@@ -118,7 +118,7 @@ def add_parser(groups: Any) -> None:
         "--build-dir",
         type=Path,
         help="build in this folder instead of build/<preset> (relative to the checkout), with the preset's settings; "
-        "for a second configuration, such as the Clang one clang-tidy reads",
+        "for a second configuration, such as a Clang one next to the default compiler's",
     )
     group.add_argument(
         "--env",
@@ -165,9 +165,7 @@ def add_parser(groups: Any) -> None:
     group.add_argument("--result-file", type=Path, help=argparse.SUPPRESS)
     group.add_argument("-j", "--jobs", type=int, help="parallel jobs (default: the cores divided by the slots)")
     commands = group.add_subparsers(dest="build_command")
-    status = commands.add_parser(
-        "status", help="who holds the slots (build lanes and the clang-tidy lane), who waits, and stale entries"
-    )
+    status = commands.add_parser("status", help="who holds the slots (the build lanes), who waits, and stale entries")
     _add_dir(status)
     status.add_argument("--json", action="store_true", help="print JSON instead of text")
     result = commands.add_parser("result", help="the outcome of the worktree's last --detach run")
@@ -176,7 +174,7 @@ def add_parser(groups: Any) -> None:
     release = commands.add_parser("release", help="manual cleanup: free an agent's slots and drop its queue places")
     release.add_argument("--agent", dest="release_agent", required=True, help="the agent whose entries to remove")
     release.add_argument("--force", action="store_true", help="also another agent's, or a build that still runs")
-    release.add_argument("--slot", type=int, help="one slot by number (with --lane for the fast or tidy lane)")
+    release.add_argument("--slot", type=int, help="one slot by number (with --lane for the fast lane)")
     release.add_argument("--lane", choices=LANES, help="one lane only (default: all)")
     _add_dir(release)
 
@@ -845,7 +843,7 @@ def result_record(root: Path) -> dict[str, Any] | None:
 
 
 def run_status(directory: Path | None, as_json: bool) -> int:
-    """`build status`: the slots of every lane (main, fast, and the clang-tidy lane of `check changed`) with their
+    """`build status`: the slots of every lane (main and fast) with their
     holders, the queues in order, and stale entries."""
     root = _root(directory)
     lanes = {lane: build_claims.default_slots(lane, root) for lane in LANES}

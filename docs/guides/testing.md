@@ -402,24 +402,20 @@ the files you touched, and fix what it prints:
 uv run --project python coney-tools check changed
 ```
 
-It runs pre-commit on the changed files, clang-tidy with the GCC and Clang warnings on the files a pull request changes
-(a changed header through the `.cpp` files that include it; the only clang-tidy a pull request gets, as CI's runs
-nightly), the page standards on the changed pages and `mkdocs build --strict` when docs changed, ruff, pytest and mypy
-when `python/` or `.claude/` changed, `orig check` when `src/` changed (a new gameplay function carries `@orig` or
-`@coney-only`), and `repo check`; it needs a `build/dev` that was configured once (`coney-tools build --configure-only
---agent <id>`: configure, no build). It catches what MSVC lets through: a designated initializer that skips a field
-(`-Wmissing-designated-field-initializers`), an unchecked `std::optional` access (`bugprone-unchecked-optional-access`).
-[The command's page](coney-tools-build.md#check) has the options. It does not replace `coney-tools task check`
+It runs pre-commit on the changed files, the page standards on the changed pages and `mkdocs build --strict` when docs
+changed, ruff, pytest and mypy when `python/` or `.claude/` changed, `orig check` when `src/` changed (a new gameplay
+function carries `@orig` or `@coney-only`), and `repo check`. [The command's page](coney-tools-build.md#check) has the
+options. It does not replace `coney-tools task check`
 ([profiles and checks](coney-tools-repo.md#task-check)), the gate that runs the whole list for the change's kind and
-writes the `checked` stamp, nor the list below, which is the whole gate, and it leaves to CI the warnings only GCC
-emits, macOS, the sanitizers and the nightly full clang-tidy pass; a change to the build setup is checked on its changed
-files only.
+writes the `checked` stamp, nor the list below, which is the whole gate, and it leaves to CI the warnings only GCC emits,
+macOS, the sanitizers and clang-tidy.
 
-clang-tidy waits for a slot of the machine's tidy lane, like a build, and skips every file the shared cache has seen
-clean in the same state, so a rerun after a fix tidies only what the fix reaches ([building](building.md#clang-tidy-cache)).
-A first run on a header change can reach hundreds of files: when the queue or the run would outlast your prompt cache,
-start it with `--detach`, write STATUS.md and stop; `coney-tools check result` shows the outcome. Exit 75 means it gave
-up waiting, not that anything failed.
+**clang-tidy is CI's alone.** It is not run locally (on Windows there are no local WSL builds or clang-tidy runs):
+every pull request that changes engine files gets a required `clang-tidy` check on the lines it changes, and the whole
+codebase is tidied nightly ([building](building.md#clang-tidy)). It catches what MSVC lets through: a designated
+initializer that skips a field (`-Wmissing-designated-field-initializers`), an unchecked `std::optional` access
+(`bugprone-unchecked-optional-access`), a use after a move. A finding is an annotation on the pull request; fix it
+forward on the branch and let CI check again.
 
 The command runs on Windows, Linux and macOS. Nobody checks it by hand on all three, so CI does: the `python` workflow
 runs its `repo` and `pre-commit` steps on every operating system it tests (`--base HEAD^1`, the branch a pull request's
@@ -450,10 +446,10 @@ suite holds one for 15 to 30 minutes, so running it for every step makes everyon
 
 ### Continuous integration {#ci}
 
-CI builds and tests on Windows, Linux (GCC and Clang) and macOS, with sanitizers (clang-tidy nightly), and runs the Python
-and docs checks. It is the gate for the platforms you are not on: do not run virtual-machine or cross-platform builds
-locally to stand in for it, and fix a red CI forward rather than leaving `main` red. Code that MSVC accepts but the
-others reject is the usual cause: see [Portability traps](conventions.md#portability-traps).
+CI builds and tests on Windows, Linux (GCC and Clang) and macOS, with sanitizers and clang-tidy on the changed lines,
+and runs the Python and docs checks. It is the gate for the platforms you are not on: do not run virtual-machine or
+cross-platform builds locally to stand in for it, and fix a red CI forward rather than leaving `main` red. Code that
+MSVC accepts but the others reject is the usual cause: see [Portability traps](conventions.md#portability-traps).
 
 ## Play-testing {#play-testing}
 

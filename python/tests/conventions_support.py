@@ -94,7 +94,6 @@ CI_CLASSES = [
     (".github/actions/ccache/action.yml", "engine"),
     (".github/workflows/build.yml", "engine"),
     (".github/scripts/ci-scope.sh", "unknown"),
-    (".github/scripts/tidy-files.sh", "unknown"),
     (".github/workflows/new.yml", "unknown"),
     (".gitattributes", "unknown"),
     (".editorconfig", "unknown"),

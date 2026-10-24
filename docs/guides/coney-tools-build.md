@@ -8,8 +8,8 @@ The other groups are listed in [the command line overview](coney-tools.md#groups
 ## check {#check}
 
 ```sh
-uv run --project python coney-tools check changed [--base origin/main] [--build-dir build/dev] [--only STEP ...]
-    [--skip STEP ...] [--jobs N] [--clang-tidy PATH] [--agent ID] [--max-wait MIN] [--no-cache] [--detach]
+uv run --project python coney-tools check changed [--base origin/main] [--only STEP ...] [--skip STEP ...]
+    [--detach]
 uv run --project python coney-tools check result
 ```
 
@@ -23,62 +23,27 @@ line, and any failure makes the command exit 1:
 | `repo` | always | `repo audit --files`: `.github/conventions.yml` loads, and the agent pointer files, the generated blocks, the issue forms, the pull request template, the CI scope script and pre-commit's size limit agree with it |
 | `orig` | a file under `src/` changed | [`orig check`](coney-tools-fidelity.md#orig): a new function in a gameplay folder carries `@orig` or `@coney-only`, and every folder of `src/` is listed as gameplay or Coney-only |
 | `pre-commit` | a file changed | `pre-commit run --files` on the changed files: clang-format, ruff, whitespace, the 512 KB guard, the real-clock rule |
-| `clang-tidy` | C++ under `src/` or `tests/` changed | clang-tidy on the files CI's pull-request job would check, with the compiler warnings the GCC and Clang builds enable |
 | `docs` | a file matching `paths.docs_only` of `.github/conventions.yml` changed (`docs/`, `research/`, top-level Markdown, `mkdocs.yml`, the MkDocs hooks and theme overrides, the shared artwork, `requirements-docs.txt`, ...), or the python the build imports (`python/src/coney_tools/progress*.py`, `research*.py`, `config.py`) | [`docs check`](#docs) on the changed pages, then `mkdocs build --strict` into a throwaway folder; both run, so one run shows every problem |
 | `python` | `python/` or `.claude/` changed (the tests also run the hooks) | `ruff check` and `ruff format --check` over `python` and `.claude/hooks`, `pytest python/tests` and `mypy --config-file python/pyproject.toml python/src python/tests` |
 
-**Which files clang-tidy checks.** The same rules as CI (`.github/scripts/tidy-files.sh`): a changed `.cpp` itself, a
-changed header through every `.cpp` that includes it, directly or through other headers. A test keeps the two in
-agreement. When the build or tidy setup changed (`CMakeLists.txt`, `cmake/`, `CMakePresets.json`, `.clang-tidy`, the
-build workflow) the nightly CI run checks every file, an hour's work; the command says so and checks the changed ones
-only. Pull requests get no clang-tidy in CI, so this is their gate ([building](building.md#clang-tidy)).
+**clang-tidy is not a step.** It is not run locally, on Windows least of all (no local WSL builds or clang-tidy
+runs): CI tidies every pull request on the lines it changes, in its own required check, and the whole codebase
+nightly ([building](building.md#clang-tidy)). A finding comes back as an annotation on the pull request and is fixed
+forward on the branch. Every program the command starts runs below normal priority, like a build's (Windows:
+below-normal priority class; elsewhere `nice -n 5`).
 
-**How it runs clang-tidy.** With the repository's `.clang-tidy` and the `compile_commands.json` of `--build-dir`
-(every preset writes one; configuring is enough, no build, and a stale or missing entry is reported with the
-`coney-tools build --configure-only` to rerun). It finds clang-tidy 19 as `clang-tidy-19` on `PATH`, in Homebrew's
-`llvm@19`, in the Visual Studio LLVM folder that `vswhere` names, or as `clang-tidy` on `PATH` or in Homebrew's `llvm`
-(the first of version 19 wins; another version is used with a note), or from `--clang-tidy`. A `ccache` or `sccache`
-launcher in the database is removed from the copy clang-tidy reads, as CI's job does. The compile database of an MSVC
-build makes clang-tidy run in clang-cl mode, where MSVC's `/W4` misses what GCC and Clang reject (a designated
-initializer that leaves a field out, `-Wmissing-designated-field-initializers`). So the command adds `-Wall -Wextra
--Wpedantic` (the flags of `cmake/coney_target.cmake`, passed as `/clang:-W...` in that mode) and lets the compiler's
-diagnostics through the `-*` of `.clang-tidy`; with the config's `WarningsAsErrors` they fail like CI's `-Werror`.
-Every program the command starts runs below normal priority, like a build's (Windows: below-normal priority class;
-elsewhere `nice -n 5`).
-
-**Tidy slots, the cache and waiting.** clang-tidy runs only on the files the shared result cache has not seen clean in
-the same state, and only while the command holds a slot of the machine's **tidy lane**
-([building](building.md#clang-tidy-cache)): `tidy_slots` of `coney.local.toml` gates at once (default 1), each running
-`tidy_jobs` clang-tidy processes (default 0: a build slot's share, the cores divided by `build_slots`); `--jobs`
-overrides the second for one run. A gate whose files are all cached takes no slot, and one of at most 6 files takes the
-fast lane's slot instead. The summary line says how many files came from the cache (`254 files (clang-tidy 19, 251
-cached)`). The queue is the build slots' own: fair, with the same claim files; `build status` lists the lane, each
-holder with its file count and progress (`tidy 12/40`), and `build release --lane tidy` cleans up after a crash. The
-queue entry carries `--agent` (default: `CONEY_AGENT`, else the worktree's folder name). `--max-wait` minutes (default
-and most 40, inside an agent's prompt cache) bound the wait; a gate that gives up skips clang-tidy, runs the other steps
-and exits 75 unless one of them failed. `--detach` runs the whole gate in the background, apart from the shell (default
-wait 240 minutes), and returns at once; `check result` prints its output and exits with its code (75 while it runs, as
-`build result` does, and 1 when its process is gone; "still running" is judged as for `build result`, by the pid and
-when that process started). `--no-cache` tidies every file again.
-
-**Linux and macOS: use a Clang database.** On Windows the `dev` preset uses MSVC and the command adapts. On Linux the
-default compiler is GCC, whose database can carry flags clang-tidy rejects, and CI tidies a Clang 19 build. The
-command notes a GCC database; configure a Clang one once, beside `build/dev`, with [`build`](#build) (it sets the
-compilers for the run and configures a second folder; a hook refuses a raw `cmake`), and point the command at it:
-
-```sh
-uv run --project python coney-tools build --agent ID --configure-only --preset dev --build-dir build/tidy \
-    --env CC=clang-19 --env CXX=clang++-19         # macOS: the Apple or Homebrew clang
-uv run --project python coney-tools check changed --build-dir build/tidy
-```
+`--detach` runs the whole gate in the background, apart from the shell, and returns at once; `check result` prints its
+output and exits with its code (75 while it runs, as `build result` does, and 1 when its process is gone; "still
+running" is judged as for `build result`, by the pid and when that process started). The detached run is recorded
+under the worktree's name (`CONEY_AGENT`, else the folder's name).
 
 CI runs the `repo` and `pre-commit` steps on Windows, Linux and macOS in its `python` workflow, so the command's
 handling of paths, programs and long command lines is tested on all three.
 
 `--only` and `--skip` take step names, for a rerun of the one that failed. Exit codes: 0 all passed, 1 a step failed, 2
-a setup problem (no compile database, no clang-tidy), 75 clang-tidy gave up waiting for a slot. The command prints at
-most 40 lines of a failing step; run the step's tool by hand for the rest. What stays CI's: warnings only GCC emits,
-macOS, the sanitizers and the full clang-tidy pass (see [the local gate](testing.md#local-gate)).
+a setup problem (a program the step needs is missing), 75 from `check result` while a detached run goes on. The command
+prints at most 40 lines of a failing step; run the step's tool by hand for the rest. What stays CI's: warnings only GCC
+emits, macOS, the sanitizers and clang-tidy (see [the local gate](testing.md#local-gate)).
 
 <!-- command-reference:begin check -->
 ## Parameters of `check` {#check-parameters}
@@ -87,24 +52,17 @@ Written by `coney-tools docs render` from the command line's own definitions; ne
 
 ### `check changed` {#check-changed-usage}
 
-Clang-tidy (with GCC/Clang warnings), pre-commit, docs, Python and repo checks on what changed.
+Pre-commit, docs, Python and repo checks on what changed (clang-tidy runs in CI).
 
 ```text
-coney-tools check changed [--base BASE] [--build-dir BUILD_DIR] [--only ONLY] [--skip SKIP] [--jobs JOBS]
-    [--clang-tidy CLANG_TIDY] [--agent AGENT] [--max-wait MIN] [--no-cache] [--detach]
+coney-tools check changed [--base BASE] [--only ONLY] [--skip SKIP] [--detach]
 ```
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `--base BASE` | text | `origin/main` | the branch the change is measured from |
-| `--build-dir BUILD_DIR` | text | `build/dev` | the build folder holding compile_commands.json |
-| `--only ONLY` | choice | none | run only this step (repeatable). One of `repo`, `orig`, `pre-commit`, `clang-tidy`, `docs`, `python`. |
-| `--skip SKIP` | choice | none | leave this step out (repeatable). One of `repo`, `orig`, `pre-commit`, `clang-tidy`, `docs`, `python`. |
-| `--jobs JOBS` | integer | none | clang-tidy processes at once in the tidy slot (default: tidy_jobs of coney.local.toml, else a build's share, the cores divided by build_slots) |
-| `--clang-tidy CLANG_TIDY` | text | none | the clang-tidy to use; default: clang-tidy-19, Visual Studio's, PATH |
-| `--agent AGENT` | text | none | your id, for your place in the clang-tidy queue (default: CONEY_AGENT, else the worktree) |
-| `--max-wait MIN` | number | none | minutes to wait for a clang-tidy slot before giving up with exit 75 (default and most 40; with --detach default 240) |
-| `--no-cache` | flag | off | tidy every file, ignoring the shared clang-tidy result cache |
+| `--only ONLY` | choice | none | run only this step (repeatable). One of `repo`, `orig`, `pre-commit`, `docs`, `python`. |
+| `--skip SKIP` | choice | none | leave this step out (repeatable). One of `repo`, `orig`, `pre-commit`, `docs`, `python`. |
 | `--detach` | flag | off | run in the background, apart from this shell, and return at once; `check result` shows the outcome |
 
 ### `check result` {#check-result-usage}
@@ -219,7 +177,7 @@ uv run --project python coney-tools build [--agent ID] [--preset dev|playtest|re
     [--lane auto|main] [--max-wait MIN] [--budget MIN] [--detach] [-j N] [--dir CHECKOUT]
 uv run --project python coney-tools build status [--json] [--dir CHECKOUT]
 uv run --project python coney-tools build result [--json] [--dir CHECKOUT]
-uv run --project python coney-tools build release --agent ID [--force] [--slot N] [--lane main|fast|tidy]
+uv run --project python coney-tools build release --agent ID [--force] [--slot N] [--lane main|fast]
     [--dir CHECKOUT]
 ```
 
@@ -416,7 +374,7 @@ pull request; or unmerged work), saying which of them
 [`workspace clean --apply`](coney-tools-setup.md#workspace) would free now. Only the worktrees under the workspace's
 `worktrees/` folder are counted: the main checkout's `build/release`, the coordinator's play build, never counts and a
 run in the main checkout is never refused. A folder that exists keeps building whatever the count is, and a second
-folder in a worktree that already holds one (the `build/tidy` of the gate, a `release` beside a `dev`) adds no worktree,
+folder in a worktree that already holds one (a second configuration, a `release` beside a `dev`) adds no worktree,
 so it is allowed. Two runs that configure at the very same moment may both pass: the cap is a brake, not a lock. Why it
 is needed and what to do on a refusal: [The cap on build folders](agents.md#build-cap)
 ([`build_cap.py`](repo:python/src/coney_tools/build_cap.py)).
@@ -449,17 +407,16 @@ selects, and the hook allows it.
 
 **Another build folder.** `--build-dir FOLDER` (relative to the checkout) configures, builds and tests in that folder
 instead of `build/<preset>`, with the preset's settings (`cmake --preset P -B FOLDER`, `cmake --build FOLDER`, `ctest
---test-dir FOLDER`), for a second configuration beside the first, such as the Clang one that
-[`check changed`](#check) reads for clang-tidy. `--env NAME=VALUE` (repeatable) sets an environment variable for the
-run, such as `CC=clang-19`; CMake reads `CC` and `CXX` at a folder's first configure and keeps them in the cache.
+--test-dir FOLDER`), for a second configuration beside the first, such as a Clang build beside the default compiler's.
+`--env NAME=VALUE` (repeatable) sets an environment variable for the run, such as `CC=clang-19`; CMake reads `CC` and
+`CXX` at a folder's first configure and keeps them in the cache.
 
-`build status` prints every lane (main, fast, and the [clang-tidy lane](#check) of `check changed`, whose "preset" is
-the gate's file count): each slot's holder, worktree, preset, step and minutes, the queue in order (place, agent,
-priority, minutes waiting) and the stale entries; `--json` prints the same as one object. `build release --agent ID
-[--lane main|fast|tidy]` is manual cleanup: it frees the slots a crashed or stuck run of that agent left, stops what a
-crashed run left running, and drops its tickets. A slot whose process still runs, or another agent's, needs `--force`,
-which frees the slot but does not stop the process. How agents use it, and what exit `75` asks of them: [Builds and
-tests](agents.md#builds).
+`build status` prints every lane (main and fast): each slot's holder, worktree, preset, step and minutes, the queue in
+order (place, agent, priority, minutes waiting) and the stale entries; `--json` prints the same as one object. `build
+release --agent ID [--lane main|fast]` is manual cleanup: it frees the slots a crashed or stuck run of that agent left,
+stops what a crashed run left running, and drops its tickets. A slot whose process still runs, or another agent's, needs
+`--force`, which frees the slot but does not stop the process. How agents use it, and what exit `75` asks of them:
+[Builds and tests](agents.md#builds).
 
 <!-- command-reference:begin build -->
 ## Parameters of `build` {#build-parameters}
@@ -487,7 +444,7 @@ coney-tools build [--agent AGENT] [--preset PRESET] [--dir DIR] [--configure] [-
 | `--target NAME` | text | none | build only this target and what it needs (repeatable), e.g. `coney` for a play build without the tests; not with --test |
 | `-R, --regex REGEX` | text | none | run only the tests whose names match (ctest -R, a CMake regular expression: escape . + ( ) with a backslash); a few tests are quick |
 | `-L, --label LABEL` | text | none | run only the tests with a label that matches (ctest -L); `disc` is every test that needs the game's disc |
-| `--build-dir BUILD_DIR` | path | none | build in this folder instead of build/\<preset\> (relative to the checkout), with the preset's settings; for a second configuration, such as the Clang one clang-tidy reads |
+| `--build-dir BUILD_DIR` | path | none | build in this folder instead of build/\<preset\> (relative to the checkout), with the preset's settings; for a second configuration, such as a Clang one next to the default compiler's |
 | `--env NAME=VALUE` | text | none | set an environment variable for the run, e.g. CC=clang-19 (repeatable); CMake reads CC and CXX at the first configure of a folder |
 | `--priority` | flag | off | go ahead of the normal queue (a build someone awaits) |
 | `--lane RUN_LANE` | choice | `auto` | auto (default): a small build or test run takes the fast lane; main: always a main slot, for a run you know is long. One of `auto`, `main`. |
@@ -498,7 +455,7 @@ coney-tools build [--agent AGENT] [--preset PRESET] [--dir DIR] [--configure] [-
 
 ### `build status` {#build-status-usage}
 
-Who holds the slots (build lanes and the clang-tidy lane), who waits, and stale entries.
+Who holds the slots (the build lanes), who waits, and stale entries.
 
 ```text
 coney-tools build status [--dir DIR] [--json]
@@ -534,8 +491,8 @@ coney-tools build release --agent RELEASE_AGENT [--force] [--slot SLOT] [--lane 
 | --- | --- | --- | --- |
 | `--agent RELEASE_AGENT` | text | required | the agent whose entries to remove |
 | `--force` | flag | off | also another agent's, or a build that still runs |
-| `--slot SLOT` | integer | none | one slot by number (with --lane for the fast or tidy lane) |
-| `--lane LANE` | choice | none | one lane only (default: all). One of `main`, `fast`, `tidy`. |
+| `--slot SLOT` | integer | none | one slot by number (with --lane for the fast lane) |
+| `--lane LANE` | choice | none | one lane only (default: all). One of `main`, `fast`. |
 | `--dir DIR` | path | none | the checkout the command is about (default: the current one) |
 <!-- command-reference:end -->
 

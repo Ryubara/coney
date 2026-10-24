@@ -1,0 +1,63 @@
+# A pull request whose description says `Depends on #N` (pull_requests.stacked.depends_line of
+# .github/conventions.yml) cannot merge until every pull request it names has merged: the `dependencies` job is a
+# required check (merge.required_checks). Most pull requests have no such line and pass at once. Stacked pull requests
+# are not how the project works any more (docs/guides/how-we-work.md), so the line is a backstop.
+#
+# The job reads the description from GitHub when it runs, not from the event, so a rerun sees the text as it is now. When
+# a pull request merges (a push to the default branch), the `rerun` job restarts the failed run of each waiting pull
+# request whose dependencies have all merged. Both are `coney-tools ci ...` commands (docs/guides/coney-tools-ci.md,
+# "ci"); the settings are `ci.dependencies` of the conventions file. Actions are pinned to a full commit SHA; the tag is
+# in the comment beside it.
+name: dependencies
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize, ready_for_review]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# One run per pull request at a time (a newer edit replaces the older run). Pushes to main share one group, so two
+# reruns never restart the same run together; a newer push replaces one that is still waiting, which loses nothing,
+# because each rerun looks at every waiting pull request.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || 'main' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  dependencies:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      # The number reaches the command through an environment variable, never expanded into the script's text.
+      - name: Check that the pull requests this one depends on are merged
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: uv run --project python coney-tools ci dependencies --pr "$PR_NUMBER"
+
+  rerun:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - name: Restart the runs of pull requests whose dependencies have merged
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: uv run --project python coney-tools ci rerun-dependencies --apply

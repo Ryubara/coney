@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import NamedTuple
 
 from coney_tools.config import ConfigError
-from coney_tools.conventions import Conventions, load_conventions
+from coney_tools.conventions import CI_WHERE, Conventions, load_conventions
 
 #: The docs' line length (.markdownlint.yaml, MD013); generated prose is wrapped to it. Tables are not.
 WIDTH = 120
@@ -346,6 +346,35 @@ def _audit_checks(conventions: Conventions) -> list[str]:
     return lines
 
 
+#: How a place's CI `where` words read in the table, after "CI:".
+_CI_PLACE_WORDS = {
+    "ci": "every pull request",
+    "main": "a push to main",
+    "nightly": "nightly",
+    "issues": "issue and pull request events",
+}
+
+
+def _place_where(where: tuple[str, ...]) -> str:
+    """Where a check runs, in one phrase: `local`, then `CI: ...` with its CI words in their usual order, each once."""
+    parts = ["local"] if "local" in where else []
+    ci_words = [_CI_PLACE_WORDS[name] for name in CI_WHERE if name in where and name != "local"]
+    if ci_words:
+        parts.append("CI: " + ", ".join(ci_words))
+    return "; ".join(parts)
+
+
+def _check_places(conventions: Conventions) -> list[str]:
+    """One place per check (`ci.places`) as a table: the check, where it runs and the jobs behind it."""
+    lines = ["| Check | Where | CI jobs |", "| --- | --- | --- |"]
+    for place in conventions.ci.places:
+        where = _place_where(place.where)
+        where += f" ({place.note})" if place.note else ""
+        jobs = ", ".join(f"`{job}`" for job in place.jobs) or "none"
+        lines.append(f"| {place.check} | {where} | {jobs} |")
+    return lines
+
+
 def _research_pages(conventions: Conventions) -> list[str]:
     """The kinds of research page as a table (sections, limit, front matter), and the limits that apply to all."""
     research = conventions.research
@@ -390,6 +419,7 @@ BLOCKS: dict[str, Callable[[Conventions], list[str]]] = {
     "tools-only-paths": lambda conventions: _scope_paths(conventions.paths.tools_only),
     "engine-paths": lambda conventions: _scope_paths(conventions.paths.engine),
     "audit-checks": _audit_checks,
+    "check-places": _check_places,
     "claim-rules": _claim_rules,
     "research-pages": _research_pages,
 }

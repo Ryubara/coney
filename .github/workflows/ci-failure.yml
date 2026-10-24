@@ -1,0 +1,52 @@
+# A failed run on the default branch (the nightly build, a push to main, a manual run) opens a P-critical issue, or
+# comments on the one that is already open for that workflow, so a red main is noticed the next time anyone looks at the
+# issues and not after days. The settings (the workflows watched, the events that count, the labels, how much of the log
+# and history goes in) are `ci.failure` of .github/conventions.yml; the code is python/src/coney_tools/ci_failure.py.
+#
+# It runs with `workflow_run`, which gives it a token that can write issues, so it takes care what it runs: only the
+# default branch's own code (the checkout is the default branch, never the commit the run tested), only runs of this
+# repository on the default branch, and never a pull request's run. The run's id reaches the command through an
+# environment variable. Actions are pinned to a full commit SHA; the tag is in the comment beside it.
+name: ci-failure
+
+on:
+  workflow_run:
+    # Must equal ci.failure.workflows in .github/conventions.yml (a test checks it).
+    workflows: [build, python, docs]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    if: >-
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.event != 'pull_request' &&
+      github.event.workflow_run.head_branch == github.event.repository.default_branch &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    # One report per workflow at a time, so two failures of the same workflow never both open an issue. It is on the job,
+    # not the workflow, so only a run that reports enters the group: a pull request's run, whose job is skipped, never
+    # replaces a waiting report. GitHub keeps one waiting run per group, so a third failure while one report runs and
+    # one waits replaces the waiting one; the issue is open by then, and the newest failure is the one that is told.
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.event.workflow_run.name }}
+      cancel-in-progress: false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+      actions: read
+    steps:
+      # The whole history: the report names the last commits that touched the files the log mentions.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - name: Open or update the P-critical issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: uv run --project python coney-tools ci report-failure --run "$RUN_ID" --apply

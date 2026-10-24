@@ -43,6 +43,7 @@ and `labels.yml`) are gone, and so are the constants that repeated their values 
 | `research` | The kinds of research page, the sections each keeps, their length limits, the old section names, the data files an address is checked against and the legacy file ([Research pages](writing-docs.md#research-pages)) | `docs check` and `docs legacy`; `repo render` (the `research-pages` block) |
 | `standards` | What a touched file is held to: the legacy file of source and test files, whether a touched file below the standard fails (`enforce`, false until the cutover), the cutover day (from it nothing new is marked legacy), the folders and endings of the code and the tests, the test macros and the form of an `// Expected:` citation ([the standards](coney-tools-standards.md#standards)) | `standards scan`, `init`, `prune`, `mark` and `check`; `docs check` |
 | `runs` | Run records: the id's shape (their folder is `research.files.runs`), the largest record, the most values and the kinds of run ([Run records](research-evidence.md#run-records)) | `pcsx2 record-run`, `pcsx2 recipe run --record`, `pcsx2 record --run-record`, `research claims` |
+| `ci` | The settings of the CI jobs that read them (`dependencies`: the workflow whose runs are restarted; `tidy`: the folders and extensions the per-pull-request clang-tidy checks, and the build-setup files whose change sends it through every file; `failure`: the workflows watched, the events, the labels and the size of the report of a failed run on `main`) and `places`: where each check runs, local or in CI, with its jobs | `ci dependencies`, `ci rerun-dependencies`, `ci tidy-plan`, `ci tidy-run`, `ci report-failure`; `repo render` (the `check-places` block); `repo audit --files` (`files.ci-places`) |
 
 The commented file is the reference for each key: open `.github/conventions.yml` and read the comment above it.
 
@@ -75,6 +76,7 @@ Markers inside a fenced code block, like the one above, are examples and are lef
 | `tools-only-paths` | The paths that run python on every OS and skip the engine jobs | `paths.tools_only` | [Building and testing](building.md#what-a-pull-request-runs) |
 | `engine-paths` | The paths that run the engine jobs and python on Linux | `paths.engine` | [Building and testing](building.md#what-a-pull-request-runs) |
 | `audit-checks` | The table of the audit's checks | `hygiene.checks` | [Audit checks](#audit-checks) |
+| `check-places` | The table of where each check runs: local, or CI on pull requests, pushes to main, nightly or issue events | `ci.places` | [Building and testing](building.md#what-ci-runs) |
 
 After a change to a key, run `uv run --project python coney-tools repo render` and commit the rewritten files with the
 change. `repo render --check` fails when a block is stale; the `python` workflow and `coney-tools check changed` run
@@ -113,6 +115,7 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
 | `files.generated-blocks` | files | error | auto | a generated block in AGENTS.md, CONTRIBUTING.md or a guide is out of date (coney-tools repo render) |
 | `files.command-reference` | files | error | auto | a coney-tools command or parameter is missing from the guides, or a generated parameter block there is out of date (coney-tools docs render) |
 | `files.ci-scope` | files | error | skill | .github/scripts/ci-scope.sh does not read the CI scope paths (docs_only, tools_only, engine) from the conventions file |
+| `files.ci-places` | files | error | skill | a job of the workflows is in no place of ci.places, or a place names a job no workflow has |
 | `files.large-file-limit` | files | error | skill | pre-commit's check-added-large-files limit differs from the conventions, or the hook or the config skips a file (no --enforce-all, an exclude, types, stages, a wider top-level exclude) |
 | `files.game-files` | files | error | skill | pre-commit's no-game-files hook is missing, not language fail, narrowed (an exclude, types, stages, a wider top-level exclude) or lets through a game capture type, the busy marker or a local record |
 | `files.markdown-hook` | files | error | skill | pre-commit has no markdownlint-cli2 hook, so a long Markdown line is first caught by CI |
@@ -242,6 +245,26 @@ existing issues (giving a card to a hand assignment, the 48 and 72 hour deadline
 Whether the Actions token may delete another person's comment, and whether it may read a collaborator's permission, are
 checked on the real repository; the design works without both (the card remembers which commands it acted on, and the
 comment's own association decides for the repository's owner).
+
+Two more write beyond a comment and wait for the maintainer's approval, which merging the pull request that added them
+gives (2026-10-23, the CI phase of the workflow plan):
+
+- `dependencies.yml` ([What CI runs](building.md#what-ci-runs)) restarts a failed run. On a push to `main` its `rerun`
+  job has `actions: write` (and `contents: read`, `pull-requests: read`) and runs `coney-tools ci rerun-dependencies
+  --apply`, which restarts the failed `dependencies` run of an open pull request whose `Depends on #N` pull requests
+  have all merged, and nothing else. Its `dependencies` job, on a pull request, only reads. Both check out the default
+  branch's own code on `push` and the merge commit on `pull_request`, and the pull request number reaches the command
+  through an environment variable.
+- `ci-failure.yml` ([Failures on main](building.md#ci-failure)) opens and comments on issues. It runs on
+  `workflow_run` of `build`, `python` and `docs` (`ci.failure.workflows`), so it has a token that can write, which is
+  why it acts only on a run of this repository on the default branch that did not come from a pull request, checks out
+  the default branch (never the tested commit), has `issues: write`, `contents: read` and `actions: read`, and passes the
+  run's id through an environment variable. It creates an issue in the task form with the `P-critical` label, or
+  comments on the open issue of the same workflow, and edits and deletes nothing.
+
+A third workflow job, `clang-tidy` in `build.yml`, has `security-events: write` to upload its SARIF file to code
+scanning (the annotations on a pull request). GitHub does not grant that permission to a pull request from a fork, so
+there the job prints workflow commands instead of uploading. It writes nothing else.
 
 ## The /repo-hygiene skill {#hygiene-skill}
 

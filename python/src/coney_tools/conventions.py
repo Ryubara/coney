@@ -965,6 +965,87 @@ class Conclave:
     claim_red_hours: int
 
 
+#: Where a check can run (`ci.places[].where`), in the order the table lists them: `local` is `task check` or a git
+#: hook, `ci` every pull request, `main` a push to main, `nightly` the scheduled run on the default branch, `issues`
+#: issue and pull request events and the sweeps that follow them up. Every word but `local` is CI.
+CI_WHERE: tuple[str, ...] = ("local", "ci", "main", "nightly", "issues")
+
+
+@dataclass(frozen=True)
+class CiDependencies:
+    """The `dependencies` job: pull requests that `Depends on #N` wait until #N is merged."""
+
+    #: The workflow file whose runs `coney-tools ci rerun-dependencies` restarts when a dependency has merged.
+    workflow: str
+    #: The most runs one rerun pass restarts.
+    rerun_limit: int
+
+
+@dataclass(frozen=True)
+class CiTidy:
+    """The per-pull-request clang-tidy job: what it checks and how it reports."""
+
+    #: The folders of Coney's own sources (never the fetched dependencies).
+    folders: tuple[str, ...]
+    #: Extensions of the files checked themselves, and of the headers checked through one source that includes them.
+    sources: tuple[str, ...]
+    headers: tuple[str, ...]
+    #: The name code scanning shows the annotations under.
+    sarif_category: str
+    #: The findings the job's summary lists.
+    findings_listed: int
+    #: The build setup: a pull request changing one of these (a folder ending in /, or a file) is checked on every file.
+    whole_when: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class CiFailure:
+    """The issue a failed run on the default branch opens (`coney-tools ci report-failure`)."""
+
+    #: The `name:` of the workflows watched and the events of their runs that count.
+    workflows: tuple[str, ...]
+    events: tuple[str, ...]
+    #: The labels of the issue (type, priority, area, status) and the form's Area answer.
+    labels: tuple[str, ...]
+    area: str
+    #: `<!-- marker:<workflow> -->` in the body finds the open issue of a workflow again.
+    marker: str
+    files_listed: int
+    commits_per_file: int
+    log_lines: int
+
+
+@dataclass(frozen=True)
+class CiPlace:
+    """One check of the project and where it runs."""
+
+    id: str
+    check: str
+    #: A subset of `CI_WHERE`.
+    where: tuple[str, ...]
+    #: For `ci` and `nightly`: the jobs as `<workflow file without .yml>/<job id>`.
+    jobs: tuple[str, ...]
+    note: str
+
+
+@dataclass(frozen=True)
+class Ci:
+    """The `ci` section: the settings of the CI jobs that read them, and the one place of every check."""
+
+    dependencies: CiDependencies
+    tidy: CiTidy
+    failure: CiFailure
+    places: tuple[CiPlace, ...]
+
+    def jobs(self) -> tuple[str, ...]:
+        """Every job any place names, as `<workflow>/<job>`."""
+        return tuple(job for place in self.places for job in place.jobs)
+
+    def at(self, where: str) -> tuple[CiPlace, ...]:
+        """The checks that run at `where` (a word of `CI_WHERE`)."""
+        return tuple(place for place in self.places if where in place.where)
+
+
 @dataclass(frozen=True)
 class CodeStandard:
     """Which source files the code standard covers (comments on every function, a doc comment on every public type, a
@@ -1031,6 +1112,7 @@ class Conventions:
     runs: Runs
     conclave: Conclave
     standards: Standards
+    ci: Ci
 
 
 # --- reading ------------------------------------------------------------------------------------------------------
@@ -1783,6 +1865,114 @@ def _read_standards(data: object, where: str) -> Standards:
     )
 
 
+def _read_ci_place(item: object, where: str) -> CiPlace:
+    """One entry of `ci.places`; a place that runs in CI names its jobs, a `local` one does not."""
+    table = _table(item, where, ("id", "check", "where"), ("jobs", "note"))
+    place = _texts(table["where"], _at(where, "where"))
+    _names_in(place, CI_WHERE, _at(where, "where"), f"a place ({', '.join(CI_WHERE)})")
+    jobs = _texts(table.get("jobs", []), _at(where, "jobs"), empty_ok=True)
+    runs_in_ci = any(name != "local" for name in place)
+    if runs_in_ci and not jobs:
+        raise _fail(_at(where, "jobs"), "a check that runs in CI names its jobs")
+    if jobs and not runs_in_ci:
+        raise _fail(_at(where, "jobs"), "only a check that runs in CI has jobs")
+    for index, job in enumerate(jobs):
+        if not re.fullmatch(r"[a-z][a-z0-9-]*/[A-Za-z_][A-Za-z0-9_-]*", job):
+            raise _fail(f"{_at(where, 'jobs')}[{index}]", f"'{job}' must be <workflow file without .yml>/<job id>")
+    ident = _text(table["id"], _at(where, "id"))
+    if not re.fullmatch(r"[a-z][a-z0-9-]*", ident):
+        raise _fail(_at(where, "id"), f"'{ident}' must be lower case letters, digits and dashes")
+    note = table.get("note", "")
+    return CiPlace(
+        id=ident,
+        check=_text(table["check"], _at(where, "check")),
+        where=place,
+        jobs=jobs,
+        note=_text(note, _at(where, "note")) if note else "",
+    )
+
+
+def _read_ci(data: object, where: str, labels: Labels, required_checks: tuple[str, ...]) -> Ci:
+    """The `ci` section: the CI jobs' settings and the places of the checks; every required check has a place."""
+    table = _table(data, where, ("dependencies", "tidy", "failure", "places"))
+    dep_where = _at(where, "dependencies")
+    dependencies = _table(table["dependencies"], dep_where, ("workflow", "rerun_limit"))
+    workflow = _text(dependencies["workflow"], _at(dep_where, "workflow"))
+    if not re.fullmatch(r"[A-Za-z0-9_-]+[.]yml", workflow):
+        raise _fail(_at(dep_where, "workflow"), "a workflow file name under .github/workflows/")
+    tidy_where = _at(where, "tidy")
+    tidy = _table(
+        table["tidy"],
+        tidy_where,
+        ("folders", "sources", "headers", "sarif_category", "findings_listed", "whole_when"),
+    )
+    folders = _texts(tidy["folders"], _at(tidy_where, "folders"))
+    for folder in folders:
+        if not folder.endswith("/") or folder.startswith("/") or ".." in folder:
+            raise _fail(_at(tidy_where, "folders"), f"'{folder}' must be a folder inside the checkout, ending in /")
+    extensions = {key: _texts(tidy[key], _at(tidy_where, key)) for key in ("sources", "headers")}
+    for key, values in extensions.items():
+        for value in values:
+            if not re.fullmatch(r"[.][A-Za-z0-9]+", value):
+                raise _fail(_at(tidy_where, key), f"'{value}' must be an extension such as .cpp")
+    if set(extensions["sources"]) & set(extensions["headers"]):
+        raise _fail(_at(tidy_where, "headers"), "an extension cannot be both a source and a header")
+    whole_when = _texts(tidy["whole_when"], _at(tidy_where, "whole_when"))
+    for entry in whole_when:
+        if entry.startswith("/") or ".." in entry or "*" in entry:
+            raise _fail(_at(tidy_where, "whole_when"), f"'{entry}' must be a path inside the checkout, no pattern")
+    failure_where = _at(where, "failure")
+    failure = _table(
+        table["failure"],
+        failure_where,
+        ("workflows", "events", "labels", "area", "marker", "files_listed", "commits_per_file", "log_lines"),
+    )
+    failure_labels = _texts(failure["labels"], _at(failure_where, "labels"))
+    _names_in(failure_labels, labels.names(), _at(failure_where, "labels"), "in labels.list")
+    area = _text(failure["area"], _at(failure_where, "area"))
+    _names_in((area,), failure_labels, _at(failure_where, "area"), "one of the labels")
+    marker = _text(failure["marker"], _at(failure_where, "marker"))
+    if not re.fullmatch(r"[a-z][a-z0-9-]*", marker):
+        raise _fail(_at(failure_where, "marker"), "lower case letters, digits and dashes")
+    places = _each(table["places"], _at(where, "places"), _read_ci_place)
+    ids = [place.id for place in places]
+    if len(set(ids)) != len(ids):
+        raise _fail(_at(where, "places"), "an id is used twice")
+    jobs = [job for place in places for job in place.jobs]
+    if len(set(jobs)) != len(jobs):
+        raise _fail(_at(where, "places"), "a job is named in two places: one place per check")
+    named = {job.split("/", 1)[1] for job in jobs}
+    for check in required_checks:
+        if check not in named:
+            raise _fail(
+                _at(where, "places"), f"the required check '{check}' (merge.required_checks) is in no place's jobs"
+            )
+    return Ci(
+        dependencies=CiDependencies(
+            workflow=workflow, rerun_limit=_count(dependencies["rerun_limit"], _at(dep_where, "rerun_limit"))
+        ),
+        tidy=CiTidy(
+            folders=folders,
+            sources=extensions["sources"],
+            headers=extensions["headers"],
+            sarif_category=_text(tidy["sarif_category"], _at(tidy_where, "sarif_category")),
+            findings_listed=_count(tidy["findings_listed"], _at(tidy_where, "findings_listed")),
+            whole_when=whole_when,
+        ),
+        failure=CiFailure(
+            workflows=_texts(failure["workflows"], _at(failure_where, "workflows")),
+            events=_texts(failure["events"], _at(failure_where, "events")),
+            labels=failure_labels,
+            area=area,
+            marker=marker,
+            files_listed=_count(failure["files_listed"], _at(failure_where, "files_listed")),
+            commits_per_file=_count(failure["commits_per_file"], _at(failure_where, "commits_per_file")),
+            log_lines=_count(failure["log_lines"], _at(failure_where, "log_lines")),
+        ),
+        places=places,
+    )
+
+
 def _read_label(item: object, where: str, description_max: int) -> Label:
     """One entry of `labels.list`; a colour YAML read as a number must have been quoted."""
     table = _table(item, where, ("name", "color", "description"))
@@ -2247,6 +2437,7 @@ def parse_conventions(data: object) -> Conventions:
         "runs",
         "conclave",
         "standards",
+        "ci",
     )
     table = _table(data, "", ("version", *keys))
     version = table["version"]
@@ -2275,13 +2466,14 @@ def parse_conventions(data: object) -> Conventions:
     _names_in(hygiene.report_issue.labels, names, "hygiene.report_issue.labels", "in labels.list")
     _names_in(hygiene.pr_health.labels.values(), names, "hygiene.pr_health.labels", "in labels.list")
     research = _read_research(table["research"], "research")
+    merge = _read_merge(table["merge"], "merge")
     return Conventions(
         version=SUPPORTED_VERSION,
         repo=_read_repo(table["repo"], "repo"),
         paths=_read_paths(table["paths"], "paths"),
         commits=commits,
         pull_requests=pull_requests,
-        merge=_read_merge(table["merge"], "merge"),
+        merge=merge,
         issues=issues,
         claims=claims,
         tasks=_read_tasks(table["tasks"], "tasks"),
@@ -2294,6 +2486,7 @@ def parse_conventions(data: object) -> Conventions:
         runs=_read_runs(table["runs"], "runs", research.files.runs),
         conclave=_read_conclave(table["conclave"], "conclave"),
         standards=_read_standards(table["standards"], "standards"),
+        ci=_read_ci(table["ci"], "ci", labels, merge.required_checks),
     )
 
 

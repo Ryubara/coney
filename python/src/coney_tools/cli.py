@@ -16,6 +16,7 @@ from coney_tools import (
     audio_cli,
     build_cli,
     check_cli,
+    ci_cli,
     clips,
     commit_message,
     conclave_cli,
@@ -368,6 +369,7 @@ def _build_parser() -> argparse.ArgumentParser:
     issue_cli.add_issue_parser(groups)
     issue_claim_cli.add_claim_parser(groups)
     task_cli.add_task_parser(groups)
+    ci_cli.add_ci_parser(groups)
     add_pr_health_parser(repo_commands)
     add_review_parsers(repo_commands)
     add_hygiene_parser(repo_commands)
@@ -443,33 +445,11 @@ def _add_check_commands(groups: Any) -> None:
     commands = group.add_subparsers(dest="command", required=True)
     changed = commands.add_parser(
         "changed",
-        help="clang-tidy (with GCC/Clang warnings), pre-commit, docs, Python and repo checks on what changed",
+        help="pre-commit, docs, Python and repo checks on what changed (clang-tidy runs in CI)",
     )
     changed.add_argument("--base", default="origin/main", help="the branch the change is measured from")
-    changed.add_argument("--build-dir", default="build/dev", help="the build folder holding compile_commands.json")
     changed.add_argument("--only", action="append", choices=check_cli.STEPS, help="run only this step (repeatable)")
     changed.add_argument("--skip", action="append", choices=check_cli.STEPS, help="leave this step out (repeatable)")
-    changed.add_argument(
-        "--jobs",
-        type=int,
-        default=None,
-        help="clang-tidy processes at once in the tidy slot (default: tidy_jobs of coney.local.toml, else a build's "
-        "share, the cores divided by build_slots)",
-    )
-    changed.add_argument("--clang-tidy", help="the clang-tidy to use; default: clang-tidy-19, Visual Studio's, PATH")
-    changed.add_argument(
-        "--agent", help="your id, for your place in the clang-tidy queue (default: CONEY_AGENT, else the worktree)"
-    )
-    changed.add_argument(
-        "--max-wait",
-        type=float,
-        metavar="MIN",
-        help="minutes to wait for a clang-tidy slot before giving up with exit 75 (default and most 40; with --detach "
-        "default 240)",
-    )
-    changed.add_argument(
-        "--no-cache", action="store_true", help="tidy every file, ignoring the shared clang-tidy result cache"
-    )
     changed.add_argument(
         "--detach",
         action="store_true",
@@ -1100,6 +1080,8 @@ def _run(args: argparse.Namespace) -> int:
         return issue_claim_cli.run_claim(args)
     if args.group == "task":
         return task_cli.run_task(args)
+    if args.group == "ci":
+        return ci_cli.run_ci(args)
     if args.group == "wad":
         return _run_wad(args)
     if args.group == "xbox":

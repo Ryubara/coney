@@ -247,7 +247,7 @@ merge:
   delete_branch_on_merge: true
   linear_history: true
   up_to_date_required: false                     # no merge queue yet (how-we-work#merging)
-  required_checks: [title, docs, body, build-ok, python-ok, format, mkdocs, markdownlint, actionlint]
+  required_checks: [title, docs, body, build-ok, python-ok, format, mkdocs, markdownlint, actionlint, dependencies, clang-tidy]
   who: [maintainer, coordinator]                 # never the agent that wrote the work
 
 issues:
@@ -466,7 +466,7 @@ hygiene:
   # the command rereads up to unknown_retries times, unknown_wait_seconds apart, before it leaves those pull requests
   # as they are.
   pr_health:
-    lint_checks: [title, docs, body, format, mkdocs, markdownlint, actionlint]
+    lint_checks: [title, docs, body, format, mkdocs, markdownlint, actionlint, dependencies]
     labels: {conflict: S-conflict, checks-failed: S-failing}
     unknown_retries: 4
     unknown_wait_seconds: 15
@@ -581,6 +581,12 @@ hygiene:
       fix: skill
       keys: [paths.docs_only, paths.tools_only, paths.engine]
       summary: ".github/scripts/ci-scope.sh does not read the CI scope paths (docs_only, tools_only, engine) from the conventions file"
+    files.ci-places:
+      scope: files
+      severity: error
+      fix: skill
+      keys: [ci.places, merge.required_checks]
+      summary: "a job of the workflows is in no place of ci.places, or a place names a job no workflow has"
     files.large-file-limit:
       scope: files
       severity: error
@@ -997,3 +1003,57 @@ standards:
       marker: "Expected:"
       unverified: "unverified, #"
       reference: '[A-Za-z0-9_./-]+\.md#[A-Za-z0-9_-]+'
+
+ci:
+  # What runs where, and the three CI jobs that read this section's settings (docs/guides/building.md#what-ci-runs).
+  # `dependencies`: a pull request whose description says `Depends on #N` (pull_requests.stacked.depends_line) waits
+  # until every such pull request is merged; the workflow reruns a waiting pull request's check when one merges.
+  dependencies:
+    workflow: dependencies.yml                   # `coney-tools ci rerun-dependencies` finds the runs of this workflow
+    rerun_limit: 50                              # the most runs one rerun pass restarts
+  # The changed-lines clang-tidy job (`coney-tools ci tidy-plan`, `ci tidy-run`) of a pull request or a push: only the
+  # lines the change touches are reported, so a finding that was already there never fails it; the nightly run checks
+  # every file.
+  tidy:
+    folders: ["src/", "tests/"]                  # Coney's own sources; never the fetched dependencies under _deps/
+    sources: [".cpp"]                            # a changed source is checked itself
+    headers: [".h", ".hpp"]                      # a changed header is checked through one source that includes it
+    sarif_category: clang-tidy                   # code scanning's name for the annotations on the pull request
+    findings_listed: 40                          # the findings the job's summary lists (the SARIF file holds all)
+    # The build setup: a setting here reaches every file, so a pull request or push changing one of these (a folder
+    # ending in /, or a file at that path) runs the whole-codebase pass of the nightly job instead of its changed lines.
+    whole_when: [CMakeLists.txt, cmake/, CMakePresets.json, .clang-tidy]
+  # A failed run on the default branch (the nightly build, a push, a manual run) opens a P-critical issue, or comments
+  # on the one that is still open for the same workflow (`coney-tools ci report-failure`, workflow ci-failure.yml).
+  failure:
+    workflows: [build, python, docs]             # the `name:` of the workflows watched
+    events: [schedule, push, workflow_dispatch]  # the events that count; a pull request's run never does
+    labels: [task, P-critical, A-tools, S-ready-to-start]   # the type, priority, area and status of the issue
+    area: A-tools                                # the form's Area answer
+    marker: coney-ci-failure                     # <!-- coney-ci-failure:<workflow> --> in the body finds the open issue again
+    files_listed: 8                              # the files named in the issue, each with its last commits
+    commits_per_file: 3
+    log_lines: 40                                # the lines of the failed steps' log quoted in the issue
+  # One place per check: where each check of the project runs. `local` is `task check` (which writes the `checked`
+  # stamp, running the checks of `proof.profiles`), a stamp command (`original study`, `compare`, `fails-first`) or a
+  # git hook; the CI words are `ci` (every pull request), `main` (a push to main), `nightly` (the scheduled run on
+  # main) and `issues` (issue and pull request events, and the sweeps that follow them up). A place that runs in CI
+  # names its jobs as <workflow file>/<job id>; `coney-tools repo audit --files` (files.ci-places) fails when a job is
+  # missing from the workflows, a job is in no place or a required check (merge.required_checks) is in none.
+  places:
+    - {id: full-suite, check: "Full suite with the disc", where: [local]}
+    - {id: msvc-ci-build, check: "MSVC `ci` build (/WX, C4062)", where: [local]}
+    - {id: study, check: "Study, pairs, copy check, fails-first", where: [local]}
+    - {id: format, check: "Formatting", where: [local, ci], jobs: ["build/format"], note: "applied by a git pre-commit hook, verified by CI"}
+    - {id: compilers, check: "GCC 13, Clang 19 and AppleClang builds with the unit and smoke tests; MSVC and GCC release builds", where: [ci], jobs: ["build/build"]}
+    - {id: sanitizers, check: "Linux and macOS sanitizers", where: [ci], jobs: ["build/sanitizers"]}
+    - {id: clang-tidy, check: "clang-tidy: the lines a change touches; the whole codebase nightly and for a build-setup change", where: [ci, main, nightly], jobs: ["build/clang-tidy"]}
+    - {id: python, check: "Python: ruff, mypy, pytest, the repository, render and progress checks", where: [local, ci], jobs: ["python/python", "python/python-ok"]}
+    - {id: docs, check: "Docs: mkdocs strictly, markdownlint, actionlint, the page standards", where: [local, ci], jobs: ["docs/mkdocs", "docs/markdownlint", "docs/actionlint"]}
+    - {id: pull-request, check: "The pull request's title, description and docs", where: [ci], jobs: ["pr/title", "pr/docs", "pr/body"]}
+    - {id: dependencies, check: "`Depends on #N` pull requests are merged", where: [ci, main], jobs: ["dependencies/dependencies", "dependencies/rerun"]}
+    - {id: gates, check: "The gate that stands for the build jobs", where: [ci], jobs: ["build/build-ok"]}
+    - {id: scope, check: "Which jobs a change needs", where: [ci], jobs: ["build/changes", "python/changes"]}
+    - {id: caches, check: "Cache upkeep and the docs site", where: [main, nightly], jobs: ["build/cache-prune", "docs/deploy"]}
+    - {id: issue-automation, check: "Issue checks, claims, status labels and the weekly report", where: [issues], jobs: ["claim/claim", "hygiene/hygiene", "issue-check/check", "issue-status/status-label"]}
+    - {id: failure-issue, check: "A failure on main opens a P-critical issue", where: [main, nightly], jobs: ["ci-failure/report"]}

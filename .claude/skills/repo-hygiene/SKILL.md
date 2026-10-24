@@ -77,7 +77,7 @@ do not invent it.
 | `pr.base-merged` | The author rebases onto `main` (`git rebase --onto origin/main <old base> <branch>`); then `gh pr edit N --base main`. |
 | `pr.merged-into-base` | Close by hand the issues the pull request fixes, with a comment naming it, and move the work onto `main`. |
 | `ws.scratch` | Look at the paths the finding lists (a generic `.bin` can be a tool file), then delete the finished work's captures from its scratch folder (generated media may be deleted), or ask the track. |
-| `files.pointer`, `files.exist`, `files.address`, `files.forms`, `files.template`, `files.ci-scope`, `files.large-file-limit`, `files.game-files`, `files.markdown-hook` | A change to the repository: make it on a branch in a worktree as one unit, with the check's rule from the conventions, and queue it ([the release queue](../../../docs/guides/how-we-work.md#release-queue)). |
+| `files.pointer`, `files.exist`, `files.address`, `files.forms`, `files.template`, `files.ci-scope`, `files.ci-places`, `files.large-file-limit`, `files.game-files`, `files.markdown-hook` | A change to the repository: make it on a branch in a worktree as one unit, with the check's rule from the conventions, and queue it ([the release queue](../../../docs/guides/how-we-work.md#release-queue)). |
 
 ### `maintainer`: stop
 

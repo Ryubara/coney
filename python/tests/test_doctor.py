@@ -168,7 +168,6 @@ def test_doctor_runs_in_a_plain_clone_without_a_config(
     disc = make_disc(tmp_path, {"SLUS_212.15": b"other release"})
     monkeypatch.chdir(checkout)
     monkeypatch.setattr(doctor, "check_prerequisites", lambda *args: [Check("Git", True, "git", "", True)])
-    monkeypatch.setattr(doctor, "clang_tidy_check", lambda: Check("clang-tidy 19", True, "x", "", False))
     monkeypatch.setattr(doctor, "is_listening", lambda port: False)
     code = main(["doctor", "--disc", str(disc.path)])
     out = capsys.readouterr().out

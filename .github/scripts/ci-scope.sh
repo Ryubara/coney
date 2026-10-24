@@ -4,7 +4,7 @@
 # into) or any other commit. Reads EVENT (github.event_name) and DRAFT ("true" for a draft pull request) from the
 # environment and appends to $GITHUB_OUTPUT (or prints, when it is unset):
 #
-#   build=true|false     the engine jobs run: build, sanitizers and (nightly) clang-tidy (the build workflow)
+#   build=true|false     the engine jobs run: build, sanitizers and clang-tidy (the build workflow)
 #   python=true|false    python runs at all
 #   python-os=<JSON>     the OSes python runs on
 #

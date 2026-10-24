@@ -78,7 +78,7 @@ def test_the_real_orig_review_gate() -> None:
 def test_the_real_merge_settings_follow_the_owners_decisions() -> None:
     merge = load_conventions(REPO).merge
     assert merge.methods == ("squash",) and merge.squash_message == "PR_BODY" and merge.auto_merge
-    assert len(merge.required_checks) == 9 and "body" in merge.required_checks
+    assert len(merge.required_checks) == 11 and "body" in merge.required_checks
 
 
 def test_the_real_hygiene_thresholds_follow_the_owners_decisions() -> None:
@@ -666,4 +666,63 @@ def test_a_cutover_day_is_read_as_a_moment() -> None:
 def test_a_wrong_standards_section_is_refused(path: str, value: object, message: str) -> None:
     data = changed((path, value))
     with pytest.raises(ConventionsError, match=message):
+        parse_conventions(data)
+
+
+# --- the ci section -----------------------------------------------------------------------------------------------
+
+
+def test_the_real_ci_section_puts_every_required_check_in_a_place() -> None:
+    conventions = load_conventions(REPO)
+    named = {job.split("/", 1)[1] for job in conventions.ci.jobs()}
+    assert set(conventions.merge.required_checks) <= named
+    # the new required checks of the CI phase: a waiting pull request, and the lines a pull request changes
+    assert {"dependencies", "clang-tidy"} <= set(conventions.merge.required_checks)
+    assert conventions.ci.dependencies.workflow == "dependencies.yml"
+    # the build setup that sends a pull request to the whole-codebase clang-tidy pass
+    assert set(conventions.ci.tidy.whole_when) == {"CMakeLists.txt", "cmake/", "CMakePresets.json", ".clang-tidy"}
+
+
+def test_the_ci_places_split_the_checks_between_local_and_ci() -> None:
+    ci = load_conventions(REPO).ci
+    local_only = {place.id for place in ci.at("local") if "ci" not in place.where}
+    assert {"full-suite", "msvc-ci-build"} <= local_only
+    assert "clang-tidy" in {place.id for place in ci.at("nightly")}
+    # a local-only check names no CI job and every CI check names one
+    assert all(not place.jobs for place in ci.places if place.where == ("local",))
+    assert all(place.jobs for place in ci.places if place.where != ("local",))
+
+
+@pytest.mark.parametrize(
+    ("path", "value", "message"),
+    [
+        ("ci.places.0.where", ["somewhere"], "is not a place"),
+        ("ci.places.0.jobs", ["build/format"], "only a check that runs in CI has jobs"),
+        ("ci.places.4.where", ["ci", "ci"], "a value is listed twice"),
+        ("ci.places.4.jobs", REMOVE, "names its jobs"),
+        ("ci.places.4.jobs", ["Build/format"], "must be <workflow file"),
+        ("ci.places.1.id", "full-suite", "an id is used twice"),
+        ("ci.places.4.jobs", ["build/format"], "a job is named in two places"),
+        ("ci.dependencies.workflow", "dependencies", "a workflow file name"),
+        ("ci.dependencies.rerun_limit", 0, "expected a whole number of 1 or more"),
+        ("ci.tidy.folders", ["src"], "ending in /"),
+        ("ci.tidy.headers", [".cpp"], "both a source and a header"),
+        ("ci.tidy.sources", ["cpp"], "must be an extension"),
+        ("ci.tidy.whole_when", ["../CMakeLists.txt"], "a path inside the checkout"),
+        ("ci.tidy.whole_when", ["cmake/*.cmake"], "no pattern"),
+        ("ci.tidy.whole_when", [], "non-empty list"),
+        ("ci.failure.labels", ["task", "P-critical", "A-nowhere", "S-ready-to-start"], "in labels.list"),
+        ("ci.failure.area", "A-core", "one of the labels"),
+        ("ci.failure.marker", "Not A Marker", "lower case letters"),
+        ("ci.failure.log_lines", 0, "expected a whole number of 1 or more"),
+    ],
+)
+def test_a_wrong_ci_section_is_refused(path: str, value: object, message: str) -> None:
+    with pytest.raises(ConventionsError, match=message):
+        parse_conventions(changed((path, value)))
+
+
+def test_a_required_check_in_no_place_is_refused() -> None:
+    data = changed(("merge.required_checks", [*real_data()["merge"]["required_checks"], "unplaced"]))
+    with pytest.raises(ConventionsError, match=r"'unplaced' .* is in no place"):
         parse_conventions(data)

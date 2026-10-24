@@ -2,8 +2,9 @@
 
 The commands that check the repository's own rules and run the pull request process: [`repo`](#repo) (titles,
 descriptions, labels), [`pr`](#pr) (commit messages) and [`task`](#task) (claiming issues and writing a task file).
-[`issue`](coney-tools-issues.md#issue) and [`claim`](coney-tools-issues.md#claim) have a page of their own. The other
-groups are listed in [the command line overview](coney-tools.md#groups).
+[`issue`](coney-tools-issues.md#issue), [`claim`](coney-tools-issues.md#claim) and [`ci`](coney-tools-ci.md#ci) (the
+commands the CI workflows run) have a page of their own. The other groups are listed in [the command line
+overview](coney-tools.md#groups).
 
 ## repo {#repo}
 
@@ -618,7 +619,8 @@ cannot be read ends the run with exit 2.
 The build checks run `coney-tools build --preset ci --test` once, with the whole suite and the disc, and read the build
 record it leaves ([The build record](stamps.md#build-record)): one answers whether it built (MSVC with /WX), the other
 whether the suite ran whole with no disc test skipped. The ruff and mypy commands are the ones of `check changed`; there
-is no clang-tidy here (CI's nightly run and `check changed` have it).
+is no clang-tidy here: clang-tidy is CI's alone, on the changed lines of every pull request and on the whole
+codebase nightly ([building](building.md#clang-tidy)).
 
 * A fault of the machine is not a verdict about the change: a program that is missing, no disc for a `full` run
   (including a `CONEY_DISC` that names nothing), a worktree that changed during the run, a build that got no slot.

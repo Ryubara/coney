@@ -523,7 +523,7 @@ The guards, with the rule each one holds (the diagram only orders them):
 | --- | --- | --- |
 | Claude Code hooks (`.claude/hooks/`) | A raw `cmake --build`, `ctest` or `ninja`; a raw `gh` command that writes an issue; a wait loop with no bound; an agent started with `isolation: "worktree"`; a `Co-Authored-By` trailer that names the wrong model | [Setting up an agent tool](agents.md#setup) |
 | pre-commit (`.pre-commit-config.yaml`) | Unformatted C++ (clang-format) and Python (ruff); a Markdown line over 120 characters; trailing whitespace, broken YAML or TOML; any file over 512 KB, which is usually game data; a read of the real clock outside the frame pacer | [Formatting and pre-commit](building.md#formatting-and-pre-commit) |
-| `coney-tools check changed` | What CI would fail on, for the files the change touched: the repository audit, pre-commit, clang-tidy, `mkdocs build --strict`, ruff, mypy and pytest | [The local gate](testing.md#local-gate) |
+| `coney-tools check changed` | What CI would fail on, for the files the change touched: the repository audit, pre-commit, `mkdocs build --strict`, ruff, mypy and pytest | [The local gate](testing.md#local-gate) |
 | `repo check-title`, `check-body`, `check-docs` | A title that is not `area: Verb the rest`; a description that breaks the template; a change under `src/` or `python/src/` with no docs change and no `Docs: none` line | [Repository conventions](repo-conventions.md#workflows) |
 | `pr-reviewer`, `repo check-review` | A description whose pictures or claims do not match the diff; a verdict that is stale after a new commit or edit | [The description review](#pr-review) |
 | Release queue | An agent pushing: only the coordinator pushes, when CI has room | [Local first](#release-queue) |
