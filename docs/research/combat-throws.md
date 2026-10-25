@@ -469,6 +469,8 @@ which takes the human's **handle**, called on the game's thread; PoizoCiv facing
 
 ### Cross with a bat in hand {#bat-cross}
 
+Read in Ghidra: confirmed (code) where no other level is given; each runtime block says confirmed (runtime).
+
 When cross starts a bat swing, after each bat move. **The rule**: cross acts only through its `0x10`
 ([Input](combat-moves.md#input)): on the update it is released after 1 to 3 updates down, or on its 4th held update.
 That update starts 36 `BAT_COMBO_X1` (or 37 at a low or mid target, 501 at a free run) when, and only when, the move
@@ -497,15 +499,15 @@ k counts updates from the move's first; "free" is the first k a `0x10` starts 36
 | cross + square, a target within 2.0 m | nothing (the throw is refused: `Player_Special` `0x00287730` refuses anyone holding an object, confirmed (code)) | | | **at once** | the cross's own release (`0x10`) plays 36 |
 
 The 34 lasted 37 updates at runtime (k0-36), one fewer than the 38 the [frame data](combat-moves.md#frame-data) rounds
-from its frame count; 36 lasted 35. 35 `BAT_COMBO_SS2` never played from the pad, so its phases were not measured. The
-run attack 501 (21 updates, `0x1000000` throughout, [Moving attacks with something in hand](#armed-moves)) and the
-grounded strike 37 (30 updates, no phase events: `0x1` from `Attack_StartGrounded` to its end, inferred from the frame
-data) were not rerun here.
+from its frame count; 36 lasted 35 (confirmed (runtime)). 35 `BAT_COMBO_SS2` never played from the pad, so its phases
+were not measured. The run attack 501 (21 updates, `0x1000000` throughout, [Moving attacks with something in
+hand](#armed-moves)) and the grounded strike 37 (30 updates, no phase events: `0x1` from `Attack_StartGrounded` to its
+end, inferred from the frame data) were not rerun here.
 
 Compared with the unarmed fight: there a press in a move's wind-up or window is kept and plays the next step, so the
 lost stretch is only the end phase and the recovery ([Input](combat-moves.md#input)). With a bat every cross (and
 every square) before the move's last update is lost: 35 updates after 36 and 37 (1.2 s) after 34, against the unarmed
-`X1`'s 30 with its first 20 updates taking a press.
+`X1`'s 30 with its first 20 updates taking a press (inferred from the table above and the unarmed buffer rule).
 
 At runtime (confirmed (runtime); PCSX2 2.9.94; copies of slot 1, the street with nobody near, and slot 6 with the
 puppet `PoizoCiv` pinned 1.5 m ahead for the last row; `dyn_bat_tuff` put in the hand at update 3 with
