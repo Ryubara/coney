@@ -162,7 +162,7 @@ runs every `--ai-seed` from 0 to 7, so a pass is no longer one lucky sequence.
 
 A driver that fights holds the stick toward the foe it means to hit while it presses the attack, as a player does: a
 player's attack searches for its target along the stick's heading, and along his facing only when the stick is at
-rest ([Targets](../research/combat-moves.md#targeting)). A driver that rests the stick once in reach strikes whoever
+rest ([Targets](../research/combat-targets.md#targeting)). A driver that rests the stick once in reach strikes whoever
 the player happens to face; the level5 boss fight's driver did, and lost once the AI's enemy scan changed who the
 crew fought.
 

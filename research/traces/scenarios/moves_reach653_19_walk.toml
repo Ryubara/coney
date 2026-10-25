@@ -1,5 +1,5 @@
 description = "slot 6: cross + square (653) at PoizoCiv walking in, 1.9 m ahead, placed until update 9 and then free; the hands' and the target's bone positions every update"
-research = "docs/research/combat-moves.md"
+research = "docs/research/combat-targets.md#reach"
 input = "moves_reach653_19_walk.txt"
 updates = 40
 fields = ["player", "enemy"]

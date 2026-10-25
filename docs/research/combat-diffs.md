@@ -41,7 +41,7 @@ Coney does instead; an address cited here carries its level beside it.
 ### Timing and targets
 
 The original's rules are in one place: [Timing](combat-moves.md#timing), [Input](combat-moves.md#input) and
-[Targets](combat-moves.md#targeting). Coney (main at `f4562750`): `repo:src/combat/attacks.cpp`,
+[Targets](combat-targets.md#targeting). Coney (main at `f4562750`): `repo:src/combat/attacks.cpp`,
 `repo:src/human/fighter.cpp`.
 
 - **The hit update.** Coney lands every attack on one update per id: the measured contacts for 11, 13-17 and 19 and

@@ -1,5 +1,5 @@
 description = "slot 6: a cross combo (four taps) at PoizoCiv standing still 1.0 m ahead (brain off, its walk stopped), placed until update 30 and then free; the target's head transform (+0x500, model frame), its slot point 0 (+0x1e0), its position and heading, and bone-cache entries 0, 3 and 6, through the reels, and the player's head transform (he stands in the fight idle 358 after the combo)"
-research = "docs/research/combat-moves.md"
+research = "docs/research/combat-targets.md#led-steer"
 input = "moves_head_reel.txt"
 updates = 130
 fields = ["player", "enemy"]

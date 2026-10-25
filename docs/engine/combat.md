@@ -121,10 +121,10 @@ grabber's power running out ends the grab, with an escape when the grabber is hu
 drawn skeleton every update, and each human's strike test runs after its move against the spine and head of the humans
 it fights and against the doors' enabled triangles and the panes' bodies. Every free attack hits a human this way, each
 shape tested along its move since the last update (from where it was posed the update before, none on its first update),
-as [where the attacker stands](../research/combat-moves.md#reach) gives; the moves in a hold, and a body without shapes,
-still land at the measured hit update. The doors and panes are met where the shapes stand. A charge whose sweep loses
-more than half its move to a wall stops dead until its clip ends, and a broken barrier's triangles stand for its body
-until its removal. In Coney's play-through the charge strikes the fence on its 11th update, 1.06 m from the line, and
+as [where the attacker stands](../research/combat-targets.md#reach) gives; the moves in a hold, and a body without
+shapes, still land at the measured hit update. The doors and panes are met where the shapes stand. A charge whose sweep
+loses more than half its move to a wall stops dead until its clip ends, and a broken barrier's triangles stand for its
+body until its removal. In Coney's play-through the charge strikes the fence on its 11th update, 1.06 m from the line, and
 stops 0.51 m from it 3 updates later; the original also strikes on its 11th update, but at 0.55 m, and stops 1 update
 later at 0.42 m. The AI's attack pick takes only the square and cross strikes and the snap, so no AI charges a human.
 The player's sprint charge and dive into a human are tested in play
@@ -379,7 +379,7 @@ it.
   steps but `SSX3` and `SSS3`, and the snaps); without it `Attack_SteerToTarget` takes the caller's time cut to that,
   the time to the event from `Attack_Start` and the specials (653 and 645 stand at their reach by k3 at runtime), 0.1 s
   from the snap's start. The lead is the target's velocity × (the time to the event + 0.1 s), cut to 0.5 m as above
-  ([where the attacker stands](../research/combat-moves.md#reach)). The led steer aims at the target's head ([The led
+  ([where the attacker stands](../research/combat-targets.md#reach)). The led steer aims at the target's head ([The led
   steer](../research/combat-targets.md#led-steer)), read once as the attack starts, and the other at its position. On
   the disc Coney's posed heads match the runtime ones: in 388 the head stands 0.001-0.039 m forward and within 0.006 m
   sideways, in 358 0.097-0.186 m forward and 0.038-0.065 m right, 0.02 m beyond the recorded leans. **Coney's reading**:

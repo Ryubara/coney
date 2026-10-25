@@ -418,7 +418,7 @@ status = "legacy"
 [[function]]
 address = 0x00254418
 name = "AttackTable_GetOffset"
-page = "combat-moves.md#targeting"
+page = "combat-targets.md#targeting"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/human/fighter.h:Fighter::attackDirection"
 status = "legacy"
@@ -1493,7 +1493,7 @@ level = "confirmed-code"
 [[function]]
 address = 0x0027a4b0
 name = "Player_FindAttackTarget"
-page = "combat-moves.md#targeting"
+page = "combat-targets.md#targeting"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::findAttackTarget"
 status = "legacy"
