@@ -52,7 +52,7 @@ struct Frame {
 // beside in the game (docs/research/tasks.md#held-flags): the wind-up, the chain window from `open`, the end phase from
 // `close`, the recovery from `recovery`, nothing from `end`, in updates from the clip's start; the moving attacks hold
 // 0x1000000 to their end. The values are the phases measured at runtime (docs/research/combat/index.md#attacks; the
-// bat's 34 and 36, which have no chain window, docs/research/combat-moves.md#bat-cross), S1's for the attacks not
+// bat's 34 and 36, which have no chain window, docs/research/combat-throws.md#bat-cross), S1's for the attacks not
 // listed.
 class ClipPhases {
   public:
@@ -501,7 +501,7 @@ TEST_CASE("with a brick in hand square, cross and the charge throw it; mid-throw
 
 TEST_CASE("with a bat, a cross's 0x10 starts 36 only once 34 or 36 has ended: k37 after 34, k35 after 36", "[combat]") {
     // The move's whole length is lost, not only its end phase and recovery: the bat's 34 and 36 have no chain window
-    // that keeps a press (docs/research/combat-moves.md#bat-cross). k counts updates from the move's first, and a tap
+    // that keeps a press (docs/research/combat-throws.md#bat-cross). k counts updates from the move's first, and a tap
     // at update f has its 0x10 on f + 1.
     struct Case {
         const char* first;
@@ -540,7 +540,7 @@ TEST_CASE("with a bat, cross + square is no special: no 653, no power spent, and
           "[combat]") {
     // The original's Player_Special refuses a pad player holding an object (it throws a melee weapon first when the
     // throw is allowed, which Coney does not build); cross's own 0x10 then plays 36 on the release
-    // (docs/research/combat-moves.md#bat-cross).
+    // (docs/research/combat-throws.md#bat-cross).
     for (const int set : {1, 2, 3, 4, 5, 6}) {
         INFO("anim set " << set);
         Runner runner(nullptr);

@@ -1,5 +1,5 @@
 description = "slot 6: a beer bottle in hand, PoizoCiv 4.0 m ahead; cross: the throw"
-research = "docs/research/combat-moves.md"
+research = "docs/research/combat-throws.md#weapons"
 input = "moves_bottle_throw.txt"
 updates = 120
 fields = ["player", "enemy"]

@@ -4,7 +4,7 @@ system: combat
 owns:
   functions: [
     "0x00254418", "0x00258e10", "0x00258e88", "0x002590f8", "0x0026f780", "0x0026f860", "0x00277458", "0x0027a4b0",
-    "0x0027d6e0", "0x002880d8",
+    "0x0027d6e0",
   ]
 ---
 # Combat: moves, their timing and frame data
@@ -17,9 +17,9 @@ Every move a human can make in a fight, in one place: what input or command star
 it plays, its strike shapes and phases in updates, its reach and damage, and what refuses or cancels it. The
 mechanics behind the moves (chains, block, grabs, damage, reactions, meters, targets) are on
 [Combat](combat/index.md); this page indexes them by move, fills the moves that page leaves out (strafe attacks, the
-counters from square and cross, cross at a grounded target, tandems, stealth kills, the mounted victim's actions, the
-knife and bottle kills and thrown melee weapons) and gives frame data for all of them. Where Coney differs:
-[Combat differences](combat-diffs.md).
+counters from square and cross, cross at a grounded target, tandems, stealth kills and the mounted victim's actions)
+and gives frame data for all of them. What a weapon in hand changes, the bat's cross among it, is on [Combat: throws,
+weapons in hand and mugging](combat-throws.md#weapons). Where Coney differs: [Combat differences](combat-diffs.md).
 
 ## Map {#original-structure}
 
@@ -28,8 +28,6 @@ knife and bottle kills and thrown melee weapons) and gives frame data for all of
 | `0x0027c120` | `Player_UpdateActions` | the dispatcher: block, state routes, then the command ([Combat](combat/index.md#dispatch)) | confirmed (code) |
 | `0x00286cc8` | `Player_Square` | square: moving attacks, strafes, snaps, target-state strikes, tandem, counters, `S1`; the armed branch | confirmed (code) |
 | `0x00287a18` | `Player_Cross` | cross: the same order without strafes and snaps, with 194 and 661 for low targets | confirmed (code) |
-| `0x002880d8` | `Player_CrossWithWeapon` | square and cross with a set 4-6 object: smash or throw | confirmed (code) |
-| `0x00288838` | `Player_ArmedSpecial` | commands `0x22` / `0x39` with a melee weapon: throw it (`Player_ThrowMeleeWeapon`, `0x00288698`) | confirmed (code) |
 | `0x00287730` | `Player_Special` | cross + square, circle + cross, circle + triangle ([Combat](combat/index.md#run-attacks)) | confirmed (code) |
 | `0x00284920` | `Player_GrabOrTackle` | circle tapped / held ([Combat](combat-grabs.md#grab)) | confirmed (code) |
 | `0x0027ec20` | `Player_UpdateMounting` | the mounter's inputs ([Combat](combat-grabs.md#mount)) | confirmed (code) |
@@ -951,104 +949,6 @@ updates, the mounter 251, and the mounter lost **40** health on 250's second upd
 player was free. After one 250, R1 every 3 updates gave the reversal 242 / 243 on the 3rd press (57 updates, then
 210 / 207 with the player on top); circle every 3 updates gave 246 / 247 on the 6th press.
 
-### Weapons {#weapons}
-
-The armed moves' choice of clip is on [Combat](combat-throws.md#armed-moves). Added here, confirmed (code):
-
-- **Armed chain**: square repeats the set's two swings, 34 → 35 → 34 (bat), 39 → 40 (baton), 45 → 46 (knife), for
-  as long as presses come in the window; cross's combo count 2 means it never chains. A step needs the swing's
-  window `0x2`, and the bat's 34 has none, so **a bat never chains**: confirmed (runtime), [Cross with a bat in
-  hand](#bat-cross). The baton's 39 (W 9) and the knife's 45 (W 15) have one.
-- **Knife and bottle kills** in a grab or mount: with a knife (set 1) square or cross plays 484 (rear hold), 486
-  (front hold) or 488 (mount); a broken bottle (type 43) plays 492 / 494 / 496. Each needs more than 0.25 power and
-  spends 0.25. The damage lands at the start: 600 (knife) or 40 (bottle) × the power class's first float, doubled
-  with flag `0x4000`; a lethal hit plays a death reaction. 483 `KNIFE_VICTIM_DIE` is never played.
-- **Wear**: the clip's `use` event (`0x41`) calls `WorldObject_TakeHit(held, -1)`, which takes 1 from the object's
-  hit counter (`+0x10e` first for objects with flag `0x4000000`, then `+0x10d`); at 0 the weapon breaks
-  (`WorldObject_Break`, `0x00393e20`). The counters start from `CfgObj` bytes `+0x5a` / `+0x5b`; 0 (or −1) means it
-  never wears. The ordinary swings have no `use` event, which is why 12 bat hits never broke a bat
-  ([Combat](combat-throws.md#bat)).
-- **Thrown objects** (sets 4-6, `Player_CrossWithWeapon`, `0x002880d8`): set 4 throws 505 / 506 / 507 at a target
-  searched within 10 m; set 5 throws 467 / 471 / 472 within 20 m, after trying the smash 473 / 475 on a human in
-  reach; set 6 throws 551 / 552 / 553. A thrown object's hit deals its `CfgObj` `+0x58`
-  (`ThrownObject_HitHuman`, `0x00392b88`), not the clip's damage.
-- **Throwing a melee weapon**: commands `0x22` and `0x39` with a knife or baton play 491 `KNIFE_THROW`, with a bat
-  502 `SWINGABLE_OBJECT_THROW`, and 471 / 472 when moving (`Player_ArmedSpecial`, `0x00288838`, then
-  `Player_ThrowMeleeWeapon`, `0x00288698`). So cross + square with a weapon throws it instead of the special. The
-  throw is refused when the target (the counter target, else the nearest within 20 m, `0x0027ad80`) is within
-  **2.0 m**, and with human flag `0x4000000000`; the command then does nothing.
-- **Blocks against weapons** (`Human_BlockHit`, `0x00269f30`): the bat's 26-34 range (its first swing 34 included)
-  is never blocked; an unarmed blocker never blocks an armed hit; a set 3 (bat) blocker blocks armed hits, and the
-  bat's cross 36 against a set 3 front block makes the attacker play 629 `BAT_BLOCK_REACT`; other armed blockers
-  block only while in their block clips 605-620. The armed block clips 621-624 come from slots `0x15`-`0x18`
-  (sets 2 and 3).
-
-At runtime (confirmed (runtime); the object put in the player's hand with `Human_PlaceItemInHand` `0x00238540`,
-which takes the human's **handle**, called on the game's thread; PoizoCiv facing the player):
-
-| Scenario | Object, target | Input | Result |
-| --- | --- | --- | --- |
-| `moves_knife_grab` | `dyn_tknife`, 1.0 m | circle, then square in the hold | the grab ended in the rear hold (74, then 84); square played **484** on the next update with the victim in 485, its health at **1** at once (knocked out), power 387 → 287; 484 ran 76 updates |
-| `moves_knife_throw` | `dyn_tknife`, 5.0 m (pinned) | cross held, square | **491** on the `0x22` update; the knife left the hand at k24 and hit 5 updates later for **200**, reaction 280. With the target at 2.5 m and walking in, the throw was refused and cross's release played the knife's `X1` 47, which dealt 259 |
-| `moves_bottle_cross` | `dyn_beerbottle`, 0.7 m | cross | **475** at once (the smash, from behind by the side test) with the victim in 476: **155** damage and power 400 → 300 on its first update; the bottle was swapped for another object (the broken bottle) at k23 |
-| `moves_bottle_kill` | the broken bottle the smash left, the same victim once up | circle, then square in the front hold (82) | square in the hold played **494** on the next update with the victim in 495, power −100, **51** damage on its second update (not lethal at 445), 43 updates. Square outside a hold with the broken bottle played the knife's swing 45 |
-| `moves_bottle_throw` | `dyn_beerbottle`, 4.0 m | cross | 466 `ONE_HANDED_OBJECT_THROW_START` for 7 updates, then **467**; the bottle left the hand at k7 of 467 and hit 2 updates later for **60**, reaction 280 |
-
-### Cross with a bat in hand {#bat-cross}
-
-When cross starts a bat swing, after each bat move. **The rule**: cross acts only through its `0x10`
-([Input](#input)): on the update it is released after 1 to 3 updates down, or on its 4th held update. That update
-starts 36 `BAT_COMBO_X1` (or 37 at a low or mid target, 501 at a free run) when, and only when, the move before has
-**ended**: record `+0x08` holds none of `0x100101f` (`Player_Cross` `0x00287a18`) and none of the dispatcher's
-`0x5c7fee0` (`Player_UpdateActions` `0x0027c120`). A `0x10` that falls inside the move is dropped, and nothing keeps
-it: a held cross gives no second `0x10`, so the player has to press again. Confirmed (code) at those addresses and
-`Pad_TapOrHold4` (`0x00144d60`); confirmed (runtime), below.
-
-There is **no buffer for cross with a weapon**. The chain (`Player_UpdateChain` `0x00280708`, armed branch, held
-object set not 0) does store cross's press `0x12` as 1 in record `+0xb8` during the swing's wind-up `0x1` (combo count
-`+0xbc` at most 1) or its window `0x2`, but it plays only a stored **square** (2), and only once `0x2` opens: 1 is never
-played, and stays in `+0xb8` after the move until the next attack start empties it (`Attack_Start` `0x002625a8`).
-Armed cross itself (`Player_Cross`) does not empty `+0xb8`, sets the combo count to 2 before `Attack_Start` adds 1, so
-nothing is stored or played during 36. Confirmed (code); the stored 1 and the count 3 confirmed (runtime).
-
-So the time a cross is lost after each bat move is the move's whole length, its clip's phases (confirmed (runtime);
-k counts updates from the move's first; "free" is the first k a `0x10` starts 36):
-
-| Move before | Wind-up `0x1` | End `0x4` | Recovery `0x40000` | Free | What follows |
-| --- | --- | --- | --- | --- | --- |
-| 34 square (`BAT_COMBO_S1`) | 0-12 | 13-24 | 25-36 | **37** | 389 (`0x40000000`, refuses nothing) with nobody near |
-| 36 cross (`BAT_COMBO_X1`) | 0-19 | 20-22 | 23-34 | **35** | 389 |
-| square, square (the chain) | as 34: the second square is stored as 2 and never played | | | **37** | 389 |
-| triangle (with nothing to take) | no clip: the bat is dropped at once ([Losing it](combat-throws.md#bat)) | | | **next update** | cross now plays the unarmed `X1` 11 |
-| cross + square (`0x22`), nobody near | 502 `SWINGABLE_OBJECT_THROW`, holding `0x10` for 35 updates; the bat leaves the hand at k20 | | | 35, unarmed | 389 |
-| cross + square, a target within 2.0 m | nothing (the throw is refused: `Player_Special` `0x00287730` refuses anyone holding an object, confirmed (code)) | | | **at once** | the cross's own release (`0x10`) plays 36 |
-
-The 34 lasted 37 updates at runtime (k0-36), one fewer than the 38 the frame-data table rounds from its frame count;
-36 lasted 35. 35 `BAT_COMBO_SS2` never played from the pad, so its phases were not measured. The run attack 501 (21
-updates, `0x1000000` throughout, [Combat](combat-throws.md#armed-moves)) and the grounded strike 37 (30 updates, no
-phase events: `0x1` from `Attack_StartGrounded` to its end, inferred from the frame data) were not rerun here.
-
-Compared with the unarmed fight: there a press in a move's wind-up or window is kept and plays the next step, so the
-lost stretch is only the end phase and the recovery ([Input](#input)). With a bat every cross (and every square)
-before the move's last update is lost: 35 updates after 36 and 37 (1.2 s) after 34, against the unarmed `X1`'s 30 with
-its first 20 updates taking a press.
-
-At runtime (confirmed (runtime); PCSX2 2.9.94; copies of slot 1, the street with nobody near, and slot 6 with the
-puppet `PoizoCiv` pinned 1.5 m ahead for the last row; `dyn_bat_tuff` put in the hand at update 3 with
-`Human_PlaceItemInHand` (`0x00238540`) on the game's thread; patches `scripted-pad`, `right-stick` and `call-brains`,
-plus `puppet` in slot 6; the stick at rest (128, 128) throughout; a tap holds the button for one update; the record's
-`+0x08`, `+0xb8`, `+0xbc`, the clip and the per-player command read every update):
-
-| Scenario | Input | Result |
-| --- | --- | --- |
-| `bat_cross_after_square` | square, then a cross tap 3, 8, ..., 40 updates later (14 runs) | `0x10` on k4-k36 of 34 dropped (10 runs, in every phase); on k37 (389's first update), k38, k39 and k41 it started **36** at once (4 runs) |
-| `bat_cross_after_cross` | cross, then a cross tap 3-40 updates later | `0x10` on k3-k33 of 36 dropped; on k35 and later it started 36 |
-| `bat_cross_after_square2` | square, square 5 updates later, then a cross tap 8-46 updates after the first | the second square stored 2 in `+0xb8` and played nothing (no 35, no `0x2`); a cross press in the wind-up overwrote it with 1; a cross `0x10` at k35 was dropped, at k39 and later it played 36 |
-| `bat_cross_held` | square or cross, then cross held 8 updates from 30-38 updates later | `0x10` on the 4th held update: after 34 at k33 dropped, at k37, k39 and k41 started 36; after 36 at k32 dropped, at k36, k38 and k40 started 36; held updates (`0x16`) never start one |
-| `bat_cross_after_triangle` | triangle, then a cross tap the next update | triangle (`0xa`) dropped the bat (`+0x338` Nil); the tap's `0x10` two updates after triangle played **11** `X1` |
-| `bat_cross_square` | cross held 3 updates, square tapped on its 2nd, nobody near | `0x22` played **502** (the bat thrown, out of the hand at k20, 35 updates); the release's `0x10` at k2 dropped |
-| `bat_cross_square_near` | the same, `PoizoCiv` 1.5 m ahead | `0x22` started nothing; the release's `0x10` on the next update played **36**, 35 updates, which hit him for 64 at k13 |
-
 ### Commands only scripts and the AI send {#ai-commands}
 
 Read in Ghidra: confirmed (code) where no other level is given.
@@ -1143,35 +1043,6 @@ or an AI's. Where the page is silent, these are **Coney's choices**:
   player statistics, which have categories 0-5 (open question below).
 - **No other command.** The attacker and the grabber take no command until their tandem clips are over.
 
-### Cross with a bat in hand {#bat-cross-coney}
-
-`repo:src/combat/player_combat.cpp`, `repo:src/combat/attacks.cpp` and `repo:src/human/human_animator.cpp`, fixed for
-issue #228 ([the rule](#bat-cross)):
-
-- The gates are the original's: Coney's cross acts on `0x10` (`kCrossLongHold`), refused under `0x100101f`
-  (`kAttackRefusingPhases`) and dropped under `0x5c7fee0` (`kDispatchDroppingPhases`), with the clips' own phase
-  events and lengths. Its chain (`AttackChain`) stores the cross press during 34's wind-up and, having no armed steps
-  (`nextChainAttack` knows only 12, 11 and 16), plays nothing: the same result as the original for the bat. The
-  disc test (`repo:tests/platform/disc_bat_cross_test.cpp`, level99 with a bat in hand, cross tapped 33-40 updates
-  after a square and 31-38 after a cross) finds the first cross that swings at **k37 after 34 and k35 after 36**,
-  and none before, as the table above.
-- **34's length is a stand-in.** Coney's 34 (28 frames at 0.75) lasted 38 updates, so a cross on k37 was dropped.
-  Coney ends that one clip a step early (`ClipThenNextTask`'s `handOverEarly`, set for anim id 34 in
-  `HumanAnimator::clipThen`) so that 389 and the held flags clear on k37. **Coney stand-in**, now replaceable: the
-  original ends **every** clip by one rule ([When a clip ends](formats/animation.md#clip-end)), the update its
-  cursor's frame would reach the frame count *f* (the event rule with the tie, [Reading the tables](#reading)), which
-  gives 37 for 34, 35 for 36, 15 for 441 (a tie: 10.5 / 0.75 = 14, one late), 16 for 69 and 26 for 19, all as
-  measured. Coney's clip tasks end when the time reaches the duration (ceil(*f* / *r*)), one update late on 50 of
-  the 174 clips in the tables below (19, 34 and the dive 1 among them).
-- **Cross + square (`0x22`) and circle + cross (`0x23`) with an object in hand** do nothing in Coney, as in the
-  original's `Player_Special`, which refuses a pad player holding an object: `PlayerCombat::special` and
-  `strongGrapple` return when `CombatInput::animSet` is not 0 (sets 1-6). Before, `0x22` played the special 653
-  (spending a quarter of the power), whose phases refused the cross's own `0x10`, and `0x23` started a grab: the player
-  saw a push, not a bat swing, and that was the likely cause of "cross sometimes does not start an attack". Now
-  the cross's release plays 36 (47, 41 for a knife, a baton) on the next update. **Not built**: the original's
-  throw of the melee weapon (502 / 491) for the `0x22` that has a free target ([Combat
-  differences](combat-diffs.md#weapons)), so with nobody near Coney swings where the original throws.
-
 ## Open questions
 
 - **653's extra reach**{#q-653-reach}: where 653's 0.04 m beyond its 1.58 m reach comes from: its steer aims at the
@@ -1209,8 +1080,6 @@ issue #228 ([the rule](#bat-cross)):
   control, for the late ties ([Reading the tables](#reading)). The clip ends agree with it on three more ties (36, 440,
   441 at 0.75, [When a clip ends](formats/animation.md#clip-end)); a run of a rate-0.9 clip with a tie (an event at
   frame 5 or 14) would check that rate.
-- **The bat's 35**{#q-bat-35}: when the bat's 35 plays at all, if no pad chain reaches it ([Cross with a bat in
-  hand](#bat-cross)).
 - **Clips no path plays**{#q-unplayed-clips}: 490 `KNIFE_ATTACK_FROM_RUN`, 18 `ATTACK_SSX3_HOLD` and the `_02` snaps: no
   code path plays them here (20 is the chain's random pick after `SS2`, `0x00280708`).
 

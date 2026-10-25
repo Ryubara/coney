@@ -1,8 +1,8 @@
 # a bat in hand: square or cross, then cross held 8 updates from 30-38 updates later.
-# Research: docs/research/combat-moves.md#bat-cross. Slot 1 (the street, nobody near); dyn_bat_tuff put in the hand
+# Research: docs/research/combat-throws.md#bat-cross. Slot 1 (the street, nobody near); dyn_bat_tuff put in the hand
 # at update 3 (Human_PlaceItemInHand 0x00238540). Frames are updates of 1/30 s.
 description = "a bat in hand: square or cross, then cross held 8 updates from 30-38 updates later"
-research = "docs/research/combat-moves.md#bat-cross"
+research = "docs/research/combat-throws.md#bat-cross"
 input = "bat_cross_held.txt"
 updates = 770
 fields = ["player"]

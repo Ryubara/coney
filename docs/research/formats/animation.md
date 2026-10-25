@@ -534,7 +534,7 @@ first update showing the id to the first showing the next one, all match the rul
 | 389 (the attack's end clip) | 19 × 0.75 | 25 | 25 | 26 |
 
 The lengths measured before agree as well: 12 `S1` 20 ([Tasks](../tasks.md#held-flags)), 34 37 and 36 35 (a tie,
-25.5 / 0.75 = 34, one late) ([Cross with a bat in hand](../combat-moves.md#bat-cross)), 69 16, the fence climb's 440
+25.5 / 0.75 = 34, one late) ([Cross with a bat in hand](../combat-throws.md#bat-cross)), 69 16, the fence climb's 440
 11, 441 15 (both ties) and 442 13 ([Characters](../characters.md#climb)), the dive 1 61
 ([Combat](../combat-reactions.md#protected-moves)). The rule with the time summed in single precision rounded toward
 zero (the

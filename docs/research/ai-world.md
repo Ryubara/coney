@@ -19,7 +19,7 @@ here, not repeated.
 | Route links: climbs, jumps, doors, charges | [AI: Following a route](ai-moving.md#route-follow), [Jump legs](ai-moving.md#route-jump) |
 | How the scripts drive the AI | [AI: How the scripts drive the AI](ai-scripting.md#script-control) |
 | An AI's attacks and the held object's effect | [Combat: An AI's attacks](combat-targets.md#ai-attacks) |
-| Each weapon set's swings, throws and blocks | [Combat moves: Weapons](combat-moves.md#weapons) |
+| Each weapon set's swings, throws and blocks | [Combat moves: Weapons](combat-throws.md#weapons) |
 | Steps and giving way | [Characters: Step control](characters.md#step-control), [AI: Giving way](ai-moving.md#giving-way) |
 
 ## Behaviour

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // Checks against the player's own disc that a cross with a bat in hand starts a swing exactly when the original's does
-// (docs/research/combat-moves.md#bat-cross, issue #228), in a level as `coney --play-level level99` plays it
+// (docs/research/combat-throws.md#bat-cross, issue #228), in a level as `coney --play-level level99` plays it
 // (support/disc_session.h): the player is given a bat, nobody is near, and the pad (a script, cross as a tap) presses
 // cross at a chosen update after a square (clip 34) or a cross (clip 36). The original drops a cross whose `0x10`
 // falls inside the move before it and plays 36 on the first update after the move: update k37 after 34 and k35

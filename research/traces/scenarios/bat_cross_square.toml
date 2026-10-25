@@ -1,8 +1,8 @@
 # A bat in hand, nobody near: cross held and square tapped (0x22), then cross released: what the combination and the release start.
-# Research: docs/research/combat-moves.md#bat-cross. Slot 1 (the street, nobody near); dyn_bat_tuff put in the hand
+# Research: docs/research/combat-throws.md#bat-cross. Slot 1 (the street, nobody near); dyn_bat_tuff put in the hand
 # at update 3 (Human_PlaceItemInHand 0x00238540). Frames are updates of 1/30 s.
 description = "a bat in hand, nobody near: cross pressed, square tapped while it is held (command 0x22), cross released"
-research = "docs/research/combat-moves.md#bat-cross"
+research = "docs/research/combat-throws.md#bat-cross"
 input = "bat_cross_square.txt"
 updates = 160
 fields = ["player"]
