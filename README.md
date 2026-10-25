@@ -36,7 +36,7 @@ What this gives us:
 - **Room for other assets and for mods:** the game's assets come from your own copy: the PS2 disc today, and the
   Xbox version as an optional extra ([in progress](docs/roadmap.md#xbox-assets-optional)). Assets people make
   themselves can be loaded too ([custom content](docs/roadmap.md#custom-content)), and the engine has room for mod
-  tools ([script mods](docs/roadmap.md#script-mods)) and more. All of this is planned: the game comes first.
+  tools ([script mods](docs/roadmap.md#script-mods)) and more. Custom assets and mod tools are planned: the game comes first.
 - **Code anyone can read and change**, under our own licence.
 
 What it costs:
