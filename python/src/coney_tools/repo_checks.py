@@ -553,6 +553,15 @@ def _affected_entries(section: str, rules: PullRequests) -> tuple[list[tuple[int
     return items, none_text, strays
 
 
+def issues_affected_shape(rules: PullRequests) -> str:
+    """What the Issues affected section holds, in words, as the check's messages and `pr text` say it."""
+    rule = rules.issues_affected
+    return (
+        f"one line '- #N: how it is affected' for each open issue this change affects, or, when there is none, the "
+        f"single line '{rule.none} (<reason>)' with any short reason, for example '{rule.example}'"
+    )
+
+
 def issues_affected_problems(section: str, rules: PullRequests) -> list[str]:
     """Check the Issues affected section against `pull_requests.issues_affected`.
 
@@ -565,10 +574,7 @@ def issues_affected_problems(section: str, rules: PullRequests) -> list[str]:
     rule = rules.issues_affected
     name = f"'## {rule.section}'"
     items, none_text, strays = _affected_entries(section, rules)
-    shape = (
-        f"one line '- #N: how it is affected' for each open issue this change affects, or, when there is none, the "
-        f"single line '{rule.none} (<reason>)' with any short reason, for example '{rule.example}'"
-    )
+    shape = issues_affected_shape(rules)
     if not items and none_text is None and not strays:
         return [f"{name} is empty; write {shape}"]
     problems: list[str] = []

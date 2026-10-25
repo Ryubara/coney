@@ -65,8 +65,11 @@ Every pull request lists, in its **Issues affected** section, the open issues it
 or makes out of date ([Issues a pull request changes](issues.md#affected)). `issue impact` suggests that list from the
 diff, so the author reads a handful of issues instead of searching three hundred. It is a helper for whoever has the
 tools: a pull request made by hand writes `None (one-line fix)` or its own list, and the check
-([`repo check-body`](coney-tools-repo.md#repo)) accepts either. The suggestion is never the section itself: the author reads
-each issue and lists the ones the change really affects, with a line on how.
+([`repo check-body`](coney-tools-repo.md#repo)) accepts either. The suggestion is never the section itself: the author
+reads each issue and lists the ones the change really affects, with a line on how. [`pr text`](coney-tools-pr.md#pr-text)
+runs it (`--json`, for the unit's base and tip) when the engineer's `PR.md` has no Issues affected section, and writes
+the candidates, less the issues the task finishes, into a `TODO:` that the checks refuse until the engineer replaces it
+([What is generated](pr.md#generated)).
 
 What it reads from the branch (`git diff -U0` from the merge base with `--base` to `--head`):
 

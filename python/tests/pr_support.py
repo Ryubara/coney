@@ -64,6 +64,10 @@ DOCS_TEXT = f"""docs: Document the widget
 
 Docs: none
 
+## Issues affected
+
+None (no open issue is affected)
+
 ## Screenshots
 
 Screenshots: none (no visible change)
@@ -75,6 +79,10 @@ PR_TEXT = f"""gameplay: Fix the widget ready frame
 {PARAGRAPH}
 
 Docs: none
+
+## Issues affected
+
+None (no open issue is affected)
 
 ## Testing
 

@@ -10,14 +10,13 @@ other section the template has. The generated description therefore cannot disag
 it has are the template's: they are read from `pull_requests.sections` in `.github/conventions.yml`, never listed here.
 
 `generate` writes no file and reads none but the pictures, with one exception: a section only a person can fill
-("Issues affected") that the engineer's file leaves out is suggested by running `coney-tools issue impact`, which
-reads GitHub, when that command exists (`issues_affected`). `pr text` writes `PR-TITLE.txt` and `PR-BODY.md`.
+(`pull_requests.issues_affected.section`) that the engineer's file leaves out is suggested by running `coney-tools
+issue impact`, which reads GitHub (`issues_affected`). `pr text` writes `PR-TITLE.txt` and `PR-BODY.md`.
 """
 
 from __future__ import annotations
 
 import hashlib
-import importlib.util
 import json
 import re
 import subprocess
@@ -34,7 +33,7 @@ from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
 from coney_tools.pr_proof import Refusal, TextHashes
 from coney_tools.pr_review import description_problems
-from coney_tools.repo_checks import check_docs
+from coney_tools.repo_checks import check_docs, issues_affected_shape
 from coney_tools.task_file import TaskFile
 
 #: The most characters the facts block may have before its per-stage lines become counts.
@@ -521,8 +520,6 @@ class _Context:
     extra: dict[str, str] = field(default_factory=dict)
 
 
-#: The module of `coney-tools issue impact`; without it the "Issues affected" section has no suggestion to offer.
-IMPACT_MODULE = "coney_tools.issue_impact"
 #: The text of a section nothing generates (yet); a check refuses a description that still holds it.
 TODO = "TODO:"
 
@@ -546,25 +543,24 @@ def _run_impact(root: Path, base: str, tip: str) -> dict[str, Any]:
     return report
 
 
-def issues_affected(root: Path, base: str, tip: str, run: ImpactRunner | None = None) -> str | None:
-    """The text for the "Issues affected" section when the engineer's file has none: the candidate issues from
+def issues_affected(ctx: _Context, run: ImpactRunner | None = None) -> str:
+    """The text for the Issues affected section when the engineer's file has none: the candidate issues from
     `coney-tools issue impact` as a TODO that asks the engineer to confirm them, since a suggestion is never a verdict.
 
-    None when that command does not exist (the section is then a bare TODO). The command reads GitHub, so a failure to
-    run it is also said in the TODO, never raised.
+    What the section holds is said as `check-body` says it (`issues_affected_shape`), and the issues the task finishes
+    are left out of the candidates, as `issue impact --description` leaves out a `Fixes` line's. The command reads
+    GitHub, so a failure to run it is said in the TODO, never raised.
     """
-    if importlib.util.find_spec(IMPACT_MODULE) is None:
-        return None
-    ask = (
-        f"{TODO} write this section in PR.md: one line `- #N: how it is affected` for each open issue this change "
-        "affects, or `None (<reason>)`."
-    )
+    subject = ctx.subject
+    ask = f"{TODO} write this section in PR.md: {issues_affected_shape(subject.conventions.pull_requests)}."
     try:
-        report = (run or _run_impact)(root, base, tip)
+        report = (run or _run_impact)(subject.root, subject.base, subject.tip)
     except ConfigError as error:
         return f"{ask} `coney-tools issue impact` could not run ({error})."
     lines = [ask]
     for item in report.get("issues", []):
+        if item.get("number") in ctx.task.issues:
+            continue
         reasons = item.get("reasons") or [{}]
         first = reasons[0].get("detail") or reasons[0].get("what") or ""
         lines.append(
@@ -573,13 +569,6 @@ def issues_affected(root: Path, base: str, tip: str, run: ImpactRunner | None = 
     if len(lines) == 1:
         lines.append("`coney-tools issue impact` found no candidate.")
     return "\n".join(lines)
-
-
-#: Sections whose text comes from a function, by the section's name; any other section of the template that is not a
-#: standard one gets the TODO text.
-_EXTRA_SECTIONS: dict[str, Callable[[pr_proof.Subject], str | None]] = {
-    "Issues affected": lambda subject: issues_affected(subject.root, subject.base, subject.tip),
-}
 
 
 def _marked(name: str, content: str) -> str:
@@ -654,9 +643,9 @@ def generate(
     """The title and description for `subject`, with every check run on them.
 
     The sections come from `pull_requests.sections`, in the template's order. The five standard ones are built from
-    the engineer's file, `TASK.md` and the stamps; any other section is `_EXTRA_SECTIONS` text, or a TODO that the
-    checks refuse, so adding a section to the template is a change to the conventions and, if anything fills it, one
-    entry in `_EXTRA_SECTIONS`.
+    the engineer's file, `TASK.md` and the stamps; any other section is the engineer's text, the Issues affected
+    suggestion (`issues_affected`), or a TODO that the checks refuse, so adding a section to the template is a change
+    to the conventions and, if anything generates it, a branch here.
     """
     rules = subject.conventions.pull_requests
     ctx = _Context(subject, task, text, keys or {}, models_of(subject, trailer_models), facts_block(subject))
@@ -674,8 +663,9 @@ def generate(
             content = builder(ctx)
         else:
             written = text.extra.get(name, "")
-            producer = _EXTRA_SECTIONS.get(name)
-            produced = written or (producer(subject) if producer else None)
+            produced = written
+            if not produced and name == rules.issues_affected.section:
+                produced = issues_affected(ctx)
             content = produced if produced else f"{TODO} nothing fills this section yet"
         blocks.append(f"## {name}\n\n{content}".rstrip())
     body = "\n\n".join(blocks) + "\n"
