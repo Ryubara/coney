@@ -460,7 +460,7 @@ sets 1.
 - `src/animation/anim_task.*` holds the held flags and the events that move them, and a fade that holds bits until it
   ends (the idle's fade holds `0x10000000`, which gives the 5 updates after a block or a stop)
   ([Animation](formats/animation.md#coneys-implementation)); the readers' masks are in `src/combat/` and
-  `src/human/locomotion_gate.*` ([Combat](../engine/combat.md)).
+  `src/human/locomotion_gate.*` ([Combat](combat/index.md#coneys-implementation)).
 
 ## Runtime checks {#runtime-checks}
 

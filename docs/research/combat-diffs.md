@@ -8,15 +8,15 @@ Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038e
 
 A worklist for the combat implementers: each place Coney's fight plays differently from the original, what the
 original does (with a link to the research) and where Coney's side lives. Coney's documented **choices** and
-**stand-ins** (on [Combat](../engine/combat.md)) are listed too when they change what the player sees.
+**stand-ins** (on [Combat](combat/index.md#coneys-implementation)) are listed too when they change what the player sees.
 Remove an entry when it is fixed, in the same commit. The original's evidence levels are on the linked pages; the
 Coney side is confirmed by reading the source.
 
 ## Original structure
 
 The original functions behind each entry are on the page it links, in that page's own Original structure and code
-index ([Combat](combat/index.md#map), [Combat moves](combat-moves.md#original-structure)). The few an entry
-here names with an address (the mid-target test, the snap's search and filter, `Player_Special`) are graded where
+index ([Combat](combat/index.md#original-structure), [Combat moves](combat-moves.md#original-structure)). The few an
+entry here names with an address (the mid-target test, the snap's search and filter, `Player_Special`) are graded where
 they are cited.
 
 ## Data
@@ -185,7 +185,7 @@ The Coney side of each entry is named in it. The files the entries cite: `repo:s
 dispatcher and the commands it takes), `repo:src/combat/attacks.cpp` (which attack a press starts),
 `repo:src/human/fighter.cpp` (targets and the steer), `repo:src/platform/play_level_objects.cpp` (moving attacks on
 objects), `repo:src/animation/anim_task.cpp` and `repo:src/human/human_animator.cpp` (clip timing). Coney's choices
-and stand-ins as a whole are listed on [Combat](../engine/combat.md).
+and stand-ins as a whole are listed on [Combat](combat/index.md#coneys-implementation).
 
 ## Open questions
 

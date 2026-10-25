@@ -542,9 +542,10 @@ play 246 (the break) or 242 (the reversal) instead; none of them plays 199.
   fighter beside the player, a square at k = 16 counters and one at 18 does not).
 - **Missing: the grounded mount.** `Mount_StartOnGrounded` is not built for anyone: circle at a downed human
   neither mounts him (237-240 / 241) nor cuts a rise below 70 %.
-- **Missing: the mounted player's inputs.** No AI grabs, tackles or mounts yet ([Coney's implementation](../engine/combat.md)),
-  and `Player_UpdateTackled` is not built: no struggle 250 (power drain, 40 damage), no break 246 / 247, no reversal
-  242 / 243 into the player's own mount, and no escape when the mounter's power runs out while mounting the player.
+- **Missing: the mounted player's inputs.** No AI grabs, tackles or mounts yet ([Coney's
+  implementation](combat/index.md#coneys-implementation)), and `Player_UpdateTackled` is not built: no struggle 250
+  (power drain, 40 damage), no break 246 / 247, no reversal 242 / 243 into the player's own mount, and no escape when
+  the mounter's power runs out while mounting the player.
 - **Missing for the AI:** kind 14 (the grounded mount, command `0xe`) has a reach but no move behind it; kind 42 on
   itself should be one command that cuts the AI's ground time (Coney calls it "the get-up attack").
 - A disc test: knock the player down with an AI, kick him (195), press square in 196 (he rises next update), press
@@ -1079,8 +1080,8 @@ The damage and the reactions live in `repo:src/combat/reactions.h` (the hit code
 block reactions), `repo:src/combat/meters.h` (health and the pending damage), `repo:src/human/victim.h` (the stun,
 the knockdown, the ground time, the rise and the mash) and `repo:src/human/fighter_victim.cpp` (the player hit, the
 lethal hit held back, the rise's counter); the mission failing is `repo:src/warriors/game_over.h`. [Combat: Coney's
-implementation](../engine/combat.md) says what each file does. What differs from the original is written
-beside each subject above: the held flags that stop an attack or a reaction ([Moves a hit cannot
+implementation](combat/index.md#coneys-implementation) says what each file does. What differs from the original is
+written beside each subject above: the held flags that stop an attack or a reaction ([Moves a hit cannot
 stop](#protected-moves), items 25 and 29), the ground escapes ([Down and under attack](#ground-escape)), the
 game-over check's stand-ins ([Who can help](#defeat-helpers)) and the Furies' bats ([A bat's hit](#bat-knockdown)).
 

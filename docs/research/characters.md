@@ -2943,7 +2943,7 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
   the 0.1333 s fade between moves, the idle's fade by how much of a start clip has played, and the walk start swapped
   for the run start in its first half ([Clip selection](#clip-selection)). Its clips hold their record `+0x08` bits
   while they play ([Tasks](tasks.md#held-flags)): a start clip `0x10000000`, the landing `0x1000000`, the run stop and
-  the climb's first and last clips `0x80000`, the combat moves theirs ([Combat](../engine/combat.md)).
+  the climb's first and last clips `0x80000`, the combat moves theirs ([Combat](combat/index.md#coneys-implementation)).
 - **Dynamic animation slots** ([Animation](animation.md#dynamic-slots)): `human::ScriptState` holds the seven
   slots that `HuUseAnim` and `HuUseAnyAnim` both fill. An id already in a slot reuses that slot, a new id takes the
   first free one, and an eighth id is refused. The play mode hands the idle's clip (`0x184`) to `Human::setIdleClip()`

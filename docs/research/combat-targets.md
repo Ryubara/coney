@@ -694,7 +694,7 @@ The pick, the stance and the lock live in `repo:src/combat/lock_on.h` (the lock-
 target is dropped) and `repo:src/human/fighter.cpp` (the target in front, the grab search, the stance and the combat
 walk); the steer is `repo:src/human/turn_and_slide.h`; an AI's attack checks are `repo:src/ai/attack_views.cpp`; the
 object attack's clip is in `repo:src/combat/attacks.h` and the stick games in `repo:src/combat/stick_games.h`.
-[Combat: Coney's implementation](../engine/combat.md) says what each file does. What differs from the
+[Combat: Coney's implementation](combat/index.md#coneys-implementation) says what each file does. What differs from the
 original is written beside each subject above: hits on teammates and the chief's hit-back ([Teammates](#teammates),
 user item 10), the spin of the run attacks and the lock on neutral civilians ([The fight stance](#fight-stance), user
 items 34 and 14).

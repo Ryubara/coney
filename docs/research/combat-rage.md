@@ -732,8 +732,8 @@ Readings and stand-ins:
 The meters and the rage awards live in `repo:src/combat/meters.h` and `repo:src/combat/rage_awards.h`, the rage
 handlers in `ScriptedHumans::runRageHandlers`, and the revive in `repo:src/gamemodes/gameplay_revive.cpp`,
 `repo:src/human/human_revive.cpp` and `repo:src/combat/revive.h`. [Combat: Coney's
-implementation](../engine/combat.md) says what each file does. What differs from the original is written
-beside each subject above: rage's screen look, sounds and `RageFull(human, false)` ([Everything rage
+implementation](combat/index.md#coneys-implementation) says what each file does. What differs from the original is
+written beside each subject above: rage's screen look, sounds and `RageFull(human, false)` ([Everything rage
 does](#rage-effects), item 26), the keep-weapon drops ([Dropping what is held when hit](#keep-weapon), issue #91) and
 the revive's readings and stand-ins ([Reviving](#revive)).
 

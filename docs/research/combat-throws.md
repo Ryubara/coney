@@ -17,9 +17,9 @@ from are on [Combat: grabs](combat-grabs.md); damage and reactions on [Combat: r
 The throw is `Player_Throw` with the paired-move code it starts; a bat is the `melee_weapon` object's message
 handler, the human's pick-up clip and the dispatcher's armed branch; the mugging is `Player_UpdateMugging` with its
 parameter table and the tackle and cuffing holds. `Player_Throw` and `Player_UpdateMugging` are in
-[Combat's Original structure](combat/index.md#map), the helpers in [its code index](combat/index.md#code-index);
-the behaviour below names the function each step lives in, with its address and level, the weapon's handler and the
-pick-up clip among them.
+[Combat's Original structure](combat/index.md#original-structure), the helpers in [its code
+index](combat/index.md#code-index); the behaviour below names the function each step lives in, with its address and
+level, the weapon's handler and the pick-up clip among them.
 
 ## Data
 

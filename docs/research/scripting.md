@@ -948,7 +948,7 @@ bums. Points an implementer needs:
   `_BACK_01` (25, 27, 29). Any of the three counts, in any order and on any bum; any other id (an `S1`, 12) is ignored.
   The first two update the text and give Rudy a line; the third calls `P1.SnapsDone`. Confirmed (runtime):
   snaps 27, 29 and 25 that landed on the bums each reached the callback once, with that id. Coney passes it with the
-  disc ([the second wave](ai.md#coney), [the snap](../engine/combat.md)).
+  disc ([the second wave](ai.md#coney), [the snap](combat/index.md#coneys-implementation)).
 - **2, 6, 8**: a plain grab scores nothing; strikes, throws and power moves are scored with their own ids when they
   start, since a grab move applies its damage on its first update.
 

@@ -30,10 +30,10 @@ leans into turns, stops, steps onto kerbs under 25 cm, slides along walls, jumps
 ledges on the level's collision mesh, with the original's speeds, turn rates and clips: the walk or run start, a blend
 across walk, jog, run and sprint, the idle, the run stop, the jump and its landing, and the climbs
 ([Characters](../research/characters.md#sprint)). He fights as the original's player does
-([Combat](../engine/combat.md)): the square and cross chains, the snaps, the run attack, the
-charge and the dive, the block, rage, the grab with its strikes, spins, throws and the mugging, and the tackle, with the
-original's commands, timing and clips; the sandbox's fight yard (`--play-level sandbox:combat`) has passive targets that
-take the hits. With a target (the one he attacked, or the one L1 picks) he locks onto it, as the original's default
+([Combat](../research/combat/index.md#coneys-implementation)): the square and cross chains, the snaps, the run attack,
+the charge and the dive, the block, rage, the grab with its strikes, spins, throws and the mugging, and the tackle, with
+the original's commands, timing and clips; the sandbox's fight yard (`--play-level sandbox:combat`) has passive targets
+that take the hits. With a target (the one he attacked, or the one L1 picks) he locks onto it, as the original's default
 settings do: he faces it and the stick walks him at one speed in any direction with the combat walk until it is more
 than 2.5 m away or down. The level's glass panes and doors work: his hits break the panes and the breakable doors, and
 the lock pick opens a door ([World objects](../research/objects.md#coneys-implementation)). The level's scenes play and

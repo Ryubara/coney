@@ -718,7 +718,7 @@ The grab lives in `repo:src/combat/grab.h` (when a grab starts, the search range
 `repo:src/combat/grabbed.h` (held in a grab), `repo:src/combat/player_combat.cpp` (the dispatcher's grab, tackle and
 mount routes), `repo:src/human/fighter_grab.cpp` (the clips, the pose and the walk), `repo:src/human/pair_placement.h`
 (the offsets and the alignment) and `repo:src/human/carried_prop.h` (the spray can). [Combat: Coney's
-implementation](../engine/combat.md) says what each file does. Two differences from the original are
+implementation](combat/index.md#coneys-implementation) says what each file does. Two differences from the original are
 listed above as fixes to make: the hold's movement styles and walk clips ([The hold walk](#hold-walk), user item 21)
 and the mount's power strike, which Coney plays like a mount strike and returns to 210 / 207 ([The mount's power
 strike](#mount-power), user item 32).
