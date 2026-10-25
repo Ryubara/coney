@@ -743,11 +743,11 @@ Read in Ghidra: confirmed (code) where no other level is given.
 
 | Input | Target | Clip | Runtime (`moves_grounded_*`, victim knocked down by 653 and set 1 m ahead) | Evidence |
 | --- | --- | --- | --- | --- |
-| square | low (down) | **193** `gen_ground_kickB` | foot B shape k11-k13, contact k12, −34 health seen in its sample, reaction 195 | confirmed (code), runtime confirmed (runtime) |
-| cross | low (down) | **194** `gen_ground_stomp` | foot B shape k11-k17, contact k15, −34 seen in its sample, 32 updates, then 358 | confirmed (code), runtime confirmed (runtime) |
-| square | mid (the mount's states, or 0.7-1.3 m lower) | **212** `MOUNTING_STRIKE` | `moves_mid_square`: at Bum01 mounting PoizoCiv (made the target), contact on the mounter at k8; the victim was let go (245, then up with 199) | confirmed (code), runtime confirmed (runtime) |
-| cross | mid | **661** `SPECIAL_BREAK_OBJECT_LOW` | `moves_mid_cross`: the same, 661 one update after the release, contact at k9, the victim let go | confirmed (code), runtime confirmed (runtime) |
-| square or cross | grabbed from the front by someone else, or grabbing someone from the front | **120** | `moves_grab_front_strike`: at PoizoCiv holding Bum01 from the front (82), contact at k9, 50 damage, PoizoCiv 144 and the hold broken | confirmed (code), runtime confirmed (runtime) |
+| square | low (down) | **193** `gen_ground_kickB` | foot B shape k11-k13, contact k12, −34 health seen in its sample, reaction 195 | confirmed (code); confirmed (runtime) |
+| cross | low (down) | **194** `gen_ground_stomp` | foot B shape k11-k17, contact k15, −34 seen in its sample, 32 updates, then 358 | confirmed (code); confirmed (runtime) |
+| square | mid (the mount's states, or 0.7-1.3 m lower) | **212** `MOUNTING_STRIKE` | `moves_mid_square`: at Bum01 mounting PoizoCiv (made the target), contact on the mounter at k8; the victim was let go (245, then up with 199) | confirmed (code); confirmed (runtime) |
+| cross | mid | **661** `SPECIAL_BREAK_OBJECT_LOW` | `moves_mid_cross`: the same, 661 one update after the release, contact at k9, the victim let go | confirmed (code); confirmed (runtime) |
+| square or cross | grabbed from the front by someone else, or grabbing someone from the front | **120** | `moves_grab_front_strike`: at PoizoCiv holding Bum01 from the front (82), contact at k9, 50 damage, PoizoCiv 144 and the hold broken | confirmed (code); confirmed (runtime) |
 | commands `0x37` / `0x38` (scripts, AI) | any | 193 / 194 (`Attack_StartGroundStrike`, `0x00287fe0`) | not run | confirmed (code) |
 
 Both grounded strikes deal 34 (class indices 12 / 13). Confirmed (code); confirmed (runtime) for 193, 194, 212, 661
@@ -1183,9 +1183,10 @@ issue #228 ([the rule](#bat-cross)):
   right and misses, when 27 hits one on the left. That target was pinned while walking, so the steer's lead may explain
   it ([Contact](#reach)); not rerun against a still target.
 - **The tandem intro's length**{#q-tandem-intro}: why the tandem intro ran 51 updates, not 36.
-- **The tandem's alignment**{#q-tandem-align}: which of the three humans `Tandem_AlignThree`
-  (`0x00277458`) moves, by which offsets and over what time. Coney moves only the attacker, to his intro's pair point
-  ([Coney's tandem](#tandem-coney)).
+- **The tandem's alignment**{#q-tandem-align}: `Tandem_AlignThree` (`0x00277458`) turns the three and slides two of
+  them over 1/15 s to the set's offsets ([Map](#original-structure)); which body each turn and slide applies to is
+  inferred, not read, since the decompile does not show the calls' first arguments. Coney moves only the attacker, to
+  his intro's pair point ([Coney's tandem](#tandem-coney)).
 - **The tandem's let-go**{#q-tandem-letgo}: when the tandem's grabber lets go: 48 updates after the damage at runtime,
   where his end clip (166) lasts 27. Coney lets go at the end of the clip.
 - **The empty-handed set**{#q-tandem-set}: how the empty-handed set is drawn: whether the three sets are equally likely,
