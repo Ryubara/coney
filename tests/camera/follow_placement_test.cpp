@@ -149,3 +149,15 @@ TEST_CASE("a scene's end hands the follow camera back behind the place the scene
     CHECK(follow.position().y > 25.0F); // behind a player facing -y
     CHECK(acrossGround(follow) < 6.0F);
 }
+
+TEST_CASE("CamSetFollowPos snaps the look-at point onto where the target stands now", "[camera]") {
+    // Expected: camera.md#fn-script, confirmed (code) (Camera_SetFollowPosition 0x0011c638 calls
+    // Cam_Follow_RefreshLookAt 0x00127d48 before it places the camera)
+    FollowPlace where{.feet = Vec3{0.0F, 0.0F, 0.0F}, .heading = 0.0F};
+    FollowCamera camera = settled();
+    camera.setTargetSource([&where] { return where; });
+    where = FollowPlace{.feet = Vec3{0.0F, 12.0F, 0.0F}, .heading = 0.0F};
+    camera.placeAt(Vec3{3.0F, 8.0F, 2.0F});
+    CHECK(camera.lookAt().y == Approx(12.0F));
+    CHECK(camera.position() == Vec3{3.0F, 8.0F, 2.0F});
+}
