@@ -248,6 +248,9 @@ class FollowCamera {
     /// @coney-only Noclip camera routing, docs/guides/debug-menu.md#noclip.
     void updateForPlayer(const FollowTarget& target, std::uint8_t rawRightX, std::uint8_t rawRightY,
                          const raycast::CollisionMesh* mesh, float seconds);
+    /// Starts the next debug flight behind its new target, rather than retaining a previous flight's orbit.
+    /// @coney-only Noclip camera reset, docs/guides/debug-menu.md#noclip.
+    void resetDebugFlight() { m_debugYaw.reset(); }
 
     /// `CamEnable(5, on)`: switches the sprint zoom on or off (`+0x468`, on when made). Turning it off cancels a zoom
     /// in progress, leaving the band and the target pitch where they are.
@@ -353,6 +356,7 @@ class FollowCamera {
     [[nodiscard]] float inputHold() const { return m_inputHold; }
     /// The leash band now, metres (`+0x32c` / `+0x330`).
     [[nodiscard]] float bandNear() const { return m_bandNear; }
+    /// The far edge of the leash band, metres.
     [[nodiscard]] float bandFar() const { return m_bandNear + m_bandWidth; }
     /// Whether the sprint zoom is under way (`+0x448` not 0): zoomed in, or waiting or easing to go back.
     [[nodiscard]] bool sprintZoomActive() const { return m_zoomActive; }
@@ -368,6 +372,7 @@ class FollowCamera {
     [[nodiscard]] const FollowSettings& settings() const { return m_settings; }
     /// The field of view now, degrees, and the near plane.
     [[nodiscard]] float fieldOfView() const { return m_fov; }
+    /// The near plane used to draw the follow view.
     [[nodiscard]] float nearClip() const { return m_settings.nearClip; }
     /// Whether the combat camera is on (`+0x46f`).
     [[nodiscard]] bool combatOn() const { return m_combatOn; }

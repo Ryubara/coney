@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// A flying human: the debug menu's noclip (docs/guides/debug-menu.md#noclip). Coney's own tool, with no counterpart in
+// @coney-only A flying human: the debug menu's noclip (docs/guides/debug-menu.md#noclip), with no counterpart in
 // the original; it changes nothing while no flight is set.
 #include <numbers>
 #include <optional>

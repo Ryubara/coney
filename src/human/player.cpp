@@ -299,6 +299,9 @@ void Player::setPadControlled(bool padControlled) {
 }
 
 void Player::setNoclip(bool on) {
+    if (on != m_noclip) {
+        m_camera.resetDebugFlight();
+    }
     m_noclip = on;
     // Off, the human stands where he is and the next update's physics drops him; on, he hovers until the pad flies him.
     m_driven->setFlight(on ? std::optional<Flight>(Flight{}) : std::nullopt);
@@ -403,7 +406,15 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
     camera::FollowTarget after = followTargetOf(*m_driven, pad, m_nearestEnemy, m_padControlled);
     after.debugFlight = m_noclip;
     m_combatFraming = after.lockOn && !after.grabbing;
-    if (m_cameras != nullptr) {
+    if (m_noclip) {
+        // The debug view replaces this frame's output; the original cameras' update remains untouched.
+        m_camera.updateForPlayer(after, raw[0], raw[1], mesh, kStepSeconds);
+        if (m_cameras != nullptr) {
+            m_cameras->setDebugView(camera::viewLookingAt(m_camera.position(), m_camera.aimPoint(),
+                                                          m_camera.fieldOfView(), m_camera.nearClip(),
+                                                          m_cameras->view().farClip));
+        }
+    } else if (m_cameras != nullptr) {
         m_cameras->update(after, raw[0], raw[1], mesh, kStepSeconds);
     } else {
         m_camera.updateForPlayer(after, raw[0], raw[1], mesh, kStepSeconds);

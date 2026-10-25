@@ -2,12 +2,17 @@
 // Scripted noclip input uses the normal game session and the player's own disc, never copied game assets.
 #include <cmath>
 #include <optional>
+#include <span>
+#include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
 #include "animation/anim_math.h"
+#include "core/pads.h"
 #include "fileio/wad.h"
 #include "platform/play_level_mode.h"
+#include "scripting/binding_args.h"
+#include "scripting/lua_vm.h"
 #include "support/disc_play_fixtures.h"
 #include "support/disc_session.h"
 
@@ -23,6 +28,14 @@ TEST_CASE("noclip holds its camera offset while R1 accelerates vertical flight",
     REQUIRE(run.runToPlayFrame(300));
     auto* play = run.session().play();
     REQUIRE(play != nullptr);
+    // A synthetic native callback makes the actual gameplay input route observable without game script fixtures.
+    int r1Callbacks = 0;
+    run.session().flow().scripts().vm().registerFunction(
+        "NoclipR1Probe", [&](std::span<const coney::script::Value>) -> coney::script::binding::Results {
+            ++r1Callbacks;
+            return std::vector<coney::script::Value>{};
+        });
+    run.session().flow().state().player.pads.set(coney::Pads::recordOfPort(0), coney::pad::kR1, "NoclipR1Probe");
     play->setNoclip(true);
     run.run(1);
     const auto initial = play->player().current();
@@ -37,4 +50,5 @@ TEST_CASE("noclip holds its camera offset while R1 accelerates vertical flight",
         CHECK(std::abs(current.heading - initial.heading) < 0.001F);
     }
     CHECK(play->player().human().position().z > initial.feet.z + 23.0F);
+    CHECK(r1Callbacks == 0);
 }

@@ -287,6 +287,7 @@ class HumanAnimator {
     void keepEvents(bool keep) { m_tasks.keepEvents(keep); }
     /// The clip events passed since the last call (anim::AnimTaskStack::takeEvents()).
     [[nodiscard]] std::vector<anim::ClipEvent> takeEvents() { return m_tasks.takeEvents(); }
+    /// The controller state used to decide whether locomotion may replace the current action.
     [[nodiscard]] AnimState state() const { return m_state; }
     /// `HuUseAnim`'s replacement for the idle (anim kUseAnimIds[0], human `+0x3c8`): `clip` (which must outlive its
     /// use; null puts the character's own idle back) plays wherever the idle would, under the idle's anim id, and at
@@ -306,8 +307,11 @@ class HumanAnimator {
     [[nodiscard]] std::uint32_t animId() const;
     /// The newest task's gait blend value, or -1 when it is not a gait blend.
     [[nodiscard]] float gaitValue() const;
+    /// Read-only tasks for pose sampling and deterministic animation inspection.
     [[nodiscard]] const anim::AnimTaskStack& tasks() const { return m_tasks; }
+    /// Movement speeds derived from the active animation set.
     [[nodiscard]] const Speeds& speeds() const { return m_speeds; }
+    /// The character's animation set, which supplies its clips.
     [[nodiscard]] const characters::AnimSet& anims() const { return *m_anims; }
 
   private:
