@@ -85,7 +85,8 @@ Confirmed (code) at the addresses cited:
   grabbing or tackling, and not while his clips hold any of `0xc02201`.
 - `Human_UpdateDown` (`0x00256a60`), which refills the power meter, returns before the refill while the human's state
   holds any of `0x1c18003ff0`, which takes in the paired attacker's `0x1000`: so the meter neither drains nor refills
-  during a power move.
+  during a power move. It moves the refill's time stamp (record `+0x14c`) to now before that test, so when the move
+  ends the refill counts only the time since, not the move's.
 - `Human_ApplyPendingDamage` (`0x00265f70`): a third human's hit on a human in state `0x1000` who is not grabbing takes
   his health and, as a pair's member, the share `0x00510274` of his power, then clears the pending damage with no
   reaction.

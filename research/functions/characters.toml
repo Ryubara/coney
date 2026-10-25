@@ -1860,6 +1860,21 @@ level = "confirmed-code"
 coney = "src/human/stamina.h:Stamina::refill"
 status = "legacy"
 
+[[function.gaps]]
+what = "state 0x4000000 fills stamina and power"
+relation = "not-ported"
+issue = 719
+
+[[function.gaps]]
+what = "the power refill's stops while sprinting, running with the pad's button 1 held, in state 0x1c00000000 or while the clips hold 0x41a420"
+relation = "not-ported"
+issue = 719
+
+[[function.gaps]]
+what = "of the no-refill states 0x1c18003ff0 only the paired attacker's 0x1000 (PlayerCombat::updatePower) and the grab's drain are ported"
+relation = "not-ported"
+issue = 719
+
 [[function]]
 address = 0x002570e8
 name = "Human_ComputeThrowVelocity"

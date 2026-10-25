@@ -158,10 +158,11 @@ class PlayerCombat {
     // @orig 0x0022b960 Grab_BreakOnHit (unknown)
     // @orig 0x002562d0 Human_UpdateMeters (unknown)
     [[nodiscard]] bool holdsVictim() const { return m_mode == CombatMode::Grabbing && m_powerMove == anim_id::kNone; }
-    // Runs the power meter for this update: held in the grab's power move, where the attacker is a paired move's
-    // (state 0x1000, which the refill skips, and no longer grabbing, which the drain needs); else drained while it
-    // holds someone (holdsVictim(), or a tackle) and not in rage, and refilled otherwise
-    // (docs/research/slow-motion.md#power-move).
+    // Runs the power meter for this update. What it ports of the refill is the paired attacker's hold: in the grab's
+    // power move the attacker is a paired move's (state 0x1000, which the refill skips, and no longer grabbing, which
+    // the drain needs), so the meter is held, its time moving on (docs/research/slow-motion.md#power-move). Otherwise
+    // it drains while it holds someone (holdsVictim(), or a tackle) and not in rage, and refills; the refill's other
+    // stops (the other no-refill states, a sprint, a run, held flags) are not ported (#719).
     // @orig 0x00256a60 Human_UpdateDown (unknown)
     void updatePower(const CombatInput& input, const CombatTuning& tuning);
     // The record's +0x08 for this update.
