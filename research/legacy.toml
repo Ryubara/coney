@@ -145,12 +145,7 @@ verified = 1
 history = 3
 
 ["docs/research/combat-grabs.md"]
-front-matter = 1
-skeleton = 9
-verified = 1
-evidence = 58
-copied = 1
-history = 2
+evidence = 32
 
 ["docs/research/combat-moves.md"]
 evidence = 50
