@@ -11,7 +11,9 @@ tests that cite its section. What backs it:
   to read the claim against), else `none`, which the reviewer checks in Ghidra.
 * `confirmed (runtime)`: the run record the block cites (`run r-20261023-grab-reach`), which must exist and be a good
   record (coney_tools.run_records). A legacy claim that names the PCSX2 version and its method instead is allowed with
-  a warning. There is no stamp for a run: the record is the proof (maintainer decision, 2026-10-23).
+  a warning. There is no stamp for a run: the record is the proof (maintainer decision, 2026-10-23). A block is legacy,
+  not new, when it edits one the page had at the base or is the same text as a block that left another research page in
+  the same change (a moved section: `departed_blocks`).
 * `speculative`: the open question it links, which must exist when it is on the same page.
 * `inferred`: nothing to look up (`docs check` holds its basis).
 
@@ -34,7 +36,7 @@ from pathlib import Path
 from coney_tools import docs_check, local_gate, run_records, stamps
 from coney_tools.config import ConfigError
 from coney_tools.conventions import load_conventions
-from coney_tools.docs_page import Page, heading_ids, read_page
+from coney_tools.docs_page import Block, Page, heading_ids, read_page
 from coney_tools.research_check import subject_of
 from coney_tools.research_evidence import (
     QUESTION_LINK,
@@ -58,6 +60,7 @@ TEST_FOLDERS = ("tests", "python/tests")
 TEST_SUFFIXES = (".cpp", ".h", ".py")
 
 _PCSX2_VERSION = re.compile(r"PCSX2\s+v?\d+\.\d+", re.IGNORECASE)
+_LINK_TARGET = re.compile(r"\]\([^)]*\)")
 _HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(?P<start>\d+)(?:,(?P<count>\d+))? @@")
 
 CODE, RUNTIME, INFERRED, SPECULATIVE, NOT_NEEDED = "code", "runtime", "inferred", "speculative", "not-needed"
@@ -161,6 +164,40 @@ def changed_lines(root: Path, point: str, similarity: int | None = None) -> dict
     for name, touch in docs_check.change_touches(root, point, moved, similarity).items():
         changed[name] = None if touch.new or touch.lines is None else set(touch.lines)
     return changed
+
+
+def _normal(text: str) -> str:
+    """A block's text with each run of white space as one space and the target of each link left out, to tell the same
+    block on two pages: a section that moves has its relative links rewritten (`(#input)` to `(combat-moves.md#input)`),
+    which changes no claim."""
+    return " ".join(_LINK_TARGET.sub("]", text).split())
+
+
+def departed_blocks(root: Path, point: str) -> frozenset[str]:
+    """The text (`_normal`) of the blocks that left a research page in the working tree since the commit `point`: the
+    page had the block then and no longer has it (it holds no such block now, or is gone). A block of that text found on
+    another page is the same block moved there (a section cut from one page to another), not a new claim; a copy that
+    left the old page as it was is not a departure."""
+    prefix = RESEARCH_DIR.rstrip("/") + "/"
+    names = _git(root, "diff", "--name-only", "--no-renames", point, "--", RESEARCH_DIR).splitlines()
+    gone: set[str] = set()
+    for name in names:
+        if not (name.startswith(prefix) and name.endswith(".md")):
+            continue
+        before = {_normal(b.text) for b in _blocks_at(root, point, name)}
+        path = root / name
+        now = {_normal(b.text) for b in read_page(path.read_text(encoding="utf-8")).blocks} if path.is_file() else set()
+        gone |= before - now
+    return frozenset(gone)
+
+
+def _blocks_at(root: Path, point: str, page: str) -> list[Block]:
+    """The blocks, headings left out, that the page had at the commit `point` (none for a page that was not there)."""
+    try:
+        text = _git(root, "show", f"{point}:{page}")
+    except ConfigError:
+        return []
+    return [block for block in read_page(text).blocks if block.kind != "heading"]
 
 
 def _all_pages(root: Path) -> dict[str, set[int] | None]:
@@ -337,9 +374,11 @@ def _page_claims(
     report: Report,
     backing: _Backing,
     known: list[frozenset[str]] | None,
+    moved_in: frozenset[str] = frozenset(),
 ) -> None:
     """Add the claims of one page that touch `lines` (all of them when None) to `report`, graded as `docs check`
-    grades them. `known` holds the word sets of the base page's blocks (None without a base)."""
+    grades them. `known` holds the word sets of the base page's blocks (None without a base); `moved_in` the text of
+    the blocks that left another page in this change (`departed_blocks`): one here is that block, not new."""
     page, name = subject.page, subject.path
     leads = lead_lines(subject)
     map_section = subject.env.research.map_section
@@ -383,7 +422,7 @@ def _page_claims(
             levels.runs,
             tuple(dict.fromkeys((m.group("page"), m.group("anchor")) for m in links)),
             page.anchors,
-            not _is_edit(block.text, known),
+            not _is_edit(block.text, known) and _normal(block.text) not in moved_in,
         )
         what = _back(report, backing, site)
         anchor = ids[block.section]
@@ -409,6 +448,7 @@ def build(
     similarity = load_conventions(root).research.moved_similarity
     pages = _all_pages(root) if point is None else changed_lines(root, point, similarity)
     moved = {} if point is None else moved_pages(root, point, similarity)
+    departed = frozenset() if point is None else departed_blocks(root, point)
     for page, lines in sorted(pages.items()):
         path = root / page
         if not path.is_file():
@@ -416,18 +456,14 @@ def build(
         report.pages.append(page)
         known = None if point is None else _base_blocks(root, point, moved.get(page, page))
         subject, _ = subject_of(page, read_page(path.read_text(encoding="utf-8")), env)
-        _page_claims(subject, lines, report, backing, known)
+        _page_claims(subject, lines, report, backing, known, departed)
     return report
 
 
 def _base_blocks(root: Path, point: str, page: str) -> list[frozenset[str]]:
     """The word sets of the blocks the page had at the commit `point` (none for a page that was not there; pass the
     path a moved page came from)."""
-    try:
-        text = _git(root, "show", f"{point}:{page}")
-    except ConfigError:
-        return []
-    return [_words(block.text) for block in read_page(text).blocks if block.kind != "heading"]
+    return [_words(block.text) for block in _blocks_at(root, point, page)]
 
 
 def _plural(count: int, noun: str) -> str:

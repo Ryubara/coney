@@ -245,6 +245,104 @@ def test_a_new_runtime_claim_on_a_moved_page_is_still_an_error(tmp_path: Path) -
     assert any("a new confirmed (runtime) claim cites a run record" in e for e in report.errors)
 
 
+THROWS = "docs/research/combat/throws.md"
+THROWS_TEXT = "# T\n\n## Behaviour\n\n`Throw` at `0x00123456` (confirmed (code)).\n"
+REACH = "The catch reach is 1.1 m (confirmed (runtime))."
+
+
+def split_repo(tmp_path: Path) -> Path:
+    """A checkout whose base holds the grabs page (its runtime claim cites no run record: legacy) and a throws page,
+    both of which stay."""
+    root = make_repo(tmp_path, NO_RUN)
+    git(root, "checkout", "-q", "main")
+    (root / THROWS).write_text(THROWS_TEXT, encoding="utf-8", newline="\n")
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "throws")
+    git(root, "checkout", "-q", "-B", "work")
+    return root
+
+
+def move_reach(root: Path, *, keep: bool = False, edited: str = REACH, source: str = REACH) -> None:
+    """Move the reach claim (`source`, as the grabs page has it) to the throws page (copy it when `keep`), as `edited`
+    says."""
+    if not keep:
+        edit(root, f"{source}\n\n", "")
+    page = (root / THROWS).read_text(encoding="utf-8")
+    (root / THROWS).write_text(f"{page}\n{edited}\n", encoding="utf-8", newline="\n")
+
+
+def test_a_runtime_block_moved_unchanged_between_two_pages_is_not_new(tmp_path: Path) -> None:
+    # The claim has no run record: an error as a new block on the throws page, but it was legacy on the grabs page.
+    root = split_repo(tmp_path)
+    move_reach(root)
+    report = research_claims.build(root, base="main")
+    assert report.errors == []
+    assert [c.page for c in report.claims] == [THROWS]
+    assert any("legacy" in w for w in report.warnings)
+
+
+def test_a_moved_block_whose_link_targets_were_rewritten_is_not_new(tmp_path: Path) -> None:
+    # A move rewrites the relative links of the block; the claim is the same.
+    root = split_repo(tmp_path)
+    linked = REACH.replace("catch reach", "[catch reach](#reach)")
+    edit(root, REACH, linked)
+    git(root, "commit", "-q", "-am", "link")
+    git(root, "branch", "-f", "main", "HEAD")
+    move_reach(root, edited=linked.replace("(#reach)", "(grabs.md#reach)"), source=linked)
+    assert research_claims.build(root, base="main").errors == []
+
+
+def test_a_moved_block_with_new_link_text_is_still_new(tmp_path: Path) -> None:
+    root = split_repo(tmp_path)
+    linked = REACH.replace("catch reach", "[catch reach](#reach)")
+    edit(root, REACH, linked)
+    git(root, "commit", "-q", "-am", "link")
+    git(root, "branch", "-f", "main", "HEAD")
+    move_reach(root, edited=linked.replace("[catch reach]", "[catch range]"), source=linked)
+    assert any("a new confirmed (runtime) claim" in e for e in research_claims.build(root, base="main").errors)
+
+
+def test_a_block_moved_and_edited_is_still_new(tmp_path: Path) -> None:
+    root = split_repo(tmp_path)
+    move_reach(root, edited=REACH.replace("1.1 m", "1.2 m"))
+    report = research_claims.build(root, base="main")
+    assert any(f"{THROWS}:" in e and "a new confirmed (runtime) claim" in e for e in report.errors)
+
+
+def test_a_new_block_next_to_a_moved_one_is_still_new(tmp_path: Path) -> None:
+    root = split_repo(tmp_path)
+    move_reach(root)
+    page = (root / THROWS).read_text(encoding="utf-8")
+    (root / THROWS).write_text(f"{page}\nThe throw lands at 2 m (confirmed (runtime)).\n", encoding="utf-8")
+    report = research_claims.build(root, base="main")
+    assert len(report.claims) == 2
+    assert len(report.errors) == 1 and f"{THROWS}:9" in report.errors[0]
+
+
+def test_a_block_copied_to_another_page_is_new_there(tmp_path: Path) -> None:
+    # It is still on the grabs page, so nothing moved.
+    root = split_repo(tmp_path)
+    move_reach(root, keep=True)
+    report = research_claims.build(root, base="main")
+    assert any(f"{THROWS}:" in e and "a new confirmed (runtime) claim" in e for e in report.errors)
+
+
+def test_a_block_moved_from_a_page_the_branch_deleted_is_not_new(tmp_path: Path) -> None:
+    root = split_repo(tmp_path)
+    move_reach(root, keep=True)
+    git(root, "rm", "-q", "-f", PAGE)
+    assert research_claims.build(root, base="main").errors == []
+
+
+def test_a_block_moved_to_a_page_the_base_did_not_have_is_not_new(tmp_path: Path) -> None:
+    # The destination is untracked (nothing to compare it with at the base); the source page stays.
+    root = split_repo(tmp_path)
+    edit(root, f"{REACH}\n\n", "")
+    other = root / "docs/research/combat/reach.md"
+    other.write_text(f"# R\n\n## Behaviour\n\n{REACH}\n", encoding="utf-8", newline="\n")
+    assert research_claims.build(root, base="main").errors == []
+
+
 def test_a_page_the_branch_did_not_touch_is_not_listed(tmp_path: Path) -> None:
     assert research_claims.build(make_repo(tmp_path), base="main").claims == []
 
