@@ -6,7 +6,7 @@
 // The human flag word (human `+0xe0`, a u64): the switches the scripts set on a human (`HuSetGodMode`,
 // `HuSetUnstunnable`, ...) and the ones combat, climbing and the meters read. Only the bits the research names are
 // listed; the word keeps any other bit a caller sets.
-// Research: docs/research/combat.md#human-flags, docs/research/characters.md#the-record,
+// Research: docs/research/combat/index.md#human-flags, docs/research/characters.md#the-record,
 // docs/references/bindings/character.md
 
 namespace coney::human::flag {
@@ -108,9 +108,9 @@ inline constexpr std::uint64_t kBlockRearGrab = 0x80000000;
 inline constexpr std::uint64_t kAutoCombat = 0x200000000000;
 
 /// The flags a player's human starts with: what `Human_MakePlayer` sets (kFastClimber, kRevivable, kRageAllowed) and
-/// the combo rule kComboStrength (docs/research/combat.md#human-flags). kDemiGod, also seen on the player at runtime,
-/// is the level scripts' (`HuSetDemiGodMode`): a mode whose scripts never set it (the Rumble arena) lets the player be
-/// knocked out.
+/// the combo rule kComboStrength (docs/research/combat/index.md#human-flags). kDemiGod, also seen on the player at
+/// runtime, is the level scripts' (`HuSetDemiGodMode`): a mode whose scripts never set it (the Rumble arena) lets the
+/// player be knocked out.
 inline constexpr std::uint64_t kPlayerFlags = kFastClimber | kRevivable | kComboStrength | kRageAllowed;
 
 } // namespace coney::human::flag

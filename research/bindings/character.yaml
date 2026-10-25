@@ -594,7 +594,7 @@
   depth: thorough
   notes: >-
     Readers: the power-out escape in `Human_UpdateMeters` (0x002562d0) and the grab intro's end (0x0026c1d8),
-    [Combat](../../research/combat.md#human-flags).
+    [Combat](../../research/combat/index.md#human-flags).
   usage: {chunks: 8, calls: 13, boot: false, mission1: false, result_used: false, levels: [80, 54, 82]}
   coney: implemented
 
@@ -922,7 +922,7 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Effects of the flag: [Combat](../../research/combat.md#human-flags). Weapon and thrown hits go through the same
+    Effects of the flag: [Combat](../../research/combat/index.md#human-flags). Weapon and thrown hits go through the same
     damage path (inferred).
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [83]}
   coney: implemented
@@ -1043,7 +1043,7 @@
   depth: thorough
   notes: >-
     An entry whose scaled value rounds to 0 is not written and keeps its previous damage. The write is
-    0x002548f0, as when the human is made ([Combat: damage](../../research/combat.md#damage-table)).
+    0x002548f0, as when the human is made ([Combat: damage](../../research/combat/index.md#damage-table)).
   usage: {chunks: 8, calls: 30, boot: false, mission1: false, result_used: false, levels: [3, 93, 83, 60, 61, 62, 63, 64]}
   coney: implemented
 
@@ -1534,7 +1534,7 @@
   description: >-
     Tells whether the human is on the receiving end of a grapple: true while any of its state flags `0x10` (grabbed
     from the front), `0x20` (grabbed from the rear) or `0x800` (pinned by a tackle) is set
-    ([Combat: state flags](../../research/combat.md#state-flags)). The grabber itself does not count.
+    ([Combat: state flags](../../research/combat/index.md#state-flags)). The grabber itself does not count.
   evidence: confirmed-code
   depth: thorough
   notes: >-
@@ -2008,7 +2008,7 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Fight stance: [Combat](../../research/combat.md#state-flags). An AI's brain can put it back in stance on its next
+    Fight stance: [Combat](../../research/combat/index.md#state-flags). An AI's brain can put it back in stance on its next
     fight decision.
   usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: false, levels: [95, 54, 55, 83]}
   coney: implemented
@@ -2042,7 +2042,7 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Readers: [AI](../../research/ai.md), [Combat](../../research/combat.md) and the follow camera
+    Readers: [AI](../../research/ai.md), [Combat](../../research/combat/index.md) and the follow camera
     (camera.md), which only acts for a pad-controlled player. Armies of the Night uses it for players that have not
     joined.
   usage: {chunks: 7, calls: 30, boot: false, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
@@ -2895,7 +2895,7 @@
     7 × 0x28: name, clip `+0x20`, anim id `+0x24`) by its type: type 0 (puke) the first seven as ids 668, 320, 321,
     322, 323, 669, 324; type 1 (sleeping) the `bm_` three as 668, 196, 195; type 2 (begging) the `bum_beg_` three
     as 668, 196, 195. 668 is the fidget (itch) the goal plays every 10 s with a player near, 669 the big puke, 196
-    and 195 the knocked-down pose and the hit while down ([Combat](../../research/combat.md)), so a sleeping or
+    and 195 the knocked-down pose and the hit while down ([Combat](../../research/combat/index.md)), so a sleeping or
     begging bum lies or sits in its own clips; 320-324 being the arrested state's idle, hit, dying, dead and second
     hit is inferred (a type-0 bum is put in the arrested state). [AI: GoalBumLogic](../../research/ai-scripting.md#bum-logic).
     Requesting fills 13 of the 64 dynamic-animation list entries. Releasing also drops files another script

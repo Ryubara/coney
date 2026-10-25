@@ -201,7 +201,7 @@ of the `load-checkpoint` recipe's slow reload.
   script's percentages (`160 + round(0.95 × v)`, `95 − round(0.95 × |v|)`, 128 at rest) gives both games the same
   stick, diagonals included, without touching the table.
 - **A puppet human** (2026-10-05, the combat runtime pass). To make an AI human attack, grab or block the player,
-  write command ids ([Combat](../research/combat.md#commands)) into its per-player record with the `puppet` patch,
+  write command ids ([Combat](../research/combat/index.md#commands)) into its per-player record with the `puppet` patch,
   which stops the game clearing them: the [`puppet-command`](pcsx2-recipes/input.md#puppet-command) recipe, with what a
   grab and a held button need. Pick the puppet by name: the nearest human changes as pedestrians walk, and an ally's hits
   play reactions without damage.

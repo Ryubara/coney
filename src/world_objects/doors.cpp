@@ -594,9 +594,9 @@ void Doors::hitBarrier(Door& door, const ObjectHit& hit, ObjectWorld& world) {
     }
     // Broken: the triangles off and the links open, then by class: dyn_door_wall_a its damaged model and no body,
     // dyn_door_wall_b nothing more, the others three boards. **Coney's reading**: the barrier's collision body, which
-    // the break leaves until its removal and which stops a charge dead (docs/research/combat.md#moving-strikes), is its
-    // triangles in Coney's level mesh, so they go off only at the removal, unless the body goes now (wall_a) or the
-    // barrier is never removed (dyn_door_vargas).
+    // the break leaves until its removal and which stops a charge dead (docs/research/combat/index.md#moving-strikes),
+    // is its triangles in Coney's level mesh, so they go off only at the removal, unless the body goes now (wall_a) or
+    // the barrier is never removed (dyn_door_vargas).
     if (door.type == kWallA || door.type == kVargas) {
         setTrianglesEnabled(world, door.triangles, false);
     }

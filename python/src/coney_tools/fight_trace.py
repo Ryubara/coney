@@ -38,7 +38,7 @@ from coney_tools.events import read_hook_logs
 #: A metric's value: a number, or a name (a winner, a tactic).
 Metric = float | str
 
-#: The attack commands (combat::command, docs/research/combat.md#commands) by the name a report shows.
+#: The attack commands (combat::command, docs/research/combat/index.md#commands) by the name a report shows.
 ATTACK_COMMANDS = {
     0x0D: "grab",
     0x0E: "tackle",

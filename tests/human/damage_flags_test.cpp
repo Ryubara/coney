@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The attacker's damage flags of the human flag word (docs/research/combat.md#human-flags): killer mode (0x20,
+// The attacker's damage flags of the human flag word (docs/research/combat/index.md#human-flags): killer mode (0x20,
 // `HuSetKillerMode`) takes all the victim's health with one strike, double damage (0x4000, `HuSetDoubleDamage`)
 // doubles each hit; then what the victim's side changes: a Warrior's hit on class 0x80 is quartered
 // (`Human_AddPendingDamage` 0x00264bd8), and a hit on a man already out or on a boss with flag 0x10 earns no rage

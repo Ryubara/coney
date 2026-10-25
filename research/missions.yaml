@@ -42,7 +42,7 @@ missions:
       - {title: "The first mission's script", path: "research/scripting.md#level99"}
       - {title: "The combat tutorial's lessons", path: "research/scripting.md#level99-lessons"}
       - {title: "The first mission's cast", path: "research/ai.md#level99"}
-      - {title: "Combat", path: "research/combat.md"}
+      - {title: "Combat", path: "research/combat/index.md"}
     test: "coney_tests \"[disc][story]\""
     notes: "The goal for this mission: STORY from the main menu through the profile screens and loading, to the mission playing from start to end."
   - level: 80

@@ -10,8 +10,8 @@
 // `P3.FuryTimeout`, `P3.MoveFromFence` and `P3.EnterDiamond` (a Warrior on the fence or diamond box), so with the
 // player standing still and his crew beside him the timeout is what turns the Furies, 150 updates after the scene.
 // Before that nobody may hit a Warrior, and the crew stays out of the Furies' fight with the hurt Rogues: a swing
-// warns its own target alone (docs/research/combat.md#attack-warnings), so a Warrior who only saw it takes no side
-// and does not walk onto the fence box. In the original the first hit on the player came 276 and 294 updates after
+// warns its own target alone (docs/research/combat/index.md#attack-warnings), so a Warrior who only saw it takes no
+// side and does not walk onto the fence box. In the original the first hit on the player came 276 and 294 updates after
 // the scene (confirmed (runtime), two runs), and Coney's must come within 40 updates of those.
 //
 // It runs only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts and

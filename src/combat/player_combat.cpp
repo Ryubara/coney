@@ -308,7 +308,7 @@ void PlayerCombat::updateTheft(const CombatInput& input, const CombatTuning& tun
 
 void PlayerCombat::grabOrTackle(const CombatInput& input, CombatOutput& out) {
     // Refused while +0x08 has any of 0xfc7eaf7: an attack's phases, and the grab bit 0x10 its own intro and miss hold
-    // (docs/research/combat.md#input-return).
+    // (docs/research/combat/index.md#input-return).
     if (!grabAllowed(phaseFlags(input))) {
         return;
     }

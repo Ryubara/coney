@@ -66,8 +66,8 @@ BrainType brainTypeOf(int behaviour) {
 
 namespace {
 
-// Human_Init's and Human_ReleasePlayer's bits (docs/research/combat.md#human-flags): a cop's and a dealer's two have
-// no name in Coney yet.
+// Human_Init's and Human_ReleasePlayer's bits (docs/research/combat/index.md#human-flags): a cop's and a dealer's two
+// have no name in Coney yet.
 constexpr std::uint64_t kCopFlag2000 = 0x2000;
 constexpr std::uint64_t kCopFlag40000 = 0x40000;
 constexpr std::uint64_t kRevivableFlags = human::flag::kFastClimber | human::flag::kRevivable;

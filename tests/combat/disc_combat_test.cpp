@@ -2,10 +2,10 @@
 
 // A check against the player's own disc: Rembrandt's Anim Range List decodes, every attack combat starts has a damage
 // in it, and the grab and tackle search ranges come out as the research reads them at runtime
-// (docs/research/combat.md). The damage the research measured at runtime (S1 17, SS2 36, ...) is not what the file
-// holds: the character class's damage table overrides it when the human is made (combat.md, Coney's implementation),
-// so this test checks only that the file's values are there. It runs only when the environment variable CONEY_DISC
-// names the disc and skips otherwise. It prints counts only (LEGAL.md).
+// (docs/research/combat/index.md). The damage the research measured at runtime (S1 17, SS2 36, ...) is not what the
+// file holds: the character class's damage table overrides it when the human is made (combat.md, Coney's
+// implementation), so this test checks only that the file's values are there. It runs only when the environment
+// variable CONEY_DISC names the disc and skips otherwise. It prints counts only (LEGAL.md).
 
 #include <cstddef>
 #include <cstdio>

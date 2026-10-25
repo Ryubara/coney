@@ -9,8 +9,8 @@
 // How a human reacts to a hit: the attack's hit code (direction, height and strength) is turned by where the attacker
 // stands and how high, the victim's state changes the strength, and the reaction table names the clip; a stun flag on
 // the attack stuns, and a held block cancels the damage with a block reaction unless the hit breaks it.
-// Research: docs/research/combat.md#hit-codes, docs/research/combat-reactions.md#reactions,
-// docs/research/combat.md#block
+// Research: docs/research/combat/index.md#hit-codes, docs/research/combat-reactions.md#reactions,
+// docs/research/combat/index.md#block
 
 namespace coney::combat {
 

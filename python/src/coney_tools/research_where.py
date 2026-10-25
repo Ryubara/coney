@@ -44,7 +44,7 @@ class Place:
     anchor: str
 
     def text(self) -> str:
-        """`docs/research/combat.md:120 (#state-flags)`."""
+        """`docs/research/combat/index.md:120 (#state-flags)`."""
         return f"{self.page}:{self.line}" + (f" (#{self.anchor})" if self.anchor else "")
 
 

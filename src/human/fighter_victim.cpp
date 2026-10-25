@@ -22,7 +22,7 @@
 // catch, the struggle, the strike back, the escape and the reversal), or held by a grab that drives it (enterHold(), a
 // human with a brain the player grabs or tackles). Another human's strikes and warnings reach it
 // through Human (a Combatant); the tests use the same entry points (Fighter::takeHit(), warn(), catchInGrab()).
-// Research: docs/research/combat-reactions.md#damage, docs/research/combat.md#block,
+// Research: docs/research/combat-reactions.md#damage, docs/research/combat/index.md#block,
 // docs/research/combat-grabs.md#grabbed, docs/research/combat-reactions.md#being-hit-runtime
 
 namespace coney::human {

@@ -8,7 +8,7 @@ Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038e
 How an AI human touches the world, seen from the Human side. It covers which world uses an AI reaches, through
 which of the player's own functions, and which it never reaches. [AI humans](ai.md) explains the brains, goals and
 actions; this page fills the gaps between that page and the Human pages ([Characters](characters.md),
-[Combat](combat.md), [Combat moves](combat-moves.md)). Where another page already covers a topic, it is linked
+[Combat](combat/index.md), [Combat moves](combat-moves.md)). Where another page already covers a topic, it is linked
 here, not repeated.
 
 | Topic | Where it is covered |
@@ -28,7 +28,7 @@ here, not repeated.
 
 An AI human uses the world through the same functions as a player. Its actions write a **command** into its
 per-player record (`PlayerRecord_SetCommand`, `0x00147ef0`), and `Player_UpdateActions` (`0x0027c120`) runs that
-command for every human whose per-player `+0x1e` is 0, AI humans included ([Combat: The dispatcher](combat.md#dispatch)).
+command for every human whose per-player `+0x1e` is 0, AI humans included ([Combat: The dispatcher](combat/index.md#dispatch)).
 So the world use is the player's code, and Coney needs no second copy of it. Confirmed (code) at the
 addresses cited.
 
@@ -55,7 +55,7 @@ Confirmed (code) unless marked:
 - **No car.** No function in the Human or AI range puts a human into a car or drives one, and cars run on their own
   paths ([Cars](cars.md)). An AI meets a car only by hitting it ([Smashing a car](#cars)), by investigating a
   crime at one ([AI](ai.md#ai-hazards)) or by being hit by it. Inferred from the absence of any such caller.
-- **No block.** An AI never starts a block, because the block reads the pad ([Combat: The dispatcher](combat.md#dispatch)).
+- **No block.** An AI never starts a block, because the block reads the pad ([Combat: The dispatcher](combat/index.md#dispatch)).
 - **No cover.** No goal seeks cover or shadow on its own ([AI: Cover, cars and trains](ai.md#ai-hazards)).
 - **No closed door.** An AI never opens a closed door by itself ([Doors](#doors)).
 
@@ -195,7 +195,7 @@ the strike path is the player's.
 
    While they are on, `Human_TestStrikes` tests them each update against the bodies near him, the car's physics
    body included. The first overlap calls `Strike_Contact` ([Combat: How a moving attack
-   strikes](combat.md#moving-strikes)). The spot stands 0.8 m out from the part's origin, so a hand or foot that
+   strikes](combat/index.md#moving-strikes)). The spot stands 0.8 m out from the part's origin, so a hand or foot that
    reaches the car's box strikes it; a swing that misses the box does nothing.
 3. **The part comes from where he stands.** `Strike_Contact` sees a car (type word `0x100000`) and calls `Car_OnHit`
    (`0x0038bea0`) directly. For a plain human hit, that picks the parts from the attacker's position in the car's zone

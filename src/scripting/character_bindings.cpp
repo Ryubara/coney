@@ -83,7 +83,7 @@ template <typename Read> NativeFunction statusQuestion(const BindingContext& con
 } // namespace
 
 void addCharacterBindings(LuaVm& vm, const BindingContext& context) {
-    // The flag word's switches (docs/research/combat.md#human-flags).
+    // The flag word's switches (docs/research/combat/index.md#human-flags).
     // `HuSetKillerMode(human, on)`: bit 0x20, every strike takes all the victim's health (human::Fighter::applyHit()).
     // @orig 0x0035b980 HuSetKillerMode (unknown)
     // @orig 0x00235a88 Human_SetKillerMode (unknown)

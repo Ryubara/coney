@@ -1,8 +1,8 @@
 # Combat: grabs, tackles, the hold and the mount
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`); runtime claims with
-PCSX2 2.9.94 as on [Combat](combat.md), which this page was split from because that page had grown too
-large. The overview, the data tables and the code index stay on [Combat](combat.md#code-index).
+PCSX2 2.9.94 as on [Combat](combat/index.md), which this page was split from because that page had grown too
+large. The overview, the data tables and the code index stay on [Combat](combat/index.md#code-index).
 Every claim carries the level written beside it.
 
 ## Purpose
@@ -17,8 +17,8 @@ free. [Throws](combat-throws.md) and [mugging](combat-throws.md#mugging) start f
 
 No source file names this code: it lies in the player's combat code in `Human/`, after `cns/cnsplayertag.cpp`
 ([Source map](source-map.md#position), inferred), and the names are ours. Every grab function is in the [code
-index](combat.md#code-grabs) and its [grab ends and holds](combat.md#code-holds) part; these are the entry points, each
-read in Ghidra at its address.
+index](combat/index.md#code-grabs) and its [grab ends and holds](combat/index.md#code-holds) part; these are the entry
+points, each read in Ghidra at its address.
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |
@@ -38,11 +38,11 @@ read in Ghidra at its address.
 
 ## Data
 
-The grab keeps its state in fields that [Combat](combat.md#data) owns: the state bits `0x10`-`0x2000` of a grab, a
-mount and a paired move ([State flags](combat.md#state-flags)), the partner's handle at human `+0xc4` and the other
-fields of [Other record fields](combat.md#record-fields), the reach and offset of each id in the [Anim Range
-List](combat.md#damage-table), and the costs and drains in [Constants](combat.md#constants). The fields this page adds
-are below; each was read in the function named.
+The grab keeps its state in fields that [Combat](combat/index.md#data) owns: the state bits `0x10`-`0x2000` of a grab, a
+mount and a paired move ([State flags](combat/index.md#state-flags)), the partner's handle at human `+0xc4` and the other
+fields of [Other record fields](combat/index.md#record-fields), the reach and offset of each id in the [Anim Range
+List](combat/index.md#damage-table), and the costs and drains in [Constants](combat/index.md#constants). The fields this
+page adds are below; each was read in the function named.
 
 | Field | Meaning | Evidence |
 | --- | --- | --- |
@@ -103,10 +103,10 @@ At runtime (confirmed (runtime)):
 | R1 pressed (3) or `0x19` | **spin**: front → rear 78 / 79 (`0x0026d570`), rear → front 80 / 81 (`0x0026d998`); confirmed (runtime): 78 / 79, then the rear hold 84 / 85, states `0x85` / `0x20` |
 | L2 held (5) | **lets go**: player 95, victim 94; confirmed (runtime) |
 
-The commands are those of the [table](combat.md#commands): square acts on its press (`0xf`), cross on its release (`0x10`),
-circle on its press (`0x1e`). A grab strike only **spends** power, at any meter level: 0.2 of the maximum, halved for
-a human with a player number (`+0x1b0`), so **40 of 400**. The power strike, `0x23` and the throws **need** more than
-0.25 of the maximum and **spend** 0.25 (**100 of 400**); with 0.25 or less the grab is released instead
+The commands are those of the [table](combat/index.md#commands): square acts on its press (`0xf`), cross on its release
+(`0x10`), circle on its press (`0x1e`). A grab strike only **spends** power, at any meter level: 0.2 of the maximum,
+halved for a human with a player number (`+0x1b0`), so **40 of 400**. The power strike, `0x23` and the throws **need**
+more than 0.25 of the maximum and **spend** 0.25 (**100 of 400**); with 0.25 or less the grab is released instead
 (`0x0026c7e0`). Confirmed (code) at `0x0027f3b0` and `0x00262ac8`; confirmed (runtime): strikes 40 each, the power
 strike 236 → 135 with its 57 damage on the same update. The grab also ends when the victim drifts beyond the larger of
 reach + 0.2 m and reach × 1.2, or 0.2 m up or down.
@@ -204,13 +204,13 @@ confirmed (runtime) where marked.
    the victim** (659 / 660 from the rear) where a plain grab plays 72 / 73; the hold 82 / 83 (84 / 85) follows. The
    alignment gate is 657's far range (2.5 m) × 1.25 = 3.125 m.
 6. **Damage at the connect's end** (`Grab_ConnectEnd`, `0x0026bad8`): with the player grabbing (`0xc0`), the victim
-   grabbed (`0x30`) and the player's power above 0, the victim gets pending damage of the [damage table](combat.md#damage-table)
+   grabbed (`0x30`) and the player's power above 0, the victim gets pending damage of the [damage table](combat/index.md#damage-table)
    value of the player's id at that moment (657: index 17) through `0x0021d680`. The same code runs at the end of a
    plain grab's 72, whose value is 0, so a plain grab deals nothing and scores no hit (confirmed (runtime): no
    scoring call). Then the snap and attach, and the grab's scoring (`0x00264fa0`: 657, 659, 649 and 651 score as
    category 1, 3).
 7. **No power cost**: the paired path neither checks nor spends power; the hold's drain of 15 per second
-   ([constants](combat.md#constants)) starts with the grab, as for any grab (confirmed (runtime): 72 of 400 was enough,
+   ([constants](combat/index.md#constants)) starts with the grab, as for any grab (confirmed (runtime): 72 of 400 was enough,
    and the meter fell 1 every 2 updates from the press).
 
 **At runtime** (confirmed (runtime), PCSX2, a copy of slot 6: the civilian `PoizoCiv` held in place facing the player
@@ -530,8 +530,8 @@ square, cross, circle and L2, **the same after a tackle or a grab**:
 | L2 (5) | gets off: 244 / 245, the victim rises with 199 (`0x00271098`) |
 | triangle | mug ([Mugging](combat-throws.md#mugging)) |
 
-The mount drains power at the tackle's 15 per second ([constants](combat.md#constants)). The strikes ran 16, 19 and 28
-updates back to 210. Level 99's tutorial follows this through two callbacks: `AddAnimCallback(player, 210,
+The mount drains power at the tackle's 15 per second ([constants](combat/index.md#constants)). The strikes ran 16, 19
+and 28 updates back to 210. Level 99's tutorial follows this through two callbacks: `AddAnimCallback(player, 210,
 "PlayerState")` shows the mount's prompt when 210 starts, and `HUDSetTutorialCallback("P1.BasicAttacks")`, which
 receives each hit's anim id, wants 219 or 221 and then 223 before it calls `P1.BasicAttacksDone`.
 
@@ -559,7 +559,7 @@ cited, and (runtime) as below; the clip events read from the disc (numbers only)
    by the code, when 226's knockdown value is 0 (`Anim_GetKnockdownValue`, `0x00101a60`: the first type-7 event's
    word), held `0x2000` and **198** (the knockdown's follow-up), then the looping **grounded idle** (record `+0x28`,
    anim state 0). At runtime 198 did not play: 226 went straight to the grounded idle 196 (below). He lies there
-   and gets up by the ordinary ground time ([Reactions](combat-reactions.md#reactions)). The damage ([damage table](combat.md#damage-table)
+   and gets up by the ordinary ground time ([Reactions](combat-reactions.md#reactions)). The damage ([damage table](combat/index.md#damage-table)
    index 37; Rembrandt's value in [Combat moves](combat-moves.md#frame-data)) is dealt on the start update (the
    health field showed it one update later at runtime); a lethal one plays the death reaction instead.
 5. **The extension**: the mounter is now in state `0x1000`, so the dispatcher sends him to `Player_UpdatePowerMove`
@@ -609,7 +609,7 @@ not reached). At 229 the mounter stood in 358 (state `0x5`), the victim lay in 1
 
 1. In `PlayerCombat::updateMounting`, a `MountAction::PowerStrike` ends the mount on its start update: the combat
    mode leaves `Mounting`, the pair stops being a mount (no seat, no mounted target state) and becomes a paired move
-   (the mounter "throwing", the victim "thrown", [state flags](combat.md#state-flags) `0x1000` / `0x2000`).
+   (the mounter "throwing", the victim "thrown", [state flags](combat/index.md#state-flags) `0x1000` / `0x2000`).
 2. The mounter plays 225 (231 raging) chained to the fight-stance idle, not to 210; the victim plays 226 (232) with
    held `0x400000`, then the grounded idle (196; no 198, as seen at runtime), and is down (style `0xf`) with the
    ordinary ground timer running from the knockdown.
@@ -708,7 +708,7 @@ and the named one is free at once. `Grab_Release` does not run, so 94 / 95 never
 
 **Brains are not links.** `BrDead`, `BrSuspend` and `Brain_ClearActions` only clear the brain's queued actions and
 set its flags or handlers (`0x00292330`, `0x002923a0`); none touches the human's state, so a grab in progress goes on.
-Inferred: its power keeps draining (15 per second in a grab or a mount, [constants](combat.md#constants)) until `Grab_Release`
+Inferred: its power keeps draining (15 per second in a grab or a mount, [constants](combat/index.md#constants)) until `Grab_Release`
 ends it with 95 / 94, as for any grab whose power runs out ([Grabbed](#grabbed)). There is no `HuStop` binding in the
 game.
 
@@ -718,7 +718,7 @@ The grab lives in `repo:src/combat/grab.h` (when a grab starts, the search range
 `repo:src/combat/grabbed.h` (held in a grab), `repo:src/combat/player_combat.cpp` (the dispatcher's grab, tackle and
 mount routes), `repo:src/human/fighter_grab.cpp` (the clips, the pose and the walk), `repo:src/human/pair_placement.h`
 (the offsets and the alignment) and `repo:src/human/carried_prop.h` (the spray can). [Combat: Coney's
-implementation](combat.md#coneys-implementation) says what each file does. Two differences from the original are
+implementation](combat/index.md#coneys-implementation) says what each file does. Two differences from the original are
 listed above as fixes to make: the hold's movement styles and walk clips ([The hold walk](#hold-walk), user item 21)
 and the mount's power strike, which Coney plays like a mount strike and returns to 210 / 207 ([The mount's power
 strike](#mount-power), user item 32).

@@ -157,7 +157,7 @@ again. `Brains_RegisterTypeHandlers` (`0x0028a360`) fills the tables at `0x00715
 | 5 | dealers (15) | `0x0028fbb0` | `0x00302cd8` | `0x00303178` |
 | 6 | the `civl_co_di` kind (441): shopkeepers, [below](#think-shopkeeper) | `0x0028fbb0` | `0x00303f10` | `0x00304228` |
 
-So type 3 is the Warriors' brain, which an ally Warrior runs (this answers [Combat](combat.md#open-questions)'s "brain
+So type 3 is the Warriors' brain, which an ally Warrior runs (this answers [Combat](combat/index.md#open-questions)'s "brain
 type 3"). The player's update `0x003035d8` only keeps books (target validity, attackers counted, the follower check
 `0x002d09f0`); it pushes no goals.
 
@@ -215,7 +215,7 @@ Start returned 2 never set `+0x06`, so only its destroy runs.
 ### Attack kinds and commands {#attack-kinds}
 
 An attack action carries one of **45 attack kinds**; `AttackKind_ToCommand` (`0x00231090`, jump table `0x0055c170`)
-turns it into the command id written to the per-player record ([Commands](combat.md#commands)):
+turns it into the command id written to the per-player record ([Commands](combat/index.md#commands)):
 
 | Kinds | Command |
 | --- | --- |
@@ -241,7 +241,7 @@ turns it into the command id written to the per-player record ([Commands](combat
 `Brain_QueueAttack` (`0x0028e248`) turns a chain kind into several actions, each later press delayed by
 `AttackKind_ChainDelay` (`0x00231198`: the first event time of clip 11, 12 or 16, `0x001017a0`), so the AI presses
 inside the chain window as a player would: kind 2 queues kinds 0 then 2 (`X1`, `XX2`), kind 6 or 8 queues 1, 5 and 6
-or 8. The kinds follow the [damage table](combat.md#damage-table)'s indices (0 `X1`, 1 `S1`, 2 `XX2`, 3 `SX2`, 4
+or 8. The kinds follow the [damage table](combat/index.md#damage-table)'s indices (0 `X1`, 1 `S1`, 2 `XX2`, 3 `SX2`, 4
 `XS2`, 5 `SS2`, 6 `SSX3`, 7-9 `SSS3` and its holds, 10 the snap); inferred from the commands and the queued chains.
 Every kind with its delay, command and anim ids, and every attack table: [Attack kinds and
 tables](../references/attacks.md).
@@ -298,7 +298,7 @@ stack is then empty, sends the human event `0xd`. `BrFlush` clears both.
 ### Reaction goals {#reaction-goals}
 
 The brain's `+0x3c` holds a **reaction goal** that has priority over the stack. `Brain_UpdateReactionGoal`
-(`0x0028f2b0`) makes one from the human's state word ([Combat](combat.md#state-flags)) when none is active, and
+(`0x0028f2b0`) makes one from the human's state word ([Combat](combat/index.md#state-flags)) when none is active, and
 `Brain_EndReactionGoal` (`0x0028f240`) ends it and resumes the stack's top:
 
 | Goal | When the state has | Constructor |
@@ -314,8 +314,8 @@ The brain's `+0x3c` holds a **reaction goal** that has priority over the stack. 
 | `0x1a` | `0x10000` | `0x002b5110` |
 
 The stack's goals `0x1f`, `0x92`, `0x89` and `0x4f`, and the character classes `0x77`, `0x78`, `0x4f`, `0x80`,
-`0xb2`, `0x87` and `0x62`, can hold it off. This corrects [Combat](combat.md#block): `+0x3c` is the reaction goal, not
-a tactic, and type `0x17` is the knocked-down goal, which is why a downed AI never counters.
+`0xb2`, `0x87` and `0x62`, can hold it off. This corrects [Combat](combat/index.md#block): `+0x3c` is the reaction goal,
+not a tactic, and type `0x17` is the knocked-down goal, which is why a downed AI never counters.
 
 Confirmed (runtime), a civilian fighting the player: the knocked-down goal `0x17` (vtable `0x00540210`) appeared on
 the update after the state word took `0x80000` and stayed until the update after it cleared (88 updates), then the
@@ -1086,8 +1086,8 @@ BigBrawler, BigFighter, BigFighterA, HideAndSeek, ObjectPile, SaveHuman, FollowA
 goal's grab try). Confirmed (code), jump tables `0x0055c0e0` and `0x0055c110`.
 
 The reach is the **near** value of one anim id: `AttackTable_GetReach(A, anim)` (`0x002544a0`), the float at `+0x4`
-of that anim's 16-byte row in A's attack table (record `+0x160`, [Combat](combat.md)). It is used as is: no scale, no
-capsule radii, and not the far range (`+0x8`, which `Human_CanStartAttack` uses instead). The anim is chosen by kind:
+of that anim's 16-byte row in A's attack table (record `+0x160`, [Combat](combat/index.md)). It is used as is: no scale,
+no capsule radii, and not the far range (`+0x8`, which `Human_CanStartAttack` uses instead). The anim is chosen by kind:
 
 | Kind | Anim id when A holds nothing |
 | --- | --- |
@@ -1376,7 +1376,7 @@ make the fight goal wait. Confirmed (code). Sectors are the eight 45° sectors o
 - **Kind 10 (the snap)**: the first of A's sectors 4, 5, 3, 6, 2 whose near human (flag bit 1) is in A's own attack-slot
   list (B `+0x1a4`: he is attacking A) gives the stick angle: heading + π for 3-5, heading + π/2 for 6, heading − π/2
   for 2. The kind becomes 1 (square), so the press is square with the stick to that side or back. This is how the
-  player's snap is made ([Combat](combat.md)).
+  player's snap is made ([Combat](combat/index.md)).
 - **Kind 22 (the grab)**: when A is in T's sector 2 or 6 (at his side) and T is grabbed from the rear, A moves in
   (move-to-human, 2 × T's radius to the grab reach, 1500 ms) and returns 1. At his side otherwise, the grab becomes
   kind 0 (`X1`).
@@ -1931,7 +1931,7 @@ them grabs.
   (`0x00292d80`) adds one for each event `0x10`, as do `0x002ff898`, `0x00302ff0` and `0x00304070`, and
   `Brain_Update` clears it (`0x0028f914`). Event `0x10` comes from `0x0021d5c0`, called by `Attack_Start` (call at
   `0x0026267c`) and the square path (`0x00287594`), each time to the attack's target alone ([Combat: attack
-  warnings](combat.md#attack-warnings)), which it reaches only if `0x002223e8` passes: within the
+  warnings](combat/index.md#attack-warnings)), which it reaches only if `0x002223e8` passes: within the
   brain's range `+0x130` and its **field of view** `+0x12c` (half-angle, radians), or 2 m when the attacker's brain
   `+0x2d4` is set, and then a line of sight (`0x00222288`). Confirmed (code); the counting confirmed (runtime).
 - **When** (`Goal_TryBlock`, `0x0029f098`): only when the brain's `+0x200` is not 0, that is when an attack on the
@@ -1940,7 +1940,7 @@ them grabs.
   pattern meets the class's `+0x37` threshold (`0x002236c8`, `0x00418398` on human `+0x5d0`) is always blocked. Yes
   pushes the block goal.
 - **An AI human cannot block.** Confirmed (code) at `0x0027c120` and `0x00147f98`. The dispatcher starts a block
-  only when R1 (mask 8) is **held in a pad record** ([Combat](combat.md#dispatch)): `0x00147f98(record, mask)` reads
+  only when R1 (mask 8) is **held in a pad record** ([Combat](combat/index.md#dispatch)): `0x00147f98(record, mask)` reads
   pad record `0x005dd810 + pad × 0x50` with the pad index per-player `+0x19`, and returns 0 when that is −1, as it is
   for every AI human. Command 4 (R1 held) is looked at only inside the block branch, once a block runs; it cannot start
   one. So the block goal's command 4 does nothing for an AI: it never takes state `0x8000` or plays 606, and its hits
@@ -1949,7 +1949,7 @@ them grabs.
     - **Init** (`0x002b54d8`): `+0x16` = 1 (active); `+0x10` (the end time), `+0x14`, `+0x15` and `+0x17` (an update
       count) = 0.
     - **Start** (`0x002b5520`): `+0x10` = now + a random 1000-3000 ms; `+0x14` = (rand100 < `Human_BlockChance`), which
-      allows the counter after a duck ([Combat](combat.md#block)); `+0x18` = whether human `+0xe0` already had
+      allows the counter after a duck ([Combat](combat/index.md#block)); `+0x18` = whether human `+0xe0` already had
       `0x800`. With a target: `+0x15` = 1 when the class's pattern threshold (`0x002236c8`) is above 0 and the
       target's pattern (`0x00418398` on human `+0x5d0`) meets it, and human `+0xe0` gets **`0x800`** unless `+0x18`.
     - **Flag `0x800`** on human `+0xe0` means **no hit reaction**: `Human_ApplyPendingDamage` (`0x00265f70`) still
@@ -1993,7 +1993,7 @@ them grabs.
     `0x002672d0` 0 both ways (inferred: face to face), a counter chance above 0, and, while the byte
     `*(0x0051489c) + 0x56e3` is 0, a brain of type 3 or a class whose `+0x11b` is 13 (`0x00223e20`). So an AI
     counters grabs and tackles, never strikes; a strike is answered only by the duck counter
-    ([Combat](combat.md#block)).
+    ([Combat](combat/index.md#block)).
 
 At runtime (confirmed (runtime), PCSX2 2.9.94):
 
@@ -2109,7 +2109,7 @@ tactic (`TacticCrowd`) and a gang message handler (`GangSetMsgHandler(…, 18, �
 
 `CfgChar`'s damage argument names one of eleven tables in `config_preload2.lua` (`DamageWeak`, `DamageNormal`,
 `DamageTough`, `DamageBoss`, `DamageGhost`, `DamageCop`, `DamageRookieCop`, `DamageDestroyerLT`, `DamageMoonLT`,
-`DamageWarriors`, `DamageFox`), 45 values each, indexed as [the damage table](combat.md#damage-table) (index = Lua
+`DamageWarriors`, `DamageFox`), 45 values each, indexed as [the damage table](combat/index.md#damage-table) (index = Lua
 index − 1). The values at the indices that write damage, for the tables `level99` uses:
 
 | Index (anim) | Weak | Normal | Tough | Boss | Warriors | Fox |
@@ -2127,7 +2127,7 @@ index − 1). The values at the indices that write damage, for the tables `level
 | 25 (throws) | 30 | 50 | 70 | 75 | 57 | 57 |
 | 29 (wall throws) | 80 | 100 | 150 | 300 | 230 | 230 |
 
-Rembrandt's `S1` of 15 (`DamageFox`) at 115 % gives the 17 seen at runtime ([Damage](combat.md#damage-table)).
+Rembrandt's `S1` of 15 (`DamageFox`) at 115 % gives the 17 seen at runtime ([Damage](combat/index.md#damage-table)).
 Evidence: the values are read from the disc's compiled script (confirmed (code) for the reader); the index mapping is
 confirmed (code) on Combat.
 
@@ -2274,7 +2274,7 @@ the player and stands there**, so that whichever way he snaps, a bum is there to
   from his facing, without actions. With the stick at 0.6 straight up for 3 s the player walked off; they followed
   and stood within 1.3 m of him again 3 s after he stopped. None attacked.
 - So the four slots and `GoalTrackHuman`'s 0.5 m are what put a bum within the snap's 2 m
-  ([Attacks](combat.md#attacks)) on every side.
+  ([Attacks](combat/index.md#attacks)) on every side.
 
 #### Reaching the fight without a playthrough {#level99-save}
 
@@ -3014,7 +3014,7 @@ byte is not kept; the ledge thrower has no objects to pick up or throw yet, so e
 - The Warrior commands' tactics (`0x00310e00`, `0x00320530`, `0x00313400`, `0x00319570`, `0x00320b60`), the exit
   goal's on-screen test and the finding goal's search values (90, 30, 10).
 - The think handlers of types 2, 3 and 5 in detail; what goals the Warriors' think pushes for an ally.
-- Which class `+0x11b` value 13 is ([Combat](combat.md#open-questions)), and what the byte
+- Which class `+0x11b` value 13 is ([Combat](combat/index.md#open-questions)), and what the byte
   `*(0x0051489c) + 0x56e3` that lets every AI counter is.
 - What stopped Vermin's route jump at the `level99` window (x 47.76, by the panes at x 47.40) in the window-jump
   state, and whether a normal play-through clears it first; no run has seen a jump land on its point.

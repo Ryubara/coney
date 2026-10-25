@@ -84,7 +84,7 @@ gives its address), shared by every timed action; confirmed (code):
 | `+0x46` | u16 **mode**: 0 none, 1 uncuff mash, 2 lock picking, 3 car stereo, 4 a mash on an object, 5 `HuButtonMiniGame` |
 | `+0x48`, `+0x4c` | the stereo's angle and stage ([Combat](combat-targets.md#stereo-theft)) |
 
-While a mode runs, human state `0x4000000` is set ([state flags](combat.md#state-flags)). Combat's "theft mode 1"
+While a mode runs, human state `0x4000000` is set ([state flags](combat/index.md#state-flags)). Combat's "theft mode 1"
 is the **uncuff** mash and "mode 2" is **lock picking**. No code was found that sets mode 4 (its start
 `0x0022df88` and end `0x0022e330`, which marks the object `0x8000` and calls `0x0024c560`, are reached only through
 the dispatch).
@@ -93,7 +93,7 @@ the dispatch).
 
 | Where | Meaning | Evidence |
 | --- | --- | --- |
-| state `0x2000000` | **tagging** (`HuIsTagging`); the other state bits are on [Combat](combat.md#state-flags) | confirmed (code) at `0x002238c0` |
+| state `0x2000000` | **tagging** (`HuIsTagging`); the other state bits are on [Combat](combat/index.md#state-flags) | confirmed (code) at `0x002238c0` |
 | `+0x250` / `+0x254` | the pocket: item id and count (`HuPutItemInPocket`) | confirmed (code) |
 | `+0x257` | the carried object's name; anything but `none` counts as something to give ([starting values](#starting-money)) | confirmed (code) at `0x00225ff0` |
 | `+0x278` | the carried object's drop chance (`CfgChar` `+0xb4`; 100 after `HuSetCarriedItem`), inferred a percentage | confirmed (code) at `0x00218850` |
@@ -116,7 +116,7 @@ kind order 0-5 and the first record that passes wins. A record passes when its o
 the ground plane and its height is within 1.5 m of the human's waist (feet + 1.0), it has no other user, and for a
 stereo (kind 3) the stereo is not below the human's feet. Confirmed (code) at `0x00417ed0`, `0x004180b0`.
 
-**Triangle pressed** (command `0xa`, [Commands](combat.md#commands)) runs `Player_TriangleAction` **after** a climb
+**Triangle pressed** (command `0xa`, [Commands](combat/index.md#commands)) runs `Player_TriangleAction` **after** a climb
 is tried for a pad-controlled human (an AI's triangle runs it alone), and before the jump and the drop
 ([Triangle with something in hand](characters.md#triangle-held)); an earlier reading here had it before the climb.
 Confirmed (code) at `0x0027c120`, `0x002811f0`:
@@ -527,7 +527,7 @@ fix for them ([Coney's implementation](#coneys-implementation), the starting mon
 
 A human whose health runs out drops what he carries: `Human_OnHealthOut` (`0x002674c0`, [Defeat](combat-reactions.md#defeat))
 calls `Human_DropCarried(human, 1, 1)` (`0x00232c60`) when he is wounded or knocked out, unless he has human flag
-`0x4` (the players and the crew, [Human flags](combat.md#human-flags)). Every human goes through it, so a spawner's
+`0x4` (the players and the crew, [Human flags](combat/index.md#human-flags)). Every human goes through it, so a spawner's
 human drops his money as a scripted one does ([Starting money](#starting-money)). Confirmed (code) at `0x00232c60`; the
 order of the steps:
 
@@ -578,7 +578,7 @@ records ([AI: crimes](ai-gangs.md#crimes)).
 A level's tag spots are `part_spray_tag` particle objects (class bit `0x10` marks a particle system; configured by
 `CfgTagSettings`) with flags of activity 12
 ([World flags](flags.md)); `global.lua`'s helper loads a **pattern** (`HuTagPattern`) and calls `HuTag`.
-Circle + triangle (`0x24`) also sprays where the player has paint ([Combat](combat.md#dispatch)).
+Circle + triangle (`0x24`) also sprays where the player has paint ([Combat](combat/index.md#dispatch)).
 
 **`HuTag`** (`0x00238db0`), confirmed (code): a player with **no spray paint** (item 3) says 37 `nopaint` and the
 **human himself** gets event `0xe` with the tag and 0 (not finished; the record goes through the human's own vtable

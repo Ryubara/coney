@@ -318,7 +318,7 @@ target_sources(coney_tests PRIVATE
     human/human_contacts_test.cpp
     human/strike_hits_test.cpp
     human/locomotion_gate_test.cpp)
-# Combat (docs/research/combat.md).
+# Combat (docs/research/combat/index.md).
 target_sources(coney_tests PRIVATE
     combat/ai_counter_test.cpp
     combat/anim_ranges_test.cpp

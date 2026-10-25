@@ -1,8 +1,8 @@
 # Combat: targets, AI attacks and breakables
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`); runtime claims with
-PCSX2 2.9.94 as on [Combat](combat.md), which this page was split from because that page had grown too
-large. The overview, the data tables and the code index stay on [Combat](combat.md#code-index).
+PCSX2 2.9.94 as on [Combat](combat/index.md), which this page was split from because that page had grown too
+large. The overview, the data tables and the code index stay on [Combat](combat/index.md#code-index).
 Every claim carries the level written beside it.
 
 ## Purpose
@@ -17,7 +17,7 @@ car radios a punch or a triangle opens. Every attack ([Combat moves](combat-move
 
 No source file names this code: it lies in the player's combat code in `Human/`, after `cns/cnsplayertag.cpp`
 ([Source map](source-map.md#position), inferred), and the names are ours. Every function is in the [code
-index](combat.md#code-targets); these are the entry points, each read in Ghidra at its address.
+index](combat/index.md#code-targets); these are the entry points, each read in Ghidra at its address.
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |
@@ -35,11 +35,11 @@ index](combat.md#code-targets); these are the entry points, each read in Ghidra 
 
 ## Data
 
-The target, the stance and the lock are kept in fields that [Combat](combat.md#data) owns: the state bits `0x1`-`0x8` of
-the stance and the lock ([State flags](combat.md#state-flags)), the target handle at human `+0xc8` and the other
-[record fields](combat.md#record-fields), the attack table's reach and far range ([The Anim Range
-List](combat.md#damage-table)) and the distances of `CfgDistances` ([Constants](combat.md#constants)). The fields this
-page adds, each read in the function named:
+The target, the stance and the lock are kept in fields that [Combat](combat/index.md#data) owns: the state bits
+`0x1`-`0x8` of the stance and the lock ([State flags](combat/index.md#state-flags)), the target handle at human `+0xc8`
+and the other [record fields](combat/index.md#record-fields), the attack table's reach and far range ([The Anim Range
+List](combat/index.md#damage-table)) and the distances of `CfgDistances` ([Constants](combat/index.md#constants)). The
+fields this page adds, each read in the function named:
 
 | Field | Meaning | Evidence |
 | --- | --- | --- |
@@ -105,7 +105,7 @@ at the addresses cited unless marked; "teammate" is a human friendly to the play
    are grabbable because they are another gang: `level99` creates them in `CombatWarriors` and calls
    `GangMakeEnemies(Warriors, CombatWarriors)` ([AI: the sparring fight](ai.md#level99-fight)).
 3. **A swing that touches a teammate does land** (confirmed (code)). The strike test takes every body, allies too
-   ([Moving strikes](combat.md#moving-strikes)), so `Strike_Contact` (`0x0021b290`) runs on the teammate: impact sound,
+   ([Moving strikes](combat/index.md#moving-strikes)), so `Strike_Contact` (`0x0021b290`) runs on the teammate: impact sound,
    hit effect, the damage stored as pending through `Human_DealDamage` (`0x0021d680`) with the event's hostile byte
    clear; with the player having no target, a free Warrior who may gesture and has more than 10 % health says speech
    command `0x58` (a complaint). In `Human_ApplyPendingDamage` (`0x00265f70`) the friend's pending damage is set to
@@ -258,8 +258,8 @@ addresses:
      below), `Player_ExitStanceAndLock` (`0x002801e8`: `0x5` cleared, the combo count zeroed and, from the lock-on
      movement state, back to the free one), and a state code of `0xe` becomes 7.
   3. **An enemy within 2 m enters it** (confirmed (code); the distances are the values in play,
-     [Constants](combat.md#constants)): when the movement state is not the lock-on one (`Human_FightStanceMove`), the
-     state word lacks `0x200000`, and the nearest enemy is within **2 m** (`0x005104bc`, 4) or the player is locked:
+     [Constants](combat/index.md#constants)): when the movement state is not the lock-on one (`Human_FightStanceMove`),
+     the state word lacks `0x200000`, and the nearest enemy is within **2 m** (`0x005104bc`, 4) or the player is locked:
      nothing with an object of set 4 in hand; else `0x1008000` cleared, `Player_EnterStance` (`0x00280068`:
      `0x00230140`, then `0x1` if clear; `0x00230140` clears state `0x200000`, setting `0x20000000` when he is then free
      and still, and zeroes record `+0x114`), the nearest taken as the target (when there is none yet and `+0x08` has
@@ -281,8 +281,8 @@ addresses:
 So in play a player is in a fight stance **while locked on** (L1, or an enemy coming within 2 m with the street's
 auto-lock), for the rest of any attack he starts, and while he stands facing an alerted enemy within 20 m; a run or
 sprint ends it. A locked-on combat walk keeps `0x1` (it moves at the base speed, gait 3), so **square there skips the
-walk attack and goes to the snap or `S1`**, which is what level99's lesson 7 needs ([Attacks](combat.md#attacks)). At
-runtime L1 held gave state `0xd` (confirmed (runtime), below).
+walk attack and goes to the snap or `S1`**, which is what level99's lesson 7 needs ([Attacks](combat/index.md#attacks)).
+At runtime L1 held gave state `0xd` (confirmed (runtime), below).
 
 **L2 ends the stance and the target at once** (`Player_UpdateSprint`, `0x0027ce90`), confirmed (code): with L2 held
 (`PlayerRec_IsPadHeld(rec, 1)`), stamina (record `+0x14a`) above 0 and record `+0x08` free of `0x10`, it sets state
@@ -495,7 +495,7 @@ marked:
 
 An AI human attacks through the same dispatcher and attack functions as a player: the [attack
 action](ai.md#attack-action) writes a command into its per-player record and `Player_UpdateActions` (`0x0027c120`)
-reads it ([The dispatcher](combat.md#dispatch)). What differs for a human that is not pad-controlled (per-player `+0x1b`
+reads it ([The dispatcher](combat/index.md#dispatch)). What differs for a human that is not pad-controlled (per-player `+0x1b`
 = 0, human `+0x1b0` = −1), confirmed (code) at the addresses cited:
 
 - **The target is the brain's.** `Human_GetTargetHandle` and `Human_GetTargetResolved` (`0x00226e20`, `0x00226ea8`)
@@ -514,12 +514,12 @@ reads it ([The dispatcher](combat.md#dispatch)). What differs for a human that i
   the state has
   `0x100000000` or any of `0x3981f3ff3` (the fight stance among them), any held flag is set, or the human carries an
   object of kind 4 or 6. So square from an AI out of the fight stance at gait 4 (cross at gait 4 or 5) plays the run
-  attack 24 (`Player_StartCharge`, [Moving attacks](combat.md#run-attacks)); otherwise the AI takes the fight stance
+  attack 24 (`Player_StartCharge`, [Moving attacks](combat/index.md#run-attacks)); otherwise the AI takes the fight stance
   (`Player_EnterStance`, `0x00280068`) and plays `S1` or `X1`, or the grounded, tackled-target or grab-victim strike
   as a player does.
 - **Not for an AI**: the locked strafe attacks (`0x1f`-`0x21`, which need a pad and `Human_IsLocked`), the counter grab
   and counter tackle from square or cross (`Human_CanCounterGrab`, `Human_CanCounterTackle`: an AI has command 3
-  instead, [AI](ai.md#block)), starting a block ([The dispatcher](combat.md#dispatch)), and the climb and jump on
+  instead, [AI](ai.md#block)), starting a block ([The dispatcher](combat/index.md#dispatch)), and the climb and jump on
   triangle: an AI's triangle goes straight to `Player_TriangleAction` (`0x002811f0`).
 
 **May this attack start now** (`Human_CanStartAttack(h, target, kind)`, `0x00224778`), asked by the attack action's
@@ -666,7 +666,7 @@ Scenario `store_loot` (`repo:research/traces/scenarios/store_loot.toml`) replays
 
 **A wooden fence** (slot 10, `level99` checkpoint 3.5): the charge, the dive or the walk attack breaks it with their
 strike shapes, the run attack falls short; the break, its message 2 and the script's placement are under
-[How a moving attack strikes](combat.md#moving-strikes) and [Barriers](objects.md#barriers).
+[How a moving attack strikes](combat/index.md#moving-strikes) and [Barriers](objects.md#barriers).
 
 ## The stereo theft {#stereo-theft}
 
@@ -694,7 +694,7 @@ The pick, the stance and the lock live in `repo:src/combat/lock_on.h` (the lock-
 target is dropped) and `repo:src/human/fighter.cpp` (the target in front, the grab search, the stance and the combat
 walk); the steer is `repo:src/human/turn_and_slide.h`; an AI's attack checks are `repo:src/ai/attack_views.cpp`; the
 object attack's clip is in `repo:src/combat/attacks.h` and the stick games in `repo:src/combat/stick_games.h`.
-[Combat: Coney's implementation](combat.md#coneys-implementation) says what each file does. What differs from the
+[Combat: Coney's implementation](combat/index.md#coneys-implementation) says what each file does. What differs from the
 original is written beside each subject above: hits on teammates and the chief's hit-back ([Teammates](#teammates),
 user item 10), the spin of the run attacks and the lock on neutral civilians ([The fight stance](#fight-stance), user
 items 34 and 14).

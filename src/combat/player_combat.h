@@ -19,7 +19,7 @@
 // commands that start attacks, grabs, tackles and rage, with the meters moved on. It decides; it does not play clips
 // or move anyone: the caller starts the clip it names, applies the hits to their targets and tells it when a grab or
 // a tackle ends.
-// Research: docs/research/combat.md#dispatch
+// Research: docs/research/combat/index.md#dispatch
 
 namespace coney::combat {
 
@@ -101,13 +101,13 @@ class PlayerCombat {
 
     /// One update, in the original's order: the block, the chain, the meters, the state routes, the commands.
     ///
-    /// When input is read again (docs/research/combat.md#input-return, docs/research/tasks.md#readers): with `+0x08`
-    /// (CombatInput::phase) in the recovery or the run attack the dispatcher reads nothing past the block; a press for
-    /// the attack playing is buffered by the chain (AttackChain); square and cross refuse on kAttackRefusingPhases,
-    /// circle on kGrabRefusingPhases; the charge and dive keep their own test. **Coney choice**: the grab's moves and
-    /// the mount's strike take square's mask, kAttackRefusingPhases (their routes, `0x0027ec20` and
-    /// `Player_UpdateGrabbing`, are not traced for it), so one move in a hold plays out before the next and nothing is
-    /// read before the hold stands (the grab's clips hold `0x10`).
+    /// When input is read again (docs/research/combat/index.md#input-return, docs/research/tasks.md#readers): with
+    /// `+0x08` (CombatInput::phase) in the recovery or the run attack the dispatcher reads nothing past the block; a
+    /// press for the attack playing is buffered by the chain (AttackChain); square and cross refuse on
+    /// kAttackRefusingPhases, circle on kGrabRefusingPhases; the charge and dive keep their own test. **Coney choice**:
+    /// the grab's moves and the mount's strike take square's mask, kAttackRefusingPhases (their routes, `0x0027ec20`
+    /// and `Player_UpdateGrabbing`, are not traced for it), so one move in a hold plays out before the next and nothing
+    /// is read before the hold stands (the grab's clips hold `0x10`).
     /// @orig 0x0027c120 Player_UpdateActions (unknown)
     CombatOutput update(const CombatInput& input, const CombatTuning& tuning);
 
@@ -126,7 +126,7 @@ class PlayerCombat {
     /// A hit took the player out of what it was doing: the attack and its chain are lost and the block ends.
     void interrupt();
     /// The attack's clip has ended: its chain ends with it, as a press is taken again on the first update after the
-    /// clip (docs/research/combat.md#input-return).
+    /// clip (docs/research/combat/index.md#input-return).
     void endAttack() { m_chain.cancel(); }
     /// The player holds someone without having grabbed them (the reversal of a grab on it): grabbing.
     void startHolding();
@@ -161,7 +161,7 @@ class PlayerCombat {
     // The grabbing route.
     void updateGrabbing(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
     // Cross + square outside a hold: the special 653 (645 in rage), which needs and spends a quarter of the power meter
-    // (docs/research/combat.md#attacks). Refused on kSpecialRefusingPhases and with an object in hand
+    // (docs/research/combat/index.md#attacks). Refused on kSpecialRefusingPhases and with an object in hand
     // (CombatInput::animSet not 0: the original throws a melee weapon instead, which is not built; either way no
     // special, docs/research/combat-moves.md#bat-cross). The fighter adds 2 from the target's rear
     // (Fighter::playAttack()). **Coney choice**: circle + triangle (the tag) is not built.

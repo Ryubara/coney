@@ -12,7 +12,7 @@
 
 // A human's strike shapes: the ten bone shapes of its body (segments and spheres on the spine, head, forearms, hands,
 // shins and feet), which its clips' events switch on and off, posed by the clip each update; the strike test meets
-// other bodies with them. Research: docs/research/combat.md#moving-strikes
+// other bodies with them. Research: docs/research/combat/index.md#moving-strikes
 
 namespace coney::human {
 

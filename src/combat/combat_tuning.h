@@ -2,9 +2,9 @@
 #pragma once
 
 // The combat values the debug menus may edit while the game runs, each defaulting to the value read from the original
-// in the street (docs/research/combat.md#constants). The game reads them through combatTuning(); the tunables registry
-// changes them only between two steps (src/debug/combat_tunables.h), so a run stays deterministic.
-// Research: docs/research/combat.md
+// in the street (docs/research/combat/index.md#constants). The game reads them through combatTuning(); the tunables
+// registry changes them only between two steps (src/debug/combat_tunables.h), so a run stays deterministic. Research:
+// docs/research/combat/index.md
 
 namespace coney::combat {
 
@@ -17,7 +17,7 @@ struct CombatTuning {
 
     /// `CfgSnap` (`0x005102b4`, 1): on, a snap (the stick beyond kSnapStick off the facing) needs a snap target, fresh
     /// or from the chain's buffer (within kChainSnapRange there); off, the stick alone snaps
-    /// (docs/research/combat.md#attacks, docs/research/combat-moves.md#input).
+    /// (docs/research/combat/index.md#attacks, docs/research/combat-moves.md#input).
     bool snapNeedsTarget = true;
 
     /// The update, from the press, at which `S1`'s hit lands at runtime, and every attack's whose hit was not measured

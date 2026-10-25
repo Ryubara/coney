@@ -8,7 +8,7 @@
 // The left stick as combat reads it: a length and an angle from the player's facing, and which side of the player it
 // points to. Combat takes the stick already turned into the player's frame (x to the player's right, y ahead), as the
 // original compares the camera-turned stick with the facing; the caller does the turning.
-// Research: docs/research/combat.md#attacks, docs/research/combat-throws.md#throws
+// Research: docs/research/combat/index.md#attacks, docs/research/combat-throws.md#throws
 
 namespace coney::combat {
 

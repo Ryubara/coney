@@ -47,7 +47,7 @@ Research:
 - [The first mission's script](../research/scripting.md#level99)
 - [The combat tutorial's lessons](../research/scripting.md#level99-lessons)
 - [The first mission's cast](../research/ai.md#level99)
-- [Combat](../research/combat.md)
+- [Combat](../research/combat/index.md)
 
 ## Run it in Coney {#run}
 

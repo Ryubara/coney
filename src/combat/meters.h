@@ -32,7 +32,7 @@ struct RageClass {
 };
 
 /// Rembrandt's and Ash's class 6 on normal: 78, 144 %, 200 % and 240 % (confirmed at runtime,
-/// docs/research/combat.md#constants).
+/// docs/research/combat/index.md#constants).
 inline constexpr RageClass kPlayerRageClass{};
 
 /// The span the decay and drain percentages are given over (`0x002562d0`): 20 s.

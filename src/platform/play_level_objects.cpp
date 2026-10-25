@@ -208,7 +208,7 @@ void PlayLevelMode::bindObjects(world_objects::LevelObjects* objects, const scri
         }
     });
     // A human's switched-on strike shapes strike the panes and doors they meet
-    // (docs/research/combat.md#moving-strikes).
+    // (docs/research/combat/index.md#moving-strikes).
     m_player->humans().setStrikeContact(
         [this](human::Human& human, std::span<const human::PosedShape> shapes) { strikeObjects(human, shapes); });
     m_print(std::format("objects: {} glass panes, {} doors and barriers\n", m_objects->glass.panes().size(),

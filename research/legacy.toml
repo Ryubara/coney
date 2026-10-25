@@ -192,8 +192,8 @@ evidence = 31
 decompile = 1
 history = 3
 
-["docs/research/combat.md"]
-evidence = 65
+["docs/research/combat/index.md"]
+evidence = 48
 
 ["docs/research/compiler.md"]
 front-matter = 1

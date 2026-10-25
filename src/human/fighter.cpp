@@ -682,7 +682,7 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
         startHold(*m_candidate, input, heading, out.tackleStarted, connect, animator);
         consumed = true;
     } else if (out.grabMissed) {
-        // Each miss ends in 389, then the idle (docs/research/combat.md#input-return).
+        // Each miss ends in 389, then the idle (docs/research/combat/index.md#input-return).
         if (input.command == combat::command::kCircleHeld) {
             const std::array<std::uint32_t, 3> miss{id::kTacklePlayerIntro, clips::kTackleMiss,
                                                     clips::kNormalFromFight};
@@ -769,7 +769,7 @@ void Fighter::playBlock(const FighterInput& input, HumanAnimator& animator) {
 void Fighter::warnTarget(int animId, const FighterInput& input, bool chainStep) const {
     // The charge warns the target it already has or, for a player with none, the nearest human its reach search
     // finds (Player_StartCharge's Attack_FindNearestInReach with the charge's reach and far range); it takes none
-    // (docs/research/combat.md#charge-aim).
+    // (docs/research/combat/index.md#charge-aim).
     if (animId == id::kRunningAttackCharge) {
         Combatant* target = m_target != nullptr ? m_target : m_player ? nearestInReach(animId, input) : nullptr;
         if (target != nullptr) {
@@ -779,7 +779,7 @@ void Fighter::warnTarget(int animId, const FighterInput& input, bool chainStep) 
     }
     // **Coney choice**: the dive warns the human its own search dives at (nearestInReach(), the same search steerDive()
     // makes next), none when it finds none; the research does not list the dive's warning
-    // (docs/research/combat.md#attack-warnings).
+    // (docs/research/combat/index.md#attack-warnings).
     if (animId == id::kRunningAttackDive) {
         if (Combatant* target = nearestInReach(id::kRunningAttackDive, input); target != nullptr) {
             target->announceAttack(input.position);
@@ -798,10 +798,10 @@ void Fighter::playAttack(int animId, const FighterInput& input, HumanAnimator& a
                          bool chainStep) {
     const float fade = chainStep ? kCombatFade : kAttackFade;
     // The start warns the attack's one target (event 0x10), whose brain then decides whether its range and field of
-    // view take it in; no one else hears of it (docs/research/combat.md#attack-warnings).
+    // view take it in; no one else hears of it (docs/research/combat/index.md#attack-warnings).
     warnTarget(animId, input, chainStep);
     // The special's id adds 2 when the attacker stands on its target's rear (`Player_SpecialAttack` `0x00263c90`,
-    // after its target search): 655, 647 in rage (docs/research/combat.md#attacks).
+    // after its target search): 655, 647 in rage (docs/research/combat/index.md#attacks).
     if (animId == id::kSpecial || animId == id::kSpecialRage) {
         const Combatant* target = attackTargetOf(animId, input, chainStep);
         if (target != nullptr &&
@@ -832,8 +832,8 @@ void Fighter::playAttack(int animId, const FighterInput& input, HumanAnimator& a
         return;
     }
     // With a target the fight idle follows; with none the attack ends in 389, then the idle, as at runtime with
-    // nobody near (docs/research/combat.md#input-return). **Coney's reading**: the target kept decides between the
-    // two (the original's test is not traced).
+    // nobody near (docs/research/combat/index.md#input-return). **Coney's reading**: the target kept decides between
+    // the two (the original's test is not traced).
     if (m_target != nullptr) {
         animator.playCombat(clip, kAnimFightIdle, AnimState::Attack, fade, held);
         return;
@@ -845,7 +845,8 @@ void Fighter::playAttack(int animId, const FighterInput& input, HumanAnimator& a
 void Fighter::steer(int animId, const FighterInput& input, const HumanAnimator& animator, float& heading,
                     bool chainStep) {
     m_steer.clear();
-    // A snap steers onto the human its own search found, which becomes the target (docs/research/combat.md#attacks).
+    // A snap steers onto the human its own search found, which becomes the target
+    // (docs/research/combat/index.md#attacks).
     if (m_snapTarget != nullptr && (animId == id::kSnapRight || animId == id::kSnapLeft || animId == id::kSnapBack)) {
         m_target = m_snapTarget;
         steerSnap(animId, input, animator, heading);
@@ -853,7 +854,7 @@ void Fighter::steer(int animId, const FighterInput& input, const HumanAnimator& 
     }
     // The charge neither steers nor takes a target: it runs along the facing, which the stick still turns (its record
     // bit 0x1000000 does not make the human busy), and only warns the human ahead, as every attack's start does here
-    // (docs/research/combat.md#charge-aim).
+    // (docs/research/combat/index.md#charge-aim).
     // @orig 0x00264a80 Player_StartCharge (unknown)
     if (animId == id::kRunningAttackCharge) {
         return;

@@ -51,7 +51,7 @@ inline constexpr std::uint8_t kGuitarMaterial = 154;
 /// its size's x (`PHYS.SPHERE`), as `Obj_CreatePhysicsBody` makes them. **Coney's stand-ins**: the size is the box's
 /// whole extents (the sphere's half x reads it so), and a cylinder or capsule body is tested as its box. No shape
 /// (`PHYS.NONE`) or no size: no body.
-/// Research: docs/research/objects.md#spawning, docs/research/combat.md#moving-strikes
+/// Research: docs/research/objects.md#spawning, docs/research/combat/index.md#moving-strikes
 [[nodiscard]] bool bodyTouches(const ObjectType& type, anim::Vec3 position, anim::Quat rotation, anim::Vec3 centre,
                                float radius);
 

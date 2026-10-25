@@ -120,10 +120,10 @@ inline constexpr std::uint32_t kAnimWorkoutLoop = 693;
 /// and `Attack_StartSolo`, docs/research/combat-moves.md#input). **Coney's reading**: a chain step, which the original
 /// swaps into the running task (its blend not traced), keeps kCombatFade.
 inline constexpr float kAttackFade = 0.2F;
-/// The fight idle (358, `ANIM_FIGHT_IDLE`) the attacks return to (docs/research/combat.md#attacks).
+/// The fight idle (358, `ANIM_FIGHT_IDLE`) the attacks return to (docs/research/combat/index.md#attacks).
 inline constexpr std::uint32_t kAnimFightIdle = 358;
 /// 389 `NORMAL_FROM_FIGHT`, which a move ends in with the stick at rest: it holds neither a press nor the stick, which
-/// replaces it at once (docs/research/combat.md#input-return).
+/// replaces it at once (docs/research/combat/index.md#input-return).
 inline constexpr std::uint32_t kAnimNormalFromFight = 389;
 /// The gait blend's value speed, units a second, for the locomotion.
 inline constexpr float kGaitValueSpeed = 10.0F;

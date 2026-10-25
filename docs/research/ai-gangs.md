@@ -570,8 +570,8 @@ command `0x10` with a 100 ms start delay) and back to 1 when the hand is empty. 
 ### The throw {#boss-throw}
 
 Command `0x10` (cross) reaches the dispatcher like a pad press. With a held object of set 4, 5 or 6 it goes to
-`Player_CrossWithWeapon` (`0x002880d8`, [Combat](combat.md#dispatch)). Confirmed (code). For an AI (brain type not 0)
-the clip is thrown at **his current target**: the human's target handle (`Human_GetTargetHandle` `0x00226e20`,
+`Player_CrossWithWeapon` (`0x002880d8`, [Combat](combat/index.md#dispatch)). Confirmed (code). For an AI (brain type
+not 0) the clip is thrown at **his current target**: the human's target handle (`Human_GetTargetHandle` `0x00226e20`,
 `+0xc8`, refreshed from the brain's target). He turns to it over the time to the clip's first event, then
 `Human_StartMeleeThrow` (`0x00261e78`). A player instead searches (`Player_PickThrowTarget`, 10 m for set 4, 20 m
 for 5 and 6). The clip by held set and gait:
@@ -1058,7 +1058,7 @@ command gives nothing) and always rebuilds the tactic.
   is the other one gets `FollowAndDefend` (`0x35`, `0x002bca20`) on that player instead. "Not down" is
   `Human_IsDownOrDead` (`0x00227e60`) returning 0: the human has its record (`+0xd4`) and none of the state bits
   `0x180050000` (`0x100000000` dead, `0x80000000` dying, `0x40000` knocked out, `0x10000` tackled;
-  [Combat](combat.md#state-flags)). It does not read the brain's `+0x09` (`BrDead`), the health, or knocked down
+  [Combat](combat/index.md#state-flags)). It does not read the brain's `+0x09` (`BrDead`), the health, or knocked down
   (`0x80000`): a member made dead to the AI still gets the follow goal. Confirmed (code). The binding `HuIsAlive` is the
   same test. Start also fills the gang's anim group 604 with ten idle clips (`0x00169468`; End `0x00311230` undoes it).
 - **Process** (`0x00311638`): done (1) when the gang has no leader; every 8 s the chief's slot set is re-picked

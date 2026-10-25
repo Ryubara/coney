@@ -686,7 +686,7 @@ described:
 
 | Family | Behaviour |
 | --- | --- |
-| character | [Characters](characters.md), [Combat](combat.md) |
+| character | [Characters](characters.md), [Combat](combat/index.md) |
 | world | [World objects](objects.md), [World flags](flags.md) |
 | level | [Level loading](level-loading.md) |
 | ai: goals and actions (`Goal*`, `Act*`) | [AI](ai-scripting.md#scripted) |
@@ -819,7 +819,7 @@ and the only failure the engine raises by itself is a player falling out of the 
 (`0x0051024c`) shared by every human. When a hit would take such a human's health below that fraction of its
 maximum, its health is set to the fraction × maximum and flag `0x10` (god mode) is set, so it takes no more damage
 until a script clears it (`Human_ApplyPendingDamage` `0x00265f70`, and `0x00256f28`, which sets `0x10` once health is
-at or below the fraction). Confirmed (code); [Combat](combat.md#damage-table) has the rest of the damage order.
+at or below the fraction). Confirmed (code); [Combat](combat/index.md#damage-table) has the rest of the damage order.
 
 **How the mission ends** (the Lua side inferred from the disassembly, the C++ side confirmed (code)):
 
@@ -881,10 +881,10 @@ disassembly of the script (ids and counts only); the moves themselves are confir
 | 1 | camera, intro | flags and scenes | | [Scenes](scenes.md) |
 | 2 | basic attacks | 12; 11; 51 or 53; 55; 219 or 221; 223 | square, cross, grab strikes, mount strikes | [Combat](combat-grabs.md#grabbing), [mount](combat-grabs.md#mount) |
 | 3 | targeting | the `PadSetHandlerEx` handler | L1 | [Input](../references/bindings/input.md#padsethandlerex) |
-| 4 | light, then heavy combos | 12, 16, then 19 or 20; 12, 15; 11, 13; 12, 16, then 17 or 18 | chains | [Attacks](combat.md#attacks) |
-| 5 | strong attacks | 653 or 655; then **82 or 84** | cross + square; circle + cross | [Specials](combat.md#run-attacks), [Strong grapple](combat-grabs.md#strong-grapple) |
+| 4 | light, then heavy combos | 12, 16, then 19 or 20; 12, 15; 11, 13; 12, 16, then 17 or 18 | chains | [Attacks](combat/index.md#attacks) |
+| 5 | strong attacks | 653 or 655; then **82 or 84** | cross + square; circle + cross | [Specials](combat/index.md#run-attacks), [Strong grapple](combat-grabs.md#strong-grapple) |
 | 6 | power moves | 57; then 59 | in a front grab, cross + square, then square or cross in its window | [Power strike](combat-grabs.md#grabbing) |
-| 7 | snaps (after the scene `l99_c7`; Rudy drinks at the fence, the second wave surrounds the player) | three hits of 25, 27 or 29 | square, standing, with the stick past 0.95 more than 45° off the facing, at a bum within 2 m there | [Attacks](combat.md#attacks), [the second wave](ai.md#level99-snaps) |
+| 7 | snaps (after the scene `l99_c7`; Rudy drinks at the fence, the second wave surrounds the player) | three hits of 25, 27 or 29 | square, standing, with the stick past 0.95 more than 45° off the facing, at a bum within 2 m there | [Attacks](combat/index.md#attacks), [the second wave](ai.md#level99-snaps) |
 | 8 | throws | two hits of 147, 149, 151 or 153; then zone 1 is enabled | circle with the stick in a grab | [Throws](combat-throws.md#throws) |
 | 9 | weapons (after the scene `l99_c8`, three bats on the ground) | the pick-up (message 0 on a bat, with a prompt); then 34; 36; then two more of 34 or 36 (four counted hits) | triangle at a bat; square, cross | [A bat in hand](combat-throws.md#bat), [the prompt](#message-handlers) |
 | 10 | rage (2 s after lesson 9) | the meter set to half and locked, then filled by hits; the full callback; L1 + R1 (every other command off); 3.5 s into rage, 645 or 647; 3.5 s later, 65 or 233 | rage, the rage special, the extended power move in rage (grab or mount) | [Rage](combat-rage.md#rage); 65 and 233 inferred |
@@ -948,7 +948,7 @@ bums. Points an implementer needs:
   `_BACK_01` (25, 27, 29). Any of the three counts, in any order and on any bum; any other id (an `S1`, 12) is ignored.
   The first two update the text and give Rudy a line; the third calls `P1.SnapsDone`. Confirmed (runtime):
   snaps 27, 29 and 25 that landed on the bums each reached the callback once, with that id. Coney passes it with the
-  disc ([the second wave](ai.md#coney), [the snap](combat.md#coneys-implementation)).
+  disc ([the second wave](ai.md#coney), [the snap](combat/index.md#coneys-implementation)).
 - **2, 6, 8**: a plain grab scores nothing; strikes, throws and power moves are scored with their own ids when they
   start, since a grab move applies its damage on its first update.
 
@@ -2358,25 +2358,25 @@ spawners and link to their subject pages; the rest are this mission's.
     small reactions (anims 272, 275, 280), the first time on the ground at update 368, health 900 to 216 by update 785.
     Done: no Fury hits a Warrior before `P3.FuryTimeout`, `P3.MoveFromFence` or `P3.EnterDiamond` runs, and the standing
     player is first hit after the Furies turn. The cause: Coney announced each attack start to every human the attacker
-    could fight, where the original warns the attack's one target ([Attack warnings](combat.md#attack-warnings)). Warned
-    of a hurt `SceneRogue2`'s swing at a Fury about 20 m off, the player's shared handler made the Warriors enemies of
-    the Rogues and called his crew over; AI Warrior Snow walked onto the fence box (`P3.MoveFromFence`), which turned
-    the Furies early. Since the fix (`Fighter::warnTarget`, the target alone), measured with a dev build, `--play-level
-    level34 --checkpoint 5 --headless`, no input, the scene's end at step 722: `P3.FuryTimeout` at +149, the first hit
-    on a Warrior at +275 (before the fix +239), on the player at +281 (anim 275, 27 health), the first knock-down of the
-    player at +474 (anim 289); test `disc_level34_furies_test.cpp`. On main of 2026-10-21 (with the waiting attackers'
-    taunts, #599) the same run has `P3.FuryTimeout` at +149, the first hit on a Warrior at +157 and on the player at
-    +295; with `--ai-seed` 1 to 5 the player's first hit comes at +185 to +284, and in the disc test's own run at +391,
-    so when it comes depends on the AI's draws, and the test holds it to after the turn and at most +500 (the widest
-    seen, +391, with a margin, so a Fury that turns but does not come for him still fails). Still different: Coney's
-    first hits are small reactions (18-54 health) where the original's are knock-downs of 90. **Why the original's hits
-    are 90-health knock-downs** (issue #492): every park and fence Fury holds a `dyn_bat` from `l34_c4`'s start, swings
-    the bat's clips (501 at a run, 36, and 37 or the unarmed 193 / 194, which deal 25, at a man down), and each bat-clip
-    hit is the bat's own contact, `dyn_bat`'s 90 × the holder's class float, with the heavy high reaction 292-295 of the
-    clips' code `0x2a`; Coney's Furies have no bats ([Combat: a bat's hit](combat-reactions.md#bat-knockdown)). Open:
-    whether the original's AI Warriors run out to meet the Furies (Coney's do, under `FollowPlayer`). Note: the
-    original's player had 1,170 health here and Coney's 900; the original state came from a save with progress, so that
-    may be upgrades, not a difference (not checked).
+    could fight, where the original warns the attack's one target ([Attack warnings](combat/index.md#attack-warnings)).
+    Warned of a hurt `SceneRogue2`'s swing at a Fury about 20 m off, the player's shared handler made the Warriors
+    enemies of the Rogues and called his crew over; AI Warrior Snow walked onto the fence box (`P3.MoveFromFence`),
+    which turned the Furies early. Since the fix (`Fighter::warnTarget`, the target alone), measured with a dev build,
+    `--play-level level34 --checkpoint 5 --headless`, no input, the scene's end at step 722: `P3.FuryTimeout` at +149,
+    the first hit on a Warrior at +275 (before the fix +239), on the player at +281 (anim 275, 27 health), the first
+    knock-down of the player at +474 (anim 289); test `disc_level34_furies_test.cpp`. On main of 2026-10-21 (with the
+    waiting attackers' taunts, #599) the same run has `P3.FuryTimeout` at +149, the first hit on a Warrior at +157 and
+    on the player at +295; with `--ai-seed` 1 to 5 the player's first hit comes at +185 to +284, and in the disc test's
+    own run at +391, so when it comes depends on the AI's draws, and the test holds it to after the turn and at most
+    +500 (the widest seen, +391, with a margin, so a Fury that turns but does not come for him still fails). Still
+    different: Coney's first hits are small reactions (18-54 health) where the original's are knock-downs of 90. **Why
+    the original's hits are 90-health knock-downs** (issue #492): every park and fence Fury holds a `dyn_bat` from
+    `l34_c4`'s start, swings the bat's clips (501 at a run, 36, and 37 or the unarmed 193 / 194, which deal 25, at a man
+    down), and each bat-clip hit is the bat's own contact, `dyn_bat`'s 90 × the holder's class float, with the heavy
+    high reaction 292-295 of the clips' code `0x2a`; Coney's Furies have no bats ([Combat: a bat's
+    hit](combat-reactions.md#bat-knockdown)). Open: whether the original's AI Warriors run out to meet the Furies
+    (Coney's do, under `FollowPlayer`). Note: the original's player had 1,170 health here and Coney's 900; the original
+    state came from a save with progress, so that may be upgrades, not a difference (not checked).
 15. **The route to `vSubwayExit`** (settled). `P3.GetToSubway` takes message 3 from any Warrior on `vSubwayExit`
     (corner (−256.6, −203.2, −12.7), size 2 × 3.8 × 3.5, turned about its centre (−255.6, −201.3) by
     `RotateVolumeBox(0.696, −0.718, 0.718, 0.696)`). Confirmed (runtime), the same state, full stick with **L2 held

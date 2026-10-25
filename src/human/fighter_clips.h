@@ -10,7 +10,7 @@
 
 // The clips the fighter plays, by anim id, shared by its source files (fighter.cpp, fighter_grab.cpp,
 // fighter_victim.cpp), with the small helpers that build their lists.
-// Research: docs/research/combat.md, docs/references/anim-ids.md
+// Research: docs/research/combat/index.md, docs/references/anim-ids.md
 
 namespace coney::human::clips {
 
@@ -96,7 +96,8 @@ inline constexpr std::uint32_t kStepHeld = 0x80000;
 /// What the player's moves hold on the record `+0x08` while their clips play (docs/research/tasks.md#held-flags).
 /// An attack holds its phases and starts in its wind-up, as `Attack_Start` builds it; the grab's and tackle's clips the
 /// grab bit `0x10`, the duck `0x1000` and its counter `0x2000`, and the moving attacks (the run attack, the charge, the
-/// dive) `0x1000000`, as seen at runtime (docs/research/combat.md#input-return, docs/research/combat.md#block).
+/// dive) `0x1000000`, as seen at runtime (docs/research/combat/index.md#input-return,
+/// docs/research/combat/index.md#block).
 /// **Coney choices** where the research names no bits: every attack the dispatcher starts (the walk attack, the snaps,
 /// the grounded and mounted strikes, the grab strikes, power strikes and throws) is built as `Attack_Start`'s, and so
 /// are rage's start and a theft's clips; the charge and dive hold the run attack's bit; the grab's connecting clips,
@@ -106,7 +107,7 @@ inline constexpr HeldFlags kGrabHolds{.held = combat::kPhaseGrabStart, .set = co
 inline constexpr HeldFlags kDuckHolds{.held = combat::kPhaseDuck, .set = combat::kPhaseDuck};
 inline constexpr HeldFlags kCounterHolds{.held = combat::kPhaseCounter, .set = combat::kPhaseCounter};
 inline constexpr HeldFlags kMovingAttackHolds{.held = combat::kPhaseRunAttack, .set = combat::kPhaseRunAttack};
-/// The dive holds 0x400000 instead, which makes the human busy (docs/research/combat.md#charge-aim).
+/// The dive holds 0x400000 instead, which makes the human busy (docs/research/combat/index.md#charge-aim).
 inline constexpr HeldFlags kDiveHolds{.held = combat::kPhaseDive, .set = combat::kPhaseDive};
 
 /// The moves of a hold switch both humans on the same update, with no fade (docs/research/combat-grabs.md#grab-posing).

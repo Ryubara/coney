@@ -12,7 +12,7 @@
 // A character's Anim Range List decoded: per anim id, the direction towards the other human, the reach and far
 // ranges, the damage and the hit kind. The character data keeps the chunk as stored
 // (characters::CharacterData::rangeList()); combat decodes it here.
-// Research: docs/research/formats/animation.md#anim-range-list, docs/research/combat.md#damage-table
+// Research: docs/research/formats/animation.md#anim-range-list, docs/research/combat/index.md#damage-table
 
 namespace coney::combat {
 
@@ -67,10 +67,10 @@ class AnimRangeList {
 inline constexpr std::size_t kClassDamageEntries = 45;
 
 /// Writes a character class's damage `values` (up to kClassDamageEntries, by class index) over `list`, as the
-/// original does when a human is made: each index names the anim ids it sets (docs/research/combat.md#damage-table);
-/// a value of 0 keeps the list's own. With `playerPercent` (the Warrior class byte `+0x06`, 115 for class 6; 0 for a
-/// human that is not a player) each value is first scaled to `int(value × percent × 0.01 + 0.5)` in single-precision
-/// floats. Returns how many records it set.
+/// original does when a human is made: each index names the anim ids it sets
+/// (docs/research/combat/index.md#damage-table); a value of 0 keeps the list's own. With `playerPercent` (the Warrior
+/// class byte `+0x06`, 115 for class 6; 0 for a human that is not a player) each value is first scaled to `int(value ×
+/// percent × 0.01 + 0.5)` in single-precision floats. Returns how many records it set.
 /// @orig 0x002548f0 AnimRange_ApplyClassDamage (unknown)
 int applyClassDamage(AnimRangeList& list, std::span<const std::int16_t> values, int playerPercent);
 

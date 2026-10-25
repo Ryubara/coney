@@ -36,9 +36,9 @@ namespace coney::platform {
 
 /// The length of an SDL stick (0 to 1) from which it counts as pushed fully: a Coney choice. A modern stick pushed to
 /// its rim often reports 0.92-0.97 rather than 1, and the moves that need the stick beyond 0.95 (the snap attacks of
-/// `level99`'s lesson 7, the run and its attacks, docs/research/combat.md#attacks) then never happened with a real
-/// gamepad; a DualShock 2's output saturates before its rim (and PCSX2's default sensitivity of 1.33 scales a modern
-/// stick past it), so the original's players reached them (docs/research/frontend.md#pad-record).
+/// `level99`'s lesson 7, the run and its attacks, docs/research/combat/index.md#attacks) then never happened with a
+/// real gamepad; a DualShock 2's output saturates before its rim (and PCSX2's default sensitivity of 1.33 scales a
+/// modern stick past it), so the original's players reached them (docs/research/frontend.md#pad-record).
 inline constexpr float kStickRim = 0.9F;
 
 /// The pressure byte (0-255) for an SDL trigger axis (0 to 32767; negative values count as 0).

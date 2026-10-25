@@ -282,7 +282,7 @@ TEST_CASE("on the disc, the holds 82-85 pose the pelvis as the game does at runt
         SKIP("CONEY_DISC is not set: no disc to check");
     }
     const Yard yard = loadYard(path);
-    // The model-space pelvis read in PCSX2 at the holds' first frame (docs/research/combat.md, the grab pose at
+    // The model-space pelvis read in PCSX2 at the holds' first frame (docs/research/combat/index.md, the grab pose at
     // runtime, #grab-pose-runtime): the grabber's 82 turned 71° about the vertical, the victim's 83 leaning 39°, and
     // the rear holds 84 and 85; none rolled onto its side.
     struct Expected {

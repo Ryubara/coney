@@ -113,7 +113,7 @@ Confirmed (code); offsets with "runtime" were checked on Rembrandt.
 | `+0xd0` | int | the type passed to `HuCreate` (`0x20`) | confirmed (code), runtime |
 | `+0x54` | u32 | object flags: `0x4000000` airborne, `0x2000000` on the ground ([Ground](#ground)) | confirmed (code) |
 | `+0xd4` | pointer | the human's 0x180-byte record (`0x0065a540 + i × 0x180`, [below](#the-record)) | confirmed (code), runtime |
-| `+0xe0` | u64 | human flags. `Human_Init` starts them by brain type ([Combat: human flags](combat.md#human-flags): a Warrior gets `0x2` and the revivable `0x4`). `Human_MakePlayer` sets `0x2` (may start a climb from a run), `0x4` and `0x2000000` and clears `0x8`; `0x4000000` keeps stamina full; `0x10000000` forbids a jump; `0x20000000` forces the anim state and forbids a climb. Rembrandt: `0x24004440407` | confirmed (code), runtime |
+| `+0xe0` | u64 | human flags. `Human_Init` starts them by brain type ([Combat: human flags](combat/index.md#human-flags): a Warrior gets `0x2` and the revivable `0x4`). `Human_MakePlayer` sets `0x2` (may start a climb from a run), `0x4` and `0x2000000` and clears `0x8`; `0x4000000` keeps stamina full; `0x10000000` forbids a jump; `0x20000000` forces the anim state and forbids a climb. Rembrandt: `0x24004440407` | confirmed (code), runtime |
 | `+0xd8` | pointer | the `CharacterInstance` (model, skeleton, animation) | confirmed (code) |
 | `+0x1a0` | pointer | the physics body (0 for none) | confirmed (code) |
 | `+0x1a8` | int | the gait for the current speed (0, 1-5; `0x0022aeb0`), used by the lean | confirmed (code) |
@@ -188,7 +188,7 @@ State flag bits used on this page:
 | Bit | Meaning |
 | --- | --- |
 | `0x1000000` | sprint asked for (L2 held, [Sprint](#sprint)) |
-| `0x1`-`0x8000`, `0x4000000` | fight stance, grabs, mugging, tackles, throwing, blocking, theft ([Combat](combat.md#state-flags)) |
+| `0x1`-`0x8000`, `0x4000000` | fight stance, grabs, mugging, tackles, throwing, blocking, theft ([Combat](combat/index.md#state-flags)) |
 | `0x200000000` | dead |
 | `0x400000000` | jumping (set at launch) |
 | `0x800000000` | falling (a drop) |
@@ -230,7 +230,7 @@ Each confirmed (code) at the reader named (the class is the one
 | --- | --- | --- |
 | s16 `+0x32` | `Human_ApplyPendingDamage` (`0x00265f70`) | after a hit lands on an **AI** human (brain kind not 0), its record `+0x108` = game time + `+0x32` ms; until then `Human_IsBusy` (`0x00228258`) says busy, which about 40 AI routines test (spotting, reporting a crime, joining a fight, grabbing). A player is never marked |
 | s8 `+0x38` | `Human_GetClassReactFlag` (`0x002233c8`) in `Human_PlayReaction` (`0x0026a6d0`) | the most ground strikes a downed human reacts to: while a reaction clip plays (`Human_IsInReactionClip` `0x00228488`: held `0x8000`, a clip with flag `0x80`, or 199) and his record `+0xbe` is at least this, a new reaction is skipped. `+0xbe` counts the ground-strike reactions 195 played (`Human_PlayReaction`, `Hit_PlayBegReaction` `0x00269b80`) and is cleared when he gets up (`Human_EndDownState` `0x0025e250`) |
-| bytes `+0x3a`-`+0x3f` | `Human_ApplyClassFlags` (`0x00222c98`), from `Human_Init`, `Human_MakePlayer` and `Human_ReleasePlayer` | switches copied into the human flags `+0xe0` ([Combat: human flags](combat.md#human-flags)): `+0x3a` = 1 sets `0x80` (reaction strength at most 1), else clears it; `+0x3b` `0x1000000000` (hard to stun, below); `+0x3c` `0x2000000000` (never escapes when the grabber's power runs out); `+0x3d` `0x800000000` (reader not traced; `HuSetBlockFromReact` sets the same bit); `+0x3e` = 1 sets `0x200000` and clears `0x400000`, −1 sets `0x400000` and clears `0x200000`, 0 clears both; `+0x3f` = 1 sets `0x400` and clears `0x200`, −1 sets `0x200` and clears `0x400`, 0 clears both |
+| bytes `+0x3a`-`+0x3f` | `Human_ApplyClassFlags` (`0x00222c98`), from `Human_Init`, `Human_MakePlayer` and `Human_ReleasePlayer` | switches copied into the human flags `+0xe0` ([Combat: human flags](combat/index.md#human-flags)): `+0x3a` = 1 sets `0x80` (reaction strength at most 1), else clears it; `+0x3b` `0x1000000000` (hard to stun, below); `+0x3c` `0x2000000000` (never escapes when the grabber's power runs out); `+0x3d` `0x800000000` (reader not traced; `HuSetBlockFromReact` sets the same bit); `+0x3e` = 1 sets `0x200000` and clears `0x400000`, −1 sets `0x400000` and clears `0x200000`, 0 clears both; `+0x3f` = 1 sets `0x400` and clears `0x200`, −1 sets `0x200` and clears `0x400`, 0 clears both |
 | byte `+0x41` | `Human_ClassCanFlee` (`0x00224ea0`) in `Brain_Think` (`0x0028f6c0`) | an AI with a fight goal and **nothing in hand** draws a weapon: when free, it clears its actions and plays 477 `ANIM_ONE_HANDED_OBJECT_DRAW` (`GenToIdleAnimAction`). A cop (brain kind 1) does so in or out of a fight, unless his type's weapon (`CfgChar` `+0x18c`) is `none`. The clip's object event named `random` (`Anim_FireFrameEvents` `0x00101dd8`) calls `Brain_GiveHandObject` (`0x0028c780`), which puts the type's weapon in his hand, or `dyn_swhbld` (a switchblade) when it is `none`. The name "can flee" is an old guess: the byte is "draws a weapon" |
 | byte `+0x42` | `Human_ShouldFleeHurt` (`0x00224ec8`) in `Brain_Think` | an AI with a fight goal whose health is under 30 % plays 665 `ANIM_SPECIAL_FLASH` (blend 0.1 s in and out) when free, after clearing its actions: an AI's flash. The name is likewise a guess the code does not bear out |
 
@@ -275,7 +275,7 @@ levels 60-64), the speed class byte at `+0x11c`, and four strings (32 bytes each
   (`0x002545a8`). A 0 leaves the anims' own far range. The ids per kind: 0 → 11; 1 → 12; 2 → 13; 3 → 15; 4 → 14;
   5 → 16; 6 → 17; 7 → 19; 8 → 18; 9 → 20; 10 → 25-30; 11 → 21; 12 → 193; 13 → 194; 14 → 237-240; 16 → 653, 655;
   17 → 657, 659; 19 and 20 → 0; 21 → 3, 4; 22 → 70, 71; 15, 18 and 23-44 none. The far range is what
-  `Human_CanStartAttack` and the steer use ([Combat](combat.md#run-attacks)); kind 22's ids 70, 71 are the grab's
+  `Human_CanStartAttack` and the steer use ([Combat](combat/index.md#run-attacks)); kind 22's ids 70, 71 are the grab's
   search and kind 21's 3, 4 the tackle's. The list written is the character data's (record `+0x160` points at the
   model's own list, `HumanRecord_SetAttackTable` `0x00254568`), so every human with that model shares the values the
   last one attached wrote (inferred from the pointer; the damage table has the same reach).
@@ -329,7 +329,7 @@ the type's own record and the rest after the [remap](#type-to-model) from the cl
 | Speed class | byte `+0x11c` | record `+0x164`-`+0x17c` | the [speed class](#speed-classes), a fallback the clips' own speeds replace in play | confirmed (code) |
 | Power class | byte `+0x11d` | `+0x1b8`, `+0x1b9` | below; a Warriors player's `+0x1b9` is his Warrior's | confirmed (code) |
 | Health | s16 `+0x116` | record `+0x144` / `+0x146` | health and its maximum (1800 for every Warrior, 600 for the street civilian) | confirmed (runtime) ([Combat: damage](combat-reactions.md#damage)) |
-| Damage table × damage scale | s16 × 45 at `+0xb8` | the human's Anim Range List | written over the list's damages when the model is attached (`0x00217a98`); a player's first times his Warrior class's damage % ([Damage](combat.md#damage-table)) | confirmed (code), confirmed (runtime) |
+| Damage table × damage scale | s16 × 45 at `+0xb8` | the human's Anim Range List | written over the list's damages when the model is attached (`0x00217a98`); a player's first times his Warrior class's damage % ([Damage](combat/index.md#damage-table)) | confirmed (code), confirmed (runtime) |
 | Attack table | byte × 45 at `+0x11e` | brain `+0x298` | an AI's weight for each attack kind ([AI](ai.md)) | confirmed (code) |
 | Range table | float × 45 at `+0x00` (÷ 100) | not traced | no reader found | not traced |
 | Hat | string `+0x14c` | the hat object | worn from creation ([Hats](#hats)) | confirmed (code) |
@@ -362,7 +362,7 @@ Warriors, 9 everyone else), read through `0x00222b58`. Confirmed (code) at each 
 | --- | --- | --- |
 | Rage | s16 `+0x00`; bytes `+0x02`-`+0x04` | the rage maximum, the gain percentage, and the idle decay and the drain while raging, percent of the maximum per 20 s ([Rage](combat-rage.md#rage)) |
 | Health % | byte `+0x05` | when the human becomes a player (`Human_MakePlayer` `0x00229c40`) his health and maximum are times n %, rounded; divided back when he stops being one (`0x0022a2a8`). Rembrandt: 1800 × 50 % = 900 |
-| Damage % (Strength) | byte `+0x06` | a player's attack damages times n % ([Damage](combat.md#damage-table)); the Stats screen's Strength bar |
+| Damage % (Strength) | byte `+0x06` | a player's attack damages times n % ([Damage](combat/index.md#damage-table)); the Stats screen's Strength bar |
 | Context games | bytes `+0x07`-`+0x0c` | the cuffing hold, the uncuff mash, tagging, lock picking, the stereo theft and mugging |
 
 **4. The gym upgrades** (`CfgWarriorUpgrade`, bytes `0x006b6650`-`0x006b6653`; 10, 20, 10, 20), each only while its
@@ -439,7 +439,7 @@ function. Confirmed (code). So a dealer with no script hat still wears his class
 
 **On the head.** The hat's `0x32` handler (`HatObject_Wear`, `0x003e77c0`, [Script types](script-types.md#hat-object))
 zeroes its velocity and spin, attaches it (`Obj_Attach`) to **bone 6, the head** (the head strike sphere's bone,
-[Combat](combat.md#moving-strikes)), clears its flags `0x6000000`, and writes its local transform in that bone's frame:
+[Combat](combat/index.md#moving-strikes)), clears its flags `0x6000000`, and writes its local transform in that bone's frame:
 the position is the fit offset (`Human_PlaceHat(…, 0xb)`, the set's or the model's, above) **times the human's
 scale** (`Human_GetScale`), the rotation the fit rotation (`Human_PlaceHat(…, 0xc)`), unscaled; then it tells the
 human (message 3). Confirmed (code). That the attach composes the head bone's matrix with this local translation
@@ -1194,7 +1194,7 @@ into the brain's heading `+0x110`, then calls `Human_EnterStepControl` (`0x00243
 argument: the clip decides how far the body goes. `Human_EnterStepControl` does nothing when either of these holds:
 
 - the human has any of state bits **`0x180f3ff0`**. That is `0x10`-`0x2000`: grabbed or grabbing, mugging or
-  mugged, the tackle and mount, and a paired power move ([Combat: State flags](combat.md#state-flags)). It is also
+  mugged, the tackle and mount, and a paired power move ([Combat: State flags](combat/index.md#state-flags)). It is also
   `0x10000`-`0x80000` (`0x10000` is hurt) and `0x8000000` and `0x10000000`, whose meanings are not traced;
 - the step control is already installed.
 
@@ -1341,7 +1341,7 @@ The pad's buttons become **command ids** through tables of 12-byte entries `{u16
 u16 extra}` that `AddCommand` fills. Each update `0x00147940` matches them and stores the command in the per-player
 record's `+0x20`, or in the pending `+0x24` when the entry's mask is `0xfe` (`0xff` enables it for pad 0). The buttons
 are the pad word's bits ([Pad record](frontend.md#pad-record)). The nine tables, what each trigger means, the
-order in which they are matched and every command they make are on [Combat, Commands](combat.md#commands)
+order in which they are matched and every command they make are on [Combat, Commands](combat/index.md#commands)
 (confirmed (code) and (runtime)). An earlier reading here took square (`0x80`) for d-pad left and cross (`0x40`) for
 down: the combinations are L2 + square (`0x21`), L2 + cross (`0x20`), cross + square (`0x22`) and circle + triangle
 (`0x24`), and the d-pad combinations `0x29`-`0x2c` and L3's 9 need select held as well.
@@ -1364,7 +1364,7 @@ and clears state flags `0x8008`) only when all of these hold. Confirmed (code):
 So the sprint lasts exactly as long as L2 is held and stamina lasts: letting go of L2 ends it on the next update, and
 nothing latches it. It also ends when stamina reaches 0 (below) and when `Player_UpdateActions` takes its block branch
 (`0x0027c6b0`): **R1 held** in a fight, or L1 released or L1 + R1 while already blocking
-([Combat, Dispatcher](combat.md#dispatch)), which clears the flag and sets state flags `0x8001`. **At runtime**
+([Combat, Dispatcher](combat/index.md#dispatch)), which clears the flag and sets state flags `0x8001`. **At runtime**
 (`level99` and a street, stick 1.0 straight up and L2 held
 through patched pad input, [Driving PCSX2](../guides/research-workflow.md#driving-pcsx2)) the flag was set every
 update, the command was 5, and the speed rose by 0.8 m/s per update from 7.80 to **10.245 m/s** (gait 5).
@@ -1953,7 +1953,7 @@ again for a held object; confirmed (code) at `Player_UpdateActions` (`0x0027c120
 `Climb_TryStart` (`0x002826f0`), `Climb_Start` (`0x00281c20`), `Player_TriangleAction` (`0x002811f0`),
 `ContextAction_Use` (`0x0024d530`) and `Human_PickUpSearch` (`0x0024d810`):
 
-1. **There is no buffer.** Command 10 is one sample ([Commands](combat.md#commands)) and each try runs once, on that
+1. **There is no buffer.** Command 10 is one sample ([Commands](combat/index.md#commands)) and each try runs once, on that
    update. An "early" climb is only the long ray: 4.5 m ahead for a player (human flag `0x2`) at gait 4 or 5, else
    1.5 m.
 2. **The climb comes first and ignores what is in hand.** `Climb_TryStart` refuses only on record `+0x08` `0x84240`;
@@ -2223,7 +2223,7 @@ updates (`+0xc8` and `+0xcc` set to `0xFFFFFF00` | alpha first). [HUD](hud.md) h
 Every function of the human code in `0x00217a70`-`0x00288000` (inferred: the range is our grouping, and each row is
 graded) that the sections above do not walk through, in address order, with what it does. Names are ours, as in the
 local Ghidra project, where each function also carries a plate comment. Combat functions are indexed on
-[Combat](combat.md#code-index) and the crimes' on [Crimes](crimes.md#code-index).
+[Combat](combat/index.md#code-index) and the crimes' on [Crimes](crimes.md#code-index).
 
 ### The human core {#code-core}
 
@@ -2943,7 +2943,7 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
   the 0.1333 s fade between moves, the idle's fade by how much of a start clip has played, and the walk start swapped
   for the run start in its first half ([Clip selection](#clip-selection)). Its clips hold their record `+0x08` bits
   while they play ([Tasks](tasks.md#held-flags)): a start clip `0x10000000`, the landing `0x1000000`, the run stop and
-  the climb's first and last clips `0x80000`, the combat moves theirs ([Combat](combat.md#coneys-implementation)).
+  the climb's first and last clips `0x80000`, the combat moves theirs ([Combat](combat/index.md#coneys-implementation)).
 - **Dynamic animation slots** ([Animation](animation.md#dynamic-slots)): `human::ScriptState` holds the seven
   slots that `HuUseAnim` and `HuUseAnyAnim` both fill. An id already in a slot reuses that slot, a new id takes the
   first free one, and an eighth id is refused. The play mode hands the idle's clip (`0x184`) to `Human::setIdleClip()`
@@ -3148,7 +3148,7 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   `CfgChar` call or a model the Character List lacks is drawn as Rembrandt, with a log line.
 - **The scripts' hold on a human** ([character bindings](../references/bindings/character.md)): the flag word
   `+0xe0` is `human::flag` (`src/human/human_flags.h`), kept by the fighter and across a respawn; combat reads the
-  bits [Combat](combat.md#human-flags) lists, `0x2` gates the running climb and `0x4000000` keeps stamina full. A
+  bits [Combat](combat/index.md#human-flags) lists, `0x2` gates the running climb and `0x4000000` keeps stamina full. A
   player starts with `0x2`, `0x4`, `0x400`, `0x2000000` and (**Coney choice**, for scenes with no level script)
   `0x20000000000`. The rest of what the scripts set (arrest, pad lock, disabled commands, money, carried item,
   callbacks, icon, held object, head-look, animation overrides) is `human::ScriptState` (`src/human/script_state.h`);
@@ -3233,7 +3233,7 @@ read them yet.
   [Animation](formats/animation.md#animation-tasks); the playback rate is never scaled with the speed. Still open:
   the anim states other than idle and move (11, 21, 24 and the combat ones) and the special idle ids.
 - **Jog**: when a pad-controlled human jogs other than when carrying (a movement style, a script).
-- **What slots 16-24 and 28-34 are used for** (16-24 are the attacks and the block, [Combat](combat.md#attacks)) (their
+- **What slots 16-24 and 28-34 are used for** (16-24 are the attacks and the block, [Combat](combat/index.md#attacks)) (their
 default ids are known, [Anim slots](#anim-slots)), and the
   movement styles of `0x00253688` beyond the ids they write.
 - **The `+0x65c` scale's source**: what the division in `Human_Init` takes.
@@ -3275,7 +3275,7 @@ default ids are known, [Anim slots](#anim-slots)), and the
 - **The camera during a fence climb** (answered: the camera's rays exclude materials 30, 122 and 107,
   [Camera](camera.md#collision)).
 - **Triangle flags `0x4` and `0x80`**: why two climbable flags (one for players only), and which surfaces carry them.
-- **The sprint's other clear** (answered: the block, [Combat](combat.md#dispatch)). Still open: what `0x00230140`,
+- **The sprint's other clear** (answered: the block, [Combat](combat/index.md#dispatch)). Still open: what `0x00230140`,
   called when the sprint is set, does, and the fight test `0x00224f28`.
 - **The rest of the human**: the 0x180 record (the 0x2f0 record is the brain, [AI](ai.md#brain)), the state flags
   tested by `0x002265f0` / `0x00226660`, and `Human_MakePlayer`'s steps.

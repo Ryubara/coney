@@ -181,10 +181,10 @@ In a window the page also shows the real time each frame took, as the frame pace
 real clock and leaves it out); it is only shown and plotted, never used by a step. The scale is Coney's own; the
 original has none ([Debug features](../research/debug.md#not-present)).
 
-**Cheats.** The retail cheat checker (six single buttons matched against a table, [Debug features](../research/debug.md#cheats))
-is not in Coney yet. The page does what the checker does on a match: it calls the script's cheat callback,
-`DbgEnterCheat`, with the code's index. `global.lua` defines that callback when a level loads; at the front end or in
-the sandbox the page reports that it is not set.
+**Cheats.** The retail cheat checker (six single buttons matched against a table, [Debug
+features](../research/debug.md#cheats)) is not in Coney yet. The page does what the checker does on a match: it calls
+the script's cheat callback, `DbgEnterCheat`, with the code's index. `global.lua` defines that callback when a level
+loads; at the front end or in the sandbox the page reports that it is not set.
 
 **Levels.** In the game (the story from the front end, or a `--play-level` run, which is the same game session), the
 level table holds the game's levels (filled by `CfgLevelName`); choosing one jumps there at checkpoint 1 at the start
@@ -244,8 +244,8 @@ player, the camera, the level, the checkpoint, the HUD and the sound engine's pa
 **Player, Camera, Spawner and AI fighters** act on the mode the player plays in (`--play-level`, or a sandbox from
 Levels), through `debug::PlayControls` (`src/debug/play_controls.h`), which `platform::PlayLevelControls`
 (`src/platform/play_level_controls.h`, in the debug tools) implements over the play mode's own capabilities; elsewhere
-they say there is no player. A teleport drops the player onto the ground below the spot and places the camera behind
-him again. Frozen, the player ignores the pad. *Reset behind player* places the follow camera again with the Follow camera
+they say there is no player. A teleport drops the player onto the ground below the spot and places the camera behind him
+again. Frozen, the player ignores the pad. *Reset behind player* places the follow camera again with the Follow camera
 tunables, so the leash, pitch and look-at height apply at once. The free camera flies with pad 1 as the world viewer's
 does, while the player stands still and the scenery streams round the free camera. *AI fighters* spawns fighters
 ([Sandbox](sandbox.md#ai-fighters)) the chosen distance in front of the player, facing him, in a sandbox or a level;
@@ -278,25 +278,24 @@ spawned triangles inside that box too. An AI human only climbs on its route's cl
 path data, so it walks into a spawned obstacle rather than over it, as it does in a sandbox.
 
 **Change character.** *Character type* lists every type the scripts' `CfgChar` calls configure (449 on the disc) when
-the scripts set up the scene (a level's own, the story's, or level99's for a sandbox), each with the model a player
-of it is drawn as: a plain alias takes its class's model, and levels 60-64 the `_a` one
-([From a type to a model](../research/characters.md#type-to-model)). *Change character* rebuilds the player where he
-stands, at full health, with the camera behind him, through the play mode's own player creation: the model, its
-animation set and moves (their Anim Range List), the speeds its clips give, and his class, taken as the level's
-starting player takes his. That is the class's damage table scaled by his Warrior class's percentage
-([Damage](../research/combat.md#damage-table)), and his power class: his Warrior's (58-66) for a Warriors type, else the
-type's own ([Power classes](../research/characters.md#power-classes)), which sets his power meter, stamina, hurt
-threshold, stun and down times; his health, the type's times his Warrior class's percentage (Cleon's 1800 × 85 % =
-1530); and his Warrior class's rage ([Stats](../research/characters.md#stats)). The Player page's *Character* line
-shows both classes. The AI fighters are made again where they
-stand, at full health, since their brains hold the player they fought; they and the targets keep the scene's
-character. In a level whose scripts hold the player (every story level, the hub included) the brains and the scripts
-hold him by his handle, so he is not made again but becomes the type in place (`human::Player::changeCharacter()`):
-the same files, moves, speeds, class damage, power class and full health as a player made as that type, standing
-where he was with the camera where it was. The scripts' record of him and his brain take the new type too, so
-`HuGetCharType`, his voice and his sounds' character type follow it; the cast is left as it is. A disc test
-(`tests/platform/disc_level99_change_character_test.cpp`) checks the result against a player made as the type. The
-new character loads from the disc, so that frame stalls briefly.
+the scripts set up the scene (a level's own, the story's, or level99's for a sandbox), each with the model a player of
+it is drawn as: a plain alias takes its class's model, and levels 60-64 the `_a` one ([From a type to a
+model](../research/characters.md#type-to-model)). *Change character* rebuilds the player where he stands, at full
+health, with the camera behind him, through the play mode's own player creation: the model, its animation set and moves
+(their Anim Range List), the speeds its clips give, and his class, taken as the level's starting player takes his. That
+is the class's damage table scaled by his Warrior class's percentage
+([Damage](../research/combat/index.md#damage-table)), and his power class: his Warrior's (58-66) for a Warriors type,
+else the type's own ([Power classes](../research/characters.md#power-classes)), which sets his power meter, stamina,
+hurt threshold, stun and down times; his health, the type's times his Warrior class's percentage (Cleon's 1800 × 85 % =
+1530); and his Warrior class's rage ([Stats](../research/characters.md#stats)). The Player page's *Character* line shows
+both classes. The AI fighters are made again where they stand, at full health, since their brains hold the player they
+fought; they and the targets keep the scene's character. In a level whose scripts hold the player (every story level,
+the hub included) the brains and the scripts hold him by his handle, so he is not made again but becomes the type in
+place (`human::Player::changeCharacter()`): the same files, moves, speeds, class damage, power class and full health as
+a player made as that type, standing where he was with the camera where it was. The scripts' record of him and his brain
+take the new type too, so `HuGetCharType`, his voice and his sounds' character type follow it; the cast is left as it
+is. A disc test (`tests/platform/disc_level99_change_character_test.cpp`) checks the result against a player made as the
+type. The new character loads from the disc, so that frame stalls briefly.
 
 Not taken from the configuration yet, because Coney does not model them for a player: the Warrior class's cuffing,
 theft and mugging stats, the gym upgrades, the body scale (Rembrandt's 0.97), the speed class (a fallback the
@@ -333,10 +332,10 @@ never a copy of them, so a change to a radius or a rule shows at once:
 
 The shapes and the Entity inspector's highlight are drawn where the models are, `alpha` of the way from the step before
 to the newest one (the same blend the meshes use), so at an uncapped frame rate they stay on the model: each human's
-shapes are built where the engine has it, then moved by the distance from its newest feet to its drawn ones (the pose
-of a strike shape is the newest step's, not blended). Sandbox targets get no shapes, on purpose: a target has no body
-in Coney's physics and no strike shapes of its own, so nothing is hit by geometry. The player's attacks reach it by
-the attack's hit update and its reach (a **Coney stand-in**, [Combat](../research/combat.md#hit-codes)), which is a
+shapes are built where the engine has it, then moved by the distance from its newest feet to its drawn ones (the pose of
+a strike shape is the newest step's, not blended). Sandbox targets get no shapes, on purpose: a target has no body in
+Coney's physics and no strike shapes of its own, so nothing is hit by geometry. The player's attacks reach it by the
+attack's hit update and its reach (a **Coney stand-in**, [Combat](../research/combat/index.md#hit-codes)), which is a
 timing and a distance, not a shape that could be drawn. The Entity inspector's highlight and its watch lines are how a
 target is looked at.
 
@@ -460,7 +459,7 @@ The first tunables are the player's and the camera's researched values (`src/deb
 | Jump | minimum speed (3.3 m/s), up speed (5.5 m/s), climbable check (5.5 m), air turn (4° an update, Coney's choice) |
 | Climb | low and high probe (0.69 m, 1.7 m), reach and running reach (1.5 m, 4.5 m), probe behind (0.4 m), fence top limit (0.25 m), fence ceiling (2.5 m), wall window (1.7-2.91 m), short wall window (0.7-1.7 m) |
 | Follow camera | position lag (0.22), collision margin (0.2 m), closest after collision (0.5 m), auto-centre (on; off is the default rule), one player camera `0x0050b19c` (on), leash near and far (4.8 m, 5.3 m), pitch (13°), look-at height (1.4 m) |
-| Combat | history hold (7 samples), snaps need a target (`CfgSnap`, on), `S1`'s timing (hit 2, window 6 to 15, recovery 17, end 20 updates; the other attacks keep their measured timing), grab search scale (1.25), power endurance (0.25), grab strike cost (0.2, halved for the player), power drain (15/s), rage points cap (25) and factors (1.0, 0.1), rage hold (5000 ms) (the rage's drain and decay are the player's Warrior class's), the button mash, the mugging and the stereo theft ([Combat](../research/combat.md#coneys-implementation), `src/debug/combat_tunables.cpp`) |
+| Combat | history hold (7 samples), snaps need a target (`CfgSnap`, on), `S1`'s timing (hit 2, window 6 to 15, recovery 17, end 20 updates; the other attacks keep their measured timing), grab search scale (1.25), power endurance (0.25), grab strike cost (0.2, halved for the player), power drain (15/s), rage points cap (25) and factors (1.0, 0.1), rage hold (5000 ms) (the rage's drain and decay are the player's Warrior class's), the button mash, the mugging and the stereo theft ([Combat](../research/combat/index.md#coneys-implementation), `src/debug/combat_tunables.cpp`) |
 | Display | cutscene letterbox (on: the black bars over cutscenes, as the original draws them; off plays cutscenes full screen) |
 
 The leash, pitch and look-at height apply when the camera is next placed (a level start); the others at the next step.
