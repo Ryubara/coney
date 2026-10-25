@@ -111,6 +111,7 @@ subject, updated in place, so a reader never has to work out which of two pages 
 | Progress | `docs/progress/` | The tables at the `progress:generated` marker are produced by the docs build, never committed; edit the data files beside the page instead |
 | Game references: lists | `docs/references/` | Generated from `research/references/` by `coney-tools refs render`; edit the YAML instead. `entities.md` is written by hand |
 | Game references: script bindings | `docs/references/bindings/` | Generated from `research/bindings/` by `coney-tools natives render`; edit the YAML instead |
+| Engine | `docs/engine/` | Living; how Coney works: its own internals and port notes, never what the original does ([Engine pages](#engine-pages)) |
 | Guides | `docs/guides/` | Living; how to build, contribute, research and review |
 | Designs | `docs/guides/` | A plan for work that is not allowed or not started yet, with the questions only a maintainer can answer ([enhancements](enhancements.md), [realtime lighting](realtime-lighting.md), [asset and script architecture](asset-and-script-architecture.md)). Not a how-to: say at the top that it is a design, and move what is built into a guide or research page |
 | Missions | `docs/missions/` | Generated from `research/missions.yaml` by `coney-tools missions render`; edit the YAML instead |
@@ -144,8 +145,11 @@ today is listed, and `coney-tools standards` holds the touched ones to it ([the 
    (`mkdocs.yml` sets `validation: nav: omitted_files: warn`, and `--strict` turns that warning into a failure).
 3. Link files outside `docs/` (such as `LEGAL.md`) as `repo:<file>`, e.g. `[LEGAL.md](repo:LEGAL.md#no-game-data)`:
    the strict build rejects relative links that leave `docs/`, and `mkdocs_hooks.py` turns these into links to the
-   file on GitHub. Never write the repository's or the site's address into a file, code comment or commit message;
-   the README is the one exception. Name roles, not people or accounts: "a maintainer decision", not who made it.
+   file on GitHub. Link an issue or pull request as `issue:<number>`, e.g. `[#123](issue:123)`: the same hook turns it
+   into the issue's page, from the same repository address (neither scheme is rewritten inside code, so a code span or a
+   fenced block shows the form as written). Never write the repository's or the site's address into a
+   file, code comment or commit message; the README is the one exception. Name roles, not people or accounts: "a
+   maintainer decision", not who made it.
 4. On a research page, start with the front matter of its kind and keep the sections of that kind
    ([Research pages](#research-pages)), and give every behaviour an address and an evidence level: confirmed (code),
    confirmed (runtime), inferred or speculative. The levels and their spellings are in
@@ -163,8 +167,8 @@ today is listed, and `coney-tools standards` holds the touched ones to it ([the 
   `docs/references/`, `docs/missions/` and the progress tables, are rebuilt from their source; change the source
   ([Repository conventions](repo-conventions.md#generated-blocks),
   [the parameter reference](coney-tools.md#parameter-reference)).
-- **Links.** A file outside `docs/` is `repo:<path>` (step 3 above). Link a heading, not just a page, when the
-  point is in one section.
+- **Links.** A file outside `docs/` is `repo:<path>` and an issue or pull request is `issue:<number>` (step 3 above;
+  the `repo-link` rule accepts both). Link a heading, not just a page, when the point is in one section.
 - **Name roles, not people.** Write "the user" for the person who tests, reports or directs and "a maintainer" for the
   one who decides; never "the owner" (the `repo.wording` key of `.github/conventions.yml`). Do not give dates or
   names to say who decided something.
@@ -414,6 +418,39 @@ exits 1 when the file lists something that passes or grew since the branch left 
 `--init`, which refuses to run again. An entry may list any research rule of the table below and `stale-wording`, the
 one Style rule that older research pages break ("not yet" and the like); no other Style rule is excused.
 
+## Engine pages {#engine-pages}
+
+The section "Engine: how Coney works" is `docs/engine/`: how Coney's own code is built and why, and the port notes that
+say where it stands against the original. A page here never says what the original does, which is a
+[research page](#research-pages) and is linked; and it makes no claim to grade. The folder is flat or grouped by system,
+and `docs/engine/index.md` is its landing page, which every page is reachable from. An engine page reads and is checked
+as a [guide](#page-kinds) (the Style rules, the 800-line warning), and three more rules hold, because it names what the
+code ports:
+
+- **No date, and no issue number but as a link to that issue** (`history`). History lives in git and the pull requests.
+  A stand-in that is to be replaced may name the issue that tracks it, and the check accepts exactly one form: the whole
+  text of a link is the number (`#123`, `issue 123`, `issue #123`, `PR 45`, `PR #45` or `pull request #45`, in any case)
+  and its target is `issue:` and the same number ([Adding a page](#adding-a-page), step 3). The link is inline
+  (`[#123](issue:123)`) or by reference, with its definition a line of its own and nothing else: `[#123][tracker]` with
+  `[tracker]: issue:123`, or `[#123][]` and `[#123]` with `[#123]: issue:123` (the label is the link text when none is
+  given). A title or other text after the target makes it no definition, and a label defined twice means its first
+  definition, as in Markdown. Any other target (`../roadmap.md`, `issue:abc`, another number, a label with no
+  definition) leaves the number refused, as does a link text that says more than the number. An issue number in a code
+  span or a fenced block is not read. A date is refused everywhere except in a fenced block and in the inline target of
+  a link (`[x](a-2026-10-05.md)`); inline code and a reference definition's target are read. `#<n>` after one of the
+  words player, pad, gamepad, slot, port, controller, button, channel, lane, axis, stick or trigger ("player #1", "pad
+  #0") numbers a thing of Coney's own and is not an issue; after any other word it is. There is no section that may hold
+  a date or an issue number, unlike a research page's In Coney.
+- **An address of `SLUS_212.15` is written in full and resolves** (`address-form`, `address-resolve`; `address-name` warns
+  when the name beside it is not Ghidra's), as on a research page ([Addresses](#addresses)). A level beside it is not
+  asked for. The check reads inline code too, and an engine page has no How this was checked section to excuse a heap
+  address, so a Coney-side hex constant of the same shape (a mask `0x00ffffff`, a size `0x01000000`) fails
+  `address-resolve`: write it in a fenced block, which is not read, or short (`0xffffff`) or in decimal.
+- **The folder has its landing page** (`index`): `docs/engine/index.md`, checked on every engine page checked and on a
+  change that removes it.
+
+There is no front matter and no fixed list of sections.
+
 ## Checking a page {#checking}
 
 ```sh
@@ -438,17 +475,18 @@ is read as any other page. What each rule looks at, by the kind of page ([Page k
 | `skeleton` | research | A missing or second `# Title`; a missing, empty, repeated or out-of-order section of the kind; a `##` heading that is no section of the kind (the old names count) |
 | `verified` | research | No `Verified against: ...` line above the first section, or one that wraps or is over the limit |
 | `evidence` | research | An address or locator with no level in its block, Evidence cell or lead line; a level in a form the [standard](#evidence-levels) refuses; a runtime claim with no existing run; a speculative claim with no open question |
-| `address-form`, `address-resolve` | research | The short form of a function entry or of a global in `.data` or `.bss`; an address in no function and no data section (not checked in How this was checked). `address-name` is a warning when the name beside an address is not Ghidra's |
+| `address-form`, `address-resolve` | research, engine | The short form of a function entry or of a global in `.data` or `.bss`; an address in no function and no data section (not checked in How this was checked); on an engine page a Coney-side constant of that shape too, so fence it or write it short. `address-name` is a warning when the name beside an address is not Ghidra's |
 | `decompile` | research | One of Ghidra's made-up names (`param_1`, `uVar2`, `DAT_005127e4`, `FUN_00123456`), in the text or in a code block: the mark of a pasted decompile, which the page never holds ([LEGAL.md](repo:LEGAL.md#research-limits)). Cite the address, or name the thing for what it is. A survey may name a register or placeholder (`in_EAX`, `unaff_ESI`) by itself in a code span, as the subject of what Ghidra makes of an executable; an expression, a bare word and a code block are refused on every page |
 | `function-entries` | research | An entry of the [function database](research-function-database.md) that points at the page for an address the page does not own, or that another page owns (the most specific `owns` entry wins): point the entry at the page that owns it, or add the address to `owns`. Checked once the page has front matter; `research render --check` reports the same |
 | `copied` | research | A paragraph of 200 characters or more that is also on another research page |
-| `history` | research | A date or an issue number outside In Coney and How this was checked |
-| `length` | research, guides | Research: more lines than the kind's limit, an error unless the page is legacy. Guides: a **warning** above 800 lines, because a guide past that is several guides and where to cut is the author's call |
+| `history` | research, engine | Research: a date or an issue number outside In Coney and How this was checked. Engine: a date anywhere but a fenced block or a link's inline target, and an issue number that is not in a code span or the whole text of a link to `issue:` and the same number ([the forms](#engine-pages)) |
+| `length` | research, guides, engine | Research: more lines than the kind's limit, an error unless the page is legacy. Guides and engine pages: a **warning** above 800 lines, because a guide past that is several guides and where to cut is the author's call |
+| `index` | engine | `docs/engine/index.md` is missing, or a change removes it while other engine pages remain |
 | `legacy` | research | A new page in the legacy file; a rule listed for a page that now passes it; a change to the file that adds a page or a rule |
 | `machine-path` | all | A user folder (under `Users` or `/home`, with a real name) or a drive-letter path two folders deep. Not refused: a placeholder (`<name>`), a bare drive (`H:\`), `C:\Program Files`, `C:\Windows`, and the original's own build paths (`c:/Warriors/...`, `/home/ack/...`) |
 | `stale-wording` | all | "still small", "not yet", "once it exists", "does not exist yet", "yet to be written": wording that says when something is true instead of what is true. "Not yet" is refused only where it dates the project: on a research page where it speaks of Coney (In Coney, Open questions, or a line that names Coney), since "a store that is not yet broken" describes the original; on any other page where a word of work follows it ("not yet implemented", "written", "listed", "supported", ...), since "not yet looked at" is an issue's state. A phrase in code spans or in double quotes is mentioned, not used |
 | `repo-link` | all | A relative link, image or link reference definition that leaves `docs/`: write `repo:<path>` |
-| `person-wording` | guides and other pages | "the owner", "the project owner", "repo owner" and the other words of `repo.wording.avoid` in `.github/conventions.yml`: write "the user" or "a maintainer". "An object's owner" and "the owner of the task" are not refused |
+| `person-wording` | guides, engine and other pages | "the owner", "the project owner", "repo owner" and the other words of `repo.wording.avoid` in `.github/conventions.yml`: write "the user" or "a maintainer". "An object's owner" and "the owner of the task" are not refused |
 | `address` | all | The repository's or the docs site's address (only the README may carry it) |
 
 The heuristics are deliberately forgiving: they flag what is surely a gap, not what might be one. A false positive is

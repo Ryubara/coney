@@ -86,8 +86,9 @@ uv run --project python coney-tools docs legacy [--init | --prune | --check] [--
 
 Checks Markdown pages against the standard of [Writing these docs](writing-docs.md#checking): the front matter, the
 sections of its kind, the "Verified against" line, the evidence levels, the addresses, the copied paragraphs, the dates
-and the length of a research page, and the Style rules every page keeps. Writing-docs owns the rules and the
-heuristics, and `research` in [.github/conventions.yml](repo:.github/conventions.yml) the kinds, sections and limits;
+and the length of a research page, the dates, issue numbers, addresses and landing page of an engine page
+([`docs/engine/`](writing-docs.md#engine-pages)), and the Style rules every page keeps. Writing-docs owns the rules and
+the heuristics, and `research` in [.github/conventions.yml](repo:.github/conventions.yml) the kinds, sections and limits;
 this entry is the command. Without `PATHS` it checks the pages changed since
 `--base` (committed or not, untracked included), as [`check changed`](#check) does in its `docs` step and the `docs`
 workflow does on a pull request. With `PATHS` it checks those files, or every page under a folder, whether or not they

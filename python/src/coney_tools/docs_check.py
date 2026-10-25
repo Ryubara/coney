@@ -4,9 +4,11 @@
 A page is held to the rules of its kind (`kind_of`): a research page keeps the research standard (front matter, the
 sections of its kind, a level beside every address it cites, addresses that resolve; `research_check`), and every
 hand-written page keeps the Style rules that a program can see (no machine paths, no time-bound wording, `repo:` links,
-roles not people, no repository or site address). The check runs on the pages a change touches and on those only, so
-the standard ratchets: whoever touches a page brings the whole page up to it, and a research page that cannot meet the
-standard yet is listed in the legacy file (`research_legacy`), which excuses it from the rules it fails and no more.
+roles not people, no repository or site address). An engine page (`docs/engine/`, `docs_engine`) keeps those and,
+because it cites Coney's code against the original, the history, address and landing-page rules. The check runs on the
+pages a change touches and on those only, so the standard ratchets: whoever touches a page brings the whole page up to
+it, and a research page that cannot meet the standard yet is listed in the legacy file (`research_legacy`), which
+excuses it from the rules it fails and no more.
 
 Everything here is a function of the page text, so the tests use made-up pages. The heuristics are deliberately
 forgiving (they flag what is surely a gap, not what might be one); each is described where it is implemented and in
@@ -26,6 +28,9 @@ from coney_tools import docs_legacy, local_gate, source_files, standards_check
 from coney_tools.audit_files import repository_address_terms
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Research, load_conventions
+from coney_tools.docs_engine import FOLDER as ENGINE_FOLDER
+from coney_tools.docs_engine import INDEX as ENGINE_INDEX
+from coney_tools.docs_engine import check_engine, index_finding
 from coney_tools.docs_link_moves import touched_lines
 from coney_tools.docs_page import Finding, Page, kind_of, read_page
 from coney_tools.docs_style import check_style
@@ -39,13 +44,13 @@ from coney_tools.research_subject import ResearchEnv
 
 __all__ = ["Context", "Finding", "Result", "check_page", "kind_of"]
 
-#: The kinds of file `kind_of` tells apart. Only the first three are checked.
-CHECKED_KINDS: tuple[str, ...] = ("research", "guide", "page")
+#: The kinds of file `kind_of` tells apart. Only the first four are checked.
+CHECKED_KINDS: tuple[str, ...] = ("research", "engine", "guide", "page")
 #: Lines above which a page gets a length warning (never a failure). A reader takes a page in whole before changing
 #: it, and the Read tool shows 2,000 lines at a time; a guide past 800 (the top tenth, median 260) is several guides.
 #: A warning, because splitting a page is the author's call: the cut is usually along a sub-subject that deserves its
 #: own page. A research page's limit is its kind's `max_lines` in `.github/conventions.yml`.
-LENGTH_WARNING: dict[str, int] = {"guide": 800}
+LENGTH_WARNING: dict[str, int] = {"guide": 800, "engine": 800}
 
 
 @dataclass(frozen=True)
@@ -166,6 +171,8 @@ def check_page(path: str, text: str, context: Context | None = None, touch: Touc
     found = list(check_style(path, page, kind, context.avoid, context.address_terms))
     if kind == "research" and context.research is not None:
         found = _check_research(path, page, context.research, touch or Touch(), found)
+    if kind == "engine":
+        found.extend(check_engine(path, page, context.research))
     if kind != "research":
         found.extend(_check_length(kind, text))
     return sorted(found, key=lambda item: item.line)
@@ -206,6 +213,8 @@ def check_files(root: Path, names: Iterable[str], context: Context, touches: dic
             result.legacy += 1
         text = (root / name).read_text(encoding="utf-8", errors="replace")
         found = check_page(name, text, context, (touches or {}).get(name))
+        if kind_of(name) == "engine" and not (root / ENGINE_INDEX).is_file():
+            found = sorted([*found, index_finding()], key=lambda item: item.line)
         if found:
             result.findings[name] = found
     return result
@@ -293,6 +302,7 @@ def check_changed(root: Path, base: str, context: Context) -> Result:
     names = local_gate.changed_files(root, base)
     similarity = context.research.research.moved_similarity if context.research is not None else None
     result = check_files(root, names, context, change_touches(root, base, names, similarity))
+    _check_engine_index(result, root, base)
     if context.research is not None and legacy_relevant(names, context.research.research):
         # A page that now passes must leave the file, and a changed file may only have shrunk.
         found = [Finding("legacy", 1, line) for line in docs_legacy.problems(root, context, base)]
@@ -303,6 +313,32 @@ def check_changed(root: Path, base: str, context: Context) -> Result:
     if context.research is not None:
         _add_standards(result, root, base, names)
     return result
+
+
+def _check_engine_index(result: Result, root: Path, base: str) -> None:
+    """A change that deletes (or moves away) the engine section's landing page while other engine pages remain fails on
+    the landing page's path: no page of the change names it, so the per-page check cannot see it."""
+    folder = root / ENGINE_FOLDER
+    if (root / ENGINE_INDEX).is_file():
+        return
+    since = local_gate.merge_base(root, base)
+    command = [
+        "git",
+        "-C",
+        str(root),
+        "diff",
+        "--no-renames",
+        "--diff-filter=D",
+        "--name-only",
+        since,
+        "--",
+        ENGINE_INDEX,
+    ]
+    if ENGINE_INDEX not in local_gate.run_command(command, root)[1].split():
+        return
+    if folder.is_dir() and any(folder.rglob("*.md")):
+        result.pages.append(ENGINE_INDEX)
+        result.findings[ENGINE_INDEX] = [index_finding()]
 
 
 def _add_standards(result: Result, root: Path, base: str, names: list[str]) -> None:
