@@ -288,7 +288,7 @@ def fetch_edit_times(run: Runner, name: str) -> dict[int, str]:
             return found
         after = page["pageInfo"]["endCursor"]
         if not after or after in seen:
-            raise ValueError(f"the issue paging does not end (cursor {after!r} after {len(seen)} pages)")
+            raise ValueError(f"the issue paging does not end (cursor {after!r} after {len(seen) + 1} pages)")
         seen.add(after)
     raise ValueError(f"more than {EDIT_PAGE_LIMIT} pages of open issues; the edit times were not read")
 

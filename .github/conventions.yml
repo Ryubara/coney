@@ -198,7 +198,7 @@ pull_requests:
     none: "None"
     reason: required
     example: "None (one-line fix)"                # what a hand-made pull request writes; shown by template and errors
-    since: "2026-10-24T00:00:00Z"
+    since: "2026-10-25T08:33:51Z"
   screenshots: {section: Screenshots, none: "Screenshots: none", reason: required, uploaded_only: true}
   # Gameplay work is checked against the original running, not only against our reading of its code (maintainer
   # decision, 2026-10-20). A pull request whose title area is one of `areas` (the areas a player sees; each must be a
