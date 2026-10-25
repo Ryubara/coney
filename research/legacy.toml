@@ -98,13 +98,7 @@ evidence = 64
 address-resolve = 8
 
 ["docs/research/camera.md"]
-front-matter = 1
-skeleton = 1
-verified = 1
-evidence = 115
-address-form = 1
-address-resolve = 4
-history = 18
+evidence = 55
 length = 1910
 
 ["docs/research/cars.md"]
