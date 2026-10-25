@@ -576,7 +576,7 @@ def _compared_one(
         "pairs_sha256": orig_pairs.file_sha256(path),
         "coney_body_sha256": unit.body_sha256,
     }
-    if report.current("compared", address, covers) is not None:
+    if orig_review.current_compared(subject.root, report, address, covers, unit.key) is not None:
         return found
     last = report.latest("compared", address)
     if last is None:

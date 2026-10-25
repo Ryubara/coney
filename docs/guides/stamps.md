@@ -316,8 +316,9 @@ merge_reason = ""          # needed when lines cover more than one piece
     * **`orig copy-check` is clean** on that file ([orig](coney-tools-fidelity.md#orig)): automatic names, `undefined`
       types, raw byte-offset reads and `goto` are refused.
 3. When all of it holds it appends the `compared` stamp, covering the decompile, Ghidra's function hash, the cut, the
-   pairs file's hash (line endings normalised) and the Coney function's body hash, and a count of the relations. A
-   second run that changes nothing writes no stamp.
+   pairs file's hash (line endings normalised) and the Coney function's body hash ([its code without comments or white
+   space](coney-tools-fidelity.md#body-hash)), and a count of the relations. A second run that changes nothing writes
+   no stamp.
 
 A run that finds something wrong prints it and writes **no stamp**: this is an edit-and-rerun loop, and the log records
 verdicts, not drafts. The same holds for every environment fault (Ghidra down, a git error, a build that does not
@@ -336,7 +337,9 @@ are listed.
 
 The reviewer ([Orig review](review/orig.md)) answers each pair: condition, value, effect and order the same, or the
 stand-in true. The tool part of that check is that the decompile still matches Ghidra (`original verify`), the cut and
-the pairs file hash agree with the stamp, and the Coney body is unchanged.
+the pairs file hash agree with the stamp, and the Coney body is unchanged. A comment or white space edit is not a
+change of the body; a stamp made when the hash still covered them is read by rehashing the function at the stamp's
+commit, so it keeps covering an unchanged function ([The body hash](coney-tools-fidelity.md#body-hash)).
 
 ## Fails first {#fails-first}
 

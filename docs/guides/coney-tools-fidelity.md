@@ -116,8 +116,9 @@ uv run --project python coney-tools orig record [FINDINGS.tsv ...] [--ref COMMIT
 These commands feed the orig review, which compares `@orig` functions with the original
 ([Orig review](review/orig.md), the [reviewer agent](agents.md#reviewer)). Each one works on **units**. A
 unit is a function definition with a body that a tag covers: its own tag, one in its body, or its declaration's.
-A unit has a key (`Brain::think(int)`, with the file in front for a file's private helper) and a hash of its body
-lines. The source is read from commits, not from the working tree.
+A unit has a key (`Brain::think(int)`, with the file in front for a file's private helper) and a
+[hash of its body](#body-hash): its code, without comments or white space. The source is read from commits, not from
+the working tree.
 
 * `review-stamp` prints JSON.
     * With `--branch` or `--worktree` (pr mode) it gives the branch's `tip`, the `base` it left, and the units that
@@ -143,6 +144,36 @@ It is one JSON object per review and is never committed. `orig queue` reads it:
 * an address whose units were all reviewed `clean` or `diff-deliberate-ok` at their current bodies leaves the queue;
 * an unreviewed one gains 3 points, and a stale one 5;
 * a review finding adds its class's weight, from `unclear` (6) to `diff-bug` (40).
+
+### The body hash {#body-hash}
+
+A unit's `body_sha256` is the SHA-256 of its definition's **code**, which is what decides that a function changed
+(`review-stamp`, `check-review`, the ledger, a `compared` stamp's `coney_body_sha256`, `task review` and `pr verify`
+all read this one hash, `orig_review.code_text` and `_body_hash`).
+
+* **Left out:** every comment (`//` to the end of the line, also over a trailing backslash, and `/* ... */` across any
+  number of lines) and all white space: indentation, trailing blanks, line breaks, the spacing around an operator.
+  Repointing a research link in a comment, rewording one, or re-wrapping a line is not a change of the function, and
+  neither `task review` nor `pr verify` asks for a new `original compare` for it.
+* **Kept:** every token. A string, a raw string and a character literal are read whole before any comment is looked
+  for, so a `//` or `/*` inside one is code and editing it changes the hash; so does a space inside a literal. A
+  single space stays where its absence would join two tokens (`return x`, `a + +b` against `a ++b`), because there
+  it is code.
+* **Not a comment:** commenting code out removes tokens, so it changes the hash; the code is gone from the function.
+
+**Stamps and records made under the old hash** (the lines of the definition, trailing blanks dropped) are read by
+rehashing, not migrated, so none is invalidated when the hash changes and no stamp or ledger line is rewritten:
+
+* A `compared` stamp whose `coney_body_sha256` is not the hash now is checked against the function's code at the
+  stamp's own `commit`: it stands when that hash is the old-style hash of the function at that commit and the new-style
+  hash of the function there equals the one now. So an unchanged function keeps its stamp, a comment edit after the
+  stamp keeps it too, and any edit of the code refuses it ("no current `compared` stamp") until `original compare` is
+  run again. A stamp whose commit is gone from the repository (a garbage-collected branch) cannot be rehashed and is
+  refused the same way; run `original compare` again.
+* A ledger entry made under the old hash counts while the function's lines are exactly as they were then. After any
+  edit it is stale, as before, and the function is reviewed again.
+* An `ORIG-REVIEW.json` verdict is not rehashed: it lives as long as its branch, and one written before this change is
+  refused as "reviewed at another body"; the reviewer writes it again from `review-stamp`.
 
 <!-- command-reference:begin orig -->
 ## Parameters of `orig` {#orig-parameters}
