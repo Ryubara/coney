@@ -75,7 +75,7 @@ Inferred from the measurement in [Method](#method); the counts depend on Ghidra'
 - **Floats and vectors.** Float code decompiles as plain `float` arithmetic; 21 of the 341 PS2 functions use VU0
   macro instructions, which decompile as opaque `in_vf0` registers.
 - **More anchors.** MSVC keeps one copy of `__FILE__` per use, so 338 functions in 141 files load a path, against
-  300 in 134. **Evidence:** inferred: 819 path copies, 818 of whose addresses occur as words in `.text`.
+  300 in 134. **Evidence:** inferred from a count: 819 path copies, 818 of whose addresses occur as words in `.text`.
 
 **Not easier.**
 
