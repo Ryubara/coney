@@ -48,8 +48,11 @@
       return load().then(function (mermaid) {
         return mermaid.render(id, text).then(function (result) {
           // Keep the text readable on a narrow screen: the picture stops shrinking at MIN_WIDTH and the page
-          // scrolls it sideways (docs/stylesheets/extra.css) instead.
-          result.svg = result.svg.replace(/<svg([^>]*?) style="/, '<svg$1 style="min-width: ' + MIN_WIDTH + "px; ");
+          // scrolls it sideways (docs/stylesheets/extra.css) instead. A diagram narrower than that keeps its own
+          // width (Mermaid's max-width), so a tall top-to-bottom chain is not stretched to twice its size.
+          var natural = /max-width:\s*([\d.]+)px/.exec(result.svg);
+          var floor = natural ? Math.min(MIN_WIDTH, Math.ceil(parseFloat(natural[1]))) : MIN_WIDTH;
+          result.svg = result.svg.replace(/<svg([^>]*?) style="/, '<svg$1 style="min-width: ' + floor + "px; ");
           return result;
         });
       });

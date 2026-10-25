@@ -60,6 +60,10 @@ flowchart LR
   Material looks for Mermaid. The stand-in loads a pinned Mermaid and `@mermaid-js/layout-elk` from jsDelivr when
   the first diagram of a page is drawn, so a page without a diagram loads nothing extra. To upgrade, change the two
   pinned versions in that file to releases at least two weeks old and look at every diagram again.
+- **Size.** A diagram is drawn at its own width, centred, and never wider than the column. On a narrow screen it
+  stops shrinking at 640 pixels (or its own width, if smaller) and scrolls sideways, so its text stays readable. A
+  tall chain therefore reads better than a wide one: `flowchart TB` keeps its text full size, while a long
+  `flowchart LR` row shrinks to fit.
 - **Light and dark.** Material colours the diagram from the palette (its `--md-mermaid-*` variables), so the palette
   toggle changes it at once. Do not set colours in the diagram (`classDef`, `style`): they would stay the same in both.
 - **Layout.** Nodes in one chain with `flowchart LR` wrap into rows by themselves. Avoid a `subgraph` that arrows enter
