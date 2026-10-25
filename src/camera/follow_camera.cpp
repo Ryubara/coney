@@ -294,6 +294,9 @@ void FollowCamera::reset() {
 }
 
 void FollowCamera::activate() {
+    // **Coney's choice** (a stand-in): the glass tasks' update and the views' layout the original runs first, its
+    // reset of another player's camera and its lost test with two player cameras, and the recovered distance it sets
+    // (+0x380) are not made here: Coney has one player camera and no recovered distance (docs/research/camera.md).
     // The look-at point snapped; the camera kept in its direction from it, at its distance clamped to the band.
     m_lookAt = lookAtOf(m_targetFeet);
     snapAim();
