@@ -68,7 +68,8 @@ class Legacy:
 @dataclass(frozen=True)
 class Touch:
     """What a change did to a page: the lines it added or changed (None when not known), whether the page is new and,
-    for a page git sees as moved from another path, that path (the page is then touched throughout and not new)."""
+    for a page git sees as moved from another path, that path (the page is then graded on the lines git's diff of the
+    renamed pair changes, and is not new)."""
 
     lines: frozenset[int] | None = None
     new: bool = False

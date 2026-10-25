@@ -408,8 +408,13 @@ folder rewrites its own relative links for it: a link to the same page and ancho
 read from the folder the page left). The link's text, the rest of the line and the number of links must be equal, read
 whole: spaces and line breaks do not count, so a link split over two lines, or a paragraph that a longer target made
 the editor reflow (past the 120 columns markdownlint allows), is judged as one, as long as no line on either side is
-blank or starts a heading, list item, quotation, table row or code: a line break there is structure, and a change to
-it, or to a line's indent, is a touch. A link to a page that stayed, to a target that resolves nowhere, to a `repo:`
+blank or starts a block: a heading, quotation, table row, code, or what MkDocs adds (an admonition `!!!` or `???`, a
+content tab `===`, a setext underline or rule, an HTML block, a footnote or link definition, an attribute list `{: }`).
+A line break there is structure, and a change to it, or to a line's indent, is a touch. Two cases need more than the
+changed lines: a link split over lines of which only the `](target)` line changed is read from the line holding its
+`[` (the diff has no context, so the checker widens the hunk through the unchanged lines above); and a list item
+rewrapped by the longer target is no touch when the list markers (`-`, `1.`) stand on the same lines of the hunk on both
+sides. A link to a page that stayed, to a target that resolves nowhere, to a `repo:`
 path or an address, an image, or any other edit on the line is a touch of that line. So moving a page does not end the
 excuse of every page that links to it.
 
