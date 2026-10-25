@@ -27,9 +27,12 @@ struct HumanCreation {
     /// The character model the type is drawn as (characters::modelNameFor(): `warr_cl` for Cleon); empty when the
     /// type has no `CfgChar` record.
     std::string model{};
-    /// Where the last `TeleportToFlag` put the human, with no ground snap; nothing while it stands where it was made.
+    /// Where the last `TeleportToFlag` or `Teleport` put the human, with no ground snap; nothing while it stands where
+    /// it was made.
     std::optional<world_objects::Placement> teleported{};
     std::uint32_t teleports = 0; ///< Teleports so far: a change tells a running level to move the human.
+    /// Whether the last teleport stopped the human's move (`TeleportToFlag`) or left it (`Teleport`).
+    world_objects::TeleportMotion teleportMotion = world_objects::TeleportMotion::Stopped;
     /// May comment on a crew mate's tag (`HuEnableTagDone`, human byte `+0x19a`; set when the human is made).
     bool tagDoneSpeech = true;
     /// While this human tags, a crew member may comment when the stick game snaps the cursor back

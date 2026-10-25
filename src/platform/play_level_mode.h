@@ -346,8 +346,11 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     static void skin(const human::PlayerCharacter& character, const anim::Pose& pose, anim::Vec3 feet, float heading,
                      float lean, std::vector<anim::Vec3>& positions, std::vector<anim::Vec3>& normals);
 
-    /// ScriptedPlayer: a script's `TeleportToFlag` on player 1 during play; no ground snap.
-    void teleportPlayer(const world_objects::Placement& placement) override;
+    /// ScriptedPlayer: a script's teleport of player 1 during play: placed (dropped onto the ground at most 0.5 m
+    /// below, unless a scene holds him) with his health, meters and clip kept, his brain's front move popped, and for
+    /// `TeleportToFlag` his move stopped (human::Player::teleport(); `Teleport`: human::Player::place()).
+    void teleportPlayer(const world_objects::Placement& placement, world_objects::TeleportMotion motion) override;
+    using ScriptedPlayer::teleportPlayer;
     /// ScriptedPlayer: player 1's spray clips for a tag at `point`.
     bool startTagSpray(const std::array<float, 3>& point) override;
     /// ScriptedPlayer: player 1's held object falls from his hand as a spray or an uncuff begins.
@@ -458,6 +461,11 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     void placeReleased(const SceneStage::Release& release);
     // Whether a scene holds player 1 now: his pad does nothing and he is drawn as the scene poses him.
     [[nodiscard]] bool sceneHoldsPlayer() const;
+    // The ground a placement of `human` drops onto (human::Human::place()): the level's collision, or null while a
+    // scene holds the human.
+    [[nodiscard]] const raycast::CollisionMesh* placeGround(double human) const;
+    // The brain's part of a placement of `human` (ai::Brain::placed(): its front move popped), when it has a brain.
+    void brainPlaced(const human::Human& human);
     // The handle the scripts name a cast AI human by (its brain's); 0 for one with no brain.
     [[nodiscard]] double castHandleOf(const ai::AiHuman& fighter);
     // The cast AI human the scripts name `handle`; null when none is.
@@ -562,10 +570,11 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     // @orig 0x00169ea0 Gang_CanReachToHelp (unknown)
     void stepGameOver(const Pad& pad);
     // Player 1's flash (command 0x28, d-pad right, docs/research/combat-rage.md#rage): with a flash carried and health
-    // below its maximum, 665 SPECIAL_FLASH plays when nothing blocks a move, and its action event 19 updates in uses
-    // the flash (a clip cut first spends nothing); when something blocks a move (a grab, which stays) the flash is used
-    // at once, unless 665 already plays. **Coney's stand-in**: the full-health rage use (upgrade (6, 8)) is not built.
-    // @orig 0x002843f8 Player_StartRage (unknown)
+    // below its maximum, refused only when down or dead, cuffed, airborne or climbing: 665 SPECIAL_FLASH plays when
+    // nothing holds him, and its action event 25 updates in uses the flash (a clip cut first spends nothing); when
+    // something holds him (a grab, which stays; a knockdown, a stun, a hit reaction) the flash is used at once, unless
+    // 665 already plays. **Coney's stand-in**: the full-health rage use (upgrade (6, 8)) is not built.
+    // @orig 0x002843f8 Player_UseItemCommand (unknown)
     void stepFlash();
     // `Flash_Use`: one flash spent, interface sound 23 (`vags/misc/flash`), the health filled and wounding ended, and
     // the HUD's ring request. **Coney's stand-in**: always the full heal (Coney has no difficulty setting; above

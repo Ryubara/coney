@@ -373,6 +373,12 @@ class Brain {
     /// Frees the front action.
     /// @orig 0x0028da60 Brain_PopAction (unknown)
     void popAction();
+    /// The brain's part of a placement of its human (Human::place()): a front action that is a move (MoveAction, the
+    /// original's `MoveTo`, type 1) is popped, aborted first when it has started, so the human does not walk on from
+    /// where he stood (docs/research/teleports.md#placement). Every caller that places a human with a brain calls it
+    /// after the placement.
+    /// @orig 0x0023d440 Human_SetTransform (unknown)
+    void placed();
     /// Asks the actions to stop from the front, freeing each that agrees; stops at one that refuses. Returns whether
     /// the queue is empty.
     /// @orig 0x0028db20 Brain_ClearActions (unknown)
@@ -751,5 +757,14 @@ void releaseToAi(Brain& brain, BrainType leftAs);
 /// the class role is read through the gang's lookups, so a gang brain or a civilian with no gang takes 2.
 /// @orig 0x00291db8 Brain_GetHelpLevel (unknown)
 [[nodiscard]] int helpLevel(const Brain& brain);
+
+/// A scene's release of `human` (an AI human; the player's is the level's): placed at `feet` facing `headingDegrees`
+/// (Human::place(), dropped onto `ground` when not null), its motion reset as at the scene's start, and, only when
+/// `skipped`, its brain's part of the placement (Brain::placed(); `brain` may be null). After a skip the original
+/// places the human at its end pose through `Human_SetTransform`, which pops the front move; after a clip that played
+/// to its end it places no one, so nothing pops (docs/research/scenes.md#ending, teleports.md#in-coney).
+/// @orig 0x0023d440 Human_SetTransform (unknown)
+void placeAfterScene(human::Human& human, Brain* brain, const raycast::CollisionMesh* ground, anim::Vec3 feet,
+                     float headingDegrees, bool skipped);
 
 } // namespace coney::ai

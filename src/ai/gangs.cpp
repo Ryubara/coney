@@ -39,11 +39,8 @@ bool downOrDead(const Brain& brain) {
 }
 
 bool humanIsDownOrDead(const Brain& brain) {
-    // The mask 0x180050000 as Coney models it: dead and dying are no health left, knocked out and wounded are the
-    // script's states. Knocked down alive (on the ground, 0x80000) and arrested (0x20000) are not in the mask, so
-    // those members stand.
-    const human::Human& human = brain.human();
-    return human.fighter().health().depleted() || human.script().knockedOut || human.script().wounded;
+    // The mask 0x180050000 as Coney models it (Human::downOrDead()): knocked down alive and arrested members stand.
+    return brain.human().downOrDead();
 }
 
 int Gang::countLiving(bool standingOnly) const {

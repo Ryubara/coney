@@ -14,6 +14,7 @@
 
 #include <rw.h>
 
+#include "ai/brain.h"
 #include "animation/anim_pose.h"
 #include "camera/camera_lens.h"
 #include "camera/camera_view.h"
@@ -911,8 +912,8 @@ void PlayLevelMode::teleport(const human::Place& place) {
     if (!raycast::dropToGround(mesh, kTeleportDrop * 2.0F, point)) {
         point.z = place.feet.z;
     }
-    m_player->teleport(&mesh, human::PlayerStart{.position = anim::Vec3{point.x, point.y, point.z},
-                                                 .headingDegrees = place.headingDegrees});
+    m_player->standAt(&mesh, human::PlayerStart{.position = anim::Vec3{point.x, point.y, point.z},
+                                                .headingDegrees = place.headingDegrees});
 }
 
 void PlayLevelMode::startAt(const StartPlace& place) {
@@ -922,18 +923,42 @@ void PlayLevelMode::startAt(const StartPlace& place) {
     if (!raycast::dropToGround(mesh, kTeleportDrop * 2.0F, point)) {
         point.z = place.z;
     }
-    m_player->teleport(&mesh, human::PlayerStart{.position = anim::Vec3{point.x, point.y, point.z},
-                                                 .headingDegrees = place.headingDegrees});
+    m_player->standAt(&mesh, human::PlayerStart{.position = anim::Vec3{point.x, point.y, point.z},
+                                                .headingDegrees = place.headingDegrees});
     if (place.cameraDistance.has_value() && place.cameraYawDegrees.has_value()) {
         m_player->placeCamera(*place.cameraDistance, *place.cameraYawDegrees * std::numbers::pi_v<float> / 180.0F);
     }
 }
 
-void PlayLevelMode::teleportPlayer(const world_objects::Placement& placement) {
-    // TeleportToFlag sets the transform without a ground snap: spawned without the mesh.
+void PlayLevelMode::teleportPlayer(const world_objects::Placement& placement, world_objects::TeleportMotion motion) {
+    // The placement drops him onto what is at most 0.5 m below the point, unless a scene holds him; TeleportToFlag
+    // then stops his move (Object_TeleportToFlag), Teleport leaves it (Object_Teleport).
     const std::array<float, 3>& p = placement.position;
-    m_player->teleport(nullptr, human::PlayerStart{.position = anim::Vec3{p[0], p[1], p[2]},
-                                                   .headingDegrees = placement.headingDegrees});
+    const human::PlayerStart start{.position = anim::Vec3{p[0], p[1], p[2]},
+                                   .headingDegrees = placement.headingDegrees};
+    if (motion == world_objects::TeleportMotion::Stopped) {
+        m_player->teleport(placeGround(m_playerHandle), start);
+    } else {
+        m_player->place(placeGround(m_playerHandle), start);
+    }
+    brainPlaced(m_player->human());
+}
+
+void PlayLevelMode::brainPlaced(const human::Human& human) {
+    if (m_ai == nullptr) {
+        return;
+    }
+    if (ai::Brain* brain = m_ai->brainOf(human); brain != nullptr) {
+        brain->placed();
+    }
+}
+
+const raycast::CollisionMesh* PlayLevelMode::placeGround(double human) const {
+    // Human_SetTransform drops no human a scene holds (human +0x280 not -1).
+    if (m_scenery == nullptr || (m_scenes != nullptr && m_stage->holds(human))) {
+        return nullptr;
+    }
+    return &m_scenery->collision();
 }
 
 bool PlayLevelMode::startTagSpray(const std::array<float, 3>& point) {

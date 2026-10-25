@@ -156,6 +156,7 @@ nav:
           - Scripts (Lua): research/scripting.md
           - World flags: research/flags.md
           - Characters: research/characters.md
+          - "Characters: placing a human (teleports)": research/teleports.md
           - "Animation system: code": research/animation.md
           - Inventory, unlockables and statistics: research/player-state.md
           - "Workouts: the hangout gym": research/workouts.md

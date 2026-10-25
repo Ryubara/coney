@@ -21,6 +21,7 @@
 #include "animation/anim_clip.h"
 #include "animation/anim_math.h"
 #include "human/human_animator.h"
+#include "raycast/collision_mesh.h"
 #include "scripting/ai_bindings.h"
 #include "warriors/created_humans.h"
 #include "world_objects/flag_net.h"
@@ -71,6 +72,15 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     void setMessages(const script::MessageHandlers* messages) { m_messages = messages; }
     /// Walks `FlagNetTraverse`'s pedestrians on `net` (null: there is none, and they stand); it must outlive them.
     void setFlagNet(const world_objects::FlagNet* net) { m_flagNet = net; }
+    /// The ground a placement of the human with a handle drops onto (Human::place()): the level's collision, or null
+    /// while a scene holds the human (the original drops no human in a scene) or when there is no level.
+    using PlaceGround = std::function<const raycast::CollisionMesh*(double human)>;
+    /// Sets it; empty: every placement stands where put.
+    void setPlaceGround(PlaceGround ground) { m_placeGround = std::move(ground); }
+    /// The ground a placement of `human` drops onto (setPlaceGround()); null for none.
+    [[nodiscard]] const raycast::CollisionMesh* placeGround(double human) const {
+        return m_placeGround ? m_placeGround(human) : nullptr;
+    }
     /// Gives the steal command's tactic the level's loose objects and store fronts (null for none: no store is ever
     /// found); they must outlive this, or be replaced.
     void setItems(ItemServices* items) { m_items = items; }
@@ -272,8 +282,13 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     /// Makes the human with the spawner and binds its brain to the handle, in `human`'s gang, with its type as the
     /// brain's class, keeping its priority (HuCreate's player argument); nothing without a spawner.
     void humanCreated(const HumanCreation& human) override;
-    /// Moves a bound AI human there, with no ground snap; the player's teleport is the level's (GameplayMode).
-    void humanTeleported(double handle, const world_objects::Placement& placement) override;
+    /// Moves a bound AI human there as the script's teleport does: Human::place() onto placeGround() and the brain's
+    /// part (Brain::placed()), then for `TeleportToFlag` (`motion` Stopped) Human::resetMotion(); the player's teleport
+    /// is the level's (GameplayMode).
+    /// @orig 0x00385bb8 Object_Teleport (unknown)
+    /// @orig 0x00385db0 Object_TeleportToFlag (unknown)
+    void humanTeleported(double handle, const world_objects::Placement& placement,
+                         world_objects::TeleportMotion motion) override;
     /// Where a bound brain's human stands now, and its heading.
     [[nodiscard]] std::optional<world_objects::Placement> humanPlacement(double handle) const override;
     /// The character bindings' host (ai::ScriptedHumans).
@@ -390,6 +405,7 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     script::ScriptSystem* m_scripts = nullptr;
     const script::MessageHandlers* m_messages = nullptr;
     const world_objects::FlagNet* m_flagNet = nullptr;
+    PlaceGround m_placeGround; // setPlaceGround()
     ItemServices* m_items = nullptr;
     script::AnimCallbacks* m_animCallbacks = nullptr;
     std::vector<std::pair<double, std::uint32_t>> m_animStarts; // (human, anim id) since runAnimCallbacks()

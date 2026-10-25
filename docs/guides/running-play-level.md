@@ -194,9 +194,10 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level34 -
 ```
 
 `--start X,Y,Z,HEADING[,DISTANCE,YAW]` (with `--play-level`) moves player 1, after the level's own start, to those
-feet (dropped onto the ground below) and heading in degrees, and with the last two puts the follow camera DISTANCE
-metres from him with its view facing YAW degrees. It is a test aid: a trace scenario starts Coney where the
-original's save state stands, as `walk60` and `run_circle` do from slot 1's first trace row.
+feet (dropped onto the ground below, standing idle with his health and meters kept) and heading in degrees, and with
+the last two puts the follow camera DISTANCE metres from him with its view facing YAW degrees. It is a test aid: a
+trace scenario starts Coney where the original's save state stands, as `walk60` and `run_circle` do from slot 1's
+first trace row.
 
 `--scene NAME` (with `--play-level`) plays the in-engine scene NAME at once, after any `--start`, as a level99
 cinematic: player 1 takes the role named `warrrecv` and the other roles are played by stand-ins drawn from the role's
@@ -260,7 +261,9 @@ enemy]` (standing: not on the ground, so a held or mounted human stands, as the 
 observed world objects as `[type, x, y, shown]`, with car stereos among them), then reads lines from
 standard input until a pad: `observe PREFIX...` chooses the world object types observed from then on, and `pad
 BUTTONS RX RY LX LY` (the buttons in hexadecimal, as an input script's masks, then the four stick bytes, 0x80
-centred) is the pad of the update. With `--play-level` the first observation is of the level's first update of
+centred) is the pad of the update. `call NAME` runs the level script's function `NAME` (no arguments) before the update
+and answers `@called NAME ok` or `failed`: a test aid that puts the level at a given step, such as `call P3.DealerPoizo`
+for a capture at level99's flash dealer. With `--play-level` the first observation is of the level's first update of
 play: until then the session loads the level as the story does and the pad rests. With `--event-log` each event is
 also written as `@ev <csv line>`; other lines on standard output are Coney's own messages. At the end of standard
 input the pad is released. It is test mode (one step per update) and cannot be combined with `--input-script`.

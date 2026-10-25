@@ -135,6 +135,15 @@ coney = "src/animation/anim_task.h:ClipThenNextTask"
 status = "legacy"
 
 [[function]]
+address = 0x00106240
+name = "AnimTask5_Construct"
+page = "formats/animation.md#playback-rate"
+role = "Builds a type 5 (layer) task over one clip, its rate taken from the clip's Anim Range List flags (`Anim_RateMultiplier`, `0x00104a38`): no flag, the default 0.75."
+level = "confirmed-code"
+coney = "src/human/human.h:Human::pushOverlayClip"
+status = "legacy"
+
+[[function]]
 address = 0x00106c80
 name = "AnimTaskBlendOut_Construct"
 page = "formats/animation.md#original-structure"

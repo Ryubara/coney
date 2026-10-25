@@ -1,0 +1,39 @@
+version = 1
+id = "r-20261024-flash-dealer-665"
+date = "2026-10-24"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "69f1a2baaa51f1c86ce4be827e35e318a7f6a053554c52636962053fb475e5ed"
+
+[who]
+agent = "a6477f20b579fc7e6"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "breakable-fence-flash"
+patches = ["call-brains", "right-stick", "scripted-pad"]
+
+[run]
+name = ""
+method = "level99 checkpoint 3 from the state: the lua recipe ran P3.DealerPoizo(); the pad recipe walked the player to the dealer at 60 percent stick (two holds, 45 and 60 updates) and tapped triangle; the d-pad right entry of the pressed command table was read before the dealer (mask 0xfe) and after the purchase and P3.FlashSpeak (mask 0xff); a breakpoint on Flash_Use's entry, then the pad recipe pressed d-pad right for 2 updates; at the break ra and v0 were read"
+
+[values]
+health_before = 314
+health_max = 900
+flashes_after_buy = 1
+money_before = 54
+money_after = 34
+dpad_right_mask_before = 254
+dpad_right_mask_after_flashspeak = 255
+flash_use_v0_anim = 665
+
+[addresses]
+flash_use = 0x00284280
+flash_use_ra = 0x002473c4
+dpad_right_entry = 0x005ddde8

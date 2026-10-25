@@ -136,6 +136,25 @@ struct PlayerClass {
 /// as the original writes the class's damage when any human is made (docs/research/combat/index.md#damage-table).
 [[nodiscard]] PlayerClass playerClassOf(const characters::CharacterTypes& types, int type);
 
+/// Gives `player` the meters a human has when the game makes it a player (`HuChangePlayerGang` handing player 1 to
+/// `chosen`): `chosen`'s own health and maximum, each times the Warrior class's health percentage `healthPercent`
+/// (byte `+0x05`) and rounded, the power and the stamina full, and `chosen`'s rage
+/// (docs/research/teleports.md#handover). It ports the meters part of `Human_MakePlayer` only; the flags, the brain
+/// and the record it also writes are the hand-over's (ai::ScriptedBrains::changePlayerGang()). Coney's hand-over moves
+/// player 1's human onto `chosen` (a stand-in), so it copies them; the original's chosen human keeps its own and is
+/// scaled where it stands. A `healthPercent` of 0 leaves them unscaled: Coney's "no class recorded" (a type with no
+/// `CfgWarriorClass` record, as characters::PlayerTraits::healthPercent gives it), where the original always has one.
+/// The maximum is at least 1, so a class percentage that rounds it to 0 cannot leave a player whose health has no
+/// maximum (combat::Health needs one).
+/// @orig 0x00229c40 Human_MakePlayer (unknown)
+void takeMetersOf(Human& player, const Human& chosen, int healthPercent);
+
+/// Makes `player`, moved onto `chosen` by Coney's hand-over, the human `chosen` is as the game makes it a player: it
+/// stands afresh (Human::settle(): no stun, stance, attack, pair or clip of the old body carried over), then takes
+/// `chosen`'s meters (takeMetersOf()). The original's new player 1 is the chosen human itself, with its own state.
+/// @coney-only the hand-over's stand-in: Coney has one player human, which takes the chosen human's place
+void makePlayerOf(Human& player, const Human& chosen, int healthPercent);
+
 /// The noclip's flying speed across the ground with the left stick pushed fully, and its rise and descent with a
 /// trigger pulled fully, in metres a second: **Coney's choice**, a little under the run's 7.5 so that a short push
 /// places him exactly (docs/guides/debug-menu.md#noclip).
@@ -177,9 +196,20 @@ class Player {
     /// no flow for yet).
     void update(const Pad& pad, const raycast::CollisionMesh* mesh, std::span<Combatant* const> targets = {});
 
-    /// Puts the human at `start` on `mesh` (spawned there as at a level start) and the camera behind it, with nothing
-    /// to blend from: the debug menus' teleport. Coney's own tool; the original has none.
+    /// Moves the human to `start` as `TeleportToFlag` moves a human (place(), then Human::resetMotion(): his move
+    /// stops), so its health, meters and clip stay, and puts the camera behind him with nothing to blend from (a
+    /// stand-in, cameraAfterPlacement()). The scripts' `TeleportToFlag`, a scene's release and the hand-over use it.
+    /// @orig 0x00385db0 Object_TeleportToFlag (unknown)
     void teleport(const raycast::CollisionMesh* mesh, const PlayerStart& start);
+    /// Moves the human to `start` as `Teleport` moves a human: the placement alone (Human::place() with `mesh` as the
+    /// ground, null for none), so his move goes on (docs/research/teleports.md#motion-reset); the camera as after
+    /// teleport(). The brain's part of the placement is the caller's (ai::Brain::placed()).
+    /// @orig 0x00385bb8 Object_Teleport (unknown)
+    void place(const raycast::CollisionMesh* mesh, const PlayerStart& start);
+    /// The human settled as after a walk (Human::settle()), then teleport(): the debug menus' teleport and `--start`,
+    /// which stand for the walk there.
+    /// @coney-only a test aid's walk stand-in; the original has none
+    void standAt(const raycast::CollisionMesh* mesh, const PlayerStart& start);
     /// Places the camera behind the human again with the current follow settings (camera::followDefaults()), with
     /// nothing to blend from: the debug menus' camera reset.
     void resetCamera();
@@ -244,6 +274,9 @@ class Player {
   private:
     // The snapshot of the state now.
     [[nodiscard]] PlayerSnapshot capture() const;
+    // After a placement: the camera put behind the human (a stand-in: the original's teleports leave the camera alone).
+    // @coney-only the camera cut after a placement, which Coney's level start and scene ends rely on
+    void cameraAfterPlacement();
 
     PlayerStart m_start;
     combat::CommandTables m_tables = combat::CommandTables::street();

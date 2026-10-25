@@ -4,12 +4,13 @@
 // "The flash clip's events"; issue #234): `level80` checkpoint 2 played in the game session as `coney --play-level
 // level80 --checkpoint 2` plays it (support/disc_session.h), player 1 hurt and carrying a flash, and a pad driver that
 // taps d-pad right for one frame. The clip 665 `gen_flash_use` must play (it is in the player's animation set), the
-// flash is spent and the health filled 19 updates into it, at the clip's action event, and on that update interface
+// flash is spent and the health filled 25 updates into it, at the clip's action event, and on that update interface
 // cue 23 (`vags/misc/flash`) and the clip's animation sound 70 sound. Standing still, walking and running are each
 // tried, so a held stick does not turn the use into an instant heal. It runs only when the environment variable
 // CONEY_DISC names the disc and skips otherwise; it prints counts only (LEGAL.md).
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -23,6 +24,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "ai/ai_humans.h"
 #include "ai/brain.h"
 #include "ai/brains.h"
 #include "ai/dealer_goal.h"
@@ -39,18 +41,23 @@
 #include "human/player.h"
 #include "platform/game_session.h"
 #include "platform/play_level_mode.h"
+#include "scripting/script_system.h"
 #include "support/disc_play_fixtures.h"
 #include "support/disc_session.h"
+#include "warriors/created_humans.h"
 #include "warriors/inventory.h"
 
 namespace {
 
 // The flash's clip: 665 SPECIAL_FLASH, `gen_flash_use`.
 constexpr std::uint32_t kFlashClip = 665;
-// The update of the clip its action event falls on: frame 19 of 30 per second (docs/research/combat-rage.md#rage).
-constexpr int kEventUpdate = 19;
+// The update of the clip its action event falls on: frame 19 at the clip's rate of 0.75 (no rate flag), 25 updates
+// after 665 began, as the original's runs measure it (docs/research/combat-rage.md#rage).
+constexpr int kEventUpdate = 25;
 // The interface cue `Flash_Use` plays: 23, `vags/misc/flash`.
 constexpr std::size_t kFlashCue = 23;
+// The animation sound 665's event 11 asks for: 70 (docs/research/combat-rage.md#rage).
+constexpr std::uint32_t kFlashAnimSound = 70;
 // How long anything here may take: 60 s of frames.
 constexpr std::uint64_t kLimit = 1800;
 // A forward stick that walks (under the run's 0.95) and one that runs, as fractions of full deflection.
@@ -156,8 +163,11 @@ struct Use {
     int healUpdate = -1;              // the update the flash was spent and the health filled
     int cueUpdate = -1;               // the update interface cue 23's sound was asked for
     int animSoundUpdate = -1;         // the update the humans' animation sounds count rose
+    std::uint32_t animSound = 0;      // the animation sound player 1 asked for last, on that update
     int flashesAfter = -1;            // the flashes left at the end
     int healthAfter = -1;             // the health at the end
+    int healthBefore = -1;            // the health at the press
+    int healthFilledUpdate = -1;      // the first update the health was at its maximum
     int healthMaximum = -1;           // the maximum
     int cueSounds = 0;                // how many times cue 23's sound was asked for
     std::uint64_t unheard = 0;        // plays the engine could not sound: unknown, refused or without a sample
@@ -195,22 +205,29 @@ std::uint64_t unheardPlays(const coney::audio::SoundEngine& engine) {
     return stats.unknown + stats.refused + stats.missingSamples;
 }
 
-// Plays the use: hurts player 1 to half health with one flash, optionally holding the stick, taps d-pad right and
-// follows 90 updates (3 s), noting what happens when; with `pressAgainAt` it taps d-pad right again on that update
-// (while 665 plays, which must neither restart the clip nor spend a second flash).
-Use useFlash(coney::test::DiscSession& run, FlashDriver& driver, float stick, int pressAgainAt = -1) {
+// How useFlash() finds player 1: hurt to half health and given one flash by the test, or as the game left him.
+enum class SetUp : std::uint8_t { HurtWithFlash, AsPlayed };
+
+// Plays the use: with SetUp::HurtWithFlash hurts player 1 to half health with one flash, optionally holding the stick,
+// taps d-pad right and follows 90 updates (3 s), noting what happens when; with `pressAgainAt` it taps d-pad right
+// again on that update (while 665 plays, which must neither restart the clip nor spend a second flash).
+Use useFlash(coney::test::DiscSession& run, FlashDriver& driver, float stick, int pressAgainAt = -1,
+             SetUp setUp = SetUp::HurtWithFlash) {
     // The play mode hands out player 1 const; the test hurts him as a fight would.
     auto& human = const_cast<coney::human::Human&>(run.session().play()->player().human());
     coney::Inventory& inventory = run.session().flow().state().player.inventory;
-    inventory.set(0, coney::item::kRevive, 1);
     coney::combat::Health& health = human.fighter().health();
-    health.set(health.maximum() / 2);
+    if (setUp == SetUp::HurtWithFlash) {
+        inventory.set(0, coney::item::kRevive, 1);
+        health.set(health.maximum() / 2);
+    }
 
     coney::audio::SoundEngine* engine = run.audio().sounds().engine();
     REQUIRE(engine != nullptr);
     const std::uint32_t cueHash = engine->interfaceSound(kFlashCue);
     Use use;
     use.healthMaximum = health.maximum();
+    use.healthBefore = health.value();
     int update = -1;
     engine->setPlayObserver([&](std::uint32_t hash) {
         if (hash == cueHash && cueHash != 0) {
@@ -225,7 +242,7 @@ Use useFlash(coney::test::DiscSession& run, FlashDriver& driver, float stick, in
     driver.want = Want::Flash;
     const std::uint64_t unheardBefore = unheardPlays(*engine);
     std::uint64_t animSounds = animSoundsAsked(run.audio().game());
-    int flashes = 1;
+    int flashes = inventory.count(0, coney::item::kRevive);
     for (update = 0; update < 90; ++update) {
         if (update == pressAgainAt) {
             driver.want = Want::Flash;
@@ -242,9 +259,15 @@ Use useFlash(coney::test::DiscSession& run, FlashDriver& driver, float stick, in
             use.healUpdate = update;
         }
         flashes = left;
+        if (use.healthFilledUpdate < 0 && health.value() == health.maximum()) {
+            use.healthFilledUpdate = update;
+        }
         const std::uint64_t now = animSoundsAsked(run.audio().game());
         if (now > animSounds && use.animSoundUpdate < 0 && use.healUpdate >= 0) {
             use.animSoundUpdate = update;
+            // The player's own: on that update other humans' clips ask for theirs too (a footstep's).
+            const coney::HumanCreation* player = run.session().flow().humans().player(1);
+            use.animSound = player != nullptr ? run.audio().game().lastAnimSound(player->handle) : 0;
         }
         animSounds = now;
     }
@@ -256,25 +279,29 @@ Use useFlash(coney::test::DiscSession& run, FlashDriver& driver, float stick, in
     return use;
 }
 
-// Checks one use against the original: 665 plays, and 19 updates into it (its action event) the flash is spent, the
-// health filled, cue 23 and the clip's animation sound 70 sound on that update, and nothing the engine was asked to
-// play was left silent.
+// Checks one use against the original: 665 plays, and 25 updates into it (its action event) the flash is spent, the
+// health filled (not before: it stays as it was until then), cue 23 and the clip's animation sound 70 sound on that
+// update, and nothing the engine was asked to play was left silent.
 void checkUse(const Use& use, const char* what) {
-    std::printf("  %s: 665 %s from update %d; spent at %d, cue 23 at %d (x%d), animation sound at %d; flashes 1 -> %d, "
-                "health %d of %d; %llu plays silent\n",
+    std::printf("  %s: 665 %s from update %d; spent at %d, cue 23 at %d (x%d), animation sound %u at %d; flashes 1 -> "
+                "%d, health %d -> %d of %d, full from update %d; %llu plays silent\n",
                 what, use.played ? "plays" : "does not play", use.startUpdate, use.healUpdate, use.cueUpdate,
-                use.cueSounds, use.animSoundUpdate, use.flashesAfter, use.healthAfter, use.healthMaximum,
+                use.cueSounds, static_cast<unsigned>(use.animSound), use.animSoundUpdate, use.flashesAfter,
+                use.healthBefore, use.healthAfter, use.healthMaximum, use.healthFilledUpdate,
                 static_cast<unsigned long long>(use.unheard));
     INFO(what);
     CHECK(use.played);
     CHECK(use.flashesAfter == 0);
+    CHECK(use.healthBefore < use.healthMaximum);
     CHECK(use.healthAfter == use.healthMaximum);
-    // Nothing is spent or healed before the clip's event: the use lands 19 updates after 665 began.
+    // Nothing is spent or healed before the clip's event: the use lands 25 updates after 665 began.
     REQUIRE(use.startUpdate >= 0);
     CHECK(use.healUpdate == use.startUpdate + kEventUpdate);
+    CHECK(use.healthFilledUpdate == use.healUpdate);
     CHECK(use.cueUpdate == use.healUpdate);
     CHECK(use.cueSounds == 1);
     CHECK(use.animSoundUpdate == use.healUpdate);
+    CHECK(use.animSound == kFlashAnimSound);
     CHECK(use.unheard == 0);
 }
 
@@ -292,7 +319,7 @@ void startPlaying(coney::test::DiscSession& run, FlashDriver& driver, const char
 
 } // namespace
 
-TEST_CASE("the disc's level80: d-pad right with a flash plays 665 and uses it 19 updates in", "[disc][story][flash]") {
+TEST_CASE("the disc's level80: d-pad right with a flash plays 665 and uses it 25 updates in", "[disc][story][flash]") {
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -319,6 +346,40 @@ TEST_CASE("the disc's level80: d-pad right with a flash plays 665 and uses it 19
         driver.stick = 0.0F;
         run.run(60);
     }
+    CHECK(run.session().flow().scripts().errors() == 0);
+}
+
+TEST_CASE("the disc's level80: a stunned player's d-pad right uses the flash at once, with no 665",
+          "[disc][story][flash]") {
+    // Player_UseItemCommand (0x002843f8) refuses the press only when down or dead (Human_IsDownOrDead, 0x00227e60),
+    // cuffed, airborne or climbing. A stun is none of those: it reaches the test of what holds the human, which a stun
+    // fails, so Flash_Use runs at once on the press's update and 665 is not played (docs/research/combat-rage.md#rage,
+    // where the original's runs heal at once over a hit reaction and a knockdown).
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    FlashDriver driver;
+    coney::test::DiscSession run(*wad, driver);
+    startPlaying(run, driver, "level80", 2);
+    auto& human = const_cast<coney::human::Human&>(run.session().play()->player().human());
+    constexpr std::uint64_t kStunMs = 3000;
+    human.stunFor(human.nowMs(), kStunMs);
+    run.run(5);
+    REQUIRE(human.fighter().helpless(human.animator()));
+
+    const Use use = useFlash(run, driver, 0.0F);
+    std::printf("  level80 stunned: 665 %s; spent at %d, cue 23 at %d (x%d); health %d -> %d of %d\n",
+                use.played ? "plays" : "does not play", use.healUpdate, use.cueUpdate, use.cueSounds, use.healthBefore,
+                use.healthAfter, use.healthMaximum);
+    CHECK_FALSE(use.played);
+    CHECK(use.flashesAfter == 0);
+    CHECK(use.healthBefore < use.healthMaximum);
+    CHECK(use.healthAfter == use.healthMaximum);
+    // At once: on the press's update.
+    CHECK(use.healUpdate == 0);
+    CHECK(use.cueUpdate == use.healUpdate);
+    CHECK(use.cueSounds == 1);
     CHECK(run.session().flow().scripts().errors() == 0);
 }
 
@@ -414,4 +475,93 @@ TEST_CASE("the disc's level99 dealer: buying a flash plays the money pair, then 
     run.run(150);
     checkUse(useFlash(run, driver, 0.0F, 5), "level99 after the purchase");
     CHECK(run.session().flow().scripts().errors() == 0);
+}
+
+TEST_CASE(
+    "the disc's level99 from a new story, checkpoint ends called: hurt at checkpoint 2, teleported to the dealer, the "
+    "flash bought heals at 665's event",
+    "[disc][story][flash]") {
+    // Issue #234: a new story's level99 from checkpoint 1, its checkpoints in one session, the dealer reached with the
+    // stick and the flash bought with triangle, then d-pad right with the health the game left him
+    // (docs/research/teleports.md#flash-lesson). The course, the street lesson and the roofs are not played: the test
+    // calls the end of each (P1.Cleanup; P2.NavigationSection with player 1's handle for both of its arguments; the
+    // fence's break P3.FenceBroken), as the hand-over, street and fence tests do, and every scene is skipped with
+    // cross. The teleports and the scenes between are the game's own.
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    coney::test::DiscSession* current = nullptr;
+    FlashDriver driver([&current]() -> const coney::human::Player* {
+        coney::platform::PlayLevelMode* play = current != nullptr ? current->session().play() : nullptr;
+        return play != nullptr ? &play->player() : nullptr;
+    });
+    coney::test::DiscSession run(*wad, driver);
+    current = &run;
+    coney::StartUpFlow& flow = run.session().flow();
+    coney::script::ScriptSystem& scripts = flow.scripts();
+
+    // A new story, its first mission from checkpoint 1, every scene skipped with cross.
+    run.session().startStory();
+    REQUIRE(run.runUntil([&flow] { return flow.state().levels.find("level99").has_value(); },
+                         coney::test::DiscSession::kPlayLimit));
+    REQUIRE(run.session().jumpToLevel("level99", 1));
+    REQUIRE(run.runUntilPlay());
+    driver.want = Want::SkipScene;
+    run.run(300);
+    const auto health = [&run] { return run.session().play()->player().human().health(); };
+
+    // Checkpoint 2: the new Rembrandt is handed the player and P2.SetupLesson1 sets him to 35 %; the street scene
+    // l99_c2 that follows (its join and its release place him) leaves him there.
+    REQUIRE(scripts.call("P1.Cleanup"));
+    run.run(600);
+    CHECK(flow.state().checkPoint == 2);
+    const int hurt = health().value();
+    const int maximum = health().maximum();
+    std::printf("  level99 story: checkpoint 2, health %d of %d\n", hurt, maximum);
+    // Coney's 35 % in exact arithmetic (315 of 900); the original's single-precision product gives 314 (issue #820).
+    CHECK(hurt == maximum * 35 / 100);
+
+    // Checkpoint 3: the street lesson's end (walking back to Vermin) sets it and loads the roofs' chapter.
+    const coney::HumanCreation* player = flow.humans().player(1);
+    REQUIRE(player != nullptr);
+    const std::array<coney::script::Value, 2> reached{coney::script::Value(player->handle),
+                                                      coney::script::Value(player->handle)};
+    REQUIRE(scripts.call("P2.NavigationSection", reached));
+    REQUIRE(run.runUntil([&scripts] { return scripts.hasFunction("P3.DealerPoizo"); }, kLimit));
+    run.run(900);
+    CHECK(flow.state().checkPoint == 3);
+    driver.want = Want::Nothing;
+
+    // The rotting fence broken (P3.FenceBroken, which tops his money up to $20), and half a second later the cut to the
+    // dealer (P3.DealerPoizo) teleports him there: still hurt.
+    REQUIRE(scripts.call("P3.FenceBroken"));
+    run.run(135);
+    std::printf("  level99 story: at the dealer, health %d of %d\n", health().value(), maximum);
+    CHECK(health().value() == hurt);
+
+    // To the dealer with the stick at 60 %, triangle: the money pair and the flash.
+    const coney::ai::Brains* found = run.session().gameplay().brains();
+    REQUIRE(found != nullptr);
+    const coney::ai::Brain* dealer = nullptr;
+    for (std::size_t i = 0; i < found->size(); ++i) {
+        const coney::ai::Goal* goal = found->at(i).topGoal();
+        if (goal != nullptr && goal->type() == coney::ai::GoalType::Dealer) {
+            dealer = &found->at(i);
+        }
+    }
+    REQUIRE(dealer != nullptr);
+    driver.goal = dealer->human().position();
+    driver.want = Want::WalkTo;
+    REQUIRE(run.runUntil([&driver] { return driver.arrived; }, kLimit));
+    driver.want = Want::Nothing;
+    run.run(10);
+    driver.tapTriangle = true;
+    // Past the script's 3 s for the flash command (P3.CheckForFlash, then P3.FlashSpeak).
+    run.run(150);
+    REQUIRE(flow.state().player.inventory.count(0, coney::item::kRevive) == 1);
+
+    // d-pad right as the game left him: 665, and the heal at its event, not before.
+    checkUse(useFlash(run, driver, 0.0F, -1, SetUp::AsPlayed), "level99 story");
+    CHECK(scripts.errors() == 0);
 }

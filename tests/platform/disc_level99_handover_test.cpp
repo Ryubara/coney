@@ -2,7 +2,8 @@
 
 // Checks against the player's own disc that player 1 stays player 1 when `level99` goes from checkpoint 1 to 2 in one
 // session, as the story plays it: `P1.Cleanup` sets checkpoint 2 and `P2.SetupLesson1` makes a new Rembrandt and hands
-// him the player with `HuChangePlayerGang` (docs/research/characters.md#level99-handover). From then on every lookup of
+// him the player with `HuChangePlayerGang` (docs/research/characters.md#level99-handover), with the new human's own
+// health even when the old one was hurt (docs/research/teleports.md#handover). From then on every lookup of
 // player 1 must name the new human, or the street lesson stalls: the stereo theft's handler `P2.CarRadioStolen` asks
 // `HuIsAPlayer` of the thief and only then schedules the next step. The level plays in the game session as
 // `--play-level level99` plays it (support/disc_session.h), the course's end called by the test (as level99's street
@@ -10,6 +11,7 @@
 // in circles at 90 %). It runs only when the environment variable CONEY_DISC names the disc and skips otherwise; it
 // prints counts only (LEGAL.md).
 
+#include <charconv>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -19,12 +21,16 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
 #include "debug/play_controls.h"
 #include "fileio/wad.h"
+#include "human/fighter.h"
+#include "human/human.h"
+#include "human/player.h"
 #include "platform/game_session.h"
 #include "platform/play_level_mode.h"
 #include "scripting/script_system.h"
@@ -60,6 +66,44 @@ std::string padScript(std::uint64_t theft) {
     return script;
 }
 
+// The health the old player 1 is left with before the hand-over.
+constexpr int kHurt = 100;
+
+// The text "X of Y" at `start` in `text` read as the pair (X, Y); nothing when it is not that. std::from_chars, not
+// sscanf, which MSVC flags as unsafe; it reads the line's own string, so its range ends where the line does.
+std::optional<std::pair<int, int>> parseXOfY(const std::string& text, std::size_t start) {
+    constexpr std::string_view kOf = " of ";
+    int value = 0;
+    int maximum = 0;
+    const char* const end = text.c_str() + text.size();
+    const auto [afterValue, valueError] = std::from_chars(text.c_str() + start, end, value);
+    if (valueError != std::errc{} || std::string_view(afterValue, end).substr(0, kOf.size()) != kOf) {
+        return std::nullopt;
+    }
+    const auto [afterMaximum, maximumError] = std::from_chars(afterValue + kOf.size(), end, maximum);
+    if (maximumError != std::errc{}) {
+        return std::nullopt;
+    }
+    return std::pair{value, maximum};
+}
+
+// The health and maximum the play mode's hand-over line gives ("player: handed to human ..., health X of Y"); nothing
+// when there is none.
+std::optional<std::pair<int, int>> handOverHealth(const std::vector<std::string>& lines) {
+    constexpr std::string_view kLine = "player: handed to human";
+    constexpr std::string_view kHealth = ", health ";
+    for (const std::string& line : lines) {
+        const std::size_t health = line.find(kHealth);
+        if (line.find(kLine) == std::string::npos || health == std::string::npos) {
+            continue;
+        }
+        if (const auto parsed = parseXOfY(line, health + kHealth.size())) {
+            return parsed;
+        }
+    }
+    return std::nullopt;
+}
+
 // The handle of the last human the scripts made with `name`, or 0.
 double lastNamed(const coney::CreatedHumans& humans, std::string_view name) {
     double handle = 0.0;
@@ -82,7 +126,8 @@ std::size_t countOf(const std::vector<std::string>& lines, std::string_view text
 
 } // namespace
 
-TEST_CASE("the disc's level99: player 1 handed over at checkpoint 2 steals the stereo as the player",
+TEST_CASE("the disc's level99: player 1 handed over hurt at checkpoint 2 has the new human's health and steals the "
+          "stereo as the player",
           "[disc][story][handover]") {
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
@@ -99,9 +144,16 @@ TEST_CASE("the disc's level99: player 1 handed over at checkpoint 2 steals the s
     REQUIRE(run.runUntilPlay());
     const coney::CreatedHumans& humans = run.session().flow().humans();
 
-    // The course's end: checkpoint 2, a new Rembrandt handed the player.
+    // The course's end: checkpoint 2, a new Rembrandt handed the player. The old one is hurt first: the new player 1
+    // has the new human's own health (full, as made), not his (Human_MakePlayer, docs/research/teleports.md#handover).
     REQUIRE(run.runToPlayFrame(kCleanupAt));
     const double coursePlayer = lastNamed(humans, "Rembrandt");
+    {
+        coney::platform::PlayLevelMode* course = run.session().play();
+        REQUIRE(course != nullptr);
+        auto& old = const_cast<coney::human::Human&>(course->player().human());
+        old.fighter().health().set(kHurt);
+    }
     CHECK(scripts.call("P1.Cleanup"));
     REQUIRE(run.runToPlayFrame(kCarsAt));
     const double streetPlayer = lastNamed(humans, "Rembrandt");
@@ -110,6 +162,13 @@ TEST_CASE("the disc's level99: player 1 handed over at checkpoint 2 steals the s
     REQUIRE(player != nullptr);
     CHECK(player->handle == streetPlayer);
     CHECK(run.session().flow().state().checkPoint == 2);
+    const std::optional<std::pair<int, int>> handedHealth = handOverHealth(run.log());
+    REQUIRE(handedHealth.has_value());
+    // value_or after the REQUIRE: its default is never used, and the analysis cannot see the REQUIRE's check.
+    const auto [handedValue, handedMaximum] = handedHealth.value_or(std::pair{-1, 0});
+    std::printf("  level99 hand-over: the old player at %d, the new one handed over at %d of %d\n", kHurt, handedValue,
+                handedMaximum);
+    CHECK(handedValue == handedMaximum);
 
     // The cars' step (CarSpawnRadio, the theft handler), then player 1 at car 142's front-left door, facing it.
     CHECK(scripts.call("P2.SetupCars"));

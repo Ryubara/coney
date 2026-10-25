@@ -253,6 +253,7 @@ void SceneStage::humanRelease(double human, const std::optional<scenes::ScenePos
     // A human the scene never took in (one in a grab at the start) and not skipped stays where it is.
     const bool placed = endPose.has_value() || frame.has_value();
     if (endPose) {
+        release.skipped = true;
         release.feet = endPose->position;
         release.heading = scenes::headingOf(endPose->rotation);
     } else if (frame) {
