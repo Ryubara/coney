@@ -225,6 +225,7 @@ class LevelPickups {
     void spendItem(int player, int item);
     /// Player `player` (0 or 1) holds `count` of item `item` from now on, with no callbacks and no notice: `--give`,
     /// Coney's test aid.
+    /// @coney-only test aid: the original has no command-line inventory
     void setCarried(int player, int item, int count);
 
     /// The mugging record `SetInterrogateParam` set (set 0-2's override) while its required time is not 0; nothing for
