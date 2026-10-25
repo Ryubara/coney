@@ -123,7 +123,7 @@ inline std::vector<LocomotionClip> combatClips() {
     };
     // The attacks, each with phase events as an attack's clip has them (docs/research/tasks.md#held-flags): the first
     // and second of a chain open a window (0x2c) at frame 5, every one ends (0x2d) at 12 and recovers (0x48) at 13. The
-    // snaps carry a contact event (0x41) at frame 3, which ends their steer's time (combat-moves.md#two-steers).
+    // snaps carry a contact event (0x41) at frame 3, which ends their steer's time (combat-targets.md#two-steers).
     for (const std::uint32_t id : {11U, 12U, 13U, 14U, 15U, 16U, 17U, 19U, 25U, 27U, 29U, 661U, 662U}) {
         still(id, 0.6F);
         if (id == 11U || id == 12U || id == 16U) {

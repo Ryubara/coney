@@ -3,7 +3,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-// Which target each attack goes for (docs/research/combat-moves.md#targeting).
+// Which target each attack goes for (docs/research/combat-targets.md#targeting).
 
 using coney::combat::attackTarget;
 using coney::combat::TargetSearch;

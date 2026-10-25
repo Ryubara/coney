@@ -69,7 +69,7 @@ struct BodyPlacement {
 
 /// Whether shape `to`, swept from where it was posed the update before (`from`, the same shape), meets `part`: the
 /// test along each shape's move since the last update (`Human_TestStrikes` `0x0033f110` tests from a shape's previous
-/// posed point, `+0x20`, to its new one, `+0x50`, in the world; docs/research/combat-moves.md#reach). A sphere sweeps
+/// posed point, `+0x20`, to its new one, `+0x50`, in the world; docs/research/combat-targets.md#reach). A sphere sweeps
 /// a capsule from its old centre to its new one. **Coney's reading** for a segment: its new place and the paths of
 /// its two ends.
 [[nodiscard]] bool sweptShapesMeet(const PosedShape& from, const PosedShape& to, const PosedShape& part);

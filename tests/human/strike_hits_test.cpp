@@ -186,7 +186,7 @@ TEST_CASE("square at a human down behind the attacker within the pick's wide pas
           "[human][strike]") {
     // Player_PickTarget's wide pass (any angle, 2.0 m × 0.7) skips only the knocked out, so it finds a downed human
     // 0.9 m behind, and its state picks 193; 1.6 m behind he is out of every pass and square plays S1
-    // (docs/research/combat-moves.md#targeting).
+    // (docs/research/combat-targets.md#targeting).
     for (const auto& [behind, wanted] : {std::pair{0.9F, 193U}, std::pair{1.6F, 12U}}) {
         Strike strike(-behind, 0.5F);
         const std::array<std::uint32_t, 1> down{196};

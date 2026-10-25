@@ -124,7 +124,7 @@ TEST_CASE("shapes overlap within their radii; segments by their nearest points",
 TEST_CASE("a strike is tested along each shape's move since the last update, as X1's hook crosses the spine",
           "[human][strike]") {
     // The target's spine, upright, 1.0 m ahead; a hand sphere crossing in front of its top from right to left
-    // (combat-moves.md#reach): neither end of the move overlaps, the path does.
+    // (combat-targets.md#reach): neither end of the move overlaps, the path does.
     const human::PosedShape spine{.a = {0.0F, 1.0F, 1.1F}, .b = {0.0F, 1.0F, 1.5F}, .radius = 0.18F, .bone = 3};
     const human::PosedShape from{.a = {0.25F, 0.78F, 1.6F}, .b = {0.25F, 0.78F, 1.6F}, .radius = 0.087F, .bone = 25};
     const human::PosedShape to{.a = {-0.25F, 0.78F, 1.6F}, .b = {-0.25F, 0.78F, 1.6F}, .radius = 0.087F, .bone = 25};

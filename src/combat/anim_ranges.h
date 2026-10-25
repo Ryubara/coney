@@ -28,7 +28,7 @@ struct AnimRange {
 };
 
 /// The hit code's flag that gives an attack the led steer, aimed at the target's head over the time to its first
-/// event + 0.1 s (`AttackTable_GetFlags` `0x00254d60`, docs/research/combat-moves.md#two-steers).
+/// event + 0.1 s (`AttackTable_GetFlags` `0x00254d60`, docs/research/combat-targets.md#two-steers).
 inline constexpr std::int16_t kLedSteerFlag = 0x8;
 
 /// The Anim Range List of one character.
