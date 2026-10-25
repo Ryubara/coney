@@ -235,8 +235,9 @@ def _rebasing(git: Git, worktree: Path) -> bool:
 def rebase(git: Git, worktree: Path, upstream: str) -> RebaseResult:
     """Rebase the branch of `worktree` onto `upstream`, linear. A conflict is aborted so the worktree is as it was.
 
-    ConfigError when git fails for another reason (nothing was started, so there is nothing to abort) or the abort
-    itself fails (the worktree is then mid-rebase and the message says so).
+    ConfigError, with git's own message, when git fails for another reason: before it started (nothing to abort), or
+    mid-way with no path left unmerged (no committer identity, a hook; aborted too), or when the abort itself fails (the
+    worktree is then mid-rebase and the message says so).
     """
     tip = out(git, worktree, "rev-parse", "HEAD").strip()
     if git(worktree, ["merge-base", "--is-ancestor", upstream, "HEAD"]).returncode == 0:
@@ -254,6 +255,9 @@ def rebase(git: Git, worktree: Path, upstream: str) -> RebaseResult:
         aborted = git(worktree, ["rebase", "--abort"])
         if aborted.returncode != 0:
             raise ConfigError(f"git rebase --abort failed: {aborted.stderr.strip()}; the worktree is mid-rebase")
+    if not paths:
+        said = (done.stderr or done.stdout).strip() or f"exit {done.returncode}"
+        raise ConfigError(f"git rebase {upstream} stopped with no conflict: {said}; aborted, the branch is as it was")
     return RebaseResult("conflict", tip, tip, paths, stopped)
 
 

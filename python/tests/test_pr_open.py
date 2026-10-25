@@ -230,6 +230,36 @@ def test_a_clean_rebase_keeps_check_and_review_and_records_where_it_started(tmp_
     assert f"rebased onto origin/main: {old[:12]} -> {new[:12]}" in opened.text()
 
 
+def test_a_rebase_that_stops_with_no_conflict_says_what_git_said(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    opened = docs_unit(tmp_path)
+    built = opened.built
+    old = built.tip
+    opened.advance_main("docs/guides/other.md", "# Other\n")
+    # a machine with no committer identity anywhere: the rebase starts, then cannot write its first commit
+    for key in ("core.autocrlf", "core.eol", "core.safecrlf"):  # the line endings stay as the checkout was made
+        kept = subprocess.run(["git", "-C", str(built.root), "config", "--get", key], capture_output=True, text=True)
+        if kept.returncode == 0:
+            git(built.root, "config", key, kept.stdout.strip())
+    empty = tmp_path / "empty.gitconfig"
+    empty.write_text("", encoding="utf-8")
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(empty))
+    monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
+    for name in ("GIT_AUTHOR_NAME", "GIT_AUTHOR_EMAIL", "GIT_COMMITTER_NAME", "GIT_COMMITTER_EMAIL", "EMAIL"):
+        monkeypatch.delenv(name, raising=False)
+    git(built.root, "config", "--unset", "user.name")
+    git(built.root, "config", "--unset", "user.email")
+    git(built.root, "config", "user.useConfigOnly", "true")
+    assert opened.run() == 4, opened.text()
+    text = opened.text()
+    assert "git rebase origin/main stopped with no conflict: " in text and "aborted, the branch is as it was" in text
+    assert "conflicts at" not in text and "user.email" in text
+    assert git(built.root, "rev-parse", "HEAD").strip() == old and opened.gh.writes() == []
+    assert not (built.root / ".git" / "rebase-merge").exists()
+    assert not (built.unit.dir / pr_publish.REBASE_FILE).exists()
+
+
 def tree_bytes(root: Path) -> dict[Path, bytes]:
     """Every file of the worktree with its bytes, line endings made LF (git may write either on a checkout)."""
     crlf, lf = bytes([13, 10]), bytes([10])

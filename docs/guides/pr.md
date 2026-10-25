@@ -211,10 +211,11 @@ commit: what is pushed is exactly what Check and Review saw. Its options and exi
 5. **Rebase.** `git rebase <remote>/<default>`, linear. Up to date: nothing happens. A conflict is aborted, so the
    worktree is as it was; the paths are written to `REBASE.md` in the task's folder and the exit is 3. The engineer
    resolves, and the hashes say which stamps that made stale. The rebase is linear whatever the machine's git
-   configuration says (`--no-rebase-merges`, no autosquash). A git that fails before it starts a rebase is exit 4, not a
-   conflict. After a clean rebase the proof runs again on the new tip; a stamp that became stale is listed like any
-   refusal (the branch stays rebased locally, exit 1). For a fix task the number of files changed since the last
-   release is printed (`fix touches 3 files since the last release`), so the reviewer can judge its scope.
+   configuration says (`--no-rebase-merges`, no autosquash). A git that fails before it starts a rebase, or a rebase
+   that stops with no path left unmerged (no committer identity, a hook), is exit 4 with git's message, not a conflict;
+   the second is aborted too. After a clean rebase the proof runs again on the new tip; a stamp that became stale is
+   listed like any refusal (the branch stays rebased locally, exit 1). For a fix task the number of files changed since
+   the last release is printed (`fix touches 3 files since the last release`), so the reviewer can judge its scope.
 6. **The stamp.** One `pr-opened` stamp is appended: the tip, the base, the change, title, paragraph, facts and pictures
    hashes, the engineer. When the newest stamp of the log is already a `pr-opened` that covers the same things, it is
    reused, so a rerun appends nothing.
@@ -272,7 +273,7 @@ What it refuses, besides the proof's refusals above (each message starts with "p
 | 1 | the proof's refusals, each under its stage | the stage named |
 | 3 | `rebase onto <remote>/<default> conflicts at <12 digits> in <paths>; the branch is as it was` | the engineer resolves; the stale stamps are redone |
 | 4 | `auto-merge on #N stays on and this release must not be merged by it; nothing was pushed` | turn it off on GitHub, rerun |
-| 4 | `push: ...` (the lease was refused: fetch the branch and have the engineer rebase onto it); `gh: ...; run pr open again`; `read-back: <url> is wrong: ...`; a git error from the rebase on | rerun |
+| 4 | `push: ...` (the lease was refused: fetch the branch and have the engineer rebase onto it); `gh: ...; run pr open again`; `read-back: <url> is wrong: ...`; `git rebase <remote>/<default> stopped with no conflict: <git's message>; aborted, the branch is as it was`; a git error from the rebase on | rerun (after fixing what git names) |
 
 ## What this does not do {#limits}
 
