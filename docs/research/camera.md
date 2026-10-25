@@ -1719,7 +1719,10 @@ engine at the cited addresses:
    0 or −1 is a cut. In one game-mode case (the mode object at `0x0015e718` reporting 8) it first takes the scene
    camera's view, field of view and near plane. The scene camera is then released (`0x0011e440`) and **the cameras'
    update runs once with dt = 0.17 s** (`0x0011e878(0.17)`), so the follow camera settles before the next frame. A
-   scene without a camera puts the kept camera back at its saved position and resets it (`0x0039ec60`).
+   cinematic **given up** before it starts (`SceneTask_Abort`, `0x0039ec60`, after 10 s, [Scenes](scenes.md#starting))
+   takes none of these steps: after placing the scene's humans and objects at their end poses it resets player 1's
+   camera, and player 2's when there is one, through the same slot `+0x13c`, with no pop, blend or settling update.
+   Confirmed (code) at `0x0039ec60`.
 6. **The script's end callback** (`global.lua`, run when the scene ends) calls `ReturnFunc` (for the intro,
    `P1.StartTraining`), turns gang spotting back on unless `BlendCam` was 0, and with `FadeIn` fades the screen in over
    0.5 s (`ScreenQueueEffect(0, 0.5)`).
