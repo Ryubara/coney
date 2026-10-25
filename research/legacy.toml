@@ -192,7 +192,7 @@ evidence = 31
 decompile = 1
 history = 3
 
-["docs/research/combat.md"]
+["docs/research/combat/index.md"]
 evidence = 65
 
 ["docs/research/compiler.md"]

@@ -93,7 +93,7 @@ is 0.05 m above the feet, and a wall triangle under 0.25 m tall is not a wall
   ([Characters](../research/characters.md#coneys-implementation) lists what each one shows).
 
 - **Fight yard**: Rembrandt fights the passive targets with the original's moves
-  ([Combat](../research/combat.md#coneys-implementation)); the targets react, are stunned, knocked down and thrown
+  ([Combat](../engine/combat.md)); the targets react, are stunned, knocked down and thrown
   and get up again as the research's civilian does. `tests/sandbox/disc_sandbox_combat_test.cpp` runs a combo, a grab
   with a strike, both spins and a throw, a tackle and a mugging, with the input scripts `tests/support/combat_*.txt`.
 

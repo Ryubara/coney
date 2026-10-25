@@ -264,8 +264,8 @@ TEST_CASE("square at an enemy an ally holds from behind plays the tandem: the th
 }
 
 TEST_CASE("the tandem's start warns its victim alone, not a bystander", "[human][tandem]") {
-    // docs/research/combat.md#attack-warnings: the tandem start passes its victim to Human_WarnOfAttack; a bystander
-    // the player could fight, 3 m to the side, hears nothing of it.
+    // docs/research/combat/index.md#attack-warnings: the tandem start passes its victim to Human_WarnOfAttack; a
+    // bystander the player could fight, 3 m to the side, hears nothing of it.
     const FightCharacter character;
     TandemFight fight(character);
     const coney::human::TargetHuman& bystander =

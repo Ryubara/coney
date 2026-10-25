@@ -12,7 +12,7 @@
 #include "human/strike_shapes.h"
 
 // The strike shapes' switching by clip events, their posing on the bones and their overlap tests
-// (docs/research/combat.md#moving-strikes). Synthetic bones only.
+// (docs/research/combat/index.md#moving-strikes). Synthetic bones only.
 
 using Catch::Approx;
 using coney::anim::ClipEvent;

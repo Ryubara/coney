@@ -37,7 +37,7 @@ AttackTarget attackTarget(int animId, bool cross, bool armed, bool chainStep, bo
         return AttackTarget{.range = kArmedPickRange};
     }
     // Cross always picks afresh; square's moving attacks too. (The charge takes no target and the dive searches its
-    // own band; Fighter::steer() runs those, docs/research/combat.md#charge-aim.)
+    // own band; Fighter::steer() runs those, docs/research/combat/index.md#charge-aim.)
     if (cross || movingAttack(animId)) {
         return AttackTarget{};
     }

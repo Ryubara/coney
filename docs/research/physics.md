@@ -31,7 +31,7 @@ block allocator, so `0x0033c288`-`0x003418f8` is `Physics/` too (inferred; no pa
 or a ragdoll, and the linked libraries ([Source map](source-map.md#middleware)) include no physics library.
 
 Every function of `Physics/` (`0x0033c288`-`0x0034f740`), by area; the sections below say what each does. Names are
-ours (some set by the [Combat](combat.md) research) and match the local Ghidra project; all confirmed (code) at the
+ours (some set by the [Combat](combat/index.md) research) and match the local Ghidra project; all confirmed (code) at the
 address unless a section says otherwise.
 
 | Area | Functions | Evidence |
@@ -39,7 +39,7 @@ address unless a section says otherwise.
 | The world | `IPhysics_Construct` `0x0033c288`, `IPhysics_Step` `0x00340918`, `Physics_StaticInit` `0x0034f6c0` and its stub `0x0034f718` (copy a 48-byte constant from `0x00511720` to `0x006eb9e0`) | confirmed (code) |
 | [Bodies](#bodies) | create and free: `IPhysics_CreateHumanBody` `0x0033cc48` / `_FreeHumanBody` `0x0033ce00`, `_CreatePunchBagBody` `0x0033cb08` / `_FreePunchBagBody` `0x0033cbf0`, `_CreateObjectBody` `0x0033ce58` / `_FreeObjectBody` `0x0033cf00`, `_CreateCarBody` `0x0033cf68` / `_FreeCarBody` `0x0033cff8`, `Physics_CreateBoxBody` `0x0033d070` / `IPhysics_FreeBoxBody` `0x0033d158`; lists: `IPhysics_AddBody` `0x00340668`, `_RemoveBody` `0x00340700`, `_AddHumanBody` `0x003407a0`, `_RemoveHumanBody` `0x003407f8`, `BodyList_Insert` / `_Remove` / `_Reinsert` `0x003404a8` / `0x003405d8` / `0x00340628`; the body: `PhysicsNode_Init` `0x00341158`, `PhysicsBody_Construct` `0x003418f8`, `_ConstructForOwner` `0x00341970`, `_Destroy` `0x00341a00`, `_SetOwner` `0x00341a68`, `_AddShape` `0x00341aa8`, `_GetShapes` `0x00341ae0`, `_Update` `0x00341c10`, `_Moved` `0x00341e40`, `_GetContactScale` `0x00341e18`, `_ComputeBounds` `0x00341638`, `_AddShapeBounds` `0x003417c0` | confirmed (code) |
 | [Shapes](#shapes) | pools: `IPhysics_AllocObjectSphere` `0x0033d1a0`, `_AllocObjectBox` `0x0033d1e8`, `_AllocCarBox` `0x0033d230`, `_AllocBigSphere` `0x0033d278`, `_FreeShape` `0x0033d2c8`, `_FindFreeStrikeSphere` `0x003408d8`; base: `PhysicsShape_Construct` / `_Destroy` `0x00342a30` / `0x00342a70`, `PhysicsShape_GetBounds` `0x00341190`; sphere `0x00342aa0` / `0x00342ae0` / pose `0x00342b08`; box `0x00342d18` / `0x00342d98`, `PhysicsBox_SetSize` `0x00342dc0`, pose `0x00342df8`, `_SetMatrix` `0x00343040`, `_GetCorners` `0x003430e8`; capsule `0x003434a8` / `0x003434e0`, size `0x00343508`, pose `0x00343518`; segment `0x003437b0` / `0x003437e8`, pose `0x00343810`; `AABB_FromSphere` `0x00341660`, `AABB_FromUprightCylinder` `0x00341708`, `AABB_ExtendByMove` `0x00341840`, `AABB_ScaleAboutCentre` `0x003414c0` | confirmed (code) |
-| [The human body](#human-body) | `PhysicsHumanBody_Construct` `0x00341e98`, `_Destroy` `0x00341f00`, `PhysicsBody_ApplyHumanScale` `0x00341f28`, `PhysicsHumanBody_SetPushSphere` `0x003420d0`, `_GetShapes` `0x003420c8`, `_OnStruck` `0x00342130`, `_AddStrikeSphere` `0x00342158`, `_ClearStrikeSpheres` `0x00342168`, `_GetContactScale` `0x00342288`, `_Update` `0x003422d0`, `_PushAwayHumans` `0x003425c0`, `_Moved` `0x00342828`, `PhysBody_SetShapeEnabled` `0x003428d0`, `_AddBoneShape` `0x003429e8`, `Human_TestStrikes` `0x0033f110` ([Combat](combat.md#moving-strikes)) | confirmed (code) |
+| [The human body](#human-body) | `PhysicsHumanBody_Construct` `0x00341e98`, `_Destroy` `0x00341f00`, `PhysicsBody_ApplyHumanScale` `0x00341f28`, `PhysicsHumanBody_SetPushSphere` `0x003420d0`, `_GetShapes` `0x003420c8`, `_OnStruck` `0x00342130`, `_AddStrikeSphere` `0x00342158`, `_ClearStrikeSpheres` `0x00342168`, `_GetContactScale` `0x00342288`, `_Update` `0x003422d0`, `_PushAwayHumans` `0x003425c0`, `_Moved` `0x00342828`, `PhysBody_SetShapeEnabled` `0x003428d0`, `_AddBoneShape` `0x003429e8`, `Human_TestStrikes` `0x0033f110` ([Combat](combat/index.md#moving-strikes)) | confirmed (code) |
 | [Ignore lists](#ignore-lists) | `IPhysics_FindFreeIgnoreSlot` `0x00340890`, `IPhysics_ForgetIgnoredOwner` `0x0033cd70`, `PhysicsBody_IsIgnoring` / `_Ignore` / `_StopIgnoring` `0x00341ae8` / `0x00341b20` / `0x00341b80`, the human body's `0x003421d0` / `0x00342230` / `0x00342260` | confirmed (code) |
 | [Queries](#queries) | `IPhysics_QueryBox` `0x0033feb0`, `_QueryBoxFiltered` `0x00340120`, `_CollideShape` `0x0033e7f0`, `_OverlapShape` `0x0033ebb8`, `_RayCastBodies` `0x0033eee0` | confirmed (code) |
 | [Sweeping a body](#sweep) | `PhysicsBody_Sweep` `0x0033e278`, `IPhysics_SweepShapeVsMesh` `0x0033d2d8`, `_SweepBodyVsMesh` `0x0033d340`, `PhysicsBody_SweepHumanMask` `0x0033d498` (against the bodies), `PhysicsBody_PushOutOfWalls` `0x003477c0` ([Characters](characters.md#walls)) | confirmed (code) |
@@ -95,7 +95,7 @@ Confirmed (code) at `0x0033c288` and the step. Pool sizes are counts × bytes.
 
 The 60 human body sets match the 60 human slots ([AI humans](ai.md)), inferred. Who allocates from which pool is
 confirmed (code) by the callers: `Obj_CreatePhysicsBody` (world objects), `GlassPane_CreateBody`, `Car_MakeBodies`. The
-ten bone shapes are the strike shapes; their bones, sizes and events are on [Combat](combat.md#moving-strikes).
+ten bone shapes are the strike shapes; their bones, sizes and events are on [Combat](combat/index.md#moving-strikes).
 
 ### Bodies {#bodies}
 
@@ -183,7 +183,7 @@ confirmed (code) at `0x00343810` and `0x00343518`):
 | segment (type 4, inline at body set `+0xe0`, also listed at a pool copy) | 3 | (0, 0, 0) | radius 0.35, length 1.5 | start = bone 3's position, 2.15 m above the origin; end = start + bone 3's **local x axis** × 1.5, which at rest points straight down (end 0.65 m above the origin, 0.05 m off the vertical); so it swings with the bag |
 | capsule (type 3) | none | (0, 0, 0) | radius 0.35, height 1.787 m | base on the bag's origin; the height is recomputed each update as for a human (bone 6's height + 0.2 × scale) |
 
-The segment is what strikes meet ([Combat](combat.md#moving-strikes)); the capsule is what sweeps and pushes meet
+The segment is what strikes meet ([Combat](combat/index.md#moving-strikes)); the capsule is what sweeps and pushes meet
 ([Workouts](workouts.md#bag-target)).
 
 `PhysicsBody_Update` (`0x00341c10`), when the body is dirty or flag `0x800` is set: pose every shape (shape vtable
@@ -234,7 +234,7 @@ bone: the limbs' strike volumes.
 the push sphere, `+0x90` a broad bound, `+0xc0` one bit per switched-on bone (`PhysBody_SetShapeEnabled`
 `0x003428d0`), `+0xc4` the weapon strike spheres (`0x00342158`, `0x00342168`), `+0xc8` / `+0xcc` the human list,
 `+0xd0` a weapon-strike flag, `+0xd4` "ignore the level". The bone shapes, their sizes and when they switch on are on
-[Combat](combat.md#moving-strikes); `PhysicsBody_ApplyHumanScale` (`0x00341f28`) multiplies their offsets, radii and
+[Combat](combat/index.md#moving-strikes); `PhysicsBody_ApplyHumanScale` (`0x00341f28`) multiplies their offsets, radii and
 lengths and the capsule (height `0x00219890`, radius `0x00219860` of the human) by the human's scale. Confirmed
 (code) at the cited addresses:
 
@@ -274,7 +274,7 @@ An owner answers numbered float attributes through its vtable `+0xd0` (and sets 
 | # | Human | World object | Read by |
 | --- | --- | --- | --- |
 | 1 | 82.0 | its type's `+0x62` (`CfgObj` argument 6; 10 or 50 for most types) | the push sphere ([The human body](#human-body)); a weight |
-| 7 | `+0x27c`: the push weight, 1.0, set to 1e9 to make the human immovable (grabs, arrests, [Combat](combat.md#code-grabs)) | 1.0 | the push sphere |
+| 7 | `+0x27c`: the push weight, 1.0, set to 1e9 to make the human immovable (grabs, arrests, [Combat](combat/index.md#code-grabs)) | 1.0 | the push sphere |
 | 8 | 0 | its type's `+0x88` (`CfgObj` argument 11, named `mass` in the scripts): 0.1 for 1,359 of the 1,371 types, 0.2 for 7 (the cue ball among them), 0.15 and 0.4 for one each, 0 for 3 | contact code 2's bounce: the restitution |
 | others | 0 | 0 | |
 
@@ -617,7 +617,7 @@ Mirrored entries call the other order and swap the contact's halves. A segment's
 segment is the static overlap, which writes no fraction, so such contacts are sorted by stack leftovers
 ([Unit 11](physics-bodies.md#u11-mirrors)): segments move with their bone and are tested where they are, which is how
 strikes
-work ([Combat](combat.md#moving-strikes)). A segment never touches a box, and no sphere or segment is ray-tested.
+work ([Combat](combat/index.md#moving-strikes)). A segment never touches a box, and no sphere or segment is ray-tested.
 Strikes go through the **sweep** table (`Human_TestStrikes` `0x0033f110` sweeps each strike shape from its last pose
 to its current one), so of a human's strike shapes only the spheres (hands, head, feet, a weapon's spheres) can
 reach a car's or an object's box; the forearm, shin and spine segments never do. Confirmed (code)

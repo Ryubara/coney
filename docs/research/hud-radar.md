@@ -188,7 +188,7 @@ four at `0x006c72d8`, `0x0024b190`):
   per-player `+0x19`) while the per-player record's `+0x1b` is set (1 for the player in `level99`), or the HUD's
   per-panel request byte (HUD `+0x225d0` + panel, `0x001b28a0`), which **using a flash** sets (`0x00284280`) and the
   update clears;
-- **in a fight stance** (record `+0x00` & 3, [Combat](combat.md#state-flags)) or with **health at or below 20 %**
+- **in a fight stance** (record `+0x00` & 3, [Combat](combat/index.md#state-flags)) or with **health at or below 20 %**
   the last trigger is renewed every update, so the rings stay;
 - otherwise the rings are drawn only while the player is in the list and within 4,500 ms of the last trigger: they
   fade in over 500 ms after first appearing, hold, and from **4,000 ms after the last trigger** fade out linearly over

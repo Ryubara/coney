@@ -22,7 +22,7 @@ the play tick calls on every 60 Hz tick and which works on every second one (30 
 length: the clip's **animation task** holds bits of the record's `+0x08` flags while it plays, the clip's events
 change them (wind-up, chain window, end, recovery), and the task clears them when the clip ends or is cut. The
 dispatcher, the locomotion and the AI's attack action all read those bits. So **the clip's end hands back the
-presses and the stick**, which is what was seen at runtime ([Combat](combat.md#input-return)).
+presses and the stick**, which is what was seen at runtime ([Combat](combat/index.md#input-return)).
 
 Not to be confused with **animation tasks** (`AnimTask`, `Animation/AnimationBlend.cpp`), the small objects that play
 clips on a character ([Animation](formats/animation.md#animation-tasks)); they are covered here only where they hold
@@ -341,8 +341,9 @@ before on [Characters](characters.md#update):
    [Characters](characters.md#locomotion)), unless `0x0023d790` says it is not ready.
 9. With `0x005e5368`, each human's **actions**, the order alternating (0 → 59, then 59 → 0) between steps:
    `Human_UpdateActions` (`0x00254e78`) runs `Player_UpdateActions` (`0x0027c120`, the dispatcher,
-   [Combat](combat.md#dispatch)) unless the state word has any of `0x1f80974000` or per-player `+0x1e` is set, then the
-   anim state choice. A dead or knocked-out human takes another path (`0x00221108`, `0x00256f28`, `0x00265f70`).
+   [Combat](combat/index.md#dispatch)) unless the state word has any of `0x1f80974000` or per-player `+0x1e` is set,
+   then the anim state choice. A dead or knocked-out human takes another path (`0x00221108`, `0x00256f28`,
+   `0x00265f70`).
 10. The cameras (`0x0011e878`).
 
 So an AI human's command is written in step 5 and taken by the same dispatcher as the player's in step 9 of the same
@@ -354,8 +355,8 @@ written once per attack, not again while the action waits ([AI](ai.md#attack-act
 
 ### Held flags: how a move ends {#held-flags}
 
-The record's `+0x08` word ([Combat](combat.md#state-flags)) is not set and cleared by the move's logic but **held by
-the clip's animation task**: a clip task (types 1, 3, 6) keeps at `+0x24` the bits its caller set on the human as it
+The record's `+0x08` word ([Combat](combat/index.md#state-flags)) is not set and cleared by the move's logic but **held
+by the clip's animation task**: a clip task (types 1, 3, 6) keeps at `+0x24` the bits its caller set on the human as it
 pushed the task, and clears them from `+0x08` when the clip ends or is cut off; a fade clears the bits it was given on
 release ([Animation](formats/animation.md#animation-tasks)). For the attacks, confirmed (code):
 
@@ -385,7 +386,7 @@ climbs `0x80000`, landing `0x1000000`; seen at runtime, [Characters](characters.
 
 | Reader | Address | Refuses while `+0x08` has | Evidence |
 | --- | --- | --- | --- |
-| the dispatcher, before every command | `0x0027c120` | any of `0x5c7fee0` | confirmed (code), [Combat](combat.md#input-return) |
+| the dispatcher, before every command | `0x0027c120` | any of `0x5c7fee0` | confirmed (code), [Combat](combat/index.md#input-return) |
 | the chain | `0x00280630` | takes the press only while any of `0x7` | confirmed (code) |
 | square, cross | `0x00286cc8`, `0x00287a18` | any of `0x100101f` | confirmed (code) |
 | grab, tackle | `0x00284920` | any of `0xfc7eaf7` | confirmed (code) |
@@ -411,7 +412,7 @@ and before that, the whole stick step is skipped (turning included) when:
   (mask `0xaeebf7ff`);
 - or `0x00227d28` is true: the human is attached (`+0x280` ≠ -1) or in state `0x800000`.
 
-Read against the runtime table on [Combat](combat.md#input-return): the wind-up, window and end bits (`0x1`, `0x2`,
+Read against the runtime table on [Combat](combat/index.md#input-return): the wind-up, window and end bits (`0x1`, `0x2`,
 `0x4`) make the human busy, the recovery `0x40000` zeroes the stick's velocity, and 389's `0x40000000` is in neither
 mask, so **the stick moves the human on the first update after the clip has cleared its bits**, and 389 never holds
 it.
@@ -448,7 +449,7 @@ sets 1.
 - **Catch-up steps.** A runtime diff against the original sees two character steps in one frame about every 1000
   frames ([The play tick](#tick)); a trace keyed on the tick counter, not the frame, lines up.
 - **Messages are synchronous**: a hit's warning (`0xa4`, `0xa6`) is handled inside the attacker's event, before the
-  sender's next line ([Combat](combat.md#block)).
+  sender's next line ([Combat](combat/index.md#block)).
 
 ## Coney's implementation {#coneys-implementation}
 
@@ -459,7 +460,7 @@ sets 1.
 - `src/animation/anim_task.*` holds the held flags and the events that move them, and a fade that holds bits until it
   ends (the idle's fade holds `0x10000000`, which gives the 5 updates after a block or a stop)
   ([Animation](formats/animation.md#coneys-implementation)); the readers' masks are in `src/combat/` and
-  `src/human/locomotion_gate.*` ([Combat](combat.md#coneys-implementation)).
+  `src/human/locomotion_gate.*` ([Combat](../engine/combat.md)).
 
 ## Runtime checks {#runtime-checks}
 

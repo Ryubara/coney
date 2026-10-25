@@ -84,7 +84,7 @@ void countClip(const std::vector<std::byte>& keyframes, const std::vector<std::b
     totals.withoutA += clip->rootVelocity.empty() ? 1 : 0;
     totals.withoutB += clip->rootTranslation.empty() ? 1 : 0;
     totals.events += clip->events.size();
-    // Only the two sweeps strike the target's capsule (docs/research/combat.md#capsule-strike).
+    // Only the two sweeps strike the target's capsule (docs/research/combat/index.md#capsule-strike).
     if ((clip->flags & coney::anim::kClipCapsuleStrike) != 0) {
         ++totals.capsule;
         const bool sweep = clip->name == "gen_rage_sweep" || clip->name == "gen_sweep";

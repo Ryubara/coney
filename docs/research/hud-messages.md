@@ -207,7 +207,7 @@ the combat tutorial's **"player 1 hit someone"** hook. Confirmed (code):
   `landed` 1 for a hit that lands and 0 for one a block stops (both call the callback). `0x002653d8` returns first when
   the attacker's brain `+0x4` is not 0 or the two are allies (`0x00290230`), then calls the callback only when the
   attacker's player index (`+0x1b0`) is **0**, before it awards the hit's rage ([Combat](combat-rage.md#rage)). The anim
-  id is the attacker's record `+0x20` (11 `X1`, 12 `S1`, 13 `XX2`, ...; [Combat](combat.md#attacks)).
+  id is the attacker's record `+0x20` (11 `X1`, 12 `S1`, 13 `XX2`, ...; [Combat](combat/index.md#attacks)).
 - The id is read when the **victim** applies the pending damage, not when the hit was dealt. For a hit dealt as a
   clip ends, the attacker has already moved on: the strong grapple's damage is added at the end of 657 and applied as
   the hold 82 starts, so the callback gets **82** (84 from the rear). Confirmed (runtime)
@@ -379,8 +379,8 @@ icon sprite at `+0x480`. Confirmed (code) unless marked:
       (`0x00223b70`); not in state `0x80000000` (`0x00227e18`) or `0x100000000` (`0x00227eb0`); and **revivable**, human
       flag `+0xe0` bit `0x4` (`Human_Init` sets it on every player and every Warrior, brain types 0 and 3;
       `Human_MakePlayer` on a player too; scripts set or clear it with `HuSetRevivable`; [Combat: human
-      flags](combat.md#human-flags)). Confirmed (runtime) on `level80`: beside a knocked-out Vermin with a flash, string
-      4 showed ([Combat: revive at runtime](combat-rage.md#revive-runtime)).
+      flags](combat/index.md#human-flags)). Confirmed (runtime) on `level80`: beside a knocked-out Vermin with a flash,
+      string 4 showed ([Combat: revive at runtime](combat-rage.md#revive-runtime)).
     - **Sight, no facing**: each candidate must also pass `Human_HasLineOfSight(player, him)` (`0x00222288`: a ray at
       1.7 m to his 1.7 m, else to his 1.0 m; it passes fences, railings and glass, [AI: sight](ai.md#sight)). The list's
       field-of-view test is only consulted beyond 3 m (squared distance over 9), which the 3 m search never yields, so

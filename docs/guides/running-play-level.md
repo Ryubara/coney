@@ -30,7 +30,7 @@ leans into turns, stops, steps onto kerbs under 25 cm, slides along walls, jumps
 ledges on the level's collision mesh, with the original's speeds, turn rates and clips: the walk or run start, a blend
 across walk, jog, run and sprint, the idle, the run stop, the jump and its landing, and the climbs
 ([Characters](../research/characters.md#sprint)). He fights as the original's player does
-([Combat](../research/combat.md#coneys-implementation)): the square and cross chains, the snaps, the run attack, the
+([Combat](../engine/combat.md)): the square and cross chains, the snaps, the run attack, the
 charge and the dive, the block, rage, the grab with its strikes, spins, throws and the mugging, and the tackle, with the
 original's commands, timing and clips; the sandbox's fight yard (`--play-level sandbox:combat`) has passive targets that
 take the hits. With a target (the one he attacked, or the one L1 picks) he locks onto it, as the original's default
@@ -116,7 +116,7 @@ The columns, positions in metres (game axes, z up), angles in degrees, speeds in
 | `cam_x` ... `wanted_z` | the camera's position, its look-at point and its wanted position |
 | `cam_distance`, `cam_pitch`, `cam_yaw` | the camera's distance from its look-at point, its pitch above it and the heading its view faces |
 | `band_near`, `target_pitch`, `auto_turn` | the leash band's near edge (the sprint zoom moves it), the target pitch, and the auto-centre rule's turn this step |
-| `command`, `health`, `power` | the command matched this step (0 for none; [Combat](../research/combat.md#commands)), the health and the power meter |
+| `command`, `health`, `power` | the command matched this step (0 for none; [Combat](../research/combat/index.md#commands)), the health and the power meter |
 | `aim_x`, `aim_y`, `aim_z`, `aim_lag` | the aim point the view faces ([Camera](../research/camera.md#aim-point)) and its lag |
 
 `--trace-humans FILE` (with `--play-level` or `--rumble`) writes **every** human's state after every step to `FILE`, one

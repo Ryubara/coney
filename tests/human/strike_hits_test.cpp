@@ -211,8 +211,8 @@ TEST_CASE("square at a human down behind the attacker within the pick's wide pas
 TEST_CASE("the rage sweep 645 strikes a bum's capsule at shin height: 1.0 m away it hits, 1.6 m away it misses",
           "[human][combat][strike]") {
     // 645 carries clip flag 0x10000, so its strike shapes are tested against the target's upright capsule (radius
-    // 0.35, from the feet to the head + 0.2), not its spine and head (docs/research/combat.md#capsule-strike). The
-    // foot (30, a sphere of 0.15) stands 0.6 m ahead and 0.2 m up; the spine sits 1.0 m up and the head 1.6 m. The
+    // 0.35, from the feet to the head + 0.2), not its spine and head (docs/research/combat/index.md#capsule-strike).
+    // The foot (30, a sphere of 0.15) stands 0.6 m ahead and 0.2 m up; the spine sits 1.0 m up and the head 1.6 m. The
     // victim is a bum: flagged never to be a target, so nothing steers onto it. 653 without the flag never reaches the
     // spine or the head from shin height.
     struct Case {

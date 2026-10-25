@@ -133,7 +133,7 @@ struct PlayerClass {
 
 /// The class a player made as `type` plays with, from `types` (characters::CharacterTypes::playerTraitsOf()); empty
 /// when `types` has no such type. The one path for every player, the one a level starts with and a changed one alike,
-/// as the original writes the class's damage when any human is made (docs/research/combat.md#damage-table).
+/// as the original writes the class's damage when any human is made (docs/research/combat/index.md#damage-table).
 [[nodiscard]] PlayerClass playerClassOf(const characters::CharacterTypes& types, int type);
 
 /// The noclip's flying speed across the ground with the left stick pushed fully, and its rise and descent with a
@@ -152,7 +152,7 @@ inline constexpr float kNoclipFastFactor = 4.0F;
 class Player {
   public:
     /// A player playing `character` (which must outlive it), spawned at `start` on `mesh` (may be null), the camera
-    /// set up behind it, with `playerClass`'s damage and power class (docs/research/combat.md#damage-table).
+    /// set up behind it, with `playerClass`'s damage and power class (docs/research/combat/index.md#damage-table).
     Player(const PlayerCharacter& character, const raycast::CollisionMesh* mesh, const PlayerStart& start,
            const PlayerClass& playerClass = {});
     Player(const Player&) = delete;

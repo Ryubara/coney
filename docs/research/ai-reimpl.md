@@ -629,7 +629,7 @@ top), `+0x1d` **interrupted** (once set, the goal ends).
        handle; return 0.
     3. `d²` = squared distance between the two; `R²` = `Attack_ReachSquared(d², self, kind 0)` (`0x00230d00`, the
        reach of attack kind 0 with what he holds: 30 m for held set 5, 15 m for set 4, else the attack table's
-       reach; [Combat code index](combat.md#code-index)).
+       reach; [Combat code index](combat/index.md#code-index)).
     4. `d²` > `R²` (out of reach): enter the fight stance (`0x0022fe80`) and queue a MoveMelee action on him
        (`0x002fcf50`, [MoveMelee](ai-moving.md#move-melee)) with the band from 2 *r* to max(`R`, 2 *r* + 1) m, *r*
        his capsule radius (0.35 × his scale, `0x00219860`), no delay, limit 2000 ms; return 0.

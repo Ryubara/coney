@@ -353,7 +353,7 @@ object's vtable is `0x005453a0` (stored by `ObjectTaskPool_New`, `0x004f3ef0`).
      appended the same way.
 
    So H's bone list is, in order, the segments on bones 3, 24, 18, 32, 29 and the spheres on bones 6, 25, 19, 33, 30,
-   with the sizes on [Combat](combat.md#moving-strikes); after construction their flags are `0x3`, or `0x7` for bones
+   with the sizes on [Combat](combat/index.md#moving-strikes); after construction their flags are `0x3`, or `0x7` for bones
    3 and 6 (enabled). `IPhysics_CreateHumanBody` (`0x0033cc48`) later switches every bone shape off and the capsule
    on, which gives the `0x2` / `0x6` of the Combat table ([Unit 9](physics-bodies.md#unit-9)).
 10. **The punch bag** (`0x0033ca4c`-`0x0033caf4`): capsule `+0x4f3f0` `SetSize(2.0, 0.35)`; bag body `+0x30`

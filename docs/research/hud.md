@@ -298,8 +298,8 @@ A war chief (human `+0x3ac` = 1) orders his crew from a six-slot menu held open 
 menu's input and issue steps are confirmed (runtime)
 ([`crew-command-menu`](../guides/pcsx2-recipes.md#crew-command-menu)): see the end of this section.
 
-**Input** (`Player_UseItemCommand`, `0x002843f8`; pad commands from [Combat](combat.md#commands): 1 is R2 held, 2 R2
-released). Nothing happens while the human has a state flag of `0x80040000`, or `0x20000` (that branch only handles
+**Input** (`Player_UseItemCommand`, `0x002843f8`; pad commands from [Combat](combat/index.md#commands): 1 is R2 held, 2
+R2 released). Nothing happens while the human has a state flag of `0x80040000`, or `0x20000` (that branch only handles
 triangle), or has no player index (human `+0x1b0` = -1), or while that player's menu is locked (game state `+0x42e` +
 player). Release is tested before hold:
 
@@ -994,8 +994,8 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
 - **The prompt beside a downed Warrior** (user item 8, "no revive prompt"): Coney's revive step read only a script's
   knock-out, so a Warrior downed in a fight (his health gone) gave no prompt; it now counts both, a flash is still
   needed, and d-pad left revives him ([Combat: revive](combat-rage.md#revive)). He must also be revivable (flag `0x4`),
-  which every Warrior is from the moment he is made (`Human_Init`, [Combat: human flags](combat.md#human-flags)), in
-  Coney too (`ai::startingFlags`). The disc test `repo:tests/platform/disc_revive_test.cpp` downs a `level80` Warrior
+  which every Warrior is from the moment he is made (`Human_Init`, [Combat: human flags](combat/index.md#human-flags)),
+  in Coney too (`ai::startingFlags`). The disc test `repo:tests/platform/disc_revive_test.cpp` downs a `level80` Warrior
   with a strike (no script call), walks player 1 to him with the stick at 60 % and sees no prompt without a flash,
   string 4 with one, then the revive. The swap prompt
   (`repo:src/ai/swap_prompt.h`) has the blocked test, for the Warrior and the player alike, as far as Coney models

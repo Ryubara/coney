@@ -6,8 +6,8 @@ sets, the ambient sounds, emitters and speech lines, and the gang messages. Each
 (`lua4.ChunkFacts` by script name) and returns plain entries, so the tests can feed it synthetic facts; the disc
 readers in `refs_extract` call them.
 
-Research: docs/research/gui.md#strings, docs/research/combat.md#commands, docs/research/ai-gangs.md#warrior-commands,
-docs/research/sound.md#speech, docs/guides/research-data.md#reference-lists.
+Research: docs/research/gui.md#strings, docs/research/combat/index.md#commands,
+docs/research/ai-gangs.md#warrior-commands, docs/research/sound.md#speech, docs/guides/research-data.md#reference-lists.
 """
 
 from __future__ import annotations

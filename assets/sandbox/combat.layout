@@ -1,6 +1,6 @@
 # Coney sandbox: the fight yard (docs/guides/sandbox.md). Passive targets to fight: Coney's own test humans, which
 # take hits, react, get stunned, knocked down and thrown as the research's victim does, and never fight back
-# (docs/research/combat.md); and an AI fighter that does fight back (docs/research/ai.md). Game axes and units:
+# (docs/research/combat/index.md); and an AI fighter that does fight back (docs/research/ai.md). Game axes and units:
 # metres, z up; the spawn faces +y ("north").
 
 title Fight yard

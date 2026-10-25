@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // What the level scripts switch on a human (docs/references/bindings/character.md,
-// docs/research/combat.md#human-flags): god and demi-god mode against synthetic hits, the stun and knockdown flags, the
-// health percentage, the revive, the normal mode, the arrest, tireless stamina, the rage meter's script operations and
-// the target search's no-target flag. Synthetic humans and hits; the stick at full deflection where the human sprints.
+// docs/research/combat/index.md#human-flags): god and demi-god mode against synthetic hits, the stun and knockdown
+// flags, the health percentage, the revive, the normal mode, the arrest, tireless stamina, the rage meter's script
+// operations and the target search's no-target flag. Synthetic humans and hits; the stick at full deflection where the
+// human sprints.
 #include <array>
 #include <cmath>
 #include <cstdint>

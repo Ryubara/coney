@@ -171,9 +171,9 @@ TEST_CASE("the disc's level80: player 1 with a flash revives a knocked-out Warri
     run.run(30);
 
     // The nearest Warrior of player 1's gang: revivable from the moment he was made (Human_Init gives every Warrior
-    // flag 0x4, docs/research/combat.md#human-flags), with no script call. The test knocks him out in a fight: a strike
-    // (S1, hit code 0x0a) from player 1's side that takes all his health. The brains belong to the session's gameplay,
-    // which the test reaches through them.
+    // flag 0x4, docs/research/combat/index.md#human-flags), with no script call. The test knocks him out in a fight: a
+    // strike (S1, hit code 0x0a) from player 1's side that takes all his health. The brains belong to the session's
+    // gameplay, which the test reaches through them.
     const coney::ai::Brains* found = run.session().gameplay().brains();
     REQUIRE(found != nullptr);
     auto& brains = const_cast<coney::ai::Brains&>(*found);

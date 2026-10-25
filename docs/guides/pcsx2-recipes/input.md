@@ -97,20 +97,20 @@ Make an AI human act on a command id for one update (attack, grab, block), as a 
 on the command id in its per-player record (`0x00660f50 + index * 0x2c`, `+0x20`). For a human with no pad, `0x00146000`
 clears `+0x20` every update; the `puppet` patch puts a `nop` over that `sw zero,0x20(a0)` at `0x00146030`, so a command
 written there stays. The recipe writes `command` for one update, `then` for the next and 0 after, which is one tap
-([commands](../../research/combat.md#commands): a cross tap is `0x12`, then `0x10`, then 0). A grab needs a target:
-write the player's handle (human `+0x90`) to the puppet's human `+0xc8` and its brain's `+0x124` (`target=1` does), or
-command 70 misses. A held button (R1 to block) is read from a pad record instead: give the puppet pad index 4
+([commands](../../research/combat/index.md#commands): a cross tap is `0x12`, then `0x10`, then 0). A grab needs a
+target: write the player's handle (human `+0x90`) to the puppet's human `+0xc8` and its brain's `+0x124` (`target=1`
+does), or command 70 misses. A held button (R1 to block) is read from a pad record instead: give the puppet pad index 4
 (per-player `+0x19`) and write the button into all eight `u16` entries of pad record 4's history (`0x005dd950 + 0x1c`)
 every update. Set `CfgAutoLockAndCombat` (`0x005104b8`) to 0 when the player must not turn to face the attacker. Pick
 the puppet by name: an ally's hits play reactions without damage.
 
 | | |
 | --- | --- |
-| Parameters | `who` (human): the puppet's name (humans lists them); `command` (number): the first update's command id (combat.md#commands), such as 0x12; `then` (number, default `0`): the second update's command id (0x10 after 0x12 for a cross tap); 0 none; `target` (number, default `0`): 1 to aim it at the player first (human +0xc8, brain +0x124) |
+| Parameters | `who` (human): the puppet's name (humans lists them); `command` (number): the first update's command id (combat/index.md#commands), such as 0x12; `then` (number, default `0`): the second update's command id (0x10 after 0x12 for a cross tap); 0 none; `target` (number, default `0`): 1 to aim it at the player first (human +0xc8, brain +0x124) |
 | Preconditions | patches: `puppet`; emulation running |
 | Evidence | confirmed (runtime) |
 | Ghidra | `0x00146078 PlayerRecord_Update`, `0x00146000 PlayerRecord_ClearCommand` |
-| Research | [guides/research-tools.md#driving-pcsx2](../research-tools.md#driving-pcsx2), [research/combat.md#commands](../../research/combat.md#commands) |
+| Research | [guides/research-tools.md#driving-pcsx2](../research-tools.md#driving-pcsx2), [research/combat/index.md#commands](../../research/combat/index.md#commands) |
 | Confirmed at runtime | 2026-10-21, copy `pcsx2-d`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6); PoizoCiv given 0x12 then 0x10, aimed at the player: its anim id went from 0x29f to 11, ANIM_ATTACK_X1 |
 
 ```sh

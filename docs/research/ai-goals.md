@@ -529,7 +529,7 @@ Goals for what happens to the body: grabbed, tackled, on the ground, stunned, on
 | `0x002b5280` | `WoundedGoal_Start` | Start | limp on | confirmed (code) |
 | `0x002b52a0` | `WoundedGoal_End` | End | limp off | confirmed (code) |
 | `0x002b52c0` | `WoundedGoal_Process` | Process | no fight stance or target; done when no longer wounded; a clutch and line 8 | confirmed (code) |
-| `0x002b5698` | `BlockGoal_WantsCounter` | helper | Blocking (`0x1b`): ducking with goal bytes `+0x14` and `+0x16` both 1 sets player command `0x10` (cross) and answers 1 ([combat.md](combat.md)) | confirmed (code) |
+| `0x002b5698` | `BlockGoal_WantsCounter` | helper | Blocking (`0x1b`): ducking with goal bytes `+0x14` and `+0x16` both 1 sets player command `0x10` (cross) and answers 1 ([combat.md](combat/index.md)) | confirmed (code) |
 | `0x002b5a98` | `GrabbingGoal_Init` | init | Grabbing (`0x12`), vtable `0x00540150` | confirmed (code) |
 | `0x002b5ad0` | `GrabbingGoal_Start` | Start | a let-go chance of the class value × 10 %, none with a FollowAndDefend (`0x35`) goal; goal `0x7d`'s flag | confirmed (code) |
 | `0x002b5b58` | `GrabbingGoal_End` | End | when still grabbing, clears the hold timer (`+0x148` of the held record) | confirmed (code) |

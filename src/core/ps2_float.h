@@ -5,10 +5,10 @@
 
 // Single-precision arithmetic as the PS2's floating-point unit does it: every result rounded toward zero, where an
 // IEEE float rounds to nearest. Only where the research shows the last bit deciding something: a class damage of 30
-// at 115 % plays as 34, not 35 (docs/research/combat.md#damage-table), and a steady run's measured speed comes out
-// below the run speed it was set to far more often than above it (docs/research/characters.md#run-stop).
-// Each operation is worked out exactly in double (a product or a sum of two floats of like size, and a square root,
-// fit in a double's 53 bits) and then cut to a float toward zero.
+// at 115 % plays as 34, not 35 (docs/research/combat/index.md#damage-table), and a steady run's measured speed comes
+// out below the run speed it was set to far more often than above it (docs/research/characters.md#run-stop). Each
+// operation is worked out exactly in double (a product or a sum of two floats of like size, and a square root, fit in a
+// double's 53 bits) and then cut to a float toward zero.
 
 namespace coney::ps2 {
 

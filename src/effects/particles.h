@@ -170,7 +170,7 @@ class ParticleSystems {
                           std::optional<std::uint16_t> rect = std::nullopt);
 
     /// Blood thrown from a hit at `at` along `direction` (game axes): a `blood_spray` system. For combat; which hits
-    /// bleed is the caller's choice (docs/research/combat.md does not say).
+    /// bleed is the caller's choice (docs/research/combat/index.md does not say).
     ParticleSystem* spawnBlood(anim::Vec3 at, anim::Vec3 direction);
     /// Sparks from a hit at `at` along `direction`: a `spark` system.
     ParticleSystem* spawnSparks(anim::Vec3 at, anim::Vec3 direction);

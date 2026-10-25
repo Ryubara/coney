@@ -1,8 +1,8 @@
 # Combat: throws, the bat and mugging
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`); runtime claims with
-PCSX2 2.9.94 as on [Combat](combat.md), which this page was split from because that page had grown too
-large. The overview, the data tables and the code index stay on [Combat](combat.md#code-index).
+PCSX2 2.9.94 as on [Combat](combat/index.md), which this page was split from because that page had grown too
+large. The overview, the data tables and the code index stay on [Combat](combat/index.md#code-index).
 Every claim keeps the evidence level it had there.
 
 ## Purpose
@@ -17,13 +17,13 @@ from are on [Combat: grabs](combat-grabs.md); damage and reactions on [Combat: r
 The throw is `Player_Throw` with the paired-move code it starts; a bat is the `melee_weapon` object's message
 handler, the human's pick-up clip and the dispatcher's armed branch; the mugging is `Player_UpdateMugging` with its
 parameter table and the tackle and cuffing holds. `Player_Throw` and `Player_UpdateMugging` are in
-[Combat's Original structure](combat.md#original-structure), the helpers in [its code index](combat.md#code-index);
+[Combat's Original structure](combat/index.md#map), the helpers in [its code index](combat/index.md#code-index);
 the behaviour below names the function each step lives in, with its address and level, the weapon's handler and the
 pick-up clip among them.
 
 ## Data
 
-The move table, the Anim Range List and the hit codes are on [Combat](combat.md#data). This page's own values
+The move table, the Anim Range List and the hit codes are on [Combat](combat/index.md#data). This page's own values
 (the wall clips' far ranges, a throw's power cost, the mugging record's times and angles) sit with the behaviour
 that uses them.
 
@@ -51,7 +51,7 @@ index 29) and the victim's `+0x5c0` gets the ray's direction × the distance. Ot
 below. From a front hold, before the pair starts (`Attack_StartPaired`), a plain throw turns the player onto the
 stick and carries the victim round with him, and a head-on wall throw aligns the pair instead (`Human_AlignToObject`,
 0.01 s); from a rear hold there is no turn ([Where a throw goes](#throw-direction)). Every throw sets the victim's
-`+0x3bd`, which arms its one wall-impact sound ([Moving strikes](combat.md#moving-strikes)).
+`+0x3bd`, which arms its one wall-impact sound ([Moving strikes](combat/index.md#moving-strikes)).
 
 **What the thrown body hits** (confirmed (code) at `0x0021b290`, `0x00264bd8`, `0x00265f70`; the clip data read
 from the disc). The plain throws' victim clips switch the victim's own strike shapes on: event `0x13`
@@ -75,7 +75,7 @@ traced. What a bystander gets comes from the **victim clip's** Anim Range List e
   `Human_ApplyPendingDamage` subtracts only a pending value of 1 or more, so −60 takes nothing. (Between two friendly
   players it is negated to 60.) The pending value is not 0, so the hit still goes on to the reaction, and the
   bystander's foe becomes the thrown human.
-- **The reaction is a crushing high hit**: by the [reaction table](combat.md#hit-codes), 300-303
+- **The reaction is a crushing high hit**: by the [reaction table](combat/index.md#hit-codes), 300-303
   `REACT_EXTREME_HIGH_*` by the side the thrown body comes from. These carry the knockdown event (type 7), so the
   bystander goes down ([Reactions](combat-reactions.md#reactions)). The usual adjustments apply: −1 strength for a
   victim with flag `0x200` (292-295, still a knockdown), at most 1 with `0x80`, the height by the two roots' height
@@ -136,7 +136,7 @@ are Coney's (0 faces +y, anticlockwise); the **stick heading** is the heading th
    `Grab_StartPairedMove`: the spin to the front 80 / 81 plays first, then the side's throw clip, with no turn and no
    alignment. The side is chosen against the facing when circle is pressed and the thrower's heading does not change
    during the spin, so the body flies along **the side's body axis**, up to 45° off the stick. With `0x40000000` set
-   (the grab blocks of [Human flags](combat.md#human-flags)) the front-hold path above is taken.
+   (the grab blocks of [Human flags](combat/index.md#human-flags)) the front-hold path above is taken.
 5. **A wall throw** aims at the wall, not the stick: the first ray runs along the side's body axis (the stick's own
    direction only when that ray hits nothing), and a head-on hit aligns the pair to the hit point over 0.01 s; a face
    more than 45° off head-on gets no turn at all (above).
@@ -201,7 +201,7 @@ faces the stick (0.0°) 5 updates after the press. Before the fix the front thro
 right of the stick. Two differences remain, both from the clips' own root rotation, not the aim: the side clips turn
 the thrower about a third too far (149 −120° against −90° at runtime; rear −237°, left +119°), and the front victim
 lands 19.2° right of the stick (2.1° at runtime). See the open question on the root turn and the task's rate
-([Open questions](combat.md#open-questions)).
+([Open questions](combat/index.md#open-questions)).
 
 ### A bat in hand {#bat}
 
@@ -309,12 +309,12 @@ Square, cross and L2 + cross or square choose by the **held object's set** (`0x0
 `0x0027c120`. "Run" below is gait 4 with record `+0x08` clear (`0x00223a60`), and for cross also gait 5 with
 `+0x08` clear (`0x00223a98`); either needs `0x00225c10` (for a pad player: the stick above 0.95 at `0x005102e8`, plus
 state tests) and no fight stance (state bits `0x3`, `0x00228340`). "Walk" is gait 1-3 with the stick at 0.12
-or more, and the unarmed walk attack also needs no fight stance ([Attacks](combat.md#attacks)); for the throws a stance
+or more, and the unarmed walk attack also needs no fight stance ([Attacks](combat/index.md#attacks)); for the throws a stance
 only turns the walking throw (gait 2) into the standing one.
 
 | Held set | Square / cross at a run | At a walk | Standing (or in a fight stance) | Charge, dive |
 | --- | --- | --- | --- | --- |
-| nothing, 0 | 24 `ATTACK_FROM_RUN` (square at gait 4 only; cross at 4 or 5) | 23 `ATTACK_FROM_WALK` | square's snaps, `S1` 12 / `X1` 11 ([Attacks](combat.md#attacks)) | 0 / 1 |
+| nothing, 0 | 24 `ATTACK_FROM_RUN` (square at gait 4 only; cross at 4 or 5) | 23 `ATTACK_FROM_WALK` | square's snaps, `S1` 12 / `X1` 11 ([Attacks](combat/index.md#attacks)) | 0 / 1 |
 | 1, 2, 3 (knife, baton, bat) | **501** `SWINGABLE_OBJECT_ATTACK_FROM_RUN` (`gen_run_1hand_weapon_atk`) for all three (gaits as unarmed) | **no walk attack**: the standing swing, slot `0x10` / `0x11` | slot `0x10` / `0x11` (bat 34 / 36, knife 45 / 47, baton 39 / 41); no snaps | 0 / 1, unchanged |
 | 4 (overhead) | the throw 507 `BARREL_THROW_FROM_RUN` (gait 3, 4 or 5) | 506 `BARREL_THROW_FROM_WALK` (gait 2) | 505 `BARREL_THROW` (gait 0 or 1) | the throw instead |
 | 5 (one-handed throw) | 472 `ONE_HANDED_OBJECT_THROW_FROM_RUN` (gait 3-5) | 471 `…_FROM_WALK` (gait 2) | 467 `ONE_HANDED_OBJECT_THROW` | the throw instead |
@@ -324,7 +324,7 @@ So **with a bat at a run, square plays 501**, not 24 and not a slot: `Player_Squ
 1, 2 or 3, takes its own branch, which has the run attack (constant `0x1f5`, through the same starter as 24,
 `0x00264a80`: record `+0x08` `0x1000000`, a 0.3 s blend, no steer: it only warns the current target or, for the player
 without one, the nearest between the clip's reach and far range, `0x0027b058`, [where the charge
-aims](combat.md#charge-aim)) and then only the grounded strike (slot `0x13`, also on a tackled target), a
+aims](combat/index.md#charge-aim)) and then only the grounded strike (slot `0x13`, also on a tackled target), a
 [tandem](combat-moves.md#tandem) (`Tandem_Start`, `0x0026f860`), an object attack on a breakable with no human target
 (`0x00263eb8`, not traced) and the slot's swing. That branch has **no walk attack, no snaps, and no strike on a grabbed
 target** (the unarmed 120); a walking player swings from where he is. Cross's armed branch is the same with slot `0x11`
@@ -349,14 +349,14 @@ nobody near):
 
 **The held weapon in a run attack** (confirmed (code) at `0x0021b290`, `0x002653d8`): nothing about the weapon depends
 on the clip. A hit's damage is the clip's Anim Range List value (501's own: the class table writes no index for it, [The
-Anim Range List](combat.md#damage-table)); then, with the attacker's body `+0xd0` set and the held object's flags (vtable
-`+0x54`) having `0x10000`, **(damage + the object's `CfgObj` u16 `+0x58`) × the first float of the attacker's power
-class record** (`0x00222b78`, [Power meter](combat-rage.md#power-meter)), the same for a swing and a run attack. That
-is what `Strike_Contact`'s code does, but at runtime it was not the path: the `level34` Furies' `dyn_bat` hits (501, 36
-and 37) never reached `Strike_Contact`, and each dealt the bat's own contact damage instead, `CfgObj` `+0x58` × the
-holder's class float with no clip damage (confirmed (runtime), [Combat: a bat's hit](combat-reactions.md#bat-knockdown);
-[Objects in a hand](objects.md#held) item 3). Whether the player's bat, or the knife and the baton, ever take the
-`Strike_Contact` weapon branch is open. Because
+Anim Range List](combat/index.md#damage-table)); then, with the attacker's body `+0xd0` set and the held object's flags
+(vtable `+0x54`) having `0x10000`, **(damage + the object's `CfgObj` u16 `+0x58`) × the first float of the attacker's
+power class record** (`0x00222b78`, [Power meter](combat-rage.md#power-meter)), the same for a swing and a run attack.
+That is what `Strike_Contact`'s code does, but at runtime it was not the path: the `level34` Furies' `dyn_bat` hits
+(501, 36 and 37) never reached `Strike_Contact`, and each dealt the bat's own contact damage instead, `CfgObj` `+0x58` ×
+the holder's class float with no clip damage (confirmed (runtime), [Combat: a bat's
+hit](combat-reactions.md#bat-knockdown); [Objects in a hand](objects.md#held) item 3). Whether the player's bat, or the
+knife and the baton, ever take the `Strike_Contact` weapon branch is open. Because
 record `+0x08` has `0x1000000`, the hit takes the moving-attack branch that 24, 0 and 1 take (a breakable gets hit kind
 2, [World objects](objects.md#door-break)). Rage: 501 is **event 1 × 1 = 5** (2 blocked) and kind 4, so never halved by
 repeats ([Rage](combat-rage.md#rage)), against the bat's square 34 at 2 and its cross 36 at 11, and the unarmed 24 at 1.
@@ -663,14 +663,14 @@ fight plays differently is listed on [Combat: where Coney differs](combat-diffs.
 
 - **A throw's root turn**: the side clips turn the thrower about a third further in Coney than at runtime, and the
   front victim lands 19.2° right of the stick against 2.1° ([Where a throw goes](#throw-direction);
-  [Combat: open questions](combat.md#open-questions)).
+  [Combat: open questions](combat/index.md#open-questions)).
 - **What sends a weapon message 1** (the break, `0x003fd600`): hits alone do not, at runtime ([A bat in hand](#bat)).
   Coney's weapons never break for want of it. Found from the callers that send message 1 to an object (the
   object message dispatch's cross-references), or a PCSX2 breakpoint on `0x003fd600` while a weapon is used.
 - **The inventory check for a type 44 object** on pick-up (`0x0041e420`, `0x0041ded0`): which count it reads and
   what refuses the pick-up. Pick-up of that type depends on it. Found by decompiling both functions.
 - **The armed branch's object attack** on a breakable with no human target (`0x00263eb8`, `Human_AttackObject` on
-  [Combat](combat.md#code-index)), and what plays the knife's `KNIFE_ATTACK_FROM_RUN` (490)
+  [Combat](combat/index.md#code-index)), and what plays the knife's `KNIFE_ATTACK_FROM_RUN` (490)
   ([Moving attacks with something in hand](#armed-moves)). Found from the references to anim id 490 in the code and
   the scripts.
 - **The mugging angle's frame**, world or camera ([Mugging](#mugging)): Coney's stick game depends on it. Found by

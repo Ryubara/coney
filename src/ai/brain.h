@@ -79,10 +79,10 @@ static_assert(static_cast<std::size_t>(TargetCause::Order) + 1 == kTargetCauseCo
 /// gives Gang (**Coney choice**).
 [[nodiscard]] BrainType brainTypeOf(int behaviour);
 
-/// The human flags a human of brain type `type` is made with (`Human_Init`, docs/research/combat.md#human-flags): the
-/// player 0x2000000, 0x2 and 0x4; a Warrior 0x2 and 0x4 (revivable, so any Warrior downed in a fight can be revived);
-/// a cop and a dealer 0x2000 and 0x40000; any other none of these. **Coney's stand-in**: the others' 0x8 (woundable)
-/// on a 1-in-2 roll is not given, as no Coney code reads it and the roll would shift every seeded run.
+/// The human flags a human of brain type `type` is made with (`Human_Init`, docs/research/combat/index.md#human-flags):
+/// the player 0x2000000, 0x2 and 0x4; a Warrior 0x2 and 0x4 (revivable, so any Warrior downed in a fight can be
+/// revived); a cop and a dealer 0x2000 and 0x40000; any other none of these. **Coney's stand-in**: the others' 0x8
+/// (woundable) on a 1-in-2 roll is not given, as no Coney code reads it and the roll would shift every seeded run.
 /// @orig 0x00218008 Human_Init (unknown)
 [[nodiscard]] std::uint64_t startingFlags(BrainType type);
 

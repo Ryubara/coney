@@ -46,10 +46,10 @@ constexpr float kPressWithin = 3.0F;
 constexpr float kSprintStick = 0.98F;
 // How long the run is watched after the spawn, in frames (6 s).
 constexpr std::uint64_t kWatchFrames = 180;
-// The charge (L2 + cross) and the dive (L2 + square) clips (docs/research/combat.md#run-attacks).
+// The charge (L2 + cross) and the dive (L2 + square) clips (docs/research/combat/index.md#run-attacks).
 constexpr std::uint32_t kCharge = 0;
 constexpr std::uint32_t kDive = 1;
-// The hit reactions, light to extreme and the dying set (docs/research/combat.md#hit-codes).
+// The hit reactions, light to extreme and the dying set (docs/research/combat/index.md#hit-codes).
 constexpr std::uint32_t kFirstReaction = 268;
 constexpr std::uint32_t kLastReaction = 315;
 

@@ -260,12 +260,12 @@ stores at `0x0021810c`-`0x0021811c`), so both are on for every human until a scr
 
 Everything in this section is confirmed (code) at the cited addresses unless a line says otherwise.
 
-A landed strike (`Strike_Contact`, `0x0021b290`, [Combat](combat.md#moving-strikes)) on a human with health plays its hit
-sound in `Hit_ResolveBlock` (`0x00220df0`): `Human_PlayImpactSound(1, attacker, attacker, victim, strike, struck, 5)`,
-nothing when the attacker's body `+0x1a0` has `+0x38` set. Confirmed (code):
+A landed strike (`Strike_Contact`, `0x0021b290`, [Combat](combat/index.md#moving-strikes)) on a human with health plays
+its hit sound in `Hit_ResolveBlock` (`0x00220df0`): `Human_PlayImpactSound(1, attacker, attacker, victim, strike,
+struck, 5)`, nothing when the attacker's body `+0x1a0` has `+0x38` set. Confirmed (code):
 
-- **`strike`** by the attacker's striking shape (its bone id `+0x31`, [Combat](combat.md#moving-strikes)) and the hit's
-  **strength** `s` (0-3: the reaction's bits 4-5 from `Hit_PickReaction` `0x00266d00`, plus 1 when the attack's
+- **`strike`** by the attacker's striking shape (its bone id `+0x31`, [Combat](combat/index.md#moving-strikes)) and the
+  hit's **strength** `s` (0-3: the reaction's bits 4-5 from `Hit_PickReaction` `0x00266d00`, plus 1 when the attack's
   Anim Range flags (`+0x0e`, `0x00254e20`) have `0x600` or the attacker's anim id is 11, at most 3):
     - head (bones 5-16): 17 `HEAD`;
     - forearms and hands (17-27): `[111 JAB, 9 FIST, 112 BIGPUNCH, 112 BIGPUNCH][s]` (`0x00510190`);
@@ -278,7 +278,7 @@ nothing when the attacker's body `+0x1a0` has `+0x38` set. Confirmed (code):
   (bones 5-16), 10 `TORSO` otherwise (the spine, or no shape).
 
 Before that, `Strike_Contact` adds `Human_PlayImpactSound(1, attacker, attacker, victim, 26 HUMAN, 26 HUMAN, 5)` when
-the attacker holds flag `0x1400000` (a charge or a thrown human, [Combat](combat.md)) or the attacker's body shape
+the attacker holds flag `0x1400000` (a charge or a thrown human, [Combat](combat/index.md)) or the attacker's body shape
 has flag `0x2`. A friendly hit by a player on a gang member (brain `+0x04` = 3) who is idle and may gesture makes
 him say `fuck_you` (88; interrupt, duckable) when his health is above 10 %.
 
@@ -405,7 +405,7 @@ interrupt (cuts the speaker's current line; without it nothing is said while he 
 line (`Human_PlaySpeechCutting`), **N** not duckable, **L** the speaker looks at a target. "Gesture" means only when
 `Ambient_MayGesture` allows ([above](#command-ids)). Every call goes through the voice table, so a command the
 speaker's voice set has no line for says nothing. The triggers are the functions' own (their pages: [AI](ai.md),
-[Combat](combat.md), [Crimes](crimes.md)); a "variable" command is a parameter of the goal or action. Confirmed
+[Combat](combat/index.md), [Crimes](crimes.md)); a "variable" command is a parameter of the goal or action. Confirmed
 (code) for every call's arguments.
 
 | Address | Function | Commands (volume, flags) | Evidence |

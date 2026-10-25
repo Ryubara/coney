@@ -246,14 +246,14 @@ character keeps it at Character Data `+0xb54` (`+0xb50` the count); the human's 
 | `+0x00`, `+0x02` | s16 × 0.001 | `x`, `y` of a unit direction (x right, y forward) towards the other human for this move: (1, 0) for a snap right, (-1, 0) left, (0, -1) back | `0x00254418`; its angle `0x00254310` |
 | `+0x04` | f32 | reach; 0 means the id has no range data | `0x002544a0` |
 | `+0x08` | s16 × 0.001 | a far range; when 0, `+0x04` × 1.25 | `0x00254508`; setter `0x002545a8` |
-| `+0x0a` | s16 | the move's **damage** ([Combat](../combat.md#damage-table)) | `0x002542e8`; setter `0x002548c8` |
-| `+0x0c` | s16 | the **hit code**: bits 0-1 direction, 2-3 height, 4-5 strength; 10 by default; picks the victim's reaction ([Combat](../combat.md#hit-codes)) | `0x00254d60`; `0x00266d00` |
+| `+0x0a` | s16 | the move's **damage** ([Combat](../combat/index.md#damage-table)) | `0x002542e8`; setter `0x002548c8` |
+| `+0x0c` | s16 | the **hit code**: bits 0-1 direction, 2-3 height, 4-5 strength; 10 by default; picks the victim's reaction ([Combat](../combat/index.md#hit-codes)) | `0x00254d60`; `0x00266d00` |
 | `+0x0e` | u16 | flags: `0x400` the hit **stuns** (`0x0026a6d0`); `0x800`, `0x1000`, `0x2000` choose the playback rate ([rates](#playback-rate)); `0x100` seen on escapes and throws, not traced | `0x00104a38` |
 
 At runtime (Rembrandt-class player, PCSX2 2.9.94) `+0x00`, `+0x02` read as a unit vector × 1000: (0, 1000) for most
 ids, (999, -12) for 25 `SNAP_RIGHT_01`, (-1000, 0) for 27, (-39, -999) for 29, (351, 936) for 147; so a direction
 rather than an offset (inferred from the values). `+0x0a` is the damage: every hit tested took exactly this value off
-the target's health (confirmed (runtime), [Combat](../combat.md#damage-table)). The ranges serve the attacks, grabs
+the target's health (confirmed (runtime), [Combat](../combat/index.md#damage-table)). The ranges serve the attacks, grabs
 and tackles: the grab searches within id 70's far range × 1.25, the tackle id 3's (confirmed (code) at `0x00284920`);
 the locomotion clips carry flag `0x1000` (confirmed (runtime) on Rembrandt). The class record (`CfgChar`'s 45 floats
 and 16-bit values) overrides the range data for some ids, through the jump tables at `0x0055d640` and `0x0055d6f0`
@@ -337,7 +337,7 @@ never move the character by their root**; start and stop clips have no flags and
 
 **Fields of the clip tasks** (types 1, 3, 6), confirmed (code) at the constructors and at `0x00108dd0` /
 `0x00108f10`: `+0x1c` the next task (3, 6), `+0x20` the blend time into it, `+0x24` **state flags** the task holds on
-its human (the combat state word at record `+0x08`, [Combat](../combat.md#state-flags)): the caller sets them on the
+its human (the combat state word at record `+0x08`, [Combat](../combat/index.md#state-flags)): the caller sets them on the
 human as it pushes the task, and the task clears them from record `+0x08` when it ends or is cut off; `+0x28` the
 handle of the human the task plays on; `+0x2c` a callback called with that human when the clip ends (the hook the
 combat code chains on, [Combat](../combat-grabs.md#grab-posing)).

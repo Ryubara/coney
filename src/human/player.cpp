@@ -325,7 +325,7 @@ void Player::drive(Human& human) {
 }
 
 void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::span<Combatant* const> targets) {
-    // The command for this sample (docs/research/combat.md#commands).
+    // The command for this sample (docs/research/combat/index.md#commands).
     // The buttons are matched even with the pad locked; a locked pad's human does not act on them (HuLockPad), and a
     // command disabled for it is kept pending, not acted on (EnableCommand). Both still reach the pad handler
     // (docs/references/bindings/input.md#padsethandlerex).

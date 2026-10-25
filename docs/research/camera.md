@@ -806,7 +806,7 @@ With one target that is a player (with any other target, only a 1.0 m sphere pus
    forward `f`, the view's direction `v` (from the camera of the last update `+0x1e0` to the look-at point) and `L =
    max(0.75, 0.15 × band near edge)`: `L` is scaled by allowed ÷ wanted distance when the world holds the camera in, and
    by 0.4 while the target has state flag `0x40` or `0x80` (mask `0xc0`: he is grabbing someone from the front or the
-   rear, [Combat](combat.md#state-flags)). A world ray (`WorldManager_RayCast` `0x0040db88`, at `0x00133604`)
+   rear, [Combat](combat/index.md#state-flags)). A world ray (`WorldManager_RayCast` `0x0040db88`, at `0x00133604`)
    from the look-at point along `f`, `L − 0.5 × L × |f · v|` long, gives the lead point `P` = look-at + `f` × (the free
    length − 0.01). So running away from the camera the aim point is about 0.36 m ahead of the look-at point (0.375 −
    0.01 at the default band; runtime 0.363 standing, 0.365 running).
@@ -815,7 +815,7 @@ With one target that is a player (with any other target, only a 1.0 m sphere pus
    0.62 landing). **While the target runs or sprints** (below) this step is replaced. Otherwise: nothing (`P` stays at
    the look-at height) while `|d|` ≤ 0.27, unless the human has any of the state flags `0xe2c00`: `0x400` tackling (on
    top of the victim), `0x800` being tackled, `0x2000` (not named; paired attacks read it), `0x20000` arrested,
-   `0x40000` knocked out, `0x80000` knocked down ([Combat](combat.md#state-flags),
+   `0x40000` knocked out, `0x80000` knocked down ([Combat](combat/index.md#state-flags),
    [Characters](characters.md#the-record), `Human_EndDownState` `0x0025e250`), so on the ground or in a tackle the
    height follows the body with no dead band. Otherwise `d` is scaled by `max(0, (0.27 − |d|) × 0.9 / 0.27 + 0.1)` when
    `|d|` ≤ 0.27, by `min(1, (|d| − 0.27) × 0.9 / 0.27 + 0.1)` up to 0.54, and kept beyond; a negative `d` is lowered by
@@ -1079,7 +1079,7 @@ The yaw rotation is done by `0x0012d688(angle)`, about the look-at point. Four r
   (`Human_IsInFightStance` `0x00228340`, state flags `0x3`) and he still counts for the cameras (`0x00123500`), else 0;
   confirmed (code). So a player squaring up gets the fast swing over the whole range. Beyond 157.5° the rule turns only
   when the target's record has state flag 4 (`0x002265f0(target, 4)`, "has a target" in
-  [Combat](combat.md#state-flags), inferred there; the same flag can stand in for "moving").
+  [Combat](combat/index.md#state-flags), inferred there; the same flag can stand in for "moving").
   `a` is the angle between the target's facing (its rotation in the transform table) and the camera's own horizontal
   forward: vtable slot `+0x224` returns the orientation `+0x20`, whose y axis (`Quat_AxisY` `0x003363b0`), flattened and
   normalised, is the view as placed at the end of the previous update, toward the [aim point](#aim-point) `+0x240`, not
@@ -1298,7 +1298,7 @@ While the button is held the framing rules and auto-follow are off (update step 
 view is pulled out (step 18).
 
 **R1 at a run looks behind and does not block.** The reverse button is R1, which also blocks
-([Combat](combat.md#dispatch)), but the block's fight test `Human_CanFight` (`0x00224f28`) fails while the human
+([Combat](combat/index.md#dispatch)), but the block's fight test `Human_CanFight` (`0x00224f28`) fails while the human
 runs or sprints free: gait `+0x1a8` 4 (`0x00223a60`) or 5 (`0x00223a98`) with record `+0x08` clear. Confirmed
 (code). So at a run R1 leaves the gait, the speed and the run clip alone and only turns the view; the block starts
 on the first update the gait drops below 4 with R1 still held. Confirmed (runtime), PCSX2 2.9.94, scenario
@@ -2696,7 +2696,7 @@ Every cut is a hard cut: the camera jumps in one update, and no blend camera (ty
 
 1. **Ends** (`CamPower_End`) when the human is gone, down or dead (`Human_IsDownOrDead`), or, outside hide-and-seek,
    when he is in neither side of a paired move (state `0x1000`, the attacker, or `0x2000`, the victim,
-   [Combat](combat.md#state-flags)), or he is a victim whose partner has gone or left `0x1000`.
+   [Combat](combat/index.md#state-flags)), or he is a victim whose partner has gone or left `0x1000`.
 2. Otherwise the camera is put back at the cut's position and orientation (`+0x270`, `+0x310`), the position is
    pushed out of nearby humans (`Camera_PushOutOfHumans` with 3.0, none skipped), and the look point is set 3 m
    along the view.

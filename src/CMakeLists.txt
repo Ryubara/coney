@@ -360,7 +360,7 @@ target_sources(coney_core PRIVATE
     ai/tactic_crowd.cpp
     ai/track_human_goal.cpp
     ai/turn_action.cpp)
-# Combat: the player's commands, attack chains, damage, grabs and meters (docs/research/combat.md).
+# Combat: the player's commands, attack chains, damage, grabs and meters (docs/research/combat/index.md).
 target_sources(coney_core PRIVATE
     combat/ai_counter.cpp
     combat/anim_ranges.cpp

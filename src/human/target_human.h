@@ -21,7 +21,7 @@
 // a real level. It stands where its layout line puts it, takes the player's hits as pending damage, loses health and
 // reacts as the research's victim does (the reaction table, the stun, the knockdown and getting up, with a street
 // civilian's power class); it has no brain, does not walk and never fights back.
-// Research: docs/research/combat.md#hit-codes, docs/research/combat-reactions.md#reactions,
+// Research: docs/research/combat/index.md#hit-codes, docs/research/combat-reactions.md#reactions,
 // docs/research/combat-grabs.md#grab, docs/research/combat-grabs.md#grab-posing Guide: docs/guides/sandbox.md
 
 namespace coney::human {

@@ -204,9 +204,9 @@ TEST_CASE("an attack turns to a target off to the side within its range", "[huma
 }
 
 TEST_CASE("an attack's start warns its target alone, never a bystander", "[human][combat]") {
-    // docs/research/combat.md#attack-warnings: Human_WarnOfAttack (event 0x10) goes to the one target an attack takes.
-    // A bystander that saw a stranger's swing would otherwise answer it (the gangs made enemies, a help call): the
-    // level34 park's Warriors joined a fight that was not theirs (issue #372).
+    // docs/research/combat/index.md#attack-warnings: Human_WarnOfAttack (event 0x10) goes to the one target an attack
+    // takes. A bystander that saw a stranger's swing would otherwise answer it (the gangs made enemies, a help call):
+    // the level34 park's Warriors joined a fight that was not theirs (issue #372).
     const FightCharacter character;
     Fight fight(character);
     const coney::human::TargetHuman& bystander = fight.addTarget(character, 3.0F, 4.0F);
@@ -219,8 +219,8 @@ TEST_CASE("an attack's start warns its target alone, never a bystander", "[human
 
 TEST_CASE("an attack a human no player controls starts warns its target only within the clip's far range",
           "[human][combat]") {
-    // docs/research/combat.md#attack-warnings: Attack_Start warns its target only within the far range (1.25 m here);
-    // beyond it the attack only turns and warns no one. A bystander behind is never warned.
+    // docs/research/combat/index.md#attack-warnings: Attack_Start warns its target only within the far range (1.25 m
+    // here); beyond it the attack only turns and warns no one. A bystander behind is never warned.
     const FightCharacter character;
     for (const float ahead : {3.0F, 1.0F}) {
         INFO("target " << ahead << " m ahead");
@@ -342,7 +342,7 @@ bool playedClip(const Played& played, std::uint32_t clip) {
 }
 
 // The stick fully to the right one update before square, as the research reached lesson 7's snaps
-// (docs/research/combat.md#attacks), then at rest.
+// (docs/research/combat/index.md#attacks), then at rest.
 constexpr std::string_view kSnapRightScript = "10 stick left 100 0\n11 tap square\n12 stick left 0 0\n";
 
 } // namespace
@@ -719,7 +719,7 @@ TEST_CASE("cross + square plays the special 653 at a target's front and 655 at i
         });
         return played;
     };
-    // Facing the player: the front special; facing away, the rear one (docs/research/combat.md#attacks).
+    // Facing the player: the front special; facing away, the rear one (docs/research/combat/index.md#attacks).
     const std::vector<std::uint32_t> front = special(std::numbers::pi_v<float>);
     CHECK(std::ranges::find(front, 653U) != front.end());
     CHECK(std::ranges::find(front, 655U) == front.end());

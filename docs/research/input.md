@@ -8,7 +8,7 @@ Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038e
 This page indexes the `Device/ps2/` code that turns the two DualShock 2 pads into what the game reads: the `libpad`
 state machine that brings a pad into analog and pressure mode, the pad queries over the 8-sample button history, the
 Lua pad handlers, and the per-player record that turns buttons into **command ids**. What the commands mean and how
-they are matched is on [Combat, Commands](combat.md#commands); the pad record and the per-frame pad update are on
+they are matched is on [Combat, Commands](combat/index.md#commands); the pad record and the per-frame pad update are on
 [Front end, Pad record](frontend.md#pad-record) and [Input on the front end](frontend.md#input); the per-player record
 is on [Characters](characters.md#buttons). Every function from `0x00144a08` to `0x00148358` and from `0x00149520` to
 `0x00149ef8` is listed here.
@@ -23,7 +23,7 @@ unless the row says otherwise.
 ### Pad queries {#pad-queries}
 
 `pad` is a [pad record](frontend.md#pad-record); `cur` is the current button word, `prev(n)` the word `n` samples
-back. The matchers of [the command tables](combat.md#commands) are the ones marked "table".
+back. The matchers of [the command tables](combat/index.md#commands) are the ones marked "table".
 
 | Address | Name | Returns | Evidence |
 | --- | --- | --- | --- |
@@ -82,7 +82,7 @@ sprint's `CfgPlayerRunButton` option and [`Pad_GetPressure`](#pad-queries) read.
 ### Commands and the per-player record {#commands}
 
 The script bindings are on [character bindings](../references/bindings/character.md); the tables and the matching
-order on [Combat, Commands](combat.md#commands); the record (`0x00660f50 + i × 0x2c`) on
+order on [Combat, Commands](combat/index.md#commands); the record (`0x00660f50 + i × 0x2c`) on
 [Characters](characters.md#buttons). The nine tables live at `0x005ddd10`-`0x005de130` with their counts at
 `0x0050b740`-`0x0050b760`.
 
@@ -100,7 +100,7 @@ order on [Combat, Commands](combat.md#commands); the record (`0x00660f50 + i × 
 | `0x00147640` | `PlayerRecord_ForceCommand(record, id, ms)` | the pending command `+0x24` and its end time `+0x28` (game time + `ms`) | confirmed (code) |
 | `0x00147660` | `PlayerCommand_ForceForHuman` | `ForceCommand`: for a pad-controlled human and an id 1-57 | confirmed (code) |
 | `0x00147738` | `PlayerCommand_IsEnabled(record, id)` | the record's pad bit in the mask of the first entry with that command; `HUD_Update` asks for `0xa` ([Crimes](crimes.md)) | confirmed (code) |
-| `0x00147940` | `Commands_Match(record)` | the matcher ([Combat, Commands](combat.md#commands)) | confirmed (code) |
+| `0x00147940` | `Commands_Match(record)` | the matcher ([Combat, Commands](combat/index.md#commands)) | confirmed (code) |
 | `0x00147ef8` | `PlayerRecord_GetCommand` | `+0x20` | confirmed (code) |
 | `0x00147f00` | `PlayerRecord_GetCommandOrPending` | `+0x20`, else `+0x24` (`PadSetHandlerEx`) | confirmed (code) |
 | `0x00147f18` | `PlayerRecord_GetPressure(record, i)` | pressure byte `i` (0-11) of the record's pad | confirmed (code) |

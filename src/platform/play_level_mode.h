@@ -143,8 +143,8 @@ using SceneLines = std::function<std::vector<SceneLine>(const PlayLevelMode& mod
 /// the level's brains) drawn with its own model (play_level_cast.cpp). Otherwise the other characters are a sandbox
 /// layout's `target` lines, Coney's passive targets (human::TargetHuman) stepped after the player, and AI fighters (a
 /// layout's `fighter` lines, or spawned from the debug menus), humans with a brain stepped in the player's characters'
-/// step; both are drawn with the player's model. The parts follow docs/research/characters.md, docs/research/combat.md,
-/// docs/research/ai.md and docs/research/camera.md; the mode is Coney's own glue.
+/// step; both are drawn with the player's model. The parts follow docs/research/characters.md,
+/// docs/research/combat/index.md, docs/research/ai.md and docs/research/camera.md; the mode is Coney's own glue.
 ///
 /// A level entered through gameplay also brings its glass panes and doors (ScriptedCast::objects,
 /// play_level_objects.cpp): they get the level's collision mesh and path data, tick twice a step, take player 1's
@@ -501,12 +501,12 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     // (docs/research/combat-targets.md#breakables).
     // @orig 0x0021b290 Strike_Contact (unknown)
     [[nodiscard]] std::optional<double> objectAttackLands(const human::Human& human);
-    // The strike test's objects (`Strike_Contact`'s object branch, docs/research/combat.md#moving-strikes): `human`'s
-    // posed strike `shapes` strike each door or barrier whose enabled triangles they touch, each pane whose body they
-    // reach and each strike-target world object (a street prop) whose body (props.h bodyTouches()) they reach, once
-    // while the shapes stay on, with message 1 of the attack record's hit kind, each sounding as its type's material;
-    // then the level (strikeLevel()). **Coney's stand-ins**: a car's hit is not made here; only the drawn world
-    // objects are tested.
+    // The strike test's objects (`Strike_Contact`'s object branch, docs/research/combat/index.md#moving-strikes):
+    // `human`'s posed strike `shapes` strike each door or barrier whose enabled triangles they touch, each pane whose
+    // body they reach and each strike-target world object (a street prop) whose body (props.h bodyTouches()) they
+    // reach, once while the shapes stay on, with message 1 of the attack record's hit kind, each sounding as its type's
+    // material; then the level (strikeLevel()). **Coney's stand-ins**: a car's hit is not made here; only the drawn
+    // world objects are tested.
     void strikeObjects(human::Human& human, std::span<const human::PosedShape> shapes);
     // The strike shapes' contact with the level mesh: once while the shapes stay on, the fist (or the charging body)
     // against the triangle met, as `human`'s sound (`player`: he is player 1; docs/research/sound-events.md).
@@ -525,8 +525,8 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     // Player 1 walks over the power-ups he touches (LevelPickups::walkOver(), which plays their pick-up sounds).
     void walkOverPowerups();
     // A strike on a world object or a car reports a 30 m noise (`AI_ReportNoise`, `0x002936a8`;
-    // docs/research/combat.md, cars.md#hit-effects). Coney's AI does not hear it yet; the noise stamps the ambient
-    // manager's event, which opens the `_DAM_` emitters' window (docs/research/sound.md#ambient).
+    // docs/research/combat/index.md, cars.md#hit-effects). Coney's AI does not hear it yet; the noise stamps the
+    // ambient manager's event, which opens the `_DAM_` emitters' window (docs/research/sound.md#ambient).
     // @orig 0x002936a8 AI_ReportNoise (unknown)
     void reportNoise();
     // Gives player 1 triangle's pick-up over `pickups` (may be null: none): the search, with sight rays through the

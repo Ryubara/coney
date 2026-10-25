@@ -8,8 +8,9 @@ namespace coney::combat {
 
 namespace {
 
-// The order the tables are matched in; a later match overwrites an earlier one (docs/research/combat.md#commands).
-// Tapped only matches on a sample with a release, which its own test already ensures.
+// The order the tables are matched in; a later match overwrites an earlier one
+// (docs/research/combat/index.md#commands). Tapped only matches on a sample with a release, which its own test already
+// ensures.
 constexpr std::array<Trigger, kTriggerCount> kMatchOrder{
     Trigger::Held,       Trigger::HistoryHold, Trigger::Pressed,  Trigger::Query,    Trigger::ComboHeld,
     Trigger::ComboPress, Trigger::Tapped,      Trigger::LongHold, Trigger::Released,

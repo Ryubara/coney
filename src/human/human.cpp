@@ -39,17 +39,17 @@ constexpr std::uint16_t kCoveredGroundFlag = 0x20;
 constexpr float kStrikeCapsuleRadius = 0.35F;
 constexpr float kStrikeCapsuleHeight = 2.0F;
 // The struck capsule's top above the head bone, and its least height, before the body scale
-// (`PhysicsCapsule_Pose` 0x00343518, docs/research/combat.md#capsule-strike).
+// (`PhysicsCapsule_Pose` 0x00343518, docs/research/combat/index.md#capsule-strike).
 constexpr float kCapsuleAboveHead = 0.2F;
 /// The bone the led steer aims at: the head, which human +0x500 holds (docs/research/combat-targets.md#led-steer).
 constexpr int kLedPointBone = 6;
 // Beyond this between the feet no strike shape can meet another body's (each reaches well under 1.5 m from its feet),
 // so the victim is not posed.
 constexpr float kStrikeBroadReach = 3.0F;
-// **Coney's reading** of a charge stopping dead at a wall (docs/research/combat.md#moving-strikes): `Human_OnContact`
-// answers the slide response, which takes the move into the wall away, so a charge whose sweep kept less than this
-// share of its move met the wall head-on; it then does not move again before its clip ends, as seen at runtime (why is
-// not traced).
+// **Coney's reading** of a charge stopping dead at a wall (docs/research/combat/index.md#moving-strikes):
+// `Human_OnContact` answers the slide response, which takes the move into the wall away, so a charge whose sweep kept
+// less than this share of its move met the wall head-on; it then does not move again before its clip ends, as seen at
+// runtime (why is not traced).
 constexpr float kChargeStopShare = 0.5F;
 // The idle a pick-up returns to (388, the plain idle).
 constexpr std::uint32_t kPickUpIdle = 388;
@@ -150,9 +150,9 @@ class WalkingOwner final : public physics::BodyOwner {
     std::optional<anim::Vec3> m_written;
 };
 
-// The capsule strike (docs/research/combat.md#capsule-strike): whether any bone strike shape of `shapes` (posed now;
-// `before`, the update before) meets the target's upright `capsule`. A segment is tested where it stands, against the
-// capsule's axis; a sphere along its path this update. The attacker's own capsule (bone -1) does not strike.
+// The capsule strike (docs/research/combat/index.md#capsule-strike): whether any bone strike shape of `shapes` (posed
+// now; `before`, the update before) meets the target's upright `capsule`. A segment is tested where it stands, against
+// the capsule's axis; a sphere along its path this update. The attacker's own capsule (bone -1) does not strike.
 // @orig 0x00349a60 Sweep_SphereCapsule (unknown)
 bool meetsCapsule(std::span<const PosedShape> before, std::span<const PosedShape> shapes, const PosedShape& capsule) {
     for (std::size_t i = 0; i < shapes.size(); ++i) {
@@ -861,7 +861,7 @@ void Human::holdForCombat() {
     const anim::Vec3 slide = m_fighter.takeSlide();
     m_velocity = anim::Vec3{slide.x, slide.y, m_velocity.z};
     // Blocking, the stick turns the player in place at the combat stance's limit (24° an update in play; the block is
-    // held in a fight stance, docs/research/combat.md).
+    // held in a fight stance, docs/research/combat/index.md).
     if (m_fighter.blocking() && m_intent.magnitude > locomotionTuning().stickDeadZone) {
         m_heading = turnToward(m_heading, m_intent.angle - kPi / 2.0F, stanceTurn(), m_turn);
     }
@@ -958,7 +958,7 @@ void Human::fight(std::span<Combatant* const> targets, const raycast::CollisionM
     const std::uint64_t nowMs = m_updates * 1000 / 30;
     // **Coney's reading**: the dispatcher's gait tests (`0x00223a30`-`0x00223a60`) read the gait the last update's
     // velocity left, not this one's: in the original a square one update after the stick is first pushed fully still
-    // snaps, though the run start moves the body on that update (docs/research/combat.md#attacks).
+    // snaps, though the run start moves the body on that update (docs/research/combat/index.md#attacks).
     m_fighter.update(FighterInput{.command = m_record.command,
                                   .buttons = m_record.buttons,
                                   .stick = stick,

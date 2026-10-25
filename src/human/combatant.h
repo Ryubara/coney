@@ -12,7 +12,8 @@
 // messages an attack sends it (the clip's warning and the hit). The player fights the sandbox's passive targets
 // (TargetHuman) and other humans (Human, an AI's or a second player's) through this one view, and so does an AI human,
 // so a strike, its warning and its reaction work the same whoever gives or takes them.
-// Research: docs/research/combat.md#block, docs/research/combat-reactions.md#damage, docs/research/ai.md#attack-action
+// Research: docs/research/combat/index.md#block, docs/research/combat-reactions.md#damage,
+// docs/research/ai.md#attack-action
 
 namespace coney::human {
 
@@ -27,7 +28,7 @@ enum class TargetState : std::uint8_t {
 };
 
 /// What an attacker's clip tells its target before the hit (combat::warningBetween() finds it in the attacker's clip;
-/// the attacker sends it when the target is within twice the attack's reach, docs/research/combat.md#block).
+/// the attacker sends it when the target is within twice the attack's reach, docs/research/combat/index.md#block).
 struct AttackNotice {
     combat::AttackWarning warning = combat::AttackWarning::Duck;
     int attackAnim = -1; ///< The attacker's anim id.

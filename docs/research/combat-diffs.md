@@ -1,27 +1,27 @@
 # Combat: where Coney differs from the original
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`) through
-[Combat](combat.md) and [Combat moves](combat-moves.md); Coney's side read from `repo:src/combat/`,
+[Combat](combat/index.md) and [Combat moves](combat-moves.md); Coney's side read from `repo:src/combat/`,
 `repo:src/human/` and `repo:src/ai/` as of 2026-10-07 (main at `f4562750`), as behaviours only.
 
 ## Purpose
 
 A worklist for the combat implementers: each place Coney's fight plays differently from the original, what the
 original does (with a link to the research) and where Coney's side lives. Coney's documented **choices** and
-**stand-ins** (on [Combat](combat.md#coneys-implementation)) are listed too when they change what the player sees.
+**stand-ins** (on [Combat](../engine/combat.md)) are listed too when they change what the player sees.
 Remove an entry when it is fixed, in the same commit. The original's evidence levels are on the linked pages; the
 Coney side is confirmed by reading the source.
 
 ## Original structure
 
 The original functions behind each entry are on the page it links, in that page's own Original structure and code
-index ([Combat](combat.md#original-structure), [Combat moves](combat-moves.md#original-structure)). The few an entry
+index ([Combat](combat/index.md#map), [Combat moves](combat-moves.md#original-structure)). The few an entry
 here names with an address (the mid-target test, the snap's search and filter, `Player_Special`) are graded where
 they are cited.
 
 ## Data
 
-This page holds no data of its own: the commands, flags, tables and constants are on [Combat](combat.md#data) and
+This page holds no data of its own: the commands, flags, tables and constants are on [Combat](combat/index.md#data) and
 [Combat moves](combat-moves.md#data).
 
 ## Behaviour
@@ -82,8 +82,8 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
   22's choice at a rear-held target) is issue #84's ([Coney's tandem](combat-moves.md#tandem-coney)).
 - **The moving attacks' windows** open late: on the disc Coney's run attack 24 switches its shapes on at update 4 and
   off at 9, the walk attack 23 at 6 and 12, against 1 and 7, 4 and 10 at runtime
-  ([How a moving attack strikes](combat.md#moving-strikes)). Coney fires the clips' events by the clip time from 0 on
-  the clip's first update ([Animation](formats/animation.md#animation-tasks)); why the original's open about two
+  ([How a moving attack strikes](combat/index.md#moving-strikes)). Coney fires the clips' events by the clip time from 0
+  on the clip's first update ([Animation](formats/animation.md#animation-tasks)); why the original's open about two
   updates earlier is open ([below](#open-questions)).
 - **The armed run attack 501** does not test the fight stance in Coney; the original's armed branch does
   ([Square](combat-moves.md#square)).
@@ -91,7 +91,7 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
   line (`0x00222a90`) is `Human_IsFriendly`, which the snap's filter `TargetFilter_Enemy` (`0x00279410`) calls
   (confirmed (code) in `Player_FindSnapTarget`, `0x0027aa38`), so a snap takes no human friendly to the player.
   Coney's search (`Fighter::snapTarget`) leaves friendliness to the targets it is given, and does not keep the
-  snap's target as the current target ([Combat](combat.md#attacks)).
+  snap's target as the current target ([Combat](combat/index.md#attacks)).
 - **Object targets**: only glass panes; doors and loose objects are not targets, and the approach from far × 1.5 is
   missing ([Breakables](combat-targets.md#breakables)).
 
@@ -185,12 +185,12 @@ The Coney side of each entry is named in it. The files the entries cite: `repo:s
 dispatcher and the commands it takes), `repo:src/combat/attacks.cpp` (which attack a press starts),
 `repo:src/human/fighter.cpp` (targets and the steer), `repo:src/platform/play_level_objects.cpp` (moving attacks on
 objects), `repo:src/animation/anim_task.cpp` and `repo:src/human/human_animator.cpp` (clip timing). Coney's choices
-and stand-ins as a whole are listed on [Combat](combat.md#coneys-implementation).
+and stand-ins as a whole are listed on [Combat](../engine/combat.md).
 
 ## Open questions
 
 - **The moving attacks' windows**: why the original's run and walk attacks switch their shapes on about two updates
-  before Coney's clip events do ([How a moving attack strikes](combat.md#moving-strikes)). Found by tracing the clip's
+  before Coney's clip events do ([How a moving attack strikes](combat/index.md#moving-strikes)). Found by tracing the clip's
   first update in the original's animation task against Coney's.
 - **A throw's root turn**: why the throw clips' root turn is about a third larger in Coney than at runtime, and
   where the task's rate differs ([Where a throw goes](combat-throws.md#throw-direction)).

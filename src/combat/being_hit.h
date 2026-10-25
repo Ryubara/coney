@@ -12,7 +12,7 @@
 // The victim's side of a hit, as `Human_ApplyPendingDamage` takes it each update: a held block first (a duck the
 // attacker's clip announced lets the attack pass over), the health floor of a player, the hit armour of a player
 // winding up or in a chain window, and the knocked-down human's mashing. Pure decisions; the human plays the clips.
-// Research: docs/research/combat-reactions.md#damage, docs/research/combat.md#block,
+// Research: docs/research/combat-reactions.md#damage, docs/research/combat/index.md#block,
 // docs/research/combat-reactions.md#reactions, docs/research/combat-reactions.md#being-hit-runtime
 
 namespace coney::combat {

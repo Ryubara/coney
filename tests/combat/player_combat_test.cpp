@@ -51,8 +51,9 @@ struct Frame {
 // What an attack's clip would hold on the record's +0x08 as it plays, standing in for the animator the dispatcher runs
 // beside in the game (docs/research/tasks.md#held-flags): the wind-up, the chain window from `open`, the end phase from
 // `close`, the recovery from `recovery`, nothing from `end`, in updates from the clip's start; the moving attacks hold
-// 0x1000000 to their end. The values are the phases measured at runtime (docs/research/combat.md#attacks; the bat's
-// 34 and 36, which have no chain window, docs/research/combat-moves.md#bat-cross), S1's for the attacks not listed.
+// 0x1000000 to their end. The values are the phases measured at runtime (docs/research/combat/index.md#attacks; the
+// bat's 34 and 36, which have no chain window, docs/research/combat-moves.md#bat-cross), S1's for the attacks not
+// listed.
 class ClipPhases {
   public:
     // An attack `animId` started this update.

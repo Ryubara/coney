@@ -28,10 +28,10 @@
 #include "support/human_fixtures.h"
 
 // When the player's moves take a press again and give the stick back, for every move, under button spam and with the
-// stick held at partial deflections (docs/research/combat.md#input-return). The synthetic character plays each move's
-// clip for as long as Rembrandt's clip on the disc lasts (S1 20 updates, X1 30, the grab miss 71 and 69, ...). Each
-// test checks that the clip sequence plays fully under the spam, the update at which a press next starts a move, the
-// update at which the stick moves the player again and the gait he resumes at, and that nothing of the move is left
+// stick held at partial deflections (docs/research/combat/index.md#input-return). The synthetic character plays each
+// move's clip for as long as Rembrandt's clip on the disc lasts (S1 20 updates, X1 30, the grab miss 71 and 69, ...).
+// Each test checks that the clip sequence plays fully under the spam, the update at which a press next starts a move,
+// the update at which the stick moves the player again and the gait he resumes at, and that nothing of the move is left
 // behind (gait, traversal, the fighter's state, the hold).
 
 using coney::anim::Vec3;
@@ -567,8 +567,8 @@ TEST_CASE("square then cross spammed plays S1 and SX2, which plays to its end", 
 }
 
 TEST_CASE("a snap plays to its end under square spam, then the stick at rest gives S1", "[human][combat][timing]") {
-    // A human 1.1 m to the right for the snap to find (docs/research/combat.md#attacks), and the current target ahead
-    // (the stance takes the nearest within 2 m; a snap never goes for the current target).
+    // A human 1.1 m to the right for the snap to find (docs/research/combat/index.md#attacks), and the current target
+    // ahead (the stance takes the nearest within 2 m; a snap never goes for the current target).
     Fight fight(timingCharacter(), 0.0F, 1.1F);
     static_cast<void>(fight.addTarget(timingCharacter(), 0.9F, 0.0F));
     // The stick flicked fully right for one update with square (docs/engine/combat.md#input-scripts), then square

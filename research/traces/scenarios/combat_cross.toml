@@ -1,10 +1,10 @@
 # A cross chain on a puppet: the player plays X1 then XX2 against a civilian held still 1.5 m in front of him.
-# Research: docs/research/combat.md#attacks, #input-return. On the original, slot 6 (facing a pedestrian): the
+# Research: docs/research/combat/index.md#attacks, #input-return. On the original, slot 6 (facing a pedestrian): the
 # civilian PoizoCiv is made a puppet (no AI: its per-player +0x1e = 0, and the puppet patch keeps its command clear),
 # then placed 1.5 m in front of the player, facing him, as the sandbox's fight yard places its front target; it is
 # put back there every update until the input starts, because it keeps walking.
 description = "X1 then XX2 at a passive target 1.5 m ahead: the clips, commands and timing of a cross chain"
-research = "docs/research/combat.md#attacks"
+research = "docs/research/combat/index.md#attacks"
 input = "combat_cross.txt"
 updates = 130
 fields = ["player"]

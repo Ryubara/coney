@@ -34,7 +34,7 @@
 // player's victim side: the hits, warnings and grabs another human aims at it.
 // The work is split by subject: fighter.cpp (the update, the attacks and the targets), fighter_grab.cpp (posing and
 // playing a grab the player holds) and fighter_victim.cpp (the player hit, warned and grabbed).
-// Research: docs/research/combat.md, docs/research/combat-grabs.md#grab-posing (the pair's placement:
+// Research: docs/research/combat/index.md, docs/research/combat-grabs.md#grab-posing (the pair's placement:
 // human/pair_placement.h)
 
 namespace coney::raycast {
@@ -248,7 +248,7 @@ class Fighter {
     /// The snap's target: the nearest human within combat::kSnapSearchRange, combat::kSnapSearchCone of the stick's
     /// direction and combat::kSnapSearchHeight, standing, with health left and targetable (null for none).
     /// **Coney stand-in**: the clear line to it (`0x00222a90`) is not tested.
-    /// The original's search is `0x0027aa38(h, 0x80)` (docs/research/combat.md#attacks).
+    /// The original's search is `0x0027aa38(h, 0x80)` (docs/research/combat/index.md#attacks).
     [[nodiscard]] static Combatant* snapTarget(const FighterInput& input);
     /// The same search along heading `along` (radians).
     [[nodiscard]] static Combatant* snapTarget(const FighterInput& input, float along);
@@ -482,7 +482,7 @@ class Fighter {
     // brain then makes its own sight test (ai::Brain::update()). **Coney choices**: a player's standing square warns
     // once, where the original's pad path and Attack_Start each warn (the brain counts 2); the dive warns the one its
     // own search (nearestInReach()) dives at, as the research does not list it; a block try only asks for a warning.
-    // Research: docs/research/combat.md#attack-warnings
+    // Research: docs/research/combat/index.md#attack-warnings
     // @orig 0x0021d5c0 Human_WarnOfAttack (unknown)
     void warnTarget(int animId, const FighterInput& input, bool chainStep) const;
     // The dispatcher's input from the world: square's target, circle's search, the hold, and the record's +0x08.
@@ -501,11 +501,11 @@ class Fighter {
     void steer(int animId, const FighterInput& input, const HumanAnimator& animator, float& heading, bool chainStep);
     // A snap's steer onto the target its search found (m_snapTarget), through steerOnto() with
     // combat::kSnapSteerSeconds as the caller's time, when it is within the snap's far range; nothing beyond. The
-    // original's snap (`0x00264460`) steers so (docs/research/combat.md#attacks).
+    // original's snap (`0x00264460`) steers so (docs/research/combat/index.md#attacks).
     void steerSnap(int animId, const FighterInput& input, const HumanAnimator& animator, float heading);
     // The dive's search and steer (Player_StartDive): the nearest standing human between its reach and far range
     // within 54° of the stick or the facing becomes the target (none clears it unless locked on), and the non-led steer
-    // takes it there over 0.1 s (docs/research/combat.md#charge-aim).
+    // takes it there over 0.1 s (docs/research/combat/index.md#charge-aim).
     // @orig 0x00264878 Player_StartDive (unknown)
     void steerDive(const FighterInput& input, const HumanAnimator& animator, float heading);
     // The reach search of attack `animId` (the dive's, the charge's): the nearest standing human between its reach and

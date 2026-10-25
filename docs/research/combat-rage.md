@@ -1,8 +1,8 @@
 # Combat: the power meter, rage and reviving
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`); runtime claims with
-PCSX2 2.9.94 as on [Combat](combat.md), which this page was split from because that page had grown too
-large. The overview, the data tables and the code index stay on [Combat](combat.md#code-index).
+PCSX2 2.9.94 as on [Combat](combat/index.md), which this page was split from because that page had grown too
+large. The overview, the data tables and the code index stay on [Combat](combat/index.md#code-index).
 Every claim carries the level written beside it.
 
 ## Purpose
@@ -17,7 +17,7 @@ both meters; the scripts' rage handlers and the level99 lessons react to them.
 
 No source file names this code: it lies in `Human/`, in the player's combat code after `cns/cnsplayertag.cpp`
 ([Source map](source-map.md#position), inferred), and the names are ours. Every function is in the [code
-index](combat.md#code-index); these are the entry points, each read in Ghidra at its address.
+index](combat/index.md#code-index); these are the entry points, each read in Ghidra at its address.
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |
@@ -32,10 +32,10 @@ index](combat.md#code-index); these are the entry points, each read in Ghidra at
 
 ## Data
 
-The meters live in fields [Combat](combat.md#data) owns ([Other record fields](combat.md#record-fields)); the power
-and Warrior class records are on [Characters](characters.md#power-classes), the `CfgBurnRates`, `CfgRagePoints` and
-`CfgRageHandlers` values on [Constants](combat.md#constants). The fields this page reads most, each read in the
-function named:
+The meters live in fields [Combat](combat/index.md#data) owns ([Other record fields](combat/index.md#record-fields));
+the power and Warrior class records are on [Characters](characters.md#power-classes), the `CfgBurnRates`,
+`CfgRagePoints` and `CfgRageHandlers` values on [Constants](combat/index.md#constants). The fields this page reads most,
+each read in the function named:
 
 | Field | Meaning | Evidence |
 | --- | --- | --- |
@@ -254,13 +254,13 @@ the key and the R2 command menu, in this order. Confirmed (code) at `0x002843f8`
    `u16` of the Warrior class record,
    `0x00222b58`) and the human may gain rage (human `+0xe0` bit `0x2000000`, which `Human_MakePlayer` sets and
    `Human_AddRage` also tests) and is not raging (`+0xe0` bit `0x80000`), `Rage_Enter` (`0x00284340`) runs.
-5. **The flash**, command `0x28` (d-pad right, [Commands](combat.md#commands)), needs all of: a player human (`+0x1b0` ≠
-   −1), at least one flash (item 1) in the player's inventory (`0x0041e420` on `*(0x0051489c) + 0x480`, the player index
-   at human `+0x380`), not down or dead (`Human_IsDownOrDead`: state `0x180050000`, which is wounded `0x10000`,
-   knocked out `0x40000`, the pending-hit mark `0x80000000` and dead `0x100000000`; knocked **down**, `0x80000`, is
-   not in it), the state word free of `0x1c00000000` (`0x00227f90`: jumping, falling, a long fall) and `+0x08` free
-   of `0x40` (`0x00223c10`: climbing over). Any of these and the press does nothing: no clip, no flash spent. Then by
-   health (record `+0x144` against the maximum `+0x146`):
+5. **The flash**, command `0x28` (d-pad right, [Commands](combat/index.md#commands)), needs all of: a player human
+   (`+0x1b0` ≠ −1), at least one flash (item 1) in the player's inventory (`0x0041e420` on `*(0x0051489c) + 0x480`, the
+   player index at human `+0x380`), not down or dead (`Human_IsDownOrDead`: state `0x180050000`, which is wounded
+   `0x10000`, knocked out `0x40000`, the pending-hit mark `0x80000000` and dead `0x100000000`; knocked **down**,
+   `0x80000`, is not in it), the state word free of `0x1c00000000` (`0x00227f90`: jumping, falling, a long fall) and
+   `+0x08` free of `0x40` (`0x00223c10`: climbing over). Any of these and the press does nothing: no clip, no flash
+   spent. Then by health (record `+0x144` against the maximum `+0x146`):
    - **Below the maximum.** The flash clip **665 `SPECIAL_FLASH`** (`gen_flash_use`, 40 frames) is pushed as a
      one-shot clip task on top of the stack (`0x0025ade8`: a type-5 task, `0x00106240`, holding `0x2000`) when
      **nothing blocks a move**: the state word has none of `0x18003ff0` (`0x00227fd8`: grabbed, grabbing, mugging,
@@ -370,7 +370,7 @@ state's handle at `+0x264` (restarted when it is still playing, `0x004194b8`); w
 `RAGE_START` plays as a full-body clip holding `0x2000` (`0x0025a8c0`); otherwise rage starts without the clip.
 
 `level99`'s last lesson waits for this command through `PadSetHandlerEx` (the handler receives it even when
-`EnableCommand` has turned it off, [Commands](combat.md#commands)).
+`EnableCommand` has turned it off, [Commands](combat/index.md#commands)).
 
 ### Everything rage does {#rage-effects}
 
@@ -407,11 +407,11 @@ held for 0.3 s (2026-10-10).
   → 0 in about 8.1 s (look 2 from game time 581.34 s, ended by 589.41 s).
 - **What the player deals**: the same damage (no bonus); every hit causes a reaction because the attacker is raging
   (hit armour does not apply, `Human_ApplyPendingDamage` `0x00265f70`) and, through `0x200000`, one step stronger
-  ([Human flags](combat.md#human-flags)); the power strike is 63 (and 231 when mounted, which also deals its damage at once,
-  `Player_UpdateGrabbing` at `0x0027f524`), the special 645 / 647, the strong grapple's strike 649 / 651; no power
-  spent or drained; the player's grabs cannot be struggled out of, escaped (`0x002258f0`, `0x00225830`), countered
-  (`Human_CanCounterGrab` `0x00258f40` refuses a raging grabber) or counter-tackled (`Human_CanCounterTackle`, the
-  same test at `0x002591e8`).
+  ([Human flags](combat/index.md#human-flags)); the power strike is 63 (and 231 when mounted, which also deals its
+  damage at once, `Player_UpdateGrabbing` at `0x0027f524`), the special 645 / 647, the strong grapple's strike 649 /
+  651; no power spent or drained; the player's grabs cannot be struggled out of, escaped (`0x002258f0`, `0x00225830`),
+  countered (`Human_CanCounterGrab` `0x00258f40` refuses a raging grabber) or counter-tackled (`Human_CanCounterTackle`,
+  the same test at `0x002591e8`).
 - **What the player takes**, through the enter handler's flags: no damage (god mode: `Human_ApplyPendingDamage`
   zeroes the pending damage while `+0xe0` has `0x10`, except a hit by a world object of `ObjectAttribs` kind `0x1d` or
   `0x22`), never stunned (`0x100`), reaction one step weaker (`0x200`), reaction strength at most 1, so never knocked
@@ -472,7 +472,7 @@ any of the three (each name occurs once in the 467 chunks, at its definition). N
   player's end. Prepare-at-90 % is a loading detail; starting it on rage is enough.
 - **`RageFull(human, false)`**: Coney calls the full handler only when the meter fills; add the false call when the
   hold timer runs out on an unspent full meter, or the 75 blur stays on.
-- **Rage start outside a block**: the original starts it from any free state ([Commands](combat.md#commands)); Coney
+- **Rage start outside a block**: the original starts it from any free state ([Commands](combat/index.md#commands)); Coney
   only from the block ([Coney's differences](combat-diffs.md)).
 - **To check in Coney**: god mode (`kGod`) is honoured by `Fighter::takePending`; make sure the other six
   flags are read where the original reads them (unstunnable, reduced and increased reaction, ungrabbable,
@@ -601,8 +601,8 @@ throw still drops the object. Inferred from the code above.
 ## Reviving a downed Warrior {#revive}
 
 The prompt (HUD string 4) and who can be revived are on [HUD: action prompts](hud-messages.md#action-prompts); this is the
-action. **D-pad left** pressed makes command `0x27` ([the street's tables](combat.md#commands), confirmed (runtime)), which
-`Player_TryRevive` (`0x00286ba8`) handles; an AI Warrior reaches the same function through
+action. **D-pad left** pressed makes command `0x27` ([the street's tables](combat/index.md#commands), confirmed
+(runtime)), which `Player_TryRevive` (`0x00286ba8`) handles; an AI Warrior reaches the same function through
 [SaveHuman](ai-goals.md#goal-save-human) (inferred from its brain-type test below). Confirmed (code) at the addresses
 given:
 
@@ -658,9 +658,9 @@ So the whole revive is clip 351 on the reviver (the flash spent and the heal at 
 the revived together.
 
 **Who can be revived.** Every Warrior: `Human_Init` gives brain type 3 the revivable flag `0x4` when he is made
-([Human flags](combat.md#human-flags)), so a crew Warrior downed in any fight of any mission is revivable unless a script
-clears it with `HuSetRevivable(h, false)`. Confirmed (code); confirmed (runtime) on `level80` below. `level80`'s own two
-`HuSetRevivable` calls (checkpoint 3) are for humans of brain type 2; the crew needs none.
+([Human flags](combat/index.md#human-flags)), so a crew Warrior downed in any fight of any mission is revivable unless a
+script clears it with `HuSetRevivable(h, false)`. Confirmed (code); confirmed (runtime) on `level80` below. `level80`'s
+own two `HuSetRevivable` calls (checkpoint 3) are for humans of brain type 2; the crew needs none.
 
 ### At runtime {#revive-runtime}
 
@@ -695,13 +695,13 @@ tests as `combat::mayRevive` in `repo:src/combat/revive.h`): d-pad left beside a
 76, the led steer, the chain 351, 353 and the idle (through 389 out of the stance) holding `0x8000000`, and at 351's
 end, however it ends, the flash, cue 23, 75, the full heal and 354, 389 and the idle on the revived, holding `0x8000`.
 Every Warrior and every player is made revivable: `ai::startingFlags` gives a human its brain type's flags of the
-table in [Human flags](combat.md#human-flags) as its brain is made (`Brains::add`), and `ai::releasedFlags` those of a player
-handed back to the AI (`AiHumans::switchPlayer`). A Warrior downed in a fight (his health gone) counts as knocked out,
-as one a script knocked out does. So beside a crew Warrior downed in any fight the prompt shows with a flash and
-d-pad left revives him, with no script call (user item 8). The disc test `repo:tests/platform/disc_revive_test.cpp`
-downs a `level80` Warrior with a strike, walks player 1 to him by the stick at 60 % and revives him: 351 ran 22
-updates, 353 34, 389 25 and the revived's 354 73, each counted with the update it starts (the runtime read 21, 33, 25
-and 72), the steer turned him over 25 updates to 8.8° left of the
+table in [Human flags](combat/index.md#human-flags) as its brain is made (`Brains::add`), and `ai::releasedFlags` those
+of a player handed back to the AI (`AiHumans::switchPlayer`). A Warrior downed in a fight (his health gone) counts as
+knocked out, as one a script knocked out does. So beside a crew Warrior downed in any fight the prompt shows with a
+flash and d-pad left revives him, with no script call (user item 8). The disc test
+`repo:tests/platform/disc_revive_test.cpp` downs a `level80` Warrior with a strike, walks player 1 to him by the stick
+at 60 % and revives him: 351 ran 22 updates, 353 34, 389 25 and the revived's 354 73, each counted with the update it
+starts (the runtime read 21, 33, 25 and 72), the steer turned him over 25 updates to 8.8° left of the
 line to the head at the press (351's direction on the disc is 10° to the right; the runtime 11-13°), and he ended
 0.81 m from the head (351's reach 1.04 m less its root motion; the runtime 0.70-0.71 m from a standing Warrior).
 Readings and stand-ins:
@@ -732,7 +732,7 @@ Readings and stand-ins:
 The meters and the rage awards live in `repo:src/combat/meters.h` and `repo:src/combat/rage_awards.h`, the rage
 handlers in `ScriptedHumans::runRageHandlers`, and the revive in `repo:src/gamemodes/gameplay_revive.cpp`,
 `repo:src/human/human_revive.cpp` and `repo:src/combat/revive.h`. [Combat: Coney's
-implementation](combat.md#coneys-implementation) says what each file does. What differs from the original is written
+implementation](../engine/combat.md) says what each file does. What differs from the original is written
 beside each subject above: rage's screen look, sounds and `RageFull(human, false)` ([Everything rage
 does](#rage-effects), item 26), the keep-weapon drops ([Dropping what is held when hit](#keep-weapon), issue #91) and
 the revive's readings and stand-ins ([Reviving](#revive)).

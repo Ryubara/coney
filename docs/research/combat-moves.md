@@ -11,7 +11,7 @@ PCSX2](../guides/research-workflow.md#driving-pcsx2)). The scenarios are `repo:r
 Every move a human can make in a fight, in one place: what input or command starts it, which tests gate it, the clip
 it plays, its strike shapes and phases in updates, its reach and damage, and what refuses or cancels it. The
 mechanics behind the moves (chains, block, grabs, damage, reactions, meters, targets) are on
-[Combat](combat.md); this page indexes them by move, fills the moves that page leaves out (strafe attacks, the
+[Combat](combat/index.md); this page indexes them by move, fills the moves that page leaves out (strafe attacks, the
 counters from square and cross, cross at a grounded target, tandems, stealth kills, the mounted victim's actions, the
 knife and bottle kills and thrown melee weapons) and gives frame data for all of them. Where Coney differs:
 [Combat differences](combat-diffs.md).
@@ -20,12 +20,12 @@ knife and bottle kills and thrown melee weapons) and gives frame data for all of
 
 | Address | Name | What it decides | Evidence |
 | --- | --- | --- | --- |
-| `0x0027c120` | `Player_UpdateActions` | the dispatcher: block, state routes, then the command ([Combat](combat.md#dispatch)) | confirmed (code) |
+| `0x0027c120` | `Player_UpdateActions` | the dispatcher: block, state routes, then the command ([Combat](combat/index.md#dispatch)) | confirmed (code) |
 | `0x00286cc8` | `Player_Square` | square: moving attacks, strafes, snaps, target-state strikes, tandem, counters, `S1`; the armed branch | confirmed (code) |
 | `0x00287a18` | `Player_Cross` | cross: the same order without strafes and snaps, with 194 and 661 for low targets | confirmed (code) |
 | `0x002880d8` | `Player_CrossWithWeapon` | square and cross with a set 4-6 object: smash or throw | confirmed (code) |
 | `0x00288838` | `Player_ArmedSpecial` | commands `0x22` / `0x39` with a melee weapon: throw it (`Player_ThrowMeleeWeapon`, `0x00288698`) | confirmed (code) |
-| `0x00287730` | `Player_Special` | cross + square, circle + cross, circle + triangle ([Combat](combat.md#run-attacks)) | confirmed (code) |
+| `0x00287730` | `Player_Special` | cross + square, circle + cross, circle + triangle ([Combat](combat/index.md#run-attacks)) | confirmed (code) |
 | `0x00284920` | `Player_GrabOrTackle` | circle tapped / held ([Combat](combat-grabs.md#grab)) | confirmed (code) |
 | `0x0027ec20` | `Player_UpdateMounting` | the mounter's inputs ([Combat](combat-grabs.md#mount)) | confirmed (code) |
 | `0x0027f1a0` | `Player_UpdateTackled` | the mounted victim's inputs: struggle, get-off, reversal | confirmed (code) |
@@ -71,20 +71,20 @@ knife and bottle kills and thrown melee weapons) and gives frame data for all of
   `float` and rounding each step toward zero, or by using the closed form with the tie exception.
 - **The held phases** W (chain window `0x2`, event `0x2c`), E (end `0x4`, `0x2d`) and R (recovery `0x40000`, `0x48`)
   show in record `+0x08` on the update that rule gives: `S1` 6 / 15 / 16, `X1` 10 / 20 / 21 and `XX2` 17 / 19 match
-  the runtime timings on [Combat](combat.md#attacks). Confirmed (runtime) for those three.
+  the runtime timings on [Combat](combat/index.md#attacks). Confirmed (runtime) for those three.
 - **Strike shapes**: event `0xf` turns a bone's shape on and `0x10` off; `0x13` / `0x14` turn on and off all ten
   shapes and the capsule ("all"). Bones: L/R forearm and hand (18/19, 24/25), shin and foot A (29/30) and B
-  (32/33), spine 3, head 6 ([Combat](combat.md#moving-strikes)). Shown "on-off" in updates; a shape is live from the
+  (32/33), spine 3, head 6 ([Combat](combat/index.md#moving-strikes)). Shown "on-off" in updates; a shape is live from the
   first update to the one before the second.
 - **Events**: `eblk` early block (`0x26`) and `duck` warning (`0x24`), which tell a target to block or duck
-  ([Combat](combat.md#block)); `KD` knockdown (7); `use` (`0x41`), which wears a held weapon or uses the flash.
+  ([Combat](combat/index.md#block)); `KD` knockdown (7); `use` (`0x41`), which wears a held weapon or uses the flash.
 - **Reach / far** are the record's reach and far ranges in metres; when the stored far (mm) is not above the reach,
   the far range is reach × 1.25 (inferred from the disc's values).
 - **Damage** is the disc's value for the clip, then the value Rembrandt plays where the class table writes that
-  index ([Combat](combat.md#damage-table)). The class value is scaled by the Warrior byte (115 %) with the PS2 FPU's
+  index ([Combat](combat/index.md#damage-table)). The class value is scaled by the Warrior byte (115 %) with the PS2 FPU's
   rounding toward zero, which is why 50 gives 57, not 58, and 230 gives 264: every value measured at runtime
   matches. Inferred (the FPU's rounding mode), confirmed (runtime) for the 17 measured values.
-- **Hit code** picks the victim's reaction ([Combat](combat.md#hit-codes)); `stun` is flag `0x400`, `0x100` marks
+- **Hit code** picks the victim's reaction ([Combat](combat/index.md#hit-codes)); `stun` is flag `0x400`, `0x100` marks
   the throws.
 
 ### Who plays what
@@ -100,12 +100,12 @@ kinds](../references/attacks.md#damage-table).
 
 Start here to build the fight's feel. Updates (k) are 1/30 s from the clip's first update. Confirmed (code) at
 the addresses given; the phase updates are confirmed (runtime) for 12, 11, 13, 16 and 20 ([When input and the stick
-come back](combat.md#input-return)) and come from the clips' events for the rest ([Reading the tables](#reading)).
+come back](combat/index.md#input-return)) and come from the clips' events for the rest ([Reading the tables](#reading)).
 
 **A hit has no fixed frame.** No attack start deals damage (`Attack_Start` `0x002625a8`, `Attack_StartSolo`
 `0x00262368`). Damage comes only from `Strike_Contact` (`0x0021b290`), called by the strike test that runs every
 update after the move while one of the clip's **strike shapes** is on: the first update a shape overlaps the target's
-spine or head shape ([How a moving attack strikes](combat.md#moving-strikes)). The same body is struck once per
+spine or head shape ([How a moving attack strikes](combat/index.md#moving-strikes)). The same body is struck once per
 window. So the hit update depends on the distance and the steer, and a strike that never touches misses. The
 "contact" column is that update measured with the target standing near the move's reach; the shape window is the
 range a target can be hit in. The paired moves (grab strikes, power moves, counters, tandems, stealth and knife kills)
@@ -116,7 +116,7 @@ are the exception: their damage is applied by the pair's own code, mostly on the
 | 12 `S1` | square pressed, the same update | L hand 1-10 | 2 (3 from 1.5 m) | 0-14 | 6-14 | 15 | 16-19 | 20 |
 | 16 `SS2` | the window of 12 | L forearm, L hand 2-7 | 4 | 0-18 | 6-18 | 19 | 20-24 | 25 |
 | 19 `SSS3` | the window of 16 | R hand 7-15 | 7 | none | - | 16 | 17-25 | 26 |
-| 20 `SSS3_HOLD` | the window of 16, instead of 19 at random ([Combat](combat.md#attacks)) | shin A, foot A 15-21 | | none | - | 24 | 25-31 | 32 |
+| 20 `SSS3_HOLD` | the window of 16, instead of 19 at random ([Combat](combat/index.md#attacks)) | shin A, foot A 15-21 | | none | - | 24 | 25-31 | 32 |
 | 17 `SSX3` | the window of 16 | shin B, foot B 5-12 | 7 | none | - | 24 | 25-33 | 34 |
 | 11 `X1` | cross released 1-3 updates after the press, or its 4th held update | R hand 6-11 | 8 (7 in two of three runs; 10 from 1.0-1.6 m) | 0-19 | 10-19 | 20 | 21-29 | 30 |
 | 15 `SX2` | the window of 12 | R hand 6-11 | 7 | none | - | 14 | 15-19 | 20 |
@@ -134,7 +134,7 @@ back to the run at once). The rest of the frame data is in [Frame data](#frame-d
 
 #### Input, buffering and cancels {#input}
 
-From `Commands_Match` (`0x00147940`; the tables are in [Commands](combat.md#commands)) and the dispatcher:
+From `Commands_Match` (`0x00147940`; the tables are in [Commands](combat/index.md#commands)) and the dispatcher:
 
 - **A command lives one update.** The matcher clears the per-player command (`+0x20`) before matching each pad
   sample, one sample per update. A command not used that update is gone. Only the chain below keeps a press.
@@ -153,7 +153,7 @@ From `Commands_Match` (`0x00147940`; the tables are in [Commands](combat.md#comm
       and a square with the stick above 0.95 and more than 45° off the facing as a snap (2 plus `0x100` back, `0x200`
       left or `0x400` right). One slot: a later press overwrites it.
     - it **plays** on the first update the window is open with a press stored: the next attack by [the chain's
-      table](combat.md#attacks), or, for a pad player's buffered snap, the snap when a snap target is within 1.3 m
+      table](combat/index.md#attacks), or, for a pad player's buffered snap, the snap when a snap target is within 1.3 m
       (the far range of 25) or `CfgSnap` is off; otherwise the plain square step. A step from `S1` or `X1` is not
       played while the target is low (`0x00225200`).
     - it is **emptied** by every attack start (`Attack_Start`, `Attack_StartSolo`, square and cross themselves).
@@ -188,8 +188,8 @@ distances between the humans' positions; "nearest" sorts by that distance (`Sort
 | Cross (`X1`, 23, 24, 194, 661, 120) | always a fresh `Player_PickTarget(2.0 m)` for a player (`0x00287a18`) |
 | Armed square and cross | a fresh `Player_PickTarget(2.5 m)` |
 | A chain step | a cross step (`SX2`, `XX2`, `SSX3`) re-searches with `Player_FindAttackTarget(h, next id)` when not locked; a square step keeps the target |
-| Snaps 25 / 27 / 29 | their own search (`Player_FindSnapTarget`): nearest within 2.0 m and 45° of the stick that `TargetFilter_Enemy` accepts ([Combat](combat.md#attacks)) |
-| The charge 0 and the dive 1 | `Attack_FindNearestInReach`: humans **between the reach and the far range** (3.29-4.11 m, 2.22-3.00 m) inside 54°, then objects and glass; the charge only warns it, the dive takes it and steers over 0.1 s ([Combat](combat.md#charge-aim)) |
+| Snaps 25 / 27 / 29 | their own search (`Player_FindSnapTarget`): nearest within 2.0 m and 45° of the stick that `TargetFilter_Enemy` accepts ([Combat](combat/index.md#attacks)) |
+| The charge 0 and the dive 1 | `Attack_FindNearestInReach`: humans **between the reach and the far range** (3.29-4.11 m, 2.22-3.00 m) inside 54°, then objects and glass; the charge only warns it, the dive takes it and steers over 0.1 s ([Combat](combat/index.md#charge-aim)) |
 | The special 653 and the strong grapple | `Player_FindAttackTarget` with the far range of id 0 (4.11 m) and of id 1 (3.0 m) ([Strong grapple](combat-grabs.md#strong-grapple)) |
 
 **`Player_PickTarget(range)`** (`0x0027a6c0`), in order; the first pass that finds anything ends the search:
@@ -423,7 +423,7 @@ of `0x7bf9e9f4300` or record `+0x08` any of `0x100101f`; the buffered chain pres
    right (angle < 0), else **32**; only when the target is within that attack's far range ([Strafe
    attacks](#strafe)). Otherwise on.
 3. **Snap** (stick above 0.95, more than 45° off the facing, a snap target): 25 / 27 / 29
-   ([Combat](combat.md#attacks)).
+   ([Combat](combat/index.md#attacks)).
 4. Re-pick the target (`Player_PickTarget(2.0)`, [Targets](#targeting)) when a pad player has none, or it is
    farther than **2.5 m** (`0x005104c0`, 6.25 squared as `CfgDistances` sets it). No human but an
    object → `Player_ObjectAttack` ([Combat](combat-targets.md#breakables)).
@@ -540,7 +540,7 @@ Asked in issue #412: a player's report said the tandem is not square and cross a
 **square and cross together**. The game's own level80 tutorial line for the tandem (`LEVEL80.TANDEM`, shown by
 `level80_chapter4.lua`'s `TandemText`) agrees: it tells the player that any attack button works on an enemy a teammate holds.
 
-**The four inputs.** Each is one command of [the command tables](combat.md#commands), and `Player_UpdateActions`
+**The four inputs.** Each is one command of [the command tables](combat/index.md#commands), and `Player_UpdateActions`
 (`0x0027c120`) hands it on only when the player is not busy (`Human_IsBusy`) and holds none of the held flags
 `0x5c7fee0`. Confirmed (code) at the addresses cited:
 
@@ -917,7 +917,7 @@ tables](#reading)), including the late ties: 25 / 27 / 29 off (frame 5), 23 / 33
 ### Frame data {#frame-data}
 
 Generated from the disc's clips and records (Rembrandt). Ids with the filler clip `missing_anim_filler` (61, 229)
-are never seen. Standing attacks and their chains ([Combat](combat.md#attacks)):
+are never seen. Standing attacks and their chains ([Combat](combat/index.md#attacks)):
 
 | Id | Name | Clip | Updates (frames × rate) | Strike shapes (updates on-off) | Events (updates) | Reach / far (m) | Damage (file → Rembrandt) | Hit code |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -948,7 +948,7 @@ are never seen. Standing attacks and their chains ([Combat](combat.md#attacks)):
 | 619 | `BLOCK_COUNTER_BACK` | `gen_block_duck_counter2_back` | 27 (20 f × 0.75) | L forearm, L hand 2-11 | - | 1.20 / 1.50 | 50 | `0x26` stun |
 | 620 | `BLOCK_COUNTER_LEFT` | `gen_block_duck_counter2_left` | 27 (20 f × 0.75) | R forearm, R hand 2-11 | - | 1.20 / 1.50 | 50 | `0x26` stun |
 
-Moving attacks ([Combat](combat.md#run-attacks)):
+Moving attacks ([Combat](combat/index.md#run-attacks)):
 
 | Id | Name | Clip | Updates (frames × rate) | Strike shapes (updates on-off) | Events (updates) | Reach / far (m) | Damage (file → Rembrandt) | Hit code |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -1145,14 +1145,14 @@ Block, rage and the rest:
 
 Found while building this table; for the owners of those pages. Confirmed (code) at the cited addresses.
 
-- [Combat](combat.md#attacks) "a mugging (`0x0026f860`)" and [Combat](combat-grabs.md#grab) "grabbed by `0x0026f860`":
+- [Combat](combat/index.md#attacks) "a mugging (`0x0026f860`)" and [Combat](combat-grabs.md#grab) "grabbed by `0x0026f860`":
   `0x0026f860` is `Tandem_Start`, the three-person [tandem](#tandem), not a mugging or a grab from behind.
-- [Combat](combat.md#state-flags): state `0x1000` is the paired power-move state (power strikes, specials, stealth
+- [Combat](combat/index.md#state-flags): state `0x1000` is the paired power-move state (power strikes, specials, stealth
   kills), not "throwing" alone.
 - [Combat](combat-grabs.md#grab) and [Combat](combat-targets.md#fight-stance): `0x00244770` is `Human_MoveThrowAim`
   (aiming a throw), not a stealth state; hiding is state `0x200000` ([Stealth](#stealth)).
-- [Combat](combat.md#attacks): the target-state strikes (193, 212, 120) are tested only in the fight-stance path, after
-  the strafes and snaps; outside a stance the moving attacks test only the low target (193). Cross has its own 194
+- [Combat](combat/index.md#attacks): the target-state strikes (193, 212, 120) are tested only in the fight-stance path,
+  after the strafes and snaps; outside a stance the moving attacks test only the low target (193). Cross has its own 194
   and 661 ([Cross](#cross)).
 - [Combat](combat-throws.md#bat): a weapon's wear is the hit counter `+0x10d` / `+0x10e`, taken down by one on each `use`
   event; `+0x128` is not its hitpoints ([Weapons](#weapons)).
@@ -1162,7 +1162,7 @@ Found while building this table; for the owners of those pages. Confirmed (code)
 - [Combat](combat-targets.md#targets) step 1 "keep the current target while `0x0027a120` accepts it": that filter accepts
   only world objects, so a human target is always searched for again; and the 135° pass's humans (× 0.7, filter
   `0x002796a0`) have no angle test at all ([Targets](#targeting)).
-- [Combat](combat.md#attacks) "Square takes a target from `Player_PickTarget`": in the stance square keeps the
+- [Combat](combat/index.md#attacks) "Square takes a target from `Player_PickTarget`": in the stance square keeps the
   current target within 3 m and searches only without one or beyond; cross always searches ([Targets](#targeting)).
 - [Combat](combat-targets.md#targets), the steer's turn: the new heading is the goal's heading minus the attack's direction
   (record offset `+0x0` / `+0x2`), not the goal's heading; a snap turns its side, not its front, to the target
