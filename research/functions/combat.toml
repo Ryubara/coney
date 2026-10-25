@@ -170,6 +170,16 @@ level = "confirmed-code"
 coney = "src/combat/player_combat.h:PlayerCombat::holdsVictim"
 status = "compared"
 
+[[function.gaps]]
+what = "a tackle is not ended: Coney's mount power strike stays in the tackle, so its meter drains while it plays"
+relation = "not-ported"
+issue = 684
+
+[[function.gaps]]
+what = "the victim's side (its grab, tackle and style 0xe), the tag, the voice, the throw aims, the knock-down or stun, the pair's link, its messages and id"
+relation = "not-ported"
+issue = 684
+
 [[function]]
 address = 0x0022bce0
 name = "Throw_ClearLink"

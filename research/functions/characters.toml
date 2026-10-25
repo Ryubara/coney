@@ -1836,6 +1836,21 @@ level = "confirmed-code"
 coney = "src/combat/meters.h:RageMeter::update"
 status = "legacy"
 
+[[function.gaps]]
+what = "the power meter's drain while blocking or ducking, and its stop in state 0x4000000"
+relation = "not-ported"
+issue = 719
+
+[[function.gaps]]
+what = "the empty-meter let-go's wait while the clips hold 0xc02201 and its tests of the victim"
+relation = "not-ported"
+issue = 719
+
+[[function.gaps]]
+what = "a tackler's get-off on an empty meter is not traced against Coney's mount"
+relation = "not-ported"
+issue = 684
+
 [[function]]
 address = 0x00256a60
 name = "Human_UpdateDown"

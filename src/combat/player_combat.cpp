@@ -13,10 +13,8 @@ PlayerCombat::PlayerCombat(const AnimRangeList* ranges, std::uint64_t startMs, s
 CombatOutput PlayerCombat::update(const CombatInput& input, const CombatTuning& tuning) {
     CombatOutput out;
 
-    // The meters run every update: power drains while holding someone (but not in rage) and refills otherwise; rage
-    // drains in rage and decays after a gain's hold. A grab's power move holds no one any more (holdsVictim()).
-    const bool holding = holdsVictim() || m_mode == CombatMode::Tackling;
-    m_power.update(input.nowMs, holding && !m_rage.raging(), tuning.powerDrainPerSecond);
+    // The meters run every update: power by updatePower(); rage drains in rage and decays after a gain's hold.
+    updatePower(input, tuning);
     m_rage.update(input.nowMs);
     if (input.helpless) {
         return out;
@@ -85,6 +83,16 @@ CombatOutput PlayerCombat::update(const CombatInput& input, const CombatTuning& 
         break;
     }
     return out;
+}
+
+void PlayerCombat::updatePower(const CombatInput& input, const CombatTuning& tuning) {
+    // The grab's power move: neither the drain (no longer grabbing) nor the refill (paired, state 0x1000) runs.
+    if (m_mode == CombatMode::Grabbing && m_powerMove != anim_id::kNone) {
+        m_power.hold(input.nowMs);
+        return;
+    }
+    const bool holding = holdsVictim() || m_mode == CombatMode::Tackling;
+    m_power.update(input.nowMs, holding && !m_rage.raging(), tuning.powerDrainPerSecond);
 }
 
 void PlayerCombat::startTheft(TheftKind kind, std::uint64_t nowMs, float stageTurns, float mashFactor) {

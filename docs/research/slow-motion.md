@@ -34,6 +34,7 @@ power move that did not kill.
 | A player leaves | `PlayerList_Remove` (`0x00419c68`) | confirmed (code) |
 | A power move stops being a grab | `Attack_StartPaired` (`0x00262ac8`) → `Grab_BreakOnHit` (`0x0022b960`) | confirmed (code) |
 | The meter drains and lets go only in a grab | `Human_UpdateMeters` (`0x002562d0`) | confirmed (code) |
+| The meter does not refill in a paired move | `Human_UpdateDown` (`0x00256a60`) | confirmed (code) |
 | A hit on the paired attacker plays no reaction | `Human_ApplyPendingDamage` (`0x00265f70`) | confirmed (code) |
 
 ## Behaviour
@@ -75,10 +76,16 @@ Confirmed (code) at the addresses cited:
 - `Attack_StartPaired` (`0x00262ac8`), for a pair that is not a throw, calls `Grab_BreakOnHit` (`0x0022b960`), which
   ends a grab or tackle on both sides (`Grab_End` twice, so the grab's states `0xc0` / `0x30` go) and sets the
   attacker's state `0x1000` and the victim's `0x2000`. `Player_UpdatePowerMove` (`0x0027df38`) starts the extensions
-  through it too.
+  through it too. Its other callers start the other paired moves the same way: `Grab_StartPairedMove` (`0x00263380`),
+  `Grab_Reverse` (`0x0026d150`), `Grab_Strike` (`0x0026e5f8`, a defeating strike) and the mount's `Mount_StartStrike`
+  (`0x00270b38`), `Mount_GetOff` (`0x00271098`), `Mount_Strike` (`0x00271ef0`) and `Mount_StartReversal`
+  (`0x002723e8`). This page covers the grab's power-move path; what the others do after the call is not traced here.
 - `Human_UpdateMeters` (`0x002562d0`) drains the power meter (record `+0x148`) only while the human is grabbing
   (`0xc0`), tackling or blocking, and on an empty meter lets go, lets the victim escape or gets off only while he is
   grabbing or tackling, and not while his clips hold any of `0xc02201`.
+- `Human_UpdateDown` (`0x00256a60`), which refills the power meter, returns before the refill while the human's state
+  holds any of `0x1c18003ff0`, which takes in the paired attacker's `0x1000`: so the meter neither drains nor refills
+  during a power move.
 - `Human_ApplyPendingDamage` (`0x00265f70`): a third human's hit on a human in state `0x1000` who is not grabbing takes
   his health and, as a pair's member, the share `0x00510274` of his power, then clears the pending damage with no
   reaction.
@@ -109,23 +116,28 @@ and the Anim Range Lists' damage.
   neither drains nor lets go while it plays. Coney keeps the grab's combat mode until the power move ends; until issue
   #733 its meter drained there and an empty meter let go with 95 / 94, which in slow motion (the move five times as
   many updates long, the drain on game time) cut an extension before its `0x2f` and left the step at 1/150 s.
-- **Coney's reading**: the meter refills during the power move, as anywhere outside a hold
-  ([q-power-move-refill](#q-power-move-refill)).
+- `PlayerCombat::updatePower()` holds the meter during the grab's power move (`PowerMeter::hold()`): no drain and no
+  refill, as `Human_UpdateDown` skips the paired attacker. Until this was fixed it refilled there at the class's rate.
+- The mount's power strike keeps the tackle in Coney (`CombatMode::Tackling`), so its meter still drains while it plays,
+  where the original's `Grab_BreakOnHit` ends the tackle too (#684). Coney plays no mount extension (227, 229, which
+  carry the slow-motion pair), so no mount move is cut before its `0x2f` today; whoever ports those extensions must
+  end the tackle at the power strike first, or the stuck slow motion of #733 comes back.
+- Coney drains no power while blocking, and its empty-meter let-go tests the meter alone, without the original's
+  `0xc02201` and victim tests (#719); neither reaches a power move, which `holdsVictim()` leaves out.
 - **Coney stand-ins**: a paired victim clip's end does not turn a player victim's slow motion off, Coney's victim clips
   being plain chained clips ([q-victim-clip](#q-victim-clip)); a player's removal and the one-player test are not built,
   Coney having one player.
 
 ## Open questions
 
-### Where the meter refills {#q-power-move-refill}
-
-Where the original refills the power meter, and whether it does during a power move: at runtime it rose after 57
-ended. Coney refills it during the move. A watch on record `+0x148` during an extension would show it.
-
 ### A player as the victim {#q-victim-clip}
 
 Which Coney paths play a slow-motion victim clip on a player (a tandem's 166 or 184, an AI's power move on a grabbed
-player). Each needs the victim clip's end to turn the player's slow motion off, which Coney does not build yet.
+player). Each needs the victim clip's end to turn the player's slow motion off, which Coney does not build yet. To
+answer it: list the Coney calls that start a paired victim clip on a human that may be the player (the `playPaired`
+calls in `src/human/fighter_grab.cpp` and `src/human/fighter_counter.cpp`, and the tandem's), and in PCSX2 let an AI
+grabber's power move or a tandem play on the player with a watch on his slow-motion mark (game state `0x0051489c`
+`+0x220`) to see the victim clip's end clear it.
 
 ## How this was checked
 
