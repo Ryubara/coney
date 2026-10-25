@@ -190,7 +190,7 @@ test is cited in the behaviour below; seen at runtime unless marked.
 | `0x40` / `0x80` | grabbing from the front / rear (a front grab reads `0x45`) |
 | `0x100` / `0x200` | mugging / being mugged |
 | `0x400` | tackling, mounted on the target (seen `0x405`); the victim `0x800` (seen `0x801`) |
-| `0x1000` | a paired power move: throws, power strikes, specials and stealth kills (seen `0x1005`; [Combat moves](../combat-moves.md#corrections)) |
+| `0x1000` | a paired power move: throws, power strikes, specials and stealth kills (seen `0x1005`; [Combat moves](../combat-moves.md#tandem-ai)) |
 | `0x8000` | blocking (with `0x1`: `0x8001`) |
 | `0x1000000` | sprint asked for ([Sprint](../characters.md#sprint)) |
 | `0x2000000` | tagging ([Crimes](../crimes.md#tagging)) |
