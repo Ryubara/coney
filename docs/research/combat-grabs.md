@@ -10,7 +10,7 @@ owns:
 ---
 # Combat: grabs, tackles, the hold and the mount
 
-Verified against: `SLUS_212.15` (NTSC-U); runtime claims name PCSX2 2.9.94 and their method beside them.
+Verified against: `SLUS_212.15` (NTSC-U).
 
 ## Summary
 
@@ -313,11 +313,11 @@ each matches the clip's type 8 event):
 | rear hold | 84 | (−0.399, 0.916) × 0.242 m | (−0.097, 0.222): 0.24 m, 23.5° to the left | grabber's |
 | mounted (tackle) | 210, 213 | (−0.965, 0.259) × 0.124 m | (−0.120, 0.032) | not traced |
 
-So Coney's guess of 0.8 m straight ahead is replaced by the table: 1.0 m straight ahead when the connecting clips
-start, 1.08 m at 20.6° right in the front hold, 0.24 m in the rear hold. For the mount the record puts the victim's
-point 0.12 m from the attacker, who sits on it; how the tackle places the pair (`0x00270270` calls the same
-alignment; the mount uses a [type 4](formats/animation.md#animation-tasks) task, `0x00270b38`, `0x00271ef0`) is not
-traced, so the mount's offset is inferred from the record only.
+So the victim stands 1.0 m straight ahead when the connecting clips start, 1.08 m at 20.6° right in the front hold, 0.24
+m in the rear hold. For the mount the record puts the victim's point 0.12 m from the attacker, who sits on it; how the
+tackle places the pair (`0x00270270` calls the same alignment; the mount uses a [type
+4](formats/animation.md#animation-tasks) task, `0x00270b38`, `0x00271ef0`) is not traced, so the mount's offset is
+inferred from the record only.
 
 **The pose** of every one of these clips is ordinary; what they share is that most leave out the bone 2 channel, which
 the original fills from its fixed reference pose ([Animation](formats/animation.md#reference-pose)).
@@ -392,7 +392,7 @@ the holds and strikes and carried only the spins' and connects' root motion (78:
 
 #### The hold walk: clips, speed and turning {#hold-walk}
 
-What plays while the grabber walks the pair, from the front or from behind (user item 21). Confirmed (code) at the
+What plays while the grabber walks the pair, from the front or from behind. Confirmed (code) at the
 addresses cited unless marked.
 
 1. **Refused while busy.** `Human_MoveGrabbing` (`0x00245310`) runs for a grabbing or mugging human with a player's
@@ -438,21 +438,6 @@ addresses cited unless marked.
    it is the grabber's rotation × the stored relative rotation, so it swings round the grabber on the hold's offset
    (from behind 0.24 m, 23.5° to the left; from the front 1.08 m, 20.6° to the right, [the offsets](#grab-posing)).
 
-**Coney fixes** (user item 21; Coney's `Fighter::moveGrab` already turns and moves the pair):
-
-1. Give the grabber movement style 7 (front) or 9 (rear) and the victim 8 or 10 for the whole hold, and switch them
-   on every spin (78 / 79 to 9 / 10, 80 / 81 to 7 / 8), as the table says.
-2. Play the hold as a two-clip blend per body (hold idle ↔ walk clip: 82 ↔ 86 and 83 ↔ 87 from the front, 84 ↔ 88
-   and 85 ↔ 89 from behind), target = speed / walk speed clamped to 0-1, started on both bodies on the same update
-   when the pair starts or stops walking, with no root motion from the clips.
-3. Feed the victim the grabber's velocity (not zero), so its blend follows the grabber's.
-4. Take the walk speed from the style's walk clip (86 from the front, 88 from behind) instead of the fixed 1.125 and
-   1.22 m/s tunables, and walk only with the stick above 0.95, straight backward from the grabber's new facing.
-5. No walk while mugging; stop the pair when the victim's sweep against the world fails.
-6. Tests: a rear hold with a full stick plays 88 on the grabber and 89 on the victim within one update of each other,
-   moves at clip 88's speed directly away from the grabber's facing, and returns to 84 / 85 when the stick is
-   released; a stick at 0.9 neither turns nor moves the pair.
-
 **The tackle's mount** (confirmed (runtime), and from the disc's events): after the tackle (5 / 6 from the front,
 7 / 8) the pair is in 210 `MOUNTING_IDLE` / 207 `MOUNTED_IDLE` with the victim **0.032 m ahead and 0.120 m to the
 mounter's left**, its heading the mounter's + 180°. That is the record's offset for 210 × its reach, which
@@ -477,7 +462,7 @@ puppet civilian 1 m ahead, stick centred):
 - Grabber 118 `GRAB_MOUNT`, victim 119 from the grabber's set (a paired type 6 task), both holding `+0x08` `0x2000`,
   0.1 s blends. **118 lasts 65 updates (2.17 s)**; at its end `Grab_MountClipEnd` (`0x0026ef68`) moves the **mounter**
   to the victim over 0.1 s (`Human_AlignToVictimFacing`, `0x00277248`, below), and the idles become 210 / 207. A
-  victim with human flag `0x20000` is got off at once (`0x00271470`). Confirmed (code).
+  victim with human flag `0x20000` is got off at once (`Mount_GetOff`, `0x00271470`). Confirmed (code).
 
 **Where the pair goes in the mount** (the ground slam). Confirmed (code) and (runtime) as marked:
 
@@ -527,7 +512,7 @@ square, cross, circle and L2, **the same after a tackle or a grab**:
 | cross (`0x10`) | 223 (record `+0x6c`; victim 224), 61 damage; spends 40 |
 | cross held, square (`0x22`) | the power strike 225 (231 raging) through `Attack_StartPaired`; needs more than 0.25 power, otherwise gets off |
 | circle (`0x1e`, `0xd`, `0xe`) | back to the front hold: 248 / 249 (36 updates), then 82 / 83 (`0x00271808`, confirmed (code)) |
-| L2 (5) | gets off: 244 / 245, the victim rises with 199 (`0x00271098`, confirmed (code)) |
+| L2 (5) | gets off: 244 / 245, the victim rises with 199 (`Mount_GetOff`, `0x00271098`, confirmed (code)) |
 | triangle | mug ([Mugging](combat-throws.md#mugging)) |
 
 The mount drains power at the tackle's 15 per second ([constants](combat/index.md#constants)). The strikes ran 16, 19
@@ -537,13 +522,13 @@ receives each hit's anim id, wants 219 or 221 and then 223 before it calls `P1.B
 
 #### The mount's power strike ends the mount {#mount-power}
 
-Cross held and square pressed in the mount (user checklist item 32) is **not** a mount strike: it ends the mount
+Cross held and square pressed in the mount is **not** a mount strike: it ends the mount
 and leaves the mounter standing in the fight stance and the victim on the ground. Confirmed (code) at the addresses
 cited, and (runtime) as below; the clip events read from the disc (numbers only).
 
 1. **The start** (`Player_UpdateMounting`, `0x0027ec20`): with more than 0.25 of the power meter, a player calls
    `Attack_StartPaired(mounter, victim, 225, 1, 0x400000)` (231 while raging, human `+0xe0` `0x80000`); with 0.25 or
-   less he gets off instead (`Mount_GetOff`). The mount's own strikes (219 / 221 / 223) go through
+   less he gets off instead (`Mount_GetOff`, `0x00271470`). The mount's own strikes (219 / 221 / 223) go through
    `Mount_StartStrike` and stay in the mount; only the power strike and the knife or bottle attacks (488, 496 with
    the held set 1) go through `Attack_StartPaired`.
 2. **The mount is ended at once** (`Attack_StartPaired`, `0x00262ac8`): it spends 0.25 of the power, then calls
@@ -604,23 +589,6 @@ the word differs from the one read off the disc is open).
 so the later taps did nothing and **one extension is all a mount power strike gets** (the counter's limit of two is
 not reached). At 229 the mounter stood in 358 (state `0x5`), the victim lay in 196 and rose with 199 at 289 (2.0 s).
 
-**Coney fixes** (item 32; today `Fighter::playMountAction` plays the power strike like a mount strike, back to 210 /
-207, so the player stands up at 225's end and snaps back into the pin):
-
-1. In `PlayerCombat::updateMounting`, a `MountAction::PowerStrike` ends the mount on its start update: the combat
-   mode leaves `Mounting`, the pair stops being a mount (no seat, no mounted target state) and becomes a paired move
-   (the mounter "throwing", the victim "thrown", [state flags](combat/index.md#state-flags) `0x1000` / `0x2000`).
-2. The mounter plays 225 (231 raging) chained to the fight-stance idle, not to 210; the victim plays 226 (232) with
-   held `0x400000`, then the grounded idle (196; no 198, as seen at runtime), and is down (style `0xf`) with the
-   ordinary ground timer running from the knockdown.
-3. Square or cross in 225's window plays 227 / 228 (233 / 234) through the same extension code as the grab's
-   57 → 59; 227 opens no window of its own, so one extension (seen at runtime); 229 is the filler clip and never plays.
-4. When the mounter's clip ends: clear the paired link on both and leave the victim on the ground; a circle at him
-   is the grounded mount again.
-5. Test (no disc needed, synthetic clips): mount, power strike, run to the end; assert the mounter is standing in the
-   fight-stance idle, not mounting, the victim is grounded and not mounted, and no frame after the strike shows 210 /
-   207. A level99 cp1 playthrough step can assert the same on the hobo.
-
 ### Grabbed, and breaking free {#grabbed}
 
 **When the player is grabbed** (`Player_UpdateGrabbed`, `0x0027fd68`, the grabber at human `+0xc4`), confirmed
@@ -662,13 +630,13 @@ updates of 96), 68 when 104 was still playing; the
 
 `CfgButtonMash` plays no part here: its only reader is the theft game ([Stereo theft](combat-targets.md#stereo-theft)).
 
-**When the player's victim breaks free**: the grab drains the grabber's power (15 per second) and
-`Human_UpdateMeters` (`0x002562d0`) ends it when the meter reaches 0. If the victim has flag `0x20000` or `0x4000`, or
-the grabber is hurt (and the victim lacks `0x2000000000`), the victim **escapes** through `0x0026cc18`; otherwise both
-let go (95 / 94). A tackle dismounts (`0x00271470`). Confirmed (code); confirmed (runtime): from 25 power the grab
-drained at 15 per second and broke with 95 / 94; with the player hurt (200 of 900 health) the civilian escaped with 100,
-the player played 101, was knocked down and stunned (`0x180005`), lay in 196 and rose with 199 2.78 s later; the
-escapee took 20. A third human hitting a grabber costs it 0.6 of its power (`0x00510274`).
+**When the player's victim breaks free**: the grab drains the grabber's power (15 per second) and `Human_UpdateMeters`
+(`0x002562d0`) ends it when the meter reaches 0. If the victim has flag `0x20000` or `0x4000`, or the grabber is hurt
+(and the victim lacks `0x2000000000`), the victim **escapes** through `0x0026cc18`; otherwise both let go (95 / 94). A
+tackle dismounts (`Mount_GetOff`, `0x00271470`). Confirmed (code); confirmed (runtime): from 25 power the grab drained
+at 15 per second and broke with 95 / 94; with the player hurt (200 of 900 health) the civilian escaped with 100, the
+player played 101, was knocked down and stunned (`0x180005`), lay in 196 and rose with 199 2.78 s later; the escapee
+took 20. A third human hitting a grabber costs it 0.6 of its power (`0x00510274`).
 
 ### Breaking a pair from outside {#pair-break}
 
@@ -718,10 +686,45 @@ The grab lives in `repo:src/combat/grab.h` (when a grab starts, the search range
 `repo:src/combat/grabbed.h` (held in a grab), `repo:src/combat/player_combat.cpp` (the dispatcher's grab, tackle and
 mount routes), `repo:src/human/fighter_grab.cpp` (the clips, the pose and the walk), `repo:src/human/pair_placement.h`
 (the offsets and the alignment) and `repo:src/human/carried_prop.h` (the spray can). [Combat: Coney's
-implementation](combat/index.md#coneys-implementation) says what each file does. Two differences from the original are
-listed above as fixes to make: the hold's movement styles and walk clips ([The hold walk](#hold-walk), user item 21)
-and the mount's power strike, which Coney plays like a mount strike and returns to 210 / 207 ([The mount's power
-strike](#mount-power), user item 32).
+implementation](combat/index.md#coneys-implementation) says what each file does; the
+offsets in `pair_placement.h` are those of [the table](#grab-posing).
+
+**Where Coney differs: the hold walk** ([The hold walk](#hold-walk), #86). `Fighter::moveGrab` turns the pair and
+walks it backward along the stick at the fixed `grabWalkFront` / `grabWalkRear` tunables (1.125 and 1.22 m/s). The
+original does more, none of which Coney has:
+
+1. The hold's movement styles: 7 (front) or 9 (rear) on the grabber and 8 or 10 on the victim for the whole hold,
+   switched on every spin (78 / 79 to 9 / 10, 80 / 81 to 7 / 8).
+2. A two-clip blend per body (hold idle and walk clip: 82 and 86, 83 and 87 from the front, 84 and 88, 85 and 89 from
+   behind), weighted by speed over walk speed clamped to 0-1, started on both bodies on the same update when the pair
+   starts or stops walking, with no root motion from the clips; the victim is fed the grabber's velocity, so its blend
+   follows the grabber's.
+3. The walk speed from the style's walk clip (86 from the front, 88 from behind), not a fixed tunable.
+4. No walk while mugging, and the pair stops when the victim's sweep against the world fails.
+
+The check that will show it: a rear hold with a full stick plays 88 on the grabber and 89 on the victim within one
+update of each other, moves at clip 88's speed directly away from the grabber's facing, and returns to 84 / 85 when the
+stick is released; a stick at 0.9 neither turns nor moves the pair.
+
+**Where Coney differs: the mount's power strike** ([The mount's power strike](#mount-power), #96).
+`Fighter::playMountAction` plays the power strike like a mount strike, back to 210 / 207, so the player stands up at
+225's end and snaps back into the pin. The original instead:
+
+1. ends the mount on the strike's start update (where Coney's `PlayerCombat::updateMounting` returns
+   `MountAction::PowerStrike`): the pair stops being a mount (no seat, no mounted target state) and becomes a
+   paired move, the mounter "throwing" and the victim "thrown" ([state flags](combat/index.md#state-flags) `0x1000` /
+   `0x2000`);
+2. plays 225 (231 raging) on the mounter chained to the fight-stance idle, not to 210, and 226 (232) on the victim
+   with held `0x400000`, then the grounded idle (196; no 198, as seen at runtime), the victim down (style `0xf`) with
+   the ordinary ground timer running from the knockdown;
+3. plays 227 / 228 (233 / 234) for square or cross in 225's window, through the same extension code as the grab's
+   57 → 59; 227 opens no window of its own, so one extension; 229 is the filler clip and never plays;
+4. when the mounter's clip ends, clears the paired link on both and leaves the victim on the ground, where a circle
+   at him is the grounded mount again.
+
+The check that will show it (no disc needed, synthetic clips): mount, power strike, run to the end; the mounter stands
+in the fight-stance idle, not mounting, the victim is grounded and not mounted, and no frame after the strike shows
+210 / 207. A level99 cp1 playthrough step can assert the same on the hobo.
 
 The spray can of [Rembrandt's power move](#power-move-props) (#223): `Human` acts on its clip events for any human
 (`repo:src/human/carried_prop.h`, `Human::carriedProp()`): `0x30` notes the named prop, `0x37` its place (the word's
@@ -734,14 +737,22 @@ lesson 6 the can is carried from 59's update 1 to 77 of its 59 and is gone after
 
 ## Open questions
 
-- Why 226's knockdown word reads non-zero at runtime, so that 198 never plays after the mount's power strike, when the
-  disc's clip holds 0 ([The mount's power strike](#mount-power)). A breakpoint on `Anim_GetKnockdownValue` during the
-  strike would show the word it reads.
-- How the tackle places the pair before the mount (`0x00270270` and the type 4 tasks), and so the mount's offset after a
-  tackle, which is inferred from the range record only ([Posing a grab](#grab-posing)).
-- How the stick drives the grabbing player's movement state while the pair turns, and the other callers of
-  `Pair_SnapAttach`: `Grab_Reattach` (`0x0026d078`), `0x0026d8c8`, `0x0026eba0`, `0x00272918`).
-- The six callers of `Human_BreakPair` not traced, and what 244's and 199's end callback (`0x00267870`) does
-  ([Breaking a pair](#pair-break)).
-- What human flag `0x100000000` stands for (it blocks the mount from the front hold, the tackle and the strong
-  grapple's grab).
+- **The power strike's knockdown word**{#q-mount-power-knockdown}: why 226's knockdown word reads non-zero at runtime,
+  so that 198 never plays after the mount's power strike, when the disc's clip holds 0 ([The mount's power
+  strike](#mount-power)). A breakpoint on `Anim_GetKnockdownValue` during the strike would show the word it reads.
+- **The tackle's placement**{#q-tackle-placement}: how the tackle places the pair before the mount (`0x00270270` and the
+  type 4 tasks), and so the mount's offset after a tackle, which is inferred from the range record only ([Posing a
+  grab](#grab-posing)).
+- **Turning the pair**{#q-pair-turn}: how the stick drives the grabbing player's movement state while the pair turns,
+  and the other callers of `Pair_SnapAttach`: `Grab_Reattach` (`0x0026d078`), `0x0026d8c8`, `0x0026eba0`, `0x00272918`.
+- **The other pair breaks**{#q-pair-break-callers}: the six callers of `Human_BreakPair` not traced, and what 244's and
+  199's end callback (`0x00267870`) does ([Breaking a pair](#pair-break)).
+- **Flag `0x100000000`**{#q-flag-100000000}: what human flag `0x100000000` stands for (it blocks the mount from the
+  front hold, the tackle and the strong grapple's grab).
+
+## How this was checked
+
+The code claims were read in Ghidra on `SLUS_212.15` (NTSC-U). The runtime claims were read with PCSX2 2.9.94 over PINE;
+each names its method beside it (the save-state slot, the puppet civilian of [Being
+hit](combat-reactions.md#being-hit-runtime) or the scripted pad), as [Combat](combat/index.md#how-this-was-checked)
+describes for the street runs.
