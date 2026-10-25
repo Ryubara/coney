@@ -320,9 +320,9 @@ class FollowCamera {
     /// activate() place it on the target's latest feet and facing.
     void observe(const FollowTarget& target);
 
-    /// Gives the camera a way to read where its target stands now (empty for none): placeBehind(), and so reset(),
-    /// read it first, as the original's placement reads its target's transform, so a `CameraReset` right after a
-    /// teleport puts the camera behind the new place. Without one they use the feet and facing last observed.
+    /// Gives the camera a way to read where its target stands now (empty for none): placeBehind() (and so reset())
+    /// and placeAt() read it first, as the original's placement reads its target's transform, so a `CameraReset` right
+    /// after a teleport puts the camera behind the new place. Without one they use the feet and facing last observed.
     void setTargetSource(FollowTargetSource source) { m_source = std::move(source); }
     /// Where the target stands now: from the source when there is one, else as last observed.
     [[nodiscard]] FollowPlace targetPlace() const;
@@ -339,7 +339,7 @@ class FollowCamera {
     /// this at the leash band's near edge behind the target.
     void place(anim::Vec3 targetFeet, float distance, float viewHeading);
     /// `CamSetFollowPos`: the camera put at `position` at once, its wanted position there too and its look-at point
-    /// snapped onto the target's last feet, with no blend.
+    /// snapped onto where the target stands now, with no blend.
     /// @orig 0x0011c638 Camera_SetFollowPosition (unknown)
     void placeAt(anim::Vec3 position);
 

@@ -397,6 +397,8 @@ void FollowCamera::place(anim::Vec3 targetFeet, float distance, float viewHeadin
 }
 
 void FollowCamera::placeAt(anim::Vec3 position) {
+    // The look-at point snapped onto where the target stands now (Cam_Follow_RefreshLookAt), the aim point with it.
+    refreshTarget();
     m_lookAt = lookAtOf(m_targetFeet);
     snapAim();
     m_wanted = position;
