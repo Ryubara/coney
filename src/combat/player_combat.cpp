@@ -443,9 +443,10 @@ void PlayerCombat::special(const CombatInput& input, const CombatTuning& tuning,
         if (input.padControlled && !input.hasSprayPaint) {
             return;
         }
-        // What is held drops and one paint goes (the caller's, through `sprayed`); 664 starts at the target its own
-        // far range finds (the fighter's search and steer, human::Fighter::attackTargetOf()). **Coney stand-in**: only
-        // the play mode's player 1 has a hand and paint the caller keeps; no AI keeps its paint count
+        // What is held drops (nothing for a player, refused above with an object in hand) and one paint goes (the
+        // caller's, through `sprayed`); 664 starts at the human its own far range finds, warning no one and keeping
+        // the target it had (the fighter's search and steer, human::Fighter::attackTargetOf()). **Coney stand-in**:
+        // only the play mode's player 1 has a hand and paint the caller keeps; no AI keeps its paint count
         // (docs/research/combat/index.md#q-ai-spray).
         out.sprayed = true;
         startAttack(anim_id::kSpraySpecial, tuning, out);
