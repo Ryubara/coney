@@ -151,7 +151,11 @@ Three tiers, each usable on its own. The data limits them: only the environment-
 
 For the graphics engineers, one line each. None is started.
 
-- What the Xbox build's `GraphicsShadowXBox.cpp` draws (**Xbox**, optional; shared with the plan).
+- What the Xbox build's `GraphicsShadowXBox.cpp` draws: done, on [Xbox lighting and
+  shadows](../research/xbox-lighting.md). One shadow map fitted around the people within 20 m, from a fixed
+  per-level shadow light (not the moonlight), cast onto the world and world objects as a multiply by a per-level
+  shadow colour; characters do not receive. Its *In Coney* section maps it, and the Xbox's other differences (gamma
+  ramp, per-pixel fog), onto the presets here.
 - How the environment-map pipeline gets its texture and matrix (`0x00428410`, `0x00428260`), and which materials
   and objects use it, as a count per level.
 - What the prelit colour holds: whether direction or occlusion can be told apart from the lamps' baked part, from a
