@@ -2,6 +2,7 @@
 """Tests for steps 1-4 of the release: the log, Check, the compared functions and Review, each refusal with its text."""
 
 import dataclasses
+import hashlib
 import json
 import os
 import subprocess
@@ -29,7 +30,7 @@ from pr_support import (
 from test_orig_compare import SOURCE
 from test_orig_study import ADDRESS
 
-from coney_tools import build_record, orig_copy, orig_pairs, pr_diff, pr_proof
+from coney_tools import build_record, orig_copy, orig_pairs, pr_diff, pr_proof, stamps
 from coney_tools import conventions as conventions_module
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions, parse_conventions
@@ -338,6 +339,25 @@ def test_a_body_edited_after_it_was_compared_is_refused_with_both_hashes(tmp_pat
         t.startswith("compared: 0x00501000: Widget::update changed after it was compared (body ") and " now " in t
         for t in refused
     ), refused
+
+
+def test_a_comment_edited_after_it_was_compared_is_not_a_change(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    note = "// stand-in: the sound plays later"
+    built.edit(SOURCE_FILE, SOURCE.replace(note, note + " (see the page)"))
+    assert texts(built.verify(), "compared") == []
+
+
+def test_a_compare_made_under_the_old_body_hash_still_covers_the_unchanged_function(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    last = stamps.verify(built.unit.stamps, built.conventions.stamps).latest("compared", ADDRESS)
+    assert last is not None
+    lines = SOURCE.splitlines()[3:15]
+    old = hashlib.sha256(chr(10).join(line.rstrip() for line in lines).encode("utf-8")).hexdigest()
+    built.stamp("compared", subject=ADDRESS, covers={**last.covers, "coney_body_sha256": old})
+    assert texts(built.verify(), "compared") == []
+    built.edit(SOURCE_FILE, SOURCE.replace("return 2;", "return 3;"))
+    assert any("changed after it was compared" in t for t in texts(built.verify(), "compared"))
 
 
 def test_a_pairs_file_edited_after_it_was_compared_is_refused(tmp_path: Path) -> None:

@@ -3,6 +3,7 @@
 headless run. Git is real (a temporary repository); GitHub, the agent, the diff hash and the page checks are fakes.
 Invented code, names and addresses only."""
 
+import hashlib
 import json
 import shutil
 from collections.abc import Callable
@@ -174,14 +175,15 @@ class Rig:
             clock=self.clock,
         )
 
-    def compare(self) -> None:
-        """What `original compare` leaves for Brain::think: a pairs file and a `compared` stamp covering it."""
+    def compare(self, body: str | None = None) -> None:
+        """What `original compare` leaves for Brain::think: a pairs file and a `compared` stamp covering it (the body
+        hash `body`, when a stamp from before the hash left comments out is wanted)."""
         from coney_tools import orig_review
 
         pairs = self.unit.mapping("0x00100010")
         pairs.parent.mkdir(parents=True, exist_ok=True)
         pairs.write_text("version = 1\n", encoding="utf-8")
-        body = orig_review.pr_stamp(self.root, self.tip(), "origin/main")["functions"][0]["body_sha256"]
+        body_hash = orig_review.pr_stamp(self.root, self.tip(), "origin/main")["functions"][0]["body_sha256"]
         self.stamp(
             "compared",
             "0x00100010",
@@ -190,7 +192,7 @@ class Rig:
                 "ghidra_function_hash": "b" * 64,
                 "cut_sha256": "c" * 64,
                 "pairs_sha256": orig_pairs.file_sha256(pairs),
-                "coney_body_sha256": body,
+                "coney_body_sha256": body_hash if body is None else body,
             },
         )
 
@@ -309,6 +311,48 @@ def test_a_function_that_changed_after_it_was_compared_is_refused(rig: Rig) -> N
     git(rig.root, "commit", "-q", "-a", "-m", "again")
     _, problems = rig.prepare()
     assert any("0x00100010" in p and "no current `compared` stamp" in p for p in problems)
+
+
+def old_body_hash(rig: Rig) -> str:
+    """Brain::think's body hash as a stamp made before comments were left out holds it."""
+    lines = (rig.root / "src/ai/brain.cpp").read_text(encoding="utf-8").splitlines()[2:5]
+    return hashlib.sha256(chr(10).join(line.rstrip() for line in lines).encode("utf-8")).hexdigest()
+
+
+def comment_think(root: Path) -> None:
+    """Commit a comment inside Brain::think."""
+    path = root / "src/ai/brain.cpp"
+    path.write_text(
+        path.read_text(encoding="utf-8").replace("    return", "    // a link" + chr(10) + "    return"),
+        encoding="utf-8",
+    )
+    git(root, "commit", "-q", "-a", "-m", "repoint a link")
+
+
+def test_a_comment_edit_after_it_was_compared_is_not_a_change(rig: Rig) -> None:
+    comment_think(rig.root)
+    assert rig.prepare()[1] == []
+
+
+def test_a_stamp_made_under_the_old_hash_still_covers_an_unchanged_function(tmp_path: Path) -> None:
+    made = Rig(tmp_path)
+    made.stamp("assigned")
+    made.stamp("claimed")
+    made.compare(body=old_body_hash(made))
+    assert made.prepare()[1] == []
+
+
+def test_a_stamp_made_under_the_old_hash_covers_a_comment_edit_but_not_a_code_edit(tmp_path: Path) -> None:
+    made = Rig(tmp_path)
+    made.stamp("assigned")
+    made.stamp("claimed")
+    made.compare(body=old_body_hash(made))
+    comment_think(made.root)
+    assert made.prepare()[1] == []
+    path = made.root / "src/ai/brain.cpp"
+    path.write_text(path.read_text(encoding="utf-8").replace("> 4", "> 5"), encoding="utf-8")
+    git(made.root, "commit", "-q", "-a", "-m", "code")
+    assert any("0x00100010" in p and "no current `compared` stamp" in p for p in made.prepare()[1])
 
 
 def test_a_log_that_is_not_intact_is_refused(rig: Rig) -> None:
