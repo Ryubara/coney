@@ -317,6 +317,8 @@ def _release_steps(run: Run, upstream: str, first: Proof, existing: PullRequest 
         if proof.refusals:
             raise _refuse(run, proof, rebased.new_tip)
     _fix_scope(run, proof)
+    want_auto = pr_open_publish.wants_auto_merge(run, proof)
+    pr_open_publish.guard_auto_merge(run, existing, want_auto)
     opener = env.remote.current_user()
     stamp = _record_release(run, proof, rebased.old_tip if rebased.status == "rebased" else "", opener)
     tip = proof.subject.tip
@@ -330,7 +332,7 @@ def _release_steps(run: Run, upstream: str, first: Proof, existing: PullRequest 
     try:
         pr = pr_open_publish.publish(run, proof, existing, published)
         pr_publish.write_published(folder, published)
-        want_auto = pr_open_publish.auto_merge(run, proof, pr.number)
+        want_auto = pr_open_publish.auto_merge(run, pr.number, want_auto)
         view = pr_open_publish.read_back(run, proof, pr, tip, want_auto)
     finally:
         # What is known is kept even when a step fails, so a rerun finds the pull request and its uploads.
@@ -455,7 +457,9 @@ def add_parser(commands: Any) -> None:
         "--repo", metavar="OWNER/NAME", help="the repository to open it in (default: what gh makes of the remote)"
     )
     sub.add_argument("--reopen", action="store_true", help="reopen a closed, unmerged pull request of the branch")
-    sub.add_argument("--no-auto-merge", action="store_true", help="open without turning on auto-merge")
+    sub.add_argument(
+        "--no-auto-merge", action="store_true", help="open without turning on auto-merge (and turn it off if it is on)"
+    )
     sub.add_argument(
         "--dry-run", action="store_true", help="try everything but the push and GitHub in a throwaway worktree"
     )

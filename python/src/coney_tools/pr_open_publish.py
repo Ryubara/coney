@@ -100,9 +100,28 @@ def wants_auto_merge(run: Run, proof: Proof) -> bool:
     return True
 
 
-def auto_merge(run: Run, proof: Proof, number: int) -> bool:
-    """Turn auto-merge on when it should be; whether it is on."""
-    if not wants_auto_merge(run, proof):
+def guard_auto_merge(run: Run, existing: PullRequest | None, want: bool) -> None:
+    """Before anything is pushed or edited: auto-merge that is on for the branch's open pull request while this release
+    must not be merged by it is turned off and read again; Stop(4) when it stays on. Otherwise a failed step between the
+    push and the read-back would leave the new tip to merge by itself."""
+    if want or existing is None or existing.state != "OPEN":
+        return
+    gh = run.env.gh
+    if not pr_publish.view_pr(gh, run.repo, existing.number).auto_merge:
+        return
+    run.say(f"  auto-merge is on for #{existing.number} but should be off here; turning it off before the push")
+    pr_publish.disable_auto_merge(gh, run.repo, existing.number)
+    if pr_publish.view_pr(gh, run.repo, existing.number).auto_merge:
+        raise Stop(
+            EXIT_FAILED,
+            f"auto-merge on #{existing.number} stays on and this release must not be merged by it; nothing was "
+            "pushed: turn it off on GitHub, then run pr open again",
+        )
+
+
+def auto_merge(run: Run, number: int, want: bool) -> bool:
+    """Turn auto-merge on when `want` (from `wants_auto_merge`); whether it is on."""
+    if not want:
         return False
     assert run.rules is not None
     pr_publish.enable_auto_merge(run.env.gh, run.repo, number, run.rules.merge.methods[0])

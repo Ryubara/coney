@@ -234,9 +234,11 @@ commit: what is pushed is exactly what Check and Review saw. Its options and exi
    without it).
 9. **Read back.** The title, the head commit, the pictures (as many addresses as pictures), the marked blocks, the
    absence of any local path and auto-merge are read from GitHub. A wrong description is repaired once with `gh pr
-   edit`; a second failure is exit 4 with the pull request's address (it exists, and rerunning repairs it). Auto-merge
-   that is on when this release should leave it off (a fix round that now touches a `manual_paths` file, `--no-auto-merge`,
-   a frozen `merge.auto_merge`, or a hand-set one) is turned off with `gh pr merge --disable-auto`.
+   edit`; a second failure is exit 4 with the pull request's address (it exists, and rerunning repairs it).
+   Auto-merge that is on when this release should leave it off (a fix round that now touches a `manual_paths` file,
+   `--no-auto-merge`, a frozen `merge.auto_merge`, or a hand-set one) is turned off with `gh pr merge --disable-auto`.
+   For a pull request that already exists this happens before the push (step 7), so a failed step later cannot leave
+   the new tip to merge by itself; if it stays on, the run stops with exit 4 before pushing anything.
 10. **Record.** `/progress pr-opened` is posted once on each issue (the claim Action then shows `PR #N open`),
     `pr-published.json` is written (number, address, pushed tip, picture hashes to addresses, the engineer, the
     time) and one line is printed: `opened #812 <url> (task ..., engineer ..., auto-merge on)`. `--json` prints the
@@ -263,10 +265,13 @@ What it refuses, besides the proof's refusals above (each message starts with "p
 | 2 | `<task>: no unit worktree (run task start)`; `a rebase or merge is in progress`; `the worktree is on 'x', the unit's branch is 'y'` | `task start`, or the engineer |
 | 2 | `the worktree has uncommitted changes: <first 5 paths>; the engineer commits or removes them` | the engineer |
 | 2 | `another pr open of <task> is running`; `cannot fetch <remote> <default>: ...` | wait; none |
+| 2 | `<task>: the unit was started from <ref>, not from <remote>/<default>; ...` (a stacked unit) | the engineer rebases the task onto the default branch, or the unit is started again |
+| 2 | `origin/HEAD is not set here, so the default branch is unknown; run git remote set-head origin --auto` | the coordinator runs the command named |
 | 1 | `refused: the claim is not yours to release in <task>`, with the claim's state under it | the coordinator re-claims |
 | 1 | `#N already merged this branch; new work is a new task`; `#N was closed; --reopen to continue it`; `<fix> has no open pull request to fix (...)` | a new task; `--reopen`; none |
 | 1 | the proof's refusals, each under its stage | the stage named |
 | 3 | `rebase onto <remote>/<default> conflicts at <12 digits> in <paths>; the branch is as it was` | the engineer resolves; the stale stamps are redone |
+| 4 | `auto-merge on #N stays on and this release must not be merged by it; nothing was pushed` | turn it off on GitHub, rerun |
 | 4 | `push: ...` (the lease was refused: fetch the branch and have the engineer rebase onto it); `gh: ...; run pr open again`; `read-back: <url> is wrong: ...`; a git error from the rebase on | rerun |
 
 ## What this does not do {#limits}

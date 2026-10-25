@@ -77,7 +77,7 @@ option to skip a check, to take a stamp from elsewhere or to name another base b
 | `--remote NAME` | `origin` | The git remote the branch is pushed to and whose default branch is the base |
 | `--repo OWNER/NAME` | what `gh` resolves for the remote (the parent of a fork) | The repository the pull request is opened in |
 | `--reopen` | off | Reopen a closed, unmerged pull request of the branch and update it |
-| `--no-auto-merge` | off | Open without turning on auto-merge (it is turned on when `merge.auto_merge` is true, the change touches no path of `merge.manual_paths` and the viewer's permission allows it) |
+| `--no-auto-merge` | off | Open without turning on auto-merge, and turn it off when it is already on for the pull request (it is turned on when `merge.auto_merge` is true, the change touches no path of `merge.manual_paths` and the viewer's permission allows it) |
 | `--dry-run` | off | Steps 1 to 5 in a throwaway worktree: the rebase is tried there and nothing in the unit's folder (no lock, no `REBASE.md`), the log, git or GitHub changes |
 | `--json` | off | Print the result as one JSON object: `ok`, `exit`, `task`, `dry_run`, `message`, `refusals`, `log`, `pr`, `tip`, `stamp`, `auto_merge` |
 
@@ -87,9 +87,9 @@ Exit codes:
 | --- | --- | --- |
 | 0 | Opened or updated and read back; with `--dry-run`, every check passed | nothing: the claim card shows the pull request |
 | 1 | Refused: a stage or text check failed, the claim is not the opener's, or the pull request is merged or closed. Every problem is listed under the stage to redo | send the list to the engineer and wait for the next Review |
-| 2 | Cannot run: wrong caller, `gh` missing or old, no unit, dirty worktree, lock held, no fetch. Nothing was touched | fix the cause |
+| 2 | Cannot run: wrong caller, `gh` missing or old, no unit, dirty worktree, lock held, no fetch, a unit started from a base other than the default branch, `origin/HEAD` unset. Nothing was touched | fix the cause (the messages are in [pr open](pr.md#open)) |
 | 3 | Rebase conflict. The branch is as it was; `REBASE.md` in the task's folder lists the paths | send the paths to the engineer |
-| 4 | A git or GitHub step failed once the branch had been touched (the rebase, the lease, create, edit, merge, read-back). The pull request may exist | run it again: every step is idempotent |
+| 4 | A git or GitHub step failed once the branch had been touched (the rebase, the lease, create, edit, merge, read-back), or auto-merge that must be off stays on (nothing is pushed then). The pull request may exist | run it again: every step is idempotent |
 
 ### pr check-commit {#pr-check-commit}
 
@@ -185,7 +185,7 @@ coney-tools pr open [TASK] [--worktree WORKTREE] [--text FILE] [--remote REMOTE]
 | `--remote REMOTE` | text | `origin` | the git remote the branch is pushed to |
 | `--repo OWNER/NAME` | text | none | the repository to open it in (default: what gh makes of the remote) |
 | `--reopen` | flag | off | reopen a closed, unmerged pull request of the branch |
-| `--no-auto-merge` | flag | off | open without turning on auto-merge |
+| `--no-auto-merge` | flag | off | open without turning on auto-merge (and turn it off if it is on) |
 | `--dry-run` | flag | off | try everything but the push and GitHub in a throwaway worktree |
 | `--json` | flag | off | print the result as one JSON object |
 

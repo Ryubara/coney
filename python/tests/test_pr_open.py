@@ -856,6 +856,17 @@ def test_the_rules_come_from_origin_even_when_the_release_goes_to_another_remote
 
 def test_the_claims_client_is_built_from_the_default_branchs_rules(tmp_path: Path) -> None:
     opened = docs_unit(tmp_path)
+    built = opened.built
+    text = (built.root / ".github" / "conventions.yml").read_text(encoding="utf-8")
+    assert 'bot_login: "github-actions[bot]"' in text
+    # only the branch names another bot; origin/main keeps the real one
+    built.edit(
+        ".github/conventions.yml",
+        text.replace('bot_login: "github-actions[bot]"', 'bot_login: "branch-bot[bot]"'),
+        "ci: bot",
+    )
+    built.check("docs")
+    built.review(functions={})
     seen: list[str] = []
 
     def remote_from(rules: Conventions) -> GhRemote:
@@ -865,4 +876,48 @@ def test_the_claims_client_is_built_from_the_default_branchs_rules(tmp_path: Pat
     env = opened.env()
     env.remote_from = remote_from
     assert pr_open.run_open(opened.request(), env) == 0, opened.text()
-    assert seen == [opened.built.conventions.claims.bot_login]
+    assert seen == ["github-actions[bot]"]
+
+
+def test_auto_merge_is_off_before_the_push_so_a_failed_edit_cannot_leave_the_new_tip_to_merge(tmp_path: Path) -> None:
+    opened = docs_unit(tmp_path)
+    built = opened.built
+    assert opened.run() == 0
+    assert opened.gh.prs[812]["auto"] is True
+    start_fix(opened)
+    text = (built.root / "AGENTS.md").read_text(encoding="utf-8") if (built.root / "AGENTS.md").exists() else "x\n"
+    built.edit("AGENTS.md", text + "\nOne more line.\n", "docs: fix touches AGENTS.md")
+    built.check("docs")
+    built.review(functions={})
+    fake = opened.gh
+    real = fake.__call__
+
+    def edit_fails(args: Sequence[str], cwd: Path | None) -> str:
+        if args[:2] == ["pr", "edit"]:
+            raise pr_publish.GhError("gh pr edit failed: the upload was refused")
+        return real(args, cwd)
+
+    opened.gh = edit_fails  # type: ignore[assignment]
+    assert opened.run(task="work-fix") == 4
+    assert fake.prs[812]["auto"] is False
+
+
+def test_auto_merge_that_stays_on_stops_the_run_before_anything_is_pushed(tmp_path: Path) -> None:
+    opened = docs_unit(tmp_path)
+    built = opened.built
+    assert opened.run() == 0
+    start_fix(opened)
+    text = (built.root / "AGENTS.md").read_text(encoding="utf-8") if (built.root / "AGENTS.md").exists() else "x\n"
+    built.edit("AGENTS.md", text + "\nOne more line.\n", "docs: fix touches AGENTS.md")
+    built.check("docs")
+    built.review(functions={})
+    pushed = opened.origin_tip()
+    real = opened.gh.__call__
+
+    def stuck(args: Sequence[str], cwd: Path | None) -> str:
+        return "" if "--disable-auto" in args else real(args, cwd)
+
+    opened.gh = stuck  # type: ignore[assignment]
+    assert opened.run(task="work-fix") == 4
+    assert "stays on" in opened.text() and "nothing was pushed" in opened.text()
+    assert opened.origin_tip() == pushed
