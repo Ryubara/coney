@@ -99,7 +99,7 @@ something it should not copy; **neutral** is a difference with no better side. L
 | Content | The Xbox build has four Lua bindings the PS2 lacks, two for vertex shaders ([Numbers](xbox-executable.md#numbers)) | neutral | inferred from the binding registration |
 | Behaviour | Both run the shared save-screen mode over their own save layer: the PS2's `W_PS2SaveSystem.cpp` over the memory card, the Xbox's own (no PS2 save unit in the XBE) | neutral | inferred from the source paths (see [Which build came first](#which-first)) |
 | Behaviour | The Xbox build is five changelists older than the PS2's; what they changed is not known | unknown ([q-changelists](#q-changelists)) | inferred from the two banners |
-| Behaviour | Struct layouts and vtables differ (MSVC against GCC 2.x), so offsets do not transfer ([Not easier](xbox-executable.md#findings)) | neutral | confirmed (code) at XBE `0x000e1640` and XBE `0x001b8d38` |
+| Behaviour | Struct layouts and vtables differ (MSVC against GCC 2.x), so offsets do not transfer ([Not easier](xbox-executable.md#findings)) | neutral | confirmed (code) at XBE `0x000e1640` |
 | Performance | One Xbox review finds the loading long ("a good amount of time grinding away") and the graphics only passable; no PS2 comparison is made | problem | inferred from the review ([sources](#how-this-was-checked)) |
 | Performance | Frame rate against the PS2 | unknown ([q-perf](#q-perf)) | speculative ([q-perf](#q-perf)) |
 | Bugs | No Xbox-only bug list was found in public sources | unknown ([q-bugs](#q-bugs)) | speculative ([q-bugs](#q-bugs)) |
