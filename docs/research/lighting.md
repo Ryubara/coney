@@ -1,10 +1,19 @@
+---
+kind: system
+system: lighting
+owns:
+  files: ["Graphics/LightManager.cpp"]
+  functions: [
+    "0x0017bec8", "0x0017c308", "0x0017c508", "0x0017c840", "0x0017caa8", "0x0017d0b0", "0x0017d338", "0x0017d510",
+    "0x0017d598", "0x0017d880", "0x0017ea60", "0x0017ec38", "0x0017ec80", "0x0017ef20", "0x0017f160", "0x0017f1b8",
+    "0x0017f218", "0x0017f270",
+  ]
+---
 # Lighting
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). Runtime values were read
-over PINE in PCSX2 2.9.94 on 2026-10-06 from the user's quick-save slot 1 (`level99`, checkpoint 3, loaded read-only
-from a copy), counts and values only.
+Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`).
 
-## Purpose
+## Summary
 
 How the original lights a level: the light manager and its lights, how lights are chosen for the world, for objects
 and for humans, what the level scripts set (lights, fog, world ambient, colour offset), what the brightness option
@@ -24,9 +33,10 @@ humans, by distance) lights, the nearest-overlapping point lights last, and Rend
 colour to the prelighting. In `level99` the world is lit only by the 0.227 grey world ambient and two flickering
 lamps; humans get a cold moonlight, a weak warm light from below, a 0.22 ambient and up to 3 lamps.
 
-## Original structure
+## Map
 
-`c:/Warriors/Source/Graphics/LightManager.cpp` (string at `0x005522b0`; [Source map](source-map.md)). Names are ours.
+`c:/Warriors/Source/Graphics/LightManager.cpp` (string at `0x005522b0`, confirmed (code); [Source map](source-map.md)).
+Names are ours.
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |
@@ -53,9 +63,57 @@ lamps; humans get a cold moonlight, a weak warm light from below, a 0.22 ambient
 | `0x00174320` | `HumanRender_Draw` | lights a human, its colour and its blob shadow | confirmed (code) |
 | `0x0028ee88` | `Brain_SetHiddenInShadow` | the brain's `+0x2d4` flag that dims a human | confirmed (code), meaning inferred |
 
-## The light manager {#manager}
+### Code index {#code-index}
 
-### Fields {#manager-fields}
+Every function of `LightManager.cpp` and the unnamed file before it (the queued 2D rings and the light records;
+inferred from position, between the stub `0x0017b1c0` and `LightManager.cpp`'s anchors), with what it does. Rows
+that only link are described above. Names are ours. Confirmed (code) at each address.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x0017b1e0`, `0x0017b2e0` | `GroundRing_Queue`, `GroundRing_DrawQueued` | [HUD](hud-radar.md#the-health-rings) | confirmed (code) |
+| `0x0017b8a8`, `0x0017bc28` | `Im2D_DrawTexturedRing`, `Im2D_DrawTexturedDisc` | [HUD](hud-radar.md#the-health-rings) | confirmed (code) |
+| `0x0017bec8` | `Im2D_DrawArc(shape)` | the part (`+0xb4` per cent) of a ring as a fan of segments with its colours; the chase and lock-pick gauges | confirmed (code) |
+| `0x0017c2a8` | `Shape2D_Queue(shape)` | copies a 0xc0-byte shape into the queue at `0x005fd9f0` (at most 6, count `0x0050ccd8`) | confirmed (code) |
+| `0x0017c308` | `Shape2D_DrawQueued` | draws each queued shape (a full disc at 100 %, else an arc) and empties the queue, from the viewport pass (`0x00156658`, `0x00156978`) | confirmed (code) |
+| `0x0017c3c8`, `0x0017c468` | `Shape2D_StaticInit`, `Shape2D_StaticInitStub` | default colours (60, 60, 60) of a static shape record at `0x005fde70`: not needed (static initialiser) | confirmed (code) |
+| `0x0017c488` | `Colour_UnpackRgba32(out, rgba)` | a `0xRRGGBBAA` word to float RGBA | confirmed (code) |
+| `0x0017c508` | `Light_InitFromDescriptor` | [The light record](#record) | confirmed (code) |
+| `0x0017c690` | `Light_Destruct` | detaches the RenderWare light from its frame and destroys both | confirmed (code) |
+| `0x0017c700`, `0x0017c840` | `Light_GetDescriptor`, `Light_ApplyDescriptor` | [The light record](#record) | confirmed (code) |
+| `0x0017ca90` | `Light_SetOn(light, on)` | `+0x30` | confirmed (code) |
+| `0x0017ca98` | `Light_MarkDirty` | sets the record's first word to 1 | confirmed (code) |
+| `0x0017caa8` | `Light_UpdateFlickerAndCorona` | [Coronas and flicker](#coronas) | confirmed (code) |
+| `0x0017d0b0` | `Light_SetFlickerTiming` | [Flicker](#flicker) | confirmed (code) |
+| `0x0017d338` | `LightManager_Init` | [Fields](#manager-fields) | confirmed (code) |
+| `0x0017d510`, `0x0017d578` | `LightManager_AddLight`, `LightManager_AddLightThunk` | take the next free record of the pool and build it from a descriptor (the second only calls the first) | confirmed (code) |
+| `0x0017d598` | `LightManager_RemoveLight` | gives a record back to the pool and destroys its light | confirmed (code) |
+| `0x0017d640` | `LightManager_Construct` | [The light manager](#manager) | confirmed (code) |
+| `0x0017d880` | `LightManager_CullForViewport` | [Per viewport: the cull](#cull) | confirmed (code) |
+| `0x0017de10` | `LightManager_SelectLights` | [Per atomic: the selection](#select) | confirmed (code) |
+| `0x0017e490` | `LightGlow_OnLoaded` | chunk `0x4B` ([Chunk system](chunk-system.md)): each 40-byte record becomes a light; flickering kinds get a random phase, and some lose their flicker at random (40 % keep it) | confirmed (code) |
+| `0x0017e680` | `LightGlow_Release` | frees the chunk (level reset `0x0040c7f0`) | confirmed (code) |
+| `0x0017e6c0` | `LightManager_Reset` | removes every light except the built-in ones and clears the lists | confirmed (code) |
+| `0x0017e7e8` | `LightManager_ClearLists` | empties the per-viewport lists | confirmed (code) |
+| `0x0017e810` | `LightManager_UploadSelected` | [Per atomic: the selection](#select) | confirmed (code) |
+| `0x0017e930` | `CharAtomic_UploadLights` | atomic callback of the character pipelines: queues the selected lights for VU1 with the atomic's matrix scale | confirmed (code) |
+| `0x0017ea60` | `LightManager_BeginViewport` | [Per viewport: the cull](#cull) | confirmed (code) |
+| `0x0017ec38`, `0x0017ec80` | `LightManager_SetBrightness`, `LightManager_SetGammaOffset` | [The brightness option](#brightness) | confirmed (code) |
+| `0x0017ec78`, `0x0017ecc0` | `LightManager_Brightness`, `LightManager_GammaOffset` | the addresses of `+0x90` and `+0xa0` | confirmed (code) |
+| `0x0017ecc8` | `LightManager_AddOffsets(out, colour)` | `max(0, brightness + offset)` added to a colour ([Colour](#colour)) | confirmed (code) |
+| `0x0017ed60` | `LightManager_SetColourOffsets` | [The brightness option](#brightness) | confirmed (code) |
+| `0x0017ee88` | `Light_CoronaBatch(light)` | the light's corona batch: made on first use from sheet record 8 (`lighting`), 128 sprites, depth 10,000 | confirmed (code) |
+| `0x0017ef20` | `Light_SetFromScript` | `SetLight` | confirmed (code) |
+| `0x0017f160` | `Light_SetState(light, state)` | 2 removes the light, else on / off (`SetLight`'s short form) | confirmed (code) |
+| `0x0017f1b8` | `Light_SetFlicker` | `SetLightFlicker` | confirmed (code) |
+| `0x0017f218` | `LightManager_SetWorldAmbient` | `SetWorldAmbient` | confirmed (code) |
+| `0x0017f260`, `0x0017f268`, `0x0017f270` | `Shadow_SetColour_Stub`, `Shadow_SetLightOffset_Stub`, `Shadow_Enable_Stub` | empty: `SetShadowColor`, `SetShadowLightOffset` and `EnableShadow` do nothing | confirmed (code) |
+
+## Data
+
+### The light manager {#manager}
+
+#### Fields {#manager-fields}
 
 Confirmed (code) at the constructor and `0x0017d338`; values confirmed (runtime) in `level99`.
 
@@ -75,7 +133,7 @@ Confirmed (code) at the constructor and `0x0017d338`; values confirmed (runtime)
 | `+0xa0` | the **colour offset** (RGB, 0 by default; `SetGammaOffset`) |
 | `+0xb0`, `+0xb4` | the corona sprite batches of viewports 0 and 1: resource instances 7 and 8, over the `lighting` sheet ([GUI](gui.md#resource-instances); confirmed (runtime): `+0xb0` is instance 7) |
 
-### The light record (0x50 bytes) {#record}
+#### The light record (0x50 bytes) {#record}
 
 Confirmed (code) at `0x0017c508` and `0x0017c700`; the meanings of the flicker bytes at `0x0017caa8` and `0x0017d0b0`.
 
@@ -105,7 +163,7 @@ parameters are one of six sets, (height, pull, size) = (0, 0.5, 2.2), (0, 0.5, 3
 as `(x, z, -y)`. Confirmed (code), and confirmed (runtime): the lamp the script puts at (-286.13, 122.79, 5.49) has its
 frame at (-286.13, 5.49, -122.79).
 
-### Light kinds {#kinds}
+#### Light kinds {#kinds}
 
 `SetLight`'s type 0-3 becomes RenderWare type `0x80` point, `0x81` spot, 1 directional, 2 ambient (`0x0017ef20`,
 confirmed (code)). A point light lights within its radius; a light with radius 0 lights nothing and exists for its
@@ -115,7 +173,9 @@ corona (41 of `level99`'s 90 lamps). No script light in `level99` is a spot ligh
 levels (5,283 long-form calls, listed in [Lights](../references/lights.md)), `SetLightFlicker` in 9 levels,
 `SetWorldAmbient` in 3 files of 2 levels, `SetGammaOffset` in 1 file.
 
-### Colour: brightness and offset {#colour}
+#### Colour: brightness and offset {#colour}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
 
 When an **ambient or directional** light's colour is set (`0x0017c840`), the manager adds
 `max(0, brightness + offset)` (component-wise, `0x0017ecc8`) to the script's colour; reading it back subtracts it
@@ -129,9 +189,33 @@ has the RpLight colour (0.227, 0.257, 0.337).
   the ends swapping every 300 ms: a triangle wave between black and 0.25 grey with a 600 ms period, plus the offsets.
   It stays off, but [object selection](#select) uses it for some objects.
 
-## Choosing lights {#choosing}
+### Level 99's values {#level99}
 
-### Per viewport: the cull {#cull}
+Read at runtime at checkpoint 3 (confirmed (runtime)); brightness 40, offset 0.
+
+| Light | Kind, lights | Script colour | RpLight colour | Direction (game axes) |
+| --- | --- | --- | --- | --- |
+| A, world ambient | ambient, world | `+0x50` = 0.07 | 0.227 grey | |
+| B, pulse | ambient, objects (off) | | 0.157-0.407 | |
+| glow | point 0.4 m, objects (off) | white | | |
+| moonlight | directional, objects | (0.07, 0.10, 0.18) | (0.227, 0.257, 0.337) | (0.391, -0.474, -0.789) |
+| reflected | directional, objects | (0.03, 0.02, 0.01) | (0.187, 0.177, 0.167) | (0.496, 0.552, 0.670), upwards |
+| object ambient | ambient, objects | (0.055, 0.065, 0.075) | (0.212, 0.222, 0.232) | |
+| 90 lamps | 49 point lights (7 with a corona), 41 coronas alone | warm and cold whites, 0.78-1.0 | | [Lights: level99](../references/lights/level99.md) |
+
+Of the lamps, 88 light objects only and 2 both objects and the world (flicker mode 2); 2 have light bugs. Coronas by
+rectangle: 0 ×20, 2 ×7, 3 ×10, 4 ×11. Fog colour (12, 12, 5), fog start 0.5, draw distance 115.
+
+A reference screenshot at this spot (window capture, kept outside the repository) shows a dark blue night: a black-blue
+sky, walls lit flat grey-brown, the player lit cold from above.
+
+## Behaviour
+
+### Choosing lights {#choosing}
+
+#### Per viewport: the cull {#cull}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
 
 `LightManager_BeginViewport` (`0x0017ea60`) sets the two ambients' colours, clears the lists (`0x0017e7e8`) and, once
 per viewport, `0x0017d880` walks every record. Confirmed (code):
@@ -145,7 +229,9 @@ per viewport, `0x0017d880` walks every record. Confirmed (code):
 3. A visible light with radius 0 only updates its flicker and draws its corona (if it has one). A visible light with a
    radius joins the viewport's list `+0x20` and, with flag 2, list `+0x30`; then its flicker and corona.
 
-### Per atomic: the selection {#select}
+#### Per atomic: the selection {#select}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
 
 `LightManager_SelectLights(distSq, manager, sphere, flags, pointLights, pulse, human)` (`0x0017de10`) fills the
 upload list (`0x00715300`, at most 8). Confirmed (code):
@@ -177,7 +263,7 @@ quadwords. Confirmed (code).
 | a human (`0x00174320`) | squared distance `+0x334` | 1 | unless hidden ([Humans](#humans)) | no | yes |
 | `0x00172c70` (the resource manager's list `+0xc98`, [The streamed world](world.md#a-frame)) | 0 | 1 | yes | no | |
 
-## World lighting {#world}
+### World lighting {#world}
 
 **Prelit and lit.** The streamed world's sectors carry prelighting colours and normals
 ([The streamed world](world.md#pipelines)) and are also lit at runtime with the world's list (light A, world
@@ -231,9 +317,11 @@ prelighting plus 0.227 grey, plus two lamps that light both (flags 3, radius 3 a
 lamps); nothing in the manager changes them over time except flicker and light B. Inferred (no timer-driven caller of
 the colour setters found).
 
-## Coronas and flicker {#coronas}
+### Coronas and flicker {#coronas}
 
-### Coronas {#corona}
+#### Coronas {#corona}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
 
 For every visible light with a corona, `0x0017caa8` adds one sprite to the viewport's batch (`+0xb0`), confirmed
 (code):
@@ -248,7 +336,9 @@ For every visible light with a corona, `0x0017caa8` adds one sprite to the viewp
 Coronas are separate from the **level world's glows**, the fixed `propglow` halos in the `.lev`
 ([Level loading](level-loading.md#the-level-object)).
 
-### Flicker {#flicker}
+#### Flicker {#flicker}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
 
 The effects word's bits 1-4 (`+0x08 & 0x1e`) select a mode; the step runs only while the light is visible (from the
 cull). Confirmed (code); `rand(n)` is the game's random 0 to n inclusive (`Random_Int`, `0x003353b8`,
@@ -266,7 +356,9 @@ cull). Confirmed (code); `rand(n)` is the game's random 0 to n inclusive (`Rando
 instead spawns the particle `sub_flashing_light` with the timing, the corona and the colour, and removes the light.
 Effects bit 0 spawns `part_light_bugs` at the light when it is made (`0x0017c508`; 2 lamps in `level99`).
 
-## Humans {#humans}
+### Humans {#humans}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
 
 `HumanRender_Draw` (`0x00174320`), confirmed (code):
 
@@ -286,99 +378,37 @@ Effects bit 0 spawns `part_light_bugs` at the light when it is made (`0x0017c508
   **blob** sprite: rectangle 40 of `part_page1` (resource instances 9 and 10), colour (10, 10, 10, 128), on the ground
   found by a ray from 0.25 m above the human, 4 m down (`WorldManager_RayCast`), turned to the ground's normal and
   scaled by the human's `+0x580`-`+0x588`, 0.05 m above it. No projected or light-dependent shadows; `SetShadowColor`,
-  `SetShadowLightOffset` and `EnableShadow` are empty ([bindings](../references/bindings/effects.md)); on the Xbox
-  port they drive a shadow map ([Xbox lighting and shadows](xbox-lighting.md#shadow-map)). The sprite goes
+  `SetShadowLightOffset` and `EnableShadow` are empty ([bindings](../references/bindings/effects.md)). The sprite goes
   through `Instance_AddSprite`, so its colour is on RenderWare's 0-255 scale ([GUI](gui.md#sprite-colours)): alpha
   128 is **half transparent**, and the shadow is faint (confirmed (runtime), PCSX2 2.9.94, `level99`: a soft, barely
   darker patch under Rembrandt's feet). Rembrandt's `+0x580`-`+0x588` read 1.195, 1.097, 1.0 (confirmed (runtime)).
   The reticule update turns a player's shadow on every update and the Rumble team disc turns it off
   ([HUD: the health rings](hud-radar.md#the-health-rings)), which are drawn after it, over it.
 
-### The glow {#glow}
+On the Xbox port the same three shadow calls drive a real shadow map of the people near the camera, and the blob may
+not be drawn at all ([Xbox lighting and shadows](xbox-lighting.md#shadow-map)).
+
+#### The glow {#glow}
 
 When a human's byte `+0x647` is above 10, the manager's glow light (`+0x84`) is placed at the human (its bone
 `+0x92`'s position, raised by half the model's scale) with colour = the human's bytes `+0x644`-`+0x647` / 255, and is
 the human's first light (`0x0017de10`). Confirmed (code). What sets `+0x644` (written in `Human_HandleMessage` at
 `0x002475a8`, cleared at `0x0022eb40` and `0x002325e0`) is not traced.
 
-## The brightness option {#brightness}
+### The brightness option {#brightness}
 
 `PM_Light` ([Front end](frontend.md)) and the options call `Gamma_Set(v)` (`0x001b4838`) with v from 0 to 100 in
 steps of 5, 40 by default: `W_GameState + 0x57a4` = v and the manager's brightness `+0x90` = v / 255 in R, G and B.
 So the option **adds v/255 to every ambient and directional light** (the world ambient, the objects' and humans'
 ambient and directional lights): 0 to 0.39, 0.157 by default, and so the sky, which light A lights (inferred from the
 runtime test in [World lighting](#world)). It does not touch point lights, the prelighting,
-the fog or the screen. `SetGammaRamp` is empty (the Xbox port applies a per-level ramp instead,
-[Xbox lighting and shadows](xbox-lighting.md#gamma-ramp)). Confirmed (code); `level99` reads 40 and `+0x90` = 0.157
-(confirmed (runtime)). The setting's storage is on the save page.
+the fog or the screen. `SetGammaRamp` is empty. Confirmed (code); `level99` reads 40 and `+0x90` = 0.157 (confirmed
+(runtime)). The setting's storage is on the save page.
 
-## Level 99's values {#level99}
+The Xbox port keeps this option, with a default of 48, and adds a per-level gamma ramp over the whole picture
+([Xbox lighting and shadows](xbox-lighting.md#gamma-ramp)).
 
-Read at runtime at checkpoint 3 (confirmed (runtime)); brightness 40, offset 0.
-
-| Light | Kind, lights | Script colour | RpLight colour | Direction (game axes) |
-| --- | --- | --- | --- | --- |
-| A, world ambient | ambient, world | `+0x50` = 0.07 | 0.227 grey | |
-| B, pulse | ambient, objects (off) | | 0.157-0.407 | |
-| glow | point 0.4 m, objects (off) | white | | |
-| moonlight | directional, objects | (0.07, 0.10, 0.18) | (0.227, 0.257, 0.337) | (0.391, -0.474, -0.789) |
-| reflected | directional, objects | (0.03, 0.02, 0.01) | (0.187, 0.177, 0.167) | (0.496, 0.552, 0.670), upwards |
-| object ambient | ambient, objects | (0.055, 0.065, 0.075) | (0.212, 0.222, 0.232) | |
-| 90 lamps | 49 point lights (7 with a corona), 41 coronas alone | warm and cold whites, 0.78-1.0 | | [Lights: level99](../references/lights/level99.md) |
-
-Of the lamps, 88 light objects only and 2 both objects and the world (flicker mode 2); 2 have light bugs. Coronas by
-rectangle: 0 ×20, 2 ×7, 3 ×10, 4 ×11. Fog colour (12, 12, 5), fog start 0.5, draw distance 115.
-
-A reference screenshot at this spot (window capture, kept outside the repository) shows a dark blue night: a black-blue
-sky, walls lit flat grey-brown, the player lit cold from above.
-
-## Code index {#code-index}
-
-Every function of `LightManager.cpp` and the unnamed file before it (the queued 2D rings and the light records;
-inferred from position, between the stub `0x0017b1c0` and `LightManager.cpp`'s anchors), with what it does. Rows
-that only link are described above. Names are ours. Confirmed (code) at each address.
-
-| Address | Name | What it does | Evidence |
-| --- | --- | --- | --- |
-| `0x0017b1e0`, `0x0017b2e0` | `GroundRing_Queue`, `GroundRing_DrawQueued` | [HUD](hud-radar.md#the-health-rings) | confirmed (code) |
-| `0x0017b8a8`, `0x0017bc28` | `Im2D_DrawTexturedRing`, `Im2D_DrawTexturedDisc` | [HUD](hud-radar.md#the-health-rings) | confirmed (code) |
-| `0x0017bec8` | `Im2D_DrawArc(shape)` | the part (`+0xb4` per cent) of a ring as a fan of segments with its colours; the chase and lock-pick gauges | confirmed (code) |
-| `0x0017c2a8` | `Shape2D_Queue(shape)` | copies a 0xc0-byte shape into the queue at `0x005fd9f0` (at most 6, count `0x0050ccd8`) | confirmed (code) |
-| `0x0017c308` | `Shape2D_DrawQueued` | draws each queued shape (a full disc at 100 %, else an arc) and empties the queue, from the viewport pass (`0x00156658`, `0x00156978`) | confirmed (code) |
-| `0x0017c3c8`, `0x0017c468` | `Shape2D_StaticInit`, `Shape2D_StaticInitStub` | default colours (60, 60, 60) of a static shape record at `0x005fde70`: not needed (static initialiser) | confirmed (code) |
-| `0x0017c488` | `Colour_UnpackRgba32(out, rgba)` | a `0xRRGGBBAA` word to float RGBA | confirmed (code) |
-| `0x0017c508` | `Light_InitFromDescriptor` | [The light record](#record) | confirmed (code) |
-| `0x0017c690` | `Light_Destruct` | detaches the RenderWare light from its frame and destroys both | confirmed (code) |
-| `0x0017c700`, `0x0017c840` | `Light_GetDescriptor`, `Light_ApplyDescriptor` | [The light record](#record) | confirmed (code) |
-| `0x0017ca90` | `Light_SetOn(light, on)` | `+0x30` | confirmed (code) |
-| `0x0017ca98` | `Light_MarkDirty` | sets the record's first word to 1 | confirmed (code) |
-| `0x0017caa8` | `Light_UpdateFlickerAndCorona` | [Coronas and flicker](#coronas) | confirmed (code) |
-| `0x0017d0b0` | `Light_SetFlickerTiming` | [Flicker](#flicker) | confirmed (code) |
-| `0x0017d338` | `LightManager_Init` | [Fields](#manager-fields) | confirmed (code) |
-| `0x0017d510`, `0x0017d578` | `LightManager_AddLight`, `LightManager_AddLightThunk` | take the next free record of the pool and build it from a descriptor (the second only calls the first) | confirmed (code) |
-| `0x0017d598` | `LightManager_RemoveLight` | gives a record back to the pool and destroys its light | confirmed (code) |
-| `0x0017d640` | `LightManager_Construct` | [The light manager](#manager) | confirmed (code) |
-| `0x0017d880` | `LightManager_CullForViewport` | [Per viewport: the cull](#cull) | confirmed (code) |
-| `0x0017de10` | `LightManager_SelectLights` | [Per atomic: the selection](#select) | confirmed (code) |
-| `0x0017e490` | `LightGlow_OnLoaded` | chunk `0x4B` ([Chunk system](chunk-system.md)): each 40-byte record becomes a light; flickering kinds get a random phase, and some lose their flicker at random (40 % keep it) | confirmed (code) |
-| `0x0017e680` | `LightGlow_Release` | frees the chunk (level reset `0x0040c7f0`) | confirmed (code) |
-| `0x0017e6c0` | `LightManager_Reset` | removes every light except the built-in ones and clears the lists | confirmed (code) |
-| `0x0017e7e8` | `LightManager_ClearLists` | empties the per-viewport lists | confirmed (code) |
-| `0x0017e810` | `LightManager_UploadSelected` | [Per atomic: the selection](#select) | confirmed (code) |
-| `0x0017e930` | `CharAtomic_UploadLights` | atomic callback of the character pipelines: queues the selected lights for VU1 with the atomic's matrix scale | confirmed (code) |
-| `0x0017ea60` | `LightManager_BeginViewport` | [Per viewport: the cull](#cull) | confirmed (code) |
-| `0x0017ec38`, `0x0017ec80` | `LightManager_SetBrightness`, `LightManager_SetGammaOffset` | [The brightness option](#brightness) | confirmed (code) |
-| `0x0017ec78`, `0x0017ecc0` | `LightManager_Brightness`, `LightManager_GammaOffset` | the addresses of `+0x90` and `+0xa0` | confirmed (code) |
-| `0x0017ecc8` | `LightManager_AddOffsets(out, colour)` | `max(0, brightness + offset)` added to a colour ([Colour](#colour)) | confirmed (code) |
-| `0x0017ed60` | `LightManager_SetColourOffsets` | [The brightness option](#brightness) | confirmed (code) |
-| `0x0017ee88` | `Light_CoronaBatch(light)` | the light's corona batch: made on first use from sheet record 8 (`lighting`), 128 sprites, depth 10,000 | confirmed (code) |
-| `0x0017ef20` | `Light_SetFromScript` | `SetLight` | confirmed (code) |
-| `0x0017f160` | `Light_SetState(light, state)` | 2 removes the light, else on / off (`SetLight`'s short form) | confirmed (code) |
-| `0x0017f1b8` | `Light_SetFlicker` | `SetLightFlicker` | confirmed (code) |
-| `0x0017f218` | `LightManager_SetWorldAmbient` | `SetWorldAmbient` | confirmed (code) |
-| `0x0017f260`, `0x0017f268`, `0x0017f270` | `Shadow_SetColour_Stub`, `Shadow_SetLightOffset_Stub`, `Shadow_Enable_Stub` | empty: `SetShadowColor`, `SetShadowLightOffset` and `EnableShadow` do nothing (the Xbox's: [Xbox lighting](xbox-lighting.md#shadow-light)) | confirmed (code) |
-
-## Coney's implementation {#coneys-implementation}
+## In Coney {#coneys-implementation}
 
 `repo:src/graphics/light_manager.h` is the manager (pool, built-in lights, offsets, cull, selection, flicker, coronas);
 the lighting bindings (`repo:src/scripting/lighting_bindings.h`) fill a level's lights and fog, kept by gameplay;
@@ -407,11 +437,22 @@ unlit vertices (0) reach the GS as 59, 64 and 29 of 128 (street dump), `level100
 
 ## Open questions
 
-- Lighting: whether the prelighting is multiplied by the material (needs a non-white world or car material), and a
-  directional light's fit.
-- What sets a human's glow colour `+0x644` (a rage or power-up effect?).
-- What object flag `0x80` (the pulse, light B) marks.
-- Mode 4's flicker: the RpLight's colour is not updated by it; whether another step applies the base.
-- The value passed with rectangles 1-4 of the coronas (`distSq / 640`).
-- The blob shadow's size: the sprite's base size and what sets the human's `+0x580`-`+0x588` (Rembrandt 1.195, 1.097,
-  1.0).
+- **The material and the prelight**{#q-material}: whether the prelighting is multiplied by the material, and a
+  directional light's fit. Find out: in PCSX2, a GS dump of a sector or a car whose material colour is not white,
+  against the prelight and the lights read at the same frame.
+- **The glow's colour**{#q-glow-colour}: what sets a human's glow colour `+0x644` (a rage or power-up effect?). Find
+  out: in Ghidra, the message `Human_HandleMessage` handles at its write; or in PCSX2, a write watchpoint on the byte.
+- **The pulse flag**{#q-pulse-flag}: what object flag `0x80` (the pulse, light B) marks. Find out: in Ghidra, the
+  writers of the flag in the object set-up; or the objects that carry it, counted per level from the disc.
+- **Mode 4's flicker**{#q-flicker-mode4}: the RpLight's colour is not updated by it; whether another step applies the
+  base. Find out: in PCSX2, a lamp with mode 4, its record and its RpLight colour read over a few frames.
+- **The corona value**{#q-corona-value}: the value passed with rectangles 1-4 of the coronas (`distSq / 640`). Find
+  out: in Ghidra, the sprite batch's use of the value it is given.
+- **The blob's size**{#q-blob-size}: the sprite's base size and what sets the human's `+0x580`-`+0x588` (Rembrandt
+  1.195, 1.097, 1.0). Find out: in Ghidra, the writers of `+0x580`; in PCSX2, the values on a few other characters.
+
+## How this was checked
+
+Runtime values were read over PINE in PCSX2 2.9.94 on 2026-10-06 from the user's quick-save slot 1 (`level99`,
+checkpoint 3, loaded read-only from a copy), counts and values only; the GS dumps the page cites were taken in the
+same build. These runs predate run records, so the page's runtime claims name no run.

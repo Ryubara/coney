@@ -1,12 +1,11 @@
+---
+kind: survey
+---
 # Xbox executable (evaluation)
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`) and the NTSC-U Xbox
-`default.xbe` (SHA1 `fe246a74501cd10d2ce89ca5dbda5080d2b2edcc`). No runtime claims. Evaluation date 2026-10-05.
+Verified against: `SLUS_212.15` (NTSC-U) and the NTSC-U Xbox `default.xbe` (SHA1 `fe246a74501c...`).
 
-Addresses written **XBE `0x...`** are virtual addresses in `default.xbe` (base `0x00010000`); plain addresses are in
-`SLUS_212.15`. Everything else about the Xbox disc is on [Xbox assets](xbox-assets.md).
-
-## Purpose
+## Summary
 
 The question: is the Xbox build's executable easier to reverse engineer than the PS2's, and is it worth using? The
 PS2 stays the only reference for behaviour; this page measures whether the Xbox executable helps as a
@@ -15,6 +14,9 @@ string literals, calling conventions, library names. But it has no symbols, no R
 so it does not replace PS2 analysis.
 
 ## Method {#method}
+
+Addresses written **XBE `0x...`** are virtual addresses in `default.xbe` (base `0x00010000`); plain addresses are in
+`SLUS_212.15`. Everything else about the Xbox disc is on [Xbox assets](xbox-assets.md).
 
 Both executables were imported fresh into a separate headless Ghidra 12.1.4 project, outside the repository, with
 default auto-analysis and no names of ours: the ELF with the Emotion Engine extension, the XBE with the
@@ -30,7 +32,11 @@ one-to-one function pairs** (114 backed by two or more strings). Of the 90 pairs
 source path, 87 load the same file, and 302 of 340 consecutive pairs keep the same order in both `.text`
 sections, so the pairs are sound. **Evidence:** inferred.
 
-## Numbers {#numbers}
+## Findings {#survey-findings}
+
+### Numbers {#numbers}
+
+Inferred from the measurement in [Method](#method); the counts depend on Ghidra's analysis.
 
 | Measure | PS2 (`SLUS_212.15`) | Xbox (`default.xbe`) |
 | --- | ---: | ---: |
@@ -54,9 +60,7 @@ sections, so the pairs are sound. **Evidence:** inferred.
 | Warnings (of which the stack-cookie injection note) | 57 (0) | 126 (62) |
 | Functions using VU0 macro registers (`in_vf*`) | 21 | 0 |
 
-**Evidence:** inferred (measured with the method above; counts depend on Ghidra's analysis).
-
-## What the numbers say {#findings}
+### What the numbers say {#findings}
 
 **Easier on the Xbox.**
 
@@ -77,20 +81,18 @@ sections, so the pairs are sound. **Evidence:** inferred.
 
 - **No names for game code.** The PDB path is embedded but the PDB is not on the disc; there are no exports, no
   RTTI for game classes (built without it, as on the PS2) and, on both builds, no assert messages but Lua's own.
-- **Register artefacts.** MSVC's optimiser passes values in `EAX`, `ESI`, `EBX` and the stack across calls
-  (`in_EAX` 183, `unaff_ESI` 180, `in_stack` 256), so three times as many functions need prototype fixes as on
-  the PS2.
-- **Coverage.** A quarter of the XBE's `.text` is in no function after auto-analysis (padding, jump tables, or code
-  reached only through vtables), against 3% on the PS2.
-- **Different layouts.** The same function reads a field at `+0x3ac` on the Xbox and at `+0x454` on the PS2,
-  steps an array of `0xdc`-byte elements against `0x100`, and calls a virtual through a 4-byte slot (`+0x44`)
-  against a GCC 2.x 8-byte `{delta, fn}` slot (`+0x90`) (XBE `0x000e1640`, `0x001b8d38`). Offsets, sizes and vtable
-  slots found on the Xbox **do not transfer** to the PS2; only the shape of the logic does. **Evidence:** confirmed
-  (code) at those two addresses.
-- **Lua bindings give no extra names.** Both builds register the same 955 binding names from one function; the
-  Xbox adds four (`SoundHandle`, `WorldPath`, `XBoxCompileVertexShader`, `XBoxLoadVS`).
+- **Register artefacts.** MSVC's optimiser passes values in `EAX`, `ESI`, `EBX` and the stack across calls (183 values
+  the decompiler reads from `EAX` on entry, 180 from `ESI` and 256 from the caller's stack), so three times as many
+  functions need prototype fixes as on the PS2. - **Coverage.** A quarter of the XBE's `.text` is in no function after
+  auto-analysis (padding, jump tables, or code reached only through vtables), against 3% on the PS2. - **Different
+  layouts.** The same function reads a field at `+0x3ac` on the Xbox and at `+0x454` on the PS2, steps an array of
+  `0xdc`-byte elements against `0x100`, and calls a virtual through a 4-byte slot (`+0x44`) against a GCC 2.x 8-byte
+  `{delta, fn}` slot (`+0x90`) (XBE `0x000e1640`, `0x001b8d38`). Offsets, sizes and vtable slots found on the Xbox **do
+  not transfer** to the PS2; only the shape of the logic does. **Evidence:** confirmed (code) at those two addresses. -
+  **Lua bindings give no extra names.** Both builds register the same 955 binding names from one function; the Xbox adds
+  four (`SoundHandle`, `WorldPath`, `XBoxCompileVertexShader`, `XBoxLoadVS`).
 
-## Cross-referencing cost {#cross-reference}
+### Cross-referencing cost {#cross-reference}
 
 Cheap at the file and function level, not below it.
 
@@ -102,14 +104,14 @@ Cheap at the file and function level, not below it.
 - **Use.** For a PS2 function in a pair, the Xbox twin shows which string, sound or binding each call uses, and
   which argument is `this`. Every claim on a research page must still be read in the PS2 code at a PS2 address.
 
-## Runtime access {#runtime}
+### Runtime access {#runtime}
 
 xemu (QEMU-based) has a GDB stub (`-s`, TCP port 1234; `-S` starts paused) and the QEMU monitor (memory dumps,
 registers, trace events). GDB's remote protocol gives memory reads and writes, breakpoints and watchpoints, about
-what PCSX2's debugger and PINE give together. Coney has no tooling for it, and an observation in xemu is not
-`confirmed (runtime)` for the PS2. **Evidence:** from xemu's guest-debugging documentation; not tried.
+what PCSX2's debugger and PINE give together. Coney has no tooling for it, and an observation in xemu is no
+runtime evidence for the PS2. Inferred from xemu's guest-debugging documentation; not tried.
 
-## Recommendation {#recommendation}
+### Recommendation {#recommendation}
 
 **Adopt the Xbox executable as an optional, read-only cross-reference for engineers; do not make it a reference
 and do not build xemu tooling.** It is not easier overall: game code is equally unnamed, MSVC's register
@@ -126,3 +128,8 @@ Xbox addresses.
 1. How much of the XBE's unanalysed 25% of `.text` is code that a vtable scan or Ghidra's aggressive instruction
    finder would recover?
 2. Do the XDK's `D3D`/`DSOUND` signatures cover the statically linked XGraphics and Bink sections (6 and 0 named)?
+
+## How this was checked
+
+The evaluation ran on 2026-10-05, from code only: the two executables in a separate Ghidra project, as Method says.
+No claim on the page is runtime. The XBE's full SHA1 is `fe246a74501cd10d2ce89ca5dbda5080d2b2edcc`.

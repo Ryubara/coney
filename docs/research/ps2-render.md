@@ -259,8 +259,7 @@ calls `SetFogDistance`), confirmed (code) at `0x001954f0`. The vertex fog value 
 1,998 partly fogged vertices of the world and the Wonder Wheel, residuals about 1, [The front end](rendering.md#front-end)).
 The world's own pipelines and the objects' share it: an object's atomics get the same game pipelines as the streamed
 world (`ObjectModel_SetupAtomic`, `0x001807cc` → `Atomic_AssignGamePipelines`), confirmed (code). How the microcode
-computes the value was not read. The Xbox port evaluates the same linear fog per pixel instead
-([Xbox lighting and shadows](xbox-lighting.md#fog)).
+computes the value was not read.
 
 ### Packets {#packets}
 

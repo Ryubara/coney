@@ -377,11 +377,7 @@ history = 3
 stale-wording = 1
 
 ["docs/research/lighting.md"]
-front-matter = 1
-skeleton = 10
-verified = 1
-evidence = 24
-history = 1
+evidence = 12
 
 ["docs/research/link-once.md"]
 front-matter = 1
@@ -605,11 +601,3 @@ verified = 1
 evidence = 2
 address-resolve = 1
 history = 4
-
-["docs/research/xbox-executable.md"]
-front-matter = 1
-skeleton = 10
-verified = 1
-evidence = 2
-decompile = 1
-history = 1
