@@ -40,8 +40,9 @@ uv run --project python coney-tools standards check [--base origin/main]
   file only shrinks;
 * a ported function with no `status`;
 * when `--base` already has the legacy file, a file or a rule added to it since the branch left `--base`;
-* once `standards.cutover` is set, a function marked `legacy` that was not at `--base`: nothing new is marked legacy
-  after the cutover. Before it, a new port is still written `legacy` ([Recording a port](research-function-database.md#ported)).
+* once `standards.cutover` is set (it is: 2026-10-25), a function marked `legacy` that was not at `--base`: nothing new
+  is marked legacy. A new port is recorded `compared`, which needs its side-by-side comparison first
+  ([Recording a port](research-function-database.md#ported)).
 
 And the touch-it rule ([Touch a page, fix the page](writing-docs.md#touch-it), for files and functions):
 
@@ -53,11 +54,14 @@ And the touch-it rule ([Touch a page, fix the page](writing-docs.md#touch-it), f
   overload by overload as [`orig check`](coney-tools-fidelity.md#orig) matches them, so touching one overload owes
   only its own address.
 
-Every report of `check` is a warning while `standards.enforce` is false in
-[.github/conventions.yml](repo:.github/conventions.yml) (until the cutover of the workflow): nothing in it fails a pull
-request before then. The marks that are out of step say what to run (`coney-tools standards prune` for a file that
-passes or is gone, `standards mark` for a function with no status). Once `enforce` is true every report is an error. The
-same check runs inside `docs check` whenever the
+Enforcement is on: `standards.enforce` is true and `standards.cutover` is 2026-10-25 in
+[.github/conventions.yml](repo:.github/conventions.yml) (the maintainer approved it on that day, issue #813). Every
+report of `check` is an error, so a change that touches a file below the standard without bringing the whole file up to
+it, touches a ported function that is not `compared`, adds to the legacy file or marks a function `legacy` fails
+`standards check` and `docs check`, and so the `mkdocs` job of CI. The marks that are out of step say what to run
+(`coney-tools standards prune` for a file that passes or is gone, `standards mark` for a function with no status).
+Setting `enforce` back to false would turn every report into a warning again (`path:line: warning: rule: message`),
+which the tests of both modes cover. The same check runs inside `docs check` whenever the
 change touches a source or test file, the function database, the legacy file, the conventions or these checks, so the
 `mkdocs` job of CI and the docs step of [`check changed`](coney-tools-build.md#check) hold it without a step of their
 own. The group is `standards`, not `legacy`: that name is reserved for the retired review commands.
