@@ -133,7 +133,8 @@ Read in Ghidra: confirmed (code) where no other level is given.
    objects; it tests a body, `Human_IsTargetable`, not friendly, another gang and the height, and skips state
    `0x100000000` (dead), held flag `0x40` and state `0x1c00000000`. Of the down-or-dead bits (`Human_IsDownOrDead`,
    `0x00227e60`, tests `0x180050000`) it refuses only the dead one: a human dying (`0x80000000`), knocked out
-   (`0x40000`) or tackled (`0x10000`) passes. This pass runs with or without a current target.
+   (`0x40000`) or wounded (`0x10000`, set by `Human_StartWounded` `0x0022fa78`, tested by `Human_IsWounded`
+   `0x00227d98`) passes. This pass runs with or without a current target.
 7. The nearest found wins. With nothing found, the previous target is kept when it is not a car, has a body and is
    within range.
 
@@ -927,16 +928,16 @@ The original's rules are in [The fight stance](#fight-stance); issue #82 tracks 
   3 m.
 
 What the original does that Coney lacks: 23, 24 and 501 played as `Player_StartCharge` plays them (a warning to the
-picked target, no steer or slide); an attack's pick that only stores a target, with the lock-on walk running only
-after the stance step (nearest threat within 2 m, not running, outside an attack) or L1, and ending on running,
-sprinting or L2 as `Player_UpdateSprint` ends it; the lock-on walk facing the target only within 2.5 m (or while L1
-locks), beyond it turning to the stick at most `Human_MaxTurn` per update; the target dropped beyond 3 m once the
-stance timer has run out; the stance's nearest enemy searched within 3 m and only among threats, with the wider list
-kept for the attack picks; square in the stance keeping its target out to 2.5 m (`0x005104c0`), where Coney keeps it out
-to 3 m (`kKeepTargetRange`); and 2 / 2.5 / 3 m taken from `CfgDistances`, not the executable's defaults. The checks that
-will show it: a bat sweep at a full run past an enemy 1.5 m to the side keeps the heading on the stick for all of 501
-and the run resumes with no lock; a stick at 60 % walking past a neutral civilian at 1 m never locks or turns; the same
-past an enemy-gang member within 2 m locks and faces him.
+picked target, no steer or slide); an attack's pick that only stores a target, with the lock-on walk running only after
+the stance step (nearest threat within 2 m, not running, outside an attack) or L1, and ending on running, sprinting or
+L2 as `Player_UpdateSprint` ends it; the lock-on walk facing the target only within 2.5 m (or while L1 locks), beyond it
+turning to the stick at most `Human_MaxTurn` per update; the target dropped beyond 3 m once the stance timer has run
+out; the stance's nearest enemy searched within 3 m and only among threats, with the wider list kept for the attack
+picks; square in the stance keeping its target out to 2.5 m (`0x005104c0`), where Coney keeps it out to 3 m
+(`kKeepTargetRange`, issue #895); and 2 / 2.5 / 3 m taken from `CfgDistances`, not the executable's defaults. The checks
+that will show it: a bat sweep at a full run past an enemy 1.5 m to the side keeps the heading on the stick for all of
+501 and the run resumes with no lock; a stick at 60 % walking past a neutral civilian at 1 m never locks or turns; the
+same past an enemy-gang member within 2 m locks and faces him.
 
 ### The steer {#steer-coney}
 

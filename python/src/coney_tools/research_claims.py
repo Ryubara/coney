@@ -13,7 +13,7 @@ tests that cite its section. What backs it:
   record (coney_tools.run_records). A legacy claim that names the PCSX2 version and its method instead is allowed with
   a warning. There is no stamp for a run: the record is the proof (maintainer decision, 2026-10-23). A block is legacy,
   not new, when it edits one the page had at the base, or is the same text as a block that left another research page in
-  the same change (a moved section: `departed_blocks`) or that text with words only taken out (`_is_cut`).
+  the same change (a moved section: `departed_blocks`) or that text with parts only deleted (`_is_cut`).
 * `speculative`: the open question it links, which must exist when it is on the same page.
 * `inferred`: nothing to look up (`docs check` holds its basis).
 
@@ -345,11 +345,29 @@ def _is_edit(text: str, known: list[frozenset[str]] | None) -> bool:
     return any(len(words & other) / len(words | other) >= SAME_BLOCK for other in known)
 
 
-def _is_cut(text: str, departed: list[frozenset[str]]) -> bool:
-    """Whether a block is one that left another page with words only taken out (a wrong clause dropped on the way): its
-    words are all that block's and at least half of them. Taking text out adds no claim; a word added makes it new."""
-    words = _words(text)
-    return bool(words) and any(words <= other and len(words) / len(other) >= SAME_BLOCK for other in departed)
+# A word, with a number kept whole: 1.3 stays one token, and so does a range such as 0.870-0.880 (hyphen or en dash).
+TOKEN = re.compile(r"\w+(?:[.\N{EN DASH}-]\d+)*")
+
+
+def _tokens(text: str) -> tuple[str, ...]:
+    """The lower-case words of a block in order, numbers and ranges whole, to tell a cut block from a changed one."""
+    return tuple(TOKEN.findall(text.lower()))
+
+
+def _is_cut(text: str, departed: list[tuple[str, ...]]) -> bool:
+    """Whether a block is one that left another page with parts only deleted (a wrong clause dropped on the way): its
+    tokens are that block's in the same order (a subsequence) and at least half of them. Deleting text adds no claim; a
+    word or number added, changed or moved makes it new, since 1.0 is not 1.3 and 0.880-0.870 not 0.870-0.880."""
+    tokens = _tokens(text)
+    if not tokens:
+        return False
+    for other in departed:
+        if len(tokens) / max(len(other), 1) < SAME_BLOCK:
+            continue
+        rest = iter(other)
+        if all(token in rest for token in tokens):  # each found after the one before: a subsequence
+            return True
+    return False
 
 
 def _targets(text: str) -> tuple[str, ...]:
@@ -382,12 +400,12 @@ def _page_claims(
     backing: _Backing,
     known: list[frozenset[str]] | None,
     moved_in: frozenset[str] = frozenset(),
-    cut_from: list[frozenset[str]] | None = None,
+    cut_from: list[tuple[str, ...]] | None = None,
 ) -> None:
     """Add the claims of one page that touch `lines` (all of them when None) to `report`, graded as `docs check`
     grades them. `known` holds the word sets of the base page's blocks (None without a base); `moved_in` the text of
     the blocks that left another page in this change (`departed_blocks`): one here is that block, not new, and so is one
-    with words only taken out of it (`cut_from`, their word sets: `_is_cut`)."""
+    with parts only deleted from it (`cut_from`, their tokens: `_is_cut`)."""
     page, name = subject.page, subject.path
     leads = lead_lines(subject)
     map_section = subject.env.research.map_section
@@ -460,7 +478,7 @@ def build(
     pages = _all_pages(root) if point is None else changed_lines(root, point, similarity)
     moved = {} if point is None else moved_pages(root, point, similarity)
     departed = frozenset() if point is None else departed_blocks(root, point)
-    cut_from = [_words(text) for text in departed]
+    cut_from = [_tokens(text) for text in departed]
     for page, lines in sorted(pages.items()):
         path = root / page
         if not path.is_file():

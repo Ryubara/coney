@@ -18,7 +18,7 @@ inline constexpr float kAttackPickRange = 2.0F;
 inline constexpr float kArmedPickRange = 2.5F;
 /// Square in the stance keeps a current target up to this far (metres). The original keeps it out to 2.5 m
 /// (`0x005104c0`, 6.25 squared as `CfgDistances` sets it, docs/research/combat-targets.md#targeting); 3 m is the
-/// executable's initial value, which never applies in play, so this value is wrong; its fix is a change of its own.
+/// executable's initial value, which never applies in play, so this value is wrong; its fix is #895.
 inline constexpr float kKeepTargetRange = 3.0F;
 
 /// How an attack finds its target.
