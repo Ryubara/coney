@@ -106,7 +106,9 @@ want ([Research workflow](docs/guides/research-workflow.md)).
 [Running agents](docs/guides/agents.md). You can ignore all of it; a pull request you open yourself follows the
 same rules in the template. One thing reaches you if you use Claude Code in this checkout: start it with
 `uv run --project python coney-agent engineer`, because a plain `claude` session here may only read files
-([Which role to start](docs/guides/agents.md#roles)).
+([Which role to start](docs/guides/agents.md#roles)). The engineer role brings the project's agent instructions
+(worktrees, scratch folders, the local checks, reporting to a coordinator) and refuses `git push` and `gh pr create`
+inside that session: push your branch and open your pull request from your own terminal.
 
 **Stamps are local agent bookkeeping.** The stamp log (`docs/guides/stamps.md`) is what the project's agents keep on
 their own machine to work in order; it is never checked in CI. Working by hand you need no stamps, no `coney-tools`

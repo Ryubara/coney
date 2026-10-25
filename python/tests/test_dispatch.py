@@ -409,9 +409,8 @@ def test_a_command_that_is_refused_gets_no_identity(identity_folder: Path) -> No
 
 def test_no_one_may_name_the_identity_folder_or_a_private_key() -> None:
     for command in ("ls ~/.coney/identity", "cat ~/.ssh/id_ed25519", "type C:\\Users\\x\\.coney\\identity\\a.json"):
-        for kind in ("", "engineer", "coordinator"):
-            extra = {"agent_type": kind} if kind else {}
-            assert DISPATCH.dispatch(bash(command, **extra), CONFIG)[0] == 2, (command, kind)
+        for kind in (None, "engineer", "coordinator"):  # None: a session with no role
+            assert DISPATCH.dispatch(bash(command, agent_type=kind), CONFIG)[0] == 2, (command, kind)
     assert DISPATCH.dispatch(pre("Read", {"file_path": "/home/x/.ssh/id_ed25519"}), CONFIG)[0] == 2
     assert DISPATCH.dispatch(pre("Glob", {"pattern": "*", "path": "/home/x/.coney/identity"}), CONFIG)[0] == 2
     assert DISPATCH.dispatch(pre("Read", {"file_path": "/home/x/.ssh/id_ed25519.pub"}), CONFIG)[0] == 0

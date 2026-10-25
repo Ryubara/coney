@@ -203,7 +203,9 @@ agent again with the right one.
 `claude`) may do. On, it may only read (Read, Grep, Glob) and every other call is refused with a message to start with
 `coney-agent`. It is **on in the committed file**: the maintainer's sessions start through `coney-agent`, and every
 agent they start carries its own role. Off, such a session would get no role rules at all. Whatever its value, a
-session start with no role shows a notice (a SessionStart hook).
+session start with no role shows a notice (a SessionStart hook). To keep the conversation of a session that has no
+role, quit it and start again with `coney-agent -- --continue` (the latest conversation in the folder) or
+`coney-agent -- --resume` (pick one): everything after `--` goes to `claude` unchanged.
 
 ## Which model {#models}
 
