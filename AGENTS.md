@@ -39,17 +39,12 @@ contributing starts at CONTRIBUTING.md, section Your first hour; the rest of thi
 - **One role:** engineers study the original game (Ghidra through ghidra-mcp, the running game through the pcsx2 MCP
   server), write `docs/research/` pages where they help, citing addresses and short snippets, and implement the
   behaviour in Coney's own code (`docs/guides/research-workflow.md`).
-- **Research claims** carry an evidence level: confirmed (code) at a cited address, confirmed (runtime), inferred,
-  or speculative. Addresses are like `0x001490b8` in NTSC-U `SLUS_212.15`; the Xbox port's are written
-  `Xbox 0x000bd3c0` (its `default.xbe`). How: `docs/guides/research-evidence.md`.
+- **Research claims** carry an evidence level: confirmed (code) at a cited address, confirmed (runtime), inferred, or
+  speculative. Addresses are like `0x001490b8` in NTSC-U `SLUS_212.15`. How: `docs/guides/research-evidence.md`.
 - **Reverse-engineering work** (Ghidra, disassembly, PCSX2, research claims) runs on Opus 5.5.
-- **Faithful first:** Coney reimplements the game as a whole. Gameplay (rules, timings, maths, AI, missions) matches
-  the PS2 build exactly until the game is complete, and Coney's own gameplay mechanics wait (designs may be written
-  now). Presentation and performance may go beyond it now: the Xbox port's rendering (lighting, shadows, textures,
-  movies) and Coney's own renderer options (anti-aliasing, high and uncapped frame rates, resolution), each an option,
-  forced off in test mode, so the PS2 look stays selectable and the fidelity tests hold. The research page says which
-  build a feature follows; code cites the Xbox port as `@orig xbox 0x<addr>` and names its enhancement in
-  `@coney-only` (`conventions.md#xbox-tags`). Debug tooling is not a mechanic and is fine.
+- **Faithful first:** gameplay (rules, timings, maths, AI, missions) matches the PS2 exactly until the game is complete;
+  Coney's own mechanics wait, debug tooling is fine. Graphics and performance may go further now (the Xbox port's look,
+  renderer options), each an option off in test mode; the research page names the build (`conventions.md#xbox-tags`).
 - **Never exclude a file from the 512 KB large-file check** in `.pre-commit-config.yaml`: it catches game data
   committed by mistake. Split big generated data and pages instead.
 <!-- conventions:begin maintainer-decisions -->
