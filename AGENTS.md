@@ -1,16 +1,17 @@
 # AGENTS.md -- Coney
 
-Coney is an open-source, functional reimplementation of *The Warriors* (Rockstar Toronto, PS2, 2005) in C++23,
-running natively on Windows, Linux and macOS from a disc the player owns. Anyone should be able to find, from our
-docs and code comments, where each behaviour lives in the original and port it. Legal rules in full: `LEGAL.md`.
+Coney is an open-source, functional reimplementation of *The Warriors* (Rockstar Toronto, 2005) in C++23, running
+natively on Windows, Linux and macOS from a disc the player owns. It is built mainly on reverse engineering the PS2
+version, the reference for gameplay, with the Xbox port as a second source for rendering and assets. Anyone should be
+able to find, from our docs and code comments, where each behaviour lives in the original. Legal: `LEGAL.md`.
 
 ## Layout
 
 `src/core/` platform-neutral engine code; `src/platform/` the only place for OS, SDL3 or librw code; `tests/`
 Catch2; `python/` the `coney-tools` CLI (uv); `docs/research/` what we know about the original; `docs/guides/` how
 we work; `assets/` Coney's own assets (sandbox layouts, CC0 textures; never game data); `cmake/deps.cmake` pinned
-dependencies. Worktrees go in `../../worktrees/coney/<branch>/`, scratch output
-in `../../scratch/`; game files, emulators and tool installs live beside the repo, never in it.
+dependencies. Worktrees go in `../../worktrees/coney/<branch>/`, scratch output in `../../scratch/`; game files,
+emulators and tool installs live beside the repo, never in it.
 
 ## How we work
 
@@ -43,8 +44,9 @@ contributing starts at CONTRIBUTING.md, section Your first hour; the rest of thi
   speculative. Addresses are like `0x001490b8` in NTSC-U `SLUS_212.15`. How: `docs/guides/research-evidence.md`.
 - **Reverse-engineering work** (Ghidra, disassembly, PCSX2, research claims) runs on Opus 5.5.
 - **Faithful first:** gameplay (rules, timings, maths, AI, missions) matches the PS2 exactly until the game is complete;
-  Coney's own mechanics wait, debug tooling is fine. Graphics and performance may go further now (the Xbox port's look,
-  renderer options), each an option off in test mode; the research page names the build (`conventions.md#xbox-tags`).
+  Coney's own mechanics wait (designs may be written now), debug tooling is fine. Graphics and performance may go
+  further now (the Xbox port's look, renderer options), each an option off in test mode; the research page names the
+  build (`research-evidence.md#xbox-addresses`).
 - **Never exclude a file from the 512 KB large-file check** in `.pre-commit-config.yaml`: it catches game data
   committed by mistake. Split big generated data and pages instead.
 <!-- conventions:begin maintainer-decisions -->
@@ -83,9 +85,8 @@ its description has a line `Docs: none`. `HANDOFF.md` holds only the current sta
 ## Commits and GitHub
 
 Every rule below that a program checks is a key of `.github/conventions.yml`, the one source: titles, description
-sections, labels, merge settings, hygiene limits and path classes (`docs/guides/repo-conventions.md`). Change the
-rule there, never a copy of it. The block below is generated from it (`coney-tools repo render`): edit the file, not
-the block.
+sections, labels, merge settings, hygiene limits and path classes (`docs/guides/repo-conventions.md`). Change the rule
+there, never a copy. The block below is generated from it (`coney-tools repo render`): edit the file, not the block.
 
 <!-- conventions:begin commit-rules -->
 - Title `area: Verb the rest`, at most 72 characters, present tense, no trailing period. Verbs: Add, Fix, Update,

@@ -13,6 +13,7 @@ report, never a wrong answer from a check that passes.
 from __future__ import annotations
 
 import re
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 
 #: `@orig 0x<address> <OriginalName> (<File>.cpp)`, anywhere on a line (a `/** ... */` comment, text after it); the
@@ -28,10 +29,49 @@ _ORIG_MENTION = re.compile(r"@orig\s+(?:(?i:xbox)\s+)?0x")
 #: The build a tag without a build word cites (`SLUS_212.15`), and the Xbox port's (`default.xbe`).
 PS2 = "ps2"
 XBOX = "xbox"
-#: A lookbehind for an address pattern: not after the word Xbox (or XBE, the older pages' spelling), which marks an
-#: address in `default.xbe`, not `SLUS_212.15` (`Xbox 0x000bd3c0`, ``Xbox `0x000bd3c0` ``;
+#: An address of the Xbox port's `default.xbe` is written after the word Xbox (or XBE, the older pages' spelling), in
+#: any case: `Xbox 0x000bd3c0`, ``XBOX `0x000bd3c0` ``. A range or a list after one word is Xbox's throughout: the
+#: word goes before the first address only (`Xbox 0x000bd3c0-0x000bd400`, `Xbox 0x1..., 0x2... and 0x3...`;
 #: docs/guides/research-evidence.md#xbox-addresses).
-NOT_XBOX = r"(?<![Xx]box )(?<![Xx]box `)(?<!XBE )(?<!XBE `)"
+_XBOX_ADDRESS = r"0x[0-9a-fA-F]{8}\b"
+_XBOX_RUN = re.compile(
+    r"(?<![A-Za-z])(?i:xbox|xbe)[ \t]+`?"
+    + _XBOX_ADDRESS
+    + r"(?:`?\s*(?:[-,;/\u2013\u2014]|\.\.|\b(?:and|or|to)\b)\s*`?"
+    + _XBOX_ADDRESS
+    + r")*"
+)
+_ANY_ADDRESS = re.compile(_XBOX_ADDRESS)
+
+
+def xbox_addresses(text: str) -> list[str]:
+    """Each address `text` cites as the Xbox port's, in order, as written: the one after the word Xbox and every one
+    that follows it in a range or a list."""
+    return [a.group(0) for run in _XBOX_RUN.finditer(text) for a in _ANY_ADDRESS.finditer(run.group(0))]
+
+
+def mask_xbox(text: str) -> str:
+    """`text` with each Xbox run (the word and its addresses) replaced by `x`, line breaks and length kept, so a
+    pattern for a PS2 address cannot read an Xbox one and its matches keep their positions."""
+    return _XBOX_RUN.sub(lambda run: re.sub(r"[^\n]", "x", run.group(0)), text)
+
+
+class Ps2Pattern:
+    """A pattern for the PS2's addresses in a page or comment: `search` and `finditer` as a compiled pattern has them,
+    on the text with the Xbox port's addresses masked out (`mask_xbox`)."""
+
+    def __init__(self, pattern: str) -> None:
+        self._pattern = re.compile(pattern)
+
+    def search(self, text: str) -> re.Match[str] | None:
+        """The first match outside an Xbox run."""
+        return self._pattern.search(mask_xbox(text))
+
+    def finditer(self, text: str) -> Iterator[re.Match[str]]:
+        """Every match outside an Xbox run."""
+        return self._pattern.finditer(mask_xbox(text))
+
+
 #: The marker a Coney-only function or file carries (docs/guides/conventions.md#coney-only): `@coney-only <reason>`.
 CONEY_ONLY_TAG = re.compile(r"@coney-only\b")
 #: Wording the conventions asked for before the marker existed: "Coney's own ...", "(no @orig)". It marks only

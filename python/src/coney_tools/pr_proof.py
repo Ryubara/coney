@@ -869,7 +869,7 @@ def check_reviewed(subject: Subject, text: TextHashes | None) -> list[Refusal]:
     found: list[Refusal] = []
     functions = _review_functions(subject, stamp)
     for unit in subject.changed:
-        for address in _addresses(unit):
+        for address in unit.review_addresses:
             judged = None if functions is None else _class_name(functions.get(address))
             if judged is None:
                 found.append(refuse(f"Review did not cover {address}"))

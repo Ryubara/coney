@@ -204,6 +204,10 @@ One tag per original function. A Coney function that does the work of two origin
 helper that does part of an original function's work (a step the original inlined) carries that function's tag. A
 function with no original counterpart carries `@coney-only <reason>` instead ([Coney-only code](#coney-only)).
 
+**Every PS2 tag is counted** (an [Xbox tag](#xbox-tags) is not). In the same commit as the code, record the port on
+the function's entry in the function database and run `progress check`
+([Recording a port](research-function-database.md#ported)).
+
 ### Xbox tags {#xbox-tags}
 
 Presentation may follow Rockstar's Xbox port where it differs from the PS2 build (lighting, shadows, textures,
@@ -227,9 +231,6 @@ movies; [Faithful first](repo:AGENTS.md)). Code ported from the Xbox executable 
   `@coney-only enhancement: <option>`, naming the option as [Graphics and
   performance](../roadmap.md#graphics-and-performance) and its design page do. It is an option, off in test mode,
   and never changes what the simulation computes.
-
-**Every tag is counted.** In the same commit as the code, record the port on the function's entry in the function
-database and run `progress check`: [Recording a port](research-function-database.md#ported).
 
 ### A complete example
 

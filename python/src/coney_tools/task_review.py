@@ -352,7 +352,9 @@ def prepare(env: ReviewEnv, mode: str) -> int:
         (env.folder / name).unlink(missing_ok=True)
     packet_path = env.folder / rules.packet_file
     packet_path.write_text(json.dumps(packet, indent=2) + "\n", encoding="utf-8")
-    functions = ", ".join(f"{f['coney']} {' '.join(f['addresses'])}" for f in packet["functions"]) or "none"
+    functions = (
+        ", ".join(f"{f['coney']} {' '.join(review_verdict.review_addresses(f))}" for f in packet["functions"]) or "none"
+    )
     tip, base, diff = packet["tip"][:12], packet["base"][:12], packet["diff_sha256"][:12]
     print(f"task review {task}: {mode} review of {tip} (base {base}, change {diff})")
     print(f"  checklists: {', '.join(packet['kinds'])}")

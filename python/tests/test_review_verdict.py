@@ -288,3 +288,44 @@ def test_a_text_verdict_lists_no_functions_or_pages() -> None:
     found = review_verdict.problems(verdict, packet, 2)
     for field in ("functions", "pages", "reviewed"):
         assert any(p.startswith(f"{field}: a text review has none") for p in found)
+
+
+# --- an Xbox port (`@orig xbox`) is compared by hand, at addresses of its own ---------------------------------------
+
+
+def xbox_packet() -> dict[str, Any]:
+    """A packet whose one function follows the Xbox port only: no PS2 address, one in `default.xbe`."""
+    function = {**PACKET["functions"][0], "addresses": [], "xbox": ["0x000bd3c0"]}
+    return make_packet(functions=[function])
+
+
+def test_an_xbox_only_function_can_be_given_a_verdict() -> None:
+    packet = xbox_packet()
+    verdict = make_verdict(packet)
+    assert verdict["functions"][0]["addresses"] == ["xbox 0x000bd3c0"]
+    assert verdict["reviewed"] == ["xbox 0x000bd3c0"]
+    assert problems(verdict, packet) == []
+
+
+def test_an_xbox_address_is_named_with_its_build_and_never_as_a_ps2_one() -> None:
+    packet = xbox_packet()
+    verdict = make_verdict(packet)
+    verdict["functions"][0]["addresses"] = ["0x000bd3c0"]
+    verdict["reviewed"] = ["0x000bd3c0"]
+    assert any("`addresses` must be its own and listed in `reviewed`" in p for p in problems(verdict, packet))
+    verdict["functions"][0]["addresses"] = []
+    assert any("no compared `addresses`" in p for p in problems(verdict, packet))
+
+
+def test_a_function_with_both_builds_may_compare_either_or_both() -> None:
+    function = {**PACKET["functions"][0], "xbox": ["0x000bd3c0"]}
+    packet = make_packet(functions=[function])
+    verdict = make_verdict(packet)
+    assert verdict["functions"][0]["addresses"] == ["0x00100010", "xbox 0x000bd3c0"]
+    assert problems(verdict, packet) == []
+
+
+def test_the_stamp_detail_gives_an_xbox_address_its_class_letter() -> None:
+    packet = xbox_packet()
+    detail = review_verdict.stamp_detail(make_verdict(packet))
+    assert detail["functions"] == {"xbox 0x000bd3c0": "c"}

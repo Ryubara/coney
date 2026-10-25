@@ -99,6 +99,11 @@ class Unit:
         """The PS2 and the Xbox addresses: a change of either is a change of the unit."""
         return (self.addresses, self.xbox)
 
+    @property
+    def review_addresses(self) -> list[str]:
+        """What a review covers: the PS2 addresses as `0x00100010`, the Xbox ones as `xbox 0x000bd3c0`."""
+        return [f"0x{a:08x}" for a in self.addresses] + [f"xbox 0x{a:08x}" for a in self.xbox]
+
     def to_json(self) -> dict[str, Any]:
         """The unit as a stamp lists it; `xbox` only when it has Xbox addresses, so older stamps read the same."""
         found: dict[str, Any] = {

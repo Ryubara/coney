@@ -1,5 +1,5 @@
 site_name: Coney
-site_description: An open-source reimplementation of The Warriors (PS2, 2005) for Windows, Linux and macOS.
+site_description: An open-source reimplementation of The Warriors for Windows, Linux and macOS, built mainly on reverse engineering the PS2 version, with the Xbox port as a second source.
 docs_dir: docs
 strict: true
 # repo_url and site_url are set at build time by mkdocs_hooks.py, from the build.

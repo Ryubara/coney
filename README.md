@@ -1,6 +1,8 @@
 # Coney
 
-An open-source reimplementation of *The Warriors* (PS2, 2005) for Windows, Linux and macOS.
+An open-source reimplementation of *The Warriors* for Windows, Linux and macOS, built mainly on reverse engineering
+the 2005 PS2 version, the reference for how the game plays, with the Xbox port as a second source for rendering and
+assets.
 
 Status: in development, not yet a complete game. With your disc Coney plays the start-up movies and the front end and
 runs levels as far as the [missions](docs/missions/index.md) page records.
@@ -20,11 +22,7 @@ Projects that bring old games to new platforms work in one of three ways:
 - A **decompilation** rewrites the original's machine code as source that compiles back to the same binary. It is
   exact, but the result stays close to the original console and its design.
 - A **static recompilation** translates the binary itself into code for another machine. It runs soonest, but the
-  translated code is hard to read or change. How hard it is to make depends on the console. The Xbox has an x86
-  processor and an NV2A graphics chip driven through Direct3D 8, so its code translates to PC code fairly directly
-  and its graphics calls map onto modern APIs such as Direct3D 12, which is how an Xbox recompilation can run at high
-  frame rates. The PS2's MIPS R5900 processor, its vector units and its Graphics Synthesizer have no PC counterpart,
-  which makes a recompilation much harder there.
+  translated code is hard to read or change, and the PS2's graphics hardware makes it especially hard there.
 - A **reimplementation**, which is what Coney is, writes new code that behaves the same.
 
 Coney's contributors read the original in Ghidra and watch it run in PCSX2, so Coney follows the same rules, timings
@@ -62,8 +60,9 @@ Coney reimplements *The Warriors* as a whole, not one console's version of it
   data formats and names its files after the PS2's processor and sound format. So the PS2 version is Coney's main
   source for how the game plays. It is also the one we can check at runtime, in PCSX2's debugger, which Coney's tools
   are built around; the Xbox executable serves as a reading aid beside it.
-- **What the Xbox port adds:** textures about twice the size, HD and widescreen movies, and its own renderer, with a
-  shadow map for the characters. **What it does worse:** its music is at a lower sample rate.
+- **What the Xbox port adds:** textures twice the width and height, HD and widescreen movies, and its own Direct3D 8
+  renderer, whose lighting and shadows are research in progress (#881). **What it does worse:** its music is at a lower
+  sample rate.
 
 Coney takes the Xbox version's gains as faithful and builds on them: they, and what neither console could do (higher
 frame rates, anti-aliasing, modern lighting), are [graphics and performance](docs/roadmap.md#graphics-and-performance)

@@ -37,7 +37,7 @@ from coney_tools import docs_check, local_gate, run_records, stamps
 from coney_tools.config import ConfigError
 from coney_tools.conventions import load_conventions
 from coney_tools.docs_page import Block, Page, heading_ids, read_page
-from coney_tools.orig_scan import XBOX
+from coney_tools.orig_scan import XBOX, xbox_addresses
 from coney_tools.research_check import subject_of
 from coney_tools.research_evidence import (
     QUESTION_LINK,
@@ -48,7 +48,7 @@ from coney_tools.research_evidence import (
     level_column_of,
     levels_in,
 )
-from coney_tools.research_subject import ADDRESS, LOCATOR, XBOX_ADDRESS, ResearchEnv, Subject
+from coney_tools.research_subject import ADDRESS, LOCATOR, ResearchEnv, Subject
 from coney_tools.standards_scan import cited_sections
 
 #: The pages whose claims are listed, as repository-relative paths.
@@ -377,7 +377,7 @@ def _is_cut(text: str, departed: list[tuple[str, ...]]) -> bool:
 def _targets(text: str) -> tuple[str, ...]:
     """The addresses and script locators a block cites, in order, as `docs check` reads them."""
     found = [m.group(0).lower() for m in ADDRESS.finditer(text)]
-    found += [f"{XBOX} {m['address'].lower()}" for m in XBOX_ADDRESS.finditer(text)]
+    found += [f"{XBOX} {address.lower()}" for address in xbox_addresses(text)]
     found += [m.group(0) for m in LOCATOR.finditer(text)]
     return tuple(dict.fromkeys(found))
 

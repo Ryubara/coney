@@ -1,7 +1,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Tests for the light C++ reader behind `coney-tools orig`, on small made-up sources."""
 
-from coney_tools.orig_scan import read_source
+import re
+
+import pytest
+
+from coney_tools.orig_scan import Ps2Pattern, mask_xbox, read_source, xbox_addresses
 
 HEADER = """// SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
@@ -310,3 +314,41 @@ def test_a_malformed_xbox_tag_is_reported() -> None:
     source = read_source("src/ai/t.h", text)
     assert [line for line, _ in source.malformed] == [1, 2]
     assert [t.build for t in source.functions[0].tags] == ["xbox"]
+
+
+# --- Xbox addresses on a research page --------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("text", "xbox"),
+    [
+        ("Xbox 0x000bd3c0", ["0x000bd3c0"]),
+        ("XBOX `0x000bd3c0` draws", ["0x000bd3c0"]),
+        ("xbe 0x000bd3c0", ["0x000bd3c0"]),
+        ("Xbox 0x000bd3c0-0x000bd400", ["0x000bd3c0", "0x000bd400"]),
+        ("Xbox `0x000bd3c0`\u2013`0x000bd400`", ["0x000bd3c0", "0x000bd400"]),
+        ("Xbox 0x000bd3c0, 0x000bd400 and 0x000bd500", ["0x000bd3c0", "0x000bd400", "0x000bd500"]),
+        ("Xbox 0x000bd3c0 to 0x000bd400, then 0x00100010", ["0x000bd3c0", "0x000bd400"]),
+        ("Xbox 0x000bd3c0 and the PS2's 0x00100010", ["0x000bd3c0"]),
+        ("PS2 0x00100010; 0x00100020", []),
+        ("Xboxes 0x00100010", []),
+    ],
+)
+def test_the_addresses_after_an_xbox_word_are_found_through_a_range_or_list(text: str, xbox: list[str]) -> None:
+    assert xbox_addresses(text) == xbox
+
+
+def test_masking_the_xbox_addresses_keeps_every_position() -> None:
+    text = "PS2 0x00100010, XBOX 0x000bd3c0, 0x000bd400\nthen 0x00100020"
+    masked = mask_xbox(text)
+    assert len(masked) == len(text) and masked.count("\n") == 1
+    assert [m.group(0) for m in re.finditer(r"0x[0-9a-f]{8}", masked)] == ["0x00100010", "0x00100020"]
+    assert masked.index("0x00100020") == text.index("0x00100020")
+
+
+def test_a_ps2_pattern_never_matches_inside_an_xbox_run() -> None:
+    pattern = Ps2Pattern(r"\b0x([0-9a-fA-F]{8})\b")
+    text = "0x00100010 and XBOX `0x00100020`, `0x00100030`, then 0x00100040"
+    assert [m.group(1) for m in pattern.finditer(text)] == ["00100010", "00100040"]
+    found = pattern.search("Xbox 0x00100020 / 0x00100030")
+    assert found is None

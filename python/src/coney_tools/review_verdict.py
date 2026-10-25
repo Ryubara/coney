@@ -247,6 +247,12 @@ def _applied(verdict: Mapping[str, Any], packet: Mapping[str, Any]) -> list[str]
     return problems
 
 
+def review_addresses(function: Mapping[str, Any]) -> list[str]:
+    """The addresses a reviewer compares for a packet's `function`: its PS2 ones as `0x00100010`, then the Xbox
+    port's as `xbox 0x000bd3c0`, so the two builds' equal numbers stay apart (docs/guides/review/task.md#verdict)."""
+    return [*function["addresses"], *(f"xbox {a}" for a in function.get("xbox", ()))]
+
+
 def _functions(verdict: Mapping[str, Any], packet: Mapping[str, Any]) -> tuple[list[str], list[str]]:
     """Problems of the `@orig` functions' entries, and the classes among them that fail the review."""
     reviewed: dict[str, Mapping[str, Any]] = {}
@@ -274,7 +280,7 @@ def _functions(verdict: Mapping[str, Any], packet: Mapping[str, Any]) -> tuple[l
         if item.get("body_sha256") != function["body_sha256"]:
             problems.append(f"{name}: reviewed at another body (body_sha256 differs)")
         compared = item.get("addresses")
-        own = {a.lower() for a in function["addresses"]}
+        own = {a.lower() for a in review_addresses(function)}
         if not isinstance(compared, list) or not compared:
             problems.append(f"{name}: no compared `addresses`")
         elif any(not isinstance(a, str) or a.lower() not in own or a.lower() not in listed for a in compared):

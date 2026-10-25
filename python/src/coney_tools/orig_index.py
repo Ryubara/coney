@@ -26,10 +26,10 @@ from typing import NamedTuple
 from coney_tools.orig_scan import (
     CONEY_ONLY_TAG,
     LEGACY_CONEY_ONLY,
-    NOT_XBOX,
     PS2,
     RESEARCH_LINK,
     Function,
+    Ps2Pattern,
     SourceFile,
     Tag,
     read_source,
@@ -39,7 +39,7 @@ from coney_tools.progress_research import claim_blocks
 SOURCE_DIR = Path("src")
 RESEARCH_DIR = Path("docs/research")
 SOURCE_SUFFIXES = frozenset({".h", ".hpp", ".cpp", ".cc", ".inl"})
-_ADDRESS = re.compile(r"\b" + NOT_XBOX + r"0x([0-9a-fA-F]{8})\b")  # an Xbox address is not the PS2's
+_ADDRESS = Ps2Pattern(r"\b0x([0-9a-fA-F]{8})\b")  # an Xbox address is not the PS2's
 #: A research link cut after a hyphen of its anchor at a line's end, and the next line's comment opener.
 _WRAPPED_LINK = re.compile(r"(docs/research/[A-Za-z0-9_./-]+?\.md#[A-Za-z0-9_-]*-)[ \t]*\r?\n[ \t]*(?://+!?|\*)?[ \t]*")
 _EVIDENCE_WORDS = re.compile(r"\b(confirmed|inferred|speculative)\b", re.IGNORECASE)

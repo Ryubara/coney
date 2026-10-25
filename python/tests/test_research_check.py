@@ -841,7 +841,21 @@ def test_the_modules_of_the_check_stay_near_the_size_of_a_file() -> None:
 # --- Xbox addresses ---------------------------------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("cited", [f"Xbox `{NOWHERE}`", "xbox 0x000bd3c0", "Xbox `0x000bd3c0`", f"XBE `{NOWHERE}`"])
+@pytest.mark.parametrize(
+    "cited",
+    [
+        f"Xbox `{NOWHERE}`",
+        "xbox 0x000bd3c0",
+        "Xbox `0x000bd3c0`",
+        f"XBE `{NOWHERE}`",
+        f"XBOX `{NOWHERE}`",
+        f"xbe {NOWHERE}",
+        f"Xbox `0x000bd3c0`-`{NOWHERE}`",
+        f"Xbox 0x000bd3c0, {NOWHERE}",
+        f"Xbox 0x000bd3c0 and {NOWHERE}",
+        f"XBE 0x000bd3c0 to {NOWHERE}, 0x000bd3c8 and {NOWHERE}",
+    ],
+)
 def test_an_xbox_address_is_graded_and_never_read_as_the_ps2s(cited: str) -> None:
     # NOWHERE is in the PS2 range but in no section of the made-up SLUS_212.15: as an Xbox address it is not refused.
     assert rules_of(findings(RESEARCH_PATH, page(f"The shadow pass at {cited} draws.\n"))) == ["evidence"]

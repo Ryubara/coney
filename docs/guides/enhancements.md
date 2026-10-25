@@ -207,13 +207,16 @@ with a manifest. There are three kinds:
 
 ## Order
 
+Graphics and performance options may be built now ([Faithful first](repo:AGENTS.md)); the phases order them by what
+each depends on, not by when it may start. Coney's own mechanics still wait for the whole game.
+
 | Phase | When | Items |
 | --- | --- | --- |
 | 0 | Now, during faithful work | The five choices above; F2 as part of the faithful blur and distortion work |
-| 1 | Faithful look at 100% | F1; 16:9 mode; any aspect with HUD anchoring; FOV; frame-rate audit with the motion blur fixed; MSAA and alpha-to-coverage; mip generation and anisotropic filtering; render scale and *Faithful 640 × 448* |
+| 1 | First, once the renderer has its base | F1; 16:9 mode; any aspect with HUD anchoring; FOV; frame-rate audit with the motion blur fixed; MSAA and alpha-to-coverage; mip generation and anisotropic filtering; render scale and *Faithful 640 × 448* |
 | 2 | Then | F4; Xbox textures and HD movies (**Xbox**); player texture packs ([roadmap](../roadmap.md#graphics-and-performance)); the upscaling tool; SMAA or FXAA; colour grading; bloom from glow sprites |
 | 3 | Then | F3; shadow maps for humans and objects; GTAO; velocity motion blur; cutscene depth of field; chromatic aberration; fog and render distance scales; TAA or FSR |
-| 4 | After the whole game | F5 (SDL3 GPU backend); HDR output; ray-traced shadows and AO on Vulkan; character subdivision |
+| 4 | Last, the heaviest | F5 (SDL3 GPU backend); HDR output; ray-traced shadows and AO on Vulkan; character subdivision |
 
 ## Decided {#decided}
 

@@ -6,8 +6,10 @@ contribute. If you only read one other file first, read [LEGAL.md](LEGAL.md).
 ## Before you start
 
 - Read [LEGAL.md](LEGAL.md). The short version: no game data anywhere in the project.
-- Contributors study the original game (in Ghidra and running in PCSX2), write `docs/research/` pages where they
-  help and implement the behaviour in Coney's own code. See [the research workflow](docs/guides/research-workflow.md).
+- Coney is built mainly on reverse engineering the PS2 version, the reference for how the game plays; the Xbox port is
+  a second source for rendering and assets. Contributors study the original game (in Ghidra and running in PCSX2),
+  write `docs/research/` pages where they help and implement the behaviour in Coney's own code. See [the research
+  workflow](docs/guides/research-workflow.md).
 - Research lives in `docs/research/`. If the page you need does not exist or is wrong, fixing the research is a
   contribution in its own right. Each claim carries an evidence level and, where it applies, an address.
 
