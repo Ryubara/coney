@@ -421,7 +421,7 @@ void PlayerCombat::updateCommands(const CombatInput& input, const CombatTuning& 
 void PlayerCombat::special(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out) {
     // Player_Special refuses a pad player holding an object, whatever the object: the melee weapon's throw (502 / 491,
     // not built) is the armed command's, and when it is refused too the command does nothing, so the cross's own
-    // release swings (docs/research/combat-moves.md#bat-cross).
+    // release swings (docs/research/combat-throws.md#bat-cross).
     if (input.animSet != 0 || (phaseFlags(input) & kSpecialRefusingPhases) != 0) {
         return;
     }

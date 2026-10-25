@@ -107,7 +107,7 @@ constexpr std::uint16_t kRate08 = 0x800;
 
 // The fight's clips with the disc's lengths for the moves timed here, and the chain attacks' and the snaps' phase
 // events. The charge carries the body at 7.45 m/s, as at runtime. The bat's square 34 (28 frames) and cross 36 (26
-// frames) are at the unflagged 0.75, with no chain window (docs/research/combat-moves.md#bat-cross).
+// frames) are at the unflagged 0.75, with no chain window (docs/research/combat-throws.md#bat-cross).
 std::vector<coney::test::LocomotionClip> timingClips() {
     std::vector<coney::test::LocomotionClip> clips = coney::test::fightClips();
     const std::vector<coney::test::LocomotionClip> timedClips{
@@ -538,7 +538,7 @@ TEST_CASE("X1 alone lasts 30 updates; the stick at 35 % walks him as it ends", "
 
 TEST_CASE("with a bat, 34 lasts 37 updates and 36 lasts 35, as at runtime", "[human][combat][timing]") {
     // 34's 28 frames at 0.75 give 38 updates; the original handed over to 389 after 37 (a Coney stand-in ends that
-    // clip early, docs/research/combat-moves.md#bat-cross). 36's 26 frames give its 35.
+    // clip early, docs/research/combat-throws.md#bat-cross). 36's 26 frames give its 35.
     struct Case {
         const char* script;
         int clip;

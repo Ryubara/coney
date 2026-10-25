@@ -178,13 +178,13 @@ class PlayerCombat {
     // Cross + square outside a hold: the special 653 (645 in rage), which needs and spends a quarter of the power meter
     // (docs/research/combat/index.md#attacks). Refused on kSpecialRefusingPhases and with an object in hand
     // (CombatInput::animSet not 0: the original throws a melee weapon instead, which is not built; either way no
-    // special, docs/research/combat-moves.md#bat-cross). The fighter adds 2 from the target's rear
+    // special, docs/research/combat-throws.md#bat-cross). The fighter adds 2 from the target's rear
     // (Fighter::playAttack()). **Coney choice**: circle + triangle (the tag) is not built.
     // @orig 0x00287730 Player_Special (unknown)
     void special(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
     // Circle + cross outside a hold: the strong grapple, a grab whose connect is the strike 657 (649 in rage), with no
     // power check or cost; with nobody to grab, nothing (docs/research/combat-grabs.md#strong-grapple). Refused, like
-    // the special, with an object in hand (docs/research/combat-moves.md#bat-cross).
+    // the special, with an object in hand (docs/research/combat-throws.md#bat-cross).
     // @orig 0x00263c90 Player_SpecialAttack (unknown)
     void strongGrapple(const CombatInput& input, CombatOutput& out);
     // The mounted route (after a tackle or a grab's mount): updateMount's move, played through the chain or the mode.
