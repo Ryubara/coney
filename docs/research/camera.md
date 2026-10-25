@@ -680,24 +680,23 @@ The far clip is 115 for this camera ([The streamed world](world.md#player-camera
 
 **`CameraReset` on the follow camera** (`0x00124d00(camera, 1)`), confirmed (code): `0x00124f38(180, −1)` places the
 camera **behind the target** (heading 180° from its facing, inferred from `0x001250a8`) at a distance picked from the
-current one clamped to the band: the minimum when it is at most halfway from the minimum to the default (zoom step
-then the default), the default when at most halfway from the default to the maximum (zoom step the maximum), else the
-maximum − 0.5 (zoom step the minimum); then the previous look-at points are set to the current one, the wanted near
-edge cleared, **the target pitch set back to the configured pitch** (13°) and reached at once, the wanted field of view
-set back to the configured one (over 1 s). It moves the band to that distance (`0x00124f38` passes 1 as
-`0x001250a8`'s last argument, which sets `+0x32c` to it and `+0x330` to it + min(0.5, max − min); this page said
-before that it did not move the band). Last, it turns the camera to look from its new position at the look-at point
-(`Mat_LookAt` `0x00337028`, then `Mat_ToQuat` `0x003365c8`) and copies the position and orientation into the last
-update's camera (`+0x1e0`). **It casts no ray**: its only callees are `0x00124f38`, `Cam_Follow_ArmSplitTimers`,
-`Cam_Follow_GetViewPitch`, `Cam_Follow_Pitch`, `Mat_LookAt`, `Mat_ToQuat` and `Quat_AxisX`/`Quat_AxisY`, and the
-slots it calls (`+0x1bc` at `0x00125878`, `+0x1c4` at `0x004db168`) only store the position and the orientation.
-Confirmed (code) at `0x00124d00`. So a camera reset into a wall stays there until the next update's
-[collision step](#collision) (`0x00130990`) moves it, inferred. For a follow camera the other player's follow camera
-is reset too. The placement reads the target where it stands at that moment: `Cam_Follow_PlaceAtHeading` first
-gathers the targets and snaps the look-at point onto the target's transform (`Cam_Follow_RefreshLookAt`
-`0x00127d48`), and its heading is the target's facing then, so a `CameraReset` right after a teleport goes behind
-the new place. Confirmed (code). The distance it starts from is the held position's (`+0x260`) from the look-at point
-before that snap.
+current one clamped to the band: the minimum when it is at most halfway from the minimum to the default (zoom step then
+the default), the default when at most halfway from the default to the maximum (zoom step the maximum), else the maximum
+− 0.5 (zoom step the minimum); then the previous look-at points are set to the current one, the wanted near edge
+cleared, **the target pitch set back to the configured pitch** (13°) and reached at once, the wanted field of view set
+back to the configured one (over 1 s). It moves the band to that distance (`0x00124f38` passes 1 as `0x001250a8`'s last
+argument, which sets `+0x32c` to it and `+0x330` to it + min(0.5, max − min); this page said before that it did not move
+the band). Last, it turns the camera to look from its new position at the look-at point (`Mat_LookAt` `0x00337028`, then
+`Mat_ToQuat` `0x003365c8`) and copies the position and orientation into the last update's camera (`+0x1e0`). **It casts
+no ray**: its only callees are `0x00124f38`, `Cam_Follow_ArmSplitTimers`, `Cam_Follow_GetViewPitch`, `Cam_Follow_Pitch`,
+`Mat_LookAt`, `Mat_ToQuat` and `Quat_AxisX`/`Quat_AxisY`, and the camera's position and orientation slots (`+0x1bc`,
+`+0x1c4` of the vtable `0x00535d50`) are bare stores into `+0x10` and `+0x20` (one `lq`, one `sq`; Ghidra has no
+function there). Confirmed (code) at `0x00124d00`. So a camera reset into a wall stays there until the next update's
+[collision step](#collision) (`0x00130990`) moves it, inferred. For a follow camera the other player's follow camera is
+reset too. The placement reads the target where it stands at that moment: `Cam_Follow_PlaceAtHeading` first gathers the
+targets and snaps the look-at point onto the target's transform (`Cam_Follow_RefreshLookAt` `0x00127d48`), and its
+heading is the target's facing then, so a `CameraReset` right after a teleport goes behind the new place. Confirmed
+(code). The distance it starts from is the held position's (`+0x260`) from the look-at point before that snap.
 
 ### The follow update {#update}
 
