@@ -557,13 +557,14 @@ is not a good record. A runtime claim is a legacy claim, not a new one, when its
 with a block of the page at `--base` (an edit), or is the same text as a block that left another research page in the
 same change (a section cut from one page and pasted into another, whether both pages stay or the old one is deleted),
 to the white space and the targets of its links, which a move rewrites. One departed block covers every page it arrives
-on: a block pasted into two pages is not new on either. A block edited on the way, a copy that leaves the old page as it
-was, and a new block next to a moved one are new. A legacy claim keeps its level with a warning, whether its text names
-the PCSX2 version and the method or not. Other warnings: a record the hook did not name (`who.source` is `unverified`)
-and `speculative` with no question linked. How a level is written (a bare `inferred`, a refused spelling) is
-`docs check`'s. `--require-study` also makes `confirmed (code)` at an address that was not studied in the task an error
-(a new or changed claim cites an address studied in its own task, or is written `inferred`); without it `none` is for
-the reviewer to check in Ghidra. `--json` prints the same report as JSON.
+on: a block pasted into two pages is not new on either. So is a moved block with words only taken out of it (a wrong
+clause dropped on the way), when it keeps at least half of them. A block with a word added or changed on the way, a copy
+that leaves the old page as it was, and a new block next to a moved one are new. A legacy claim keeps its level with a
+warning, whether its text names the PCSX2 version and the method or not. Other warnings: a record the hook did not name
+(`who.source` is `unverified`) and `speculative` with no question linked. How a level is written (a bare `inferred`, a
+refused spelling) is `docs check`'s. `--require-study` also makes `confirmed (code)` at an address that was not studied
+in the task an error (a new or changed claim cites an address studied in its own task, or is written `inferred`);
+without it `none` is for the reviewer to check in Ghidra. `--json` prints the same report as JSON.
 
 `research claims` is `research_claims.py` and `research_claims_cli.py`.
 

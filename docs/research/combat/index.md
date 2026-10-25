@@ -461,7 +461,7 @@ classes](../../references/warrior-classes.md), which lists every byte's reader.
 
 **Square** (`Player_Square`, `0x00286cc8`) takes a target from `Player_PickTarget(0x40000000, h)` (in the fight stance
 it keeps the current target within 2.5 m, `0x005104c0`, and searches only without one or beyond; cross always searches,
-[Combat moves](../combat-targets.md#targeting)), then, confirmed
+[Combat targets](../combat-targets.md#targeting)), then, confirmed
 (code):
 
 - a grounded target → 193 (`0x00261a08`); a tackled one → 212; a grabbed one → 120: these three are tested only on

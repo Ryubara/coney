@@ -45,7 +45,7 @@ address.
 | `0x002761c8` / `0x00275678` | `Attack_SteerToTarget` / `Attack_SteerLed` | the turn and slide into an attack, and its led variant ([The two steers](#two-steers)) | confirmed (code) |
 | `0x00276008` | `Attack_TurnToTarget` | the turn alone, beyond the far range | confirmed (code) |
 | `0x0023cf88` / `0x0023d2b8` / `0x0023f5e0` | `Human_TurnToOver` / `Human_MoveToOver` / `Human_ApplyTurnAndSlide` | the steer's turn and slide, and their application each step | confirmed (code) |
-| `0x00254418` | `AttackTable_GetOffset` | a kind's direction offset (record `+0x160` + kind × 16, two millimetre words) when its reach is set | confirmed (code) |
+| `0x00254418` | `AttackTable_GetOffset` | a kind's direction offset (record `+0x160` + kind × 16, a unit vector in thousandths) when its reach is set | confirmed (code) |
 | `0x00306190` | `WarriorBrain_OnHitByChief` | a Warrior hit by his chief hits back ([Teammates](#teammates)) | confirmed (code) |
 | `0x00219b08` | `Human_OnPushContact` | a head-on push and the swap of places | confirmed (code) |
 | `0x00224778` | `Human_CanStartAttack` | whether an attack kind may start now ([An AI's attacks](#ai-attacks)) | confirmed (code) |
@@ -87,7 +87,7 @@ Angles are measured from an **aim heading**; distances are flat squared distance
 
 | Move | Target it uses |
 | --- | --- |
-| Square in the stance (`S1`, the low, mid and held strikes, the tandem, the counters) | the **current target** (human `+0xc8`), unless a pad player has none or it is beyond **3 m**: then a fresh `Player_PickTarget(2.0 m)` |
+| Square in the stance (`S1`, the low, mid and held strikes, the tandem, the counters) | the **current target** (human `+0xc8`), unless a pad player has none or it is beyond **2.5 m** (distance² above `0x005104c0`, 6.25 in play): then a fresh `Player_PickTarget(2.0 m)` |
 | Square's moving attacks (23, 24, 193 from a run or walk) | a fresh `Player_PickTarget(2.0 m)` |
 | Cross (`X1`, 23, 24, 194, 661, 120) | always a fresh `Player_PickTarget(2.0 m)` for a player (`0x00287a18`) |
 | Armed square and cross | a fresh `Player_PickTarget(2.5 m)` |
@@ -131,8 +131,9 @@ Read in Ghidra: confirmed (code) where no other level is given.
 6. The cone widens to 2.356 rad (135°): world objects within range × 0.8 inside it, then humans within range × 0.7
    **at any angle**. `TargetFilter_Wide` (`0x002796a0`) has no angle test, so the 135° cone holds only for the
    objects; it tests a body, `Human_IsTargetable`, not friendly, another gang and the height, and skips state
-   `0x100000000`, held flag `0x40` and state `0x1c00000000`, but not the down or the dead. This pass runs with or
-   without a current target.
+   `0x100000000` (dead), held flag `0x40` and state `0x1c00000000`. Of the down-or-dead bits (`Human_IsDownOrDead`,
+   `0x00227e60`, tests `0x180050000`) it refuses only the dead one: a human dying (`0x80000000`), knocked out
+   (`0x40000`) or tackled (`0x10000`) passes. This pass runs with or without a current target.
 7. The nearest found wins. With nothing found, the previous target is kept when it is not a car, has a body and is
    within range.
 
@@ -640,10 +641,9 @@ decide where `X1` lands, and they hold for every move:
    inferred, a turn).
 
 Confirmed (runtime): the attacker ends at the goal less the clip's 0.18 m: **0.870-0.880 m** from the target at k12
-whatever the start (0.879 from 1.3 m). From 1.0 m the
-steer moves him back while the clip carries him forward faster, so he still closes in (0.013-0.017 m per update). At the
-contact the attacker is **still moving in**: 0.890 m (from 1.0 m), 0.930 m (from 1.3 m), 0.970 m (from 1.6 m) after the
-contact update, never 1.02 m.
+whatever the start (0.879 from 1.3 m). From 1.0 m the steer moves him back while the clip carries him forward faster,
+so he still closes in (0.013-0.017 m per update). At the contact the attacker is **still moving in**: 0.890 m (from
+1.0 m), 0.930 m (from 1.3 m), 0.970 m (from 1.6 m) after the contact update, never 1.02 m.
 
 **The hand and the target at contact** (confirmed (runtime)). In the attacker's frame (forward, right, up from his feet,
 metres; samples after each update; the attacker's scale 0.97 makes the hand sphere's radius 0.087). The hand's path is
@@ -932,10 +932,11 @@ after the stance step (nearest threat within 2 m, not running, outside an attack
 sprinting or L2 as `Player_UpdateSprint` ends it; the lock-on walk facing the target only within 2.5 m (or while L1
 locks), beyond it turning to the stick at most `Human_MaxTurn` per update; the target dropped beyond 3 m once the
 stance timer has run out; the stance's nearest enemy searched within 3 m and only among threats, with the wider list
-kept for the attack picks; and 2 / 2.5 / 3 m taken from `CfgDistances`, not the executable's defaults. The checks that
+kept for the attack picks; square in the stance keeping its target out to 2.5 m (`0x005104c0`), where Coney keeps it out
+to 3 m (`kKeepTargetRange`); and 2 / 2.5 / 3 m taken from `CfgDistances`, not the executable's defaults. The checks that
 will show it: a bat sweep at a full run past an enemy 1.5 m to the side keeps the heading on the stick for all of 501
-and the run resumes with no lock; a stick at 60 % walking past a neutral civilian at 1 m never locks or turns; the
-same past an enemy-gang member within 2 m locks and faces him.
+and the run resumes with no lock; a stick at 60 % walking past a neutral civilian at 1 m never locks or turns; the same
+past an enemy-gang member within 2 m locks and faces him.
 
 ### The steer {#steer-coney}
 
