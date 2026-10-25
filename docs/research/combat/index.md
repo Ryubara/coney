@@ -56,10 +56,10 @@ and the side it came from; strong hits knock down, flagged hits stun, and a held
 the attacker's rage; L1 + R1 with a full meter starts rage, which makes grabs unbreakable and spends no power.
 
 The subjects with entry functions of their own have topic pages: [grabs, the hold and the mount](../combat-grabs.md),
-[throws, the bat and mugging](../combat-throws.md), [damage, reactions and defeat](../combat-reactions.md), [the power meter,
-rage and reviving](../combat-rage.md) and [targets, AI attacks and breakables](../combat-targets.md); the move table and
-frame data are on [Combat moves](../combat-moves.md). This page keeps the commands, the data every topic reads, the
-dispatcher, the attacks and their strikes, the attack warnings and the block.
+[throws, weapons in hand and mugging](../combat-throws.md), [damage, reactions and defeat](../combat-reactions.md), [the
+power meter, rage and the flash](../combat-rage.md) and [targets, AI attacks and breakables](../combat-targets.md); the
+move table and frame data are on [Combat moves](../combat-moves.md). This page keeps the commands, the data every topic
+reads, the dispatcher, the attacks and their strikes, the attack warnings and the block.
 
 ## Map {#original-structure}
 
@@ -95,7 +95,7 @@ role and level, is on [the combat function list](functions.md). Where to start, 
 | The reaction played; stun and knockdown | `0x0026a6d0` `Human_PlayReaction` | [Reactions](../combat-reactions.md#reactions) | confirmed (code), runtime |
 | Health gone: wounded, knocked out or dead | `0x002674c0` `Human_OnHealthOut` | [Defeat](../combat-reactions.md#defeat) | confirmed (code) |
 | The power meter spent | `0x00226448` `Human_SpendPower` | [Power meter](../combat-rage.md#power-meter) | confirmed (code), runtime |
-| L1 + R1 with a full meter | `0x00284340` `Rage_Enter` | [Rage](../combat-rage.md#rage) | confirmed (code), runtime |
+| L1 + R1 with a full meter | `0x00284340` `Rage_Enter` | [Rage](../combat-rage.md#rage-effects) | confirmed (code), runtime |
 | A target kept or searched for an action | `0x0027a6c0` `Player_PickTarget` | [Target selection](../combat-targets.md#targets) | confirmed (code) |
 | A strike at a breakable object | `0x00264178` `Player_ObjectAttack` | [Breakables](../combat-targets.md#breakables) | confirmed (code), runtime |
 | The theft mini-games (the stereo) | `0x0027e6d8` `Player_UpdateTheft` | [The stereo theft](../combat-targets.md#stereo-theft) | confirmed (code), runtime |
@@ -240,7 +240,7 @@ The flags at human `+0xe0` that combat reads, confirmed (code) at the cited func
 | `0x400` | combo hits keep their full strength; strength +1 from an attacker with `0x200000` | |
 | `0x4000` | escapes when the grabber's power runs out (`0x002562d0`) | **doubles** the damage dealt; ignores hit armour |
 | `0x20000` | as `0x4000` for the power-out escape | |
-| `0x80000` | | **raging** ([Rage](../combat-rage.md#rage)) |
+| `0x80000` | | **raging** ([Rage](../combat-rage.md#rage-effects)) |
 | `0x200000` | | reaction strength +1 (see `0x400`); ignores hit armour |
 | `0x4000000` | spends no power (`0x00226448`) | |
 | `0x1000000` | rubber-neck (`HuRubberNeck`, `0x0023a258`): no reader found; every load of human `+0xe0`-`+0xe7` in the executable (324 functions) was checked, and none tests this bit (inferred: unused) | |
@@ -1082,7 +1082,7 @@ open question below or the issue that tracks it. The ported functions and their 
   humans share, so the newest human's class sets everyone's damage ([Being hit](../combat-reactions.md#being-hit-runtime)).
   Whether that is intended, and which humans share a list, is open; two classes of one model in one level would show
   it.
-- **A blocked `SSS3`'s rage**{#q-blocked-sss3-rage}: 0 at runtime ([Rage](../combat-rage.md#rage)) where the two
+- **A blocked `SSS3`'s rage**{#q-blocked-sss3-rage}: 0 at runtime ([Rage](../combat-rage.md#rage-points)) where the two
   awards' formula gives 1 (3 >> 1, as `SSX3`'s blocked 1).
 - **The stun after a knockdown**{#q-stun-after-knockdown}: it ends at the rise + 200 ms, before 199 ends, yet after
   653 the player stood in 356 for 7 updates before 357 ([Being hit](../combat-reactions.md#being-hit-runtime)).
@@ -1125,12 +1125,12 @@ open question below or the issue that tracks it. The ported functions and their 
   rage lesson waits for (inferred from `Player_UpdatePowerMove`); L1 + R1 did not start rage in a slot 6 copy with the
   meter written full, so what else the start needs is open.
 - **Whether the flash clip sets `0x2000`**{#q-flash-held-flag} (record `+0x08`) as it starts: the task holds it
-  ([Rage](../combat-rage.md#rage)); the type-5 task's start flags at `0x0025ade8` would tell, and a runtime read of
+  ([Rage](../combat-rage.md#flash)); the type-5 task's start flags at `0x0025ade8` would tell, and a runtime read of
   `+0x08` on the update after d-pad right in the stance.
-- **The flash during a move**{#q-flash-mid-move} ([The flash during a move](../combat-rage.md#flash-mid-move)): what
-  sets 665's rate (53 updates for 40 frames); why presses on landing from the slot 9 window jump gave no command; the
-  window between 665's start and its event when a hit lands (a hit in `flash_hit`'s first run took health while 665
-  played on).
+- **The flash during a move**{#q-flash-mid-move} ([The flash during a move](../combat-rage.md#flash-mid-move)): why
+  presses on landing from the slot 9 window jump gave no command, and the window between 665's start and its event when
+  a hit lands (a hit in `flash_hit`'s first run took health while 665 played on). What sets 665's rate is answered
+  there ([The flash](../combat-rage.md#flash): 0.75, inferred from the counts).
 - **The clips' `+0x44` flags**{#q-tackle-flag} (paired `0x1`, tackle `0x20`, grab `0x40`): which clips carry the
   tackle flag ([Strong grapple](../combat-grabs.md#strong-grapple)).
 - **226's knockdown word at runtime**{#q-mount-power-knockdown}: the disc's 226 has its type-7 word 0, which would

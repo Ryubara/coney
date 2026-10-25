@@ -3785,7 +3785,7 @@ the flag.
 **Notes.** The Lua function is the first name given to CfgRageHandlers (copied to 0x006b6830 by Cfg_SetRageHandlers);
 global.lua registers `SetRageMode` there, which sets god mode, unstunnable, reduced and increased reaction, ungrabbable,
 ungroundable and keep-weapon on the human; ending calls the second name, `ClrRageMode`, which clears them ([Scripts:
-level5](../../research/scripting.md#level5)). Rage itself: [Combat](../../research/combat-rage.md#rage).
+level5](../../research/scripting.md#level5)). Rage itself: [Combat](../../research/combat-rage.md#rage-effects).
 
 - **Evidence:** confirmed (code) at `0x00237128`; detail: traced
 - **Wrapper** `0x00359478` (registered by `RegisterBindings`); **calls** `0x00237128` `Human_SetRageMode`

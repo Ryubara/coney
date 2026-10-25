@@ -775,7 +775,8 @@ cut short).
 
 1. Both partners cleared, both `+0xe4` calls with (1.0, 7), both pair ids 0.
 2. **One flash is spent**: the downed human's when his inventory has one, else the reviver's
-   (`Inventory_AddItem(…, 1, −1)`).
+   (`Inventory_AddItem(…, 1, −1)`). When neither has one, none is spent and steps 3 and 4 still follow: the two
+   `Inventory_GetCount` tests guard only the `Inventory_AddItem` (confirmed (code) at `0x00274ee0`).
 3. Interface cue **23** (the flash sound, as [`Flash_Use`](combat-rage.md#flash)); the revived says **75
    `revive_thank`**; `Human_Heal(revived, 1)` wakes him and fills his health ([`Flash_Use`](combat-rage.md#flash)
    above).

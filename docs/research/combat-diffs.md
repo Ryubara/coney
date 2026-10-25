@@ -140,7 +140,7 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 ### Specials, rage and stealth
 
 - **Rage** starts only through the block branch (L1 + R1 while blocking), not by the original's other routes
-  ([Rage](combat-rage.md#rage)).
+  ([Rage](combat-rage.md#flash)).
 - **Stealth** (hiding in shadow, 630 / 633, the stealth kill 637-641) is not built ([Stealth](combat-moves.md#stealth)).
 - **Flash revive** (command `0x27`): built for player 1, every Warrior revivable from his creation
   ([Combat: revive](combat-reactions.md#revive)); an AI Warrior reviving ([SaveHuman](ai-goals.md#goal-save-human)), a

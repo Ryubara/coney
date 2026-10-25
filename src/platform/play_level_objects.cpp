@@ -146,7 +146,7 @@ void reportStrikeSound(human::Human& human, std::uint32_t struck, float volume, 
 // (docs/research/crimes.md#lockpick); any other press abandons it.
 constexpr std::uint16_t kLockPickKeeps =
     pad::kCross | pad::kL1 | pad::kR2 | pad::kUp | pad::kDown | pad::kLeft | pad::kRight | pad::kSelect;
-// The flash's clip, 665 SPECIAL_FLASH, and the record bits it holds (docs/research/combat-rage.md#rage).
+// The flash's clip, 665 SPECIAL_FLASH, and the record bits it holds (docs/research/combat-rage.md#flash).
 constexpr std::uint32_t kFlashAnim = 665;
 constexpr std::uint32_t kFlashHeld = 0x2000;
 // `Flash_Use`'s interface sound: entry 23 of the cue table, which the scripts fill with `vags/misc/flash`.

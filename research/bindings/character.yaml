@@ -661,7 +661,7 @@
     global.lua registers `SetRageMode` there, which sets god mode, unstunnable, reduced and increased reaction,
     ungrabbable, ungroundable and keep-weapon on the human; ending calls the second name, `ClrRageMode`, which clears
     them ([Scripts: level5](../../research/scripting.md#level5)). Rage itself:
-    [Combat](../../research/combat-rage.md#rage).
+    [Combat](../../research/combat-rage.md#rage-effects).
   usage: {chunks: 9, calls: 18, boot: false, mission1: false, result_used: false, levels: [5, 81, 51, 84, 82, 20, 11]}
   coney: implemented
 

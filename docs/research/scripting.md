@@ -887,7 +887,7 @@ disassembly of the script (ids and counts only); the moves themselves are confir
 | 7 | snaps (after the scene `l99_c7`; Rudy drinks at the fence, the second wave surrounds the player) | three hits of 25, 27 or 29 | square, standing, with the stick past 0.95 more than 45° off the facing, at a bum within 2 m there | [Attacks](combat/index.md#attacks), [the second wave](ai.md#level99-snaps) |
 | 8 | throws | two hits of 147, 149, 151 or 153; then zone 1 is enabled | circle with the stick in a grab | [Throws](combat-throws.md#throws) |
 | 9 | weapons (after the scene `l99_c8`, three bats on the ground) | the pick-up (message 0 on a bat, with a prompt); then 34; 36; then two more of 34 or 36 (four counted hits) | triangle at a bat; square, cross | [A bat in hand](combat-throws.md#bat), [the prompt](#message-handlers) |
-| 10 | rage (2 s after lesson 9) | the meter set to half and locked, then filled by hits; the full callback; L1 + R1 (every other command off); 3.5 s into rage, 645 or 647; 3.5 s later, 65 or 233 | rage, the rage special, the extended power move in rage (grab or mount) | [Rage](combat-rage.md#rage); 65 and 233 inferred |
+| 10 | rage (2 s after lesson 9) | the meter set to half and locked, then filled by hits; the full callback; L1 + R1 (every other command off); 3.5 s into rage, 645 or 647; 3.5 s later, 65 or 233 | rage, the rage special, the extended power move in rage (grab or mount) | [Rage](combat-rage.md#rage-decay); 65 and 233 inferred |
 | 11 | finish the second wave | the gang's message 18 with none standing | any | [AI](ai.md#level99) |
 | 12 | the Warriors (after the scene `l99_c5`) | the 50-second stopwatch; a hint the first time the player holds a grab (anim callback on 82 / 84) | any | [Stopwatch](#stopwatch), [anim callbacks](characters.md#anim-callbacks) |
 
@@ -910,7 +910,8 @@ bums. Points an implementer needs:
        locks it, and it registers the rage handlers: enter `P1.EnterRageMode`, exit `P1.ExitRageMode`, full
        `P1.CheckRage`, 20000 and 5000 ms. It arms **no** tutorial callback.
     3. The meter fills only from the player's own hits. The lock stops the drain but not `Human_AddRage`
-       ([Rage](combat-rage.md#rage)), so the player must earn the other half (39 of class 6's 78) by hurting someone.
+       ([Rage](combat-rage.md#rage-decay)), so the player must earn the other half (39 of class 6's 78) by hurting
+       someone.
     4. When it is full, `Human_AddRage` calls the full handler once, `P1.CheckRage(player, true)`. That shows the
        next text, drops his weapon, turns every command off and turns command 31 (L1 + R1) back on.
     5. Pressing L1 + R1 starts rage, which calls `P1.EnterRageMode(player, …)`. That turns every button back on except
@@ -1130,7 +1131,7 @@ the disassembly of the scripts (names, ids and values only).
 | 3.4 rooftops | `vReachRooftop` / `2` 3 (`P3.PoizoJump`) | `ObjShow(dyn_w_mission)`, the camera `JumpCam`, the players put at `fRoofTeleport`, radar target `fRadarJump` | `vReachWindow` 3 (both players with two, below), then Vermin's run to `fStop3`, his line, `vVerminJumps` 3 | [Jumps](characters.md#jump), [Moving into a pane](objects.md#pane-break) |
 | 3.5 wooden fences | `vAlmostDone` 3 (`P3.WoodenFences`) | the players put at `fBreakFencePoizo` (a held object destroyed), two locked cameras, message 2 on `dyn_door_fence02` and `03` | either fence's message 2 (`P3.FenceBroken`) | [Barriers](objects.md#barriers) |
 | 3.6 dealer | `P3.DealerPoizo`, 0.5 s later | `CfgSetGlobalTimeToLive(1000)`, money raised to at least $20, the dealer's icon `dyn_flashdeal`, `TriggerSphereCfg(dealer, true, 4, 2, 500)` with messages 3 / 4, the scene `l99_c9` preloaded | message 3 on the dealer → `P3.CheckForFlash` every 0.5 s until `InvNumberOf(1)` ≥ 1 | [Buying](ai-scripting.md#dealer), [trigger spheres](#triggers) |
-| 3.7 flash | `P3.FlashSpeak`, 3 s after the buy | `CfgSetGlobalTimeToLive(10000)`, command 40 on, `PadSetHandlerEx(P3.UseFlash)` | command 40 (d-pad right) → `P3.MissionOver` 1.5 s later | [The flash](combat-rage.md#rage), [How the mission ends](#level99) |
+| 3.7 flash | `P3.FlashSpeak`, 3 s after the buy | `CfgSetGlobalTimeToLive(10000)`, command 40 on, `PadSetHandlerEx(P3.UseFlash)` | command 40 (d-pad right) → `P3.MissionOver` 1.5 s later | [The flash](combat-rage.md#flash), [How the mission ends](#level99) |
 
 Points an implementer needs:
 

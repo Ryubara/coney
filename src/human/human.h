@@ -450,7 +450,7 @@ class Human final : public Holdable {
     }
     /// Whether `Player_UseItemCommand` refuses the flash's press outright: down or dead, cuffed, airborne
     /// (`0x1c00000000`) or climbing over. A knockdown, a stun, a hit reaction or a climb's first or last clip is none
-    /// of these: there the flash is used at once (docs/research/combat-rage.md#rage).
+    /// of these: there the flash is used at once (docs/research/combat-rage.md#flash-mid-move).
     /// @orig 0x002843f8 Player_UseItemCommand (unknown)
     [[nodiscard]] bool refusesFlash() const {
         return downOrDead() || m_script.arrested || airborne() || climbingOver();
@@ -527,7 +527,7 @@ class Human final : public Holdable {
     [[nodiscard]] bool takeSlowMotionReset() { return std::exchange(m_slowMotionReset, false); }
     /// The anim whose action event (type `0x41`, which `Anim_FireFrameEvents` 0x00101dd8 sends as message `0xc1`) the
     /// clip playing passed in the last update, if any: for 665 `SPECIAL_FLASH` the flash is used, for 666 the door
-    /// ahead opens and for 668 the dealer's goal is served (docs/research/combat-rage.md#rage).
+    /// ahead opens and for 668 the dealer's goal is served (docs/research/combat-rage.md#flash).
     [[nodiscard]] std::optional<std::uint32_t> actionEvent() const { return m_actionEvent; }
     /// Sets the characters' step its next updates advance by: kStepSeconds, or less in slow motion
     /// (docs/research/camera.md#slow-motion; Humans::update() sets it for every human).

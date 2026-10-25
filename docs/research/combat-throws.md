@@ -15,13 +15,13 @@ man: the stick picks where he flies, a wall in reach turns the throw into a slam
 whoever it meets. Triangle picks up a bat, a knife or another object; with one in hand, square and cross swing it, a run
 gives a running swing, and an overhead object, a brick or a blaster is thrown instead. With a knife or a broken bottle,
 square in a hold is a kill; with a bat, a cross pressed before the last swing has ended is lost, and an AI's bat hit
-deals the bat's own damage and knocks the victim down. A hit, a grab or a defeat makes a hurt man drop what he
-holds, unless a flag (set in rage) keeps it. Triangle in a front hold starts the mugging: a stick game against
-the clock, harder for some victims than others. A tackle with handcuffs leads to the cuffing hold, the same game between
-holder and held. The grab and the hold these start from are on [Combat: grabs](combat-grabs.md); the damage and the
-reactions on [Combat: reactions](combat-reactions.md); how an object hangs from the hand on [World
-objects](objects.md#held); the mug meter on [HUD](hud-functions-panels.md#mug-meter-layout); the money on
-[Crimes](crimes.md#mugging). The commands, the state bits and the tables every combat topic reads are on
+deals the bat's own damage and knocks the victim down. A hit makes a hurt man drop what he holds, a grab makes him drop
+a bat even when he is not hurt, and a defeat drops anything, unless a flag (set in rage) keeps it. Triangle in a front
+hold starts the mugging: a stick game against the clock, harder for some victims than others. A tackle with handcuffs
+leads to the cuffing hold, the same game between holder and held. The grab and the hold these start from are on [Combat:
+grabs](combat-grabs.md); the damage and the reactions on [Combat: reactions](combat-reactions.md); how an object hangs
+from the hand on [World objects](objects.md#held); the mug meter on [HUD](hud-functions-panels.md#mug-meter-layout); the
+money on [Crimes](crimes.md#mugging). The commands, the state bits and the tables every combat topic reads are on
 [Combat](combat/index.md#data).
 
 ## Map
@@ -661,11 +661,10 @@ three 25s on the downed player (above).
 
 Read in Ghidra: confirmed (code) at the addresses cited unless a line says otherwise; not checked at runtime.
 
-When a hit, a grab or a defeat makes a human let go of what he holds, and what human flag `0x2000`
-(`HuSetKeepWeapon`, set by [rage's enter handler](combat-rage.md#rage-effects)) changes. Confirmed (code) at the
-addresses cited; not checked at runtime. "Set" is the held object's type byte `+0x87`, its move style
-([Objects: the move style](objects.md#two-handed)): 1 knife, 2 baton, 3 bat, 4 two-handed prop, 5 throwable, 6
-ghetto blaster. "Hurt" is `Human_IsHurt` (`0x00222ff8`): health below the power class's `+0x04` fraction of the
+When a hit, a grab or a defeat makes a human let go of what he holds, and what human flag `0x2000` (`HuSetKeepWeapon`,
+set by [rage's enter handler](combat-rage.md#rage-effects)) changes. "Set" is the held object's type byte `+0x87`, its
+move style ([Objects: the move style](objects.md#two-handed)): 1 knife, 2 baton, 3 bat, 4 two-handed prop, 5 throwable,
+6 ghetto blaster. "Hurt" is `Human_IsHurt` (`0x00222ff8`): health below the power class's `+0x04` fraction of the
 maximum (0.35 for a street civilian, [Characters: power classes](characters.md#power-classes)). Every drop is
 `Human_DropHeld` (`0x00257f38`, [Objects: drop](objects.md#held)).
 

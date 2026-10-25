@@ -442,7 +442,7 @@ TEST_CASE("a climb refuses the flash only while it climbs over: its first and la
           "[human][traversal][flash]") {
     // Player_UseItemCommand (0x002843f8) refuses the press on held 0x40 (Human_HasHeld40, 0x00223c10), which only the
     // climb's middle clip holds; the original's runs use the flash at once during the first and last clips and ignore
-    // it during the middle one (docs/research/combat-rage.md#rage).
+    // it during the middle one (docs/research/combat-rage.md#flash-mid-move).
     const TestCharacter character;
     const auto mesh =
         makeMesh(join(ground(), blockAlongY(30.0F, 50.0F, 40.0F, 40.08F, 1.0F, 0, coney::human::kMaterialLowFence)));

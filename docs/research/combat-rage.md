@@ -112,10 +112,9 @@ the hold timer `+0x648` = now + 5000 ms (`CfgRageHandlers`). Confirmed (code). T
 | `+0xb` | u8 | the kind of the last hit noted (4 = other) |
 
 `Human_ApplyPendingDamage` (`0x00265f70`) notes a hit through `Rage_NoteHit` (`0x00265dd0`, confirmed (code)) after it
-has given the hit's rage, when the
-attacker is a player (pad `+0x1b`) or its brain is of type 3 and the two are not allies (`0x00222a90` →
-`0x00290230`), for a hit that lands and for one a block stops. `0x00265dd0` picks the **kind** from the attacker's
-current anim id (record `+0x20`):
+has given the hit's rage, when the attacker is a player (pad `+0x1b`) or its brain is of type 3 and the two are not
+allies (`0x00222a90` → `0x00290230`), for a hit that lands and for one a block stops. `0x00265dd0` picks the **kind**
+from the attacker's current anim id (record `+0x20`):
 
 | Kind | Anim ids |
 | --- | --- |
@@ -151,9 +150,8 @@ each (`trunc(5.76 × 0.5)`); with 5.17 s between hits the count stayed at 1 and 
 
 Read in Ghidra: confirmed (code) where no other level is given; each runtime block says confirmed (runtime).
 
-`Hit_Score` (`0x002653d8`, called by `Human_ApplyPendingDamage` `0x00265f70` after
-the hit's damage is taken from health and before its reaction plays; confirmed (code)). Nothing is
-scored when any of these holds:
+`Hit_Score` (`0x002653d8`, called by `Human_ApplyPendingDamage` `0x00265f70` after the hit's damage is taken from health
+and before its reaction plays; confirmed (code)). Nothing is scored when any of these holds:
 
 - there is no attacker, or the attacker's brain is not a player's (type 0); the caller already requires a pad
   (per-player `+0x1b`);
@@ -268,11 +266,11 @@ the key and the R2 command menu, in this order. Confirmed (code) at `0x002843f8`
    in it, if any (`WarCommandDisplay_Issue`, `0x001a6c58`); neither while the command menu is locked
    (`*(0x0051489c) + 0x42e + player`, the player's `+0x1b0`). Confirmed (code). (This is the [Warrior
    commands](ai-gangs.md#warrior-commands) menu, not a map.)
-4. **L1 + R1** (`0x1f`) with the state word free of `0x19f9e0f3000` and `+0x08` free of `0xfc7eae0` (confirmed
-   (code)): when rage (human `+0x650`) has reached the class maximum (`Human_GetRageMax`, `0x00223260`: the first
-   `u16` of the Warrior class record,
-   `0x00222b58`) and the human may gain rage (human `+0xe0` bit `0x2000000`, which `Human_MakePlayer` sets and
-   `Human_AddRage` also tests) and is not raging (`+0xe0` bit `0x80000`), `Rage_Enter` (`0x00284340`) runs.
+4. **L1 + R1** (`0x1f`) with the state word free of `0x19f9e0f3000` and `+0x08` free of `0xfc7eae0` (confirmed (code)):
+   when rage (human `+0x650`) has reached the class maximum (`Human_GetRageMax`, `0x00223260`: the first `u16` of the
+   Warrior class record, `0x00222b58`) and the human may gain rage (human `+0xe0` bit `0x2000000`, which
+   `Human_MakePlayer` sets and `Human_AddRage` also tests) and is not raging (`+0xe0` bit `0x80000`), `Rage_Enter`
+   (`0x00284340`) runs.
 5. **The flash**, command `0x28` (d-pad right, [Commands](combat/index.md#commands)), needs all of: a player human
    (`+0x1b0` ≠ −1), at least one flash (item 1) in the player's inventory (`0x0041e420` on `*(0x0051489c) + 0x480`, the
    player index at human `+0x380`), not down or dead (`Human_IsDownOrDead`: state `0x180050000`, which is wounded
@@ -313,7 +311,7 @@ N + 25 and 665 lasted **53 updates** (N to N + 52), standing still and over a bl
 second would give 19 and 40. Confirmed (runtime), `flash_idle` and `flash_block` below. The rate is 0.75, the one an
 Anim Range List record with none of the rate flags gets ([Playback rate](formats/animation.md#playback-rate);
 `Human_PushOverlayClip`, `0x0025ade8`, passes none of its own): inferred from the counts, since that rate and [the
-update rule](combat-moves.md#timing) give exactly 25 updates for frame 19 and 53 for 40 frames.
+update rule](combat-moves.md#reading) give exactly 25 updates for frame 19 and 53 for 40 frames.
 
 **Taking flash from the dealer** plays the money pair, not 665: the dealer's anim 668 bound to `money_take` and the
 buyer's 668 to `money_give` (both 1.333 s, each with a type-8 partner-place event at frame 0, about 0.97 m ahead;
@@ -385,8 +383,8 @@ scenarios turn it on with a setup write.
 
 ### Everything rage does {#rage-effects}
 
-Read in Ghidra: confirmed (code) at the cited functions unless a line says otherwise; each runtime line says
-confirmed (runtime), measured as [Rage, at runtime](#rage-effects-setup) says.
+Read in Ghidra: confirmed (code) at the cited functions unless a line says otherwise; the readings marked runtime
+("Runtime:" or "(runtime: ...)") are confirmed (runtime), measured as [Rage, at runtime](#rage-effects-setup) says.
 
 **`Rage_Enter`** (`0x00284340`), confirmed (code): plays the 2D sound `vags/misc/rage_mode_06` through the game
 state's handle at `+0x264` (restarted when it is still playing, `0x004194b8`); when the state word has any of
