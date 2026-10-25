@@ -840,8 +840,11 @@ Read 2026-10-11, the rise counter 2026-10-13 (`src/combat`, `src/human`, `src/ai
 - Built: the counter from the rise (`Fighter::riseCounter`, run in `Fighter::update` while the player still reacts).
   199's `0x48` at frame 14 holds the recovery `0x40000` and closes the window, and the `0x25` events are read with the
   task stack's frame rounding (`combat::eventBetween`, `anim::eventFrame`), which at 0.75 fires frames 11-13 on
-  k = 15-17: the runtime's edges, not frames 11-13 through a 0.75 rate. An AI in its rise does not counter. Tests:
-  `repo:tests/human/rise_counter_test.cpp` and `repo:tests/platform/disc_rise_counter_test.cpp`.
+  k = 15-17: the runtime's edges, not frames 11-13 through a 0.75 rate. Tests: `repo:tests/human/rise_counter_test.cpp`
+  (square at k = 15-17 plays 620 that update, ends the stun and knocks the attacker down for 50; k = 9-14 and 18-24
+  nothing; cross pressed at 14 counters at 15 on its release; 618 to the right; no target, an AI, or the manual stun:
+  nothing) and `repo:tests/platform/disc_rise_counter_test.cpp` (the disc's 199 events; on `level99` a square at
+  k = 16 counters and one at 18 does not).
 - Missing: the grounded mount (`Mount_StartOnGrounded`) and the mounted player's inputs (`Player_UpdateTackled`: the
   struggle, the break, the reversal, the escape when the mounter's power runs out). Kind 14 has a reach but no move,
   and kind 42 on an AI himself is called "the get-up attack" where it should be one command that cuts his ground time.

@@ -12,15 +12,16 @@ Verified against: `SLUS_212.15` (NTSC-U); runtime claims name PCSX2 2.9.94 and t
 
 This page covers what a player does with a human he holds and with a weapon in his hand. Circle in the hold throws the
 man: the stick picks where he flies, a wall in reach turns the throw into a slam, and the flying body knocks down
-whoever it meets. Triangle picks up a bat, a knife or another object; with one in hand, square and cross swing it, a
-run gives a running swing, and an overhead object, a brick or a blaster is thrown instead. With a knife or a broken
-bottle, square in a hold is a kill; with a bat, a cross pressed before the last swing has ended is lost. Triangle in a
-front hold starts the mugging: a stick game against the clock, harder for some victims than others. A tackle with
-handcuffs leads to the cuffing hold, the same game between holder and held. The grab and the hold these start from are
-on [Combat: grabs](combat-grabs.md); the damage and the reactions on [Combat: reactions](combat-reactions.md); how an
-object hangs from the hand on [World objects](objects.md#held); the mug meter on
-[HUD](hud-functions-panels.md#mug-meter-layout); the money on [Crimes](crimes.md#mugging). The commands, the state
-bits and the tables every combat topic reads are on [Combat](combat/index.md#data).
+whoever it meets. Triangle picks up a bat, a knife or another object; with one in hand, square and cross swing it, a run
+gives a running swing, and an overhead object, a brick or a blaster is thrown instead. With a knife or a broken bottle,
+square in a hold is a kill; with a bat, a cross pressed before the last swing has ended is lost, and an AI's bat hit
+deals the bat's own damage and knocks the victim down. Triangle in a front hold starts the mugging: a stick game against
+the clock, harder for some victims than others. A tackle with handcuffs leads to the cuffing hold, the same game between
+holder and held. The grab and the hold these start from are on [Combat: grabs](combat-grabs.md); the damage and the
+reactions on [Combat: reactions](combat-reactions.md); how an object hangs from the hand on [World
+objects](objects.md#held); the mug meter on [HUD](hud-functions-panels.md#mug-meter-layout); the money on
+[Crimes](crimes.md#mugging). The commands, the state bits and the tables every combat topic reads are on
+[Combat](combat/index.md#data).
 
 ## Map
 
@@ -38,6 +39,7 @@ in the player's combat code after `cns/cnsplayertag.cpp`; the melee weapon's han
 | `0x00253688` | `Human_ApplyMoveStyle` | applies an anim set to the clip slots ([A bat in hand](#bat)) | confirmed (code) |
 | `0x00286cc8` / `0x00287a18` | `Player_Square` / `Player_Cross` | the armed branch of square and cross ([Moving attacks with something in hand](#armed-moves)) | confirmed (code) |
 | `0x002880d8` | `Player_CrossWithWeapon` | square and cross with a set 4-6 object: smash or throw ([Weapons](#weapons)) | confirmed (code) |
+| `0x00392b88` | `ThrownObject_HitHuman` | a held or thrown object's hit on a human: its `CfgObj` damage, not the clip's ([A bat's hit](#bat-knockdown)) | confirmed (code) |
 | `0x00288838` | `Player_ArmedSpecial` | commands `0x22` / `0x39` with a melee weapon: throw it (`Player_ThrowMeleeWeapon`, `0x00288698`; [Weapons](#weapons)) | confirmed (code) |
 | `0x002856b8` | `Player_UpdateMugging` | the mugger's stick game, mode 0 ([Mugging](#mugging)) | confirmed (code) |
 | `0x002855f8` | `Mug_MoveTargetAngle` | a new target angle for a stick game | confirmed (code) |
@@ -1013,7 +1015,7 @@ run attack on arrival. With the bats in hand, Coney needs:
 3. The reaction from the swing clip's hit code (`0x2a`: 292-295 and down; 195 for a man on the ground).
 4. A check in `repo:tests/platform/disc_level34_furies_test.cpp` (checkpoint 5, no input): every Fury holds a `dyn_bat`
    once `l34_c4` has started, and every hit on the player deals 90 or 72 (25 from 193 / 194 while he is down), the
-   first one a 292-295 that puts him down.
+   first one, about 270-330 updates after the scene's end, a 292-295 that puts him down.
 
 ### The mugging {#mug-difficulty-coney}
 
