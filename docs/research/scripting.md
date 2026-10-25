@@ -887,7 +887,7 @@ disassembly of the script (ids and counts only); the moves themselves are confir
 | 7 | snaps (after the scene `l99_c7`; Rudy drinks at the fence, the second wave surrounds the player) | three hits of 25, 27 or 29 | square, standing, with the stick past 0.95 more than 45° off the facing, at a bum within 2 m there | [Attacks](combat/index.md#attacks), [the second wave](ai.md#level99-snaps) |
 | 8 | throws | two hits of 147, 149, 151 or 153; then zone 1 is enabled | circle with the stick in a grab | [Throws](combat-throws.md#throws) |
 | 9 | weapons (after the scene `l99_c8`, three bats on the ground) | the pick-up (message 0 on a bat, with a prompt); then 34; 36; then two more of 34 or 36 (four counted hits) | triangle at a bat; square, cross | [A bat in hand](combat-throws.md#bat), [the prompt](#message-handlers) |
-| 10 | rage (2 s after lesson 9) | the meter set to half and locked, then filled by hits; the full callback; L1 + R1 (every other command off); 3.5 s into rage, 645 or 647; 3.5 s later, 65 or 233 | rage, the rage special, the extended power move in rage (grab or mount) | [Rage](combat-rage.md#rage-decay); 65 and 233 inferred |
+| 10 | rage (2 s after lesson 9) | the meter set to half and locked, then filled by hits; the full callback; L1 + R1 (every other command off); 3.5 s into rage, 645 or 647; 3.5 s later, 65 or 233 | rage, the rage special, the extended power move in rage (grab or mount) | [Rage](combat-rage.md#rage); 65 and 233 inferred |
 | 11 | finish the second wave | the gang's message 18 with none standing | any | [AI](ai.md#level99) |
 | 12 | the Warriors (after the scene `l99_c5`) | the 50-second stopwatch; a hint the first time the player holds a grab (anim callback on 82 / 84) | any | [Stopwatch](#stopwatch), [anim callbacks](characters.md#anim-callbacks) |
 
@@ -910,8 +910,7 @@ bums. Points an implementer needs:
        locks it, and it registers the rage handlers: enter `P1.EnterRageMode`, exit `P1.ExitRageMode`, full
        `P1.CheckRage`, 20000 and 5000 ms. It arms **no** tutorial callback.
     3. The meter fills only from the player's own hits. The lock stops the drain but not `Human_AddRage`
-       ([Rage](combat-rage.md#rage-decay)), so the player must earn the other half (39 of class 6's 78) by hurting
-       someone.
+       ([Rage](combat-rage.md#rage)), so the player must earn the other half (39 of class 6's 78) by hurting someone.
     4. When it is full, `Human_AddRage` calls the full handler once, `P1.CheckRage(player, true)`. That shows the
        next text, drops his weapon, turns every command off and turns command 31 (L1 + R1) back on.
     5. Pressing L1 + R1 starts rage, which calls `P1.EnterRageMode(player, …)`. That turns every button back on except

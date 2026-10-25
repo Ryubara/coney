@@ -206,9 +206,8 @@ the combat tutorial's **"player 1 hit someone"** hook. Confirmed (code):
   (`0x00265f70`) runs on the victim's pending hit when the attacker is pad-controlled (player record `+0x1b`): with
   `landed` 1 for a hit that lands and 0 for one a block stops (both call the callback). `0x002653d8` returns first when
   the attacker's brain `+0x4` is not 0 or the two are allies (`0x00290230`), then calls the callback only when the
-  attacker's player index (`+0x1b0`) is **0**, before it awards the hit's rage
-  ([Combat](combat-rage.md#hit-score-skips)). The anim id is the attacker's record `+0x20` (11 `X1`, 12 `S1`, 13 `XX2`,
-  ...; [Combat](combat/index.md#attacks)).
+  attacker's player index (`+0x1b0`) is **0**, before it awards the hit's rage ([Combat](combat-rage.md#rage)). The anim
+  id is the attacker's record `+0x20` (11 `X1`, 12 `S1`, 13 `XX2`, ...; [Combat](combat/index.md#attacks)).
 - The id is read when the **victim** applies the pending damage, not when the hit was dealt. For a hit dealt as a
   clip ends, the attacker has already moved on: the strong grapple's damage is added at the end of 657 and applied as
   the hold 82 starts, so the callback gets **82** (84 from the rear). Confirmed (runtime)

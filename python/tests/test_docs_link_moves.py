@@ -21,6 +21,8 @@ PAGES = {
     # A page that stays and gave its `targeting` section to `combat-targets.md`.
     "docs/research/combat-moves.md": {"moves"},
     "docs/research/combat-targets.md": {"targeting", "locking", "open-questions"},
+    # A page that stays and split its `rage` section: the flash moved out under `flash`, and `rage` is still there.
+    "docs/research/combat-rage.md": {"rage", "flash", "power-meter"},
 }
 
 
@@ -35,6 +37,7 @@ def held(path: str, anchor: str) -> bool:
         **PAGES,
         "docs/research/combat-moves.md": {"moves", "targeting", "locking", "open-questions"},
         "docs/research/combat-targets.md": {"open-questions"},
+        "docs/research/combat-rage.md": {"rage", "power-meter"},
     }
     return path in before and anchor in before[path]
 
@@ -68,6 +71,22 @@ def test_a_link_to_an_anchor_that_moved_to_another_page_is_no_touch() -> None:
     assert same("See [aim](combat-moves.md#targeting).", "See [aim](combat-targets.md#targeting).")
     old = "[a](combat-moves.md#targeting) and [b](combat-moves.md#locking)"
     assert same(old, "[a](combat-targets.md#targeting) and [b](combat-targets.md#locking)")
+
+
+def test_a_link_to_the_part_of_a_split_section_that_moved_out_under_its_own_id_is_no_touch() -> None:
+    assert same("See [the flash](combat-rage.md#rage).", "See [the flash](combat-rage.md#flash).")
+
+
+def test_a_link_to_another_id_of_the_same_page_is_a_touch_unless_a_section_was_split() -> None:
+    # The new id was there before: the link now cites other text, not a part that moved out.
+    assert not same("See [it](combat-rage.md#rage).", "See [it](combat-rage.md#power-meter).")
+    # The old id is gone: no section was split (a rename of the id is an edit of the link).
+    assert not same("See [aim](combat-moves.md#targeting).", "See [aim](combat-moves.md#moves).")
+    # A new id on another page is no split of the old page's section.
+    assert not same("See [it](combat-rage.md#rage).", "See [it](combat-targets.md#locking).")
+    # From the page itself, or to an id the page does not hold.
+    assert not same("See [it](combat-rage.md).", "See [it](combat-rage.md#flash).")
+    assert not same("See [it](combat-rage.md#rage).", "See [it](combat-rage.md#nowhere).")
 
 
 def test_a_link_to_an_id_the_new_page_held_before_is_a_touch() -> None:
