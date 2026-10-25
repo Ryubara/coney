@@ -1932,6 +1932,15 @@ coney = "src/human/human_animator.h:HumanAnimator::choose"
 status = "legacy"
 
 [[function]]
+address = 0x0025ade8
+name = "Human_PushOverlayClip"
+page = "combat-rage.md#rage"
+role = "Plays a clip over what the human plays (the flash's 665) as a type 5 task (`AnimTask5_Construct`), passing no rate, so the clip plays at its Anim Range List rate."
+level = "confirmed-code"
+coney = "src/human/human.h:Human::pushOverlayClip"
+status = "legacy"
+
+[[function]]
 address = 0x0025b200
 name = "Human_BuildMoveTasks"
 page = "characters.md#original-structure"
