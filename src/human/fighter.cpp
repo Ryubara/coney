@@ -1304,8 +1304,8 @@ void Fighter::updateStance(const FighterInput& input, std::uint32_t phase) {
         nearest != nullptr ? flatDistance(input.position, nearest->position()) : tuning.stanceFar + 1.0F;
     // 1. The sprint (L2 with stamina, +0x08 free of 0x10: the state 0x1000000 that input.sprinting is) clears L1's
     // bit and drops the target; a target beyond 13 m loses L1's bit. **Coney's choice**: the original also ends the
-    // hidden state here and in step 2 (Human_ClearHiddenState); Coney's hidden state (setLockBlocked()) is cleared by
-    // whoever set it.
+    // hidden state (0x200000, Human_ClearHiddenState) here and in step 2; Coney's ends it in Human::updateHiding(),
+    // which reads the same sprint.
     if (input.sprinting && (phase & combat::kPhaseGrabStart) == 0) {
         m_l1Lock = false;
         takeTarget(nullptr);
@@ -1328,12 +1328,12 @@ void Fighter::updateStance(const FighterInput& input, std::uint32_t phase) {
         }
         return;
     }
-    // 3. Out of the lock-on movement, a threat (or the target kept) within the near distance, or L1's lock, enters the
-    // stance: the nearest becomes the target (the first only while +0x08 holds nothing outside 0x320100) and, unless
-    // he is hidden, the lock-on movement starts (Player_LockOn). A player holding a set-4 object enters nothing.
-    // **Coney's choice**: the original also tests state 0x200000 and flag +0xe0 0x200000000000, and clears states
-    // 0x1008000 on entering; Coney's player has none of them (the sprint is input.sprinting, made again each update).
-    if (!m_lockOn && (toNearest <= tuning.stanceNear || l1Locked())) {
+    // 3. Out of the lock-on movement and not hidden (state 0x200000, setLockBlocked()), a threat (or the target kept)
+    // within the near distance, or L1's lock, enters the stance: the nearest becomes the target (the first only while
+    // +0x08 holds nothing outside 0x320100) and the lock-on movement starts (Player_LockOn). A player holding a set-4
+    // object enters nothing. **Coney's choice**: the original also tests flag +0xe0 0x200000000000, and clears states
+    // 0x1008000 on entering; Coney's player has neither (the sprint is input.sprinting, made again each update).
+    if (!m_lockOn && !m_lockBlocked && (toNearest <= tuning.stanceNear || l1Locked())) {
         if (m_animSet == 4) {
             return;
         }
@@ -1343,7 +1343,7 @@ void Fighter::updateStance(const FighterInput& input, std::uint32_t phase) {
         }
         if (m_target != nullptr) {
             takeTarget(nearest);
-            m_lockOn = m_target != nullptr && !m_lockBlocked;
+            m_lockOn = m_target != nullptr;
         }
         return;
     }
@@ -1358,9 +1358,9 @@ void Fighter::updateStance(const FighterInput& input, std::uint32_t phase) {
         }
         return;
     }
-    // **Coney's choice**: the original also holds while states 0x8 and 0x200000 are both set; Coney's player holds no
-    // 0x200000 state.
-    if (toTarget < tuning.stanceFar || input.nowMs <= m_l1WindowEndMs || phase != 0 || l1Locked()) {
+    // It also holds while L1's bit is set and he is hidden (0x00227cd8).
+    if (toTarget < tuning.stanceFar || input.nowMs <= m_l1WindowEndMs || phase != 0 || l1Locked() ||
+        (m_l1Lock && m_lockBlocked)) {
         return;
     }
     // 5. It ends: the target is dropped and the stance and its lock are left. **Coney stand-in**: the original keeps a
