@@ -6,8 +6,8 @@ agent it was started as (`claude --agent coordinator`). The rules live in `hooks
 (docs/guides/enforcement.md#hooks); this module reads them and judges one tool call:
 
 * **require_role**: when on, a call whose type is no Coney role (and no allowed helper) may use only the read-only
-  tools in `readonly_tools`, and the refusal tells the person to start with `coney-agent`. It is off in
-  the committed file until the maintainer's sessions start that way.
+  tools in `readonly_tools`, and the refusal tells the person to start with `coney-agent`. It is on in the
+  committed file.
 * **a role's refusals**: tools by name prefix, `coney-tools` commands, shell commands by pattern, folders Edit and
   Write may not change, the only files a role may write, a `git commit` under a unit worktree, and the GitHub writes
   `push_guard.py` refuses (also for a main session, which has no agent id), and `allow_agent_types`, the only

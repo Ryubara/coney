@@ -463,13 +463,14 @@ tools/coney-agent.ps1 [ROLE] ...    # Windows, PowerShell
 tools/coney-agent.cmd [ROLE] ...    # Windows, cmd.exe
 ```
 
-The session launcher: starts Claude Code as one of Coney's roles, so the hooks know who is acting
-([Which role to start](agents.md#roles)). It is a separate console script of the same package, not a `coney-tools`
-group, and not the player-facing launcher of the game. It finds the Coney checkout that holds the current folder
-(the nearest folder above it with `AGENTS.md` and `.claude/agents/`; outside any checkout, the one it is installed
-from), checks the role against the files in `.claude/agents/`, and runs `claude --agent ROLE` in that checkout, adding
-`--plugin-dir <mod folder>` when the folder exists (the mod then loads in every mode, trusted folder or not). When it
-does not, it says so on stderr and starts without the mod, unless `--mod-dir` named the folder (then it is an error).
+The session launcher: starts Claude Code as one of Coney's roles, so the hooks know who is acting ([Which role to
+start](agents.md#roles)); a session started without one may only read (`require_role`). It is a separate console script
+of the same package, not a `coney-tools` group, and not the player-facing launcher of the game. It finds the Coney
+checkout that holds the current folder (the nearest folder above it with `AGENTS.md` and `.claude/agents/`; outside any
+checkout, the one it is installed from), checks the role against the files in `.claude/agents/`, and runs `claude
+--agent ROLE` in that checkout, adding `--plugin-dir <mod folder>` when the folder exists (the mod then loads in every
+mode, trusted folder or not). When it does not, it says so on stderr and starts without the mod, unless `--mod-dir`
+named the folder (then it is an error).
 
 * `ROLE`: the role to start, a file name in `.claude/agents/` without `.md`. Default `coordinator`. An unknown role is
   refused with the list of roles.
