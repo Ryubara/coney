@@ -405,6 +405,7 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
         if (ended) {
             m_cameras->slowMotion().event(camera::SlowMotion::kEventOff, 0);
         }
+        // **Coney stand-in**: the original switches it only while the game has one player; Coney has one.
         if (const std::optional<std::uint16_t> event = m_driven->slowMotionEvent(); event) {
             m_cameras->slowMotion().event(*event, 0);
         }
