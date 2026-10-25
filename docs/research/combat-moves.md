@@ -21,7 +21,7 @@ counters from square and cross, cross at a grounded target, tandems, stealth kil
 knife and bottle kills and thrown melee weapons) and gives frame data for all of them. Where Coney differs:
 [Combat differences](combat-diffs.md).
 
-## Map
+## Map {#original-structure}
 
 | Address | Name | What it decides | Evidence |
 | --- | --- | --- | --- |
