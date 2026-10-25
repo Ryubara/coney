@@ -93,9 +93,9 @@ export function showUtc(iso: string): string {
 type ClaimRules = { warn_hours: number; deadline_hours: number; enforced: boolean }
 
 /**
- * The pane's layouts, widest first: `wide` puts a row on one line, `compact` gives a row its key fields and then its
- * title on a second line, `narrow` keeps only the issue and the stage on the first line and abbreviates the claims, and
- * `line` is one clipped summary line.
+ * The pane's layouts with rows, widest first: `wide` puts a row on one line, `compact` gives a row its key fields and
+ * then its title on a second line, and `narrow` keeps only the issue and the stage on the first line and abbreviates the
+ * claims.
  */
 export type Layout = 'wide' | 'compact' | 'narrow'
 
@@ -310,23 +310,58 @@ export function prText(unit: Unit, nowMs: number): string {
   return `merged ${unit.pr.merged_at ? elapsed(unit.pr.merged_at, nowMs) : ''} ago`
 }
 
-/** `text` cut to `width` characters, ending in an ellipsis when it was cut. */
+/** Code points a terminal draws two cells wide: emoji shown as emoji by default, and East Asian wide and fullwidth. */
+const WIDE =
+  /[\p{Emoji_Presentation}\u1100-\u115f\u2e80-\u303e\u3041-\u33ff\u3400-\u4dbf\u4e00-\u9fff\ua000-\ua4cf\uac00-\ud7a3\uf900-\ufaff\ufe30-\ufe4f\uff00-\uff60\uffe0-\uffe6\u{1f300}-\u{1f64f}\u{1f900}-\u{1f9ff}\u{20000}-\u{3fffd}]/u
+/** Code points that take no cell of their own: joiners, variation selectors and combining marks. */
+const ZERO = /[\u200b-\u200f\ufe00-\ufe0f\p{Mn}\p{Me}]/u
+
+/**
+ * The cells each code point of `text` takes on a terminal, in order. The emoji variation selector (U+FE0F) widens the
+ * one-cell symbol before it to two (`⚠️`, the mark on the desktop and mobile surfaces); other selectors and joiners take
+ * none. A joined emoji sequence is counted per emoji, which can only overcount, so a line clipped by it never overflows.
+ */
+function cellsOf(text: string): { char: string; cells: number }[] {
+  const out: { char: string; cells: number }[] = []
+  let before = 0
+  for (const char of text) {
+    const cells = char === '\ufe0f' ? (before === 1 ? 1 : 0) : ZERO.test(char) ? 0 : WIDE.test(char) ? 2 : 1
+    out.push({ char, cells })
+    if (cells > 0 || char !== '\ufe0f') before = cells
+  }
+  return out
+}
+
+/** The columns `text` takes on a terminal: emoji and East Asian wide characters count two (`cellsOf`). */
+export function columns(text: string): number {
+  return cellsOf(text).reduce((sum, one) => sum + one.cells, 0)
+}
+
+/** `text` cut to `width` columns (as `columns` counts them), ending in an ellipsis when it was cut. */
 export function clip(text: string, width: number): string {
-  const chars = [...text]
-  return chars.length <= width ? text : `${chars.slice(0, Math.max(0, width - 1)).join('')}…`
+  if (columns(text) <= width) return text
+  // Keep whole characters while they and the one-column ellipsis fit; a wide character never splits.
+  let kept = ''
+  let used = 0
+  for (const { char, cells } of cellsOf(text)) {
+    if (used + cells > Math.max(0, width - 1)) break
+    kept += char
+    used += cells
+  }
+  return `${kept}…`
 }
 
 /**
- * `tokens` (each cut to `width`) grouped into lines that fit `width` when joined by `sep`: a token never splits, so a
+ * `tokens` (each cut to `width` columns) grouped into lines that fit `width` when joined by `sep`: a token never splits, so a
  * compact pane can draw each one in its own colour and still know where a line ends. Always at least one (maybe empty) line.
  */
 export function packLines(tokens: string[], sep: string, width: number): string[][] {
   const lines: string[][] = []
-  const sepWidth = [...sep].length
+  const sepWidth = columns(sep)
   let line: string[] = []
   let used = 0
   for (const token of tokens.map(one => clip(one, width))) {
-    const size = [...token].length
+    const size = columns(token)
     if (line.length > 0 && used + sepWidth + size > width) {
       lines.push(line)
       line = [token]

@@ -18,6 +18,7 @@ import {
   claimTone,
   clip,
   color,
+  columns,
   elapsed,
   issueIds,
   mark,
@@ -195,7 +196,7 @@ export async function drawPane($: EngineInterface, e: PaneInput) {
         <Box key={key} flexDirection="column">
           <Button key={key} onPress={() => toggle(key)}>
             <Text color={color(markTone(kind))}>{caret}</Text>
-            <Text bold>{clip(head, room - 4)}</Text>
+            <Text bold>{clip(head, room - columns(caret))}</Text>
           </Button>
           {line(clip(`${isNarrow ? '  ' : '   '}${rest.filter(Boolean).join(' · ')}`, room), 'dim')}
           {open}
@@ -241,7 +242,7 @@ export async function drawPane($: EngineInterface, e: PaneInput) {
           <Button key={key} onPress={() => toggle(key)}>
             <Text color={color('warn')}>{caret}</Text>
             <Text bold color={color(tone)}>
-              {clip(`#${claim.issue} ${expiry}`, room - 4)}
+              {clip(`#${claim.issue} ${expiry}`, room - columns(caret))}
             </Text>
           </Button>
           {line(clip(`${isNarrow ? '  ' : '   '}${rest.filter(Boolean).join(' · ')}`, room), 'dim')}

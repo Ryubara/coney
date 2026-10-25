@@ -41,15 +41,16 @@ mod reads from the start of the session. The issue and the stage are written as 
 | --- | --- |
 | From `pane_wide_columns` (110) | **Wide**: a row is one line. |
 | From `pane_compact_columns` (60) | **Compact**: the pane opens with the band's own items in the band's colours, and a row has the key fields on its first line (the mark, the issue, the stage and the pull request) and the title, who works on it and the build on a dim second line. |
-| From `pane_min_columns` (30) | **Narrow**: as compact, but a row's first line keeps only the mark, the issue (the task when it names none) and the stage; the pull request, who, the build and last the title go on the second line. A claim reads `#741 2d 14h (warned) contrib-a`: the bare countdown, `~2d 14h` while expiry is not enforced (it would expire then), or `waits: S-blocked`, ahead of the claimant. |
+| From `pane_min_columns` (30; the conventions refuse less than 15, where the narrow layout's fixed parts stop fitting) | **Narrow**: as compact, but a row's first line keeps only the mark, the issue (the task when it names none) and the stage; the pull request, who, the build and last the title go on the second line. A claim reads `#741 2d 14h (warned) contrib-a`: the bare countdown, `~2d 14h` while expiry is not enforced (it would expire then), or `waits: S-blocked`, ahead of the claimant. |
 | Under `pane_min_columns` | **One line**: the band's items joined by `·`, clipped, in the colour of the worst of them. |
 
-In the compact and narrow layouts every line is clipped to the width with an ellipsis, so the most decision-relevant
-text (the issue, the stage, the countdown) comes first and the title is what a clip cuts. The details of an open row
-wrap under their label, so nothing an open row says is lost to the width. The pane is never empty and never refuses a
-width. The words (stage, build, pull request, counts) are the band's and the status line's in every layout. The pane
-opens by itself at the start of a session where the terminal is wide enough for the engine to place an unasked pane, and
-waits for `/conclave` where it is not; the engine seats a pane the person opens at any width.
+In the compact and narrow layouts every line is clipped to the width with an ellipsis, counted in terminal columns (an
+emoji or an East Asian wide character takes two), so the most decision-relevant text (the issue, the stage, the
+countdown) comes first; in the narrow layout the title ends the second line, so it is what a clip cuts first. The
+details of an open row wrap under their label, so nothing an open row says is lost to the width. The pane is never
+empty and never refuses a width. The words (stage, build, pull request, counts) are the band's and the status line's
+in every layout. The pane opens by itself at the start of a session where the terminal is wide enough for the engine to
+place an unasked pane, and waits for `/conclave` where it is not; the engine seats a pane the person opens at any width.
 
 - **Units and issues** lists every unit (a scratch folder with a task file, with a worktree or changed in the last
   `unit_days`) and the issues the signed-in account holds with no unit here. A wide row is one line: a mark, the issue

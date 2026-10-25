@@ -690,6 +690,7 @@ def test_the_real_conclave_section() -> None:
         ("conclave.local_seconds", 0, "expected a whole number of 1 or more"),
         ("conclave.unknown", 1, "unknown key 'unknown'"),
         ("conclave.pane_min_columns", REMOVE, "missing the key 'pane_min_columns'"),
+        ("conclave.pane_min_columns", 14, "must be at least 15"),
         ("conclave.pane_compact_columns", 20, "must not be less than pane_min_columns"),
         ("conclave.pane_compact_columns", REMOVE, "missing the key 'pane_compact_columns'"),
         ("conclave.pane_wide_columns", 50, "must not be less than pane_compact_columns"),

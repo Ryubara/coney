@@ -1034,6 +1034,12 @@ class Research:
         return ""
 
 
+#: The smallest `conclave.pane_min_columns`: the narrow pane's widest fixed parts must fit with room to spare, the
+#: row caret (five columns with an emoji mark) and an open row's indent and label column (one and nine), so no line
+#: overflows at any valid width (tools/claude-mod/tests/conclave.test.tsx draws the pane at this width).
+PANE_MIN_COLUMNS_FLOOR = 15
+
+
 @dataclass(frozen=True)
 class Conclave:
     """Conclave, the Claude Code mod (docs/guides/conclave.md): what its snapshot sends and how it draws."""
@@ -2000,6 +2006,8 @@ def _read_conclave(data: object, where: str) -> Conclave:
     hooks_file = _text(table["hooks_file"], _at(where, "hooks_file"))
     if hooks_file.startswith(("/", "\\")) or ".." in hooks_file or ":" in hooks_file:
         raise _fail(_at(where, "hooks_file"), "a path inside the checkout")
+    if numbers["pane_min_columns"] < PANE_MIN_COLUMNS_FLOOR:
+        raise _fail(_at(where, "pane_min_columns"), f"must be at least {PANE_MIN_COLUMNS_FLOOR}")
     if numbers["pane_compact_columns"] < numbers["pane_min_columns"]:
         raise _fail(_at(where, "pane_compact_columns"), "must not be less than pane_min_columns")
     if numbers["pane_wide_columns"] < numbers["pane_compact_columns"]:

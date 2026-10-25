@@ -3,7 +3,7 @@
 import { expect, test } from 'claude-code/testing'
 
 import type { Held, Snapshot } from '../types'
-import { claimLineText, paneLayout, claimTone, clip, countdown, elapsed, issueIds, mark, packLines, showUtc, stageText, wrapTokens } from '../src/format'
+import { claimLineText, columns, paneLayout, claimTone, clip, countdown, elapsed, issueIds, mark, packLines, showUtc, stageText, wrapTokens } from '../src/format'
 import { checkoutOf, firstLine, merged, offerKey, venvOf } from '../src/snapshot'
 import { EMPTY } from '../src/state'
 import fixture from './fixtures/snapshot'
@@ -132,6 +132,12 @@ test('the saved agent list is kept per checkout, whatever the slashes', () => {
 test('a line is clipped with an ellipsis, and tokens wrap without splitting', () => {
   expect(clip('abcdef', 6)).toBe('abcdef')
   expect(clip('abcdefg', 6)).toBe('abcde…')
+  // by columns: an emoji or a CJK character takes two and never splits, the terminal marks one, `⚠️` two
+  expect([columns('修正'), columns('🚀x'), columns('✖ ⚠ ✔ ▸ ● ·'), columns('⚠️'), columns('❌'), columns('한')]).toEqual([4, 3, 11, 2, 2, 2])
+  expect(clip('修正する', 6)).toBe('修正…')
+  expect(clip('ab🚀cd', 4)).toBe('ab…')
+  expect(clip('修正', 4)).toBe('修正')
+  expect(packLines(['修正', 'ab'], ' ', 6)).toEqual([['修正'], ['ab']])
   expect(wrapTokens(['✔ assigned', '✔ claimed', '✖ compared'], '  ', 22)).toEqual(['✔ assigned  ✔ claimed', '✖ compared'])
   expect(wrapTokens(['x'.repeat(30)], ' ', 10)).toEqual(['xxxxxxxxx…'])
   expect(wrapTokens([], ' ', 10)).toEqual([''])

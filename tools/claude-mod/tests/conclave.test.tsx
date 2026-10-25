@@ -427,10 +427,26 @@ function textOf(node: unknown): string {
   return isElement(node) ? node.children.map(textOf).join('') : String(node)
 }
 
-/** The columns a drawn node takes, margins included: a text its characters, a row the sum of its parts, a column its widest. */
+/**
+ * The terminal columns of a string, measured apart from the mod's own `columns` so the tests do not grade it by itself:
+ * an emoji shown as emoji or a CJK character takes two, a joiner or variation selector none, except that the emoji
+ * selector after the one-column marks the tests draw (`⚠️`) makes them two. Enough for the strings these tests draw.
+ */
+function cells(text: string): number {
+  let sum = 0
+  for (const char of text) {
+    if (char === '\ufe0f') sum += 1
+    else if (/[\u200b-\u200f\ufe00-\ufe0e]/u.test(char)) sum += 0
+    else if (/[\p{Emoji_Presentation}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(char)) sum += 2
+    else sum += 1
+  }
+  return sum
+}
+
+/** The columns a drawn node takes, margins included: a text its cells, a row the sum of its parts, a column its widest. */
 function columnsOf(node: unknown): number {
-  if (!isElement(node)) return [...String(node)].length
-  if (node.type === 'Text') return [...textOf(node)].length
+  if (!isElement(node)) return cells(String(node))
+  if (node.type === 'Text') return cells(textOf(node))
   const parts = node.children.map(columnsOf)
   const inside = node.props.flexDirection === 'column' ? Math.max(0, ...parts) : parts.reduce((sum, part) => sum + part, 0)
   return inside + marginOf(node)
@@ -551,6 +567,78 @@ for (const columns of [29, 20, 8] as const) {
     expect(lines[0]?.text).not.toContain('needs about')
     expect(lines[0]?.text.startsWith('2 units'.slice(0, columns - 2))).toBe(true)
     expect(overflows(lines, columns)).toEqual([])
+    await ui.unmount()
+  })
+}
+
+/** A title as wide as text gets: emoji and CJK, two columns each, on the units, the issues and an issue row of mine. */
+const WIDE_TITLE = '修正する🚀 the 表示 of 宽字符 🔥🔥 everywhere 한국어'
+
+/**
+ * The fixture with `WIDE_TITLE` everywhere a title is drawn, and the signed-in account renamed `me`, so the title
+ * reaches the narrow pane's second lines instead of being cut behind a long name.
+ */
+function wideTitles(copy: Snapshot): void {
+  enforced(copy)
+  if (copy.claims !== null && copy.claims.error === null) {
+    copy.claims.account = 'me'
+    for (const claim of copy.claims.claims) if (claim.claimant !== 'contrib-a') claim.claimant = 'me'
+  }
+  if (copy.units.error === null) {
+    for (const unit of copy.units.units) {
+      unit.goal = WIDE_TITLE
+      unit.claimant = 'me'
+    }
+  }
+  if (copy.issues !== null && copy.issues.error === null) for (const issue of copy.issues.issues) issue.title = WIDE_TITLE
+  if (copy.claims !== null && copy.claims.error === null) {
+    const account = copy.claims.account
+    const second = copy.claims.claims[1]
+    // #770 becomes the signed-in account's with no unit here, so it is drawn as an issue row with its title
+    if (second !== undefined && account !== null) {
+      second.claimant = account
+      second.title = WIDE_TITLE
+    }
+  }
+}
+
+for (const surface of ['terminal', 'desktop'] as const) {
+  for (const columns of [30, 40, 60, 80] as const) {
+    test(`at ${columns} columns on the ${surface} a title of emoji and CJK is clipped by its columns`, async ($, on) => {
+      const world = engine(on, prints(snapshot(wideTitles)))
+      await start($, world)
+
+      const ui = await $.ui.mount({ ...PANE, surface, props: { ...PANE.props, bodyColumns: columns } })
+      const lines = await drawn(ui)
+      expect(lines.some(line => line.text.includes('修正'))).toBe(true)
+      expect(overflows(lines, columns)).toEqual([])
+      const rows = await ui.findAll({ type: 'Button' })
+      expect(rows.map(row => row.key)).toContain('#770')
+      await ui.press({ key: '#770' })
+      expect(overflows(await drawn(ui), columns)).toEqual([])
+      await ui.unmount()
+    })
+  }
+}
+
+for (const surface of ['terminal', 'desktop'] as const) {
+  test(`the narrow pane at the smallest pane_min_columns the conventions allow (15) still fits on the ${surface}`, async ($, on) => {
+    const world = engine(
+      on,
+      prints(
+        snapshot(copy => {
+          wideTitles(copy)
+          copy.config.pane_min_columns = 15
+        }),
+      ),
+    )
+    await start($, world)
+
+    const ui = await $.ui.mount({ ...PANE, surface, props: { ...PANE.props, bodyColumns: 15 } })
+    expect((await ui.findAll({ type: 'Button' })).length).toBeGreaterThan(0)
+    expect(overflows(await drawn(ui), 15)).toEqual([])
+    await ui.press({ key: 'task:fix-frame-812' })
+    expect(overflows(await drawn(ui), 15)).toEqual([])
     await ui.unmount()
   })
 }
