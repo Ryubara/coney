@@ -576,9 +576,16 @@ void Cameras::endScene(float blendSeconds) {
         return;
     }
     switchTo(back, blendSeconds);
-    // The settling update, with the last target and the stick at rest.
+    // The settling update, with the stick at rest and the last target where it stands now (the scene may have let the
+    // player go elsewhere since the last update; the original's update reads its target live). **Coney's reading**:
+    // the rest of the target (its gait, velocity) is the last update's.
     if (m_lastTarget) {
-        const FollowTarget target = *m_lastTarget;
+        FollowTarget target = *m_lastTarget;
+        if (m_follow != nullptr) {
+            const FollowPlace now = m_follow->targetPlace();
+            target.feet = now.feet;
+            target.heading = now.heading;
+        }
         update(target, kStickRest, kStickRest, m_lastMesh, kSceneSettleSeconds);
     }
 }

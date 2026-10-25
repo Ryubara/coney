@@ -246,8 +246,9 @@ Levels), through `debug::PlayControls` (`src/debug/play_controls.h`), which `pla
 (`src/platform/play_level_controls.h`, in the debug tools) implements over the play mode's own capabilities; elsewhere
 they say there is no player. A teleport drops the player onto the ground below the spot, stands him idle as a walk there
 would leave him (his health and meters kept) and places the camera behind him again. Frozen, the player ignores the
-pad. *Reset behind player* places the follow camera again with the Follow camera tunables, so the leash, pitch and
-look-at height apply at once. The free camera flies with pad 1 as the world viewer's
+pad. *Reset behind player* puts the follow camera behind the player as the scripts' `CameraReset` does, keeping what
+the scripts set on it; the Follow camera tunables for the leash, pitch and look-at height apply to the next follow
+camera made (a level start). The free camera flies with pad 1 as the world viewer's
 does, while the player stands still and the scenery streams round the free camera. *AI fighters* spawns fighters
 ([Sandbox](sandbox.md#ai-fighters)) the chosen distance in front of the player, facing him, in a sandbox or a level;
 *Engaging* off keeps idle fighters from taking him on.

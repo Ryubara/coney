@@ -181,7 +181,17 @@ void FollowCamera::observe(const FollowTarget& target) {
     m_targetHeading = target.heading;
 }
 
-FollowPlace FollowCamera::targetPlace() const { return FollowPlace{.feet = m_targetFeet, .heading = m_targetHeading}; }
+FollowPlace FollowCamera::targetPlace() const {
+    return m_source ? m_source() : FollowPlace{.feet = m_targetFeet, .heading = m_targetHeading};
+}
+
+void FollowCamera::refreshTarget() {
+    if (m_source) {
+        const FollowPlace now = m_source();
+        m_targetFeet = now.feet;
+        m_targetHeading = now.heading;
+    }
+}
 
 void FollowCamera::configure(const FollowSettings& settings) {
     // The three distances, each clamped against the others; the band at the default, min(0.5, max - min) deep.
@@ -250,7 +260,7 @@ void FollowCamera::placeBehind(float degrees) {
     // The distance: the sprint zoom's saved edge while one is held, else the camera's own from the look-at point,
     // clamped to the band, then the preset it is nearest by the halfway rule, with the zoom step after that preset.
     const FollowSettings& s = m_settings;
-    const float own = m_savedNear != 0.0F ? m_savedNear : anim::distance(m_position, m_lookAt);
+    const float own = m_savedNear != 0.0F ? m_savedNear : anim::distance(m_held, m_lookAt);
     const float current = std::clamp(own, bandNear(), bandFar());
     float distance = s.maxDistance - kBandDepth;
     float step = s.minDistance;
@@ -266,8 +276,9 @@ void FollowCamera::placeBehind(float degrees) {
     m_bandNear = distance;
     updateLowerPitch();
     // The camera stands along the target's forward turned clockwise by `degrees` and looks back along it, so its view
-    // faces the target's heading turned by 180° − `degrees` (180: behind, looking where the target looks).
-    // place() snaps the look-at point.
+    // faces the target's heading turned by 180° − `degrees` (180: behind, looking where the target looks). The target
+    // is read where it stands now (Cam_Follow_PlaceAtHeading gathers it first), and place() snaps the look-at point.
+    refreshTarget();
     const float turn = degrees == kBehindDegrees ? 0.0F : kPi - degrees * kRadians;
     place(m_targetFeet, distance, m_targetHeading + turn);
 }
@@ -290,6 +301,7 @@ void FollowCamera::activate() {
     const float distance = std::clamp(anim::length(offset), bandNear(), bandFar());
     m_position = anim::add(m_lookAt, withLength(offset, distance));
     m_wanted = m_position;
+    m_held = m_position;
     // The hard band set to the band, the wanted near edge cleared.
     m_hardNear = bandNear();
     m_hardFar = bandFar();
@@ -380,6 +392,7 @@ void FollowCamera::place(anim::Vec3 targetFeet, float distance, float viewHeadin
                             distance * std::sin(m_targetPitch)};
     m_wanted = anim::add(m_lookAt, behind);
     m_position = m_wanted;
+    m_held = m_wanted;
     stepHardBand();
 }
 
@@ -388,6 +401,20 @@ void FollowCamera::placeAt(anim::Vec3 position) {
     snapAim();
     m_wanted = position;
     m_position = position;
+    m_held = position;
+}
+
+void FollowCamera::resetWhenLost() {
+    // Only with one player camera. Lost: the held position of the last update farther from the look-at point across
+    // the ground than 1.3 x the maximum distance (one target, which Coney's camera always has), or the camera more
+    // than 30 m above or below it. The reset's pitch and field of view step runs, as for a player's target.
+    if (!followTuning().onePlayerCamera) {
+        return;
+    }
+    const float across = std::hypot(m_held.x - m_lookAt.x, m_held.y - m_lookAt.y);
+    if (across > kLostDistanceShare * m_settings.maxDistance || std::abs(m_position.z - m_lookAt.z) > kLostHeight) {
+        reset();
+    }
 }
 
 anim::Vec3 FollowCamera::forward() const {
@@ -820,6 +847,10 @@ void FollowCamera::update(const FollowTarget& target, std::uint8_t rawRightX, st
     // 2. The field of view.
     easeFieldOfView(seconds);
 
+    // The reset when lost (the original's step 7): far behind the look-at point after a long move, the camera is put
+    // behind the target at once.
+    resetWhenLost();
+
     // 3. The right stick (unless CamEnable(0) turned it off): a yaw rate and a pitch rate; any input holds the
     // automatic rules off.
     const float yawRate = m_stickOn && m_padStickOn ? rightStickYawRate(rawRightX) : 0.0F;
@@ -900,6 +931,7 @@ void FollowCamera::update(const FollowTarget& target, std::uint8_t rawRightX, st
     } else if (actual < m_hardNear) {
         m_position = anim::add(m_lookAt, withLength(fromLookAt, m_hardNear));
     }
+    m_held = m_position;
 
     // 13. The world: swing away from it, pull in when it hides the camera from the look-at point. A blocked view
     // latches until the target has stood a moment.

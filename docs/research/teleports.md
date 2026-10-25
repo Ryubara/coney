@@ -26,6 +26,8 @@ does is on [Combat: the power meter, rage and the flash](combat-rage.md#flash); 
 - A placement drops the human onto the ground at most 0.5 m below the point, unless he is in a scene.
 - `TeleportToFlag` also stops his move across the ground; `Teleport` does not.
 - A scene's end keeps the health; after a skip it places each human at his end pose.
+- A placement leaves the camera alone: the follow camera glides after the player, and puts itself behind him only when
+  it has lost him; a script that wants a cut calls `CameraReset` itself.
 - A flash heals only a hurt player: at full health d-pad right does nothing, so the first mission's flash lesson needs
   the player still hurt when he reaches the dealer.
 
@@ -38,6 +40,7 @@ does is on [Combat: the power meter, rage and the flash](combat-rage.md#flash); 
 | `Teleport`: the placement only | `0x00385bb8` `Object_Teleport` | [The motion reset](#motion-reset) |
 | The motion reset: move velocity and steer cleared | `0x0023f158` `Human_ResetMotion` | [The motion reset](#motion-reset) |
 | A scene's end: the health untouched, a skipped human placed | `0x003a00b8`, `0x0039f450` | [A scene's end](#scene-end) |
+| The follow camera after a placement: it glides, and resets itself when lost | `0x0012ae58` `Cam_Follow_Update` | [The camera](#camera) |
 | A human made player 1 by a hand-over | `0x00229c40` `Human_MakePlayer` | [The hand-over](#handover) |
 | The flash lesson that needs the health kept | `level99_lesson2.lua` `P3.DealerPoizo` | [The level99 flash lesson](#flash-lesson) |
 
@@ -113,6 +116,35 @@ object it holds; the human is not placed, its clip having moved it there. At the
 above, so it drops onto the ground; then its speech and voice stop, its hat is told and its join goal is popped.
 Neither function writes the health or a meter. Confirmed (code) at `0x003a00b8` and `0x0039f450`.
 
+### The camera {#camera}
+
+Neither teleport calls camera code, nor do the placement and the motion reset they call: confirmed (code) at
+`0x00385bb8`, `0x00385db0`, `0x0023d440` and `0x0023f158`. The follow camera sees only that its target stands
+elsewhere on its next update (`Cam_Follow_Update`, `0x0012ae58`, [the follow update](camera.md#update)):
+
+1. Its look-at point closes the gap a share at a time: all of a move up to 0.4 m, 20% of one beyond 0.8 m (step 5), so
+   after a short teleport the view glides to the new place over a few updates. Confirmed (code) at `0x00127d88`. In
+   the running game a 2 m `Teleport` at level99's street end moved the look-at point 0.4, 0.32, 0.256, 0.205, 0.164,
+   0.321 and 0.335 m over seven updates, and the camera 0.059 m in all: confirmed (runtime), run
+   r-20261025-camera-glides-after-teleport.
+2. When the camera is lost, it is put behind the target at once, as `CameraReset` puts it (step 7, with one player
+   camera): its position of the last update more than 1.3 × the maximum distance from the look-at point across the
+   ground, or more than 30 m above or below it. Confirmed (code) at `0x0012b918`-`0x0012b9c8`. With level99's 6.6 m
+   maximum the limit is 8.58 m. The look-at point moves at most 20% of a long move on the first update, and from then
+   on the hard band keeps the camera within its far edge of the look-at point (about 5.7 m), so only a teleport of
+   about 20 m or more away from a camera 4.8 m behind is lost; a shorter one is followed. Inferred from steps 5, 7 and
+   19 of the update. In the running game a 30 m `Teleport` put the camera behind the player on the first update after
+   it (from 4.8 m behind the old place to 4.7 m behind the new): confirmed (runtime), run
+   r-20261025-camera-glides-after-teleport.
+3. A script that wants the view behind the new place calls `CameraReset` after the teleport, and the reset reads where
+   the target stands then (`Cam_Follow_PlaceAtHeading` gathers its targets first, `0x001250a8`). level99's lessons
+   do it before handing back from a cut-away (`level99_lesson1.lua`, `level99_lesson2.lua`, after each
+   `TeleportToFlag(player, ...)`), and `level95.lua`'s `StartDoorWalk` does it after its teleport when it has no door
+   camera ([The door walks](camera.md#door-walks)). Confirmed (code) at `0x001250a8`.
+4. A scene that had its own camera ends by resetting the follow camera it hands back to, after its humans are let go,
+   so the view starts behind the place the scene left the player ([Scenes take the camera](camera.md#scenes)).
+   Confirmed (code) at `0x0039f450`.
+
 ### The hand-over {#handover}
 
 `HuChangePlayerGang` makes a chosen AI human player 1 (`Human_MakePlayer`, `0x00229c40`, [the level99
@@ -168,12 +200,13 @@ the dealer. Script locators are given as file and function.
   heading for one update), the placed marks (`+0x1b3` makes `Human_GetNavPolygon` look the polygon up again, and Coney
   caches none; the flag at `+0x54` has no reader traced) and the body's re-pose bit (Coney's body is posed from the
   position at each use). Coney pops a front move whatever `+0xec` holds, having no such state.
-- A placement of the player puts the camera behind him (`Player::cameraAfterPlacement()`), a **stand-in**: neither
-  `Object_Teleport` nor `Object_TeleportToFlag` calls the camera code ([Cameras](camera.md)), so the original's follow
-  camera follows the new position and puts itself behind him only when it is lost ([the follow
-  update](camera.md#update), step 7, which Coney's follow update does not build). Coney's level start and a scene's end
-  set up the camera through this cut. To measure: a short `Teleport` mid-play in PCSX2, whether the view glides to the
-  new place.
+- A placement of the player leaves the camera alone ([The camera](#camera)): `camera::FollowCamera::update()` follows
+  the new place and puts itself behind him when lost (`FollowCamera::resetWhenLost()`), and the follow camera reads
+  where the player stands whenever it places itself (`FollowCamera::setTargetSource()`, which `human::Player` gives
+  it), so the scripts' `CameraReset` and a scene's end go behind the new place. Disc test:
+  `tests/human/disc_player_placement_test.cpp`; unit tests: `tests/camera/follow_placement_test.cpp`. Coney's own
+  jumps that stand for a walk (the debug menus' teleport, `--start`, the debug menus' character change) still put the
+  camera behind the player (`Player::resetCamera()`, `CameraReset` with what the scripts set kept).
 - Coney's choices: a climb in progress ends at a placement ([q-placement-rest](#q-placement-rest)). After a scene clip
   played to its end Coney places the human where the clip left it, with no drop and no pop of the brain's front move,
   since Coney's scene drives a frame and not the human, and the original places no one there.

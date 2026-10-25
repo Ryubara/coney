@@ -682,7 +682,13 @@ then the default), the default when at most halfway from the default to the maxi
 maximum − 0.5 (zoom step the minimum); then the previous look-at points are set to the current one, the wanted near
 edge cleared, **the target pitch set back to the configured pitch** (13°) and reached at once, the wanted field of view
 set back to the configured one (over 1 s), and a line-of-sight test from the target pulls the camera in if the world is
-in the way. It does not move the band. For a follow camera the other player's follow camera is reset too.
+in the way. It moves the band to that distance (`0x00124f38` passes 1 as `0x001250a8`'s last argument, which sets
+`+0x32c` to it and `+0x330` to it + min(0.5, max − min); this page said before that it did not move the band).
+Confirmed (code). For a follow camera the other player's follow camera is reset too. The
+placement reads the target where it stands at that moment: `Cam_Follow_PlaceAtHeading` first gathers the targets and
+snaps the look-at point onto the target's transform (`Cam_Follow_RefreshLookAt` `0x00127d48`), and its heading is the
+target's facing then, so a `CameraReset` right after a teleport goes behind the new place. Confirmed (code). The
+distance it starts from is the held position's (`+0x260`) from the look-at point before that snap.
 
 ### The follow update {#update}
 
@@ -720,9 +726,12 @@ single-player case.
    `level99` has no hiding spot on its path (inferred).
 6. **Field of view** eases toward `+0x394` at `+0x39c` degrees per second, at most 7.5, or over the timed move's
    remaining time `+0x40c` when one runs (then `|fov − wanted| / +0x40c` per second).
-7. **Reset when lost** (only with one player camera, `0x0050b19c` = 1): when the held position `+0x260` is more than
-   **1.3 × the maximum distance** `+0x304` from the look-at point, or the camera is more than **30 m** above or below
-   it, `0x00124d00` puts the camera behind the player as `CameraReset` does. Confirmed (code).
+7. **Reset when lost** (only with one player camera, `0x0050b19c` = 1): when the held position `+0x260` of the last
+   update is more than **1.3 × the maximum distance** `+0x304` from the look-at point **across the ground** (x and y
+   only; the squares are compared with 1.69 × max², and only with one target), or the camera (its position at
+   `+0x10`) is more than **30 m** above or below it, `0x00124d00` puts the camera behind the player as `CameraReset`
+   does, with its pitch and field of view step when the target is a player (its byte `+0x1b0` is not −1).
+   Confirmed (code) at `0x0012b918`-`0x0012b9c8` and `0x0012aff0`-`0x0012b014`.
 8. **Look-behind** (`0x001298c0`, [below](#reverse)) while the reverse button is held, and on the update it is let go.
    Confirmed (code).
 9. **Framing rules**, only while the stick has been still for 0.334 s (`+0x368` = 0) and the view is not pulled out
@@ -3399,7 +3408,8 @@ position, and `CamSetFollowPos` puts the follow camera at a point at once.
   ([update step 5](#update)), and once the held position is more than 1.3 × the maximum distance from the look-at
   point (or 30 m above or below it), step 7 puts it behind the player as `CameraReset` does, with one player camera
   only. A script that wants a cut calls `CameraReset` itself (inferred: the camera's path for a long move follows from
-  those two steps; not seen at runtime).
+  those two steps; not seen at runtime). Coney builds both steps and no longer cuts after a placement
+  ([Placing a human](teleports.md#camera)).
 - **The power camera's events and shots** (answered, [Power-move camera](#power-camera)): begin `0x39`, add shot
   `0x3b`, cut `0x3a`, end `0x3d`; eight shots at most, in the followed human's frame at the begin; the first cut
   tests them with two sphere sweeps and picks a pair from a counter; every cut and the hand-back are hard cuts.

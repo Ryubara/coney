@@ -57,7 +57,7 @@ struct FollowTuning {
 [[nodiscard]] FollowTuning& followTuning();
 
 /// The settings a new follow camera starts with when none are given: FollowSettings' defaults (level99's values)
-/// unless a debug menu changed them. A change applies when the camera is next placed (a level start or a reset).
+/// unless a debug menu changed them. A change applies to the next follow camera made (a level start).
 [[nodiscard]] FollowSettings& followDefaults();
 
 /// Yaw rate from the right stick's raw x byte (0-255, 128 at rest), radians a second: 150°/s at 0 falling to 60°/s
