@@ -758,9 +758,21 @@ Each contact falls in the update whose sample first shows the damage, and every 
 tables to the update ([Reading the tables](#reading)), including the late ties: 25 / 27 / 29 off (frame 5), 23 / 33 off
 (frame 8) and 193 / 194 on (frame 8). Confirmed (runtime).
 
+**Damage as the blow lands.** With a pedestrian made 1.0 m in front of the player, facing him, the damage showed
+2 updates after `S1` started (17), 4 after `SS2` (36), 7 after the kick `SSX3` (61) and 9 after `X1` (26); the grab
+strike 53 took its 57 on the update it started. In a real-time capture of `S1`, the fist reached the pedestrian's
+face 4 frames (2 updates) after the punch first moved on screen, the same 2 updates the memory showed from the anim id
+to the health drop; the picture ran about 8 frames behind the memory. So the health goes as the punch lands, not when
+it starts. Confirmed (runtime), run r-20261025-strike-contact-timing.
+
 ## In Coney
 
 The moves Coney plays and where they differ from the table above: [Combat differences](combat-diffs.md).
+
+A free attack of a human with strike shapes takes the victim's health from the strike test, on the first update a
+shape touches him (`Human::testStrikes`, `Fighter::strikeContact`, after `Strike_Contact` `0x0021b290`, confirmed
+(code)). With a fighter 1.0 m ahead in `level99` its damage shows 3 updates into `S1`, 4 into `SS2`, 7 into `SSX3`, 8
+into `X1` and 7 into 653, each within one update of the original (`repo:tests/platform/disc_strike_contact_test.cpp`).
 
 ### The tandem {#tandem-coney}
 

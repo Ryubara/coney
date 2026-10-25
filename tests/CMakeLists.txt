@@ -469,6 +469,7 @@ if(CONEY_DEBUG_TOOLS)
         platform/disc_level99_street_props_test.cpp
         platform/disc_rise_counter_test.cpp
         platform/disc_sprint_attacks_test.cpp
+        platform/disc_strike_contact_test.cpp
         platform/disc_tandem_test.cpp
         platform/imgui_model_view_test.cpp
         platform/imgui_ui_scale_test.cpp

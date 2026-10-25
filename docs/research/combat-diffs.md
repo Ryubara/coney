@@ -44,13 +44,12 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 [Targets](combat-targets.md#targeting). Coney (main at `f4562750`): `repo:src/combat/attacks.cpp`,
 `repo:src/human/fighter.cpp`.
 
-- **The hit update.** Coney lands every attack on one update per id: the measured contacts for 11, 13-17 and 19 and
-  the grab strikes, and **update 2 for every other id**, the special 653 included, whatever the distance. The
-  original lands a hit only when a strike shape touches the target, inside the clip's shape window: 653's hands are
-  live at 2-8 and touched at 6-7 at runtime, so in Coney cross + square hits about 4 updates early and hits a target
-  the hands never reach. The snaps, strafes, low and mid strikes, 193 / 194, 212, 661, 120 and 22 have the same
-  problem. A moving attack's shapes (charge, dive, 23, 24) are used only against objects; on a human it too hits
-  2 updates in (`repo:src/platform/play_level_objects.cpp`).
+- **The hit update of a body without shapes.** The original deals a free attack's damage only through the strike
+  test (`Strike_Contact`, `0x0021b290`, confirmed (code)): an attack whose clip switches no strike shape never hits.
+  Coney does the same for every human with a skeleton (`Human::testStrikes`), within one update of the original at
+  1.0 m ([Runtime results](combat-moves.md#runtime)), but a victim with no strike shapes (the sandbox's targets) and
+  an attack whose clip switches no shape still take the hit on one update per id: the measured contact, or update 2
+  (`repo:src/combat/attacks.cpp`).
 - **The attack's target.** Coney searches afresh for every attack along the stick with the attack's own far range
   × 1.1 (`Fighter::steer`). The original keeps the current target for square in the stance (searching only without
   one or beyond 3 m), searches for cross with a fixed 2.0 m, keeps the target on a square chain step, and uses the
