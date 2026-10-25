@@ -2166,21 +2166,16 @@ status = "legacy"
 address = 0x00287730
 name = "Player_Special"
 page = "combat/index.md#run-attacks"
-role = "cross + square, circle + cross, circle + triangle outside a grab"
+role = "cross + square, circle + cross and circle + triangle (the spray 664) outside a grab, refused for a player holding any object"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/combat/player_combat.h:PlayerCombat::special"
-status = "legacy"
+status = "compared"
 
 [[function.gaps]]
-what = "circle + triangle (command 0x24): the tag 664 where the player may tag, spending one paint"
-relation = "not-ported"
-issue = 860
-
-[[function.gaps]]
-what = "the refusal tests the held object's anim set for any fighter, where the original tests a pad player holding any object"
+what = "the spray's drop and paint are kept for the play mode's player 1 only; no AI keeps its paint count (+0x374) or picks attack kind 15"
 relation = "stand-in"
-issue = 860
+question = "combat/index.md#q-ai-spray"
 
 [[function]]
 address = 0x002878b8
