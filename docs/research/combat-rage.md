@@ -310,8 +310,10 @@ from the disc's clips (identical in both copies). So the flash is used partway i
 (then nothing is spent), and the player hears the animation sound 70 and `Flash_Use`'s interface sound 23 on the same
 update. At runtime 665 plays slower than its frames say: started on update N, `Flash_Use` ran from the event on update
 N + 25 and 665 lasted **53 updates** (N to N + 52), standing still and over a block alike, where 40 frames at 30 per
-second would give 19 and 40 (both ratios about 0.75). Confirmed (runtime), `flash_idle` and `flash_block` below; what
-sets that rate is not traced (`Human_PushOverlayClip`, `0x0025ade8`, passes no rate).
+second would give 19 and 40. Confirmed (runtime), `flash_idle` and `flash_block` below. The rate is 0.75, the one an
+Anim Range List record with none of the rate flags gets ([Playback rate](formats/animation.md#playback-rate);
+`Human_PushOverlayClip`, `0x0025ade8`, passes none of its own): inferred from the counts, since that rate and [the
+update rule](combat-moves.md#timing) give exactly 25 updates for frame 19 and 53 for 40 frames.
 
 **Taking flash from the dealer** plays the money pair, not 665: the dealer's anim 668 bound to `money_take` and the
 buyer's 668 to `money_give` (both 1.333 s, each with a type-8 partner-place event at frame 0, about 0.97 m ahead;
@@ -524,9 +526,6 @@ Coney as of `781d7768`, against [Everything rage does](#rage-effects):
 
 ## Open questions
 
-- **The flash clip's play rate**{#q-flash-rate}: what sets 665's rate, about 0.75 at runtime
-  (`Human_PushOverlayClip` passes no rate; [L1 + R1 and the flash](#flash)). Found from the clip's speed field or the
-  task's rate in memory.
 - **The presses on landing**{#q-flash-landing}: whether d-pad right pressed on landing from a jump gives a command at
   all ([The flash during a move](#flash-mid-move)). A watch on the per-player command `+0x20` through a landing would
   tell.
