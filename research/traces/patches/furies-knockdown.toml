@@ -1,9 +1,9 @@
-# The level34 Furies pass (docs/research/combat-reactions.md#bat-knockdown, issue #492): what each hit on the player
+# The level34 Furies pass (docs/research/combat-throws.md#bat-knockdown, issue #492): what each hit on the player
 # deals before the damage is applied, and who deals it.
 
 [hook.deal-damage]
 description = "Each call of Human_DealDamage (0x0021d680, from Strike_Contact and the other damage paths): the victim, the damage as the caller worked it out, the attacker (0 for none), the word at the victim's health (record +0x144, its low 16 bits) before the hit lands, and the caller."
-research = "docs/research/combat-reactions.md#bat-knockdown"
+research = "docs/research/combat-throws.md#bat-knockdown"
 address = 0x0021d680
 # addiu sp,sp,-0xa0; sq s0,0x90(sp)
 original = [0x27bdff60, 0x7fb00090]

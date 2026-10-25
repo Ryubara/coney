@@ -789,7 +789,7 @@ addresses cited unless marked.
    attacks](combat-targets.md#ai-attacks)), and square and cross choose their clip by the **held object's set**
    (`0x00231a80`, [Combat: moving attacks with something in hand](combat-throws.md#armed-moves)), so a Warrior holding a
    bat (set 3) swings 34 / 36 (37 at a grounded target, though the `level34` Furies also used the unarmed grounded
-   strikes 193 / 194 with a bat in hand, [Combat: a bat's hit](combat-reactions.md#bat-knockdown)), a baton (set 2) 39 /
+   strikes 193 / 194 with a bat in hand, [Combat: a bat's hit](combat-throws.md#bat-knockdown)), a baton (set 2) 39 /
    41, a knife (set 1) 45 / 47.
 3. **The damage** is that clip's [damage table](combat/index.md#damage-table) value plus the weapon's: `Strike_Contact`
    (`0x0021b290`) adds the object type's `CfgObj` u16 `+0x58` and multiplies by the attacker's class record's first
@@ -798,7 +798,7 @@ addresses cited unless marked.
    **Correction** (issue #492, confirmed (runtime) for `dyn_bat` in the `level34` Furies' hands only): their bat
    swings (501, 36, 37) never reached `Strike_Contact`; each hit was the bat's own body touching the victim
    (`WorldObject_OnContact` `0x00394050` → `ThrownObject_HitHuman` `0x00392b88`), which deals `CfgObj` `+0x58` × the
-   holder's class float, without the clip's damage ([Combat: a bat's hit](combat-reactions.md#bat-knockdown)). Not
+   holder's class float, without the clip's damage ([Combat: a bat's hit](combat-throws.md#bat-knockdown)). Not
    checked: the knife (set 1), the baton (set 2), other bats, and the player's own bat swings, so whether a weapon
    hits as hard in a Warrior's hand as in the player's is open.
 4. **His choices change too.** `Brain_PickAttack` adds the **armed bonus** (+100 to every candidate of kinds 0-9 with
@@ -828,7 +828,7 @@ its anim set):
    `repo:src/ai/swap_prompt.cpp`).
 3. Check that an AI fighter with a held set picks its square / cross clips from the held object's set (34 / 36 for a
    bat) and that an AI's bat hit deals the bat's `CfgObj` `+0x58` × his class float, as the bat's own contact does
-   ([Combat: a bat's hit](combat-reactions.md#bat-knockdown)). Only `dyn_bat` in an AI's hand was measured; the knife,
+   ([Combat: a bat's hit](combat-throws.md#bat-knockdown)). Only `dyn_bat` in an AI's hand was measured; the knife,
    the baton and the player's bat are unchecked, so keep their damage path an open question until they are.
 4. Add the armed bonus to Coney's attack pick and the set's clips to its reach test, if missing.
 5. Drop a held kind 4 or 6 object from a Warrior with no enemies outside co-op.

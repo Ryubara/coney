@@ -160,13 +160,7 @@ copied = 1
 history = 7
 
 ["docs/research/combat-reactions.md"]
-front-matter = 1
-skeleton = 8
-verified = 1
-evidence = 55
-address-form = 1
-copied = 1
-history = 12
+evidence = 33
 
 ["docs/research/combat-targets.md"]
 front-matter = 1
@@ -177,7 +171,7 @@ copied = 1
 history = 3
 
 ["docs/research/combat-throws.md"]
-evidence = 37
+evidence = 44
 
 ["docs/research/combat/index.md"]
 evidence = 48
