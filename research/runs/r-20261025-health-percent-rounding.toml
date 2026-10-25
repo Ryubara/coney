@@ -1,0 +1,36 @@
+version = 1
+id = "r-20261025-health-percent-rounding"
+date = "2026-10-25"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "afae11ccdcbe5015547093fbb7e5c4a211b1548c20d81100863fd04ca1ce55b7"
+
+[who]
+agent = "unknown"
+type = "unknown"
+model = "unknown"
+source = "unverified"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "breakable-fence-flash"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "level99 checkpoint 3 from the state, patch call-brains: the lua recipe ran HuSetHealthPercent(player, P) for P = 50, 35, 100, 1, 10, 75 in turn, and the health recipe read the player's health (+0x144) and maximum (+0x146) after each"
+
+[values]
+health_max = 900
+health_at_50 = 449
+health_at_35 = 314
+health_at_100 = 899
+health_at_1 = 8
+health_at_10 = 89
+health_at_75 = 674
+
+[addresses]
+human_set_health_percent = 0x002378a8

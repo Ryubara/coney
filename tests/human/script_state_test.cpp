@@ -89,8 +89,8 @@ TEST_CASE("a demi-god's hit stops at the floor fraction, which makes it a god", 
     Fight fight(character, 30.0F);
     fight.human().setFlag(flag::kDemiGod, true);
     fight.human().setHealthPercent(30.0F);
-    REQUIRE(fight.human().fighter().health().value() == 270);
-    // 100 would take 270 to 170: the floor (0.25 of 900) holds it at 225, and god mode follows.
+    REQUIRE(fight.human().fighter().health().value() == 269);
+    // 100 would take 269 to 169: the floor (0.25 of 900) holds it at 225, and god mode follows.
     fight.human().takeHit(hitOf(12, 100, 0x0a, 0x800));
     fight.run("", 1);
     CHECK(fight.human().fighter().health().value() == 225);
@@ -105,7 +105,7 @@ TEST_CASE("a demi-god's hit stops at the floor fraction, which makes it a god", 
     mortal.human().setHealthPercent(30.0F);
     mortal.human().takeHit(hitOf(12, 100, 0x0a, 0x800));
     mortal.run("", 1);
-    CHECK(mortal.human().fighter().health().value() == 170);
+    CHECK(mortal.human().fighter().health().value() == 169);
     combat::combatTuning().healthFloor = 0.1F;
     Fight lower(character, 30.0F);
     lower.human().setFlag(flag::kDemiGod, true);
@@ -116,11 +116,11 @@ TEST_CASE("a demi-god's hit stops at the floor fraction, which makes it a god", 
 }
 
 TEST_CASE("HuSetHealthPercent truncates; a percentage outside (0, 100] gives full health", "[human][script]") {
+    // Expected: ../references/bindings/character.md#husethealthpercent, confirmed (runtime)
     const FightCharacter character;
     Fight fight(character, 30.0F);
     fight.human().setHealthPercent(50.0F);
-    CHECK(fight.human().fighter().health().value() == 450);
-    CHECK(fight.human().healthPercent() == 50.0F);
+    CHECK(fight.human().fighter().health().value() == 449);
     fight.human().setHealthPercent(33.3F);
     CHECK(fight.human().fighter().health().value() == 299);
     fight.human().setHealthPercent(0.0F);
@@ -128,6 +128,22 @@ TEST_CASE("HuSetHealthPercent truncates; a percentage outside (0, 100] gives ful
     fight.human().setHealthPercent(20.0F);
     fight.human().setHealthPercent(150.0F);
     CHECK(fight.human().fighter().health().value() == 900);
+}
+
+TEST_CASE("HuSetHealthPercent rounds as the PS2's float products do: one point under the exact share",
+          "[human][script]") {
+    // Expected: ../references/bindings/character.md#husethealthpercent, confirmed (runtime)
+    // The values the original gave a 900 maximum (run r-20261025-health-percent-rounding); exact arithmetic would give
+    // 450, 315, 900, 9, 90 and 675.
+    const FightCharacter character;
+    Fight fight(character, 30.0F);
+    REQUIRE(fight.human().fighter().health().maximum() == 900);
+    constexpr std::array<std::array<int, 2>, 6> kPercentAndHealth{
+        {{50, 449}, {35, 314}, {100, 899}, {1, 8}, {10, 89}, {75, 674}}};
+    for (const auto& [percent, health] : kPercentAndHealth) {
+        fight.human().setHealthPercent(static_cast<float>(percent));
+        CHECK(fight.human().fighter().health().value() == health);
+    }
 }
 
 TEST_CASE("an unstunnable human is not stunned and an ungroundable one is not knocked down", "[human][script]") {

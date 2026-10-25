@@ -631,8 +631,10 @@ class Human final : public Holdable {
     void stunFor(std::uint64_t nowMs, std::uint64_t durationMs) { m_fighter.stunFor(m_animator, nowMs, durationMs); }
     /// Ends a stun now (Fighter::endStun()).
     void endStun(std::uint64_t nowMs) { m_fighter.endStun(nowMs); }
-    /// `HuSetHealthPercent`: health becomes `percent` of the maximum, truncated to whole points; a value outside
-    /// (0, 100] gives full health.
+    /// `HuSetHealthPercent`: health becomes `percent` of the maximum in the PS2's single-precision arithmetic
+    /// (rounded toward zero), truncated to whole points, so it lands one point under the exact share where that is
+    /// whole (35 % of 900 is 314, 100 % is 899); a value outside (0, 100] gives full health.
+    /// Research: docs/references/bindings/character.md#husethealthpercent
     /// @orig 0x002378a8 Human_SetHealthPercent (unknown)
     void setHealthPercent(float percent);
     /// `HuRevive` (Fighter::revive()), which ends in the heal: the body is made again, so it blocks other humans'
