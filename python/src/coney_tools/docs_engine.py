@@ -5,9 +5,9 @@ An engine page describes Coney's own internals and port notes, never what the or
 It is a guide in how it reads and what the Style rules refuse, and holds the same length warning, but it keeps three
 rules a guide does not, because it says where Coney's code stands against the original:
 
-* `history`: no date (in code too; only a fenced block is not read), and an issue or pull request number only as the
-  whole text of a link whose target is `issue:<same number>` (an issue tracks a stand-in that is to be replaced, so the
-  reader can follow it, but the page does not narrate it);
+* `history`: no date (in code too; only a fenced block and the inline target of a link are not read), and an issue or
+  pull request number only as the whole text of a link whose target is `issue:<same number>`, or inside a code span (an
+  issue tracks a stand-in that is to be replaced, so the reader can follow it, but the page does not narrate it);
 * `address-form`, `address-resolve`, `address-name`: an address of `SLUS_212.15` that a page cites is written in full,
   resolves in the executable and is named as Ghidra names it (the research rule, `research_check.check_addresses`);
 * `index`: the folder has a landing page, `docs/engine/index.md`.
@@ -40,6 +40,8 @@ _ISSUE_TARGET = re.compile(r"issue:(\d+)")
 #: A link reference definition that is whole-line `[label]: issue:<number>`; with anything after the target it is no
 #: definition, and the build leaves it alone.
 _ISSUE_DEFINITION = re.compile(r"^ {0,3}\[(?P<label>[^\]\n]+)\]:[ \t]*issue:(?P<number>\d+)[ \t]*$")
+#: Any link reference definition, whatever its target: it claims its label, so a later definition of it is ignored.
+_DEFINITION = re.compile(r"^ {0,3}\[(?P<label>[^\]\n]+)\]:[ \t]*\S")
 #: `#<n>` right after one of these words numbers a thing of Coney's own ("player #1", "pad #0"), not an issue. This list
 #: is the whole rule: after any other word, `#<n>` is an issue reference.
 _COUNTED = re.compile(
@@ -68,13 +70,20 @@ def _label(text: str) -> str:
     return " ".join(text.casefold().split())
 
 
-def _issue_definitions(page: Page) -> dict[str, str]:
-    """The labels the page defines as `issue:<number>`, with their numbers."""
-    found: dict[str, str] = {}
+def _issue_definitions(page: Page) -> dict[str, str | None]:
+    """The page's link reference definitions by label: the number when the first definition of the label is
+    `issue:<number>`, else None. Markdown takes the first definition of a label, so a later one changes nothing."""
+    found: dict[str, str | None] = {}
     for line in page.lines:
-        match = None if line.fenced else _ISSUE_DEFINITION.match(line.text)
+        if line.fenced:
+            continue
+        match = _ISSUE_DEFINITION.match(line.text)
         if match:
             found.setdefault(_label(match.group("label")), match.group("number"))
+            continue
+        other = _DEFINITION.match(line.text)
+        if other:
+            found.setdefault(_label(other.group("label")), None)
     return found
 
 
@@ -109,7 +118,7 @@ def _check_history(page: Page) -> Iterable[Finding]:
                 "history",
                 line.number,
                 f"'{date.group(0)}' dates the page: say what is true (git keeps the history; a date in code counts, "
-                "a fenced block does not)",
+                "a fenced block and a link's inline target do not)",
             )
             continue
         issue = ISSUE.search(CODE_SPAN.sub(" ", _COUNTED.sub(" ", plain)))

@@ -127,6 +127,17 @@ def test_a_definition_in_a_fenced_block_defines_nothing() -> None:
     assert rules_of(engine(text)) == ["history"]
 
 
+def test_a_label_defined_twice_means_its_first_definition() -> None:
+    link = "It waits for [#123][tracker].\n\n"
+    # Markdown takes the first definition, so a later `issue:` one does not rescue a link that goes elsewhere.
+    assert rules_of(engine(page(link + "[tracker]: ../roadmap.md\n[Tracker]: issue:123\n"))) == ["history"]
+    assert engine(page(link + "[tracker]: issue:123\n[Tracker]: ../roadmap.md\n")) == []
+
+
+def test_a_date_in_a_reference_definitions_target_is_refused() -> None:
+    assert rules_of(engine(page("See [x][a].\n\n[a]: https://example.org/2026-10-05\n"))) == ["history"]
+
+
 def test_a_shortcut_reference_is_a_link_only_when_the_page_defines_it() -> None:
     assert rules_of(engine(page("The stand-in waits for [#123].\n"))) == ["history"]
     assert rules_of(engine(page("The stand-in waits for [#124].\n\n[#123]: issue:123\n"))) == ["history"]

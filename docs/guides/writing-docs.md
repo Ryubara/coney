@@ -428,17 +428,19 @@ as a [guide](#page-kinds) (the Style rules, the 800-line warning), and three mor
 code ports:
 
 - **No date, and no issue number but as a link to that issue** (`history`). History lives in git and the pull requests.
-  A stand-in that is to be replaced may name the issue that tracks it, and the check accepts exactly one form: the
-  whole text of a link is the number (`#123`, `issue 123`, `issue #123`, `PR 45`, `PR #45` or `pull request #45`, in
-  any case) and its target is `issue:` and the same number ([Adding a page](#adding-a-page), step 3). The link is
-  inline (`[#123](issue:123)`) or by reference (`[#123][tracker]`, `[#123][]` or `[#123]`) with a definition on its own
-  line, `[tracker]: issue:123`, which is the whole line (a title or other text after the target makes it no
-  definition). Any other target (`../roadmap.md`, `issue:abc`, another number, a label with no definition) leaves the
-  number refused, as does a link text that says more than the number. A date is refused wherever it stands, inline code
-  included; only a fenced block is not read, and an issue number in a code span is not read either. `#<n>` after one of
-  the words player, pad, gamepad, slot, port, controller, button, channel, lane, axis, stick or trigger ("player #1",
-  "pad #0") numbers a thing of Coney's own and is not an issue; after any other word it is. There is no section that may
-  hold a date or an issue number, unlike a research page's In Coney.
+  A stand-in that is to be replaced may name the issue that tracks it, and the check accepts exactly one form: the whole
+  text of a link is the number (`#123`, `issue 123`, `issue #123`, `PR 45`, `PR #45` or `pull request #45`, in any case)
+  and its target is `issue:` and the same number ([Adding a page](#adding-a-page), step 3). The link is inline
+  (`[#123](issue:123)`) or by reference, with its definition a line of its own and nothing else: `[#123][tracker]` with
+  `[tracker]: issue:123`, or `[#123][]` and `[#123]` with `[#123]: issue:123` (the label is the link text when none is
+  given). A title or other text after the target makes it no definition, and a label defined twice means its first
+  definition, as in Markdown. Any other target (`../roadmap.md`, `issue:abc`, another number, a label with no
+  definition) leaves the number refused, as does a link text that says more than the number. An issue number in a code
+  span or a fenced block is not read. A date is refused everywhere except in a fenced block and in the inline target of
+  a link (`[x](a-2026-10-05.md)`); inline code and a reference definition's target are read. `#<n>` after one of the
+  words player, pad, gamepad, slot, port, controller, button, channel, lane, axis, stick or trigger ("player #1", "pad
+  #0") numbers a thing of Coney's own and is not an issue; after any other word it is. There is no section that may hold
+  a date or an issue number, unlike a research page's In Coney.
 - **An address of `SLUS_212.15` is written in full and resolves** (`address-form`, `address-resolve`; `address-name` warns
   when the name beside it is not Ghidra's), as on a research page ([Addresses](#addresses)). A level beside it is not
   asked for. The check reads inline code too, and an engine page has no How this was checked section to excuse a heap
@@ -477,7 +479,7 @@ is read as any other page. What each rule looks at, by the kind of page ([Page k
 | `decompile` | research | One of Ghidra's made-up names (`param_1`, `uVar2`, `DAT_005127e4`, `FUN_00123456`), in the text or in a code block: the mark of a pasted decompile, which the page never holds ([LEGAL.md](repo:LEGAL.md#research-limits)). Cite the address, or name the thing for what it is. A survey may name a register or placeholder (`in_EAX`, `unaff_ESI`) by itself in a code span, as the subject of what Ghidra makes of an executable; an expression, a bare word and a code block are refused on every page |
 | `function-entries` | research | An entry of the [function database](research-function-database.md) that points at the page for an address the page does not own, or that another page owns (the most specific `owns` entry wins): point the entry at the page that owns it, or add the address to `owns`. Checked once the page has front matter; `research render --check` reports the same |
 | `copied` | research | A paragraph of 200 characters or more that is also on another research page |
-| `history` | research, engine | Research: a date or an issue number outside In Coney and How this was checked. Engine: a date anywhere but a fenced block, and an issue number that is not the whole text of a link to `issue:` and the same number ([the forms](#engine-pages)) |
+| `history` | research, engine | Research: a date or an issue number outside In Coney and How this was checked. Engine: a date anywhere but a fenced block or a link's inline target, and an issue number that is not in a code span or the whole text of a link to `issue:` and the same number ([the forms](#engine-pages)) |
 | `length` | research, guides, engine | Research: more lines than the kind's limit, an error unless the page is legacy. Guides and engine pages: a **warning** above 800 lines, because a guide past that is several guides and where to cut is the author's call |
 | `index` | engine | `docs/engine/index.md` is missing, or a change removes it while other engine pages remain |
 | `legacy` | research | A new page in the legacy file; a rule listed for a page that now passes it; a change to the file that adds a page or a rule |

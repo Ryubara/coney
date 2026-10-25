@@ -20,9 +20,10 @@ from pathlib import Path
 _REPO_LINK = re.compile(r"\]\(repo:([^)\s]+)\)")
 # An `issue:<number>` link target: inline, `](issue:123)`, or in a link reference definition, `[ref]: issue:123`.
 _ISSUE_LINK = re.compile(r"\]\(issue:(\d+)\)|^( {0,3}\[[^\]\n]+\]:[ \t]*)issue:(\d+)[ \t]*$", re.MULTILINE)
-# Code, where a link is not a link: a fenced block (to its closing fence or the end) or an inline code span.
+# Code, where a link is not a link: a fenced block (to its closing fence or the end; indented as it is in a list item,
+# as `docs_page` reads it) or an inline code span.
 _CODE = re.compile(
-    r"(?sm)^ {0,3}(?P<fence>`{3,}|~{3,}).*?(?:^ {0,3}(?P=fence)[`~]*[ \t]*$|\Z)"
+    r"(?sm)^[ \t]*(?P<fence>`{3,}|~{3,}).*?(?:^[ \t]*(?P=fence)[`~]*[ \t]*$|\Z)"
     r"|(?P<ticks>`+)(?!`)[^\n]*?(?<!`)(?P=ticks)(?!`)"
 )
 

@@ -76,6 +76,13 @@ def test_links_in_a_fenced_block_are_left_as_written(hooks: ModuleType, opening:
     assert inside in done
 
 
+def test_a_fenced_block_in_a_list_item_is_code_as_it_is_for_docs_check(hooks: ModuleType) -> None:
+    inside = "    [b](issue:2) [c](repo:LEGAL.md)\n    [t]: issue:3\n"
+    text = f"- item\n\n    ```text\n{inside}    ```\n\n[d](issue:4)\n"
+    done = hooks.resolve_repo_links(text, BASE)
+    assert inside in done and f"[d]({BASE}/issues/4)" in done
+
+
 def test_an_unclosed_fence_runs_to_the_end_of_the_page(hooks: ModuleType) -> None:
     text = "[a](issue:1)\n\n```\n[b](issue:2)\n"
     assert hooks.resolve_repo_links(text, BASE) == f"[a]({BASE}/issues/1)\n\n```\n[b](issue:2)\n"
