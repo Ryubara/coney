@@ -13,6 +13,8 @@ from pathlib import Path
 import pytest
 import yaml
 
+from coney_tools.conventions import load_conventions
+
 REPO = Path(__file__).resolve().parents[2]
 AGENTS = REPO / ".claude" / "agents"
 
@@ -62,7 +64,9 @@ def test_every_role_the_hooks_name_has_an_agent_definition() -> None:
 def test_the_committed_hook_config_is_the_safe_rollout() -> None:
     config = tomllib.loads((REPO / ".claude" / "hooks" / "hooks.toml").read_text(encoding="utf-8"))
     assert config["require_role"] is False, "switch require_role on in its own one-line pull request"
-    assert config["pr_guard"]["refuse_pr_create"] is False, "switch it on when `pr open` lands"
+    # The PR guard's switch is not in this file: it is `pull_requests.open_only` of the conventions, which a maintainer
+    # turns on after one pull request went through `coney-tools pr open`.
+    assert load_conventions(REPO).pull_requests.open_only is False
     assert config["identity"]["powershell_modes"] == ["bypassPermissions"]
 
 

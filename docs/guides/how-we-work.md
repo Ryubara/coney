@@ -288,16 +288,14 @@ coordinator, who pushes them when CI has room.
   `coney-tools repo review <PR.md> --worktree <worktree>` and pushes only when `repo check-review` passes. Any edit to
   the description or its pictures, and any new commit on the branch, makes the verdict stale: review again.
 - **The PR guard holds the push to CI's checks.** A Claude Code hook (`.claude/hooks/pr_guard.py`) runs before
-  `gh pr create` and `gh pr edit`. `create` needs `--title` and `--body-file` (never `--body`, `--fill`, `--web` or a
-  body on stdin), and the title and the file must pass `repo check-title` and `repo check-body --title` (with
-  `--local-images` when the command has `--attach`), the checks CI's required `title` and `body` jobs run; `edit` checks
-  the title or file it changes. On 2026-10-20 and 21 CI's `body` job refused six pull requests for a missing section or
-  a local image not attached, mistakes this finds before the push. A relative `--body-file` is found from the folder a
-  leading `cd` moved to. A command that names only another repository passes, a title or file the shell fills in
-  (`"$TITLE"`) is not checked, and the hook lets a command through when it cannot run the checks. Now that
-  `coney-tools pr open` replaces `gh pr create` (its own `gh` calls are subprocesses, which no hook sees), one switch
-  (`[pr_guard] refuse_pr_create` in `.claude/hooks/hooks.toml`, off until the guard task lands) makes the hook refuse
-  every `gh pr create` and every `gh api` call that opens a pull request ([The hooks](agents.md#hooks)).
+  `gh pr create` and `gh pr edit` and makes a hand-typed title and description pass `repo check-title` and `repo
+  check-body --title`, the checks CI's required `title` and `body` jobs run. On 2026-10-20 and 21 CI's `body` job
+  refused six pull requests for a missing section or a local image not attached, mistakes this finds before the push.
+  Now that `coney-tools pr open` replaces `gh pr create` (its own `gh` calls are subprocesses, which no hook sees), one
+  switch (`pull_requests.open_only` in `.github/conventions.yml`, off until one real pull request has gone through
+  `pr open`, then turned on by a maintainer's pull request) makes the hook refuse the hand-typed routes in every
+  session, the coordinator's too. What it refuses, allows and does not cover:
+  [The PR guard](enforcement.md#pr-guard).
 - **Stale failures restart themselves.** `coney-tools repo pr-health --rerun --apply` (run from the coordinator's
   watch loop) reruns a required check that failed because the runner or GitHub did (cancelled, never started, timed
   out, or a log that shows the runner was lost), at most twice per workflow and commit, and never a real lint, build or

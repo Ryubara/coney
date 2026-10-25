@@ -67,7 +67,9 @@ The coordinator's release command: it runs `pr verify` and `pr text` on the unit
 branch, pushes it with a lease, opens or updates the pull request with the generated title and description and the
 pictures attached, turns on auto-merge, reads the pull request back and records it. It commits nothing. An engineer or
 reviewer identity is refused. The steps, each refusal and what to redo: [pr open](pr.md#open). There is deliberately no
-option to skip a check, to take a stamp from elsewhere or to name another base branch.
+option to skip a check, to take a stamp from elsewhere or to name another base branch. Its own `git` and `gh` calls are
+subprocesses, which no hook sees; once a maintainer turns on `pull_requests.open_only`, the PR guard refuses the
+hand-typed ways around it in every session ([The PR guard](enforcement.md#pr-guard)).
 
 | Argument or option | Default | What it does |
 | --- | --- | --- |

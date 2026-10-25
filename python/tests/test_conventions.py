@@ -56,6 +56,12 @@ def test_the_real_pull_request_rules() -> None:
     assert rules.ai_use.written_by.no_ai == "a person"
 
 
+def test_pull_requests_open_only_is_read_as_a_yes_or_no() -> None:
+    # The switch of .claude/hooks/pr_guard.py (test_pr_guard.py holds the hook's reader to this loader).
+    assert conventions_with(("pull_requests.open_only", True)).pull_requests.open_only is True
+    assert conventions_with(("pull_requests.open_only", False)).pull_requests.open_only is False
+
+
 def test_the_real_review_gate() -> None:
     review = load_conventions(REPO).pull_requests.review
     # The legacy gate runs the one merged reviewer (docs/guides/review/index.md), like `task review`.
@@ -263,6 +269,16 @@ BAD: list[tuple[str, tuple[tuple[str, object], ...], str]] = [
     ("an area with a colon", (("commits.title.areas", {"a:b": "x"}),), r"'a:b' must be one word without a colon"),
     ("an area with a space", (("commits.title.areas", {"a b": "x"}),), r"'a b' must be one word"),
     ("an area without text", (("commits.title.areas.docs", ""),), r"areas\.docs: expected non-empty text"),
+    (
+        "an open_only that is text",
+        (("pull_requests.open_only", "yes please"),),
+        r"pull_requests\.open_only: expected true or false",
+    ),
+    (
+        "a pull_requests table with no open_only",
+        (("pull_requests.open_only", REMOVE),),
+        r"pull_requests: missing the key 'open_only'",
+    ),
     ("a boolean where text goes", (("repo.default_branch", False),), r"repo\.default_branch: expected non-empty"),
     (
         "a filled section that does not exist",

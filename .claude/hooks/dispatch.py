@@ -184,11 +184,7 @@ def run_guard(name: str, raw: str, config: dict[str, Any]) -> str | None:
         err = io.StringIO()
         with contextlib.redirect_stderr(err), contextlib.redirect_stdout(io.StringIO()):
             sys.stdin = stdin
-            if name == "pr_guard":
-                pr = config.get("pr_guard", {})
-                code = module.main(refuse_create=isinstance(pr, dict) and pr.get("refuse_pr_create") is True)
-            else:
-                code = module.main()
+            code = module.main()
     except Exception as error:  # a broken guard must not lock the tools: it passes and leaves a line
         record(f"{name}: {type(error).__name__}: {error}")
         return None
