@@ -400,12 +400,13 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
         ++m_respawns;
     }
     const auto& raw = pad.rawSticks(); // right x, right y, left x, left y
-    const camera::FollowTarget after = followTargetOf(*m_driven, pad, m_nearestEnemy, m_padControlled);
+    camera::FollowTarget after = followTargetOf(*m_driven, pad, m_nearestEnemy, m_padControlled);
+    after.debugFlight = m_noclip;
     m_combatFraming = after.lockOn && !after.grabbing;
     if (m_cameras != nullptr) {
         m_cameras->update(after, raw[0], raw[1], mesh, kStepSeconds);
     } else {
-        m_camera.update(after, raw[0], raw[1], mesh, kStepSeconds);
+        m_camera.updateForPlayer(after, raw[0], raw[1], mesh, kStepSeconds);
     }
     // What drawing will read: this step's state, and the last one's to interpolate from.
     m_previous = m_current;

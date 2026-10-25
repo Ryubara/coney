@@ -313,6 +313,13 @@ void HumanAnimator::stopToIdle() {
     m_state = AnimState::Idle;
 }
 
+// Noclip freezes the first idle pose, so a blend from a previous action must not survive entry.
+// @coney-only Noclip's frozen debug pose, docs/guides/debug-menu.md#noclip.
+void HumanAnimator::debugIdle() {
+    m_tasks.change(idleLoop(), 0.0F);
+    m_state = AnimState::Idle;
+}
+
 void HumanAnimator::playCombat(std::span<const std::uint32_t> clips, std::uint32_t loop, AnimState state, float fade,
                                HeldFlags held) {
     playChain(clips, nullptr, loop, state, fade, held);

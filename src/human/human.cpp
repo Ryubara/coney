@@ -1380,7 +1380,8 @@ void Human::animate(const raycast::CollisionMesh* mesh) {
     if (!m_reportSounds) {
         static_cast<void>(m_fighter.takeSounds());
     }
-    if (m_outOfWorld) {
+    // Debug flight holds the idle pose; clip events and animation-driven turns must stay frozen with it.
+    if (m_outOfWorld || m_flight.has_value()) {
         return;
     }
     // The animation's step (a climb follows its clips). A climb's first clip runs during the move to the start point,
@@ -1841,7 +1842,8 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
 }
 
 void Human::updateActions(std::span<Combatant* const> targets, const raycast::CollisionMesh* mesh) {
-    if (m_outOfWorld) {
+    // Debug flight owns movement and holds its idle pose, so neither commands nor gait selection run.
+    if (m_outOfWorld || m_flight.has_value()) {
         return;
     }
     // Stamina and the sprint (a block clears it), combat, triangle, the lean, and the animation state. Combat first,

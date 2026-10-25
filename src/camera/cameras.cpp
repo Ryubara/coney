@@ -607,7 +607,7 @@ void Cameras::update(const FollowTarget& target, std::uint8_t rawRightX, std::ui
             FollowTarget withSecondary = target;
             withSecondary.secondary = secondaryPoint();
             withSecondary.secondaryRange = m_secondaryRange;
-            m_follow->update(withSecondary, rawRightX, rawRightY, mesh, seconds);
+            m_follow->updateForPlayer(withSecondary, rawRightX, rawRightY, mesh, seconds);
         } else {
             m_follow->observe(target);
         }

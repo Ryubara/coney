@@ -171,6 +171,9 @@ class HumanAnimator {
     void startClimb(std::uint32_t firstId, bool running);
     /// Ends whatever plays with the idle (a climb that cannot go on).
     void stopToIdle();
+    /// Starts the idle pose immediately, with no outgoing animation to blend while debug flight holds it still.
+    /// @coney-only Noclip's frozen debug pose, docs/guides/debug-menu.md#noclip.
+    void debugIdle();
     /// Leaves for the idle through its builder (the block let go): its fade holds `0x10000000` while it runs, so the
     /// stick turns the human on the spot and the move waits for its end (idleFading()).
     void settleToIdle();

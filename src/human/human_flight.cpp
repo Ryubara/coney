@@ -25,9 +25,7 @@ void Human::setFlight(std::optional<Flight> flight) {
         m_blockedUpdates = 0;
         m_velocity = anim::Vec3{};
         m_turn = TurnState{};
-        if (m_animator.state() != AnimState::Idle) {
-            m_animator.stopToIdle();
-        }
+        m_animator.debugIdle();
     }
     if (ending) {
         // Standing where it is, still: the next state update's ground test drops it from here (no ground within the

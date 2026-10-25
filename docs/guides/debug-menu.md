@@ -382,6 +382,8 @@ and the selection is a number in the Debug draw options, so a test-mode run play
 The Player page's *Noclip* lets the player fly through walls and floors, to reach any spot of a level quickly or look
 at a place no path leads to. It is Coney's own debug tool (the original has none) and changes nothing while it is off.
 While it is on, pad 1 flies him and does nothing else in the game: no attacks, jumps, climbs, pick-ups or throws.
+Its Lua button handlers are suppressed too, so R1 accelerates flight without also calling a camera handler. Pad 2's
+handlers and the mission timers continue normally.
 
 | Pad | Keyboard | Does |
 | --- | --- | --- |
@@ -392,6 +394,8 @@ While it is on, pad 1 flies him and does nothing else in the game: no attacks, j
 | right stick | none | turn the follow camera round him, as in play |
 
 He has no collision, no gravity and no falling or landing, so no fall hurts him; let go of everything and he hovers.
+He holds the first idle pose without advancing its animation. The follow camera stays behind him without movement
+lag or wall collision, including during vertical flight; the right stick can still orbit and tilt it.
 Switched off, he is dropped from where he stands with the normal physics: on the ground if it is under his feet, else
 he falls to whatever is below. A short notice, *Noclip on* or *Noclip off*, shows under the corner lines for 90 frames.
 

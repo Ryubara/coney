@@ -130,6 +130,8 @@ struct FollowTarget {
     bool counts = true;
     /// A fall that began limp (state flag `0x1000000000`): the aim point moves 60% of the way an update.
     bool longFall = false;
+    /// Coney's noclip camera follows without lag or world collision (docs/guides/debug-menu.md#noclip).
+    bool debugFlight = false;
 };
 
 /// The zoom presets of `CamSetFollowZoom` (docs/research/camera.md#script-calls).
@@ -242,6 +244,10 @@ class FollowCamera {
     /// @orig 0x0012ae58 Cam_Follow_Update (Cam_Follow.cpp)
     void update(const FollowTarget& target, std::uint8_t rawRightX, std::uint8_t rawRightY,
                 const raycast::CollisionMesh* mesh, float seconds);
+    /// Routes player updates through the debug flight camera when requested; ordinary play uses update().
+    /// @coney-only Noclip camera routing, docs/guides/debug-menu.md#noclip.
+    void updateForPlayer(const FollowTarget& target, std::uint8_t rawRightX, std::uint8_t rawRightY,
+                         const raycast::CollisionMesh* mesh, float seconds);
 
     /// `CamEnable(5, on)`: switches the sprint zoom on or off (`+0x468`, on when made). Turning it off cancels a zoom
     /// in progress, leaving the band and the target pitch where they are.
@@ -371,6 +377,9 @@ class FollowCamera {
     }
 
   private:
+    // Places the debug camera behind its flying target, with only explicit right-stick orbit and pitch.
+    // @coney-only Noclip camera, docs/guides/debug-menu.md#noclip.
+    void updateDebugFlight(const FollowTarget& target, std::uint8_t rawRightX, std::uint8_t rawRightY, float seconds);
     // The hard band's near edge before the first update: beyond any band, so the first update sets it at once.
     static constexpr float kNoHardBand = 1e9F;
 
@@ -492,6 +501,7 @@ class FollowCamera {
     anim::Vec3 m_blockPoint;
     anim::Vec3 m_targetFeet; // the target's latest feet and facing
     float m_targetHeading = 0.0F;
+    std::optional<float> m_debugYaw; // debug view heading; only the right stick turns it during flight
 };
 
 } // namespace coney::camera
