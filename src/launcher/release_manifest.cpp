@@ -147,7 +147,9 @@ std::expected<std::vector<ReleaseFile>, Error> parseFiles(const json::Value& lis
         if (!seen.insert(pathKey(*path)).second) {
             return invalid(where, std::format("repeats the path {} (case aside)", *path));
         }
-        if (size == nullptr || !size->asInteger() || *size->asInteger() < 0) {
+        // Read once into a local: the optional-access check cannot tell that a second call returns the same value.
+        const auto bytes = size != nullptr ? size->asInteger() : std::nullopt;
+        if (!bytes || *bytes < 0) {
             return invalid(where, "has no size in bytes");
         }
         const auto digest = sha != nullptr ? parseSha256Hex(*sha) : std::nullopt;
@@ -159,7 +161,7 @@ std::expected<std::vector<ReleaseFile>, Error> parseFiles(const json::Value& lis
         if (asset == nullptr || !printableAscii(*asset) || !safePart(*asset)) {
             return invalid(where, "has no asset name (a plain file name, not . or ..)");
         }
-        files.push_back({*path, static_cast<std::uint64_t>(*size->asInteger()), *digest, *asset});
+        files.push_back({*path, static_cast<std::uint64_t>(*bytes), *digest, *asset});
     }
     // A file cannot also be a folder: `a` and `a/b` (case aside) cannot both be written. In sorted order the paths
     // under `a/` come at or after `a/` itself, so the first key from there tells.

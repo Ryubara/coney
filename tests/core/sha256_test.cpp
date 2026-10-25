@@ -8,6 +8,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "support/optional_value.h"
+
 using coney::Sha256;
 
 namespace {
@@ -46,8 +48,8 @@ TEST_CASE("SHA-256 pads messages that end near a block boundary", "[sha256]") {
 
 TEST_CASE("parseSha256Hex reads 64 hex digits and refuses anything else", "[sha256]") {
     const auto digest = coney::parseSha256Hex("BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD");
-    REQUIRE(digest.has_value());
-    CHECK(coney::toHex(*digest) == sha256Of("abc"));
+    // got, not *: clang-tidy does not see REQUIRE as a check on the optional.
+    CHECK(coney::toHex(coney::test::got(digest)) == sha256Of("abc"));
     CHECK_FALSE(coney::parseSha256Hex("ba7816bf").has_value());
     CHECK_FALSE(coney::parseSha256Hex(std::string(64, 'z')).has_value());
 }
