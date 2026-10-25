@@ -835,6 +835,11 @@ void FollowCamera::stepAim(const FollowTarget& target, anim::Vec3 cameraBefore, 
 
 void FollowCamera::update(const FollowTarget& target, std::uint8_t rawRightX, std::uint8_t rawRightY,
                           const raycast::CollisionMesh* mesh, float seconds) {
+    // **Coney stand-ins** for the parts of Cam_Follow_Update not built (docs/research/camera.md#update): the look-at
+    // offset's 15% ease, the tagging, fight-stance, hidden-in-shadow and aiming states and their look-at heights, the
+    // look-behind, the queued heading (+0x43c), the placed heading (+0x3f0), the heading target and pitch override
+    // (+0x350, +0x354), the height probe, the head look, aiming's and a grapple's lags, the tilt over obstacles, the
+    // roll's ease, the split screen, the queued hand-over and the fade timer. The shake is the manager's (Cameras).
     // The camera's view at the start of the update, which the auto-follow rules measure from.
     const anim::Vec3 viewBefore = anim::subtract(m_lookAt, m_position);
     const anim::Vec3 cameraBefore = m_position;
