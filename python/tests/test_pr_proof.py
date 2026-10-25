@@ -74,11 +74,13 @@ def test_an_edited_log_line_is_refused_and_nothing_else_is_judged(tmp_path: Path
     segment = built.unit.stamps / "0001.jsonl"
     lines = segment.read_text(encoding="utf-8").splitlines()
     lines[3] = lines[3].replace('"pass"', '"fail"', 1)
-    segment.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    # Bytes, not write_text: text mode writes CRLF on Windows, which makes every line non-canonical there.
+    segment.write_bytes(("\n".join(lines) + "\n").encode("utf-8"))
     result = built.verify()
-    assert any(t.startswith("log: 0001.jsonl:4: ") and "edited" in t for t in texts(result)), texts(result)
+    # Editing line 4 breaks the link of the stamp after it, so the log names line 5.
+    assert any(t.startswith("log: 0001.jsonl:5: ") and "edited" in t for t in texts(result)), texts(result)
     assert {r.stage for r in result.refusals} == {"log"}
-    assert redo(result, "log: 0001.jsonl:4")[0] == "none"
+    assert redo(result, "log: 0001.jsonl:5")[0] == "none"
 
 
 def test_a_missing_log_is_refused_with_task_start(tmp_path: Path) -> None:
