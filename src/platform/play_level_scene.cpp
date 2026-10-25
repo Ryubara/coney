@@ -207,11 +207,8 @@ void PlayLevelMode::placeReleased(const SceneStage::Release& release) {
             brainPlaced(m_player->human());
         }
     } else if (const ai::AiHuman* fighter = castHumanOf(release.human); fighter != nullptr) {
-        fighter->human->place(ground, release.feet, headingDegrees);
-        fighter->human->resetMotion();
-        if (release.skipped) {
-            brainPlaced(*fighter->human);
-        }
+        ai::Brain* brain = m_ai != nullptr ? m_ai->brainOf(*fighter->human) : nullptr;
+        ai::placeAfterScene(*fighter->human, brain, ground, release.feet, headingDegrees, release.skipped);
     }
 }
 

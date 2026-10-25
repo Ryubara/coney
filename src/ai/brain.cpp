@@ -817,4 +817,13 @@ int helpLevel(const Brain& brain) {
     }
 }
 
+void placeAfterScene(human::Human& human, Brain* brain, const raycast::CollisionMesh* ground, anim::Vec3 feet,
+                     float headingDegrees, bool skipped) {
+    human.place(ground, feet, headingDegrees);
+    human.resetMotion();
+    if (skipped && brain != nullptr) {
+        brain->placed();
+    }
+}
+
 } // namespace coney::ai

@@ -596,15 +596,10 @@ void PlayLevelMode::stepFlash() {
     if (human.record().command != combat::command::kDpadRight || m_pickups->carried(0, item::kRevive) < 1) {
         return;
     }
-    // The press is refused only when down or dead (Human_IsDownOrDead's 0x180050000 as Coney models it, as
-    // ai::humanIsDownOrDead() does: no health left, knocked out or wounded), cuffed (0x20000), airborne (0x1c00000000)
-    // or climbing (held 0x40); at full health it would only feed rage (not built). A knockdown, a stun or a hit
-    // reaction is none of these.
+    // The press is refused only when down or dead, cuffed, airborne or climbing over (Human::refusesFlash()); at full
+    // health it would only feed rage (not built).
     const combat::Health& health = human.fighter().health();
-    const human::ScriptState& script = human.script();
-    const bool downOrDead = health.depleted() || script.knockedOut || script.wounded;
-    if (downOrDead || script.arrested || human.airborne() || human.climb().has_value() ||
-        health.value() >= health.maximum()) {
+    if (human.refusesFlash() || health.value() >= health.maximum()) {
         return;
     }
     // Nothing holds the human: 665 is pushed, and its event uses the flash. Otherwise the flash is used at once,

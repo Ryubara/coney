@@ -207,8 +207,14 @@ class HumanAnimator {
     /// plays, its task holding `held` on the record `+0x08`. With `handOverEarly` the idle takes over on the advance
     /// that leaves less than one advance of the clip (anim::ClipThenNextTask), for a clip whose original end, one
     /// update before Coney's (docs/research/formats/animation.md#clip-end), was measured. It stands for the last branch
-    /// of `Human_PlayScriptAnim` (the held flags set, a type 5 task pushed); its loop, chained and busy branches are
-    /// the callers' or not built. Research: docs/research/ai-scripting.md#dyn-animation
+    /// of `Human_PlayScriptAnim` (the held flags set, a type 5 task pushed). **Coney stand-ins**: that branch pushes
+    /// the task on top of the stack, so what played under it shows again when it ends, where this one replaces the
+    /// stack (the older tasks fade out and go) and hands over to the idle; what shows after a scripted clip over a
+    /// fidget or a block is not measured. None of its refusals is built, here or in the callers (the scripted brains'
+    /// playClip and playNamedClip, the workout's exit): held `0x1c16a40` at its start, and on that branch any held
+    /// flag, or state `0x7bf9e9f7ff0` but for 668 and 669; nor its loop and chained branches (671, 673, a loop asked
+    /// for), nor its held flags chosen by anim id (the callers pass their own). Research:
+    /// docs/research/ai-scripting.md#dyn-animation
     /// @orig 0x0025a3e0 Human_PlayScriptAnim (unknown)
     void playScripted(const anim::AnimClip& clip, std::uint32_t animId, float rate, float fade, HeldFlags held,
                       bool handOverEarly = false);

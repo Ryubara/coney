@@ -259,6 +259,15 @@ coney = "src/human/stamina.h:Stamina::Stamina"
 status = "legacy"
 
 [[function]]
+address = 0x00223c10
+name = "Human_HasHeld40"
+page = "characters.md#climb"
+role = "Record `+0x08` bit `0x40`: set while a climb's middle clip plays (fences do not block the body); the flash's press is refused on it."
+level = "confirmed-code"
+coney = "src/human/human.h:Human::climbingOver"
+status = "legacy"
+
+[[function]]
 address = 0x002240e8
 name = "Human_CanUseAttackKind"
 page = "characters.md#code-core"

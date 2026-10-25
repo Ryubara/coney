@@ -437,6 +437,23 @@ class Human final : public Holdable {
     [[nodiscard]] bool stickHeld() const;
     /// The climb in progress, if any.
     [[nodiscard]] const std::optional<ClimbProbe>& climb() const { return m_climbProbe; }
+    /// Climbing over: the climb's middle clip (441 standing, 447 running), while record `+0x08` holds bit `0x40`
+    /// (fences do not block the body); not its first or last clip.
+    /// @orig 0x00223c10 Human_HasHeld40 (unknown)
+    [[nodiscard]] bool climbingOver() const { return m_climbRun.has_value() && m_climbRun->over; }
+    /// `Human_IsDownOrDead`'s states `0x180050000` as Coney models them: no health left (dead, dying), knocked out or
+    /// wounded (`0x10000`). Knocked down alive (`0x80000`) and cuffed (`0x20000`) are not among them.
+    /// @orig 0x00227e60 Human_IsDownOrDead (unknown)
+    [[nodiscard]] bool downOrDead() const {
+        return m_fighter.health().depleted() || m_script.knockedOut || m_script.wounded;
+    }
+    /// Whether `Player_UseItemCommand` refuses the flash's press outright: down or dead, cuffed, airborne
+    /// (`0x1c00000000`) or climbing over. A knockdown, a stun, a hit reaction or a climb's first or last clip is none
+    /// of these: there the flash is used at once (docs/research/combat-rage.md#rage).
+    /// @orig 0x002843f8 Player_UseItemCommand (unknown)
+    [[nodiscard]] bool refusesFlash() const {
+        return downOrDead() || m_script.arrested || airborne() || climbingOver();
+    }
     /// The body's scale (`+0x65c`).
     [[nodiscard]] float scale() const { return m_scale; }
     [[nodiscard]] float bodyScale() const override { return m_scale; }
@@ -556,7 +573,9 @@ class Human final : public Holdable {
     /// human has its movement held and moves with no velocity of its own, and what the sweep changes (a grab against a
     /// wall) is not measured (docs/research/combat-grabs.md#grab-posing). The locked camera's kept-in-view push
     /// (gameplay_mode.cpp) borrows it to move a human: `LockedCam_KeepHumansInView` (`0x00135ca8`) sets the human's
-    /// transform through its own slot (`+0x6c`) with the rotation kept, and the stop of the velocity is Coney's there.
+    /// transform through its slot `+0x6c`, which for a human is `Human_SetTransform`, with the rotation kept. **Coney
+    /// stand-in** there: the mover does none of that placement's pair break, 0.5 m drop or front-move pop (place()
+    /// above), and the stop of the velocity is Coney's.
     /// @orig 0x00244e78 Human_MoveAttached (unknown)
     void place(anim::Vec3 position, float headingRadians) override;
     /// Thrown: its fighter's steer carries it (Fighter::carryOver()), applied in each state update as an attack's is.

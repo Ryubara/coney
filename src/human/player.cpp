@@ -225,15 +225,25 @@ void Player::changeCharacter(const PlayerCharacter& character, const raycast::Co
 
 void Player::teleport(const raycast::CollisionMesh* mesh, const PlayerStart& start) {
     // TeleportToFlag's two steps (Object_TeleportToFlag): the placement (Human_SetTransform), then the motion reset
-    // (Human_ResetMotion); the camera behind him last, from the state they leave.
+    // (Human_ResetMotion). Neither touches the camera.
     m_driven->place(mesh, start.position, start.headingDegrees);
     m_driven->resetMotion();
-    resetCamera();
+    cameraAfterPlacement();
 }
 
 void Player::place(const raycast::CollisionMesh* mesh, const PlayerStart& start) {
-    // Teleport's one step (Object_Teleport): the placement, with no motion reset after it.
+    // Teleport's one step (Object_Teleport): the placement, with no motion reset after it and no camera call.
     m_driven->place(mesh, start.position, start.headingDegrees);
+    cameraAfterPlacement();
+}
+
+void Player::cameraAfterPlacement() {
+    // **Coney stand-in**: the camera is put behind the player after every placement. The original's teleports call no
+    // camera code (docs/research/camera.md, Teleports): its follow camera follows the new position, and puts itself
+    // behind the player only when it is lost (its update's step 7, which Coney's follow update does not build). Coney's
+    // level start and a scene's end set up the follow camera through this cut (the camera is made before the scripts
+    // place the player), so it stays until both have their own; to measure: a short Teleport mid-play in PCSX2, whether
+    // the view glides to the new place.
     resetCamera();
 }
 

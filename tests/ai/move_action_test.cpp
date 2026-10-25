@@ -714,6 +714,29 @@ TEST_CASE("a teleport pops the brain's front move, keeps another front action, a
     CHECK(brain.actionCount() == 1);
 }
 
+TEST_CASE("a scene's release pops the brain's front move after a skip, not after a clip that played to its end",
+          "[ai][placement]") {
+    // After a skip the original places the human at its end pose through Human_SetTransform (0x0023d440), which pops
+    // a front move; after a clip played to its end it places no one (docs/research/teleports.md#in-coney).
+    MoveScene scene;
+    Brain& brain = scene.add({41.0F, 41.0F, 0.0F}, -90.0F);
+    brain.queueAction(moveTo({49.0F, 41.0F, 0.0F}, 0.3F));
+    scene.run(15);
+    REQUIRE(frontMove(brain) != nullptr);
+
+    // Played to its end: placed and stopped, the move kept.
+    coney::ai::placeAfterScene(brain.human(), &brain, nullptr, {45.0F, 41.0F, 0.0F}, 0.0F, false);
+    CHECK(brain.actionCount() == 1);
+    CHECK(frontMove(brain) != nullptr);
+    CHECK(brain.human().speed() == 0.0F);
+    CHECK(planDistance(brain.human().position(), {45.0F, 41.0F, 0.0F}) < 1e-3F);
+
+    // Skipped: the move is popped.
+    coney::ai::placeAfterScene(brain.human(), &brain, nullptr, {45.0F, 43.0F, 0.0F}, 0.0F, true);
+    CHECK(brain.actionCount() == 0);
+    CHECK(planDistance(brain.human().position(), {45.0F, 43.0F, 0.0F}) < 1e-3F);
+}
+
 namespace {
 
 // Two flags 5 m apart along the U's bottom corridor, found by handle.

@@ -168,6 +168,12 @@ the dealer. Script locators are given as file and function.
   heading for one update), the placed marks (`+0x1b3` makes `Human_GetNavPolygon` look the polygon up again, and Coney
   caches none; the flag at `+0x54` has no reader traced) and the body's re-pose bit (Coney's body is posed from the
   position at each use). Coney pops a front move whatever `+0xec` holds, having no such state.
+- A placement of the player puts the camera behind him (`Player::cameraAfterPlacement()`), a **stand-in**: neither
+  `Object_Teleport` nor `Object_TeleportToFlag` calls the camera code ([Cameras](camera.md)), so the original's follow
+  camera follows the new position and puts itself behind him only when it is lost ([the follow
+  update](camera.md#update), step 7, which Coney's follow update does not build). Coney's level start and a scene's end
+  set up the camera through this cut. To measure: a short `Teleport` mid-play in PCSX2, whether the view glides to the
+  new place.
 - Coney's choices: a climb in progress ends at a placement ([q-placement-rest](#q-placement-rest)). After a scene clip
   played to its end Coney places the human where the clip left it, with no drop and no pop of the brain's front move,
   since Coney's scene drives a frame and not the human, and the original places no one there.

@@ -197,13 +197,13 @@ class Player {
     void update(const Pad& pad, const raycast::CollisionMesh* mesh, std::span<Combatant* const> targets = {});
 
     /// Moves the human to `start` as `TeleportToFlag` moves a human (place(), then Human::resetMotion(): his move
-    /// stops), so its health, meters and clip stay, and puts the camera behind it with nothing to blend from. The
-    /// scripts' `TeleportToFlag`, a scene's release and the hand-over use it.
+    /// stops), so its health, meters and clip stay, and puts the camera behind him with nothing to blend from (a
+    /// stand-in, cameraAfterPlacement()). The scripts' `TeleportToFlag`, a scene's release and the hand-over use it.
+    /// @orig 0x00385db0 Object_TeleportToFlag (unknown)
     void teleport(const raycast::CollisionMesh* mesh, const PlayerStart& start);
     /// Moves the human to `start` as `Teleport` moves a human: the placement alone (Human::place() with `mesh` as the
-    /// ground, null for none), so his move goes on, and the camera put behind him with nothing to blend from
-    /// (docs/research/teleports.md#motion-reset). The brain's part of the placement is the caller's
-    /// (ai::Brain::placed()).
+    /// ground, null for none), so his move goes on (docs/research/teleports.md#motion-reset); the camera as after
+    /// teleport(). The brain's part of the placement is the caller's (ai::Brain::placed()).
     /// @orig 0x00385bb8 Object_Teleport (unknown)
     void place(const raycast::CollisionMesh* mesh, const PlayerStart& start);
     /// The human settled as after a walk (Human::settle()), then teleport(): the debug menus' teleport and `--start`,
@@ -274,6 +274,9 @@ class Player {
   private:
     // The snapshot of the state now.
     [[nodiscard]] PlayerSnapshot capture() const;
+    // After a placement: the camera put behind the human (a stand-in: the original's teleports leave the camera alone).
+    // @coney-only the camera cut after a placement, which Coney's level start and scene ends rely on
+    void cameraAfterPlacement();
 
     PlayerStart m_start;
     combat::CommandTables m_tables = combat::CommandTables::street();

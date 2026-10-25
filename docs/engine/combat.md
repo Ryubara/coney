@@ -459,27 +459,27 @@ it.
   (the 5 slower first updates backward are not known). Tracked by
   [q-backward-walk](../research/combat.md#q-backward-walk).
 - **The flash** (`PlayLevelMode::stepFlash()`, `useFlash()`): d-pad right with a flash carried and health below the
-  maximum is refused only when the player is down or dead, cuffed, airborne or climbing, as `Player_UseItemCommand`
-  (`0x002843f8`) refuses it. When nothing holds him it plays 665 (`Human::pushOverlayClip()`): at the clip's rate of
-  0.75, which `AnimTask5_Construct` (`0x00106240`) takes from the clip's Anim Range List flags (665 has none, [Playback
-  rate](../research/formats/animation.md#playback-rate)), at full weight from its first update (the original passes no
-  fade), and the clip's action event `0x41` 25 updates in (`Human::actionEvent()`) uses the flash: one spent, interface
-  sound 23 and the clip's animation sound 70, the health filled, the health rings asked for; a clip cut first spends
-  nothing. The clip lasts the original's 53 updates: it hands over to the idle a step early, a **stand-in** as clip 34's
-  is, since Coney's clip end would give 54 ([When a clip ends](../research/formats/animation.md#clip-end)). When
-  something holds him (a grab, which stays; a knockdown, a stun or a hit reaction) the flash is used at once with no
-  clip. Coney always heals in full (it has no difficulty setting) and does not build the full-health rage use or the
-  screen effect reset. The clip holds `0x2000` **and sets it as it starts** (**Coney's reading**: the page says the task
-  "holds" it and only a set bit keeps the clip alive; [q-flash-held-flag](../research/combat.md#q-flash-held-flag)).
-  Held without being set, the bit never reaches the record, the stick step does not count the human busy, and a player
-  in the fight stance (after walking up to the dealer, his lock on) has the stance walk's idle put over 665 on the next
-  update: the clip showed for one update, the event never came, and nothing was spent or healed (issue
-  [#234](issue:234)). A second d-pad right while 665 plays does nothing (the human is busy, and 665 is already his
-  anim). Until issue [#234](issue:234) Coney played 665 at a rate of 1, faded in, and healed on update 19. Tests:
-  `repo:tests/platform/disc_flash_test.cpp` (`level80` standing, walking and running, and stunned, where the flash is
-  used at once; `level99` from the dealer's purchase to the use in the stance: 665 from the press, the spend, cue 23 and
-  animation sound 70 on update 25 of it, and no play left silent by the engine) and the overlay clip's rate, length and
-  fade in `repo:tests/human/human_test.cpp`.
+  maximum is refused only when the player is down or dead, cuffed, airborne or climbing over (`Human::refusesFlash()`),
+  as `Player_UseItemCommand` (`0x002843f8`) refuses it. When nothing holds him it plays 665
+  (`Human::pushOverlayClip()`): at the clip's rate of 0.75, which `AnimTask5_Construct` (`0x00106240`) takes from the
+  clip's Anim Range List flags (665 has none, [Playback rate](../research/formats/animation.md#playback-rate)), at full
+  weight from its first update (the original passes no fade), and the clip's action event `0x41` 25 updates in
+  (`Human::actionEvent()`) uses the flash: one spent, interface sound 23 and the clip's animation sound 70, the health
+  filled, the health rings asked for; a clip cut first spends nothing. The clip lasts the original's 53 updates: it
+  hands over to the idle a step early, a **stand-in** as clip 34's is, since Coney's clip end would give 54 ([When a
+  clip ends](../research/formats/animation.md#clip-end)). When something holds him (a grab, which stays; a knockdown, a
+  stun or a hit reaction) the flash is used at once with no clip. Coney always heals in full (it has no difficulty
+  setting) and does not build the full-health rage use or the screen effect reset. The clip holds `0x2000` **and sets it
+  as it starts** (**Coney's reading**: the page says the task "holds" it and only a set bit keeps the clip alive;
+  [q-flash-held-flag](../research/combat.md#q-flash-held-flag)). Held without being set, the bit never reaches the
+  record, the stick step does not count the human busy, and a player in the fight stance (after walking up to the
+  dealer, his lock on) has the stance walk's idle put over 665 on the next update: the clip showed for one update, the
+  event never came, and nothing was spent or healed (issue [#234](issue:234)). A second d-pad right while 665 plays does
+  nothing (the human is busy, and 665 is already his anim). Tests: `repo:tests/platform/disc_flash_test.cpp` (`level80`
+  standing, walking and running, and stunned, where the flash is used at once; `level99` from the dealer's purchase to
+  the use in the stance: 665 from the press, the spend, cue 23 and animation sound 70 on update 25 of it, and no play
+  left silent by the engine) and the overlay clip's rate, length and fade in `repo:tests/human/human_test.cpp`, and a
+  climb's refusal during its middle clip alone in `repo:tests/human/traversal_test.cpp`.
 
 Not built: the rage of the attacks beyond the chain, the moving attacks and the throws (their events are not mapped),
 and the hurt multipliers `+0x10` / `+0x14`. The AI's attacks on the player, its attack warnings, the class damage tables
