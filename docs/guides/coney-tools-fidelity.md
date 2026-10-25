@@ -497,7 +497,10 @@ uv run --project python coney-tools research claims [--base origin/main] [--task
 
 Lists the graded blocks the branch added or changed on the research pages (`docs/research/`), for the reviewer to work
 from ([evidence levels](research-evidence.md#evidence-levels)). The changed lines are those of the working tree since
-the branch left `--base`, a new page counting whole. It reads the pages exactly as
+the branch left `--base`, a new page counting whole. A page moved with git (a rename git finds at the similarity
+`research.moved_similarity` of [.github/conventions.yml](repo:.github/conventions.yml) or more, staged so git can pair
+it) is not new: it is read as [`docs check`](coney-tools-build.md#docs) reads it, on the lines git's diff of the renamed
+pair changes, and its old text is the page at its old path. It reads the pages exactly as
 [`docs check`](coney-tools-build.md#docs) does, with the same reader and the same grammar: a block is graded in itself,
 a table row in its Evidence column, or by the lead line of its H3-or-deeper heading. For each graded block it prints the
 page and line, the level, the addresses and script locators the block cites, what backs it and the tests that cite its section:

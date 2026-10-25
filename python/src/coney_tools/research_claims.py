@@ -31,7 +31,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from coney_tools import run_records, stamps
+from coney_tools import docs_check, local_gate, run_records, stamps
 from coney_tools.config import ConfigError
 from coney_tools.conventions import load_conventions
 from coney_tools.docs_page import Page, heading_ids, read_page
@@ -124,9 +124,19 @@ def merge_base(root: Path, base: str) -> str:
         raise ConfigError(f"{base}: not a commit to compare with ({error})") from error
 
 
-def changed_lines(root: Path, point: str) -> dict[str, set[int] | None]:
+def moved_pages(root: Path, point: str, similarity: int | None = None) -> dict[str, str]:
+    """The research pages the working tree moved since the commit `point` as git sees a rename (`similarity` percent or
+    more: the research conventions' `moved_similarity`; git's own 50 when None), each with the path it moved from.
+    It is the rename detection of `docs check`."""
+    prefix = f"{RESEARCH_DIR.rstrip('/')}/"
+    moves = local_gate.renamed_files(root, point, similarity)
+    return {new: old for new, old in moves.items() if new.startswith(prefix) and new.endswith(".md")}
+
+
+def changed_lines(root: Path, point: str, similarity: int | None = None) -> dict[str, set[int] | None]:
     """The research pages the working tree changed since the commit `point`, each with its added or changed lines
-    (None for a page with no earlier version: every line counts)."""
+    (None for a page with no earlier version: every line counts). A page moved with git is read as `docs check` reads
+    it, from the lines git's diff of the renamed pair changes (`moved_pages`), not as a new page."""
     out = _git(root, "diff", "--unified=0", "--no-color", "--no-ext-diff", "--no-renames", point, "--", RESEARCH_DIR)
     changed: dict[str, set[int] | None] = {}
     path: str | None = None
@@ -146,6 +156,10 @@ def changed_lines(root: Path, point: str) -> dict[str, set[int] | None]:
     for name in _git(root, "ls-files", "--others", "--exclude-standard", "--", RESEARCH_DIR).splitlines():
         if name.endswith(".md"):
             changed[name] = None
+    # The diff above ignores renames, so a moved page shows as all new: grade it on what the move changed.
+    moved = moved_pages(root, point, similarity)
+    for name, touch in docs_check.change_touches(root, point, moved, similarity).items():
+        changed[name] = None if touch.new or touch.lines is None else set(touch.lines)
     return changed
 
 
@@ -392,20 +406,23 @@ def build(
     env = ResearchEnv(load_conventions(root).research)
     backing = _Backing(studied_addresses(stamp_folder, root), records, bad, test_citations(root), require_study)
     point = None if base is None else merge_base(root, base)
-    pages = _all_pages(root) if point is None else changed_lines(root, point)
+    similarity = load_conventions(root).research.moved_similarity
+    pages = _all_pages(root) if point is None else changed_lines(root, point, similarity)
+    moved = {} if point is None else moved_pages(root, point, similarity)
     for page, lines in sorted(pages.items()):
         path = root / page
         if not path.is_file():
             continue
         report.pages.append(page)
-        known = None if point is None else _base_blocks(root, point, page)
+        known = None if point is None else _base_blocks(root, point, moved.get(page, page))
         subject, _ = subject_of(page, read_page(path.read_text(encoding="utf-8")), env)
         _page_claims(subject, lines, report, backing, known)
     return report
 
 
 def _base_blocks(root: Path, point: str, page: str) -> list[frozenset[str]]:
-    """The word sets of the blocks the page had at the commit `point` (none for a page that was not there)."""
+    """The word sets of the blocks the page had at the commit `point` (none for a page that was not there; pass the
+    path a moved page came from)."""
     try:
         text = _git(root, "show", f"{point}:{page}")
     except ConfigError:

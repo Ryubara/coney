@@ -206,6 +206,45 @@ def test_a_new_page_counts_whole(tmp_path: Path) -> None:
     assert [(c.page, c.line) for c in report.claims] == [("docs/research/combat/throws.md", 5)]
 
 
+MOVED = "docs/research/combat/grabs/index.md"
+NO_RUN = GRABS.replace(", run r-20261023-grab-reach", "")
+
+
+def move_page(root: Path) -> None:
+    """Move the page with git into a folder of its own, as a restructure does."""
+    (root / MOVED).parent.mkdir(parents=True)
+    git(root, "mv", PAGE, MOVED)
+
+
+def test_a_moved_page_is_graded_on_the_lines_git_changes_not_as_new(tmp_path: Path) -> None:
+    # The runtime claim has no run record: an error on a new page, but this text did not change.
+    root = make_repo(tmp_path, NO_RUN)
+    move_page(root)
+    report = research_claims.build(root, base="main")
+    assert report.claims == []
+    assert report.errors == []
+
+
+def test_a_moved_page_grades_the_lines_it_changed(tmp_path: Path) -> None:
+    root = make_repo(tmp_path, NO_RUN)
+    move_page(root)
+    edit(root, "plays anim 71", "plays anim 72", MOVED)
+    report = research_claims.build(root, base="main")
+    assert [(c.page, c.line) for c in report.claims] == [(MOVED, 13)]
+    assert report.pages == [MOVED]
+    assert report.errors == []
+
+
+def test_a_new_runtime_claim_on_a_moved_page_is_still_an_error(tmp_path: Path) -> None:
+    root = make_repo(tmp_path, NO_RUN)
+    move_page(root)
+    new = "The throw lands at 2 m (confirmed (runtime)).\n\nThe counter is a fixed roll"
+    edit(root, "The counter is a fixed roll", new, MOVED)
+    report = research_claims.build(root, base="main")
+    assert [c.line for c in report.claims] == [17]
+    assert any("a new confirmed (runtime) claim cites a run record" in e for e in report.errors)
+
+
 def test_a_page_the_branch_did_not_touch_is_not_listed(tmp_path: Path) -> None:
     assert research_claims.build(make_repo(tmp_path), base="main").claims == []
 
