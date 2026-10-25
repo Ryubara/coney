@@ -30,7 +30,7 @@ status = "legacy"
 [[function]]
 address = 0x00158728
 name = "Gm_Level_Update"
-page = "combat-reactions.md#original-structure"
+page = "combat-reactions.md#knocked-out-bit"
 role = "the mission failing and the hand-off to its screen"
 level = "confirmed-code"
 coney = "src/camera/cameras.h:Cameras::startFailed"
@@ -441,7 +441,7 @@ status = "legacy"
 [[function]]
 address = 0x00258e10
 name = "Tandem_CanStart"
-page = "combat-moves.md#original-structure"
+page = "combat-moves.md#tandem"
 level = "confirmed-code"
 coney = "src/combat/tandem.h:tandemCanStart"
 status = "legacy"
@@ -449,7 +449,7 @@ status = "legacy"
 [[function]]
 address = 0x00258e88
 name = "Human_CanCounterGrab"
-page = "combat-moves.md#original-structure"
+page = "combat-moves.md#counters"
 level = "confirmed-code"
 coney = "src/combat/ai_counter.h:aiCounterFor"
 status = "legacy"
@@ -457,7 +457,7 @@ status = "legacy"
 [[function]]
 address = 0x002590f8
 name = "Human_CanCounterTackle"
-page = "combat-moves.md#original-structure"
+page = "combat-moves.md#counters"
 level = "confirmed-code"
 coney = "src/combat/ai_counter.h:aiCounterFor"
 status = "legacy"
@@ -642,7 +642,7 @@ status = "legacy"
 [[function]]
 address = 0x002653d8
 name = "Hit_Score"
-page = "combat-rage.md#original-structure"
+page = "combat-rage.md#hit-score-skips"
 role = "a hit's rage awards and the repeat tracker"
 level = "confirmed-code"
 coney = "src/combat/rage_awards.h:awardHitRage"
@@ -934,7 +934,7 @@ level = "confirmed-code"
 [[function]]
 address = 0x0026b0a0
 name = "Hit_PlayReaction"
-page = "combat-reactions.md#original-structure"
+page = "combat-reactions.md#damage"
 role = "a normal hit's reaction, by hit code; plays it"
 level = "confirmed-code"
 coney = "src/combat/reactions.h:hitReaction"
@@ -1041,7 +1041,7 @@ level = "confirmed-code"
 [[function]]
 address = 0x0026cc18
 name = "Grab_Escape"
-page = "combat-grabs.md#original-structure"
+page = "combat-grabs.md#grabbed"
 role = "the escape, the reversal and their shared roll"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::victimEscapes"
@@ -1128,7 +1128,7 @@ level = "confirmed-code"
 [[function]]
 address = 0x0026f860
 name = "Tandem_Start"
-page = "combat-moves.md#original-structure"
+page = "combat-moves.md#tandem"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::startTandem"
 status = "legacy"
@@ -1252,7 +1252,7 @@ status = "legacy"
 [[function]]
 address = 0x00275678
 name = "Attack_SteerLed"
-page = "combat-targets.md#original-structure"
+page = "combat-targets.md#led-steer"
 role = "the turn and slide into an attack, and its led variant"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::steerOnto"
@@ -1481,7 +1481,7 @@ level = "confirmed-code"
 [[function]]
 address = 0x0027a4b0
 name = "Player_FindAttackTarget"
-page = "combat-moves.md#original-structure"
+page = "combat-moves.md#targeting"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::findAttackTarget"
 status = "legacy"
@@ -1864,7 +1864,7 @@ level = "confirmed-code"
 [[function]]
 address = 0x0027d6e0
 name = "Player_TryCounterGrab"
-page = "combat-moves.md#original-structure"
+page = "combat-moves.md#counters"
 level = "confirmed-code"
 coney = "src/combat/ai_counter.h:aiCounterAllowed"
 status = "legacy"
@@ -2066,7 +2066,7 @@ level = "confirmed-code"
 [[function]]
 address = 0x00284280
 name = "Flash_Use"
-page = "combat-rage.md#original-structure"
+page = "combat-rage.md#rage"
 role = "spends a flash and heals"
 level = "confirmed-code"
 coney = "src/platform/play_level_mode.h:PlayLevelMode::useFlash"
@@ -2083,7 +2083,7 @@ note = "confirmed (code), runtime"
 [[function]]
 address = 0x002843f8
 name = "Player_UseItemCommand"
-page = "combat-rage.md#original-structure"
+page = "combat-rage.md#rage"
 role = "L1 + R1, the flash, the key when cuffed, the R2 command menu"
 level = "confirmed-code"
 coney = "src/combat/meters.h:RageMeter::start"
@@ -2135,7 +2135,7 @@ level = "confirmed-code"
 [[function]]
 address = 0x00286ba8
 name = "Player_TryRevive"
-page = "combat-rage.md#original-structure"
+page = "combat-rage.md#revive"
 role = "the revive ([Reviving](combat-rage.md#revive))"
 level = "confirmed-code"
 coney = "src/combat/revive.h:mayRevive"
@@ -2182,7 +2182,7 @@ status = "legacy"
 [[function]]
 address = 0x002880d8
 name = "Player_CrossWithWeapon"
-page = "combat-moves.md#original-structure"
+page = "combat-moves.md#weapons"
 level = "confirmed-code"
 coney = "src/combat/attacks.h:throwAttack"
 status = "legacy"
