@@ -997,3 +997,22 @@ TEST_CASE("with neither --disc nor --data the install beside the executable is p
     auto none = coney::parseOptions(args);
     REQUIRE_FALSE(none.has_value());
 }
+
+TEST_CASE("the give option fills player 1's inventory in a played level", "[options]") {
+    auto given = parse(
+        std::array<std::string_view, 8>{"--disc", "x", "--play-level", "level99", "--give", "3,2", "--give", "2,100"});
+    REQUIRE(given.has_value());
+    REQUIRE(given->gives.size() == 2);
+    CHECK(given->gives[0].item == 3);
+    CHECK(given->gives[0].count == 2);
+    CHECK(given->gives[1].item == 2);
+    CHECK(given->gives[1].count == 100);
+    // An item beyond the 23 slots, a count beyond the most, a missing part or no level: refused.
+    for (const std::string_view bad : {"23,1", "3,10000", "3", "3,", ",2", "-1,2", "3,2,1"}) {
+        INFO(bad);
+        CHECK_FALSE(parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "level99", "--give", bad})
+                        .has_value());
+    }
+    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--disc", "x", "--give", "3,2"}).has_value());
+    CHECK(coney::usageText().find("--give ITEM,COUNT") != std::string_view::npos);
+}

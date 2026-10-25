@@ -11,6 +11,7 @@ namespace id = coney::combat::anim_id;
 
 TEST_CASE("square in the stance keeps the current target; its moving attacks and cross pick afresh at 2 m",
           "[combat][targets]") {
+    // Expected: combat-targets.md#targeting, confirmed (code)
     CHECK(attackTarget(id::kAttackS1, false, false, false, true).search == TargetSearch::KeepCurrent);
     CHECK(attackTarget(id::kGroundedStrike1, false, false, false, false).search == TargetSearch::KeepCurrent);
     for (const int moving : {id::kAttackFromWalk, id::kAttackFromRun}) {
@@ -24,6 +25,7 @@ TEST_CASE("square in the stance keeps the current target; its moving attacks and
 }
 
 TEST_CASE("armed swings pick at 2.5 m; the snaps search their own way", "[combat][targets]") {
+    // Expected: combat-targets.md#targeting, confirmed (code)
     const auto armed = attackTarget(34, false, true, false, false);
     CHECK(armed.search == TargetSearch::Pick);
     CHECK(armed.range == 2.5F);
@@ -32,6 +34,7 @@ TEST_CASE("armed swings pick at 2.5 m; the snaps search their own way", "[combat
 
 TEST_CASE("a cross chain step re-searches at its far range unless locked; a square step keeps the target",
           "[combat][targets]") {
+    // Expected: combat-targets.md#targeting, confirmed (code)
     for (const int step : {id::kAttackSX2, id::kAttackXX2, id::kAttackSSX3}) {
         const auto free = attackTarget(step, false, false, true, false);
         CHECK(free.search == TargetSearch::FindAttack);
@@ -44,6 +47,7 @@ TEST_CASE("a cross chain step re-searches at its far range unless locked; a squa
 }
 
 TEST_CASE("the special searches at the charge's far range", "[combat][targets]") {
+    // Expected: combat-targets.md#targeting, confirmed (code)
     for (const int special : {id::kSpecial, id::kSpecialRage, id::kSpecialRear, id::kSpecialRageRear}) {
         const auto how = attackTarget(special, false, false, false, false);
         CHECK(how.search == TargetSearch::FindAttack);

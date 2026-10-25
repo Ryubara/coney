@@ -50,6 +50,16 @@ struct CameraPin {
     float fieldOfView = 60.0F; ///< Degrees, the field of view used (+0x48); 60, the base camera's, when not given.
 };
 
+/// What one `--give ITEM,COUNT` asks for: player 1 holds COUNT of inventory item ITEM (docs/references/inventory.md)
+/// from the first step of play, so a capture can show what needs an item (the spray needs paint). Coney's own test aid.
+struct ItemGift {
+    int item = 0;  ///< The inventory item id, 0 to 22 (3 is spray paint).
+    int count = 0; ///< How many, 0 to kMaxGiftCount.
+};
+
+/// The most of one item `--give` hands over.
+inline constexpr int kMaxGiftCount = 9999;
+
 /// What `--render-size` asks for: the frame's size in pixels, which then holds the logical screen exactly, shown at
 /// its 4:3 display shape, as the original's 640 x 448 frame buffer does.
 struct RenderSize {
@@ -171,6 +181,9 @@ struct Options {
     /// `--camera X,Y,Z,QX,QY,QZ,QW[,FOV]`: player 1's view pinned there for the whole run (CameraPin). Requires
     /// playLevel.
     std::optional<CameraPin> cameraPin;
+    /// `--give ITEM,COUNT`, repeatable: the counts player 1 holds from the first step of play (ItemGift). Requires
+    /// playLevel.
+    std::vector<ItemGift> gives;
     /// `--trace`: write the player's and the follow camera's state after every step of `--play-level` to this file,
     /// one CSV line per step (human::traceLine()), so feel comparisons can be repeated
     /// (docs/guides/running-play-level.md#tracing). Requires playLevel.

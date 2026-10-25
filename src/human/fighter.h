@@ -118,7 +118,8 @@ struct FighterInput {
     std::span<const ObjectTarget> objects{}; ///< The breakable objects square may strike.
     bool strikeShapes = false; ///< The human has strike shapes: its free attacks strike through them (strikeContact()).
     const raycast::CollisionMesh* mesh = nullptr; ///< The level's collision, for the wall throw's ray (none: no wall).
-    bool sprinting = false; ///< L2 held with stamina left: the sprint state (`0x1000000`), which drops the target.
+    bool sprinting = false;    ///< L2 held with stamina left: the sprint state (`0x1000000`), which drops the target.
+    bool padControlled = true; ///< The per-player record's `+0x1b` (HumanRecord::padDriven).
 };
 
 /// The camera shake a reaction asks for (docs/research/camera.md#shake): on the attacker's camera when a player hit,
@@ -285,6 +286,13 @@ class Fighter {
     /// The held object's anim set from now on (0 for none), which square and cross branch on (combat::armedAttack()).
     void setAnimSet(int set) { m_animSet = set; }
     [[nodiscard]] int animSet() const { return m_animSet; }
+    /// Whether a world object is in the hand from now on, whatever its anim set (combat::CombatInput::holdingObject).
+    void setHoldingObject(bool holding) { m_holdingObject = holding; }
+    /// Whether the human has spray paint left from now on (combat::CombatInput::hasSprayPaint).
+    void setSprayPaint(bool has) { m_hasSprayPaint = has; }
+    /// How many sprays (circle + triangle, 664) started since the last call: for each, whoever keeps the hand and the
+    /// inventory drops what is held and takes one spray paint (`Human_DropHeld`, `Human_AddSprayPaint(h, -1)`).
+    [[nodiscard]] int takeSprays() { return std::exchange(m_sprays, 0); }
 
     /// The target kept (human `+0xc8`); null when none.
     [[nodiscard]] const Combatant* target() const { return m_target; }
@@ -794,6 +802,9 @@ class Fighter {
     int m_riseCounters = 0;        // the counters played from the rise
     int m_hitsLanded = 0;
     int m_animSet = 0;                          // the anim set a held weapon applied (record +0x10's top)
+    bool m_holdingObject = false;               // a world object in hand (setHoldingObject())
+    bool m_hasSprayPaint = false;               // spray paint left (setSprayPaint())
+    int m_sprays = 0;                           // sprays started since takeSprays()
     std::vector<int> m_strikes;                 // a player's struck hits' anim ids in the last update
     std::optional<double> m_objectTarget;       // the object square's object attack aims at
     std::optional<double> m_objectHit;          // the object an object attack struck this update
