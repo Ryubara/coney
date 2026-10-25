@@ -260,14 +260,36 @@ play the player's feet and heading, the camera's eye and target, the other human
 enemy]` (standing: not on the ground, so a held or mounted human stands, as the original's state bits say) and the
 observed world objects as `[type, x, y, shown]`, with car stereos among them), then reads lines from
 standard input until a pad: `observe PREFIX...` chooses the world object types observed from then on, and `pad
-BUTTONS RX RY LX LY` (the buttons in hexadecimal, as an input script's masks, then the four stick bytes, 0x80
-centred) is the pad of the update. `call NAME` runs the level script's function `NAME` (no arguments) before the update
-and answers `@called NAME ok` or `failed`: a test aid that puts the level at a given step, such as `call P3.DealerPoizo`
-for a capture at level99's flash dealer. With `--play-level` the first observation is of the level's first update of
-play: until then the session loads the level as the story does and the pad rests. With `--event-log` each event is
-also written as `@ev <csv line>`; other lines on standard output are Coney's own messages. At the end of standard
-input the pad is released. It is test mode (one step per update) and cannot be combined with `--input-script`.
+BUTTONS RX RY LX LY` is the pad of the update ([the pad line](#pad-line)). `call NAME` runs the level script's
+function `NAME` (no arguments) before the update and answers `@called NAME ok` or `failed`: a test aid that puts the
+level at a given step, such as `call P3.DealerPoizo` for a capture at level99's flash dealer. With `--play-level` the
+first observation is of the level's first update of play: until then the session loads the level as the story does and
+the pad rests. With `--event-log` each event is also written as `@ev <csv line>`; other lines on standard output are
+Coney's own messages. At the end of standard input the pad is released. It is test mode (one step per update) and
+cannot be combined with `--input-script`.
 `coney-tools trace mission` drives it.
+
+#### The pad line {#pad-line}
+
+A `pad` line has five fields after the word, and the first is the only one in hexadecimal:
+
+- **`BUTTONS`** is the held buttons as a hexadecimal word, without a `0x`, in the bits of an input script's masks
+  (`40` is cross, `80` is square); pressure buttons held read 255.
+- **`RX RY LX LY`** are the four stick bytes, **in decimal**, as the PS2 pad reports them: right stick x and y, then
+  left stick x and y. 0 is left or up, 255 is right or down and 128 is centred. Write centre as `128`, never `0x80`:
+  the number is read in base 10 and a `0x` prefix is not understood. Bytes 95 to 160 sit inside the game's dead zone
+  and read as no deflection; to ask for a given fraction of a stick, take the byte an input script's `stick left X Y`
+  percentages give (`stickByteFromPercent`) rather than scaling over 0 to 255.
+- A field out of range (a button word over `ffff`, a stick byte over 255) or a line without five numbers is answered
+  `@error bad pad line: ...`, and that update gets a released pad.
+
+```text
+pad 0 128 128 128 128
+pad 40 128 128 200 60
+```
+
+The first line is a released pad, every stick centred. The second holds cross with the left stick pushed up and to
+the right (x 200, y 60) and the right stick centred.
 
 ### Matched views {#matched-views}
 
