@@ -42,10 +42,10 @@ grep); it changes no worktree, commits nothing and does not touch GitHub.
 - [ ] **The rules a program cannot check:**
     - `Fixes #N` and `Refs #N` fit the change (`gh issue view N` is read only and allowed); a `Fixes` line for work the
       change does not finish is Important;
-    - **Issues affected** is believable: for a change that is more than a one-line fix, a `None (<reason>)` whose reason is
-      only "none" or "n/a" is a Minor finding, and when the diff plainly touches what an open issue cites (run
-      `coney-tools issue impact --base origin/main --head HEAD`, read the top matches, `gh issue view N` read only) and the
-      section omits it, that is Important; a one-line fix by hand with `None (one-line fix)` passes;
+    - **Issues affected** is believable: for a change that is more than a one-line fix, a `None (<reason>)` whose
+      reason is only "none" or "n/a" is a Minor finding, and when the diff plainly touches what an open issue cites
+      (run `coney-tools issue impact --base origin/main --head HEAD`, read the top matches, `gh issue view N` read
+      only) and the section omits it, that is Important; a one-line fix by hand with `None (one-line fix)` passes;
     - nothing is left for later: no "Left for later", "Remaining", "TODO", "follow-up" or "next step" in the body (a
       pull request merges only when every task in it is finished, [Issues](../how-we-work.md#issues));
     - `Docs: none` only when the change touches no behaviour, command or finding a doc describes;
