@@ -177,11 +177,7 @@ copied = 1
 history = 3
 
 ["docs/research/combat-throws.md"]
-front-matter = 1
-verified = 1
-evidence = 31
-decompile = 1
-history = 3
+evidence = 29
 
 ["docs/research/combat/index.md"]
 evidence = 48
