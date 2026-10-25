@@ -201,6 +201,32 @@ def plain_doc_paths(text: str) -> list[str]:
     return found
 
 
+def _slug(name: str) -> str:
+    """The anchor GitHub and the docs site make of a heading's text (lower case, punctuation dropped, hyphens)."""
+    return re.sub(r"\s", "-", re.sub(r"[^\w\s-]", "", _EXPLICIT_ANCHOR.sub("", name).strip().casefold()))
+
+
+def heading_spans(markdown: str) -> list[tuple[int, int, frozenset[str]]]:
+    """The headings of a Markdown page as `(line, level, anchors)` in order, line numbers from 1.
+
+    The anchors of a heading are its slug and its `{#id}`, if any. A `#` line inside a fenced block is a comment of
+    the code in it, not a heading, and is skipped.
+    """
+    spans: list[tuple[int, int, frozenset[str]]] = []
+    fence = ""
+    for number, line in enumerate(markdown.splitlines(), start=1):
+        marker = re.match(r"^[ \t]*(```+|~~~+)", line)
+        if marker:
+            fence = "" if fence and marker.group(1).startswith(fence[0]) else (fence or marker.group(1))
+            continue
+        heading = None if fence else re.match(r"^(?P<hashes>#{1,6})[ \t]+(?P<name>.+?)[ \t]*$", line)
+        if heading:
+            name = heading.group("name")
+            anchors = {_slug(name), *(m.group("id") for m in _EXPLICIT_ANCHOR.finditer(name))}
+            spans.append((number, len(heading.group("hashes")), frozenset(anchors)))
+    return spans
+
+
 def anchors_of(markdown: str) -> frozenset[str]:
     """The anchors a Markdown page offers: each `{#id}` and the slug of each heading (lower case, punctuation dropped,
     spaces as hyphens), as the docs site and GitHub make them."""

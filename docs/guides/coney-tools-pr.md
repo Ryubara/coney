@@ -42,7 +42,9 @@ uv run --project python coney-tools pr text [TASK] [--worktree DIR] [--remote NA
 
 Step 5: generates the pull request's title and description from the engineer's file, `TASK.md` and the stamps, checks
 them with the checks CI runs, and writes `PR-TITLE.txt` and `PR-BODY.md` next to the engineer's file. When a check
-fails it prints each problem with what to redo and writes nothing. `TASK`, `--worktree`, `--remote` and `--json` are
+fails it prints each problem with what to redo and writes nothing. When the engineer's file has no Issues affected
+section, it runs [`issue impact`](coney-tools-issues.md#issue-impact) (which reads GitHub) and writes the candidates into
+a `TODO:` the checks refuse, since only the engineer can confirm them. `TASK`, `--worktree`, `--remote` and `--json` are
 as for `pr verify`.
 
 | Option | Default | What it does |

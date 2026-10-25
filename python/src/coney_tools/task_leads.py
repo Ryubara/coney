@@ -61,7 +61,7 @@ def is_code_like(name: str) -> bool:
     return "_" in name or "::" in name or any(c.isdigit() for c in name) or any(c.isupper() for c in name[1:])
 
 
-def _code_spans(text: str) -> list[str]:
+def code_spans(text: str) -> list[str]:
     """The code spans of a text: on each line, the pieces between backtick pairs (none if the count is odd)."""
     spans: list[str] = []
     for line in text.splitlines():
@@ -78,7 +78,7 @@ def identifiers_in(text: str) -> tuple[list[str], list[str], list[str]]:
     `#317` are returned with the names, as `#317`.
     """
     addresses = list(dict.fromkeys(a.lower() for a in _ADDRESS.findall(text)))
-    names = [name for name in _code_spans(text) if is_code_like(name)]
+    names = [name for name in code_spans(text) if is_code_like(name)]
     names += [f"#{number}" for number in _PR_NUMBER.findall(text)]
     paths = [path.rstrip("./") if not path.endswith("/") else path for path in _PATH.findall(text)]
     return addresses, list(dict.fromkeys(names)), list(dict.fromkeys(paths))

@@ -46,6 +46,11 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   `Runtime:` in the Testing section: the evidence of a comparison with the original running, with numbers, or `Runtime:
   none (<reason>)` ([the Runtime line](testing.md#runtime-line)). Without `--title` that rule is not checked and the
   output says so; `repo check-review` always has the title (line 1 of `PR.md`).
+  The **Issues affected** section must hold one `- #N: how it is affected` item for each open issue the change affects,
+  or the single line `None (<reason>)` with any short reason (`None (one-line fix)`); an empty section, a `None` with
+  no reason, an item with no line on how, a number listed twice and prose are refused, and the message says what to
+  write. Whether the list is complete is the reviewer's judgement;
+  [`issue impact`](coney-tools-issues.md#issue-impact) suggests it.
   `--local-images` accepts an image that points at a local file, as in a description that `gh pr create --attach`
   is about to upload; the release guard hook passes it ([The release queue](how-we-work.md#release-queue)).
 * `repo review`, `repo check-review` and `repo review-stamp` are the release gate on a description's content: see

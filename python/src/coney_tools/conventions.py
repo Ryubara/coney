@@ -245,6 +245,22 @@ class ScreenshotsRule:
 
 
 @dataclass(frozen=True)
+class IssuesAffected:
+    """The Issues affected section: the open issues a pull request partly fixes, changes or makes out of date, or
+    `None` with a reason (maintainer decision 2026-10-23, after an audit found 175 of 311 open issues out of date)."""
+
+    section: str
+    #: The word that says no issue is affected, followed by the reason in parentheses.
+    none: str
+    #: `required`: the `none` line must give a reason.
+    reason: str
+    #: A `none` line as a hand-made pull request writes it, shown in the template and in the error messages.
+    example: str
+    #: The moment the rule began: a pull request merged before it is not held to the after-merge check.
+    since: datetime
+
+
+@dataclass(frozen=True)
 class RuntimeEvidence:
     """The runtime-evidence line: a pull request whose title area a player sees says how it was checked against the
     original running (maintainer decision 2026-10-20)."""
@@ -371,6 +387,7 @@ class PullRequests:
     docs_none: DocsNone
     closing: Closing
     checklist: Checklist
+    issues_affected: IssuesAffected
     screenshots: ScreenshotsRule
     runtime: RuntimeEvidence
     ai_use: AiUse
@@ -446,6 +463,18 @@ class IssueLabelRules:
 
 
 @dataclass(frozen=True)
+class ImpactRules:
+    """`coney-tools issue impact`: which open issues a branch may have changed."""
+
+    #: How long the open issues read from GitHub stay cached before they are read again.
+    cache_minutes: int
+    #: A name or address cited by more than this many open issues says little about any one of them: it is skipped.
+    common_max_issues: int
+    #: The reasons listed for one issue in the text output (the JSON output lists them all).
+    max_reasons: int
+
+
+@dataclass(frozen=True)
 class Issues:
     """The rules for issues: blank issues, the forms, the media line, provenance and labels."""
 
@@ -462,6 +491,7 @@ class Issues:
     links: IssueLinks
     status_text: str
     labels: IssueLabelRules
+    impact: ImpactRules
     #: Label name to the title area (a key of `commits.title.areas`) that `issue titles` proposes for an old title.
     title_area_by_label: Mapping[str, str]
 
@@ -1448,6 +1478,14 @@ def _read_commits(data: object, where: str) -> Commits:
     )
 
 
+def _example(affected: dict[str, Any], where: str) -> str:
+    """The `issues_affected.example` line: the `none` word, then a reason in parentheses."""
+    example = _text(affected["example"], _at(where, "example"))
+    if not re.fullmatch(rf"{re.escape(affected['none'])} \(.+\)", example):
+        raise _fail(_at(where, "example"), f"must be '{affected['none']} (<a reason>)'")
+    return example
+
+
 def _read_pull_requests(data: object, where: str) -> PullRequests:
     """The `pull_requests` section; every section it names must be one of its `sections`."""
     keys = (
@@ -1459,6 +1497,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
         "docs_none",
         "closing",
         "checklist",
+        "issues_affected",
         "screenshots",
         "runtime",
         "ai_use",
@@ -1479,6 +1518,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
     docs_none, docs_none_where = sub("docs_none", "line", "when_changed", "unless_changed")
     closing, closing_where = sub("closing", "keyword", "form", "one_per_line", "section")
     checklist, checklist_where = sub("checklist", "section", "unchecked", "since", "legacy_label")
+    affected, affected_where = sub("issues_affected", "section", "none", "reason", "example", "since")
     screenshots, screenshots_where = sub("screenshots", "section", "none", "reason", "uploaded_only")
     runtime, runtime_where = sub("runtime", "areas", "section", "line", "none", "reason")
     ai_use, ai_where = sub("ai_use", "section", "written_by", "model")
@@ -1524,6 +1564,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
     section_fields = (
         (_at(closing_where, "section"), closing["section"]),
         (_at(checklist_where, "section"), checklist["section"]),
+        (_at(affected_where, "section"), affected["section"]),
         (_at(screenshots_where, "section"), screenshots["section"]),
         (_at(runtime_where, "section"), runtime["section"]),
         (_at(ai_where, "section"), ai_use["section"]),
@@ -1552,6 +1593,13 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
             unchecked=_choice(checklist["unchecked"], _at(checklist_where, "unchecked"), ("refused",)),
             since=_moment(checklist["since"], _at(checklist_where, "since")),
             legacy_label=_text(checklist["legacy_label"], _at(checklist_where, "legacy_label")),
+        ),
+        issues_affected=IssuesAffected(
+            section=affected["section"],
+            none=_text(affected["none"], _at(affected_where, "none")),
+            reason=_choice(affected["reason"], _at(affected_where, "reason"), ("required",)),
+            example=_example(affected, affected_where),
+            since=_moment(affected["since"], _at(affected_where, "since")),
         ),
         screenshots=ScreenshotsRule(
             section=screenshots["section"],
@@ -1676,6 +1724,7 @@ def _read_issues(data: object, where: str) -> Issues:
         "links",
         "status_text",
         "labels",
+        "impact",
         "title_area_by_label",
     )
     table = _table(data, where, keys)
@@ -1695,6 +1744,8 @@ def _read_issues(data: object, where: str) -> Issues:
     links = _table(table["links"], links_where, ("docs_paths", "link_form", "must_exist_on"))
     labels_where = _at(where, "labels")
     labels = _table(table["labels"], labels_where, ("type", "area", "priority", "status", "closed_keeps_status"))
+    impact_where = _at(where, "impact")
+    impact = _table(table["impact"], impact_where, ("cache_minutes", "common_max_issues", "max_reasons"))
     return Issues(
         blank_issues=_flag(table["blank_issues"], _at(where, "blank_issues")),
         placeholders=_texts(table["placeholders"], _at(where, "placeholders")),
@@ -1718,6 +1769,11 @@ def _read_issues(data: object, where: str) -> Issues:
             priority=_choice(labels["priority"], _at(labels_where, "priority"), _LABEL_COUNTS),
             status=_choice(labels["status"], _at(labels_where, "status"), _LABEL_COUNTS),
             closed_keeps_status=_flag(labels["closed_keeps_status"], _at(labels_where, "closed_keeps_status")),
+        ),
+        impact=ImpactRules(
+            cache_minutes=_count(impact["cache_minutes"], _at(impact_where, "cache_minutes")),
+            common_max_issues=_count(impact["common_max_issues"], _at(impact_where, "common_max_issues")),
+            max_reasons=_count(impact["max_reasons"], _at(impact_where, "max_reasons")),
         ),
         title_area_by_label=MappingProxyType(
             {

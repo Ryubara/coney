@@ -248,6 +248,8 @@ def template_matches(context: FilesContext) -> Iterator[Problem]:
         (f"`{rules.docs_none.line}`", "pull_requests.docs_none"),
         (closing, "pull_requests.closing"),
         ("Done:", "pull_requests.checklist"),
+        (f"`{rules.issues_affected.none} (<reason>)`", "pull_requests.issues_affected"),
+        (f"`{rules.issues_affected.example}`", "pull_requests.issues_affected"),
         (f"`{rules.screenshots.none} (<reason>)`", "pull_requests.screenshots"),
         (f"`{rules.runtime.none} (<reason>)`", "pull_requests.runtime"),
         (f"{rules.runtime.line} ...", "pull_requests.runtime"),

@@ -41,6 +41,10 @@ BODY = """tools: Add a thing
 
 Adds a thing.
 
+## Issues affected
+
+None (nothing cites it)
+
 ## Checklist
 
 Done:

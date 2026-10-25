@@ -130,10 +130,12 @@ Docs: none
 
 Line 1 is the title (`area: Verb the rest`). The Summary is one paragraph and, if the change needs no documentation,
 a `Docs: none` line. Testing holds only the `Runtime:` line (required for the title areas a player sees); the facts are
-generated. Screenshots holds image references under `./shots/`, or `Screenshots: none (<reason>)`. Anything else is
-refused: `Fixes` lines, the markers and the Checklist are generated, so a hand-typed claim cannot disagree with the
-stamps. A heading that is not one of `pull_requests.sections` is refused ("is not a section of a pull request
-description"); a section added to that list that only a person can fill goes in the file under its own heading and is
+generated. Issues affected holds one `- #N: how it is affected` line per open issue the change affects, or
+`None (<reason>)` (`pull_requests.issues_affected`; [Issues a pull request changes](issues.md#affected)). Screenshots
+holds image references under `./shots/`, or `Screenshots: none (<reason>)`. Anything else is refused: `Fixes` lines,
+the markers and the Checklist are generated, so a hand-typed claim cannot disagree with the stamps. A heading that is
+not one of `pull_requests.sections` is refused ("is not a section of a pull request description"); a section of that
+list that only a person can fill (Issues affected, or one added later) goes in the file under its own heading and is
 kept as written. A person's own pull request, with no AI identity in the log and no model in the commits' trailers,
 also writes the `## AI use` section itself.
 
@@ -150,7 +152,8 @@ line and refused by the checks until it is.
 | Testing | The [facts block](#facts) between `<!-- coney:facts -->` markers, then the engineer's `Runtime:` line |
 | Screenshots | The engineer's section, as written |
 | AI use | `Commits written by: an AI` and the models the branch's `Co-Authored-By` trailers name, else the models of the engineers in the log. No trailer lines are added to the description: GitHub copies the branch commits' trailers into the squash commit |
-| A section added to `pull_requests.sections` that only a person can fill | The engineer's section of `PR.md`, as written. Without it, a bare `TODO:`, which is refused |
+| Issues affected | The engineer's section of `PR.md`, as written (`check-body` checks its form: [Issues a pull request changes](issues.md#affected)). Without it, a `TODO:` that says what the section holds and lists the candidates of [`issue impact`](coney-tools-issues.md#issue-impact) (the issues the task finishes left out); it is refused until the engineer has read the candidates and written the section |
+| Any other section added to `pull_requests.sections` that only a person can fill | The engineer's section of `PR.md`, as written. Without it, a bare `TODO:`, which is refused |
 
 The marker names (`pull_requests.markers`) let a later pass find the two generated blocks again.
 

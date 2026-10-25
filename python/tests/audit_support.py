@@ -59,9 +59,12 @@ def issue(
     created: float = 1.0,
     updated: float = 1.0,
     assignees: tuple[str, ...] = ("alice",),
+    edited: float | None = None,
 ) -> dict[str, Any]:
     """An issue as `gh issue list --json` returns it; the defaults describe a clean one."""
+    extra = {} if edited is None else {"editedAt": stamp(edited)}
     return {
+        **extra,
         "assignees": [{"login": name} for name in assignees],
         "number": number,
         "title": title,
@@ -76,7 +79,8 @@ def issue(
 
 
 PR_BODY = (
-    "## Summary\n\nAdds a check.\n\n## Checklist\n\nDone:\n\n- [x] the check\n\n"
+    "## Summary\n\nAdds a check.\n\n## Issues affected\n\nNone (nothing cites it)\n\n"
+    "## Checklist\n\nDone:\n\n- [x] the check\n\n"
     "## Testing\n\n- 3 tests passed\n\n## Screenshots\n\nScreenshots: none (tooling)\n\n"
     "## AI use\n\n- **Commits written by:** a person\n- **Model:** n/a\n"
 )

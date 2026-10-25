@@ -318,7 +318,8 @@ file. So a second reader goes over every description before it is pushed: the `r
 branch's diff and the logs the description cites,
 opens every picture, and writes a verdict: whether each picture shows what the text says (gameplay, not a scene,
 loading screen or menu; the right level; before and after that differ), whether each claim in Summary and Testing is
-backed by the diff or a log, whether `Fixes #N` fits, that nothing is left for later, that `Docs: none` is allowed and
+backed by the diff or a log, whether `Fixes #N` fits, whether Issues affected lists the open issues the diff plainly
+touches (`issue impact` helps), that nothing is left for later, that `Docs: none` is allowed and
 that AI use is filled.
 For a title in an area a player sees (`gameplay`, `graphics`, `audio`), `check-body` already requires the Testing
 section's `Runtime:` line ([What a pull request shows](testing.md#runtime-line)); the reviewer checks that it is
@@ -468,6 +469,9 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
   [.github/conventions.yml](repo:.github/conventions.yml)); everything else the coordinator decides itself.
 - **Tidy after every merge round and once a week.** Run the `/repo-hygiene` skill: it audits the issues, pull requests,
   labels and workspace and fixes each finding by its class ([Merging safely](#merging)).
+- **Bring the issues up to date after every merge.** Each pull request lists the open issues it affects in its Issues
+  affected section; once it merges the coordinator edits each of them, and `pr.affected-unedited` reports the ones left
+  ([After a merge](issues.md#after-a-merge)).
 - **Keep every team staffed.** The [standing teams](#teams) are never left empty: when an engineer finishes, the
   next open item of that team's list gets an engineer at once (unfinished fixes, subsystems that differ from the
   original, missions still to build, the audit's next subsystem), one issue per engineer. The priorities are on the
@@ -537,9 +541,10 @@ Issues are guarded the same way: the `issue_guard` hook, `coney-tools issue chec
 ## Merging safely {#merging}
 
 - **After a merge round, run `/repo-hygiene`.** The skill runs the audit and fixes what it finds by the finding's fix
-  class, including the issues that cite a pull request that merged (change "open" to "merged", tick what it finished,
-  close or relabel an issue it fixed: [Writing an issue a newcomer can read](issues.md#writing)). It stops at the
-  maintainer decisions ([The /repo-hygiene skill](repo-conventions.md#hygiene-skill)).
+  class, including the issues each merged pull request lists under Issues affected
+  ([After a merge](issues.md#after-a-merge)) and the issues that cite it (change "open" to "merged", tick what it
+  finished, close or relabel an issue it fixed: [Writing an issue a newcomer can read](issues.md#writing)). It stops
+  at the maintainer decisions ([The /repo-hygiene skill](repo-conventions.md#hygiene-skill)).
 - **Merge only finished work.** A pull request is merged as it stands at its tip, and the squash drops the commits
   inside the branch, so a "WIP" commit in the middle does no harm. A branch whose tip is a paused, half-finished
   state is never merged: finish it, or cut the finished part into a new branch.
