@@ -1,28 +1,30 @@
+---
+kind: feature
+---
 # Combat: where Coney differs from the original
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`) through
-[Combat](combat/index.md) and [Combat moves](combat-moves.md); Coney's side read from `repo:src/combat/`,
-`repo:src/human/` and `repo:src/ai/` as of 2026-10-07 (main at `f4562750`), as behaviours only.
+Verified against: `SLUS_212.15` (NTSC-U) through [Combat](combat/index.md) and [Combat moves](combat-moves.md).
 
-## Purpose
+## Summary
 
 A worklist for the combat implementers: each place Coney's fight plays differently from the original, what the
 original does (with a link to the research) and where Coney's side lives. Coney's documented **choices** and
 **stand-ins** (on [Combat](combat/index.md#coneys-implementation)) are listed too when they change what the player sees.
-Remove an entry when it is fixed, in the same commit. The original's evidence levels are on the linked pages; the
-Coney side is confirmed by reading the source.
 
-## Original structure
+## Rules
 
-The original functions behind each entry are on the page it links, in that page's own Original structure and code
-index ([Combat](combat/index.md#original-structure), [Combat moves](combat-moves.md#original-structure)). The few an
-entry here names with an address (the mid-target test, the snap's search and filter, `Player_Special`) are graded where
-they are cited.
+- An entry says what the original does, linking the page that grades it, and what Coney does instead, read from
+  `repo:src/combat/`, `repo:src/human/` and `repo:src/ai/` as behaviours only.
+- An entry goes when its difference is fixed, in the same commit.
+- The page holds no data of its own: the commands, flags, tables and constants are on [Combat](combat/index.md#data)
+  and [Combat moves](combat-moves.md#data).
 
-## Data
+## Map
 
-This page holds no data of its own: the commands, flags, tables and constants are on [Combat](combat/index.md#data) and
-[Combat moves](combat-moves.md#data).
+The original functions behind each entry are on the page it links, in that page's own Map and code index
+([Combat](combat/index.md#original-structure), [Combat moves](combat-moves.md#original-structure)). The few an entry
+here names with an address (the mid-target test, the snap's search and filter, `Player_Special`) are graded where they
+are cited.
 
 ## Behaviour
 
@@ -78,7 +80,7 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
   ([Counters](combat-moves.md#counters)).
 - **Tandems** are built for any fighter's square, cross and circle, with Coney's choices for the alignment, the
   grabber's let-go and the target search, and no scoring; the AI's side (its target view's `0xc12200` test and kind
-  22's choice at a rear-held target) is issue #84's ([Coney's tandem](combat-moves.md#tandem-coney)).
+  22's choice at a rear-held target) is not built ([Coney's tandem](combat-moves.md#tandem-coney)).
 - **The moving attacks' windows** open late: on the disc Coney's run attack 24 switches its shapes on at update 4 and
   off at 9, the walk attack 23 at 6 and 12, against 1 and 7, 4 and 10 at runtime
   ([How a moving attack strikes](combat/index.md#moving-strikes)). Coney fires the clips' events by the clip time from 0
@@ -153,8 +155,8 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 - **Throwing a melee weapon with cross + square** (`0x22`, 502 / 491): the original throws a knife, baton or bat unless
   a target is within 2.0 m (then it does nothing, and the cross's release swings 36). Coney refuses the command for a
   player holding any object, as `Player_Special` (`0x00287730`, confirmed (code)) does, and never throws: with nobody
-  near the cross's release swings where the original throws. The special 653 and circle + cross's strong grapple no
-  longer start with an object in hand (fixed with issue #228; [Cross with a bat in hand](combat-throws.md#bat-cross)).
+  near the cross's release swings where the original throws. The special 653 and circle + cross's strong grapple do
+  not start with an object in hand ([Cross with a bat in hand](combat-throws.md#bat-cross)).
   Coney: `repo:src/combat/player_combat.cpp`.
 - **Clip lengths**: Coney ends a clip when its time reaches its duration, ceil(F / rate) updates; the original ends
   it on the update its frame would reach F, one update sooner on 50 of the 174 clips in the move tables (19, 20, 34
@@ -178,7 +180,7 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
   and escapes by its command as `Player_UpdateGrabbed` decides, the grabber playing its side an update later; the
   **reversal** (R1) is not offered this way ([Grabbed](combat-grabs.md#grabbed)).
 
-## Coney's implementation
+## In Coney
 
 The Coney side of each entry is named in it. The files the entries cite: `repo:src/combat/player_combat.cpp` (the
 dispatcher and the commands it takes), `repo:src/combat/attacks.cpp` (which attack a press starts),

@@ -139,11 +139,6 @@ verified = 1
 evidence = 10
 history = 1
 
-["docs/research/combat-diffs.md"]
-front-matter = 1
-verified = 1
-history = 3
-
 ["docs/research/combat-grabs.md"]
 evidence = 32
 
