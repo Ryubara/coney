@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
+import yaml
 from git_support import git
 from pr_open_support import OPENER, PNG, REPO, Open, make_open, picture, show
 from pr_support import make
@@ -857,14 +858,11 @@ def test_the_rules_come_from_origin_even_when_the_release_goes_to_another_remote
 def test_the_claims_client_is_built_from_the_default_branchs_rules(tmp_path: Path) -> None:
     opened = docs_unit(tmp_path)
     built = opened.built
-    text = (built.root / ".github" / "conventions.yml").read_text(encoding="utf-8")
-    assert 'bot_login: "github-actions[bot]"' in text
+    data = yaml.safe_load((built.root / ".github" / "conventions.yml").read_text(encoding="utf-8"))
+    base_bot = data["claims"]["bot_login"]
     # only the branch names another bot; origin/main keeps the real one
-    built.edit(
-        ".github/conventions.yml",
-        text.replace('bot_login: "github-actions[bot]"', 'bot_login: "branch-bot[bot]"'),
-        "ci: bot",
-    )
+    data["claims"]["bot_login"] = "branch-bot[bot]"
+    built.edit(".github/conventions.yml", yaml.safe_dump(data), "ci: bot")
     built.check("docs")
     built.review(functions={})
     seen: list[str] = []
@@ -876,7 +874,7 @@ def test_the_claims_client_is_built_from_the_default_branchs_rules(tmp_path: Pat
     env = opened.env()
     env.remote_from = remote_from
     assert pr_open.run_open(opened.request(), env) == 0, opened.text()
-    assert seen == ["github-actions[bot]"]
+    assert base_bot != "branch-bot[bot]" and seen == [base_bot]
 
 
 def test_auto_merge_is_off_before_the_push_so_a_failed_edit_cannot_leave_the_new_tip_to_merge(tmp_path: Path) -> None:
@@ -921,3 +919,22 @@ def test_auto_merge_that_stays_on_stops_the_run_before_anything_is_pushed(tmp_pa
     assert opened.run(task="work-fix") == 4
     assert "stays on" in opened.text() and "nothing was pushed" in opened.text()
     assert opened.origin_tip() == pushed
+
+
+def test_a_reopened_pull_request_has_auto_merge_turned_off_before_the_push(tmp_path: Path) -> None:
+    opened = docs_unit(tmp_path)
+    assert opened.run() == 0
+    fake = opened.gh
+    # closed with its auto-merge request kept, then released again with --reopen and --no-auto-merge
+    fake.prs[812]["state"] = "CLOSED"
+    assert fake.prs[812]["auto"] is True
+    real = fake.__call__
+
+    def edit_fails(args: Sequence[str], cwd: Path | None) -> str:
+        if args[:2] == ["pr", "edit"]:
+            raise pr_publish.GhError("gh pr edit failed: the upload was refused")
+        return real(args, cwd)
+
+    opened.gh = edit_fails  # type: ignore[assignment]
+    assert opened.run(reopen=True, no_auto_merge=True) == 4
+    assert fake.prs[812]["auto"] is False

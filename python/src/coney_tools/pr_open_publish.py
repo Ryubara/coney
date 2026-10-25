@@ -62,7 +62,7 @@ def check_existing(run: Run, existing: PullRequest | None) -> None:
     """Refuse a merged or closed pull request, and a fix task with no open pull request to fix."""
     fix = run.task != run.owner
     if fix:
-        if existing is None or existing.state != "OPEN":
+        if existing is None or existing.state == "MERGED":
             why = f"#{existing.number} is {existing.state.lower()}" if existing else "the branch has none"
             raise Stop(EXIT_REFUSED, f"{run.task} has no open pull request to fix ({why})")
         return
@@ -101,10 +101,11 @@ def wants_auto_merge(run: Run, proof: Proof) -> bool:
 
 
 def guard_auto_merge(run: Run, existing: PullRequest | None, want: bool) -> None:
-    """Before anything is pushed or edited: auto-merge that is on for the branch's open pull request while this release
-    must not be merged by it is turned off and read again; Stop(4) when it stays on. Otherwise a failed step between the
-    push and the read-back would leave the new tip to merge by itself."""
-    if want or existing is None or existing.state != "OPEN":
+    """Before anything is pushed or edited: auto-merge that is on for the branch's pull request while this release must
+    not be merged by it is turned off and read again; Stop(4) when it stays on. Otherwise a failed step between the
+    push and the read-back would leave the new tip to merge by itself. A closed one (`--reopen`) is checked too, in case
+    GitHub kept its auto-merge request across the close; a merged one is never released onto."""
+    if want or existing is None or existing.state == "MERGED":
         return
     gh = run.env.gh
     if not pr_publish.view_pr(gh, run.repo, existing.number).auto_merge:
