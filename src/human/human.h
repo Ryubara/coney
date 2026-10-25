@@ -437,12 +437,13 @@ class Human final : public Holdable {
     [[nodiscard]] bool stickHeld() const;
     /// The climb in progress, if any.
     [[nodiscard]] const std::optional<ClimbProbe>& climb() const { return m_climbProbe; }
-    /// Climbing over: the climb's middle clip (441 standing, 447 running), while record `+0x08` holds bit `0x40`
-    /// (fences do not block the body); not its first or last clip.
+    /// Climbing over: the climb's middle clip (for the tall and the short fence 438 and 444 standing, 441 and 447
+    /// running), while record `+0x08` holds bit `0x40` (fences do not block the body); not its first or last clip.
     /// @orig 0x00223c10 Human_HasHeld40 (unknown)
     [[nodiscard]] bool climbingOver() const { return m_climbRun.has_value() && m_climbRun->over; }
     /// `Human_IsDownOrDead`'s states `0x180050000` as Coney models them: no health left (dead, dying), knocked out or
-    /// wounded (`0x10000`). Knocked down alive (`0x80000`) and cuffed (`0x20000`) are not among them.
+    /// wounded (`0x10000`). Knocked down alive (`0x80000`) and cuffed (`0x20000`) are not among them. The narrow
+    /// reading: ai::downOrDead() (src/ai/gangs.h) is Coney's wider one, which also counts a human knocked down alive.
     /// @orig 0x00227e60 Human_IsDownOrDead (unknown)
     [[nodiscard]] bool downOrDead() const {
         return m_fighter.health().depleted() || m_script.knockedOut || m_script.wounded;

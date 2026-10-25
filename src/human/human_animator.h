@@ -212,8 +212,9 @@ class HumanAnimator {
     /// stack (the older tasks fade out and go) and hands over to the idle; what shows after a scripted clip over a
     /// fidget or a block is not measured. None of its refusals is built, here or in the callers (the scripted brains'
     /// playClip and playNamedClip, the workout's exit): held `0x1c16a40` at its start, and on that branch any held
-    /// flag, or state `0x7bf9e9f7ff0` but for 668 and 669; nor its loop and chained branches (671, 673, a loop asked
-    /// for), nor its held flags chosen by anim id (the callers pass their own). Research:
+    /// flag, or state `0x7bf9e9f7ff0` but for 668 and 669, and anims 603 and 604 while `Human_IsBusyForScriptAnim`
+    /// (`0x00223d38`) holds; nor its loop and chained branches (671, 673, a loop asked for), nor its held flags chosen
+    /// by anim id (the callers pass their own). Research:
     /// docs/research/ai-scripting.md#dyn-animation
     /// @orig 0x0025a3e0 Human_PlayScriptAnim (unknown)
     void playScripted(const anim::AnimClip& clip, std::uint32_t animId, float rate, float fade, HeldFlags held,
