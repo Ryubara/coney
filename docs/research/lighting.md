@@ -33,7 +33,7 @@ humans, by distance) lights, the nearest-overlapping point lights last, and Rend
 colour to the prelighting. In `level99` the world is lit only by the 0.227 grey world ambient and two flickering
 lamps; humans get a cold moonlight, a weak warm light from below, a 0.22 ambient and up to 3 lamps.
 
-## Map
+## Map {#original-structure}
 
 `c:/Warriors/Source/Graphics/LightManager.cpp` (string at `0x005522b0`, confirmed (code); [Source map](source-map.md)).
 Names are ours.

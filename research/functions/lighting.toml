@@ -84,12 +84,30 @@ coney = "src/graphics/light_manager.h:LightManager::removeLight"
 status = "legacy"
 
 [[function]]
+address = 0x0017d640
+name = "LightManager_Construct"
+page = "lighting.md#original-structure"
+role = "the light manager (`0x0050cce4`, 0xc0 bytes) ([Lighting](lighting.md#manager))"
+level = "confirmed-code"
+coney = "src/graphics/light_manager.h:LightManager::LightManager"
+status = "legacy"
+
+[[function]]
 address = 0x0017d880
 name = "LightManager_CullForViewport"
 page = "lighting.md#original-structure"
 role = "sorts the lights into the lists below"
 level = "confirmed-code"
 coney = "src/graphics/light_manager.h:LightManager::beginViewport"
+status = "legacy"
+
+[[function]]
+address = 0x0017de10
+name = "LightManager_SelectLights"
+page = "lighting.md#original-structure"
+role = "the lights for one atomic or sphere"
+level = "confirmed-code"
+coney = "src/graphics/light_manager.h:LightManager::select"
 status = "legacy"
 
 [[function]]
