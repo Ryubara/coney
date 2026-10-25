@@ -142,9 +142,11 @@ NativeFunction makeHuGetPosition(const BindingContext& context) {
 }
 
 // `TeleportToFlag(object, flag, heading)`: puts the object on the flag's position, facing the flag's heading for -1
-// (the default) or `heading` whole degrees, with no ground snap. Both are turned by about -z, clockwise seen from
-// above, the other way from `HuCreate`'s heading (docs/research/flags.md#position). Coney keeps the humans only, so it
-// moves a human the scripts made and ignores any other handle (and a handle that names no flag).
+// (the default) or `heading` whole degrees; the binding records the flag's point with no ground snap, and the running
+// level's placement drops it onto the ground (Human::place()), then resets the motion (TeleportMotion::Stopped). Both
+// are turned by about -z, clockwise seen from above, the other way from `HuCreate`'s heading
+// (docs/research/flags.md#position). Coney keeps the humans only, so it moves a human the scripts made and ignores any
+// other handle (and a handle that names no flag).
 // @orig 0x0036cdc0 TeleportToFlag (unknown)
 // @orig 0x00385db0 Object_TeleportToFlag (unknown)
 NativeFunction makeTeleportToFlag(const BindingContext& context) {

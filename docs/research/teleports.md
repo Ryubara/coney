@@ -169,8 +169,8 @@ the dealer. Script locators are given as file and function.
   caches none; the flag at `+0x54` has no reader traced) and the body's re-pose bit (Coney's body is posed from the
   position at each use). Coney pops a front move whatever `+0xec` holds, having no such state.
 - Coney's choices: a climb in progress ends at a placement ([q-placement-rest](#q-placement-rest)). After a scene clip
-  played to its end Coney places the human where the clip left it, with no drop, since Coney's scene drives a frame and
-  not the human.
+  played to its end Coney places the human where the clip left it, with no drop and no pop of the brain's front move,
+  since Coney's scene drives a frame and not the human, and the original places no one there.
 - The hand-over moves Coney's one player human onto the chosen one, so he stands afresh, nothing of the old body's
   fight carried over, and takes the chosen human's meters as `Human_MakePlayer` sets them (`human::makePlayerOf()`,
   `human::takeMetersOf()`).

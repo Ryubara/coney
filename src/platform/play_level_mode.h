@@ -570,10 +570,11 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     // @orig 0x00169ea0 Gang_CanReachToHelp (unknown)
     void stepGameOver(const Pad& pad);
     // Player 1's flash (command 0x28, d-pad right, docs/research/combat-rage.md#rage): with a flash carried and health
-    // below its maximum, 665 SPECIAL_FLASH plays when nothing blocks a move, and its action event 25 updates in uses
-    // the flash (a clip cut first spends nothing); when something blocks a move (a grab, which stays) the flash is used
-    // at once, unless 665 already plays. **Coney's stand-in**: the full-health rage use (upgrade (6, 8)) is not built.
-    // @orig 0x002843f8 Player_StartRage (unknown)
+    // below its maximum, refused only when down or dead, cuffed, airborne or climbing: 665 SPECIAL_FLASH plays when
+    // nothing holds him, and its action event 25 updates in uses the flash (a clip cut first spends nothing); when
+    // something holds him (a grab, which stays; a knockdown, a stun, a hit reaction) the flash is used at once, unless
+    // 665 already plays. **Coney's stand-in**: the full-health rage use (upgrade (6, 8)) is not built.
+    // @orig 0x002843f8 Player_UseItemCommand (unknown)
     void stepFlash();
     // `Flash_Use`: one flash spent, interface sound 23 (`vags/misc/flash`), the health filled and wounding ended, and
     // the HUD's ring request. **Coney's stand-in**: always the full heal (Coney has no difficulty setting; above

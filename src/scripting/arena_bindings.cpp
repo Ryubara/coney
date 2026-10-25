@@ -124,11 +124,12 @@ NativeFunction makeGetGameMode(const BindingContext& context) {
     };
 }
 
-// `Teleport(object, {x, y, z}, heading)`: moves a human the scripts made, as `TeleportToFlag` does (a running level
-// moves it, the player too), or a spawned object (its spawn record, which the trigger spheres and the drawing read);
-// heading -1 (the default) keeps its facing; another turns it about -z, clockwise seen from above, as `TeleportToFlag`
-// does (docs/research/flags.md#position). **Coney stand-in**: the human is placed at the point as given (the
-// original lowers it onto what a short ray down finds).
+// `Teleport(object, {x, y, z}, heading)`: moves a human the scripts made (a running level moves it, the player too),
+// or a spawned object (its spawn record, which the trigger spheres and the drawing read); heading -1 (the default)
+// keeps its facing; another turns it about -z, clockwise seen from above, as `TeleportToFlag` does
+// (docs/research/flags.md#position). For a human it is the placement alone (TeleportMotion::Kept: no motion reset,
+// docs/research/teleports.md#motion-reset); the binding records the point as given, and the running level's
+// placement lowers it onto what the 0.5 m ray down finds (Human::place()).
 // @orig 0x00385bb8 Object_Teleport (unknown)
 NativeFunction makeTeleport(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {

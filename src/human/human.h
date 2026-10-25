@@ -346,15 +346,18 @@ class Human final : public Holdable {
         m_animator.setIdleClip(clip);
     }
     /// `Human_PushOverlayClip`: `clip` played as anim `animId` over what plays, at the rate its Anim Range List flags
-    /// give it (characters::AnimSet::rate(): 0.75 for a clip with none), fading in over `fade` seconds, with `held`
-    /// set while it plays (docs/research/formats/animation.md#playback-rate). **Coney stand-in**: the original ends a
-    /// clip on the update its frame would reach its count (ceil((F - 0.5) / rate), 53 for the flash's 40 frames, as
-    /// measured), Coney's clip tasks when the time reaches the length (54), so this clip hands over a step early, as
-    /// clip 34 does, until the clip tasks take the original's rule (formats/animation.md#clip-end).
+    /// give it (characters::AnimSet::rate(): 0.75 for a clip with none), at full weight from its first update (the
+    /// original passes 0 for both of the task's fades), with `held` set while it plays
+    /// (docs/research/formats/animation.md#playback-rate). **Coney stand-ins**: the original ends a clip on the update
+    /// its frame would reach its count (ceil((F - 0.5) / rate), 53 for the flash's 40 frames, as measured), Coney's
+    /// clip tasks when the time reaches the length (54), so this clip hands over a step early, as clip 34 does, until
+    /// the clip tasks take the original's rule (formats/animation.md#clip-end); and the original pushes a layer over
+    /// the stack, so what played before (a held block, say) shows again when the clip ends, where Coney's clip hands
+    /// over to the idle and the controller chooses again (what shows on the update after 665 is not measured).
     /// @orig 0x0025ade8 Human_PushOverlayClip (unknown)
     /// @orig 0x00106240 AnimTask5_Construct (unknown)
-    void pushOverlayClip(const anim::AnimClip& clip, std::uint32_t animId, float fade, HeldFlags held) {
-        m_animator.playScripted(clip, animId, m_animator.anims().rate(animId), fade, held, true);
+    void pushOverlayClip(const anim::AnimClip& clip, std::uint32_t animId, HeldFlags held) {
+        m_animator.playScripted(clip, animId, m_animator.anims().rate(animId), 0.0F, held, true);
     }
     /// A scripted clip played from outside the dispatcher (HumanAnimator::playScripted()).
     void playScripted(const anim::AnimClip& clip, std::uint32_t animId, float rate, float fade, HeldFlags held) {
@@ -548,9 +551,12 @@ class Human final : public Holdable {
     [[nodiscard]] std::optional<int> takeTandemRequest() override { return m_fighter.takeTandemRequest(); }
     /// Moves it there and stops it (its velocity goes): the attached hold's placement of the held human at the
     /// transform the grabber gives (fighter_grab.cpp), not a script's placement (place() above). It ports the placing
-    /// part of `Human_MoveAttached` only: the original also sweeps the held body toward the point against the others
-    /// (`PhysicsBody_Sweep`, up to three tries) and hands the holder's velocity on; Coney's held human has its movement
-    /// held and moves with no velocity of its own (docs/research/combat-grabs.md#grab-posing).
+    /// part of `Human_MoveAttached` only. **Coney stand-in**: the original also sweeps the held body toward the point
+    /// against the others (`PhysicsBody_Sweep`, up to three tries) and hands the holder's velocity on; Coney's held
+    /// human has its movement held and moves with no velocity of its own, and what the sweep changes (a grab against a
+    /// wall) is not measured (docs/research/combat-grabs.md#grab-posing). The locked camera's kept-in-view push
+    /// (gameplay_mode.cpp) borrows it to move a human: `LockedCam_KeepHumansInView` (`0x00135ca8`) sets the human's
+    /// transform through its own slot (`+0x6c`) with the rotation kept, and the stop of the velocity is Coney's there.
     /// @orig 0x00244e78 Human_MoveAttached (unknown)
     void place(anim::Vec3 position, float headingRadians) override;
     /// Thrown: its fighter's steer carries it (Fighter::carryOver()), applied in each state update as an attack's is.

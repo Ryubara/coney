@@ -760,7 +760,7 @@ TEST_CASE("an overlay clip plays at its anim's rate: the flash with no rate flag
     flash.events.push_back(
         coney::anim::ClipEvent{.frame = 19, .type = 0x41, .word = 0, .position = {}, .rotation = {}});
     // Pushed during update 0's actions, as the d-pad press is handled.
-    human.pushOverlayClip(flash, 665, 0.0F, coney::human::HeldFlags{.held = 0x2000});
+    human.pushOverlayClip(flash, 665, coney::human::HeldFlags{.held = 0x2000});
     int firedAt = -1;
     int lastPlaying = 0;
     for (int update = 1; update <= 70; ++update) {
@@ -774,6 +774,24 @@ TEST_CASE("an overlay clip plays at its anim's rate: the flash with no rate flag
     }
     CHECK(firedAt == 25);
     CHECK(lastPlaying == 52);
+}
+
+TEST_CASE("an overlay clip has no fade: it plays at full weight from its first update, the older tasks gone",
+          "[human][flash]") {
+    // Human_PushOverlayClip (0x0025ade8) passes 0 for both of AnimTask5_Construct's fades, so the flash snaps in where
+    // a fade would blend it over the idle (docs/research/combat-rage.md#rage).
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 40.0F, 0.0F});
+    human.step(stick(0.0F, 0.0F), mesh.get());
+    coney::anim::AnimClip flash;
+    flash.duration = 40.0F / 30.0F;
+    human.pushOverlayClip(flash, 665, coney::human::HeldFlags{.held = 0x2000});
+    // Nothing is left to fade out: the clip is the one layer, before and after its first update.
+    CHECK(human.animator().tasks().layerCount() == 1U);
+    human.step(stick(0.0F, 0.0F), mesh.get());
+    CHECK(human.animator().animId() == 665U);
+    CHECK(human.animator().tasks().layerCount() == 1U);
 }
 
 TEST_CASE("a human's power meter, stamina, health and rage come from its fighter profile", "[human]") {

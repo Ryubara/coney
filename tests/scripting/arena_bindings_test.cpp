@@ -211,6 +211,8 @@ TEST_CASE("Teleport moves a human the scripts made, keeping its facing for -1", 
     // The heading turns clockwise seen from above (about -z), so the placement's (about +z) is its negative.
     CHECK(made->teleported.value_or(coney::world_objects::Placement{}).headingDegrees == -90.0F);
     CHECK(made->teleports == 1);
+    // Teleport is the placement alone: the motion is kept (TeleportToFlag's is stopped).
+    CHECK(made->teleportMotion == coney::world_objects::TeleportMotion::Kept);
     // The default heading keeps the facing it has now.
     const std::optional<coney::world_objects::Placement> before = level.scripted->humanPlacement(thug.handle());
     REQUIRE(before.has_value());

@@ -196,16 +196,22 @@ void PlayLevelMode::placeReleased(const SceneStage::Release& release) {
     // ground applies (docs/research/scenes.md#ending). **Coney's choice** after a clip played to its end: the original
     // places no one (its clip moved the human there), but Coney's scene drives a frame, not the human, so it is placed
     // where the clip left it, with no drop. The motion reset is the one the original makes at the scene's start
-    // (scenes.md#humans); Coney's held human has not moved since.
+    // (scenes.md#humans); Coney's held human has not moved since. The brain's front move is popped only after a skip,
+    // where the original's Human_SetTransform pops it: after a clip played to its end the original places no one, so
+    // nothing pops.
     const float headingDegrees = release.heading * 180.0F / std::numbers::pi_v<float>;
     const raycast::CollisionMesh* ground = release.skipped ? &m_scenery->collision() : nullptr;
     if (release.human == m_playerHandle) {
         m_player->teleport(ground, human::PlayerStart{.position = release.feet, .headingDegrees = headingDegrees});
-        brainPlaced(m_player->human());
+        if (release.skipped) {
+            brainPlaced(m_player->human());
+        }
     } else if (const ai::AiHuman* fighter = castHumanOf(release.human); fighter != nullptr) {
         fighter->human->place(ground, release.feet, headingDegrees);
         fighter->human->resetMotion();
-        brainPlaced(*fighter->human);
+        if (release.skipped) {
+            brainPlaced(*fighter->human);
+        }
     }
 }
 

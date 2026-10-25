@@ -349,6 +349,40 @@ TEST_CASE("the disc's level80: d-pad right with a flash plays 665 and uses it 25
     CHECK(run.session().flow().scripts().errors() == 0);
 }
 
+TEST_CASE("the disc's level80: a stunned player's d-pad right uses the flash at once, with no 665",
+          "[disc][story][flash]") {
+    // Player_UseItemCommand (0x002843f8) refuses the press only when down or dead (Human_IsDownOrDead, 0x00227e60),
+    // cuffed, airborne or climbing. A stun is none of those: it reaches the test of what holds the human, which a stun
+    // fails, so Flash_Use runs at once on the press's update and 665 is not played (docs/research/combat-rage.md#rage,
+    // where the original's runs heal at once over a hit reaction and a knockdown).
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    FlashDriver driver;
+    coney::test::DiscSession run(*wad, driver);
+    startPlaying(run, driver, "level80", 2);
+    auto& human = const_cast<coney::human::Human&>(run.session().play()->player().human());
+    constexpr std::uint64_t kStunMs = 3000;
+    human.stunFor(human.nowMs(), kStunMs);
+    run.run(5);
+    REQUIRE(human.fighter().helpless(human.animator()));
+
+    const Use use = useFlash(run, driver, 0.0F);
+    std::printf("  level80 stunned: 665 %s; spent at %d, cue 23 at %d (x%d); health %d -> %d of %d\n",
+                use.played ? "plays" : "does not play", use.healUpdate, use.cueUpdate, use.cueSounds, use.healthBefore,
+                use.healthAfter, use.healthMaximum);
+    CHECK_FALSE(use.played);
+    CHECK(use.flashesAfter == 0);
+    CHECK(use.healthBefore < use.healthMaximum);
+    CHECK(use.healthAfter == use.healthMaximum);
+    // At once: on the press's update.
+    CHECK(use.healUpdate == 0);
+    CHECK(use.cueUpdate == use.healUpdate);
+    CHECK(use.cueSounds == 1);
+    CHECK(run.session().flow().scripts().errors() == 0);
+}
+
 TEST_CASE("the disc's level99 dealer: buying a flash plays the money pair, then d-pad right plays 665 and uses it",
           "[disc][story][flash]") {
     std::optional<coney::io::Wad> wad = coney::test::openDisc();

@@ -146,11 +146,9 @@ void reportStrikeSound(human::Human& human, std::uint32_t struck, float volume, 
 // (docs/research/crimes.md#lockpick); any other press abandons it.
 constexpr std::uint16_t kLockPickKeeps =
     pad::kCross | pad::kL1 | pad::kR2 | pad::kUp | pad::kDown | pad::kLeft | pad::kRight | pad::kSelect;
-// The flash's clip, 665 SPECIAL_FLASH, and the record bits it holds (docs/research/combat-rage.md#rage); its fade in is
-// Coney's (the scripted clips' 0.2 s).
+// The flash's clip, 665 SPECIAL_FLASH, and the record bits it holds (docs/research/combat-rage.md#rage).
 constexpr std::uint32_t kFlashAnim = 665;
 constexpr std::uint32_t kFlashHeld = 0x2000;
-constexpr float kFlashFade = 0.2F;
 // `Flash_Use`'s interface sound: entry 23 of the cue table, which the scripts fill with `vags/misc/flash`.
 constexpr int kFlashSoundCue = 23;
 // The 60 Hz ticks the objects take in one 1/30 s step.
@@ -598,20 +596,27 @@ void PlayLevelMode::stepFlash() {
     if (human.record().command != combat::command::kDpadRight || m_pickups->carried(0, item::kRevive) < 1) {
         return;
     }
-    // Not while out of health, down or airborne; at full health it would only feed rage (not built).
+    // The press is refused only when down or dead (Human_IsDownOrDead's 0x180050000 as Coney models it, as
+    // ai::humanIsDownOrDead() does: no health left, knocked out or wounded), cuffed (0x20000), airborne (0x1c00000000)
+    // or climbing (held 0x40); at full health it would only feed rage (not built). A knockdown, a stun or a hit
+    // reaction is none of these.
     const combat::Health& health = human.fighter().health();
-    if (health.depleted() || human.airborne() || human.fighter().helpless(human.animator()) ||
+    const human::ScriptState& script = human.script();
+    const bool downOrDead = health.depleted() || script.knockedOut || script.wounded;
+    if (downOrDead || script.arrested || human.airborne() || human.climb().has_value() ||
         health.value() >= health.maximum()) {
         return;
     }
-    // Nothing blocks a move: 665 is pushed, and its event uses the flash. Otherwise (a grab, which stays) the flash is
-    // used at once, unless 665 already plays.
-    const bool blocked = human::stickBusy(human.gateInput()) || human.fighter().inPair();
+    // Nothing holds the human: 665 is pushed, and its event uses the flash. Otherwise the flash is used at once,
+    // unless 665 already plays: a grab (which stays), or Coney's fighter states for the original's state mask
+    // 0x7bf9e9f7ff0 and held mask 0x2fefefff (a knockdown, a stun, a hit reaction).
+    const bool blocked =
+        human::stickBusy(human.gateInput()) || human.fighter().inPair() || human.fighter().helpless(human.animator());
     const anim::AnimClip* clip = human.anims().clip(kFlashAnim);
     if (!blocked && clip != nullptr) {
         // The clip sets the bit it holds as it starts: the stick step reads it (busy) and leaves the clip alone, where
         // the fight stance would otherwise put its idle over it on the very next update.
-        human.pushOverlayClip(*clip, kFlashAnim, kFlashFade, human::HeldFlags{.held = kFlashHeld, .set = kFlashHeld});
+        human.pushOverlayClip(*clip, kFlashAnim, human::HeldFlags{.held = kFlashHeld, .set = kFlashHeld});
         m_print("flash: 665 plays\n");
     } else if (human.animator().animId() != kFlashAnim) {
         useFlash(human);
