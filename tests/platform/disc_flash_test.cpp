@@ -519,8 +519,11 @@ TEST_CASE(
     const int hurt = health().value();
     const int maximum = health().maximum();
     std::printf("  level99 story: checkpoint 2, health %d of %d\n", hurt, maximum);
-    // Coney's 35 % in exact arithmetic (315 of 900); the original's single-precision product gives 314 (issue #820).
-    CHECK(hurt == maximum * 35 / 100);
+    // Expected: ../references/bindings/character.md#husethealthpercent, confirmed (runtime): 314 of 900, one point
+    // under the exact 315, because the original's single-precision products round toward zero (run
+    // r-20261025-health-percent-rounding; the same 314 at this checkpoint in run r-20261024-flash-dealer-665).
+    CHECK(maximum == 900);
+    CHECK(hurt == 314);
 
     // Checkpoint 3: the street lesson's end (walking back to Vermin) sets it and loads the roofs' chapter.
     const coney::HumanCreation* player = flow.humans().player(1);
