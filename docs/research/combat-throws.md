@@ -603,7 +603,7 @@ named), with A the attacker it is given, O the object and V the victim:
 None changed the damage in this fight (all 23 calls returning at `0x00393158` in the recorded run dealt 90, −90 or
 −72, `+0x58` × the class float or its negation, and the polled run's bat hits took 90 or 72), so for a Fury's bat on the
 player or a fellow Fury only the friend case
-applies; the other cases are for Coney's implementer of thrown objects and of other holders to take whole.
+applies; the other cases are those of thrown objects and of other holders.
 
 So a Fury of power class 26 (float 1.0) deals **90** with any bat clip, 501, 34, 36 or 37 alike, and one of class 5
 (types 90, `ParkFury01` and `ParkFury14`, float 0.8) deals **72**; the clip's own damage (20, 10, 130, 75) is not used.
@@ -1004,18 +1004,18 @@ issue #492), so their first hits are small reactions of 18-54 health where the o
 Coney gives a scene's bound props to no one ([Scripts: the props go into hands by clip
 events](scripting.md#level80-arrest-fire), item 3; [the level34 fix list](scripting.md#level34-fixes), item 14).
 The issue's two runs of the original (+276 and +294, reactions 292 and 294) fit [the opening](#bat-knockdown): a bat
-run attack on arrival. With the bats in hand, Coney needs:
+run attack on arrival, about 270-330 updates after the scene's end. `repo:tests/platform/disc_level34_furies_test.cpp`
+(checkpoint 5, no input) holds Coney's first hit on the player to after the Furies' turn and at most 500 updates
+after the scene's end; it checks no bat, damage or reaction.
 
-1. The armed choice of clip for an AI with set 3: 501 on arrival at a run, 36 or 34 standing, and at a man down 37 or
-   the unarmed 193 / 194 ([Open questions](#open-questions)).
-2. An AI's bat hit dealt as an object contact by `ThrownObject_HitHuman`'s rules: `CfgObj` `+0x58` × the holder's
-   power-class float (90 for class 26 with `dyn_bat`, 72 for class 5), negated against a friend, with the type, knife
-   and victim cases of [the function](#bat-knockdown); the grounded 193 / 194 through `Strike_Contact` as unarmed
-   hits (25).
-3. The reaction from the swing clip's hit code (`0x2a`: 292-295 and down; 195 for a man on the ground).
-4. A check in `repo:tests/platform/disc_level34_furies_test.cpp` (checkpoint 5, no input): every Fury holds a `dyn_bat`
-   once `l34_c4` has started, and every hit on the player deals 90 or 72 (25 from 193 / 194 while he is down), the
-   first one, about 270-330 updates after the scene's end, a 292-295 that puts him down.
+What Coney lacks for an armed AI, all of it missing today:
+
+- the armed choice of clip for an AI with set 3: 501 on arrival at a run, 36 or 34 standing, and at a man down 37 or
+  the unarmed 193 / 194 ([Open questions](#open-questions));
+- an AI's bat hit dealt as an object contact by `ThrownObject_HitHuman`'s rules ([the bat's hit](#bat-knockdown)):
+  `CfgObj` `+0x58` × the holder's power-class float (90 for class 26 with `dyn_bat`, 72 for class 5), negated against
+  a friend, and the grounded 193 / 194 through `Strike_Contact` as unarmed hits (25);
+- the reaction from the swing clip's hit code (`0x2a`: 292-295 and down; 195 for a man on the ground).
 
 ### The mugging {#mug-difficulty-coney}
 

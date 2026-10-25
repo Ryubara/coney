@@ -105,11 +105,10 @@ quartered. Health (record `+0x144`) fell by exactly the table's value on every h
    no reaction from anyone.
 6. Otherwise the reaction by state, each a function of its own, among them: in a jump, falling, on fire, cuffing or
    being cuffed, in a mini-game, mugging or mugged, grabbed (`HitReact_WhileGrabbed`, `0x002688d0`), tackled,
-   grabbing (`HitReact_WhileGrabbing`, `0x00268ea8`), tackling, mounting, mounted, throwing or thrown (state `0x2000`:
-   no reaction, the pending damage cleared), in a special, knocked out
-   (`HitReact_WhileOut`), wounded (`Hit_PlayBegReaction`) and hit by an object (`HitReact_FromObject`); a normal hit
-   `Hit_PlayReaction` (`0x0026b0a0`, [Hit codes](combat/index.md#hit-codes)). Confirmed (code); the list is not every
-   branch.
+   grabbing (`HitReact_WhileGrabbing`, `0x00268ea8`), tackling, mounting, mounted, throwing (state `0x1000`) or
+   thrown (`0x2000`) (no reaction, the pending damage cleared), in a special, knocked out (`HitReact_WhileOut`),
+   wounded (`Hit_PlayBegReaction`) and hit by an object (`HitReact_FromObject`); a normal hit `Hit_PlayReaction`
+   (`0x0026b0a0`, [Hit codes](combat/index.md#hit-codes)). Confirmed (code); the list is not every branch.
 
 ### Attacking a busy target {#busy-target}
 
@@ -227,8 +226,10 @@ has his pending damage cleared with **no reaction**: the dive, the charge, the p
 (`0x0024966c`), each only while he holds none of **`0xc12200`** (`0x800000`, `0x400000`, `0x10000`, `0x2000`,
 `0x200`), is not falling (`0x1c00000000`) and is not in movement style `0x12`. While he holds any of them, the
 ordinary path runs: the health drops and no reaction (lethal or other) plays. `Human_PlayLethalReaction` sets
-`0x80000000` itself, returns at once when the flags are held, and otherwise ends what he was doing (mugging, cuffing,
-a tackle hold, a mini-game) and plays the gang's death reaction (`Human_PlayGangDeathReaction`); a cuffed human with
+`0x80000000` itself after it has cleared the pending damage and the player's command, released what he carries and
+ended a throw's aim; it then returns at once when the flags are held, and otherwise ends what he was doing (mugging, cuffing,
+a tackle hold, a mini-game) and plays the gang's death reaction (`Human_PlayGangDeathReaction`), unless he already
+plays 349 (the knocked-out idle), whose death reaction it skips; a cuffed human with
 human flag `0x4` plays 322 and the loop 323 `ANIM_ARRESTED_DEAD` instead. A human in state `0x800000` takes
 nothing: `Human_ApplyPendingDamage` clears his pending damage and returns. Which code first sets `0x80000000` on the
 lethal hit was not traced ([Open questions](#open-questions)).
@@ -263,7 +264,7 @@ square at 44), Ash given `X1` (`0x12`, `0x10`, 0) at 47-49; stick centred; hooks
 | 46 | | 57 damage: 60 → 3 |
 | 56 | | Ash's `X1` (`Strike_Contact`, Ash → PoizoCiv): 23 damage, 3 → **−20**; state `0x80002001` (`0x80000000` set); **no reaction**, 58 plays on |
 | 89 | 57 ends: 358, state `0x5` | still 58, state `0x80000001` (the pair's `0x2000` cleared) |
-| 117 | | 58 ends (72 updates); **286** (the low reaction) with held `0x2000`, health set to **1** |
+| 117 | | 58 ends (72 updates); **286** (the low reaction for a hit from behind) with held `0x2000`, health set to **1** |
 | 149 | | **349**, state **`0x40000`**: knocked out, not dead ([Defeat](#defeat)) |
 
 So the lethal hit took the health below 0 at once but changed nothing the player sees until the victim's own paired
@@ -447,7 +448,12 @@ Confirmed (code). A mounted human is state `0x800` instead, and the dispatcher s
   rose into 356 / 357. Confirmed (runtime). The path is the duck's counter: `Human_UpdateActions` (`0x00254e78`), when
   record `+0x14` is `0xe` and the human is free to react, finds the foe within 1.25 × 617's far range (or the
   nearest one, `Player_FindCounterTarget`), ends the reaction clip and the stun, and calls `Block_DuckCounter`
-  (`0x002617f8`), which plays 617-620 by the target's side ([Block](combat/index.md#block)). Confirmed (code).
+  (`0x002617f8`), which plays 617-620 by the target's side ([Block](combat/index.md#block)). This test comes before
+  `Human_UpdateDown` and the dispatcher, so being down (`0x80000`) does not stop it. Confirmed (code). The counter's
+  hit is 617-620's own, 50 health points, their damage in the generic set's [Anim Range
+  List](combat/index.md#damage-table) (Disc check: read from the disc; the 50 confirmed (runtime) above). With no
+  target in range nothing plays, and the request lasts while the window is open (inferred from the duck counter's
+  rule: each `0x25` of the window asks again).
 - **What opens it: the rise's own `0x25` events.** 199's clip, `gen_face_up_ground_get_up` (21 frames; the generic
   set's, and no character maps 199 to another clip), carries event **`0x25` on frames 11-18**, the duck's event
   ([Block](combat/index.md#block)); its other events are `0x43` and 7 at frame 0, `0x44` at 6, `0xb` at 9 and 14, and **`0x48`
@@ -824,7 +830,8 @@ From the user's checklist, items 25 (a dive cut short) and 29 (teammates attacki
   while his clips hold any of `0xc12200`, a human plays no reaction and keeps his clip; on the first update the flags
   are clear his dying reaction plays, so a tandem's defeated victim finishes his end clip first ([Coney's
   tandem](combat-moves.md#tandem-coney)). **Coney's choice**: the dying reaction is the one his hit picks; the
-  knock-out with health 1 of [the run](#lethal-runtime) is not built.
+  knock-out with health 1 of [the run](#lethal-runtime) is not built ([Open questions](#open-questions), the
+  knock-out after a held-back lethal hit).
 - **Missing: no attack on a busy target.** `ai::startGuardOf` (`src/ai/attack_views.cpp`) never sets
   `StartGuard::targetHeldBusy` (the target's held `0xc08200`) or `targetPinned` (the partner exception), so teammates
   and enemies still start attacks on a finisher's victim and on a diving player.
@@ -854,7 +861,8 @@ Read 2026-10-11, the rise counter 2026-10-13 (`src/combat`, `src/human`, `src/ai
 `repo:src/warriors/game_over.h`, `PlayLevelMode::stepGameOver()`: the check runs each update in the order of [The
 mission failing](#mission-failing), on at each level's start and switched by `EnableGameOverCheck`; a failure hides the
 HUD and, 180 updates later (10 once cross is newly pressed), opens the mission-failed mode with `GSTRING.HUD` 20 or 21
-as its title. Stand-ins: a player at 0 health counts as knocked out and none as dead, no player frees himself from
+as its title. Stand-ins ([Open questions](#open-questions): when a player is dead, and a tackled victim's wounded
+bit): a player at 0 health counts as knocked out and none as dead, no player frees himself from
 cuffs, the wait's `+0x414` never blocks it, a held member is one attached to his holder, and the route check is a route
 request (Coney has no blocked links, and a level without path data always finds a route); the failed camera, the tint,
 the blur, the music's fade and the `dyn_cross` icon are not built.
@@ -871,6 +879,14 @@ the blur, the music's fade and the `dyn_cross` icon are not built.
 - **The rise's play rate**{#q-rise-rate}: 199's exact rate (about 0.75-0.78 from the measured edges, [Down and under
   attack](#ground-escape)); the window's edges are known without it. Found from the clip's speed field or the task's
   rate in memory.
+- **The knock-out after a held-back lethal hit**{#q-lethal-knockout}: whether every victim of a lethal hit held
+  back by a paired clip ends knocked out with health 1, as the civilian of [the run](#lethal-runtime) did (inferred
+  through `HitReact_WhileOut` `0x002686e8`, which sets health 1), or only a human with his flags. Coney plays the
+  hit's own dying reaction until it is known. Found by the same run with a gang member as the victim.
+- **When a player is dead**{#q-player-dead}: whether a player in a story level is ever made dead (state
+  `0x100000000`) rather than knocked out: by an object of kind 29's last hit (`Human_OnHealthOut`), or by
+  `Humans_Update` (`0x00249ab4`) once no player of his gang is conscious. Coney's game-over check counts no player as
+  dead. Found by a watch on the player's state word in a level with such an object.
 - **A knocked-out tackled victim**{#q-tackle-knockout}: whether a tackled victim is ever knocked out when
   `Tackle_OnVictimRiseEnd` fires ([Who sets and clears the knocked-out bit](#knocked-out-bit)). A breakpoint on the
   hook with the state word read would tell.
