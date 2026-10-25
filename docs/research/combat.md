@@ -206,7 +206,7 @@ Confirmed (runtime).
 | Where | Type | Meaning | Evidence |
 | --- | --- | --- | --- |
 | record `+0xb8` | u32 | the buffered next attack: cross 1, square 2, `0x14` 4, `0x13` 8; a snap square `0x102`, `0x202`, `0x402` | confirmed (code) at `0x00280708` |
-| record `+0xbc` | u32 | the combo count; `Attack_Start` adds 1 | confirmed (code) |
+| record `+0xbc` | s16 | the combo count; `Attack_Start` adds 1, `Player_UpdateChain` resets it to 0 for a snap, a low strike and an armed chain's second step | confirmed (code) |
 | record `+0x118` | s16 | the damage pending this update (the largest of the update's hits) | confirmed (code) at `0x00264bd8` |
 | record `+0x11a` | s16 | whether the hit may cause a reaction: 0 when the attacker's object at human `+0x44` has `+0x31` = 6 (not traced), else 1; an earlier reading took it for the hit's kind | confirmed (code) at `0x0021b290` |
 | record `+0x100` | u32 | the time a **stun** ends (ms) | confirmed (code), runtime |
