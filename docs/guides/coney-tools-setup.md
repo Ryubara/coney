@@ -300,7 +300,7 @@ coney-tools ghidra export-names [--url URL] [--check]
 ## mcp {#mcp}
 
 ```sh
-uv run --project python coney-tools mcp serve ghidra-mcp|pcsx2 [--copy NAME]
+uv run --project python coney-tools mcp serve ghidra-mcp|pcsx2|xemu [--copy NAME]
 ```
 
 Runs one of the debugging servers that the repository's `.mcp.json` registers for agent tools, with stdin and stdout
@@ -313,10 +313,12 @@ to `pcsx2_connect` anyway). The pcsx2 server always starts with `PCSX2_REQUIRE_A
 from v2.9.129.9 on reads as "every `pcsx2_*` call must carry an `agent` argument, and not `default`" (an older
 build ignores it); that build also has `pcsx2_disconnect` and releases a connection idle for `PCSX2_IDLE_MINUTES`
 (default 30, read from the environment the agent tool gives) when another caller wants its port ([The PCSX2 MCP
-guard](agents.md#pcsx2-guard)). The checkout is `CLAUDE_PROJECT_DIR` when the agent tool
-sets it, else the current folder; a worktree reads the main checkout's `coney.local.toml`. A missing key, folder or
-program (`uv`, `node`) prints one line on stderr and exits with code 2, so a server that is not installed fails
-without affecting the others. Why and how it is set up: [Setting up an agent tool](agents.md#setup).
+guard](agents.md#pcsx2-guard)). `xemu` is Coney's own server for the Xbox build in xemu
+(`repo:python/src/coney_tools/xemu_mcp.py`), run with the Python that runs `coney-tools`: it needs no path, and finds
+each agent's copy from the xemu claims ([The xemu server](coney-tools-xemu.md#mcp)). The checkout is
+`CLAUDE_PROJECT_DIR` when the agent tool sets it, else the current folder; a worktree reads the main checkout's
+`coney.local.toml`. A missing key, folder or program (`uv`, `node`) prints one line on stderr and exits with code 2,
+so a server that is not installed fails without affecting the others. Why and how it is set up: [Setting up an agent tool](agents.md#setup).
 
 <!-- command-reference:begin mcp -->
 ## Parameters of `mcp` {#mcp-parameters}
@@ -333,7 +335,7 @@ coney-tools mcp serve NAME [--copy COPY]
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `NAME` | choice | required | which server to run. One of `ghidra-mcp`, `pcsx2`. |
+| `NAME` | choice | required | which server to run. One of `ghidra-mcp`, `pcsx2`, `xemu`. |
 | `--copy COPY` | text | none | pcsx2 only: the PCSX2 copy (pcsx2, pcsx2-b, ...) whose ports pcsx2_connect defaults to |
 <!-- command-reference:end -->
 

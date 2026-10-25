@@ -14,9 +14,10 @@ SessionStart), and the checks run inside it:
   (`identity.py`);
   then the guards that were separate hooks, loaded as modules and run unchanged (`build_guard.py`, `issue_guard.py`,
   `comment_guard.py`, `bounded_waits.py`, `pr_guard.py`, `push_guard.py` for the shell tools; `pcsx2_guard.py` for the
-  shell commands that name PCSX2 and for the PCSX2 MCP tools; `agent_guard.py` and, last, `slot_guard.py` (the
-  coordinator's engineer slots) for the Agent tool; `lua_guard.py` for Write, Edit, MultiEdit and NotebookEdit). Every
-  refusal is collected and sent together, as the separate hooks' were; `slot_guard.py` runs only when nothing else
+  shell commands that name PCSX2 and for the PCSX2 MCP tools, `xemu_guard.py` the same for xemu; `agent_guard.py` and,
+  last, `slot_guard.py` (the coordinator's engineer slots) for the Agent tool; `lua_guard.py` for Write, Edit, MultiEdit
+  and NotebookEdit). Every refusal is collected and sent together, as the separate hooks' were; `slot_guard.py` runs only
+  when nothing else
   refused, since it keeps a slot. When nothing refuses, a `coney-tools` or `git commit` command gets the caller's
   identity token put in front of it (`identity.py`, returned as `updatedInput`).
 * **PostToolUse**: `trailer_guard.py` after a `git commit`; the identity file of the command is removed, also when
@@ -94,6 +95,8 @@ LOG_FILE = "coney-hooks.log"
 #: commands that drive PCSX2 from other groups, `trace original`, `trace events` (and its old name `trace mission`,
 #: until the cutover) and `clips record`.
 _PCSX2_COMMAND = re.compile(r"coney-tools.*(?:pcsx2|trace\s+(?:original|events|mission)|clips\s+record)", re.DOTALL)
+#: The shell commands xemu_guard reads: `coney-tools ... xemu`.
+_XEMU_COMMAND = re.compile(r"coney-tools.*xemu", re.DOTALL)
 _modules: dict[str, ModuleType] = {}
 
 
@@ -151,6 +154,12 @@ def _pcsx2(payload: dict[str, Any]) -> bool:
     return tool.startswith("mcp__pcsx2__") or (_shell(payload) and _PCSX2_COMMAND.search(_command(payload)) is not None)
 
 
+def _xemu(payload: dict[str, Any]) -> bool:
+    """Whether xemu_guard has to look at the call: an xemu MCP tool, or a shell command that names the tool."""
+    tool = str(payload.get("tool_name", ""))
+    return tool.startswith("mcp__xemu__") or (_shell(payload) and _XEMU_COMMAND.search(_command(payload)) is not None)
+
+
 def _agent(payload: dict[str, Any]) -> bool:
     """Whether the call starts an agent."""
     return payload.get("tool_name") in ("Agent", "Task")
@@ -186,6 +195,7 @@ PRE_GUARDS: list[tuple[str, Callable[[dict[str, Any]], bool]]] = [
     ("pr_guard", _shell),
     ("push_guard", _shell),
     ("pcsx2_guard", _pcsx2),
+    ("xemu_guard", _xemu),
     ("agent_guard", _agent),
     ("slot_guard", _agent),
     ("lua_guard", _writes),

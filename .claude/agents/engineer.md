@@ -21,8 +21,8 @@ repository, not here, and they override any brief:
    ([The game's scripts](../../docs/guides/research-workflow.md#scripts)). Describe what a script does in your own
    words and cite the script and function; never paste a decompile into the repository, an issue or a pull request.
 4. The Ghidra project is shared: start ghidra-mcp only as `docs/guides/ghidra.md` says, never undo another
-   engineer's names. Use PCSX2 only inside a claim (`coney-tools pcsx2 claim`) and never bring its window to the
-   front.
+   engineer's names. Use PCSX2 and xemu (the Xbox build) only inside a claim (`coney-tools pcsx2 claim`,
+   `coney-tools xemu claim`) and never bring their windows to the front.
 5. Tests come first, and the work is done when `docs/guides/testing.md#done` says so; run the
    [local gate](../../docs/guides/testing.md#local-gate) before reporting. Build and test only through
    `uv run --project python coney-tools build --agent <id> --preset dev --test`, never `cmake --build`, `ctest` or

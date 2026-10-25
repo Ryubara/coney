@@ -10,10 +10,12 @@ tests that cite its section. What backs it:
 * `confirmed (code)`: a `studied` stamp for each cited address in the unit's stamp log (the saved decompile is there
   to read the claim against), else `none`, which the reviewer checks in Ghidra.
 * `confirmed (runtime)`: the run record the block cites (`run r-20261023-grab-reach`), which must exist and be a good
-  record (coney_tools.run_records). A legacy claim that names the PCSX2 version and its method instead is allowed with
-  a warning. There is no stamp for a run: the record is the proof (maintainer decision, 2026-10-23). A block is legacy,
-  not new, when it edits one the page had at the base, or is the same text as a block that left another research page in
-  the same change (a moved section: `departed_blocks`) or that text with parts only deleted (`_is_cut`).
+  record (coney_tools.run_records); a run made in xemu observed the Xbox build, so it backs only a claim about the
+  Xbox (`runs.xbox_words` in .github/conventions.yml). A legacy claim that names the PCSX2 version and its method
+  instead is allowed with a warning. There is no stamp for a run: the record is the proof (maintainer decision,
+  2026-10-23). A block is legacy, not new, when it edits one the page had at the base, or is the same text as a block
+  that left another research page in the same change (a moved section: `departed_blocks`) or that text with parts
+  only deleted (`_is_cut`).
 * `speculative`: the open question it links, which must exist when it is on the same page.
 * `inferred`: nothing to look up (`docs check` holds its basis).
 
@@ -256,6 +258,8 @@ class _Backing:
     bad_records: dict[str, str]
     cited: dict[tuple[str, str], list[str]]
     require_study: bool
+    #: The words that make a claim one about the Xbox build (`runs.xbox_words`).
+    xbox_words: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -274,6 +278,8 @@ class _Site:
     anchors: set[str]
     #: False when the block is an edit of one the base page had (a legacy claim touched), True for a new one.
     is_new: bool
+    #: The block's own text, for what it is about (an Xbox claim may cite an xemu run).
+    block: str = ""
 
 
 def _back_runtime(report: Report, backing: _Backing, site: _Site) -> str:
@@ -290,15 +296,33 @@ def _back_runtime(report: Report, backing: _Backing, site: _Site) -> str:
             return "legacy method"
         report.warnings.append(f"{where}: confirmed (runtime) names no run record and no PCSX2 version (legacy)")
         return "none"
+    labels = []
     for run_id in ids:
-        if run_id in backing.records:
-            if backing.records[run_id].source != "hook":
+        record = backing.records.get(run_id)
+        labels.append(f"{run_id} (xemu)" if record is not None and record.emulator == "xemu" else run_id)
+        if record is not None:
+            if record.source != "hook":
                 report.warnings.append(f"{where}: run {run_id} was not named by the hook (who.source is unverified)")
+            if record.emulator == "xemu" and not about_xbox(site, backing.xbox_words):
+                report.errors.append(
+                    f"{where}: run {run_id} observed the Xbox build in xemu, so it backs only a claim about the Xbox "
+                    f"(one that names {', '.join(backing.xbox_words)}); a PS2 claim cites a PCSX2 run"
+                )
         elif run_id in backing.bad_records:
             report.errors.append(f"{where}: run {run_id} is not a good record ({backing.bad_records[run_id]})")
         else:
             report.errors.append(f"{where}: run {run_id}: no run record {run_id} (research/runs/{run_id}.toml)")
-    return "run " + ", ".join(ids)
+    return "run " + ", ".join(labels)
+
+
+def about_xbox(site: _Site, words: tuple[str, ...]) -> bool:
+    """Whether a claim is about the Xbox build: its block or grading text names one of `words` (whole words, case as
+    written), or its page's file name starts with `xbox`."""
+    page = Path(site.where.rsplit(":", 1)[0]).name
+    if page.startswith("xbox"):
+        return True
+    text = f"{site.block} {site.text}"
+    return any(re.search(rf"(?<!\w){re.escape(word)}(?!\w)", text) for word in words)
 
 
 def _back(report: Report, backing: _Backing, site: _Site) -> str:
@@ -458,6 +482,7 @@ def _page_claims(
             not _is_edit(block.text, known)
             and _normal(block.text) not in moved_in
             and not _is_cut(_normal(block.text), cut_from or []),
+            block.text,
         )
         what = _back(report, backing, site)
         anchor = ids[block.section]
@@ -478,7 +503,15 @@ def build(
     bad = {Path(p.split(":", 1)[0]).stem: p.split(": ", 1)[1] if ": " in p else p for p in problems}
     report.errors.extend(problems)
     env = ResearchEnv(load_conventions(root).research)
-    backing = _Backing(studied_addresses(stamp_folder, root), records, bad, test_citations(root), require_study)
+    conventions = load_conventions(root)
+    backing = _Backing(
+        studied_addresses(stamp_folder, root),
+        records,
+        bad,
+        test_citations(root),
+        require_study,
+        conventions.runs.xbox_words,
+    )
     point = None if base is None else merge_base(root, base)
     similarity = load_conventions(root).research.moved_similarity
     pages = _all_pages(root) if point is None else changed_lines(root, point, similarity)

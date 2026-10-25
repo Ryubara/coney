@@ -328,6 +328,7 @@ nav:
           - Fidelity and research commands: guides/coney-tools-fidelity.md
           - Standards commands: guides/coney-tools-standards.md
           - PCSX2 and clip commands: guides/coney-tools-pcsx2.md
+          - xemu commands: guides/coney-tools-xemu.md
           - Trace commands: guides/coney-tools-trace.md
           - Repository commands: guides/coney-tools-repo.md
           - Pull request commands: guides/coney-tools-pr.md

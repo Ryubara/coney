@@ -655,3 +655,52 @@ def test_an_xbox_address_is_a_target_the_reviewer_reads_by_hand(tmp_path: Path) 
     report = claims_of(only, require_study=True)
     assert by_line(report, "plays anim 71").backing == "Xbox by hand"
     assert not [e for e in report.errors if "plays anim 71" in e or "0x000bd3c0" in e]
+
+
+# --- runs made in xemu (the Xbox build) -------------------------------------------------------------------------------
+
+XEMU_RUN = "r-20261025-xbox-ramp"
+
+
+def _xemu_record(root: Path) -> None:
+    """An xemu record next to the PCSX2 one."""
+    record = RunRecord(
+        id=XEMU_RUN,
+        date="2026-10-25",
+        kind="method",
+        tool="xemu record-run",
+        agent="a",
+        agent_type="engineer",
+        model="m",
+        source="hook",
+        pcsx2_version="v0.8.110",
+        copy="xemu",
+        state="unknown",
+        patches=(),
+        name="",
+        args={},
+        method="read the ramp index at the game state",
+        values={"ramp_index": 3},
+        addresses={},
+        emulator="xemu",
+    )
+    run_records.write(root, record)
+
+
+def test_an_xemu_run_backs_a_claim_about_the_xbox(tmp_path: Path) -> None:
+    text = GRABS.replace(
+        "The catch reach is 1.1 m (confirmed (runtime), run r-20261023-grab-reach).",
+        f"On the Xbox the ramp at XBE `0x0032dd40` is index 3 (confirmed (runtime), run {XEMU_RUN}).",
+    )
+    root = make_repo(tmp_path, text)
+    _xemu_record(root)
+    report = claims_of(root)
+    assert by_line(report, "ramp").backing == f"run {XEMU_RUN} (xemu)"
+    assert not [e for e in report.errors if XEMU_RUN in e]
+
+
+def test_an_xemu_run_is_no_evidence_for_the_ps2(tmp_path: Path) -> None:
+    text = GRABS.replace("run r-20261023-grab-reach", f"run {XEMU_RUN}")
+    root = make_repo(tmp_path, text)
+    _xemu_record(root)
+    assert any(XEMU_RUN in e and "backs only a claim about the Xbox" in e for e in claims_of(root).errors)

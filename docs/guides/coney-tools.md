@@ -60,6 +60,10 @@ so they go, with these ids, once those pages are touched and cite the disc page.
 * [`pcsx2`](coney-tools-pcsx2.md#pcsx2): drive PCSX2: claims, recipes, save states, input recordings.
 * [`clips`](coney-tools-pcsx2.md#clips): in-game video clips, the original's recorded with `clips record`.
 
+### [The xemu commands](coney-tools-xemu.md)
+
+* [`xemu`](coney-tools-xemu.md#xemu): run the Xbox build in xemu, and the `xemu` MCP server.
+
 ### [The trace commands](coney-tools-trace.md)
 
 * [`trace`](coney-tools-trace.md#trace): traces and event logs of the original (`trace original`) and of Coney,

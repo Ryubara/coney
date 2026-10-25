@@ -21,6 +21,10 @@ rest of the research workflow is listed in [its overview](research-workflow.md#p
   its own Ghidra project (never the main one), and use it only to read the logic: offsets, sizes and vtable slots
   differ, and evidence is cited at `SLUS_212.15` addresses only. Measurements and the loader used:
   [Xbox executable](../research/xbox-executable.md).
+- **xemu (optional).** The Xbox build running, for claims about the Xbox build itself (its lighting, its shadows):
+  copies made from your own xemu install, claimed one per agent like the PCSX2 copies, read and driven through the
+  `xemu` MCP server over QEMU's GDB stub and monitor, with run records of their own. A run in xemu is evidence for
+  the Xbox only. Set-up, claims and tools: [The xemu commands](coney-tools-xemu.md).
 - **Save states in Ghidra (evaluated 2026-10-05, not used).** The EE extension's `PCSX2SaveStateImporter.java`
   script pours a state's RAM into a program's writable blocks and the heap above `.bss` (a `.other` block); run on a
   scratch copy of our project with `pcsx2 states repack` first, it took 10 s, and a script labelling level99's 19 live

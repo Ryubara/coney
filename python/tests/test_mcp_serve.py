@@ -5,6 +5,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -232,3 +233,8 @@ def test_the_committed_mcp_json_starts_every_server_through_coney_tools() -> Non
         assert "--isolated" in entry["args"] and "--frozen" in entry["args"]
         # No machine's paths in the repository: everything is found through coney.local.toml.
         assert not any(":\\" in arg or arg.startswith("/") for arg in entry["args"])
+
+
+def test_xemu_runs_the_package_server_with_this_python() -> None:
+    command, extra = server_command("xemu", paths(), which_all, {})
+    assert command == [sys.executable, "-m", "coney_tools.xemu_mcp"] and extra == {}

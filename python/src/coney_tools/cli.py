@@ -64,6 +64,7 @@ from coney_tools import (
     workspace_clean,
     workspace_fetch,
     xbox_cli,
+    xemu_cli,
 )
 from coney_tools.audit_cli import add_audit_parser, run_audit
 from coney_tools.config import PATH_KEYS, ConfigError, find_repo_root, load_config
@@ -412,6 +413,7 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_missions_commands(groups)
     research_cli.add_parser(groups)
     _add_pcsx2_commands(groups)
+    xemu_cli.add_parser(groups)
     _add_clips_commands(groups)
     build_cli.add_parser(groups)
     ghidra_cli.add_parser(groups)
@@ -1201,6 +1203,8 @@ def _run(args: argparse.Namespace) -> int:
         return research_cli.run(args)
     if args.group == "pcsx2":
         return _run_pcsx2(args)
+    if args.group == "xemu":
+        return xemu_cli.run(args)
     if args.group == "clips":
         return _run_clips(args)
     if args.group == "build":

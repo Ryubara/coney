@@ -17,6 +17,7 @@ Coney/                          the workspace (a plain folder, not a repository)
   game/                         your disc image and files extracted from it
   emulators/pcsx2, pcsx2-b, ... portable PCSX2 copies of the PCSX2-MCP fork build (plus BIOS), one per agent
   emulators/state-library/      the shared library of PCSX2 save states (pcsx2-states.md); game memory, so never in a repo
+  emulators/xemu, xemu-b, ...   xemu copies for the Xbox build, made from your own xemu (coney-tools-xemu.md#copies)
   tools/                        local installs: Ghidra (with the EE extension), Lua 4.0.1's luac, RenderDoc, a JDK if needed
   ghidra/                       local Ghidra projects (rebuildable caches)
 ```
@@ -214,6 +215,14 @@ Paths are relative to the repository root or absolute. The keys and their defaul
 | `pcsx2_mcp_dir` | none (`init` sets it to the clone's newest build under `tools/pcsx2-mcp/release/`, else to the fetched release `tools/PCSX2-MCP-v1.1.0-win64`) | a PCSX2-MCP fork build, the release or one made from the clone: the copies' PCSX2 (`pcsx2 setup-copies`) and the `pcsx2` agent server in its `pcsx2-mcp-server/`; a server-only folder (`dist/index.js`) serves the agent server alone |
 | `luac_program` | the `luac` that `workspace init --fetch lua` built in `../../tools/lua-4.0.1/bin` | a stock Lua 4.0 `luac`, for [`lua decompile --roundtrip`](coney-tools-fidelity.md#lua) |
 | `lua_dir` | `scratch/lua` in the main checkout's `../..` (`<clone>-workspace/scratch/lua` in a plain clone) | the shared folder of decompiled game scripts, their index and fingerprints ([`lua decompile --all`](coney-tools-fidelity.md#lua)); game data, so never in a checkout |
+| `xemu_install` | none: set it to use xemu | your own xemu install, the folder with `xemu.exe`; [`xemu setup-copies`](coney-tools-xemu.md#copies) copies its program files and disk image into the copies and never changes it |
+| `xemu_config` | `xemu.toml` beside `xemu.exe` (a portable install), else `%APPDATA%/xemu/xemu/xemu.toml` | that install's settings, which name your console's boot ROM, BIOS, disk image and EEPROM |
+| `xemu_root` | `../../emulators` (`<clone>-workspace/emulators` in a plain clone) | the folder holding the `xemu`, `xemu-b`, ... copies that `coney-tools xemu claim` hands out |
+| `xemu_claims_dir` | `xemu-claims` in the main checkout's `../../scratch` (`<clone>-workspace/scratch` in a plain clone) | where those claims live; one place every worktree sees |
+| `xemu_dvd` | none: `xemu launch --dvd` or this | the Xbox game disc image xemu boots, an XISO of your own disc |
+| `xemu_copies` | `2` | a number: how many copies `xemu setup-copies` makes |
+| `xemu_gdb_base` | `1234` | a number: the GDB stub port of copy `xemu`; copy *i* uses this + *i* |
+| `xemu_monitor_base` | `4444` | a number: the QEMU monitor port of copy `xemu`; copy *i* uses this + *i* |
 | `ffmpeg_dir` | none (`PATH`) | the folder holding `ffmpeg` and `ffprobe`, for in-game clips ([`clips`](coney-tools-pcsx2.md#clips)); Coney itself reads `CONEY_FFMPEG` |
 
 Each line is `key = "value"` (the number keys are written without quotes: `build_slots = 2`); a `#` starts a
