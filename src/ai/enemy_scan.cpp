@@ -158,7 +158,7 @@ std::uint64_t ScanSchedule::interval(const Brain& brain) const {
         ms = found->second.intervalMs;
     }
     // Slower while it fights in the stance.
-    if (brain.human().fighter().lockTarget() != nullptr) {
+    if (brain.human().fighter().inFightStance()) {
         ms *= kScanSlowFactor;
     }
     return ms;

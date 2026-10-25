@@ -100,12 +100,39 @@ coney = "src/combat/meters.h:PowerMeter::fraction"
 status = "legacy"
 
 [[function]]
+address = 0x00226c30
+name = "Human_SetTarget"
+page = "combat-targets.md#fight-stance"
+role = "Takes a human as the target, refused for a pad player locked by L1 (state 0x8 and 0x4)."
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::takeTarget"
+status = "compared"
+
+[[function]]
 address = 0x00227a90
 name = "Human_ExitThrowAim"
 page = "combat/index.md#dispatch"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/combat/throw_aim.h:ThrowAimState::leave"
 status = "legacy"
+
+[[function]]
+address = 0x00227b98
+name = "Player_OnL1Released"
+page = "combat-targets.md#fight-stance"
+role = "L1 let go: clears state 0xc and opens the 264 ms release window (record +0xf4)."
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::updateL1"
+status = "compared"
+
+[[function]]
+address = 0x00228340
+name = "Human_IsInFightStance"
+page = "combat-targets.md#fight-stance"
+role = "Whether record +0x00 holds a fight-stance bit (0x3)."
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::inFightStance"
+status = "compared"
 
 [[function]]
 address = 0x00229b60
@@ -385,7 +412,7 @@ role = "movement in a fight stance; lock-on"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/human/human.h:Human::combatWalk"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00244e78
@@ -631,7 +658,7 @@ name = "Player_StartCharge"
 page = "combat-targets.md#fight-stance"
 level = "confirmed-code"
 coney = "src/human/fighter.cpp:Fighter::steer"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00264bd8
@@ -1403,6 +1430,8 @@ name = "TargetFilter_StanceEnemy"
 page = "combat/index.md#code-targets"
 role = "The stance's nearest-enemy filter: a targetable, unfriendly, non-pad human within 2 m in height who is a threat (gangs enemies), not down, dead or held; a neutral civilian is refused."
 level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::nearestStanceEnemy"
+status = "compared"
 
 [[function]]
 address = 0x002792c8
@@ -1522,6 +1551,20 @@ role = "The charge and dive's target: the nearest human between the clip's reach
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::nearestInReach"
 status = "legacy"
+
+[[function]]
+address = 0x0027b1a0
+name = "Player_FindNearestEnemy"
+page = "combat-targets.md#fight-stance"
+role = "The stance's nearest threat within the far distance, kept when the line to it is clear; else the target held unless it is out."
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::nearestStanceEnemy"
+status = "compared"
+
+[[function.gaps]]
+what = "the clear-line test (0x0021c240) is not made: the nearest is always taken"
+relation = "stand-in"
+question = "combat-targets.md#q-clear-line"
 
 [[function]]
 address = 0x0027b2a8
@@ -1874,6 +1917,20 @@ role = "Command 0x25 (d-pad down)."
 level = "confirmed-code"
 
 [[function]]
+address = 0x0027d5a0
+name = "Player_UpdateStanceOrIdle"
+page = "combat-targets.md#fight-stance"
+role = "The dispatcher's stance step: outside state 0xf0000 and the throw aim, a pad player runs the stance update (a scene drops the target)."
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::updateStance"
+status = "compared"
+
+[[function.gaps]]
+what = "a scene's target drop is not made (Coney's targets report no scene)"
+relation = "stand-in"
+question = "combat-targets.md#q-clear-line"
+
+[[function]]
 address = 0x0027d6e0
 name = "Player_TryCounterGrab"
 page = "combat-moves.md#counters"
@@ -1900,6 +1957,25 @@ level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/combat/attacks.h:runningAttackAllowed"
 status = "legacy"
+
+[[function]]
+address = 0x0027dc00
+name = "Player_OnL1Held"
+page = "combat-targets.md#fight-stance"
+role = "L1 held: picks a target when there is none and locks one there (state 0x8, Player_LockOn), unless delayed, busy, locked, aiming or sprinting."
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::updateL1"
+status = "compared"
+
+[[function.gaps]]
+what = "the pick is square's within 2.5 m, not Player_FindLockTarget's passes to 6 m"
+relation = "stand-in"
+question = "combat-targets.md#q-l1-search"
+
+[[function.gaps]]
+what = "the per-player action delay is not modelled"
+relation = "stand-in"
+question = "combat-targets.md#q-l1-delay"
 
 [[function]]
 address = 0x0027df38
@@ -1949,6 +2025,15 @@ role = "the struggle in another human's grab"
 level = "confirmed-code"
 coney = "src/combat/grabbed.h:updateGrabbed"
 status = "legacy"
+
+[[function]]
+address = 0x002801e8
+name = "Player_ExitStanceAndLock"
+page = "combat-targets.md#fight-stance"
+role = "Leaves the stance and the lock (state 0x5 cleared, the combo count zeroed) and the lock-on movement."
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::leaveStance"
+status = "compared"
 
 [[function]]
 address = 0x002802a0

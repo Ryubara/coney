@@ -24,8 +24,8 @@ inline constexpr int kCombatWalkFirst = 380;
 /// **Coney's choice**: eight even 45° sectors centred on the clips' directions (at runtime 348° still gave 387).
 [[nodiscard]] int combatWalkClip(float clockwiseDegrees);
 
-/// Whether a target `distance` metres away is kept: within CombatTuning::targetDropDistance, or always while L1 holds
-/// it (record `+0x00` `0x8`) or a grab or tackle holds it (`0x4`).
+/// Whether an AI human keeps a target `distance` metres away: within CombatTuning::stanceMid, or always while a grab or
+/// tackle holds it (**Coney's reading**; a player's target follows his stance update, human::Fighter).
 [[nodiscard]] bool keepsTarget(const CombatTuning& tuning, float distance, bool held);
 
 /// The grabbing player's turn this update, radians (at most the remaining angle `remaining`, signed): with `max`

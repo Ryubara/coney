@@ -1014,9 +1014,16 @@ void Human::combatWalk(const Combatant& target, bool gated) {
         aiCombatWalk(gated);
         return;
     }
-    // The player faces the target every update.
+    // The player faces the target every update while it is within the mid distance or L1 locks it (`Human_IsLocked`),
+    // and the lock-on settings lock; beyond, the walk keeps his heading (the right stick would turn it with
+    // `CfgStrafeRStick`, off in play).
     const anim::Vec3 to = anim::subtract(target.position(), m_position);
-    if (std::hypot(to.x, to.y) > 1e-4F) {
+    const float distance = std::hypot(to.x, to.y);
+    const combat::CombatTuning& tuning = combat::combatTuning();
+    const bool near = m_fighter.l1Locked() || distance <= tuning.stanceMid;
+    // **Coney's choice**: a car as the target (its box's nearest side faced) and the right stick's turn with
+    // `CfgStrafeRStick` are not built: Coney's lock targets are humans, and the setting is off in play.
+    if (near && combat::lockedOn(tuning, true, (m_record.buttons & pad::kL1) != 0) && distance > 1e-4F) {
         m_heading = headingOf(to);
     }
     m_turn = TurnState{};
@@ -1039,7 +1046,8 @@ void Human::combatWalk(const Combatant& target, bool gated) {
     m_animator.playCombatWalk(static_cast<std::uint32_t>(combat::combatWalkClip(clockwise)));
 }
 
-void Human::fight(std::span<Combatant* const> targets, const raycast::CollisionMesh* mesh) {
+void Human::fight(std::span<Combatant* const> targets, const raycast::CollisionMesh* mesh,
+                  std::span<Combatant* const> calm) {
     // The stick in the facing frame: x to the player's right, y ahead.
     const float relative = wrapAngle(m_intent.angle - kPi / 2.0F - m_heading);
     const combat::Stick stick{-m_intent.magnitude * std::sin(relative), m_intent.magnitude * std::cos(relative)};
@@ -1057,12 +1065,14 @@ void Human::fight(std::span<Combatant* const> targets, const raycast::CollisionM
                                   .heading = m_heading,
                                   .nowMs = nowMs,
                                   .targets = targets,
+                                  .calm = calm,
                                   .stepSeconds = m_stepSeconds,
                                   .objects = m_objectTargets,
                                   .strikeShapes = m_skeleton != nullptr,
                                   .mesh = mesh,
                                   .sprinting = m_sprinting,
-                                  .padControlled = m_record.padDriven},
+                                  .padControlled = m_record.padDriven,
+                                  .throwAiming = m_script.throwAiming},
                      m_animator, m_heading);
 }
 
@@ -1165,7 +1175,7 @@ bool Human::runStepControl() {
     // The clip toward the heading, then the idle (the fight idle in the stance), holding the step bit while it
     // plays; it fades in over 0.2 s.
     constexpr float kStepFade = 0.2F;
-    const bool stance = m_fighter.lockTarget() != nullptr;
+    const bool stance = m_fighter.inFightStance();
     CONEY_ASSERT(m_stepRequest.has_value()); // run only with a step asked for
     const StepClip step = stepClipFor(m_stepRequest->heading, m_heading, stance, m_stepRequest->boost);
     m_stepRequest.reset();
@@ -1272,10 +1282,10 @@ bool Human::tagSprayPlaying() const {
 
 void Human::endTagSpray() {
     // A finished or abandoned spray ends through 336 (Tag_EndSprayClips), whose event 0x31 drops the can; the fight
-    // stance is the lock on a target (the original tests the state word's 0x3).
+    // stance is Fighter::inFightStance() (the state word's 0x3).
     m_clipTurn.reset();
     if (tagSprayPlaying()) {
-        m_animator.playTagEnd(m_fighter.lockTarget() != nullptr);
+        m_animator.playTagEnd(m_fighter.inFightStance());
     }
 }
 
@@ -1458,6 +1468,7 @@ void Human::step(const HumanInput& input, const raycast::CollisionMesh* mesh) {
     m_record = recordOf(input);
     animate(mesh);
     updateState(mesh);
+    setCalm(input.calm);
     updateActions(input.targets, mesh);
 }
 
@@ -1931,6 +1942,8 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
 }
 
 void Human::updateActions(std::span<Combatant* const> targets, const raycast::CollisionMesh* mesh) {
+    // The calm list given for this call only.
+    const std::span<Combatant* const> calm = std::exchange(m_calm, {});
     if (m_outOfWorld) {
         return;
     }
@@ -1948,7 +1961,7 @@ void Human::updateActions(std::span<Combatant* const> targets, const raycast::Co
         return;
     }
     if (!m_airborne && !m_climbRun && !m_script.arrested && !m_script.workingOut) {
-        fight(targets, mesh);
+        fight(targets, mesh, calm);
     }
     if (m_record.actionPressed && !m_fighter.holdsMovement(m_animator) && !m_script.arrested && !m_script.workingOut) {
         tryActions(mesh, m_record.sprintHeld);

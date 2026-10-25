@@ -1,0 +1,54 @@
+# slot 6: walking past an enemy, nothing pressed: PoizoCiv's gang is made an enemy of the player's at update 2
+# (Gang_MakeEnemies 0x0016acf0), his brain kept alerted so that the gang stays an enemy, and he stands 3 m ahead
+# and 1 m to the right, facing the player, who walks straight
+# ahead at 60 % past him. When does the stance take him and lock, does the player turn to face him, and when does it
+# end as he walks on? Research: docs/research/combat-targets.md#fight-stance.
+description = "slot 6: walk at 60 % past PoizoCiv made an enemy, 1 m to the side; when does the lock start and end"
+research = "docs/research/combat-targets.md#fight-stance"
+input = "target_walk_past_enemy.txt"
+updates = 110
+fields = ["player"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "call-brains"]
+let = { enemy = 'human("PoizoCiv")' }
+setup = [
+  { address = "tf(enemy) + 0x0", type = "f32", value = "f32(tf(player)) - 3.0 * sin(heading(player)) + 1.0 * cos(heading(player))", until = 0 },
+  { address = "tf(enemy) + 0x4", type = "f32", value = "f32(tf(player) + 4) + 3.0 * cos(heading(player)) + 1.0 * sin(heading(player))", until = 0 },
+  { address = "tf(enemy) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 0 },
+  { address = "tf(enemy) + 0x18", type = "f32", value = "sin((heading(player) + pi) / 2)", until = 0 },
+  { address = "tf(enemy) + 0x1c", type = "f32", value = "cos((heading(player) + pi) / 2)", until = 0 },
+  { address = "brain(enemy) + 0x21c", type = "u32", value = "1", frame = 0, until = 200 },
+]
+# A civilian gang (kind 0x17) whose members are all unalerted is made neutral again every update
+# (Gang_CheckNeutralRule 0x00169d30), so PoizoCiv's brain is kept alerted (+0x21c).
+calls = [
+  { function = "0x0016acf0", args = ["s16(u32(brain(player) + 0x20c) + 0x30)", "s16(u32(brain(enemy) + 0x20c) + 0x30)"], frame = 2 },
+]
+
+[coney]
+level = "sandbox:combat"
+args = ["--spawn", "start"]
+
+[[field]]
+name = "state"                            # record +0x00, the state word's low half (0x1 stance, 0x4 lock, 0x8 L1)
+address = "rec(player) + 0x0"
+type = "u32"
+
+[[field]]
+name = "target"                           # human +0xc8, the target's handle index (-1 none)
+value = "hidx(u32(player + 0xc8))"
+
+[[field]]
+name = "move"                             # human +0x1c0, the movement state (0x241b90 lock-on, 0x240e38 free)
+address = "player + 0x1c0"
+type = "u32"
+
+[[field]]
+name = "dist"
+value = "hypot(f32(tf(player)) - f32(tf(enemy)), f32(tf(player) + 4) - f32(tf(enemy) + 4))"
+
+[[field]]
+name = "bearing"                          # PoizoCiv's direction from the player's facing, degrees
+value = "wrap(deg(atan2(f32(tf(player)) - f32(tf(enemy)), f32(tf(enemy) + 4) - f32(tf(player) + 4)) - heading(player)))"

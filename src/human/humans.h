@@ -34,6 +34,10 @@ class Humans {
     /// Whether one human fights another: `opposed(attacker, victim)`. The gangs give it (ai::Gangs::friends(), whose
     /// friends do not fight each other).
     using Opposition = std::function<bool(const Human& attacker, const Human& victim)>;
+    /// Whether `other` is a threat to `human` (`Human_IsThreatTo`, ai::isThreat(): their gangs are enemies, or both are
+    /// pad players): what the player's fight stance takes as an enemy (Fighter's stance update), where the attacks pick
+    /// from every human they are opposed to.
+    using Threat = std::function<bool(const Human& human, const Human& other)>;
 
     /// Adds `human` (not owned; it must outlive the step, or be removed) as the next slot. With `padControlled` a pad
     /// writes its record before each step; otherwise its command and buttons are cleared at the step's start, as the
@@ -52,6 +56,9 @@ class Humans {
     /// Sets who fights whom. Without one (the default) the humans added pad-controlled and the others fight each other,
     /// as the player and the AI humans of a scene without gangs do.
     void setOpposition(Opposition opposition) { m_opposition = std::move(opposition); }
+    /// Sets who is a threat to whom. Without one (the default) every human a human is opposed to is a threat to it, as
+    /// are the passive targets.
+    void setThreat(Threat threat) { m_threat = std::move(threat); }
     /// Takes `human` out of the step (a spawned AI cleared away); nothing when it is not in it.
     void remove(const Human& human);
     /// Sets what runs at the brains' place.
@@ -82,7 +89,8 @@ class Humans {
 
   private:
     // Who slot `slot` fights this step: the passive `targets` for a human added pad-controlled, and the humans it is
-    // opposed to.
+    // opposed to; and of those, the ones its fight stance refuses (m_calm), which the human is given
+    // (Human::setCalm()).
     void gatherTargets(std::size_t slot, std::span<Combatant* const> targets);
     // Whether slot `slot` fights slot `other`.
     [[nodiscard]] bool opposed(std::size_t slot, std::size_t other) const;
@@ -92,7 +100,9 @@ class Humans {
     std::vector<bool> m_fightsTargets; // per slot: added pad-controlled
     std::vector<bool> m_held;          // per slot: setHeld()
     Opposition m_opposition;
+    Threat m_threat;
     std::vector<Combatant*> m_scratch; // gatherTargets()'s list
+    std::vector<Combatant*> m_calm;    // gatherTargets()'s targets that are no threat, or a pad player
     BrainsHook m_brains;
     Human::BodyContact m_bodyContact;
     Human::ObjectPush m_objectPush;

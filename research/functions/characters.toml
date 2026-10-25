@@ -2042,11 +2042,21 @@ status = "legacy"
 address = 0x0027ce90
 name = "Player_UpdateSprint"
 page = "characters.md#original-structure"
-role = "clears the sprint flag and sets it again while L2 is held"
+role = "The pad player's stance update: drops a target that is out, the sprint, a run leaving the stance, a threat within 2 m entering it and locking, the hold and the end."
 level = "confirmed-code"
 note = "confirmed (code), runtime"
-coney = "src/human/fighter.h:Fighter::trackTarget"
-status = "legacy"
+coney = "src/human/fighter.h:Fighter::updateStance"
+status = "compared"
+
+[[function.gaps]]
+what = "the standing stance before an alerted enemy within 20 m (step 5) is not entered"
+relation = "stand-in"
+question = "combat-targets.md#q-alerted-stance"
+
+[[function.gaps]]
+what = "a target in a scene is not dropped"
+relation = "stand-in"
+question = "combat-targets.md#q-clear-line"
 
 [[function]]
 address = 0x00281450

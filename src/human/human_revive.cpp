@@ -22,7 +22,7 @@ void Human::startRevive(const Combatant& downed) {
     constexpr std::array<std::uint32_t, 3> kOutOfStance{combat::kReviveBeginAnim, combat::kReviveEndAnim,
                                                         clips::kNormalFromFight};
     constexpr std::array<std::uint32_t, 2> kInStance{combat::kReviveBeginAnim, combat::kReviveEndAnim};
-    const bool stance = m_fighter.lockTarget() != nullptr;
+    const bool stance = m_fighter.inFightStance();
     const std::span<const std::uint32_t> chain =
         stance ? std::span<const std::uint32_t>(kInStance) : std::span<const std::uint32_t>(kOutOfStance);
     m_animator.playCombat(chain, stance ? kAnimFightIdle : clips::kIdle, AnimState::Attack, combat::kReviveFadeSeconds,

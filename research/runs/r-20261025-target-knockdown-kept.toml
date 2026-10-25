@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261025-target-knockdown-kept"
+date = "2026-10-25"
+kind = "trace"
+tool = "pcsx2 record"
+digest = "c8cb4e34ac1532a9c82a5beb31a511743c45e5959b520d85922d93bddc3f9f08"
+
+[who]
+agent = "a2409aa0e30768f5e"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["call-brains", "right-stick", "scripted-pad"]
+
+[run]
+name = "target_knockdown_kept"
+method = ""
+
+[values]
+updates = 91
+missed_updates = 0
+columns = 19
+
+[hashes]
+trace_csv = "367a487eca69f42424b91b0bacd059a70c7a8021b69108f9edfb467439c6e427"

@@ -1,0 +1,3 @@
+# Nothing pressed: the player stands while the enemy ahead is locked, then knocked down.
+# Frames are character updates of 1/30 s.
+0 stick left 0 0

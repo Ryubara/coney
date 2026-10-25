@@ -284,37 +284,46 @@ Read in Ghidra: confirmed (code) where no other level is given.
   clear `0x5`. The stance timer `0x002800b8` is unused: its seconds `0x00510994` are −1.
 - **The player's stance each update** (`Player_UpdateSprint`, `0x0027ce90`, through `Player_UpdateStanceOrIdle`
   `0x0027d5a0` from the dispatcher after its busy gate, for a pad player (per-player `+0x1b`) outside the throw aim
-  (`Human_MoveThrowAim`, `0x00244770`), the state word's `0xf0000` and a scene; an AI-controlled player runs
-  `0x0027cd50` instead, and a scene drops the target). Distances are compared squared; "drop the target" is
-  `0x00226f70` (refused while locked, state `0x8` and `0x4`) and "take" is `0x00226c30` (refused while locked, and
-  for a human the target filter `0x00227d78` rejects). In this order:
-  0. **The nearest enemy** (`Player_FindNearestEnemy`, `0x0027b1a0`): the humans within **3 m** (`0x005104c4`, 9
-     in play) that the enemy filter `TargetFilter_StanceEnemy` (`0x002791b0`, threats only: "What an attack does
-     to the lock" below) accepts, nearest first, kept if `0x0021c240` agrees; with none, the current target
-     unless it is down (state `0x80000000` or `0x100000000`, or `0x00227dd8`). It also writes record `+0xd4` /
-     `+0xd8`. A current target that is down, knocked out or in a scene is dropped (and the lock bit `0x8` cleared)
-     unless it is flying in a knockdown (`+0x08` `0x400000`).
+  (`Human_MoveThrowAim`, `0x00244770`), the state word's `0xf0000` and a scene; an AI-controlled player runs `0x0027cd50`
+  instead, and a scene drops the target). Distances are compared squared; "drop the target" is `0x00226f70` (refused
+  while locked, state `0x8` and `0x4`) and "take" is `0x00226c30` (refused while locked, and for a human the target
+  filter `0x00227d78` rejects). Confirmed (code), in this order:
+  0. **The nearest enemy** (`Player_FindNearestEnemy`, `0x0027b1a0`): the humans within **3 m** (`0x005104c4`, 9 in
+     play) that the enemy filter `TargetFilter_StanceEnemy` (`0x002791b0`, threats only: "What an attack does to the
+     lock" below) accepts, nearest first, kept if `Human_IsClearToTarget` (`0x0021c240`, a capsule cast from the player
+     toward him through the physics, `IPhysics_CollideShape`) finds nothing in the way, else the current target as it is
+     (no down test on that path); with none found, the current target unless it is out (state `0x80000000`, which
+     `Human_PlayDeathReaction` sets, or `0x100000000`, or knocked out, `0x00227dd8`: state `0x40000`). **That fallback
+     is how the target an attack picked gets locked**: within 2 m it passes step 3 as "the nearest" even when it is no
+     threat (confirmed (runtime) below). It also writes record `+0xd4` / `+0xd8`. Then, the search already made, a
+     current target in one of those three states or in a scene (`Human_IsInSceneState`) is dropped (and the lock bit
+     `0x8` cleared) unless his `+0x08` holds `0x400000`; when he was the nearest, there is none. A target knocked over
+     with health left (state `0x80000`) is **kept** (confirmed (code) at `0x0027ce90`; confirmed
+     (runtime), run `r-20261025-target-knockdown-kept`, below).
   1. **The sprint**: state `0x1000000` is cleared, then set again while L2 is held with stamina (record `+0x14a`)
      and `+0x08` free of `0x10`, which also clears `0x8008` and drops the target ([Sprint](characters.md#sprint)). A
      target beyond **13 m** (169) loses the lock bit `0x8`.
-  2. **Running drops it**: with L2 held, or gait 4 or 5 with `+0x08` clear (`Human_IsRunningFree`, `0x00223a60`, gait
-     4; `Human_IsSprintingFree`, `0x00223a98`, gait 5), or human `+0xe0` `0x8000000000` while not locked, nothing else
-     happens this update; a player in a stance with `+0x08` clear also leaves it: `0x8008` cleared, target dropped,
-     `0x00230140` (which ends state `0x200000`, see below), `Player_ExitStanceAndLock` (`0x002801e8`: `0x5` cleared,
-     the combo count zeroed and, from the lock-on movement state, back to the free one), and a state code of `0xe`
-     becomes 7.
-  3. **An enemy within 2 m enters it** (the distances are the values in play, [Constants](combat/index.md#constants)):
-     when the movement state is not the lock-on one (`Human_FightStanceMove`), the state word lacks `0x200000`, and the
-     nearest enemy is within **2 m** (`0x005104bc`, 4) or the player is locked: nothing with an object of set 4 in
-     hand; else `0x1008000` cleared, `Player_EnterStance` (`0x00280068`: `0x00230140`, then `0x1` if clear;
-     `0x00230140` clears state `0x200000`, setting `0x20000000` when he is then free and still, and zeroes record
-     `+0x114`), the nearest taken as the target (when there is none yet and `+0x08` has nothing outside `0x320100`;
-     and again when there is one), and unless state `0x200000` or human `+0xe0` `0x200000000000`, the lock
-     (`Player_LockOn`, `0x00280158`: state `0x5`, and the lock-on movement state through `0x00221038`).
-  4. **It holds** while the target timer (record `+0xf4`) runs and a target is kept; or, with the nearest within 2 m
-     and the target beyond **2.5 m** (`0x005104c0`, 6.25 in play), the target is swapped for the nearest when `+0x08`
-     is clear; or the target is within **3 m** (`0x005104c4`, 9 in play).
-  5. **It ends** once the timer has run out, `+0x08` is clear and he is neither locked nor in state `0x8` with
+  2. **Running drops it** (confirmed (code)): with L2 held, or gait 4 or 5 with `+0x08` clear (`Human_IsRunningFree`,
+     `0x00223a60`, gait 4; `Human_IsSprintingFree`, `0x00223a98`, gait 5), or
+     human `+0xe0` `0x8000000000` while not locked, nothing else happens this update; a player in a stance with
+     `+0x08` clear also leaves it: `0x8008` cleared, target dropped, `0x00230140` (which ends state `0x200000`, see
+     below), `Player_ExitStanceAndLock` (`0x002801e8`: `0x5` cleared, the combo count zeroed and, from the lock-on
+     movement state, back to the free one), and a state code of `0xe` becomes 7.
+  3. **An enemy within 2 m enters it** (confirmed (code); the distances are the values in play,
+     [Constants](combat/index.md#constants)): when the movement state is not the lock-on one (`Human_FightStanceMove`),
+     the state word lacks `0x200000`, and the nearest enemy is within **2 m** (`0x005104bc`, 4) or the player is locked:
+     nothing with an object of set 4 in hand; else `0x1008000` cleared, `Player_EnterStance` (`0x00280068`:
+     `0x00230140`, then `0x1` if clear; `0x00230140` clears state `0x200000`, setting `0x20000000` when he is then free
+     and still, and zeroes record `+0x114`), the nearest taken as the target (when there is none yet and `+0x08` has
+     nothing outside `0x320100`; and again when there is one), and unless state `0x200000` or human `+0xe0`
+     `0x200000000000`, the lock (`Player_LockOn`, `0x00280158`: state `0x5`, and the lock-on movement state through
+     `0x00221038`).
+  4. **It holds** (confirmed (code)) while L1's release window runs (record `+0xf4`: `Player_OnL1Released` `0x00227b98`
+     sets it to the game time + 264 ms; the other writer found is the hidden update's L1 release at `0x0027e14c`, the
+     same + 264 ms (inferred: the writers were not enumerated by a full search), so in a fight it has long run out) and
+     a target is kept; or, with the nearest within 2 m and the target beyond **2.5 m** (`0x005104c0`, 6.25 in play), the
+     target is swapped for the nearest when `+0x08` is clear; or the target is within **3 m** (`0x005104c4`, 9 in play).
+  5. **It ends** once that window has run out, `+0x08` is clear and he is neither locked nor in state `0x8` with
      `0x200000` (`0x00227cd8`): the target is dropped; a stance in the lock-on or the free movement state is left
      through `0x002801e8` (a state code `0xe` → 7). Then, outside state `0x200000`, the nearest human on the brain's
      list `+0x164` within **20 m** that is an alerted (brain `+0x21c` set) non-pad human inside a 120° cone of his
@@ -328,6 +337,29 @@ sprint ends it (inferred from the steps above, `0x0027ce90`). A locked-on combat
 base speed, gait 3), so **square there skips the walk attack and goes to the snap or `S1`**, which is what level99's
 lesson 7 needs ([Attacks](combat/index.md#attacks)). At runtime L1 held gave state `0xd` (confirmed (runtime), below).
 
+**The whole path at runtime** (confirmed (runtime), PCSX2 2.9.129 (the PCSX2-MCP fork), copies of slot 6,
+the scenarios `target_*` of `repo:research/traces/scenarios/`, one sample per update; state is record `+0x00`, the
+movement state human `+0x1c0`, the target human `+0xc8`). The settings in play were `CfgAutoLockAndCombat` 1 (`0x005104b8`,
+the other three 0), near² 4, mid² 6.25, far² 9 (`0x005104bc`-`0x005104c4`) and `CfgStrafeRStick` 0 (`0x005104d0`).
+
+| Scenario | What the original did |
+| --- | --- |
+| `target_attack_walk_away`: `S1` at PoizoCiv, a **neutral** civilian (his gang, kind `0x17`, no enemy of the player's) 1 m ahead; stand 40 updates; stick 60 % back | The press update: state `0x1`, target PoizoCiv. The next update, still in `S1`'s wind-up (`+0x08` `0x1`, outside the busy gate): state `0x5` and `Human_FightStanceMove`, at 0.74 m. Standing, the lock held. Backing off: clip 384 at 3.43 m/s, PoizoCiv's bearing within 1° of the facing to 2.39 m, the heading unchanged from 2.5 to 3 m; at 3.05 m state 0, target none, the free movement |
+| `target_walk_past_friends`: walking at 60 % past Vermin (crew, the player's gang) at 0.69 m | Target none and state 0 on every update |
+| `target_walk_past_enemy`: PoizoCiv's gang made an enemy (`Gang_MakeEnemies` `0x0016acf0`, his brain kept alerted, below), 1 m to the side of the walk | Standing (updates 0-4, the gangs made enemies at update 2): state 0. As the stick was pushed (updates 5-6, gait 0 then 1): state `0x1` with no target (step 5's alerted enemy, 2.9 m away), then 0 while the walk started. At 1.99 m (update 16) state `0x1` only (`+0x08` held the run start's `0x10000000`, outside `0x320100`); four updates later (update 20), `+0x08` clear, at 1.65 m: state `0x5`, target him, the lock-on movement. Walking on at 3.43 m/s facing him, the player circled him (heading 147° → −28° as the camera followed) and the target went at 3.06 m |
+| `target_knockdown_kept` (run `r-20261025-target-knockdown-kept`): PoizoCiv made an enemy 1.5 m ahead, the player standing; at update 30 the game knocks him down (`Human_KnockDown` `0x0022f100`) | Locked from update 3 (state `0x5`, target him, `Human_FightStanceMove`); from update 31 his state word held `0x80000` with all 600 health, and the player kept him as the target, locked, on all 60 updates to the end |
+| `target_bat_sweep_run`: a bat in hand (`Human_PlaceItemInHand` `0x00238540`), a run at full stick, square at 2.73 m from the enemy 1.2 m to the side | 501 took him as the target; state 0 throughout; the heading stayed at −29.1° through the clip (no steer, no turn); the run went on at gait 4 past him (0.72 m), the target kept and never locked, until the run was stopped by a wall 6.68 m on (gait 3), when it went |
+| The same with square at 3.24 m (beyond the armed pick's 2.5 m × 1.1) | 501 with no target; the same straight run |
+| level95 checkpoint 2 (loaded with `load-checkpoint`), Cochise of the crew's gang 3 held 1.23 m beside Cleon walking at 60 % for 40 updates | Target none and state 0 on every update |
+| level95 checkpoint 2 (loaded with `load-checkpoint`), Cleon walked at 60 % from the checkpoint's spot (−184.9, 95.5) toward Ajax (crew, gang 2, standing at −177.5, 87.0); held at a corner near (−180.3, 90.0), as Coney's player is for a while on the same line, he was moved on over PINE to (−179.56, 88.51, heading −129.2), where Coney's player stood after the corner, and walked on into Ajax, stopping 0.71 m from him | Target none and state 0 on every update; Coney after this change walks the same line and stops 0.69 m from him with no target, where Coney before locked onto him from 1.6 m (the combat walk 381, turned to face him) |
+
+In level95 the crew's gangs (2 and 3, kind `0x13`) and the player's (0, kind 0) hold no friend or enemy bit for each
+other (gang `+0x38`, `+0x3c` read 0), so they are neutral: no friends (an attack may pick them) and no threat (the
+stance never takes one). A civilian gang (kind `0x17` or `0x18`) is made neutral again every update while none of its
+members is alerted (`Gang_CheckNeutralRule`, `0x00169d30`, confirmed (code) and seen: a write watch on the enemy mask
+caught `Gang_MakeNeutralWithType` `0x0016c470` clearing it the update after `Gang_MakeEnemies`), which is why the
+enemy scenarios keep PoizoCiv's brain `+0x21c` set.
+
 **L2 ends the stance and the target at once** (`Player_UpdateSprint`, `0x0027ce90`): with L2 held
 (`PlayerRec_IsPadHeld(rec, 1)`), stamina (record `+0x14a`) above 0 and record `+0x08` free of `0x10`, it sets state
 `0x1000000`, clears `0x8008` and then calls `Human_DropTarget` (`0x00226f70`). That drop is refused only for a pad
@@ -338,28 +370,41 @@ record `+0x08` is entirely clear drops the target again and leaves the stance an
 dispatcher passes its busy gate (`0x5c7fee0`), so the target goes **during an attack's wind-up or window** too; only
 the stance bits and the lock-on movement wait for the clip's end, when `+0x08` clears.
 
-At runtime (confirmed (runtime), `X1` at PoizoCiv pinned 0.95 m ahead, then the stick 100 % straight back from update
-20): with **L2 pressed at update 20**, the target went on the update L2 was read (21, `X1`'s wind-up), state
-`0x1000005`; on the first update after the clip (43) the movement state was the free one and the state word
-`0x1000000`, and Rembrandt turned to the stick at 22.5° per update and ran off (410 at 7.8 m/s by update 50), never
-toward the target. **Without L2** he stayed locked (state `0x5`, `0x00241b90`) and walked backward facing the target
-(385, then 384, at 3.43 m/s) for 14 updates, until the target was dropped at 3.09 m, then turned and ran. That drop is
-step 5 above: the first update with the target beyond the 3 m keep distance (`0x005104c4`, 9 in play) once the stance
-timer had run out (confirmed (code); the timer at that update was not read). So a player who holds L2 after an attack
-never walks toward the old target.
+At runtime (confirmed (runtime), copies of slot 6, `X1` at PoizoCiv pinned 0.95 m ahead, then the stick 100 % straight
+back from update 20): with **L2 pressed at update 20**, the target went on the update L2 was read (21, `X1`'s
+wind-up), state `0x1000005`; on the first update after the clip (43) the movement state was the free one and the
+state word `0x1000000`, and Rembrandt turned to the stick at 22.5° per update and ran off (410 at 7.8 m/s by update
+50), never toward the target. **Without L2** he stayed locked (state `0x5`, `0x00241b90`) and walked backward facing
+the target (385, then 384, at 3.43 m/s) for 14 updates, until the target was dropped at 3.09 m, then turned and
+ran. That drop is step 5 above: the first update with the target beyond the 3 m keep distance (`0x005104c4`, 9 in
+play), L1's release window long run out (confirmed (code); `target_attack_walk_away` dropped it at 3.05 m the same
+way). So a player who
+holds L2 after an attack never walks toward the old target.
 
 **Lock-on** is the fight stance's movement state `0x00241b90` (the normal one is `0x00240e38`): the human is
 **locked** when it has a human or object target and either L1 is held (`CfgLockOn`), or `CfgAutoLock`,
 `CfgAutoLockAndCombat` (1 in the street) or auto-combat is on. Locked, it **turns to face the target every update**
 and the stick (dead zone 0.12) moves it without turning, the stick's angle from the facing (record `+0xdc`) picking
-the combat-walk clips 380-387; unlocked, it turns to the stick. Blocking stops the movement. A target farther than
-2.5 m (`0x005104c0`, 6.25 in play) is not dropped here but **ignored** unless `Human_IsLocked` (state `0x8` and
-`0x4`, L1): the walk turns to the stick as unlocked; the drop is the stance update's, at 3 m (step 5 above).
+the combat-walk clips 380-387. Blocking stops the movement. A target farther than 2.5 m (`0x005104c0`, 6.25 in
+play) is not dropped here but **ignored** unless `Human_IsLocked` (`0x00227c88`: state `0x8` and `0x4`, L1); so is one
+whose type bits lack `0x100040`. Ignored, or with the settings not locking, the walk **keeps the heading**: the only
+turn left is the right stick's, capped by `Human_MaxTurn`, and only with `CfgStrafeRStick` (`0x005104d0`, written only
+by `Cfg_SetStrafeRStick` `0x0023a5f0`; 0 in play). With no target at all the movement hands control back to
+`0x00240e38`. Confirmed (code) at `0x00241b90`; confirmed (runtime) in `target_attack_walk_away` (the heading did not
+move between 2.5 and 3 m). The drop is the stance update's, at 3 m (step 5 above).
 
 **L1**: pressed (`0x0027da10`) or held (`0x0027dc00`), it sets record `+0x00` `0x8`, enters the stance and picks a
 target; released (command 8, `0x00227b98`), it clears `0xc` and opens a 264 ms window in which a second tap picks and
-locks. While aiming a throw (`Human_MoveThrowAim`, `0x00244770`) L1 leaves the aim; with weapon type 5 and no enemy
-target it enters mode `0x13` (`0x00227b30`). Confirmed (code); confirmed (runtime): L1 held gave state `0xd`, a target,
+locks. The three handlers are the dispatcher's last commands (`Player_UpdateActions`, `0x0027c120`), after the stance
+update and every other command, so none runs under the busy gate (`+0x08` & `0x5c7fee0`), with R1 held, in a hold,
+for a hidden player (`Player_UpdateActionsHidden`, `0x0027e040`, instead), or on an update another command took; with
+no command, or `Human_IsBusy` (`0x00228258`), the dispatcher clears `0x8008`. A set-5 object in hand skips the held
+handler; the held handler itself does nothing while the per-player action delay runs (`PlayerRec_GetActionDelayLeft`),
+under `+0x08` `0x2000000`, while locked or in the throw aim, and with a target at a free sprint; hidden, it drops a
+target in state `0x3800f0000` instead of locking. The press acts only inside the release window (then searches and
+runs the held handler). Confirmed (code) at the cited addresses, 2026-10-25. While aiming a throw
+(`Human_MoveThrowAim`, `0x00244770`) L1 leaves the aim; with weapon type 5 and no enemy target it enters mode `0x13`
+(`0x00227b30`). Confirmed (code); confirmed (runtime): L1 held gave state `0xd`, a target,
 and the movement state `0x00241b90`.
 
 **At runtime** (confirmed (runtime), PoizoCiv 2 m ahead as the target): the street has `CfgLockOn` = 0, so **L1 alone
@@ -374,9 +419,9 @@ not the script's; confirmed (runtime)):
 | --- | --- | --- | --- | --- | --- | --- |
 | Clip | 380 forward | 381 forward right | 382 right | 383 back right | 384 back | 387 forward left |
 
-A target that the walk took beyond 2.5 m was dropped and the player went back to the walk start 413 (confirmed
-(runtime); by the code the walk ignores the target beyond 2.5 m and the stance drops it beyond 3 m, and that run did
-not tell the two apart).
+A target that the walk took beyond 2.5 m was dropped and the player went back to the walk start 413. By the code the
+walk ignores the target beyond 2.5 m and the stance drops it beyond 3 m; `target_attack_walk_away` told the two apart
+(the heading held from 2.5 m, the drop at 3.05 m; confirmed (runtime), above).
 
 **Combat-walk speed.** `0x00241b90` normalises the stick vector (dead zone 0.12) and multiplies it by `0x00221710`'s
 speed, so the stick's deflection does not change the speed (confirmed (code)). The clips 380-387 each cover 2.4 m in
@@ -411,27 +456,33 @@ player at the walk speed.
 - **No stance logic during the clip.** `0x1000000` is inside the dispatcher's busy gate `0x5c7fee0`
   (`Player_UpdateActions`, `0x0027c120`), so `Player_UpdateStanceOrIdle` / `Player_UpdateSprint` (`0x0027ce90`) do
   not run while 501 plays: nothing enters the stance or locks during the sweep.
-- **After the clip, running keeps it free.** The gait is human `+0x1a8`, set from the speed by `Human_SetMoveVelocity`
-  (`0x0023cf00`). With the run resumed (gait 4, `+0x08` clear) `Human_IsRunningFree` holds, `Player_UpdateSprint`
-  returns early (and, as the player is not in a stance, drops nothing). The target stays in `+0xc8`, but the movement
-  state is still the free `Human_PlayerLocomotion` (`0x00240e38`), which turns to the stick: a stored target alone
-  never steers the player. Only `Player_LockOn` (`0x00280158`) installs the lock-on movement `Human_FightStanceMove`
-  (`0x00241b90`), and only from step 3 of the stance update (nearest enemy within 2 m, not running) or L1.
-- **The lock-on movement faces the target only within 2.5 m.** `Human_FightStanceMove` treats the target as absent
+- **After the clip, running keeps it free** (confirmed (code)). The gait is human `+0x1a8`, set from the speed by
+  `Human_SetMoveVelocity` (`0x0023cf00`). With the run resumed (gait 4, `+0x08` clear) `Human_IsRunningFree` holds,
+  `Player_UpdateSprint` returns early (and, as the player is not in a stance, drops nothing). The target stays in
+  `+0xc8`, but the movement state is still the free `Human_PlayerLocomotion` (`0x00240e38`), which turns to the
+  stick: a stored target alone never steers the player. Only `Player_LockOn` (`0x00280158`) installs the lock-on
+  movement `Human_FightStanceMove` (`0x00241b90`), and only from step 3 of the stance update or L1. Step 3's "nearest"
+  falls back on the stored target, so **once he is not running and the target is within 2 m, it locks**; the 501 run
+  of `target_bat_sweep_run` never did (confirmed (runtime)).
+- **The lock-on movement faces the target only within 2.5 m** (confirmed (code)). `Human_FightStanceMove` treats the
+  target as absent
   when its distance² is above `0x005104c0` (6.25 in play, 2.5 m) unless `Human_IsLocked` (state `0x8` and `0x4`, L1;
-  the auto-lock's state `0x5` is not enough), or when the target lacks type bits `0x100040`; then it turns toward the
-  stick, capped per update by `Human_MaxTurn`, instead of snapping to the target. With no target at all it hands
-  control back to `0x00240e38`. The stance update drops the target beyond 3 m once its timer has run out (step 5).
-- **Only a threat is auto-locked.** The stance's nearest-enemy search (`Player_FindNearestEnemy`, `0x0027b1a0`, 3 m)
-  filters with `TargetFilter_StanceEnemy` (`0x002791b0`): the other must be a human whose object query (vtable
-  `+0xf4`) holds, targetable (`0x00227d78`: not flag `0x100000000000`), not friendly (`Human_IsFriendly`,
-  `0x00222a90`), not a pad player, within 2 m in height (`0x00510970`), **a threat** (`0x00222a48`
-  `Human_IsThreatTo`, through `Brain_IsThreat`: the two gangs are enemies or both are players), and neither down nor dead
-  (`0x00227e60`), nor in state `0xe0000` (`0x00223b48`), nor holding `0x40` (`0x00223c10`). A neutral civilian, whose
-  gang is no enemy of the Warriors, is refused, so **walking past a civilian never enters the stance or locks**; one
-  does once his gang has been made an enemy (a civilian of kind 3 who fights back, `Hostile_Attack`, [AI
-  goals](ai-goals.md)). The attack picks are wider: `TargetFilter_Enemy` (`0x00279410`) and `0x00279568` skip only
-  allies and the same gang, so square still picks and hits a civilian, without locking.
+  the auto-lock's state `0x5` is not enough), or when the target lacks type bits `0x100040`; then it keeps the
+  heading (only the right stick turns it, with `CfgStrafeRStick`, off in play). With no target at all it hands
+  control back to `0x00240e38`. The stance update drops the target beyond 3 m (step 5).
+- **Only a threat is found by the stance** (confirmed (code)). The stance's nearest-enemy search
+  (`Player_FindNearestEnemy`, `0x0027b1a0`, 3 m) filters with `TargetFilter_StanceEnemy` (`0x002791b0`): the other
+  must be a human
+  whose object query (vtable `+0xf4`) holds, targetable (`0x00227d78`: not flag `0x100000000000`), not friendly
+  (`Human_IsFriendly`, `0x00222a90`), not a pad player, within 2 m in height (`0x00510970`), **a threat**
+  (`Human_IsThreatTo`, `0x00222a48`: `Brain_IsThreat`, the two gangs are enemies or both are players), and neither
+  down nor dead (`0x00227e60`), nor in state `0xe0000` (`0x00223b48`), nor holding `0x40` (`0x00223c10`). A neutral
+  civilian, whose gang is no enemy of the Warriors, is refused, and so is a crew mate, so **walking past a civilian or
+  the crew never enters the stance or locks** (user item 14; confirmed (runtime) above); one does once his gang has
+  been made an enemy (a civilian of kind 3 who fights back, `Hostile_Attack`, [AI goals](ai-goals.md)). The attack
+  picks are wider: `TargetFilter_Enemy` (`0x00279410`) and `0x00279568` skip only allies and the same gang, so square
+  still picks and hits a civilian, and the stance's fallback then locks onto him while he is within 2 m (confirmed
+  (runtime), `target_attack_walk_away`).
 
 ### The steer into an attack {#attack-steer}
 
@@ -883,7 +934,8 @@ At runtime 1.5 turns per second took 9.6 s to succeed, and one R1 press failed i
 
 The pick, the stance and the lock live in `repo:src/combat/lock_on.h` (the lock-on rule, the combat walk's clip, when a
 target is dropped), `repo:src/combat/attack_target.h` (which target each attack goes for) and
-`repo:src/human/fighter.cpp` (the target in front, the grab search, the stance and the combat walk); the steer is
+`repo:src/human/fighter.cpp` (the target in front, the grab search, the stance) and `repo:src/human/human.cpp` (the
+combat walk); the steer is
 `repo:src/human/turn_and_slide.h` and the swept strike test `repo:src/human/strike_shapes.h`; an AI's attack checks
 are `repo:src/ai/attack_views.cpp`; the object attack's clip is in `repo:src/combat/attacks.h` and the stick games in
 `repo:src/combat/stick_games.h`. [Combat: Coney's implementation](combat/index.md#coneys-implementation) says what each
@@ -916,29 +968,31 @@ square that touches him makes him say `0x58`.
 
 ### The fight stance and the lock {#fight-stance-coney}
 
-The original's rules are in [The fight stance](#fight-stance); issue #82 tracks them. Where Coney differs:
+The original's rules are in [The fight stance](#fight-stance); issue #82 ported them. `Fighter::updateStance()`
+(`repo:src/human/fighter.cpp`) is the stance update, step by step, run before the player's commands as the dispatcher
+runs it, and `Fighter::updateL1()` the L1 handlers, outside the block, the busy gate and a hold;
+`Fighter::lockTarget()` is the lock-on movement's target, set only by the stance's step 3 and L1, and
+`Human::combatWalk()` (`repo:src/human/human.cpp`) the lock-on walk, which faces the target within 2.5 m (or while L1
+locks it) and keeps the heading beyond it. The stance's search takes only threats: `human::Humans` marks the targets
+that are no threat (`ai::isThreat()`) or a pad player as the calm list, which only the stance's search skips (the
+attacks' picks still take them). 23, 24 and 501 store their pick and steer nothing (`Fighter::steer()`). The
+distances are `CombatTuning::stanceNear`, `stanceMid` and `stanceFar` at the values in play (`CfgDistances` is not
+read from the scripts).
 
-- **The spin.** `Fighter::steer()` exempts only the charge (id 0), so 23, 24 and 501 pick a target and turn and slide
-  onto it (`steerOnto`); and `Fighter::lockTarget()` treats any target as a lock, so the target an attack picked puts
-  the player in `Human::combatWalk` as soon as the clip ends. `combatWalk` sets the heading straight to the target
-  every update (no cap, out to 2.5 m) and moves at the combat-walk speed, so the gait is never Run and
-  `trackTarget`'s "running drops it" never fires: walking past the enemy swings the heading round it every update.
-- **The civilian lock.** The player's targets list (`Humans::gatherTargets` with `AiHumans`' opposition
-  `!Gangs::friends`) holds every non-friend, neutral civilians included, and `trackTarget`'s stance step takes the
-  nearest of them within 2 m (`kStanceEnterRange`), searching 6 m (`kStanceTrackRange`) where the original searches
-  3 m.
+Where Coney still differs (stand-ins, each marked at the code):
 
-What the original does that Coney lacks: 23, 24 and 501 played as `Player_StartCharge` plays them (a warning to the
-picked target, no steer or slide); an attack's pick that only stores a target, with the lock-on walk running only after
-the stance step (nearest threat within 2 m, not running, outside an attack) or L1, and ending on running, sprinting or
-L2 as `Player_UpdateSprint` ends it; the lock-on walk facing the target only within 2.5 m (or while L1 locks), beyond it
-turning to the stick at most `Human_MaxTurn` per update; the target dropped beyond 3 m once the stance timer has run
-out; the stance's nearest enemy searched within 3 m and only among threats, with the wider list kept for the attack
-picks; square in the stance keeping its target out to 2.5 m (`0x005104c0`), where Coney keeps it out to 3 m
-(`kKeepTargetRange`, issue #895); and 2 / 2.5 / 3 m taken from `CfgDistances`, not the executable's defaults. The checks
-that will show it: a bat sweep at a full run past an enemy 1.5 m to the side keeps the heading on the stick for all of
-501 and the run resumes with no lock; a stick at 60 % walking past a neutral civilian at 1 m never locks or turns; the
-same past an enemy-gang member within 2 m locks and faces him.
+- L1 picks as square does within 2.5 m; the original's `Player_FindLockTarget` (`0x0027b2a8`) searches to 6 m
+  ([L1's own search](#q-l1-search)).
+- The clear-line test of the nearest enemy (`0x0021c240`) is not made, so the nearest is always taken, and a target in
+  a scene is not dropped ([The clear-line test](#q-clear-line)).
+- A target is out when it has no health left (Coney's targets report no state word).
+- The standing stance before an alerted enemy within 20 m (step 5) is not entered, the fighter not seeing the brains'
+  lists ([The alerted-enemy stance](#q-alerted-stance)).
+- L1's action delay is not modelled and a press acts as a hold ([L1's action delay](#q-l1-delay)).
+- Square in the stance keeps its target out to 3 m (`kKeepTargetRange`, issue #895), where `0x005104c0` gives 2.5 m.
+
+Tests: `repo:tests/human/player_targeting_test.cpp` (one case per scenario of [The fight stance](#fight-stance)) and,
+through the player's path, `repo:tests/platform/disc_level95_crew_lock_test.cpp`.
 
 ### The steer {#steer-coney}
 
@@ -966,6 +1020,20 @@ contact](#reach) shows the original does.
 - **653's extra reach**{#q-653-reach}: where 653's 0.04 m beyond its 1.58 m reach comes from: its steer aims at the
   target's position (task `+0x10`), not its head ([The two steers](#two-steers)); whether the clip's root motion over
   k1-k3 adds it was not read ([Where the attacker stands at contact](#reach)).
+- **L1's own search**{#q-l1-search}: porting `Player_FindLockTarget` (`0x0027b2a8`, confirmed (code)), which
+  `Player_LockOnTarget` (`0x0027b548`) calls from `0x0027dc00` with no target: humans within 6 m and 63° of the aim
+  through `0x002792c8`, else threats within 4 m (`0x002791b0`), standing enemies within 6 m (`0x00279568`), any angle
+  within 4 m (`0x002797b0`), near ones within 6 m (`Humans_FindNear`, `0x00279c48`), a car within 1 m, then 2.5 m
+  passes (`0x002796a0`, `0x00279d38`); the nearest of the first pass that finds any is taken if the line to it is
+  clear (`0x0021c240`). What each filter of `0x002792c8` and `0x00279c48` refuses is not read: decompile them and
+  compare with `0x00279410`.
+- **The alerted-enemy stance**{#q-alerted-stance}: how the rule of the stance's step 5 (brain list `+0x164`) is fed
+  for the player, so Coney can enter that standing stance ([The fight stance](#fight-stance)).
+- **The clear-line test**{#q-clear-line}: porting `Human_IsClearToTarget` (`0x0021c240`, a capsule cast through the
+  physics) for the stance's nearest enemy, and the scene state a target's drop also reads (`Human_IsInSceneState`:
+  human `+0x280`, or state `0x800000`), which Coney's targets do not report ([The fight stance](#fight-stance)).
+- **L1's action delay**{#q-l1-delay}: who sets the per-player action delay (player state `+0x4d` / `+0x50`, read by
+  `PlayerRec_GetActionDelayLeft`) that refuses L1 held ([The fight stance](#fight-stance)).
 
 ## How this was checked
 
@@ -983,6 +1051,10 @@ page's ([Evidence levels and run records](../guides/research-evidence.md#run-rec
 - **The fight stance**: copies of the street save state (slot 6), the player Rembrandt with PoizoCiv as the target
   (pinned 0.95 m ahead for the L2 runs, 2 m ahead and circling for the lock runs); the backward walks, 2026-10-05, each
   from a fresh copy with L1 held and the civilian locked 1.2 m ahead.
+- **The stance's path** (the table in [The fight stance](#fight-stance)), 2026-10-21 with PCSX2 2.9.129 (the
+  PCSX2-MCP fork): copies of slot 6 and level95 checkpoint 2, one sample per update, the scenarios `target_*` of
+  `repo:research/traces/scenarios/`; the knockdown run on 2026-10-25 has its record
+  (`repo:research/runs/r-20261025-target-knockdown-kept.toml`).
 - **The steer into an attack**: scenario `combat_cross` (`repo:research/traces/scenarios/combat_cross.toml`).
 - **The led steer** and **Where the attacker stands at contact**: copies of slot 6 with the puppet PoizoCiv (brain off,
   its move speed 0) placed by writing its transform each update until the move, driven over PINE with the scripted pad,

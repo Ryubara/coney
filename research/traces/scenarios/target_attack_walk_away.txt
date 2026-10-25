@@ -1,0 +1,5 @@
+# S1 at the civilian, stand 40 updates, then the stick 60 % straight back (toward the camera) for 70 updates.
+# Frames are character updates of 1/30 s.
+5 tap square
+50 stick left 0 -60
+120 stick left 0 0

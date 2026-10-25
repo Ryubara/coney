@@ -66,7 +66,8 @@ struct HumanInput {
     combat::CommandId command = combat::command::kNone; ///< This update's command (combat::CommandMatcher).
     std::uint16_t buttons = 0;                          ///< The held buttons (the block reads R1).
     std::span<Combatant* const> targets;                ///< The humans that can be fought.
-    std::span<Combatant* const> calm;                   ///< Stub for the tests: not read yet.
+    /// Of `targets`, those the fight stance never takes (no threat, or a pad player).
+    std::span<Combatant* const> calm;
 };
 
 /// A brain's move (brain `+0x110`, `+0x114`, `+0x90`): the heading and speed the locomotion follows in place of the
@@ -241,8 +242,13 @@ class Human final : public Holdable {
     /// @orig 0x0023fea8 Human_StateUpdate (unknown)
     void updateState(const raycast::CollisionMesh* mesh);
     /// The third pass, the actions: stamina and the sprint, combat's dispatcher from the record's command (against
-    /// `targets`), triangle's climb or jump, the lean and the animation state.
+    /// `targets`, of which the fight stance never takes those setCalm() gave), triangle's climb or jump, the lean and
+    /// the animation state.
+    /// @coney-only the third pass of Coney's character step, which gathers what the original's per-human updates run
     void updateActions(std::span<Combatant* const> targets, const raycast::CollisionMesh* mesh);
+    /// Of the next updateActions()' targets, those the fight stance never takes (no threat, or a pad player); it must
+    /// outlive that call, which uses it once.
+    void setCalm(std::span<Combatant* const> calm) { m_calm = calm; }
 
     /// The pose to draw now.
     [[nodiscard]] anim::Pose pose() const { return m_animator.pose(m_bindRotations); }
@@ -1006,7 +1012,9 @@ class Human final : public Holdable {
     // @orig 0x00243848 Human_UpdateControl (unknown)
     void aiCombatWalk(bool gated);
     // Combat's update from the record: the stick turned into the facing frame, the game time, the targets.
-    void fight(std::span<Combatant* const> targets, const raycast::CollisionMesh* mesh);
+    // @coney-only glue: combat's input from the record, for Fighter::update()
+    void fight(std::span<Combatant* const> targets, const raycast::CollisionMesh* mesh,
+               std::span<Combatant* const> calm);
     // The attacker's side of a warning: an event 0x24 or 0x26 of the clip playing that this step's animation passed
     // (since `beforeTime` of `before`, which played `beforeId`, when it is still the clip) tells the fighter's target,
     // when it stands within twice the anim's reach.
@@ -1166,6 +1174,7 @@ class Human final : public Holdable {
     ContextAction m_contextAction;
     ContextAction m_firstContextAction;         // tried before m_contextAction (a cuffed human to free)
     const BodyContact* m_bodyContact = nullptr; // setBodyContact(), the step's
+    std::span<Combatant* const> m_calm;         // setCalm(), for the next updateActions() only
     const ObjectPush* m_objectPush = nullptr;   // setObjectPush(), the step's
     const anim::Skeleton* m_skeleton = nullptr; // setSkeleton()
     StrikeShapes m_strikes;

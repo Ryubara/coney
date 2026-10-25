@@ -61,14 +61,23 @@ void Humans::remove(const Human& human) {
 
 void Humans::gatherTargets(std::size_t slot, std::span<Combatant* const> targets) {
     m_scratch.clear();
+    m_calm.clear();
     if (m_fightsTargets[slot]) {
         m_scratch.assign(targets.begin(), targets.end());
     }
     for (std::size_t other = 0; other < m_humans.size(); ++other) {
-        if (other != slot && opposed(slot, other)) {
-            m_scratch.push_back(m_humans[other]);
+        if (other == slot || !opposed(slot, other)) {
+            continue;
+        }
+        m_scratch.push_back(m_humans[other]);
+        // The stance's enemy filter (`TargetFilter_StanceEnemy`, 0x002791b0) refuses a human that is no threat and a
+        // pad player (per-player +0x1b), whom the attacks may still pick.
+        const bool threat = !m_threat || m_threat(*m_humans[slot], *m_humans[other]);
+        if (!threat || m_padControlled[other]) {
+            m_calm.push_back(m_humans[other]);
         }
     }
+    m_humans[slot]->setCalm(m_calm);
 }
 
 void Humans::update(const raycast::CollisionMesh* mesh, std::span<Combatant* const> targets, float stepSeconds) {

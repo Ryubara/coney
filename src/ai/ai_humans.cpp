@@ -6,6 +6,7 @@
 #include <span>
 #include <utility>
 
+#include "ai/threats.h"
 #include "animation/anim_pose.h"
 
 namespace coney::ai {
@@ -33,6 +34,13 @@ void AiHumans::install() {
         const Brain* a = m_brains->find(attacker);
         const Brain* b = m_brains->find(victim);
         return !Gangs::friends(a != nullptr ? a->gang() : nullptr, b != nullptr ? b->gang() : nullptr);
+    });
+    // The player's stance takes only a threat (`TargetFilter_StanceEnemy` 0x002791b0 through `Human_IsThreatTo`).
+    // **Coney's choice**: a human without a brain (none in the original) stays a threat, as it was a target.
+    m_player.humans().setThreat([this](const human::Human& human, const human::Human& other) {
+        const Brain* a = m_brains->find(human);
+        const Brain* b = m_brains->find(other);
+        return a == nullptr || b == nullptr || isThreat(*a, *b);
     });
     m_player.humans().setBrains([this](std::span<human::Human* const> /*humans*/) { step(); });
 }
@@ -85,6 +93,7 @@ AiHumans::~AiHumans() {
     }
     m_player.humans().setBrains({});
     m_player.humans().setOpposition({});
+    m_player.humans().setThreat({});
     m_player.setPadControlled(true);
     m_player.setNearestEnemy(std::nullopt);
 }

@@ -1,0 +1,48 @@
+# slot 6: PoizoCiv, a neutral civilian (gang 2, no enemy of the Warriors), is put 1.0 m in front of the player, facing
+# him. Square is tapped once (S1 picks him as the target), the player stands for 40 updates, then walks straight back
+# at 60 % for 70 updates. The trace shows whether the attack's target becomes a lock (record state 0x5, the movement
+# state Human_FightStanceMove 0x00241b90), how long the player keeps facing him while backing off, and at what
+# distance the target is dropped. Research: docs/research/combat-targets.md#fight-stance.
+description = "slot 6: S1 at a neutral civilian 1 m ahead, stand, then walk back at 60 %: does the pick lock, when does it end"
+research = "docs/research/combat-targets.md#fight-stance"
+input = "target_attack_walk_away.txt"
+updates = 140
+fields = ["player"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick"]
+let = { enemy = 'human("PoizoCiv")' }
+setup = [
+  { address = "tf(enemy) + 0x0", type = "f32", value = "f32(tf(player)) - 1.0 * sin(heading(player))", until = 0 },
+  { address = "tf(enemy) + 0x4", type = "f32", value = "f32(tf(player) + 4) + 1.0 * cos(heading(player))", until = 0 },
+  { address = "tf(enemy) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 0 },
+  { address = "tf(enemy) + 0x18", type = "f32", value = "sin((heading(player) + pi) / 2)", until = 0 },
+  { address = "tf(enemy) + 0x1c", type = "f32", value = "cos((heading(player) + pi) / 2)", until = 0 },
+]
+
+[coney]
+level = "sandbox:combat"
+args = ["--spawn", "start"]
+
+[[field]]
+name = "state"                            # record +0x00, the state word's low half (0x1 stance, 0x4 lock, 0x8 L1)
+address = "rec(player) + 0x0"
+type = "u32"
+
+[[field]]
+name = "target"                           # human +0xc8, the target's handle index (-1 none)
+value = "hidx(u32(player + 0xc8))"
+
+[[field]]
+name = "move"                             # human +0x1c0, the movement state (0x241b90 lock-on, 0x240e38 free)
+address = "player + 0x1c0"
+type = "u32"
+
+[[field]]
+name = "dist"                             # metres from the player to PoizoCiv, on the ground
+value = "hypot(f32(tf(player)) - f32(tf(enemy)), f32(tf(player) + 4) - f32(tf(enemy) + 4))"
+
+[[field]]
+name = "bearing"                          # PoizoCiv's direction from the player's facing, degrees
+value = "wrap(deg(atan2(f32(tf(player)) - f32(tf(enemy)), f32(tf(enemy) + 4) - f32(tf(player) + 4)) - heading(player)))"

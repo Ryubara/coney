@@ -29,9 +29,7 @@ int combatWalkClip(float clockwiseDegrees) {
     return kCombatWalkFirst + sector;
 }
 
-bool keepsTarget(const CombatTuning& tuning, float distance, bool held) {
-    return held || distance <= tuning.targetDropDistance;
-}
+bool keepsTarget(const CombatTuning& tuning, float distance, bool held) { return held || distance <= tuning.stanceMid; }
 
 float grabTurnStep(const CombatTuning& tuning, float remaining, float previous) {
     const float size = std::fabs(remaining);

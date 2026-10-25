@@ -70,15 +70,25 @@ inline constexpr float kPickConeDegrees = 54.0F;
 inline constexpr float kPickConeScale = 1.1F;
 inline constexpr float kPickAnyScale = 0.9F;
 inline constexpr float kPickWideScale = 0.7F;
-/// The player's fight stance each update (`0x0027ce90`, docs/research/combat-targets.md#fight-stance): the nearest
-/// enemy is tracked within this many metres, ...
-inline constexpr float kStanceTrackRange = 6.0F;
-/// ... one within this many metres is taken as the target (and locked with the street's `CfgAutoLockAndCombat`), ...
-inline constexpr float kStanceEnterRange = 2.0F;
-/// ... and a target beyond this many metres is swapped for that nearest one.
-inline constexpr float kStanceSwapRange = 3.0F;
+/// The player's fight stance each update (`Player_UpdateSprint` `0x0027ce90`,
+/// docs/research/combat-targets.md#fight-stance) runs only while the record's `+0x08` holds none of these bits (the
+/// dispatcher's busy gate, `0x0027c120`).
+inline constexpr std::uint32_t kStanceGate = 0x5c7fee0;
+/// A target farther than this many metres loses L1's lock bit (`0x8`; 169 squared).
+inline constexpr float kL1ForgetDistance = 13.0F;
+/// Letting go of L1 opens a window of this many ms (record `+0xf4`, `Player_OnL1Released` `0x00227b98`) in which the
+/// stance keeps its target.
+inline constexpr std::uint64_t kL1ReleaseWindowMs = 264;
 /// The `+0x08` bits under which the stance may still take a target (`0x320100`): any other held bit refuses it.
 inline constexpr std::uint32_t kStanceTakeAllowed = 0x320100;
+/// A target whose record `+0x08` holds this bit (a dive or a paired move under way) is kept by the stance even when it
+/// is out (`Player_UpdateSprint` `0x0027ce90`).
+inline constexpr std::uint32_t kStanceKeepHeld = 0x400000;
+/// The stance's enemy search refuses a human whose record `+0x08` holds this bit (`TargetFilter_StanceEnemy`
+/// `0x002791b0`, `Human_HasHeld40`).
+inline constexpr std::uint32_t kStanceRefuseHeld = 0x40;
+/// The `+0x08` bit under which L1 held does nothing (`Player_OnL1Held` `0x0027dc00`).
+inline constexpr std::uint32_t kL1HeldRefused = 0x2000000;
 /// The stick length above which its heading leads the search.
 inline constexpr float kPickStick = 0.01F;
 /// Targets more than this far above or below are skipped.
@@ -110,16 +120,18 @@ struct FighterInput {
     combat::Stick stick;                                ///< The camera-turned stick in the facing frame.
     combat::Stick padStick;                             ///< The stick as the pad reads it (the minigames').
     Gait gait = Gait::Standing;
-    anim::Vec3 position;                     ///< The player's feet.
-    float heading = 0.0F;                    ///< The player's heading, radians.
-    std::uint64_t nowMs = 0;                 ///< Game time, whole milliseconds.
-    std::span<Combatant* const> targets;     ///< The humans that can be fought.
-    float stepSeconds = kStepSeconds;        ///< The characters' step: 1/30 s, less in slow motion.
+    anim::Vec3 position;                 ///< The player's feet.
+    float heading = 0.0F;                ///< The player's heading, radians.
+    std::uint64_t nowMs = 0;             ///< Game time, whole milliseconds.
+    std::span<Combatant* const> targets; ///< The humans that can be fought.
+    std::span<Combatant* const> calm;    ///< Of `targets`, those the fight stance never takes (no threat, a player).
+    float stepSeconds = kStepSeconds;    ///< The characters' step: 1/30 s, less in slow motion.
     std::span<const ObjectTarget> objects{}; ///< The breakable objects square may strike.
     bool strikeShapes = false; ///< The human has strike shapes: its free attacks strike through them (strikeContact()).
     const raycast::CollisionMesh* mesh = nullptr; ///< The level's collision, for the wall throw's ray (none: no wall).
     bool sprinting = false;    ///< L2 held with stamina left: the sprint state (`0x1000000`), which drops the target.
     bool padControlled = true; ///< The per-player record's `+0x1b` (HumanRecord::padDriven).
+    bool throwAiming = false;  ///< In a throw aim (`Human_MoveThrowAim` drives it), where L1 held does nothing.
 };
 
 /// The camera shake a reaction asks for (docs/research/camera.md#shake): on the attacker's camera when a player hit,
@@ -297,11 +309,20 @@ class Fighter {
     /// The target kept (human `+0xc8`); null when none.
     [[nodiscard]] const Combatant* target() const { return m_target; }
     [[nodiscard]] Combatant* target() { return m_target; }
-    /// The target the fight stance is locked onto (combat::lockedOn()): it has one and the lock-on settings lock; null
-    /// otherwise. Locked, the human faces it every update and walks in the combat walk.
+    /// The target of the lock-on movement (`Human_FightStanceMove` `0x00241b90`), null when the human moves freely. A
+    /// player's lock-on movement starts only from his stance update (an enemy within 2 m, not running) or L1
+    /// (`Player_LockOn` `0x00280158`), never from an attack's pick, and ends with the stance or the target; in it he
+    /// walks in the combat walk (Human::combatWalk(), which faces the target within CombatTuning::stanceMid or while
+    /// l1Locked()). An AI human's is its target while the lock-on settings lock (combat::lockedOn()).
     [[nodiscard]] const Combatant* lockTarget() const;
-    /// Stub for the tests: no stance yet.
-    [[nodiscard]] bool inFightStance() const { return false; }
+    /// Whether L1 locks the target (`Human_IsLocked` `0x00227c88`: state `0x8` and `0x4`), which refuses a pad player's
+    /// target changes and lets the lock-on walk face a target beyond CombatTuning::stanceMid.
+    [[nodiscard]] bool l1Locked() const { return m_l1Lock && m_lockOn; }
+    /// Whether the human is in a fight stance (record `+0x00` `0x1` or `0x2`, `0x00228340`): a player's from his stance
+    /// update, an attack's start or the block; an AI human's while it is locked onto a target (**Coney stand-in**: the
+    /// goals' own `Human_EnterFightStance` is not modelled).
+    /// @orig 0x00228340 Human_IsInFightStance (unknown)
+    [[nodiscard]] bool inFightStance() const;
     /// The sounds its hits asked for since the last call (the hit sound of a hit it took), oldest first.
     [[nodiscard]] std::vector<HumanSound> takeSounds() { return std::exchange(m_sounds, {}); }
     /// Keeps the target from locking (`blocked`) or lets it lock again: while the human is hidden L1 picks a target
@@ -570,11 +591,38 @@ class Fighter {
 
     // Remembers the clip playing at the end of the update and its time (the pair's moments, the duck's window).
     void noteClip(const HumanAnimator& animator);
-    // Keeps the target or drops it (gone, out of health, down, or too far without L1 or a hold), lets L1 pick one, and
-    // runs a player's fight-stance target rules: a run drops the target, the nearest enemy within 2 m is taken, and a
-    // target beyond 3 m is swapped for it. `phase` is the record's `+0x08`.
+    // An AI human's target: dropped when it is gone, out of health or down, or beyond CombatTuning::stanceMid without a
+    // hold; L1 (a scripted pad) picks one. A player's is the stance update's (updateStance()).
+    // @coney-only an AI human's own target rules (combat::keepsTarget()); its brain picks targets in the original
+    void trackTarget(const FighterInput& input);
+    // The player's fight stance and target each update, before his commands (docs/research/combat-targets.md#fight-
+    // stance): the nearest threat within 3 m (else the target he has, unless he is out); a target out is dropped; L2
+    // or a run drops the target and leaves the stance; a threat or the target within 2 m enters it and locks on, unless
+    // he runs; a target within 3 m keeps it; beyond, the target goes and the stance ends. `phase` is the record's
+    // `+0x08`.
     // @orig 0x0027ce90 Player_UpdateSprint (unknown)
-    void trackTarget(const FighterInput& input, std::uint32_t phase);
+    // @orig 0x0027d5a0 Player_UpdateStanceOrIdle (unknown)
+    void updateStance(const FighterInput& input, std::uint32_t phase);
+    // The dispatcher's L1 handlers, after the stance update and only where `Player_UpdateActions` reaches them (out of
+    // the block, the busy gate and a hold; no command clears L1's bit). Pressed or held: with no target one is picked;
+    // one held is locked on (state `0x8`, `Player_LockOn`). Let go, the lock ends and the release window opens.
+    // `phase` is the record's `+0x08`.
+    // @orig 0x0027dc00 Player_OnL1Held (unknown)
+    // @orig 0x00227b98 Player_OnL1Released (unknown)
+    void updateL1(const FighterInput& input, std::uint32_t phase);
+    // The stance's nearest enemy within `range` (`TargetFilter_StanceEnemy` `0x002791b0`): a target of `input` not in
+    // its calm list, standing with health left, targetable, within 2 m in height and not holding `+0x08` `0x40`. With
+    // none, the target held unless it is out. Null for neither.
+    // @orig 0x0027b1a0 Player_FindNearestEnemy (unknown)
+    // @orig 0x002791b0 TargetFilter_StanceEnemy (unknown)
+    [[nodiscard]] Combatant* nearestStanceEnemy(const FighterInput& input, float range) const;
+    // Takes `target` (null drops it), unless L1 locks the one held (`Human_SetTarget` `0x00226c30`, `Human_DropTarget`
+    // `0x00226f70`).
+    // @orig 0x00226c30 Human_SetTarget (unknown)
+    void takeTarget(Combatant* target);
+    // Leaves the stance and the lock-on movement (`Player_ExitStanceAndLock` `0x002801e8`).
+    // @orig 0x002801e8 Player_ExitStanceAndLock (unknown)
+    void leaveStance();
 
     // --- fighter_grab.cpp: a grab the player holds.
 
@@ -845,12 +893,16 @@ class Fighter {
     int m_hitsDucked = 0;
     int m_hitsArmoured = 0;
     int m_hitsShrugged = 0;
-    int m_holdUnkept = 0; // own updates held since the grabber last kept the hold (keepHold())
+    int m_holdUnkept = 0;              // own updates held since the grabber last kept the hold (keepHold())
+    std::uint64_t m_l1WindowEndMs = 0; // record +0xf4: L1's release window's end
     // The flags, together so the class packs.
     bool m_player = true;         // FighterProfile::player
     bool m_bossClass = false;     // FighterProfile::bossClass
     bool m_warriorBrain = false;  // setWarriorBrain(): brain type 3
-    bool m_l1Held = false;        // L1 held this update (record +0x00 0x8)
+    bool m_l1Held = false;        // L1 held this update
+    bool m_stanceOn = false;      // a player's fight stance (record +0x00 0x1)
+    bool m_lockOn = false;        // a player's lock (0x4) and lock-on movement (Human_FightStanceMove)
+    bool m_l1Lock = false;        // L1's lock bit (0x8)
     bool m_lockBlocked = false;   // setLockBlocked(): hidden, the target does not lock
     bool m_tacklePending = false; // the tackle's intro plays; the victim reacts when its hit clip starts
     bool m_mountPending = false;  // the grab's mount (118) or the tackle plays; the mounter is seated at 210

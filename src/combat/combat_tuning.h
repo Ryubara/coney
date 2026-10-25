@@ -71,8 +71,14 @@ struct CombatTuning {
     bool autoCombat = false;
     bool autoLock = false;
     bool autoLockAndCombat = true;
-    /// A target farther than this is dropped (`0x005104c0`, 2.5 m), unless L1 or a hold keeps it.
-    float targetDropDistance = 2.5F;
+    /// The fight stance's distances (`CfgDistances` near, mid, far: `0x005104bc`, `0x005104c0`, `0x005104c4`, kept
+    /// squared; read in play as 4, 6.25 and 9, where the executable's defaults are 2, 3 and 6 m). Near: a threat this
+    /// close enters the stance and locks on. Mid: the lock-on walk faces a target only this close, and a target farther
+    /// is swapped for a threat within near. Far: the nearest threat is searched this far, and a target beyond it is
+    /// dropped and the stance ends (docs/research/combat-targets.md#fight-stance).
+    float stanceNear = 2.0F;
+    float stanceMid = 2.5F;
+    float stanceFar = 3.0F;
     /// The combat walk's speed, m/s, at any stick deflection past the dead zone (the clips 380-387 cover 2.4 m in
     /// 0.7 s).
     float combatWalkSpeed = 3.429F;
