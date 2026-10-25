@@ -282,7 +282,7 @@ def test_a_line_break_that_is_structure_is_a_touch() -> None:
     assert hunk(["See [g](combat.md#grab).", "## Data"], ["See [g](combat-grabs.md#grab). ## Data"]) == {3}
     assert hunk(["See [g](combat.md#grab) - a note."], ["See [g](combat-grabs.md#grab)", "- a note."]) == {3, 4}
     # So do a blank line, a quotation, a table row and a code fence on either side.
-    for marker in ["", "> quoted", "| a | b |", "```", "1. first", "    code"]:
+    for marker in ["", "> quoted", "| a | b |", "```", "1. first"]:
         assert hunk(["See [g](combat.md#grab)", marker], ["See [g](combat-grabs.md#grab) " + marker.strip()]) == {3}
     # A rewrite on one list item, kept a list item, is no touch; a changed indent is.
     assert hunk(["- See [g](combat.md#grab)."], ["- See [g](combat-grabs.md#grab)."]) == frozenset()
@@ -376,3 +376,21 @@ def test_a_split_link_with_only_its_target_line_changed_is_no_touch_in_a_checkou
     root = linked_checkout(tmp_path, split)
     write(root, "docs/research/ai.md", split.replace("combat.md#grab", "combat-grabs.md#grab"))
     assert touches(root) == {"docs/research/ai.md": frozenset()}
+
+
+def test_indented_lines_continue_a_list_item_but_a_code_block_is_structure() -> None:
+    diff = "\n".join(
+        [
+            "@@ -3,2 +3,2 @@",
+            "-     [it](combat.md#grab)): when the state is not the one, the",
+            "-     word lacks it:",
+            "+     [it](combat-grabs.md#grab)): when the state is not the one,",
+            "+     the word lacks it:",
+        ]
+    )
+    item = ["- A nested item that", "  goes on and", "     [it](combat-grabs.md#grab)): when the state", "     the"]
+    assert touched_lines(diff, FOLDER, GONE, resolves) == frozenset({3, 4})  # nothing above: read as code
+    assert touched_lines(diff, FOLDER, GONE, resolves, new_lines=item) == frozenset()
+    # After a blank line the same indent is a code block.
+    code = ["- A nested item that", "", *item[2:]]
+    assert touched_lines(diff, FOLDER, GONE, resolves, new_lines=code) == frozenset({3, 4})

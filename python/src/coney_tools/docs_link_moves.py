@@ -32,13 +32,15 @@ _HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(?P<start>\d+)(?:,\d+)? @@")
 #: A target with a scheme (`https:`, `repo:`, `mailto:`) leaves the pages.
 _SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
 #: A line that starts or ends a Markdown block, so a line break before it is structure, not layout: a heading, a list
-#: item, a quotation, a table row, a code fence or an indented code line; and what MkDocs adds: an admonition (`!!!`,
-#: `???`), a content tab (`===`), a setext underline or rule (`===`, `---`, `***`), an HTML block, a footnote or link
-#: definition (`[^1]:`, `[x]: url`) and an attribute list (`{: ...}`).
+#: item, a quotation, a table row or a code fence; and what MkDocs adds: an admonition
+#: (`!!!`, `???`), a content tab (`===`), a setext underline or rule (`===`, `---`, `***`), an HTML block, a footnote
+#: or link definition (`[^1]:`, `[x]: url`) and an attribute list (`{: ...}`).
 _BLOCK_START = re.compile(
     r"^(?:\s*(?:#|[-*+]\s|>|\||\d+[.)]\s|```|~~~|!!!|\?\?\?|===|<[A-Za-z/!]|\[[^\]]+\]:|\{:)"
-    r"|\s*(?:=+|-+|\*{3,}|_{3,})\s*$| {4}|	)"
+    r"|\s*(?:=+|-+|\*{3,}|_{3,})\s*$)"
 )
+#: An indented line, which is a code block only after a blank line: after text it continues a paragraph or list item.
+_INDENTED = re.compile(r"^(?: {4}|\t)")
 #: A list item's marker with the whitespace before it.
 _LIST_ITEM = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s")
 #: The first line of a link split over lines: it holds the end of the link text, `](target)`, and no `[` before it.
@@ -105,31 +107,41 @@ def link_only_change(
     return bool(changed) and all(_rewritten(a, b, folder, from_folder, gone, resolves) for a, b in changed)
 
 
-def _prose(lines: list[str]) -> bool:
-    """Whether `lines` are the lines of one paragraph, which may be broken anywhere: none is blank or starts a block."""
-    return all(line.strip() and not _BLOCK_START.match(line) for line in lines)
+def _starts_block(line: str, previous: str | None) -> bool:
+    """Whether `line` is blank or starts a block, given the `previous` line (None when it is not known). An indented
+    line is code only when no text comes before it."""
+    if not line.strip() or _BLOCK_START.match(line):
+        return True
+    return bool(_INDENTED.match(line)) and not (previous is not None and previous.strip())
 
 
-def _item_markers(lines: list[str]) -> list[tuple[int, str]] | None:
+def _prose(lines: list[str], above: str | None) -> bool:
+    """Whether `lines` are the lines of one paragraph, which may be broken anywhere: none is blank or starts a block.
+    `above` is the line before the first."""
+    return not any(_starts_block(line, previous) for line, previous in zip(lines, [above, *lines], strict=False))
+
+
+def _item_markers(lines: list[str], above: str | None) -> list[tuple[int, str]] | None:
     """The list markers of `lines` with the line each stands on, or None when a line is blank or starts any other block:
     the lines are the lines of list items, whose text may be broken anywhere but whose markers are structure."""
     markers: list[tuple[int, str]] = []
-    for index, line in enumerate(lines):
+    for index, (line, previous) in enumerate(zip(lines, [above, *lines], strict=False)):
         item = _LIST_ITEM.match(line)
         if item:
             markers.append((index, item.group(0)))
-        elif not line.strip() or _BLOCK_START.match(line):
+        elif _starts_block(line, previous):
             return None
     return markers
 
 
-def _rewrapped(removed: list[str], added: list[str]) -> bool:
+def _rewrapped(removed: list[str], added: list[str], above: str | None) -> bool:
     """Whether `removed` and `added` are both one paragraph's lines, or both list items' lines with the same markers on
-    the same lines of the hunk: a rewrap that moves words between lines changes no structure."""
-    if _prose(removed) and _prose(added):
+    the same lines of the hunk: a rewrap that moves words between lines changes no structure. `above` is the unchanged
+    line before the hunk."""
+    if _prose(removed, above) and _prose(added, above):
         return True
-    before = _item_markers(removed)
-    return before is not None and before == _item_markers(added)
+    before = _item_markers(removed, above)
+    return before is not None and before == _item_markers(added, above)
 
 
 def _link_head(lines: list[str], start: int, file: Sequence[str] | None) -> list[str]:
@@ -181,7 +193,8 @@ def touched_lines(
     def only_links(was: list[str], now: list[str]) -> bool:
         """Whether the hunk's lines `was` became `now` by link rewrites alone, however the lines break; a hunk that
         begins inside a split link is read with the unchanged lines above it."""
-        if not _rewrapped(was, now):
+        previous = new_lines[start - 2] if new_lines is not None and 2 <= start <= len(new_lines) + 1 else None
+        if not _rewrapped(was, now, previous):
             return False
         above = _link_head(now, start, new_lines)
         return link_only_change(" ".join([*above, *was]), " ".join([*above, *now]), folder, gone, resolves, old_folder)

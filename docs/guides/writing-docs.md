@@ -408,7 +408,8 @@ folder rewrites its own relative links for it: a link to the same page and ancho
 read from the folder the page left). The link's text, the rest of the line and the number of links must be equal, read
 whole: spaces and line breaks do not count, so a link split over two lines, or a paragraph that a longer target made
 the editor reflow (past the 120 columns markdownlint allows), is judged as one, as long as no line on either side is
-blank or starts a block: a heading, quotation, table row, code, or what MkDocs adds (an admonition `!!!` or `???`, a
+blank or starts a block: a heading, quotation, table row, code fence, a code block (an indented line after a blank
+line; after text it continues the paragraph or list item), or what MkDocs adds (an admonition `!!!` or `???`, a
 content tab `===`, a setext underline or rule, an HTML block, a footnote or link definition, an attribute list `{: }`).
 A line break there is structure, and a change to it, or to a line's indent, is a touch. Two cases need more than the
 changed lines: a link split over lines of which only the `](target)` line changed is read from the line holding its
