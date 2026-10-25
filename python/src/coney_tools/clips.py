@@ -16,6 +16,7 @@ The limits are keys of `.github/conventions.yml` (`workspace.clips`), never cons
 
 from __future__ import annotations
 
+import csv
 import itertools
 import json
 import os
@@ -447,4 +448,44 @@ def run_clean(older_than_hours: float | None, dry_run: bool, cwd: Path | None = 
 def run_folder(task: str, cwd: Path | None = None) -> int:
     """`clips folder`: make and print the clips folder of `task`."""
     print(clip_folder(task, scratch_root(cwd), clip_rules(cwd)))
+    return 0
+
+
+def run_events(clip: Path, log: Path | None) -> int:
+    """Print events within a clip's recorded step span, omitting details and redacting textual names."""
+    try:
+        with clip.with_suffix(".record.csv").open(encoding="utf-8", newline="") as source:
+            records = list(csv.DictReader(source, strict=True))
+        if len(records) != 1:
+            raise ValueError
+        start, frames = int(records[0]["start_step"]), int(records[0]["frames"])
+        if start < 0 or frames <= 0:
+            raise ValueError
+    except (OSError, UnicodeError, csv.Error, KeyError, TypeError, ValueError) as error:
+        raise ClipError(
+            "invalid or missing clip record (.record.csv): expected one nonnegative start_step and positive frames"
+        ) from error
+
+    # Only current identifier-bearing emitters expose names. Hints carry game text in their name, not their detail.
+    named = {"call", "callback", "sound", "human_in", "human_out", "human_gone"}
+    lines: list[str] = []
+    try:
+        with (log or clip.with_suffix(".events.csv")).open(encoding="utf-8", newline="") as source:
+            reader = csv.DictReader(source, strict=True)
+            if reader.fieldnames != ["step", "kind", "name", "detail"]:
+                raise ValueError
+            for row in reader:
+                step = int(row["step"])
+                if not start <= step < start + frames:
+                    continue
+                kind, name = row["kind"], row["name"]
+                if not re.fullmatch(r"[a-z_]+", kind):
+                    kind = "<redacted>"
+                if kind not in named or not re.fullmatch(r"[A-Za-z0-9_.:-]*", name):
+                    name = "<redacted>"
+                lines.append(f"{(step - start) / 30:.3f}s {kind} {name}".rstrip())
+    except (OSError, UnicodeError, csv.Error, KeyError, TypeError, ValueError) as error:
+        raise ClipError("invalid or missing event log: expected step,kind,name,detail CSV") from error
+    for line in lines:
+        print(line)
     return 0

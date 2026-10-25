@@ -1136,9 +1136,10 @@ int main(int argc, char** argv) {
     // the steps' sound (docs/guides/testing.md#clips). It starts at once, or with `--play-level` at the level's first
     // frame of play, as `--frames` counts; without `--frames` the run ends when the clip is done.
     std::unique_ptr<coney::platform::ClipRecorder> clip;
+    std::optional<std::uint64_t> clipFirstStep;
     bool clipDone = false;
     bool clipFailed = false;
-    const auto finishClip = [&clip, &clipDone, &clipFailed] {
+    const auto finishClip = [&clip, &clipDone, &clipFailed, &clipFirstStep] {
         clipDone = true;
         auto summary = clip->finish();
         if (!summary) {
@@ -1147,6 +1148,16 @@ int main(int argc, char** argv) {
             return;
         }
         const double megabytes = static_cast<double>(summary->bytes) / 1'000'000.0;
+        // Keep only numeric timing beside the clip: the event log can hold game text and stays separate.
+        std::filesystem::path recordPath(summary->path);
+        recordPath.replace_extension(".record.csv");
+        std::ofstream record(recordPath, std::ios::binary | std::ios::trunc);
+        record << "start_step,frames\n" << clipFirstStep.value_or(0) << ',' << summary->frames << '\n';
+        record.close();
+        if (!record) {
+            logError("--record: could not write the clip's numeric event timing record");
+            clipFailed = true;
+        }
         printText(std::format("clip {}: {} frames ({:.2f} s) of {}x{} as {}x{}, {} sound, {:.2f} MB, frames hash "
                               "{:#018x}\n",
                               summary->path, summary->frames,
@@ -1169,7 +1180,19 @@ int main(int argc, char** argv) {
             return 1;
         }
         clip = std::move(*made);
-        renderer.setFrameTap([&clip](std::span<const std::uint8_t> rgba, coney::graphics::Extent size) {
+        // A failed replacement recording must not leave the previous clip's timing looking current.
+        std::filesystem::path previousRecord(*recordPath);
+        previousRecord.replace_extension(".record.csv");
+        std::error_code recordError;
+        std::filesystem::remove(previousRecord, recordError);
+        if (recordError) {
+            logError("--record: could not remove the previous clip timing record");
+            return 1;
+        }
+        renderer.setFrameTap([&clip, &clipFirstStep](std::span<const std::uint8_t> rgba, coney::graphics::Extent size) {
+            if (clip->recording() && !clipFirstStep) {
+                clipFirstStep = coney::events::step();
+            }
             clip->addFrame(rgba, coney::clips::ClipSize{size.width, size.height});
         });
         if (audio) {

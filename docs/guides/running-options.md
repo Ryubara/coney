@@ -33,6 +33,9 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 -
   starts.
 - **What the file holds.** Only the picture and the sound: no title, comment, encoder version or path (FFmpeg runs
   with `-map_metadata -1`, bit-exact headers and x264's settings note removed). `coney-tools clips check` confirms it.
+  A separate `.record.csv` companion holds the first event-log step and the number of recorded frames, both numeric.
+  Record with `--event-log FILE` as well to list events with their time in the clip using
+  [`coney-tools clips events`](coney-tools-pcsx2.md#clips). That report omits details and redacts text-bearing names.
 - **Needs** a window (not `--headless`, `--load` or `--render-references`) and FFmpeg: `CONEY_FFMPEG` names the
   program, else `ffmpeg` is looked up on `PATH`. Frames go to FFmpeg through its standard input (its only input), the
   sound is muxed in a second pass; the part files beside the clip are deleted. A clip over 10 MB prints a warning.

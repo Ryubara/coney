@@ -638,6 +638,7 @@ coney-tools pcsx2 states render [--out OUT]
 ```sh
 uv run --project python coney-tools clips folder TASK
 uv run --project python coney-tools clips check CLIP [CLIP...]
+uv run --project python coney-tools clips events CLIP [--log FILE]
 uv run --project python coney-tools clips publish (--pr N | --issue N) [--edit] (--body TEXT | --body-file FILE) CLIP [CLIP...]
 uv run --project python coney-tools clips clean [--older-than HOURS] [--dry-run]
 ```
@@ -648,6 +649,14 @@ clip](running-options.md#record)) or `pcsx2 clip` (above). The rules and why: [C
 
 * `folder` makes and prints a task's clips folder, `<scratch>/<task>/clips/`, where `<scratch>` is the workspace's
   shared scratch folder (`../../scratch` beside the main checkout).
+* `events` reads the numeric `CLIP.record.csv` companion written by `coney --record` and the run's event CSV,
+  printing each event inside the clip's span as seconds from its first frame, kind and name. The frame rate is
+  30 fps; the first step is included and the step after the last frame is excluded. Record with both `--record`
+  and `--event-log`, choosing the same basename (`after.mp4` and `after.events.csv`), or pass another event log
+  with `--log`. Details are omitted, hint names and unknown emitters' names are redacted, and identifier names
+  containing text punctuation or spaces are redacted too. The numeric record holds only `start_step,frames`;
+  it and the log stay beside the clip outside the repository. Older clips and PCSX2 captures without that record
+  are refused rather than assigned a guessed start time.
 * `check` runs ffprobe on each clip and prints its length, size, picture and whether it has sound. It refuses a clip
   outside a task's clips folder or inside a git checkout, one longer than `max_seconds` (10), and one with any tag
   beyond the fixed ones an MP4's boxes carry (`major_brand`, `minor_version`, `compatible_brands`, `language`,
@@ -679,6 +688,19 @@ coney-tools clips folder TASK
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `TASK` | text | required | the task's scratch folder name (your branch or track) |
+
+### `clips events` {#clips-events-usage}
+
+Print clip event times, kinds and names; redact text and omit details.
+
+```text
+coney-tools clips events CLIP [--log LOG]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `CLIP` | path | required | clip with a .record.csv companion |
+| `--log LOG` | path | none | event CSV (default: CLIP basename with .events.csv) |
 
 ### `clips check` {#clips-check-usage}
 

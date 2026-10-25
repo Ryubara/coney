@@ -819,10 +819,13 @@ def _add_pcsx2_commands(groups: Any) -> None:
 
 def _add_clips_commands(groups: Any) -> None:
     """Register `coney-tools clips ...`."""
-    group = groups.add_parser("clips", help="in-game video clips for issues and pull requests: check, publish, clean")
+    group = groups.add_parser("clips", help="in-game video clips: events, check, publish, clean")
     commands = group.add_subparsers(dest="command", required=True)
     folder = commands.add_parser("folder", help="make and print a task's clips folder (<scratch>/<task>/clips)")
     folder.add_argument("task", help="the task's scratch folder name (your branch or track)")
+    events = commands.add_parser("events", help="print clip event times, kinds and names; redact text and omit details")
+    events.add_argument("clip", type=Path, metavar="CLIP", help="clip with a .record.csv companion")
+    events.add_argument("--log", type=Path, help="event CSV (default: CLIP basename with .events.csv)")
     check = commands.add_parser("check", help="check clips as publish does (place, length, metadata), upload nothing")
     check.add_argument("clips", nargs="+", type=Path, metavar="CLIP", help="the clip files to check")
     publish = commands.add_parser(
@@ -843,6 +846,8 @@ def _add_clips_commands(groups: Any) -> None:
 
 def _run_clips(args: argparse.Namespace) -> int:
     """Dispatch a `clips` command."""
+    if args.command == "events":
+        return clips.run_events(args.clip, args.log)
     if args.command == "folder":
         return clips.run_folder(args.task)
     if args.command == "check":
