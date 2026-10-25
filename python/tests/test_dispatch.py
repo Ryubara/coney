@@ -35,7 +35,12 @@ def identity_folder(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
 
 
 def pre(tool: str, tool_input: dict[str, Any], **extra: Any) -> str:
-    """A PreToolUse payload as the JSON text Claude Code sends."""
+    """A PreToolUse payload as the JSON text Claude Code sends, from a session started as the coordinator unless
+    `agent_type` says otherwise; `agent_type=None` is a session with no role (a plain `claude`), which `require_role`
+    keeps to reading."""
+    extra.setdefault("agent_type", "coordinator")
+    if extra["agent_type"] is None:
+        del extra["agent_type"]
     return json.dumps({"hook_event_name": "PreToolUse", "tool_name": tool, "tool_input": tool_input, **extra})
 
 
@@ -358,8 +363,17 @@ def test_the_role_rules_run_in_the_dispatcher() -> None:
     code, _, err = DISPATCH.dispatch(bash(command, agent_type="engineer"), CONFIG)
     assert code == 2 and "engineer" in err
     strict = {**CONFIG, "require_role": True}
-    assert DISPATCH.dispatch(bash("ls"), strict)[0] == 2
-    assert DISPATCH.dispatch(pre("Read", {"file_path": "x"}), strict)[0] == 0
+    assert DISPATCH.dispatch(bash("ls", agent_type=None), strict)[0] == 2
+    assert DISPATCH.dispatch(pre("Read", {"file_path": "x"}, agent_type=None), strict)[0] == 0
+
+
+@pytest.mark.parametrize("agent_type", ["coordinator", "engineer", "tooling", "reviewer"])
+def test_with_the_committed_settings_a_role_works_and_a_session_with_none_only_reads(agent_type: str) -> None:
+    # `coney-agent <role>` starts `claude --agent <role>`; a plain `claude` gives no `agent_type`.
+    assert DISPATCH.dispatch(bash("git status", agent_type=agent_type), CONFIG)[0] == 0
+    code, _, err = DISPATCH.dispatch(bash("git status", agent_type=None), CONFIG)
+    assert code == 2 and "no Coney role" in err and "`coney-agent`" in err
+    assert DISPATCH.dispatch(pre("Read", {"file_path": "x"}, agent_type=None), CONFIG)[0] == 0
 
 
 def test_a_coney_tools_command_is_returned_with_an_identity_token(identity_folder: Path) -> None:
@@ -441,6 +455,7 @@ def test_a_background_command_keeps_its_file_for_the_sweep(identity_folder: Path
             "hook_event_name": "PreToolUse",
             "tool_name": "Bash",
             "tool_use_id": "t7",
+            "agent_type": "engineer",
             "tool_input": {"command": "coney-tools build --detach", "run_in_background": True},
         }
     )

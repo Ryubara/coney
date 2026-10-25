@@ -201,10 +201,9 @@ agent again with the right one.
 
 **A session with no role.** `require_role` in `hooks.toml` says what a session started without a role (a plain
 `claude`) may do. On, it may only read (Read, Grep, Glob) and every other call is refused with a message to start with
-`coney-agent`. It is **off in the committed file** until the maintainer's sessions are started that way.
-To switch it on, a tooling agent changes `require_role = false` to `true` in a one-line pull request (the coordinator
-may not commit in a unit's worktree, and every worktree counts as one). Whatever its value, a session start with no
-role shows a notice (a SessionStart hook).
+`coney-agent`. It is **on in the committed file**: the maintainer's sessions start through `coney-agent`, and every
+agent they start carries its own role. Off, such a session would get no role rules at all. Whatever its value, a
+session start with no role shows a notice (a SessionStart hook).
 
 ## Which model {#models}
 
@@ -306,13 +305,12 @@ guards come back together, as Claude Code's JSON answer (`permissionDecision: de
 runs, `decision: block` after it) with exit code 0, shown to the agent; never exit code 2, which Claude Code also gets
 from a launcher that fails ([Nothing turns the guards off](#hooks)). The settings are in `.claude/hooks/hooks.toml`
 (hand-written, standard-library TOML: the hooks run without packages, so they cannot load `.github/conventions.yml`).
-Two switches are off in the committed files and are changed in a one-line pull request when their moment comes:
-`require_role` in `hooks.toml` ([Which role to start](#roles)) and `pull_requests.open_only` in
-`.github/conventions.yml`, which makes the PR guard refuse the hand-typed ways of opening a pull request in any
-session, once `coney-tools pr open` is the only way ([The PR guard](enforcement.md#pr-guard) lists them). The second is
-a conventions key, not a line of `hooks.toml`, so the rule has one source: `pr_guard.py` reads that one line itself
-(`read_open_only`; a file it cannot read leaves the switch off), and a test holds its reader to the conventions
-loader. The hooks run from the checkout the session was
+There are two switches. `require_role` in `hooks.toml` ([Which role to start](#roles)) is on. `pull_requests.open_only`
+in `.github/conventions.yml` is off and is changed in a one-line pull request when its moment comes: it makes the PR
+guard refuse the hand-typed ways of opening a pull request in any session, once `coney-tools pr open` is the only way
+([The PR guard](enforcement.md#pr-guard) lists them). The second is a conventions key, not a line of `hooks.toml`, so
+the rule has one source: `pr_guard.py` reads that one line itself (`read_open_only`; a file it cannot read leaves the
+switch off), and a test holds its reader to the conventions loader. The hooks run from the checkout the session was
 started in, so a change to them reaches a session when that checkout has it. Whatever the dispatcher runs is judged on
 spelling; none of it is a security boundary.
 

@@ -104,7 +104,9 @@ want ([Research workflow](docs/guides/research-workflow.md)).
 `build` slots, `STATUS.md`), the release queue that pushes pull requests, the Tether and Claude Code configuration
 (`.claude/`, `.mcp.json`), `PR.md` and the `reviewer`, and most of [How we work](docs/guides/how-we-work.md) and
 [Running agents](docs/guides/agents.md). You can ignore all of it; a pull request you open yourself follows the
-same rules in the template.
+same rules in the template. One thing reaches you if you use Claude Code in this checkout: start it with
+`uv run --project python coney-agent engineer`, because a plain `claude` session here may only read files
+([Which role to start](docs/guides/agents.md#roles)).
 
 **Stamps are local agent bookkeeping.** The stamp log (`docs/guides/stamps.md`) is what the project's agents keep on
 their own machine to work in order; it is never checked in CI. Working by hand you need no stamps, no `coney-tools`

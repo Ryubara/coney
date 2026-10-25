@@ -18,6 +18,8 @@ roles = load_hook_module("roles")
 CONFIG = hooklib.load_config(HOOKS / "hooks.toml")
 BACKSLASH = chr(92)
 STRICT = {**copy.deepcopy(CONFIG), "require_role": True}
+#: The committed settings with `require_role` off, the state before the maintainer's sessions had a role.
+LENIENT = {**copy.deepcopy(CONFIG), "require_role": False}
 
 
 def call(
@@ -51,14 +53,30 @@ def checkout(tmp_path: Path) -> Path:
     return root
 
 
-def test_the_committed_config_leaves_require_role_off() -> None:
-    # The coordinator session that exists today has no role; turning it on at merge would lock it out.
-    assert CONFIG["require_role"] is False
+def test_the_committed_config_turns_require_role_on() -> None:
+    # The maintainer's sessions start through `coney-agent`, so a session with no role may only read.
+    assert CONFIG["require_role"] is True
+
+
+@pytest.mark.parametrize("agent_type", ["coordinator", "engineer", "tooling", "reviewer"])
+def test_with_the_committed_config_a_session_started_as_a_role_is_not_locked_out(agent_type: str) -> None:
+    # What `coney-agent <role>` starts: `claude --agent <role>`, so every call carries that `agent_type`.
+    for tool, tool_input in (("Bash", {"command": "git status"}), ("Agent", {"subagent_type": "Explore"})):
+        if (agent_type, tool) == ("reviewer", "Agent"):
+            continue  # a reviewer starts no agent, a rule of its role and not of the gate
+        assert roles.check(CONFIG, call(tool, tool_input, agent_type=agent_type)) is None, (agent_type, tool)
+
+
+def test_with_the_committed_config_a_session_with_no_role_is_read_only() -> None:
+    assert roles.check(CONFIG, call("Read", {"file_path": "x"})) is None
+    for payload in (bash("git status"), call("Write", {"file_path": "x"}), call("Agent", {"subagent_type": "tooling"})):
+        reason = roles.check(CONFIG, payload)
+        assert reason is not None and "`coney-agent`" in reason, payload
 
 
 def test_with_require_role_off_a_session_with_no_role_is_not_limited() -> None:
-    assert roles.check(CONFIG, bash("git status")) is None
-    assert roles.check(CONFIG, call("Write", {"file_path": "x"})) is None
+    assert roles.check(LENIENT, bash("git status")) is None
+    assert roles.check(LENIENT, call("Write", {"file_path": "x"})) is None
 
 
 @pytest.mark.parametrize("tool", ["Read", "Grep", "Glob"])
@@ -85,7 +103,7 @@ def test_a_generic_agent_has_no_role() -> None:
 
 
 def test_session_start_names_a_missing_role_in_both_modes() -> None:
-    off = roles.session_notice(CONFIG, {"hook_event_name": "SessionStart"})
+    off = roles.session_notice(LENIENT, {"hook_event_name": "SessionStart"})
     on = roles.session_notice(STRICT, {"hook_event_name": "SessionStart"})
     assert off and "`coney-agent`" in off and "do not apply" in off
     assert on and "read-only" in on
