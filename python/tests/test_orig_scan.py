@@ -292,3 +292,21 @@ def test_a_type_is_public_when_every_class_around_it_is_open_at_its_declaration(
         "Open::Inside": True,
         "Local": False,
     }
+
+
+def test_an_xbox_tag_is_read_with_its_build() -> None:
+    text = (
+        "/// @orig 0x00100010 Brain_Think (Brain.cpp)\n"
+        "/// @orig xbox 0x000bd3c0 Brain_Think (Brain.cpp)\nvoid think();\n"
+    )
+    source = read_source("src/ai/t.h", text)
+    found = [(t.address, t.name, t.file, t.build) for t in source.functions[0].tags]
+    assert found == [(0x00100010, "Brain_Think", "Brain.cpp", "ps2"), (0x000BD3C0, "Brain_Think", "Brain.cpp", "xbox")]
+    assert source.malformed == []
+
+
+def test_a_malformed_xbox_tag_is_reported() -> None:
+    text = "/// @orig xbox 0x000bd3c0 NoFile\n/// @orig XBOX 0x000bd3c0 Upper (Brain.cpp)\nvoid f();\n"
+    source = read_source("src/ai/t.h", text)
+    assert [line for line, _ in source.malformed] == [1, 2]
+    assert [t.build for t in source.functions[0].tags] == ["xbox"]

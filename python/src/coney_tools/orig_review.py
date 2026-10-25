@@ -39,7 +39,7 @@ from coney_tools import stamps
 from coney_tools.config import ConfigError, workspace_folder
 from coney_tools.conventions import load_conventions
 from coney_tools.orig_index import SOURCE_DIR, SOURCE_SUFFIXES
-from coney_tools.orig_scan import Function, Tag, read_source
+from coney_tools.orig_scan import PS2, XBOX, Function, Tag, read_source
 
 #: The classes a reviewed function gets, as docs/guides/review/orig.md defines them.
 CLASSES = (
@@ -81,20 +81,27 @@ class Unit:
     path: str
     line: int  # the definition's first line
     coney: str  # "Brain::think"
-    addresses: tuple[int, ...]
+    addresses: tuple[int, ...]  # in `SLUS_212.15`: what `original study` and `orig compare` read
     names: tuple[str, ...]  # the original's names, as the tags give them
     body_sha256: str
     #: The hash the body had before comments and white space were left out of it: to read what was recorded then.
     legacy_sha256: str = field(default="", compare=False, repr=False)
+    #: Addresses in the Xbox port's `default.xbe` (`@orig xbox`): the reviewer reads them by hand, no stamp covers them.
+    xbox: tuple[int, ...] = ()
 
     @property
     def where(self) -> str:
         """`path:line`."""
         return f"{self.path}:{self.line}"
 
+    @property
+    def cited(self) -> tuple[tuple[int, ...], tuple[int, ...]]:
+        """The PS2 and the Xbox addresses: a change of either is a change of the unit."""
+        return (self.addresses, self.xbox)
+
     def to_json(self) -> dict[str, Any]:
-        """The unit as a stamp lists it."""
-        return {
+        """The unit as a stamp lists it; `xbox` only when it has Xbox addresses, so older stamps read the same."""
+        found: dict[str, Any] = {
             "key": self.key,
             "where": self.where,
             "coney": self.coney,
@@ -102,6 +109,9 @@ class Unit:
             "names": list(self.names),
             "body_sha256": self.body_sha256,
         }
+        if self.xbox:
+            found["xbox"] = [f"0x{a:08x}" for a in self.xbox]
+        return found
 
 
 # --- reading the source at a commit -------------------------------------------------------------------------------
@@ -233,10 +243,11 @@ def units_from(texts: dict[str, str]) -> list[Unit]:
                     path,
                     function.line,
                     function.qualified,
-                    tuple(dict.fromkeys(t.address for t in tags)),
+                    tuple(dict.fromkeys(t.address for t in tags if t.build == PS2)),
                     tuple(dict.fromkeys(t.name for t in tags)),
                     _body_hash(lines, function),
                     _legacy_body_hash(lines, function),
+                    tuple(dict.fromkeys(t.address for t in tags if t.build == XBOX)),
                 )
             )
     # Two definitions with one key (a platform variant of a free function) are told apart by their file.
@@ -293,7 +304,7 @@ def pr_stamp(root: Path, tip_ref: str, base_ref: str) -> dict[str, Any]:
     changed = [
         u
         for u in units_at(root, tip)
-        if u.key not in before or before[u.key].body_sha256 != u.body_sha256 or before[u.key].addresses != u.addresses
+        if u.key not in before or before[u.key].body_sha256 != u.body_sha256 or before[u.key].cited != u.cited
     ]
     return {"mode": "pr", "tip": tip, "base": base, "functions": [u.to_json() for u in changed]}
 
@@ -665,6 +676,7 @@ def units_from_stamp(stamp: dict[str, Any]) -> list[Unit]:
                 tuple(int(a, 16) for a in f["addresses"]),
                 tuple(f.get("names", ())),
                 f["body_sha256"],
+                xbox=tuple(int(a, 16) for a in f.get("xbox", ())),
             )
         )
     return found

@@ -19,7 +19,9 @@ uv run --project python coney-tools orig index --out <folder> [--ghidra auto|liv
 uv run --project python coney-tools orig legacy-queue --out <folder> [--issues FILE] [--label bug] [--show N] [--ghidra ...]
 ```
 
-`orig index` reads every `@orig` tag in `src/` and writes to `<folder>` (use your scratch folder):
+`orig index` reads every `@orig` tag in `src/` and writes to `<folder>` (use your scratch folder). An `@orig xbox`
+tag covers its function but makes no row: the index and its Ghidra checks are of `SLUS_212.15`
+([Xbox tags](conventions.md#xbox-tags)).
 
 * `index.tsv`: one line per tag: the original's address, name and source file, the Coney function the tag
   documents, its file and line, where the tag sits (`comment` above a function, `body` inside one, `other` on a
@@ -584,7 +586,9 @@ docs/research/combat/grabs.md
 ```
 
 What backs a claim: for `confirmed (code)`, a passing `studied` stamp for each cited address in the task's stamp log
-(`--task`, default the branch; `--stamps` names another log folder; none found means `none`); for `confirmed (runtime)`,
+(`--task`, default the branch; `--stamps` names another log folder; none found means `none`), and an Xbox address
+(`Xbox 0x...`, listed as `xbox 0x...`) adds `Xbox by hand`, since no stamp covers one
+([Xbox addresses](research-evidence.md#xbox-addresses)); for `confirmed (runtime)`,
 the run record it cites (`confirmed (runtime), run <id>`, in the block or its lead line), which must exist and meet the
 rules of `runs` in [.github/conventions.yml](repo:.github/conventions.yml); for `speculative`, the open question it
 links, which must exist when it is on the same page; `inferred` has nothing to look up. A test cites a section with a

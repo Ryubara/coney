@@ -35,6 +35,7 @@ from pathlib import Path
 from coney_tools import docs_page, progress, research_functions, research_import
 from coney_tools.conventions import Research
 from coney_tools.orig_index import IndexRow
+from coney_tools.orig_scan import NOT_XBOX
 from coney_tools.progress import Function, ProgressError
 from coney_tools.progress_research import ListedFunction
 from coney_tools.research_evidence import Levels, cites, levels_in
@@ -382,7 +383,7 @@ _LEVEL_PHRASE = re.compile(
 #: "not needed: <reason>" counts; any other level needs a table's Evidence cell or a block that opens with it.
 _CLAIM_LEVELS = frozenset({"confirmed-code", "not-needed"})
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s+(?=[A-Z`*(\[])")
-_ADDRESS = re.compile(r"\b0x([0-9a-fA-F]{8})\b")
+_ADDRESS = re.compile(r"\b" + NOT_XBOX + r"0x([0-9a-fA-F]{8})\b")  # an Xbox address is not the PS2's
 _KEYS = {
     "code": "confirmed-code",
     "runtime": "confirmed-runtime",

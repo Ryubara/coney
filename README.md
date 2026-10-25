@@ -20,8 +20,21 @@ Projects that bring old games to new platforms work in one of three ways:
 - A **decompilation** rewrites the original's machine code as source that compiles back to the same binary. It is
   exact, but the result stays close to the original console and its design.
 - A **static recompilation** translates the binary itself into code for another machine. It runs soonest, but the
-  translated code is hard to read or change, and the PS2's graphics hardware makes it especially hard there.
+  translated code is hard to read or change. How hard it is to make depends on the console. The Xbox has an x86
+  processor and an NV2A graphics chip driven through Direct3D 8, so its code translates to PC code fairly directly
+  and its graphics calls map onto modern APIs such as Direct3D 12, which is how an Xbox recompilation can run at high
+  frame rates. The PS2's MIPS R5900 processor, its vector units and its Graphics Synthesizer have no PC counterpart,
+  which makes a recompilation much harder there.
 - A **reimplementation**, which is what Coney is, writes new code that behaves the same.
+
+Coney reimplements *The Warriors* as a whole, not one console's version of it. The PS2 version is the main source
+and the reference for how the game plays. Where Rockstar's Xbox port draws the game differently (its lighting and
+shadows, its larger textures and HD movies), Coney can follow it too, and it may go beyond both consoles in graphics
+and performance. Each of these is an option, and the PS2 look is always there to choose. The PS2 version is the main
+source for three reasons. PCSX2's debugger lets contributors watch the game run and check its behaviour at runtime,
+and Coney's tools are built around it. The shared Ghidra project of the PS2 executable holds the names and types
+research has given it. The Xbox executable reads more easily in places (strings in place, library calls named), but
+it has no symbols either and lays out its data differently, so it serves as a reading aid beside the PS2's.
 
 Coney's contributors read the original in Ghidra and watch it run in PCSX2, so Coney follows the same rules, timings
 and maths. The code is our own: written in Coney's own structure and names, on our own engine, with no part of the
@@ -31,8 +44,9 @@ read the original.
 What this gives us:
 
 - **A native game, not an emulated one**, on Windows, Linux and macOS.
-- **Room to grow:** co-op over a network, higher frame rates and widescreen need code that was designed for them,
-  which a translated or matched binary is not.
+- **Room to grow:** co-op over a network, higher frame rates, widescreen and modern lighting and shadows need code
+  that was designed for them, which a translated or matched binary is not
+  ([graphics and performance](docs/roadmap.md#graphics-and-performance)).
 - **Room for other assets and for mods:** the game's assets come from your own copy: the PS2 disc today, and the
   Xbox version as an optional extra ([in progress](docs/roadmap.md#xbox-assets-optional)). Assets people make
   themselves can be loaded too ([custom content](docs/roadmap.md#custom-content)), and the engine has room for mod

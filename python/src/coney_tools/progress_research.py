@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import Any
 
 from coney_tools import research_functions
+from coney_tools.orig_scan import NOT_XBOX
 from coney_tools.progress import UNATTRIBUTED, ProgressError, Totals
 
 LISTING_FILE = Path("docs/progress/ghidra-functions.tsv")
@@ -44,7 +45,7 @@ LISTING_HEADER = (
 )
 _DEFAULT_NAME = re.compile(r"^(?:thunk_)?(?:FUN|SUB|LAB)_[0-9a-fA-F]{8}$")
 _EVIDENCE = re.compile(r"\b(?:confirmed|inferred|speculative)\b|not needed", re.IGNORECASE)
-_ADDRESS = re.compile(r"\b0x([0-9a-fA-F]{8})\b")
+_ADDRESS = re.compile(r"\b" + NOT_XBOX + r"0x([0-9a-fA-F]{8})\b")  # an Xbox address is not the PS2's
 _WRAPPER = re.compile(r"^\s*wrapper:\s*0x([0-9a-fA-F]{8})\b", re.MULTILINE)
 _BINDING_EVIDENCE = re.compile(r"^\s*evidence:\s*\S", re.MULTILINE)
 _BINDING_NAME = re.compile(r"^\s*name:\s*(\S+)", re.MULTILINE)

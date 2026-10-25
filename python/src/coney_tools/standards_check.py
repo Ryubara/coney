@@ -31,7 +31,7 @@ from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
 from coney_tools.docs_link_resolve import link_resolver
 from coney_tools.orig_index import SOURCE_DIR, TagCoverage, read_sources
-from coney_tools.orig_scan import SourceFile, Tag
+from coney_tools.orig_scan import PS2, SourceFile, Tag
 from coney_tools.research_functions import (
     Entry,
     ResearchFunctionsError,
@@ -382,7 +382,8 @@ def _touched_functions(
             for other in coverage.declarations(function):
                 tags += [*other.tags, *other.body_tags]
             for tag in dict.fromkeys(tags):
-                entry = database.get(tag.address)
+                # The database holds PS2 addresses; an `@orig xbox` tag owes no PS2 comparison.
+                entry = database.get(tag.address) if tag.build == PS2 else None
                 if entry is not None and entry.status != COMPARED:
                     found.append(
                         Report(

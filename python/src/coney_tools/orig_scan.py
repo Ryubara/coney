@@ -16,11 +16,22 @@ import re
 from dataclasses import dataclass, field
 
 #: `@orig 0x<address> <OriginalName> (<File>.cpp)`, anywhere on a line (a `/** ... */` comment, text after it); the
-#: file part may be missing on a malformed tag.
-ORIG_TAG = re.compile(r"@orig\s+0x(?P<address>[0-9a-fA-F]{8})\b\s+(?P<name>[^\s()*]+)(?:\s*\((?P<file>[^()\n]*)\))?")
-#: The whole form, which every tag must have; `@orig 0x` without it is reported as malformed.
-_ORIG_FORM = re.compile(r"@orig 0x[0-9a-fA-F]{8} [^\s()*]+ \([^()\n]+\)")
-_ORIG_MENTION = re.compile(r"@orig\s+0x")
+#: file part may be missing on a malformed tag. `@orig xbox 0x<address> ...` cites the Xbox port's `default.xbe`
+#: instead of `SLUS_212.15`, for presentation that follows the Xbox build (docs/guides/conventions.md#xbox-tags).
+ORIG_TAG = re.compile(
+    r"@orig\s+(?:(?P<build>xbox)\s+)?0x(?P<address>[0-9a-fA-F]{8})\b\s+(?P<name>[^\s()*]+)"
+    r"(?:\s*\((?P<file>[^()\n]*)\))?"
+)
+#: The whole form, which every tag must have; `@orig 0x` (or `@orig xbox 0x`) without it is reported as malformed.
+_ORIG_FORM = re.compile(r"@orig (?:xbox )?0x[0-9a-fA-F]{8} [^\s()*]+ \([^()\n]+\)")
+_ORIG_MENTION = re.compile(r"@orig\s+(?:(?i:xbox)\s+)?0x")
+#: The build a tag without a build word cites (`SLUS_212.15`), and the Xbox port's (`default.xbe`).
+PS2 = "ps2"
+XBOX = "xbox"
+#: A lookbehind for an address pattern: not after the word Xbox (or XBE, the older pages' spelling), which marks an
+#: address in `default.xbe`, not `SLUS_212.15` (`Xbox 0x000bd3c0`, ``Xbox `0x000bd3c0` ``;
+#: docs/guides/research-evidence.md#xbox-addresses).
+NOT_XBOX = r"(?<![Xx]box )(?<![Xx]box `)(?<!XBE )(?<!XBE `)"
 #: The marker a Coney-only function or file carries (docs/guides/conventions.md#coney-only): `@coney-only <reason>`.
 CONEY_ONLY_TAG = re.compile(r"@coney-only\b")
 #: Wording the conventions asked for before the marker existed: "Coney's own ...", "(no @orig)". It marks only
@@ -66,6 +77,7 @@ class Tag:
     name: str
     file: str  # the original's source file, "" when the tag has none
     line: int
+    build: str = PS2  # the executable the address is in: PS2 (`SLUS_212.15`) or XBOX (`default.xbe`)
 
 
 @dataclass
@@ -131,7 +143,8 @@ def parse_tags(comment: str, first_line: int) -> list[Tag]:
     for offset, text in enumerate(comment.splitlines()):
         for match in ORIG_TAG.finditer(text):
             name = match["name"].strip()
-            tags.append(Tag(int(match["address"], 16), name, (match["file"] or "").strip(), first_line + offset))
+            file = (match["file"] or "").strip()
+            tags.append(Tag(int(match["address"], 16), name, file, first_line + offset, match["build"] or PS2))
     return tags
 
 

@@ -71,6 +71,24 @@ A page also says what it was checked against: the executable (`SLUS_212.15`, see
 [Writing up a finding](research-workflow.md#writing-up-a-finding)) and, for runtime claims, the run record that holds
 the PCSX2 version.
 
+### Xbox addresses {#xbox-addresses}
+
+Presentation may follow Rockstar's Xbox port where it differs ([Faithful first](repo:AGENTS.md)), so a page can cite
+the Xbox executable too. An address there is written with the word Xbox in front: `Xbox 0x000bd3c0`, or
+``Xbox `0x000bd3c0` `` with the address in a code span. It is a virtual address in the NTSC-U `default.xbe`
+(base `0x00010000`), eight hex digits ([Xbox executable](../research/xbox-executable.md)). A plain address is
+always `SLUS_212.15`'s.
+
+- The same levels apply, written the same way: `confirmed (code)` needs the Xbox address in the block, and
+  `docs check` reports an Xbox address with no level as it does a PS2 one.
+- `docs check` never looks an Xbox address up in the PS2 listing or sections, and the progress pages never count it
+  as a PS2 function.
+- `research claims` lists it as a target (`xbox 0x000bd3c0`) whose backing is `Xbox by hand`: `original study`
+  reads `SLUS_212.15` only, so the reviewer reads an Xbox claim in a Ghidra project of the XBE.
+- A page that cites Xbox addresses names `default.xbe` and its SHA1 on its Verified line, and a page that a
+  feature follows says which build it follows: the PS2 for every behaviour, the Xbox port where its presentation
+  is taken instead.
+
 ### Run records {#run-records}
 
 A `confirmed (runtime)` claim cites the run that observed it: `confirmed (runtime), run r-20261023-grab-reach`. The run

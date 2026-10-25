@@ -180,9 +180,10 @@ GitHub. The coordinator makes GitHub match it with `coney-tools repo sync-labels
 prints the `gh label create ... --force` commands instead of running them.
 
 The table is generated from `labels.list` (`coney-tools repo render`). `parity` is a difference from the original and
-`enhancement` is beyond it, so it waits until the game is complete ([Faithful first](repo:AGENTS.md)). The task form's
-area list is the `A-` labels. The coordinator sets the priority, and an open issue carries one status label at a
-time. A closed issue carries none ([What a closed issue keeps](#closed)).
+`enhancement` is beyond it: a graphics or performance option may be built now, a gameplay one waits until the game
+is complete ([Faithful first](repo:AGENTS.md)). The task form's area list is the `A-` labels. The coordinator sets
+the priority, and an open issue carries one status label at a time. A closed issue carries none ([What a closed
+issue keeps](#closed)).
 
 <!-- conventions:begin labels -->
 | Family | Label | Meaning |
@@ -191,7 +192,7 @@ time. A closed issue carries none ([What a closed issue keeps](#closed)).
 | | `parity` | Coney differs from the original game |
 | | `task` | A piece of work for a maintainer or an agent |
 | | `docs` | Documentation or research pages |
-| | `enhancement` | Beyond the original; waits until the game is complete |
+| | `enhancement` | Beyond the original: graphics and performance options now; gameplay waits for the whole game |
 | Area | `A-combat` | Area: fighting, grabs, weapons, damage |
 | | `A-ai` | Area: AI humans, pathing, goals, cars driven by AI |
 | | `A-missions` | Area: mission scripts, checkpoints, objectives |

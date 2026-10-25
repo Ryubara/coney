@@ -8,6 +8,10 @@ kind of its packet), to a legacy branch's before release (pr mode, one of the
 (sweep mode, whose findings become issues: [Legacy fidelity](../how-we-work.md#fidelity-audit)). The rule it checks
 is [Porting, not transcribing](../conventions.md#porting).
 
+A function that follows the Xbox port carries `@orig xbox 0x<address>` ([Xbox tags](../conventions.md#xbox-tags)).
+The same two counts apply, read against that address in the Xbox `default.xbe` in a Ghidra project of the XBE. No
+study or compare stamp covers an Xbox address, so the reviewer reads it by hand and says so in the verdict's note.
+
 **Rubric version: 1.** The version is `pull_requests.orig_review.rubric_version` in
 [.github/conventions.yml](repo:.github/conventions.yml). Raise both together when a class or a count changes
 meaning; a verdict made under another version is refused.

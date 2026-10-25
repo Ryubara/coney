@@ -1,11 +1,13 @@
 # Realtime lighting design
 
 The design for realtime shadows, per-pixel lighting and reflections in Coney's own rendering pipeline, an
-option of the [Enhancements](../roadmap.md#enhancements) milestone. It extends the
+option of the [Graphics and performance](../roadmap.md#graphics-and-performance) milestone. It extends the
 [Enhancements plan](enhancements.md) (foundations F2, F3 and F5, the shadow, AO and ray-tracing rows) and does not
-repeat it. **Status: design only. Nothing here is built, and nothing is built before the faithful game is complete**
-(AGENTS.md, "Faithful first"). Every option ships **off** by default and is forced off in test mode, so tests and
-reference screenshots always show the faithful image.
+repeat it. **Status: design only; nothing here is built yet.** It may be built now, as options beside the faithful
+look (AGENTS.md, "Faithful first", since 2026-10-25), and what the Xbox port does differently in its lighting and
+shadows ([Xbox lighting and shadows](../roadmap.md#xbox-lighting-and-shadows)) is one of its sources. Every option
+ships **off** by default and is forced off in test mode, so tests and reference screenshots always show the faithful
+image.
 
 ## What the original gives us
 

@@ -37,6 +37,7 @@ from coney_tools import docs_check, local_gate, run_records, stamps
 from coney_tools.config import ConfigError
 from coney_tools.conventions import load_conventions
 from coney_tools.docs_page import Block, Page, heading_ids, read_page
+from coney_tools.orig_scan import XBOX
 from coney_tools.research_check import subject_of
 from coney_tools.research_evidence import (
     QUESTION_LINK,
@@ -47,7 +48,7 @@ from coney_tools.research_evidence import (
     level_column_of,
     levels_in,
 )
-from coney_tools.research_subject import ADDRESS, LOCATOR, ResearchEnv, Subject
+from coney_tools.research_subject import ADDRESS, LOCATOR, XBOX_ADDRESS, ResearchEnv, Subject
 from coney_tools.standards_scan import cited_sections
 
 #: The pages whose claims are listed, as repository-relative paths.
@@ -307,15 +308,18 @@ def _back(report: Report, backing: _Backing, site: _Site) -> str:
         return _back_runtime(report, backing, site)
     if CODE in site.levels:
         addresses = [t for t in site.targets if t.startswith("0x")]
+        # `original study` reads SLUS_212.15 only, so no stamp backs an Xbox address: the reviewer reads it by hand.
+        xbox = "Xbox by hand" if any(t.startswith(XBOX) for t in site.targets) else ""
         if not addresses:
-            return "-"
+            return xbox or "-"
         done = [a for a in addresses if a in backing.studied]
         if len(done) == len(addresses):
-            return "studied"
+            return f"studied; {xbox}" if xbox else "studied"
         if backing.require_study:
             left = ", ".join(a for a in addresses if a not in done)
             report.errors.append(f"{site.where}: confirmed (code) at {left} was not studied in this task")
-        return f"studied {len(done)} of {len(addresses)}" if done else "none"
+        found = f"studied {len(done)} of {len(addresses)}" if done else "none"
+        return f"{found}; {xbox}" if xbox else found
     if SPECULATIVE in site.levels:
         if not site.questions:
             report.warnings.append(f"{site.where}: speculative links no open question (q-... anchor)")
@@ -372,7 +376,9 @@ def _is_cut(text: str, departed: list[tuple[str, ...]]) -> bool:
 
 def _targets(text: str) -> tuple[str, ...]:
     """The addresses and script locators a block cites, in order, as `docs check` reads them."""
-    found = [m.group(0).lower() for m in ADDRESS.finditer(text)] + [m.group(0) for m in LOCATOR.finditer(text)]
+    found = [m.group(0).lower() for m in ADDRESS.finditer(text)]
+    found += [f"{XBOX} {m['address'].lower()}" for m in XBOX_ADDRESS.finditer(text)]
+    found += [m.group(0) for m in LOCATOR.finditer(text)]
     return tuple(dict.fromkeys(found))
 
 

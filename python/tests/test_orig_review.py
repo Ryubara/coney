@@ -79,6 +79,27 @@ def test_units_take_their_address_from_the_declaration(repo: Path) -> None:
     ]
 
 
+def test_an_xbox_tag_makes_a_unit_whose_xbox_address_is_kept_apart() -> None:
+    text = (
+        "namespace coney::render {\n"
+        "/// Draws the shadows the Xbox port adds.\n"
+        "/// @orig xbox 0x000bd3c0 Shadow_Draw (Shadow.cpp)\n"
+        "void draw() {}\n"
+        "/// Both builds.\n"
+        "/// @orig 0x00100010 Light_Set (Light.cpp)\n"
+        "/// @orig xbox 0x000bd4e0 Light_Set (Light.cpp)\n"
+        "void light() {}\n"
+        "} // namespace coney::render\n"
+    )
+    units = orig_review.units_from({"src/render/shadow.cpp": text})
+    assert [(u.coney, u.addresses, u.xbox) for u in units] == [
+        ("draw", (), (0x000BD3C0,)),
+        ("light", (0x00100010,), (0x000BD4E0,)),
+    ]
+    assert units[0].to_json()["xbox"] == ["0x000bd3c0"]
+    assert "xbox" not in orig_review.units_from({"src/ai/brain.cpp": BRAIN_CPP, "src/ai/brain.h": BRAIN_H})[0].to_json()
+
+
 def test_a_branch_lists_only_the_tagged_functions_it_changes(repo: Path) -> None:
     tip = change_think(repo)
     stamp = orig_review.pr_stamp(repo, tip, "main")

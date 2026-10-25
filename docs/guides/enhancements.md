@@ -1,11 +1,12 @@
 # Enhancements plan
 
-The design for the [Enhancements](../roadmap.md#enhancements) milestone: what each graphics option means for *The
-Warriors*, whether it is possible, how Coney's renderer would do it, what it depends on, a rough cost and the order.
-The rule stands: **the faithful look first**. Nothing here is built before graphics research and the
-faithful renderer are complete. This page only records which choices to make *now* so that the options stay cheap
-later. Every option ships **off** by default and is forced off in test mode, so tests and reference screenshots
-always show the faithful image.
+The design for the [Graphics and performance](../roadmap.md#graphics-and-performance) milestone: what each graphics
+option means for *The Warriors*, whether it is possible, how Coney's renderer would do it, what it depends on, a rough
+cost and the order. Since 2026-10-25 these options may be built now, beside the faithful renderer
+([Faithful first](repo:AGENTS.md)): presentation and performance go beyond the PS2, gameplay does not. Every option
+ships **off** by default and is forced off in test mode, so tests and reference screenshots always show the faithful
+image, and the PS2 look stays selectable. Code for an option carries `@coney-only enhancement: <option>`, or
+`@orig xbox` where it follows the Xbox port ([Xbox tags](conventions.md#xbox-tags)).
 
 ## What the game gives us
 
@@ -14,7 +15,7 @@ always show the faithful image.
 | 640 × 448 logical screen, interlaced, 4:3; the original also has a **16:9 mode** (device flag `0x04`) with its own overlay aspect, HUD and menu layouts and `_w` legal screens | Widescreen is partly faithful: the original's 16:9 mode is the reference, and only wider shapes are Coney's | [Graphics: video mode](../research/graphics.md#video-mode), [HUD: coordinates](../research/hud.md#coordinates) |
 | 30 frames a second (a flip every second vertical blank); simulation on a fixed 1/30 s step | Above 30 fps, drawing must blend the last two steps. Coney already does this | [Graphics: frame rate](../research/graphics.md#frame-rate), [Update and render](conventions.md#update-and-render) |
 | World is **prelit** (a baked vertex colour per vertex) plus a 0.227 grey ambient and a few lamps; 88 of `level99`'s 90 lamps light only objects and humans | No light sources that match the baked light: shadows, AO and RT can only add to it, never replace it | [Lighting: world](../research/lighting.md#world) |
-| Humans: vertex lighting from a few lights; one faint blob shadow (alpha 128) | Dynamic shadows are an addition. The Xbox build has a `GraphicsShadowXBox.cpp` (inferred from its path string), so another shipped version may have had better shadows | [Lighting: humans](../research/lighting.md#humans), [Xbox assets](../research/xbox-assets.md#the-executable) |
+| Humans: vertex lighting from a few lights; one faint blob shadow (alpha 128) | Dynamic shadows are an addition. The Xbox build has a `GraphicsShadowXBox.cpp` (inferred from its path string), so another shipped version may have had better shadows | [Lighting: humans](../research/lighting.md#humans), [Xbox assets](../research/xbox-assets.md#original-structure) |
 | Every texture is 4- or 8-bit palettised, up to 512²; only 741 of 42,211 have mipmaps; 20,559 of 20,582 distinct textures wrap | Mip generation is the cheapest big quality gain. Upscalers must handle tiling and palettes | [Graphics: texture formats](../research/graphics.md#texture-formats) |
 | Draw distance 115 m with fog from half of it; the PS2 shrinks it when the frame rate drops | The level's mood is in its fog. A longer view changes the look | [World: a frame](../research/world.md#a-frame) |
 | Screen effects: frame-feedback motion blur (looks), a 512 × 256 blur/glow raster, heat distortion, a 9 × 9 distortion grid | The faithful look already needs a render-to-texture post chain | [Graphics: screen effects](../research/graphics.md#screen-effects) |
@@ -210,7 +211,7 @@ with a manifest. There are three kinds:
 | --- | --- | --- |
 | 0 | Now, during faithful work | The five choices above; F2 as part of the faithful blur and distortion work |
 | 1 | Faithful look at 100% | F1; 16:9 mode; any aspect with HUD anchoring; FOV; frame-rate audit with the motion blur fixed; MSAA and alpha-to-coverage; mip generation and anisotropic filtering; render scale and *Faithful 640 × 448* |
-| 2 | Then | F4; Xbox textures and HD movies (**Xbox**); player texture packs ([roadmap](../roadmap.md#enhancements)); the upscaling tool; SMAA or FXAA; colour grading; bloom from glow sprites |
+| 2 | Then | F4; Xbox textures and HD movies (**Xbox**); player texture packs ([roadmap](../roadmap.md#graphics-and-performance)); the upscaling tool; SMAA or FXAA; colour grading; bloom from glow sprites |
 | 3 | Then | F3; shadow maps for humans and objects; GTAO; velocity motion blur; cutscene depth of field; chromatic aberration; fog and render distance scales; TAA or FSR |
 | 4 | After the whole game | F5 (SDL3 GPU backend); HDR output; ray-traced shadows and AO on Vulkan; character subdivision |
 

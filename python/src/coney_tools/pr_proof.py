@@ -217,7 +217,7 @@ def changed_functions(
     changed = tuple(
         u
         for u in after.values()
-        if u.key not in before or before[u.key].body_sha256 != u.body_sha256 or before[u.key].addresses != u.addresses
+        if u.key not in before or before[u.key].body_sha256 != u.body_sha256 or before[u.key].cited != u.cited
     )
     removed = tuple(u for key, u in before.items() if key not in after)
     return changed, removed, orig_review.citing(after.values())
