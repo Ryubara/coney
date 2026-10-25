@@ -138,11 +138,22 @@ struct PlayerClass {
 
 /// Gives `player` the meters a human has when the game makes it a player (`HuChangePlayerGang` handing player 1 to
 /// `chosen`): `chosen`'s own health and maximum, each times the Warrior class's health percentage `healthPercent`
-/// (byte `+0x05`; 0 leaves them as they are) and rounded, the power and the stamina full, and `chosen`'s rage
-/// (docs/research/teleports.md#handover). Coney's hand-over moves player 1's human onto `chosen` (a stand-in), so it
-/// copies them; the original's chosen human keeps its own and is scaled where it stands.
+/// (byte `+0x05`) and rounded, the power and the stamina full, and `chosen`'s rage
+/// (docs/research/teleports.md#handover). It ports the meters part of `Human_MakePlayer` only; the flags, the brain
+/// and the record it also writes are the hand-over's (ai::ScriptedBrains::changePlayerGang()). Coney's hand-over moves
+/// player 1's human onto `chosen` (a stand-in), so it copies them; the original's chosen human keeps its own and is
+/// scaled where it stands. A `healthPercent` of 0 leaves them unscaled: Coney's "no class recorded" (a type with no
+/// `CfgWarriorClass` record, as characters::PlayerTraits::healthPercent gives it), where the original always has one.
+/// The maximum is at least 1, so a class percentage that rounds it to 0 cannot leave a player whose health has no
+/// maximum (combat::Health needs one).
 /// @orig 0x00229c40 Human_MakePlayer (unknown)
 void takeMetersOf(Human& player, const Human& chosen, int healthPercent);
+
+/// Makes `player`, moved onto `chosen` by Coney's hand-over, the human `chosen` is as the game makes it a player: it
+/// stands afresh (Human::settle(): no stun, stance, attack, pair or clip of the old body carried over), then takes
+/// `chosen`'s meters (takeMetersOf()). The original's new player 1 is the chosen human itself, with its own state.
+/// @coney-only the hand-over's stand-in: Coney has one player human, which takes the chosen human's place
+void makePlayerOf(Human& player, const Human& chosen, int healthPercent);
 
 /// The noclip's flying speed across the ground with the left stick pushed fully, and its rise and descent with a
 /// trigger pulled fully, in metres a second: **Coney's choice**, a little under the run's 7.5 so that a short push
@@ -185,11 +196,16 @@ class Player {
     /// no flow for yet).
     void update(const Pad& pad, const raycast::CollisionMesh* mesh, std::span<Combatant* const> targets = {});
 
-    /// Moves the human to `start` as `TeleportToFlag` moves a human (Human::place() with `mesh` as the ground, null for
-    /// none, then Human::resetMotion()), so its health, meters and clip stay, and puts the camera behind it with
-    /// nothing to blend from. The scripts' teleports, a scene's release and the hand-over use it.
+    /// Moves the human to `start` as `TeleportToFlag` moves a human (place(), then Human::resetMotion(): his move
+    /// stops), so its health, meters and clip stay, and puts the camera behind it with nothing to blend from. The
+    /// scripts' `TeleportToFlag`, a scene's release and the hand-over use it.
     void teleport(const raycast::CollisionMesh* mesh, const PlayerStart& start);
-    /// teleport(), then the human settled as after a walk (Human::settle()): the debug menus' teleport and `--start`,
+    /// Moves the human to `start` as `Teleport` moves a human: the placement alone (Human::place() with `mesh` as the
+    /// ground, null for none), so his move goes on, and the camera put behind him with nothing to blend from
+    /// (docs/research/teleports.md#motion-reset). The brain's part of the placement is the caller's
+    /// (ai::Brain::placed()).
+    void place(const raycast::CollisionMesh* mesh, const PlayerStart& start);
+    /// The human settled as after a walk (Human::settle()), then teleport(): the debug menus' teleport and `--start`,
     /// which stand for the walk there.
     /// @coney-only a test aid's walk stand-in; the original has none
     void standAt(const raycast::CollisionMesh* mesh, const PlayerStart& start);

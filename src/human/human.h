@@ -185,16 +185,19 @@ class Human final : public Holdable {
     /// Stands a human just made (or made another character) at `position` (the feet, game axes) facing
     /// `headingDegrees` (0 faces +y), snapped to the ground of `mesh` (may be null: no snap) with a 2.5 m ray from 1 m
     /// above; 0.01 above the hit. Everything starts afresh: full health, meters and stamina, nothing in progress (a
-    /// jump, a climb, a pair), the idle. Only a creation does this; moving a human that exists is place().
+    /// jump, a climb, a pair), the idle. Only a creation does this; moving a human that exists is place(). Human_Init
+    /// makes no snap while game mode 0xb (mission complete) or 0x11 (the Rumble menus) is on top; Coney makes no human
+    /// in either (its Rumble menus draw their fighters without one), so every spawn snaps.
     /// @orig 0x00218008 Human_Init (unknown)
     void spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float headingDegrees);
 
     /// Moves a human that exists (a script's teleport, a scene's placement): any pair it is in is broken (its partner
     /// plays its reaction), the feet go to `position` lowered onto what a 0.5 m ray straight down from it hits (no ray
-    /// with `ground` null, as for a human in a scene), facing `headingDegrees`, and the stick's last angle turns to the
-    /// new facing with no push. Nothing else changes: the health and its maximum, the stamina, the rage and power
-    /// meters, a stun and the clip all stay (docs/research/teleports.md#placement). **Coney's choice**: a climb in
-    /// progress ends (teleports.md#q-placement-rest).
+    /// with `ground` null, as for a human in a scene), facing `headingDegrees`, the stick's last angle turns to the
+    /// new facing with no push, and the new point is its last ground. None of its meters, its stun or its clip is
+    /// written: the health and its maximum, the stamina, the rage and power meters, a stun and the clip all stay
+    /// (docs/research/teleports.md#placement). The brain's part (its front move popped) is ai::Brain::placed(), which
+    /// the callers make. **Coney's choice**: a climb in progress ends (teleports.md#q-placement-rest).
     /// @orig 0x0023d440 Human_SetTransform (unknown)
     void place(const raycast::CollisionMesh* ground, anim::Vec3 position, float headingDegrees);
 
@@ -206,13 +209,14 @@ class Human final : public Holdable {
 
     /// Stands the human as after a walk, where it is: idle, out of any stance, attack, stun, pair or traversal, its
     /// health and its maximum, stamina and meters kept. For Coney's own placements that stand for a walk (the debug
-    /// menus' teleport, `--start`), done after the placement.
-    /// @coney-only a test aid's walk stand-in; the original has no such call
+    /// menus' teleport, `--start`) and for the hand-over's new player 1 (human::makePlayerOf()).
+    /// @coney-only the walk stand-in of the test aids and the hand-over's stand-in; the original has no such call
     void settle();
 
-    /// Puts a human that fell out of the world back at `position` facing `headingDegrees`: standing, still, as a
-    /// placement leaves it otherwise (its health kept). The original has no put-back: the fall fails the mission
-    /// (docs/research/teleports.md#out-of-world).
+    /// Puts a human that fell out of the world back at `position` facing `headingDegrees`: standing, still, snapped
+    /// to `ground` as a creation snaps (a 2.5 m ray from 1 m above, 0.01 above the hit, so a start point at or a little
+    /// under the surface is found), its health and meters kept. The original has no put-back: the fall fails the
+    /// mission (docs/research/teleports.md#out-of-world).
     /// @coney-only a fallen player put back, where the original fails the mission
     void putBack(const raycast::CollisionMesh* ground, anim::Vec3 position, float headingDegrees);
 
@@ -292,6 +296,9 @@ class Human final : public Holdable {
     [[nodiscard]] bool airborne() const { return m_airborne; }
     /// The human fell more than kOutOfWorldDepth below the mesh; it stays put until spawned again.
     [[nodiscard]] bool outOfWorld() const { return m_outOfWorld; }
+    /// Where it last stood on the ground (a creation's or a placement's point, or its feet on the last update it
+    /// stood): where a human stuck in the air for two seconds lands.
+    [[nodiscard]] anim::Vec3 lastGround() const { return m_lastGround; }
     /// With a skeleton and in the world, its spine and head shapes are posed each update for the strike test.
     [[nodiscard]] bool struckByShapes() const override { return m_skeleton != nullptr && !m_outOfWorld; }
     /// The head (bone 6) as posed now, in the world; the position without a skeleton.
@@ -337,6 +344,17 @@ class Human final : public Holdable {
     void setIdleClip(std::string_view name, const anim::AnimClip* clip) {
         m_idleClipName = std::string(name);
         m_animator.setIdleClip(clip);
+    }
+    /// `Human_PushOverlayClip`: `clip` played as anim `animId` over what plays, at the rate its Anim Range List flags
+    /// give it (characters::AnimSet::rate(): 0.75 for a clip with none), fading in over `fade` seconds, with `held`
+    /// set while it plays (docs/research/formats/animation.md#playback-rate). **Coney stand-in**: the original ends a
+    /// clip on the update its frame would reach its count (ceil((F - 0.5) / rate), 53 for the flash's 40 frames, as
+    /// measured), Coney's clip tasks when the time reaches the length (54), so this clip hands over a step early, as
+    /// clip 34 does, until the clip tasks take the original's rule (formats/animation.md#clip-end).
+    /// @orig 0x0025ade8 Human_PushOverlayClip (unknown)
+    /// @orig 0x00106240 AnimTask5_Construct (unknown)
+    void pushOverlayClip(const anim::AnimClip& clip, std::uint32_t animId, float fade, HeldFlags held) {
+        m_animator.playScripted(clip, animId, m_animator.anims().rate(animId), fade, held, true);
     }
     /// A scripted clip played from outside the dispatcher (HumanAnimator::playScripted()).
     void playScripted(const anim::AnimClip& clip, std::uint32_t animId, float rate, float fade, HeldFlags held) {
@@ -528,7 +546,12 @@ class Human final : public Holdable {
         return m_fighter.startTandemVictim(start, m_animator, m_script.arrested, m_script.knockedOut);
     }
     [[nodiscard]] std::optional<int> takeTandemRequest() override { return m_fighter.takeTandemRequest(); }
-    /// Moves it there and stops it (its velocity goes).
+    /// Moves it there and stops it (its velocity goes): the attached hold's placement of the held human at the
+    /// transform the grabber gives (fighter_grab.cpp), not a script's placement (place() above). It ports the placing
+    /// part of `Human_MoveAttached` only: the original also sweeps the held body toward the point against the others
+    /// (`PhysicsBody_Sweep`, up to three tries) and hands the holder's velocity on; Coney's held human has its movement
+    /// held and moves with no velocity of its own (docs/research/combat-grabs.md#grab-posing).
+    /// @orig 0x00244e78 Human_MoveAttached (unknown)
     void place(anim::Vec3 position, float headingRadians) override;
     /// Thrown: its fighter's steer carries it (Fighter::carryOver()), applied in each state update as an attack's is.
     void carryOver(anim::Vec3 goal, float headingRadians, float seconds) override {

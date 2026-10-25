@@ -58,11 +58,14 @@ rotation) and, confirmed (code) at `0x0023d440`:
    keeps it at `+0x10`-`+0x2c`. Confirmed (code) at `0x0021b048`.
 5. Sets the stick's last angle `+0x5d8` to the new facing's angle from x and its push `+0x5dc` to 0, and the brain's
    facing `+0x110`.
-6. When brain `+0x2e` is above 0 and brain `+0xec` is not 4, asks the front action's slot `+0xc` and pops the action
-   (`Brain_PopAction`) when it answers 1. Inferred from the goals' slot `+0xc`, which gives a goal's type: the count
-   of actions queued and a `MoveTo` (action type 1, [Moving](ai-moving.md)); what `+0xec` = 4 means is not traced
-   ([q-placement-rest](#q-placement-rest)).
-7. Sets bit `0x80000000` at `+0x40` of the object at `+0x1a0` (not traced).
+6. When brain `+0x2e` (the count of actions queued) is above 0 and brain `+0xec` is not 4, asks the front action's
+   type (slot `+0xc` of its vtable at `+0x08`) and, when it is 1, pops it (`Brain_PopAction`, `0x0028da60`, which
+   aborts a started action first through `Action_AbortAndDestroy`, `0x002f9de0`). Type 1 is the move: `MoveAction_Init`
+   (`0x002fb9e8`) gives a move the vtable `0x00542f20`, whose slot `+0xc` returns 1. Confirmed (code) at
+   `0x0023d440`, `0x0028da60`, `0x002fb9e8` and the vtable `0x00542f20`. What `+0xec` = 4 means is not traced: no
+   `sw` to an offset `+0xec` in the program stores to a brain ([q-placement-rest](#q-placement-rest)).
+7. Sets bit `0x80000000` in the flags (`+0x40`) of the human's physics body (`+0x1a0`): the body's "re-pose and
+   re-sort on the next update" bit ([Physics](physics.md#bodies)). Confirmed (code) at `0x0023d440`.
 
 Nothing in it, nor in the two functions it calls to set the transform, writes the health (record `+0x144`), its
 maximum (`+0x146`), the power (`+0x148`), the stamina (`+0x14a`), the rage, a stun or the animation. Confirmed (code)
@@ -71,7 +74,9 @@ at `0x0023d440` and `0x0021b048`.
 | Field | Meaning | Evidence |
 | --- | --- | --- |
 | human `+0x1b3` | set to 1 by a placement; its only reader is `Human_GetNavPolygon` | confirmed (code) |
-| human `+0x54` | state bit `0x40000000` set by a placement, with the time at `+0x50` | confirmed (code) |
+| human `+0x54` | object flag `0x40000000` set by a placement, with the time at `+0x50`; no reader traced | confirmed (code) |
+| brain `+0x110` | the brain's facing: set to the new heading | confirmed (code) |
+| human `+0x1a0` | the physics body; a placement sets its re-pose bit `0x80000000` | confirmed (code) |
 | human `+0x280` | the scene the human is in, −1 for none; a placement drops only a human in none | confirmed (code) |
 | human `+0x5d8`, `+0x5dc` | the stick's last angle and push: the new facing, no push | confirmed (code) |
 | record `+0x144` | the health; a placement does not write it | confirmed (code) |
@@ -91,8 +96,10 @@ transform slot. Confirmed (code) at `0x00385db0` and `0x00385bb8`.
 - calls slot `+0x74`, `Human_SetMoveVelocity` (`0x0023cf00`), with the zero vector (`0x005116c0`): the move velocity
   `+0x30` is zero, its speed `+0x1ac` 0 and the gait `+0x1a8` the one for speed 0. The vertical speed (`+0x3a0`) is a
   field of its own and is not written (confirmed (code) at `0x0023cf00`);
-- clears `+0x300`, `+0x304`, `+0x331` and `+0x332`, the fields `Human_ClearTurn` clears (an attack's steer);
-- sets `+0x2e0`-`+0x2ec` to (0, 0, 0, 1) (what they hold is not traced);
+- clears `+0x300`, `+0x304`, `+0x331` and `+0x332`, the fields `Human_ClearTurn` clears (an attack's steer), and the
+  turn's rate `+0x308`, which `Human_ClearTurn` leaves;
+- sets `+0x2e0`-`+0x2ec`, the steer's slide velocity ([the fight stance](combat-targets.md#fight-stance)), to
+  (0, 0, 0, 1);
 - sets the transform again as it is, and the time at `+0x50`.
 
 It writes no meter, no stun and no animation. A scene's start makes the same reset ([Scenes](scenes.md#humans)).
@@ -147,27 +154,35 @@ the dealer. Script locators are given as file and function.
 - `Human::place()` (`src/human/human.h`) is the placement and `Human::resetMotion()` the motion reset; `Human::spawn()`
   is a creation only (a human made, a character change), which starts the human afresh. The scripts' teleports
   (`Player::teleport()`, `ai::ScriptedBrains::humanTeleported()`), a scene's release and the hand-over place. The level
-  gives the placement its collision unless a scene holds the human (`PlayLevelMode::placeGround()`). Coney's own
-  placements that stand for a walk (the debug menus' teleport, `--start`) place and then settle the player as a walk
-  would leave him (`Human::settle()`: idle, out of a stance or an attack, his health and meters kept).
+  gives the placement its collision unless a scene holds the human (`PlayLevelMode::placeGround()`). `TeleportToFlag`
+  then resets the motion and `Teleport` does not (`world_objects::TeleportMotion`). The brain's part of a placement,
+  its front move popped, is `ai::Brain::placed()`, which every caller that places a human with a brain makes. A
+  placement makes the point the human's last ground (`Human::lastGround()`), where Coney's stuck-in-the-air rule
+  lands him. Coney's own placements that stand for a walk (the debug menus' teleport, `--start`) settle the player as
+  a walk would leave him (`Human::settle()`: idle, out of a stance or an attack, his health and meters kept) and then
+  place him.
 - Until issue #234 every placement rebuilt the human as a creation does, so in the story the player reached the dealer
   at 900 of 900 and the flash did nothing visible before the closing scene. Disc test:
   `tests/platform/disc_flash_test.cpp`, the level99 case scripted through checkpoints 1 to 3.
-- Coney's choices: `Teleport` makes the motion reset too, as `TeleportToFlag` does; a climb in progress ends at a
-  placement; the brain's front action is not popped ([q-placement-rest](#q-placement-rest)). After a scene clip played
-  to its end Coney places the human where the clip left it, with no drop, since Coney's scene drives a frame and not
-  the human.
-- The hand-over moves Coney's one player human onto the chosen one, so it takes the chosen human's meters as
-  `Human_MakePlayer` sets them (`human::takeMetersOf()`).
-- A player who falls out of the world is put back at the level's start, placed with his health kept
-  (`Human::putBack()`), where the original fails the mission (a known difference,
+- Not ported, each for want of the state it marks: the brain's facing (Coney's brain keeps none: a move sets the
+  heading for one update), the placed marks (`+0x1b3` makes `Human_GetNavPolygon` look the polygon up again, and Coney
+  caches none; the flag at `+0x54` has no reader traced) and the body's re-pose bit (Coney's body is posed from the
+  position at each use). Coney pops a front move whatever `+0xec` holds, having no such state.
+- Coney's choices: a climb in progress ends at a placement ([q-placement-rest](#q-placement-rest)). After a scene clip
+  played to its end Coney places the human where the clip left it, with no drop, since Coney's scene drives a frame and
+  not the human.
+- The hand-over moves Coney's one player human onto the chosen one, so he stands afresh, nothing of the old body's
+  fight carried over, and takes the chosen human's meters as `Human_MakePlayer` sets them (`human::makePlayerOf()`,
+  `human::takeMetersOf()`).
+- A player who falls out of the world is put back at the level's start, snapped as a creation snaps (from 1 m above)
+  with his health kept (`Human::putBack()`), where the original fails the mission (a known difference,
   [Characters](characters.md#coneys-implementation)).
 
 ## Open questions
 
 ### The rest of a placement {#q-placement-rest}
 
-What brain `+0xec` = 4 means, which of Coney's actions are the original's type 1 (`MoveTo`) that a placement pops, what
-`+0x2e0`-`+0x2ec` and the object at `+0x1a0` are, and how a climb in progress carries on after a placement are not
-traced. To settle them: read the brain's `+0xec` writers and the action types' slot `+0xc` in Ghidra, and teleport a
+What brain `+0xec` = 4 means (no direct store to it was found), who reads object flag `0x40000000` at `+0x54` and the
+time at `+0x50`, and how a climb in progress carries on after a placement are not traced. To settle them: watch brain
+`+0xec` and human `+0x54` with write and read watchpoints in PCSX2 through a level with waypoint queues, and teleport a
 climbing human in PCSX2 and read his state.

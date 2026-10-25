@@ -180,6 +180,12 @@ void takeMetersOf(Human& player, const Human& chosen, int healthPercent) {
     player.fighter().combat().rage().set(chosen.fighter().combat().rage().value());
 }
 
+void makePlayerOf(Human& player, const Human& chosen, int healthPercent) {
+    // Fresh first, so nothing of the old body's fight carries over; then the chosen human's meters over the settle's.
+    player.settle();
+    takeMetersOf(player, chosen, healthPercent);
+}
+
 FighterProfile playerProfileOf(const PlayerClass& playerClass) {
     FighterProfile profile;
     profile.player = true;
@@ -218,9 +224,16 @@ void Player::changeCharacter(const PlayerCharacter& character, const raycast::Co
 }
 
 void Player::teleport(const raycast::CollisionMesh* mesh, const PlayerStart& start) {
-    // TeleportToFlag's two steps: the placement (Human_SetTransform), then the motion reset (Human_ResetMotion).
+    // TeleportToFlag's two steps (Object_TeleportToFlag): the placement (Human_SetTransform), then the motion reset
+    // (Human_ResetMotion); the camera behind him last, from the state they leave.
     m_driven->place(mesh, start.position, start.headingDegrees);
     m_driven->resetMotion();
+    resetCamera();
+}
+
+void Player::place(const raycast::CollisionMesh* mesh, const PlayerStart& start) {
+    // Teleport's one step (Object_Teleport): the placement, with no motion reset after it.
+    m_driven->place(mesh, start.position, start.headingDegrees);
     resetCamera();
 }
 

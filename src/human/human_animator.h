@@ -204,9 +204,12 @@ class HumanAnimator {
     void playCombatThenRun(std::span<const std::uint32_t> clips, float fade = kCombatFade, HeldFlags held = {});
     /// A scripted clip from outside the dispatcher (the play-anim action's start, `0x0025a3e0`): `clip` (anim `animId`,
     /// which must outlive its use) once at `rate`, faded in over `fade`, then the idle; AnimState::Attack while it
-    /// plays, its task holding `held` on the record `+0x08`.
+    /// plays, its task holding `held` on the record `+0x08`. With `handOverEarly` the idle takes over on the advance
+    /// that leaves less than one advance of the clip (anim::ClipThenNextTask), for a clip whose original end, one
+    /// update before Coney's (docs/research/formats/animation.md#clip-end), was measured.
     /// Research: docs/research/ai-scripting.md#dyn-animation
-    void playScripted(const anim::AnimClip& clip, std::uint32_t animId, float rate, float fade, HeldFlags held);
+    void playScripted(const anim::AnimClip& clip, std::uint32_t animId, float rate, float fade, HeldFlags held,
+                      bool handOverEarly = false);
     /// A workout's clips (docs/research/workouts.md#engine): a fade of kWorkoutFade, the enter clip (anim 691) and
     /// then a gait blend over the three loop clips (693-695) at kWorkoutBlendSpeed units a second, its target kept as
     /// given and no root motion sampled (flags `0x201`); the state stays Workout until endWorkout(). **Coney choice**:

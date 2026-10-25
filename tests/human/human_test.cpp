@@ -575,6 +575,55 @@ TEST_CASE("a placement drops the feet onto a hit at most 0.5 below, with no gap;
     CHECK(human.position().z == Approx(-0.2F));
 }
 
+TEST_CASE("a placement makes the new point the human's last ground, where a human stuck in the air goes back to",
+          "[human][placement]") {
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{10.0F, 10.0F, 0.0F});
+    REQUIRE(human.lastGround().x == Approx(10.0F));
+    human.place(mesh.get(), Vec3{60.0F, 50.0F, 0.3F}, 0.0F);
+    CHECK(human.lastGround().x == Approx(60.0F));
+    CHECK(human.lastGround().y == Approx(50.0F));
+    CHECK(human.lastGround().z == Approx(0.0F).margin(1e-5));
+}
+
+TEST_CASE("Coney's put-back snaps as a creation does, so a start a little under the floor is found from 1 m above",
+          "[human][placement]") {
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{10.0F, 10.0F, 0.0F});
+    human.setHealthPercent(35.0F);
+    const int health = human.health().value();
+    human.putBack(mesh.get(), Vec3{30.0F, 30.0F, -0.2F}, 0.0F);
+    CHECK(human.position().z == Approx(0.01F).margin(1e-5));
+    CHECK(human.lastGround().z == Approx(0.01F).margin(1e-5));
+    CHECK(human.health().value() == health);
+}
+
+TEST_CASE("a player handed over stands afresh as the chosen human, not stunned, with the chosen human's meters",
+          "[human][placement]") {
+    // Human_MakePlayer (0x00229c40) makes the chosen human player 1 as it is; Coney moves its one player human onto it,
+    // so the old body's stun and clip must not carry over.
+    const coney::test::FightCharacter character;
+    coney::test::Fight fight(character, 1.5F);
+    fight.run("5 tap circle\n", 40);
+    fight.human().fighter().health().apply(fight.human().health().value() - 10);
+    fight.human().fighter().combat().power().set(0);
+    fight.run("", 2);
+    Human& player = fight.human();
+    REQUIRE(player.fighter().victim().stunned());
+    const TestCharacter chosenCharacter;
+    Human chosen = spawnHuman(chosenCharacter, nullptr, Vec3{45.0F, 40.0F, 0.0F});
+    chosen.fighter().health() = coney::combat::Health(700, 1000);
+
+    coney::human::makePlayerOf(player, chosen, 0);
+    CHECK_FALSE(player.fighter().victim().stunned());
+    CHECK(player.animator().state() == AnimState::Idle);
+    CHECK(player.health().value() == 700);
+    CHECK(player.health().maximum() == 1000);
+    CHECK(player.fighter().combat().power().value() == player.fighter().combat().power().maximum());
+}
+
 TEST_CASE("a human made (Human_Init) starts full: the creation's spawn fills the health, the meters and the stamina",
           "[human][placement]") {
     const TestCharacter character;
@@ -693,6 +742,38 @@ TEST_CASE("leaving normal mode by the script or a scene's bind is handed on once
     CHECK_FALSE(human.takeSlowMotionReset());
     human.resetForJoin();
     CHECK(human.takeSlowMotionReset());
+}
+
+TEST_CASE("an overlay clip plays at its anim's rate: the flash with no rate flag, at 0.75, is used 25 updates in",
+          "[human][flash]") {
+    // Human_PushOverlayClip (0x0025ade8) builds its task with AnimTask5_Construct (0x00106240), which takes the rate
+    // from the clip's Anim Range List flags (Anim_RateMultiplier, 0x00104a38): no flag, 0.75. So 665's frame-19 event
+    // falls 25 updates after the update the clip started on, and the clip's 40 frames last 53 updates (0 to 52), as
+    // measured in the original (docs/research/combat-rage.md#rage; the end rule: formats/animation.md#clip-end).
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 40.0F, 0.0F});
+    human.step(stick(0.0F, 0.0F), mesh.get());
+    REQUIRE(human.anims().rate(665) == Approx(0.75F));
+    coney::anim::AnimClip flash;
+    flash.duration = 40.0F / 30.0F;
+    flash.events.push_back(
+        coney::anim::ClipEvent{.frame = 19, .type = 0x41, .word = 0, .position = {}, .rotation = {}});
+    // Pushed during update 0's actions, as the d-pad press is handled.
+    human.pushOverlayClip(flash, 665, 0.0F, coney::human::HeldFlags{.held = 0x2000});
+    int firedAt = -1;
+    int lastPlaying = 0;
+    for (int update = 1; update <= 70; ++update) {
+        human.step(stick(0.0F, 0.0F), mesh.get());
+        if (human.actionEvent().has_value()) {
+            firedAt = update;
+        }
+        if (human.animator().animId() == 665U) {
+            lastPlaying = update;
+        }
+    }
+    CHECK(firedAt == 25);
+    CHECK(lastPlaying == 52);
 }
 
 TEST_CASE("a human's power meter, stamina, health and rage come from its fighter profile", "[human]") {

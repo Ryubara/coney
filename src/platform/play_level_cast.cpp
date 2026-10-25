@@ -120,10 +120,10 @@ void PlayLevelMode::takePlace(const ai::Brain& to) {
     // **Coney's stand-in** for HuChangePlayerGang's hand-over (docs/research/characters.md#level99-handover): the
     // original makes the chosen AI human player 1 and leaves the old one in the world as an AI until its gang is
     // deleted. Coney has one player human, so he takes the chosen human's place instead: put where it stands (placed
-    // there, the camera behind him) with the chosen human's meters as Human_MakePlayer leaves them (its own health
-    // scaled by its Warrior class, full power and stamina, human::takeMetersOf()), drawn as its model, named by its
-    // handle; the chosen human leaves the world, and the brains name the player by its handle
-    // (ai::ScriptedBrains::changePlayerGang()).
+    // there, the camera behind him), standing afresh as the chosen human does (nothing of the old body's fight carried
+    // over) with its meters as Human_MakePlayer leaves them (its own health scaled by its Warrior class, full power and
+    // stamina, human::makePlayerOf()), drawn as its model, named by its handle; the chosen human leaves the world, and
+    // the brains name the player by its handle (ai::ScriptedBrains::changePlayerGang()).
     const human::Human& chosen = to.human();
     const human::PlayerStart start{.position = chosen.position(),
                                    .headingDegrees = chosen.heading() * 180.0F / std::numbers::pi_v<float>};
@@ -133,7 +133,7 @@ void PlayLevelMode::takePlace(const ai::Brain& to) {
     const HumanCreation* made = m_cast.humans != nullptr ? m_cast.humans->find(to.handle()) : nullptr;
     const std::optional<characters::PlayerTraits> traits =
         made != nullptr ? m_types.playerTraitsOf(made->type) : std::nullopt;
-    human::takeMetersOf(m_player->human(), chosen, traits ? traits->healthPercent : 0);
+    human::makePlayerOf(m_player->human(), chosen, traits ? traits->healthPercent : 0);
     takeHatOf(chosen);
     m_ai->remove(chosen);
     // The scenes know player 1 by the new handle from now on (level99's l99_c2 joins him by it).

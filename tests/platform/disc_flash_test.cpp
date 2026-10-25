@@ -4,7 +4,7 @@
 // "The flash clip's events"; issue #234): `level80` checkpoint 2 played in the game session as `coney --play-level
 // level80 --checkpoint 2` plays it (support/disc_session.h), player 1 hurt and carrying a flash, and a pad driver that
 // taps d-pad right for one frame. The clip 665 `gen_flash_use` must play (it is in the player's animation set), the
-// flash is spent and the health filled 19 updates into it, at the clip's action event, and on that update interface
+// flash is spent and the health filled 25 updates into it, at the clip's action event, and on that update interface
 // cue 23 (`vags/misc/flash`) and the clip's animation sound 70 sound. Standing still, walking and running are each
 // tried, so a held stick does not turn the use into an instant heal. It runs only when the environment variable
 // CONEY_DISC names the disc and skips otherwise; it prints counts only (LEGAL.md).
@@ -51,8 +51,9 @@ namespace {
 
 // The flash's clip: 665 SPECIAL_FLASH, `gen_flash_use`.
 constexpr std::uint32_t kFlashClip = 665;
-// The update of the clip its action event falls on: frame 19 of 30 per second (docs/research/combat-rage.md#rage).
-constexpr int kEventUpdate = 19;
+// The update of the clip its action event falls on: frame 19 at the clip's rate of 0.75 (no rate flag), 25 updates
+// after 665 began, as the original's runs measure it (docs/research/combat-rage.md#rage).
+constexpr int kEventUpdate = 25;
 // The interface cue `Flash_Use` plays: 23, `vags/misc/flash`.
 constexpr std::size_t kFlashCue = 23;
 // The animation sound 665's event 11 asks for: 70 (docs/research/combat-rage.md#rage).
@@ -278,7 +279,7 @@ Use useFlash(coney::test::DiscSession& run, FlashDriver& driver, float stick, in
     return use;
 }
 
-// Checks one use against the original: 665 plays, and 19 updates into it (its action event) the flash is spent, the
+// Checks one use against the original: 665 plays, and 25 updates into it (its action event) the flash is spent, the
 // health filled (not before: it stays as it was until then), cue 23 and the clip's animation sound 70 sound on that
 // update, and nothing the engine was asked to play was left silent.
 void checkUse(const Use& use, const char* what) {
@@ -293,7 +294,7 @@ void checkUse(const Use& use, const char* what) {
     CHECK(use.flashesAfter == 0);
     CHECK(use.healthBefore < use.healthMaximum);
     CHECK(use.healthAfter == use.healthMaximum);
-    // Nothing is spent or healed before the clip's event: the use lands 19 updates after 665 began.
+    // Nothing is spent or healed before the clip's event: the use lands 25 updates after 665 began.
     REQUIRE(use.startUpdate >= 0);
     CHECK(use.healUpdate == use.startUpdate + kEventUpdate);
     CHECK(use.healthFilledUpdate == use.healUpdate);
@@ -318,7 +319,7 @@ void startPlaying(coney::test::DiscSession& run, FlashDriver& driver, const char
 
 } // namespace
 
-TEST_CASE("the disc's level80: d-pad right with a flash plays 665 and uses it 19 updates in", "[disc][story][flash]") {
+TEST_CASE("the disc's level80: d-pad right with a flash plays 665 and uses it 25 updates in", "[disc][story][flash]") {
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");

@@ -14,6 +14,7 @@
 
 #include <rw.h>
 
+#include "ai/brain.h"
 #include "animation/anim_pose.h"
 #include "camera/camera_lens.h"
 #include "camera/camera_view.h"
@@ -929,11 +930,27 @@ void PlayLevelMode::startAt(const StartPlace& place) {
     }
 }
 
-void PlayLevelMode::teleportPlayer(const world_objects::Placement& placement) {
-    // TeleportToFlag's placement drops him onto what is at most 0.5 m below the flag, unless a scene holds him.
+void PlayLevelMode::teleportPlayer(const world_objects::Placement& placement, world_objects::TeleportMotion motion) {
+    // The placement drops him onto what is at most 0.5 m below the point, unless a scene holds him; TeleportToFlag
+    // then stops his move (Object_TeleportToFlag), Teleport leaves it (Object_Teleport).
     const std::array<float, 3>& p = placement.position;
-    m_player->teleport(placeGround(m_playerHandle), human::PlayerStart{.position = anim::Vec3{p[0], p[1], p[2]},
-                                                                       .headingDegrees = placement.headingDegrees});
+    const human::PlayerStart start{.position = anim::Vec3{p[0], p[1], p[2]},
+                                   .headingDegrees = placement.headingDegrees};
+    if (motion == world_objects::TeleportMotion::Stopped) {
+        m_player->teleport(placeGround(m_playerHandle), start);
+    } else {
+        m_player->place(placeGround(m_playerHandle), start);
+    }
+    brainPlaced(m_player->human());
+}
+
+void PlayLevelMode::brainPlaced(const human::Human& human) {
+    if (m_ai == nullptr) {
+        return;
+    }
+    if (ai::Brain* brain = m_ai->brainOf(human); brain != nullptr) {
+        brain->placed();
+    }
 }
 
 const raycast::CollisionMesh* PlayLevelMode::placeGround(double human) const {

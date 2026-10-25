@@ -237,6 +237,7 @@ void ScriptedHumans::teleportNear(double human, double near) {
                             beside.position().y + (std::cos(right) * gap), beside.position().z};
         brain.human().place(m_scripted->placeGround(brain.handle()), at,
                             brain.human().heading() * 180.0F / std::numbers::pi_v<float>);
+        brain.placed();
     });
 }
 

@@ -376,7 +376,10 @@ void Human::settle() { standAfresh(true); }
 void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float headingDegrees) {
     m_heading = wrapAngle(headingDegrees * kPi / 180.0F);
     standAfresh(false);
-    // Creation's snap: a ray from 1 m above, 2.5 m down; on a hit the feet go 0.01 above it.
+    // Creation's snap: a ray from 1 m above, 2.5 m down; on a hit the feet go 0.01 above it. Human_Init skips it in
+    // game modes 0xb and 0x11, where Coney makes no human. **Coney's choice**: Human_Init then sets the point through
+    // Human_SetTransform, whose 0.5 m drop would take the 0.01 back for a human in no scene; whether +0x280 is -1 that
+    // early is not traced (Human_Init sets it to -1 only later), so the gap stays.
     if (mesh != nullptr) {
         const raycast::Ray ray{.origin = toMesh(anim::add(position, anim::Vec3{0.0F, 0.0F, kSnapAbove})),
                                .direction = raycast::kDown,
@@ -403,11 +406,21 @@ void Human::place(const raycast::CollisionMesh* ground, anim::Vec3 position, flo
             position.z -= hit->t;
         }
     }
+    // The transform (the position slot, Human_SetPosition). The point is the human's last ground too, so the
+    // stuck-in-the-air rule lands him near it and not where he stood before.
     m_position = position;
+    m_lastGround = position;
     m_heading = wrapAngle(headingDegrees * kPi / 180.0F);
     // The stick's last angle (+0x5d8) is the new facing's angle from x, its push (+0x5dc) none, so an idle's fade
     // turns the human nowhere.
     m_lastStick = StickIntent{.angle = wrapAngle(m_heading + (kPi / 2.0F)), .magnitude = 0.0F};
+    // Not ported, each for want of the state it marks (docs/research/teleports.md#placement):
+    // - the placed marks: +0x1b3 = 1 tells Human_GetNavPolygon to look the human's polygon up again, but Coney
+    //   caches none (ai::RoutePlanner finds it at each query); object flag 0x40000000 at +0x54 with the time at +0x50
+    //   has no reader traced and Coney's human has no such flags word;
+    // - bit 0x80000000 on the physics body's flags (+0x1a0, +0x40, "re-pose and re-sort"): Coney's body is posed
+    //   from the position at each use (human/body.h), so it is never stale;
+    // - the brain's facing and front-action pop: ai::Brain::placed(), the callers' (the human knows no brain).
     // **Coney's choice**: a climb in progress ends; how the original's climb goes on after a placement is not traced
     // (docs/research/teleports.md#q-placement-rest).
     endClimb();
@@ -418,7 +431,9 @@ void Human::resetMotion() {
     // its own (+0x3a0) and stays.
     m_velocity.x = 0.0F;
     m_velocity.y = 0.0F;
-    // Human_ClearTurn's fields (+0x300, +0x304, +0x331, +0x332): the attack's steer.
+    // The steer: Human_ClearTurn's fields (+0x300, +0x304, +0x331, +0x332), and the turn's rate +0x308 and the
+    // slide's velocity +0x2e0-+0x2ec (set to (0, 0, 0, 1)), which Human_ResetMotion clears beside them
+    // (docs/research/combat-targets.md#fight-stance); Fighter::clearSteer() drops the whole turn and slide.
     m_fighter.clearSteer();
 }
 
@@ -431,9 +446,18 @@ void Human::putBack(const raycast::CollisionMesh* ground, anim::Vec3 position, f
     m_airborneUpdates = 0;
     m_blockedUpdates = 0;
     m_velocity = anim::Vec3{};
-    place(ground, position, headingDegrees);
+    // The start point is unsnapped and may lie at or under the surface, where the placement's ray from the point
+    // itself finds nothing: creation's ray from 1 m above finds it, 0.01 above the hit.
+    if (ground != nullptr) {
+        const raycast::Ray ray{.origin = toMesh(anim::add(position, anim::Vec3{0.0F, 0.0F, kSnapAbove})),
+                               .direction = raycast::kDown,
+                               .length = kSpawnLength};
+        if (const auto hit = ground->rayCast(ray, {}, 0); hit) {
+            position.z = position.z + kSnapAbove - hit->t + kSpawnGap;
+        }
+    }
+    place(nullptr, position, headingDegrees);
     resetMotion();
-    m_lastGround = m_position;
 }
 
 void Human::locomote(bool gated) {

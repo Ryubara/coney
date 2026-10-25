@@ -71,7 +71,8 @@ class SprayLevel final : public coney::GameMode, public coney::ScriptedPlayer {
     coney::ModeResult update(coney::GameModeStack& /*stack*/, const coney::FrameTime& /*frame*/) override {
         return coney::ModeResult::Stay;
     }
-    void teleportPlayer(const coney::world_objects::Placement& /*placement*/) override {}
+    void teleportPlayer(const coney::world_objects::Placement& /*placement*/,
+                        coney::world_objects::TeleportMotion /*motion*/) override {}
     void dropHeldObject() override { ++drops; }
     [[nodiscard]] std::string heldObjectType() const override { return held; }
     bool startTagSpray(const std::array<float, 3>& /*point*/) override { return clips; }

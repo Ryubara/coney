@@ -1558,14 +1558,19 @@ status = "legacy"
 address = 0x0023d440
 name = "Human_SetTransform"
 page = "teleports.md#placement"
-role = "A human's placement (the scripts' `Teleport` and `TeleportToFlag`, a skipped scene's end): breaks the pair, drops the point 0.5 straight down onto a hit outside a scene, sets the transform and facing; no meter, stun or clip is written."
+role = "A human's placement (the scripts' `Teleport` and `TeleportToFlag`, a skipped scene's end): breaks the pair, drops the point 0.5 straight down onto a hit outside a scene, sets the transform and facing, pops the brain's front move (type 1); no meter, stun or clip is written."
 level = "confirmed-code"
-note = "the health kept is also confirmed (runtime)"
+note = "the health kept is also confirmed (runtime); the brain's part is ai::Brain::placed"
 coney = "src/human/human.h:Human::place"
 status = "compared"
 
 [[function.gaps]]
-what = "the brain's front action (type 1) is not popped, and a climb in progress ends"
+what = "a climb in progress ends; the front move is popped whatever brain +0xec holds (Coney has no such state)"
+relation = "stand-in"
+question = "teleports.md#q-placement-rest"
+
+[[function.gaps]]
+what = "not set, for want of the state they mark: the brain's facing +0x110 (Coney's brain keeps none), the placed marks +0x1b3 and +0x54 bit 0x40000000 with the time (no nav-polygon cache, no reader traced) and the body's re-pose bit (Coney poses the body at each use)"
 relation = "stand-in"
 question = "teleports.md#q-placement-rest"
 
@@ -1618,7 +1623,7 @@ status = "legacy"
 address = 0x0023f158
 name = "Human_ResetMotion"
 page = "teleports.md#motion-reset"
-role = "Slot `+0x14c`: the move velocity zeroed (`Human_SetMoveVelocity`), the steer `+0x300`-`+0x332` cleared, `+0x2e0`-`+0x2ec` set to (0, 0, 0, 1), the transform set again; `TeleportToFlag` and a scene's start call it."
+role = "Slot `+0x14c`: the move velocity zeroed (`Human_SetMoveVelocity`), the steer `+0x300`-`+0x332` cleared with the turn rate `+0x308`, the slide velocity `+0x2e0`-`+0x2ec` set to (0, 0, 0, 1), the transform set again; `TeleportToFlag` and a scene's start call it."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::resetMotion"
 status = "compared"

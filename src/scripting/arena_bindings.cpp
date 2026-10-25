@@ -169,10 +169,12 @@ NativeFunction makeTeleport(const BindingContext& context) {
         } else {
             placement.headingDegrees = world_objects::placementHeading(static_cast<float>(heading));
         }
+        // Object_Teleport makes the placement alone: the human's move goes on (docs/research/teleports.md).
         human->teleported = placement;
+        human->teleportMotion = world_objects::TeleportMotion::Kept;
         ++human->teleports;
         if (context->ai != nullptr) {
-            context->ai->humanTeleported(handle, placement);
+            context->ai->humanTeleported(handle, placement, world_objects::TeleportMotion::Kept);
         }
         return binding::none();
     };

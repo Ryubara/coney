@@ -201,9 +201,11 @@ void PlayLevelMode::placeReleased(const SceneStage::Release& release) {
     const raycast::CollisionMesh* ground = release.skipped ? &m_scenery->collision() : nullptr;
     if (release.human == m_playerHandle) {
         m_player->teleport(ground, human::PlayerStart{.position = release.feet, .headingDegrees = headingDegrees});
+        brainPlaced(m_player->human());
     } else if (const ai::AiHuman* fighter = castHumanOf(release.human); fighter != nullptr) {
         fighter->human->place(ground, release.feet, headingDegrees);
         fighter->human->resetMotion();
+        brainPlaced(*fighter->human);
     }
 }
 

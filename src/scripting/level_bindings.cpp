@@ -161,10 +161,12 @@ NativeFunction makeTeleportToFlag(const BindingContext& context) {
                                                          heading == kFlagHeading
                                                              ? world_objects::WorldFlags::headingDegrees(*flag, locate)
                                                              : static_cast<float>(heading))};
+        // Object_TeleportToFlag stops the human after the placement (docs/research/teleports.md#motion-reset).
+        human->teleportMotion = world_objects::TeleportMotion::Stopped;
         ++human->teleports;
         // A human in play is moved there too.
         if (context->ai != nullptr) {
-            context->ai->humanTeleported(human->handle, *human->teleported);
+            context->ai->humanTeleported(human->handle, *human->teleported, world_objects::TeleportMotion::Stopped);
         }
         return binding::none();
     };

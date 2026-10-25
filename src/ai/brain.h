@@ -373,6 +373,12 @@ class Brain {
     /// Frees the front action.
     /// @orig 0x0028da60 Brain_PopAction (unknown)
     void popAction();
+    /// The brain's part of a placement of its human (Human::place()): a front action that is a move (MoveAction, the
+    /// original's `MoveTo`, type 1) is popped, aborted first when it has started, so the human does not walk on from
+    /// where he stood (docs/research/teleports.md#placement). Every caller that places a human with a brain calls it
+    /// after the placement.
+    /// @orig 0x0023d440 Human_SetTransform (unknown)
+    void placed();
     /// Asks the actions to stop from the front, freeing each that agrees; stops at one that refuses. Returns whether
     /// the queue is empty.
     /// @orig 0x0028db20 Brain_ClearActions (unknown)

@@ -611,8 +611,7 @@ void PlayLevelMode::stepFlash() {
     if (!blocked && clip != nullptr) {
         // The clip sets the bit it holds as it starts: the stick step reads it (busy) and leaves the clip alone, where
         // the fight stance would otherwise put its idle over it on the very next update.
-        human.playScripted(*clip, kFlashAnim, 1.0F, kFlashFade,
-                           human::HeldFlags{.held = kFlashHeld, .set = kFlashHeld});
+        human.pushOverlayClip(*clip, kFlashAnim, kFlashFade, human::HeldFlags{.held = kFlashHeld, .set = kFlashHeld});
         m_print("flash: 665 plays\n");
     } else if (human.animator().animId() != kFlashAnim) {
         useFlash(human);

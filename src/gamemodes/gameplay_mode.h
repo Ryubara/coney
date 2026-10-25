@@ -80,8 +80,13 @@ class ScriptedPlayer {
     ScriptedPlayer(ScriptedPlayer&&) = delete;
     ScriptedPlayer& operator=(ScriptedPlayer&&) = delete;
 
-    /// Puts player 1 at `placement` (feet, heading in degrees) with no ground snap, as `TeleportToFlag` does.
-    virtual void teleportPlayer(const world_objects::Placement& placement) = 0;
+    /// Puts player 1 at `placement` (feet, heading in degrees) with no ground snap, as the script's teleport does:
+    /// `motion` Stopped for `TeleportToFlag` (his move stops), Kept for `Teleport` (it goes on).
+    virtual void teleportPlayer(const world_objects::Placement& placement, world_objects::TeleportMotion motion) = 0;
+    /// teleportPlayer() as `TeleportToFlag` does it.
+    void teleportPlayer(const world_objects::Placement& placement) {
+        teleportPlayer(placement, world_objects::TeleportMotion::Stopped);
+    }
     /// Player 1 starts a tag's spray clips facing the tag at `point` (Human::startTagSpray()); false when he cannot.
     virtual bool startTagSpray(const std::array<float, 3>& /*point*/) { return false; }
     /// Whether player 1's spray intro has ended and its loop plays: the stick game goes live.

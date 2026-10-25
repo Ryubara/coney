@@ -282,9 +282,11 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     /// Makes the human with the spawner and binds its brain to the handle, in `human`'s gang, with its type as the
     /// brain's class, keeping its priority (HuCreate's player argument); nothing without a spawner.
     void humanCreated(const HumanCreation& human) override;
-    /// Moves a bound AI human there as `TeleportToFlag` does (Human::place() onto placeGround(), then
-    /// Human::resetMotion()); the player's teleport is the level's (GameplayMode).
-    void humanTeleported(double handle, const world_objects::Placement& placement) override;
+    /// Moves a bound AI human there as the script's teleport does: Human::place() onto placeGround() and the brain's
+    /// part (Brain::placed()), then for `TeleportToFlag` (`motion` Stopped) Human::resetMotion(); the player's teleport
+    /// is the level's (GameplayMode).
+    void humanTeleported(double handle, const world_objects::Placement& placement,
+                         world_objects::TeleportMotion motion) override;
     /// Where a bound brain's human stands now, and its heading.
     [[nodiscard]] std::optional<world_objects::Placement> humanPlacement(double handle) const override;
     /// The character bindings' host (ai::ScriptedHumans).

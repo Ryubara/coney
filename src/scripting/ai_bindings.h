@@ -230,8 +230,10 @@ class AiBindingHost {
 
     /// `HuCreate` made `human` (kept in the context's CreatedHumans): from now on its handle names it.
     virtual void humanCreated(const HumanCreation& /*human*/) {}
-    /// `TeleportToFlag` put the human with `handle` at `placement`, with no ground snap.
-    virtual void humanTeleported(double /*handle*/, const world_objects::Placement& /*placement*/) {}
+    /// `TeleportToFlag` or `Teleport` put the human with `handle` at `placement`, with no ground snap; `motion` says
+    /// whether its move stops (`TeleportToFlag`) or goes on (`Teleport`).
+    virtual void humanTeleported(double /*handle*/, const world_objects::Placement& /*placement*/,
+                                 world_objects::TeleportMotion /*motion*/) {}
     /// The level's humans, brains and gangs as the character bindings drive them (scripting/human_bindings.h); null
     /// for none.
     [[nodiscard]] virtual HumanBindingHost* humans() { return nullptr; }

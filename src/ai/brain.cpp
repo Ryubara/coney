@@ -11,6 +11,7 @@
 #include "ai/fight_goal.h"
 #include "ai/gangs.h"
 #include "ai/melee_goal.h"
+#include "ai/move_action.h"
 #include "ai/perception.h"
 #include "ai/reaction_goals.h"
 #include "ai/script_services.h"
@@ -352,6 +353,21 @@ void Brain::popAction() {
     m_actions[m_actionFront].reset();
     m_actionFront = (m_actionFront + 1) % kActionQueueSize;
     --m_actionCount;
+}
+
+void Brain::placed() {
+    // The brain's facing (+0x110) is set to the new heading too: Coney's brain keeps no facing of its own (a move
+    // writes setMoveHeading() each update, and it lasts that update only), so there is none to set.
+    // The pop is made only when brain +0xec is not 4; no store of 4 to +0xec was found (every `sw` to +0xec in the
+    // program belongs to another object), Coney's brain has no such state, so it pops whenever the front is a move.
+    // Brain_PopAction aborts a started action first (Action_AbortAndDestroy, 0x002f9de0); a move never refuses.
+    auto* move = dynamic_cast<MoveAction*>(frontAction());
+    if (move == nullptr) {
+        return;
+    }
+    if (!move->started() || move->abort(*this)) {
+        popAction();
+    }
 }
 
 void Brain::finishAction(Action& action) {
