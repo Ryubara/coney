@@ -207,6 +207,18 @@ have yet (before the preloads at the legal screen fill it) is refused and the pa
 `src/debug/story_missions.cpp`, which a Python test checks against `research/missions.yaml` and the [levels
 list](../references/levels.md). The hub (`level95`) between the missions is not listed: the Levels page loads it.
 
+### Scene test {#scene-test}
+
+Open **Levels > Scene test**, enter the level and the scene name, then choose **Load**. For example, use
+`level99` and `l99_c1`. This reloads the level at checkpoint 1 through its own scene-test dispatcher: Coney runs
+`global.lua`, sets `SCENETEST` to the scene-name string, then runs the level script and its start callback. The level
+supplies its own cast and scene-test loop, as described in [Scene test](../research/scenes.md#scene-test).
+
+Use a scene supported by that level's dispatcher; this entry does not make every scene in the global scene list
+playable in every level. It differs from `--scene`, which starts a scene directly. Typing names changes only the
+editor; **Load** requests the reload at the next frame boundary. The name is passed as a string, never evaluated as
+Lua source. A later ordinary level load resets the debug flag through `global.lua` as usual.
+
 ### Movies {#movies}
 
 The Movies page plays any of the disc's Bink movies over whatever the game is doing, and then gives the game back
@@ -515,12 +527,12 @@ The signatures come from the masterlist: `coney-tools natives cpp` generates `sr
 
 ## The Lua console {#lua-console}
 
-*Run line* runs a line of Lua in the same script state the Natives page calls into, as the original's dormant scene-test
-hook would have run `SCENETEST=1` ([Debug features](../research/debug.md#debug-only-script-paths)). Coney's VM runs the
-game's compiled bytecode and has no Lua compiler, so the console understands the part of Lua a console needs, evaluated
+*Run line* runs a line of Lua in the same script state the Natives page calls into. A scene-test flag takes a scene
+name, such as `SCENETEST = 'l99_c1'` ([Scene test](../research/scenes.md#scene-test)). Coney's VM runs the game's compiled
+bytecode and has no Lua compiler, so the console understands the part of Lua a console needs, evaluated
 directly on the VM:
 
-- statements separated by `;`: an assignment (`SCENETEST = 1`, `t.x = 2`, `t[1] = 3`) or an expression list, whose
+- statements separated by `;`: an assignment (`SCENETEST = 'l99_c1'`, `t.x = 2`, `t[1] = 3`) or an expression list, whose
   values are printed; `=expr` prints, as Lua's own console does;
 - numbers, strings, `nil`, table constructors, globals, fields, calls `f(...)`, method calls `obj:m(...)`, unary minus
   and `not`, `+ - * / ..`, comparisons, `and`, `or` and parentheses.

@@ -832,13 +832,15 @@ int main(int argc, char** argv) {
     // any step: by the game session (the level flow's jump, from the front end or a level in play), or, before a
     // session runs (a viewer or a sandbox), by a new session started directly at that level.
     std::optional<std::pair<std::string, int>> pendingStart;
-    const auto jumpTo = [&session, &pendingStart, &wad](std::string_view name, int checkpoint) {
+    std::optional<std::string> pendingSceneTest;
+    const auto jumpTo = [&session, &pendingStart, &pendingSceneTest, &wad](std::string_view name, int checkpoint) {
         if (session) {
             return session->jumpToLevel(name, checkpoint);
         }
         if (!wad || !coney::platform::worldNamesFor(*wad, name)) {
             return false;
         }
+        pendingSceneTest.reset();
         pendingStart.emplace(std::string(name), checkpoint);
         return true;
     };
@@ -846,6 +848,21 @@ int main(int argc, char** argv) {
         // The game's scripts and state for the Lua console and the Cheats page: the session's, however it started.
         coney::platform::connectDebugServices(
             debugServices, [&session]() -> coney::platform::GameSession* { return session ? &*session : nullptr; });
+        debugServices.loadSceneTest = [&session, &pendingStart, &pendingSceneTest, &wad](std::string_view level,
+                                                                                         std::string_view scene) {
+            if (scene.empty()) {
+                return false;
+            }
+            if (session) {
+                return session->jumpToSceneTest(level, scene);
+            }
+            if (!wad || !coney::platform::worldNamesFor(*wad, level)) {
+                return false;
+            }
+            pendingStart.emplace(std::string(level), 1);
+            pendingSceneTest = std::string(scene);
+            return true;
+        };
         debugServices.loadLevel = [jumpTo](std::string_view name) { return jumpTo(name, 1); };
         debugServices.loadLevelAt = [jumpTo](std::string_view name, int checkpoint) {
             return jumpTo(name, checkpoint);
@@ -976,7 +993,7 @@ int main(int argc, char** argv) {
     // Starts a game session directly at level `name`, as `--play-level` does, in place of the sandbox's play mode or
     // viewer on top: the debug menus' first level jump when no session runs yet. The mode it replaces goes first, so
     // its sectors leave the budget before the level loads.
-    const auto startSessionAt = [&](const std::string& name, int checkpoint) {
+    const auto startSessionAt = [&](const std::string& name, int checkpoint, const std::optional<std::string>& scene) {
         coney::GameMode* replaced = replaceable();
         if (replaced != nullptr && modes.top() != replaced) {
             debugSession.print("levels: finish the mode on top first");
@@ -990,7 +1007,11 @@ int main(int argc, char** argv) {
         coney::platform::GameSession& started = makeSession();
         started.attachAudio(audio.get());
         started.setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
-        started.startAtLevel(name, checkpoint);
+        if (scene) {
+            started.startSceneTest(name, *scene);
+        } else {
+            started.startAtLevel(name, checkpoint);
+        }
         debugSession.print(std::format("levels: playing {} at checkpoint {}", name, checkpoint));
     };
     // The developer overlay (F1), only with a window; without it the pad menu still works.
@@ -1068,8 +1089,9 @@ int main(int argc, char** argv) {
     // The window's events go past the developer overlay first; while it has the keyboard, the keyboard pad is off.
     coney::FrameHooks hooks;
     coney::platform::HumanWatch humanWatch; // the humans' events for the event log
-    hooks.beginFrame = [&window, &devOverlay, devices, &pendingSandbox, &playSandbox, &pendingStart, &startSessionAt,
-                        &session, &playFramesDone, &humanWatch, &playLevel, &sessionPlayMode, &eventFile] {
+    hooks.beginFrame = [&window, &devOverlay, devices, &pendingSandbox, &playSandbox, &pendingStart, &pendingSceneTest,
+                        &startSessionAt, &session, &playFramesDone, &humanWatch, &playLevel, &sessionPlayMode,
+                        &eventFile] {
         // The event log: what the last frame's step did to the humans, then the step the next frame runs.
         if (coney::events::enabled()) {
             humanWatch.update(playLevel ? playLevel.get() : sessionPlayMode());
@@ -1088,7 +1110,8 @@ int main(int argc, char** argv) {
         if (pendingStart) {
             const std::pair<std::string, int> start = *pendingStart;
             pendingStart.reset();
-            startSessionAt(start.first, start.second);
+            const auto scene = std::exchange(pendingSceneTest, std::nullopt);
+            startSessionAt(start.first, start.second, scene);
         }
         if (session) {
             session->beginFrame();

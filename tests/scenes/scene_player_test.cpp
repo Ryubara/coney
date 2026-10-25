@@ -784,3 +784,41 @@ TEST_CASE("an intro card is held along the camera's own view axis", "[scenes]") 
     CHECK(card.position.z == Approx(3.0F).margin(1e-4));
     CHECK(card.rotation.z == Approx(half));
 }
+
+// Shared segment storage must outlive every runner's last read when a scene wraps.
+// Expected: docs/research/scenes.md#scene-test (looping scenes retain their cast across passes).
+TEST_CASE("scene-test looping a three-part scene keeps roles after the first track wraps", "[scenes][scene-test]") {
+    Harness h;
+    auto spec = test::twoPartSpec();
+    spec.frames = 60;
+    h.files["tst_c1"] = test::sceneHeaderRecord(spec).data();
+    h.files["tst_c1aa"] = test::sceneSegmentRecord("tst_c1aa", "ab", test::segmentPart()).data();
+    h.files["tst_c1ab"] = test::sceneSegmentRecord("tst_c1ab", "", test::segmentPart()).data();
+    h.system.preload("tst_c1", "");
+    h.step();
+    REQUIRE(h.system.joinHuman(12.0, 1, 0, 0));
+    REQUIRE(h.system.joinHuman(14.0, 1, 1, 0));
+    auto request = Harness::cinematic();
+    request.looping = true;
+    REQUIRE(h.system.play(1, request));
+    for (unsigned step = 0; step < 10 && h.system.state(1) == scenes::SceneState::Starting; ++step) {
+        h.step();
+    }
+    REQUIRE(h.system.state(1) == scenes::SceneState::Playing);
+    float previous = 0.0F;
+    unsigned loops = 0;
+    for (unsigned step = 0; step < 200; ++step) {
+        h.step();
+        const auto frame = h.system.frame(1);
+        REQUIRE(frame.has_value());
+        if (*frame + 1.0F < previous) {
+            ++loops;
+        }
+        previous = *frame;
+        REQUIRE(h.system.inScene(12.0));
+        REQUIRE(h.system.inScene(14.0));
+    }
+    CHECK(loops >= 2);
+    CHECK(h.system.stats().ended == 0);
+    CHECK(h.system.stats().aborted == 0);
+}

@@ -607,3 +607,22 @@ TEST_CASE("story: a level's intro movie plays before the level's first step", "[
     run.frames(1);
     CHECK(run.levelUpdates == 1);
 }
+
+// An ordinary debug jump during fade-in must cancel an unconsumed scene-test request.
+// Expected: unverified, #283 (Coney debug requests must not leak into ordinary startup).
+TEST_CASE("scene-test flow cancels its pending entry when an ordinary jump replaces it", "[scene-test][story_start]") {
+    StoryRun run({}, false, std::nullopt, false);
+    coney::LoadingScreen screen(run.device, {}, {}, {}, coney::LoadScreenSounds{}, [](std::string_view) {});
+    run.flow->gameplay().setLoadingScreen(&screen);
+    run.flow->startSceneTest("level1", "chosen_scene");
+    run.frames(2);
+    REQUIRE(run.stack.topId() == GameplayMode::kId);
+    REQUIRE(run.flow->gameplay().phase() == GameplayMode::Phase::FadeIn);
+    REQUIRE(run.starts.empty());
+    REQUIRE(run.flow->jumpToLevel("level1", 2));
+    run.frames(110);
+    REQUIRE(run.starts.size() == 1);
+    CHECK(run.flow->scripts().vm().global("SCENETEST").isNil());
+    CHECK(run.starts.front().checkpoint == 2);
+    CHECK(run.flow->scripts().errors() == 0);
+}

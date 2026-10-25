@@ -262,15 +262,34 @@ bool GameSession::jumpToLevel(std::string_view level, int checkpoint) {
     if (!m_flow->state().levels.find(level)) {
         return false;
     }
+    m_pendingSceneTest.reset();
     m_pendingLevel = std::string(level);
     m_pendingCheckpoint = checkpoint;
+    return true;
+}
+
+void GameSession::startSceneTest(std::string_view level, std::string_view scene) {
+    m_flow->startSceneTest(level, scene);
+}
+
+bool GameSession::jumpToSceneTest(std::string_view level, std::string_view scene) {
+    if (scene.empty() || !m_flow->state().levels.find(level)) {
+        return false;
+    }
+    m_pendingLevel = std::string(level);
+    m_pendingCheckpoint = 1;
+    m_pendingSceneTest = std::string(scene);
     return true;
 }
 
 void GameSession::beginFrame() {
     if (m_pendingLevel) {
         const std::string level = std::exchange(m_pendingLevel, std::nullopt).value_or(std::string{});
-        (void)m_flow->jumpToLevel(level, m_pendingCheckpoint);
+        if (const auto scene = std::exchange(m_pendingSceneTest, std::nullopt)) {
+            (void)m_flow->jumpToSceneTest(level, *scene);
+        } else {
+            (void)m_flow->jumpToLevel(level, m_pendingCheckpoint);
+        }
     }
     if (m_pendingMovie) {
         auto [name, captions] = std::exchange(m_pendingMovie, std::nullopt).value_or(std::pair<std::string, bool>{});

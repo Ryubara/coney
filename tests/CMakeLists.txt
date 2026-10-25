@@ -62,6 +62,7 @@ add_executable(coney_tests
     gamemodes/start_up_flow_test.cpp
     gamemodes/rumble_start_test.cpp
     gamemodes/story_start_test.cpp
+    gamemodes/scene_test_start_test.cpp
     graphics/font_test.cpp
     graphics/frame_stats_test.cpp
     graphics/car_draw_test.cpp
@@ -457,6 +458,7 @@ if(CONEY_DEBUG_TOOLS)
         platform/disc_fall_camera_test.cpp
         platform/disc_fighter_models_test.cpp
         platform/disc_game_session_test.cpp
+        platform/disc_scene_test_entry_test.cpp
         platform/disc_hub_doors_test.cpp
         platform/disc_inspector_freeze_test.cpp
         platform/disc_level93_molotov_test.cpp

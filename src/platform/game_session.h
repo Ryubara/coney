@@ -100,6 +100,10 @@ class GameSession {
     /// The debug menus' jump to `level` at `checkpoint`, carried out at the next beginFrame(); false, changing nothing,
     /// when the level table has no such level.
     bool jumpToLevel(std::string_view level, int checkpoint);
+    /// Starts the level's scene-test dispatcher directly, before any frame is stepped.
+    void startSceneTest(std::string_view level, std::string_view scene);
+    /// Requests a scene-test level load at the next frame boundary; replaces an earlier level request.
+    bool jumpToSceneTest(std::string_view level, std::string_view scene);
     /// The debug menu's movie (docs/guides/debug-menu.md#movies): plays `name` over whatever runs at the next
     /// beginFrame(), as a MovieRequest::debug (the game held beneath it, its sound held and given back, played even
     /// under `--skip-movies`), with ordinary captions whatever the subtitle option when `captions`. False, changing
@@ -145,6 +149,7 @@ class GameSession {
     LevelSetup m_firstLevelSetup;
     std::shared_ptr<HumansTrace> m_humansTrace;
     std::optional<std::string> m_pendingLevel;
+    std::optional<std::string> m_pendingSceneTest;
     int m_pendingCheckpoint = 1;
     std::optional<std::pair<std::string, bool>> m_pendingMovie; // playDebugMovie(): the name and the captions switch
     std::optional<std::vector<std::string>> m_discMovies;

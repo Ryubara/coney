@@ -111,6 +111,7 @@ void StartUpFlow::start() {
 }
 
 void StartUpFlow::startAtLevel(std::string_view level, int checkpoint, std::function<void()> ready) {
+    m_gameplay.requestSceneTest(std::nullopt);
     if (m_hasScripts) {
         m_scripts.create();
     }
@@ -155,6 +156,7 @@ bool StartUpFlow::jumpToLevel(std::string_view level, int checkpoint) {
         m_log(std::format("level flow: jump to {}: the level flow is not running; ignored\n", level));
         return false;
     }
+    m_gameplay.requestSceneTest(std::nullopt);
     // The level first, so the level flow's resume below starts it and not the front end.
     m_state.checkPoint = checkpoint;
     m_levelFlow.chooseLevel(level);
@@ -162,6 +164,22 @@ bool StartUpFlow::jumpToLevel(std::string_view level, int checkpoint) {
         m_stack.pop();
     }
     m_log(std::format("level flow: jump to {} checkpoint {}\n", level, checkpoint));
+    return true;
+}
+
+void StartUpFlow::startSceneTest(std::string_view level, std::string_view scene) {
+    startAtLevel(level, 1);
+    m_gameplay.requestSceneTest(std::string(scene));
+}
+
+bool StartUpFlow::jumpToSceneTest(std::string_view level, std::string_view scene) {
+    if (level.empty() || scene.empty()) {
+        return false;
+    }
+    if (!jumpToLevel(level, 1)) {
+        return false;
+    }
+    m_gameplay.requestSceneTest(std::string(scene));
     return true;
 }
 

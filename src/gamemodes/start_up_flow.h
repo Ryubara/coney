@@ -12,7 +12,6 @@
 
 #include "gamemodes/front_end_services.h"
 #include "gamemodes/game_mode_stack.h"
-#include "gamemodes/gameplay_mode.h"
 #include "gamemodes/legal_screen_mode.h"
 #include "gamemodes/level_flow_mode.h"
 #include "gamemodes/memory_card_mode.h"
@@ -23,6 +22,7 @@
 #include "gamemodes/rumble_intro_layer.h"
 #include "gamemodes/rumble_menu_mode.h"
 #include "gamemodes/rumble_result_mode.h"
+#include "gamemodes/scene_test_gameplay_mode.h"
 #include "graphics/render_device.h"
 #include "graphics/screen_fade.h"
 #include "gui/global_strings.h"
@@ -152,6 +152,12 @@ class StartUpFlow final : public script::BindingHost {
     ///
     /// Coney's tool: the original's debug menus are not in the retail game (docs/research/debug.md#not-present).
     bool jumpToLevel(std::string_view level, int checkpoint);
+    /// Starts directly in a level's own scene-test path; the request is consumed when its scripts load.
+    /// @coney-only Debug entry, with a scene-name string rather than a direct scene player.
+    void startSceneTest(std::string_view level, std::string_view scene);
+    /// Queues the scene-test entry through the running level flow; false leaves no debug request behind.
+    /// @coney-only Debug level transition.
+    bool jumpToSceneTest(std::string_view level, std::string_view scene);
     void playMovie(std::string_view name) override;
     void playMusic(std::string_view track) override;
     void stopMusic() override;
@@ -191,7 +197,7 @@ class StartUpFlow final : public script::BindingHost {
     bool m_hasScripts;
     script::ScriptSystem m_scripts; // after everything its bindings refer to
     ProfileManagerMode m_profileManager;
-    GameplayMode m_gameplay;
+    SceneTestGameplayMode m_gameplay;
     LevelFlowMode m_levelFlow;
     MissionCompleteMode m_missionComplete;
     PauseRecordLoader m_loadRecord; // the sheet-table records' loader, which the two modes below call through

@@ -298,6 +298,7 @@ caller, not new logic ([Debug menus: adding a feature](debug-menu.md#adding-a-fe
 
 | Proposed native | C++ entry point today | What it does | Status |
 | --- | --- | --- | --- |
+| `Coney.SceneTest(level, scene)` | `runSceneTestLevelScript()` | Loads the level's own scene-test path with a scene-name string set between the global and level scripts; the debug entry supplies the level and scene | engine-only, on its branch |
 | `Coney.SetFlight(human, speed, climb)` | `human::Human::setFlight(std::optional<Flight>)`, `human::noclipFlight()` (the debug noclip change, not on main yet) | Flies a human by the stick, through walls and floors, with no gravity; `nil` ends it and drops him with the normal physics | engine-only, on its branch |
 | `Coney.SetNoclip(on)` | `PlayLevelMode::setNoclip()`, `human::Player::setNoclip()` (the debug noclip change, not on main yet) | The player's flight as the debug noclip drives it (pad 1 flies him) | engine-only, on its branch |
 | `Coney.TeleportPlayer(x, y, z, heading)` | `human::Player::teleport(mesh, PlayerStart)`, `PlayLevelMode::teleport()` | Puts the player on the ground below a spot, with the camera behind him and nothing to blend from | engine-only |
