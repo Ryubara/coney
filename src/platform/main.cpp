@@ -591,6 +591,7 @@ int main(int argc, char** argv) {
             if (options->freezeWorld) {
                 playLevel->freezeWorld();
             }
+            playLevel->giveAtStart(options->gives);
             if (const std::optional<std::string> tracePath = options->traceFile; tracePath) {
                 if (auto traced = playLevel->traceTo(*tracePath); !traced) {
                     logError(traced.error().message);
@@ -787,6 +788,8 @@ int main(int argc, char** argv) {
                     if (options->freezeWorld) {
                         mode.freezeWorld();
                     }
+                    // `--give`: player 1's inventory counts from the first step, for a capture that needs an item.
+                    mode.giveAtStart(options->gives);
                     if (const std::optional<std::string> tracePath = options->traceFile; tracePath) {
                         if (auto traced = mode.traceTo(*tracePath); !traced) {
                             return std::unexpected(std::move(traced.error()));

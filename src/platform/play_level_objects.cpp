@@ -772,6 +772,10 @@ void PlayLevelMode::stepPickups() {
     if (m_pickups == nullptr) {
         return;
     }
+    // `--give`: the counts asked for, once, so this step's end already tells the fighter what it holds.
+    for (const ItemGift& gift : std::exchange(m_gifts, {})) {
+        m_pickups->setCarried(0, gift.item, gift.count);
+    }
     human::Human& human = m_player->human();
     human::ScriptState& script = human.script();
     stepStereoPanel(human);
@@ -787,6 +791,13 @@ void PlayLevelMode::stepPickups() {
         m_theftCar.reset();
     }
     stepMugging(human);
+    // Circle + triangle's spray takes one spray paint each, with no pick-up notice (`Player_Special`'s
+    // `Human_AddSprayPaint(h, -1)`, docs/research/combat/index.md#run-attacks). Its `Human_DropHeld` drops nothing for
+    // player 1: a player with an object in hand gets no spray (PlayerCombat::special()).
+    for (int sprays = human.fighter().takeSprays(); sprays > 0; --sprays) {
+        m_pickups->spendItem(0, item::kSprayPaint);
+        m_print(std::format("spray: 664, spray paint left {}\n", m_pickups->carried(0, item::kSprayPaint)));
+    }
     // A throw's release event lets go of the held object, thrown (Human_ReleaseThrow on event 10).
     if (human.takeThrowRelease() && throwClip(human.animator().animId()) &&
         script.heldObject != world_objects::kNoObject) {
@@ -823,6 +834,9 @@ void PlayLevelMode::stepPickups() {
     }
     m_heldObject = script.heldObject;
     human.fighter().setAnimSet(m_pickups->animSetOf(script.heldObjectName));
+    // What the specials read next update: any object in the hand refuses them, and the spray asks for paint.
+    human.fighter().setHoldingObject(script.heldObject != world_objects::kNoObject);
+    human.fighter().setSprayPaint(m_pickups->carried(0, item::kSprayPaint) > 0);
 }
 
 void PlayLevelMode::stepStereoPanel(const human::Human& human) {

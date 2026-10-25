@@ -223,6 +223,9 @@ class LevelPickups {
     void dealerSold(int player, int item, int amount, int price);
     /// Player `player` (0 or 1) used one of item `item` (a flash): one fewer, no callbacks.
     void spendItem(int player, int item);
+    /// Player `player` (0 or 1) holds `count` of item `item` from now on, with no callbacks and no notice: `--give`,
+    /// Coney's test aid.
+    void setCarried(int player, int item, int count);
 
     /// The mugging record `SetInterrogateParam` set (set 0-2's override) while its required time is not 0; nothing for
     /// the defaults (docs/research/combat-throws.md#mugging).

@@ -324,6 +324,8 @@ int LevelPickups::score(int player) const { return static_cast<int>(m_state.play
 
 void LevelPickups::spendItem(int player, int item) { m_state.player.inventory.give(player, item, -1); }
 
+void LevelPickups::setCarried(int player, int item, int count) { m_state.player.inventory.set(player, item, count); }
+
 void LevelPickups::dealerSold(int player, int item, int amount, int price) {
     script::addInventoryItem(m_scripts, m_state, player, item, amount, false);
     if (amount > 0) {
