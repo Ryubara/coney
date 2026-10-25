@@ -396,6 +396,17 @@ def test_a_fix_whose_parent_pull_request_is_merged_or_missing_is_refused(tmp_pat
     assert "work-fix has no open pull request to fix (the branch has none)" in opened.text()
 
 
+def test_a_fix_whose_parent_pull_request_is_closed_is_refused_and_not_reopened(tmp_path: Path) -> None:
+    opened = docs_unit(tmp_path)
+    assert opened.run() == 0
+    start_fix(opened)
+    opened.gh.prs[812]["state"] = "CLOSED"
+    opened.gh.calls.clear()
+    assert opened.run(task="work-fix") == 1
+    assert "work-fix has no open pull request to fix (#812 is closed)" in opened.text()
+    assert opened.gh.writes() == [] and opened.gh.prs[812]["state"] == "CLOSED"
+
+
 # --- 33: the read-back -----------------------------------------------------------------------------------------------
 
 

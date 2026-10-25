@@ -62,7 +62,7 @@ def check_existing(run: Run, existing: PullRequest | None) -> None:
     """Refuse a merged or closed pull request, and a fix task with no open pull request to fix."""
     fix = run.task != run.owner
     if fix:
-        if existing is None or existing.state == "MERGED":
+        if existing is None or existing.state != "OPEN":
             why = f"#{existing.number} is {existing.state.lower()}" if existing else "the branch has none"
             raise Stop(EXIT_REFUSED, f"{run.task} has no open pull request to fix ({why})")
         return
