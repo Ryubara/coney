@@ -149,13 +149,13 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 ### Weapons
 
 - **Sets 4-6** (barrels, bottles, the ghetto blaster): square and cross play the unarmed moves; the original throws
-  (505-507, 467-472, 551-553) or smashes (473 / 475) ([Weapons](combat-moves.md#weapons)).
+  (505-507, 467-472, 551-553) or smashes (473 / 475) ([Weapons](combat-throws.md#weapons)).
 - **Knife and bottle kills** (484-496) and **throwing a melee weapon** (491 / 502, next entry) are not built.
 - **Throwing a melee weapon with cross + square** (`0x22`, 502 / 491): the original throws a knife, baton or bat unless
   a target is within 2.0 m (then it does nothing, and the cross's release swings 36). Coney refuses the command for a
   player holding any object, as `Player_Special` (`0x00287730`, confirmed (code)) does, and never throws: with nobody
   near the cross's release swings where the original throws. The special 653 and circle + cross's strong grapple no
-  longer start with an object in hand (fixed with issue #228; [Cross with a bat in hand](combat-moves.md#bat-cross)).
+  longer start with an object in hand (fixed with issue #228; [Cross with a bat in hand](combat-throws.md#bat-cross)).
   Coney: `repo:src/combat/player_combat.cpp`.
 - **Clip lengths**: Coney ends a clip when its time reaches its duration, ceil(F / rate) updates; the original ends
   it on the update its frame would reach F, one update sooner on 50 of the 174 clips in the move tables (19, 20, 34
@@ -166,9 +166,9 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 - **Wear**: weapons never break; the original wears them on the `use` event.
 - **Armed chain**: Coney's armed square plays the slot's swing each time; the original alternates 39 / 40 (baton)
   and 45 / 46 (knife) for a square pressed in the swing. With a bat the two agree: 34 has no chain window, so the
-  original never plays 35 from the pad either ([Cross with a bat in hand](combat-moves.md#bat-cross)).
+  original never plays 35 from the pad either ([Cross with a bat in hand](combat-throws.md#bat-cross)).
 - **Blocks against weapons**: the original's rules by set (no block of an armed hit unarmed, the bat's 629, the armed
-  block clips 621-624) are missing ([Weapons](combat-moves.md#weapons)).
+  block clips 621-624) are missing ([Weapons](combat-throws.md#weapons)).
 - **Armed AI**: no AI human holds or uses a weapon.
 
 ### The AI in a fight

@@ -2194,7 +2194,7 @@ status = "legacy"
 [[function]]
 address = 0x002880d8
 name = "Player_CrossWithWeapon"
-page = "combat-moves.md#weapons"
+page = "combat-throws.md#weapons"
 level = "confirmed-code"
 coney = "src/combat/attacks.h:throwAttack"
 status = "legacy"

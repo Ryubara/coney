@@ -1,8 +1,8 @@
 # a bat in hand: square, then a cross tap 3, 8, 12, 14, 18, 22, 26, 30, 33, 35, 36, 37, 38, 40 updates later, every 90 updates.
-# Research: docs/research/combat-moves.md#bat-cross. Slot 1 (the street, nobody near); dyn_bat_tuff put in the hand
+# Research: docs/research/combat-throws.md#bat-cross. Slot 1 (the street, nobody near); dyn_bat_tuff put in the hand
 # at update 3 (Human_PlaceItemInHand 0x00238540). Frames are updates of 1/30 s.
 description = "a bat in hand: square, then a cross tap 3, 8, 12, 14, 18, 22, 26, 30, 33, 35, 36, 37, 38, 40 updates later, every 90 updates"
-research = "docs/research/combat-moves.md#bat-cross"
+research = "docs/research/combat-throws.md#bat-cross"
 input = "bat_cross_after_square.txt"
 updates = 1310
 fields = ["player"]

@@ -1,9 +1,9 @@
 # A bat in hand, PoizoCiv pinned 1.5 m ahead (inside the melee throw's 2.0 m refusal): cross held and square tapped
 # (0x22), then cross released; then a plain square and a plain cross at him. Research:
-# docs/research/combat-moves.md#bat-cross. Slot 6 (the street with the puppet civilian); dyn_bat_tuff put in the hand at
+# docs/research/combat-throws.md#bat-cross. Slot 6 (the street with the puppet civilian); dyn_bat_tuff put in the hand at
 # update 3 (Human_PlaceItemInHand 0x00238540). Frames are updates of 1/30 s.
 description = "slot 6, a bat in hand, PoizoCiv 1.5 m ahead: cross held + square (0x22), then the cross release"
-research = "docs/research/combat-moves.md#bat-cross"
+research = "docs/research/combat-throws.md#bat-cross"
 input = "bat_cross_square_near.txt"
 updates = 130
 fields = ["player", "enemy"]
