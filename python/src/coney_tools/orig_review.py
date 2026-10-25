@@ -6,7 +6,8 @@ The reviewer agent (.claude/agents/reviewer.md) compares a Coney function with t
 what to review and holds its results:
 
 * a **unit** is one Coney function definition with a body whose `@orig` addresses come from its own comment, a
-  comment in its body or its declaration's comment; its body hash says whether it changed since a review;
+  comment in its body or its declaration's comment; its body hash (of the code only: comments and white space are
+  left out) says whether it changed since a review;
 * `pr_stamp` lists the units a branch adds or changes (`orig review-stamp --branch`), `sweep_stamp` the units of a
   folder or of chosen addresses not yet reviewed at their current body (`orig review-stamp --folder`);
 * `verdict_problems` and `gate` are the release gate on a branch's `ORIG-REVIEW.json` (`orig check-review`, run by
@@ -23,16 +24,18 @@ from __future__ import annotations
 
 import csv
 import datetime
+import functools
 import hashlib
 import json
 import re
 import subprocess
 from collections import defaultdict
-from collections.abc import Callable, Iterable
-from dataclasses import dataclass
+from collections.abc import Callable, Iterable, Mapping
+from dataclasses import dataclass, field, replace
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+from coney_tools import stamps
 from coney_tools.config import ConfigError, workspace_folder
 from coney_tools.conventions import load_conventions
 from coney_tools.orig_index import SOURCE_DIR, SOURCE_SUFFIXES
@@ -81,6 +84,8 @@ class Unit:
     addresses: tuple[int, ...]
     names: tuple[str, ...]  # the original's names, as the tags give them
     body_sha256: str
+    #: The hash the body had before comments and white space were left out of it: to read what was recorded then.
+    legacy_sha256: str = field(default="", compare=False, repr=False)
 
     @property
     def where(self) -> str:
@@ -133,8 +138,64 @@ def files_at(root: Path, commit: str) -> dict[str, str]:
     return texts
 
 
+#: The token classes, tried in this order at every position: a comment (a `//` one goes on over a backslash and a
+#: newline), a raw string, a string, a number (it may hold digit separators: `48'000`), a character literal, a word,
+#: white space, any other character. A literal is matched whole, so a `//` or a quote inside one is code.
+_TOKEN = re.compile(
+    r"""
+    (?P<comment>//(?:\\\r?\n|[^\n])*|/\*.*?(?:\*/|\Z))
+    |(?P<raw>(?:u8|u|U|L)?R"(?P<delim>[^ ()\\\t\v\f\r\n"]{0,16})\(.*?\)(?P=delim)")
+    |(?P<string>(?:u8|u|U|L)?"(?:\\.|[^"\\\n])*")
+    |(?P<number>\.?\d(?:[eEpP][+-]|['\w.])*)
+    |(?P<char>(?:u8|u|U|L)?'(?:\\.|[^'\\\n])*')
+    |(?P<word>[A-Za-z_]\w*)
+    |(?P<space>\s+)
+    |(?P<other>.)
+    """,
+    re.VERBOSE | re.DOTALL,
+)
+#: The characters that would run into a neighbour if nothing stood between them (`a ++b` is not `a + +b`).
+_OPERATOR_CHARS = frozenset("+-*/%&|^<>=!:.~?#")
+
+
+def _glues(before: str, after: str) -> bool:
+    """Whether a space between these two characters is code: two word characters, or two operator characters, would
+    merge into one token without it."""
+
+    def word(char: str) -> bool:
+        return char.isalnum() or char == "_"
+
+    return (word(before) and word(after)) or (before in _OPERATOR_CHARS and after in _OPERATOR_CHARS)
+
+
+def code_text(text: str) -> str:
+    """`text` as code only: each comment and run of white space is gone, except one space where two tokens would
+    otherwise run together, and every string, raw string and character literal is kept whole (a `//` inside a string
+    is code). Two texts a compiler reads the same way, up to comments and layout, give one `code_text`."""
+    out: list[str] = []
+    pending = False
+    for match in _TOKEN.finditer(text):
+        if match.lastgroup in ("comment", "space"):
+            pending = True
+            continue
+        token = match.group(0)
+        if pending and out and _glues(out[-1][-1], token[0]):
+            out.append(" ")
+        pending = False
+        out.append(token)
+    return "".join(out)
+
+
 def _body_hash(lines: list[str], function: Function) -> str:
-    """The SHA-256 of a definition's lines, trailing blanks dropped: what says it changed."""
+    """The SHA-256 of a definition's code (`code_text` of its lines): what says it changed. An edit of only comments
+    or white space leaves it as it was (issue 859)."""
+    body = code_text("\n".join(lines[function.line - 1 : function.line - 1 + function.lines]))
+    return hashlib.sha256(body.encode("utf-8")).hexdigest()
+
+
+def _legacy_body_hash(lines: list[str], function: Function) -> str:
+    """The SHA-256 of a definition's lines, trailing blanks dropped: the hash before comments and white space were
+    left out. Kept to read what was recorded then (`recorded_body_is_current`, `status_of`)."""
     body = "\n".join(line.rstrip() for line in lines[function.line - 1 : function.line - 1 + function.lines])
     return hashlib.sha256(body.encode("utf-8")).hexdigest()
 
@@ -175,6 +236,7 @@ def units_from(texts: dict[str, str]) -> list[Unit]:
                     tuple(dict.fromkeys(t.address for t in tags)),
                     tuple(dict.fromkeys(t.name for t in tags)),
                     _body_hash(lines, function),
+                    _legacy_body_hash(lines, function),
                 )
             )
     # Two definitions with one key (a platform variant of a free function) are told apart by their file.
@@ -182,14 +244,8 @@ def units_from(texts: dict[str, str]) -> list[Unit]:
     for unit in found:
         counts[unit.key] += 1
     return [
-        Unit(f"{u.path}::{u.key}", *_rest(u)) if counts[u.key] > 1 and not u.key.startswith(u.path) else u
-        for u in found
+        replace(u, key=f"{u.path}::{u.key}") if counts[u.key] > 1 and not u.key.startswith(u.path) else u for u in found
     ]
-
-
-def _rest(unit: Unit) -> tuple[str, int, str, tuple[int, ...], tuple[str, ...], str]:
-    """A unit's fields after its key."""
-    return (unit.path, unit.line, unit.coney, unit.addresses, unit.names, unit.body_sha256)
 
 
 def _declared_tags(function: Function, candidates: list[tuple[Function, list[Tag]]]) -> list[Tag]:
@@ -257,6 +313,56 @@ def sweep_stamp(
         and (every or status[u.key] in ("unreviewed", "stale"))
     ]
     return {"mode": "sweep", "commit": commit, "functions": [{**u.to_json(), "status": status[u.key]} for u in wanted]}
+
+
+# --- hashes recorded before comments were left out -----------------------------------------------------------------
+
+#: The `covers` key of a `compared` stamp that holds the Coney function's body hash.
+BODY_COVER = "coney_body_sha256"
+
+
+@functools.lru_cache(maxsize=8)
+def _units_at_commit(root: str, commit: str) -> dict[str, Unit]:
+    """The units of `src/` at one commit by key (a commit never changes, so the answer is kept)."""
+    return {u.key: u for u in units_at(Path(root), commit)}
+
+
+def recorded_body_is_current(root: Path, recorded: str | None, commit: str, key: str, body_sha256: str) -> bool:
+    """Whether a body hash recorded at `commit` (a stamp's `coney_body_sha256`) still stands for the function `key`,
+    whose body hash now is `body_sha256`: it is that hash, or the hash the body had before comments and white space
+    were left out and the function's code at `commit` is the code it has now. This rehashes on read: no recorded
+    stamp is rewritten or invalidated by the change of hash, and a code edit after the stamp still refuses it."""
+    if not recorded:
+        return False
+    if recorded == body_sha256:
+        return True
+    if not re.fullmatch(r"[0-9a-f]{40}", commit or ""):
+        return False
+    try:
+        then = _units_at_commit(str(root), commit).get(key)
+    except ConfigError:
+        return False
+    return then is not None and then.legacy_sha256 == recorded and then.body_sha256 == body_sha256
+
+
+def current_compared(
+    root: Path, report: stamps.Report, address: str, covers: Mapping[str, str], key: str
+) -> stamps.Stamp | None:
+    """The newest `compared` stamp of `address` when it passes and covers `covers`, where the function `key`'s body
+    hash (`BODY_COVER`) is read by `recorded_body_is_current`; else None."""
+    found = report.current("compared", address, covers)
+    if found is not None:
+        return found
+    latest = report.latest("compared", address)
+    if latest is None or latest.result != "pass":
+        return None
+    if any(latest.covers.get(name) != value for name, value in covers.items() if name != BODY_COVER):
+        return None
+    if BODY_COVER in covers and recorded_body_is_current(
+        root, latest.covers.get(BODY_COVER), latest.commit, key, covers[BODY_COVER]
+    ):
+        return latest
+    return None
 
 
 # --- the verdict --------------------------------------------------------------------------------------------------
@@ -467,13 +573,19 @@ def entry(unit: Unit, commit: str, cls: str, mode: str, source: str, note: str, 
 
 def status_of(ledger: Ledger, units: list[Unit]) -> dict[str, str]:
     """Each unit's key -> its latest review's class at its current body, "stale" when it was reviewed at another
-    body only, "unreviewed" when never."""
+    body only, "unreviewed" when never. A review recorded under the hash from before comments were left out counts
+    while the function's lines are as they were then (its `legacy_sha256`)."""
     latest: dict[tuple[str, str], str] = {}
     seen: set[str] = set()
     for item in ledger.entries():
         latest[(item["key"], str(item.get("body_sha256")))] = str(item.get("class"))
         seen.add(item["key"])
-    return {u.key: latest.get((u.key, u.body_sha256)) or ("stale" if u.key in seen else "unreviewed") for u in units}
+    return {
+        u.key: latest.get((u.key, u.body_sha256))
+        or (latest.get((u.key, u.legacy_sha256)) if u.legacy_sha256 else None)
+        or ("stale" if u.key in seen else "unreviewed")
+        for u in units
+    }
 
 
 #: How much each status needs attention, least first: an address's status is its worst unit's.

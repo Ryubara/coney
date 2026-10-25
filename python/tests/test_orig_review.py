@@ -2,6 +2,7 @@
 """Tests for the orig review: which `@orig` functions a branch touches, the release gate on the reviewer's
 verdict, and the ledger of reviewed functions. Invented code, names and addresses only."""
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -265,3 +266,181 @@ def test_review_stamp_command_prints_json(repo: Path, monkeypatch: pytest.Monkey
     assert main(["orig", "review-stamp", "--folder", "src/ai/", "--ledger", str(repo / "l.jsonl")]) == 0
     sweep = json.loads(capsys.readouterr().out)
     assert sweep["mode"] == "sweep" and [f["coney"] for f in sweep["functions"]] == ["Brain::think", "Brain::wait"]
+
+
+# --- the body hash ignores comments and whitespace (issue 859) ------------------------------------------------------
+
+THINK_BODY = "    return hunger > 3 ? 1 : 0;\n"
+
+
+def think_hash(body: str) -> str:
+    """The body hash of Brain::think when its body is `body` (the lines between the braces)."""
+    text = BRAIN_CPP.replace(THINK_BODY, body)
+    units = orig_review.units_from({"src/ai/brain.h": BRAIN_H, "src/ai/brain.cpp": text})
+    return next(u.body_sha256 for u in units if u.coney == "Brain::think")
+
+
+def old_hash(text: str, first_line: int, count: int) -> str:
+    """The body hash as it was before comments and whitespace were left out: the definition's lines, each with its
+    trailing white space dropped, joined by newlines. Written out here so the migration tests do not rely on the code
+    they test."""
+    lines = text.splitlines()[first_line - 1 : first_line - 1 + count]
+    return hashlib.sha256("\n".join(line.rstrip() for line in lines).encode("utf-8")).hexdigest()
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        "    return hunger > 3 ? 1 : 0; // the original's threshold\n",
+        "    // Why: see docs/research/ai/brain.md#think\n" + THINK_BODY,
+        "    /* one line */\n" + THINK_BODY,
+        "    /*\n     * a block comment\n     * that spans lines, with a ' and a \"\n     */\n" + THINK_BODY,
+        "    return /* inline */ hunger > 3 ? 1 : 0;\n",
+        "    // a comment that continues \\\n    // onto the next line\n" + THINK_BODY,
+        "        return   hunger>3 ? 1 : 0;   \n",
+        "\n\n    return hunger > 3\n        ? 1\n        : 0;\n\n",
+        "\treturn hunger > 3 ? 1 : 0;\r\n",
+    ],
+    ids=[
+        "trailing-comment",
+        "link-comment",
+        "block-comment",
+        "multi-line-block",
+        "inline-block",
+        "continued-line-comment",
+        "spacing",
+        "line-breaks",
+        "tab-and-crlf",
+    ],
+)
+def test_a_comment_or_whitespace_edit_keeps_the_body_hash(body: str) -> None:
+    assert think_hash(body) == think_hash(THINK_BODY)
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        "    return hunger > 4 ? 1 : 0;\n",
+        "    return hunger >= 3 ? 1 : 0;\n",
+        "    return hunger > 3 ? 0 : 1;\n",
+        "    return hungry > 3 ? 1 : 0;\n",
+        "    return hunger > 3 ? 1 : 0;\n    go();\n",
+        "    // return hunger > 3 ? 1 : 0;\n    return 0;\n",
+        "    return hunger > 3 ? 1 : 0 /* ; */;\n    ;\n",
+    ],
+    ids=["number", "operator", "swapped", "identifier", "added-statement", "commented-out", "extra-token"],
+)
+def test_a_one_token_code_edit_changes_the_body_hash(body: str) -> None:
+    assert think_hash(body) != think_hash(THINK_BODY)
+
+
+def test_a_space_that_separates_two_tokens_is_code() -> None:
+    assert think_hash("    return hunger > 3 ? 1 : 0;\n") != think_hash("    returnhunger > 3 ? 1 : 0;\n")
+    assert think_hash("    return a + +b;\n") != think_hash("    return a ++b;\n")
+
+
+@pytest.mark.parametrize(
+    ("one", "other"),
+    [
+        ('    log("see http://a/b");\n', '    log("see http://a/c");\n'),
+        ('    log("// not a comment");\n', '    log("// a different one");\n'),
+        ('    log("/*"); go(1);\n', '    log("/*"); go(2);\n'),
+        ('    log("a b");\n', '    log("a  b");\n'),
+        ("    char c = '\"'; go(1);\n", "    char c = '\"'; go(2);\n"),
+        ("    char c = '/'; go(1);\n", "    char c = '/'; go(2);\n"),
+        ('    log(R"x(// not)x"); go(1);\n', '    log(R"x(// not)x"); go(2);\n'),
+        ('    log("a\\"//b"); go(1);\n', '    log("a\\"//b"); go(2);\n'),
+        ("    wait(48'000); go(1);\n", "    wait(48'000); go(2);\n"),
+    ],
+    ids=["url", "slashes", "block-opener", "spaces", "quote-char", "slash-char", "raw", "escaped-quote", "separator"],
+)
+def test_a_string_or_character_literal_that_looks_like_a_comment_is_code(one: str, other: str) -> None:
+    assert think_hash(one) != think_hash(other)
+
+
+def test_a_comment_after_a_literal_that_looks_like_a_comment_is_still_a_comment() -> None:
+    plain = think_hash('    log("/*"); go(1);\n')
+    assert think_hash('    log("/*"); go(1); // a note\n') == plain
+    assert think_hash('    log("/*"); /* a note */ go(1);\n') == plain
+    assert think_hash("    char c = '\"'; go(1); // \"\n") == think_hash("    char c = '\"'; go(1);\n")
+    assert think_hash("    wait(48'000); go(1); // it's fine\n") == think_hash("    wait(48'000); go(1);\n")
+
+
+def edit_brain(repo: Path, old: str, new: str, message: str) -> str:
+    """Replace `old` with `new` in brain.cpp and commit; returns the commit."""
+    path = repo / "src/ai/brain.cpp"
+    path.write_text(path.read_text(encoding="utf-8").replace(old, new), encoding="utf-8")
+    return commit_all(repo, message)
+
+
+def test_a_comment_only_branch_lists_no_function(repo: Path) -> None:
+    git(repo, "checkout", "-q", "-b", "links")
+    tip = edit_brain(repo, THINK_BODY, "    // See docs/research/ai/brain.md#think\n" + THINK_BODY, "repoint a link")
+    assert orig_review.pr_stamp(repo, tip, "main")["functions"] == []
+
+
+def test_a_verdict_survives_a_comment_edit_after_the_review(repo: Path) -> None:
+    tip = change_think(repo)
+    reviewed = verdict(orig_review.pr_stamp(repo, tip, "main"))
+    body = THINK_BODY.replace("3", "4")
+    later = edit_brain(repo, body, "    // why\n" + body, "comment")
+    stamp = orig_review.pr_stamp(repo, later, "main")
+    assert orig_review.verdict_problems(reviewed, stamp, 1) == []
+
+
+# --- what happens to hashes recorded before: the ledger and the `compared` stamps -----------------------------------
+
+
+def think_unit(repo: Path, ref: str = "HEAD") -> orig_review.Unit:
+    """Brain::think at `ref`."""
+    (unit,) = [u for u in orig_review.units_at(repo, ref) if u.coney == "Brain::think"]
+    return unit
+
+
+def test_a_ledger_entry_recorded_under_the_old_hash_still_counts(repo: Path, tmp_path: Path) -> None:
+    unit = think_unit(repo)
+    old = old_hash(BRAIN_CPP, unit.line, 3)
+    assert old != unit.body_sha256
+    recorded = orig_review.entry(unit, "HEAD", "clean", "sweep", "x", "")
+    ledger = orig_review.Ledger(tmp_path / "ledger.jsonl")
+    ledger.add([{**recorded, "body_sha256": old}])
+    assert orig_review.status_of(ledger, [unit]) == {unit.key: "clean"}
+    # A review under neither hash is stale, as ever.
+    other = orig_review.Ledger(tmp_path / "other.jsonl")
+    other.add([{**recorded, "body_sha256": "0" * 64}])
+    assert orig_review.status_of(other, [unit]) == {unit.key: "stale"}
+
+
+def test_a_ledger_entry_under_the_old_hash_is_stale_once_the_code_changed(repo: Path, tmp_path: Path) -> None:
+    unit = think_unit(repo)
+    recorded = {**orig_review.entry(unit, "HEAD", "clean", "sweep", "x", ""), "body_sha256": old_hash(BRAIN_CPP, 3, 3)}
+    ledger = orig_review.Ledger(tmp_path / "ledger.jsonl")
+    ledger.add([recorded])
+    tip = change_think(repo)
+    assert orig_review.status_of(ledger, [think_unit(repo, tip)]) == {unit.key: "stale"}
+
+
+def test_a_body_recorded_under_the_old_hash_is_current_while_the_code_is_unchanged(repo: Path) -> None:
+    unit = think_unit(repo)
+    commit = git(repo, "rev-parse", "HEAD").strip()
+    old = old_hash(BRAIN_CPP, unit.line, 3)
+    assert orig_review.recorded_body_is_current(repo, old, commit, unit.key, unit.body_sha256)
+    assert orig_review.recorded_body_is_current(repo, unit.body_sha256, commit, unit.key, unit.body_sha256)
+
+
+def test_a_body_recorded_under_the_old_hash_survives_a_comment_edit_but_not_a_code_edit(repo: Path) -> None:
+    unit = think_unit(repo)
+    commit = git(repo, "rev-parse", "HEAD").strip()
+    old = old_hash(BRAIN_CPP, unit.line, 3)
+    edit_brain(repo, THINK_BODY, "    // a link\n" + THINK_BODY, "comment")
+    assert orig_review.recorded_body_is_current(repo, old, commit, unit.key, think_unit(repo).body_sha256)
+    edit_brain(repo, "> 3", "> 4", "code")
+    assert not orig_review.recorded_body_is_current(repo, old, commit, unit.key, think_unit(repo).body_sha256)
+
+
+def test_a_recorded_body_that_matches_nothing_at_its_commit_is_not_current(repo: Path) -> None:
+    unit = think_unit(repo)
+    commit = git(repo, "rev-parse", "HEAD").strip()
+    assert not orig_review.recorded_body_is_current(repo, "0" * 64, commit, unit.key, unit.body_sha256)
+    assert not orig_review.recorded_body_is_current(repo, "1" * 64, "2" * 40, unit.key, unit.body_sha256)
+    assert not orig_review.recorded_body_is_current(repo, None, commit, unit.key, unit.body_sha256)

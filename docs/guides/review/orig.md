@@ -219,7 +219,8 @@ that predates it, `orig check-review`, reads the file below until `pr open` repl
   one of its own and is in `reviewed`;
 - no finding is a blocker, and the rubric version matches.
 
-The verdict binds to the function bodies it reviewed, so a rebase that leaves them unchanged keeps it, and any
+The verdict binds to the function bodies it reviewed (their code: comments and white space are not part of the
+[body hash](../coney-tools-fidelity.md#body-hash)), so a rebase that leaves them unchanged keeps it, and any
 change to one of them makes it stale. A pass is recorded in the ledger. `ORIG-REVIEW.md` is the same verdict for a
 person: the verdict, then one line per function with its class and note, then the findings.
 

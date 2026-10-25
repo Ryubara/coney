@@ -214,7 +214,8 @@ def _function_problems(env: ReviewEnv, functions: list[dict[str, Any]], report: 
                 problems.append(f"compared: {name}: no pairs file (run `original compare {address}`)")
                 continue
             hashes[address] = pairs_hash
-            stamp = report.current("compared", address, {"coney_body_sha256": function["body_sha256"]})
+            covers = {orig_review.BODY_COVER: function["body_sha256"]}
+            stamp = orig_review.current_compared(env.worktree, report, address, covers, function["key"])
             if stamp is None:
                 problems.append(f"compared: {name}: no current `compared` stamp (run `original compare {address}`)")
             elif stamp.covers.get("pairs_sha256") != pairs_hash:
