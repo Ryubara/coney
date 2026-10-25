@@ -312,6 +312,7 @@ def test_a_mkdocs_block_start_joined_onto_a_link_line_is_a_touch() -> None:
         "[^1]: a footnote",
         "[ref]: https://example.org",
         "{: .class }",
+        ": a definition",
         '=== "Tab"',
     ]
     for marker in starts:
@@ -394,3 +395,39 @@ def test_indented_lines_continue_a_list_item_but_a_code_block_is_structure() -> 
     # After a blank line the same indent is a code block.
     code = ["- A nested item that", "", *item[2:]]
     assert touched_lines(diff, FOLDER, GONE, resolves, new_lines=code) == frozenset({3, 4})
+
+
+def test_an_indented_line_continues_only_text() -> None:
+    diff = "\n".join(
+        [
+            "@@ -3,2 +3,2 @@",
+            "-     [it](combat.md#grab)): when the state is not the one, the",
+            "-     word lacks it:",
+            "+     [it](combat-grabs.md#grab)): when the state is not the one,",
+            "+     the word lacks it:",
+        ]
+    )
+    text = ["- An item that", "  goes on and"]
+    assert touched_lines(diff, FOLDER, GONE, resolves, new_lines=text) == frozenset()
+    # Not after a heading, a table row or an indented code line.
+    for above in ["## Heading", "| a | b |", "```"]:
+        assert touched_lines(diff, FOLDER, GONE, resolves, new_lines=["", above]) == {3, 4}, above
+    code = ["", "    code"]
+    assert touched_lines(diff, FOLDER, GONE, resolves, new_lines=code) == frozenset({3, 4})
+
+
+def test_a_rewrap_keeps_the_indent_of_its_other_lines() -> None:
+    old = ["- See [g](combat.md#grab) a long item text that", "  continues here."]
+    new = ["- See [g](combat-grabs.md#grab) a long item text", "    that continues here."]
+    header = "@@ -3,2 +3,2 @@\n"
+    diff = header + "".join(f"-{line}\n" for line in old) + "".join(f"+{line}\n" for line in new)
+    assert touched_lines(diff, FOLDER, GONE, resolves) == frozenset({3, 4})
+
+
+def test_the_widening_of_a_split_link_stops_after_five_lines() -> None:
+    six = ["# Links", "See [zero", "one", "two", "three", "four", "five", "six](combat-grabs.md#grab) for it."]
+    diff = "@@ -8 +8 @@\n-six](combat.md#grab) for it.\n+six](combat-grabs.md#grab) for it.\n"
+    assert touched_lines(diff, FOLDER, GONE, resolves, new_lines=six) == frozenset({8})
+    five = ["# Links", "See [one", "two", "three", "four", "five", "six](combat-grabs.md#grab) for it."]
+    diff = "@@ -7 +7 @@\n-six](combat.md#grab) for it.\n+six](combat-grabs.md#grab) for it.\n"
+    assert touched_lines(diff, FOLDER, GONE, resolves, new_lines=five) == frozenset()
