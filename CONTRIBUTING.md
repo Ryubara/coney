@@ -261,8 +261,10 @@ The person who submits or merges the work answers for it. The full rule is in [L
   model. Who opened the pull request does not matter there. CI refuses a description that leaves out a section or an answer.
 - Keep a pull request to one subject. Unrelated changes belong in separate pull requests.
 - The project's agents never open their own pull requests: the coordinator releases each one with `coney-tools pr
-  open`, which checks it, rebases and pushes the branch, opens the pull request and turns on auto-merge
-  ([pr open](docs/guides/pr.md#open)). A pull request you open yourself needs none of that.
+  open` ([pr open](docs/guides/pr.md#open)). It checks the pull request, rebases and pushes the branch, opens the pull
+  request and turns on auto-merge, except for a change to a path the maintainer merges by hand (`merge.manual_paths`
+  in `.github/conventions.yml`, such as `AGENTS.md`). A pull request you open yourself needs none of those steps; the
+  rules above still apply.
 
 ### Working from a fork
 
