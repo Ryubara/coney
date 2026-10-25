@@ -774,7 +774,7 @@ one sphere of 0.8 m; for an object with `0x20000` one sphere of half its smalles
 - **Record `+0x08` bit `0x800`** is read in three places: the move's sweep mask (`0x0033d498`: with it, as when
   airborne, the sweep also meets `0x40` bodies), `Human_OnContact` (it counts as airborne for a `0x40` body, a pane's
   box) and the wall-impact sound above. **Nothing in the executable sets it**: no held-flag setter (`0x00226640`, the
-  clip tasks' `+0x24`, `Anim_FireEvents`' event bits) is given `0x800`, and the only immediates `0x800` in `Human/`
+  clip tasks' `+0x24`, `Anim_FireFrameEvents`' event bits) is given `0x800`, and the only immediates `0x800` in `Human/`
   are state-word and human-flag bits (inferred from a search of every `li`/`ori` of `0x800`; a value read from data
   was not ruled out). So it behaves as a dead "airborne" override.
 - **After the break** the script takes over ([Barriers](objects.md#barriers)): the fence's message 2 reaches
