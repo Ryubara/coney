@@ -146,6 +146,8 @@ def _readback_problems(
         hard.append(f"the pull request head is {view.head[:12]}, not the pushed tip {tip[:12]}")
     if want_auto and not view.auto_merge:
         hard.append("auto-merge is off")
+    if not want_auto and view.auto_merge:
+        hard.append("auto-merge is on")
     return fixable, hard
 
 
@@ -163,8 +165,13 @@ def read_back(run: Run, proof: Proof, pr: PullRequest, tip: str, want_auto: bool
         pr_publish.edit_pr(gh, run.repo, pr.number, proof.generated.title, body, pictures, run.text_path.parent)
         view = pr_publish.view_pr(gh, run.repo, pr.number)
         fixable, hard = _readback_problems(proof, run.rules.pull_requests, view, tip, want_auto)
-    if hard and "auto-merge is off" in hard:
+    if "auto-merge is off" in hard:
         pr_publish.enable_auto_merge(gh, run.repo, pr.number, run.rules.merge.methods[0])
+    elif "auto-merge is on" in hard:
+        # A fix round or a person left it on, and GitHub keeps it across a push: this release must not be merged by it.
+        run.say("  auto-merge is on but should be off here; turning it off")
+        pr_publish.disable_auto_merge(gh, run.repo, pr.number)
+    if "auto-merge is off" in hard or "auto-merge is on" in hard:
         view = pr_publish.view_pr(gh, run.repo, pr.number)
         fixable, hard = _readback_problems(proof, run.rules.pull_requests, view, tip, want_auto)
     if fixable or hard:

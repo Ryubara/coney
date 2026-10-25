@@ -11,8 +11,8 @@ import sys
 from collections.abc import Iterator
 from pathlib import Path
 
-from coney_tools import pr_publish, pr_text
-from coney_tools.config import find_repo_root
+from coney_tools import pr_proof, pr_publish, pr_text
+from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import Conventions, ConventionsError, load_conventions, load_release_rules_at
 from coney_tools.issue_claim_engine import Engine
 from coney_tools.pr_open_run import EXIT_UNABLE, Run, Stop
@@ -104,9 +104,19 @@ def find_unit(run: Run) -> None:
     run.root = find_repo_root(worktree)
     run.conventions = load_conventions(run.root)
     run.owner = run.record.log_task
-    prefix = f"{request.remote}/"
-    base_ref = run.record.base_ref
-    run.default_branch = base_ref[len(prefix) :] if base_ref.startswith(prefix) else run.conventions.repo.default_branch
+    # The default branch is the one origin's HEAD names, as pr verify takes it; a unit that was started from any
+    # other base (a stacked task) is refused, so no unmerged branch is ever where the release rules come from.
+    try:
+        run.default_branch = pr_proof.default_branch(run.root)
+    except ConfigError as error:
+        raise Stop(EXIT_UNABLE, str(error)) from error
+    expected = f"{request.remote}/{run.default_branch}"
+    if run.record.base_ref != expected:
+        raise Stop(
+            EXIT_UNABLE,
+            f"{run.task}: the unit was started from {run.record.base_ref}, not from {expected}; "
+            "pr open releases a unit onto the default branch only (rebase the task onto it, or start it again)",
+        )
     run.unit = Unit.of(root0, run.owner)
     own_task, own_raw = read_task(own_dir, run.task, run.conventions)
     # A fix task is released onto its parent's pull request, with the parent's issues, log and text.
@@ -138,15 +148,23 @@ def git_state(run: Run) -> None:
 
 
 def fetch(run: Run) -> str:
-    """Fetch the remote's default branch and read the release rules from it; the ref the change is measured from."""
+    """Fetch the default branch and read the release rules from `origin/<default>` (whatever `--remote` is); the ref
+    the change is measured from is `<remote>/<default>`."""
     assert run.conventions is not None
     default = run.default_branch
     done = run.env.git(run.root, ["fetch", "-q", run.request.remote, default])
     if done.returncode != 0:
         raise Stop(EXIT_UNABLE, f"cannot fetch {run.request.remote} {default}: {done.stderr.strip() or 'failed'}")
     upstream = f"{run.request.remote}/{default}"
+    rules_ref = f"{pr_proof.RULES_REMOTE}/{default}"
+    if run.request.remote != pr_proof.RULES_REMOTE:
+        done = run.env.git(run.root, ["fetch", "-q", pr_proof.RULES_REMOTE, default])
+        if done.returncode != 0:
+            raise Stop(
+                EXIT_UNABLE, f"cannot fetch {pr_proof.RULES_REMOTE} {default}: {done.stderr.strip() or 'failed'}"
+            )
     try:
-        run.rules = load_release_rules_at(run.root, upstream, run.conventions)
+        run.rules = load_release_rules_at(run.root, rules_ref, run.conventions)
     except ConventionsError as error:
         raise Stop(EXIT_UNABLE, str(error)) from error
     return upstream

@@ -37,7 +37,7 @@ from typing import Any
 
 from coney_tools import identity, pr_open_publish, pr_open_unit, pr_proof, pr_publish, pr_text, stamps
 from coney_tools.config import ConfigError, find_repo_root
-from coney_tools.conventions import load_conventions
+from coney_tools.conventions import Claims, load_conventions
 from coney_tools.issue_claim_remote import GhRemote
 from coney_tools.pr_open_run import (
     EXIT_CONFLICT,
@@ -69,6 +69,11 @@ def _claims_runner(args: Sequence[str]) -> str:
         raise OSError(str(error)) from error
 
 
+def _claims_remote(rules: Claims) -> GhRemote:
+    """The claim cards through `gh`, with the bot login and markers of `rules`."""
+    return GhRemote(rules.bot_login, rules.card_marker, rules.reply_marker, _claims_runner)
+
+
 def default_env() -> Env:
     """The real machine: `gh`, git, the claim cards through `gh`, the clock and the identity the hook vouched for."""
     root = find_repo_root(Path.cwd())
@@ -76,7 +81,9 @@ def default_env() -> Env:
     return Env(
         gh=pr_publish.real_gh,
         git=pr_publish.real_git,
-        remote=GhRemote(rules.bot_login, rules.card_marker, rules.reply_marker, _claims_runner),
+        # Replaced by `remote_from` once the default branch's rules are read; this one only stands in until then.
+        remote=_claims_remote(rules),
+        remote_from=lambda base: _claims_remote(base.claims),
         clock=lambda: datetime.now(UTC),
         say=print,
         who=identity.current,
@@ -369,6 +376,9 @@ def _run(run: Run) -> None:
     with lock:
         pr_open_unit.git_state(run)
         upstream = pr_open_unit.fetch(run)
+        if run.env.remote_from is not None:
+            assert run.rules is not None
+            run.env.remote = run.env.remote_from(run.rules)
         claims = pr_open_unit.claims(run)
         if claims:
             raise Stop(EXIT_REFUSED, f"refused: the claim is not yours to release in {run.task}", claims)

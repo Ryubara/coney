@@ -745,3 +745,124 @@ def test_the_fix_scope_count_leaves_out_what_main_changed_in_the_rebase(tmp_path
     built.review(functions={})
     assert opened.run(task="work-fix") == 0, opened.text()
     assert any(line.startswith("  fix touches 1 file since the last release") for line in opened.said), opened.text()
+
+
+# --- auto-merge that is on when it should be off ---------------------------------------------------------------------
+
+
+def test_a_fix_round_that_now_touches_a_maintainer_file_turns_auto_merge_off(tmp_path: Path) -> None:
+    opened = docs_unit(tmp_path)
+    built = opened.built
+    assert opened.run() == 0
+    assert opened.gh.prs[812]["auto"] is True
+    start_fix(opened)
+    text = (built.root / "AGENTS.md").read_text(encoding="utf-8") if (built.root / "AGENTS.md").exists() else "x\n"
+    built.edit("AGENTS.md", text + "\nOne more line.\n", "docs: fix touches AGENTS.md")
+    built.check("docs")
+    built.review(functions={})
+    assert opened.run(task="work-fix") == 0, opened.text()
+    assert opened.gh.prs[812]["auto"] is False
+    assert ["pr", "merge", "812", "--repo", REPO, "--disable-auto"] in [args for args, _ in opened.gh.calls]
+    assert opened.said[-1].endswith("auto-merge off)")
+
+
+def test_auto_merge_somebody_turned_on_by_hand_is_turned_off_when_the_release_declines_it(tmp_path: Path) -> None:
+    opened = docs_unit(tmp_path)
+    assert opened.run() == 0
+    assert opened.gh.prs[812]["auto"] is True
+    assert opened.run(no_auto_merge=True) == 0, opened.text()
+    assert opened.gh.prs[812]["auto"] is False
+    assert "turning it off" in opened.text()
+
+
+def test_auto_merge_that_stays_on_after_the_disable_is_exit_4(tmp_path: Path) -> None:
+    opened = docs_unit(tmp_path)
+    assert opened.run() == 0
+    real = opened.gh.__call__
+
+    def stuck(args: Sequence[str], cwd: Path | None) -> str:
+        return "" if "--disable-auto" in args else real(args, cwd)
+
+    opened.gh = stuck  # type: ignore[assignment]
+    assert opened.run(no_auto_merge=True) == 4
+    assert "auto-merge is on" in opened.text()
+
+
+# --- one default branch, origin's, for every rule --------------------------------------------------------------------
+
+
+def test_a_branch_that_names_another_default_branch_in_its_own_file_changes_nothing(tmp_path: Path) -> None:
+    opened = docs_unit(tmp_path)
+    built = opened.built
+    text = (built.root / ".github" / "conventions.yml").read_text(encoding="utf-8")
+    assert "default_branch: main" in text
+    built.edit(".github/conventions.yml", text.replace("default_branch: main", "default_branch: sneaky"), "ci: rename")
+    built.check("docs")
+    built.review(functions={})
+    seen: list[str] = []
+    real = conventions.load_release_rules_at
+
+    def spy(root: Path, ref: str, own: Conventions) -> Conventions:
+        seen.append(ref)
+        return real(root, ref, own)
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(pr_open_unit, "load_release_rules_at", spy)
+        assert opened.run() == 0, opened.text()
+    assert seen == ["origin/main"]
+    assert not any("sneaky" in " ".join(call) for call in opened.git_calls)
+
+
+def test_a_unit_started_from_another_base_is_refused_before_anything_is_touched(tmp_path: Path) -> None:
+    opened = docs_unit(tmp_path)
+    record_path = opened.built.unit.dir / opened.built.conventions.tasks.start.unit_file
+    record = unit_record.read_record(record_path)
+    unit_record.write_record(
+        record_path, unit_record.UnitRecord(**{**record.__dict__, "base_ref": "origin/stack-below"})
+    )
+    before = opened.snapshot()
+    assert opened.run() == 2
+    assert "started from origin/stack-below, not from origin/main" in opened.text()
+    assert opened.snapshot() == before and opened.gh.writes() == []
+
+
+def test_an_unset_origin_head_stops_the_run(tmp_path: Path) -> None:
+    opened = docs_unit(tmp_path)
+    git(opened.built.root, "remote", "set-head", "origin", "-d")
+    assert opened.run() == 2
+    assert "origin/HEAD is not set" in opened.text()
+
+
+def test_the_rules_come_from_origin_even_when_the_release_goes_to_another_remote(tmp_path: Path) -> None:
+    opened = docs_unit(tmp_path)
+    built = opened.built
+    git(built.root, "remote", "add", "up", str(built.origin))
+    git(built.root, "fetch", "-q", "up")
+    record_path = built.unit.dir / built.conventions.tasks.start.unit_file
+    record = unit_record.read_record(record_path)
+    unit_record.write_record(record_path, unit_record.UnitRecord(**{**record.__dict__, "base_ref": "up/main"}))
+    seen: list[str] = []
+    real = conventions.load_release_rules_at
+
+    def spy(root: Path, ref: str, own: Conventions) -> Conventions:
+        seen.append(ref)
+        return real(root, ref, own)
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(pr_open_unit, "load_release_rules_at", spy)
+        assert opened.run(remote="up") == 0, opened.text()
+    assert seen == ["origin/main"]
+
+
+def test_the_claims_client_is_built_from_the_default_branchs_rules(tmp_path: Path) -> None:
+    opened = docs_unit(tmp_path)
+    seen: list[str] = []
+
+    def remote_from(rules: Conventions) -> GhRemote:
+        seen.append(rules.claims.bot_login)
+        return opened.github  # type: ignore[return-value]
+
+    env = opened.env()
+    env.remote_from = remote_from
+    assert pr_open.run_open(opened.request(), env) == 0, opened.text()
+    assert seen == [opened.built.conventions.claims.bot_login]

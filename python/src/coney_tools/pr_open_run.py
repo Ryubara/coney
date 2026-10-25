@@ -63,6 +63,9 @@ class Env:
     who: Callable[[], identity.Identity]
     #: The stamp's `who`, as `stamps.who_from_env` makes it.
     stamp_who: Callable[[], dict[str, Any]] = lambda: stamps.who_from_env("coney-tools pr open")
+    #: Builds the claims client from the default branch's rules (bot login, markers) once they are read, replacing
+    #: `remote`, so nothing the branch holds names the bot. None keeps `remote` (the tests' made-up one).
+    remote_from: Callable[[Conventions], Remote] | None = None
 
 
 class Stop(Exception):
@@ -89,7 +92,8 @@ class Run:
     #: The sections that steer the release (repo, pull requests, merge, claims, stamps) as the default branch has
     #: them: a branch under release cannot change them. Set by `pr_open_unit.fetch`.
     rules: Conventions | None = None
-    #: The default branch, from the unit record `task start` wrote, never from the branch under release.
+    #: The default branch, as `origin`'s `HEAD` names it (`pr_proof.default_branch`), the same one `pr verify` uses;
+    #: never from the branch under release or from the unit record. Set by `pr_open_unit.find_unit`.
     default_branch: str = "main"
     record: UnitRecord | None = None
     unit: Unit | None = None

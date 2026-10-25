@@ -126,6 +126,9 @@ class FakeGh:
             self.prs[number]["body"] = self._body(args, cwd)
             return ""
         if key == "pr merge":
+            if "--disable-auto" in args:
+                self.prs[number]["auto"] = False
+                return ""
             assert "--squash" in args and "--auto" in args
             self.prs[number]["auto"] = True
             return ""

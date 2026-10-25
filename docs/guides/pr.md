@@ -196,9 +196,10 @@ commit: what is pushed is exactly what Check and Review saw. Its options and exi
    refused. `gh` is 2.99 or newer (`--attach`) and logged in. The task has a unit (`unit.json` from `task start`) and a
    `TASK.md`; the worktree exists, is on the unit's branch (not detached, no rebase or merge in progress) and is clean.
    One `pr open` of a task runs at a time (the lock file `pr-open.lock` in the task's folder; a dry run takes no lock).
-   The remote's default branch is fetched, and the sections that steer a release (`repo`, `pull_requests`, `merge`,
-   `claims`, `stamps`) are read from it, never from the branch under release; its name is the one `task start`
-   recorded.
+   The default branch is the one `origin`'s `HEAD` names (as for `pr verify`), fetched, and the sections that steer
+   a release (`repo`, `pull_requests`, `merge`, `claims`, `stamps`, and so the claims client's bot login and markers)
+   are read from `origin/<default branch>` whatever `--remote` is, never from the branch under release. A unit
+   that `task start` cut from any other base (a stacked task) is refused: the rules never come from an unmerged branch.
 2. **The claim (exit 1).** Each issue of the task is claimed by the person running the command (the card is present and
    not released); otherwise the message names the claimant.
 3. **The pull request (exit 1).** The branch's pull request is looked up (`gh pr list --head`). Merged: refused.
@@ -227,12 +228,15 @@ commit: what is pushed is exactly what Check and Review saw. Its options and exi
    `gh` matches. The title, the body and `pr-published.json` are kept in the task's folder, whatever file `--text`
    names. On an update only pictures that are new are attached; an unchanged one keeps the address of its upload from
    `pr-published.json`. Then `gh pr merge --squash --auto`, unless `--no-auto-merge` is given, `merge.auto_merge` is
-   off, the change touches a path of `merge.manual_paths` (`.github/conventions.yml`, `AGENTS.md`, `.claude/hooks/`: the
-   maintainer merges those, and the message says so) or the viewer's permission on the repository is not admin,
-   maintain or write (a fork's owner has none: the pull request opens without it).
+   off, the change touches a path of `merge.manual_paths` (`.github/conventions.yml`, `AGENTS.md`,
+   `.claude/settings.json`, `.claude/hooks/`: the maintainer merges those, and the message says so) or the viewer's
+   permission on the repository is not admin, maintain or write (a fork's owner has none: the pull request opens
+   without it).
 9. **Read back.** The title, the head commit, the pictures (as many addresses as pictures), the marked blocks, the
    absence of any local path and auto-merge are read from GitHub. A wrong description is repaired once with `gh pr
-   edit`; a second failure is exit 4 with the pull request's address (it exists, and rerunning repairs it).
+   edit`; a second failure is exit 4 with the pull request's address (it exists, and rerunning repairs it). Auto-merge
+   that is on when this release should leave it off (a fix round that now touches a `manual_paths` file, `--no-auto-merge`,
+   a frozen `merge.auto_merge`, or a hand-set one) is turned off with `gh pr merge --disable-auto`.
 10. **Record.** `/progress pr-opened` is posted once on each issue (the claim Action then shows `PR #N open`),
     `pr-published.json` is written (number, address, pushed tip, picture hashes to addresses, the engineer, the
     time) and one line is printed: `opened #812 <url> (task ..., engineer ..., auto-merge on)`. `--json` prints the

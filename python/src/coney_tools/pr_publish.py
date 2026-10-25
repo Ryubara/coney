@@ -173,6 +173,11 @@ def reopen_pr(gh: Gh, repo: str, number: int) -> None:
     gh(["pr", "reopen", str(number), "--repo", repo], None)
 
 
+def disable_auto_merge(gh: Gh, repo: str, number: int) -> None:
+    """Turn auto-merge off (it was on when it should not be)."""
+    gh(["pr", "merge", str(number), "--repo", repo, "--disable-auto"], None)
+
+
 def enable_auto_merge(gh: Gh, repo: str, number: int, method: str) -> None:
     """Turn auto-merge on with the merge `method` the repository allows (`squash`, `merge` or `rebase`)."""
     gh(["pr", "merge", str(number), "--repo", repo, f"--{method}", "--auto"], None)
