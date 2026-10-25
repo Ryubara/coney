@@ -50,12 +50,25 @@ they mean is on [the page](../progress/index.md#the-picture). Where the fidelity
 `progress_grid.load_audited`: it returns no addresses until the audit stores a machine-readable result on `main`, and
 the picture then draws the Audited state.
 
+The [home page](../index.md) shows the same picture in a compact form, filled in at its `<!-- progress:home -->`
+marker by the same build (`progress_site.home_section`). The squares and their order are the progress page's, but
+the five states fold into three (`progress_grid.HOME_STATE_OF`): Reimplemented (audited included), Understood, and
+Not yet started (researched and untouched), coloured by the home page's own classes `cg-h-<state>` and palette
+(`HOME_PALETTE`, a darker green, a light gray and a dim gray, repeated under `.progress-home` in
+`progress-grid.css`; a test holds the two equal). There are no block labels: the blocks flow on from one another,
+`HOME_COLS` squares to a row (`progress_picture.flow`; each block's `data-o` is where it starts), so the picture is
+some 50 rows high. It reads the same `progress/functions.json` with the same script, so hovering or tapping a square
+shows the progress page's tooltip, Coney file included; on the home page the tooltip's swatch takes the home colour.
+`progress check` refuses a home page without its single marker, and `progress render` writes the filled page as
+`index.md`.
+
 ```sh
 uv run --project python coney-tools progress render <folder> [--no-history]
 ```
 
 Writes what the build publishes to `<folder>`, to look at it without a docs build: the progress and history pages as
-the build fills them (`progress/index.md`, `progress/history.md`), the badge files (`progress/badges/*.json`,
+the build fills them (`progress/index.md`, `progress/history.md`) and the home page with its picture (`index.md`), the
+badge files (`progress/badges/*.json`,
 shields.io endpoint JSON that the README's badges read), the pictures (`progress/progress.svg`,
 `progress-size.svg`, `missions.svg`, `history.svg`), the raw numbers (`progress/progress.json`), the per-function
 table the tooltips read (`progress/functions.json`) and the history (`progress/history.json`). It rebuilds the daily

@@ -146,3 +146,42 @@
 .progress-grid .cg-tip[data-pinned] { pointer-events: auto; }
 .progress-grid .cg-tip .cg-tip-name { font-weight: 700; }
 .progress-grid .cg-tip .cg-tip-title { white-space: pre-line; }
+
+/*
+ * The home page's picture (docs/index.md, progress_site.home_section): the same squares and tooltip in three states
+ * and the home page's own palette, coloured from HOME_PALETTE in coney_tools/progress_grid.py (a test holds them
+ * equal). Its tooltip names the progress page's state; the swatch beside it takes the home colour of that state.
+ */
+.progress-home {
+  --cg-h-reimplemented: #1a7f37;
+  --cg-h-understood: #c1c8d0;
+  --cg-h-not-started: #e6e9ed;
+
+  margin: 1.2em 0 0.8em;
+}
+
+[data-md-color-scheme="slate"] .progress-home {
+  --cg-h-reimplemented: #238636;
+  --cg-h-understood: #9da5b0;
+  --cg-h-not-started: #363b45;
+}
+
+.progress-home svg .cg-h-reimplemented { fill: var(--cg-h-reimplemented); }
+.progress-home svg .cg-h-understood { fill: var(--cg-h-understood); }
+.progress-home svg .cg-h-not-started { fill: var(--cg-h-not-started); }
+.progress-home .cg-key.cg-h-reimplemented,
+.progress-home .cg-key.cg-s-audited,
+.progress-home .cg-key.cg-s-reimplemented { background: var(--cg-h-reimplemented); }
+.progress-home .cg-key.cg-h-understood,
+.progress-home .cg-key.cg-s-understood { background: var(--cg-h-understood); }
+.progress-home .cg-key.cg-h-not-started,
+.progress-home .cg-key.cg-s-researched,
+.progress-home .cg-key.cg-s-untouched { background: var(--cg-h-not-started); }
+
+/* A pale key needs an edge to show on the light page. */
+.progress-home .cg-key { box-shadow: inset 0 0 0 1px rgb(0 0 0 / 12%); }
+[data-md-color-scheme="slate"] .progress-home .cg-key { box-shadow: inset 0 0 0 1px rgb(255 255 255 / 10%); }
+
+.md-typeset .progress-home .cg-headline { margin: 0 0 0.6em; font-size: 0.8rem; }
+.md-typeset .progress-home .cg-legend { margin-top: 0.6em; }
+.progress-home svg.cg { cursor: crosshair; touch-action: manipulation; }

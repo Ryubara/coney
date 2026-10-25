@@ -84,6 +84,7 @@ of Material for MkDocs; the files are Coney's own:
 | `overrides/home.html` | The template (`theme.custom_dir` in `mkdocs.yml`): the hero's markup around the page content |
 | `docs/stylesheets/home.css` | The look and the effect, every rule scoped to a page that has a hero |
 | `docs/javascripts/home.js` | One scroll listener that writes how far the hero has scrolled (0 to 1) into `--coney-p`; the stylesheet does the rest |
+| `<!-- progress:home -->` in `docs/index.md` | Where the docs build puts the picture of every function, one square each, with the progress page's tooltips ([progress](coney-tools-references.md#progress)); it is never committed |
 | `assets/art/hero.webp`, `hero.jpg` | The artwork, shared with the launcher ([LEGAL.md](repo:LEGAL.md#site-and-launcher-artwork)) |
 
 - **The art.** Replace `assets/art/hero.webp` and its fallback `assets/art/hero.jpg` with the new picture, same names,

@@ -7,6 +7,11 @@ elements per block (one per state), so about 14,000 squares come to a few hundre
 markup: blocks carry a `<title>` (the browser's own tooltip), and the data attributes on each block let the page's
 script (docs/javascripts/progress-grid.js) find the square under the pointer without a per-square element.
 
+The home page's smaller copy (progress_grid.render_home_svg) uses `flow` instead: no labels, and each block continues
+on the row where the one before it ended, so the picture wastes no room on gaps and stays short. A block then starts
+`offset` squares into its rows (the group's `data-o`), and the SVG's `data-label` (the label strip above a block, 0
+here) tells the script there is nothing to hover above the squares.
+
 The colours are CSS classes (`cg-s-<state>`, `cg-m-<status>`) so one drawing serves both themes. The docs site defines
 them in docs/stylesheets/extra.css; the standalone file (`standalone=True`) carries its own `<style>` with a
 `prefers-color-scheme` switch, so it also works as an image.
@@ -48,13 +53,17 @@ class Block:
 
 @dataclass(frozen=True)
 class Placement:
-    """Where a block sits: its squares start at (x, y) and run `cols` to a row; the label is above."""
+    """Where a block sits: its squares start at (x, y) and run `cols` to a row; the label is above.
+
+    In a `flow` picture a block's first square is square `offset` of that grid, so square i is drawn at `offset + i`.
+    """
 
     x: int
     y: int
     cols: int
     rows: int
     label_y: int
+    offset: int = 0
 
 
 def label_cols(label: str) -> int:
@@ -120,6 +129,24 @@ def _widen(preferred: list[int], cells: list[int]) -> list[int]:
     return widths
 
 
+def flow(blocks: Sequence[Block], cols: int) -> tuple[list[Placement | None], int]:
+    """Lay `blocks` out in order as one run of squares, `cols` to a row, each block starting where the last one ended.
+
+    Every block shares the picture's origin and width and is told apart by its `offset`; there are no labels. Returns
+    each block's placement (None for an empty one) and the height.
+    """
+    placements: list[Placement | None] = []
+    offset = 0
+    for block in blocks:
+        n = len(block.cells)
+        if not n:
+            placements.append(None)
+            continue
+        placements.append(Placement(0, 0, cols, math.ceil((offset + n) / cols), 0, offset))
+        offset += n
+    return placements, math.ceil(offset / cols) * PITCH
+
+
 def _path(indexes: Sequence[int], placement: Placement) -> str:
     """The `d` of one path drawing the squares at `indexes`, each as a relative `h5v5h-5z` after a move.
 
@@ -127,7 +154,8 @@ def _path(indexes: Sequence[int], placement: Placement) -> str:
     """
     parts: list[str] = []
     px = py = 0
-    for k, i in enumerate(indexes):
+    for k, index in enumerate(indexes):
+        i = index + placement.offset
         x = placement.x + (i % placement.cols) * PITCH
         y = placement.y + (i // placement.cols) * PITCH
         move = f"M{x} {y}" if k == 0 else f"m{x - px} {y - py}"
@@ -146,21 +174,26 @@ def render_svg(
     palette: dict[str, tuple[str, str]],
     standalone: bool = False,
     data_view: str = "",
+    flow_cols: int = 0,
 ) -> str:
     """The SVG of `blocks`; `classes` maps a state to its CSS class; `uid` keeps ids unique when several share a page.
 
     `palette` is each class's (light, dark) fill, written into the `<style>` of a standalone file only: on the docs
-    page the stylesheet owns the colours. The result has no blank line, so Markdown keeps it as one HTML block.
+    page the stylesheet owns the colours. `flow_cols` lays the blocks out as one unlabelled run of that many squares to
+    a row (`flow`) instead of labelled shelves (`layout`). The result has no blank line, so Markdown keeps it as one
+    HTML block.
     """
-    placements, height = layout(blocks)
+    placements, height = flow(blocks, flow_cols) if flow_cols else layout(blocks)
     height = max(height, 1)
+    width = flow_cols * PITCH if flow_cols else WIDTH
     root_attrs = (
-        f'viewBox="0 0 {WIDTH} {height}" role="img" aria-labelledby="{uid}-t {uid}-d" class="cg" data-pitch="{PITCH}"'
+        f'viewBox="0 0 {width} {height}" role="img" aria-labelledby="{uid}-t {uid}-d" class="cg" '
+        f'data-pitch="{PITCH}" data-label="{0 if flow_cols else LABEL_HEIGHT}"'
     )
     if data_view:
         root_attrs += f' data-view="{escape(data_view)}"'
     if standalone:
-        root_attrs = f'xmlns="http://www.w3.org/2000/svg" width="{WIDTH}" height="{height}" ' + root_attrs
+        root_attrs = f'xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" ' + root_attrs
     out = [f"<svg {root_attrs}>"]
     if standalone:
         out.append(_standalone_style(classes, palette))
@@ -168,23 +201,27 @@ def render_svg(
     for index, (block, place) in enumerate(zip(blocks, placements, strict=True)):
         if place is None:
             continue
-        out.append(_block_svg(index, block, place, classes))
+        out.append(_block_svg(index, block, place, classes, labelled=not flow_cols))
     out.append("</svg>")
     return "\n".join(out)
 
 
-def _block_svg(index: int, block: Block, place: Placement, classes: dict[str, str]) -> str:
-    """One block: its group with the tooltip, the label and one path per state present."""
+def _block_svg(index: int, block: Block, place: Placement, classes: dict[str, str], *, labelled: bool) -> str:
+    """One block: its group with the tooltip, the label (when `labelled`) and one path per state present."""
     by_state: dict[str, list[int]] = {}
     for i, state in enumerate(block.cells):
         by_state.setdefault(state, []).append(i)
+    offset = f' data-o="{place.offset}"' if place.offset else ""
     group = (
         f'<g class="cg-b" data-b="{index}" data-x="{place.x}" data-y="{place.y}" data-c="{place.cols}" '
-        f'data-n="{len(block.cells)}">'
+        f'data-n="{len(block.cells)}"{offset}>'
     )
-    text = f'<text class="cg-l" x="{place.x}" y="{place.label_y}" font-size="{FONT_SIZE}">{escape(block.label)}</text>'
-    if block.href:
-        text = f"<a href={quoteattr(block.href)}>{text}</a>"
+    text = ""
+    if labelled:
+        label = escape(block.label)
+        text = f'<text class="cg-l" x="{place.x}" y="{place.label_y}" font-size="{FONT_SIZE}">{label}</text>'
+        if block.href:
+            text = f"<a href={quoteattr(block.href)}>{text}</a>"
     paths = "".join(
         f'<path class="{classes[state]}" d="{_path(indexes, place)}"/>'
         for state, indexes in by_state.items()

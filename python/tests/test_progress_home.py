@@ -28,9 +28,9 @@ def squares_by_index(svg: str) -> dict[tuple[int, int], str]:
     exactly as the page's script finds the square under the pointer.
     """
     found: dict[tuple[int, int], str] = {}
-    for block, attrs, body in re.findall(r'<g class="cg-b" data-b="(\d+)"([^>]*)>(.*?)</g>', svg):
+    for block, attrs, body in re.findall(r'<g class="cg-b" data-b="(\d+)"([^>]*)>(.*?)</g>', svg, re.DOTALL):
         data = dict(re.findall(r'data-(\w)="(\d+)"', attrs))
-        x, y, cols = int(data["x"]), int(data["y"]), int(data["c"])
+        x, y, cols, offset = int(data["x"]), int(data["y"]), int(data["c"]), int(data.get("o", 0))
         for cls, d in re.findall(r'<path class="([^"]+)" d="([^"]+)"/>', body):
             position = [0, 0]
             for command, a, b in re.findall(rf"([Mm])(-?\d+) (-?\d+){SQUARE}", d):
@@ -38,7 +38,7 @@ def squares_by_index(svg: str) -> dict[tuple[int, int], str]:
                 position = [int(a), int(b)] if command == "M" else moved
                 column = (position[0] - x) // progress_picture.PITCH
                 row = (position[1] - y) // progress_picture.PITCH
-                found[(int(block), row * cols + column)] = cls
+                found[(int(block), row * cols + column - offset)] = cls
     return found
 
 
@@ -104,14 +104,15 @@ def test_an_audited_function_is_a_reimplemented_square(tmp_path: Path) -> None:
     assert squares_by_index(progress_grid.render_home_svg(grid))[(0, 0)] == "cg-h-reimplemented"
 
 
-def test_the_home_picture_is_wide_unlabelled_and_uses_only_the_home_classes(tmp_path: Path) -> None:
+def test_the_home_picture_is_one_unlabelled_run_in_only_the_home_classes(tmp_path: Path) -> None:
     """No block labels (they would be unreadable at the home page's scale), so the picture is squares only."""
     svg = progress_grid.render_home_svg(grid_of(make_grid_checkout(tmp_path)))
-    assert f'viewBox="0 0 {progress_grid.HOME_COLS * progress_picture.PITCH} ' in svg
+    width = progress_grid.HOME_COLS * progress_picture.PITCH
+    assert f'viewBox="0 0 {width} {progress_picture.PITCH}"' in svg  # five functions fill part of one row
     assert 'data-label="0"' in svg and 'data-view="functions"' in svg
     assert "<text" not in svg and "cg-s-" not in svg and "style" not in svg
     assert "\n\n" not in svg  # Markdown ends an HTML block at a blank line
-    assert svg.count("<title>") == 1 + len(grid_of(make_grid_checkout(tmp_path / "b")).blocks)
+    assert svg.count("<title") == 1 + len(grid_of(make_grid_checkout(tmp_path / "b")).blocks)
 
 
 def test_the_progress_pictures_keep_their_labels(tmp_path: Path) -> None:
@@ -119,17 +120,29 @@ def test_the_progress_pictures_keep_their_labels(tmp_path: Path) -> None:
     assert f'data-label="{progress_picture.LABEL_HEIGHT}"' in svg and "<text" in svg
 
 
-def test_layout_without_labels_starts_at_the_top_and_stays_inside_the_width() -> None:
-    blocks = [progress_picture.Block(f"A long block label {i}", "t", ["x"] * n) for i, n in enumerate([900, 3, 40])]
-    placements, height = progress_picture.layout(blocks, max_cols=150, labels=False)
-    places = [p for p in placements if p is not None]
-    assert places[0].y == 0 and places[0].label_y == 0
-    for place in places:
-        assert place.x + place.cols * progress_picture.PITCH <= 150 * progress_picture.PITCH
-        assert place.y + place.rows * progress_picture.PITCH <= height
-    # A three-square block is three squares wide plus nothing for its label.
-    labelled, _ = progress_picture.layout(blocks, max_cols=150)
-    assert sum(p.cols for p in places) >= sum(p.cols for p in labelled if p is not None)
+def test_flow_puts_each_block_where_the_last_one_ended() -> None:
+    """Blocks of 250, 3, none and 40 squares, 100 to a row: offsets 0, 250 and 253 and 293 squares in 3 rows."""
+    blocks = [progress_picture.Block(f"B{i}", "t", ["x"] * n) for i, n in enumerate([250, 3, 0, 40])]
+    placements, height = progress_picture.flow(blocks, 100)
+    assert placements[2] is None
+    assert [(p.x, p.y, p.cols, p.offset, p.rows) for p in placements if p is not None] == [
+        (0, 0, 100, 0, 3),
+        (0, 0, 100, 250, 3),
+        (0, 0, 100, 253, 3),
+    ]
+    assert height == 3 * progress_picture.PITCH
+
+
+def test_a_flowing_block_draws_its_squares_after_the_offset() -> None:
+    """Square 0 of a block at offset 98 in rows of 100 is column 98; square 2 wraps to column 0 of the next row."""
+    blocks = [progress_picture.Block("A", "t", ["u"] * 98), progress_picture.Block("B", "t", ["r"] * 3)]
+    svg = progress_picture.render_svg(
+        blocks, uid="x", title="t", description="d", classes={"u": "u", "r": "r"}, palette={}, flow_cols=100
+    )
+    assert 'data-o="98"' in svg and 'data-label="0"' in svg and "<text" not in svg
+    pitch = progress_picture.PITCH
+    assert f'<path class="r" d="M{98 * pitch} 0{SQUARE}m{pitch} 0{SQUARE}m-{99 * pitch} {pitch}{SQUARE}"/>' in svg
+    assert squares_by_index(svg)[(1, 2)] == "r"
 
 
 # --- the section and the page -----------------------------------------------------------------------------------------
