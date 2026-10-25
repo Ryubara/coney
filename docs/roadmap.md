@@ -206,12 +206,12 @@ feasibility, approach, dependencies, cost and order, and the local AI-upscaling 
 
 ### Xbox lighting and shadows {#xbox-lighting-and-shadows}
 
-Rockstar's Xbox port draws the game with its own Direct3D 8 renderer, and its shadows have a source file of their
-own, `GraphicsShadowXBox.cpp` ([Xbox assets](research/xbox-assets.md#original-structure)). Coney finds what its
-lighting and shadows do differently from the PS2's, writes it up citing `Xbox 0x...` addresses
-([Xbox addresses](guides/research-evidence.md#xbox-addresses)) and ports it as a renderer option tagged
-`@orig xbox` ([Xbox tags](guides/conventions.md#xbox-tags)). It is presentation only: the stealth "hidden in shadow"
-rule and everything else the simulation reads stay the PS2's.
+Rockstar's Xbox port draws the game with its own Direct3D 8 renderer, and its shadows have a source file of their own,
+`GraphicsShadowXBox.cpp` ([Xbox assets](research/xbox-assets.md#original-structure)); what else the port changes is on
+[Xbox port](research/xbox-port.md#differences). Coney finds what its lighting and shadows do differently from the PS2's,
+writes it up citing `Xbox 0x...` addresses ([Xbox addresses](guides/research-evidence.md#xbox-addresses)) and ports it
+as a renderer option tagged `@orig xbox` ([Xbox tags](guides/conventions.md#xbox-tags)). It is presentation only: the
+stealth "hidden in shadow" rule and everything else the simulation reads stay the PS2's.
 
 **Done when** the first mission plays at a widescreen resolution with anti-aliasing and interpolated rendering above
 30 frames a second, a test pack replaces a named texture, and a level can be drawn with the Xbox port's lighting and

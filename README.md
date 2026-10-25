@@ -27,17 +27,6 @@ Projects that bring old games to new platforms work in one of three ways:
   which makes a recompilation much harder there.
 - A **reimplementation**, which is what Coney is, writes new code that behaves the same.
 
-Coney reimplements *The Warriors* as a whole, not one console's version of it. Rockstar Toronto made the game for
-the PlayStation 2 and the Xbox at once, from one codebase: both versions' final builds were compiled on the same day,
-and both were released in North America on 17 October 2005. The code above each console's platform layer is the
-same, and the engine and its data were built around the PS2: the Xbox version still reads the PS2's data formats. So
-the PS2 version is Coney's main source and the reference for how the game plays. It is also the one Coney can check at runtime:
-PCSX2's debugger lets contributors watch the game run, and Coney's tools are built around it. The Xbox executable
-reads more easily in places (strings in place, library calls named), so it also serves as a reading aid. Where the
-Xbox port does better (its larger textures, HD movies and its own renderer's lighting and shadows), Coney can follow
-it too, and it may go beyond both consoles in graphics and performance. Each of these is an option, and the PS2 look
-is always there to choose.
-
 Coney's contributors read the original in Ghidra and watch it run in PCSX2, so Coney follows the same rules, timings
 and maths. The code is our own: written in Coney's own structure and names, on our own engine, with no part of the
 original's code, data or binary inside it. It is not a clean-room reimplementation: the people writing the code also
@@ -60,6 +49,25 @@ What it costs:
 - **Faithfulness has to be checked, not assumed.** Each ported function cites the original's address, every change
   to one is compared side by side with the original, and tests check Coney against the running game.
 - **It takes longer:** every system has to be understood, not just matched or translated.
+
+### The PS2 and Xbox versions
+
+Coney reimplements *The Warriors* as a whole, not one console's version of it
+([research](docs/research/xbox-port.md)):
+
+- **One codebase.** Rockstar Toronto built the PS2 and Xbox versions from one codebase. Their final builds were
+  compiled on the same day, from changelist numbers five apart, and both were released in North America on
+  17 October 2005.
+- **Built around the PS2.** The engine and its data were made for the PS2: the Xbox version still reads the PS2's
+  data formats and names its files after the PS2's processor and sound format. So the PS2 version is Coney's main
+  source for how the game plays. It is also the one we can check at runtime, in PCSX2's debugger, which Coney's tools
+  are built around; the Xbox executable serves as a reading aid beside it.
+- **What the Xbox port adds:** textures about twice the size, HD and widescreen movies, and its own renderer, with a
+  shadow map for the characters. **What it does worse:** its music is at a lower sample rate.
+
+Coney takes the Xbox version's gains as faithful and builds on them: they, and what neither console could do (higher
+frame rates, anti-aliasing, modern lighting), are [graphics and performance](docs/roadmap.md#graphics-and-performance)
+options. Gameplay stays the PS2's, and the PS2 look is always there to choose.
 
 The rules we work under are in [LEGAL.md](LEGAL.md).
 
