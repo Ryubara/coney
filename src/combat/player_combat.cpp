@@ -454,10 +454,10 @@ void PlayerCombat::special(const CombatInput& input, const CombatTuning& tuning,
 }
 
 void PlayerCombat::strongGrapple(const CombatInput& input, CombatOutput& out) {
-    // Not ported: the original first pops the grounded move style 15 when the human is not knocked down. Coney keeps
-    // no move-style stack, and the two go together: Human_KnockDown pushes 15 with state 0x80000 and Human_GetUp
-    // (`0x0022f3c8`) pops it as it clears 0x80000; at runtime a knockdown and its rise never showed 15 without 0x80000
-    // (docs/research/combat-grabs.md#strong-grapple).
+    // **Coney's choice**: the original first pops the grounded move style 15 when the human is not knocked down; Coney
+    // keeps no move-style stack, and the two go together: Human_KnockDown pushes 15 with state 0x80000 and Human_GetUp
+    // (`0x0022f3c8`) pops it as it clears 0x80000. At runtime a knockdown and its rise never showed 15 without
+    // 0x80000 (docs/research/combat/index.md#attacks).
     // The strike's clip is paired, so with nobody the search may grab nothing plays; the power meter is neither tested
     // nor spent (the hold's drain starts with the grab, as for any).
     if (!input.grabTargetInReach) {

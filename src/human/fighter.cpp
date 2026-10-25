@@ -574,7 +574,7 @@ Holdable* Fighter::strongGrappleTarget(const FighterInput& input) {
     }
     Combatant* target = input.targets[found];
     m_target = target;
-    // The paired clip needs one that may be grabbed: within a quarter metre in height. **Coney choice**: the clear
+    // The paired clip needs one that may be grabbed: within a quarter metre in height. **Coney's choice**: the clear
     // line to it (`0x0021c0a8`) is not tested.
     if (std::fabs(target->position().z - input.position.z) > combat::kGrabbableHeight) {
         return nullptr;
