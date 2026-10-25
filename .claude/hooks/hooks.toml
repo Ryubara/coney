@@ -25,10 +25,8 @@ ttl_seconds = 600
 # there it is injected only under these modes (docs/guides/agents.md#identity).
 powershell_modes = ["bypassPermissions"]
 
-[pr_guard]
-# Refuse `gh pr create` (and a pull request opened through `gh api`) in every session: only `coney-tools pr open`
-# may open a pull request. OFF until `pr open` exists; then flip it here.
-refuse_pr_create = false
+# The PR guard's switch is not here: it is `pull_requests.open_only` in .github/conventions.yml (off until one pull request
+# has gone through `coney-tools pr open`), which pr_guard.py reads itself.
 
 # What no session may touch (~/.coney, private keys, stamp logs) is built into protect.py: a settings file that
 # cannot be read must not take it away, and no setting may weaken it.

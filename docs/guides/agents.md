@@ -21,7 +21,7 @@ so a fresh clone gets the same setup as the maintainer's machine:
 | `.mcp.json` | The debugging servers: `ghidra-mcp` (the shared Ghidra project) and `pcsx2` (the emulator, over the PCSX2-MCP fork's debug server and PINE) | Claude Code; other tools take the same two commands in their own MCP config |
 | `.claude/agents/` | The roles: `coordinator` (the main session), `engineer`, `tooling`, `reviewer` | Claude Code |
 | `.claude/skills/` | The coordinator's skills: `repo-hygiene` ([the skill](repo-conventions.md#hygiene-skill)) | Claude Code |
-| `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and `coney-tools build` allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)), and `gh` commands naming a video file, which only `coney-tools clips publish` uploads ([Clips](testing.md#clips)); `export CONEY_AGENT_TOKEN=*`, the [identity](#identity) prefix the dispatcher adds; hooks, run by one dispatcher (`.claude/hooks/dispatch.py`, [The hooks](#hooks)), that refuse a raw `cmake --build`, `ctest` or `ninja` ([Builds and tests](#builds)), a wait loop with no bound ([Bounded waits](#bounded-waits)), a raw `gh` command that writes an issue (`.claude/hooks/issue_guard.py`, [Filing an issue](issues.md#filing)), an Agent call with `isolation: "worktree"` or with no Coney role as its type (`.claude/hooks/agent_guard.py`, [Where an agent works](#worktrees), [Which role to start](#roles)), a tool call the role of the session does not allow (`.claude/hooks/roles.py`), a call of the shared `pcsx2` MCP server on a copy the caller has not claimed (`.claude/hooks/pcsx2_guard.py`, [The PCSX2 MCP guard](#pcsx2-guard)), a `gh pr create` or `gh pr edit` whose title or description CI would refuse (`.claude/hooks/pr_guard.py`, [The release queue](how-we-work.md#release-queue)), and, inside a subagent, `git push` or a `gh` command that writes to GitHub (`.claude/hooks/push_guard.py`, [The release queue](how-we-work.md#release-queue)) and, after a `git commit`, a `Co-Authored-By` trailer that names another model than the agent runs on (`.claude/hooks/trailer_guard.py`, [Commit trailers](#trailer-guard)) | Claude Code |
+| `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and `coney-tools build` allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)), and `gh` commands naming a video file, which only `coney-tools clips publish` uploads ([Clips](testing.md#clips)); `export CONEY_AGENT_TOKEN=*`, the [identity](#identity) prefix the dispatcher adds; hooks, run by one dispatcher (`.claude/hooks/dispatch.py`, [The hooks](#hooks)), that refuse a raw `cmake --build`, `ctest` or `ninja` ([Builds and tests](#builds)), a wait loop with no bound ([Bounded waits](#bounded-waits)), a raw `gh` command that writes an issue (`.claude/hooks/issue_guard.py`, [Filing an issue](issues.md#filing)), an Agent call with `isolation: "worktree"` or with no Coney role as its type (`.claude/hooks/agent_guard.py`, [Where an agent works](#worktrees), [Which role to start](#roles)), a tool call the role of the session does not allow (`.claude/hooks/roles.py`), a call of the shared `pcsx2` MCP server on a copy the caller has not claimed (`.claude/hooks/pcsx2_guard.py`, [The PCSX2 MCP guard](#pcsx2-guard)), a `gh pr create` or `gh pr edit` whose title or description CI would refuse and, once `pull_requests.open_only` is on, every hand-typed way of opening a pull request (`.claude/hooks/pr_guard.py`, [The PR guard](enforcement.md#pr-guard)), and, inside a subagent, `git push` or a `gh` command that writes to GitHub (`.claude/hooks/push_guard.py`, [The release queue](how-we-work.md#release-queue)) and, after a `git commit`, a `Co-Authored-By` trailer that names another model than the agent runs on (`.claude/hooks/trailer_guard.py`, [Commit trailers](#trailer-guard)) | Claude Code |
 | `tools/claude-mod/` | Conclave, the Claude Code mod: a band, a status line, a pane and the shorter list of agent types ([Conclave](conclave.md)) | Claude Code, with `--plugin-dir` |
 | `.claude/hooks/` | The dispatcher `dispatch.py` that `settings.json` runs for every event ([The hooks](#hooks)), the guard scripts it runs, the role rules and identity injection (`roles.py`, `identity.py`), their settings `hooks.toml`, and `ruff.toml` (the package's rules; ruff lints the hooks like `python/`, [Conventions](conventions.md#python)) | Claude Code |
 
@@ -300,17 +300,21 @@ Of the nine guard scripts, `lua_guard.py` was written for the dispatcher (its fi
 `no-decompiled-lua`), and five run exactly as they did as separate hooks (`build_guard.py`, `issue_guard.py`,
 `bounded_waits.py`, `push_guard.py`, `pcsx2_guard.py`); `trailer_guard.py` is unchanged but the dispatcher starts it
 only for a real `git commit`; `pr_guard.py` (once `release_guard.py`) and `agent_guard.py` run as before and have a
-rule more each (the `refuse_pr_create` switch, the role check). The dispatcher gives a guard's `main()` the hook input
-and takes its exit code and stderr, so a guard stays a script of its own with its own tests. The refusals of all
+rule more each (the `pull_requests.open_only` switch, the role check). The dispatcher gives a guard's `main()` the hook
+input and takes its exit code and stderr, so a guard stays a script of its own with its own tests. The refusals of all
 guards come back together, as Claude Code's JSON answer (`permissionDecision: deny` with the reasons before a tool
 runs, `decision: block` after it) with exit code 0, shown to the agent; never exit code 2, which Claude Code also gets
 from a launcher that fails ([Nothing turns the guards off](#hooks)). The settings are in `.claude/hooks/hooks.toml`
-(hand-written, standard-library TOML: the hooks run without packages, so `.github/conventions.yml` cannot be read
-there). Two switches are off in the committed file and are changed in a one-line pull request when their moment comes:
-`require_role` ([Which role to start](#roles)) and `[pr_guard] refuse_pr_create`, which makes the PR guard refuse
-every `gh pr create` and every `gh api` call that opens a pull request, in any session, once `coney-tools pr open` is
-the only way. The hooks run from the checkout the session was started in, so a change to them reaches a session when
-that checkout has it. Whatever the dispatcher runs is judged on spelling; none of it is a security boundary.
+(hand-written, standard-library TOML: the hooks run without packages, so they cannot load `.github/conventions.yml`).
+Two switches are off in the committed files and are changed in a one-line pull request when their moment comes:
+`require_role` in `hooks.toml` ([Which role to start](#roles)) and `pull_requests.open_only` in
+`.github/conventions.yml`, which makes the PR guard refuse the hand-typed ways of opening a pull request in any
+session, once `coney-tools pr open` is the only way ([The PR guard](enforcement.md#pr-guard) lists them). The second is
+a conventions key, not a line of `hooks.toml`, so the rule has one source: `pr_guard.py` reads that one line itself
+(`read_open_only`; a file it cannot read leaves the switch off), and a test holds its reader to the conventions
+loader. The hooks run from the checkout the session was
+started in, so a change to them reaches a session when that checkout has it. Whatever the dispatcher runs is judged on
+spelling; none of it is a security boundary.
 
 **Nothing turns the guards off, and a guard that cannot start blocks nothing.** The guards are what
 keeps agents from breaking the shared machine, so only a guard's own failure may stop that guard. A settings file that

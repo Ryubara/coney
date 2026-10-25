@@ -278,9 +278,10 @@ What it refuses, besides the proof's refusals above (each message starts with "p
 ## What this does not do {#limits}
 
 These commands guard against mistakes and against agents, not against the person at the machine. `pr open` is the only
-release path the tools offer, but until the PR guard's switch (`[pr_guard] refuse_pr_create` in
-`.claude/hooks/hooks.toml`, which refuses `gh pr create` and the `gh api` calls that open a pull request; off until
-one real pull request has gone through `pr open`) is on, nothing stops a coordinator from skipping it. They also do
+release path the tools offer, but until the PR guard's switch (`pull_requests.open_only` in
+`.github/conventions.yml`, which refuses the hand-typed ways of opening, rewriting or auto-merging a pull request and of
+pushing this repository, [The PR guard](enforcement.md#pr-guard); off until one real pull request has gone through
+`pr open`) is on, nothing stops a coordinator from skipping it. They also do
 not stop a person who can write the files: the stamp log is written only by the stage commands and the hooks keep
 agents from writing it, but a person who can write the files can rebuild a chain. An edit made on the GitHub website
 is not checked beyond the `title`, `docs` and `body` jobs. The description CI checks is the one that `pr text`

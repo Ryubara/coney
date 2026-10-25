@@ -396,6 +396,10 @@ class PullRequests:
     stacked: Stacked
     images: Images
     markers: Markers
+    #: Whether only `coney-tools pr open` opens a pull request: with this on, `.claude/hooks/pr_guard.py` refuses the
+    #: hand-typed routes (docs/guides/enforcement.md#pr-guard). The hook reads this one key from the file itself (it
+    #: runs without packages); `test_pr_guard.py` holds its reader to this loader.
+    open_only: bool
 
 
 @dataclass(frozen=True)
@@ -1509,6 +1513,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
         "stacked",
         "images",
         "markers",
+        "open_only",
     )
     table = _table(data, where, keys)
     sections = _texts(table["sections"], _at(where, "sections"))
@@ -1656,6 +1661,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
             extensions=extensions,
         ),
         markers=Markers(summary=marker_names[0], facts=marker_names[1]),
+        open_only=_flag(table["open_only"], _at(where, "open_only")),
     )
 
 
