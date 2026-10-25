@@ -40,9 +40,9 @@ TEST_CASE("versions parse and sort as Semantic Versioning orders them", "[launch
                              "1.1.0",       "2.0.0"};
     for (std::size_t i = 0; i + 1 < std::size(ordered); ++i) {
         INFO(ordered[i] << " < " << ordered[i + 1]);
-        CHECK(*parseVersion(ordered[i]) < *parseVersion(ordered[i + 1]));
+        CHECK(coney::test::got(parseVersion(ordered[i])) < coney::test::got(parseVersion(ordered[i + 1])));
     }
-    CHECK(*parseVersion("1.0.0") == *parseVersion("1.0.0"));
+    CHECK(coney::test::got(parseVersion("1.0.0")) == coney::test::got(parseVersion("1.0.0")));
 }
 
 TEST_CASE("a release manifest is read with its files per platform", "[launcher]") {
@@ -50,7 +50,7 @@ TEST_CASE("a release manifest is read with its files per platform", "[launcher]"
     REQUIRE(release.has_value());
     CHECK(release->version.text() == "0.2.0");
     CHECK(release->channel == "stable");
-    CHECK(release->minLauncher == *parseVersion("0.1.0"));
+    CHECK(release->minLauncher == coney::test::got(parseVersion("0.1.0")));
     CHECK(release->notes.size() == 2);
     const auto files = release->platforms.find("windows-x64");
     REQUIRE(files != release->platforms.end());
