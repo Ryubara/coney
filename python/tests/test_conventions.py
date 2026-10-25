@@ -741,9 +741,54 @@ def test_the_ci_places_split_the_checks_between_local_and_ci() -> None:
     local_only = {place.id for place in ci.at("local") if "ci" not in place.where}
     assert {"full-suite", "msvc-ci-build"} <= local_only
     assert "clang-tidy" in {place.id for place in ci.at("nightly")}
+    # build.yml also runs on a push to release/** and by hand, and the failure issue follows a manual run on main
+    assert {"clang-tidy"} <= {place.id for place in ci.at("release")}
+    assert {"clang-tidy", "failure-issue"} <= {place.id for place in ci.at("manual")}
     # a local-only check names no CI job and every CI check names one
     assert all(not place.jobs for place in ci.places if place.where == ("local",))
     assert all(place.jobs for place in ci.places if place.where != ("local",))
+
+
+#: How a trigger of the gate workflows reads as a `ci.places` word: (event, branch or None) -> word.
+_TRIGGER_WORDS = {
+    ("pull_request", None): "ci",
+    ("push", "main"): "main",
+    ("push", "release/**"): "release",
+    ("schedule", None): "nightly",
+    ("workflow_dispatch", None): "manual",
+}
+
+
+def _trigger_words(workflow: dict[Any, Any]) -> set[str]:
+    """The `ci.places` words a workflow's `on:` triggers stand for (PyYAML reads the key `on` as True)."""
+    triggers = workflow.get("on", workflow.get(True)) or {}
+    words: set[str] = set()
+    for event, spec in triggers.items():
+        branches = (spec or {}).get("branches") if event == "push" else None
+        for branch in branches or [None]:
+            words.add(_TRIGGER_WORDS[(event, branch)])
+    return words
+
+
+def test_the_ci_places_of_the_gate_workflows_say_every_event_their_jobs_run_on() -> None:
+    import yaml
+
+    ci = load_conventions(REPO).ci
+    runs_on: dict[str, set[str]] = {}
+    for name in ("build", "python", "docs"):
+        workflow = yaml.safe_load((REPO / ".github" / "workflows" / f"{name}.yml").read_text(encoding="utf-8"))
+        words = _trigger_words(workflow)
+        for job_id, job in workflow["jobs"].items():
+            # a job whose `if:` picks events runs on fewer of them; those places are checked one by one below
+            if "event_name" not in str(job.get("if", "")):
+                runs_on[f"{name}/{job_id}"] = words
+    for place in ci.places:
+        if place.jobs and all(job in runs_on for job in place.jobs):
+            expected = set().union(*(runs_on[job] for job in place.jobs))
+            assert set(place.where) - {"local"} == expected, place.id
+    # cache-prune runs on every event but a pull request; the docs site deploys on a push to main
+    caches = next(place for place in ci.places if place.id == "caches")
+    assert set(caches.where) == {"main", "release", "nightly", "manual"}
 
 
 @pytest.mark.parametrize(

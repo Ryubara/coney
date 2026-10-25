@@ -76,7 +76,7 @@ Markers inside a fenced code block, like the one above, are examples and are lef
 | `tools-only-paths` | The paths that run python on every OS and skip the engine jobs | `paths.tools_only` | [Building and testing](building.md#what-a-pull-request-runs) |
 | `engine-paths` | The paths that run the engine jobs and python on Linux | `paths.engine` | [Building and testing](building.md#what-a-pull-request-runs) |
 | `audit-checks` | The table of the audit's checks | `hygiene.checks` | [Audit checks](#audit-checks) |
-| `check-places` | The table of where each check runs: local, or CI on pull requests, pushes to main, nightly or issue events | `ci.places` | [Building and testing](building.md#what-ci-runs) |
+| `check-places` | The table of where each check runs: local, or CI on pull requests, pushes to main or a release branch, nightly, manual runs or issue events | `ci.places` | [Building and testing](building.md#what-ci-runs) |
 
 After a change to a key, run `uv run --project python coney-tools repo render` and commit the rewritten files with the
 change. `repo render --check` fails when a block is stale; the `python` workflow and `coney-tools check changed` run
