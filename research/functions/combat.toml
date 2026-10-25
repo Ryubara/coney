@@ -642,7 +642,7 @@ status = "legacy"
 [[function]]
 address = 0x002653d8
 name = "Hit_Score"
-page = "combat-rage.md#hit-score-skips"
+page = "combat-rage.md#rage"
 role = "a hit's rage awards and the repeat tracker"
 level = "confirmed-code"
 coney = "src/combat/rage_awards.h:awardHitRage"
