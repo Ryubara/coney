@@ -4,7 +4,7 @@ Before a unit of work becomes a pull request, two read-only commands say whether
 checks that the proof the unit carries holds for the change on the branch, and `coney-tools pr text` writes the pull
 request's title and description from the engineer's one paragraph, the task and the stamps. Neither pushes, opens or
 edits anything on GitHub, so an engineer runs them whenever it wants to know where the unit stands. They are the code
-that `pr open` (planned) will run before it pushes, so what they accept is what a release will accept. The commands'
+that [`pr open`](#open) runs before it pushes, so what they accept is what a release will accept. The commands'
 options and exit codes are in [the pull request commands](coney-tools-pr.md#pr); this page is what they check and what
 each refusal asks you to do.
 
@@ -180,9 +180,108 @@ refused: `clips publish` is the only video upload), at most `max_bytes` and not 
 at most `max_count`. Its output also holds the hashes a release records: the title, paragraph, pictures and facts
 (`--json`).
 
+## pr open {#open}
+
+```sh
+uv run --project python coney-tools pr open [TASK] [--dry-run] [--reopen] [--no-auto-merge] [--json]
+```
+
+The coordinator's release command, and the only way the tools turn a unit into a pull request: it proves the unit,
+rebases it, pushes it, opens (or updates) the pull request, turns on auto-merge and reads the result back. It replaces
+the hand-run sequence of fetch, rebase, `docs check`, force push, `gh pr create` and `gh pr merge --auto`. It makes no
+commit: what is pushed is exactly what Check and Review saw. Its options and exit codes are in
+[the pull request commands](coney-tools-pr.md#pr-open); this section is what it checks and does, in order.
+
+1. **Who and where (exit 2 when not).** The caller is the coordinator or a person: an engineer or reviewer identity is
+   refused. `gh` is 2.99 or newer (`--attach`) and logged in. The task has a unit (`unit.json` from `task start`) and a
+   `TASK.md`; the worktree exists, is on the unit's branch (not detached, no rebase or merge in progress) and is clean.
+   One `pr open` of a task runs at a time (the lock file `pr-open.lock` in the task's folder; a dry run takes no lock).
+   The default branch is the one `origin`'s `HEAD` names (as for `pr verify`), fetched, and the sections that steer
+   a release (`repo`, `pull_requests`, `merge`, `claims`, `stamps`, and so the claims client's bot login and markers)
+   are read from `origin/<default branch>` whatever `--remote` is, never from the branch under release. A unit
+   that `task start` cut from any other base (a stacked task) is refused: the rules never come from an unmerged branch.
+2. **The claim (exit 1).** Each issue of the task is claimed by the person running the command (the card is present and
+   not released); otherwise the message names the claimant.
+3. **The pull request (exit 1).** The branch's pull request is looked up (`gh pr list --head`). Merged: refused.
+   Closed and not merged: refused unless `--reopen`. A fix task (`parent:` in its `TASK.md`) is released onto its
+   parent's pull request, log and text, and is refused when the parent has no open pull request.
+4. **The proof (exit 1).** [`pr verify`](#verify) and [`pr text`](#text) run on the unit as it is, so a doomed run costs
+   seconds and leaves the branch alone. Every problem is listed under the stage to redo; the unit goes back to its
+   engineer, never to the coordinator's hands.
+5. **Rebase.** `git rebase <remote>/<default>`, linear. Up to date: nothing happens. A conflict is aborted, so the
+   worktree is as it was; the paths are written to `REBASE.md` in the task's folder and the exit is 3. The engineer
+   resolves, and the hashes say which stamps that made stale. The rebase is linear whatever the machine's git
+   configuration says (`--no-rebase-merges`, no autosquash). A git that fails before it starts a rebase, or a rebase
+   that stops with no path left unmerged (no committer identity, a hook), is exit 4 with git's message, not a conflict;
+   the second is aborted too. After a clean rebase the proof runs again on the new tip; a stamp that became stale is
+   listed like any refusal (the branch stays rebased locally, exit 1). For a fix task the number of files changed since
+   the last release is printed (`fix touches 3 files since the last release`), so the reviewer can judge its scope.
+6. **The stamp.** One `pr-opened` stamp is appended: the tip, the base, the change, title, paragraph, facts and pictures
+   hashes, the engineer. When the newest stamp of the log is already a `pr-opened` that covers the same things, it is
+   reused, so a rerun appends nothing.
+7. **Push.** `git push --force-with-lease=<branch>:<expected> <remote> <branch>`, where `<expected>` is the remote tip
+   the previous run recorded in `pr-published.json` (empty on the first push, which then fails if the branch exists). A
+   bare `--force-with-lease` and `--force` are never used. A branch someone else moved is refused (exit 4). A remote
+   already at the tip is not pushed to, and a branch that is gone from the remote (GitHub deleted it after the pull
+   request was closed) is expected absent, so `--reopen` pushes it again.
+8. **Create or update.** `gh pr create` (or `gh pr edit`, after a reopen when asked) with the generated title and
+   description and one `--attach` per picture, run in the folder of the engineer's file so `./shots/x.png` is the path
+   `gh` matches. The title, the body and `pr-published.json` are kept in the task's folder, whatever file `--text`
+   names. On an update only pictures that are new are attached; an unchanged one keeps the address of its upload from
+   `pr-published.json`. Then `gh pr merge --squash --auto`, unless `--no-auto-merge` is given, `merge.auto_merge` is
+   off, the change touches a path of `merge.manual_paths` (`.github/conventions.yml`, `AGENTS.md`,
+   `.claude/settings.json`, `.claude/hooks/`: the maintainer merges those, and the message says so) or the viewer's
+   permission on the repository is not admin, maintain or write (a fork's owner has none: the pull request opens
+   without it).
+9. **Read back.** The title, the head commit, the pictures (as many addresses as pictures), the marked blocks, the
+   absence of any local path and auto-merge are read from GitHub. A wrong description is repaired once with `gh pr
+   edit`; a second failure is exit 4 with the pull request's address (it exists, and rerunning repairs it).
+   Auto-merge that is on when this release should leave it off (a fix round that now touches a `manual_paths` file,
+   `--no-auto-merge`, a frozen `merge.auto_merge`, or a hand-set one) is turned off with `gh pr merge --disable-auto`.
+   For a pull request that already exists this happens before the push (step 7), so a failed step later cannot leave
+   the new tip to merge by itself; if it stays on, the run stops with exit 4 before pushing anything.
+10. **Record.** `/progress pr-opened` is posted once on each issue (the claim Action then shows `PR #N open`),
+    `pr-published.json` is written (number, address, pushed tip, picture hashes to addresses, the engineer, the
+    time) and one line is printed: `opened #812 <url> (task ..., engineer ..., auto-merge on)`. `--json` prints the
+    same as one object: `ok`, `exit`, `task`, `dry_run`, `message`, `refusals`, `log`, `pr`, `tip`, `stamp`,
+    `auto_merge`.
+
+`--dry-run` does steps 1 to 5 in a throwaway `git worktree add --detach` and says what 6 to 10 would do (open or
+update the pull request that exists, with or without auto-merge): nothing in the unit's folder, the log, git or GitHub
+changes, not even a lock or `REBASE.md`. It reports a conflict or a refusal as a real run would.
+
+Every step is idempotent, so after exit 4 the coordinator runs the same command again: no second stamp, no second pull
+request, no second `/progress`. The facts block is generated from the log without the `pr-opened` stamps, so a rerun
+makes identical text. The repository is never written in a file or in the code: `--repo` defaults to what `gh` resolves
+for the remote (the parent of a fork), so a contributor's clone releases to the upstream repository. The pull request's
+author and the squash commit are the coordinator's account; the engineer is named in the AI use section, the facts
+block, the stamp and `pr-published.json`.
+
+What it refuses, besides the proof's refusals above (each message starts with "pr open: "):
+
+| Exit | Message | Redo |
+| --- | --- | --- |
+| 2 | `only the coordinator opens pull requests; ask it` | none: ask the coordinator |
+| 2 | `gh 2.99 or newer is needed (--attach); found 2.97`; `gh is not ready (...)` | none |
+| 2 | `<task>: no unit worktree (run task start)`; `a rebase or merge is in progress`; `the worktree is on 'x', the unit's branch is 'y'` | `task start`, or the engineer |
+| 2 | `the worktree has uncommitted changes: <first 5 paths>; the engineer commits or removes them` | the engineer |
+| 2 | `another pr open of <task> is running`; `cannot fetch <remote> <default>: ...` | wait; none |
+| 2 | `<task>: the unit was started from <ref>, not from <remote>/<default>; ...` (a stacked unit) | the engineer rebases the task onto the default branch, or the unit is started again |
+| 2 | `origin/HEAD is not set here, so the default branch is unknown; run git remote set-head origin --auto` | the coordinator runs the command named |
+| 1 | `refused: the claim is not yours to release in <task>`, with the claim's state under it | the coordinator re-claims |
+| 1 | `#N already merged this branch; new work is a new task`; `#N was closed; --reopen to continue it`; `<fix> has no open pull request to fix (...)` | a new task; `--reopen`; none |
+| 1 | the proof's refusals, each under its stage | the stage named |
+| 3 | `rebase onto <remote>/<default> conflicts at <12 digits> in <paths>; the branch is as it was` | the engineer resolves; the stale stamps are redone |
+| 4 | `auto-merge on #N stays on and this release must not be merged by it; nothing was pushed` | turn it off on GitHub, rerun |
+| 4 | `push: ...` (the lease was refused: fetch the branch and have the engineer rebase onto it); `gh: ...; run pr open again`; `read-back: <url> is wrong: ...`; `git rebase <remote>/<default> stopped with no conflict: <git's message>; aborted, the branch is as it was`; a git error from the rebase on | rerun (after fixing what git names) |
+
 ## What this does not do {#limits}
 
-These commands guard against mistakes and against agents, not against the person at the machine: the stamp log is
-written only by the stage commands and the hooks keep agents from writing it, but a person who can write the files can
-rebuild a chain. An edit made on the GitHub website is not checked beyond the `title`, `docs` and `body` jobs. The
-description CI checks is the one that `pr text` generates; nothing in CI reads the stamps.
+These commands guard against mistakes and against agents, not against the person at the machine. `pr open` is the only
+release path the tools offer, but until the PR guard's switch (`[pr_guard] refuse_pr_create` in
+`.claude/hooks/hooks.toml`, which refuses `gh pr create` and the `gh api` calls that open a pull request; off until
+one real pull request has gone through `pr open`) is on, nothing stops a coordinator from skipping it. They also do
+not stop a person who can write the files: the stamp log is written only by the stage commands and the hooks keep
+agents from writing it, but a person who can write the files can rebuild a chain. An edit made on the GitHub website
+is not checked beyond the `title`, `docs` and `body` jobs. The description CI checks is the one that `pr text`
+generates; nothing in CI reads the stamps.

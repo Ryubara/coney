@@ -1,16 +1,16 @@
 # The coney-tools pull request commands
 
-The `pr` commands: whether a unit is ready to become a pull request, the text it carries and the trailers of a
-commit. [`repo`](coney-tools-repo.md#repo) and [`task`](coney-tools-repo.md#task) are on the repository commands page;
-the other groups are listed in [the command line overview](coney-tools.md#groups).
+The `pr` commands: whether a unit is ready to become a pull request, the text it carries, its release and the
+trailers of a commit. [`repo`](coney-tools-repo.md#repo) and [`task`](coney-tools-repo.md#task) are on the repository
+commands page; the other groups are listed in [the command line overview](coney-tools.md#groups).
 
 ## pr {#pr}
 
 The checks on a pull request and its commits: whether a unit is ready to become a pull request (`pr verify`), the text
-it will carry (`pr text`) and the trailers of a commit (`pr check-commit`). The pull-request checks of [repo](coney-tools-repo.md#repo)
-(`check-title`, `check-body`, `check-docs`) are planned to move here when the command groups are renamed
-([Stamps](stamps.md) says the command names are placeholders for that pass). What the first two check, and what each
-refusal asks you to do, is [Releasing a pull request](pr.md).
+it will carry (`pr text`), the release itself (`pr open`) and the trailers of a commit (`pr check-commit`). The
+pull-request checks of [repo](coney-tools-repo.md#repo) (`check-title`, `check-body`, `check-docs`) are planned to
+move here when the command groups are renamed ([Stamps](stamps.md) says the command names are placeholders for that
+pass). What the first three check and do, and what each refusal asks you to do, is [Releasing a pull request](pr.md).
 
 ### pr verify {#pr-verify}
 
@@ -55,6 +55,41 @@ as for `pr verify`.
 With `--json` the result holds the title and the hashes a release records (`title_sha256`, `paragraph_sha256`,
 `images_sha256`, `facts_sha256`). Exit codes as for `pr verify`. The file's form, what is generated and the checks:
 [pr text](pr.md#text).
+
+### pr open {#pr-open}
+
+```sh
+uv run --project python coney-tools pr open [TASK] [--worktree DIR] [--text FILE] [--remote NAME] [--repo OWNER/NAME]
+    [--reopen] [--no-auto-merge] [--dry-run] [--json]
+```
+
+The coordinator's release command: it runs `pr verify` and `pr text` on the unit, rebases it onto the remote's default
+branch, pushes it with a lease, opens or updates the pull request with the generated title and description and the
+pictures attached, turns on auto-merge, reads the pull request back and records it. It commits nothing. An engineer or
+reviewer identity is refused. The steps, each refusal and what to redo: [pr open](pr.md#open). There is deliberately no
+option to skip a check, to take a stamp from elsewhere or to name another base branch.
+
+| Argument or option | Default | What it does |
+| --- | --- | --- |
+| `TASK` | `CONEY_TASK`, else the branch | The task whose unit is released. A fix task (`parent:` in its `TASK.md`) is released onto its parent's pull request |
+| `--worktree DIR` | the worktree `task start` recorded | The unit's worktree, which `pr open` rebases; it must be clean and on the unit's branch |
+| `--text FILE` | `PR.md` in the task's scratch folder (a fix task: its parent's) | The engineer's title, paragraph, `Runtime:` line and pictures; `gh` runs in its folder, and the generated files and `pr-published.json` stay in the task's folder |
+| `--remote NAME` | `origin` | The git remote the branch is pushed to and whose default branch is the base |
+| `--repo OWNER/NAME` | what `gh` resolves for the remote (the parent of a fork) | The repository the pull request is opened in |
+| `--reopen` | off | Reopen a closed, unmerged pull request of the branch and update it |
+| `--no-auto-merge` | off | Open without turning on auto-merge, and turn it off when it is already on for the pull request (it is turned on when `merge.auto_merge` is true, the change touches no path of `merge.manual_paths` and the viewer's permission allows it) |
+| `--dry-run` | off | Steps 1 to 5 in a throwaway worktree: the rebase is tried there and nothing in the unit's folder (no lock, no `REBASE.md`), the log, git or GitHub changes |
+| `--json` | off | Print the result as one JSON object: `ok`, `exit`, `task`, `dry_run`, `message`, `refusals`, `log`, `pr`, `tip`, `stamp`, `auto_merge` |
+
+Exit codes:
+
+| Exit | Meaning | The coordinator does |
+| --- | --- | --- |
+| 0 | Opened or updated and read back; with `--dry-run`, every check passed | nothing: the claim card shows the pull request |
+| 1 | Refused: a stage or text check failed, the claim is not the opener's, or the pull request is merged or closed. Every problem is listed under the stage to redo | send the list to the engineer and wait for the next Review |
+| 2 | Cannot run: wrong caller, `gh` missing or old, no unit, dirty worktree, lock held, no fetch, a unit started from a base other than the default branch, `origin/HEAD` unset. Nothing was touched | fix the cause (the messages are in [pr open](pr.md#open)) |
+| 3 | Rebase conflict. The branch is as it was; `REBASE.md` in the task's folder lists the paths | send the paths to the engineer |
+| 4 | A git or GitHub step failed once the branch had been touched (the rebase, the lease, create, edit, merge, read-back), or auto-merge that must be off stays on (nothing is pushed then). The pull request may exist | run it again: every step is idempotent |
 
 ### pr check-commit {#pr-check-commit}
 
@@ -131,6 +166,28 @@ coney-tools pr text [TASK] [--worktree WORKTREE] [--remote REMOTE] [--json] [--t
 | `--json` | flag | off | print the result as one JSON object |
 | `--text FILE` | path | none | the engineer's file (default: PR.md) |
 | `--dry-run` | flag | off | check and print; write no file |
+
+### `pr open` {#pr-open-usage}
+
+Release a unit: check it, rebase, push with a lease, open or update the pull request, turn on auto-merge and read it
+back (docs/guides/pr.md#open).
+
+```text
+coney-tools pr open [TASK] [--worktree WORKTREE] [--text FILE] [--remote REMOTE] [--repo OWNER/NAME] [--reopen]
+    [--no-auto-merge] [--dry-run] [--json]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[TASK]` | text | none | the task (default: CONEY_TASK, else the branch) |
+| `--worktree WORKTREE` | path | none | the unit's worktree (default: the one task start recorded) |
+| `--text FILE` | path | none | the engineer's file (default: PR.md in the task's folder) |
+| `--remote REMOTE` | text | `origin` | the git remote the branch is pushed to |
+| `--repo OWNER/NAME` | text | none | the repository to open it in (default: what gh makes of the remote) |
+| `--reopen` | flag | off | reopen a closed, unmerged pull request of the branch |
+| `--no-auto-merge` | flag | off | open without turning on auto-merge (and turn it off if it is on) |
+| `--dry-run` | flag | off | try everything but the push and GitHub in a throwaway worktree |
+| `--json` | flag | off | print the result as one JSON object |
 
 ### `pr check-commit` {#pr-check-commit-usage}
 

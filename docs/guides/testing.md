@@ -337,8 +337,11 @@ other title area leaves the line out.
   `coney-tools pcsx2 clip`, and both go up only with `coney-tools clips publish`: the rules and how each is kept are
   in [Clips](#clips) below. Never a screen recorder.
 - **Agents** keep every capture in `scratch/<branch>/shots/` and write real image references in the pull request
-  text (`PR.md`), paths relative to the scratch folder: `![Coney after](./shots/after.png)`. The coordinator uploads
-  them from that folder, one `--attach` per file, when it opens the pull request:
+  text (`PR.md`), paths relative to the scratch folder: `![Coney after](./shots/after.png)`. `coney-tools pr open`
+  ([pr open](pr.md#open)) does the attaching when the coordinator releases the unit: it runs from that folder and passes
+  one `--attach` per file (on an update only the pictures that are new), then reads the description back to check that
+  each reference became an upload address and no local path is left. Underneath it is this, which is also what to run
+  by hand outside the workflow:
 
   ```sh
   cd scratch/<branch>
@@ -435,10 +438,12 @@ The whole gate:
   agents never run `cmake --build` or `ctest` directly). Read its `disc tests:` line: `SKIPPED` means no disc test
   ran, and the run is made again with a disc.
 - **Python:** `ruff check` and `ruff format --check` on `python/` and `.claude/hooks/`, `mypy` and `pytest` on
-  `python/`; `coney-tools repo check`; `coney-tools progress check` (the progress inputs; its tables are built into
-  the docs, not committed); and every generator's `--check` (`natives render`, `natives coney`, `natives cpp`,
-  `refs render`, `missions render`, `research render`, `pcsx2 recipe render`). Rerun a generator without `--check`
-  when you change what it reads.
+  `python/`; a Python test is not stamped `fails-first` (that stamp is for the `TEST_CASE`s of an `@orig` change): a
+  tooling task's tests-first rule rests on the reviewer and on pytest in its `checked` stamp ([pr
+  verify](pr.md#verify)); `coney-tools repo check`; `coney-tools progress check` (the progress inputs; its tables
+  are built into the docs, not committed); and every generator's `--check` (`natives render`, `natives coney`,
+  `natives cpp`, `refs render`, `missions render`, `research render`, `pcsx2 recipe render`). Rerun a generator
+  without `--check` when you change what it reads.
 - **Everything:** `uvx pre-commit run --all-files` leaves the tree unchanged, markdownlint passes,
   `mkdocs build --strict` passes, and `coney-tools docs check` passes on the pages you touched.
 

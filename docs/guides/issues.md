@@ -519,6 +519,11 @@ worktree, and a second `claimed` stamp with `detail.fix` set to the fix's id is 
 is the one log all the stage commands write (`UnitRecord.log_task` in `coney_tools/unit_record.py`). The claim check
 uses the parent's task id, because the claim is the parent's.
 
+When the fix is done, `coney-tools pr open <issue>-fix` releases it onto the parent's pull request ([pr
+open](pr.md#open)): the parent's log, text and branch, a push that updates the open pull request in place (a merged or
+missing one is refused), and the stamps the fix did not touch still match their hashes, so only the stale ones are
+redone. A release posts `/progress pr-opened` on each issue once, which the claim card shows as `PR #N open`.
+
 ### Slots {#slots}
 
 A machine runs a limited number of task units and of fix units at a time (`tasks.start.slots` in

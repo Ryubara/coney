@@ -266,6 +266,9 @@ merge:
   up_to_date_required: false                     # no merge queue yet (how-we-work#merging)
   required_checks: [title, docs, body, build-ok, python-ok, format, mkdocs, markdownlint, actionlint, dependencies, clang-tidy]
   who: [maintainer, coordinator]                 # never the agent that wrote the work
+  # A change to one of these paths (a file, or a folder ending in /) is the maintainer's to merge: `pr open`
+  # leaves auto-merge off for it and says why.
+  manual_paths: [.github/conventions.yml, AGENTS.md, .claude/settings.json, .claude/hooks/]
 
 issues:
   blank_issues: false

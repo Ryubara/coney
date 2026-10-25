@@ -412,6 +412,9 @@ class Merge:
     required_checks: tuple[str, ...]
     #: Who may merge: never the agent that wrote the work.
     who: tuple[str, ...]
+    #: Paths whose change is the maintainer's to merge (a file, or a folder ending in `/`): `pr open` leaves
+    #: auto-merge off for a change that touches one.
+    manual_paths: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -1669,7 +1672,7 @@ def _read_merge(data: object, where: str) -> Merge:
         "required_checks",
         "who",
     )
-    table = _table(data, where, keys)
+    table = _table(data, where, keys, ("manual_paths",))
     methods = _texts(table["methods"], _at(where, "methods"))
     _names_in(methods, _MERGE_METHODS, _at(where, "methods"), f"a merge method ({', '.join(_MERGE_METHODS)})")
     return Merge(
@@ -1682,6 +1685,7 @@ def _read_merge(data: object, where: str) -> Merge:
         up_to_date_required=_flag(table["up_to_date_required"], _at(where, "up_to_date_required")),
         required_checks=_texts(table["required_checks"], _at(where, "required_checks")),
         who=_texts(table["who"], _at(where, "who")),
+        manual_paths=_texts(table.get("manual_paths", []), _at(where, "manual_paths")),
     )
 
 
@@ -2720,6 +2724,39 @@ def load_proof_rules_at(root: Path, ref: str, own: Conventions) -> tuple[Convent
     except ConventionsError as error:
         raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: {error}") from error
     return replace(own, proof=proof, paths=paths), "base"
+
+
+def load_release_rules_at(root: Path, ref: str, own: Conventions) -> Conventions:
+    """`own` with the sections that steer a release (`repo`, `pull_requests`, `merge`, `claims` and `stamps`) replaced
+    by those of `.github/conventions.yml` at the git revision `ref`, the rules a branch under release cannot have
+    edited. The other sections are not read, so a base that gained a key elsewhere is still read. Raises
+    ConventionsError when git cannot show the file, it is not YAML, or those sections do not validate."""
+    try:
+        done = subprocess.run(
+            ["git", "-C", str(root), "show", f"{ref}:{CONVENTIONS_FILE}"], capture_output=True, check=False
+        )
+    except OSError as error:
+        raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: git cannot be run ({error.strerror or error})") from error
+    if done.returncode != 0:
+        raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: git cannot show it")
+    try:
+        data = yaml.load(done.stdout.decode("utf-8"), Loader=_Loader)
+    except (UnicodeDecodeError, yaml.YAMLError) as error:
+        raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: not valid YAML ({error})") from error
+    if not isinstance(data, dict):
+        raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: expected a mapping")
+    try:
+        names = own.labels.names()
+        return replace(
+            own,
+            repo=_read_repo(data.get("repo"), "repo"),
+            pull_requests=_read_pull_requests(data.get("pull_requests"), "pull_requests"),
+            merge=_read_merge(data.get("merge"), "merge"),
+            claims=_read_claims(data.get("claims"), "claims", names),
+            stamps=_read_stamps(data.get("stamps"), "stamps"),
+        )
+    except ConventionsError as error:
+        raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: {error}") from error
 
 
 def _keep(value: object, keys: Iterable[str]) -> object:
