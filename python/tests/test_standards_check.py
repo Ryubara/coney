@@ -198,7 +198,7 @@ def test_the_marks_are_only_warnings_until_the_check_is_enforced(tmp_path: Path)
     assert {p.rule for p in found} == {"legacy", "status"} and len(found) == 3
     assert not any(p.error for p in found)
     assert sum("standards prune" in p.message for p in found) == 2
-    assert any("standards mark" in p.message for p in found)
+    assert any('status = "compared"' in p.message and "standards mark" not in p.message for p in found)
 
 
 def test_the_marks_are_errors_once_the_check_is_enforced(tmp_path: Path) -> None:
@@ -268,7 +268,7 @@ def test_the_first_legacy_file_may_be_added_when_the_base_has_none(tmp_path: Pat
     assert sc.problems(root, conv, result, "main") == []
 
 
-def test_a_function_marked_legacy_since_the_base_is_refused_only_after_the_cutover(tmp_path: Path) -> None:
+def test_a_function_marked_legacy_since_the_base_is_refused_only_while_a_cutover_is_set(tmp_path: Path) -> None:
     root = build(tmp_path, {}, status='status = "compared"\n')
     branch(root, {"research/functions/ai.toml": f'# ai\n\n{ENTRY}status = "legacy"\n'})
     conv = conventions(**{"standards.cutover": ""})
@@ -281,7 +281,7 @@ def test_a_function_marked_legacy_since_the_base_is_refused_only_after_the_cutov
 # --- touching --------------------------------------------------------------------------------------------------------
 
 
-def test_a_touched_file_below_the_standard_is_a_warning_before_the_cutover(tmp_path: Path) -> None:
+def test_a_touched_file_below_the_standard_is_a_warning_while_not_enforced(tmp_path: Path) -> None:
     root = build(tmp_path, {"src/ai/brain.cpp": BAD_SOURCE, "src/ai/other.cpp": BAD_SOURCE})
     branch(root, {"src/ai/brain.cpp": BAD_SOURCE + "\n// More.\n"})
     conv = conventions(**{"standards.enforce": False})
@@ -539,7 +539,6 @@ def test_on_the_real_rules_a_branch_may_not_add_to_the_legacy_file_or_mark_a_fun
     root = build(
         tmp_path, {"src/ai/brain.cpp": GOOD_SOURCE, "src/ai/new.cpp": BAD_SOURCE}, status='status = "compared"\n'
     )
-    write_legacy(root, {"src/ai/brain.cpp": {"tag": 1}})
     write_legacy(root, {})
     git(root, "add", "-A")
     git(root, "commit", "-q", "-m", "empty list")

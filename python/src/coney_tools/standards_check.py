@@ -227,7 +227,7 @@ def problems(root: Path, conventions: Conventions, scan: Scan, base: str | None 
             conventions.research.files.functions,
             1,
             "status",
-            f'{item} is ported and has no status: run `coney-tools standards mark` to give it `status = "legacy"`',
+            f'{item} is ported and has no status: record it as `status = "compared"` after its side-by-side comparison',
             error,
         )
         for item in counted.unmarked

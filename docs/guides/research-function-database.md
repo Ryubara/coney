@@ -40,7 +40,7 @@ issue = 123                     # the issue that does
 | `kind` | no | A short tag for the sort of function |
 | `note` | with no `level`; else no | The part of the claim the level does not cover (`confirmed (code); the rock inferred` becomes level `confirmed-code` with that text as the note), or, for an entry with no level, why it has none and where to read about the function; Markdown, links relative to `docs/research` like the role's |
 | `coney` | no | The source file of the port and, after a colon, its function or class |
-| `status` | with `coney` | How far the port has been checked against the original: `legacy` (not yet compared side by side) or `compared`. Only a function with `coney` has one, and every one has one (`standards check` refuses a port without one; `standards mark` gives it `legacy`). Since the cutover (2026-10-25) nothing new is marked `legacy` ([the standards](coney-tools-standards.md#standards)) |
+| `status` | with `coney` | How far the port has been checked against the original: `legacy` (not yet compared side by side) or `compared`. Only a function with `coney` has one, and every one has one (`standards check` refuses a port without one). Since the cutover (2026-10-25) nothing new is marked `legacy`: record a new port `compared` ([the standards](coney-tools-standards.md#standards)) |
 | `gaps` | no | Each piece the port leaves out or does differently: `what`, a `relation` (`stand-in`: on purpose, the reason on the open question; `not-ported`: waits for the issue) and an `issue` number, a `question` (`page.md#q-...`), or both |
 
 Keep to what the file is for. A function's logic, its branches and its constants belong in the page's Behaviour

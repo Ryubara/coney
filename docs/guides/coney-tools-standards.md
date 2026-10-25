@@ -55,16 +55,15 @@ And the touch-it rule ([Touch a page, fix the page](writing-docs.md#touch-it), f
   only its own address.
 
 Enforcement is on: `standards.enforce` is true and `standards.cutover` is 2026-10-25 in
-[.github/conventions.yml](repo:.github/conventions.yml) (the maintainer approved it on that day, issue #813). Every
-report of `check` is an error, so a change that touches a file below the standard without bringing the whole file up to
-it, touches a ported function that is not `compared`, adds to the legacy file or marks a function `legacy` fails
-`standards check` and `docs check`, and so the `mkdocs` job of CI. The marks that are out of step say what to run
-(`coney-tools standards prune` for a file that passes or is gone, `standards mark` for a function with no status).
-Setting `enforce` back to false would turn every report into a warning again (`path:line: warning: rule: message`),
-which the tests of both modes cover. The same check runs inside `docs check` whenever the
-change touches a source or test file, the function database, the legacy file, the conventions or these checks, so the
-`mkdocs` job of CI and the docs step of [`check changed`](coney-tools-build.md#check) hold it without a step of their
-own. The group is `standards`, not `legacy`: that name is reserved for the retired review commands.
+[.github/conventions.yml](repo:.github/conventions.yml). Every report of `check` is an error, so a change that touches a
+file below the standard without bringing the whole file up to it, touches a ported function that is not `compared`, adds
+to the legacy file or marks a function `legacy` fails `standards check` and `docs check`, and so the `mkdocs` job of
+CI. The marks that are out of step say what to run (`coney-tools standards prune` for a file that passes or is gone;
+for a ported function with no status, record it `compared` after its comparison, since `standards mark` writes
+`legacy`, which the cutover refuses for anything new). The same check runs inside `docs check` whenever the change
+touches a source or test file, the function database, the legacy file, the conventions or these checks, so the `mkdocs`
+job of CI and the docs step of [`check changed`](coney-tools-build.md#check) hold it without a step of their own.
+The group is `standards`, not `legacy`: that name is reserved for the retired review commands.
 
 `standards` is `standards_scan.py` (the scanners), `standards_file.py` (the legacy file), `standards_check.py`
 (the marks and the touch-it rule) and `standards_cli.py`; the C++ is read with the reader of `orig_scan.py`.

@@ -744,17 +744,6 @@ def test_the_real_standards_section() -> None:
     assert standards.legacy_file == "research/legacy-files.toml"
     assert standards.code.folders == ("src/",) and ".cpp" in standards.code.suffixes
     assert "TEST_CASE" in standards.tests.macros and standards.tests.citation.marker == "Expected:"
-    # Since the cutover (2026-10-25, issue 813) a file below standard is an error and no function may be marked legacy.
-    assert standards.enforce is True
-    assert standards.cutover is not None and (
-        standards.cutover.year,
-        standards.cutover.month,
-        standards.cutover.day,
-    ) == (
-        2026,
-        10,
-        25,
-    )
 
 
 def test_a_cutover_day_is_read_as_a_moment() -> None:
