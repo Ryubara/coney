@@ -284,7 +284,9 @@ target_sources(coney_tests PRIVATE
     camera/failed_camera_test.cpp
     camera/follow_camera_test.cpp
     camera/follow_collision_test.cpp
+    camera/follow_placement_test.cpp
     camera/follow_script_test.cpp
+    human/disc_player_placement_test.cpp
     human/disc_player_test.cpp
     human/human_test.cpp
     human/workout_test.cpp

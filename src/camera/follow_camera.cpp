@@ -181,6 +181,8 @@ void FollowCamera::observe(const FollowTarget& target) {
     m_targetHeading = target.heading;
 }
 
+FollowPlace FollowCamera::targetPlace() const { return FollowPlace{.feet = m_targetFeet, .heading = m_targetHeading}; }
+
 void FollowCamera::configure(const FollowSettings& settings) {
     // The three distances, each clamped against the others; the band at the default, min(0.5, max - min) deep.
     m_settings = settings;
