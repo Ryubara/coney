@@ -153,11 +153,7 @@ copied = 1
 history = 2
 
 ["docs/research/combat-moves.md"]
-front-matter = 1
-skeleton = 1
-verified = 1
-evidence = 60
-history = 6
+evidence = 50
 
 ["docs/research/combat-rage.md"]
 front-matter = 1
