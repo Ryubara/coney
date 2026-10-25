@@ -291,7 +291,10 @@ TEST_CASE("Battle royal's knock-out and Warrior commands switch", "[scripting][r
     CHECK(thug.human().script().knockedOut);
     CHECK_FALSE(thug.human().alive());
     CHECK(thug.dead());
+    // The knock-out ends a player's slow motion (`Human_KnockOut`, docs/research/slow-motion.md#off).
+    CHECK(thug.human().takeSlowMotionEnd());
     level.call("HuSetConscious", {Value(thug.handle()), Value(1.0)});
+    CHECK_FALSE(thug.human().takeSlowMotionEnd());
     CHECK_FALSE(thug.human().script().knockedOut);
     CHECK(thug.human().alive());
     CHECK_FALSE(thug.dead());

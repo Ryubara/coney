@@ -38,6 +38,9 @@ class SlowMotion {
         m_step = fraction > 0.0F && fraction < 1.0F ? fraction * kNormalStep : kNormalStep;
     }
 
+    /// Stub for the fails-first test commit: does nothing.
+    void reset() {}
+
     /// The characters' step now, seconds.
     [[nodiscard]] float stepSeconds() const { return m_step; }
     /// Whether some player has it on.

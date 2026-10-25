@@ -3,8 +3,8 @@
 // docs/research/combat-grabs.md#grab, docs/research/combat-grabs.md#grab-posing): the grab holds the human, the
 // reaction goal its brain gets follows its state, the hold's moves and the throw land on it, a human with flag 0x40
 // cannot be grabbed, the grab-block flags stop a grab of their side, the power-out escape follows the victim's flags,
-// and a human gone from the level or freed by a script ends the hold. Synthetic clips; the player's stick and buttons
-// come from input scripts.
+// a power move plays out with no power left and gives slow motion back, and a human gone from the level or freed by a
+// script ends the hold. Synthetic clips; the player's stick and buttons come from input scripts.
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -12,7 +12,9 @@
 #include <format>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <span>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -21,6 +23,7 @@
 
 #include "ai/goal.h"
 #include "ai/reaction_goals.h"
+#include "camera/slow_motion.h"
 #include "combat/anim_ids.h"
 #include "combat/commands.h"
 #include "combat/player_combat.h"
@@ -576,4 +579,80 @@ TEST_CASE("an AI attacker's double damage gets through the player's hit armour",
     CHECK(plain.damage > 0);
     CHECK(doubled.armoured == 0);
     CHECK(doubled.damage == 2 * plain.damage);
+}
+
+namespace {
+
+// The fight's clips with the power strike 57 and its extension 59 as long as the disc's slow-motion power moves (24
+// frames) and carrying their pair, slow motion on at frame 10 and off at 15, as Vermin's 59 has them
+// (docs/research/slow-motion.md#non-lethal).
+std::vector<coney::test::LocomotionClip> slowMotionPowerClips() {
+    std::vector<coney::test::LocomotionClip> clips = coney::test::fightClips();
+    const auto strike = static_cast<std::uint32_t>(combat::anim_id::kGrabPower1Strike1);
+    for (coney::test::LocomotionClip& clip : clips) {
+        if (clip.id == strike || clip.id == strike + 2) {
+            clip.duration = 24.0F / 30.0F;
+            clip.markers.push_back({10, coney::camera::SlowMotion::kEventOn});
+            clip.markers.push_back({15, coney::camera::SlowMotion::kEventOff});
+        }
+    }
+    return clips;
+}
+
+// What a power move left behind: the characters' step at the end, whether slow motion was ever on, and whether the
+// grab was let go (95) while the move played.
+struct SlowMotionRun {
+    float step = 0.0F;
+    bool slowed = false;
+    bool letGo = false;
+};
+
+// Plays `script` for 300 updates with the player's power at `power` as the hold stands (update 29), each update's
+// slow-motion event of the player's clip switching slow motion as the player does (human::Player), its step given to
+// both humans for the next update.
+SlowMotionRun runSlowMotion(const FightCharacter& character, std::string_view script, int power) {
+    HumanFight fight(character, 1.0F);
+    coney::camera::SlowMotion slow;
+    SlowMotionRun run;
+    fight.run(script, 300, [&](std::uint64_t frame) {
+        if (frame == 29) {
+            fight.player().fighter().combat().power().set(power);
+        }
+        if (const std::optional<std::uint16_t> event = fight.player().slowMotionEvent()) {
+            slow.event(*event, 0);
+        }
+        run.slowed = run.slowed || slow.active();
+        run.letGo =
+            run.letGo || fight.player().animator().animId() == static_cast<std::uint32_t>(combat::anim_id::kGrabLetGo);
+        fight.player().setStepSeconds(slow.stepSeconds());
+        fight.other().setStepSeconds(slow.stepSeconds());
+    });
+    run.step = slow.stepSeconds();
+    return run;
+}
+
+} // namespace
+
+TEST_CASE("a power move that does not kill plays out with no power left and gives slow motion back",
+          "[human][combat]") {
+    // Expected: docs/research/slow-motion.md#power-move, confirmed (code). Once the power strike starts the player is
+    // no longer grabbing (`Grab_BreakOnHit` ends the grab and makes the pair a paired move), so the meter neither
+    // drains nor lets go when it is empty (`Human_UpdateMeters`): the move plays to its slow-motion off event. 110
+    // power leaves 10 after the strike's quarter of 400, which the hold's drain of 15 a second would empty within the
+    // move.
+    const FightCharacter character(slowMotionPowerClips());
+    constexpr std::string_view kPowerStrike = "5 tap circle\n30 press cross\n32 tap square\n34 release cross\n";
+    // Without the extension: 57 slows time and gives it back.
+    const SlowMotionRun plain = runSlowMotion(character, kPowerStrike, 110);
+    CHECK(plain.slowed);
+    CHECK_FALSE(plain.letGo);
+    CHECK(plain.step == coney::camera::SlowMotion::kNormalStep);
+    // With the extension: square in 57's window (before its slow motion) plays 59, which slows time and gives it back.
+    const SlowMotionRun extended =
+        runSlowMotion(character, std::string(kPowerStrike) + "35 tap square\n40 tap square\n", 110);
+    CHECK(extended.slowed);
+    CHECK_FALSE(extended.letGo);
+    CHECK(extended.step == coney::camera::SlowMotion::kNormalStep);
+    // With full power the same move never ran short.
+    CHECK(runSlowMotion(character, kPowerStrike, 400).step == coney::camera::SlowMotion::kNormalStep);
 }

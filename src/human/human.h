@@ -444,6 +444,9 @@ class Human final : public Holdable {
     /// The slow-motion event (type `0x2e` on, `0x2f` off) the clip playing passed in the last update, if any; the
     /// later of the two when both did (docs/research/camera.md#slow-motion).
     [[nodiscard]] std::optional<std::uint16_t> slowMotionEvent() const { return m_slowMotionEvent; }
+    /// Stubs for the fails-first test commit: never set.
+    [[nodiscard]] bool takeSlowMotionEnd() { return false; }
+    [[nodiscard]] bool takeSlowMotionReset() { return false; }
     /// The anim whose action event (type `0x41`, which `Anim_FireEvents` sends as message `0xc1`) the clip playing
     /// passed in the last update, if any: for 665 `SPECIAL_FLASH` the flash is used, for 666 the door ahead opens and
     /// for 668 the dealer's goal is served (docs/research/combat-rage.md#rage).

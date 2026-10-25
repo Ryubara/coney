@@ -320,6 +320,8 @@ class AnimTaskStack {
     }
     /// The events kept since the last call, in the order they were passed.
     [[nodiscard]] std::vector<ClipEvent> takeEvents() { return std::exchange(m_events, {}); }
+    /// Stub for the fails-first test commit: no events.
+    [[nodiscard]] std::span<const ClipEvent> firedEvents() const { return {}; }
 
     /// The outgoing weight of a fade `elapsed` seconds into `duration`: 1 at the start, 0 at the end and after;
     /// 0 for a zero duration.
