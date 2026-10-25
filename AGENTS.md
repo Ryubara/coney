@@ -53,8 +53,9 @@ first hour; the rest of this file is for agents.
 <!-- conventions:end -->
 - Whoever pushes a pull-request branch may `git push --force-with-lease` it.
 - **Local first; no agent pushes or waits on CI.** An agent commits, runs every applicable local check, writes each
-  pull request's title and description to its scratch folder and tells the coordinator, who pushes from a release
-  queue when CI has room (`docs/guides/how-we-work.md`, "Local first: the release queue").
+  pull request's title and description to its scratch folder and tells the coordinator, who releases it from a queue
+  when CI has room with `coney-tools pr open` ([`pr open`](docs/guides/pr.md#open); the queue:
+  `docs/guides/how-we-work.md`, "Local first: the release queue").
 
 ## Code
 
