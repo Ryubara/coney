@@ -11,6 +11,7 @@ import json
 from typing import Any
 
 from coney_tools import coord_cli
+from coney_tools.conclave_events import collect_events
 from coney_tools.conclave_sources import Sources, section
 from coney_tools.issue_claim_model import Card, iso_time, scopes_overlap
 
@@ -149,9 +150,10 @@ def _attach_pull_requests(units: list[dict[str, Any]], prs: dict[str, Any]) -> N
 
 
 def add_github(src: Sources, report: dict[str, Any]) -> None:
-    """Add the `claims`, `prs` and `issues` sections, and attach pull requests and claim overlaps to the units."""
+    """Add the `claims`, `prs`, `issues` and `events` sections; attach pull requests and claim overlaps to the units."""
     units: list[dict[str, Any]] = (report["units"] or {}).get("units", [])
-    prs = coord_cli.collect(src.coord, True, ["pr"])["prs"]
+    read = coord_cli.collect(src.coord, True, ["pr", "unit"])
+    prs = read["prs"]
     if isinstance(prs, dict) and not prs.get("error"):
         try:
             prs["merged"] = _merged(src)
@@ -161,6 +163,7 @@ def add_github(src: Sources, report: dict[str, Any]) -> None:
     report["prs"] = prs
     if isinstance(prs, dict) and not prs.get("error"):
         _attach_pull_requests(units, prs)
+    report["events"] = section(lambda: collect_events(src, report, read["release"]))
 
     open_issues: list[dict[str, Any]] = []
     issues_error: str | None = None

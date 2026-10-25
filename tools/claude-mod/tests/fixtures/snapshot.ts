@@ -2,7 +2,7 @@
 // Written by python/tests/test_conclave_fixture.py from the Python tests' synthetic units: do not edit.
 // Run that test with CONEY_UPDATE_FIXTURES=1 to write it again after a change to the snapshot.
 export default {
- "schema": 1,
+ "schema": 2,
  "time": "2026-10-23T14:00:00Z",
  "checkout": "/work/repos/coney",
  "github": true,
@@ -33,7 +33,18 @@ export default {
   "band_narrow_columns": 100,
   "stale_after_reads": 3,
   "merged_visible_minutes": 10,
-  "claim_red_hours": 6
+  "claim_red_hours": 6,
+  "watch": {
+   "roles": [
+    "coordinator"
+   ],
+   "preamble": "Coordinator: new work. Handle it or say why it can wait:",
+   "github_seconds": 120,
+   "wake_gap_seconds": 60,
+   "defer_typing_minutes": 10,
+   "resend_minutes": 2,
+   "stop_max_blocks": 3
+  }
  },
  "builds": {
   "error": null,
@@ -416,6 +427,7 @@ export default {
     "auto_merge": false,
     "ci": "fail",
     "updated": "2026-10-23T13:00:00Z",
+    "head": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     "causes": [
      "checks-failed"
     ]
@@ -425,7 +437,14 @@ export default {
    "stuck": [
     {
      "number": 812,
-     "cause": "checks-failed"
+     "branch": "fix-frame-812",
+     "cause": "checks-failed",
+     "kind": "code",
+     "detail": "build-ok (code)",
+     "who": "author",
+     "checks": [
+      "build-ok"
+     ]
     }
    ],
    "other": [],
@@ -459,5 +478,72 @@ export default {
     "assignees": []
    }
   ]
+ },
+ "events": {
+  "error": null,
+  "events": [
+   {
+    "id": "unit:fix-new:PR.md:2026-10-23T12:00:00Z",
+    "kind": "unit-ready",
+    "state": "open",
+    "ref": {
+     "pr": null,
+     "task": "fix-new",
+     "branch": "fix-new"
+    },
+    "since": "2026-10-23T12:00:00Z",
+    "text": "fix-new: PR.md is ready for pr open",
+    "do": "coney-tools pr open fix-new",
+    "guard": false,
+    "handled_by": null
+   },
+   {
+    "id": "pr:812:checks-failed:bbbbbbb:00f533",
+    "kind": "check-failed",
+    "state": "open",
+    "ref": {
+     "pr": 812,
+     "task": null,
+     "branch": "fix-frame-812"
+    },
+    "since": "2026-10-23T13:00:00Z",
+    "text": "#812 fix-frame-812: checks-failed build-ok (code)",
+    "do": "fix it or start an agent for it, then record it: coney-tools pr hold 812 --who <agent> (a known wait: no --who, a --note that says why)",
+    "guard": true,
+    "handled_by": null
+   },
+   {
+    "id": "question:fix-new:QUESTION.md:2026-10-23T13:00:00Z",
+    "kind": "question",
+    "state": "open",
+    "ref": {
+     "pr": null,
+     "task": "fix-new",
+     "branch": "fix-new"
+    },
+    "since": "2026-10-23T13:00:00Z",
+    "text": "fix-new asks: Which step first?",
+    "do": "read /work/scratch/fix-new/QUESTION.md, then answer it: write ANSWER.md beside it, or message the agent",
+    "guard": false,
+    "handled_by": null
+   },
+   {
+    "id": "merged:799",
+    "kind": "merged",
+    "state": "open",
+    "ref": {
+     "pr": 799,
+     "task": null,
+     "branch": "add-task-start"
+    },
+    "since": "2026-10-23T13:56:00Z",
+    "text": "#799 add-task-start merged",
+    "do": "bring the issues it affected up to date (issues.md#after-a-merge)",
+    "guard": false,
+    "handled_by": null
+   }
+  ],
+  "unread": [],
+  "holds_problems": []
  }
 }

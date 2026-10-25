@@ -142,6 +142,11 @@ def github_answers() -> dict[tuple[str, ...], Any]:
         ("pr", "list", "--state", "merged"): [
             {"number": 799, "headRefName": "add-task-start", "mergedAt": iso(ago(minutes=4))}
         ],
+        # every pull request of a branch, for the release queue: a unit is queued while its branch has none
+        ("pr", "list", "--state", "all"): [
+            {"number": 812, "headRefName": "fix-frame-812", "state": "OPEN", "closedAt": None},
+            {"number": 799, "headRefName": "add-task-start", "state": "MERGED", "closedAt": iso(ago(minutes=4))},
+        ],
         ("pr", "list", "--state", "open"): [
             {
                 "number": 812,
@@ -150,6 +155,7 @@ def github_answers() -> dict[tuple[str, ...], Any]:
                 "isDraft": False,
                 "mergeable": "MERGEABLE",
                 "autoMergeRequest": None,
+                "headRefOid": "b" * 40,
                 "statusCheckRollup": [
                     {
                         "__typename": "CheckRun",
@@ -251,7 +257,17 @@ def sources(made: Layout, gh: FakeGh | None = None, **changes: Any) -> Sources:
         "builds": lambda: lanes,
         "build_result": lambda path: None,
         "health": lambda pulls, required, now: {
-            "stuck": [{"number": 812, "cause": "checks-failed"}],
+            "stuck": [
+                {
+                    "number": 812,
+                    "branch": "fix-frame-812",
+                    "cause": "checks-failed",
+                    "kind": "code",
+                    "detail": "build-ok (code)",
+                    "who": "author",
+                    "checks": ["build-ok"],
+                }
+            ],
             "other": [],
             "notices": [],
         },

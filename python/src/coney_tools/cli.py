@@ -42,6 +42,7 @@ from coney_tools import (
     pcsx2_states_cli,
     perf_cli,
     pr_cli,
+    pr_hold,
     pr_open,
     progress_cli,
     recipes_cli,
@@ -359,6 +360,7 @@ def _build_parser() -> argparse.ArgumentParser:
     pr_commands = pr.add_subparsers(dest="command", required=True)
     pr_cli.add_pr_commands(pr_commands)
     pr_open.add_parser(pr_commands)
+    pr_hold.add_parser(pr_commands)
     check_commit = pr_commands.add_parser(
         "check-commit",
         help="check a commit message's trailers and e-mail addresses (the git commit-msg hook runs this)",
@@ -1217,6 +1219,8 @@ def _run(args: argparse.Namespace) -> int:
             return pr_cli.run_text(args)
         if args.command == "open":
             return pr_open.run(args)
+        if args.command == "hold":
+            return pr_hold.run(args)
         return _pr_check_commit(args.file, args.model)
     if args.command == "check-title":
         return _repo_check_title(args.file)
