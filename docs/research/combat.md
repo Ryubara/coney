@@ -143,7 +143,8 @@ reset of a per-player record, the rage loop's sound and two configuration setter
 bindings](../references/bindings/character.md#addcommand)) fills nine tables of 12-byte entries `{u16 mask, u32 command,
 u16 buttons, u16 extra}`; `global.lua` fills them for the street, and level 84's chase adds command `0x2d` on a button
 of its own. Every binding is listed in [Commands](../references/commands.md). The tables as read at runtime in the
-street (confirmed (runtime)); the matchers are confirmed (code):
+street (confirmed (runtime)); the matchers and `PlayerCommand_Add`, which the binding calls to add an entry, are
+confirmed (code):
 
 | Trigger | Table | Matched when (matcher) | Button → command |
 | --- | --- | --- | --- |
@@ -492,6 +493,9 @@ it keeps the current target within 2.5 m, `0x005104c0`, and searches only withou
 the run attack 24 and at a walk the walk attack 23, as square does, but has no snaps. Confirmed (code), confirmed
 (runtime). With a weapon in hand both buttons follow [Moving attacks with something in
 hand](combat-throws.md#armed-moves).
+
+Square, cross and the chain are the only callers of `Attack_Start` (`0x002625a8`), which starts the attack clip and
+adds 1 to the combo count (record `+0xbc`). Confirmed (code).
 
 **The chain** (`0x00280708`) accepts the next button while record `+0x08` has `0x2`, or during the wind-up `0x1` while
 the combo count is below 2 (or is 2 and the current id is 16), and stores it in `+0xb8` (one buffered press; a

@@ -64,7 +64,7 @@ status = "legacy"
 [[function]]
 address = 0x00222ef0
 name = "Human_GetHealthPercentRaw"
-page = "combat-reactions.md#damage"
+page = "graphics.md#human-draw"
 role = "health over maximum"
 level = "confirmed-code"
 coney = "src/combat/meters.h:Health::fraction"
@@ -1003,7 +1003,7 @@ level = "confirmed-code"
 [[function]]
 address = 0x0026c1d8
 name = "Grab_IntroEnd"
-page = "combat-grabs.md#grab"
+page = "combat-grabs.md#grab-posing"
 role = "end of the intro clip: grab from the front or rear, or a counter"
 level = "confirmed-code"
 coney = "src/combat/grabbed.h:counterAtCatch"
@@ -1957,7 +1957,7 @@ level = "confirmed-code"
 [[function]]
 address = 0x00280630
 name = "Player_BufferChain"
-page = "combat.md#attacks"
+page = "combat.md#dispatch"
 role = "the chain's entry from the dispatcher: while the attack holds `0x8` it buffers one press in record `+0xb8`, while it holds any of `0x7` it runs `Player_UpdateChain`"
 level = "confirmed-code"
 coney = "src/combat/attacks.h:AttackChain::update"
