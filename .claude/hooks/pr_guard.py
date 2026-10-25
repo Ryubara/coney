@@ -41,11 +41,9 @@ HOW = (
     "`repo check-review`), the checks CI's required `title` and `body` jobs run "
     "(docs/guides/how-we-work.md#release-queue)."
 )
-#: What a refusal says while the switch is on; the reasons follow. It points at the `pr` section of the coney-tools
-#: guide, which will describe `pr open` when the command lands.
-OPEN_ONLY_HEAD = (
-    "Blocked: pull requests are opened only by coney-tools pr open <task> (docs/guides/coney-tools-repo.md#pr)"
-)
+#: What a refusal says while the switch is on; the reasons follow. It points at the `pr open` section of the release
+#: guide.
+OPEN_ONLY_HEAD = "Blocked: pull requests are opened only by coney-tools pr open <task> (docs/guides/pr.md#open)"
 
 
 def open_only_refusal(call: PrCall) -> str | None:

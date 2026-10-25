@@ -102,7 +102,7 @@ one pull request went through `coney-tools pr open`), in every session, the coor
   subshell (`( ... )`, `$( ... )`, `bash -c "..."`) moves only the commands inside it, and `popd` goes back.
 - `pr open` itself runs `gh` and `git` as subprocesses, which are no tool call, so the hook never sees them.
 
-The message names `coney-tools pr open <task>` and the [pr section](coney-tools-repo.md#pr) of the command reference. The
+The message names `coney-tools pr open <task>` and the [pr open section](pr.md#open) of the release guide. The
 hook reads the switch itself from the conventions (the hooks run without packages), a file it cannot read leaves it off,
 and `test_pr_guard.py` holds that reader to the conventions loader. A command counts only where a program starts, also
 inside `bash -c "..."` and a command substitution in double quotes or backticks; text that merely mentions a command

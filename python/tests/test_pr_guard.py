@@ -354,9 +354,7 @@ def test_the_dispatcher_runs_the_hook_for_both_shells() -> None:
 
 # --- the open_only switch (`pull_requests.open_only` of .github/conventions.yml) -------------------------------------
 
-OPEN_ONLY_MESSAGE = (
-    "Blocked: pull requests are opened only by coney-tools pr open <task> (docs/guides/coney-tools-repo.md#pr)"
-)
+OPEN_ONLY_MESSAGE = "Blocked: pull requests are opened only by coney-tools pr open <task> (docs/guides/pr.md#open)"
 THIS = "owner/repo"
 
 #: Says which repository a folder's `origin` is; the tests give it instead of running git.
