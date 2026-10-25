@@ -117,7 +117,9 @@ artefacts and lower function coverage offset the cleaner x86 output, and its lay
 pay off for string-heavy and float-heavy code: front end, audio cues, scripting glue, camera and other vector maths.
 There, opening the Xbox twin of a PS2 function first (found through a shared string) shows its literals,
 `this` argument and float expressions quickly. Engineers who do so cite only PS2 addresses as evidence and keep the
-XBE project outside the repository.
+XBE project outside the repository. The exception is code the PS2 does not have: the port's own renderer, whose
+lighting, shadow map, fog and gamma ramp [Xbox lighting and shadows](xbox-lighting.md) reads in the XBE and cites at
+Xbox addresses.
 
 ## Open questions
 

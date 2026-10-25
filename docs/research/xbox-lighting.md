@@ -41,7 +41,7 @@ What a player sees, Xbox against PS2. Each row links to the behaviour that holds
 | --- | --- | --- | --- |
 | Lights: sources, colours, flicker | the PS2's game code | the same | [The same game code](#same-code) |
 | Light model | per vertex in vertex shaders; ambient + directional + point, point falloff `1 - d / r` | per vertex in VU1 microcode; the same terms | [Vertex lighting](#vertex-lighting) |
-| Lights per surface | world: 1 directional + 0, 3 or 7 point; objects and people: 2 directional + 3 point; ambients summed | world up to 8 lights; objects and people 3 to 6 by distance | [Lights per surface](#light-slots) |
+| Lights per surface | world: 1 directional + 0, 3 or 7 point; objects and people: 2 directional + 3 point; ambients summed | world up to 8 lights; objects and people 3 to 6 by distance (4 to 6 from the pulse list) | [Lights per surface](#light-slots) |
 | Character shadows | a shadow map, 1024 × 512, one light per level, humans within 20 m and up to 20 held props | a blob sprite per human | [The shadow map](#shadow-map) |
 | Who receives | the streamed world and world objects | the ground under the blob | [Receiving](#shadow-receive) |
 | Shadow colour and direction | per level from `global.lua`: colour (0.77, 0.77, 0.79), offset (-500, -500, 850) in most levels | the calls do nothing | [The shadow light](#shadow-light) |
@@ -61,17 +61,17 @@ loads one. Source files: `\Warriors\Source\Graphics\Devices\XBox\GraphicsShadowX
 | Behaviour | Xbox function | PS2 counterpart | Section |
 | --- | --- | --- | --- |
 | Frame: shadow map, then the passes | Xbox `0x0032a470` viewport render | the viewport pass ([Rendering](rendering.md#passes)) | [A frame](#frame) |
-| Shadow object: construct, defaults, map | Xbox `0x000be6a0`, `0x000bda20`, `0x000bd810` | none | [The shadow map](#shadow-map) |
+| Shadow object: construct, defaults, map | Xbox `0x000be6a0`, Xbox `0x000bda20`, Xbox `0x000bd810` | none | [The shadow map](#shadow-map) |
 | Shadow map: casters and depth pass | Xbox `0x000bdaf0` | none | [The shadow map](#shadow-map) |
-| Shadow colour, light offset, caster flag | Xbox `0x0009ce50`, `0x0009ced0`, `0x0009cdd0` | `0x0017f260`, `0x0017f268`, `0x0017f270` (empty) | [The shadow light](#shadow-light) |
+| Shadow colour, light offset, caster flag | Xbox `0x0009ce50`, Xbox `0x0009ced0`, Xbox `0x0009cdd0` | `0x0017f260`, `0x0017f268`, `0x0017f270` (empty) | [The shadow light](#shadow-light) |
 | World sector draw | Xbox `0x0032dd40` | `World_RenderSectorAtomic` `0x00411990` | [Receiving](#shadow-receive) |
 | World object draw | Xbox `0x0009d740` | `ObjectRender_Draw` `0x0017fd78` | [Receiving](#shadow-receive) |
-| Character draw | Xbox `0x0008fc70`, `0x000bedf0` | `HumanRender_Draw` `0x00174320` | [Vertex lighting](#vertex-lighting) |
+| Character draw | Xbox `0x0008fc70`, Xbox `0x000bedf0` | `HumanRender_Draw` `0x00174320` | [Vertex lighting](#vertex-lighting) |
 | Light selection per atomic | Xbox `0x0009ae10` | `LightManager_SelectLights` `0x0017de10` | [Lights per surface](#light-slots) |
-| Light upload: world, objects | Xbox `0x000990e0`, `0x00098f50` | `LightManager_UploadSelected` `0x0017e810` | [Lights per surface](#light-slots) |
+| Light upload: world, objects | Xbox `0x000990e0`, Xbox `0x00098f50` | `LightManager_UploadSelected` `0x0017e810` | [Lights per surface](#light-slots) |
 | Vertex shaders from the script | binding Xbox `0x0028bb20` → Xbox `0x000b93e0` | none | [Vertex lighting](#vertex-lighting) |
 | Pixel shaders | Xbox `0x000ba550` | none (fixed GS blending) | [Vertex lighting](#vertex-lighting) |
-| Device frame set-up: fog, gamma ramp | Xbox `0x000bb860`, `0x000ba800` | `RwDevice_SetUpCameras` `0x00195400` | [Fog](#fog), [The gamma ramp](#gamma-ramp) |
+| Device frame set-up: fog, gamma ramp | Xbox `0x000bb860`, Xbox `0x000ba800` | `RwDevice_SetUpCameras` `0x00195400` | [Fog](#fog), [The gamma ramp](#gamma-ramp) |
 | Fire light flicker | Xbox `0x002dda80` | `SubFire2Light_Update` `0x003c71a8` | [The fire light](#fire-light) |
 | Brightness | Xbox `0x000ddd50`, defaults Xbox `0x003386b0` | `Gamma_Set` `0x001b4838` | [Brightness](#brightness) |
 
@@ -90,7 +90,8 @@ entry with the smallest score when the list is full, the same quirk as on the PS
 Both builds run the same scripts: all 467 PS2 scripts are byte-identical on the Xbox
 ([Kinds of entry](xbox-assets.md#kinds-of-entry)), so `global.lua`'s per-level `LightData` and every level's
 `SetLight` calls are the same. One difference in this layer: the Xbox selection never uses the distance it is given,
-so objects and people far from the camera keep their lights (the PS2 cuts from 6 to 3 between 40 and 69 m). That is
+so objects and people far from the camera keep their lights (the PS2 cuts from 6 to 3 between 40 and 69 m, to 4
+for the pulse list). That is
 confirmed (code) at Xbox `0x0009ae10`, where the cap is 8 records whatever the distance.
 
 ### The fire light {#fire-light}
@@ -181,7 +182,7 @@ world objects):
    ([Drawing a human](graphics.md#human-draw)); they do not sample the shadow map.
 3. A second list of up to 18 a viewport (the cars, inferred from its source), then the world objects with shadow
    receiving on (Xbox `0x000bd430` before, Xbox `0x000bd4a0` after).
-4. The streamed world's sector lists, opaque then sorted (Xbox `0x0032d160`, `0x0032d240`), each sector lit by the
+4. The streamed world's sector lists, opaque then sorted (Xbox `0x0032d160`, Xbox `0x0032d240`), each sector lit by the
    world selection and drawn with the shadow map (Xbox `0x0032dd40`).
 5. The world objects whose kind is `0x20`, kept in a list of their own and receiving as well, then the second list's
    second pass and the rest.
@@ -209,9 +210,10 @@ Each frame, Xbox `0x000bdaf0`:
 2. **Bounds.** A box grown by 2 m around each caster's position, and the casters' mean position.
 3. **The light's view.** The eye is the box's centre plus the **shadow light offset** (`+0x15c`); it looks at the mean
    position. The projection is a perspective one whose angle just covers the box's radius at that distance, with the
-   near plane at the distance minus the radius (at least 0.01) and the far plane 100 m beyond. With the usual offset
-   of about 1,100 m this is close to a parallel projection: one direction for every shadow. The texture matrix that
-   receivers use maps it to texels with a half-texel offset (512.5, 256.5) and the depth to the 16-bit range.
+   near plane at the distance minus the radius (at least 0.01) and the far plane at that near plane plus 100 m. With the
+   usual offset of about 1,100 m this is close to a parallel projection: one direction for every shadow. The texture
+   matrix that receivers use maps it to texels with a half-texel offset (512.5, 256.5) and the depth to the 16-bit
+   range.
 4. **The pass.** Into the depth texture, cleared to 1.0, with colour writes off and a depth bias (slope 4.0, constant
    2.0; their render states are inferred from the values the object stores at `+0x12c`, `+0x130`): every caster with
    `vsCharacterShadowCast`, then every prop with `vsObjectShadowCast`.
@@ -243,15 +245,15 @@ moonlight direction, which the same rows give separately.
 
 Confirmed (code) at the addresses named and in `xbox_shaders.lua`.
 
-The streamed world (Xbox `0x0032dd40`) and the world objects (Xbox `0x0009d740`) bind the shadow map as texture stage
-1 (stage 2 for two UV sets) with border addressing, upload the shadow direction (the offset, negated and normalised,
-`+0x16c`) as a vertex constant (Xbox `0x000bd430`, `0x0032cfd0`) and draw with `ShadowBuffer` or `ShadowBufferDual`,
-whose constants are the lit colour and the shadow colour (Xbox `0x0032dd40` sets both). Per vertex the shader writes
-the position projected by the shadow matrix as a projective texture coordinate (its `w` kept from going negative), and
-a flag that is 1 when the surface faces away from the shadow light. Per pixel the hardware compares the depth (the
-shadow-buffer compare is on in the device's state, its states inferred from Xbox `0x000bd430`), and the shader picks
-the **lit colour** when the test passes or the surface faces away, else the **shadow colour**, and multiplies the
-texture × vertex colour by it.
+The streamed world (Xbox `0x0032dd40`) and the world objects (Xbox `0x0009d740`) bind the shadow map as texture stage 1
+(stage 2 for two UV sets) with border addressing, upload the shadow direction (the offset, negated and normalised,
+`+0x16c`) as a vertex constant (Xbox `0x000bd430`, Xbox `0x0032cfd0`) and draw with `ShadowBuffer` or
+`ShadowBufferDual`, whose constants are the lit colour and the shadow colour (Xbox `0x0032dd40` sets both). Per vertex
+the shader writes the position projected by the shadow matrix as a projective texture coordinate (its `w` kept from
+going negative), and a flag that is 1 when the surface faces away from the shadow light. Per pixel the hardware compares
+the depth (the shadow-buffer compare is on in the device's state, its states inferred from Xbox `0x000bd430`), and the
+shader picks the **lit colour** when the test passes or the surface faces away, else the **shadow colour**, and
+multiplies the texture × vertex colour by it.
 
 So:
 
@@ -271,7 +273,7 @@ So:
 Confirmed (code) at Xbox `0x000bb860` for the states.
 
 The Xbox device sets the fog colour from the device's own colour bytes (the same fog colour the PS2's
-`SetFogColor` sets, through the device's `+0x20` and `+0x24` slots at Xbox `0x00328470`, `0x003284c0`), the fog
+`SetFogColor` sets, through the device's `+0x20` and `+0x24` slots at Xbox `0x00328470`, Xbox `0x003284c0`), the fog
 **table mode to linear** (render state value 3) with a start and an end from the device. Table fog is evaluated per
 pixel from the depth, where the PS2 writes a fog value per vertex and interpolates it
 ([Fog](ps2-render.md#fog)). The curve is the same kind (linear from a start to the far end); that the start is the
@@ -314,7 +316,7 @@ lights per pixel; the names of the Xbox's bump, cube-map and specular texture mo
 assembler's own strings, which the XDK links in. Inferred from the shader set and the shadow pass: no light but the
 shadow light casts a shadow, and the PS2's corona sprites, flicker and glow are drawn by the shared code.
 
-## In Coney
+## In Coney {#in-coney}
 
 **Follows: the Xbox port (presentation).** The maintainer decided on 2026-10-25 that the Xbox port's lighting and
 shadows count as faithful and Coney will offer them as options, off by default; the PS2 stays the reference for
@@ -331,18 +333,27 @@ that a surface facing away from the shadow light is never darkened; the gamma cu
 
 **What is free to improve** (presentation only): per-pixel evaluation; more lights per surface; the shadow map's
 size, filtering and coverage; characters receiving shadows; shadows from point lights such as the fires, which the
-Xbox never had. These belong to the *Enhanced* and *High* presets of the design page, not to the Xbox preset.
+Xbox never had. These belong to the *Enhanced* and higher presets of the design page.
+
+**Where the options sit.** The design page's [Quality ladder](../guides/realtime-lighting.md#quality-ladder) has four
+presets, *Faithful*, *Enhanced*, *High* and *Ultra*, and no Xbox preset. Because the maintainer counts the Xbox look
+as faithful, its options (1, 2 with 5, and 4 below) are toggles under *Faithful*, each off by default, so *Faithful*
+still adds nothing unless the player turns one on. *Enhanced* and up keep the gamma ramp and the per-pixel fog as the
+same toggles, and replace the Xbox shadow map with the design's own sun shadow map (step L2); whether L2 takes the
+Xbox's per-level shadow colour, offset and back-face rule as its inputs is for the renderer design (#883) to decide.
+Per-pixel lights (3) are not an Xbox technique: they are *Enhanced*'s (step L3), listed here because the Xbox's light
+data and caps are what they evaluate.
 
 The options, ordered by how much they change the picture for the effort:
 
-| # | Option | Xbox technique | Modern form | Keep | Effort | Tests |
-| --- | --- | --- | --- | --- | --- | --- |
-| 1 | Character shadows | one 1024 × 512 D16 map, fitted to the casters, hard compare, × shadow colour | the same fitted map at 2048 or more, PCF (4 to 16 taps) or PCSS softness, normal-offset bias; a cascade around the player for the *Enhanced* preset | casters, receivers, 20 m, colour, offset, back-face rule | M (needs the design's scene target and Coney shaders, L1) | the light view and caster list from a synthetic scene (unit); a receiver facing away is never darkened; shadow colour × lit colour on a synthetic quad (headless render, pixel values); stealth flag not read from the renderer |
-| 2 | Gamma ramp | hardware gamma ramp per level, points from a table in the executable | a 1D LUT in the final pass, after the HUD as on the Xbox | the curve points per level index | S | the LUT built from synthetic points matches the piecewise-linear rule; identity under the PS2 preset |
-| 3 | Per-pixel lights | per vertex in vertex shaders | the same lights, terms and `1 − d / r` falloff evaluated per pixel; clustered lists if the caps are lifted | light data, order, clamp before the pixel's texture | M (L3 of the design) | the per-pixel result averages to the per-vertex one on a synthetic mesh; caps 1 + 7 / 2 + 3 under the Xbox preset |
-| 4 | Per-pixel fog | linear table fog | per-pixel linear fog in Coney's shaders | colour, start, end | S | fog factor at synthetic depths equals the linear formula |
-| 5 | Brightness default 48 | profile default | the Xbox preset's default only | the 0-255 scale | S | a fresh profile under the Xbox preset reads 48 |
-| 6 | Character shader quirk | point lights from the bind pose | not reproduced: Coney lights the skinned position | none | none | none |
+| # | Option | Preset | Xbox technique | Modern form | Keep | Effort | Tests |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | Character shadows | *Faithful* toggle; replaced by L2 from *Enhanced* | one 1024 × 512 D16 map, fitted to the casters, hard compare, × shadow colour | the same fitted map, with the stand-in filter below; larger maps, PCF or PCSS softness belong to L2 | casters, receivers, 20 m, colour, offset, back-face rule | M (needs the design's scene target and Coney shaders, L1) | the light view and caster list from a synthetic scene (unit); a receiver facing away is never darkened; shadow colour × lit colour on a synthetic quad (headless render, pixel values); stealth flag not read from the renderer |
+| 2 | Gamma ramp | toggle in every preset | hardware gamma ramp per level, points from a table in the executable | a 1D LUT in the final pass, after the HUD as on the Xbox | the curve points per level index | S | the LUT built from synthetic points matches the piecewise-linear rule; identity with the toggle off |
+| 3 | Per-pixel lights | *Enhanced* and up (L3) | per vertex in vertex shaders | the same lights, terms and `1 − d / r` falloff evaluated per pixel; clustered lists if the caps are lifted | light data, order, clamp before the pixel's texture | M (L3 of the design) | the per-pixel result averages to the per-vertex one on a synthetic mesh (the design's test) |
+| 4 | Per-pixel fog | toggle in every preset | linear table fog | per-pixel linear fog in Coney's shaders | colour, start, end | S | fog factor at synthetic depths equals the linear formula |
+| 5 | Brightness default 48 | with option 2 | profile default | 48 when a profile is made with the gamma ramp on, else the PS2's 40 | the 0-255 scale | S | a fresh profile reads 48 with option 2 on and 40 with it off |
+| 6 | Character shader quirk | none | point lights from the bind pose | not reproduced: Coney lights the skinned position | none | none | none |
 
 The data each needs is on the PS2 disc already, except the gamma table and the pixel shaders, which live in the
 Xbox executable (see [How this was checked](#how-this-was-checked)): the shadow colour and offset are in `global.lua`
@@ -357,6 +368,10 @@ described.
 
 ## Open questions
 
+Each says how to answer it: a further read of the Xbox executable in Ghidra, or a look at the running Xbox game in
+xemu over its GDB stub ([Runtime access](xbox-executable.md#runtime)), which Coney has no set-up or tooling for
+yet, so a runtime answer waits for one. The last is a PCSX2 check.
+
 - **The shadow buffer's filtering**{#q-shadow-filter}: whether the Xbox's shadow-buffer compare samples one texel or
   filters four (the NV2A can filter shadow buffers), which decides how soft the edges are. Find out: a frame in xemu,
   or the texture stage's filter state at the receivers' draw (Xbox `0x0032dd40` calls the stage-state setter for
@@ -366,12 +381,23 @@ described.
   the Xbox's code is outside any function). Find out: a frame in xemu, or a scan of the unanalysed code.
 - **The ramp's value**{#q-ramp-value}: which two fields of a point or spot light's descriptor Xbox `0x0009a620` adds
   the record's value × 0.07 to, and what the record's last word (0 or -1) does (stored at the device's `+0xc90`).
+  Find out: in Ghidra, follow the descriptor's two offsets from Xbox `0x0009a620` to the light upload (Xbox
+  `0x000990e0`, `0x00098f50`) and the readers of the device's `+0xc90`; or in xemu, read a point light's descriptor
+  before and after a level change.
 - **The gamma ramp's index**{#q-ramp-index}: what the game state's `+0x56b4` holds (the level number is inferred) and
-  what Xbox `0x0007a470` tests for record 31.
+  what Xbox `0x0007a470` tests for record 31. Find out: in Ghidra, the writers of `+0x56b4` and the body of Xbox
+  `0x0007a470`; or in xemu, read `+0x56b4` and the device's three ramps (`+0xc94` to `+0xf94`) in two or three
+  levels.
 - **The camera point for the 20 m test**{#q-caster-centre}: the eye or the target, from the camera's `+0x108`
-  virtual.
-- **Cars**{#q-cars}: whether cars receive the shadow map; they are drawn outside the receiving block.
+  virtual. Find out: in Ghidra, the camera class's virtual table entry at `+0x108` (found through the call in Xbox
+  `0x000bdaf0`); or in xemu, a breakpoint after that call in Xbox `0x000bdaf0`, comparing the vector it returns with
+  the camera's eye and target.
+- **Cars**{#q-cars}: whether cars receive the shadow map; they are drawn outside the receiving block. Find out: in
+  Ghidra, whether the car draw binds the shadow texture stage or a `ShadowBuffer` pixel shader; or in xemu, a frame
+  of a person's shadow falling across a parked car.
 - **The fog coordinate's sign**{#q-fog-sign}: why the characters' vertex shader writes `+w` and the world's `−w`.
+  Find out: in Ghidra, the fog render states each draw sets before its shader (Xbox `0x000bb860` sets table mode for
+  the frame); or in xemu, a frame with a person and a wall at the same depth inside the fog.
 - **The PS2's fire light at runtime**{#q-ps2-fire}: the code says the PS2 lights the wall with the same light; a PCSX2
   frame of a burning barrel would show it beside the Xbox video (needs a save state near one).
 

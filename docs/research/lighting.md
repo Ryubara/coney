@@ -286,7 +286,8 @@ Effects bit 0 spawns `part_light_bugs` at the light when it is made (`0x0017c508
   **blob** sprite: rectangle 40 of `part_page1` (resource instances 9 and 10), colour (10, 10, 10, 128), on the ground
   found by a ray from 0.25 m above the human, 4 m down (`WorldManager_RayCast`), turned to the ground's normal and
   scaled by the human's `+0x580`-`+0x588`, 0.05 m above it. No projected or light-dependent shadows; `SetShadowColor`,
-  `SetShadowLightOffset` and `EnableShadow` are empty ([bindings](../references/bindings/effects.md)). The sprite goes
+  `SetShadowLightOffset` and `EnableShadow` are empty ([bindings](../references/bindings/effects.md)); on the Xbox
+  port they drive a shadow map ([Xbox lighting and shadows](xbox-lighting.md#shadow-map)). The sprite goes
   through `Instance_AddSprite`, so its colour is on RenderWare's 0-255 scale ([GUI](gui.md#sprite-colours)): alpha
   128 is **half transparent**, and the shadow is faint (confirmed (runtime), PCSX2 2.9.94, `level99`: a soft, barely
   darker patch under Rembrandt's feet). Rembrandt's `+0x580`-`+0x588` read 1.195, 1.097, 1.0 (confirmed (runtime)).
@@ -307,8 +308,9 @@ steps of 5, 40 by default: `W_GameState + 0x57a4` = v and the manager's brightne
 So the option **adds v/255 to every ambient and directional light** (the world ambient, the objects' and humans'
 ambient and directional lights): 0 to 0.39, 0.157 by default, and so the sky, which light A lights (inferred from the
 runtime test in [World lighting](#world)). It does not touch point lights, the prelighting,
-the fog or the screen. `SetGammaRamp` is empty. Confirmed (code); `level99` reads 40 and `+0x90` = 0.157 (confirmed
-(runtime)). The setting's storage is on the save page.
+the fog or the screen. `SetGammaRamp` is empty (the Xbox port applies a per-level ramp instead,
+[Xbox lighting and shadows](xbox-lighting.md#gamma-ramp)). Confirmed (code); `level99` reads 40 and `+0x90` = 0.157
+(confirmed (runtime)). The setting's storage is on the save page.
 
 ## Level 99's values {#level99}
 
@@ -374,7 +376,7 @@ that only link are described above. Names are ours. Confirmed (code) at each add
 | `0x0017f160` | `Light_SetState(light, state)` | 2 removes the light, else on / off (`SetLight`'s short form) | confirmed (code) |
 | `0x0017f1b8` | `Light_SetFlicker` | `SetLightFlicker` | confirmed (code) |
 | `0x0017f218` | `LightManager_SetWorldAmbient` | `SetWorldAmbient` | confirmed (code) |
-| `0x0017f260`, `0x0017f268`, `0x0017f270` | `Shadow_SetColour_Stub`, `Shadow_SetLightOffset_Stub`, `Shadow_Enable_Stub` | empty: `SetShadowColor`, `SetShadowLightOffset` and `EnableShadow` do nothing | confirmed (code) |
+| `0x0017f260`, `0x0017f268`, `0x0017f270` | `Shadow_SetColour_Stub`, `Shadow_SetLightOffset_Stub`, `Shadow_Enable_Stub` | empty: `SetShadowColor`, `SetShadowLightOffset` and `EnableShadow` do nothing (the Xbox's: [Xbox lighting](xbox-lighting.md#shadow-light)) | confirmed (code) |
 
 ## Coney's implementation {#coneys-implementation}
 
