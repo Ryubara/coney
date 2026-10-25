@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The build record: what a run of `coney-tools build` leaves behind so that `task check` (and `pr verify`, planned)
+"""The build record: what a run of `coney-tools build` leaves behind so that `task check` and `pr verify`
 can read what happened instead of parsing printed text (docs/guides/stamps.md#build-record).
 
 At the end of every run that configured, built or tested, `coney-tools build` writes one JSON file to

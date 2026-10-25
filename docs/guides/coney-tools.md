@@ -66,8 +66,12 @@ so they go, with these ids, once those pages are touched and cite the disc page.
 ### [The repository commands](coney-tools-repo.md)
 
 * [`repo`](coney-tools-repo.md#repo): titles, descriptions, labels.
-* [`pr`](coney-tools-repo.md#pr): commit messages.
 * [`task`](coney-tools-repo.md#task): claiming issues and writing a task file.
+
+### [The pull request commands](coney-tools-pr.md)
+
+* [`pr`](coney-tools-pr.md#pr): whether a unit is ready to become a pull request and the text it carries, and
+  commit messages ([Releasing a pull request](pr.md)).
 
 ### [The issue commands](coney-tools-issues.md)
 

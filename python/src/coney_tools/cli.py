@@ -41,6 +41,7 @@ from coney_tools import (
     pcsx2_copies,
     pcsx2_states_cli,
     perf_cli,
+    pr_cli,
     progress_cli,
     recipes_cli,
     recordings_make,
@@ -353,8 +354,10 @@ def _build_parser() -> argparse.ArgumentParser:
     render_parser.add_argument(
         "--check", action="store_true", help="change nothing; exit 1 when a block is out of date"
     )
-    pr = groups.add_parser("pr", help="pull request and commit checks")
-    check_commit = pr.add_subparsers(dest="command", required=True).add_parser(
+    pr = groups.add_parser("pr", help="pull request and commit checks; verify and text before a release")
+    pr_commands = pr.add_subparsers(dest="command", required=True)
+    pr_cli.add_pr_commands(pr_commands)
+    check_commit = pr_commands.add_parser(
         "check-commit",
         help="check a commit message's trailers and e-mail addresses (the git commit-msg hook runs this)",
     )
@@ -1206,6 +1209,10 @@ def _run(args: argparse.Namespace) -> int:
     if args.command == "labels":
         return _repo_labels(args.apply, args.repo)
     if args.group == "pr":
+        if args.command == "verify":
+            return pr_cli.run_verify(args)
+        if args.command == "text":
+            return pr_cli.run_text(args)
         return _pr_check_commit(args.file, args.model)
     if args.command == "check-title":
         return _repo_check_title(args.file)

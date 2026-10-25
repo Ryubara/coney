@@ -824,3 +824,30 @@ def test_a_required_check_in_no_place_is_refused() -> None:
     data = changed(("merge.required_checks", [*real_data()["merge"]["required_checks"], "unplaced"]))
     with pytest.raises(ConventionsError, match=r"'unplaced' .* is in no place"):
         parse_conventions(data)
+
+
+# --- the pull request text keys and the hook identity rule --------------------------------------------------------
+
+
+def test_the_real_pull_request_text_keys() -> None:
+    conventions = load_conventions(REPO)
+    assert conventions.stamps.require_hook_source is False
+    images = conventions.pull_requests.images
+    assert images.max_bytes == 10 * 1024 * 1024 and "png" in images.extensions and images.max_count >= 1
+    assert conventions.pull_requests.markers.summary != conventions.pull_requests.markers.facts
+
+
+@pytest.mark.parametrize(
+    ("path", "value", "message"),
+    [
+        ("stamps.require_hook_source", "yes", "expected true or false"),
+        ("pull_requests.images.max_bytes", 0, "expected a whole number of 1 or more"),
+        ("pull_requests.images.extensions", [], "expected a non-empty list"),
+        ("pull_requests.markers.facts", "coney:summary", "must differ"),
+        ("pull_requests.markers.summary", REMOVE, "missing the key 'summary'"),
+    ],
+)
+def test_a_wrong_text_key_is_refused(path: str, value: object, message: str) -> None:
+    data = changed((path, value))
+    with pytest.raises(ConventionsError, match=message):
+        parse_conventions(data)

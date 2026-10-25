@@ -156,11 +156,6 @@ def default_change_hash(worktree: Path, base: str, tip: str) -> str:
 # --- the packet ------------------------------------------------------------------------------------------------------
 
 
-def _sha256(text: str) -> str:
-    """The SHA-256 of `text`."""
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
-
-
 def _kinds(files: list[str], functions: list[dict[str, Any]], env: ReviewEnv, mode: str) -> list[str]:
     """Which checklists the change needs, in the order the reviewer applies them (docs/guides/review/index.md)."""
     if mode == "text":
@@ -208,7 +203,7 @@ def _added_tests(env: ReviewEnv, base: str, tip: str) -> list[str]:
 def _function_problems(env: ReviewEnv, functions: list[dict[str, Any]], report: stamps.Report) -> tuple[list[str], str]:
     """The `compared` problems of the changed `@orig` functions, and the hash of all their pairs files."""
     problems: list[str] = []
-    lines: list[str] = []
+    hashes: dict[str, str] = {}
     for function in functions:
         for address in function["addresses"]:
             name = f"{function['coney']} ({address})"
@@ -218,7 +213,7 @@ def _function_problems(env: ReviewEnv, functions: list[dict[str, Any]], report: 
             except orig_pairs.PairsError:
                 problems.append(f"compared: {name}: no pairs file (run `original compare {address}`)")
                 continue
-            lines.append(f"{address} {pairs_hash}")
+            hashes[address] = pairs_hash
             stamp = report.current("compared", address, {"coney_body_sha256": function["body_sha256"]})
             if stamp is None:
                 problems.append(f"compared: {name}: no current `compared` stamp (run `original compare {address}`)")
@@ -226,7 +221,7 @@ def _function_problems(env: ReviewEnv, functions: list[dict[str, Any]], report: 
                 problems.append(
                     f"compared: {name}: the pairs file changed after it was compared (run `original compare {address}`)"
                 )
-    return problems, _sha256("\n".join(sorted(lines)))
+    return problems, orig_pairs.set_sha256(hashes)
 
 
 def _text_problems(env: ReviewEnv, files: list[str], text: pr_text_file.TextFile) -> list[str]:

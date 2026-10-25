@@ -79,9 +79,10 @@ and puts only that token (`CONEY_AGENT_TOKEN`) in front of every `coney-tools` c
 command](agents.md#identity)). `who_from_env` reads the file as the command's first action. The stamp records
 `who.source` as `hook` when a valid, unexpired file was found, and `unverified` otherwise, with every field `unknown`,
 however the environment was set (a person at a terminal, a PowerShell command outside `bypassPermissions`, an agent
-that typed variables or a token of its own). Recording never refuses a command: the check that `source` is `hook` will
-belong to `pr open`. A [run record](research-evidence.md#run-records) takes its `who` the same way and marks its
-source the same way; a run itself is not stamped.
+that typed variables or a token of its own). Recording never refuses a command: [`pr verify`](pr.md#verify) requires
+`source` to be `hook` on the stamps it relies on when `stamps.require_hook_source` is on. A [run
+record](research-evidence.md#run-records) takes its `who` the same way and marks its source the same way; a run itself
+is not stamped.
 
 ### Verifying a log {#verify}
 
@@ -95,7 +96,8 @@ a later stamp of the same step and subject replaced with a fail.
 What the chain protects, honestly: without signatures, a log can be rebuilt by whoever can write its files. The protection
 is that only `coney-tools` appends to it, that the hooks refuse an agent's direct write to a `stamps/` folder, and that
 the chain catches an edit made any other way (by hand, a stray tool) and a truncated segment. A stamp's `time` is written
-by the tool and attested by nothing else; `pr open` will bound it by the dates of the commits. The design guards against
+by the tool and attested by nothing else; `pr verify` bounds it by the clock and by the author date of its
+commit while the commit exists ([pr verify](pr.md#verify)). The design guards against
 agents and mistakes, not against the person at the machine.
 
 ## The change hash {#change}
@@ -138,7 +140,7 @@ another one. The accepted cost is that a clean rebase can combine with upstream 
 
 ## The build record {#build-record}
 
-`task check` (and `pr verify`, planned) must know that the engine built and the whole suite ran with the
+`task check` and `pr verify` must know that the engine built and the whole suite ran with the
 disc, without parsing printed text. Every run of `coney-tools build` that configured, built or tested therefore ends
 by writing one record to `<scratch>/<task>/build-runs/<sha256>.json` (the task is `CONEY_TASK`, else the branch; no
 record outside a git checkout). The file is canonical JSON, like a stamp's line, and is named by the SHA-256 of its
@@ -393,3 +395,15 @@ What the three steps bound to the change record (all unsigned, in the local log)
 | `checked` | `diff_sha256`; `build_record_sha256` (profile `full` only); `checks_sha256`, the SHA-256 of the canonical JSON of the sorted list `detail.checks` | `profile` (`docs`, `tooling` or `full`: the checks of `proof.profiles` in [.github/conventions.yml](repo:.github/conventions.yml), written by `task check`), `rules` (`base`: the profiles and path classes were read from the base's file; `branch`: the base has no `proof` section yet), `checks` (the names that ran, in order), `failed` (the names that failed, on a `fail`), `tests` {total, passed, failed, skipped, skipped_disc}, `preset`, `minutes` |
 | `reviewed` | `diff_sha256`, `pairs_set_sha256`, `title_sha256`, `paragraph_sha256`, `images_sha256`, `review_sha256` (the recorded verdict, kept as `<scratch>/<task>/review.json`) | `verdict`, `scope`, `kinds`, `functions` (address to a one-letter class; `function_count` when the list would not fit), `pages`, `reviewer` {id, type, model}, `blockers`, `notes`, `not_reviewed`; a text review adds `full_seq` ([Task review](review/task.md#stamp)) |
 | `pr-opened` | `tip`, `base`, `diff_sha256`, `title_sha256`, `paragraph_sha256`, `facts_sha256`, `images_sha256`, `chain_head` | `engineer`, `opener`, `kind`, `issues`, `profile`, `rebased_from`, `fix` |
+
+The hashes come from one place each, so the stage that writes a stamp and the check that reads it cannot differ:
+`pr_diff` for the change, `orig_pairs.set_sha256` for the pairs set (one `<address> <pairs file hash>` line for each
+changed function, sorted; `task review` and `pr_proof.pairs_set_sha256` both call it) and `pr_text_file` for the title,
+the paragraph and the pictures (`pr_text.hashes_of` calls it).
+
+A `full` Check names a **build record**, `<scratch>/<task>/build-runs/<sha256>.json`, that `coney-tools build` writes
+and `task check` reads instead of parsing printed text; the stamp's `build_record_sha256` is the SHA-256 of the file.
+Its keys are those of [the build record](#build-record). `pr verify` reads it with `build_record.read` and applies
+`build_record.problems`, the rule `task check` applies, with the preset `proof.build.preset` and the commit the
+`checked` stamp names (so the log the record's `log` names must still match `log_sha256` when it exists), and
+also requires the stamp's test counts.

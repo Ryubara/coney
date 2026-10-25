@@ -155,6 +155,22 @@ def _blob(root: Path, commit: str, path: str) -> str:
     return _git(root, "rev-parse", "--verify", "--quiet", f"{commit}:{path}", check=False).strip()
 
 
+def tests_sha256(root: Path, commit: str, test_files: Sequence[str]) -> str:
+    """The hash a `fails-first` stamp covers as `tests_sha256`: each test file's path and its blob at `commit`, so an
+    edit to a test file changes it (`pr verify` recomputes it at the branch's tip)."""
+    return stamps.sha256_hex(
+        "".join(f"{path}" + chr(10) + _blob(root, commit, path) + chr(10) for path in test_files).encode("utf-8")
+    )
+
+
+def declared_in(root: Path, commit: str, path: str) -> set[str]:
+    """The `TEST_CASE` names the test file `path` declares at `commit` (none when the file is not there)."""
+    done = subprocess.run(
+        ["git", "-C", str(root), "show", f"{commit}:{path}"], capture_output=True, encoding="utf-8", check=False
+    )
+    return declared_names(done.stdout) if done.returncode == 0 else set()
+
+
 def _plan(root: Path, test_commit: str, fix_commit: str | None) -> tuple[str, str, list[str], list[str]]:
     """(test commit, fix commit, the test files, the other files) after the checks the run depends on."""
     head = _commit(root, "HEAD")
@@ -373,9 +389,7 @@ def run(
         data = "".join(logs).encode("utf-8")
         (folder / f"{label}-{test[:12]}-{fix[:12]}.log").write_bytes(data)
         digests[label] = stamps.sha256_hex(data)
-    tests_hash = stamps.sha256_hex(
-        "".join(f"{path}" + chr(10) + _blob(root, fix, path) + chr(10) for path in test_files).encode("utf-8")
-    )
+    tests_hash = tests_sha256(root, fix, test_files)
     entries = []
     for name in names:
         red, green = runs["red"][1][name], runs["green"][1][name]

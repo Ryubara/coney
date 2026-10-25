@@ -15,7 +15,7 @@ from conventions_support import write_checkout
 from git_support import git
 from review_support import make_verdict
 
-from coney_tools import identity, orig_pairs, stamps, task_review
+from coney_tools import identity, orig_pairs, pr_proof, stamps, task_review
 from coney_tools.config import ConfigError
 from coney_tools.conventions import load_conventions
 from coney_tools.review_verdict import problems as verdict_problems
@@ -270,6 +270,12 @@ def test_the_pairs_hash_covers_every_changed_function(rig: Rig) -> None:
     # The pairs file changed after `compared`: refused, and the packet's hash moved with it.
     assert any("pairs file changed after it was compared" in p for p in problems)
     assert packet["pairs_set_sha256"] != first
+
+
+def test_the_pairs_hash_is_the_one_pr_verify_recomputes(rig: Rig) -> None:
+    packet = rig.prepare()[0]
+    addresses = [address for function in packet["functions"] for address in function["addresses"]]
+    assert packet["pairs_set_sha256"] == pr_proof.pairs_set_sha256(rig.unit, addresses)
 
 
 def test_every_problem_of_the_tool_part_is_listed(rig: Rig) -> None:
