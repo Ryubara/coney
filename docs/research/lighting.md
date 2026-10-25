@@ -3,11 +3,7 @@ kind: system
 system: lighting
 owns:
   files: ["Graphics/LightManager.cpp"]
-  functions: [
-    "0x0017bec8", "0x0017c308", "0x0017c508", "0x0017c840", "0x0017caa8", "0x0017d0b0", "0x0017d338", "0x0017d510",
-    "0x0017d598", "0x0017d880", "0x0017ea60", "0x0017ec38", "0x0017ec80", "0x0017ef20", "0x0017f160", "0x0017f1b8",
-    "0x0017f218", "0x0017f270",
-  ]
+  ranges: ["0x0017b1e0-0x0017f278"]
 ---
 # Lighting
 
@@ -91,7 +87,7 @@ that only link are described above. Names are ours. Confirmed (code) at each add
 | `0x0017d640` | `LightManager_Construct` | [The light manager](#manager) | confirmed (code) |
 | `0x0017d880` | `LightManager_CullForViewport` | [Per viewport: the cull](#cull) | confirmed (code) |
 | `0x0017de10` | `LightManager_SelectLights` | [Per atomic: the selection](#select) | confirmed (code) |
-| `0x0017e490` | `LightGlow_OnLoaded` | chunk `0x4B` ([Chunk system](chunk-system.md)): each 40-byte record becomes a light; flickering kinds get a random phase, and some lose their flicker at random (40 % keep it) | confirmed (code) |
+| `0x0017e490` | `LightGlow_OnLoaded` | chunk `0x4B` ([Chunk system](chunk-system.md)): each 40-byte record becomes a light; one with flicker mode 2 also lights the world; one with no flicker mode and a non-zero first halfword (the corona) gains flicker mode 4 when `rand() % 100` is below 40, so 40 % of them flicker and no record loses its mode | confirmed (code) |
 | `0x0017e680` | `LightGlow_Release` | frees the chunk (level reset `0x0040c7f0`) | confirmed (code) |
 | `0x0017e6c0` | `LightManager_Reset` | removes every light except the built-in ones and clears the lists | confirmed (code) |
 | `0x0017e7e8` | `LightManager_ClearLists` | empties the per-viewport lists | confirmed (code) |

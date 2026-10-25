@@ -30,7 +30,7 @@ more names and types.
 those two functions. Of 2,023 strings referenced on both sides, 1,760 are unique in this way. They give **341
 one-to-one function pairs** (114 backed by two or more strings). Of the 90 pairs where both functions also load a
 source path, 87 load the same file, and 302 of 340 consecutive pairs keep the same order in both `.text`
-sections, so the pairs are sound. **Evidence:** inferred.
+sections, so the pairs are sound. **Evidence:** inferred from those counts.
 
 ## Findings {#survey-findings}
 
@@ -71,7 +71,7 @@ Inferred from the measurement in [Method](#method); the counts depend on Ghidra'
   GCC 2.x on the EE passes `this` in `a0` like any argument.
 - **Library code is named.** 580 functions (C runtime, XAPI, D3D, DirectSound) are named by signatures, so calls
   like `sprintf` and `strncpy` read as such; on the PS2, RenderWare, the SCE libraries and libc are unnamed until
-  an engineer names them.
+  someone names them.
 - **Floats and vectors.** Float code decompiles as plain `float` arithmetic; 21 of the 341 PS2 functions use VU0
   macro instructions, which decompile as opaque `in_vf0` registers.
 - **More anchors.** MSVC keeps one copy of `__FILE__` per use, so 338 functions in 141 files load a path, against
@@ -115,15 +115,14 @@ runtime evidence for the PS2. Inferred from xemu's guest-debugging documentation
 
 ### Recommendation {#recommendation}
 
-**Adopt the Xbox executable as an optional, read-only cross-reference for engineers; do not make it a reference
-and do not build xemu tooling.** It is not easier overall: game code is equally unnamed, MSVC's register
-artefacts and lower function coverage offset the cleaner x86 output, and its layouts differ from the PS2's. It does
-pay off for string-heavy and float-heavy code: front end, audio cues, scripting glue, camera and other vector maths.
-There, opening the Xbox twin of a PS2 function first (found through a shared string) shows its literals,
-`this` argument and float expressions quickly. Engineers who do so cite only PS2 addresses as evidence and keep the
-XBE project outside the repository. The exception is code the PS2 does not have: the port's own renderer, whose
-lighting, shadow map, fog and gamma ramp [Xbox lighting and shadows](xbox-lighting.md) reads in the XBE and cites at
-Xbox addresses.
+**Adopt the Xbox executable as an optional, read-only cross-reference for contributors; do not make it a reference and
+do not build xemu tooling.** It is not easier overall: game code is equally unnamed, MSVC's register artefacts and lower
+function coverage offset the cleaner x86 output, and its layouts differ from the PS2's. It does pay off for string-heavy
+and float-heavy code: front end, audio cues, scripting glue, camera and other vector maths. There, opening the Xbox twin
+of a PS2 function first (found through a shared string) shows its literals, `this` argument and float expressions
+quickly. Whoever does so cites only PS2 addresses as evidence and keeps the XBE project outside the repository. The
+exception is code the PS2 does not have: the port's own renderer, whose lighting, shadow map, fog and gamma ramp [Xbox
+lighting and shadows](xbox-lighting.md) reads in the XBE and cites at Xbox addresses.
 
 ## Open questions
 

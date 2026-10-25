@@ -382,7 +382,7 @@ yet, so a runtime answer waits for one. The last is a PCSX2 check.
 - **The ramp's value**{#q-ramp-value}: which two fields of a point or spot light's descriptor Xbox `0x0009a620` adds
   the record's value × 0.07 to, and what the record's last word (0 or -1) does (stored at the device's `+0xc90`).
   Find out: in Ghidra, follow the descriptor's two offsets from Xbox `0x0009a620` to the light upload (Xbox
-  `0x000990e0`, `0x00098f50`) and the readers of the device's `+0xc90`; or in xemu, read a point light's descriptor
+  `0x000990e0`, Xbox `0x00098f50`) and the readers of the device's `+0xc90`; or in xemu, read a point light's descriptor
   before and after a level change.
 - **The gamma ramp's index**{#q-ramp-index}: what the game state's `+0x56b4` holds (the level number is inferred) and
   what Xbox `0x0007a470` tests for record 31. Find out: in Ghidra, the writers of `+0x56b4` and the body of Xbox

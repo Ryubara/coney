@@ -110,7 +110,7 @@ Three tiers, each usable on its own. The data limits them: only the environment-
 
 | Preset | Contents | Needs |
 | --- | --- | --- |
-| *Faithful* | Nothing added. The default, and what tests use | none |
+| *Faithful* | Nothing added. The default, and what tests use. The Xbox port's shadow map, gamma ramp and per-pixel fog are toggles here, off by default ([Xbox lighting](../research/xbox-lighting.md#in-coney)) | none |
 | *Enhanced* | Sun shadow map, per-pixel lights, environment-map materials with cube maps | F2, F3 |
 | *High* | Adds GTAO ([plan](enhancements.md#lighting-and-post-processing)), probes, tagged reflections, lamp shadows for objects | F2, F3 |
 | *Ultra* | Adds ray-traced shadows and AO for dynamic objects over the baked light | F5 and a Vulkan ray-query path |
