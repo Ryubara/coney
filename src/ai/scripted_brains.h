@@ -285,6 +285,8 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     /// Moves a bound AI human there as the script's teleport does: Human::place() onto placeGround() and the brain's
     /// part (Brain::placed()), then for `TeleportToFlag` (`motion` Stopped) Human::resetMotion(); the player's teleport
     /// is the level's (GameplayMode).
+    /// @orig 0x00385bb8 Object_Teleport (unknown)
+    /// @orig 0x00385db0 Object_TeleportToFlag (unknown)
     void humanTeleported(double handle, const world_objects::Placement& placement,
                          world_objects::TeleportMotion motion) override;
     /// Where a bound brain's human stands now, and its heading.

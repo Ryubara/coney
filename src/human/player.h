@@ -204,6 +204,7 @@ class Player {
     /// ground, null for none), so his move goes on, and the camera put behind him with nothing to blend from
     /// (docs/research/teleports.md#motion-reset). The brain's part of the placement is the caller's
     /// (ai::Brain::placed()).
+    /// @orig 0x00385bb8 Object_Teleport (unknown)
     void place(const raycast::CollisionMesh* mesh, const PlayerStart& start);
     /// The human settled as after a walk (Human::settle()), then teleport(): the debug menus' teleport and `--start`,
     /// which stand for the walk there.

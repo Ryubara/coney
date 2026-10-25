@@ -1932,6 +1932,15 @@ coney = "src/human/human_animator.h:HumanAnimator::choose"
 status = "legacy"
 
 [[function]]
+address = 0x0025a3e0
+name = "Human_PlayScriptAnim"
+page = "ai-scripting.md#dyn-animation"
+role = "The play-anim action's clip start: refused while held flags `0x1c16a40` are set; a chained loop for anims 671 and 673 and a plain loop when asked; otherwise the held flags set and a type 5 task pushed (`AnimTask5_Construct`)."
+level = "confirmed-code"
+coney = "src/human/human_animator.h:HumanAnimator::playScripted"
+status = "legacy"
+
+[[function]]
 address = 0x0025ade8
 name = "Human_PushOverlayClip"
 page = "combat-rage.md#rage"

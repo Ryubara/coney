@@ -206,8 +206,10 @@ class HumanAnimator {
     /// which must outlive its use) once at `rate`, faded in over `fade`, then the idle; AnimState::Attack while it
     /// plays, its task holding `held` on the record `+0x08`. With `handOverEarly` the idle takes over on the advance
     /// that leaves less than one advance of the clip (anim::ClipThenNextTask), for a clip whose original end, one
-    /// update before Coney's (docs/research/formats/animation.md#clip-end), was measured.
-    /// Research: docs/research/ai-scripting.md#dyn-animation
+    /// update before Coney's (docs/research/formats/animation.md#clip-end), was measured. It stands for the last branch
+    /// of `Human_PlayScriptAnim` (the held flags set, a type 5 task pushed); its loop, chained and busy branches are
+    /// the callers' or not built. Research: docs/research/ai-scripting.md#dyn-animation
+    /// @orig 0x0025a3e0 Human_PlayScriptAnim (unknown)
     void playScripted(const anim::AnimClip& clip, std::uint32_t animId, float rate, float fade, HeldFlags held,
                       bool handOverEarly = false);
     /// A workout's clips (docs/research/workouts.md#engine): a fade of kWorkoutFade, the enter clip (anim 691) and
