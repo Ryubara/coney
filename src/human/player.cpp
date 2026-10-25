@@ -169,7 +169,10 @@ void takeMetersOf(Human& player, const Human& chosen, int healthPercent) {
             return value;
         }
         const float factor = static_cast<float>(healthPercent) * 0.01F;
-        return static_cast<int>((static_cast<float>(value) * factor) + 0.5F);
+        // The original adds 0.5 to the float product and truncates (cvt.w.s). A health is never negative, so that
+        // truncation is std::floor of the same float sum. std::lround would round the product itself and differ
+        // where the float sum rounds up (0.49999997F + 0.5F is 1.0F).
+        return static_cast<int>(std::floor((static_cast<float>(value) * factor) + 0.5F));
     };
     const combat::Health& own = chosen.health();
     player.fighter().health() = combat::Health(scaled(own.value()), std::max(scaled(own.maximum()), 1));

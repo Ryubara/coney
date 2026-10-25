@@ -69,14 +69,14 @@ std::string padScript(std::uint64_t theft) {
 // The health the old player 1 is left with before the hand-over.
 constexpr int kHurt = 100;
 
-// The text "X of Y" at the start of `text` read as the pair (X, Y); nothing when it is not that. std::from_chars, not
-// sscanf: it needs no terminated string and MSVC does not flag it as unsafe.
-std::optional<std::pair<int, int>> parseXOfY(std::string_view text) {
+// The text "X of Y" at `start` in `text` read as the pair (X, Y); nothing when it is not that. std::from_chars, not
+// sscanf, which MSVC flags as unsafe; it reads the line's own string, so its range ends where the line does.
+std::optional<std::pair<int, int>> parseXOfY(const std::string& text, std::size_t start) {
     constexpr std::string_view kOf = " of ";
     int value = 0;
     int maximum = 0;
-    const char* const end = text.data() + text.size();
-    const auto [afterValue, valueError] = std::from_chars(text.data(), end, value);
+    const char* const end = text.c_str() + text.size();
+    const auto [afterValue, valueError] = std::from_chars(text.c_str() + start, end, value);
     if (valueError != std::errc{} || std::string_view(afterValue, end).substr(0, kOf.size()) != kOf) {
         return std::nullopt;
     }
@@ -97,7 +97,7 @@ std::optional<std::pair<int, int>> handOverHealth(const std::vector<std::string>
         if (line.find(kLine) == std::string::npos || health == std::string::npos) {
             continue;
         }
-        if (const auto parsed = parseXOfY(std::string_view(line).substr(health + kHealth.size()))) {
+        if (const auto parsed = parseXOfY(line, health + kHealth.size())) {
             return parsed;
         }
     }
@@ -164,9 +164,11 @@ TEST_CASE("the disc's level99: player 1 handed over hurt at checkpoint 2 has the
     CHECK(run.session().flow().state().checkPoint == 2);
     const std::optional<std::pair<int, int>> handedHealth = handOverHealth(run.log());
     REQUIRE(handedHealth.has_value());
-    std::printf("  level99 hand-over: the old player at %d, the new one handed over at %d of %d\n", kHurt,
-                handedHealth->first, handedHealth->second);
-    CHECK(handedHealth->first == handedHealth->second);
+    // value_or after the REQUIRE: its default is never used, and the analysis cannot see the REQUIRE's check.
+    const auto [handedValue, handedMaximum] = handedHealth.value_or(std::pair{-1, 0});
+    std::printf("  level99 hand-over: the old player at %d, the new one handed over at %d of %d\n", kHurt, handedValue,
+                handedMaximum);
+    CHECK(handedValue == handedMaximum);
 
     // The cars' step (CarSpawnRadio, the theft handler), then player 1 at car 142's front-left door, facing it.
     CHECK(scripts.call("P2.SetupCars"));
