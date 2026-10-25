@@ -5,7 +5,7 @@ checks that the proof the unit carries holds for the change on the branch, and `
 request's title and description from the engineer's one paragraph, the task and the stamps. Neither pushes, opens or
 edits anything on GitHub, so an engineer runs them whenever it wants to know where the unit stands. They are the code
 that `pr open` (planned) will run before it pushes, so what they accept is what a release will accept. The commands'
-options and exit codes are in [the repository commands](coney-tools-repo.md#pr); this page is what they check and what
+options and exit codes are in [the pull request commands](coney-tools-pr.md#pr); this page is what they check and what
 each refusal asks you to do.
 
 The proof is the unit's [stamp log](stamps.md#log), kept in the task's scratch folder. The commands trust nothing they
@@ -132,9 +132,10 @@ Line 1 is the title (`area: Verb the rest`). The Summary is one paragraph and, i
 a `Docs: none` line. Testing holds only the `Runtime:` line (required for the title areas a player sees); the facts are
 generated. Screenshots holds image references under `./shots/`, or `Screenshots: none (<reason>)`. Anything else is
 refused: `Fixes` lines, the markers and the Checklist are generated, so a hand-typed claim cannot disagree with the
-stamps. A section the template has that only a person can fill, such as `## Issues affected`, goes in the file under its
-own heading and is kept as written. A person's own pull request, with no AI identity in the log and no model in the
-commits' trailers, also writes the `## AI use` section itself.
+stamps. A heading that is not one of `pull_requests.sections` is refused ("is not a section of a pull request
+description"); a section added to that list that only a person can fill goes in the file under its own heading and is
+kept as written. A person's own pull request, with no AI identity in the log and no model in the commits' trailers,
+also writes the `## AI use` section itself.
 
 ### What is generated {#generated}
 
@@ -149,7 +150,7 @@ line and refused by the checks until it is.
 | Testing | The [facts block](#facts) between `<!-- coney:facts -->` markers, then the engineer's `Runtime:` line |
 | Screenshots | The engineer's section, as written |
 | AI use | `Commits written by: an AI` and the models the branch's `Co-Authored-By` trailers name, else the models of the engineers in the log. No trailer lines are added to the description: GitHub copies the branch commits' trailers into the squash commit |
-| Issues affected | The engineer's section of `PR.md`, as written (only a person can say how an issue is affected). Without it, a bare `TODO:`, which is refused; once `coney-tools issue impact` exists, the `TODO:` lists its candidates to confirm |
+| A section added to `pull_requests.sections` that only a person can fill | The engineer's section of `PR.md`, as written. Without it, a bare `TODO:`, which is refused |
 
 The marker names (`pull_requests.markers`) let a later pass find the two generated blocks again.
 

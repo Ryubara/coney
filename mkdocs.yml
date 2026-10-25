@@ -309,6 +309,7 @@ nav:
           - PCSX2 and clip commands: guides/coney-tools-pcsx2.md
           - Trace commands: guides/coney-tools-trace.md
           - Repository commands: guides/coney-tools-repo.md
+          - Pull request commands: guides/coney-tools-pr.md
           - Issue commands: guides/coney-tools-issues.md
           - CI commands: guides/coney-tools-ci.md
           - Check, build and benchmark commands: guides/coney-tools-build.md

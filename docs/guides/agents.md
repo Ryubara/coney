@@ -393,7 +393,7 @@ that line, and subagents see it too and copy it: on 2026-10-13 a Sonnet agent tw
 Model line followed the wrong trailer, and `coney-tools repo check-body` passed because body and trailers agreed with
 each other. **Two checks stand against it.** A git `commit-msg` hook, installed by `uvx pre-commit install` (the
 `commit-message` hook of `.pre-commit-config.yaml`, which runs [`coney-tools pr
-check-commit`](coney-tools-repo.md#pr-check-commit)), refuses the message before the commit exists, for everyone, with or
+check-commit`](coney-tools-pr.md#pr-check-commit)), refuses the message before the commit exists, for everyone, with or
 without Claude Code: only `Co-Authored-By` trailers, no other e-mail address, and, when the commit runs in a Claude
 Code session (its [identity](#identity) file names the model), a trailer naming that model. The hook below stays
 beside it until the git hook has run for real: it reads the model from the transcript, so it still catches the
