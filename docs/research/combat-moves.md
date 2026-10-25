@@ -40,6 +40,9 @@ knife and bottle kills and thrown melee weapons) and gives frame data for all of
 | `0x00287fe0` | `Attack_StartGroundStrike` | commands `0x37` / `0x38`: 193 / 194 | confirmed (code) |
 | `0x0027d6e0` | `Player_TryCounterGrab` | command 3: the AI's counter, 76 or 9 | confirmed (code) |
 | `0x00258e10` / `0x0026f860` | `Tandem_CanStart` / `Tandem_Start` | the three-person tandem | confirmed (code) |
+| `0x00277458` | `Tandem_AlignThree` | places the three for a tandem: turns them and slides the grabber and the attacker over 1/15 s to the set's offsets ([Tandems](#tandem)) | confirmed (code); which body each step moves inferred |
+| `0x0026f780` | `Tandem_OnVictimIntroEnd` | the end of the victim's intro: the attacker's intro and end damage (ids +0 and +3) dealt as one hit | confirmed (code) |
+| `0x00254418` | `AttackTable_GetOffset` | a kind's pair offset (record `+0x160` + kind × 16, two millimetre words) when its reach is set | confirmed (code) |
 | `0x00258e88` / `0x002590f8` | `Human_CanCounterGrab` / `Human_CanCounterTackle` | whether a grab or tackle coming at the human can be countered | confirmed (code) |
 | `0x00264738` | `Player_StartStealthKill` | the stealth kill 637 / 639 / 641 | confirmed (code) |
 | `0x00261c80` | `Attack_StartAtTarget` | starts a strike on a target in a given state: 212, 661, 120, the push 21 | confirmed (code), runtime |
@@ -73,7 +76,7 @@ Every function of the moves, with its role and level, is on [the combat function
   and so on at 0.75, frames 5, 14, 23 and so on at 0.9), which acts **one update later**. Frame 2 at 0.75 (k = 2)
   is the one tie that acts on time. The PS2 FPU rounds every add and multiply toward zero, so the summed time falls a
   hair short of the tie; at k = 2 it is still exact. Rates 0.8 and 1.0 have no ties that fall short. The rounding
-  mode is inferred; with it the rule matches all 17 strike-shape windows measured after the recorder fix ([Runtime
+  mode is inferred; with it the rule matches all 17 strike-shape windows measured at runtime ([Runtime
   results](#runtime)) and the held phases below. A reimplementation can get the same updates by summing the time in
   `float` and rounding each step toward zero, or by using the closed form with the tie exception.
 - **The held phases** W (chain window `0x2`, event `0x2c`), E (end `0x4`, `0x2d`) and R (recovery `0x40000`, `0x48`)
@@ -397,7 +400,8 @@ From `Commands_Match` (`0x00147940`; the tables are in [Commands](combat/index.m
       dispatcher's gate `0x5c7fee0`: neither is kept for later.
 
   So the longest a press waits is from the attack's first update to its window: up to 6 updates in `S1` and `SS2`,
-  10 in `X1`. There is no buffer across the end of a move: a press must land after it ends.
+  10 in `X1` (inferred from the buffer rule above and the clips' window events in [Frame data](#frame-data)). There
+  is no buffer across the end of a move: a press must land after it ends.
 - **Cancels.** Nothing interrupts an attack except the chain step at its window. Every other command needs the
   human not busy (`Human_IsBusy` `0x00223cb0`: record `+0x08` `0xaeebf7ff`, which holds `0x1`, `0x2`, `0x4` and
   `0x10`) and passes the dispatcher's gate (`0x5c7fee0`, which holds the recovery). R1's block is tested before both
@@ -509,21 +513,24 @@ PoizoCiv standing 1.0 m ahead with his brain off; two runs gave the same values)
 an attack started (43 for `X1`, 54 for `XX2`), each time to that update's `+0x500`. The head's offset from the
 position, `+0x500` in metres:
 
-| Pose (clip) | x (right) | y (forward) | xy length | z |
-| --- | --- | --- | --- | --- |
-| idle 388 / 396 (target, brain off) | −0.008 to −0.003 | 0.012 to 0.037 | **0.013-0.037** | 1.728-1.734 |
-| fight idle 358 (the player, looping from update 88) | 0.024 to 0.051 | 0.075 to 0.165 | **0.09-0.165** | 1.540-1.558 |
-| reel 275 after `X1` (updates 52-63) | 0.083 to 0.273 | 0.031 to 0.137 | **0.15-0.28** | 1.469-1.601 |
-| reel 273 after `XX2` (updates 65-76) | −0.228 to 0.070 | 0.029 to 0.141 | **0.10-0.23** | 1.530-1.600 |
-| recovery 389 (updates 78-96) | −0.028 to 0.079 | 0.020 to 0.140 | 0.02-0.16 | 1.61-1.73 |
+| Pose (clip) | x (right) | y (forward) | xy length | z | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| idle 388 / 396 (target, brain off) | −0.008 to −0.003 | 0.012 to 0.037 | **0.013-0.037** | 1.728-1.734 | confirmed (runtime) |
+| fight idle 358 (the player, looping from update 88) | 0.024 to 0.051 | 0.075 to 0.165 | **0.09-0.165** | 1.540-1.558 | confirmed (runtime); for another human inferred |
+| reel 275 after `X1` (updates 52-63) | 0.083 to 0.273 | 0.031 to 0.137 | **0.15-0.28** | 1.469-1.601 | confirmed (runtime) |
+| reel 273 after `XX2` (updates 65-76) | −0.228 to 0.070 | 0.029 to 0.141 | **0.10-0.23** | 1.530-1.600 | confirmed (runtime) |
+| recovery 389 (updates 78-96) | −0.028 to 0.079 | 0.020 to 0.140 | 0.02-0.16 | 1.61-1.73 | confirmed (runtime) |
 
-So the original's head really moves that far: in a reel it swings up to 0.28 m, mostly sideways, and drops by up to
-0.26 m; in the fight idle the head leans 0.08-0.17 m forward. `XX2` started at update 54, two updates into the reel
-275, and its steer aimed at (0.215, 0.132): **0.25 m** from the target's position, to his right. The fight idle was
-measured on the player, whose model shares the humans' skeleton (inferred); an AI target held in 358 was not
-recorded.
+Confirmed (runtime), from the table: the original's head really moves that far. In a reel it swings up to 0.28 m, mostly
+sideways, and drops by up to 0.26 m; in the fight idle the head leans 0.08-0.17 m forward. `XX2` started at update 54,
+two updates into the reel 275, and its steer aimed at (0.215, 0.132): **0.25 m** from the target's position, to his
+right. The fight idle was measured on the player, whose model shares the humans' skeleton (inferred); an AI target held
+in 358 was not recorded.
 
 #### Where the attacker stands at contact {#reach}
+
+Measured in PCSX2: confirmed (runtime) where no other level is given (PCSX2 2.9.94, no run record: [How this was
+checked](#how-this-was-checked)).
 
 **The steer sets the distance, both ways** (`Attack_SteerToTarget`, `0x002761c8`), confirmed (code) and (runtime).
 The goal is the target's predicted point minus the reach along the line from the attacker, and `Human_MoveToOver`
@@ -548,12 +555,13 @@ the transform; confirmed (runtime)):
 | `X1` from 1.0 / 1.3 / 1.6 m | a straight slide from k3 to k11 (below) | ends at 0.878-0.879 m | **k10** | 0.903 / 0.890, 0.976 / 0.930, 1.048 / 0.970 |
 | `X1` from 1.9 m | turns only (the far range is 1.90 m): 1.886 at k3, 1.747 at k10 | | **miss** | |
 
-From k3 on, the three 653 runs are the same to the millimetre: the steer ends at 1.62 m (the reach 1.58 m and
-0.04 m more, not explained: 653 takes the steer that aims at the target's position, not its head, [The two
+Confirmed (runtime): from k3 on, the three 653 runs are the same to the millimetre: the steer ends at 1.62 m (the reach
+1.58 m and 0.04 m more, not explained: 653 takes the steer that aims at the target's position, not its head, [The two
 steers](#two-steers)) by k3, and the clip then carries the attacker 0.50 m forward to 1.12 m by the end of k7. The
 shapes are on k2-k8 (653) and k1-k9 (`S1`, from the hook).
 
-**Bones at contact**, in the attacker's frame (forward, right, height above the attacker's feet; metres). The pose
+**Bones at contact** (confirmed (runtime)), in the attacker's frame (forward, right, height above the attacker's feet;
+metres). The pose
 before the contact update (k6's) and after it (k7's) bracket the test; the hands reach the target only in k7's
 pose:
 
@@ -564,10 +572,10 @@ pose:
 | `S1` from 1.5 m | after k2 | 0.73, +0.03, 1.61 | −0.03, +0.39, 1.32 | 1.21, +0.02, 1.18 | 1.15, +0.03, 1.73 |
 | `S1` from 1.5 m | after k3 | 0.73, +0.02, 1.60 | −0.06, +0.37, 1.32 | 1.07, +0.02, 1.18 | 1.01, +0.03, 1.73 |
 
-After k7 of 653 the hands are 0.24-0.28 m from the target's spine bone (0.51-0.52 m from the head); after k6, 0.50-
-0.58 m. In world space for the 1.9 m run (attacker at (33.391, 37.943), heading 179°): left hand (33.537, 36.949,
-1.500), right hand (33.204, 36.960, 1.471), spine (33.345, 36.778, 1.403), head (33.342, 36.831, 1.959). `S1`'s
-left hand is 0.30 m from the head after k3.
+Confirmed (runtime): after k7 of 653 the hands are 0.24-0.28 m from the target's spine bone (0.51-0.52 m from the head);
+after k6, 0.50- 0.58 m. In world space for the 1.9 m run (attacker at (33.391, 37.943), heading 179°): left hand
+(33.537, 36.949, 1.500), right hand (33.204, 36.960, 1.471), spine (33.345, 36.778, 1.403), head (33.342, 36.831,
+1.959). `S1`'s left hand is 0.30 m from the head after k3.
 
 **`X1` against a standing target** (confirmed (runtime), PCSX2, slot 6, the same still PoizoCiv; cross
 tapped at k0, clip 11 from k2; the strike shapes read from the bodies themselves, as below). Two rules of the test
@@ -580,9 +588,7 @@ decide where `X1` lands, and they hold for every move:
   from a 1.0 m start and +0.040 m from 1.6 m; only the sweep across the target's front touches.
 - **Contact and samples**: the contact update k10 is the one whose result is sample k10: the target's health first
   drops in that sample (also in the `S1` and 653 runs above), and the shapes that overlap are the ones posed in it,
-  the hand sweeping from its k9 point to its k10 point. (These runs were recorded before the recorder fix, which
-  labelled a `strike-contact` or `strike-shape` call one update early; the contact here is re-labelled one update
-  later, [Recording a trace](../guides/research-workflow.md#hooks).)
+  the hand sweeping from its k9 point to its k10 point.
 
 **The slide** is two motions added together, confirmed (runtime) with the steer's own fields (`moves_reachX1_10_steer`,
 `moves_reachX1_16_steer`):
@@ -599,15 +605,15 @@ decide where `X1` lands, and they hold for every move:
    forward** in all, then about 0 (its first word, up to −1.17, is not a sideways speed: the attacker does not drift;
    inferred, a turn).
 
-So the attacker ends at the goal less the clip's 0.18 m: **0.870-0.880 m** from the target at k12 whatever the start
-(0.879 from 1.3 m), and the target point is the target's own position, not a bone. From 1.0 m the steer moves him
-back while the clip carries him forward faster, so he still closes in (0.013-0.017 m per update). At the contact the
-attacker is **still moving in**: 0.890 m (from 1.0 m), 0.930 m (from 1.3 m), 0.970 m (from 1.6 m) after the
+Confirmed (runtime): the attacker ends at the goal less the clip's 0.18 m: **0.870-0.880 m** from the target at k12
+whatever the start (0.879 from 1.3 m), and the target point is the target's own position, not a bone. From 1.0 m the
+steer moves him back while the clip carries him forward faster, so he still closes in (0.013-0.017 m per update). At the
+contact the attacker is **still moving in**: 0.890 m (from 1.0 m), 0.930 m (from 1.3 m), 0.970 m (from 1.6 m) after the
 contact update, never 1.02 m.
 
-**The hand and the target at contact.** In the attacker's frame (forward, right, up from his feet, metres; samples
-after each update; the attacker's scale 0.97 makes the hand sphere's radius 0.087). The hand's path is the same to
-the millimetre from every start; the target's shapes sit at the distance d:
+**The hand and the target at contact** (confirmed (runtime)). In the attacker's frame (forward, right, up from his feet,
+metres; samples after each update; the attacker's scale 0.97 makes the hand sphere's radius 0.087). The hand's path is
+the same to the millimetre from every start; the target's shapes sit at the distance d:
 
 | Sample | Right hand sphere (25), r 0.087 | Target spine segment (3), r 0.18 | Target head (6), r 0.15 |
 | --- | --- | --- | --- |
@@ -617,25 +623,25 @@ the millimetre from every start; the target's shapes sit at the distance d:
 | k11 | 0.647, −0.592, 1.374 | (target recoiling) | |
 | k12 | 0.389, −0.707, 1.172 | | |
 
-The hand comes in at shoulder height and crosses from the attacker's right to his left in front of the target, a
-hook; between k9 and k10 it passes the top of the spine segment (1.49 m) where it meets the right-to-left line,
-0.78 m ahead at 1.60 m high. With the attacker standing still through that update, the sweep touches the spine only
-when the distance after the update is at most **1.019 m** (the head at 1.00 m); an attacker still moving forward
+Confirmed (runtime): the hand comes in at shoulder height and crosses from the attacker's right to his left in front of
+the target, a hook; between k9 and k10 it passes the top of the spine segment (1.49 m) where it meets the right-to-left
+line, 0.78 m ahead at 1.60 m high. With the attacker standing still through that update, the sweep touches the spine
+only when the distance after the update is at most **1.019 m** (the head at 1.00 m); an attacker still moving forward
 carries the start of the sweep back with him (the sweep is in world space), which costs reach: the 1.6 m run, 0.078 m
-forward in that update, hit with 0.022 m to spare at 0.970 m. Measured swept gaps (spine / head) at k10: −0.105 /
-−0.059 (from 1.0 m), −0.064 / −0.028 (1.3 m), −0.022 / +0.013 (1.6 m). From 1.9 m, with no slide, the hand stays
-0.68 m short.
+forward in that update, hit with 0.022 m to spare at 0.970 m. Measured swept gaps (spine / head) at k10: −0.105 / −0.059
+(from 1.0 m), −0.064 / −0.028 (1.3 m), −0.022 / +0.013 (1.6 m). From 1.9 m, with no slide, the hand stays 0.68 m short.
 
-So a `X1` stance of 1.02 m with a static overlap test misses by a few centimetres on two counts: the original's
+So a `X1` stance of 1.02 m with a static overlap test misses by a few centimetres on two counts (inferred from the
+runs above): the original's
 attacker is 0.89-0.97 m away when the hand crosses (and 0.88 m when the slide ends), and its hand is tested along
 its sweep.
 
-**A walking target** changes this through the lead. PoizoCiv walking in at 1.63 m/s (its AI on, placed until update
-9): the 653 steer stopped near 1.7 m by k3 and contact came at k7 from 1.0 and 1.6 m and **k8** from 1.9 m (the
-shapes' last live update), at 1.15-1.21 m. Pinned in place but still in its walk (velocity 1.6 m/s toward the
-attacker, position written every update), the lead put the attacker 1.9-1.95 m away at k3 and 653 **missed** from
-1.0 and 1.9 m, as did `S1` from 1.5 m. So runs against a pinned walking target, as some earlier ones on this page
-were, understate what reaches (inferred; the right snap's miss may be this).
+**A walking target** changes this through the lead (confirmed (runtime)). PoizoCiv walking in at 1.63 m/s (its AI on,
+placed until update 9): the 653 steer stopped near 1.7 m by k3 and contact came at k7 from 1.0 and 1.6 m and **k8** from
+1.9 m (the shapes' last live update), at 1.15-1.21 m. Pinned in place but still in its walk (velocity 1.6 m/s toward the
+attacker, position written every update), the lead put the attacker 1.9-1.95 m away at k3 and 653 **missed** from 1.0
+and 1.9 m, as did `S1` from 1.5 m. So runs against a pinned walking target understate what reaches (inferred; the right
+snap's miss may be this).
 
 Scenarios: `moves_reach653_10`, `moves_reach653_16`, `moves_reach653_19`, `moves_reachS1_15`, `moves_reachX1_10`,
 `moves_reachX1_13`, `moves_reachX1_16`, `moves_reachX1_19` (still target; the `X1` ones but the last also read the
@@ -735,14 +741,14 @@ showed 359 for one update. Confirmed (runtime).
 
 Read in Ghidra: confirmed (code) where no other level is given.
 
-| Input | Target | Clip | Runtime (`moves_grounded_*`, victim knocked down by 653 and set 1 m ahead) |
-| --- | --- | --- | --- |
-| square | low (down) | **193** `gen_ground_kickB` | foot B shape k11-k13, contact k12, −34 health seen in its sample, reaction 195 |
-| cross | low (down) | **194** `gen_ground_stomp` | foot B shape k11-k17, contact k15, −34 seen in its sample, 32 updates, then 358 |
-| square | mid (the mount's states, or 0.7-1.3 m lower) | **212** `MOUNTING_STRIKE` | `moves_mid_square`: at Bum01 mounting PoizoCiv (made the target), contact on the mounter at k8; the victim was let go (245, then up with 199) |
-| cross | mid | **661** `SPECIAL_BREAK_OBJECT_LOW` | `moves_mid_cross`: the same, 661 one update after the release, contact at k9, the victim let go |
-| square or cross | grabbed from the front by someone else, or grabbing someone from the front | **120** | `moves_grab_front_strike`: at PoizoCiv holding Bum01 from the front (82), contact at k9, 50 damage, PoizoCiv 144 and the hold broken |
-| commands `0x37` / `0x38` (scripts, AI) | any | 193 / 194 (`Attack_StartGroundStrike`, `0x00287fe0`) | not run |
+| Input | Target | Clip | Runtime (`moves_grounded_*`, victim knocked down by 653 and set 1 m ahead) | Evidence |
+| --- | --- | --- | --- | --- |
+| square | low (down) | **193** `gen_ground_kickB` | foot B shape k11-k13, contact k12, −34 health seen in its sample, reaction 195 | confirmed (code), runtime confirmed (runtime) |
+| cross | low (down) | **194** `gen_ground_stomp` | foot B shape k11-k17, contact k15, −34 seen in its sample, 32 updates, then 358 | confirmed (code), runtime confirmed (runtime) |
+| square | mid (the mount's states, or 0.7-1.3 m lower) | **212** `MOUNTING_STRIKE` | `moves_mid_square`: at Bum01 mounting PoizoCiv (made the target), contact on the mounter at k8; the victim was let go (245, then up with 199) | confirmed (code), runtime confirmed (runtime) |
+| cross | mid | **661** `SPECIAL_BREAK_OBJECT_LOW` | `moves_mid_cross`: the same, 661 one update after the release, contact at k9, the victim let go | confirmed (code), runtime confirmed (runtime) |
+| square or cross | grabbed from the front by someone else, or grabbing someone from the front | **120** | `moves_grab_front_strike`: at PoizoCiv holding Bum01 from the front (82), contact at k9, 50 damage, PoizoCiv 144 and the hold broken | confirmed (code), runtime confirmed (runtime) |
+| commands `0x37` / `0x38` (scripts, AI) | any | 193 / 194 (`Attack_StartGroundStrike`, `0x00287fe0`) | not run | confirmed (code) |
 
 Both grounded strikes deal 34 (class indices 12 / 13). Confirmed (code); confirmed (runtime) for 193, 194, 212, 661
 and 120. A plain `S1` at a tackled victim lying under its mounter (PoizoCiv in 207) did not touch it.
@@ -753,15 +759,14 @@ A **tandem** is a three-person move: a player strikes a victim another human hol
 `Tandem_CanStart` (`0x00258e10`), `Tandem_Start` (`0x0026f860`), `Tandem_LinkThree` (`0x0022b1a0`),
 `Tandem_AlignThree` (`0x00277458`) and `Tandem_OnVictimIntroEnd` (`0x0026f780`):
 
-- **Started from square, cross, circle tapped or circle held**, when the target is held from the rear (state
-  `0x20`, by anyone: a gang member or another player), the attacker stands within 45° of the victim's front
+- **Started from square, cross, circle tapped or circle held**, when the target is held from the rear (state `0x20`, by
+  anyone: a gang member or another player), the attacker stands within 45° of the victim's front
   (`Human_GetSideOf(victim, attacker, 1)` = 0), and the victim's held flags have none of `0xc12200`. Square and cross
   test it after the target-state strikes; circle tests it before grabbing ([Combat](combat-grabs.md#grab), step 3). The
-  three callers (`Player_Square`, `Player_Cross`, `Player_GrabOrTackle`) are the only ones, and none tests for a
-  pad: they are the dispatcher's, which an AI human runs too ([An AI's attacks](combat-targets.md#ai-attacks)). An earlier
-  reading here said "the player only"; that is corrected below. Square and cross pressed **together** (command
-  `0x22`) are not among them: that is the special 653, which hits the victim and breaks the hold. Every input, with
-  runtime checks: [Which button starts it](#tandem-input).
+  three callers (`Player_Square`, `Player_Cross`, `Player_GrabOrTackle`) are the only ones, and none tests for a pad:
+  they are the dispatcher's, which an AI human runs too ([An AI's attacks](combat-targets.md#ai-attacks)). Square and
+  cross pressed **together** (command `0x22`) are not among them: that is the special 653, which hits the victim and
+  breaks the hold. Every input, with runtime checks: [Which button starts it](#tandem-input).
 - **The set**: a bat or baton in hand → 181-186; a knife → 187-192; otherwise 163-168, 169-174 or 175-180 at random.
   Each set has an intro and an end for the grabber, victim and attacker (ids +0 to +5).
 - The three are linked and placed by the set's pair offsets. At the **end of the victim's intro** the attacker's
@@ -832,21 +837,18 @@ rear hold (85), the player 1.1 m in front of him facing him, stick centred, in t
 | `moves_tandem_circle_hold` | circle held from 60 to 72 | `0x1e` (61), `0xe` (67) | the tandem at **67**, the 7th update held, five before the release; the release gave no `0xd` |
 | `moves_tandem_square_cross` | cross held from 60 to 64, square tapped at 61 | `0x12` (61), `0x22` (62), `0x16` (63), `0x10` (64) | **no tandem**: 653 `SPECIAL_ATTACK1_FRONT` at 62; at 69 PoizoCiv lost 6 (600 → 594) and played 133, Ash 107 `GRAB_REAR_BREAK_REACT` then 268: the hold was broken. The later `0x10` found the player busy |
 
-Each of the four tandems played the first set, 163-168.
+Each of the four tandems played the first set, 163-168. Confirmed (runtime).
 
-**To script it** (on the original, through the `scripted-pad` patch; the recorder writes the same bytes from a Coney
-input script; confirmed (runtime) by the runs above, PCSX2 2.9.94): the second button byte `0x005de3ab` is active
-low, so circle alone is `0xdf`, cross `0xbf`, square
-`0x7f`, cross and square `0x3f`, none `0xff`; the first byte `0x005de3aa` stays `0xff` and the four stick bytes
+**To script it** (on the original, through the `scripted-pad` patch; confirmed (runtime) by the runs above, PCSX2
+2.9.94): the second button byte `0x005de3ab` is active low, so circle alone is `0xdf`, cross `0xbf`, square `0x7f`,
+cross and square `0x3f`, none `0xff`; the first byte `0x005de3aa` stays `0xff` and the four stick bytes
 `0x005de3ac`-`0x005de3af` stay `0x80`. A circle hold is `0xdf` written for at least 7 updates (the tandem starts on the
-7th); a circle tap is `0xdf` for 1-6 updates, then `0xff`. In a Coney input script: `60 tap circle`, or
-`60 press circle` and `72 release circle`; the negative test is `60 press cross`, `61 tap square`, `64 release
-cross`, which must play 653 and no tandem.
+7th); a circle tap is `0xdf` for 1-6 updates, then `0xff`.
 
 #### Who starts a tandem, and how an AI chooses it {#tandem-ai}
 
-User checklist item 18 (a gang member holds an enemy; the teammates stand by). Confirmed (code) at the addresses
-cited unless marked:
+A gang member holds an enemy and the teammates stand by: who of them strikes. Confirmed (code) at the addresses cited
+unless marked:
 
 1. **An AI teammate starts it through the grab.** The fight goal's attack pick (`Brain_PickAttack`, `0x0028e708`,
    [AI](ai.md#pick-attack)) adds **+200** to kind 22 (the grab) when the target is grabbed from the rear (step 4.7),
@@ -941,7 +943,7 @@ Confirmed (code); confirmed (runtime) below:
 when hurt, always; above it, a 1 in floor(power / that) chance per press; never while the mounter rages) makes the
 mounter's power the gate: struggle first, then circle or R1. The AI does the same through its commands.
 
-At runtime (`moves_mounted_square`, `_r1`, `_circle`; the puppet civilian at power 400 given the tackle command
+Confirmed (runtime) (`moves_mounted_square`, `_r1`, `_circle`; the puppet civilian at power 400 given the tackle command
 `0xe` 1.5 m away): its intro 3 ran 19 updates, then the player played 6 for 46 updates (every press refused) under
 the puppet's 5, then the mounted idles 207 (victim) and 210 (mounter). Square played 250 on the next update for 16
 updates, the mounter 251, and the mounter lost **40** health on 250's second update. Squares every 4 updates (two
@@ -1067,10 +1069,8 @@ Confirmed (code).
 
 ### Runtime results {#runtime}
 
-Method: PCSX2 2.9.94, copies of slot 6 (the street, the player Rembrandt facing 179.029°, the camera at 145.398°),
-the puppet civilian `PoizoCiv` (600 health) placed by writing its transform each update until the move, the player
-at 900 health and 400 power. The stick is pushed through the scripted pad at full deflection where the move needs
-more than 0.95 (snaps, strafes) and is otherwise centred. k counts from the clip's first update.
+Measured in PCSX2: confirmed (runtime) for every row (PCSX2 2.9.94, no run record: [How this was
+checked](#how-this-was-checked)). k counts from the clip's first update.
 
 | Scenario | Clip | Strike shapes | Contact | Damage | Reaction |
 | --- | --- | --- | --- | --- | --- |
@@ -1088,18 +1088,19 @@ more than 0.95 (snaps, strafes) and is otherwise centred. k counts from the clip
 | `moves_strafe_front` | 33 | L forearm / hand k5-k11 | none (2.6 m) | | |
 | `moves_grabcounter_12`, `_14` | 76 (grabber 77) | all | k0 | 100 | 77 |
 
-The shape windows and contacts here are re-labelled one update later after the recorder fix: these runs were
-recorded when `pcsx2 record` labelled every `strike-shape` and `strike-contact` call one update early
-([Recording a trace](../guides/research-workflow.md#hooks)); each contact now falls in the update whose sample first
-shows the damage. Re-labelled, every measured window matches the frame tables below to the update ([Reading the
-tables](#reading)), including the late ties: 25 / 27 / 29 off (frame 5), 23 / 33 off (frame 8) and 193 / 194 on
-(frame 8).
+Each contact falls in the update whose sample first shows the damage, and every measured window matches the frame
+tables to the update ([Reading the tables](#reading)), including the late ties: 25 / 27 / 29 off (frame 5), 23 / 33 off
+(frame 8) and 193 / 194 on (frame 8). Confirmed (runtime).
 
 ## In Coney
 
 The moves Coney plays and where they differ from the table above: [Combat differences](combat-diffs.md).
 
 ### The tandem {#tandem-coney}
+
+The [tandem runs](#tandem-input) script the same pad bytes from a Coney input script: `60 tap circle`, or `60 press
+circle` and `72 release circle`; the negative test is `60 press cross`, `61 tap square`, `64 release cross`, which must
+play 653 and no tandem.
 
 The fix list (item 18), then what Coney builds:
 
@@ -1173,40 +1174,44 @@ issue #228 ([the rule](#bat-cross)):
 
 ## Open questions
 
-- Where 653's 0.04 m beyond its 1.58 m reach comes from: its steer aims at the target's position (task `+0x10`),
-  not its head ([The two steers](#two-steers)); whether the clip's root motion over k1-k3 adds it was not read.
-- The low and mid tests' state bits are read but not all named; which reactions put a human in them, and which
-  point the height test compares (vtable `+0xac`).
-- Why the snap 25 slides the player 0.3-0.5 m away from a target pinned on its right and misses, when 27 hits one
-  on the left. That target was pinned while walking, so the steer's lead may explain it ([Contact](#reach)); not
-  rerun against a still target.
-- Why the tandem intro ran 51 updates, not 36.
-- The tandem's alignment: which of the three humans `Tandem_AlignThree` (`0x00277458`) moves, by which offsets and
-  over what time. Coney moves only the attacker, to his intro's pair point ([Coney's tandem](#tandem-coney)).
-- When the tandem's grabber lets go: 48 updates after the damage at runtime, where his end clip (166) lasts 27. Coney
-  lets go at the end of the clip.
-- How the empty-handed set is drawn: whether the three sets are equally likely, and from which random source.
-- What `Grab_ScoreMove`'s "100 points of category 6" adds to: Coney's player statistics have categories 0-5, so the
-  tandem scores nothing in Coney yet.
-- The target a held victim is found by: `Player_PickTarget` and the grab's search skip held humans in Coney; which
-  search square, cross and circle use to reach a rear-held victim for the tandem was not traced.
-- Whether a Warrior who grabs an enemy in a real fight holds him from the rear (where a tandem is possible) or from
-  the front (where square and cross give 120 and circle grabs instead), and how often: every [tandem
-  run](#tandem-input) staged the rear hold with a puppet. A rumble with the Warriors' own brains, logging the
-  grabber's state `0x20` / `0x10`, would tell.
-- Whether a Warrior's own type-3 brain (the Warriors' think, `0x003052f0`) starts a tandem: in `moves_tandem_ai` Ash
-  with that brain stood idle, so the run gave him type-2 handlers ([An AI tandem at runtime](#tandem-ai)). To find out,
-  rerun the scenario without the brain writes and give Ash an attack order on PoizoCiv once he is in the rear hold,
-  through the call hook on `GameState_IssueWarriorCommandFor` (`0x0041dc80`, behind the script binding
-  `IssueWarriorCommand`), logging `set-command` for Ash's command `0xd`.
-- The PS2 FPU's rounding toward zero is assumed, not read from the FPU's control, for the late ties ([Reading the
-  tables](#reading)). The clip ends agree with it on three more ties (36, 440, 441 at 0.75,
-  [When a clip ends](formats/animation.md#clip-end)); a run of a rate-0.9 clip with a tie (an event at frame 5 or 14)
-  would check that rate.
-- When the bat's 35 plays at all, if no pad chain reaches it ([Cross with a bat in hand](#bat-cross)). (Why 34
-  lasts 37 updates is answered: [When a clip ends](formats/animation.md#clip-end).)
-- 490 `KNIFE_ATTACK_FROM_RUN`, 18 `ATTACK_SSX3_HOLD` and the `_02` snaps: no code path plays them here (20 is the
-  chain's random pick after `SS2`, `0x00280708`).
+- **653's extra reach**{#q-653-reach}: where 653's 0.04 m beyond its 1.58 m reach comes from: its steer aims at the
+  target's position (task `+0x10`), not its head ([The two steers](#two-steers)); whether the clip's root motion over
+  k1-k3 adds it was not read.
+- **The low and mid states**{#q-low-mid-states}: the low and mid tests' state bits are read but not all named; which
+  reactions put a human in them, and which point the height test compares (vtable `+0xac`).
+- **The right snap's miss**{#q-snap-right}: why the snap 25 slides the player 0.3-0.5 m away from a target pinned on its
+  right and misses, when 27 hits one on the left. That target was pinned while walking, so the steer's lead may explain
+  it ([Contact](#reach)); not rerun against a still target.
+- **The tandem intro's length**{#q-tandem-intro}: why the tandem intro ran 51 updates, not 36.
+- **The tandem's alignment**{#q-tandem-align}: which of the three humans `Tandem_AlignThree`
+  (`0x00277458`) moves, by which offsets and over what time. Coney moves only the attacker, to his intro's pair point
+  ([Coney's tandem](#tandem-coney)).
+- **The tandem's let-go**{#q-tandem-letgo}: when the tandem's grabber lets go: 48 updates after the damage at runtime,
+  where his end clip (166) lasts 27. Coney lets go at the end of the clip.
+- **The empty-handed set**{#q-tandem-set}: how the empty-handed set is drawn: whether the three sets are equally likely,
+  and from which random source.
+- **The tandem's score**{#q-tandem-score}: what `Grab_ScoreMove`'s "100 points of category 6" adds to: Coney's player
+  statistics have categories 0-5, so the tandem scores nothing in Coney yet.
+- **The tandem's target**{#q-tandem-target}: the target a held victim is found by: `Player_PickTarget` and the grab's
+  search skip held humans in Coney; which search square, cross and circle use to reach a rear-held victim for the tandem
+  was not traced.
+- **A Warrior's grab in a fight**{#q-warrior-grab}: whether a Warrior who grabs an enemy in a real fight holds him from
+  the rear (where a tandem is possible) or from the front (where square and cross give 120 and circle grabs instead),
+  and how often: every [tandem run](#tandem-input) staged the rear hold with a puppet. A rumble with the Warriors' own
+  brains, logging the grabber's state `0x20` / `0x10`, would tell.
+- **A Warrior's own brain**{#q-warrior-brain}: whether a Warrior's own type-3 brain (the Warriors' think, `0x003052f0`)
+  starts a tandem: in `moves_tandem_ai` Ash with that brain stood idle, so the run gave him type-2 handlers ([An AI
+  tandem at runtime](#tandem-ai)). To find out, rerun the scenario without the brain writes and give Ash an attack order
+  on PoizoCiv once he is in the rear hold, through the call hook on `GameState_IssueWarriorCommandFor` (`0x0041dc80`,
+  behind the script binding `IssueWarriorCommand`), logging `set-command` for Ash's command `0xd`.
+- **The FPU's rounding**{#q-fpu-rounding}: the PS2 FPU's rounding toward zero is assumed, not read from the FPU's
+  control, for the late ties ([Reading the tables](#reading)). The clip ends agree with it on three more ties (36, 440,
+  441 at 0.75, [When a clip ends](formats/animation.md#clip-end)); a run of a rate-0.9 clip with a tie (an event at
+  frame 5 or 14) would check that rate.
+- **The bat's 35**{#q-bat-35}: when the bat's 35 plays at all, if no pad chain reaches it ([Cross with a bat in
+  hand](#bat-cross)).
+- **Clips no path plays**{#q-unplayed-clips}: 490 `KNIFE_ATTACK_FROM_RUN`, 18 `ATTACK_SSX3_HOLD` and the `_02` snaps: no
+  code path plays them here (20 is the chain's random pick after `SS2`, `0x00280708`).
 
 ## How this was checked
 
@@ -1214,3 +1219,16 @@ The clip and Anim Range List numbers were read from the disc's `warr_re_cv` (Rem
 The runtime claims were measured in PCSX2 2.9.94 on copies of the street save state (slot 6), driven over PINE with
 the scripted pad, the right-stick and puppet patches, and the `strike-contact` and `strike-shape` hooks ([Driving
 PCSX2](../guides/research-workflow.md#driving-pcsx2)); the scenarios are `repo:research/traces/scenarios/moves_*.toml`.
+
+**The runs in [Runtime results](#runtime)** started from copies of slot 6 (the street, the player Rembrandt facing
+179.029°, the camera at 145.398°), with the puppet civilian `PoizoCiv` (600 health) placed by writing its transform each
+update until the move, and the player at 900 health and 400 power. The stick was pushed through the scripted pad at
+full deflection where the move needs more than 0.95 (snaps, strafes) and was otherwise centred.
+
+**Shape windows and contacts** from runs recorded while `pcsx2 record` labelled every `strike-shape` and
+`strike-contact` call one update early ([Recording a trace](../guides/research-workflow.md#hooks)) are given re-labelled
+one update later, so that each contact falls in the update whose sample first shows the damage: the runs of [Runtime
+results](#runtime) and the `X1` contact runs of [Where the attacker stands at contact](#reach).
+
+None of these runs has a run record; the runtime claims are of the old form, which the page keeps as a legacy page
+([Evidence levels and run records](../guides/research-evidence.md#run-records)).
