@@ -496,7 +496,7 @@ k counts updates from the move's first; "free" is the first k a `0x10` starts 36
 | square, square (the chain) | as 34: the second square is stored as 2 and never played | | | **37** | 389 |
 | triangle (with nothing to take) | no clip: the bat is dropped at once ([Losing it](#bat)) | | | **next update** | cross now plays the unarmed `X1` 11 |
 | cross + square (`0x22`), nobody near | 502 `SWINGABLE_OBJECT_THROW`, holding `0x10` for 35 updates; the bat leaves the hand at k20 | | | 35, unarmed | 389 |
-| cross + square, a target within 2.0 m | nothing (the throw is refused: `Player_Special` `0x00287730` refuses anyone holding an object, confirmed (code)) | | | **at once** | the cross's own release (`0x10`) plays 36 |
+| cross + square, a target within 2.0 m | nothing (the throw is refused: `Player_Special` `0x00287730` refuses a pad player holding an object, confirmed (code)) | | | **at once** | the cross's own release (`0x10`) plays 36 |
 
 The 34 lasted 37 updates at runtime (k0-36), one fewer than the 38 the [frame data](combat-moves.md#frame-data) rounds
 from its frame count; 36 lasted 35 (confirmed (runtime)). 35 `BAT_COMBO_SS2` never played from the pad, so its phases
