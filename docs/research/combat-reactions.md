@@ -1,24 +1,34 @@
+---
+kind: topic
+system: combat
+owns:
+  functions: [
+    "0x00158728", "0x0022f100", "0x0022f658", "0x0022f8d8", "0x00230328", "0x00264bd8", "0x00265f70", "0x002674c0",
+    "0x0026a6d0", "0x0026b0a0",
+  ]
+---
 # Combat: damage, reactions and defeat
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`); runtime claims with
-PCSX2 2.9.94 as on [Combat](combat/index.md), which this page was split from because that page had grown too
-large. The overview, the data tables and the code index stay on [Combat](combat/index.md#code-index).
-Every claim carries the level written beside it.
+Verified against: `SLUS_212.15` (NTSC-U); runtime claims name PCSX2 2.9.94 and their method in How this was checked.
 
-## Purpose
+## Summary
 
-This page covers how a hit lands on a busy target, the reactions (stun, knockdown, getting up and countering), being
-knocked out and the mission failing, being hit at runtime, a bat's hit (the level34 Furies) and hit blood. A player
-sees it as what a punch does to whoever takes it: a flinch, a stagger, a fall and the climb back up, a man left on
-the ground, and the "mission failed" screen when the crew can no longer help. The AI's fight goals, the grab and the
-mount ([Grabs](combat-grabs.md)) and the HUD's health meter all read the states set here.
+This page covers what a hit does to whoever takes it: the damage and the health it takes, the reaction it plays (a
+flinch, a stun, a knockdown), a hit on a human busy with something else and the moves a hit cannot stop, the climb
+back up and the counter from the ground, being knocked out, the mission failing when the crew can no longer help, and
+the blood a hit draws. A player sees a punch land, a man stagger or fall and get up, a man left on the ground, and the
+"mission failed" screen. The AI's fight goals ([AI](ai.md#fight-reactions)), the grab and the mount
+([Combat: grabs](combat-grabs.md)) and the HUD's health meter read the states set here. A bat's hit, which deals the
+bat's damage rather than the clip's, is on [Combat: throws, weapons in hand](combat-throws.md#bat-knockdown). The
+commands, the state bits and the tables every combat topic reads are on [Combat](combat/index.md#data).
 
-## Original structure
+## Map
 
 No source file names this code: it lies in `Human/`, in the human's set-up and contacts and in the player's combat
-code after `cns/cnsplayertag.cpp` ([Source map](source-map.md#position), inferred). The names are ours. Every
-reaction function is in the [code index](combat/index.md#code-reactions); these are the entry points, each read in Ghidra
-at its address.
+code after `cns/cnsplayertag.cpp` ([Source map](source-map.md#position), inferred), and the names are ours. Every
+reaction function is in the [code index](combat/index.md#code-reactions), and every combat function, with its role and
+level, on [the combat function list](combat/functions.md); these are the entry points, each read in Ghidra at its
+address.
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |
@@ -28,9 +38,11 @@ at its address.
 | `0x0026b0a0` / `0x0026a6d0` | `Hit_PlayReaction` / `Human_PlayReaction` | a normal hit's reaction, by hit code; plays it | confirmed (code) |
 | `0x002688d0` / `0x00268ea8` / `0x00268c50` | `HitReact_WhileGrabbed` / `HitReact_WhileGrabbing` / `HitReact_InMiniGame` | a hit on a busy human ([Attacking a busy target](#busy-target)) | confirmed (code) |
 | `0x0022f658` / `0x0022f100` | `Human_Stun` / `Human_KnockDown` | the stun and the knockdown and their timers ([Reactions](#reactions)) | confirmed (code) |
+| `0x0022f8d8` | `Human_EndStun` | the stun's end: 357, then idle ([Reactions](#reactions)) | confirmed (code) |
 | `0x00256a60` / `0x0025e2d8` | `Human_UpdateDown` / `Human_PlayRise` | the get-up time and the rise 199 | confirmed (code) |
+| `0x00267e48` | `Human_PlayLethalReaction` | the death reaction of a dying human, held back by a paired clip ([Moves a hit cannot stop](#protected-moves)) | confirmed (code) |
 | `0x002674c0` / `0x00230328` / `0x00230598` | `Human_OnHealthOut` / `Human_KnockOut` / `Human_WakeUp` | health out, knocked out, woken ([Defeat](#defeat)) | confirmed (code) |
-| `0x004197a8` / `0x00158728` | `GameState_CheckGameOver` / `Gm_Level_Update` | the mission failing and the hand-off to its screen | confirmed (code) |
+| `0x004197a8` / `0x00158728` | `GameState_CheckGameOver` / `Gm_Level_Update` | the mission failing and the hand-off to its screen ([The mission failing](#mission-failing)) | confirmed (code) |
 
 ## Data
 
@@ -52,11 +64,12 @@ flags](combat/index.md#state-flags), [Other record fields](combat/index.md#recor
 
 ## Behaviour
 
-The sections below follow a hit from the contact to its reaction, then a human down, out and the mission's end. Each
-claim carries its level; the code claims were read at the addresses they cite, the runtime ones measured in PCSX2
-2.9.94 as each one says.
+The sections follow a hit from the contact to its reaction, then a human down, out and the mission's end, and last the
+blood a hit draws.
 
-## Damage, health and reactions {#damage}
+### Damage, health and reactions {#damage}
+
+Read in Ghidra: confirmed (code) where no other level is given; each runtime block says confirmed (runtime).
 
 `Strike_Contact` (`0x0021b290`) takes the [damage table](combat/index.md#damage-table)'s value, adds a held weapon's bonus,
 and for a player applies upgrade percentages (categories `0x13` / `0x19` and `0x1e` / `0x21` / `0x1d` / `0x20`, inferred
@@ -64,11 +77,10 @@ to be the upgrade levels). An attacker with flag `0x20` deals the victim's whole
 `Human_AddPendingDamage` (`0x00264bd8`) stores it at record `+0x118` if larger than what is pending, with its weight at
 `+0x11a` ([Scripted knockdowns](#scripted-knockdowns)); the damage is **doubled** when the attacker has human flag
 `0x4000` and **quartered** for class `0x80` (`bopp_bo`, the Boppers' boss) against brain type 3, after the doubling,
-with an arithmetic shift right by 2. Confirmed (code), re-read 2026-10-21: every damage path reaches it
-(`Strike_Contact`, `Human_DealDamage` from the grab strikes, mounts and throws), so a grab strike is quartered too.
-Coney quarters a fighter's strikes and grab strikes on that class when its brain is a Warrior's
-(`human::Fighter::quarteredFor`); the grabbed side's strike-backs are only a player's (`Player_UpdateGrabbed`, brain
-type 0), so they are never quartered. Health (record `+0x144`) fell by exactly the table's value on every hit tested
+with an arithmetic shift right by 2. Confirmed (code): every damage path reaches it
+(`Strike_Contact`, `Human_DealDamage` from the grab strikes, mounts and throws), so a grab strike is quartered too;
+the grabbed side's strike-backs are only a player's (`Player_UpdateGrabbed`, brain type 0), so they are never
+quartered. Health (record `+0x144`) fell by exactly the table's value on every hit tested
 (confirmed (runtime)). Grab moves (`0x00262ac8`) apply their damage on the move's first update.
 
 **Applying it** (`Human_ApplyPendingDamage`, `0x00265f70`, each update), confirmed (code), in order:
@@ -81,23 +93,30 @@ type 0), so they are never quartered. Health (record `+0x144`) fell by exactly t
    own value is 0.3). Confirmed (code).
 3. A cuffed victim (state `0x20000`, `Human_IsCuffed`, `0x00223b70`) takes triple damage; allies hurt each other only
    when both are players. Confirmed (code).
-4. Health drops; the flash clip 665 prevents death. Any human in a pair or a block (state `0x18003ff0`,
-   `Human_IsInPairOrBlock`, `0x00227fd8`) hit by someone other than his partner (`+0xc4`) spends 0.6 of his power (the
-   constant at `0x00510274`). Confirmed (code).
+4. Health drops, unless the victim has human flag `0x10` (set by step 2 and by `HuMakeBeatUp`), is knocked out,
+   dying or dead: then the pending damage is cleared and the health stays (a hit by an object of type `0x22` or
+   `0x1d` still lands). A hit that would take the last of the health while the victim plays the flash clip 665 is
+   cleared instead, so the flash prevents death (a smaller hit still lands). Any human in a pair or a block (state `0x18003ff0`,
+   `Human_IsInPairOrBlock`, `0x00227fd8`) hit by someone other than his partner (`+0xc4`) spends 0.6 of his power
+   (the constant at `0x00510274`). Confirmed (code).
 5. **Hit armour**: no reaction plays (the damage still lands) while the victim is a player in an attack's wind-up or
    chain window (`+0x08` & 3), or a class 13 human with `+0x08` & `0x13`, unless the attacker is a player, class 13,
-   raging, has flag `0x200000` or `0x4000`, or plays 617-620.
+   raging, has flag `0x200000` or `0x4000`, or plays 617-620. A player with human flag `0x80000` holding `0x10` takes
+   no reaction from anyone.
 6. Otherwise the reaction by state, each a function of its own, among them: in a jump, falling, on fire, cuffing or
    being cuffed, in a mini-game, mugging or mugged, grabbed (`HitReact_WhileGrabbed`, `0x002688d0`), tackled,
-   grabbing (`HitReact_WhileGrabbing`, `0x00268ea8`), tackling, mounting, mounted, in a special, knocked out
+   grabbing (`HitReact_WhileGrabbing`, `0x00268ea8`), tackling, mounting, mounted, throwing or thrown (state `0x2000`:
+   no reaction, the pending damage cleared), in a special, knocked out
    (`HitReact_WhileOut`), wounded (`Hit_PlayBegReaction`) and hit by an object (`HitReact_FromObject`); a normal hit
    `Hit_PlayReaction` (`0x0026b0a0`, [Hit codes](combat/index.md#hit-codes)). Confirmed (code); the list is not every
    branch.
 
-## Attacking a busy target {#busy-target}
+### Attacking a busy target {#busy-target}
+
+Read in Ghidra: confirmed (code) where no other level is given.
 
 What happens when an attacker goes for a human who is busy with something else: held by a third human, stealing a
-car stereo, or spraying a tag. No test anywhere names these three activities. Each check reads the target's state word
+car stereo, or spraying a tag. Each check reads the target's state word
 (record `+0x00`, [State flags](combat/index.md#state-flags)) or held flags (record `+0x08`) against a mask, and the
 three show up there as grabbed `0x10` (front) / `0x20` (rear), a mini-game `0x4000000` (the stereo is mini-game mode 3,
 [Crimes](crimes.md#mini-game-record)) and tagging `0x2000000`. `Tag_StartSpray` (`0x0022e610`) and
@@ -171,9 +190,11 @@ armour, the held flags `0x1c16a40` or human flag `0x800` cancel the reaction:
 
 ### Moves a hit cannot stop: the dive, the charge and the paired moves {#protected-moves}
 
+Read in Ghidra: confirmed (code) where no other level is given.
+
 No "in a sync move" flag exists. What protects a human in a dive, a charge, a power move, a finisher or a tandem is
 the record `+0x08` **held flags** those moves' clip tasks hold ([Held flags](tasks.md#held-flags)), read in three
-places. Confirmed (code) at the addresses cited; user checklist items 25 and 29.
+places.
 
 **Who holds what** (each bit is held by the clip task for the clip's whole length, then cleared with it):
 
@@ -201,14 +222,37 @@ third human's shapes do. In `Human_ApplyPendingDamage` (`0x00265f70`) the health
 any of **`0x1c16a40`** (`0x1000000`, `0x800000`, `0x400000`, `0x10000`, `0x4000`, `0x2000`, `0x800`, `0x200`, `0x40`)
 has his pending damage cleared with **no reaction**: the dive, the charge, the paired clip and the tandem play on.
 
-**4. A lethal hit waits.** At the top of `Human_ApplyPendingDamage`, a human in state `0x800000` or `0x80000000`
-plays `Human_PlayLethalReaction` at once, unless he holds any of **`0xc12200`** (`0x800000`, `0x400000`, `0x10000`,
-`0x2000`, `0x200`): then the ordinary path runs, the health drops, and no reaction (lethal or other) plays while the
-flags are held. Which code sets state `0x800000` (inferred: the damage message, human vtable `+0x44`, when the damage
-is defeating) and what plays the death once the paired clip ends were not traced.
+**4. A lethal hit waits.** A dying human (state `0x80000000`) is given his death by `Human_PlayLethalReaction`
+(`0x00267e48`), which `Human_ApplyPendingDamage` calls at its top (`0x00266488`) and `Humans_Update` once an update
+(`0x0024966c`), each only while he holds none of **`0xc12200`** (`0x800000`, `0x400000`, `0x10000`, `0x2000`,
+`0x200`), is not falling (`0x1c00000000`) and is not in movement style `0x12`. While he holds any of them, the
+ordinary path runs: the health drops and no reaction (lethal or other) plays. `Human_PlayLethalReaction` sets
+`0x80000000` itself, returns at once when the flags are held, and otherwise ends what he was doing (mugging, cuffing,
+a tackle hold, a mini-game) and plays the gang's death reaction (`Human_PlayGangDeathReaction`); a cuffed human with
+human flag `0x4` plays 322 and the loop 323 `ANIM_ARRESTED_DEAD` instead. A human in state `0x800000` takes
+nothing: `Human_ApplyPendingDamage` clears his pending damage and returns. Which code first sets `0x80000000` on the
+lethal hit was not traced ([Open questions](#open-questions)).
 
-**At runtime the victim finishes his paired clip and only then goes down** (confirmed (runtime), PCSX2 2.9.94,
-scenario `moves_finisher_lethal`: a copy of slot 6, PoizoCiv a puppet at 60 health 1.0 m ahead, Ash, the player's
+**When the order matters** (`Humans_Update` step 9, [Tasks](tasks.md#humans-update); `Human_UpdateActions`,
+`0x00254e78`): each human applies its pending damage **before** its dispatcher runs, and a reaction returns before
+the dispatcher. The strike tests run earlier in the step (after each move). So:
+
+- A hit that reaches a player on the update he presses L2 + square wins: the reaction plays, the dispatcher does not
+  run, the one-sample command is lost, and there is no dive.
+- From the dive's first update (`Player_StartDive` sets `0x400000` on the update of the press) no hit can stop it:
+  AIs do not start attacks on him, a swing already under way still takes health but plays no reaction, and the dive
+  runs its 2 s with its strike shapes on from k2 to k24 ([the table](combat/index.md#moving-strikes)).
+- When the diver's shapes and the target's swing meet on the same update, both get pending damage; the diver plays
+  on, the target reacts to the dive's crushing hit code `0x3a` ([Hit codes](combat/index.md#hit-codes)) before its own dispatcher
+  could start anything new.
+
+#### A lethal hit during a paired move, at runtime {#lethal-runtime}
+
+Measured in PCSX2 2.9.94: confirmed (runtime) where no other level is given; none of the runs has a run record
+([How this was checked](#how-this-was-checked)).
+
+**The victim finishes his paired clip and only then goes down** (confirmed (runtime), PCSX2 2.9.94, scenario
+`moves_finisher_lethal`: a copy of slot 6, PoizoCiv a puppet at 60 health 1.0 m ahead, Ash, the player's
 ally, a puppet placed 0.9 m behind him; the player's front grab (circle at 10) and power strike (cross held from 42,
 square at 44), Ash given `X1` (`0x12`, `0x10`, 0) at 47-49; stick centred; hooks `paired-start`, `anim-dispatch`,
 `strike-contact`):
@@ -224,28 +268,14 @@ square at 44), Ash given `X1` (`0x12`, `0x10`, 0) at 47-49; stick centred; hooks
 
 So the lethal hit took the health below 0 at once but changed nothing the player sees until the victim's own paired
 clip (58, which outlasts the attacker's 57 by 28 updates) ended; then he fell (286, 32 updates) and lay knocked out.
-The record's state `0x80000000` is the mark the hit leaves while the reaction waits (the "state `0x80000000`" of the
-test above; which code sets it is still not traced). A civilian with the flags of this one is knocked out, with
+The record's state `0x80000000` is the mark the hit leaves while the reaction waits (the dying state of
+[the test above](#protected-moves)). A civilian with the flags of this one is knocked out, with
 health 1 (inferred: `HitReact_WhileOut`, `0x002686e8`, which sets health 1), rather than killed.
 
-**Coney** holds a lethal hit back the same way (`Fighter::takePending`, `repo:src/human/fighter_victim.cpp`): out of
-health while his clips hold any of `0xc12200`, a human plays no reaction and keeps his clip; on the first update the
-flags are clear, his dying reaction plays. A tandem's defeated victim so finishes his end clip first
-([Coney's tandem](combat-moves.md#tandem-coney)). **Coney's reading**: the dying reaction is the one his hit picks;
-the knock-out with health 1 seen above is not built.
+#### A charge or a dive into a standing human, at runtime {#charge-dive-runtime}
 
-**When the order matters** (`Humans_Update` step 9, [Tasks](tasks.md#humans-update); `Human_UpdateActions`,
-`0x00254e78`): each human applies its pending damage **before** its dispatcher runs, and a reaction returns before
-the dispatcher. The strike tests run earlier in the step (after each move). So:
-
-- A hit that reaches a player on the update he presses L2 + square wins: the reaction plays, the dispatcher does not
-  run, the one-sample command is lost, and there is no dive.
-- From the dive's first update (`Player_StartDive` sets `0x400000` on the update of the press) no hit can stop it:
-  AIs do not start attacks on him, a swing already under way still takes health but plays no reaction, and the dive
-  runs its 2 s with its strike shapes on from k2 to k24 ([the table](combat/index.md#moving-strikes)).
-- When the diver's shapes and the target's swing meet on the same update, both get pending damage; the diver plays
-  on, the target reacts to the dive's crushing hit code `0x3a` ([Hit codes](combat/index.md#hit-codes)) before its own dispatcher
-  could start anything new.
+Measured in PCSX2 2.9.94: confirmed (runtime) where no other level is given; none of the runs has a run record
+([How this was checked](#how-this-was-checked)).
 
 **A sprint charge or dive into a standing human, at runtime** (confirmed (runtime), PCSX2 2.9.94, scenarios
 [`charge_human`](repo:research/traces/scenarios/charge_human.toml) and
@@ -265,7 +295,7 @@ tapped at 30; hooks `strike-contact` and `anim-dispatch`):
 Neither attacker played a reaction or lost health: the move ran its whole clip. The run did not
 test a flung victim striking the attacker, and **PoizoCiv's 195 damage and 294 were not the charge's or the dive's**:
 moving him every update kept him airborne (clip 428, `ANIM_MOVEMENT_FALL`), and update 61 is when he landed (429)
-and took a fall's damage and knockdown (confirmed (runtime), 2026-10-12, PCSX2 2.9.94, the same slot: placed only at
+and took a fall's damage and knockdown (confirmed (runtime), PCSX2 2.9.94, the same slot: placed only at
 updates 0-2, he fell until update 34 and took 600 → 405 and 294 at 35 with no strike on him, the player still
 standing; the strike-shape hook (`0x003428d0`) showed only the attacker's body switching shapes on). Why he fell:
 the street in front of slot 6's spot ends about 7.5 m ahead in a drop of 8.7 m, and both placements put him past it
@@ -273,7 +303,7 @@ the street in front of slot 6's spot ends about 7.5 m ahead in a drop of 8.7 m, 
 to 7.5 m and steps off there (confirmed (runtime), scratch probes `walkout` and `charge1`).
 
 **A flung victim's strike costs the charger 20 health and no reaction; the diver was not struck** (confirmed
-(runtime), PCSX2 2.9.94, 2026-10-12, a copy of slot 6; PoizoCiv's brain held (`+0x09` = 1), walked out 0.15 m an
+(runtime), PCSX2 2.9.94, a copy of slot 6; PoizoCiv's brain held (`+0x09` = 1), walked out 0.15 m an
 update to 3.8 m (charge) or 2.7 m (dive) in front of the player, then kept there along the player's heading and facing
 him until the press, so he stands upright and reacts at once; L2 held and the stick at 98 % straight ahead from update
 20, cross or square tapped at 40; hooks `strike-contact` and `anim-dispatch`):
@@ -291,35 +321,9 @@ reactions 296-303 switch every shape on) and the held `0x1000000` (`0x1c16a40` a
 was clear of 300's spine and head shapes in this run; a diver whose body is inside a flung victim's shapes would lose
 the same 20 by the same code (inferred: the dive holds `0x400000`, in the same mask).
 
-**Coney fixes** (items 25 and 29):
+### Reactions: stun, knockdown and getting up {#reactions}
 
-1. `ai::startGuardOf` (`src/ai/attack_views.cpp`) never sets `StartGuard::targetHeldBusy`: set it from the target's
-   held flags `0xc08200` (Coney: the target is diving, is the victim of a paired move or power move, is in a tandem,
-   or holds a block's `0x8000` / `0x200`), and `targetPinned` for the partner exception (target "thrown" `0x2000`,
-   attacker "throwing" `0x1000`). This stops teammates and enemies starting attacks on a finisher's victim (item 29)
-   and on a diving player (item 25).
-2. **Done for the charge and the dive** (`Fighter::takePending`, `combat::heldCancelsReaction()`): after the health
-   drops, a victim whose clip holds any of `0x1c16a40` plays no reaction and is not interrupted. Before it, a charge
-   into a human broke off on impact and the charger fell: the victim's crushing mid reaction (296-299) switches every
-   strike shape on and its flung body struck the charger for 20 with a heavy high hit, which played 292-295 on him
-   (user report, 2026-10-11). The original takes the same 20 from the charger with no reaction (confirmed (runtime),
-   the run above). The dive escaped only by chance (inferred; no strike back in the run above): its crushing high hit
-   gives 300-303, which strike with the spine and head alone.
-   Still to do: a paired move's victim holding `0x400000` (Coney's paired clips
-   hold no such flag yet).
-3. A lethal hit on a victim holding any of `0xc12200` does not start the dying reaction or break the pair at once:
-   keep the health below 0 and let the victim's own paired clip finish (not the attacker's: 58 outlasts 57); then
-   the victim falls with the low reaction (286 for a hit from behind, the reactions table) and goes down by
-   [Defeat](#defeat)'s rules: a civilian like PoizoCiv knocked out with health 1, idle 349 (confirmed (runtime),
-   above). Test: a third human's lethal hit during 57 / 58 leaves the victim in 58 to its end, then down.
-4. The grab search of a player refuses a target holding `0x8fc57a60` (diving, charging, in a pair).
-5. Order: apply a human's pending damage before its own commands in the same update, and drop that update's command
-   when a reaction starts.
-6. Tests: (a) a player diving at an AI that is mid-swing: the dive plays its whole clip and the AI is knocked down;
-   (b) a hit landing on the press update cancels the dive; (c) an AI Warrior next to the player's front-grab power
-   strike does not start an attack on the victim while 57 / 59 play (assert no attack command with that target).
-
-## Reactions: stun, knockdown and getting up {#reactions}
+Read in Ghidra: confirmed (code) where no other level is given; each runtime block says confirmed (runtime).
 
 `Human_PlayReaction` (`0x0026a6d0`) blends to the reaction in 1/30 s and rumbles the pad by strength (+1 raging).
 Confirmed (code):
@@ -344,12 +348,14 @@ mashing is measured in [Being hit](#being-hit-runtime).
 
 The victim can act again when its reaction clip ends (standing), its stun ends, or its rise ends.
 
-### Scripted knockdowns, stuns and hits {#scripted-knockdowns}
+#### Scripted knockdowns, stuns and hits {#scripted-knockdowns}
+
+Read in Ghidra: confirmed (code) where no other level is given; each runtime block says confirmed (runtime).
 
 What the script bindings `HuMakeGrounded`, `HuMakeBeatUp`, `HuSetStunned` and `HuSetDamage` do to a human
-([the bindings](../references/bindings/character.md#humakegrounded)). Confirmed (code) at the addresses; the runtime
-lines are from PCSX2 2.9.94, 2026-10-12, a copy of slot 6, the natives' functions called on PoizoCiv (brain held,
-`+0x09` = 1) through the `call-brains` hook, with `anim-dispatch`.
+([the bindings](../references/bindings/character.md#humakegrounded)). The runtime lines are from PCSX2 2.9.94, a copy of
+slot 6, the natives' functions called on PoizoCiv (brain held, `+0x09` = 1) through the `call-brains` hook, with
+`anim-dispatch`.
 
 - **The script's knockdown lies down at once in 196.** `Human_MakeGrounded` (`0x00234e58`, with true) and
   `Human_MakeBeatUp` (`0x00234d70`) call `Human_KnockDown` (`0x0022f100`) with no attacker and no stun, which pushes
@@ -375,7 +381,7 @@ lines are from PCSX2 2.9.94, 2026-10-12, a copy of slot 6, the natives' function
   `HuMakeGrounded(true)` also writes the state code (record `+0x14`) 3, but at runtime it read 0 from the next update.
 - **`HuSetStunned`'s stun-immune bit is `0x100`**, the same bit as a hit's stun and `HuSetUnstunnable`: `Human_Stun`
   (`0x0022f658`) returns at once when the byte at human `+0xe1` has bit **0** (`lbu` at `0x0022f68c` / `0x0022f6c8`,
-  then `andi 1`), which is flag word bit `0x100`. The binding page's "bit 1" was wrong. The endless-stun flag
+  then `andi 1`), which is flag word bit `0x100`. The endless-stun flag
   `0x8000000` (`HuSetManualStun`) skips the test, and only when there is no attacker, as for `HuSetStunned`.
   Confirmed (runtime): with `0x100` set, `HuSetStunned(true)` changed nothing; with it cleared, the human was stunned
   at once (355, 356, state `0x100000`, movement style 14) for 750 ms (the class stun time; 23 updates), then 357.
@@ -393,13 +399,15 @@ lines are from PCSX2 2.9.94, 2026-10-12, a copy of slot 6, the natives' function
   `0x002689b0`) and `HitReact_WhileGrabbing` (`0x00268fa0`, `0x00268fbc`, `0x00269024`): for a third party's hit on a
   pair holding `0x2000` (or a grabbed victim with flag `0x200`), a value of 2 or more plays the heavier paired
   reaction (`0x7d` / `0x87` instead of `0x7b` / `0x85`). Confirmed (code). So a scripted hit always reacts unless the
-  usual held flags, flag `0x800` or a block stop it ([Moves a hit cannot stop](#protected-moves)). (The record table
-  above calls `+0x11a` "whether the hit may cause a reaction"; by these readers it is a hit weight for paired
-  reactions.)
+  usual held flags, flag `0x800` or a block stop it ([Moves a hit cannot stop](#protected-moves)). By these readers
+  `+0x11a` is a hit weight for paired reactions; its writer `Strike_Contact` is on [Other record
+  fields](combat/index.md#record-fields).
 
-## Down and under attack: getting up and countering {#ground-escape}
+### Down and under attack: getting up and countering {#ground-escape}
 
-What a knocked-down human can do while someone attacks him on the ground (issue #231). There is **no dedicated
+Read in Ghidra: confirmed (code) where no other level is given; each runtime block says confirmed (runtime).
+
+What a knocked-down human can do while someone attacks him on the ground. There is **no dedicated
 "get-up attack" clip**: the escape is one of three routes, by what the attacker does. Runtime claims are confirmed
 (runtime) with PCSX2 2.9.94, scenarios `ground_kicked`, `ground_kicked_mash`, `ground_mounted_circle`,
 `ground_mounted_r1` and `ground_mounted_square` (a copy of slot 6; `PoizoCiv`, a puppet with 600 health and 400
@@ -459,7 +467,7 @@ Confirmed (code). A mounted human is state `0x800` instead, and the dispatcher s
   (kept through 199 until its end callback `Human_EndDownState` `0x0025e26c`) and the stun `0x100000` are outside
   its state mask `0x7bf9e877ff0`. So **only frames 11-13 count**. Confirmed (code); the frame-14 `0x25` being dead is
   inferred from the event order (`0x25` before `0x48` in the clip's list) and fits the runtime below.
-- **The window at runtime** (confirmed (runtime), PCSX2 2.9.94, 2026-10-13: `ground_rise_counter` and variants of it,
+- **The window at runtime** (confirmed (runtime), PCSX2 2.9.94: `ground_rise_counter` and variants of it,
   a copy of slot 6 as above with the second kick removed; square tapped at update 80 starts 199 on update 81, then one
   square or cross tap; k counts updates from 199's first, k = 0 at 81). 199 ran 28 updates (81-108) with no input
   after it, so it plays at about 0.75 speed, as 616 does. A square tapped at update t reached the record (command
@@ -490,8 +498,7 @@ Confirmed (code). A mounted human is state `0x800` instead, and the dispatcher s
 - **The AI.** An AI's Grounded goal (`0x17`, `0x002b4aa8`) queues kind 42 on itself about 1.9 s after going down while
   it is attacked ([AI](ai.md#fight-reactions)). `AttackKind_ToCommand` (`0x00231090`, table `0x0055c170`) makes kind
   42 the command `0xf` (square), so it is the AI's mash: one command, which cuts its ground time like a press
-  (inferred from the code; not seen at runtime). This corrects "a get-up attack" on [AI](ai.md#fight-reactions):
-  no attack clip starts from it.
+  (inferred from the code; not seen at runtime): no attack clip starts from it.
 
 **2. Mounted on the ground: struggle, break or reverse.** An attacker's circle at a knocked-down target that
 `Human_CanBeGrabbed` accepts (not holding `0x8fc57a60`, so not while the knockdown reaction plays) mounts him:
@@ -525,69 +532,12 @@ mount plays when something **outside** the pair breaks it (a teleport, a hit on 
 [Breaking a pair](combat-grabs.md#pair-break)): the victim plays 245 then 199. The escapes here are the victim's own and
 play 246 (the break) or 242 (the reversal) instead; none of them plays 199.
 
-**Coney today** (read 2026-10-11, the rise counter again 2026-10-13, `src/combat`, `src/human`, `src/ai`):
+### Knocked out, and the mission failing {#defeat}
 
-- The ground hit (195), the ground time and the mash's cut are built (`human/victim.*`, `Fighter` victim side).
-  Whether a press is counted while 303 or 195 still holds a flag (the original counts none) should be checked.
-- **Built (2026-10-13): the counter from the rise** (`Fighter::riseCounter` in `fighter_victim.cpp`, run in
-  `Fighter::update` while the player still reacts). 199 holds `0x8000` (`Victim::step`), so its `0x48` at frame 14
-  holds the recovery `0x40000` and refuses the window from there; the `0x25` events are read with the task stack's
-  frame rounding (`combat::eventBetween`, `anim::eventFrame`), which at 0.75 fires frames 11, 12 and 13 on k = 15,
-  16 and 17, none on k = 18 and frame 14 on k = 19: the runtime's edges. The duck's `0x25` (616) goes through the
-  same event dispatcher, so its window is read with the same rounding ([Reading the tables](combat-moves.md#reading)).
-  Tests: `repo:tests/human/rise_counter_test.cpp` (square at k = 15-17 plays 620 that update, the stun ends and the
-  attacker takes 50 and is knocked down; k = 9-14 and 18-24 nothing, he rises into 357; cross pressed at 14 counters
-  at 15 on its release; 618 to the right; no target, an AI, or the manual stun: nothing) and
-  `repo:tests/platform/disc_rise_counter_test.cpp` (the disc's 199 events and window; `level99` with a spawned
-  fighter beside the player, a square at k = 16 counters and one at 18 does not).
-- **Missing: the grounded mount.** `Mount_StartOnGrounded` is not built for anyone: circle at a downed human
-  neither mounts him (237-240 / 241) nor cuts a rise below 70 %.
-- **Missing: the mounted player's inputs.** No AI grabs, tackles or mounts yet ([Coney's
-  implementation](combat/index.md#coneys-implementation)), and `Player_UpdateTackled` is not built: no struggle 250
-  (power drain, 40 damage), no break 246 / 247, no reversal 242 / 243 into the player's own mount, and no escape when
-  the mounter's power runs out while mounting the player.
-- **Missing for the AI:** kind 14 (the grounded mount, command `0xe`) has a reach but no move behind it; kind 42 on
-  itself should be one command that cuts the AI's ground time (Coney calls it "the get-up attack").
-- A disc test: knock the player down with an AI, kick him (195), press square in 196 (he rises next update), press
-  square late in 199 (620 / 617-620 by side, the attacker knocked down); and an AI that mounts him from the ground,
-  circle until 246, then `S1` hits.
-
-**What an implementer needs for the rise's counter** (#231):
-
-1. **The rule, per clip, not per anim id.** On every update, the `0x25` events of the clip the human is playing that
-   pass this update open the counter when (a) the human is free to react: no held flag but `0x8000`, `0x1000`,
-   `0x80000` or `0x40000000` (so a clip that has reached its `0x48` recovery, held `0x40000`, refuses), and none of
-   the state flags in `0x7bf9e877ff0` (being down, `0x80000`, and stunned, `0x100000`, are allowed); (b) he is not
-   both stunned and flagged `0x8000000`; (c) a player's command that update is square (`0xf`, `0x11`, `0x15`) or cross
-   (`0x10`, `0x12`, `0x16`); an AI's comes from its goals, and a Grounded AI says no. Coney's
-   `combat::asksDuckCounter` already holds (c). For 199 this means the events of frames 11-13 (frame 14's is in the
-   same update as the `0x48` and is refused). **Test against the runtime window, k = 15-17 from 199's first update,
-   not against frames 11-13 through a 0.75 rate** (that gives k = 15-18, and k = 18 does nothing in the original;
-   199's exact rate is not known, see the runtime paragraph above).
-2. **Where it runs.** Before the down state's own update skips the dispatcher: in the original the `+0x14` = `0xe`
-   test comes before `Human_UpdateDown` and before the dispatcher, so being down (`0x80000`) does not stop it. In Coney
-   that means the counter check must run for a human in his rise even though `stepVictim` says he is reacting.
-3. **What it does.** The same as the duck's: the foe if within 1.25 × anim 617's far range, else the nearest human in
-   that range; end the rise clip and the stun; play 617-620 by the target's side (`combat::duckCounterClip`), with the
-   counter's own hit: 50 health points (the damage field of 617-620 in the generic set's
-   [Anim Range List](combat/index.md#damage-table), read from the disc), which knocked the puppet down at runtime. The counter
-   plays on the update the command arrives. Without a target nothing plays (the request lasts, as for the duck,
-   while the window is open).
-4. **Not for AI humans in their rise** (their Grounded goal says no).
-5. **Failing tests to write first.**
-    - Unit (`tests/human`): a player knocked down by a crushing hit, ground time over, rises with 199 at update R
-      (an attacker 0.8 m to his left). Square whose command lands at R + 15, R + 16 or R + 17 plays 620 that update,
-      clears the stun and hits the attacker; at R + 14 or R + 18 (and later) nothing plays and he rises into 356 /
-      357. The same with cross (`0x12` press, `0x10` release). Today all fail at the first case.
-    - Unit: the same for an AI human in 199 with its Grounded goal: no counter whatever its command.
-    - Disc (`tests/platform`): the clip mapped to anim 199 for the generic set carries `0x25` on frames 11-18 and
-      `0x48` on frame 14 (counts only), and Coney's window from it is k = 15-17 (the runtime edges).
-
-## Knocked out, and the mission failing {#defeat}
+Read in Ghidra: confirmed (code) where no other level is given; each runtime block says confirmed (runtime).
 
 **When health runs out** (inferred from what it does), `Human_OnHealthOut` (`0x002674c0`; from `0x00267a00`,
-`0x00267e48` and `Human_HandleMessage`) runs, unless state `0x1c00000000` is set. Confirmed (code) at the cited
-addresses:
+`0x00267e48` and `Human_HandleMessage`) runs, unless state `0x1c00000000` is set, in this order:
 
 1. It clears the state bits `0x208000800f` (stance, grabs, block), the action and the pending damage, and sets
    record `+0xf0` = now + 500 ms.
@@ -596,8 +546,8 @@ addresses:
    - **Without `0x4`**, a human that is not cuffed, has flag `0x8` and is not wounded already (`Human_IsWounded`,
      `0x00227d98`, state `0x10000`) is **wounded** (`Human_StartWounded`, `0x0022fa78`, which sets `0x10000`;
      confirmed (code)). It drops what it carries, leaves the radar and loses its icon.
-   - Any other human without `0x4` is **knocked out** (`Human_KnockOut`, `0x00230328`) and drops what it carries
-     ([Dropped when down](crimes.md#down-drop)).
+   - Any other human without `0x4` is **knocked out** (`Human_KnockOut`, `0x00230328`), drops what it carries
+     ([Dropped when down](crimes.md#down-drop)) and loses the wounded bit `0x10000`.
      It is **dead** instead (state `0x100000000`, record `+0xf0` = 0) when the source of the last hit (record `+0xd0`)
      is an object of kind 29.
    - **With `0x4`**: knocked out, with record `+0xf0` 14 s later still. Confirmed (runtime), `level80`: Vermin's
@@ -605,7 +555,7 @@ addresses:
 3. A cuffed human's idle becomes 323 `ANIM_ARRESTED_DEAD`.
 4. For a player, the players of the same gang who are knocked out get the same `+0xf0`.
 
-**`Human_KnockOut`**:
+**`Human_KnockOut`** does nothing to a human already knocked out (state `0x40000`); otherwise it:
 
 - sets record `+0xf0` = now + 14,000 ms (`0x00510794`, an s32 14000 in the executable; confirmed (code));
 - gives the push weight 1e9;
@@ -616,11 +566,15 @@ addresses:
   the brain call ([Who sets and clears it](#knocked-out-bit));
 - for a member of a player's gang outside Armies and Rumble levels, shows the **`dyn_cross`** icon over it
   (`Human_ShowOverheadIcon`, argument 3), the mark a partner revives with a flash
-  ([Crimes](crimes.md#triangle); inferred).
+  ([Crimes](crimes.md#triangle); inferred). The brain call and the icon are skipped when its second argument is
+  not 0;
+- clears the block bit `0x8000`.
 
 The flash clip 665 keeps a player alive ([Damage](#damage), step 4).
 
-### Who sets and clears the knocked-out bit {#knocked-out-bit}
+#### Who sets and clears the knocked-out bit {#knocked-out-bit}
+
+Read in Ghidra: confirmed (code) where no other level is given; each runtime block says confirmed (runtime).
 
 State `0x40000` is the record's state word (`+0x00`), which only `Human_SetStateFlag` (`0x002265d0`) and
 `Human_ClearStateFlag` (`0x00226620`) change bit by bit. Their 135 and 161 call sites were read for the mask they
@@ -677,7 +631,11 @@ updates, or a multiple of 420 when a camera saw him, then **dead** (`0x0` in the
 `0x80000000` run ended in anything but `0x10000` or `0x40000`. The 461 updates from 349 to deletion on
 [Rumble](rumble.md#gang-battle-results) are these 420 + 41.
 
-**The mission failing.** The engine decides this; `global.lua` does not. `GameState_CheckGameOver` (`0x004197a8`)
+#### The mission failing {#mission-failing}
+
+Read in Ghidra: confirmed (code) where no other level is given.
+
+The engine decides when a mission fails; `global.lua` does not. `GameState_CheckGameOver` (`0x004197a8`)
 runs every game-state update (`0x0041a370`), while three things hold:
 
 - the check is on (`EnableGameOverCheck`, game state `+0x155`,
@@ -724,7 +682,9 @@ labels](../references/text-labels.md#text-gstring-hud)).
 So the screen comes 180 updates (6 s at 30 updates a second, inferred) after the failure, with the reason set by the
 engine. `HUDLaunchMissionFailed` is only the scripts' own route.
 
-### Who can help {#defeat-helpers}
+#### Who can help {#defeat-helpers}
+
+Read in Ghidra: confirmed (code) where no other level is given.
 
 Both tests walk the 16 member slots (gang `+0x48`) of the gang passed in (player 1's) and skip empty slots and the
 downed player himself. Players count as members like anyone else. Confirmed (code):
@@ -754,246 +714,9 @@ So a stand-in that always finds a route never fails on the 4th try. The faithful
 the mesh (no area), when every free member is in an area off the graph, or when every route crosses a blocked edge (a
 link with a negative cost, `NavNode_IsLinkBlocked` `0x002510a8`).
 
-**In Coney** (`repo:src/warriors/game_over.h`, `PlayLevelMode::stepGameOver()`): the check runs each update in the
-order above, on at each level's start and switched by `EnableGameOverCheck`; a failure hides the HUD and, 180 updates
-later (10 once cross is newly pressed), opens the mission-failed mode with `GSTRING.HUD` 20 or 21 as its title.
-Stand-ins: a player at 0 health counts as knocked out and none as dead, no player frees himself from cuffs, the
-wait's `+0x414` never blocks it, a held member is one attached to his holder, and the route check is a route request
-(Coney has no blocked links, and a level without path data always finds a route); the failed camera, the tint, the
-blur, the music's fade and the `dyn_cross` icon are not built.
+### Hit blood {#hit-blood}
 
-## Being hit, at runtime {#being-hit-runtime}
-
-A puppet civilian (`PoizoCiv`, type 417, power class 2) attacked, blocked and grabbed the player (Rembrandt, 900
-health, power class 64) 1.0 m away at a chosen bearing, with `CfgAutoLockAndCombat` written to 0 so that the player
-did not turn to face it. Every value here is confirmed (runtime) unless marked; updates are 1/30 s.
-
-**Reactions.** Every hit played the reaction the [table](combat/index.md#hit-codes) gives for the attack's code and
-side, from all four sides, for `S1`, `X1`, `SS2`, `SX2`, `XS2`, `XX2`, `SSS3`, `SSX3` and the special 653 / 655; the
-civilian's own codes (its list differs from Rembrandt's: `SS2` `0x09`, `XX2` `0x26`, `XS2` `0x1b`, `SSX3` `0x2b`, `SSS3`
-`0x16`, 653 `0x39`) gave, front / victim's left / behind / victim's right:
-
-| Attack (code) | Front | Left | Behind | Right | Then |
-| --- | --- | --- | --- | --- | --- |
-| `S1` (`0x0a`) | 272 | 275 | 274 | 273 | idle |
-| `X1`, `SS2` (`0x09`) | 275 | 274 | 273 | 272 | idle |
-| `SX2` (`0x1a`, stun) | 280 | 283 | 282 | 281 | 357, idle |
-| `XS2` (`0x1b`, stun) | 281 | 280 | 283 | 282 | 357, idle |
-| `SSS3` (`0x16`, stun) | 276 | 279 | 278 | 277 | 357, idle |
-| `XX2` (`0x26`) | 288 | 291 | 290 | 289 | 196, 199 |
-| `SSX3` (`0x2b`) | 293 | 292 | | | 196, 199 |
-| 653 / 655 (`0x39`) | 303 | 302 | 301 | 300 | 196, 199, 356, 357 |
-
-`SSS3` stayed strength 1 on the player because he has flag `0x400`. The player's reaction starts on the attack's hit
-update (`S1` 2 updates after its start, `X1` 6, `SS2` 4, `SX2` 5, `XX2` 5, `SSS3` 5, `SSX3` 6, 653 25 for the
-civilian's clips).
-
-**Stun and ground time.** The player's stun is **200 ms** (`+0x100` = hit + 200): shorter than his reaction clips, so
-the stunned reactions went straight to 357 `STUNNED_EXIT` when the clip ended (0.9-1.2 s after the hit), with no
-356 loop. Knocked down, `+0x104` = hit + **2750 ms**; the player lay in 196 and rose with 199 **83 updates (2.77 s)
-after the hit** with no input. The crushing 653 also set the stun to the rise + 200 ms, so after 199 he stood in 356
-for 7 updates, then 357.
-
-**Mashing.** A press while still in the knockdown reaction (288) did nothing. Pressed while lying in 196 with about
-1.3 s left, one square press made him rise on the next update in 2 runs of 5, and about 13 updates later (when the
-time ran out, or at a second press) in the other 3: consistent with a cut of 2750 / 1, 2 or 3 ms per command (the
-cuts of 2750 and 1375 cover 1.3 s, 917 does not). Pressing every 4 updates from the hit got him up at the end of the
-reaction clip (update 63 instead of 107).
-
-**Hit armour.** The player pressed square (`S1`) and the civilian's `S1` hit him at chosen moments: in his wind-up
-(`+0x08` `0x1`) and in his chain window (`0x2`) the 14 damage landed but **no reaction played** and his attack went
-on (his `S1` still hit); in the attack's end (`0x4`) and before his clip started he played the reaction (274) and his
-attack was lost.
-
-**Damage taken** was the attacker's Anim Range List value with no reduction: 14 `S1`, 23 `X1`, 28 `SS2`, 37 `SX2` /
-`XS2`, 46 `XX2`, 42 `SSS3`, 51 `SSX3`, 50 or 70 for 653 / 655. At other times the same civilian dealt 18 `S1`, 27
-`X1` and 45 `SX2` / `XS2`: the **Anim Range List is shared** by the humans that use the same character data (record
-`+0x160` pointed to one list for `PoizoCiv`, `Civilians0`-`4` and Ash), and `AnimRange_ApplyClassDamage` writes each
-new human's class damage over it, so the newest human's class decides everyone's damage. With type 417
-(`PoizoCiv`, class values 27, 18, 54, 45, 45, 36, 63, 54 for indices 0-7) the list read 18 / 27; after a type 418-420
-civilian appeared (23, 14, 46, 37, 37, 28, 51, 42) it read 14 / 23. The class values of the humans in the street
-(`CfgChar` `+0xb8`, the [index → anim id](combat/index.md#damage-table) map):
-
-| Type | 0 `X1` | 1 `S1` | 2 `XX2` | 3 `SX2` | 4 `XS2` | 5 `SS2` | 6 `SSX3` | 7 `SSS3` | 16 653 | 24 grab strikes | 25 throws |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 417 `PoizoCiv` | 27 | 18 | 54 | 45 | 45 | 36 | 63 | 54 | 70 | 60 | 70 |
-| 418-420, 271, 272 civilians, bums | 23 | 14 | 46 | 37 | 37 | 28 | 51 | 42 | 50 | 20 | 30 |
-| 26 Vermin, 38 Ash | 23 | 15 | 46 | 38 | 38 | 31 | 53 | 46 | 69 | 50 | 57 |
-| 30 Rembrandt (before the 115 % scale) | 23 | 15 | 46 | 38 | 38 | 31 | 53 | 46 | 5 | 50 | 57 |
-
-**Blocking** (R1 held, the player's `0x8` pressed through the pad): the block started on the next update (606, state
-`0x8001`, no 605 seen) and **every blocked hit did 0 damage**, from every side. Light and medium hits played the block
-reactions of the [table](combat/index.md#block) by the reaction's direction: `S1` 608 front, 611 left, 610 behind; `X1`
-611, 610, 609; `SS2` 608 then 611; `SSS3` 612, 615, 614. The heavy and crushing ones (`SSX3`, 653 / 655) played **616
-`BLOCK_DODGE`** (a duck) about 4 updates before their hit, which then missed: `0x00261578` plays 616 (or 628 with weapon
-type 3 against weapon type 3) when the blocker's record `+0x14` is `0xd` (`0x00254e78`), confirmed (code); the
-attacker's anim event `0x24` sets `0xd` ([Block](combat/index.md#block)). The block reaction table at `0x00510898` holds
--1 in entries 0-3 and 12-15, so a modified strength of 3 (entry 0) would break the block (confirmed (code) at
-`0x002671a8`); no hit broke the player's block. The puppet civilian, blocking the player, ducked under `X1`, `XX2` and
-`XS2` (616) and blocked `S1`, `SS2`, `SSS3` and `SSX3`.
-
-**Rage gained by the player** (rage 0 and the hold timer reset before each combo; `S1` gains are 0 or 1):
-
-| Hit | `S1` | `X1` | `SS2` | `SX2` | `XS2` | `XX2` | `SSS3` (19 or 20) | `SSX3` | counter 76 | 104 in a grab |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Rage | 1 | 5 | 1 | 13 | 10 | 6 | 4 | 7 or 15 | 10 | 1 |
-| Blocked | 0 | | 0 | | | | 0 | 6 | | |
-
-Being hit gave the player no rage. Every gain set the hold timer to now + 5000 ms. A later run gave `S1` 1, `X1` 5,
-`XS2` 10, `SX2` 13 and `SSX3` 15 every time; the 7 is the halved gain ([Rage](combat-rage.md#rage)): `SSX3`'s two awards
-3 and 8 give 2 + 5 at a factor 0.72, and `S1`'s 1 gives 0.
-
-## A bat's hit: why the level34 Furies knock the player down {#bat-knockdown}
-
-Asked by issue #492: at `level34` checkpoint 5 (the park) the original's first Fury hits on a player standing still
-are knock-downs of 90 health; Coney's are small reactions of 18-54
-([Scripts: the level34 fix list](scripting.md#level34-fixes), item 14). The answer: **every park and fence Fury holds a
-`dyn_bat`**, so it fights with the bat's clips, and a bat's hit is the bat object touching the victim, which deals the
-bat's own damage and gives a heavy high reaction.
-
-**1. Where the bats come from: the scene.** The fourteen Furies (`ParkFury01`-`10`, `ParkFury14`, `FenceFury1`-`3`,
-character types 90-94) are made with no weapon. Every Fury's hand was empty at tick 1 of the polled run (confirmed
-(runtime), the polled run's hand poll); the five types' `CfgChar` weapon string (record `+0x18c`) read `none` and their
-power classes 5 (type 90) and 26 (the rest) over PINE in the first run, so `Human_Init` (`0x00218008`) puts nothing in
-their hands and the classes draw nothing either. Those `CfgChar` values are graded inferred: that read's output was not
-kept, and what still supports them is the empty hands at tick 1 and the 90 and 72 below, which fit floats 1.0 and 0.8.
-`gPlayCutScene` then binds them to `l34_c4`'s roles and binds fourteen `dyn_bat` objects (and `dyn_furies`) to its
-object slots with `SceneAddObject` (inferred: the calls were logged by Coney's interpreter running the original's
-chapter script, not traced in the original; the scene's fourteen `dyn_bat` and one `dyn_furies` props are the scene
-data's own list, on [Scenes](../references/scenes.md#scene-l34-c4)). At the scene's start each role's pick target is the
-slot its clip's first type-9 event names, and the event takes the object into the hand ([Scripts: the props go into
-hands by clip events](scripting.md#level80-arrest-fire), confirmed (code) at `0x0039d870`). At runtime every Fury's hand
-(human `+0x338`) went from Nil at tick 1 to a held object by tick 9, long before the scene's end, and still held it when
-the fight began (confirmed (runtime), PCSX2 2.9.94, two runs, below). That the object is a `dyn_bat` (`CfgObj` class
-`melee_weapon`, anim set 3, `+0x58` = 90) was read over PINE without a kept log, so it is inferred: the Furies then
-played set 3's bat clips, and every bat hit dealt 90 or 72. That the hand-over is the scene's type-9 event is inferred:
-the timing, the fourteen bound bats and the documented start agree, but the event values of `l34_c4`'s role clips were
-not read. The script's own `HuSetKeepWeapon(Fury, 1)` before `GoalFight` keeps the bat in hand when he is hit ([Dropping
-what is held](combat-rage.md#keep-weapon)).
-
-**2. What they swing.** With set 3 in hand an AI's square and cross play the bat's clips
-([A bat in hand](combat-throws.md#bat)): **501** `SWINGABLE_OBJECT_ATTACK_FROM_RUN` when he arrives at a run, **36**
-`BAT_COMBO_X1` or **34** (the bat's square swing) standing, and at a man on the ground either **37**
-`BAT_COMBO_GROUNDED_STRIKE_01` or the unarmed grounded strikes **193** / **194**, bat still in hand (35 was not seen;
-34 once, `ParkFury09` at step 1375, its hit on `ParkFury07` at step 1386). In the recorded run `ParkFury03` and
-`ParkFury10`, both holding bats, played 37 at steps 730, 762, 802 and 846 and 194 / 193 at steps 767, 811 and 838,
-and the 37s of steps 762 and 802 and all three 193 / 194 landed on `SceneRogue2` on the ground (hits at steps 775,
-781, 815, 825 and 850; rec1's `anim-dispatch`, `strike-contact` and `deal-damage` logs; human names by allocation
-order); in the polled run the downed player was hit the same way (below). What picks 37 or 193 / 194 was not found.
-Their Anim Range List entries on the disc ([chunk `0x45`](formats/animation.md#anim-range-list)), the same in the
-park Furies' character data (`fury_so1`-`4`, resource `312adcb1`), `fury_lt`'s and the player's (`warr_ve`): 501
-damage 20, hit code `0x2a`, flags `0x400`; 36 damage 130, `0x2a`; 37 damage 75, `0x0a`; 34 / 35 damage 10, `0x29` /
-`0x2b`; 193 / 194 damage 50, `0x0a`. Those are the disc's values, read with the chunk's layout (confirmed (code) at
-its readers) from `coney-tools extract`'s output; 44 of the 53 character data resources hold exactly these for these
-ids. That the Furies' lists at runtime (record `+0x160`) hold the same is inferred: a PINE read in the first run gave
-the same for 501 and 34-37 but its output was not kept, and the disc is corroboration, not a grade. The hit codes
-are supported by the reactions (292-295 from 501 and 36 fit `0x2a`, confirmed (runtime) below). The damages can be
-overwritten by the class when the human is made ([damage table](combat/index.md#damage-table)): 193 / 194 hold 50 on the
-disc but dealt 25 here (not traced). Code `0x2a` is a straight high **heavy** hit ([Hit codes](combat/index.md#hit-codes)).
-
-**3. The damage is the bat's, not the clip's.** None of the Furies' bat hits went through `Strike_Contact`
-(`0x0021b290`): its hook logged only unarmed and grounded strikes, while every bat hit came from
-`ThrownObject_HitHuman` (`0x00392b88`, the call returning at `0x00393158`). That path is the held object's own body
-touching the victim: `WorldObject_OnContact` (`0x00394050`) takes the object type's `CfgObj` u16 `+0x58` and, for an
-object in a hand, multiplies it by the holder's power-class first float (`Human_GetClassRecord` `0x00222b78`, table
-`0x006619a0` + class × `0x44`); `ThrownObject_HitHuman` negates it against a friend and passes it to
-`Human_DealDamage` (`0x0021d680`) with the holder as the attacker (confirmed (code)).
-
-`ThrownObject_HitHuman` serves thrown objects too, and between the friend test and `Human_DealDamage` it can still
-change the damage. Its cases, all confirmed (code) at `0x00392b88` (the fields' meanings are not traced unless
-named), with A the attacker it is given, O the object and V the victim:
-
-- No attacker: it plays the contact sound and returns with no damage.
-- A friend of the attacker (`Human_IsFriendly`): the damage is negated, and `Human_DealDamage`'s fifth argument is 0
-  instead of 1.
-- O's type has `CfgObj` byte `+0x86` = `0x24` and A's word `+0x1a8` is above 2: × 0.25.
-- O's type `+0x86` = `0x0b` and O's flags `+0x54` have `0x4000000` (the thrown knife: this case ends in
-  `Human_StickThrownKnife`): when the human at O `+0x11c` is set and V is that human's target or not his friend, the
-  damage is replaced by the type's `+0x58` (no class float), or by V's whole health when V's character type `+0xcc` is
-  `0x4f`; a hit with O `+0x11c` empty skips every case below.
-- The human at O `+0x11c` (empty: no case below applies): when his brain's type (brain `+0x4`) is 3 and V is of class 13
-  (`Human_IsClass13` `0x00223e20`), × 0.5 (confirmed (code)); then, when his signed byte `+0x1b0` is not −1, × 3 against
-  V of character type `0x77` or `0x78` and × 1.25 against `0x87`.
-
-None changed the damage in this fight (all 23 calls returning at `0x00393158` in the recorded run dealt 90, −90 or
-−72, `+0x58` × the class float or its negation, and the polled run's bat hits took 90 or 72), so for a Fury's bat on the
-player or a fellow Fury only the friend case
-applies; the other cases are for Coney's implementer of thrown objects and of other holders to take whole.
-
-So a Fury of power class 26 (float 1.0) deals **90** with any bat clip, 501, 34, 36 or 37 alike, and one of class 5
-(types 90, `ParkFury01` and `ParkFury14`, float 0.8) deals **72**; the clip's own damage (20, 10, 130, 75) is not used.
-Confirmed (runtime): every bat hit on the player in the recorded run took exactly 90, from 501, 36 and 37 (all from
-class 26 Furies), and `ParkFury14` (human `0x646510`, named by allocation order) dealt **−72** with 36 to
-`ParkFury10` at step 1339 (rec1's `deal-damage` log, return `0x00393158`), the class 5 figure measured directly.
-`ParkFury09`'s 34 (clip damage 10) dealt −90 to `ParkFury07` at step 1386 through the same return, a fourth bat clip
-whose own damage was ignored. A
-bat that touched a fellow Fury of class 26 dealt −90 (the friend case).
-
-**The 25s: grounded strikes without the bat.** The bat's contact is not every hit an armed Fury lands. His 193 / 194
-(above) go through `Strike_Contact` (return `0x0021b69c` into `Human_DealDamage`) and deal **25** each, the bat
-adding nothing (confirmed (runtime): rec1 steps 781, 825 and 850, `ParkFury10` and `ParkFury03` on `SceneRogue2`). In
-the polled run the player took 90, then 72 at +319 (while `ParkFury14` and `FenceFury1` were both in 501 within
-0.71 m), then 25 three times while he was down (updates 394, 486 and 582, each with 195 `GROUNDED_STRIKE_REACT`), and
-90 once more at update 446; the polled run read no clips at those three, so that they were 193 / 194 is inferred from
-the recorded run.
-
-This corrects [Objects in a hand](objects.md#held) item 3, which reads `Strike_Contact`'s weapon bonus (clip damage +
-`+0x58`, × the float) as a held weapon's damage: that code exists, but for these bat swings it did not run. Whether
-the player's own bat (64 with `dyn_bat_tuff`, [A bat in hand](combat-throws.md#bat)), the knife or the baton take the
-same contact path was not checked.
-
-**4. Why it knocks him down.** The reaction is chosen as for any hit, from the attacker's current clip's hit code and
-the side ([Hit codes](combat/index.md#hit-codes)): `0x2a` gives strength 2 (heavy), height 2 (high), so 292-295
-`ANIM_REACT_KNOCKDOWN_HIGH_*` by side, and those reactions knock down ([Reactions](#reactions)). 501 and 36 are not
-combo ids, so no strength step applies. A man already down gets the ground reactions (195, 196) from 37 and from
-193 / 194. Confirmed
-(runtime): every 501 or 36 hit on the standing player played 292, 293 or 295 (`Hit_PlayReaction` `0x0026b0a0`
-hooked), then 196 down and 199 rising; the reaction rule itself is confirmed (code) at `0x00266d00`.
-
-**At runtime** (confirmed (runtime), PCSX2 2.9.94, 2026-10-13: a copy of slot 7 (`level99`), `level34` checkpoint 5
-loaded through mode 8 as on [Scripts](scripting.md#level34-fixes) (level index 4 to `0x005e5db0`, checkpoint 5 to
-`W_GameState + 0x33a`, 3 to `+0x14c`), a state saved 9 ticks into the level once every Fury held his bat, then
-[`l34_furies_first_hits`](repo:research/traces/scenarios/l34_furies_first_hits.toml) recorded from it: no input, hooks
-`strike-contact`, `anim-dispatch`, `hit-reaction` and `deal-damage`; a second run polled the hands and clips over PINE).
-The scenario's `slot = 7` is that `level99` slot and measures the wrong level unless `--state` gives the level34
-state. In the recorded run the scene's end is step 697, the first `anim-dispatch` entry, when every human's clip is
-set at once (19 to 388, 3 to 704); the table's times are steps − 697:
-
-| After the scene's end (about) | Attacker, clip | Player | Health |
-| --- | --- | --- | --- |
-| +162 | | fight stance 359 | 1,170 |
-| +296 | `FenceFury1`, 501 | 292, then 196 down | 1,170 → 1,080 |
-| +486 | `ParkFury02`, 36; the next update `ParkFury03`, 36 | 295 (the second hit lands in it, no new reaction) | → 990 → 900 |
-| +569 | `ParkFury10`, 37 | 195 on the ground | → 810 |
-| +631 | `ParkFury10`, 36 | 292, then 196 | → 720 |
-
-In the second run (scene end read from `SubwayScene`) the first hit came at +310 from `FenceFury1` or `ParkFury02`,
-both in 501 within 2 m, with 293 and 90, then 72 (inferred `ParkFury14`'s, above) 9 updates later, and later the
-three 25s on the downed player (above). The issue's two
-runs (+276 and +294, 292 and 294) fit the same opening: a bat run attack on arrival.
-
-**Coney** (`level34`, `fix-furies-passive`'s measurements, [Scripts](scripting.md#level34-fixes) item 14): the Furies
-swing only unarmed clips (11, 12, 13, 15, 16 in its trace), because Coney gives a scene's bound props to no one: the
-fix is item 3 of [Scripts: the props go into hands by clip events](scripting.md#level80-arrest-fire) (set the pick
-target at the scene's start and take the object on the clip's type-9 event). With the bats in hand, Coney needs:
-
-1. The armed choice of clip for an AI with set 3: 501 on arrival at a run, 36 or 34 standing, and at a man down either 37
-   or the unarmed grounded strikes 193 / 194. Both choices are open: what makes an AI pick 34 or 36 (for the player
-   it is the square / cross split of [A bat in hand](combat-throws.md#bat)), and what picks 37 or 193 / 194.
-2. An AI's bat hit dealt as an object contact through `ThrownObject_HitHuman`'s rules: the bat type's `CfgObj` `+0x58`
-   × the holder's power-class first float (90 for a class 26 Fury with `dyn_bat`, 72 for class 5), not the clip's
-   damage; negative (no harm) against a friend; and the type, knife and victim cases listed in step 3 above, which did
-   not apply here but belong to the same function. Only `dyn_bat` in an AI's hand was measured; the knife, the baton
-   and the player's bat stay open.
-3. The 193 / 194 grounded strikes of an armed AI dealt through `Strike_Contact` as unarmed hits: 25, with no bat bonus.
-4. The reaction from the swing clip's hit code (`0x2a`: 292-295 and down; 195 for a man on the ground).
-5. Test (`tests/platform/disc_level34_furies_test.cpp`, checkpoint 5, no input): every Fury holds a `dyn_bat` once
-   `l34_c4` has started; the first hit on the player lands about 270-330 updates after the scene's end, deals 90 (or
-   72 from `ParkFury01` / `ParkFury14`) and plays one of 292-295 with the player then down; every later hit on the
-   standing player (501, 34 or 36) deals 90 or 72, and every hit on him while he is down deals 90 or 72 (37) or 25
-   (193 / 194).
-
-## Hit blood {#hit-blood}
+Read in Ghidra: confirmed (code) where no other level is given; each runtime block says confirmed (runtime).
 
 Blood comes from two places: every landed hit on a human asks for a **punch flash** whose blood count depends on
 the weapon and on how hurt the victim is, and the **reaction and kill clips** carry effect events that spawn blood
@@ -1074,24 +797,175 @@ every blob landed exactly once, 25 to 38 ticks after it was made, on the floor (
 landed again in the rest of the run. No `Human_SpawnHitEffect` call: the paired kill strikes nothing. Confirmed
 (runtime).
 
-## Coney's implementation
+## In Coney
 
 The damage and the reactions live in `repo:src/combat/reactions.h` (the hit code, the side, the reaction table, the
 block reactions), `repo:src/combat/meters.h` (health and the pending damage), `repo:src/human/victim.h` (the stun,
 the knockdown, the ground time, the rise and the mash) and `repo:src/human/fighter_victim.cpp` (the player hit, the
 lethal hit held back, the rise's counter); the mission failing is `repo:src/warriors/game_over.h`. [Combat: Coney's
-implementation](combat/index.md#coneys-implementation) says what each file does. What differs from the original is
-written beside each subject above: the held flags that stop an attack or a reaction ([Moves a hit cannot
-stop](#protected-moves), items 25 and 29), the ground escapes ([Down and under attack](#ground-escape)), the
-game-over check's stand-ins ([Who can help](#defeat-helpers)) and the Furies' bats ([A bat's hit](#bat-knockdown)).
+implementation](combat/index.md#coneys-implementation) says what each file does, and [Combat: where Coney
+differs](combat-diffs.md) lists every difference in the fight. A bat's hit in Coney is on [Combat: throws, weapons in
+hand](combat-throws.md#bat-knockdown-coney).
+
+### Damage {#damage-coney}
+
+Coney quarters a fighter's strikes and grab strikes on class `0x80` when its brain is a Warrior's
+(`human::Fighter::quarteredFor`), as [Damage](#damage) reads it (re-read in Ghidra 2026-10-21).
+
+### Moves a hit cannot stop {#protected-moves-coney}
+
+From the user's checklist, items 25 (a dive cut short) and 29 (teammates attacking a finisher's victim):
+
+- **Built: no reaction under `0x1c16a40`** (`Fighter::takePending`, `combat::heldCancelsReaction()`): after the health
+  drops, a victim whose clip holds any of `0x1c16a40` plays no reaction and is not interrupted, so a charge into a human
+  takes the flung victim's 20 and plays on, as [at runtime](#charge-dive-runtime). Before it the charger fell (user
+  report, 2026-10-11). Coney's paired clips hold no `0x400000` yet, so a paired move's victim is not covered.
+- **Built: the lethal hit held back** (`Fighter::takePending`, `repo:src/human/fighter_victim.cpp`): out of health
+  while his clips hold any of `0xc12200`, a human plays no reaction and keeps his clip; on the first update the flags
+  are clear his dying reaction plays, so a tandem's defeated victim finishes his end clip first ([Coney's
+  tandem](combat-moves.md#tandem-coney)). **Coney's choice**: the dying reaction is the one his hit picks; the
+  knock-out with health 1 of [the run](#lethal-runtime) is not built.
+- **Missing: no attack on a busy target.** `ai::startGuardOf` (`src/ai/attack_views.cpp`) never sets
+  `StartGuard::targetHeldBusy` (the target's held `0xc08200`) or `targetPinned` (the partner exception), so teammates
+  and enemies still start attacks on a finisher's victim and on a diving player.
+- **Missing:** the player's grab search refusing a target holding `0x8fc57a60`, and the order of [When the order
+  matters](#protected-moves) (the pending damage applied before the human's own command, which a reaction drops).
+
+### Down and under attack {#ground-escape-coney}
+
+Read 2026-10-11, the rise counter 2026-10-13 (`src/combat`, `src/human`, `src/ai`; issue #231):
+
+- Built: the ground hit (195), the ground time and the mash's cut (`human/victim.*`). Whether a press counts while
+  303 or 195 still holds a flag (the original counts none) is not checked.
+- Built: the counter from the rise (`Fighter::riseCounter`, run in `Fighter::update` while the player still reacts).
+  199's `0x48` at frame 14 holds the recovery `0x40000` and closes the window, and the `0x25` events are read with the
+  task stack's frame rounding (`combat::eventBetween`, `anim::eventFrame`), which at 0.75 fires frames 11-13 on
+  k = 15-17: the runtime's edges, not frames 11-13 through a 0.75 rate. An AI in its rise does not counter. Tests:
+  `repo:tests/human/rise_counter_test.cpp` and `repo:tests/platform/disc_rise_counter_test.cpp`.
+- Missing: the grounded mount (`Mount_StartOnGrounded`) and the mounted player's inputs (`Player_UpdateTackled`: the
+  struggle, the break, the reversal, the escape when the mounter's power runs out). Kind 14 has a reach but no move,
+  and kind 42 on an AI himself is called "the get-up attack" where it should be one command that cuts his ground time.
+
+### The mission failing {#game-over-coney}
+
+`repo:src/warriors/game_over.h`, `PlayLevelMode::stepGameOver()`: the check runs each update in the order of [The
+mission failing](#mission-failing), on at each level's start and switched by `EnableGameOverCheck`; a failure hides the
+HUD and, 180 updates later (10 once cross is newly pressed), opens the mission-failed mode with `GSTRING.HUD` 20 or 21
+as its title. Stand-ins: a player at 0 health counts as knocked out and none as dead, no player frees himself from
+cuffs, the wait's `+0x414` never blocks it, a held member is one attached to his holder, and the route check is a route
+request (Coney has no blocked links, and a level without path data always finds a route); the failed camera, the tint,
+the blur, the music's fade and the `dyn_cross` icon are not built.
 
 ## Open questions
 
-- Which code sets state `0x800000` on a lethal hit, and what plays the death once a paired clip ends ([Moves a hit
-  cannot stop](#protected-moves)).
-- Whether a tackled victim carries state `0x10000`, which the original's "free to help" test reads as wounded
-  (`Human_IsWounded`); Coney's game-over stand-in counts a held member instead ([Who can help](#defeat-helpers)).
-- The rise 199's exact play rate (about 0.75-0.78 from the measured edges, [Down and under attack](#ground-escape)).
-- What makes an armed AI pick 34 or 36, and 37 or 193 / 194 at a man down ([A bat's hit](#bat-knockdown)).
-- Whether a tackled victim is ever knocked out when `Tackle_OnVictimRiseEnd` fires ([Who sets and clears the
-  knocked-out bit](#knocked-out-bit)).
+- **Who first sets the dying state**{#q-lethal-state}: which code sets state `0x80000000` on a lethal hit before
+  `Human_PlayLethalReaction` runs (inferred: the damage message, human vtable `+0x44`), and what sets `0x800000`
+  ([Moves a hit cannot stop](#protected-moves)). A watch on the record's state word during [the
+  run](#lethal-runtime) would name the writer.
+- **A tackled victim's wounded bit**{#q-tackled-wounded}: whether a tackled victim carries state `0x10000`, which the
+  original's "free to help" test reads as wounded (`Human_IsWounded`); Coney's game-over stand-in counts a held member
+  instead ([Who can help](#defeat-helpers)). A read of the state word during a tackle would tell.
+- **The rise's play rate**{#q-rise-rate}: 199's exact rate (about 0.75-0.78 from the measured edges, [Down and under
+  attack](#ground-escape)); the window's edges are known without it. Found from the clip's speed field or the task's
+  rate in memory.
+- **A knocked-out tackled victim**{#q-tackle-knockout}: whether a tackled victim is ever knocked out when
+  `Tackle_OnVictimRiseEnd` fires ([Who sets and clears the knocked-out bit](#knocked-out-bit)). A breakpoint on the
+  hook with the state word read would tell.
+
+## How this was checked
+
+The code claims were read in Ghidra on `SLUS_212.15` (NTSC-U); the clip events and the Anim Range List values were read
+from the disc's character data (numbers only). The runtime claims were read with PCSX2 2.9.94 over PINE, before run
+records existed, so none of them has one:
+
+- **Damage**, **Reactions** and **Being hit** (below): a copy of slot 6 with the puppet civilian `PoizoCiv`, driven
+  with the scripted pad.
+- **A lethal hit during a paired move** and **A charge or a dive**: the setups are beside the runs; the second run of
+  the charge and the fall that explains the first were made on 2026-10-12, with the scratch probes `walkout` and
+  `charge1`.
+- **Scripted knockdowns**: 2026-10-12, the natives' functions called through the `call-brains` hook.
+- **Down and under attack**: scenarios `ground_kicked`, `ground_kicked_mash`, `ground_mounted_*` and, on 2026-10-13,
+  `ground_rise_counter` and its variants.
+- **Knocked out in a Rumble brawl**: the hook recordings of [Rumble](rumble.md#gang-battle-results).
+- **Hit blood**: scenario `blood_knife_grab`, the knife grab kill with call hooks on the functions named.
+
+### Being hit, at runtime {#being-hit-runtime}
+
+A puppet civilian (`PoizoCiv`, type 417, power class 2) attacked, blocked and grabbed the player (Rembrandt, 900
+health, power class 64) 1.0 m away at a chosen bearing, with `CfgAutoLockAndCombat` written to 0 so that the player
+did not turn to face it. Every value here is confirmed (runtime) unless marked; updates are 1/30 s.
+
+**Reactions.** Every hit played the reaction the [table](combat/index.md#hit-codes) gives for the attack's code and
+side, from all four sides, for `S1`, `X1`, `SS2`, `SX2`, `XS2`, `XX2`, `SSS3`, `SSX3` and the special 653 / 655; the
+civilian's own codes (its list differs from Rembrandt's: `SS2` `0x09`, `XX2` `0x26`, `XS2` `0x1b`, `SSX3` `0x2b`, `SSS3`
+`0x16`, 653 `0x39`) gave, front / victim's left / behind / victim's right:
+
+| Attack (code) | Front | Left | Behind | Right | Then |
+| --- | --- | --- | --- | --- | --- |
+| `S1` (`0x0a`) | 272 | 275 | 274 | 273 | idle |
+| `X1`, `SS2` (`0x09`) | 275 | 274 | 273 | 272 | idle |
+| `SX2` (`0x1a`, stun) | 280 | 283 | 282 | 281 | 357, idle |
+| `XS2` (`0x1b`, stun) | 281 | 280 | 283 | 282 | 357, idle |
+| `SSS3` (`0x16`, stun) | 276 | 279 | 278 | 277 | 357, idle |
+| `XX2` (`0x26`) | 288 | 291 | 290 | 289 | 196, 199 |
+| `SSX3` (`0x2b`) | 293 | 292 | | | 196, 199 |
+| 653 / 655 (`0x39`) | 303 | 302 | 301 | 300 | 196, 199, 356, 357 |
+
+`SSS3` stayed strength 1 on the player because he has flag `0x400`. The player's reaction starts on the attack's hit
+update (`S1` 2 updates after its start, `X1` 6, `SS2` 4, `SX2` 5, `XX2` 5, `SSS3` 5, `SSX3` 6, 653 25 for the
+civilian's clips).
+
+**Stun and ground time.** The player's stun is **200 ms** (`+0x100` = hit + 200): shorter than his reaction clips, so
+the stunned reactions went straight to 357 `STUNNED_EXIT` when the clip ended (0.9-1.2 s after the hit), with no
+356 loop. Knocked down, `+0x104` = hit + **2750 ms**; the player lay in 196 and rose with 199 **83 updates (2.77 s)
+after the hit** with no input. The crushing 653 also set the stun to the rise + 200 ms, so after 199 he stood in 356
+for 7 updates, then 357.
+
+**Mashing.** A press while still in the knockdown reaction (288) did nothing. Pressed while lying in 196 with about
+1.3 s left, one square press made him rise on the next update in 2 runs of 5, and about 13 updates later (when the
+time ran out, or at a second press) in the other 3: consistent with a cut of 2750 / 1, 2 or 3 ms per command (the
+cuts of 2750 and 1375 cover 1.3 s, 917 does not). Pressing every 4 updates from the hit got him up at the end of the
+reaction clip (update 63 instead of 107).
+
+**Hit armour.** The player pressed square (`S1`) and the civilian's `S1` hit him at chosen moments: in his wind-up
+(`+0x08` `0x1`) and in his chain window (`0x2`) the 14 damage landed but **no reaction played** and his attack went
+on (his `S1` still hit); in the attack's end (`0x4`) and before his clip started he played the reaction (274) and his
+attack was lost.
+
+**Damage taken** was the attacker's Anim Range List value with no reduction: 14 `S1`, 23 `X1`, 28 `SS2`, 37 `SX2` /
+`XS2`, 46 `XX2`, 42 `SSS3`, 51 `SSX3`, 50 or 70 for 653 / 655. At other times the same civilian dealt 18 `S1`, 27
+`X1` and 45 `SX2` / `XS2`: the **Anim Range List is shared** by the humans that use the same character data (record
+`+0x160` pointed to one list for `PoizoCiv`, `Civilians0`-`4` and Ash), and `AnimRange_ApplyClassDamage` writes each
+new human's class damage over it, so the newest human's class decides everyone's damage. With type 417
+(`PoizoCiv`, class values 27, 18, 54, 45, 45, 36, 63, 54 for indices 0-7) the list read 18 / 27; after a type 418-420
+civilian appeared (23, 14, 46, 37, 37, 28, 51, 42) it read 14 / 23. The class values of the humans in the street
+(`CfgChar` `+0xb8`, the [index → anim id](combat/index.md#damage-table) map):
+
+| Type | 0 `X1` | 1 `S1` | 2 `XX2` | 3 `SX2` | 4 `XS2` | 5 `SS2` | 6 `SSX3` | 7 `SSS3` | 16 653 | 24 grab strikes | 25 throws |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 417 `PoizoCiv` | 27 | 18 | 54 | 45 | 45 | 36 | 63 | 54 | 70 | 60 | 70 |
+| 418-420, 271, 272 civilians, bums | 23 | 14 | 46 | 37 | 37 | 28 | 51 | 42 | 50 | 20 | 30 |
+| 26 Vermin, 38 Ash | 23 | 15 | 46 | 38 | 38 | 31 | 53 | 46 | 69 | 50 | 57 |
+| 30 Rembrandt (before the 115 % scale) | 23 | 15 | 46 | 38 | 38 | 31 | 53 | 46 | 5 | 50 | 57 |
+
+**Blocking** (R1 held, the player's `0x8` pressed through the pad): the block started on the next update (606, state
+`0x8001`, no 605 seen) and **every blocked hit did 0 damage**, from every side. Light and medium hits played the block
+reactions of the [table](combat/index.md#block) by the reaction's direction: `S1` 608 front, 611 left, 610 behind; `X1`
+611, 610, 609; `SS2` 608 then 611; `SSS3` 612, 615, 614. The heavy and crushing ones (`SSX3`, 653 / 655) played **616
+`BLOCK_DODGE`** (a duck) about 4 updates before their hit, which then missed: `0x00261578` plays 616 (or 628 with weapon
+type 3 against weapon type 3) when the blocker's record `+0x14` is `0xd` (`0x00254e78`), confirmed (code); the
+attacker's anim event `0x24` sets `0xd` ([Block](combat/index.md#block)). The block reaction table at `0x00510898` holds
+-1 in entries 0-3 and 12-15, so a modified strength of 3 (entry 0) would break the block (confirmed (code) at
+`0x002671a8`); no hit broke the player's block. The puppet civilian, blocking the player, ducked under `X1`, `XX2` and
+`XS2` (616) and blocked `S1`, `SS2`, `SSS3` and `SSX3`.
+
+**Rage gained by the player** (rage 0 and the hold timer reset before each combo; `S1` gains are 0 or 1):
+
+| Hit | `S1` | `X1` | `SS2` | `SX2` | `XS2` | `XX2` | `SSS3` (19 or 20) | `SSX3` | counter 76 | 104 in a grab |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Rage | 1 | 5 | 1 | 13 | 10 | 6 | 4 | 7 or 15 | 10 | 1 |
+| Blocked | 0 | | 0 | | | | 0 | 6 | | |
+
+Being hit gave the player no rage. Every gain set the hold timer to now + 5000 ms. A later run gave `S1` 1, `X1` 5,
+`XS2` 10, `SX2` 13 and `SSX3` 15 every time; the 7 is the halved gain ([Rage](combat-rage.md#rage)): `SSX3`'s two awards
+3 and 8 give 2 + 5 at a factor 0.72, and `S1`'s 1 gives 0.

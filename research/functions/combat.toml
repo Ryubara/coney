@@ -30,7 +30,7 @@ status = "legacy"
 [[function]]
 address = 0x00158728
 name = "Gm_Level_Update"
-page = "combat-reactions.md#knocked-out-bit"
+page = "combat-reactions.md#mission-failing"
 role = "the mission failing and the hand-off to its screen"
 level = "confirmed-code"
 coney = "src/camera/cameras.h:Cameras::startFailed"
