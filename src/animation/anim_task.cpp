@@ -298,6 +298,7 @@ void AnimTaskStack::fireEvents(AnimTask& task, const AnimClip& clip, float befor
         const bool passed = wrapped ? (frame > from || frame <= to) : (frame > from && frame <= to);
         if (passed) {
             applyHeldFlagEvent(event.type, task, m_flags);
+            m_fired.push_back(event);
             if (m_keepEvents) {
                 m_events.push_back(event);
             }
@@ -341,6 +342,7 @@ void AnimTaskStack::change(std::unique_ptr<AnimTask> task, float fadeSeconds, st
 void AnimTaskStack::advance(float seconds) {
     // Every task advances, the outgoing ones too; the newest task's clip fires its events as their frames pass; a
     // finished clip-then-next task gives back its bits and gives way to its next task, which starts.
+    m_fired.clear();
     for (std::size_t i = 0; i < m_layers.size(); ++i) {
         Layer& layer = m_layers[i];
         // A task with its events muted (task flag 0x10) fires none.

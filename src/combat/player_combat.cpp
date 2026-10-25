@@ -13,10 +13,8 @@ PlayerCombat::PlayerCombat(const AnimRangeList* ranges, std::uint64_t startMs, s
 CombatOutput PlayerCombat::update(const CombatInput& input, const CombatTuning& tuning) {
     CombatOutput out;
 
-    // The meters run every update: power drains while holding someone (but not in rage) and refills otherwise; rage
-    // drains in rage and decays after a gain's hold.
-    const bool holding = m_mode == CombatMode::Grabbing || m_mode == CombatMode::Tackling;
-    m_power.update(input.nowMs, holding && !m_rage.raging(), tuning.powerDrainPerSecond);
+    // The meters run every update: power by updatePower(); rage drains in rage and decays after a gain's hold.
+    updatePower(input, tuning);
     m_rage.update(input.nowMs);
     if (input.helpless) {
         return out;
@@ -47,7 +45,7 @@ CombatOutput PlayerCombat::update(const CombatInput& input, const CombatTuning& 
     }
     if (dropped) {
         // The meters still end a grab whose power ran out (Human_UpdateMeters, not the dispatcher).
-        if (m_mode == CombatMode::Grabbing && m_power.value() == 0) {
+        if (holdsVictim() && m_power.value() == 0) {
             updateGrabbing(input, tuning, out);
         }
         return out;
@@ -85,6 +83,16 @@ CombatOutput PlayerCombat::update(const CombatInput& input, const CombatTuning& 
         break;
     }
     return out;
+}
+
+void PlayerCombat::updatePower(const CombatInput& input, const CombatTuning& tuning) {
+    // The grab's power move: neither the drain (no longer grabbing) nor the refill (paired, state 0x1000) runs.
+    if (m_mode == CombatMode::Grabbing && m_powerMove != anim_id::kNone) {
+        m_power.hold(input.nowMs);
+        return;
+    }
+    const bool holding = holdsVictim() || m_mode == CombatMode::Tackling;
+    m_power.update(input.nowMs, holding && !m_rage.raging(), tuning.powerDrainPerSecond);
 }
 
 void PlayerCombat::startTheft(TheftKind kind, std::uint64_t nowMs, float stageTurns, float mashFactor) {
@@ -131,6 +139,7 @@ void PlayerCombat::startHolding() {
     m_chain.cancel();
     m_blocking = false;
     m_mode = CombatMode::Grabbing;
+    m_powerMove = anim_id::kNone;
 }
 
 bool PlayerCombat::updateBlock(const CombatInput& input, CombatOutput& out) {
@@ -186,8 +195,8 @@ bool PlayerCombat::extendPowerMove(const CombatInput& input, const CombatTuning&
 }
 
 void PlayerCombat::updateGrabbing(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out) {
-    // The grab breaks when the power meter runs out.
-    if (m_power.value() == 0) {
+    // The grab breaks when the power meter runs out, but not in its power move, which holds no one any more.
+    if (holdsVictim() && m_power.value() == 0) {
         m_chain.cancel();
         out.grabAction = GrabAction::LetGo;
         out.startAnim = anim_id::kGrabLetGo;

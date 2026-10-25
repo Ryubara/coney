@@ -1,0 +1,39 @@
+version = 1
+id = "r-20261025-power-move-meter"
+date = "2026-10-25"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "9035feda00531888f76e4a857ea5ba16e4071d378f4290ed223e1dba3f92c645"
+
+[who]
+agent = "aae3ab6f088b3852b"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = ""
+method = "PoizoCiv teleported 1.0 m in front of the player and grabbed with circle (hold 82); emulation paused, the power meter (record +0x148) written to 110; cross held from frame 0, square added at frames 4-7, cross alone to frame 14, then released (pad bytes 0x005de3aa); the player's anim id (record +0x20) and power read after the press, 30 frames later and 90 frames later, stepped with frame advance"
+
+[values]
+power_set = 110
+power_after_strike = 9
+anim_after_strike = 57
+power_30_frames_into_57 = 9
+anim_30_frames_into_57 = 57
+anim_90_frames_later = 358
+power_90_frames_later = 21
+
+[addresses]
+player_record = 0x0065a840
+pad_buttons = 0x005de3aa
+Human_UpdateMeters = 0x002562d0
+Grab_BreakOnHit = 0x0022b960

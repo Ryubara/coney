@@ -150,6 +150,21 @@ class PlayerCombat {
     [[nodiscard]] int powerMove() const { return m_powerMove; }
 
   private:
+    // Whether it holds its victim in a grab: grabbing, and not in the grab's power move. The power strike ends the grab
+    // and makes the two a paired move (`Grab_BreakOnHit` clears the grab's states 0xc0 / 0x30 and sets the paired
+    // 0x1000 / 0x2000), and the meters drain a grab's power and let go on an empty meter only while grabbing
+    // (`Human_UpdateMeters`), so the power move and its extensions play out whatever power is left
+    // (docs/research/slow-motion.md#power-move); the meter does not refill there either (updatePower()).
+    // @orig 0x0022b960 Grab_BreakOnHit (unknown)
+    // @orig 0x002562d0 Human_UpdateMeters (unknown)
+    [[nodiscard]] bool holdsVictim() const { return m_mode == CombatMode::Grabbing && m_powerMove == anim_id::kNone; }
+    // Runs the power meter for this update. What it ports of the refill is the paired attacker's hold: in the grab's
+    // power move the attacker is a paired move's (state 0x1000, which the refill skips, and no longer grabbing, which
+    // the drain needs), so the meter is held, its time moving on (docs/research/slow-motion.md#power-move). Otherwise
+    // it drains while it holds someone (holdsVictim(), or a tackle) and not in rage, and refills; the refill's other
+    // stops (the other no-refill states, a sprint, a run, held flags) are not ported (#719).
+    // @orig 0x00256a60 Human_UpdateDown (unknown)
+    void updatePower(const CombatInput& input, const CombatTuning& tuning);
     // The record's +0x08 for this update.
     [[nodiscard]] static std::uint32_t phaseFlags(const CombatInput& input) { return input.phase; }
     // R1 held in a fight, or L1 released or L1 + R1 short of full rage while blocking: the block. Returns true when

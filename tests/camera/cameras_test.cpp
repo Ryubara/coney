@@ -380,6 +380,20 @@ TEST_CASE("slow motion's events set the characters' step to the factor of 1/30 s
     CHECK(slow.stepSeconds() == Approx(1.0F / 30.0F));
 }
 
+TEST_CASE("leaving normal mode turns slow motion off for every player and ends a script's", "[camera]") {
+    // Expected: docs/research/slow-motion.md#off, confirmed (code) (`Human_ResetForMode`).
+    SlowMotion slow;
+    slow.event(SlowMotion::kEventOn, 0);
+    slow.event(SlowMotion::kEventOn, 1);
+    slow.reset();
+    CHECK_FALSE(slow.active());
+    CHECK(slow.stepSeconds() == SlowMotion::kNormalStep);
+    // A script's slowed step goes back to 1/30 s too.
+    slow.setScripted(0.5F);
+    slow.reset();
+    CHECK(slow.stepSeconds() == SlowMotion::kNormalStep);
+}
+
 TEST_CASE("CamSetupFollow and CfgFollowCamera made before the player exists apply when his camera is attached",
           "[camera]") {
     Cameras cameras;

@@ -472,6 +472,44 @@ TEST_CASE("a clip's action event (0x41) is reported in the update that passes it
     CHECK(firedAt <= 20);
 }
 
+TEST_CASE("a slow-motion event on a clip's last frame is reported in the update that hands the clip over", "[human]") {
+    // Expected: docs/research/slow-motion.md#events, confirmed (code): the events of the clip the update passes fire
+    // up to its end when it hands over to the next task, and slow motion is switched by the ones that fire
+    // (`Anim_FireFrameEvents`), not by the next task's clip.
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 40.0F, 0.0F});
+    human.step(stick(0.0F, 0.0F), mesh.get());
+    // 10 frames at rate 1: on at frame 2, off on frame 10, the update that ends it and gives way to the idle.
+    coney::anim::AnimClip clip;
+    clip.duration = 10.0F / 30.0F;
+    clip.events.push_back(coney::anim::ClipEvent{.frame = 2, .type = 0x2e, .word = 0, .position = {}, .rotation = {}});
+    clip.events.push_back(coney::anim::ClipEvent{.frame = 10, .type = 0x2f, .word = 0, .position = {}, .rotation = {}});
+    human.playScripted(clip, 665, 1.0F, 0.0F, coney::human::HeldFlags{});
+    std::vector<std::uint16_t> events;
+    for (int update = 1; update <= 20; ++update) {
+        human.step(stick(0.0F, 0.0F), mesh.get());
+        if (const std::optional<std::uint16_t> event = human.slowMotionEvent()) {
+            events.push_back(*event);
+        }
+    }
+    CHECK(events == std::vector<std::uint16_t>{0x2e, 0x2f});
+}
+
+TEST_CASE("leaving normal mode by the script or a scene's bind is handed on once to end slow motion", "[human]") {
+    // Expected: docs/research/slow-motion.md#off, confirmed (code) (`Human_ResetForMode`, whatever its
+    // argument).
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 40.0F, 0.0F});
+    CHECK_FALSE(human.takeSlowMotionReset());
+    human.setNormalMode(false);
+    CHECK(human.takeSlowMotionReset());
+    CHECK_FALSE(human.takeSlowMotionReset());
+    human.resetForJoin();
+    CHECK(human.takeSlowMotionReset());
+}
+
 TEST_CASE("a human's power meter, stamina, health and rage come from its fighter profile", "[human]") {
     const TestCharacter character;
     const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));

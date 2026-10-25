@@ -445,6 +445,15 @@ class Human final : public Holdable {
     /// The slow-motion event (type `0x2e` on, `0x2f` off) the clip playing passed in the last update, if any; the
     /// later of the two when both did (docs/research/camera.md#slow-motion).
     [[nodiscard]] std::optional<std::uint16_t> slowMotionEvent() const { return m_slowMotionEvent; }
+    /// Knocked out (its health run out, or `HuSetConscious(false)`): its player's slow motion goes off, as a clip's off
+    /// event does; takeSlowMotionEnd() hands it to the player (docs/research/slow-motion.md#off).
+    /// @orig 0x00230328 Human_KnockOut (unknown)
+    void endSlowMotion() { m_slowMotionEnd = true; }
+    /// Whether endSlowMotion() was called since the last call.
+    [[nodiscard]] bool takeSlowMotionEnd() { return std::exchange(m_slowMotionEnd, false); }
+    /// Whether it left normal mode (setNormalMode(), resetForJoin()) since the last call, which turns every player's
+    /// slow motion off (camera::SlowMotion::reset(), docs/research/slow-motion.md#off).
+    [[nodiscard]] bool takeSlowMotionReset() { return std::exchange(m_slowMotionReset, false); }
     /// The anim whose action event (type `0x41`, which `Anim_FireEvents` sends as message `0xc1`) the clip playing
     /// passed in the last update, if any: for 665 `SPECIAL_FLASH` the flash is used, for 666 the door ahead opens and
     /// for 668 the dealer's goal is served (docs/research/combat-rage.md#rage).
@@ -574,9 +583,9 @@ class Human final : public Holdable {
     /// (docs/research/scenes.md#join-reset): a throw's aim is cancelled, any pair it is in is broken (breakPair()) so
     /// that a grab or a paired move does not keep it out of the scene, a wound ends, then setNormalMode(true) ends a
     /// grab, a stun, its rage and a fall and stands it in its idle with at least 1 health, and last its carried prop
-    /// goes. Every other human's rage ends too, which is the caller's (endAllRage()). **Coney stand-in**: the steps for
-    /// what Coney does not model (fire, a mini-game, an overlay task, a held kind-`0x27` or `0x10` object, slow
-    /// motion, a climb's body, a picked object) are left out.
+    /// goes; the players' slow motion ends with setNormalMode() (takeSlowMotionReset()). Every other human's rage ends
+    /// too, which is the caller's (endAllRage()). **Coney stand-in**: the steps for what Coney does not model (fire, a
+    /// mini-game, an overlay task, a held kind-`0x27` or `0x10` object, a climb's body, a picked object) are left out.
     /// @orig 0x002325e0 Human_ResetForMode (unknown)
     void resetForJoin();
     /// `HuSetArrested`: arrested, the human stops where it is, its fighting ends and it loops 320
@@ -865,10 +874,11 @@ class Human final : public Holdable {
     // when it stands within twice the anim's reach.
     // @orig 0x00101dd8 Anim_FireEvents (unknown)
     void sendWarnings(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
-    // Notes a slow-motion event (0x2e or 0x2f) of the clip playing that this step's animation passed, as
-    // sendWarnings() finds a warning.
-    // @orig 0x00101dd8 Anim_FireEvents (unknown)
-    void noteSlowMotion(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
+    // Notes the slow-motion event (0x2e or 0x2f) this step's animation fired, the last when several did: from the
+    // events the task stack fired (anim::AnimTaskStack::firedEvents()), so a clip that hands over in the step counts
+    // up to its end, at the frames the held flags' events use (anim::eventFrame()).
+    // @orig 0x00101dd8 Anim_FireFrameEvents (unknown)
+    void noteSlowMotion();
     // Switches the strike shapes by the events of the clip playing that this step's animation passed (as the held
     // flags' events fire, anim::eventFrame()). **Coney choice**: when another clip takes the top before the one that
     // switched them on ends its window, they go off, as its own off event would have switched them.
@@ -929,6 +939,8 @@ class Human final : public Holdable {
     std::string m_logName;                          // setLogName()
     std::vector<anim::Vec3> m_announced;            // attacks announced since the brain last looked (event 0x10)
     std::optional<std::uint16_t> m_slowMotionEvent; // the last update's slow-motion event (0x2e / 0x2f)
+    bool m_slowMotionEnd = false;                   // endSlowMotion(), takeSlowMotionEnd()
+    bool m_slowMotionReset = false;                 // setNormalMode(), takeSlowMotionReset()
     std::optional<std::uint32_t> m_actionEvent;     // the anim whose action event (0x41) the last update passed
     float m_stepSeconds = kStepSeconds;             // the characters' step (slow motion shortens it)
     std::uint64_t m_updates = 0;                    // updates stepped: combat's game time

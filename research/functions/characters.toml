@@ -1831,10 +1831,25 @@ status = "legacy"
 address = 0x002562d0
 name = "Human_UpdateMeters"
 page = "characters.md#original-structure"
-role = "stamina drain while sprinting (and a second meter)"
+role = "stamina drain while sprinting, the rage drain, and the power meter's drain and empty-meter let-go only while grabbing or tackling ([The power move holds no one](slow-motion.md#power-move))"
 level = "confirmed-code"
 coney = "src/combat/meters.h:RageMeter::update"
 status = "legacy"
+
+[[function.gaps]]
+what = "the power meter's drain while blocking or ducking, and its stop in state 0x4000000"
+relation = "not-ported"
+issue = 719
+
+[[function.gaps]]
+what = "the empty-meter let-go's wait while the clips hold 0xc02201 and its tests of the victim"
+relation = "not-ported"
+issue = 719
+
+[[function.gaps]]
+what = "a tackler's get-off on an empty meter is not traced against Coney's mount"
+relation = "not-ported"
+issue = 684
 
 [[function]]
 address = 0x00256a60
@@ -1844,6 +1859,21 @@ role = "stamina refill (and the second meter)"
 level = "confirmed-code"
 coney = "src/human/stamina.h:Stamina::refill"
 status = "legacy"
+
+[[function.gaps]]
+what = "state 0x4000000 fills stamina and power"
+relation = "not-ported"
+issue = 719
+
+[[function.gaps]]
+what = "the power refill's stops while sprinting, running with the pad's button 1 held, in state 0x1c00000000 or while the clips hold 0x41a420"
+relation = "not-ported"
+issue = 719
+
+[[function.gaps]]
+what = "of the no-refill states 0x1c18003ff0 only the paired attacker's 0x1000 (PlayerCombat::updatePower) and the grab's drain are ported"
+relation = "not-ported"
+issue = 719
 
 [[function]]
 address = 0x002570e8

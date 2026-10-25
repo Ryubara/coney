@@ -119,6 +119,9 @@ class PowerMeter {
     /// by the refill rate, to the maximum. The fraction of a point is carried to the next update.
     /// **Coney choice**: the carried fraction restarts when the meter turns from refilling to draining or back.
     void update(std::uint64_t nowMs, bool draining, float drainPerSecond);
+    /// Moves the meter to game time `nowMs` with no change: neither drained nor refilled (a paired move's attacker,
+    /// docs/research/slow-motion.md#power-move). The carried fraction is kept.
+    void hold(std::uint64_t nowMs) { m_lastMs = nowMs; }
 
   private:
     int m_value;

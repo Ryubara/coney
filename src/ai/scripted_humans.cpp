@@ -190,9 +190,11 @@ void ScriptedHumans::setConscious(double human, bool conscious) {
             return;
         }
         out = !conscious;
-        // `Human_KnockOut` takes BLOCKHUMANS away; waking (`Human_WakeUp`) does not give it back.
+        // `Human_KnockOut` takes BLOCKHUMANS away and turns a player's slow motion off; waking (`Human_WakeUp`) does
+        // not give it back.
         if (!conscious) {
             brain.human().loseBlockHumans();
+            brain.human().endSlowMotion();
         }
         brain.setDead(!conscious);
     });

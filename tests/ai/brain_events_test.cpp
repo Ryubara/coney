@@ -115,6 +115,9 @@ TEST_CASE("a knocked-out attacker lets go of his target's slot and place and his
     attacker.human().fighter().health().set(0);
     scene.run(1);
     CHECK(attacker.knockedOut());
+    // His knock-out ends a player's slow motion (`Human_KnockOut`, docs/research/slow-motion.md#off), once.
+    CHECK(attacker.human().takeSlowMotionEnd());
+    CHECK_FALSE(attacker.human().takeSlowMotionEnd());
     CHECK(attacker.target() == nullptr);
     CHECK(attacker.goalCount() == 0);
     CHECK(attacker.enemies().empty());
