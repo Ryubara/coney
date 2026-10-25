@@ -242,7 +242,9 @@ def change_touches(root: Path, base: str, names: Iterable[str], similarity: int 
             diff = local_gate.run_command(
                 ["git", "-C", str(root), "diff", "-U0", detect, since, "--", old, name], root
             )[1]
-            lines = touched_lines(diff, posixpath.dirname(name), gone, resolves, posixpath.dirname(old))
+            lines = touched_lines(
+                diff, posixpath.dirname(name), gone, resolves, posixpath.dirname(old), _file_lines(root, name)
+            )
             touches[name] = Touch(lines, moved_from=old)
             continue
         code, _ = local_gate.run_command(["git", "-C", str(root), "cat-file", "-e", f"{since}:{name}"], root)
@@ -250,8 +252,14 @@ def change_touches(root: Path, base: str, names: Iterable[str], similarity: int 
             touches[name] = Touch(None, True)
             continue
         diff = local_gate.run_command(["git", "-C", str(root), "diff", "-U0", since, "--", name], root)[1]
-        touches[name] = Touch(touched_lines(diff, posixpath.dirname(name), gone, resolves))
+        lines = touched_lines(diff, posixpath.dirname(name), gone, resolves, None, _file_lines(root, name))
+        touches[name] = Touch(lines)
     return touches
+
+
+def _file_lines(root: Path, name: str) -> list[str]:
+    """The lines of the page `name` as the checkout holds it, which the diff of the change is read against."""
+    return (root / name).read_text(encoding="utf-8", errors="replace").splitlines()
 
 
 def _link_resolver(root: Path) -> Callable[[str, str], bool]:

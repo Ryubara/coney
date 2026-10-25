@@ -121,13 +121,13 @@ def test_the_lines_a_diff_touches_leave_out_the_link_rewrites() -> None:
 LINKS = "# Links\n\nSee [grabs](combat.md#grab) for the grab.\n\nSee [more](combat.md#grab) too.\n"
 
 
-def linked_checkout(tmp_path: Path) -> Path:
+def linked_checkout(tmp_path: Path, links: str = LINKS) -> Path:
     """`ai.md` listed as legacy, linking to `combat.md`, with `combat.md` moved to `combat/index.md` on the branch."""
     root = checkout(
         tmp_path,
         files={
             "docs/research/combat.md": page("Combat.\n\n" + "A fact about combat.\n\n" * 40, meta=""),
-            "docs/research/ai.md": LINKS,
+            "docs/research/ai.md": links,
             "docs/research/combat-grabs.md": "# Grabs\n\n## Grab {#grab}\n\nText.\n",
         },
     )
@@ -282,8 +282,152 @@ def test_a_line_break_that_is_structure_is_a_touch() -> None:
     assert hunk(["See [g](combat.md#grab).", "## Data"], ["See [g](combat-grabs.md#grab). ## Data"]) == {3}
     assert hunk(["See [g](combat.md#grab) - a note."], ["See [g](combat-grabs.md#grab)", "- a note."]) == {3, 4}
     # So do a blank line, a quotation, a table row and a code fence on either side.
-    for marker in ["", "> quoted", "| a | b |", "```", "1. first", "    code"]:
+    for marker in ["", "> quoted", "| a | b |", "```", "1. first"]:
         assert hunk(["See [g](combat.md#grab)", marker], ["See [g](combat-grabs.md#grab) " + marker.strip()]) == {3}
     # A rewrite on one list item, kept a list item, is no touch; a changed indent is.
     assert hunk(["- See [g](combat.md#grab)."], ["- See [g](combat-grabs.md#grab)."]) == frozenset()
     assert hunk(["  - See [g](combat.md#grab)."], ["- See [g](combat-grabs.md#grab)."]) == {3}
+
+
+# --- MkDocs block starts, a split link with an unchanged first line, a list item rewrap -------------------------------
+
+
+def test_a_mkdocs_block_start_joined_onto_a_link_line_is_a_touch() -> None:
+    def hunk(old: list[str], new: list[str]) -> frozenset[int]:
+        """The touched lines of one hunk at line 3 that turns `old` into `new`."""
+        header = f"@@ -3,{len(old)} +3,{len(new)} @@\n"
+        diff = header + "".join(f"-{line}\n" for line in old) + "".join(f"+{line}\n" for line in new)
+        return touched_lines(diff, FOLDER, GONE, resolves)
+
+    starts = [
+        "!!! note",
+        "??? tip",
+        "???+ tip",
+        "    !!! nested",
+        "===",
+        "---",
+        "<div>",
+        "</div>",
+        "<!-- comment -->",
+        "[^1]: a footnote",
+        "[ref]: https://example.org",
+        "{: .class }",
+        ": a definition",
+        '=== "Tab"',
+    ]
+    for marker in starts:
+        old, new = ["See [g](combat.md#grab)", marker], ["See [g](combat-grabs.md#grab) " + marker.strip()]
+        assert hunk(old, new) == {3}, marker
+    # Plain text on the next line is still a reflow.
+    assert hunk(["See [g](combat.md#grab)", "plain text"], ["See [g](combat-grabs.md#grab) plain text"]) == frozenset()
+
+
+FILE = ["# Links", "", "See [the long", "grabs](combat-grabs.md#grab) for it.", "", "Plain."]
+SPLIT_TAIL = "@@ -4 +4 @@\n-grabs](combat.md#grab) for it.\n+grabs](combat-grabs.md#grab) for it.\n"
+
+
+def test_a_split_link_whose_target_line_alone_changed_is_no_touch() -> None:
+    assert touched_lines(SPLIT_TAIL, FOLDER, GONE, resolves, new_lines=FILE) == frozenset()
+    # A list item holding the first half of the link is unchanged structure.
+    item = ["# Links", "", "- See [the long", "  grabs](combat-grabs.md#grab) for it."]
+    diff = "@@ -4 +4 @@\n-  grabs](combat.md#grab) for it.\n+  grabs](combat-grabs.md#grab) for it.\n"
+    assert touched_lines(diff, FOLDER, GONE, resolves, new_lines=item) == frozenset()
+    # A link text split over three lines.
+    three = ["# Links", "", "See [the", "long", "grabs](combat-grabs.md#grab) for it."]
+    diff = "@@ -5 +5 @@\n-grabs](combat.md#grab) for it.\n+grabs](combat-grabs.md#grab) for it.\n"
+    assert touched_lines(diff, FOLDER, GONE, resolves, new_lines=three) == frozenset()
+
+
+def test_a_split_link_is_still_a_touch_when_anything_else_changed() -> None:
+    # Without the file there is nothing to widen to.
+    assert touched_lines(SPLIT_TAIL, FOLDER, GONE, resolves) == frozenset({4})
+    # The target is not a moved page's, or the rest of the line changed.
+    elsewhere = SPLIT_TAIL.replace("combat-grabs.md#grab", "camera.md#grab")
+    assert touched_lines(elsewhere, FOLDER, GONE, resolves, new_lines=FILE) == frozenset({4})
+    edited = SPLIT_TAIL.replace("+grabs](combat-grabs.md#grab) for it.", "+grabs](combat-grabs.md#grab) for them.")
+    assert touched_lines(edited, FOLDER, GONE, resolves, new_lines=FILE) == frozenset({4})
+    # The line above is blank: there is no link text to join.
+    blank = ["# Links", "", "", "grabs](combat-grabs.md#grab) for it."]
+    assert touched_lines(SPLIT_TAIL, FOLDER, GONE, resolves, new_lines=blank) == frozenset({4})
+
+
+def test_a_list_item_rewrapped_with_the_same_markers_is_no_touch() -> None:
+    def hunk(old: list[str], new: list[str]) -> frozenset[int]:
+        """The touched lines of one hunk at line 3 that turns `old` into `new`."""
+        header = f"@@ -3,{len(old)} +3,{len(new)} @@\n"
+        diff = header + "".join(f"-{line}\n" for line in old) + "".join(f"+{line}\n" for line in new)
+        return touched_lines(diff, FOLDER, GONE, resolves)
+
+    old = ["- See [g](combat.md#grab) a long item text that", "  continues here."]
+    same_markers = ["- See [g](combat-grabs.md#grab) a long item text", "  that continues here."]
+    assert hunk(old, same_markers) == frozenset()
+    numbered = ["1. See [g](combat.md#grab) text that", "   goes on."]
+    assert hunk(numbered, ["1. See [g](combat-grabs.md#grab) text", "   that goes on."]) == frozenset()
+    # A marker that appeared or lost its indent, or a word that changed, is a touch.
+    assert hunk(old, [*same_markers[:1], "- that continues here."]) == {3, 4}
+    assert hunk(old, ["- See [g](combat-grabs.md#grab) a long item text that continues here."]) == frozenset()
+    assert hunk(old, [*same_markers[:1], "  that continue here."]) == {3, 4}
+    assert hunk(["- See [g](combat.md#grab)"], ["* See [g](combat-grabs.md#grab)"]) == {3}
+
+
+def test_a_split_link_with_only_its_target_line_changed_is_no_touch_in_a_checkout(tmp_path: Path) -> None:
+    split = LINKS.replace(
+        "See [grabs](combat.md#grab) for the grab.", "See [the long\ngrabs](combat.md#grab) for the grab."
+    )
+    root = linked_checkout(tmp_path, split)
+    write(root, "docs/research/ai.md", split.replace("combat.md#grab", "combat-grabs.md#grab"))
+    assert touches(root) == {"docs/research/ai.md": frozenset()}
+
+
+def test_indented_lines_continue_a_list_item_but_a_code_block_is_structure() -> None:
+    diff = "\n".join(
+        [
+            "@@ -3,2 +3,2 @@",
+            "-     [it](combat.md#grab)): when the state is not the one, the",
+            "-     word lacks it:",
+            "+     [it](combat-grabs.md#grab)): when the state is not the one,",
+            "+     the word lacks it:",
+        ]
+    )
+    item = ["- A nested item that", "  goes on and", "     [it](combat-grabs.md#grab)): when the state", "     the"]
+    assert touched_lines(diff, FOLDER, GONE, resolves) == frozenset({3, 4})  # nothing above: read as code
+    assert touched_lines(diff, FOLDER, GONE, resolves, new_lines=item) == frozenset()
+    # After a blank line the same indent is a code block.
+    code = ["- A nested item that", "", *item[2:]]
+    assert touched_lines(diff, FOLDER, GONE, resolves, new_lines=code) == frozenset({3, 4})
+
+
+def test_an_indented_line_continues_only_text() -> None:
+    diff = "\n".join(
+        [
+            "@@ -3,2 +3,2 @@",
+            "-     [it](combat.md#grab)): when the state is not the one, the",
+            "-     word lacks it:",
+            "+     [it](combat-grabs.md#grab)): when the state is not the one,",
+            "+     the word lacks it:",
+        ]
+    )
+    text = ["- An item that", "  goes on and"]
+    assert touched_lines(diff, FOLDER, GONE, resolves, new_lines=text) == frozenset()
+    # Not after a heading, a table row or an indented code line.
+    for above in ["## Heading", "| a | b |", "```"]:
+        assert touched_lines(diff, FOLDER, GONE, resolves, new_lines=["", above]) == {3, 4}, above
+    code = ["", "    code"]
+    assert touched_lines(diff, FOLDER, GONE, resolves, new_lines=code) == frozenset({3, 4})
+
+
+def test_a_rewrap_keeps_the_indent_of_its_other_lines() -> None:
+    old = ["- See [g](combat.md#grab) a long item text that", "  continues here."]
+    new = ["- See [g](combat-grabs.md#grab) a long item text", "    that continues here."]
+    header = "@@ -3,2 +3,2 @@\n"
+    diff = header + "".join(f"-{line}\n" for line in old) + "".join(f"+{line}\n" for line in new)
+    assert touched_lines(diff, FOLDER, GONE, resolves) == frozenset({3, 4})
+
+
+def test_the_widening_of_a_split_link_stops_after_five_lines() -> None:
+    six = ["# Links", "See [zero", "one", "two", "three", "four", "five", "six](combat-grabs.md#grab) for it."]
+    diff = "@@ -8 +8 @@\n-six](combat.md#grab) for it.\n+six](combat-grabs.md#grab) for it.\n"
+    assert touched_lines(diff, FOLDER, GONE, resolves, new_lines=six) == frozenset({8})
+    five = ["# Links", "See [one", "two", "three", "four", "five", "six](combat-grabs.md#grab) for it."]
+    diff = "@@ -7 +7 @@\n-six](combat.md#grab) for it.\n+six](combat-grabs.md#grab) for it.\n"
+    assert touched_lines(diff, FOLDER, GONE, resolves, new_lines=five) == frozenset()
