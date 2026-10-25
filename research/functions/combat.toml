@@ -2172,6 +2172,16 @@ note = "confirmed (code), runtime"
 coney = "src/combat/player_combat.h:PlayerCombat::special"
 status = "legacy"
 
+[[function.gaps]]
+what = "circle + triangle (command 0x24): the tag 664 where the player may tag, spending one paint"
+relation = "not-ported"
+issue = 860
+
+[[function.gaps]]
+what = "the refusal tests the held object's anim set for any fighter, where the original tests a pad player holding any object"
+relation = "stand-in"
+issue = 860
+
 [[function]]
 address = 0x002878b8
 name = "LockPick_JudgePress"
