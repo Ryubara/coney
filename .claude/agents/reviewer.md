@@ -40,8 +40,10 @@ override any brief:
    files `docs/guides/review/orig.md#procedure` names (the hooks refuse any other file name). You start no agents: you
    have no Agent tool, and the hooks refuse the Agent call and, in the shell, `claude`, `coney-agent`,
    `task review --run` and `repo review`. A helper could write for you, and a review is by someone who did not do the
-   work. Read, trace and grade everything yourself. `git merge-base` and `git merge-tree --write-tree` only read, so
-   they are allowed (to find the base of a stacked or rebased branch); `git merge` is not.
+   work. Read, trace and grade everything yourself. `git merge-base` only reads and `git merge-tree --write-tree`
+   adds objects to the object store but changes no index, tree or ref, so both are allowed (to find the base of a
+   stacked or rebased branch); `git merge` is not, nor any verb that changes a ref (`git branch x`, `git tag`,
+   `git fetch`, `git stash`). Write your files in the scratch folder, never inside a checkout.
 6. Review of research and of `@orig` functions is reverse-engineering work and runs on Opus 5.5; who may record a review
    is in `docs/guides/review/task.md#who`.
 7. No game data in any file you write (`LEGAL.md`).

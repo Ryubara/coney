@@ -465,9 +465,9 @@ def record(env: ReviewEnv, mode: str) -> int:
         clock=env.clock,
     )
     # The verdict is kept twice: by stamp, so a text review can point at the full one it rests on, and as the task's
-    # `review.json`, the newest, which the stamp's `review_sha256` covers (docs/guides/stamps.md#api).
+    # `reviewed.json`, the newest, which the stamp's `review_sha256` covers (docs/guides/stamps.md#api).
     (env.folder / f"recorded-{stamp.seq}.json").write_bytes(raw)
-    (env.unit.dir / "review.json").write_bytes(raw)
+    (env.unit.dir / review_verdict.RECORDED).write_bytes(raw)
     blockers = review_verdict.blocking(verdict)
     print(
         f"task review {task}: reviewed: {result} (stamp #{stamp.seq}, change {packet['diff_sha256'][:12]}, "

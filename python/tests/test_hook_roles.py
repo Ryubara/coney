@@ -265,6 +265,26 @@ def test_a_code_review_name_does_not_open_other_files(name: str, tmp_path: Path)
     assert roles.check(CONFIG, report), name
 
 
+@pytest.mark.parametrize("name", ["REVIEW.json", "REVIEW.md", "CODE-REVIEW.md", "FINDINGS.tsv", "orig-review.md"])
+def test_a_reviewer_writes_its_files_in_no_checkout(name: str, checkout: Path, tmp_path: Path) -> None:
+    # #823: a report inside a worktree (or the main checkout) is a file an engineer could commit by mistake.
+    for folder in (checkout, checkout / "src" / "core", checkout / "docs"):
+        assert roles.check(CONFIG, call("Write", {"file_path": str(folder / name)}, "reviewer", "a1")), folder
+    worktree = tmp_path / "worktrees" / "coney" / "x"
+    worktree.mkdir(parents=True)
+    (worktree / ".git").write_text("gitdir: ../../repos/coney/.git/worktrees/x\n", encoding="utf-8")
+    reason = roles.check(CONFIG, call("Write", {"file_path": str(worktree / name)}, "reviewer", "a1"))
+    assert reason and "scratch" in reason
+    assert roles.check(CONFIG, call("Write", {"file_path": str(tmp_path / "scratch" / "x" / name)}, "reviewer")) is None
+
+
+@pytest.mark.parametrize("name", ["CODE-REVIEW:x.md", "CODE-REVIEW.md:stream", "REVIEW.md:x", "code-review-a:b.md"])
+def test_a_reviewer_may_not_write_a_name_with_a_colon(name: str, tmp_path: Path) -> None:
+    # `*` matches `:`, and on Windows `name:stream` writes an alternate data stream of another file.
+    report = call("Write", {"file_path": str(tmp_path / "scratch" / "x") + "/" + name}, "reviewer", "a1")
+    assert roles.check(CONFIG, report), name
+
+
 def test_a_pattern_in_write_only_matches_the_file_name_not_the_folder(tmp_path: Path, checkout: Path) -> None:
     # Only the last part counts, so a CODE-REVIEW folder does not open the files in it.
     inside = call("Write", {"file_path": str(checkout / "docs/CODE-REVIEW.md/a.cpp")}, "reviewer", "a1")
@@ -312,6 +332,87 @@ def test_a_reviewer_may_not_commit_or_stage() -> None:
 )
 def test_a_reviewer_may_not_change_or_discard_the_tree(command: str) -> None:
     assert roles.check(CONFIG, bash(command, agent_type="reviewer", agent_id="a1")), command
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        # #823: the verbs that change a ref, the index or a worktree and passed before.
+        "git pull",
+        "git -C repo pull --rebase origin main",
+        "git stash",
+        "git stash push -m x",
+        "git -P stash pop",
+        "git stash drop",
+        "git read-tree -u -m HEAD",
+        "git read-tree HEAD",
+        "git update-ref refs/heads/x HEAD",
+        "git update-index --assume-unchanged a",
+        "git branch -f main HEAD",
+        "git branch x",
+        "git branch -D x",
+        "git -P branch -m a b",
+        "git branch --set-upstream-to=origin/main",
+        "git branch -a -d x",
+        "git branch --list x -D x",
+        "git tag v1",
+        "git tag -d v1",
+        "git tag -a v1 -m 'x'",
+        "git tag -f v1 HEAD",
+        "git mergetool",
+        "git -C repo mergetool --tool=x",
+        # The other verbs of the same kind.
+        "git worktree add ../x",
+        "git worktree move a b",
+        "git worktree prune",
+        "git bisect start",
+        "git fetch origin",
+        "git stage a",
+        "git checkout-index -a -f",
+        "git sparse-checkout set src",
+        "git notes add -m x",
+        "git replace a b",
+        "git reflog expire --all",
+        "git gc",
+        "git pack-refs --all",
+        "git filter-branch HEAD",
+        "git remote prune origin",
+        "git submodule update",
+        "git status && git stash",
+    ],
+)
+def test_a_reviewer_may_not_change_a_ref_the_index_or_a_worktree(command: str) -> None:
+    assert roles.check(CONFIG, bash(command, agent_type="reviewer", agent_id="a1")), command
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git stash list",
+        "git stash show -p stash@{0}",
+        "git branch",
+        "git branch -a",
+        "git branch -vv",
+        "git branch -avr",
+        "git branch --contains HEAD",
+        "git -P branch -r --merged origin/main",
+        "git branch --list 'tools-*'",
+        "git branch --format=%(refname) --sort=-committerdate",
+        "git branch -a 2>/dev/null | grep tools",
+        "git tag",
+        "git tag -l",
+        "git tag --list v1*",
+        "git tag -n --contains HEAD",
+        "git tag --points-at HEAD; git status",
+        "git reflog",
+        "git reflog show HEAD",
+        "git notes list",
+        "git remote -v",
+        "git worktree list --porcelain",
+    ],
+)
+def test_a_reviewer_may_still_list_refs_and_stashes(command: str) -> None:
+    assert roles.check(CONFIG, bash(command, agent_type="reviewer", agent_id="a1")) is None, command
 
 
 @pytest.mark.parametrize(

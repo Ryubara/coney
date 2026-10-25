@@ -23,6 +23,12 @@ from coney_tools.orig_review import CLASSES, PASSING
 
 #: The version of this file's format.
 VERSION = 1
+#: The task's copy of the newest recorded verdict, which the `reviewed` stamp's `review_sha256` covers. Not
+#: `review.json`: on a case-insensitive file system (Windows, macOS) that is the description review's `REVIEW.json`
+#: in the same folder, and writing one would overwrite the other.
+RECORDED = "reviewed.json"
+#: The name the copy had before, still read for a review recorded under it.
+RECORDED_BEFORE = "review.json"
 #: How serious a finding is. Critical and important hold the change back; minor is written down for later.
 SEVERITIES = ("critical", "important", "minor")
 #: The severities that make a change fail its review.

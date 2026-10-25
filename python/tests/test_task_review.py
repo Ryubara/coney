@@ -16,7 +16,7 @@ from conventions_support import write_checkout
 from git_support import git
 from review_support import make_verdict
 
-from coney_tools import identity, orig_pairs, pr_proof, stamps, task_review
+from coney_tools import identity, orig_pairs, pr_proof, review_verdict, stamps, task_review
 from coney_tools.config import ConfigError
 from coney_tools.conventions import load_conventions
 from coney_tools.review_verdict import problems as verdict_problems
@@ -440,7 +440,9 @@ def test_record_appends_a_reviewed_stamp_bound_to_the_change(rig: Rig, capsys: p
     assert stamp.who["agent"] == REVIEWER.agent() and stamp.who["source"] == "hook"
     recorded = rig.unit.dir / "review" / f"recorded-{stamp.seq}.json"
     assert json.loads(recorded.read_text(encoding="utf-8"))["verdict"] == "pass"
-    assert (rig.unit.dir / "review.json").read_bytes() == recorded.read_bytes()
+    # The recorded copy is `reviewed.json`: `review.json` is the description review's REVIEW.json on Windows.
+    assert (rig.unit.dir / "reviewed.json").read_bytes() == recorded.read_bytes()
+    assert review_verdict.RECORDED == "reviewed.json" and not (rig.unit.dir / "review.json").exists()
     assert "reviewed" in capsys.readouterr().out
 
 
