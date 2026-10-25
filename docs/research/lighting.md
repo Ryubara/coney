@@ -3,7 +3,7 @@ kind: system
 system: lighting
 owns:
   files: ["Graphics/LightManager.cpp"]
-  ranges: ["0x0017b1e0-0x0017f278"]
+  ranges: ["0x0017bec8-0x0017f278"]
 ---
 # Lighting
 
