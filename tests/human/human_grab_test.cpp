@@ -656,3 +656,41 @@ TEST_CASE("a power move that does not kill plays out with no power left and give
     // With full power the same move never ran short.
     CHECK(runSlowMotion(character, kPowerStrike, 400).step == coney::camera::SlowMotion::kNormalStep);
 }
+
+TEST_CASE("a power move holds the power meter: it neither drains nor refills while the move plays", "[human][combat]") {
+    // Expected: docs/research/slow-motion.md#power-move, confirmed (code) at 0x00256a60 and confirmed (runtime) in run
+    // r-20261025-power-move-meter (110 before the strike, 9 after it and 30 frames into 57): the power strike makes the
+    // attacker a paired move's (state 0x1000), the refill adds nothing in that state, and the drain runs only in a
+    // grab, so what the strike leaves of 110 (its quarter of 400 and the hold's drain before it) stays as it is until
+    // the move (here in slow motion, five times as long) has played out.
+    const FightCharacter character(slowMotionPowerClips());
+    constexpr std::string_view kPowerStrike = "5 tap circle\n30 press cross\n32 tap square\n34 release cross\n";
+    HumanFight fight(character, 1.0F);
+    coney::camera::SlowMotion slow;
+    const auto strike = static_cast<std::uint32_t>(combat::anim_id::kGrabPower1Strike1);
+    std::vector<int> during;
+    int after = -1;
+    fight.run(kPowerStrike, 300, [&](std::uint64_t frame) {
+        if (frame == 29) {
+            fight.player().fighter().combat().power().set(110);
+        }
+        if (const std::optional<std::uint16_t> event = fight.player().slowMotionEvent()) {
+            slow.event(*event, 0);
+        }
+        fight.player().setStepSeconds(slow.stepSeconds());
+        fight.other().setStepSeconds(slow.stepSeconds());
+        const int power = fight.player().fighter().combat().power().value();
+        if (fight.player().animator().animId() == strike) {
+            during.push_back(power);
+        } else if (!during.empty()) {
+            after = power;
+        }
+    });
+    REQUIRE(during.size() > 30);
+    const int left = during.front();
+    CHECK(left <= 10);
+    CHECK(*std::ranges::min_element(during) == left);
+    CHECK(*std::ranges::max_element(during) == left);
+    // Once the move has ended the meter refills.
+    CHECK(after > left);
+}
