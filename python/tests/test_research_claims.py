@@ -334,6 +334,16 @@ def test_a_block_moved_from_a_page_the_branch_deleted_is_not_new(tmp_path: Path)
     assert research_claims.build(root, base="main").errors == []
 
 
+def test_one_departed_block_covers_every_page_it_arrives_on(tmp_path: Path) -> None:
+    root = split_repo(tmp_path)
+    move_reach(root)
+    other = root / "docs/research/combat/reach.md"
+    other.write_text(f"# R\n\n## Behaviour\n\n{REACH}\n", encoding="utf-8", newline="\n")
+    report = research_claims.build(root, base="main")
+    assert report.errors == []
+    assert sorted(c.page for c in report.claims) == ["docs/research/combat/reach.md", THROWS]
+
+
 def test_a_block_moved_to_a_page_the_base_did_not_have_is_not_new(tmp_path: Path) -> None:
     # The destination is untracked (nothing to compare it with at the base); the source page stays.
     root = split_repo(tmp_path)
