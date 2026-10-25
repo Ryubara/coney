@@ -524,9 +524,9 @@ class Human final : public Holdable {
     /// Whether it left normal mode (setNormalMode(), resetForJoin()) since the last call, which turns every player's
     /// slow motion off (camera::SlowMotion::reset(), docs/research/slow-motion.md#off).
     [[nodiscard]] bool takeSlowMotionReset() { return std::exchange(m_slowMotionReset, false); }
-    /// The anim whose action event (type `0x41`, which `Anim_FireEvents` sends as message `0xc1`) the clip playing
-    /// passed in the last update, if any: for 665 `SPECIAL_FLASH` the flash is used, for 666 the door ahead opens and
-    /// for 668 the dealer's goal is served (docs/research/combat-rage.md#rage).
+    /// The anim whose action event (type `0x41`, which `Anim_FireFrameEvents` 0x00101dd8 sends as message `0xc1`) the
+    /// clip playing passed in the last update, if any: for 665 `SPECIAL_FLASH` the flash is used, for 666 the door
+    /// ahead opens and for 668 the dealer's goal is served (docs/research/combat-rage.md#rage).
     [[nodiscard]] std::optional<std::uint32_t> actionEvent() const { return m_actionEvent; }
     /// Sets the characters' step its next updates advance by: kStepSeconds, or less in slow motion
     /// (docs/research/camera.md#slow-motion; Humans::update() sets it for every human).
@@ -954,7 +954,7 @@ class Human final : public Holdable {
     // The attacker's side of a warning: an event 0x24 or 0x26 of the clip playing that this step's animation passed
     // (since `beforeTime` of `before`, which played `beforeId`, when it is still the clip) tells the fighter's target,
     // when it stands within twice the anim's reach.
-    // @orig 0x00101dd8 Anim_FireEvents (unknown)
+    // @orig 0x00101dd8 Anim_FireFrameEvents (unknown)
     void sendWarnings(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
     // Notes the slow-motion event (0x2e or 0x2f) this step's animation fired, the last when several did: from the
     // events the task stack fired (anim::AnimTaskStack::firedEvents()), so a clip that hands over in the step counts
@@ -964,19 +964,19 @@ class Human final : public Holdable {
     // Switches the strike shapes by the events of the clip playing that this step's animation passed (as the held
     // flags' events fire, anim::eventFrame()). **Coney choice**: when another clip takes the top before the one that
     // switched them on ends its window, they go off, as its own off event would have switched them.
-    // @orig 0x00101dd8 Anim_FireEvents (unknown)
+    // @orig 0x00101dd8 Anim_FireFrameEvents (unknown)
     void noteStrikeEvents(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
     // Notes the release event (type 10) of the clip playing when this step's animation passed it, as
     // noteStrikeEvents() does; takeThrowRelease() reads it.
     void noteReleaseEvent(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
     // Notes the action event (0x41) of the clip playing that this step's animation passed (message 0xc1, read by
     // Human_HandleMessage at 0x002473bc).
-    // @orig 0x00101dd8 Anim_FireEvents (unknown)
+    // @orig 0x00101dd8 Anim_FireFrameEvents (unknown)
     void noteActionEvent(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
     // Acts on the carried prop's events of the clip playing that this step's animation passed, as noteStrikeEvents()
     // finds its own: 0x30 makes the prop when it carries none, 0x37 moves it to the event's attach point and pose
     // (message 0xb7), 0x31 removes it when it is of the named type (docs/research/combat-grabs.md#power-move-props).
-    // @orig 0x00101dd8 Anim_FireEvents (unknown)
+    // @orig 0x00101dd8 Anim_FireFrameEvents (unknown)
     void noteCarriedPropEvents(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
     // The world placement of the body the strike shapes are posed on.
     [[nodiscard]] BodyPlacement placement() const;

@@ -36,7 +36,7 @@ enum class AttackWarning : std::uint8_t {
 
 /// The first warning event of `clip` whose time (its frame / 30 s) falls in (`fromSeconds`, `toSeconds`] of clip time
 /// (from `fromSeconds` < 0 the clip's start counts), or nothing.
-/// @orig 0x00101dd8 Anim_FireEvents (unknown)
+/// @orig 0x00101dd8 Anim_FireFrameEvents (unknown)
 [[nodiscard]] std::optional<AttackWarning> warningBetween(const anim::AnimClip& clip, float fromSeconds,
                                                           float toSeconds);
 

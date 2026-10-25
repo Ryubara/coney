@@ -41,8 +41,8 @@ inline constexpr std::uint32_t kFlagAttackEnd = 0x4;
 inline constexpr std::uint32_t kFlagAttackPhases = kFlagWindUp | kFlagChainWindow | kFlagAttackEnd;
 inline constexpr std::uint32_t kFlagRecovery = 0x40000;
 
-/// The clip event types that move an attack's phase (`Anim_FireEvents`, docs/research/tasks.md#held-flags): the chain
-/// window opens, the attack's end phase starts, the recovery starts.
+/// The clip event types that move an attack's phase (`Anim_FireFrameEvents` 0x00101dd8,
+/// docs/research/tasks.md#held-flags): the chain window opens, the attack's end phase starts, the recovery starts.
 inline constexpr std::uint16_t kEventChainWindow = 0x2c;
 inline constexpr std::uint16_t kEventAttackEnd = 0x2d;
 inline constexpr std::uint16_t kEventRecovery = 0x48;
@@ -243,7 +243,7 @@ class GaitBlendTask final : public AnimTask {
 /// a task that holds the bits it changes (the attack's phases, or anything for the recovery), so a clip played without
 /// an attack's flags (a reaction, another human's paired clip) leaves the record alone and no bit outlives its clip.
 /// The original's cases are inside the event dispatcher: 0x2c at 0x001023d8, 0x2d at 0x00102410, 0x48 at 0x00102358.
-/// @orig 0x00101dd8 Anim_FireEvents (unknown)
+/// @orig 0x00101dd8 Anim_FireFrameEvents (unknown)
 void applyHeldFlagEvent(std::uint16_t type, AnimTask& task, std::uint32_t& flags);
 
 /// The frame a clip's events count as reached `seconds` into it: the cursor's `uint(t × 30 + 0.5)`, the nearest whole
@@ -313,7 +313,7 @@ class AnimTaskStack {
     /// Keeps (`keep`) every event of the newest task's clip whose frame is passed, after the held-flag events have
     /// moved the record, for takeEvents(): the human acts on the rest (clip event 11, the animation sounds,
     /// docs/research/sound.md#anim-sounds). Off by default: an owner that never takes them keeps none.
-    /// @orig 0x00101dd8 Anim_FireEvents (unknown)
+    /// @orig 0x00101dd8 Anim_FireFrameEvents (unknown)
     void keepEvents(bool keep) {
         m_keepEvents = keep;
         m_events.clear();
@@ -322,7 +322,7 @@ class AnimTaskStack {
     [[nodiscard]] std::vector<ClipEvent> takeEvents() { return std::exchange(m_events, {}); }
     /// The events the last advance() fired, in their order, whatever keepEvents() says: the newest task's clip's
     /// passed frames, a clip handing over to its next task up to its end. The slow-motion events are read from them
-    /// as the original's event dispatcher, `Anim_FireFrameEvents`, switches slow motion
+    /// as the original's event dispatcher, `Anim_FireFrameEvents` (0x00101dd8), switches slow motion
     /// (docs/research/slow-motion.md#events).
     [[nodiscard]] std::span<const ClipEvent> firedEvents() const { return m_fired; }
 

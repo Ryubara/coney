@@ -32,8 +32,8 @@ struct StrikeShapeDef {
 /// the right, 29 and 30 one shin and foot, 32 and 33 the other.
 [[nodiscard]] std::span<const StrikeShapeDef> strikeShapeDefs();
 
-/// The clip event types that switch them (`Anim_FireEvents` → `Human_HandleMessage`): one bone's shape on (its id in
-/// the event's `+6` word) or off, every shape on (and the capsule's strike flag) or off.
+/// The clip event types that switch them (`Anim_FireFrameEvents` 0x00101dd8 → `Human_HandleMessage`): one bone's
+/// shape on (its id in the event's `+6` word) or off, every shape on (and the capsule's strike flag) or off.
 inline constexpr std::uint16_t kEventStrikeOn = 0xf;
 inline constexpr std::uint16_t kEventStrikeOff = 0x10;
 inline constexpr std::uint16_t kEventStrikeAllOn = 0x13;
