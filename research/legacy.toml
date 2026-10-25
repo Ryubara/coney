@@ -151,15 +151,10 @@ evidence = 32
 evidence = 24
 
 ["docs/research/combat-rage.md"]
-front-matter = 1
-skeleton = 3
-verified = 1
-evidence = 29
-address-form = 2
-history = 7
+evidence = 21
 
 ["docs/research/combat-reactions.md"]
-evidence = 33
+evidence = 39
 
 ["docs/research/combat-targets.md"]
 evidence = 37

@@ -826,10 +826,10 @@ class Human final : public Holdable {
     /// The cuffed human's end: freed, 333 `ANIM_ARREST_RELEASE_END_REACT` paired to `freer` then his idle; still
     /// cuffed, back to 320.
     void endUncuffReact(const Human& freer, bool freed);
-    /// The reviver's half of a revive (docs/research/combat-rage.md#revive): the led steer turns him to `downed`'s head
-    /// and slides him to 351's reach from it over 351's time to its first event + 0.1 s (Fighter::steerRevive()), and
-    /// he plays 351 `gen_revive_begin`, then 353 `gen_revive_end`, then his idle (through 389 out of the fight stance,
-    /// the fight idle in it), after a 0.01 s blend, each clip holding `0x8000000`.
+    /// The reviver's half of a revive (docs/research/combat-reactions.md#revive): the led steer turns him to `downed`'s
+    /// head and slides him to 351's reach from it over 351's time to its first event + 0.1 s (Fighter::steerRevive()),
+    /// and he plays 351 `gen_revive_begin`, then 353 `gen_revive_end`, then his idle (through 389 out of the fight
+    /// stance, the fight idle in it), after a 0.01 s blend, each clip holding `0x8000000`.
     void startRevive(const Combatant& downed);
     /// Whether 351 `gen_revive_begin` plays: the revive's first clip, at whose end the flash is spent.
     [[nodiscard]] bool reviveBeginPlaying() const;

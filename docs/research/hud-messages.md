@@ -380,7 +380,7 @@ icon sprite at `+0x480`. Confirmed (code) unless marked:
       flag `+0xe0` bit `0x4` (`Human_Init` sets it on every player and every Warrior, brain types 0 and 3;
       `Human_MakePlayer` on a player too; scripts set or clear it with `HuSetRevivable`; [Combat: human
       flags](combat/index.md#human-flags)). Confirmed (runtime) on `level80`: beside a knocked-out Vermin with a flash,
-      string 4 showed ([Combat: revive at runtime](combat-rage.md#revive-runtime)).
+      string 4 showed ([Combat: revive at runtime](combat-reactions.md#revive-runtime)).
     - **Sight, no facing**: each candidate must also pass `Human_HasLineOfSight(player, him)` (`0x00222288`: a ray at
       1.7 m to his 1.7 m, else to his 1.0 m; it passes fences, railings and glass, [AI: sight](ai.md#sight)). The list's
       field-of-view test is only consulted beyond 3 m (squared distance over 9), which the 3 m search never yields, so

@@ -472,9 +472,9 @@ class GameplayMode final : public GameMode {
     [[nodiscard]] std::string talkPrompt() const;
     // The revive prompt, `GSTRING.HUD` 4, while a partner is revivable and player 1 holds a flash; empty otherwise.
     [[nodiscard]] std::string revivePrompt() const;
-    // The revive (gameplay_revive.cpp, docs/research/combat-rage.md#revive). Each frame after the level's step: d-pad
-    // left (command 0x27) tries a revive, and a revive under way finishes when the reviver's 351 ends, or is dropped
-    // when something else took his body or the downed human went.
+    // The revive (gameplay_revive.cpp, docs/research/combat-reactions.md#revive). Each frame after the level's step:
+    // d-pad left (command 0x27) tries a revive, and a revive under way finishes when the reviver's 351 ends, or is
+    // dropped when something else took his body or the downed human went.
     void updateRevive();
     // D-pad left: `reviver` (player 1) revives the partner revivableInReach() finds when the tests pass, says 76 and
     // plays his clips; false when refused.

@@ -631,8 +631,8 @@ him on the way. Pushed by the arrested goal (`0x002b6eb0`) and by FollowAndDefen
   20 m who claims him.
 
 No caller pushes it for one AI Warrior downed beside another, and the revive itself needs a flash that only a player's
-inventory holds ([Combat: revive](combat-rage.md#revive), step 3): **an AI Warrior revives a player who holds a flash, never
-another AI Warrior**. Inferred from the callers and `Player_TryRevive`.
+inventory holds ([Combat: revive](combat-reactions.md#revive), step 3): **an AI Warrior revives a player who holds a
+flash, never another AI Warrior**. Inferred from the callers and `Player_TryRevive`.
 
 **How Process runs**, confirmed (code) at `0x002b8ad8`. Goal fields: `+0x20` the saved human's handle, `+0x10` the
 rescue point (his position on the nav mesh, `SaveHumanGoal_UpdatePoint`), `+0x30` the state, `+0x28` the attack kind,
@@ -664,7 +664,7 @@ are the brain's ranges `+0x140` and `+0x13c`; *d²* the squared distance from th
    once (`+0x3c`), standing (gait idle) and holding no flag but `0x40000000`: a cuffed human gets an `UnlockHuman`
    action (command `0x32`, [uncuffing](crimes.md)); a knocked-out one gets, when the way is clear
    (`Human_IsWayClearTo`), his wake time `+0xf0` pushed 10 s later, then a `Revive` action (command `0x27`, the
-   player's [revive](combat-rage.md#revive) with its tests); state 2.
+   player's [revive](combat-reactions.md#revive) with its tests); state 2.
 
 ### Domination (type 0x7d) {#goal-hold-flag}
 

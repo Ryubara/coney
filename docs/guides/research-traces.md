@@ -156,9 +156,9 @@ box's queue, [HUD](../research/hud-messages.md#hint-queue-runtime)) and `anim-di
 starts which anim id and which script callback it runs). The level80 passes added the teammate hooks (`hit-by-chief`,
 `hit-reaction`, `attack-target-push`, `push-contact`, `can-push`, `say-command`) and the fire hooks (`ember-init`,
 `burn-init`, `fade-flame-init`, `debris-flame` and their update hooks); the revive pass added `revive-start` and
-`revive-finish` ([Combat](../research/combat-rage.md#revive-runtime)), the speech pass `say-anim-line`, `stop-speech`,
-`play-speech` and `play-speech-cut` (who starts, stops or refuses a human's line, with his line state before each;
-[Sound](../research/sound.md#speech-cut-in)), and the scene-mapping pass `scene-find`, `scene-bind-human`,
+`revive-finish` ([Combat](../research/combat-reactions.md#revive-runtime)), the speech pass `say-anim-line`,
+`stop-speech`, `play-speech` and `play-speech-cut` (who starts, stops or refuses a human's line, with his line state
+before each; [Sound](../research/sound.md#speech-cut-in)), and the scene-mapping pass `scene-find`, `scene-bind-human`,
 `scene-bind-object` (what each scene binds, [Scenes](../research/scenes.md#cast-runtime)) and `lua-exec-source`
 (`lua-exec` with the chunk name's text), and the gang-battle pass `set-target`, `help-call` and `send-helper` (who
 changes a fighter's target, help calls and helpers sent; [Gang fights](../research/gang-fights.md#runtime)). One run

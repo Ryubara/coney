@@ -2853,7 +2853,7 @@ Around the commands:
 | Repeating the current order | unforced: line again, no rebuild | refused silently (matches, minus the line) |
 | [Automatic commands](ai-gangs.md#warrior-auto-commands) | follow → attack / defend / steal; attack, defend → follow; steal → follow beyond 15 m | **partial**: follow → attack and back only (`CrewOrders`, `repo:src/ai/crew.h`) |
 | Hiding in shadow | forced hold (hide) after 500 ms or the run time; the old command back on leaving | **missing** |
-| Revive ([Combat](combat-rage.md#revive)) | d-pad left (command `0x27`) near a revivable downed member with a flash: 351, 353 / 354, flash spent, healed, 76 / 75 | **partial**: player 1 revives (`repo:src/gamemodes/gameplay_revive.cpp`) a revivable member, but no code flags the crew revivable ([open question](combat-rage.md#revive)); no AI rescue (`SaveHuman`) |
+| Revive ([Combat](combat-reactions.md#revive)) | d-pad left (command `0x27`) near a revivable downed member with a flash: 351, 353 / 354, flash spent, healed, 76 / 75 | **partial**: player 1 revives (`repo:src/gamemodes/gameplay_revive.cpp`) a revivable member, but no code flags the crew revivable ([open question](combat-reactions.md#revive)); no AI rescue (`SaveHuman`) |
 | [Weapon swap](#warrior-swap) | instant; the object is attached to the bone of the low pick-up clip's first type-9 event and drawn there; 146 `give_me` | **matches**: the hands swap, the anim set follows, the line plays, and the object is drawn in his right hand (issue #78) |
 
 **Item 37: the given weapon.** In the original the swap puts the object in the Warrior's hand exactly as
@@ -2888,8 +2888,8 @@ with the weapon's damage and wear it is not checked, and the kind 4 / 6 drop is 
    fights for him and (with `SaveHuman`) frees or revives him.
 4. **Draw the Warrior's weapon** (item 37): place every human's held object at his own pose, not only player 1's
    (the same bone and offset as the swap's placement); then add the kind 4 / 6 drop rule.
-5. **Revive** (item 8): built for player 1 ([Combat](combat-rage.md#revive)); the crew's flag (`Human_Init`'s) and the AI
-   rescue remain.
+5. **Revive** (item 8): built for player 1 ([Combat](combat-reactions.md#revive)); the crew's flag (`Human_Init`'s) and
+   the AI rescue remain.
 6. **The 50 m range refusal** with 18 / 92, the out-of-range flag with its menu text and its mission-failure shortcut
    ([out-of-range flag](ai-gangs.md#warrior-range-flag)), then the hide tactic and the hide-in-shadow order.
 
