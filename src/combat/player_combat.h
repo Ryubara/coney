@@ -150,6 +150,15 @@ class PlayerCombat {
     [[nodiscard]] int powerMove() const { return m_powerMove; }
 
   private:
+    // Whether it holds its victim in a grab: grabbing, and not in the grab's power move. The power strike ends the grab
+    // and makes the two a paired move (`Grab_BreakOnHit` clears the grab's states 0xc0 / 0x30 and sets the paired
+    // 0x1000 / 0x2000), and the meters drain a grab's power and let go on an empty meter only while grabbing
+    // (`Human_UpdateMeters`), so the power move and its extensions play out whatever power is left
+    // (docs/research/slow-motion.md#power-move). **Coney's reading**: the meter refills during the power move,
+    // as anywhere outside a hold (where the original refills it is not traced).
+    // @orig 0x0022b960 Grab_BreakOnHit (unknown)
+    // @orig 0x002562d0 Human_UpdateMeters (unknown)
+    [[nodiscard]] bool holdsVictim() const { return m_mode == CombatMode::Grabbing && m_powerMove == anim_id::kNone; }
     // The record's +0x08 for this update.
     [[nodiscard]] static std::uint32_t phaseFlags(const CombatInput& input) { return input.phase; }
     // R1 held in a fight, or L1 released or L1 + R1 short of full rage while blocking: the block. Returns true when

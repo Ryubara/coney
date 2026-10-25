@@ -167,6 +167,8 @@ name = "Grab_BreakOnHit"
 page = "combat.md#code-grabs"
 role = "Breaks the grab, tackle or tag a hit human is in, stunning and damaging by the anim's knockdown value."
 level = "confirmed-code"
+coney = "src/combat/player_combat.h:PlayerCombat::holdsVictim"
+status = "compared"
 
 [[function]]
 address = 0x0022bce0

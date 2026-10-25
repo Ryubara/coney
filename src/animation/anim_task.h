@@ -320,8 +320,11 @@ class AnimTaskStack {
     }
     /// The events kept since the last call, in the order they were passed.
     [[nodiscard]] std::vector<ClipEvent> takeEvents() { return std::exchange(m_events, {}); }
-    /// Stub for the fails-first test commit: no events.
-    [[nodiscard]] std::span<const ClipEvent> firedEvents() const { return {}; }
+    /// The events the last advance() fired, in their order, whatever keepEvents() says: the newest task's clip's
+    /// passed frames, a clip handing over to its next task up to its end. The slow-motion events are read from them
+    /// as the original's event dispatcher, `Anim_FireFrameEvents`, switches slow motion
+    /// (docs/research/slow-motion.md#events).
+    [[nodiscard]] std::span<const ClipEvent> firedEvents() const { return m_fired; }
 
     /// The outgoing weight of a fade `elapsed` seconds into `duration`: 1 at the start, 0 at the end and after;
     /// 0 for a zero duration.
@@ -351,6 +354,7 @@ class AnimTaskStack {
     std::uint32_t m_flags = 0;                      // the human's record +0x08
     std::function<void(std::uint32_t)> m_startHook; // setStartHook()
     std::vector<ClipEvent> m_events;                // keepEvents(), takeEvents()
+    std::vector<ClipEvent> m_fired;                 // firedEvents(): the last advance's
     bool m_keepEvents = false;
 };
 

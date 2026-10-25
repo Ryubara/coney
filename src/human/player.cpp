@@ -388,9 +388,26 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
             m_cameras->shake(1);
         }
     }
-    // A slow-motion event on the player's clip (docs/research/camera.md#slow-motion).
-    if (const std::optional<std::uint16_t> event = m_driven->slowMotionEvent(); event && m_cameras != nullptr) {
-        m_cameras->slowMotion().event(*event, 0);
+    // What switched slow motion since the last update (docs/research/slow-motion.md#off), in the order they
+    // come in the step: any human leaving normal mode ends it for every player; the player knocked out ends his; then
+    // a slow-motion event his clip fired. Every human's notes are taken, so one not driven now keeps none for later.
+    bool reset = false;
+    bool ended = false;
+    for (Human* human : m_humans.humans()) {
+        reset = human->takeSlowMotionReset() || reset;
+        const bool knockedOut = human->takeSlowMotionEnd();
+        ended = ended || (knockedOut && human == m_driven);
+    }
+    if (m_cameras != nullptr) {
+        if (reset) {
+            m_cameras->slowMotion().reset();
+        }
+        if (ended) {
+            m_cameras->slowMotion().event(camera::SlowMotion::kEventOff, 0);
+        }
+        if (const std::optional<std::uint16_t> event = m_driven->slowMotionEvent(); event) {
+            m_cameras->slowMotion().event(*event, 0);
+        }
     }
     if (m_driven->outOfWorld()) {
         // Put back, the camera reset behind him with its configuration kept.

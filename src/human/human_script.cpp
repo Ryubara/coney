@@ -23,6 +23,8 @@ void Human::setHealthPercent(float percent) {
 }
 
 void Human::setNormalMode(bool full) {
+    // Leaving normal mode ends the players' slow motion whatever `full` says (`Human_ResetForMode`).
+    m_slowMotionReset = true;
     m_script.arrested = false;
     m_fighter.setNormal(m_animator, full);
 }

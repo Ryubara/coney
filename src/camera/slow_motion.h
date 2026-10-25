@@ -38,8 +38,13 @@ class SlowMotion {
         m_step = fraction > 0.0F && fraction < 1.0F ? fraction * kNormalStep : kNormalStep;
     }
 
-    /// Stub for the fails-first test commit: does nothing.
-    void reset() {}
+    /// A human leaving normal mode (`HuSetNormalMode`, a scene binding him): with the step not at 1/30 s, every player
+    /// is unmarked and the step is 1/30 s again, which also ends a script's slow motion
+    /// (docs/research/slow-motion.md#off). **Coney's reading**: the original also resets when a player's scripted
+    /// mark (`+0x3bb`, which `HuSetSlowMo` sets on a player) is set; with the step already at 1/30 s that changes only
+    /// the marks of a factor of 1, so Coney keeps no scripted mark.
+    /// @orig 0x002325e0 Human_ResetForMode (unknown)
+    void reset();
 
     /// The characters' step now, seconds.
     [[nodiscard]] float stepSeconds() const { return m_step; }

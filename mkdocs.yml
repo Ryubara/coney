@@ -185,6 +185,7 @@ nav:
           - "AI reimplementation plan: units and specifications": research/ai-reimpl.md
           - Cars: research/cars.md
           - Camera: research/camera.md
+          - "Slow motion: what turns it on and off": research/slow-motion.md
           - Scenes (cutscenes): research/scenes.md
           - Sound: research/sound.md
           - Sound events: research/sound-events.md
