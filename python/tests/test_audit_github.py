@@ -750,7 +750,10 @@ def test_a_next_page_with_no_or_a_repeated_cursor_stops_with_a_notice(cursor: st
         return "[]"
 
     raw = gh.fetch_raw(run)
-    assert any("paging does not end" in n and "pr.affected-unedited did not run" in n for n in raw["notices"])
+    assert any(
+        "paging does not end" in n and "after 2 pages" in n and "pr.affected-unedited did not run" in n
+        for n in raw["notices"]
+    )
 
 
 def test_endless_paging_is_capped(monkeypatch: pytest.MonkeyPatch) -> None:

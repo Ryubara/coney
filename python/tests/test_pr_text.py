@@ -2,6 +2,7 @@
 """Tests for step 5: the pull request text generated from the engineer's file, the task and the stamps, then checked."""
 
 import dataclasses
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -86,14 +87,10 @@ def test_the_engineer_writes_the_issues_affected_section_and_it_is_kept_as_writt
     assert problems(generated) == []
 
 
-def test_without_the_section_the_candidates_of_issue_impact_are_a_todo_the_engineer_confirms(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    built = make(tmp_path)
-    (built.unit.dir / "PR.md").write_text(without_issues_affected(built), encoding="utf-8")
-    seen: list[tuple[Path, str, str]] = []
+def fake_impact(monkeypatch: pytest.MonkeyPatch, seen: list[tuple[Path, str, str]]) -> None:
+    """Make `pr text` read two candidates from `issue impact`: #760 and #757, which is the unit's own issue."""
 
-    def fake_impact(root: Path, base: str, tip: str) -> dict[str, object]:
+    def impact(root: Path, base: str, tip: str) -> dict[str, object]:
         seen.append((root, base, tip))
         detail = [{"detail": "modifies src/ai/widget.cpp"}]
         return {
@@ -103,15 +100,45 @@ def test_without_the_section_the_candidates_of_issue_impact_are_a_todo_the_engin
             ]
         }
 
-    monkeypatch.setattr(pr_text, "_run_impact", fake_impact)
+    monkeypatch.setattr(pr_text, "_run_impact", impact)
+
+
+def issues_affected_todo(generated: Generated) -> str:
+    """The text of the Issues affected section of a generated body."""
+    return generated.body.split("## Issues affected" + chr(10) * 2)[1].split(chr(10) * 2 + "## ")[0]
+
+
+def test_without_the_section_the_candidates_of_issue_impact_are_a_todo_the_engineer_confirms(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    built = make(tmp_path)
+    (built.unit.dir / "PR.md").write_text(without_issues_affected(built), encoding="utf-8")
+    seen: list[tuple[Path, str, str]] = []
+    fake_impact(monkeypatch, seen)
     generated = generate(built)
-    section = generated.body.split("## Issues affected" + chr(10) * 2)[1].split(chr(10) * 2 + "## ")[0]
+    section = issues_affected_todo(generated)
     shape = issues_affected_shape(built.conventions.pull_requests)
     assert section.startswith(f"TODO: write this section in PR.md: {shape}.")
     assert "- `#760` `Widget 'ready' @\u200bteam` (candidate: `modifies src/ai/widget.cpp`)" in section
     assert "#757" not in section  # the issue the task finishes is not a candidate
     assert any(t.startswith("body: '## Issues affected' is not filled in") for t in problems(generated))
     assert seen == [(built.root, built.base, built.tip)]
+
+
+def test_a_task_that_does_not_finish_its_issue_keeps_it_as_a_candidate(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    built = make(tmp_path)
+    (built.unit.dir / "PR.md").write_text(without_issues_affected(built), encoding="utf-8")
+    path = built.unit.dir / "TASK.md"
+    path.write_text(
+        path.read_text(encoding="utf-8").replace("kind: feature", "kind: feature\nfinishes: false"), encoding="utf-8"
+    )
+    fake_impact(monkeypatch, [])
+    generated = generate(built)
+    assert "Fixes" not in generated.body  # the issue stays open, so it is an issue this change affects
+    section = issues_affected_todo(generated)
+    assert "- `#757` `The task's own issue` (candidate: `modifies src/ai/widget.cpp`)" in section
 
 
 def test_a_failing_issue_impact_is_said_in_the_todo_not_raised(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -127,9 +154,18 @@ def test_a_failing_issue_impact_is_said_in_the_todo_not_raised(tmp_path: Path, m
     assert not generated.ok
 
 
-def test_what_the_generated_section_may_hold_is_what_check_body_accepts(tmp_path: Path) -> None:
-    rules = make(tmp_path).conventions.pull_requests
-    for section in (rules.issues_affected.example, "- #12: step 2 is done", "None (no open issue is affected)"):
+def test_what_the_generated_section_asks_for_is_what_check_body_accepts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    built = make(tmp_path)
+    (built.unit.dir / "PR.md").write_text(without_issues_affected(built), encoding="utf-8")
+    fake_impact(monkeypatch, [])
+    asked = issues_affected_todo(generate(built))
+    rules = built.conventions.pull_requests
+    item = re.search(r"'(- #N: [^']+)'", asked)
+    example = re.search(r"for example '([^']+)'", asked)
+    assert item is not None and example is not None  # the TODO shows the item form and the example it asks for
+    for section in (item.group(1).replace("#N", "#12"), example.group(1)):
         assert issues_affected_problems(section, rules) == []
 
 

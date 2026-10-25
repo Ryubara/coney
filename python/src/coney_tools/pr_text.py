@@ -547,9 +547,9 @@ def issues_affected(ctx: _Context, run: ImpactRunner | None = None) -> str:
     """The text for the Issues affected section when the engineer's file has none: the candidate issues from
     `coney-tools issue impact` as a TODO that asks the engineer to confirm them, since a suggestion is never a verdict.
 
-    What the section holds is said as `check-body` says it (`issues_affected_shape`), and the issues the task finishes
-    are left out of the candidates, as `issue impact --description` leaves out a `Fixes` line's. The command reads
-    GitHub, so a failure to run it is said in the TODO, never raised.
+    What the section holds is said as `check-body` says it (`issues_affected_shape`). The issues the task finishes (it
+    has a `Fixes` line for them) are left out of the candidates, as `issue impact --description` leaves them out. The
+    command reads GitHub, so a failure to run it is said in the TODO, never raised.
     """
     subject = ctx.subject
     ask = f"{TODO} write this section in PR.md: {issues_affected_shape(subject.conventions.pull_requests)}."
@@ -558,8 +558,11 @@ def issues_affected(ctx: _Context, run: ImpactRunner | None = None) -> str:
     except ConfigError as error:
         return f"{ask} `coney-tools issue impact` could not run ({error})."
     lines = [ask]
+    # A task that does not finish its issue (`finishes: false`) has no Fixes line, so the issue stays open and stays a
+    # candidate: the same test as the Summary's Fixes line.
+    finishes = ctx.keys.get("finishes", True) is not False
     for item in report.get("issues", []):
-        if item.get("number") in ctx.task.issues:
+        if finishes and item.get("number") in ctx.task.issues:
             continue
         reasons = item.get("reasons") or [{}]
         first = reasons[0].get("detail") or reasons[0].get("what") or ""

@@ -191,8 +191,8 @@ pull_requests:
   # issues out of date because a pull request named only the issue it fixes). The section holds one item per issue,
   # `- #N: how it is affected`, or a `none` line with a reason in parentheses. `coney-tools issue impact` suggests the
   # list; after the merge the coordinator edits each issue, and the audit (pr.affected-unedited) reports a pull request
-  # merged since `since` whose listed issues were not edited after the merge. `since` is when the rule's pull request
-  # (#802) merged; set it to the second of that merge (UTC).
+  # merged since `since` whose listed issues were not edited after the merge. `since` is the second (UTC) the rule
+  # started: a pull request merged before it was written before the rule and is not held to it.
   issues_affected:
     section: Issues affected
     none: "None"
