@@ -310,7 +310,7 @@ Circle catches the man in front; held, it runs him down. Throws are on [Combat: 
 
 ## Open questions
 
-- **The counter chance** {#q-counter}: read as `rand() % N` with `N` from a table not yet named.
+- **The counter chance**{#q-counter}: read as `rand() % N` with `N` from a table not yet named.
 ````
 
 ### Evidence levels on a page {#evidence-levels}
