@@ -34,12 +34,20 @@ failed`; the task name when the unit names no issue), `coordinator · 2 units ·
 start with coney-agent` for a session that started with no `--agent`. The role is the session's agent type, which the
 mod reads from the start of the session. The issue and the stage are written as the pane's row writes them.
 
-**The pane** (`/conclave`, or a press on the band) has two sections and two layouts. From `pane_wide_columns` (110) a
-row is one line. Under that, down to `pane_min_columns` (60), the pane is compact: it opens with the band's own items in
-the band's colours, and a row has the key fields on its first line (the mark, the issue, the stage and the pull request)
-and the title, who works on it and the build on a dim second line, clipped to the width. The details of an open row wrap
-under their label, so nothing is lost to the width. Under 60 columns the pane only says it needs that width and the band
-stays. The words (stage, build, pull request, counts) are the band's and the status line's in both layouts. The pane
+**The pane** (`/conclave`, or a press on the band) has two sections and a layout for every width, chosen by three
+`conclave` keys of [.github/conventions.yml](repo:.github/conventions.yml) that the snapshot carries:
+
+| Width | Layout |
+| --- | --- |
+| From `pane_wide_columns` (110) | **Wide**: a row is one line. |
+| From `pane_compact_columns` (60) | **Compact**: the pane opens with the band's own items in the band's colours, and a row has the key fields on its first line (the mark, the issue, the stage and the pull request) and the title, who works on it and the build on a dim second line. |
+| From `pane_min_columns` (30) | **Narrow**: as compact, but a row's first line keeps only the mark, the issue (the task when it names none) and the stage; the pull request, who, the build and last the title go on the second line. A claim reads `#741 2d 14h (warned) contrib-a`: the bare countdown, `~2d 14h` while expiry is not enforced (it would expire then), or `waits: S-blocked`, ahead of the claimant. |
+| Under `pane_min_columns` | **One line**: the band's items joined by `·`, clipped, in the colour of the worst of them. |
+
+In the compact and narrow layouts every line is clipped to the width with an ellipsis, so the most decision-relevant
+text (the issue, the stage, the countdown) comes first and the title is what a clip cuts. The details of an open row
+wrap under their label, so nothing an open row says is lost to the width. The pane is never empty and never refuses a
+width. The words (stage, build, pull request, counts) are the band's and the status line's in every layout. The pane
 opens by itself at the start of a session where the terminal is wide enough for the engine to place an unasked pane, and
 waits for `/conclave` where it is not; the engine seats a pane the person opens at any width.
 

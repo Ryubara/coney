@@ -15,7 +15,11 @@ export type Config = {
   require_role: boolean
   claude_code: string
   intervals: { local: number; github: number; github_idle: number }
+  /** Under it the pane is one clipped summary line; from it the narrow layout. */
   pane_min_columns: number
+  /** From it the compact layout. */
+  pane_compact_columns: number
+  /** From it the wide layout. */
   pane_wide_columns: number
   band_narrow_columns: number
   stale_after_reads: number

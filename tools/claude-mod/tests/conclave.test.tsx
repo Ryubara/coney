@@ -416,15 +416,6 @@ test('a claim in its last hours is red, and one that waits has no countdown', as
   await ui.unmount()
 })
 
-test('a pane under the minimum width says what it needs and points to the band', async ($, on) => {
-  const world = engine(on, prints(snapshot()))
-  await start($, world)
-
-  const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: 59 } })
-  expect((await ui.find({ type: 'Text' }))?.text).toContain('needs about 60 columns')
-  await ui.unmount()
-})
-
 type Drawn = { type: string; props: Record<string, unknown>; children: unknown[] }
 type Line = { columns: number; text: string }
 
@@ -484,6 +475,82 @@ for (const columns of [60, 80, 109] as const) {
     const shown = (await ui.findAll({ type: 'Text' })).map(item => item.text ?? '').join(' ')
     for (const word of ['2026-10-26', 'UTC)', '/work/worktrees/fix-frame-812', '· finished', 'overlaps']) expect(shown).toContain(word)
     expect(overflows(await drawn(ui), columns)).toEqual([])
+    await ui.unmount()
+  })
+}
+
+for (const columns of [30, 40, 59] as const) {
+  test(`the pane at ${columns} columns is narrow: the summary, the rows and the claims, every line clipped to fit`, async ($, on) => {
+    const world = engine(on, prints(snapshot(enforced)))
+    await start($, world)
+
+    const band = await $.ui.mount({ ...BAND, surface: 'terminal' })
+    const items = (await band.findAll({ type: 'Button' })).map(item => item.text ?? '')
+    await band.unmount()
+    const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: columns } })
+    const lines = await drawn(ui)
+    const text = lines.map(line => line.text).join('\n')
+    // never the refusal: the band's own items (pull requests, builds, critical issues, disk) head the pane
+    expect(text).not.toContain('needs about')
+    expect(items.length).toBeGreaterThan(3)
+    for (const item of items) expect(text).toContain(item)
+    for (const key of ['PRs 1', 'builds 1', 'P-critical #790', 'disk ']) expect(text).toContain(key)
+    // every unit is a row that still opens, its issue and stage first; the pull request moves to the line below
+    const rows = await ui.findAll({ type: 'Button' })
+    expect(rows.map(row => row.key)).toEqual(['task:fix-frame-812', 'task:fix-new', 'task:add-task-start'])
+    expect(rows[0]?.text).toContain('#741 compared failed')
+    expect(text).toContain('PR #812')
+    // each claim keeps its issue and its countdown whole, ahead of the claimant
+    expect(text).toMatch(/^ {2}#741 2d 14h /m)
+    expect(text).toMatch(/^ {2}#770 22h 00m /m)
+    expect(text).toContain('CLAIMS')
+    expect(overflows(lines, columns)).toEqual([])
+    // a cut line ends in an ellipsis, never wraps
+    expect(lines.some(line => line.text.endsWith('…'))).toBe(true)
+
+    await ui.press({ key: 'task:fix-frame-812' })
+    expect((await ui.findAll({ type: 'Text', text: /^stamps/ })).length).toBeGreaterThan(0)
+    expect((await ui.findAll({ type: 'Text', text: /^reason/ })).length).toBe(1)
+    expect(overflows(await drawn(ui), columns)).toEqual([])
+    await ui.unmount()
+  })
+}
+
+test('a narrow claim that is not enforced yet, or waits, says so in a few characters', async ($, on) => {
+  const world = engine(
+    on,
+    prints(
+      snapshot(copy => {
+        if (copy.claims !== null && copy.claims.error === null) {
+          const second = copy.claims.claims[1]
+          if (second !== undefined) {
+            second.deadline = null
+            second.waiting = 'S-blocked'
+          }
+        }
+      }),
+    ),
+  )
+  await start($, world)
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: 30 } })
+  const text = (await drawn(ui)).map(line => line.text).join('\n')
+  expect(text).toMatch(/^ {2}#741 ~2d 14h /m)
+  expect(text).toMatch(/^ {2}#770 waits: S-blocked/m)
+  await ui.unmount()
+})
+
+for (const columns of [29, 20, 8] as const) {
+  test(`under the narrowest layout, at ${columns} columns, the pane is one clipped summary line`, async ($, on) => {
+    const world = engine(on, prints(snapshot()))
+    await start($, world)
+
+    const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: columns } })
+    const lines = await drawn(ui)
+    expect(lines.length).toBe(1)
+    expect(lines[0]?.text).not.toContain('needs about')
+    expect(lines[0]?.text.startsWith('2 units'.slice(0, columns - 2))).toBe(true)
+    expect(overflows(lines, columns)).toEqual([])
     await ui.unmount()
   })
 }

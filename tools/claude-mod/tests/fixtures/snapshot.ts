@@ -27,7 +27,8 @@ export default {
    "github": 60,
    "github_idle": 300
   },
-  "pane_min_columns": 60,
+  "pane_min_columns": 30,
+  "pane_compact_columns": 60,
   "pane_wide_columns": 110,
   "band_narrow_columns": 100,
   "stale_after_reads": 3,

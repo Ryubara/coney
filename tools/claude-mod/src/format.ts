@@ -92,6 +92,24 @@ export function showUtc(iso: string): string {
 
 type ClaimRules = { warn_hours: number; deadline_hours: number; enforced: boolean }
 
+/**
+ * The pane's layouts, widest first: `wide` puts a row on one line, `compact` gives a row its key fields and then its
+ * title on a second line, `narrow` keeps only the issue and the stage on the first line and abbreviates the claims, and
+ * `line` is one clipped summary line.
+ */
+export type Layout = 'wide' | 'compact' | 'narrow'
+
+/** The layout for a pane `columns` wide, by the three limits the snapshot carries (never a width of the mod's own). */
+export function paneLayout(
+  columns: number,
+  config: Pick<Config, 'pane_min_columns' | 'pane_compact_columns' | 'pane_wide_columns'>,
+): Layout | 'line' {
+  if (columns >= config.pane_wide_columns) return 'wide'
+  if (columns >= config.pane_compact_columns) return 'compact'
+  if (columns >= config.pane_min_columns) return 'narrow'
+  return 'line'
+}
+
 /** A claim's countdown colour: amber from the warning, red in the last `redHours`; none while it waits or is unenforced. */
 export function claimTone(claim: ClaimRow, rules: ClaimRules, redHours: number, nowMs: number): Tone {
   if (claim.deadline === null) return 'dim'
@@ -114,13 +132,27 @@ export function claimExpiry(claim: ClaimRow, rules: ClaimRules, nowMs: number, i
 }
 
 /**
- * One held claim's line in the claims list. The wide one gives the claimant, the stage and then the countdown; the
- * short one (`isShort`, the compact pane) leads with the countdown. Both say `(warned)` only for a claim that has a
- * deadline: one that waits has no clock to warn about.
+ * A claim's countdown in the fewest characters, for the narrow pane: `2d 14h`, `~2d 14h` while expiry is not enforced
+ * (it would expire then), `waits: S-blocked`, `no deadline` or `expired`. The colour carries how near it is.
  */
-export function claimLineText(claim: ClaimRow, rules: ClaimRules, nowMs: number, isShort: boolean): string {
+export function claimExpiryTiny(claim: ClaimRow, rules: ClaimRules, nowMs: number): string {
+  if (claim.deadline === null) return claim.waiting === null ? 'no deadline' : `waits: ${claim.waiting}`
+  const left = countdown(claim.deadline, nowMs)
+  return rules.enforced || left === 'expired' ? left : `~${left}`
+}
+
+/**
+ * One held claim's line in the claims list. The wide one gives the claimant, the stage and then the countdown; the
+ * compact one leads with the countdown; the narrow one has the bare countdown and the warning ahead of the claimant, so
+ * a line clipped to the pane keeps them. All say `(warned)` only for a claim that has a deadline: one that waits has no
+ * clock to warn about.
+ */
+export function claimLineText(claim: ClaimRow, rules: ClaimRules, nowMs: number, layout: Layout): string {
   const warned = claim.deadline !== null && claim.warned
-  if (isShort) {
+  if (layout === 'narrow') {
+    return `  #${claim.issue} ${claimExpiryTiny(claim, rules, nowMs)}${warned ? ' (warned)' : ''} ${claim.claimant}`
+  }
+  if (layout === 'compact') {
     return `  #${claim.issue} ${claimExpiry(claim, rules, nowMs, true)}  ${claim.claimant}${warned ? ' (warned)' : ''}`
   }
   const expiry = claimExpiry(claim, rules, nowMs)

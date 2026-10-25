@@ -78,6 +78,7 @@ def _config(src: Sources) -> dict[str, Any]:
             "github_idle": conclave.github_idle_seconds,
         },
         "pane_min_columns": conclave.pane_min_columns,
+        "pane_compact_columns": conclave.pane_compact_columns,
         "pane_wide_columns": conclave.pane_wide_columns,
         "band_narrow_columns": conclave.band_narrow_columns,
         "stale_after_reads": conclave.stale_after_reads,

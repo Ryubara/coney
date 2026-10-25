@@ -1047,9 +1047,11 @@ class Conclave:
     local_seconds: int
     github_seconds: int
     github_idle_seconds: int
-    #: The pane's narrowest useful width: under it the pane only says so, and the band and the status line stay.
+    #: The narrowest width for the pane's rows: from it the narrow layout, under it one clipped summary line.
     pane_min_columns: int
-    #: From this width the pane draws its full layout; between the two it draws the compact one (shorter rows).
+    #: From this width the pane draws the compact layout; between `pane_min_columns` and it, the narrow one.
+    pane_compact_columns: int
+    #: From this width the pane draws its full layout (a row on one line).
     pane_wide_columns: int
     #: The width below which the band takes two short lines.
     band_narrow_columns: int
@@ -1985,6 +1987,7 @@ def _read_conclave(data: object, where: str) -> Conclave:
         "github_seconds",
         "github_idle_seconds",
         "pane_min_columns",
+        "pane_compact_columns",
         "pane_wide_columns",
         "band_narrow_columns",
         "stale_after_reads",
@@ -1997,8 +2000,10 @@ def _read_conclave(data: object, where: str) -> Conclave:
     hooks_file = _text(table["hooks_file"], _at(where, "hooks_file"))
     if hooks_file.startswith(("/", "\\")) or ".." in hooks_file or ":" in hooks_file:
         raise _fail(_at(where, "hooks_file"), "a path inside the checkout")
-    if numbers["pane_wide_columns"] < numbers["pane_min_columns"]:
-        raise _fail(_at(where, "pane_wide_columns"), "must not be less than pane_min_columns")
+    if numbers["pane_compact_columns"] < numbers["pane_min_columns"]:
+        raise _fail(_at(where, "pane_compact_columns"), "must not be less than pane_min_columns")
+    if numbers["pane_wide_columns"] < numbers["pane_compact_columns"]:
+        raise _fail(_at(where, "pane_wide_columns"), "must not be less than pane_compact_columns")
     if numbers["github_idle_seconds"] < numbers["github_seconds"]:
         raise _fail(_at(where, "github_idle_seconds"), "must not be less than github_seconds")
     return Conclave(

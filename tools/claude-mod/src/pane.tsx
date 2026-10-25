@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The pane: units and issues with rows that open, and every held claim with a live countdown. Draws; never decides,
-// and writes nothing but which row is open. Two layouts from one set of fields: the wide one puts a row on one line
-// (from `pane_wide_columns`), the compact one gives the key fields a first line and wraps the rest underneath, down to
-// `pane_min_columns`; the words come from format.ts, which the band and the status line use too.
+// and writes nothing but which row is open. Three layouts from one set of fields, picked by the widths the snapshot
+// carries (format.ts `paneLayout`): the wide one puts a row on one line (from `pane_wide_columns`), the compact one gives
+// the key fields a first line and the rest a dim second one (from `pane_compact_columns`), and the narrow one keeps only
+// the issue and the stage on the first line and abbreviates the claims (from `pane_min_columns`). Every line of the two
+// shorter ones is clipped to the pane with an ellipsis; under the narrow one the pane is one clipped summary line. The
+// words come from format.ts, which the band and the status line use too.
 import type { EngineInterface, RenderInputOf } from 'claude-code'
 
 import type { ClaimRow, Held, Snapshot, StepState, Unit } from '../types'
@@ -10,6 +13,7 @@ import {
   bandItems,
   buildText,
   claimExpiry,
+  claimExpiryTiny,
   claimLineText,
   claimTone,
   clip,
@@ -19,6 +23,7 @@ import {
   mark,
   markTone,
   packLines,
+  paneLayout,
   prText,
   showUtc,
   stageText,
@@ -67,8 +72,12 @@ function reason(unit: Unit): string | null {
 }
 
 const NO_RULES = { warn_hours: 0, deadline_hours: 0, enforced: false }
-/** The width of a detail's label column (`expiry` and the rest) in an open row. */
-const LABEL = 10
+
+/** The tone of a line that stands for several band items: the worst of theirs. */
+function worstTone(items: readonly BandItem[]): Tone {
+  const tones = items.map(item => item.tone)
+  return tones.includes('bad') ? 'bad' : tones.includes('warn') ? 'warn' : 'normal'
+}
 
 /** What a collapsed unit row says after its title in the wide layout: who, the stage, the build, the pull request, the age. */
 function unitSummary(unit: Unit, nowMs: number): string {
@@ -84,26 +93,33 @@ export async function drawPane($: EngineInterface, e: PaneInput) {
   const openRow = await getOpen($)
   const { Box, Button, Text } = $.ui.resolve(e)
   const snapshot = state.snapshot
+  // One column spare, so a line that fills the pane never wraps by the terminal's own rule (and never less than one).
+  const room = Math.max(1, e.props.bodyColumns - 1)
   if (snapshot === null) {
     return (
       <Box flexDirection="column">
-        <Text dimColor>{state.error === null ? 'Reading the first snapshot...' : `No snapshot yet: ${state.error}`}</Text>
+        <Text dimColor>
+          {clip(state.error === null ? 'Reading the first snapshot...' : `No snapshot yet: ${state.error}`, room)}
+        </Text>
       </Box>
     )
   }
-  const { pane_min_columns: minColumns, pane_wide_columns: wideColumns } = snapshot.config
-  if (e.props.bodyColumns < minColumns) {
+  const layout = paneLayout(e.props.bodyColumns, snapshot.config)
+  if (layout === 'line') {
+    // Too narrow for rows: the band's items on one line, clipped, in the colour of the worst of them.
+    const items = bandItems(state, nowMs)
+    const text = items.length === 0 ? 'Conclave: nothing to count' : items.map(item => item.text).join(' · ')
     return (
-      <Text dimColor>
-        {`The Conclave pane needs about ${minColumns} columns; the band and the status line show the summary.`}
-      </Text>
+      <Box flexDirection="column">
+        <Text color={color(worstTone(items))}>{clip(text, room)}</Text>
+      </Box>
     )
   }
-  const isCompact = e.props.bodyColumns < wideColumns
-  // One column spare, so a line that fills the pane never wraps by the terminal's own rule.
-  const room = e.props.bodyColumns - 1
-  // How far the details of an open row sit in.
-  const indent = isCompact ? 2 : 4
+  const isCompact = layout !== 'wide'
+  const isNarrow = layout === 'narrow'
+  // How far the details of an open row sit in, and the width of their label column (`expiry` and the rest).
+  const indent = isNarrow ? 1 : isCompact ? 2 : 4
+  const LABEL = isNarrow ? 9 : 10
   const surface = e.surface
   const toggle = (key: string) => toggleOpen($, key)
   const line = (text: string, tone: Tone = 'normal', key?: string) => (
@@ -165,16 +181,23 @@ export async function drawPane($: EngineInterface, e: PaneInput) {
     const caret = `${isOpen ? '▾' : '▸'} ${mark(kind, surface)} `
     const open = isOpen && unitDetails(unit, claimOf(snapshot, unit))
     if (isCompact) {
-      // Line 1: the mark, the issue, the stage and the pull request. Line 2, dim: the title, who, the build.
-      const head = [`${issueIds(unit)} ${stageText(unit)}`, prText(unit, nowMs)].filter(Boolean).join('  ')
-      const rest = [unitTitle(snapshot, unit), unit.agent?.id ?? unit.claimant ?? '?', buildText(unit, nowMs)]
+      // Compact: line 1 the mark, the issue, the stage and the pull request; line 2, dim, the title, who, the build.
+      // Narrow: line 1 only the issue (the task when it names none) and the stage; line 2 the pull request, who, the
+      // build and last the title, the first thing a clip cuts.
+      const who = unit.agent?.id ?? unit.claimant ?? '?'
+      const head = isNarrow
+        ? `${issueIds(unit) || unit.task} ${stageText(unit)}`
+        : [`${issueIds(unit)} ${stageText(unit)}`, prText(unit, nowMs)].filter(Boolean).join('  ')
+      const rest = isNarrow
+        ? [prText(unit, nowMs), who, buildText(unit, nowMs), unitTitle(snapshot, unit)]
+        : [unitTitle(snapshot, unit), who, buildText(unit, nowMs)]
       return (
         <Box key={key} flexDirection="column">
           <Button key={key} onPress={() => toggle(key)}>
             <Text color={color(markTone(kind))}>{caret}</Text>
             <Text bold>{clip(head, room - 4)}</Text>
           </Button>
-          {line(clip(`   ${rest.filter(Boolean).join(' · ')}`, room), 'dim')}
+          {line(clip(`${isNarrow ? '  ' : '   '}${rest.filter(Boolean).join(' · ')}`, room), 'dim')}
           {open}
         </Box>
       )
@@ -208,16 +231,20 @@ export async function drawPane($: EngineInterface, e: PaneInput) {
       </Box>
     )
     if (isCompact) {
-      const rest = [claim.title ?? '', claim.claimant, claim.stage ?? claim.status]
+      // The narrow row has the bare countdown, and its second line puts the title last, where a clip cuts first.
+      const expiry = isNarrow ? claimExpiryTiny(claim, rules, nowMs) : claimExpiry(claim, rules, nowMs, true)
+      const rest = isNarrow
+        ? [claim.claimant, claim.stage ?? claim.status, claim.title ?? '']
+        : [claim.title ?? '', claim.claimant, claim.stage ?? claim.status]
       return (
         <Box key={key} flexDirection="column">
           <Button key={key} onPress={() => toggle(key)}>
             <Text color={color('warn')}>{caret}</Text>
             <Text bold color={color(tone)}>
-              {clip(`#${claim.issue} ${claimExpiry(claim, rules, nowMs, true)}`, room - 4)}
+              {clip(`#${claim.issue} ${expiry}`, room - 4)}
             </Text>
           </Button>
-          {line(clip(`   ${rest.filter(Boolean).join(' · ')}`, room), 'dim')}
+          {line(clip(`${isNarrow ? '  ' : '   '}${rest.filter(Boolean).join(' · ')}`, room), 'dim')}
           {open}
         </Box>
       )
@@ -236,14 +263,14 @@ export async function drawPane($: EngineInterface, e: PaneInput) {
     )
   }
 
-  // One held claim's line in the claims list: the words are format.ts's, and the compact one is clipped to the pane.
+  // One held claim's line in the claims list: the words are format.ts's, and the shorter ones are clipped to the pane.
   const claimLine = (claim: ClaimRow) => {
     const tone = claimTone(claim, rules, redHours, nowMs)
-    const text = claimLineText(claim, rules, nowMs, isCompact)
+    const text = claimLineText(claim, rules, nowMs, layout)
     return line(isCompact ? clip(text, room) : text, tone, `claim-${claim.issue}`)
   }
 
-  // The compact pane opens with the band's own items, in the band's own colours, so what the band counts is what the
+  // The compact and narrow panes open with the band's own items, in the band's own colours, so what the band counts is what the
   // rows below list. They pack into lines by their text; each is drawn on its own, with a dim separator between.
   const items = isCompact ? bandItems(state, nowMs) : []
   let from = 0
@@ -261,7 +288,8 @@ export async function drawPane($: EngineInterface, e: PaneInput) {
       ])}
     </Box>
   )
-  // A line of the compact pane that may be long (an account, an error) is cut to the pane; the wide pane lets it wrap.
+  // A line of the compact or narrow pane that may be long (an account, an error) is cut to the pane; the wide pane lets
+  // it wrap.
   const fit = (text: string) => (isCompact ? clip(text, room) : text)
   const readLine = `${snapshot.github ? 'with GitHub' : 'local only'} · read ${fresh}${state.error ? ` · local read failed: ${state.error}` : ''}${state.githubError ? ` · GitHub read failed: ${state.githubError}` : ''}`
   return (
@@ -270,14 +298,14 @@ export async function drawPane($: EngineInterface, e: PaneInput) {
       <Text dimColor>{fit(readLine)}</Text>
       <Text bold>{fit(`UNITS AND ISSUES${account ? ` (mine: ${account})` : ''}`)}</Text>
       {snapshot.units.error !== null && line(fit(`units not read: ${snapshot.units.error}`), 'bad')}
-      {units.length === 0 && mine.length === 0 && snapshot.units.error === null && line('No unit or claim of yours.', 'dim')}
+      {units.length === 0 && mine.length === 0 && snapshot.units.error === null && line(fit('No unit or claim of yours.'), 'dim')}
       {units.map(unitRow)}
       {mine.map(issueRow)}
       <Text> </Text>
-      <Text bold>CLAIMS (all contributors)</Text>
-      {snapshot.claims === null && line('Waiting for the first GitHub read.', 'dim')}
+      <Text bold>{fit('CLAIMS (all contributors)')}</Text>
+      {snapshot.claims === null && line(fit('Waiting for the first GitHub read.'), 'dim')}
       {snapshot.claims !== null && snapshot.claims.error !== null && line(fit(`claims not read: ${snapshot.claims.error}`), 'bad')}
-      {claims !== null && claims.claims.length === 0 && line('No held claims.', 'dim')}
+      {claims !== null && claims.claims.length === 0 && line(fit('No held claims.'), 'dim')}
       {claims !== null && claims.claims.map(claimLine)}
     </Box>
   )
