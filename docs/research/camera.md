@@ -220,7 +220,7 @@ The base camera's own methods, the frustum, the views and the shake, `0x00120868
 | `0x00124778` | `Cam_Follow_Construct` | Cam_Follow constructor (0x480 bytes, vtable `0x00535d50`): distances 4/9/6, pitch 15°, fov 65, offset (0,0,1.4), lag 0.22, pitch limits -20..50°, near 0.1, far `0x005d91c0` (115); clears the latches and the camera-obstacle list. [the follow camera object](#the-follow-camera-object). | confirmed (code) |
 | `0x00124be0` | `Cam_Follow_Destroy` | Cam_Follow destructor. | confirmed (code) |
 | `0x00124c28` | `Cam_Follow_CopySettings` | Copies another follow camera's distances, pitch, fov, near plane and offset into this one, then applies them (`0x00125888`). Used when a second player joins. | confirmed (code) |
-| `0x00124d00` | `Cam_Follow_Reset` | Follow camera reset (vtable `+0x13c`, CameraReset): place behind the target (`0x00124f38`(180,-1)), target pitch and fov back to the configured ones, line-of-sight pull-in. [setting up](#setting-up). | confirmed (code) |
+| `0x00124d00` | `Cam_Follow_Reset` | Follow camera reset (vtable `+0x13c`, CameraReset): place behind the target (`0x00124f38`(180,-1)), target pitch and fov back to the configured ones, then the orientation turned to the look-at point; casts no ray. [setting up](#setting-up). | confirmed (code) |
 | `0x00124f38` | `Cam_Follow_PlaceBehind` | Places the camera at a heading from the target's facing (180 = behind) at a distance picked from the band presets (min/default/max-0.5) and sets the zoom step. [setting up](#setting-up). | confirmed (code) |
 | `0x001250a8` | `Cam_Follow_PlaceAtHeading` | Puts the camera at a heading relative to the target's facing and a distance about the look-at point, pitch to the target pitch; optionally sets the band to that distance (+0.5 deep) and the zoom step from it. | confirmed (code) |
 | `0x001254f0` | `Cam_Follow_StepZoom` | Sets the zoom step `+0x400` and the upper pitch limit `+0x3ac` from a distance (50/40/30°). [pitch](#pitch). | confirmed (code) |
@@ -684,14 +684,20 @@ current one clamped to the band: the minimum when it is at most halfway from the
 then the default), the default when at most halfway from the default to the maximum (zoom step the maximum), else the
 maximum − 0.5 (zoom step the minimum); then the previous look-at points are set to the current one, the wanted near
 edge cleared, **the target pitch set back to the configured pitch** (13°) and reached at once, the wanted field of view
-set back to the configured one (over 1 s), and a line-of-sight test from the target pulls the camera in if the world is
-in the way. It moves the band to that distance (`0x00124f38` passes 1 as `0x001250a8`'s last argument, which sets
-`+0x32c` to it and `+0x330` to it + min(0.5, max − min); this page said before that it did not move the band).
-Confirmed (code). For a follow camera the other player's follow camera is reset too. The
-placement reads the target where it stands at that moment: `Cam_Follow_PlaceAtHeading` first gathers the targets and
-snaps the look-at point onto the target's transform (`Cam_Follow_RefreshLookAt` `0x00127d48`), and its heading is the
-target's facing then, so a `CameraReset` right after a teleport goes behind the new place. Confirmed (code). The
-distance it starts from is the held position's (`+0x260`) from the look-at point before that snap.
+set back to the configured one (over 1 s). It moves the band to that distance (`0x00124f38` passes 1 as
+`0x001250a8`'s last argument, which sets `+0x32c` to it and `+0x330` to it + min(0.5, max − min); this page said
+before that it did not move the band). Last, it turns the camera to look from its new position at the look-at point
+(`Mat_LookAt` `0x00337028`, then `Mat_ToQuat` `0x003365c8`) and copies the position and orientation into the last
+update's camera (`+0x1e0`). **It casts no ray**: its only callees are `0x00124f38`, `Cam_Follow_ArmSplitTimers`,
+`Cam_Follow_GetViewPitch`, `Cam_Follow_Pitch`, `Mat_LookAt`, `Mat_ToQuat` and `Quat_AxisX`/`Quat_AxisY`, and the
+slots it calls (`+0x1bc` at `0x00125878`, `+0x1c4` at `0x004db168`) only store the position and the orientation.
+Confirmed (code) at `0x00124d00`. So a camera reset into a wall stays there until the next update's
+[collision step](#collision) (`0x00130990`) moves it, inferred. For a follow camera the other player's follow camera
+is reset too. The placement reads the target where it stands at that moment: `Cam_Follow_PlaceAtHeading` first
+gathers the targets and snaps the look-at point onto the target's transform (`Cam_Follow_RefreshLookAt`
+`0x00127d48`), and its heading is the target's facing then, so a `CameraReset` right after a teleport goes behind
+the new place. Confirmed (code). The distance it starts from is the held position's (`+0x260`) from the look-at point
+before that snap.
 
 ### The follow update {#update}
 
@@ -1430,9 +1436,18 @@ calls and constants; the overall reading is inferred:
   fourth argument, the materials to skip (`0x001311a8`, `0x001312e0`, `0x00131730`, ...). So the camera sees
   through low fences, railings and unclimbable chain-link. Confirmed (code).
 - **A height ray** (`0x00130c28`) straight down from the look-at point (`0x00511770`, (0, 0, −1)), as long as the
-  look-at offset plus 0.5 m (1.9 m), mask `0x200`: when it hits a face whose normal's `z` is at most cos 15° (a slope,
-  or the top of something under the look-at), `0x0012f3e0` eases a pitch offset (`+0x3a4`) 10% per update toward
-  the slope's angle, 0 on flat ground. Confirmed (code).
+  look-at offset plus 0.5 m (1.9 m), mask `0x200`. Only a hit on a face whose normal's `z` lies from 0.6
+  (`0x005d91cc`) up to cos 15° (a slope between 15° and 53.13°, tested at `0x00130c44`-`0x00130c64`) calls
+  `Cam_Follow_SlopePitch` (`0x0012f3e0`); flat ground and steep faces leave the pitch offset (`+0x3a4`) as it is.
+  `0x0012f3e0` has two cases, picked by the dot product of the view direction (look-at point to the wanted position)
+  with the slope's normal: below −cos 87° (the camera on the uphill side) and above cos 87° (the downhill side);
+  within 3° of across the slope it does nothing. Each case casts its own `0x200` ray along the reversed normal, at
+  least 6 m long, from a height above the look-at point (the up case's from the caller's height, the down case's
+  1.45 m less the look-at offset `+0x208`), and acts only when that ray hits a face within 0.5° of the first normal:
+  it then sets `+0x460` and eases `+0x3a4` 10% per update toward an angle from the slope (the up case toward the
+  slope's angle, the down case toward half that scaled by the dot product, opposite in sign), or sets it to 0 when
+  a second direction the caller passes (its `t0` argument) lies on the wrong side of the face. Confirmed (code) at
+  `0x0012f3e0` for the cases, rays and constants; which way each case tilts the view is inferred.
 - **The main ray** (the cast at `0x001311b4`, the recast at `0x001312e4`): from the look-at point toward the wanted
   position, its full length, with mask **`0x200 | 0x800 | 1`** (`| 1` only with one target). Through the [ray cast's
   rules](collision.md#ray-cast) that skips triangles with type bit 9 (`0x200`), and **tests disabled triangles too**
@@ -1727,8 +1742,10 @@ engine at the cited addresses:
    camera's view, field of view and near plane. The scene camera is then released (`0x0011e440`) and **the cameras'
    update runs once with dt = 0.17 s** (`0x0011e878(0.17)`), so the follow camera settles before the next frame. A
    cinematic **given up** before it starts (`SceneTask_Abort`, `0x0039ec60`, after 10 s, [Scenes](scenes.md#starting))
-   takes none of these steps: after placing the scene's humans and objects at their end poses it resets player 1's
-   camera, and player 2's when there is one, through the same slot `+0x13c`, with no pop, blend or settling update.
+   takes none of these steps: after placing the scene's humans and objects at their end poses it puts the kept camera
+   of step 3 (task `+0x90`, when there is one) back at its saved position (task `+0x80`, through the camera's slot
+   `+0x1bc`) and clears the pointer, then resets player 1's camera, and player 2's when there is one, through the same
+   slot `+0x13c`, with no pop, blend or settling update.
    Confirmed (code) at `0x0039ec60`.
 6. **The script's end callback** (`global.lua`, run when the scene ends) calls `ReturnFunc` (for the intro,
    `P1.StartTraining`), turns gang spotting back on unless `BlendCam` was 0, and with `FadeIn` fades the screen in over
