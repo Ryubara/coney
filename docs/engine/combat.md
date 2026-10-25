@@ -30,7 +30,7 @@ a seeded generator (`CombatRandom`), so a run with the same seed and input is th
 | `combat/combat_tuning.*`, `debug/combat_tunables.*` | the values above as tunables, category **Combat**, registered at start-up beside the game's |
 | `human/fighter.*`, `human/fighter_grab.cpp`, `human/fighter_victim.cpp`, `human/fighter_clips.h` | the player's combat inside the human (split as the attacker, the grab and the victim side): builds `PlayerCombat`'s input (the camera-turned stick in the facing frame, the pad's stick, the gait, game time, the target in front, the grab search and the snap's search), plays its clips, turns and slides into an attack, poses a grab (the alignment, the connect, the gate, the snap and the attachment), turns and walks the grab by the stick, lands the hits with their rage, locks onto a target and combat-walks round it; and the player hit (a duck and its counter, the block, the health floor, the hit armour, the reaction, stun, knockdown and mash) and held in a grab (the counter at the catch, the struggle, the strike back, the escape and the reversal) |
 | `world_objects/pickups.*`, `gamemodes/level_pickups.*` | triangle with the objects of a level ([Crimes: triangle](../research/crimes.md#triangle), steps 4 and 5): message 0 to the nearest object with a prompt (`SetMsgHandlerEx`), then to each object in reach, a true result taking the press; the search (the [pickable](../research/objects.md#pickable) classes, reach, the two sight rays, the score by the direction from behind the feet) and the clip; the take, which adds a `TYPE_SPECIAL`'s loot with notify and its value in money without and removes the record, or puts any other kind in the hand ([A bat in hand](../research/combat-throws.md#bat)); with something in hand and nothing taken, the drop. The human plays the clip with a 0.2 s blend and takes the object at its first event (`Human::startPickUp`); the play mode gives the fighter the held type's anim set, whose square, cross and two strikes `combat::animSetClips()` gives |
-| `human/human_flags.h`, `human/fighter_script.cpp` | the [human flags](../research/combat.md#human-flags) as the fighter keeps and reads them: god mode drops a hit's damage (**Coney's reading**: the reaction still plays), the demi-god floor (`HuSetDemiGodMode`'s fraction, one global) sets god mode when reached, `0x80`, `0x100`, `0x200`, `0x400` and `0x200000` shape the reaction, `0x2000000` gates every rage gain, `0x100000` freezes the meter's drain and decay, `0x4000000` spends no power, `0x100000000000` and an untargetable gang are skipped by the target search; `HuRevive` and `HuSetNormalMode`. The rage handlers (`CfgRageHandlers`) are called after the characters' step (**Coney choice** of when) with the original's arguments: the full one with `(human, true)`, enter and exit with `(human, flag)`, the flag true (1) when no other human rages and nil otherwise (counted before the starter is added and after the ender is taken off, **Coney's reading**; issue #821). |
+| `human/human_flags.h`, `human/fighter_script.cpp` | the [human flags](../research/combat.md#human-flags) as the fighter keeps and reads them: god mode drops a hit's damage (**Coney's reading**: the reaction still plays), the demi-god floor (`HuSetDemiGodMode`'s fraction, one global) sets god mode when reached, `0x80`, `0x100`, `0x200`, `0x400` and `0x200000` shape the reaction, `0x2000000` gates every rage gain, `0x100000` freezes the meter's drain and decay, `0x4000000` spends no power, `0x100000000000` and an untargetable gang are skipped by the target search; `HuRevive` and `HuSetNormalMode`. The rage handlers (`CfgRageHandlers`) are called after the characters' step (**Coney choice** of when) with the original's arguments: the full one with `(human, true)`, enter and exit with `(human, flag)`, the flag true (1) when no other human rages and nil otherwise (counted before the starter is added and after the ender is taken off, **Coney's reading**; issue [#821](issue:821)). |
 | `human/turn_and_slide.*` | the attack's steer ([Target selection](../research/combat-targets.md#targets)): a turn and a slide at a constant rate over a time, the last update only for the time left; the time to a clip's first steer-ending event; and the goal, the target led by its velocity and short of it by the reach |
 | `human/victim.*` | what the player and the target share as victims: the update's largest hit, the reaction it plays, the stun (its exit waits for the clip playing to end), the knockdown, the ground time, the rise and the mash |
 | `human/pair_placement.*` | the pair's geometry: offsets in the grabber's frame from a range record's direction × reach or a clip's type-8 pair event, the alignment (`Pair_AlignStart`), its time, the gate at the connect's end and `Pair_CheckPlace` |
@@ -63,13 +63,14 @@ sprints, but not while blocking.
 ## Lock-on and the combat walk {#lock-on}
 
 The attack's target search, or L1 when there is none (**Coney's choice**: L1 searches as far as a target is kept, 2.5 m;
-issue #82), gives the player a target. With the original's settings (`CfgLockOn` 0, `CfgAutoLockAndCombat` 1) L1 alone
-does not lock: the auto setting does, so while he has a target the player faces it every update and the stick past the
-12 % dead zone walks him at 3.429 m/s in any direction, with the combat-walk clip (380-387) by the stick's angle from
-his facing. The target is dropped beyond 2.5 m (unless L1 or a grab holds it), when it leaves the fight or has no health
-left, and (**Coney's choice**, issue #82) when it is not standing. Grabbing, the stick past 95 % turns the pair towards
-it at most 0.192 rad an update (the carry 0.8, −0.5 when the turn reverses within 45°) and pulled back walks it backward
-at 1.125 m/s (front hold) or 1.22 m/s (rear), both bodies by their clips.
+issue [#82](issue:82)), gives the player a target. With the original's settings (`CfgLockOn` 0,
+`CfgAutoLockAndCombat` 1) L1 alone does not lock: the auto setting does, so while he has a target the player faces it
+every update and the stick past the 12 % dead zone walks him at 3.429 m/s in any direction, with the combat-walk clip
+(380-387) by the stick's angle from his facing. The target is dropped beyond 2.5 m (unless L1 or a grab holds it), when
+it leaves the fight or has no health left, and (**Coney's choice**, issue [#82](issue:82)) when it is not standing.
+Grabbing, the stick past 95 % turns the pair towards it at most 0.192 rad an update (the carry 0.8, −0.5 when the turn
+reverses within 45°) and pulled back walks it backward at 1.125 m/s (front hold) or 1.22 m/s (rear), both bodies by
+their clips.
 
 ## Rage from hits {#rage}
 
@@ -100,8 +101,8 @@ and his attack goes on; otherwise the reaction plays and his attack is lost. A p
 a stun hit holds him 200 ms, then 357 when the reaction's clip has ended (the stun's loop 356 does not play); a
 knockdown lays him down for 2750 ms, then 199, and a stunned knockdown stays stunned for 200 ms after the rise. Every
 command made while he lies in 196 cuts the ground time (and a stun's) by 2750 ms divided by 1, 2 or 3 at random
-(**Coney's choice**: the three evenly, issue #821). The power meter's maximum is scaled by the hurt factor while hurt
-(below 30 % health: 0.75 × 400).
+(**Coney's choice**: the three evenly, issue [#821](issue:821)). The power meter's maximum is scaled by the hurt factor
+while hurt (below 30 % health: 0.75 × 400).
 
 ## Held in a grab {#held}
 
@@ -131,14 +132,14 @@ The player's sprint charge and dive into a human are tested in play
 ahead, the stick at 98 %): each strikes him once and plays its whole clip (27 and 62 updates in Coney, 27 and 61 in the
 original) with no reaction of the attacker's ([Moves a hit cannot
 stop](../research/combat-reactions.md#protected-moves)). Not built: the level mesh's impact sound, a car struck by the
-shapes (issue #72), and the weapon spheres of a held object.
+shapes (issue [#72](issue:72)), and the weapon spheres of a held object.
 
 The capsule strike (`Human::testStrikes`, `Human::struckCapsule`, [`human/human.cpp`](repo:src/human/human.cpp)): the
 clip decoder keeps the descriptor's flags, and a clip with `0x10000` tests its bone shapes against the target's capsule
-as above: a segment where it stands, a sphere along its path this update. **Coney choice** (issue #821): the capsule
-always has the standing height (head + 0.2); the shorter heights of some states are not built. The unit test plays 645
-at a bum (flagged never to be a target) 1.0 m away, which it hits, and 1.6 m away, which it misses. The disc check finds
-the two sweeps and no other clip with the flag.
+as above: a segment where it stands, a sphere along its path this update. **Coney choice** (issue [#821](issue:821)):
+the capsule always has the standing height (head + 0.2); the shorter heights of some states are not built. The unit test
+plays 645 at a bum (flagged never to be a target) 1.0 m away, which it hits, and 1.6 m away, which it misses. The disc
+check finds the two sweeps and no other clip with the flag.
 
 ## Attack warnings {#warnings}
 
@@ -157,10 +158,10 @@ dives at (`Fighter::nearestInReach`), and no one when it finds none
 
 The clips (anim ids, played through the human's animator, `AnimState::Attack` returning to the fight idle 358 and
 `AnimState::Hold` keeping its loop; an attack returns to the fight idle 358 while the player has a target and through
-389 to the idle 388 when he has none, **Coney's reading** of the runtime runs, issue #821): the chains `S1` 12, `SS2`
-16, `SSS3` 19, `SSX3` 17, `X1` 11, `XX2` 13, `SX2` 15, `XS2` 14 and the snaps; the run attack 24 (501 armed) and the
-charge 0 and dive 1, after which the run resumes when the stick is still at a run; the block 606, or the shuffle 607
-with the stick pushed; rage 643; the grab 71, 72, then the hold 82 (victim 73, then 83), or from the rear 71, 74, 84
+389 to the idle 388 when he has none, **Coney's reading** of the runtime runs, issue [#821](issue:821)): the chains `S1`
+12, `SS2` 16, `SSS3` 19, `SSX3` 17, `X1` 11, `XX2` 13, `SX2` 15, `XS2` 14 and the snaps; the run attack 24 (501 armed)
+and the charge 0 and dive 1, after which the run resumes when the stick is still at a run; the block 606, or the shuffle
+607 with the stick pushed; rage 643; the grab 71, 72, then the hold 82 (victim 73, then 83), or from the rear 71, 74, 84
 (victim 75, 85); the miss 71, 69, 389; the tackle 4, 5, then 210 (victim 6 when the player's 5 starts, then 207), the
 tackle's miss 4, 2, 389; the grab strikes and power strikes with the victim's next id (52, 54, 56, 58, 64); the spins 78
 / 79 to the rear hold 84 / 85 and 80 / 81 back to 82 / 83; the throws with the victim's next id, then 196; the let-go 95
@@ -265,17 +266,18 @@ Where the research is silent or only inferred, Coney chooses; each choice links 
 it.
 
 - Inside one trigger table a later matching entry overwrites an earlier one, as the tables do between themselves;
-  trigger 4 (query) never matches. Tracked by issue #821.
+  trigger 4 (query) never matches. Tracked by issue [#821](issue:821).
 - **Object targets** ([Target selection](../research/combat-targets.md#targets)): square with no human in front takes
   the nearest whole pane within the object attack's far range, within 54° of the heading, else within 135° (the
   original's × 0.8 is not applied there); its centre is the target point. The original approaches from up to far × 1.5;
-  Coney does not. Doors and loose objects are not object targets. Tracked by issue #712.
+  Coney does not. Doors and loose objects are not object targets. Tracked by issue [#712](issue:712).
 - **The pick-up** ([Breakables](../research/combat-targets.md#breakables)): the reach is measured in plan from the feet,
   and the second point the search goes round (human `+0x4e0`) is left out; the flag messages (`0x19`) that change what
   is pickable are not modelled. The human does not steer during the clip. Every `TYPE_SPECIAL` is loot (the named
   mission items are not listed). The human's current context record is the nearest object with a prompt in reach. The
   clip is the pick-up animation's pair; the drop before a left-handed or hat clip, and the anim set pushed for the
-  follow-on, are not modelled. A dropped object lands 0.3 m ahead of the feet, with no fall. Tracked by issue #821.
+  follow-on, are not modelled. A dropped object lands 0.3 m ahead of the feet, with no fall. Tracked by issue
+  [#821](issue:821).
 - **A weapon in hand** ([A bat in hand](../research/combat-throws.md#bat), [Moving attacks with something in
   hand](../research/combat-throws.md#armed-moves)): the fighter's anim set stands for the held object's set. With set
   1-3 square and cross take the armed branch (501, the grounded strike, the slot's swing; no walk attack, snaps or
@@ -284,7 +286,7 @@ it.
   `0x269`-`0x26c`'s table-2 award). **Not built**: the armed branch's mugging, the blocks' clips of an anim set, the
   weapon's damage bonus (`CfgObj` `+0x58` × the power class's factor), a breakable's hit kind 2 for the moving attacks,
   and the throws of sets 4-6 (square, cross, the charge and the dive play the unarmed moves); a bat never breaks.
-  Tracked by issues #153, #309.
+  Tracked by issues [#153](issue:153), [#309](issue:309).
 - **The held flags** ([Tasks](../research/tasks.md#held-flags)): the bits each move holds where the research names none.
   Every attack the dispatcher starts (the walk attack, the snaps, the grounded and mounted strikes, the grab strikes,
   power strikes and throws) is built as `Attack_Start`'s (holds `0x7`, sets `0x1`); the charge and dive hold the run
@@ -316,9 +318,9 @@ it.
 - **The characters' step** ([Tasks](../research/tasks.md#humans-update)): it runs on Coney's fixed 1/30 s step, the
   original's 30 Hz characters' update, without the 60 Hz tick or the timing wheel, which wait for the world's objects;
   the brains are an empty hook until the AI lands; the context actions (triangle) are refused while the dispatcher would
-  drop a command or the human is busy. Tracked by issue #821.
+  drop a command or the human is busy. Tracked by issue [#821](issue:821).
 - `SS2`, square is always `SSS3` (19), never 20; a grounded target takes 193, never 194; the dive takes the charge's
-  conditions. Tracked by issue #821.
+  conditions. Tracked by issue [#821](issue:821).
 - **The snap** (`squareAttack` in `repo:src/combat/attacks.cpp`, the search and steer in `repo:src/human/fighter.cpp`)
   follows [Attacks](../research/combat.md#attacks): the run and walk attacks first, then the snap only when
   `Fighter::snapTarget` finds a human within 2 m, 45° of the stick and 2 m in height, standing, with health left and
@@ -338,32 +340,33 @@ it.
   Coney's search leaves that to the targets it is given. With the disc, `level99`'s lesson 7 passes:
   `repo:tests/platform/disc_level99_snaps_test.cpp`. Tracked by [q-snap-steer](../research/combat.md#q-snap-steer).
 - A side is "front" up to and including 45° and "rear" beyond 135°; a height difference beyond 1.5 m counts as 0.9 to
-  1.5 m. Tracked by issue #821.
+  1.5 m. Tracked by issue [#821](issue:821).
 - The mount ([The mount](../research/combat-grabs.md#mount)): the victim is placed at clip 210's pair event when 210
   starts rather than slid there over 0.1 s; the mount's moves take square's mask, so one plays out before the next; the
   mount's power strike spends the endurance fraction, as the grab's does (the page names only its need); triangle in the
-  mount (the mugging) is not built, nor flag `0x20000`'s getting off at once. Tracked by issue #684.
+  mount (the mugging) is not built, nor flag `0x20000`'s getting off at once. Tracked by issue [#684](issue:684).
 - The pad's buttons are matched even while the pad is locked (`HuLockPad`), and a command disabled with
   `EnableCommand` is kept pending; the human acts on neither, but the `PadSetHandlerEx` handler hears both
   ([PadSetHandlerEx](../references/bindings/input.md#padsethandlerex)). Only the pad-driven humans carry a pad command:
-  Coney's brains write their commands straight to the record. Tracked by issue #821.
+  Coney's brains write their commands straight to the record. Tracked by issue [#821](issue:821).
 - The special (cross + square outside a hold, [Specials](../research/combat.md#attacks)) is 653 (645 in rage), 655 (647)
   when the player stands on its target's rear; circle + triangle (the tag) is not built. Both specials are refused on
-  `0xaeebf7ff`. Tracked by issue #821.
+  `0xaeebf7ff`. Tracked by issue [#821](issue:821).
 - The strong grapple ([Strong grapple](../research/combat-grabs.md#strong-grapple)) is the grab with 657 / 659 (649 /
   651 in rage) as its connect and 658 / 660 on the victim, searched with anim 1's range within 54° of the stick, the
   clear line to the target (`0x0021c0a8`) not tested. Its damage is dealt on the snap to the hold, reported to the
-  tutorial as 82 / 84; the paired, tackle and solo paths for other clip flags are not built. Tracked by issue #684.
+  tutorial as 82 / 84; the paired, tackle and solo paths for other clip flags are not built. Tracked by issue
+  [#684](issue:684).
 - The power strike's extension (57 → 59, 63 → 65) takes square's press or cross's `0x10` only on an update with the
   window open, and the grab ends when the last part's clip gives way to 389: the victim, attached until then, is put on
   the ground (196) to get up after its time. The rear power strike's hit is scored as 57, not the spin's 80. Tracked by
-  issue #684.
+  issue [#684](issue:684).
 - A grab plays one move at a time; a throw lets go at once (from the rear hold, once its spin to the front has played),
   turning the pair onto the stick from the front hold ([Where a throw
   goes](../research/combat-throws.md#throw-direction)); the rear power strike's spin plays in front of the strike, whose
   timing starts with it; the release with too little power goes straight to the idles, and the grab broken at 0 power
   plays the let-go. A tackle also ends when the power meter is empty, and any hold when the victim has no health left.
-  Tracked by issue #684.
+  Tracked by issue [#684](issue:684).
 - The grab and tackle search takes the nearest candidate by straight-line distance with no facing cone. The attack's
   target search uses the attack's far range in `Player_PickTarget`'s first two passes (the third finds no human the
   second missed); beyond the far range the attacker turns at most 8° at once (read as degrees). Within it the steer
@@ -380,7 +383,7 @@ it.
   sideways, in 358 0.097-0.186 m forward and 0.038-0.065 m right, 0.02 m beyond the recorded leans. **Coney's reading**:
   the turn faces the led target, not the standing point, which lies behind the attacker when the target is inside the
   reach (the runtime `XX2` at 0.83 m, inside its 1.12 m reach, turned under 1°). A reaction cuts the steer. Tracked by
-  issue #683.
+  issue [#683](issue:683).
 - **Posing a grab** follows [Posing a grab](../research/combat-grabs.md#grab-posing): circle plays 71, then 72 (from the
   front) or 74 (from the rear, when the player stands on the victim's rear side), the player turning to face the victim
   over 71's playing time while the victim waits in its idle. When 72 / 74 starts, the alignment turns and slides the
@@ -398,7 +401,7 @@ it.
   decided as the intro starts (a passive target does not move in between); the place a move checks is the current hold's
   point (the strikes' points are the front hold's); the victim's turn spreads evenly over the alignment's updates and a
   slide under 0.01 m is left out; the moves of a hold switch both humans with no fade, the let-go keeps the combat fade.
-  Tracked by issue #684.
+  Tracked by issue [#684](issue:684).
 - The mugging (`MuggingGame`, `LevelPickups::mugEnded()`): the record is `SetInterrogateParam`'s set 0 while its
   required time is set, else the runtime one (5 s, 2.5 s, 50 s off target, 50°, 60°), not the per-class table; the
   target angles are drawn evenly (the first at random). The money moves in the deciding update, the end clips 344 / 345
@@ -410,10 +413,11 @@ it.
   quit commands fail it and the decay starts at the first alternation. Tracked by
   [q-mug-angle](../research/combat.md#q-mug-angle).
 - The block is read only when the player is free (not grabbing, tackling, mugging or in a theft); it turns the player
-  towards the stick at the standing turn rate. Tracked by issue #678.
-- The stun's loop is 356, as seen at runtime (the code names 355 as a stunned reaction's return). Tracked by issue #685.
+  towards the stick at the standing turn rate. Tracked by issue [#678](issue:678).
+- The stun's loop is 356, as seen at runtime (the code names 355 as a stunned reaction's return). Tracked by issue
+  [#685](issue:685).
 - `applyClassDamage()` rounds as the PS2's floating-point unit does (toward zero), which gives the research's 34 for 30
-  at 115 %. Tracked by issue #821.
+  at 115 %. Tracked by issue [#821](issue:821).
 - **The shared Anim Range List is not reproduced**: in the original the class damage is written into the list the
   character's humans share, so the newest human's class sets everyone's damage ([Being
   hit](../research/combat-reactions.md#being-hit-runtime)). Coney gives each human its own copy, as the design plainly
@@ -423,25 +427,25 @@ it.
   with the knockdown; held in a grab or holding someone, a hit only takes health (the reactions by those states,
   `0x002688d0` and `0x00268ea8`, are not traced); for a demi-god (flag `0x20000000000`, which only the level scripts
   set, `HuSetDemiGodMode`) the health floor stops a hit that starts above 25 %, and one already at or below it takes
-  the whole hit; the escapee takes its escape clip's own damage, as at runtime. Tracked by issue #685.
+  the whole hit; the escapee takes its escape clip's own damage, as at runtime. Tracked by issue [#685](issue:685).
 - The duck's counter is asked for once per duck and the command that asks is spent (no attack starts from it); it
   plays on the next update with no steering, against the attacker that made the player duck, else the nearest target
-  within 1.25 × 617's reach, and hits once. Tracked by issue #683.
+  within 1.25 × 617's reach, and hits once. Tracked by issue [#683](issue:683).
 - The rise's counter ([Down and under attack](../research/combat-reactions.md#ground-escape)) is the duck's played out
   of 199: square or cross on an update whose clip fires its own `0x25` while the player is free to react (held bits only
   within `0x40089000`, not stunned with the manual stun `0x8000000`) plays 617-620 that update, ends the rise and the
   stun, and spends the command. **Coney's stand-in** for the foe (the human that knocked him down, not kept): the target
   search's pick within 1.25 × 617's reach; with none the request lasts while he stays free to react. Only a player
-  counters (an AI's Grounded goal says no through the rise). Tracked by issue #231.
+  counters (an AI's Grounded goal says no through the rise). Tracked by issue [#231](issue:231).
 - Held: the counter at the catch costs the grabber a quarter of its maximum; a reversed hold has no victim behind it
-  (the grabber is an entry point, not a `Holdable`). Tracked by issue #679.
+  (the grabber is an entry point, not a `Holdable`). Tracked by issue [#679](issue:679).
 - The player's grab or tackle holds any `Holdable`: the sandbox's passive target or another human without flag `0x40`.
   A held human's fighter keeps the hold's state (held or mounted), which holds its movement, keeps it from acting and
   gives its brain the grabbed (`0x14`) or tackled (`0x15`) reaction goal; attached, its own update does not move it.
   The grab's intro leaves the victim alone (it is stopped at the connect, as `Grab_Connect` does), so an AI may still
   answer it; the tackle's intro stops it at once (**Coney choice**, as before). The answer itself (the AI's counter
   76 or 9) and the AI's own struggle in the hold are not built, and no AI grabs or tackles. A held human gone from
-  the targets, or freed by a script, ends the hold. Tracked by issue #684.
+  the targets, or freed by a script, ends the hold. Tracked by issue [#684](issue:684).
 - **Breaking a pair** ([Breaking a pair from outside](../research/combat-grabs.md#pair-break)): every placement of a
   human (`Human::spawn`: the scripts' teleports, a scene's release) first breaks any pair it is in
   (`Fighter::breakPair`). The human placed plays nothing; a victim it held plays 145 (front), 107 (rear or a mugging) or
@@ -449,7 +453,8 @@ it.
   choice**: the original plays it at once). **Coney's choice**: a held human whose grabber stops updating without a
   break (taken out of the update) frees itself with the same victim clips after 3 of its own updates without its grabber
   keeping the hold (the humans act in an order that alternates each step, so a live grabber keeps it at most 2 apart).
-  `Grab_Release`'s refusal in a scene is not built: no human in a pair is taken into one. Tracked by issue #684.
+  `Grab_Release`'s refusal in a scene is not built: no human in a pair is taken into one. Tracked by issue
+  [#684](issue:684).
 - The combat walk's clip by eight even 45° sectors centred on the clips' directions; the walk starts at its full speed
   (the 5 slower first updates backward are not known). Tracked by
   [q-backward-walk](../research/combat.md#q-backward-walk).
@@ -462,11 +467,11 @@ it.
   set bit keeps the clip alive; [q-flash-held-flag](../research/combat.md#q-flash-held-flag)). Held without being set,
   the bit never reaches the record, the stick step does not count the human busy, and a player in the fight stance
   (after walking up to the dealer, his lock on) has the stance walk's idle put over 665 on the next update: the clip
-  showed for one update, the event never came, and nothing was spent or healed (issue #234). A second d-pad right while
-  665 plays does nothing (the human is busy, and 665 is already his anim). Tests:
+  showed for one update, the event never came, and nothing was spent or healed (issue [#234](issue:234)). A second d-pad
+  right while 665 plays does nothing (the human is busy, and 665 is already his anim). Tests:
   `repo:tests/platform/disc_flash_test.cpp` (`level80` standing, walking and running; `level99` from the dealer's
   purchase to the use in the stance: 665 from the press, the spend, cue 23 and animation sound 70 on update 19 of it,
-  and no play left silent by the engine). Tracked by issue #234.
+  and no play left silent by the engine). Tracked by issue [#234](issue:234).
 
 Not built: the rage of the attacks beyond the chain, the moving attacks and the throws (their events are not mapped),
 and the hurt multipliers `+0x10` / `+0x14`. The AI's attacks on the player, its attack warnings, the class damage tables
