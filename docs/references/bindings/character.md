@@ -2955,6 +2955,12 @@ HuSetHealthPercent(human, percent)
 Sets the human's current health to `percent` per cent of its maximum (truncated to whole hit points). A value outside
 (0, 100] restores full health rather than killing the human.
 
+**Notes.** Human_SetHealthPercent multiplies the maximum by 0.01 and then by the percentage (the two `mul.s` at
+0x00237924 and 0x00237928), each product a single-precision float that the PS2 rounds toward zero, and truncates the
+result (confirmed (code)). Because 0.01 as a float is a little under a hundredth, the health lands one point under the
+exact share whenever that share is whole: 449, 314, 899, 8, 89 and 674 for 50, 35, 100, 1, 10 and 75 % of 900 (confirmed
+(runtime), run r-20261025-health-percent-rounding), so even 100 % leaves the human one point short of full health.
+
 - **Evidence:** confirmed (code) at `0x002378a8`; detail: traced
 - **Wrapper** `0x0035bb50` (registered by `RegisterBindings`); **calls** `0x002378a8` `Human_SetHealthPercent`
 - **Used by** 17 of 467 script chunks (29 references); boot to menu: no; mission 1: yes; result used: no

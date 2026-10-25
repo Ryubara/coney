@@ -1803,6 +1803,13 @@
     outside (0, 100] restores full health rather than killing the human.
   evidence: confirmed-code
   depth: thorough
+  notes: >-
+    Human_SetHealthPercent multiplies the maximum by 0.01 and then by the percentage (the two `mul.s` at 0x00237924
+    and 0x00237928), each product a single-precision float that the PS2 rounds toward zero, and truncates the result
+    (confirmed (code)). Because 0.01 as a float is a little under a hundredth, the health lands one point under the
+    exact share whenever that share is whole: 449, 314, 899, 8, 89 and 674 for 50, 35, 100, 1, 10 and 75 % of 900
+    (confirmed (runtime), run r-20261025-health-percent-rounding), so even 100 % leaves the human one point short of
+    full health.
   usage: {chunks: 17, calls: 29, boot: false, mission1: true, result_used: false, levels: [95, 2, 3, 81, 93, 31, 54, 55, 83]}
   coney: implemented
 
