@@ -83,14 +83,16 @@ Inferred from the measurement in [Method](#method); the counts depend on Ghidra'
   RTTI for game classes (built without it, as on the PS2) and, on both builds, no assert messages but Lua's own.
 - **Register artefacts.** MSVC's optimiser passes values in `EAX`, `ESI`, `EBX` and the stack across calls (183 values
   the decompiler reads from `EAX` on entry, 180 from `ESI` and 256 from the caller's stack), so three times as many
-  functions need prototype fixes as on the PS2. - **Coverage.** A quarter of the XBE's `.text` is in no function after
-  auto-analysis (padding, jump tables, or code reached only through vtables), against 3% on the PS2. - **Different
-  layouts.** The same function reads a field at `+0x3ac` on the Xbox and at `+0x454` on the PS2, steps an array of
-  `0xdc`-byte elements against `0x100`, and calls a virtual through a 4-byte slot (`+0x44`) against a GCC 2.x 8-byte
-  `{delta, fn}` slot (`+0x90`) (XBE `0x000e1640`, `0x001b8d38`). Offsets, sizes and vtable slots found on the Xbox **do
-  not transfer** to the PS2; only the shape of the logic does. **Evidence:** confirmed (code) at those two addresses. -
-  **Lua bindings give no extra names.** Both builds register the same 955 binding names from one function; the Xbox adds
-  four (`SoundHandle`, `WorldPath`, `XBoxCompileVertexShader`, `XBoxLoadVS`).
+  functions need prototype fixes as on the PS2.
+- **Coverage.** A quarter of the XBE's `.text` is in no function after auto-analysis (padding, jump tables, or code
+  reached only through vtables), against 3% on the PS2.
+- **Different layouts.** The same function reads a field at `+0x3ac` on the Xbox and at `+0x454` on the PS2,
+  steps an array of `0xdc`-byte elements against `0x100`, and calls a virtual through a 4-byte slot (`+0x44`)
+  against a GCC 2.x 8-byte `{delta, fn}` slot (`+0x90`) (XBE `0x000e1640`, `0x001b8d38`). Offsets, sizes and vtable
+  slots found on the Xbox **do not transfer** to the PS2; only the shape of the logic does. **Evidence:** confirmed
+  (code) at those two addresses.
+- **Lua bindings give no extra names.** Both builds register the same 955 binding names from one function; the
+  Xbox adds four (`SoundHandle`, `WorldPath`, `XBoxCompileVertexShader`, `XBoxLoadVS`).
 
 ### Cross-referencing cost {#cross-reference}
 
