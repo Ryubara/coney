@@ -88,13 +88,19 @@ def test_the_bench_command_plays_the_level_with_the_fighters() -> None:
     headless = bench_command(Path("coney"), "disc.iso", "level99", 0, 100, 10, True, Path("out.json"))
     assert headless[-1] == "--headless"
     assert "--vsync" not in headless
+    assert "--cpu-skinning" not in windowed
+    cpu = bench_command(Path("coney"), "disc.iso", "level95", 10, 600, 60, False, Path("out.json"), cpu_skinning=True)
+    assert cpu[-1] == "--cpu-skinning"
 
 
 def test_the_perf_commands_parse() -> None:
     args = build_parser().parse_args(["perf", "bench", "--out", "x", "--fighters", "0,100", "--headless"])
     assert args.fighters == [0, 100]
     assert args.headless
-    assert args.preset == "release"
+    # The release preset has no debug tools, so no --bench: the optimised build with them is playtest's.
+    assert args.preset == "playtest"
+    assert not args.cpu_skinning
+    assert build_parser().parse_args(["perf", "bench", "--out", "x", "--cpu-skinning"]).cpu_skinning
     with pytest.raises(SystemExit):
         build_parser().parse_args(["perf", "bench", "--out", "x", "--fighters", "1001"])
     table_args = build_parser().parse_args(["perf", "table", "a.json", "b.json"])

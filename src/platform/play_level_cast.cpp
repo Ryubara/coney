@@ -109,9 +109,7 @@ ai::Brain* PlayLevelMode::castHuman(const HumanCreation& human) {
     }
     FighterMesh mesh;
     mesh.character = look.character;
-    mesh.mesh = std::make_unique<CharacterMesh>(look.character->assets().model, look.texture);
-    mesh.positions.resize(look.character->assets().model.vertices.size());
-    mesh.normals.resize(mesh.positions.size());
+    mesh.mesh = std::make_unique<CharacterMesh>(look.character->assets().model, look.texture, Skinning::Gpu);
     m_fighterMeshes.push_back(std::move(mesh));
     return &brain;
 }

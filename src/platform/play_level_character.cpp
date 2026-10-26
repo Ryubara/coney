@@ -80,9 +80,8 @@ std::string PlayLevelMode::characterState() const {
 void PlayLevelMode::swapPlayerModel(LoadedCharacter loaded, const std::string& model) {
     // He keeps animating with the character he has (every character has the same 34 bones); only the model drawn
     // changes. The old mesh goes before the dictionaries whose texture it holds.
-    m_mesh = std::make_unique<CharacterMesh>(loaded.character->assets().model, textureOf(loaded.dictionaries));
-    m_positions.assign(loaded.character->assets().model.vertices.size(), anim::Vec3{});
-    m_normals.assign(m_positions.size(), anim::Vec3{});
+    m_mesh = std::make_unique<CharacterMesh>(loaded.character->assets().model, textureOf(loaded.dictionaries),
+                                             Skinning::Gpu);
     if (m_playerCharacter) {
         m_retired.push_back(std::move(m_playerCharacter));
     }
@@ -169,9 +168,8 @@ std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
     m_player = std::make_unique<human::Player>(*loaded->character, mesh, start, human::playerClassOf(m_types, type));
     m_player->teleport(mesh, here);
     m_player->resetCamera();
-    m_mesh = std::make_unique<CharacterMesh>(loaded->character->assets().model, textureOf(loaded->dictionaries));
-    m_positions.assign(loaded->character->assets().model.vertices.size(), anim::Vec3{});
-    m_normals.assign(m_positions.size(), anim::Vec3{});
+    m_mesh = std::make_unique<CharacterMesh>(loaded->character->assets().model, textureOf(loaded->dictionaries),
+                                             Skinning::Gpu);
     if (m_playerCharacter) {
         m_retired.push_back(std::move(m_playerCharacter));
     }

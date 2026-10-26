@@ -34,7 +34,7 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--profiles DIR] [--dev-overlay N] [--no-activate] [--window-display DISPLAY] [--event-log FILE] [--pad-pipe]
       [--record FILE [--record-seconds N]] [--bench FILE [--bench-fighters N] [--bench-warmup N]]
       [--log-file FILE] [--log-verbose CATEGORIES]
-      [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]
+      [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME] [--cpu-skinning]
 ```
 
 That is the command line of a build with the debug tools (`dev`, `playtest`, `ci`). The release build a player gets

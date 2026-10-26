@@ -55,9 +55,14 @@ std::vector<anim::Mat34> skinningMatrices(const CharacterModel& model,
 
 void skinVertices(const CharacterModel& model, std::span<const anim::Mat34> matrices, std::span<anim::Vec3> positions,
                   std::span<anim::Vec3> normals) {
-    CONEY_ASSERT(positions.size() == model.vertices.size() && normals.size() == model.vertices.size());
-    for (std::size_t i = 0; i < model.vertices.size(); ++i) {
-        const SkinVertex& vertex = model.vertices[i];
+    skinVertices(std::span<const SkinVertex>(model.vertices), matrices, positions, normals);
+}
+
+void skinVertices(std::span<const SkinVertex> vertices, std::span<const anim::Mat34> matrices,
+                  std::span<anim::Vec3> positions, std::span<anim::Vec3> normals) {
+    CONEY_ASSERT(positions.size() == vertices.size() && normals.size() == vertices.size());
+    for (std::size_t i = 0; i < vertices.size(); ++i) {
+        const SkinVertex& vertex = vertices[i];
         anim::Vec3 position;
         anim::Vec3 normal;
         for (std::size_t w = 0; w < kVertexWeights; ++w) {

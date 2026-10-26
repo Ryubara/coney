@@ -21,6 +21,7 @@
 #include "core/assert.h"
 #include "core/perf.h"
 #include "core/window_display.h"
+#include "platform/character_skin.h"
 #include "platform/movie_screen.h"
 #include "platform/perf_probes.h"
 #include "platform/sprite_sheets.h"
@@ -348,6 +349,9 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
     attachWorldPlugins();
     // Each converted texture's GS level parameters, for drawing at the original's mip levels (platform/texture_lod.h).
     attachTextureLodPlugin();
+    // Characters skinned in the vertex shader: their weights, bone matrices and the shader's uniform
+    // (platform/character_skin.h).
+    attachCharacterSkin();
     // Anisotropic filtering per texture, which the sandbox's grid floor needs to stay sharp at grazing angles
     // (platform/sandbox_renderer.h); it only takes effect on textures that ask for it.
     rw::registerAnisotropyPlugin();
@@ -442,6 +446,10 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
     engine->createCamera();
     // Mip levels by distance, as the GS picks them; without it OpenGL picks them by screen size.
     engine->m_textureLod = startTextureLod();
+    // Characters skinned on the GPU, drawn through the same fragment step; CPU skinning where it cannot start.
+    if (engine->m_textureLod) {
+        startCharacterSkin();
+    }
     // The profiler's counts of draws, uploads and state changes (docs/guides/performance.md).
     installGlCounters();
     return engine;
@@ -961,6 +969,7 @@ std::expected<CapturedFrame, Error> RenderEngine::captureBackBuffer(const std::s
 void RenderEngine::shutDown() noexcept {
     removeGlCounters(); // a later start loads OpenGL's functions afresh
     destroyCamera();
+    stopCharacterSkin();
     if (m_textureLod) {
         m_textureLod = false;
         stopTextureLod();
