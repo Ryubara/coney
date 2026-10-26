@@ -88,9 +88,9 @@ Inferred from the measurement in [Method](#method); the counts depend on Ghidra'
   reached only through vtables), against 3% on the PS2.
 - **Different layouts.** The same function reads a field at `+0x3ac` on the Xbox and at `+0x454` on the PS2,
   steps an array of `0xdc`-byte elements against `0x100`, and calls a virtual through a 4-byte slot (`+0x44`)
-  against a GCC 2.x 8-byte `{delta, fn}` slot (`+0x90`) (XBE `0x000e1640`, `0x001b8d38`). Offsets, sizes and vtable
-  slots found on the Xbox **do not transfer** to the PS2; only the shape of the logic does. **Evidence:** confirmed
-  (code) at those two addresses.
+  against a GCC 2.x 8-byte `{delta, fn}` slot (`+0x90`) (XBE `0x000e1640` and its PS2 twin `0x001b8d38`). Offsets,
+  sizes and vtable slots found on the Xbox **do not transfer** to the PS2; only the shape of the logic does.
+  **Evidence:** confirmed (code) at those two addresses.
 - **Lua bindings give no extra names.** Both builds register the same 955 binding names from one function; the
   Xbox adds four (`SoundHandle`, `WorldPath`, `XBoxCompileVertexShader`, `XBoxLoadVS`).
 
@@ -110,8 +110,8 @@ Cheap at the file and function level, not below it.
 
 xemu (QEMU-based) has a GDB stub and the QEMU monitor (memory dumps, registers, snapshots). GDB's remote protocol
 gives memory reads and writes, breakpoints and watchpoints, about what PCSX2's debugger and PINE give together:
-inferred from xemu's and QEMU's documentation. Only memory reads have been used on the real game; breakpoints and
-watchpoints have not been used on the real game yet, only against the tests' fake stub.
+inferred from xemu's and QEMU's documentation. Of these, only memory reads have been used on the real game;
+breakpoints and watchpoints have not been used on the real game yet, only against the tests' fake stub.
 
 Coney's tooling for it is [the coney-tools xemu commands](../guides/coney-tools-xemu.md): copies of the user's own
 xemu install claimed one per agent, a launch with the stub and monitor on the copy's own ports, reads, an `xemu` MCP
