@@ -1538,7 +1538,7 @@ status = "legacy"
 [[function]]
 address = 0x0027aa38
 name = "Player_FindSnapTarget"
-page = "combat/index.md#attacks"
+page = "combat-targets.md#targeting"
 role = "the snap's target: the nearest enemy within 2 m and 45 degrees of a direction"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::snapTarget"

@@ -546,16 +546,19 @@ class Human final : public Holdable {
     /// drawn body only: the physics and the collision are scale() and collisionScale().
     /// @coney-only debug tooling: the Entity editor's scale
     void setMeshScale(float scale) { m_meshScale = scale; }
+    /// The mesh's drawn scale (setMeshScale()).
     [[nodiscard]] float meshScale() const { return m_meshScale; }
     /// A multiplier on every gait speed of this human, on top of the player's own Movement tunables; 1 is as
     /// configured. It lands at once and reads through speeds().
     /// @coney-only debug tooling: the Entity editor's speed scale
     void setSpeedScale(float scale);
+    /// The multiplier on the gait speeds (setSpeedScale()).
     [[nodiscard]] float speedScale() const { return m_speedScale; }
     /// A multiplier on how fast every clip plays (and so how far its root motion carries); 1 is as configured, 0 holds
     /// the clips.
     /// @coney-only debug tooling: the Entity editor's animation rate
     void setAnimRate(float rate) { m_animRate = rate < 0.0F ? 0.0F : rate; }
+    /// The multiplier on the clips' rate (setAnimRate()).
     [[nodiscard]] float animRate() const { return m_animRate; }
     /// The health set to `percent` of its maximum (rounded; at least 1 point, so a kill is its own edit; above 100 the
     /// maximum).
