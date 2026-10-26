@@ -306,16 +306,16 @@ and the hand held the bat in that update's sample. Confirmed (runtime). `Human_P
 binding `HuPlaceItemInHand`) is the scripted way to arm a human; the pick-up does not use it (confirmed (code)).
 
 **In the hand.** The bat hangs from **pose bone 25, the right hand** (bone 19 is the left, which the left-hand pick-up
-clips use), at the offset clip 461's **type-9 event at frame 7** gives; the attachment and its maths are on
-[World objects: objects in a human's hand](objects.md#held). The event (confirmed (runtime), read from Rembrandt's
-clip 461 in memory; 462 has the same event at frame 4, and his 481, 482, 498 and 499 are the same two clips): bone
-25, position `(47, 88, 54)` → (0.0459, 0.0860, 0.0264) m, rotation `(22788, 4078, −23079)` →
-(0.6954, 0.1245, −0.7043, 0.0690). The bat's stored local pose is that position × Rembrandt's scale 0.97, slid
-0.39 m (`dyn_bat_tuff`'s `CfgObj` `+0x70`) along the bat's own `y`: **(0.1500, −0.2908, −0.0053)** with the rotation
-unchanged. The hand at idle sits at (0.29, −0.03, 1.05) in the model frame, on the human's right (`+x` with the model
-facing `+y`). The local pose did not change through the idle, a walk (stick 60 % up), the square swing 34, the block
-(R1) and a run (stick 100 % up): no bat clip moves it, so the bat swings with the hand alone. Confirmed (runtime); a
-screenshot of the swing showed the bat in Rembrandt's right hand.
+clips use), at the offset clip 461's **type-9 event at frame 7** gives; the attachment and its maths are on [World
+objects: objects in a human's hand](objects.md#held). The event (confirmed (runtime), read from Rembrandt's clip 461 in
+memory; 462 has the same event at frame 4, and his 481, 482, 498 and 499 are the same two clips): bone 25, position
+`(47, 88, 54)` → (0.0459, 0.0860, 0.0264) m, rotation `(22788, 4078, −23079)` → (0.6954, 0.1245, −0.7043, 0.0690). The
+bat's stored local pose is that position × Rembrandt's scale 0.97, slid 0.39 m (`dyn_bat_tuff`'s `CfgObj` `+0x70`) along
+the bat's own `y`: **(0.1500, −0.2908, −0.0053)** with the rotation unchanged. The hand at idle sits at (0.29, −0.03,
+1.05) in the model frame, on the human's right (`+x` with the model facing `+y`). The local pose did not change through
+the idle, a walk (stick 60 % up), the square swing 34, the block (R1) and a run (stick 100 % up): no bat clip moves it,
+so the bat swings with the hand alone. Confirmed (runtime); a screenshot of the swing showed the bat in Rembrandt's
+right hand.
 
 **The anim set.** A human keeps a stack of up to 3 anim sets (record `+0x0c` the depth, the sets as bytes at `+0x10`;
 push `0x00253ed0`, pop `0x00253f28`). Applying one (`Human_ApplyMoveStyle`, `0x00253688`) resets the clip slots
@@ -414,16 +414,15 @@ Anim Range List](combat/index.md#damage-table)); then, with the attacker's body 
 power class record** (`0x00222b78`, [Power meter](combat-rage.md#power-meter)), the same for a swing and a run attack.
 That is what `Strike_Contact`'s code does, but at runtime it was not the path: the `level34` Furies' `dyn_bat` hits
 (501, 36 and 37) never reached `Strike_Contact`, and each dealt the bat's own contact damage instead, `CfgObj` `+0x58` ×
-the holder's class float with no clip damage (confirmed (runtime), [Combat: a bat's
-hit](#bat-knockdown); [Objects in a hand](objects.md#held) item 3). Whether the player's bat, or the
-knife and the baton, ever take the `Strike_Contact` weapon branch is open ([Open questions](#open-questions)).
-Because record `+0x08` has `0x1000000`, the hit takes the moving-attack branch that 24, 0 and 1 take (a breakable gets
-hit kind 2, [World objects](objects.md#door-break)); confirmed (code). Rage: 501 is **event 1 × 1 = 5** (2 blocked) and
-kind 4, so never halved by repeats ([Rage](combat-rage.md#rage)), against the bat's square 34 at 2 and its cross 36 at
-11, and the unarmed 24 at 1; confirmed (code). The weapon is not worn: only its message 1 breaks it ([Losing
-it](#bat)). With an AI holding `dyn_bat`, 501 dealt the bat's 90 (class float 1.0), hit code `0x2a`, and the victim
-played 292-295 and went down ([Combat: a bat's hit](#bat-knockdown)); confirmed (runtime). The
-player's own 501 was not measured.
+the holder's class float with no clip damage (confirmed (runtime), [Combat: a bat's hit](#bat-knockdown); [Objects in a
+hand](objects.md#held) item 3). Whether the player's bat, or the knife and the baton, ever take the `Strike_Contact`
+weapon branch is open ([Open questions](#open-questions)). Because record `+0x08` has `0x1000000`, the hit takes the
+moving-attack branch that 24, 0 and 1 take (a breakable gets hit kind 2, [World objects](objects.md#door-break));
+confirmed (code). Rage: 501 is **event 1 × 1 = 5** (2 blocked) and kind 4, so never halved by repeats
+([Rage](combat-rage.md#rage)), against the bat's square 34 at 2 and its cross 36 at 11, and the unarmed 24 at 1;
+confirmed (code). The weapon is not worn: only its message 1 breaks it ([Losing it](#bat)). With an AI holding
+`dyn_bat`, 501 dealt the bat's 90 (class float 1.0), hit code `0x2a`, and the victim played 292-295 and went down
+([Combat: a bat's hit](#bat-knockdown)); confirmed (runtime). The player's own 501 was not measured.
 
 ### Weapons {#weapons}
 
@@ -558,25 +557,25 @@ the timing, the fourteen bound bats and the documented start agree, but the even
 not read. The script's own `HuSetKeepWeapon(Fury, 1)` before `GoalFight` keeps the bat in hand when he is hit ([Dropping
 what is held](#keep-weapon)).
 
-**2. What they swing.** With set 3 in hand an AI's square and cross play the bat's clips
-([A bat in hand](#bat)): **501** `SWINGABLE_OBJECT_ATTACK_FROM_RUN` when he arrives at a run, **36**
-`BAT_COMBO_X1` or **34** (the bat's square swing) standing, and at a man on the ground either **37**
-`BAT_COMBO_GROUNDED_STRIKE_01` or the unarmed grounded strikes **193** / **194**, bat still in hand (35 was not seen;
-34 once, `ParkFury09` at step 1375, its hit on `ParkFury07` at step 1386). In the recorded run `ParkFury03` and
-`ParkFury10`, both holding bats, played 37 at steps 730, 762, 802 and 846 and 194 / 193 at steps 767, 811 and 838,
-and the 37s of steps 762 and 802 and all three 193 / 194 landed on `SceneRogue2` on the ground (hits at steps 775,
-781, 815, 825 and 850; rec1's `anim-dispatch`, `strike-contact` and `deal-damage` logs; human names by allocation
-order); in the polled run the downed player was hit the same way (below). What picks 37 or 193 / 194 was not found.
-Their Anim Range List entries on the disc ([chunk `0x45`](formats/animation.md#anim-range-list)), the same in the
-park Furies' character data (`fury_so1`-`4`, resource `312adcb1`), `fury_lt`'s and the player's (`warr_ve`): 501
-damage 20, hit code `0x2a`, flags `0x400`; 36 damage 130, `0x2a`; 37 damage 75, `0x0a`; 34 / 35 damage 10, `0x29` /
-`0x2b`; 193 / 194 damage 50, `0x0a`. Those are the disc's values, read with the chunk's layout (confirmed (code) at
-its readers) from `coney-tools extract`'s output; 44 of the 53 character data resources hold exactly these for these
-ids. That the Furies' lists at runtime (record `+0x160`) hold the same is inferred: a PINE read in the first run gave
-the same for 501 and 34-37 but its output was not kept, and the disc is corroboration, not a grade. The hit codes
-are supported by the reactions (292-295 from 501 and 36 fit `0x2a`, confirmed (runtime) below). The damages can be
-overwritten by the class when the human is made ([damage table](combat/index.md#damage-table)): 193 / 194 hold 50 on the
-disc but dealt 25 here (not traced). Code `0x2a` is a straight high **heavy** hit ([Hit codes](combat/index.md#hit-codes)).
+**2. What they swing.** With set 3 in hand an AI's square and cross play the bat's clips ([A bat in hand](#bat)):
+**501** `SWINGABLE_OBJECT_ATTACK_FROM_RUN` when he arrives at a run, **36** `BAT_COMBO_X1` or **34** (the bat's square
+swing) standing, and at a man on the ground either **37** `BAT_COMBO_GROUNDED_STRIKE_01` or the unarmed grounded strikes
+**193** / **194**, bat still in hand (35 was not seen; 34 once, `ParkFury09` at step 1375, its hit on `ParkFury07` at
+step 1386). In the recorded run `ParkFury03` and `ParkFury10`, both holding bats, played 37 at steps 730, 762, 802 and
+846 and 194 / 193 at steps 767, 811 and 838, and the 37s of steps 762 and 802 and all three 193 / 194 landed on
+`SceneRogue2` on the ground (hits at steps 775, 781, 815, 825 and 850; rec1's `anim-dispatch`, `strike-contact` and
+`deal-damage` logs; human names by allocation order); in the polled run the downed player was hit the same way (below).
+What picks 37 or 193 / 194 was not found. Their Anim Range List entries on the disc ([chunk
+`0x45`](formats/animation.md#anim-range-list)), the same in the park Furies' character data (`fury_so1`-`4`, resource
+`312adcb1`), `fury_lt`'s and the player's (`warr_ve`): 501 damage 20, hit code `0x2a`, flags `0x400`; 36 damage 130,
+`0x2a`; 37 damage 75, `0x0a`; 34 / 35 damage 10, `0x29` / `0x2b`; 193 / 194 damage 50, `0x0a`. Those are the disc's
+values, read with the chunk's layout (confirmed (code) at its readers) from `coney-tools extract`'s output; 44 of the 53
+character data resources hold exactly these for these ids. That the Furies' lists at runtime (record `+0x160`) hold the
+same is inferred: a PINE read in the first run gave the same for 501 and 34-37 but its output was not kept, and the disc
+is corroboration, not a grade. The hit codes are supported by the reactions (292-295 from 501 and 36 fit `0x2a`,
+confirmed (runtime) below). The damages can be overwritten by the class when the human is made ([damage
+table](combat/index.md#damage-table)): 193 / 194 hold 50 on the disc but dealt 25 here (not traced). Code `0x2a` is a
+straight high **heavy** hit ([Hit codes](combat/index.md#hit-codes)).
 
 **3. The damage is the bat's, not the clip's.** None of the Furies' bat hits went through `Strike_Contact`
 (`0x0021b290`): its hook logged only unarmed and grounded strikes, while every bat hit came from
@@ -602,19 +601,17 @@ named), with A the attacker it is given, O the object and V the victim:
   (`Human_IsClass13` `0x00223e20`), × 0.5 (confirmed (code)); then, when his signed byte `+0x1b0` is not −1, × 3 against
   V of character type `0x77` or `0x78` and × 1.25 against `0x87`.
 
-None changed the damage in this fight (all 23 calls returning at `0x00393158` in the recorded run dealt 90, −90 or
-−72, `+0x58` × the class float or its negation, and the polled run's bat hits took 90 or 72), so for a Fury's bat on the
-player or a fellow Fury only the friend case
-applies; the other cases are those of thrown objects and of other holders.
+None changed the damage in this fight (all 23 calls returning at `0x00393158` in the recorded run dealt 90, −90 or −72,
+`+0x58` × the class float or its negation, and the polled run's bat hits took 90 or 72), so for a Fury's bat on the
+player or a fellow Fury only the friend case applies; the other cases are those of thrown objects and of other holders.
 
 So a Fury of power class 26 (float 1.0) deals **90** with any bat clip, 501, 34, 36 or 37 alike, and one of class 5
 (types 90, `ParkFury01` and `ParkFury14`, float 0.8) deals **72**; the clip's own damage (20, 10, 130, 75) is not used.
 Confirmed (runtime): every bat hit on the player in the recorded run took exactly 90, from 501, 36 and 37 (all from
-class 26 Furies), and `ParkFury14` (named by allocation order) dealt **−72** with 36 to
-`ParkFury10` at step 1339 (rec1's `deal-damage` log, return `0x00393158`), the class 5 figure measured directly.
-`ParkFury09`'s 34 (clip damage 10) dealt −90 to `ParkFury07` at step 1386 through the same return, a fourth bat clip
-whose own damage was ignored. A
-bat that touched a fellow Fury of class 26 dealt −90 (the friend case).
+class 26 Furies), and `ParkFury14` (named by allocation order) dealt **−72** with 36 to `ParkFury10` at step 1339
+(rec1's `deal-damage` log, return `0x00393158`), the class 5 figure measured directly. `ParkFury09`'s 34 (clip
+damage 10) dealt −90 to `ParkFury07` at step 1386 through the same return, a fourth bat clip whose own damage was
+ignored. A bat that touched a fellow Fury of class 26 dealt −90 (the friend case).
 
 **The 25s: grounded strikes without the bat.** The bat's contact is not every hit an armed Fury lands. His 193 / 194
 (above) go through `Strike_Contact` (return `0x0021b69c` into `Human_DealDamage`) and deal **25** each, the bat
@@ -690,27 +687,25 @@ if (Human_IsHurt(h) && !(h->flags & 0x2000) &&
 
 1. **Every landed, non-lethal hit** (or any hit while airborne), before the reaction is chosen and **without any flag
    test**:
-    - `Human_ReleaseCarriedProps` (`0x0024ce40`, unless cuffed; confirmed (code)) drops a held object of
-      `ObjectAttribs` kind `0x27`
-      (39, the one-sphere melee object) unless he is throwing, and lets go of the carried props `+0x348` / `+0x34c`;
+    - `Human_ReleaseCarriedProps` (`0x0024ce40`, unless cuffed; confirmed (code)) drops a held object of `ObjectAttribs`
+      kind `0x27` (39, the one-sphere melee object) unless he is throwing, and lets go of the carried props
+      `+0x348` / `+0x34c`;
     - `Human_DropHeld` when `Human_IsSwingingHeld` (`0x002286a0`, confirmed (code)) is true, that is held flag
-      `0x800000`, or held
-      flag `0x1000010` with something in hand during one of the eleven **throw** clips (467, 471, 472, 491, 502,
-      505-507, 551-553), or when he plays 602 `ANIM_TAUNT_CHALLENGE` (the knife-toss fidget) with set 1 in hand
-      (`0x002664e8`). So a hit during a throw wind-up makes the object fall from the hand, raging or not. Despite
-      the function's name, no melee swing clip is in its list.
+      `0x800000`, or held flag `0x1000010` with something in hand during one of the eleven **throw** clips (467, 471,
+      472, 491, 502, 505-507, 551-553), or when he plays 602 `ANIM_TAUNT_CHALLENGE` (the knife-toss fidget) with set 1
+      in hand (`0x002664e8`). So a hit during a throw wind-up makes the object fall from the hand, raging or not.
+      Despite the function's name, no melee swing clip is in its list.
 2. **The ordinary reaction** (`Human_PlayReaction` `0x0026a6d0`, reached when hit armour, the held flags `0x1c16a40`
    and flag `0x800` let a reaction play; confirmed (code)):
     - when the **attacker's** clip is **620 or above** (the test at `0x0026a798` is `id ≥ 0x269` and `id ≥ 0x26c`,
-      confirmed (code);
-      so in effect `≥ 620`: the left block counter 620, the bat-block counter 629, the rage moves 645 / 647 and
-      649 / 651, the specials 653 / 655 and 657 / 659) and the victim's flag `0x2000` is clear, he drops what he
-      holds, any set, hurt or not;
+      confirmed (code); so in effect `≥ 620`: the left block counter 620, the bat-block counter 629, the rage moves
+      645 / 647 and 649 / 651, the specials 653 / 655 and 657 / 659) and the victim's flag `0x2000` is clear, he drops
+      what he holds, any set, hurt or not;
     - a reaction that knocks down calls `Human_KnockDown`, hence `0x00257e38` (confirmed (code));
     - a stunning reaction calls `Human_Stun(victim, attacker)` (confirmed (code)). `Human_Stun` returns at once for a
-      human with flag
-      `0x100` (unstunnable; without an attacker only when he also lacks flag `0x8000000`), and calls `0x00257e38` only
-      when he has none of the state bits `0xcf0` (grabbed or grabbing) and neither held flag `0x10200`.
+      human with flag `0x100` (unstunnable; without an attacker only when he also lacks flag `0x8000000`), and calls
+      `0x00257e38` only when he has none of the state bits `0xcf0` (grabbed or grabbing) and neither held flag
+      `0x10200`.
 3. **The special reactions** (confirmed (code)): `HitReact_WhileGrabbed` (`0x002688d0`) stuns (so `0x00257e38` as
    above); `HitReact_InSpecial` (`0x00268430`) knocks down; a lethal hit runs `Human_PlayLethalReaction`
    (`0x00267e48`), which calls `Human_EndThrowAimDropHeavy` (`0x00257d70`).
@@ -735,13 +730,12 @@ else only without flag `0x2000`. Confirmed (code).
 The damage itself is never read: only whether the victim is hurt after it (the health drops before the reaction).
 The weapon the attacker uses matters only through his clip id (≥ 620).
 
-**With flag `0x2000`** every row above keeps the object, except: the set 4 / 6 column wherever one of the three
-helpers or the arrest runs (they drop those first, flag or not; the clip ≥ 620 test itself spares them, but the
-stun or knock-down that usually follows does not), the throw
-row and a kind 39 object (step 1, no flag test), and defeat. The flag is read at exactly five places: the three
-helpers (`0x00257d18`, `0x00257da4`, `0x00257e7c`), `Human_PlayReaction` (`0x0026a7bc`) and `Human_Arrest`
-(`0x0022ed14`), confirmed (code); a search of every `andi …, 0x2000` in the executable found no other reader of the
-human flags (inferred: complete).
+**With flag `0x2000`** every row above keeps the object, except: the set 4 / 6 column wherever one of the three helpers
+or the arrest runs (they drop those first, flag or not; the clip ≥ 620 test itself spares them, but the stun or
+knock-down that usually follows does not), the throw row and a kind 39 object (step 1, no flag test), and defeat. The
+flag is read at exactly five places: the three helpers (`0x00257d18`, `0x00257da4`, `0x00257e7c`), `Human_PlayReaction`
+(`0x0026a7bc`) and `Human_Arrest` (`0x0022ed14`), confirmed (code); a search of every `andi …, 0x2000` in the executable
+found no other reader of the human flags (inferred: complete).
 
 **While raging**, the enter handler's other flags already close most of these paths: unstunnable (`0x100`) stops
 `Human_Stun` before its drop, ungroundable (`0x80`) keeps reactions from knocking down, ungrabbable (`0x40`) stops
@@ -1169,8 +1163,8 @@ Coney's weapons never break, since what sends a weapon its message 1 is open ([O
 ## Open questions
 
 - **A throw's root turn**{#q-throw-root-turn}: the side clips turn the thrower about a third further in Coney than at
-  runtime, and the front victim lands 19.2° right of the stick against 2.1° ([Where a throw goes,
-  at runtime](#throw-runtime); [Combat: open questions](combat/index.md#open-questions)).
+  runtime, and the front victim lands 19.2° right of the stick against 2.1° ([Where a throw goes, at
+  runtime](#throw-runtime); [Combat: open questions](combat/index.md#open-questions)).
 - **What sends a weapon message 1**{#q-weapon-break} (the break, `0x003fd600`): hits alone do not, at runtime ([A bat
   in hand](#bat)). Found from the callers that send message 1 to an object (the object message dispatch's
   cross-references), or a PCSX2 breakpoint on `0x003fd600` while a weapon is used.

@@ -13,8 +13,10 @@ the target of an inline link `[text](target)` does not count as touched when, fo
   does, and the new page holds it now but did not before: the section moved between two pages (the old page stayed, so
   its anchor is looked at), and its id and the text of the link did not change; or
 * the new target names another anchor on the same page, the old anchor is still there, and the new one is new: the
-  page held the old anchor before the change but not the new one, and holds both now. A section was split, and the
-  part the link cites moved out under its own id (a link to `#rage` that cites the flash, now `#flash`).
+  page held the old anchor before the change but not the new one, and holds both now. Any anchor new on that page
+  qualifies: the reason is a section split in two, the part the link cites moving out under its own id (a link to
+  `#rage` that cites the flash, now `#flash`), but only the anchors are looked at, not where the new section came
+  from. An anchor that replaced the old one (a renamed section) is a touch.
 
 The text of the link, the rest of the line and the number of links must be equal (spaces and line breaks do not count,
 so a link split over two lines is read whole, and so is the paragraph or list item that a longer target made the editor
@@ -88,7 +90,8 @@ def _rewritten(
     moved: the old page is in `gone` and the new target resolves, both name the same page and anchor, or both name the
     same anchor, which the old page `held` before the change and the new one did not hold but does now (a section that
     moved between two pages that stayed), or both name the same page, which `held` the old anchor and still holds it
-    but holds the new one only now (a section split in two). Without `held` the last two cases are not looked at."""
+    but holds the new one only now (an anchor new on the page, as when a section is split). Without `held` the last
+    two cases are not looked at."""
     before, after = _split(old, old_folder), _split(new, folder)
     if before is None or after is None:
         return False
@@ -99,7 +102,7 @@ def _rewritten(
     # The same id on another page: the section moved there and left the old page.
     if before[1] == after[1]:
         return not resolves(*before)
-    # Another id on the same page: the section the link cited was split, and the new id is the part it cites.
+    # Another id on the same page, new on it while the old one stays (a split section); a renamed id is a touch.
     return bool(before[1]) and before[0] == after[0] and resolves(*before)
 
 

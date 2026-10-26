@@ -278,17 +278,16 @@ the key and the R2 command menu, in this order. Confirmed (code) at `0x002843f8`
    `0x80000`, is not in it), the state word free of `0x1c00000000` (`0x00227f90`: jumping, falling, a long fall) and
    `+0x08` free of `0x40` (`0x00223c10`: climbing over). Any of these and the press does nothing: no clip, no flash
    spent. Then by health (record `+0x144` against the maximum `+0x146`):
-   - **Below the maximum.** The flash clip **665 `SPECIAL_FLASH`** (`gen_flash_use`, 40 frames) is pushed as a
-     one-shot clip task on top of the stack (`0x0025ade8`: a type-5 task, `0x00106240`, holding `0x2000`) when
-     **nothing blocks a move**: the state word has none of `0x18003ff0` (`0x00227fd8`: grabbed, grabbing, mugging,
-     mugged, tackling, tackled, a paired power move and its victim, `0x8000000`, `0x10000000`; blocking, `0x8000`, is
-     in none of these masks), none of `0xe0000` (`0x00223b48`: cuffed `0x20000`, knocked out `0x40000`, knocked down
-     `0x80000`), not the mini-game `0x4000000` (`0x00228050`), not tagging `0x2000000` (`0x002238c0`), none of
-     `0x7bf9e9f7ff0`; record `+0x08` has
-     none of `0x2fefefff`; and the object in hand is not of `ObjectAttribs` kind (`+0x87`) 4 or 6 (`0x00224000`).
-     Otherwise, if 665 is already the human's anim (`0x002266b8`), nothing more happens (its event will use the
-     flash); else the flash is **used at once** (`Flash_Use`, called at `0x00284818`): no clip, the move plays on.
-     The code before this test that would let go of a grab (`Human_BreakPair`, `0x00258a88`, when the state word has
+   - **Below the maximum.** The flash clip **665 `SPECIAL_FLASH`** (`gen_flash_use`, 40 frames) is pushed as a one-shot
+     clip task on top of the stack (`0x0025ade8`: a type-5 task, `0x00106240`, holding `0x2000`) when **nothing blocks a
+     move**: the state word has none of `0x18003ff0` (`0x00227fd8`: grabbed, grabbing, mugging, mugged, tackling,
+     tackled, a paired power move and its victim, `0x8000000`, `0x10000000`; blocking, `0x8000`, is in none of these
+     masks), none of `0xe0000` (`0x00223b48`: cuffed `0x20000`, knocked out `0x40000`, knocked down `0x80000`), not the
+     mini-game `0x4000000` (`0x00228050`), not tagging `0x2000000` (`0x002238c0`), none of `0x7bf9e9f7ff0`; record
+     `+0x08` has none of `0x2fefefff`; and the object in hand is not of `ObjectAttribs` kind (`+0x87`) 4 or 6
+     (`0x00224000`). Otherwise, if 665 is already the human's anim (`0x002266b8`), nothing more happens (its event will
+     use the flash); else the flash is **used at once** (`Flash_Use`, called at `0x00284818`): no clip, the move plays
+     on. The code before this test that would let go of a grab (`Human_BreakPair`, `0x00258a88`, when the state word has
      `0xc0` or `0x400`) also requires the state word to be free of `0x7bf9e9f7ff0`, which holds both bits, so it never
      runs: in a grab the flash is used at once and the grab stays. Confirmed (code) at `0x002843f8`; confirmed
      (runtime), [The flash during a move](#flash-mid-move).
@@ -298,20 +297,21 @@ the key and the R2 command menu, in this order. Confirmed (code) at `0x002843f8`
      a flash carried: one flash is spent (`Inventory_AddItem(…, 1, −1)`), rage is set to the class maximum and
      `Rage_Enter` runs. Without the upgrade nothing happens.
 
-**The flash clip's events**: `gen_flash_use` (665, 1.333 s) has two events, both at **frame 19** (0.633 s): type
-`0x41`, which `Anim_FireFrameEvents` (`0x00101dd8`) sends as message `0xc1`, and type 11, an [animation
+**The flash clip's events**: `gen_flash_use` (665, 1.333 s) has two events, both at **frame 19** (0.633 s): type `0x41`,
+which `Anim_FireFrameEvents` (`0x00101dd8`) sends as message `0xc1`, and type 11, an [animation
 sound](sound.md#anim-sounds) (message `0x8b`) with id **70** at `+0x8` and the text `flash` at `+0xc`.
-`Human_HandleMessage` (`0x002473bc`) answers `0xc1` by the human's anim: 665 calls `Flash_Use`; 666 opens the door
-the human targets (`Door_OpenBy`); 668 played by a dealer (brain type 5 with `GoalDealer`, `0x80`, on top) finishes
-the deal (`DealerGoal_FinishPair` `0x002c7c20`, [AI](ai-scripting.md#dealer-buy)). Confirmed (code); the events read
-from the disc's clips (identical in both copies). So the flash is used partway into the clip, unless the clip is cut first
-(then nothing is spent), and the player hears the animation sound 70 and `Flash_Use`'s interface sound 23 on the same
-update. At runtime 665 plays slower than its frames say: started on update N, `Flash_Use` ran from the event on update
-N + 25 and 665 lasted **53 updates** (N to N + 52), standing still and over a block alike, where 40 frames at 30 per
-second would give 19 and 40. Confirmed (runtime), `flash_idle` and `flash_block` below. The rate is 0.75, the one an
-Anim Range List record with none of the rate flags gets ([Playback rate](formats/animation.md#playback-rate);
-`Human_PushOverlayClip`, `0x0025ade8`, passes none of its own): inferred from the counts, since that rate and [the
-update rule](combat-moves.md#reading) give exactly 25 updates for frame 19 and 53 for 40 frames.
+`Human_HandleMessage` (`0x00245920`) answers `0xc1` by the human's anim: 665 calls `Flash_Use` (the call at
+`0x002473bc`); 666 opens the door the human targets (`Door_OpenBy`); 668 played by a dealer (brain type 5 with
+`GoalDealer`, `0x80`, on top) finishes the deal (`DealerGoal_FinishPair` `0x002c7c20`,
+[AI](ai-scripting.md#dealer-buy)). Confirmed (code); the events read from the disc's clips (identical in both copies).
+So the flash is used partway into the clip, unless the clip is cut first (then nothing is spent), and the player hears
+the animation sound 70 and `Flash_Use`'s interface sound 23 on the same update. At runtime 665 plays slower than its
+frames say: started on update N, `Flash_Use` ran from the event on update N + 25 and 665 lasted **53 updates** (from N
+to N + 52), standing still and over a block alike, where 40 frames at 30 per second would give 19 and 40. Confirmed
+(runtime), `flash_idle` and `flash_block` below. The rate is 0.75, the one an Anim Range List record with none of the
+rate flags gets ([Playback rate](formats/animation.md#playback-rate); `Human_PushOverlayClip`, `0x0025ade8`, passes none
+of its own): inferred from the counts, since that rate and [the update rule](combat-moves.md#reading) give exactly 25
+updates for frame 19 and 53 for 40 frames.
 
 **Taking flash from the dealer** plays the money pair, not 665: the dealer's anim 668 bound to `money_take` and the
 buyer's 668 to `money_give` (both 1.333 s, each with a type-8 partner-place event at frame 0, about 0.97 m ahead;
@@ -334,12 +334,12 @@ maximum (capped); it also runs `0x0021ce08`, `0x0024ca40` and clears human `+0x6
 
 Read in Ghidra: confirmed (code) where no other level is given; each runtime block says confirmed (runtime).
 
-What d-pad right does while another move plays. The press is **never queued**: `Commands_Match`
-(`0x00147940`) clears the per-player command `+0x20` at every update, and `Human_UpdateActions` (`0x00254e78`) hands
-command `0x28` to `Player_UseItemCommand` (the call at `0x00255074`; confirmed (code)) on that update only, whenever
-`PadHandlerEx_DispatchCommand`
-(`0x001480e0`) returns 0 (the per-player `+0x1e`, set while a script holds the player, is clear); no move state is
-tested before that call. So each press has one of three outcomes, decided at once by step 5 above:
+What d-pad right does while another move plays. The press is **never queued**: `Commands_Match` (`0x00147940`) clears
+the per-player command `+0x20` at every update, and `Human_UpdateActions` (`0x00254e78`) hands command `0x28` to
+`Player_UseItemCommand` (the call at `0x00255074`; confirmed (code)) on that update only, whenever
+`PadHandlerEx_DispatchCommand` (`0x001480e0`) returns 0 (the per-player `+0x1e`, set while a script holds the player, is
+clear); no move state is tested before that call. So each press has one of three outcomes, decided at once by step 5
+above:
 
 | Outcome | What the player sees and hears | When |
 | --- | --- | --- |
@@ -483,12 +483,12 @@ keep-weapon drops in Coney are on [Combat: throws, weapons in hand](combat-throw
 
 ### Who scores {#hit-score-coney}
 
-Read 2026-10-21: `human::Fighter::scoresRageOn` (`repo:src/human/fighter.h`) skips a victim whose
-health ran out before the hit (**Coney's reading**, inferred: Coney has no state word, and in Coney all three states
-follow a man's health running out; in the original a knocked-out man can keep some health, issue #592, so once Coney
-has that state the test reads it instead) and a category-13 victim with flag `0x10`; a hit only reaches an opponent,
-so the friends test holds; the player test is the fighter's player profile with the rage flag `0x2000000`. A grabbed
-player's counters and strike-backs read the grabber's flag through `combat::GrabberState::scoresRage`.
+Read 2026-10-21: `human::Fighter::scoresRageOn` (`repo:src/human/fighter.h`) skips a victim whose health ran out before
+the hit (**Coney's reading**, inferred: Coney has no state word, and in Coney all three states follow a man's health
+running out; in the original a knocked-out man can keep some health, issue #592, so once Coney has that state the test
+reads it instead) and a category-13 victim with flag `0x10`; a hit only reaches an opponent, so the friends test holds;
+the player test is the fighter's player profile with the rage flag `0x2000000`. A grabbed player's counters and
+strike-backs read the grabber's flag through `combat::GrabberState::scoresRage`.
 
 ### The flash {#flash-coney}
 

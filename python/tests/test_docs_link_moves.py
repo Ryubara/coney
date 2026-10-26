@@ -23,6 +23,8 @@ PAGES = {
     "docs/research/combat-targets.md": {"targeting", "locking", "open-questions"},
     # A page that stays and split its `rage` section: the flash moved out under `flash`, and `rage` is still there.
     "docs/research/combat-rage.md": {"rage", "flash", "power-meter"},
+    # A page that stays and renamed its `aiming` section to `aim`: the old id is gone, the new one is new.
+    "docs/research/combat-aim.md": {"aim"},
 }
 
 
@@ -38,6 +40,7 @@ def held(path: str, anchor: str) -> bool:
         "docs/research/combat-moves.md": {"moves", "targeting", "locking", "open-questions"},
         "docs/research/combat-targets.md": {"open-questions"},
         "docs/research/combat-rage.md": {"rage", "power-meter"},
+        "docs/research/combat-aim.md": {"aiming"},
     }
     return path in before and anchor in before[path]
 
@@ -80,13 +83,19 @@ def test_a_link_to_the_part_of_a_split_section_that_moved_out_under_its_own_id_i
 def test_a_link_to_another_id_of_the_same_page_is_a_touch_unless_a_section_was_split() -> None:
     # The new id was there before: the link now cites other text, not a part that moved out.
     assert not same("See [it](combat-rage.md#rage).", "See [it](combat-rage.md#power-meter).")
-    # The old id is gone: no section was split (a rename of the id is an edit of the link).
+    # The old id moved to another page and the new one was there before: the link now cites other text.
     assert not same("See [aim](combat-moves.md#targeting).", "See [aim](combat-moves.md#moves).")
     # A new id on another page is no split of the old page's section.
     assert not same("See [it](combat-rage.md#rage).", "See [it](combat-targets.md#locking).")
     # From the page itself, or to an id the page does not hold.
     assert not same("See [it](combat-rage.md).", "See [it](combat-rage.md#flash).")
     assert not same("See [it](combat-rage.md#rage).", "See [it](combat-rage.md#nowhere).")
+
+
+def test_a_link_to_a_renamed_id_of_the_same_page_is_a_touch() -> None:
+    # The old id is gone and the new one is new: the section was renamed, not split, and a link that follows a
+    # renamed id is an edit of the link, which the page must answer for.
+    assert not same("See [aim](combat-aim.md#aiming).", "See [aim](combat-aim.md#aim).")
 
 
 def test_a_link_to_an_id_the_new_page_held_before_is_a_touch() -> None:
