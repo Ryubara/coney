@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <format>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -13,9 +14,15 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/pad.h"
+#include "graphics/overlay_camera.h"
+#include "graphics/screen.h"
+#include "graphics/sprite_batch.h"
 #include "gui/colour_table.h"
 #include "gui/global_strings.h"
 #include "gui/menu_input.h"
+#include "gui/widget.h"
+#include "support/font_fixtures.h"
+#include "support/recording_device.h"
 
 using Catch::Approx;
 using coney::gui::MenuCommand;
@@ -522,4 +529,102 @@ TEST_CASE("options: a move refused at an end stops the d-pad repeating until the
         }
     }
     CHECK(commands == 1);
+}
+
+namespace {
+
+// The background sheet's (record 12) synthetic stand-in: seven rectangles over a 128 x 128 texture, rectangle 0 (the
+// bars' sizing sprite) 64 x 16 texels, so a sprite of it is a quarter as tall as it is wide.
+coney::graphics::SpriteSheet sheet12() {
+    coney::graphics::SpriteSheet sheet;
+    constexpr float kTexel = 1.0F / 128.0F;
+    sheet.page.rects.push_back(coney::graphics::UvRect{0.0F, 0.0F, 64.0F * kTexel, 16.0F * kTexel});
+    for (int i = 1; i < 7; ++i) {
+        const float v0 = 16.0F * kTexel * static_cast<float>(i);
+        sheet.page.rects.push_back(coney::graphics::UvRect{0.0F, v0, 8.0F * kTexel, v0 + (8.0F * kTexel)});
+    }
+    sheet.texture = std::make_shared<coney::test::FakeTexture>(128, 128);
+    return sheet;
+}
+
+// The Audio page drawn with `layout` and `fade` into a synthetic sheet 12 batch and a synthetic part_page0 batch (the
+// one every font slot but big_font's draws into); no fonts, so the texts add nothing.
+struct DrawnAudio {
+    coney::graphics::SpriteBatch sheet{sheet12(), 64, 8500.0F};
+    coney::graphics::SpriteBatch parts{coney::test::testFontSheet(), 64, 9000.0F};
+
+    DrawnAudio(const OptionLayout& layout, float fade) {
+        Screen screen({}, 99, layout);
+        screen.menu.setSpriteBatch(&sheet);
+        screen.menu.setFade(fade);
+        screen.openPage(OptionPage::Audio);
+        coney::gui::GuiCanvas canvas;
+        canvas.textBatch = [this](int /*slot*/) { return &parts; };
+        screen.menu.render(canvas);
+    }
+};
+
+} // namespace
+
+TEST_CASE("options: a volume bar draws no frame, a dark back and a fill in its label's colour, as its first update "
+          "sizes them",
+          "[pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code)
+    using coney::graphics::OverlayCamera;
+    for (const bool flag02 : {false, true}) {
+        const OptionLayout layout = OptionLayout::forMode(coney::Language::English, false, flag02);
+        const DrawnAudio drawn(layout, 1.0F);
+        // No sprite of sheet 12: the sizing sprite is never drawn.
+        CHECK(drawn.sheet.sprites().empty());
+        // Per bar, the back then the fill, in part_page0's strip rectangle (55).
+        REQUIRE(drawn.parts.sprites().size() == 4);
+        // The height: the sizing sprite's (0.54 wide, its rectangle's shape), less 0.04 (0.025 with flag 0x02).
+        const float width = OverlayCamera::guiWidthToOverlay(0.54F);
+        const float height = (width * 0.25F) - (flag02 ? 0.025F : 0.04F);
+        // The strip starts after the left cap (rectangle 56, 8 x 16 texels drawn that tall) from x 0.26 - 0.001.
+        const float cap = height * 0.5F * (coney::graphics::kLogicalHeight / coney::graphics::kLogicalWidth);
+        const float inner = 0.54F - cap;
+        const std::array<float, 2> rows{layout.volumeRows[1], layout.volumeRows[3]};
+        const std::array<coney::graphics::Rgba, 2> fills{coney::gui::kMenuGrey, coney::gui::kDimGrey};
+        const coney::graphics::UvRect strip = coney::test::testFontSheet().page.rect(55);
+        for (std::size_t bar = 0; bar < 2; ++bar) {
+            const coney::graphics::Sprite& back = drawn.parts.sprites().at(bar * 2);
+            const coney::graphics::Sprite& fill = drawn.parts.sprites().at((bar * 2) + 1);
+            const auto backCentre = OverlayCamera::guiToOverlay(0.259F + cap + (inner / 2.0F), rows.at(bar));
+            const auto fillCentre = OverlayCamera::guiToOverlay(0.259F + cap + (inner * 0.9F / 2.0F), rows.at(bar));
+            CHECK(back.position.x == Approx(backCentre.x));
+            CHECK(back.position.y == Approx(backCentre.y));
+            CHECK(fill.position.x == Approx(fillCentre.x));
+            CHECK(back.width == Approx(OverlayCamera::guiWidthToOverlay(inner)));
+            CHECK(fill.width == Approx(OverlayCamera::guiWidthToOverlay(inner * 0.9F)));
+            CHECK(back.height == Approx(height));
+            CHECK(fill.height == Approx(height));
+            CHECK(back.colour == coney::graphics::Rgba{21, 21, 21, 255});
+            const coney::graphics::Rgba label = fills.at(bar);
+            CHECK(fill.colour == coney::graphics::Rgba{label.r, label.g, label.b, 255});
+            // The strip moved in by a texel across, not down.
+            CHECK(back.uv.u0 == Approx(strip.u0 + (1.0F / 128.0F)));
+            CHECK(back.uv.u1 == Approx(strip.u1 - (1.0F / 128.0F)));
+            CHECK(back.uv.v0 == Approx(strip.v0));
+        }
+    }
+    // Faded, the fill takes the menu's alpha and the back keeps its own.
+    const DrawnAudio faded(OptionLayout{}, 0.5F);
+    REQUIRE(faded.parts.sprites().size() == 4);
+    CHECK(faded.parts.sprites().at(0).colour.a == 255);
+    CHECK(faded.parts.sprites().at(1).colour.a == 128);
+}
+
+TEST_CASE("options: a choice's answers are set edge to edge, the slash between them", "[pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code)
+    Screen screen;
+    const auto tag = [](coney::graphics::Rgba c) {
+        return std::format("<COLOR {:02x}{:02x}{:02x}{:02x}>", c.r, c.g, c.b, c.a);
+    };
+    // Invert P1 is off: the second answer is the chosen one.
+    CHECK(screen.menu.items(OptionPage::Camera).at(0)->answersText.text() ==
+          std::format("{}#12b</COLOR>/{}#12c</COLOR>", tag(coney::gui::kDimGrey), tag(coney::gui::kMenuGrey)));
+    // Restore Default: Yes/No, on No.
+    CHECK(screen.menu.items(OptionPage::RestoreDefault).at(0)->answersText.text() ==
+          std::format("{}#3b</COLOR>/{}#3c</COLOR>", tag(coney::gui::kDimGrey), tag(coney::gui::kMenuGrey)));
 }

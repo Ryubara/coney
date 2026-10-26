@@ -285,6 +285,7 @@ target_sources(coney_tests PRIVATE
     camera/rail_camera_test.cpp
     camera/win_camera_test.cpp
     camera/failed_camera_test.cpp
+    camera/follow_camera_option_test.cpp
     camera/follow_camera_test.cpp
     camera/follow_collision_test.cpp
     camera/follow_placement_test.cpp

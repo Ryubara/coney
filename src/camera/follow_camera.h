@@ -383,6 +383,10 @@ class FollowCamera {
     [[nodiscard]] bool viewLatched() const { return m_viewLatch; }
     /// The yaw the auto-follow rule turned the camera by in the last update, radians (positive anticlockwise).
     [[nodiscard]] float lastAutoTurn() const { return m_lastAutoTurn; }
+    /// Sets the camera's player's Auto Adjust option. Stub: not kept yet.
+    void setAutoAdjust(bool /*on*/) {}
+    /// The camera's player's Auto Adjust option. Stub: always on.
+    [[nodiscard]] bool autoAdjust() const { return true; }
     /// The yaw the combat camera or keep-in-view turned it by in the last update, radians (positive anticlockwise).
     [[nodiscard]] float lastFrameTurn() const { return m_lastFrameTurn; }
     /// The settings it was made or configured with.
