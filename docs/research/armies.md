@@ -46,7 +46,8 @@ Read in the scripts and the screens' code; each line gives its level.
 
 - Each stage runs a **99-second timer**; when it runs out, the game-over screen asks "CONTINUE?" and counts 9 down to 0
   ([The game-over screen](#game-over); the timer's script is in [the start](#level60-start)). Inferred from
-  `level60_destroyers.lua`'s `F1.Time` and `F1.TimerOut`.
+  `level60_destroyers.lua`'s `F1.Time` and `F1.TimerOut`. The watch runs about 1% slow, so the 99 s take about 101 s
+  ([From the walk to the game over](#timer)).
 - The player starts with **7 credits** (`HUDANSetCredit(7)` in `RunLevel`). A Start during the count spends one and
   plays on; with none left, or when the count ends, the screen shows GAME OVER with Replay and Quit (confirmed (code)
   at `ANGameOver_Update` `0x001cf468`).
@@ -132,6 +133,31 @@ Swan stands at (−93.5, 18.8), where the level script puts him, through the int
 stops by tick 1411 at (−94.78, 23.54): 0.48 m from `Flag_02` (−94.9, 24), inside the goal's 0.5 m radius. The flag's
 message 8 then runs `P1.Start04` ([the start](#level60-start), step 4).
 
+### From the walk to the game over {#timer}
+
+Confirmed (runtime), run r-20261026-level60-clock, for the ticks; confirmed (code) at the cited addresses for the
+stopwatch.
+
+The same idle start as [the first frames](#first-frames), with a breakpoint on the binding each script step calls; the
+ticks are the game's 60 Hz count:
+
+| Tick | Step |
+| --- | --- |
+| 1205 | `P1.Start03` calls `GoalMoveToFlag` |
+| 1224-1231 | Swan starts walking |
+| 1405-1411 | he stops at (−94.78, 23.54) |
+| 1428 | `P1.Start04`, run by the flag's message 8, calls `CloseDoor` |
+| 1457 | `F1.Restore01` calls `HUDANSetGOSignMode` |
+| 1473 | `F1.Restore02` calls `F1.Time`, which calls `W_SetStopWatch(99999, 0, "F1.TimerOut")` |
+| 7541 | `F1.TimerOut` calls `HUDLaunchANGameOver` |
+
+- The walk takes about 180 ticks, and the flag's message 8 comes 17 to 23 ticks after Swan stops. The script's 500 and
+  250 ms delays take 29 and 16 ticks.
+- **The timer runs slow.** The 99,999 ms took 6068 ticks (101.1 s), not 6000. `StopWatch_Update` (`0x004233f8`) adds
+  the whole milliseconds since its last reading (`GameTimer_MsSince`, `0x004dca60`, truncates) and then keeps the
+  timer's whole reading, so a 33.33 ms frame counts 33 ([Scripting: the stopwatch](scripting.md#stopwatch)). The game
+  clock itself kept time: at tick 7541 the game timer read 125,726 ms, the same as its real time.
+
 ### The HUD in play {#hud-in-play}
 
 Confirmed (runtime), run r-20261026-level60-idle, for what shows; the code of each part is in the sections below.
@@ -215,6 +241,9 @@ The screen's layout, its strings and its function list are on
   ([q-brain-9](#q-brain-9)).
 - **Opening it twice.** `HUD_LaunchANGameOver` (`0x001cede8`) toggles: called while mode 0xd is on top it pops it,
   with no choice made.
+- **What it draws** (`Gm_ANGameOver_Update`, `0x00155c78`): one frame of the world under the menu, through
+  `GameMode_RenderViewportAlt` (`0x00156540`), which draws the views' world, their 3D sprites and the ground rings and
+  no HUD. Seen: no HUD under "CONTINUE?".
 
 ### The garage door {#garage-door}
 
@@ -235,12 +264,16 @@ stage cannot start without it, because the player walks out through its doorway.
   3 along −x. The step is twice property 6 (`DynDoorSliding_Init`, `0x003f5d10`), taken every 2 ticks
   (`SubSlidingDoor_Update`, `0x003f5a68`) until the offset passes the length, which it then takes; so a leaf
   overshoots by up to one step before it settles.
-- **The leaves.** A roll-up door has one leaf, `dyn_dr_rollup`; `dyn_door_ele` and `dyn_door_pol` one of their own;
-  the portcullis, both fences, `dyn_door_ele_c` and `dyn_door_subway` two, and `dyn_door_spook` `dyn_dr_spook_a` and
-  `_b`. A second leaf sits 2 × property 5 along the door's −x axis (`dyn_door_ele_c`'s along its −z), turned 180°
-  about its own z, or about its own y when the axis byte is below 2, so the lift's second leaf slides down while the
-  first slides up. The open and close sound is `0xd2479dee` for the roll-up, the lift doors and the spook door,
-  `0x8a2b8511` for the portcullis and `0xf8638826` for the rest.
+- **The leaves.** A roll-up door has one leaf, `dyn_dr_rollup`; `dyn_door_ele` and `dyn_door_pol` one of their own; the
+  portcullis, both fences, `dyn_door_ele_c` and `dyn_door_subway` two, and `dyn_door_spook` `dyn_dr_spook_a` and `_b`. A
+  second leaf sits 2 × property 5 along the door's −x axis (`dyn_door_ele_c`'s along its −z), turned 180° about its own
+  z, or about its own y when the axis byte is below 2, so the lift's second leaf slides down while the first slides up.
+  A leaf takes that pose and its slide direction on its first update, after the set-up's command 7. From then on every
+  command (`SlidingDoor_StateCommand`) puts the poses back, for every type but `dyn_door_ele_c`: the first leaf to the
+  door's rotation, the second to it turned 180° about z. The slide direction stays as placed, so after its first command
+  a two-leaf up-and-down door's second leaf stands upright again and still slides down. The open and close sound is
+  `0xd2479dee` for the roll-up, the lift doors and the spook door, `0x8a2b8511` for the portcullis and `0xf8638826` for
+  the rest.
 - **Its messages** (`DynDoorSliding_OnMessage`, `0x003f5ef0`): 8 detach, `0x0b` command 2, `0x0c` open when `+0x2c`
   is 2, `0x10` and `0x13` pin and unpin the leaves, `0x15` the door's destroy, `0x22` a command, `0x3e` its data.
 
@@ -250,8 +283,25 @@ The mode is ported for one player in `level60`'s first checkpoint, as far as the
 (`repo:src/world_objects/doors.cpp`), the rail's mode 3 (`repo:src/camera/rail_camera.cpp`), the Armies HUD's credits,
 GO sign and join messages (`repo:src/hud/armies_hud.cpp`), the timer's seconds form and the game-over screen
 (`repo:src/gamemodes/armies_game_over_mode.h`, `repo:src/gui/pause_menu/armies_game_over_menu.h`). With the pad idle
-the stage plays as [the original's first frames](#first-frames) do; a disc test holds it
-(`repo:tests/platform/disc_armies_test.cpp`).
+the stage runs through the same steps as [the original's](#timer), in the same order, and a disc test holds it
+(`repo:tests/platform/disc_armies_test.cpp`). It differs in the stand-ins below and in these
+timings, counted from `P1.Start03`'s `GoalMoveToFlag` in 60 Hz ticks (Coney's dev build, `--play-level level60
+--checkpoint 1`, its steps of 1/30 s counted twice, against run r-20261026-level60-clock):
+
+| Step | Coney | Original |
+| --- | --- | --- |
+| Swan starts walking | 14 | 19-26 |
+| He stops | 196 | 200-206 |
+| `P1.Start04` (`CloseDoor`) | 210 | 223 |
+| `F1.Time` (`W_SetStopWatch`) | 254 | 268 |
+| `F1.TimerOut` (`HUDLaunchANGameOver`) | 6316 | 6336 |
+
+So Coney's walk starts about 8 ticks sooner, the flag's message 8 comes a few ticks sooner after the stop, and the
+timer runs 6 ticks shorter (3031 steps of 33 ms counted, where the original's frames of about 33.4 ms took 6068 ticks):
+the game over comes about 0.3 s sooner in all. Why the walk starts sooner is not traced.
+
+- **The GO sign's bleep** (`vags/misc/bleep27`, restarted by `GoSign_Render` `0x0019ed28`) is a marked stand-in:
+  Coney's sign is silent.
 
 - **Bindings.** Of the stage's 15 new bindings, 6 are not implemented
   ([Story coverage](../references/bindings/story.md#level60)): `HuColor`, `HuEnableController`, `GangSetMoney`,
@@ -268,9 +318,9 @@ the stage plays as [the original's first frames](#first-frames) do; a disc test 
   choice, because Coney's front-end audio cannot say when a cue has ended; the `level64` section 4 refusal is not
   built ([q-brain-9](#q-brain-9)); only the NTSC layout is laid out; the Armies score clear (`0x004229c0`, issue #704)
   and the `+0x14c` writes (issue #669) are left to their issues.
-- **The sliding doors**: all of [the garage door](#garage-door) but the streaming pins, the leaves' collision bodies,
-  messages 8, `0x15` and `0x3e` (issues #707, #710) and the lock-pick glint. Stand-in: a command starts a leaf's slide
-  on its next 2-tick step, not on its pending update ([q-slide-start](#q-slide-start)).
+- **The sliding doors**: all of [the garage door](#garage-door) but the streaming pins (issue #710), the leaves'
+  collision bodies and messages 8, `0x15` and `0x3e` (issue #707), and the lock-pick glint. Stand-in: a command starts a
+  leaf's slide on its next 2-tick step, not on its pending update ([q-slide-start](#q-slide-start)).
 - `characters::isArmiesLevel` takes levels 60-69, as the original's test does
   (`repo:src/characters/character_class.cpp`).
 - **The black screen (item 19)**, reproduced in a disc test: the debug menu's Levels page listed every record of the
@@ -329,6 +379,7 @@ Reading the garage leaf's offset each tick after `P1.Start02` in PCSX2 would sho
 ## How this was checked
 
 The runs are run records: r-20261026-level60-idle (the idle stage, from the load to GAME OVER, sampled four times a
-second with window captures every 4 s) and r-20261026-level60-join (breakpoints on the join flag's set and clear during
-the load, then the panels' fields read in play). Coney's side is the dev build's `--play-level level60 --checkpoint 1`
-with the pad idle.
+second with window captures every 4 s), r-20261026-level60-join (breakpoints on the join flag's set and clear during the
+load, then the panels' fields read in play) and r-20261026-level60-clock (breakpoints on the script steps' bindings from
+the walk to the game over, the player sampled about every 100 ms, the game timer read at the end). Coney's side is the
+dev build's `--play-level level60 --checkpoint 1` with the pad idle.
