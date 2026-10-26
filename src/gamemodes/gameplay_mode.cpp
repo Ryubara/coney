@@ -78,6 +78,9 @@ class ScriptSpawnerWorld final : public ai::SpawnerWorld {
         : m_scripted(&scripted), m_scripts(&scripts), m_cameras(cameras), m_boxes(boxes), m_collision(collision),
           m_random(&random) {}
 
+    // Spawner_PlaceOutOfView's camera, random draw and turf steps around the search (ai::outOfSightNode())
+    // (docs/research/ai-gangs.md#spawner-placement).
+    // @orig 0x001673b8 Spawner_PlaceOutOfView (unknown)
     [[nodiscard]] std::optional<anim::Vec3> outOfSight(float value, int gang) override {
         const std::optional<anim::Vec3> player = playerPosition();
         const ai::RoutePlanner* planner = m_scripted->owner().planner();
@@ -161,6 +164,9 @@ class ScriptSpawnerWorld final : public ai::SpawnerWorld {
         return found != nullptr && found->kind() == ai::kPoliceKind;
     }
 
+    // Spawner_MakeHuman's human, made through the scripts' own `HuCreate` so it is kept and numbered as a script's
+    // (docs/research/ai-gangs.md#spawners).
+    // @orig 0x0016d860 Spawner_MakeHuman (unknown)
     double spawn(const ai::SpawnRequest& request) override {
         auto position = std::make_shared<script::Table>();
         for (std::size_t i = 0; i < request.position.size(); ++i) {
@@ -183,6 +189,8 @@ class ScriptSpawnerWorld final : public ai::SpawnerWorld {
         return made->front().number().value_or(0.0);
     }
 
+    // Spawner_MakeHuman's last step: the spawner's callback with (human, gang, spawner name).
+    // @orig 0x0016d860 Spawner_MakeHuman (unknown)
     void spawned(std::string_view callback, double handle, int gang, std::string_view spawner) override {
         // A name that is not a function calls nothing, without a message (0x0016d860 checks before it calls).
         if (!m_scripts->hasFunction(callback)) {
@@ -242,6 +250,7 @@ GameplayMode::~GameplayMode() {
     }
 }
 
+// @orig 0x001607b8 UnloadLevel (unknown)
 void GameplayMode::endLevel() {
     // The level first: its humans are what the brains refer to, its player what the cameras follow. Then the cameras,
     // whose locator reads the scripts' hold, then the hold, then the brains it holds.
@@ -573,6 +582,10 @@ void GameplayMode::enter() {
     startPlay();
 }
 
+// InitLevel's steps 4-10 behind the loading screen: the HUD set-up with the radar's map (Radar_Setup's sheet and
+// floats from the level record), the level script, the pick-ups, then the level entered.
+// @orig 0x0015fe90 InitLevel (InitLevel.cpp)
+// @orig 0x001c3de0 Radar_Setup (RadarHUD.cpp)
 void GameplayMode::loadLevel() {
     startPlayerLevel(m_state);
     // InitLevel's HUD set-up, before the script: the level starts with the HUD hidden until something shows it.
@@ -702,6 +715,7 @@ void GameplayMode::loadLevel() {
     m_level->enter();
 }
 
+// @orig 0x0015fe90 InitLevel (InitLevel.cpp)
 void GameplayMode::startPlay() {
     // A level that failed to load asks for no movie.
     if (!m_level) {
@@ -716,6 +730,8 @@ void GameplayMode::startPlay() {
     }
 }
 
+// InitLevel's loading-screen steps (LoadScreen_Begin, the sounds, LoadScreen_End) spread over the mode's steps.
+// @orig 0x0015fe90 InitLevel (InitLevel.cpp)
 bool GameplayMode::updateLoadingScreen(const FrameTime& frame) {
     LoadingScreen& screen = *m_loadingScreen;
     const std::uint64_t msPerTick = GameTimer::kTicksPerSecond / 1000;
@@ -769,6 +785,8 @@ ModeResult GameplayMode::update(GameModeStack& stack, const FrameTime& frame) {
     return result;
 }
 
+// Mode 1's frame of play in the original's order (docs/research/level-loading.md#a-frame-of-play).
+// @orig 0x00158728 Gm_Level_Update (unknown)
 ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& frame) {
     // The level's step (the characters, the cameras, the streaming), then the scripts' frame, as a frame of play
     // orders them.
@@ -975,6 +993,7 @@ script::HumanSoundCall humanSoundCallOf(double handle, const ai::Brain& brain, c
                                   .gestureSlots = ai::helpLevel(brain)};
 }
 
+// @orig 0x00390480 LightTask_SetParams (unknown)
 void GameplayMode::syncSystemLights() {
     if (!m_effects || !m_lighting) {
         return;
@@ -1013,6 +1032,9 @@ void GameplayMode::syncSystemLights() {
     m_systemLights = std::move(lit);
 }
 
+// @orig 0x003e85b8 PartStrobeRed_Init (unknown)
+// @orig 0x003e8678 PartStrobeRed_OnMessage (unknown)
+// @orig 0x003d7e30 PartGarbageFlies_Init (unknown)
 void GameplayMode::syncSystemSounds() {
     if (!m_effects || m_context.sound == nullptr) {
         return;
@@ -1066,6 +1088,7 @@ void GameplayMode::syncSystemSounds() {
     m_systemEmitters = std::move(kept);
 }
 
+// @orig 0x003ad440 Radio_Update (unknown)
 void GameplayMode::updateRadios() {
     if (m_radios.all().empty()) {
         return;
@@ -1110,6 +1133,7 @@ void GameplayMode::updateRadios() {
                     [this](const std::string& function) { m_scripts.call(function, std::vector<script::Value>{}); });
 }
 
+// @orig 0x00415378 VolumeBox_Update (unknown)
 void GameplayMode::updateBoxes(std::uint64_t nowMs) {
     if (m_context.boxes == nullptr || m_context.messages == nullptr || !m_scripted) {
         return;
@@ -1120,6 +1144,7 @@ void GameplayMode::updateBoxes(std::uint64_t nowMs) {
     });
 }
 
+// @orig 0x00413018 VolumeBoxes_SendDamageMessage (unknown)
 void GameplayMode::sendDamageMessage(double human, double object) {
     if (m_context.boxes == nullptr || m_context.messages == nullptr || !m_scripted) {
         return;
@@ -1135,6 +1160,7 @@ void GameplayMode::sendDamageMessage(double human, double object) {
     }
 }
 
+// @orig 0x00412dc8 Item_TakeOwned (unknown)
 void GameplayMode::sendTheftMessage(double taker, double object, anim::Vec3 at) {
     if (m_context.boxes == nullptr || m_context.messages == nullptr) {
         return;
@@ -1384,6 +1410,8 @@ void GameplayMode::wireScoutServices() {
     scout.setSecondWanted = [this](int gang) { m_state.player.crimes.setSecondWanted(gang, m_scripts.now()); };
 }
 
+// Human_SnapToGround's hide rule after the ground snap, with its HUD_RadarSetTintBlue call.
+// @orig 0x0023eab8 Human_SnapToGround (unknown)
 void GameplayMode::updateHiding() {
     ai::Brain* player = m_scripted ? m_scripted->player() : nullptr;
     if (player == nullptr || !m_brains) {
@@ -1439,6 +1467,9 @@ void GameplayMode::renderWithOverlay(const RenderTime& time,
     m_device.present();
 }
 
+// Mode 1's Exit, then UnloadLevel's level and script steps (docs/research/level-loading.md#unload).
+// @orig 0x00158488 Gm_Level_Exit (unknown)
+// @orig 0x001607b8 UnloadLevel (unknown)
 void GameplayMode::exit() {
     // Left behind the loading screen: its sounds stop and it ends.
     if (m_loadingScreen != nullptr && m_phase != Phase::Playing) {
