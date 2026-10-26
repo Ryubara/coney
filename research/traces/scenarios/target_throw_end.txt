@@ -1,0 +1,6 @@
+# Grab (circle), then the stick straight ahead at 0.9 with circle on the same update: a front throw (147 / 148).
+# The stick stays ahead at 0.6 from update 70, so the walk the throw's end gives way to shows.
+10 tap circle
+61 stick left 0 86
+61 tap circle
+70 stick left 0 60

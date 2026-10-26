@@ -904,6 +904,7 @@ class Fighter {
     bool m_lockOn = false;        // a player's lock (0x4) and lock-on movement (Human_FightStanceMove)
     bool m_l1Lock = false;        // L1's lock bit (0x8)
     bool m_lockBlocked = false;   // setLockBlocked(): hidden, the target does not lock
+    bool m_lockMoveFree = false;  // locked, but a throw put him on the free movement (0x00240e38)
     bool m_tacklePending = false; // the tackle's intro plays; the victim reacts when its hit clip starts
     bool m_mountPending = false;  // the grab's mount (118) or the tackle plays; the mounter is seated at 210
     int m_seatUpdates = 0;        // the updates of the seat's slide left; the victim is attached when it ends

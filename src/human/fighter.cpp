@@ -265,8 +265,9 @@ Combatant* Fighter::attackTargetOf(int animId, const FighterInput& input, bool c
 }
 
 const Combatant* Fighter::lockTarget() const {
+    // A player's lock-on movement runs while he is locked, unless a throw put him on the free one.
     if (m_player) {
-        return m_lockOn ? m_target : nullptr;
+        return m_lockOn && !m_lockMoveFree ? m_target : nullptr;
     }
     return !m_lockBlocked && combat::lockedOn(combat::combatTuning(), m_target != nullptr, m_l1Held) ? m_target
                                                                                                      : nullptr;
@@ -1344,6 +1345,7 @@ void Fighter::updateStance(const FighterInput& input, std::uint32_t phase) {
         if (m_target != nullptr) {
             takeTarget(nearest);
             m_lockOn = m_target != nullptr;
+            m_lockMoveFree = false;
         }
         return;
     }
@@ -1419,6 +1421,7 @@ void Fighter::updateL1(const FighterInput& input, std::uint32_t phase) {
     }
     if (!m_lockBlocked) {
         m_lockOn = true;
+        m_lockMoveFree = false;
         m_stanceOn = true;
     }
     // L1's bit (0x8). **Coney's choice**: a hidden player's hold also sets state 0x20000000, which Coney's player keeps

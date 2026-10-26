@@ -416,6 +416,13 @@ void Fighter::playGrabAction(const combat::CombatOutput& out, HumanAnimator& ani
         break;
     }
     case combat::GrabAction::Throw:
+        // The throw ends the grab with no Grab_End: the grabbing movement (`Human_MoveGrabbing` `0x00245310`) finds
+        // him grabbing no one and puts the free locomotion (`Human_PlayerLocomotion` `0x00240e38`) in place of the
+        // lock-on movement it had saved. The lock bit and the target stay, so the stance update does not lock again
+        // while the body flies; at runtime the stance dropped the target 5.6 m off on the update the throw's clip
+        // ended, and 413 walked him at once (run r-20261026-target-throw-end). A let-go (Grab_End) restores the
+        // lock-on movement instead.
+        m_lockMoveFree = m_lockOn;
         if (rearThrowPath()) {
             // From the rear hold the spin to the front (80, the victim 81) plays first, then the throw; the victim is
             // let go when the throw's clip begins (throwAfterSpin()). Nothing turns the pair, so the body flies along
