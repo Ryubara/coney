@@ -1356,9 +1356,9 @@ void Human::startStereoTheft(anim::Vec3 point, float stageTurns) {
         m_heading = headingOf(to);
     }
     m_velocity = anim::Vec3{};
-    // The mini-game (mode 3, MiniGame_Start's StereoTheft_Start), then 683 and its loop 684
-    // (Fighter::startStereoTheft).
-    // **Coney stand-in**: Coney's combat fade, not the original's 0.01 s blend.
+    // The mini-game (mode 3, MiniGame_Start's StereoTheft_Start), then 683 and its loop 684 (Fighter's start).
+    // **Coney stand-ins**: Coney's combat fade, not the original's 0.01 s blend; Coney's anim state Hold, not state 0;
+    // no held 0x2000000 on the record or the clip. Not ported: the push sphere switched off.
     m_fighter.startStereoTheft(m_animator, nowMs(), stageTurns);
 }
 
