@@ -216,6 +216,8 @@ class OptionMenu {
         std::function<void(bool on, float volume)> previewMusic;
         /// A pad's vibration turned on: rumble `pad` at `strength` for `ms`.
         std::function<void(int pad, int strength, std::uint64_t ms)> vibrate;
+        /// The vibration preview stopped early (back on the Vibration page).
+        std::function<void()> stopVibration;
     };
 
     OptionMenu();

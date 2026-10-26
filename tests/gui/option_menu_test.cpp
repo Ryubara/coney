@@ -2,6 +2,7 @@
 // The pause menu's Options screen (docs/research/pause.md#options), driven command by command with synthetic strings.
 #include "gui/pause_menu/option_menu.h"
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <format>
@@ -33,7 +34,7 @@ struct Screen {
     std::vector<int> cues;
     std::vector<OptionValues> applied;
     std::vector<std::pair<bool, float>> music;
-    std::vector<int> vibrations;
+    std::vector<int> vibrations; // a pad's preview rumble, or -1 for the preview stopped
 
     explicit Screen(OptionValues values = {}, int level = 99, OptionLayout layout = {}) {
         for (std::uint32_t id = 0x30; id < 0x180; ++id) {
@@ -48,6 +49,7 @@ struct Screen {
             CHECK(ms == 500);
             vibrations.push_back(pad);
         };
+        hooks.stopVibration = [this] { vibrations.push_back(-1); };
         menu.open(&strings, input, hooks, values, layout, level, 10'000);
     }
     // One command; returns whether it left the screen.
@@ -68,6 +70,7 @@ struct Screen {
 
 TEST_CASE("options: seven titles at (0.26, 0.30 + 0.055 i) in big_font at 1.3, the first selected",
           "[pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code)
     Screen screen;
     CHECK(screen.menu.lines() == std::vector<std::string>{"#117", "#119", "#122", "#123", "#124", "#11f", "#128"});
     for (std::size_t i = 0; i < coney::gui::kOptionPages; ++i) {
@@ -83,6 +86,7 @@ TEST_CASE("options: seven titles at (0.26, 0.30 + 0.055 i) in big_font at 1.3, t
 
 TEST_CASE("options: up and down move the titles, refusing at the ends; back leaves with cue 0xf",
           "[pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code)
     Screen screen;
     CHECK_FALSE(screen.command(MenuCommand::Up));
     CHECK(screen.lastCue() == 0xe);
@@ -99,6 +103,7 @@ TEST_CASE("options: up and down move the titles, refusing at the ends; back leav
 }
 
 TEST_CASE("options: the pages' items, in order", "[pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code)
     Screen screen;
     const auto labels = [&](OptionPage page) {
         std::vector<std::uint32_t> out;
@@ -123,6 +128,7 @@ TEST_CASE("options: the pages' items, in order", "[pause_menu][options]") {
 
 TEST_CASE("options: the Camera rows at y 0.36 + 0.045 i with their answers at x 0.66 (0.76 in German)",
           "[pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code)
     Screen screen;
     const auto& camera = screen.menu.items(OptionPage::Camera);
     for (std::size_t i = 0; i < camera.size(); ++i) {
@@ -141,6 +147,7 @@ TEST_CASE("options: the Camera rows at y 0.36 + 0.045 i with their answers at x 
 
 TEST_CASE("options: the single-item pages put the answers 0.06 under a 1.3 label at (0.26, 0.30)",
           "[pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code)
     Screen screen;
     for (const OptionPage page : {OptionPage::Video, OptionPage::Subtitles, OptionPage::RestoreDefault}) {
         const auto& item = *screen.menu.items(page).at(0);
@@ -158,6 +165,7 @@ TEST_CASE("options: the single-item pages put the answers 0.06 under a 1.3 label
 }
 
 TEST_CASE("options: a Camera choice applies at once, the first answer meaning on", "[pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code)
     Screen screen;
     screen.openPage(OptionPage::Camera);
     CHECK(screen.lastCue() == 8);
@@ -167,10 +175,10 @@ TEST_CASE("options: a Camera choice applies at once, the first answer meaning on
     CHECK(invert.choice == 1);
     CHECK_FALSE(screen.command(MenuCommand::Right));
     CHECK(screen.lastCue() == 0xe);
-    CHECK(screen.applied.empty());
+    CHECK(screen.applied.size() == 1);
     CHECK_FALSE(screen.command(MenuCommand::Left));
     CHECK(screen.lastCue() == 4);
-    REQUIRE(screen.applied.size() == 1);
+    REQUIRE(screen.applied.size() == 2);
     CHECK(screen.applied.back().invertCamera[0]);
     CHECK(screen.menu.values().invertCamera[0]);
     // Down to Auto Adjust P2 and turn it off.
@@ -192,6 +200,7 @@ TEST_CASE("options: a Camera choice applies at once, the first answer meaning on
 }
 
 TEST_CASE("options: back on a page puts back the values it had when opened", "[pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code)
     Screen screen;
     screen.openPage(OptionPage::Camera);
     (void)screen.command(MenuCommand::Left);
@@ -205,6 +214,7 @@ TEST_CASE("options: back on a page puts back the values it had when opened", "[p
 }
 
 TEST_CASE("options: turning a pad's vibration on rumbles it", "[pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code)
     OptionValues values;
     values.vibration = {false, true};
     Screen screen(values);
@@ -220,6 +230,7 @@ TEST_CASE("options: turning a pad's vibration on rumbles it", "[pause_menu][opti
 }
 
 TEST_CASE("options: the volume bars step 0.05 within 0-1 and the Audio page loops the music", "[pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code)
     Screen screen;
     screen.openPage(OptionPage::Audio);
     REQUIRE_FALSE(screen.music.empty());
@@ -245,6 +256,7 @@ TEST_CASE("options: the volume bars step 0.05 within 0-1 and the Audio page loop
 }
 
 TEST_CASE("options: brightness steps 5 within 0-100", "[pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code)
     OptionValues values;
     values.brightness = 95;
     Screen screen(values);
@@ -268,6 +280,7 @@ TEST_CASE("options: brightness steps 5 within 0-100", "[pause_menu][options]") {
 }
 
 TEST_CASE("options: Video moves without applying; accept applies Wide", "[pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code)
     Screen screen;
     screen.openPage(OptionPage::Video);
     const auto& video = *screen.menu.items(OptionPage::Video).at(0);
@@ -283,6 +296,7 @@ TEST_CASE("options: Video moves without applying; accept applies Wide", "[pause_
 
 TEST_CASE("options: Restore Default starts on No; Yes restores the defaults, keeping the video mode",
           "[pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code)
     OptionValues values;
     values.brightness = 70;
     values.musicVolume = 0.3F;
@@ -303,13 +317,13 @@ TEST_CASE("options: Restore Default starts on No; Yes restores the defaults, kee
     CHECK(screen.menu.values().brightness == 40);
     CHECK(screen.menu.values().musicVolume == Approx(0.9F));
     CHECK_FALSE(screen.menu.values().invertCamera[0]);
-    // The pages show the new values; the list stays on Restore Default.
-    CHECK(screen.menu.selectedTitle() == 6);
+    // The pages show the new values.
     CHECK(screen.menu.items(OptionPage::Camera).at(0)->choice == 1);
     CHECK(screen.menu.items(OptionPage::Lighting).at(0)->bar == Approx(0.4F));
 }
 
 TEST_CASE("options: the layout by video mode", "[pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code)
     const OptionLayout wide = OptionLayout::forMode(coney::Language::English, true, false);
     CHECK(wide.titleY == Approx(0.24F));
     CHECK(wide.rowY == Approx(0.30F));
@@ -320,6 +334,145 @@ TEST_CASE("options: the layout by video mode", "[pause_menu][options]") {
     CHECK(pal.titleY == Approx(0.32F));
     CHECK(pal.titleStep == Approx(0.045F));
     CHECK(pal.rowStep == Approx(0.04F));
-    CHECK(pal.answersOffset == Approx(0.52F));
     CHECK(pal.squareScale == Approx(0.7F));
+}
+
+TEST_CASE("options: left and right on the title list are refused with cue 0xe", "[pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code)
+    Screen screen;
+    CHECK_FALSE(screen.command(MenuCommand::Left));
+    CHECK(screen.lastCue() == 0xe);
+    CHECK_FALSE(screen.command(MenuCommand::Right));
+    CHECK(screen.cues == std::vector<int>{0xe, 0xe});
+    CHECK(screen.menu.selectedTitle() == 0);
+    CHECK_FALSE(screen.menu.pageOpen());
+}
+
+TEST_CASE("options: a page keeps its selected item between visits", "[pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code)
+    Screen screen;
+    screen.openPage(OptionPage::Camera);
+    (void)screen.command(MenuCommand::Down);
+    (void)screen.command(MenuCommand::Down);
+    CHECK(screen.menu.selectedItem() == 2);
+    (void)screen.command(MenuCommand::Back);
+    REQUIRE_FALSE(screen.menu.pageOpen());
+    (void)screen.command(MenuCommand::Accept);
+    REQUIRE(screen.menu.pageOpen());
+    CHECK(screen.menu.selectedItem() == 2);
+    CHECK(screen.menu.items(OptionPage::Camera).at(2)->labelText.style().colour == coney::gui::kMenuGrey);
+    // Another page has its own selection, from its first item.
+    (void)screen.command(MenuCommand::Accept);
+    for (int i = 0; i < 4; ++i) {
+        (void)screen.command(MenuCommand::Down);
+    }
+    (void)screen.command(MenuCommand::Accept);
+    REQUIRE(screen.menu.selectedTitle() == static_cast<std::size_t>(OptionPage::Vibration));
+    CHECK(screen.menu.selectedItem() == 0);
+}
+
+TEST_CASE("options: Restore Default is on No each time its page opens", "[pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code)
+    Screen screen;
+    screen.openPage(OptionPage::RestoreDefault);
+    (void)screen.command(MenuCommand::Left);
+    CHECK(screen.menu.items(OptionPage::RestoreDefault).at(0)->choice == 0);
+    // Back keeps the page's answer (Restore Default is not reverted), but opening the page again picks No.
+    (void)screen.command(MenuCommand::Back);
+    CHECK(screen.menu.items(OptionPage::RestoreDefault).at(0)->choice == 0);
+    (void)screen.command(MenuCommand::Accept);
+    REQUIRE(screen.menu.pageOpen());
+    CHECK(screen.menu.items(OptionPage::RestoreDefault).at(0)->choice == 1);
+}
+
+TEST_CASE("options: back on Vibration stops the preview and puts back the values it had when opened",
+          "[pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code)
+    OptionValues values;
+    values.vibration = {false, true};
+    Screen screen(values);
+    screen.openPage(OptionPage::Vibration);
+    (void)screen.command(MenuCommand::Left);
+    (void)screen.command(MenuCommand::Down);
+    (void)screen.command(MenuCommand::Right);
+    CHECK(screen.menu.values().vibration == std::array<bool, 2>{true, false});
+    REQUIRE(screen.vibrations == std::vector<int>{0});
+    (void)screen.command(MenuCommand::Back);
+    CHECK(screen.lastCue() == 0xf);
+    CHECK_FALSE(screen.menu.pageOpen());
+    CHECK(screen.menu.values().vibration == std::array<bool, 2>{false, true});
+    REQUIRE_FALSE(screen.applied.empty());
+    CHECK(screen.applied.back().vibration == std::array<bool, 2>{false, true});
+    // The preview stops first; putting P2 back on rumbles it again.
+    CHECK(screen.vibrations == std::vector<int>{0, -1, 1});
+}
+
+TEST_CASE("options: a refused choice or bar step still calls the item's setter", "[pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code)
+    Screen screen;
+    screen.openPage(OptionPage::Vibration);
+    // P1's vibration is already on: left is refused (cue 0xe) but sets it on again, which rumbles.
+    (void)screen.command(MenuCommand::Left);
+    CHECK(screen.lastCue() == 0xe);
+    CHECK(screen.applied.size() == 1);
+    CHECK(screen.vibrations == std::vector<int>{0});
+    // The Music bar at 1 refuses right but sets the volume again.
+    OptionValues values;
+    values.musicVolume = 1.0F;
+    Screen audio(values);
+    audio.openPage(OptionPage::Audio);
+    (void)audio.command(MenuCommand::Right);
+    CHECK(audio.lastCue() == 0xe);
+    REQUIRE(audio.applied.size() == 1);
+    CHECK(audio.applied.back().musicVolume == Approx(1.0F));
+    // Video in confirm mode: a refused move applies nothing.
+    Screen video;
+    video.openPage(OptionPage::Video);
+    (void)video.command(MenuCommand::Left);
+    CHECK(video.lastCue() == 0xe);
+    CHECK(video.applied.empty());
+}
+
+TEST_CASE("options: after Restore Default the title list starts again at Lighting", "[pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code)
+    Screen screen;
+    screen.openPage(OptionPage::RestoreDefault);
+    (void)screen.command(MenuCommand::Left);
+    (void)screen.command(MenuCommand::Accept);
+    CHECK_FALSE(screen.menu.pageOpen());
+    CHECK(screen.menu.selectedTitle() == 0);
+    CHECK(screen.menu.title(0).style().colour == coney::gui::kMenuGrey);
+    CHECK(screen.menu.title(6).style().colour == coney::gui::kDimGrey);
+    // No keeps the list where it was.
+    Screen no;
+    no.openPage(OptionPage::RestoreDefault);
+    (void)no.command(MenuCommand::Accept);
+    CHECK(no.menu.selectedTitle() == 6);
+}
+
+TEST_CASE("options: flag 0x02 moves only the Camera answers; with 16:9 too only the squares and answers change",
+          "[pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code)
+    const OptionLayout flag02 = OptionLayout::forMode(coney::Language::English, false, true);
+    CHECK(flag02.answersOffset == Approx(0.4F));
+    CHECK(flag02.cameraAnswersExtra == Approx(0.12F));
+    CHECK(flag02.lightingLabelY == Approx(0.33F));
+    CHECK(flag02.rowY == Approx(0.37F));
+    CHECK(flag02.volumeRows[0] == Approx(0.38F));
+    CHECK(flag02.volumeRows[1] == Approx(0.415F));
+    CHECK(flag02.volumeRows[2] == Approx(0.455F));
+    CHECK(flag02.volumeRows[3] == Approx(0.49F));
+    // The flag's Camera answers replace German's.
+    CHECK(OptionLayout::forMode(coney::Language::German, false, true).cameraAnswersExtra == Approx(0.12F));
+    // Flags 0x02 and 0x04 together: the default places, smaller squares, Camera answers 0.1 further right.
+    const OptionLayout both = OptionLayout::forMode(coney::Language::English, true, true);
+    CHECK(both.titleY == Approx(0.30F));
+    CHECK(both.titleStep == Approx(0.055F));
+    CHECK(both.rowY == Approx(0.36F));
+    CHECK(both.lightingLabelY == Approx(0.29F));
+    CHECK(both.squaresY == Approx(0.38F));
+    CHECK(both.volumeRows[0] == Approx(0.37F));
+    CHECK(both.squareScale == Approx(0.7F));
+    CHECK(both.cameraAnswersExtra == Approx(0.1F));
+    CHECK(both.answersOffset == Approx(0.4F));
 }
