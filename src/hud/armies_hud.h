@@ -75,6 +75,8 @@ class ArmiesHud {
     /// `HUDANEnableJoinMsg(player, on)`: panel `player`'s join message on or off (`+0x4614`).
     /// @orig 0x001b46a0 HUD_ANEnableJoinMsg (unknown)
     void setJoinMessage(std::size_t player, bool on);
+    /// Panel `player`'s first attach to a player.
+    void panelAttached(std::size_t /*player*/) {}
     /// Whether panel `player`'s join message is on.
     [[nodiscard]] bool joinMessage(std::size_t player) const { return m_join.at(player); }
     /// Whether panel `player`'s join message shows now: on, the player not in, and on the blink's lit half.

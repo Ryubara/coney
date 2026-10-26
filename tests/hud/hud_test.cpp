@@ -729,6 +729,22 @@ TEST_CASE("the Armies credits do not outlive a level: the next level's set-up cl
     CHECK(hud.armies().credits() == 0);
 }
 
+TEST_CASE("an Armies level asks the absent player 2 to join from its set-up: attaching player 1 clears only his",
+          "[hud][armies]") {
+    // Expected: armies.md#the-join-messages, confirmed (runtime) in level60: HUD_InitLevel turns both panels' join
+    // flag on (0x004ec650); Human_MakePlayer -> HUD_AttachPlayer -> ANHud_Init clears player 1's on the panel's first
+    // attach only; player 2's stays on.
+    Hud hud = makeHud(nullptr);
+    hud.levelSetUp();
+    REQUIRE(hud.attachPlayer(0, 32) == 0);
+    CHECK_FALSE(hud.armies().joinMessage(0));
+    CHECK(hud.armies().joinMessage(1));
+    // A script turning his message on again is not undone by a refused second attach.
+    hud.armies().setJoinMessage(0, true);
+    CHECK(hud.attachPlayer(0, 32) == -1);
+    CHECK(hud.armies().joinMessage(0));
+}
+
 TEST_CASE("a context prompt's GSTRING.ACTIONBUTTON draws the triangle button, not the letter n", "[hud]") {
     // User item 9 ("n Give Weapon"): the prompt strings start with <MONEYFONT><ST></MONEYFONT> and a space, and in the
     // prompt's part_page0 font the <ST> character n inside <MONEYFONT> is rectangle 11 + ('n' - '0') = 73.

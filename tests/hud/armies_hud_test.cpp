@@ -83,6 +83,22 @@ TEST_CASE("the GO sign sits 0.4 further left in Spanish and 0.02 in Italian", "[
     CHECK(armies.goSignShift() == 0.0F);
 }
 
+TEST_CASE("each level's set-up turns both join messages on, and a panel's first attach turns its own off",
+          "[hud][armies]") {
+    // Expected: armies.md#the-join-messages, confirmed (code) and (runtime): HUD_InitLevel calls each new ANHud's
+    // slot +0x80 (0x004ec650), which sets +0x4614 to 1; ANHud_Init (0x002107e8), from HUD_AttachPlayer on the
+    // panel's first attach, sets it to 0. In level60 panel 2 keeps it: "PRESS THE START BUTTON TO JOIN".
+    ArmiesHud armies;
+    armies.levelSetUp();
+    CHECK(armies.joinMessage(0));
+    CHECK(armies.joinMessage(1));
+    armies.panelAttached(0);
+    CHECK_FALSE(armies.joinMessage(0));
+    CHECK(armies.joinMessage(1));
+    armies.update(0, 60, {true, false});
+    CHECK(armies.joinShowing(1));
+}
+
 TEST_CASE("a join message shows for a player who is not in, blinking every 500 ms", "[hud][armies]") {
     ArmiesHud armies;
     armies.levelSetUp();
