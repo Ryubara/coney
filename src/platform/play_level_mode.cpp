@@ -311,7 +311,8 @@ void PlayLevelMode::makeTargets(rw::Texture* texture) {
     }
 }
 
-void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees, const std::string& model, bool debugSpawned) {
+void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees, const std::string& model, bool debugSpawned,
+                               ai::FighterSide side) {
     // Dropped onto the ground below its spot, as a teleport is.
     raycast::Vec3 feet{spot.x, spot.y, spot.z + kTeleportDrop};
     if (!raycast::dropToGround(m_scenery->collision(), kTeleportDrop * 2.0F, feet)) {
@@ -322,7 +323,7 @@ void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees, const std:
     const CastLook look =
         model.empty() ? CastLook{.character = m_character.get(), .texture = m_texture} : castCharacter(model);
     human::Human& made = m_ai->spawnFighter(*look.character, &m_scenery->collision(),
-                                            anim::Vec3{feet.x, feet.y, feet.z}, headingDegrees);
+                                            anim::Vec3{feet.x, feet.y, feet.z}, headingDegrees, side);
     if (debugSpawned) {
         m_ai->markDebugSpawned(made);
         bindDebugFighter(made, look, model);
@@ -348,9 +349,9 @@ std::vector<std::string> PlayLevelMode::fighterModels() const {
     return {models.begin(), models.end()};
 }
 
-std::expected<void, Error> PlayLevelMode::spawnFighterAs(anim::Vec3 feet, float headingDegrees,
-                                                         std::string_view model) {
-    addFighter(feet, headingDegrees, std::string(model), true);
+std::expected<void, Error> PlayLevelMode::spawnFighterAs(anim::Vec3 feet, float headingDegrees, std::string_view model,
+                                                         ai::FighterSide side) {
+    addFighter(feet, headingDegrees, std::string(model), true, side);
     return {};
 }
 

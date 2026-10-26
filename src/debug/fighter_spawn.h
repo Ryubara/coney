@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "ai/fighter_side.h"
 #include "animation/anim_math.h"
 #include "core/error.h"
 
@@ -59,6 +60,7 @@ struct SpawnedFighters {
 /// (pickFighterModels()) in rows of five from `distance` metres ahead (fighterSpots()). An amount over
 /// kMaxFighterAmount is spawned as several clicks' worth, each placed beyond the rows before it, so no two fighters
 /// stand on one spot. Used by the page and by `--bench-fighters` (docs/guides/performance.md).
-SpawnedFighters spawnFighters(PlayControls& play, std::size_t choice, int amount, float distance, SpawnRandom& random);
+SpawnedFighters spawnFighters(PlayControls& play, std::size_t choice, int amount, float distance, SpawnRandom& random,
+                              ai::FighterSide side = ai::FighterSide::Enemy);
 
 } // namespace coney::debug

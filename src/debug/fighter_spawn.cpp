@@ -65,7 +65,8 @@ std::vector<anim::Vec3> fighterSpots(anim::Vec3 playerFeet, float playerHeadingD
     return spots;
 }
 
-SpawnedFighters spawnFighters(PlayControls& play, std::size_t choice, int amount, float distance, SpawnRandom& random) {
+SpawnedFighters spawnFighters(PlayControls& play, std::size_t choice, int amount, float distance, SpawnRandom& random,
+                              ai::FighterSide side) {
     SpawnedFighters result;
     result.asked = static_cast<std::size_t>(std::max(amount, 0));
     const std::vector<std::string> models = play.fighterModels();
@@ -79,7 +80,7 @@ SpawnedFighters spawnFighters(PlayControls& play, std::size_t choice, int amount
         const std::vector<anim::Vec3> spots = fighterSpots(feet, heading, ahead, batch);
         for (std::size_t i = 0; i < spots.size(); ++i) {
             // Each faces the player.
-            auto spawned = play.spawnFighterAs(spots[i], heading + 180.0F, picks[i]);
+            auto spawned = play.spawnFighterAs(spots[i], heading + 180.0F, picks[i], side);
             if (!spawned) {
                 result.error = std::move(spawned.error());
                 return result;

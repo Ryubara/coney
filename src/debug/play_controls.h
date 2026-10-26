@@ -8,6 +8,7 @@
 #include <string_view>
 #include <vector>
 
+#include "ai/fighter_side.h"
 #include "animation/anim_math.h"
 #include "characters/character_choice.h"
 #include "core/error.h"
@@ -153,8 +154,8 @@ class PlayControls {
     /// As spawnFighter(), as the character `model` (one of fighterModels()): its model, animation set and moves. An
     /// empty `model` is the scene's own character. Fails with ErrorCode::InvalidArgument where none can be spawned.
     /// The default ignores the model.
-    virtual std::expected<void, Error> spawnFighterAs(anim::Vec3 feet, float headingDegrees,
-                                                      std::string_view /*model*/) {
+    virtual std::expected<void, Error> spawnFighterAs(anim::Vec3 feet, float headingDegrees, std::string_view /*model*/,
+                                                      ai::FighterSide /*side*/) {
         return spawnFighter(feet, headingDegrees);
     }
     /// AI fighters in the scene.

@@ -8,6 +8,7 @@
 #include "ai/ai_config.h"
 #include "ai/brain.h"
 #include "ai/brains.h"
+#include "ai/fighter_side.h"
 #include "animation/anim_math.h"
 #include "human/human.h"
 #include "human/player.h"
@@ -31,6 +32,8 @@ struct AiHuman {
     /// Made by the debug menus' AI fighters page (AiHumans::markDebugSpawned()), not by a level's scripts or its
     /// layout: the one kind AiHumans::removeDebugSpawned() takes out.
     bool debugSpawned = false;
+    /// The side it was spawned on (a stub: never set yet).
+    FighterSide side = FighterSide::Enemy;
 };
 
 /// The kind of the sandbox fighters' gang: the level scripts' combat gangs' kind (`GangCreate(19, ...)` in
@@ -61,11 +64,12 @@ class AiHumans {
     /// Spawns a fighter (AiConfig::fighter, of the power class AiConfig::powerClass) with its feet at `feet` on `mesh`
     /// (may be null) facing `headingDegrees`; with engaging() on it fights the player once he comes within its far
     /// melee range. Returns its human.
-    human::Human& spawnFighter(const raycast::CollisionMesh* mesh, anim::Vec3 feet, float headingDegrees);
+    human::Human& spawnFighter(const raycast::CollisionMesh* mesh, anim::Vec3 feet, float headingDegrees,
+                               FighterSide side = FighterSide::Enemy);
     /// As above, as `character` (which must outlive it): its model's files, animation set and moves; the fighters'
     /// class and power class stay AiConfig's. Joins the same gang.
     human::Human& spawnFighter(const human::PlayerCharacter& character, const raycast::CollisionMesh* mesh,
-                               anim::Vec3 feet, float headingDegrees);
+                               anim::Vec3 feet, float headingDegrees, FighterSide side = FighterSide::Enemy);
     /// Spawns an AI human playing `character` (which must outlive it), of the class and power class `config` gives,
     /// fighting by its settings, with its feet at `feet` on `mesh` (may be null: no snap) facing `headingDegrees`, in
     /// no gang. Returns its brain.

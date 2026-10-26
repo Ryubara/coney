@@ -113,12 +113,13 @@ Brain& AiHumans::spawn(const human::PlayerCharacter& character, const AiConfig& 
     return brain;
 }
 
-human::Human& AiHumans::spawnFighter(const raycast::CollisionMesh* mesh, anim::Vec3 feet, float headingDegrees) {
-    return spawnFighter(m_character, mesh, feet, headingDegrees);
+human::Human& AiHumans::spawnFighter(const raycast::CollisionMesh* mesh, anim::Vec3 feet, float headingDegrees,
+                                     FighterSide side) {
+    return spawnFighter(m_character, mesh, feet, headingDegrees, side);
 }
 
 human::Human& AiHumans::spawnFighter(const human::PlayerCharacter& character, const raycast::CollisionMesh* mesh,
-                                     anim::Vec3 feet, float headingDegrees) {
+                                     anim::Vec3 feet, float headingDegrees, FighterSide /*side*/) {
     Brain& brain = spawn(character, m_config, mesh, feet, headingDegrees);
     m_brains->gangs().addMember(fighterGang(), brain);
     return brain.human();
