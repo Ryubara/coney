@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The follow camera when its target is moved by a placement (a teleport): it is not cut, its look-at point follows the
-// new place and it resets itself behind the target only when lost (update step 7); a reset reads where the target
-// stands now, and a scene's end hands the camera back behind the place the scene left the player
+// new place and it resets itself behind the target only when lost (update step 7); a reset or an activation reads where
+// the target stands now, and a scene's end hands the camera back behind the place the scene left the player
 // (docs/research/camera.md#update, docs/research/camera.md#setting-up, docs/research/camera.md#scenes).
 #include <cmath>
 #include <cstdint>
@@ -14,6 +14,7 @@
 #include "camera/camera_view.h"
 #include "camera/cameras.h"
 #include "camera/follow_camera.h"
+#include "camera/locked_camera.h"
 
 using Catch::Approx;
 using coney::anim::Vec3;
@@ -160,4 +161,40 @@ TEST_CASE("CamSetFollowPos snaps the look-at point onto where the target stands 
     camera.placeAt(Vec3{3.0F, 8.0F, 2.0F});
     CHECK(camera.lookAt().y == Approx(12.0F));
     CHECK(camera.position() == Vec3{3.0F, 8.0F, 2.0F});
+}
+
+TEST_CASE("a follow camera made current right after a teleport looks at the new place and takes its field of view",
+          "[camera]") {
+    // Expected: camera.md#setting-up, confirmed (code) (Cam_Follow_Activate 0x00125cc0 runs Cam_Follow_ActivateStep
+    // 0x00125e50, which snaps the look-at point through Cam_Follow_RefreshLookAt 0x00127d48 and sets the field of view
+    // to the wanted one at once, slot +0x194)
+    FollowPlace where{.feet = Vec3{0.0F, 0.0F, 0.0F}, .heading = 0.0F};
+    FollowCamera follow(where.feet, 0.0F);
+    follow.setTargetSource([&where] { return where; });
+    // A new field of view eases over 1 s from the 65 degrees the camera starts with.
+    coney::camera::FollowSettings settings;
+    settings.fieldOfView = 50.0F;
+    follow.configure(settings);
+    Cameras cameras;
+    cameras.attachFollow(&follow);
+    constexpr double kFollowHandle = 7.0;
+    constexpr double kLockedHandle = 8.0;
+    REQUIRE(cameras.setupFollow(kFollowHandle) == kFollowHandle);
+    cameras.createLocked(kLockedHandle, coney::camera::LockedCamera{.position = Vec3{0.0F, -10.0F, 3.0F},
+                                                                    .headingDegrees = 0.0F,
+                                                                    .pitchDegrees = -10.0F,
+                                                                    .rollDegrees = 0.0F,
+                                                                    .fieldOfView = 50.0F,
+                                                                    .nearClip = 0.1F,
+                                                                    .farClip = 200.0F,
+                                                                    .keptInView = {}});
+    cameras.makeActive(kLockedHandle, 0.0F);
+    cameras.update(standing(where.feet), kRest, kRest, nullptr, kStep);
+    REQUIRE(follow.fieldOfView() > 50.0F);
+    // A script's Teleport 40 m east, then CameraMakeActive of the follow camera with 0 s in the same tick.
+    where = FollowPlace{.feet = Vec3{40.0F, 0.0F, 0.0F}, .heading = 0.0F};
+    cameras.makeActive(kFollowHandle, 0.0F);
+    CHECK(follow.lookAt().x == Approx(40.0F).margin(1e-3));
+    CHECK(std::abs(follow.position().x - 40.0F) < 6.0F);
+    CHECK(follow.fieldOfView() == Approx(50.0F));
 }
