@@ -36,7 +36,8 @@ def comment_spans(lines: Sequence[str]) -> list[list[Span]]:
                 if end < 0:
                     i = size
                 else:
-                    raw_end, i = None, end + len(raw_end)
+                    i = end + len(raw_end)
+                    raw_end = None
             elif in_block:
                 end = line.find("*/", i)
                 spans.append((i, size if end < 0 else end + 2))
