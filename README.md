@@ -63,7 +63,7 @@ so it is not counted.
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://ryubara.github.io/coney/progress/readme-dark.png">
       <img
-        alt="Coney's progress: a square for each function of the original's own code, with the counts"
+        alt="Coney's progress: a square per function, in three colours, and the count of each in a legend"
         src="https://ryubara.github.io/coney/progress/readme-light.png"
         width="880">
     </picture>
@@ -71,8 +71,13 @@ so it is not counted.
 </p>
 
 Each square is one function of the original's own code, in address order: green is reimplemented, the softer grey
-understood (named and cited), the stronger grey not yet started. The picture is the one on the
-[docs home page](https://ryubara.github.io/coney/), where pointing at a square names its function.
+understood (named and cited), the stronger grey not yet started. They are the same squares, in the same order and
+colours, as on the [docs home page](https://ryubara.github.io/coney/) (there in rows of 240, here 170), where pointing
+at a square names its function.
+
+The percentages differ on purpose: the badges weigh each function by the size of its code, while the picture counts
+every function as one square, so its share is lower where the reimplemented functions are the larger ones; and
+"Understood" in its legend counts only the functions understood but not yet reimplemented.
 
 The figures and the picture are measured from `main` each time the [documentation](#documentation) is built, so they
 are never out of date. Per subsystem, the research coverage, the middleware and how it is all measured:

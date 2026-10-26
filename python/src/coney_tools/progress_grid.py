@@ -428,6 +428,32 @@ def home_counts(grid: Grid) -> dict[str, int]:
     return counts
 
 
+def home_blocks(grid: Grid) -> list[progress_picture.Block]:
+    """The home picture's blocks: `picture_blocks` with each square folded into its home state."""
+    return [
+        progress_picture.Block(b.label, b.title, [HOME_STATE_OF[state] for state in b.cells])
+        for b in picture_blocks(grid, False, home=True)
+    ]
+
+
+def home_cells(grid: Grid) -> list[str]:
+    """The home state of each function in the home picture's order (blocks in address order, flowing on)."""
+    return [state for block in home_blocks(grid) for state in block.cells]
+
+
+def home_headline(grid: Grid) -> tuple[str, str]:
+    """The home picture's headline as (bold part, rest): `21.1% reimplemented`, then what it counts.
+
+    The home section and the README's picture (progress_png.py) both print it, so they cannot say different things.
+    """
+    total, _ = grid.total()
+    done, _ = grid.measure("reimplemented")
+    return (
+        f"{progress_render.percent(done, total)} reimplemented",
+        f"{done:,} of {total:,} functions of the original's own code, one square each",
+    )
+
+
 def render_home_svg(grid: Grid, *, uid: str = "ph") -> str:
     """The home page's picture: the progress page's per-function blocks in the home states, as one unlabelled run.
 
@@ -437,12 +463,8 @@ def render_home_svg(grid: Grid, *, uid: str = "ph") -> str:
     """
     count, _ = grid.total()
     done, _ = grid.measure("reimplemented")
-    blocks = [
-        progress_picture.Block(b.label, b.title, [HOME_STATE_OF[state] for state in b.cells])
-        for b in picture_blocks(grid, False, home=True)
-    ]
     return progress_picture.render_svg(
-        blocks,
+        home_blocks(grid),
         uid=uid,
         title=f"Coney's progress, one square per function of the original's own code ({count:,} functions)",
         description=f"Grouped by source directory in address order: {done:,} of {count:,} functions are "

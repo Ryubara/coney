@@ -73,8 +73,10 @@ so the picture there is not committed: the docs build draws it (`progress_png.py
 site as `progress/readme-light.png` and `progress/readme-dark.png`, and the README embeds them by the site's address
 inside a `<picture>` (GitHub shows the dark file on a dark page) that links to the home page. It is the home page's
 squares in the same order, states and colours (`HOME_STATE_OF`, `HOME_PALETTE` and `HOME_LABELS` are read, never
-repeated), `COLS` (170) to a row so that it fits a README column; the headline, the counts and the legend are drawn
-into the picture, so it never needs the README text to change. The file is drawn twice as large as its 880 px
+repeated), `COLS` (170) to a row so that it fits a README column; the headline (`progress_grid.home_headline`, which
+the home section prints too, with "counted by function" added), the counts and the legend are drawn into the picture,
+so it never needs the README text to change. Its percentage counts functions, while the badges beside it weigh each by
+the size of its code, so the README says in one sentence why they differ. The file is drawn twice as large as its 880 px
 display width (`SCALE`) for dense screens, stays under 60 KB, and holds no date, so the same data is the same
 bytes. The site's address is in the README only (the one file allowed to hold it), and a test holds the README's
 file names equal to `progress_png.FILES`. It follows `main` when the next docs build is published: GitHub's image

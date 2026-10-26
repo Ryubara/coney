@@ -38,7 +38,7 @@ def decode(data: bytes) -> Image.Image:
 def test_the_cells_are_the_home_pictures_squares_in_order(tmp_path: Path) -> None:
     """One cell per function, in the home picture's order, each in its home state."""
     grid = grid_of(make_grid_checkout(tmp_path))
-    assert progress_png.home_cells(grid) == [
+    assert progress_grid.home_cells(grid) == [
         "reimplemented",
         "not-started",
         "understood",
@@ -46,7 +46,7 @@ def test_the_cells_are_the_home_pictures_squares_in_order(tmp_path: Path) -> Non
         "not-started",
     ]
     expected = [progress_grid.HOME_STATE_OF[f.state] for block in grid.blocks for f in block.functions]
-    assert progress_png.home_cells(grid) == expected
+    assert progress_grid.home_cells(grid) == expected
 
 
 @pytest.mark.parametrize("theme", ["light", "dark"])
@@ -55,7 +55,7 @@ def test_each_square_has_the_home_colour_of_its_state_in_that_theme(tmp_path: Pa
     grid = grid_of(make_grid_checkout(tmp_path))
     image = decode(progress_png.render_home_png(grid, theme))
     column = 0 if theme == "light" else 1
-    for index, state in enumerate(progress_png.home_cells(grid)):
+    for index, state in enumerate(progress_grid.home_cells(grid)):
         x, y = progress_png.square_centre(index)
         assert image.getpixel((x, y)) == rgb(progress_grid.HOME_PALETTE[state][column]), (theme, index, state)
 
@@ -76,7 +76,7 @@ def test_the_picture_has_the_documented_size(tmp_path: Path) -> None:
     grid = grid_of(make_grid_checkout(tmp_path))
     image = decode(progress_png.render_home_png(grid, "light"))
     assert image.width == progress_png.WIDTH == 880 * progress_png.SCALE
-    count = len(progress_png.home_cells(grid))
+    count = len(progress_grid.home_cells(grid))
     assert progress_png.height_of(count) == image.height
     assert progress_png.height_of(progress_png.COLS + 1) - progress_png.height_of(progress_png.COLS) == (
         progress_png.PITCH * progress_png.SCALE
@@ -106,7 +106,7 @@ def test_the_header_and_the_legend_are_drawn_with_the_themes_text_and_the_swatch
         bottom = {
             image.getpixel((x, y))
             for x in range(image.width)
-            for y in range(progress_png.chart_bottom(len(progress_png.home_cells(grid))), image.height)
+            for y in range(progress_png.chart_bottom(len(progress_grid.home_cells(grid))), image.height)
         }
         for state in progress_grid.HOME_STATES:
             assert rgb(progress_grid.HOME_PALETTE[state][column]) in bottom, (theme, state)
@@ -121,11 +121,16 @@ def test_the_words_carry_the_numbers_so_they_change_with_the_counts(tmp_path: Pa
     assert before.crop(header).tobytes() != after.crop(header).tobytes()
 
 
-def test_the_text_is_the_legends_names_and_the_home_headline(tmp_path: Path) -> None:
+def test_the_text_is_the_home_sections_headline_and_legend(tmp_path: Path) -> None:
+    """The words are the home page's own (progress_grid.home_headline, HOME_LABELS), not a second copy of them."""
     grid = grid_of(make_grid_checkout(tmp_path))
     lines = progress_png.text_lines(grid)
-    assert lines.title == "Coney: 20.0% reimplemented"
-    assert lines.subtitle == "1 of 5 functions of the original's own code, one square each, in address order"
+    bold, rest = progress_grid.home_headline(grid)
+    assert (bold, rest) == ("20.0% reimplemented", "1 of 5 functions of the original's own code, one square each")
+    assert lines.title == f"Coney: {bold}"
+    assert lines.subtitle == f"{rest} (counted by function), in address order"
+    # The home section prints the same headline, so the page and the picture cannot say different things.
+    assert f'<p class="cg-headline"><strong>{bold}</strong>: {rest}</p>' in progress_site.home_section(grid, None)
     assert lines.legend == [
         (progress_grid.HOME_LABELS["reimplemented"], "1", "reimplemented"),
         (progress_grid.HOME_LABELS["understood"], "1", "understood"),

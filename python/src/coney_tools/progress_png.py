@@ -24,7 +24,7 @@ from dataclasses import dataclass
 
 from PIL import Image, ImageDraw, ImageFont
 
-from coney_tools import progress_grid, progress_render
+from coney_tools import progress_grid
 
 #: What the picture is called in the site (under `progress_site.SITE_DIR`), by theme.
 FILES = {"light": "readme-light.png", "dark": "readme-dark.png"}
@@ -78,23 +78,15 @@ class TextLines:
     legend: list[tuple[str, str, str]]
 
 
-def home_cells(grid: progress_grid.Grid) -> list[str]:
-    """The home state of each function in the home picture's order (blocks in address order, flowing on)."""
-    return [
-        progress_grid.HOME_STATE_OF[state]
-        for block in progress_grid.picture_blocks(grid, False)
-        for state in block.cells
-    ]
-
-
 def text_lines(grid: progress_grid.Grid) -> TextLines:
     """The words of the picture, from the same numbers and names as the home page's headline and legend."""
-    total, _ = grid.total()
-    done, _ = grid.measure("reimplemented")
+    bold, rest = progress_grid.home_headline(grid)
     counts = progress_grid.home_counts(grid)
     return TextLines(
-        title=f"Coney: {progress_render.percent(done, total)} reimplemented",
-        subtitle=f"{done:,} of {total:,} functions of the original's own code, one square each, in address order",
+        title=f"Coney: {bold}",
+        # "By function": the README's badges above it weigh each function by the size of its code and read lower or
+        # higher, so the picture says what its percentage counts.
+        subtitle=f"{rest} (counted by function), in address order",
         legend=[(progress_grid.HOME_LABELS[s], f"{counts[s]:,}", s) for s in progress_grid.HOME_STATES],
     )
 
@@ -137,7 +129,7 @@ def render_home_png(grid: progress_grid.Grid, theme: str) -> bytes:
         raise ValueError(f"theme must be one of {', '.join(THEMES)}, not {theme!r}")
     colours = THEMES[theme]
     palette = 0 if theme == "light" else 1
-    cells = home_cells(grid)
+    cells = progress_grid.home_cells(grid)
     lines = text_lines(grid)
     image = Image.new("RGB", (WIDTH, height_of(len(cells))), _rgb(colours.background))
     draw = ImageDraw.Draw(image)
