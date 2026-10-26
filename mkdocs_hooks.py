@@ -72,7 +72,10 @@ _HOME_PAGE = "index.md"
 
 
 def _use_checkout_tools(root):
-    """Makes `coney_tools` importable from the checkout at `root`: the docs build installs only MkDocs."""
+    """Makes `coney_tools` importable from the checkout at `root`.
+
+    The docs build installs only MkDocs (and Pillow, for the README's pictures).
+    """
     src = str(Path(root) / "python" / "src")
     if src not in sys.path:
         sys.path.insert(0, src)
@@ -81,8 +84,9 @@ def _use_checkout_tools(root):
 def load_progress(root):
     """The progress tracker's state for the checkout at `root`, from `coney_tools` in `python/src`.
 
-    The docs build installs only MkDocs, so the tracker is imported from the checkout instead of from an installed
-    package. Raises RuntimeError, naming the problems, when the tracker's inputs disagree with each other.
+    The docs build installs only MkDocs and Pillow (requirements-docs.txt), so the tracker is imported from the
+    checkout instead of from an installed package. Raises RuntimeError, naming the problems, when the tracker's
+    inputs disagree with each other.
     """
     _use_checkout_tools(root)
     from coney_tools import progress

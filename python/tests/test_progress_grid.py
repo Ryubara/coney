@@ -332,6 +332,8 @@ def test_the_site_holds_the_pictures_numbers_and_history(tmp_path: Path) -> None
         "progress/progress-size.svg",
         "progress/progress.json",
         "progress/progress.svg",
+        "progress/readme-dark.png",
+        "progress/readme-light.png",
     ]
     assert (
         'data-repo="https://example.invalid/r"' in site.grid_html

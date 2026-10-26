@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from html import escape
 from pathlib import Path
 
-from coney_tools import missions, progress_grid, progress_history, progress_picture, progress_render
+from coney_tools import missions, progress_grid, progress_history, progress_picture, progress_png, progress_render
 from coney_tools.config import ConfigError
 from coney_tools.progress import Progress
 
@@ -46,7 +46,7 @@ class Site:
     home_html: str = ""
     missions_html: str = ""
     history_html: str = ""
-    files: dict[str, str] = field(default_factory=dict)
+    files: dict[str, str | bytes] = field(default_factory=dict)
 
 
 # --- the mission picture ----------------------------------------------------------------------------------------------
@@ -185,9 +185,8 @@ def home_section(grid: progress_grid.Grid, repo_url: str | None) -> str:
     site's root, so the table is one folder down) and tooltip element, so progress-grid.js gives its squares the
     progress page's tooltips. Only the stylesheet's `progress-home` rules (the home palette, the size) differ.
     """
-    total, _ = grid.total()
     counts = progress_grid.home_counts(grid)
-    done = counts["reimplemented"]
+    headline = progress_grid.home_headline(grid)
     attrs = f'data-functions="{SITE_DIR}/functions.json"'
     # The tooltip names each square's state as the legend below does (HOME_LABELS), not by the progress page's five.
     attrs += f" data-labels='{json.dumps(progress_grid.home_state_labels(), separators=(',', ':'))}'"
@@ -201,8 +200,7 @@ def home_section(grid: progress_grid.Grid, repo_url: str | None) -> str:
     return "\n".join(
         [
             f'<div class="progress-grid progress-functions progress-home" {attrs}>',
-            f'<p class="cg-headline"><strong>{progress_render.percent(done, total)} reimplemented</strong>: '
-            f"{done:,} of {total:,} functions of the original's own code, one square each</p>",
+            f'<p class="cg-headline"><strong>{headline[0]}</strong>: {headline[1]}</p>',
             progress_grid.render_home_svg(grid),
             f'<ul class="cg-legend cg-legend-inline">{items}</ul>',
             '<div class="cg-tip" role="status" aria-live="polite" hidden></div>',
@@ -250,6 +248,9 @@ def build_site(
         site.files[f"{SITE_DIR}/progress-size.svg"] = progress_grid.render_functions_svg(
             grid, True, uid="ps", standalone=True
         )
+        # The README's pictures (light and dark): the README embeds them by the site's address.
+        for theme, name in progress_png.FILES.items():
+            site.files[f"{SITE_DIR}/{name}"] = progress_png.render_home_png(grid, theme)
         summary = progress_grid.summary(grid)
         site.files[f"{SITE_DIR}/functions.json"] = _json(progress_grid.functions_table(grid))
     else:
