@@ -52,8 +52,10 @@ uv run --project python coney-tools task review [TASK] [--worktree DIR] [--base 
 The review folder is `<scratch>/<task>/review/` (`tasks.review` in [.github/conventions.yml](repo:.github/conventions.yml)
 names the folder, the three files and the agent). It holds `PACKET.json` (the tool's), `REVIEW.json` and `REVIEW.md` (the
 reviewer's) and `recorded-<seq>.json`, a copy of each verdict that was recorded. The newest is also
-`<scratch>/<task>/review.json`, which the stamp's `review_sha256` covers. Preparing removes an earlier verdict and
-report: a verdict made for another packet is never mistaken for this one's.
+`<scratch>/<task>/reviewed.json`, which the stamp's `review_sha256` covers (`pr verify` still reads a `review.json`
+recorded before the name changed: on Windows that name is the same file as a description review's `REVIEW.json` beside
+`PR.md`). Preparing removes an earlier verdict and report: a verdict made for another packet is never mistaken for this
+one's.
 
 | Exit | Meaning |
 | --- | --- |
@@ -188,15 +190,19 @@ A change is sometimes reviewed with no task of its own: a fix round, a conflict 
 of the launcher stack. There is then no review folder, packet or stamp, and the `reviewer` has nowhere to write its
 report. It writes the report as `CODE-REVIEW.md`, or `CODE-REVIEW-<n>.md` for the n-th round, in the folder the brief
 names (usually the scratch folder of the branch), in the [finding format](index.md#finding-format) with the verdict on
-the first line; the coordinator reads it there instead of copying it out of the reply. The hooks allow exactly the
-names `CODE-REVIEW*.md` besides the verdict files (`write_only` in `[roles.reviewer]` of `.claude/hooks/hooks.toml`;
-an entry may be a pattern for the file name, matched in any letter case). Such a report is not a verdict: it writes no
-`reviewed` stamp, and a task's own review still ends in `REVIEW.json` and `--record`.
+the first line; the coordinator reads it there instead of copying it out of the reply. The hooks allow exactly the names
+`CODE-REVIEW*.md` besides the verdict files (`write_only` in `[roles.reviewer]` of `.claude/hooks/hooks.toml`; an entry
+may be a pattern for the file name, matched in any letter case; a name with a colon never matches), and only outside
+every checkout (`write_outside_checkouts`): a report inside a worktree or the main repository is a file an engineer
+could commit by mistake. Such a report is not a verdict: it writes no `reviewed` stamp, and a task's own review still
+ends in `REVIEW.json` and `--record`.
 
 To find where a stacked or rebased branch starts, the reviewer may run `git merge-base` and `git merge-tree
---write-tree`: both only read (the second adds objects to the object store and changes no index, tree or ref). `git
-merge` and the other `merge-*` verbs that write (`merge-file`, `merge-index`, `merge-one-file`) stay refused with the
-rest of the verbs that change the tree.
+--write-tree`: the first only reads, and the second adds objects to the object store and changes no index, tree or ref.
+`git merge` and the other `merge-*` verbs that write (`merge-file`, `merge-index`, `merge-one-file`) stay refused with
+the rest of the verbs that change a ref, the index, the tree or a worktree (the list is in
+[Which role to start](../agents.md#roles)). `branch`, `tag`, `stash`, `worktree`, `notes` and `reflog` pass only in
+their listing forms (`git branch -a`, `git tag -l`, `git stash list`, `git worktree list`).
 
 ## Release checks that predate it {#legacy}
 

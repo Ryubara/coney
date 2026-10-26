@@ -678,28 +678,35 @@ def _class_name(value: object) -> str | None:
 
 
 def _review_functions(subject: Subject, stamp: stamps.Stamp) -> Mapping[str, Any] | None:
-    """The address -> class map of a review: in the stamp, or (when it was too big) in `review.json`, whose hash the
-    stamp covers as `review_sha256`."""
+    """The address -> class map of a review: in the stamp, or (when it was too big) in the task's recorded verdict
+    (`reviewed.json`, or `review.json` for a review recorded before the rename), whose hash the stamp covers as
+    `review_sha256`."""
     inline = stamp.detail.get("functions")
     if isinstance(inline, dict):
         return inline
     wanted = stamp.covers.get("review_sha256")
-    path = subject.unit.dir / "review.json"
-    try:
-        raw = path.read_bytes()
-        data = json.loads(raw)
-    except (OSError, ValueError):
-        return None
-    if wanted and hashlib.sha256(raw).hexdigest() == wanted and isinstance(data, dict):
-        listed = data.get("functions")
-        if isinstance(listed, list):
-            return {
-                str(address): item.get("class")
-                for item in listed
-                if isinstance(item, dict)
-                for address in item.get("addresses", [])
-            }
+    for name in (review_verdict.RECORDED, review_verdict.RECORDED_BEFORE):
+        try:
+            raw = (subject.unit.dir / name).read_bytes()
+            data = json.loads(raw)
+        except (OSError, ValueError):
+            continue
+        if wanted and hashlib.sha256(raw).hexdigest() == wanted and isinstance(data, dict):
+            return _listed_functions(data)
     return None
+
+
+def _listed_functions(data: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    """The address -> class map of a verdict's `functions` list, or None when it has none."""
+    listed = data.get("functions")
+    if not isinstance(listed, list):
+        return None
+    return {
+        str(address): item.get("class")
+        for item in listed
+        if isinstance(item, dict)
+        for address in item.get("addresses", [])
+    }
 
 
 def _worked_on(subject: Subject, reviewer: Mapping[str, object]) -> bool:

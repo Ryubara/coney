@@ -8,6 +8,8 @@ import os
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
+from types import SimpleNamespace
+from typing import cast
 
 import pytest
 from conventions_support import changed
@@ -613,3 +615,21 @@ def test_without_origins_head_the_default_branch_is_unknown_and_nothing_runs(tmp
     git(built.root, "remote", "set-head", "origin", "--delete")
     with pytest.raises(ConfigError, match=r"origin/HEAD is not set here.*git remote set-head origin --auto"):
         pr_proof.load_subject(built.root, built.unit, built.task, built.kind)
+
+
+# --- the recorded verdict --------------------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("name", ["reviewed.json", "review.json"])
+def test_a_function_map_too_big_for_the_stamp_is_read_from_the_recorded_verdict(tmp_path: Path, name: str) -> None:
+    # `reviewed.json` now; `review.json` for a review recorded before the rename (it was the same file as a description
+    # review's REVIEW.json on Windows). The stamp's hash decides which one is the verdict it rests on.
+    raw = json.dumps({"functions": [{"addresses": ["0x00100010"], "class": "c"}]}).encode()
+    (tmp_path / name).write_bytes(raw)
+    if name == "reviewed.json":
+        (tmp_path / "REVIEW.json").write_bytes(b"{}")  # the description review's verdict beside it
+    subject = cast(pr_proof.Subject, SimpleNamespace(unit=SimpleNamespace(dir=tmp_path)))
+    stamp = cast(stamps.Stamp, SimpleNamespace(detail={}, covers={"review_sha256": hashlib.sha256(raw).hexdigest()}))
+    assert pr_proof._review_functions(subject, stamp) == {"0x00100010": "c"}
+    other = cast(stamps.Stamp, SimpleNamespace(detail={}, covers={"review_sha256": "0" * 64}))
+    assert pr_proof._review_functions(subject, other) is None

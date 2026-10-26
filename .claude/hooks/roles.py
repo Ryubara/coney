@@ -9,9 +9,9 @@ agent it was started as (`claude --agent coordinator`). The rules live in `hooks
   tools in `readonly_tools`, and the refusal tells the person to start with `coney-agent`. It is on in the
   committed file.
 * **a role's refusals**: tools by name prefix, `coney-tools` commands, shell commands by pattern, folders Edit and
-  Write may not change, the only files a role may write, a `git commit` under a unit worktree, and the GitHub writes
-  `push_guard.py` refuses (also for a main session, which has no agent id), and `allow_agent_types`, the only
-  `subagent_type`s the role may start with the Agent tool.
+  Write may not change, the only files a role may write (with `write_outside_checkouts`, only outside any checkout), a
+  `git commit` under a unit worktree, and the GitHub writes `push_guard.py` refuses (also for a main session, which has
+  no agent id), and `allow_agent_types`, the only `subagent_type`s the role may start with the Agent tool.
 
 Like every guard it judges spelling, never a security boundary: a command can be hidden from it. A setting of the
 wrong shape is ignored, and an invalid pattern is skipped, so one bad entry never disables the rest. Standard library
@@ -22,7 +22,6 @@ from __future__ import annotations
 
 import fnmatch
 import re
-from pathlib import Path
 from typing import Any
 
 import hooklib
@@ -107,11 +106,18 @@ def _write_refusal(role: str, rules: dict[str, Any], payload: dict[str, Any]) ->
     if not isinstance(path, str) or not path:
         return None
     only = hooklib.strings(rules.get("write_only"))
-    # An entry is a file name or a pattern for one (`CODE-REVIEW*.md`), matched against the last part of the path in any
-    # letter case (Windows ignores it).
-    name = Path(path).name.casefold()
-    if only and not any(fnmatch.fnmatchcase(name, entry.casefold()) for entry in only):
-        return _refuse(role, f"write {Path(path).name}: you write only {', '.join(only)}", rules)
+    # An entry is a file name or a pattern for one (`CODE-REVIEW*.md`), matched against the last part of the path (split
+    # at either slash, so a Windows path reads the same on every system) in any letter case (Windows ignores it). A
+    # name with a colon is never one: `*` would match it, and on Windows `REVIEW.md:x` writes a stream of another file.
+    shown = re.split(r"[\\/]", path)[-1]
+    name = shown.casefold()
+    if only and (":" in name or not any(fnmatch.fnmatchcase(name, entry.casefold()) for entry in only)):
+        return _refuse(role, f"write {shown}: you write only {', '.join(only)}", rules)
+    if rules.get("write_outside_checkouts") is True:
+        # A report inside a worktree or the main checkout is a file an engineer could commit by mistake.
+        root = hooklib.checkout_of(path)
+        if root is not None:
+            return _refuse(role, f"write {shown} inside the checkout {root}: write it in the scratch folder", rules)
     relative = hooklib.relative_path(path)
     for folder in hooklib.strings(rules.get("deny_write_dirs")):
         if relative is not None and (relative == folder.casefold() or relative.startswith(folder.casefold() + "/")):
