@@ -44,9 +44,6 @@ tag = 14
 ["src/ai/boss_goals.h"]
 comment = 4
 
-["src/ai/brain.cpp"]
-tag = 19
-
 ["src/ai/brain.h"]
 comment = 38
 tag = 1
@@ -671,9 +668,6 @@ tag = 1
 ["src/gamemodes/game_mode_stack.cpp"]
 tag = 7
 
-["src/gamemodes/gameplay_mode.cpp"]
-tag = 30
-
 ["src/gamemodes/gameplay_mode.h"]
 comment = 1
 type-doc = 1
@@ -1124,12 +1118,6 @@ tag = 12
 ["src/human/holdable.h"]
 comment = 1
 tag = 1
-
-["src/human/human.cpp"]
-tag = 42
-
-["src/human/human.h"]
-tag = 2
 
 ["src/human/human_animator.cpp"]
 tag = 38

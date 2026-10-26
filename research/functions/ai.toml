@@ -999,6 +999,16 @@ coney = "src/ai/give_way.h:pushAside"
 status = "legacy"
 
 [[function]]
+address = 0x0028ab28
+name = "Brain_SetMoveSpeed"
+page = "ai-moving.md#ai-gaits"
+kind = "helper"
+role = "stores a move speed in brain `+0x114`"
+level = "confirmed-code"
+coney = "src/ai/brain.cpp:Brain::setMove"
+status = "compared"
+
+[[function]]
 address = 0x0028abc0
 name = "Brain_CanBeChased"
 page = "ai-code.md#enemy-list"
@@ -1090,6 +1100,21 @@ role = "sets the turn boost byte `+0x0b`"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::setTurnBoost"
 status = "legacy"
+
+[[function]]
+address = 0x0028ceb8
+name = "Brain_StoreType"
+page = "ai-code.md#brain-record"
+kind = "helper"
+role = "stores the brain type (`+0x04`) and installs its handlers"
+level = "confirmed-code"
+coney = "src/ai/brain.cpp:Brain::setType"
+status = "compared"
+
+[[function.gaps]]
+what = "no handlers are installed: Coney's update, think and event calls pick by the type each time, and the same type again changes nothing; Brain_InstallHandlers' player-brain work is that function's own gap"
+relation = "stand-in"
+issue = 635
 
 [[function]]
 address = 0x0028cfe0
@@ -1216,6 +1241,20 @@ role = "the action queue"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::clearActions"
 status = "legacy"
+
+[[function]]
+address = 0x0028db88
+name = "Brain_SetAttackSlotCountRaw"
+page = "ai-code.md#attack-slots"
+kind = "helper"
+role = "sets the maximum attack slots (`+0x1e4`); when lowered, keeps the nearest holders"
+level = "confirmed-code"
+coney = "src/ai/brain.cpp:Brain::setAttackSlotCount"
+status = "compared"
+
+[[function.gaps]]
+what = "when lowered, the first holders stay rather than the nearest (no sort by distance), and the count is kept to the list's 16"
+relation = "stand-in"
 
 [[function]]
 address = 0x0028dc80
@@ -1445,6 +1484,20 @@ coney = "src/ai/attack_places.h:ActivePlaces::release"
 status = "legacy"
 
 [[function]]
+address = 0x002911e8
+name = "Brain_StoreAttackWeight"
+page = "ai-code.md#brain-record"
+kind = "helper"
+role = "one attack kind's weight, `+0x298 + kind`"
+level = "confirmed-code"
+coney = "src/ai/brain.cpp:Brain::setAttackWeight"
+status = "compared"
+
+[[function.gaps]]
+what = "a kind outside the table is ignored, where the original writes past it unchecked"
+relation = "stand-in"
+
+[[function]]
 address = 0x002911f8
 name = "Brain_GetAttackWeight"
 page = "ai.md#original-structure"
@@ -1567,6 +1620,20 @@ role = "degrees to radians into `+0x12c`"
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
 status = "legacy"
+
+[[function]]
+address = 0x00292938
+name = "Brain_SetMeleeRange"
+page = "ai-code.md#script-bindings"
+kind = "binding worker"
+role = "near `+0x13c`, far `+0x140`"
+level = "confirmed-code"
+coney = "src/ai/brain.cpp:Brain::setMeleeRange"
+status = "compared"
+
+[[function.gaps]]
+what = "a member of the brain: the handle the worker resolves is its caller's, and Coney registers no BrSetMeleeRange binding (no script calls it)"
+relation = "stand-in"
 
 [[function]]
 address = 0x00292ac0
@@ -5626,6 +5693,20 @@ role = "whether a world object may be smashed: worth 1 or more unless of class `
 level = "confirmed-code"
 coney = "src/gamemodes/level_items.h:LevelItems::smashable"
 status = "legacy"
+
+[[function]]
+address = 0x00419ee0
+name = "GameState_FindNearestPlayer"
+page = "ai.md#warriors-functions"
+kind = "helper"
+role = "the nearest listed player to a point, the squared distance out"
+level = "confirmed-code"
+coney = "src/ai/brain.cpp:Brain::nearestPlayer"
+status = "compared"
+
+[[function.gaps]]
+what = "the players are the scene's player brains but the asking one, measured horizontally from its human rather than by squared 3D distance from a point, and no distance is handed out"
+relation = "stand-in"
 
 [[function]]
 address = 0x0041c2b0
