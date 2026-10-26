@@ -3,6 +3,7 @@
 // script with START (docs/research/pause.md).
 #include "gamemodes/pause_mode.h"
 
+#include <array>
 #include <cstdint>
 #include <expected>
 #include <memory>
@@ -204,4 +205,32 @@ TEST_CASE("mission failed: the launch pushes mode 0xc, and Restart level reloads
     CHECK(run.flow->state().checkPoint == 1);
     CHECK(run.flow->levelFlow().chosenLevel() == 1);
     CHECK(run.soundPauses == std::vector<bool>{true, false});
+}
+
+TEST_CASE("pause: the Options screen's values read from and write to the game state where save.md puts them",
+          "[pause][options]") {
+    coney::GameState state;
+    state.brightness = 55;
+    state.subtitles = true;
+    state.saved.musicVolume = 0.4F;
+    state.saved.pads[1].invertCamera = true;
+    state.saved.wideVideo = true;
+    coney::gui::OptionValues values = coney::optionValuesOf(state);
+    CHECK(values.brightness == 55);
+    CHECK(values.subtitles);
+    CHECK(values.musicVolume == 0.4F);
+    CHECK(values.soundFxVolume == 0.9F);
+    CHECK(values.invertCamera == std::array<bool, 2>{false, true});
+    CHECK(values.autoAdjustCamera == std::array<bool, 2>{true, true});
+    CHECK(values.wideVideo);
+    values.vibration[0] = false;
+    values.proLogic = true;
+    values.splitScreenMerge = false;
+    values.soundFxVolume = 0.25F;
+    coney::storeOptionValues(values, state);
+    CHECK_FALSE(state.saved.pads[0].vibration);
+    CHECK(state.saved.proLogic2);
+    CHECK_FALSE(state.saved.splitScreenMerge);
+    CHECK(state.saved.soundFxVolume == 0.25F);
+    CHECK(coney::optionValuesOf(state) == values);
 }

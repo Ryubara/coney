@@ -1,0 +1,325 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// The pause menu's Options screen (docs/research/pause.md#options), driven command by command with synthetic strings.
+#include "gui/pause_menu/option_menu.h"
+
+#include <cstddef>
+#include <cstdint>
+#include <format>
+#include <string>
+#include <vector>
+
+#include <catch2/catch_approx.hpp>
+#include <catch2/catch_test_macros.hpp>
+
+#include "gui/colour_table.h"
+#include "gui/global_strings.h"
+#include "gui/menu_input.h"
+
+using Catch::Approx;
+using coney::gui::MenuCommand;
+using coney::gui::OptionItemKind;
+using coney::gui::OptionLayout;
+using coney::gui::OptionMenu;
+using coney::gui::OptionPage;
+using coney::gui::OptionValues;
+
+namespace {
+
+// The screen opened in level 99 over strings that read "#<hex id>", recording its cues and every value applied.
+struct Screen {
+    coney::gui::GlobalStrings strings;
+    coney::gui::MenuInput input;
+    OptionMenu menu;
+    std::vector<int> cues;
+    std::vector<OptionValues> applied;
+    std::vector<std::pair<bool, float>> music;
+    std::vector<int> vibrations;
+
+    explicit Screen(OptionValues values = {}, int level = 99, OptionLayout layout = {}) {
+        for (std::uint32_t id = 0x30; id < 0x180; ++id) {
+            strings.set(id, std::format("#{:x}", id));
+        }
+        OptionMenu::Hooks hooks;
+        hooks.playCue = [this](int cue) { cues.push_back(cue); };
+        hooks.apply = [this](const OptionValues& v) { applied.push_back(v); };
+        hooks.previewMusic = [this](bool on, float volume) { music.emplace_back(on, volume); };
+        hooks.vibrate = [this](int pad, int strength, std::uint64_t ms) {
+            CHECK(strength == 120);
+            CHECK(ms == 500);
+            vibrations.push_back(pad);
+        };
+        menu.open(&strings, input, hooks, values, layout, level, 10'000);
+    }
+    // One command; returns whether it left the screen.
+    bool command(MenuCommand command) { return menu.handle(command); }
+    // Down `n` times on the title list, then accept: opens page `page`.
+    void openPage(OptionPage page) {
+        for (std::size_t i = 0; i < static_cast<std::size_t>(page); ++i) {
+            (void)command(MenuCommand::Down);
+        }
+        (void)command(MenuCommand::Accept);
+        REQUIRE(menu.pageOpen());
+        REQUIRE(menu.selectedTitle() == static_cast<std::size_t>(page));
+    }
+    [[nodiscard]] int lastCue() const { return cues.empty() ? -1 : cues.back(); }
+};
+
+} // namespace
+
+TEST_CASE("options: seven titles at (0.26, 0.30 + 0.055 i) in big_font at 1.3, the first selected",
+          "[pause_menu][options]") {
+    Screen screen;
+    CHECK(screen.menu.lines() == std::vector<std::string>{"#117", "#119", "#122", "#123", "#124", "#11f", "#128"});
+    for (std::size_t i = 0; i < coney::gui::kOptionPages; ++i) {
+        const auto& style = screen.menu.title(i).style();
+        CHECK(style.x == Approx(0.26F));
+        CHECK(style.y == Approx(0.30F + (0.055F * static_cast<float>(i))));
+        CHECK(style.scale == Approx(1.3F));
+        CHECK(style.fontSlot == 6);
+        CHECK(style.colour == (i == 0 ? coney::gui::kMenuGrey : coney::gui::kDimGrey));
+    }
+    CHECK(screen.cues.empty());
+}
+
+TEST_CASE("options: up and down move the titles, refusing at the ends; back leaves with cue 0xf",
+          "[pause_menu][options]") {
+    Screen screen;
+    CHECK_FALSE(screen.command(MenuCommand::Up));
+    CHECK(screen.lastCue() == 0xe);
+    for (int i = 0; i < 6; ++i) {
+        CHECK_FALSE(screen.command(MenuCommand::Down));
+        CHECK(screen.lastCue() == 4);
+    }
+    CHECK(screen.menu.selectedTitle() == 6);
+    CHECK_FALSE(screen.command(MenuCommand::Down));
+    CHECK(screen.lastCue() == 0xe);
+    CHECK(screen.menu.title(6).style().colour == coney::gui::kMenuGrey);
+    CHECK(screen.command(MenuCommand::Back));
+    CHECK(screen.lastCue() == 0xf);
+}
+
+TEST_CASE("options: the pages' items, in order", "[pause_menu][options]") {
+    Screen screen;
+    const auto labels = [&](OptionPage page) {
+        std::vector<std::uint32_t> out;
+        for (const auto& item : screen.menu.items(page)) {
+            out.push_back(item->label);
+        }
+        return out;
+    };
+    CHECK(labels(OptionPage::Lighting) == std::vector<std::uint32_t>{0x117});
+    CHECK(labels(OptionPage::Camera) == std::vector<std::uint32_t>{0x11a, 0x11b, 0x11c, 0x11d, 0x11e});
+    CHECK(labels(OptionPage::Audio) == std::vector<std::uint32_t>{0x129, 0x12a, 0x126});
+    CHECK(labels(OptionPage::Video) == std::vector<std::uint32_t>{0x123});
+    CHECK(labels(OptionPage::Subtitles) == std::vector<std::uint32_t>{0x124});
+    CHECK(labels(OptionPage::Vibration) == std::vector<std::uint32_t>{0x120, 0x121});
+    CHECK(labels(OptionPage::RestoreDefault) == std::vector<std::uint32_t>{0x128});
+    CHECK(screen.menu.items(OptionPage::Audio).at(0)->kind == OptionItemKind::VolumeBar);
+    CHECK(screen.menu.items(OptionPage::Lighting).at(0)->kind == OptionItemKind::Brightness);
+    // Level 102 has no Split Screen Merge.
+    Screen level102({}, 102);
+    CHECK(level102.menu.items(OptionPage::Camera).size() == 4);
+}
+
+TEST_CASE("options: the Camera rows at y 0.36 + 0.045 i with their answers at x 0.66 (0.76 in German)",
+          "[pause_menu][options]") {
+    Screen screen;
+    const auto& camera = screen.menu.items(OptionPage::Camera);
+    for (std::size_t i = 0; i < camera.size(); ++i) {
+        const auto& label = camera.at(i)->labelText.style();
+        CHECK(label.x == Approx(0.26F));
+        CHECK(label.y == Approx(0.36F + (0.045F * static_cast<float>(i))));
+        CHECK(label.scale == Approx(1.0F));
+        CHECK(label.fontSlot == 3);
+        CHECK(camera.at(i)->answersText.style().x == Approx(0.66F));
+        CHECK(camera.at(i)->answersText.style().fontSlot == 4);
+    }
+    Screen german({}, 99, OptionLayout::forMode(coney::Language::German, false, false));
+    CHECK(german.menu.items(OptionPage::Camera).at(0)->answersText.style().x == Approx(0.76F));
+    CHECK(german.menu.items(OptionPage::Vibration).at(0)->answersText.style().x == Approx(0.66F));
+}
+
+TEST_CASE("options: the single-item pages put the answers 0.06 under a 1.3 label at (0.26, 0.30)",
+          "[pause_menu][options]") {
+    Screen screen;
+    for (const OptionPage page : {OptionPage::Video, OptionPage::Subtitles, OptionPage::RestoreDefault}) {
+        const auto& item = *screen.menu.items(page).at(0);
+        CHECK(item.labelText.style().y == Approx(0.30F));
+        CHECK(item.labelText.style().scale == Approx(1.3F));
+        CHECK(item.answersText.style().x == Approx(0.26F));
+        CHECK(item.answersText.style().y == Approx(0.36F));
+    }
+    Screen german({}, 99, OptionLayout::forMode(coney::Language::German, false, false));
+    CHECK(german.menu.items(OptionPage::RestoreDefault).at(0)->answersText.style().y == Approx(0.41F));
+    // Pro Logic II at (0.26, 0.60), its answers at 0.66.
+    const auto& proLogic = *screen.menu.items(OptionPage::Audio).at(2);
+    CHECK(proLogic.labelText.style().y == Approx(0.60F));
+    CHECK(proLogic.answersText.style().x == Approx(0.66F));
+}
+
+TEST_CASE("options: a Camera choice applies at once, the first answer meaning on", "[pause_menu][options]") {
+    Screen screen;
+    screen.openPage(OptionPage::Camera);
+    CHECK(screen.lastCue() == 8);
+    CHECK(screen.menu.lines().front() == "#119");
+    // Invert P1 starts on Off (the second answer); left picks On and applies it.
+    const auto& invert = *screen.menu.items(OptionPage::Camera).at(0);
+    CHECK(invert.choice == 1);
+    CHECK_FALSE(screen.command(MenuCommand::Right));
+    CHECK(screen.lastCue() == 0xe);
+    CHECK(screen.applied.empty());
+    CHECK_FALSE(screen.command(MenuCommand::Left));
+    CHECK(screen.lastCue() == 4);
+    REQUIRE(screen.applied.size() == 1);
+    CHECK(screen.applied.back().invertCamera[0]);
+    CHECK(screen.menu.values().invertCamera[0]);
+    // Down to Auto Adjust P2 and turn it off.
+    (void)screen.command(MenuCommand::Down);
+    (void)screen.command(MenuCommand::Down);
+    (void)screen.command(MenuCommand::Down);
+    CHECK(screen.menu.selectedItem() == 3);
+    CHECK(screen.menu.items(OptionPage::Camera).at(3)->labelText.style().colour == coney::gui::kMenuGrey);
+    CHECK(screen.menu.items(OptionPage::Camera).at(0)->labelText.style().colour == coney::gui::kDimGrey);
+    (void)screen.command(MenuCommand::Right);
+    CHECK_FALSE(screen.menu.values().autoAdjustCamera[1]);
+    CHECK(screen.menu.values().autoAdjustCamera[0]);
+    // Accept closes the page keeping both.
+    CHECK_FALSE(screen.command(MenuCommand::Accept));
+    CHECK(screen.lastCue() == 8);
+    CHECK_FALSE(screen.menu.pageOpen());
+    CHECK(screen.menu.values().invertCamera[0]);
+    CHECK_FALSE(screen.menu.values().autoAdjustCamera[1]);
+}
+
+TEST_CASE("options: back on a page puts back the values it had when opened", "[pause_menu][options]") {
+    Screen screen;
+    screen.openPage(OptionPage::Camera);
+    (void)screen.command(MenuCommand::Left);
+    CHECK(screen.menu.values().invertCamera[0]);
+    CHECK_FALSE(screen.command(MenuCommand::Back));
+    CHECK(screen.lastCue() == 0xf);
+    CHECK_FALSE(screen.menu.pageOpen());
+    CHECK_FALSE(screen.menu.values().invertCamera[0]);
+    CHECK_FALSE(screen.applied.back().invertCamera[0]);
+    CHECK(screen.menu.items(OptionPage::Camera).at(0)->choice == 1);
+}
+
+TEST_CASE("options: turning a pad's vibration on rumbles it", "[pause_menu][options]") {
+    OptionValues values;
+    values.vibration = {false, true};
+    Screen screen(values);
+    screen.openPage(OptionPage::Vibration);
+    (void)screen.command(MenuCommand::Left);
+    CHECK(screen.menu.values().vibration[0]);
+    CHECK(screen.vibrations == std::vector<int>{0});
+    // Off does not rumble.
+    (void)screen.command(MenuCommand::Down);
+    (void)screen.command(MenuCommand::Right);
+    CHECK_FALSE(screen.menu.values().vibration[1]);
+    CHECK(screen.vibrations.size() == 1);
+}
+
+TEST_CASE("options: the volume bars step 0.05 within 0-1 and the Audio page loops the music", "[pause_menu][options]") {
+    Screen screen;
+    screen.openPage(OptionPage::Audio);
+    REQUIRE_FALSE(screen.music.empty());
+    CHECK(screen.music.back() == std::pair<bool, float>{true, 0.9F});
+    (void)screen.command(MenuCommand::Right);
+    CHECK(screen.menu.values().musicVolume == Approx(0.95F));
+    (void)screen.command(MenuCommand::Right);
+    CHECK(screen.menu.values().musicVolume == Approx(1.0F));
+    CHECK(screen.lastCue() == 4);
+    (void)screen.command(MenuCommand::Right);
+    CHECK(screen.lastCue() == 0xe);
+    CHECK(screen.menu.values().musicVolume == Approx(1.0F));
+    CHECK(screen.music.back().second == Approx(1.0F));
+    // SoundFX down.
+    (void)screen.command(MenuCommand::Down);
+    (void)screen.command(MenuCommand::Left);
+    CHECK(screen.menu.values().soundFxVolume == Approx(0.85F));
+    // Back restores both and stops the loop.
+    (void)screen.command(MenuCommand::Back);
+    CHECK(screen.menu.values().musicVolume == Approx(0.9F));
+    CHECK(screen.menu.values().soundFxVolume == Approx(0.9F));
+    CHECK_FALSE(screen.music.back().first);
+}
+
+TEST_CASE("options: brightness steps 5 within 0-100", "[pause_menu][options]") {
+    OptionValues values;
+    values.brightness = 95;
+    Screen screen(values);
+    screen.openPage(OptionPage::Lighting);
+    const auto& bar = *screen.menu.items(OptionPage::Lighting).at(0);
+    CHECK(bar.bar == Approx(0.95F));
+    CHECK(bar.labelText.style().y == Approx(0.29F));
+    CHECK(bar.labelText.style().scale == Approx(1.3F));
+    CHECK(screen.menu.hint().style().y == Approx(0.35F));
+    CHECK(screen.menu.hint().text() == "#118");
+    (void)screen.command(MenuCommand::Right);
+    CHECK(screen.menu.values().brightness == 100);
+    (void)screen.command(MenuCommand::Right);
+    CHECK(screen.lastCue() == 0xe);
+    CHECK(screen.menu.values().brightness == 100);
+    (void)screen.command(MenuCommand::Left);
+    (void)screen.command(MenuCommand::Left);
+    CHECK(screen.menu.values().brightness == 90);
+    CHECK_FALSE(screen.command(MenuCommand::Accept));
+    CHECK(screen.menu.values().brightness == 90);
+}
+
+TEST_CASE("options: Video moves without applying; accept applies Wide", "[pause_menu][options]") {
+    Screen screen;
+    screen.openPage(OptionPage::Video);
+    const auto& video = *screen.menu.items(OptionPage::Video).at(0);
+    CHECK(video.choice == 0);
+    (void)screen.command(MenuCommand::Right);
+    CHECK(screen.lastCue() == 4);
+    CHECK_FALSE(screen.menu.values().wideVideo);
+    CHECK(screen.applied.empty());
+    (void)screen.command(MenuCommand::Accept);
+    CHECK(screen.menu.values().wideVideo);
+    CHECK_FALSE(screen.menu.pageOpen());
+}
+
+TEST_CASE("options: Restore Default starts on No; Yes restores the defaults, keeping the video mode",
+          "[pause_menu][options]") {
+    OptionValues values;
+    values.brightness = 70;
+    values.musicVolume = 0.3F;
+    values.invertCamera = {true, true};
+    values.subtitles = true;
+    values.wideVideo = true;
+    Screen screen(values);
+    screen.openPage(OptionPage::RestoreDefault);
+    CHECK(screen.menu.items(OptionPage::RestoreDefault).at(0)->choice == 1);
+    // No and accept: nothing changes.
+    (void)screen.command(MenuCommand::Accept);
+    CHECK(screen.menu.values() == values);
+    // Yes and accept.
+    (void)screen.command(MenuCommand::Accept);
+    (void)screen.command(MenuCommand::Left);
+    (void)screen.command(MenuCommand::Accept);
+    CHECK(screen.menu.values() == OptionValues::defaults(true));
+    CHECK(screen.menu.values().brightness == 40);
+    CHECK(screen.menu.values().musicVolume == Approx(0.9F));
+    CHECK_FALSE(screen.menu.values().invertCamera[0]);
+    // The pages show the new values; the list stays on Restore Default.
+    CHECK(screen.menu.selectedTitle() == 6);
+    CHECK(screen.menu.items(OptionPage::Camera).at(0)->choice == 1);
+    CHECK(screen.menu.items(OptionPage::Lighting).at(0)->bar == Approx(0.4F));
+}
+
+TEST_CASE("options: the layout by video mode", "[pause_menu][options]") {
+    const OptionLayout wide = OptionLayout::forMode(coney::Language::English, true, false);
+    CHECK(wide.titleY == Approx(0.24F));
+    CHECK(wide.rowY == Approx(0.30F));
+    CHECK(wide.squaresY == Approx(0.34F));
+    CHECK(wide.volumeRows[0] == Approx(0.31F));
+    CHECK(wide.volumeRows[3] == Approx(0.43F));
+    const OptionLayout pal = OptionLayout::forMode(coney::Language::English, false, true);
+    CHECK(pal.titleY == Approx(0.32F));
+    CHECK(pal.titleStep == Approx(0.045F));
+    CHECK(pal.rowStep == Approx(0.04F));
+    CHECK(pal.answersOffset == Approx(0.52F));
+    CHECK(pal.squareScale == Approx(0.7F));
+}

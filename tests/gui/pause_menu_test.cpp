@@ -240,7 +240,7 @@ TEST_CASE("pause menu: Stats opens nothing without stats; Options opens its list
     paused.driver.tap(coney::pad::kCross);
     CHECK(paused.menu.screen() == PauseScreen::Options);
     CHECK(paused.menu.headers()[0].text() == "#116");
-    CHECK(paused.menu.screenLines().size() == PauseMenu::kOptionsEntries.size());
+    CHECK(paused.menu.screenLines().size() == coney::gui::kOptionPages);
     paused.driver.tap(coney::pad::kTriangle);
     paused.selectItem(PauseItem::Controls);
     paused.driver.tap(coney::pad::kCross);
@@ -410,4 +410,33 @@ TEST_CASE("pause menu: the Controls screen takes its layout from the language an
     REQUIRE(paused.menu.screen() == PauseScreen::Controls);
     CHECK(paused.menu.controls().label(1).style().x == Catch::Approx(0.16F));
     CHECK(paused.menu.controls().tips().visibleCount() == 10);
+}
+
+TEST_CASE("pause menu: Options takes the pad: cross opens Camera, left turns Invert P1 on and the game is told, "
+          "triangle twice returns to the grid",
+          "[pause_menu][options]") {
+    PauseMenuSetup setup;
+    setup.options.invertCamera = {false, false};
+    std::vector<coney::gui::OptionValues> applied;
+    Paused paused(99, setup);
+    coney::gui::OptionMenu::Hooks hooks;
+    hooks.apply = [&applied](const coney::gui::OptionValues& values) { applied.push_back(values); };
+    paused.menu.setOptionHooks(hooks);
+    paused.selectItem(PauseItem::Options);
+    paused.driver.tap(coney::pad::kCross);
+    REQUIRE(paused.menu.screen() == PauseScreen::Options);
+    paused.driver.tap(coney::pad::kDown);
+    CHECK(paused.menu.options().selectedTitle() == 1);
+    paused.driver.tap(coney::pad::kCross);
+    REQUIRE(paused.menu.options().pageOpen());
+    paused.driver.tap(coney::pad::kLeft);
+    REQUIRE(applied.size() == 1);
+    CHECK(applied.back().invertCamera[0]);
+    // Cross keeps it and closes the page; triangle leaves Options for the grid.
+    paused.driver.tap(coney::pad::kCross);
+    CHECK_FALSE(paused.menu.options().pageOpen());
+    CHECK(paused.menu.options().values().invertCamera[0]);
+    paused.driver.tap(coney::pad::kTriangle);
+    CHECK(paused.menu.screen() == PauseScreen::Grid);
+    CHECK_FALSE(paused.menu.closing());
 }

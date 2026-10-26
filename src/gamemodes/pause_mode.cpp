@@ -130,6 +130,12 @@ void applyPauseOutcome(gui::PauseOutcome outcome, GameModeStack& stack, GameStat
     }
 }
 
+// Stub for the Options screen's tests: reads nothing from `state` yet.
+gui::OptionValues optionValuesOf(const GameState& /*state*/) { return {}; }
+
+// Stub for the Options screen's tests: writes nothing to `state` yet.
+void storeOptionValues(const gui::OptionValues& /*values*/, GameState& /*state*/) {}
+
 PauseMode::PauseMode(graphics::RenderDevice& device, PauseSheetLoader loadSheet, PauseRecordLoader loadRecord,
                      const gui::GlobalStrings& strings, FrontEndServices& services, GameState& state,
                      LevelFlowMode& levelFlow, std::function<void(std::string_view)> log)

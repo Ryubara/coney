@@ -48,7 +48,16 @@ struct PauseHooks {
     /// automatic return (HUD `+0x177ac`, docs/research/hud.md) is not traced, and without it a pause would leave them
     /// off.
     std::function<void()> radarsBack;
+    /// The Options screen changed a value (every change, with all the values, after the game state took them): the
+    /// game applies what it has (the volumes, the camera's auto-adjust).
+    std::function<void(const gui::OptionValues& values)> applyOptions{};
 };
+
+/// The Options screen's values as `state` keeps them (docs/research/save.md#options): the brightness, the subtitles
+/// and, in GameState::saved, the volumes, the pads' options, the merge, Pro Logic II and the video mode.
+[[nodiscard]] gui::OptionValues optionValuesOf(const GameState& state);
+/// Writes the Options screen's `values` into `state`, where each setter writes them (save.md#options).
+void storeOptionValues(const gui::OptionValues& values, GameState& state);
 
 /// The loaded fonts and batches a pause-style menu draws with, and the 2D pass over them: one per mode.
 ///
@@ -157,6 +166,8 @@ class PauseMode final : public GameMode {
     static constexpr std::uint32_t kId = 0xa;
     /// The sound bank the pause loads.
     static constexpr std::string_view kSoundBank = "pause";
+    /// The music the Options screen's Audio page loops (`vags/music/wonderwheel_mono`).
+    static constexpr std::string_view kPreviewMusic = "music/wonderwheel_mono";
     /// The background's sheet record (docs/research/pause.md#layout-gui-coordinates) and its batch.
     static constexpr std::uint32_t kBackgroundRecord = 12;
     static constexpr std::size_t kBackgroundCapacity = 1;
@@ -222,6 +233,7 @@ class PauseMode final : public GameMode {
     gui::PauseMenu m_menu;
     MenuLayer m_layer;
     std::string m_previousBank;
+    std::string m_musicBeforePreview; // the music track the Options screen's Audio page replaced
     RenderTime m_frozen;              // the world's frame as the game paused
     Interpolated<float> m_tint{0.0F}; // the tint at the last two steps
     int m_cooldown = 0;

@@ -83,6 +83,7 @@ add_executable(coney_tests
     gui/markup_test.cpp
     gui/menu_input_test.cpp
     gui/control_menu_test.cpp
+    gui/option_menu_test.cpp
     gui/pause_menu_test.cpp
     gui/profile_management_gui/pm_controller_test.cpp
     gui/rumble_mode_gui/rumble_menu_test.cpp
@@ -141,6 +142,7 @@ add_executable(coney_tests
     platform/disc_spawner_money_test.cpp
     platform/disc_credits_test.cpp
     platform/disc_pause_controls_test.cpp
+    platform/disc_pause_options_test.cpp
     platform/disc_level99_player2_test.cpp
     platform/disc_hub_workout_test.cpp
     platform/disc_level99_street_test.cpp

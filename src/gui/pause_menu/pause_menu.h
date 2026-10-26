@@ -19,6 +19,7 @@
 #include "gui/menu_input.h"
 #include "gui/option_grid.h"
 #include "gui/pause_menu/control_menu.h"
+#include "gui/pause_menu/option_menu.h"
 #include "gui/pause_menu/pause_items.h"
 #include "gui/pause_menu/yes_no_box.h"
 #include "gui/text_widget.h"
@@ -61,6 +62,7 @@ struct PauseMenuSetup {
     /// pause mode leaves both unset (Coney has no video-mode setting yet), so the default 4:3 layout is used.
     bool widescreen = false;
     bool flag02 = false;
+    OptionValues options{}; ///< The values the Options screen starts from (the game state's, save.md#options).
     std::array<std::vector<std::string>, 3> objectives{}; ///< Current, bonus and overview lists (`HUDSetObjective`).
 };
 
@@ -137,6 +139,10 @@ class PauseMenu : public Widget {
     void setBackgroundBatch(graphics::SpriteBatch* batch) { m_background.setBatch(batch); }
     /// Draws the Controls screen's pad picture into `batch` (ControlMenu::kPictureRecord's sheet); null draws none.
     void setControllerBatch(graphics::SpriteBatch* batch) { m_controls.setPictureBatch(batch); }
+    /// Draws the Options screen's bars and squares into `batch` (sheet 12's, the background's); null draws none.
+    void setOptionsBatch(graphics::SpriteBatch* batch) { m_options.setSpriteBatch(batch); }
+    /// What the Options screen asks of the game (its cues always go to the menu's sound sink).
+    void setOptionHooks(OptionMenu::Hooks hooks) { m_optionHooks = std::move(hooks); }
 
     /// Opens the menu at game time `nowMs` as `setup` says.
     /// @orig 0x001dbee0 PauseMenu_Open (unknown)
@@ -180,6 +186,8 @@ class PauseMenu : public Widget {
 
     /// The Controls screen.
     [[nodiscard]] const ControlMenu& controls() const { return m_controls; }
+    /// The Options screen.
+    [[nodiscard]] const OptionMenu& options() const { return m_options; }
 
     /// The Options screen's entries (Coney's stand-in list, docs/research/pause.md#the-items-screens).
     static constexpr std::array<std::string_view, 7> kOptionsEntries{
@@ -229,6 +237,8 @@ class PauseMenu : public Widget {
     UsageInfo m_usage;
     YesNoBox m_yesNo;
     ControlMenu m_controls;
+    OptionMenu m_options;
+    OptionMenu::Hooks m_optionHooks;
     std::vector<QuitChoice> m_quitChoices;
 
     PauseScreen m_screen = PauseScreen::Grid;
