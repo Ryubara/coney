@@ -291,7 +291,8 @@ class Built:
         listed = checks if checks is not None else list(next(p.checks for p in rules.profiles if p.name == profile))
         detail = {"profile": profile, "checks": listed, "tests": tests, "preset": "ci", "minutes": 21}
         detail.update(more)
-        # A profile with no build or test run (`tooling`) records no counts: `tests=None` leaves them out.
+        # `tests` stands for the build's counts; a `more` key of None (e.g. `tests=None`) leaves that key out, as a
+        # profile without a build (`docs`, `tooling`) has no `detail.tests`. Pytest's counts are `more["pytest"]`.
         self.stamp("checked", covers=covers, detail={k: v for k, v in detail.items() if v is not None})
 
     def text_hashes(self) -> pr_proof.TextHashes:

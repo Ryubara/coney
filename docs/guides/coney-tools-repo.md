@@ -409,7 +409,8 @@ codebase nightly ([building](clang-tidy.md)).
   when the build failed, if it left a record). Its `detail` holds the profile, the checks, the test counts, the preset
   and the minutes.
 * A passing `pytest` check says how many tests passed in the run's output (`pytest python/tests: 4210 passed`); the
-  stamp keeps no counts for a profile without a build, and the facts of `pr text` name its checks instead.
+  stamp keeps these as `detail.pytest` (passed, skipped), and the facts of `pr text` report them beside the checks
+  that ran; `detail.tests` holds only the build's counts, so a profile without a build has none.
 * A `full` run can take an hour. Start it with `run_in_background`, write STATUS.md and stop; it has no budget cap and
   waits for a slot up to `--max-wait`.
 

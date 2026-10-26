@@ -263,9 +263,10 @@ to the merged result, is in [From research to code](research-to-code.md).
   is seen by all; never undo another engineer's names. Setup: [Ghidra + ghidra-mcp](ghidra.md).
 - **The Xbox build: a reading aid, and a source for presentation.** The same function in the Xbox executable can
   read faster (inline strings, named library calls), and behaviour is still cited at PS2 addresses. Where the Xbox
-  port draws the game differently (lighting, shadows, textures, movies), Coney may follow it as an option
-  ([Faithful first](repo:AGENTS.md)); that work cites `Xbox 0x...` addresses on its research page and
-  `@orig xbox` in code ([Xbox addresses](research-evidence.md#xbox-addresses), [Xbox tags](conventions.md#xbox-tags),
+  port draws the game differently (anything either build does natively is faithful, e.g. lighting, shadows,
+  textures, movies), Coney may follow it as an option ([Faithful first](repo:AGENTS.md)); that work cites
+  `Xbox 0x...` addresses on its research page and `@orig xbox` in code
+  ([Xbox addresses](research-evidence.md#xbox-addresses), [Xbox tags](conventions.md#xbox-tags),
   [Xbox executable](../research/xbox-executable.md)).
 - **PCSX2, several copies with claims.** Portable PCSX2 copies (`pcsx2`, `pcsx2-b`, ...) run the maintainer's
   PCSX2-MCP fork build (`coney-tools pcsx2 setup-copies`) and each have their own settings, states, PINE port and

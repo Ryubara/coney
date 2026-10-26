@@ -210,9 +210,9 @@ the function's entry in the function database and run `progress check`
 
 ### Xbox tags {#xbox-tags}
 
-Presentation may follow Rockstar's Xbox port where it differs from the PS2 build (lighting, shadows, textures,
-movies; [Faithful first](repo:AGENTS.md)). Code ported from the Xbox executable cites it the same way, with the word
-`xbox` before the address:
+Presentation may follow Rockstar's Xbox port where it differs from the PS2 build (anything either build does
+natively is faithful, e.g. lighting, shadows, textures, movies; [Faithful first](repo:AGENTS.md)). Code ported from
+the Xbox executable cites it the same way, with the word `xbox` before the address:
 
 ```text
 @orig xbox 0x<address> <OriginalName> (<File>.cpp)
