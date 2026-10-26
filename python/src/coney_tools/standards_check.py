@@ -288,10 +288,12 @@ def _code_diff(
 ) -> CodeDiff | None:
     """What the change touched of `name` (committed or not), or None for a new file (all of it). A hunk that only
     rewrites research references in comments to follow a page the change moved touches nothing (`code_link_moves`)."""
-    if _file_at(root, since, name) is None:
+    before = _file_at(root, since, name)
+    if before is None:
         return None
     diff = local_gate.run_command(["git", "-C", str(root), "diff", "-U0", since, "--", name], root)[1]
-    return touched_code_lines(diff, gone, resolves, held)
+    after = (root / name).read_text(encoding="utf-8", errors="replace")
+    return touched_code_lines(diff, gone, resolves, held, before.splitlines(), after.splitlines())
 
 
 def _ported(root: Path, conventions: Conventions) -> dict[int, Entry]:

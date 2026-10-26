@@ -13,11 +13,19 @@ PAGES = {
     "docs/research/ai-fights.md": {"fight", "pick-attack"},
     "docs/research/tasks.md": {"held-flags"},
     "docs/research/stays.md": {"stays"},
+    # Two pages that stayed: `moves.md` gave `targeting` to `targets.md`, which also holds `shared` as it did.
+    "docs/research/moves.md": {"moves", "shared"},
+    "docs/research/targets.md": {"targeting", "shared"},
+    # A page that stayed and split its `rage` section: the flash moved out under `flash`, `rage` is still there.
+    "docs/research/rage.md": {"rage", "flash", "power"},
 }
 #: What the pages held before the change: `ai.md` held every section it gave away.
 BEFORE = {
     "docs/research/ai.md": {"brain", "update", "fight", "pick-attack"},
     "docs/research/tasks.md": {"held-flags"},
+    "docs/research/moves.md": {"moves", "targeting", "shared"},
+    "docs/research/targets.md": {"shared"},
+    "docs/research/rage.md": {"rage", "power"},
 }
 
 
@@ -60,9 +68,25 @@ def test_every_changed_reference_of_a_line_must_follow_a_move_and_the_others_may
     )
 
 
-def test_a_reference_in_a_trailing_comment_and_a_block_comment_is_read() -> None:
+def test_a_reference_in_a_trailing_comment_and_a_one_line_block_comment_is_read() -> None:
     assert moved(["int a = 1;  // docs/research/ai.md#brain"], ["int a = 1;  // docs/research/ai/index.md#brain"])
-    assert moved([" * See docs/research/ai.md#brain."], [" * See docs/research/ai/index.md#brain."])
+    assert moved(["/* docs/research/ai.md#brain */ g();"], ["/* docs/research/ai/index.md#brain */ g();"])
+    assert moved(["int a = 1; /* docs/research/ai.md */"], ["int a = 1; /* docs/research/ai/index.md */"])
+    # a quote in a character literal does not open a string, nor does the digit separator a character
+    assert moved(["char q = '\"'; // docs/research/ai.md#brain"], ["char q = '\"'; // docs/research/ai/index.md#brain"])
+    assert moved(["int n = 1'000; // docs/research/ai.md#brain"], ["int n = 1'000; // docs/research/ai/index.md#brain"])
+
+
+def test_a_line_of_a_block_comment_is_comment_only_with_the_lines_above_it() -> None:
+    old = ["/**", " * See docs/research/ai.md#brain.", " */", "int a;"]
+    new = ["/**", " * See docs/research/ai/index.md#brain.", " */", "int a;"]
+    diff = "@@ -2 +2 @@\n- * See docs/research/ai.md#brain.\n+ * See docs/research/ai/index.md#brain.\n"
+    assert touched_code_lines(diff, GONE, resolves, held, old, new).link_moves_only
+    # without the lines above, a line that begins with `*` is code (a dereference)
+    assert not touched_code_lines(diff, GONE, resolves, held).link_moves_only
+    # the same line below the end of the comment is code
+    shut = ["/** x */", " * See docs/research/ai.md#brain.", "int a;"]
+    assert not touched_code_lines(diff, GONE, resolves, held, shut, shut).link_moves_only
 
 
 def test_a_test_citation_without_its_folder_is_read_on_an_expected_line() -> None:
@@ -93,6 +117,23 @@ def test_a_comment_reflowed_by_a_longer_reference_is_no_touch() -> None:
     )
 
 
+def test_a_section_that_moved_between_pages_that_stayed_is_no_touch_when_the_old_page_held_it() -> None:
+    # `moves.md` stayed and gave `targeting` to `targets.md`, which stayed too: the old page held the anchor before the
+    # change and no longer does, and the new page holds it now but did not before
+    assert moved(["// docs/research/moves.md#targeting"], ["// docs/research/targets.md#targeting"])
+    # the old page still holds it, or the new page held it already, or the lookup of the old pages is not given
+    assert not moved(["// docs/research/moves.md#moves"], ["// docs/research/targets.md#moves"])
+    assert not moved(["// docs/research/moves.md#shared"], ["// docs/research/targets.md#shared"])
+    assert not link_move_hunk(
+        ["// docs/research/moves.md#targeting"], ["// docs/research/targets.md#targeting"], GONE, resolves
+    )
+
+
+def test_a_section_split_off_its_page_keeps_its_old_anchor_and_gains_a_new_one() -> None:
+    assert moved(["// docs/research/rage.md#rage"], ["// docs/research/rage.md#flash"])
+    assert not moved(["// docs/research/rage.md#rage"], ["// docs/research/rage.md#power"])
+
+
 # --- anything else is a touch ----------------------------------------------------------------------------------------
 
 
@@ -117,6 +158,37 @@ def test_a_link_move_with_another_edit_in_a_reflowed_comment_is_a_touch() -> Non
 
 def test_a_link_move_in_code_and_not_in_a_comment_is_a_touch() -> None:
     assert not moved(['auto page = "docs/research/ai.md#brain";'], ['auto page = "docs/research/ai/index.md#brain";'])
+
+
+def test_a_link_move_in_a_string_that_looks_like_a_comment_is_a_touch() -> None:
+    # a `//` or `/*` inside a string, the code beside a block comment, and a line that starts with `*` are code
+    cases = [
+        'f("http://x", "docs/research/ai.md#brain");',
+        'auto s = "// docs/research/ai.md#brain";',
+        'auto s = "/* docs/research/ai.md#brain */";',
+        '/* c */ g("docs/research/ai.md#brain");',
+        '* p = "docs/research/ai.md#brain";',
+        'char c = \'"\'; auto s = "docs/research/ai.md#brain";',
+        'auto s = R"(// docs/research/ai.md#brain)";',
+        'auto s = R"x(" // docs/research/ai.md#brain)x";',
+    ]
+    for case in cases:
+        assert not moved([case], [case.replace("ai.md", "ai/index.md")]), case
+
+
+def test_a_reflow_of_code_beside_a_comment_is_a_touch() -> None:
+    assert not moved(
+        ["/* c */ g(); // docs/research/ai.md#brain, words", "// more"],
+        ["/* c */ g(); // docs/research/ai/index.md#brain,", "// words more"],
+    )
+    assert not moved(
+        ["* p = 1; // docs/research/ai.md#brain, words", "* q"],
+        ["* p = 1; // docs/research/ai/index.md#brain,", "* words q"],
+    )
+    assert not moved(
+        ["// docs/research/ai.md#brain", '/* x */ f("a");'],
+        ["// docs/research/ai/index.md#brain", '/* x */ f("a");', "//"],
+    )
 
 
 def test_a_rewrite_with_no_matching_move_is_a_touch() -> None:

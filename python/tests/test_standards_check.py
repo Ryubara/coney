@@ -640,3 +640,10 @@ def test_a_comment_link_rewrite_to_a_page_that_does_not_exist_touches_the_file(t
     root = build(tmp_path, {"docs/research/ai.md": PAGE, "src/ai/brain.cpp": LINKED_SOURCE.replace("REF", OLD_REF)})
     move_page_and_edit(root, {"src/ai/brain.cpp": LINKED_SOURCE.replace("REF", "docs/research/ai/brain.md#brain")})
     assert {r.rule for r in linked(root)} == {"comment", "tag", "compared"}
+
+
+def test_a_link_move_inside_a_string_that_looks_like_a_comment_touches_the_file(tmp_path: Path) -> None:
+    code = GOOD_SOURCE.replace("    int a = 1;", '    auto s = "// REF";')
+    root = build(tmp_path, {"docs/research/ai.md": PAGE, "src/ai/brain.cpp": code.replace("REF", OLD_REF)})
+    move_page_and_edit(root, {"src/ai/brain.cpp": code.replace("REF", NEW_REF)})
+    assert {r.rule for r in linked(root)} == {"compared"}
