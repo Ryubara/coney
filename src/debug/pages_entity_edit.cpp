@@ -209,7 +209,7 @@ MenuItem groupItem(DebugSession& session, std::string label, void (*fill)(MenuPa
 // NOLINTBEGIN(bugprone-exception-escape)
 
 // The Entity editor page's items.
-void fillEditor(MenuPage& page, DebugSession& session) {
+[[maybe_unused]] void fillEditor(MenuPage& page, DebugSession& session) {
     PlayControls* play = session.play();
     if (play == nullptr || play->inspect() == nullptr || play->entityEdits() == nullptr) {
         page.add(watchItem("No entities", [] { return std::string(kNoEntities); }));
@@ -244,8 +244,9 @@ void fillEditor(MenuPage& page, DebugSession& session) {
 } // namespace
 
 void addEntityEditorPage(DebugSession& session) {
+    // Stub for the fails-first run: the page is listed and empty.
     session.model().addPage(
-        "Entity editor", [&session](MenuPage& page) { fillEditor(page, session); },
+        "Entity editor", [](MenuPage& /*page*/) {},
         "Change the Entity inspector's selection: transform, meters, stats, delete. Edits land between steps.");
 }
 
