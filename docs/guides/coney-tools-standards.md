@@ -31,7 +31,7 @@ uv run --project python coney-tools standards check [--base origin/main]
 | `scan` | Prints how many ported functions are `legacy`, `compared` or have no status; how many source and test files are below the standard, with their findings counted by rule; and how many research pages are listed. `--files` also prints every finding as `path:line: rule: message`. Read-only; exit 0 |
 | `init` | Writes the legacy file of source and test files from a scan. It refuses when the file exists (exit 2): the file only shrinks |
 | `prune` | Takes out the files that now pass, drops the rules a file now passes and lowers the counts to the scan's. Never adds a file or a rule. Run it in the commit that fixes a file |
-| `mark` | Gives every ported function that has no `status` the status `legacy` and rewrites the database files that hold one. A function becomes `compared` only by a side-by-side comparison, never here |
+| `mark` | Gives every ported function that has no `status` the status `legacy` and rewrites the database files that hold one. A function becomes `compared` only by a side-by-side comparison, never here. For a new port the `legacy` it writes is refused by `check`: record it `compared` instead |
 | `check` | The marks are consistent and the files and functions the change touches meet the standard, measured from `--base` (default `origin/main`). Prints `path:line: [warning: ]rule: message`, exits 1 when there is an error |
 
 `check` reports:
@@ -107,7 +107,7 @@ Takes no parameters.
 
 ### `standards mark` {#standards-mark-usage}
 
-Give every ported function with no status the status legacy.
+Give every ported function with no status the status legacy (refused for a new port: record it compared).
 
 ```text
 coney-tools standards mark

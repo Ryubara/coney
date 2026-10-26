@@ -61,7 +61,7 @@ class Report:
     line: int
     rule: str
     message: str
-    #: Whether it fails the check: `standards.enforce`, so false (a warning) until the cutover.
+    #: Whether it fails the check: `standards.enforce` (an error when true, a warning when false).
     error: bool
 
 
