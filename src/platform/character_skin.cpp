@@ -2,6 +2,7 @@
 #include "platform/character_skin.h"
 
 #include <cstring>
+#include <string>
 
 #include <rw.h>
 
@@ -43,8 +44,6 @@ void* constructNull(void* object, rw::int32 offset, rw::int32 /*size*/) {
 // whose weights may sum a hair below 1 (CharacterMesh::pose()); the blended normal is normalised, as the CPU skinning
 // normalised it (characters::skinVertices()).
 const char* const kVertexSource = R"(
-uniform mat4 u_coneyBones[64];
-
 VSIN(ATTRIB_POS) vec3 in_pos;
 
 VSOUT vec4 v_color;
@@ -184,8 +183,11 @@ bool startCharacterSkin() {
     const char* allLights = "#define DIRECTIONALS\n#define POINTLIGHTS\n#define SPOTLIGHTS\n";
     const char* noTest = "#define NO_ALPHATEST\n";
     const char* fragment = textureLodFragmentSource();
-    const char* vs[] = {rw::gl3::shaderDecl, rw::gl3::header_vert_src, kVertexSource, nullptr};
-    const char* vsLit[] = {rw::gl3::shaderDecl, allLights, rw::gl3::header_vert_src, kVertexSource, nullptr};
+    // The palette's array is declared with the size the palette and the uniform have (kMaxSkinBones).
+    const std::string bonesDecl = "uniform mat4 u_coneyBones[" + std::to_string(kMaxSkinBones) + "];\n";
+    const char* vs[] = {rw::gl3::shaderDecl, rw::gl3::header_vert_src, bonesDecl.c_str(), kVertexSource, nullptr};
+    const char* vsLit[] = {rw::gl3::shaderDecl, allLights,     rw::gl3::header_vert_src,
+                           bonesDecl.c_str(),   kVertexSource, nullptr};
     const char* fs[] = {rw::gl3::shaderDecl, rw::gl3::header_frag_src, fragment, nullptr};
     const char* fsNoTest[] = {rw::gl3::shaderDecl, noTest, rw::gl3::header_frag_src, fragment, nullptr};
     shaders.plain = rw::gl3::Shader::create(vs, fs);

@@ -44,6 +44,11 @@ inline constexpr anim::Mat34 kClumpToPose{{1.0F, 0.0F, 0.0F}, {0.0F, 0.0F, 1.0F}
 void skinVertices(const CharacterModel& model, std::span<const anim::Mat34> matrices, std::span<anim::Vec3> positions,
                   std::span<anim::Vec3> normals);
 
+/// The same blend for a list of vertices (the model's, or a copy a mesh keeps): the one place the CPU skinning's blend
+/// is written, whose normals are normalised after it.
+void skinVertices(std::span<const SkinVertex> vertices, std::span<const anim::Mat34> matrices,
+                  std::span<anim::Vec3> positions, std::span<anim::Vec3> normals);
+
 /// How far apart a vertex lands when skinned by each of its bones alone, averaged over the vertices with two or more
 /// weights of at least 0.2: a few centimetres when the rig is right, much more when bones and skin disagree. Coney's
 /// check of kClumpToPose; 0 when no vertex qualifies.

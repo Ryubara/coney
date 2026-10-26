@@ -116,6 +116,8 @@ class CharacterMesh {
     rw::Texture* m_texture = nullptr;               // one reference held
     rw::Texture* m_bloodTexture = nullptr;          // the dual layer's, as last set (its materials hold the references)
     std::vector<characters::SkinVertex> m_vertices; // the model's, for skinning on the CPU (empty on the GPU)
+    std::vector<anim::Vec3> m_positions;            // the CPU pose's blended positions and normals, kept between poses
+    std::vector<anim::Vec3> m_normals;
     bool m_gpu = false;
     SkinVertexData m_skin;                  // the shader's weights and bones (GPU)
     std::unique_ptr<BonePalette> m_palette; // this frame's bone matrices (GPU)

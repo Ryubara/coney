@@ -8,6 +8,7 @@
 
 #include <rw.h>
 
+#include "characters/character_rig.h"
 #include "core/assert.h"
 
 namespace coney::platform {
@@ -239,21 +240,12 @@ void CharacterMesh::poseOnCpu(std::span<const anim::Mat34> skinning) {
     geometry->lock(rw::Geometry::LOCKVERTICES | rw::Geometry::LOCKNORMALS);
     rw::MorphTarget& target = geometry->morphTargets[0];
     // Each vertex by its bones' matrices, in the character's space; the normal blended, then normalised.
+    m_positions.resize(m_vertices.size());
+    m_normals.resize(m_vertices.size());
+    characters::skinVertices(m_vertices, skinning, m_positions, m_normals);
     for (std::size_t i = 0; i < m_vertices.size(); ++i) {
-        const characters::SkinVertex& vertex = m_vertices[i];
-        anim::Vec3 position;
-        anim::Vec3 normal;
-        for (std::size_t w = 0; w < characters::kVertexWeights; ++w) {
-            if (vertex.weights[w] == 0.0F) {
-                continue;
-            }
-            const anim::Mat34& matrix = skinning[vertex.bones[w]];
-            position =
-                anim::add(position, anim::scale(anim::transformPoint(matrix, vertex.position), vertex.weights[w]));
-            normal = anim::add(normal, anim::scale(anim::transformDirection(matrix, vertex.normal), vertex.weights[w]));
-        }
-        target.vertices[i] = toRw(position);
-        target.normals[i] = toRw(anim::normalise(normal));
+        target.vertices[i] = toRw(m_positions[i]);
+        target.normals[i] = toRw(m_normals[i]);
     }
     geometry->calculateBoundingSphere();
     geometry->unlock();
