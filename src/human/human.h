@@ -252,6 +252,8 @@ class Human final : public Holdable {
     /// Which of its strike shapes its clips' events have switched on (human/strike_shapes.h), and what they struck.
     [[nodiscard]] const StrikeShapes& strikeShapes() const { return m_strikes; }
     [[nodiscard]] StrikeShapes& strikeShapes() { return m_strikes; }
+    /// The anim id whose clip's events last switched a strike shape: the shapes on belong to it.
+    [[nodiscard]] std::uint32_t strikeAnim() const { return m_strikeAnim; }
     /// Its strike shapes posed in the world now: the ones switched on (and the capsule while its strike flag is on),
     /// or with `targets` the spine and the head, which a strike is tested against (flag `0x4`). Empty without a
     /// skeleton.

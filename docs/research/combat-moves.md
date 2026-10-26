@@ -407,10 +407,24 @@ From `Commands_Match` (`0x00147940`; the tables are in [Commands](combat/index.m
   `0x20081404`) lets it through in the end phase `0x4` only, so a block can cut the end phase but not the wind-up,
   window or recovery. Confirmed (runtime): R1 pressed in `S1`'s window gave the block 606 at k15, 5 updates before
   `S1` ended; pressed at k16 (recovery) it came at k20.
-- **Blend.** A new attack enters over **0.2 s** from the current pose (`AnimTaskChained_Construct(0.2, ...)` in
-  `Attack_Start`, `Attack_StartSolo` and `Attack_StartSnap`; 0.1 s in `Attack_StartAtTarget`, so 212, 661 and 120); a
-  chain step taken in the window swaps the clip inside the running task instead (`Attack_Start` with
-  record `+0x08` `0x2` and a combo count of 1 or 2). Confirmed (code); how the swap blends is not traced.
+- **Blend.** A new attack shows its own pose **from its first update**, with no fade from the pose before it. Each
+  start builds the attack's clip as a chained task (type 3) and pushes a fade (type 9, `AnimTaskBlendOut_Construct`
+  `0x00106c80`) over the old tasks with a length of **0 s**: `f12` is cleared before the call in `Attack_Start`
+  (`0x0026281c`), `Attack_StartSolo` (`0x0026248c`), `Attack_StartSnap` (`0x002646b4`), `Attack_StartAtTarget`
+  (`0x00261d54`) and `Attack_StartGrounded` (`0x00261b5c`). The 0.2 s each passes to `AnimTaskChained_Construct`
+  (`0x00105990`; 0.1 s in `Attack_StartAtTarget`, so 212, 661 and 120) is the chained task's blend into the **next**
+  task, the idle loop, over the clip's last 0.2 s ([Animation tasks](formats/animation.md#animation-tasks)). A chain
+  step taken in the window swaps the clip inside the running task instead (`Attack_Start` with record `+0x08` `0x2`
+  and a combo count of 1 or 2). Confirmed (code); how the swap blends is not traced. The 0.2 s is not a fade-in: at
+  runtime `S1`'s hand is 0.447 m ahead of the player's feet on its update 1 and already 0.778 m on update 2, where it
+  lands, against the pedestrian's head 0.842 m ahead. Confirmed (runtime), run r-20261026-strike-pose-entry.
+  The moving attacks start elsewhere. `Player_StartDive` (`0x00264878`) pushes its fade over **0.2 s**
+  (`AnimTaskBlendOut_Construct`, the call at `0x002649f0`), so the dive does fade in from the run, and passes 0 s
+  to its chained task, so it hands over to the next with no end blend. `Player_StartCharge` (`0x00264a80`: the
+  charge 0, the walk and run attacks 23 and 24, the armed 501) pushes a layer (type 5, `AnimTask5_Construct`
+  `0x00106240`, the call at `0x00264b7c`) with a fade-in of 0.3 s and a fade-out of 0; a zero fade-out starts the
+  layer in its playing phase, so its fade-in never runs and the clip shows at full weight from its first update.
+  Confirmed (code).
 
 ### Square, in order {#square}
 
@@ -758,9 +772,37 @@ Each contact falls in the update whose sample first shows the damage, and every 
 tables to the update ([Reading the tables](#reading)), including the late ties: 25 / 27 / 29 off (frame 5), 23 / 33 off
 (frame 8) and 193 / 194 on (frame 8). Confirmed (runtime).
 
+**Damage as the blow lands.** With a pedestrian made 1.0 m in front of the player, facing him, the damage showed
+2 updates after `S1` started (17), 4 after `SS2` (36) and 7 after the kick `SSX3` (61); the grab strike 53 took its 57
+on the update it started. In a real-time capture of `S1`, the fist reached the pedestrian's face 4 frames (2 updates)
+after the punch first moved on screen, the same 2 updates the memory showed from the anim id to the health drop; the
+picture ran about 8 frames behind the memory. So the health goes as the punch lands, not when it starts. Confirmed
+(runtime), run r-20261025-strike-contact-timing. That run gave `X1` 9 (26): it counted 17 ticks from the anim id to
+the health and halved them, but its reads fell in the middle of updates. Read once per whole update, `X1` lands on
+update 8, its right hand on from update 6; `S1` again on update 2, in two runs, its left hand 0.299 m short of the
+head on update 1 and overlapping both the head and the spine on update 2. Confirmed (runtime), run
+r-20261026-strike-pose-entry.
+
+Two more `S1` runs at 1.0 m in the first session dealt **no damage**: the punch played out whole and the pedestrian's
+health stayed at 300 while the gap to him closed to 0.82 and 0.72 m (the scratch logs of run
+r-20261025-strike-contact-timing, not its values). Why is not known. Both came straight after earlier runs on the
+same loaded state, with no state reloaded between, so a pedestrian spawned for an earlier run may have stood in the way
+and taken the blow unread: speculative, not checked ([q-s1-misses](combat-moves.md#q-s1-misses)).
+
 ## In Coney
 
 The moves Coney plays and where they differ from the table above: [Combat differences](combat-diffs.md).
+
+A free attack of a human with strike shapes takes the victim's health from the strike test, on the first update a
+shape touches him (`Human::testStrikes`, `Fighter::strikeContact`, after `Strike_Contact` `0x0021b290`, confirmed
+(code)). A new attack shows its clip's pose from its first update, as the original's 0 s fade does (`kAttackFade`
+in `repo:src/human/human_animator.h`, [Blend](#input)); the dive fades in over 0.2 s as `Player_StartDive` does
+(`kDiveFade`); a chain step still fades over 0.1 s, and the clip hands over to
+the idle at its end with no 0.2 s blend (Coney stand-ins). With a fighter 1.0 m ahead in `level99` its damage shows 2
+updates into `S1`, 4 into `SS2`, 7 into `SSX3`, 8 into `X1` and 7 into 653, the original's updates
+(`repo:tests/platform/disc_strike_contact_test.cpp`). Until 2026-10-26 Coney faded each new attack in over 0.2 s,
+which held `S1`'s hand back (0.647 m ahead of the feet on update 2, against the original's 0.778 m) and landed it an
+update late.
 
 ### The tandem {#tandem-coney}
 
@@ -843,6 +885,9 @@ or an AI's. Where the page is silent, these are **Coney's choices**:
   control, for the late ties ([Reading the tables](#reading)). The clip ends agree with it on three more ties (36, 440,
   441 at 0.75, [When a clip ends](formats/animation.md#clip-end)); a run of a rate-0.9 clip with a tie (an event at
   frame 5 or 14) would check that rate.
+- **The S1 runs with no damage**{#q-s1-misses}: why two `S1` runs at 1.0 m dealt no damage
+  ([Runtime results](#runtime)). To test it: repeat the run from a reloaded state with one pedestrian spawned, and
+  read every human's health near the player, not only the spawned one's.
 - **Clips no path plays**{#q-unplayed-clips}: 490 `KNIFE_ATTACK_FROM_RUN`, 18 `ATTACK_SSX3_HOLD` and the `_02` snaps: no
   code path plays them here (20 is the chain's random pick after `SS2`, `0x00280708`).
 

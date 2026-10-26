@@ -1,28 +1,30 @@
+---
+kind: feature
+---
 # Combat: where Coney differs from the original
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`) through
-[Combat](combat/index.md) and [Combat moves](combat-moves.md); Coney's side read from `repo:src/combat/`,
-`repo:src/human/` and `repo:src/ai/` as of 2026-10-07 (main at `f4562750`), as behaviours only.
+Verified against: `SLUS_212.15` (NTSC-U) through [Combat](combat/index.md) and [Combat moves](combat-moves.md).
 
-## Purpose
+## Summary
 
 A worklist for the combat implementers: each place Coney's fight plays differently from the original, what the
 original does (with a link to the research) and where Coney's side lives. Coney's documented **choices** and
 **stand-ins** (on [Combat](combat/index.md#coneys-implementation)) are listed too when they change what the player sees.
-Remove an entry when it is fixed, in the same commit. The original's evidence levels are on the linked pages; the
-Coney side is confirmed by reading the source.
 
-## Original structure
+## Rules
 
-The original functions behind each entry are on the page it links, in that page's own Original structure and code
-index ([Combat](combat/index.md#original-structure), [Combat moves](combat-moves.md#original-structure)). The few an
-entry here names with an address (the mid-target test, the snap's search and filter, `Player_Special`) are graded where
-they are cited.
+- An entry says what the original does, linking the page that grades it, and what Coney does instead, read from
+  `repo:src/combat/`, `repo:src/human/` and `repo:src/ai/` as behaviours only.
+- An entry goes when its difference is fixed, in the same commit.
+- The page holds no data of its own: the commands, flags, tables and constants are on [Combat](combat/index.md#data)
+  and [Combat moves](combat-moves.md#data).
 
-## Data
+## Map
 
-This page holds no data of its own: the commands, flags, tables and constants are on [Combat](combat/index.md#data) and
-[Combat moves](combat-moves.md#data).
+The original functions behind each entry are on the page it links, in that page's own Map and code index
+([Combat](combat/index.md#original-structure), [Combat moves](combat-moves.md#original-structure)). The few an entry
+here names with an address (the mid-target test, the snap's search and filter, `Player_Special`) are graded where they
+are cited.
 
 ## Behaviour
 
@@ -41,16 +43,14 @@ Coney does instead; an address cited here carries its level beside it.
 ### Timing and targets
 
 The original's rules are in one place: [Timing](combat-moves.md#timing), [Input](combat-moves.md#input) and
-[Targets](combat-targets.md#targeting). Coney (main at `f4562750`): `repo:src/combat/attacks.cpp`,
-`repo:src/human/fighter.cpp`.
+[Targets](combat-targets.md#targeting). Coney: `repo:src/combat/attacks.cpp`, `repo:src/human/fighter.cpp`.
 
-- **The hit update.** Coney lands every attack on one update per id: the measured contacts for 11, 13-17 and 19 and
-  the grab strikes, and **update 2 for every other id**, the special 653 included, whatever the distance. The
-  original lands a hit only when a strike shape touches the target, inside the clip's shape window: 653's hands are
-  live at 2-8 and touched at 6-7 at runtime, so in Coney cross + square hits about 4 updates early and hits a target
-  the hands never reach. The snaps, strafes, low and mid strikes, 193 / 194, 212, 661, 120 and 22 have the same
-  problem. A moving attack's shapes (charge, dive, 23, 24) are used only against objects; on a human it too hits
-  2 updates in (`repo:src/platform/play_level_objects.cpp`).
+- **The hit update of a body without shapes.** The original deals a free attack's damage only through the strike
+  test (`Strike_Contact`, `0x0021b290`, confirmed (code)): an attack whose clip switches no strike shape never hits.
+  Coney does the same for every human with a skeleton (`Human::testStrikes`), on the original's update at 1.0 m for
+  `S1`, `SS2`, `SSX3`, `X1` and 653 ([Runtime results](combat-moves.md#runtime)), but a victim with no strike shapes
+  (the sandbox's targets) and an attack whose clip switches no shape still take the hit on one update per id: the
+  measured contact, or update 2 (`repo:src/combat/attacks.cpp`).
 - **The attack's target.** Coney searches afresh for every attack along the stick with the attack's own far range
   × 1.1 (`Fighter::steer`). The original keeps the current target for square in the stance (searching only without
   one or beyond 3 m), searches for cross with a fixed 2.0 m, keeps the target on a square chain step, and uses the
@@ -58,8 +58,11 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 - **Taking a target by nearness.** Coney takes a target only from L1 or an attack; the original's stance logic takes
   the nearest enemy within 2 m every update (and locks it with the street's `CfgAutoLockAndCombat`), swaps it once the
   target is beyond 3 m and tracks enemies to 6 m.
-- **Blend into an attack.** The original enters each new attack over 0.2 s and swaps a chain step's clip in place;
-  Coney fades every attack in over 0.1 s (`kCombatFade`).
+- **Blend into an attack.** Both show a new attack's pose from its first update, with no fade, and both fade the
+  dive in over 0.2 s ([Blend](combat-moves.md#input), confirmed (code)). Two differences are left: the original
+  swaps a chain step's clip inside the running task, where Coney fades it in over 0.1 s (`kCombatFade`), and the
+  original blends the attack's last 0.2 s into the idle after it, where Coney's clip hands over at once (`kAttackFade`
+  in `repo:src/human/human_animator.h`).
 
 ### Square and cross
 
@@ -79,7 +82,7 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
   ([Counters](combat-moves.md#counters)).
 - **Tandems** are built for any fighter's square, cross and circle, with Coney's choices for the alignment, the
   grabber's let-go and the target search, and no scoring; the AI's side (its target view's `0xc12200` test and kind
-  22's choice at a rear-held target) is issue #84's ([Coney's tandem](combat-moves.md#tandem-coney)).
+  22's choice at a rear-held target) is not built ([Coney's tandem](combat-moves.md#tandem-coney)).
 - **The moving attacks' windows** open late: on the disc Coney's run attack 24 switches its shapes on at update 4 and
   off at 9, the walk attack 23 at 6 and 12, against 1 and 7, 4 and 10 at runtime
   ([How a moving attack strikes](combat/index.md#moving-strikes)). Coney fires the clips' events by the clip time from 0
@@ -154,8 +157,8 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 - **Throwing a melee weapon with cross + square** (`0x22`, 502 / 491): the original throws a knife, baton or bat unless
   a target is within 2.0 m (then it does nothing, and the cross's release swings 36). Coney refuses the command for a
   player holding any object, as `Player_Special` (`0x00287730`, confirmed (code)) does, and never throws: with nobody
-  near the cross's release swings where the original throws. The special 653 and circle + cross's strong grapple no
-  longer start with an object in hand (fixed with issue #228; [Cross with a bat in hand](combat-throws.md#bat-cross)).
+  near the cross's release swings where the original throws. The special 653 and circle + cross's strong grapple do
+  not start with an object in hand ([Cross with a bat in hand](combat-throws.md#bat-cross)).
   Coney: `repo:src/combat/player_combat.cpp`.
 - **Clip lengths**: Coney ends a clip when its time reaches its duration, ceil(F / rate) updates; the original ends
   it on the update its frame would reach F, one update sooner on 50 of the 174 clips in the move tables (19, 20, 34
@@ -179,7 +182,7 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
   and escapes by its command as `Player_UpdateGrabbed` decides, the grabber playing its side an update later; the
   **reversal** (R1) is not offered this way ([Grabbed](combat-grabs.md#grabbed)).
 
-## Coney's implementation
+## In Coney
 
 The Coney side of each entry is named in it. The files the entries cite: `repo:src/combat/player_combat.cpp` (the
 dispatcher and the commands it takes), `repo:src/combat/attacks.cpp` (which attack a press starts),

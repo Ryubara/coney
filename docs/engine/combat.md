@@ -308,8 +308,10 @@ it.
   shapes are not built). The block's release plays the idle at once, and its fade holds `0x10000000` for its 5 updates:
   the stick turns the player but the walk start waits for the fade, as at runtime. R1 held blocks only when the record
   holds no phase outside `0x20081404` (`Human_CanFight`), so it cuts an attack's end phase and ends its chain but waits
-  through the wind-up, window and recovery ([Input](../research/combat-moves.md#input)). A new attack fades in over 0.2
-  s; a chain step keeps the 0.1 s combat fade (**Coney's reading**: the original swaps it into the running task). Coney
+  through the wind-up, window and recovery ([Input](../research/combat-moves.md#input)). A new attack shows its clip's
+  pose from its first update (`kAttackFade`, 0 s), the dive alone fading in over 0.2 s (`kDiveFade`), as the original's
+  starts do ([Blend](../research/combat-moves.md#input)); a chain step keeps the 0.1 s combat fade (**Coney's
+  reading**: the original swaps it into the running task). Coney
   never sets state code 5. A buffered snap plays only with a snap target within 25's far range (with `CfgSnap` on), else
   the plain square step, and no step from `S1` or `X1` plays while the target is low (down, or 1.3 to 1.8 m below), as
   [Input](../research/combat-moves.md#input) gives. **Coney's readings**: the buffered snap's search runs along its side
