@@ -28,7 +28,10 @@
 #include "combat/commands.h"
 #include "combat/player_combat.h"
 #include "combat/power_class.h"
+#include "human/fighter.h"
+#include "human/fighter_clips.h"
 #include "human/human.h"
+#include "human/human_animator.h"
 #include "human/human_flags.h"
 #include "human/pair_placement.h"
 #include "support/collision_fixtures.h"
@@ -142,6 +145,7 @@ bool reactsWith(const Human& human, coney::ai::GoalType type) {
 } // namespace
 
 TEST_CASE("the player grabs another human, strikes it in the hold and throws it", "[human][combat]") {
+    // Expected: combat-grabs.md#grabbing, confirmed (runtime)
     const FightCharacter character;
     HumanFight fight(character, 1.5F);
     TargetState held = TargetState::Standing;
@@ -183,6 +187,7 @@ TEST_CASE("the player grabs another human, strikes it in the hold and throws it"
 }
 
 TEST_CASE("the full stick drags a held human with the grabber, at the hold's offset", "[human][combat]") {
+    // Expected: combat-grabs.md#hold-walk, confirmed (code)
     const FightCharacter character;
     HumanFight fight(character, 1.5F);
     fight.run("5 tap circle\n", 40);
@@ -202,6 +207,7 @@ TEST_CASE("the full stick drags a held human with the grabber, at the hold's off
 
 TEST_CASE("circle held tackles another human: it is mounted and its reaction goal is the tackled one",
           "[human][combat]") {
+    // Expected: combat-grabs.md#grab, confirmed (code) (the tackled victim's reaction goal: ai.md#reaction-goals)
     const FightCharacter character;
     HumanFight fight(character, 2.0F);
     fight.run("5 press circle\n15 release circle\n50 tap square\n", 70);
@@ -211,6 +217,7 @@ TEST_CASE("circle held tackles another human: it is mounted and its reaction goa
 }
 
 TEST_CASE("a human with flag 0x40 cannot be grabbed: the grab misses", "[human][combat]") {
+    // Expected: combat-reactions.md#busy-target, confirmed (code)
     const FightCharacter character;
     HumanFight fight(character, 1.5F);
     fight.other().setFlag(flag::kUngrabbable, true);
@@ -224,6 +231,7 @@ TEST_CASE("a human with flag 0x40 cannot be grabbed: the grab misses", "[human][
 }
 
 TEST_CASE("a held human taken out of the level, or freed by a script, ends the hold", "[human][combat]") {
+    // Expected: combat-grabs.md#pair-break, confirmed (code)
     const FightCharacter character;
     SECTION("gone from the targets") {
         HumanFight fight(character, 1.5F);
@@ -274,6 +282,7 @@ TEST_CASE("a held human taken out of the level, or freed by a script, ends the h
 
 TEST_CASE("circle + cross grabs with the strike 657, deals its 60 as the hold starts and keeps holding",
           "[human][combat]") {
+    // Expected: combat-grabs.md#strong-grapple, confirmed (code)
     const FightCharacter character;
     HumanFight fight(character, 1.0F);
     bool struck = false;
@@ -304,6 +313,7 @@ TEST_CASE("circle + cross grabs with the strike 657, deals its 60 as the hold st
 
 TEST_CASE("the power strike ends the grab with the victim down, unless square in its window extends it to 59",
           "[human][combat]") {
+    // Expected: combat-grabs.md#grabbing, confirmed (runtime)
     const FightCharacter character;
     // Without the extension: 57 lands its 57, then the victim falls and the player is free.
     HumanFight plain(character, 1.0F);
@@ -328,6 +338,7 @@ TEST_CASE("the power strike ends the grab with the victim down, unless square in
 }
 
 TEST_CASE("placing the grabber breaks the pair: the victim plays its reaction and stands free", "[human][combat]") {
+    // Expected: combat-grabs.md#pair-break, confirmed (code)
     // docs/research/combat-grabs.md#pair-break: the human placed plays nothing and is free; a front grab's victim plays
     // 145.
     const FightCharacter character;
@@ -347,6 +358,7 @@ TEST_CASE("placing the grabber breaks the pair: the victim plays its reaction an
 }
 
 TEST_CASE("placing the victim breaks the pair: the grabber plays its reaction on its next update", "[human][combat]") {
+    // Expected: combat-grabs.md#pair-break, confirmed (code)
     const FightCharacter character;
     HumanFight fight(character, 1.5F);
     fight.run("5 tap circle\n", 40);
@@ -362,6 +374,7 @@ TEST_CASE("placing the victim breaks the pair: the grabber plays its reaction on
 }
 
 TEST_CASE("placing the mounter breaks the mount: the human below plays 245, then gets up", "[human][combat]") {
+    // Expected: combat-grabs.md#pair-break, confirmed (code)
     const FightCharacter character;
     HumanFight fight(character, 2.0F);
     fight.run("5 press circle\n15 release circle\n", 60);
@@ -376,6 +389,7 @@ TEST_CASE("placing the mounter breaks the mount: the human below plays 245, then
 }
 
 TEST_CASE("a held human whose grabber stops updating frees itself", "[human][combat]") {
+    // Expected: unverified, #684 (Coney's choice: no hold outlives the grabber that drives it)
     // Coney's choice (Fighter::freeFromLostGrabber()): no hold outlives the grabber that drives it.
     const FightCharacter character;
     HumanFight fight(character, 1.5F);
@@ -391,6 +405,7 @@ TEST_CASE("a held human whose grabber stops updating frees itself", "[human][com
 }
 
 TEST_CASE("a held human stays held while its grabber goes on updating", "[human][combat]") {
+    // Expected: combat-grabs.md#grabbed, confirmed (code)
     // A live grabber keeps the hold every update, so the victim never frees itself.
     const FightCharacter character;
     HumanFight fight(character, 1.5F);
@@ -401,6 +416,7 @@ TEST_CASE("a held human stays held while its grabber goes on updating", "[human]
 
 TEST_CASE("a held human struggles out of a grab: square costs the grabber power, circle then escapes",
           "[human][combat]") {
+    // Expected: combat-grabs.md#grabbed, confirmed (runtime)
     const FightCharacter character;
     HumanFight fight(character, 1.5F);
     // The held human presses square three times, then circle (docs/research/combat-grabs.md#grabbed).
@@ -442,6 +458,7 @@ TEST_CASE("a held human struggles out of a grab: square costs the grabber power,
 }
 
 TEST_CASE("a throw toward a wall within the side's reach is the wall throw", "[human][combat]") {
+    // Expected: combat-throws.md#throws, confirmed (runtime)
     const FightCharacter character;
     // Circle with the stick ahead throws ahead: with a wall 2 m ahead (within 155's far range of 2.25 m) the wall
     // throw 155 / 156 plays; with none, the plain throw 147 / 148 (docs/research/combat-throws.md#throws).
@@ -468,6 +485,7 @@ TEST_CASE("a throw toward a wall within the side's reach is the wall throw", "[h
 
 TEST_CASE("a grab-block flag on either human stops a grab of its side at the intro's end; the miss plays on",
           "[human][combat]") {
+    // Expected: combat/index.md#human-flags, confirmed (code)
     const FightCharacter character;
     // Whether the player's circle tap at the other human ends in a hold.
     const auto grabs = [&](bool fromRear, std::uint64_t playerFlags, std::uint64_t otherFlags) {
@@ -499,6 +517,7 @@ TEST_CASE("a grab-block flag on either human stops a grab of its side at the int
 }
 
 TEST_CASE("a player with both grab-block flags starts no grab; his tackle still goes", "[human][combat]") {
+    // Expected: combat/index.md#human-flags, confirmed (code)
     const FightCharacter character;
     {
         HumanFight fight(character, 1.5F);
@@ -521,6 +540,7 @@ TEST_CASE("a player with both grab-block flags starts no grab; his tackle still 
 
 TEST_CASE("out of power, a victim with double damage or auto-escape escapes; with no-escape it is let go",
           "[human][combat]") {
+    // Expected: combat-grabs.md#grabbed, confirmed (code)
     const FightCharacter character;
     // Grabs the other human with `otherFlags`, hurts the player when `hurt`, empties the power; whether the victim
     // escaped (the player down) rather than being let go.
@@ -548,6 +568,7 @@ TEST_CASE("out of power, a victim with double damage or auto-escape escapes; wit
 }
 
 TEST_CASE("an AI attacker's double damage gets through the player's hit armour", "[human][combat]") {
+    // Expected: combat/index.md#human-flags, confirmed (code)
     const FightCharacter character;
     // The other human squares the player at update 5; the player squares at update `wind`. The player's armoured hit
     // count and the damage he took.
@@ -693,4 +714,75 @@ TEST_CASE("a power move holds the power meter: it neither drains nor refills whi
     CHECK(*std::ranges::max_element(during) == left);
     // Once the move has ended the meter refills.
     CHECK(after > left);
+}
+
+// The player's fight stance around a throw, a special and a hidden L1: after a throw with L1 held the lock-on walk
+// comes back, the special 653 enters no stance, and hidden, L1 held keeps a target knocked over once its bit is set
+// (`Player_UpdateSprint` 0x0027ce90, `Player_EnterStance` 0x00280068, `Player_OnL1Held` 0x0027dc00,
+// docs/research/combat-targets.md#fight-stance). Issue #82.
+
+using coney::test::Fight;
+using coney::test::throwAhead;
+using coney::test::throwOver;
+
+namespace {
+
+// The stance cases' character, built once.
+const FightCharacter& stanceCharacter() {
+    static const FightCharacter built;
+    return built;
+}
+
+} // namespace
+
+TEST_CASE("after a throw with L1 held the lock-on walk comes back on the target", "[human][combat][targeting]") {
+    // Expected: combat-targets.md#fight-stance, confirmed (code). L1's bit (0x8), which no handler clears while he
+    // holds a victim, and the lock (0x4) the throw keeps make Human_IsLocked 0x00227c88 true, so Player_UpdateSprint
+    // 0x0027ce90's step 3 enters again off the throw's free movement and Player_LockOn 0x00280158 puts the lock-on
+    // movement back.
+    Fight fight(stanceCharacter(), 1.5F);
+    const auto [line, thrown] = throwAhead(fight, true);
+    REQUIRE(thrown > 0);
+    REQUIRE(line[static_cast<std::size_t>(thrown) - 1].target == &fight.target());
+    const auto over = throwOver(line, thrown);
+    REQUIRE(over != line.end());
+    // From the update after the throw's clip is over the lock-on walk drives him again, on the thrown target.
+    for (auto it = over + 1; it != line.end(); ++it) {
+        INFO("update " << (it - line.begin()));
+        CHECK(it->target == &fight.target());
+        CHECK(it->lockWalk);
+    }
+}
+
+TEST_CASE("the special 653 does not put the player in the fight stance", "[human][combat][targeting]") {
+    // Expected: combat-targets.md#fight-stance, confirmed (code). Player_Special 0x00287730 and Player_SpecialAttack
+    // 0x00263c90 start 653 (Attack_StartSolo) without Player_EnterStance 0x00280068, which only Square, Cross, the
+    // dive, the grab or tackle, the ground strike and the stance updates call. No one stands within 2 m to enter it.
+    Fight fight(stanceCharacter(), 6.0F);
+    bool played = false;
+    fight.run("5 tap cross square\n", 60, [&](std::uint64_t update) {
+        played = played || fight.human().animator().animId() == static_cast<std::uint32_t>(combat::anim_id::kSpecial);
+        INFO("update " << update);
+        CHECK_FALSE(fight.human().fighter().inFightStance());
+    });
+    CHECK(played);
+}
+
+TEST_CASE("hidden, L1 held keeps a target knocked over once its bit is set", "[human][combat][targeting]") {
+    // Expected: combat-targets.md#fight-stance, confirmed (code). Player_OnL1Held 0x0027dc00 drops a hidden player's
+    // target in state 0x3800f0000 only while state 0x8 is clear; the hold sets it (0x20000008), so a target knocked
+    // over after that stays.
+    Fight fight(stanceCharacter(), 1.5F);
+    fight.makeCalm(fight.target());
+    fight.human().enterHiding();
+    fight.run("0 press l1\n", 10);
+    REQUIRE(fight.human().fighter().target() == &fight.target());
+    static constexpr std::array<std::uint32_t, 1> kDown{coney::human::clips::kIdle};
+    fight.target().play(kDown, coney::human::clips::kIdle, coney::human::AnimState::Hold,
+                        coney::human::TargetState::Grounded);
+    REQUIRE(fight.target().state() == coney::human::TargetState::Grounded);
+    fight.run("0 press l1\n", 10, [&](std::uint64_t update) {
+        INFO("update " << update);
+        CHECK(fight.human().fighter().target() == &fight.target());
+    });
 }
