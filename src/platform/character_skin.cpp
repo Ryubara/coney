@@ -39,8 +39,9 @@ void* constructNull(void* object, rw::int32 offset, rw::int32 /*size*/) {
 }
 
 // The default pipeline's vertex step with the vertex and its normal first blended by up to four bones. The palette
-// holds the whole placement in the world (u_world is the identity for a skinned character), and the blended normal
-// is normalised, as the CPU skinning normalised it (characters::skinVertices()).
+// holds the skinning matrices in the character's space and u_world (the atomic's frame) places the blended vertex,
+// whose weights may sum a hair below 1 (CharacterMesh::pose()); the blended normal is normalised, as the CPU skinning
+// normalised it (characters::skinVertices()).
 const char* const kVertexSource = R"(
 uniform mat4 u_coneyBones[64];
 

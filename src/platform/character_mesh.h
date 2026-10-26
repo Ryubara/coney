@@ -40,9 +40,10 @@ struct BoneBox {
 /// Each skin node's box of the vertices it moves.
 [[nodiscard]] std::vector<BoneBox> boneBoxes(const characters::CharacterModel& model);
 
-/// The box round every node's box as its matrix in `placed` moves it. Every skinned vertex lies inside: a vertex is a
-/// weighted blend of points each inside one of the moved boxes. Empty with no boxes.
-[[nodiscard]] BoneBox posedBox(std::span<const BoneBox> boxes, std::span<const anim::Mat34> placed);
+/// The box round every node's box as its matrix in `skinning` moves it, and round the origin (the feet). Every skinned
+/// vertex lies inside: a vertex is a blend of points each inside one of the moved boxes, by weights that sum to 1 or
+/// a hair below (characters.md#character-geometry), so it lies between them and the origin. Empty with no boxes.
+[[nodiscard]] BoneBox posedBox(std::span<const BoneBox> boxes, std::span<const anim::Mat34> skinning);
 
 /// Whether a mesh asking for `skinning`, of a model with `nodes` skin nodes, is skinned by the vertex shader: only with
 /// the skinned pipeline running (`pipelineOn`, characterSkinOn()) and at most kMaxSkinBones nodes, the shader's
@@ -82,14 +83,16 @@ class CharacterMesh {
     CharacterMesh& operator=(CharacterMesh&&) = delete;
 
     /// Replaces every vertex's position and normal, in both atomics; both spans hold one entry per model vertex
-    /// (checked by CONEY_ASSERT). Only on a mesh skinned on the CPU.
+    /// (checked by CONEY_ASSERT). They are in the atomics' frames, which stay at the origin unless pose() moved them.
+    /// Only on a mesh skinned on the CPU, and not mixed with pose().
     void update(std::span<const anim::Vec3> positions, std::span<const anim::Vec3> normals);
 
     /// Poses the mesh: `skinning` holds the model's skinning matrices (characters::skinningMatrices(), one per skin
-    /// node) and `placement` puts the character's space into the world (characterPlacement()). On the GPU only the
-    /// bone matrices change, and the bounding sphere is the box round each bone's vertices as the bone moved them; on
-    /// the CPU every vertex is blended by its bones (as characters::skinVertices()) and placed, straight into librw's
-    /// geometry, and the sphere is the vertices' own.
+    /// node) and `placement` puts the character's space into the world (characterPlacement()). The blend is done in
+    /// the character's space and the placement is both atomics' frame, so it moves the blended vertex whole, as it must
+    /// with weights that sum a hair below 1. On the GPU only the bone matrices change, and the bounding sphere is the
+    /// box round each bone's vertices as the bone moved them (posedBox()); on the CPU every vertex is blended by its
+    /// bones (as characters::skinVertices()) straight into librw's geometry, and the sphere is the vertices' own.
     void pose(std::span<const anim::Mat34> skinning, const anim::Mat34& placement);
 
     /// Whether the vertex shader skins this mesh.
@@ -103,17 +106,16 @@ class CharacterMesh {
     void setBloodTexture(rw::Texture* texture);
 
   private:
-    // The CPU pose: blends each vertex into both atomics' geometry.
-    void poseOnCpu(std::span<const anim::Mat34> placed);
-    // The GPU pose: the palette and the sphere from the bone boxes.
-    void poseOnGpu(std::span<const anim::Mat34> placed);
+    // The CPU pose: blends each vertex into both atomics' geometry, in the character's space.
+    void poseOnCpu(std::span<const anim::Mat34> skinning);
+    // The GPU pose: the palette and the sphere from the bone boxes, in the character's space.
+    void poseOnGpu(std::span<const anim::Mat34> skinning);
 
     rw::Atomic* m_atomic = nullptr;                 // owned, with its geometry and frame
     rw::Atomic* m_blood = nullptr;                  // owned, with its geometry and frame
     rw::Texture* m_texture = nullptr;               // one reference held
     rw::Texture* m_bloodTexture = nullptr;          // the dual layer's, as last set (its materials hold the references)
-    std::vector<characters::SkinVertex> m_vertices; // the model's, for skinning on the CPU
-    std::vector<anim::Mat34> m_placed;              // this frame's skinning matrices with the placement
+    std::vector<characters::SkinVertex> m_vertices; // the model's, for skinning on the CPU (empty on the GPU)
     bool m_gpu = false;
     SkinVertexData m_skin;                  // the shader's weights and bones (GPU)
     std::unique_ptr<BonePalette> m_palette; // this frame's bone matrices (GPU)
