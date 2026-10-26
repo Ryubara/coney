@@ -462,7 +462,7 @@ class Human final : public Holdable {
     [[nodiscard]] float scale() const { return m_scale; }
     [[nodiscard]] float bodyScale() const override { return m_scale; }
     /// The scale the collision is sized by: scale(), or the configured one while collisionFollowsMesh() is off.
-    [[nodiscard]] float collisionScale() const { return m_scale; } // stub
+    [[nodiscard]] float collisionScale() const { return m_collisionFixed.value_or(m_scale); }
     /// The scale the human was made with (a script's `HuSetScale` is an edit of it, not its configuration).
     /// @coney-only debug tooling: the Entity editor's reset and its *Scale collision with mesh*
     [[nodiscard]] float configuredScale() const { return m_configuredScale; }
@@ -472,7 +472,9 @@ class Human final : public Holdable {
     [[nodiscard]] bool collisionFollowsMesh() const { return !m_collisionFixed.has_value(); }
     /// Makes the collision follow the mesh scale (`follow`), or stay at the configured scale whatever setScale() says.
     /// @coney-only debug tooling: the Entity editor's *Scale collision with mesh*
-    void setCollisionFollowsMesh(bool /*follow*/) {} // stub
+    void setCollisionFollowsMesh(bool follow) {
+        m_collisionFixed = follow ? std::nullopt : std::optional<float>(m_configuredScale);
+    }
     /// The radius of its collision capsule (the shape's `+0x40`, 0.35 m, × its scale): human::walkingRadius().
     [[nodiscard]] float capsuleRadius() const { return walkingRadius(collisionScale()); }
     /// The walking sphere the wall sweep moves (docs/research/characters.md#walls, step 1): a player's
@@ -502,7 +504,7 @@ class Human final : public Holdable {
     /// How much bigger the mesh is drawn than configured, 1 as made: only the Entity editor's scale changes it. The
     /// drawn body only: the physics and the collision are scale() and collisionScale().
     /// @coney-only debug tooling: the Entity editor's scale
-    void setMeshScale(float /*scale*/) {} // stub
+    void setMeshScale(float scale) { m_meshScale = scale; }
     [[nodiscard]] float meshScale() const { return m_meshScale; }
     /// A multiplier on every gait speed of this human, on top of the player's own Movement tunables; 1 is as
     /// configured. It lands at once and reads through speeds().
@@ -512,7 +514,7 @@ class Human final : public Holdable {
     /// A multiplier on how fast every clip plays (and so how far its root motion carries); 1 is as configured, 0 holds
     /// the clips.
     /// @coney-only debug tooling: the Entity editor's animation rate
-    void setAnimRate(float /*rate*/) {} // stub
+    void setAnimRate(float rate) { m_animRate = rate < 0.0F ? 0.0F : rate; }
     [[nodiscard]] float animRate() const { return m_animRate; }
     /// The health set to `percent` of its maximum (rounded; at least 1 point, so a kill is its own edit; above 100 the
     /// maximum).
@@ -529,7 +531,7 @@ class Human final : public Holdable {
     void setRageShare(float percent);
     /// Empties the health; the human's own update turns that into a death, as damage that takes the last point does.
     /// @coney-only debug tooling: the Entity editor's Kill
-    void kill() {} // stub
+    void kill() { m_fighter.health().set(0); }
     /// The fighting: combat's state, meters and what it last did.
     [[nodiscard]] const Fighter& fighter() const { return m_fighter; }
     [[nodiscard]] Fighter& fighter() { return m_fighter; }
