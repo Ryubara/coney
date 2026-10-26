@@ -497,6 +497,24 @@ TEST_CASE("text wrap: a word that would pass the wrap width starts the next line
     CHECK(coney::gui::layoutText("AAA AAA", style, fonts).lines == 2);
 }
 
+TEST_CASE("text line window: only the window's lines are drawn, its first at y; every line is counted", "[gui][text]") {
+    const coney::graphics::Font font = coney::test::testFont();
+    const coney::gui::FontLookup fonts = [&font](int /*slot*/) { return &font; };
+    coney::gui::TextStyle style;
+    style.y = 0.3F;
+    const coney::gui::TextLayout whole = coney::gui::layoutText("A<CR>BB<CR>C<CR>D", style, fonts);
+    REQUIRE(whole.sprites.size() == 5);
+    style.firstLine = 1;
+    style.lastLine = 2;
+    const coney::gui::TextLayout window = coney::gui::layoutText("A<CR>BB<CR>C<CR>D", style, fonts);
+    CHECK(window.lines == 4);
+    REQUIRE(window.sprites.size() == 3);
+    // Line 1 ("BB") takes line 0's place, line 2 line 1's.
+    CHECK(window.sprites[0].sprite.position.y == Approx(whole.sprites[0].sprite.position.y));
+    CHECK(window.sprites[2].sprite.position.y == Approx(whole.sprites[1].sprite.position.y));
+    CHECK(window.height < whole.height);
+}
+
 TEST_CASE("scrolling menu: no wrap, the refused cue at the ends, a 100 ms gap and a centred window", "[gui]") {
     coney::gui::MenuInput input;
     coney::gui::ScrollingMenu menu;

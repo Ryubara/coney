@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <expected>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -39,19 +40,21 @@ using PauseRecordLoader = std::function<std::expected<graphics::SpriteSheet, Err
 /// What the pause and mission-failed modes need from the game beyond the modes: every hook may be empty.
 struct PauseHooks {
     /// Pauses (true) or resumes (false) every sound playing; sounds started while paused (the menu's cues) play.
-    std::function<void(bool paused)> pauseSound;
+    std::function<void(bool paused)> pauseSound{};
     /// The three objective lists (current, bonus, overview) `HUDSetObjective` filled.
-    std::function<std::array<std::vector<std::string>, 3>()> objectives;
+    std::function<std::array<std::vector<std::string>, 3>()> objectives{};
     /// Turns both radars off (`0x001b2658`), when the pause menu opens.
-    std::function<void()> radarsOff;
+    std::function<void()> radarsOff{};
     /// Puts the radars back as they were before radarsOff(), when the pause ends. Coney's stand-in: the original's
     /// automatic return (HUD `+0x177ac`, docs/research/hud.md) is not traced, and without it a pause would leave them
     /// off.
-    std::function<void()> radarsBack;
+    std::function<void()> radarsBack{};
     /// The Options screen changed a value (every change, with all the values, after the game state took them): the
     /// game applies what it has outside the game state (the volumes). What the game state keeps, the level reads
     /// from there (each player camera's Auto Adjust).
     std::function<void(const gui::OptionValues& values)> applyOptions{};
+    /// What the Stats screen reads of the pausing player's human (`player`, 0 or 1); nothing when there is none.
+    std::function<std::optional<gui::WarriorStats>(int player)> warriorStats{};
 };
 
 /// The Options screen's values as `state` keeps them (docs/research/save.md#options): the brightness, the subtitles
@@ -90,6 +93,12 @@ class MenuLayer {
                     const std::function<void(std::string_view)>& log, std::string_view who);
     /// The second sheet's batch; null when it did not load.
     [[nodiscard]] graphics::SpriteBatch* second() { return m_second ? &*m_second : nullptr; }
+    /// Loads one more sheet, of record `record` through `loadRecord`, or of resource `name` through `loadSheet` when
+    /// `name` is not empty, into a batch of `capacity` at `depth`; `log` gets a line when it fails. Returns the batch
+    /// (null when it did not load), which lives until release().
+    graphics::SpriteBatch* loadExtra(const PauseSheetLoader& loadSheet, const PauseRecordLoader& loadRecord,
+                                     std::string_view name, std::uint32_t record, std::size_t capacity, float depth,
+                                     const std::function<void(std::string_view)>& log, std::string_view who);
     /// Releases everything load() made.
     void release();
 
@@ -112,6 +121,7 @@ class MenuLayer {
     std::optional<graphics::SpriteBatch> m_bigBatch;
     std::optional<graphics::SpriteBatch> m_sprites;
     std::optional<graphics::SpriteBatch> m_second;
+    std::vector<std::unique_ptr<graphics::SpriteBatch>> m_extras; // loadExtra()'s; pointers, the pass holds them
     graphics::OverlayCamera m_camera;
     graphics::OverlayPass m_pass;
     gui::GuiCanvas m_canvas{
@@ -174,6 +184,10 @@ class PauseMode final : public GameMode {
     /// The background's sheet record (docs/research/pause.md#layout-gui-coordinates) and its batch.
     static constexpr std::uint32_t kBackgroundRecord = 12;
     static constexpr std::size_t kBackgroundCapacity = 16;
+    /// The `part_page0` batch (the top header's three circles and rule, the Stats screen's four bars of four sprites:
+    /// caps, body and fill) and the Stats screen's name batch (the name and its two shadows).
+    static constexpr std::size_t kHeaderCapacity = 20;
+    static constexpr std::size_t kStatsCapacity = 4;
 
     /// Draws through `device` with fonts from `loadSheet` and the background from `loadRecord`, shows `strings`, sends
     /// cues, banks and Lua calls to `services`, reloads levels through `state` and `levelFlow`, and draws the paused
@@ -236,9 +250,10 @@ class PauseMode final : public GameMode {
     gui::PauseMenu m_menu;
     MenuLayer m_layer;
     std::string m_previousBank;
-    std::string m_musicBeforePreview; // the music track the Options screen's Audio page replaced
-    RenderTime m_frozen;              // the world's frame as the game paused
-    Interpolated<float> m_tint{0.0F}; // the tint at the last two steps
+    std::optional<gui::WarriorStats> m_stats; // the pausing player's, read on entry
+    std::string m_musicBeforePreview;         // the music track the Options screen's Audio page replaced
+    RenderTime m_frozen;                      // the world's frame as the game paused
+    Interpolated<float> m_tint{0.0F};         // the tint at the last two steps
     int m_cooldown = 0;
     int m_player = 0;
     std::uint64_t m_pauses = 0;

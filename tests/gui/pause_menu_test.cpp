@@ -154,15 +154,21 @@ TEST_CASE("pause menu: opening tints the world over 1.4 s and fades the cycling 
     GlobalStrings strings = syntheticStrings();
     PauseMenu menu;
     menu.setStrings(&strings);
-    menu.open(PauseMenuSetup{.level = 99}, 1000);
+    menu.open(PauseMenuSetup{.level = 99, .missionTitle = "1:Coney", .levelName = "New Blood", .checkpoint = 2}, 1000);
     CHECK(menu.worldTint(1000) == Approx(0.0F));
     CHECK(menu.worldTint(1700) == Approx(0.5F));
     CHECK(menu.worldTint(3000) == Approx(1.0F));
 
-    // The first item selected, the title on the top header, the usage line.
+    // The first item selected, the mission's title on the top header, its label 0xe7 hidden.
     CHECK(menu.grid().selected() == 0);
     CHECK(menu.grid().items() == 7);
-    CHECK(menu.headers()[0].text() == "#e7");
+    CHECK(menu.topHeader().title().text() == "Coney");
+    CHECK(menu.topHeader().subtitle().text() == "New Blood");
+    CHECK(menu.topHeader().circles() == 2);
+    CHECK(menu.topHeader().letter(1).text() == "B");
+    CHECK(menu.topHeader().label().text() == "#e7");
+    CHECK_FALSE(menu.topHeader().label().visible());
+    CHECK_FALSE(menu.headers()[0].visible());
     CHECK(menu.alpha() == Approx(255.0F));
 
     menu.update(GuiFrame{1000 + 1500, nullptr});
@@ -234,6 +240,44 @@ TEST_CASE("pause menu: Objectives shows the lists, None for an empty one, and up
     CHECK(paused.cues.back() == PauseMenu::kRefusedCue);
     paused.driver.tap(coney::pad::kTriangle);
     CHECK(paused.menu.screen() == PauseScreen::Grid);
+    CHECK_FALSE(paused.menu.closing());
+}
+
+TEST_CASE("pause menu: the header's circles take the level's colour, the last one red", "[pause_menu]") {
+    CHECK(coney::gui::pauseLevelColour(99) == coney::graphics::Rgba{186, 139, 53, 255});
+    CHECK(coney::gui::pauseLevelColour(92) == coney::graphics::Rgba{37, 100, 60, 255});
+    CHECK(coney::gui::pauseLevelColour(3) == coney::graphics::Rgba{38, 61, 94, 255});
+    // 80 and 83 are in the gold list too, but the brown one is tested first.
+    CHECK(coney::gui::pauseLevelColour(80) == coney::graphics::Rgba{76, 53, 44, 255});
+    CHECK(coney::gui::pauseLevelColour(95) == coney::graphics::kBlack);
+
+    PauseMenuSetup setup;
+    setup.missionTitle = "1:Coney";
+    Paused paused(99, setup);
+    // The circles are coloured when the header is drawn.
+    paused.menu.render(coney::gui::GuiCanvas{});
+    CHECK(paused.menu.topHeader().circle(0).colour().r == 186);
+    CHECK(paused.menu.topHeader().circle(1).colour().r == 170);
+}
+
+TEST_CASE("pause menu: Stats opens the Warrior's screen, and triangle closes it", "[pause_menu]") {
+    PauseMenuSetup setup;
+    setup.stats = coney::gui::WarriorStats{.characterType = 30,
+                                           .damageScale = 150,
+                                           .powerMax = 400,
+                                           .staminaMax = 200,
+                                           .rageMax = 78,
+                                           .powerClassByte40 = 35};
+    Paused paused(99, setup);
+    paused.selectItem(PauseItem::Stats);
+    paused.driver.tap(coney::pad::kCross);
+    REQUIRE(paused.menu.screen() == PauseScreen::Stats);
+    CHECK(paused.menu.screenLines() == std::vector<std::string>{"#f3", "#f4", "#f5", "#f6", "#f0"});
+    paused.driver.tap(coney::pad::kDown);
+    CHECK(paused.cues.back() == PauseMenu::kRefusedCue);
+    paused.driver.tap(coney::pad::kTriangle);
+    CHECK(paused.menu.screen() == PauseScreen::Grid);
+    CHECK(paused.cues.back() == PauseMenu::kBackCue);
     CHECK_FALSE(paused.menu.closing());
 }
 

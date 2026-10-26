@@ -288,38 +288,49 @@ class LayoutBuilder {
         }
     }
 
-    // Places the lines in the box and draws every run.
+    // Places the window's lines in the box and draws their runs.
     void finish() {
+        m_out.lines = m_lines.size();
+        // The line window: lines outside it are neither drawn nor measured.
+        const std::size_t first = m_style.firstLine;
+        const std::size_t last = std::min(m_style.lastLine, m_lines.size() - 1);
+        const auto shown = [first, last](std::size_t line) { return line >= first && line <= last; };
         // The box grows to the widest line.
         float box = m_style.boxWidth;
-        for (const Line& line : m_lines) {
-            box = std::max(box, line.width);
+        for (std::size_t i = 0; i < m_lines.size(); ++i) {
+            if (shown(i)) {
+                box = std::max(box, m_lines[i].width);
+            }
         }
         m_out.width = box;
-        m_out.lines = m_lines.size();
-        // Each line's centre and left edge.
-        std::vector<float> lineY;
-        std::vector<float> lineX;
+        // Each shown line's centre and left edge, the window's first at y.
+        std::vector<float> lineY(m_lines.size(), m_style.y);
+        std::vector<float> lineX(m_lines.size(), m_style.x);
         float y = m_style.y;
-        for (const Line& line : m_lines) {
-            lineY.push_back(y);
-            const TextAlignment alignment = line.alignment.value_or(m_style.alignment);
-            float x = m_style.x;
-            if (alignment == TextAlignment::Centre) {
-                x += (box - line.width) / 2.0F;
-            } else if (alignment == TextAlignment::Right) {
-                x += box - line.width;
+        float lastY = m_style.y;
+        for (std::size_t i = 0; i < m_lines.size(); ++i) {
+            if (!shown(i)) {
+                continue;
             }
-            lineX.push_back(x);
+            const Line& line = m_lines[i];
+            lineY[i] = y;
+            lastY = y;
+            const TextAlignment alignment = line.alignment.value_or(m_style.alignment);
+            if (alignment == TextAlignment::Centre) {
+                lineX[i] += (box - line.width) / 2.0F;
+            } else if (alignment == TextAlignment::Right) {
+                lineX[i] += box - line.width;
+            }
             y += line.advance;
         }
-        m_out.height = (y - m_style.y) + graphics::fontMetrics(m_style.scale * m_size.current()).height;
-        // The runs, through the font's own drawing.
+        m_out.height =
+            first <= last ? (lastY - m_style.y) + graphics::fontMetrics(m_style.scale * m_size.current()).height : 0.0F;
+        // The runs of the shown lines, through the font's own drawing.
         const std::uint32_t flags = m_style.proportional ? graphics::kFontProportional : 0;
         std::vector<graphics::Sprite> sprites;
         for (const Run& run : m_runs) {
             const graphics::Font* font = m_fonts ? m_fonts(run.slot) : nullptr;
-            if (font == nullptr) {
+            if (font == nullptr || !shown(run.line)) {
                 continue;
             }
             sprites.clear();

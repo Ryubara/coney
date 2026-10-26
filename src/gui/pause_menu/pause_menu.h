@@ -15,12 +15,14 @@
 #include "graphics/render_device.h"
 #include "graphics/sprite_batch.h"
 #include "gui/base_widget.h"
+#include "gui/circled_text_header.h"
 #include "gui/global_strings.h"
 #include "gui/menu_input.h"
 #include "gui/option_grid.h"
 #include "gui/pause_menu/control_menu.h"
 #include "gui/pause_menu/option_menu.h"
 #include "gui/pause_menu/pause_items.h"
+#include "gui/pause_menu/pause_stats.h"
 #include "gui/pause_menu/yes_no_box.h"
 #include "gui/text_widget.h"
 #include "gui/usage_info.h"
@@ -44,6 +46,7 @@ enum class PauseOutcome : std::uint8_t {
 enum class PauseScreen : std::uint8_t {
     Grid,       ///< Only the grid (and the mission's title).
     Objectives, ///< `+0x1ba8`: the three objective lists.
+    Stats,      ///< `+0x3bb0`: the pausing player's Warrior.
     Options,    ///< `+0x3a78`.
     Controls,   ///< `+0x3a7c`.
     Restart,    ///< `+0x1bb8`: Restart Level / Restart Last Check Point.
@@ -63,8 +66,22 @@ struct PauseMenuSetup {
     bool widescreen = false;
     bool flag02 = false;
     OptionValues options{}; ///< The values the Options screen starts from (the game state's, save.md#options).
+    /// The top header's title: the game state's mission title (`+0x134`), `<number>:<title>`.
+    std::string missionTitle{};
+    std::string levelName{}; ///< The current level record's name (`+0x49`), the header's subtitle.
+    int checkpoint = 1;      ///< The game state's checkpoint (`+0x33a`), the header's last circle.
+    /// The pausing player's human for the Stats screen (nothing: no human, so no Stats screen).
+    std::optional<WarriorStats> stats{};
+    int difficulty = 1; ///< The game state's difficulty (`+0x154`), which picks the Stats screen's table row.
     std::array<std::vector<std::string>, 3> objectives{}; ///< Current, bonus and overview lists (`HUDSetObjective`).
 };
+
+/// The colour of the pause header's circles in level number `level`: the first of four lists that holds it decides,
+/// green (37, 100, 60), blue (38, 61, 94), brown (76, 53, 44) or gold (186, 139, 53); any other level black.
+///
+/// Research: docs/research/pause.md#the-top-header
+/// @orig 0x001db928 PauseMenu_GetLevelColour (unknown)
+[[nodiscard]] graphics::Rgba pauseLevelColour(int level);
 
 /// The pause menu (the story one, `0x0062e790`): the menu mode 0xa opens over the paused game.
 ///
@@ -76,20 +93,22 @@ struct PauseMenuSetup {
 ///   since opening. Every other command goes to the Yes/No box when it is open, else to the open screen (back
 ///   returns to the grid; up and down move the screen's selection, cue 4 or 0xe at an end; accept acts), else to the
 ///   grid: accept plays cue 8 and selects the item, back plays cue 0xf and resumes, moves are the grid's.
-/// - **Items**: Objectives opens the lists (selection 0, or 2 in a Rumble level); Stats opens nothing (see below);
-///   Options and Controls open their screens; Restart opens Restart Level / Restart Last Check Point (the second
-///   selected), whose accept asks 0x105 or 0x103, and in a Rumble level Replay asks 0x105 at once; Resume closes; Quit
-///   asks 0x102, after a choice of two destinations when the level offers the hangout or is a Rumble level. Yes to a
-///   question closes with that outcome; No and back close the box and forget the choice.
+/// - **Top header** (CircledTextHeader): the mission's title after its circled number and checkpoint letter, the
+///   circles in pauseLevelColour() but the last, red; the level's name under it; its label (string 0xe7, or 0xe8 when
+///   the current objectives hold `<ROBJ_N>`) hidden on the grid. Drawn on every screen.
+/// - **Items**: Objectives opens the lists (selection 0, or 2 in a Rumble level); Stats opens the Stats screen
+///   (PauseStats) when the pausing player is one of the nine Warriors, else nothing; Options and Controls open their
+///   screens; Restart opens Restart Level / Restart Last Check Point (the second selected), whose accept asks 0x105 or
+///   0x103, and in a Rumble level Replay asks 0x105 at once; Resume closes; Quit asks 0x102, after a choice of two
+///   destinations when the level offers the hangout or is a Rumble level. Yes to a question closes with that outcome;
+///   No and back close the box and forget the choice.
 /// - **Closing**: the menu's alpha falls from 255 to 0 over kFadeOutMs, and kHoldMs after it reaches 0 the menu is
 ///   closed() and outcome() says what to do.
 ///
-/// Coney's stand-ins (docs/research/pause.md#coneys-implementation): the Stats screen is never available (Coney has no
-/// character stats), so Stats opens nothing; the Options screen is OptionMenu and the Controls screen ControlMenu; the
-/// headers
-/// (`CircledTextHeader`), the objective lists and the Restart and Quit screens are centred texts at Coney's positions
-/// and colours; the menu waits for no sound before it closes; the co-op quit (Player 2 / All) is not offered (Coney has
-/// one player).
+/// Coney's stand-ins (docs/research/pause.md#coneys-implementation): the two lower headers (`IconTextHeader`s), the
+/// screens' names over Objectives, Options and Controls, the objective lists and the Restart and Quit screens are
+/// centred texts at Coney's positions and colours; the menu waits for no sound before it closes; the co-op quit (Player
+/// 2 / All) is not offered (Coney has one player).
 ///
 /// Research: docs/research/pause.md
 /// @orig 0x001db3c0 PauseMenu_Construct (unknown)
@@ -143,6 +162,12 @@ class PauseMenu : public Widget {
     void setOptionsBatch(graphics::SpriteBatch* batch) { m_options.setSpriteBatch(batch); }
     /// What the Options screen asks of the game (its cues always go to the menu's sound sink).
     void setOptionHooks(OptionMenu::Hooks hooks) { m_optionHooks = std::move(hooks); }
+    /// Draws the top header's circles and rule into `batch` (over `part_page0`; null draws none).
+    void setHeaderBatch(graphics::SpriteBatch* batch) { m_topHeader.setBatch(batch); }
+    /// Draws the Stats screen's pictures into these batches (PauseStats::setBatches()).
+    void setStatsBatches(graphics::SpriteBatch* name, graphics::SpriteBatch* face, graphics::SpriteBatch* bars) {
+        m_stats.setBatches(name, face, bars);
+    }
 
     /// Opens the menu at game time `nowMs` as `setup` says.
     /// @orig 0x001dbee0 PauseMenu_Open (unknown)
@@ -188,6 +213,10 @@ class PauseMenu : public Widget {
     [[nodiscard]] const ControlMenu& controls() const { return m_controls; }
     /// The Options screen.
     [[nodiscard]] const OptionMenu& options() const { return m_options; }
+    /// The Stats screen.
+    [[nodiscard]] const PauseStats& stats() const { return m_stats; }
+    /// The top header (`CircledTextHeader`).
+    [[nodiscard]] const CircledTextHeader& topHeader() const { return m_topHeader; }
 
   private:
     // The quit destination the Quit screen offers at index i.
@@ -238,6 +267,8 @@ class PauseMenu : public Widget {
     YesNoBox m_yesNo;
     ControlMenu m_controls;
     OptionMenu m_options;
+    PauseStats m_stats;
+    CircledTextHeader m_topHeader;
     OptionMenu::Hooks m_optionHooks;
     std::vector<QuitChoice> m_quitChoices;
 

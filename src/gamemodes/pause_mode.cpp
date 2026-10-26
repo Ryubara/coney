@@ -71,9 +71,31 @@ void MenuLayer::loadSecond(const PauseRecordLoader& loadRecord, std::uint32_t re
     }
 }
 
+graphics::SpriteBatch* MenuLayer::loadExtra(const PauseSheetLoader& loadSheet, const PauseRecordLoader& loadRecord,
+                                            std::string_view name, std::uint32_t record, std::size_t capacity,
+                                            float depth, const std::function<void(std::string_view)>& log,
+                                            std::string_view who) {
+    std::expected<graphics::SpriteSheet, Error> sheet = std::unexpected(Error{ErrorCode::NotFound, "no loader"});
+    if (!name.empty() && loadSheet) {
+        sheet = loadSheet(name);
+    } else if (name.empty() && loadRecord) {
+        sheet = loadRecord(record);
+    } else {
+        return nullptr;
+    }
+    if (!sheet) {
+        log(name.empty() ? std::format("{}: sheet record {}: {}\n", who, record, sheet.error().message)
+                         : std::format("{}: {}: {}\n", who, name, sheet.error().message));
+        return nullptr;
+    }
+    m_extras.push_back(std::make_unique<graphics::SpriteBatch>(std::move(*sheet), capacity, depth));
+    return m_extras.back().get();
+}
+
 void MenuLayer::release() {
     // The queue points at the batches released below.
     m_pass.empty();
+    m_extras.clear();
     m_sprites.reset();
     m_second.reset();
     m_textBatch.reset();
@@ -87,6 +109,9 @@ void MenuLayer::queue() {
         if (*batch) {
             m_pass.queue(**batch);
         }
+    }
+    for (const std::unique_ptr<graphics::SpriteBatch>& batch : m_extras) {
+        m_pass.queue(*batch);
     }
 }
 
@@ -240,6 +265,22 @@ void PauseMode::enter() {
     m_layer.loadSecond(m_loadRecord, gui::ControlMenu::kPictureRecord, 1, gui::ControlMenu::kPictureDepth, m_log,
                        "pause");
     m_menu.setControllerBatch(m_layer.second());
+    // The top header's circles and rule and the Stats screen's bars (`part_page0`), and the Stats screen's pictures
+    // for the pausing player's Warrior: his name and his face.
+    graphics::SpriteBatch* parts = m_layer.loadExtra(m_loadSheet, m_loadRecord, gui::kTextFontSheet, 0, kHeaderCapacity,
+                                                     gui::CircledTextHeader::kCircleDepth, m_log, "pause");
+    m_menu.setHeaderBatch(parts);
+    m_stats = m_hooks.warriorStats ? m_hooks.warriorStats(m_player) : std::nullopt;
+    graphics::SpriteBatch* name = nullptr;
+    graphics::SpriteBatch* face = nullptr;
+    if (const std::optional<gui::StatsPortrait> kind =
+            m_stats ? gui::PauseStats::portraitOf(m_stats->characterType) : std::nullopt) {
+        name = m_layer.loadExtra(m_loadSheet, m_loadRecord, {}, kind->nameRecord, kStatsCapacity,
+                                 gui::PauseStats::kPortraitDepth, m_log, "pause");
+        face = m_layer.loadExtra(m_loadSheet, m_loadRecord, {}, kind->faceRecord, 1, gui::PauseStats::kBannerDepth,
+                                 m_log, "pause");
+    }
+    m_menu.setStatsBatches(name, face, parts);
     if (m_hooks.radarsOff) {
         m_hooks.radarsOff();
     }
@@ -258,7 +299,12 @@ ModeResult PauseMode::update(GameModeStack& stack, const FrameTime& frame) {
         setup.options = optionValuesOf(m_state);
         if (const LevelRecord* record = m_state.levels.at(m_state.currentLevel)) {
             setup.level = static_cast<int>(record->number);
+            setup.missionTitle = record->secondName;
+            setup.levelName = record->fourthName;
         }
+        setup.checkpoint = static_cast<int>(m_state.checkPoint);
+        setup.difficulty = static_cast<int>(m_state.difficulty);
+        setup.stats = m_stats;
         if (m_hooks.objectives) {
             setup.objectives = m_hooks.objectives();
         }
@@ -315,6 +361,8 @@ void PauseMode::exit() {
     m_menu.setBackgroundBatch(nullptr);
     m_menu.setControllerBatch(nullptr);
     m_menu.setOptionsBatch(nullptr);
+    m_menu.setHeaderBatch(nullptr);
+    m_menu.setStatsBatches(nullptr, nullptr, nullptr);
     m_layer.release();
 }
 

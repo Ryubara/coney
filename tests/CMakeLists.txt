@@ -83,9 +83,12 @@ add_executable(coney_tests
     gui/disc_text_test.cpp
     gui/markup_test.cpp
     gui/menu_input_test.cpp
+    gui/circled_text_header_test.cpp
+    gui/game_stats_test.cpp
     gui/control_menu_test.cpp
     gui/option_menu_test.cpp
     gui/pause_menu_test.cpp
+    gui/pause_stats_test.cpp
     gui/profile_management_gui/pm_controller_test.cpp
     gui/rumble_mode_gui/rumble_menu_test.cpp
     gui/rumble_mode_gui/rumble_match_screens_test.cpp
@@ -145,6 +148,8 @@ add_executable(coney_tests
     platform/disc_credits_test.cpp
     platform/disc_pause_controls_test.cpp
     platform/disc_pause_options_test.cpp
+    platform/disc_pause_stats_test.cpp
+    platform/disc_game_stats_test.cpp
     platform/disc_level99_player2_test.cpp
     platform/disc_hub_workout_test.cpp
     platform/disc_level99_street_test.cpp
@@ -224,6 +229,7 @@ add_executable(coney_tests
     warriors/player_state_test.cpp
     warriors/profile_record_test.cpp
     warriors/tag_game_test.cpp
+    warriors/unlock_counts_test.cpp
     world/debug_camera_test.cpp
     world/level_object_test.cpp
     world/path_map_test.cpp

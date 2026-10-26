@@ -33,11 +33,37 @@ graphics::Rgba blend(graphics::Rgba a, graphics::Rgba b, float t) {
     return graphics::Rgba{mix(a.r, b.r), mix(a.g, b.g), mix(a.b, b.b), mix(a.a, b.a)};
 }
 
+// The top header's place (`PauseMenu_Open`): its row (0.18 in 16:9), box width, text offset.
+constexpr float kTopHeaderY = 0.22F;
+constexpr float kWideTopHeaderY = 0.18F;
+
+// The lists of pauseLevelColour(), in the order they are tested, and their colours.
+struct LevelColour {
+    std::array<int, 10> levels; // -1 pads a short list
+    graphics::Rgba colour;
+};
+constexpr std::array<LevelColour, 4> kLevelColours{{
+    {{92, 51, 31, 9, 55, -1, -1, -1, -1, -1}, {37, 100, 60, 255}},
+    {{20, 11, 34, 54, 3, -1, -1, -1, -1, -1}, {38, 61, 94, 255}},
+    {{80, 82, 83, 93, 7, 87, -1, -1, -1, -1}, {76, 53, 44, 255}},
+    {{99, 81, 86, 84, 2, 52, 5, 14, 80, 83}, {186, 139, 53, 255}},
+}};
+
 } // namespace
+
+graphics::Rgba pauseLevelColour(int level) {
+    for (const LevelColour& entry : kLevelColours) {
+        if (std::ranges::find(entry.levels, level) != entry.levels.end()) {
+            return entry.colour;
+        }
+    }
+    return graphics::kBlack;
+}
 
 void PauseMenu::setSoundSink(std::function<void(int cue)> playCue) {
     m_playCue = std::move(playCue);
     m_yesNo.setSoundSink(m_playCue);
+    m_stats.setSoundSink(m_playCue);
 }
 
 std::string_view PauseMenu::string(std::uint32_t id) const { return m_strings != nullptr ? m_strings->get(id) : ""; }
@@ -64,7 +90,18 @@ void PauseMenu::open(const PauseMenuSetup& setup, std::uint64_t nowMs) {
     // The background: centred, faded in and colour-cycled by animate().
     m_background.setup(BaseWidgetSetup{.x = 0.5F, .y = 0.5F, .height = kBackgroundSize, .colour = kCycleColours[0]});
 
-    // The three headers, centred on their rows (Coney's stand-in for CircledTextHeader).
+    // The top header: the mission's title, its circles in the level's colour (the last red), the level's name.
+    m_topHeader.setup(CircledTextHeaderSetup{.y = setup.widescreen ? kWideTopHeaderY : kTopHeaderY,
+                                             .factors = CircledHeaderFactors::forMode(setup.widescreen, setup.flag02)});
+    m_topHeader.setCircleColour(pauseLevelColour(setup.level));
+    m_topHeader.setTitle(setup.missionTitle, setup.checkpoint, setup.levelName);
+    m_topHeader.setLetterColour(graphics::kBlack);
+    m_topHeader.setLabelColour(kDimGrey);
+
+    // The Stats screen for the pausing player (`PauseStats_Setup`, every pause).
+    (void)m_stats.setup(setup.stats, setup.difficulty, m_strings, setup.widescreen);
+
+    // Coney's stand-in headers for the screens' names, centred on their rows.
     for (std::size_t i = 0; i < m_headers.size(); ++i) {
         m_headers.at(i).setup(TextWidgetSetup{.x = kCentreX,
                                               .y = kHeaderY.at(i),
@@ -136,6 +173,8 @@ void PauseMenu::animate(std::uint64_t nowMs) {
     m_background.setColour(colour);
 
     const float fade = m_alpha / 255.0F;
+    m_topHeader.setFade(fade);
+    m_stats.setFade(fade);
     for (TextWidget& header : m_headers) {
         header.setFade(fade);
     }
@@ -173,6 +212,8 @@ void PauseMenu::update(const GuiFrame& frame) {
     for (const std::unique_ptr<TextWidget>& line : m_lines) {
         line->update(frame);
     }
+    m_topHeader.update(frame);
+    m_stats.update(frame);
     m_grid.update(frame);
     m_usage.update(frame);
     if (m_screen == PauseScreen::Controls) {
@@ -230,6 +271,13 @@ void PauseMenu::onScreenCommand(MenuCommand command, std::uint64_t nowMs) {
         if (m_controls.handle(command, nowMs)) {
             closeScreen();
             m_grid.takeFocus(m_input, nowMs);
+        }
+        return;
+    }
+    // So does the Stats screen; back closes it.
+    if (m_screen == PauseScreen::Stats) {
+        if (m_stats.handle(command)) {
+            closeScreen();
         }
         return;
     }
@@ -312,7 +360,10 @@ void PauseMenu::selectItem(PauseItem item, std::uint64_t nowMs) {
         openScreen(PauseScreen::Objectives, isRumbleLevel(m_setup.level) ? 2 : 0);
         return;
     case PauseItem::Stats:
-        // Coney has no character stats: the Stats screen is never available, so nothing opens.
+        // Only a Warrior has a Stats screen; for anyone else nothing opens.
+        if (m_stats.available()) {
+            openScreen(PauseScreen::Stats, 0);
+        }
         return;
     case PauseItem::Options:
         openOptions(nowMs);
@@ -379,7 +430,9 @@ std::size_t PauseMenu::screenEntries() const {
     case PauseScreen::Objectives:
         return m_headers.size();
     case PauseScreen::Options:
+    case PauseScreen::Stats:
     case PauseScreen::Controls:
+        // These screens take the commands themselves.
         return 0;
     case PauseScreen::Restart:
         return 2;
@@ -406,15 +459,20 @@ void PauseMenu::refreshScreen() {
     namespace s = pause_strings;
     m_lines.clear();
 
-    // The top header: string 0xe7 (PauseMenu_Open picks 0xe8 for a checklist holding `<ROBJ_N>` but then sets 0xe7
-    // whatever it picked, 0x001dc984), or the screen's name on Options and Controls.
-    std::uint32_t top = s::kTitleA;
+    // The top header's label: string 0xe7 (PauseMenu_Open picks 0xe8 for a checklist holding `<ROBJ_N>` but then sets
+    // 0xe7 whatever it picked, 0x001dc984). The grid hides it; Coney's stand-in hides it everywhere (where the label
+    // sits on the other screens is an open question) and names the Options and Controls screens with its own header
+    // line.
+    m_topHeader.setLabel(string(s::kTitleA));
+    m_topHeader.setLabelVisible(false);
+    std::uint32_t top = 0;
     if (m_screen == PauseScreen::Options) {
         top = s::kOptionsHeader;
     } else if (m_screen == PauseScreen::Controls) {
         top = s::kControlsHeader;
     }
-    m_headers.at(0).setText(string(top));
+    m_headers.at(0).setVisible(top != 0);
+    m_headers.at(0).setText(top != 0 ? string(top) : std::string_view());
     m_headers.at(0).style().colour = kMenuGrey;
     m_headers.at(1).setVisible(false);
     m_headers.at(2).setVisible(false);
@@ -453,7 +511,8 @@ void PauseMenu::refreshScreen() {
     }
     case PauseScreen::Controls:
     case PauseScreen::Options:
-        // ControlMenu and OptionMenu draw themselves.
+    case PauseScreen::Stats:
+        // ControlMenu, OptionMenu and PauseStats draw themselves.
         return;
     case PauseScreen::Restart:
     case PauseScreen::Quit: {
@@ -495,6 +554,9 @@ std::vector<std::string> PauseMenu::screenLines() const {
     if (m_screen == PauseScreen::Options) {
         return m_options.lines();
     }
+    if (m_screen == PauseScreen::Stats) {
+        return m_stats.lines();
+    }
     std::vector<std::string> lines;
     lines.reserve(m_lines.size());
     for (const std::unique_ptr<TextWidget>& line : m_lines) {
@@ -508,6 +570,7 @@ void PauseMenu::render(const GuiCanvas& canvas) const {
         return;
     }
     m_background.render(canvas);
+    m_topHeader.render(canvas);
     for (const TextWidget& header : m_headers) {
         header.render(canvas);
     }
@@ -519,6 +582,9 @@ void PauseMenu::render(const GuiCanvas& canvas) const {
     }
     if (m_screen == PauseScreen::Options) {
         m_options.render(canvas);
+    }
+    if (m_screen == PauseScreen::Stats) {
+        m_stats.render(canvas);
     }
     m_yesNo.render(canvas);
     m_grid.render(canvas);

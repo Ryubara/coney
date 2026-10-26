@@ -12,6 +12,7 @@
 
 #include "gamemodes/front_end_services.h"
 #include "gamemodes/game_mode_stack.h"
+#include "gamemodes/game_stats_mode.h"
 #include "gamemodes/gameplay_mode.h"
 #include "gamemodes/legal_screen_mode.h"
 #include "gamemodes/level_flow_mode.h"
@@ -48,9 +49,9 @@ namespace coney {
 /// It is also what the script bindings reach outside the script system (script::BindingHost): `ShowProfileManager`
 /// shows the menus, `MenuLoadLevel` chooses a level in the level flow, `HUDLaunchMissionComplete` pushes the
 /// mission-complete mode, `HuCreate` and `AddFlag` keep the level scripts' humans and flags, `ScreenQueueEffect` starts
-/// a fade, `ShowRumbleModeInterface` pushes the Rumble menu (mode 0x11), `SSMC_StartLoadSequence` and
-/// `SSMC_StartDeleteSequence` push the memory-card mode (6) to read the profiles again or after a delete, and music
-/// and movies go to FrontEndServices.
+/// a fade, `ShowRumbleModeInterface` pushes the Rumble menu (mode 0x11), `ShowGameStatsInterface` the statistics screen
+/// (0x13), `SSMC_StartLoadSequence` and `SSMC_StartDeleteSequence` push the memory-card mode (6) to read the profiles
+/// again or after a delete, and music and movies go to FrontEndServices.
 ///
 /// Research: docs/research/boot.md#main, docs/research/frontend.md#mode-flow, docs/research/scripting.md
 class StartUpFlow final : public script::BindingHost {
@@ -128,6 +129,8 @@ class StartUpFlow final : public script::BindingHost {
     void setAiSeed(std::uint32_t seed);
     /// Mode 0x14.
     [[nodiscard]] RumbleResultMode& rumbleResult() { return m_rumbleResult; }
+    /// Mode 0x13.
+    [[nodiscard]] GameStatsMode& gameStats() { return m_gameStats; }
     /// The humans the level scripts created.
     [[nodiscard]] const CreatedHumans& humans() const { return m_humans; }
     /// The level's world flags.
@@ -166,6 +169,8 @@ class StartUpFlow final : public script::BindingHost {
     void launchMissionFailed(std::string_view reason) override;
     void showRumbleModeIntro(std::string_view onDone, std::span<const std::string> names) override;
     void launchRumbleWin(std::string_view winner, std::string_view reason) override;
+    /// `ShowGameStatsInterface(onClose)`: the statistics screen (mode 0x13).
+    void showGameStats(std::string_view onClose) override;
 
   private:
     // The sheet of sprite-sheet table record `record`, through the loader set, or an error without one.
@@ -200,6 +205,7 @@ class StartUpFlow final : public script::BindingHost {
     RumbleMenuMode m_rumbleMenu;
     RumbleIntroLayer m_rumbleIntro;
     RumbleResultMode m_rumbleResult;
+    GameStatsMode m_gameStats;
     MemoryCardMode m_memoryCard;
     LegalScreenMode m_legal;
 };

@@ -60,6 +60,9 @@ StartUpFlow::StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack,
       m_rumbleResult(
           device, loadSheet, strings, m_services, m_state, m_levelFlow, stack,
           [this] { return m_rumbleMenu.fromFrontEnd(); }, log),
+      m_gameStats(
+          device, loadSheet, [this](std::uint32_t record) { return loadRecord(record); }, strings, m_services, m_state,
+          m_scripts, stack, log),
       m_memoryCard(device, stack, m_levelFlow, loadSheet, strings, cardCheckingMs, log),
       m_legal(device, loadSheet, legal, log, &m_scripts) {
     m_state.language = legal.language;
@@ -191,6 +194,8 @@ void StartUpFlow::startSaveSequence() {
 }
 
 void StartUpFlow::launchMissionFailed(std::string_view reason) { m_missionFailed.launch(reason); }
+
+void StartUpFlow::showGameStats(std::string_view onClose) { m_gameStats.launch(onClose); }
 
 void StartUpFlow::showRumbleModeIntro(std::string_view onDone, std::span<const std::string> names) {
     m_rumbleIntro.show(onDone, names);

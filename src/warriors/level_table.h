@@ -30,11 +30,13 @@ struct LevelRecord {
     /// How many numbers follow the level number.
     static constexpr std::size_t kOtherValues = 12;
 
-    double id = 0;          ///< `+0x00`, argument 1: the record's index in the table.
-    std::string name;       ///< `+0x14`, argument 2: the level name (`level100`): its `.lev`, `.lua`, packs and lists.
-    std::string secondName; ///< `+0x24`, argument 3: hashed to release the level's dependency list.
+    double id = 0;    ///< `+0x00`, argument 1: the record's index in the table.
+    std::string name; ///< `+0x14`, argument 2: the level name (`level100`): its `.lev`, `.lua`, packs and lists.
+    /// `+0x24`, argument 3: hashed to release the level's dependency list; the mission's title, `<number>:<title>`,
+    /// which the pause header and the mission lists split at the `:` (docs/research/frontend.md#game-stats).
+    std::string secondName;
     std::string worldName;  ///< `+0x39`, argument 4: the streamed world's name.
-    std::string fourthName; ///< `+0x49`, argument 5: meaning unknown.
+    std::string fourthName; ///< `+0x49`, argument 5: the level's name the menus show (docs/research/gui.md).
     double number = 0;      ///< `+0x04`, argument 6: the level number (`GetLevelId`), naming the intro movie `L<n>_IN`.
     /// Arguments 7-18, in order. They fill the section count (`+0x08`), the byte at `+0x0c`, the three flags at
     /// `+0x0d` (bit 1 plays the intro movie, bit 2 an outro movie), `+0x10` and the values at `+0x6c`-`+0x80`, in an
@@ -51,6 +53,15 @@ struct LevelRecord {
     static constexpr std::size_t kRadarOffsetXValue = 6;
     static constexpr std::size_t kRadarOffsetYValue = 7;
     static constexpr std::size_t kRadarScaleValue = 8;
+    /// Where in `values` the mission byte (`+0x0c`) is: the `order` column (1-23 for the story, 24-26 for the hub, the
+    /// Armies of the Night and the Rumble arenas), which indexes the profile's mission bests (docs/research/save.md)
+    /// and which the statistics list requires. Inferred: the column's values are the byte's uses.
+    static constexpr std::size_t kMissionValue = 1;
+    /// Where in `values` the level's colour (`+0x7c`, `SUBWAY_*`: 1 orange, 2 green, 3 blue, 4 brown) and its
+    /// picture's sprite word (`+0x80`) are. Inferred: the words name sheet-table records 22 and 23 exactly as
+    /// `GameStats_PickThumbBatch` splits the levels (docs/research/frontend.md#fn-gamestats).
+    static constexpr std::size_t kSubwayValue = 10;
+    static constexpr std::size_t kPictureValue = 11;
 };
 
 /// The game state's level table: up to 128 records by index, filled by `CfgLevelName` (`config_preload3.lua` sets
