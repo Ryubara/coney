@@ -209,11 +209,13 @@ class PauseStats {
     std::array<float, kBars> m_values{};
     float m_baseY = kBaseY;
     float m_fade = 1.0F;
-    std::array<BaseWidget, 2> m_shadows{{{nullptr, 0}, {nullptr, 0}}};
-    BaseWidget m_name{nullptr, 0};
-    BaseWidget m_face{nullptr, 0};
-    std::array<Bar, kBars> m_bars{{{nullptr, kBarRect}, {nullptr, kBarRect}, {nullptr, kBarRect}, {nullptr, kBarRect}}};
-    std::array<TextWidget, kBars> m_labels;
+    // The parts in the original's order (name `+0x7b0`, shadows `+0x8b0` and `+0x9b0`, face `+0xab0`, bars `+0xbb0`,
+    // description `+0x1b70`), built by the constructor.
+    BaseWidget m_name;
+    std::array<BaseWidget, 2> m_shadows;
+    BaseWidget m_face;
+    std::array<Bar, kBars> m_bars;
+    std::array<TextWidget, kBars> m_labels; // each bar's label (the original's bar holds its own)
     TextWidget m_description;
     mutable std::size_t m_descriptionLines = 0; // the description's line count when last measured (`+0x1ac` + 1)
 };

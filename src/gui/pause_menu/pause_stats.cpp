@@ -76,7 +76,11 @@ float autoIndentWidth(std::string_view text, float fallback) {
 
 } // namespace
 
-PauseStats::PauseStats() = default;
+// The name, its two shadows and the face as sprite widgets with no batch yet, the four bars over the meter's body
+// rectangle, and the texts.
+PauseStats::PauseStats()
+    : m_name(nullptr, 0), m_shadows{{{nullptr, 0}, {nullptr, 0}}}, m_face(nullptr, 0),
+      m_bars{{{nullptr, kBarRect}, {nullptr, kBarRect}, {nullptr, kBarRect}, {nullptr, kBarRect}}} {}
 
 // The kind's row: `Human_GetPortraitKind`'s character types and setup's switch on the kind.
 std::optional<StatsPortrait> PauseStats::portraitOf(int type) {
