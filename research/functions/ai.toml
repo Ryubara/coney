@@ -1181,7 +1181,17 @@ name = "Brain_AddEnemy"
 page = "ai.md#original-structure"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::addEnemy"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "nothing is listed while this human is down or dead"
+relation = "not-ported"
+issue = 649
+
+[[function.gaps]]
+what = "no hostile count (+0x152, Brain_CountHostile): Coney lists this human in the enemy's list instead"
+relation = "not-ported"
+issue = 649
 
 [[function]]
 address = 0x0028d758
@@ -4559,7 +4569,32 @@ name = "AttackAction_Start"
 page = "ai.md#original-structure"
 level = "confirmed-code"
 coney = "src/ai/attack_action.h:AttackAction::start"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the wait flags 0x5c0221f keep the action running when the attack cannot start, and Human_CanStartAttack is not asked (Coney: the health left)"
+relation = "not-ported"
+issue = 674
+
+[[function.gaps]]
+what = "the stick is not cleared at the start, and the brain's target is not set to the human attacked"
+relation = "not-ported"
+issue = 674
+
+[[function.gaps]]
+what = "the busy test before the attackable time is Coney's humanBusy, not grabbing/tackling/cuffed"
+relation = "not-ported"
+issue = 674
+
+[[function.gaps]]
+what = "the held weapon (class 1 subtype 11) does not turn the kind to 23 beyond reach"
+relation = "not-ported"
+issue = 674
+
+[[function.gaps]]
+what = "the stick toward the target for the snap (kind 10) is Coney's own; this function writes no stick for it"
+relation = "not-ported"
+issue = 674
 
 [[function]]
 address = 0x002fad30

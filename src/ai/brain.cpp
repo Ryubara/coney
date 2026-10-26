@@ -757,7 +757,7 @@ void Brain::setMoveAim(anim::Vec3 point, float radius) {
 
 void Brain::stopMove() { m_human->record().move.reset(); }
 
-// The climb a route leg asks for (Route_ClimbLeg's and Route_TryClimbNear's Climb_TryStart), handed to the human.
+// Coney's choice: a route leg's climb is handed to the human, who tries it in its update (the original, at once).
 // @orig 0x0029b848 Route_ClimbLeg (unknown)
 // @orig 0x0029b9b0 Route_TryClimbNear (unknown)
 void Brain::requestClimb(anim::Vec3 direction) { m_human->record().climbToward = direction; }
