@@ -122,6 +122,8 @@ inline constexpr std::uint32_t kAnimWorkoutLoop = 693;
 /// `AnimTaskChained_Construct` is the clip's blend into the idle after it, at its end
 /// (docs/research/combat-moves.md#input). **Coney stand-in**: that end blend is not built (the clip hands over at
 /// once); a chain step, which the original swaps into the running task (its blend not traced), keeps kCombatFade.
+/// @orig 0x002625a8 Attack_Start (unknown)
+/// @orig 0x00262368 Attack_StartSolo (unknown)
 inline constexpr float kAttackFade = 0.0F;
 /// The fight idle (358, `ANIM_FIGHT_IDLE`) the attacks return to (docs/research/combat/index.md#attacks).
 inline constexpr std::uint32_t kAnimFightIdle = 358;
