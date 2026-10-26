@@ -787,7 +787,7 @@ Two more `S1` runs at 1.0 m in the first session dealt **no damage**: the punch 
 health stayed at 300 while the gap to him closed to 0.82 and 0.72 m (the scratch logs of run
 r-20261025-strike-contact-timing, not its values). Why is not known. Both came straight after earlier runs on the
 same loaded state, with no state reloaded between, so a pedestrian spawned for an earlier run may have stood in the way
-and taken the blow unread: speculative, not checked.
+and taken the blow unread: speculative, not checked ([q-s1-misses](combat-moves.md#q-s1-misses)).
 
 ## In Coney
 
@@ -885,6 +885,9 @@ or an AI's. Where the page is silent, these are **Coney's choices**:
   control, for the late ties ([Reading the tables](#reading)). The clip ends agree with it on three more ties (36, 440,
   441 at 0.75, [When a clip ends](formats/animation.md#clip-end)); a run of a rate-0.9 clip with a tie (an event at
   frame 5 or 14) would check that rate.
+- **The S1 runs with no damage**{#q-s1-misses}: why two `S1` runs at 1.0 m dealt no damage
+  ([Runtime results](#runtime)). To test it: repeat the run from a reloaded state with one pedestrian spawned, and
+  read every human's health near the player, not only the spawned one's.
 - **Clips no path plays**{#q-unplayed-clips}: 490 `KNIFE_ATTACK_FROM_RUN`, 18 `ATTACK_SSX3_HOLD` and the `_02` snaps: no
   code path plays them here (20 is the chain's random pick after `SS2`, `0x00280708`).
 
