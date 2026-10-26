@@ -56,6 +56,7 @@ class FakeGdbStub:
         self.packets: list[str] = []
         self.connections = 0
         self._server = socket.create_server(("127.0.0.1", 0))
+        self._server.settimeout(0.1)  # before the thread starts: a close can then never beat it
         self.port: int = self._server.getsockname()[1]
         self._client: socket.socket | None = None
         self._lock = threading.Lock()
@@ -99,7 +100,6 @@ class FakeGdbStub:
         client.sendall(b"$" + raw + b"#" + checksum(raw))
 
     def _serve(self) -> None:
-        self._server.settimeout(0.1)
         while not self._stop.is_set():
             try:
                 client, _ = self._server.accept()
@@ -212,6 +212,7 @@ class FakeMonitor:
         self.paused = False
         self.screendump = True  # xemu 0.8.139 has no `screendump`: "unknown command"
         self._server = socket.create_server(("127.0.0.1", 0))
+        self._server.settimeout(0.1)  # before the thread starts: a close can then never beat it
         self.port: int = self._server.getsockname()[1]
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._serve, daemon=True)
@@ -260,7 +261,6 @@ class FakeMonitor:
         return f"unknown command: '{words[0] if words else ''}'\r\n"
 
     def _serve(self) -> None:
-        self._server.settimeout(0.1)
         while not self._stop.is_set():
             try:
                 client, _ = self._server.accept()
