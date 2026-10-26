@@ -385,7 +385,7 @@ class FollowCamera {
     [[nodiscard]] float lastAutoTurn() const { return m_lastAutoTurn; }
     /// Sets the Auto Adjust option of the camera's player (the option byte `0x0050b240` + the camera's pad, which
     /// Cam_Follow_AutoFollow reads through the camera's own slot `+0x27c`): on, auto-follow runs the auto-centre rule;
-    /// off, the default rule. The game mode sets it from its player's pad options (docs/research/camera.md#heading).
+    /// off, the default rule. The game mode sets it from its player's pad options (docs/research/pause.md#options).
     void setAutoAdjust(bool on) { m_autoAdjust = on; }
     /// The camera's player's Auto Adjust option; on until set.
     [[nodiscard]] bool autoAdjust() const { return m_autoAdjust; }

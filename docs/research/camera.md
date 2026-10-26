@@ -1099,11 +1099,7 @@ The yaw rotation is done by `0x0012d688(angle)`, about the look-at point. Four r
   from 120°/s back to 60°/s at 157.5°. Each update turns by `min(a, rate × dt)` toward the facing. Confirmed (code).
 - **Auto-centre option** (`0x00129f88`, used instead when the per-pad option bytes `0x0050b240` and `0x0050b248` are
   both set; they are 1 in the `level99` save used at runtime and 1 by default,
-  [Feel](feel.md#details-behind-the-table). Each camera reads its own pair: `Cam_Follow_AutoFollow` indexes both
-  bytes by what the camera's own slot `+0x27c` returns (`0x00129de4`-`0x00129e30`), confirmed (code); that the index
-  is the camera's pad is inferred from `Options_SetAutoAdjust` (`0x00418aa8`), which writes `0x0050b240 + pad` for
-  the Options screen's Auto Adjust P1 and P2 Cam ([Pause](pause.md#options)). So turning P1's off changes player 1's
-  camera only): nothing below 22.5°; from 22.5° to 90° the rate is `(a − 45°) × 2.444 +
+  [Feel](feel.md#details-behind-the-table)): nothing below 22.5°; from 22.5° to 90° the rate is `(a − 45°) × 2.444 +
   45°` per second (negative below 26.6°, so the step is then a small turn the other way; 45°/s at 45°, 155°/s at 90°);
   200°/s (`3.4907` rad/s) from 90° to 100°; from 100° to 157.5° it falls linearly (`(157.5° − a) × 2.435 + 60°`) from
   200°/s to 60°/s, unless the call's fourth argument is set, which keeps 200°/s up to 157.5°. That argument is the
@@ -3229,12 +3225,10 @@ by `src/human/player.*` and drawn by `--play-level` ([Running Coney](../guides/r
   update, at the stored gaits 2, 4 and 5 (walk, run, sprint; so not standing, not in the walk start at 0.76 m/s nor
   at a jog's speed, whatever clip plays). It is held off from a blocked main ray until the player stops (the `+0x45d`
   latch, set by `+0x45b` and cleared on the second update standing, as at runtime), for 0.334 s after right-stick
-  input, and while the left stick points more than 157.5° from up (`+0x474`). With the option off (the camera's player's
-  Auto Adjust, which the level sets on its player's camera from the game state's pad options each update,
-  `FollowCamera::setAutoAdjust`; or the debug menu's *Auto-centre*, Coney's switch over every camera) the default rule
-  (`0x0012a400`) runs instead, at the run and sprint gaits only. With the stick held sideways the player runs in a
-  circle: Rembrandt in the sandbox turns about 197°/s at a run and 144°/s at a 35 % walk, against the original's 191°/s
-  and 143°/s (disc test `[disc][player][sandbox]`);
+  input, and while the left stick points more than 157.5° from up (`+0x474`). With the
+  option off (the debug menu's *Auto-centre*) the default rule (`0x0012a400`) runs instead, at the run and sprint
+  gaits only. With the stick held sideways the player runs in a circle: Rembrandt in the sandbox turns about 197°/s
+  at a run and 144°/s at a 35 % walk, against the original's 191°/s and 143°/s (disc test `[disc][player][sandbox]`);
 - the **sprint zoom** ([Sprint zoom](#sprint-zoom)) with the page's fields: the first update at the sprint gait arms
   and latches it (`+0x467`, `+0x466`) when the player has no enemies or the nearest is within 12 m (the brain's query
   is a hook, `Player::setNearestEnemy()`, with no enemies until Coney has brains; out of range the arm waits); the

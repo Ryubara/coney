@@ -634,6 +634,12 @@ page's name again as a heading (`OptionPage_SetDescription`: size 1.0 × 1.3, fo
   Restore Default starts on **No** (`+0x4c0` = 1) when the menu opens and again each time its page is opened
   (`OptionMenu_OnCommand`'s accept on title 6, through the item pointer `0x0050edd4`). Confirmed (code).
 - **Pro Logic II**: an on/off choice at (0.26, 0.60) with answers at (0.66, 0.60) (`0x0050edcc`).
+- **Auto Adjust P1 / P2 Cam** reach one camera each. `Options_SetAutoAdjust` (`0x00418aa8`) writes the game state's
+  `+0x448 + pad × 4` and the byte `0x0050b240 + pad`; `Cam_Follow_AutoFollow` (`0x00129c78`) reads that byte, and the
+  second per-pad byte `0x0050b248` beside it, at the index the camera's own slot `+0x27c` returns
+  (`0x00129de4`-`0x00129e30`), and runs the auto-centre rule only when both are set
+  ([Camera](camera.md#heading)). Confirmed (code). That the index is the camera's pad is inferred from the setter,
+  which writes the same bytes by the pad.
 - **Volume bars** (`StatBarItem`, Music then SoundFX): label at (0.26, 0.37) and (0.26, 0.455), bar at (0.26, 0.405)
   and (0.26, 0.49) (`0x0050edac`-`0x0050edc0`), width **0.54** (`0x0050eda8`). What is drawn
   (`StatBarItem_RenderColoured` `0x001d73b0`, through `HudBar_Draw` `0x001a1138`): no frame, and two strips of
@@ -896,7 +902,7 @@ Coney stand-ins, each an open question below:
   once into the game state where [save.md](save.md#options) puts it (`storeOptionValues`), so the next autosave keeps
   it; the game then applies the volumes as the music and effects buses' volumes, and each level's player camera takes
   its own pad's Auto Adjust from the game state every update (`FollowCamera::setAutoAdjust`, as
-  `Cam_Follow_AutoFollow` reads the byte of the camera's pad, [Camera](camera.md#heading)). The Audio page loops
+  `Cam_Follow_AutoFollow` reads the byte of the camera's pad, above). The Audio page loops
   `music/wonderwheel_mono` and the previous track starts again when it closes.
   Coney's choices and gaps: the brightness, the camera's inversion, the vibration (and its 500 ms preview), the
   merge, Pro Logic II and the Video mode are only stored (Coney applies none of them yet), so Video's accept does not

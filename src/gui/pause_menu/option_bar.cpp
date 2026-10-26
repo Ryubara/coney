@@ -10,6 +10,7 @@ namespace {
 
 // Rectangle `rect`'s texel shape on `sheet`'s texture: its height over its width in texels (`across` false), or its
 // width over its height (`across` true). None without a texture or rectangle, or for an empty one.
+// @coney-only Coney's sheet arithmetic; the original reads the rectangle in BaseWidget_UpdateSize and HudBar_Draw
 std::optional<float> texelShape(const graphics::SpriteSheet& sheet, std::size_t rect, bool across) {
     if (!sheet.texture || rect >= sheet.page.rects.size()) {
         return std::nullopt;

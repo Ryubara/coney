@@ -552,7 +552,7 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     }
     const anim::Vec3 before = m_player->human().position();
     // The player's camera follows by its own pad's Auto Adjust option, which the Options screen may have changed
-    // (Cam_Follow_AutoFollow reads the byte of the camera's pad each update, docs/research/camera.md#heading).
+    // (Cam_Follow_AutoFollow reads the byte of the camera's pad each update, docs/research/pause.md#options).
     if (m_padOptions != nullptr) {
         m_player->camera().setAutoAdjust(m_padOptions->at(kPlayerSlot).autoAdjustCamera);
     }
