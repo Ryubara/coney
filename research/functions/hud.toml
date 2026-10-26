@@ -89,7 +89,7 @@ page = "hud-functions-parts.md#fn-pre-basewidget"
 role = "the end caps (rectangles +2, +3), back (+0), fill (+1) and an optional second fill `+0x3c`; a flash below `flashBelow` and a fading trail, both unused: every caller passes 0 for both ([The rage meter](hud.md#the-rage-meter))"
 level = "confirmed-code"
 coney = "src/gui/bar.h:Bar::render"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001a3338

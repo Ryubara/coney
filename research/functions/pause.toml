@@ -526,8 +526,8 @@ name = "PauseStats_Construct"
 page = "pause.md#fn-after-controlmenuhud"
 role = "builds the Stats screen's widgets: name, two shadows, face, four bars and the description"
 level = "confirmed-code"
-coney = "src/gui/pause_menu/pause_stats.h:PauseStats"
-status = "legacy"
+coney = "src/gui/pause_menu/pause_stats.h:PauseStats::PauseStats"
+status = "compared"
 
 [[function]]
 address = 0x001e5618
@@ -536,7 +536,7 @@ page = "pause.md#stats-screen"
 role = "on each pause: picks the Warrior's pictures and text by portrait kind, fills the four bars from the difficulty table, sets the description's wrap and line window"
 level = "confirmed-code"
 coney = "src/gui/pause_menu/pause_stats.h:PauseStats::setup"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001e6698
@@ -545,7 +545,7 @@ page = "pause.md#stats-screen"
 role = "up and down move the description's line window one line, left and right refuse, back closes"
 level = "confirmed-code"
 coney = "src/gui/pause_menu/pause_stats.h:PauseStats::handle"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001e6778
@@ -554,7 +554,7 @@ page = "pause.md#stats-screen"
 role = "places the name, face, bars, labels and description from the base and the size factor"
 level = "confirmed-code"
 coney = "src/gui/pause_menu/pause_stats.h:PauseStats::update"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001e6cf0
@@ -563,7 +563,7 @@ page = "pause.md#fn-after-controlmenuhud"
 role = "stores the screen's alpha"
 level = "confirmed-code"
 coney = "src/gui/pause_menu/pause_stats.h:PauseStats::setFade"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001e6cf8
@@ -572,7 +572,7 @@ page = "pause.md#fn-after-controlmenuhud"
 role = "draws the widgets at the screen's alpha"
 level = "confirmed-code"
 coney = "src/gui/pause_menu/pause_stats.h:PauseStats::render"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0041d1b0
