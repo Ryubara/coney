@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <span>
 #include <vector>
@@ -19,7 +20,7 @@ struct Texture;
 namespace coney::platform {
 
 /// Where a character's mesh is skinned.
-enum class Skinning {
+enum class Skinning : std::uint8_t {
     Cpu, ///< On the CPU, every vertex written into librw's geometry each frame (the viewers, reference images).
     Gpu, ///< In the vertex shader (platform/character_skin.h) when it runs, else on the CPU (play and scenes).
 };

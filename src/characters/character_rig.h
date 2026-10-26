@@ -46,6 +46,7 @@ void skinVertices(const CharacterModel& model, std::span<const anim::Mat34> matr
 
 /// The same blend for a list of vertices (the model's, or a copy a mesh keeps): the one place the CPU skinning's blend
 /// is written, whose normals are normalised after it.
+/// @coney-only the CPU half of Coney's renderer: the original blends in its VU1 microcode (graphics.md#human-draw)
 void skinVertices(std::span<const SkinVertex> vertices, std::span<const anim::Mat34> matrices,
                   std::span<anim::Vec3> positions, std::span<anim::Vec3> normals);
 
