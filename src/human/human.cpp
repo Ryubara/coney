@@ -71,6 +71,8 @@ constexpr float kLastStickFadePerStep = 0.8F;
 
 // A human's own copy of `ranges` with its class's damage written over it, or null when it has no class table (then it
 // uses `ranges` as it is). Each human keeps its own list, so its class decides only its own damage.
+// @coney-only each human's own copy of the range list for its class's damage (combat::applyClassDamage() holds the
+// rule)
 std::unique_ptr<combat::AnimRangeList> classRanges(const combat::AnimRangeList* ranges,
                                                    std::span<const std::int16_t> classDamage, int damagePercent) {
     if (ranges == nullptr || classDamage.empty()) {
@@ -81,10 +83,15 @@ std::unique_ptr<combat::AnimRangeList> classRanges(const combat::AnimRangeList* 
     return own;
 }
 
+// The animation's vector as the collision mesh's.
+// @coney-only a conversion between Coney's two vector types
 raycast::Vec3 toMesh(anim::Vec3 v) { return raycast::Vec3{v.x, v.y, v.z}; }
+// The collision mesh's vector as the animation's.
+// @coney-only a conversion between Coney's two vector types
 anim::Vec3 fromMesh(raycast::Vec3 v) { return anim::Vec3{v.x, v.y, v.z}; }
 
 // `v` across the ground, made unit length; zero when it has no horizontal part.
+// @coney-only a maths helper
 anim::Vec3 flatUnit(anim::Vec3 v) {
     const float length = std::hypot(v.x, v.y);
     return length > 1e-6F ? anim::Vec3{v.x / length, v.y / length, 0.0F} : anim::Vec3{};
@@ -95,6 +102,8 @@ anim::Vec3 flatUnit(anim::Vec3 v) {
 // (1.06 m forward and 1.29 m up onto a trash can, as clip 456's displacement and the top), while the fence climb was
 // carried through by its second clip's own root motion. So walls move at once (rising to the top found behind the
 // face), and fences go by the clip.
+// @orig 0x00281450 Climb_OnFirstClipEndRun (unknown)
+// @orig 0x00281838 Climb_OnFirstClipEndStand (unknown)
 bool movesAtOnce(ClimbKind kind) { return kind == ClimbKind::Wall || kind == ClimbKind::ShortWall; }
 
 // The walking body's owner as the physics world's sweep sees it (docs/research/physics-bodies.md#u3-records), for one
@@ -123,6 +132,7 @@ class WalkingOwner final : public physics::BodyOwner {
     [[nodiscard]] physics::Body* body() override { return m_body; }
     // `Human_OnContact` (`0x00219d50`) for the level: a climbing human passes through the fence it climbs (code 0);
     // every other triangle slides, with the contact scale (`0x20001`; docs/research/characters.md#walls, step 4).
+    // @orig 0x00219d50 Human_OnContact (unknown)
     [[nodiscard]] std::uint32_t onContact(const physics::Contact& contact) override {
         if (contact.triangle && !m_passThrough.empty()) {
             const std::uint8_t material = m_mesh.triangles()[*contact.triangle].material;

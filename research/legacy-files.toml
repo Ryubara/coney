@@ -10,9 +10,6 @@ tag = 1
 ["src/ai/ai_config.cpp"]
 tag = 7
 
-["src/ai/ai_humans.cpp"]
-tag = 16
-
 ["src/ai/ai_humans.h"]
 comment = 5
 
@@ -76,9 +73,6 @@ tag = 6
 
 ["src/ai/dealer_goal.h"]
 comment = 7
-
-["src/ai/enemy_scan.cpp"]
-tag = 8
 
 ["src/ai/engage_goals.cpp"]
 comment = 1
@@ -540,9 +534,6 @@ tag = 6
 
 ["src/combat/grabbed.cpp"]
 tag = 2
-
-["src/combat/lock_on.cpp"]
-tag = 4
 
 ["src/combat/meters.cpp"]
 tag = 11
@@ -1102,13 +1093,6 @@ tag = 9
 comment = 1
 tag = 1
 
-["src/human/fighter.cpp"]
-tag = 34
-
-["src/human/fighter.h"]
-comment = 13
-tag = 3
-
 ["src/human/fighter_clips.h"]
 tag = 6
 
@@ -1116,8 +1100,7 @@ tag = 6
 tag = 1
 
 ["src/human/fighter_grab.cpp"]
-comment = 1
-tag = 21
+tag = 20
 
 ["src/human/fighter_tandem.cpp"]
 tag = 5
@@ -1128,14 +1111,6 @@ tag = 12
 ["src/human/holdable.h"]
 comment = 1
 tag = 1
-
-["src/human/human.cpp"]
-comment = 2
-tag = 52
-
-["src/human/human.h"]
-comment = 11
-tag = 3
 
 ["src/human/human_animator.cpp"]
 tag = 38
@@ -1149,12 +1124,6 @@ tag = 2
 ["src/human/human_held.cpp"]
 tag = 3
 
-["src/human/human_hiding.cpp"]
-tag = 1
-
-["src/human/human_revive.cpp"]
-tag = 4
-
 ["src/human/human_script.cpp"]
 tag = 3
 
@@ -1164,9 +1133,6 @@ tag = 2
 
 ["src/human/human_sounds.h"]
 comment = 1
-
-["src/human/humans.cpp"]
-tag = 7
 
 ["src/human/jump.cpp"]
 tag = 1
@@ -2127,9 +2093,6 @@ citation = 2
 ["tests/debug/audio_page_test.cpp"]
 citation = 2
 
-["tests/debug/combat_tunables_test.cpp"]
-citation = 2
-
 ["tests/debug/debug_session_test.cpp"]
 citation = 12
 
@@ -2409,9 +2372,6 @@ citation = 4
 ["tests/hud/war_command_display_test.cpp"]
 citation = 7
 
-["tests/human/being_hit_test.cpp"]
-citation = 24
-
 ["tests/human/body_test.cpp"]
 citation = 4
 
@@ -2420,9 +2380,6 @@ citation = 7
 
 ["tests/human/combat_test.cpp"]
 citation = 33
-
-["tests/human/combat_timing_test.cpp"]
-citation = 25
 
 ["tests/human/damage_flags_test.cpp"]
 citation = 4
@@ -2442,14 +2399,8 @@ citation = 4
 ["tests/human/human_contacts_test.cpp"]
 citation = 8
 
-["tests/human/human_grab_test.cpp"]
-citation = 18
-
 ["tests/human/human_revive_test.cpp"]
 citation = 2
-
-["tests/human/human_tandem_test.cpp"]
-citation = 8
 
 ["tests/human/human_test.cpp"]
 citation = 23
@@ -2495,9 +2446,6 @@ citation = 6
 
 ["tests/human/strike_shapes_test.cpp"]
 citation = 7
-
-["tests/human/throw_direction_test.cpp"]
-citation = 2
 
 ["tests/human/traversal_test.cpp"]
 citation = 13

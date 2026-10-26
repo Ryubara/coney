@@ -65,9 +65,10 @@ struct HumanInput {
     bool actionPressed = false; ///< Triangle went down this update (command 10): a climb, an action or a jump.
     combat::CommandId command = combat::command::kNone; ///< This update's command (combat::CommandMatcher).
     std::uint16_t buttons = 0;                          ///< The held buttons (the block reads R1).
-    std::span<Combatant* const> targets;                ///< The humans that can be fought.
-    /// Of `targets`, those the fight stance never takes (no threat, or a pad player).
-    std::span<Combatant* const> calm;
+    std::span<Combatant* const> targets{};              ///< The humans that can be fought.
+    /// Of `targets`, those the fight stance never takes (no threat, or a pad player). Defaulted, like `targets`, so a
+    /// designated initializer may leave it out (GCC's and Clang's -Wmissing-field-initializers).
+    std::span<Combatant* const> calm{};
 };
 
 /// A brain's move (brain `+0x110`, `+0x114`, `+0x90`): the heading and speed the locomotion follows in place of the
@@ -110,6 +111,8 @@ struct PlayerRecord {
 };
 
 /// The record part of `input`, a pad's (so pad-driven).
+/// @coney-only Coney's HumanInput written as the record; the original's record is written from the pad
+/// (PlayerRecord_Update)
 [[nodiscard]] PlayerRecord recordOf(const HumanInput& input);
 
 /// What the human is doing beyond walking and standing, for the debug menus and the tests.
@@ -123,6 +126,7 @@ enum class Traversal : std::uint8_t {
 };
 
 /// A short lower-case name for `traversal` ("none", "falling", "jumping", ...), for summaries and the debug menus.
+/// @coney-only names for the summaries and the debug menus
 [[nodiscard]] const char* traversalName(Traversal traversal);
 
 /// A human: position (the feet), heading, velocity, ground and air state, stamina, its fighting and its animation,
@@ -166,6 +170,7 @@ class Human final : public Holdable {
     /// written over it (combat::applyClassDamage(), scaled by `damagePercent`, the Warrior class byte `+0x06` of a
     /// player; 0 for none), so each human deals its own class's damage. It stands at the origin facing +y with full
     /// stamina until spawn().
+    /// @coney-only Coney's construction of its members; the original's fresh state is standAfresh() (Human_Init)
     Human(const characters::AnimSet& anims, const AnimSlots& slots,
           std::span<const anim::Quat, anim::kPoseBones> bindRotations, float scale = 1.0F,
           const combat::AnimRangeList* ranges = nullptr, std::span<const std::int16_t> classDamage = {},
@@ -173,7 +178,9 @@ class Human final : public Holdable {
 
     /// Makes it fight as `profile` says (a player, or a human no player controls with its class's power class and
     /// health), from now and at every spawn(); its fighting starts afresh. A human is a player until told otherwise.
+    /// @coney-only Coney's set-up of the fighter from its profile
     void setFighterProfile(const FighterProfile& profile);
+    /// The profile it fights as (setFighterProfile()).
     [[nodiscard]] const FighterProfile& fighterProfile() const { return m_profile; }
 
     /// Makes it another character where it is, as a human made with these arguments would be: it animates with
@@ -181,6 +188,7 @@ class Human final : public Holdable {
     /// `damagePercent` written over it (as the constructor takes them) and as `profile` says, its fighting afresh.
     /// What the human is to the rest of the game stays: its handle's place in the humans, its script state, its hooks
     /// and actions, its skeleton (set it again for another skeleton). Spawn it again to stand it up afresh.
+    /// @coney-only the debug menus' change of character in place; the original has none
     void changeCharacter(const characters::AnimSet& anims, const combat::AnimRangeList* ranges,
                          std::span<const std::int16_t> classDamage, int damagePercent, const FighterProfile& profile);
 
@@ -224,6 +232,8 @@ class Human final : public Holdable {
 
     /// One update of 1/30 s for this human alone: `input` written into its record, then animate(), updateState() and
     /// updateActions() in turn. human::Humans runs the same passes across every human in the original's order.
+    /// @coney-only one human updated alone (the tests, a scene of one); the original updates every human together
+    /// (Humans_Update)
     void step(const HumanInput& input, const raycast::CollisionMesh* mesh);
 
     /// The per-player record the next update reads; a pad or a brain writes it before the update.
@@ -233,6 +243,7 @@ class Human final : public Holdable {
     /// The update's first pass, the animation step: the gait the last update left is kept for the dispatcher's gait
     /// tests, then every task advances (the clips' events moving the record's
     /// `+0x08`), and a climb follows its clips. Nothing for a human out of the world.
+    /// @orig 0x00249108 Humans_Update (unknown)
     void animate(const raycast::CollisionMesh* mesh);
     /// The second pass, the state update: the record's stick turned by its camera; the locomotion (through the
     /// locomotion gate, human/locomotion_gate.h), the jump's air control or the climb's own motion, with the clip's
@@ -295,14 +306,18 @@ class Human final : public Holdable {
     [[nodiscard]] float heading() const override { return m_heading; }
     /// How it lies, for an attacker: grounded while knocked down or out of health, held while in a grab, else
     /// standing.
+    /// @coney-only Coney's summary of the down and held states for an attacker
     [[nodiscard]] TargetState state() const override;
     /// Its health (record `+0x144`).
     [[nodiscard]] const combat::Health& health() const override { return m_fighter.health(); }
     [[nodiscard]] anim::Vec3 velocity() const override { return m_velocity; }
     /// The horizontal speed.
+    /// @coney-only a read of the velocity
     [[nodiscard]] float speed() const;
     /// The gait of the whole velocity's length (`+0x1a8`, written with the velocity: a jump's vertical speed counts).
+    /// @coney-only a read of the velocity as a gait
     [[nodiscard]] Gait gait() const;
+    /// Whether it is in the air: a jump or a fall.
     [[nodiscard]] bool airborne() const { return m_airborne; }
     /// The human fell more than kOutOfWorldDepth below the mesh; it stays put until spawned again.
     [[nodiscard]] bool outOfWorld() const { return m_outOfWorld; }
@@ -348,9 +363,12 @@ class Human final : public Holdable {
     [[nodiscard]] std::uint32_t landings() const { return m_landings; }
     /// The last stick intent, after the camera's turn.
     [[nodiscard]] const StickIntent& intent() const { return m_intent; }
+    /// Its animator, to read.
     [[nodiscard]] const HumanAnimator& animator() const { return m_animator; }
     /// `HuUseAnim`'s idle replacement, `name` loaded as `clip` (null for none: the own idle);
     /// HumanAnimator::setIdleClip(). The play mode applies ScriptState's override for the idle (`0x184`) through it.
+    /// @coney-only the play mode's hand-over of a script's idle replacement to the animator (the native,
+    /// Human_UseAnim, is ported in the bindings)
     void setIdleClip(std::string_view name, const anim::AnimClip* clip) {
         m_idleClipName = std::string(name);
         m_animator.setIdleClip(clip);
@@ -386,7 +404,9 @@ class Human final : public Holdable {
     void playWorkout(const anim::AnimClip& enter, const std::array<const anim::AnimClip*, 3>& loops) {
         m_animator.playWorkout(enter, loops);
     }
+    /// The workout's loop while one plays (HumanAnimator::workoutLoop()), else null.
     [[nodiscard]] anim::GaitBlendTask* workoutLoop() const { return m_animator.workoutLoop(); }
+    /// Ends the workout's clips with `exit` (HumanAnimator::endWorkout()).
     void endWorkoutClips(const anim::AnimClip* exit) { m_animator.endWorkout(exit); }
     /// **Coney's own**: the debug menus' Animation player plays `clip` on the human (HumanAnimator::playDebugClip(),
     /// docs/guides/debug-menu.md#animation-player); the original has nothing like it.
@@ -399,6 +419,8 @@ class Human final : public Holdable {
     [[nodiscard]] const std::string& idleClipName() const { return m_idleClipName; }
     /// `HuUseAnyAnim`'s replacement for anim `id` other than the idle, `name` loaded as `clip` (null: the own clip
     /// plays); an empty `name` takes it out. HumanAnimator::setOverride().
+    /// @coney-only the play mode's hand-over of a script's clip replacement to the animator (the native,
+    /// Human_UseAnyAnim, is ported in the bindings)
     void setOverrideClip(std::uint32_t id, std::string_view name, const anim::AnimClip* clip) {
         if (name.empty()) {
             m_overrideNames.erase(id);
@@ -415,12 +437,15 @@ class Human final : public Holdable {
     /// The sounds its updates asked for since the last call, oldest first: its clips' animation sounds (clip event
     /// 11) and the hit sounds of the hits it took (docs/research/sound-events.md). Kept only once asked for
     /// (reportSounds()), so a human nobody listens to keeps none.
+    /// @coney-only the hand-over of its sounds to Coney's audio
     [[nodiscard]] std::vector<HumanSound> takeSounds();
     /// Starts (or stops) keeping its sounds for takeSounds(). Asking for what it does already changes nothing: the
     /// sounds it holds stay.
+    /// @coney-only the switch of Coney's sound hand-over
     void reportSounds(bool on);
     /// Adds a sound the level found for this human, such as his strike on the level, an object or a car. It is kept
     /// for takeSounds() only while he reports sounds.
+    /// @coney-only the hand-over of the level's sounds to Coney's audio
     void reportSound(const HumanSound& sound);
     /// The material of the ground under the feet (`+0x1d8`): the triangle the last ground snap hit, `CONCRETE` (5)
     /// before any. **Coney's reading**: the snap's triangle (docs/research/sound.md#anim-sounds names `+0x1d8` the
@@ -430,6 +455,7 @@ class Human final : public Holdable {
     /// which ambient emitters a player hears (`+0x5b7`, docs/research/sound-events.md#covered).
     /// @orig 0x002195e0 Human_SetCoverFlag5 (unknown)
     [[nodiscard]] bool onCoveredGround() const { return m_coveredGround; }
+    /// Its gait speeds, the animator's.
     [[nodiscard]] const Speeds& speeds() const { return m_animator.speeds(); }
     /// Stamina (record `+0x14a`).
     [[nodiscard]] const Stamina& stamina() const { return m_stamina; }
@@ -440,11 +466,14 @@ class Human final : public Holdable {
     /// The body's lean, radians (`+0x29c`), positive leaning left.
     [[nodiscard]] float lean() const { return m_lean; }
     /// What the human is doing beyond walking.
+    /// @coney-only a summary of the human's state for the debug menus and the tests
     [[nodiscard]] Traversal traversal() const;
     /// What the locomotion gate reads of the human now: the record's `+0x08` and state code, airborne, held.
+    /// @coney-only what Coney's locomotion gate reads, gathered from the human
     [[nodiscard]] GateInput gateInput() const;
     /// Whether the stick does not move the human now: combat's states hold the body (Fighter::holdsMovement()), it is
     /// busy (stickBusy()), the stick's velocity is gated (stickVelocityGated()) or it is arrested.
+    /// @coney-only Coney's summary of the gates for the stick
     [[nodiscard]] bool stickHeld() const;
     /// The climb in progress, if any.
     [[nodiscard]] const std::optional<ClimbProbe>& climb() const { return m_climbProbe; }
@@ -487,13 +516,17 @@ class Human final : public Holdable {
     [[nodiscard]] float capsuleRadius() const { return walkingRadius(collisionScale()); }
     /// The walking sphere the wall sweep moves (docs/research/characters.md#walls, step 1): a player's
     /// playerWalkingRadius(), an AI human's aiWalkingRadius(), of its scale now.
+    /// @coney-only the body's size as Coney's sweep takes it (the original keeps it on its physics body)
     [[nodiscard]] float walkingSphereRadius() const;
     /// How far above the feet the walking sphere's centre is: its radius plus BodyTuning::footGap.
+    /// @coney-only the body's size as Coney's sweep takes it (the original keeps it on its physics body)
     [[nodiscard]] float walkingSphereCentreHeight() const;
     /// The sphere the airborne body is pushed out of walls with: BodyTuning::airRadius × the scale, its centre its
     /// radius plus the foot gap above the feet (docs/research/characters.md#walls).
+    /// @coney-only the body's size as Coney's push-out takes it (the original keeps it on its physics body)
     [[nodiscard]] float airSphereRadius() const;
     /// Its capsule as another human's sweep meets it, and as the way-clear test (human::wayClear()) takes it.
+    /// @coney-only the capsule as Coney's sweeps and way-clear test take it
     [[nodiscard]] UprightCapsule uprightCapsule() const;
     /// The normals of what the last walking sweep slid along (walls, other humans' capsules, world objects' bodies),
     /// each pointing out of what was met; empty after a move that met nothing. The velocity slides along the same.
@@ -571,6 +604,7 @@ class Human final : public Holdable {
     /// Keeps where an attack started near it (event `0x10`) for its brain, which counts them (brain `+0x200`).
     void announceAttack(anim::Vec3 attacker) override { m_announced.push_back(attacker); }
     /// Where the attacks announced since the last call started, and forgets them (its brain takes them each update).
+    /// @coney-only the hand-over of the announced attacks to its brain, which counts them (brain `+0x200`)
     [[nodiscard]] std::vector<anim::Vec3> takeAttackAnnouncements() { return std::exchange(m_announced, {}); }
     /// The slow-motion event (type `0x2e` on, `0x2f` off) the clip playing passed in the last update, if any; the
     /// later of the two when both did (docs/research/camera.md#slow-motion).
@@ -667,9 +701,11 @@ class Human final : public Holdable {
     [[nodiscard]] std::uint64_t flags() const override { return m_fighter.flags(); }
     /// Its character class (human `+0xcc`); its brain gives it (ai::Brain::setCharacterClass()), -1 until then.
     [[nodiscard]] int characterClass() const override { return m_characterClass; }
+    /// Sets its character class (human `+0xcc`); its brain gives it.
     void setCharacterClass(int characterClass) { m_characterClass = characterClass; }
     /// Its class's category is 13 (FighterProfile::bossClass).
     [[nodiscard]] bool bossClass() const override { return m_fighter.bossClass(); }
+    /// Whether a bit of `bit` is set in the flag word.
     [[nodiscard]] bool hasFlag(std::uint64_t bit) const { return m_fighter.hasFlag(bit); }
     /// Sets (`on`) or clears the bits of `bits`.
     void setFlag(std::uint64_t bits, bool on) { m_fighter.setFlag(bits, on); }
@@ -777,6 +813,7 @@ class Human final : public Holdable {
     /// record or a loose object, which starts what it found on the human (or drops what he holds) and returns true.
     /// None: nothing.
     using ContextAction = std::function<bool(Human& human)>;
+    /// Sets what triangle tries after a climb (none: nothing).
     void setContextAction(ContextAction action) { m_contextAction = std::move(action); }
     /// What triangle tries before the level's context action: the kind-0 record, a cuffed human to free, comes first
     /// in the kinds' order (docs/research/crimes.md#triangle). None: nothing.
@@ -785,6 +822,7 @@ class Human final : public Holdable {
     /// shapes, docs/research/objects.md#pane-break): the level breaks the panes whose bodies a sphere at `centre` of
     /// `radius` reaches. Humans::setBodyContact() gives it; null: nothing.
     using BodyContact = std::function<void(Human& human, anim::Vec3 centre, float radius)>;
+    /// Sets what an airborne body touches before the walls push it; it must outlive the step.
     void setBodyContact(const BodyContact* contact) { m_bodyContact = contact; }
     /// What a walking body slides along beyond the level's walls: the world objects' `BLOCKHUMANS` bodies
     /// (`Human_OnContact` slides along an object as along the level, docs/research/physics.md#contacts). Given the
@@ -793,6 +831,7 @@ class Human final : public Holdable {
     /// `RUNTARGET` body). Humans::setObjectPush() gives it; null: nothing.
     using ObjectPush =
         std::function<std::optional<anim::Vec3>(const Human& walker, anim::Vec3 centre, float radius, anim::Vec3 move)>;
+    /// Sets what a walking body slides along beyond the walls; it must outlive the step.
     void setObjectPush(const ObjectPush* push) { m_objectPush = push; }
     /// The humans its walking body meets (docs/research/physics.md#human-contacts): the characters' step gives every
     /// human its list each update (Humans::update()); the list may hold this human and null slots, which are skipped.
@@ -818,6 +857,7 @@ class Human final : public Holdable {
     [[nodiscard]] bool linkedWith(const Human& other) const;
     /// Its push weight (attribute 7, `+0x27c`): 1e9 while it must not move (linked in a pair, arrested, or freeing a
     /// cuffed human), else 1.
+    /// @coney-only a read of the weight the links and the arrest give (the original keeps it at attribute 7)
     [[nodiscard]] float pushWeight() const;
     /// Whether another human's walk pushes it: not when a script made it unpushable (`HuSetPushable(false)`, body flag
     /// `0x200`), when it is only slid along.
@@ -839,6 +879,7 @@ class Human final : public Holdable {
     /// Starts the stereo theft at the stereo at `point`: the human turns to it at once and the mini-game runs (mode 3)
     /// with `stageTurns` turns of the stick a stage (combat::stereoStageTurns()). **Coney's reading**: the turn is not
     /// spread over the intro.
+    /// @orig 0x0022dd98 StereoTheft_Start (unknown)
     void startStereoTheft(anim::Vec3 point, float stageTurns);
     /// Enters the step control for one step toward `heading` (radians) with the turn boost `boost`: the next state
     /// update that finds the human free plays the step's clip (stepClipFor(); the fight stance's while locked onto a
@@ -862,6 +903,7 @@ class Human final : public Holdable {
     /// Whether the stereo theft's intro or loop (683, 684) is playing. While a theft runs, anything else taking the
     /// body (a hit, a knock-down, death, a scene) ends it with no outcome at the next update (`MiniGame_Abort`, from
     /// the hit `0x00268c50` and from leaving normal mode `0x002325e0`, docs/research/crimes.md#uncuffing).
+    /// @coney-only a read of the clip playing
     [[nodiscard]] bool stereoTheftPlaying() const;
     /// Starts freeing `cuffed` by the mash (`Uncuff_Start`, docs/research/crimes.md#uncuffing): the cuffed human's
     /// steer is dropped and this human is steered onto him for 325 (Fighter::steerUncuff(),
@@ -873,6 +915,7 @@ class Human final : public Holdable {
     /// @orig 0x0022d3f8 Uncuff_BeginMash (unknown)
     void startUncuff(Human& cuffed, float mashFactor);
     /// Whether the freer's clips (325 or 329) still play: false once a hit or anything else took the body.
+    /// @coney-only a read of the clip playing
     [[nodiscard]] bool uncuffPlaying() const;
     /// The freer's end: the mash stops, the link to the cuffed human goes (`MiniGame_Abort` gives the freer his own
     /// body group and push weight 1 again) and he plays 332 `ANIM_ARREST_RELEASE_END`, or 331
@@ -881,21 +924,28 @@ class Human final : public Holdable {
     void endUncuff(bool hit);
     /// The cuffed human's half while `freer` frees him: 326 paired to the freer after a 0.01 s blend, then the loop
     /// 330; he is not moved.
+    /// @orig 0x00260ca8 Uncuff_Start (unknown)
     void playUncuffReact(const Human& freer);
     /// The cuffed human's end: freed, 333 `ANIM_ARREST_RELEASE_END_REACT` paired to `freer` then his idle; still
     /// cuffed, back to 320.
+    /// @orig 0x002606e8 Uncuff_MashSuccess (unknown)
+    /// @orig 0x00260a70 Uncuff_MashFail (unknown)
     void endUncuffReact(const Human& freer, bool freed);
     /// The reviver's half of a revive (docs/research/combat-reactions.md#revive): the led steer turns him to `downed`'s
     /// head and slides him to 351's reach from it over 351's time to its first event + 0.1 s (Fighter::steerRevive()),
     /// and he plays 351 `gen_revive_begin`, then 353 `gen_revive_end`, then his idle (through 389 out of the fight
     /// stance, the fight idle in it), after a 0.01 s blend, each clip holding `0x8000000`.
+    /// @orig 0x002752a0 Revive_Start (unknown)
     void startRevive(const Combatant& downed);
     /// Whether 351 `gen_revive_begin` plays: the revive's first clip, at whose end the flash is spent.
+    /// @coney-only a read of the clip playing
     [[nodiscard]] bool reviveBeginPlaying() const;
     /// Whether 353 `gen_revive_end` plays: 351 ended and the reviver goes on to his idle.
+    /// @coney-only a read of the clip playing
     [[nodiscard]] bool reviveEndPlaying() const;
     /// The revived human's half: healed in full (wounding over, his health back, up from the ground, as `HuRevive`)
     /// and up with 354 `gen_revive` paired to `reviver` holding `0x8000`, then 389 and his idle.
+    /// @orig 0x00274ee0 Revive_Finish (unknown)
     void playRevived(const Human& reviver);
     /// Turns to face `point` over `seconds` of updates, whatever plays (`Human_TurnToFacePoint`); the human stays where
     /// he stands. A Warrior handed a swap turns to the presser this way.
@@ -914,13 +964,16 @@ class Human final : public Holdable {
     void restartTagSpray();
     /// Whether the spray's intro is over and its loop plays: the moment the stick game goes live (the intro's end hook
     /// `0x00277ed8`).
+    /// @coney-only a read of the clip playing (the original's intro end hook is where the loop starts)
     [[nodiscard]] bool tagSprayLooping() const;
     /// Whether the spray's clips still play (the intro, the loop or the restart): false once something else took the
     /// body.
+    /// @coney-only a read of the clip playing
     [[nodiscard]] bool tagSprayPlaying() const;
     /// The spray is over (finished or let go): a spray clip still playing hands over to 336 and the idle, or the fight
     /// idle in a fight stance (HumanAnimator::playTagEnd()). A spray cut short does not come here: it plays no end
     /// clip.
+    /// @orig 0x002783b0 Tag_EndSprayClips (unknown)
     void endTagSpray();
     /// Whether a pick-up is under way.
     [[nodiscard]] bool pickingUp() const { return m_pickUp.has_value(); }
@@ -943,6 +996,7 @@ class Human final : public Holdable {
     };
 
     // The locomotion: target speed, skid, turn, acceleration; sets the horizontal velocity, none while `gated`.
+    // @orig 0x00240e38 Human_PlayerLocomotion (unknown)
     void locomote(bool gated);
     // Gives the animator the gait-speed factors now: the player's Movement tunables and this human's speed scale.
     void refreshSpeedFactors();
@@ -963,6 +1017,7 @@ class Human final : public Holdable {
     // @orig 0x0023d8c8 Human_Move (unknown)
     void moveOnGround(const raycast::CollisionMesh& mesh);
     // Moves a falling human, landing on a floor it passed on the update before.
+    // @orig 0x0023d8c8 Human_Move (unknown)
     void moveInAir(const raycast::CollisionMesh& mesh);
     // Where a walking sweep ends: the feet, and the velocity the sweep wrote back to the human (the slid one for a
     // player, zero when the body was stuck), or nothing when it wrote none.
@@ -995,10 +1050,12 @@ class Human final : public Holdable {
     // @orig 0x0023e090 Human_Land (unknown)
     void land(anim::Vec3 feet);
     // The materials the body and the snap pass through now: the fences while climbing over.
+    // @orig 0x00219d50 Human_OnContact (unknown)
     [[nodiscard]] std::span<const std::uint8_t> passThrough() const;
 
     // The stick step is skipped (combat's states, or the human is busy): the clip and an attack's slide move the body;
     // a block turns toward the stick in place (the shuffle); a standing grab turns and walks the pair by the stick.
+    // @orig 0x00240e38 Human_PlayerLocomotion (unknown)
     void holdForCombat();
     // Locked onto `target`: a pad-driven human faces it and walks at the combat walk's speed along the stick, in the
     // combat-walk clip of the stick's angle from the facing; with the velocity `gated`, it only faces the target and
@@ -1032,6 +1089,7 @@ class Human final : public Holdable {
     void noteStrikeEvents(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
     // Notes the release event (type 10) of the clip playing when this step's animation passed it, as
     // noteStrikeEvents() does; takeThrowRelease() reads it.
+    // @orig 0x00101dd8 Anim_FireFrameEvents (unknown)
     void noteReleaseEvent(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
     // Notes the action event (0x41) of the clip playing that this step's animation passed (message 0xc1, read by
     // Human_HandleMessage at 0x002473bc).
@@ -1043,23 +1101,34 @@ class Human final : public Holdable {
     // @orig 0x00101dd8 Anim_FireFrameEvents (unknown)
     void noteCarriedPropEvents(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
     // The world placement of the body the strike shapes are posed on.
+    // @coney-only the placement Coney's strike shapes are posed with
     [[nodiscard]] BodyPlacement placement() const;
     // Stamina's drain and refill, then the sprint flag, for this update's L2.
+    // @orig 0x002562d0 Human_UpdateMeters (unknown)
+    // @orig 0x00256a60 Human_UpdateDown (unknown)
     void updateMeters(bool sprintHeld);
     // The hidden state's own ends each update: a sprint, the fight stance or the grace running out
     // (docs/research/stealth.md#hidden).
+    // @orig 0x00254e78 Human_UpdateActions (unknown)
+    // @orig 0x0027ce90 Player_UpdateSprint (unknown)
     void updateHiding();
     // Triangle: a climb (stick above the dead zone), then the context action, then a jump.
     // @orig 0x0027c120 Player_UpdateActions (unknown)
     void tryActions(const raycast::CollisionMesh* mesh, bool sprintHeld);
     // The context action triangle tries after a climb: the level's (setContextAction()), which also drops what is in
     // hand when there is nothing to take. Returns whether it did something.
+    // @orig 0x0027c120 Player_UpdateActions (unknown)
     [[nodiscard]] bool tryContextAction();
     // A pick-up's step after the animation's: the turn, and the take at the clip's event; a clip replaced ends it.
+    // @orig 0x0025e5a8 Human_PlayPickupClip (unknown)
     void followPickUp();
     // Tries a climb toward `direction`; starts it and returns true on success.
+    // @orig 0x002826f0 Climb_TryStart (unknown)
+    // @orig 0x00281c20 Climb_Start (unknown)
     [[nodiscard]] bool tryClimb(const raycast::CollisionMesh& mesh, anim::Vec3 direction);
     // Tries a jump; launches it and returns true on success.
+    // @orig 0x002829e8 Player_TryJump (unknown)
+    // @orig 0x002217f0 Human_LaunchJump (unknown)
     [[nodiscard]] bool tryJump(const raycast::CollisionMesh* mesh, anim::Vec3 direction);
     // A climb's work as its clips change: the probe and move at the second clip, the end.
     // @orig 0x00281450 Climb_RunningClipEnd (unknown)
@@ -1070,6 +1139,7 @@ class Human final : public Holdable {
     // @orig 0x00218008 Human_Init (unknown)
     void standAfresh(bool keepMeters);
     // Ends a climb.
+    // @coney-only the end of Coney's climb bookkeeping; the original's chain ends through its clips' hooks
     void endClimb();
     // The state update while flying (setFlight()): the move by the stick and the climb, through everything.
     void fly();
@@ -1146,6 +1216,7 @@ class Human final : public Holdable {
     };
     std::optional<StepRequest> m_stepRequest;
     // Plays the waiting step when the human is free; true while the step control holds the update.
+    // @orig 0x00243420 Human_StepControl (unknown)
     bool runStepControl();
     // A pick-up under way: the object, the clip, the updates to its event and the turn each takes.
     struct PickUpRun {
@@ -1168,6 +1239,7 @@ class Human final : public Holdable {
     // this one's push weight is 1e9 (pushWeight()), as Uncuff_BeginMash's shared body group and attribute 7 make them.
     const Human* m_uncuffing = nullptr;
     // Starts a turn to `point` spread over `share` of `clip`'s playing time; nothing when the clip is not loaded.
+    // @orig 0x00221c20 Human_TurnToFacePoint (unknown)
     void turnOverClip(std::uint32_t clip, anim::Vec3 point, float share);
     std::optional<double> m_pickedUp; // the object a pick-up reached, until takePickedUp()
     bool m_throwRelease = false;      // a release event passed, until takeThrowRelease()

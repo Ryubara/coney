@@ -42,13 +42,15 @@ void Human::clearHiding() {
     m_animator.setStealthStyle(false);
 }
 
+// The stance's own update never enters the stance while hidden, but an attack, a grab or a tackle does, and entering
+// it ends the hiding there (`Player_EnterStance`, 0x00280068; Human::fight()).
 void Human::updateHiding() {
     if (!m_hidden) {
         return;
     }
     // A sprint (`Player_UpdateSprint`, 0x0027ce90) and the grace's end (`Human_UpdateActions`, 0x00254e78) end it.
-    // Entering the fight stance (`Player_EnterStance`, 0x00280068) ends it too: hidden, the target does not lock, so
-    // the stance's own update never enters it, but an attack, a grab or a tackle does (Human::fight()).
+    // The fight stance (`Player_EnterStance`, 0x00280068) would too, but hidden the target does not lock, so the
+    // human never enters it by itself.
     const bool graceOver = m_hideGraceUntil && nowMs() >= *m_hideGraceUntil;
     if (m_sprinting || graceOver) {
         clearHiding();

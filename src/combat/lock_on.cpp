@@ -15,11 +15,13 @@ constexpr float kSector = 45.0F;
 
 } // namespace
 
+// @orig 0x00241b90 Human_FightStanceMove (unknown)
 bool lockedOn(const CombatTuning& tuning, bool hasTarget, bool l1Held) {
     return hasTarget &&
            ((l1Held && tuning.lockOnButton) || tuning.autoLock || tuning.autoLockAndCombat || tuning.autoCombat);
 }
 
+// @orig 0x00241b90 Human_FightStanceMove (unknown)
 int combatWalkClip(float clockwiseDegrees) {
     float angle = std::fmod(clockwiseDegrees, 360.0F);
     if (angle < 0.0F) {
@@ -29,8 +31,10 @@ int combatWalkClip(float clockwiseDegrees) {
     return kCombatWalkFirst + sector;
 }
 
+// @coney-only stand-in: an AI human's target drop, Coney's reading (the original's rule for it is not traced)
 bool keepsTarget(const CombatTuning& tuning, float distance, bool held) { return held || distance <= tuning.stanceMid; }
 
+// @orig 0x00245310 Human_MoveGrabbing (unknown)
 float grabTurnStep(const CombatTuning& tuning, float remaining, float previous) {
     const float size = std::fabs(remaining);
     if (size < 1e-6F) {

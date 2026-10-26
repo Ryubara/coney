@@ -19,6 +19,7 @@ namespace {
 // The Warriors' filter (`Filter_IsThreatTo`): a cop only within 10 m and a threat; a civilian not at all (**Coney's
 // reading**: the ped type 3 with a threat response that would let one through is not modelled); any other when he is
 // a threat (isThreat()).
+// @orig 0x0029bf98 Filter_IsThreatTo (unknown)
 bool warriorThreat(const Brain& scanner, const Brain& member) {
     if (member.type() == BrainType::Cop) {
         return scanner.distanceTo(member) <= kScanWarriorCopRange && isThreat(scanner, member);
@@ -28,6 +29,7 @@ bool warriorThreat(const Brain& scanner, const Brain& member) {
 
 // The near radius for `member` as `scanner` sees him: 1.5 m walking or standing, 5.2 m for a cop and a running member,
 // else 3 m.
+// @orig 0x0028b358 Brain_ScanEnemies (unknown)
 float nearRadius(const Brain& scanner, const Brain& member) {
     const human::Gait gait = member.human().gait();
     if (scanner.type() == BrainType::Cop && gait >= human::Gait::Run) {
@@ -37,12 +39,14 @@ float nearRadius(const Brain& scanner, const Brain& member) {
 }
 
 // Whether `brain`'s human is down or out: its list is emptied.
+// @orig 0x0028b358 Brain_ScanEnemies (unknown)
 bool down(const Brain& brain) {
     const human::Human& human = brain.human();
     return !human.alive() || human.script().knockedOut || human.outOfWorld();
 }
 
 // Whether `member` is in a gang `scanner`'s gang has as an enemy, both in use.
+// @orig 0x0028b358 Brain_ScanEnemies (unknown)
 bool enemyGang(const Brain& scanner, const Brain& member) {
     const Gang* mine = scanner.gang();
     const Gang* theirs = member.gang();
@@ -51,6 +55,7 @@ bool enemyGang(const Brain& scanner, const Brain& member) {
 
 } // namespace
 
+// @orig 0x0028b358 Brain_ScanEnemies (unknown)
 bool scanSees(const Brain& scanner, const Brain& member) {
     const human::Human& eye = scanner.human();
     const human::Human& them = member.human();
@@ -150,8 +155,10 @@ int scanEnemies(const Gangs& gangs, Brain& scanner) {
     return added;
 }
 
+// @coney-only setter: the brain's scan interval (`+0x144`), a field the original's goals write directly
 void ScanSchedule::setInterval(const Brain& brain, std::uint64_t ms) { m_entries[&brain].intervalMs = ms; }
 
+// @orig 0x0028fa18 Brain_MaybeScanEnemies (unknown)
 std::uint64_t ScanSchedule::interval(const Brain& brain) const {
     std::uint64_t ms = brain.type() == BrainType::Cop ? kScanIntervalCopMs : kScanIntervalMs;
     if (const auto found = m_entries.find(&brain); found != m_entries.end() && found->second.intervalMs != 0) {
@@ -179,6 +186,7 @@ bool ScanSchedule::maybeScan(const Gangs& gangs, Brain& brain, std::uint64_t now
     return true;
 }
 
+// @coney-only bookkeeping: drops a removed brain from Coney's schedule map
 void ScanSchedule::forget(const Brain& brain) { m_entries.erase(&brain); }
 
 } // namespace coney::ai

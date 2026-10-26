@@ -77,12 +77,14 @@ bool attackEntersStance(int animId) {
 }
 
 // Whether `animId` is a moving attack, after which the run may go on.
+// @coney-only Coney's grouping of the run attacks, for the animator's holds and the run resumed after them
 bool isMovingAttack(int animId) {
     return animId == id::kRunningAttackCharge || animId == id::kRunningAttackDive || animId == id::kAttackFromRun ||
            animId == id::kArmedAttackFromRun;
 }
 
 // Whether `clip` switches a strike shape on (one bone's, or all of them): its attack strikes through the shapes.
+// @coney-only a test over the clip's events, for Coney's strike-shape attacks
 bool switchesStrikeShapes(const anim::AnimClip& clip) {
     return std::ranges::any_of(clip.events, [](const anim::ClipEvent& event) {
         return event.type == kEventStrikeOn || event.type == kEventStrikeAllOn;
@@ -90,6 +92,7 @@ bool switchesStrikeShapes(const anim::AnimClip& clip) {
 }
 
 // The horizontal distance between two points.
+// @coney-only a maths helper
 float flatDistance(const anim::Vec3& a, const anim::Vec3& b) { return std::hypot(b.x - a.x, b.y - a.y); }
 
 // The character class whose damage from a Warrior is quartered: `bopp_bo`, the Boppers' boss.
@@ -185,6 +188,9 @@ namespace {
 // down with health left counts too: the wide filter (`TargetFilter_Wide` `0x002796a0`) skips only the knocked out
 // (state `0x100000000`), not the down, which is how square finds a downed human for the grounded strike 193
 // (docs/research/combat-targets.md#targeting).
+// @orig 0x0027a6c0 Player_PickTarget (unknown)
+// @orig 0x0027a4b0 Player_FindAttackTarget (unknown)
+// @orig 0x0027b058 Attack_FindNearestInReach (unknown)
 bool fightable(const Combatant& target, const anim::Vec3& from, bool down = false) {
     const bool state = target.state() == TargetState::Standing || (down && target.state() == TargetState::Grounded);
     return state && !target.health().depleted() && target.targetable() &&
@@ -193,6 +199,8 @@ bool fightable(const Combatant& target, const anim::Vec3& from, bool down = fals
 
 // The nearest fightable target of `input` within `reach` and, when `cone` is above 0, within `cone` degrees of the
 // heading `along`, a downed one too with `down`; null for none.
+// @orig 0x0027a6c0 Player_PickTarget (unknown)
+// @orig 0x0027a4b0 Player_FindAttackTarget (unknown)
 Combatant* nearestFightable(const FighterInput& input, float along, float reach, float cone, bool down = false) {
     Combatant* best = nullptr;
     float bestDistance = reach;
@@ -212,6 +220,8 @@ Combatant* nearestFightable(const FighterInput& input, float along, float reach,
 }
 
 // The search's last resort: the current target, when it is still fightable within `range`.
+// @orig 0x0027a6c0 Player_PickTarget (unknown)
+// @orig 0x0027a4b0 Player_FindAttackTarget (unknown)
 Combatant* keptTarget(const FighterInput& input, const Combatant* current, float range) {
     if (current == nullptr || !fightable(*current, input.position) ||
         flatDistance(input.position, current->position()) > range) {
@@ -223,6 +233,9 @@ Combatant* keptTarget(const FighterInput& input, const Combatant* current, float
 
 // The heading a search runs along: the stick's when it is pushed (its angle is positive to the right, headings grow to
 // the left), else the facing turned by `offset`.
+// @orig 0x0027a6c0 Player_PickTarget (unknown)
+// @orig 0x0027a4b0 Player_FindAttackTarget (unknown)
+// @orig 0x0027b058 Attack_FindNearestInReach (unknown)
 float aimHeading(const FighterInput& input, float offset) {
     return input.stick.magnitude() > kPickStick ? input.heading - (input.stick.angleDegrees() * kDegrees)
                                                 : wrapAngle(input.heading + offset);
@@ -765,6 +778,16 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
         Holdable* thrown = frontThrow ? m_held : nullptr;
         if (frontThrow) {
             alignWallThrow(out, input, heading);
+        }
+        // The throw ends the grab with no Grab_End: the grabbing movement (`Human_MoveGrabbing` `0x00245310`) finds
+        // him grabbing no one and puts the free locomotion (`Human_PlayerLocomotion` `0x00240e38`) in place of the
+        // lock-on movement it had saved. The lock (0x4) and the target stay. Off the lock-on movement the stance
+        // update's step 3 may enter again: a threat within 2 m, or L1's lock held, locks him at once. With neither, as
+        // at runtime, the stance dropped the thrown target 5.6 m off on the update the throw's clip ended and 413
+        // walked him at once (run r-20261026-target-throw-end). A let-go (Grab_End) restores the lock-on movement
+        // instead.
+        if (out.grabAction == combat::GrabAction::Throw) {
+            m_lockMoveFree = m_lockOn;
         }
         playGrabAction(out, animator);
         if (thrown != nullptr) {
