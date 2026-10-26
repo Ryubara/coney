@@ -818,8 +818,12 @@ for the call; the strings' tags inferred from reading them over PINE. Then it se
 
 - **Wrapping** (`MessageHUD_WordWrap`, `0x001bac20`): each draw, words are added to a line while its measured width
   (tags stripped) stays within 0.55; the word that would pass it starts a new line (a `<CRM>` is inserted).
-  `+0x1ac` counts the line breaks (inserted ones and the text's own `<CR>` / `<CR3` tags), so it is the line count
-  less one.
+  `+0x1ac` counts the line breaks (inserted ones and the text's own `<CR>` / `<CR3` tags; a `<CRM>` or `<CR2>`
+  already in the text is not counted), so it is the line count less one. The break goes before the last space or `<`
+  written so far, so a line of one word carries the previous `<CRM>` along: an empty line, and that word joins the
+  next one even past the width. A word that holds a `>` counts as starting inside a tag, so what comes before its
+  first `>` is not measured. `MessageHUD_Draw` (`0x001bb038`) wraps when `+0x1b8` is set and clips to the window only
+  when `+0x1a0` is set too. Confirmed (code) at `0x001bac20` and `0x001bb038`.
 - **The line window** (`MessageHUD_ClipToPage`, `0x001baee0`): only the lines `+0x1a4` to `+0x1a8` **inclusive** are
   drawn, so a page is **six lines** (0-5). The window splits the text only at `<CRM>` (`0x00554af8`), the break the
   wrap inserts: a line the text's own `<CR>` starts stays with the window line it is in, though `+0x1ac` counts it.

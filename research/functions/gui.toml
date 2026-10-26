@@ -113,8 +113,35 @@ name = "MessageHUD_WordWrap"
 page = "gui.md#fn-messagehud"
 role = "splits the text at spaces, measures each line with its tags stripped, and inserts `<CRM>` before the word that takes the line past the wrap width (`+0x1d4`); the line count goes to `+0x1ac`"
 level = "confirmed-code"
-coney = "src/hud/hint_box.h:wrapText"
-status = "legacy"
+coney = "src/gui/message_paging.h:wrapMessage"
+status = "compared"
+
+[[function]]
+address = 0x001baee0
+name = "MessageHUD_ClipToPage"
+page = "gui.md#fn-messagehud"
+role = "keeps only the wrapped lines from `+0x1a4` to `+0x1a8`, both included, split at `<CRM>`: a scrolling page of a long text"
+level = "confirmed-code"
+coney = "src/gui/message_paging.h:clipToPage"
+status = "compared"
+
+[[function]]
+address = 0x001bafd0
+name = "MessageHUD_PageUp"
+page = "gui.md#fn-messagehud"
+role = "moves the line window `+0x1a4`/`+0x1a8` up one line while `+0x1a4` is above 0; false at the top"
+level = "confirmed-code"
+coney = "src/gui/message_paging.h:pageUp"
+status = "compared"
+
+[[function]]
+address = 0x001bb000
+name = "MessageHUD_PageDown"
+page = "gui.md#fn-messagehud"
+role = "moves the line window down one line while `+0x1a8` is below the line count `+0x1ac`; false at the last line"
+level = "confirmed-code"
+coney = "src/gui/message_paging.h:pageDown"
+status = "compared"
 
 [[function]]
 address = 0x001bb390
@@ -123,7 +150,7 @@ page = "gui.md#fn-messagehud"
 role = "the wrap width (`+0x1d4`): the number after a leading `<AUTOINDENT f>`, or the width given"
 level = "confirmed-code"
 coney = "src/gui/pause_menu/pause_stats.cpp:autoIndentWidth"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001c3de0
