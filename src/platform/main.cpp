@@ -312,7 +312,8 @@ int main(int argc, char** argv) {
         return 1;
     }
     const std::unique_ptr<coney::platform::LogOutput> runLog = std::move(*logOutput);
-    // `--cpu-skinning`: the humans skinned as before GPU skinning, to compare the two (docs/guides/performance.md).
+    // `--cpu-skinning`: the humans skinned by CharacterMesh's CPU path, to compare it with the GPU's
+    // (docs/guides/performance.md#gpu-skinning).
     coney::platform::allowCharacterSkin(!options->cpuSkinning);
 
     // `--event-log` and `--pad-pipe`: the events go to the file, and to the driver as `@ev` lines (a hint's line

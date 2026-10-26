@@ -101,26 +101,33 @@ own allocations use `malloc` and are not counted.
 
 In play and in scenes every human is skinned in the vertex shader (`src/platform/character_skin.*`): a librw GL3
 object pipeline of Coney's own uploads a character's vertices once, with each vertex's four bone indices and weights,
-and per frame only its bone matrices change (at most 64, the placement in the world folded in). Its lighting, fog,
+and per frame only its bone matrices change (at most 64, in the character's space). Its lighting, fog,
 texture levels and alpha test are those of Coney's default pipeline (`src/platform/texture_lod.*`), and the blended
 normal is normalised as the CPU skinning normalised it, so a human looks as it did. Before, every human's every vertex
 was blended on the CPU each frame, written into two librw geometries (the second for the blood layer) and uploaded
 again whole.
 
+The placement in the world (the lean, the heading, the feet and RenderWare's axes) is the atomic's frame on both
+paths, so it moves the blended vertex whole. Folded into each bone matrix instead, it would move a vertex by the sum
+of its weights, and the stored weights sum a hair below 1 (the decoder clears the bits that hold the bone,
+[Character geometry](../research/characters.md#character-geometry)): on the disc, 71,380 of the 150,509 distinct
+vertices fall short, by 1.9 × 10⁻⁵ on average and 9.2 × 10⁻⁵ at most, which would pull a human towards the world's
+origin by up to a centimetre a hundred metres out.
+
 The bounding sphere that chooses a human's lights and fades it out at a distance comes from the box round each skin
-node's vertices as the node's matrix moves it (`posedBox()`), which holds every vertex and is a little larger than the
-vertices' own box (**Coney's choice**: the original's choice of sphere is not traced). Where the pipeline cannot start
-(OpenGL 2.1 or ES 2, a model with more than 64 skin nodes), the mesh skins on the CPU as before, straight into librw's
-geometry with the placement folded into the bone matrices. The character viewer and the reference images skin on the
-CPU. `--cpu-skinning` skins every human on the CPU in any run, to compare the two paths' pictures and times in one
-build.
+node's vertices as the node's matrix moves it, and round the feet (`posedBox()`), which holds every vertex and is a
+little larger than the vertices' own box (**Coney's choice**: the original's choice of sphere is not traced). Where the
+pipeline cannot start (OpenGL 2.1 or ES 2, a model with more than 64 skin nodes), the mesh skins on the CPU, blending
+each vertex straight into librw's geometry. The character viewer and the reference images skin on the CPU.
+`--cpu-skinning` skins every human by that CPU path in any run, to compare the two paths' pictures and times in one
+build; it is not the per-vertex skinning that came before GPU skinning.
 `platform::characterSkinOn()` says which path new meshes take, and `CharacterMesh::gpuSkinned()` which one a mesh took.
 
-The two paths draw the same picture. In one build on 2026-10-25, a frame with GPU skinning was compared with the same
-frame taken with `--cpu-skinning`. A close-up of the player in `level99` with the view pinned had 4 of 286,720 pixels
-different, each by one level of one channel. A frame of the hub with 25 fighters in motion had 503 pixels different
-(0.18 %): 495 by one level, and 8 on the edge of a figure, where a triangle's edge falls on the other side of a pixel
-centre.
+The two paths draw the same picture as the skinning that came before them. On 2026-10-25, `playtest` builds of the
+change and of the `main` it starts from took the same frames at 640 × 448: a close-up of the player in `level99` with
+the view pinned, and the hub with 25 fighters in motion at frame 200. GPU skinning and `--cpu-skinning` drew both
+frames identically, pixel for pixel. Against `main`'s build, the close-up was identical too, and the hub frame had 1
+of 286,720 pixels different, by one level of one channel.
 
 ## Findings {#findings}
 

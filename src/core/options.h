@@ -324,7 +324,7 @@ struct Options {
     /// `--net-name NAME`: the player name sent when joining or hosting (the Network page's Player name); main checks
     /// it is a valid one (1 to 32 printable ASCII characters).
     std::optional<std::string> netName;
-    /// `--cpu-skinning`: skin every human on the CPU, as before GPU skinning, to compare the two
+    /// `--cpu-skinning`: skin every human by CharacterMesh's CPU path, to compare it with the GPU's
     /// (docs/guides/performance.md#gpu-skinning). Coney's own debug tooling.
     bool cpuSkinning = false;
 };
