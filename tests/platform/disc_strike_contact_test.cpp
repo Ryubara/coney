@@ -4,10 +4,11 @@
 // it starts: the level plays as `coney --play-level level99` plays it (support/disc_session.h), a fighter of the debug
 // menus' spawn stands 1.0 m ahead of player 1 facing him, and the player attacks with the pad (square, square, cross:
 // S1, SS2 and the kick SSX3; cross alone: X1; cross held and square: the special 653). The update each attack's
-// damage shows, counted from the first update its clip plays, must fall within one of the update the original showed
-// it in the same set-up, and never before the attack's strike shapes are on: the original deals a free attack's damage
-// only from the strike test, when a shape touches the victim (docs/research/combat-moves.md#timing). It runs only when
-// the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only (LEGAL.md).
+// damage shows, counted from the first update its clip plays, must be the update the original showed it in the same
+// set-up, and never before the attack's strike shapes are on: the original deals a free attack's damage only from the
+// strike test, when a shape touches the victim, and shows the attack's pose from its first update, with no fade from
+// the pose before it (docs/research/combat-moves.md#timing). It runs only when the environment variable CONEY_DISC
+// names the disc and skips otherwise; it prints counts only (LEGAL.md).
 
 #include <cstdint>
 #include <cstdio>
@@ -136,7 +137,7 @@ std::vector<Seen> play(const coney::io::Wad& wad, std::vector<Press> presses, co
     return seen;
 }
 
-// Checks each attack's damage against the original's update, within one, and after its shapes came on.
+// Checks each attack's damage against the original's update, and that it came once its shapes were on.
 void check(std::string_view name, const std::vector<Attack>& attacks, const std::vector<Seen>& seen) {
     for (std::size_t i = 0; i < attacks.size(); ++i) {
         std::printf("%s: clip %u shapes on at update %d, damage at %d (the original's %d)\n", std::string(name).c_str(),
@@ -145,8 +146,7 @@ void check(std::string_view name, const std::vector<Attack>& attacks, const std:
         REQUIRE(seen[i].damage >= 0);
         CHECK(seen[i].shapesOn >= 0);
         CHECK(seen[i].damage >= seen[i].shapesOn);
-        CHECK(seen[i].damage >= attacks[i].contact - 1);
-        CHECK(seen[i].damage <= attacks[i].contact + 1);
+        CHECK(seen[i].damage == attacks[i].contact);
     }
 }
 
@@ -165,7 +165,7 @@ TEST_CASE("the disc's level99: a punch or kick's damage shows when it reaches th
     const std::vector<Attack> chain{{12, 2}, {16, 4}, {17, 7}};
     check("square, square, cross", chain, play(*wad, {{0, 2, kSquare}, {8, 2, kSquare}, {16, 2, kCross}}, chain));
     // Cross tapped: X1 (11) on the release.
-    const std::vector<Attack> cross{{11, 9}};
+    const std::vector<Attack> cross{{11, 8}};
     check("cross", cross, play(*wad, {{0, 2, kCross}}, cross));
     // Cross held and square pressed: the special 653.
     const std::vector<Attack> special{{653, 7}};
