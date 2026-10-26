@@ -142,7 +142,8 @@ by message, and writes the file when it does. The names are `conclave.watch.ques
 The watchers replace two pollers of the coordinator's Tether watch settings, `release` (the release queue:
 `unit-ready`) and `prs` (stuck pull requests, Tether's PR guard and its owner records: `check-failed`, `pr-stuck` and
 the stop guard), so nothing is told twice. They are gone from the block in [Waking the
-coordinator](coney-tools-setup.md#coord-wakes), and the coordinator's own file loses them in the same change.
+coordinator](coney-tools-setup.md#coord-wakes), and the coordinator deletes them from its own file when it loads the
+mod with the watchers (until then both tell the same event).
 `triage`, `builds` and the subagent pollers stay Tether's.
 
 ## The boundary: what Conclave leaves to Tether {#boundary}

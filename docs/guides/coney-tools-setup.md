@@ -60,17 +60,16 @@ section and its error on stderr and exits 1, so a watcher reports a failed read 
 
 ### Waking the coordinator {#coord-wakes}
 
-Between turns the coordinator's session sees nothing, so new work would wait until someone typed. Two plugins that
-the maintainer runs in every session watch for it and wake the session when it arrives. [Conclave](conclave.md#watchers),
+Between turns the coordinator's session sees nothing, so new work would wait until someone typed. Two plugins that the
+maintainer runs in every session watch for it and wake the session when it arrives. [Conclave](conclave.md#watchers),
 Coney's own mod, tells it Coney's own events: a failed check or another pull request problem, a merge, a unit ready for
 `pr open` and a question, and holds its turn end for pull request problems nobody holds ([`pr hold`](pr.md#hold)). The
 [Tether](https://github.com/Ryubara/tether) plugin tells it the rest: issues to triage and detached builds that ended,
 and it keeps the session's health (context, cache, subagents). Tether needs 1.0.0-alpha.31 or later. Tether reads
-`.claude/tether.json` in the
-session's folder. The repository commits no such file, because Tether would then apply it to every agent's worktree
-too, and the maintainer's own file holds machine settings. The coordinator's local file (listed in
-`.git/info/exclude`) carries the `watch` settings below. This block is the source those settings are copied from:
-change it here first, then in the local file. `python/tests/test_coord_cli.py` checks that every `coney-tools`
+`.claude/tether.json` in the session's folder. The repository commits no such file, because Tether would then apply it
+to every agent's worktree too, and the maintainer's own file holds machine settings. The coordinator's local file
+(listed in `.git/info/exclude`) carries the `watch` settings below. This block is the source those settings are copied
+from: change it here first, then in the local file. `python/tests/test_coord_cli.py` checks that every `coney-tools`
 command in it parses.
 
 ```json
@@ -101,9 +100,9 @@ command in it parses.
 }
 ```
 
-The block holds two pollers. A coordinator's file from before Conclave's watchers also holds `release` and `prs`:
-delete them, or every unit and every stuck pull request is told twice, once by each plugin (the local file may carry
-more pollers of Tether's own, such as `agents`, which stay). What each poller wakes for:
+The block holds two pollers. A coordinator's file from before Conclave's watchers also holds `release` and `prs`: delete
+them, or every unit and every stuck pull request is told twice, once by each plugin (the local file may carry more
+pollers of Tether's own, such as `agents`, which stay). What each poller wakes for:
 
 * **`triage`** wakes for each issue waiting for [triage](issues.md#triage): an open issue carrying `S-needs-triage`,
   read every two minutes. It wakes once per issue, keyed by its number, so the coordinator's own comment does not wake
