@@ -9,7 +9,7 @@
 // handler (gang soldiers and Warriors), then the shared one every type falls back on. A hit, a new enemy or an attack
 // warning sends a help call: violence (`0x14`) to every human in reach, which a gang soldier or a Warrior answers by
 // taking a side, fighting him and walking over (HelpRespondGoal).
-// Research: docs/research/ai-brain-types.md#shared-events,
+// Research: docs/research/ai-brain-types.md#shared-events, docs/research/ai-brain-types.md#think-gang,
 // docs/research/ai-brain-types.md#help-calls, docs/research/ai-goals.md#goal-help-respond
 
 namespace coney::ai {
