@@ -681,6 +681,8 @@ void Brain::setAttackSlotCount(std::size_t count) {
 
 // @orig 0x00292938 Brain_SetMeleeRange (unknown)
 void Brain::setMeleeRange(float nearRange, float farRange) {
+    // Coney's choice: a member of the brain, so the handle the original's worker resolves to a human is its caller's
+    // (no script calls BrSetMeleeRange, and Coney registers no binding for it).
     m_meleeNear = nearRange;
     m_meleeFar = farRange;
 }
@@ -693,6 +695,7 @@ void Brain::setSight(float range, float fieldOfView) {
 
 // @orig 0x002911e8 Brain_StoreAttackWeight (unknown)
 void Brain::setAttackWeight(int kind, std::uint8_t weight) {
+    // Coney's choice: a kind outside the table is ignored, where the original writes past it unchecked.
     if (kind >= 0 && kind < static_cast<int>(kAttackKinds)) {
         m_settings.attackWeights[static_cast<std::size_t>(kind)] = weight;
     }
