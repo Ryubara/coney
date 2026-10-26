@@ -892,9 +892,6 @@ tag = 6
 ["src/gui/pause_menu/mission_failed_menu.cpp"]
 tag = 5
 
-["src/gui/pause_menu/pause_menu.cpp"]
-tag = 18
-
 ["src/gui/pause_menu/yes_no_box.cpp"]
 tag = 7
 

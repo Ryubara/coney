@@ -293,8 +293,8 @@ name = "CircledText_Construct"
 page = "gui.md#fn-circledtext"
 role = "the parts above; slot `+0x60`"
 level = "confirmed-code"
-coney = "src/gui/circled_text.h:CircledText"
-status = "legacy"
+coney = "src/gui/circled_text.h:CircledText::CircledText"
+status = "compared"
 
 [[function]]
 address = 0x001d0d18
@@ -303,7 +303,7 @@ page = "gui.md#fn-circledtext"
 role = "slot `+0xc0` `(circleW, circleH, owner, widget, pos, textOff, circleOff, metrics, backSprite, circleSprite, backInst, circleInst)`, once: text font flags 4; back sprite size 1.0, depth 8,400, grey (128, 128, 128); circles size 0.1, depth 8,500, red (160, 16, 16), sized `circleW` × `circleH`; spacing divisor `0x0050ec64` = 3 (2 with device flag `0x02`); character y offset `0x0050ec68` = `circleH` × 0.1; reveal 1.0"
 level = "confirmed-code"
 coney = "src/gui/circled_text.h:CircledText::setup"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001d0fe8
@@ -312,7 +312,7 @@ page = "gui.md#fn-circledtext"
 role = "slots `+0xc8`, `+0xd0`: the main text; one character of the string per circle, count = its length"
 level = "confirmed-code"
 coney = "src/gui/circled_text.h:CircledText::setText"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001d1008
@@ -321,7 +321,7 @@ page = "gui.md#fn-circledtext"
 role = "slots `+0xc8`, `+0xd0`: the main text; one character of the string per circle, count = its length"
 level = "confirmed-code"
 coney = "src/gui/circled_text.h:CircledText::setCircled"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001d1098
@@ -330,7 +330,7 @@ page = "gui.md#fn-circledtext"
 role = "slots `+0xd8`, `+0xe0`, `+0xe8`"
 level = "confirmed-code"
 coney = "src/gui/circled_text.h:CircledText::setCircleColour"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001d1108
@@ -339,7 +339,7 @@ page = "gui.md#fn-circledtext"
 role = "slots `+0xd8`, `+0xe0`, `+0xe8`"
 level = "confirmed-code"
 coney = "src/gui/circled_text.h:CircledText::setCharColour"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001d1178
@@ -348,7 +348,7 @@ page = "gui.md#fn-circledtext"
 role = "slots `+0xd8`, `+0xe0`, `+0xe8`"
 level = "confirmed-code"
 coney = "src/gui/circled_text.h:CircledText::setBackColour"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001d11c8
@@ -357,7 +357,7 @@ page = "gui.md#fn-circledtext"
 role = "slots `+0xa8` / `+0x70`: reveal clamped to 0-1; the rectangle with its height × the reveal"
 level = "confirmed-code"
 coney = "src/gui/circled_text.h:CircledText::setReveal"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001d11f8
@@ -366,7 +366,7 @@ page = "gui.md#fn-circledtext"
 role = "slots `+0xa8` / `+0x70`: reveal clamped to 0-1; the rectangle with its height × the reveal"
 level = "confirmed-code"
 coney = "src/gui/circled_text.h:CircledText::height"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001d1250
@@ -374,8 +374,8 @@ name = "CircledText_Update"
 page = "gui.md#fn-circledtext"
 role = "slot `+0x30`: the back sprite over the rectangle, its texture rectangle cut by the reveal; circles left to right from the left edge + `circleOff`, each step `circleW` / 3, their height × the reveal; the main text after the last circle; visible while the reveal is above 0"
 level = "confirmed-code"
-coney = "src/gui/circled_text.h:CircledText::render"
-status = "legacy"
+coney = "src/gui/circled_text.h:CircledText::update"
+status = "compared"
 
 [[function]]
 address = 0x001d16e8
@@ -384,7 +384,7 @@ page = "gui.md#fn-circledtext"
 role = "slot `+0x38`: back sprite, text (focused colour when slot `+0xa0` is true), each circle and its character (recoloured to `+0x134` unless its colour is the colour-table entry 0)"
 level = "confirmed-code"
 coney = "src/gui/circled_text.h:CircledText::render"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001d3ef0
@@ -492,7 +492,7 @@ page = "gui.md#fn-after-controlmenuhud"
 role = "text `+0x70`; child slot `+0x40`; visible flags"
 level = "confirmed-code"
 coney = "src/gui/circled_text_header.h:CircledTextHeader::setLabel"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001e7ea8
@@ -501,7 +501,7 @@ page = "gui.md#fn-after-controlmenuhud"
 role = "text `+0x70`; child slot `+0x40`; visible flags"
 level = "confirmed-code"
 coney = "src/gui/circled_text_header.h:CircledTextHeader::setLabelVisible"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001e7f50
@@ -509,8 +509,8 @@ name = "CircledTextHeader_Construct"
 page = "gui.md#fn-after-controlmenuhud"
 role = "vtable `0x0053ca00`, the pause menu's top header only ([The pause header](gui.md#circled-text-header)): rule B `+0x390`, 3 circles `+0x490`, 3 letters `+0x790`, title `+0xa00`, subtitle `+0xad0`"
 level = "confirmed-code"
-coney = "src/gui/circled_text_header.h:CircledTextHeader"
-status = "legacy"
+coney = "src/gui/circled_text_header.h:CircledTextHeader::CircledTextHeader"
+status = "compared"
 
 [[function]]
 address = 0x001e81c0
@@ -519,7 +519,7 @@ page = "gui.md#fn-after-controlmenuhud"
 role = "the layout factors per video mode ([Layout](gui.md#circled-text-header-layout))"
 level = "confirmed-code"
 coney = "src/gui/circled_text_header.h:CircledHeaderFactors::forMode"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001e8368
@@ -528,7 +528,7 @@ page = "gui.md#fn-after-controlmenuhud"
 role = "slot `+0xa8`: title size 2.23, subtitle 1.561, font slot 4; circles sprite `0x54` (rect 84), `0x005fd260`, depth 8500, size 0.082 x scale"
 level = "confirmed-code"
 coney = "src/gui/circled_text_header.h:CircledTextHeader::setup"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001e85e8
@@ -537,7 +537,7 @@ page = "gui.md#fn-after-controlmenuhud"
 role = "the three circles or letters"
 level = "confirmed-code"
 coney = "src/gui/circled_text_header.h:CircledTextHeader::setCircleColour"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001e8658
@@ -546,7 +546,7 @@ page = "gui.md#fn-after-controlmenuhud"
 role = "the three circles or letters"
 level = "confirmed-code"
 coney = "src/gui/circled_text_header.h:CircledTextHeader::setLetterColour"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001e86c8
@@ -555,7 +555,7 @@ page = "gui.md#fn-after-controlmenuhud"
 role = "slot `+0x30`: used circles spaced `0x0050f324`, black letters, title after, subtitle under, child"
 level = "confirmed-code"
 coney = "src/gui/circled_text_header.h:CircledTextHeader::update"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001e8d00
@@ -564,7 +564,7 @@ page = "gui.md#fn-after-controlmenuhud"
 role = "slots `+0x38`/`+0xd0`"
 level = "confirmed-code"
 coney = "src/gui/circled_text_header.h:CircledTextHeader::render"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001e8dd0
@@ -573,7 +573,7 @@ page = "gui.md#fn-after-controlmenuhud"
 role = "slots `+0x38`/`+0xd0`"
 level = "confirmed-code"
 coney = "src/gui/circled_text_header.h:CircledTextHeader::render"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001e8ee0
@@ -582,7 +582,7 @@ page = "gui.md#fn-after-controlmenuhud"
 role = "characters before `:` become letters; a `:` adds a circle with `'@'` + game state `+0x33a`; rest is the title; last circle `0x005fd328`; subtitle = level name of game state `+0x56dc` (table at `+0x151d`, 0x84 each)"
 level = "confirmed-code"
 coney = "src/gui/circled_text_header.h:CircledTextHeader::setTitle"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001e95c0

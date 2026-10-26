@@ -338,7 +338,7 @@ page = "pause.md#fn-pausemenu"
 role = "the top header's circle colour by level number: four colour groups by level list, else black"
 level = "confirmed-code"
 coney = "src/gui/pause_menu/pause_menu.h:pauseLevelColour"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001dbee0
