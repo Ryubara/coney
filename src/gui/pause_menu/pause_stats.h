@@ -76,7 +76,6 @@ struct StatsPortrait {
 /// measure() found (the original's draw counts the lines too); the `0x08` and `0x02` layouts are not modelled.
 ///
 /// Research: docs/research/pause.md#stats-screen
-/// @orig 0x001e5498 PauseStats_Construct (unknown)
 class PauseStats {
   public:
     /// The base point B (`0x0050f110`, `0x0050f118`) and its 16:9 y.
@@ -130,6 +129,8 @@ class PauseStats {
     /// The bars.
     static constexpr std::size_t kBars = 4;
 
+    /// The parts, unplaced: the name, its two shadows, the face, the four bars and their labels, the description.
+    /// @orig 0x001e5498 PauseStats_Construct (unknown)
     PauseStats();
 
     /// The Stats screen of character type `type`: one of the nine Warriors' (the kinds 0-8 of `Human_GetPortraitKind`),
