@@ -537,13 +537,16 @@ void FollowCamera::followLookAt(const FollowTarget& target) {
 
 void FollowCamera::autoFollow(anim::Vec3 view, const FollowTarget& target, float seconds) {
     // The gates: no camera input lately, no blocked view since the player last stopped (the latch, which the last
-    // update's blocked ray sets), the stick not pulled back.
+    // update's blocked ray sets), the stick not pulled back. Coney's choice: the original's other gates are not
+    // modelled (state flag 4 counting as moving, the top task's clip flag 0x8000, +0x455, the human flags
+    // 0x18003ff0), docs/research/camera.md#heading.
     if (m_inputHold > 0.0F || m_viewBlocked || m_viewLatch || target.stickBack || std::hypot(view.x, view.y) < 1e-6F) {
         return;
     }
     // The auto-centre rule follows a walk, run or sprint; the default rule only a run or sprint.
     const bool running = target.gait == kGaitRun || target.gait == kGaitSprint;
-    // The auto-centre rule needs the camera's player's Auto Adjust option (and Coney's debug switch).
+    // The auto-centre rule needs the camera's player's Auto Adjust option, 0x0050b240 + its pad. Coney's choice: its
+    // debug switch stands where the original reads the second per-pad byte, 0x0050b248 (set by Cameras_ResetLevel).
     const bool centre = m_autoAdjust && followTuning().autoCentre;
     if (!running && !(centre && target.gait == kGaitWalk)) {
         return;
