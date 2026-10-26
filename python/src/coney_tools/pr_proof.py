@@ -194,13 +194,16 @@ def _touches_source(paths: Sequence[str]) -> bool:
 
 def changed_functions(
     root: Path, base: str, tip: str, paths: Sequence[str]
-) -> tuple[tuple[OrigUnit, ...], tuple[OrigUnit, ...]]:
-    """The `@orig` functions the branch adds or changes, and those it removes, between `base` and `tip`.
+) -> tuple[tuple[OrigUnit, ...], tuple[OrigUnit, ...], dict[str, tuple[str, ...]]]:
+    """The `@orig` functions the branch adds or changes, those it removes, between `base` and `tip`, and which Coney
+    functions at the tip cite each original address (`orig_review.citing`: a `compared` stamp belongs to one of
+    several functions that share an address, so the lookup needs all of them, not only the changed ones).
 
     Reading every source file at two commits takes seconds, so a change that touches no C++ file under `src/` (a
-    guide, a tool, a workflow) is known to add, change and remove none without reading them."""
+    guide, a tool, a workflow) is known to add, change and remove none, and to need no stamp looked up, without reading
+    them."""
     if not _touches_source(paths):
-        return (), ()
+        return (), (), {}
     before = {u.key: u for u in orig_review.units_at(root, base)}
     after = {u.key: u for u in orig_review.units_at(root, tip)}
     changed = tuple(
@@ -209,7 +212,7 @@ def changed_functions(
         if u.key not in before or before[u.key].body_sha256 != u.body_sha256 or before[u.key].addresses != u.addresses
     )
     removed = tuple(u for key, u in before.items() if key not in after)
-    return changed, removed
+    return changed, removed, orig_review.citing(after.values())
 
 
 def load_subject(
@@ -254,7 +257,7 @@ def load_subject(
     change = pr_diff.change_of(root, remote_ref, tip)
     base, paths = change.base, change.paths
     profile = proof_profiles.required_profile(rules, paths)
-    changed, removed = changed_functions(root, base, tip, paths) if scan else ((), ())
+    changed, removed, citing = changed_functions(root, base, tip, paths) if scan else ((), (), {})
     return Subject(
         root=root,
         unit=unit,
@@ -271,7 +274,7 @@ def load_subject(
         profile=profile,
         checks=tuple(proof_profiles.required_checks(rules, profile, paths)),
         changed=changed,
-        citing=orig_review.citing(after.values()),
+        citing=citing,
         removed=removed,
         dirty=dirty_paths(root),
         now=now or datetime.now(UTC),
@@ -281,8 +284,8 @@ def load_subject(
 def scanned(subject: Subject) -> Subject:
     """`subject` with the `@orig` functions its change adds, changes and removes read in (`load_subject(scan=False)`
     leaves them out)."""
-    changed, removed = changed_functions(subject.root, subject.base, subject.tip, subject.paths)
-    return dataclasses.replace(subject, changed=changed, removed=removed)
+    changed, removed, citing = changed_functions(subject.root, subject.base, subject.tip, subject.paths)
+    return dataclasses.replace(subject, changed=changed, removed=removed, citing=citing)
 
 
 def refusals_before_scan(subject: Subject) -> list[Refusal]:
