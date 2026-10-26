@@ -408,7 +408,8 @@ class Human final : public Holdable {
     /// 11) and the hit sounds of the hits it took (docs/research/sound-events.md). Kept only once asked for
     /// (reportSounds()), so a human nobody listens to keeps none.
     [[nodiscard]] std::vector<HumanSound> takeSounds();
-    /// Starts (or stops) keeping its sounds for takeSounds().
+    /// Starts (or stops) keeping its sounds for takeSounds(). Asking for what it does already changes nothing: the
+    /// sounds it holds stay.
     void reportSounds(bool on);
     /// Adds a sound the level found for this human, such as his strike on the level, an object or a car. It is kept
     /// for takeSounds() only while he reports sounds.
