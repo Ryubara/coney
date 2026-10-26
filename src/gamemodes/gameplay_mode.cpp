@@ -1047,7 +1047,8 @@ void GameplayMode::syncSystemSounds() {
     std::map<std::uint32_t, SystemEmitter> kept;
     for (const effects::ParticleSystem& system : m_effects->particles.systems()) {
         const bool strobe = system.type->behaviour == effects::ParticleBehaviour::Strobe;
-        // Only the garbage flies themselves have a sound (their `_ns` spawner's and the light bugs' have none).
+        // Only the garbage flies themselves have a sound (their `_ns` spawner's and the light bugs' have none). Coney
+        // stand-in: every pile has it, where the original gives it only to one made with no parent handle.
         const bool flies = system.type->name == "part_garbage_flies";
         if (!strobe && !flies) {
             continue;
