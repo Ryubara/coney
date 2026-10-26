@@ -31,6 +31,13 @@ namespace coney::platform {
 /// asks for the controls, so they never outlive the mode they act on in use.
 class PlayLevelControls final : public debug::PlayControls, public debug::EntityEditTarget {
   public:
+    /// The Entity inspector's id of player 1 in a play mode (the other ids are a kind's base plus an index).
+    static constexpr debug::EntityId kInspectPlayerId = 1;
+
+    /// The librw atomics `mode` draws entity `id` with (a human's body and its blood layer); empty for an object or
+    /// an unknown id (play_level_mesh.cpp). The mesh views' selection.
+    [[nodiscard]] static std::vector<const rw::Atomic*> atomicsOf(const PlayLevelMode& mode, debug::EntityId id);
+
     /// Controls of `mode` (none: setMode() before use).
     explicit PlayLevelControls(PlayLevelMode* mode = nullptr) : m_mode(mode) {}
     ~PlayLevelControls() override = default;

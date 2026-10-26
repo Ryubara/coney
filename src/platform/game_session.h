@@ -83,6 +83,10 @@ class GameSession {
     /// The lines every level's play mode draws into its scene (PlayLevelMode::setSceneLines(): the debug tools' Debug
     /// draw page); empty: none.
     void setSceneLines(SceneLines lines) { m_sceneLines = std::move(lines); }
+    /// The mesh views every level's play mode draws its models through (PlayLevelMode::setMeshViews(): the debug
+    /// tools' Debug draw page); null: none.
+    /// @coney-only the debug tools' mesh views; the original has none
+    void setMeshViews(std::shared_ptr<MeshViewHook> /*views*/) {} // stub for the tests' commit
 
     /// What the first level loaded does before its first frame (`--start`, `--camera`, `--trace`, `--scene`): called
     /// once, on that level's play mode; an error fails that level's load.

@@ -252,6 +252,10 @@ struct Options {
     /// test aid for checking that the overlay leaves the frame as it found it (docs/guides/debug-menu.md). Ignored
     /// without a window.
     std::optional<int> devOverlayFrames;
+    /// `--mesh-view`: the Debug draw page's mesh views to switch on from the first frame of play, as the debug tools
+    /// parse it (debug::parseMeshViewSpec(), docs/guides/debug-menu.md#mesh-views); a test aid and the way to take a
+    /// screenshot of a view.
+    std::optional<std::string> meshView;
     /// `--render-references`: the folder to write a reference image of every character, object, car, radar icon and
     /// traced particle effect into (in its `characters`, `objects`, `cars`, `radar` and `particles` folders), then
     /// exit. Requires discPath and a window (not headless); cannot be

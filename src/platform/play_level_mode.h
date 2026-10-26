@@ -46,6 +46,7 @@
 #include "platform/character_mesh.h"
 #include "platform/hud_layer.h"
 #include "platform/humans_trace.h"
+#include "platform/mesh_view_hook.h"
 #include "platform/placed_objects.h"
 #include "platform/play_lighting.h"
 #include "platform/play_scenery.h"
@@ -247,6 +248,11 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     /// Sets the lines render() draws into the scene each frame, through the camera and tested against depth (the debug
     /// tools' Debug draw page, PlayLevelControls::sceneLines()); empty draws none.
     void setSceneLines(SceneLines lines) { m_sceneLines = std::move(lines); }
+    /// Sets the debug tools' mesh views (docs/guides/debug-menu.md#mesh-views), which render() asks at each frame's
+    /// start and, while they are on, hands every model the scene draws (MeshViewHook); null: none, and every model is
+    /// drawn as the game draws it.
+    /// @coney-only the debug tools' mesh views; the original has none
+    void setMeshViews(std::shared_ptr<MeshViewHook> /*views*/) {} // stub for the tests' commit
 
     // Coney's own capabilities and views of the play: the debug menus' Player, Camera, Spawner and AI fighters pages
     // reach them through PlayLevelControls, and the disc tests call them.

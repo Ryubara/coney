@@ -11,6 +11,7 @@
 #include "graphics/light_manager.h"
 #include "graphics/particle_page.h"
 #include "hud/health_rings.h"
+#include "platform/mesh_view_hook.h"
 #include "world/view_frustum.h"
 #include "world_objects/glass.h"
 
@@ -79,6 +80,19 @@ class SceneLighting {
     /// blended, no Z write.
     /// @orig 0x0017b2e0 GroundRing_DrawQueued (unknown)
     void drawGroundRings(std::span<const hud::GroundRing> rings, std::span<const hud::TargetMarker> markers) const;
+
+    /// Hands every atomic drawn from now on to the debug tools' mesh views (`hook`, which must outlive its use), or to
+    /// nobody (null: each is drawn as it always is, the hook not consulted).
+    /// @coney-only the debug tools' mesh views (docs/guides/debug-menu.md#mesh-views); the original has none
+    void setMeshViews(MeshViewHook* /*hook*/) {} // stub for the tests' commit
+    /// Marks `atomic` as a second layer of the model drawn around it (a human's blood pass), which the mesh views draw
+    /// only with the shaded draw; null: none.
+    /// @coney-only the debug tools' mesh views (docs/guides/debug-menu.md#mesh-views); the original has none
+    void setMeshLayer(const rw::Atomic* /*atomic*/) {} // stub for the tests' commit
+    /// How many atomics the rig has drawn since it was made, with or without the mesh views: the play mode counts a
+    /// human's passes from it for the Entity inspector's Mesh group.
+    /// @coney-only the Entity inspector's Mesh group (docs/guides/debug-menu.md#mesh-group)
+    [[nodiscard]] std::uint64_t atomicsDrawn() const { return 0; } // stub for the tests' commit
 
     /// This frame's camera (RenderWare's axes), as beginFrame() was given it.
     [[nodiscard]] const world::CameraPose& pose() const { return m_pose; }

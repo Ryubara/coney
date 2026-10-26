@@ -106,6 +106,17 @@ void APIENTRY countBindTexture(GLenum target, GLuint texture) {
 
 void installPerfClock() { perf::setClock(&steadyNanoseconds); }
 
+// Stubs for the tests' commit: nothing is counted; the next commit implements them.
+DrawKindScope::DrawKindScope(DrawKind /*kind*/) : m_previous(DrawKind::Other) {}
+
+DrawKindScope::~DrawKindScope() = default;
+
+DrawKind currentDrawKind() { return DrawKind::Other; }
+
+DrawTotals drawTotals(DrawKind /*kind*/) { return {}; }
+
+void recordDraw(std::uint64_t /*triangles*/, std::uint64_t /*vertices*/) {}
+
 AllocationTotals allocationTotals() {
     return AllocationTotals{g_allocations.load(std::memory_order_relaxed),
                             g_allocatedBytes.load(std::memory_order_relaxed)};
