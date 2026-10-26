@@ -324,6 +324,8 @@ struct Options {
     /// `--net-name NAME`: the player name sent when joining or hosting (the Network page's Player name); main checks
     /// it is a valid one (1 to 32 printable ASCII characters).
     std::optional<std::string> netName;
+    /// `--cpu-skinning`. (Stub: never set.)
+    bool cpuSkinning = false;
 };
 
 /// The largest `--fps-cap`.
