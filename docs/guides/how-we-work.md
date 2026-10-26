@@ -537,8 +537,8 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
 - **Resume what was interrupted.** A usage limit, an account switch or a cleared session can stop agents mid-task;
   the coordinator restarts each stopped track as a fresh agent from its `STATUS.md` and branch before taking new work.
 - **Let the plugins wake it.** Between turns the session sees nothing. [Conclave](conclave.md#watchers) starts a turn
-  once for each new event of Coney's own (a failed check or another pull request problem, a merge, a unit ready for
-  `pr open`, a question: a `QUESTION.md` in a unit's scratch folder, answered in `ANSWER.md` beside it,
+  once for each new event of Coney's own (a failed check or another pull request problem, a merge, a unit whose proof
+  `pr open` would pass, a question: a `QUESTION.md` in a unit's scratch folder, answered in `ANSWER.md` beside it,
   [Questions](conclave.md#questions)) and keeps the coordinator from ending a turn on a pull request problem nobody holds
   ([`pr hold`](pr.md#hold) says who does); [Tether](coney-tools-setup.md#coord-wakes) wakes it for issues to triage and
   detached builds that ended. The settings that do this are documented there, not kept only on one machine.

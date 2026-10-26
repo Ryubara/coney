@@ -1054,6 +1054,7 @@ conclave:
     hold_max_hours: 24                           # and never longer, so a stalled fix cannot hide for ever
     question_prefix: QUESTION                    # QUESTION.md or QUESTION-<n>.md in a unit's scratch folder is a question ...
     answer_prefix: ANSWER                        # ... until ANSWER.md (ANSWER-<n>.md) is newer than it
+    unit_hold_file: HOLD.md                      # a file of this name in a unit's scratch folder holds its unit-ready wake back
 
 standards:
   # What a file is held to when a change touches it, and the files that do not meet it yet
