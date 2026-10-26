@@ -106,6 +106,19 @@ def _rewritten(
     return bool(before[1]) and before[0] == after[0] and resolves(*before)
 
 
+def target_rewritten(
+    old: str,
+    new: str,
+    gone: Collection[str],
+    resolves: Callable[[str, str], bool],
+    held: Callable[[str, str], bool] | None = None,
+) -> bool:
+    """Whether the repository-relative link target `old` (`docs/research/ai.md#fight`) was rewritten to `new` because a
+    page moved, by the same cases as a link in a page (`link_only_change`); the two must name different pages or
+    anchors. The source and test files' comments use it (`code_link_moves`)."""
+    return _rewritten(old, new, "", "", gone, resolves, held) and _split(old, "") != _split(new, "")
+
+
 def link_only_change(
     old: str,
     new: str,
