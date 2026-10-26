@@ -557,7 +557,7 @@ void OptionMenu::setFade(float fade) {
         title.setFade(fade);
     }
     m_heading.setFade(fade);
-    m_hint.setFade(fade);
+    // Not the brightness hint: the original never gives its MessageHUD the menu's alpha (LightingItem_RenderColoured).
     for (auto& items : m_pages) {
         for (const std::unique_ptr<OptionItem>& item : items) {
             item->labelText.setFade(fade);
@@ -600,10 +600,13 @@ void OptionMenu::render(const GuiCanvas& canvas) const {
             drawOptionBar(parts, *place, item.bar, graphics::Rgba{label.r, label.g, label.b, alpha});
         }
         if (item.kind == OptionItemKind::Brightness) {
-            // The squares: the brightness's grey, then black; and the hint.
+            // The squares: the brightness's grey, then black; and the hint. All three are drawn opaque whatever the
+            // menu's fade: the first square's alpha is 0xff (LightingItem_RenderColoured), the second's colour is
+            // 0xff000000 (LightingItem_Setup), each draws at its own alpha (BaseWidget_Render) and the hint is never
+            // given the menu's.
             const auto grey = static_cast<std::uint8_t>(std::clamp(m_values.brightness, 0, 255));
-            const std::array<graphics::Rgba, 2> colours{graphics::Rgba{grey, grey, grey, alpha},
-                                                        graphics::Rgba{0, 0, 0, alpha}};
+            const std::array<graphics::Rgba, 2> colours{graphics::Rgba{grey, grey, grey, 255},
+                                                        graphics::Rgba{0, 0, 0, 255}};
             for (std::size_t s = 0; s < m_squares.size(); ++s) {
                 BaseWidget& square = m_squares.at(s);
                 square.setup(BaseWidgetSetup{.x = kSquareX.at(s),
