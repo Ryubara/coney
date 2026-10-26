@@ -328,6 +328,10 @@ void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees, const std:
         m_ai->markDebugSpawned(made);
         bindDebugFighter(made, look, model);
     }
+    // With every gang slot in use the fighter has no gang, so it is nobody's friend or enemy: say so.
+    if (const ai::Brain* brain = m_ai->brainOf(made); brain != nullptr && brain->gang() == nullptr) {
+        m_print("fighters: no free gang slot, so a fighter was made with no gang\n");
+    }
     FighterMesh mesh;
     mesh.character = look.character;
     mesh.model = model;
