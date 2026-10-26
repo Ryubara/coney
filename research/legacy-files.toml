@@ -2559,9 +2559,6 @@ citation = 16
 ["tests/physics/sphere_triangle_test.cpp"]
 citation = 8
 
-["tests/platform/character_mesh_test.cpp"]
-citation = 1
-
 ["tests/platform/clip_recorder_test.cpp"]
 citation = 4
 
