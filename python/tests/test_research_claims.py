@@ -704,3 +704,19 @@ def test_an_xemu_run_is_no_evidence_for_the_ps2(tmp_path: Path) -> None:
     root = make_repo(tmp_path, text)
     _xemu_record(root)
     assert any(XEMU_RUN in e and "backs only a claim about the Xbox" in e for e in claims_of(root).errors)
+
+
+def test_the_xbox_words_match_in_any_case_and_whole_words_only() -> None:
+    site = research_claims._Site(
+        "page.md:1", "", ("confirmed-runtime",), (), (), (), set(), True, block="on the xbox the ramp is 3"
+    )
+    assert research_claims.about_xbox(site, ("Xbox", "XBE"))
+    assert research_claims.about_xbox(
+        research_claims._Site("page.md:1", "", (), (), (), (), set(), True, block="the XBE header"), ("Xbox", "XBE")
+    )
+    assert not research_claims.about_xbox(
+        research_claims._Site("page.md:1", "", (), (), (), (), set(), True, block="an xboxlike thing"), ("Xbox",)
+    )
+    assert research_claims.about_xbox(
+        research_claims._Site("docs/research/xbox-executable.md:9", "", (), (), (), (), set(), True), ("Xbox",)
+    )

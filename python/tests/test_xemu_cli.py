@@ -3,16 +3,20 @@
 and its formats, `record-run` writing an xemu run record from a fake monitor, the install search and the parser."""
 
 import argparse
+import json
 import shutil
 import struct
+import time
 import tomllib
 from pathlib import Path
 
 import pytest
 from conventions_support import REPO
-from xemu_support import fake_xemu, make_copy
+from xemu_support import fake_xemu, make_copy, make_install
 
-from coney_tools import cli, run_records, run_records_cli, xemu_claims, xemu_cli
+from coney_tools import cli, pcsx2_proc, run_records, run_records_cli, xemu_claims, xemu_cli
+from coney_tools.config import ConfigError
+from coney_tools.pcsx2_claims import ClaimError
 from coney_tools.xemu_claims import Registry
 from coney_tools.xemu_copies import Copy
 
@@ -106,3 +110,184 @@ def test_record_run_writes_an_xemu_record(tmp_path: Path, monkeypatch: pytest.Mo
     record = run_records.load(root, "r-20261025-ramp-index")
     assert (record.emulator, record.pcsx2_version, record.copy, record.state) == ("xemu", "v0.8.110", "xemu", "level-1")
     assert record.tool == "xemu record-run" and record.values == {"ramp_index": 3}
+
+
+# --- claim, release, set-up and launch, on a synthetic install and copies -------------------------------------------
+
+
+@pytest.fixture
+def machine(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Registry:
+    """Two fake copies under `emulators/` and their registry as `default_registry` returns it; no xemu process runs and
+    nothing serves a port."""
+    monkeypatch.setattr(xemu_claims, "xemu_processes", dict)
+    monkeypatch.setattr(xemu_claims, "is_xemu", lambda pid: False)
+    monkeypatch.setattr(xemu_claims, "port_open", lambda port: False)
+    make_copy(tmp_path / "emulators", "xemu", 61101, 61102)
+    make_copy(tmp_path / "emulators", "xemu-b", 61103, 61104)
+    registry = Registry(tmp_path / "emulators", tmp_path / "claims")
+    monkeypatch.setattr(xemu_claims, "default_registry", lambda start=None: registry)
+    return registry
+
+
+def configure(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, **paths: Path) -> None:
+    """The config `xemu_cli` reads: these paths and the default numbers."""
+    numbers = {"xemu_copies": 2, "xemu_gdb_base": 61201, "xemu_monitor_base": 61301}
+    monkeypatch.setattr(xemu_cli, "_config", lambda: (dict(paths), numbers, tmp_path))
+
+
+def test_claim_prints_the_copy_and_its_ports_and_release_frees_it(
+    machine: Registry, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert xemu_cli.run_claim("alice", None, False, None) == 0
+    out = capsys.readouterr().out
+    assert "alice holds xemu:" in out and "GDB port 61101, monitor port 61102" in out
+    assert machine.read("xemu") is not None
+    assert xemu_cli.run_release("alice", None, False) == 0
+    assert "released xemu (held by alice)" in capsys.readouterr().out
+    assert machine.read("xemu") is None
+
+
+def test_claim_json_and_a_second_agent_gets_the_next_copy(
+    machine: Registry, capsys: pytest.CaptureFixture[str]
+) -> None:
+    xemu_cli.run_claim("alice", None, True, None)
+    first = json.loads(capsys.readouterr().out)
+    xemu_cli.run_claim("bob", None, True, None)
+    second = json.loads(capsys.readouterr().out)
+    assert (first["copy"], second["copy"]) == ("xemu", "xemu-b") and first["took_over"] is None
+
+
+def test_a_copy_another_agent_holds_is_neither_claimed_nor_released_without_force(machine: Registry) -> None:
+    xemu_cli.run_claim("alice", "xemu", False, None)
+    with pytest.raises(ClaimError):
+        xemu_cli.run_claim("bob", "xemu", False, None)
+    with pytest.raises(ClaimError):
+        xemu_cli.run_release("bob", "xemu", False)
+    assert machine.read("xemu") is not None
+    assert xemu_cli.run_release("bob", "xemu", True) == 0 and machine.read("xemu") is None
+
+
+def test_setup_copies_makes_copies_from_the_install_and_leaves_its_console_files(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(xemu_claims, "xemu_processes", dict)
+    install = make_install(tmp_path)
+    root = tmp_path / "emulators"
+    configure(monkeypatch, tmp_path, xemu_install=install, xemu_root=root)
+    assert xemu_cli.run_setup_copies(None, False, False) == 0
+    assert sorted(p.name for p in root.iterdir()) == ["xemu", "xemu-b"]
+    assert (root / "xemu" / "xemu.exe").is_file() and (root / "xemu" / "SDL2.dll").is_file()
+    assert not (root / "xemu" / "bios.exe").exists()  # a console file with a program's suffix is never a program
+    ports = tomllib.loads((root / "xemu-b" / "coney-copy.toml").read_text(encoding="utf-8"))
+    assert ports == {"gdb_port": 61202, "monitor_port": 61302}
+    assert "show_welcome = true" in (install / "xemu.toml").read_text(encoding="utf-8")  # the install is read only
+    assert xemu_cli.run_setup_copies(1, False, True) == 0  # a dry run changes nothing
+
+
+def test_setup_copies_refuses_a_root_inside_a_checkout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(xemu_claims, "xemu_processes", dict)
+    inside = REPO / "emulators-never-made"
+    configure(monkeypatch, tmp_path, xemu_install=make_install(tmp_path), xemu_root=inside)
+    with pytest.raises(ConfigError, match="inside the repository"):
+        xemu_cli.run_setup_copies(None, False, False)
+    assert not inside.exists()
+
+
+def test_setup_copies_without_an_install_names_the_key(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    configure(monkeypatch, tmp_path, xemu_root=tmp_path / "emulators")
+    with pytest.raises(ConfigError, match="xemu_install"):
+        xemu_cli.run_setup_copies(None, False, False)
+
+
+def test_setup_copies_exits_1_when_a_copys_xemu_runs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(xemu_claims, "xemu_processes", dict)
+    root = tmp_path / "emulators"
+    configure(monkeypatch, tmp_path, xemu_install=make_install(tmp_path), xemu_root=root)
+    assert xemu_cli.run_setup_copies(1, False, False) == 0
+    monkeypatch.setattr(xemu_claims, "xemu_processes", lambda: {99: root / "xemu" / "xemu.exe"})
+    assert xemu_cli.run_setup_copies(1, False, False) == 1
+
+
+class Launched:
+    """What `run_launch` started: the command lines, and whether the process it started is alive."""
+
+    def __init__(self) -> None:
+        self.commands: list[list[str]] = []
+        self.alive = True
+
+
+@pytest.fixture
+def launched(machine: Registry, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Launched:
+    """`run_launch` with the process start, its liveness and the monitor's port faked, and a disc of one byte."""
+    seen = Launched()
+
+    def start(command: list[str]) -> int:
+        seen.commands.append(command)
+        return 4242
+
+    monkeypatch.setattr(pcsx2_proc, "start_detached", start)
+    monkeypatch.setattr(pcsx2_proc, "pid_alive", lambda pid: seen.alive)
+    monkeypatch.setattr(xemu_cli, "port_open", lambda port: True)
+    (tmp_path / "disc").mkdir()
+    (tmp_path / "disc" / "game.xiso").write_bytes(b"x")
+    configure(monkeypatch, tmp_path, xemu_dvd=tmp_path / "disc" / "game.xiso")
+    return seen
+
+
+def test_launch_sets_the_disc_starts_xemu_and_notes_its_pid(
+    launched: Launched, machine: Registry, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert xemu_cli.run_launch("alice", None, False, 1.0) == 0
+    assert "alice runs xemu: xemu pid 4242, GDB port 61101, monitor port 61102" in capsys.readouterr().out
+    (command,) = launched.commands
+    assert command[1:] == ["-gdb", "tcp:127.0.0.1:61101", "-monitor", "tcp:127.0.0.1:61102,server,nowait"]
+    settings = tomllib.loads((tmp_path / "emulators" / "xemu" / "xemu.toml").read_text(encoding="utf-8"))
+    assert settings["sys"]["files"]["dvd_path"] == str(tmp_path / "disc" / "game.xiso")
+    claim = machine.read("xemu")
+    assert claim is not None and claim.xemu_pid == 4242
+
+
+def test_launch_paused_adds_the_stop_flag(launched: Launched) -> None:
+    xemu_cli.run_launch("alice", None, True, 1.0)
+    assert launched.commands[0][-1] == "-S"
+
+
+def test_launch_leaves_a_running_xemu_alone(
+    launched: Launched, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    xemu_cli.run_claim("alice", "xemu", False, None)  # a copy with an xemu running and no claim is not handed out
+    monkeypatch.setattr(xemu_claims, "xemu_processes", lambda: {77: tmp_path / "emulators" / "xemu" / "xemu.exe"})
+    capsys.readouterr()
+    assert xemu_cli.run_launch("alice", None, False, 1.0) == 0
+    assert "already runs (pid 77)" in capsys.readouterr().out and launched.commands == []
+
+
+def test_launch_needs_a_disc_and_refuses_one_inside_a_checkout(
+    launched: Launched, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    configure(monkeypatch, tmp_path)
+    with pytest.raises(ConfigError, match="no disc image"):
+        xemu_cli.run_launch("alice", None, False, 1.0)
+    with pytest.raises(ConfigError, match="no disc image"):
+        xemu_cli.run_launch("alice", tmp_path / "missing.xiso", False, 1.0)
+    inside = REPO / "docs" / "guides" / "coney-tools-xemu.md"  # any real file: the rule is about where it lies
+    with pytest.raises(ConfigError, match="inside the repository"):
+        xemu_cli.run_launch("alice", inside, False, 1.0)
+    assert launched.commands == []
+
+
+def test_launch_names_a_copy_with_no_program(launched: Launched, tmp_path: Path) -> None:
+    (tmp_path / "emulators" / "xemu" / "xemu.exe").unlink()
+    with pytest.raises(ConfigError, match="setup-copies"):
+        xemu_cli.run_launch("alice", None, False, 1.0)
+
+
+def test_launch_reports_an_xemu_that_ends_or_never_answers(launched: Launched, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(xemu_cli, "port_open", lambda port: False)
+    launched.alive = False
+    with pytest.raises(ConfigError, match="ended before its monitor answered"):
+        xemu_cli.run_launch("alice", None, False, 5.0)
+    launched.alive = True
+    monkeypatch.setattr(time, "sleep", lambda seconds: None)
+    with pytest.raises(ConfigError, match="did not answer within 0 s"):
+        xemu_cli.run_launch("alice", None, False, 0.0)

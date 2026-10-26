@@ -14,7 +14,8 @@ only for the read (coney_tools.xemu_debug). `READ_ONLY_TOOLS` are the ones that 
 reviewer gets those only (`.claude/agents/reviewer.md`, which a test holds to this list).
 
 The protocol is MCP's stdio transport: one JSON-RPC 2.0 message per line on stdin and stdout. Nothing else may reach
-stdout; errors of a tool are its answer (`isError`), never a crash of the server.
+stdout; errors of a tool are its answer (`isError`), never a crash of the server. A picture is written only inside the
+shared scratch folder (the reviewer holds `xemu_screenshot` as a read-only tool).
 """
 
 from __future__ import annotations
@@ -101,6 +102,14 @@ def _count(arguments: Mapping[str, Any], key: str, default: int, least: int, mos
     return value
 
 
+def _text(arguments: Mapping[str, Any], key: str, default: str | None = None) -> str:
+    """A text argument: a string, or `default` when absent; any other JSON type is the caller's error."""
+    value = arguments.get(key, default)
+    if not isinstance(value, str):
+        raise ConfigError(f"{key} must be text, got {value!r}" if key in arguments else f"{key} is needed")
+    return value
+
+
 def _stop(stop: Stop | None) -> str:
     """A stop reply in words."""
     if stop is None:
@@ -119,7 +128,7 @@ def _status(server: Server, session: XemuSession, arguments: dict[str, Any]) -> 
 
 def _read_memory(server: Server, session: XemuSession, arguments: dict[str, Any]) -> object:
     address = parse_address(arguments.get("address"))
-    kind = arguments.get("type", "hex")
+    kind = _text(arguments, "type", "hex")
     if kind != "hex" and kind not in VALUE_TYPES:
         raise ConfigError(f"type {kind!r}: hex or one of {', '.join(VALUE_TYPES)}")
     size = struct.calcsize(VALUE_TYPES[kind]) if kind != "hex" else 1
@@ -136,16 +145,16 @@ def _write_memory(server: Server, session: XemuSession, arguments: dict[str, Any
     address = parse_address(arguments.get("address"))
     if "hex" in arguments:
         try:
-            data = bytes.fromhex(str(arguments["hex"]))
+            data = bytes.fromhex(_text(arguments, "hex"))
         except ValueError as error:
             raise ConfigError(f"hex {arguments['hex']!r}: not hex digits") from error
     else:
-        kind = arguments.get("type", "u32")
+        kind = _text(arguments, "type", "u32")
         if kind not in VALUE_TYPES or "value" not in arguments:
             raise ConfigError(f"give hex, or value with a type ({', '.join(VALUE_TYPES)})")
         try:
             data = struct.pack(VALUE_TYPES[kind], arguments["value"])
-        except struct.error as error:
+        except (struct.error, TypeError) as error:
             raise ConfigError(f"value {arguments['value']!r} is not a {kind}: {error}") from error
     if not 1 <= len(data) <= MAX_READ:
         raise ConfigError(f"write 1 to {MAX_READ} bytes, not {len(data)}")
@@ -158,14 +167,14 @@ def _read_registers(server: Server, session: XemuSession, arguments: dict[str, A
 
 
 def _write_register(server: Server, session: XemuSession, arguments: dict[str, Any]) -> object:
-    name = str(arguments.get("name", ""))
+    name = _text(arguments, "name")
     value = parse_address(arguments.get("value"))
     session.write_register(name, value)
     return f"{name} = 0x{value:08x}"
 
 
 def _point(arguments: dict[str, Any]) -> tuple[str, int, int]:
-    kind = str(arguments.get("kind", "break"))
+    kind = _text(arguments, "kind", "break")
     if kind not in POINT_KINDS:
         raise ConfigError(f"kind {kind!r}: one of {', '.join(POINT_KINDS)}")
     return kind, parse_address(arguments.get("address")), _count(arguments, "length", 1, 1, 8)
@@ -204,8 +213,13 @@ def _step(server: Server, session: XemuSession, arguments: dict[str, Any]) -> ob
 
 
 def _screenshot(server: Server, session: XemuSession, arguments: dict[str, Any]) -> object:
-    out = Path(arguments["out"]) if arguments.get("out") else server.capture_path(session.copy.name)
-    refuse_inside_repo(out)
+    if arguments.get("out"):
+        out = Path(_text(arguments, "out"))
+        refuse_inside_repo(out)  # the legal rule first, so its message is the one a caller in a checkout reads
+        out = server.confined(out)
+    else:
+        out = server.capture_path(session.copy.name)
+        refuse_inside_repo(out)
     width, height, how = session.screenshot(
         out, _count(arguments, "width", 640, 1, 1920), _count(arguments, "height", 480, 1, 1080)
     )
@@ -217,13 +231,15 @@ def _list_snapshots(server: Server, session: XemuSession, arguments: dict[str, A
 
 
 def _save_snapshot(server: Server, session: XemuSession, arguments: dict[str, Any]) -> object:
-    session.save_snapshot(str(arguments.get("name", "")))
-    return f"saved snapshot {arguments['name']} in {session.copy.name}'s disk image"
+    name = _text(arguments, "name")
+    session.save_snapshot(name)
+    return f"saved snapshot {name} in {session.copy.name}'s disk image"
 
 
 def _load_snapshot(server: Server, session: XemuSession, arguments: dict[str, Any]) -> object:
-    session.load_snapshot(str(arguments.get("name", "")))
-    return f"loaded snapshot {arguments['name']}"
+    name = _text(arguments, "name")
+    session.load_snapshot(name)
+    return f"loaded snapshot {name}"
 
 
 _POINT_ARGS = {
@@ -361,6 +377,16 @@ class Server:
             raise ConfigError("no scratch folder is known: pass `out`, a path outside the repository")
         return self.scratch / "xemu" / f"{copy}-{datetime.now(UTC):%Y%m%d-%H%M%S}.png"
 
+    def confined(self, path: Path) -> Path:
+        """A path the caller named for a picture: it must lie inside the shared scratch folder, so that a tool the
+        reviewer holds as read-only writes nowhere else."""
+        if self.scratch is None:
+            raise ConfigError("no scratch folder is known: leave `out` out, or set `scratch_dir`")
+        target = path.resolve()
+        if not target.is_relative_to(self.scratch.resolve()):
+            raise ConfigError(f"out {path!r}: a picture goes inside the shared scratch folder ({self.scratch})")
+        return target
+
     def _drop(self, agent: str) -> None:
         held = self.held.pop(agent, None)
         if held is not None:
@@ -409,7 +435,7 @@ class Server:
             if agent in self.held and self.held[agent].session.broken:
                 self._drop(agent)
             return f"{name}: {error}", True
-        except (OSError, ValueError, KeyError) as error:
+        except Exception as error:  # a tool's failure of any kind is its answer, never the server's end
             self._drop(agent)
             return f"{name}: {type(error).__name__}: {error}", True
         return (result if isinstance(result, str) else json.dumps(result, indent=1)), False
@@ -435,6 +461,8 @@ class Server:
         if ident is None:
             return None
         params = message.get("params") or {}
+        if not isinstance(params, dict):
+            return {"jsonrpc": "2.0", "id": ident, "error": {"code": -32602, "message": "params must be an object"}}
         if method == "initialize":
             result: object = {
                 "protocolVersion": params.get("protocolVersion", PROTOCOL_VERSION),
@@ -451,11 +479,27 @@ class Server:
             arguments = params.get("arguments") or {}
             if not isinstance(arguments, dict):
                 arguments = {}
-            text, failed = self.call(str(params.get("name", "")), arguments)
+            name = params.get("name")
+            text, failed = self.call(name if isinstance(name, str) else "", arguments)
             result = {"content": [{"type": "text", "text": text}], "isError": failed}
         else:
             return {"jsonrpc": "2.0", "id": ident, "error": {"code": -32601, "message": f"no method {method!r}"}}
         return {"jsonrpc": "2.0", "id": ident, "result": result}
+
+
+def _answer(server: Server, message: object) -> dict[str, object] | None:
+    """The server's answer to one parsed message; a bug while handling it is an error answer, never the end of the
+    server every agent of the session shares."""
+    if not isinstance(message, dict):
+        return None
+    try:
+        return server.handle(message)
+    except Exception as error:
+        return {
+            "jsonrpc": "2.0",
+            "id": message.get("id"),
+            "error": {"code": -32603, "message": f"{type(error).__name__}: {error}"},
+        }
 
 
 def serve(stdin: IO[str], stdout: IO[str], server: Server) -> int:
@@ -473,7 +517,7 @@ def serve(stdin: IO[str], stdout: IO[str], server: Server) -> int:
                     "error": {"code": -32700, "message": "not JSON"},
                 }
             else:
-                answer = server.handle(message) if isinstance(message, dict) else None
+                answer = _answer(server, message)
             if answer is not None:
                 stdout.write(json.dumps(answer) + "\n")
                 stdout.flush()

@@ -315,3 +315,26 @@ def make_copy(root: Path, name: str, gdb: int, monitor: int) -> Path:
     (folder / "xemu.toml").write_text("[general]\nshow_welcome = false\n", encoding="utf-8")
     (folder / "coney-copy.toml").write_text(f"gdb_port = {gdb}\nmonitor_port = {monitor}\n", encoding="utf-8")
     return folder
+
+
+def make_install(root: Path, portable: bool = True) -> Path:
+    """A synthetic xemu install: an empty xemu.exe and a dll, and the user's own files (stand-ins of a few bytes)
+    named by its xemu.toml: a boot ROM and BIOS beside the program, a disk image and an EEPROM in a subfolder."""
+    folder = root / "xemu-install"
+    (folder / "console").mkdir(parents=True)
+    (folder / "xemu.exe").write_bytes(b"MZ")
+    (folder / "SDL2.dll").write_bytes(b"MZ")
+    (folder / "mcpx.bin").write_bytes(b"\x01" * 4)
+    (folder / "bios.exe").write_bytes(b"\x02" * 4)  # a console file with a program's suffix must still be left alone
+    (folder / "console" / "xbox_hdd.qcow2").write_bytes(b"QFI\xfb")
+    (folder / "console" / "eeprom.bin").write_bytes(b"\x03" * 4)
+    settings = (
+        "[general]\nshow_welcome = true\n\n[sys.files]\n"
+        f"bootrom_path = '{(folder / 'mcpx.bin').as_posix()}'\n"
+        "flashrom_path = 'bios.exe'\n"
+        "hdd_path = 'console/xbox_hdd.qcow2'\n"
+        "eeprom_path = 'console/eeprom.bin'\n"
+        "\n[display.quality]\nsurface_scale = 3\n"
+    )
+    (folder / ("xemu.toml" if portable else "elsewhere.toml")).write_text(settings, encoding="utf-8")
+    return folder

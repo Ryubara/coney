@@ -49,9 +49,9 @@ PROGRAM_SUFFIXES: tuple[str, ...] = (".exe", ".dll")
 #: The settings every copy gets on top of the install's (table, key, value), so that an agent's xemu stays out of the
 #: user's way and its frames compare: no welcome window or boot animation, no update check, a window (never full
 #: screen) of a fixed size at a fixed render scale, no notifications, and no gamepad bound automatically (the user's pad
-#: must never drive an agent's game; port 1 takes the keyboard, which `xemu` posts keys to by window handle). xemu
-#: warns of a key it does not know (xemu.log: `Warning: unrecognized key`). Checked against xemu 0.8.139 at the first
-#: live run (docs/guides/coney-tools-xemu.md#settings).
+#: must never drive an agent's game; port 1 is bound to the keyboard, which only a key sent to the copy's window
+#: reaches, and no Coney command sends one yet). xemu warns of a key it does not know (xemu.log: `Warning:
+#: unrecognized key`). Checked against xemu 0.8.139 at the first live run (docs/guides/coney-tools-xemu.md#settings).
 COPY_SETTINGS: tuple[tuple[str, str, object], ...] = (
     ("general", "show_welcome", False),
     ("general", "skip_boot_anim", True),

@@ -14,8 +14,8 @@ a hand-typed `gh pr create` or a push before the command runs. Such a session wo
 events, deny formats and trust rules, and what stays Claude Code's only (the `Agent` tool's rules, the identity token,
 the trailer guard): [Agent tools and their hooks](enforcement.md#harnesses). Supported tools (maintainer decisions of
 2026-10-27 and 2026-10-29): Codex, Gemini CLI, Antigravity, Cursor, GitHub Copilot and Grok Build, the Codex,
-Antigravity and Grok command-line tools among them. Another tool reads the rules from `AGENTS.md`, can take the two MCP
-servers as its own entries (the same `uv run --isolated --frozen --project python coney-tools mcp serve <name>` command,
+Antigravity and Grok command-line tools among them. Another tool reads the rules from `AGENTS.md`, can take the three MCP
+servers (`ghidra-mcp`, `pcsx2`, `xemu`) as its own entries (the same `uv run --isolated --frozen --project python coney-tools mcp serve <name>` command,
 run from the checkout), and runs the checks that come after the hooks through three commands that need no Claude Code,
 because every program that decides a rule is a `coney-tools` command or a git hook:
 
@@ -49,10 +49,10 @@ learn.chatgpt.com), and says where a page is silent.
   [Hooks](https://learn.chatgpt.com/docs/hooks).
 - **MCP.** `codex mcp add <name> -- <command>` (or a `[mcp_servers.<name>]` table in `~/.codex/config.toml`, or in a
   trusted project's `.codex/config.toml`) registers a stdio server. The page names no project-level `.mcp.json` (it
-  mentions that file only for servers a plugin provides), so assume Codex does not read ours and give it the two
+  mentions that file only for servers a plugin provides), so assume Codex does not read ours and give it the three
   commands. For the cloud it says only "Local MCP servers and transports may not be available in the cloud; check
-  connectivity and authentication separately", and not that a configured server runs there. Coney's two servers need
-  a disc, Ghidra and PCSX2 on the same machine ([Ghidra](ghidra.md),
+  connectivity and authentication separately", and not that a configured server runs there. Coney's servers need
+  a disc, Ghidra and PCSX2 (or xemu) on the same machine ([Ghidra](ghidra.md),
   [Driving PCSX2](research-tools.md#driving-pcsx2)), so a Codex task without them says so in the description's Testing
   section and does no reverse engineering. Source: [MCP](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
 - **Local runs.** The sandbox is `read-only`, `workspace-write` (the default: edit the workspace and run routine

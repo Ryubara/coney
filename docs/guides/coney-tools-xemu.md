@@ -28,6 +28,9 @@ uv run --project python coney-tools xemu status [--json]
 uv run --project python coney-tools xemu check-ports --agent ID [--gdb-port N] [--monitor-port N]
 ```
 
+The tools are **Windows-only** for now: `find-install` looks for `xemu.exe`, `setup-copies` copies `.exe` and `.dll` files,
+and `launch` starts xemu through WMI. A Linux or macOS port is a separate unit.
+
 `find-install` looks for an `xemu.exe` in the usual places (your Desktop, Downloads and Documents, the program folders,
 three levels down) and prints each with its settings file; it only reads, and exits 1 when it finds none. Set
 `xemu_install` to the one to use.
@@ -52,10 +55,9 @@ xemu reads `xemu.toml` beside its executable before the user's own, which is wha
 mode, confirmed on 0.8.139: its log says `base path: <the copy's folder>`, and it writes its log, shader cache and
 settings there, never into the install).
 
-Until this page's tools are on `main`, put `xemu_install` and `xemu_dvd` in the **worktree's own** `coney.local.toml`
-(a copy of the main one, which a worktree reads first), not in the main checkout's: a coney-tools without these keys
-refuses the file as having unknown keys, and so breaks every other worktree's checks. After the merge they belong in
-the main file.
+`xemu_install` and `xemu_dvd` go in the main checkout's `coney.local.toml`, which every worktree reads. A worktree
+branched before this page's tools merged refuses the file as having unknown keys: update that worktree
+(`git rebase origin/main`) rather than keep the keys out of the main file.
 
 ### Headless settings {#settings}
 
@@ -70,14 +72,15 @@ way and its frames compare (`COPY_SETTINGS` in `repo:python/src/coney_tools/xemu
 | `display.quality` `surface_scale` | `1` | a fixed render scale, so frames of two runs compare |
 | `display.ui` `show_notifications` | `false` | nothing drawn over the game |
 | `input` `auto_bind`, `background_input_capture` | `false`, `false` | the user's gamepad never drives an agent's game |
-| `input.bindings` `port1` | `keyboard` | the virtual pad: port 1 takes keys posted to the copy's window by handle |
+| `input.bindings` `port1` | `keyboard` | port 1 is the keyboard, so nothing but a key sent to the copy's window drives the game (no Coney command sends one yet) |
 
 xemu warns of a key it does not know, in the `xemu.log` beside its executable (`Warning: unrecognized key '...'`):
 read that log after a change to the table. Checked live on xemu 0.8.139 (Windows): every key is known, `skip_boot_anim`
 reaches QEMU as `short-animation=on` and the window is 640 x 480; the first draft's `fullscreen_on_boot` was wrong
 (the key is `fullscreen_on_startup`). That `port1 = 'keyboard'` is the keyboard binding is not yet exercised: no
-key has been sent to a copy. `launch` starts xemu through WMI, outside the agent's process tree, so it cannot take
-the keyboard focus ([How the launcher keeps the focus off](research-tools.md#driving-pcsx2)).
+key has been sent to a copy, and no `xemu` command or tool sends one (`pcsx2 keys` is for PCSX2 copies).
+`launch` starts xemu through WMI, outside the agent's process tree, so it cannot take the keyboard focus
+([How the launcher keeps the focus off](research-tools.md#driving-pcsx2)).
 
 ### Claims {#claims}
 
@@ -120,6 +123,10 @@ needs no translation. The stub is all-stop, which shapes every tool:
 `read` is a quick look from a shell: `--type` `hex` (default), `u8`, `u16`, `u32`, `i32` or `f32`, `--count` values,
 4 KiB at most. A read is for numbers, never for a dump of the game's memory.
 
+**No authentication.** The stub and the monitor listen on `127.0.0.1` only, and anything on the machine that connects
+to them can read and write the game's memory, and QEMU's monitor can be made to run commands on the host. That is
+fine on a one-user development machine, which is what Coney's tools assume; on a shared machine, do not run a copy.
+
 ### The monitor {#monitor}
 
 QEMU's human monitor on the copy's monitor port (`repo:python/src/coney_tools/qemu_monitor.py`) answers what the stub
@@ -149,7 +156,7 @@ ports to pass. Claim in a shell first, so [the hook](agents.md#xemu-guard) knows
 | `xemu_write_register` | one register; pause first | |
 | `xemu_set_breakpoint`, `xemu_remove_breakpoint` | `kind` `break` (default) or `hardware`, or a watchpoint `write`, `read` or `access` of `length` bytes | |
 | `xemu_pause`, `xemu_continue`, `xemu_step` | pause; run (with `wait_seconds`, up to 60, wait for a point to hit and say where); run `count` instructions | |
-| `xemu_screenshot` | a PNG of the screen (`out`, default `xemu/<copy>-<time>.png` in the shared scratch folder; never inside a checkout; `width` and `height` of the [front buffer](#screenshot), default 640 x 480) | yes |
+| `xemu_screenshot` | a PNG of the screen (`out`, default `xemu/<copy>-<time>.png` in the shared scratch folder; `out` too must lie inside that folder, so the tool the reviewer holds writes nowhere else, and never inside a checkout; `width` and `height` of the [front buffer](#screenshot), default 640 x 480) | yes |
 | `xemu_list_snapshots`, `xemu_save_snapshot`, `xemu_load_snapshot` | the [snapshots](#snapshots) of your copy's disk image | list only |
 | `xemu_disconnect` | close your connection; the game stays running or paused as it was | |
 
@@ -205,7 +212,7 @@ worktree's `coney.local.toml`), his install untouched (every file's time unchang
 | Check | Result |
 | --- | --- |
 | `launch` | the game booted to its intro in the claimed copy; `-gdb tcp:127.0.0.1:1234` and `-monitor tcp:127.0.0.1:4444,server,nowait` accepted on the Windows build |
-| `read 0x00010000 --type u32 --count 4` | `1212498520` first, which is `0x48454258`: the bytes `XBEH`, the XBE header magic at the image base, as the executable page says |
+| `read 0x00010000 --type u32 --count 4` | `1212498520` first, which is `0x48454258`: the bytes `XBEH`, the XBE header magic at the image base (`0x00010000`, [Xbox executable](../research/xbox-executable.md)) |
 | portable lookup | xemu logged `base path` and `config path` in the copy's folder |
 | `xemu.toml` keys | all known except the draft's `fullscreen_on_boot`, fixed to `fullscreen_on_startup` ([the table](#settings)) |
 | `info version` | `10.2.0`, QEMU's; xemu's release comes from `xemu.log` |

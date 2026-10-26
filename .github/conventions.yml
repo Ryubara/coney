@@ -1136,7 +1136,7 @@ runs:
   max_text: 600                                  # characters of the method, and of any other text field
   kinds: [recipe, trace, method]    # recipe: pcsx2 recipes run; trace: trace original; method: pcsx2 record-run, xemu record-run
   # An xemu run observed the Xbox build, so it backs only a claim about the Xbox: one whose block, grading line or page
-  # name has one of these words (case as written, whole words; a page named xbox-*.md counts). `research claims` refuses
+  # name has one of these words (any case, whole words; a page named xbox-*.md counts). `research claims` refuses
   # an xemu run on any other claim: what the Xbox does is no evidence for the PS2 (docs/guides/research-evidence.md#run-records).
   xbox_words: [Xbox, XBE, xemu]
 

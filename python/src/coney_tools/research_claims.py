@@ -316,13 +316,17 @@ def _back_runtime(report: Report, backing: _Backing, site: _Site) -> str:
 
 
 def about_xbox(site: _Site, words: tuple[str, ...]) -> bool:
-    """Whether a claim is about the Xbox build: its block or grading text names one of `words` (whole words, case as
-    written), or its page's file name starts with `xbox`."""
+    """Whether a claim is about the Xbox build: its block or grading text names one of `words` (whole words, any
+    case: `xbox` and `Xbox` both count; the names of the runs it cites do not), or its page's file name starts with
+    `xbox`. A passing mention in a PS2 claim also passes this gate; whether the run is the right one for the claim is
+    the reviewer's check (docs/guides/review/research.md)."""
     page = Path(site.where.rsplit(":", 1)[0]).name
     if page.startswith("xbox"):
         return True
     text = f"{site.block} {site.text}"
-    return any(re.search(rf"(?<!\w){re.escape(word)}(?!\w)", text) for word in words)
+    for run_id in site.runs:  # a run's own name (`r-20261025-xbox-ramp`) is not the claim saying what it is about
+        text = text.replace(run_id, " ")
+    return any(re.search(rf"(?<!\w){re.escape(word)}(?!\w)", text, re.IGNORECASE) for word in words)
 
 
 def _back(report: Report, backing: _Backing, site: _Site) -> str:

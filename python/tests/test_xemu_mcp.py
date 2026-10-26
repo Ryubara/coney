@@ -269,3 +269,117 @@ def test_the_protocol_answers_one_line_per_request(rig: tuple[Server, FakeGdbStu
     assert {t["name"] for t in answers[1]["result"]["tools"]} >= {"xemu_status", "xemu_disconnect"}
     assert answers[2]["result"]["isError"] is False
     assert answers[3]["error"]["code"] == -32601 and answers[4]["error"]["code"] == -32700
+
+
+@pytest.mark.parametrize(
+    ("tool", "arguments"),
+    [
+        ("xemu_read_memory", {"address": 0x10000, "type": ["u32"]}),
+        ("xemu_read_memory", {"address": 0x10000, "type": {"a": 1}}),
+        ("xemu_read_memory", {"address": ["0x10000"]}),
+        ("xemu_read_memory", {"address": 0x10000, "count": "4"}),
+        ("xemu_write_memory", {"address": 0x10000, "type": ["u32"], "value": 1}),
+        ("xemu_write_memory", {"address": 0x10000, "type": "u32", "value": [1]}),
+        ("xemu_write_memory", {"address": 0x10000, "hex": ["00"]}),
+        ("xemu_write_memory", {"address": 0x10000, "hex": 5}),
+        ("xemu_write_register", {"name": ["eax"], "value": 1}),
+        ("xemu_write_register", {"name": "eax", "value": {"x": 1}}),
+        ("xemu_set_breakpoint", {"address": 0x10000, "kind": ["break"]}),
+        ("xemu_set_breakpoint", {"address": 0x10000, "length": [1]}),
+        ("xemu_continue", {"wait_seconds": "soon"}),
+        ("xemu_step", {"count": [1]}),
+        ("xemu_screenshot", {"out": 5}),
+        ("xemu_screenshot", {"out": ["a.png"]}),
+        ("xemu_screenshot", {"width": "wide"}),
+        ("xemu_save_snapshot", {"name": ["a"]}),
+        ("xemu_save_snapshot", {}),
+        ("xemu_load_snapshot", {"name": {"a": 1}}),
+    ],
+)
+def test_a_wrongly_typed_argument_is_the_tools_answer_not_a_crash(
+    rig: tuple[Server, FakeGdbStub, FakeMonitor, Registry], tool: str, arguments: dict[str, object]
+) -> None:
+    server, *_ = rig
+    text, failed = server.call(tool, {"agent": "alice", **arguments})
+    assert failed and text.startswith(tool)
+
+
+def test_a_tool_that_breaks_unexpectedly_is_still_an_answer(
+    rig: tuple[Server, FakeGdbStub, FakeMonitor, Registry], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    server, *_ = rig
+
+    def broken(*args: object) -> object:
+        raise RuntimeError("a bug in a handler")
+
+    monkeypatch.setattr(xemu_debug.XemuSession, "registers", broken)
+    text, failed = call(server, "xemu_read_registers", agent="alice")
+    assert failed and "RuntimeError" in text and "a bug in a handler" in text
+    # the connection was dropped, so the next call starts clean
+    assert "alice" not in server.held
+
+
+def test_a_screenshot_stays_in_the_shared_scratch(
+    rig: tuple[Server, FakeGdbStub, FakeMonitor, Registry], tmp_path: Path
+) -> None:
+    # The reviewer holds this tool as a read-only one: it must not write wherever it is told.
+    server, *_ = rig
+    text, failed = call(server, "xemu_screenshot", agent="alice", out=str(tmp_path / "elsewhere" / "x.png"))
+    assert failed and "scratch" in text
+    assert not (tmp_path / "elsewhere").exists()
+    text, failed = call(server, "xemu_screenshot", agent="alice", out=str(tmp_path / "scratch" / ".." / "x.png"))
+    assert failed and "scratch" in text
+    text, failed = call(server, "xemu_screenshot", agent="alice", out=str(tmp_path / "scratch" / "mine" / "x.png"))
+    assert not failed, text
+    no_scratch = Server(server.registry, server.session_factory)
+    text, failed = no_scratch.call("xemu_screenshot", {"agent": "alice", "out": str(tmp_path / "x.png")})
+    assert failed and "scratch" in text
+
+
+def test_the_protocol_survives_messages_of_the_wrong_shape(
+    rig: tuple[Server, FakeGdbStub, FakeMonitor, Registry], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    server, *_ = rig
+    requests: list[object] = [
+        {"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": ["xemu_status"]},
+        {"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": "xemu_status"},
+        {"jsonrpc": "2.0", "id": 3, "method": "initialize", "params": [1]},
+        {"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": ["x"], "arguments": [1]}},
+        {"jsonrpc": "2.0", "id": 5, "method": ["tools/list"]},
+        {
+            "jsonrpc": "2.0",
+            "id": 6,
+            "method": "tools/call",
+            "params": {"name": "xemu_status", "arguments": {"agent": "alice"}},
+        },
+    ]
+    stdin = io.StringIO("".join(json.dumps(r) + "\n" for r in requests))
+    stdout = io.StringIO()
+    assert serve(stdin, stdout, server) == 0
+    answers = {a["id"]: a for a in map(json.loads, stdout.getvalue().splitlines())}
+    assert set(answers) == {1, 2, 3, 4, 5, 6}
+    assert answers[1]["error"]["code"] == -32602 and answers[2]["error"]["code"] == -32602
+    assert answers[3]["error"]["code"] == -32602
+    assert answers[4]["result"]["isError"] is True
+    assert answers[5]["error"]["code"] == -32601
+    assert answers[6]["result"]["isError"] is False
+
+
+def test_a_bug_in_handling_a_message_does_not_stop_the_server(
+    rig: tuple[Server, FakeGdbStub, FakeMonitor, Registry], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    server, *_ = rig
+    real = server.handle
+
+    def handle(message: dict[str, object]) -> dict[str, object] | None:
+        if message.get("id") == 1:
+            raise RuntimeError("boom")
+        return real(message)
+
+    monkeypatch.setattr(server, "handle", handle)
+    stdin = io.StringIO('{"jsonrpc":"2.0","id":1,"method":"ping"}\n{"jsonrpc":"2.0","id":2,"method":"ping"}\n')
+    stdout = io.StringIO()
+    assert serve(stdin, stdout, server) == 0
+    answers = [json.loads(line) for line in stdout.getvalue().splitlines()]
+    assert answers[0]["id"] == 1 and answers[0]["error"]["code"] == -32603
+    assert answers[1] == {"jsonrpc": "2.0", "id": 2, "result": {}}

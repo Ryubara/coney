@@ -12,7 +12,7 @@ to know whether it was read in the code, seen happening, or worked out from clue
 | Level | Meaning | YAML value |
 | --- | --- | --- |
 | **confirmed (code)** | Read in the original's code, at a cited address | `confirmed-code` |
-| **confirmed (runtime)** | Observed in the original game running under PCSX2; the claim cites the [run record](#run-records) of the run (`run <id>`), which holds the PCSX2 version and the method. A legacy claim states them in its own text | `confirmed-runtime` |
+| **confirmed (runtime)** | Observed in the game running under PCSX2 (the PS2 original), or, for a claim about the Xbox build, in xemu; the claim cites the [run record](#run-records) of the run (`run <id>`), which holds the emulator's version and the method. A legacy claim states them in its own text | `confirmed-runtime` |
 | **inferred** | Follows from evidence that points one way, without being read or observed directly | `inferred` |
 | **speculative** | A plausible guess, written down so it can be tested | `speculative` |
 
