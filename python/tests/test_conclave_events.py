@@ -78,6 +78,7 @@ def test_the_config_carries_the_watch_settings_the_mod_acts_by(layout: Layout) -
     assert watch["github_seconds"] == RULES.github_seconds and watch["wake_gap_seconds"] == RULES.wake_gap_seconds
     assert watch["defer_typing_minutes"] == RULES.defer_typing_minutes
     assert watch["resend_minutes"] == RULES.resend_minutes and watch["stop_max_blocks"] == RULES.stop_max_blocks
+    assert watch["stop_reset_minutes"] == RULES.stop_reset_minutes and watch["stop_preamble"] == RULES.stop_preamble
 
 
 def test_every_event_has_the_same_fields(layout: Layout) -> None:

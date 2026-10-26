@@ -1047,6 +1047,8 @@ conclave:
     resend_minutes: 2                            # a wake the engine refused is tried again after this long
     merged_minutes: 30                           # a merged pull request is news for this long after the merge
     stop_max_blocks: 3                           # the stop guard blocks at most this many turn ends in a row for one reason
+    stop_reset_minutes: 30                       # ... and counts again from one after this long without a block
+    stop_preamble: "Open pull requests are in trouble and nobody holds the fix. Deal with each, or record who does:"
     holds_dir: pr-holds                          # a hold on a pull request's problems: one file each, in the scratch directory
     hold_default_hours: 4                        # `pr hold` lasts this long unless it is told another time
     hold_max_hours: 24                           # and never longer, so a stalled fix cannot hide for ever

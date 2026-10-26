@@ -159,7 +159,7 @@ function isEngineFunction(callee) {
 
 const {
   unwrap, isName, plainProperties, constText, snapshotProblem, isRunOptions, inlineFunction, passingHookProblems,
-  sessionStartProblems, NOT_THE_COMMAND,
+  sessionStartProblems, stopGuardProblems, NOT_THE_COMMAND,
 } = require('./conclave_boundary_syntax.cjs')({ ts, checker, req, mod, norm, isEngine, isOwn, isEngineFunction })
 
 /** Whether `call` is `<engine>.process.run(...)`. */
@@ -238,6 +238,9 @@ function checkFile(sf, label, errors, events) {
         } else if (key === 'process.run') checkRun(callee.parent)
         else if (key === 'command.register') checkNamed(callee.parent, key, 'name', 'description')
         else if (key === 'ui.open') checkNamed(callee.parent, key, 'id', 'title')
+        else if (key === 'prompt.submit') checkSubmit(callee.parent)
+        else if (key === 'ui.toast' && callee.parent.arguments.length !== 1) err(callee.parent, '$.ui.toast takes only the text to show')
+        else if (key === 'prompt.read' && callee.parent.arguments.length !== 0) err(callee.parent, '$.prompt.read takes no argument')
       } else if (!PROPERTIES.has(key)) {
         err(next, `uses $.${key}, which is not in the mod's list (no $.session. or $.model. at all)`)
       }
@@ -291,6 +294,12 @@ function checkFile(sf, label, errors, events) {
     else if ([...props.keys()].some(one => one !== property && one !== text)) err(call, `$.${key} takes only ${property} and ${text}`)
   }
 
+  // A wake is the text alone: no `asUser`, no other option that changes how the engine takes it.
+  function checkSubmit(call) {
+    const props = call.arguments.length === 1 ? plainProperties(call.arguments[0]) : null
+    if (props === null || props.size !== 1 || !props.has('text')) err(call, '$.prompt.submit takes only { text }')
+  }
+
   // The filter of a hook: `command.run` is Conclave's own command only, `ui.render` its band and its pane only.
   function checkFilter(call, event, matcher) {
     const props = matcher === undefined ? null : plainProperties(matcher)
@@ -314,6 +323,7 @@ function checkFile(sf, label, errors, events) {
   // The two hooks read in conclave_boundary_syntax.cjs: what each passes on, and how.
   const checkPassingHook = (fn, label, refusal) => passingHookProblems(fn, label, refusal).forEach(([node, why]) => err(node, why))
   const checkSessionStartHook = fn => sessionStartProblems(fn).forEach(([node, why]) => err(node, why))
+  const checkStopGuardHook = fn => stopGuardProblems(fn).forEach(([node, why]) => err(node, why))
 
   // What an on(...) call does: its filter, its handler, and the `.catch` it may carry (which also passes the event on).
   function checkHook(call, event) {
@@ -330,6 +340,7 @@ function checkFile(sf, label, errors, events) {
     const hook = arrow(args[args.length - 1])
     if (hook === null) err(args[args.length - 1], `the hook of ${event} must be an arrow function written in place with at most ($, e, next), each a plain name, which this check reads`)
     else if (event === 'classic.SessionStart') checkSessionStartHook(hook)
+    else if (event === 'classic.Stop') checkStopGuardHook(hook)
     else if (event === 'session.start' || event === 'agent.offer') checkPassingHook(hook, event, event === 'agent.offer')
     const outer = top(call)
     const chained = outer.parent
@@ -360,7 +371,7 @@ function checkFile(sf, label, errors, events) {
       }
       events.push(event.text)
       if (EVENTS.has(event.text)) return checkHook(parent, event.text)
-      return err(event, TETHER.has(event.text) ? `hooks the event ${event.text}, which is Tether's` : `hooks the event ${event.text}, which is not one of the five the mod lists`)
+      return err(event, TETHER.has(event.text) ? `hooks the event ${event.text}, which is Tether's` : `hooks the event ${event.text}, which is not one of the six the mod lists`)
     }
     return err(n, '`on` is used other than as on(...): it is renamed, passed on, cast or called indirectly')
   }

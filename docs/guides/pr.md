@@ -275,6 +275,35 @@ What it refuses, besides the proof's refusals above (each message starts with "p
 | 4 | `auto-merge on #N stays on and this release must not be merged by it; nothing was pushed` | turn it off on GitHub, rerun |
 | 4 | `push: ...` (the lease was refused: fetch the branch and have the engineer rebase onto it); `gh: ...; run pr open again`; `read-back: <url> is wrong: ...`; `git rebase <remote>/<default> stopped with no conflict: <git's message>; aborted, the branch is as it was`; a git error from the rebase on | rerun (after fixing what git names) |
 
+## pr hold {#hold}
+
+```sh
+uv run --project python coney-tools pr hold PR [--who NAME] [--hours N] [--cause CAUSE] [--note TEXT]
+uv run --project python coney-tools pr hold PR --release
+uv run --project python coney-tools pr hold --list [--json]
+```
+
+A pull request with a failed check, a conflict, a CI run that never ends or auto-merge off is a problem the
+coordinator must see: [Conclave's watchers](conclave.md#watchers) wake it for each one and its stop guard keeps it from
+ending a turn on one nobody holds. `pr hold` records that somebody holds the problem, so it is neither told again nor
+guarded:
+
+- `pr hold 812 --who engineer-2` says that engineer-2 is fixing #812. Start the agent, then record it.
+- `pr hold 812 --note "the runner pool is down"` (no `--who`) is a **waiver**: a known wait, with nobody working on
+  it. A waiver needs the note.
+- `--cause checks-failed` (or `conflict`, `ci-stuck`, `auto-merge-off`) covers that cause only; without it the hold
+  covers every cause of the pull request.
+- `--hours N` sets how long it lasts: `conclave.watch.hold_default_hours` (4) when left out, and no more than
+  `hold_max_hours` (24). **A hold ends by itself**: the problem is then open again and told again, so a fix that stalls
+  cannot hide. A new push is a new problem (the event id names the head commit), so it is not held either.
+- `--release` ends the pull request's hold now. `--list` prints the holds that run (`--json`: with their times).
+
+A hold is one small JSON file per pull request in the scratch directory (`conclave.watch.holds_dir`, `pr-holds`),
+written whole and replaced by the next hold of the same pull request; `conclave snapshot` reads them and marks the
+event `handled`. A file that cannot be read is reported (`holds_problems`) and holds nothing. Only the coordinator
+holds: `hooks.toml` refuses the command to the other roles. Exit codes: 0 done, 1 nothing to release, 2 a refused
+request (no pull request, a waiver with no note, hours out of range, `--list` with another option).
+
 ## What this does not do {#limits}
 
 These commands guard against mistakes and against agents, not against the person at the machine. `pr open` is the only

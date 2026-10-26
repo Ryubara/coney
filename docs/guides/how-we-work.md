@@ -16,8 +16,9 @@ hook holds each to its own commands and files ([Which role to start](agents.md#r
 | Role | What it is | What it reads | What it writes | When it runs |
 | --- | --- | --- | --- | --- |
 | **Maintainer** | A person | What the coordinator escalates | The [maintainer decisions](repo:AGENTS.md) only; may merge | When one is due |
-| **`coordinator`** | The main session ([The coordinator](#coordinator)) | The state file, issues, the release queue, GitHub | Tasks, briefs, pull requests and merges; the only role that writes to GitHub. No code, tests or research, and none of the commands of steps 2 to 7 | Always; Tether starts its turns |
+| **`coordinator`** | The main session ([The coordinator](#coordinator)) | The state file, issues, the release queue, GitHub | Tasks, briefs, pull requests and merges; the only role that writes to GitHub. No code, tests or research, and none of the commands of steps 2 to 7 | Always; Conclave and Tether start its turns |
 | **Tether** | A Claude Code plugin ([Waking the coordinator](coney-tools-setup.md#coord-wakes)) | The machine and GitHub | Nothing; it starts a coordinator turn | Between the coordinator's turns |
+| **Conclave** | Coney's own Claude Code mod ([Conclave](conclave.md)) | `coney-tools conclave snapshot` | Nothing; it draws, and starts a coordinator turn for Coney's own events | In a session loaded with it, between the coordinator's turns |
 | **`engineer`** | Agent, Opus (Sonnet without reverse engineering: [Which model](agents.md#models)) | Its brief, the guides, the original, research pages | Code, tests, pages and docs on its own branch, its stamps, `PR.md`. Never pushes or runs `pr open` | One per task, in a [standing team](#teams) |
 | **`tooling`** | Agent, Sonnet; the engineer's rules for the project's own tools | The guides and the tool's code; no Ghidra or PCSX2 | Tools, workflows, hooks and their guides, on its own branch. Never pushes | One per task about the tools or the process |
 | **`reviewer`** | Agent, Opus for research and `@orig`, smaller for docs and tooling ([The reviewer](agents.md#reviewer)) | The diff, the packet, the [checklists](review/index.md), the original (read only) | Its verdict and report, nothing else; it never edits | Once per committed change, by someone other than its author; again after a later commit |
@@ -535,9 +536,11 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
   changed and how to reach it ([Play-testing](testing.md#play-testing)). Research-only merges need no build.
 - **Resume what was interrupted.** A usage limit, an account switch or a cleared session can stop agents mid-task;
   the coordinator restarts each stopped track as a fresh agent from its `STATUS.md` and branch before taking new work.
-- **Let Tether wake it.** Between turns the session sees nothing. The [Tether](coney-tools-setup.md#coord-wakes) plugin's
-  watch starts a turn for new work: issues to triage, units in the release queue, detached builds that ended and stuck
-  pull requests. The settings that do this are documented there, not kept only on one machine.
+- **Let the plugins wake it.** Between turns the session sees nothing. [Conclave](conclave.md#watchers) starts a turn
+  once for each new event of Coney's own (a failed check or another pull request problem, a merge, a unit ready for
+  `pr open`, a question) and keeps the coordinator from ending a turn on a pull request problem nobody holds
+  ([`pr hold`](pr.md#hold) says who does); [Tether](coney-tools-setup.md#coord-wakes) wakes it for issues to triage and
+  detached builds that ended. The settings that do this are documented there, not kept only on one machine.
 - **Keep its own context small.** The coordinator re-reads its whole conversation on every turn: it saves the state,
   clears and continues from it at a natural boundary ([Running agents](agents.md#cache)).
 - **A lesson becomes a rule in the same commit.** A mistake that cost time (a tool pitfall, a process race) is
@@ -565,7 +568,7 @@ flowchart LR
   ci --> rules["Branch protection<br/>on main:<br/>squash merge only"]
   rules --> main(["main"])
   text["check-title,<br/>check-body,<br/>check-docs"] -.-> push
-  tether["Tether pull request guard<br/>wakes for a stuck PR"] -.-> push
+  tether["Conclave stop guard<br/>wakes for a stuck PR"] -.-> push
   conv[".github/conventions.yml<br/>one source of the rules"] -.-> text
   conv -.-> ci
 ```

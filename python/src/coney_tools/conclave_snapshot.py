@@ -93,6 +93,8 @@ def _config(src: Sources) -> dict[str, Any]:
             "defer_typing_minutes": watch.defer_typing_minutes,
             "resend_minutes": watch.resend_minutes,
             "stop_max_blocks": watch.stop_max_blocks,
+            "stop_reset_minutes": watch.stop_reset_minutes,
+            "stop_preamble": watch.stop_preamble,
         },
     }
     try:

@@ -6,7 +6,7 @@ import type { On } from 'claude-code'
 import { expect, mock, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 
-import type { Snapshot } from '../types'
+import type { EventRow, Snapshot } from '../types'
 import fixture from './fixtures/snapshot'
 
 // The moment the fixture snapshot was taken.
@@ -72,6 +72,13 @@ type World = {
   stored: Record<string, unknown>
   /** The keys the mod asked for as its own checkout's saved list. */
   ownKeys: Set<string>
+  /** The toasts shown, and the wakes the mod submitted. */
+  toasts: string[]
+  wakes: string[]
+  /** What the person has typed in the prompt box. */
+  draft: string
+  /** Set to make the engine refuse the next wakes (a person interrupted a turn). */
+  isWakeRefused: boolean
 }
 
 /** The snapshot as it reads once claims expire: the fixture was written with `claims.release` still off. */
@@ -94,6 +101,8 @@ function engine(
     isPaneShown?: boolean
     isHung?: boolean
     beneath?: Record<string, unknown>
+    /** What the plugins beneath answer to a Stop (Tether's own guard, in a real session). */
+    beneathStop?: Record<string, unknown>
   } = {},
 ): World {
   const world: World = {
@@ -106,6 +115,10 @@ function engine(
     opened: [],
     stored: {},
     ownKeys: new Set(),
+    toasts: [],
+    wakes: [],
+    draft: '',
+    isWakeRefused: false,
   }
   // The store in memory, kept here so a test can read what the mod stored (mock.store would hide it). The mod's own
   // list sits under a key that names its checkout, which the test cannot know: any `offer:` key not given as another
@@ -130,6 +143,7 @@ function engine(
   on('agent.offer', () => ({ isOffered: true }))
   // What the plugins beneath answer to the session start (Tether's context for the first turn, in a real session).
   on('classic.SessionStart', () => options.beneath ?? {})
+  on('classic.Stop', () => options.beneathStop ?? {})
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   on('command.register', () => ({ value: { command: 'conclave' } }))
   on('ui.open', (_, e) => {
@@ -141,6 +155,16 @@ function engine(
       ? [{ id: 'conclave', title: 'Conclave', isShown: true, isFocused: false, isPlaced: true }]
       : [],
   }))
+  on('ui.toast', (_, e) => {
+    world.toasts.push(e.text)
+    return { value: undefined }
+  })
+  on('prompt.read', () => ({ value: { text: world.draft, cursor: world.draft.length } }))
+  on('prompt.submit', (_, e) => {
+    if (world.isWakeRefused) return { drop: 'the turn was interrupted' }
+    world.wakes.push(e.text)
+    return { text: e.text }
+  })
   on('ui.status', (_, e) => {
     world.statuses.push(e.text)
     return { value: undefined }
@@ -304,14 +328,14 @@ test('a snapshot of a newer schema is refused, not drawn', async ($, on) => {
     on,
     prints(
       snapshot(copy => {
-        copy.schema = 2
+        copy.schema = 3
       }),
     ),
   )
   await start($, world)
 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  expect((await ui.find({ type: 'Text', text: /update the checkout/ }))?.text).toContain('schema 2')
+  expect((await ui.find({ type: 'Text', text: /update the checkout/ }))?.text).toContain('schema 3')
   expect(await ui.find({ key: 'units' })).toBeUndefined()
   await ui.unmount()
 })
@@ -951,4 +975,281 @@ test('/conclave opens the pane', async ($, on) => {
   })
   expect(done.text).toBe('Conclave pane opened.')
   expect(world.opened).toEqual(['conclave'])
+})
+
+// --- the watchers (docs/guides/conclave.md#watchers) ----------------------------------------------------------------
+
+/** A snapshot whose events are what `edit` makes of the fixture's four (a failed check, a merge, a unit, a question). */
+function withEvents(edit: (events: EventRow[]) => EventRow[]): Snapshot {
+  return snapshot(copy => {
+    if (copy.events === null || copy.events.error !== null) throw new Error('the fixture holds events')
+    copy.events.events = edit(copy.events.events)
+  })
+}
+
+/** An event of the fixture, by kind. */
+function kindOf(events: EventRow[], kind: EventRow['kind']): EventRow {
+  const found = events.find(one => one.kind === kind)
+  if (found === undefined) throw new Error(`the fixture holds no ${kind}`)
+  return found
+}
+
+/** The same events with the failed check held (handled) by an agent. */
+const held = (events: EventRow[]): EventRow[] =>
+  events.map(one => (one.kind === 'check-failed' ? { ...one, state: 'handled', handled_by: 'engineer-2 until later' } : one))
+
+/** The session of `role`, started, with its first GitHub read made. */
+async function startAs($: Engine, world: World, role: string): Promise<void> {
+  await $.session.start({ ...SESSION })
+  await $.classic.SessionStart({ source: 'startup', agent_type: role })
+  await world.clock.advance(1000)
+}
+
+const MINUTE = 60_000
+
+test('the coordinator is toasted and woken once for the events a read brings, and for no event told before', async ($, on) => {
+  const world = engine(on, prints(snapshot()))
+  await startAs($, world, 'coordinator')
+
+  // four new events: a count in one toast, one wake that names each and what to do, under the conventions' preamble
+  expect(world.toasts).toHaveLength(1)
+  expect(world.toasts[0]).toMatch(/^Conclave: 4 new events/)
+  expect(world.wakes).toHaveLength(1)
+  const lines = (world.wakes[0] ?? '').split('\n')
+  expect(lines[0]).toBe(snapshot().config.watch.preamble)
+  expect(lines).toHaveLength(5)
+  expect(lines.find(line => line.includes('#812'))).toContain('pr hold 812')
+  expect(lines.find(line => line.includes('ready for pr open'))).toContain('coney-tools pr open fix-new')
+
+  // a long time of reads that bring the same events: nothing is told again, and no idle wake comes
+  await world.clock.advance(30 * MINUTE)
+  expect(world.toasts).toHaveLength(1)
+  expect(world.wakes).toHaveLength(1)
+})
+
+test('a new event is told alone, and only when it is new', async ($, on) => {
+  const world = engine(on, prints(snapshot()))
+  await startAs($, world, 'coordinator')
+
+  const another = (events: EventRow[]): EventRow[] => [
+    ...events,
+    { ...kindOf(events, 'question'), id: 'question:fix-new:QUESTION-2.md:later', text: 'fix-new asks: Another?' },
+  ]
+  world.answer = prints(withEvents(another))
+  await world.clock.advance(3 * MINUTE)
+  expect(world.toasts.at(-1)).toBe('Conclave: fix-new asks: Another?')
+  expect(world.wakes).toHaveLength(2)
+  expect(world.wakes[1]?.split('\n').slice(1)).toHaveLength(1)
+  expect(world.wakes[1]).toContain('Another?')
+})
+
+test('a problem that is held is not told, and is told again when its hold runs out', async ($, on) => {
+  const world = engine(on, prints(withEvents(held)))
+  await startAs($, world, 'coordinator')
+  expect(world.wakes).toHaveLength(1)
+  expect(world.wakes[0]).not.toContain('#812')
+
+  // the hold runs out: the problem is open again, with the same id, and is told
+  world.answer = prints(snapshot())
+  await world.clock.advance(3 * MINUTE)
+  expect(world.wakes).toHaveLength(2)
+  expect(world.wakes[1]?.split('\n')).toHaveLength(2)
+  expect(world.wakes[1]).toContain('#812')
+
+  // held, open, held: a second hold that runs out is a state change too, and is told once more
+  world.answer = prints(withEvents(held))
+  await world.clock.advance(3 * MINUTE)
+  world.answer = prints(snapshot())
+  await world.clock.advance(3 * MINUTE)
+  expect(world.wakes).toHaveLength(3)
+})
+
+test('an event that is gone and comes back is told as a new one', async ($, on) => {
+  const world = engine(on, prints(snapshot()))
+  await startAs($, world, 'coordinator')
+  world.answer = prints(withEvents(events => events.filter(one => one.kind !== 'unit-ready')))
+  await world.clock.advance(3 * MINUTE)
+  expect(world.wakes).toHaveLength(1)
+  world.answer = prints(snapshot())
+  await world.clock.advance(3 * MINUTE)
+  expect(world.wakes).toHaveLength(2)
+  expect(world.wakes[1]).toContain('ready for pr open')
+})
+
+test('what could not be read is not taken for gone', async ($, on) => {
+  const world = engine(on, prints(snapshot()))
+  await startAs($, world, 'coordinator')
+  world.answer = prints(
+    snapshot(copy => {
+      if (copy.events === null || copy.events.error !== null) throw new Error('the fixture holds events')
+      copy.events.events = copy.events.events.filter(one => one.kind !== 'check-failed')
+      copy.events.unread = ['check-failed']
+    }),
+  )
+  await world.clock.advance(3 * MINUTE)
+  world.answer = prints(snapshot())
+  await world.clock.advance(3 * MINUTE)
+  expect(world.wakes).toHaveLength(1)
+})
+
+test('a failed events section tells nothing and forgets nothing', async ($, on) => {
+  const world = engine(on, prints(snapshot()))
+  await startAs($, world, 'coordinator')
+  world.answer = prints(
+    snapshot(copy => {
+      copy.events = { error: 'gh: rate limited' }
+    }),
+  )
+  await world.clock.advance(3 * MINUTE)
+  world.answer = prints(snapshot())
+  await world.clock.advance(3 * MINUTE)
+  expect(world.wakes).toHaveLength(1)
+})
+
+test('the events already told in an earlier session are not told again', async ($, on) => {
+  const world = engine(on, prints(snapshot()))
+  await startAs($, world, 'coordinator')
+  expect(world.wakes).toHaveLength(1)
+
+  // a new session of the same mod and store
+  await $.session.start({ ...SESSION })
+  await $.classic.SessionStart({ source: 'startup', agent_type: 'coordinator' })
+  await world.clock.advance(5 * MINUTE)
+  expect(world.wakes).toHaveLength(1)
+  expect(world.toasts).toHaveLength(1)
+})
+
+test('the other roles are neither toasted nor woken', async ($, on) => {
+  const world = engine(on, prints(snapshot()))
+  await startAs($, world, 'engineer')
+  await world.clock.advance(5 * MINUTE)
+  expect(world.toasts).toEqual([])
+  expect(world.wakes).toEqual([])
+})
+
+test('a session started with no role watches nothing', async ($, on) => {
+  const world = engine(on, prints(snapshot()))
+  await $.session.start({ ...SESSION })
+  await world.clock.advance(5 * MINUTE)
+  expect(world.wakes).toEqual([])
+})
+
+test('the roles that watch are the ones the snapshot names, not a name in the mod', async ($, on) => {
+  const world = engine(
+    on,
+    prints(
+      snapshot(copy => {
+        copy.config.watch.roles = ['engineer']
+      }),
+    ),
+  )
+  await startAs($, world, 'engineer')
+  expect(world.wakes).toHaveLength(1)
+})
+
+test('a wake waits while the person types, and goes after the deferral', async ($, on) => {
+  const world = engine(on, prints(snapshot()))
+  world.draft = 'half a thought'
+  await startAs($, world, 'coordinator')
+  const defer = snapshot().config.watch.defer_typing_minutes
+  // the toast does not wait; the wake does
+  expect(world.toasts).toHaveLength(1)
+  await world.clock.advance((defer - 2) * MINUTE)
+  expect(world.wakes).toEqual([])
+  await world.clock.advance(4 * MINUTE)
+  expect(world.wakes).toHaveLength(1)
+})
+
+test('a wake does not come sooner than the gap after the last one', async ($, on) => {
+  const world = engine(on, prints(snapshot()))
+  await startAs($, world, 'coordinator')
+  expect(world.wakes).toHaveLength(1)
+  const second = (events: EventRow[]): EventRow[] => [...events, { ...kindOf(events, 'question'), id: 'q2', text: 'fix-new asks: Two?' }]
+  world.answer = prints(withEvents(second))
+  // the next GitHub read is 120 s away, past the 60 s gap: it goes with that read, not sooner
+  await world.clock.advance(100_000)
+  expect(world.wakes).toHaveLength(1)
+  await world.clock.advance(40_000)
+  expect(world.wakes).toHaveLength(2)
+})
+
+test('a wake the engine refuses is tried again after the resend time, and once taken is not sent twice', async ($, on) => {
+  const world = engine(on, prints(snapshot()))
+  world.isWakeRefused = true
+  await startAs($, world, 'coordinator')
+  expect(world.wakes).toEqual([])
+  const resend = snapshot().config.watch.resend_minutes
+  world.isWakeRefused = false
+  await world.clock.advance((resend - 1) * MINUTE)
+  expect(world.wakes).toEqual([])
+  await world.clock.advance(2 * MINUTE)
+  expect(world.wakes).toHaveLength(1)
+  await world.clock.advance(10 * MINUTE)
+  expect(world.wakes).toHaveLength(1)
+})
+
+test('a session whose GitHub read never worked wakes for nothing', async ($, on) => {
+  const world = engine(on, fails)
+  await startAs($, world, 'coordinator')
+  await world.clock.advance(10 * MINUTE)
+  expect(world.wakes).toEqual([])
+})
+
+test('the stop guard holds the end of a coordinator turn for a problem nobody holds, a few times, then lets it end', async ($, on) => {
+  const world = engine(on, prints(snapshot()))
+  await startAs($, world, 'coordinator')
+  const watch = snapshot().config.watch
+  const before = world.runs.length
+
+  const first = await $.classic.Stop({ stop_hook_active: false })
+  expect(first.block).toContain(watch.stop_preamble)
+  expect(first.block).toContain('#812')
+  // it looked again at GitHub before it blocked
+  expect(world.runs.length).toBe(before + 1)
+  expect(world.runs.at(-1)).toContain('--github')
+
+  for (let n = 1; n < watch.stop_max_blocks; n += 1) {
+    expect((await $.classic.Stop({ stop_hook_active: true })).block).toBeDefined()
+  }
+  // past the most in a row for one reason the turn ends
+  expect((await $.classic.Stop({ stop_hook_active: true })).block).toBeUndefined()
+})
+
+test('the stop guard lets the turn end once the problem is held, as the fresh read says', async ($, on) => {
+  const world = engine(on, prints(snapshot()))
+  await startAs($, world, 'coordinator')
+  world.answer = prints(withEvents(held))
+  expect((await $.classic.Stop({ stop_hook_active: false })).block).toBeUndefined()
+})
+
+test('the stop guard does not look again when nothing is open', async ($, on) => {
+  const world = engine(on, prints(withEvents(events => events.filter(one => !one.guard))))
+  await startAs($, world, 'coordinator')
+  const reads = world.runs.length
+  expect((await $.classic.Stop({ stop_hook_active: false })).block).toBeUndefined()
+  expect(world.runs.length).toBe(reads)
+})
+
+test('the stop guard holds no engineer', async ($, on) => {
+  const world = engine(on, prints(snapshot()))
+  await startAs($, world, 'engineer')
+  expect((await $.classic.Stop({ stop_hook_active: false })).block).toBeUndefined()
+})
+
+test('the stop guard never blocks on a list it could not make current', async ($, on) => {
+  const world = engine(on, prints(snapshot()))
+  await startAs($, world, 'coordinator')
+  world.answer = fails
+  // the last GitHub read is older than three watch intervals and the fresh one fails
+  await world.clock.advance(20 * MINUTE)
+  expect((await $.classic.Stop({ stop_hook_active: false })).block).toBeUndefined()
+})
+
+test('the answer beneath the stop guard is kept whole', async ($, on) => {
+  const world = engine(on, prints(withEvents(events => events.filter(one => !one.guard))), {
+    beneathStop: { additionalContext: ['from Tether'] },
+  })
+  await startAs($, world, 'coordinator')
+  const done = await $.classic.Stop({ stop_hook_active: false })
+  expect(done.additionalContext).toEqual(['from Tether'])
 })

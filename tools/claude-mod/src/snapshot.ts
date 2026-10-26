@@ -6,10 +6,10 @@ import type { EngineInterface } from 'claude-code'
 
 import type { Held, Snapshot, Unit } from '../types'
 import { PANE } from './format'
-import { changeHeld, clearOffer, getHeld, setNow } from './state'
+import { changeHeld, clearOffer, getHeld, getRole, setNow } from './state'
 
 /** The snapshot shape this mod draws; `coney-tools conclave snapshot` prints it as `schema`. */
-export const SCHEMA = 1
+export const SCHEMA = 2
 // The three numbers the mod holds itself, because it needs them before any snapshot has said otherwise (every other
 // number arrives in the snapshot, from .github/conventions.yml). A read that overruns is killed, so a hung `uv` never
 // outlives its bound: a session that ends meanwhile (`claude -p`) is not held by it either.
@@ -112,6 +112,7 @@ export function merged(previous: Held, result: Run, github: boolean, nowMs: numb
     claims: old?.claims ?? null,
     prs: old?.prs ?? null,
     issues: old?.issues ?? null,
+    events: old?.events ?? null,
     units: carryUnits(old, fresh),
   }
   return { ...previous, snapshot, localAt: nowMs, error: null, newer: null }
@@ -187,7 +188,10 @@ export function startPolling($: EngineInterface, onChange: (state: Held, nowMs: 
     const state = await getHeld($)
     const intervals = state.snapshot?.config.intervals
     const localMs = (intervals?.local ?? BOOTSTRAP_RETRY_MS / 1000) * 1000
-    const githubMs = (isShown ? intervals?.github : intervals?.github_idle) ?? 0
+    // A session that watches reads GitHub on the watchers' own interval while the pane is closed: the events come from it.
+    const watcher = state.snapshot !== null && state.snapshot.config.watch.roles.includes((await getRole($)) ?? '')
+    const idleMs = watcher ? state.snapshot?.config.watch.github_seconds : intervals?.github_idle
+    const githubMs = (isShown ? intervals?.github : idleMs) ?? 0
     const isGithubDue = intervals !== undefined && at - Math.max(state.githubAt, lastGithubTry) >= githubMs * 1000
     if (isGithubDue) await take(true)
     else if (at - Math.max(state.localAt, lastTry) >= localMs) await take(false)

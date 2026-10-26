@@ -700,6 +700,7 @@ def test_the_real_watch_settings_are_read() -> None:
         ("conclave.watch.hold_default_hours", 0, "expected a whole number of 1 or more"),
         ("conclave.watch.hold_default_hours", 99, "must not be more than hold_max_hours"),
         ("conclave.watch.stop_max_blocks", 0, "expected a whole number of 1 or more"),
+        ("conclave.watch.stop_preamble", "", "expected non-empty text"),
         ("conclave.watch.holds_dir", "../x", "a folder name"),
         ("conclave.watch.holds_dir", "a/b", "a folder name"),
         ("conclave.watch.question_prefix", "ANSWER", "must differ from answer_prefix"),

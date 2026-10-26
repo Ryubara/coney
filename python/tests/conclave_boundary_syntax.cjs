@@ -346,16 +346,12 @@ module.exports = function syntax({ ts, checker, req, mod, norm, isEngine, isOwn,
     return problems
   }
 
-  // `classic.SessionStart` reads the session's agent type and passes the answer of the hooks beneath (Tether's, with the
-  // HANDOFF context) on whole: it begins `const r = await next(e)` and only ever returns `r`.
-  function sessionStartProblems(fn) {
-    const problems = []
-    const err = (node, why) => problems.push([node, why])
-    const ev = paramSymbol(fn, 1)
-    const next = paramSymbol(fn, 2)
-    const bad = () => err(fn, 'classic.SessionStart must begin with `const r = await next(e)` and return only r, so the answer beneath it stays whole')
-    const body = fn.body
-    if (ev === undefined || next === undefined || !ts.isBlock(body)) return (bad(), problems)
+  /**
+   * The first statement of a hook that keeps the answer beneath it whole: `const r = await next(e)`. It returns the
+   * declaration and the awaited call, or null when the hook does not begin so.
+   */
+  function answerDeclaration(body, ev, next) {
+    if (ev === undefined || next === undefined || !ts.isBlock(body)) return null
     const first = body.statements[0]
     const decl = first !== undefined && ts.isVariableStatement(first) ? first.declarationList.declarations[0] : undefined
     const isConst = first !== undefined && ts.isVariableStatement(first) && (first.declarationList.flags & ts.NodeFlags.Const) !== 0
@@ -368,8 +364,22 @@ module.exports = function syntax({ ts, checker, req, mod, norm, isEngine, isOwn,
       ts.isAwaitExpression(awaited) &&
       ts.isCallExpression(unwrap(awaited.expression)) &&
       isPassOn(awaited.expression, next, ev, false)
-    if (!isFirst) return (bad(), problems)
-    for (const [node, why] of hookMisuses(fn, ev, next, [unwrap(awaited.expression)])) err(node, `classic.SessionStart ${why}`)
+    return isFirst ? { decl, call: unwrap(awaited.expression) } : null
+  }
+
+  // `classic.SessionStart` reads the session's agent type and passes the answer of the hooks beneath (Tether's, with the
+  // HANDOFF context) on whole: it begins `const r = await next(e)` and only ever returns `r`.
+  function sessionStartProblems(fn) {
+    const problems = []
+    const err = (node, why) => problems.push([node, why])
+    const ev = paramSymbol(fn, 1)
+    const next = paramSymbol(fn, 2)
+    const bad = () => err(fn, 'classic.SessionStart must begin with `const r = await next(e)` and return only r, so the answer beneath it stays whole')
+    const body = fn.body
+    const first = answerDeclaration(body, ev, next)
+    if (first === null) return (bad(), problems)
+    const { decl } = first
+    for (const [node, why] of hookMisuses(fn, ev, next, [first.call])) err(node, `classic.SessionStart ${why}`)
     const answer = checker.getSymbolAtLocation(decl.name)
     const last = body.statements.at(-1)
     if (!(ts.isReturnStatement(last) && body.statements.length > 1)) return (bad(), problems)
@@ -388,8 +398,79 @@ module.exports = function syntax({ ts, checker, req, mod, norm, isEngine, isOwn,
     return problems
   }
 
+  // `classic.Stop` is the stop guard on pull request problems nobody owns. It keeps the answer beneath it (Tether's own
+  // guard for stopped agents, with its block) whole and adds one thing, the reason a function of the mod's own gives:
+  //   const r = await next(e); const reason = await guard($); return reason === null ? r : { ...r, block: reason }
+  // `e` goes nowhere but `next`, nothing else is returned, and the guard is asked with the engine alone.
+  function stopGuardProblems(fn) {
+    const problems = []
+    const err = (node, why) => problems.push([node, why])
+    const host = paramSymbol(fn, 0)
+    const ev = paramSymbol(fn, 1)
+    const next = paramSymbol(fn, 2)
+    const bad = () =>
+      err(
+        fn,
+        "classic.Stop must begin with `const r = await next(e)`, ask one function of the mod's own for the reason (`const reason = await guard($)`) and return `reason === null ? r : { ...r, block: reason }`, so the answer beneath stays whole and the only thing added is the guard's block",
+      )
+    const body = fn.body
+    const first = answerDeclaration(body, ev, next)
+    if (first === null) return (bad(), problems)
+    for (const [node, why] of hookMisuses(fn, ev, next, [first.call])) err(node, `classic.Stop ${why}`)
+    const answer = checker.getSymbolAtLocation(first.decl.name)
+    const [, ask, ending] = body.statements
+    // The second statement asks the guard, with `$` alone.
+    const decl = ask !== undefined && ts.isVariableStatement(ask) ? ask.declarationList.declarations[0] : undefined
+    const awaited = decl?.initializer === undefined ? undefined : unwrap(decl.initializer)
+    const call = awaited !== undefined && ts.isAwaitExpression(awaited) ? unwrap(awaited.expression) : undefined
+    const isAsk =
+      body.statements.length === 3 &&
+      (ask.declarationList.flags & ts.NodeFlags.Const) !== 0 &&
+      ask.declarationList.declarations.length === 1 &&
+      ts.isIdentifier(decl.name) &&
+      call !== undefined &&
+      ts.isCallExpression(call) &&
+      ownFunction(call.expression) !== null &&
+      call.arguments.length === 1 &&
+      ts.isIdentifier(unwrap(call.arguments[0])) &&
+      host !== undefined &&
+      checker.getSymbolAtLocation(unwrap(call.arguments[0])) === host
+    if (!isAsk) return (bad(), problems)
+    const reason = checker.getSymbolAtLocation(decl.name)
+    const is = (node, symbol) => ts.isIdentifier(unwrap(node)) && checker.getSymbolAtLocation(unwrap(node)) === symbol
+    // The last statement returns the choice between the answer beneath and the answer with the guard's block.
+    const choice = ts.isReturnStatement(ending) && ending.expression !== undefined ? unwrap(ending.expression) : undefined
+    const test = choice !== undefined && ts.isConditionalExpression(choice) ? unwrap(choice.condition) : undefined
+    const added = choice !== undefined && ts.isConditionalExpression(choice) ? unwrap(choice.whenFalse) : undefined
+    const members = added !== undefined && ts.isObjectLiteralExpression(added) ? added.properties : []
+    const isChoice =
+      test !== undefined &&
+      ts.isBinaryExpression(test) &&
+      test.operatorToken.kind === ts.SyntaxKind.EqualsEqualsEqualsToken &&
+      is(test.left, reason) &&
+      unwrap(test.right).kind === ts.SyntaxKind.NullKeyword &&
+      is(choice.whenTrue, answer) &&
+      members.length === 2 &&
+      ts.isSpreadAssignment(members[0]) &&
+      is(members[0].expression, answer) &&
+      ts.isPropertyAssignment(members[1]) &&
+      ts.isIdentifier(members[1].name) &&
+      members[1].name.text === 'block' &&
+      is(members[1].initializer, reason)
+    if (!isChoice) return (bad(), problems)
+    // The answer beneath is used twice, in that choice, and nowhere else.
+    let uses = 0
+    const visit = node => {
+      if (ts.isIdentifier(node) && node !== first.decl.name && checker.getSymbolAtLocation(node) === answer) uses += 1
+      ts.forEachChild(node, visit)
+    }
+    visit(body)
+    if (uses !== 2) bad()
+    return problems
+  }
+
   return {
     unwrap, isName, plainProperties, constText, NOT_THE_COMMAND, snapshotProblem, isRunOptions, inlineFunction,
-    passingHookProblems, sessionStartProblems,
+    passingHookProblems, sessionStartProblems, stopGuardProblems,
   }
 }

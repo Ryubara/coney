@@ -1060,6 +1060,10 @@ class ConclaveWatch:
     merged_minutes: int
     #: The stop guard blocks at most this many turn ends in a row for one reason.
     stop_max_blocks: int
+    #: The stop guard counts its blocks again from one after this many minutes without a block.
+    stop_reset_minutes: int
+    #: The first line of the stop guard's reason.
+    stop_preamble: str
     #: The folder of the scratch directory that holds the holds on pull request problems, one file each.
     holds_dir: str
     #: How long `pr hold` lasts when it is given no time, and the longest it may last, in hours.
@@ -2066,6 +2070,8 @@ def _read_conclave_watch(data: object, where: str) -> ConclaveWatch:
         "resend_minutes",
         "merged_minutes",
         "stop_max_blocks",
+        "stop_reset_minutes",
+        "stop_preamble",
         "holds_dir",
         "hold_default_hours",
         "hold_max_hours",
@@ -2090,6 +2096,7 @@ def _read_conclave_watch(data: object, where: str) -> ConclaveWatch:
     return ConclaveWatch(
         roles=_texts(table["roles"], _at(where, "roles")),
         preamble=_text(table["preamble"], _at(where, "preamble")),
+        stop_preamble=_text(table["stop_preamble"], _at(where, "stop_preamble")),
         holds_dir=holds_dir,
         question_prefix=question,
         answer_prefix=answer,

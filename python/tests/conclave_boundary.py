@@ -31,13 +31,13 @@ TYPESCRIPT = "typescript@5.6.3"
 #: Code files of the mod's runtime; its tests, type contract and the engine's generated types are not part of it.
 CODE = ("*.ts", "*.tsx", "*.js", "*.jsx", "*.mjs", "*.cjs", "*.mts", "*.cts")
 NOT_RUNTIME = {"tests", "types", "node_modules", ".claude-plugin"}
-#: The events the mod hooks, and nothing else: none of them is one Tether acts on (`classic.SessionStart` is only read).
-EVENTS = {"session.start", "classic.SessionStart", "command.run", "agent.offer", "ui.render"}
+#: The events the mod hooks, and nothing else. `classic.SessionStart` is only read; `classic.Stop` is the stop guard on
+#: pull request problems nobody owns (the half of Tether's own Stop guard that Conclave took over with its pollers).
+EVENTS = {"session.start", "classic.SessionStart", "classic.Stop", "command.run", "agent.offer", "ui.render"}
 #: Events Tether hooks or whose work is Tether's (the checkpoint cycle, the cache guard, the idle wake, the HANDOFF
 #: message, the subagent limits). Named here so a crossing says which line it crosses.
 TETHER_EVENTS = {
     "classic.UserPromptSubmit",
-    "classic.Stop",
     "classic.SubagentStop",
     "classic.SessionEnd",
     "classic.PreCompact",
@@ -65,6 +65,8 @@ API_CALLS = {
     "clock.now",
     "command.register",
     "process.run",
+    "prompt.read",
+    "prompt.submit",
     "store.get",
     "store.set",
     "store.delete",
@@ -72,6 +74,7 @@ API_CALLS = {
     "ui.panes",
     "ui.resolve",
     "ui.status",
+    "ui.toast",
 }
 #: The one `$.noun.property` the mod reads (the folder it was loaded from).
 API_PROPERTIES = {"plugin.root"}

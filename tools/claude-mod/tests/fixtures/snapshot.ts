@@ -43,7 +43,9 @@ export default {
    "wake_gap_seconds": 60,
    "defer_typing_minutes": 10,
    "resend_minutes": 2,
-   "stop_max_blocks": 3
+   "stop_max_blocks": 3,
+   "stop_reset_minutes": 30,
+   "stop_preamble": "Open pull requests are in trouble and nobody holds the fix. Deal with each, or record who does:"
   }
  },
  "builds": {
