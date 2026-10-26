@@ -591,10 +591,10 @@ def default_ledger(root: Path) -> Ledger:
 
 
 def entry(unit: Unit, commit: str, cls: str, mode: str, source: str, note: str, evidence: str = "") -> dict[str, Any]:
-    """A ledger entry for one reviewed unit."""
+    """A ledger entry for one reviewed unit; `xbox` lists its Xbox addresses when it has any, as its stamp does."""
     if cls not in CLASSES:
         raise ConfigError(f"class {cls!r} is not one of {', '.join(CLASSES)}")
-    return {
+    found: dict[str, Any] = {
         "key": unit.key,
         "coney": unit.coney,
         "where": unit.where,
@@ -608,6 +608,9 @@ def entry(unit: Unit, commit: str, cls: str, mode: str, source: str, note: str, 
         "note": note,
         "date": datetime.date.today().isoformat(),
     }
+    if unit.xbox:
+        found["xbox"] = [f"0x{a:08x}" for a in unit.xbox]
+    return found
 
 
 def status_of(ledger: Ledger, units: list[Unit]) -> dict[str, str]:
@@ -641,12 +644,14 @@ _ATTENTION = (
 )
 
 
-def address_status(ledger: Ledger, units: list[Unit]) -> dict[int, str]:
-    """Each tagged address -> the status of the unit carrying it that most needs attention."""
+def address_status(ledger: Ledger, units: list[Unit], build: str = PS2) -> dict[int, str]:
+    """Each address tagged in `build` (the PS2's `SLUS_212.15`, or `xbox` for `default.xbe`) -> the status of the unit
+    carrying it that most needs attention. The two builds' addresses are separate maps, as the same number names
+    different code in each."""
     status = status_of(ledger, units)
     result: dict[int, str] = {}
     for unit in units:
-        for address in unit.addresses:
+        for address in unit.xbox if build == XBOX else unit.addresses:
             old = result.get(address)
             if old is None or _ATTENTION.index(status[unit.key]) > _ATTENTION.index(old):
                 result[address] = status[unit.key]

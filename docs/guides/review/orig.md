@@ -262,10 +262,12 @@ at the commit the sweep read, and prints what is still unreviewed.
 Every review is recorded in one ledger: `pull_requests.orig_review.ledger` under the workspace's scratch folder
 (local, never committed). An entry holds:
 
-- the function's key, its addresses and its body hash;
+- the function's key, its body hash, its `SLUS_212.15` addresses (`addresses`) and, for an `@orig xbox` tag, its
+  `default.xbe` addresses (`xbox`), so an Xbox-only function keeps its address;
 - the commit, the class and the mode (`pr` or `sweep`);
 - the source file of the review.
 
 A function with no entry is unreviewed. One whose body changed since its last review is stale and is reviewed
-again. `orig review-stamp --folder` lists only these, and `orig legacy-queue` ranks them, so every `@orig` function is
-reviewed once and again after each change.
+again. `orig review-stamp --folder` lists only these, and `orig queue` ranks them, so every `@orig` function is
+reviewed once and again after each change. The status by address keeps the two builds apart, as one number names
+different code in each: `orig queue` reads the PS2's, as it ranks the PS2 function index.

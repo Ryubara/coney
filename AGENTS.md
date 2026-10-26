@@ -44,9 +44,9 @@ contributing starts at CONTRIBUTING.md, section Your first hour; the rest of thi
   speculative. Addresses are like `0x001490b8` in NTSC-U `SLUS_212.15`. How: `docs/guides/research-evidence.md`.
 - **Reverse-engineering work** (Ghidra, disassembly, PCSX2, research claims) runs on Opus 5.5.
 - **Faithful first:** gameplay (rules, timings, maths, AI, missions) matches the PS2 exactly until the game is complete;
-  Coney's own mechanics wait (designs may be written now), debug tooling is fine. Graphics and performance may go
-  further now (the Xbox port's look, renderer options), each an option, off in test mode, with the PS2 look still
-  selectable; the research page names the build (`research-evidence.md#xbox-addresses`).
+  Coney's own mechanics wait (designs may be written now), debug tooling is fine. The Xbox port's rendering (lighting,
+  shadows, textures) is faithful too, an option beside the PS2 look; only what neither build does (renderer options)
+  goes further now. Each is an option, off in test mode; pages name the build (`research-evidence.md#xbox-addresses`).
 - **Never exclude a file from the 512 KB large-file check** in `.pre-commit-config.yaml`: it catches game data
   committed by mistake. Split big generated data and pages instead.
 <!-- conventions:begin maintainer-decisions -->

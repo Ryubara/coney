@@ -100,6 +100,31 @@ def test_an_xbox_tag_makes_a_unit_whose_xbox_address_is_kept_apart() -> None:
     assert "xbox" not in orig_review.units_from({"src/ai/brain.cpp": BRAIN_CPP, "src/ai/brain.h": BRAIN_H})[0].to_json()
 
 
+def test_the_ledger_and_the_address_status_keep_an_xbox_only_functions_xbox_address(tmp_path: Path) -> None:
+    text = (
+        "namespace coney::render {\n"
+        "/// Draws the shadows the Xbox port adds.\n"
+        "/// @orig xbox 0x000bd3c0 Shadow_Draw (Shadow.cpp)\n"
+        "void draw() {}\n"
+        "} // namespace coney::render\n"
+    )
+    [unit] = orig_review.units_from({"src/render/shadow.cpp": text})
+    recorded = orig_review.entry(unit, "HEAD", "diff-bug", "sweep", "x", "")
+    assert recorded["addresses"] == [] and recorded["xbox"] == ["0x000bd3c0"]
+    assert "xbox" not in orig_review.entry(
+        orig_review.units_from({"src/ai/brain.cpp": BRAIN_CPP, "src/ai/brain.h": BRAIN_H})[0],
+        "HEAD",
+        "clean",
+        "sweep",
+        "x",
+        "",
+    )
+    ledger = orig_review.Ledger(tmp_path / "ledger.jsonl")
+    ledger.add([recorded])
+    assert orig_review.address_status(ledger, [unit]) == {}
+    assert orig_review.address_status(ledger, [unit], build="xbox") == {0x000BD3C0: "diff-bug"}
+
+
 def test_a_branch_lists_only_the_tagged_functions_it_changes(repo: Path) -> None:
     tip = change_think(repo)
     stamp = orig_review.pr_stamp(repo, tip, "main")

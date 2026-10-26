@@ -208,9 +208,11 @@ feasibility, approach, dependencies, cost and order, and the local AI-upscaling 
 
 Rockstar's Xbox port draws the game with its own Direct3D 8 renderer, and its shadows have a source file of their own,
 `GraphicsShadowXBox.cpp` ([Xbox assets](research/xbox-assets.md#original-structure)); what else the port changes is on
-[Xbox port](research/xbox-port.md#differences). Coney finds what its lighting and shadows do differently from the PS2's,
-writes it up citing `Xbox 0x...` addresses ([Xbox addresses](guides/research-evidence.md#xbox-addresses)) and ports it
-as a renderer option tagged `@orig xbox` ([Xbox tags](guides/conventions.md#xbox-tags)). It is presentation only: the
+[Xbox port](research/xbox-port.md#differences). What its lighting, shadows, fog and final image do differently from the
+PS2's is written up, citing `Xbox 0x...` addresses ([Xbox addresses](guides/research-evidence.md#xbox-addresses)), in
+[Xbox lighting and shadows](research/xbox-lighting.md), with how it maps onto Coney's presets
+([In Coney](research/xbox-lighting.md#in-coney)). Coney ports it as a renderer option tagged `@orig xbox`
+([Xbox tags](guides/conventions.md#xbox-tags)). It is presentation only: the
 stealth "hidden in shadow" rule and everything else the simulation reads stay the PS2's.
 
 **Done when** the first mission plays at a widescreen resolution with anti-aliasing and interpolated rendering above

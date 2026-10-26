@@ -61,8 +61,9 @@ Coney reimplements *The Warriors* as a whole, not one console's version of it
   source for how the game plays. It is also the one we can check at runtime, in PCSX2's debugger, which Coney's tools
   are built around; the Xbox executable serves as a reading aid beside it.
 - **What the Xbox port adds:** textures twice the width and height, HD and widescreen movies, and its own Direct3D 8
-  renderer, whose lighting and shadows are research in progress (#881). **What it does worse:** its music is at a lower
-  sample rate.
+  renderer, whose lighting and shadows are written up in
+  [Xbox lighting and shadows](docs/research/xbox-lighting.md). **What it does worse:** its music is at a lower sample
+  rate.
 
 Coney takes the Xbox version's gains as faithful and builds on them: they, and what neither console could do (higher
 frame rates, anti-aliasing, modern lighting), are [graphics and performance](docs/roadmap.md#graphics-and-performance)

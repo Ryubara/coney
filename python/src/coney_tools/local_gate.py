@@ -30,6 +30,8 @@ class StepResult:
     seconds: float = 0.0
     skipped: bool = False
     output: tuple[str, ...] = ()
+    #: What the check counted, by kind, in the order it printed them (pytest's `(("passed", 412), ("skipped", 3))`).
+    counts: tuple[tuple[str, int], ...] = ()
 
 
 def low_priority(command: Sequence[str]) -> tuple[list[str], dict[str, object]]:

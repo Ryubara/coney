@@ -5,7 +5,7 @@ option of the [Graphics and performance](../roadmap.md#graphics-and-performance)
 [Enhancements plan](enhancements.md) (foundations F2, F3 and F5, the shadow, AO and ray-tracing rows) and does not
 repeat it. **Status: design only; nothing here is built yet.** It may be built now, as options beside the faithful
 look (AGENTS.md, "Faithful first", since 2026-10-25), and what the Xbox port does differently in its lighting and
-shadows ([Xbox lighting and shadows](../roadmap.md#xbox-lighting-and-shadows)) is one of its sources. Every option
+shadows ([Xbox lighting and shadows](../research/xbox-lighting.md)) is one of its sources. Every option
 ships **off** by default and is forced off in test mode, so tests and reference screenshots always show the faithful
 image.
 

@@ -190,9 +190,10 @@ The marker names (`pull_requests.markers`) let a later pass find the two generat
 
 The facts say which stages passed, with their hashes cut to 12 digits, from the local log alone: the log's task and
 chain head, the change and the `<remote>/<default branch>` commit it is on, then one line each for the functions studied
-and compared (pairs counted by relation), the tests that failed first, Check (profile, preset, counts, build record;
-a profile that builds and tests nothing, `docs` or `tooling`, names the checks it ran instead of counts) and Review
-(verdict, model, functions by class), and the stand-in and not-ported pieces of the pairs. A stage with no stamp
+and compared (pairs counted by relation), the tests that failed first, Check (profile, preset, the build's counts,
+pytest's counts, build record; a profile with no build says `no build`, or `no build or test run` for `docs`, which
+runs no pytest, and names the checks it ran) and Review (verdict, model, functions by class), and the stand-in and
+not-ported pieces of the pairs. A stage with no stamp
 reads `Check: not run` or `Review: not reviewed`, and a Check or Review made for another change reads `stale (made for
 change <12 digits>)` instead of its verdict, as `pr verify` refuses it. Every name from a stamp or a pairs file is a
 code span with backticks and `@` neutralised, because those strings are not trusted text. The block is at most 8,000

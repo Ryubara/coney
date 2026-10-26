@@ -75,7 +75,9 @@ the PCSX2 version.
 
 Presentation may follow Rockstar's Xbox port where it differs ([Faithful first](repo:AGENTS.md)), so a page can cite
 the Xbox executable too. An address there is written with the word Xbox in front, in any letter case: `Xbox
-0x000bd3c0`, or ``Xbox `0x000bd3c0` `` with the address in a code span. It is a virtual address in the NTSC-U
+0x000bd3c0`, or ``Xbox `0x000bd3c0` `` with the address in a code span. The checker also takes `XBE 0x000bd3c0`, the
+older pages' spelling ([Xbox executable](../research/xbox-executable.md) uses it), as an Xbox address; write Xbox in a
+new page. It is a virtual address in the NTSC-U
 `default.xbe` (base `0x00010000`), eight hex digits ([Xbox executable](../research/xbox-executable.md)). A plain
 address is always `SLUS_212.15`'s. One word covers a range or a list that follows it (`Xbox 0x000bd3c0-0x000bd400`,
 `Xbox 0x000bd3c0, 0x000bd400 and 0x000bd500`): put it before the first address, and write a PS2 address of the same

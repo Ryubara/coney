@@ -36,6 +36,8 @@ PYTEST_COMMAND: tuple[str, ...] = ("uv", "run", "--project", "python", "pytest",
 
 #: The counts in pytest's last line ("4210 passed, 3 skipped in 3612.40s"), without the time.
 PYTEST_COUNTS = re.compile(r"^(\d+ (?:passed|failed|skipped)(?:, \d+ \w+)*)(?= in )", re.MULTILINE)
+#: One count in that line ("11 skipped").
+COUNT = re.compile(r"(\d+) (\w+)")
 
 
 class CheckUnavailable(ConfigError):
@@ -87,9 +89,11 @@ def _commands(
     counts: re.Pattern[str] | None = None,
 ) -> StepResult:
     """Run each command in the worktree; the check fails if any does, and every failure shows its tail. With `counts`,
-    a pass appends the last match in the output to `ok` (pytest's "412 passed, 3 skipped")."""
+    a pass appends the last match in the output to `ok` (pytest's "412 passed, 3 skipped") and keeps its numbers by
+    kind, for the stamp."""
     problems: list[str] = []
     found = ""
+    counted: tuple[tuple[str, int], ...] = ()
     for command in commands:
         code, output = context.run(list(command), context.root)
         if code != 0:
@@ -97,8 +101,11 @@ def _commands(
             problems.extend(f"  {line}" for line in _tail(output))
         elif counts is not None and (matches := counts.findall(output)):
             found = matches[-1]
+            counted = tuple((kind, int(number)) for number, kind in COUNT.findall(found))
     detail = f"{ok}: {found}" if found else ok
-    return StepResult(name, not problems, detail if not problems else "failed", output=tuple(problems))
+    if problems:
+        return StepResult(name, False, "failed", output=tuple(problems))
+    return StepResult(name, True, detail, counts=counted)
 
 
 def docs_check_step(context: StepContext) -> StepResult:

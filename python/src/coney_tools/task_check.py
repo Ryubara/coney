@@ -24,7 +24,7 @@ from __future__ import annotations
 import argparse
 import os
 from collections.abc import Callable, Mapping
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -166,9 +166,11 @@ def _run(request: Request, env: Env) -> int:
     outcome = _execute(request, env, context, checks, builds, task, agent, change)
     if isinstance(outcome, int):
         return outcome
-    ran, failed, record, tests = outcome
+    ran, failed, record, tests, counted = outcome
     _unchanged(root, base, change)
-    return _stamp(env, root, conventions, task, change, who, profile, ran, failed, record, tests, started, rules_from)
+    return _stamp(
+        env, root, conventions, task, change, who, profile, ran, failed, record, tests, counted, started, rules_from
+    )
 
 
 def _rules(root: Path, base: str, own: Conventions, say: Callable[[str], None]) -> tuple[Conventions, str]:
@@ -201,14 +203,15 @@ def _execute(
     task: str,
     agent: str,
     change: pr_diff.Change,
-) -> int | tuple[list[str], list[str], Path | None, dict[str, int] | None]:
+) -> int | tuple[list[str], list[str], Path | None, dict[str, int] | None, dict[str, dict[str, int]]]:
     """Run the checks in order, stopping at the first failure unless asked not to. Returns the exit code when the run
-    cannot go on (the build had no slot), else the checks that ran, those that failed, the build record's path and the
-    test counts."""
+    cannot go on (the build had no slot), else the checks that ran, those that failed, the build record's path, the
+    build's test counts and what the other checks counted (pytest's), by check."""
     ran: list[str] = []
     failed: list[str] = []
     record: Path | None = None
     tests: dict[str, int] | None = None
+    counted: dict[str, dict[str, int]] = {}
     queue = list(checks)
     while queue:
         name = queue.pop(0)
@@ -226,6 +229,8 @@ def _execute(
             step_results = [_timed(step(context), env, started)]
         for result in step_results:
             ran.append(result.name)
+            if result.ok and result.counts:
+                counted[result.name] = dict(result.counts)
             env.say(f"  {'ok  ' if result.ok else 'FAIL'} {result.name}: {result.detail}")
             for line in result.output:
                 env.say(f"       {line}")
@@ -233,17 +238,13 @@ def _execute(
                 failed.append(result.name)
         if failed and not request.keep_going:
             break
-    return ran, failed, record, tests
+    return ran, failed, record, tests, counted
 
 
 def _timed(result: StepResult, env: Env, started: datetime) -> StepResult:
     """`result` with the minutes it took in its detail when that is a minute or more."""
     minutes = int((env.clock() - started).total_seconds() // 60)
-    return (
-        result
-        if minutes < 1
-        else StepResult(result.name, result.ok, f"{result.detail} ({minutes} min)", output=result.output)
-    )
+    return result if minutes < 1 else replace(result, detail=f"{result.detail} ({minutes} min)")
 
 
 def _build_results(
@@ -308,10 +309,12 @@ def _stamp(
     failed: list[str],
     record: Path | None,
     tests: dict[str, int] | None,
+    counted: dict[str, dict[str, int]],
     started: datetime,
     rules_from: str,
 ) -> int:
-    """Append the `checked` stamp and say so; 0 for a pass, 1 for a fail."""
+    """Append the `checked` stamp and say so; 0 for a pass, 1 for a fail. The build's counts go in `tests`, which
+    `pr verify` matches against the build record; a check's own counts (pytest's) go under its name, for the facts."""
     passed = not failed
     covers = {
         stamps.CHANGE: change.sha256,
@@ -330,6 +333,8 @@ def _stamp(
         detail["preset"] = conventions.proof.build.preset
     if tests is not None:
         detail["tests"] = dict(tests)
+    for name, counts in counted.items():
+        detail[name] = counts
     stamp = stamps.append(
         unit.Unit.of(root, task).stamps,
         rules=conventions.stamps,
