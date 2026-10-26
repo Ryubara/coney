@@ -329,6 +329,11 @@ class Fighter {
     /// but `Player_LockOn` is skipped, so it keeps its walk and never enters the fight stance by itself
     /// (docs/research/stealth.md#stealth-kill).
     void setLockBlocked(bool blocked) { m_lockBlocked = blocked; }
+    /// Whether the player entered the fight stance through an attack, a grab, a tackle, a miss or a tandem since the
+    /// last call (`Player_EnterStance` `0x00280068`), which ends his hiding: the human clears it
+    /// (Human::clearHiding()).
+    /// @coney-only the hand-off of Player_EnterStance's unhide from the fighter to the human that owns the hiding
+    [[nodiscard]] bool takeStanceEntered() { return std::exchange(m_stanceEntered, false); }
     /// Whether it fights as a player (FighterProfile::player).
     [[nodiscard]] bool player() const { return m_player; }
     /// Its class's `+0x11b` is kBossCategory (FighterProfile::bossClass).
@@ -623,6 +628,14 @@ class Fighter {
     // Leaves the stance and the lock-on movement (`Player_ExitStanceAndLock` `0x002801e8`).
     // @orig 0x002801e8 Player_ExitStanceAndLock (unknown)
     void leaveStance();
+    // Enters a player's fight stance (state 0x1) and ends his hiding (takeStanceEntered()), as an attack's or a grab's
+    // start does.
+    // @orig 0x00280068 Player_EnterStance (unknown)
+    void enterStance();
+    // The stance step of circle's starts: a grab, a tackle, a mount, a miss or a tandem enters the stance; the strong
+    // grapple does not (the rest of Player_GrabOrTackle is combat::PlayerCombat's and startHold()'s).
+    // @orig 0x00284920 Player_GrabOrTackle (unknown)
+    void enterStanceForHold(const combat::CombatOutput& out);
 
     // --- fighter_grab.cpp: a grab the player holds.
 
@@ -901,6 +914,7 @@ class Fighter {
     bool m_warriorBrain = false;  // setWarriorBrain(): brain type 3
     bool m_l1Held = false;        // L1 held this update
     bool m_stanceOn = false;      // a player's fight stance (record +0x00 0x1)
+    bool m_stanceEntered = false; // enterStance() ran since takeStanceEntered(): the hiding ends
     bool m_lockOn = false;        // a player's lock (0x4) and lock-on movement (Human_FightStanceMove)
     bool m_l1Lock = false;        // L1's lock bit (0x8)
     bool m_lockBlocked = false;   // setLockBlocked(): hidden, the target does not lock

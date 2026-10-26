@@ -42,12 +42,12 @@ constexpr int kStrongerHitAnim = 11;
 constexpr std::uint32_t kChargeFlags = 0x1400000;
 
 // Whether a player's attack `animId` enters the fight stance: its original start calls `Player_EnterStance`
-// (`0x00280068`). The grab, the tackle, the mount, a miss and a tandem do not come here: playDecisions() enters the
-// stance where it starts them. The charge (Player_Charge), the walk and run attacks 23 and 24 and the armed run sweep
-// 501 (Player_StartCharge), the specials 653 and 645 and their rear ids (Player_Special and Player_SpecialAttack,
-// 0x00287730 and 0x00263c90), the spray 664, rage's start 643 (Player_TryStartRage) and a held object's throws (sets
-// 4-6, Player_CrossWithWeapon 0x002880d8) do not. Nor do square's solo 22 and the armed special's throw of a melee
-// weapon (Player_ThrowMeleeWeapon), which Coney does not build (docs/research/combat-targets.md#fight-stance).
+// (`0x00280068`). A grab, tackle, mount, miss or tandem does not come here (enterStanceForHold() enters it). The charge
+// (Player_Charge), the walk and run attacks 23 and 24 and the armed run sweep 501 (Player_StartCharge), the specials
+// 653 and 645 and their rear ids (Player_Special and Player_SpecialAttack, 0x00287730 and 0x00263c90), the spray 664,
+// rage's start 643 (Player_TryStartRage) and a held object's throws (sets 4-6, Player_CrossWithWeapon 0x002880d8) do
+// not. Nor do square's solo 22 and the armed special's throw of a melee weapon (Player_ThrowMeleeWeapon), which Coney
+// does not build (docs/research/combat-targets.md#fight-stance).
 // @coney-only a list of the attack starts that call Player_EnterStance; the original makes the call in each start
 bool attackEntersStance(int animId) {
     switch (animId) {
@@ -730,14 +730,7 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
                             clips::kAttackHolds);
         consumed = true;
     }
-    // A grab, a tackle (or a mount on a downed victim), a miss and a tandem enter the fight stance as they start:
-    // `Player_GrabOrTackle` (`0x00284920`) calls `Player_EnterStance` (`0x00280068`) before each, found target or not,
-    // and Square and Cross before a tandem. The strong grapple, which `Player_SpecialAttack` starts through
-    // `Grab_Start`, enters none (docs/research/combat-targets.md#fight-stance).
-    const bool holdStarted = (out.grabStarted || out.tackleStarted) && out.grappleAnim == id::kNone;
-    if (m_player && (holdStarted || out.grabMissed || out.tandemBase != id::kNone)) {
-        m_stanceOn = true;
-    }
+    enterStanceForHold(out);
     if (out.tandemBase != id::kNone) {
         // The tandem at the victim the search found (no candidate: nothing starts, as with a vanished target).
         if (m_tandemCandidate != nullptr) {
@@ -928,9 +921,9 @@ void Fighter::steer(int animId, const FighterInput& input, const HumanAnimator& 
     m_steer.clear();
     // A player's attack enters the fight stance (`Player_EnterStance` `0x00280068`, state 0x1) only where its start
     // calls it: Square, Cross, the dive and the ground strike (attackEntersStance()). The grab, the tackle, a miss and
-    // a tandem enter it in playDecisions().
+    // a tandem enter it in enterStanceForHold().
     if (m_player && attackEntersStance(animId)) {
-        m_stanceOn = true;
+        enterStance();
     }
     // A snap steers onto the human its own search found, which becomes the target
     // (docs/research/combat/index.md#attacks).
@@ -1319,6 +1312,25 @@ void Fighter::leaveStance() {
     // the power move's extension count (+0xbc) that the original zeroes here is zeroed where each power move starts.
     m_stanceOn = false;
     m_lockOn = false;
+}
+
+void Fighter::enterStance() {
+    // `Human_ClearHiddenState` (`0x00230140`) first, then state 0x1; the human ends the hiding when it reads
+    // takeStanceEntered(). **Coney's choice**: the stance timer the original also sets (`0x002800b8`) is read by
+    // nothing, so it is not kept.
+    m_stanceEntered = true;
+    m_stanceOn = true;
+}
+
+void Fighter::enterStanceForHold(const combat::CombatOutput& out) {
+    // A grab, a tackle (or a mount on a downed victim), a miss and a tandem enter the fight stance as they start:
+    // `Player_GrabOrTackle` calls `Player_EnterStance` before each, found target or not, and Square and Cross before a
+    // tandem. The strong grapple, which `Player_SpecialAttack` starts through `Grab_Start`, enters none
+    // (docs/research/combat-targets.md#fight-stance).
+    const bool holdStarted = (out.grabStarted || out.tackleStarted) && out.grappleAnim == id::kNone;
+    if (m_player && (holdStarted || out.grabMissed || out.tandemBase != id::kNone)) {
+        enterStance();
+    }
 }
 
 void Fighter::updateStance(const FighterInput& input, std::uint32_t phase) {

@@ -454,7 +454,10 @@ player at the walk speed.
 **A grab or tackle enters the stance and locks during its intro** (confirmed (code)). `Player_GrabOrTackle`
 (`0x00284920`) calls `Player_EnterStance` before each thing circle starts: the tackle, the grab (a miss is a grab with
 no target), the mount on a downed victim, the pull-off of a tackler and a tandem; Square and Cross also enter it before
-a tandem. The strong grapple, which `Player_SpecialAttack` starts through `Grab_Start`, enters none. `Grab_Start`
+a tandem. The strong grapple, which `Player_SpecialAttack` starts through `Grab_Start`, enters none. Hidden, the
+player's buttons go to `Player_UpdateActionsHidden` (`0x0027e040`), which calls `Player_GrabOrTackle`, `Player_Square`
+and `Player_Cross`, so a grab or an attack from the shadow ends his hiding (`Player_EnterStance` calls
+`Human_ClearHiddenState` first). `Grab_Start`
 (`0x0026c548`) and `Tackle_Start` (`0x002707a8`) set only `+0x08` `0x10`, outside the busy gate `0x5c7fee0`; the
 grabbing state (`0xc0`) comes at the connect and the tackling one (`0x400`) from `Tackle_StartMount` at the intro's end
 (`Tackle_OnIntroEnd` `0x00270560`). Until then `Player_UpdateActions` (`0x0027c120`) still runs the stance update, so
@@ -480,7 +483,7 @@ its step 3 locks the victim within 2 m (the nearest falls back on the target hel
   stick: a stored target alone never steers the player. Only `Player_LockOn` (`0x00280158`) installs the lock-on
   movement `Human_FightStanceMove` (`0x00241b90`), and only from step 3 of the stance update or L1. Step 3's "nearest"
   falls back on the stored target, so **once he is not running and the target is within 2 m, it locks**; the 501 run
-  of `target_bat_sweep_run` never did (confirmed (runtime)).
+  of `target_bat_sweep_run` never did (confirmed (runtime), run r-20261026-target-bat-sweep-run).
 - **The lock-on movement faces the target only within 2.5 m** (confirmed (code)). `Human_FightStanceMove` treats the
   target as absent
   when its distance² is above `0x005104c0` (6.25 in play, 2.5 m) unless `Human_IsLocked` (state `0x8` and `0x4`, L1;
@@ -494,7 +497,9 @@ its step 3 locks the victim within 2 m (the nearest falls back on the target hel
   (`Human_IsThreatTo`, `0x00222a48`, which asks `Brain_IsThreat`, `0x00290138`: the two gangs are enemies or both are
   players), and neither down nor dead (`0x00227e60`), nor in state `0xe0000` (`0x00223b48`), nor holding `0x40`
   (`0x00223c10`). A neutral civilian, whose gang is no enemy of the Warriors, is refused, and so is a crew mate, so
-  **walking past a civilian or the crew never enters the stance or locks** (user item 14; confirmed (runtime) above);
+  **walking past a civilian or the crew never enters the stance or locks** (user item 14; for the crew confirmed
+  (runtime), run r-20261026-target-walk-past-friends and run r-20261026-target-level95-crew-beside, above; for a
+  neutral civilian inferred from the filter);
   one does once his gang has been made an enemy (a civilian of kind 3 who fights back, `Hostile_Attack`, [AI
   goals](ai-goals.md)). The attack picks are wider: `TargetFilter_Enemy` (`0x00279410`) and `0x00279568` skip only
   allies and the same gang, so square still picks and hits a civilian, and the stance's fallback then locks onto him
@@ -1002,7 +1007,9 @@ attacks' picks still take them). 23, 24 and 501 store their pick and steer nothi
 the attacks whose start calls `Player_EnterStance` enter the stance: not the charge, 23, 24, 501, the specials (653,
 645 and their rear ids), the spray 664, rage's start 643 or a held object's throws. A grab, a tackle, a miss and a
 tandem enter it as `Fighter::playDecisions()` starts them (not the strong grapple), and the stance update runs
-through a grab's or tackle's intro (the hold's gate starts at the connect), so it locks the victim. Hidden, L1 held
+through a grab's or tackle's intro (the hold's gate starts at the connect), so it locks the victim. Entering the
+stance that way ends the player's hiding (`Fighter::enterStance()`, as `Player_EnterStance` calls
+`Human_ClearHiddenState` `0x00230140`). Hidden, L1 held
 drops a target that is not standing only while its bit `0x8` is clear. The
 distances are `CombatTuning::stanceNear`, `stanceMid` and `stanceFar` at the values in play (`CfgDistances` is not
 read from the scripts).
