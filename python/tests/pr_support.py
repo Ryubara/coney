@@ -215,8 +215,9 @@ class Built:
         ]
         orig_pairs.write(self.pairs_path, file)
 
-    def compare(self) -> orig_compare.CompareResult:
-        """Run compare (copy-check answers with `self.findings`) and stamp it."""
+    def compare(self, key: str | None = None) -> orig_compare.CompareResult:
+        """Run compare (copy-check answers with `self.findings`) and stamp it; `key` picks the Coney function when
+        several carry the address."""
         return orig_compare.compare(
             self.unit,
             self.root,
@@ -225,6 +226,7 @@ class Built:
             commit=self.tip,
             who=ENGINEER,
             clock=self.clock,
+            key=key,
             copy_check=lambda root, base: self.findings,
         )
 

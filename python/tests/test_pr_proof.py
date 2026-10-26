@@ -29,7 +29,7 @@ from pr_support import (
     sha,
     write,
 )
-from test_orig_compare import SOURCE
+from test_orig_compare import SOURCE, TWO_FUNCTIONS
 from test_orig_study import ADDRESS
 
 from coney_tools import build_record, orig_copy, orig_pairs, pr_diff, pr_proof, stamps
@@ -360,6 +360,34 @@ def test_a_compare_made_under_the_old_body_hash_still_covers_the_unchanged_funct
     assert texts(built.verify(), "compared") == []
     built.edit(SOURCE_FILE, SOURCE.replace("return 2;", "return 3;"))
     assert any("changed after it was compared" in t for t in texts(built.verify(), "compared"))
+
+
+def cite_twice(built: Built) -> None:
+    """Commit a second Coney function that carries the same `@orig` address as Widget::update."""
+    built.edit(SOURCE_FILE, TWO_FUNCTIONS)
+
+
+def test_two_functions_of_one_address_are_accepted_when_each_was_compared(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    cite_twice(built)
+    built.compare(key="Widget::reset()")  # the stamp for Widget::update came with the unit; this one is the second's
+    assert texts(built.verify(), "compared") == []
+
+
+def test_the_second_function_of_one_address_is_refused_until_it_is_compared_itself(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    cite_twice(built)
+    refused = texts(built.verify(), "compared")
+    assert refused == ["compared: 0x00501000: Widget::reset was never compared"], refused
+
+
+def test_a_function_compared_before_a_sibling_changed_stays_compared(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    cite_twice(built)
+    built.compare(key="Widget::reset()")
+    built.edit(SOURCE_FILE, TWO_FUNCTIONS.replace("count_ = 0;", "count_ = 1;"))
+    refused = texts(built.verify(), "compared")
+    assert len(refused) == 1 and refused[0].startswith("compared: 0x00501000: Widget::reset changed after"), refused
 
 
 def test_a_pairs_file_edited_after_it_was_compared_is_refused(tmp_path: Path) -> None:
