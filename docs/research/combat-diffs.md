@@ -100,9 +100,9 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 
 ### Stance
 
-- **The fight stance** follows the original's stance update (issue #82), with four stand-ins: no clear-line test for
-  the nearest enemy, no scene drop, no standing stance before an alerted enemy within 20 m, and L1 searching as square
-  does within 2.5 m ([The fight stance](combat-targets.md#fight-stance), "In Coney").
+- **The fight stance** is a stand-in (locked onto a target), not the original's enter and leave rules
+  ([The fight stance](combat-targets.md#fight-stance)). Every gate that tests the stance (moving attacks, strafes, the
+  snaps' path) inherits it.
 
 ### Grabs, tackles and the mount
 

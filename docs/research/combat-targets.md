@@ -3,9 +3,10 @@ kind: topic
 system: combat
 owns:
   functions: [
-    "0x0021c570", "0x0023a1b0", "0x0023cf88", "0x0023d2b8", "0x0023f5e0", "0x00241b90", "0x00254418", "0x00264178",
-    "0x00264a80", "0x00275678", "0x00276008", "0x002761c8", "0x00279f50", "0x0027a070", "0x0027a120", "0x0027a4b0",
-    "0x0027a6c0", "0x0027e6d8", "0x00290e78",
+    "0x0021c570", "0x00226c30", "0x00227b98", "0x00228340", "0x0023a1b0", "0x0023cf88", "0x0023d2b8", "0x0023f5e0",
+    "0x00241b90", "0x00254418", "0x00264178", "0x00264a80", "0x00275678", "0x00276008", "0x002761c8", "0x00279f50",
+    "0x0027a070", "0x0027a120", "0x0027a4b0", "0x0027a6c0", "0x0027b1a0", "0x0027d5a0", "0x0027dc00", "0x0027e6d8",
+    "0x002801e8", "0x00290e78",
   ]
 ---
 # Combat: targets, AI attacks and breakables
@@ -402,7 +403,7 @@ no command, or `Human_IsBusy` (`0x00228258`), the dispatcher clears `0x8008`. A 
 handler; the held handler itself does nothing while the per-player action delay runs (`PlayerRec_GetActionDelayLeft`),
 under `+0x08` `0x2000000`, while locked or in the throw aim, and with a target at a free sprint; hidden, it drops a
 target in state `0x3800f0000` instead of locking. The press acts only inside the release window (then searches and
-runs the held handler). Confirmed (code) at the cited addresses, 2026-10-25. While aiming a throw
+runs the held handler). Confirmed (code) at the cited addresses. While aiming a throw
 (`Human_MoveThrowAim`, `0x00244770`) L1 leaves the aim; with weapon type 5 and no enemy target it enters mode `0x13`
 (`0x00227b30`). Confirmed (code); confirmed (runtime): L1 held gave state `0xd`, a target,
 and the movement state `0x00241b90`.
@@ -471,18 +472,17 @@ player at the walk speed.
   heading (only the right stick turns it, with `CfgStrafeRStick`, off in play). With no target at all it hands
   control back to `0x00240e38`. The stance update drops the target beyond 3 m (step 5).
 - **Only a threat is found by the stance** (confirmed (code)). The stance's nearest-enemy search
-  (`Player_FindNearestEnemy`, `0x0027b1a0`, 3 m) filters with `TargetFilter_StanceEnemy` (`0x002791b0`): the other
-  must be a human
-  whose object query (vtable `+0xf4`) holds, targetable (`0x00227d78`: not flag `0x100000000000`), not friendly
-  (`Human_IsFriendly`, `0x00222a90`), not a pad player, within 2 m in height (`0x00510970`), **a threat**
-  (`Human_IsThreatTo`, `0x00222a48`: `Brain_IsThreat`, the two gangs are enemies or both are players), and neither
-  down nor dead (`0x00227e60`), nor in state `0xe0000` (`0x00223b48`), nor holding `0x40` (`0x00223c10`). A neutral
-  civilian, whose gang is no enemy of the Warriors, is refused, and so is a crew mate, so **walking past a civilian or
-  the crew never enters the stance or locks** (user item 14; confirmed (runtime) above); one does once his gang has
-  been made an enemy (a civilian of kind 3 who fights back, `Hostile_Attack`, [AI goals](ai-goals.md)). The attack
-  picks are wider: `TargetFilter_Enemy` (`0x00279410`) and `0x00279568` skip only allies and the same gang, so square
-  still picks and hits a civilian, and the stance's fallback then locks onto him while he is within 2 m (confirmed
-  (runtime), `target_attack_walk_away`).
+  (`Player_FindNearestEnemy`, `0x0027b1a0`, 3 m) filters with `TargetFilter_StanceEnemy` (`0x002791b0`): the other must
+  be a human whose object query (vtable `+0xf4`) holds, targetable (`0x00227d78`: not flag `0x100000000000`), not
+  friendly (`Human_IsFriendly`, `0x00222a90`), not a pad player, within 2 m in height (`0x00510970`), **a threat**
+  (`Human_IsThreatTo`, `0x00222a48`, which asks `Brain_IsThreat`, `0x00290138`: the two gangs are enemies or both are
+  players), and neither down nor dead (`0x00227e60`), nor in state `0xe0000` (`0x00223b48`), nor holding `0x40`
+  (`0x00223c10`). A neutral civilian, whose gang is no enemy of the Warriors, is refused, and so is a crew mate, so
+  **walking past a civilian or the crew never enters the stance or locks** (user item 14; confirmed (runtime) above);
+  one does once his gang has been made an enemy (a civilian of kind 3 who fights back, `Hostile_Attack`, [AI
+  goals](ai-goals.md)). The attack picks are wider: `TargetFilter_Enemy` (`0x00279410`) and `0x00279568` skip only
+  allies and the same gang, so square still picks and hits a civilian, and the stance's fallback then locks onto him
+  while he is within 2 m (confirmed (runtime), `target_attack_walk_away`).
 
 ### The steer into an attack {#attack-steer}
 
@@ -982,13 +982,13 @@ read from the scripts).
 Where Coney still differs (stand-ins, each marked at the code):
 
 - L1 picks as square does within 2.5 m; the original's `Player_FindLockTarget` (`0x0027b2a8`) searches to 6 m
-  ([L1's own search](#q-l1-search)).
+  ([L1's own search](#open-questions)).
 - The clear-line test of the nearest enemy (`0x0021c240`) is not made, so the nearest is always taken, and a target in
-  a scene is not dropped ([The clear-line test](#q-clear-line)).
+  a scene is not dropped ([The clear-line test](#open-questions)).
 - A target is out when it has no health left (Coney's targets report no state word).
 - The standing stance before an alerted enemy within 20 m (step 5) is not entered, the fighter not seeing the brains'
-  lists ([The alerted-enemy stance](#q-alerted-stance)).
-- L1's action delay is not modelled and a press acts as a hold ([L1's action delay](#q-l1-delay)).
+  lists ([The alerted-enemy stance](#open-questions)).
+- L1's action delay is not modelled and a press acts as a hold ([L1's action delay](#open-questions)).
 - Square in the stance keeps its target out to 3 m (`kKeepTargetRange`, issue #895), where `0x005104c0` gives 2.5 m.
 
 Tests: `repo:tests/human/player_targeting_test.cpp` (one case per scenario of [The fight stance](#fight-stance)) and,
