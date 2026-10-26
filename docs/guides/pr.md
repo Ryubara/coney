@@ -94,7 +94,8 @@ that failed first. Python tests are not stamped; a tooling task's tests-first ru
 in its `checked` stamp. And a function that carries several `@orig` addresses needs every address compared against that
 one Coney body.
 
-A function the branch removes is printed as a note, not a refusal.
+A function the branch removes is printed as a note, not a refusal. A change that touches no C++ file under `src/`
+adds, changes and removes no `@orig` function, so the run does not read the source at all.
 
 ## pr text {#text}
 
@@ -205,8 +206,9 @@ commit: what is pushed is exactly what Check and Review saw. Its options and exi
 3. **The pull request (exit 1).** The branch's pull request is looked up (`gh pr list --head`). Merged: refused.
    Closed and not merged: refused unless `--reopen`. A fix task (`parent:` in its `TASK.md`) is released onto its
    parent's pull request, log and text, and is refused when the parent has no open pull request.
-4. **The proof (exit 1).** [`pr verify`](#verify) and [`pr text`](#text) run on the unit as it is, so a doomed run costs
-   seconds and leaves the branch alone. Every problem is listed under the stage to redo; the unit goes back to its
+4. **The proof (exit 1).** [`pr verify`](#verify) and [`pr text`](#text) run on the unit as it is (`pr_ready.prove`,
+   which Conclave's [`unit-ready` wake](conclave.md#ready) asks too), so a doomed run costs seconds and leaves the
+   branch alone. Every problem is listed under the stage to redo; the unit goes back to its
    engineer, never to the coordinator's hands.
 5. **Rebase.** `git rebase <remote>/<default>`, linear. Up to date: nothing happens. A conflict is aborted, so the
    worktree is as it was; the paths are written to `REBASE.md` in the task's folder and the exit is 3. The engineer

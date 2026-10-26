@@ -130,6 +130,38 @@ void applyPauseOutcome(gui::PauseOutcome outcome, GameModeStack& stack, GameStat
     }
 }
 
+gui::OptionValues optionValuesOf(const GameState& state) {
+    gui::OptionValues values;
+    values.brightness = state.brightness;
+    values.musicVolume = state.saved.musicVolume;
+    values.soundFxVolume = state.saved.soundFxVolume;
+    for (std::size_t pad = 0; pad < 2; ++pad) {
+        values.invertCamera.at(pad) = state.saved.pads.at(pad).invertCamera;
+        values.autoAdjustCamera.at(pad) = state.saved.pads.at(pad).autoAdjustCamera;
+        values.vibration.at(pad) = state.saved.pads.at(pad).vibration;
+    }
+    values.splitScreenMerge = state.saved.splitScreenMerge;
+    values.subtitles = state.subtitles;
+    values.proLogic = state.saved.proLogic2;
+    values.wideVideo = state.saved.wideVideo;
+    return values;
+}
+
+void storeOptionValues(const gui::OptionValues& values, GameState& state) {
+    state.brightness = values.brightness;
+    state.saved.musicVolume = values.musicVolume;
+    state.saved.soundFxVolume = values.soundFxVolume;
+    for (std::size_t pad = 0; pad < 2; ++pad) {
+        state.saved.pads.at(pad).invertCamera = values.invertCamera.at(pad);
+        state.saved.pads.at(pad).autoAdjustCamera = values.autoAdjustCamera.at(pad);
+        state.saved.pads.at(pad).vibration = values.vibration.at(pad);
+    }
+    state.saved.splitScreenMerge = values.splitScreenMerge;
+    state.subtitles = values.subtitles;
+    state.saved.proLogic2 = values.proLogic;
+    state.saved.wideVideo = values.wideVideo;
+}
+
 PauseMode::PauseMode(graphics::RenderDevice& device, PauseSheetLoader loadSheet, PauseRecordLoader loadRecord,
                      const gui::GlobalStrings& strings, FrontEndServices& services, GameState& state,
                      LevelFlowMode& levelFlow, std::function<void(std::string_view)> log)
@@ -137,6 +169,28 @@ PauseMode::PauseMode(graphics::RenderDevice& device, PauseSheetLoader loadSheet,
       m_services(services), m_state(state), m_levelFlow(levelFlow), m_log(std::move(log)) {
     m_menu.setStrings(&m_strings);
     m_menu.setSoundSink([this](int cue) { m_services.playCue(cue); });
+    // The Options screen's changes go into the game state at once, then to the game.
+    gui::OptionMenu::Hooks options;
+    options.apply = [this](const gui::OptionValues& values) {
+        storeOptionValues(values, m_state);
+        if (m_hooks.applyOptions) {
+            m_hooks.applyOptions(values);
+        }
+    };
+    // The Audio page's music loop (its volume is the Music volume applyOptions sets). Coney's choice: the track that
+    // played before starts again when the page closes, since Coney's music has one track at a time.
+    options.previewMusic = [this](bool on, float /*volume*/) {
+        if (on && !m_services.musicPlaying(kPreviewMusic)) {
+            m_musicBeforePreview = m_services.music();
+            m_services.playMusic(kPreviewMusic);
+        } else if (!on && m_services.musicPlaying(kPreviewMusic)) {
+            m_services.stopMusic();
+            if (!m_musicBeforePreview.empty()) {
+                m_services.playMusic(m_musicBeforePreview);
+            }
+        }
+    };
+    m_menu.setOptionHooks(std::move(options));
 }
 
 void PauseMode::playFrame(GameModeStack& stack, const Pads& pads) {
@@ -181,6 +235,7 @@ void PauseMode::enter() {
     m_layer.load(m_loadSheet, m_loadRecord, kBackgroundRecord, kBackgroundCapacity, gui::PauseMenu::kBackgroundDepth,
                  m_log, "pause");
     m_menu.setBackgroundBatch(m_layer.sprites());
+    m_menu.setOptionsBatch(m_layer.sprites());
     // The Controls screen's pad picture (`ControllerPage_Init`'s sprite word `0x18f0000`).
     m_layer.loadSecond(m_loadRecord, gui::ControlMenu::kPictureRecord, 1, gui::ControlMenu::kPictureDepth, m_log,
                        "pause");
@@ -200,6 +255,7 @@ ModeResult PauseMode::update(GameModeStack& stack, const FrameTime& frame) {
         m_frozen = RenderTime{.alpha = 1.0F, .gameTicks = frame.gameTicks - frame.stepTicks, .index = 0};
         gui::PauseMenuSetup setup;
         setup.language = m_state.language;
+        setup.options = optionValuesOf(m_state);
         if (const LevelRecord* record = m_state.levels.at(m_state.currentLevel)) {
             setup.level = static_cast<int>(record->number);
         }
@@ -239,6 +295,13 @@ void PauseMode::render(const RenderTime& time) {
 }
 
 void PauseMode::exit() {
+    // A close from the Options screen's Audio page (START) ends its music loop too.
+    if (m_services.musicPlaying(kPreviewMusic)) {
+        m_services.stopMusic();
+        if (!m_musicBeforePreview.empty()) {
+            m_services.playMusic(m_musicBeforePreview);
+        }
+    }
     // The sound state as it was: the bank, then the paused sounds.
     if (!m_previousBank.empty() && m_previousBank != kSoundBank) {
         m_services.loadBank(m_previousBank);
@@ -251,6 +314,7 @@ void PauseMode::exit() {
     }
     m_menu.setBackgroundBatch(nullptr);
     m_menu.setControllerBatch(nullptr);
+    m_menu.setOptionsBatch(nullptr);
     m_layer.release();
 }
 

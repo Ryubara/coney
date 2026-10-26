@@ -138,9 +138,10 @@ std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
     const human::PlayerStart start = m_player->start();
     std::vector<human::PlayerStart> fighters;
     // The model each fighter was spawned as (the meshes are in the fighters' order), so it keeps its look, and whether
-    // the debug menus spawned it, so Clear fighters still finds it.
+    // the debug menus spawned it, so Clear fighters still finds it, and its side.
     std::vector<std::string> fighterModels;
     std::vector<bool> fighterDebug;
+    std::vector<ai::FighterSide> fighterSides;
     fighters.reserve(m_ai->humans().size());
     for (std::size_t i = 0; i < m_ai->humans().size(); ++i) {
         const ai::AiHuman& fighter = m_ai->humans()[i];
@@ -152,6 +153,7 @@ std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
                                               .headingDegrees = degreesOf(fighter.human->heading())});
         fighterModels.push_back(i < m_fighterMeshes.size() ? m_fighterMeshes[i].model : std::string{});
         fighterDebug.push_back(fighter.debugSpawned);
+        fighterSides.push_back(fighter.side);
     }
     const ai::AiConfig aiConfig = m_ai->config();
     const bool engaging = m_ai->engaging();
@@ -185,7 +187,8 @@ std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
     }
     m_ai->brains().setCollision(&m_scenery->collision());
     for (std::size_t i = 0; i < fighters.size(); ++i) {
-        addFighter(fighters[i].position, fighters[i].headingDegrees, fighterModels[i], fighterDebug[i]);
+        addFighter(fighters[i].position, fighters[i].headingDegrees, fighterModels[i], fighterDebug[i],
+                   fighterSides[i]);
     }
     m_type = type;
     m_model = *model;

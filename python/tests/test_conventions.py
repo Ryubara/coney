@@ -689,6 +689,12 @@ def test_the_real_watch_settings_are_read() -> None:
     assert 0 < watch.hold_default_hours <= watch.hold_max_hours
     assert watch.stop_max_blocks >= 1 and watch.wake_gap_seconds >= 1
     assert watch.holds_dir == "pr-holds" and watch.question_prefix != watch.answer_prefix
+    assert watch.unit_hold_file == "HOLD.md"
+
+
+def test_a_conventions_file_made_before_the_unit_hold_key_still_reads() -> None:
+    watch = parse_conventions(changed(("conclave.watch.unit_hold_file", REMOVE))).conclave.watch
+    assert watch.unit_hold_file == "HOLD.md"
 
 
 @pytest.mark.parametrize(
@@ -704,6 +710,9 @@ def test_the_real_watch_settings_are_read() -> None:
         ("conclave.watch.holds_dir", "../x", "a folder name"),
         ("conclave.watch.holds_dir", "a/b", "a folder name"),
         ("conclave.watch.question_prefix", "ANSWER", "must differ from answer_prefix"),
+        ("conclave.watch.unit_hold_file", "../HOLD.md", "a file name"),
+        ("conclave.watch.unit_hold_file", "a/HOLD.md", "a file name"),
+        ("conclave.watch.unit_hold_file", "", "expected non-empty text"),
         ("conclave.watch.unknown", 1, "unknown key 'unknown'"),
     ],
 )

@@ -1,10 +1,23 @@
+---
+kind: system
+system: save
+owns:
+  functions:
+    - "0x00155308"
+    - "0x0015baa0"
+    - "0x0015be00"
+    - "0x0015c2c0"
+    - "0x00421638"
+    - "0x00421708"
+    - "0x004219d0"
+    - "0x00421ad0"
+    - "0x00421d98"
+    - "0x00421e68"
+    - "0x00421f98"
+---
 # Profiles, options and saving
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). Runtime claims were made in
-PCSX2 2.9.94 (2026-10-06) from a fresh boot with a new, unformatted 8 MB card in slot 1 (no other card), driving the
-pad over PINE (the `scripted-pad` patch, written before the pad code first ran) through STORY → CREATE NEW PROFILE →
-a typed name → the default difficulty, brightness and subtitles, reading memory over PINE and listing the card image
-afterwards; they say so.
+Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`).
 
 ## Purpose
 
@@ -30,7 +43,7 @@ machine), `Device/ps2/memorycard/mcbase.cpp` (the card library wrapper, [below](
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |
-| `0x006fe2f8` | `g_PS2SaveSystem` | the save system (pointer at `0x00515024`; vtable at `+0x128` = `0x00545fa0`) | confirmed (code), confirmed (runtime) |
+| `0x006fe2f8` | `g_PS2SaveSystem` | the save system (pointer at `0x00515024`; vtable at `+0x128` = `0x00545fa0`) | confirmed (code) |
 | `0x00421348` | `SaveSystem_Init` (slot `+0x14`) | measures the record, builds the template and the six-slot image | confirmed (code) |
 | `0x00421708` | `Profile_Write(ss, file, slot)` | serialises the game state into one slot | confirmed (code) |
 | `0x00421ad0` | `Profile_Read(ss, file, slot)` | the reverse, applying each option | confirmed (code) |
@@ -49,9 +62,11 @@ machine), `Device/ps2/memorycard/mcbase.cpp` (the card library wrapper, [below](
 
 ### The profile record {#record}
 
+Confirmed (code) at the addresses cited unless a line says otherwise.
+
 `Profile_Write` (`0x00421708`) writes these fields in this order, little-endian; `Profile_Read` (`0x00421ad0`) reads
 them back the same way. The record size is measured, not fixed: `SaveSystem_Init` writes a fresh game state into a
-scratch memory file and keeps its length (`ss + 0x108`), **0x504 = 1,284 bytes** (confirmed (runtime)). Confirmed
+scratch memory file and keeps its length (`ss + 0x108`), **0x504 = 1,284 bytes** (PCSX2 read the same). Confirmed
 (code) for the order; the runtime dump of a new profile matched every offset.
 
 | Offset | Size | Field | Live copy | Default (new profile) |
@@ -88,10 +103,12 @@ next mission from them; a loaded profile always starts that mission at checkpoin
 
 ### The save system's slots {#slots}
 
+Confirmed (code) at the addresses cited unless a line says otherwise.
+
 The save system holds six 0x2c-byte slot records at `ss + 0x00` (cleared by `0x00421dd0`), the record length
 (`+0x108`), the image length (`+0x10c` = 6 × `+0x108`), a memory file of the whole image (`+0x110`), the template
 (`+0x114`, the record of a fresh game state), the current slot (`+0x118`), a "bad version" flag (`+0x11c`) and
-**saving enabled** (`+0x124`). Confirmed (code) at `0x00421348`; values confirmed (runtime): `+0x108` = `0x504`,
+**saving enabled** (`+0x124`). Confirmed (code) at `0x00421348`; PCSX2 read: `+0x108` = `0x504`,
 `+0x10c` = `0x1e18`.
 
 | Slot offset | Meaning | Accessors (vtable slot) |
@@ -113,14 +130,17 @@ unlocked (`0x00424540`), `+0xcc` loads a slot into the game state (`Profile_Read
 
 ### A new profile: what each STORY screen writes {#story-screens}
 
-Every write below is confirmed (code); the values on a fresh boot are confirmed (runtime).
+Confirmed (code) at the addresses cited unless a line says otherwise.
+
+Every write below is confirmed (code); the values on a fresh boot were also read in PCSX2.
 
 1. **`PM_Profile`** (init `0x0020be68`, accept `0x0020c588`): with no profiles it offers only CREATE NEW PROFILE (code
    1) and RELOAD PROFILES (code 3, calls `Menu.reloadProfiles`); with some, USE EXISTING PROFILE (0), CREATE (1, left
    out when all **six** slots are used) and DELETE PROFILE (2, sets `0x0050f5a0` = 1, which makes `PM_Load` lead to
    `PM_Delete`).
 2. **`PM_Create`** (init `0x002050f0`, the pad's callback `0x002054a0`): stores the first free slot in `0x0050f594`
-   and opens a `TextEntryPad` (`0x001cc2f0`) whose text starts as the pending name at `0x0063f1d8` (**empty** on a fresh
+   and opens a text-entry pad (`TextEntryPad_Setup`, `0x001cc2f0`) whose text starts as the pending name at `0x0063f1d8`
+   (**empty** on a fresh
    boot; it keeps the last name typed, and triangle on this screen clears it). Name entry, `0x001cca80`:
    - **Keys**: the characters of global string `0x97` in order, A-Z, 1-9, 0, `_`, `!`, `?`, `.`, then five blank
      spacers, then OK (string `0x99`) and DEL (`0x9a`): 47 keys on a 12-column grid. `_` types a **space**.
@@ -150,7 +170,8 @@ screen that starts a game sets the done flag `0x0050f5b0`; the controller's upda
 mode 0x12's `Update` (`0x0015e238`) then queues a fade to black (`ScreenFx_Queue(1.0, 1)`); when the fade is over
 (`0x005fdeb8 + 0x1d4` clear) it stops the music (`0x0010fba8`, inferred) and returns 0, so the loop pops the mode.
 `PM_Subtitles` does this for a new profile;
-`PM_Load` (`0x002098b0`) and `PM_Continue` (`0x00203800`) do it for a saved one, after loading the chosen slot into
+`PM_Load_OnCommand` (`0x002098b0`) and `PM_Continue_OnCommand` (`0x00203800`) do it for a saved one, after loading the
+chosen slot into
 the game state (slot `+0xcc`) and setting saving enabled. Confirmed (code); at runtime the done flag was set on the
 cross and mode 0x12 was gone 0.65 s later.
 
@@ -163,15 +184,19 @@ the name, used = 1, created = 1.
 
 ### Brightness {#brightness}
 
+Confirmed (code) at the addresses cited unless a line says otherwise.
+
 `Gamma_Set(level)` (`0x001b4838`) clamps the level to 255, stores it in the byte `W_GameState + 0x57a4`, and sets the
 light manager's **brightness offset** `+0x90` to `(level / 255, level / 255, level / 255, 1)` through `0x0017ec38`,
 which adds the change to the colour of every ambient and directional light the manager holds (`0x0017ed60`). The
 manager's constructor (`0x0017d640`) sets the same offset to 40 / 255, so 40 is the brightness of a game that never
 touched the setting. The other offset, `+0xa0`, belongs to the script call `SetGammaOffset` (`0x0017ec80`). How the
-offset lights the world: [The streamed world](world.md#lighting). Confirmed (code); confirmed (runtime): `+0x90` read
+offset lights the world: [The streamed world](world.md#lighting). Confirmed (code); PCSX2: `+0x90` read
 0.1569 (40/255) and 0.1765 (45/255) as the bar moved, `+0xa0` stayed 0.
 
 ### The other options {#options}
+
+Confirmed (code) at the addresses cited unless a line says otherwise.
 
 The in-game options menu (`0x001d86a8`) shows Lighting (the brightness bar), Camera (Invert P1 / P2 Cam, Auto Adjust
 P1 / P2 Cam, 2P Split Screen Merge, left out in level 102), Vibration (P1 / P2 Controller), Subtitles, Video (Normal,
@@ -184,6 +209,8 @@ vibration on, subtitles off, Pro Logic II off and the half-word `W_GameState + 0
 
 ### The save file on the card {#card-files}
 
+Confirmed (code) at the addresses cited unless a line says otherwise.
+
 | Path | Size | What |
 | --- | --- | --- |
 | `BASLUS-21215/` | | the save directory |
@@ -191,7 +218,7 @@ vibration on, subtitles off, Pro Logic II off and the half-word `W_GameState + 0
 | `BASLUS-21215/WARR.ICO` | 79,128 | the icon, copied from the disc's `WARR.ICO` |
 | `BASLUS-21215/icon.sys` | 964 | the standard `PS2D` header: title "The Warriors", all three icons `WARR.ICO` (`0x0014ad90`) |
 
-Confirmed (code) at `0x00420060`; confirmed (runtime): the card image after the first save held exactly these three
+Confirmed (code) at `0x00420060`; in PCSX2 the card image after the first save held exactly these three
 files with these sizes, every slot header was version `0x11`, slot 0 held the typed name, difficulty 1, brightness 40
 and the defaults above, slots 1-5 were empty records. A string `BASLUS-21215/bugstar.dat` (`0x0041f8b0`,
 `0x0041f960`) is a 20-byte debug file the shipped game does not write on this path (it was absent).
@@ -199,7 +226,7 @@ and the defaults above, slots 1-5 were empty records. A string `BASLUS-21215/bug
 **Integrity**: no checksum or CRC. Loading checks the three files' sizes (`0x0041fcc8`: `WARR.ICO` 79,128,
 `icon.sys` 964, the data file the image length; any other size is "corrupt") and each header's version (`0x11`; another
 sets `ss + 0x11c`). **Space**: a new save needs `round_up_5(ceil(7,704 / 1024) + 83)` = **95 KB** free (`0x0041fb78`);
-the check is made only when the directory does not exist yet. Confirmed (code).
+the check is made only when the directory is absent. Confirmed (code).
 
 **The card state machine** (`ss + 0x184`, one step per frame from `PS2Save_Service`): 1 idle; 2 detect (after slot
 `+0xf4`); 3 format (slot `+0x11c`); 4 **create**: make the directory, write a zeroed data file, read `WARR.ICO` from the
@@ -208,6 +235,8 @@ parse the six headers; 6 **save**: write the whole image over the data file, the
 at runtime the first save ran format (1.6 s), detect, create (1.3 s) and save (0.4 s).
 
 ### The card library {#card-library}
+
+Confirmed (code) at the addresses cited unless a line says otherwise.
 
 `Device/ps2/memorycard/mcbase.cpp` (`0x00149f30`-`0x0014b9d0`) wraps Sony's `libmc` for the save system's state
 machine above: a card record `{port, slot, type, free, format, changed, present}`, ten file records handed out from a
@@ -261,6 +290,8 @@ find, read, delete, run by an operation number) has no caller in this build (inf
 
 ### Mode 6: load, save and the dialogs {#mode-6}
 
+Confirmed (code) at the addresses cited unless a line says otherwise.
+
 Mode 6 (`0x005e5810`) runs in one of two kinds, `0x005e5d80`: **1 load** (the boot, and `SSMC_StartLoadSequence`) and
 **0 save** (`Autosave_Request`, `SSMC_StartSaveSequence`, and with `0x0050c700` set `SSMC_StartDeleteSequence`). In save
 kind `Enter` first writes the current game into the current slot of the image (`0x00421d98`). Each frame `Update`
@@ -291,9 +322,13 @@ runtime mode 6 was pushed 0.65 s after the cross on `PM_Subtitles`, with `level9
 
 **Too many profiles, no space**: `PM_TooManyProfiles` and `PM_NoSpace` are reachable only through `PM_Greet`'s
 results 1 and 2, which `PM_Greet` never returns (`0x00207e28`); a full card is handled by mode 6 and six profiles by
-hiding CREATE NEW PROFILE. Confirmed (code); that the two screens are left from the Xbox flow is speculative.
+hiding CREATE NEW PROFILE. Confirmed (code); that the two screens are left from the Xbox flow is speculative
+([q-xbox-profile-screens](#q-xbox-profile-screens)): their being unreachable here says nothing about where they came
+from.
 
 ### Script bindings {#bindings}
+
+Confirmed (code) at the addresses cited unless a line says otherwise.
 
 [`GetProfileDifficulty`](../references/bindings/level.md#getprofiledifficulty) (`+0x43c`),
 [`CfgSubtitles`](../references/bindings/config.md#cfgsubtitles) (`+0x438`),
@@ -309,8 +344,11 @@ hiding CREATE NEW PROFILE. Confirmed (code); that the two screens are left from 
 
 ### Game-state functions {#warriors-functions}
 
+Confirmed (code) at the addresses cited unless a line says otherwise.
+
 Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
-workers) that belong to this page, by address.
+workers) that belong to this page, by address; each is confirmed (code) at its address unless its row says
+otherwise.
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -344,13 +382,13 @@ workers) that belong to this page, by address.
 | `0x00423200` / `0x00423280` / `0x00423300` | `Stats_WriteBests` / `Stats_ReadBests` / `Stats_BestsSize` | write / read the 0x168-byte best records (`0x006fe790`) to or from the profile file (from `Profile_Write` / `Profile_Read`); the size is 0x168 | confirmed (code) |
 | `0x00424a20` / `0x00424b90` | `Unlockables_Write` / `Unlockables_Read` | write / read the locked set then the new set, twenty 32-bit words each, to or from the profile file | confirmed (code) |
 
-## What Coney stores instead of a memory card {#coney}
+## In Coney {#coney}
 
 Coney keeps each profile as one file holding the 1,284-byte record above (same fields and order, little-endian) in the
 platform's per-user data folder, writes it whenever the original would autosave, and has no format, space or icon
 dialogs.
 
-### Coney's implementation {#coneys-implementation}
+### What Coney stores instead of a memory card {#coneys-implementation}
 
 - [`ProfileRecord`](repo:src/warriors/profile_record.h) writes and reads the record field by field; a record of
   another size or version is an error, and the store lists that file as a damaged ("not loadable") profile under the
@@ -371,7 +409,9 @@ dialogs.
   front end; **stand-in**: it writes at once, with no mode 6 on top, and the "new game just started" case is not
   applied. `SetLUASaveDataBool` and `GetLUASaveDataBool` use the saved script flags 1-128; other numbers are kept
   for the run only (the original's fields past the saved words are not named).
-- Not yet: the money bank's adds (Coney has no inventories).
+- The pause menu's Options screen ([Pause menu](pause.md#coneys-implementation)) writes its values into the game
+  state as the setters above do (`storeOptionValues` in `repo:src/gamemodes/pause_mode.h`), so the autosave keeps them.
+- Not implemented: the money bank's adds (Coney has no inventories).
 - **Coney's choices**: bit *i* of the unlockable and script-flag sets is byte *i* / 8, bit *i* % 8 (the little-endian
   layout of 32-bit words, inferred); the three bytes after the brightness byte are written as zero; the date and time a
   slot keeps (`+0x16`) are not stored; the fourth-difficulty unlock (slot `+0xb4`) leaves the "every story level
@@ -383,3 +423,16 @@ dialogs.
 - The second 640-bit unlockables set (`0x006fe948`): that it marks new unlocks is inferred.
 - The bit order of the unlockable and script-flag sets in the record (byte *i* / 8, bit *i* % 8 is inferred).
 - Which message a slot-1 card change shows (`0xa1`-`0xa4`) in each case, not traced.
+
+### The two unreachable profile screens {#q-xbox-profile-screens}
+
+Whether `PM_TooManyProfiles` and `PM_NoSpace`, unreachable on the PS2 (`PM_Greet` never returns 1 or 2), are the Xbox
+version's screens: testable by finding `PM_Greet` in the Xbox executable and checking whether it returns 1 and 2 there
+(speculative until then).
+
+## How this was checked
+
+The runtime observations were made in PCSX2 2.9.94 (2026-10-06) from a fresh boot with a new, unformatted 8 MB card in
+slot 1 (no other card), driving the pad over PINE (the `scripted-pad` patch, written before the pad code first ran)
+through STORY → CREATE NEW PROFILE → a typed name → the default difficulty, brightness and subtitles, reading memory
+over PINE and listing the card image afterwards.

@@ -84,6 +84,7 @@ add_executable(coney_tests
     gui/markup_test.cpp
     gui/menu_input_test.cpp
     gui/control_menu_test.cpp
+    gui/option_menu_test.cpp
     gui/pause_menu_test.cpp
     gui/profile_management_gui/pm_controller_test.cpp
     gui/rumble_mode_gui/rumble_menu_test.cpp
@@ -143,6 +144,7 @@ add_executable(coney_tests
     platform/disc_spawner_money_test.cpp
     platform/disc_credits_test.cpp
     platform/disc_pause_controls_test.cpp
+    platform/disc_pause_options_test.cpp
     platform/disc_level99_player2_test.cpp
     platform/disc_hub_workout_test.cpp
     platform/disc_level99_street_test.cpp
@@ -285,6 +287,7 @@ target_sources(coney_tests PRIVATE
     camera/rail_camera_test.cpp
     camera/win_camera_test.cpp
     camera/failed_camera_test.cpp
+    camera/follow_camera_option_test.cpp
     camera/follow_camera_test.cpp
     camera/follow_collision_test.cpp
     camera/follow_placement_test.cpp
@@ -359,6 +362,7 @@ target_sources(coney_tests PRIVATE
     ai/attack_choice_test.cpp
     ai/attack_reach_test.cpp
     ai/fidget_action_test.cpp
+    ai/fighter_sides_test.cpp
     ai/fight_goal_test.cpp
     ai/fight_trace_test.cpp
     ai/fight_reactions_test.cpp
@@ -456,6 +460,8 @@ if(CONEY_DEBUG_TOOLS)
         gui/debug_menu_view_test.cpp
         platform/disc_anim_player_test.cpp
         platform/disc_change_character_test.cpp
+        platform/disc_debug_ai_sides_test.cpp
+        platform/disc_debug_no_gang_test.cpp
         platform/disc_debug_clear_fighters_test.cpp
         platform/disc_debug_fighter_sounds_test.cpp
         platform/disc_debug_movies_test.cpp

@@ -15,8 +15,9 @@ from coney_tools import pr_publish
 from coney_tools.config import ConfigError
 from coney_tools.conventions import PullRequests
 from coney_tools.pr_cli import BODY_FILE, TITLE_FILE
-from coney_tools.pr_open_run import EXIT_FAILED, EXIT_REFUSED, MERGERS, PROGRESS, UPLOAD_BODY, Proof, Run, Stop
+from coney_tools.pr_open_run import EXIT_FAILED, EXIT_REFUSED, MERGERS, PROGRESS, UPLOAD_BODY, Run, Stop
 from coney_tools.pr_publish import PullRequest
+from coney_tools.pr_ready import Proof
 from coney_tools.repo_checks import check_body, image_targets
 
 
