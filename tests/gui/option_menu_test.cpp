@@ -12,6 +12,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include "core/pad.h"
 #include "gui/colour_table.h"
 #include "gui/global_strings.h"
 #include "gui/menu_input.h"
@@ -475,4 +476,50 @@ TEST_CASE("options: flag 0x02 moves only the Camera answers; with 16:9 too only 
     CHECK(both.squareScale == Approx(0.7F));
     CHECK(both.cameraAnswersExtra == Approx(0.1F));
     CHECK(both.answersOffset == Approx(0.4F));
+}
+
+TEST_CASE("options: a move refused at an end stops the d-pad repeating until the next move", "[pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code)
+    Screen screen;
+    coney::Pad pad;
+    // Holds `buttons` for `samples` pad samples 33 ms apart from `now`, handing each command to the screen.
+    const auto hold = [&](std::uint16_t buttons, int samples, std::uint64_t now) {
+        int commands = 0;
+        for (int i = 0; i < samples; ++i, now += 33) {
+            coney::PadSample held;
+            held.connected = true;
+            held.buttons = buttons;
+            held.pressure.fill(255);
+            pad.update(held);
+            if (const auto command = screen.input.dispatch(pad, now)) {
+                ++commands;
+                (void)screen.command(*command);
+            }
+        }
+        return commands;
+    };
+    // Up on the first title is refused once; the held d-pad then gives nothing more.
+    CHECK(hold(coney::pad::kUp, 30, 20'000) == 1);
+    CHECK(screen.cues == std::vector<int>{0xe});
+    (void)hold(0, 2, 21'000);
+    // Down moves, and a held Down repeats again.
+    CHECK(hold(coney::pad::kDown, 30, 22'000) > 1);
+    // On a page: Left on an already-on choice is refused once too.
+    Screen page;
+    page.openPage(OptionPage::Vibration);
+    coney::Pad pad2;
+    int commands = 0;
+    std::uint64_t now = 30'000;
+    for (int i = 0; i < 30; ++i, now += 33) {
+        coney::PadSample held;
+        held.connected = true;
+        held.buttons = coney::pad::kLeft;
+        held.pressure.fill(255);
+        pad2.update(held);
+        if (const auto command = page.input.dispatch(pad2, now)) {
+            ++commands;
+            (void)page.command(*command);
+        }
+    }
+    CHECK(commands == 1);
 }
