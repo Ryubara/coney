@@ -251,6 +251,9 @@ void RailCamera::chooseSegmentFor(anim::Vec3 p) {
     if (m_count < 2) {
         return;
     }
+    // **Coney's stand-in** (CamRail_ChooseSegment): the original also takes the segment between two rail points
+    // equally near when the point projects inside it, keeps the last point's index in modes 1 and 2, measures the
+    // inside test in plan in mode 3, and starts the hand-over even before the first placement.
     // The rail point nearest the target point starts the segment; the last point gives the last segment.
     std::size_t nearest = 0;
     float best = std::numeric_limits<float>::max();
