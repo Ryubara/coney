@@ -349,9 +349,10 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     [[nodiscard]] std::optional<double> carriedPropOf(const human::Human& human) const;
 
     /// Poses `mesh` as `character` in `pose`, leaned by `lean` and turned to `heading` at `feet`, in the world
-    /// (RenderWare's axes) for drawing (CharacterMesh::pose()).
+    /// (RenderWare's axes) for drawing (CharacterMesh::pose()), the body `scale` times its size (1 unless the Entity
+    /// editor scaled it: Human::meshScale()).
     static void skin(const human::PlayerCharacter& character, const anim::Pose& pose, anim::Vec3 feet, float heading,
-                     float lean, CharacterMesh& mesh);
+                     float lean, CharacterMesh& mesh, float scale = 1.0F);
 
     /// ScriptedPlayer: a script's teleport of player 1 during play: placed (dropped onto the ground at most 0.5 m
     /// below, unless a scene holds him) with his health, meters and clip kept, his brain's front move popped, and for

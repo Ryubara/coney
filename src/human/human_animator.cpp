@@ -92,7 +92,8 @@ std::size_t HumanAnimator::clipsMissing(const characters::AnimSet& anims, const 
 }
 
 HumanAnimator::HumanAnimator(const characters::AnimSet& anims, const AnimSlots& slots)
-    : m_anims(&anims), m_slots(slots), m_normalSlots(slots), m_speeds(speedsOf(anims, slots)) {
+    : m_anims(&anims), m_slots(slots), m_normalSlots(slots), m_clipSpeeds(speedsOf(anims, slots)),
+      m_speeds(m_clipSpeeds) {
     CONEY_ASSERT(clipsMissing(anims, slots) == 0);
     // A human is made standing: its idle, with nothing to fade from.
     m_tasks.change(idleLoop(), 0.0F);
@@ -102,12 +103,31 @@ HumanAnimator::HumanAnimator(const characters::AnimSet& anims, const AnimSlots& 
 void HumanAnimator::changeAnims(const characters::AnimSet& anims) {
     CONEY_ASSERT(clipsMissing(anims, m_slots) == 0);
     m_anims = &anims;
-    m_speeds = speedsOf(anims, m_slots);
+    refreshSpeeds();
     // The clips the scripts gave came from the old set's level; the new character stands in its own idle.
     m_idleClip = nullptr;
     m_overrides.clear();
     m_tasks.change(idleLoop(), 0.0F);
     m_state = AnimState::Idle;
+}
+
+void HumanAnimator::refreshSpeeds() {
+    m_clipSpeeds = speedsOf(*m_anims, m_slots);
+    m_speeds = Speeds{.base = m_clipSpeeds.base * m_factors.base,
+                      .sneak = m_clipSpeeds.sneak * m_factors.sneak,
+                      .walk = m_clipSpeeds.walk * m_factors.walk,
+                      .jog = m_clipSpeeds.jog * m_factors.jog,
+                      .run = m_clipSpeeds.run * m_factors.run,
+                      .sprint = m_clipSpeeds.sprint * m_factors.sprint};
+}
+
+void HumanAnimator::setSpeedFactors(const Speeds& factors) {
+    if (factors.base == m_factors.base && factors.sneak == m_factors.sneak && factors.walk == m_factors.walk &&
+        factors.jog == m_factors.jog && factors.run == m_factors.run && factors.sprint == m_factors.sprint) {
+        return;
+    }
+    m_factors = factors;
+    refreshSpeeds();
 }
 
 anim::GaitClip HumanAnimator::slotClip(std::size_t slot) const {
@@ -135,7 +155,7 @@ void HumanAnimator::setStealthStyle(bool on) {
         m_slots.ids[kSlotWalk] = kAnimStealthWalk;
         m_slots.ids[kSlotWalkStart] = kAnimStealthWalkStart;
     }
-    m_speeds = speedsOf(*m_anims, m_slots);
+    refreshSpeeds();
     // Standing, the idle's builder plays the transition first (`Human_BuildIdleTasks`, 0x0025f770): 634 going in, 394
     // coming out of 630. Moving, a new gait blend on the new clips carries on the old one.
     constexpr HeldFlags kTransitionHeld{.held = kFlagNormalFromFight, .set = kFlagNormalFromFight};

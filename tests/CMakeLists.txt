@@ -292,6 +292,7 @@ target_sources(coney_tests PRIVATE
     camera/follow_script_test.cpp
     human/disc_player_placement_test.cpp
     human/disc_player_test.cpp
+    human/human_edit_test.cpp
     human/human_test.cpp
     human/workout_test.cpp
     human/human_revive_test.cpp
@@ -438,6 +439,8 @@ if(CONEY_DEBUG_TOOLS)
         debug/audio_page_test.cpp
         debug/combat_tunables_test.cpp
         debug/debug_session_test.cpp
+        debug/entity_edit_test.cpp
+        debug/entity_editor_page_test.cpp
         debug/entity_inspector_test.cpp
         debug/fighter_spawn_test.cpp
         debug/human_shapes_test.cpp
@@ -464,6 +467,7 @@ if(CONEY_DEBUG_TOOLS)
         platform/disc_debug_movies_test.cpp
         platform/disc_fall_camera_test.cpp
         platform/disc_fighter_models_test.cpp
+        platform/disc_entity_editor_test.cpp
         platform/disc_game_session_test.cpp
         platform/disc_hub_doors_test.cpp
         platform/disc_inspector_freeze_test.cpp

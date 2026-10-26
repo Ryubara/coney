@@ -58,6 +58,11 @@ void Stamina::fill() {
     m_fraction = 0.0F;
 }
 
+void Stamina::set(int value) {
+    m_value = std::clamp(value, 0, m_maximum);
+    m_fraction = 0.0F;
+}
+
 bool sprintAsked(bool l2Held, int stamina, bool forbidden) { return l2Held && stamina != 0 && !forbidden; }
 
 } // namespace coney::human

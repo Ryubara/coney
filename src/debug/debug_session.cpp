@@ -7,6 +7,7 @@
 #include <utility>
 #include <vector>
 
+#include "core/log.h"
 #include "debug/debug_pages.h"
 
 namespace coney::debug {
@@ -14,8 +15,19 @@ namespace coney::debug {
 DebugSession::DebugSession(TunableRegistry& tunables, DebugServices services, InputSource* inner,
                            std::function<void(std::string_view)> log)
     : m_tunables(tunables), m_services(std::move(services)), m_logCallback(std::move(log)), m_gate(inner, m_navigator) {
-    // Between two steps: the queued tunable changes land, then the channels take their sample.
+    // The Entity editor's edits go to the run log, and in a network session only the host applies them.
+    m_entityEditor.setLog([](std::string_view line) { logging::info(logging::Category::Engine, line); });
+    m_entityEditor.setAuthority([this] {
+        const NetControls* net = m_services.net ? m_services.net() : nullptr;
+        return net == nullptr || net->status().role != NetRole::Client;
+    });
+    // Between two steps: the queued tunable changes land, then the queued entity edits, then the channels take their
+    // sample.
     m_gate.addBetweenSteps([this] { m_tunables.applyPending(); });
+    m_gate.addBetweenSteps([this] {
+        PlayControls* mode = play();
+        m_entityEditor.applyPending(mode != nullptr ? mode->entityEdits() : nullptr);
+    });
     m_gate.addBetweenSteps([this] { m_model.sampleChannels(); });
     // A notice counts down by frames.
     m_gate.addBetweenSteps([this] { m_noticeFramesLeft = m_noticeFramesLeft > 0 ? m_noticeFramesLeft - 1 : 0; });
@@ -43,6 +55,7 @@ DebugSession::DebugSession(TunableRegistry& tunables, DebugServices services, In
     addHudPage(*this);
     addDebugDrawPage(*this);
     addEntityInspectorPage(*this);
+    addEntityEditorPage(*this);
     addDisplayPage(*this);
     addAudioPage(*this);
     addNetworkPage(*this);

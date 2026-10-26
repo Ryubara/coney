@@ -5,6 +5,8 @@
 
 #include <filesystem>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -112,7 +114,7 @@ TEST_CASE("removing a tunable drops it and its queued change", "[debug]") {
 TEST_CASE("the game's movement and camera tunables edit the values the game reads", "[debug]") {
     TunableRegistry registry;
     coney::debug::registerGameTunables(registry);
-    CHECK(registry.inCategory("Movement").size() == 12);
+    CHECK(registry.inCategory("Movement").size() == 17);
     CHECK(registry.inCategory("Body").size() == 5);
     // The stamina maximum and refill are each human's power class's: only the drain is a tunable.
     CHECK(registry.inCategory("Sprint").size() == 1);
@@ -142,6 +144,41 @@ TEST_CASE("the game's movement and camera tunables edit the values the game read
     registry.applyPending();
     CHECK(coney::human::locomotionTuning().runThreshold == coney::human::kRunThreshold);
     CHECK(coney::camera::followDefaults().leashFar == 5.3F);
+}
+
+TEST_CASE("the player's gait speeds are tunable as a scale on each gait, beside the existing Movement tunables",
+          "[debug]") {
+    // Expected: unverified, #723 (the gait speeds come from the clips' root motion, characters.md#speed-classes, so the
+    // tunable is a scale on each; the combat walk's speed is already the Combat page's tunable)
+    TunableRegistry registry;
+    coney::debug::registerGameTunables(registry);
+    const std::vector<std::pair<std::string, float*>> scales{
+        {"Movement/Sneak speed scale", &coney::human::locomotionTuning().sneakSpeedScale},
+        {"Movement/Walk speed scale", &coney::human::locomotionTuning().walkSpeedScale},
+        {"Movement/Jog speed scale", &coney::human::locomotionTuning().jogSpeedScale},
+        {"Movement/Run speed scale", &coney::human::locomotionTuning().runSpeedScale},
+        {"Movement/Sprint speed scale", &coney::human::locomotionTuning().sprintSpeedScale}};
+    float value = 0.5F;
+    for (const auto& [path, variable] : scales) {
+        INFO(path);
+        const coney::debug::Tunable* tunable = registry.find(path);
+        REQUIRE(tunable != nullptr);
+        // Each starts at 1, the clips' own speed, and is a plain multiplier up to a tenfold.
+        CHECK(tunable->defaultValue() == Catch::Approx(1.0));
+        CHECK(tunable->min() == 0.0);
+        CHECK(tunable->max() == Catch::Approx(10.0));
+        // It lands only between steps, then the game reads it.
+        registry.set(path, value);
+        CHECK(*variable == 1.0F);
+        registry.applyPending();
+        CHECK(*variable == value);
+        value += 0.5F;
+    }
+    registry.resetAll();
+    registry.applyPending();
+    for (const auto& scale : scales) {
+        CHECK(*scale.second == 1.0F);
+    }
 }
 
 TEST_CASE("the cutscene letterbox setting is on by default and the Display tunable turns the bars off", "[debug]") {

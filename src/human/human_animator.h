@@ -328,10 +328,18 @@ class HumanAnimator {
     /// The newest task's gait blend value, or -1 when it is not a gait blend.
     [[nodiscard]] float gaitValue() const;
     [[nodiscard]] const anim::AnimTaskStack& tasks() const { return m_tasks; }
+    /// The gait speeds in use: the clips' (speedsOf()) times speedFactors().
     [[nodiscard]] const Speeds& speeds() const { return m_speeds; }
+    /// Multiplies each gait speed (`base` the combat walk's, the others as Speeds names them) by a factor; 1 in all is
+    /// the clips' own. Coney's debug tooling (the Entity editor's speed scale, the Movement tunables); Human sets it.
+    void setSpeedFactors(const Speeds& factors);
+    /// The factors setSpeedFactors() set; all 1 at first.
+    [[nodiscard]] const Speeds& speedFactors() const { return m_factors; }
     [[nodiscard]] const characters::AnimSet& anims() const { return *m_anims; }
 
   private:
+    // Recomputes m_speeds from the clips' speeds in the current slots and the factors.
+    void refreshSpeeds();
     // The idle: slot 0 looping with no task flags, after a fade of 0.15 s (shorter or longer over a start clip) that
     // holds 0x10000000 while it runs.
     // @orig 0x0025f770 Human_BuildIdleTasks (unknown)
@@ -367,7 +375,9 @@ class HumanAnimator {
     AnimSlots m_slots;
     AnimSlots m_normalSlots; // the slots without the hidden style
     bool m_stealth = false;  // setStealthStyle()
-    Speeds m_speeds;
+    Speeds m_clipSpeeds;     // the clips' speeds, before the factors
+    Speeds m_factors{1.0F, 1.0F, 1.0F, 1.0F, 1.0F, 1.0F};
+    Speeds m_speeds; // m_clipSpeeds times m_factors
     anim::AnimTaskStack m_tasks;
     AnimState m_state = AnimState::None;
     const anim::AnimTask* m_debugTask = nullptr; // playDebugClip()'s task while AnimState::Debug; only compared
