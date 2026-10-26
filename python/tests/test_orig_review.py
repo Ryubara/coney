@@ -143,6 +143,33 @@ def verdict(stamp: dict[str, Any], cls: str = "clean", **extra: Any) -> dict[str
     return data
 
 
+def xbox_stamp(repo: Path) -> dict[str, Any]:
+    """The stamp of a branch that changes one function that follows the Xbox port only."""
+    git(repo, "checkout", "-q", "-b", "xbox")
+    path = repo / "src/render/shadow.cpp"
+    path.parent.mkdir(parents=True)
+    path.write_text(
+        "namespace coney::render {\n/// Draws the shadows the Xbox port adds.\n"
+        "/// @orig xbox 0x000bd3c0 Shadow_Draw (Shadow.cpp)\nvoid draw() {}\n} // namespace coney::render\n",
+        encoding="utf-8",
+    )
+    return orig_review.pr_stamp(repo, commit_all(repo, "shadow"), "main")
+
+
+def test_the_release_gate_takes_an_xbox_only_function_by_its_xbox_address(repo: Path) -> None:
+    stamp = xbox_stamp(repo)
+    assert [f["xbox"] for f in stamp["functions"]] == [["0x000bd3c0"]]
+    data = verdict(stamp)
+    for item in data["functions"]:
+        item["addresses"] = ["xbox 0x000bd3c0"]
+    data["reviewed"] = ["xbox 0x000bd3c0"]
+    assert orig_review.verdict_problems(data, stamp, 1) == []
+    # The bare number is the PS2's, so it does not stand for the Xbox function.
+    data["functions"][0]["addresses"] = ["0x000bd3c0"]
+    data["reviewed"] = ["0x000bd3c0"]
+    assert any("`addresses` must be its own" in p for p in orig_review.verdict_problems(data, stamp, 1))
+
+
 def test_a_passing_verdict_for_the_tip_passes(repo: Path) -> None:
     tip = change_think(repo)
     stamp = orig_review.pr_stamp(repo, tip, "main")

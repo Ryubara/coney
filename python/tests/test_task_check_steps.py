@@ -50,6 +50,15 @@ def test_pytest_runs_the_whole_suite_without_stopping_at_the_first_failure() -> 
     assert "-x" not in runner.commands[0] and "python/tests" in runner.commands[0]
 
 
+def test_a_passing_pytest_run_says_how_many_tests_passed() -> None:
+    runner = Commands()
+    runner.codes["pytest"] = (0, "....\n4210 passed, 3 skipped in 3612.40s (1:00:12)\n")
+    result = task_check_steps.pytest_step(context(runner))
+    assert result.ok and result.detail == "pytest python/tests: 4210 passed, 3 skipped"
+    runner.codes["pytest"] = (0, "")
+    assert task_check_steps.pytest_step(context(runner)).detail == "pytest python/tests"
+
+
 def test_a_failing_command_fails_the_check_and_shows_the_tail_of_its_output() -> None:
     runner = Commands()
     runner.codes["mypy"] = (1, "".join(f"line {n}\n" for n in range(40)) + "Found 3 errors\n")

@@ -401,6 +401,12 @@ def current_compared(
 # --- the verdict --------------------------------------------------------------------------------------------------
 
 
+def function_addresses(function: Mapping[str, Any]) -> list[str]:
+    """The addresses a stamped `function` can be reviewed at: its PS2 ones as `0x00100010`, then the Xbox port's as
+    `xbox 0x000bd3c0`, so the two builds' equal numbers stay apart (docs/guides/review/task.md#verdict)."""
+    return [*function["addresses"], *(f"xbox {a}" for a in function.get("xbox", ()))]
+
+
 def verdict_problems(verdict: Any, stamp: dict[str, Any], rubric_version: int, strict_tip: bool = False) -> list[str]:
     """Why a verdict does not let the branch the stamp describes through (empty: it does).
 
@@ -451,7 +457,7 @@ def verdict_problems(verdict: Any, stamp: dict[str, Any], rubric_version: int, s
         # A function that carries many tags (a binding table's lambdas) is compared where the change touches it, so
         # one of its addresses is enough; `addresses` says which.
         compared = item.get("addresses")
-        own = {a.lower() for a in function["addresses"]}
+        own = {a.lower() for a in function_addresses(function)}
         if not isinstance(compared, list) or not compared:
             problems.append(f"{function['coney']}: no compared `addresses`")
         elif any(not isinstance(a, str) or a.lower() not in own or a.lower() not in listed for a in compared):

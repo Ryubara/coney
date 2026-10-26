@@ -429,14 +429,24 @@ def _stage_lines(subject: pr_proof.Subject, short: bool) -> list[str]:
         lines.append("- Check: not run")
     else:
         d = checked.detail
-        tests = d.get("tests") if isinstance(d.get("tests"), dict) else {}
+        tests = d.get("tests") if isinstance(d.get("tests"), dict) else None
         record = checked.covers.get("build_record_sha256")
         extra = f", build record `{record[:12]}`" if record else ""
+        if tests is None:
+            # A profile with no build or test run (`tooling`, `docs`) records no counts: say which checks ran, as "0
+            # passed, 0 failed" would read as an empty run.
+            names = d.get("checks") if isinstance(d.get("checks"), list) else []
+            ran = ", ".join(code(str(name)) for name in names)
+            outcome = f"no build or test run; checks {ran}" if ran else "no build or test run"
+        else:
+            preset = f"preset {code(d.get('preset', ''))}, "
+            outcome = (
+                f"{preset}{tests.get('passed', 0)} passed, "
+                f"{tests.get('failed', 0)} failed, {tests.get('skipped', 0)} skipped"
+            )
         lines.append(
             f"- Check: {_stale(subject, checked)}profile {code(d.get('profile', ''))}, "
-            f"preset {code(d.get('preset', ''))}, "
-            f"{tests.get('passed', 0)} passed, "
-            f"{tests.get('failed', 0)} failed, {tests.get('skipped', 0)} skipped (stamp `{_h(checked)}`{extra})"
+            f"{outcome} (stamp `{_h(checked)}`{extra})"
         )
     reviewed = _newest_pass(subject, "reviewed")
     if reviewed is None:

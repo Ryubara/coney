@@ -340,6 +340,18 @@ def test_two_functions_of_one_address_are_counted_by_their_own_compared_stamps(t
     assert "- Compared 2 of 2 functions" in short()
 
 
+def test_a_check_with_no_test_run_names_its_checks_and_never_reads_as_an_empty_run(tmp_path: Path) -> None:
+    built = make(tmp_path, shape="tooling", skip=frozenset({"checked"}))
+    built.check("tooling", preset=None, tests=None)
+    facts = pr_text.facts_block(built.subject())
+    stamp = built.subject().report.latest("checked")
+    assert stamp is not None
+    names = ("docs-check", "mkdocs", "pre-commit", "ruff", "mypy", "pytest", "actionlint")
+    expected = ", ".join(f"`{name}`" for name in names)
+    assert f"- Check: profile `tooling`, no build or test run; checks {expected} (stamp `{stamp.hash[:12]}`)" in facts
+    assert "0 passed" not in facts and "preset ``" not in facts
+
+
 def test_a_stage_that_has_not_run_is_said_so_in_the_facts(tmp_path: Path) -> None:
     built = make(tmp_path, skip=frozenset({"checked", "reviewed"}))
     facts = pr_text.facts_block(built.subject())

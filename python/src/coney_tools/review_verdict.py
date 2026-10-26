@@ -19,7 +19,7 @@ from typing import Any
 
 from coney_tools.config import ConfigError
 from coney_tools.conventions import REVIEW_KINDS
-from coney_tools.orig_review import CLASSES, PASSING
+from coney_tools.orig_review import CLASSES, PASSING, function_addresses
 
 #: The version of this file's format.
 VERSION = 1
@@ -250,7 +250,7 @@ def _applied(verdict: Mapping[str, Any], packet: Mapping[str, Any]) -> list[str]
 def review_addresses(function: Mapping[str, Any]) -> list[str]:
     """The addresses a reviewer compares for a packet's `function`: its PS2 ones as `0x00100010`, then the Xbox
     port's as `xbox 0x000bd3c0`, so the two builds' equal numbers stay apart (docs/guides/review/task.md#verdict)."""
-    return [*function["addresses"], *(f"xbox {a}" for a in function.get("xbox", ()))]
+    return function_addresses(function)
 
 
 def _functions(verdict: Mapping[str, Any], packet: Mapping[str, Any]) -> tuple[list[str], list[str]]:

@@ -12,6 +12,7 @@ This module never runs clang-tidy: CI does, on every pull request.
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import tempfile
 from collections.abc import Callable, Sequence
@@ -31,6 +32,10 @@ KEEP_LINES = 15
 #: The pytest run: every test of the Python package and the hooks, as CI's python job runs them (no `-x`: the stamp
 #: should say everything that is wrong).
 PYTEST_COMMAND: tuple[str, ...] = ("uv", "run", "--project", "python", "pytest", "python/tests", "-q", "--no-header")
+
+
+#: The counts in pytest's last line ("4210 passed, 3 skipped in 3612.40s"), without the time.
+PYTEST_COUNTS = re.compile(r"^(\d+ (?:passed|failed|skipped)(?:, \d+ \w+)*)(?= in )", re.MULTILINE)
 
 
 class CheckUnavailable(ConfigError):
@@ -74,15 +79,26 @@ def _tail(output: str) -> tuple[str, ...]:
     )
 
 
-def _commands(name: str, commands: Sequence[Sequence[str]], context: StepContext, ok: str) -> StepResult:
-    """Run each command in the worktree; the check fails if any does, and every failure shows its tail."""
+def _commands(
+    name: str,
+    commands: Sequence[Sequence[str]],
+    context: StepContext,
+    ok: str,
+    counts: re.Pattern[str] | None = None,
+) -> StepResult:
+    """Run each command in the worktree; the check fails if any does, and every failure shows its tail. With `counts`,
+    a pass appends the last match in the output to `ok` (pytest's "412 passed, 3 skipped")."""
     problems: list[str] = []
+    found = ""
     for command in commands:
         code, output = context.run(list(command), context.root)
         if code != 0:
             problems.append(f"{' '.join(command[:6])}: exit {code}")
             problems.extend(f"  {line}" for line in _tail(output))
-    return StepResult(name, not problems, ok if not problems else "failed", output=tuple(problems))
+        elif counts is not None and (matches := counts.findall(output)):
+            found = matches[-1]
+    detail = f"{ok}: {found}" if found else ok
+    return StepResult(name, not problems, detail if not problems else "failed", output=tuple(problems))
 
 
 def docs_check_step(context: StepContext) -> StepResult:
@@ -137,7 +153,7 @@ def mypy_step(context: StepContext) -> StepResult:
 def pytest_step(context: StepContext) -> StepResult:
     """The whole Python test suite."""
     _need("uv", "docs/guides/building.md#python-tools")
-    return _commands("pytest", [PYTEST_COMMAND], context, "pytest python/tests")
+    return _commands("pytest", [PYTEST_COMMAND], context, "pytest python/tests", PYTEST_COUNTS)
 
 
 def actionlint_step(context: StepContext) -> StepResult:

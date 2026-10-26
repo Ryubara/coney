@@ -12,7 +12,8 @@ A function that follows the Xbox port carries `@orig xbox 0x<address>` ([Xbox ta
 The same two counts apply, read against that address in the Xbox `default.xbe` in a Ghidra project of the XBE. No
 study or compare stamp covers an Xbox address, so the reviewer reads it by hand and says so in the verdict's note. The
 verdict names it `xbox 0x<address>` in the function's `addresses` and in `reviewed` ([the verdict](task.md#verdict)),
-and `pr verify` wants a passing class for it as for a PS2 address.
+and `pr verify` wants a passing class for it as for a PS2 address. The legacy `orig check-review` reads the same
+spelling.
 
 **Rubric version: 1.** The version is `pull_requests.orig_review.rubric_version` in
 [.github/conventions.yml](repo:.github/conventions.yml). Raise both together when a class or a count changes
