@@ -665,7 +665,15 @@ Each of the 60 human bodies holds its capsule (type 3, radius 0.35 m, height 2.0
 **bone shapes**, identified by a bone index (shape `+0x31`). A **segment** (type 4, `0x003437b0`; posed by
 `0x00343810`) runs from the bone's position plus the bone's rotation times the offset, along the bone's local x axis,
 for its length, with its radius around it; a **sphere** (type 2, `0x00342aa0`) is centred at the bone's position plus
-the rotated offset. Both are then carried into the world by the human's transform. The limbs are named from the
+the rotated offset. Both are then carried into the world by the human's transform. **The body scale** (human
+`+0x65c`, 0.97 for Rembrandt) reaches every part of a shape: `PhysicsBody_ApplyHumanScale` (`0x00341f28`) multiplies
+the offsets, radii and lengths once, and the bone each pose reads (owner slot `+0xb8`, `Human_GetBoneTransform`
+`0x0023bde8`) comes from the bone cache with its **position multiplied by `Human_GetScale`** (`0x0021d020`) and its
+rotation as is, so a shape of a scaled human is its unscaled pose times the scale about the feet. Confirmed (code) at
+`0x0023bde8` and the poses `0x00342b08` (sphere; `0x00342aa0` only constructs it) and `0x00343810` (segment), which
+use the bone as returned; `Human_TestStrikes` (`0x0033f110`) tests the shapes as posed and scales nothing again
+([Physics: transforms](../physics-bodies.md#u6-transforms)). Coney poses them so
+(`Human::posedStrikeShapes`). The limbs are named from the
 skeleton's [parent table](../formats/animation.md#the-pose) (inferred); left and right follow the hand bones (25 right,
 confirmed (runtime); 19 left, inferred), and which leg is which is not known.
 
