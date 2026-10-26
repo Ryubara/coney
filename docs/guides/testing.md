@@ -158,7 +158,9 @@ off, and the pursuers' speed, are inferred from the research ([level3](../resear
 walk before each climb, and the pursuers, who speed up as they fall behind, caught it there; the same route driven
 in the original lost Snow the same way. Now it sprints into the climbs (a running player takes a face 4.5 m off,
 [Climbing](../research/characters.md#climb)), charges again when a charge leaves the barrier standing, and the test
-runs every `--ai-seed` from 0 to 7, so a pass is no longer one lucky sequence.
+runs every `--ai-seed` from 0 to 7, so a pass is no longer one lucky sequence. A climb counts only once it has taken
+him up or over the face: when the sliding doors began to work, the mimes came out of their lift as the original's do,
+a climb cut short in the scramble left the driver standing at a wall it took for climbed, and it now climbs again.
 
 A driver that fights holds the stick toward the foe it means to hit while it presses the attack, as a player does: a
 player's attack searches for its target along the stick's heading, and along his facing only when the stick is at
