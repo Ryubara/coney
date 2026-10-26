@@ -466,8 +466,9 @@ class Human final : public Holdable {
     /// The scale the human was made with (a script's `HuSetScale` is an edit of it, not its configuration).
     /// @coney-only debug tooling: the Entity editor's reset and its *Scale collision with mesh*
     [[nodiscard]] float configuredScale() const { return m_configuredScale; }
-    /// Whether the collision (the walking and air spheres, the upright capsule, the strike capsule and the strike
-    /// shapes) scales with the mesh: on at first, so a giant collides at its drawn size.
+    /// Whether the collision (the walking and air spheres, the upright capsule and the strike shapes) scales with the
+    /// mesh: on at first, so a giant collides at its drawn size. The struck capsule (struckCapsule(), a port) keeps
+    /// following scale() either way.
     [[nodiscard]] bool collisionFollowsMesh() const { return !m_collisionFixed.has_value(); }
     /// Makes the collision follow the mesh scale (`follow`), or stay at the configured scale whatever setScale() says.
     /// @coney-only debug tooling: the Entity editor's *Scale collision with mesh*

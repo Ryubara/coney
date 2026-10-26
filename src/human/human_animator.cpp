@@ -92,8 +92,7 @@ std::size_t HumanAnimator::clipsMissing(const characters::AnimSet& anims, const 
 }
 
 HumanAnimator::HumanAnimator(const characters::AnimSet& anims, const AnimSlots& slots)
-    : m_anims(&anims), m_slots(slots), m_normalSlots(slots), m_clipSpeeds(speedsOf(anims, slots)),
-      m_speeds(m_clipSpeeds) {
+    : m_anims(&anims), m_slots(slots), m_normalSlots(slots), m_speeds(speedsOf(anims, slots)) {
     CONEY_ASSERT(clipsMissing(anims, slots) == 0);
     // A human is made standing: its idle, with nothing to fade from.
     m_tasks.change(idleLoop(), 0.0F);
@@ -103,7 +102,7 @@ HumanAnimator::HumanAnimator(const characters::AnimSet& anims, const AnimSlots& 
 void HumanAnimator::changeAnims(const characters::AnimSet& anims) {
     CONEY_ASSERT(clipsMissing(anims, m_slots) == 0);
     m_anims = &anims;
-    refreshSpeeds();
+    m_speeds = speedsOf(anims, m_slots);
     // The clips the scripts gave came from the old set's level; the new character stands in its own idle.
     m_idleClip = nullptr;
     m_overrides.clear();
@@ -111,27 +110,27 @@ void HumanAnimator::changeAnims(const characters::AnimSet& anims) {
     m_state = AnimState::Idle;
 }
 
-// Recomputes the speeds in use from the clips' and the factors.
-// @coney-only debug tooling: the factors are the Entity editor's and the Movement tunables'
-void HumanAnimator::refreshSpeeds() {
-    m_clipSpeeds = speedsOf(*m_anims, m_slots);
-    m_speeds = Speeds{.base = m_clipSpeeds.base * m_factors.base,
-                      .sneak = m_clipSpeeds.sneak * m_factors.sneak,
-                      .walk = m_clipSpeeds.walk * m_factors.walk,
-                      .jog = m_clipSpeeds.jog * m_factors.jog,
-                      .run = m_clipSpeeds.run * m_factors.run,
-                      .sprint = m_clipSpeeds.sprint * m_factors.sprint};
-}
-
-// Sets the factors the gait speeds are scaled by, doing nothing when they are the ones already set.
+// Sets the factors the gait speeds are scaled by. The speeds the original's lines leave in m_speeds (a new anim set, a
+// style change) are the clips' own, so a change in them or in the factors rebuilds the scaled ones from the clips;
+// otherwise there is nothing to do, which is every step of a human nobody edits.
 // @coney-only debug tooling: the Entity editor's speed scale and the Movement tunables
 void HumanAnimator::setSpeedFactors(const Speeds& factors) {
-    if (factors.base == m_factors.base && factors.sneak == m_factors.sneak && factors.walk == m_factors.walk &&
-        factors.jog == m_factors.jog && factors.run == m_factors.run && factors.sprint == m_factors.sprint) {
+    const auto same = [](const Speeds& a, const Speeds& b) {
+        return a.base == b.base && a.sneak == b.sneak && a.walk == b.walk && a.jog == b.jog && a.run == b.run &&
+               a.sprint == b.sprint;
+    };
+    if (same(m_speeds, m_applied) && same(factors, m_factors)) {
         return;
     }
     m_factors = factors;
-    refreshSpeeds();
+    const Speeds clips = speedsOf(*m_anims, m_slots);
+    m_speeds = Speeds{.base = clips.base * factors.base,
+                      .sneak = clips.sneak * factors.sneak,
+                      .walk = clips.walk * factors.walk,
+                      .jog = clips.jog * factors.jog,
+                      .run = clips.run * factors.run,
+                      .sprint = clips.sprint * factors.sprint};
+    m_applied = m_speeds;
 }
 
 anim::GaitClip HumanAnimator::slotClip(std::size_t slot) const {
@@ -159,7 +158,7 @@ void HumanAnimator::setStealthStyle(bool on) {
         m_slots.ids[kSlotWalk] = kAnimStealthWalk;
         m_slots.ids[kSlotWalkStart] = kAnimStealthWalkStart;
     }
-    refreshSpeeds();
+    m_speeds = speedsOf(*m_anims, m_slots);
     // Standing, the idle's builder plays the transition first (`Human_BuildIdleTasks`, 0x0025f770): 634 going in, 394
     // coming out of 630. Moving, a new gait blend on the new clips carries on the old one.
     constexpr HeldFlags kTransitionHeld{.held = kFlagNormalFromFight, .set = kFlagNormalFromFight};

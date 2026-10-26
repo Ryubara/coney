@@ -990,7 +990,7 @@ void Human::aiCombatWalk(bool gated) {
     if (wounded) {
         speed = asked > kMovingAsk ? m_animator.speeds().walk : asked;
     } else if (asked > kMovingAsk) {
-        speed = combat::combatTuning().combatWalkSpeed * m_speedScale;
+        speed = combat::combatTuning().combatWalkSpeed;
     }
     // The feet strafe along the line to the move's point, whatever the facing; on the point, they stand.
     const anim::Vec3 to = moving ? anim::subtract(m_record.move->aim, m_position) : anim::Vec3{};
@@ -1031,7 +1031,7 @@ void Human::combatWalk(const Combatant& target, bool gated) {
         m_animator.playCombatWalk(kAnimFightIdle);
         return;
     }
-    const float speed = combat::combatTuning().combatWalkSpeed * m_speedScale;
+    const float speed = combat::combatTuning().combatWalkSpeed;
     m_velocity = anim::Vec3{std::cos(m_intent.angle) * speed, std::sin(m_intent.angle) * speed, m_velocity.z};
     // The clip by the stick's angle from the facing, clockwise (record +0xdc).
     const float stickHeading = m_intent.angle - kPi / 2.0F;
@@ -1679,11 +1679,11 @@ std::optional<anim::Vec3> Human::bodyPoint() const {
 PosedShape Human::struckCapsule() const {
     // Upright from the feet to the head bone's height + 0.2 (never under 0.2), its radius 0.35, all times the scale;
     // the walking sweep's body factor is not applied.
-    const float least = kCapsuleAboveHead * collisionScale();
+    const float least = kCapsuleAboveHead * m_scale;
     const float height = std::max(ledPoint().z - m_position.z + least, least);
     return PosedShape{.a = m_position,
                       .b = anim::add(m_position, anim::Vec3{0.0F, 0.0F, height}),
-                      .radius = kStrikeCapsuleRadius * collisionScale(),
+                      .radius = kStrikeCapsuleRadius * m_scale,
                       .bone = -1};
 }
 

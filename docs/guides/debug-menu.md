@@ -444,7 +444,7 @@ only the host applies edits**; a client's are refused with a line. Edits are nev
 | --- | --- |
 | Transform | X, Y, Z (a `teleport` with that axis changed; the ground below is found when it lands), Heading (`heading`, degrees), Drop to ground (`drop-to-ground`), Move to camera (a `teleport` to the point the camera looks at) |
 | Meters | Health (1 to 100 %), Stamina, Power, Rage (0 to 100 % of each maximum), Invincible (human flag god, `0x10`), Kill (`kill`: the health to 0, which the human's own update turns into a death) |
-| Stats | Scale (`scale`: the body, its collision unless the switch below is off, and the drawn mesh), Scale collision with mesh (`scale-collision`, on at first), Animation rate (`anim-rate`: how fast every clip plays; 0 holds them), Speed scale (`speed-scale`: a multiplier on every gait speed of this human) |
+| Stats | Scale (`scale`: the body, its collision unless the switch below is off, and the drawn mesh), Scale collision with mesh (`scale-collision`, on at first), Animation rate (`anim-rate`: how fast every clip plays; 0 holds them), Speed scale (`speed-scale`: a multiplier on every gait speed of this human; the combat walk is the Combat page's) |
 | Control | Frozen (`frozen`: the inspector's *Freeze selection*) |
 | Lifecycle | Delete (`delete`) |
 
@@ -460,10 +460,12 @@ layout's fighters) take every edit. A sandbox target takes *Frozen* only, and an
 
 **Scale.** *Scale* sets the human's body scale (`Human::setScale()`) and draws the mesh that much bigger than it was
 made (about the feet; the hat, the held weapon and a carried prop are posed unscaled). By default the collision follows:
-the walking and air spheres, the upright capsule, the strike capsule and the strike shapes are sized by
-`Human::collisionScale()`, which is the body scale, so a giant collides and fights at its drawn size. With *Scale
-collision with mesh* off the collision keeps the scale the human was made with (`Human::configuredScale()`) whatever the
-body scale is. Extreme scales are allowed and may misbehave (a human the size of the map falls through or jams in
+the walking and air spheres, the upright capsule and the strike shapes are sized by `Human::collisionScale()`,
+which is the body scale, so a giant collides and fights at its drawn size. With *Scale collision with mesh* off the
+collision keeps the scale the human was made with (`Human::configuredScale()`) whatever the body scale is. The capsule
+other humans' strikes test (`Human::struckCapsule()`, a port of `PhysicsCapsule_Pose`) follows the body scale either
+way until it is compared with the original again; that is still open on #723.
+Extreme scales are allowed and may misbehave (a human the size of the map falls through or jams in
 things); a test steps humans from 0.05 to 60 times with the collision either way and checks that nothing goes
 non-finite and that a bystander does not move.
 
