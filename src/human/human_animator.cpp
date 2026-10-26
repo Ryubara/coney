@@ -111,6 +111,8 @@ void HumanAnimator::changeAnims(const characters::AnimSet& anims) {
     m_state = AnimState::Idle;
 }
 
+// Recomputes the speeds in use from the clips' and the factors.
+// @coney-only debug tooling: the factors are the Entity editor's and the Movement tunables'
 void HumanAnimator::refreshSpeeds() {
     m_clipSpeeds = speedsOf(*m_anims, m_slots);
     m_speeds = Speeds{.base = m_clipSpeeds.base * m_factors.base,
@@ -121,6 +123,8 @@ void HumanAnimator::refreshSpeeds() {
                       .sprint = m_clipSpeeds.sprint * m_factors.sprint};
 }
 
+// Sets the factors the gait speeds are scaled by, doing nothing when they are the ones already set.
+// @coney-only debug tooling: the Entity editor's speed scale and the Movement tunables
 void HumanAnimator::setSpeedFactors(const Speeds& factors) {
     if (factors.base == m_factors.base && factors.sneak == m_factors.sneak && factors.walk == m_factors.walk &&
         factors.jog == m_factors.jog && factors.run == m_factors.run && factors.sprint == m_factors.sprint) {
