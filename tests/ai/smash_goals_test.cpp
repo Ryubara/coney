@@ -55,3 +55,14 @@ TEST_CASE("the wreck's smash search refuses an object only with the player neare
     low.targets.push_back({.handle = 601, .position = {feet.x + 0.5F, feet.y, feet.z}, .animSet = 0});
     CHECK_FALSE(coney::ai::findSmashTarget(searcher, scene.player(), low, scene.services, 15.0F, 15.0F).has_value());
 }
+
+TEST_CASE("the wreck's smash search refuses an object any player stands at, not only player 1", "[ai][steal][wreck]") {
+    // Expected: crew-wreck.md#stand-point, confirmed (code)
+    // Ai_FindObject (0x0029d5f0) tests every player: a second player within 1 m of the object makes it refused.
+    AiScene scene;
+    Brain& searcher = scene.add({42.0F, 40.0F, 0.0F}, 0.0F);
+    static_cast<void>(scene.add({44.5F, 40.0F, 0.0F}, 0.0F, coney::ai::BrainType::Player));
+    FakeItems items;
+    items.targets.push_back({.handle = 600, .position = {45.0F, 40.0F, 0.0F}, .animSet = 0});
+    CHECK_FALSE(coney::ai::findSmashTarget(searcher, scene.player(), items, scene.services, 15.0F, 15.0F).has_value());
+}

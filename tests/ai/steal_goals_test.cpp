@@ -11,17 +11,22 @@
 #include <cmath>
 #include <cstdint>
 #include <memory>
+#include <numbers>
 #include <optional>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "ai/attack_action.h"
 #include "ai/brain.h"
 #include "ai/gangs.h"
 #include "ai/goal.h"
 #include "ai/item_services.h"
+#include "ai/move_action.h"
 #include "ai/perception.h"
 #include "ai/smash_goals.h"
+#include "ai/turn_action.h"
+#include "human/locomotion.h"
 #include "support/ai_fixtures.h"
 #include "support/collision_fixtures.h"
 #include "support/fake_items.h"
@@ -359,7 +364,8 @@ TEST_CASE("under the wreck command a Warrior holding a swung object with a held 
     member.setTarget(&foe);
     scene.run(1);
     CHECK(member.target() == nullptr);
-    CHECK(member.actionCount() == 0);
+    // No swing queued; the goal's own turn to the leader's facing may be (crew-wreck.md#process).
+    CHECK(dynamic_cast<const coney::ai::AttackAction*>(member.frontAction()) == nullptr);
     bool followed = false;
     for (int k = 0; k < 60 * 3 && !followed; ++k) {
         scene.run(1);
@@ -432,4 +438,185 @@ TEST_CASE("under the wreck command the claim on a struck target drops once Destr
     scene.run(2);
     CHECK(members[0]->nowMs() < sentMs + coney::ai::kSmashClaimMs);
     CHECK_FALSE(items.claimedBy(600, gang, members[0]->nowMs()));
+}
+
+namespace {
+
+// An action that never ends: a queue that stays full.
+class HoldAction final : public coney::ai::Action {
+  public:
+    [[nodiscard]] coney::ai::ActionStatus update(Brain& /*brain*/) override { return coney::ai::ActionStatus::Running; }
+};
+
+// A Warrior at `at` facing `headingDegrees` running WarriorVandalSteal for the human with handle `leader`, in no gang
+// and under no tactic, so neither the fetch nor the wreck gives him anything.
+Brain& vandal(AiScene& scene, FakeItems& items, Vec3 at, float headingDegrees, double leader) {
+    Brain& member = scene.add(at, headingDegrees);
+    REQUIRE(member.pushGoal(std::make_unique<coney::ai::WarriorVandalStealGoal>(
+        scene.services, scene.brains.formations(), &items, leader)));
+    return member;
+}
+
+// Moves `brain`'s human to `at` facing `headingDegrees`, as a scene's placement does.
+void put(AiScene& scene, Brain& brain, Vec3 at, float headingDegrees = 0.0F) {
+    brain.human().place(scene.mesh.get(), at, headingDegrees);
+    brain.placed();
+}
+
+} // namespace
+
+TEST_CASE("under the wreck command a Warrior whose leader is gone keeps his goal", "[ai][steal][wreck]") {
+    // Expected: crew-wreck.md#process, confirmed (code)
+    AiScene scene;
+    FakeItems items;
+    Brain& member = vandal(scene, items, {42.0F, 40.0F, 0.0F}, 0.0F, 99.0);
+    scene.run(30);
+    CHECK(member.findGoal(GoalType::WarriorVandalSteal) != nullptr);
+}
+
+TEST_CASE("under the wreck command the follow deadline runs from his first update, so later he follows at once",
+          "[ai][steal][wreck]") {
+    // Expected: crew-wreck.md#process, confirmed (code)
+    // The 2 s deadline is armed whenever it is 0, near the leader too, and cleared only by a wreck: once it has
+    // passed, the first update he is beyond 3 m of the leader pushes FollowFormation.
+    AiScene scene;
+    FakeItems items;
+    Brain& member = vandal(scene, items, {41.0F, 40.0F, 0.0F}, 0.0F, scene.player().handle());
+    scene.run(60 * 3);
+    REQUIRE(member.findGoal(GoalType::FollowFormation) == nullptr);
+    put(scene, scene.player(), {40.0F, 50.0F, 0.0F});
+    scene.run(2);
+    CHECK(member.findGoal(GoalType::FollowFormation) != nullptr);
+}
+
+TEST_CASE("under the wreck command a Warrior away from the leader before the deadline drops his target and looks",
+          "[ai][steal][wreck]") {
+    // Expected: crew-wreck.md#process, confirmed (code)
+    // Far from the leader with the deadline not passed, the update goes on to the queued-action check and, his gang
+    // not attacked, drops his target and sets his field of view to 1.92 rad.
+    AiScene scene;
+    FakeItems items;
+    Brain& member = vandal(scene, items, {52.0F, 40.0F, 0.0F}, 0.0F, scene.player().handle());
+    Brain& foe = scene.add({60.0F, 40.0F, 0.0F}, 0.0F);
+    member.setTarget(&foe);
+    member.setSight(member.sightRange(), 0.5F);
+    scene.run(1);
+    CHECK(member.target() == nullptr);
+    CHECK(member.fieldOfView() == coney::ai::kDefaultFieldOfView);
+    CHECK(member.findGoal(GoalType::FollowFormation) == nullptr);
+}
+
+TEST_CASE("under the wreck command a Warrior near the leader turns to the leader's facing however little he is off",
+          "[ai][steal][wreck]") {
+    // Expected: crew-wreck.md#process, confirmed (code)
+    // Every 4 s he turns to a point ahead of him along the leader's facing, with no threshold: 40 degrees off (under
+    // the 60 the crew's own heading turn waits for) is turned, to within the turn's 15 degrees.
+    AiScene scene;
+    FakeItems items;
+    Brain& leader = scene.add({40.0F, 40.0F, 0.0F}, 90.0F);
+    Brain& member = vandal(scene, items, {41.0F, 40.0F, 0.0F}, 50.0F, leader.handle());
+    scene.run(60 * 3);
+    const float off = coney::human::wrapAngle(member.human().heading() - leader.human().heading());
+    CHECK(std::fabs(off) <= coney::ai::kTurnDoneAngle);
+}
+
+TEST_CASE("under the wreck command the fetch comes before the queued-action check", "[ai][steal][wreck]") {
+    // Expected: crew-wreck.md#process, confirmed (code)
+    // TryFetch runs first in the update: with an action queued that never ends he still fetches the store's objects
+    // (the pushed GetItem clears the queue). The goal runs first with no store; the store is stocked once the action
+    // is queued, and the tactic finds it within its 2 s.
+    AiScene scene;
+    std::vector<Brain*> members;
+    const int gang = makeCrew(scene, 1, members);
+    FakeItems items;
+    static_cast<void>(steal(scene, gang, items));
+    scene.run(1);
+    REQUIRE(members[0]->findGoal(GoalType::WarriorVandalSteal) != nullptr);
+    members[0]->queueAction(std::make_unique<HoldAction>());
+    stockStore(items);
+    scene.run(60 * 3);
+    CHECK_FALSE(items.takes.empty());
+}
+
+TEST_CASE("under the wreck command queued actions hold the wreck back unless a fidget plays", "[ai][steal][wreck]") {
+    // Expected: crew-wreck.md#process, confirmed (code)
+    // With actions queued he stops, unless held flag 0x100 (a fidget) is set: then the wreck step runs and a smash
+    // target by him is struck.
+    const auto struck = [](std::uint32_t held) {
+        AiScene scene;
+        std::vector<Brain*> members;
+        const int gang = makeCrew(scene, 1, members);
+        Brain& member = *members[0];
+        FakeItems items;
+        static_cast<void>(steal(scene, gang, items));
+        // The tactic's start flushes his actions: the queue and the clip come after it, then the target.
+        scene.run(1);
+        member.queueAction(std::make_unique<HoldAction>());
+        coney::anim::AnimClip clip;
+        clip.duration = 10.0F;
+        member.human().playScripted(clip, 999, 1.0F, 0.0F, coney::human::HeldFlags{.held = held, .set = held});
+        items.targets.push_back({.handle = 600, .position = {44.0F, 38.0F, 0.0F}, .animSet = 0});
+        for (int k = 0; k < 30; ++k) {
+            scene.run(1);
+            if (member.findGoal(GoalType::DestroyItem) != nullptr) {
+                return true;
+            }
+        }
+        return false;
+    };
+    CHECK(struck(0x100));
+    CHECK_FALSE(struck(0));
+}
+
+TEST_CASE("under the wreck command a failed move holds the follow back for 31 updates", "[ai][steal][wreck]") {
+    // Expected: crew-wreck.md#process, confirmed (code)
+    // While the brain's move failure (+0x284) is set the goal counts updates; far from the leader with the deadline
+    // passed, he follows only once the count reaches 31, which clears the failure and the count.
+    AiScene scene;
+    FakeItems items;
+    Brain& member = vandal(scene, items, {41.0F, 40.0F, 0.0F}, 0.0F, scene.player().handle());
+    scene.run(60 * 3);
+    put(scene, scene.player(), {40.0F, 50.0F, 0.0F});
+    member.setMoveFailure(coney::ai::MoveFailure::Stuck);
+    scene.run(25);
+    CHECK(member.findGoal(GoalType::FollowFormation) == nullptr);
+    scene.run(15);
+    CHECK(member.findGoal(GoalType::FollowFormation) != nullptr);
+}
+
+TEST_CASE("under the wreck command a Warrior follows a running leader even within 3 m", "[ai][steal][wreck]") {
+    // Expected: crew-wreck.md#process, confirmed (code)
+    // The follow also starts when the leader's gait (+0x1a8) is above the jog, whatever the distance.
+    AiScene scene;
+    FakeItems items;
+    Brain& leader = scene.add({40.0F, 40.0F, 0.0F}, 0.0F);
+    Brain& member = vandal(scene, items, {40.5F, 42.0F, 0.0F}, 0.0F, leader.handle());
+    scene.run(60 * 3);
+    REQUIRE(member.findGoal(GoalType::FollowFormation) == nullptr);
+    leader.queueAction(std::make_unique<coney::ai::MoveAction>(
+        coney::ai::MoveRequest{.point = {40.0F, 75.0F, 0.0F}, .radius = 0.5F, .gait = 4}));
+    bool followedNear = false;
+    for (int k = 0; k < 120 && !followedNear; ++k) {
+        scene.run(1);
+        followedNear = member.findGoal(GoalType::FollowFormation) != nullptr &&
+                       coney::anim::distance(member.human().position(), leader.human().position()) <= 3.0F;
+    }
+    CHECK(followedNear);
+}
+
+TEST_CASE("under the wreck command a Warrior whose gang is attacked looks all round", "[ai][steal][wreck]") {
+    // Expected: crew-wreck.md#process, confirmed (code)
+    // While a member of his gang has attackers his field of view is 2 pi.
+    AiScene scene;
+    std::vector<Brain*> members;
+    static_cast<void>(makeCrew(scene, 1, members));
+    Brain& member = *members[0];
+    FakeItems items;
+    REQUIRE(member.pushGoal(std::make_unique<coney::ai::WarriorVandalStealGoal>(
+        scene.services, scene.brains.formations(), &items, scene.player().handle())));
+    Brain& foe = scene.add({44.0F, 40.0F, 0.0F}, 0.0F);
+    foe.setTarget(&member);
+    REQUIRE_FALSE(member.attackSlots().empty());
+    scene.run(1);
+    CHECK(member.fieldOfView() == 2.0F * std::numbers::pi_v<float>);
 }
