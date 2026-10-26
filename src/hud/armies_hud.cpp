@@ -14,9 +14,9 @@ namespace {
 // The credits line's colour, (245, 184, 0).
 constexpr graphics::Rgba kArmiesYellow{245, 184, 0, 255};
 // The GO sign in the default video mode and English (`GoSign_Setup`; every x less the language's shift): the text at
-// (0.8, 0.3); in mode Text one arrow at
-// (0.78, 0.299) turned 4.72 radians, in mode Arrows three at (0.835 / 0.875 / 0.915, 0.39) unturned; arrows 0.06
-// square, `part_page0` rectangle 4 (sprite word 4), coloured as the text. Its font size is 3.9.
+// (0.8, 0.3); in mode Text one arrow at (0.78, 0.299) turned 4.72 radians, in mode Arrows three at (0.835 / 0.875 /
+// 0.915, 0.39) unturned; arrows 0.06 square, `part_page0` rectangle 4 (sprite word 4), coloured as the text. Its font
+// size is 3.9.
 constexpr GuiPoint kGoTextPlace{0.8F, 0.3F};
 constexpr float kGoTextScale = 3.9F;
 constexpr GuiPoint kGoSingleArrow{0.78F, 0.299F};
