@@ -127,7 +127,9 @@ class XemuSession:
         if actual is None:
             return gdb
         if gdb.running and not actual:
-            if gdb.wait_stop(0.5) is None:
+            # The stub may not have taken a `c` we sent a moment ago when the monitor answered (two sockets, no order
+            # between them), so the monitor is asked again once no stop has come before its word is believed.
+            if gdb.wait_stop(0.5) is None and self._monitor_running() is False:
                 gdb.running = False
         elif not gdb.running and actual:
             gdb.running = True

@@ -125,7 +125,8 @@ needs no translation. The stub is all-stop, which shapes every tool:
 QEMU's human monitor on the copy's monitor port (`repo:python/src/coney_tools/qemu_monitor.py`) answers what the stub
 cannot: whether the guest runs (`info status`) without stopping it, pause and resume (`stop`, `cont`), the version
 (`info version`) and the snapshots (`savevm`, `loadvm`, `delvm`, `info snapshots`). The tools keep the stub's view of
-the guest in step with the monitor's, so a pause from xemu's own menu is seen. Two things differ from stock QEMU
+the guest in step with the monitor's, so a pause from xemu's own menu is seen (a "paused" with no stop from the stub is
+asked a second time first: the two sockets have no order between them). Two things differ from stock QEMU
 (xemu 0.8.139, QEMU 10.2.0):
 
 - `info version` answers QEMU's version (`10.2.0`), never xemu's. xemu's own release is the `xemu_version:` line at the

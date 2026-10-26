@@ -67,9 +67,30 @@ def test_status_names_the_copy_and_its_version(rig: tuple[Server, FakeGdbStub, F
     server, stub, *_ = rig
     stub.running = True
     text, failed = call(server, "xemu_status", agent="alice")
+    assert not failed, text
     status = json.loads(text)
-    assert not failed and status["copy"] == "xemu" and status["running"] is True
+    assert status["copy"] == "xemu" and status["running"] is True
     assert status["version"] == "8.2.50 (xemu-v0.8.110)"
+
+
+def test_a_monitor_a_moment_behind_the_stub_is_not_believed(
+    rig: tuple[Server, FakeGdbStub, FakeMonitor, Registry], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The monitor and the stub are two sockets: right after the resume the monitor can still say "paused" while the
+    # stub has taken the `c` (seen once in a full run). One stale answer must not turn a running game into a paused one.
+    server, stub, monitor, _ = rig
+    stub.running = True
+    real, calls = monitor._running, []
+
+    def lagging() -> bool:
+        # The first ask comes before the attach (truthfully); the second, right after the resume, is the stale one.
+        calls.append(1)
+        return False if len(calls) == 2 else real()
+
+    monkeypatch.setattr(monitor, "_running", lagging)
+    text, failed = call(server, "xemu_status", agent="alice")
+    assert not failed, text
+    assert json.loads(text)["running"] is True and len(calls) >= 2
 
 
 def test_status_names_xemus_own_release_from_the_copys_log(
