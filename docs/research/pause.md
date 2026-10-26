@@ -400,7 +400,7 @@ Default video mode, [GUI coordinates](hud.md#coordinates). Confirmed (code) at `
 | Part | Where |
 | --- | --- |
 | background | sheet record 12 rectangle 5 (sprite word `0xc0005`), centred at (0.5, 0.5), size 1.05 (0.9 when the device's slot `+0xb8` is set), depth 7,000, white tinted by the colour cycle |
-| three headers | the top one a `CircledTextHeader` ([GUI: the pause header](gui.md#circled-text-header)), the other two `IconTextHeader`s (`0x001e77a0`), at y 0.22, 0.46 and 0.68 (16:9: 0.18, 0.42, 0.64), x 0.5, box width 0.5; built with "Current Objectives" (`0x108`), "Bonus Objectives" (`0x107`) and "Overview" (`0x106`), their texts swapped per screen (the top one shows the mission's title on the grid, "OPTIONS" `0x116` on Options, "CONTROLS" `0x173` on Controls) |
+| three headers | the top one a `CircledTextHeader` ([Circled texts: the pause header](circled-text.md#pause-header)), the other two `IconTextHeader`s (`0x001e77a0`), at y 0.22, 0.46 and 0.68 (16:9: 0.18, 0.42, 0.64), x 0.5, box width 0.5; built with "Current Objectives" (`0x108`), "Bonus Objectives" (`0x107`) and "Overview" (`0x106`), their texts swapped per screen (the top one shows the mission's title on the grid, "OPTIONS" `0x116` on Options, "CONTROLS" `0x173` on Controls) |
 | item grid | rows of 3 and 4 items (3 and 3 in `level95`, the hangout, and in Rumble levels), centred on x 0.5, first row at y 0.86, font scale 1.15, grey `0x005fd320`, font slot 3, a `" : "` after every item but the last of a row |
 | usage line | centred at (0.5, 0.97) |
 | Yes/No box | the question at (0.26, 0.55), the answers at (0.6, 0.75) (`0x0050ee10`-`0x0050ee1c`) |
@@ -499,7 +499,7 @@ rises from 0 to 255 over the first 3,000 ms. Confirmed (code).
 Confirmed (code) at the addresses cited unless a line says otherwise.
 
 The header above the grid is the menu's one `CircledTextHeader`; its parts, text rules, drawing and layout per video
-mode are on [GUI: the pause header](gui.md#circled-text-header). What the pause menu feeds it (`PauseMenu_Open`,
+mode are on [Circled texts: the pause header](circled-text.md#pause-header). What the pause menu feeds it (`PauseMenu_Open`,
 `0x001dbee0`), confirmed (code):
 
 - **Text:** the game state's mission title (`+0x134`), or the Rumble mode's title in a Rumble level; the subtitle is
@@ -803,7 +803,7 @@ and banner the other way round.
 | name (`+0x7b0`) | left edge (anchor 1) at B + (−0.08, −0.2) = (0.42, 0.3), size 0.09 × k (`0x0050f130`), depth 15,000, tinted (150, 30, 30) (`0x0063ee30`) |
 | two shadows (`+0x8b0`, `+0x9b0`) | the name's sprite in black, depth 11,000, offset (+0.0025, +0.004) and (−0.001, −0.002) (`0x0050f2a8`-`0x0050f2b4`); set up at alpha 128, but drawn **opaque**: before each draw `PauseStats_Render` sets every part's alpha to the menu's (`BaseWidget_SetAlpha`, `0x001a2638`, writes the colour's alpha byte `+0xb7`), replacing the 128 (confirmed (code); that it shows is inferred from the runtime shot's darker outline) |
 | face (`+0xab0`) | centred at B + (−0.17, −0.099) = (0.33, 0.401), size 0.3 × k (`0x0050f150`), white, depth 11,000 |
-| four bars (`HudGenericBar`, `+0xbb0` + `0x3f0` × i) | left edge at B + (0.14, −0.11 + 0.05 i) = (0.64, 0.39 / 0.44 / 0.49 / 0.54), 0.22 × 0.025 (× k), fill (150, 30, 30) (`0x0063ee38`), back (37, 37, 37), sprite word `0x30036`: resource instance 3, `part_page0`, rectangles 54 (body), 55 (fill), 56 and 57 (end caps), drawn as the rage meter is ([HUD: which sheet](hud.md#scripted-bars); `HudBar_Draw`, `0x001a1138`, reads the high half as an instance, not a sheet-table record) |
+| four bars (`HudGenericBar`, `+0xbb0` + `0x3f0` × i) | left edge at B + (0.14, −0.11 + 0.05 i) = (0.64, 0.39 / 0.44 / 0.49 / 0.54), 0.22 × 0.025 (× k), fill (150, 30, 30) (`0x0063ee38`), back (37, 37, 37), sprite word `0x30036`: resource instance 3, `part_page0`, rectangles 54 (body), 55 (fill), 56 and 57 (end caps), drawn as the rage meter is ([the draw](hud-bar.md#draw), [HUD: which sheet](hud.md#scripted-bars); `HudBar_Draw`, `0x001a1138`, reads the high half as an instance, not a sheet-table record) |
 | the bars' labels | each bar's label (a markup text of the `HudGenericBar`, font slot 3, grey `0x005fd310`, size 1.0), anchored at x 0.38 (`0x0050f2b8`), y B + −0.08, −0.03, 0.02, 0.07 = 0.42, 0.47, 0.52, 0.57 (`0x0050f178`, `0x0050f1a8`, `0x0050f1d8`, `0x0050f208`; `HudGenericBar_SetLabelPos`, `0x001c2520`), **plus the bar's label offset (0.04, −0.035)** (`0x0050e960` / `0x0050e964`, copied to bar `+0x3d0` / `+0x3d8` by `HudGenericBar_Setup` `0x001c1f80` and added by `HudGenericBar_Update` `0x001c22e8`): drawn at (0.42, 0.385 / 0.435 / 0.485 / 0.535), left-aligned (`HudGenericBar_SetLabelAlign(bar, 0)`: `Font_Draw` flags 0). So the labels start at the name's left edge (0.42), clear of the face (centred at 0.33). Strength `0xf3`, Stamina `0xf4`, Health `0xf5`, Rage `0xf6` |
 | description (`+0x1b70`) | a markup text at B + (−0.24, 0.1) = (0.26, 0.6), size 1.0, grey `0x005fd310`, font slot 3, paged and word-wrapped at 0.55 ([below](#stats-description)) |
 
@@ -932,7 +932,7 @@ grids, the Yes/No box and the leaving actions follow this page; tests in `repo:t
 
 Coney stand-ins, each an open question below:
 
-- The top header is the `CircledTextHeader` ([GUI](gui.md#circled-text-header), [The top header](#the-top-header)):
+- The top header is the `CircledTextHeader` ([Circled texts](circled-text.md#pause-header), [The top header](#the-top-header)):
   the mission's title is the current level record's `+0x24` text (Coney's reading of the game state's `+0x134`, which
   `InitLevel` copies from the level's names; on the disc `level99`'s gives the circled `1`, the checkpoint letter and
   "Coney", as the runtime screenshot shows), the subtitle its `+0x49` name, the circles in the level's colour
@@ -1010,7 +1010,7 @@ Coney stand-ins, each an open question below:
   bars' sprites, the labels' offset and the description's wrap width, line window and paging, with a runtime check;
   the flag `+0x3bb8` is taken to be what `PauseStats_Setup`'s slot `+0x44` call sets, inferred). Still open: the
   unused floats t6-t9 of the difficulty table and the `0x08` and `0x02` layouts.
-- The header widget ([answered](gui.md#circled-text-header): one to three circles, the level's colour and a
+- The header widget ([answered](circled-text.md#pause-header): one to three circles, the level's colour and a
   red checkpoint circle). Still open: a screenshot of the 16:9 pause menu (the layout's title factor is 0 there) and
   whether the menu's mission titles always have the `<number>:<title>` form.
 - The Controls screen and the Options menu (answered: [The Options screen](#options),

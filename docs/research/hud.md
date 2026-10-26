@@ -263,11 +263,8 @@ along it. Confirmed (code); 40 of 78 confirmed (runtime): red to 27 %, white to 
 **Drawing** (`0x001a1138`), left to right, all at the meter's height: the left cap (rectangle 56) in the background
 colour; the body (rectangle 54) over the inner width (`width` less the cap's width) in the background colour; the
 capacity strip (rectangle 55) over inner width × capacity in the capacity colour; the fill strip (rectangle 55) over
-inner width × fill in the fill colour; the right cap (rectangle 57). Where each goes: a cap is as wide as its
-rectangle's u span (u1 − u0, taken as overlay units), and the inner width is the width less the left cap's; the left
-cap starts at the left end, the body is centred on the meter's middle (so it starts half a cap in), the two strips
-start half a cap in, and the right cap starts half a cap short of the width. The stretched rectangles are inset by one
-texel left and right (the u span only). Confirmed (code).
+inner width × fill in the fill colour; the right cap (rectangle 57). The stretched rectangles are inset by one texel
+on each side. Confirmed (code).
 
 **Flash and trail, unused.** `HudBar_Draw(flashBelow, bar, flash, trail)` takes the threshold in `f12` and the bar,
 `flash` and `trail` in `a0`-`a2`. Every one of its 14 calls passes **`flash` = 0 and `trail` = 0** (`0x001a33a4`,

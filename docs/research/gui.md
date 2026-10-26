@@ -20,9 +20,6 @@ particle.
 
 ## Original structure
 
-Every claim in this section is confirmed (code) at the address it cites unless its line says it is inferred,
-speculative or confirmed (runtime).
-
 The GUI is `c:/Warriors/Source/GUI/` (`0x001a1f10`-`0x002176b8`, [Source map](source-map.md#gui)), with the
 profile-manager screens in `GUI/ProfileManagementGUI/` and the Rumble-mode screens in `GUI/RumbleModeGUI/`. The sprite
 sheets belong to `Graphics/ParticlePage.cpp` (`0x00181b68`-`0x00182820`) and the resource manager
@@ -59,9 +56,6 @@ sheets belong to `Graphics/ParticlePage.cpp` (`0x00181b68`-`0x00182820`) and the
 | `0x00179808`, `0x00179958`, `0x00179c30` | `Font_Size(scale)`, `Font_Measure`, `Font_Draw` | text as sprites | confirmed (code); file inferred (`Graphics/`, before the stub `0x0017b1c0`) |
 
 ## Data
-
-Every claim in this section is confirmed (code) at the address it cites unless its line says it is inferred,
-speculative or confirmed (runtime).
 
 ### Sprite sheet: chunk `0x4C` "Particle Page" {#particle-page}
 
@@ -306,13 +300,13 @@ from the runtime: PM_Light's bar starts at x 0); fill colour `+0x28`, fill fract
 
 The big header at the top of the story pause menu (the mission's title after one to three circled characters, the level
 name under it) is the class we call **`CircledTextHeader`** (constructor `0x001e7f50`, vtable `0x0053ca00`), a subclass
-of `IconTextHeader` (constructor `IconTextHeader_Construct` `0x001e77a0`, [function index](#fn-after-controlmenuhud)).
-It has **one instance**, the pause menu's top header at `0x006340c0`, built by `PauseMenu_StaticInit` (`0x001dfc80`, the
-only caller of the constructor) with the text "Current Objectives" (`0x108`); the two other pause headers (`0x00634c70`,
-`0x00634fe0`) are plain `IconTextHeader`s. Confirmed (code). The front-end screens that pass the allocator tag
-`CircledTextHeader` (mission select `0x001bc5a8` and `0x001bd838`, game stats `0x002155a8`) allocate `0x600` bytes and
-construct a [`CircledText`](#fn-circledtext) (`0x001d0aa8`) in them, a different and smaller class: the tag is only a
-name. Confirmed (code) at those call sites.
+of `IconTextHeader` (`0x001e77a0`, [function index](#fn-after-controlmenuhud)). It has **one instance**, the pause
+menu's top header at `0x006340c0`, built by `PauseMenu_StaticInit` (`0x001dfc80`, the only caller of the constructor)
+with the text "Current Objectives" (`0x108`); the two other pause headers (`0x00634c70`, `0x00634fe0`) are plain
+`IconTextHeader`s. Confirmed (code). The front-end screens that pass the allocator tag `CircledTextHeader` (mission
+select `0x001bc5a8` and `0x001bd838`, game stats `0x002155a8`) allocate `0x600` bytes and construct a
+[`CircledText`](#fn-circledtext) (`0x001d0aa8`) in them, a different and smaller class: the tag is only a name.
+Confirmed (code) at those call sites.
 
 **Parts** (offsets from the object; confirmed (code) at `0x001e7f50`, `0x001e7898`, `0x001e8368`):
 
@@ -321,13 +315,13 @@ name. Confirmed (code) at those call sites.
 | `+0x20` / `+0x30` | position (x at `+0x20`, y at `+0x28`) and box (width at `+0x30`) | the caller's |
 | `+0x360` | text offset (x at `+0x360`, y at `+0x368`) | the caller's |
 | `+0x50` | the child (the pause menu passes its current-objectives checklist) | placed under the header ([Layout](#circled-text-header-layout)) |
-| `+0x70` | the label, a markup text (`IconTextHeader`'s) | size 1.0, grey `0x005fd310`, font slot 3, the constructor's text; confirmed (code) |
-| `+0x260` | rule A, a `BaseWidget` (`IconTextHeader`'s) | the caller's sprite word, size 0.1, depth 8,000, grey `0x005fd310`; confirmed (code) |
-| `+0x390` | rule B, a `BaseWidget` | the same sprite word, depth 8,000, grey `0x005fd310`; confirmed (code) |
-| `+0x490` + `0x100` × i, i < 3 | three circles, `BaseWidget`s | `part_page0` rectangle 84 (sprite word `0x54`), depth 8,500, **black** (`0x005fd260`), size 0.082 × the circle scale; confirmed (code) |
-| `+0x790` + `0xd0` × i, i < 3 | a one-character `TextWidget` in each circle | font slot 4, `Font_Size(1.561)`, grey `0x005fd310`; confirmed (code) |
-| `+0xa00` | the title, a `TextWidget` | font slot 4, `Font_Size(2.23)`, grey `0x005fd310`; confirmed (code) |
-| `+0xad0` | the subtitle, a `TextWidget` | font slot 4, `Font_Size(1.561)`, grey `0x005fd310`; confirmed (code) |
+| `+0x70` | the label, a markup text (`IconTextHeader`'s) | size 1.0, grey `0x005fd310`, font slot 3, the constructor's text |
+| `+0x260` | rule A, a `BaseWidget` (`IconTextHeader`'s) | the caller's sprite word, size 0.1, depth 8,000, grey `0x005fd310` |
+| `+0x390` | rule B, a `BaseWidget` | the same sprite word, depth 8,000, grey `0x005fd310` |
+| `+0x490` + `0x100` × i, i < 3 | three circles, `BaseWidget`s | `part_page0` rectangle 84 (sprite word `0x54`), depth 8,500, **black** (`0x005fd260`), size 0.082 × the circle scale |
+| `+0x790` + `0xd0` × i, i < 3 | a one-character `TextWidget` in each circle | font slot 4, `Font_Size(1.561)` |
+| `+0xa00` | the title, a `TextWidget` | font slot 4, `Font_Size(2.23)`, grey `0x005fd310` |
+| `+0xad0` | the subtitle, a `TextWidget` | font slot 4, `Font_Size(1.561)`, grey `0x005fd310` |
 | `+0x370` | the title's characters (the text after the `:`) | |
 | `+0xba0` | the number of circles in use | |
 
@@ -335,12 +329,9 @@ The pause menu sets it up (`0x001dbee0`) at position (0.5, 0.22) (16:9: (0.5, 0.
 (0.01, −0.01) and sprite word 10 (`part_page0` rectangle 10) for both rules. Confirmed (code).
 
 **The text** (`CircledTextHeader_SetTitle`, `0x001e8ee0`): the string is split at its first `:`. Every character before
-it gets a circle of its own, in order; **every** `:` that is not the first character of the string adds one more
-circle whose character is `@` + the checkpoint (game state `+0x33a`, so checkpoint 1 shows `A`, 2 `B`), coloured grey
-`0x005fd310` until the next update turns it black; the other characters after the first `:` are the title, so a later
-`:` is left out of it and adds a circle; a string without a `:` is all circles and no title. Nothing bounds the count
-at three (Coney drops the circles past three, a marked stand-in). The letters of circles not in use keep
-their old text. The **last** circle is then coloured red `0x005fd328` (170, 43, 43). The
+it gets a circle of its own, in order; the `:` itself (when it is not the first character) adds one more circle whose
+character is `@` + the checkpoint (game state `+0x33a`, so checkpoint 1 shows `A`, 2 `B`); what follows the `:` is the
+title. Nothing bounds the count at three. The **last** circle is then coloured red `0x005fd328` (170, 43, 43). The
 subtitle is always the current level's name (the level record at game state `+0x14d4` + `0x84` × `+0x56dc`, name at
 `+0x49`). Confirmed (code). The pause menu passes the game state's mission title (`+0x134`), or the Rumble mode's title
 in a Rumble level, after colouring all three circles with the level's colour ([Pause](pause.md#the-top-header)); so a
@@ -367,14 +358,8 @@ text offset (ox, oy) and the factors below, in GUI coordinates ([HUD: coordinate
 
 - rule A: centre (X + 0.035, Y + 0.105), size 0.57 × 0.007 (device-converted);
 - rule B: centre (X + 0.035, (Y − 0.07) × **a**), the same size;
-- with `h` rule A's height (`+0x2f4`, 0.007) and `t` the title's line height (`TextWidget` `+0xb4`, which
-  `TextWidget_SetText` `0x001cd1e0` sets to `h + lineGap` of the title's metrics, `Font_Size(2.23)`), `y0` = Y − h / 2 +
-  t + oy − 0.045 − 0.151. `Font_Size` (`0x00179808`) multiplies `h` by the live view aspect `0x0050b208` (static
-  1.3333, which the device replaces with 1.45 in interlaced 4:3), so `t` is 0.099 there, not the 0.091 the static value
-  gives: confirmed (code) at `0x00179808`; a PCSX2 read of the pause header (`0x006340c0`, `level99` checkpoint 2)
-  showed `+0xab4` = 0.09898 and the title at y 0.0745, the subtitle at 0.1753 (inferred: no run record). Coney's font
-  metrics still use 1.3333, so its header sits about 3 pixels higher (a marked stand-in at
-  `CircledTextHeader::place`, until the font metrics take the view aspect);
+- with `h` rule A's height (`+0x2f4`, 0.007) and `t` the title's line height (`TextWidget` `+0xb4`: `h + lineGap` of
+  `Font_Size(2.23)`, [Text](#text), 0.091 in 4:3), `y0` = Y − h / 2 + t + oy − 0.045 − 0.151;
 - the subtitle (`Font_Size(1.7)`) at (0.257, (`y0` + 0.075) × **b**);
 - the circles from x = 0.272 (an absolute x, not relative to X), each step 0.051: the character at (x, `y0` × **d**),
   `Font_Size(1.7)`, and its circle centred at (x + the character's width / 2, `y0` × **c**), size 0.082 × **s**
@@ -382,10 +367,10 @@ text offset (ox, oy) and the factors below, in GUI coordinates ([HUD: coordinate
 - the title (`Font_Size(2.23)`) after the last circle at (x, `y0` × **d**), or at x 0.255 when there is no circle;
 - the label at (X − W / 2 + ox − 0.005, (Y + h / 2 − its height / 2 + oy + 0.1) × **e**);
 - the child at (the label's x + 0.005, (Y + h / 2 + 0.02 + 0.1 + g) × **f**), with g = −0.015 (−0.025 with flag `0x02`
-  alone; confirmed (code) at `0x001e7898`).
+  alone; `0x001e7898`).
 
-The factors per video mode (`CircledTextHeader_ApplyVideoMode`, `0x001e81c0`, run at the top of every update;
-confirmed (code); device flags as on [Graphics](graphics.md#video-mode)):
+The factors per video mode (`CircledTextHeader_ApplyVideoMode`, `0x001e81c0`, run at the top of every update; device
+flags as on [Graphics](graphics.md#video-mode)):
 
 | Flags | a `0x0050f2fc` | b `0x0050f300` | c `0x0050f304` | d `0x0050f308` | e `0x0050f30c` | f `0x0050f310` | s `0x0050f2dc` |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -398,10 +383,8 @@ confirmed (code); device flags as on [Graphics](graphics.md#video-mode)):
 (inferred). The function also writes `0x0050f314` (0.082, or 0.05 with `0x02`), which the update does not read.
 
 **Worked example** (inferred, computed from the constants above): on the pause grid in the default mode (X, Y = 0.5,
-0.22, interlaced 4:3 so t ≈ 0.099), `y0` ≈ 0.109, so the title and the circle characters sit at y ≈ 0.074 and the
-circles' centres at 0.085, rule B at 0.135, the subtitle at (0.257, 0.175) and rule A (not drawn) at 0.325; the
-title's and subtitle's y match the PCSX2 read above. With Coney's t of 0.091, `y0` is 0.102 (title 0.069, subtitle
-0.168). In the 16:9 row the factor **d** is 0, which
+0.22), `y0` ≈ 0.102, so the title and the circle characters sit at y ≈ 0.069 and the circles' centres at 0.079, rule B
+at 0.135, the subtitle at (0.257, 0.168) and rule A (not drawn) at 0.325. In the 16:9 row the factor **d** is 0, which
 would put the title's centre on y 0; whether the original shows that is an open question (no 16:9 screenshot yet).
 
 ### The markup text widget's fields {#markup-text-fields}
@@ -497,9 +480,6 @@ Confirmed (code) at `0x001b9600` (`MessageHUD_Layout`), `0x00179958` (`Font_Meas
 - Quirk: `Font_Draw`'s own alignment measure is taken with base -1 (only `<CCENTER>`/`<RRIGHT>` runs use it).
 
 ## Behaviour
-
-Every claim in this section is confirmed (code) at the address it cites unless its line says it is inferred,
-speculative or confirmed (runtime).
 
 ### The screen flow {#screen-flow}
 
@@ -759,9 +739,6 @@ debug or PC tool (inferred).
 
 ## Function index {#function-index}
 
-Every claim in this section is confirmed (code) at the address it cites unless its line says it is inferred,
-speculative or confirmed (runtime).
-
 Every function of the GUI files this page covers, by source file in address order, with the name it has in Ghidra
 (ours). Rows link to the section that describes the behaviour where there is one. The files and ranges are from the
 [Source map](source-map.md#gui).
@@ -861,7 +838,7 @@ fields are in [The markup text widget's fields](#markup-text-fields); the tags i
 | `0x001b9548` | `MessageHUD_Update` | slot `+0x30`: updates the icon sprite when there is no text; visible (slot `+0x40`) while the reveal (slot `+0xb0`) is above 0 | confirmed (code) |
 | `0x001b9600` | `MessageHUD_Layout` | the markup interpreter ([Text](#text), [Markup tags](#markup)). Measure mode makes one pass, draw mode two (the first fixes each line's width for `<RIGHT>` and `<CENTER>`). Tags 6 (`<BOLD>`) and 21 (`<AUTOINDENT>`) have no case here: `<BOLD>` does nothing and `<AUTOINDENT f>` is read by `MessageHUD_ReadAutoIndent`. While a `<FREEZE>` is running, text after the prompt line fades over 334 ms. The box's right edge is capped at `+0x184` × reveal | confirmed (code) |
 | `0x001bac20` | `MessageHUD_WordWrap` | splits the text at spaces, measures each line with its tags stripped, and inserts `<CRM>` before the word that takes the line past the wrap width (`+0x1d4`); the line count goes to `+0x1ac` | confirmed (code) |
-| `0x001baee0` | `MessageHUD_ClipToPage` | keeps only the wrapped lines from `+0x1a4` to `+0x1a8`, both included (split at `<CRM>`): a scrolling page of a long text ([the Stats description](pause.md#stats-description)) | confirmed (code) |
+| `0x001baee0` | `MessageHUD_ClipToPage` | keeps only the wrapped lines from `+0x1a4` to `+0x1a8` (split at `<CRM>`): a scrolling page of a long text | confirmed (code) |
 | `0x001bafd0`, `0x001bb000` | `MessageHUD_PageUp`, `MessageHUD_PageDown` | move that line window by one line; false at the top or at the last line (`+0x1ac`) | confirmed (code) |
 | `0x001bb038` | `MessageHUD_Draw` | when visible, active and not expired: draws the icon, or copies the text, wraps it, clips it to the page (when `+0x1a0` is set), plays a pending `<SOUND>` (`+0x194`) and lays it out in draw mode; sets `+0x1bc` (drawn this frame) | confirmed (code) |
 | `0x001bb1c0` | `MessageHUD_Render` | slot `+0x38`: `MessageHUD_Draw` in the widget's colour | confirmed (code) |
@@ -1056,34 +1033,19 @@ i), and the main `TextWidget` (`+0x60`). The mission-select and game-stats scree
 they allocate with the tag `CircledTextHeader`, which is only a name: the class of that name is the pause menu's
 header ([The pause header](#circled-text-header)), confirmed (code) at the constructor calls `0x001bc5a8`,
 `0x001bd838` and `0x002155a8`. Fields: circle width/height `+0x5f0`/`+0x5f4`,
-circle count `+0x5f8`, position `+0x20` (x is the rectangle's centre), size `+0x30` (width at `+0x30`, height at
-`+0x38`), circle offset `+0x240`, colours `+0x130` (normal, `0x005fd320`) and `+0x134` (focused, `0x005fd318`), reveal
-`+0x50`, set up `+0x0c` (a second set-up does nothing). Confirmed (code) at `0x001d0d18` and `0x001d1250`.
-
-**Layout** (`CircledText_Update`, `0x001d1250`; confirmed (code)), with X, Y the position, W × H the size and r the
-reveal: the back sprite centred on X, its size (W, H × r) set after its update through the device's width conversion,
-moved up by (H − H × r) / 2 so its top edge stays; the text's and characters' reveal is r. The pen starts at x0 = X − W
-/ 2 + the circle offset. For each circle the pen moves `circleW` / 3 (`0x0050ec64`, raw `circleW` added to a GUI x),
-the character is placed half its measured width left of the pen (so centred on it) at y Y, the circle is centred on
-the pen at Y − (`circleH` − `circleH` × r) / 2 + `circleH` × 0.1 (`0x0050ec68`), sized (`circleW`, `circleH` × r) after
-its update without conversion, and the pen moves `circleW` / 3 again: circle i is centred at x0 + (2i + 1) ×
-`circleW` / 3. The text goes at the last circle's centre + `circleW` / 2 (at x0 without circles), at y Y. The texture
-rectangles of the back and of each circle are cut to r of their height. Visible while r is above 0.
-
-**Drawing** (`CircledText_Render`, `0x001d16e8`; confirmed (code)): the back sprite; the text in the focused colour when
-slot `+0xa0` says so, else the normal one; then each circle and its character, which is first recoloured to the focused
-colour `+0x134` (focused or not) unless its colour is the colour table's entry `0x005fd260` (black).
+circle count `+0x5f8`, text offset `+0x30`, circle offset `+0x240`, colours `+0x130` (normal, `0x005fd320`) and `+0x134`
+(focused, `0x005fd318`), reveal `+0x50`.
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
 | `0x001d0aa8` / `0x001d0b70` | `CircledText_Construct` / `_Destroy` | the parts above; slot `+0x60` | confirmed (code) |
 | `0x001d0c68` | `CircledText_Shutdown` | slot `+0x68`: releases every part | confirmed (code) |
-| `0x001d0d18` | `CircledText_Setup` | slot `+0xc0` `(circleW, circleH, owner, pos, size, circleOff, metrics, backSprite, circleSprite, backInst, circleInst)`, once: text and characters in `+0x130`, font slot 4, the characters without a shadow; back sprite size 1.0, depth 8,400, grey (128, 128, 128); circles size 0.1, depth 8,500, red (160, 16, 16), sized `circleW` × `circleH`; spacing divisor `0x0050ec64` = 3 (2 with device flag `0x02`); character y offset `0x0050ec68` = `circleH` × 0.1; reveal 1.0 | confirmed (code) |
+| `0x001d0d18` | `CircledText_Setup` | slot `+0xc0` `(circleW, circleH, owner, widget, pos, textOff, circleOff, metrics, backSprite, circleSprite, backInst, circleInst)`, once: text font flags 4; back sprite size 1.0, depth 8,400, grey (128, 128, 128); circles size 0.1, depth 8,500, red (160, 16, 16), sized `circleW` × `circleH`; spacing divisor `0x0050ec64` = 3 (2 with device flag `0x02`); character y offset `0x0050ec68` = `circleH` × 0.1; reveal 1.0 | confirmed (code) |
 | `0x001d0fe8`, `0x001d1008` | `CircledText_SetText`, `_SetCircled` | slots `+0xc8`, `+0xd0`: the main text; one character of the string per circle, count = its length | confirmed (code) |
 | `0x001d1098`, `0x001d1108`, `0x001d1178` | `_SetCircleColour`, `_SetCharColour`, `_SetBackColour` | slots `+0xd8`, `+0xe0`, `+0xe8` | confirmed (code) |
 | `0x001d1198` | `CircledText_IsReady` | slot `+0x88`: created and the circle batch (`+0x204`) resident | confirmed (code) |
 | `0x001d11c8` / `0x001d11f8` | `CircledText_SetReveal` / `_GetRect` | slots `+0xa8` / `+0x70`: reveal clamped to 0-1; the rectangle with its height × the reveal | confirmed (code) |
-| `0x001d1250` | `CircledText_Update` | slot `+0x30`, while slot `+0x88` holds: [the layout above](#fn-circledtext) | confirmed (code) |
+| `0x001d1250` | `CircledText_Update` | slot `+0x30`: the back sprite over the rectangle, its texture rectangle cut by the reveal; circles left to right from the left edge + `circleOff`, each step `circleW` / 3, their height × the reveal; the main text after the last circle; visible while the reveal is above 0 | confirmed (code) |
 | `0x001d16e8` | `CircledText_Render` | slot `+0x38`: back sprite, text (focused colour when slot `+0xa0` is true), each circle and its character (recoloured to `+0x134` unless its colour is the colour-table entry 0) | confirmed (code) |
 
 ### `OptionGridItem` (`GUI/OptionGrid.cpp`) {#fn-optiongriditem}
@@ -1344,14 +1306,6 @@ runs about 42,600 Lua instructions and skips 1,796 binding calls.
   0.0505 apart at size 1.15, as measured ([Front end](frontend.md#pm-layout)); items past the row counts get a row each;
   part_page0 is Coney's font slot 2 (the original's 3). The screens that use them are on
   [Front end](frontend.md#coneys-implementation).
-- **The pause header** (`src/gui/circled_text_header.h`, `CircledTextHeader`, written from
-  [The pause header](#circled-text-header)): the title split at its first `:` into up to three circled characters
-  (the `:` adding `@` + the checkpoint), the last circle red, the level's name under it; rule B, the circles, their
-  characters, the title and the subtitle placed each frame by [the layout](#circled-text-header-layout) with the
-  video mode's factors (`CircledHeaderFactors::forMode`), and the label in its box. Coney's choices: rule A is not
-  made (never drawn), there is no child, more than three circles are dropped, and the characters and subtitle use the
-  update's size 1.7. Tests: `repo:tests/gui/circled_text_header_test.cpp`; the pause menu's use is on
-  [Pause](pause.md#coneys-implementation).
 - **The `METRICS1` file** is not read: no code uses it ([above](#the-metrics1-file)), and the fonts' metrics come from
   their sheets' rectangles.
 - `coney --disc <disc> --view-text <font> <text or @id>` lays a text out and draws it through a batch per font and

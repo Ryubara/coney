@@ -13,9 +13,6 @@ are listed in [Inventory items](../references/inventory.md), [Unlockables](../re
 
 ## Original structure
 
-Every claim in this section is confirmed (code) at the address it cites unless its line says it is inferred,
-speculative or confirmed (runtime).
-
 `W_UnlockManager.cpp` holds the unlockables manager ([Source map](source-map.md)); the end-of-mission screen is
 `GUI/GameStats.cpp` (the path is a string at `0x00559f70`); its line items (`GameStatsSubItem.cpp`) run on past
 `0x002176b8` into the human code's range. Names are ours.
@@ -36,9 +33,6 @@ speculative or confirmed (runtime).
 | `0x002179e8` | `GameStatsSubItem_Draw` | Stats-screen sub item: when visible and both child widgets exist, draws the two children (`+0x68`, `+0x6c`). | confirmed (code) |
 
 ## Data
-
-Every claim in this section is confirmed (code) at the address it cites unless its line says it is inferred,
-speculative or confirmed (runtime).
 
 ### The inventory {#inventory}
 
@@ -174,13 +168,11 @@ at the addresses given.
   for every level record whose mission byte is 1-23.
 - **`Unlocks_CountUnlocked(&groupUnlocked, &groupTotal, &unlocked, &total)`** (`0x004245d8`), the statistics screen's
   summary ([Front end](frontend.md#game-stats)):
-    - `total` / `unlocked`: the records whose type is **not** 0, 5, 7, 8, 9, 10 or 11 (the test lists the excluded
-      types, so on the disc's records, types 0-11, it takes 1, 2, 3, 4 and 6: Rumble modes, arenas, gangs, character
-      types, upgrades) and whose **level** byte is neither 1 nor 4; the completion percentage is `unlocked` × 100 /
-      `total`, truncated;
-    - `groupTotal` / `groupUnlocked`: among the records of types 1, 2, 3, 4 and 6 (listed by name here) in **group 1**
-      (any level), the distinct (level, item) pairs, marked in a table at level × 100 + item; only the first record of
-      each pair is tested for `groupUnlocked`.
+    - `total` / `unlocked`: the records of types 1, 2, 3, 4 and 6 (Rumble modes, arenas, gangs, character types,
+      upgrades) whose **level** byte is neither 1 nor 4; the completion percentage is `unlocked` × 100 / `total`,
+      truncated;
+    - `groupTotal` / `groupUnlocked`: among the records of those five types in **group 1** (any level), the distinct
+      (level, item) pairs; only the first record of each pair is tested for `groupUnlocked`.
 - **`Unlockables_GetLevelTargets(level, &scoreTarget, &charUnlocked, &charTotal, &arenaUnlocked, &arenaTotal,
   &groupUnlocked, &groupTotal)`** (`0x00424298`), one mission's line on the statistics and mission-select screens.
   The records it looks at are the level's, where level 60 stands for 60-64 (the Armies of the Night stages) and 101
@@ -314,10 +306,6 @@ workers) that belong to this page, by address.
 | `0x00424d60` | `Unlockables_SetAll` | the unlock-all switch: player 1's money (inventory `+0x480`) set to 1,000,000; on, every record unlocked and new; off, every record locked and none new | confirmed (code) |
 | `0x00424e50` / `0x00424ec8` | `Unlockables_StaticInit` / `Unlockables_StaticInitStub` | static constructor: clears both bit sets and constructs the manager on (1, 0xffff) | confirmed (code) |
 
-## Behaviour
-
-How the records behave (counting, unlocking, scoring) is described under Data, next to each record's layout.
-
 ## Coney's implementation
 
 Written from this page, [Scripts](scripting.md#stopwatch), [AI: crimes](ai-gangs.md#crimes) and the binding pages
@@ -333,11 +321,7 @@ Written from this page, [Scripts](scripting.md#stopwatch), [AI: crimes](ai-gangs
   human (from the humans the scripts made); other handles do nothing.
 - **The unlockables' records** (`src/warriors/unlock_records.h`): `UM_SetNumUnlockables`, `UM_SetUnlockable`,
   `UM_Reset`, `UM_Unlock`, `UM_IsLevelComplete`, `UM_IsDataUnlocked`, `UM_IsTypeDirty`, `UM_IsDataDirty` and
-  `UM_GetRecordData` over the profile's locked and new bits (`SavedProgress`), so a save carries story progress. The
-  menus' counts ([above](#unlockable-counts)) are `countUnlocked`, `levelTargets` and `countCharacters`, with
-  `isLevelComplete` for `Unlocks_IsLevelComplete` (without its 32-record bound); the statistics screen ([Front
-  end](frontend.md#game-stats)) shows them. Over the disc's records Coney's summary shows the 469 counted records and 40
-  group-1 items counted above.
+  `UM_GetRecordData` over the profile's locked and new bits (`SavedProgress`), so a save carries story progress.
 - **The checkpoint copy**: `SetCheckPoint` copies the inventories and statistics; `restoreCheckpoint()` puts them back
   for a restart.
 - **The walk-over** (`LevelPickups::walkOver`, `src/gamemodes/level_pickups.h`): each update player 1 takes every

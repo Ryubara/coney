@@ -381,17 +381,18 @@ status = "legacy"
 [[function]]
 address = 0x004241d8
 name = "Unlocks_IsLevelComplete"
-page = "player-state.md#unlockable-counts"
-note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+page = "game-stats.md#counts"
+role = "whether a level is complete: the first of its group-0 records (at most 32) whose item is 0 is unlocked"
+level = "confirmed-code"
 coney = "src/warriors/unlock_records.h:UnlockRecords::isLevelComplete"
 status = "compared"
 
 [[function]]
 address = 0x004245d8
 name = "Unlocks_CountUnlocked"
-page = "player-state.md#unlockable-counts"
+page = "game-stats.md#counts"
+role = "the statistics summary's counts: the records of types other than 0, 5, 7-11 whose level byte is not 1 or 4, and the distinct group-1 (level, item) pairs of types 1, 2, 3, 4 and 6"
 level = "confirmed-code"
-note = "the level is from [frontend.md#game-stats](frontend.md#game-stats)"
 coney = "src/warriors/unlock_records.h:UnlockRecords::countUnlocked"
 status = "compared"
 

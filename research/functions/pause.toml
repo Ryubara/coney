@@ -323,6 +323,15 @@ coney = "src/hud/hud.h:Hud::setObjective"
 status = "legacy"
 
 [[function]]
+address = 0x001db278
+name = "PauseMenu_OnConfirm"
+page = "pause.md#fn-pausemenu"
+role = "the Yes/No box's callback: 2 Yes, 3 No, 4 back"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::onBoxCommand"
+status = "legacy"
+
+[[function]]
 address = 0x001db3c0
 name = "PauseMenu_Construct"
 page = "pause.md#original-structure"
@@ -350,6 +359,15 @@ coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::open"
 status = "compared"
 
 [[function]]
+address = 0x001ddbc0
+name = "PauseMenu_FadeOut"
+page = "pause.md#fn-pausemenu"
+role = "the closing fade: once `+0x1b80` is set the menu's alpha falls to 0, then the mode pops"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::animate"
+status = "legacy"
+
+[[function]]
 address = 0x001ddcf8
 name = "PauseMenu_Update"
 page = "pause.md#original-structure"
@@ -357,6 +375,42 @@ role = "vtable `+0x30` / `+0x38`"
 level = "confirmed-code"
 coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::update"
 status = "compared"
+
+[[function]]
+address = 0x001de488
+name = "PauseMenu_CloseScreen"
+page = "pause.md#fn-pausemenu"
+role = "closes the open screen (Options once its back flag `+0x45d0` is set) and restores the headers"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::closeScreen"
+status = "legacy"
+
+[[function]]
+address = 0x001de6c0
+name = "PauseMenu_SelectItem"
+page = "pause.md#fn-pausemenu"
+role = "accept on a grid item: opens its screen, the Yes/No box or resumes"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::selectItem"
+status = "legacy"
+
+[[function]]
+address = 0x001ded68
+name = "PauseMenu_OnYesNoCommand"
+page = "pause.md#fn-pausemenu"
+role = "routes commands to the open Yes/No box (cues `0xe` and 8)"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::onBoxCommand"
+status = "legacy"
+
+[[function]]
+address = 0x001dee00
+name = "PauseMenu_OnCommand"
+page = "pause.md#fn-pausemenu"
+role = "the grid owner's command handler, which sees every grid command first"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::onGridCommand"
+status = "legacy"
 
 [[function]]
 address = 0x001df700
