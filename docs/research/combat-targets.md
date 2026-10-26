@@ -6,7 +6,7 @@ owns:
     "0x0021c570", "0x00226c30", "0x00227b98", "0x00228340", "0x0023a1b0", "0x0023cf88", "0x0023d2b8", "0x0023f5e0",
     "0x00241b90", "0x00254418", "0x00264178", "0x00264a80", "0x00275678", "0x00276008", "0x002761c8", "0x00279f50",
     "0x0027a070", "0x0027a120", "0x0027a4b0", "0x0027a6c0", "0x0027b1a0", "0x0027d5a0", "0x0027dc00", "0x0027e6d8",
-    "0x002801e8", "0x00290e78",
+    "0x00280068", "0x002801e8", "0x00290e78",
   ]
 ---
 # Combat: targets, AI attacks and breakables
@@ -38,6 +38,7 @@ address.
 | `0x0027a4b0` | `Player_FindAttackTarget` | a chain step's or a special's search at the id's far range ([Which target each move goes for](#targeting)) | confirmed (code) |
 | `0x00279f50` / `0x0027a120` / `0x0027a070` | `Target_CarFilter` / `Target_ObjectFilter` / `Target_GlassFilter` | the pick's filters for cars, world objects and glass panes ([Target selection](#targets)) | confirmed (code) |
 | `0x0027ce90` / `0x0027d5a0` | `Player_UpdateSprint` / `Player_UpdateStanceOrIdle` | the fight stance each update ([The fight stance](#fight-stance)) | confirmed (code) |
+| `0x00280068` | `Player_EnterStance` | enters the stance (state `0x1`) after ending the hiding (`Human_ClearHiddenState` `0x00230140`) | confirmed (code) |
 | `0x0027b1a0` | `Player_FindNearestEnemy` | the stance's nearest threat within 3 m | confirmed (code) |
 | `0x00280158` / `0x00241b90` | `Player_LockOn` / `Human_FightStanceMove` | the lock and the lock-on movement | confirmed (code) |
 | `0x0023a1b0` | `Human_SetCombatMode` | the script's and the AI goals' way into the stance (`HuSetCombatMode`) | confirmed (code) |
