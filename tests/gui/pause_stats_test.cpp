@@ -230,22 +230,31 @@ TEST_CASE("pause stats: up and down move the description's six-line window one l
           "[pause_stats]") {
     // Expected: pause.md#stats-description, confirmed (code)
     coney::gui::GlobalStrings strings = syntheticStrings();
-    // Rembrandt's description, eight lines, broken where the wrap breaks them (`<CRM>`).
-    strings.set(0xf0, "L0<CRM>L1<CRM>L2<CRM>L3<CRM>L4<CRM>L5<CRM>L6<CRM>L7");
     const coney::graphics::Font font = coney::test::testFont();
     coney::graphics::SpriteBatch text(font.sheet(), 4096, 9000.0F);
     const coney::gui::GuiCanvas canvas{.fonts = [&font](int /*slot*/) { return &font; },
                                        .textBatch = [&text](int /*slot*/) { return &text; }};
+    // Rembrandt's description, sixteen words wrapped two to a line into eight lines: its `<AUTOINDENT>` width fits
+    // " L0 L1" (the first line starts with the space after the tag's first word) but no three words.
+    coney::gui::TextStyle measured;
+    measured.fontSlot = PauseStats::kTextFontSlot;
+    const float twoWords = coney::gui::layoutText(" L0 L1", measured, canvas.fonts).width;
+    strings.set(0xf0,
+                std::format("<AUTOINDENT {:.6f}>L0 L1 L2 L3 L4 L5 L6 L7 L8 L9 LA LB LC LD LE LF", twoWords * 1.05F));
     PauseStats stats;
     std::vector<int> cues;
     stats.setSoundSink([&cues](int cue) { cues.push_back(cue); });
     REQUIRE(stats.setup(rembrandt(), 1, &strings, false));
     stats.update(GuiFrame{0, nullptr});
     stats.render(canvas);
-    // Lines 0-5 drawn: six lines of two glyphs, each with a shadow.
-    CHECK(stats.description().layout(canvas).lines == 8);
-    CHECK(stats.description().layout(canvas).sprites.size() ==
-          std::size_t{24}); // 6 lines × 2 glyphs × (glyph + shadow)
+    // Lines 0-5 drawn, each "Lx Ly ", and the break that ends line 5 (an empty line after it).
+    coney::gui::TextStyle oneLine = stats.description().style();
+    oneLine.wrapWidth = 0.0F;
+    const std::size_t lineSprites = coney::gui::layoutText("L0 L1 ", oneLine, canvas.fonts).sprites.size();
+    REQUIRE(lineSprites > 0);
+    const coney::gui::TextLayout page = stats.descriptionLayout(canvas);
+    CHECK(page.sprites.size() == 6 * lineSprites);
+    CHECK(page.lines == 7);
     // Up at the top refuses; down moves twice, until line 7 is the bottom line, then refuses.
     CHECK_FALSE(stats.handle(MenuCommand::Up));
     CHECK_FALSE(stats.handle(MenuCommand::Down));

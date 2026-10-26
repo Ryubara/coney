@@ -96,6 +96,7 @@ add_library(coney_core STATIC
     gui/game_stats.cpp
     gui/global_strings.cpp
     gui/markup.cpp
+    gui/message_paging.cpp
     gui/menu_input.cpp
     gui/message_box.cpp
     gui/option_grid.cpp

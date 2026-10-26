@@ -12,8 +12,10 @@
 
 #include "graphics/font.h"
 #include "graphics/overlay_camera.h"
+#include "graphics/sprite_batch.h"
 #include "gui/game_stats.h"
 #include "gui/global_strings.h"
+#include "support/font_fixtures.h"
 #include "warriors/level_table.h"
 #include "warriors/profile_record.h"
 #include "warriors/unlock_records.h"
@@ -280,4 +282,29 @@ TEST_CASE("the list: five entries at most centred on (0.185, 0.45), headers 0.35
     }
     CHECK(screen.subItem(1).reveal() == 1.0F);
     CHECK(cues.size() == 1);
+}
+
+TEST_CASE("a mission's block draws only the lines of its text that fit its shown height", "[game_stats]") {
+    // Expected: frontend.md#game-stats, speculative (Coney's choice: the original's text widget crops by height)
+    const gui::GlobalStrings text = strings();
+    const coney::graphics::Font font = coney::test::testFont();
+    coney::graphics::SpriteBatch batch(font.sheet(), 4096, 9000.0F);
+    const gui::GuiCanvas canvas{.fonts = [&font](int /*slot*/) { return &font; },
+                                .textBatch = [&batch](int /*slot*/) { return &batch; }};
+    // A level below no goal: the score line, the time line and three empty lines.
+    gui::GameStatsSubItem block;
+    block.setup(gui::GameStatsLevel{}, &text, nullptr);
+    // The sprites drawn with `shown` of the block's height open.
+    const auto drawn = [&](float shown) {
+        batch.clear();
+        block.moveTo(0.2F, 0.1F, shown);
+        block.render(canvas);
+        return batch.sprites().size();
+    };
+    const std::size_t all = drawn(1.0F);
+    const std::size_t scoreLine = drawn(0.2F); // one of the five lines
+    CHECK(drawn(0.1F) == 0);
+    CHECK(scoreLine > 0);
+    CHECK(scoreLine < all);
+    CHECK(drawn(0.4F) == all); // the two lines with characters
 }

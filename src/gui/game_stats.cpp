@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "graphics/overlay_camera.h"
+#include "gui/markup.h"
 #include "gui/text_layout.h"
 
 namespace coney::gui {
@@ -28,6 +29,33 @@ constexpr std::uint32_t kArmiesPicture = 0x180000;
 constexpr std::uint32_t kRumblePicture = 0x180003;
 // The room past the list's clip a header may end in: the stacked heights' rounding.
 constexpr float kClipSlack = 1e-4F;
+
+// The first `count` lines of marked-up `text`: the text up to its count-th line break (`<CR>`, `<CR2>`, `<CR3 f>` or
+// `<CRM>`), so the tags before it still apply.
+// @coney-only Coney's crop of the sub-item's text to the lines that fit; the original's text widget crops by height
+std::string firstLines(std::string_view text, std::size_t count) {
+    std::size_t lines = 1;
+    for (std::size_t open = text.find('<'); open != std::string_view::npos; open = text.find('<', open + 1)) {
+        const std::size_t close = text.find('>', open);
+        if (close == std::string_view::npos) {
+            break;
+        }
+        // The tag's name runs to its first space or its `>`, as the layout reads it.
+        const std::string_view inside = text.substr(open + 1, close - open - 1);
+        const std::optional<MarkupTag> tag = findMarkupTag(inside.substr(0, inside.find(' ')));
+        const bool lineBreak =
+            tag == MarkupTag::Cr || tag == MarkupTag::Cr2 || tag == MarkupTag::Cr3 || tag == MarkupTag::Crm;
+        if (!lineBreak) {
+            continue;
+        }
+        if (lines == count) {
+            return std::string(text.substr(0, open));
+        }
+        ++lines;
+    }
+    return count == 0 ? std::string{} : std::string(text);
+}
+
 // The sub-item's label grey (178).
 constexpr std::string_view kSubLabelGrey = "B2B2B2FF";
 // The lines a sub-item's block is padded to.
@@ -262,10 +290,7 @@ void GameStatsSubItem::setReveal(float reveal) { m_reveal = std::clamp(reveal, 0
 
 TextLayout GameStatsSubItem::fullLayout() const {
     // The lines' advances come from the size alone, so no fonts are needed.
-    TextStyle style = m_text.style();
-    style.firstLine = 0;
-    style.lastLine = SIZE_MAX;
-    return layoutText(m_text.text(), style, {});
+    return layoutText(m_text.text(), m_text.style(), {});
 }
 
 float GameStatsSubItem::fullHeight() const { return fullLayout().height; }
@@ -291,8 +316,7 @@ void GameStatsSubItem::moveTo(float x, float top, float shown) {
     // Coney's choice: the lines that fit the shown height are drawn (the original's text widget crops by height).
     const auto fit =
         static_cast<std::size_t>((static_cast<float>(whole.lines) * height / std::max(full, 1e-6F)) + 1e-3F);
-    style.firstLine = 0;
-    style.lastLine = fit > 0 ? fit - 1 : 0;
+    m_shownLines = fit;
     m_text.setVisible(fit > 0);
 }
 
@@ -303,7 +327,11 @@ void GameStatsSubItem::render(const GuiCanvas& canvas) const {
         return;
     }
     m_picture.render(canvas);
-    m_text.render(canvas);
+    // The text's lines that fit, laid out as its widget would.
+    if (m_text.visible() && canvas.fonts && canvas.textBatch) {
+        addTextSprites(layoutText(firstLines(m_text.text(), m_shownLines), m_text.style(), canvas.fonts),
+                       canvas.textBatch);
+    }
 }
 
 // The summary's and the usage line's places and fonts.

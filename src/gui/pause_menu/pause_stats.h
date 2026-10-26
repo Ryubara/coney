@@ -15,6 +15,7 @@
 #include "gui/base_widget.h"
 #include "gui/global_strings.h"
 #include "gui/menu_input.h"
+#include "gui/message_paging.h"
 #include "gui/text_widget.h"
 #include "gui/widget.h"
 
@@ -189,10 +190,15 @@ class PauseStats {
     /// The description.
     [[nodiscard]] const TextWidget& description() const { return m_description; }
     /// The description's line window: its first and last lines shown.
-    [[nodiscard]] std::size_t firstLine() const { return m_description.style().firstLine; }
+    [[nodiscard]] std::size_t firstLine() const { return m_page.firstLine; }
     /// The description window's last line shown.
-    [[nodiscard]] std::size_t lastLine() const { return m_description.style().lastLine; }
-    /// Counts the description's lines with `canvas`'s fonts, as render() does (the down move's limit).
+    [[nodiscard]] std::size_t lastLine() const { return m_page.lastLine; }
+    /// The description as render() draws it with `canvas`'s fonts: word-wrapped at its width, clipped to the line
+    /// window and laid out with no further wrap; counts the wrapped text's breaks (the down move's limit). Empty
+    /// without fonts.
+    /// @coney-only Coney's draw of the description; the original's MessageHUD_Draw wraps, clips and lays it out
+    [[nodiscard]] TextLayout descriptionLayout(const GuiCanvas& canvas) const;
+    /// Counts the description's line breaks with `canvas`'s fonts, as render() does (the down move's limit).
     /// @coney-only Coney's line count for the down move; the original's draw stores it (`+0x1ac`)
     void measure(const GuiCanvas& canvas) const;
     /// The texts shown, in drawing order (for tests and the log): the four labels and the description.
@@ -217,7 +223,8 @@ class PauseStats {
     std::array<Bar, kBars> m_bars;
     std::array<TextWidget, kBars> m_labels; // each bar's label (the original's bar holds its own)
     TextWidget m_description;
-    mutable std::size_t m_descriptionLines = 0; // the description's line count when last measured (`+0x1ac` + 1)
+    MessagePage m_page;                          // the description's line window (`+0x1a4`, `+0x1a8`)
+    mutable std::size_t m_descriptionBreaks = 0; // the description's line breaks when last wrapped (`+0x1ac`)
 };
 
 } // namespace coney::gui

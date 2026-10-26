@@ -28,7 +28,6 @@ constexpr int kBigMoneyOrigin = 1;
 constexpr int kTextMoneyOrigin = '0';
 
 // A whole number of milliseconds, or nothing.
-// @coney-only number reading; the original reads its tags' numbers with the C library
 std::optional<std::uint32_t> parseMs(std::string_view text) {
     std::uint32_t value = 0;
     const auto parsed = std::from_chars(text.data(), text.data() + text.size(), value);
@@ -40,7 +39,6 @@ std::optional<std::uint32_t> parseMs(std::string_view text) {
 
 // A decimal number such as `0.9` or `-1.5`, or nothing. Written by hand because floating-point from_chars is not in
 // every standard library Coney builds with.
-// @coney-only number reading; the original reads its tags' numbers with the C library
 std::optional<float> parseDecimal(std::string_view text) {
     bool negative = false;
     if (!text.empty() && (text.front() == '-' || text.front() == '+')) {
@@ -73,7 +71,6 @@ std::optional<float> parseDecimal(std::string_view text) {
 }
 
 // `rrggbbaa` in hex, or nothing.
-// @coney-only number reading; the original reads its tags' numbers with the C library
 std::optional<graphics::Rgba> parseColour(std::string_view text) {
     std::uint32_t value = 0;
     const auto parsed = std::from_chars(text.data(), text.data() + text.size(), value, 16);
@@ -84,8 +81,7 @@ std::optional<graphics::Rgba> parseColour(std::string_view text) {
                           static_cast<std::uint8_t>(value >> 8), static_cast<std::uint8_t>(value)};
 }
 
-// A colour channel times a factor, kept in 0-255: the pulse's and fades' part of the layout.
-// @orig 0x001b9600 MessageHUD_Layout (unknown)
+// A colour channel times a factor, kept in 0-255.
 std::uint8_t scaleChannel(std::uint8_t channel, float factor) {
     return static_cast<std::uint8_t>(std::clamp(static_cast<float>(channel) * factor + 0.5F, 0.0F, 255.0F));
 }
@@ -95,8 +91,6 @@ template <typename T> class Stacked {
   public:
     explicit Stacked(T initial) : m_values{std::move(initial)} {}
     void push(T value) { m_values.push_back(std::move(value)); }
-    // Restores the value before the last push; the first value stays.
-    // @coney-only Coney's stack of a tag's values for its closing tag
     void pop() {
         if (m_values.size() > 1) {
             m_values.pop_back();
@@ -119,12 +113,11 @@ struct Run {
     float offset;
 };
 
-// One line: its measured width, its alignment, how far down the next line starts and the window line it is part of.
+// One line: its measured width, its alignment and how far down the next line starts.
 struct Line {
     float width = 0.0F;
     std::optional<TextAlignment> alignment;
     float advance = 0.0F;
-    std::size_t window = 0; // the window line: every line, or when paged only the wrap's breaks and `<CRM>`
 };
 
 // The state the tags change while a text is laid out, and the runs and lines measured so far.
@@ -141,7 +134,6 @@ class LayoutBuilder {
 
     // Adds characters with the current font, size and colour, word by word when the style wraps: a word (with the
     // spaces before it) that would take a line past the wrap width starts the next line, without those spaces.
-    // @orig 0x001b9600 MessageHUD_Layout (unknown)
     void addText(std::string_view text) {
         if (m_style.wrapWidth <= 0.0F) {
             addRun(text);
@@ -155,7 +147,7 @@ class LayoutBuilder {
             std::string_view piece = text.substr(pos, end - pos);
             if (m_lines.back().width > 0.0F && m_lines.back().width + measure(piece) > m_style.wrapWidth &&
                 wordStart != std::string_view::npos) {
-                newLine(0.0F, true);
+                newLine(0.0F);
                 piece = text.substr(wordStart, end - wordStart);
             }
             addRun(piece);
@@ -166,7 +158,6 @@ class LayoutBuilder {
   private:
     // The money font's base for characters drawn now: the base `<MONEYFONT>` chose, counted from the current slot's
     // origin.
-    // @orig 0x001b9600 MessageHUD_Layout (unknown)
     [[nodiscard]] std::optional<graphics::GlyphBase> glyphBase() const {
         if (!m_moneyBase) {
             return std::nullopt;
@@ -176,7 +167,6 @@ class LayoutBuilder {
     }
 
     // The width of `text` in the current font and size.
-    // @orig 0x001b9600 MessageHUD_Layout (unknown)
     [[nodiscard]] float measure(std::string_view text) const {
         const graphics::FontMetrics metrics = graphics::fontMetrics(m_style.scale * m_size.current());
         const graphics::Font* font = m_fonts ? m_fonts(m_slot.current()) : nullptr;
@@ -185,7 +175,6 @@ class LayoutBuilder {
     }
 
     // Adds characters with the current font, size and colour to the current line.
-    // @orig 0x001b9600 MessageHUD_Layout (unknown)
     void addRun(std::string_view text) {
         if (text.empty()) {
             return;
@@ -205,7 +194,6 @@ class LayoutBuilder {
 
   public:
     // Applies one tag.
-    // @orig 0x001b9600 MessageHUD_Layout (unknown)
     void apply(MarkupTag tag, std::string_view argument) {
         if (const std::optional<std::uint8_t> character = markupCharacter(tag)) {
             const char c = static_cast<char>(*character);
@@ -271,13 +259,11 @@ class LayoutBuilder {
             break;
         case MarkupTag::Cr:
         case MarkupTag::Cr2:
-            newLine(0.0F, false);
-            break;
         case MarkupTag::Crm:
-            newLine(0.0F, true);
+            newLine(0.0F);
             break;
         case MarkupTag::Cr3:
-            newLine(parseDecimal(argument).value_or(0.0F), false);
+            newLine(parseDecimal(argument).value_or(0.0F));
             break;
         case MarkupTag::EndColor:
             m_colour.pop();
@@ -302,56 +288,38 @@ class LayoutBuilder {
         }
     }
 
-    // Places the window's lines in the box and draws their runs.
-    // @orig 0x001b9600 MessageHUD_Layout (unknown)
+    // Places the lines in the box and draws every run.
     void finish() {
-        m_out.lines = m_lines.size();
-        // The line window: only the window lines first to last, both included, are drawn and measured.
-        const std::size_t first = m_style.firstLine;
-        const std::size_t last = m_style.lastLine;
-        const auto shown = [this, first, last](std::size_t line) {
-            return m_lines[line].window >= first && m_lines[line].window <= last;
-        };
-        bool any = false;
-        for (std::size_t i = 0; i < m_lines.size(); ++i) {
-            any = any || shown(i);
-        }
         // The box grows to the widest line.
         float box = m_style.boxWidth;
-        for (std::size_t i = 0; i < m_lines.size(); ++i) {
-            if (shown(i)) {
-                box = std::max(box, m_lines[i].width);
-            }
+        for (const Line& line : m_lines) {
+            box = std::max(box, line.width);
         }
         m_out.width = box;
-        // Each shown line's centre and left edge, the window's first at y.
-        std::vector<float> lineY(m_lines.size(), m_style.y);
-        std::vector<float> lineX(m_lines.size(), m_style.x);
+        m_out.lines = m_lines.size();
+        // Each line's centre and left edge.
+        std::vector<float> lineY;
+        std::vector<float> lineX;
         float y = m_style.y;
-        float lastY = m_style.y;
-        for (std::size_t i = 0; i < m_lines.size(); ++i) {
-            if (!shown(i)) {
-                continue;
-            }
-            const Line& line = m_lines[i];
-            lineY[i] = y;
-            lastY = y;
+        for (const Line& line : m_lines) {
+            lineY.push_back(y);
             const TextAlignment alignment = line.alignment.value_or(m_style.alignment);
+            float x = m_style.x;
             if (alignment == TextAlignment::Centre) {
-                lineX[i] += (box - line.width) / 2.0F;
+                x += (box - line.width) / 2.0F;
             } else if (alignment == TextAlignment::Right) {
-                lineX[i] += box - line.width;
+                x += box - line.width;
             }
+            lineX.push_back(x);
             y += line.advance;
         }
-        m_out.height =
-            any ? (lastY - m_style.y) + graphics::fontMetrics(m_style.scale * m_size.current()).height : 0.0F;
-        // The runs of the shown lines, through the font's own drawing.
+        m_out.height = (y - m_style.y) + graphics::fontMetrics(m_style.scale * m_size.current()).height;
+        // The runs, through the font's own drawing.
         const std::uint32_t flags = m_style.proportional ? graphics::kFontProportional : 0;
         std::vector<graphics::Sprite> sprites;
         for (const Run& run : m_runs) {
             const graphics::Font* font = m_fonts ? m_fonts(run.slot) : nullptr;
-            if (font == nullptr || !shown(run.line)) {
+            if (font == nullptr) {
                 continue;
             }
             sprites.clear();
@@ -364,20 +332,14 @@ class LayoutBuilder {
     }
 
   private:
-    // Ends the current line, moving down by h + lineGap of the current size plus `extra`. The next line starts a new
-    // window line unless the text is paged and this is not a `windowBreak` (the wrap's or `<CRM>`): a paged text's
-    // window splits only there (MessageHUD_ClipToPage).
-    // @orig 0x001b9600 MessageHUD_Layout (unknown)
-    void newLine(float extra, bool windowBreak) {
+    // Ends the current line, moving down by h + lineGap of the current size plus `extra`.
+    void newLine(float extra) {
         const graphics::FontMetrics metrics = graphics::fontMetrics(m_style.scale * m_size.current());
         m_lines.back().advance = metrics.height + metrics.lineGap + extra;
-        const std::size_t window = m_lines.back().window + ((windowBreak || !m_style.paged) ? 1 : 0);
         m_lines.emplace_back();
-        m_lines.back().window = window;
     }
 
     // The colour in effect, with the pulse and the fades applied.
-    // @orig 0x001b9600 MessageHUD_Layout (unknown)
     [[nodiscard]] graphics::Rgba effectiveColour() const {
         graphics::Rgba colour = m_colour.current();
         if (const std::uint32_t period = m_pulse.current(); period != 0) {
@@ -450,7 +412,6 @@ TextLayout layoutText(std::string_view text, const TextStyle& style, const FontL
     return layout;
 }
 
-// Each sprite into its font slot's batch.
 std::size_t addTextSprites(const TextLayout& layout, const std::function<graphics::SpriteBatch*(int slot)>& batches) {
     std::size_t dropped = 0;
     for (const TextSprite& sprite : layout.sprites) {

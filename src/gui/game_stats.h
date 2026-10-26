@@ -196,7 +196,8 @@ class GameStatsSubItem : public Widget {
     BaseWidget m_picture{nullptr, 0};
     TextWidget m_text;
     float m_reveal = 0.0F;
-    bool m_drawn = false; // whether moveTo() left anything to draw
+    bool m_drawn = false;         // whether moveTo() left anything to draw
+    std::size_t m_shownLines = 0; // the text's lines that fit the shown height, drawn from the first
 };
 
 /// The statistics screen (`GUI/GameStats.cpp`, game mode 0x13's widget): the colour-cycling background (kColours, a

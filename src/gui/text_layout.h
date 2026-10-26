@@ -48,13 +48,6 @@ struct TextStyle {
     TextAlignment alignment = TextAlignment::Left;
     int fontSlot = kTextFontSlot; ///< The font until `<BIGFONT>` changes it.
     std::uint32_t timeMs = 0;     ///< Game time since the text was first shown: `<PULSE>`, `<DISPLAYTIME>`.
-    /// The line window (the markup widget's `+0x1a4` and `+0x1a8`): only the window lines from firstLine to lastLine,
-    /// both included, are drawn, firstLine's at y; the others take no room. Each line is a window line, unless paged.
-    std::size_t firstLine = 0;
-    std::size_t lastLine = SIZE_MAX;
-    /// Paged (`+0x1a0`, `MessageHUD_ClipToPage`): a window line ends only at a wrap break or `<CRM>`, the breaks the
-    /// original splits the page at, so a `<CR>`, `<CR2>` or `<CR3>` line stays in its window line.
-    bool paged = false;
 };
 
 /// One sprite of a laid-out text and the font slot whose batch draws it.
@@ -66,10 +59,10 @@ struct TextSprite {
 /// A laid-out text: its sprites in drawing order, its size and what its tags asked for beyond drawing.
 struct TextLayout {
     std::vector<TextSprite> sprites;
-    float width = 0.0F;    ///< The box's width after growing to the widest line, GUI units.
-    float height = 0.0F;   ///< From the first line's top to the last line's bottom, GUI units.
-    std::size_t lines = 0; ///< Every line of the text, the window's or not (the markup widget's `+0x1ac` + 1).
-    bool expired = false;  ///< `<DISPLAYTIME>` has passed: nothing is drawn.
+    float width = 0.0F;  ///< The box's width after growing to the widest line, GUI units.
+    float height = 0.0F; ///< From the first line's top to the last line's bottom, GUI units.
+    std::size_t lines = 0;
+    bool expired = false;            ///< `<DISPLAYTIME>` has passed: nothing is drawn.
     std::vector<std::string> sounds; ///< `<SOUND name>` names, in order, for whoever plays them on the first frame.
     std::uint32_t freezeMs = 0;      ///< The largest `<FREEZE ms>`; Coney does not freeze the game timer yet.
     std::size_t skippedTags = 0;     ///< Tags with no effect in Coney (unknown names, not-yet-understood tags).
@@ -104,7 +97,6 @@ using FontLookup = std::function<const graphics::Font*(int slot)>;
 
 /// Adds the sprites of `layout` to the batch of each sprite's font slot; a slot with no batch (null) is skipped.
 /// Returns how many sprites a full batch dropped.
-/// @coney-only Coney's sprite batches, one per font slot
 std::size_t addTextSprites(const TextLayout& layout, const std::function<graphics::SpriteBatch*(int slot)>& batches);
 
 } // namespace coney::gui

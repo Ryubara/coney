@@ -143,10 +143,8 @@ bool PauseStats::setup(const std::optional<WarriorStats>& stats, int difficulty,
     m_description.setup(TextWidgetSetup{
         .colour = kMenuGrey, .fontSlot = kTextFontSlot, .wrapWidth = autoIndentWidth(description, kDescriptionWrap)});
     m_description.setText(description);
-    m_description.style().paged = true;
-    m_description.style().firstLine = 0;
-    m_description.style().lastLine = kDescriptionLastLine;
-    m_descriptionLines = 0;
+    m_page = MessagePage{.firstLine = 0, .lastLine = kDescriptionLastLine};
+    m_descriptionBreaks = 0;
     // The menu's alpha back to full.
     setFade(1.0F);
     return true;
@@ -161,30 +159,14 @@ void PauseStats::playCue(int cue) const {
 
 bool PauseStats::handle(MenuCommand command) {
     switch (command) {
-    case MenuCommand::Up: {
-        // `MessageHUD_PageUp`: both ends up one line while the first is above 0.
-        TextStyle& style = m_description.style();
-        if (style.firstLine == 0) {
-            playCue(kRefusedCue);
-            return false;
-        }
-        --style.firstLine;
-        --style.lastLine;
-        playCue(kMoveCue);
+    case MenuCommand::Up:
+        // `MessageHUD_PageUp`: the window up one line while its first line is above 0.
+        playCue(pageUp(m_page) ? kMoveCue : kRefusedCue);
         return false;
-    }
-    case MenuCommand::Down: {
-        // `MessageHUD_PageDown`: both ends down one line while the last is above the text's last line.
-        TextStyle& style = m_description.style();
-        if (m_descriptionLines == 0 || style.lastLine >= m_descriptionLines - 1) {
-            playCue(kRefusedCue);
-            return false;
-        }
-        ++style.firstLine;
-        ++style.lastLine;
-        playCue(kMoveCue);
+    case MenuCommand::Down:
+        // `MessageHUD_PageDown`: the window down one line while its last line is short of the text's last line.
+        playCue(pageDown(m_page, m_descriptionBreaks) ? kMoveCue : kRefusedCue);
         return false;
-    }
     case MenuCommand::Left:
     case MenuCommand::Right:
         playCue(kRefusedCue);
@@ -262,17 +244,30 @@ void PauseStats::render(const GuiCanvas& canvas) const {
     for (const TextWidget& label : m_labels) {
         label.render(canvas);
     }
-    m_description.render(canvas);
-    measure(canvas);
-}
-
-// Counts the description's lines.
-void PauseStats::measure(const GuiCanvas& canvas) const {
-    // The line count the down move stops at, as the original's draw counts it (`MessageHUD_WordWrap`).
-    if (canvas.fonts) {
-        m_descriptionLines = m_description.layout(canvas).lines;
+    // The description's window of its wrapped lines, as its draw lays it out; the wrap counts its breaks even with
+    // no batch to draw into.
+    const TextLayout description = descriptionLayout(canvas);
+    if (m_description.visible() && canvas.textBatch) {
+        addTextSprites(description, canvas.textBatch);
     }
 }
+
+TextLayout PauseStats::descriptionLayout(const GuiCanvas& canvas) const {
+    if (!canvas.fonts || m_description.text().empty()) {
+        return TextLayout{};
+    }
+    // Wrapped at the description's width, counting the breaks the down move stops at, then clipped to the window
+    // and laid out with no further wrap (`MessageHUD_Draw`).
+    const TextStyle& style = m_description.style();
+    const WrappedMessage wrapped = wrapMessage(m_description.text(), style.wrapWidth, lineMeasure(style, canvas.fonts));
+    m_descriptionBreaks = wrapped.breaks;
+    TextStyle page = style;
+    page.wrapWidth = 0.0F;
+    return layoutText(clipToPage(wrapped.text, m_page), page, canvas.fonts);
+}
+
+// Counts the description's line breaks.
+void PauseStats::measure(const GuiCanvas& canvas) const { static_cast<void>(descriptionLayout(canvas)); }
 
 void PauseStats::setFade(float fade) {
     m_fade = fade;
