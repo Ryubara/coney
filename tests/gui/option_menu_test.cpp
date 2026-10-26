@@ -628,3 +628,29 @@ TEST_CASE("options: a choice's answers are set edge to edge, the slash between t
     CHECK(screen.menu.items(OptionPage::RestoreDefault).at(0)->answersText.text() ==
           std::format("{}#3b</COLOR>/{}#3c</COLOR>", tag(coney::gui::kDimGrey), tag(coney::gui::kMenuGrey)));
 }
+
+TEST_CASE("options: the brightness squares and hint stay solid while the menu fades", "[pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code): LightingItem_RenderColoured (0x001d7e28) tints the first square
+    // with alpha 0xff, LightingItem_Setup (0x001d7958) makes the second 0xff000000, BaseWidget_Render (0x001a2660)
+    // draws each at its own alpha, and the hint's MessageHUD is never given the menu's.
+    OptionValues values;
+    values.brightness = 60;
+    Screen screen(values);
+    coney::graphics::SpriteBatch sheet{sheet12(), 64, 8500.0F};
+    coney::graphics::SpriteBatch parts{coney::test::testFontSheet(), 64, 9000.0F};
+    screen.menu.setSpriteBatch(&sheet);
+    screen.openPage(OptionPage::Lighting);
+    screen.menu.setFade(0.5F);
+    coney::gui::GuiCanvas canvas;
+    canvas.textBatch = [&parts](int /*slot*/) { return &parts; };
+    screen.menu.render(canvas);
+    // The bar's fill fades with the menu...
+    REQUIRE(parts.sprites().size() == 2);
+    CHECK(parts.sprites().at(1).colour.a == 128);
+    // ...the squares do not: the brightness's grey, then black, both opaque.
+    REQUIRE(sheet.sprites().size() == 2);
+    CHECK(sheet.sprites().at(0).colour == coney::graphics::Rgba{60, 60, 60, 255});
+    CHECK(sheet.sprites().at(1).colour == coney::graphics::Rgba{0, 0, 0, 255});
+    // ...and neither does the hint.
+    CHECK(screen.menu.hint().style().fade == Approx(1.0F));
+}
