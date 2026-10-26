@@ -882,8 +882,8 @@ class Human final : public Holdable {
     /// @orig 0x0022dd98 StereoTheft_Start (unknown)
     void startStereoTheft(anim::Vec3 point, float stageTurns);
     /// Enters the step control for one step toward `heading` (radians) with the turn boost `boost`: the next state
-    /// update that finds the human free plays the step's clip (stepClipFor(); the fight stance's while locked onto a
-    /// target), turns him to its end facing over half the clip, and leaves the control. Until then he waits, not
+    /// update that finds the human free plays the step's clip (stepClipFor(); the fight stance's in the fight
+    /// stance), turns him to its end facing over half the clip, and leaves the control. Until then he waits, not
     /// moved by his stick or brain. Refused (false) while grabbed, grabbing or held in a hold, or when a step is
     /// already waiting. **Coney's reading**: those stand for the state bits `0x180f3ff0`.
     /// @orig 0x002432b0 Human_EnterStepControl (unknown)
@@ -935,6 +935,8 @@ class Human final : public Holdable {
     /// head and slides him to 351's reach from it over 351's time to its first event + 0.1 s (Fighter::steerRevive()),
     /// and he plays 351 `gen_revive_begin`, then 353 `gen_revive_end`, then his idle (through 389 out of the fight
     /// stance, the fight idle in it), after a 0.01 s blend, each clip holding `0x8000000`.
+    /// **Coney stand-in**: the pair ids, the two calls on both humans before the say, the push sphere's switch-off
+    /// and Human_SetPartner are not built; the say is the game mode's (GameplayMode::tryRevive()).
     /// @orig 0x002752a0 Revive_Start (unknown)
     void startRevive(const Combatant& downed);
     /// Whether 351 `gen_revive_begin` plays: the revive's first clip, at whose end the flash is spent.

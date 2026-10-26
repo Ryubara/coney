@@ -1184,7 +1184,10 @@ bool Human::idleUnderControl() const {
 bool Human::runStepControl() {
     // The control moves nothing itself: the clip's root motion does.
     m_velocity = anim::Vec3{0.0F, 0.0F, m_velocity.z};
-    // Waits while the human is busy, held by combat, wounded, or anything is held on the record.
+    // Waits while the human is busy, held by combat, wounded, or anything is held on the record. Only a brain enters
+    // the control (enterStepControl()), so the original's branch for a pad-driven human is never needed. **Coney
+    // stand-in**: the fighter states (holdsMovement()) stand for the state bits 0xe0000, and the riding attachment
+    // (+0x280) is not tested (Coney's only attachment is a grab's, which returns before this control).
     if (stickBusy(gateInput()) || m_fighter.holdsMovement(m_animator) || m_script.wounded || m_animator.flags() != 0) {
         return true;
     }
@@ -1193,12 +1196,16 @@ bool Human::runStepControl() {
     constexpr float kStepFade = 0.2F;
     const bool stance = m_fighter.inFightStance();
     CONEY_ASSERT(m_stepRequest.has_value()); // run only with a step asked for
+    // **Coney stand-in**: the heading and turn boost are the brain's at the entry (StepRequest), where the original
+    // reads the brain's at this update.
     const StepClip step = stepClipFor(m_stepRequest->heading, m_heading, stance, m_stepRequest->boost);
     m_stepRequest.reset();
     const anim::AnimClip* found = m_animator.anims().clip(step.clip);
     if (found == nullptr) {
         return true;
     }
+    // **Coney stand-in**: one 0.2 s fade, not the original's 0.1 s blend-out then 0.2 s fade in; the push sphere stays
+    // on.
     m_animator.playCombat(clips::one(step.clip), stance ? kAnimFightIdle : clips::kIdle, AnimState::Attack, kStepFade,
                           HeldFlags{.held = clips::kStepHeld, .set = clips::kStepHeld});
     // The turn to the end facing, at a constant rate over half the clip's play time; under 0.01 rad, none.
@@ -1300,6 +1307,8 @@ void Human::endTagSpray() {
     // A finished or abandoned spray ends through 336 (Tag_EndSprayClips), whose event 0x31 drops the can; the fight
     // stance is Fighter::inFightStance() (the state word's 0x3).
     m_clipTurn.reset();
+    // **Coney stand-in**: the end plays only while the spray's clips play (the original: while the tag exists), the
+    // anim state is AnimState::Attack (the original's codes 0 and 0xb), and the push sphere stays on.
     if (tagSprayPlaying()) {
         m_animator.playTagEnd(m_fighter.inFightStance());
     }

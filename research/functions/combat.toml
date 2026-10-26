@@ -2202,7 +2202,7 @@ role = "circle: target search, then grab or tackle"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/combat/player_combat.h:PlayerCombat::grabOrTackle"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x002854b0
