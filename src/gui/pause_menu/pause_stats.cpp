@@ -246,6 +246,7 @@ void PauseStats::update(const GuiFrame& frame) {
 }
 
 void PauseStats::render(const GuiCanvas& canvas) const {
+    // Only an available screen is drawn; Coney's choice: there is no ready wait to pass (see update()).
     if (!available()) {
         return;
     }
@@ -257,6 +258,7 @@ void PauseStats::render(const GuiCanvas& canvas) const {
     for (const Bar& bar : m_bars) {
         bar.render(canvas);
     }
+    // The bars' labels, which the original's bars draw with themselves.
     for (const TextWidget& label : m_labels) {
         label.render(canvas);
     }
