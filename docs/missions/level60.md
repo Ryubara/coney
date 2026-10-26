@@ -6,7 +6,7 @@ Stage 1 of the Armies of the Night bonus game, which the hub offers once the fiv
 
 | | |
 | --- | --- |
-| Status | ⬜ Not Started |
+| Status | 🚧 In Progress |
 | Level | `level60` (Armies of the Night 1) |
 | Checkpoints | 0 of 3 built, 0 approved |
 
@@ -14,13 +14,13 @@ Stage 1 of the Armies of the Night bonus game, which the hub offers once the fiv
 
 | # | Status | Note |
 | --- | --- | --- |
-| 1 | ⬜ Not Started | - |
+| 1 | 🚧 In Progress | With the pad idle it plays as the original does: the intro scene, Swan walking out of the garage (a roll-up sliding door) to Flag_02, play with the Armies HUD (timer from 99, GO sign, CREDITS 07, player 2's join message) on the trailing rail camera, and the CONTINUE? screen when the timer runs out. Fights, player 2 joining and the way in from the hub's trophies (#569) are not checked yet. |
 | 2 | ⬜ Not Started | - |
 | 3 | ⬜ Not Started | - |
 
 ## What it needs {#needs}
 
-Its scripts can call 150 script bindings. 15 of them are new, which no earlier level of the story calls: 4 are
+Its scripts can call 150 script bindings. 15 of them are new, which no earlier level of the story calls: 9 are
 implemented in Coney and 15 are traced. The full list is on [the coverage
 page](../references/bindings/story.md#level60).
 
@@ -29,7 +29,7 @@ page](../references/bindings/story.md#level60).
 | [Characters](../references/bindings/character.md) | 3 | 1 |
 | [Gangs](../references/bindings/gang.md) | 1 | 0 |
 | [Cameras](../references/bindings/camera.md) | 1 | 0 |
-| [HUD and menus](../references/bindings/hud.md) | 7 | 1 |
+| [HUD and menus](../references/bindings/hud.md) | 7 | 6 |
 | [Script flow](../references/bindings/script.md) | 1 | 1 |
 | [Configuration (Cfg)](../references/bindings/config.md) | 2 | 1 |
 
@@ -38,6 +38,11 @@ Research:
 - [Story order and what loads each level](../research/scripting.md#run-next-mission)
 - [Armies of the Night: the way in, the pieces and what Coney needs](../research/armies.md)
 
+## Known issues {#issues}
+
+- #569
+- #570
+
 ## Run it in Coney {#run}
 
 With your own disc ([Playing a level](../guides/running-play-level.md#playing-a-level)); `--checkpoint` picks where it
@@ -45,6 +50,12 @@ starts, 1 to 3:
 
 ```text
 coney --disc /path/to/disc --play-level level60 --checkpoint 1
+```
+
+Its disc test (needs `CONEY_DISC`; [Building](../guides/building.md)):
+
+```text
+coney_tests "[disc][armies]"
 ```
 
 [All missions](index.md) and [how a mission moves between states](index.md#lifecycle).

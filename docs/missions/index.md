@@ -11,8 +11,8 @@ to run it.
 
 | Status | Missions | Meaning |
 | --- | --- | --- |
-| ⬜ Not Started | 21 | No Coney code for it yet. |
-| 🚧 In Progress | 6 | Being built. |
+| ⬜ Not Started | 20 | No Coney code for it yet. |
+| 🚧 In Progress | 7 | Being built. |
 | 🎮 Pending Gameplay Approval | 2 | Built to its end in Coney; waits for the user's play-test against the original. |
 | 🔧 Needs Fixes | 0 | A play-test found something off; back in maintenance, the known issues are listed. |
 | ✅ Approved | 0 | The user played it and signed it off. |
@@ -60,7 +60,7 @@ to run it.
 
 | Mission | Level | Status | Checkpoints built | Approved | New bindings in Coney |
 | --- | --- | --- | --- | --- | --- |
-| [Armies of the Night: Stage 1](level60.md) | `level60` | ⬜ Not Started | 0 of 3 | 0 | 4 of 15 |
+| [Armies of the Night: Stage 1](level60.md) | `level60` | 🚧 In Progress | 0 of 3 | 0 | 9 of 15 |
 | [Armies of the Night: Stage 2](level61.md) | `level61` | ⬜ Not Started | 0 of 3 | 0 | - |
 | [Armies of the Night: Stage 3](level62.md) | `level62` | ⬜ Not Started | 0 of 3 | 0 | 0 of 1 |
 | [Armies of the Night: Stage 4](level63.md) | `level63` | ⬜ Not Started | 0 of 3 | 0 | - |

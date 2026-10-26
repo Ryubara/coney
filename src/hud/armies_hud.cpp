@@ -59,7 +59,9 @@ void ArmiesHud::levelSetUp(Language language) {
     }
     m_goMode = static_cast<std::uint8_t>(GoSignMode::Off);
     m_goFrame = 0;
-    m_join = {};
+    // Both panels ask their player to join until he is attached: in level60 player 2's "PRESS THE START BUTTON TO
+    // JOIN" shows from the start of play (docs/research/armies.md#the-join-messages).
+    m_join = {true, true};
     // **Coney's choice**: a join message starts on its lit half (the panel's flag is not traced at its construction).
     m_joinLit = {true, true};
     m_in = {};
@@ -68,6 +70,13 @@ void ArmiesHud::levelSetUp(Language language) {
 void ArmiesHud::setJoinMessage(std::size_t player, bool on) {
     if (player < kPlayers) {
         m_join.at(player) = on;
+    }
+}
+
+// ANHud_Init zeroes the join flag along with the rest of the panel; it runs once, on the panel's first attach.
+void ArmiesHud::panelAttached(std::size_t player) {
+    if (player < kPlayers) {
+        m_join.at(player) = false;
     }
 }
 

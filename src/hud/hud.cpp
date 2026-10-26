@@ -59,6 +59,8 @@ int Hud::attachPlayer(int slot, int type) {
     if (!target.attach(type)) {
         return -1;
     }
+    // The first attach inits the panel (interface `+0x14`), which in an Armies level turns its join message off.
+    m_armies.panelAttached(static_cast<std::size_t>(slot));
     if (!m_visible) {
         target.hide();
     }
@@ -67,8 +69,8 @@ int Hud::attachPlayer(int slot, int type) {
 
 void Hud::levelSetUp() {
     m_radar.scriptOn = true;
-    // The Armies of the Night parts: no credits, the GO sign off and placed for the language, no join message
-    // (docs/research/armies.md).
+    // The Armies of the Night parts: no credits, the GO sign off and placed for the language, both join messages on
+    // until their panel's first attach (docs/research/armies.md#the-join-messages).
     m_armies.levelSetUp(m_services.language ? m_services.language() : Language::English);
     // **Coney's stand-in** for HUD_Render's fade branch, which hides the spinner the memory-card screen left on at
     // the level's first fully faded frame (docs/research/hud.md#hud-spinner): a level's set-up hides it.

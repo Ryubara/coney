@@ -19,12 +19,12 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "camera/cameras.h"
+#include "camera/rail_camera.h"
 #include "debug/debug_session.h"
 #include "debug/menu_model.h"
 #include "debug/tunables.h"
 #include "fileio/wad.h"
-#include "camera/cameras.h"
-#include "camera/rail_camera.h"
 #include "gamemodes/armies_game_over_mode.h"
 #include "gamemodes/start_up_flow.h"
 #include "hud/armies_hud.h"
@@ -151,10 +151,13 @@ TEST_CASE("the disc's level60 with the pad idle: the walk out, the Armies HUD, t
     CHECK(rail->mode() == coney::camera::RailMode::Trailing);
     CHECK(creditsAtStart == 7);
     CHECK(armies.active());
+    // Player 2's panel asks him to join from the set-up on; player 1's attach cleared his (PCSX2, 2026-10-26).
+    CHECK_FALSE(armies.joinMessage(0));
+    CHECK(armies.joinMessage(1));
 
     // The idle stage runs its timer out and the game-over screen opens (the original: "CONTINUE?" at about 126 s).
-    const bool over = run.runUntil([&run] { return run.stack().topId() == coney::ArmiesGameOverMode::kId; },
-                                   kTimerLimit);
+    const bool over =
+        run.runUntil([&run] { return run.stack().topId() == coney::ArmiesGameOverMode::kId; }, kTimerLimit);
     const std::uint64_t overAt = run.frames();
     std::printf("  level60 idle: game over %d at frame %llu, countdown %d\n", over ? 1 : 0,
                 static_cast<unsigned long long>(overAt), flow.armiesGameOver().menu().count());

@@ -50,9 +50,10 @@ class ArmiesHud {
 
     /// The level's set-up (`HUD_InitLevel`), before the level's script, in the game's `language`: the credits 0 (the
     /// HUD's word `+0x190d0`, `0x00619910`, which the Armies stages carry from one stage to the next in their Lua save
-    /// data), the GO sign Off and placed for the language, the join messages off (the original allocates its `ANHud`
-    /// panels afresh).
+    /// data), the GO sign Off and placed for the language, both join messages on (the original allocates its `ANHud`
+    /// panels afresh and its slot `+0x80` sets each one's flag; a panel's first attach clears it again).
     /// @orig 0x0019e030 GoSign_Setup (unknown)
+    /// @orig 0x004ec650 ANHud_SetPlayer (unknown)
     void levelSetUp(Language language = Language::English);
     /// How far left of its English place the GO sign sits in the set-up's language, in GUI units (`0x0050cf98`).
     [[nodiscard]] float goSignShift() const { return m_goShift; }
@@ -75,8 +76,9 @@ class ArmiesHud {
     /// `HUDANEnableJoinMsg(player, on)`: panel `player`'s join message on or off (`+0x4614`).
     /// @orig 0x001b46a0 HUD_ANEnableJoinMsg (unknown)
     void setJoinMessage(std::size_t player, bool on);
-    /// Panel `player`'s first attach to a player.
-    void panelAttached(std::size_t /*player*/) {}
+    /// Panel `player`'s first attach to a player (`HUD_AttachPlayer` -> `ANHud_Init`): its join message off.
+    /// @orig 0x002107e8 ANHud_Init (unknown)
+    void panelAttached(std::size_t player);
     /// Whether panel `player`'s join message is on.
     [[nodiscard]] bool joinMessage(std::size_t player) const { return m_join.at(player); }
     /// Whether panel `player`'s join message shows now: on, the player not in, and on the blink's lit half.

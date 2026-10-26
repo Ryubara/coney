@@ -106,6 +106,27 @@ stage runs a 99-second timer that ends in the continue screen without any fight 
 panel](hud-functions-panels.md#fn-anhud) for the panel's code). Which script call starts the timer and the `P1.Start03`
 timing were not traced here.
 
+### The join messages {#the-join-messages}
+
+"PRESS THE START BUTTON TO JOIN" is not turned on by the stage's script: none of `level60.lua`'s
+`HUDANEnableJoinMsg(n, true)` calls runs at the start (they are in the death, credit and bonus handlers). It is the
+panels' own state at the set-up:
+
+- `HUD_InitLevel` (`0x001ad588`) allocates the two `ANHud` panels in an Armies level and calls each one's interface
+  slot `+0x80` with the panel's player (`0x001ae260`). That slot, **`0x004ec650` `ANHud_SetPlayer`** (made a
+  function in the Ghidra project on 2026-10-26), stores the player at `+0x40f4` and **1 at `+0x4614`**, the
+  join flag `ANHud_Update` and `ANHud_Draw` read. Confirmed (code) at `0x004ec650` and confirmed (runtime): a write
+  watchpoint on panel 1's `+0x4614` stopped there with `a0` the panel and `a1` 0, called from `0x001ae260`
+  (PCSX2 2.9.129, 2026-10-26, `level60` checkpoint 1 loaded from a level99 state).
+- `ANHud_Init` (`0x002107e8`) zeroes the flag (`0x00210b40`). It runs on a panel's first attach only:
+  `lua_HuCreate` → `Human_MakePlayer` (`0x00229c40`) → `HUD_AttachPlayer` (`0x001b2200`, which calls the interface's
+  `+0x10` while `+0x4100` is 0) → `ANHud_Init`. Confirmed (runtime): the watchpoint's second stop, with that stack.
+- So player 1's flag is cleared when the level script makes Swan, and player 2's stays on: in play (the panel not
+  shown, `+0x40fc` 0) `ANHud_Draw` draws the join text, blinking every 500 ms. Read in PCSX2 during play: panel 1
+  `+0x4614` = 0, panel 2 `+0x4614` = 1, `+0x40f4` = 1, `+0x40f8` and `+0x40fc` = 0.
+- Search note: a search for the operand `0x4614` finds the setter `0x002107d8`, the getter, `ANHud_Init`, `_Update`
+  and `_Draw`, but missed `0x004ec650` while that code was not yet a function.
+
 ## Coney's implementation {#coney}
 
 Read in the engine and seen in a run of the 2026-10-10 release build (`--play-level level60`, 600 steps, pad idle).
@@ -137,12 +158,15 @@ That run is an observation of Coney, not of the original:
   ended at once), the flag's message 8 never came and `P1.Start04`, the HUD's return and the timer never ran. Coney
   now has the sliding doors ([Sliding doors](script-types.md#sliding-doors)), the rail's mode 3, the Armies HUD's
   credits, GO sign and join messages, the timer's seconds form and the game-over screen (mode 0xd); with the pad idle
-  the stage plays as [the original's first frames](#first-frames) do.
+  the stage plays as [the original's first frames](#first-frames) do. Both join messages start on at the set-up and
+  a panel's first attach clears its own ([The join messages](#the-join-messages); `repo:src/hud/armies_hud.cpp`), so
+  player 2's "PRESS THE START BUTTON TO JOIN" shows in play as in the original.
 
 ### Coney fixes (item 19) {#coney-fixes}
 
-The minimum to show Armies of the Night instead of a black screen, in order. Steps 1 and 2 and the 60-69 test of
-step 4 are done (the black screen was step 1's record); the rest is open:
+The minimum to show Armies of the Night instead of a black screen, in order. Steps 1, 2, 4, 5 and 6 are done (the
+black screen was step 1's record; 4-6 with issue #85, the playthrough from the trophy waiting for step 3). Step 3 is
+issue #569; the bindings #85 left out (`CamLockRail`, `HuEnableController`, `HUDSetANBossTexture`) are issue #570:
 
 1. **Debug Levels page:** do not offer a record that cannot load. Skip, or mark and refuse with a log line, a record
    with no `.lev` of its name: `armies`, and the other test records with no level file. That is what the original's

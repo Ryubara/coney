@@ -427,7 +427,8 @@ Confirmed (code) at `0x00210e48`, `0x00211938`, `0x002102f0`.
 | `0x0020fd40`, `0x0020fd60` | `ANHud_Enable`, `ANHud_Disable` | slot `+0x20`: wanted = 1 and `PlayerHUD_Show`; slot `+0x28`: wanted = 0 and `PlayerHUD_Hide` | confirmed (code) |
 | `0x0020fd80`, `0x0020ffe8` | `ANHud_Construct`, `ANHud_Destroy` | the `PlayerHUD` parts, the portrait and frame, the health bar, the join text and the `TargetPanel` (`+0x4590`); the destructor (slot `+0x08`) frees them | confirmed (code) |
 | `0x002102f0` | `ANHud_ApplyVideoMode` | each update: copies the ANHud table and the target panel's (`0x00559710` → `0x0050f6a0`, `0x80` per player) and patches them for 16:9, flag `0x02` and flags `0x02` + `0x04` | confirmed (code) |
-| `0x002107e8` | `ANHud_Init(panel, player)` | slot `+0x10`: the two bars (sprite word `0x30036`, the health bar with the gradient), the score counter (`+0x70`), `TargetPanel_Setup`; then hidden | confirmed (code) |
+| `0x002107e8` | `ANHud_Init(panel, player)` | slot `+0x10`: the two bars (sprite word `0x30036`, the health bar with the gradient), the score counter (`+0x70`), `TargetPanel_Setup`; then hidden, with the join flag `+0x4614` cleared | confirmed (code) |
+| `0x004ec650` | `ANHud_SetPlayer(panel, player)` | slot `+0x80`, from `HUD_InitLevel` for each new panel: `+0x40f4` = player and the join flag `+0x4614` = 1, which `ANHud_Init` clears on the first attach ([Armies: the join messages](armies.md#the-join-messages)) | confirmed (code), confirmed (runtime) |
 | `0x00210b80` | `ANHud_SetBanner` | slot `+0x30`: `PlayerHUD_SetBanner`, then the portrait (depth 14,000) and its frame | confirmed (code) |
 | `0x00210d10` | `ANHud_Shutdown` | slot `+0x18`: the base shutdown, the portrait and frame, the score counter, the join text and the target panel | confirmed (code) |
 | `0x00210dc0` | `ANHud_SetBossTexture` | slot `+0x70`: `TargetPanel_SetBossTexture` | confirmed (code) |
