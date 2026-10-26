@@ -45,6 +45,8 @@ void ArmiesGameOverMode::launch() {
 }
 
 void ArmiesGameOverMode::enter() {
+    // **Coney's stand-in**: the original also sets the task manager's phase 1 and pauses the audio (Gm_Mode0D_Enter);
+    // Coney holds the level below still under the screen (update()) and leaves the sound playing.
     m_layer.load(m_loadSheet, m_loadRecord, std::nullopt, kNoSprites, 0.0F, m_log, "armies game over");
     m_fadeLevel.reset(0.0F);
     m_fade = graphics::ScreenFade{};
@@ -92,6 +94,8 @@ void ArmiesGameOverMode::pressStart(int player, std::uint64_t nowMs) {
 
 ModeResult ArmiesGameOverMode::update(GameModeStack& stack, const FrameTime& frame) {
     const std::uint64_t nowMs = frame.gameTicks / (GameTimer::kTicksPerSecond / 1000);
+    // **Coney's stand-in**: the original runs one frame of the world's phase-1 tasks, its streaming and its audio
+    // under the screen each update (Gm_ANGameOver_Update); Coney draws the level's last frame (m_frozen) instead.
     // The screen opens on the first frame, which knows the time.
     if (m_openPending) {
         m_openPending = false;
