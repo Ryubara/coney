@@ -150,20 +150,20 @@
 /*
  * The home page's picture (docs/index.md, progress_site.home_section): the same squares and tooltip in three states
  * and the home page's own palette, coloured from HOME_PALETTE in coney_tools/progress_grid.py (a test holds them
- * equal). Its tooltip names the progress page's state; the swatch beside it takes the home colour of that state.
+ * equal). Its tooltip names the state as the legend does (data-labels); the swatch beside it takes its home colour.
  */
 .progress-home {
   --cg-h-reimplemented: #1a7f37;
-  --cg-h-understood: #c1c8d0;
-  --cg-h-not-started: #e6e9ed;
+  --cg-h-understood: #d0d6dc;
+  --cg-h-not-started: #b0b8c2;
 
   margin: 1.2em 0 0.8em;
 }
 
 [data-md-color-scheme="slate"] .progress-home {
   --cg-h-reimplemented: #238636;
-  --cg-h-understood: #9da5b0;
-  --cg-h-not-started: #363b45;
+  --cg-h-understood: #4a5160;
+  --cg-h-not-started: #9da5b0;
 }
 
 .progress-home svg .cg-h-reimplemented { fill: var(--cg-h-reimplemented); }

@@ -189,6 +189,8 @@ def home_section(grid: progress_grid.Grid, repo_url: str | None) -> str:
     counts = progress_grid.home_counts(grid)
     done = counts["reimplemented"]
     attrs = f'data-functions="{SITE_DIR}/functions.json"'
+    # The tooltip names each square's state as the legend below does (HOME_LABELS), not by the progress page's five.
+    attrs += f" data-labels='{json.dumps(progress_grid.home_state_labels(), separators=(',', ':'))}'"
     if repo_url:
         attrs += f' data-repo="{escape(repo_url.rstrip("/"), quote=True)}"'
     items = "".join(

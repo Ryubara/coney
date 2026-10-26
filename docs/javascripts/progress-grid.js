@@ -78,6 +78,8 @@
     var tip = root.querySelector(".cg-tip");
     var url = root.getAttribute("data-functions");
     var repo = root.getAttribute("data-repo") || "";
+    // The home page names a state as its legend does (state code to name), not by the progress page's five.
+    var labels = JSON.parse(root.getAttribute("data-labels") || "{}");
     var data = null;
     var loading = null;
     var pinned = false;
@@ -198,7 +200,7 @@
       var key = document.createElement("span");
       key.className = "cg-key " + state[1];
       row.appendChild(key);
-      row.appendChild(document.createTextNode(state[0]));
+      row.appendChild(document.createTextNode(labels[info.s.charAt(i)] || state[0]));
       var file = info.f[i] >= 0 ? data.files[info.f[i]] : "";
       if (file) {
         line(tip, "", "Original file (source map): " + file);
