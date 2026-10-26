@@ -65,7 +65,7 @@ constexpr std::string_view kAutoAdjustPad = "30 tap start\n"
                                             "240 tap start\n";
 // Frames of play by which each step has happened.
 constexpr std::uint64_t kAutoAdjustOff = 215;
-constexpr std::uint64_t kPlayingOn = 300;
+constexpr std::uint64_t kPlayingOn = 360;
 
 } // namespace
 
