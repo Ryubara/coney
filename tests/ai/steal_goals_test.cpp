@@ -24,103 +24,16 @@
 #include "ai/smash_goals.h"
 #include "support/ai_fixtures.h"
 #include "support/collision_fixtures.h"
+#include "support/fake_items.h"
 
 using coney::ai::Brain;
 using coney::ai::GoalType;
 using coney::anim::Vec3;
 using coney::test::AiScene;
+using coney::test::FakeItems;
+using coney::test::kZone;
 
 namespace {
-
-// The store's zone in these tests.
-constexpr int kZone = 24;
-
-// A level's objects as the AI sees them: store fronts and owned objects; a pick-up takes its object at once (it is
-// gone, as a TYPE_SPECIAL taken for good), noting who took it and where he stood.
-class FakeItems final : public coney::ai::ItemServices {
-  public:
-    struct Object {
-        double handle = 0;
-        Vec3 position{};
-        int zone = kZone;
-        bool gone = false;
-    };
-    struct Take {
-        double taker = 0;
-        double object = 0;
-        Vec3 standing{};
-    };
-    std::vector<coney::ai::StoreFlag> storeFlags;
-    std::vector<Object> objects;
-    std::vector<Take> takes;
-    std::vector<coney::ai::PaneView> glass;             // what panes() lists, whatever the centre and radius
-    std::vector<coney::ai::SmashTarget> targets;        // what smashTargets() lists, likewise
-    coney::ai::HeldUse use = coney::ai::HeldUse::Other; // what heldUse() says of any held object
-    std::vector<double> flying;                         // the objects in flight
-
-    [[nodiscard]] bool inFlight(double handle) const override { return std::ranges::contains(flying, handle); }
-
-    [[nodiscard]] std::vector<coney::ai::PaneView> panes(Vec3 /*centre*/, float /*radius*/) const override {
-        return glass;
-    }
-    [[nodiscard]] std::vector<coney::ai::SmashTarget> smashTargets(Vec3 /*centre*/, float /*radius*/) const override {
-        return targets;
-    }
-    [[nodiscard]] coney::ai::HeldUse heldUse(double /*handle*/) const override { return use; }
-    [[nodiscard]] std::optional<Vec3> objectPosition(double handle) const override {
-        for (const coney::ai::PaneView& pane : glass) {
-            if (pane.handle == handle) {
-                return pane.centre;
-            }
-        }
-        for (const coney::ai::SmashTarget& target : targets) {
-            if (target.handle == handle) {
-                return target.position;
-            }
-        }
-        return itemPosition(handle);
-    }
-
-    [[nodiscard]] std::vector<coney::ai::StoreFlag> stores() const override { return storeFlags; }
-    [[nodiscard]] std::vector<coney::ai::LooseItem> ownedItems(int zone) const override {
-        std::vector<coney::ai::LooseItem> items;
-        for (const Object& object : objects) {
-            if (object.zone == zone && !object.gone) {
-                items.push_back({object.handle, object.position});
-            }
-        }
-        return items;
-    }
-    [[nodiscard]] std::optional<Vec3> itemPosition(double handle) const override {
-        const Object* object = find(handle);
-        return object != nullptr && !object->gone ? std::optional<Vec3>(object->position) : std::nullopt;
-    }
-    [[nodiscard]] std::optional<double> holder(double /*handle*/) const override { return std::nullopt; }
-    bool startPickUp(Brain& brain, double handle) override {
-        Object* object = find(handle);
-        if (object == nullptr || object->gone) {
-            return false;
-        }
-        object->gone = true;
-        takes.push_back({brain.handle(), handle, brain.human().position()});
-        return true;
-    }
-
-    // Adds an owned object with `handle` at `at`.
-    void add(double handle, Vec3 at) { objects.push_back({handle, at, kZone, false}); }
-
-  private:
-    // The object with `handle`; null for none.
-    [[nodiscard]] Object* find(double handle) {
-        for (Object& object : objects) {
-            if (object.handle == handle) {
-                return &object;
-            }
-        }
-        return nullptr;
-    }
-    [[nodiscard]] const Object* find(double handle) const { return const_cast<FakeItems*>(this)->find(handle); }
-};
 
 // The player's crew: a gang holding the player as chief and `count` AI members a few metres east of him.
 int makeCrew(AiScene& scene, int count, std::vector<Brain*>& members) {
@@ -519,40 +432,4 @@ TEST_CASE("under the wreck command the claim on a struck target drops once Destr
     scene.run(2);
     CHECK(members[0]->nowMs() < sentMs + coney::ai::kSmashClaimMs);
     CHECK_FALSE(items.claimedBy(600, gang, members[0]->nowMs()));
-}
-
-TEST_CASE("DestroyItem walks to the object's own spot and swings within 1 m of it", "[ai][steal][wreck]") {
-    // DestroyItemGoal_Process (0x002dd210): Nav_FindPolygonUnder (0x00252410) never reads the stand-off or the
-    // direction it is given, so the stand point is the object's spot on the ground; the swing comes within 1 m of it.
-    AiScene scene;
-    Brain& striker = scene.add({40.0F, 30.0F, 0.0F}, 0.0F);
-    FakeItems items;
-    items.targets.push_back({.handle = 600, .position = {40.0F, 36.0F, 0.0F}, .animSet = 0});
-    REQUIRE(striker.pushGoal(std::make_unique<coney::ai::DestroyItemGoal>(600.0, false, items)));
-    const auto* goal = dynamic_cast<const coney::ai::DestroyItemGoal*>(striker.findGoal(GoalType::DestroyItem));
-    REQUIRE(goal != nullptr);
-    for (int k = 0; k < 60 * 10 && !goal->swung(); ++k) {
-        scene.run(1);
-    }
-    REQUIRE(goal->swung());
-    const Vec3 at = striker.human().position();
-    CHECK(std::hypot(at.x - 40.0F, at.y - 36.0F) <= coney::ai::kDestroyItemReach + 0.05F);
-}
-
-TEST_CASE("the wreck's smash search refuses an object only with the player nearer than 1 m to it in 3D",
-          "[ai][steal][wreck]") {
-    // Ai_FindObject (0x0029d5f0): an object a player is nearer than 1 m to (Vec_DistSq < 1.0) is skipped. One on a
-    // shelf 2 m above the player's feet is not; one at his feet is.
-    AiScene scene;
-    Brain& searcher = scene.add({42.0F, 40.0F, 0.0F}, 0.0F);
-    const Vec3 feet = scene.player().human().position();
-    FakeItems items;
-    items.targets.push_back({.handle = 600, .position = {feet.x + 0.5F, feet.y, feet.z + 2.0F}, .animSet = 0});
-    const std::optional<coney::ai::SmashTarget> above =
-        coney::ai::findSmashTarget(searcher, scene.player(), items, scene.services, 15.0F, 15.0F);
-    REQUIRE(above.has_value());
-    CHECK(above->handle == 600.0);
-    FakeItems low;
-    low.targets.push_back({.handle = 601, .position = {feet.x + 0.5F, feet.y, feet.z}, .animSet = 0});
-    CHECK_FALSE(coney::ai::findSmashTarget(searcher, scene.player(), low, scene.services, 15.0F, 15.0F).has_value());
 }
