@@ -47,6 +47,7 @@ constexpr std::uint32_t kChargeFlags = 0x1400000;
 // 0x00287730 and 0x00263c90), the spray 664, rage's start 643 (Player_TryStartRage) and a held object's throws (sets
 // 4-6, Player_CrossWithWeapon 0x002880d8) do not. Nor do square's solo 22 and the armed special's throw of a melee
 // weapon (Player_ThrowMeleeWeapon), which Coney does not build (docs/research/combat-targets.md#fight-stance).
+// @coney-only a list of the attack starts that call Player_EnterStance; the original makes the call in each start
 bool attackEntersStance(int animId) {
     switch (animId) {
     case id::kRunningAttackCharge:
