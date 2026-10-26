@@ -22,7 +22,11 @@ namespace coney::hud {
 
 /// Whether level number `level` is an Armies of the Night level: 60 to 69, as the original's test takes it.
 /// @orig 0x0041d110 GameState_IsArmiesLevel (unknown)
-[[nodiscard]] constexpr bool isArmiesLevel(int level) { return level >= 60 && level <= 69; }
+[[nodiscard]] constexpr bool isArmiesLevel(int level) {
+    // Fails-first stub: the port is put back by the next commit.
+    static_cast<void>(level);
+    return false;
+}
 
 /// The GO sign's modes (`HUDANSetGOSignMode`, byte `0x0060f260`): any other value hides it as Off does.
 enum class GoSignMode : std::uint8_t {

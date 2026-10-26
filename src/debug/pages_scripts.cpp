@@ -379,10 +379,8 @@ void addLevelsPage(DebugSession& session) {
                     if (record == nullptr) {
                         continue;
                     }
-                    if (loads && !loads(record->name)) {
-                        leftOut += std::format("{}{:03} {}", leftOut.empty() ? "" : ", ", i, record->name);
-                        continue;
-                    }
+                    // Fails-first stub: the port is put back by the next commit.
+                    static_cast<void>(loads);
                     page.add(actionItem(std::format("{:03} {}", i, record->name),
                                         [load, name = record->name] { load(name); }));
                 }

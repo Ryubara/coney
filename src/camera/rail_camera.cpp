@@ -477,88 +477,10 @@ anim::Vec3 RailCamera::projectTrailing(anim::Vec3 p) const {
 }
 
 void RailCamera::placeTrailing(std::optional<anim::Vec3> feet, anim::Vec3 velocity, float seconds) {
-    const anim::Vec3 offset{m_setup.offset.x, m_setup.offset.y, m_lookHeight.current};
-    // 1. The start, on the first update after an activation (or the first ever): level with the target point.
-    if (m_starting || !m_placed) {
-        if (!feet) {
-            return;
-        }
-        m_feet = *feet;
-        m_target = anim::add(*feet, offset);
-        chooseSegmentFor(m_target);
-        m_position = projectTrailing(m_target);
-        m_lookAt = pitchedLook(m_position, m_target);
-        m_goal = m_lookAt;
-        m_placed = true;
-        // **Coney's stand-in**: the original also sets `+0x3ea` from the side the first target faces, which nothing
-        // reads (docs/research/camera.md#rail-mode3).
-        return;
-    }
-    // No target: the camera keeps its place.
-    if (!feet) {
-        return;
-    }
-    m_feet = *feet;
-    // 2. **Coney stand-in**: the keep-in-frame step (0x00140d68), which pushes the targets back inside the view's
-    // sides by the margin (setting 7) and out of walls, is not built; Coney's rail has one target, so the hindmost is
-    // he.
-    // 3. The target point: his feet raised by the offset's height only.
-    m_target = anim::Vec3{feet->x, feet->y, feet->z + offset.z};
-    // 4. The goal: the target point's foot on the rail and 2 m toward him at the pitch, taken only when ahead of the
-    // look-at point along the segment: the camera never goes back.
-    const bool heldBefore = m_held;
-    const anim::Vec3 start = m_position;
-    chooseSegmentFor(m_target);
-    const anim::Vec3 goal = pitchedLook(projectTrailing(m_target), m_target);
-    const anim::Vec3 d = flatDirection();
-    const bool ahead = ((goal.x - m_lookAt.x) * d.x) + ((goal.y - m_lookAt.y) * d.y) > 0.0F;
-    bool move = false;
-    if (ahead) {
-        m_goal = goal;
-        move = !heldBefore;
-    }
-    // 5. The ends: a camera at the rail's first point (on segment 0) or its last (on the last segment) holds there,
-    // until CamLockRail(false).
-    const anim::Vec3 fromFirst = anim::subtract(start, m_points.at(0));
-    const anim::Vec3 fromLast = anim::subtract(start, m_points.at(m_count - 1));
-    if ((m_segment == 0 && anim::dot(fromFirst, fromFirst) < kTrailEndSquared) ||
-        (m_segment + 2 >= m_count && anim::dot(fromLast, fromLast) < kTrailEndSquared)) {
-        m_held = true;
-    }
-    if (!move || m_held) {
-        m_goal = m_lookAt;
-        return;
-    }
-    // 6. The move: toward the goal by the target's forward speed plus 1 m/s, at most 40% of the gap; the segment
-    // chosen again for the moved point (so it crosses joints) and the camera its foot on the rail.
-    const float forward = (velocity.x * d.x) + (velocity.y * d.y);
-    const float speed = (forward > 0.0F ? forward + kTrailBaseSpeed : kTrailBaseSpeed) * seconds;
-    const anim::Vec3 gap = anim::subtract(m_goal, m_lookAt);
-    const float gapLength = anim::length(gap);
-    const float step = std::min(gapLength * kTrailGapShare, speed);
-    if (gapLength > 0.0F) {
-        m_lookAt = anim::add(m_lookAt, anim::scale(gap, step / gapLength));
-    }
-    chooseSegmentFor(m_lookAt);
-    anim::Vec3 placed = projectTrailing(m_lookAt);
-    // 7. The hand-over between segments: a share of the step that grows by 15% an update.
-    if (m_blend > 0.0F) {
-        const anim::Vec3 change = anim::subtract(placed, start);
-        const float grown = m_blend * kTrailBlendGrowth;
-        if (((change.x * change.x) + (change.y * change.y)) < kTrailBlendDone * kTrailBlendDone || grown >= 1.0F) {
-            m_blend = 0.0F;
-        } else {
-            placed = anim::add(start, anim::scale(change, m_blend));
-            m_blend = grown;
-        }
-    }
-    m_position = placed;
-    // 8. The look-at point again 2 m from the camera toward where it was, at the pitch.
-    m_lookAt = pitchedLook(m_position, m_lookAt);
-    // The finish: with the height setting above 0 the camera is no higher than that over the target's feet.
-    if (m_height.current > 0.0F) {
-        m_position.z = std::min(m_position.z, feet->z + m_height.current);
-    }
+    // Fails-first stub: the port is put back by the next commit.
+    static_cast<void>(feet);
+    static_cast<void>(velocity);
+    static_cast<void>(seconds);
 }
 
 CameraView RailCamera::view() const {

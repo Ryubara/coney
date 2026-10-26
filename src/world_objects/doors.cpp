@@ -388,56 +388,11 @@ const Door& Doors::spawn(double handle, const DoorSpawn& spawn, const ObjectType
 }
 
 void Doors::setUpSliding(Door& door, const ObjectTypeInfo* info, const HandleSource& handles, ObjectWorld& world) {
-    // The slide: property 7's length along the leaf's x axis (axis byte 2), or with none property 8's up its z axis
-    // (axis byte 0); the step twice property 6, taken every kSlideStepTicks while it slides.
-    const float lengthX = info != nullptr ? info->property7 : 0.0F;
-    door.slideLength = lengthX;
-    door.slideAxis = 2;
-    if (std::fabs(lengthX) == 0.0F) {
-        door.slideLength = info != nullptr ? info->property8 : 0.0F;
-        door.slideAxis = 0;
-    }
-    door.slideStep = info != nullptr ? info->property6 * 2.0F : 0.0F;
-    // The leaves by type name: the first at the door's pose, a second 2w away and turned half round.
-    const auto row = std::ranges::find(kSlidingRows, door.type, &SlidingRow::name);
-    if (row != kSlidingRows.end()) {
-        if (row->axisOneMore) {
-            ++door.slideAxis;
-        }
-        std::uint32_t sound = row->rollupSound ? kRollupDoorSound : kSlidingDoorSound;
-        if (row->name == kPortcullis) {
-            sound = kPortcullisSound;
-        }
-        door.slideOpenSound = sound;
-        door.slideCloseSound = sound;
-        for (const std::string_view model : {row->leaf, row->secondLeaf}) {
-            if (model.empty()) {
-                continue;
-            }
-            const bool second = !door.slidingLeaves.empty();
-            SlidingLeaf leaf;
-            leaf.handle = handles ? handles() : kNoObject;
-            leaf.model = std::string(model);
-            // A second leaf turns half round, about the door's y axis for an up-and-down slide (so it slides the
-            // other way) and about the vertical otherwise (SubSlidingDoor_PlaceLeaf), and stands 2w away from the
-            // first along the door's -x, or its -z for the lift's pair.
-            const anim::Vec3 apart = row->secondBelow ? anim::Vec3{0.0F, 0.0F, -2.0F * door.leafWidth}
-                                                      : anim::Vec3{-2.0F * door.leafWidth, 0.0F, 0.0F};
-            leaf.closed = second ? anim::add(door.position, rotate(door.rotation, apart)) : door.position;
-            if (!second) {
-                leaf.rotation = door.rotation;
-            } else if (door.slideAxis < 2) {
-                leaf.rotation = turnAboutOwnAxis(door.rotation, anim::Vec3{0.0F, 1.0F, 0.0F}, 180.0F);
-            } else {
-                leaf.rotation = turnAboutVertical(door.rotation, 180.0F);
-            }
-            leaf.axis = rotate(leaf.rotation, slideDirection(door.slideAxis));
-            door.slidingLeaves.push_back(std::move(leaf));
-        }
-    }
-    // Its triangles two-sided with the door bit and the type's material, then closed (command 7).
-    markTriangles(world, door.triangles, raycast::kTriangleTwoSided | kTriangleDoorBit, door.material);
-    runSlidingCommand(door, door_command::kCloseToo, world);
+    // Fails-first stub: the port is put back by the next commit.
+    static_cast<void>(door);
+    static_cast<void>(info);
+    static_cast<void>(handles);
+    static_cast<void>(world);
 }
 
 void Doors::runSlidingCommand(Door& door, int command, ObjectWorld& world) {

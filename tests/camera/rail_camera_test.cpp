@@ -135,6 +135,52 @@ TEST_CASE("the rail camera holds at the rail's end; its settings ease linearly; 
     CHECK(rail.lead() == Approx(2.0F));
 }
 
+TEST_CASE(
+    "the rail camera in mode 3 trails the Armies fighter forward only, at a fixed pitch, 1 m/s faster than he goes",
+    "[camera]") {
+    // level60's Rail1: along -x at y = 39.5, 3.7 m up; the look-at offset (0, -0.25, 1.25); CamModifyRail(5, -7, 0).
+    RailCamera rail;
+    RailSetup setup;
+    setup.fieldOfView = 22.0F;
+    setup.offset = Vec3{0.0F, -0.25F, 1.25F};
+    rail.setup(setup);
+    rail.addPoint(Vec3{100.0F, 39.5F, 3.7F});
+    rail.addPoint(Vec3{-752.3F, 39.5F, 3.7F});
+    rail.addPoint(Vec3{-850.0F, 39.5F, 3.7F});
+    rail.modify(RailCamera::kMode3Pitch, -7.0F, 0.0F);
+    rail.modify(RailCamera::kMode3Margin, 0.5F, 0.0F);
+    CHECK(rail.mode() == RailMode::Trailing);
+    rail.activate();
+    const float drop = 2.0F * std::tan(-7.0F * std::numbers::pi_v<float> / 180.0F);
+
+    // The start: on the rail level with the target point, looking 2 m toward it in plan at the pitch.
+    rail.update(Vec3{-94.9F, 24.0F, 0.0F}, false, kStep, Vec3{});
+    CHECK(rail.position().x == Approx(-94.9F));
+    CHECK(rail.position().y == Approx(39.5F));
+    CHECK(rail.position().z == Approx(3.7F));
+    CHECK(rail.lookAt().y == Approx(37.5F));
+    CHECK(rail.lookAt().z == Approx(3.7F + drop));
+
+    // He goes 2 m on along the rail at 3 m/s: the look-at point moves (3 + 1) m/s x 1/30 s toward the goal, under
+    // 40% of the 2 m gap, and the camera is its foot on the rail.
+    rail.update(Vec3{-96.9F, 24.0F, 0.0F}, false, kStep, Vec3{-3.0F, 0.0F, 0.0F});
+    const float moved = 4.0F * kStep;
+    CHECK(rail.position().x == Approx(-94.9F - moved));
+    CHECK(rail.position().y == Approx(39.5F));
+    CHECK(rail.lookAt().x == Approx(-94.9F - moved));
+    CHECK(rail.lookAt().y == Approx(37.5F));
+    CHECK(rail.lookAt().z == Approx(3.7F + drop));
+
+    // Back the way he came: the goal lies behind, so the camera keeps its place.
+    rail.update(Vec3{-90.0F, 24.0F, 0.0F}, false, kStep, Vec3{3.0F, 0.0F, 0.0F});
+    CHECK(rail.position().x == Approx(-94.9F - moved));
+    CHECK_FALSE(rail.held());
+
+    // Below -360 the setting switches mode 3 off.
+    rail.modify(RailCamera::kMode3Pitch, -400.0F, 0.0F);
+    CHECK(rail.mode() == RailMode::Level);
+}
+
 TEST_CASE("the rail camera's mode 3 pitch switched on with a time eases from the camera's present pitch", "[camera]") {
     // Expected: camera.md#rail-mode3, confirmed (code): CamRail_Update starts setting 5's pitch, while off, at the
     // camera's present pitch (CamRail_PitchToPoint) and eases it to the target.
@@ -160,6 +206,18 @@ TEST_CASE("an activation snaps the rail camera's eased settings to their targets
     rail.activate();
     CHECK(rail.fieldOfView() == Approx(40.0F));
     CHECK(rail.mode3Pitch() == Approx(-7.0F));
+}
+
+TEST_CASE("the rail camera in mode 3 holds once it reaches the rail's first point", "[camera]") {
+    RailCamera rail = straightRail();
+    rail.modify(RailCamera::kMode3Pitch, -7.0F, 0.0F);
+    rail.activate();
+    // Started before the rail's first point: clamped there, and held from the first later update.
+    rail.update(Vec3{-5.0F, 4.0F, 0.0F}, false, kStep, Vec3{});
+    CHECK(rail.position().x == Approx(0.0F));
+    rail.update(Vec3{5.0F, 4.0F, 0.0F}, false, kStep, Vec3{3.0F, 0.0F, 0.0F});
+    CHECK(rail.held());
+    CHECK(rail.position().x == Approx(0.0F));
 }
 
 TEST_CASE("a fixed camera looks at its targets' average plus its offset; a third-person camera sits behind its target",
