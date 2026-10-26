@@ -889,7 +889,7 @@ the world AABB of a posed shape. Specified exactly below; everything confirmed (
 the disassembly, 2026-10-12), unless a line says otherwise.
 
 - **Specified by:** this section; background in [Shapes](physics.md#shapes), [The human body](physics.md#human-body) and
-  [Combat: moving strikes](combat.md#moving-strikes).
+  [Combat: moving strikes](combat/index.md#moving-strikes).
 - **Coney:** a new `src/physics/shapes.{h,cpp}` (posed shapes as values, with a pose function per type that takes
   the owner's transform and bone transform as inputs); `src/human/human.h` capsule height moves here;
   `world_objects/object_bodies.*` builds its box and sphere from it.
@@ -1806,7 +1806,7 @@ rest is whatever the constructor or the slot's last user left. Confirmed (code) 
   offsets, radii and lengths come from the tables at `0x00512810` (segment offsets, 16 bytes each), `0x005128b0`
   (segment radii), `0x005128e0` (segment lengths), `0x00512860` (sphere offsets) and `0x005128c8` (sphere radii),
   index *k* of each table going with the *k*-th bone of its list; the values are on
-  [Combat](combat.md#moving-strikes). Flags: the shape head's `0x1`, plus `0x2`, plus `0x4` for bone 3 and bone 6
+  [Combat](combat/index.md#moving-strikes). Flags: the shape head's `0x1`, plus `0x2`, plus `0x4` for bone 3 and bone 6
   (`0x7`; the others `0x3`). The capsule's flags are `0x1`.
 - **The 60 weapon strike spheres** (`+0xf7b0`) are switched off and get `0x2` (flags `0x2`). The 30 push spheres
   (`+0x4db60`) are plain spheres (bone −1, offset 0, flags `0x1`).
@@ -2032,7 +2032,7 @@ inside the human, not across the distance moved (inferred from the pose rule, [U
 ### PhysBody_SetShapeEnabled {#u10-enable}
 
 `0x003428d0 (body, id, on)`, through `Human_SetStrikeShape` (`0x0021c030`) from the clip events
-([Combat](combat.md#moving-strikes)).
+([Combat](combat/index.md#moving-strikes)).
 
 1. **Always first:** `StopIgnoring(null)` on the body (vtable `+0x38` / `+0x3c`): the human body clears `+0xd4` and
    frees its whole ignore list. So every strike-on or strike-off event, even one that changes nothing below, empties
@@ -2053,7 +2053,7 @@ both (confirmed (code) by the arithmetic; whether any clip has both in one windo
 
 `PhysicsHumanBody_AddStrikeSphere(body, sphere)` (`0x00342158`) pushes the sphere at the **head** of `+0xc4`
 (sphere `+0x00` = old head). `PhysicsHumanBody_ClearStrikeSpheres` (`0x00342168`) pops them one by one: enable(off),
-next 0, head = the following one. Who builds them is on [Combat](combat.md#moving-strikes)
+next 0, head = the following one. Who builds them is on [Combat](combat/index.md#moving-strikes)
 (`Human_BuildWeaponStrikeSpheres` `0x00247be8`, the timer `+0xd0` = event word + 1).
 
 ### The push sphere {#u10-push-sphere}
@@ -2128,7 +2128,7 @@ per-shape sweep
        `+0x10c` with its owner nonzero): for each bone shape with `0x1` and `0x2`, its move, against: a non-human's
        GetShapes(2, 4, own owner) chain; a human's bone shapes with flag `0x4`, or **his capsule alone** when
        `Anim_HitsWithCapsule(owner, Human_GetAnimId(owner))` (`0x00101b88`, clip flag `0x10000`,
-       [Combat](combat.md#capsule-strike)). The first nonzero sweep: contact as Unit 5, `Strike_Contact`, then
+       [Combat](combat/index.md#capsule-strike)). The first nonzero sweep: contact as Unit 5, `Strike_Contact`, then
        `Ignore(its owner)` when it has one; the strike shapes stop for **this candidate**.
     5. Go on with the **next candidate**: a hit does not end the test. Each body can be struck once per update (and
        once per window, by the ignore list), but one swing can strike several bodies in the same update.

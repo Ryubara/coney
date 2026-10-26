@@ -50,14 +50,50 @@ they mean is on [the page](../progress/index.md#the-picture). Where the fidelity
 `progress_grid.load_audited`: it returns no addresses until the audit stores a machine-readable result on `main`, and
 the picture then draws the Audited state.
 
+The [home page](../index.md) shows the same picture in a compact form, filled in at its `<!-- progress:home -->`
+marker by the same build (`progress_site.home_section`). The squares and their order are the progress page's, but
+the five states fold into three (`progress_grid.HOME_STATE_OF`): Reimplemented (audited included), Understood, and
+Not yet started (researched and untouched), coloured by the home page's own classes `cg-h-<state>` and palette
+(`HOME_PALETTE`, repeated under `.progress-home` in `progress-grid.css`; a test holds the two equal). Reimplemented is a
+darker green; the two greys read by lightness on both themes: **Understood is the softer grey and Not yet started the
+stronger one** (light page: `#d0d6dc` and `#b0b8c2`; dark page: `#4a5160` and `#9da5b0`), and a test keeps every pair
+of the three at least 8 L* apart and each one visible against the page (green 3:1, the greys 1.4:1). There are no
+block labels: the blocks flow on from one another, `HOME_COLS` squares to a row (`progress_picture.flow`; each
+block's `data-o` is where it starts), so the picture is some 50 rows high. It reads the same `progress/functions.json`
+with the same script, so hovering or tapping a square shows the progress page's tooltip, Coney file included, with
+the swatch in the home colour, and **the state named as the legend names it**: `HOME_LABELS` is the one table, and
+the section hands it to the script as `data-labels` (`progress_grid.home_state_labels`, by state code), so a
+researched or untouched square says "Not yet started", an audited one "Reimplemented". The block text shown before the
+table loads (`picture_blocks(..., home=True)`) counts the same three states. The progress page keeps its five names.
+`progress check` refuses a home page without its single marker, and `progress render` writes the filled page as
+`index.md`.
+
+**The README's picture.** The README on GitHub cannot run the home page's script, and `main` takes no direct pushes,
+so the picture there is not committed: the docs build draws it (`progress_png.py`, Pillow) and publishes it with the
+site as `progress/readme-light.png` and `progress/readme-dark.png`, and the README embeds them by the site's address
+inside a `<picture>` (GitHub shows the dark file on a dark page) that links to the home page. It is the home page's
+squares in the same order, states and colours (`HOME_STATE_OF`, `HOME_PALETTE` and `HOME_LABELS` are read, never
+repeated), `COLS` (170) to a row so that it fits a README column; the headline (`progress_grid.home_headline`, which
+the home section prints too, with "counted by function" added), the counts and the legend are drawn into the picture,
+so it never needs the README text to change. Its percentage counts functions, while the badges beside it weigh each by
+the size of its code, so the README says in one sentence why they differ. The file is drawn twice as large as its 880 px
+display width (`SCALE`) for dense screens, stays under 60 KB, and holds no date, so the same data is the same
+bytes. The site's address is in the README only (the one file allowed to hold it), and a test holds the README's
+file names equal to `progress_png.FILES`. It follows `main` when the next docs build is published: GitHub's image
+proxy may keep showing the old picture for a few minutes. The docs build therefore needs Pillow, which
+`requirements-docs.txt` pins to the version `python/uv.lock` locks (a test holds the two equal). To see the files
+without a build, `progress render` writes them with the other pictures.
+
 ```sh
 uv run --project python coney-tools progress render <folder> [--no-history]
 ```
 
 Writes what the build publishes to `<folder>`, to look at it without a docs build: the progress and history pages as
-the build fills them (`progress/index.md`, `progress/history.md`), the badge files (`progress/badges/*.json`,
+the build fills them (`progress/index.md`, `progress/history.md`) and the home page with its picture (`index.md`), the
+badge files (`progress/badges/*.json`,
 shields.io endpoint JSON that the README's badges read), the pictures (`progress/progress.svg`,
-`progress-size.svg`, `missions.svg`, `history.svg`), the raw numbers (`progress/progress.json`), the per-function
+`progress-size.svg`, `missions.svg`, `history.svg`, and the README's `readme-light.png` and `readme-dark.png`),
+the raw numbers (`progress/progress.json`), the per-function
 table the tooltips read (`progress/functions.json`) and the history (`progress/history.json`). It rebuilds the daily
 history from git, a few seconds a day; `--no-history` keeps it to today's point. It refuses to write while the inputs
 disagree, as `check` finds.

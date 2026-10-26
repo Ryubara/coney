@@ -28,6 +28,7 @@
 #include "ai/scripted_story.h"
 #include "animation/anim_clip.h"
 #include "combat/combat_tuning.h"
+#include "combat/meters.h"
 #include "core/error.h"
 #include "gui/global_strings.h"
 #include "human/human.h"
@@ -173,8 +174,12 @@ TEST_CASE("the getters answer for a human and their defaults for a handle that n
     level.call("HuSetArrested", {Value(2.0), Value(1.0)});
     CHECK(level.call("HuIsArrested", {Value(2.0)}).number() == 1.0);
     CHECK(level.call("HuIsAlive", {Value(2.0)}).isNil());
+    // Expected: ../references/bindings/character.md#husethealthpercent, confirmed (runtime): a quarter comes out
+    // one point under, as the PS2's products round toward zero, and the getter reads back what was set.
     level.call("HuSetHealthPercent", {Value(2.0), Value(25.0)});
-    CHECK(level.call("HuGetHealthPercent", {Value(2.0)}).number() == 25.0);
+    const coney::combat::Health& health = thug.human().fighter().health();
+    CHECK(health.value() == health.maximum() / 4 - 1);
+    CHECK(level.call("HuGetHealthPercent", {Value(2.0)}).number() == thug.human().healthPercent());
     // No such human.
     CHECK(level.call("HuIsAlive", {Value(99.0)}).isNil());
     CHECK(level.call("HuGetHealthPercent", {Value(99.0)}).number() == 0.0);
@@ -425,7 +430,7 @@ TEST_CASE("the rage handler runs when a human's meter fills, with its handle and
     level.scripted->humanHost().runRageHandlers();
     level.scripted->humanHost().runRageHandlers();
     REQUIRE(level.rageCalls.size() == 1);
-    // (human, true): Lua 4's true is 1 (docs/research/combat-rage.md#rage).
+    // (human, true): Lua 4's true is 1 (docs/research/combat-rage.md#rage-decay).
     CHECK(level.rageCalls[0] == std::vector<double>{1.0, 1.0});
 }
 

@@ -190,9 +190,11 @@ void ScriptedHumans::setConscious(double human, bool conscious) {
             return;
         }
         out = !conscious;
-        // `Human_KnockOut` takes BLOCKHUMANS away; waking (`Human_WakeUp`) does not give it back.
+        // `Human_KnockOut` takes BLOCKHUMANS away and turns a player's slow motion off; waking (`Human_WakeUp`) does
+        // not give it back.
         if (!conscious) {
             brain.human().loseBlockHumans();
+            brain.human().endSlowMotion();
         }
         brain.setDead(!conscious);
     });
@@ -233,7 +235,9 @@ void ScriptedHumans::teleportNear(double human, double near) {
         const float right = beside.heading() - (std::numbers::pi_v<float> / 2.0F);
         const anim::Vec3 at{beside.position().x - (std::sin(right) * gap),
                             beside.position().y + (std::cos(right) * gap), beside.position().z};
-        brain.human().spawn(nullptr, at, brain.human().heading() * 180.0F / std::numbers::pi_v<float>);
+        brain.human().place(m_scripted->placeGround(brain.handle()), at,
+                            brain.human().heading() * 180.0F / std::numbers::pi_v<float>);
+        brain.placed();
     });
 }
 

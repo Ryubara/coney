@@ -26,6 +26,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from coney_tools import stamps
+from coney_tools.build_run import TestScan
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Stamps
 from coney_tools.unit import Unit
@@ -48,8 +49,8 @@ class BuildOutcome:
 
     built: bool  # configure and build succeeded
     ok: bool  # the whole run succeeded: every selected test passed
-    failed: tuple[str, ...]  # names of the failed tests
-    failed_truncated: bool  # the list ended in `... and N more`: a name missing from it is not known to pass
+    failed: tuple[str, ...]  # names of the failed tests, as ctest's own list in the build's log gives them
+    failed_known: bool  # `failed` is whole: the run was ok, or the log holds every failure ctest counted
     no_tests: bool  # the filter matched no test
     queued: bool  # the build gave up waiting for a slot
     output: str  # the summary the build printed
@@ -64,21 +65,35 @@ class BuildOutcome:
 Runner = Callable[[Path, str, tuple[str, ...]], BuildOutcome]
 
 
+def _ctest_failures(text: str) -> tuple[str, ...] | None:
+    """The failed tests' names from the build's own log, or None when they cannot be told whole. The summary's
+    `failed: a, b` line is no source: it joins names with ", " (a name may hold one) and the build cuts it at a width in
+    the middle of a name; the log holds ctest's `N - name (Failed)` list, one name a line. A log that is missing, or
+    whose list holds fewer names than ctest counted, leaves every name unknown."""
+    found = re.search(r"^log: (.+)$", text, re.MULTILINE)
+    if found is None:
+        return None
+    try:
+        lines = Path(found.group(1).strip()).read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return None
+    scan = TestScan()
+    for line in lines:
+        scan.feed(line)
+    return tuple(scan.failed) if scan.failed_count and len(scan.failed) == scan.failed_count else None
+
+
 def parse_build_output(text: str, exit_code: int) -> BuildOutcome:
-    """Read the summary lines `coney-tools build` prints (`result: ok`, `result: FAILED at test: a, b`, ...)."""
+    """Read the summary lines `coney-tools build` prints (`result: ok`, `result: FAILED at test: a`, ...). Which tests
+    failed is read from the log the summary names (`_ctest_failures`), never from its comma-joined `failed:` line."""
     failed_at = re.search(r"^result: FAILED at (\w+)", text, re.MULTILINE)
-    names: list[str] = []
-    truncated = False
-    for line in text.splitlines():
-        if line.startswith("  failed: "):
-            parts = [n.strip() for n in line[len("  failed: ") :].split(", ") if n.strip()]
-            truncated = any(part.startswith("...") for part in parts)
-            names = [part for part in parts if not part.startswith("...")]
+    names = _ctest_failures(text)
+    ok = exit_code == 0 and bool(re.search(r"^result: ok", text, re.MULTILINE))
     return BuildOutcome(
         built=exit_code != EXIT_QUEUED and (failed_at is None or failed_at.group(1) == "test"),
-        ok=exit_code == 0 and bool(re.search(r"^result: ok", text, re.MULTILINE)),
-        failed=tuple(names),
-        failed_truncated=truncated,
+        ok=ok,
+        failed=names or (),
+        failed_known=ok or names is not None,
         no_tests="no tests match" in text,
         queued=exit_code == EXIT_QUEUED or "result: QUEUED" in text,
         output=text,
@@ -210,16 +225,15 @@ def _original_ref(root: Path) -> tuple[str, bool]:
 def _states(
     root: Path, preset: str, runner: Runner, names: tuple[str, ...], outcome: BuildOutcome, commit: str, logs: list[str]
 ) -> dict[str, str]:
-    """Each name's state at the checked-out commit, "failed" or "passed". A name the run's own words settle is settled;
-    one that a cut-off failed list leaves unknown (or a run that failed without saying which) is run alone."""
+    """Each name's state at the checked-out commit, "failed" or "passed". A name the run's own words settle is settled:
+    a run that was ok, or one whose ctest failure list was read whole. One a run leaves unknown (no log to read, or a
+    list shorter than ctest's count) is run alone, and a name alone that did not pass is failed."""
     states: dict[str, str] = {}
     for name in names:
-        if name in outcome.failed:
-            states[name] = "failed"
-        elif outcome.ok:
+        if outcome.ok:
             states[name] = "passed"
-        elif outcome.failed and not outcome.failed_truncated:
-            states[name] = "passed"  # a whole list of failures, and not this name among them
+        elif outcome.failed_known:
+            states[name] = "failed" if name in outcome.failed else "passed"
         elif len(names) == 1:
             states[name] = "failed"  # alone already, and it did not pass
         else:

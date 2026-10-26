@@ -410,7 +410,7 @@ damages comes from the zone tables, never from the part's own box. Confirmed (co
 | 1 | a world object someone holds (a melee weapon) | 0.34 | 3.0 | the contact point, the body or cabin table by the box struck | only the parts on the holder's side; each part once per swing |
 | 0 | a world object nobody holds (thrown, rolling) | 0.34 | none | the contact point, as kind 1; the body table drops the windows (`0xffd57fff`), the cabin table the doors (`0xffeabfff`) | an intact window shields its door |
 
-- **A human's strike** reaches the car through the [strike test](combat.md#moving-strikes): `Human_TestStrikes`
+- **A human's strike** reaches the car through the [strike test](combat/index.md#moving-strikes): `Human_TestStrikes`
   (`0x0033f110`) tests the clip's enabled strike shapes against every body near the human, the car's body included
   (an object's body is tested against its own shapes, here the two boxes), and the first overlap calls
   `Strike_Contact` (`0x0021b290`), which sees a car (`Car_FromObject`, type word `0x100000`) and calls `Car_OnHit`.

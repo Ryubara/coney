@@ -155,7 +155,7 @@ axis), so a full diagonal runs as on a PS2; the table above is unchanged. The st
 **0.9** (`kStickRim`, at most 1), so a stick at its rim reads as a full push. A modern stick pushed straight to its
 rim often reports 0.92-0.97 of the travel, bytes 249-252, which the table turns into 0.94-0.97: the moves that need
 more than 0.95 then came only now and then. `level99`'s lesson 7 needs the snap attacks (the stick past 0.95 to a
-side, [Attacks](combat.md#attacks)), and with a gamepad they came out as `S1` (12), so the lesson never went on. A
+side, [Attacks](combat/index.md#attacks)), and with a gamepad they came out as `S1` (12), so the lesson never went on. A
 DualShock 2's output saturates before its rim (inferred, as for the diagonals; PCSX2's sensitivity of 1.33 does the
 same), so the original's players reached 0.95. A Coney choice; `tests/platform/disc_level99_snaps_test.cpp` makes
 the snaps through this mapping with the stick at 0.93. Open: measuring a real DualShock 2's diagonal bytes (through

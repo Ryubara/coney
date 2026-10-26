@@ -2,7 +2,8 @@
 """What the docs build publishes for the progress pictures: the page's HTML sections and the files of the site.
 
 `build_site` is the one call the MkDocs hook makes (mkdocs_hooks.py). It returns the text that fills the progress
-page's marker (the function picture, the mission picture), the history page's block, and the files to add to the
+page's marker (the function picture, the mission picture), the history page's block, the home page's compact picture
+(the same squares in three states, `home_section`), and the files to add to the
 site: the standalone SVGs (`progress/progress.svg`, `progress-size.svg`, `missions.svg`, `history.svg`), the raw
 numbers (`progress/progress.json`), the per-function table the page's script reads for tooltips
 (`progress/functions.json`) and the history (`progress/history.json`). Nothing is committed.
@@ -20,7 +21,7 @@ from dataclasses import dataclass, field
 from html import escape
 from pathlib import Path
 
-from coney_tools import missions, progress_grid, progress_history, progress_picture, progress_render
+from coney_tools import missions, progress_grid, progress_history, progress_picture, progress_png, progress_render
 from coney_tools.config import ConfigError
 from coney_tools.progress import Progress
 
@@ -42,9 +43,10 @@ class Site:
     """The generated parts of the progress pages and the files that go into the site, by path."""
 
     grid_html: str = ""
+    home_html: str = ""
     missions_html: str = ""
     history_html: str = ""
-    files: dict[str, str] = field(default_factory=dict)
+    files: dict[str, str | bytes] = field(default_factory=dict)
 
 
 # --- the mission picture ----------------------------------------------------------------------------------------------
@@ -173,6 +175,40 @@ def grid_section(grid: progress_grid.Grid, repo_url: str | None) -> str:
     )
 
 
+# --- the home page's picture -----------------------------------------------------------------------------------------
+
+
+def home_section(grid: progress_grid.Grid, repo_url: str | None) -> str:
+    """The home page's block: one line of numbers, the compact picture and a legend of the three home states.
+
+    It is the progress page's picture in miniature and carries the same `data-functions` table (the home page is the
+    site's root, so the table is one folder down) and tooltip element, so progress-grid.js gives its squares the
+    progress page's tooltips. Only the stylesheet's `progress-home` rules (the home palette, the size) differ.
+    """
+    counts = progress_grid.home_counts(grid)
+    headline = progress_grid.home_headline(grid)
+    attrs = f'data-functions="{SITE_DIR}/functions.json"'
+    # The tooltip names each square's state as the legend below does (HOME_LABELS), not by the progress page's five.
+    attrs += f" data-labels='{json.dumps(progress_grid.home_state_labels(), separators=(',', ':'))}'"
+    if repo_url:
+        attrs += f' data-repo="{escape(repo_url.rstrip("/"), quote=True)}"'
+    items = "".join(
+        f'<li><span class="cg-key {progress_grid.HOME_CLASSES[s]}"></span>'
+        f"<strong>{progress_grid.HOME_LABELS[s]}</strong> {counts[s]:,}</li>"
+        for s in progress_grid.HOME_STATES
+    )
+    return "\n".join(
+        [
+            f'<div class="progress-grid progress-functions progress-home" {attrs}>',
+            f'<p class="cg-headline"><strong>{headline[0]}</strong>: {headline[1]}</p>',
+            progress_grid.render_home_svg(grid),
+            f'<ul class="cg-legend cg-legend-inline">{items}</ul>',
+            '<div class="cg-tip" role="status" aria-live="polite" hidden></div>',
+            "</div>",
+        ]
+    )
+
+
 # --- the whole site ---------------------------------------------------------------------------------------------------
 
 
@@ -205,12 +241,16 @@ def build_site(
     grid = progress_grid.build_grid(state, root, audited)
     if grid is not None:
         site.grid_html = grid_section(grid, repo_url)
+        site.home_html = home_section(grid, repo_url)
         site.files[f"{SITE_DIR}/progress.svg"] = progress_grid.render_functions_svg(
             grid, False, uid="pf", standalone=True
         )
         site.files[f"{SITE_DIR}/progress-size.svg"] = progress_grid.render_functions_svg(
             grid, True, uid="ps", standalone=True
         )
+        # The README's pictures (light and dark): the README embeds them by the site's address.
+        for theme, name in progress_png.FILES.items():
+            site.files[f"{SITE_DIR}/{name}"] = progress_png.render_home_png(grid, theme)
         summary = progress_grid.summary(grid)
         site.files[f"{SITE_DIR}/functions.json"] = _json(progress_grid.functions_table(grid))
     else:

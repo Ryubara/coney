@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Conclave: Coney's coordination view. Wiring only: which event calls which file.
 //
-// Read-only. It draws what `coney-tools conclave snapshot` prints and hides the generic agent types. It wakes nobody,
-// guards no stop and adds no tool: session health (the context window, the prompt cache, /clear, HANDOFF, the idle
-// wake) stays with Tether, and the one classic hook below only reads the session's agent type. Nothing here waits on
-// anything: a session start, Tether's included, never pauses for Conclave (test_conclave_mod.py holds the boundary).
+// It draws what `coney-tools conclave snapshot` prints, hides the generic agent types and, in a coordinator's session,
+// watches Coney's own events: a toast and one wake for each event the first time it is seen, and a stop guard on pull
+// request problems nobody holds (docs/guides/conclave.md#watchers). It never wakes an idle session and adds no tool:
+// session health (the context window, the prompt cache, /clear, HANDOFF, the idle wake) stays with Tether, and the one
+// classic hook below that reads the session's start only reads its agent type. Nothing here waits on anything: a session
+// start, Tether's included, never pauses for Conclave (test_conclave_mod.py holds the boundary).
 import type { Register } from 'claude-code'
 
 import { drawBand, openPane } from '../src/band'
@@ -14,6 +16,7 @@ import { drawPane } from '../src/pane'
 import { startPolling } from '../src/snapshot'
 import { setRole } from '../src/state'
 import { showStatus } from '../src/status'
+import { guardReason, watchEvents } from '../src/watch'
 
 export const register: Register = on => {
   // The session's folder, for the status line (a module variable resets on a reload, and session.start sets it again).
@@ -26,7 +29,11 @@ export const register: Register = on => {
       // The list this checkout saved, applied from the first turn; with none, nothing is hidden this session.
       await applySavedOffer($, false)
       // The first read runs in the background: the session never waits for it, and its list serves the next session.
-      startPolling($, () => void showStatus($, cwd).catch(() => undefined))
+      // After each read the status line is redrawn and the watchers look at the events it brought.
+      startPolling($, (state, at) => {
+        void showStatus($, cwd).catch(() => undefined)
+        void watchEvents($, state, at).catch(() => undefined)
+      })
       // Unasked, the pane seats only where the terminal is wide enough; below that it waits for /conclave.
       if (e.isInteractive) $.ui.open({ id: PANE, title: 'Conclave' }).catch(() => undefined)
     } catch {
@@ -48,6 +55,15 @@ export const register: Register = on => {
       // The status line is a convenience; the answer beneath (Tether's HANDOFF context) is returned whole.
     }
     return result
+  }).catch(($, e, next) => next(e))
+
+  // The stop guard: the end of a coordinator's turn is held back, at most a few times in a row, while an open pull request
+  // has a problem nobody holds. The answer beneath (Tether's own guard for stopped agents) stays whole: a block already
+  // set there is kept as it is, and the guard then neither looks nor counts.
+  on('classic.Stop', async ($, e, next) => {
+    const r = await next(e)
+    const reason = r.block === undefined ? await guardReason($) : null
+    return reason === null ? r : { ...r, block: reason }
   }).catch(($, e, next) => next(e))
 
   on('command.run', { command: 'conclave' }, async $ => {

@@ -147,6 +147,8 @@ class Human final : public Holdable {
     /// After this many airborne updates with the body unable to move as long, the human is put back on its last
     /// ground.
     static constexpr std::uint32_t kStuckUpdates = 60;
+    /// A placement's drop: the ray straight down from the placed point is this long (`0x0023d440`).
+    static constexpr float kPlaceDrop = 0.5F;
     /// The landing test's segment starts this far above the feet. **Coney's choice** for the body's upper point
     /// (`+0x4e8` − 0.16 × scale, `+0x4e8` not researched).
     static constexpr float kLandingTestHeight = 1.0F;
@@ -180,11 +182,43 @@ class Human final : public Holdable {
     void changeCharacter(const characters::AnimSet& anims, const combat::AnimRangeList* ranges,
                          std::span<const std::int16_t> classDamage, int damagePercent, const FighterProfile& profile);
 
-    /// Places the human at `position` (the feet, game axes) facing `headingDegrees` (0 faces +y), snapped to the
-    /// ground of `mesh` (may be null: no snap) with a 2.5 m ray from 1 m above; 0.01 above the hit. Stamina is full
-    /// again and anything in progress (a jump, a climb) is dropped.
+    /// Stands a human just made (or made another character) at `position` (the feet, game axes) facing
+    /// `headingDegrees` (0 faces +y), snapped to the ground of `mesh` (may be null: no snap) with a 2.5 m ray from 1 m
+    /// above; 0.01 above the hit. Everything starts afresh: full health, meters and stamina, nothing in progress (a
+    /// jump, a climb, a pair), the idle. Only a creation does this; moving a human that exists is place(). Human_Init
+    /// makes no snap while game mode 0xb (mission complete) or 0x11 (the Rumble menus) is on top; Coney makes no human
+    /// in either (its Rumble menus draw their fighters without one), so every spawn snaps.
     /// @orig 0x00218008 Human_Init (unknown)
     void spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float headingDegrees);
+
+    /// Moves a human that exists (a script's teleport, a scene's placement): any pair it is in is broken (its partner
+    /// plays its reaction), the feet go to `position` lowered onto what a 0.5 m ray straight down from it hits (no ray
+    /// with `ground` null, as for a human in a scene), facing `headingDegrees`, the stick's last angle turns to the
+    /// new facing with no push, and the new point is its last ground. None of its meters, its stun or its clip is
+    /// written: the health and its maximum, the stamina, the rage and power meters, a stun and the clip all stay
+    /// (docs/research/teleports.md#placement). The brain's part (its front move popped) is ai::Brain::placed(), which
+    /// the callers make. **Coney's choice**: a climb in progress ends (teleports.md#q-placement-rest).
+    /// @orig 0x0023d440 Human_SetTransform (unknown)
+    void place(const raycast::CollisionMesh* ground, anim::Vec3 position, float headingDegrees);
+
+    /// The motion reset `TeleportToFlag` makes after its placement: the move velocity across the ground is zero
+    /// (`Human_SetMoveVelocity` with the zero vector) and the attack's steer is cleared; the clip, the vertical speed
+    /// and the meters stay (docs/research/teleports.md#motion-reset).
+    /// @orig 0x0023f158 Human_ResetMotion (unknown)
+    void resetMotion();
+
+    /// Stands the human as after a walk, where it is: idle, out of any stance, attack, stun, pair or traversal, its
+    /// health and its maximum, stamina and meters kept. For Coney's own placements that stand for a walk (the debug
+    /// menus' teleport, `--start`) and for the hand-over's new player 1 (human::makePlayerOf()).
+    /// @coney-only the walk stand-in of the test aids and the hand-over's stand-in; the original has no such call
+    void settle();
+
+    /// Puts a human that fell out of the world back at `position` facing `headingDegrees`: standing, still, snapped
+    /// to `ground` as a creation snaps (a 2.5 m ray from 1 m above, 0.01 above the hit, so a start point at or a little
+    /// under the surface is found), its health and meters kept. The original has no put-back: the fall fails the
+    /// mission (docs/research/teleports.md#out-of-world).
+    /// @coney-only a fallen player put back, where the original fails the mission
+    void putBack(const raycast::CollisionMesh* ground, anim::Vec3 position, float headingDegrees);
 
     /// One update of 1/30 s for this human alone: `input` written into its record, then animate(), updateState() and
     /// updateActions() in turn. human::Humans runs the same passes across every human in the original's order.
@@ -218,12 +252,15 @@ class Human final : public Holdable {
     /// Which of its strike shapes its clips' events have switched on (human/strike_shapes.h), and what they struck.
     [[nodiscard]] const StrikeShapes& strikeShapes() const { return m_strikes; }
     [[nodiscard]] StrikeShapes& strikeShapes() { return m_strikes; }
+    /// The anim id whose clip's events last switched a strike shape: the shapes on belong to it.
+    [[nodiscard]] std::uint32_t strikeAnim() const { return m_strikeAnim; }
     /// Its strike shapes posed in the world now: the ones switched on (and the capsule while its strike flag is on),
     /// or with `targets` the spine and the head, which a strike is tested against (flag `0x4`). Empty without a
     /// skeleton.
     [[nodiscard]] std::vector<PosedShape> posedStrikeShapes(bool targets) const;
     /// The capsule a capsule strike (clip flag `0x10000`) is tested against: upright from the feet to the head bone's
-    /// height + 0.2, never under 0.2, of radius 0.35, all times the scale (docs/research/combat.md#capsule-strike).
+    /// height + 0.2, never under 0.2, of radius 0.35, all times the scale
+    /// (docs/research/combat/index.md#capsule-strike).
     /// **Coney choice**: the standing height in every state.
     /// @orig 0x00343518 PhysicsCapsule_Pose (unknown)
     [[nodiscard]] PosedShape struckCapsule() const;
@@ -261,6 +298,9 @@ class Human final : public Holdable {
     [[nodiscard]] bool airborne() const { return m_airborne; }
     /// The human fell more than kOutOfWorldDepth below the mesh; it stays put until spawned again.
     [[nodiscard]] bool outOfWorld() const { return m_outOfWorld; }
+    /// Where it last stood on the ground (a creation's or a placement's point, or its feet on the last update it
+    /// stood): where a human stuck in the air for two seconds lands.
+    [[nodiscard]] anim::Vec3 lastGround() const { return m_lastGround; }
     /// With a skeleton and in the world, its spine and head shapes are posed each update for the strike test.
     [[nodiscard]] bool struckByShapes() const override { return m_skeleton != nullptr && !m_outOfWorld; }
     /// The head (bone 6) as posed now, in the world; the position without a skeleton.
@@ -306,6 +346,20 @@ class Human final : public Holdable {
     void setIdleClip(std::string_view name, const anim::AnimClip* clip) {
         m_idleClipName = std::string(name);
         m_animator.setIdleClip(clip);
+    }
+    /// `Human_PushOverlayClip`: `clip` played as anim `animId` over what plays, at the rate its Anim Range List flags
+    /// give it (characters::AnimSet::rate(): 0.75 for a clip with none), at full weight from its first update (the
+    /// original passes 0 for both of the task's fades), with `held` set while it plays
+    /// (docs/research/formats/animation.md#playback-rate). **Coney stand-ins**: the original ends a clip on the update
+    /// its frame would reach its count (ceil((F - 0.5) / rate), 53 for the flash's 40 frames, as measured), Coney's
+    /// clip tasks when the time reaches the length (54), so this clip hands over a step early, as clip 34 does, until
+    /// the clip tasks take the original's rule (formats/animation.md#clip-end); and the original pushes a layer over
+    /// the stack, so what played before (a held block, say) shows again when the clip ends, where Coney's clip hands
+    /// over to the idle and the controller chooses again (what shows on the update after 665 is not measured).
+    /// @orig 0x0025ade8 Human_PushOverlayClip (unknown)
+    /// @orig 0x00106240 AnimTask5_Construct (unknown)
+    void pushOverlayClip(const anim::AnimClip& clip, std::uint32_t animId, HeldFlags held) {
+        m_animator.playScripted(clip, animId, m_animator.anims().rate(animId), 0.0F, held, true);
     }
     /// A scripted clip played from outside the dispatcher (HumanAnimator::playScripted()).
     void playScripted(const anim::AnimClip& clip, std::uint32_t animId, float rate, float fade, HeldFlags held) {
@@ -370,6 +424,8 @@ class Human final : public Holdable {
     [[nodiscard]] const Speeds& speeds() const { return m_animator.speeds(); }
     /// Stamina (record `+0x14a`).
     [[nodiscard]] const Stamina& stamina() const { return m_stamina; }
+    /// Fills the stamina to its maximum (a human made a player, human::takeMetersOf()).
+    void fillStamina() { m_stamina.fill(); }
     /// Whether a sprint is asked for (state flag `0x1000000`): L2 held with stamina left.
     [[nodiscard]] bool sprinting() const { return m_sprinting; }
     /// The body's lean, radians (`+0x29c`), positive leaning left.
@@ -383,6 +439,24 @@ class Human final : public Holdable {
     [[nodiscard]] bool stickHeld() const;
     /// The climb in progress, if any.
     [[nodiscard]] const std::optional<ClimbProbe>& climb() const { return m_climbProbe; }
+    /// Climbing over: the climb's middle clip (for the tall and the short fence 438 and 444 standing, 441 and 447
+    /// running), while record `+0x08` holds bit `0x40` (fences do not block the body); not its first or last clip.
+    /// @orig 0x00223c10 Human_HasHeld40 (unknown)
+    [[nodiscard]] bool climbingOver() const { return m_climbRun.has_value() && m_climbRun->over; }
+    /// `Human_IsDownOrDead`'s states `0x180050000` as Coney models them: no health left (dead, dying), knocked out or
+    /// wounded (`0x10000`). Knocked down alive (`0x80000`) and cuffed (`0x20000`) are not among them. The narrow
+    /// reading: ai::downOrDead() (src/ai/gangs.h) is Coney's wider one, which also counts a human knocked down alive.
+    /// @orig 0x00227e60 Human_IsDownOrDead (unknown)
+    [[nodiscard]] bool downOrDead() const {
+        return m_fighter.health().depleted() || m_script.knockedOut || m_script.wounded;
+    }
+    /// Whether `Player_UseItemCommand` refuses the flash's press outright: down or dead, cuffed, airborne
+    /// (`0x1c00000000`) or climbing over. A knockdown, a stun, a hit reaction or a climb's first or last clip is none
+    /// of these: there the flash is used at once (docs/research/combat-rage.md#flash-mid-move).
+    /// @orig 0x002843f8 Player_UseItemCommand (unknown)
+    [[nodiscard]] bool refusesFlash() const {
+        return downOrDead() || m_script.arrested || airborne() || climbingOver();
+    }
     /// The body's scale (`+0x65c`).
     [[nodiscard]] float scale() const { return m_scale; }
     [[nodiscard]] float bodyScale() const override { return m_scale; }
@@ -444,9 +518,18 @@ class Human final : public Holdable {
     /// The slow-motion event (type `0x2e` on, `0x2f` off) the clip playing passed in the last update, if any; the
     /// later of the two when both did (docs/research/camera.md#slow-motion).
     [[nodiscard]] std::optional<std::uint16_t> slowMotionEvent() const { return m_slowMotionEvent; }
-    /// The anim whose action event (type `0x41`, which `Anim_FireEvents` sends as message `0xc1`) the clip playing
-    /// passed in the last update, if any: for 665 `SPECIAL_FLASH` the flash is used, for 666 the door ahead opens and
-    /// for 668 the dealer's goal is served (docs/research/combat-rage.md#rage).
+    /// Knocked out (its health run out, or `HuSetConscious(false)`): its player's slow motion goes off, as a clip's off
+    /// event does; takeSlowMotionEnd() hands it to the player (docs/research/slow-motion.md#off).
+    /// @orig 0x00230328 Human_KnockOut (unknown)
+    void endSlowMotion() { m_slowMotionEnd = true; }
+    /// Whether endSlowMotion() was called since the last call.
+    [[nodiscard]] bool takeSlowMotionEnd() { return std::exchange(m_slowMotionEnd, false); }
+    /// Whether it left normal mode (setNormalMode(), resetForJoin()) since the last call, which turns every player's
+    /// slow motion off (camera::SlowMotion::reset(), docs/research/slow-motion.md#off).
+    [[nodiscard]] bool takeSlowMotionReset() { return std::exchange(m_slowMotionReset, false); }
+    /// The anim whose action event (type `0x41`, which `Anim_FireFrameEvents` 0x00101dd8 sends as message `0xc1`) the
+    /// clip playing passed in the last update, if any: for 665 `SPECIAL_FLASH` the flash is used, for 666 the door
+    /// ahead opens and for 668 the dealer's goal is served (docs/research/combat-rage.md#flash).
     [[nodiscard]] std::optional<std::uint32_t> actionEvent() const { return m_actionEvent; }
     /// Sets the characters' step its next updates advance by: kStepSeconds, or less in slow motion
     /// (docs/research/camera.md#slow-motion; Humans::update() sets it for every human).
@@ -486,7 +569,17 @@ class Human final : public Holdable {
         return m_fighter.startTandemVictim(start, m_animator, m_script.arrested, m_script.knockedOut);
     }
     [[nodiscard]] std::optional<int> takeTandemRequest() override { return m_fighter.takeTandemRequest(); }
-    /// Moves it there and stops it (its velocity goes).
+    /// Moves it there and stops it (its velocity goes): the attached hold's placement of the held human at the
+    /// transform the grabber gives (fighter_grab.cpp), not a script's placement (place() above). It ports the placing
+    /// part of `Human_MoveAttached` only. **Coney stand-in**: the original also sweeps the held body toward the point
+    /// against the others (`PhysicsBody_Sweep`, up to three tries) and hands the holder's velocity on; Coney's held
+    /// human has its movement held and moves with no velocity of its own, and what the sweep changes (a grab against a
+    /// wall) is not measured (docs/research/combat-grabs.md#grab-posing). The locked camera's kept-in-view push
+    /// (gameplay_mode.cpp) borrows it to move a human: `LockedCam_KeepHumansInView` (`0x00135ca8`) sets the human's
+    /// transform through its slot `+0x6c`, which for a human is `Human_SetTransform`, with the rotation kept. **Coney
+    /// stand-in** there: the mover does none of that placement's pair break, 0.5 m drop or front-move pop (place()
+    /// above), and the stop of the velocity is Coney's.
+    /// @orig 0x00244e78 Human_MoveAttached (unknown)
     void place(anim::Vec3 position, float headingRadians) override;
     /// Thrown: its fighter's steer carries it (Fighter::carryOver()), applied in each state update as an attack's is.
     void carryOver(anim::Vec3 goal, float headingRadians, float seconds) override {
@@ -541,8 +634,10 @@ class Human final : public Holdable {
     void stunFor(std::uint64_t nowMs, std::uint64_t durationMs) { m_fighter.stunFor(m_animator, nowMs, durationMs); }
     /// Ends a stun now (Fighter::endStun()).
     void endStun(std::uint64_t nowMs) { m_fighter.endStun(nowMs); }
-    /// `HuSetHealthPercent`: health becomes `percent` of the maximum, truncated to whole points; a value outside
-    /// (0, 100] gives full health.
+    /// `HuSetHealthPercent`: health becomes `percent` of the maximum in the PS2's single-precision arithmetic
+    /// (rounded toward zero), truncated to whole points, so it lands one point under the exact share where that is
+    /// whole (35 % of 900 is 314, 100 % is 899); a value outside (0, 100] gives full health.
+    /// Research: docs/references/bindings/character.md#husethealthpercent
     /// @orig 0x002378a8 Human_SetHealthPercent (unknown)
     void setHealthPercent(float percent);
     /// `HuRevive` (Fighter::revive()), which ends in the heal: the body is made again, so it blocks other humans'
@@ -573,9 +668,9 @@ class Human final : public Holdable {
     /// (docs/research/scenes.md#join-reset): a throw's aim is cancelled, any pair it is in is broken (breakPair()) so
     /// that a grab or a paired move does not keep it out of the scene, a wound ends, then setNormalMode(true) ends a
     /// grab, a stun, its rage and a fall and stands it in its idle with at least 1 health, and last its carried prop
-    /// goes. Every other human's rage ends too, which is the caller's (endAllRage()). **Coney stand-in**: the steps for
-    /// what Coney does not model (fire, a mini-game, an overlay task, a held kind-`0x27` or `0x10` object, slow
-    /// motion, a climb's body, a picked object) are left out.
+    /// goes; the players' slow motion ends with setNormalMode() (takeSlowMotionReset()). Every other human's rage ends
+    /// too, which is the caller's (endAllRage()). **Coney stand-in**: the steps for what Coney does not model (fire, a
+    /// mini-game, an overlay task, a held kind-`0x27` or `0x10` object, a climb's body, a picked object) are left out.
     /// @orig 0x002325e0 Human_ResetForMode (unknown)
     void resetForJoin();
     /// `HuSetArrested`: arrested, the human stops where it is, its fighting ends and it loops 320
@@ -733,10 +828,10 @@ class Human final : public Holdable {
     /// The cuffed human's end: freed, 333 `ANIM_ARREST_RELEASE_END_REACT` paired to `freer` then his idle; still
     /// cuffed, back to 320.
     void endUncuffReact(const Human& freer, bool freed);
-    /// The reviver's half of a revive (docs/research/combat-rage.md#revive): the led steer turns him to `downed`'s head
-    /// and slides him to 351's reach from it over 351's time to its first event + 0.1 s (Fighter::steerRevive()), and
-    /// he plays 351 `gen_revive_begin`, then 353 `gen_revive_end`, then his idle (through 389 out of the fight stance,
-    /// the fight idle in it), after a 0.01 s blend, each clip holding `0x8000000`.
+    /// The reviver's half of a revive (docs/research/combat-reactions.md#revive): the led steer turns him to `downed`'s
+    /// head and slides him to 351's reach from it over 351's time to its first event + 0.1 s (Fighter::steerRevive()),
+    /// and he plays 351 `gen_revive_begin`, then 353 `gen_revive_end`, then his idle (through 389 out of the fight
+    /// stance, the fight idle in it), after a 0.01 s blend, each clip holding `0x8000000`.
     void startRevive(const Combatant& downed);
     /// Whether 351 `gen_revive_begin` plays: the revive's first clip, at whose end the flash is spent.
     [[nodiscard]] bool reviveBeginPlaying() const;
@@ -862,28 +957,29 @@ class Human final : public Holdable {
     // The attacker's side of a warning: an event 0x24 or 0x26 of the clip playing that this step's animation passed
     // (since `beforeTime` of `before`, which played `beforeId`, when it is still the clip) tells the fighter's target,
     // when it stands within twice the anim's reach.
-    // @orig 0x00101dd8 Anim_FireEvents (unknown)
+    // @orig 0x00101dd8 Anim_FireFrameEvents (unknown)
     void sendWarnings(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
-    // Notes a slow-motion event (0x2e or 0x2f) of the clip playing that this step's animation passed, as
-    // sendWarnings() finds a warning.
-    // @orig 0x00101dd8 Anim_FireEvents (unknown)
-    void noteSlowMotion(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
+    // Notes the slow-motion event (0x2e or 0x2f) this step's animation fired, the last when several did: from the
+    // events the task stack fired (anim::AnimTaskStack::firedEvents()), so a clip that hands over in the step counts
+    // up to its end, at the frames the held flags' events use (anim::eventFrame()).
+    // @orig 0x00101dd8 Anim_FireFrameEvents (unknown)
+    void noteSlowMotion();
     // Switches the strike shapes by the events of the clip playing that this step's animation passed (as the held
     // flags' events fire, anim::eventFrame()). **Coney choice**: when another clip takes the top before the one that
     // switched them on ends its window, they go off, as its own off event would have switched them.
-    // @orig 0x00101dd8 Anim_FireEvents (unknown)
+    // @orig 0x00101dd8 Anim_FireFrameEvents (unknown)
     void noteStrikeEvents(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
     // Notes the release event (type 10) of the clip playing when this step's animation passed it, as
     // noteStrikeEvents() does; takeThrowRelease() reads it.
     void noteReleaseEvent(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
     // Notes the action event (0x41) of the clip playing that this step's animation passed (message 0xc1, read by
     // Human_HandleMessage at 0x002473bc).
-    // @orig 0x00101dd8 Anim_FireEvents (unknown)
+    // @orig 0x00101dd8 Anim_FireFrameEvents (unknown)
     void noteActionEvent(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
     // Acts on the carried prop's events of the clip playing that this step's animation passed, as noteStrikeEvents()
     // finds its own: 0x30 makes the prop when it carries none, 0x37 moves it to the event's attach point and pose
     // (message 0xb7), 0x31 removes it when it is of the named type (docs/research/combat-grabs.md#power-move-props).
-    // @orig 0x00101dd8 Anim_FireEvents (unknown)
+    // @orig 0x00101dd8 Anim_FireFrameEvents (unknown)
     void noteCarriedPropEvents(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
     // The world placement of the body the strike shapes are posed on.
     [[nodiscard]] BodyPlacement placement() const;
@@ -908,6 +1004,10 @@ class Human final : public Holdable {
     // @orig 0x00281450 Climb_RunningClipEnd (unknown)
     // @orig 0x00281838 Climb_StandingClipEnd (unknown)
     void followClimb(const raycast::CollisionMesh* mesh);
+    // Everything a human just made starts with, and what a settle drops (spawn(), settle()): no motion, traversal,
+    // stance, attack or stun, the idle; with `keepMeters` the health and its maximum, stamina, power and rage stay.
+    // @orig 0x00218008 Human_Init (unknown)
+    void standAfresh(bool keepMeters);
     // Ends a climb.
     void endClimb();
     // The state update while flying (setFlight()): the move by the stick and the climb, through everything.
@@ -928,6 +1028,8 @@ class Human final : public Holdable {
     std::string m_logName;                          // setLogName()
     std::vector<anim::Vec3> m_announced;            // attacks announced since the brain last looked (event 0x10)
     std::optional<std::uint16_t> m_slowMotionEvent; // the last update's slow-motion event (0x2e / 0x2f)
+    bool m_slowMotionEnd = false;                   // endSlowMotion(), takeSlowMotionEnd()
+    bool m_slowMotionReset = false;                 // setNormalMode(), takeSlowMotionReset()
     std::optional<std::uint32_t> m_actionEvent;     // the anim whose action event (0x41) the last update passed
     float m_stepSeconds = kStepSeconds;             // the characters' step (slow motion shortens it)
     std::uint64_t m_updates = 0;                    // updates stepped: combat's game time

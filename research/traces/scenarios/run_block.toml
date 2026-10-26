@@ -1,5 +1,5 @@
 # R1 held at a run: does a block start, and does the look-behind keep working? Research: docs/research/camera.md#reverse
-# and docs/research/combat.md#dispatch. Slot 1 (level99's street, nobody near). The stick at 98 % up gives a run;
+# and docs/research/combat/index.md#dispatch. Slot 1 (level99's street, nobody near). The stick at 98 % up gives a run;
 # R1 is held twice at the run, then held while the stick goes back to rest, then let go.
 description = "level99 street: R1 held at a run (stick 98 % up), then held through the stop; gait, speed, block and look-behind"
 research = "docs/research/camera.md#reverse"

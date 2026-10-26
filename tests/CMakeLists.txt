@@ -138,6 +138,7 @@ add_executable(coney_tests
     platform/disc_level99_change_character_test.cpp
     platform/disc_scene_option_test.cpp
     platform/disc_bat_cross_test.cpp
+    platform/disc_spray_paint_test.cpp
     platform/disc_spawner_money_test.cpp
     platform/disc_credits_test.cpp
     platform/disc_pause_controls_test.cpp
@@ -299,6 +300,7 @@ target_sources(coney_tests PRIVATE
     human/body_test.cpp
     human/climb_test.cpp
     human/combat_test.cpp
+    human/spray_special_test.cpp
     human/throw_direction_test.cpp
     human/damage_flags_test.cpp
     human/combat_timing_test.cpp
@@ -321,7 +323,7 @@ target_sources(coney_tests PRIVATE
     human/human_contacts_test.cpp
     human/strike_hits_test.cpp
     human/locomotion_gate_test.cpp)
-# Combat (docs/research/combat.md).
+# Combat (docs/research/combat/index.md).
 target_sources(coney_tests PRIVATE
     combat/ai_counter_test.cpp
     combat/anim_ranges_test.cpp
@@ -471,6 +473,7 @@ if(CONEY_DEBUG_TOOLS)
         platform/disc_level99_street_props_test.cpp
         platform/disc_rise_counter_test.cpp
         platform/disc_sprint_attacks_test.cpp
+        platform/disc_strike_contact_test.cpp
         platform/disc_tandem_test.cpp
         platform/imgui_model_view_test.cpp
         platform/imgui_ui_scale_test.cpp

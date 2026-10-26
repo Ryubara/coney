@@ -70,8 +70,8 @@ so they go, with these ids, once those pages are touched and cite the disc page.
 
 ### [The pull request commands](coney-tools-pr.md)
 
-* [`pr`](coney-tools-pr.md#pr): whether a unit is ready to become a pull request and the text it carries, and
-  commit messages ([Releasing a pull request](pr.md)).
+* [`pr`](coney-tools-pr.md#pr): whether a unit is ready to become a pull request, the text it carries, its release
+  and commit messages ([Releasing a pull request](pr.md)).
 
 ### [The issue commands](coney-tools-issues.md)
 

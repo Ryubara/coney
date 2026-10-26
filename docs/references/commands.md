@@ -7,7 +7,7 @@ buttons each update, through the nine **trigger** kinds; `global.lua` binds them
 `AddCommand(command, trigger, buttons, extra)` and scripts switch them per human with `EnableCommand`.
 AI humans write the same numbers. A **Warrior command** is an order the war chief gives the crew from
 the command menu (`WCIssueCommand`, `WCEnableCommand`). How buttons are matched:
-[Combat: commands](../research/combat.md#commands); the orders:
+[Combat: commands](../research/combat/index.md#commands); the orders:
 [AI: Warrior commands](../research/ai-gangs.md#warrior-commands); the buttons: [Controls](controls.md).
 
 !!! info "What is complete"
@@ -64,7 +64,7 @@ the command menu (`WCIssueCommand`, `WCEnableCommand`). How buttons are matched:
 | <span id="cmd-pad-33"></span>33 | `0x0021` | L2 + square | `combination press: L2 + square` | Dive. | `level80_chapter3.lua` |
 | <span id="cmd-pad-34"></span>34 | `0x0022` | cross + square | `combination press: cross + square` | Outside a grab, the special attack 653 (645 raging), needing and spending a quarter of the power meter; in a grab, the power strike. | `level93_chapter6.lua` |
 | <span id="cmd-pad-35"></span>35 | `0x0023` | circle + cross | `combination held: circle + cross` | Strong grapple: a grab that connects with the strike 657 (649 raging; 659 / 651 from behind), deals its damage as the hold starts and keeps the hold; no power cost. In a grab, the power strike 63. | `level80_chapter3.lua`, `level93_chapter6.lua` |
-| <span id="cmd-pad-36"></span>36 | `0x0024` | circle + triangle | `combination press: circle + triangle` | Sprays a tag (664) where the player may tag. | `level93_chapter6.lua` |
+| <span id="cmd-pad-36"></span>36 | `0x0024` | circle + triangle | `combination press: circle + triangle` | The spray (664) at the attack target, spending one spray paint; a pad-driven human with none does nothing. | `level93_chapter6.lua` |
 | <span id="cmd-pad-37"></span>37 | `0x0025` | d-pad down | `pressed: d-pad down` | | `level99.lua` |
 | <span id="cmd-pad-38"></span>38 | `0x0026` | d-pad up | `pressed: d-pad up` | | `level99.lua`, `level99_lesson1.lua`, `level99_lesson2.lua` |
 | <span id="cmd-pad-39"></span>39 | `0x0027` | d-pad left | `pressed: d-pad left` | | |

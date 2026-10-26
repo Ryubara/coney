@@ -143,8 +143,8 @@ using SceneLines = std::function<std::vector<SceneLine>(const PlayLevelMode& mod
 /// the level's brains) drawn with its own model (play_level_cast.cpp). Otherwise the other characters are a sandbox
 /// layout's `target` lines, Coney's passive targets (human::TargetHuman) stepped after the player, and AI fighters (a
 /// layout's `fighter` lines, or spawned from the debug menus), humans with a brain stepped in the player's characters'
-/// step; both are drawn with the player's model. The parts follow docs/research/characters.md, docs/research/combat.md,
-/// docs/research/ai.md and docs/research/camera.md; the mode is Coney's own glue.
+/// step; both are drawn with the player's model. The parts follow docs/research/characters.md,
+/// docs/research/combat/index.md, docs/research/ai.md and docs/research/camera.md; the mode is Coney's own glue.
 ///
 /// A level entered through gameplay also brings its glass panes and doors (ScriptedCast::objects,
 /// play_level_objects.cpp): they get the level's collision mesh and path data, tick twice a step, take player 1's
@@ -234,6 +234,9 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     /// in the world objects there, and every frame is drawn from that step with the scenery's animations held, so each
     /// frame shows the same picture: `--freeze-world`.
     void freezeWorld() { m_freezeWorld = true; }
+    /// Player 1 holds the counts `gifts` give from the first step of play on (applied once, before that step's
+    /// pickups): `--give`, Coney's test aid for captures that need an item.
+    void giveAtStart(std::vector<ItemGift> gifts) { m_gifts = std::move(gifts); }
     /// Whether the world is frozen now (freezeWorld() and its first step done).
     [[nodiscard]] bool worldFrozen() const { return m_freezeWorld && m_frozenSince.has_value(); }
 
@@ -346,8 +349,11 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     static void skin(const human::PlayerCharacter& character, const anim::Pose& pose, anim::Vec3 feet, float heading,
                      float lean, std::vector<anim::Vec3>& positions, std::vector<anim::Vec3>& normals);
 
-    /// ScriptedPlayer: a script's `TeleportToFlag` on player 1 during play; no ground snap.
-    void teleportPlayer(const world_objects::Placement& placement) override;
+    /// ScriptedPlayer: a script's teleport of player 1 during play: placed (dropped onto the ground at most 0.5 m
+    /// below, unless a scene holds him) with his health, meters and clip kept, his brain's front move popped, and for
+    /// `TeleportToFlag` his move stopped (human::Player::teleport(); `Teleport`: human::Player::place()).
+    void teleportPlayer(const world_objects::Placement& placement, world_objects::TeleportMotion motion) override;
+    using ScriptedPlayer::teleportPlayer;
     /// ScriptedPlayer: player 1's spray clips for a tag at `point`.
     bool startTagSpray(const std::array<float, 3>& point) override;
     /// ScriptedPlayer: player 1's held object falls from his hand as a spray or an uncuff begins.
@@ -458,6 +464,11 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     void placeReleased(const SceneStage::Release& release);
     // Whether a scene holds player 1 now: his pad does nothing and he is drawn as the scene poses him.
     [[nodiscard]] bool sceneHoldsPlayer() const;
+    // The ground a placement of `human` drops onto (human::Human::place()): the level's collision, or null while a
+    // scene holds the human.
+    [[nodiscard]] const raycast::CollisionMesh* placeGround(double human) const;
+    // The brain's part of a placement of `human` (ai::Brain::placed(): its front move popped), when it has a brain.
+    void brainPlaced(const human::Human& human);
     // The handle the scripts name a cast AI human by (its brain's); 0 for one with no brain.
     [[nodiscard]] double castHandleOf(const ai::AiHuman& fighter);
     // The cast AI human the scripts name `handle`; null when none is.
@@ -501,12 +512,12 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     // (docs/research/combat-targets.md#breakables).
     // @orig 0x0021b290 Strike_Contact (unknown)
     [[nodiscard]] std::optional<double> objectAttackLands(const human::Human& human);
-    // The strike test's objects (`Strike_Contact`'s object branch, docs/research/combat.md#moving-strikes): `human`'s
-    // posed strike `shapes` strike each door or barrier whose enabled triangles they touch, each pane whose body they
-    // reach and each strike-target world object (a street prop) whose body (props.h bodyTouches()) they reach, once
-    // while the shapes stay on, with message 1 of the attack record's hit kind, each sounding as its type's material;
-    // then the level (strikeLevel()). **Coney's stand-ins**: a car's hit is not made here; only the drawn world
-    // objects are tested.
+    // The strike test's objects (`Strike_Contact`'s object branch, docs/research/combat/index.md#moving-strikes):
+    // `human`'s posed strike `shapes` strike each door or barrier whose enabled triangles they touch, each pane whose
+    // body they reach and each strike-target world object (a street prop) whose body (props.h bodyTouches()) they
+    // reach, once while the shapes stay on, with message 1 of the attack record's hit kind, each sounding as its type's
+    // material; then the level (strikeLevel()). **Coney's stand-ins**: a car's hit is not made here; only the drawn
+    // world objects are tested.
     void strikeObjects(human::Human& human, std::span<const human::PosedShape> shapes);
     // The strike shapes' contact with the level mesh: once while the shapes stay on, the fist (or the charging body)
     // against the triangle met, as `human`'s sound (`player`: he is player 1; docs/research/sound-events.md).
@@ -525,8 +536,8 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     // Player 1 walks over the power-ups he touches (LevelPickups::walkOver(), which plays their pick-up sounds).
     void walkOverPowerups();
     // A strike on a world object or a car reports a 30 m noise (`AI_ReportNoise`, `0x002936a8`;
-    // docs/research/combat.md, cars.md#hit-effects). Coney's AI does not hear it yet; the noise stamps the ambient
-    // manager's event, which opens the `_DAM_` emitters' window (docs/research/sound.md#ambient).
+    // docs/research/combat/index.md, cars.md#hit-effects). Coney's AI does not hear it yet; the noise stamps the
+    // ambient manager's event, which opens the `_DAM_` emitters' window (docs/research/sound.md#ambient).
     // @orig 0x002936a8 AI_ReportNoise (unknown)
     void reportNoise();
     // Gives player 1 triangle's pick-up over `pickups` (may be null: none): the search, with sight rays through the
@@ -561,11 +572,12 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     // @orig 0x00169dd8 Gang_NoneAbleToHelp (unknown)
     // @orig 0x00169ea0 Gang_CanReachToHelp (unknown)
     void stepGameOver(const Pad& pad);
-    // Player 1's flash (command 0x28, d-pad right, docs/research/combat-rage.md#rage): with a flash carried and health
-    // below its maximum, 665 SPECIAL_FLASH plays when nothing blocks a move, and its action event 19 updates in uses
-    // the flash (a clip cut first spends nothing); when something blocks a move (a grab, which stays) the flash is used
-    // at once, unless 665 already plays. **Coney's stand-in**: the full-health rage use (upgrade (6, 8)) is not built.
-    // @orig 0x002843f8 Player_StartRage (unknown)
+    // Player 1's flash (command 0x28, d-pad right, docs/research/combat-rage.md#flash): with a flash carried and health
+    // below its maximum, refused only when down or dead, cuffed, airborne or climbing: 665 SPECIAL_FLASH plays when
+    // nothing holds him, and its action event 25 updates in uses the flash (a clip cut first spends nothing); when
+    // something holds him (a grab, which stays; a knockdown, a stun, a hit reaction) the flash is used at once, unless
+    // 665 already plays. **Coney's stand-in**: the full-health rage use (upgrade (6, 8)) is not built.
+    // @orig 0x002843f8 Player_UseItemCommand (unknown)
     void stepFlash();
     // `Flash_Use`: one flash spent, interface sound 23 (`vags/misc/flash`), the health filled and wounding ended, and
     // the HUD's ring request. **Coney's stand-in**: always the full heal (Coney has no difficulty setting; above
@@ -810,6 +822,7 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     bool m_frozen = false;
     std::optional<CameraPin> m_pinnedCamera;                      // `--camera`
     bool m_freezeWorld = false;                                   // `--freeze-world`
+    std::vector<ItemGift> m_gifts;                                // `--give`'s counts, until the first step's pickups
     std::optional<std::uint64_t> m_frozenSince;                   // the game ticks of the step the world froze after
     std::optional<Interpolated<world::DebugCamera>> m_freeCamera; // at the last two steps, while it is on
     // The sandbox's targets, each drawn with its own copy of the character's mesh.

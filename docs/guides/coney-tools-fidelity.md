@@ -116,8 +116,9 @@ uv run --project python coney-tools orig record [FINDINGS.tsv ...] [--ref COMMIT
 These commands feed the orig review, which compares `@orig` functions with the original
 ([Orig review](review/orig.md), the [reviewer agent](agents.md#reviewer)). Each one works on **units**. A
 unit is a function definition with a body that a tag covers: its own tag, one in its body, or its declaration's.
-A unit has a key (`Brain::think(int)`, with the file in front for a file's private helper) and a hash of its body
-lines. The source is read from commits, not from the working tree.
+A unit has a key (`Brain::think(int)`, with the file in front for a file's private helper) and a
+[hash of its body](#body-hash): its code, without comments or white space. The source is read from commits, not from
+the working tree.
 
 * `review-stamp` prints JSON.
     * With `--branch` or `--worktree` (pr mode) it gives the branch's `tip`, the `base` it left, and the units that
@@ -143,6 +144,36 @@ It is one JSON object per review and is never committed. `orig queue` reads it:
 * an address whose units were all reviewed `clean` or `diff-deliberate-ok` at their current bodies leaves the queue;
 * an unreviewed one gains 3 points, and a stale one 5;
 * a review finding adds its class's weight, from `unclear` (6) to `diff-bug` (40).
+
+### The body hash {#body-hash}
+
+A unit's `body_sha256` is the SHA-256 of its definition's **code**, which is what decides that a function changed
+(`review-stamp`, `check-review`, the ledger, a `compared` stamp's `coney_body_sha256`, `task review` and `pr verify`
+all read this one hash, `orig_review.code_text` and `_body_hash`).
+
+* **Left out:** every comment (`//` to the end of the line, also over a trailing backslash, and `/* ... */` across any
+  number of lines) and all white space: indentation, trailing blanks, line breaks, the spacing around an operator.
+  Repointing a research link in a comment, rewording one, or re-wrapping a line is not a change of the function, and
+  neither `task review` nor `pr verify` asks for a new `original compare` for it.
+* **Kept:** every token. A string, a raw string and a character literal are read whole before any comment is looked
+  for, so a `//` or `/*` inside one is code and editing it changes the hash; so does a space inside a literal. A
+  single space stays where its absence would join two tokens (`return x`, `a + +b` against `a ++b`), because there
+  it is code.
+* **Not a comment:** commenting code out removes tokens, so it changes the hash; the code is gone from the function.
+
+**Stamps and records made under the old hash** (the lines of the definition, trailing blanks dropped) are read by
+rehashing, not migrated, so none is invalidated when the hash changes and no stamp or ledger line is rewritten:
+
+* A `compared` stamp whose `coney_body_sha256` is not the hash now is checked against the function's code at the
+  stamp's own `commit`: it stands when that hash is the old-style hash of the function at that commit and the new-style
+  hash of the function there equals the one now. So an unchanged function keeps its stamp, a comment edit after the
+  stamp keeps it too, and any edit of the code refuses it ("no current `compared` stamp") until `original compare` is
+  run again. A stamp whose commit is gone from the repository (a garbage-collected branch) cannot be rehashed and is
+  refused the same way; run `original compare` again.
+* A ledger entry made under the old hash counts while the function's lines are exactly as they were then. After any
+  edit it is stale, as before, and the function is reviewed again.
+* An `ORIG-REVIEW.json` verdict is not rehashed: it lives as long as its branch, and one written before this change is
+  refused as "reviewed at another body"; the reviewer writes it again from `review-stamp`.
 
 <!-- command-reference:begin orig -->
 ## Parameters of `orig` {#orig-parameters}
@@ -497,7 +528,10 @@ uv run --project python coney-tools research claims [--base origin/main] [--task
 
 Lists the graded blocks the branch added or changed on the research pages (`docs/research/`), for the reviewer to work
 from ([evidence levels](research-evidence.md#evidence-levels)). The changed lines are those of the working tree since
-the branch left `--base`, a new page counting whole. It reads the pages exactly as
+the branch left `--base`, a new page counting whole. A page moved with git (a rename git finds at the similarity
+`research.moved_similarity` of [.github/conventions.yml](repo:.github/conventions.yml) or more, staged so git can pair
+it) is not new: it is read as [`docs check`](coney-tools-build.md#docs) reads it, on the lines git's diff of the renamed
+pair changes, and its old text is the page at its old path. It reads the pages exactly as
 [`docs check`](coney-tools-build.md#docs) does, with the same reader and the same grammar: a block is graded in itself,
 a table row in its Evidence column, or by the lead line of its H3-or-deeper heading. For each graded block it prints the
 page and line, the level, the addresses and script locators the block cites, what backs it and the tests that cite its section:
@@ -520,10 +554,16 @@ counted, not listed: `docs check` reports them.
 It exits 1 when a claim has an error: a new runtime claim that cites no run record, a runtime claim whose record is
 missing or breaks a rule, a `speculative` claim whose question is not on the page, or any file in `research/runs/` that
 is not a good record. A runtime claim is a legacy claim, not a new one, when its block shares at least half its words
-with a block of the page at `--base` (an edit): it keeps its level with a warning, whether its text names the PCSX2
-version and the method or not. Other warnings: a record the hook did not name (`who.source` is `unverified`) and
-`speculative` with no question linked. How a level is written (a bare `inferred`, a refused spelling) is
-`docs check`'s. `--require-study` also makes `confirmed (code)` at an address that was not studied in the task an
+with a block of the page at `--base` (an edit), or is the same text as a block that left another research page in the
+same change (a section cut from one page and pasted into another, whether both pages stay or the old one is deleted), to
+the white space and the targets of its links, which a move rewrites. One departed block covers every page it arrives on:
+a block pasted into two pages is not new on either. Nor is a moved block with parts only deleted from it (a wrong clause
+dropped on the way): its words, numbers kept whole (`1.3`, `0.870-0.880`), are the departed block's in the same order,
+and at least half of them. A block with a word or number added, changed or reordered on the way, a copy that leaves the
+old page as it was, and a new block next to a moved one are new. A legacy claim keeps its level with a warning, whether
+its text names the PCSX2 version and the method or not. Other warnings: a record the hook did not name (`who.source` is
+`unverified`) and `speculative` with no question linked. How a level is written (a bare `inferred`, a refused spelling)
+is `docs check`'s. `--require-study` also makes `confirmed (code)` at an address that was not studied in the task an
 error (a new or changed claim cites an address studied in its own task, or is written `inferred`); without it `none` is
 for the reviewer to check in Ghidra. `--json` prints the same report as JSON.
 

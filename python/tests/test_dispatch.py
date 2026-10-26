@@ -35,7 +35,12 @@ def identity_folder(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
 
 
 def pre(tool: str, tool_input: dict[str, Any], **extra: Any) -> str:
-    """A PreToolUse payload as the JSON text Claude Code sends."""
+    """A PreToolUse payload as the JSON text Claude Code sends, from a session started as the coordinator unless
+    `agent_type` says otherwise; `agent_type=None` is a session with no role (a plain `claude`), which `require_role`
+    keeps to reading."""
+    extra.setdefault("agent_type", "coordinator")
+    if extra["agent_type"] is None:
+        del extra["agent_type"]
     return json.dumps({"hook_event_name": "PreToolUse", "tool_name": tool, "tool_input": tool_input, **extra})
 
 
@@ -137,7 +142,17 @@ def test_the_pre_tool_use_timeout_covers_the_pr_guard_checks() -> None:
 def test_every_script_in_the_hooks_folder_is_the_dispatcher_a_guard_or_a_helper() -> None:
     scripts = {path.stem for path in HOOKS.glob("*.py")}
     guards = {name for name, _ in DISPATCH.PRE_GUARDS + DISPATCH.POST_GUARDS}
-    assert guards | {"dispatch", "hooklib", "roles", "identity", "protect"} == scripts, "a hook script nothing runs"
+    helpers = {
+        "dispatch",
+        "hooklib",
+        "roles",
+        "identity",
+        "protect",
+        "pr_guard_shell",
+        "pr_guard_repo",
+        "pr_guard_routes",
+    }
+    assert guards | helpers == scripts, "a hook script nothing runs"
 
 
 def test_the_settings_allow_the_identity_prefix_and_nothing_wider() -> None:
@@ -246,7 +261,7 @@ def test_the_copy_works_unbroken(copy_of_hooks: Path) -> None:
         "x".encode("utf-16"),  # not UTF-8
         b"\xff\xfe\x00",  # not text at all
         b"",  # empty
-        "roles = 3\nprotect = 'x'\nidentity = []\n[pr_guard]\nrefuse_pr_create = 'yes'\n",  # wrong shapes
+        "roles = 3\nprotect = 'x'\nidentity = []\n",  # wrong shapes
     ],
     ids=["invalid-toml", "utf-16", "binary", "empty", "wrong-shapes"],
 )
@@ -348,8 +363,17 @@ def test_the_role_rules_run_in_the_dispatcher() -> None:
     code, _, err = DISPATCH.dispatch(bash(command, agent_type="engineer"), CONFIG)
     assert code == 2 and "engineer" in err
     strict = {**CONFIG, "require_role": True}
-    assert DISPATCH.dispatch(bash("ls"), strict)[0] == 2
-    assert DISPATCH.dispatch(pre("Read", {"file_path": "x"}), strict)[0] == 0
+    assert DISPATCH.dispatch(bash("ls", agent_type=None), strict)[0] == 2
+    assert DISPATCH.dispatch(pre("Read", {"file_path": "x"}, agent_type=None), strict)[0] == 0
+
+
+@pytest.mark.parametrize("agent_type", ["coordinator", "engineer", "tooling", "reviewer"])
+def test_with_the_committed_settings_a_role_works_and_a_session_with_none_only_reads(agent_type: str) -> None:
+    # `coney-agent <role>` starts `claude --agent <role>`; a plain `claude` gives no `agent_type`.
+    assert DISPATCH.dispatch(bash("git status", agent_type=agent_type), CONFIG)[0] == 0
+    code, _, err = DISPATCH.dispatch(bash("git status", agent_type=None), CONFIG)
+    assert code == 2 and "no Coney role" in err and "`coney-agent`" in err
+    assert DISPATCH.dispatch(pre("Read", {"file_path": "x"}, agent_type=None), CONFIG)[0] == 0
 
 
 def test_a_coney_tools_command_is_returned_with_an_identity_token(identity_folder: Path) -> None:
@@ -385,9 +409,8 @@ def test_a_command_that_is_refused_gets_no_identity(identity_folder: Path) -> No
 
 def test_no_one_may_name_the_identity_folder_or_a_private_key() -> None:
     for command in ("ls ~/.coney/identity", "cat ~/.ssh/id_ed25519", "type C:\\Users\\x\\.coney\\identity\\a.json"):
-        for kind in ("", "engineer", "coordinator"):
-            extra = {"agent_type": kind} if kind else {}
-            assert DISPATCH.dispatch(bash(command, **extra), CONFIG)[0] == 2, (command, kind)
+        for kind in (None, "engineer", "coordinator"):  # None: a session with no role
+            assert DISPATCH.dispatch(bash(command, agent_type=kind), CONFIG)[0] == 2, (command, kind)
     assert DISPATCH.dispatch(pre("Read", {"file_path": "/home/x/.ssh/id_ed25519"}), CONFIG)[0] == 2
     assert DISPATCH.dispatch(pre("Glob", {"pattern": "*", "path": "/home/x/.coney/identity"}), CONFIG)[0] == 2
     assert DISPATCH.dispatch(pre("Read", {"file_path": "/home/x/.ssh/id_ed25519.pub"}), CONFIG)[0] == 0
@@ -431,6 +454,7 @@ def test_a_background_command_keeps_its_file_for_the_sweep(identity_folder: Path
             "hook_event_name": "PreToolUse",
             "tool_name": "Bash",
             "tool_use_id": "t7",
+            "agent_type": "engineer",
             "tool_input": {"command": "coney-tools build --detach", "run_in_background": True},
         }
     )
@@ -518,3 +542,26 @@ def test_the_script_answers_input_it_cannot_read() -> None:
         timeout=60,
     )
     assert done.returncode == 0
+
+
+# --- the PR guard's switch is read from the conventions, not from hooks.toml -----------------------------------------
+
+
+def checkout_with_switch(root: Path, value: str) -> Path:
+    """A made-up checkout: a copy of the hooks and a conventions file whose `pull_requests.open_only` is `value`."""
+    shutil.copytree(HOOKS, root / ".claude" / "hooks", ignore=shutil.ignore_patterns("__pycache__"))
+    (root / ".github").mkdir()
+    (root / ".github" / "conventions.yml").write_text(f"pull_requests:\n  open_only: {value}\n", encoding="utf-8")
+    return root / ".claude" / "hooks"
+
+
+def test_open_only_in_the_conventions_makes_the_dispatcher_refuse_gh_pr_create(tmp_path: Path) -> None:
+    folder = checkout_with_switch(tmp_path, "true")
+    reason = denial(run_copy(folder, "gh pr create --title 'tools: Add x' --body-file PR.md"))
+    assert reason is not None and reason.startswith("Blocked: pull requests are opened only by coney-tools pr open")
+
+
+def test_open_only_off_in_the_conventions_leaves_the_checks_of_a_hand_typed_command(tmp_path: Path) -> None:
+    folder = checkout_with_switch(tmp_path, "false")
+    reason = denial(run_copy(folder, "gh pr create --fill"))
+    assert reason is not None and "takes the description from somewhere" in reason and "opened only by" not in reason

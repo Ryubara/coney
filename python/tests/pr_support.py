@@ -64,6 +64,10 @@ DOCS_TEXT = f"""docs: Document the widget
 
 Docs: none
 
+## Issues affected
+
+None (no open issue is affected)
+
 ## Screenshots
 
 Screenshots: none (no visible change)
@@ -75,6 +79,10 @@ PR_TEXT = f"""gameplay: Fix the widget ready frame
 {PARAGRAPH}
 
 Docs: none
+
+## Issues affected
+
+None (no open issue is affected)
 
 ## Testing
 
@@ -207,8 +215,9 @@ class Built:
         ]
         orig_pairs.write(self.pairs_path, file)
 
-    def compare(self) -> orig_compare.CompareResult:
-        """Run compare (copy-check answers with `self.findings`) and stamp it."""
+    def compare(self, key: str | None = None) -> orig_compare.CompareResult:
+        """Run compare (copy-check answers with `self.findings`) and stamp it; `key` picks the Coney function when
+        several carry the address."""
         return orig_compare.compare(
             self.unit,
             self.root,
@@ -217,6 +226,7 @@ class Built:
             commit=self.tip,
             who=ENGINEER,
             clock=self.clock,
+            key=key,
             copy_check=lambda root, base: self.findings,
         )
 
@@ -339,6 +349,13 @@ _TEMPLATE_ROOT = Path(tempfile.mkdtemp(prefix="coney-pr-unit-"))
 atexit.register(shutil.rmtree, _TEMPLATE_ROOT, ignore_errors=True)
 
 
+def own_identity(root: Path) -> None:
+    """Give the checkout `root` its own committer identity and no signing, so the git that `pr open` runs (a rebase
+    writes commits) works the same on a machine whose global git config is empty, as on CI."""
+    for key, value in (("user.name", "T"), ("user.email", "t@example.org"), ("commit.gpgsign", "false")):
+        git(root, "config", key, value)
+
+
 def make(tmp_path: Path, shape: str = "feature", skip: frozenset[str] = frozenset(), start: bool = True) -> Built:
     """A unit in which every stage has passed (see `build`), copied from one built once per kind of unit, because
     building one runs a dozen git commands and the tests make hundreds."""
@@ -394,6 +411,7 @@ def build(tmp_path: Path, shape: str = "feature", skip: frozenset[str] = frozens
     write(root, "src/ai/placeholder.cpp", "// placeholder\n")
     write(root, "tests/ai/placeholder_test.cpp", "// placeholder\n")
     git(root, "init", "-q", "-b", "main")
+    own_identity(root)
     commit_all(root, "base")
     git(root, "remote", "add", "origin", str(origin))
     git(root, "push", "-q", "-u", "origin", "main")

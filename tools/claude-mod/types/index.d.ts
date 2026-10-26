@@ -6,6 +6,28 @@
 /** A section that could not be read holds only its `error`. */
 export type Read<T> = ({ error: null } & T) | { error: string }
 
+/** What the watchers act by (conclave.watch in .github/conventions.yml): the mod holds none of these itself. */
+export type WatchConfig = {
+  /** The agent types of the sessions that are woken, toasted and held to the stop guard. */
+  roles: string[]
+  /** The first line of a wake. */
+  preamble: string
+  /** Seconds between GitHub reads in a session that watches, pane open or not. */
+  github_seconds: number
+  /** At least this long between two wakes. */
+  wake_gap_seconds: number
+  /** A wake waits this long for a draft in the prompt box, then goes anyway. */
+  defer_typing_minutes: number
+  /** A wake the engine refused is tried again after this long. */
+  resend_minutes: number
+  /** The stop guard blocks at most this many turn ends in a row for one reason ... */
+  stop_max_blocks: number
+  /** ... and counts again from one after this long without a block. */
+  stop_reset_minutes: number
+  /** The first line of the stop guard's reason. */
+  stop_preamble: string
+}
+
 export type Config = {
   /** Why the hook settings could not be read; the lists are then empty and the mod hides no agent type. */
   error: string | null
@@ -15,12 +37,17 @@ export type Config = {
   require_role: boolean
   claude_code: string
   intervals: { local: number; github: number; github_idle: number }
+  /** Under it the pane is one clipped summary line; from it the narrow layout. */
   pane_min_columns: number
+  /** From it the compact layout. */
+  pane_compact_columns: number
+  /** From it the wide layout. */
   pane_wide_columns: number
   band_narrow_columns: number
   stale_after_reads: number
   merged_visible_minutes: number
   claim_red_hours: number
+  watch: WatchConfig
 }
 
 export type StepState = 'pass' | 'fail' | 'none' | 'missing'
@@ -115,6 +142,26 @@ export type IssueRow = {
   assignees: string[]
 }
 
+/** `check-failed` and `pr-stuck` are pull request problems (`guard`: the stop guard holds the turn end for them). */
+export type EventKind = 'check-failed' | 'pr-stuck' | 'merged' | 'unit-ready' | 'question'
+
+/** One event Coney raises for the coordinator. The id names the occurrence: the same thing read again has the same id. */
+export type EventRow = {
+  id: string
+  kind: EventKind
+  /** `handled` while a hold covers a pull request problem; an event that cannot come back leaves the list instead. */
+  state: 'open' | 'handled'
+  ref: { pr: number | null; task: string | null; branch: string | null }
+  since: string | null
+  /** What happened, in one line. */
+  text: string
+  /** What to do about it. */
+  do: string
+  guard: boolean
+  /** Who holds a handled problem, and until when. */
+  handled_by: string | null
+}
+
 export type Snapshot = {
   schema: number
   time: string
@@ -131,6 +178,8 @@ export type Snapshot = {
   }> | null
   prs: Read<{ prs: PrRow[]; merged: { number: number; branch: string; merged_at: string }[] }> | null
   issues: Read<{ issues: IssueRow[] }> | null
+  /** From a GitHub read only. `unread` names the kinds whose source could not be read: their absence says nothing. */
+  events: Read<{ events: EventRow[]; unread: string[]; holds_problems: string[] }> | null
 }
 
 /** What the mod holds of the snapshot: the sections of the last good local and GitHub reads, merged. */
@@ -146,6 +195,21 @@ export type Held = {
   newer: number | null
 }
 
+/** An event the watchers have seen: toasted when first seen, woken for once (`wokeAt` 0 until then). */
+export type SeenEvent = { id: string; kind: string; seenAt: number; wokeAt: number }
+
+/** What the watchers remember across sessions (`$.store`, key `watch`): the events told, and the wake's pacing. */
+export type Watched = {
+  seen: SeenEvent[]
+  /** `$.clock.now()` of the last wake that was taken. */
+  lastWakeAt: number
+  /** A wake the engine refused waits until then. */
+  retryAt: number
+}
+
+/** The stop guard's count of turn ends it blocked in a row for one reason. */
+export type StopState = { reason: string; blocks: number; lastBlockAt: number }
+
 /** The agent types the model is offered, frozen for the session so the listing never changes under the cache. */
 export type Offer = { allowed: string[] }
 
@@ -160,6 +224,7 @@ declare module 'claude-code' {
       /** The main session's agent type (`coordinator`, `engineer`), null when it started with none. */
       role: string | null
       offer: Shaped<Offer | null>
+      stops: Shaped<StopState | null>
     }
   }
 }

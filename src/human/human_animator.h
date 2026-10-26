@@ -116,14 +116,26 @@ inline constexpr float kWorkoutBlendSpeed = 16.0F;
 inline constexpr std::uint32_t kAnimWorkoutEnter = 691;
 inline constexpr std::uint32_t kAnimWorkoutExit = 692;
 inline constexpr std::uint32_t kAnimWorkoutLoop = 693;
-/// A new attack enters over this long from the pose before it (`AnimTaskChained_Construct(0.2, ...)` in `Attack_Start`
-/// and `Attack_StartSolo`, docs/research/combat-moves.md#input). **Coney's reading**: a chain step, which the original
-/// swaps into the running task (its blend not traced), keeps kCombatFade.
-inline constexpr float kAttackFade = 0.2F;
-/// The fight idle (358, `ANIM_FIGHT_IDLE`) the attacks return to (docs/research/combat.md#attacks).
+/// The fade into a new attack from the pose before it: none, so the attack's own pose shows from its first update.
+/// The standing starts push a fade task (type 9) of 0 s over the old tasks (`AnimTaskBlendOut_Construct` with `f12`
+/// cleared, at `0x0026281c` in `Attack_Start` and `0x0026248c` in `Attack_StartSolo`, and the same in StartSnap,
+/// StartAtTarget and StartGrounded); the 0.2 s each passes to `AnimTaskChained_Construct` is the clip's blend into the
+/// idle after it, at its end (docs/research/combat-moves.md#input). The charge and the run attacks (0, 23, 24, 501)
+/// show their pose at once too: `Player_StartCharge` pushes a layer whose 0.3 s fade-in its 0 s fade-out skips
+/// (`AnimTask5_Construct` at `0x00264b7c`). **Coney stand-in**: the end blend is not built (the clip hands over at
+/// once); a chain step, which the original swaps into the running task (its blend not traced), keeps kCombatFade.
+/// The dive fades in over kDiveFade instead.
+/// @orig 0x002625a8 Attack_Start (unknown)
+inline constexpr float kAttackFade = 0.0F;
+/// The fade into the dive (anim 1) from the pose before it: `Player_StartDive` pushes its fade task over 0.2 s
+/// (`AnimTaskBlendOut_Construct`, the call at `0x002649f0`), and gives its clip no end blend
+/// (docs/research/combat-moves.md#input).
+/// @orig 0x00264878 Player_StartDive (unknown)
+inline constexpr float kDiveFade = 0.2F;
+/// The fight idle (358, `ANIM_FIGHT_IDLE`) the attacks return to (docs/research/combat/index.md#attacks).
 inline constexpr std::uint32_t kAnimFightIdle = 358;
 /// 389 `NORMAL_FROM_FIGHT`, which a move ends in with the stick at rest: it holds neither a press nor the stick, which
-/// replaces it at once (docs/research/combat.md#input-return).
+/// replaces it at once (docs/research/combat/index.md#input-return).
 inline constexpr std::uint32_t kAnimNormalFromFight = 389;
 /// The gait blend's value speed, units a second, for the locomotion.
 inline constexpr float kGaitValueSpeed = 10.0F;
@@ -207,9 +219,21 @@ class HumanAnimator {
     void playCombatThenRun(std::span<const std::uint32_t> clips, float fade = kCombatFade, HeldFlags held = {});
     /// A scripted clip from outside the dispatcher (the play-anim action's start, `0x0025a3e0`): `clip` (anim `animId`,
     /// which must outlive its use) once at `rate`, faded in over `fade`, then the idle; AnimState::Attack while it
-    /// plays, its task holding `held` on the record `+0x08`.
-    /// Research: docs/research/ai-scripting.md#dyn-animation
-    void playScripted(const anim::AnimClip& clip, std::uint32_t animId, float rate, float fade, HeldFlags held);
+    /// plays, its task holding `held` on the record `+0x08`. With `handOverEarly` the idle takes over on the advance
+    /// that leaves less than one advance of the clip (anim::ClipThenNextTask), for a clip whose original end, one
+    /// update before Coney's (docs/research/formats/animation.md#clip-end), was measured. It stands for the last branch
+    /// of `Human_PlayScriptAnim` (the held flags set, a type 5 task pushed). **Coney stand-ins**: that branch pushes
+    /// the task on top of the stack, so what played under it shows again when it ends, where this one replaces the
+    /// stack (the older tasks fade out and go) and hands over to the idle; what shows after a scripted clip over a
+    /// fidget or a block is not measured. None of its refusals is built, here or in the callers (the scripted brains'
+    /// playClip and playNamedClip, the workout's exit): held `0x1c16a40` at its start, and on that branch any held
+    /// flag, or state `0x7bf9e9f7ff0` but for 668 and 669, and anims 603 and 604 while `Human_IsBusyForScriptAnim`
+    /// (`0x00223d38`) holds; nor its loop and chained branches (671, 673, a loop asked for), nor its held flags chosen
+    /// by anim id (the callers pass their own). Research:
+    /// docs/research/ai-scripting.md#dyn-animation
+    /// @orig 0x0025a3e0 Human_PlayScriptAnim (unknown)
+    void playScripted(const anim::AnimClip& clip, std::uint32_t animId, float rate, float fade, HeldFlags held,
+                      bool handOverEarly = false);
     /// A workout's clips (docs/research/workouts.md#engine): a fade of kWorkoutFade, the enter clip (anim 691) and
     /// then a gait blend over the three loop clips (693-695) at kWorkoutBlendSpeed units a second, its target kept as
     /// given and no root motion sampled (flags `0x201`); the state stays Workout until endWorkout(). **Coney choice**:

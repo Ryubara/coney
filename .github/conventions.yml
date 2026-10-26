@@ -175,7 +175,7 @@ commits:
 pull_requests:
   template: .github/pull_request_template.md
   # `##` headings of the description, in the template's order; the squash commit takes the pull request's title.
-  sections: [Summary, Checklist, Testing, Screenshots, AI use]
+  sections: [Summary, Issues affected, Checklist, Testing, Screenshots, AI use]
   filled: [Summary, Testing]                     # must hold text of their own, not just a comment or a placeholder
   placeholders: ["...", "<reason>"]              # template text that counts as empty when left unchanged
   local_paths: false                             # no scratch/, ../../ or C:\ in the text (images are the exception)
@@ -187,6 +187,18 @@ pull_requests:
   # `since` is the moment the rule's pull request (#391) merged, to the second (UTC), not a day: pull requests merged
   # earlier on that day were written before the rule.
   checklist: {section: Checklist, unchecked: refused, since: "2026-10-12T10:39:13Z", legacy_label: "Remaining:"}
+  # Every pull request lists the open issues it changes (maintainer decision, 2026-10-23: an audit found 175 of 311 open
+  # issues out of date because a pull request named only the issue it fixes). The section holds one item per issue,
+  # `- #N: how it is affected`, or a `none` line with a reason in parentheses. `coney-tools issue impact` suggests the
+  # list; after the merge the coordinator edits each issue, and the audit (pr.affected-unedited) reports a pull request
+  # merged since `since` whose listed issues were not edited after the merge. `since` is the second (UTC) the rule
+  # started: a pull request merged before it was written before the rule and is not held to it.
+  issues_affected:
+    section: Issues affected
+    none: "None"
+    reason: required
+    example: "None (one-line fix)"                # what a hand-made pull request writes; shown by template and errors
+    since: "2026-10-25T08:33:51Z"
   screenshots: {section: Screenshots, none: "Screenshots: none", reason: required, uploaded_only: true}
   # Gameplay work is checked against the original running, not only against our reading of its code (maintainer
   # decision, 2026-10-20). A pull request whose title area is one of `areas` (the areas a player sees; each must be a
@@ -241,6 +253,11 @@ pull_requests:
   # `<!-- name -->` and `<!-- /name -->`, so a later edit finds them again.
   images: {max_bytes: 10485760, max_count: 20, extensions: [png, jpg, jpeg, gif]}
   markers: {summary: "coney:summary", facts: "coney:facts"}
+  # Whether only `coney-tools pr open` may open a pull request. What the PR guard hook (.claude/hooks/pr_guard.py)
+  # then refuses is listed in docs/guides/enforcement.md#pr-guard. A maintainer turns it on after one pull request went
+  # through `pr open`. The hook runs without packages and reads this key with a small reader of its own, so keep it a
+  # plain `open_only: true|false` line, two spaces in, under `pull_requests:`.
+  open_only: false
 
 merge:
   # Mirrors the GitHub ruleset "Main" and the repository settings, which only a maintainer changes; the audit (a later
@@ -254,6 +271,9 @@ merge:
   up_to_date_required: false                     # no merge queue yet (how-we-work#merging)
   required_checks: [title, docs, body, build-ok, python-ok, format, mkdocs, markdownlint, actionlint, dependencies, clang-tidy]
   who: [maintainer, coordinator]                 # never the agent that wrote the work
+  # A change to one of these paths (a file, or a folder ending in /) is the maintainer's to merge: `pr open`
+  # leaves auto-merge off for it and says why.
+  manual_paths: [.github/conventions.yml, AGENTS.md, .claude/settings.json, .claude/hooks/]
 
 issues:
   blank_issues: false
@@ -318,6 +338,10 @@ issues:
     link_form: "../blob/main/<path>"
     must_exist_on: main                          # the path and its {#anchor}; a branch-only page is named as such
   status_text: truthful                          # a cited pull request called "open" must be open, "merged" merged
+  # `coney-tools issue impact` (docs/guides/coney-tools-issues.md#issue-impact): the open issues are read once and kept
+  # `cache_minutes`; a name, address or path that more than `common_max_issues` open issues cite is too common to say
+  # which of them a change affects and is skipped; the text output lists `max_reasons` reasons per issue.
+  impact: {cache_minutes: 30, common_max_issues: 6, max_reasons: 3}
   # How many of each label family an open issue carries.
   labels:
     type: exactly-one
@@ -586,7 +610,7 @@ hygiene:
       scope: files
       severity: error
       fix: skill
-      keys: [pull_requests.template, pull_requests.sections, pull_requests.ai_use, pull_requests.docs_none, pull_requests.closing, pull_requests.checklist]
+      keys: [pull_requests.template, pull_requests.sections, pull_requests.ai_use, pull_requests.docs_none, pull_requests.closing, pull_requests.checklist, pull_requests.issues_affected]
       summary: "the pull request template differs from the conventions: headings, AI use lines, the Docs: none and Fixes lines"
     files.generated-blocks:
       scope: files
@@ -768,6 +792,12 @@ hygiene:
       fix: skill
       keys: [pull_requests.checklist]
       summary: "a pull request merged before the Checklist rule left an unchecked Remaining item that names no issue"
+    pr.affected-unedited:
+      scope: github
+      severity: warn
+      fix: skill
+      keys: [pull_requests.issues_affected]
+      summary: "a pull request merged since the Issues affected rule lists open issues with no body edit or person-made label change after the merge"
     pr.idle:
       scope: github
       severity: warn
@@ -998,13 +1028,32 @@ conclave:
   local_seconds: 15                              # between reads of the local snapshot (a `uv` start costs 1-2 s)
   github_seconds: 60                             # between reads with --github while the pane is open
   github_idle_seconds: 300                       # ... and while it is closed
-  pane_min_columns: 60                           # under it the pane only says it needs this width (band and status line stay)
-  pane_wide_columns: 110                         # from it the pane draws its full layout, under it the compact one
+  pane_min_columns: 30                           # under it the pane is one clipped summary line; from it the narrow layout
+  pane_compact_columns: 60                       # from it the compact layout (a row's key fields, then its title below)
+  pane_wide_columns: 110                         # from it the pane draws its full layout (a row on one line)
   band_narrow_columns: 100                       # under it the band takes two short lines
   stale_after_reads: 3                           # the band is dimmed once the last read is older than this many local intervals
   merged_visible_minutes: 10                     # a merged unit stays on the pane this long
   unit_days: 3                                   # a unit with no worktree stays on the pane this long after its last change
   claim_red_hours: 6                             # a claim's countdown is red in its last hours (amber from claims.warn_hours)
+  # The watchers (docs/guides/conclave.md#watchers): Coney's own events told to the coordinator once. Never an idle wake,
+  # which stays Tether's.
+  watch:
+    roles: [coordinator]                         # the sessions that are woken, toasted and held to the stop guard
+    preamble: "Coordinator: new work. Handle it or say why it can wait:"   # the first line of a wake
+    github_seconds: 120                          # between GitHub reads in a session that watches, pane open or not (idle: 300)
+    wake_gap_seconds: 60                         # at least this long between two wakes; events in between join the next
+    defer_typing_minutes: 10                     # a wake waits this long for a draft in the prompt box, then goes anyway
+    resend_minutes: 2                            # a wake the engine refused is tried again after this long
+    merged_minutes: 30                           # a merged pull request is news for this long after the merge
+    stop_max_blocks: 3                           # the stop guard blocks at most this many turn ends in a row for one reason
+    stop_reset_minutes: 30                       # ... and counts again from one after this long without a block
+    stop_preamble: "Open pull requests are in trouble and nobody holds the fix. Deal with each, or record who does:"
+    holds_dir: pr-holds                          # a hold on a pull request's problems: one file each, in the scratch directory
+    hold_default_hours: 4                        # `pr hold` lasts this long unless it is told another time
+    hold_max_hours: 24                           # and never longer, so a stalled fix cannot hide for ever
+    question_prefix: QUESTION                    # QUESTION.md or QUESTION-<n>.md in a unit's scratch folder is a question ...
+    answer_prefix: ANSWER                        # ... until ANSWER.md (ANSWER-<n>.md) is newer than it
 
 standards:
   # What a file is held to when a change touches it, and the files that do not meet it yet

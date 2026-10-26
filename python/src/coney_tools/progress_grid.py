@@ -15,7 +15,8 @@ Blocks are the tracker's subsystems (the original's top-level source directories
 code last. Each function also knows its source file when the source map's per-file ranges
 (research/source-files.toml) place it, and the Coney source line that carries its `@orig` tag, for the page's tooltips.
 Nothing generated is committed: the docs build calls `build_grid` and writes the pictures and numbers into the site
-(progress_site.py).
+(progress_site.py). The home page shows the same squares folded into three states in its own palette
+(`HOME_STATE_OF`, `render_home_svg`).
 
 Research: docs/research/source-map.md (the file ranges, as research/source-files.toml),
 docs/guides/research-workflow.md#understood
@@ -66,6 +67,30 @@ CLASSES = {state: f"cg-s-{state}" for state in STATES}
 UNPLACED = frozenset({UNATTRIBUTED, "link-once"})
 #: Bytes one square stands for in the picture by size (a function gets at least one square).
 BYTES_PER_SQUARE = 512
+
+#: The home page's picture (docs/index.md, `render_home_svg`) folds the states into three, in the home page's own
+#: palette: what Coney has, what is understood and waits to be ported, and the rest. Its tooltips are the progress
+#: page's, but name a square's state as the legend does (`home_state_labels`).
+HOME_STATES = ("reimplemented", "understood", "not-started")
+HOME_STATE_OF = {
+    "audited": "reimplemented",
+    "reimplemented": "reimplemented",
+    "understood": "understood",
+    "researched": "not-started",
+    "untouched": "not-started",
+}
+HOME_LABELS = {"reimplemented": "Reimplemented", "understood": "Understood", "not-started": "Not yet started"}
+HOME_CLASSES = {state: f"cg-h-{state}" for state in HOME_STATES}
+#: Fill of each home state, light and dark (the maintainer's scheme: issue #868 a darker green, and on 2026-10-26 the
+#: two grays swapped, so Understood is the softer gray, with Not yet started the stronger one, and a test keeps them
+#: apart in lightness and from the page). docs/stylesheets/progress-grid.css repeats them; a test holds them equal.
+HOME_PALETTE = {
+    "reimplemented": ("#1a7f37", "#238636"),
+    "understood": ("#d0d6dc", "#4a5160"),
+    "not-started": ("#b0b8c2", "#9da5b0"),
+}
+#: Squares in each row of the home picture: about 4 px a square in the home page's column, and some 50 rows in all.
+HOME_COLS = 240
 
 
 # --- the audit hook ---------------------------------------------------------------------------------------------------
@@ -243,6 +268,14 @@ def _state_summary(block: GridBlock, states: Iterable[str]) -> str:
     return " · ".join(f"{STATE_LABELS[s]} {block.count(s):,}" for s in states if block.count(s))
 
 
+def _home_summary(block: GridBlock) -> str:
+    """`Reimplemented 12 · Understood 30 · Not yet started 5`: the squares counted by home state (HOME_LABELS)."""
+    counts = dict.fromkeys(HOME_STATES, 0)
+    for f in block.functions:
+        counts[HOME_STATE_OF[f.state]] += 1
+    return " · ".join(f"{HOME_LABELS[s]} {counts[s]:,}" for s in HOME_STATES if counts[s])
+
+
 def summary(grid: Grid) -> dict[str, Any]:
     """The raw numbers of the picture as plain data (`progress.json`): the same measures the page's tables show."""
     functions, size = grid.total()
@@ -333,14 +366,17 @@ def square_count(size: int) -> int:
     return max(1, math.ceil(size / BYTES_PER_SQUARE))
 
 
-def picture_blocks(grid: Grid, by_size: bool) -> list[progress_picture.Block]:
-    """Blocks to draw: a square per function, or (`by_size`) one per `BYTES_PER_SQUARE` bytes (at least one)."""
+def picture_blocks(grid: Grid, by_size: bool, *, home: bool = False) -> list[progress_picture.Block]:
+    """Blocks to draw: a square per function, or (`by_size`) one per `BYTES_PER_SQUARE` bytes (at least one).
+
+    `home` words each block's text in the home page's three states, as its legend does, not the five of the page.
+    """
     blocks = []
     for b in grid.blocks:
         done, _ = b.measure("reimplemented")
         n = len(b.functions)
         lines = [f"{b.label}: {done:,}/{n:,} reimplemented ({progress_render.percent(done, n)})"]
-        lines.append(_state_summary(b, STATES))
+        lines.append(_home_summary(b) if home else _state_summary(b, STATES))
         if by_size:
             cells = [f.state for f in b.functions for _ in range(square_count(f.size))]
             lines.append(f"{b.bytes:,} bytes; one square is up to {BYTES_PER_SQUARE} bytes")
@@ -372,4 +408,69 @@ def render_functions_svg(grid: Grid, by_size: bool, *, uid: str, standalone: boo
         palette=PALETTE,
         standalone=standalone,
         data_view="size" if by_size else "functions",
+    )
+
+
+def home_state_labels() -> dict[str, str]:
+    """The name the home page gives each progress state, by the state's code in `functions_table`.
+
+    The legend counts squares by home state, so a hovered square must say the same: researched and untouched squares
+    are both "Not yet started", audited ones "Reimplemented". The tooltip script reads this from `data-labels`.
+    """
+    return {STATE_CODES[state]: HOME_LABELS[HOME_STATE_OF[state]] for state in STATES}
+
+
+def home_counts(grid: Grid) -> dict[str, int]:
+    """Functions in each home state, in HOME_STATES order."""
+    counts = dict.fromkeys(HOME_STATES, 0)
+    for f in grid.functions:
+        counts[HOME_STATE_OF[f.state]] += 1
+    return counts
+
+
+def home_blocks(grid: Grid) -> list[progress_picture.Block]:
+    """The home picture's blocks: `picture_blocks` with each square folded into its home state."""
+    return [
+        progress_picture.Block(b.label, b.title, [HOME_STATE_OF[state] for state in b.cells])
+        for b in picture_blocks(grid, False, home=True)
+    ]
+
+
+def home_cells(grid: Grid) -> list[str]:
+    """The home state of each function in the home picture's order (blocks in address order, flowing on)."""
+    return [state for block in home_blocks(grid) for state in block.cells]
+
+
+def home_headline(grid: Grid) -> tuple[str, str]:
+    """The home picture's headline as (bold part, rest): `21.1% reimplemented`, then what it counts.
+
+    The home section and the README's picture (progress_png.py) both print it, so they cannot say different things.
+    """
+    total, _ = grid.total()
+    done, _ = grid.measure("reimplemented")
+    return (
+        f"{progress_render.percent(done, total)} reimplemented",
+        f"{done:,} of {total:,} functions of the original's own code, one square each",
+    )
+
+
+def render_home_svg(grid: Grid, *, uid: str = "ph") -> str:
+    """The home page's picture: the progress page's per-function blocks in the home states, as one unlabelled run.
+
+    The blocks and their order are `picture_blocks`', so square i of block b is function i of `functions_table`'s
+    block b and the progress page's script and table give its tooltip unchanged. They flow on from one another
+    (`progress_picture.flow`), so the whole picture is the functions in address order, `HOME_COLS` to a row.
+    """
+    count, _ = grid.total()
+    done, _ = grid.measure("reimplemented")
+    return progress_picture.render_svg(
+        home_blocks(grid),
+        uid=uid,
+        title=f"Coney's progress, one square per function of the original's own code ({count:,} functions)",
+        description=f"Grouped by source directory in address order: {done:,} of {count:,} functions are "
+        "reimplemented, the others understood or not yet started.",
+        classes=HOME_CLASSES,
+        palette=HOME_PALETTE,
+        data_view="functions",
+        flow_cols=HOME_COLS,
     )

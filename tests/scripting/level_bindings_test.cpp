@@ -155,6 +155,8 @@ TEST_CASE("TeleportToFlag puts a human on the flag with the flag's heading for -
     CHECK(placed().headingDegrees == -128.0F);
     CHECK(placed().position == std::array<float, 3>{-9.1F, 8.9F, -11.1F});
     CHECK(player->teleports == 1);
+    // TeleportToFlag resets the motion after the placement (Teleport keeps it).
+    CHECK(player->teleportMotion == coney::world_objects::TeleportMotion::Stopped);
     // A given heading is used as whole degrees, turned the same way; no heading is the flag's.
     h.call("TeleportToFlag", {Value(human), Value(flag), Value(45.7)});
     CHECK(placed().headingDegrees == -45.0F);

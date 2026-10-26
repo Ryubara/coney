@@ -1,160 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // `claude plugin test tools/claude-mod`: the band, the status line, the pane and the agent list, drawn through the
 // plugin from a fixture snapshot that the Python tests write (python/tests/test_conclave_fixture.py), so the mod's
-// tests and the command share one shape.
-import type { On } from 'claude-code'
-import { expect, mock, test } from 'claude-code/testing'
+// tests and the command share one shape. The watchers' tests are in watch.test.tsx.
+import { expect, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 
 import type { Snapshot } from '../types'
-import fixture from './fixtures/snapshot'
-
-// The moment the fixture snapshot was taken.
-const T0 = Date.parse('2026-10-23T14:00:00Z')
-
-const BAND = {
-  plugin: 'conclave',
-  component: 'AbovePrompt',
-  props: {
-    hasSurvey: false,
-    isWorking: false,
-    maxRows: 10,
-    bodyColumns: 160,
-    scroll: { offset: 0, bodyRows: 10 },
-    view: {},
-  },
-} as const
-
-const PANE = {
-  plugin: 'conclave',
-  component: 'Pane',
-  requestId: 'conclave',
-  props: {
-    title: 'Conclave',
-    isFocused: false,
-    bodyColumns: 130,
-    placement: 'dock',
-    scroll: { offset: 0, bodyRows: 40 },
-    view: {},
-  },
-} as const
-
-/** Starts the session and lets the first tick make the GitHub read, so the clock stands at T0 and every section is held. */
-async function start($: Engine, world: World): Promise<void> {
-  await $.session.start({ ...SESSION })
-  await world.clock.advance(1000)
-}
-
-const SESSION = { cwd: '/work/worktrees/fix-frame-812', surface: 'terminal', isInteractive: true } as const
-
-const OFFERED = { description: 'x', source: 'built-in', provider: { plugin: 'engine', tier: 'core' } } as const
-
-/** A copy of the fixture snapshot, changed by `edit`. */
-function snapshot(edit?: (copy: Snapshot) => void): Snapshot {
-  const copy = JSON.parse(JSON.stringify(fixture)) as Snapshot
-  edit?.(copy)
-  return copy
-}
-
-type Answer = { exitCode: number; stdout: string; stderr: string }
-type World = {
-  statuses: (string | undefined)[]
-  runs: string[][]
-  /** The `env` each run was given. */
-  envs: (Record<string, string> | undefined)[]
-  /** How long each run was given, in milliseconds. */
-  timeouts: (number | undefined)[]
-  clock: ReturnType<typeof mock.clock>
-  /** What the command prints next; change it to move the world on. */
-  answer: Answer
-  opened: string[]
-  /** The store in memory: the list saved for the checkout under test is `own`, other checkouts' lists keep their keys. */
-  stored: Record<string, unknown>
-  /** The keys the mod asked for as its own checkout's saved list. */
-  ownKeys: Set<string>
-}
-
-/** The snapshot as it reads once claims expire: the fixture was written with `claims.release` still off. */
-function enforced(copy: Snapshot): void {
-  if (copy.claims !== null && copy.claims.error === null) copy.claims.rules.enforced = true
-}
-
-const prints = (snap: Snapshot): Answer => ({ exitCode: 0, stdout: JSON.stringify(snap), stderr: '' })
-const fails: Answer = { exitCode: 1, stdout: '', stderr: 'gh: not signed in\nmore\n' }
-
-/** Everything beneath the mod, standing for the engine: the command's answer, the clock, the store and the panes. */
-function engine(
-  on: On,
-  answer: Answer,
-  options: {
-    /** The list saved for the checkout under test. */
-    saved?: unknown
-    /** The lists other checkouts saved, by their keys. */
-    elsewhere?: Record<string, unknown>
-    isPaneShown?: boolean
-    isHung?: boolean
-    beneath?: Record<string, unknown>
-  } = {},
-): World {
-  const world: World = {
-    statuses: [],
-    runs: [],
-    envs: [],
-    timeouts: [],
-    clock: mock.clock(on, { now: T0 - 1000 }),
-    answer,
-    opened: [],
-    stored: {},
-    ownKeys: new Set(),
-  }
-  // The store in memory, kept here so a test can read what the mod stored (mock.store would hide it). The mod's own
-  // list sits under a key that names its checkout, which the test cannot know: any `offer:` key not given as another
-  // checkout's is the mod's, and is kept as `own`.
-  const elsewhere = options.elsewhere ?? {}
-  world.stored = { ...elsewhere }
-  if (options.saved !== undefined) world.stored.own = options.saved
-  const slot = (key: string): string => {
-    if (!key.startsWith('offer:') || key in elsewhere) return key
-    world.ownKeys.add(key)
-    return 'own'
-  }
-  on('store.get', (_, e) => ({ value: world.stored[slot(e.key)] }))
-  on('store.set', (_, e) => {
-    world.stored[slot(e.key)] = e.value
-    return { value: undefined }
-  })
-  on('store.delete', (_, e) => {
-    delete world.stored[slot(e.key)]
-    return { value: undefined }
-  })
-  on('agent.offer', () => ({ isOffered: true }))
-  // What the plugins beneath answer to the session start (Tether's context for the first turn, in a real session).
-  on('classic.SessionStart', () => options.beneath ?? {})
-  on('session.start', (_, e) => ({ cwd: e.cwd }))
-  on('command.register', () => ({ value: { command: 'conclave' } }))
-  on('ui.open', (_, e) => {
-    world.opened.push(e.id)
-    return { value: { isPlaced: true } }
-  })
-  on('ui.panes', () => ({
-    value: options.isPaneShown
-      ? [{ id: 'conclave', title: 'Conclave', isShown: true, isFocused: false, isPlaced: true }]
-      : [],
-  }))
-  on('ui.status', (_, e) => {
-    world.statuses.push(e.text)
-    return { value: undefined }
-  })
-  on('process.run', (_, e) => {
-    world.runs.push([...e.argv])
-    world.envs.push(e.init?.env)
-    world.timeouts.push(e.init?.timeoutMs)
-    // A snapshot command that never answers (a hung `uv`): the session must start all the same.
-    if (options.isHung) return new Promise<never>(() => undefined)
-    return { value: { ...world.answer, isStdoutTruncated: false, isStderrTruncated: false } }
-  })
-  return world
-}
+import { BAND, engine, enforced, fails, OFFERED, PANE, prints, SESSION, snapshot, start } from './support'
 
 test('the first read runs the snapshot command from the checkout the mod folder belongs to', async ($, on) => {
   const world = engine(on, prints(snapshot()))
@@ -304,14 +156,14 @@ test('a snapshot of a newer schema is refused, not drawn', async ($, on) => {
     on,
     prints(
       snapshot(copy => {
-        copy.schema = 2
+        copy.schema = 3
       }),
     ),
   )
   await start($, world)
 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  expect((await ui.find({ type: 'Text', text: /update the checkout/ }))?.text).toContain('schema 2')
+  expect((await ui.find({ type: 'Text', text: /update the checkout/ }))?.text).toContain('schema 3')
   expect(await ui.find({ key: 'units' })).toBeUndefined()
   await ui.unmount()
 })
@@ -416,15 +268,6 @@ test('a claim in its last hours is red, and one that waits has no countdown', as
   await ui.unmount()
 })
 
-test('a pane under the minimum width says what it needs and points to the band', async ($, on) => {
-  const world = engine(on, prints(snapshot()))
-  await start($, world)
-
-  const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: 59 } })
-  expect((await ui.find({ type: 'Text' }))?.text).toContain('needs about 60 columns')
-  await ui.unmount()
-})
-
 type Drawn = { type: string; props: Record<string, unknown>; children: unknown[] }
 type Line = { columns: number; text: string }
 
@@ -436,10 +279,26 @@ function textOf(node: unknown): string {
   return isElement(node) ? node.children.map(textOf).join('') : String(node)
 }
 
-/** The columns a drawn node takes, margins included: a text its characters, a row the sum of its parts, a column its widest. */
+/**
+ * The terminal columns of a string, measured apart from the mod's own `columns` so the tests do not grade it by itself:
+ * an emoji shown as emoji or a CJK character takes two, a joiner or variation selector none, except that the emoji
+ * selector after the one-column marks the tests draw (`⚠️`) makes them two. Enough for the strings these tests draw.
+ */
+function cells(text: string): number {
+  let sum = 0
+  for (const char of text) {
+    if (char === '\ufe0f') sum += 1
+    else if (/[\u200b-\u200f\ufe00-\ufe0e]/u.test(char)) sum += 0
+    else if (/[\p{Emoji_Presentation}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(char)) sum += 2
+    else sum += 1
+  }
+  return sum
+}
+
+/** The columns a drawn node takes, margins included: a text its cells, a row the sum of its parts, a column its widest. */
 function columnsOf(node: unknown): number {
-  if (!isElement(node)) return [...String(node)].length
-  if (node.type === 'Text') return [...textOf(node)].length
+  if (!isElement(node)) return cells(String(node))
+  if (node.type === 'Text') return cells(textOf(node))
   const parts = node.children.map(columnsOf)
   const inside = node.props.flexDirection === 'column' ? Math.max(0, ...parts) : parts.reduce((sum, part) => sum + part, 0)
   return inside + marginOf(node)
@@ -484,6 +343,154 @@ for (const columns of [60, 80, 109] as const) {
     const shown = (await ui.findAll({ type: 'Text' })).map(item => item.text ?? '').join(' ')
     for (const word of ['2026-10-26', 'UTC)', '/work/worktrees/fix-frame-812', '· finished', 'overlaps']) expect(shown).toContain(word)
     expect(overflows(await drawn(ui), columns)).toEqual([])
+    await ui.unmount()
+  })
+}
+
+for (const columns of [30, 40, 59] as const) {
+  test(`the pane at ${columns} columns is narrow: the summary, the rows and the claims, every line clipped to fit`, async ($, on) => {
+    const world = engine(on, prints(snapshot(enforced)))
+    await start($, world)
+
+    const band = await $.ui.mount({ ...BAND, surface: 'terminal' })
+    const items = (await band.findAll({ type: 'Button' })).map(item => item.text ?? '')
+    await band.unmount()
+    const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: columns } })
+    const lines = await drawn(ui)
+    const text = lines.map(line => line.text).join('\n')
+    // never the refusal: the band's own items (pull requests, builds, critical issues, disk) head the pane
+    expect(text).not.toContain('needs about')
+    expect(items.length).toBeGreaterThan(3)
+    for (const item of items) expect(text).toContain(item)
+    for (const key of ['PRs 1', 'builds 1', 'P-critical #790', 'disk ']) expect(text).toContain(key)
+    // every unit is a row that still opens, its issue and stage first; the pull request moves to the line below
+    const rows = await ui.findAll({ type: 'Button' })
+    expect(rows.map(row => row.key)).toEqual(['task:fix-frame-812', 'task:fix-new', 'task:add-task-start'])
+    expect(rows[0]?.text).toContain('#741 compared failed')
+    expect(text).toContain('PR #812')
+    // each claim keeps its issue and its countdown whole, ahead of the claimant
+    expect(text).toMatch(/^ {2}#741 2d 14h /m)
+    expect(text).toMatch(/^ {2}#770 22h 00m /m)
+    expect(text).toContain('CLAIMS')
+    expect(overflows(lines, columns)).toEqual([])
+    // a cut line ends in an ellipsis, never wraps
+    expect(lines.some(line => line.text.endsWith('…'))).toBe(true)
+
+    await ui.press({ key: 'task:fix-frame-812' })
+    expect((await ui.findAll({ type: 'Text', text: /^stamps/ })).length).toBeGreaterThan(0)
+    expect((await ui.findAll({ type: 'Text', text: /^reason/ })).length).toBe(1)
+    expect(overflows(await drawn(ui), columns)).toEqual([])
+    await ui.unmount()
+  })
+}
+
+test('a narrow claim that is not enforced yet, or waits, says so in a few characters', async ($, on) => {
+  const world = engine(
+    on,
+    prints(
+      snapshot(copy => {
+        if (copy.claims !== null && copy.claims.error === null) {
+          const second = copy.claims.claims[1]
+          if (second !== undefined) {
+            second.deadline = null
+            second.waiting = 'S-blocked'
+          }
+        }
+      }),
+    ),
+  )
+  await start($, world)
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: 30 } })
+  const text = (await drawn(ui)).map(line => line.text).join('\n')
+  expect(text).toMatch(/^ {2}#741 ~2d 14h /m)
+  expect(text).toMatch(/^ {2}#770 waits: S-blocked/m)
+  await ui.unmount()
+})
+
+for (const columns of [29, 20, 8] as const) {
+  test(`under the narrowest layout, at ${columns} columns, the pane is one clipped summary line`, async ($, on) => {
+    const world = engine(on, prints(snapshot()))
+    await start($, world)
+
+    const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: columns } })
+    const lines = await drawn(ui)
+    expect(lines.length).toBe(1)
+    expect(lines[0]?.text).not.toContain('needs about')
+    expect(lines[0]?.text.startsWith('2 units'.slice(0, columns - 2))).toBe(true)
+    expect(overflows(lines, columns)).toEqual([])
+    await ui.unmount()
+  })
+}
+
+/** A title as wide as text gets: emoji and CJK, two columns each, on the units, the issues and an issue row of mine. */
+const WIDE_TITLE = '修正する🚀 the 表示 of 宽字符 🔥🔥 everywhere 한국어'
+
+/**
+ * The fixture with `WIDE_TITLE` everywhere a title is drawn, and the signed-in account renamed `me`, so the title
+ * reaches the narrow pane's second lines instead of being cut behind a long name.
+ */
+function wideTitles(copy: Snapshot): void {
+  enforced(copy)
+  if (copy.claims !== null && copy.claims.error === null) {
+    copy.claims.account = 'me'
+    for (const claim of copy.claims.claims) if (claim.claimant !== 'contrib-a') claim.claimant = 'me'
+  }
+  if (copy.units.error === null) {
+    for (const unit of copy.units.units) {
+      unit.goal = WIDE_TITLE
+      unit.claimant = 'me'
+    }
+  }
+  if (copy.issues !== null && copy.issues.error === null) for (const issue of copy.issues.issues) issue.title = WIDE_TITLE
+  if (copy.claims !== null && copy.claims.error === null) {
+    const account = copy.claims.account
+    const second = copy.claims.claims[1]
+    // #770 becomes the signed-in account's with no unit here, so it is drawn as an issue row with its title
+    if (second !== undefined && account !== null) {
+      second.claimant = account
+      second.title = WIDE_TITLE
+    }
+  }
+}
+
+for (const surface of ['terminal', 'desktop'] as const) {
+  for (const columns of [30, 40, 60, 80] as const) {
+    test(`at ${columns} columns on the ${surface} a title of emoji and CJK is clipped by its columns`, async ($, on) => {
+      const world = engine(on, prints(snapshot(wideTitles)))
+      await start($, world)
+
+      const ui = await $.ui.mount({ ...PANE, surface, props: { ...PANE.props, bodyColumns: columns } })
+      const lines = await drawn(ui)
+      expect(lines.some(line => line.text.includes('修正'))).toBe(true)
+      expect(overflows(lines, columns)).toEqual([])
+      const rows = await ui.findAll({ type: 'Button' })
+      expect(rows.map(row => row.key)).toContain('#770')
+      await ui.press({ key: '#770' })
+      expect(overflows(await drawn(ui), columns)).toEqual([])
+      await ui.unmount()
+    })
+  }
+}
+
+for (const surface of ['terminal', 'desktop'] as const) {
+  test(`the narrow pane at the smallest pane_min_columns the conventions allow (15) still fits on the ${surface}`, async ($, on) => {
+    const world = engine(
+      on,
+      prints(
+        snapshot(copy => {
+          wideTitles(copy)
+          copy.config.pane_min_columns = 15
+        }),
+      ),
+    )
+    await start($, world)
+
+    const ui = await $.ui.mount({ ...PANE, surface, props: { ...PANE.props, bodyColumns: 15 } })
+    expect((await ui.findAll({ type: 'Button' })).length).toBeGreaterThan(0)
+    expect(overflows(await drawn(ui), 15)).toEqual([])
+    await ui.press({ key: 'task:fix-frame-812' })
+    expect(overflows(await drawn(ui), 15)).toEqual([])
     await ui.unmount()
   })
 }

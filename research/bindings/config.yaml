@@ -298,7 +298,7 @@
   notes: >-
     The grab's power strike (cross held, square pressed while grabbing) needs the power meter's fraction (record
     +0x148 over its maximum) above this value, confirmed (code) at 0x0027f3b0 and confirmed (runtime) 0.25; a throw
-    costs the same fraction of the meter (docs/research/combat.md).
+    costs the same fraction of the meter (docs/research/combat/index.md).
   usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
 
 - name: CfgBurnTime

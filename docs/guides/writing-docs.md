@@ -60,6 +60,10 @@ flowchart LR
   Material looks for Mermaid. The stand-in loads a pinned Mermaid and `@mermaid-js/layout-elk` from jsDelivr when
   the first diagram of a page is drawn, so a page without a diagram loads nothing extra. To upgrade, change the two
   pinned versions in that file to releases at least two weeks old and look at every diagram again.
+- **Size.** A diagram is drawn at its own width, centred, and never wider than the column. On a narrow screen it
+  stops shrinking at 640 pixels (or its own width, if smaller) and scrolls sideways, so its text stays readable. A
+  tall chain therefore reads better than a wide one: `flowchart TB` keeps its text full size, while a long
+  `flowchart LR` row shrinks to fit.
 - **Light and dark.** Material colours the diagram from the palette (its `--md-mermaid-*` variables), so the palette
   toggle changes it at once. Do not set colours in the diagram (`classDef`, `style`): they would stay the same in both.
 - **Layout.** Nodes in one chain with `flowchart LR` wrap into rows by themselves. Avoid a `subgraph` that arrows enter
@@ -80,6 +84,7 @@ of Material for MkDocs; the files are Coney's own:
 | `overrides/home.html` | The template (`theme.custom_dir` in `mkdocs.yml`): the hero's markup around the page content |
 | `docs/stylesheets/home.css` | The look and the effect, every rule scoped to a page that has a hero |
 | `docs/javascripts/home.js` | One scroll listener that writes how far the hero has scrolled (0 to 1) into `--coney-p`; the stylesheet does the rest |
+| `<!-- progress:home -->` in `docs/index.md` | Where the docs build puts the picture of every function, one square each, with the progress page's tooltips ([progress](coney-tools-references.md#progress)); it is never committed |
 | `assets/art/hero.webp`, `hero.jpg` | The artwork, shared with the launcher ([LEGAL.md](repo:LEGAL.md#site-and-launcher-artwork)) |
 
 - **The art.** Replace `assets/art/hero.webp` and its fallback `assets/art/hero.jpg` with the new picture, same names,
@@ -310,7 +315,7 @@ Circle catches the man in front; held, it runs him down. Throws are on [Combat: 
 
 ## Open questions
 
-- **The counter chance** {#q-counter}: read as `rand() % N` with `N` from a table not yet named.
+- **The counter chance**{#q-counter}: read as `rand() % N` with `N` from a table not yet named.
 ````
 
 ### Evidence levels on a page {#evidence-levels}
@@ -401,25 +406,33 @@ any other rule, or `evidence` when the old entry did not, and an old entry left 
 compared with the old entry's: counts say how much is left, and are never compared with a page. Stage the move (`git
 mv`, or `git add` the new page and the deletion) so git can pair them. Once merged, the page is an ordinary legacy page.
 
-**A link rewrite that follows a move is no touch.** A line whose only change is the target of a link `[text](target)` does
-not touch the page that holds it when, for each link it changes, the old target's page was renamed or deleted in the same
-change (any anchor) and the new target resolves to an existing page that has the anchor. A page that moved to another
-folder rewrites its own relative links for it: a link to the same page and anchor is no touch either (the old target is
-read from the folder the page left). The link's text, the rest of the line and the number of links must be equal, read
-whole: spaces and line breaks do not count, so a link split over two lines, or a paragraph that a longer target made
-the editor reflow (past the 120 columns markdownlint allows), is judged as one, as long as no line on either side is
-blank or starts a block: a heading, quotation, table row, code fence, a code block (an indented line that follows a
+**A link rewrite that follows a move is no touch.** A line whose only change is the target of a link `[text](target)`
+does not touch the page that holds it when, for each link it changes, the old target's page was renamed or deleted in
+the same change (any anchor) and the new target resolves to an existing page that has the anchor. A page that moved to
+another folder rewrites its own relative links for it: a link to the same page and anchor is no touch either (the old
+target is read from the folder the page left). So is a link to a section that moved between two pages that stayed
+(cutting `combat-moves.md#targeting` to `combat-targets.md#targeting`): the link's anchor id is the same, the old page
+held it before the change and no longer does, and the new page holds it now but did not before (ids such as
+`open-questions` repeat across pages, and a link to one is a touch). So, last, is a link moved to an id that is new on
+the same page while the old id stays (`combat-rage.md#rage` to `combat-rage.md#flash`): the page held the old id before
+the change and still does, and holds the new one only now. The reason is a section split in two, the part the link cites
+moving out under its own id, but the check sees only the ids: it cannot tell whether the new section came from the old
+one, so any id new on that page qualifies. Any other new target is a touch: an id that was never on the old page, one
+still there on another page, one on neither page, another id the page already held, or an id that replaced the old one
+(a renamed section, whose links are edits). The link's text, the rest of the line and the number of links must be equal,
+read whole: spaces and line breaks do not count, so a link split over two lines, or a paragraph that a longer target
+made the editor reflow (past the 120 columns markdownlint allows), is judged as one, as long as no line on either side
+is blank or starts a block: a heading, quotation, table row, code fence, a code block (an indented line that follows a
 blank line, a heading, a table row, a definition or another code line; after text it continues the paragraph or list
 item), or what MkDocs adds (an admonition `!!!` or `???`, a content tab `===`, a setext underline or rule, an HTML
-block, a footnote or link definition, an attribute list `{: }`, a definition `: text`). A line break there is
-structure, and a change to it is a touch. So is a change to a line's indent, and in a rewrap the lines that are no list
-item keep their indents (a rewrap that joins the lines into one, or splits one, has none to compare). Two cases need
-more than the changed lines: a link split over lines of which only the `](target)` line changed is read from the line
-holding its `[` (the diff has no context, so the checker widens the hunk through the unchanged lines above, stopping
-after five lines or at a blank line); and a list item rewrapped by the longer target is no touch when the list markers
-(`-`, `1.`) stand on the same lines of the hunk on both sides. A link to a page that stayed, to a target that resolves
-nowhere, to a `repo:` path or an address, an image, or any other edit on the line is a touch of that line. So moving a
-page does not end the
+block, a footnote or link definition, an attribute list `{: }`, a definition `: text`). A line break there is structure,
+and a change to it is a touch. So is a change to a line's indent, and in a rewrap the lines that are no list item keep
+their indents (a rewrap that joins the lines into one, or splits one, has none to compare). Two cases need more than the
+changed lines: a link split over lines of which only the `](target)` line changed is read from the line holding its `[`
+(the diff has no context, so the checker widens the hunk through the unchanged lines above, stopping after five lines or
+at a blank line); and a list item rewrapped by the longer target is no touch when the list markers (`-`, `1.`) stand on
+the same lines of the hunk on both sides. A link to a page that stayed, to a target that resolves nowhere, to a `repo:`
+path or an address, an image, or any other edit on the line is a touch of that line. So moving a page does not end the
 excuse of every page that links to it.
 
 `coney-tools docs legacy` prints what a scan finds; `--prune` takes out what is fixed and lowers the counts, `--check`

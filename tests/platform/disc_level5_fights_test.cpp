@@ -260,7 +260,7 @@ FightRun playFight(const coney::io::Wad& wad, int checkpoint, std::vector<std::s
     // The steer source puts the route's point (0, 0) on the nearest foe still standing: the view is player 1's feet
     // less that foe's. With none standing the stick rests. Within kFightRange it stays on that foe, as a player holds
     // it while he strikes: a player's square searches for its human along the stick's heading, and along his facing
-    // only when the stick is at rest (Player_PickTarget, docs/research/combat-moves.md#targeting). With the stick at
+    // only when the stick is at rest (Player_PickTarget, docs/research/combat-targets.md#targeting). With the stick at
     // rest he struck whoever he happened to face, and once every gang's brains scan for enemies
     // (docs/research/ai-reimpl.md#unit-1) the crew no longer took Vargas off him: Vargas never tired a second time
     // and the player went down with both bosses standing.

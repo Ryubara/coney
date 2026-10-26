@@ -21,6 +21,10 @@ GOOD_BODY = """## Summary
 
 Adds a thing.
 
+## Issues affected
+
+None (nothing cites it)
+
 ## Checklist
 
 Done:

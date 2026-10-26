@@ -591,6 +591,7 @@ int main(int argc, char** argv) {
             if (options->freezeWorld) {
                 playLevel->freezeWorld();
             }
+            playLevel->giveAtStart(options->gives);
             if (const std::optional<std::string> tracePath = options->traceFile; tracePath) {
                 if (auto traced = playLevel->traceTo(*tracePath); !traced) {
                     logError(traced.error().message);
@@ -673,8 +674,9 @@ int main(int argc, char** argv) {
         // `--pad-pipe`: a driver program plays player 1 by what it sees of the level in play. With `--play-level` the
         // pipe starts at the level's first frame of play (DeferredInput), as a script does, so the driver's first view
         // is of the level and not of its loading screen.
-        auto pipe =
-            std::make_unique<coney::platform::PadPipe>(std::cin, std::cout, [&playLevel, &sessionPlayMode, &session]() {
+        auto pipe = std::make_unique<coney::platform::PadPipe>(
+            std::cin, std::cout,
+            [&playLevel, &sessionPlayMode, &session]() {
                 coney::platform::PipeView view;
                 view.mode = playLevel ? playLevel.get() : sessionPlayMode();
                 view.cars = view.mode != nullptr ? view.mode->cars() : nullptr;
@@ -683,7 +685,9 @@ int main(int argc, char** argv) {
                     view.pickups = session->gameplay().pickups();
                 }
                 return view;
-            });
+            },
+            // `call NAME`: the level script's function, for a test run that puts the level at a given step.
+            [&session](std::string_view name) { return session && session->flow().scripts().call(name); });
         if (commandLineLevel) {
             levelPipe = std::move(pipe);
             auto deferred =
@@ -784,6 +788,8 @@ int main(int argc, char** argv) {
                     if (options->freezeWorld) {
                         mode.freezeWorld();
                     }
+                    // `--give`: player 1's inventory counts from the first step, for a capture that needs an item.
+                    mode.giveAtStart(options->gives);
                     if (const std::optional<std::string> tracePath = options->traceFile; tracePath) {
                         if (auto traced = mode.traceTo(*tracePath); !traced) {
                             return std::unexpected(std::move(traced.error()));

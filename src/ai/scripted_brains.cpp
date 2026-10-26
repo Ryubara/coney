@@ -794,16 +794,24 @@ void ScriptedBrains::humanCreated(const HumanCreation& human) {
     }
 }
 
-void ScriptedBrains::humanTeleported(double handle, const world_objects::Placement& placement) {
-    if (held([this, handle, placement] { humanTeleported(handle, placement); })) {
+void ScriptedBrains::humanTeleported(double handle, const world_objects::Placement& placement,
+                                     world_objects::TeleportMotion motion) {
+    if (held([this, handle, placement, motion] { humanTeleported(handle, placement, motion); })) {
         return;
     }
     Brain* found = named(handle);
     if (found == nullptr || found->type() == BrainType::Player) {
         return;
     }
+    // The placement (Human_SetTransform, the human's and the brain's parts); then TeleportToFlag
+    // (Object_TeleportToFlag) resets the motion (Human_ResetMotion), and Teleport (Object_Teleport, the Rumble
+    // arenas') does not: the move goes on (docs/research/teleports.md#motion-reset).
     const std::array<float, 3>& p = placement.position;
-    found->human().spawn(nullptr, anim::Vec3{p[0], p[1], p[2]}, placement.headingDegrees);
+    found->human().place(placeGround(handle), anim::Vec3{p[0], p[1], p[2]}, placement.headingDegrees);
+    found->placed();
+    if (motion == world_objects::TeleportMotion::Stopped) {
+        found->human().resetMotion();
+    }
 }
 
 std::optional<world_objects::Placement> ScriptedBrains::humanPlacement(double handle) const {

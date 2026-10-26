@@ -30,7 +30,7 @@ constexpr float kIdleSpeedShare = 0.25F;
 
 // The bat's square 34 `BAT_COMBO_S1` (28 frames at 0.75). At runtime it lasted 37 updates and 389 followed on the 38th,
 // one fewer than its frame count gives, while the bat's cross 36 (26 frames) lasted its 35
-// (docs/research/combat-moves.md#bat-cross). **Coney stand-in**: why is open (an open question on that page), so only
+// (docs/research/combat-throws.md#bat-cross). **Coney stand-in**: why is open (an open question on that page), so only
 // this clip hands over early (ClipThenNextTask's handOverEarly, which ends it on the update 37 gives) until the rule
 // that ends clips is known.
 constexpr std::uint32_t kAnimBatComboS1 = 34;
@@ -388,9 +388,9 @@ void HumanAnimator::playCombatThenRun(std::span<const std::uint32_t> clips, floa
 }
 
 void HumanAnimator::playScripted(const anim::AnimClip& clip, std::uint32_t animId, float rate, float fade,
-                                 HeldFlags held) {
+                                 HeldFlags held, bool handOverEarly) {
     // One clip handing over to the idle, as a combat clip does; the controller chooses again once it is over.
-    auto task = std::make_unique<anim::ClipThenNextTask>(clip, animId, rate, 0U, idleLoop());
+    auto task = std::make_unique<anim::ClipThenNextTask>(clip, animId, rate, 0U, idleLoop(), 0.0F, handOverEarly);
     task->holdFlags(held.held, held.set);
     m_tasks.change(std::move(task), fade);
     m_state = AnimState::Attack;

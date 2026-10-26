@@ -318,7 +318,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = 
 
 [hook.strike-shape]
 description = "Each call of 0x003428d0, the body's strike-shape switch (the human's strike-on and strike-off messages): the body, the bone byte (negative: every shape), on (1) or off (0) and the caller."
-research = "docs/research/combat.md#run-attacks"
+research = "docs/research/combat/index.md#run-attacks"
 address = 0x003428d0
 # addiu sp,sp,-0x40; sq s0,0x30(sp)
 original = [0x27bdffc0, 0x7fb00030]

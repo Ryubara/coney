@@ -149,7 +149,7 @@ namespace {
 // `from` (the enemy filters `0x00279410` / `0x00279568`; the gang test is the targets list's). With `down`, one knocked
 // down with health left counts too: the wide filter (`TargetFilter_Wide` `0x002796a0`) skips only the knocked out
 // (state `0x100000000`), not the down, which is how square finds a downed human for the grounded strike 193
-// (docs/research/combat-moves.md#targeting).
+// (docs/research/combat-targets.md#targeting).
 bool fightable(const Combatant& target, const anim::Vec3& from, bool down = false) {
     const bool state = target.state() == TargetState::Standing || (down && target.state() == TargetState::Grounded);
     return state && !target.health().depleted() && target.targetable() &&
@@ -233,6 +233,14 @@ Combatant* Fighter::findAttackTarget(const FighterInput& input, int farId) const
 }
 
 Combatant* Fighter::attackTargetOf(int animId, const FighterInput& input, bool chainStep) const {
+    // The spray searches afresh at its own far range, whatever is in hand (`Player_Special`'s
+    // `Player_FindAttackTarget(h, 664)`, docs/research/combat-targets.md#targeting). The original's search also has an
+    // object pass and a glass pass between the human ones, and an object or a pane found there makes the spray play at
+    // no one (`Object_AsHuman` gives null). **Coney stand-in**: findAttackTarget() has only the human passes
+    // (docs/engine/combat.md).
+    if (animId == id::kSpraySpecial) {
+        return findAttackTarget(input, id::kSpraySpecial);
+    }
     const bool cross = !chainStep && input.command == combat::command::kCrossLongHold;
     const bool armed = m_animSet >= 1 && m_animSet <= 3;
     const combat::AttackTarget how = combat::attackTarget(animId, cross, armed, chainStep, lockTarget() != nullptr);
@@ -459,6 +467,10 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
     in.nowMs = input.nowMs;
     in.helpless = helpless;
     in.animSet = m_animSet;
+    in.holdingObject = m_holdingObject;
+    in.player = m_player;
+    in.padControlled = input.padControlled;
+    in.hasSprayPaint = m_hasSprayPaint;
     in.fightStance = lockTarget() != nullptr;
     m_snapTarget = nullptr;
     m_wallThrow.reset();
@@ -472,7 +484,7 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
     }
     // Square's target decides the grounded strike: the current target in the stance within 3 m, else a fresh
     // Player_PickTarget (2.0 m, 2.5 m armed), whose wide pass finds a downed human at any angle when no standing one
-    // is near (docs/research/combat-moves.md#targeting). A standing human picked first takes the plain attack.
+    // is near (docs/research/combat-targets.md#targeting). A standing human picked first takes the plain attack.
     const bool keep = in.fightStance && m_target != nullptr &&
                       flatDistance(input.position, m_target->position()) <= combat::kKeepTargetRange;
     const bool armed = m_animSet >= 1 && m_animSet <= 3;
@@ -562,7 +574,7 @@ Holdable* Fighter::strongGrappleTarget(const FighterInput& input) {
     }
     Combatant* target = input.targets[found];
     m_target = target;
-    // The paired clip needs one that may be grabbed: within a quarter metre in height. **Coney choice**: the clear
+    // The paired clip needs one that may be grabbed: within a quarter metre in height. **Coney's choice**: the clear
     // line to it (`0x0021c0a8`) is not tested.
     if (std::fabs(target->position().z - input.position.z) > combat::kGrabbableHeight) {
         return nullptr;
@@ -662,7 +674,11 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
         animator.settleToIdle();
     }
 
-    // What the dispatcher started.
+    // What the dispatcher started. A spray is counted for whoever keeps the hand and the paint (takeSprays()); its 664
+    // plays below as any attack does.
+    if (out.sprayed) {
+        ++m_sprays;
+    }
     bool consumed = false;
     if (out.rageStarted) {
         m_rageStarted = true;
@@ -682,7 +698,7 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
         startHold(*m_candidate, input, heading, out.tackleStarted, connect, animator);
         consumed = true;
     } else if (out.grabMissed) {
-        // Each miss ends in 389, then the idle (docs/research/combat.md#input-return).
+        // Each miss ends in 389, then the idle (docs/research/combat/index.md#input-return).
         if (input.command == combat::command::kCircleHeld) {
             const std::array<std::uint32_t, 3> miss{id::kTacklePlayerIntro, clips::kTackleMiss,
                                                     clips::kNormalFromFight};
@@ -769,7 +785,7 @@ void Fighter::playBlock(const FighterInput& input, HumanAnimator& animator) {
 void Fighter::warnTarget(int animId, const FighterInput& input, bool chainStep) const {
     // The charge warns the target it already has or, for a player with none, the nearest human its reach search
     // finds (Player_StartCharge's Attack_FindNearestInReach with the charge's reach and far range); it takes none
-    // (docs/research/combat.md#charge-aim).
+    // (docs/research/combat/index.md#charge-aim).
     if (animId == id::kRunningAttackCharge) {
         Combatant* target = m_target != nullptr ? m_target : m_player ? nearestInReach(animId, input) : nullptr;
         if (target != nullptr) {
@@ -779,7 +795,7 @@ void Fighter::warnTarget(int animId, const FighterInput& input, bool chainStep) 
     }
     // **Coney choice**: the dive warns the human its own search dives at (nearestInReach(), the same search steerDive()
     // makes next), none when it finds none; the research does not list the dive's warning
-    // (docs/research/combat.md#attack-warnings).
+    // (docs/research/combat/index.md#attack-warnings).
     if (animId == id::kRunningAttackDive) {
         if (Combatant* target = nearestInReach(id::kRunningAttackDive, input); target != nullptr) {
             target->announceAttack(input.position);
@@ -796,12 +812,17 @@ void Fighter::warnTarget(int animId, const FighterInput& input, bool chainStep) 
 
 void Fighter::playAttack(int animId, const FighterInput& input, HumanAnimator& animator, float& heading,
                          bool chainStep) {
-    const float fade = chainStep ? kCombatFade : kAttackFade;
+    // The dive's start fades in from the pose before it; every other start shows the clip's pose at once.
+    const float fade = chainStep ? kCombatFade : animId == id::kRunningAttackDive ? kDiveFade : kAttackFade;
     // The start warns the attack's one target (event 0x10), whose brain then decides whether its range and field of
-    // view take it in; no one else hears of it (docs/research/combat.md#attack-warnings).
-    warnTarget(animId, input, chainStep);
+    // view take it in; no one else hears of it (docs/research/combat/index.md#attack-warnings). The spray warns no
+    // one: nothing on Player_Special's path to Attack_StartAtTarget (`0x00261c80`) calls Human_WarnOfAttack.
+    const bool spray = animId == id::kSpraySpecial;
+    if (!spray) {
+        warnTarget(animId, input, chainStep);
+    }
     // The special's id adds 2 when the attacker stands on its target's rear (`Player_SpecialAttack` `0x00263c90`,
-    // after its target search): 655, 647 in rage (docs/research/combat.md#attacks).
+    // after its target search): 655, 647 in rage (docs/research/combat/index.md#attacks).
     if (animId == id::kSpecial || animId == id::kSpecialRage) {
         const Combatant* target = attackTargetOf(animId, input, chainStep);
         if (target != nullptr &&
@@ -825,15 +846,23 @@ void Fighter::playAttack(int animId, const FighterInput& input, HumanAnimator& a
     if (input.strikeShapes && own != nullptr && switchesStrikeShapes(*own)) {
         m_shapeAttack = animId;
     }
+    // The spray turns and slides to the human its search found but keeps the target it had (human `+0xc8`): neither
+    // Attack_StartAtTarget nor the clip's use event (message `0xc1`, which only reads the target) writes it
+    // (docs/research/combat/index.md#run-attacks), so the steer's take is undone. **Coney stand-in**: that event's
+    // paint on the kept target (its `+0x644` takes the sprayer's colour) is not built.
+    Combatant* const kept = m_target;
     steer(animId, input, animator, heading, chainStep);
+    if (spray) {
+        m_target = kept;
+    }
     // A moving attack with the stick still at a run: the run resumes after it.
     if (isMovingAttack(animId) && input.stick.magnitude() > locomotionTuning().runThreshold) {
         animator.playCombatThenRun(clip, fade, held);
         return;
     }
     // With a target the fight idle follows; with none the attack ends in 389, then the idle, as at runtime with
-    // nobody near (docs/research/combat.md#input-return). **Coney's reading**: the target kept decides between the
-    // two (the original's test is not traced).
+    // nobody near (docs/research/combat/index.md#input-return). **Coney's reading**: the target kept decides between
+    // the two (the original's test is not traced).
     if (m_target != nullptr) {
         animator.playCombat(clip, kAnimFightIdle, AnimState::Attack, fade, held);
         return;
@@ -845,7 +874,8 @@ void Fighter::playAttack(int animId, const FighterInput& input, HumanAnimator& a
 void Fighter::steer(int animId, const FighterInput& input, const HumanAnimator& animator, float& heading,
                     bool chainStep) {
     m_steer.clear();
-    // A snap steers onto the human its own search found, which becomes the target (docs/research/combat.md#attacks).
+    // A snap steers onto the human its own search found, which becomes the target
+    // (docs/research/combat/index.md#attacks).
     if (m_snapTarget != nullptr && (animId == id::kSnapRight || animId == id::kSnapLeft || animId == id::kSnapBack)) {
         m_target = m_snapTarget;
         steerSnap(animId, input, animator, heading);
@@ -853,7 +883,7 @@ void Fighter::steer(int animId, const FighterInput& input, const HumanAnimator& 
     }
     // The charge neither steers nor takes a target: it runs along the facing, which the stick still turns (its record
     // bit 0x1000000 does not make the human busy), and only warns the human ahead, as every attack's start does here
-    // (docs/research/combat.md#charge-aim).
+    // (docs/research/combat/index.md#charge-aim).
     // @orig 0x00264a80 Player_StartCharge (unknown)
     if (animId == id::kRunningAttackCharge) {
         return;
@@ -928,7 +958,7 @@ void Fighter::steerDive(const FighterInput& input, const HumanAnimator& animator
 
 void Fighter::steerSnap(int animId, const FighterInput& input, const HumanAnimator& animator, float heading) {
     // The turn puts the target along the snap's own direction (its side, the Anim Range List's offset), where its clip
-    // strikes, not straight ahead (docs/research/combat-moves.md#targeting).
+    // strikes, not straight ahead (docs/research/combat-targets.md#targeting).
     const Combatant* target = m_snapTarget;
     const anim::Vec3 to = anim::subtract(target->position(), input.position);
     const float distance = std::hypot(to.x, to.y);

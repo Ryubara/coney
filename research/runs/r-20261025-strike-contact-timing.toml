@@ -1,0 +1,46 @@
+version = 1
+id = "r-20261025-strike-contact-timing"
+date = "2026-10-25"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "8b6b375618e7aedbd1eebb96cff7d341ccf75668fd10226c2453936e46457d5d"
+
+[who]
+agent = "a5a2a86025b296d52"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-c"
+
+[start]
+state = "pedestrian-grab"
+patches = ["call-brains", "right-stick", "scripted-pad"]
+
+[run]
+name = ""
+method = "A pedestrian of the Civilians0 type made 1.0 m in front of the player (spawn-human); emulation paused; player 1's pad written over PINE (square or cross held 4 frames; chain: square at frames 0 and 16, cross at 32); one frame advanced at a time, reading the tick, the player's anim id (record +0x20) and the pedestrian's health (record +0x144). Contact: updates from the first frame with the attack's anim id to the first with the health drop. Then S1 in real time, L1 held, with a PCSX2 capture: anim change to health drop in ticks, first visible punch motion to fist at the face in frames."
+
+[values]
+s1_contact_updates = 2
+s1_damage = 17
+x1_contact_updates = 9
+x1_damage = 26
+ss2_contact_updates = 4
+ss2_damage = 36
+ssx3_contact_updates = 7
+ssx3_damage = 61
+grab_strike_53_contact_updates = 0
+grab_strike_53_damage = 57
+realtime_anim_to_damage_ticks = 4
+realtime_visible_start_to_contact_frames = 4
+realtime_display_lag_frames = 8
+target_distance_mm = 1000
+
+[addresses]
+strike_contact = 0x0021b290
+human_test_strikes = 0x0033f110
+tick_count = 0x005104f4
+pad_bytes = 0x005de3aa

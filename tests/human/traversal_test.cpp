@@ -438,6 +438,46 @@ TEST_CASE("a fence stops a walk, and a running climb carries the body through it
     }
 }
 
+TEST_CASE("a climb refuses the flash only while it climbs over: its first and last clips take it at once",
+          "[human][traversal][flash]") {
+    // Player_UseItemCommand (0x002843f8) refuses the press on held 0x40 (Human_HasHeld40, 0x00223c10), which only the
+    // climb's middle clip holds; the original's runs use the flash at once during the first and last clips and ignore
+    // it during the middle one (docs/research/combat-rage.md#flash-mid-move).
+    const TestCharacter character;
+    const auto mesh =
+        makeMesh(join(ground(), blockAlongY(30.0F, 50.0F, 40.0F, 40.08F, 1.0F, 0, coney::human::kMaterialLowFence)));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 20.0F, 0.0F});
+    human.fighter().health().set(human.fighter().health().maximum() / 2);
+    CHECK_FALSE(human.refusesFlash());
+    hold(human, pad(0.0F, 1.0F), 45, mesh.get());
+    while (human.position().y < 37.0F) {
+        human.step(pad(0.0F, 1.0F), mesh.get());
+    }
+    human.step(pad(0.0F, 1.0F, false, true), mesh.get());
+    REQUIRE(human.traversal() == Traversal::Climbing);
+    int first = 0;
+    int over = 0;
+    int last = 0;
+    for (int i = 0; i < 60 && human.traversal() == Traversal::Climbing; ++i) {
+        const std::uint32_t clip = human.animator().animId();
+        INFO("update " << i << ", clip " << clip);
+        if (clip == 447U) {
+            ++over;
+            CHECK(human.climbingOver());
+            CHECK(human.refusesFlash());
+        } else {
+            ++(clip == 446U ? first : last);
+            CHECK_FALSE(human.climbingOver());
+            CHECK_FALSE(human.refusesFlash());
+        }
+        human.step(pad(0.0F, 1.0F), mesh.get());
+    }
+    CHECK(first > 0);
+    CHECK(over > 0);
+    CHECK(last > 0);
+    CHECK_FALSE(human.refusesFlash());
+}
+
 TEST_CASE("walking north into a corner's edge, the body slides round it where the edge is named",
           "[human][traversal]") {
     // A building's convex corner at (40, 40), as level5's at (-60.2, -163.7): the player walks due north 0.2 m east of

@@ -7,6 +7,16 @@
      (CI refuses a change under src/ or python/src/ without a docs change, unless this line is here).
      If this finishes an issue, add a line `Fixes #<number>` (one per issue): merging then closes it. -->
 
+## Issues affected
+
+<!-- Every open issue this change partly fixes, changes the behaviour of or makes out of date, one line each on how:
+     `- #123: its step 2 is done`. An issue this change finishes is `Fixes #N` in Summary and is not listed here.
+     When no open issue is affected, replace the list with one line, `None (<reason>)`, with any short reason:
+     `None (one-line fix)`. `coney-tools issue impact` lists candidate issues from the diff if you have the tools;
+     it is a helper, not a requirement. After the merge the coordinator edits each issue listed. -->
+
+- ...
+
 ## Checklist
 
 <!-- A pull request merges only when every task in it is finished: list what it finishes, each item ticked, and

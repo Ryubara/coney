@@ -69,8 +69,9 @@ constexpr int kClimbTapEvery = 2;
 constexpr int kTapEvery = 6;
 // How far past a Jump or Charge leg's take-off x the driver aims along the leg's line, m.
 constexpr float kJumpLead = 20.0F;
-// The attack record's bit a run attack or a charge holds (`+0x08` & 0x1000000, docs/research/combat.md#run-attacks):
-// with L2 held it is the charge, so a Charge leg's charge has ended once it clears.
+// The attack record's bit a run attack or a charge holds (`+0x08` & 0x1000000,
+// docs/research/combat/index.md#run-attacks): with L2 held it is the charge, so a Charge leg's charge has ended once it
+// clears.
 constexpr std::uint32_t kChargeRecordBit = 0x1000000;
 // How far past a Charge leg's point he must be when the charge ends for the leg to be done, m: the barrier row it
 // breaks stands 3.7 m past the point (kChaseRoute).

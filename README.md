@@ -31,8 +31,12 @@ read the original.
 What this gives us:
 
 - **A native game, not an emulated one**, on Windows, Linux and macOS.
-- **Room to grow:** co-op over a network, higher frame rates, widescreen and mods need code that was designed for
-  them, which a translated or matched binary is not.
+- **Room to grow:** co-op over a network, higher frame rates and widescreen need code that was designed for them,
+  which a translated or matched binary is not.
+- **Room for other assets and for mods:** the game's assets come from your own copy: the PS2 disc today, and the
+  Xbox version as an optional extra ([in progress](docs/roadmap.md#xbox-assets-optional)). Assets people make
+  themselves can be loaded too ([custom content](docs/roadmap.md#custom-content)), and the engine has room for mod
+  tools ([script mods](docs/roadmap.md#script-mods)) and more. Custom assets and mod tools are planned: the game comes first.
 - **Code anyone can read and change**, under our own licence.
 
 What it costs:
@@ -54,8 +58,29 @@ so it is not counted.
 [![Understood](https://img.shields.io/endpoint?url=https%3A%2F%2Fryubara.github.io%2Fconey%2Fprogress%2Fbadges%2Funderstood.json)](https://ryubara.github.io/coney/progress/)
 [![Milestones](https://img.shields.io/endpoint?url=https%3A%2F%2Fryubara.github.io%2Fconey%2Fprogress%2Fbadges%2Fmilestones.json)](https://ryubara.github.io/coney/progress/)
 
-The figures are measured from `main` each time the [documentation](#documentation) is built, so they are never
-out of date. Per subsystem, the research coverage, the middleware and how it is all measured:
+<p>
+  <a href="https://ryubara.github.io/coney/">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://ryubara.github.io/coney/progress/readme-dark.png">
+      <img
+        alt="Coney's progress: a square per function, in three colours, and the count of each in a legend"
+        src="https://ryubara.github.io/coney/progress/readme-light.png"
+        width="880">
+    </picture>
+  </a>
+</p>
+
+Each square is one function of the original's own code, in address order: green is reimplemented, the softer grey
+understood (named and cited), the stronger grey not yet started. They are the same squares, in the same order and
+colours, as on the [docs home page](https://ryubara.github.io/coney/) (there in rows of 240, here 170), where pointing
+at a square names its function.
+
+The percentages differ on purpose: the badges weigh each function by the size of its code, while the picture counts
+every function as one square, so its share is lower where the reimplemented functions are the larger ones; and
+"Understood" in its legend counts only the functions understood but not yet reimplemented.
+
+The figures and the picture are measured from `main` each time the [documentation](#documentation) is built, so they
+are never out of date. Per subsystem, the research coverage, the middleware and how it is all measured:
 [Progress](docs/progress/index.md).
 
 ## Building and running

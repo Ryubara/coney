@@ -19,6 +19,14 @@ struct Placement {
     float headingDegrees = 0.0F;
 };
 
+/// What a script's teleport does to the human's move across the ground: `TeleportToFlag` (`Object_TeleportToFlag`,
+/// `0x00385db0`) stops it after the placement (Human_ResetMotion), `Teleport` (`Object_Teleport`, `0x00385bb8`) makes
+/// the placement alone and the move goes on (docs/research/teleports.md#motion-reset).
+enum class TeleportMotion : std::uint8_t {
+    Kept,    ///< `Teleport`: the placement only.
+    Stopped, ///< `TeleportToFlag`: the placement, then the motion reset.
+};
+
 /// A heading in the sense of a flag, `Teleport` and `TeleportToFlag` (degrees clockwise seen from above: the original
 /// turns by it about -z, docs/research/flags.md#position) as a Placement's heading (about +z), and back: its negative.
 [[nodiscard]] constexpr float placementHeading(float clockwiseDegrees) { return -clockwiseDegrees; }

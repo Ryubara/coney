@@ -316,8 +316,24 @@ merge_reason = ""          # needed when lines cover more than one piece
     * **`orig copy-check` is clean** on that file ([orig](coney-tools-fidelity.md#orig)): automatic names, `undefined`
       types, raw byte-offset reads and `goto` are refused.
 3. When all of it holds it appends the `compared` stamp, covering the decompile, Ghidra's function hash, the cut, the
-   pairs file's hash (line endings normalised) and the Coney function's body hash, and a count of the relations. A
-   second run that changes nothing writes no stamp.
+   pairs file's hash (line endings normalised) and the Coney function's body hash ([its code without comments or white
+   space](coney-tools-fidelity.md#body-hash)), and a count of the relations. A second run that changes nothing writes
+   no stamp.
+
+### Two Coney functions, one address {#shared-address}
+
+When two Coney functions port parts of one original function
+(`FollowCamera::update` and `FollowCamera::resetWhenLost` both port `0x0012ae58`), both carry `@orig` with that address
+and share its study and pairs file, and each is compared with `--coney-function KEY`. A `compared` stamp is read **by
+address and Coney function**: the stamp names its function in `detail.coney` (the function's key), and while another
+function also carries the address, `compare`, `task review` and `pr verify` look only at the stamps that name this
+function, so comparing the second never makes the first stale, and a function with no stamp of its own is "never
+compared" even though its sibling has one. A function that is alone at its address reads every stamp of the address, as
+before: a stamp made before the function was named, or under a name since changed, still covers the only function that
+cites the address. A stamp that names no function covers neither of two functions that share an address (compare each
+again). The code is `Report.latest(..., function=, cited_by=)` and `Report.current(...)` in `coney_tools/stamps.py`,
+and `orig_review.citing` lists the functions at each address. A refusal for such a function says to run `orig compare
+<addr> --coney-function KEY`.
 
 A run that finds something wrong prints it and writes **no stamp**: this is an edit-and-rerun loop, and the log records
 verdicts, not drafts. The same holds for every environment fault (Ghidra down, a git error, a build that does not
@@ -336,7 +352,9 @@ are listed.
 
 The reviewer ([Orig review](review/orig.md)) answers each pair: condition, value, effect and order the same, or the
 stand-in true. The tool part of that check is that the decompile still matches Ghidra (`original verify`), the cut and
-the pairs file hash agree with the stamp, and the Coney body is unchanged.
+the pairs file hash agree with the stamp, and the Coney body is unchanged. A comment or white space edit is not a
+change of the body; a stamp made when the hash still covered them is read by rehashing the function at the stamp's
+commit, so it keeps covering an unchanged function ([The body hash](coney-tools-fidelity.md#body-hash)).
 
 ## Fails first {#fails-first}
 
@@ -366,12 +384,15 @@ C++ tests run), does the same on the fix commit (default HEAD), then puts the br
   `fails-first/restore.json` in the unit's scratch folder before the first checkout and removed after the last: if a
   run is killed, the next one refuses while the worktree is detached and says `git checkout <branch>`; a restore that
   fails is reported as `COULD NOT RESTORE` with that command.
-* **Verdict.** `pass`: built at both commits, the test failed on the first and passed on the second. A failed run's
-  list of failed tests may be cut off (`... and N more`); a name missing from a cut-off list is not known to pass, so
-  that test is run alone. A test that
-  passes on the test commit detects nothing, and one that still fails on the fix does not prove it: both write a
-  `fail` stamp. A build that does not compile, a build left queued for a slot, or names that match no test are errors
-  with no stamp.
+* **Verdict.** `pass`: built at both commits, the test failed on the first and passed on the second. Which tests
+  failed is read from the build's log, the file whose path the build prints first (`log: ...`): ctest's own list of
+  failures there is one name a line, so a name with a comma in it stays whole, and a failed list the build cut short
+  loses none. The one-line `failed: a, b, ...` summary is never read for it, because it joins names with commas and is
+  cut at a width, even in the middle of a name. When the log cannot be read, or its list holds fewer names than ctest
+  counted, the run does not say which tests failed: each name is then run alone, and a name that did not pass alone
+  failed. A test that passes on the test commit detects nothing, and one that still fails on the fix does not
+  prove it: both write a `fail` stamp. A build that does not compile, a build left queued for a slot, or names
+  that match no test are errors with no stamp.
 * One stamp per test name (`--test` is repeatable; they are written together or not at all), covering both commits,
   the test files and the hashes of both runs' logs (kept in scratch as `red-` and `green-<test commit>-<fix commit>.log`).
 * A docs or tooling task has nothing to run: `--none REASON` (one line, at most 200 characters, given alone) stamps
@@ -387,14 +408,21 @@ C++ tests run), does the same on the fix commit (default HEAD), then puts the br
 `verify(folder, rules, require_stamps=, task=)` returning a `Report` (`ok`, `problems`, `head`, `latest(step,
 subject)`, `current(step, subject, covers)`) and `who_from_env(tool)`. A `pr-opened` stamp gets `chain_head` filled in by
 `append`. `current(...)` is how a later stage asks "does the newest passing stamp cover the hash I just recomputed?".
+For a `compared` stamp, `latest` and `current` also take the Coney function (`function=`) and every function citing the
+address (`cited_by=`) ([Two Coney functions, one address](#shared-address)).
 
 What the three steps bound to the change record (all unsigned, in the local log):
 
 | Step | `covers` | `detail` (at most 2 KB) |
 | --- | --- | --- |
 | `checked` | `diff_sha256`; `build_record_sha256` (profile `full` only); `checks_sha256`, the SHA-256 of the canonical JSON of the sorted list `detail.checks` | `profile` (`docs`, `tooling` or `full`: the checks of `proof.profiles` in [.github/conventions.yml](repo:.github/conventions.yml), written by `task check`), `rules` (`base`: the profiles and path classes were read from the base's file; `branch`: the base has no `proof` section yet), `checks` (the names that ran, in order), `failed` (the names that failed, on a `fail`), `tests` {total, passed, failed, skipped, skipped_disc}, `preset`, `minutes` |
-| `reviewed` | `diff_sha256`, `pairs_set_sha256`, `title_sha256`, `paragraph_sha256`, `images_sha256`, `review_sha256` (the recorded verdict, kept as `<scratch>/<task>/review.json`) | `verdict`, `scope`, `kinds`, `functions` (address to a one-letter class; `function_count` when the list would not fit), `pages`, `reviewer` {id, type, model}, `blockers`, `notes`, `not_reviewed`; a text review adds `full_seq` ([Task review](review/task.md#stamp)) |
+| `reviewed` | `diff_sha256`, `pairs_set_sha256`, `title_sha256`, `paragraph_sha256`, `images_sha256`, `review_sha256` (the recorded verdict, kept as `<scratch>/<task>/reviewed.json`) | `verdict`, `scope`, `kinds`, `functions` (address to a one-letter class; `function_count` when the list would not fit), `pages`, `reviewer` {id, type, model}, `blockers`, `notes`, `not_reviewed`; a text review adds `full_seq` ([Task review](review/task.md#stamp)) |
 | `pr-opened` | `tip`, `base`, `diff_sha256`, `title_sha256`, `paragraph_sha256`, `facts_sha256`, `images_sha256`, `chain_head` | `engineer`, `opener`, `kind`, `issues`, `profile`, `rebased_from`, `fix` |
+
+`pr open` appends the `pr-opened` stamp after the last check and before the push. If the newest stamp of the log is
+already a `pr-opened` whose `covers` are identical, it is reused and nothing is appended, so a rerun after a failed push
+or `gh` call leaves one stamp. The facts block of the description is generated from the log without its `pr-opened`
+stamps, so a rerun produces the same text and the same `facts_sha256` ([pr open](pr.md#open)).
 
 The hashes come from one place each, so the stage that writes a stamp and the check that reads it cannot differ:
 `pr_diff` for the change, `orig_pairs.set_sha256` for the pairs set (one `<address> <pairs file hash>` line for each

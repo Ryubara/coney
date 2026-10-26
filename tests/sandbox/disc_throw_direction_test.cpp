@@ -208,7 +208,7 @@ TEST_CASE("on the disc, a thrown human flies along the stick wherever it points 
 
 TEST_CASE("on the disc, the throw clips' own turns end the thrower facing the stick, as at runtime",
           "[sandbox][combat][disc][throw][!mayfail]") {
-    // **Open question** (docs/research/combat.md#open-questions): Coney's side clips turn the thrower about a
+    // **Open question** (docs/research/combat/index.md#open-questions): Coney's side clips turn the thrower about a
     // third too far (149 by -120 degrees where the original's turned -90) and the front victim drifts 19 degrees right
     // of the stick (2.1 at runtime). Scaling the root turn by the task's rate, as the velocity is, matched the
     // runtime turns in a local experiment, but formats/animation.md#root-motion has only the velocity scaled. Until

@@ -9,7 +9,7 @@
 //    engine's own is, so "is this value the engine?" has one answer.
 //  - `On` is the registrar `register` is given: a pattern, an optional filter and a hook of ($, e, next); a hook
 //    returns a registration that has a `catch`.
-//  - the nouns are the ones the mod calls (clock, command, process, store, ui, plugin) and nothing else: any other
+//  - the nouns are the ones the mod calls (clock, command, process, prompt, store, ui, plugin) and nothing else: any other
 //    noun is not in the list the check allows, whether or not this stub names it.
 // This stub only needs to agree with the engine's types on what the check looks at, which
 // python/tests/test_conclave_engine_stub.py verifies against the real ones whenever they are present, so it cannot
@@ -34,6 +34,10 @@ declare module 'claude-code' {
         options?: { cwd?: string; timeoutMs?: number; env?: Record<string, string> },
       ): Promise<{ exitCode: number; stdout: string; stderr: string }>
     }
+    readonly prompt: {
+      read(): Promise<{ text: string; cursor: number }>
+      submit(input: { text: string }): Promise<{ text?: string; drop?: string }>
+    }
     readonly store: {
       get(key: string): Promise<unknown>
       set(key: string, value: unknown): Promise<void>
@@ -44,6 +48,7 @@ declare module 'claude-code' {
       panes(): Promise<unknown[]>
       resolve(input: unknown): Promise<unknown>
       status(text: string): Promise<void>
+      toast(text: string): void
     }
     readonly plugin: { readonly root: string }
   }

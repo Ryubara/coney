@@ -475,7 +475,7 @@ STARTERS: dict[str, dict[str, Any]] = {
         "`AddCommand(command, trigger, buttons, extra)` and scripts switch them per human with `EnableCommand`.\n"
         "AI humans write the same numbers. A **Warrior command** is an order the war chief gives the crew from\n"
         "the command menu (`WCIssueCommand`, `WCEnableCommand`). How buttons are matched:\n"
-        "[Combat: commands](../research/combat.md#commands); the orders:\n"
+        "[Combat: commands](../research/combat/index.md#commands); the orders:\n"
         "[AI: Warrior commands](../research/ai-gangs.md#warrior-commands); the buttons: [Controls](controls.md).",
         "complete": "Every trigger kind, every pad command the scripts bind or switch and all seven Warrior commands\n"
         "are listed. What 1, 2, 9, 11, 21, 22 and 37-44 do is not traced, nor the command menu's layout; pad\n"

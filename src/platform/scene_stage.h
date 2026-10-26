@@ -102,6 +102,7 @@ class SceneStage final : public scenes::SceneHost {
         double human = 0.0;
         anim::Vec3 feet{};
         float heading = 0.0F;
+        bool skipped = false; ///< At its end pose after a skip; otherwise where its clip left it.
     };
     /// Sets what places a released human. It is called at the release itself, before the scene's end function
     /// runs (scenes.md#ending), so the end function's own moves (a teleport to a flag) win over the placement.

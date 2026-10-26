@@ -44,9 +44,10 @@ class Brain;
 [[nodiscard]] StartGuard startGuardOf(const Brain& attacker, const Brain& target, int kind);
 
 /// Whether Coney's dispatcher takes `kind`'s command from an AI. **Coney stand-in**: the kinds whose commands reach
-/// no handler yet (11 `0x36`, 12 / 13 `0x37` / `0x38`, 15 `0x24`, 23 `0x39`, 41 `0x31`) and the `SSS3`
-/// holds (8, 9: `0x14`, `0x13`) are left out of every pick. 36 (`5`, get off) and 34 / 44 (`0x19`, the grab spin,
-/// which only a grabber's update reads) are picked as the original picks them.
+/// no handler yet (11 `0x36`, 12 / 13 `0x37` / `0x38`, 23 `0x39`, 41 `0x31`), 15 (`0x24`, the spray: the dispatcher
+/// plays it, but which AIs pick it in a fight is not checked yet, docs/research/combat/index.md#q-ai-spray) and the
+/// `SSS3` holds (8, 9: `0x14`, `0x13`) are left out of every pick. 36 (`5`, get off) and 34 / 44 (`0x19`, the grab
+/// spin, which only a grabber's update reads) are picked as the original picks them.
 [[nodiscard]] bool dispatchable(int kind);
 
 /// What filter a pick runs: `Human_CanUseAttackKind` or `Human_CanStartAttack`.

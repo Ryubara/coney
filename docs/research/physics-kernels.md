@@ -938,7 +938,7 @@ Table (3, 4); also the sweep table's (3, 4) through `0x00345d18`. Size 0x24. Mir
   `Sweep_SphereOrientedBox` `0x0034bbe8`), which writes the fraction `+0x80`, the point `+0x90`, `+0x10`, `+0x50`,
   `+0x60`, `+0x70`/`+0x74` and clears `+0xb0`; what each means, and which `Car_OnHit` reads, is in
   [Unit 5](#u4b-summary-for-the-implementer). Confirmed (code) at `0x003453f8`.
-- The strike spheres (from [Combat](combat.md#moving-strikes)): hands 19 and 25 (0.09 m), head 6 (0.15 m), feet 30
+- The strike spheres (from [Combat](combat/index.md#moving-strikes)): hands 19 and 25 (0.09 m), head 6 (0.15 m), feet 30
   and 33 (0.15 m), and the held weapon's row of 0.1 m spheres (or its single sphere). The `car_glance` runtime hit
   (`S1`, bone 19) is consistent with this.
 - **The segment's "previous position" moves only its start.** A segment's position setter (`0x004f1250`, vtable
@@ -1323,7 +1323,7 @@ and at D = 0, where C / (D − B) gives the exact tangent root.
 ### How Human_TestStrikes builds the sweep (0x0033f110) {#u4b-how-human-teststrikes-builds-the-sweep-0}
 
 Confirmed (code) at `0x0033f110` unless marked; the target filters are already on
-[combat.md#moving-strikes](combat.md#moving-strikes).
+[combat.md#moving-strikes](combat/index.md#moving-strikes).
 
 - **Which bodies.** For a candidate body that is not a human (type mask `+0x44` without `0x40`), the striking shapes
   are tried only when the candidate's flags `+0x40` have `0x10` (MELEETARGET) or `0x20` (CHARGETARGET) and the

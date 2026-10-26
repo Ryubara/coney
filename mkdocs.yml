@@ -156,16 +156,17 @@ nav:
           - Scripts (Lua): research/scripting.md
           - World flags: research/flags.md
           - Characters: research/characters.md
+          - "Characters: placing a human (teleports)": research/teleports.md
           - "Animation system: code": research/animation.md
           - Inventory, unlockables and statistics: research/player-state.md
           - "Workouts: the hangout gym": research/workouts.md
           - Profiles, options and saving: research/save.md
-          - Combat: research/combat.md
+          - Combat: research/combat/index.md
           - "Combat moves: table and frame data": research/combat-moves.md
           - "Combat grabs: the hold, the mount and breaking a pair": research/combat-grabs.md
-          - "Combat throws, the bat and mugging": research/combat-throws.md
+          - "Combat throws, weapons in hand and mugging": research/combat-throws.md
           - "Combat reactions: damage, knockdown and defeat": research/combat-reactions.md
-          - "Combat power, rage and reviving": research/combat-rage.md
+          - "Combat: the power meter, rage and the flash": research/combat-rage.md
           - "Combat targets, AI attacks and breakables": research/combat-targets.md
           - "Combat: where Coney differs": research/combat-diffs.md
           - Crimes and context actions: research/crimes.md
@@ -185,6 +186,7 @@ nav:
           - "AI reimplementation plan: units and specifications": research/ai-reimpl.md
           - Cars: research/cars.md
           - Camera: research/camera.md
+          - "Slow motion: what turns it on and off": research/slow-motion.md
           - Scenes (cutscenes): research/scenes.md
           - Sound: research/sound.md
           - Sound events: research/sound-events.md
@@ -215,8 +217,11 @@ nav:
       - The discs Coney installs from: research/discs.md
       - Xbox assets (optional): research/xbox-assets.md
       - Xbox executable (evaluation): research/xbox-executable.md
+      - "Xbox port: history and differences": research/xbox-port.md
+      - Xbox lighting and shadows: research/xbox-lighting.md
   - "Engine: how Coney works":
       - engine/index.md
+      - Combat: engine/combat.md
   - Game references:
       - references/index.md
       - Entities: references/entities.md

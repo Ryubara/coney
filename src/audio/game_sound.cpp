@@ -162,6 +162,9 @@ void GameSound::humanSound(const script::HumanSoundCall& call) {
     if (call.sound.kind != human::HumanSound::Kind::StopHeld) {
         ++(call.sound.kind == human::HumanSound::Kind::Anim ? m_animSounds : m_impactSounds);
     }
+    if (call.sound.kind == human::HumanSound::Kind::Anim) {
+        m_lastAnimSounds[call.human] = call.sound.animSound;
+    }
     if (m_sounds.engine() == nullptr) {
         return;
     }

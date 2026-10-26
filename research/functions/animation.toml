@@ -23,7 +23,7 @@ status = "legacy"
 address = 0x00101658
 name = "Anim_TimeToFirstEvent"
 page = "animation.md#clip-queries"
-role = "the time of the first event of types `0xf`, `0x13`, 9, `0x36`, `0x34`, `0x41` or `0x2c`, else the duration, divided by the rate ([Combat](combat.md))"
+role = "the time of the first event of types `0xf`, `0x13`, 9, `0x36`, `0x34`, `0x41` or `0x2c`, else the duration, divided by the rate ([Combat](combat/index.md))"
 level = "confirmed-code"
 coney = "src/human/turn_and_slide.h:firstContactTime"
 status = "legacy"
@@ -132,6 +132,15 @@ name = "AnimTaskChained_Construct"
 page = "formats/animation.md#original-structure"
 level = "confirmed-code"
 coney = "src/animation/anim_task.h:ClipThenNextTask"
+status = "legacy"
+
+[[function]]
+address = 0x00106240
+name = "AnimTask5_Construct"
+page = "formats/animation.md#playback-rate"
+role = "Builds a type 5 (layer) task over one clip, its rate taken from the clip's Anim Range List flags (`Anim_RateMultiplier`, `0x00104a38`): no flag, the default 0.75."
+level = "confirmed-code"
+coney = "src/human/human.h:Human::pushOverlayClip"
 status = "legacy"
 
 [[function]]

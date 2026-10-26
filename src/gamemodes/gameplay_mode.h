@@ -80,8 +80,13 @@ class ScriptedPlayer {
     ScriptedPlayer(ScriptedPlayer&&) = delete;
     ScriptedPlayer& operator=(ScriptedPlayer&&) = delete;
 
-    /// Puts player 1 at `placement` (feet, heading in degrees) with no ground snap, as `TeleportToFlag` does.
-    virtual void teleportPlayer(const world_objects::Placement& placement) = 0;
+    /// Puts player 1 at `placement` (feet, heading in degrees) with no ground snap, as the script's teleport does:
+    /// `motion` Stopped for `TeleportToFlag` (his move stops), Kept for `Teleport` (it goes on).
+    virtual void teleportPlayer(const world_objects::Placement& placement, world_objects::TeleportMotion motion) = 0;
+    /// teleportPlayer() as `TeleportToFlag` does it.
+    void teleportPlayer(const world_objects::Placement& placement) {
+        teleportPlayer(placement, world_objects::TeleportMotion::Stopped);
+    }
     /// Player 1 starts a tag's spray clips facing the tag at `point` (Human::startTagSpray()); false when he cannot.
     virtual bool startTagSpray(const std::array<float, 3>& /*point*/) { return false; }
     /// Whether player 1's spray intro has ended and its loop plays: the stick game goes live.
@@ -467,9 +472,9 @@ class GameplayMode final : public GameMode {
     [[nodiscard]] std::string talkPrompt() const;
     // The revive prompt, `GSTRING.HUD` 4, while a partner is revivable and player 1 holds a flash; empty otherwise.
     [[nodiscard]] std::string revivePrompt() const;
-    // The revive (gameplay_revive.cpp, docs/research/combat-rage.md#revive). Each frame after the level's step: d-pad
-    // left (command 0x27) tries a revive, and a revive under way finishes when the reviver's 351 ends, or is dropped
-    // when something else took his body or the downed human went.
+    // The revive (gameplay_revive.cpp, docs/research/combat-reactions.md#revive). Each frame after the level's step:
+    // d-pad left (command 0x27) tries a revive, and a revive under way finishes when the reviver's 351 ends, or is
+    // dropped when something else took his body or the downed human went.
     void updateRevive();
     // D-pad left: `reviver` (player 1) revives the partner revivableInReach() finds when the tests pass, says 76 and
     // plays his clips; false when refused.

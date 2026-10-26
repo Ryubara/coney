@@ -30,10 +30,10 @@ leans into turns, stops, steps onto kerbs under 25 cm, slides along walls, jumps
 ledges on the level's collision mesh, with the original's speeds, turn rates and clips: the walk or run start, a blend
 across walk, jog, run and sprint, the idle, the run stop, the jump and its landing, and the climbs
 ([Characters](../research/characters.md#sprint)). He fights as the original's player does
-([Combat](../research/combat.md#coneys-implementation)): the square and cross chains, the snaps, the run attack, the
-charge and the dive, the block, rage, the grab with its strikes, spins, throws and the mugging, and the tackle, with the
-original's commands, timing and clips; the sandbox's fight yard (`--play-level sandbox:combat`) has passive targets that
-take the hits. With a target (the one he attacked, or the one L1 picks) he locks onto it, as the original's default
+([Combat](../research/combat/index.md#coneys-implementation)): the square and cross chains, the snaps, the run attack,
+the charge and the dive, the block, rage, the grab with its strikes, spins, throws and the mugging, and the tackle, with
+the original's commands, timing and clips; the sandbox's fight yard (`--play-level sandbox:combat`) has passive targets
+that take the hits. With a target (the one he attacked, or the one L1 picks) he locks onto it, as the original's default
 settings do: he faces it and the stick walks him at one speed in any direction with the combat walk until it is more
 than 2.5 m away or down. The level's glass panes and doors work: his hits break the panes and the breakable doors, and
 the lock pick opens a door ([World objects](../research/objects.md#coneys-implementation)). The level's scenes play and
@@ -116,7 +116,7 @@ The columns, positions in metres (game axes, z up), angles in degrees, speeds in
 | `cam_x` ... `wanted_z` | the camera's position, its look-at point and its wanted position |
 | `cam_distance`, `cam_pitch`, `cam_yaw` | the camera's distance from its look-at point, its pitch above it and the heading its view faces |
 | `band_near`, `target_pitch`, `auto_turn` | the leash band's near edge (the sprint zoom moves it), the target pitch, and the auto-centre rule's turn this step |
-| `command`, `health`, `power` | the command matched this step (0 for none; [Combat](../research/combat.md#commands)), the health and the power meter |
+| `command`, `health`, `power` | the command matched this step (0 for none; [Combat](../research/combat/index.md#commands)), the health and the power meter |
 | `aim_x`, `aim_y`, `aim_z`, `aim_lag` | the aim point the view faces ([Camera](../research/camera.md#aim-point)) and its lag |
 
 `--trace-humans FILE` (with `--play-level` or `--rumble`) writes **every** human's state after every step to `FILE`, one
@@ -194,9 +194,15 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level34 -
 ```
 
 `--start X,Y,Z,HEADING[,DISTANCE,YAW]` (with `--play-level`) moves player 1, after the level's own start, to those
-feet (dropped onto the ground below) and heading in degrees, and with the last two puts the follow camera DISTANCE
-metres from him with its view facing YAW degrees. It is a test aid: a trace scenario starts Coney where the
-original's save state stands, as `walk60` and `run_circle` do from slot 1's first trace row.
+feet (dropped onto the ground below, standing idle with his health and meters kept) and heading in degrees, and with
+the last two puts the follow camera DISTANCE metres from him with its view facing YAW degrees. It is a test aid: a
+trace scenario starts Coney where the original's save state stands, as `walk60` and `run_circle` do from slot 1's
+first trace row.
+
+`--give ITEM,COUNT` (with `--play-level`, repeatable) makes player 1 hold COUNT (0 to 9999) of inventory item ITEM (0
+to 22, [Inventory](../references/inventory.md); 3 is spray paint) from the first step of play, with no pick-up notice.
+It is a test aid for a capture that needs an item, such as circle + triangle's spray, which needs paint:
+`--give 3,2`.
 
 `--scene NAME` (with `--play-level`) plays the in-engine scene NAME at once, after any `--start`, as a level99
 cinematic: player 1 takes the role named `warrrecv` and the other roles are played by stand-ins drawn from the role's
@@ -259,12 +265,36 @@ play the player's feet and heading, the camera's eye and target, the other human
 enemy]` (standing: not on the ground, so a held or mounted human stands, as the original's state bits say) and the
 observed world objects as `[type, x, y, shown]`, with car stereos among them), then reads lines from
 standard input until a pad: `observe PREFIX...` chooses the world object types observed from then on, and `pad
-BUTTONS RX RY LX LY` (the buttons in hexadecimal, as an input script's masks, then the four stick bytes, 0x80
-centred) is the pad of the update. With `--play-level` the first observation is of the level's first update of
-play: until then the session loads the level as the story does and the pad rests. With `--event-log` each event is
-also written as `@ev <csv line>`; other lines on standard output are Coney's own messages. At the end of standard
-input the pad is released. It is test mode (one step per update) and cannot be combined with `--input-script`.
+BUTTONS RX RY LX LY` is the pad of the update ([the pad line](#pad-line)). `call NAME` runs the level script's
+function `NAME` (no arguments) before the update and answers `@called NAME ok` or `failed`: a test aid that puts the
+level at a given step, such as `call P3.DealerPoizo` for a capture at level99's flash dealer. With `--play-level` the
+first observation is of the level's first update of play: until then the session loads the level as the story does and
+the pad rests. With `--event-log` each event is also written as `@ev <csv line>`; other lines on standard output are
+Coney's own messages. At the end of standard input the pad is released. It is test mode (one step per update) and
+cannot be combined with `--input-script`.
 `coney-tools trace mission` drives it.
+
+#### The pad line {#pad-line}
+
+A `pad` line has five fields after the word, and the first is the only one in hexadecimal:
+
+- **`BUTTONS`** is the held buttons as a hexadecimal word, without a `0x`, in the bits of an input script's masks
+  (`40` is cross, `80` is square); pressure buttons held read 255.
+- **`RX RY LX LY`** are the four stick bytes, **in decimal**, as the PS2 pad reports them: right stick x and y, then
+  left stick x and y. 0 is left or up, 255 is right or down and 128 is centred. Write centre as `128`, never `0x80`:
+  the number is read in base 10 and a `0x` prefix is not understood. Bytes 95 to 160 sit inside the game's dead zone
+  and read as no deflection; to ask for a given fraction of a stick, take the byte an input script's `stick left X Y`
+  percentages give (`stickByteFromPercent`) rather than scaling over 0 to 255.
+- A field out of range (a button word over `ffff`, a stick byte over 255) or a line without five numbers is answered
+  `@error bad pad line: ...`, and that update gets a released pad.
+
+```text
+pad 0 128 128 128 128
+pad 40 128 128 200 60
+```
+
+The first line is a released pad, every stick centred. The second holds cross with the left stick pushed up and to
+the right (x 200, y 60) and the right stick centred.
 
 ### Matched views {#matched-views}
 

@@ -110,7 +110,7 @@ Three tiers, each usable on its own. The data limits them: only the environment-
 
 | Preset | Contents | Needs |
 | --- | --- | --- |
-| *Faithful* | Nothing added. The default, and what tests use | none |
+| *Faithful* | Nothing added. The default, and what tests use. The Xbox port's shadow map, gamma ramp and per-pixel fog are toggles here, off by default ([Xbox lighting](../research/xbox-lighting.md#in-coney)) | none |
 | *Enhanced* | Sun shadow map, per-pixel lights, environment-map materials with cube maps | F2, F3 |
 | *High* | Adds GTAO ([plan](enhancements.md#lighting-and-post-processing)), probes, tagged reflections, lamp shadows for objects | F2, F3 |
 | *Ultra* | Adds ray-traced shadows and AO for dynamic objects over the baked light | F5 and a Vulkan ray-query path |
@@ -149,9 +149,10 @@ Three tiers, each usable on its own. The data limits them: only the environment-
 
 ## Research this design needs
 
-For the graphics engineers, one line each. None is started.
+For the graphics engineers, one line each. The first is done; the others are not started.
 
-- What the Xbox build's `GraphicsShadowXBox.cpp` draws (**Xbox**, optional; shared with the plan).
+- What the Xbox build's `GraphicsShadowXBox.cpp` draws: done, see [Xbox lighting and
+  shadows](../research/xbox-lighting.md#in-coney) for its findings and how they map onto these presets.
 - How the environment-map pipeline gets its texture and matrix (`0x00428410`, `0x00428260`), and which materials
   and objects use it, as a count per level.
 - What the prelit colour holds: whether direction or occlusion can be told apart from the lamps' baked part, from a

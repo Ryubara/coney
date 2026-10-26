@@ -28,10 +28,10 @@
 #include "support/human_fixtures.h"
 
 // When the player's moves take a press again and give the stick back, for every move, under button spam and with the
-// stick held at partial deflections (docs/research/combat.md#input-return). The synthetic character plays each move's
-// clip for as long as Rembrandt's clip on the disc lasts (S1 20 updates, X1 30, the grab miss 71 and 69, ...). Each
-// test checks that the clip sequence plays fully under the spam, the update at which a press next starts a move, the
-// update at which the stick moves the player again and the gait he resumes at, and that nothing of the move is left
+// stick held at partial deflections (docs/research/combat/index.md#input-return). The synthetic character plays each
+// move's clip for as long as Rembrandt's clip on the disc lasts (S1 20 updates, X1 30, the grab miss 71 and 69, ...).
+// Each test checks that the clip sequence plays fully under the spam, the update at which a press next starts a move,
+// the update at which the stick moves the player again and the gait he resumes at, and that nothing of the move is left
 // behind (gait, traversal, the fighter's state, the hold).
 
 using coney::anim::Vec3;
@@ -107,7 +107,7 @@ constexpr std::uint16_t kRate08 = 0x800;
 
 // The fight's clips with the disc's lengths for the moves timed here, and the chain attacks' and the snaps' phase
 // events. The charge carries the body at 7.45 m/s, as at runtime. The bat's square 34 (28 frames) and cross 36 (26
-// frames) are at the unflagged 0.75, with no chain window (docs/research/combat-moves.md#bat-cross).
+// frames) are at the unflagged 0.75, with no chain window (docs/research/combat-throws.md#bat-cross).
 std::vector<coney::test::LocomotionClip> timingClips() {
     std::vector<coney::test::LocomotionClip> clips = coney::test::fightClips();
     const std::vector<coney::test::LocomotionClip> timedClips{
@@ -538,7 +538,7 @@ TEST_CASE("X1 alone lasts 30 updates; the stick at 35 % walks him as it ends", "
 
 TEST_CASE("with a bat, 34 lasts 37 updates and 36 lasts 35, as at runtime", "[human][combat][timing]") {
     // 34's 28 frames at 0.75 give 38 updates; the original handed over to 389 after 37 (a Coney stand-in ends that
-    // clip early, docs/research/combat-moves.md#bat-cross). 36's 26 frames give its 35.
+    // clip early, docs/research/combat-throws.md#bat-cross). 36's 26 frames give its 35.
     struct Case {
         const char* script;
         int clip;
@@ -567,11 +567,12 @@ TEST_CASE("square then cross spammed plays S1 and SX2, which plays to its end", 
 }
 
 TEST_CASE("a snap plays to its end under square spam, then the stick at rest gives S1", "[human][combat][timing]") {
-    // A human 1.1 m to the right for the snap to find (docs/research/combat.md#attacks), and the current target ahead
-    // (the stance takes the nearest within 2 m; a snap never goes for the current target).
+    // A human 1.1 m to the right for the snap to find (docs/research/combat/index.md#attacks), and the current target
+    // ahead (the stance takes the nearest within 2 m; a snap never goes for the current target).
     Fight fight(timingCharacter(), 0.0F, 1.1F);
     static_cast<void>(fight.addTarget(timingCharacter(), 0.9F, 0.0F));
-    // The stick flicked fully right for one update with square (combat.md#input-scripts), then square every 2.
+    // The stick flicked fully right for one update with square (docs/engine/combat.md#input-scripts), then square
+    // every 2.
     const std::string script = "10 stick left 100 0\n10 tap square\n11 stick left 0 0\n" + taps("square", 12, 60, 2);
     const Timeline line = Timeline::record(fight, script, 80);
     CHECK(line.nthStart(id::kSnapRight, 0) == 10);

@@ -11,7 +11,7 @@ Each `topic_*` function returns the entries of one list, in page order; the pure
 scripts so the tests can feed them synthetic chunks. The topics themselves, and their starting prose, are defined here
 too and registered in `refs_topics` and `refs_cli`.
 
-Research: docs/research/characters.md#power-classes, docs/research/combat.md, docs/research/ai.md#attack-kinds,
+Research: docs/research/characters.md#power-classes, docs/research/combat/index.md, docs/research/ai.md#attack-kinds,
 docs/research/frontend.md#rumble, docs/research/gui.md#statistics, docs/guides/research-data.md#reference-lists.
 """
 
@@ -88,7 +88,7 @@ for _kinds, _command in (
 ):
     for _kind in _kinds:
         ATTACK_COMMANDS[_kind] = _command
-#: `0x002548f0`'s jump table (`0x0055d6f0`): the anim ids a damage table's index writes (docs/research/combat.md).
+#: `0x002548f0`'s jump table (`0x0055d6f0`): the anim ids a damage table's index writes (docs/research/combat/index.md).
 ATTACK_ANIMS: dict[int, list[int]] = {
     0: [11], 1: [12], 2: [13], 3: [15], 4: [14], 5: [16], 6: [17], 7: [19], 8: [18], 9: [20],
     10: [25, 26, 27, 28, 29, 30], 11: [21], 12: [193], 13: [194], 16: [653, 655], 17: [657, 659], 19: [0], 20: [1],

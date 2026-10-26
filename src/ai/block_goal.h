@@ -10,7 +10,7 @@
 // and an AI has none, so its command 4 (R1 held) does nothing. What it does give an AI: hit reactions off for its first
 // updates (the hits still take health), a counter (command 3) rolled on every update of the block time, which answers
 // a grab or a tackle, and a punishing attack in the block's last second once the block was extended.
-// Research: docs/research/ai.md#block, docs/research/combat.md#block
+// Research: docs/research/ai.md#block, docs/research/combat/index.md#block
 
 namespace coney::ai {
 

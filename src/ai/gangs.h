@@ -85,9 +85,10 @@ struct GangLookups {
 };
 
 /// Whether `brain`'s human is down or dead in Coney's attack tactic's and standing count's reading: out of health, or
-/// on the ground. **Coney's reading**, wider than the original's `Human_IsDownOrDead` (humanIsDownOrDead()), which a
-/// member knocked down alive does not meet; kept for those callers until their call sites are checked against the
-/// research.
+/// on the ground. **Coney's reading**, wider than the original's `Human_IsDownOrDead` (humanIsDownOrDead(), which
+/// forwards to human::Human::downOrDead(), the narrow reading), which a member knocked down alive does not meet; kept
+/// for those callers until their call sites are checked against the research. Not the same test as
+/// Human::downOrDead(): pick by which reading the caller ports.
 [[nodiscard]] bool downOrDead(const Brain& brain);
 
 /// Whether `brain`'s human meets `Human_IsDownOrDead` (`0x00227e60`): no state record (never, a Coney human has one),

@@ -65,7 +65,7 @@ std::string_view actionName(const Action* action) {
 // The number of goals a row lists from the bottom of the stack (goal0 to goal5).
 constexpr std::size_t kStackColumns = 6;
 
-// The record state word's bits the trace composes (docs/research/combat.md#state-flags,
+// The record state word's bits the trace composes (docs/research/combat/index.md#state-flags,
 // docs/research/rumble.md#gang-battle-results, human/script_state.h).
 constexpr std::uint32_t kStateGrabbedFront = 0x10;
 constexpr std::uint32_t kStateGrabbedRear = 0x20;

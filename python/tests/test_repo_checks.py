@@ -12,6 +12,7 @@ from coney_tools import audit_text, repo_checks
 from coney_tools.config import ConfigError
 from coney_tools.conventions import load_conventions
 from coney_tools.repo_checks import (
+    affected_issues,
     branch_trailer_models,
     check_body,
     check_docs,
@@ -116,6 +117,7 @@ CHECKLIST = "Done:\n\n- [x] The check\n"
 
 
 NO_SHOTS = "Screenshots: none (a docs-only change, nothing visible)"
+NO_ISSUES = "None (no open issue cites anything this change touches)"
 
 
 def body(
@@ -124,10 +126,11 @@ def body(
     model: str = "Claude Sonnet 5.5",
     testing: str = "- `pytest python/tests`: 120 passed",
     screenshots: str = NO_SHOTS,
+    affected: str = NO_ISSUES,
 ) -> str:
     """A description in the template's form; the arguments fill the parts the checks read."""
     return (
-        f"## Summary\n\n{summary}\n\n## Checklist\n\n{CHECKLIST}\n"
+        f"## Summary\n\n{summary}\n\n## Issues affected\n\n{affected}\n\n## Checklist\n\n{CHECKLIST}\n"
         f"## Testing\n\n{testing}\n\n## Screenshots\n\n{screenshots}\n\n"
         f"## AI use\n\n- **Commits written by:** {written_by}\n- **Model:** {model}\n"
     )
@@ -150,7 +153,7 @@ def test_windows_line_endings_and_extra_text_pass() -> None:
     assert check_body(text, BODY_RULES) == []
 
 
-@pytest.mark.parametrize("section", ["Summary", "Checklist", "Testing", "Screenshots", "AI use"])
+@pytest.mark.parametrize("section", ["Summary", "Issues affected", "Checklist", "Testing", "Screenshots", "AI use"])
 def test_a_missing_section_is_reported(section: str) -> None:
     problems = check_body(body().replace(f"## {section}\n", ""), BODY_RULES)
     assert any(f"missing the section '## {section}'" in problem for problem in problems), problems
@@ -167,7 +170,7 @@ def test_a_heading_inside_a_comment_does_not_count() -> None:
 
 
 def test_an_empty_body_reports_every_section() -> None:
-    assert len(check_body("", BODY_RULES)) == 5
+    assert len(check_body("", BODY_RULES)) == 6
 
 
 @pytest.mark.parametrize("summary", ["", "   ", "<!-- One short paragraph. -->", "<!--\nmany\nlines\n-->", "..."])
@@ -388,13 +391,23 @@ def test_the_template_matches_the_rules() -> None:
     assert tuple(listed.group(1).split(" / ")) == rules.ai_use.written_by.choices
 
 
-def test_a_filled_in_template_passes() -> None:
+def filled_template() -> str:
+    """The template with each section filled in the way a description fills it (the Runtime line left as it is)."""
     filled = read_template().replace("## Summary\n", "## Summary\n\nAdds a check.\n", 1)
+    filled = filled.replace("## Issues affected\n", "## Issues affected\n\n" + NO_ISSUES + "\n", 1)
     filled = filled.replace("## Testing\n", "## Testing\n\n- `pytest`: 3 passed\n", 1)
     filled = filled.replace("## Screenshots\n", "## Screenshots\n\nScreenshots: none (no visible change)\n", 1)
     filled = re.sub(r"(\*\*Commits written by:\*\*) <!--.*?-->", r"\1 an AI", filled)
-    filled = re.sub(r"(\*\*Model:\*\*) <!--.*?-->", r"\1 Claude Sonnet 5.5", filled)
-    assert check_body(filled, BODY_RULES) == []
+    return re.sub(r"(\*\*Model:\*\*) <!--.*?-->", r"\1 Claude Sonnet 5.5", filled)
+
+
+def test_a_filled_in_template_passes() -> None:
+    assert check_body(filled_template(), BODY_RULES) == []
+
+
+def test_the_untouched_issues_affected_section_of_the_template_is_refused() -> None:
+    template = read_template().replace("## Summary\n", "## Summary\n\nAdds a check.\n", 1)
+    assert any("'## Issues affected' is empty" in problem for problem in check_body(template, BODY_RULES))
 
 
 # --- every Checklist item is ticked -------------------------------------------------------------------------------
@@ -578,7 +591,7 @@ def test_a_local_image_is_accepted_only_when_uploads_are_not_required() -> None:
 
 def test_the_sections_and_labels_are_the_files() -> None:
     rules = conventions_with(
-        ("pull_requests.sections", ["Summary", "Checklist", "Testing", "Pictures", "AI use"]),
+        ("pull_requests.sections", ["Summary", "Issues affected", "Checklist", "Testing", "Pictures", "AI use"]),
         ("pull_requests.screenshots.section", "Pictures"),
     ).pull_requests
     text = body().replace("## Screenshots", "## Pictures")
@@ -867,11 +880,7 @@ def test_the_untouched_template_is_refused_for_a_player_facing_title_and_still_b
 
 
 def test_a_filled_template_needs_its_runtime_line_for_a_player_facing_title() -> None:
-    filled = read_template().replace("## Summary\n", "## Summary\n\nAdds a check.\n", 1)
-    filled = filled.replace("## Testing\n", "## Testing\n\n- `pytest`: 3 passed\n", 1)
-    filled = filled.replace("## Screenshots\n", "## Screenshots\n\nScreenshots: none (no visible change)\n", 1)
-    filled = re.sub(r"(\*\*Commits written by:\*\*) <!--.*?-->", r"\1 an AI", filled)
-    filled = re.sub(r"(\*\*Model:\*\*) <!--.*?-->", r"\1 Claude Sonnet 5.5", filled)
+    filled = filled_template()
     problems = check_body(filled, BODY_RULES, title=PLAYER)
     assert any("Runtime: ..." in problem or "'Runtime:' is empty" in problem for problem in problems), problems
     fixed = filled.replace("- Runtime: ...", "- " + EVIDENCE)
@@ -882,3 +891,106 @@ def test_the_template_shows_the_runtime_line() -> None:
     template = read_template()
     assert f"{BODY_RULES.runtime.line} ..." in strip_comments(template)
     assert f"`{BODY_RULES.runtime.none} (<reason>)`" in template
+
+
+# --- the Issues affected section ---------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "affected",
+    [
+        "None (no open issue cites anything this change touches)",
+        "None (one-line fix)",
+        "none (docs only)",
+        "- None (a new tool nothing cites)",
+        "**None** (the issue it fixes is the only one)",
+        "None (a reason (with a note in brackets))",
+        "- #12: its fix list item 3 is done, so the box is ticked",
+        "- #12: step 2 is done\n- #15: now cites the renamed file",
+        "* #12 - step 2 is done",
+        "1. #12, step 2 is done",
+        "- #12: step 2 is done, and the rest of the line\n  wraps onto a second line\n- #15: out of date",
+    ],
+)
+def test_an_issues_affected_section_that_lists_issues_or_says_none_passes(affected: str) -> None:
+    assert check_body(body(affected=affected), BODY_RULES) == []
+
+
+@pytest.mark.parametrize(
+    "affected",
+    ["", "   ", "<!-- the open issues this changes -->", "- ...", "..."],
+)
+def test_an_empty_issues_affected_section_is_reported_with_what_to_write(affected: str) -> None:
+    problems = check_body(body(affected=affected), BODY_RULES)
+    assert any(
+        "'## Issues affected' is empty; write one line '- #N: how it is affected'" in problem
+        and "'None (<reason>)' with any short reason, for example 'None (one-line fix)'" in problem
+        for problem in problems
+    ), problems
+
+
+@pytest.mark.parametrize(
+    "affected",
+    ["None", "None ()", "None (   )", "None (<reason>)", "None (...)", "- none", "**None**"],
+)
+def test_none_without_a_reason_is_reported(affected: str) -> None:
+    problems = check_body(body(affected=affected), BODY_RULES)
+    assert any(
+        "'None' needs its reason in parentheses" in problem and "'None (one-line fix)'" in problem
+        for problem in problems
+    ), problems
+
+
+@pytest.mark.parametrize(
+    ("affected", "why"),
+    [
+        ("- #12", "#12 needs a line on how"),
+        ("- #12:", "#12 needs a line on how"),
+        ("- #12: ...", "#12 needs a line on how"),
+        ("- #12: <how>", "#12 needs a line on how"),
+        ("- #12: x\n- #15", "#15 needs a line on how"),
+        ("This changes #12.", "'This changes #12.' is not an item"),
+        ("- the audit issue: out of date", "'the audit issue: out of date' is not an item"),
+        ("- #12: x\n\nSome prose.", "'Some prose.' is not an item"),
+        ("- #12: step 2 is done\n- #12: and step 3", "#12 is listed twice"),
+        ("None (docs only)\n- #12: x", "None and issues together"),
+    ],
+)
+def test_a_badly_formed_issues_affected_section_is_reported(affected: str, why: str) -> None:
+    problems = check_body(body(affected=affected), BODY_RULES)
+    assert any("'## Issues affected'" in problem and why in problem for problem in problems), problems
+
+
+def test_the_issues_affected_section_is_not_looked_for_outside_its_heading() -> None:
+    text = body(affected="").replace("## Testing", "- #12: x\n\n## Testing")
+    assert any("'## Issues affected'" in problem for problem in check_body(text, BODY_RULES))
+
+
+def test_affected_issues_lists_the_numbers_in_order_and_none_lists_nothing() -> None:
+    listed = body(affected="- #15: out of date\n- #12: step 2 is done")
+    assert affected_issues(listed, BODY_RULES) == [15, 12]
+    assert affected_issues(body(), BODY_RULES) == []
+    assert affected_issues("## Summary\n\nNothing else.\n", BODY_RULES) == []
+    assert affected_issues(body(affected="- #12: x\n- #12: y"), BODY_RULES) == [12]
+
+
+def test_affected_issues_ignores_a_comment_and_text_of_other_sections() -> None:
+    text = body(affected="<!-- - #99: in a comment -->\n- #12: x").replace("Adds a check.", "It fixes #77.")
+    assert affected_issues(text, BODY_RULES) == [12]
+
+
+def test_an_item_naming_several_issues_records_each_number() -> None:
+    for line in ("- #12 and #13: both are done", "- #12, #13: both are done", "- #12 & #13 - both are done"):
+        assert affected_issues(body(affected=line), BODY_RULES) == [12, 13], line
+        assert check_body(body(affected=line), BODY_RULES) == [], line
+    twice = body(affected="- #12 and #13: both\n- #13: and again")
+    assert any("#13 is listed twice" in problem for problem in check_body(twice, BODY_RULES))
+
+
+def test_an_indented_item_or_none_line_is_its_own_not_a_continuation() -> None:
+    nested = body(affected="- #12: step 2 is done\n  #13: also out of date")
+    assert affected_issues(nested, BODY_RULES) == [12, 13] and check_body(nested, BODY_RULES) == []
+    both = body(affected="- #12: step 2 is done\n  None (and nothing else)")
+    assert any("None and issues together" in problem for problem in check_body(both, BODY_RULES))
+    bare = body(affected="- #12: step 2 is done\n  None")
+    assert any("'None' needs its reason" in problem for problem in check_body(bare, BODY_RULES))

@@ -14,10 +14,16 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "characters/anim_set.h"
+#include "combat/commands.h"
+#include "combat/meters.h"
+#include "combat/player_combat.h"
 #include "human/body.h"
 #include "human/carried_prop.h"
+#include "human/fighter.h"
 #include "human/human_animator.h"
 #include "human/human_sounds.h"
+#include "human/player.h"
+#include "human/victim.h"
 #include "support/collision_fixtures.h"
 #include "support/fight_fixtures.h"
 #include "support/human_fixtures.h"
@@ -446,6 +452,234 @@ TEST_CASE("a human made another character in place is the human made as that cha
     CHECK(changed.speed() == Approx(fresh.speed()));
 }
 
+TEST_CASE("a placement (Human_SetTransform) keeps the health, its maximum, the meters, a stun and the clip",
+          "[human][placement]") {
+    // Issue #234: level99's P3.DealerPoizo teleports the player, hurt to 35 %, to the dealer; a placement that filled
+    // his health left the flash nothing to heal, so d-pad right played no clip and no sound. Human_SetTransform
+    // (0x0023d440) and the motion reset after it (Human_ResetMotion, 0x0023f158) write none of these.
+    const coney::test::FightCharacter character;
+    coney::test::Fight fight(character, 1.5F);
+    fight.run("5 tap circle\n", 40);
+    REQUIRE(fight.human().fighter().pairStage() == coney::human::PairStage::Attached);
+    // HuSetMaxHealth's maximum, hurt below 30 % of it and out of power: the held target escapes and the player goes
+    // down, stunned.
+    fight.human().fighter().health() = coney::combat::Health(1200);
+    fight.human().fighter().health().apply(1000);
+    fight.human().fighter().combat().power().set(0);
+    fight.human().setRageFraction(0.5F);
+    fight.run("", 2);
+    Human& human = fight.human();
+    REQUIRE(human.fighter().victim().stunned());
+    const int health = human.health().value();
+    const int power = human.fighter().combat().power().value();
+    const int rage = human.fighter().combat().rage().value();
+    const int stamina = human.stamina().value();
+    const AnimState state = human.animator().state();
+    REQUIRE(rage > 0);
+    REQUIRE(state != AnimState::Idle);
+
+    human.place(nullptr, Vec3{20.0F, 30.0F, 0.5F}, 90.0F);
+    human.resetMotion();
+    CHECK(human.position().x == Approx(20.0F));
+    CHECK(human.position().y == Approx(30.0F));
+    CHECK(human.position().z == Approx(0.5F)); // no ground given (a human in a scene): no drop
+    CHECK(human.heading() == Approx(std::numbers::pi_v<float> / 2.0F));
+    CHECK(human.health().value() == health);
+    CHECK(human.health().maximum() == 1200);
+    CHECK(human.fighter().combat().power().value() == power);
+    CHECK(human.fighter().combat().rage().value() == rage);
+    CHECK(human.stamina().value() == stamina);
+    CHECK(human.fighter().victim().stunned());
+    CHECK(human.animator().state() == state);
+    // Out of health stays out of health: a placement wakes no one.
+    human.fighter().health().set(0);
+    human.place(nullptr, Vec3{25.0F, 30.0F, 0.0F}, 0.0F);
+    CHECK(human.health().depleted());
+}
+
+TEST_CASE("a placement keeps the stamina and the clip; the motion reset stops the move, not the clip",
+          "[human][placement]") {
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 5.0F, 0.0F});
+    // A sprint drains the stamina.
+    for (int i = 0; i < 45; ++i) {
+        human.step(HumanInput{.stickX = 0.0F,
+                              .stickY = 1.0F,
+                              .cameraForward = kAlongY,
+                              .sprintHeld = true,
+                              .actionPressed = false,
+                              .command = coney::combat::command::kNone,
+                              .buttons = 0,
+                              .targets = {}},
+                   mesh.get());
+    }
+    const int stamina = human.stamina().value();
+    const AnimState state = human.animator().state();
+    REQUIRE(stamina < human.stamina().maximum());
+    REQUIRE(state != AnimState::Idle);
+    REQUIRE(human.speed() > 1.0F);
+
+    // Teleport's placement alone (Object_Teleport): the move goes on.
+    human.place(mesh.get(), Vec3{40.0F, 60.0F, 0.0F}, 180.0F);
+    CHECK(human.stamina().value() == stamina);
+    CHECK(human.animator().state() == state);
+    CHECK(human.speed() > 1.0F);
+    // TeleportToFlag's motion reset after it: the move velocity is zero, the clip plays on.
+    human.resetMotion();
+    CHECK(human.speed() == Approx(0.0F));
+    CHECK(human.animator().state() == state);
+    CHECK(human.stamina().value() == stamina);
+}
+
+TEST_CASE("Coney's walk stand-in (settle) stands the human idle and still with his health and meters kept",
+          "[human][placement]") {
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 5.0F, 0.0F});
+    for (int i = 0; i < 45; ++i) {
+        human.step(HumanInput{.stickX = 0.0F,
+                              .stickY = 1.0F,
+                              .cameraForward = kAlongY,
+                              .sprintHeld = true,
+                              .actionPressed = false,
+                              .command = coney::combat::command::kNone,
+                              .buttons = 0,
+                              .targets = {}},
+                   mesh.get());
+    }
+    human.setHealthPercent(35.0F);
+    const int health = human.health().value();
+    const int stamina = human.stamina().value();
+    REQUIRE(human.animator().state() != AnimState::Idle);
+    human.settle();
+    CHECK(human.animator().state() == AnimState::Idle);
+    CHECK(human.speed() == Approx(0.0F));
+    CHECK(human.health().value() == health);
+    CHECK(human.stamina().value() == stamina);
+}
+
+TEST_CASE("a placement drops the feet onto a hit at most 0.5 below, with no gap; otherwise it stays where put",
+          "[human][placement]") {
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 40.0F, 0.0F});
+    // 0.3 above the floor: the 0.5 ray straight down hits it, and the feet go onto the hit.
+    human.place(mesh.get(), Vec3{30.0F, 30.0F, 0.3F}, 0.0F);
+    CHECK(human.position().z == Approx(0.0F).margin(1e-5));
+    // 0.7 above: the ray ends short of the floor, so the point stands as given (a fall follows).
+    human.place(mesh.get(), Vec3{30.0F, 30.0F, 0.7F}, 0.0F);
+    CHECK(human.position().z == Approx(0.7F));
+    // Below the floor nothing is found looking down: as given.
+    human.place(mesh.get(), Vec3{30.0F, 30.0F, -0.2F}, 0.0F);
+    CHECK(human.position().z == Approx(-0.2F));
+}
+
+TEST_CASE("a placement makes the new point the human's last ground, where a human stuck in the air goes back to",
+          "[human][placement]") {
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{10.0F, 10.0F, 0.0F});
+    REQUIRE(human.lastGround().x == Approx(10.0F));
+    human.place(mesh.get(), Vec3{60.0F, 50.0F, 0.3F}, 0.0F);
+    CHECK(human.lastGround().x == Approx(60.0F));
+    CHECK(human.lastGround().y == Approx(50.0F));
+    CHECK(human.lastGround().z == Approx(0.0F).margin(1e-5));
+}
+
+TEST_CASE("Coney's put-back snaps as a creation does, so a start a little under the floor is found from 1 m above",
+          "[human][placement]") {
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{10.0F, 10.0F, 0.0F});
+    human.setHealthPercent(35.0F);
+    const int health = human.health().value();
+    human.putBack(mesh.get(), Vec3{30.0F, 30.0F, -0.2F}, 0.0F);
+    CHECK(human.position().z == Approx(0.01F).margin(1e-5));
+    CHECK(human.lastGround().z == Approx(0.01F).margin(1e-5));
+    CHECK(human.health().value() == health);
+}
+
+TEST_CASE("a player handed over stands afresh as the chosen human, not stunned, with the chosen human's meters",
+          "[human][placement]") {
+    // Human_MakePlayer (0x00229c40) makes the chosen human player 1 as it is; Coney moves its one player human onto it,
+    // so the old body's stun and clip must not carry over.
+    const coney::test::FightCharacter character;
+    coney::test::Fight fight(character, 1.5F);
+    fight.run("5 tap circle\n", 40);
+    fight.human().fighter().health().apply(fight.human().health().value() - 10);
+    fight.human().fighter().combat().power().set(0);
+    fight.run("", 2);
+    Human& player = fight.human();
+    REQUIRE(player.fighter().victim().stunned());
+    const TestCharacter chosenCharacter;
+    Human chosen = spawnHuman(chosenCharacter, nullptr, Vec3{45.0F, 40.0F, 0.0F});
+    chosen.fighter().health() = coney::combat::Health(700, 1000);
+
+    coney::human::makePlayerOf(player, chosen, 0);
+    CHECK_FALSE(player.fighter().victim().stunned());
+    CHECK(player.animator().state() == AnimState::Idle);
+    CHECK(player.health().value() == 700);
+    CHECK(player.health().maximum() == 1000);
+    CHECK(player.fighter().combat().power().value() == player.fighter().combat().power().maximum());
+}
+
+TEST_CASE("a human made (Human_Init) starts full: the creation's spawn fills the health, the meters and the stamina",
+          "[human][placement]") {
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 40.0F, 0.0F});
+    human.setHealthPercent(35.0F);
+    REQUIRE(human.health().value() < human.health().maximum());
+    // Creation's snap: from 1 m above, 0.01 over the floor.
+    human.spawn(mesh.get(), Vec3{20.0F, 30.0F, 0.6F}, 0.0F);
+    CHECK(human.health().value() == human.health().maximum());
+    CHECK(human.stamina().value() == human.stamina().maximum());
+    CHECK(human.position().z == Approx(0.01F).margin(1e-5));
+}
+
+TEST_CASE("a hurt player handed over takes the chosen human's own health, scaled as Human_MakePlayer scales it",
+          "[human][placement]") {
+    // HuChangePlayerGang makes the chosen AI human player 1: its own health, not the old player's, times its Warrior
+    // class's percentage, with full power and stamina (0x00229c40). Coney moves its one player human onto the chosen
+    // one, so it takes the meters over.
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human player = spawnHuman(character, mesh.get(), Vec3{40.0F, 40.0F, 0.0F});
+    Human chosen = spawnHuman(character, mesh.get(), Vec3{45.0F, 40.0F, 0.0F});
+    player.fighter().health() = coney::combat::Health(900);
+    player.fighter().health().set(90); // the old player, hurt
+    player.fighter().combat().power().set(0);
+    for (int i = 0; i < 45; ++i) { // a sprint drains his stamina
+        player.step(HumanInput{.stickX = 0.0F,
+                               .stickY = 1.0F,
+                               .cameraForward = kAlongY,
+                               .sprintHeld = true,
+                               .actionPressed = false,
+                               .command = coney::combat::command::kNone,
+                               .buttons = 0,
+                               .targets = {}},
+                    mesh.get());
+    }
+    REQUIRE(player.stamina().value() < player.stamina().maximum());
+    chosen.fighter().health() = coney::combat::Health(700, 1000);
+    chosen.fighter().combat().rage().set(3);
+
+    SECTION("a class with no percentage: the chosen human's health as it is") {
+        coney::human::takeMetersOf(player, chosen, 0);
+        CHECK(player.health().value() == 700);
+        CHECK(player.health().maximum() == 1000);
+    }
+    SECTION("a class of 90 %: each scaled and rounded") {
+        coney::human::takeMetersOf(player, chosen, 90);
+        CHECK(player.health().value() == 630);
+        CHECK(player.health().maximum() == 900);
+    }
+    CHECK(player.fighter().combat().power().value() == player.fighter().combat().power().maximum());
+    CHECK(player.stamina().value() == player.stamina().maximum());
+    CHECK(player.fighter().combat().rage().value() == 3);
+}
+
 TEST_CASE("a clip's action event (0x41) is reported in the update that passes it, once", "[human]") {
     const TestCharacter character;
     const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
@@ -470,6 +704,94 @@ TEST_CASE("a clip's action event (0x41) is reported in the update that passes it
     CHECK(fired == 1);
     CHECK(firedAt >= 19);
     CHECK(firedAt <= 20);
+}
+
+TEST_CASE("a slow-motion event on a clip's last frame is reported in the update that hands the clip over", "[human]") {
+    // Expected: docs/research/slow-motion.md#events, confirmed (code): the events of the clip the update passes fire
+    // up to its end when it hands over to the next task, and slow motion is switched by the ones that fire
+    // (`Anim_FireFrameEvents`), not by the next task's clip.
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 40.0F, 0.0F});
+    human.step(stick(0.0F, 0.0F), mesh.get());
+    // 10 frames at rate 1: on at frame 2, off on frame 10, the update that ends it and gives way to the idle.
+    coney::anim::AnimClip clip;
+    clip.duration = 10.0F / 30.0F;
+    clip.events.push_back(coney::anim::ClipEvent{.frame = 2, .type = 0x2e, .word = 0, .position = {}, .rotation = {}});
+    clip.events.push_back(coney::anim::ClipEvent{.frame = 10, .type = 0x2f, .word = 0, .position = {}, .rotation = {}});
+    human.playScripted(clip, 665, 1.0F, 0.0F, coney::human::HeldFlags{});
+    std::vector<std::uint16_t> events;
+    for (int update = 1; update <= 20; ++update) {
+        human.step(stick(0.0F, 0.0F), mesh.get());
+        if (const std::optional<std::uint16_t> event = human.slowMotionEvent()) {
+            events.push_back(*event);
+        }
+    }
+    CHECK(events == std::vector<std::uint16_t>{0x2e, 0x2f});
+}
+
+TEST_CASE("leaving normal mode by the script or a scene's bind is handed on once to end slow motion", "[human]") {
+    // Expected: docs/research/slow-motion.md#off, confirmed (code) (`Human_ResetForMode`, whatever its
+    // argument).
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 40.0F, 0.0F});
+    CHECK_FALSE(human.takeSlowMotionReset());
+    human.setNormalMode(false);
+    CHECK(human.takeSlowMotionReset());
+    CHECK_FALSE(human.takeSlowMotionReset());
+    human.resetForJoin();
+    CHECK(human.takeSlowMotionReset());
+}
+
+TEST_CASE("an overlay clip plays at its anim's rate: the flash with no rate flag, at 0.75, is used 25 updates in",
+          "[human][flash]") {
+    // Human_PushOverlayClip (0x0025ade8) builds its task with AnimTask5_Construct (0x00106240), which takes the rate
+    // from the clip's Anim Range List flags (Anim_RateMultiplier, 0x00104a38): no flag, 0.75. So 665's frame-19 event
+    // falls 25 updates after the update the clip started on, and the clip's 40 frames last 53 updates (0 to 52), as
+    // measured in the original (docs/research/combat-rage.md#flash; the end rule: formats/animation.md#clip-end).
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 40.0F, 0.0F});
+    human.step(stick(0.0F, 0.0F), mesh.get());
+    REQUIRE(human.anims().rate(665) == Approx(0.75F));
+    coney::anim::AnimClip flash;
+    flash.duration = 40.0F / 30.0F;
+    flash.events.push_back(
+        coney::anim::ClipEvent{.frame = 19, .type = 0x41, .word = 0, .position = {}, .rotation = {}});
+    // Pushed during update 0's actions, as the d-pad press is handled.
+    human.pushOverlayClip(flash, 665, coney::human::HeldFlags{.held = 0x2000});
+    int firedAt = -1;
+    int lastPlaying = 0;
+    for (int update = 1; update <= 70; ++update) {
+        human.step(stick(0.0F, 0.0F), mesh.get());
+        if (human.actionEvent().has_value()) {
+            firedAt = update;
+        }
+        if (human.animator().animId() == 665U) {
+            lastPlaying = update;
+        }
+    }
+    CHECK(firedAt == 25);
+    CHECK(lastPlaying == 52);
+}
+
+TEST_CASE("an overlay clip has no fade: it plays at full weight from its first update, the older tasks gone",
+          "[human][flash]") {
+    // Human_PushOverlayClip (0x0025ade8) passes 0 for both of AnimTask5_Construct's fades, so the flash snaps in where
+    // a fade would blend it over the idle (docs/research/combat-rage.md#flash).
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 40.0F, 0.0F});
+    human.step(stick(0.0F, 0.0F), mesh.get());
+    coney::anim::AnimClip flash;
+    flash.duration = 40.0F / 30.0F;
+    human.pushOverlayClip(flash, 665, coney::human::HeldFlags{.held = 0x2000});
+    // Nothing is left to fade out: the clip is the one layer, before and after its first update.
+    CHECK(human.animator().tasks().layerCount() == 1U);
+    human.step(stick(0.0F, 0.0F), mesh.get());
+    CHECK(human.animator().animId() == 665U);
+    CHECK(human.animator().tasks().layerCount() == 1U);
 }
 
 TEST_CASE("a human's power meter, stamina, health and rage come from its fighter profile", "[human]") {

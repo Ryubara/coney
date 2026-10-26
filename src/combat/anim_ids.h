@@ -3,7 +3,7 @@
 
 // The anim ids combat starts or reads, by their names in the original's enum (docs/references/anim-ids.md). An anim id
 // indexes a character's clips and its Anim Range List, so these also name each move's damage.
-// Research: docs/research/combat.md#damage-table
+// Research: docs/research/combat/index.md#damage-table
 
 namespace coney::combat::anim_id {
 
@@ -86,6 +86,7 @@ inline constexpr int kStrongGrappleRage =
 inline constexpr int kStrongGrapple = 657; ///< `SPECIAL_ATTACK2_FRONT`: the strong grapple's strike (rear 659).
 inline constexpr int kBreakObjectLow = 661;
 inline constexpr int kBreakObjectMid = 662;
+inline constexpr int kSpraySpecial = 664; ///< `SPECIAL_SPRAY`: circle + triangle, the spray at the attack's target.
 inline constexpr int kStereoStealEnd = 685;
 inline constexpr int kStereoStealFail = 686;
 

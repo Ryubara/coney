@@ -9,7 +9,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 // Single precision rounded toward zero, as the PS2's floating-point unit rounds (docs/research/characters.md#run-stop,
-// docs/research/combat.md#damage-table).
+// docs/research/combat/index.md#damage-table).
 
 TEST_CASE("PS2 arithmetic rounds every result toward zero", "[core][ps2_float]") {
     // 1 + 3 × 2^-25 lies three quarters of the way from 1 to the next float: to nearest it rounds up, toward zero down.

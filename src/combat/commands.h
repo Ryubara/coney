@@ -8,14 +8,14 @@
 #include <vector>
 
 // The pad's buttons turned into one command id per update, through nine trigger tables matched in a fixed order.
-// Research: docs/research/combat.md#commands
+// Research: docs/research/combat/index.md#commands
 
 namespace coney::combat {
 
 /// A command id: what the trigger tables make of one update's buttons; 0 is none. Scripts may add any id.
 using CommandId = std::uint32_t;
 
-/// The command ids the street's tables make (docs/research/combat.md#commands), and the ones combat reads.
+/// The command ids the street's tables make (docs/research/combat/index.md#commands), and the ones combat reads.
 namespace command {
 inline constexpr CommandId kNone = 0;
 inline constexpr CommandId kR2Held = 0x01;
@@ -34,7 +34,8 @@ inline constexpr CommandId kCircleHeld = 0x0e;      ///< Circle held for the his
 inline constexpr CommandId kSquarePressed = 0x0f;   ///< Square: attacks.
 inline constexpr CommandId kCrossLongHold = 0x10;   ///< Cross released within 3 samples or held 4: the X attack.
 /// The square of a chain's later step: what an AI's attack writes for kinds 4, 5 and 7 (docs/research/ai.md); the
-/// counter test takes it as a square (docs/research/combat.md, `0x0027b988`). Which pad state gives it is not traced.
+/// counter test takes it as a square (docs/research/combat/index.md, `0x0027b988`). Which pad state gives it is not
+/// traced.
 inline constexpr CommandId kSquareChain = 0x11;
 inline constexpr CommandId kCrossPressed = 0x12; ///< Cross pressed: what a chain buffers.
 inline constexpr CommandId kSquareHeld = 0x15;
@@ -98,8 +99,8 @@ class CommandTables {
     /// The entries of `trigger`'s table in the order they were added.
     [[nodiscard]] std::span<const CommandEntry> table(Trigger trigger) const;
 
-    /// The tables as `global.lua` fills them for the street, read at runtime (docs/research/combat.md#commands), in
-    /// the order listed there.
+    /// The tables as `global.lua` fills them for the street, read at runtime (docs/research/combat/index.md#commands),
+    /// in the order listed there.
     [[nodiscard]] static CommandTables street();
 
   private:

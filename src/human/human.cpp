@@ -39,17 +39,17 @@ constexpr std::uint16_t kCoveredGroundFlag = 0x20;
 constexpr float kStrikeCapsuleRadius = 0.35F;
 constexpr float kStrikeCapsuleHeight = 2.0F;
 // The struck capsule's top above the head bone, and its least height, before the body scale
-// (`PhysicsCapsule_Pose` 0x00343518, docs/research/combat.md#capsule-strike).
+// (`PhysicsCapsule_Pose` 0x00343518, docs/research/combat/index.md#capsule-strike).
 constexpr float kCapsuleAboveHead = 0.2F;
 /// The bone the led steer aims at: the head, which human +0x500 holds (docs/research/combat-targets.md#led-steer).
 constexpr int kLedPointBone = 6;
 // Beyond this between the feet no strike shape can meet another body's (each reaches well under 1.5 m from its feet),
 // so the victim is not posed.
 constexpr float kStrikeBroadReach = 3.0F;
-// **Coney's reading** of a charge stopping dead at a wall (docs/research/combat.md#moving-strikes): `Human_OnContact`
-// answers the slide response, which takes the move into the wall away, so a charge whose sweep kept less than this
-// share of its move met the wall head-on; it then does not move again before its clip ends, as seen at runtime (why is
-// not traced).
+// **Coney's reading** of a charge stopping dead at a wall (docs/research/combat/index.md#moving-strikes):
+// `Human_OnContact` answers the slide response, which takes the move into the wall away, so a charge whose sweep kept
+// less than this share of its move met the wall head-on; it then does not move again before its clip ends, as seen at
+// runtime (why is not traced).
 constexpr float kChargeStopShare = 0.5F;
 // The idle a pick-up returns to (388, the plain idle).
 constexpr std::uint32_t kPickUpIdle = 388;
@@ -150,9 +150,9 @@ class WalkingOwner final : public physics::BodyOwner {
     std::optional<anim::Vec3> m_written;
 };
 
-// The capsule strike (docs/research/combat.md#capsule-strike): whether any bone strike shape of `shapes` (posed now;
-// `before`, the update before) meets the target's upright `capsule`. A segment is tested where it stands, against the
-// capsule's axis; a sphere along its path this update. The attacker's own capsule (bone -1) does not strike.
+// The capsule strike (docs/research/combat/index.md#capsule-strike): whether any bone strike shape of `shapes` (posed
+// now; `before`, the update before) meets the target's upright `capsule`. A segment is tested where it stands, against
+// the capsule's axis; a sphere along its path this update. The attacker's own capsule (bone -1) does not strike.
 // @orig 0x00349a60 Sweep_SphereCapsule (unknown)
 bool meetsCapsule(std::span<const PosedShape> before, std::span<const PosedShape> shapes, const PosedShape& capsule) {
     for (std::size_t i = 0; i < shapes.size(); ++i) {
@@ -326,8 +326,7 @@ Traversal Human::traversal() const {
     return Traversal::None;
 }
 
-void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float headingDegrees) {
-    m_heading = wrapAngle(headingDegrees * kPi / 180.0F);
+void Human::standAfresh(bool keepMeters) {
     m_velocity = anim::Vec3{};
     m_airborne = false;
     m_outOfWorld = false;
@@ -336,6 +335,7 @@ void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float
     m_landingPending = false;
     m_turn = TurnState{};
     m_lastStick = StickIntent{};
+    const Stamina stamina = m_stamina;
     m_stamina =
         Stamina(m_profile.powerClass.staminaMax, static_cast<float>(m_profile.powerClass.staminaRefillPerSecond));
     m_sprinting = false;
@@ -343,26 +343,43 @@ void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float
     m_strikes.clear();
     m_chargeStopped = false;
     m_lean = 0.0F;
-    // A placement first breaks any pair the human is in (Human_SetTransform calls Human_BreakPair,
-    // docs/research/combat-grabs.md#pair-break), so its partner is let go; then the fighting starts afresh and the
-    // flags the scripts set stay.
+    // The fighting starts afresh (no stun, no stance, no attack; for a creation full health and meters too) with the
+    // flags the scripts set kept. **Coney's choice** for a character change or a settle of a human in a pair: the
+    // pair is broken first (Human_BreakPair), so its partner is let go.
     m_fighter.breakPair();
     const std::uint64_t flags = m_fighter.flags();
     const std::optional<TargetState> broken = m_fighter.takeBrokenHold();
+    const combat::Health health = m_fighter.health();
+    const int power = m_fighter.combat().power().value();
+    const int rage = m_fighter.combat().rage().value();
     m_fighter = Fighter(m_ranges, 1, m_profile);
+    if (keepMeters) {
+        m_stamina = stamina;
+        m_fighter.health() = health;
+        m_fighter.combat().power().set(power);
+        m_fighter.combat().rage().set(rage);
+    }
     m_fighter.setFlags(flags);
     m_fighter.setLogName(m_logName);
     m_fighter.setBrokenHold(broken);
     m_announced.clear();
     endClimb();
-    // A working-out human's clips stay, on every spawn (not only a teleport's): workout.StartWorkout teleports the
-    // player onto the station's flag before HuWorkout, but Coney applies a script's teleport of player 1 at the end of
-    // the frame, after the workout may have begun (docs/research/workouts.md#start). Any other spawn of a human that
-    // is working out (a respawn, a character change) keeps them too, until the workout ends.
+    // A working-out human's clips stay: a character change of a human that is working out keeps them until the
+    // workout ends (docs/research/workouts.md#start).
     if (m_animator.state() != AnimState::Idle && !m_script.workingOut) {
         m_animator.stopToIdle();
     }
-    // Creation's snap: a ray from 1 m above, 2.5 m down; on a hit the feet go 0.01 above it.
+}
+
+void Human::settle() { standAfresh(true); }
+
+void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float headingDegrees) {
+    m_heading = wrapAngle(headingDegrees * kPi / 180.0F);
+    standAfresh(false);
+    // Creation's snap: a ray from 1 m above, 2.5 m down; on a hit the feet go 0.01 above it. Human_Init skips it in
+    // game modes 0xb and 0x11, where Coney makes no human. **Coney's choice**: Human_Init then sets the point through
+    // Human_SetTransform, whose 0.5 m drop would take the 0.01 back for a human in no scene; whether +0x280 is -1 that
+    // early is not traced (Human_Init sets it to -1 only later), so the gap stays.
     if (mesh != nullptr) {
         const raycast::Ray ray{.origin = toMesh(anim::add(position, anim::Vec3{0.0F, 0.0F, kSnapAbove})),
                                .direction = raycast::kDown,
@@ -375,6 +392,72 @@ void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float
     }
     m_position = position;
     m_lastGround = position;
+}
+
+void Human::place(const raycast::CollisionMesh* ground, anim::Vec3 position, float headingDegrees) {
+    // Any pair is broken first, its partner playing its reaction on its next update (Human_BreakPair,
+    // docs/research/combat-grabs.md#pair-break).
+    m_fighter.breakPair();
+    // The drop: a 0.5 m ray straight down from the point itself; on a hit the feet go onto it, with no gap. A human in
+    // a scene (no ground given) stands exactly where put.
+    if (ground != nullptr) {
+        const raycast::Ray ray{.origin = toMesh(position), .direction = raycast::kDown, .length = kPlaceDrop};
+        if (const auto hit = ground->rayCast(ray, {}, 0); hit) {
+            position.z -= hit->t;
+        }
+    }
+    // The transform (the position slot, Human_SetPosition). The point is the human's last ground too, so the
+    // stuck-in-the-air rule lands him near it and not where he stood before.
+    m_position = position;
+    m_lastGround = position;
+    m_heading = wrapAngle(headingDegrees * kPi / 180.0F);
+    // The stick's last angle (+0x5d8) is the new facing's angle from x, its push (+0x5dc) none, so an idle's fade
+    // turns the human nowhere.
+    m_lastStick = StickIntent{.angle = wrapAngle(m_heading + (kPi / 2.0F)), .magnitude = 0.0F};
+    // Not ported, each for want of the state it marks (docs/research/teleports.md#placement):
+    // - the placed marks: +0x1b3 = 1 tells Human_GetNavPolygon to look the human's polygon up again, but Coney
+    //   caches none (ai::RoutePlanner finds it at each query); object flag 0x40000000 at +0x54 with the time at +0x50
+    //   has no reader traced and Coney's human has no such flags word;
+    // - bit 0x80000000 on the physics body's flags (+0x1a0, +0x40, "re-pose and re-sort"): Coney's body is posed
+    //   from the position at each use (human/body.h), so it is never stale;
+    // - the brain's facing and front-action pop: ai::Brain::placed(), the callers' (the human knows no brain).
+    // **Coney's choice**: a climb in progress ends; how the original's climb goes on after a placement is not traced
+    // (docs/research/teleports.md#q-placement-rest).
+    endClimb();
+}
+
+void Human::resetMotion() {
+    // Human_SetMoveVelocity with the zero vector: the move velocity across the ground; the vertical speed is a field of
+    // its own (+0x3a0) and stays.
+    m_velocity.x = 0.0F;
+    m_velocity.y = 0.0F;
+    // The steer: Human_ClearTurn's fields (+0x300, +0x304, +0x331, +0x332), and the turn's rate +0x308 and the
+    // slide's velocity +0x2e0-+0x2ec (set to (0, 0, 0, 1)), which Human_ResetMotion clears beside them
+    // (docs/research/combat-targets.md#fight-stance); Fighter::clearSteer() drops the whole turn and slide.
+    m_fighter.clearSteer();
+}
+
+void Human::putBack(const raycast::CollisionMesh* ground, anim::Vec3 position, float headingDegrees) {
+    // Out of the fall: standing and still, then placed as a teleport places, so the health, meters and stamina stay.
+    m_outOfWorld = false;
+    m_airborne = false;
+    m_jumping = false;
+    m_landingPending = false;
+    m_airborneUpdates = 0;
+    m_blockedUpdates = 0;
+    m_velocity = anim::Vec3{};
+    // The start point is unsnapped and may lie at or under the surface, where the placement's ray from the point
+    // itself finds nothing: creation's ray from 1 m above finds it, 0.01 above the hit.
+    if (ground != nullptr) {
+        const raycast::Ray ray{.origin = toMesh(anim::add(position, anim::Vec3{0.0F, 0.0F, kSnapAbove})),
+                               .direction = raycast::kDown,
+                               .length = kSpawnLength};
+        if (const auto hit = ground->rayCast(ray, {}, 0); hit) {
+            position.z = position.z + kSnapAbove - hit->t + kSpawnGap;
+        }
+    }
+    place(nullptr, position, headingDegrees);
+    resetMotion();
 }
 
 void Human::locomote(bool gated) {
@@ -861,7 +944,7 @@ void Human::holdForCombat() {
     const anim::Vec3 slide = m_fighter.takeSlide();
     m_velocity = anim::Vec3{slide.x, slide.y, m_velocity.z};
     // Blocking, the stick turns the player in place at the combat stance's limit (24° an update in play; the block is
-    // held in a fight stance, docs/research/combat.md).
+    // held in a fight stance, docs/research/combat/index.md).
     if (m_fighter.blocking() && m_intent.magnitude > locomotionTuning().stickDeadZone) {
         m_heading = turnToward(m_heading, m_intent.angle - kPi / 2.0F, stanceTurn(), m_turn);
     }
@@ -958,7 +1041,7 @@ void Human::fight(std::span<Combatant* const> targets, const raycast::CollisionM
     const std::uint64_t nowMs = m_updates * 1000 / 30;
     // **Coney's reading**: the dispatcher's gait tests (`0x00223a30`-`0x00223a60`) read the gait the last update's
     // velocity left, not this one's: in the original a square one update after the stick is first pushed fully still
-    // snaps, though the run start moves the body on that update (docs/research/combat.md#attacks).
+    // snaps, though the run start moves the body on that update (docs/research/combat/index.md#attacks).
     m_fighter.update(FighterInput{.command = m_record.command,
                                   .buttons = m_record.buttons,
                                   .stick = stick,
@@ -972,7 +1055,8 @@ void Human::fight(std::span<Combatant* const> targets, const raycast::CollisionM
                                   .objects = m_objectTargets,
                                   .strikeShapes = m_skeleton != nullptr,
                                   .mesh = mesh,
-                                  .sprinting = m_sprinting},
+                                  .sprinting = m_sprinting,
+                                  .padControlled = m_record.padDriven},
                      m_animator, m_heading);
 }
 
@@ -1406,7 +1490,7 @@ void Human::animate(const raycast::CollisionMesh* mesh) {
         m_fighter.combat().abortTheft();
     }
     sendWarnings(before, beforeId, beforeTime);
-    noteSlowMotion(before, beforeId, beforeTime);
+    noteSlowMotion();
     noteStrikeEvents(before, beforeId, beforeTime);
     noteReleaseEvent(before, beforeId, beforeTime);
     noteActionEvent(before, beforeId, beforeTime);
@@ -1510,30 +1594,17 @@ void Human::noteActionEvent(const anim::AnimTask* before, std::uint32_t beforeId
     }
 }
 
-void Human::noteSlowMotion(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime) {
+void Human::noteSlowMotion() {
     constexpr std::uint16_t kSlowMotionOn = 0x2e;
     constexpr std::uint16_t kSlowMotionOff = 0x2f;
-    constexpr float kEventFramesPerSecond = 30.0F; // a clip event's frame is 1/30 s of clip time
+    // The events this update's animation fired, in their order (a clip handing over fired up to its end first); the
+    // last slow-motion one wins.
     m_slowMotionEvent.reset();
-    const anim::AnimTask* top = m_animator.tasks().top();
-    if (top == nullptr || top->eventClip() == nullptr) {
-        return;
-    }
-    // From the clip's start when it began this step (or another clip took the top), else from where it was; the
-    // later event wins when both passed.
-    const bool same = top == before && top->animId() == beforeId && top->time() >= beforeTime;
-    const float from = same ? beforeTime : -1.0F;
-    std::optional<std::uint16_t> found;
-    float foundAt = -1.0F;
-    for (const anim::ClipEvent& event : top->eventClip()->events) {
-        const float at = static_cast<float>(event.frame) / kEventFramesPerSecond;
-        if ((event.type == kSlowMotionOn || event.type == kSlowMotionOff) && at > from && at <= top->time() &&
-            at >= foundAt) {
-            found = event.type;
-            foundAt = at;
+    for (const anim::ClipEvent& event : m_animator.tasks().firedEvents()) {
+        if (event.type == kSlowMotionOn || event.type == kSlowMotionOff) {
+            m_slowMotionEvent = event.type;
         }
     }
-    m_slowMotionEvent = found;
 }
 
 void Human::noteStrikeEvents(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime) {

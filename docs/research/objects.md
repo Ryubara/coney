@@ -789,16 +789,16 @@ addresses cited unless marked.
    attacks](combat-targets.md#ai-attacks)), and square and cross choose their clip by the **held object's set**
    (`0x00231a80`, [Combat: moving attacks with something in hand](combat-throws.md#armed-moves)), so a Warrior holding a
    bat (set 3) swings 34 / 36 (37 at a grounded target, though the `level34` Furies also used the unarmed grounded
-   strikes 193 / 194 with a bat in hand, [Combat: a bat's hit](combat-reactions.md#bat-knockdown)), a baton (set 2) 39 /
+   strikes 193 / 194 with a bat in hand, [Combat: a bat's hit](combat-throws.md#bat-knockdown)), a baton (set 2) 39 /
    41, a knife (set 1) 45 / 47.
-3. **The damage** is that clip's [damage table](combat.md#damage-table) value plus the weapon's: `Strike_Contact`
+3. **The damage** is that clip's [damage table](combat/index.md#damage-table) value plus the weapon's: `Strike_Contact`
    (`0x0021b290`) adds the object type's `CfgObj` u16 `+0x58` and multiplies by the attacker's class record's first
    float when the held world object's body flags have `0x10000` (the melee weapons) (confirmed (code); whether this
    branch runs for any held weapon's swing is open, below).
    **Correction** (issue #492, confirmed (runtime) for `dyn_bat` in the `level34` Furies' hands only): their bat
    swings (501, 36, 37) never reached `Strike_Contact`; each hit was the bat's own body touching the victim
    (`WorldObject_OnContact` `0x00394050` → `ThrownObject_HitHuman` `0x00392b88`), which deals `CfgObj` `+0x58` × the
-   holder's class float, without the clip's damage ([Combat: a bat's hit](combat-reactions.md#bat-knockdown)). Not
+   holder's class float, without the clip's damage ([Combat: a bat's hit](combat-throws.md#bat-knockdown)). Not
    checked: the knife (set 1), the baton (set 2), other bats, and the player's own bat swings, so whether a weapon
    hits as hard in a Warrior's hand as in the player's is open.
 4. **His choices change too.** `Brain_PickAttack` adds the **armed bonus** (+100 to every candidate of kinds 0-9 with
@@ -813,7 +813,7 @@ addresses cited unless marked.
    drop it: during a throw clip or clip 602 with set 1 (`Human_ApplyPendingDamage` `0x00265f70`), when the hit
    stuns or knocks him down while he is hurt, when it comes from a counter or special clip (620 and above), or when
    he is grabbed holding a bat; all but the throw case are stopped by `HuSetKeepWeapon`
-   ([Combat: dropping what is held when hit](combat-rage.md#keep-weapon)).
+   ([Combat: dropping what is held when hit](combat-throws.md#keep-weapon)).
 
 **Coney fixes** (user item 37; the hand-over works, the member holds the object, `play_level_objects.cpp` gives him
 its anim set):
@@ -828,7 +828,7 @@ its anim set):
    `repo:src/ai/swap_prompt.cpp`).
 3. Check that an AI fighter with a held set picks its square / cross clips from the held object's set (34 / 36 for a
    bat) and that an AI's bat hit deals the bat's `CfgObj` `+0x58` × his class float, as the bat's own contact does
-   ([Combat: a bat's hit](combat-reactions.md#bat-knockdown)). Only `dyn_bat` in an AI's hand was measured; the knife,
+   ([Combat: a bat's hit](combat-throws.md#bat-knockdown)). Only `dyn_bat` in an AI's hand was measured; the knife,
    the baton and the player's bat are unchecked, so keep their damage path an open question until they are.
 4. Add the armed bonus to Coney's attack pick and the set's clips to its reach test, if missing.
 5. Drop a held kind 4 or 6 object from a Warrior with no enemies outside co-op.
@@ -1613,7 +1613,7 @@ and 21.5 and 27.5 updates (43 and 55 ticks) in two more
 ([`fence_dealer`](repo:research/traces/scenarios/fence_dealer.toml), [Scripts](scripting.md#level99), item 44):
 anywhere from 0 to 29 updates, by the fence's 60-tick phase. In the same update the objective marker went, and 15
 updates later `P3.DealerPoizo`'s placement put the player at (18.5, −16.3), beyond the fence. Breaking in by charge:
-[Combat](combat.md#moving-strikes).
+[Combat](combat/index.md#moving-strikes).
 
 ### Lock picking {#lock-pick}
 
@@ -1707,7 +1707,7 @@ The street props `level34`'s riot meter counts ([Scripts](scripting.md#level34))
   (`0x4000000`) or a held `0x3c4e590b`; otherwise `+0x10d` loses 1 when *k* is −1 or `+0x128` is 1, else 4 + 6*k*
   (floored at 0).
 - **A strike** (`Strike_Contact`, `0x0021b290`) on a world object: kind 3 when the attacker has state `0x4000000`
-  ([Combat](combat.md#state-flags)), 2 with something in hand (held flags `0x1400000`), else 0. In order: notes whether
+  ([Combat](combat/index.md#state-flags)), 2 with something in hand (held flags `0x1400000`), else 0. In order: notes whether
   either counter was already 0, `WorldObject_TakeHit`, the impact sound, burns the attacker within 1.5 m of a
   `0x1c21bdc3`, message 6 to the boxes **only if the object was intact before the blow**
   ([Scripts](scripting.md#triggers)), `Glass_Break` if it is a pane, a crime report for class code `0x1e`, then
@@ -2104,7 +2104,7 @@ Coney's stand-ins for the world objects, where this page is silent:
   level's `LevelObjects`; the boot scripts' recorded `CfgSetGlassProperties` calls are applied before the level script
   spawns into them. The play mode gives them the level's collision mesh and path data, ticks them twice a step, and
   sends each human's strike-shape contacts to the pane or door the shapes meet
-  ([Combat](combat.md#moving-strikes)). Player 1's object attack (661 / 662) lands when those shapes reach its pane
+  ([Combat](combat/index.md#moving-strikes)). Player 1's object attack (661 / 662) lands when those shapes reach its pane
   or door, or, for a car or other object, when its strike shapes come on; never at the clip's start. Stand-ins: a
   pane or door the window passed without touching takes the hit as the window closes, and a clip with no strike
   events lands it as it ends. A broken barrier is removed at its next 60-tick
@@ -2163,7 +2163,7 @@ Coney's stand-ins, where this page is silent:
   object type no `CfgObj` names is a swinging door of 100 hitpoints.
 - Square with no human in front aims at a whole pane (its centre) as `Player_PickTarget`'s object pass does
   ([Combat](combat-targets.md#targets)); the object attack's hit breaks that pane. Doors are not object targets yet.
-  Every other hit reaches an object through the strike shapes ([Combat](combat.md#moving-strikes)): a segment shape
+  Every other hit reaches an object through the strike shapes ([Combat](combat/index.md#moving-strikes)): a segment shape
   meets a pane's box as spheres every 5 cm along it, and a door through its two triangles while they are enabled. A broken
   barrier's triangles stay on until its removal, standing for the body the break leaves (`dyn_door_wall_a`, whose
   body goes, and `dyn_door_vargas`, which is never removed, turn them off at the break). Thrown
@@ -2268,6 +2268,6 @@ the drawer and lifts the register with clip 504 (disc checks, 2026-10-08).
 - Wear ([Wear on contact](#throws)): what message 1 does for a thrown object of a class other than `thrown_weapon`,
   `overhead_weapon` and `dyn_cashreg` whose counters run out (a `melee_weapon` with hits); Coney leaves it lying.
 - Moving into a pane ([Moving into a pane](#pane-break)): which clip events switch the strike shapes on in a jump.
-  (Answered on [Combat](combat.md#moving-strikes): the strike shapes' sizes and events, record `+0x08` bit `0x800`,
+  (Answered on [Combat](combat/index.md#moving-strikes): the strike shapes' sizes and events, record `+0x08` bit `0x800`,
   and a knock-back flight, which is not airborne. Human vtable `+0x10c`, `0x00227180`: any non-human body may be
   struck, a human unless its state word has `0x100000000`.)

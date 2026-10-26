@@ -612,7 +612,7 @@ beaten the player, and Wheelchair when the CPU racer finishes. Tag battle and Me
   countdown ends (after `FinishCountdown` and `StartIt`), player 1 is released as `Human_ReleasePlayer`
   ([Characters](characters.md#players), `0x0022a2a8`) releases a human with no one taking the pad
   (`repo:src/ai/ai_humans.h`): his brain goes back to his class's type with its goals and actions cleared, his flags are
-  the released ones ([Combat: human flags](combat.md#human-flags)) and the pad drives nobody, so his brain alone moves
+  the released ones ([Combat: human flags](combat/index.md#human-flags)) and the pad drives nobody, so his brain alone moves
   him and `HuSwitchPlayer` finds no player to hand on. With no one in the player list, the game-over check ([Combat:
   defeat](combat-reactions.md#defeat)) has no one to fail the match for, however he fares. **Coney's choices**: he keeps
   the player's fighter profile (the wider body sphere `Human_ReleasePlayer` puts back to 1.0, [Physics](physics.md#sweep),

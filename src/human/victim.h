@@ -38,7 +38,7 @@ struct IncomingHit {
     std::string attackerName{};
 };
 
-/// What a human taking hits is, for its reaction (docs/research/combat.md#hit-codes).
+/// What a human taking hits is, for its reaction (docs/research/combat/index.md#hit-codes).
 struct VictimFrame {
     anim::Vec3 position;      ///< Its feet.
     float heading = 0.0F;     ///< Radians, 0 facing +y.

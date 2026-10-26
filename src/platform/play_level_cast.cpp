@@ -7,6 +7,7 @@
 #include <format>
 #include <memory>
 #include <numbers>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -14,6 +15,8 @@
 #include "ai/brain.h"
 #include "ai/scripted_brains.h"
 #include "characters/character_types.h"
+#include "human/human.h"
+#include "human/player.h"
 #include "human/tag_colour.h"
 #include "platform/play_level_mode.h"
 #include "scripting/sound_bindings.h"
@@ -44,6 +47,8 @@ void PlayLevelMode::makeCast(const ScriptedCast& cast, const ai::AiConfig& fight
         sceneName() != "level99");
     // HuChangePlayerGang hands player 1 to a member of another gang: the player takes its place.
     cast.scripted->setHandOver([this](const ai::Brain& to) { takePlace(to); });
+    // A script's placement of a human drops it onto the level's collision, unless a scene holds it.
+    cast.scripted->setPlaceGround([this](double human) { return placeGround(human); });
     // GoalPlayDynAnimation's clips are the level's dynamic clips, loaded from the disc when first named.
     cast.scripted->setClipSource([this](std::string_view name) { return m_dynamicClips.find(name); });
     // The AI goals' lines (a boss's taunts and shouts, the dealer's lines) go to the game's sound, when there is one.
@@ -114,15 +119,21 @@ ai::Brain* PlayLevelMode::castHuman(const HumanCreation& human) {
 void PlayLevelMode::takePlace(const ai::Brain& to) {
     // **Coney's stand-in** for HuChangePlayerGang's hand-over (docs/research/characters.md#level99-handover): the
     // original makes the chosen AI human player 1 and leaves the old one in the world as an AI until its gang is
-    // deleted. Coney has one player human, so he takes the chosen human's place instead: put where it stands (spawned
-    // there: nothing held, the camera behind him), drawn as its model, named by its handle; the chosen human leaves the
-    // world, and the brains name the player by its handle (ai::ScriptedBrains::changePlayerGang()).
+    // deleted. Coney has one player human, so he takes the chosen human's place instead: put where it stands (placed
+    // there, the camera behind him), standing afresh as the chosen human does (nothing of the old body's fight carried
+    // over) with its meters as Human_MakePlayer leaves them (its own health scaled by its Warrior class, full power and
+    // stamina, human::makePlayerOf()), drawn as its model, named by its handle; the chosen human leaves the world, and
+    // the brains name the player by its handle (ai::ScriptedBrains::changePlayerGang()).
     const human::Human& chosen = to.human();
     const human::PlayerStart start{.position = chosen.position(),
                                    .headingDegrees = chosen.heading() * 180.0F / std::numbers::pi_v<float>};
     const double oldHandle = m_ai->playerBrain().handle();
     m_player->teleport(&m_scenery->collision(), start);
     m_player->setStart(start);
+    const HumanCreation* made = m_cast.humans != nullptr ? m_cast.humans->find(to.handle()) : nullptr;
+    const std::optional<characters::PlayerTraits> traits =
+        made != nullptr ? m_types.playerTraitsOf(made->type) : std::nullopt;
+    human::makePlayerOf(m_player->human(), chosen, traits ? traits->healthPercent : 0);
     takeHatOf(chosen);
     m_ai->remove(chosen);
     // The scenes know player 1 by the new handle from now on (level99's l99_c2 joins him by it).
@@ -131,7 +142,6 @@ void PlayLevelMode::takePlace(const ai::Brain& to) {
     if (m_cast.humans != nullptr) {
         m_cast.humans->setPlayer(1, to.handle());
     }
-    const HumanCreation* made = m_cast.humans != nullptr ? m_cast.humans->find(to.handle()) : nullptr;
     if (made != nullptr && !made->model.empty() && made->model != m_model) {
         if (auto loaded = loadCharacter(m_engine, m_wad, made->model); loaded) {
             swapPlayerModel(std::move(*loaded), made->model);
@@ -143,8 +153,9 @@ void PlayLevelMode::takePlace(const ai::Brain& to) {
     if (made != nullptr) {
         m_type = made->type;
     }
-    m_print(std::format("player: handed to human {} (was {}) at ({:.2f}, {:.2f}, {:.2f})\n", to.handle(), oldHandle,
-                        start.position.x, start.position.y, start.position.z));
+    m_print(std::format("player: handed to human {} (was {}) at ({:.2f}, {:.2f}, {:.2f}), health {} of {}\n",
+                        to.handle(), oldHandle, start.position.x, start.position.y, start.position.z,
+                        m_player->human().health().value(), m_player->human().health().maximum()));
 }
 
 bool PlayLevelMode::releasePlayerToAi() {

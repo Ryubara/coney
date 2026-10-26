@@ -259,6 +259,15 @@ coney = "src/human/stamina.h:Stamina::Stamina"
 status = "legacy"
 
 [[function]]
+address = 0x00223c10
+name = "Human_HasHeld40"
+page = "characters.md#climb"
+role = "Record `+0x08` bit `0x40`: set while a climb's middle clip plays (fences do not block the body); the flash's press is refused on it."
+level = "confirmed-code"
+coney = "src/human/human.h:Human::climbingOver"
+status = "legacy"
+
+[[function]]
 address = 0x002240e8
 name = "Human_CanUseAttackKind"
 page = "characters.md#code-core"
@@ -933,7 +942,7 @@ status = "legacy"
 address = 0x002378a8
 name = "Human_SetHealthPercent"
 page = "characters.md#code-script"
-role = "`HuSetHealthPercent`: health as a percentage of the maximum."
+role = "`HuSetHealthPercent`: health as a percentage of the maximum, in single-precision products rounded toward zero, then truncated."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::setHealthPercent"
 status = "legacy"
@@ -1555,6 +1564,26 @@ coney = "src/human/fighter.h:Fighter::clearSteer"
 status = "legacy"
 
 [[function]]
+address = 0x0023d440
+name = "Human_SetTransform"
+page = "teleports.md#placement"
+role = "A human's placement (the scripts' `Teleport` and `TeleportToFlag`, a skipped scene's end): breaks the pair, drops the point 0.5 straight down onto a hit outside a scene, sets the transform and facing, pops the brain's front move (type 1); no meter, stun or clip is written."
+level = "confirmed-code"
+note = "the health kept is also confirmed (runtime); the brain's part is ai::Brain::placed"
+coney = "src/human/human.h:Human::place"
+status = "compared"
+
+[[function.gaps]]
+what = "a climb in progress ends; the front move is popped whatever brain +0xec holds (Coney has no such state)"
+relation = "stand-in"
+question = "teleports.md#q-placement-rest"
+
+[[function.gaps]]
+what = "not set, for want of the state they mark: the brain's facing +0x110 (Coney's brain keeps none), the placed marks +0x1b3 and +0x54 bit 0x40000000 with the time (no nav-polygon cache, no reader traced) and the body's re-pose bit (Coney poses the body at each use)"
+relation = "stand-in"
+question = "teleports.md#q-placement-rest"
+
+[[function]]
 address = 0x0023d8c8
 name = "Human_Move"
 page = "characters.md#original-structure"
@@ -1598,6 +1627,15 @@ role = "1.5 m ray down from 1 m above the feet"
 level = "confirmed-code"
 coney = "src/ai/hiding.h:updateHiding"
 status = "legacy"
+
+[[function]]
+address = 0x0023f158
+name = "Human_ResetMotion"
+page = "teleports.md#motion-reset"
+role = "Slot `+0x14c`: the move velocity zeroed (`Human_SetMoveVelocity`), the steer `+0x300`-`+0x332` cleared with the turn rate `+0x308`, the slide velocity `+0x2e0`-`+0x2ec` set to (0, 0, 0, 1), the transform set again; `TeleportToFlag` and a scene's start call it."
+level = "confirmed-code"
+coney = "src/human/human.h:Human::resetMotion"
+status = "compared"
 
 [[function]]
 address = 0x0023fea8
@@ -1831,10 +1869,25 @@ status = "legacy"
 address = 0x002562d0
 name = "Human_UpdateMeters"
 page = "characters.md#original-structure"
-role = "stamina drain while sprinting (and a second meter)"
+role = "stamina drain while sprinting, the rage drain, and the power meter's drain and empty-meter let-go only while grabbing or tackling ([The power move holds no one](slow-motion.md#power-move))"
 level = "confirmed-code"
 coney = "src/combat/meters.h:RageMeter::update"
 status = "legacy"
+
+[[function.gaps]]
+what = "the power meter's drain while blocking or ducking, and its stop in state 0x4000000"
+relation = "not-ported"
+issue = 719
+
+[[function.gaps]]
+what = "the empty-meter let-go's wait while the clips hold 0xc02201 and its tests of the victim"
+relation = "not-ported"
+issue = 719
+
+[[function.gaps]]
+what = "a tackler's get-off on an empty meter is not traced against Coney's mount"
+relation = "not-ported"
+issue = 684
 
 [[function]]
 address = 0x00256a60
@@ -1844,6 +1897,21 @@ role = "stamina refill (and the second meter)"
 level = "confirmed-code"
 coney = "src/human/stamina.h:Stamina::refill"
 status = "legacy"
+
+[[function.gaps]]
+what = "state 0x4000000 fills stamina and power"
+relation = "not-ported"
+issue = 719
+
+[[function.gaps]]
+what = "the power refill's stops while sprinting, running with the pad's button 1 held, in state 0x1c00000000 or while the clips hold 0x41a420"
+relation = "not-ported"
+issue = 719
+
+[[function.gaps]]
+what = "of the no-refill states 0x1c18003ff0 only the paired attacker's 0x1000 (PlayerCombat::updatePower) and the grab's drain are ported"
+relation = "not-ported"
+issue = 719
 
 [[function]]
 address = 0x002570e8
@@ -1870,6 +1938,24 @@ page = "characters.md#original-structure"
 role = "picks the anim state, calls its builder from `0x005106e0`"
 level = "confirmed-code"
 coney = "src/human/human_animator.h:HumanAnimator::choose"
+status = "legacy"
+
+[[function]]
+address = 0x0025a3e0
+name = "Human_PlayScriptAnim"
+page = "ai-scripting.md#dyn-animation"
+role = "The play-anim action's clip start: refused while held flags `0x1c16a40` are set; a chained loop for anims 671 and 673 and a plain loop when asked; otherwise the held flags set and a type 5 task pushed (`AnimTask5_Construct`)."
+level = "confirmed-code"
+coney = "src/human/human_animator.h:HumanAnimator::playScripted"
+status = "legacy"
+
+[[function]]
+address = 0x0025ade8
+name = "Human_PushOverlayClip"
+page = "combat-rage.md#flash"
+role = "Plays a clip over what the human plays (the flash's 665) as a type 5 task (`AnimTask5_Construct`), passing no rate, so the clip plays at its Anim Range List rate."
+level = "confirmed-code"
+coney = "src/human/human.h:Human::pushOverlayClip"
 status = "legacy"
 
 [[function]]

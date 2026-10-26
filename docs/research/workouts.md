@@ -130,7 +130,7 @@ of a human that is working out. Confirmed (code).
     - The **timing factor** *f* is 1, unless `0x005106ac` is not 1 and the lower clip's time *t* is at most half its
       duration *d*, when *f* = `0x005106ac` × (1 − *t* / (*d* / 2)). The scripts always make `0x005106ac` 1
       ([Parameters](#parameters)), so *f* is always 1.
-    - **Pump**: when the player's command is `0x12` (cross newly pressed, [Combat](combat.md#commands)), the hold
+    - **Pump**: when the player's command is `0x12` (cross newly pressed, [Combat](combat/index.md#commands)), the hold
       counter = `hold[L]`. Then, if the counter is not 0, effort += `gain[L]` / *f*, capped at 1. Without a pump, a
       non-zero counter is first decremented and, if still not 0, adds the same gain. So one press adds the gain on
       `hold[L]` updates.
@@ -279,7 +279,7 @@ before the 26 s clock ran out.
   stands on the bag's origin with radius 0.35 and **height 1.787 m** (`+0x44`; a human capsule's height is bone 6's
   height + 0.2 × scale, recomputed every update by `PhysicsCapsule_Pose`, `0x00343518`). Confirmed (code) at
   `0x00343810`, values confirmed (runtime). Details: [Physics](physics.md#bodies).
-- **Who is warned.** A punch at the bag warns the bag alone ([Combat: attack warnings](combat.md#attack-warnings)):
+- **Who is warned.** A punch at the bag warns the bag alone ([Combat: attack warnings](combat/index.md#attack-warnings)):
   nobody else in the gym hears it.
 
 ### Boxer {#boxer}
@@ -437,7 +437,7 @@ pressed. **Stand-ins and choices**:
   the bag on its segment (bone 3, no offset, along the bone's local x, which hangs down; radius 0.35, length 1.5) and
   sweep against its capsule (radius 0.35, height 1.787 m from its origin). `SetMsgHandlerEx` must register a kind-1
   record when only the second text is given (that record is the bag's quit), and `SetMsgHandler(obj, 0, ...)` must
-  unregister the object's record. Warn only the attack's target ([Combat](combat.md#attack-warnings)).
+  unregister the object's record. Warn only the attack's target ([Combat](combat/index.md#attack-warnings)).
 - **HUD**: the counter panel (kind 2), the stopwatch, the blinking cross icon, the centred combo call-out; no meter.
 - **Ranks and rewards**: `UM_Unlock(95, 1, offset + rank − 1)` must reach the unlock records and survive a save; the
   power (× 1.1) and stamina (× 1.2) upgrades of type 6 data 11 and 12 must be read where the maxima are computed.

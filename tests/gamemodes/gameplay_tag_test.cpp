@@ -34,6 +34,7 @@
 #include "support/recording_device.h"
 #include "support/tag_driver.h"
 #include "warriors/tag_game.h"
+#include "world_objects/flags.h"
 #include "world_objects/object_types.h"
 
 using coney::script::Value;
@@ -71,17 +72,21 @@ class SprayLevel final : public coney::GameMode, public coney::ScriptedPlayer {
     coney::ModeResult update(coney::GameModeStack& /*stack*/, const coney::FrameTime& /*frame*/) override {
         return coney::ModeResult::Stay;
     }
-    void teleportPlayer(const coney::world_objects::Placement& /*placement*/) override {}
+    void teleportPlayer(const coney::world_objects::Placement& /*placement*/,
+                        coney::world_objects::TeleportMotion motion) override {
+        motions.push_back(motion);
+    }
     void dropHeldObject() override { ++drops; }
     [[nodiscard]] std::string heldObjectType() const override { return held; }
     bool startTagSpray(const std::array<float, 3>& /*point*/) override { return clips; }
     [[nodiscard]] bool tagSprayLooping() const override { return clips && looping; }
     [[nodiscard]] bool tagSprayPlaying() const override { return !clips || playing; }
-    std::string held;     // the type name of what player 1 holds
-    int drops = 0;        // the drops asked for
-    bool clips = false;   // whether player 1 has spray clips
-    bool playing = true;  // with clips: whether a spray clip still plays
-    bool looping = false; // with clips: whether the loop 335 has started
+    std::string held;                                          // the type name of what player 1 holds
+    int drops = 0;                                             // the drops asked for
+    bool clips = false;                                        // whether player 1 has spray clips
+    bool playing = true;                                       // with clips: whether a spray clip still plays
+    bool looping = false;                                      // with clips: whether the loop 335 has started
+    std::vector<coney::world_objects::TeleportMotion> motions; // each teleport of player 1 handed to the level
 };
 
 // Pad 1 with the left stick the test sets, in [-1, 1] with y up.
@@ -205,6 +210,22 @@ constexpr double kTag = 500.0;
 constexpr double kFlag = 600.0;
 
 } // namespace
+
+TEST_CASE("gameplay hands a script's Teleport of player 1 to the level with its motion kept", "[gameplay][placement]") {
+    // GameplayMode passes the motion the binding recorded (Kept for Teleport, Stopped for TeleportToFlag) to the
+    // level's teleportPlayer(); the record starts at Stopped, so Kept arriving shows it was passed on
+    // (docs/research/teleports.md#motion-reset).
+    TagRun run;
+    auto to = std::make_shared<coney::script::Table>();
+    REQUIRE(to->set(Value(1.0), Value(5.0)).has_value());
+    REQUIRE(to->set(Value(2.0), Value(6.0)).has_value());
+    REQUIRE(to->set(Value(3.0), Value(0.0)).has_value());
+    run.call("Teleport", {Value(run.player), Value(std::move(to)), Value(-1.0)});
+    run.frames(1);
+    REQUIRE(run.level != nullptr);
+    REQUIRE(run.level->motions.size() == 1);
+    CHECK(run.level->motions[0] == coney::world_objects::TeleportMotion::Kept);
+}
 
 TEST_CASE("HuTag without paint gives the player event 14 unfinished and calls no start callback", "[gameplay][tag]") {
     TagRun run;

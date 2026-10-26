@@ -4,7 +4,7 @@
 # before it. Format: docs/guides/research-traces.md#recording-a-trace.
 
 # The player human: docs/research/characters.md (the human object, the record, the per-player record, the transform
-# table) and docs/research/combat.md#record-fields.
+# table) and docs/research/combat/index.md#record-fields.
 [[player]]
 name = "x"
 address = "tf(player) + 0x0"
@@ -779,7 +779,7 @@ follow = true
 # one), `goal_at(brain, k)` the type id of goal stack slot k (docs/references/goal-types.md; -1 above the top),
 # `goal_type(vtable)` a goal class's type id, `handles(address, n)` how many of n words there are
 # handles (neither 0 nor 0xffffffff).
-# Research: docs/research/ai.md (#brain, #goals, #gangs, #fight), docs/research/combat.md (#state-flags,
+# Research: docs/research/ai.md (#brain, #goals, #gangs, #fight), docs/research/combat/index.md (#state-flags,
 # #record-fields), docs/research/rumble.md#gang-battle-trace. Goal type 15 is Fight, 27 Blocking, 8 Melee, 11
 # EngageEnemy, 65 FindEnemy.
 [[humans]]

@@ -1,5 +1,5 @@
 description = "slot 6: a knife in hand; cross held and square (command 0x22) with PoizoCiv 5.0 m ahead (pinned): the knife throw"
-research = "docs/research/combat-moves.md"
+research = "docs/research/combat-throws.md#weapons"
 input = "moves_knife_throw.txt"
 updates = 120
 fields = ["player", "enemy"]

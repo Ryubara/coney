@@ -1,5 +1,5 @@
 description = "slot 6: a knife (dyn_tknife) placed in the player's hand; circle grabs PoizoCiv 1.0 m ahead, then square: the knife grab kill"
-research = "docs/research/combat-moves.md"
+research = "docs/research/combat-throws.md#weapons"
 input = "moves_knife_grab.txt"
 updates = 160
 fields = ["player", "enemy"]

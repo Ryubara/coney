@@ -11,7 +11,7 @@
 // woundable, rubber-neck and grab-block switches of the flag word, the two hearing ranges of its brain, and the
 // questions whether it is hidden, fighting, in a scene or a live handle at all. Each acts through the level's
 // HumanBindingHost (scripting/human_bindings.h), the scene question through the level's scenes.
-// Research: docs/references/bindings/character.md, docs/research/combat.md#human-flags
+// Research: docs/references/bindings/character.md, docs/research/combat/index.md#human-flags
 
 namespace coney::script {
 

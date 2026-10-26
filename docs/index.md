@@ -24,6 +24,12 @@ C++ code that behaves like the original. Contributors study the original game,
 write down what they learn on the [research pages](research/overview.md) and implement it in Coney's own code,
 and the [progress page](progress/index.md) measures how far that has come.
 
+<!-- progress:home -->
+
+Each square is one function of the original game's own code, subsystem after subsystem in address order. Point at a
+square, or tap it, to see the function, its address and, once Coney has it, the source file it was ported to; the
+[progress page](progress/index.md) has the numbers per subsystem and what each state means.
+
 ## Bring your own disc
 
 !!! warning "No game data here"

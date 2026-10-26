@@ -154,7 +154,7 @@ address = 0x00343518
 name = "PhysicsCapsule_Pose"
 page = "physics-bodies.md#u6-capsule-pose"
 level = "confirmed-code"
-note = "the level is from [combat.md#capsule-strike](combat.md#capsule-strike)"
+note = "the level is from [combat/index.md#capsule-strike](combat/index.md#capsule-strike)"
 coney = "src/human/human.h:Human::struckCapsule"
 status = "legacy"
 

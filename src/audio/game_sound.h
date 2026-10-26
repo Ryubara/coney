@@ -4,6 +4,7 @@
 #include <array>
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <optional>
 #include <span>
 #include <string>
@@ -67,6 +68,13 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     /// One line on the game's sound for the end of a run: the humans' sounds asked for and the matrix's sounds started
     /// (counts only).
     [[nodiscard]] std::string summary() const;
+    /// The `SA` id of the last animation sound the human with handle `human` asked for (clip event 11); 0 before its
+    /// first. For the tests, which check which sound a clip asked for.
+    /// @coney-only a test's view of the sounds asked for; the original keeps no such record
+    [[nodiscard]] std::uint32_t lastAnimSound(double human) const {
+        const auto found = m_lastAnimSounds.find(human);
+        return found != m_lastAnimSounds.end() ? found->second : 0;
+    }
     /// The sound matrix the preloads fill.
     [[nodiscard]] SoundMatrix& matrix() { return m_matrix; }
     [[nodiscard]] const SoundMatrix& matrix() const { return m_matrix; }
@@ -221,8 +229,9 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     SoundMatrix m_matrix;
     MaterialSoundPlayer m_materialSounds;
     Voices m_humanVoices{*this};
-    std::uint64_t m_animSounds = 0;   // the humans' animation sounds asked for
-    std::uint64_t m_impactSounds = 0; // the humans' hit sounds asked for
+    std::uint64_t m_animSounds = 0;                   // the humans' animation sounds asked for
+    std::map<double, std::uint32_t> m_lastAnimSounds; // lastAnimSound(), by human
+    std::uint64_t m_impactSounds = 0;                 // the humans' hit sounds asked for
     HumanSoundEvents m_humanSounds;
     AmbientEmitters m_emitters;
     VoiceTable m_voices;

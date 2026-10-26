@@ -32,7 +32,7 @@ struct RageClass {
 };
 
 /// Rembrandt's and Ash's class 6 on normal: 78, 144 %, 200 % and 240 % (confirmed at runtime,
-/// docs/research/combat.md#constants).
+/// docs/research/combat/index.md#constants).
 inline constexpr RageClass kPlayerRageClass{};
 
 /// The span the decay and drain percentages are given over (`0x002562d0`): 20 s.
@@ -119,6 +119,9 @@ class PowerMeter {
     /// by the refill rate, to the maximum. The fraction of a point is carried to the next update.
     /// **Coney choice**: the carried fraction restarts when the meter turns from refilling to draining or back.
     void update(std::uint64_t nowMs, bool draining, float drainPerSecond);
+    /// Moves the meter to game time `nowMs` with no change: neither drained nor refilled (a paired move's attacker,
+    /// docs/research/slow-motion.md#power-move). The carried fraction is kept.
+    void hold(std::uint64_t nowMs) { m_lastMs = nowMs; }
 
   private:
     int m_value;
@@ -179,7 +182,7 @@ class RageMeter {
     int add(float points, const CombatTuning& tuning, std::uint64_t nowMs, RageGain gain = {});
 
     /// Starts rage when the meter is full and rage is not on; returns whether it started.
-    /// @orig 0x002843f8 Player_StartRage (unknown)
+    /// @orig 0x002843f8 Player_UseItemCommand (unknown)
     bool start(std::uint64_t nowMs);
     /// Starts rage whatever the meter holds (`HuSetRageMode(human, true)`, `0x00236d28`): raging, the hold timer
     /// (`+0x648`) cleared and the drain's clock restarted at `nowMs`. An empty meter ends it at the next update().

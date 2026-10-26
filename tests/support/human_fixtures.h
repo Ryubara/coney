@@ -108,7 +108,8 @@ inline std::vector<LocomotionClip> locomotionClips() {
 /// s), the ground (193, 195, 196, 199, 207, 210, 212), the mount (118, 119, 219-226, 244, 245, 248, 249; 0.4 s), the
 /// reactions 268-303 (0.4 s; 288-303, the heavy and crushing ones, knock down), the stun (356 loop, 357 end), the fight
 /// idle (358), the miss's 389, the block (606, 607, looping), the stereo theft (683, 0.5 s; 684 looping) and the
-/// spray (334, 1 s; 335 looping; 337, 0.5 s; its end 336, 0.5 s), and the transition into the fight idle (359, 0.3 s).
+/// spray (334, 1 s; 335 looping; 337, 0.5 s; its end 336, 0.5 s), circle + triangle's spray (664, 1 s), and the
+/// transition into the fight idle (359, 0.3 s).
 inline std::vector<LocomotionClip> combatClips() {
     std::vector<LocomotionClip> clips;
     // A still clip of `id` lasting `duration`, looping at rate 1 with `loop`.
@@ -123,7 +124,7 @@ inline std::vector<LocomotionClip> combatClips() {
     };
     // The attacks, each with phase events as an attack's clip has them (docs/research/tasks.md#held-flags): the first
     // and second of a chain open a window (0x2c) at frame 5, every one ends (0x2d) at 12 and recovers (0x48) at 13. The
-    // snaps carry a contact event (0x41) at frame 3, which ends their steer's time (combat-moves.md#two-steers).
+    // snaps carry a contact event (0x41) at frame 3, which ends their steer's time (combat-targets.md#two-steers).
     for (const std::uint32_t id : {11U, 12U, 13U, 14U, 15U, 16U, 17U, 19U, 25U, 27U, 29U, 661U, 662U}) {
         still(id, 0.6F);
         if (id == 11U || id == 12U || id == 16U) {
@@ -142,6 +143,8 @@ inline std::vector<LocomotionClip> combatClips() {
     for (const std::uint32_t id : {645U, 647U, 653U, 655U}) {
         still(id, 0.6F);
     }
+    // Circle + triangle's spray (664, `gen_spray`: 30 frames, 1 s).
+    still(664, 1.0F);
     // The strong grapple's connecting strikes and their reactions (front 657 / 658, rear 659 / 660).
     for (const std::uint32_t id : {657U, 658U, 659U, 660U}) {
         still(id, 0.4F);

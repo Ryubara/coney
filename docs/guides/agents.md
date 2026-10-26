@@ -21,8 +21,8 @@ so a fresh clone gets the same setup as the maintainer's machine:
 | `.mcp.json` | The debugging servers: `ghidra-mcp` (the shared Ghidra project) and `pcsx2` (the emulator, over the PCSX2-MCP fork's debug server and PINE) | Claude Code; other tools take the same two commands in their own MCP config |
 | `.claude/agents/` | The roles: `coordinator` (the main session), `engineer`, `tooling`, `reviewer` | Claude Code |
 | `.claude/skills/` | The coordinator's skills: `repo-hygiene` ([the skill](repo-conventions.md#hygiene-skill)) | Claude Code |
-| `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and `coney-tools build` allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)), and `gh` commands naming a video file, which only `coney-tools clips publish` uploads ([Clips](testing.md#clips)); `export CONEY_AGENT_TOKEN=*`, the [identity](#identity) prefix the dispatcher adds; hooks, run by one dispatcher (`.claude/hooks/dispatch.py`, [The hooks](#hooks)), that refuse a raw `cmake --build`, `ctest` or `ninja` ([Builds and tests](#builds)), a wait loop with no bound ([Bounded waits](#bounded-waits)), a raw `gh` command that writes an issue (`.claude/hooks/issue_guard.py`, [Filing an issue](issues.md#filing)), an Agent call with `isolation: "worktree"` or with no Coney role as its type (`.claude/hooks/agent_guard.py`, [Where an agent works](#worktrees), [Which role to start](#roles)), a tool call the role of the session does not allow (`.claude/hooks/roles.py`), a call of the shared `pcsx2` MCP server on a copy the caller has not claimed (`.claude/hooks/pcsx2_guard.py`, [The PCSX2 MCP guard](#pcsx2-guard)), a `gh pr create` or `gh pr edit` whose title or description CI would refuse (`.claude/hooks/pr_guard.py`, [The release queue](how-we-work.md#release-queue)), and, inside a subagent, `git push` or a `gh` command that writes to GitHub (`.claude/hooks/push_guard.py`, [The release queue](how-we-work.md#release-queue)) and, after a `git commit`, a `Co-Authored-By` trailer that names another model than the agent runs on (`.claude/hooks/trailer_guard.py`, [Commit trailers](#trailer-guard)) | Claude Code |
-| `tools/claude-mod/` | Conclave, the Claude Code mod: a band, a status line, a pane and the shorter list of agent types ([Conclave](conclave.md)) | Claude Code, with `--plugin-dir` |
+| `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and `coney-tools build` allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)), and `gh` commands naming a video file, which only `coney-tools clips publish` uploads ([Clips](testing.md#clips)); `export CONEY_AGENT_TOKEN=*`, the [identity](#identity) prefix the dispatcher adds; hooks, run by one dispatcher (`.claude/hooks/dispatch.py`, [The hooks](#hooks)), that refuse a raw `cmake --build`, `ctest` or `ninja` ([Builds and tests](#builds)), a wait loop with no bound ([Bounded waits](#bounded-waits)), a raw `gh` command that writes an issue (`.claude/hooks/issue_guard.py`, [Filing an issue](issues.md#filing)), an Agent call with `isolation: "worktree"` or with no Coney role as its type (`.claude/hooks/agent_guard.py`, [Where an agent works](#worktrees), [Which role to start](#roles)), a tool call the role of the session does not allow (`.claude/hooks/roles.py`), a call of the shared `pcsx2` MCP server on a copy the caller has not claimed (`.claude/hooks/pcsx2_guard.py`, [The PCSX2 MCP guard](#pcsx2-guard)), a `gh pr create` or `gh pr edit` whose title or description CI would refuse and, once `pull_requests.open_only` is on, every hand-typed way of opening a pull request (`.claude/hooks/pr_guard.py`, [The PR guard](enforcement.md#pr-guard)), and, inside a subagent, `git push` or a `gh` command that writes to GitHub (`.claude/hooks/push_guard.py`, [The release queue](how-we-work.md#release-queue)) and, after a `git commit`, a `Co-Authored-By` trailer that names another model than the agent runs on (`.claude/hooks/trailer_guard.py`, [Commit trailers](#trailer-guard)) | Claude Code |
+| `tools/claude-mod/` | Conclave, the Claude Code mod: a band, a status line, a pane, the shorter list of agent types and, for the coordinator, the watchers that tell it Coney's own events ([Conclave](conclave.md)) | Claude Code, with `--plugin-dir` |
 | `.claude/hooks/` | The dispatcher `dispatch.py` that `settings.json` runs for every event ([The hooks](#hooks)), the guard scripts it runs, the role rules and identity injection (`roles.py`, `identity.py`), their settings `hooks.toml`, and `ruff.toml` (the package's rules; ruff lints the hooks like `python/`, [Conventions](conventions.md#python)) | Claude Code |
 
 **The servers.** `.mcp.json` holds no paths. Each entry runs `coney-tools mcp serve <name>`, which finds the server
@@ -165,9 +165,9 @@ the role from the hook input's `agent_type` (a subagent's type; for the main ses
 | Role | Is | May not (a hook refuses it) |
 | --- | --- | --- |
 | `coordinator` | The main session: triage, briefs, answers, pushes and opens pull requests, merges, the maintainer's contact | Write under `src/`, `tests/`, `python/`, `docs/research/`, `research/`; `git commit` in a unit's worktree; the Ghidra and PCSX2 tools; the study, compare, check and review commands of the new workflow |
-| `engineer` | A subagent: one task, any method | `git push` and every GitHub write, `coney-tools pr open` |
+| `engineer` | A subagent: one task, any method | `git push` and every GitHub write, `coney-tools pr open` and `pr hold` |
 | `tooling` | A subagent for the project's own tools and process | The same as the engineer; it may edit `src/` (warning fixes) |
-| `reviewer` | A subagent that reports | Writing any file but its verdict and notes (`REVIEW.json`, `REVIEW.md`, `ORIG-REVIEW.*`, `FINDINGS.tsv`, `PROGRESS.md`, `HANDOVER.md`, `SUMMARY.md`, and `CODE-REVIEW*.md` for the report of a [review outside `task review`](review/task.md#report)), a git command that changes the index, the tree or the worktrees (`commit`, `add`, `rm`, `mv`, `reset`, `restore`, `checkout`, `switch`, `merge`, `rebase`, `cherry-pick`, `revert`, `apply`, `am`, `clean`, `worktree remove`, also after global options such as `--no-pager` or `-C dir`; `merge-base` and `merge-tree` only read and pass), GitHub writes, any Agent call (`allow_agent_types = []`: a helper has Bash and could write for it), starting a session from the shell (`claude`, `coney-agent`, `task review --run`, `repo review`) |
+| `reviewer` | A subagent that reports | Writing any file but its verdict and notes (`REVIEW.json`, `REVIEW.md`, `ORIG-REVIEW.*`, `FINDINGS.tsv`, `PROGRESS.md`, `HANDOVER.md`, `SUMMARY.md`, and `CODE-REVIEW*.md` for the report of a [review outside `task review`](review/task.md#report)) or any of those inside a checkout or with a colon in its name, a git command that changes a ref, the index, the tree or the worktrees (`commit`, `add`, `stage`, `rm`, `mv`, `reset`, `restore`, `checkout`, `checkout-index`, `switch`, `merge`, `mergetool`, `rebase`, `cherry-pick`, `revert`, `apply`, `am`, `clean`, `pull`, `fetch`, `bisect`, `stash`, `read-tree`, `update-ref`, `update-index`, `sparse-checkout`, `replace`, `pack-refs`, `gc`, `prune`, `repack`, `maintenance run`, `filter-branch`, `symbolic-ref` with two names or `-d`, `worktree add`/`move`/`remove`/`prune`, `notes add` and the other note writes, `reflog expire`/`delete`, `remote add`/`remove`/`rename`/`set-url`/`set-head`/`set-branches`/`update`/`prune`, `submodule update` and the other submodule writes, and `branch` or `tag` with anything but listing options, also after global options such as `--no-pager` or `-C dir`; `merge-base` and `merge-tree` pass, and so do `stash list`, `worktree list`, `remote -v`, `remote show`, `symbolic-ref HEAD`, `branch -a`, `tag -l`), GitHub writes, any Agent call (`allow_agent_types = []`: a helper has Bash and could write for it), starting a session from the shell (`claude`, `coney-agent`, `task review --run`, `repo review`) |
 | every role, and a session with none | | Naming `~/.coney` ([Who runs a command](#identity)); naming a file in `~/.ssh/` other than a `.pub`, `config` or `known_hosts`; reading another process's command line or environment; deleting keys from the SSH agent (`ssh-add -d`, `-D`, also bundled with other flags such as `-qD`; listing with `-l` is fine); Edit or Write under a `stamps/` or `build-runs/` folder and a shell write into one (a stamp log or build record is written by the stage commands only, [Stamps](stamps.md)) |
 
 The role rules are the `[roles.*]` tables of `.claude/hooks/hooks.toml`, read on every call; the rules for every
@@ -181,6 +181,12 @@ real path of a short name); not a search pattern, a commit message or the text a
 Some name commands that are planned (`pr open`) so that they are held from the day they land. A hook
 judges spelling: a command can be hidden from it, so these rules make a break visible and deliberate, not impossible.
 A setting of the wrong shape is ignored and an invalid pattern skipped, so one bad entry never disables the rest.
+
+**Asking the coordinator.** An agent that cannot go on without an answer, and whose report would come too late, writes
+`QUESTION.md` in its scratch folder (`QUESTION-<n>.md` for several), the first line the question and the lines after
+it what it needs to decide. [Conclave](conclave.md#questions) tells the coordinator, who answers by message or in
+`ANSWER.md` (`ANSWER-<n>.md`) beside the question; read that file, or look for the message, before going on. A
+question that can wait goes in the report. The coordinator reads these files for every branch with a worktree.
 
 Pick the role of an Agent call by what the agent does:
 
@@ -201,10 +207,11 @@ agent again with the right one.
 
 **A session with no role.** `require_role` in `hooks.toml` says what a session started without a role (a plain
 `claude`) may do. On, it may only read (Read, Grep, Glob) and every other call is refused with a message to start with
-`coney-agent`. It is **off in the committed file** until the maintainer's sessions are started that way.
-To switch it on, a tooling agent changes `require_role = false` to `true` in a one-line pull request (the coordinator
-may not commit in a unit's worktree, and every worktree counts as one). Whatever its value, a session start with no
-role shows a notice (a SessionStart hook).
+`coney-agent`. It is **on in the committed file**: the maintainer's sessions start through `coney-agent`, and every
+agent they start carries its own role. Off, such a session would get no role rules at all. Whatever its value, a
+session start with no role shows a notice (a SessionStart hook). To keep the conversation of a session that has no
+role, quit it and start again with `coney-agent -- --continue` (the latest conversation in the folder) or
+`coney-agent -- --resume` (pick one): everything after `--` goes to `claude` unchanged.
 
 ## Which model {#models}
 
@@ -300,17 +307,20 @@ Of the nine guard scripts, `lua_guard.py` was written for the dispatcher (its fi
 `no-decompiled-lua`), and five run exactly as they did as separate hooks (`build_guard.py`, `issue_guard.py`,
 `bounded_waits.py`, `push_guard.py`, `pcsx2_guard.py`); `trailer_guard.py` is unchanged but the dispatcher starts it
 only for a real `git commit`; `pr_guard.py` (once `release_guard.py`) and `agent_guard.py` run as before and have a
-rule more each (the `refuse_pr_create` switch, the role check). The dispatcher gives a guard's `main()` the hook input
-and takes its exit code and stderr, so a guard stays a script of its own with its own tests. The refusals of all
+rule more each (the `pull_requests.open_only` switch, the role check). The dispatcher gives a guard's `main()` the hook
+input and takes its exit code and stderr, so a guard stays a script of its own with its own tests. The refusals of all
 guards come back together, as Claude Code's JSON answer (`permissionDecision: deny` with the reasons before a tool
 runs, `decision: block` after it) with exit code 0, shown to the agent; never exit code 2, which Claude Code also gets
 from a launcher that fails ([Nothing turns the guards off](#hooks)). The settings are in `.claude/hooks/hooks.toml`
-(hand-written, standard-library TOML: the hooks run without packages, so `.github/conventions.yml` cannot be read
-there). Two switches are off in the committed file and are changed in a one-line pull request when their moment comes:
-`require_role` ([Which role to start](#roles)) and `[pr_guard] refuse_pr_create`, which makes the PR guard refuse
-every `gh pr create` and every `gh api` call that opens a pull request, in any session, once `coney-tools pr open` is
-the only way. The hooks run from the checkout the session was started in, so a change to them reaches a session when
-that checkout has it. Whatever the dispatcher runs is judged on spelling; none of it is a security boundary.
+(hand-written, standard-library TOML: the hooks run without packages, so they cannot load `.github/conventions.yml`).
+There are two switches. `require_role` in `hooks.toml` ([Which role to start](#roles)) is on. `pull_requests.open_only`
+in `.github/conventions.yml` is off and is changed in a one-line pull request when its moment comes: it makes the PR
+guard refuse the hand-typed ways of opening a pull request in any session, once `coney-tools pr open` is the only way
+([The PR guard](enforcement.md#pr-guard) lists them). The second is a conventions key, not a line of `hooks.toml`, so
+the rule has one source: `pr_guard.py` reads that one line itself (`read_open_only`; a file it cannot read leaves the
+switch off), and a test holds its reader to the conventions loader. The hooks run from the checkout the session was
+started in, so a change to them reaches a session when that checkout has it. Whatever the dispatcher runs is judged on
+spelling; none of it is a security boundary.
 
 **Nothing turns the guards off, and a guard that cannot start blocks nothing.** The guards are what
 keeps agents from breaking the shared machine, so only a guard's own failure may stop that guard. A settings file that
@@ -499,7 +509,9 @@ its folder until somebody removes it. A rule written in a brief is not enough, s
   deletes the `build/` folders idle over a day, and never touches a worktree that holds or waits for a build slot,
   or one with a `.coney-busy` marker ([Cleanup](workspace.md#cleanup)). Then run the build again.
 - If it frees nothing, every holder is busy or recent: do not delete another agent's build by hand. Delete your own
-  `build/` when you hand over a unit (the [brief](#briefs) says so), do other work, and ask the coordinator.
+  `build/` when you hand over a unit (the [brief](#briefs) says so), do other work, and ask the coordinator (a
+  question that cannot wait for your report goes in `QUESTION.md` in your scratch folder, which
+  [Conclave](conclave.md#questions) tells the coordinator about).
 - **The busy marker** is how a worktree says "leave me alone". Write your agent id into it
   (`echo <id> > .coney-busy`): a marker with something in it always protects, while an empty one older than a day
   is taken for a dead agent's and ignored, so a crashed agent no longer protects its worktree for ever.

@@ -8,7 +8,7 @@ about: |
   `AddCommand(command, trigger, buttons, extra)` and scripts switch them per human with `EnableCommand`.
   AI humans write the same numbers. A **Warrior command** is an order the war chief gives the crew from
   the command menu (`WCIssueCommand`, `WCEnableCommand`). How buttons are matched:
-  [Combat: commands](../research/combat.md#commands); the orders:
+  [Combat: commands](../research/combat/index.md#commands); the orders:
   [AI: Warrior commands](../research/ai-gangs.md#warrior-commands); the buttons: [Controls](controls.md).
 complete: |
   Every trigger kind, every pad command the scripts bind or switch and all seven Warrior commands
@@ -313,7 +313,7 @@ entries:
     hex: 0x0024
     name: "circle + triangle"
     bound: ["combination press: circle + triangle"]
-    action: "Sprays a tag (664) where the player may tag."
+    action: "The spray (664) at the attack target, spending one spray paint; a pad-driven human with none does nothing."
     bound_in: [global.lua]
     toggled_in: [level93_chapter6.lua]
     source: "Player_Special (0x00287730)"

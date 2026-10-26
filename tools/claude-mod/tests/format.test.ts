@@ -3,7 +3,7 @@
 import { expect, test } from 'claude-code/testing'
 
 import type { Held, Snapshot } from '../types'
-import { claimLineText, claimTone, clip, countdown, elapsed, issueIds, mark, packLines, showUtc, stageText, wrapTokens } from '../src/format'
+import { claimLineText, columns, paneLayout, claimTone, clip, countdown, elapsed, issueIds, mark, packLines, showUtc, stageText, wrapTokens } from '../src/format'
 import { checkoutOf, firstLine, merged, offerKey, venvOf } from '../src/snapshot'
 import { EMPTY } from '../src/state'
 import fixture from './fixtures/snapshot'
@@ -132,12 +132,18 @@ test('the saved agent list is kept per checkout, whatever the slashes', () => {
 test('a line is clipped with an ellipsis, and tokens wrap without splitting', () => {
   expect(clip('abcdef', 6)).toBe('abcdef')
   expect(clip('abcdefg', 6)).toBe('abcde…')
+  // by columns: an emoji or a CJK character takes two and never splits, the terminal marks one, `⚠️` two
+  expect([columns('修正'), columns('🚀x'), columns('✖ ⚠ ✔ ▸ ● ·'), columns('⚠️'), columns('❌'), columns('한')]).toEqual([4, 3, 11, 2, 2, 2])
+  expect(clip('修正する', 6)).toBe('修正…')
+  expect(clip('ab🚀cd', 4)).toBe('ab…')
+  expect(clip('修正', 4)).toBe('修正')
+  expect(packLines(['修正', 'ab'], ' ', 6)).toEqual([['修正'], ['ab']])
   expect(wrapTokens(['✔ assigned', '✔ claimed', '✖ compared'], '  ', 22)).toEqual(['✔ assigned  ✔ claimed', '✖ compared'])
   expect(wrapTokens(['x'.repeat(30)], ' ', 10)).toEqual(['xxxxxxxxx…'])
   expect(wrapTokens([], ' ', 10)).toEqual([''])
 })
 
-test('a claim line says the same in both layouts, and warns only when it has a deadline', () => {
+test('a claim line says the same in every layout, and warns only when it has a deadline', () => {
   const claims = snapshot().claims
   if (claims === null || claims.error !== null) throw new Error('the fixture holds claims')
   const [first] = claims.claims
@@ -147,13 +153,23 @@ test('a claim line says the same in both layouts, and warns only when it has a d
   const waiting = { ...first, warned: true, deadline: null, waiting: 'S-blocked' }
 
   // wide: who and stage in the middle, the countdown last; compact: the countdown leads, the stage is left to the row
-  expect(claimLineText(timed, rules, NOW, false)).toBe(`  #741  ${first.claimant}  claimed  expires in 2d 14h  (warned)`)
-  expect(claimLineText(timed, rules, NOW, true)).toBe(`  #741 expires in 2d 14h  ${first.claimant} (warned)`)
-  // a claim that waits has no deadline to warn about, in either layout
-  expect(claimLineText(waiting, rules, NOW, false)).not.toContain('warned')
-  expect(claimLineText(waiting, rules, NOW, true)).not.toContain('warned')
-  expect(claimLineText(waiting, rules, NOW, true)).toContain('waits while S-blocked')
-  expect(claimLineText({ ...first, warned: false }, rules, NOW, false)).not.toContain('warned')
+  expect(claimLineText(timed, rules, NOW, 'wide')).toBe(`  #741  ${first.claimant}  claimed  expires in 2d 14h  (warned)`)
+  expect(claimLineText(timed, rules, NOW, 'compact')).toBe(`  #741 expires in 2d 14h  ${first.claimant} (warned)`)
+  // narrow: the bare countdown and the warning ahead of the claimant, so a clipped line keeps them; `~` while unenforced
+  expect(claimLineText(timed, rules, NOW, 'narrow')).toBe(`  #741 2d 14h (warned) ${first.claimant}`)
+  expect(claimLineText(timed, { ...rules, enforced: false }, NOW, 'narrow')).toBe(`  #741 ~2d 14h (warned) ${first.claimant}`)
+  // a claim that waits has no deadline to warn about, in any layout
+  for (const layout of ['wide', 'compact', 'narrow'] as const) expect(claimLineText(waiting, rules, NOW, layout)).not.toContain('warned')
+  expect(claimLineText(waiting, rules, NOW, 'compact')).toContain('waits while S-blocked')
+  expect(claimLineText(waiting, rules, NOW, 'narrow')).toBe(`  #741 waits: S-blocked ${first.claimant}`)
+  expect(claimLineText({ ...first, warned: false }, rules, NOW, 'wide')).not.toContain('warned')
+})
+
+test("the pane picks its layout by width from the snapshot's three limits", () => {
+  const config = { ...snapshot().config, pane_min_columns: 30, pane_compact_columns: 60, pane_wide_columns: 110 }
+  expect([1, 29, 30, 59, 60, 109, 110, 200].map(columns => paneLayout(columns, config))).toEqual([
+    'line', 'line', 'narrow', 'narrow', 'compact', 'compact', 'wide', 'wide',
+  ])
 })
 
 test('items are packed into lines no wider than the pane, each item whole', () => {

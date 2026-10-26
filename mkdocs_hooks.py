@@ -4,9 +4,10 @@ No file names the repository's or the site's address: they come from the build. 
 `repo:<path>`, which this hook turns into a link to that file on the default branch of the repository the site is
 built from, and an issue or pull request as `issue:<number>`, which it turns into that issue's page. Neither is
 rewritten inside code. It also adds the Changelog page, written from the git history at build time, fills the
-progress page's tables and pictures, writes the README's badge data (shields.io endpoint JSON) and the progress
-numbers into the site, writes each research system's function list page from research/functions/ and fills the
-source map's file tables from research/source-files.toml, so none of those is committed.
+progress page's tables and pictures and the home page's picture of functions, writes the README's badge data
+(shields.io endpoint JSON) and the progress numbers into the site, writes each research system's function list page
+from research/functions/ and fills the source map's file tables from research/source-files.toml, so none of those is
+committed.
 """
 
 import os
@@ -66,10 +67,15 @@ _progress_site = None
 # The committed progress pages, whose markers the build fills.
 _PROGRESS_PAGE = "progress/index.md"
 _HISTORY_PAGE = "progress/history.md"
+# The home page, whose marker the build fills with the compact picture of functions.
+_HOME_PAGE = "index.md"
 
 
 def _use_checkout_tools(root):
-    """Makes `coney_tools` importable from the checkout at `root`: the docs build installs only MkDocs."""
+    """Makes `coney_tools` importable from the checkout at `root`.
+
+    The docs build installs only MkDocs (and Pillow, for the README's pictures).
+    """
     src = str(Path(root) / "python" / "src")
     if src not in sys.path:
         sys.path.insert(0, src)
@@ -78,8 +84,9 @@ def _use_checkout_tools(root):
 def load_progress(root):
     """The progress tracker's state for the checkout at `root`, from `coney_tools` in `python/src`.
 
-    The docs build installs only MkDocs, so the tracker is imported from the checkout instead of from an installed
-    package. Raises RuntimeError, naming the problems, when the tracker's inputs disagree with each other.
+    The docs build installs only MkDocs and Pillow (requirements-docs.txt), so the tracker is imported from the
+    checkout instead of from an installed package. Raises RuntimeError, naming the problems, when the tracker's
+    inputs disagree with each other.
     """
     _use_checkout_tools(root)
     from coney_tools import progress
@@ -110,6 +117,13 @@ def fill_history_page(markdown, site):
     from coney_tools import progress_render
 
     return progress_render.fill_history_page(markdown, site.history_html, _HISTORY_PAGE)
+
+
+def fill_home_page(markdown, site):
+    """The home page's Markdown with its marker replaced by the compact picture of functions."""
+    from coney_tools import progress_render
+
+    return progress_render.fill_home_page(markdown, site.home_html, _HOME_PAGE)
 
 
 def build_progress_site(root, state, repo_url=None):
@@ -199,12 +213,15 @@ def on_page_markdown(markdown, config, page=None, **_):
     before MkDocs validates links (`resolve_repo_links`).
 
     On the progress page it first replaces the marker with the generated tables and pictures, on the history page with
-    the chart and the table of days, on the source map with the file tables.
+    the chart and the table of days, on the home page with the compact picture of functions, on the source map with
+    the file tables.
     """
     if page is not None and page.file.src_uri == _PROGRESS_PAGE and _progress_state is not None:
         markdown = fill_progress_page(markdown, _progress_state, _progress_site)
     if page is not None and page.file.src_uri == _HISTORY_PAGE and _progress_site is not None:
         markdown = fill_history_page(markdown, _progress_site)
+    if page is not None and page.file.src_uri == _HOME_PAGE and _progress_site is not None:
+        markdown = fill_home_page(markdown, _progress_site)
     # A real MkDocsConfig always has config_file_path; the fallback is for the plain dicts tests of other pages pass.
     config_file = getattr(config, "config_file_path", None)
     if page is not None and config_file and is_source_map_page(page.file.src_uri, Path(config_file).parent):

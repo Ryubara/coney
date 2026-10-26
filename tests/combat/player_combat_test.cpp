@@ -51,8 +51,9 @@ struct Frame {
 // What an attack's clip would hold on the record's +0x08 as it plays, standing in for the animator the dispatcher runs
 // beside in the game (docs/research/tasks.md#held-flags): the wind-up, the chain window from `open`, the end phase from
 // `close`, the recovery from `recovery`, nothing from `end`, in updates from the clip's start; the moving attacks hold
-// 0x1000000 to their end. The values are the phases measured at runtime (docs/research/combat.md#attacks; the bat's
-// 34 and 36, which have no chain window, docs/research/combat-moves.md#bat-cross), S1's for the attacks not listed.
+// 0x1000000 to their end. The values are the phases measured at runtime (docs/research/combat/index.md#attacks; the
+// bat's 34 and 36, which have no chain window, docs/research/combat-throws.md#bat-cross), S1's for the attacks not
+// listed.
 class ClipPhases {
   public:
     // An attack `animId` started this update.
@@ -178,6 +179,7 @@ using Starts = std::vector<std::pair<std::size_t, int>>;
 } // namespace
 
 TEST_CASE("a press every 6 updates plays S1, SS2 and SSS3, hitting 2, 4 and 7 updates after each start", "[combat]") {
+    // Expected: combat/index.md#attacks, confirmed (runtime)
     const AnimRangeList ranges = researchedRanges();
     Runner runner(&ranges);
     const auto frames = runner.run("10 tap square\n16 tap square\n22 tap square\n", 60);
@@ -188,6 +190,7 @@ TEST_CASE("a press every 6 updates plays S1, SS2 and SSS3, hitting 2, 4 and 7 up
 
 TEST_CASE("X1 starts on cross's release, hits at 8, and a square 5 updates later chains XS2 at its window",
           "[combat]") {
+    // Expected: combat/index.md#attacks, confirmed (runtime)
     const AnimRangeList ranges = researchedRanges();
     Runner runner(&ranges);
     const auto frames = runner.run("40 tap cross\n46 tap square\n", 80);
@@ -197,6 +200,7 @@ TEST_CASE("X1 starts on cross's release, hits at 8, and a square 5 updates later
 }
 
 TEST_CASE("a square in recovery is dropped and one after the attack starts a new S1", "[combat]") {
+    // Expected: combat/index.md#input-return, confirmed (runtime)
     Runner runner(nullptr);
     const auto frames = runner.run("0 tap square\n19 tap square\n24 tap square\n", 40);
     CHECK(starts(frames) == Starts{{0, anim_id::kAttackS1}, {24, anim_id::kAttackS1}});
@@ -204,6 +208,7 @@ TEST_CASE("a square in recovery is dropped and one after the attack starts a new
 }
 
 TEST_CASE("a snap: the full stick 90 degrees off the facing, then square, with a human there", "[combat]") {
+    // Expected: combat/index.md#attacks, confirmed (code)
     Runner runner(nullptr);
     const auto found = [](std::uint64_t, CombatInput& input) { input.snapTarget = true; };
     const auto frames = runner.run("70 stick left 100 0\n71 tap square\n72 stick left 0 0\n", 80, found);
@@ -216,6 +221,7 @@ TEST_CASE("a snap: the full stick 90 degrees off the facing, then square, with a
 
 TEST_CASE("R1 held blocks and reads nothing else; cross under it still attacks, and the block cuts its end phase",
           "[combat]") {
+    // Expected: combat/index.md#block, confirmed (code)
     Runner runner(nullptr);
     const auto frames = runner.run("200 press r1\n205 tap cross\n210 stick left 80 0\n230 stick left 0 0\n"
                                    "230 release r1\n",
@@ -234,6 +240,7 @@ TEST_CASE("R1 held blocks and reads nothing else; cross under it still attacks, 
 }
 
 TEST_CASE("L1 + R1 with a full rage meter starts rage", "[combat]") {
+    // Expected: combat-rage.md#rage, confirmed (code)
     // Filled by gains, which hold the meter for 5 s.
     Runner runner(nullptr);
     const CombatTuning tuning;
@@ -255,6 +262,7 @@ TEST_CASE("L1 + R1 with a full rage meter starts rage", "[combat]") {
 }
 
 TEST_CASE("L2 held and cross pressed charges at a run, and does nothing at a walk", "[combat]") {
+    // Expected: combat/index.md#run-attacks, confirmed (code)
     const char* script = "250 stick left 0 100\n265 press l2\n275 tap cross\n300 release l2\n300 stick left 0 0\n";
     Runner running(nullptr);
     const auto charged = running.run(script, 305, [](std::uint64_t frame, CombatInput& input) {
@@ -272,6 +280,7 @@ TEST_CASE("L2 held and cross pressed charges at a run, and does nothing at a wal
 }
 
 TEST_CASE("a grab, a strike and a forward throw, with the power meter paying for both", "[combat]") {
+    // Expected: combat-grabs.md#grabbing, confirmed (code)
     const AnimRangeList ranges = researchedRanges();
     Runner runner(&ranges);
     const auto frames =
@@ -295,6 +304,7 @@ TEST_CASE("a grab, a strike and a forward throw, with the power meter paying for
 }
 
 TEST_CASE("a rear hold's throw lands its hit the spin's updates later than a front hold's", "[combat]") {
+    // Expected: combat-throws.md#throw-direction, confirmed (code)
     // From a rear hold the spin to the front (80) plays before the throw's clip
     // (docs/research/combat-throws.md#throw-direction, item 4), so the hit comes 2 updates after the throw's own start,
     // here 17 updates after the press.
@@ -316,6 +326,7 @@ TEST_CASE("a rear hold's throw lands its hit the spin's updates later than a fro
 }
 
 TEST_CASE("circle held 7 samples tackles; mounted, square strikes", "[combat]") {
+    // Expected: combat-grabs.md#mount, confirmed (code)
     Runner runner(nullptr);
     const auto frames = runner.run("185 press circle\n195 release circle\n200 tap square\n", 210,
                                    [](std::uint64_t, CombatInput& input) { input.grabTargetInReach = true; });
@@ -330,6 +341,7 @@ TEST_CASE("circle held 7 samples tackles; mounted, square strikes", "[combat]") 
 }
 
 TEST_CASE("circle in a front grab mounts; mounted, square, cross, circle back to the hold and L2 off", "[combat]") {
+    // Expected: combat-grabs.md#mount, confirmed (code)
     Runner runner(nullptr);
     // Grab, mount, square, cross; circle back to the hold; mount again and get off with L2.
     const auto frames = runner.run("1 tap circle\n40 tap circle\n80 tap square\n120 tap cross\n160 tap circle\n"
@@ -358,6 +370,7 @@ TEST_CASE("circle in a front grab mounts; mounted, square, cross, circle back to
 }
 
 TEST_CASE("circle with nobody in reach plays the grab and misses; during an attack it is refused", "[combat]") {
+    // Expected: combat-grabs.md#grab, confirmed (code)
     Runner runner(nullptr);
     const auto frames = runner.run("5 tap circle\n30 tap square\n32 tap circle\n", 40);
     CHECK(frames[6].out.grabMissed);
@@ -368,6 +381,7 @@ TEST_CASE("circle with nobody in reach plays the grab and misses; during an atta
 }
 
 TEST_CASE("triangle in a grab mugs; the stick held on the target finishes it and the hold returns", "[combat]") {
+    // Expected: combat-throws.md#mugging, confirmed (code)
     Runner runner(nullptr);
     std::uint64_t succeeded = 0;
     // Grab at 1, triangle at 10; then steer the stick (0.8, a partial deflection) to the mugging's target each update.
@@ -392,6 +406,7 @@ TEST_CASE("triangle in a grab mugs; the stick held on the target finishes it and
 }
 
 TEST_CASE("an R1 press fails the stereo theft and plays its fail clip", "[combat]") {
+    // Expected: combat-targets.md#stereo-theft, confirmed (code)
     Runner runner(nullptr);
     runner.combat().startTheft(TheftKind::Rotate, 0, stereoStageTurns(2));
     const auto frames = runner.run("0 stick left 100 0\n1 stick left 87 50\n2 stick left 50 87\n3 stick left 0 100\n"
@@ -406,6 +421,7 @@ TEST_CASE("an R1 press fails the stereo theft and plays its fail clip", "[combat
 
 TEST_CASE("cross held and square pressed outside a hold is the special 653, spending a quarter of the power",
           "[combat]") {
+    // Expected: combat/index.md#run-attacks, confirmed (runtime)
     Runner runner(nullptr);
     const auto frames = runner.run("10 press cross\n12 tap square\n14 release cross\n", 20);
     CHECK(frames[12].command == command::kCrossSquare);
@@ -423,6 +439,7 @@ TEST_CASE("cross held and square pressed outside a hold is the special 653, spen
 
 TEST_CASE("circle + cross outside a hold is the strong grapple: a grab connecting with 657, at no power cost",
           "[combat]") {
+    // Expected: combat-grabs.md#strong-grapple, confirmed (code)
     Runner runner(nullptr);
     const auto inReach = [](std::uint64_t /*frame*/, CombatInput& input) { input.grabTargetInReach = true; };
     const auto frames = runner.run("10 press circle cross\n14 release circle cross\n", 20, inReach);
@@ -444,6 +461,7 @@ TEST_CASE("circle + cross outside a hold is the strong grapple: a grab connectin
 }
 
 TEST_CASE("a bat's anim set plays 34 for square and 36 for cross, with no chain after them", "[combat]") {
+    // Expected: combat-throws.md#weapons, confirmed (code)
     Runner runner(nullptr);
     const auto set = [](std::uint64_t, CombatInput& input) { input.animSet = 3; };
     const auto frames = runner.run("10 tap square\n16 tap square\n50 tap cross\n", 90, set);
@@ -459,6 +477,7 @@ TEST_CASE("a bat's anim set plays 34 for square and 36 for cross, with no chain 
 }
 
 TEST_CASE("square at a run plays 24 only with the record's +0x08 clear", "[combat]") {
+    // Expected: combat/index.md#attacks, confirmed (code)
     // Square tests the run with +0x08 clear (0x00286cc8): a bit square does not refuse on, such as a start clip's
     // 0x10000000, sends it on to S1 (combat.md#attacks).
     const char* script = "0 stick left 0 100\n10 tap square\n";
@@ -477,6 +496,7 @@ TEST_CASE("square at a run plays 24 only with the record's +0x08 clear", "[comba
 }
 
 TEST_CASE("with a brick in hand square, cross and the charge throw it; mid-throw a press is refused", "[combat]") {
+    // Expected: combat-throws.md#armed-moves, confirmed (code)
     Runner runner(nullptr);
     const auto frames = runner.run("10 tap square\n", 20, [](std::uint64_t, CombatInput& input) { input.animSet = 5; });
     CHECK(starts(frames) == Starts{{10, anim_id::kOneHandedThrow}});
@@ -499,8 +519,9 @@ TEST_CASE("with a brick in hand square, cross and the charge throw it; mid-throw
 }
 
 TEST_CASE("with a bat, a cross's 0x10 starts 36 only once 34 or 36 has ended: k37 after 34, k35 after 36", "[combat]") {
+    // Expected: combat-throws.md#bat-cross, confirmed (runtime)
     // The move's whole length is lost, not only its end phase and recovery: the bat's 34 and 36 have no chain window
-    // that keeps a press (docs/research/combat-moves.md#bat-cross). k counts updates from the move's first, and a tap
+    // that keeps a press (docs/research/combat-throws.md#bat-cross). k counts updates from the move's first, and a tap
     // at update f has its 0x10 on f + 1.
     struct Case {
         const char* first;
@@ -524,6 +545,7 @@ TEST_CASE("with a bat, a cross's 0x10 starts 36 only once 34 or 36 has ended: k3
 
 TEST_CASE("with a bat, a second square in the swing is not kept: 34 chains into nothing, and cross waits for k37",
           "[combat]") {
+    // Expected: combat-throws.md#bat-cross, confirmed (runtime)
     const auto set = [](std::uint64_t, CombatInput& input) { input.animSet = 3; };
     for (const int cross : {45, 46, 47}) {
         INFO("cross's 0x10 on update " << cross);
@@ -537,14 +559,18 @@ TEST_CASE("with a bat, a second square in the swing is not kept: 34 chains into 
 
 TEST_CASE("with a bat, cross + square is no special: no 653, no power spent, and the cross's release swings 36",
           "[combat]") {
+    // Expected: combat/index.md#run-attacks, confirmed (code)
     // The original's Player_Special refuses a pad player holding an object (it throws a melee weapon first when the
     // throw is allowed, which Coney does not build); cross's own 0x10 then plays 36 on the release
-    // (docs/research/combat-moves.md#bat-cross).
+    // (docs/research/combat-throws.md#bat-cross).
     for (const int set : {1, 2, 3, 4, 5, 6}) {
         INFO("anim set " << set);
         Runner runner(nullptr);
         const auto frames = runner.run("10 press cross\n11 tap square\n13 release cross\n", 30,
-                                       [set](std::uint64_t, CombatInput& input) { input.animSet = set; });
+                                       [set](std::uint64_t, CombatInput& input) {
+                                           input.animSet = set;
+                                           input.holdingObject = true;
+                                       });
         CHECK(frames[11].command == command::kCrossSquare);
         for (const Frame& frame : frames) {
             CHECK(frame.out.startAnim != anim_id::kSpecial);
@@ -559,10 +585,12 @@ TEST_CASE("with a bat, cross + square is no special: no 653, no power spent, and
 }
 
 TEST_CASE("with a bat, circle + cross is no strong grapple, even with a target in reach", "[combat]") {
+    // Expected: combat/index.md#run-attacks, confirmed (code)
     Runner runner(nullptr);
     const auto frames =
         runner.run("10 press circle cross\n14 release circle cross\n", 20, [](std::uint64_t, CombatInput& input) {
             input.animSet = 3;
+            input.holdingObject = true;
             input.grabTargetInReach = true;
         });
     CHECK(frames[10].command == command::kCircleCross);
@@ -573,8 +601,99 @@ TEST_CASE("with a bat, circle + cross is no strong grapple, even with a target i
     CHECK(runner.combat().mode() == CombatMode::Free);
 }
 
+TEST_CASE("circle + triangle with spray paint starts the spray 664 and reports it once for the caller", "[combat]") {
+    // Expected: combat/index.md#run-attacks, confirmed (code)
+    Runner runner(nullptr);
+    const auto frames = runner.run("10 press circle triangle\n14 release circle triangle\n", 20,
+                                   [](std::uint64_t, CombatInput& input) { input.hasSprayPaint = true; });
+    CHECK(frames[10].command == command::kCircleTriangle);
+    CHECK(starts(frames) == Starts{{10, anim_id::kSpraySpecial}});
+    CHECK(frames[10].out.sprayed);
+    // One spray for the one press, and no power spent.
+    CHECK(std::ranges::count_if(frames, [](const Frame& frame) { return frame.out.sprayed; }) == 1);
+    CHECK(runner.combat().power().value() >= 390);
+    CHECK(runner.combat().mode() == CombatMode::Free);
+}
+
+TEST_CASE("circle + triangle with no paint does nothing for a pad-driven human and sprays for a brain-driven one",
+          "[combat]") {
+    // Expected: combat/index.md#run-attacks, confirmed (runtime)
+    // With no paint the combination plays nothing; circle's release is then a lone tap, which grabs (with nobody near,
+    // the intro and the miss), as the original's 71, 69 and 389 did at runtime.
+    Runner padDriven(nullptr);
+    const auto none = padDriven.run("10 press circle triangle\n14 release circle triangle\n", 20);
+    CHECK(none[10].command == command::kCircleTriangle);
+    CHECK(none[10].out.startAnim == anim_id::kNone);
+    CHECK(std::ranges::none_of(
+        none, [](const Frame& frame) { return frame.out.sprayed || frame.out.startAnim == anim_id::kSpraySpecial; }));
+    const Starts started = starts(none);
+    REQUIRE(started.size() == 1);
+    CHECK(started.front().first > 10);
+    CHECK(started.front().second == anim_id::kGrabPlayerIntro);
+
+    // The per-player +0x1b clear: the paint is not asked for.
+    Runner brainDriven(nullptr);
+    const auto sprayed = brainDriven.run("10 press circle triangle\n14 release circle triangle\n", 20,
+                                         [](std::uint64_t, CombatInput& input) { input.padControlled = false; });
+    CHECK(starts(sprayed) == Starts{{10, anim_id::kSpraySpecial}});
+    CHECK(sprayed[10].out.sprayed);
+}
+
+TEST_CASE("a player holding an object of anim set 0 has no special or strong grapple or spray", "[combat]") {
+    // Expected: combat/index.md#run-attacks, confirmed (code)
+    // Human_IsHoldingObject asks for an object in hand, not for an anim set: one with set 0 refuses all three.
+    // (Circle's release after a refused combination is a lone tap, which may still grab: not the strong grapple.)
+    const auto holding = [](std::uint64_t, CombatInput& input) {
+        input.animSet = 0;
+        input.holdingObject = true;
+        input.hasSprayPaint = true;
+        input.grabTargetInReach = true;
+    };
+    for (const char* script :
+         {"10 press cross\n11 tap square\n13 release cross\n", "10 press circle cross\n14 release circle cross\n",
+          "10 press circle triangle\n14 release circle triangle\n"}) {
+        INFO(script);
+        Runner runner(nullptr);
+        const auto frames = runner.run(script, 30, holding);
+        for (const Frame& frame : frames) {
+            CHECK(frame.out.startAnim != anim_id::kSpecial);
+            CHECK(frame.out.startAnim != anim_id::kSpraySpecial);
+            CHECK(frame.out.grappleAnim == anim_id::kNone);
+            CHECK_FALSE(frame.out.sprayed);
+        }
+        CHECK(runner.combat().power().value() >= 390);
+    }
+}
+
+TEST_CASE("a fighter no player controls holding a bat still plays the special and the strong grapple and the spray",
+          "[combat]") {
+    // Expected: combat/index.md#run-attacks, confirmed (code)
+    // The refusal is a player's only (`+0x1b0` not -1); a brain-driven human asks for no paint either.
+    const auto aiWithBat = [](std::uint64_t, CombatInput& input) {
+        input.player = false;
+        input.padControlled = false;
+        input.animSet = 3;
+        input.holdingObject = true;
+        input.grabTargetInReach = true;
+    };
+    Runner special(nullptr);
+    const auto struck = special.run("10 press cross\n12 tap square\n14 release cross\n", 20, aiWithBat);
+    CHECK(struck[12].out.startAnim == anim_id::kSpecial);
+
+    Runner grapple(nullptr);
+    const auto grabbed = grapple.run("10 press circle cross\n14 release circle cross\n", 20, aiWithBat);
+    CHECK(grabbed[10].out.grabStarted);
+    CHECK(grabbed[10].out.grappleAnim == anim_id::kStrongGrapple);
+
+    Runner spray(nullptr);
+    const auto sprayed = spray.run("10 press circle triangle\n14 release circle triangle\n", 20, aiWithBat);
+    CHECK(sprayed[10].out.startAnim == anim_id::kSpraySpecial);
+    CHECK(sprayed[10].out.sprayed);
+}
+
 TEST_CASE("square, cross, circle tapped and circle held each start the tandem at a target that allows one",
           "[combat][tandem]") {
+    // Expected: combat-moves.md#tandem, confirmed (code)
     // The fighter found a victim held from the rear in front of the player (Tandem_CanStart true): every one of the
     // four commands starts the tandem, the set one of the three empty-handed ones, and no clip of the dispatcher's own.
     const auto tandem = [](std::uint64_t, CombatInput& input) { input.tandemTarget = true; };
@@ -596,6 +715,7 @@ TEST_CASE("square, cross, circle tapped and circle held each start the tandem at
 
 TEST_CASE("circle held over several steps starts the tandem with command 0xe; the square + cross combination does not",
           "[combat][tandem]") {
+    // Expected: combat-moves.md#tandem-input, confirmed (code)
     // The page's four triggers are square, cross (its 0x10), circle tapped (0xd) and circle held (0xe,
     // docs/research/combat-moves.md#tandem); the combination 0x22 (cross held, square pressed) is not one of them.
     const auto tandem = [](std::uint64_t, CombatInput& input) { input.tandemTarget = true; };
@@ -620,6 +740,7 @@ TEST_CASE("circle held over several steps starts the tandem with command 0xe; th
 }
 
 TEST_CASE("a tandem's set follows the weapon in hand: a bat 181, a baton 181, a knife 187", "[combat][tandem]") {
+    // Expected: combat-moves.md#tandem, confirmed (code)
     for (const auto& [set, base] : std::array{std::pair{3, 181}, std::pair{2, 181}, std::pair{1, 187}}) {
         Runner runner(nullptr);
         const auto frames = runner.run("10 tap square\n", 20, [set = set](std::uint64_t, CombatInput& input) {
@@ -631,6 +752,7 @@ TEST_CASE("a tandem's set follows the weapon in hand: a bat 181, a baton 181, a 
 }
 
 TEST_CASE("the tandem comes after the moving attacks and is refused mid-attack", "[combat][tandem]") {
+    // Expected: combat-moves.md#tandem, confirmed (code)
     // Walking at the victim with the stick at 60 %, square is the walk attack 23, as in the original's order.
     Runner walking(nullptr);
     const auto walk = walking.run("0 stick left 0 60\n10 tap square\n", 20, [](std::uint64_t, CombatInput& input) {
@@ -648,6 +770,7 @@ TEST_CASE("the tandem comes after the moving attacks and is refused mid-attack",
 }
 
 TEST_CASE("circle at a rear-held victim starts the tandem even with both grab blocks on", "[combat][tandem]") {
+    // Expected: combat-moves.md#tandem, confirmed (code)
     // The tandem is tested before the grab in Player_GrabOrTackle's step 3; the grab-block flags refuse only the grab.
     Runner runner(nullptr);
     const auto frames = runner.run("10 tap circle\n", 20, [](std::uint64_t, CombatInput& input) {

@@ -8,6 +8,7 @@
 #include <array>
 #include <cstdint>
 
+#include "core/ps2_float.h"
 #include "human/fighter_clips.h"
 #include "human/locomotion.h"
 
@@ -19,10 +20,18 @@ void Human::setHealthPercent(float percent) {
         health.set(health.maximum());
         return;
     }
-    health.set(static_cast<int>(static_cast<float>(health.maximum()) * percent / 100.0F));
+    // A hundredth of the maximum first, then the percentage, each product a single-precision float rounded toward
+    // zero as the PS2's FPU rounds it, then cut to whole points. 0.01 as a float is a little under a hundredth, so
+    // the products land just under the exact value: 35 % of 900 is 314, and even 100 % of 900 is 899
+    // (docs/references/bindings/character.md#husethealthpercent, run r-20261025-health-percent-rounding).
+    constexpr float kHundredth = 0.01F;
+    const float hundredth = ps2::mul(static_cast<float>(health.maximum()), kHundredth);
+    health.set(static_cast<int>(ps2::mul(percent, hundredth)));
 }
 
 void Human::setNormalMode(bool full) {
+    // Leaving normal mode ends the players' slow motion whatever `full` says (`Human_ResetForMode`).
+    m_slowMotionReset = true;
     m_script.arrested = false;
     m_fighter.setNormal(m_animator, full);
 }

@@ -15,7 +15,7 @@ from coney_tools.unit import Unit
 
 pytestmark = pytest.mark.ghidra
 
-#: A small function every project built from the disc has (docs/research/combat.md#code-index).
+#: A small function every project built from the disc has (docs/research/combat/index.md#code-index).
 ADDRESS = "0x00230d00"
 
 

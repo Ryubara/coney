@@ -17,7 +17,7 @@ entries:
   - id: 0
   - id: 1
     object: dyn_revival
-    meaning: "A flash: a revive (`InvGiveRevive`); the flash command spends one to heal ([Combat](../research/combat.md))"
+    meaning: "A flash: a revive (`InvGiveRevive`); the flash command spends one to heal ([Combat](../research/combat/index.md))"
     count: 0
     sound: vags/interface/powerup
     ms: 30000

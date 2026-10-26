@@ -7,9 +7,11 @@
 /**
  * The helpers, over one TypeScript program: `ts` and its `checker`, the request `req`, the mod's folder `mod`, the file
  * name normaliser `norm`, and the check's own tests: `isEngine` (a value of the engine's type), `isOwn` (a node in
- * one of the mod's checked sources) and `isEngineFunction` (a callee that is one of claude-code's own functions).
+ * one of the mod's checked sources) and `isEngineFunction` (a callee that is one of claude-code's own functions); and
+ * the `program` with the names of the files (`runtimeFiles`) that make up the mod, for the checks that follow a function
+ * to every place it is used.
  */
-module.exports = function syntax({ ts, checker, req, mod, norm, isEngine, isOwn, isEngineFunction }) {
+module.exports = function syntax({ ts, checker, req, mod, norm, program, runtimeFiles, isEngine, isOwn, isEngineFunction }) {
   const NAME = req.name
   const isWrapper = n => n.kind === ts.SyntaxKind.ParenthesizedExpression || n.kind === ts.SyntaxKind.NonNullExpression
 
@@ -346,16 +348,12 @@ module.exports = function syntax({ ts, checker, req, mod, norm, isEngine, isOwn,
     return problems
   }
 
-  // `classic.SessionStart` reads the session's agent type and passes the answer of the hooks beneath (Tether's, with the
-  // HANDOFF context) on whole: it begins `const r = await next(e)` and only ever returns `r`.
-  function sessionStartProblems(fn) {
-    const problems = []
-    const err = (node, why) => problems.push([node, why])
-    const ev = paramSymbol(fn, 1)
-    const next = paramSymbol(fn, 2)
-    const bad = () => err(fn, 'classic.SessionStart must begin with `const r = await next(e)` and return only r, so the answer beneath it stays whole')
-    const body = fn.body
-    if (ev === undefined || next === undefined || !ts.isBlock(body)) return (bad(), problems)
+  /**
+   * The first statement of a hook that keeps the answer beneath it whole: `const r = await next(e)`. It returns the
+   * declaration and the awaited call, or null when the hook does not begin so.
+   */
+  function answerDeclaration(body, ev, next) {
+    if (ev === undefined || next === undefined || !ts.isBlock(body)) return null
     const first = body.statements[0]
     const decl = first !== undefined && ts.isVariableStatement(first) ? first.declarationList.declarations[0] : undefined
     const isConst = first !== undefined && ts.isVariableStatement(first) && (first.declarationList.flags & ts.NodeFlags.Const) !== 0
@@ -368,8 +366,22 @@ module.exports = function syntax({ ts, checker, req, mod, norm, isEngine, isOwn,
       ts.isAwaitExpression(awaited) &&
       ts.isCallExpression(unwrap(awaited.expression)) &&
       isPassOn(awaited.expression, next, ev, false)
-    if (!isFirst) return (bad(), problems)
-    for (const [node, why] of hookMisuses(fn, ev, next, [unwrap(awaited.expression)])) err(node, `classic.SessionStart ${why}`)
+    return isFirst ? { decl, call: unwrap(awaited.expression) } : null
+  }
+
+  // `classic.SessionStart` reads the session's agent type and passes the answer of the hooks beneath (Tether's, with the
+  // HANDOFF context) on whole: it begins `const r = await next(e)` and only ever returns `r`.
+  function sessionStartProblems(fn) {
+    const problems = []
+    const err = (node, why) => problems.push([node, why])
+    const ev = paramSymbol(fn, 1)
+    const next = paramSymbol(fn, 2)
+    const bad = () => err(fn, 'classic.SessionStart must begin with `const r = await next(e)` and return only r, so the answer beneath it stays whole')
+    const body = fn.body
+    const first = answerDeclaration(body, ev, next)
+    if (first === null) return (bad(), problems)
+    const { decl } = first
+    for (const [node, why] of hookMisuses(fn, ev, next, [first.call])) err(node, `classic.SessionStart ${why}`)
     const answer = checker.getSymbolAtLocation(decl.name)
     const last = body.statements.at(-1)
     if (!(ts.isReturnStatement(last) && body.statements.length > 1)) return (bad(), problems)
@@ -388,8 +400,205 @@ module.exports = function syntax({ ts, checker, req, mod, norm, isEngine, isOwn,
     return problems
   }
 
+  // `classic.Stop` is the stop guard on pull request problems nobody owns. It keeps the answer beneath it (Tether's own
+  // guard for stopped agents, with its block) whole and adds one thing, the reason a function of the mod's own gives,
+  // asked only when no block is set beneath, so a block already there is never replaced or counted:
+  //   const r = await next(e)
+  //   const reason = r.block === undefined ? await guard($) : null
+  //   return reason === null ? r : { ...r, block: reason }
+  // `e` goes nowhere but `next`, nothing else is returned, and the guard is asked with the engine alone.
+  function stopGuardProblems(fn) {
+    const problems = []
+    const err = (node, why) => problems.push([node, why])
+    const host = paramSymbol(fn, 0)
+    const ev = paramSymbol(fn, 1)
+    const next = paramSymbol(fn, 2)
+    const bad = () =>
+      err(
+        fn,
+        "classic.Stop must begin with `const r = await next(e)`, ask one function of the mod's own for the reason only when no block is set beneath (`const reason = r.block === undefined ? await guard($) : null`) and return `reason === null ? r : { ...r, block: reason }`, so the answer beneath stays whole, a block set there is kept and the only thing added is the guard's block",
+      )
+    const body = fn.body
+    const first = answerDeclaration(body, ev, next)
+    if (first === null) return (bad(), problems)
+    for (const [node, why] of hookMisuses(fn, ev, next, [first.call])) err(node, `classic.Stop ${why}`)
+    const answer = checker.getSymbolAtLocation(first.decl.name)
+    const [, ask, ending] = body.statements
+    const is = (node, symbol) => ts.isIdentifier(unwrap(node)) && checker.getSymbolAtLocation(unwrap(node)) === symbol
+    // The second statement asks the guard, with `$` alone, when the answer beneath has no block: `r.block === undefined`.
+    const decl = ask !== undefined && ts.isVariableStatement(ask) ? ask.declarationList.declarations[0] : undefined
+    const init = decl?.initializer === undefined ? undefined : unwrap(decl.initializer)
+    const when = init !== undefined && ts.isConditionalExpression(init) ? unwrap(init.condition) : undefined
+    const isNoBlock =
+      when !== undefined &&
+      ts.isBinaryExpression(when) &&
+      when.operatorToken.kind === ts.SyntaxKind.EqualsEqualsEqualsToken &&
+      ts.isPropertyAccessExpression(unwrap(when.left)) &&
+      unwrap(when.left).name.text === 'block' &&
+      is(unwrap(when.left).expression, answer) &&
+      ts.isIdentifier(unwrap(when.right)) &&
+      unwrap(when.right).text === 'undefined'
+    const awaited = isNoBlock ? unwrap(init.whenTrue) : undefined
+    const call = awaited !== undefined && ts.isAwaitExpression(awaited) ? unwrap(awaited.expression) : undefined
+    const isAsk =
+      body.statements.length === 3 &&
+      (ask.declarationList.flags & ts.NodeFlags.Const) !== 0 &&
+      ask.declarationList.declarations.length === 1 &&
+      ts.isIdentifier(decl.name) &&
+      isNoBlock &&
+      unwrap(init.whenFalse).kind === ts.SyntaxKind.NullKeyword &&
+      call !== undefined &&
+      ts.isCallExpression(call) &&
+      ownFunction(call.expression) !== null &&
+      call.arguments.length === 1 &&
+      ts.isIdentifier(unwrap(call.arguments[0])) &&
+      host !== undefined &&
+      checker.getSymbolAtLocation(unwrap(call.arguments[0])) === host
+    if (!isAsk) return (bad(), problems)
+    const reason = checker.getSymbolAtLocation(decl.name)
+    // The last statement returns the choice between the answer beneath and the answer with the guard's block.
+    const choice = ts.isReturnStatement(ending) && ending.expression !== undefined ? unwrap(ending.expression) : undefined
+    const test = choice !== undefined && ts.isConditionalExpression(choice) ? unwrap(choice.condition) : undefined
+    const added = choice !== undefined && ts.isConditionalExpression(choice) ? unwrap(choice.whenFalse) : undefined
+    const members = added !== undefined && ts.isObjectLiteralExpression(added) ? added.properties : []
+    const isChoice =
+      test !== undefined &&
+      ts.isBinaryExpression(test) &&
+      test.operatorToken.kind === ts.SyntaxKind.EqualsEqualsEqualsToken &&
+      is(test.left, reason) &&
+      unwrap(test.right).kind === ts.SyntaxKind.NullKeyword &&
+      is(choice.whenTrue, answer) &&
+      members.length === 2 &&
+      ts.isSpreadAssignment(members[0]) &&
+      is(members[0].expression, answer) &&
+      ts.isPropertyAssignment(members[1]) &&
+      ts.isIdentifier(members[1].name) &&
+      members[1].name.text === 'block' &&
+      is(members[1].initializer, reason)
+    if (!isChoice) return (bad(), problems)
+    // The answer beneath is used three times, in the test for a block set beneath and in that choice, and nowhere else.
+    let uses = 0
+    const visit = node => {
+      if (ts.isIdentifier(node) && node !== first.decl.name && checker.getSymbolAtLocation(node) === answer) uses += 1
+      ts.forEachChild(node, visit)
+    }
+    visit(body)
+    if (uses !== 3) bad()
+    return problems
+  }
+
+  // A wake is sent from one place only: the event-wake path of the watchers (conclave.md#boundary). `$.prompt.submit` is
+  // called as `{ text: <parameter> }` in a function declaration (the wake function) that has exactly one reference in the
+  // mod, a call; that call sends the text of the events due, `wakeText(<preamble>, due)`, where `due` is a const that
+  // `pending(...)` gave, and sits in the `then` of `if (due.length > 0)` in the function declaration that watches (no
+  // closure, so no timer of its own); and the watcher has references that are calls, each in the callback given to
+  // `startPolling`, which runs after a read. So no timer, session start or fixed text can send a wake that no event asked for.
+  function wakeProblems(submit) {
+    const problems = []
+    const err = (node, why) => problems.push([node, why])
+    const enclosing = n => {
+      for (let p = n.parent; p !== undefined; p = p.parent) if (ts.isFunctionLike(p) || ts.isClassLike(p)) return p
+      return null
+    }
+    const symbolOf = id => {
+      let symbol = ts.isShorthandPropertyAssignment(id.parent) && id.parent.name === id ? checker.getShorthandAssignmentValueSymbol(id.parent) : checker.getSymbolAtLocation(id)
+      if (symbol !== undefined && symbol.flags & ts.SymbolFlags.Alias) symbol = checker.getAliasedSymbol(symbol)
+      return symbol
+    }
+    // Whether `callee` names the function `name` of the mod's own (declared in a checked source, with or without a body).
+    const ownNamed = (callee, name) => {
+      const id = unwrap(callee)
+      if (!ts.isIdentifier(id) || id.text !== name) return false
+      const decl = symbolOf(id)?.declarations?.[0]
+      return decl !== undefined && isOwn(decl)
+    }
+    // Every reference in the mod to the function declared by `decl`, but its own name and the import that names it.
+    const referencesTo = decl => {
+      const target = checker.getSymbolAtLocation(decl.name)
+      const found = []
+      for (const file of program.getSourceFiles()) {
+        if (!runtimeFiles.has(norm(file.fileName))) continue
+        const visit = n => {
+          const inImport = n.parent !== undefined && (ts.isImportSpecifier(n.parent) || ts.isImportClause(n.parent) || ts.isNamespaceImport(n.parent))
+          if (ts.isIdentifier(n) && n !== decl.name && !inImport && n.text === decl.name.text && symbolOf(n) === target) found.push(n)
+          ts.forEachChild(n, visit)
+        }
+        visit(file)
+      }
+      return found
+    }
+    const isCallee = id => ts.isCallExpression(id.parent) && id.parent.expression === id
+
+    // 1. The call: `{ text: <the last parameter> }` inside a function declaration.
+    const wake = enclosing(submit)
+    const props = submit.arguments.length === 1 ? plainProperties(submit.arguments[0]) : null
+    const text = props?.get('text')
+    const last = wake !== null && ts.isFunctionDeclaration(wake) && wake.name !== undefined ? wake.parameters.at(-1) : undefined
+    const isText =
+      text !== undefined &&
+      last !== undefined &&
+      ts.isIdentifier(last.name) &&
+      ts.isIdentifier(unwrap(text)) &&
+      checker.getSymbolAtLocation(unwrap(text)) === checker.getSymbolAtLocation(last.name)
+    if (!isText) {
+      err(submit, "$.prompt.submit may only be called as { text: <the text parameter> } inside a function declaration of the mod's own (the wake function) that takes the text, so a wake is never a fixed text or sent from a timer")
+      return problems
+    }
+
+    // 2. The wake function is called once, and only called.
+    const uses = referencesTo(wake)
+    if (uses.length !== 1 || !isCallee(uses[0])) {
+      err(wake.name, `the wake function ${wake.name.text} must be called exactly once, and only as a call: it is the one place a wake is sent from`)
+      return problems
+    }
+
+    // 3. That call sends the events due, in the watcher, when something is due.
+    const sending = uses[0].parent
+    const watcher = enclosing(sending)
+    const built = sending.arguments.length > 0 ? unwrap(sending.arguments.at(-1)) : undefined
+    const dueId = built !== undefined && ts.isCallExpression(built) && ownNamed(built.expression, 'wakeText') && built.arguments.length === 2 ? unwrap(built.arguments[1]) : undefined
+    const dueInit = dueId !== undefined && ts.isIdentifier(dueId) ? constInitializer(dueId) : null
+    const isDue = dueInit !== null && ts.isCallExpression(dueInit) && ownNamed(dueInit.expression, 'pending')
+    let isGuarded = false
+    for (let n = sending.parent; isDue && n !== undefined && n !== watcher; n = n.parent) {
+      if (!ts.isIfStatement(n) || !(sending.pos >= n.thenStatement.pos && sending.end <= n.thenStatement.end)) continue
+      const test = unwrap(n.expression)
+      const length = ts.isBinaryExpression(test) ? unwrap(test.left) : undefined
+      if (
+        ts.isBinaryExpression(test) &&
+        test.operatorToken.kind === ts.SyntaxKind.GreaterThanToken &&
+        ts.isNumericLiteral(unwrap(test.right)) &&
+        unwrap(test.right).text === '0' &&
+        ts.isPropertyAccessExpression(length) &&
+        length.name.text === 'length' &&
+        ts.isIdentifier(unwrap(length.expression)) &&
+        checker.getSymbolAtLocation(unwrap(length.expression)) === checker.getSymbolAtLocation(dueId)
+      ) {
+        isGuarded = true
+      }
+    }
+    if (!isDue || !isGuarded || watcher === null || !ts.isFunctionDeclaration(watcher) || watcher.name === undefined) {
+      err(sending, `the wake must be built from the events due: ${wake.name.text}($, wakeText(<preamble>, due)) in the then of \`if (due.length > 0)\`, with \`const due = pending(...)\`, directly in a function declaration (a closure or a timer inside it is not the watcher)`)
+      return problems
+    }
+
+    // 4. The watcher runs only from the callback of startPolling, which is called after a read.
+    for (const use of referencesTo(watcher)) {
+      let inside = null
+      if (isCallee(use)) {
+        for (let n = use.parent; n !== undefined && inside === null; n = n.parent) {
+          const given = ts.isArrowFunction(n) && ts.isCallExpression(n.parent) && n.parent.arguments.includes(n) && ownNamed(n.parent.expression, 'startPolling')
+          if (given) inside = n
+          else if (ts.isFunctionLike(n) && !ts.isArrowFunction(n)) break
+        }
+      }
+      if (inside === null) err(use, `${watcher.name.text}, which sends the wake, may only be called from the callback of startPolling (it runs after a read), not from a timer, a session start or a value passed on`)
+    }
+    return problems
+  }
+
   return {
     unwrap, isName, plainProperties, constText, NOT_THE_COMMAND, snapshotProblem, isRunOptions, inlineFunction,
-    passingHookProblems, sessionStartProblems,
+    passingHookProblems, sessionStartProblems, stopGuardProblems, wakeProblems,
   }
 }

@@ -18,6 +18,8 @@ roles = load_hook_module("roles")
 CONFIG = hooklib.load_config(HOOKS / "hooks.toml")
 BACKSLASH = chr(92)
 STRICT = {**copy.deepcopy(CONFIG), "require_role": True}
+#: The committed settings with `require_role` off, the state before the maintainer's sessions had a role.
+LENIENT = {**copy.deepcopy(CONFIG), "require_role": False}
 
 
 def call(
@@ -51,14 +53,30 @@ def checkout(tmp_path: Path) -> Path:
     return root
 
 
-def test_the_committed_config_leaves_require_role_off() -> None:
-    # The coordinator session that exists today has no role; turning it on at merge would lock it out.
-    assert CONFIG["require_role"] is False
+def test_the_committed_config_turns_require_role_on() -> None:
+    # The maintainer's sessions start through `coney-agent`, so a session with no role may only read.
+    assert CONFIG["require_role"] is True
+
+
+@pytest.mark.parametrize("agent_type", ["coordinator", "engineer", "tooling", "reviewer"])
+def test_with_the_committed_config_a_session_started_as_a_role_is_not_locked_out(agent_type: str) -> None:
+    # What `coney-agent <role>` starts: `claude --agent <role>`, so every call carries that `agent_type`.
+    for tool, tool_input in (("Bash", {"command": "git status"}), ("Agent", {"subagent_type": "Explore"})):
+        if (agent_type, tool) == ("reviewer", "Agent"):
+            continue  # a reviewer starts no agent, a rule of its role and not of the gate
+        assert roles.check(CONFIG, call(tool, tool_input, agent_type=agent_type)) is None, (agent_type, tool)
+
+
+def test_with_the_committed_config_a_session_with_no_role_is_read_only() -> None:
+    assert roles.check(CONFIG, call("Read", {"file_path": "x"})) is None
+    for payload in (bash("git status"), call("Write", {"file_path": "x"}), call("Agent", {"subagent_type": "tooling"})):
+        reason = roles.check(CONFIG, payload)
+        assert reason is not None and "`coney-agent`" in reason, payload
 
 
 def test_with_require_role_off_a_session_with_no_role_is_not_limited() -> None:
-    assert roles.check(CONFIG, bash("git status")) is None
-    assert roles.check(CONFIG, call("Write", {"file_path": "x"})) is None
+    assert roles.check(LENIENT, bash("git status")) is None
+    assert roles.check(LENIENT, call("Write", {"file_path": "x"})) is None
 
 
 @pytest.mark.parametrize("tool", ["Read", "Grep", "Glob"])
@@ -85,7 +103,7 @@ def test_a_generic_agent_has_no_role() -> None:
 
 
 def test_session_start_names_a_missing_role_in_both_modes() -> None:
-    off = roles.session_notice(CONFIG, {"hook_event_name": "SessionStart"})
+    off = roles.session_notice(LENIENT, {"hook_event_name": "SessionStart"})
     on = roles.session_notice(STRICT, {"hook_event_name": "SessionStart"})
     assert off and "`coney-agent`" in off and "do not apply" in off
     assert on and "read-only" in on
@@ -132,6 +150,7 @@ def test_the_coordinator_may_write_about_those_commands_and_run_its_own() -> Non
         "echo 'coney-tools orig study'",
         "uv run --project python coney-tools build status",
         "uv run --project python coney-tools pr open t1",
+        "uv run --project python coney-tools pr hold 812 --list",
     ):
         assert roles.check(CONFIG, bash(command, agent_type="coordinator")) is None, command
 
@@ -203,6 +222,14 @@ def test_no_one_but_the_coordinator_opens_a_pull_request(agent_type: str) -> Non
     assert roles.check(CONFIG, bash("uv run --project python coney-tools pr open t1", agent_type=agent_type))
 
 
+@pytest.mark.parametrize("agent_type", ["engineer", "tooling", "reviewer"])
+def test_no_one_but_the_coordinator_holds_a_pull_requests_problems(agent_type: str) -> None:
+    # a hold hides a pull request's problems from the coordinator's wake and stop guard, so it is the coordinator's call
+    command = "uv run --project python coney-tools pr hold 812 --who engineer-2"
+    assert roles.check(CONFIG, bash(command, agent_type=agent_type))
+    assert roles.check(CONFIG, bash(command, agent_type="coordinator")) is None
+
+
 def test_a_main_session_started_as_an_engineer_gets_the_github_rules_a_subagent_gets() -> None:
     assert roles.check(CONFIG, bash("git push origin main", agent_type="engineer"))
     assert roles.check(CONFIG, bash("gh pr merge 5", agent_type="tooling"))
@@ -244,6 +271,26 @@ def test_a_reviewer_may_write_a_code_review_report(name: str, tmp_path: Path) ->
 )
 def test_a_code_review_name_does_not_open_other_files(name: str, tmp_path: Path) -> None:
     report = call("Write", {"file_path": str(tmp_path / "scratch/x" / name)}, "reviewer", "a1")
+    assert roles.check(CONFIG, report), name
+
+
+@pytest.mark.parametrize("name", ["REVIEW.json", "REVIEW.md", "CODE-REVIEW.md", "FINDINGS.tsv", "orig-review.md"])
+def test_a_reviewer_writes_its_files_in_no_checkout(name: str, checkout: Path, tmp_path: Path) -> None:
+    # #823: a report inside a worktree (or the main checkout) is a file an engineer could commit by mistake.
+    for folder in (checkout, checkout / "src" / "core", checkout / "docs"):
+        assert roles.check(CONFIG, call("Write", {"file_path": str(folder / name)}, "reviewer", "a1")), folder
+    worktree = tmp_path / "worktrees" / "coney" / "x"
+    worktree.mkdir(parents=True)
+    (worktree / ".git").write_text("gitdir: ../../repos/coney/.git/worktrees/x\n", encoding="utf-8")
+    reason = roles.check(CONFIG, call("Write", {"file_path": str(worktree / name)}, "reviewer", "a1"))
+    assert reason and "scratch" in reason
+    assert roles.check(CONFIG, call("Write", {"file_path": str(tmp_path / "scratch" / "x" / name)}, "reviewer")) is None
+
+
+@pytest.mark.parametrize("name", ["CODE-REVIEW:x.md", "CODE-REVIEW.md:stream", "REVIEW.md:x", "code-review-a:b.md"])
+def test_a_reviewer_may_not_write_a_name_with_a_colon(name: str, tmp_path: Path) -> None:
+    # `*` matches `:`, and on Windows `name:stream` writes an alternate data stream of another file.
+    report = call("Write", {"file_path": str(tmp_path / "scratch" / "x") + "/" + name}, "reviewer", "a1")
     assert roles.check(CONFIG, report), name
 
 
@@ -294,6 +341,117 @@ def test_a_reviewer_may_not_commit_or_stage() -> None:
 )
 def test_a_reviewer_may_not_change_or_discard_the_tree(command: str) -> None:
     assert roles.check(CONFIG, bash(command, agent_type="reviewer", agent_id="a1")), command
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        # #823: the verbs that change a ref, the index or a worktree and passed before.
+        "git pull",
+        "git -C repo pull --rebase origin main",
+        "git stash",
+        "git stash push -m x",
+        "git -P stash pop",
+        "git stash drop",
+        "git read-tree -u -m HEAD",
+        "git read-tree HEAD",
+        "git update-ref refs/heads/x HEAD",
+        "git update-index --assume-unchanged a",
+        "git branch -f main HEAD",
+        "git branch x",
+        "git branch -D x",
+        "git -P branch -m a b",
+        "git branch --set-upstream-to=origin/main",
+        "git branch -a -d x",
+        "git branch --list x -D x",
+        "git tag v1",
+        "git tag -d v1",
+        "git tag -a v1 -m 'x'",
+        "git tag -f v1 HEAD",
+        "git mergetool",
+        "git -C repo mergetool --tool=x",
+        # The other verbs of the same kind.
+        "git worktree add ../x",
+        "git worktree move a b",
+        "git worktree prune",
+        "git bisect start",
+        "git fetch origin",
+        "git stage a",
+        "git checkout-index -a -f",
+        "git sparse-checkout set src",
+        "git notes add -m x",
+        "git replace a b",
+        "git reflog expire --all",
+        "git gc",
+        "git pack-refs --all",
+        "git filter-branch HEAD",
+        "git remote prune origin",
+        "git submodule update",
+        "git status && git stash",
+        # #823 review: the ref writers that were still missing.
+        "git symbolic-ref HEAD refs/heads/x",
+        "git -C repo symbolic-ref HEAD refs/heads/x",
+        "git symbolic-ref -m reason HEAD refs/heads/x",
+        "git symbolic-ref --short HEAD refs/heads/x",
+        "git symbolic-ref -d refs/remotes/origin/HEAD",
+        "git symbolic-ref --delete HEAD",
+        "git remote add up https://example.invalid/x.git",
+        "git remote remove origin",
+        "git remote rm origin",
+        "git remote rename origin up",
+        "git remote set-url origin https://example.invalid/x.git",
+        "git remote set-head origin -a",
+        "git remote set-branches origin main",
+        "git remote update",
+        "git -P remote add up x",
+        "git prune",
+        "git prune --expire now",
+        "git repack -ad",
+        "git maintenance run",
+        "git maintenance run --task=gc",
+        "git maintenance start",
+        "git -C repo maintenance register",
+    ],
+)
+def test_a_reviewer_may_not_change_a_ref_the_index_or_a_worktree(command: str) -> None:
+    assert roles.check(CONFIG, bash(command, agent_type="reviewer", agent_id="a1")), command
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git stash list",
+        "git stash show -p stash@{0}",
+        "git branch",
+        "git branch -a",
+        "git branch -vv",
+        "git branch -avr",
+        "git branch --contains HEAD",
+        "git -P branch -r --merged origin/main",
+        "git branch --list 'tools-*'",
+        "git branch --format=%(refname) --sort=-committerdate",
+        "git branch -a 2>/dev/null | grep tools",
+        "git tag",
+        "git tag -l",
+        "git tag --list v1*",
+        "git tag -n --contains HEAD",
+        "git tag --points-at HEAD; git status",
+        "git reflog",
+        "git reflog show HEAD",
+        "git notes list",
+        "git remote -v",
+        "git remote",
+        "git remote show origin",
+        "git remote get-url origin",
+        "git symbolic-ref HEAD",
+        "git symbolic-ref --short HEAD",
+        "git symbolic-ref -q HEAD 2>/dev/null",
+        "git -C repo symbolic-ref refs/remotes/origin/HEAD | cat",
+        "git worktree list --porcelain",
+    ],
+)
+def test_a_reviewer_may_still_list_refs_and_stashes(command: str) -> None:
+    assert roles.check(CONFIG, bash(command, agent_type="reviewer", agent_id="a1")) is None, command
 
 
 @pytest.mark.parametrize(

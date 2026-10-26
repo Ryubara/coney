@@ -1,41 +1,53 @@
-# Combat: the power meter, rage and reviving
+---
+kind: topic
+system: combat
+owns:
+  functions: [
+    "0x00226448", "0x00226510", "0x0022eb40", "0x0025ade8", "0x00264cf8", "0x002653d8", "0x00265dd0", "0x00284280",
+    "0x00284340", "0x002843f8", "0x00418428",
+  ]
+---
+# Combat: the power meter, rage and the flash
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`); runtime claims with
-PCSX2 2.9.94 as on [Combat](combat.md), which this page was split from because that page had grown too
-large. The overview, the data tables and the code index stay on [Combat](combat.md#code-index).
-Every claim carries the level written beside it.
+Verified against: `SLUS_212.15` (NTSC-U); runtime claims name PCSX2 2.9.94 and their method in How this was checked.
 
-## Purpose
+## Summary
 
-This page covers the power meter, the rage meter and everything rage does, dropping a held weapon when hit, and reviving
-a downed Warrior. A player sees the power meter empty as he holds a man and fill again, the rage meter fill from his
-hits until L1 + R1 sets him off in the red tint, a weapon fall from a hurt fighter's hand, and a flash bring a downed
-crewman back to his feet. Grabs and throws ([Grabs](combat-grabs.md)) spend the power; the HUD ([HUD](hud.md)) shows
-both meters; the scripts' rage handlers and the level99 lessons react to them.
+This page covers the power meter, the rage meter and everything rage does, and the flash: d-pad right, the item that
+heals. A player sees the power meter empty as he holds a man and fill again, the rage meter fill from his hits until
+L1 + R1 sets him off in the red tint, and a flash heal him, with its clip when he stands free and at once in the
+middle of a move. Grabs and throws ([Grabs](combat-grabs.md)) spend the power; the HUD ([HUD](hud.md)) shows both
+meters; the scripts' rage handlers and the level99 lessons react to them. Two neighbours that rage and the flash
+touch have their own pages: what a hit makes a human drop, and the flag rage sets to keep a weapon, are on [Combat:
+throws, weapons in hand](combat-throws.md#keep-weapon); a flash spent to revive a downed Warrior is on [Combat:
+damage, reactions and defeat](combat-reactions.md#revive). The commands, the state bits and the tables every combat
+topic reads are on [Combat](combat/index.md#data).
 
-## Original structure
+## Map
 
 No source file names this code: it lies in `Human/`, in the player's combat code after `cns/cnsplayertag.cpp`
-([Source map](source-map.md#position), inferred), and the names are ours. Every function is in the [code
-index](combat.md#code-index); these are the entry points, each read in Ghidra at its address.
+([Source map](source-map.md#position), inferred), and the names are ours. Every combat function, with its role and
+level, is on [the combat function list](combat/functions.md); these are the entry points, each read in Ghidra at its
+address.
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |
-| `0x002562d0` | `Human_UpdateMeters` | the power drain and refill, the rage decay and drain, rage's end at 0 | confirmed (code) |
+| `0x002562d0` | `Human_UpdateMeters` | the power drain and refill, the rage decay and drain, rage's end at 0 ([The power meter](#power-meter), [The meter falls](#rage-decay)) | confirmed (code) |
+| `0x00226448` / `0x00226510` | `Human_SpendPower` / `Human_PowerFraction` | spending the power; the meter as a fraction ([The power meter](#power-meter)) | confirmed (code) |
 | `0x00264cf8` | `Human_AddRage` | a rage award ([Rage](#rage)) | confirmed (code) |
-| `0x002653d8` / `0x00265dd0` / `0x00418428` | `Hit_Score` / `Rage_NoteHit` / `RepeatTracker_Note` | a hit's rage awards and the repeat tracker | confirmed (code) |
-| `0x002843f8` | `Player_UseItemCommand` | L1 + R1, the flash, the key when cuffed, the R2 command menu | confirmed (code) |
+| `0x00265dd0` / `0x00418428` | `Rage_NoteHit` / `RepeatTracker_Note` | the repeat tracker ([Rage](#rage)) | confirmed (code) |
+| `0x002653d8` | `Hit_Score` | who scores a hit, and its rage awards ([Who scores](#hit-score-skips), [The points](#rage-points)) | confirmed (code) |
+| `0x002843f8` | `Player_UseItemCommand` | L1 + R1, the flash, the key when cuffed, the R2 command menu ([L1 + R1 and the flash](#flash)) | confirmed (code) |
+| `0x00284280` / `0x0022eb40` | `Flash_Use` / `Human_Heal` | spends a flash and heals ([L1 + R1 and the flash](#flash)) | confirmed (code) |
+| `0x0025ade8` | `Human_PushOverlayClip` | pushes the flash clip 665 as a one-shot task on top of the stack ([L1 + R1 and the flash](#flash)) | confirmed (code) |
 | `0x00284340` / `0x00236d28` / `0x00236fb8` | `Rage_Enter` / `Human_StartRageMode` / `Human_EndRageMode` | rage's start and end ([Everything rage does](#rage-effects)) | confirmed (code) |
-| `0x00284280` | `Flash_Use` | spends a flash and heals | confirmed (code) |
-| `0x00257e38` / `0x00257d70` / `0x00257ce8` | `Human_EndThrowAimIfHurt` / `Human_EndThrowAimDropHeavy` / `Human_EndThrowAim` | the three drop helpers ([Dropping what is held](#keep-weapon)) | confirmed (code) |
-| `0x00286ba8` / `0x002752a0` / `0x00274ee0` | `Player_TryRevive` / `Revive_Start` / `Revive_Finish` | the revive ([Reviving](#revive)) | confirmed (code) |
 
 ## Data
 
-The meters live in fields [Combat](combat.md#data) owns ([Other record fields](combat.md#record-fields)); the power
-and Warrior class records are on [Characters](characters.md#power-classes), the `CfgBurnRates`, `CfgRagePoints` and
-`CfgRageHandlers` values on [Constants](combat.md#constants). The fields this page reads most, each read in the
-function named:
+The meters live in fields [Combat](combat/index.md#data) owns ([Other record fields](combat/index.md#record-fields));
+the power and Warrior class records are on [Characters](characters.md#power-classes), the `CfgBurnRates`,
+`CfgRagePoints` and `CfgRageHandlers` values on [Constants](combat/index.md#constants). The fields this page reads most,
+each read in the function named:
 
 | Field | Meaning | Evidence |
 | --- | --- | --- |
@@ -47,11 +59,12 @@ function named:
 
 ## Behaviour
 
-The sections below go from the power meter to rage, the drops a hit causes and the revive. Each claim carries its
-level; the code claims were read at the addresses they cite, the runtime ones measured in PCSX2 2.9.94 as each one
-says.
+The sections go from the power meter to rage's awards, then L1 + R1 and the flash, and last what rage does once it
+starts.
 
-## Power meter {#power-meter}
+### The power meter {#power-meter}
+
+Read in Ghidra: confirmed (code) where no other level is given; each runtime block says confirmed (runtime).
 
 Record `+0x148`, maximum the power class's `+0x28` (400) through `0x00223068` (with upgrades). In
 `Human_UpdateMeters` (`0x002562d0`) it **drains** by `CfgBurnRates`: 15 per second grabbing, 15 tackling, 2 in a
@@ -62,22 +75,20 @@ confirmed (runtime) (400 → 377 over 1.4 s of a tackle; 25 → 0 at 15 per seco
 
 **Per class.** The power class is human `+0x1b8` (AI) or `+0x1b9` (player), through `0x00222b78`
 ([Character classes](characters.md#classes)). The maximum (`0x00223068`) is the class's s16 `+0x28`; for a player
-with the upgrade flag (`0x00424130(0x6fe998, 6, 0xb)`) it is scaled by 1 + byte `+0x02` / 100 of the record from
+with the upgrade flag (`0x00424130(0x006fe998, 6, 0xb)`) it is scaled by 1 + byte `+0x02` / 100 of the record from
 `0x00228860`; and **while hurt** (`0x00222ff8`: health percentage below the class float `+0x04` × 100) it is scaled
 by the class float `+0x18`; each step `int(x + 0.5)`. The refill (`0x00256a60`) adds the class's `+0x2a` × the
 update's time, capped at that maximum. Confirmed (code). Runtime classes: `PoizoCiv` class 2 = 200, 32 per second,
 hurt factor 0.55; Vermin (type 26) class 7 = 400, 100 per second, hurt below 35 %, factor 0.75; Rembrandt class 64 =
 400, 60 per second, 0.75. Confirmed (runtime).
 
-The "civilian" whose meter refilled to 300 at about 100 per second was the puppet at human 0 in those runs, which
-was **Vermin** (1800 health, 400 power), not the `PoizoCiv`: the script had set its health to 600 of 1800 (33 %,
-hurt), so its maximum was 400 × 0.75 = 300 and its refill class 7's 100 per second. Confirmed (runtime) from the logs
-and the class values. The hit-armour run used the same puppet.
+### Rage: the meter and its awards {#rage}
 
-## Rage {#rage}
+Read in Ghidra: confirmed (code) where no other level is given; each runtime block says confirmed (runtime).
 
 Rage is human `+0x650`, up to the Warrior class's s16 `+0x00` (78 for class 6). `Human_AddRage` (`0x00264cf8`),
-confirmed (code), adds, only for a player-flagged human (`0x2000000`) not already raging:
+confirmed (code), adds, only for a human with a pad (per-player `+0x1b`) and the rage flag (`0x2000000`) who is
+not already raging, against a victim neither dead nor knocked out:
 
 `trunc(points × f × gain / 100 × h × s)` (the float → integer at `0x0042c718` truncates), where `f` is 1.0 when the
 award is 25 points or fewer and 0.1 when it is more (the whole award, not the excess: `CfgRagePoints` `0x005108d8`,
@@ -101,10 +112,9 @@ the hold timer `+0x648` = now + 5000 ms (`CfgRageHandlers`). Confirmed (code). T
 | `+0xb` | u8 | the kind of the last hit noted (4 = other) |
 
 `Human_ApplyPendingDamage` (`0x00265f70`) notes a hit through `Rage_NoteHit` (`0x00265dd0`, confirmed (code)) after it
-has given the hit's rage, when the
-attacker is a player (pad `+0x1b`) or its brain is of type 3 and the two are not allies (`0x00222a90` →
-`0x00290230`), for a hit that lands and for one a block stops. `0x00265dd0` picks the **kind** from the attacker's
-current anim id (record `+0x20`):
+has given the hit's rage, when the attacker is a player (pad `+0x1b`) or its brain is of type 3 and the two are not
+allies (`0x00222a90` → `0x00290230`), for a hit that lands and for one a block stops. `0x00265dd0` picks the **kind**
+from the attacker's current anim id (record `+0x20`):
 
 | Kind | Anim ids |
 | --- | --- |
@@ -134,12 +144,14 @@ circle):
 
 **The repeat flag at runtime** (confirmed (runtime)), puppet civilian, `X1` tapped every second: the first six hits gave
 5 rage each and the counts at `+0x9` went 1, 2, 3, 4, 5, 5 with the flag set by the sixth; the seventh and eighth gave 2
-each (`trunc(5.76 × 0.5)`); with 5.17 s between hits the count stayed at 1 and every hit gave 5. The earlier reading
-that the game rewrote a written flag "on the next update" is the clear at the next noted hit.
+each (`trunc(5.76 × 0.5)`); with 5.17 s between hits the count stayed at 1 and every hit gave 5.
 
-**Who scores** {#hit-score-skips} (`Hit_Score` `0x002653d8`, called by `Human_ApplyPendingDamage` `0x00265f70` after
-the hit's damage is taken from health and before its reaction plays; confirmed (code), read 2026-10-21). Nothing is
-scored when any of these holds:
+#### Who scores {#hit-score-skips}
+
+Read in Ghidra: confirmed (code) where no other level is given; each runtime block says confirmed (runtime).
+
+`Hit_Score` (`0x002653d8`, called by `Human_ApplyPendingDamage` `0x00265f70` after the hit's damage is taken from health
+and before its reaction plays; confirmed (code)). Nothing is scored when any of these holds:
 
 - there is no attacker, or the attacker's brain is not a player's (type 0); the caller already requires a pad
   (per-player `+0x1b`);
@@ -150,13 +162,9 @@ scored when any of these holds:
   These are set by the reaction of the hit that put him out, which plays after the score, so the blow that puts a man
   out scores and every blow after it does not.
 
-**Coney status (2026-10-21):** `human::Fighter::scoresRageOn` (`repo:src/human/fighter.h`) skips a victim whose
-health ran out before the hit (**Coney's reading**, inferred: Coney has no state word, and in Coney all three states
-follow a man's health running out; in the original a knocked-out man can keep some health, issue #592, so once Coney
-has that state the test reads it instead) and a category-13 victim with flag `0x10`; a hit only reaches an opponent,
-so the friends test holds; the player test is the fighter's player profile with the rage flag `0x2000000`. A grabbed
-player's
-counters and strike-backs read the grabber's flag through `combat::GrabberState::scoresRage`.
+#### The points {#rage-points}
+
+Read in Ghidra: confirmed (code) where no other level is given; each runtime block says confirmed (runtime).
 
 **The points** come from the stats system, which also adds them to the per-player score at `0x006fe490 + player ×
 0xc0`: `0x002653d8` maps the attack to an event (`X1` event 1, `S1` event 2, ...; a blocked hit is halved through
@@ -209,9 +217,14 @@ each**; seven crosses leave the meter at 77 of 78 and the eighth fills it. A bat
 the repeat tracker, so they never halve; only 35 (the bat `SS2`) counts as square-ended. The awards come only for
 an attacker whose brain is the player's (type 0, brain `+0x04`) and who is not an ally of the victim
 (`0x00290230`), and none when the victim is of class `+0x11b` 13 with flag `0x10`, or has state `0x180040000`;
-`Human_AddRage` also needs a victim that passes `0x00227eb0` and `0x00227dd8` (not traced). For player 0 the
-tutorial callback (`0x609250`) gets the attack's anim id first, before the victim tests, so it fires even for a hit
+`Human_AddRage` also needs a victim that is not dead (`Human_HasStateFlag100000000`, `0x00227eb0`) and not
+knocked out (`Human_IsKnockedOut`, `0x00227dd8`), confirmed (code) at `0x00264cf8`. For player 0 the
+tutorial callback (`0x00609250`) gets the attack's anim id first, before the victim tests, so it fires even for a hit
 that gives no rage.
+
+#### The meter falls, and L1 + R1 {#rage-decay}
+
+Read in Ghidra: confirmed (code) where no other level is given; each runtime block says confirmed (runtime).
 
 **The meter falls**: an unspent meter decays by the maximum × Warrior byte `+0x03` / 100 per 20 s (`0x00510294`;
 200 % → 7.8 per second) once the hold timer passes; while raging it drains by byte `+0x04` (240 % → **9.36 per
@@ -236,6 +249,10 @@ ending it (`0x00236fb8`) the **exit** function the same way, the flag being whet
 `*(0x0051489c) + 0x268` is below 1. `HuSetLockedRage` (bit `0x100000`) does not stop `Human_AddRage`, so a locked
 meter still fills from hits (inferred: the lock holds only the decay).
 
+### L1 + R1 and the flash {#flash}
+
+Read in Ghidra: confirmed (code) where no other level is given; each runtime block says confirmed (runtime).
+
 **`Player_UseItemCommand`** (`0x002843f8`, run from `Human_UpdateActions` at `0x00255074`) handles L1 + R1, the flash,
 the key and the R2 command menu, in this order. Confirmed (code) at `0x002843f8`:
 
@@ -249,29 +266,28 @@ the key and the R2 command menu, in this order. Confirmed (code) at `0x002843f8`
    in it, if any (`WarCommandDisplay_Issue`, `0x001a6c58`); neither while the command menu is locked
    (`*(0x0051489c) + 0x42e + player`, the player's `+0x1b0`). Confirmed (code). (This is the [Warrior
    commands](ai-gangs.md#warrior-commands) menu, not a map.)
-4. **L1 + R1** (`0x1f`) with the state word free of `0x19f9e0f3000` and `+0x08` free of `0xfc7eae0` (confirmed
-   (code)): when rage (human `+0x650`) has reached the class maximum (`Human_GetRageMax`, `0x00223260`: the first
-   `u16` of the Warrior class record,
-   `0x00222b58`) and the human may gain rage (human `+0xe0` bit `0x2000000`, which `Human_MakePlayer` sets and
-   `Human_AddRage` also tests) and is not raging (`+0xe0` bit `0x80000`), `Rage_Enter` (`0x00284340`) runs.
-5. **The flash**, command `0x28` (d-pad right, [Commands](combat.md#commands)), needs all of: a player human (`+0x1b0` ≠
-   −1), at least one flash (item 1) in the player's inventory (`0x0041e420` on `*(0x0051489c) + 0x480`, the player index
-   at human `+0x380`), not down or dead (`Human_IsDownOrDead`: state `0x180050000`, which is wounded `0x10000`,
-   knocked out `0x40000`, the pending-hit mark `0x80000000` and dead `0x100000000`; knocked **down**, `0x80000`, is
-   not in it), the state word free of `0x1c00000000` (`0x00227f90`: jumping, falling, a long fall) and `+0x08` free
-   of `0x40` (`0x00223c10`: climbing over). Any of these and the press does nothing: no clip, no flash spent. Then by
-   health (record `+0x144` against the maximum `+0x146`):
-   - **Below the maximum.** The flash clip **665 `SPECIAL_FLASH`** (`gen_flash_use`, 40 frames) is pushed as a
-     one-shot clip task on top of the stack (`0x0025ade8`: a type-5 task, `0x00106240`, holding `0x2000`) when
-     **nothing blocks a move**: the state word has none of `0x18003ff0` (`0x00227fd8`: grabbed, grabbing, mugging,
-     mugged, tackling, tackled, a paired power move and its victim, `0x8000000`, `0x10000000`; blocking, `0x8000`, is
-     in none of these masks), none of `0xe0000` (`0x00223b48`: cuffed `0x20000`, knocked out `0x40000`, knocked down
-     `0x80000`), not the mini-game `0x4000000` (`0x00228050`), not tagging `0x2000000` (`0x002238c0`), none of
-     `0x7bf9e9f7ff0`; record `+0x08` has
-     none of `0x2fefefff`; and the object in hand is not of `ObjectAttribs` kind (`+0x87`) 4 or 6 (`0x00224000`).
-     Otherwise, if 665 is already the human's anim (`0x002266b8`), nothing more happens (its event will use the
-     flash); else the flash is **used at once** (`Flash_Use`, called at `0x00284818`): no clip, the move plays on.
-     The code before this test that would let go of a grab (`Human_BreakPair`, `0x00258a88`, when the state word has
+4. **L1 + R1** (`0x1f`) with the state word free of `0x19f9e0f3000` and `+0x08` free of `0xfc7eae0` (confirmed (code)):
+   when rage (human `+0x650`) has reached the class maximum (`Human_GetRageMax`, `0x00223260`: the first `u16` of the
+   Warrior class record, `0x00222b58`) and the human may gain rage (human `+0xe0` bit `0x2000000`, which
+   `Human_MakePlayer` sets and `Human_AddRage` also tests) and is not raging (`+0xe0` bit `0x80000`), `Rage_Enter`
+   (`0x00284340`) runs.
+5. **The flash**, command `0x28` (d-pad right, [Commands](combat/index.md#commands)), needs all of: a player human
+   (`+0x1b0` ≠ −1), at least one flash (item 1) in the player's inventory (`0x0041e420` on `*(0x0051489c) + 0x480`, the
+   player index at human `+0x380`), not down or dead (`Human_IsDownOrDead`: state `0x180050000`, which is wounded
+   `0x10000`, knocked out `0x40000`, the pending-hit mark `0x80000000` and dead `0x100000000`; knocked **down**,
+   `0x80000`, is not in it), the state word free of `0x1c00000000` (`0x00227f90`: jumping, falling, a long fall) and
+   `+0x08` free of `0x40` (`0x00223c10`: climbing over). Any of these and the press does nothing: no clip, no flash
+   spent. Then by health (record `+0x144` against the maximum `+0x146`):
+   - **Below the maximum.** The flash clip **665 `SPECIAL_FLASH`** (`gen_flash_use`, 40 frames) is pushed as a one-shot
+     clip task on top of the stack (`0x0025ade8`: a type-5 task, `0x00106240`, holding `0x2000`) when **nothing blocks a
+     move**: the state word has none of `0x18003ff0` (`0x00227fd8`: grabbed, grabbing, mugging, mugged, tackling,
+     tackled, a paired power move and its victim, `0x8000000`, `0x10000000`; blocking, `0x8000`, is in none of these
+     masks), none of `0xe0000` (`0x00223b48`: cuffed `0x20000`, knocked out `0x40000`, knocked down `0x80000`), not the
+     mini-game `0x4000000` (`0x00228050`), not tagging `0x2000000` (`0x002238c0`), none of `0x7bf9e9f7ff0`; record
+     `+0x08` has none of `0x2fefefff`; and the object in hand is not of `ObjectAttribs` kind (`+0x87`) 4 or 6
+     (`0x00224000`). Otherwise, if 665 is already the human's anim (`0x002266b8`), nothing more happens (its event will
+     use the flash); else the flash is **used at once** (`Flash_Use`, called at `0x00284818`): no clip, the move plays
+     on. The code before this test that would let go of a grab (`Human_BreakPair`, `0x00258a88`, when the state word has
      `0xc0` or `0x400`) also requires the state word to be free of `0x7bf9e9f7ff0`, which holds both bits, so it never
      runs: in a grab the flash is used at once and the grab stays. Confirmed (code) at `0x002843f8`; confirmed
      (runtime), [The flash during a move](#flash-mid-move).
@@ -281,18 +297,21 @@ the key and the R2 command menu, in this order. Confirmed (code) at `0x002843f8`
      a flash carried: one flash is spent (`Inventory_AddItem(…, 1, −1)`), rage is set to the class maximum and
      `Rage_Enter` runs. Without the upgrade nothing happens.
 
-**The flash clip's events**: `gen_flash_use` (665, 1.333 s) has two events, both at **frame 19** (0.633 s): type
-`0x41`, which `Anim_FireEvents` (`0x00101dd8`) sends as message `0xc1`, and type 11, an [animation
+**The flash clip's events**: `gen_flash_use` (665, 1.333 s) has two events, both at **frame 19** (0.633 s): type `0x41`,
+which `Anim_FireFrameEvents` (`0x00101dd8`) sends as message `0xc1`, and type 11, an [animation
 sound](sound.md#anim-sounds) (message `0x8b`) with id **70** at `+0x8` and the text `flash` at `+0xc`.
-`Human_HandleMessage` (`0x002473bc`) answers `0xc1` by the human's anim: 665 calls `Flash_Use`; 666 opens the door
-the human targets (`Door_OpenBy`); 668 played by a dealer (brain type 5 with `GoalDealer`, `0x80`, on top) finishes
-the deal (`DealerGoal_FinishPair` `0x002c7c20`, [AI](ai-scripting.md#dealer-buy)). Confirmed (code); the events read
-from the disc's clips (identical in both copies). So the flash is used partway into the clip, unless the clip is cut first
-(then nothing is spent), and the player hears the animation sound 70 and `Flash_Use`'s interface sound 23 on the same
-update. At runtime 665 plays slower than its frames say: started on update N, `Flash_Use` ran from the event on update
-N + 25 and 665 lasted **53 updates** (N to N + 52), standing still and over a block alike, where 40 frames at 30 per
-second would give 19 and 40 (both ratios about 0.75). Confirmed (runtime), `flash_idle` and `flash_block` below; what
-sets that rate is not traced (`Human_PushOverlayClip`, `0x0025ade8`, passes no rate).
+`Human_HandleMessage` (`0x00245920`) answers `0xc1` by the human's anim: 665 calls `Flash_Use` (the call at
+`0x002473bc`); 666 opens the door the human targets (`Door_OpenBy`); 668 played by a dealer (brain type 5 with
+`GoalDealer`, `0x80`, on top) finishes the deal (`DealerGoal_FinishPair` `0x002c7c20`,
+[AI](ai-scripting.md#dealer-buy)). Confirmed (code); the events read from the disc's clips (identical in both copies).
+So the flash is used partway into the clip, unless the clip is cut first (then nothing is spent), and the player hears
+the animation sound 70 and `Flash_Use`'s interface sound 23 on the same update. At runtime 665 plays slower than its
+frames say: started on update N, `Flash_Use` ran from the event on update N + 25 and 665 lasted **53 updates** (from N
+to N + 52), standing still and over a block alike, where 40 frames at 30 per second would give 19 and 40. Confirmed
+(runtime), `flash_idle` and `flash_block` below. The rate is 0.75, the one an Anim Range List record with none of the
+rate flags gets ([Playback rate](formats/animation.md#playback-rate); `Human_PushOverlayClip`, `0x0025ade8`, passes none
+of its own): inferred from the counts, since that rate and [the update rule](combat-moves.md#reading) give exactly 25
+updates for frame 19 and 53 for 40 frames.
 
 **Taking flash from the dealer** plays the money pair, not 665: the dealer's anim 668 bound to `money_take` and the
 buyer's 668 to `money_give` (both 1.333 s, each with a type-8 partner-place event at frame 0, about 0.97 m ahead;
@@ -311,14 +330,16 @@ the player (`0x001b28a0`, [HUD](hud.md)); and the player's screen effect at `0x0
 maximum (capped); it also runs `0x0021ce08`, `0x0024ca40` and clears human `+0x644`. The same heal serves
 `Human_Revive`, the uncuffing and the Armies game-over toggle.
 
-### The flash during a move {#flash-mid-move}
+#### The flash during a move {#flash-mid-move}
 
-What d-pad right does while another move plays (issue #234). The press is **never queued**: `Commands_Match`
-(`0x00147940`) clears the per-player command `+0x20` at every update, and `Human_UpdateActions` (`0x00254e78`) hands
-command `0x28` to `Player_UseItemCommand` (the call at `0x00255074`; confirmed (code)) on that update only, whenever
-`PadHandlerEx_DispatchCommand`
-(`0x001480e0`) returns 0 (the per-player `+0x1e`, set while a script holds the player, is clear); no move state is
-tested before that call. So each press has one of three outcomes, decided at once by step 5 above:
+Read in Ghidra: confirmed (code) where no other level is given; each runtime block says confirmed (runtime).
+
+What d-pad right does while another move plays. The press is **never queued**: `Commands_Match` (`0x00147940`) clears
+the per-player command `+0x20` at every update, and `Human_UpdateActions` (`0x00254e78`) hands command `0x28` to
+`Player_UseItemCommand` (the call at `0x00255074`; confirmed (code)) on that update only, whenever
+`PadHandlerEx_DispatchCommand` (`0x001480e0`) returns 0 (the per-player `+0x1e`, set while a script holds the player, is
+clear); no move state is tested before that call. So each press has one of three outcomes, decided at once by step 5
+above:
 
 | Outcome | What the player sees and hears | When |
 | --- | --- | --- |
@@ -326,31 +347,28 @@ tested before that call. So each press has one of three outcomes, decided at onc
 | **at once** | the heal on the same update, with interface cue 23 (`Flash_Use` always plays it, `0x002842bc`); **no clip and no sound 70** (that sound is an event of 665); the move plays on | a move blocks 665, and the player is not airborne, climbing over, down or dead |
 | **ignored** | nothing; the flash is kept | airborne (`0x1c00000000`), climbing over (held `0x40`), wounded, knocked out or dead (`0x180050000`, and step 1's `0x80040000`) |
 
-Per move, confirmed (code) by the masks at `0x002843f8` and confirmed (runtime) where a scenario is named (PCSX2
-2.9.94, `pcsx2 record` with the `scripted-pad`, `right-stick` and new `flash-use` hook on `Flash_Use`'s entry, whose
-`ra` tells the two callers apart: `0x00284820` at once, `0x002473c4` from 665's event; health held at 600 of 900 and
-3 flashes every update so each press is a fresh test; d-pad right is a digital button, the stick at 100 % is raw byte
-255):
+Per move, by the masks at `0x002843f8` (confirmed (code)); the Evidence column names the scenario of each row seen at
+runtime, set up as [The flash, at runtime](#flash-setup) says:
 
 | Move | State when pressed | Outcome | Evidence |
 | --- | --- | --- | --- |
-| Standing, walking | no move | 665 | runtime, `flash_idle` (slot 1) |
-| **Sprinting** (L2 held, stick 100 % up) | state `0x1000000`, held 0 | 665; it **stops the sprint dead** (speed 10.25 m/s → 0 and gait 0 on the next update, with L2 and the stick still held) and the run starts again after 665 | runtime, `flash_sprint` (slot 1) |
-| **Attacking**, a cross chain X1, XX2, XXX3 | state `0x5`, held `0x1` wind-up, `0x2` window, `0x4` end, `0x40000` recovery | at once, every press (11 of 11, through 11 and 13); 665 only from the stance after the chain (358) | runtime for `0x1` and `0x40000`, `flash_attack` (slot 6, a puppet 1.5 m ahead); code for `0x2` and `0x4` |
-| **Holding someone** (front grab: the connect 72, the hold 82) | state `0x45`, held `0x200` then 0 | at once, every press (21 of 21); **the grab stays** (82 and `0x45` on) | runtime, `flash_grab` (slot 6, a puppet 1.0 m ahead) |
-| **Blocking** (R1 held), its first 5 updates | state `0x8001`, held `0x80000` | at once | runtime, `flash_block` (slot 6) |
-| **Blocking**, held after that | state `0x8001`, held 0 | **665 plays over the held block** (the state stays `0x8001`), the flash used by its event | runtime, `flash_block` |
-| **Hit**: a standing reaction (272) | state `0x5`, held `0x400` | at once; the reaction plays on | runtime, `flash_hit` (slot 6, PoizoCiv as a type-2 fighter) |
-| Held by an enemy's front grab (73) | state `0x15`, held `0x10000` | at once; still held | runtime, `flash_hit` |
-| **Knocked down**: thrown (154), then stunned on the ground | state `0x180005` (stun `0x100000`, down `0x80000`), held `0x400000` | at once; the fall goes on (196) | runtime, `flash_hit` |
-| Lying down, getting up (196, 199) | state `0x80000` | at once (`0xe0000` blocks 665, `0x180050000` does not stop the press) | code |
-| Mounted by a tackler | state `0x800` | at once | code |
-| **Jumping**, in the air (434) | state `0xc00000000` | ignored (10 of 10 presses), the flash kept | runtime, `flash_jump` (slot 9, a run at 100 % and triangle) |
-| Landing (435) | state `0x2000000000`, held `0x1000000` | at once | code (the presses on landing in `flash_jump` gave no command: open) |
-| **Climbing** a fence: its first clip (440) and last (442) | held `0x80000` | at once | runtime, `flash_climb` (slot 7) |
-| Climbing over (441) | held `0x40` | ignored (5 of 5) | runtime, `flash_climb` |
-| Knocked out, wounded, dead | `0x40000`, `0x10000`, `0x100000000` | ignored (a partner revives, [Reviving](#revive)) | code |
-| 665 already playing | held `0x2000` | nothing more (one flash, at its event) | runtime, every scenario |
+| Standing, walking | no move | 665 | confirmed (runtime), `flash_idle` (slot 1) |
+| **Sprinting** (L2 held, stick 100 % up) | state `0x1000000`, held 0 | 665; it **stops the sprint dead** (speed 10.25 m/s → 0 and gait 0 on the next update, with L2 and the stick still held) and the run starts again after 665 | confirmed (runtime), `flash_sprint` (slot 1) |
+| **Attacking**, a cross chain X1, XX2, XXX3 | state `0x5`, held `0x1` wind-up, `0x2` window, `0x4` end, `0x40000` recovery | at once, every press (11 of 11, through 11 and 13); 665 only from the stance after the chain (358) | confirmed (runtime) for `0x1` and `0x40000`, `flash_attack` (slot 6, a puppet 1.5 m ahead); code for `0x2` and `0x4` |
+| **Holding someone** (front grab: the connect 72, the hold 82) | state `0x45`, held `0x200` then 0 | at once, every press (21 of 21); **the grab stays** (82 and `0x45` on) | confirmed (runtime), `flash_grab` (slot 6, a puppet 1.0 m ahead) |
+| **Blocking** (R1 held), its first 5 updates | state `0x8001`, held `0x80000` | at once | confirmed (runtime), `flash_block` (slot 6) |
+| **Blocking**, held after that | state `0x8001`, held 0 | **665 plays over the held block** (the state stays `0x8001`), the flash used by its event | confirmed (runtime), `flash_block` |
+| **Hit**: a standing reaction (272) | state `0x5`, held `0x400` | at once; the reaction plays on | confirmed (runtime), `flash_hit` (slot 6, PoizoCiv as a type-2 fighter) |
+| Held by an enemy's front grab (73) | state `0x15`, held `0x10000` | at once; still held | confirmed (runtime), `flash_hit` |
+| **Knocked down**: thrown (154), then stunned on the ground | state `0x180005` (stun `0x100000`, down `0x80000`), held `0x400000` | at once; the fall goes on (196) | confirmed (runtime), `flash_hit` |
+| Lying down, getting up (196, 199) | state `0x80000` | at once (`0xe0000` blocks 665, `0x180050000` does not stop the press) | confirmed (code) |
+| Mounted by a tackler | state `0x800` | at once | confirmed (code) |
+| **Jumping**, in the air (434) | state `0xc00000000` | ignored (10 of 10 presses), the flash kept | confirmed (runtime), `flash_jump` (slot 9, a run at 100 % and triangle) |
+| Landing (435) | state `0x2000000000`, held `0x1000000` | at once | confirmed (code) (the presses on landing in `flash_jump` gave no command: open) |
+| **Climbing** a fence: its first clip (440) and last (442) | held `0x80000` | at once | confirmed (runtime), `flash_climb` (slot 7) |
+| Climbing over (441) | held `0x40` | ignored (5 of 5) | confirmed (runtime), `flash_climb` |
+| Knocked out, wounded, dead | `0x40000`, `0x10000`, `0x100000000` | ignored (a partner revives, [Reviving](combat-reactions.md#revive)) | confirmed (code) |
+| 665 already playing | held `0x2000` | nothing more (one flash, at its event) | confirmed (runtime), every scenario |
 
 So the "heals at once, no animation, no sound" a player sees is the original's own behaviour **mid-move** (attacking,
 in a grab, reacting to a hit, down, the block's start, a climb's first and last clips), except that the original
@@ -363,6 +381,11 @@ pending `+0x24`, not in `+0x20`, and d-pad right does nothing there (confirmed (
 script turns it off with `EnableCommand`, [bindings](../references/bindings/character.md#enablecommand)). The
 scenarios turn it on with a setup write.
 
+### Everything rage does {#rage-effects}
+
+Read in Ghidra: confirmed (code) at the cited functions unless a line says otherwise; the readings marked runtime
+("Runtime:" or "(runtime: ...)") are confirmed (runtime), measured as [Rage, at runtime](#rage-effects-setup) says.
+
 **`Rage_Enter`** (`0x00284340`), confirmed (code): plays the 2D sound `vags/misc/rage_mode_06` through the game
 state's handle at `+0x264` (restarted when it is still playing, `0x004194b8`); when the state word has any of
 `0x18003ff0` and `+0x08` none of `0x2fefefff`, the pair is broken (`Human_BreakPair`); then, if nothing of
@@ -370,14 +393,7 @@ state's handle at `+0x264` (restarted when it is still playing, `0x004194b8`); w
 `RAGE_START` plays as a full-body clip holding `0x2000` (`0x0025a8c0`); otherwise rage starts without the clip.
 
 `level99`'s last lesson waits for this command through `PadSetHandlerEx` (the handler receives it even when
-`EnableCommand` has turned it off, [Commands](combat.md#commands)).
-
-### Everything rage does {#rage-effects}
-
-One list of what changes from the moment rage starts to after it ends, for the implementer. Confirmed (code) at the
-cited functions unless marked; the runtime checks used PCSX2 2.9.94 on a copy of quick-save slot 6 (`level99`,
-Rembrandt), with the scripted-pad patch, rage started by writing the meter full (78) and the hold timer, then L1 + R1
-held for 0.3 s (2026-10-10).
+`EnableCommand` has turned it off, [Commands](combat/index.md#commands)).
 
 **Start** (`Rage_Enter` `0x00284340` → `Human_StartRageMode` `0x00236d28`), in this order:
 
@@ -407,16 +423,16 @@ held for 0.3 s (2026-10-10).
   → 0 in about 8.1 s (look 2 from game time 581.34 s, ended by 589.41 s).
 - **What the player deals**: the same damage (no bonus); every hit causes a reaction because the attacker is raging
   (hit armour does not apply, `Human_ApplyPendingDamage` `0x00265f70`) and, through `0x200000`, one step stronger
-  ([Human flags](combat.md#human-flags)); the power strike is 63 (and 231 when mounted, which also deals its damage at once,
-  `Player_UpdateGrabbing` at `0x0027f524`), the special 645 / 647, the strong grapple's strike 649 / 651; no power
-  spent or drained; the player's grabs cannot be struggled out of, escaped (`0x002258f0`, `0x00225830`), countered
-  (`Human_CanCounterGrab` `0x00258f40` refuses a raging grabber) or counter-tackled (`Human_CanCounterTackle`, the
-  same test at `0x002591e8`).
+  ([Human flags](combat/index.md#human-flags)); the power strike is 63 (and 231 when mounted, which also deals its
+  damage at once, `Player_UpdateGrabbing` at `0x0027f524`), the special 645 / 647, the strong grapple's strike 649 /
+  651; no power spent or drained; the player's grabs cannot be struggled out of, escaped (`0x002258f0`, `0x00225830`),
+  countered (`Human_CanCounterGrab` `0x00258f40` refuses a raging grabber) or counter-tackled (`Human_CanCounterTackle`,
+  the same test at `0x002591e8`).
 - **What the player takes**, through the enter handler's flags: no damage (god mode: `Human_ApplyPendingDamage`
   zeroes the pending damage while `+0xe0` has `0x10`, except a hit by a world object of `ObjectAttribs` kind `0x1d` or
   `0x22`), never stunned (`0x100`), reaction one step weaker (`0x200`), reaction strength at most 1, so never knocked
   down (`0x80`), cannot be grabbed (`0x40`), keeps his weapon (`0x2000`; what that covers and what it does not:
-  [Dropping what is held when hit](#keep-weapon)). Without the handler (none registered),
+  [Dropping what is held when hit](combat-throws.md#keep-weapon)). Without the handler (none registered),
   only the code's own rules hold:
     - a hit on a raging player who is grabbing (record `+0x08` `0x10`) plays no reaction, the damage still lands
       (`0x00265f70`, the test before the hit-armour one);
@@ -457,7 +473,32 @@ The HUD's own full-meter cue (`rage_indicator_02` and the flashing) is on [HUD](
 100) and `TurnOnRagelight` / `TurnOffRagelight` (both world lights to an orange (1, 0.75, 0)); no script chunk calls
 any of the three (each name occurs once in the 467 chunks, at its definition). Not part of the original's rage.
 
-**Coney status and the fix for the implementer** (Coney as of `781d7768`):
+## In Coney
+
+The meters and the rage awards live in `repo:src/combat/meters.h` and `repo:src/combat/rage_awards.h`, the rage
+handlers in `ScriptedHumans::runRageHandlers`. [Combat: Coney's implementation](combat/index.md#coneys-implementation)
+says what each file does, and [Combat: where Coney differs](combat-diffs.md) lists every difference in the fight. The
+keep-weapon drops in Coney are on [Combat: throws, weapons in hand](combat-throws.md#keep-weapon-coney), the revive on
+[Combat: damage, reactions and defeat](combat-reactions.md#revive-coney).
+
+### Who scores {#hit-score-coney}
+
+Read 2026-10-21: `human::Fighter::scoresRageOn` (`repo:src/human/fighter.h`) skips a victim whose health ran out before
+the hit (**Coney's reading**, inferred: Coney has no state word, and in Coney all three states follow a man's health
+running out; in the original a knocked-out man can keep some health, issue #592, so once Coney has that state the test
+reads it instead) and a category-13 victim with flag `0x10`; a hit only reaches an opponent, so the friends test holds;
+the player test is the fighter's player profile with the rage flag `0x2000000`. A grabbed player's counters and
+strike-backs read the grabber's flag through `combat::GrabberState::scoresRage`.
+
+### The flash {#flash-coney}
+
+The table of [The flash during a move](#flash-mid-move) answers issue #234 (the flash heals with no clip and no
+sound): mid-move, the original heals at once with no clip and no animation sound too, and only interface cue 23
+tells it apart.
+
+### Rage {#rage-coney}
+
+Coney as of `781d7768`, against [Everything rage does](#rage-effects):
 
 - Done: the meter, its gains, drain and decay (`repo:src/combat/meters.h`), L1 + R1 from the block, the moves 63,
   231, 645 / 647, 649 / 651, no power in rage, the rage handlers called with the original's flag
@@ -472,275 +513,45 @@ any of the three (each name occurs once in the 467 chunks, at its definition). N
   player's end. Prepare-at-90 % is a loading detail; starting it on rage is enough.
 - **`RageFull(human, false)`**: Coney calls the full handler only when the meter fills; add the false call when the
   hold timer runs out on an unspent full meter, or the 75 blur stays on.
-- **Rage start outside a block**: the original starts it from any free state ([Commands](combat.md#commands)); Coney
+- **Rage start outside a block**: the original starts it from any free state ([Commands](combat/index.md#commands)); Coney
   only from the block ([Coney's differences](combat-diffs.md)).
 - **To check in Coney**: god mode (`kGod`) is honoured by `Fighter::takePending`; make sure the other six
   flags are read where the original reads them (unstunnable, reduced and increased reaction, ungrabbable,
   ungroundable, keep weapon), that a raging grabber cannot be countered (`fighter_victim.cpp` reads the victim's own
-  rage there), and, when fire and gunmen arrive, the two code-only rules above. The keep-weapon flag's readers and
-  the drops it does not stop are in [Dropping what is held when hit](#keep-weapon), with its own list for Coney.
-
-### Dropping what is held when hit {#keep-weapon}
-
-When a hit, a grab or a defeat makes a human let go of what he holds, and what human flag `0x2000`
-(`HuSetKeepWeapon`, set by rage's enter handler) changes. Asked for issue #91. Confirmed (code) at the addresses
-cited; not checked at runtime. "Set" is the held object's type byte `+0x87`, its move style
-([Objects: the move style](objects.md#two-handed)): 1 knife, 2 baton, 3 bat, 4 two-handed prop, 5 throwable, 6
-ghetto blaster. "Hurt" is `Human_IsHurt` (`0x00222ff8`): health below the power class's `+0x04` fraction of the
-maximum (0.35 for a street civilian, [Characters: power classes](characters.md#power-classes)). Every drop is
-`Human_DropHeld` (`0x00257f38`, [Objects: drop](objects.md#held)).
-
-**Three helpers decide** (each first ends a throw aim, `Human_CancelThrowAim`, and drops a held set 4 or 6 object
-whatever the flags; `Human_HoldsKind4Or6` `0x00224000` reads the set). Confirmed (code) at each helper's address:
-
-| Helper | Then drops any other held object when | Called on |
-| --- | --- | --- |
-| `Human_EndThrowAimIfHurt` (`0x00257e38`) | the human is **hurt**, flag `0x2000` is clear, and he is not a cop (brain type 1) holding set 1 or 2 | the victim, by `Human_KnockDown` (`0x0022f100`, always, first thing) and `Human_Stun` (`0x0022f658`, see below) |
-| `Human_EndThrowAimDropHeavy` (`0x00257d70`) | flag `0x2000` is clear, he is not a cop holding set 1 or 2, and he is **hurt or holds set 3** (a bat) | the victim, by `Grab_Link` (`0x0022c730`, a grab), `Pair_LinkMount` (`0x0022bfd0`, a mount), the paired-move link `Grab_BreakOnHit` (`0x0022b960`, from `Attack_StartPaired`, `Grab_StartPairedMove`, `Grab_Strike`, `Grab_Reverse` and the mount strikes, reversal and get-off)) and `Human_PlayLethalReaction` (`0x00267e48`) |
-| `Human_EndThrowAim` (`0x00257ce8`) | flag `0x2000` is clear and the set is not 1 or 2 (no hurt test, no brain test) | the human **starting** the move: the grabber in `Grab_Start` (`0x0026c548`), `Grab_Link`, `Pair_LinkMount`, the tackler in `Tackle_Start` (`0x002707a8`), and in `0x0022b960` the attacker when he holds set 2 or 3 (not for clip 642, nor set 1 with clip 640) |
-
-The test in `0x00257e38`, as read (snippet; confirmed (code)):
-
-```c
-if (Human_IsHurt(h) && !(h->flags & 0x2000) &&
-    (Brain(h)->type != 1 || (set != 2 && set != 1)))
-    Human_DropHeld(h);
-```
-
-**When a hit gets there.** A hit that lands and is not blocked runs `Human_ApplyPendingDamage` (`0x00265f70`,
-[Damage](combat-reactions.md#damage)); a blocked hit returns before any of this. In order, confirmed (code):
-
-1. **Every landed, non-lethal hit** (or any hit while airborne), before the reaction is chosen and **without any flag
-   test**:
-    - `Human_ReleaseCarriedProps` (`0x0024ce40`, unless cuffed; confirmed (code)) drops a held object of
-      `ObjectAttribs` kind `0x27`
-      (39, the one-sphere melee object) unless he is throwing, and lets go of the carried props `+0x348` / `+0x34c`;
-    - `Human_DropHeld` when `Human_IsSwingingHeld` (`0x002286a0`, confirmed (code)) is true, that is held flag
-      `0x800000`, or held
-      flag `0x1000010` with something in hand during one of the eleven **throw** clips (467, 471, 472, 491, 502,
-      505-507, 551-553), or when he plays 602 `ANIM_TAUNT_CHALLENGE` (the knife-toss fidget) with set 1 in hand
-      (`0x002664e8`). So a hit during a throw wind-up makes the object fall from the hand, raging or not. Despite
-      the function's name, no melee swing clip is in its list.
-2. **The ordinary reaction** (`Human_PlayReaction` `0x0026a6d0`, reached when hit armour, the held flags `0x1c16a40`
-   and flag `0x800` let a reaction play; confirmed (code)):
-    - when the **attacker's** clip is **620 or above** (the test at `0x0026a798` is `id ≥ 0x269` and `id ≥ 0x26c`,
-      confirmed (code);
-      so in effect `≥ 620`: the left block counter 620, the bat-block counter 629, the rage moves 645 / 647 and
-      649 / 651, the specials 653 / 655 and 657 / 659) and the victim's flag `0x2000` is clear, he drops what he
-      holds, any set, hurt or not;
-    - a reaction that knocks down calls `Human_KnockDown`, hence `0x00257e38` (confirmed (code));
-    - a stunning reaction calls `Human_Stun(victim, attacker)` (confirmed (code)). `Human_Stun` returns at once for a
-      human with flag
-      `0x100` (unstunnable; without an attacker only when he also lacks flag `0x8000000`), and calls `0x00257e38` only
-      when he has none of the state bits `0xcf0` (grabbed or grabbing) and neither held flag `0x10200`.
-3. **The special reactions** (confirmed (code)): `HitReact_WhileGrabbed` (`0x002688d0`) stuns (so `0x00257e38` as
-   above); `HitReact_InSpecial` (`0x00268430`) knocks down; a lethal hit runs `Human_PlayLethalReaction`
-   (`0x00267e48`), which calls `Human_EndThrowAimDropHeavy` (`0x00257d70`).
-4. **Defeat**, where no flag is read: `Human_StartWounded` (`0x0022fa78`) and the knock-out's `Human_ReleaseAll`
-   (`0x00258968`) drop what he holds ([Knocked out](combat-reactions.md#defeat)). Confirmed (code).
-
-**Arrest** (`Human_Arrest` `0x0022ec18`, at the end of the cuffing) drops a set 4 or 6 object always and anything
-else only without flag `0x2000`. Confirmed (code).
-
-**Summary by case** (no flag `0x2000`; a player is brain type 0, so the cop exception never applies to him):
-
-| Case | Bat (set 3) | Knife, baton (1, 2) | Two-handed, ghetto (4, 6) | Bottle, brick (5) |
-| --- | --- | --- | --- | --- |
-| Hit, not hurt, stunned or knocked down | kept | kept | dropped | kept |
-| Hit, hurt, stunned or knocked down | dropped | dropped (a cop keeps them) | dropped | dropped |
-| Hit by a clip ≥ 620 (counter, rage, special) | dropped | dropped | dropped | dropped |
-| Hit during a throw clip | dropped | dropped | dropped | dropped |
-| Grabbed, mounted, in a paired move as the victim | dropped | kept unless hurt (a cop keeps them) | dropped | kept unless hurt |
-| Starts a grab or a tackle | dropped | kept | dropped | dropped |
-| Arrested | dropped | dropped | dropped | dropped |
-
-The damage itself is never read: only whether the victim is hurt after it (the health drops before the reaction).
-The weapon the attacker uses matters only through his clip id (≥ 620).
-
-**With flag `0x2000`** every row above keeps the object, except: the set 4 / 6 column wherever one of the three
-helpers or the arrest runs (they drop those first, flag or not; the clip ≥ 620 test itself spares them, but the
-stun or knock-down that usually follows does not), the throw
-row and a kind 39 object (step 1, no flag test), and defeat. The flag is read at exactly five places: the three
-helpers (`0x00257d18`, `0x00257da4`, `0x00257e7c`), `Human_PlayReaction` (`0x0026a7bc`) and `Human_Arrest`
-(`0x0022ed14`), confirmed (code); a search of every `andi …, 0x2000` in the executable found no other reader of the
-human flags (inferred: complete).
-
-**While raging**, the enter handler's other flags already close most of these paths: unstunnable (`0x100`) stops
-`Human_Stun` before its drop, ungroundable (`0x80`) keeps reactions from knocking down, ungrabbable (`0x40`) stops
-grabs and mounts, god mode (`0x10`) prevents defeat. What `0x2000` alone still decides for a raging player is the
-drop by an attacker's clip ≥ 620 (an enemy's counter or special), his own grab or tackle start with a bat or a
-set 5 object, and a paired move he starts holding a bat (`Grab_BreakOnHit`, `0x0022b960`). A hit during his own
-throw still drops the object. Inferred from the code above.
-
-**What Coney must do** (for the implementer of issue #91 and of [Objects: held](objects.md#held)):
-
-1. Give a human one "keep weapon" flag, set and cleared by `HuSetKeepWeapon` and by the rage handlers.
-2. On a landed, non-blocked, non-lethal hit (or any hit while airborne): drop the held object when the victim is in
-   a throw clip with something in hand (the eleven ids above), holds held flag `0x800000`, plays 602 with set 1, or
-   holds a kind 39 object; no flag test.
-3. In the ordinary reaction: when the attacker's clip id is ≥ 620 and the victim lacks the flag, drop.
-4. On a knock-down, and on a stun that is not refused (unstunnable, grab states `0xcf0`, held `0x10200`): drop set
-   4 / 6; drop any other object when the victim is hurt, lacks the flag and is not a cop holding set 1 or 2.
-5. When a human becomes the victim of a grab, mount, paired move or lethal reaction: drop set 4 / 6; drop any other
-   when he lacks the flag, is not a cop holding set 1 or 2, and is hurt or holds set 3.
-6. When a human starts a grab or tackle (and as attacker of a paired move, holding set 2 or 3): drop set 4 / 6, and
-   any set but 1 or 2 without the flag.
-7. On arrest: drop set 4 / 6, and anything else without the flag. On defeat: drop whatever is held.
-
-**Tests.**
-
-- Unit: a fighter with a bat at full health takes a stun hit and keeps it; at 20 % of a class with a 0.35 threshold
-  he drops it; with the keep-weapon flag he keeps it; with a set 4 prop he drops it in all three; the same hurt
-  victim as a cop with a baton keeps it; a hit by an attacker in clip 645 drops a bat at full health unless the flag
-  is set; a hit during clip 502 drops the bat even with the flag.
-- Disc (the player's path): `level99`, the rage lesson checkpoint, through `DiscSession`. Put a bat in the
-  player's hand (`HuPlaceItemInHand`, as the scripts do), bring his health under the hurt threshold, start rage with
-  L1 + R1 as a pad press, have a sparring Warrior land a stun hit and a special (clip ≥ 620): the bat stays in hand
-  (`script().heldObject` unchanged) through both. End rage (meter drained) and repeat the stun hit: the bat falls.
-
-## Reviving a downed Warrior {#revive}
-
-The prompt (HUD string 4) and who can be revived are on [HUD: action prompts](hud-messages.md#action-prompts); this is the
-action. **D-pad left** pressed makes command `0x27` ([the street's tables](combat.md#commands), confirmed (runtime)), which
-`Player_TryRevive` (`0x00286ba8`) handles; an AI Warrior reaches the same function through
-[SaveHuman](ai-goals.md#goal-save-human) (inferred from its brain-type test below). Confirmed (code) at the addresses
-given:
-
-1. **Refused** when the reviver has any held flag or a state flag of `0x7bf9e9f7ff0`, when
-   `Human_FindRevivableNear` (`0x00279078`) finds nobody, or when the downed human has any held flag.
-2. **The way** (confirmed (code)): when `Human_IsWayClearTo(reviver, downed)` (`0x0021c0a8`) fails, a downed AI
-   human (`+0x1b0` = −1)
-   is refused, and a downed player only accepts a reviver whose brain is type 3 (a Warrior). The test sweeps a
-   **capsule of radius 0.2 m**, as tall as the reviver's own capsule (`Human_GetCapsuleHeight`) and posed on him, along
-   the vector from his transform position to the downed human's (`IPhysics_CollideShape`, collision mask `0x2803`,
-   his own body skipped); the way is clear when nothing is hit or the first thing hit is the downed human. It fails
-   at once (not clear) while the reviver is grabbed, the downed human has no character instance (`+0xd8`) or the
-   reviver has no physics body (`+0x1a0`).
-3. **The flash**: `Inventory_GetCount(inventory, slot, 1)` for the reviver's player slot (`+0x380`), else for the
-   downed human's; an AI human's slot is −1, which the inventory refuses (count 0). So an AI Warrior can only revive
-   a downed **player who holds a flash**, and player 1 only with his own flash (or a co-op partner's). Else refused.
-   Then `Revive_Start` and the command is used (returns 1).
-
-`Revive_Start(reviver, downed)` (`0x002752a0`), confirmed (code):
-
-- Both bodies get the same new body group (a counter at `*0x00597198 + 0x10`, wrapping to 1) at the body's `+0x3c`,
-  as a paired move's do ([Grabs](combat-grabs.md#mount-power)); confirmed (code). Both their vtable slot `+0xe4` is
-  called with (1e9, 7) (inferred: the push weight, as `Human_KnockOut` gives 1e9; reset with 1.0 at the finish).
-- `Attack_SteerLed(0.1, reviver, downed, 0, 351)` puts the reviver in place for clip 351
-  ([the led steer](combat-targets.md#led-steer); the 0.1 is not read): over 351's time to its first event + 0.1 s he
-  **turns** to the line to the downed human's head (less 351's direction offset, `AttackTable_GetOffset`) and **slides**
-  to the point that lies 351's reach (the Anim Range List's `+0x04` for anim 351, `AttackTable_GetReach`, `0x002544a0`)
-  short of that head, both at an even rate ([runtime](#revive-runtime): about 0.70 m from him, 12° off the line).
-  Confirmed (code): `Attack_SteerLed` with 351 is called at the start.
-- The reviver says **76 `revive_reasure`** (`Human_SayCommand(1.0, reviver, 76, none, interrupt, …)`).
-- His animation stack gets, bottom up: **351 `gen_revive_begin`** with the finish callback (`Revive_Finish`,
-  `0x00274ee0`) on its end, chained to **353 `gen_revive_end`**, chained to his idle loop (out of the fight stance
-  through 389 `gen_trans_combat_to_neutral`, idle set 0; in the stance, idle set `0xb`); a blend-out over 0.01 s on
-  top. Clip 352 (`gen_revive_cycle`) is not used. Push sphere off; held flag `0x8000000`; each is the other's
-  partner (`Human_SetPartner`).
-
-`Revive_Finish(reviver)` (`0x00274ee0`), when 351 ends **however it ends**: the callback is the chained clip task's,
-and the task's clean-up runs it on the clip's end, on a cut-off and on the task's release
-(`AnimTaskChained_Release`, `0x00105f78`, and [the task types](animation.md#task-types): resolve the human, clear the
-task's held flags, run the callback, clear it), so a hit or anything else that cuts 351 short still spends the flash
-and heals, once. Confirmed (code); the normal end confirmed (runtime: the call came from the release, `0x00106040`);
-a cut-short 351 was not staged at runtime.
-
-1. Both partners cleared, both `+0xe4` calls with (1.0, 7), both pair ids 0.
-2. **One flash is spent**: the downed human's when his inventory has one, else the reviver's
-   (`Inventory_AddItem(…, 1, −1)`).
-3. Interface cue **23** (the flash sound, as [`Flash_Use`](#rage)); the revived says **75 `revive_thank`**;
-   `Human_Heal(revived, 1)` wakes him and fills his health ([`Flash_Use`](#rage) above).
-4. The revived gets up with **354 `gen_revive`** as a pair task bound to the reviver (flag `0x8000`), chained to his
-   idle loop (through 389 out of the stance), push sphere off, held flag `0x8000`.
-
-So the whole revive is clip 351 on the reviver (the flash spent and the heal at its end), then 353 on him and 354 on
-the revived together.
-
-**Who can be revived.** Every Warrior: `Human_Init` gives brain type 3 the revivable flag `0x4` when he is made
-([Human flags](combat.md#human-flags)), so a crew Warrior downed in any fight of any mission is revivable unless a script
-clears it with `HuSetRevivable(h, false)`. Confirmed (code); confirmed (runtime) on `level80` below. `level80`'s own two
-`HuSetRevivable` calls (checkpoint 3) are for humans of brain type 2; the crew needs none.
-
-### At runtime {#revive-runtime}
-
-Confirmed (runtime), PCSX2 2.9.94, `level80` checkpoint 1 after the "Let's Go" lesson (R2 and the right stick up 80 %
-gave command 0, which hands control back and brings Vermin and Rembrandt down to Cleon); scenario
-`repo:research/traces/scenarios/revive_crew.toml` with the hooks `revive-start`, `revive-finish`, `anim-dispatch` and
-`say-command`. Vermin was put in front of Cleon at update 270, his health set to 0 and `Human_OnHealthOut` called on
-him at 281 (he stays standing: the fall is a fight's reaction clip, not this function), Cleon given one flash, then
-d-pad left tapped once (the stick at rest). Two runs, Vermin 0.97 m and 1.66 m away:
-
-- **The prompt**: string 4 ("Revive" with the d-pad picture) showed while Cleon stood beside the knocked-out Vermin
-  with the flash, before the press.
-- **The press**: the update that read it had command `0x27`, `Revive_Start(Cleon, Vermin)` from `Player_TryRevive`
-  (return address `0x00286ca0`), line 76 on Cleon, and Cleon's clip 351 with record `+0x08` = `0x8000000`. The clips
-  taken that update, in order: 388 (idle), 389, 353, 351 (the chain built bottom up).
-- **351 lasted 21 updates (0.70 s)** in both runs. On the 22nd update `Revive_Finish` ran: the flash count went 1 to 0,
-  Vermin's health 0 to 1800 (his maximum), line 75 on Vermin, Cleon's clip 353 and Vermin's 354. **From the press to
-  the heal: 0.70 s.**
-- **353 lasted 33 updates (1.10 s)**, then **389 25 updates (0.83 s)**, then idle 388; `+0x08` went back to 0 when
-  353 ended. Cleon was out of the fight stance, so 389 came before the idle as the chain says.
-- **354 lasted 72 updates (2.40 s)** on Vermin, then 389, which his brain cut after one update with its own clips
-  (turns 400 / 401, then idle).
-- **The steer**: Cleon's heading changed for 25 updates at an even rate (1.52° and 1.06° an update) and ended **11-13°
-  to the left of** the line to where Vermin stood (105.7° against 93.0°, 94.3° against 82.9°). He **slid**: from 0.97 m
-  he ended 0.71 m from Vermin, from 1.66 m 0.71 m too (up to 1.75 m/s), so 351 has a reach and the stand point sits
-  about **0.70 m** from the downed human. 353 then carried him back to 1.1-1.16 m and 389 to 1.15-1.29 m (their own
-  root motion).
-- **Knocked out with `0x4`**: the wake time `+0xf0` was now + 28 s ([Defeat](combat-reactions.md#defeat)).
-
-**Coney** builds it for player 1 (`repo:src/gamemodes/gameplay_revive.cpp`, `repo:src/human/human_revive.cpp`, the
-tests as `combat::mayRevive` in `repo:src/combat/revive.h`): d-pad left beside a revivable partner, the tests above,
-76, the led steer, the chain 351, 353 and the idle (through 389 out of the stance) holding `0x8000000`, and at 351's
-end, however it ends, the flash, cue 23, 75, the full heal and 354, 389 and the idle on the revived, holding `0x8000`.
-Every Warrior and every player is made revivable: `ai::startingFlags` gives a human its brain type's flags of the
-table in [Human flags](combat.md#human-flags) as its brain is made (`Brains::add`), and `ai::releasedFlags` those of a player
-handed back to the AI (`AiHumans::switchPlayer`). A Warrior downed in a fight (his health gone) counts as knocked out,
-as one a script knocked out does. So beside a crew Warrior downed in any fight the prompt shows with a flash and
-d-pad left revives him, with no script call (user item 8). The disc test `repo:tests/platform/disc_revive_test.cpp`
-downs a `level80` Warrior with a strike, walks player 1 to him by the stick at 60 % and revives him: 351 ran 22
-updates, 353 34, 389 25 and the revived's 354 73, each counted with the update it starts (the runtime read 21, 33, 25
-and 72), the steer turned him over 25 updates to 8.8° left of the
-line to the head at the press (351's direction on the disc is 10° to the right; the runtime 11-13°), and he ended
-0.81 m from the head (351's reach 1.04 m less its root motion; the runtime 0.70-0.71 m from a standing Warrior).
-Readings and stand-ins:
-
-- **Blocked** is the swap prompt's reading of the state mask (knocked out, cuffed, wounded) plus anything that keeps
-  him off his feet (down, held, in the air), which covers the way test's "grabbed"; "any held flag" is the record bits
-  his clips hold.
-- **The way** (`human::wayClear`, `repo:src/human/way_clear.h`): the 0.2 m capsule, as tall as the reviver's own
-  (Coney's 2 m upright capsule on his scale), swept from his feet to the downed human's against the other humans'
-  capsules and the level's walls (triangles the walking sweep counts, tested every 0.1 m of the way). **Coney's
-  reading** of mask `0x2803`: humans and walls; objects, cars and glass panes are not swept.
-- **The led steer** (`Fighter::steerRevive`) turns him to the line to the downed human's head, less 351's direction,
-  and slides him to 351's reach from it, both over 351's time to its first event + 0.1 s, as an attack's led steer.
-- The pair ids, `Human_SetPartner`, the `+0xe4` calls and the push spheres have no counterpart.
-- The revived's 389 is taken from the reviver's anim set (the whole get-up is one paired chain).
-- **Human_Init's other flags**: cops and dealers get `0x2000` and `0x40000`; **stand-in**: the 1-in-2 woundable `0x8`
-  of the other brain types is not given (no Coney code reads it, and the roll would shift every seeded run).
-- **Not built**: an AI Warrior reviving ([SaveHuman](ai-goals.md#goal-save-human)) and a co-op partner's flash.
-  Nothing in the original wakes a knocked-out human when record `+0xf0` passes. `Humans_Update` (`0x00249108`) reads
-  it to set a wounded human dying (`0x80000000`) once it has passed; to make a knocked-out one without flag `0x4` dead
-  when no camera sees him (otherwise it moves 14 s on), and a revivable player whose crew is all out dead; and to
-  start a dead body's fade (`0x200000000`) when no camera sees it. So a revivable Warrior stays down until a revive,
-  a flash or the script wakes him ([Who sets and clears the knocked-out bit](combat-reactions.md#knocked-out-bit)).
-  Confirmed (code) for `Humans_Update`'s reads; that no other code reads `+0xf0` is inferred.
-
-## Coney's implementation
-
-The meters and the rage awards live in `repo:src/combat/meters.h` and `repo:src/combat/rage_awards.h`, the rage
-handlers in `ScriptedHumans::runRageHandlers`, and the revive in `repo:src/gamemodes/gameplay_revive.cpp`,
-`repo:src/human/human_revive.cpp` and `repo:src/combat/revive.h`. [Combat: Coney's
-implementation](combat.md#coneys-implementation) says what each file does. What differs from the original is written
-beside each subject above: rage's screen look, sounds and `RageFull(human, false)` ([Everything rage
-does](#rage-effects), item 26), the keep-weapon drops ([Dropping what is held when hit](#keep-weapon), issue #91) and
-the revive's readings and stand-ins ([Reviving](#revive)).
+  rage there), and, when fire and gunmen arrive, the two code-only rules of [Everything rage does](#rage-effects). The
+  keep-weapon flag's readers and the drops it does not stop are in [Dropping what is held when
+  hit](combat-throws.md#keep-weapon), with its own list for Coney.
 
 ## Open questions
 
-- At runtime, a 351 cut short by a hit: the code says `Revive_Finish` still runs; that case has not been staged.
-- What `Revive_Start`'s vtable `+0xe4` calls with (1e9, 7) and (1.0, 7) set (inferred: the push weight, as
-  `Human_KnockOut` gives 1e9).
-- What sets the flash clip 665's play rate (about 0.75 at runtime; `Human_PushOverlayClip` passes no rate).
-- Whether the presses on landing from a jump give a command at all ([The flash during a move](#flash-mid-move)).
+- **The presses on landing**{#q-flash-landing}: whether d-pad right pressed on landing from a jump gives a command at
+  all ([The flash during a move](#flash-mid-move)). A watch on the per-player command `+0x20` through a landing would
+  tell.
+
+## How this was checked
+
+The code claims were read in Ghidra on `SLUS_212.15` (NTSC-U); the clip events were read from the disc's clips
+(numbers only) and the script handlers from the disc's scripts. The runtime claims were read with PCSX2 2.9.94 over
+PINE, before run records existed, so none of them has one:
+
+- **The power meter** and **Rage**: copies of slot 6 (`level99`, Rembrandt) with a puppet civilian, driven with the
+  scripted pad; the runtime power classes were read from the humans in those runs.
+- **The flash during a move**: below ([The flash, at runtime](#flash-setup)).
+- **Everything rage does**: below ([Rage, at runtime](#rage-effects-setup)).
+
+The "civilian" whose meter refilled to 300 at about 100 per second was the puppet at human 0 in those runs, which
+was **Vermin** (1800 health, 400 power), not the `PoizoCiv`: the script had set its health to 600 of 1800 (33 %,
+hurt), so its maximum was 400 × 0.75 = 300 and its refill class 7's 100 per second. Confirmed (runtime) from the logs
+and the class values. The hit-armour run used the same puppet.
+
+### The flash, at runtime {#flash-setup}
+
+`pcsx2 record` with the `scripted-pad`, `right-stick` and `flash-use` hook on `Flash_Use`'s entry, whose `ra` tells
+the two callers apart: `0x00284820` at once, `0x002473c4` from 665's event; health held at 600 of 900 and 3 flashes
+every update so each press is a fresh test; d-pad right is a digital button, the stick at 100 % is raw byte 255. The
+scenarios are named in the table's Evidence column with the quick-save slot each copied.
+
+### Rage, at runtime {#rage-effects-setup}
+
+A copy of quick-save slot 6 (`level99`, Rembrandt), with the scripted-pad patch, rage started by writing the meter full
+(78) and the hold timer, then L1 + R1 held for 0.3 s (2026-10-10).

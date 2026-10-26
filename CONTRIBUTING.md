@@ -104,7 +104,11 @@ want ([Research workflow](docs/guides/research-workflow.md)).
 `build` slots, `STATUS.md`), the release queue that pushes pull requests, the Tether and Claude Code configuration
 (`.claude/`, `.mcp.json`), `PR.md` and the `reviewer`, and most of [How we work](docs/guides/how-we-work.md) and
 [Running agents](docs/guides/agents.md). You can ignore all of it; a pull request you open yourself follows the
-same rules in the template.
+same rules in the template. One thing reaches you if you use Claude Code in this checkout: start it with
+`uv run --project python coney-agent engineer`, because a plain `claude` session here may only read files
+([Which role to start](docs/guides/agents.md#roles)). The engineer role brings the project's agent instructions
+(worktrees, scratch folders, the local checks, reporting to a coordinator) and refuses `git push` and `gh pr create`
+inside that session: push your branch and open your pull request from your own terminal.
 
 **Stamps are local agent bookkeeping.** The stamp log (`docs/guides/stamps.md`) is what the project's agents keep on
 their own machine to work in order; it is never checked in CI. Working by hand you need no stamps, no `coney-tools`
@@ -135,7 +139,7 @@ created with `gh pr create --body-file`, and reruns when you edit it. These rule
 [.github/conventions.yml](.github/conventions.yml), and the block is generated from them (`coney-tools repo render`):
 
 <!-- conventions:begin pr-rules -->
-- Sections, in this order: Summary, Checklist, Testing, Screenshots, AI use.
+- Sections, in this order: Summary, Issues affected, Checklist, Testing, Screenshots, AI use.
 - Summary and Testing must hold text of their own: a section left as the template has it (its comments, `...`,
   `<reason>`) counts as empty.
 - Docs: a change under `src/`, `python/src/` needs a change under `docs/`, `research/` or the line `Docs: none` in the
@@ -143,6 +147,9 @@ created with `gh pr create --body-file`, and reruns when you edit it. These rule
 - Closing: a line `Fixes #N` in Summary for each issue the pull request finishes, one per line; merging closes it.
 - Checklist: every item is ticked (`- [x]`): a pull request lists only the work it finishes, and a task it does not
   finish is left out and lives in its own issue.
+- Issues affected: one line `- #N: how it is affected` for each open issue the pull request partly fixes, changes the
+  behaviour of or makes out of date, or the single line `None (<reason>)` with any short reason, for example
+  `None (one-line fix)`. `coney-tools issue impact` suggests the list; running it is optional.
 - Screenshots: an uploaded image (a path on your machine is refused) or a line `Screenshots: none (<reason>)` that gives
   a reason.
 - Testing: when the title's area is one a player sees (`gameplay`, `graphics`, `audio`), a line starting `Runtime:` with
@@ -257,6 +264,11 @@ The person who submits or merges the work answers for it. The full rule is in [L
   pull request; never commit them), and who wrote the work in the commits (a person, an AI, or both) and with which
   model. Who opened the pull request does not matter there. CI refuses a description that leaves out a section or an answer.
 - Keep a pull request to one subject. Unrelated changes belong in separate pull requests.
+- The project's agents never open their own pull requests: the coordinator releases each one with `coney-tools pr
+  open` ([pr open](docs/guides/pr.md#open)). It checks the pull request, rebases and pushes the branch, opens the pull
+  request and turns on auto-merge, except for a change to a path the maintainer merges by hand (`merge.manual_paths`
+  in `.github/conventions.yml`, such as `AGENTS.md`). A pull request you open yourself needs none of those steps; the
+  rules above still apply.
 
 ### Working from a fork
 

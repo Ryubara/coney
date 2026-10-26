@@ -1,5 +1,5 @@
 description = "slot 6: a beer bottle in hand; cross smashes it on PoizoCiv (leaving the broken bottle in hand), then circle grabs PoizoCiv once it is up, then square: the broken-bottle kill"
-research = "docs/research/combat-moves.md"
+research = "docs/research/combat-throws.md#weapons"
 input = "moves_bottle_kill.txt"
 updates = 300
 fields = ["player", "enemy"]

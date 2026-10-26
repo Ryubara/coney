@@ -643,8 +643,9 @@ TEST_CASE("the scripts' brains hold calls until the level makes the humans, then
     ash.handle = 7.0;
     scripted.humanCreated(ash);
     scripted.brSuspend(7.0, true);
-    scripted.humanTeleported(
-        7.0, coney::world_objects::Placement{.position = {45.0F, 41.0F, 0.0F}, .headingDegrees = 30.0F});
+    scripted.humanTeleported(7.0,
+                             coney::world_objects::Placement{.position = {45.0F, 41.0F, 0.0F}, .headingDegrees = 30.0F},
+                             coney::world_objects::TeleportMotion::Stopped);
     CHECK(scripted.holding());
     CHECK(scripted.held() == 3);
     CHECK(scripted.brain(7.0) == nullptr);
@@ -671,6 +672,69 @@ TEST_CASE("the scripts' brains hold calls until the level makes the humans, then
     // Once released, calls run at once.
     scripted.brSuspend(7.0, false);
     CHECK_FALSE(brain->suspended());
+}
+
+TEST_CASE("a teleport pops the brain's front move, keeps another front action, and only TeleportToFlag stops him",
+          "[ai][placement]") {
+    // Human_SetTransform (0x0023d440) pops the front action when it is a MoveTo (type 1); Object_TeleportToFlag
+    // (0x00385db0) then resets the motion, and Object_Teleport (0x00385bb8) does not (docs/research/teleports.md).
+    MoveScene scene;
+    coney::world_objects::WorldFlags flags;
+    flags.createPool(4);
+    coney::ai::ScriptedBrains scripted(scene.brains, flags);
+    Brain& brain = scene.add({41.0F, 41.0F, 0.0F}, -90.0F);
+    Brain& other = scene.add({41.0F, 45.0F, 0.0F}, 0.0F);
+    scripted.bind(1.0, brain);
+    scripted.bind(2.0, other);
+    const coney::world_objects::Placement there{.position = {45.0F, 41.0F, 0.0F}, .headingDegrees = 0.0F};
+
+    // Teleport: the move is popped, his move across the ground goes on.
+    brain.queueAction(moveTo({49.0F, 41.0F, 0.0F}, 0.3F));
+    scene.run(15);
+    REQUIRE(frontMove(brain) != nullptr);
+    REQUIRE(brain.human().speed() > 0.5F);
+    scripted.humanTeleported(1.0, there, coney::world_objects::TeleportMotion::Kept);
+    CHECK(brain.actionCount() == 0);
+    CHECK(brain.human().speed() > 0.5F);
+    CHECK(planDistance(brain.human().position(), {45.0F, 41.0F, 0.0F}) < 1e-3F);
+
+    // TeleportToFlag: popped and stopped.
+    brain.queueAction(moveTo({49.0F, 45.0F, 0.0F}, 0.3F));
+    scene.run(15);
+    REQUIRE(frontMove(brain) != nullptr);
+    REQUIRE(brain.human().speed() > 0.5F);
+    scripted.humanTeleported(1.0, there, coney::world_objects::TeleportMotion::Stopped);
+    CHECK(brain.actionCount() == 0);
+    CHECK(brain.human().speed() == 0.0F);
+
+    // Another front action (a turn) stays.
+    scripted.actLookAt(lookAtCall(1.0, 2.0, 0.5F));
+    REQUIRE(dynamic_cast<const coney::ai::TurnAction*>(brain.frontAction()) != nullptr);
+    scripted.humanTeleported(1.0, there, coney::world_objects::TeleportMotion::Stopped);
+    CHECK(brain.actionCount() == 1);
+}
+
+TEST_CASE("a scene's release pops the brain's front move after a skip, not after a clip that played to its end",
+          "[ai][placement]") {
+    // After a skip the original places the human at its end pose through Human_SetTransform (0x0023d440), which pops
+    // a front move; after a clip played to its end it places no one (docs/research/teleports.md#in-coney).
+    MoveScene scene;
+    Brain& brain = scene.add({41.0F, 41.0F, 0.0F}, -90.0F);
+    brain.queueAction(moveTo({49.0F, 41.0F, 0.0F}, 0.3F));
+    scene.run(15);
+    REQUIRE(frontMove(brain) != nullptr);
+
+    // Played to its end: placed and stopped, the move kept.
+    coney::ai::placeAfterScene(brain.human(), &brain, nullptr, {45.0F, 41.0F, 0.0F}, 0.0F, false);
+    CHECK(brain.actionCount() == 1);
+    CHECK(frontMove(brain) != nullptr);
+    CHECK(brain.human().speed() == 0.0F);
+    CHECK(planDistance(brain.human().position(), {45.0F, 41.0F, 0.0F}) < 1e-3F);
+
+    // Skipped: the move is popped.
+    coney::ai::placeAfterScene(brain.human(), &brain, nullptr, {45.0F, 43.0F, 0.0F}, 0.0F, true);
+    CHECK(brain.actionCount() == 0);
+    CHECK(planDistance(brain.human().position(), {45.0F, 43.0F, 0.0F}) < 1e-3F);
 }
 
 namespace {

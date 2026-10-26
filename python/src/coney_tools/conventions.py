@@ -245,6 +245,22 @@ class ScreenshotsRule:
 
 
 @dataclass(frozen=True)
+class IssuesAffected:
+    """The Issues affected section: the open issues a pull request partly fixes, changes or makes out of date, or
+    `None` with a reason (maintainer decision 2026-10-23, after an audit found 175 of 311 open issues out of date)."""
+
+    section: str
+    #: The word that says no issue is affected, followed by the reason in parentheses.
+    none: str
+    #: `required`: the `none` line must give a reason.
+    reason: str
+    #: A `none` line as a hand-made pull request writes it, shown in the template and in the error messages.
+    example: str
+    #: The moment the rule began: a pull request merged before it is not held to the after-merge check.
+    since: datetime
+
+
+@dataclass(frozen=True)
 class RuntimeEvidence:
     """The runtime-evidence line: a pull request whose title area a player sees says how it was checked against the
     original running (maintainer decision 2026-10-20)."""
@@ -371,6 +387,7 @@ class PullRequests:
     docs_none: DocsNone
     closing: Closing
     checklist: Checklist
+    issues_affected: IssuesAffected
     screenshots: ScreenshotsRule
     runtime: RuntimeEvidence
     ai_use: AiUse
@@ -379,6 +396,10 @@ class PullRequests:
     stacked: Stacked
     images: Images
     markers: Markers
+    #: Whether only `coney-tools pr open` opens a pull request: with this on, `.claude/hooks/pr_guard.py` refuses the
+    #: hand-typed routes (docs/guides/enforcement.md#pr-guard). The hook reads this one key from the file itself (it
+    #: runs without packages); `test_pr_guard.py` holds its reader to this loader.
+    open_only: bool
 
 
 @dataclass(frozen=True)
@@ -395,6 +416,9 @@ class Merge:
     required_checks: tuple[str, ...]
     #: Who may merge: never the agent that wrote the work.
     who: tuple[str, ...]
+    #: Paths whose change is the maintainer's to merge (a file, or a folder ending in `/`): `pr open` leaves
+    #: auto-merge off for a change that touches one.
+    manual_paths: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -446,6 +470,18 @@ class IssueLabelRules:
 
 
 @dataclass(frozen=True)
+class ImpactRules:
+    """`coney-tools issue impact`: which open issues a branch may have changed."""
+
+    #: How long the open issues read from GitHub stay cached before they are read again.
+    cache_minutes: int
+    #: A name or address cited by more than this many open issues says little about any one of them: it is skipped.
+    common_max_issues: int
+    #: The reasons listed for one issue in the text output (the JSON output lists them all).
+    max_reasons: int
+
+
+@dataclass(frozen=True)
 class Issues:
     """The rules for issues: blank issues, the forms, the media line, provenance and labels."""
 
@@ -462,6 +498,7 @@ class Issues:
     links: IssueLinks
     status_text: str
     labels: IssueLabelRules
+    impact: ImpactRules
     #: Label name to the title area (a key of `commits.title.areas`) that `issue titles` proposes for an old title.
     title_area_by_label: Mapping[str, str]
 
@@ -997,6 +1034,46 @@ class Research:
         return ""
 
 
+#: The smallest `conclave.pane_min_columns`: the narrow pane's widest fixed parts must fit with room to spare, the
+#: row caret (five columns with an emoji mark) and an open row's indent and label column (one and nine), so no line
+#: overflows at any valid width (tools/claude-mod/tests/conclave.test.tsx draws the pane at this width).
+PANE_MIN_COLUMNS_FLOOR = 15
+
+
+@dataclass(frozen=True)
+class ConclaveWatch:
+    """The watchers of Conclave (docs/guides/conclave.md#watchers): which events are told to whom, and how often."""
+
+    #: The agent types of the sessions that are woken, toasted and held to the stop guard.
+    roles: tuple[str, ...]
+    #: The first line of a wake.
+    preamble: str
+    #: Seconds between GitHub reads in a session that watches (the events come from that read), pane open or not.
+    github_seconds: int
+    #: At least this many seconds between two wakes; events in between join the next one.
+    wake_gap_seconds: int
+    #: A wake waits this many minutes for a draft in the prompt box, then goes anyway.
+    defer_typing_minutes: int
+    #: A wake the engine refused is tried again after this many minutes.
+    resend_minutes: int
+    #: A merged pull request is news for this many minutes after the merge.
+    merged_minutes: int
+    #: The stop guard blocks at most this many turn ends in a row for one reason.
+    stop_max_blocks: int
+    #: The stop guard counts its blocks again from one after this many minutes without a block.
+    stop_reset_minutes: int
+    #: The first line of the stop guard's reason.
+    stop_preamble: str
+    #: The folder of the scratch directory that holds the holds on pull request problems, one file each.
+    holds_dir: str
+    #: How long `pr hold` lasts when it is given no time, and the longest it may last, in hours.
+    hold_default_hours: int
+    hold_max_hours: int
+    #: The files of a unit's scratch folder that ask and answer a question: `<prefix>.md` or `<prefix>-<n>.md`.
+    question_prefix: str
+    answer_prefix: str
+
+
 @dataclass(frozen=True)
 class Conclave:
     """Conclave, the Claude Code mod (docs/guides/conclave.md): what its snapshot sends and how it draws."""
@@ -1010,9 +1087,11 @@ class Conclave:
     local_seconds: int
     github_seconds: int
     github_idle_seconds: int
-    #: The pane's narrowest useful width: under it the pane only says so, and the band and the status line stay.
+    #: The narrowest width for the pane's rows: from it the narrow layout, under it one clipped summary line.
     pane_min_columns: int
-    #: From this width the pane draws its full layout; between the two it draws the compact one (shorter rows).
+    #: From this width the pane draws the compact layout; between `pane_min_columns` and it, the narrow one.
+    pane_compact_columns: int
+    #: From this width the pane draws its full layout (a row on one line).
     pane_wide_columns: int
     #: The width below which the band takes two short lines.
     band_narrow_columns: int
@@ -1024,6 +1103,8 @@ class Conclave:
     unit_days: int
     #: A claim's countdown turns red in its last hours (it turns amber at `claims.warn_hours`).
     claim_red_hours: int
+    #: The watchers: Coney's own events, told to the coordinator once.
+    watch: ConclaveWatch
 
 
 #: Where a check can run (`ci.places[].where`), in the order the table lists them: `local` is `task check` or a git
@@ -1448,6 +1529,14 @@ def _read_commits(data: object, where: str) -> Commits:
     )
 
 
+def _example(affected: dict[str, Any], where: str) -> str:
+    """The `issues_affected.example` line: the `none` word, then a reason in parentheses."""
+    example = _text(affected["example"], _at(where, "example"))
+    if not re.fullmatch(rf"{re.escape(affected['none'])} \(.+\)", example):
+        raise _fail(_at(where, "example"), f"must be '{affected['none']} (<a reason>)'")
+    return example
+
+
 def _read_pull_requests(data: object, where: str) -> PullRequests:
     """The `pull_requests` section; every section it names must be one of its `sections`."""
     keys = (
@@ -1459,6 +1548,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
         "docs_none",
         "closing",
         "checklist",
+        "issues_affected",
         "screenshots",
         "runtime",
         "ai_use",
@@ -1467,6 +1557,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
         "stacked",
         "images",
         "markers",
+        "open_only",
     )
     table = _table(data, where, keys)
     sections = _texts(table["sections"], _at(where, "sections"))
@@ -1479,6 +1570,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
     docs_none, docs_none_where = sub("docs_none", "line", "when_changed", "unless_changed")
     closing, closing_where = sub("closing", "keyword", "form", "one_per_line", "section")
     checklist, checklist_where = sub("checklist", "section", "unchecked", "since", "legacy_label")
+    affected, affected_where = sub("issues_affected", "section", "none", "reason", "example", "since")
     screenshots, screenshots_where = sub("screenshots", "section", "none", "reason", "uploaded_only")
     runtime, runtime_where = sub("runtime", "areas", "section", "line", "none", "reason")
     ai_use, ai_where = sub("ai_use", "section", "written_by", "model")
@@ -1524,6 +1616,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
     section_fields = (
         (_at(closing_where, "section"), closing["section"]),
         (_at(checklist_where, "section"), checklist["section"]),
+        (_at(affected_where, "section"), affected["section"]),
         (_at(screenshots_where, "section"), screenshots["section"]),
         (_at(runtime_where, "section"), runtime["section"]),
         (_at(ai_where, "section"), ai_use["section"]),
@@ -1552,6 +1645,13 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
             unchecked=_choice(checklist["unchecked"], _at(checklist_where, "unchecked"), ("refused",)),
             since=_moment(checklist["since"], _at(checklist_where, "since")),
             legacy_label=_text(checklist["legacy_label"], _at(checklist_where, "legacy_label")),
+        ),
+        issues_affected=IssuesAffected(
+            section=affected["section"],
+            none=_text(affected["none"], _at(affected_where, "none")),
+            reason=_choice(affected["reason"], _at(affected_where, "reason"), ("required",)),
+            example=_example(affected, affected_where),
+            since=_moment(affected["since"], _at(affected_where, "since")),
         ),
         screenshots=ScreenshotsRule(
             section=screenshots["section"],
@@ -1605,6 +1705,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
             extensions=extensions,
         ),
         markers=Markers(summary=marker_names[0], facts=marker_names[1]),
+        open_only=_flag(table["open_only"], _at(where, "open_only")),
     )
 
 
@@ -1621,7 +1722,7 @@ def _read_merge(data: object, where: str) -> Merge:
         "required_checks",
         "who",
     )
-    table = _table(data, where, keys)
+    table = _table(data, where, keys, ("manual_paths",))
     methods = _texts(table["methods"], _at(where, "methods"))
     _names_in(methods, _MERGE_METHODS, _at(where, "methods"), f"a merge method ({', '.join(_MERGE_METHODS)})")
     return Merge(
@@ -1634,6 +1735,7 @@ def _read_merge(data: object, where: str) -> Merge:
         up_to_date_required=_flag(table["up_to_date_required"], _at(where, "up_to_date_required")),
         required_checks=_texts(table["required_checks"], _at(where, "required_checks")),
         who=_texts(table["who"], _at(where, "who")),
+        manual_paths=_texts(table.get("manual_paths", []), _at(where, "manual_paths")),
     )
 
 
@@ -1676,6 +1778,7 @@ def _read_issues(data: object, where: str) -> Issues:
         "links",
         "status_text",
         "labels",
+        "impact",
         "title_area_by_label",
     )
     table = _table(data, where, keys)
@@ -1695,6 +1798,8 @@ def _read_issues(data: object, where: str) -> Issues:
     links = _table(table["links"], links_where, ("docs_paths", "link_form", "must_exist_on"))
     labels_where = _at(where, "labels")
     labels = _table(table["labels"], labels_where, ("type", "area", "priority", "status", "closed_keeps_status"))
+    impact_where = _at(where, "impact")
+    impact = _table(table["impact"], impact_where, ("cache_minutes", "common_max_issues", "max_reasons"))
     return Issues(
         blank_issues=_flag(table["blank_issues"], _at(where, "blank_issues")),
         placeholders=_texts(table["placeholders"], _at(where, "placeholders")),
@@ -1718,6 +1823,11 @@ def _read_issues(data: object, where: str) -> Issues:
             priority=_choice(labels["priority"], _at(labels_where, "priority"), _LABEL_COUNTS),
             status=_choice(labels["status"], _at(labels_where, "status"), _LABEL_COUNTS),
             closed_keeps_status=_flag(labels["closed_keeps_status"], _at(labels_where, "closed_keeps_status")),
+        ),
+        impact=ImpactRules(
+            cache_minutes=_count(impact["cache_minutes"], _at(impact_where, "cache_minutes")),
+            common_max_issues=_count(impact["common_max_issues"], _at(impact_where, "common_max_issues")),
+            max_reasons=_count(impact["max_reasons"], _at(impact_where, "max_reasons")),
         ),
         title_area_by_label=MappingProxyType(
             {
@@ -1919,24 +2029,78 @@ def _read_conclave(data: object, where: str) -> Conclave:
         "github_seconds",
         "github_idle_seconds",
         "pane_min_columns",
+        "pane_compact_columns",
         "pane_wide_columns",
         "band_narrow_columns",
         "stale_after_reads",
         "merged_visible_minutes",
         "unit_days",
         "claim_red_hours",
+        "watch",
     )
     table = _table(data, where, keys)
-    numbers = {key: _count(table[key], _at(where, key)) for key in keys[2:]}
+    numbers = {key: _count(table[key], _at(where, key)) for key in keys[2:-1]}
     hooks_file = _text(table["hooks_file"], _at(where, "hooks_file"))
     if hooks_file.startswith(("/", "\\")) or ".." in hooks_file or ":" in hooks_file:
         raise _fail(_at(where, "hooks_file"), "a path inside the checkout")
-    if numbers["pane_wide_columns"] < numbers["pane_min_columns"]:
-        raise _fail(_at(where, "pane_wide_columns"), "must not be less than pane_min_columns")
+    if numbers["pane_min_columns"] < PANE_MIN_COLUMNS_FLOOR:
+        raise _fail(_at(where, "pane_min_columns"), f"must be at least {PANE_MIN_COLUMNS_FLOOR}")
+    if numbers["pane_compact_columns"] < numbers["pane_min_columns"]:
+        raise _fail(_at(where, "pane_compact_columns"), "must not be less than pane_min_columns")
+    if numbers["pane_wide_columns"] < numbers["pane_compact_columns"]:
+        raise _fail(_at(where, "pane_wide_columns"), "must not be less than pane_compact_columns")
     if numbers["github_idle_seconds"] < numbers["github_seconds"]:
         raise _fail(_at(where, "github_idle_seconds"), "must not be less than github_seconds")
     return Conclave(
-        claude_code=_text(table["claude_code"], _at(where, "claude_code")), hooks_file=hooks_file, **numbers
+        claude_code=_text(table["claude_code"], _at(where, "claude_code")),
+        hooks_file=hooks_file,
+        watch=_read_conclave_watch(table["watch"], _at(where, "watch")),
+        **numbers,
+    )
+
+
+def _read_conclave_watch(data: object, where: str) -> ConclaveWatch:
+    """The `conclave.watch` section: who is told of Coney's own events, and how often."""
+    keys = (
+        "roles",
+        "preamble",
+        "github_seconds",
+        "wake_gap_seconds",
+        "defer_typing_minutes",
+        "resend_minutes",
+        "merged_minutes",
+        "stop_max_blocks",
+        "stop_reset_minutes",
+        "stop_preamble",
+        "holds_dir",
+        "hold_default_hours",
+        "hold_max_hours",
+        "question_prefix",
+        "answer_prefix",
+    )
+    table = _table(data, where, keys)
+    numbers = {
+        key: _count(table[key], _at(where, key))
+        for key in keys
+        if key.endswith(("_seconds", "_minutes", "_blocks", "_hours"))
+    }
+    holds_dir = _text(table["holds_dir"], _at(where, "holds_dir"))
+    if holds_dir in {".", ".."} or any(mark in holds_dir for mark in ("/", "\\", ":")):
+        raise _fail(_at(where, "holds_dir"), "a folder name (one level, in the scratch directory)")
+    if numbers["hold_default_hours"] > numbers["hold_max_hours"]:
+        raise _fail(_at(where, "hold_default_hours"), "must not be more than hold_max_hours")
+    question = _text(table["question_prefix"], _at(where, "question_prefix"))
+    answer = _text(table["answer_prefix"], _at(where, "answer_prefix"))
+    if question == answer:
+        raise _fail(_at(where, "question_prefix"), "must differ from answer_prefix")
+    return ConclaveWatch(
+        roles=_texts(table["roles"], _at(where, "roles")),
+        preamble=_text(table["preamble"], _at(where, "preamble")),
+        stop_preamble=_text(table["stop_preamble"], _at(where, "stop_preamble")),
+        holds_dir=holds_dir,
+        question_prefix=question,
+        answer_prefix=answer,
+        **numbers,
     )
 
 
@@ -2664,6 +2828,39 @@ def load_proof_rules_at(root: Path, ref: str, own: Conventions) -> tuple[Convent
     except ConventionsError as error:
         raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: {error}") from error
     return replace(own, proof=proof, paths=paths), "base"
+
+
+def load_release_rules_at(root: Path, ref: str, own: Conventions) -> Conventions:
+    """`own` with the sections that steer a release (`repo`, `pull_requests`, `merge`, `claims` and `stamps`) replaced
+    by those of `.github/conventions.yml` at the git revision `ref`, the rules a branch under release cannot have
+    edited. The other sections are not read, so a base that gained a key elsewhere is still read. Raises
+    ConventionsError when git cannot show the file, it is not YAML, or those sections do not validate."""
+    try:
+        done = subprocess.run(
+            ["git", "-C", str(root), "show", f"{ref}:{CONVENTIONS_FILE}"], capture_output=True, check=False
+        )
+    except OSError as error:
+        raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: git cannot be run ({error.strerror or error})") from error
+    if done.returncode != 0:
+        raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: git cannot show it")
+    try:
+        data = yaml.load(done.stdout.decode("utf-8"), Loader=_Loader)
+    except (UnicodeDecodeError, yaml.YAMLError) as error:
+        raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: not valid YAML ({error})") from error
+    if not isinstance(data, dict):
+        raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: expected a mapping")
+    try:
+        names = own.labels.names()
+        return replace(
+            own,
+            repo=_read_repo(data.get("repo"), "repo"),
+            pull_requests=_read_pull_requests(data.get("pull_requests"), "pull_requests"),
+            merge=_read_merge(data.get("merge"), "merge"),
+            claims=_read_claims(data.get("claims"), "claims", names),
+            stamps=_read_stamps(data.get("stamps"), "stamps"),
+        )
+    except ConventionsError as error:
+        raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: {error}") from error
 
 
 def _keep(value: object, keys: Iterable[str]) -> object:

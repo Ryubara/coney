@@ -1774,7 +1774,7 @@ Stores a global float (0x00510278) beside CfgDamageEndurance's, set once by conf
 
 **Notes.** The grab's power strike (cross held, square pressed while grabbing) needs the power meter's fraction (record
 +0x148 over its maximum) above this value, confirmed (code) at 0x0027f3b0 and confirmed (runtime) 0.25; a throw costs
-the same fraction of the meter (docs/research/combat.md).
+the same fraction of the meter (docs/research/combat/index.md).
 
 - **Evidence:** confirmed (code) at `0x002364f8`; detail: traced
 - **Wrapper** `0x0035a678` (registered by `RegisterBindings`); **calls** `0x002364f8` `Cfg_SetPowerEndurance`

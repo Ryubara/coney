@@ -305,7 +305,7 @@ def _ci_state(pull: dict[str, Any], required: tuple[str, ...]) -> str:
 
 def _prs(src: Sources, now: datetime) -> dict[str, Any]:
     """The open pull requests (number, branch, draft, mergeable, checks, age) and the `repo pr-health` report."""
-    pulls, required = pr_health.fetch(src.default_branch, src.gh, f"{pr_health.PULL_FIELDS},updatedAt")
+    pulls, required = pr_health.fetch(src.default_branch, src.gh, f"{pr_health.PULL_FIELDS},updatedAt,headRefOid")
     health = src.health(pulls, required, now) if src.health else {"stuck": [], "other": [], "notices": []}
     causes: dict[int, list[str]] = {}
     for item in health.get("stuck", []):
@@ -320,6 +320,7 @@ def _prs(src: Sources, now: datetime) -> dict[str, Any]:
             "auto_merge": pull.get("autoMergeRequest") is not None,
             "ci": _ci_state(pull, required),
             "updated": pull.get("updatedAt"),
+            "head": pull.get("headRefOid"),
             "causes": causes.get(int(pull["number"]), []),
         }
         for pull in pulls

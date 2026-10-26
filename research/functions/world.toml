@@ -2,24 +2,6 @@
 # The fields: docs/guides/research-function-database.md; `research render --check`.
 
 [[function]]
-address = 0x0017d640
-name = "LightManager_Construct"
-page = "world.md#original-structure"
-role = "the light manager (`0x0050cce4`, 0xc0 bytes) ([Lighting](lighting.md#manager))"
-level = "confirmed-code"
-coney = "src/graphics/light_manager.h:LightManager::LightManager"
-status = "legacy"
-
-[[function]]
-address = 0x0017de10
-name = "LightManager_SelectLights"
-page = "world.md#original-structure"
-role = "the lights for one atomic or sphere"
-level = "confirmed-code"
-coney = "src/graphics/light_manager.h:LightManager::select"
-status = "legacy"
-
-[[function]]
 address = 0x00198e20
 name = "SectorPlugin_Read"
 page = "world.md#original-structure"

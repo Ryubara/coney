@@ -2,11 +2,14 @@
 """Tests for steps 1-4 of the release: the log, Check, the compared functions and Review, each refusal with its text."""
 
 import dataclasses
+import hashlib
 import json
 import os
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
+from types import SimpleNamespace
+from typing import cast
 
 import pytest
 from conventions_support import changed
@@ -26,10 +29,10 @@ from pr_support import (
     sha,
     write,
 )
-from test_orig_compare import SOURCE
+from test_orig_compare import SOURCE, TWO_FUNCTIONS
 from test_orig_study import ADDRESS
 
-from coney_tools import build_record, orig_copy, orig_pairs, pr_diff, pr_proof
+from coney_tools import build_record, orig_copy, orig_pairs, pr_diff, pr_proof, stamps
 from coney_tools import conventions as conventions_module
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions, parse_conventions
@@ -340,6 +343,53 @@ def test_a_body_edited_after_it_was_compared_is_refused_with_both_hashes(tmp_pat
     ), refused
 
 
+def test_a_comment_edited_after_it_was_compared_is_not_a_change(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    note = "// stand-in: the sound plays later"
+    built.edit(SOURCE_FILE, SOURCE.replace(note, note + " (see the page)"))
+    assert texts(built.verify(), "compared") == []
+
+
+def test_a_compare_made_under_the_old_body_hash_still_covers_the_unchanged_function(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    last = stamps.verify(built.unit.stamps, built.conventions.stamps).latest("compared", ADDRESS)
+    assert last is not None
+    lines = SOURCE.splitlines()[3:15]
+    old = hashlib.sha256(chr(10).join(line.rstrip() for line in lines).encode("utf-8")).hexdigest()
+    built.stamp("compared", subject=ADDRESS, covers={**last.covers, "coney_body_sha256": old})
+    assert texts(built.verify(), "compared") == []
+    built.edit(SOURCE_FILE, SOURCE.replace("return 2;", "return 3;"))
+    assert any("changed after it was compared" in t for t in texts(built.verify(), "compared"))
+
+
+def cite_twice(built: Built) -> None:
+    """Commit a second Coney function that carries the same `@orig` address as Widget::update."""
+    built.edit(SOURCE_FILE, TWO_FUNCTIONS)
+
+
+def test_two_functions_of_one_address_are_accepted_when_each_was_compared(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    cite_twice(built)
+    built.compare(key="Widget::reset()")  # the stamp for Widget::update came with the unit; this one is the second's
+    assert texts(built.verify(), "compared") == []
+
+
+def test_the_second_function_of_one_address_is_refused_until_it_is_compared_itself(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    cite_twice(built)
+    refused = texts(built.verify(), "compared")
+    assert refused == ["compared: 0x00501000: Widget::reset was never compared"], refused
+
+
+def test_a_function_compared_before_a_sibling_changed_stays_compared(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    cite_twice(built)
+    built.compare(key="Widget::reset()")
+    built.edit(SOURCE_FILE, TWO_FUNCTIONS.replace("count_ = 0;", "count_ = 1;"))
+    refused = texts(built.verify(), "compared")
+    assert len(refused) == 1 and refused[0].startswith("compared: 0x00501000: Widget::reset changed after"), refused
+
+
 def test_a_pairs_file_edited_after_it_was_compared_is_refused(tmp_path: Path) -> None:
     built = make(tmp_path)
     file = orig_pairs.load(built.pairs_path)
@@ -593,3 +643,21 @@ def test_without_origins_head_the_default_branch_is_unknown_and_nothing_runs(tmp
     git(built.root, "remote", "set-head", "origin", "--delete")
     with pytest.raises(ConfigError, match=r"origin/HEAD is not set here.*git remote set-head origin --auto"):
         pr_proof.load_subject(built.root, built.unit, built.task, built.kind)
+
+
+# --- the recorded verdict --------------------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("name", ["reviewed.json", "review.json"])
+def test_a_function_map_too_big_for_the_stamp_is_read_from_the_recorded_verdict(tmp_path: Path, name: str) -> None:
+    # `reviewed.json` now; `review.json` for a review recorded before the rename (it was the same file as a description
+    # review's REVIEW.json on Windows). The stamp's hash decides which one is the verdict it rests on.
+    raw = json.dumps({"functions": [{"addresses": ["0x00100010"], "class": "c"}]}).encode()
+    (tmp_path / name).write_bytes(raw)
+    if name == "reviewed.json":
+        (tmp_path / "REVIEW.json").write_bytes(b"{}")  # the description review's verdict beside it
+    subject = cast(pr_proof.Subject, SimpleNamespace(unit=SimpleNamespace(dir=tmp_path)))
+    stamp = cast(stamps.Stamp, SimpleNamespace(detail={}, covers={"review_sha256": hashlib.sha256(raw).hexdigest()}))
+    assert pr_proof._review_functions(subject, stamp) == {"0x00100010": "c"}
+    other = cast(stamps.Stamp, SimpleNamespace(detail={}, covers={"review_sha256": "0" * 64}))
+    assert pr_proof._review_functions(subject, other) is None

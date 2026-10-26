@@ -6,11 +6,11 @@
 // The revive's rules as numbers and yes-or-no answers, kept apart from the humans and the game state so they can be
 // tested on their own: whether a reviver may revive a downed partner (`Player_TryRevive`) and whose flash pays for it
 // (`Revive_Finish`). The game mode gathers the facts and plays the clips (gamemodes/gameplay_revive.cpp).
-// Research: docs/research/combat-rage.md#revive
+// Research: docs/research/combat-reactions.md#revive
 
 namespace coney::combat {
 
-/// The reviver's clips (docs/research/combat-rage.md#revive): 351 `gen_revive_begin` (its end spends the flash and
+/// The reviver's clips (docs/research/combat-reactions.md#revive): 351 `gen_revive_begin` (its end spends the flash and
 /// heals), then 353 `gen_revive_end`; the revived gets up with 354 `gen_revive`. 352 `gen_revive_cycle` is never
 /// played.
 inline constexpr std::uint32_t kReviveBeginAnim = 351;

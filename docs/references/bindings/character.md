@@ -550,7 +550,7 @@ Rewrites the damage of each of the human's 45 attack entries (its Anim Range Lis
 call starts from the class values, so calls do not compound.
 
 **Notes.** An entry whose scaled value rounds to 0 is not written and keeps its previous damage. The write is
-0x002548f0, as when the human is made ([Combat: damage](../../research/combat.md#damage-table)).
+0x002548f0, as when the human is made ([Combat: damage](../../research/combat/index.md#damage-table)).
 
 - **Evidence:** confirmed (code) at `0x00236038`, `0x00229b90`; detail: traced
 - **Wrapper** `0x00359cb0` (registered by `RegisterBindings`); **calls** `0x00236038` `Human_ApplyDamageModifier`,
@@ -1069,8 +1069,8 @@ Switches a player's human between pad control and AI control by setting its per-
 `0x00660f50 + i × 0x2c`, via `Human_GetPlayerRecord`). With 0 the brain drives it (its goals and actions run, AI grab
 counters apply); with 1 the pad's commands drive it again.
 
-**Notes.** Readers: [AI](../../research/ai.md), [Combat](../../research/combat.md) and the follow camera (camera.md),
-which only acts for a pad-controlled player. Armies of the Night uses it for players that have not joined.
+**Notes.** Readers: [AI](../../research/ai.md), [Combat](../../research/combat/index.md) and the follow camera
+(camera.md), which only acts for a pad-controlled player. Armies of the Night uses it for players that have not joined.
 
 - **Evidence:** confirmed (code) at `0x002384f8`; detail: traced
 - **Wrapper** `0x0035c120` (registered by `RegisterBindings`); **calls** `0x002384f8` `Human_EnableController`
@@ -1814,7 +1814,7 @@ or pinned by a tackle; nil otherwise, or when the handle is not a human.
 
 Tells whether the human is on the receiving end of a grapple: true while any of its state flags `0x10` (grabbed from the
 front), `0x20` (grabbed from the rear) or `0x800` (pinned by a tackle) is set ([Combat: state
-flags](../../research/combat.md#state-flags)). The grabber itself does not count.
+flags](../../research/combat/index.md#state-flags)). The grabber itself does not count.
 
 **Notes.** Tests record `+0xd4` flags with `0x002265f0(human, 0x830)`; a handle that is not a human (type flag 0x40)
 gives nil.
@@ -2517,7 +2517,7 @@ power runs out (instead of both letting go), and can counter a grab attempt at t
 player cannot simply hold it.
 
 **Notes.** Readers: the power-out escape in `Human_UpdateMeters` (0x002562d0) and the grab intro's end (0x0026c1d8),
-[Combat](../../research/combat.md#human-flags).
+[Combat](../../research/combat/index.md#human-flags).
 
 - **Evidence:** confirmed (code) at `0x00235200`; detail: traced
 - **Wrapper** `0x00359380` (registered by `RegisterBindings`); **calls** `0x00235200` `Human_SetAutoEscape`
@@ -2668,8 +2668,8 @@ Turns a human's fight stance on or off. On sets state flags `0x3` and restarts t
 the global `0x00510994` seconds), unless the human is being tackled or in a state of `0xe0000`. Off clears flags `0x7`
 (stance and target); for a pad-driven human standing idle it also resets its stance animation.
 
-**Notes.** Fight stance: [Combat](../../research/combat.md#state-flags). An AI's brain can put it back in stance on its
-next fight decision.
+**Notes.** Fight stance: [Combat](../../research/combat/index.md#state-flags). An AI's brain can put it back in stance
+on its next fight decision.
 
 - **Evidence:** confirmed (code) at `0x0023a1b0`, `0x0022fe80`, `0x0022fef0`; detail: traced
 - **Wrapper** `0x0035c030` (registered by `RegisterBindings`); **calls** `0x0023a1b0` `Human_SetCombatMode`,
@@ -2786,8 +2786,8 @@ Sets or clears human flag `+0xe0` 0x4000. With it the human's hits deal double d
 (`Human_AddPendingDamage` 0x00264bd8); as a grabbed victim it also escapes when the grabber's power runs out
 (0x002562d0).
 
-**Notes.** Effects of the flag: [Combat](../../research/combat.md#human-flags). Weapon and thrown hits go through the
-same damage path (inferred).
+**Notes.** Effects of the flag: [Combat](../../research/combat/index.md#human-flags). Weapon and thrown hits go through
+the same damage path (inferred).
 
 - **Evidence:** confirmed (code) at `0x00235e10`; detail: traced
 - **Wrapper** `0x00359a80` (registered by `RegisterBindings`); **calls** `0x00235e10` `Human_SetDoubleDamage`
@@ -2954,6 +2954,12 @@ HuSetHealthPercent(human, percent)
 
 Sets the human's current health to `percent` per cent of its maximum (truncated to whole hit points). A value outside
 (0, 100] restores full health rather than killing the human.
+
+**Notes.** Human_SetHealthPercent multiplies the maximum by 0.01 and then by the percentage (the two `mul.s` at
+0x00237924 and 0x00237928), each product a single-precision float that the PS2 rounds toward zero, and truncates the
+result (confirmed (code)). Because 0.01 as a float is a little under a hundredth, the health lands one point under the
+exact share whenever that share is whole: 449, 314, 899, 8, 89 and 674 for 50, 35, 100, 1, 10 and 75 % of 900 (confirmed
+(runtime), run r-20261025-health-percent-rounding), so even 100 % leaves the human one point short of full health.
 
 - **Evidence:** confirmed (code) at `0x002378a8`; detail: traced
 - **Wrapper** `0x0035bb50` (registered by `RegisterBindings`); **calls** `0x002378a8` `Human_SetHealthPercent`
@@ -3172,7 +3178,7 @@ object of anim set 4 or 6 (the two-handed props, the ghetto blasters) is dropped
 **Notes.** Bit set at 0x00237328 and read at five places (0x00257ce8, 0x00257d70, 0x00257e38, 0x0026a7bc, 0x0022ed14).
 It does not stop the drop of an object whose throw a hit interrupts, nor of a kind-39 object (Human_ApplyPendingDamage,
 0x00265f70). Rage's SetRageMode sets it. Details: [Combat: dropping what is held when
-hit](../../research/combat-rage.md#keep-weapon).
+hit](../../research/combat-throws.md#keep-weapon).
 
 - **Evidence:** confirmed (code) at `0x00237328`; detail: traced
 - **Wrapper** `0x003597e0` (registered by `RegisterBindings`); **calls** `0x00237328` `Human_SetKeepWeapon`
@@ -3779,7 +3785,7 @@ the flag.
 **Notes.** The Lua function is the first name given to CfgRageHandlers (copied to 0x006b6830 by Cfg_SetRageHandlers);
 global.lua registers `SetRageMode` there, which sets god mode, unstunnable, reduced and increased reaction, ungrabbable,
 ungroundable and keep-weapon on the human; ending calls the second name, `ClrRageMode`, which clears them ([Scripts:
-level5](../../research/scripting.md#level5)). Rage itself: [Combat](../../research/combat-rage.md#rage).
+level5](../../research/scripting.md#level5)). Rage itself: [Combat](../../research/combat-rage.md#rage-effects).
 
 - **Evidence:** confirmed (code) at `0x00237128`; detail: traced
 - **Wrapper** `0x00359478` (registered by `RegisterBindings`); **calls** `0x00237128` `Human_SetRageMode`
@@ -4940,11 +4946,11 @@ GoalBumLogic's set-up (0x002ac000) binds them into the bum's dynamic animation s
 clip `+0x20`, anim id `+0x24`) by its type: type 0 (puke) the first seven as ids 668, 320, 321, 322, 323, 669, 324; type
 1 (sleeping) the `bm_` three as 668, 196, 195; type 2 (begging) the `bum_beg_` three as 668, 196, 195. 668 is the fidget
 (itch) the goal plays every 10 s with a player near, 669 the big puke, 196 and 195 the knocked-down pose and the hit
-while down ([Combat](../../research/combat.md)), so a sleeping or begging bum lies or sits in its own clips; 320-324
-being the arrested state's idle, hit, dying, dead and second hit is inferred (a type-0 bum is put in the arrested
-state). [AI: GoalBumLogic](../../research/ai-scripting.md#bum-logic). Requesting fills 13 of the 64 dynamic-animation
-list entries. Releasing also drops files another script requested separately by the same name. Confirmed (code) unless
-marked.
+while down ([Combat](../../research/combat/index.md)), so a sleeping or begging bum lies or sits in its own clips;
+320-324 being the arrested state's idle, hit, dying, dead and second hit is inferred (a type-0 bum is put in the
+arrested state). [AI: GoalBumLogic](../../research/ai-scripting.md#bum-logic). Requesting fills 13 of the 64
+dynamic-animation list entries. Releasing also drops files another script requested separately by the same name.
+Confirmed (code) unless marked.
 
 - **Evidence:** confirmed (code) at `0x002abe98`; detail: traced
 - **Wrapper** `0x00363500` (registered by `RegisterBindings`); **calls** `0x002abe98` `LoadBumAnims`

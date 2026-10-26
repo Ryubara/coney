@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // Checks against the player's own disc that player 1 revives a knocked-out Warrior with a flash, as the original does
-// (docs/research/combat-rage.md#revive, docs/research/hud-messages.md#action-prompts): `level80` checkpoint 2 played in
-// the game session as `coney --play-level level80 --checkpoint 2` plays it (support/disc_session.h), one of player 1's
-// Warriors knocked out by a strike that takes all his health (no script flags him: every Warrior is made revivable),
-// and a driver that walks player 1 to him with the left stick at 60 % (turned by the camera, as a player steers), then
-// taps d-pad left. Beside him with no flash no prompt shows; with a flash the revive prompt, `GSTRING.HUD` 4, shows;
-// d-pad left turns and slides player 1 to 351's reach from the Warrior's head, plays 351 (0.70 s), 353 and 389 on him,
-// and at 351's end spends the flash and heals the Warrior, who gets up with 354. It runs only when the environment
-// variable CONEY_DISC names the disc and skips otherwise; it prints counts and measures only (LEGAL.md).
+// (docs/research/combat-reactions.md#revive, docs/research/hud-messages.md#action-prompts): `level80` checkpoint 2
+// played in the game session as `coney --play-level level80 --checkpoint 2` plays it (support/disc_session.h), one of
+// player 1's Warriors knocked out by a strike that takes all his health (no script flags him: every Warrior is made
+// revivable), and a driver that walks player 1 to him with the left stick at 60 % (turned by the camera, as a player
+// steers), then taps d-pad left. Beside him with no flash no prompt shows; with a flash the revive prompt,
+// `GSTRING.HUD` 4, shows; d-pad left turns and slides player 1 to 351's reach from the Warrior's head, plays 351
+// (0.70 s), 353 and 389 on him, and at 351's end spends the flash and heals the Warrior, who gets up with 354. It runs
+// only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts and measures only
+// (LEGAL.md).
 
 #include <algorithm>
 #include <cmath>
@@ -171,9 +172,9 @@ TEST_CASE("the disc's level80: player 1 with a flash revives a knocked-out Warri
     run.run(30);
 
     // The nearest Warrior of player 1's gang: revivable from the moment he was made (Human_Init gives every Warrior
-    // flag 0x4, docs/research/combat.md#human-flags), with no script call. The test knocks him out in a fight: a strike
-    // (S1, hit code 0x0a) from player 1's side that takes all his health. The brains belong to the session's gameplay,
-    // which the test reaches through them.
+    // flag 0x4, docs/research/combat/index.md#human-flags), with no script call. The test knocks him out in a fight: a
+    // strike (S1, hit code 0x0a) from player 1's side that takes all his health. The brains belong to the session's
+    // gameplay, which the test reaches through them.
     const coney::ai::Brains* found = run.session().gameplay().brains();
     REQUIRE(found != nullptr);
     auto& brains = const_cast<coney::ai::Brains&>(*found);
@@ -315,8 +316,8 @@ TEST_CASE("the disc's level80: player 1 with a flash revives a knocked-out Warri
                 "health %d of %d\n",
                 crew, begin, end, settle, up, turning, standOff, range != nullptr ? range->reach : 0.0F, offLine,
                 direction, flashesAtHeal, healthAtHeal, downed.fighter().health().maximum());
-    // The runtime's figures (docs/research/combat-rage.md#revive-runtime): 351 21 updates, 353 33, 389 25, 354 72; the
-    // steer 25 updates, ending about 0.70 m from him and 11-13 degrees to the left of the line.
+    // The runtime's figures (docs/research/combat-reactions.md#revive-runtime): 351 21 updates, 353 33, 389 25, 354 72;
+    // the steer 25 updates, ending about 0.70 m from him and 11-13 degrees to the left of the line.
     CHECK(begin >= 20);
     CHECK(begin <= 22);
     CHECK(end >= 32);

@@ -115,6 +115,9 @@ class Subject:
     #: Paths with uncommitted changes (tracked, or untracked and not ignored).
     dirty: tuple[str, ...]
     now: datetime
+    #: Each original address -> the keys of all the `@orig` functions at the tip that carry it (a `compared` stamp
+    #: belongs to one of them when there are several).
+    citing: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
 
 
 @dataclass
@@ -240,6 +243,7 @@ def load_subject(
         profile=profile,
         checks=tuple(proof_profiles.required_checks(rules, profile, paths)),
         changed=changed,
+        citing=orig_review.citing(after.values()),
         removed=removed,
         dirty=dirty_paths(root),
         now=now or datetime.now(UTC),
@@ -533,6 +537,8 @@ def _compared_one(
     """The study, the pairs and the `compared` stamp of one address of a changed function."""
     report = subject.report
     redo_study, redo_compare = f"orig study {address}", f"orig compare {address}"
+    if len(subject.citing.get(address, ())) > 1:  # then `compare` must be told which function
+        redo_compare += f" --coney-function '{unit.key}'"
 
     def refuse(text: str, redo: str = redo_compare) -> Refusal:
         return Refusal("compared", f"compared: {text}", redo)
@@ -576,9 +582,10 @@ def _compared_one(
         "pairs_sha256": orig_pairs.file_sha256(path),
         "coney_body_sha256": unit.body_sha256,
     }
-    if report.current("compared", address, covers) is not None:
+    cited_by = subject.citing.get(address, ())
+    if orig_review.current_compared(subject.root, report, address, covers, unit.key, cited_by) is not None:
         return found
-    last = report.latest("compared", address)
+    last = report.latest("compared", address, function=unit.key, cited_by=cited_by)
     if last is None:
         found.append(refuse(f"{address}: {unit.coney} was never compared"))
     elif last.result != "pass":
@@ -678,28 +685,35 @@ def _class_name(value: object) -> str | None:
 
 
 def _review_functions(subject: Subject, stamp: stamps.Stamp) -> Mapping[str, Any] | None:
-    """The address -> class map of a review: in the stamp, or (when it was too big) in `review.json`, whose hash the
-    stamp covers as `review_sha256`."""
+    """The address -> class map of a review: in the stamp, or (when it was too big) in the task's recorded verdict
+    (`reviewed.json`, or `review.json` for a review recorded before the rename), whose hash the stamp covers as
+    `review_sha256`."""
     inline = stamp.detail.get("functions")
     if isinstance(inline, dict):
         return inline
     wanted = stamp.covers.get("review_sha256")
-    path = subject.unit.dir / "review.json"
-    try:
-        raw = path.read_bytes()
-        data = json.loads(raw)
-    except (OSError, ValueError):
-        return None
-    if wanted and hashlib.sha256(raw).hexdigest() == wanted and isinstance(data, dict):
-        listed = data.get("functions")
-        if isinstance(listed, list):
-            return {
-                str(address): item.get("class")
-                for item in listed
-                if isinstance(item, dict)
-                for address in item.get("addresses", [])
-            }
+    for name in (review_verdict.RECORDED, review_verdict.RECORDED_BEFORE):
+        try:
+            raw = (subject.unit.dir / name).read_bytes()
+            data = json.loads(raw)
+        except (OSError, ValueError):
+            continue
+        if wanted and hashlib.sha256(raw).hexdigest() == wanted and isinstance(data, dict):
+            return _listed_functions(data)
     return None
+
+
+def _listed_functions(data: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    """The address -> class map of a verdict's `functions` list, or None when it has none."""
+    listed = data.get("functions")
+    if not isinstance(listed, list):
+        return None
+    return {
+        str(address): item.get("class")
+        for item in listed
+        if isinstance(item, dict)
+        for address in item.get("addresses", [])
+    }
 
 
 def _worked_on(subject: Subject, reviewer: Mapping[str, object]) -> bool:

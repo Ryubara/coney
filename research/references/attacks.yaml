@@ -8,7 +8,7 @@ about: |
   `+0x298`; `BrSetAttackWeight` changes one weight), waits the kind's `CfgAttackDelay` times its power class's
   factor, and presses the kind's command ([AI: attack kinds](../research/ai.md#attack-kinds)). The damage tables
   (`Damage*`) give each kind's damage, written over the anim ids listed here when a human is made
-  ([Combat: damage](../research/combat.md#damage-table)); the range table gives far ranges. `CfgChar` names a type's
+  ([Combat: damage](../research/combat/index.md#damage-table)); the range table gives far ranges. `CfgChar` names a type's
   three tables ([Characters](characters.md)). `config_preload2.lua` defines every table at boot; each difficulty
   script redefines 15 of them.
 complete: |

@@ -2,12 +2,14 @@
 """Tests for step 5: the pull request text generated from the engineer's file, the task and the stamps, then checked."""
 
 import dataclasses
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 from conventions_support import changed
-from pr_support import PARAGRAPH, Built, make
+from pr_support import PARAGRAPH, SOURCE_FILE, Built, make
+from test_orig_compare import TWO_FUNCTIONS
 
 from coney_tools import pr_proof, pr_text, stamps
 from coney_tools.config import ConfigError
@@ -15,6 +17,7 @@ from coney_tools.conventions import parse_conventions
 from coney_tools.issue_claim_remote import IssueView
 from coney_tools.issue_form import section_heading
 from coney_tools.pr_text import Generated
+from coney_tools.repo_checks import issues_affected_problems, issues_affected_shape
 from coney_tools.task_create import CreateRequest, build_task_file
 from coney_tools.task_file import parse_task_file, render_task_file
 from coney_tools.task_leads import LeadsResult
@@ -62,66 +65,109 @@ def test_the_generated_headings_are_the_templates_sections(tmp_path: Path) -> No
     assert headings == [line[3:] for line in template.splitlines() if line.startswith("## ")]
 
 
+def without_issues_affected(built: Built) -> str:
+    """The unit's PR.md with its Issues affected section taken out."""
+    text = (built.unit.dir / "PR.md").read_text(encoding="utf-8")
+    return text.replace("## Issues affected\n\nNone (no open issue is affected)\n\n", "")
+
+
 def test_a_section_the_conventions_add_is_generated_as_a_todo_the_checks_refuse(tmp_path: Path) -> None:
     built = make(tmp_path)
-    sections = [*built.conventions.pull_requests.sections, "Issues affected"]
+    sections = [*built.conventions.pull_requests.sections, "Rollout"]
     conventions = parse_conventions(changed(("pull_requests.sections", sections)))
     generated = generate(built, conventions=conventions)
-    assert "## Issues affected\n\nTODO:" in generated.body
-    assert any(t.startswith("body: '## Issues affected' is not filled in") for t in problems(generated))
-
-
-def with_issues_affected(built: Built) -> object:
-    """The conventions with the template's extra section, as the Issues affected rule adds it."""
-    sections = [*built.conventions.pull_requests.sections, "Issues affected"]
-    return parse_conventions(changed(("pull_requests.sections", sections)))
+    assert "## Rollout\n\nTODO:" in generated.body
+    assert any(t.startswith("body: '## Rollout' is not filled in") for t in problems(generated))
 
 
 def test_the_engineer_writes_the_issues_affected_section_and_it_is_kept_as_written(tmp_path: Path) -> None:
     built = make(tmp_path)
     text = (built.unit.dir / "PR.md").read_text(encoding="utf-8")
-    section = "## Issues affected\n\n- #812: its step 2 is done\n"
-    written = text.replace("## Testing", section + "\n## Testing")
-    generated = generate(built, written, conventions=with_issues_affected(built))
-    assert section in generated.body
+    generated = generate(built, text.replace("None (no open issue is affected)", "- #812: its step 2 is done"))
+    assert "## Issues affected\n\n- #812: its step 2 is done\n" in generated.body
     assert problems(generated) == []
+
+
+def fake_impact(monkeypatch: pytest.MonkeyPatch, seen: list[tuple[Path, str, str]]) -> None:
+    """Make `pr text` read two candidates from `issue impact`: #760 and #757, which is the unit's own issue."""
+
+    def impact(root: Path, base: str, tip: str) -> dict[str, object]:
+        seen.append((root, base, tip))
+        detail = [{"detail": "modifies src/ai/widget.cpp"}]
+        return {
+            "issues": [
+                {"number": 760, "title": "Widget `ready` @team", "reasons": detail},
+                {"number": 757, "title": "The task's own issue", "reasons": detail},
+            ]
+        }
+
+    monkeypatch.setattr(pr_text, "_run_impact", impact)
+
+
+def issues_affected_todo(generated: Generated) -> str:
+    """The text of the Issues affected section of a generated body."""
+    return generated.body.split("## Issues affected" + chr(10) * 2)[1].split(chr(10) * 2 + "## ")[0]
 
 
 def test_without_the_section_the_candidates_of_issue_impact_are_a_todo_the_engineer_confirms(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     built = make(tmp_path)
+    (built.unit.dir / "PR.md").write_text(without_issues_affected(built), encoding="utf-8")
     seen: list[tuple[Path, str, str]] = []
-
-    def fake_impact(root: Path, base: str, tip: str) -> dict[str, object]:
-        seen.append((root, base, tip))
-        return {
-            "issues": [
-                {"number": 757, "title": "Widget `ready` @team", "reasons": [{"detail": "modifies src/ai/widget.cpp"}]}
-            ]
-        }
-
-    monkeypatch.setattr(pr_text, "IMPACT_MODULE", "json")  # any module that exists stands for coney_tools.issue_impact
-    monkeypatch.setattr(pr_text, "_run_impact", fake_impact)
-    generated = generate(built, conventions=with_issues_affected(built))
-    section = generated.body.split("## Issues affected" + chr(10) * 2)[1].split(chr(10) * 2 + "## ")[0]
-    assert section.startswith("TODO: write this section in PR.md")
-    assert "- `#757` `Widget 'ready' @\u200bteam` (candidate: `modifies src/ai/widget.cpp`)" in section
+    fake_impact(monkeypatch, seen)
+    generated = generate(built)
+    section = issues_affected_todo(generated)
+    shape = issues_affected_shape(built.conventions.pull_requests)
+    assert section.startswith(f"TODO: write this section in PR.md: {shape}.")
+    assert "- `#760` `Widget 'ready' @\u200bteam` (candidate: `modifies src/ai/widget.cpp`)" in section
+    assert "#757" not in section  # the issue the task finishes is not a candidate
     assert any(t.startswith("body: '## Issues affected' is not filled in") for t in problems(generated))
     assert seen == [(built.root, built.base, built.tip)]
 
 
+def test_a_task_that_does_not_finish_its_issue_keeps_it_as_a_candidate(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    built = make(tmp_path)
+    (built.unit.dir / "PR.md").write_text(without_issues_affected(built), encoding="utf-8")
+    path = built.unit.dir / "TASK.md"
+    path.write_text(
+        path.read_text(encoding="utf-8").replace("kind: feature", "kind: feature\nfinishes: false"), encoding="utf-8"
+    )
+    fake_impact(monkeypatch, [])
+    generated = generate(built)
+    assert "Fixes" not in generated.body  # the issue stays open, so it is an issue this change affects
+    section = issues_affected_todo(generated)
+    assert "- `#757` `The task's own issue` (candidate: `modifies src/ai/widget.cpp`)" in section
+
+
 def test_a_failing_issue_impact_is_said_in_the_todo_not_raised(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     built = make(tmp_path)
+    (built.unit.dir / "PR.md").write_text(without_issues_affected(built), encoding="utf-8")
 
     def broken(root: Path, base: str, tip: str) -> dict[str, object]:
         raise ConfigError("cannot read the open issues with gh (offline)")
 
-    monkeypatch.setattr(pr_text, "IMPACT_MODULE", "json")
     monkeypatch.setattr(pr_text, "_run_impact", broken)
-    generated = generate(built, conventions=with_issues_affected(built))
+    generated = generate(built)
     assert "`coney-tools issue impact` could not run (cannot read the open issues with gh (offline))." in generated.body
     assert not generated.ok
+
+
+def test_what_the_generated_section_asks_for_is_what_check_body_accepts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    built = make(tmp_path)
+    (built.unit.dir / "PR.md").write_text(without_issues_affected(built), encoding="utf-8")
+    fake_impact(monkeypatch, [])
+    asked = issues_affected_todo(generate(built))
+    rules = built.conventions.pull_requests
+    item = re.search(r"'(- #N: [^']+)'", asked)
+    example = re.search(r"for example '([^']+)'", asked)
+    assert item is not None and example is not None  # the TODO shows the item form and the example it asks for
+    for section in (item.group(1).replace("#N", "#12"), example.group(1)):
+        assert issues_affected_problems(section, rules) == []
 
 
 def test_the_engineers_file_may_not_hold_generated_sections_fixes_lines_or_markers(tmp_path: Path) -> None:
@@ -261,6 +307,18 @@ def test_the_facts_name_every_stage_with_its_stamp_the_change_and_the_chain_head
     assert "- Check: profile `full`, preset `ci`, 412 passed, 0 failed, 0 skipped" in facts
     assert "build record `" in facts and "- Review: pass, Claude Opus 5.5, 1 function clean" in facts
     assert "Stand-ins:\n- `src/ai/widget.cpp:12` `the sound plays later`" in facts
+
+
+def test_two_functions_of_one_address_are_counted_by_their_own_compared_stamps(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    built.edit(SOURCE_FILE, TWO_FUNCTIONS)
+
+    def short() -> list[str]:
+        return pr_text._stage_lines(built.subject(), True)
+
+    assert "- Studied 1 of 1 functions" in short() and "- Compared 1 of 2 functions" in short()
+    built.compare(key="Widget::reset()")
+    assert "- Compared 2 of 2 functions" in short()
 
 
 def test_a_stage_that_has_not_run_is_said_so_in_the_facts(tmp_path: Path) -> None:

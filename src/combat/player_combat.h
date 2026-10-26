@@ -19,7 +19,7 @@
 // commands that start attacks, grabs, tackles and rage, with the meters moved on. It decides; it does not play clips
 // or move anyone: the caller starts the clip it names, applies the hits to their targets and tells it when a grab or
 // a tackle ends.
-// Research: docs/research/combat.md#dispatch
+// Research: docs/research/combat/index.md#dispatch
 
 namespace coney::combat {
 
@@ -43,8 +43,14 @@ struct CombatInput {
     bool inFight = true;                  ///< The fight test (`0x00224f28`, not researched) that lets R1 block.
     TargetKind target = TargetKind::None; ///< What square is aimed at.
     float objectHeight = 0.0F;            ///< A breakable target's point above the feet, metres.
-    int animSet = 0;                ///< The held object's anim set (SquareInput::heldSet); 0 with nothing in hand.
-    bool fightStance = false;       ///< In a fight stance (SquareInput::fightStance).
+    int animSet = 0; ///< The held object's anim set (SquareInput::heldSet); 0 with nothing in hand.
+    /// A world object in hand, whatever its anim set (`Human_IsHoldingObject`, `0x00224060`: the held object's type
+    /// `+0x86` not 0; a held human is not one).
+    bool holdingObject = false;
+    bool player = true;         ///< A player's human (`+0x1b0` not -1; Fighter::player()), not one no player controls.
+    bool padControlled = true;  ///< The per-player record's `+0x1b`: the pad drives the human, not its brain.
+    bool hasSprayPaint = false; ///< Spray paint left (`Human_GetSprayPaint`, `0x00222818`, not 0).
+    bool fightStance = false;   ///< In a fight stance (SquareInput::fightStance).
     bool grabTargetInReach = false; ///< The search found someone to grab for this circle or circle + cross.
     /// Both grab-block flags on the player (`0x40000000` and `0x80000000`, `HuBlockGrab`): circle starts no grab.
     bool grabBlocked = false;
@@ -80,6 +86,9 @@ struct CombatOutput {
     int grappleAnim = anim_id::kNone; ///< A strong grapple: its front strike (657, 649 raging), the grab's connect.
     bool tackleStarted = false;
     bool grabMissed = false; ///< Circle with nobody in reach: the intro, then the miss clip.
+    /// Circle + triangle started the spray (startAnim is anim_id::kSpraySpecial): the caller drops what is held and
+    /// takes one spray paint (a player's hand is empty here: special() refused one holding an object).
+    bool sprayed = false;
     GrabAction grabAction = GrabAction::None;
     MountAction mountAction = MountAction::None; ///< What the player did in the mount (startAnim is its clip).
     bool grabPowerOut = false;             ///< The grab broke because the power meter ran out (grabAction is LetGo).
@@ -101,13 +110,13 @@ class PlayerCombat {
 
     /// One update, in the original's order: the block, the chain, the meters, the state routes, the commands.
     ///
-    /// When input is read again (docs/research/combat.md#input-return, docs/research/tasks.md#readers): with `+0x08`
-    /// (CombatInput::phase) in the recovery or the run attack the dispatcher reads nothing past the block; a press for
-    /// the attack playing is buffered by the chain (AttackChain); square and cross refuse on kAttackRefusingPhases,
-    /// circle on kGrabRefusingPhases; the charge and dive keep their own test. **Coney choice**: the grab's moves and
-    /// the mount's strike take square's mask, kAttackRefusingPhases (their routes, `0x0027ec20` and
-    /// `Player_UpdateGrabbing`, are not traced for it), so one move in a hold plays out before the next and nothing is
-    /// read before the hold stands (the grab's clips hold `0x10`).
+    /// When input is read again (docs/research/combat/index.md#input-return, docs/research/tasks.md#readers): with
+    /// `+0x08` (CombatInput::phase) in the recovery or the run attack the dispatcher reads nothing past the block; a
+    /// press for the attack playing is buffered by the chain (AttackChain); square and cross refuse on
+    /// kAttackRefusingPhases, circle on kGrabRefusingPhases; the charge and dive keep their own test. **Coney choice**:
+    /// the grab's moves and the mount's strike take square's mask, kAttackRefusingPhases (their routes, `0x0027ec20`
+    /// and `Player_UpdateGrabbing`, are not traced for it), so one move in a hold plays out before the next and nothing
+    /// is read before the hold stands (the grab's clips hold `0x10`).
     /// @orig 0x0027c120 Player_UpdateActions (unknown)
     CombatOutput update(const CombatInput& input, const CombatTuning& tuning);
 
@@ -126,7 +135,7 @@ class PlayerCombat {
     /// A hit took the player out of what it was doing: the attack and its chain are lost and the block ends.
     void interrupt();
     /// The attack's clip has ended: its chain ends with it, as a press is taken again on the first update after the
-    /// clip (docs/research/combat.md#input-return).
+    /// clip (docs/research/combat/index.md#input-return).
     void endAttack() { m_chain.cancel(); }
     /// The player holds someone without having grabbed them (the reversal of a grab on it): grabbing.
     void startHolding();
@@ -150,6 +159,21 @@ class PlayerCombat {
     [[nodiscard]] int powerMove() const { return m_powerMove; }
 
   private:
+    // Whether it holds its victim in a grab: grabbing, and not in the grab's power move. The power strike ends the grab
+    // and makes the two a paired move (`Grab_BreakOnHit` clears the grab's states 0xc0 / 0x30 and sets the paired
+    // 0x1000 / 0x2000), and the meters drain a grab's power and let go on an empty meter only while grabbing
+    // (`Human_UpdateMeters`), so the power move and its extensions play out whatever power is left
+    // (docs/research/slow-motion.md#power-move); the meter does not refill there either (updatePower()).
+    // @orig 0x0022b960 Grab_BreakOnHit (unknown)
+    // @orig 0x002562d0 Human_UpdateMeters (unknown)
+    [[nodiscard]] bool holdsVictim() const { return m_mode == CombatMode::Grabbing && m_powerMove == anim_id::kNone; }
+    // Runs the power meter for this update. What it ports of the refill is the paired attacker's hold: in the grab's
+    // power move the attacker is a paired move's (state 0x1000, which the refill skips, and no longer grabbing, which
+    // the drain needs), so the meter is held, its time moving on (docs/research/slow-motion.md#power-move). Otherwise
+    // it drains while it holds someone (holdsVictim(), or a tackle) and not in rage, and refills; the refill's other
+    // stops (the other no-refill states, a sprint, a run, held flags) are not ported (#719).
+    // @orig 0x00256a60 Human_UpdateDown (unknown)
+    void updatePower(const CombatInput& input, const CombatTuning& tuning);
     // The record's +0x08 for this update.
     [[nodiscard]] static std::uint32_t phaseFlags(const CombatInput& input) { return input.phase; }
     // R1 held in a fight, or L1 released or L1 + R1 short of full rage while blocking: the block. Returns true when
@@ -160,16 +184,17 @@ class PlayerCombat {
     void startAttack(int animId, const CombatTuning& tuning, CombatOutput& out, int delayUpdates = 0);
     // The grabbing route.
     void updateGrabbing(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
-    // Cross + square outside a hold: the special 653 (645 in rage), which needs and spends a quarter of the power meter
-    // (docs/research/combat.md#attacks). Refused on kSpecialRefusingPhases and with an object in hand
-    // (CombatInput::animSet not 0: the original throws a melee weapon instead, which is not built; either way no
-    // special, docs/research/combat-moves.md#bat-cross). The fighter adds 2 from the target's rear
-    // (Fighter::playAttack()). **Coney choice**: circle + triangle (the tag) is not built.
+    // The three combinations outside a hold (docs/research/combat/index.md#run-attacks). Cross + square: the special
+    // 653 (645 in rage), which needs and spends a quarter of the power meter; the fighter adds 2 from the target's rear
+    // (Fighter::playAttack()). Circle + cross: strongGrapple(). Circle + triangle: the spray 664, which a pad-driven
+    // human needs paint for; the caller drops what is held and takes one paint (CombatOutput::sprayed). All three are
+    // refused on kSpecialRefusingPhases and for a player holding any object (with a melee weapon the original's armed
+    // command throws it first, which is not built; either way no special, docs/research/combat-throws.md#bat-cross).
     // @orig 0x00287730 Player_Special (unknown)
     void special(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
     // Circle + cross outside a hold: the strong grapple, a grab whose connect is the strike 657 (649 in rage), with no
-    // power check or cost; with nobody to grab, nothing (docs/research/combat-grabs.md#strong-grapple). Refused, like
-    // the special, with an object in hand (docs/research/combat-moves.md#bat-cross).
+    // power check or cost; with nobody to grab, nothing (docs/research/combat-grabs.md#strong-grapple). special() has
+    // already refused it as it refuses the special.
     // @orig 0x00263c90 Player_SpecialAttack (unknown)
     void strongGrapple(const CombatInput& input, CombatOutput& out);
     // The mounted route (after a tackle or a grab's mount): updateMount's move, played through the chain or the mode.

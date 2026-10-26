@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// A human's clips in a revive (human/human_revive.cpp, docs/research/combat-rage.md#revive): the reviver turns to the
-// reach of 351 from the downed human's head and plays 351, 353 and 389 into his idle, holding 0x8000000; the revived is
-// healed, gets up and plays 354 (holding 0x8000), 389 and his idle. Synthetic clips.
+// A human's clips in a revive (human/human_revive.cpp, docs/research/combat-reactions.md#revive): the reviver turns to
+// the reach of 351 from the downed human's head and plays 351, 353 and 389 into his idle, holding 0x8000000; the
+// revived is healed, gets up and plays 354 (holding 0x8000), 389 and his idle. Synthetic clips.
 #include <cmath>
 #include <cstdint>
 #include <numbers>

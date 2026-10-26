@@ -8,7 +8,7 @@
 
 // Whether the way from one human to another is clear (`Human_IsWayClearTo`): what the revive tests before a downed
 // player takes an AI's help, and a Warrior before he swaps with the player.
-// Research: docs/research/combat-rage.md#revive, docs/research/ai.md (the swap's step 4)
+// Research: docs/research/combat-reactions.md#revive, docs/research/ai.md (the swap's step 4)
 
 namespace coney::raycast {
 class CollisionMesh;

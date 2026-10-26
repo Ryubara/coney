@@ -13,10 +13,8 @@ PlayerCombat::PlayerCombat(const AnimRangeList* ranges, std::uint64_t startMs, s
 CombatOutput PlayerCombat::update(const CombatInput& input, const CombatTuning& tuning) {
     CombatOutput out;
 
-    // The meters run every update: power drains while holding someone (but not in rage) and refills otherwise; rage
-    // drains in rage and decays after a gain's hold.
-    const bool holding = m_mode == CombatMode::Grabbing || m_mode == CombatMode::Tackling;
-    m_power.update(input.nowMs, holding && !m_rage.raging(), tuning.powerDrainPerSecond);
+    // The meters run every update: power by updatePower(); rage drains in rage and decays after a gain's hold.
+    updatePower(input, tuning);
     m_rage.update(input.nowMs);
     if (input.helpless) {
         return out;
@@ -47,7 +45,7 @@ CombatOutput PlayerCombat::update(const CombatInput& input, const CombatTuning& 
     }
     if (dropped) {
         // The meters still end a grab whose power ran out (Human_UpdateMeters, not the dispatcher).
-        if (m_mode == CombatMode::Grabbing && m_power.value() == 0) {
+        if (holdsVictim() && m_power.value() == 0) {
             updateGrabbing(input, tuning, out);
         }
         return out;
@@ -85,6 +83,16 @@ CombatOutput PlayerCombat::update(const CombatInput& input, const CombatTuning& 
         break;
     }
     return out;
+}
+
+void PlayerCombat::updatePower(const CombatInput& input, const CombatTuning& tuning) {
+    // The grab's power move: neither the drain (no longer grabbing) nor the refill (paired, state 0x1000) runs.
+    if (m_mode == CombatMode::Grabbing && m_powerMove != anim_id::kNone) {
+        m_power.hold(input.nowMs);
+        return;
+    }
+    const bool holding = holdsVictim() || m_mode == CombatMode::Tackling;
+    m_power.update(input.nowMs, holding && !m_rage.raging(), tuning.powerDrainPerSecond);
 }
 
 void PlayerCombat::startTheft(TheftKind kind, std::uint64_t nowMs, float stageTurns, float mashFactor) {
@@ -131,6 +139,7 @@ void PlayerCombat::startHolding() {
     m_chain.cancel();
     m_blocking = false;
     m_mode = CombatMode::Grabbing;
+    m_powerMove = anim_id::kNone;
 }
 
 bool PlayerCombat::updateBlock(const CombatInput& input, CombatOutput& out) {
@@ -186,8 +195,8 @@ bool PlayerCombat::extendPowerMove(const CombatInput& input, const CombatTuning&
 }
 
 void PlayerCombat::updateGrabbing(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out) {
-    // The grab breaks when the power meter runs out.
-    if (m_power.value() == 0) {
+    // The grab breaks when the power meter runs out, but not in its power move, which holds no one any more.
+    if (holdsVictim() && m_power.value() == 0) {
         m_chain.cancel();
         out.grabAction = GrabAction::LetGo;
         out.startAnim = anim_id::kGrabLetGo;
@@ -308,7 +317,7 @@ void PlayerCombat::updateTheft(const CombatInput& input, const CombatTuning& tun
 
 void PlayerCombat::grabOrTackle(const CombatInput& input, CombatOutput& out) {
     // Refused while +0x08 has any of 0xfc7eaf7: an attack's phases, and the grab bit 0x10 its own intro and miss hold
-    // (docs/research/combat.md#input-return).
+    // (docs/research/combat/index.md#input-return).
     if (!grabAllowed(phaseFlags(input))) {
         return;
     }
@@ -399,10 +408,9 @@ void PlayerCombat::updateCommands(const CombatInput& input, const CombatTuning& 
         grabOrTackle(input, out);
         break;
     case command::kCrossSquare:
-        special(input, tuning, out);
-        break;
     case command::kCircleCross:
-        strongGrapple(input, out);
+    case command::kCircleTriangle:
+        special(input, tuning, out);
         break;
     default:
         break;
@@ -410,28 +418,49 @@ void PlayerCombat::updateCommands(const CombatInput& input, const CombatTuning& 
 }
 
 void PlayerCombat::special(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out) {
-    // Player_Special refuses a pad player holding an object, whatever the object: the melee weapon's throw (502 / 491,
-    // not built) is the armed command's, and when it is refused too the command does nothing, so the cross's own
-    // release swings (docs/research/combat-moves.md#bat-cross).
-    if (input.animSet != 0 || (phaseFlags(input) & kSpecialRefusingPhases) != 0) {
+    // Nothing in an attack's or another move's phases, and nothing for a player with a world object in hand, whatever
+    // its anim set; a human no player controls is not refused for what it holds. With a melee weapon the throw (502 /
+    // 491, not built) is the armed command's, and when it is refused too the cross's own release swings
+    // (docs/research/combat-throws.md#bat-cross).
+    if ((phaseFlags(input) & kSpecialRefusingPhases) != 0 || (input.player && input.holdingObject)) {
         return;
     }
-    // Not paired, it needs and spends the endurance fraction of the meter; rage plays its own and spends nothing.
-    const bool raging = m_rage.raging();
-    if (!raging) {
-        if (m_power.fraction() < tuning.powerEndurance) {
+    if (input.command == command::kCrossSquare) {
+        // Not paired, it needs and spends the endurance fraction of the meter; rage plays its own and spends nothing.
+        const bool raging = m_rage.raging();
+        if (!raging) {
+            if (m_power.fraction() < tuning.powerEndurance) {
+                return;
+            }
+            m_power.spend(tuning.powerEndurance);
+        }
+        startAttack(raging ? anim_id::kSpecialRage : anim_id::kSpecial, tuning, out);
+    } else if (input.command == command::kCircleCross) {
+        strongGrapple(input, out);
+    } else if (input.command == command::kCircleTriangle) {
+        // The spray. A pad-driven human with no paint has the command taken and nothing more; one its brain drives is
+        // not asked for any.
+        if (input.padControlled && !input.hasSprayPaint) {
             return;
         }
-        m_power.spend(tuning.powerEndurance);
+        // What is held drops (nothing for a player, refused above with an object in hand) and one paint goes (the
+        // caller's, through `sprayed`); 664 starts at the human its own far range finds, warning no one and keeping
+        // the target it had (the fighter's search and steer, human::Fighter::attackTargetOf()). **Coney stand-in**:
+        // only the play mode's player 1 has a hand and paint the caller keeps; no AI keeps its paint count
+        // (docs/research/combat/index.md#q-ai-spray).
+        out.sprayed = true;
+        startAttack(anim_id::kSpraySpecial, tuning, out);
     }
-    startAttack(raging ? anim_id::kSpecialRage : anim_id::kSpecial, tuning, out);
 }
 
 void PlayerCombat::strongGrapple(const CombatInput& input, CombatOutput& out) {
+    // **Coney's choice**: the original first pops the grounded move style 15 when the human is not knocked down; Coney
+    // keeps no move-style stack, and the two go together: Human_KnockDown pushes 15 with state 0x80000 and Human_GetUp
+    // (`0x0022f3c8`) pops it as it clears 0x80000. At runtime a knockdown and its rise never showed 15 without
+    // 0x80000 (docs/research/combat/index.md#attacks).
     // The strike's clip is paired, so with nobody the search may grab nothing plays; the power meter is neither tested
-    // nor spent (the hold's drain starts with the grab, as for any). Player_Special's refusal of a held object applies
-    // to it as to the special (special()).
-    if (input.animSet != 0 || (phaseFlags(input) & kSpecialRefusingPhases) != 0 || !input.grabTargetInReach) {
+    // nor spent (the hold's drain starts with the grab, as for any).
+    if (!input.grabTargetInReach) {
         return;
     }
     m_chain.cancel();

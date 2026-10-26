@@ -879,7 +879,7 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
         m_log(std::format("gameplay: player 1 teleported to ({:.2f}, {:.2f}, {:.2f}) heading {:.0f}\n", to.position[0],
                           to.position[1], to.position[2], to.headingDegrees));
         if (auto* scripted = dynamic_cast<ScriptedPlayer*>(m_level.get())) {
-            scripted->teleportPlayer(to);
+            scripted->teleportPlayer(to, player->teleportMotion);
         }
     }
     // The screens over play (the Rumble intro) after the scripts' frame.

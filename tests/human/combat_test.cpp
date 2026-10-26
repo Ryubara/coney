@@ -204,9 +204,9 @@ TEST_CASE("an attack turns to a target off to the side within its range", "[huma
 }
 
 TEST_CASE("an attack's start warns its target alone, never a bystander", "[human][combat]") {
-    // docs/research/combat.md#attack-warnings: Human_WarnOfAttack (event 0x10) goes to the one target an attack takes.
-    // A bystander that saw a stranger's swing would otherwise answer it (the gangs made enemies, a help call): the
-    // level34 park's Warriors joined a fight that was not theirs (issue #372).
+    // docs/research/combat/index.md#attack-warnings: Human_WarnOfAttack (event 0x10) goes to the one target an attack
+    // takes. A bystander that saw a stranger's swing would otherwise answer it (the gangs made enemies, a help call):
+    // the level34 park's Warriors joined a fight that was not theirs (issue #372).
     const FightCharacter character;
     Fight fight(character);
     const coney::human::TargetHuman& bystander = fight.addTarget(character, 3.0F, 4.0F);
@@ -219,8 +219,8 @@ TEST_CASE("an attack's start warns its target alone, never a bystander", "[human
 
 TEST_CASE("an attack a human no player controls starts warns its target only within the clip's far range",
           "[human][combat]") {
-    // docs/research/combat.md#attack-warnings: Attack_Start warns its target only within the far range (1.25 m here);
-    // beyond it the attack only turns and warns no one. A bystander behind is never warned.
+    // docs/research/combat/index.md#attack-warnings: Attack_Start warns its target only within the far range (1.25 m
+    // here); beyond it the attack only turns and warns no one. A bystander behind is never warned.
     const FightCharacter character;
     for (const float ahead : {3.0F, 1.0F}) {
         INFO("target " << ahead << " m ahead");
@@ -261,7 +261,7 @@ TEST_CASE("an attack turns and slides onto its target at a constant rate up to i
     REQUIRE(samples.size() > k + 12);
     CHECK(samples[k].heading == samples[k - 1].heading);
     // The synthetic X1's first event (the window at frame 5, rate 0.75) comes 0.222 s in: the turn and the slide last
-    // 0.322 s, 9 updates at one rate and two thirds of one more, then stop; no easing (combat-moves.md#reach).
+    // 0.322 s, 9 updates at one rate and two thirds of one more, then stop; no easing (combat-targets.md#reach).
     const float turnTime = (5.0F / 30.0F / 0.75F) + 0.1F;
     const float angle = std::atan2(-0.4F, 1.1F);
     const float perUpdate = angle * (1.0F / 30.0F) / turnTime;
@@ -286,7 +286,7 @@ TEST_CASE("an attack turns and slides onto its target at a constant rate up to i
 
 TEST_CASE("an attack without the led steer's flag slides and turns only up to its first event", "[human][combat]") {
     // X1's hit code without flag 0x8, as 653's and 645's: Attack_SteerToTarget over the time to the first event that
-    // Attack_Start passes, not that + 0.1 s (combat-moves.md#two-steers).
+    // Attack_Start passes, not that + 0.1 s (combat-targets.md#two-steers).
     FightCharacter character;
     character.ranges = coney::test::fightRanges({{id::kAttackX1, 0x01}});
     const NoAutoLock unlocked;
@@ -342,7 +342,7 @@ bool playedClip(const Played& played, std::uint32_t clip) {
 }
 
 // The stick fully to the right one update before square, as the research reached lesson 7's snaps
-// (docs/research/combat.md#attacks), then at rest.
+// (docs/research/combat/index.md#attacks), then at rest.
 constexpr std::string_view kSnapRightScript = "10 stick left 100 0\n11 tap square\n12 stick left 0 0\n";
 
 } // namespace
@@ -361,7 +361,7 @@ TEST_CASE("a snap turns the player so a human on the stick's side sits at the sn
     CHECK(fight.target().damageTaken() == 31);
     CHECK(fight.human().fighter().hitsLanded() == 1);
     // The steer, set on the snap's start (update 11) from the next update on. The snap's hit code has flag 0x8, so it
-    // takes the led steer over the time to its first event + 0.1 s (combat-moves.md#two-steers): the synthetic clip's
+    // takes the led steer over the time to its first event + 0.1 s (combat-targets.md#two-steers): the synthetic clip's
     // is at frame 3 at rate 0.75, so 0.133 s + 0.1 s, 7 updates at one rate. The facing turns to put the target at the
     // snap's direction on the disc, (0.999, -0.012), 90.7° to the right.
     const Vec3 to = coney::anim::subtract(fight.target().position(), played.positions[11]);
@@ -719,7 +719,7 @@ TEST_CASE("cross + square plays the special 653 at a target's front and 655 at i
         });
         return played;
     };
-    // Facing the player: the front special; facing away, the rear one (docs/research/combat.md#attacks).
+    // Facing the player: the front special; facing away, the rear one (docs/research/combat/index.md#attacks).
     const std::vector<std::uint32_t> front = special(std::numbers::pi_v<float>);
     CHECK(std::ranges::find(front, 653U) != front.end());
     CHECK(std::ranges::find(front, 655U) == front.end());

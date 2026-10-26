@@ -15,7 +15,7 @@
 // third press into a three-hit combo. An attack's phases (wind-up, chain window, end, recovery) are the bits of the
 // record's `+0x08` its clip holds and its events move (docs/research/tasks.md#held-flags); the chain reads them. Only
 // the hit is counted in updates.
-// Research: docs/research/combat.md#attacks, docs/research/combat.md#run-attacks,
+// Research: docs/research/combat/index.md#attacks, docs/research/combat/index.md#run-attacks,
 // docs/research/combat-targets.md#breakables
 
 namespace coney::combat {
@@ -34,7 +34,7 @@ inline constexpr std::uint32_t kPhaseCounter = 0x2000; ///< The duck's counter (
 inline constexpr std::uint32_t kPhaseRise = 0x8000;
 inline constexpr std::uint32_t kPhaseRunAttack = 0x1000000; ///< The run attack (24), for its whole length.
 /// The dive (1), for its whole length: it makes the human busy, so the stick does nothing until it ends
-/// (docs/research/combat.md#charge-aim).
+/// (docs/research/combat/index.md#charge-aim).
 inline constexpr std::uint32_t kPhaseDive = 0x400000;
 inline constexpr std::uint32_t kPhaseNormalFromFight = 0x40000000; ///< 389, which nothing refuses.
 /// The held bits under which a human is still free to react to a counter message (`Human_IsFreeToReact`,
@@ -48,7 +48,7 @@ inline constexpr std::uint32_t kAttackUnderWay =
 
 /// The `+0x08` bits that make the dispatcher (`0x0027c120`) return before the chain and every command: the recovery
 /// and the run attack's bit among them, not the wind-up, window, end phase, grab bit or 389's
-/// (docs/research/combat.md#input-return).
+/// (docs/research/combat/index.md#input-return).
 inline constexpr std::uint32_t kDispatchDroppingPhases = 0x05c7fee0;
 /// The `+0x08` bits that refuse a new square or cross attack (`0x00286cc8`, `0x00287a18`): the attack phases, the grab
 /// bit, the duck and the run attack.
@@ -67,8 +67,8 @@ inline constexpr float kSnapStick = 0.95F;
 inline constexpr float kWalkAttackStick = 0.12F;
 /// An object point up to this height above the feet takes the low break clip; above it the mid one.
 inline constexpr float kObjectLowHeight = 0.8F;
-/// The snap's target search (`0x0027aa38(h, 0x80)`, docs/research/combat.md#attacks): the nearest human within this
-/// many metres (`0x00227598`), ...
+/// The snap's target search (`0x0027aa38(h, 0x80)`, docs/research/combat/index.md#attacks): the nearest human within
+/// this many metres (`0x00227598`), ...
 inline constexpr float kSnapSearchRange = 2.0F;
 /// ... within this angle of the stick's direction (radians, π/4 written to `0x0051096c`) ...
 inline constexpr float kSnapSearchCone = 0.7853982F;
@@ -97,7 +97,7 @@ struct SquareInput {
     /// In a fight stance (record `+0x00` bits `0x3`, `0x00228340`): no unarmed run or walk attack, so square goes on to
     /// the snap test and `S1`, cross to `X1`; the armed run attack 501 does not test it. **Coney stand-in** for the
     /// stance: the fighter is locked onto a target (Fighter::lockTarget()); the original's stance rules
-    /// (`0x0027ce90`, docs/research/combat.md) are not built.
+    /// (`0x0027ce90`, docs/research/combat/index.md) are not built.
     bool fightStance = false;
     bool snapNeedsTarget = true; ///< CombatTuning::snapNeedsTarget.
     /// The snap's search found a human on the stick's side that is not the current target (the caller searches:
@@ -124,14 +124,15 @@ inline constexpr int kStartTandem = -2;
 /// a target (SquareInput::snapTarget), or with `CfgSnap` off for the stick alone; then kStartTandem at a target that
 /// allows a tandem (SquareInput::tandem); otherwise `S1`. So a snap comes from a player who has not started to walk.
 /// **Coney choice**: a grounded target takes 193, never 194.
-/// The snap itself is `0x00264460` (docs/research/combat.md#attacks).
+/// The snap itself is `0x00264460` (docs/research/combat/index.md#attacks).
 /// @orig 0x00286cc8 Player_Square (unknown)
 [[nodiscard]] int squareAttack(const SquareInput& input);
 
 /// The attack cross (its 0x10) starts. With a knife, baton or bat in hand (SquareInput::heldSet 1-3) it is
 /// armedAttack()'s with the set's cross slot. Otherwise: at a run (gait 4 or 5) with no phase bit and the stick beyond
 /// 0.95 the run attack 24; walking (gait 1-3) with the stick at 0.12 or more the walk attack 23; kStartTandem at a
-/// target that allows a tandem; else `X1`. Cross has no snaps and reads no target (docs/research/combat.md#attacks).
+/// target that allows a tandem; else `X1`. Cross has no snaps and reads no target
+/// (docs/research/combat/index.md#attacks).
 /// **Coney's reading**: square's fields are reused; cross ignores the target and the snap's. (Sets 4-6 throw instead:
 /// throwAttack().)
 /// @orig 0x00287a18 Player_Cross (unknown)
@@ -223,10 +224,10 @@ struct ChainTargets {
 
 /// The update, counted from its clip's start, at which attack `animId`'s hit lands (0: on the start) when it does not
 /// strike through strike shapes (Fighter::strikesWithShapes(): a move in a hold, or a target or attacker without
-/// shapes), as measured at runtime (docs/research/combat.md#attacks): `S1` CombatTuning::hitUpdate (2), `X1` 8, `SS2`
-/// 4, `SSS3` and `SSX3` 7, `XX2` 10, `SX2` 7, `XS2` 9, the grab strikes 51, 53 and 55 1, the power strike 57 0. **Coney
-/// choice**: every attack not measured hits as `S1` does (its hit event is not mapped). **Coney stand-in** for the
-/// bodies without shapes: in the original no attack has a fixed hit update (docs/research/combat-moves.md#timing).
+/// shapes), as measured at runtime (docs/research/combat/index.md#attacks): `S1` CombatTuning::hitUpdate (2), `X1` 8,
+/// `SS2` 4, `SSS3` and `SSX3` 7, `XX2` 10, `SX2` 7, `XS2` 9, the grab strikes 51, 53 and 55 1, the power strike 57 0.
+/// **Coney choice**: every attack not measured hits as `S1` does (its hit event is not mapped). **Coney stand-in** for
+/// the bodies without shapes: in the original no attack has a fixed hit update (docs/research/combat-moves.md#timing).
 [[nodiscard]] int attackHitUpdate(int animId, const CombatTuning& tuning);
 
 /// What one update of an attack did.

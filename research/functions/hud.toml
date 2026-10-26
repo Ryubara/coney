@@ -1120,7 +1120,7 @@ address = 0x00227e60
 name = "Human_IsDownOrDead"
 page = "hud-functions-lua.md#gang-count-what"
 level = "confirmed-code"
-coney = "src/ai/gangs.h:humanIsDownOrDead"
+coney = "src/human/human.h:Human::downOrDead"
 status = "legacy"
 
 [[function]]

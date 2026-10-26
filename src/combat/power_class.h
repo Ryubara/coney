@@ -3,7 +3,7 @@
 
 // A human's power class: the numbers that decide how it takes hits and how its power meter runs (the record at
 // `0x006619a0 + class × 0x44`, docs/research/characters.md#power-classes). Values read at runtime in the street.
-// Research: docs/research/combat.md#constants, docs/research/combat-rage.md#power-meter
+// Research: docs/research/combat/index.md#constants, docs/research/combat-rage.md#power-meter
 
 namespace coney::combat {
 

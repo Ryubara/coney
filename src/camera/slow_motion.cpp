@@ -19,4 +19,12 @@ void SlowMotion::event(std::uint16_t type, int player) {
     }
 }
 
+void SlowMotion::reset() {
+    // The original unmarks both players through SlowMotion_Off, the last of which gives the step back.
+    if (m_step != kNormalStep) {
+        m_marked = 0;
+        m_step = kNormalStep;
+    }
+}
+
 } // namespace coney::camera

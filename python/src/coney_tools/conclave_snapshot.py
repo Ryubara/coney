@@ -8,7 +8,7 @@ slots, the detached builds and the pull requests, and `claim list` for the claim
 
 Each section is an object with `error` (None when it was read); a section that could not be read holds only its
 `error` and the others stand, so a failure is never taken for "nothing there". The GitHub sections (`claims`, `prs`,
-`issues`) are None without `github`. `SCHEMA` rises when a section changes shape; the mod refuses a newer one.
+`issues`, `events`) are None without `github`. `SCHEMA` rises when a section changes shape; the mod refuses a newer one.
 
 Nothing here knows about a session's health (its context window, its prompt cache, its clearing): that stays with
 Tether, and the snapshot carries none of it.
@@ -31,7 +31,7 @@ from coney_tools.task_file import TaskFile, TaskFileError, parse_task_file
 __all__ = ["SCHEMA", "Sources", "collect", "default_sources", "format_text"]
 
 #: The version of the snapshot's shape; the mod refuses a snapshot of a newer one.
-SCHEMA = 1
+SCHEMA = 2
 #: The longest goal line sent for a unit (the pane shows one line).
 GOAL_CHARACTERS = 200
 #: A step result that counts as the step being done (`none`: the step was not needed, with a reason in the stamp).
@@ -69,6 +69,7 @@ def _config(src: Sources) -> dict[str, Any]:
     A hook file that cannot be read gives empty lists and the reason; the mod then hides no agent type.
     """
     conclave = src.conventions.conclave
+    watch = conclave.watch
     base: dict[str, Any] = {
         "source": conclave.hooks_file,
         "claude_code": conclave.claude_code,
@@ -78,11 +79,23 @@ def _config(src: Sources) -> dict[str, Any]:
             "github_idle": conclave.github_idle_seconds,
         },
         "pane_min_columns": conclave.pane_min_columns,
+        "pane_compact_columns": conclave.pane_compact_columns,
         "pane_wide_columns": conclave.pane_wide_columns,
         "band_narrow_columns": conclave.band_narrow_columns,
         "stale_after_reads": conclave.stale_after_reads,
         "merged_visible_minutes": conclave.merged_visible_minutes,
         "claim_red_hours": conclave.claim_red_hours,
+        "watch": {
+            "roles": list(watch.roles),
+            "preamble": watch.preamble,
+            "github_seconds": watch.github_seconds,
+            "wake_gap_seconds": watch.wake_gap_seconds,
+            "defer_typing_minutes": watch.defer_typing_minutes,
+            "resend_minutes": watch.resend_minutes,
+            "stop_max_blocks": watch.stop_max_blocks,
+            "stop_reset_minutes": watch.stop_reset_minutes,
+            "stop_preamble": watch.stop_preamble,
+        },
     }
     try:
         settings = _hook_settings(src)
@@ -287,7 +300,7 @@ def collect(src: Sources, github: bool, unit: str | None = None) -> dict[str, An
     lanes = report["builds"].get("lanes") or {}
     report["units"] = section(lambda: _units(src, lanes, now))
     report["machine"] = section(lambda: _machine(src))
-    report["claims"] = report["prs"] = report["issues"] = None
+    report["claims"] = report["prs"] = report["issues"] = report["events"] = None
     if github:
         add_github(src, report)
     if unit is not None and report["units"].get("units") is not None:
@@ -314,4 +327,5 @@ def format_text(report: dict[str, Any]) -> list[str]:
     line("claims", lambda s: f"{len(s['claims'])} held, signed in as {s['account'] or 'unknown'}")
     line("prs", lambda s: f"{len(s['prs'])} open, {len(s.get('merged', []))} merged recently")
     line("issues", lambda s: f"{len(s['issues'])} listed")
+    line("events", lambda s: f"{sum(e['state'] == 'open' for e in s['events'])} open, {len(s['events'])} listed")
     return lines

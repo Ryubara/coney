@@ -149,9 +149,21 @@ def run_check(base: str = "origin/main", require_base: bool = False) -> int:
     progress_render.fill_history_page(
         _template(root, progress.HISTORY_PAGE_FILE), site.history_html, progress.HISTORY_PAGE_FILE.as_posix()
     )
+    progress_render.fill_home_page(
+        _template(root, progress.HOME_PAGE_FILE), site.home_html, progress.HOME_PAGE_FILE.as_posix()
+    )
     progress_render.badge_files(state)
     print(f"progress: inputs are consistent ({len(state.functions)} functions, {len(state.milestones)} milestones)")
     return 0
+
+
+def write_site_file(target: Path, content: str | bytes) -> None:
+    """Writes one file of the site, creating its folder: text as UTF-8, a picture's bytes as they are."""
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if isinstance(content, bytes):
+        target.write_bytes(content)
+    else:
+        target.write_text(content, encoding="utf-8")
 
 
 def run_render(out_dir: Path, history: bool = True) -> int:
@@ -174,17 +186,19 @@ def run_render(out_dir: Path, history: bool = True) -> int:
     history_page = progress_render.fill_history_page(
         _template(root, progress.HISTORY_PAGE_FILE), site.history_html, progress.HISTORY_PAGE_FILE.as_posix()
     )
+    home_page = progress_render.fill_home_page(
+        _template(root, progress.HOME_PAGE_FILE), site.home_html, progress.HOME_PAGE_FILE.as_posix()
+    )
     badges = progress_render.badge_files(state)
     try:
         (out_dir / progress_render.BADGES_DIR).mkdir(parents=True, exist_ok=True)
         (out_dir / "progress" / "index.md").write_text(page, encoding="utf-8")
         (out_dir / "progress" / "history.md").write_text(history_page, encoding="utf-8")
+        (out_dir / "index.md").write_text(home_page, encoding="utf-8")
         for name, text in badges.items():
             (out_dir / progress_render.BADGES_DIR / name).write_text(text, encoding="utf-8")
-        for name, text in site.files.items():
-            target = out_dir / name
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(text, encoding="utf-8")
+        for name, content in site.files.items():
+            write_site_file(out_dir / name, content)
     except OSError as error:
         raise ConfigError(f"{out_dir}: cannot be written ({error})") from error
     print(

@@ -41,13 +41,13 @@ Event records are 24 bytes ([Keyframes](formats/animation.md#keyframes-chunk-0x0
 | `0x00101288` | `Anim_SendEventMessage1` | from the event code (`0x00101dd8`, two calls): sends task message 1 to an object with the human twice, 0, 1 and two vectors read from the object's slot `+0xa8` (inferred: a position) | confirmed (code); what message 1 does is not traced |
 | `0x00101360` | `Anim_SendPickupPlacement` | the **first type-9 event** of a human's clip: decodes its position and rotation and sends message `0x1b` (with the event's `+0x06`, and whether the target's `+0x110` is set) to a task: the scripted [placement in hand](objects.md#held) | confirmed (code) |
 | `0x00101558` | `Anim_GetPartnerOffset` | the first **type-8 event**'s position `(x / 1023, y / 1023, z / 2047, 1)`: the partner's place ([Paired tasks](formats/animation.md#paired-tasks)) | confirmed (code) |
-| `0x00101658` | `Anim_TimeToFirstEvent` | the time of the first event of types `0xf`, `0x13`, 9, `0x36`, `0x34`, `0x41` or `0x2c`, else the duration, divided by the rate ([Combat](combat.md)) | confirmed (code) |
+| `0x00101658` | `Anim_TimeToFirstEvent` | the time of the first event of types `0xf`, `0x13`, 9, `0x36`, `0x34`, `0x41` or `0x2c`, else the duration, divided by the rate ([Combat](combat/index.md)) | confirmed (code) |
 | `0x001017a0` | `Anim_ChainWindowMidpoint` | `(t(0x2c) + t(0x2d)) / (2 × rate)`, with `t(e)` = (frame − 1) / 30 of the last type-`0x2c` event and of the first `0x2d` after it; with no `0x2d` the clip's duration / rate stands in for it. Used by the AI's attack chaining (`AttackKind_ChainDelay`, [AI](ai.md)) | confirmed (code) |
 | `0x001018b8` | `Anim_GetEvent2aValue` | the value (`+0x04`) of the first type-`0x2a` event; 0 without one, 0.01 without a clip; read by the stun code `0x0026a6d0` | confirmed (code); meaning not traced |
 | `0x00101950` | `Anim_RootDisplacementLength` | length of the descriptor's displacement | confirmed (code) |
 | `0x001019a0` | `Anim_GetRootDisplacement` | the descriptor's displacement as `(dx, dy, 0, 1)`; used by the climb code (`Climb_Start`, `0x00281450`, `0x00281838`) | confirmed (code) |
 | `0x00101a00` | `Anim_GetPlayTime` | duration / [playback rate](formats/animation.md#playback-rate) | confirmed (code) |
-| `0x00101a60` | `Anim_GetKnockdownValue` | the value of the first **type-7 event**; true when there is one ([knockdowns](combat.md)) | confirmed (code) |
+| `0x00101a60` | `Anim_GetKnockdownValue` | the value of the first **type-7 event**; true when there is one ([knockdowns](combat/index.md)) | confirmed (code) |
 | `0x00101af8`, `0x00101b28`, `0x00101b58`, `0x00101b88`, `0x00101bc0`, `0x00101bf0`, `0x00101c20` | `Anim_IsPairedById`, `Anim_StartsTackleById`, `Anim_StartsGrabById`, `Anim_HitsWithCapsule`, `Anim_HasFlag80`, `Anim_HasFlag200`, `Anim_HasFlag100` | one bit each of the descriptor's [flags](#clip-flags) | confirmed (code) |
 | `0x00101c58` | `Clip_GetSoundtrackHash` | the `+0x08` word of a clip's first type-`0xd` event, else 0: the [scene soundtrack](sound.md#scene-sound) | confirmed (code) |
 | `0x00101ce0` | `Clip_GetEventValue(type)` | the value of a clip's first event of a type, or -1; used by the scene code (`0x0039d870`) | confirmed (code) |
@@ -62,13 +62,13 @@ A u32 after the reference count. Confirmed (code) at the readers; meanings from 
 | Bit | Reader | Meaning |
 | --- | --- | --- |
 | `0x1` | `0x00101af8` | a paired clip |
-| `0x4` | `0x00175120` | has strike events (type `0xf` or `0x13`): releasing the clip turns every strike shape off ([Combat](combat.md#moving-strikes)); 222 of the disc's 1,752 clips |
+| `0x4` | `0x00175120` | has strike events (type `0xf` or `0x13`): releasing the clip turns every strike shape off ([Combat](combat/index.md#moving-strikes)); 222 of the disc's 1,752 clips |
 | `0x20` | `0x00101b28` | starts a tackle |
 | `0x40` | `0x00101b58` | starts a grab |
 | `0x80` | `0x00101bc0` | read by `0x00228488` (not traced) |
 | `0x100` | `0x00101c20` | read by `0x0022f4f8` (a reaction; not traced) |
 | `0x200` | `0x00101bf0` | read by the stun and reaction code (`Human_Stun`, `0x0022f4f8`, `0x0022f9e0`) |
-| `0x10000` | `0x00101b88` | read on the **attacker's** clip: its strike shapes are tested against a human target's **capsule** instead of the target's spine and head ([The capsule strike](combat.md#capsule-strike)). Only `gen_rage_sweep` (645 / 647 for `warr_fo_header` and `warr_re_header`) and `gen_sweep` (653 / 655 for `moon_lt_header`) carry it, both with flags `0x10004` |
+| `0x10000` | `0x00101b88` | read on the **attacker's** clip: its strike shapes are tested against a human target's **capsule** instead of the target's spine and head ([The capsule strike](combat/index.md#capsule-strike)). Only `gen_rage_sweep` (645 / 647 for `warr_fo_header` and `warr_re_header`) and `gen_sweep` (653 / 655 for `moon_lt_header`) carry it, both with flags `0x10004` |
 
 ## The cursor and the pose {#cursor}
 

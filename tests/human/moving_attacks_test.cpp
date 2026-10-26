@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <numbers>
@@ -24,9 +25,9 @@
 #include "support/human_fixtures.h"
 
 // Every attack button pressed while the player walks, runs or sprints, driven as a player drives him: an analog left
-// stick and the pad's buttons through the street's command tables (docs/research/combat.md#run-attacks). Each case
-// runs through human::Humans, the characters' step the play mode uses, and through Human::step, which the other fight
-// tests use: the dispatcher's gait tests must see the gait the last update left on both. Synthetic clips only.
+// stick and the pad's buttons through the street's command tables (docs/research/combat/index.md#run-attacks). Each
+// case runs through human::Humans, the characters' step the play mode uses, and through Human::step, which the other
+// fight tests use: the dispatcher's gait tests must see the gait the last update left on both. Synthetic clips only.
 
 using coney::human::Gait;
 using coney::human::Human;
@@ -79,6 +80,7 @@ struct Sample {
     std::uint32_t clip = 0;
     Gait gait = Gait::Standing;
     float speed = 0.0F;
+    std::size_t layers = 0; // layers on the task stack: more than one while a fade runs
 };
 
 // The player alone on a floor, driven by an input script through the command tables, stepped by human::Humans (the
@@ -111,7 +113,10 @@ class Runner {
             } else {
                 m_human.step(input, m_mesh.get());
             }
-            samples.push_back(Sample{.clip = m_human.animator().animId(), .gait = m_human.gait(), .speed = speed()});
+            samples.push_back(Sample{.clip = m_human.animator().animId(),
+                                     .gait = m_human.gait(),
+                                     .speed = speed(),
+                                     .layers = m_human.animator().tasks().layerCount()});
         }
         return samples;
     }
@@ -244,6 +249,34 @@ TEST_CASE("L2 + cross at a run charges and L2 + square dives; the run resumes af
                 REQUIRE(over > kPress);
                 CHECK((line[over].clip == kRun || line[over].clip == kSprint));
             }
+        }
+    }
+}
+
+TEST_CASE("the dive fades in from the run over 0.2 s; the charge and the run attack show their pose at once",
+          "[human][combat][moving]") {
+    // Player_StartDive pushes a 0.2 s fade over the run (the call at 0x002649f0); Player_StartCharge's layer skips its
+    // 0.3 s fade-in, as its fade-out is 0 (0x00264b7c), so the run under it goes at once
+    // (docs/research/combat-moves.md#input). At 30 updates a second the dive's fade runs 6 updates.
+    struct Case {
+        std::string_view button;
+        bool l2;
+        int clip;
+    };
+    for (const Case& c : {Case{"square", true, id::kRunningAttackDive}, Case{"cross", true, id::kRunningAttackCharge},
+                          Case{"square", false, id::kAttackFromRun}}) {
+        INFO((c.l2 ? "L2 + " : "") << c.button);
+        Runner runner(true);
+        const std::vector<Sample> line = runner.run(script(0, 100, c.button, c.l2), 120);
+        const int start = firstOf(line, static_cast<std::uint32_t>(c.clip));
+        REQUIRE(start >= kPress);
+        const auto at = [&](int k) { return line[static_cast<std::size_t>(k)].layers; };
+        if (c.clip == id::kRunningAttackDive) {
+            CHECK(at(start) == 2);
+            CHECK(at(start + 4) == 2);
+            CHECK(at(start + 7) == 1);
+        } else {
+            CHECK(at(start) == 1);
         }
     }
 }
@@ -382,7 +415,7 @@ TEST_CASE("the dive takes the nearest human between its reach and far range with
           "3 updates",
           "[human][combat][moving]") {
     // A human 2.6 m away, 31 degrees right: the dive takes him and turns about 31 degrees right (headings grow to the
-    // left) over its first updates, then holds (docs/research/combat.md#charge-aim).
+    // left) over its first updates, then holds (docs/research/combat/index.md#charge-aim).
     const MovingAim onto = moveAt("square", 2.6F, 31.0F);
     // (He is its target only for that update: L2, still held, drops the target as the sprint does every update.)
     CHECK(turned(onto, 4) < -20.0F);
@@ -448,7 +481,7 @@ Warned warnedAt(std::string_view button, float distance, float bystanderDistance
 } // namespace
 
 TEST_CASE("the dive warns the human its own search dives at, not the nearest one", "[human][combat][moving]") {
-    // **Coney choice** (docs/research/combat.md#attack-warnings): the dive's search skips humans inside its reach
+    // **Coney choice** (docs/research/combat/index.md#attack-warnings): the dive's search skips humans inside its reach
     // (2.22 m here), so a bystander 1.0 m ahead, nearer than the one 2.6 m ahead it dives at, is not warned.
     const Warned dive = warnedAt("square", 2.6F, 1.0F, 0.0F);
     CHECK(dive.target == 1);
@@ -461,9 +494,9 @@ TEST_CASE("the dive warns the human its own search dives at, not the nearest one
 
 TEST_CASE("the charge of a player with no target warns the one his search finds, and no one else",
           "[human][combat][moving]") {
-    // docs/research/combat.md#charge-aim: the charge takes no target, but warns the nearest human its reach search
-    // finds (Player_StartCharge's Attack_FindNearestInReach, between the charge's reach and far range, 3.29-4.11 m); a
-    // bystander 6 m off to the side is not warned.
+    // docs/research/combat/index.md#charge-aim: the charge takes no target, but warns the nearest human its reach
+    // search finds (Player_StartCharge's Attack_FindNearestInReach, between the charge's reach and far range, 3.29-4.11
+    // m); a bystander 6 m off to the side is not warned.
     const Warned charge = warnedAt("cross", 3.7F, 2.0F, 6.0F);
     CHECK(charge.target == 1);
     CHECK(charge.bystander == 0);

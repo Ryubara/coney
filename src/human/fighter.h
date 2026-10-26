@@ -34,7 +34,7 @@
 // player's victim side: the hits, warnings and grabs another human aims at it.
 // The work is split by subject: fighter.cpp (the update, the attacks and the targets), fighter_grab.cpp (posing and
 // playing a grab the player holds) and fighter_victim.cpp (the player hit, warned and grabbed).
-// Research: docs/research/combat.md, docs/research/combat-grabs.md#grab-posing (the pair's placement:
+// Research: docs/research/combat/index.md, docs/research/combat-grabs.md#grab-posing (the pair's placement:
 // human/pair_placement.h)
 
 namespace coney::raycast {
@@ -65,7 +65,7 @@ enum class TandemRole : std::uint8_t {
 inline constexpr float kDefaultStrikeReach = 2.0F;
 /// The target search (`Player_PickTarget`): humans within the range × 1.1 and this many degrees of the stick's heading
 /// (or the facing with the stick at rest); with no current target, within the range × 0.9 at any angle; then within
-/// the range × 0.7 at any angle (docs/research/combat-moves.md#targeting).
+/// the range × 0.7 at any angle (docs/research/combat-targets.md#targeting).
 inline constexpr float kPickConeDegrees = 54.0F;
 inline constexpr float kPickConeScale = 1.1F;
 inline constexpr float kPickAnyScale = 0.9F;
@@ -118,7 +118,8 @@ struct FighterInput {
     std::span<const ObjectTarget> objects{}; ///< The breakable objects square may strike.
     bool strikeShapes = false; ///< The human has strike shapes: its free attacks strike through them (strikeContact()).
     const raycast::CollisionMesh* mesh = nullptr; ///< The level's collision, for the wall throw's ray (none: no wall).
-    bool sprinting = false; ///< L2 held with stamina left: the sprint state (`0x1000000`), which drops the target.
+    bool sprinting = false;    ///< L2 held with stamina left: the sprint state (`0x1000000`), which drops the target.
+    bool padControlled = true; ///< The per-player record's `+0x1b` (HumanRecord::padDriven).
 };
 
 /// The camera shake a reaction asks for (docs/research/camera.md#shake): on the attacker's camera when a player hit,
@@ -205,9 +206,9 @@ class Fighter {
     /// The attack's steer still under way.
     [[nodiscard]] const TurnAndSlide& steering() const { return m_steer; }
     /// The revive's led steer (`Revive_Start` calls `Attack_SteerLed` for clip 351,
-    /// docs/research/combat-rage.md#revive): from `position` and `heading`, a turn to the line to `downed`'s head (less
-    /// 351's direction) and a slide to the point 351's reach (the Anim Range List's `+0x04`) short of it, both over
-    /// 351's time to its first event + 0.1 s. Without a reach for 351 he only turns.
+    /// docs/research/combat-reactions.md#revive): from `position` and `heading`, a turn to the line to `downed`'s head
+    /// (less 351's direction) and a slide to the point 351's reach (the Anim Range List's `+0x04`) short of it, both
+    /// over 351's time to its first event + 0.1 s. Without a reach for 351 he only turns.
     /// @orig 0x00275678 Attack_SteerLed (unknown)
     void steerRevive(const Combatant& downed, anim::Vec3 position, float heading, const HumanAnimator& animator);
     /// The uncuff's steer (`Uncuff_Start` calls `Attack_SteerToTarget` for clip 325 with 0.1 s,
@@ -248,7 +249,7 @@ class Fighter {
     /// The snap's target: the nearest human within combat::kSnapSearchRange, combat::kSnapSearchCone of the stick's
     /// direction and combat::kSnapSearchHeight, standing, with health left and targetable (null for none).
     /// **Coney stand-in**: the clear line to it (`0x00222a90`) is not tested.
-    /// The original's search is `0x0027aa38(h, 0x80)` (docs/research/combat.md#attacks).
+    /// The original's search is `0x0027aa38(h, 0x80)` (docs/research/combat/index.md#attacks).
     [[nodiscard]] static Combatant* snapTarget(const FighterInput& input);
     /// The same search along heading `along` (radians).
     [[nodiscard]] static Combatant* snapTarget(const FighterInput& input, float along);
@@ -285,6 +286,13 @@ class Fighter {
     /// The held object's anim set from now on (0 for none), which square and cross branch on (combat::armedAttack()).
     void setAnimSet(int set) { m_animSet = set; }
     [[nodiscard]] int animSet() const { return m_animSet; }
+    /// Whether a world object is in the hand from now on, whatever its anim set (combat::CombatInput::holdingObject).
+    void setHoldingObject(bool holding) { m_holdingObject = holding; }
+    /// Whether the human has spray paint left from now on (combat::CombatInput::hasSprayPaint).
+    void setSprayPaint(bool has) { m_hasSprayPaint = has; }
+    /// How many sprays (circle + triangle, 664) started since the last call: for each, whoever keeps the hand and the
+    /// inventory drops what is held and takes one spray paint (`Human_DropHeld`, `Human_AddSprayPaint(h, -1)`).
+    [[nodiscard]] int takeSprays() { return std::exchange(m_sprays, 0); }
 
     /// The target kept (human `+0xc8`); null when none.
     [[nodiscard]] const Combatant* target() const { return m_target; }
@@ -482,7 +490,7 @@ class Fighter {
     // brain then makes its own sight test (ai::Brain::update()). **Coney choices**: a player's standing square warns
     // once, where the original's pad path and Attack_Start each warn (the brain counts 2); the dive warns the one its
     // own search (nearestInReach()) dives at, as the research does not list it; a block try only asks for a warning.
-    // Research: docs/research/combat.md#attack-warnings
+    // Research: docs/research/combat/index.md#attack-warnings
     // @orig 0x0021d5c0 Human_WarnOfAttack (unknown)
     void warnTarget(int animId, const FighterInput& input, bool chainStep) const;
     // The dispatcher's input from the world: square's target, circle's search, the hold, and the record's +0x08.
@@ -492,7 +500,9 @@ class Fighter {
     // an attack.
     void playDecisions(const combat::CombatOutput& out, combat::CombatMode before, const FighterInput& input,
                        HumanAnimator& animator, float& heading);
-    // Plays an attack the dispatcher started (`animId`), with what follows it, turning and sliding to its target.
+    // Plays an attack the dispatcher started (`animId`), with what follows it, turning and sliding to its target: the
+    // clip's pose at once (kAttackFade), the dive's after kDiveFade, a chain step's after kCombatFade
+    // (docs/research/combat-moves.md#input).
     void playAttack(int animId, const FighterInput& input, HumanAnimator& animator, float& heading, bool chainStep);
     // Turns (and within the far range slides) towards the target of attack `animId`, as Attack_Start steers: within
     // the far range through steerOnto() with the time to the clip's first event; beyond it the facing turns at once,
@@ -501,11 +511,11 @@ class Fighter {
     void steer(int animId, const FighterInput& input, const HumanAnimator& animator, float& heading, bool chainStep);
     // A snap's steer onto the target its search found (m_snapTarget), through steerOnto() with
     // combat::kSnapSteerSeconds as the caller's time, when it is within the snap's far range; nothing beyond. The
-    // original's snap (`0x00264460`) steers so (docs/research/combat.md#attacks).
+    // original's snap (`0x00264460`) steers so (docs/research/combat/index.md#attacks).
     void steerSnap(int animId, const FighterInput& input, const HumanAnimator& animator, float heading);
     // The dive's search and steer (Player_StartDive): the nearest standing human between its reach and far range
     // within 54° of the stick or the facing becomes the target (none clears it unless locked on), and the non-led steer
-    // takes it there over 0.1 s (docs/research/combat.md#charge-aim).
+    // takes it there over 0.1 s (docs/research/combat/index.md#charge-aim).
     // @orig 0x00264878 Player_StartDive (unknown)
     void steerDive(const FighterInput& input, const HumanAnimator& animator, float heading);
     // The reach search of attack `animId` (the dive's, the charge's): the nearest standing human between its reach and
@@ -794,6 +804,9 @@ class Fighter {
     int m_riseCounters = 0;        // the counters played from the rise
     int m_hitsLanded = 0;
     int m_animSet = 0;                          // the anim set a held weapon applied (record +0x10's top)
+    bool m_holdingObject = false;               // a world object in hand (setHoldingObject())
+    bool m_hasSprayPaint = false;               // spray paint left (setSprayPaint())
+    int m_sprays = 0;                           // sprays started since takeSprays()
     std::vector<int> m_strikes;                 // a player's struck hits' anim ids in the last update
     std::optional<double> m_objectTarget;       // the object square's object attack aims at
     std::optional<double> m_objectHit;          // the object an object attack struck this update

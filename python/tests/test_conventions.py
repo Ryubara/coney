@@ -50,10 +50,16 @@ def test_the_real_title_rules() -> None:
 
 def test_the_real_pull_request_rules() -> None:
     rules = load_conventions(REPO).pull_requests
-    assert rules.sections == ("Summary", "Checklist", "Testing", "Screenshots", "AI use")
+    assert rules.sections == ("Summary", "Issues affected", "Checklist", "Testing", "Screenshots", "AI use")
     assert rules.filled == ("Summary", "Testing") and rules.checklist.section == "Checklist"
     assert rules.docs_none.line == "Docs: none"
     assert rules.ai_use.written_by.no_ai == "a person"
+
+
+def test_pull_requests_open_only_is_read_as_a_yes_or_no() -> None:
+    # The switch of .claude/hooks/pr_guard.py (test_pr_guard.py holds the hook's reader to this loader).
+    assert conventions_with(("pull_requests.open_only", True)).pull_requests.open_only is True
+    assert conventions_with(("pull_requests.open_only", False)).pull_requests.open_only is False
 
 
 def test_the_real_review_gate() -> None:
@@ -263,6 +269,16 @@ BAD: list[tuple[str, tuple[tuple[str, object], ...], str]] = [
     ("an area with a colon", (("commits.title.areas", {"a:b": "x"}),), r"'a:b' must be one word without a colon"),
     ("an area with a space", (("commits.title.areas", {"a b": "x"}),), r"'a b' must be one word"),
     ("an area without text", (("commits.title.areas.docs", ""),), r"areas\.docs: expected non-empty text"),
+    (
+        "an open_only that is text",
+        (("pull_requests.open_only", "yes please"),),
+        r"pull_requests\.open_only: expected true or false",
+    ),
+    (
+        "a pull_requests table with no open_only",
+        (("pull_requests.open_only", REMOVE),),
+        r"pull_requests: missing the key 'open_only'",
+    ),
     ("a boolean where text goes", (("repo.default_branch", False),), r"repo\.default_branch: expected non-empty"),
     (
         "a filled section that does not exist",
@@ -661,7 +677,39 @@ def test_the_real_conclave_section() -> None:
     assert conclave.claude_code.count(".") == 2 and conclave.hooks_file.endswith("hooks.toml")
     assert 0 < conclave.local_seconds <= conclave.github_seconds <= conclave.github_idle_seconds
     # the numbers the band draws by come from here, so the mod holds none of them
-    assert 0 < conclave.pane_min_columns <= conclave.pane_wide_columns and conclave.stale_after_reads >= 1
+    assert 0 < conclave.pane_min_columns <= conclave.pane_compact_columns <= conclave.pane_wide_columns
+    assert conclave.stale_after_reads >= 1
+
+
+def test_the_real_watch_settings_are_read() -> None:
+    watch = load_conventions(REPO).conclave.watch
+    # only the coordinator is woken, toasted and held to the stop guard; the wake text is one of these keys, so the mod
+    # holds none of it
+    assert watch.roles == ("coordinator",) and watch.preamble.endswith(":")
+    assert 0 < watch.hold_default_hours <= watch.hold_max_hours
+    assert watch.stop_max_blocks >= 1 and watch.wake_gap_seconds >= 1
+    assert watch.holds_dir == "pr-holds" and watch.question_prefix != watch.answer_prefix
+
+
+@pytest.mark.parametrize(
+    ("path", "value", "message"),
+    [
+        ("conclave.watch", REMOVE, "missing the key 'watch'"),
+        ("conclave.watch.roles", [], "expected a non-empty list"),
+        ("conclave.watch.roles", ["coordinator", "coordinator"], "a value is listed twice"),
+        ("conclave.watch.hold_default_hours", 0, "expected a whole number of 1 or more"),
+        ("conclave.watch.hold_default_hours", 99, "must not be more than hold_max_hours"),
+        ("conclave.watch.stop_max_blocks", 0, "expected a whole number of 1 or more"),
+        ("conclave.watch.stop_preamble", "", "expected non-empty text"),
+        ("conclave.watch.holds_dir", "../x", "a folder name"),
+        ("conclave.watch.holds_dir", "a/b", "a folder name"),
+        ("conclave.watch.question_prefix", "ANSWER", "must differ from answer_prefix"),
+        ("conclave.watch.unknown", 1, "unknown key 'unknown'"),
+    ],
+)
+def test_a_wrong_watch_section_is_refused(path: str, value: object, message: str) -> None:
+    with pytest.raises(ConventionsError, match=message):
+        parse_conventions(changed((path, value)))
 
 
 @pytest.mark.parametrize(
@@ -673,7 +721,10 @@ def test_the_real_conclave_section() -> None:
         ("conclave.local_seconds", 0, "expected a whole number of 1 or more"),
         ("conclave.unknown", 1, "unknown key 'unknown'"),
         ("conclave.pane_min_columns", REMOVE, "missing the key 'pane_min_columns'"),
-        ("conclave.pane_wide_columns", 50, "must not be less than pane_min_columns"),
+        ("conclave.pane_min_columns", 14, "must be at least 15"),
+        ("conclave.pane_compact_columns", 20, "must not be less than pane_min_columns"),
+        ("conclave.pane_compact_columns", REMOVE, "missing the key 'pane_compact_columns'"),
+        ("conclave.pane_wide_columns", 50, "must not be less than pane_compact_columns"),
         ("conclave.pane_wide_columns", REMOVE, "missing the key 'pane_wide_columns'"),
         ("conclave.band_narrow_columns", REMOVE, "missing the key 'band_narrow_columns'"),
         ("conclave.stale_after_reads", 0, "expected a whole number of 1 or more"),
@@ -851,3 +902,18 @@ def test_a_wrong_text_key_is_refused(path: str, value: object, message: str) -> 
     data = changed((path, value))
     with pytest.raises(ConventionsError, match=message):
         parse_conventions(data)
+
+
+def test_the_issues_affected_example_is_a_none_line_with_a_reason() -> None:
+    assert load_conventions(REPO).pull_requests.issues_affected.example == "None (one-line fix)"
+    for bad in ("None", "None ()", "Nothing (one-line fix)", "one-line fix"):
+        with pytest.raises(ConventionsError, match=r"issues_affected.example"):
+            conventions_with(("pull_requests.issues_affected.example", bad))
+
+
+def test_the_impact_limits_are_whole_numbers_of_one_or_more() -> None:
+    impact = load_conventions(REPO).issues.impact
+    assert (impact.cache_minutes, impact.common_max_issues, impact.max_reasons) == (30, 6, 3)
+    for key in ("cache_minutes", "common_max_issues", "max_reasons"):
+        with pytest.raises(ConventionsError, match=key):
+            conventions_with((f"issues.impact.{key}", 0))

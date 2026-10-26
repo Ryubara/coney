@@ -15,3 +15,7 @@ notes that say where a part stands against the original. It never says what the 
 
 Add each page to this one; the rules for writing a page, and how they are checked, are in
 [Writing these docs](../guides/writing-docs.md#engine-pages).
+
+| Page | Subsystem |
+| --- | --- |
+| [Combat](combat.md) | The player's attacks, grabs, blocks, meters and reactions (`src/combat/`, the fighter in `src/human/`) |

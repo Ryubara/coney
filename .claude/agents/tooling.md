@@ -23,5 +23,8 @@ The rules are in the repository, not here, and they override any brief:
 4. Document as you work: a change to a command, a check or the process updates its guide in the same commit.
 5. No game data in the repository, ever (`LEGAL.md`). Never push or open a pull request: commit on your branch in
    your worktree and report to the coordinator.
+6. A question you cannot go on without, and whose answer cannot wait for your report, goes in `QUESTION.md` in your
+   scratch folder (first line the question); the coordinator answers in `ANSWER.md` beside it or by message
+   ([Questions](../../docs/guides/conclave.md#questions)).
 
 Report what your brief asks for and what `docs/guides/how-we-work.md#agent-conduct` lists.

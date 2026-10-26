@@ -45,7 +45,7 @@ void addBodies(DebugLines& lines, const human::Human& human) {
     }
 }
 
-// The strike shapes switched on, and the spine and head they are tested against (docs/research/combat.md
+// The strike shapes switched on, and the spine and head they are tested against (docs/research/combat/index.md
 // #moving-strikes); none for a human without a skeleton.
 void addStrikes(DebugLines& lines, const human::Human& human) {
     for (const human::PosedShape& shape : human.posedStrikeShapes(false)) {

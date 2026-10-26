@@ -4,12 +4,9 @@
 # agent file. A file that cannot be read turns no guard off: dispatch.py runs them without it (and says so at the
 # start of a session).
 
-# A session with no known role (not started with `coney-agent` or `claude --agent <role>`) may use only `readonly_tools` and is told
-# to restart. OFF in the committed file: the coordinator session that exists today was not started with
-# `--agent coordinator` and would be locked out. To switch it on, change this line to `true` in a one-line pull
-# request, made by a tooling agent (the coordinator may not commit in a unit's worktree), once the maintainer has
-# restarted through `coney-agent`.
-require_role = false
+# A session with no known role (not started with `coney-agent` or `claude --agent <role>`) may use only
+# `readonly_tools` and is told to restart. On since the maintainer's sessions start through `coney-agent`.
+require_role = true
 readonly_tools = ["Read", "Grep", "Glob"]
 
 # Agent types that are no Coney role and are allowed anyway: the read-only helpers and the fork of the caller.
@@ -25,20 +22,19 @@ ttl_seconds = 600
 # there it is injected only under these modes (docs/guides/agents.md#identity).
 powershell_modes = ["bypassPermissions"]
 
-[pr_guard]
-# Refuse `gh pr create` (and a pull request opened through `gh api`) in every session: only `coney-tools pr open`
-# may open a pull request. OFF until `pr open` exists; then flip it here.
-refuse_pr_create = false
+# The PR guard's switch is not here: it is `pull_requests.open_only` in .github/conventions.yml (off until one pull request
+# has gone through `coney-tools pr open`), which pr_guard.py reads itself.
 
 # What no session may touch (~/.coney, private keys, stamp logs) is built into protect.py: a settings file that
 # cannot be read must not take it away, and no setting may weaken it.
 
 # Rules by agent type. Keys: deny_tool_prefixes (tool names), deny_coney_tools (`coney-tools <words>` commands),
 # deny_commands (regular expressions over the shell command), allow_agent_types (the only subagent types the role may
-# start with the Agent tool; an empty list: none), deny_write_dirs (folders of a checkout that Edit and
-# Write may not change), write_only (the only file names Edit and Write may change), deny_commit_under (a git commit
-# whose directory lies under one of these is refused), no_github_writes (push_guard's rules, also for a session with
-# no agent id), hint (what to do instead). Commands and tools that do not exist yet are listed ahead of their phase.
+# start with the Agent tool; an empty list: none), deny_write_dirs (folders of a checkout that Edit and Write may not
+# change), write_only (the only file names Edit and Write may change), write_outside_checkouts (true: those only
+# outside any checkout), deny_commit_under (a git commit whose directory lies under one of these is refused),
+# no_github_writes (push_guard's rules, also for a session with no agent id), hint (what to do instead). Commands and
+# tools that do not exist yet are listed ahead of their phase.
 
 [roles.coordinator]
 deny_tool_prefixes = ["mcp__ghidra-mcp__", "mcp__pcsx2__"]
@@ -52,12 +48,12 @@ deny_commit_under = ["/worktrees/coney/"]
 hint = "Give the work to an engineer (or the tooling agent), which commits in its own worktree."
 
 [roles.engineer]
-deny_coney_tools = ["pr open"]
+deny_coney_tools = ["pr open", "pr hold"]
 no_github_writes = true
 hint = "Push, pull requests and GitHub are the coordinator's. Ask it with a note in your report."
 
 [roles.tooling]
-deny_coney_tools = ["pr open"]
+deny_coney_tools = ["pr open", "pr hold"]
 no_github_writes = true
 hint = "Push, pull requests and GitHub are the coordinator's. Ask it with a note in your report."
 
@@ -70,18 +66,32 @@ write_only = [
   # `CODE-REVIEW.md`, `CODE-REVIEW-2.md`. An entry may be a pattern for the file name.
   "CODE-REVIEW*.md",
 ]
-deny_coney_tools = ["pr open"]
+# Those files go in the scratch folder, never inside a checkout (a worktree or the main repository), where an engineer
+# could commit one by mistake.
+write_outside_checkouts = true
+deny_coney_tools = ["pr open", "pr hold"]
 # A reviewer starts no agent: any helper has Bash and no role rules, so it could write a stamp or a file for the
 # reviewer, and the reviewer would then grade work it had done. This refuses the Agent tool; the `deny_commands`
 # below refuse a session started from the shell.
 allow_agent_types = []
-# Every git verb that changes the index, the tree or the worktrees. The options before the verb follow git's grammar
-# (`-C dir` and `-c k=v` take a value, `-P`, `--no-pager` and `--git-dir=x` do not), as hooklib.GIT_COMMIT reads them.
-# `merge-base` and `merge-tree` are not in the list: they only read (`merge-tree --write-tree` adds objects to the
-# object store but changes no index, tree or ref), and a reviewer needs them to find the base of a stacked branch;
-# `merge` and the other `merge-*` verbs (`merge-file`, `merge-index`, `merge-one-file`) stay refused.
+# Every git verb that changes a ref, the index, the tree or the worktrees. The options before the verb follow git's
+# grammar (`-C dir` and `-c k=v` take a value, `-P`, `--no-pager` and `--git-dir=x` do not), as hooklib.GIT_COMMIT
+# reads them. `merge-base` and `merge-tree` are not in the list: `merge-base` only reads and `merge-tree --write-tree`
+# adds objects to the object store but changes no index, tree or ref, and a reviewer needs them to find the base of a
+# stacked branch; `merge` and the other `merge-*` verbs (`merge-file`, `merge-index`, `merge-one-file`) stay refused.
+# The verbs that also list pass in their listing forms (`stash list`, `worktree list`, `notes list`, `reflog show`,
+# `remote -v`, `remote show`); `symbolic-ref` passes when it reads (one name).
 deny_commands = [
-  '\bgit(?:\.exe)?(?:\s+(?:(?:-C|-c|--git-dir|--work-tree|--namespace|--exec-path)\s+\S+|-\S+))*\s+(?:commit|add|rm|mv|reset|restore|merge(?!-(?:base|tree)\b)|rebase|cherry-pick|checkout|switch|apply|am|clean|revert|worktree\s+remove)\b',
+  '\bgit(?:\.exe)?(?:\s+(?:(?:-C|-c|--git-dir|--work-tree|--namespace|--exec-path)\s+\S+|-\S+))*\s+(?:commit|add|stage|rm|mv|reset|restore|merge(?!-(?:base|tree)\b)|mergetool|rebase|cherry-pick|checkout|switch|apply|am|clean|revert|pull|fetch|bisect|stash(?!\s+(?:list|show)\b)|read-tree|update-ref|update-index|checkout-index|sparse-checkout|replace|pack-refs|gc|filter-branch|worktree\s+(?:remove|add|move|prune|repair|lock|unlock)|notes\s+(?:add|append|copy|edit|merge|remove|prune)|reflog\s+(?:expire|delete)|prune|repack|maintenance\s+(?:run|start|stop|register|unregister)|remote\s+(?:add|remove|rm|rename|set-head|set-branches|set-url|update|prune)|submodule\s+(?:update|init|deinit|add|sync|absorbgitdirs|set-branch|set-url))\b',
+  # `branch` and `tag` list with no name and change a ref with one (`git branch x`, `branch -f`, `git tag -d v1`): they
+  # pass only when every word after them is a listing option (`-a`, `-vv`, `--contains X`, `--sort=...`, a pattern
+  # after `--list`), up to the end of the command or a redirection.
+  '\bgit(?:\.exe)?(?:\s+(?:(?:-C|-c|--git-dir|--work-tree|--namespace|--exec-path)\s+\S+|-\S+))*\s+branch\b(?!(?:\s+(?:-[alrvi]+|--(?:show-current|all|remotes|verbose|ignore-case|no-color|no-column|no-abbrev|omit-empty)|--(?:color|column|abbrev)=\S+|--(?:format|sort)(?:=|\s+)\S+|--(?:contains|no-contains|merged|no-merged|points-at)(?:=\S+|\s+[^-\s;&|)>]\S*)?|--list(?:\s+[^-\s;&|)>]\S*)*))*\s*(?:$|[;&|)\n]|\d*>))',
+  '\bgit(?:\.exe)?(?:\s+(?:(?:-C|-c|--git-dir|--work-tree|--namespace|--exec-path)\s+\S+|-\S+))*\s+tag\b(?!(?:\s+(?:-n\d*|-i|--(?:ignore-case|no-column|omit-empty)|--(?:color|column)=\S+|--(?:format|sort)(?:=|\s+)\S+|--(?:contains|no-contains|merged|no-merged|points-at)(?:=\S+|\s+[^-\s;&|)>]\S*)?|(?:-l|--list)(?:\s+[^-\s;&|)>]\S*)*))*\s*(?:$|[;&|)\n]|\d*>))',
+  # `symbolic-ref` reads with one name (`HEAD`, `--short HEAD`, `-q refs/remotes/origin/HEAD`) and writes with two or
+  # with `-d`/`-m`: it passes only with the read-only options and exactly one name, up to the end of the command or a
+  # redirection.
+  '\bgit(?:\.exe)?(?:\s+(?:(?:-C|-c|--git-dir|--work-tree|--namespace|--exec-path)\s+\S+|-\S+))*\s+symbolic-ref\b(?!(?:\s+(?:-q|--quiet|--short|--no-recurse|--recurse))*\s+[^-\s;&|)>]\S*\s*(?:$|[;&|)\n]|\d*>))',
   # Nor a session by the shell, in any letter case (Windows ignores it): `claude`, `coney-agent` or
   # `npx @anthropic-ai/claude-code` where a command starts (the line start; after `&&`, `;`, `|`, `(`, `{`, `!`, `$(`,
   # a backtick, `then`, `do`, `else` or `find -exec`), after `NAME=v` and launchers with their options (`uv run
@@ -96,4 +106,4 @@ deny_commands = [
   '(?i)\bconey(?:-tools(?:\.exe)?|_tools[./\\]cli(?:\.py)?)\s+(?:-\S+\s+)*repo\s+review(?=\s|$|[;&|)>])',
 ]
 no_github_writes = true
-hint = "A reviewer reports; it writes only its verdict file and changes nothing else."
+hint = "A reviewer reports: write your files only in your scratch folder, outside any checkout; git only reads."

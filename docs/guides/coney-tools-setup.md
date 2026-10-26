@@ -60,13 +60,16 @@ section and its error on stderr and exits 1, so a watcher reports a failed read 
 
 ### Waking the coordinator {#coord-wakes}
 
-Between turns the coordinator's session sees nothing, so new work would wait until someone typed. The
-[Tether](https://github.com/Ryubara/tether) plugin, which the maintainer runs in every session, watches for it and
-wakes the session when it arrives. It needs Tether 1.0.0-alpha.31 or later. Tether reads `.claude/tether.json` in the
-session's folder. The repository commits no such file, because Tether would then apply it to every agent's worktree
-too, and the maintainer's own file holds machine settings. The coordinator's local file (listed in
-`.git/info/exclude`) carries the `watch` settings below. This block is the source those settings are copied from:
-change it here first, then in the local file. `python/tests/test_coord_cli.py` checks that every `coney-tools`
+Between turns the coordinator's session sees nothing, so new work would wait until someone typed. Two plugins that the
+maintainer runs in every session watch for it and wake the session when it arrives. [Conclave](conclave.md#watchers),
+Coney's own mod, tells it Coney's own events: a failed check or another pull request problem, a merge, a unit ready for
+`pr open` and a question, and holds its turn end for pull request problems nobody holds ([`pr hold`](pr.md#hold)). The
+[Tether](https://github.com/Ryubara/tether) plugin tells it the rest: issues to triage and detached builds that ended,
+and it keeps the session's health (context, cache, subagents). Tether needs 1.0.0-alpha.31 or later. Tether reads
+`.claude/tether.json` in the session's folder. The repository commits no such file, because Tether would then apply it
+to every agent's worktree too, and the maintainer's own file holds machine settings. The coordinator's local file
+(listed in `.git/info/exclude`) carries the `watch` settings below. This block is the source those settings are copied
+from: change it here first, then in the local file. `python/tests/test_coord_cli.py` checks that every `coney-tools`
 command in it parses.
 
 ```json
@@ -86,48 +89,34 @@ command in it parses.
         "remindMaxMinutes": 240
       },
       {
-        "id": "release",
-        "title": "Release queue",
-        "command": ["uv", "run", "-q", "--project", "python", "coney-tools", "coord", "status", "--ids", "--github", "--kind", "unit"],
-        "everySeconds": 120,
-        "timeoutMs": 240000,
-        "remindMinutes": 30,
-        "remindMaxMinutes": 240
-      },
-      {
         "id": "builds",
         "title": "Detached builds",
         "command": ["uv", "run", "-q", "--project", "python", "coney-tools", "coord", "status", "--ids", "--kind", "build"],
         "everySeconds": 15,
         "timeoutMs": 90000
-      },
-      {
-        "id": "prs",
-        "kind": "prs",
-        "title": "Open pull requests",
-        "command": ["uv", "run", "-q", "--project", "python", "coney-tools", "repo", "pr-health", "--json"],
-        "everySeconds": 300,
-        "timeoutMs": 240000,
-        "worktrees": "<workspace>/worktrees/coney",
-        "busyMarker": ".coney-busy",
-        "assignHours": 4
       }
     ]
   }
 }
 ```
 
-Replace `<workspace>` in the `prs` poller with the folder that holds `repos/` and `worktrees/` on your machine. What
-each poller wakes for:
+The block holds two pollers. A coordinator's file from before Conclave's watchers also holds `release` and `prs`: delete
+them, or every unit and every stuck pull request is told twice, once by each plugin (the local file may carry more
+pollers of Tether's own, such as `agents`, which stay). What each poller wakes for:
 
 * **`triage`** wakes for each issue waiting for [triage](issues.md#triage): an open issue carrying `S-needs-triage`,
   read every two minutes. It wakes once per issue, keyed by its number, so the coordinator's own comment does not wake
   it again.
-* **`release`** wakes for each `unit:` id, a [release queue](how-we-work.md#release-queue) file with no pull request
-  yet, read every two minutes.
 * **`builds`** wakes for each `build:done:` id, a detached build that ended within the hour, read every 15 seconds.
-* **`prs`** is Tether's pull-request guard, reading health through `repo pr-health`. It wakes for stuck pull
-  requests and keeps their owner and waiver records.
+
+What used to be two more pollers is Conclave's, from the same `coord status` ids and `repo pr-health` causes (the
+[snapshot](conclave.md#snapshot) reads the same sources): the **release queue** (a `unit:` id, a [release
+queue](how-we-work.md#release-queue) file with no pull request yet) and the **pull requests** (a `pr:` id, with the
+owner and waiver records now `pr hold` and the stop guard now Conclave's). `coord status --ids` still prints those ids
+for any program that wants them. Tether's `prs` poller also treated a pull request whose worktree held a `.coney-busy`
+marker as owned (its `busyMarker` and `assignHours` settings); that goes with the poller, and only [`pr hold`](pr.md#hold)
+names an owner now: an agent working on a failing pull request is recorded with `pr hold <n> --who <agent>`, whatever
+marker its worktree holds.
 
 Tether starts a turn only for ids it has not told before, and never while a turn runs or you type. Ids still waiting
 are told again 30 minutes later, then after 60, 120 and at most every four hours (`remindMinutes`). The `builds`
@@ -174,11 +163,13 @@ uv run --project python coney-tools conclave snapshot --json --github --unit fix
 ```
 
 Without `--github` it reads only the machine, in about a second. `--github` adds the claim cards, the open and recently
-merged pull requests (with the [`repo pr-health`](coney-tools-repo.md#repo-pr-health) causes) and the open issues the
-claims, the units and `P-critical` name, through `gh`, in about 6.6 seconds. `--unit TASK` keeps one unit's row (exit 2
-when there is none). The sections, each with an `error` that is `null` when it was read, and the rest of the shape are
-in [Conclave](conclave.md#snapshot); the exit code is 0 whatever a section says, and 2 when the command cannot run at
-all. The limits and intervals it sends are the `conclave` section of [.github/conventions.yml](repo:.github/conventions.yml).
+merged pull requests (with the [`repo pr-health`](coney-tools-repo.md#repo-pr-health) causes), the open issues the
+claims, the units and `P-critical` name and the [events](conclave.md#watchers) (a failed check, a merge, a unit ready
+for `pr open`, a question, each with an id and a state), through `gh`, in about 6.6 seconds. `--unit TASK` keeps one
+unit's row (exit 2 when there is none). The sections, each with an `error` that is `null` when it was read, and the rest
+of the shape are in [Conclave](conclave.md#snapshot); the exit code is 0 whatever a section says, and 2 when the command
+cannot run at all. The limits and intervals it sends are the `conclave` section of
+[.github/conventions.yml](repo:.github/conventions.yml).
 
 <!-- command-reference:begin conclave -->
 ## Parameters of `conclave` {#conclave-parameters}
@@ -463,13 +454,14 @@ tools/coney-agent.ps1 [ROLE] ...    # Windows, PowerShell
 tools/coney-agent.cmd [ROLE] ...    # Windows, cmd.exe
 ```
 
-The session launcher: starts Claude Code as one of Coney's roles, so the hooks know who is acting
-([Which role to start](agents.md#roles)). It is a separate console script of the same package, not a `coney-tools`
-group, and not the player-facing launcher of the game. It finds the Coney checkout that holds the current folder
-(the nearest folder above it with `AGENTS.md` and `.claude/agents/`; outside any checkout, the one it is installed
-from), checks the role against the files in `.claude/agents/`, and runs `claude --agent ROLE` in that checkout, adding
-`--plugin-dir <mod folder>` when the folder exists (the mod then loads in every mode, trusted folder or not). When it
-does not, it says so on stderr and starts without the mod, unless `--mod-dir` named the folder (then it is an error).
+The session launcher: starts Claude Code as one of Coney's roles, so the hooks know who is acting ([Which role to
+start](agents.md#roles)); a session started without one may only read (`require_role`). It is a separate console script
+of the same package, not a `coney-tools` group, and not the player-facing launcher of the game. It finds the Coney
+checkout that holds the current folder (the nearest folder above it with `AGENTS.md` and `.claude/agents/`; outside any
+checkout, the one it is installed from), checks the role against the files in `.claude/agents/`, and runs `claude
+--agent ROLE` in that checkout, adding `--plugin-dir <mod folder>` when the folder exists (the mod then loads in every
+mode, trusted folder or not). When it does not, it says so on stderr and starts without the mod, unless `--mod-dir`
+named the folder (then it is an error).
 
 * `ROLE`: the role to start, a file name in `.claude/agents/` without `.md`. Default `coordinator`. An unknown role is
   refused with the list of roles.

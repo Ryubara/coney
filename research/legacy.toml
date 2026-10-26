@@ -139,67 +139,26 @@ verified = 1
 evidence = 10
 history = 1
 
-["docs/research/combat-diffs.md"]
-front-matter = 1
-verified = 1
-history = 3
-
 ["docs/research/combat-grabs.md"]
-front-matter = 1
-skeleton = 9
-verified = 1
-evidence = 58
-copied = 1
-history = 2
+evidence = 32
 
 ["docs/research/combat-moves.md"]
-front-matter = 1
-skeleton = 1
-verified = 1
-evidence = 60
-history = 6
+evidence = 24
 
 ["docs/research/combat-rage.md"]
-front-matter = 1
-skeleton = 3
-verified = 1
-evidence = 29
-address-form = 2
-copied = 1
-history = 7
+evidence = 33
 
 ["docs/research/combat-reactions.md"]
-front-matter = 1
-skeleton = 8
-verified = 1
-evidence = 55
-address-form = 1
-copied = 1
-history = 12
+evidence = 39
 
 ["docs/research/combat-targets.md"]
-front-matter = 1
-skeleton = 4
-verified = 1
-evidence = 34
-copied = 1
-history = 3
+evidence = 37
 
 ["docs/research/combat-throws.md"]
-front-matter = 1
-verified = 1
-evidence = 31
-decompile = 1
-history = 3
+evidence = 44
 
-["docs/research/combat.md"]
-front-matter = 1
-skeleton = 1
-verified = 1
-evidence = 65
-copied = 1
-history = 6
-length = 437
+["docs/research/combat/index.md"]
+evidence = 48
 
 ["docs/research/compiler.md"]
 front-matter = 1
@@ -402,11 +361,7 @@ history = 3
 stale-wording = 1
 
 ["docs/research/lighting.md"]
-front-matter = 1
-skeleton = 10
-verified = 1
-evidence = 24
-history = 1
+evidence = 12
 
 ["docs/research/link-once.md"]
 front-matter = 1
@@ -630,11 +585,3 @@ verified = 1
 evidence = 2
 address-resolve = 1
 history = 4
-
-["docs/research/xbox-executable.md"]
-front-matter = 1
-skeleton = 10
-verified = 1
-evidence = 2
-decompile = 1
-history = 1

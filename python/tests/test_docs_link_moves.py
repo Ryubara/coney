@@ -15,7 +15,17 @@ from coney_tools.docs_link_moves import link_only_change, touched_lines
 FOLDER = "docs/research"
 #: The pages the made-up change renamed or deleted, and the pages and anchors that exist after it.
 GONE = {"docs/research/combat.md", "docs/research/old-name.md"}
-PAGES = {"docs/research/combat-grabs.md": {"grab", "release"}, "docs/research/combat/index.md": {"summary"}}
+PAGES = {
+    "docs/research/combat-grabs.md": {"grab", "release"},
+    "docs/research/combat/index.md": {"summary"},
+    # A page that stays and gave its `targeting` section to `combat-targets.md`.
+    "docs/research/combat-moves.md": {"moves"},
+    "docs/research/combat-targets.md": {"targeting", "locking", "open-questions"},
+    # A page that stays and split its `rage` section: the flash moved out under `flash`, and `rage` is still there.
+    "docs/research/combat-rage.md": {"rage", "flash", "power-meter"},
+    # A page that stays and renamed its `aiming` section to `aim`: the old id is gone, the new one is new.
+    "docs/research/combat-aim.md": {"aim"},
+}
 
 
 def resolves(path: str, anchor: str) -> bool:
@@ -23,9 +33,21 @@ def resolves(path: str, anchor: str) -> bool:
     return path in PAGES and (not anchor or anchor in PAGES[path])
 
 
+def held(path: str, anchor: str) -> bool:
+    """Whether `path` held `anchor` before the change: `combat-moves.md` held the section it gave away."""
+    before = {
+        **PAGES,
+        "docs/research/combat-moves.md": {"moves", "targeting", "locking", "open-questions"},
+        "docs/research/combat-targets.md": {"open-questions"},
+        "docs/research/combat-rage.md": {"rage", "power-meter"},
+        "docs/research/combat-aim.md": {"aiming"},
+    }
+    return path in before and anchor in before[path]
+
+
 def same(old: str, new: str) -> bool:
     """Whether the change of `old` to `new` is only a link rewrite."""
-    return link_only_change(old, new, FOLDER, GONE, resolves)
+    return link_only_change(old, new, FOLDER, GONE, resolves, None, held)
 
 
 # --- one line ---------------------------------------------------------------------------------------------------------
@@ -46,6 +68,63 @@ def test_each_changed_link_of_a_line_is_judged_and_unchanged_ones_pass() -> None
     old = "[a](combat.md#grab), [b](https://example.org/x) and [c](combat.md#release)"
     new = "[a](combat-grabs.md#grab), [b](https://example.org/x) and [c](combat-grabs.md#release)"
     assert same(old, new)
+
+
+def test_a_link_to_an_anchor_that_moved_to_another_page_is_no_touch() -> None:
+    assert same("See [aim](combat-moves.md#targeting).", "See [aim](combat-targets.md#targeting).")
+    old = "[a](combat-moves.md#targeting) and [b](combat-moves.md#locking)"
+    assert same(old, "[a](combat-targets.md#targeting) and [b](combat-targets.md#locking)")
+
+
+def test_a_link_to_the_part_of_a_split_section_that_moved_out_under_its_own_id_is_no_touch() -> None:
+    assert same("See [the flash](combat-rage.md#rage).", "See [the flash](combat-rage.md#flash).")
+
+
+def test_a_link_to_another_id_of_the_same_page_is_a_touch_unless_a_section_was_split() -> None:
+    # The new id was there before: the link now cites other text, not a part that moved out.
+    assert not same("See [it](combat-rage.md#rage).", "See [it](combat-rage.md#power-meter).")
+    # The old id moved to another page and the new one was there before: the link now cites other text.
+    assert not same("See [aim](combat-moves.md#targeting).", "See [aim](combat-moves.md#moves).")
+    # A new id on another page is no split of the old page's section.
+    assert not same("See [it](combat-rage.md#rage).", "See [it](combat-targets.md#locking).")
+    # From the page itself, or to an id the page does not hold.
+    assert not same("See [it](combat-rage.md).", "See [it](combat-rage.md#flash).")
+    assert not same("See [it](combat-rage.md#rage).", "See [it](combat-rage.md#nowhere).")
+
+
+def test_a_link_to_a_renamed_id_of_the_same_page_is_a_touch() -> None:
+    # The old id is gone and the new one is new: the section was renamed, not split, and a link that follows a
+    # renamed id is an edit of the link, which the page must answer for.
+    assert not same("See [aim](combat-aim.md#aiming).", "See [aim](combat-aim.md#aim).")
+
+
+def test_a_link_to_an_id_the_new_page_held_before_is_a_touch() -> None:
+    # Ids repeat across pages: the link now reads other content than the section it named.
+    assert not same("See [q](combat-moves.md#open-questions).", "See [q](combat-targets.md#open-questions).")
+
+
+def test_a_moved_linking_page_reads_a_moved_section_from_its_old_folder() -> None:
+    # The linking page moved from docs/research into docs/research/combat and rewrote its relative link.
+    old, new, folder = (
+        "See [aim](combat-moves.md#targeting).",
+        "See [aim](../combat-targets.md#targeting).",
+        FOLDER + "/combat",
+    )
+    assert link_only_change(old, new, folder, GONE, resolves, FOLDER, held)
+    # Read from the new folder, the old target names no page that held the id.
+    assert not link_only_change(old, new, folder, GONE, resolves, None, held)
+
+
+def test_a_link_whose_anchor_did_not_move_between_the_pages_is_a_touch() -> None:
+    # The id is still on the old page, or on neither page, or the link was given another id or another text.
+    assert not same("See [aim](combat-moves.md#moves).", "See [aim](combat-targets.md#moves).")
+    assert not same("See [aim](combat-moves.md#nowhere).", "See [aim](combat-targets.md#nowhere).")
+    assert not same("See [aim](combat-moves.md#targeting).", "See [aim](combat-targets.md#locking).")
+    assert not same("See [aim](combat-moves.md#targeting).", "See [aims](combat-targets.md#targeting).")
+    # No anchor: the whole page did not move.
+    assert not same("See [aim](combat-moves.md).", "See [aim](combat-targets.md).")
+    # The old page is not one of the pages: a link to somewhere else is no move.
+    assert not same("See [aim](camera.md#targeting).", "See [aim](combat-targets.md#targeting).")
 
 
 def test_a_link_to_a_page_that_was_not_renamed_is_a_touch() -> None:
@@ -154,6 +233,35 @@ def test_a_page_whose_only_change_is_links_to_a_moved_page_is_untouched(tmp_path
     result = docs_check.check_changed(root, "main", context(root))
     assert result.findings["docs/research/ai.md"][0].severity == "warning"
     assert "docs/research/ai.md" not in result.failed
+
+
+MOVES = "# Moves\n\n## Moves {#moves}\n\nText.\n"
+TARGETING = "\n## Targeting {#targeting}\n\nAim.\n"
+AI_LINKS = "# Links\n\nSee [aim](combat-moves.md#targeting).\n\nSee [it](combat-moves.md#moves).\n"
+
+
+def test_a_page_linking_an_anchor_that_moved_between_two_pages_is_untouched(tmp_path: Path) -> None:
+    files = {
+        "docs/research/combat-moves.md": MOVES + TARGETING,
+        "docs/research/combat-targets.md": "# Targets\n\nText.\n",
+        "docs/research/ai.md": AI_LINKS,
+    }
+    root = checkout(tmp_path, files=files)
+    write(root, LEGACY_FILE, docs_legacy.initial_text(root, context(root)))
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "legacy")
+    git(root, "checkout", "-q", "-B", "main")
+    git(root, "checkout", "-q", "-b", "section")
+    # The section moves from one page to the other, and the linking page follows it.
+    write(root, "docs/research/combat-moves.md", MOVES)
+    write(root, "docs/research/combat-targets.md", "# Targets\n\nText.\n" + TARGETING)
+    write(root, "docs/research/ai.md", AI_LINKS.replace("moves.md#targeting", "targets.md#targeting"))
+    assert touches(root) == {"docs/research/ai.md": frozenset()}
+    # A link to an id on neither page is a touch, and so is one to an id that stayed on the old page.
+    write(root, "docs/research/ai.md", AI_LINKS.replace("moves.md#targeting", "targets.md#nowhere"))
+    assert touches(root) == {"docs/research/ai.md": frozenset({3})}
+    write(root, "docs/research/ai.md", AI_LINKS.replace("moves.md#moves", "targets.md#moves"))
+    assert touches(root) == {"docs/research/ai.md": frozenset({5})}
 
 
 def test_a_link_to_a_page_that_stays_is_a_touch(tmp_path: Path) -> None:

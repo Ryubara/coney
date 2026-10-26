@@ -627,8 +627,8 @@ TEST_CASE("a human starts with its brain type's flags, and a player handed back 
     namespace flag = coney::human::flag;
     using coney::ai::releasedFlags;
     using coney::ai::startingFlags;
-    // Human_Init (docs/research/combat.md#human-flags): the player and every Warrior revivable (0x4) with 0x2; the
-    // player may rage (0x2000000); cops and dealers 0x2000 and 0x40000; the others none of these.
+    // Human_Init (docs/research/combat/index.md#human-flags): the player and every Warrior revivable (0x4) with 0x2;
+    // the player may rage (0x2000000); cops and dealers 0x2000 and 0x40000; the others none of these.
     CHECK(startingFlags(BrainType::Player) == (flag::kRageAllowed | flag::kFastClimber | flag::kRevivable));
     CHECK(startingFlags(BrainType::Warrior) == (flag::kFastClimber | flag::kRevivable));
     CHECK(startingFlags(BrainType::Cop) == 0x42000U);

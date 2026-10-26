@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The clip events a human's sounds read (docs/research/sound.md#anim-sounds): kept as their frames pass, the gait
-// blend's leading clip's events, and none from a task whose events are muted (task flag 0x10). Synthetic clips only.
+// blend's leading clip's events, and none from a task whose events are muted (task flag 0x10); and the events each
+// advance fired, which slow motion reads (docs/research/slow-motion.md#events). Synthetic clips only.
 #include <array>
 #include <cstdint>
 #include <memory>
@@ -67,6 +68,31 @@ TEST_CASE("events are not kept unless asked, and a muted task fires none", "[ani
     muted.keepEvents(true);
     muted.change(std::make_unique<LoopTask>(walk, 1, 1.0F, anim::kTaskEventsMuted), 0.0F);
     CHECK(soundsOver(muted, 40).empty());
+}
+
+TEST_CASE("the last advance's fired events are there unasked and a clip handing over fires up to its end",
+          "[anim_task]") {
+    // Expected: docs/research/slow-motion.md#events, confirmed (code): a clip handing over fires its events to its end.
+    // A 10-frame clip with events at 4 and its last frame 10 (sound 7), then a loop with one at frame 5 (sound 8):
+    // each advance lists what it fired and nothing older, and the clip's last frame fires though the loop takes over.
+    const AnimClip once = soundClip(10.0F, {4, 10}, 7);
+    const AnimClip loop = soundClip(20.0F, {5}, 8);
+    AnimTaskStack stack;
+    stack.change(
+        std::make_unique<anim::ClipThenNextTask>(once, 1, 1.0F, 0U, std::make_unique<LoopTask>(loop, 2, 1.0F, 0U)),
+        0.0F);
+    std::vector<std::uint32_t> fired;
+    int quiet = 0;
+    for (int k = 0; k < 20; ++k) {
+        stack.advance(kStep);
+        quiet += stack.firedEvents().empty() ? 1 : 0;
+        for (const ClipEvent& event : stack.firedEvents()) {
+            fired.push_back(event.argument);
+        }
+    }
+    CHECK(fired == std::vector<std::uint32_t>{7, 7, 8});
+    CHECK(quiet == 17);
+    CHECK(stack.takeEvents().empty()); // nothing kept: keepEvents() was not asked
 }
 
 TEST_CASE("a gait blend keeps the leading clip's sound events only", "[anim_task][sound]") {
