@@ -12,8 +12,11 @@
 #include <utility>
 
 #include "ai/ai_config.h"
+#include "ai/ai_humans.h"
 #include "ai/brain.h"
+#include "ai/brains.h"
 #include "ai/scripted_brains.h"
+#include "characters/character_choice.h"
 #include "characters/character_types.h"
 #include "human/human.h"
 #include "human/player.h"
@@ -199,6 +202,50 @@ PlayLevelMode::CastLook PlayLevelMode::castCharacter(const std::string& model) {
         return CastLook{.character = m_character.get(), .texture = m_texture};
     }
     return CastLook{.character = entry.character.get(), .texture = textureOf(entry.dictionaries)};
+}
+
+void PlayLevelMode::bindDebugFighter(human::Human& made, const CastLook& look, const std::string& model) {
+    ai::Brain* brain = m_ai->brains().find(made);
+    if (brain == nullptr) {
+        return;
+    }
+    // The type it is drawn as: the player's for the scene's own character (a model that did not load falls back to
+    // it), else the first configured type a player of which is drawn as `model`. Its voice set follows from it.
+    int type = m_type;
+    if (look.character != m_character.get()) {
+        for (const characters::CharacterChoice& choice : characterChoices()) {
+            if (choice.model == model) {
+                type = choice.type;
+                break;
+            }
+        }
+    }
+    brain->setCharacterClass(type);
+    // In a level with scripts, a handle from the counter `HuCreate` takes its own from, bound as `HuCreate`'s humans
+    // are (in no gang): gameplay hands the bound humans' sounds to the game's sound (Human_OnAnimSoundEvent,
+    // 0x0021f700, plays every human's clip sounds, whoever made him), and the lines find their speaker by it.
+    if (m_cast.scripted != nullptr && m_cast.objectHandles) {
+        const double handle = m_cast.objectHandles();
+        if (handle != 0.0) {
+            m_cast.scripted->bind(handle, *brain);
+        }
+    }
+}
+
+void PlayLevelMode::unbindDebugFighters() {
+    if (m_cast.scripted == nullptr) {
+        return;
+    }
+    // The ones removeDebugSpawned() takes: marked, still in the world, not the human the pad drives.
+    const human::Human* driven = &m_ai->playerBrain().human();
+    for (const ai::AiHuman& entry : m_ai->humans()) {
+        if (!entry.debugSpawned || entry.removed || entry.human.get() == driven) {
+            continue;
+        }
+        if (const ai::Brain* brain = m_ai->brains().find(*entry.human); brain != nullptr && brain->handle() != 0.0) {
+            m_cast.scripted->unbind(brain->handle());
+        }
+    }
 }
 
 } // namespace coney::platform

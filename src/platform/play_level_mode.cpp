@@ -329,6 +329,7 @@ void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees, const std:
                                             anim::Vec3{feet.x, feet.y, feet.z}, headingDegrees);
     if (debugSpawned) {
         m_ai->markDebugSpawned(made);
+        bindDebugFighter(made, look, model);
     }
     const std::size_t vertices = look.character->assets().model.vertices.size();
     FighterMesh mesh;
@@ -362,7 +363,9 @@ std::expected<void, Error> PlayLevelMode::spawnFighterAs(anim::Vec3 feet, float 
 
 void PlayLevelMode::clearFighters() {
     // Only the fighters the menus spawned, taken out as a level's script deletes a human: their entries stay (so the
-    // meshes keep their indexes and the scripts' handles on the others stay good) and are no longer drawn.
+    // meshes keep their indexes and the scripts' handles on the others stay good) and are no longer drawn. Their own
+    // handles leave the scripts' hold first, as a deleted script human's do.
+    unbindDebugFighters();
     m_ai->removeDebugSpawned();
 }
 

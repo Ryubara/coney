@@ -257,14 +257,22 @@ does, while the player stands still and the scenery streams round the free camer
 row 1.2 m further out. *Model* picks what they look and move as: any human model the scene's character types name (the
 list *Change character* below draws on, sorted, with its distinct models) or *Random*, which draws a model for each
 fighter from the whole list (a generator of the menu's own with a fixed seed, so it never moves the game's random
-numbers and a run with the same clicks spawns the same models). A model is loaded from the disc the first time it is
-used and kept, so a first click with many models stalls briefly. Without a list (a sandbox without a disc) only
-*Random* is offered and every fighter is the scene's own character. A fighter keeps its model when *Change character*
-makes the fighters again.
+numbers and a run with the same clicks spawns the same models). Each fighter is given the character type it is drawn as
+(the player's for the scene's own character, else the first type drawn as its model), which picks its voice set; in a
+level with scripts it also takes a handle from the counter the scripts' `HuCreate` uses and is held by it as their
+humans are, so its footsteps, swooshes, grunts and the hit sounds of the strikes it takes reach the game's sound
+(`repo:tests/platform/disc_debug_fighter_sounds_test.cpp`). Held so, it is also a subject of the level's volume boxes
+and trigger spheres, as any human is in the original: a fighter spawned in a mission trigger fires the level script's
+handlers for it. Each spawn takes a handle from that one counter, so the handles of everything the scripts create
+afterwards (and the run log's `human N` names) differ from a run without the spawn. A model is loaded from the disc the
+first time it is used and kept, so a first click with many models stalls briefly. Without a list (a sandbox without a
+disc) only *Random* is offered and every fighter is the scene's own character. A fighter keeps its model when *Change
+character* makes the fighters again.
 
 *Clear fighters* removes only the fighters *Spawn fighters* made, through the game's own removal of a human (a level
 script's `HuDelete`): never the player, the human the pad drives after a hand-over, his crew, a level script's human or
-a sandbox layout's fighter. The page's *Fighters* count is the AI humans still in the world.
+a sandbox layout's fighter. Their handles leave the scripts' hold first. The page's *Fighters* count is the AI humans
+still in the world.
 
 **Spawner.** The page adds sandbox primitives (Coney's own sizes) the chosen distance in front of the player, facing his
 way, in a sandbox or a level; *Clear spawned* removes them all. The crate and the wall carry flag bit 7 (climbable by

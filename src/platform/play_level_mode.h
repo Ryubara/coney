@@ -497,6 +497,17 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     // The character `model` names, loaded once for every human of it; the scene's character when it is empty or fails
     // to load.
     CastLook castCharacter(const std::string& model);
+    // Gives a fighter the debug menus spawned, drawn as `look` for `model`, the character type it is drawn as (its
+    // voice set) and, in a level with scripts, a handle of its own in the scripts' hold, so that gameplay hands its
+    // sounds to the game's sound as it does a script's human's (the original plays every human's clip sounds,
+    // docs/research/sound.md#anim-sounds).
+    // Research: docs/guides/debug-menu.md#pages (AI fighters)
+    // @coney-only debug tooling: the original has no spawner
+    void bindDebugFighter(human::Human& made, const CastLook& look, const std::string& model);
+    // Takes the handles of the fighters the debug menus spawned out of the scripts' hold, before their removal.
+    // Research: docs/guides/debug-menu.md#pages (AI fighters)
+    // @coney-only debug tooling: the original has no spawner
+    void unbindDebugFighters();
     // --- play_level_objects.cpp: the level's glass panes and doors.
 
     // Points `objects` (the scripts' cast's, may be null) at the scenery's collision mesh and path data.
