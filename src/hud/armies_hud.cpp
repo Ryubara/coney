@@ -2,6 +2,7 @@
 #include "hud/armies_hud.h"
 
 #include <format>
+#include <string>
 
 #include "graphics/render_device.h"
 #include "gui/text_layout.h"
@@ -151,11 +152,15 @@ void ArmiesHud::render(const HudCanvas& canvas, const std::function<std::string(
             }
         }
     }
-    // The join messages.
+    // The join messages, centred on the panel's place: alignment 2 is Font_Draw's flag 0x02, which moves each run's
+    // start left by half its width (docs/research/gui.md); the layout's box starts at its x, so move it by half.
     for (std::size_t player = 0; player < kPlayers; ++player) {
-        if (joinShowing(player)) {
+        if (joinShowing(player) && canvas.text.fonts) {
             const GuiPoint at = kJoinPlace.at(player);
-            drawMessage(canvas, text(kJoinString), styleAt(at.x, kJoinGrey, true), at.y);
+            const std::string message = text(kJoinString);
+            gui::TextStyle style = styleAt(at.x, kJoinGrey, true);
+            style.x -= gui::layoutText(message, style, canvas.text.fonts).width / 2.0F;
+            drawMessage(canvas, message, style, at.y);
         }
     }
 }
