@@ -15,7 +15,7 @@ of play unmeasured (60 by default) while the crowd settles. `--frames` counts fr
 so the bench measures `frames - warmup` frames:
 
 ```sh
-build/release/src/platform/coney --disc /path/to/warriors.iso --play-level level95 --skip-movies --frames 660 \
+build/playtest/src/platform/coney --disc /path/to/warriors.iso --play-level level95 --skip-movies --frames 660 \
     --bench ../../scratch/bench-100.json --bench-fighters 100 --vsync off --no-activate
 ```
 
@@ -28,7 +28,7 @@ display's refresh) to see the whole cost, or `--headless` (librw's NULL renderer
 the simulation's alone.
 
 `coney-tools perf bench` runs the bench once per fighter count (0, 10, 25, 50 and 100 by default) in the hub,
-`level95` (free play from the first frame: in `level99` the opening scene holds the crowd back), from the `release`
+`level95` (free play from the first frame: in `level99` the opening scene holds the crowd back), from the `playtest`
 build and prints a Markdown table of them, keeping each report and log in `--out`
 ([coney-tools perf](coney-tools-build.md#perf)):
 
@@ -38,8 +38,9 @@ uv run --project python coney-tools perf bench --out ../../scratch/perf --headle
 ```
 
 **Measure the right build.** The `dev` preset is a Debug build, several times slower than an optimised one and not
-what a player runs; measure the `release` preset (`RelWithDebInfo`: optimised, with debug information) and say so. The
-report's `build` field names it.
+what a player runs; measure the `playtest` preset (`RelWithDebInfo`: optimised, with debug information and the debug
+tools) and say so. The `release` preset is the player's build: it has no debug tools, so it refuses `--bench`
+([The debug tools and the game](building.md#debug-tools)). The report's `build` field names the build type.
 
 **Measure on a quiet machine.** The times are real time on a shared computer. Numbers taken while other builds run
 are noisy (on the agents' machine a dozen builds may be running): check `coney-tools build status` first, run each
