@@ -84,10 +84,11 @@ def test_a_change_that_touches_no_source_file_reads_no_source(tmp_path: Path, mo
 def test_a_change_to_a_header_or_a_deleted_source_file_is_scanned(tmp_path: Path) -> None:
     built = make(tmp_path)
     assert [u.coney for u in built.subject().changed] == ["Widget::update"]
-    assert pr_proof.changed_functions(built.root, built.base, built.tip, ["src/ai/widget.h"]) != ((), ())
+    assert pr_proof.changed_functions(built.root, built.base, built.tip, ["src/ai/widget.h"]) != ((), (), {})
     assert pr_proof.changed_functions(built.root, built.base, built.tip, ["docs/guides/widget.md", "src/a.txt"]) == (
         (),
         (),
+        {},
     )
 
 
