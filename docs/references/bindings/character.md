@@ -3178,7 +3178,7 @@ object of anim set 4 or 6 (the two-handed props, the ghetto blasters) is dropped
 **Notes.** Bit set at 0x00237328 and read at five places (0x00257ce8, 0x00257d70, 0x00257e38, 0x0026a7bc, 0x0022ed14).
 It does not stop the drop of an object whose throw a hit interrupts, nor of a kind-39 object (Human_ApplyPendingDamage,
 0x00265f70). Rage's SetRageMode sets it. Details: [Combat: dropping what is held when
-hit](../../research/combat-rage.md#keep-weapon).
+hit](../../research/combat-throws.md#keep-weapon).
 
 - **Evidence:** confirmed (code) at `0x00237328`; detail: traced
 - **Wrapper** `0x003597e0` (registered by `RegisterBindings`); **calls** `0x00237328` `Human_SetKeepWeapon`
@@ -3785,7 +3785,7 @@ the flag.
 **Notes.** The Lua function is the first name given to CfgRageHandlers (copied to 0x006b6830 by Cfg_SetRageHandlers);
 global.lua registers `SetRageMode` there, which sets god mode, unstunnable, reduced and increased reaction, ungrabbable,
 ungroundable and keep-weapon on the human; ending calls the second name, `ClrRageMode`, which clears them ([Scripts:
-level5](../../research/scripting.md#level5)). Rage itself: [Combat](../../research/combat-rage.md#rage).
+level5](../../research/scripting.md#level5)). Rage itself: [Combat](../../research/combat-rage.md#rage-effects).
 
 - **Evidence:** confirmed (code) at `0x00237128`; detail: traced
 - **Wrapper** `0x00359478` (registered by `RegisterBindings`); **calls** `0x00237128` `Human_SetRageMode`

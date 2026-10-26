@@ -413,22 +413,27 @@ another folder rewrites its own relative links for it: a link to the same page a
 target is read from the folder the page left). So is a link to a section that moved between two pages that stayed
 (cutting `combat-moves.md#targeting` to `combat-targets.md#targeting`): the link's anchor id is the same, the old page
 held it before the change and no longer does, and the new page holds it now but did not before (ids such as
-`open-questions` repeat across pages, and a link to one is a touch). A link to an id that was never on the old page,
-or is still there, or is on neither page, is a touch. The link's text, the rest of the line and the number of links
-must be equal, read whole: spaces and line breaks do not count, so a link split over two lines, or a paragraph that a
-longer target made the editor reflow (past the 120 columns markdownlint allows), is judged as one, as long as no line
-on either side is blank or starts a block: a heading, quotation, table row, code fence, a code block (an indented line
-that follows a blank line, a heading, a table row, a definition or another code line; after text it continues the
-paragraph or list item), or what MkDocs adds (an admonition `!!!` or `???`, a content tab `===`, a setext underline or
-rule, an HTML block, a footnote or link definition, an attribute list `{: }`, a definition `: text`). A line break
-there is structure, and a change to it is a touch. So is a change to a line's indent, and in a rewrap the lines that
-are no list item keep their indents (a rewrap that joins the lines into one, or splits one, has none to compare). Two
-cases need more than the changed lines: a link split over lines of which only the `](target)` line changed is read
-from the line holding its `[` (the diff has no context, so the checker widens the hunk through the unchanged lines
-above, stopping after five lines or at a blank line); and a list item rewrapped by the longer target is no touch when
-the list markers (`-`, `1.`) stand on the same lines of the hunk on both sides. A link to a page that stayed, to a
-target that resolves nowhere, to a `repo:` path or an address, an image, or any other edit on the line is a touch of
-that line. So moving a page does not end the excuse of every page that links to it.
+`open-questions` repeat across pages, and a link to one is a touch). So, last, is a link moved to an id that is new on
+the same page while the old id stays (`combat-rage.md#rage` to `combat-rage.md#flash`): the page held the old id before
+the change and still does, and holds the new one only now. The reason is a section split in two, the part the link cites
+moving out under its own id, but the check sees only the ids: it cannot tell whether the new section came from the old
+one, so any id new on that page qualifies. Any other new target is a touch: an id that was never on the old page, one
+still there on another page, one on neither page, another id the page already held, or an id that replaced the old one
+(a renamed section, whose links are edits). The link's text, the rest of the line and the number of links must be equal,
+read whole: spaces and line breaks do not count, so a link split over two lines, or a paragraph that a longer target
+made the editor reflow (past the 120 columns markdownlint allows), is judged as one, as long as no line on either side
+is blank or starts a block: a heading, quotation, table row, code fence, a code block (an indented line that follows a
+blank line, a heading, a table row, a definition or another code line; after text it continues the paragraph or list
+item), or what MkDocs adds (an admonition `!!!` or `???`, a content tab `===`, a setext underline or rule, an HTML
+block, a footnote or link definition, an attribute list `{: }`, a definition `: text`). A line break there is structure,
+and a change to it is a touch. So is a change to a line's indent, and in a rewrap the lines that are no list item keep
+their indents (a rewrap that joins the lines into one, or splits one, has none to compare). Two cases need more than the
+changed lines: a link split over lines of which only the `](target)` line changed is read from the line holding its `[`
+(the diff has no context, so the checker widens the hunk through the unchanged lines above, stopping after five lines or
+at a blank line); and a list item rewrapped by the longer target is no touch when the list markers (`-`, `1.`) stand on
+the same lines of the hunk on both sides. A link to a page that stayed, to a target that resolves nowhere, to a `repo:`
+path or an address, an image, or any other edit on the line is a touch of that line. So moving a page does not end the
+excuse of every page that links to it.
 
 `coney-tools docs legacy` prints what a scan finds; `--prune` takes out what is fixed and lowers the counts, `--check`
 exits 1 when the file lists something that passes or grew since the branch left `--base`. The file is first written by

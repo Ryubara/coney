@@ -283,11 +283,11 @@ it.
   hand](../research/combat-throws.md#armed-moves)): the fighter's anim set stands for the held object's set. With set
   1-3 square and cross take the armed branch (501, the grounded strike, the slot's swing; no walk attack, snaps or
   strike on a grabbed target), and the charge and dive are unchanged; the rage is the
-  [Rage](../research/combat-rage.md#rage) table's (not its gates on the attacker's brain and the victim's class, nor ids
-  `0x269`-`0x26c`'s table-2 award). **Not built**: the armed branch's mugging, the blocks' clips of an anim set, the
-  weapon's damage bonus (`CfgObj` `+0x58` × the power class's factor), a breakable's hit kind 2 for the moving attacks,
-  and the throws of sets 4-6 (square, cross, the charge and the dive play the unarmed moves); a bat never breaks.
-  Tracked by issues [#153](issue:153), [#309](issue:309).
+  [Rage](../research/combat-rage.md#rage-points) table's (not its gates on the attacker's brain and the victim's class,
+  nor ids `0x269`-`0x26c`'s table-2 award). **Not built**: the armed branch's mugging, the blocks' clips of an anim set,
+  the weapon's damage bonus (`CfgObj` `+0x58` × the power class's factor), a breakable's hit kind 2 for the moving
+  attacks, and the throws of sets 4-6 (square, cross, the charge and the dive play the unarmed moves); a bat never
+  breaks. Tracked by issues [#153](issue:153), [#309](issue:309).
 - **The held flags** ([Tasks](../research/tasks.md#held-flags)): the bits each move holds where the research names none.
   Every attack the dispatcher starts (the walk attack, the snaps, the grounded and mounted strikes, the grab strikes,
   power strikes and throws) is built as `Attack_Start`'s (holds `0x7`, sets `0x1`); the charge and dive hold the run

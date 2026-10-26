@@ -1952,7 +1952,7 @@ status = "legacy"
 [[function]]
 address = 0x0025ade8
 name = "Human_PushOverlayClip"
-page = "combat-rage.md#rage"
+page = "combat-rage.md#flash"
 role = "Plays a clip over what the human plays (the flash's 665) as a type 5 task (`AnimTask5_Construct`), passing no rate, so the clip plays at its Anim Range List rate."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::pushOverlayClip"

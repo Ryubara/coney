@@ -206,9 +206,9 @@ class Fighter {
     /// The attack's steer still under way.
     [[nodiscard]] const TurnAndSlide& steering() const { return m_steer; }
     /// The revive's led steer (`Revive_Start` calls `Attack_SteerLed` for clip 351,
-    /// docs/research/combat-rage.md#revive): from `position` and `heading`, a turn to the line to `downed`'s head (less
-    /// 351's direction) and a slide to the point 351's reach (the Anim Range List's `+0x04`) short of it, both over
-    /// 351's time to its first event + 0.1 s. Without a reach for 351 he only turns.
+    /// docs/research/combat-reactions.md#revive): from `position` and `heading`, a turn to the line to `downed`'s head
+    /// (less 351's direction) and a slide to the point 351's reach (the Anim Range List's `+0x04`) short of it, both
+    /// over 351's time to its first event + 0.1 s. Without a reach for 351 he only turns.
     /// @orig 0x00275678 Attack_SteerLed (unknown)
     void steerRevive(const Combatant& downed, anim::Vec3 position, float heading, const HumanAnimator& animator);
     /// The uncuff's steer (`Uncuff_Start` calls `Attack_SteerToTarget` for clip 325 with 0.1 s,

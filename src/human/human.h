@@ -450,7 +450,7 @@ class Human final : public Holdable {
     }
     /// Whether `Player_UseItemCommand` refuses the flash's press outright: down or dead, cuffed, airborne
     /// (`0x1c00000000`) or climbing over. A knockdown, a stun, a hit reaction or a climb's first or last clip is none
-    /// of these: there the flash is used at once (docs/research/combat-rage.md#rage).
+    /// of these: there the flash is used at once (docs/research/combat-rage.md#flash-mid-move).
     /// @orig 0x002843f8 Player_UseItemCommand (unknown)
     [[nodiscard]] bool refusesFlash() const {
         return downOrDead() || m_script.arrested || airborne() || climbingOver();
@@ -527,7 +527,7 @@ class Human final : public Holdable {
     [[nodiscard]] bool takeSlowMotionReset() { return std::exchange(m_slowMotionReset, false); }
     /// The anim whose action event (type `0x41`, which `Anim_FireFrameEvents` 0x00101dd8 sends as message `0xc1`) the
     /// clip playing passed in the last update, if any: for 665 `SPECIAL_FLASH` the flash is used, for 666 the door
-    /// ahead opens and for 668 the dealer's goal is served (docs/research/combat-rage.md#rage).
+    /// ahead opens and for 668 the dealer's goal is served (docs/research/combat-rage.md#flash).
     [[nodiscard]] std::optional<std::uint32_t> actionEvent() const { return m_actionEvent; }
     /// Sets the characters' step its next updates advance by: kStepSeconds, or less in slow motion
     /// (docs/research/camera.md#slow-motion; Humans::update() sets it for every human).
@@ -826,10 +826,10 @@ class Human final : public Holdable {
     /// The cuffed human's end: freed, 333 `ANIM_ARREST_RELEASE_END_REACT` paired to `freer` then his idle; still
     /// cuffed, back to 320.
     void endUncuffReact(const Human& freer, bool freed);
-    /// The reviver's half of a revive (docs/research/combat-rage.md#revive): the led steer turns him to `downed`'s head
-    /// and slides him to 351's reach from it over 351's time to its first event + 0.1 s (Fighter::steerRevive()), and
-    /// he plays 351 `gen_revive_begin`, then 353 `gen_revive_end`, then his idle (through 389 out of the fight stance,
-    /// the fight idle in it), after a 0.01 s blend, each clip holding `0x8000000`.
+    /// The reviver's half of a revive (docs/research/combat-reactions.md#revive): the led steer turns him to `downed`'s
+    /// head and slides him to 351's reach from it over 351's time to its first event + 0.1 s (Fighter::steerRevive()),
+    /// and he plays 351 `gen_revive_begin`, then 353 `gen_revive_end`, then his idle (through 389 out of the fight
+    /// stance, the fight idle in it), after a 0.01 s blend, each clip holding `0x8000000`.
     void startRevive(const Combatant& downed);
     /// Whether 351 `gen_revive_begin` plays: the revive's first clip, at whose end the flash is spent.
     [[nodiscard]] bool reviveBeginPlaying() const;

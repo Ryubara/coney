@@ -246,7 +246,7 @@ level = "confirmed-code"
 [[function]]
 address = 0x0022eb40
 name = "Human_Heal"
-page = "combat-rage.md#rage"
+page = "combat-rage.md#flash"
 role = "spends a flash, its sound, the heal (full, or half on fury and rumble)"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::heal"
@@ -654,7 +654,7 @@ status = "legacy"
 [[function]]
 address = 0x002653d8
 name = "Hit_Score"
-page = "combat-rage.md#rage"
+page = "combat-rage.md#hit-score-skips"
 role = "a hit's rage awards and the repeat tracker"
 level = "confirmed-code"
 coney = "src/combat/rage_awards.h:awardHitRage"
@@ -2078,7 +2078,7 @@ level = "confirmed-code"
 [[function]]
 address = 0x00284280
 name = "Flash_Use"
-page = "combat-rage.md#rage"
+page = "combat-rage.md#flash"
 role = "spends a flash and heals"
 level = "confirmed-code"
 coney = "src/platform/play_level_mode.h:PlayLevelMode::useFlash"
@@ -2087,15 +2087,15 @@ status = "legacy"
 [[function]]
 address = 0x00284340
 name = "Rage_Enter"
-page = "combat-rage.md#rage"
-role = "L1 + R1 with a full meter, the flash, the key when cuffed, the R2 map ([Rage](combat-rage.md#rage))"
+page = "combat-rage.md#rage-effects"
+role = "rage's start: the rage sound, a pair broken, 643 `RAGE_START` and `Human_StartRageMode` ([Everything rage does](combat-rage.md#rage-effects))"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 
 [[function]]
 address = 0x002843f8
 name = "Player_UseItemCommand"
-page = "combat-rage.md#rage"
+page = "combat-rage.md#flash"
 role = "L1 + R1, the flash, the key when cuffed, the R2 command menu"
 level = "confirmed-code"
 coney = "src/combat/meters.h:RageMeter::start"
@@ -2147,8 +2147,8 @@ level = "confirmed-code"
 [[function]]
 address = 0x00286ba8
 name = "Player_TryRevive"
-page = "combat-rage.md#revive"
-role = "the revive ([Reviving](combat-rage.md#revive))"
+page = "combat-reactions.md#revive"
+role = "the revive ([Reviving](combat-reactions.md#revive))"
 level = "confirmed-code"
 coney = "src/combat/revive.h:mayRevive"
 status = "legacy"

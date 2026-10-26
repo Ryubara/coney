@@ -572,7 +572,7 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     // @orig 0x00169dd8 Gang_NoneAbleToHelp (unknown)
     // @orig 0x00169ea0 Gang_CanReachToHelp (unknown)
     void stepGameOver(const Pad& pad);
-    // Player 1's flash (command 0x28, d-pad right, docs/research/combat-rage.md#rage): with a flash carried and health
+    // Player 1's flash (command 0x28, d-pad right, docs/research/combat-rage.md#flash): with a flash carried and health
     // below its maximum, refused only when down or dead, cuffed, airborne or climbing: 665 SPECIAL_FLASH plays when
     // nothing holds him, and its action event 25 updates in uses the flash (a clip cut first spends nothing); when
     // something holds him (a grab, which stays; a knockdown, a stun, a hit reaction) the flash is used at once, unless

@@ -123,8 +123,9 @@ or a rule that now passes, or (when `--base` has the file) adds a page or a rule
 checks, so it fails a legacy rule that passes and a new page that is listed. On a listed page the change touches, it
 fails every mechanical rule page-wide and the grading of the sections the change touches (an address with no level, an
 old-form runtime claim); an entry may list any research rule or `stale-wording`. A page moved with git keeps its entry's
-grading exemption and nothing else, and a line that only rewrites link targets to a page the change moved is no touch
-(both under [Legacy pages](writing-docs.md#legacy-pages)).
+grading exemption and nothing else, and a line that only rewrites link targets to follow the change is no touch: to a
+page it moved, to a section it moved between two pages, or to an id new on the same page while the old one stays (a
+split section; all under [Legacy pages](writing-docs.md#legacy-pages)).
 
 <!-- command-reference:begin docs -->
 ## Parameters of `docs` {#docs-parameters}

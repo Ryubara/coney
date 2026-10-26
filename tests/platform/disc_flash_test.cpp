@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Checks against the player's own disc that a flash is used as the original uses it (docs/research/combat-rage.md#rage,
-// "The flash clip's events"; issue #234): `level80` checkpoint 2 played in the game session as `coney --play-level
-// level80 --checkpoint 2` plays it (support/disc_session.h), player 1 hurt and carrying a flash, and a pad driver that
-// taps d-pad right for one frame. The clip 665 `gen_flash_use` must play (it is in the player's animation set), the
-// flash is spent and the health filled 25 updates into it, at the clip's action event, and on that update interface
-// cue 23 (`vags/misc/flash`) and the clip's animation sound 70 sound. Standing still, walking and running are each
-// tried, so a held stick does not turn the use into an instant heal. It runs only when the environment variable
-// CONEY_DISC names the disc and skips otherwise; it prints counts only (LEGAL.md).
+// Checks against the player's own disc that a flash is used as the original uses it
+// (docs/research/combat-rage.md#flash, "The flash clip's events"; issue #234): `level80` checkpoint 2 played in the
+// game session as `coney --play-level level80 --checkpoint 2` plays it (support/disc_session.h), player 1 hurt and
+// carrying a flash, and a pad driver that taps d-pad right for one frame. The clip 665 `gen_flash_use` must play (it is
+// in the player's animation set), the flash is spent and the health filled 25 updates into it, at the clip's action
+// event, and on that update interface cue 23 (`vags/misc/flash`) and the clip's animation sound 70 sound. Standing
+// still, walking and running are each tried, so a held stick does not turn the use into an instant heal. It runs only
+// when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only (LEGAL.md).
 
 #include <algorithm>
 #include <array>
@@ -52,11 +52,11 @@ namespace {
 // The flash's clip: 665 SPECIAL_FLASH, `gen_flash_use`.
 constexpr std::uint32_t kFlashClip = 665;
 // The update of the clip its action event falls on: frame 19 at the clip's rate of 0.75 (no rate flag), 25 updates
-// after 665 began, as the original's runs measure it (docs/research/combat-rage.md#rage).
+// after 665 began, as the original's runs measure it (docs/research/combat-rage.md#flash).
 constexpr int kEventUpdate = 25;
 // The interface cue `Flash_Use` plays: 23, `vags/misc/flash`.
 constexpr std::size_t kFlashCue = 23;
-// The animation sound 665's event 11 asks for: 70 (docs/research/combat-rage.md#rage).
+// The animation sound 665's event 11 asks for: 70 (docs/research/combat-rage.md#flash).
 constexpr std::uint32_t kFlashAnimSound = 70;
 // How long anything here may take: 60 s of frames.
 constexpr std::uint64_t kLimit = 1800;
@@ -353,8 +353,9 @@ TEST_CASE("the disc's level80: a stunned player's d-pad right uses the flash at 
           "[disc][story][flash]") {
     // Player_UseItemCommand (0x002843f8) refuses the press only when down or dead (Human_IsDownOrDead, 0x00227e60),
     // cuffed, airborne or climbing. A stun is none of those: it reaches the test of what holds the human, which a stun
-    // fails, so Flash_Use runs at once on the press's update and 665 is not played (docs/research/combat-rage.md#rage,
-    // where the original's runs heal at once over a hit reaction and a knockdown).
+    // fails, so Flash_Use runs at once on the press's update and 665 is not played
+    // (docs/research/combat-rage.md#flash-mid-move, where the original's runs heal at once over a hit reaction and a
+    // knockdown).
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");

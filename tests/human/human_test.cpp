@@ -749,7 +749,7 @@ TEST_CASE("an overlay clip plays at its anim's rate: the flash with no rate flag
     // Human_PushOverlayClip (0x0025ade8) builds its task with AnimTask5_Construct (0x00106240), which takes the rate
     // from the clip's Anim Range List flags (Anim_RateMultiplier, 0x00104a38): no flag, 0.75. So 665's frame-19 event
     // falls 25 updates after the update the clip started on, and the clip's 40 frames last 53 updates (0 to 52), as
-    // measured in the original (docs/research/combat-rage.md#rage; the end rule: formats/animation.md#clip-end).
+    // measured in the original (docs/research/combat-rage.md#flash; the end rule: formats/animation.md#clip-end).
     const TestCharacter character;
     const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
     Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 40.0F, 0.0F});
@@ -779,7 +779,7 @@ TEST_CASE("an overlay clip plays at its anim's rate: the flash with no rate flag
 TEST_CASE("an overlay clip has no fade: it plays at full weight from its first update, the older tasks gone",
           "[human][flash]") {
     // Human_PushOverlayClip (0x0025ade8) passes 0 for both of AnimTask5_Construct's fades, so the flash snaps in where
-    // a fade would blend it over the idle (docs/research/combat-rage.md#rage).
+    // a fade would blend it over the idle (docs/research/combat-rage.md#flash).
     const TestCharacter character;
     const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
     Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 40.0F, 0.0F});

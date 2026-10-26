@@ -813,7 +813,7 @@ addresses cited unless marked.
    drop it: during a throw clip or clip 602 with set 1 (`Human_ApplyPendingDamage` `0x00265f70`), when the hit
    stuns or knocks him down while he is hurt, when it comes from a counter or special clip (620 and above), or when
    he is grabbed holding a bat; all but the throw case are stopped by `HuSetKeepWeapon`
-   ([Combat: dropping what is held when hit](combat-rage.md#keep-weapon)).
+   ([Combat: dropping what is held when hit](combat-throws.md#keep-weapon)).
 
 **Coney fixes** (user item 37; the hand-over works, the member holds the object, `play_level_objects.cpp` gives him
 its anim set):

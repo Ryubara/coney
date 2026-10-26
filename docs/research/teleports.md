@@ -16,7 +16,7 @@ alone.
 
 Creating a human (`HuCreate`, `Human_Init`) and where each level first puts the player are on
 [Characters](characters.md#creation) and [Where a level puts the player](characters.md#level-starts); what the flash
-does is on [Combat power, rage and reviving](combat-rage.md#rage); a scene's start and end are on
+does is on [Combat: the power meter, rage and the flash](combat-rage.md#flash); a scene's start and end are on
 [Scenes](scenes.md#humans).
 
 ## Rules
@@ -146,8 +146,8 @@ the dealer. Script locators are given as file and function.
   `P3.MissionOver` 1.5 s later. Confirmed (runtime), run r-20261024-flash-dealer-665 (from the state library's
   `breakable-fence-flash`, 314 of 900 health, the dealer reached with the stick at 60 %).
 - At full health the press does nothing, as no upgrade (6, 8) is unlocked so early (`Player_UseItemCommand`
-  `0x002843f8`, [the flash](combat-rage.md#rage)), while the handler still ends the mission: no clip, no sound, then the
-  closing scene `l99_c9`. Confirmed (code) at `0x002843f8`.
+  `0x002843f8`, [the flash](combat-rage.md#flash)), while the handler still ends the mission: no clip, no sound, then
+  the closing scene `l99_c9`. Confirmed (code) at `0x002843f8`.
 
 ## In Coney
 
