@@ -13,8 +13,9 @@ docs/guides/coney-tools-standards.md#standards:
 gone, a ported function with no mark, a file or rule added to the legacy file since the branch left its base and, from
 the cutover, a function marked legacy since then. `touched` is the touch-it rule: a source or test file the change
 touches is held to the whole standard (listed or not), and so is a ported function the change touches. Every report of
-both is a warning until `standards.enforce` is true and an error after: nothing in `check` fails a pull request before
-the cutover. The two together are `check`, which `docs check` runs when a change can move them.
+both is a warning while `standards.enforce` is false and an error once it is true, as it is from the cutover: with the
+switch off nothing in `check` fails a pull request. The two together are `check`, which `docs check` runs when a
+change can move them.
 """
 
 from __future__ import annotations
