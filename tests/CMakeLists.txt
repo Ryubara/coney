@@ -272,6 +272,7 @@ target_sources(coney_tests PRIVATE
     characters/dynamic_clips_test.cpp
     characters/orbit_camera_test.cpp
     platform/character_mesh_test.cpp
+    platform/character_mesh_skin_test.cpp
     platform/log_output_test.cpp)
 # The player: animation tasks, locomotion, the human, the follow camera, and level99 driven by scripted pads.
 target_sources(coney_tests PRIVATE

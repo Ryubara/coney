@@ -130,6 +130,13 @@ BoneBox posedBox(std::span<const BoneBox> boxes, std::span<const anim::Mat34> pl
     return posed;
 }
 
+// Stubs until the fix: the tests in tests/platform/character_mesh_test.cpp come first.
+bool skinsOnGpu(Skinning /*skinning*/, bool /*pipelineOn*/, std::size_t /*nodes*/) { return false; }
+
+SkinVertexData packSkinVertices(std::span<const characters::SkinVertex> /*vertices*/) { return {}; }
+
+void fillBonePalette(std::span<const anim::Mat34> /*skinning*/, BonePalette& /*palette*/) {}
+
 anim::Mat34 characterPlacement(anim::Vec3 feet, float heading, float lean) {
     // The lean's roll about the forward (y) axis, then the heading about z, as columns: where each axis goes.
     const float lc = std::cos(-lean);

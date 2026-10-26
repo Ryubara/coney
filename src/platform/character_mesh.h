@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cstddef>
 #include <memory>
 #include <span>
 #include <vector>
@@ -42,6 +43,19 @@ struct BoneBox {
 /// The box round every node's box as its matrix in `placed` moves it. Every skinned vertex lies inside: a vertex is a
 /// weighted blend of points each inside one of the moved boxes. Empty with no boxes.
 [[nodiscard]] BoneBox posedBox(std::span<const BoneBox> boxes, std::span<const anim::Mat34> placed);
+
+/// Whether a mesh asking for `skinning`, of a model with `nodes` skin nodes, is skinned by the vertex shader: only with
+/// the skinned pipeline running (`pipelineOn`, characterSkinOn()) and at most kMaxSkinBones nodes, the shader's
+/// palette; any other mesh is skinned on the CPU.
+[[nodiscard]] bool skinsOnGpu(Skinning skinning, bool pipelineOn, std::size_t nodes);
+
+/// Each vertex's weights and bone indices as the skinned pipeline's vertex buffer takes them: four of each, a weight
+/// of 0 and bone 0 in an unused slot.
+[[nodiscard]] SkinVertexData packSkinVertices(std::span<const characters::SkinVertex> vertices);
+
+/// Writes the skinning matrices into the shader's palette, each a column-major 4 x 4 matrix; matrices past
+/// kMaxSkinBones are left out and the palette's other matrices left as they were.
+void fillBonePalette(std::span<const anim::Mat34> skinning, BonePalette& palette);
 
 /// A character model as plain librw geometry: the model's vertices and triangles in one librw atomic with one material
 /// per model material, textured with the character's texture. Skinned on the GPU (Skinning::Gpu with the skinned
