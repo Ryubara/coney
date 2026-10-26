@@ -130,8 +130,9 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     void markAmbientEvent() override;
     /// Whether the `_DAM_` emitters' window is open now (AmbientManager_UpdateTimers, `0x0010be78`).
     [[nodiscard]] bool damageWindowOpen() const;
-    /// The angry breathing's level now (0 silent to 1), and whether its loop plays.
+    /// The angry breathing's level now (0 silent to 1).
     [[nodiscard]] float breathingLevel() const { return m_breathing.level; }
+    /// Whether the angry breathing's loop plays.
     [[nodiscard]] bool breathingPlays() const { return m_breathing.sound.valid(); }
     void stopAmbientTrack() override;
     [[nodiscard]] bool soundPlaying(double handle) const override;
@@ -149,7 +150,10 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     void shutUp(double human, bool force) override;
     /// Whether `human`'s line is alive (Speech::speaking()), for the face's talk state.
     /// @coney-only glue: the original's human reads its own stream (`+0x170`); Coney's speech lives in the sound
-    [[nodiscard]] bool humanSpeaking(double human) const override;
+    [[nodiscard]] bool humanSpeaking(double human) const override {
+        const SoundEngine* engine = m_sounds.engine();
+        return engine != nullptr && m_speech.speaking(*engine, human);
+    }
     std::optional<double> sayCommand(const script::CommandCall& call, std::string_view callback) override;
     void gameplayEntered() override;
     void levelLoadStarted(int levelNumber) override;

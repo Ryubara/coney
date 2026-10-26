@@ -493,11 +493,6 @@ bool GameSound::speak(const script::SpeechCall& call, std::string_view callback,
         .valid();
 }
 
-bool GameSound::humanSpeaking(double human) const {
-    const SoundEngine* engine = m_sounds.engine();
-    return engine != nullptr && m_speech.speaking(*engine, human);
-}
-
 void GameSound::shutUp(double human, bool force) {
     if (SoundEngine* engine = m_sounds.engine(); engine != nullptr) {
         m_speech.shutUp(*engine, human, force);

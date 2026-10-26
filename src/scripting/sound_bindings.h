@@ -196,6 +196,7 @@ class SoundHost {
     virtual void playMusic(std::uint32_t track, bool loop, std::string_view callback) = 0;
     /// The system music's pick: `track` looping, cross-faded over `fadeBars` bars (0: a cut at the bar). By default
     /// playMusic() without a fade.
+    /// @coney-only the default of a host with no cross-fade (a test's); GameSound cross-fades
     virtual void playSystemMusic(std::uint32_t track, int /*fadeBars*/) { playMusic(track, true, {}); }
     /// `SoundStopMusicTrack()`.
     virtual void stopMusic() = 0;

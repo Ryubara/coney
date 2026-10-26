@@ -40,20 +40,25 @@ class Humans {
     /// writes its record before each step; otherwise its command and buttons are cleared at the step's start, as the
     /// original clears the command of a record no pad drives, and only a brain gives it one. A human added
     /// pad-controlled also fights the step's passive targets (the sandbox's dummies, which have no gang).
+    /// @coney-only Coney's slot list; the original's humans sit in fixed per-player slots
     void add(Human& human, bool padControlled);
     /// Takes the pad from `human` or gives it back (a player's brain set dead takes it, `BrDead`); nothing when it is
     /// not in the step.
+    /// @coney-only Coney's slot list's flag; the original reads the per-player record's pad
     void setPadControlled(const Human& human, bool padControlled);
     /// Holds `human` still, or lets it go (the Entity inspector's freeze, Coney's own debug tooling): a held human
     /// keeps its record, state and place, and the step skips its animation, state update and actions; its brain still
     /// runs and the others still see and hit it. Nothing when it is not in the step.
+    /// @coney-only debug tooling (the Entity inspector's freeze)
     void setHeld(const Human& human, bool held);
     /// Whether `human` is held (setHeld()); false for one not in the step.
+    /// @coney-only debug tooling (the Entity inspector's freeze)
     [[nodiscard]] bool held(const Human& human) const;
     /// Sets who fights whom. Without one (the default) the humans added pad-controlled and the others fight each other,
     /// as the player and the AI humans of a scene without gangs do.
     void setOpposition(Opposition opposition) { m_opposition = std::move(opposition); }
     /// Takes `human` out of the step (a spawned AI cleared away); nothing when it is not in it.
+    /// @coney-only Coney's slot list; the original's humans sit in fixed per-player slots
     void remove(const Human& human);
     /// Sets what runs at the brains' place.
     void setBrains(BrainsHook brains) { m_brains = std::move(brains); }
@@ -89,8 +94,10 @@ class Humans {
   private:
     // Who slot `slot` fights this step: the passive `targets` for a human added pad-controlled, and the humans it is
     // opposed to.
+    // @coney-only Coney's per-slot target list, the dispatcher's input
     void gatherTargets(std::size_t slot, std::span<Combatant* const> targets);
     // Whether slot `slot` fights slot `other`.
+    // @coney-only Coney's per-slot target list, the dispatcher's input
     [[nodiscard]] bool opposed(std::size_t slot, std::size_t other) const;
 
     std::vector<Human*> m_humans;      // not owned
