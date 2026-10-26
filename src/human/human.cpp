@@ -1345,8 +1345,8 @@ void Human::endTagSpray() {
     }
 }
 
-// The stereo's use of the mini-game's start at an object (docs/research/crimes.md#triangle); the lock pick's use of it
-// is not ported (its clips are not built, crimes.md#coneys-implementation).
+// The stereo's use of the mini-game's start at an object (docs/research/crimes.md#triangle). **Coney stand-in**: only
+// the stereo starts here, so no mode is tested; the lock pick's part is not ported (its clips are not built).
 // @orig 0x002789d0 MiniGame_StartAtObject (unknown)
 void Human::startStereoTheft(anim::Vec3 point, float stageTurns) {
     // **Coney stand-in** for Human_AlignToObject: the original turns and moves the human over 0.1 s onto the attack
