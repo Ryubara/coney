@@ -244,12 +244,16 @@ TEST_CASE("pause menu: Objectives shows the lists, None for an empty one, and up
 }
 
 TEST_CASE("pause menu: the header's circles take the level's colour, the last one red", "[pause_menu]") {
+    // Expected: pause.md#the-top-header, confirmed (code)
     CHECK(coney::gui::pauseLevelColour(99) == coney::graphics::Rgba{186, 139, 53, 255});
     CHECK(coney::gui::pauseLevelColour(92) == coney::graphics::Rgba{37, 100, 60, 255});
     CHECK(coney::gui::pauseLevelColour(3) == coney::graphics::Rgba{38, 61, 94, 255});
     // 80 and 83 are in the gold list too, but the brown one is tested first.
     CHECK(coney::gui::pauseLevelColour(80) == coney::graphics::Rgba{76, 53, 44, 255});
     CHECK(coney::gui::pauseLevelColour(95) == coney::graphics::kBlack);
+    // The lists are as long as their levels: nothing pads them.
+    CHECK(coney::gui::pauseLevelColour(-1) == coney::graphics::kBlack);
+    CHECK(coney::gui::pauseLevelColour(0) == coney::graphics::kBlack);
 
     PauseMenuSetup setup;
     setup.missionTitle = "1:Coney";
@@ -261,6 +265,7 @@ TEST_CASE("pause menu: the header's circles take the level's colour, the last on
 }
 
 TEST_CASE("pause menu: Stats opens the Warrior's screen, and triangle closes it", "[pause_menu]") {
+    // Expected: pause.md#stats-screen, confirmed (code)
     PauseMenuSetup setup;
     setup.stats = coney::gui::WarriorStats{.characterType = 30,
                                            .damageScale = 150,

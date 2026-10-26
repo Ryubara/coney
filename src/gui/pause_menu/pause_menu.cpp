@@ -26,6 +26,7 @@ constexpr graphics::Rgba kBonusPurple{150, 70, 190, 255}; // the selected bonus 
 constexpr graphics::Rgba kChosenWhite = graphics::kWhite; // a selected choice (white at runtime)
 
 // The colour `a` is `t` (0 to 1) of the way to `b`.
+// @orig 0x001ddcf8 PauseMenu_Update (unknown)
 graphics::Rgba blend(graphics::Rgba a, graphics::Rgba b, float t) {
     const auto mix = [t](std::uint8_t x, std::uint8_t y) {
         return static_cast<std::uint8_t>(static_cast<float>(x) + ((static_cast<float>(y) - static_cast<float>(x)) * t));
@@ -37,25 +38,31 @@ graphics::Rgba blend(graphics::Rgba a, graphics::Rgba b, float t) {
 constexpr float kTopHeaderY = 0.22F;
 constexpr float kWideTopHeaderY = 0.18F;
 
-// The lists of pauseLevelColour(), in the order they are tested, and their colours.
-struct LevelColour {
-    std::array<int, 10> levels; // -1 pads a short list
-    graphics::Rgba colour;
-};
-constexpr std::array<LevelColour, 4> kLevelColours{{
-    {{92, 51, 31, 9, 55, -1, -1, -1, -1, -1}, {37, 100, 60, 255}},
-    {{20, 11, 34, 54, 3, -1, -1, -1, -1, -1}, {38, 61, 94, 255}},
-    {{80, 82, 83, 93, 7, 87, -1, -1, -1, -1}, {76, 53, 44, 255}},
-    {{99, 81, 86, 84, 2, 52, 5, 14, 80, 83}, {186, 139, 53, 255}},
-}};
+// The level lists of pauseLevelColour(), in the order they are tested, and the colour of each: the original builds
+// them on the stack (5, 5, 6 and 10 levels; 80 and 83 in the last are never reached, the third list holds them).
+constexpr std::array kGreenLevels{92, 51, 31, 9, 55};
+constexpr std::array kBlueLevels{20, 11, 34, 54, 3};
+constexpr std::array kBrownLevels{80, 82, 83, 93, 7, 87};
+constexpr std::array kGoldLevels{99, 80, 81, 83, 86, 84, 2, 52, 5, 14};
+constexpr graphics::Rgba kGreen{37, 100, 60, 255};
+constexpr graphics::Rgba kBlue{38, 61, 94, 255};
+constexpr graphics::Rgba kBrown{76, 53, 44, 255};
+constexpr graphics::Rgba kGold{186, 139, 53, 255};
 
 } // namespace
 
 graphics::Rgba pauseLevelColour(int level) {
-    for (const LevelColour& entry : kLevelColours) {
-        if (std::ranges::find(entry.levels, level) != entry.levels.end()) {
-            return entry.colour;
-        }
+    if (std::ranges::contains(kGreenLevels, level)) {
+        return kGreen;
+    }
+    if (std::ranges::contains(kBlueLevels, level)) {
+        return kBlue;
+    }
+    if (std::ranges::contains(kBrownLevels, level)) {
+        return kBrown;
+    }
+    if (std::ranges::contains(kGoldLevels, level)) {
+        return kGold;
     }
     return graphics::kBlack;
 }

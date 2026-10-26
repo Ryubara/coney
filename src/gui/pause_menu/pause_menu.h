@@ -153,6 +153,7 @@ class PauseMenu : public Widget {
     /// Shows strings from `strings` (which must outlive the menu; null shows empty texts).
     void setStrings(const GlobalStrings* strings) { m_strings = strings; }
     /// Sends front-end sound cues to `playCue` (empty: none).
+    /// @coney-only platform glue: where the front end's cues go
     void setSoundSink(std::function<void(int cue)> playCue);
     /// Draws the background through `batch` (not owned; null: no background).
     void setBackgroundBatch(graphics::SpriteBatch* batch) { m_background.setBatch(batch); }
@@ -182,6 +183,7 @@ class PauseMenu : public Widget {
     void render(const GuiCanvas& canvas) const override;
 
     /// How far the world is tinted to black at `nowMs`, 0 to 1.
+    /// @orig 0x001ddcf8 PauseMenu_Update (unknown)
     [[nodiscard]] float worldTint(std::uint64_t nowMs) const;
 
     /// Whether the menu is fading out (`+0x1b80`).
@@ -207,6 +209,7 @@ class PauseMenu : public Widget {
     /// The menu's alpha (`+0x3b9c`), 255 open.
     [[nodiscard]] float alpha() const { return m_alpha; }
     /// The texts of the open screen's lines, as drawn (for tests and the log).
+    /// @coney-only a test and log aid
     [[nodiscard]] std::vector<std::string> screenLines() const;
 
     /// The Controls screen.
@@ -223,36 +226,52 @@ class PauseMenu : public Widget {
     enum class QuitChoice : std::uint8_t { Hangout, MainMenu, RumbleMode };
 
     // String `id`, or empty without strings.
+    // @coney-only a lookup helper over the strings Coney is given
     [[nodiscard]] std::string_view string(std::uint32_t id) const;
     // Plays `cue`, if there is a sink.
+    // @coney-only platform glue: the sound sink
     void playCue(int cue) const;
     // Starts the fade out at `nowMs` (`+0x1b80` = 1).
+    // @orig 0x001ddcf8 PauseMenu_Update (unknown)
     void startClosing(std::uint64_t nowMs);
     // The fade-in, colour cycle and closing fade at `nowMs`.
+    // @orig 0x001ddcf8 PauseMenu_Update (unknown)
+    // @orig 0x001ddbc0 PauseMenu_FadeOut (unknown)
     void animate(std::uint64_t nowMs);
     // One command without a screen or box open.
+    // @orig 0x001dee00 PauseMenu_OnCommand (unknown)
     void onGridCommand(MenuCommand command, std::uint64_t nowMs);
     // One command with a screen open.
+    // @orig 0x001ddcf8 PauseMenu_Update (unknown)
     void onScreenCommand(MenuCommand command, std::uint64_t nowMs);
     // One command to the Yes/No box.
+    // @orig 0x001ded68 PauseMenu_OnYesNoCommand (unknown)
+    // @orig 0x001db278 PauseMenu_OnConfirm (unknown)
     void onBoxCommand(MenuCommand command, std::uint64_t nowMs);
     // Acts on grid item `code`.
+    // @orig 0x001de6c0 PauseMenu_SelectItem (unknown)
     void selectItem(PauseItem item, std::uint64_t nowMs);
     // Opens the Options screen at `nowMs` (`OptionMenu_Open`, with the pausing player's input).
     // @coney-only Coney's call into OptionMenu::open with the pause setup's values and layout; the original's
     // PauseMenu_SelectItem and PauseMenu_ReturnToOptions open the menu through its slot +0xa8
     void openOptions(std::uint64_t nowMs);
     // Opens `screen` with selection `selection`.
+    // @coney-only the stand-in screens above the grid (docs/research/pause.md#open-questions)
     void openScreen(PauseScreen screen, std::size_t selection);
     // Back to the grid.
+    // @orig 0x001de488 PauseMenu_CloseScreen (unknown)
     void closeScreen();
     // Opens the Yes/No box asking string `question`.
+    // @orig 0x001de6c0 PauseMenu_SelectItem (unknown)
     void ask(std::uint32_t question);
     // How many entries the open screen's selection runs over.
+    // @coney-only the stand-in screens above the grid (docs/research/pause.md#open-questions)
     [[nodiscard]] std::size_t screenEntries() const;
     // Rebuilds the headers and screen lines for the open screen and selection.
+    // @coney-only the stand-in screens above the grid (docs/research/pause.md#open-questions)
     void refreshScreen();
     // Adds a screen line.
+    // @coney-only the stand-in screens above the grid (docs/research/pause.md#open-questions)
     void addLine(std::string_view text, float y, graphics::Rgba colour, int fontSlot, float scale);
 
     const GlobalStrings* m_strings = nullptr;

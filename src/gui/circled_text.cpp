@@ -3,21 +3,9 @@
 
 #include <algorithm>
 
-#include "graphics/screen.h"
+#include "graphics/overlay_camera.h"
 
 namespace coney::gui {
-
-namespace {
-
-// An overlay width for a width in GUI widths (BaseWidget's sizes are in overlay units: GUI heights).
-float overlayWidth(float guiWidth) { return guiWidth * graphics::kLogicalWidth / graphics::kLogicalHeight; }
-
-// A GUI width for an overlay width.
-float guiWidth(float overlay) { return overlay * graphics::kLogicalHeight / graphics::kLogicalWidth; }
-
-} // namespace
-
-CircledText::CircledText() { setup(CircledTextSetup{}); }
 
 void CircledText::setBack(graphics::SpriteBatch* batch, std::size_t rect) {
     m_back.setBatch(batch);
@@ -32,22 +20,31 @@ void CircledText::setCircleSprite(graphics::SpriteBatch* batch, std::size_t rect
 }
 
 void CircledText::setup(const CircledTextSetup& setup) {
+    if (m_setUp) {
+        return;
+    }
     m_setup = setup;
-    // The texts in the menus' font; the characters as big as the text.
+    // The text and the characters in the menus' font and the normal colour; the characters without a shadow. They are
+    // centred on their circles: the original starts each one half its measured width left of the circle's centre.
     m_text.setup(TextWidgetSetup{.scale = setup.textSize, .colour = kDimGrey, .fontSlot = kFontSlot});
     for (TextWidget& character : m_chars) {
         character.setup(TextWidgetSetup{
-            .scale = setup.textSize, .colour = kMenuGrey, .alignment = TextAlignment::Centre, .fontSlot = kFontSlot});
+            .scale = setup.textSize, .colour = kDimGrey, .alignment = TextAlignment::Centre, .fontSlot = kFontSlot});
+        character.style().shadowAlpha = 0;
     }
+    m_backColour = kBackColour;
+    m_circleColour = kCircleColour;
     m_reveal = 1.0F;
+    m_setUp = true;
 }
 
 void CircledText::setText(std::string_view text) { m_text.setText(text); }
 
 void CircledText::setCircled(std::string_view characters) {
+    // Stand-in: the count is capped at the two circles there are; the original writes past them.
     m_used = std::min(characters.size(), kCircles);
-    for (std::size_t i = 0; i < kCircles; ++i) {
-        m_chars.at(i).setText(i < m_used ? characters.substr(i, 1) : std::string_view{});
+    for (std::size_t i = 0; i < m_used; ++i) {
+        m_chars.at(i).setText(characters.substr(i, 1));
     }
 }
 
@@ -57,48 +54,68 @@ void CircledText::setCharColour(graphics::Rgba colour) {
     }
 }
 
-void CircledText::setReveal(float reveal) { m_reveal = std::clamp(reveal, 0.0F, 1.0F); }
+void CircledText::setReveal(float reveal) { m_reveal = reveal >= 0.0F ? std::min(reveal, 1.0F) : 0.0F; }
 
 void CircledText::update(const GuiFrame& frame) {
-    m_text.update(frame);
-    for (TextWidget& character : m_chars) {
-        character.update(frame);
+    if (!visible()) {
+        return;
     }
+    const CircledTextSetup& s = m_setup;
+    // The back sprite over the rectangle, its height × the reveal with its top edge kept. Its size is set after the
+    // widget's update, through the device's conversion, so the GUI width is stretched into overlay units.
+    // Stand-in: drawn whole at that height, where the original also cuts its texture rectangle by the reveal.
+    m_back.setup(BaseWidgetSetup{.x = s.x,
+                                 .y = s.y - ((s.height - height()) / 2.0F),
+                                 .height = height(),
+                                 .width = graphics::OverlayCamera::guiWidthToOverlay(s.width),
+                                 .colour = m_backColour,
+                                 .anchor = SpriteAnchor::Left});
+
+    // The circles from x0, each adding the step before and after itself (circleW is added to GUI x as it is); each
+    // character centred on its circle at the row's y. Stand-in: the texts are drawn whole (no reveal in Coney's text).
+    const float step = s.circleWidth / kStepDivisor;
+    const float shownHeight = s.circleHeight * m_reveal;
+    float x = s.x + s.circleOffset;
+    float textX = x;
+    for (std::size_t i = 0; i < m_used; ++i) {
+        const float centre = x + step;
+        TextWidget& character = m_chars.at(i);
+        character.style().x = centre;
+        character.style().y = s.y;
+        character.update(frame);
+        // The circle's size is set after its update, without the conversion, so it is drawn circleW wide as given and
+        // not refitted to the rectangle's shape; the top edge stays put as the reveal shrinks it.
+        // Stand-in: drawn whole, where the original also cuts its texture rectangle by the reveal.
+        m_circles.at(i).setup(
+            BaseWidgetSetup{.x = centre,
+                            .y = s.y - ((s.circleHeight - shownHeight) / 2.0F) + (s.circleHeight * kCircleDrop),
+                            .height = shownHeight,
+                            .width = s.circleWidth,
+                            .colour = m_circleColour});
+        textX = centre + (s.circleWidth / 2.0F);
+        x = centre + step;
+    }
+    m_text.style().x = textX;
+    m_text.style().y = s.y;
+    m_text.update(frame);
 }
 
 void CircledText::render(const GuiCanvas& canvas) const {
     if (!visible() || m_reveal <= 0.0F) {
         return;
     }
-    const CircledTextSetup& s = m_setup;
-    // The back sprite over the rectangle, its height × the reveal.
-    m_back.setup(BaseWidgetSetup{.x = s.x,
-                                 .y = s.y,
-                                 .height = height(),
-                                 .width = overlayWidth(s.width),
-                                 .colour = m_backColour,
-                                 .anchor = SpriteAnchor::Left});
     m_back.render(canvas);
-
-    // The text in the focused colour when focused.
     m_text.style().colour = m_focused ? kSelectedGrey : kDimGrey;
-
-    // The circles left to right from the left edge, each step circleW / 3; the text after the last.
-    const float step = guiWidth(s.circleWidth) / kStepDivisor;
-    float x = s.x + s.circleOffset + (guiWidth(s.circleWidth) / 2.0F);
-    for (std::size_t i = 0; i < m_used; ++i) {
-        m_circles.at(i).setup(BaseWidgetSetup{
-            .x = x, .y = s.y, .height = s.circleHeight * m_reveal, .width = s.circleWidth, .colour = m_circleColour});
-        m_circles.at(i).render(canvas);
-        m_chars.at(i).style().x = x;
-        m_chars.at(i).style().y = s.y;
-        m_chars.at(i).render(canvas);
-        x += step;
-    }
-    const float textX = m_used > 0 ? x - step + (guiWidth(s.circleWidth) / 2.0F) : s.x + s.circleOffset;
-    m_text.style().x = textX + s.textOffset;
-    m_text.style().y = s.y;
     m_text.render(canvas);
+    // Each circle and its character; a character that is not black takes the focused colour, focused or not.
+    for (std::size_t i = 0; i < m_used; ++i) {
+        m_circles.at(i).render(canvas);
+        TextWidget& character = m_chars.at(i);
+        if (character.style().colour != colourAt(0x005fd260)) {
+            character.style().colour = kSelectedGrey;
+        }
+        character.render(canvas);
+    }
 }
 
 } // namespace coney::gui

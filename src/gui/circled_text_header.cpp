@@ -24,7 +24,8 @@ constexpr float kSubtitleGap = 0.075F;
 constexpr float kLabelOffsetX = -0.005F;
 constexpr float kLabelOffsetY = 0.1F;
 
-// `colour` with its alpha × `fade`.
+// `colour` with its alpha × `fade`: the menu's fade, which RenderColoured writes into each part's alpha.
+// @coney-only a helper; the original writes the colour's alpha byte into each part
 graphics::Rgba faded(graphics::Rgba colour, float fade) {
     colour.a = static_cast<std::uint8_t>(static_cast<float>(colour.a) * fade);
     return colour;
@@ -58,11 +59,12 @@ void CircledTextHeader::setBatch(graphics::SpriteBatch* batch) {
 
 void CircledTextHeader::setup(const CircledTextHeaderSetup& setup) {
     m_setup = setup;
-    // The texts: title, characters and subtitle in font slot 4; the characters black without a shadow.
+    // The texts: title, characters and subtitle in font slot 4, grey. The characters have no shadow: the original's
+    // render clears it before each is drawn.
     m_title.setup(TextWidgetSetup{.scale = kTitleSize, .colour = kMenuGrey, .fontSlot = kFontSlot});
     m_subtitle.setup(TextWidgetSetup{.scale = kSubtitleSize, .colour = kMenuGrey, .fontSlot = kFontSlot});
     for (TextWidget& letter : m_letters) {
-        letter.setup(TextWidgetSetup{.scale = kLetterSize, .colour = graphics::kBlack, .fontSlot = kFontSlot});
+        letter.setup(TextWidgetSetup{.scale = kLetterSize, .colour = kMenuGrey, .fontSlot = kFontSlot});
         letter.style().shadowAlpha = 0;
     }
     m_label.setup(TextWidgetSetup{.scale = kLabelSize, .colour = kMenuGrey, .fontSlot = kLabelFontSlot});
@@ -70,20 +72,31 @@ void CircledTextHeader::setup(const CircledTextHeaderSetup& setup) {
 }
 
 void CircledTextHeader::setTitle(std::string_view text, int checkpoint, std::string_view levelName) {
-    // Every character before the first ':' gets a circle; a ':' that is not the first character adds the
-    // checkpoint's letter; the rest is the title.
-    std::string characters;
-    std::string_view title = text;
-    if (const std::size_t colon = text.find(':'); colon != std::string_view::npos) {
-        characters = std::string(text.substr(0, colon));
-        if (colon > 0) {
-            characters += static_cast<char>('@' + checkpoint);
+    // Every character before the first ':' gets a circle; each ':' that is not the first character adds a circle
+    // showing the checkpoint's letter in grey (black again at the next update); the other characters after the first
+    // ':' are the title, without any later ':'.
+    // Stand-in: more than three circles are dropped; the original has room for three and writes past them.
+    m_used = 0;
+    const auto addCircle = [this](char character) {
+        if (m_used < kCircles) {
+            m_letters.at(m_used).setText(std::string(1, character));
+            ++m_used;
         }
-        title = text.substr(colon + 1);
-    }
-    m_used = std::min(characters.size(), kCircles);
-    for (std::size_t i = 0; i < kCircles; ++i) {
-        m_letters.at(i).setText(i < m_used ? characters.substr(i, 1) : std::string());
+    };
+    std::string title;
+    bool inTitle = false;
+    for (std::size_t i = 0; i < text.size(); ++i) {
+        if (text[i] == ':') {
+            if (i > 0 && m_used < kCircles) {
+                addCircle(static_cast<char>('@' + checkpoint));
+                m_letters.at(m_used - 1).style().colour = kMenuGrey;
+            }
+            inTitle = true;
+        } else if (inTitle) {
+            title += text[i];
+        } else {
+            addCircle(text[i]);
+        }
     }
     m_title.setText(title);
     m_subtitle.setText(levelName);
@@ -137,6 +150,9 @@ void CircledTextHeader::place(const GuiCanvas& canvas) const {
                                  .colour = faded(kMenuGrey, m_fade)});
 
     // y0 from the position, rule A's height, the title's line height and the text offset.
+    // Stand-in: the original's line height comes from Font_Size (0x00179808), which scales by the live view aspect
+    // 0x0050b208 (1.45 in interlaced 4:3: 0.099 for the title), where Coney's font metrics use 1.3333 (0.091), so the
+    // header sits about 3 px higher than the original's until the font metrics take the view aspect.
     const graphics::FontMetrics titleMetrics = graphics::fontMetrics(kTitleSize);
     const float lineHeight = titleMetrics.height + titleMetrics.lineGap;
     const float y0 = s.y - (kRuleHeight / 2.0F) + lineHeight + s.textOffsetY - kTopLift;
@@ -152,7 +168,9 @@ void CircledTextHeader::place(const GuiCanvas& canvas) const {
         letter.style().x = x;
         letter.style().y = y0 * k.letterY;
         // The size is set without the device's conversion before the widget's update, which keeps the height and
-        // fits the width to the rectangle's shape: so only the height is given.
+        // fits the width to the rectangle's shape: so only the height is given. Stand-in: the character's width is
+        // measured now at size 1.7; the original measured it when the text was set, at the size it had then (1.561
+        // before the header's first update).
         m_circles.at(i).setup(BaseWidgetSetup{.x = x + (letter.width(canvas) / 2.0F),
                                               .y = y0 * k.circleY,
                                               .height = size,
@@ -162,6 +180,8 @@ void CircledTextHeader::place(const GuiCanvas& canvas) const {
     m_title.style().x = m_used > 0 ? x : kTitleXAlone;
     m_title.style().y = y0 * k.letterY;
 
+    // Stand-in: rule A is not made (the original places it here but never draws it), and the header has no child
+    // to place under it (the pause menu draws its objective lists itself).
     // The label in its box, centred on its own height.
     const float labelHeight = m_label.layout(canvas).height;
     m_label.style().x = s.x - (s.boxWidth / 2.0F) + s.textOffsetX + kLabelOffsetX;

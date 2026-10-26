@@ -28,7 +28,8 @@ struct CircledHeaderFactors {
 
     /// The factors in the default mode (device flag `0x01`, and progressive 4:3), in 16:9 (`widescreen`, flag `0x04`
     /// without `0x02`) and with flag `0x02` (with or without `0x04`). Flag `0x08` is not modelled (Coney has no such
-    /// device). The original writes s only in the `0x02` modes and never puts it back; Coney gives every mode its own.
+    /// device). Stand-in: the original writes s only in the `0x02` modes and never puts it back (1.2 is its static
+    /// value), so a mode entered after a `0x02` one keeps 0.84; Coney gives every mode its own s.
     /// @orig 0x001e81c0 CircledTextHeader_ApplyVideoMode (unknown)
     [[nodiscard]] static CircledHeaderFactors forMode(bool widescreen, bool flag02);
 };
@@ -47,9 +48,9 @@ struct CircledTextHeaderSetup {
 /// `0x006340c0`): the mission's title after up to three circled characters, the level's name under it, a rule between
 /// them, and a label (`IconTextHeader`'s text) the pause menu hides on its grid.
 ///
-/// - **The text** (setTitle()): the characters before the first `:` get a circle each; the `:` (when not the first
-///   character) adds a circle whose character is `@` + the checkpoint (`A` for 1); what follows is the title. The
-///   last circle is then red `0x005fd328`. The subtitle is the level's name.
+/// - **The text** (setTitle()): the characters before the first `:` get a circle each; every `:` that is not the
+///   first character adds a circle whose character is `@` + the checkpoint (`A` for 1); the other characters after the
+///   first `:` are the title. The last circle is then red `0x005fd328`. The subtitle is the level's name.
 /// - **Layout** (each frame, in render(): a circle's centre needs its character's width), from the position (X, Y),
 ///   the text offset oy, rule A's height h = 0.007, the title's line height t (h + lineGap of `Font_Size(2.23)`) and
 ///   the mode's factors: y0 = Y − h / 2 + t + oy − 0.196; rule B centred at (X + 0.035, (Y − 0.07) × a), 0.57 ×
@@ -57,8 +58,9 @@ struct CircledTextHeaderSetup {
 ///   each circle centred on its character at y0 × c, 0.082 × s square; the title after the last circle (x 0.255
 ///   with none) at y0 × d; the label at (X − W / 2 + ox − 0.005, (Y + h / 2 − its height / 2 + oy + 0.1) × e).
 /// - **Look**: circles `part_page0` rectangle 84, black until coloured; characters font slot 4 at `Font_Size(1.7)`,
-///   opaque black every update (so setLetterColour() lasts one frame), no shadow; title `Font_Size(2.23)` and
-///   subtitle `Font_Size(1.7)`, font slot 4, grey `0x005fd310`, shadow 0x80; rule B `part_page0` rectangle 10, grey.
+///   grey when set up and opaque black every update (so setLetterColour() lasts one frame), no shadow; title
+///   `Font_Size(2.23)` and subtitle `Font_Size(1.7)`, font slot 4, grey `0x005fd310`, shadow 0x80; rule B `part_page0`
+///   rectangle 10, grey.
 /// - **Drawing** (`RenderColoured`): the label in the given colour (when visible), each used circle and its character,
 ///   rule B, the title and the subtitle, all at the menu's fade.
 ///
@@ -68,7 +70,6 @@ struct CircledTextHeaderSetup {
 /// size 1.7 (the set-up's 1.561 is replaced every update).
 ///
 /// Research: docs/research/gui.md#circled-text-header, docs/research/gui.md#circled-text-header-layout
-/// @orig 0x001e7f50 CircledTextHeader_Construct (unknown)
 class CircledTextHeader : public Widget {
   public:
     /// The most circles the header holds.
@@ -99,9 +100,13 @@ class CircledTextHeader : public Widget {
     /// The last circle's colour (`0x005fd328`).
     static constexpr graphics::Rgba kLastCircle = kMenuRed;
 
+    /// The parts, the label hidden (the markup widget's constructor clears its visible flag), and a default set-up
+    /// (Coney's widgets need one; the original's are blank until the pause menu sets them up).
+    /// @orig 0x001e7f50 CircledTextHeader_Construct (unknown)
     CircledTextHeader();
 
     /// Draws the circles and rule B into `batch` (a batch over `part_page0` at kCircleDepth; not owned, null: none).
+    /// @coney-only sprite binding: the original's set-up takes the sprite words
     void setBatch(graphics::SpriteBatch* batch);
     /// Places the header and gives its parts their look (`CircledTextHeader_Setup`, slot `+0xa8`).
     /// @orig 0x001e8368 CircledTextHeader_Setup (unknown)
@@ -125,9 +130,11 @@ class CircledTextHeader : public Widget {
     /// The colour `RenderColoured` draws the label in.
     void setLabelColour(graphics::Rgba colour) { m_label.style().colour = colour; }
     /// The menu's fade, 0 to 1, on every part.
+    /// @coney-only Coney keeps the fade for render(); the original's RenderColoured takes it as an argument
     void setFade(float fade);
 
-    /// Makes the used characters opaque black again and advances the texts' time.
+    /// Makes the used characters opaque black again and advances the texts' time (the rest of the original's update
+    /// is place()).
     /// @orig 0x001e86c8 CircledTextHeader_Update (unknown)
     void update(const GuiFrame& frame) override;
     /// Places every part (the layout above) and adds it to the batches. Nothing while hidden.
@@ -137,19 +144,24 @@ class CircledTextHeader : public Widget {
 
     /// How many circles are in use.
     [[nodiscard]] std::size_t circles() const { return m_used; }
-    /// Circle `index` and its character (placed by the last render()).
+    /// Circle `index` (placed by the last render()).
     [[nodiscard]] const BaseWidget& circle(std::size_t index) const { return m_circles.at(index); }
+    /// Circle `index`'s character (placed by the last render()).
     [[nodiscard]] const TextWidget& letter(std::size_t index) const { return m_letters.at(index); }
-    /// The title, the subtitle, rule B and the label (placed by the last render()).
+    /// The title (placed by the last render()).
     [[nodiscard]] const TextWidget& title() const { return m_title; }
+    /// The subtitle (placed by the last render()).
     [[nodiscard]] const TextWidget& subtitle() const { return m_subtitle; }
+    /// Rule B (placed by the last render()).
     [[nodiscard]] const BaseWidget& rule() const { return m_rule; }
+    /// The label (placed by the last render()).
     [[nodiscard]] const TextWidget& label() const { return m_label; }
     /// The set-up.
     [[nodiscard]] const CircledTextHeaderSetup& setupValues() const { return m_setup; }
 
   private:
     // Places every part for `canvas`'s fonts (the update's layout; the circles need their characters' widths).
+    // @orig 0x001e86c8 CircledTextHeader_Update (unknown)
     void place(const GuiCanvas& canvas) const;
 
     CircledTextHeaderSetup m_setup;
