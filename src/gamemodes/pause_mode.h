@@ -49,7 +49,8 @@ struct PauseHooks {
     /// off.
     std::function<void()> radarsBack;
     /// The Options screen changed a value (every change, with all the values, after the game state took them): the
-    /// game applies what it has (the volumes, the camera's auto-adjust).
+    /// game applies what it has outside the game state (the volumes). What the game state keeps, the level reads
+    /// from there (each player camera's Auto Adjust).
     std::function<void(const gui::OptionValues& values)> applyOptions{};
 };
 

@@ -1,15 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// The Options screen. Past the 500-line guide because one class stands for the original's OptionMenu, OptionPage and
+// its three item classes (YesNoBox, StatBarItem, LightingItem), whose commands share one set of values and hooks; the
+// layout table (option_layout.cpp) and the bars' drawing (option_bar.cpp) live apart.
 #include "gui/pause_menu/option_menu.h"
 
 #include <algorithm>
 #include <cmath>
 #include <format>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "graphics/overlay_camera.h"
 #include "gui/colour_table.h"
+#include "gui/pause_menu/option_bar.h"
 
 namespace coney::gui {
 
@@ -23,9 +27,6 @@ constexpr float kBigLabelSize = 1.3F;
 constexpr float kHintGap = 0.06F;
 // The brightness bar's y (`0x0050ed74`).
 constexpr float kBrightnessBarY = 0.50F;
-// The bars' back and fill are drawn from the bar's place moved by this (`StatBarItem_Setup`).
-constexpr float kBarShiftX = -0.004F;
-constexpr float kBarShiftY = 0.004F;
 // Less than this from an end counts as at the end. Coney's choice: the original compares with 0 and 1 exactly, but
 // its FPU rounds toward zero, so the same exact compare on another FPU could take one more step at an end.
 constexpr float kBarEpsilon = 0.001F;
@@ -57,116 +58,9 @@ OptionValues OptionValues::defaults(bool wideVideo) {
     return values;
 }
 
-// OptionMenu_Open's layout globals for each video mode and language (docs/research/pause.md#options), in the order
-// forMode() picks them: (mode × 2) + German, the mode 0 default (device flags 0x01), 1 16:9 (0x04), 2 flag 0x02, 3
-// both. German moves the Camera answers 0.1 (`0x0050edd0`) and Restore Default's to 0.11 (`0x0050ed80`); flag 0x02's
-// Camera answers (0.12, or 0.1 with 16:9) replace German's.
-const std::array<OptionLayout, 8> OptionLayout::kModes{{
-    // Default: the values OptionMenu_Open writes first.
-    {.titleY = 0.30F,
-     .titleStep = 0.055F,
-     .lightingLabelY = 0.29F,
-     .rowY = 0.36F,
-     .rowStep = 0.045F,
-     .answersOffset = 0.4F,
-     .cameraAnswersExtra = 0.0F,
-     .underAnswersOffset = 0.06F,
-     .restoreAnswersOffset = 0.06F,
-     .volumeRows = {0.37F, 0.405F, 0.455F, 0.49F},
-     .squaresY = 0.38F,
-     .squareScale = 1.0F},
-    {.titleY = 0.30F,
-     .titleStep = 0.055F,
-     .lightingLabelY = 0.29F,
-     .rowY = 0.36F,
-     .rowStep = 0.045F,
-     .answersOffset = 0.4F,
-     .cameraAnswersExtra = 0.1F,
-     .underAnswersOffset = 0.06F,
-     .restoreAnswersOffset = 0.11F,
-     .volumeRows = {0.37F, 0.405F, 0.455F, 0.49F},
-     .squaresY = 0.38F,
-     .squareScale = 1.0F},
-    // 16:9 (flag 0x04 without 0x02 or 0x08): everything starts higher.
-    {.titleY = 0.24F,
-     .titleStep = 0.055F,
-     .lightingLabelY = 0.24F,
-     .rowY = 0.30F,
-     .rowStep = 0.045F,
-     .answersOffset = 0.4F,
-     .cameraAnswersExtra = 0.0F,
-     .underAnswersOffset = 0.06F,
-     .restoreAnswersOffset = 0.06F,
-     .volumeRows = {0.31F, 0.345F, 0.395F, 0.43F},
-     .squaresY = 0.34F,
-     .squareScale = 1.0F},
-    {.titleY = 0.24F,
-     .titleStep = 0.055F,
-     .lightingLabelY = 0.24F,
-     .rowY = 0.30F,
-     .rowStep = 0.045F,
-     .answersOffset = 0.4F,
-     .cameraAnswersExtra = 0.1F,
-     .underAnswersOffset = 0.06F,
-     .restoreAnswersOffset = 0.11F,
-     .volumeRows = {0.31F, 0.345F, 0.395F, 0.43F},
-     .squaresY = 0.34F,
-     .squareScale = 1.0F},
-    // Flag 0x02 without 0x04: titles and rows closer together, the Camera answers further right, smaller squares.
-    {.titleY = 0.32F,
-     .titleStep = 0.045F,
-     .lightingLabelY = 0.33F,
-     .rowY = 0.37F,
-     .rowStep = 0.04F,
-     .answersOffset = 0.4F,
-     .cameraAnswersExtra = 0.12F,
-     .underAnswersOffset = 0.06F,
-     .restoreAnswersOffset = 0.06F,
-     .volumeRows = {0.38F, 0.415F, 0.455F, 0.49F},
-     .squaresY = 0.38F,
-     .squareScale = 0.7F},
-    {.titleY = 0.32F,
-     .titleStep = 0.045F,
-     .lightingLabelY = 0.33F,
-     .rowY = 0.37F,
-     .rowStep = 0.04F,
-     .answersOffset = 0.4F,
-     .cameraAnswersExtra = 0.12F,
-     .underAnswersOffset = 0.06F,
-     .restoreAnswersOffset = 0.11F,
-     .volumeRows = {0.38F, 0.415F, 0.455F, 0.49F},
-     .squaresY = 0.38F,
-     .squareScale = 0.7F},
-    // Flags 0x02 and 0x04: the default places with smaller squares and the Camera answers 0.1 further right.
-    {.titleY = 0.30F,
-     .titleStep = 0.055F,
-     .lightingLabelY = 0.29F,
-     .rowY = 0.36F,
-     .rowStep = 0.045F,
-     .answersOffset = 0.4F,
-     .cameraAnswersExtra = 0.1F,
-     .underAnswersOffset = 0.06F,
-     .restoreAnswersOffset = 0.06F,
-     .volumeRows = {0.37F, 0.405F, 0.455F, 0.49F},
-     .squaresY = 0.38F,
-     .squareScale = 0.7F},
-    {.titleY = 0.30F,
-     .titleStep = 0.055F,
-     .lightingLabelY = 0.29F,
-     .rowY = 0.36F,
-     .rowStep = 0.045F,
-     .answersOffset = 0.4F,
-     .cameraAnswersExtra = 0.1F,
-     .underAnswersOffset = 0.06F,
-     .restoreAnswersOffset = 0.11F,
-     .volumeRows = {0.37F, 0.405F, 0.455F, 0.49F},
-     .squaresY = 0.38F,
-     .squareScale = 0.7F},
-}};
-
 OptionMenu::OptionMenu() { // Coney's choice: no music handle (+0x45d4 = -1); the hook runs the loop
-    for (BaseWidget* widget : {&m_barFrame, &m_barBack, &m_barFill, &m_squares[0], &m_squares[1]}) {
-        widget->setVisible(true);
+    for (BaseWidget& square : m_squares) {
+        square.setVisible(true);
     }
 }
 
@@ -179,8 +73,9 @@ void OptionMenu::playCue(int cue) const {
 }
 
 void OptionMenu::setSpriteBatch(graphics::SpriteBatch* batch) {
-    for (BaseWidget* widget : {&m_barFrame, &m_barBack, &m_barFill, &m_squares[0], &m_squares[1]}) {
-        widget->setBatch(batch);
+    m_sheet = batch;
+    for (BaseWidget& square : m_squares) {
+        square.setBatch(batch);
     }
 }
 
@@ -357,10 +252,11 @@ void OptionMenu::open(const GlobalStrings* strings, MenuInput& input, Hooks hook
 }
 
 void OptionMenu::refreshAnswers(OptionItem& item) const {
-    // One marked-up line, "A / B", the chosen answer in 0x005fd310 and the other in 0x005fd320.
+    // One marked-up line, "A/B" with no space (each part starts where the last ends), the chosen answer in
+    // 0x005fd310 and the other in 0x005fd320.
     const graphics::Rgba first = item.choice == 0 ? kMenuGrey : kDimGrey;
     const graphics::Rgba second = item.choice == 0 ? kDimGrey : kMenuGrey;
-    item.answersText.setText(std::format("{}{}</COLOR> / {}{}</COLOR>", colourTag(first), string(item.answers[0]),
+    item.answersText.setText(std::format("{}{}</COLOR>/{}{}</COLOR>", colourTag(first), string(item.answers[0]),
                                          colourTag(second), string(item.answers[1])));
 }
 
@@ -554,7 +450,7 @@ void OptionMenu::applyChoice(OptionItem& item, bool confirmed) {
     case OptionSetting::VibrationP1:
     case OptionSetting::VibrationP2:
         v.vibration.at(pad) = on;
-        // Turning a pad's vibration on rumbles it briefly.
+        // Turning a pad's vibration on rumbles it briefly; a later preview replaces this one (Hooks::vibrate).
         if (on && m_hooks.vibrate) {
             m_hooks.vibrate(static_cast<int>(pad), kVibrationStrength, kVibrationMs);
         }
@@ -569,7 +465,10 @@ void OptionMenu::applyChoice(OptionItem& item, bool confirmed) {
         v.proLogic = on;
         break;
     case OptionSetting::Video:
-        // Only accept (2 Normal, 3 Wide) selects the mode.
+        // Only accept (2 Normal, 3 Wide) selects the mode. Coney's choice: only the value is set. The original then
+        // switches the device's mode and closes and reopens the pause and Options menus for the new layout
+        // (OptionMenu_OnVideoChoice), so the player sees the menus fade in again on Options with Lighting selected;
+        // Coney has no video mode to switch, so nothing is reopened.
         if (!confirmed) {
             return;
         }
@@ -683,48 +582,35 @@ void OptionMenu::render(const GuiCanvas& canvas) const {
         m_heading.render(canvas);
     }
     const auto alpha = static_cast<std::uint8_t>(std::lround(255.0F * m_fade));
-    for (const std::unique_ptr<OptionItem>& item : page()) {
-        item->labelText.render(canvas);
-        if (item->kind == OptionItemKind::Choice) {
-            item->answersText.render(canvas);
+    graphics::SpriteBatch* parts = canvas.textBatch ? canvas.textBatch(kLabelFontSlot) : nullptr;
+    const std::size_t selected = m_selected.at(m_title);
+    const std::vector<std::unique_ptr<OptionItem>>& items = page();
+    for (std::size_t i = 0; i < items.size(); ++i) {
+        const OptionItem& item = *items.at(i);
+        item.labelText.render(canvas);
+        if (item.kind == OptionItemKind::Choice) {
+            item.answersText.render(canvas);
             continue;
         }
-        // A bar: its frame centred on its middle, then the back and the fill from its left edge.
-        const float width = graphics::OverlayCamera::guiWidthToOverlay(kBarWidth);
-        m_barFrame.setup(BaseWidgetSetup{.x = item->barX + (kBarWidth / 2.0F),
-                                         .y = item->barY,
-                                         .height = kBarHeight,
-                                         .width = width,
-                                         .colour = graphics::Rgba{255, 255, 255, alpha}});
-        m_barFrame.render(canvas);
-        m_barBack.setup(BaseWidgetSetup{.x = item->barX + kBarShiftX,
-                                        .y = item->barY + kBarShiftY,
-                                        .height = kBarHeight,
-                                        .width = width,
-                                        .colour = graphics::Rgba{kBarBack.r, kBarBack.g, kBarBack.b, alpha},
-                                        .anchor = SpriteAnchor::Left});
-        m_barBack.render(canvas);
-        if (item->bar > 0.0F) {
-            m_barFill.setup(BaseWidgetSetup{.x = item->barX + kBarShiftX,
-                                            .y = item->barY + kBarShiftY,
-                                            .height = kBarHeight,
-                                            .width = width * item->bar,
-                                            .colour = graphics::Rgba{255, 255, 255, alpha},
-                                            .anchor = SpriteAnchor::Left});
-            m_barFill.render(canvas);
+        // A bar: no frame, its back, then its fill in the label's colour (the selected item's 0x005fd310, the
+        // others' 0x005fd320) at the menu's alpha, where its first update put them.
+        if (const std::optional<OptionBarPlace> place =
+                optionBarPlace(m_sheet, item.barX, item.barY, m_layout.barHeightCut)) {
+            const graphics::Rgba label = i == selected ? kMenuGrey : kDimGrey;
+            drawOptionBar(parts, *place, item.bar, graphics::Rgba{label.r, label.g, label.b, alpha});
         }
-        if (item->kind == OptionItemKind::Brightness) {
+        if (item.kind == OptionItemKind::Brightness) {
             // The squares: the brightness's grey, then black; and the hint.
             const auto grey = static_cast<std::uint8_t>(std::clamp(m_values.brightness, 0, 255));
             const std::array<graphics::Rgba, 2> colours{graphics::Rgba{grey, grey, grey, alpha},
                                                         graphics::Rgba{0, 0, 0, alpha}};
-            for (std::size_t i = 0; i < m_squares.size(); ++i) {
-                BaseWidget& square = m_squares.at(i);
-                square.setup(BaseWidgetSetup{.x = kSquareX.at(i),
+            for (std::size_t s = 0; s < m_squares.size(); ++s) {
+                BaseWidget& square = m_squares.at(s);
+                square.setup(BaseWidgetSetup{.x = kSquareX.at(s),
                                              .y = m_layout.squaresY,
                                              .height = kSquareHeight * m_layout.squareScale,
                                              .width = kSquareWidth * m_layout.squareScale,
-                                             .colour = colours.at(i)});
+                                             .colour = colours.at(s)});
                 square.render(canvas);
             }
             m_hint.render(canvas);

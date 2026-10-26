@@ -89,8 +89,10 @@ struct OptionLayout {
     std::array<float, 4> volumeRows{0.37F, 0.405F, 0.455F, 0.49F}; ///< Music label, bar, SoundFX label, bar.
     float squaresY = 0.38F;                                        ///< The brightness squares' y (`0x0050ed4c`).
     float squareScale = 1.0F;                                      ///< `0x0050ed44`.
+    float barHeightCut = 0.04F; ///< Taken off the bars' height by their first update (`0x0050ed30`).
 
-    /// Each mode's and language's layout, as forMode() picks it (OptionMenu_Open's values; defined in option_menu.cpp).
+    /// Each mode's and language's layout, as forMode() picks it (OptionMenu_Open's values; defined in
+    /// option_layout.cpp).
     static const std::array<OptionLayout, 8> kModes;
 
     /// The layout for `language` in the default video mode, in 16:9 (`widescreen`, device flag `0x04`), with flag
@@ -156,25 +158,24 @@ struct OptionItem {
 ///   opened, except on Restore Default; on Vibration the preview rumble stops first. Camera, Audio and Vibration show
 ///   the page's name as a heading at (0.26, 0.30), size 1.3.
 /// - **Choices** (On `0x12b` / Off `0x12c` and the others): the label (size 1.0, font slot 3, `0x005fd310` when
-///   selected, else `0x005fd320`) with the answers 0.4 to its right ("A / B", font slot 4, the chosen one
+///   selected, else `0x005fd320`) with the answers 0.4 to its right ("A/B" edge to edge, font slot 4, the chosen one
 ///   `0x005fd310`); left picks the first answer and right the second (cue 4, `0xe` when already chosen) and the value
 ///   is set at once (again when already chosen), the first answer meaning on. Video and Restore Default are in confirm
 ///   mode: left and right only move, accept applies (Normal or Wide; Yes restores the defaults); Restore Default starts
 ///   on No.
-/// - **Volume bars** (Music, SoundFX): 0.54 wide, a white fill over a (21, 21, 21) back, 0.025 high; left and right
-///   step 0.05 within 0-1 (cue 4, `0xe` at an end) and set the volume each press, at an end too.
+/// - **Volume bars** (Music, SoundFX): 0.54 wide, no frame; a (21, 21, 21) back and over it a fill in the label's
+///   colour, both part_page0's strip, as tall as the first update makes them (option_bar.h); left and right step 0.05
+///   within 0-1 (cue 4, `0xe` at an end) and set the volume each press, at an end too.
 /// - **Brightness**: the bar at brightness / 100; left and right step the brightness by 5 within 0-100; two squares
 ///   0.09 × 0.065, the first in the brightness's grey, the second black; the hint `0x118` under the label.
 ///
 /// Every change goes to the apply callback at once with all the values (what each setter writes, save.md#options).
 ///
-/// Coney's choices where the page is silent (docs/research/pause.md#options): the bars' frame (sheet 12 rectangle 0)
-/// is drawn the bar's size; the bars' back and fill and the squares use sheet 12 rectangle 6 tinted; the page heading
-/// and the single-item pages' label sit at the heading's place; Restore Default's Yes opens the menu again at once (the
-/// original does it on its next update); the Audio page's music loop and the vibration preview go to hooks the caller
-/// may leave empty; Video's Wide only sets the value (Coney has no video mode to switch, so the menus are not
-/// reopened); the page's discard box
-/// (`OptionPage` `+0x210`), which no code opens, is left out.
+/// Coney's choices where the page is silent (docs/research/pause.md#options): the page heading and the single-item
+/// pages' label sit at the heading's place; Restore Default's Yes opens the menu again at once (the original does it
+/// on its next update); the Audio page's music loop and the vibration preview go to hooks the caller may leave empty;
+/// Video's Wide only sets the value (Coney has no video mode to switch, so the menus are not reopened); the page's
+/// discard box (`OptionPage` `+0x210`), which no code opens, is left out.
 ///
 /// Research: docs/research/pause.md#options, docs/research/pause.md#fn-optionmenu
 class OptionMenu {
@@ -189,11 +190,8 @@ class OptionMenu {
     static constexpr int kAnswersFontSlot = 4;
     /// Pro Logic II's row (`0x0050edcc`).
     static constexpr float kProLogicY = 0.60F;
-    /// The bars' width (GUI), height (overlay), the step, and their back's colour.
-    static constexpr float kBarWidth = 0.54F;
-    static constexpr float kBarHeight = 0.025F;
+    /// The bars' step.
     static constexpr float kBarStep = 0.05F;
-    static constexpr graphics::Rgba kBarBack{21, 21, 21, 255};
     /// The brightness's step and range.
     static constexpr int kBrightnessStep = 5;
     static constexpr int kBrightnessMax = 100;
@@ -202,7 +200,6 @@ class OptionMenu {
     static constexpr float kSquareWidth = 0.09F;
     static constexpr float kSquareHeight = 0.065F;
     static constexpr std::size_t kSquareRect = 6;
-    static constexpr std::size_t kFrameRect = 0;
     /// The vibration preview: strength and length (`0x0050ed50`, `0x0050ed54`).
     static constexpr int kVibrationStrength = 120;
     static constexpr std::uint64_t kVibrationMs = 500;
@@ -221,13 +218,15 @@ class OptionMenu {
         /// The Audio page's music loop (`vags/music/wonderwheel_mono`): on with the music volume while the page is
         /// open (called again when the volume changes), off when it closes.
         std::function<void(bool on, float volume)> previewMusic;
-        /// A pad's vibration turned on: rumble `pad` at `strength` for `ms`.
+        /// A pad's vibration turned on: rumble `pad` at `strength` for `ms`. One preview runs at a time: a new one
+        /// replaces the one running (the original keeps one pad record, `0x0050ecf0`), so with both pads turned on
+        /// only the last pad rumbles.
         std::function<void(int pad, int strength, std::uint64_t ms)> vibrate;
         /// The vibration preview stopped early (back on the Vibration page).
         std::function<void()> stopVibration;
     };
 
-    /// The screen, closed, with the bars' and squares' widgets shown (drawn only while a page with a bar is open).
+    /// The screen, closed, with the squares' widgets shown (drawn only while the Lighting page is open).
     /// @orig 0x001d84a0 OptionMenu_Construct (OptionMenu.cpp)
     OptionMenu();
 
@@ -248,14 +247,16 @@ class OptionMenu {
     /// Advances the texts.
     /// @orig 0x001da658 OptionMenu_Update (OptionMenu.cpp)
     void update(const GuiFrame& frame);
-    /// Adds the titles, or the open page.
+    /// Adds the titles, or the open page: the bars into the batch of font slot 3 (part_page0's, the original's batch
+    /// 3), the squares into the sprite batch.
     /// @orig 0x001da880 OptionMenu_Render (OptionMenu.cpp)
     /// @orig 0x001d62d8 OptionPage_Render (OptionMenu.cpp)
     void render(const GuiCanvas& canvas) const;
     /// The menu's alpha, 0 to 1.
     /// @coney-only the pause menu's fade handed to Coney's widgets; the original passes the alpha to each render
     void setFade(float fade);
-    /// Draws the bars and squares into `batch` (sheet 12's); null draws none.
+    /// Draws the squares into `batch` (sheet 12's), whose rectangle 0 also sizes the bars; null draws no squares or
+    /// bars.
     /// @coney-only Coney's sprite batches; the original's widgets hold their own sprites
     void setSpriteBatch(graphics::SpriteBatch* batch);
 
@@ -294,7 +295,8 @@ class OptionMenu {
     // @coney-only Coney sets them when the selection changes; the original picks them as it draws (OptionMenu_Render,
     // OptionPage_Render), whose compared pairs point here
     void colour();
-    // Rebuilds a choice's answers text: the chosen answer `0x005fd310`, the other `0x005fd320`, a "/" between.
+    // Rebuilds a choice's answers text: the chosen answer `0x005fd310`, the other `0x005fd320`, a "/" between, edge
+    // to edge (YesNoBox_SetAnswersPosition sets each after the last one's width).
     // @orig 0x001d6b00 YesNoBox_RenderColoured (OptionMenu.cpp)
     void refreshAnswers(OptionItem& item) const;
     // The open page's items.
@@ -344,10 +346,8 @@ class OptionMenu {
     std::array<std::vector<std::unique_ptr<OptionItem>>, kOptionPages> m_pages;
     TextWidget m_heading;
     TextWidget m_hint;
-    // One frame, back and fill drawn for each bar in turn: placed in render().
-    mutable BaseWidget m_barFrame{nullptr, kFrameRect};
-    mutable BaseWidget m_barBack{nullptr, kSquareRect};
-    mutable BaseWidget m_barFill{nullptr, kSquareRect};
+    // Sheet 12's batch: the squares draw into it, and its rectangle 0 sizes the bars.
+    graphics::SpriteBatch* m_sheet = nullptr;
     mutable std::array<BaseWidget, 2> m_squares{BaseWidget{nullptr, kSquareRect}, BaseWidget{nullptr, kSquareRect}};
     std::size_t m_title = 0;
     // Each page's selected item (OptionPage +4): set to 0 by open() only, so a page reopens where it was left.

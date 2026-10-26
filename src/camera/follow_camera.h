@@ -44,8 +44,8 @@ struct FollowTuning {
     float positionLag = 0.22F;         ///< FollowCamera::kPositionLag.
     float collisionMargin = 0.2F;      ///< FollowCamera::kCollisionMargin.
     float minCollisionDistance = 0.5F; ///< FollowCamera::kMinCollisionDistance.
-    /// The per-pad auto-follow option bytes (`0x0050b240` / `0x0050b248`), 1 by default: the auto-centre rule; off,
-    /// the default rule.
+    /// The debug menus' switch for the auto-centre rule, on by default: off, every camera runs the default rule. Each
+    /// camera's player's Auto Adjust option is its own (FollowCamera::setAutoAdjust()); this switch is Coney's.
     bool autoCentre = true;
     /// One player camera (`0x0050b19c` = 1, the count `0x00122ed0` makes): the sprint zoom pulls the band in to the
     /// minimum distance and the default zoom's upper pitch limit is 30°. Off is the split-screen case, which Coney
@@ -383,10 +383,12 @@ class FollowCamera {
     [[nodiscard]] bool viewLatched() const { return m_viewLatch; }
     /// The yaw the auto-follow rule turned the camera by in the last update, radians (positive anticlockwise).
     [[nodiscard]] float lastAutoTurn() const { return m_lastAutoTurn; }
-    /// Sets the camera's player's Auto Adjust option. Stub: not kept yet.
-    void setAutoAdjust(bool /*on*/) {}
-    /// The camera's player's Auto Adjust option. Stub: always on.
-    [[nodiscard]] bool autoAdjust() const { return true; }
+    /// Sets the Auto Adjust option of the camera's player (the option byte `0x0050b240` + the camera's pad, which
+    /// Cam_Follow_AutoFollow reads through the camera's own slot `+0x27c`): on, auto-follow runs the auto-centre rule;
+    /// off, the default rule. The game mode sets it from its player's pad options (docs/research/camera.md#heading).
+    void setAutoAdjust(bool on) { m_autoAdjust = on; }
+    /// The camera's player's Auto Adjust option; on until set.
+    [[nodiscard]] bool autoAdjust() const { return m_autoAdjust; }
     /// The yaw the combat camera or keep-in-view turned it by in the last update, radians (positive anticlockwise).
     [[nodiscard]] float lastFrameTurn() const { return m_lastFrameTurn; }
     /// The settings it was made or configured with.
@@ -510,6 +512,7 @@ class FollowCamera {
     bool m_viewLatch = false;          // +0x45d
     int m_standingUpdates = 0;         // updates in a row the target has stood (gait 0, on the ground)
     float m_lastAutoTurn = 0.0F;
+    bool m_autoAdjust = true; // the camera's player's Auto Adjust option (0x0050b240 + its pad)
     float m_lastFrameTurn = 0.0F;
     float m_configuredPitch;         // +0x30c
     float m_fov;                     // the field of view now
