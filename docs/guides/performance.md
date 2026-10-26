@@ -131,24 +131,26 @@ of 286,720 pixels different, by one level of one channel.
 
 ## Findings {#findings}
 
-Taken on 2026-10-25 with `coney-tools perf bench` and `perf bench --cpu-skinning` in the hub, from the `playtest`
-build of the change that brought GPU skinning: windowed, vsync off, a Ryzen 7 9800X3D with an RTX 5080 (NVIDIA
-driver 610.88). The machine was **not quiet**: two to four other builds and test runs held build slots, and the
-processor's load read 79 to 100 %. The table gives the median frame of each run (the means carry the other builds'
-stalls), as the median of three interleaved repeats. The zones are medians too.
+Taken on 2026-10-25 with `coney-tools perf bench` in the hub from two `playtest` builds: the change that brought
+GPU skinning (with and without `--cpu-skinning`) and the `main` it starts from (`516482455`, CPU skinning). Windowed,
+vsync off, a Ryzen 7 9800X3D with an RTX 5080 (NVIDIA driver 610.88). The machine was **not quiet**: two to four
+other builds and test runs held build slots, and the processor's load read 93 to 100 %. The table gives the median
+frame of each run (the means carry the other builds' stalls), as the median of three repeats, the three builds
+interleaved. The zones are medians too.
 
-| Fighters | Frame, CPU skinning (ms) | Frame, GPU skinning (ms) | Frames a second (GPU) | `render.skin`, CPU / GPU (ms) | Uploads a frame, CPU / GPU (KB) |
-| --- | --- | --- | --- | --- | --- |
-| 0 | 5.77 | 3.47 | 288 | 3.00 / 0.40 | 535 / 19 |
-| 10 | 8.34 | 3.84 | 261 | 5.16 / 0.69 | 891 / 28 |
-| 25 | 11.77 | 4.55 | 220 | 8.16 / 1.12 | 1,329 / 31 |
-| 50 | 17.91 | 6.83 | 146 | 13.45 / 1.92 | 2,058 / 36 |
-| 100 | 37.08 | 9.37 | 107 | 27.54 / 3.47 | 3,480 / 46 |
+| Fighters | Frame, `main` (ms) | Frame, `--cpu-skinning` (ms) | Frame, GPU skinning (ms) | Frames a second, `main` / GPU | `render.skin`, `main` / GPU (ms) | Uploads a frame, `main` / GPU (KB) |
+| --- | --- | --- | --- | --- | --- | --- |
+| 0 | 6.00 | 5.91 | 2.93 | 167 / 341 | 3.20 / 0.34 | 535 / 19 |
+| 10 | 9.22 | 9.97 | 3.49 | 108 / 287 | 5.61 / 0.59 | 891 / 28 |
+| 25 | 12.36 | 11.69 | 4.09 | 81 / 244 | 8.71 / 0.97 | 1,329 / 31 |
+| 50 | 22.67 | 17.88 | 5.31 | 44 / 188 | 16.03 / 1.59 | 2,058 / 36 |
+| 100 | 37.43 | 37.56 | 7.79 | 27 / 128 | 28.30 / 2.87 | 3,480 / 46 |
 
-- **Skinning.** GPU skinning makes 100 fighters about four times faster. What is left of `render.skin` is the work
-  each human's pose takes on the CPU (its bones' transforms, the skinning matrices and the palette), about 30 µs a
+- **Skinning.** GPU skinning makes the hub with 100 fighters about 4.8 times faster than `main`. The change's own CPU
+  path (`--cpu-skinning`) is as fast as `main`'s within this machine's noise. What is left of `render.skin` is the work
+  each human's pose takes on the CPU (its bones' transforms, the skinning matrices and the palette), about 25 µs a
   human.
-- **The empty hub.** At 0 fighters the hub still has its own 14 humans. Of the 3.47 ms, `step` is 1.92 ms, and nearly
-  all of that is `humans.brains` (1.58 ms). `render` is 1.32 ms (`render.scene` 0.96 ms over about 470 draw calls,
-  `render.skin` 0.40 ms), and `present` is 0.14 ms, almost all `present.swap`. The floor is CPU time spent in the AI's
-  brains, not the GPU, the 2D layers or waiting for the swap.
+- **The empty hub.** At 0 fighters the hub still has its own 14 humans. Of the 2.93 ms, `step` is 1.86 ms, and nearly
+  all of that is `humans.brains` (1.54 ms). `render` is 0.99 ms (`render.scene` 0.64 ms, `render.skin` 0.34 ms), and
+  `present.swap` 0.34 ms. The floor is CPU time spent in the AI's brains, not the GPU, the 2D layers or waiting for
+  the swap.
