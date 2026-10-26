@@ -332,6 +332,15 @@ coney = "src/gui/pause_menu/pause_menu.h:PauseMenu"
 status = "legacy"
 
 [[function]]
+address = 0x001db928
+name = "PauseMenu_GetLevelColour"
+page = "pause.md#fn-pausemenu"
+role = "the top header's circle colour by level number: four colour groups by level list, else black"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_menu.h:pauseLevelColour"
+status = "legacy"
+
+[[function]]
 address = 0x001dbee0
 name = "PauseMenu_Open"
 page = "pause.md#original-structure"
@@ -509,6 +518,60 @@ page = "pause.md#fn-controlmenuhud"
 role = "alpha `+0x954`; selected `0x005fd310`, other `0x005fd320`"
 level = "confirmed-code"
 coney = "src/gui/pause_menu/control_menu.h:ControlMenu::render"
+status = "legacy"
+
+[[function]]
+address = 0x001e5498
+name = "PauseStats_Construct"
+page = "pause.md#fn-after-controlmenuhud"
+role = "builds the Stats screen's widgets: name, two shadows, face, four bars and the description"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_stats.h:PauseStats"
+status = "legacy"
+
+[[function]]
+address = 0x001e5618
+name = "PauseStats_Setup"
+page = "pause.md#stats-screen"
+role = "on each pause: picks the Warrior's pictures and text by portrait kind, fills the four bars from the difficulty table, sets the description's wrap and line window"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_stats.h:PauseStats::setup"
+status = "legacy"
+
+[[function]]
+address = 0x001e6698
+name = "PauseStats_OnCommand"
+page = "pause.md#stats-screen"
+role = "up and down move the description's line window one line, left and right refuse, back closes"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_stats.h:PauseStats::handle"
+status = "legacy"
+
+[[function]]
+address = 0x001e6778
+name = "PauseStats_Update"
+page = "pause.md#stats-screen"
+role = "places the name, face, bars, labels and description from the base and the size factor"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_stats.h:PauseStats::update"
+status = "legacy"
+
+[[function]]
+address = 0x001e6cf0
+name = "PauseStats_SetAlpha"
+page = "pause.md#fn-after-controlmenuhud"
+role = "stores the screen's alpha"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_stats.h:PauseStats::setFade"
+status = "legacy"
+
+[[function]]
+address = 0x001e6cf8
+name = "PauseStats_Render"
+page = "pause.md#fn-after-controlmenuhud"
+role = "draws the widgets at the screen's alpha"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_stats.h:PauseStats::render"
 status = "legacy"
 
 [[function]]

@@ -377,3 +377,29 @@ role = "the code's test, as `UM_IsDataUnlocked`"
 level = "confirmed-code"
 coney = "src/warriors/unlock_records.h:UnlockRecords::isDataUnlocked"
 status = "legacy"
+
+[[function]]
+address = 0x004241d8
+name = "Unlocks_IsLevelComplete"
+page = "player-state.md#unlockable-counts"
+note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+coney = "src/warriors/unlock_records.h:UnlockRecords::isLevelComplete"
+status = "legacy"
+
+[[function]]
+address = 0x004245d8
+name = "Unlocks_CountUnlocked"
+page = "player-state.md#unlockable-counts"
+level = "confirmed-code"
+note = "the level is from [frontend.md#game-stats](frontend.md#game-stats)"
+coney = "src/warriors/unlock_records.h:UnlockRecords::countUnlocked"
+status = "legacy"
+
+[[function]]
+address = 0x004247d0
+name = "Unlockables_CountCharacters"
+page = "player-state.md#warriors-functions"
+role = "how many type-4 (character type) records exist and how many are unlocked; from the Rumble soldier-swap screen"
+level = "confirmed-code"
+coney = "src/warriors/unlock_records.h:UnlockRecords::countCharacters"
+status = "legacy"

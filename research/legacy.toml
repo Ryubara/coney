@@ -454,7 +454,6 @@ stale-wording = 3
 
 ["docs/research/player-state.md"]
 front-matter = 1
-skeleton = 1
 verified = 1
 evidence = 18
 history = 1

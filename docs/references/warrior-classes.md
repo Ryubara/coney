@@ -27,6 +27,14 @@ Confirmed (code) at each address:
 | `+0x0c` | Mugging | `0x00284ca0` | the [mugging](../research/combat-throws.md#mugging) game's times, for the mugging player: 2, 3 or any other |
 | `+0x0d` | `+0x0d` | none | stored, never read |
 
+**`+0x05` in play**, confirmed (runtime), PCSX2 2.9.94, 2026-10-11, a copy of a `level99` checkpoint-1 state on
+normal: the player Rembrandt (class 6, `+0x05` = 50) has health 900 / 900 while the AI Warriors Ash (also class 6),
+Vermin and Cleon have 1800 / 1800, so the player's 900 is 1800 × 50 %. A checkpoint restart (pause, Restart, Restart
+Last Check Point, Yes) runs the difficulty script's `CfgWarriorClass` again (a byte written over PINE was back to 50
+after it) and makes the player again; with `Cfg_SetWarriorClass`'s store of `+0x05` (`sb a1,0x5(a0)` at
+`0x00228a9c`) patched in the state copy to store the damage byte instead (115), the restarted Rembrandt has
+2070 / 2070, round(1800 × 1.15), and Ash keeps 1800. The divide back in `0x0022a2a8` is confirmed (code) only.
+
 The lock-pick difficulty on normal: 0 for Cowboy, Fox and Rembrandt, 1 for Cleon, Cochise and Snow, 2 for Ajax,
 Vermin and Swan; every difficulty turns the pins at the same speeds, only their directions and the target bands
 change ([Crimes: lock picking](../research/crimes.md#lockpick)). `+0x0d` has no reader: the table is addressed

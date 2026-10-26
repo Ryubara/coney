@@ -20,6 +20,9 @@ particle.
 
 ## Original structure
 
+Every claim in this section is confirmed (code) at the address it cites unless its line says it is inferred,
+speculative or confirmed (runtime).
+
 The GUI is `c:/Warriors/Source/GUI/` (`0x001a1f10`-`0x002176b8`, [Source map](source-map.md#gui)), with the
 profile-manager screens in `GUI/ProfileManagementGUI/` and the Rumble-mode screens in `GUI/RumbleModeGUI/`. The sprite
 sheets belong to `Graphics/ParticlePage.cpp` (`0x00181b68`-`0x00182820`) and the resource manager
@@ -56,6 +59,9 @@ sheets belong to `Graphics/ParticlePage.cpp` (`0x00181b68`-`0x00182820`) and the
 | `0x00179808`, `0x00179958`, `0x00179c30` | `Font_Size(scale)`, `Font_Measure`, `Font_Draw` | text as sprites | confirmed (code); file inferred (`Graphics/`, before the stub `0x0017b1c0`) |
 
 ## Data
+
+Every claim in this section is confirmed (code) at the address it cites unless its line says it is inferred,
+speculative or confirmed (runtime).
 
 ### Sprite sheet: chunk `0x4C` "Particle Page" {#particle-page}
 
@@ -481,6 +487,9 @@ Confirmed (code) at `0x001b9600` (`MessageHUD_Layout`), `0x00179958` (`Font_Meas
 
 ## Behaviour
 
+Every claim in this section is confirmed (code) at the address it cites unless its line says it is inferred,
+speculative or confirmed (runtime).
+
 ### The screen flow {#screen-flow}
 
 `ScreenFlowController` (`GUI/ScreenFlowController.cpp`) is a stack of screen-flow states (a list, `SFC_States`) plus
@@ -739,6 +748,9 @@ debug or PC tool (inferred).
 
 ## Function index {#function-index}
 
+Every claim in this section is confirmed (code) at the address it cites unless its line says it is inferred,
+speculative or confirmed (runtime).
+
 Every function of the GUI files this page covers, by source file in address order, with the name it has in Ghidra
 (ours). Rows link to the section that describes the behaviour where there is one. The files and ranges are from the
 [Source map](source-map.md#gui).
@@ -838,7 +850,7 @@ fields are in [The markup text widget's fields](#markup-text-fields); the tags i
 | `0x001b9548` | `MessageHUD_Update` | slot `+0x30`: updates the icon sprite when there is no text; visible (slot `+0x40`) while the reveal (slot `+0xb0`) is above 0 | confirmed (code) |
 | `0x001b9600` | `MessageHUD_Layout` | the markup interpreter ([Text](#text), [Markup tags](#markup)). Measure mode makes one pass, draw mode two (the first fixes each line's width for `<RIGHT>` and `<CENTER>`). Tags 6 (`<BOLD>`) and 21 (`<AUTOINDENT>`) have no case here: `<BOLD>` does nothing and `<AUTOINDENT f>` is read by `MessageHUD_ReadAutoIndent`. While a `<FREEZE>` is running, text after the prompt line fades over 334 ms. The box's right edge is capped at `+0x184` × reveal | confirmed (code) |
 | `0x001bac20` | `MessageHUD_WordWrap` | splits the text at spaces, measures each line with its tags stripped, and inserts `<CRM>` before the word that takes the line past the wrap width (`+0x1d4`); the line count goes to `+0x1ac` | confirmed (code) |
-| `0x001baee0` | `MessageHUD_ClipToPage` | keeps only the wrapped lines from `+0x1a4` to `+0x1a8` (split at `<CRM>`): a scrolling page of a long text | confirmed (code) |
+| `0x001baee0` | `MessageHUD_ClipToPage` | keeps only the wrapped lines from `+0x1a4` to `+0x1a8`, both included (split at `<CRM>`): a scrolling page of a long text ([the Stats description](pause.md#stats-description)) | confirmed (code) |
 | `0x001bafd0`, `0x001bb000` | `MessageHUD_PageUp`, `MessageHUD_PageDown` | move that line window by one line; false at the top or at the last line (`+0x1ac`) | confirmed (code) |
 | `0x001bb038` | `MessageHUD_Draw` | when visible, active and not expired: draws the icon, or copies the text, wraps it, clips it to the page (when `+0x1a0` is set), plays a pending `<SOUND>` (`+0x194`) and lays it out in draw mode; sets `+0x1bc` (drawn this frame) | confirmed (code) |
 | `0x001bb1c0` | `MessageHUD_Render` | slot `+0x38`: `MessageHUD_Draw` in the widget's colour | confirmed (code) |
@@ -1306,6 +1318,14 @@ runs about 42,600 Lua instructions and skips 1,796 binding calls.
   0.0505 apart at size 1.15, as measured ([Front end](frontend.md#pm-layout)); items past the row counts get a row each;
   part_page0 is Coney's font slot 2 (the original's 3). The screens that use them are on
   [Front end](frontend.md#coneys-implementation).
+- **The pause header** (`src/gui/circled_text_header.h`, `CircledTextHeader`, written from
+  [The pause header](#circled-text-header)): the title split at its first `:` into up to three circled characters
+  (the `:` adding `@` + the checkpoint), the last circle red, the level's name under it; rule B, the circles, their
+  characters, the title and the subtitle placed each frame by [the layout](#circled-text-header-layout) with the
+  video mode's factors (`CircledHeaderFactors::forMode`), and the label in its box. Coney's choices: rule A is not
+  made (never drawn), there is no child, more than three circles are dropped, and the characters and subtitle use the
+  update's size 1.7. Tests: `repo:tests/gui/circled_text_header_test.cpp`; the pause menu's use is on
+  [Pause](pause.md#coneys-implementation).
 - **The `METRICS1` file** is not read: no code uses it ([above](#the-metrics1-file)), and the fonts' metrics come from
   their sheets' rectangles.
 - `coney --disc <disc> --view-text <font> <text or @id>` lays a text out and draws it through a batch per font and
