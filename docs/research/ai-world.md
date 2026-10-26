@@ -83,7 +83,7 @@ above. The object then gets message 0 and plays the player's clip by height (463
 
 Two goals look for a weapon themselves, besides those listed in [AI: Objects in an AI's hands](ai/index.md#ai-objects).
 Both push GetItem with gait 4 and use `Ai_FindObject` with a line of sight, a claim and a reach test
-([AI: The object search](ai/index.md#get-item)):
+([AI: The object search](crew-wreck.md#object-search)):
 
 | Goal | Helper | When | Radius | Filter mask | Extra test |
 | --- | --- | --- | --- | --- | --- |

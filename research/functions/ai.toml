@@ -1945,7 +1945,7 @@ status = "legacy"
 [[function]]
 address = 0x0029d5f0
 name = "Ai_FindObject"
-page = "crew-wreck.md#stand-point"
+page = "crew-wreck.md#object-search"
 level = "confirmed-code"
 coney = "src/ai/smash_goals.h:findSmashTarget"
 status = "legacy"

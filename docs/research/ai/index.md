@@ -555,32 +555,13 @@ event `0x14`
 (violence nearby) and may start a fight through `Brain_Fight`; the type event handlers are among `Brain_Fight`'s
 callers.
 
-#### Fetching an object: GetItem and the object search {#get-item}
+#### Fetching an object: GetItem {#get-item}
 
 Confirmed (code) at the cited addresses unless a line says otherwise.
 
-**The object search** `Ai_FindObject(A, needRay, filter, claim, needReach, centre, allowLow)` (`0x0029d5f0`) is the
-general search behind every AI pick-up and smash (21 callers: Spectate, Melee,
-the Warriors' think, Riot, Destroy, Steal and others). Confirmed (code).
-
-1. List the world objects round `centre` (A's position by default; `ObjectManager_FindObjects` on the object list
-   `+0x840`, at most 384), nearest first.
-2. Take the first object that passes all of these:
-    1. It is not attached to a task (not held or carried).
-    2. Its flags (vtable `+0x54`) lack bit 26.
-    3. It is not claimed by A's own gang: object `+0xec` is the gang and `+0xf0` the claim's end.
-    4. The caller's `filter` object accepts it. This is where each caller's radius and kind test live, for example
-       15 m and pickable for Spectate, and 20 m and breakable for Riot.
-    5. For an AI A, no player stands within 1 m of it.
-    6. With `needRay`, a clear ray from A to it (`Human_HasClearRayTo`, mask 8). Unless `allowLow`, the ray must
-       not end in result 2: the ray crossed a `GLASS` triangle (material 2, an intact pane), which the ray's
-       exclusion list lets through while still recording its material ([GetItem](#get-item) below). Confirmed
-       (code) at `0x0024df40`, `0x00350778`.
-    7. With `needReach`, a point on the navigation ground under it that A can reach (`Nav_CanReach`). The search passes
-       `Nav_FindPolygonUnder` (`0x00252410`) the larger of the type's sizes `+0x78` and `+0x7c`, whole, as a stand-off,
-       but that function overwrites the argument before reading it (`0x00252454`): the point is the object's own spot
-       dropped onto the navigation ground, whatever its size.
-3. With `claim`, the object is claimed for A's gang for **5000 ms**, so gang mates do not run for the same object.
+Every AI pick-up and smash starts from the object search `Ai_FindObject` (`0x0029d5f0`, 21 callers): its steps, the
+clear ray that stops at an intact pane, the reach test and the 5 s claim are on [The crew's wreck: the object
+search](../crew-wreck.md#object-search).
 
 **GetItem** (type `0x2c`; Init `0x002dc7a0`).
 
@@ -596,7 +577,7 @@ the Warriors' think, Riot, Destroy, Steal and others). Confirmed (code).
 - **Start** (`0x002dc7f8`) drops an object of kind 4 or 6 already in hand, raises the turn boost by 1, drops the
   target and runs Resume.
 - **Resume** (`0x002dc8b0`) finds the standing point: `Nav_FindPolygonUnder` of the object's position, which, as
-  in the search above, ignores the size passed, so the point is the object's own spot on the navigation ground. With
+  in the object search, ignores the size passed, so the point is the object's own spot on the navigation ground. With
   none, the goal will end.
 
 **Process** (`0x002dc9f8`), each update. Confirmed (code).

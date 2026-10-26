@@ -50,7 +50,7 @@ inline constexpr float kGetItemWalkRadius = 0.36F;
 inline constexpr float kGetItemJogWithin = 3.0F;
 /// With a pane between him and the object it steps to its point first when farther than this from it, metres; it
 /// swings (attack kind 0 on himself) after kGetItemSwingDelayMs; with no clear ray it turns to the object when more
-/// than kGetItemTurn off (radians, 15 degrees). Research: docs/research/ai.md#get-item
+/// than kGetItemTurn off (radians, 15 degrees). Research: docs/research/ai/index.md#get-item
 inline constexpr float kGetItemGlassStep = 0.4F;
 inline constexpr std::int16_t kGetItemSwingDelayMs = 0x21;
 inline constexpr float kGetItemTurn = 0.2617994F;

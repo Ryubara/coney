@@ -260,7 +260,7 @@ TEST_CASE("under the wreck command a carried smash target is fetched and any oth
 TEST_CASE("GetItem never takes an object through an intact pane; with the pane gone it takes it",
           "[ai][steal][wreck]") {
     // A shelf object 1 m behind a glass wall (y 43), a lone gang member 0.4 m in front of the glass and so within
-    // GetItem's reach of it; the question of issue #241 (docs/research/ai.md#get-item): the clear ray through the
+    // GetItem's reach of it; the question of issue #241 (docs/research/ai/index.md#get-item): the clear ray through the
     // pane makes him swing at it, never take.
     const auto takes = [](bool glass) {
         AiScene scene;
