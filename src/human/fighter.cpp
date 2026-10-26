@@ -234,7 +234,7 @@ Combatant* Fighter::findAttackTarget(const FighterInput& input, int farId) const
 
 Combatant* Fighter::attackTargetOf(int animId, const FighterInput& input, bool chainStep) const {
     // The spray searches afresh at its own far range, whatever is in hand (`Player_Special`'s
-    // `Player_FindAttackTarget(h, 664)`, docs/research/combat-moves.md#targeting). The original's search also has an
+    // `Player_FindAttackTarget(h, 664)`, docs/research/combat-targets.md#targeting). The original's search also has an
     // object pass and a glass pass between the human ones, and an object or a pane found there makes the spray play at
     // no one (`Object_AsHuman` gives null). **Coney stand-in**: findAttackTarget() has only the human passes
     // (docs/engine/combat.md).
