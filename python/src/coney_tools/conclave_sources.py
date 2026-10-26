@@ -14,13 +14,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from coney_tools import coord_cli
+from coney_tools import coord_cli, pr_ready
 from coney_tools.audit_github import run_gh
 from coney_tools.config import ConfigError, find_repo_root, workspace_root
 from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.issue_claim_cli import held_cards
 from coney_tools.issue_claim_model import Card
 from coney_tools.issue_claim_remote import GhRemote
+from coney_tools.unit import Unit
 
 
 @dataclass
@@ -36,6 +37,11 @@ class Sources:
     free_bytes: Callable[[], int]
     #: The held claim cards (OSError or ConfigError when GitHub cannot be read).
     claims: Callable[[], list[Card]]
+    #: Whether `pr open` would pass the proof for a unit: (its worktree, its scratch folder's unit, the description
+    #: file, the conventions, the clock) to a `Readiness`. Tests swap it for a made-up answer.
+    ready: Callable[[Path, Unit, Path, Conventions, datetime], pr_ready.Readiness] = (
+        lambda root, unit, text, conventions, now: pr_ready.readiness(root, unit, text, conventions, now=now)
+    )
 
 
 def default_sources(cwd: Path) -> Sources:

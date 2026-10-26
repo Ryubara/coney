@@ -26,8 +26,6 @@ from __future__ import annotations
 
 import argparse
 import contextlib
-import dataclasses
-import hashlib
 import json
 import tempfile
 from collections.abc import Sequence
@@ -35,7 +33,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from coney_tools import identity, pr_open_publish, pr_open_unit, pr_proof, pr_publish, pr_text, stamps
+from coney_tools import identity, pr_open_publish, pr_open_unit, pr_proof, pr_publish, pr_ready, pr_text, stamps
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import Claims, load_conventions
 from coney_tools.issue_claim_remote import GhRemote
@@ -46,14 +44,13 @@ from coney_tools.pr_open_run import (
     EXIT_UNABLE,
     PROGRESS,
     Env,
-    Proof,
     Request,
     Run,
     Stop,
 )
 from coney_tools.pr_proof import Refusal
 from coney_tools.pr_publish import GhError, PullRequest
-from coney_tools.repo_checks import branch_trailer_models
+from coney_tools.pr_ready import Proof
 
 __all__ = ["Env", "Request", "Stop", "add_parser", "default_env", "run", "run_open"]
 
@@ -93,38 +90,11 @@ def default_env() -> Env:
 # --- steps 1-5: the proof and the text --------------------------------------------------------------------------------
 
 
-def _without_opened(report: stamps.Report) -> stamps.Report:
-    """The log as the facts show it: without `pr-opened` stamps, so a rerun makes the same facts as the first run."""
-    return stamps.Report(stamps=[s for s in report.stamps if s.step != "pr-opened"], problems=list(report.problems))
-
-
 def _prove(run: Run, root: Path) -> Proof:
-    """Run steps 1-5 on the worktree `root` (the unit's, or a throwaway one)."""
+    """Run steps 1-5 on the worktree `root` (the unit's, or a throwaway one): `pr_ready.prove`, which Conclave's
+    `unit-ready` asks too."""
     assert run.unit is not None and run.task_file is not None
-    subject = pr_proof.load_subject(root, run.unit, run.owner, run.task_file.kind, remote=run.request.remote)
-    try:
-        hashes: pr_proof.TextHashes | None = pr_text.hashes_of(run.text_path)
-    except ConfigError:
-        hashes = None  # the text check below says what is wrong with the file
-    result = pr_proof.verify(subject, hashes)
-    refusals = list(result.refusals)
-    generated: pr_text.Generated | None = None
-    pictures: list[tuple[str, Path, str]] = []
-    models: list[str] = []
-    try:
-        form = pr_text.read_engineer_file(run.text_path, subject.conventions)
-        models = branch_trailer_models(root, subject.base, subject.conventions.commits.trailers)
-        shown = dataclasses.replace(subject, report=_without_opened(subject.report))
-        generated = pr_text.generate(shown, run.task_file, form, keys=run.keys, trailer_models=models)
-        refusals += generated.refusals
-        pictures = [
-            (image.ref, image.path, hashlib.sha256(image.path.read_bytes()).hexdigest())
-            for image in form.images
-            if image.path.is_file()
-        ]
-    except ConfigError as error:
-        refusals.append(Refusal("text", f"text: {error}", "engineer"))
-    return Proof(subject, refusals, generated, pictures, models, list(result.notes))
+    return pr_ready.prove(root, run.unit, run.owner, run.task_file, run.keys, run.text_path, remote=run.request.remote)
 
 
 def _refuse(run: Run, proof: Proof, tip: str) -> Stop:
