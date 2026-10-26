@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "ai/fighter_side.h"
 #include "animation/anim_math.h"
 #include "core/error.h"
 
@@ -55,10 +56,13 @@ struct SpawnedFighters {
     std::optional<Error> error; ///< Why the rest were not, when one failed (the spawning stops there).
 };
 
-/// Spawns `amount` AI fighters facing the player, as the AI fighters page's Spawn does: models picked by `choice`
-/// (pickFighterModels()) in rows of five from `distance` metres ahead (fighterSpots()). An amount over
-/// kMaxFighterAmount is spawned as several clicks' worth, each placed beyond the rows before it, so no two fighters
-/// stand on one spot. Used by the page and by `--bench-fighters` (docs/guides/performance.md).
-SpawnedFighters spawnFighters(PlayControls& play, std::size_t choice, int amount, float distance, SpawnRandom& random);
+/// Spawns `amount` AI fighters of `side`, as the AI fighters page's Spawn does: models picked by `choice`
+/// (pickFighterModels()) in rows of five from `distance` metres out (fighterSpots()). Enemies and neutrals stand ahead
+/// of the player, facing him; allies stand behind him, facing the way he does, so a click of each side puts the two
+/// sides either side of him. An amount over kMaxFighterAmount is spawned as several clicks' worth, each placed beyond
+/// the rows before it, so no two fighters stand on one spot. Used by the page and by `--bench-fighters`
+/// (docs/guides/performance.md).
+SpawnedFighters spawnFighters(PlayControls& play, std::size_t choice, int amount, float distance, SpawnRandom& random,
+                              ai::FighterSide side = ai::FighterSide::Enemy);
 
 } // namespace coney::debug

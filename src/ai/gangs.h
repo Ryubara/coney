@@ -139,6 +139,9 @@ class Gang {
     [[nodiscard]] bool alwaysSeen() const { return m_alwaysSeen; }
     /// The members (`+0x48`), in the order they joined.
     [[nodiscard]] const std::vector<Brain*>& members() const { return m_members; }
+    /// How many members it holds before Gangs::addMember() makes room: kGangMemberSlots for the police kinds, else
+    /// kGangMembers. The original's `Gang_AddMember` tests the same count against the same two numbers.
+    [[nodiscard]] std::size_t capacity() const;
     /// The tactic (`+0x40`); null for none.
     [[nodiscard]] Tactic* tactic() const { return m_tactic.get(); }
     /// How many times a tactic was set on it (Gangs::setTactic()): a change says a newer order came.
@@ -308,9 +311,11 @@ class Gangs {
     /// `GangAddMember`: `brain` leaves its gang, even when it is gang `id` (its actions and target cleared, under a
     /// tactic popped to its goal base, no longer the leader, event kGangMessageMembers with 0), then joins gang `id`
     /// (a player becomes its leader, the war chief; event kGangMessageMembers with 1), so a follow tactic gives the
-    /// members their goals again (docs/research/ai-gangs.md#warrior-follow). A full gang drops its first member first
-    /// (**Coney choice** of which). Nothing for an id not in use. **Coney choices**: the brain's counted enemies are
-    /// kept; any player joining leads, where the original makes only a war chief (`+0x3ac`) the leader.
+    /// members their goals again (docs/research/ai-gangs.md#warrior-follow). A full gang (capacity()) drops its first
+    /// member first: **Coney's choice**, which of them and that any; the original resolves every member handle
+    /// (`Gangs_ResolveAllMembers` `0x0016d0e0`, its result unused) and adds the new member all the same. Nothing for an
+    /// id not in use. **Coney choices**: the brain's counted enemies are kept; any player joining leads, where the
+    /// original makes only a war chief (`+0x3ac`) the leader.
     /// @orig 0x00166308 Gang_AddMember (unknown)
     void addMember(int id, Brain& brain);
     /// `brain` leaves its gang, if it has one.

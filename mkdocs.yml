@@ -183,6 +183,7 @@ nav:
           - "AI code index: brains, actions and tactics": research/ai-code.md
           - "AI goals: the code of every goal class": research/ai-goals.md
           - "AI and the world: objects, cars, doors and climbs": research/ai-world.md
+          - "AI: the crew's wreck order": research/crew-wreck.md
           - "AI pathing: holes, claims, jumps and status": research/ai-pathing.md
           - "AI reimplementation plan: units and specifications": research/ai-reimpl.md
           - Cars: research/cars.md
@@ -190,6 +191,7 @@ nav:
           - "Slow motion: what turns it on and off": research/slow-motion.md
           - Scenes (cutscenes): research/scenes.md
           - Sound: research/sound.md
+          - "Sound: the PS2 sound device": research/sound-device.md
           - Sound events: research/sound-events.md
           - Movies: research/movies.md
           - Feel comparison: research/feel.md

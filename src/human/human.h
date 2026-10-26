@@ -278,7 +278,8 @@ class Human final : public Holdable {
     [[nodiscard]] std::uint32_t strikeAnim() const { return m_strikeAnim; }
     /// Its strike shapes posed in the world now: the ones switched on (and the capsule while its strike flag is on),
     /// or with `targets` the spine and the head, which a strike is tested against (flag `0x4`). Empty without a
-    /// skeleton.
+    /// skeleton. The bones' positions carry the body scale (docs/research/combat/index.md#moving-strikes).
+    /// @orig 0x0023bde8 Human_GetBoneTransform (unknown)
     [[nodiscard]] std::vector<PosedShape> posedStrikeShapes(bool targets) const;
     /// The capsule a capsule strike (clip flag `0x10000`) is tested against: upright from the feet to the head bone's
     /// height + 0.2, never under 0.2, of radius 0.35, all times the scale

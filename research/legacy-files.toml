@@ -1181,7 +1181,7 @@ tag = 1
 tag = 5
 
 ["src/human/player.cpp"]
-tag = 21
+tag = 20
 
 ["src/human/player.h"]
 comment = 6
@@ -2262,9 +2262,6 @@ citation = 13
 ["tests/gamemodes/movie_player_test.cpp"]
 citation = 5
 
-["tests/gamemodes/pause_mode_test.cpp"]
-citation = 7
-
 ["tests/gamemodes/rumble_start_test.cpp"]
 citation = 3
 
@@ -2345,9 +2342,6 @@ citation = 5
 
 ["tests/gui/menu_input_test.cpp"]
 citation = 8
-
-["tests/gui/pause_menu_test.cpp"]
-citation = 16
 
 ["tests/gui/profile_management_gui/pm_controller_test.cpp"]
 citation = 19
@@ -2581,9 +2575,6 @@ citation = 1
 citation = 2
 
 ["tests/platform/disc_debug_movies_test.cpp"]
-citation = 1
-
-["tests/platform/disc_fall_camera_test.cpp"]
 citation = 1
 
 ["tests/platform/disc_fighter_models_test.cpp"]

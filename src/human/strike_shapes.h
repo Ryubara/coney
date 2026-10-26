@@ -49,8 +49,9 @@ struct PosedShape {
 
 /// Where a human's character space is in the world: its feet, its heading (radians, 0 facing +y), its lean into a turn
 /// (Human::lean()) and its body scale, which scales the shapes' offsets, radii and lengths
-/// (`PhysicsBody_ApplyHumanScale`). **Coney's reading**: the bones stand where the drawn body has them (unscaled,
-/// leaned as the skin is), so the shapes cover the body the player sees.
+/// (`PhysicsBody_ApplyHumanScale`). The bones handed to poseStrikeShapes() already carry the scale in their positions,
+/// as `Human_GetBoneTransform` (`0x0023bde8`) hands them over (Human::posedStrikeShapes()). **Coney's reading**: they
+/// are leaned as the skin is, so the shapes cover the body the player sees.
 struct BodyPlacement {
     anim::Vec3 feet;
     float heading = 0.0F;

@@ -193,12 +193,12 @@ def test_the_marks_are_only_warnings_until_the_check_is_enforced(tmp_path: Path)
     # A listed file that now passes, a listed file that is gone and a ported function with no status.
     root = build(tmp_path, {"src/ai/ok.cpp": GOOD_SOURCE}, status="")
     write_legacy(root, {"src/ai/ok.cpp": {"tag": 1}, "src/ai/gone.cpp": {"tag": 1}})
-    result, conv = scan(root)
-    found = sc.problems(root, conv, result)
+    conv = conventions(**{"standards.enforce": False})
+    found = sc.problems(root, conv, sc.scan_tree(root, conv))
     assert {p.rule for p in found} == {"legacy", "status"} and len(found) == 3
     assert not any(p.error for p in found)
     assert sum("standards prune" in p.message for p in found) == 2
-    assert any("standards mark" in p.message for p in found)
+    assert any('status = "compared"' in p.message and "standards mark" not in p.message for p in found)
 
 
 def test_the_marks_are_errors_once_the_check_is_enforced(tmp_path: Path) -> None:
@@ -227,7 +227,7 @@ def test_nothing_fails_the_check_while_it_is_not_enforced(tmp_path: Path) -> Non
             "src/ai/brain.cpp": BAD_SOURCE + "// x\n",
         },
     )
-    conv = conventions(**{"standards.cutover": "2026-11-01"})
+    conv = conventions(**{"standards.cutover": "2026-11-01", "standards.enforce": False})
     reports = sc.check(root, conv, "main")
     assert not any(r.error for r in reports)
     assert {"legacy", "status", "comment", "tag"} <= {r.rule for r in reports}
@@ -268,11 +268,11 @@ def test_the_first_legacy_file_may_be_added_when_the_base_has_none(tmp_path: Pat
     assert sc.problems(root, conv, result, "main") == []
 
 
-def test_a_function_marked_legacy_since_the_base_is_refused_only_after_the_cutover(tmp_path: Path) -> None:
+def test_a_function_marked_legacy_since_the_base_is_refused_only_while_a_cutover_is_set(tmp_path: Path) -> None:
     root = build(tmp_path, {}, status='status = "compared"\n')
     branch(root, {"research/functions/ai.toml": f'# ai\n\n{ENTRY}status = "legacy"\n'})
-    before, conv = scan(root)
-    assert sc.problems(root, conv, before, "main") == []
+    conv = conventions(**{"standards.cutover": ""})
+    assert sc.problems(root, conv, sc.scan_tree(root, conv), "main") == []
     after = conventions(**{"standards.cutover": "2026-11-01"})
     found = sc.problems(root, after, sc.scan_tree(root, after), "main")
     assert [p.rule for p in found] == ["status"] and "marked legacy since the cutover" in found[0].message
@@ -281,11 +281,11 @@ def test_a_function_marked_legacy_since_the_base_is_refused_only_after_the_cutov
 # --- touching --------------------------------------------------------------------------------------------------------
 
 
-def test_a_touched_file_below_the_standard_is_a_warning_before_the_cutover(tmp_path: Path) -> None:
+def test_a_touched_file_below_the_standard_is_a_warning_while_not_enforced(tmp_path: Path) -> None:
     root = build(tmp_path, {"src/ai/brain.cpp": BAD_SOURCE, "src/ai/other.cpp": BAD_SOURCE})
     branch(root, {"src/ai/brain.cpp": BAD_SOURCE + "\n// More.\n"})
-    result, conv = scan(root)
-    found = sc.touched(root, conv, result, "main")
+    conv = conventions(**{"standards.enforce": False})
+    found = sc.touched(root, conv, sc.scan_tree(root, conv), "main")
     files = {(r.path, r.rule, r.error) for r in found}
     assert ("src/ai/brain.cpp", "comment", False) in files and ("src/ai/brain.cpp", "tag", False) in files
     # the file the change leaves alone is not held to the standard
@@ -314,8 +314,8 @@ def test_a_touched_file_that_meets_the_standard_has_no_report(tmp_path: Path) ->
 def test_a_touched_ported_function_must_be_compared(tmp_path: Path) -> None:
     root = build(tmp_path, {"src/ai/brain.cpp": GOOD_SOURCE})
     branch(root, {"src/ai/brain.cpp": GOOD_SOURCE.replace("a += 1;", "a += 2;")})
-    result, conv = scan(root)
-    found = sc.touched(root, conv, result, "main")
+    conv = conventions(**{"standards.enforce": False})
+    found = sc.touched(root, conv, sc.scan_tree(root, conv), "main")
     assert [(r.path, r.rule, r.error) for r in found] == [("src/ai/brain.cpp", "compared", False)]
     assert "0x00123456 Brain_Think" in found[0].message
 
@@ -489,3 +489,70 @@ def test_the_real_data_describes_a_checkout_that_exists() -> None:
     # the standards of the real conventions point at folders and a database the checks read
     conv = parse_conventions(real_data())
     assert conv.standards.legacy_file.endswith(".toml") and conv.research.files.functions == "research/functions"
+
+
+# --- the cutover: the real conventions enforce ------------------------------------------------------------------------
+
+
+def test_the_real_conventions_enforce_the_standards_from_the_cutover_day() -> None:
+    standards = parse_conventions(real_data()).standards
+    assert standards.enforce is True
+    assert standards.cutover is not None and standards.cutover.date().isoformat() == "2026-10-25"
+
+
+def test_on_the_real_rules_a_touched_legacy_file_left_below_the_standard_is_an_error(tmp_path: Path) -> None:
+    # Three files below the standard are listed; the change touches two of them and the third is left alone.
+    files = {"src/ai/brain.cpp": BAD_SOURCE, "src/ai/other.cpp": BAD_SOURCE, "tests/ai/a_test.cpp": BAD_TEST}
+    root = build(tmp_path, files)
+    both = {"comment": 1, "tag": 1}
+    write_legacy(root, {"src/ai/brain.cpp": both, "src/ai/other.cpp": both, "tests/ai/a_test.cpp": {"citation": 1}})
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "list")
+    # a line of the ported function changes, so it is owed its comparison too
+    branch(
+        root, {"src/ai/brain.cpp": BAD_SOURCE.replace("a += 1;", "a += 2;"), "tests/ai/a_test.cpp": BAD_TEST + "// y\n"}
+    )
+    reports = sc.check(root, conventions(), "main")
+    assert reports and all(r.error for r in reports)
+    assert {(r.path, r.rule) for r in reports} == {
+        ("src/ai/brain.cpp", "comment"),
+        ("src/ai/brain.cpp", "tag"),
+        ("src/ai/brain.cpp", "compared"),
+        ("tests/ai/a_test.cpp", "citation"),
+    }
+
+
+def test_on_the_real_rules_a_touched_legacy_file_brought_up_to_the_standard_passes(tmp_path: Path) -> None:
+    root = build(
+        tmp_path, {"src/ai/brain.cpp": BAD_SOURCE, "tests/ai/a_test.cpp": BAD_TEST}, status='status = "compared"\n'
+    )
+    write_legacy(root, {"src/ai/brain.cpp": {"comment": 1, "tag": 1}, "tests/ai/a_test.cpp": {"citation": 1}})
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "list")
+    # the change fixes both files and takes them out of the legacy file, as `standards prune` does
+    branch(root, {"src/ai/brain.cpp": GOOD_SOURCE, "tests/ai/a_test.cpp": GOOD_TEST})
+    write_legacy(root, {})
+    assert sc.check(root, conventions(), "main") == []
+
+
+def test_on_the_real_rules_a_branch_may_not_add_to_the_legacy_file_or_mark_a_function_legacy(tmp_path: Path) -> None:
+    root = build(
+        tmp_path, {"src/ai/brain.cpp": GOOD_SOURCE, "src/ai/new.cpp": BAD_SOURCE}, status='status = "compared"\n'
+    )
+    write_legacy(root, {})
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "empty list")
+    branch(
+        root,
+        {
+            "research/legacy-files.toml": format_legacy_files(
+                LegacyFiles({"src/ai/new.cpp": {"comment": 1, "tag": 1}})
+            ),
+            "research/functions/ai.toml": f'# ai\n\n{ENTRY}status = "legacy"\n',
+        },
+    )
+    reports = sc.check(root, conventions(), "main")
+    assert all(r.error for r in reports)
+    messages = [r.message for r in reports]
+    assert any("src/ai/new.cpp is added" in m for m in messages)
+    assert any("marked legacy since the cutover" in m for m in messages)

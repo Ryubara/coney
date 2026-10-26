@@ -223,6 +223,15 @@ coney = "src/human/human.h:Human::turnToFace"
 status = "legacy"
 
 [[function]]
+address = 0x00222370
+name = "Human_HasClearRayTo"
+page = "characters.md#code-core"
+role = "Ray_IsClear from the human's position (eye height added) to a point."
+level = "confirmed-code"
+coney = "src/ai/perception.h:clearRayTo"
+status = "legacy"
+
+[[function]]
 address = 0x00222710
 name = "Human_IsInFieldOfView"
 page = "characters.md#code-core"
@@ -361,6 +370,15 @@ page = "characters.md#code-core"
 role = "Held flags 0x20080000: a turn clip (0x20000000) or a step clip (0x80000) plays; TakeStep waits on it and refuses an abort ([Step control](characters.md#step-control))."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::stepHeld"
+status = "legacy"
+
+[[function]]
+address = 0x002286a0
+name = "Human_IsSwingingHeld"
+page = "characters.md#code-core"
+role = "Held flag 0x800000, or 0x1000010 while holding an object and playing one of the eleven object throw clips (467, 471, 472, 491, 502, 505-507, 551-553; a throw wind-up, not a melee swing). A hit drops the held object while it is true ([Combat: dropping what is held](combat-throws.md#keep-weapon))."
+level = "confirmed-code"
+coney = "src/ai/steal_goals.cpp:swingingHeld"
 status = "legacy"
 
 [[function]]

@@ -19,6 +19,7 @@
 #include "gui/menu_input.h"
 #include "gui/option_grid.h"
 #include "gui/pause_menu/control_menu.h"
+#include "gui/pause_menu/option_menu.h"
 #include "gui/pause_menu/pause_items.h"
 #include "gui/pause_menu/yes_no_box.h"
 #include "gui/text_widget.h"
@@ -61,6 +62,7 @@ struct PauseMenuSetup {
     /// pause mode leaves both unset (Coney has no video-mode setting yet), so the default 4:3 layout is used.
     bool widescreen = false;
     bool flag02 = false;
+    OptionValues options{}; ///< The values the Options screen starts from (the game state's, save.md#options).
     std::array<std::vector<std::string>, 3> objectives{}; ///< Current, bonus and overview lists (`HUDSetObjective`).
 };
 
@@ -83,8 +85,8 @@ struct PauseMenuSetup {
 ///   closed() and outcome() says what to do.
 ///
 /// Coney's stand-ins (docs/research/pause.md#coneys-implementation): the Stats screen is never available (Coney has no
-/// character stats), so Stats opens nothing; the Options screen is a list of its entries' names that does nothing on
-/// accept (`OptionMenu.cpp` not yet implemented); the Controls screen is ControlMenu; the headers
+/// character stats), so Stats opens nothing; the Options screen is OptionMenu and the Controls screen ControlMenu; the
+/// headers
 /// (`CircledTextHeader`), the objective lists and the Restart and Quit screens are centred texts at Coney's positions
 /// and colours; the menu waits for no sound before it closes; the co-op quit (Player 2 / All) is not offered (Coney has
 /// one player).
@@ -137,6 +139,10 @@ class PauseMenu : public Widget {
     void setBackgroundBatch(graphics::SpriteBatch* batch) { m_background.setBatch(batch); }
     /// Draws the Controls screen's pad picture into `batch` (ControlMenu::kPictureRecord's sheet); null draws none.
     void setControllerBatch(graphics::SpriteBatch* batch) { m_controls.setPictureBatch(batch); }
+    /// Draws the Options screen's bars and squares into `batch` (sheet 12's, the background's); null draws none.
+    void setOptionsBatch(graphics::SpriteBatch* batch) { m_options.setSpriteBatch(batch); }
+    /// What the Options screen asks of the game (its cues always go to the menu's sound sink).
+    void setOptionHooks(OptionMenu::Hooks hooks) { m_optionHooks = std::move(hooks); }
 
     /// Opens the menu at game time `nowMs` as `setup` says.
     /// @orig 0x001dbee0 PauseMenu_Open (unknown)
@@ -180,10 +186,8 @@ class PauseMenu : public Widget {
 
     /// The Controls screen.
     [[nodiscard]] const ControlMenu& controls() const { return m_controls; }
-
-    /// The Options screen's entries (Coney's stand-in list, docs/research/pause.md#the-items-screens).
-    static constexpr std::array<std::string_view, 7> kOptionsEntries{
-        "Lighting", "Camera", "Audio", "Video", "Subtitles", "Vibration", "Restore Default"};
+    /// The Options screen.
+    [[nodiscard]] const OptionMenu& options() const { return m_options; }
 
   private:
     // The quit destination the Quit screen offers at index i.
@@ -205,6 +209,10 @@ class PauseMenu : public Widget {
     void onBoxCommand(MenuCommand command, std::uint64_t nowMs);
     // Acts on grid item `code`.
     void selectItem(PauseItem item, std::uint64_t nowMs);
+    // Opens the Options screen at `nowMs` (`OptionMenu_Open`, with the pausing player's input).
+    // @coney-only Coney's call into OptionMenu::open with the pause setup's values and layout; the original's
+    // PauseMenu_SelectItem and PauseMenu_ReturnToOptions open the menu through its slot +0xa8
+    void openOptions(std::uint64_t nowMs);
     // Opens `screen` with selection `selection`.
     void openScreen(PauseScreen screen, std::size_t selection);
     // Back to the grid.
@@ -229,6 +237,8 @@ class PauseMenu : public Widget {
     UsageInfo m_usage;
     YesNoBox m_yesNo;
     ControlMenu m_controls;
+    OptionMenu m_options;
+    OptionMenu::Hooks m_optionHooks;
     std::vector<QuitChoice> m_quitChoices;
 
     PauseScreen m_screen = PauseScreen::Grid;

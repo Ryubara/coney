@@ -139,7 +139,7 @@ The Display page's *Debug UI scale* overrides the choice: *Auto* (the rule above
 | Player | where the player is and how it moves (plotted), his character type and a change of it, freezing him, the [noclip](#noclip) and its hotkey, teleports |
 | Camera | the follow camera's eye, target and distance (plotted), a reset behind the player, the free camera, its values |
 | Spawner | objects put in front of the player in a sandbox or a level: a crate, a fence, a wall, a ramp, stairs, a pillar, a ball |
-| AI fighters | AI humans that fight the player: a model picker (every human model, or Random) and an amount, spawn them in front of him, the engaging toggle, their state, clear them |
+| AI fighters | AI humans on a side of the player's: a side (enemy, ally or neutral), a model picker (every human model, or Random) and an amount, spawn them in front of him (allies behind him), the engaging toggle, their state, clear them |
 | Animation player | every clip the player's anim sets can play, by set and category with its length, played on him once or looping at a speed, then his own animation back ([below](#animation-player)) |
 | HUD | the [in-game HUD](../research/hud.md)'s parts on and off, player 1's rage, score, money and items set (-1 gives the value back), an objective, a hint and an announcement fired |
 | Debug draw | lines in the scene: collision near the player (plain or by wall class), the player's heading and velocity, the camera, places, every human's collision shapes, strike shapes and contacts |
@@ -250,8 +250,8 @@ pad. *Reset behind player* puts the follow camera behind the player as the scrip
 the scripts set on it; the Follow camera tunables for the leash, pitch and look-at height apply to the next follow
 camera made (a level start). The free camera flies with pad 1 as the world viewer's
 does, while the player stands still and the scenery streams round the free camera. *AI fighters* spawns fighters
-([Sandbox](sandbox.md#ai-fighters)) the chosen distance in front of the player, facing him, in a sandbox or a level;
-*Engaging* off keeps idle fighters from taking him on.
+([Sandbox](sandbox.md#ai-fighters)) the chosen distance in front of the player, facing him, in a sandbox or a level
+(allies behind him, as *Side* says below); *Engaging* off keeps idle enemy fighters from taking him on.
 
 *Spawn fighters* makes *Amount* of them (1 to 50) in one click, in rows of five centred in front of the player, each
 row 1.2 m further out. *Model* picks what they look and move as: any human model the scene's character types name (the
@@ -268,6 +268,36 @@ afterwards (and the run log's `human N` names) differ from a run without the spa
 first time it is used and kept, so a first click with many models stalls briefly. Without a list (a sandbox without a
 disc) only *Random* is offered and every fighter is the scene's own character. A fighter keeps its model when *Change
 character* makes the fighters again.
+
+*Side*, set before *Spawn fighters*, picks whose fighters the click makes; each fighter keeps the side it was made on
+(also through *Change character*). The side is the fighter's **gang**, made through the game's own gang calls, so the
+AI, the enemy scans and the strike tests treat it as they treat any gang member: friends are the same gang or kind
+(`Gang_AreFriends` `0x00168f58`), enemies are the bits of the enemy mask (`Gang_IsEnemyOf` `0x00168fe0`), and a human
+with no gang is no one's friend ([Gangs](../research/ai-gangs.md#gang-record),
+[friend and enemy](../research/ai-reimpl.md#gang-is-enemy-of)).
+
+| Side | Its gang | Behaviour |
+| --- | --- | --- |
+| **Enemy** (the default) | `Fighters`, kind 19 (the sandbox's combat gangs' kind), an enemy of the player's gang and of every ally gang | What the page always made: it attacks him, his crew and his allies on sight (the gang soldier's think pushes the fight once its scan lists an enemy), and with *Engaging* on takes him on when he is in its melee range |
+| **Ally** | `Allies`, of the kind of the player's gang (the Warriors' kind 0 in the levels), a friend of his gang, with his gang's enemies and friends copied at every spawn | His friend: the player's hits, his lock-on and his strike tests skip it (the step's opposition test is `Gang_AreFriends`), and his crew's hits skip it too; it lists and fights every gang he has as an enemy, the enemy fighters among them, and the enemy fighters fight it. With the default *Distance ahead* it stands 4 m behind him, facing the way he does, and *Engaging* never sends it at him. It holds its place and fights what comes into its sight: it does not follow him |
+| **Neutral** | `Neutrals`, kind 3 (rumble's first side), with no enemy or friend bit | Nobody's friend and nobody's enemy: no scan lists it and it lists no one, so it stands and takes hits. Hit, it answers as any gang soldier hit by a stranger: the two gangs become enemies (`Brain_MakeGangsEnemies`) and it fights back, and from the next spawn the allies fight it too, since they copy the player's enemies |
+
+An ally is in a gang of its own that is the player's camp, not in his gang itself: a gang holds at most 10 brains and
+Coney's `Gangs::addMember()` drops the first of a full gang (a Coney choice; the original adds the member anyway,
+[Coney choices](../research/ai.md#coney)), so allies added to his own would push his crew out, and his crew's follow
+tactic would give them goals; a gang of his gang's kind is his friend by the original's own kind rule and takes his
+gang's enemy and friend masks. A side's gang that is full (10 members) is left for a new one of the same side
+(`Allies2`, `Allies3`), and at each spawn every live gang of the side, the full ones too, is brought in line with the
+player's gang again. A fighter that is cleared leaves its gang, and the room is used again; the gangs themselves stay
+until the level ends, so a session of hundreds of fighters takes gang slots (32 in all) that a level script's
+`GangCreate` may then lack. With every slot taken a fighter is made with no gang, which makes it nobody's friend, and a
+line in the log says so. Following the player, as his crew does under the Warrior follow tactic
+([The default command: follow](../research/ai-gangs.md#warrior-follow)), is not built for allies: they hold their place
+and fight, until the crew's follow goals are right (issue #677). The *State* line names each fighter's gang. The
+sides are Coney's own debug tool (`@coney-only`); the gangs and their tests are the original's. A disc test
+(`tests/platform/disc_debug_ai_sides_test.cpp`) spawns four allies and four enemies through the page in `level80`,
+checkpoint 2, and watches twenty seconds: they fight each other, and no ally or enemy takes its own side, the player or
+his crew. Another changes the player's character with a fighter of each side and checks that each keeps its side.
 
 *Clear fighters* removes only the fighters *Spawn fighters* made, through the game's own removal of a human (a level
 script's `HuDelete`): never the player, the human the pad drives after a hand-over, his crew, a level script's human or

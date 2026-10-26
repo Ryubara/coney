@@ -13,8 +13,9 @@ docs/guides/coney-tools-standards.md#standards:
 gone, a ported function with no mark, a file or rule added to the legacy file since the branch left its base and, from
 the cutover, a function marked legacy since then. `touched` is the touch-it rule: a source or test file the change
 touches is held to the whole standard (listed or not), and so is a ported function the change touches. Every report of
-both is a warning until `standards.enforce` is true and an error after: nothing in `check` fails a pull request before
-the cutover. The two together are `check`, which `docs check` runs when a change can move them.
+both is a warning while `standards.enforce` is false and an error once it is true, as it is from the cutover: with the
+switch off nothing in `check` fails a pull request. The two together are `check`, which `docs check` runs when a
+change can move them.
 """
 
 from __future__ import annotations
@@ -61,7 +62,7 @@ class Report:
     line: int
     rule: str
     message: str
-    #: Whether it fails the check: `standards.enforce`, so false (a warning) until the cutover.
+    #: Whether it fails the check: `standards.enforce` (an error when true, a warning when false).
     error: bool
 
 
@@ -227,7 +228,7 @@ def problems(root: Path, conventions: Conventions, scan: Scan, base: str | None 
             conventions.research.files.functions,
             1,
             "status",
-            f'{item} is ported and has no status: run `coney-tools standards mark` to give it `status = "legacy"`',
+            f'{item} is ported and has no status: record it as `status = "compared"` after its side-by-side comparison',
             error,
         )
         for item in counted.unmarked

@@ -43,6 +43,7 @@ enum class GoalType : std::uint8_t {
     PlayGenAnim = 0x26,        ///< PlayGenAnimGoal: one generic clip.
     GuardFlag = 0x2b,          ///< GuardFlagGoal: keeps to a flag.
     GetItem = 0x2c,            ///< GetItemGoal: walks to a loose object and picks it up.
+    DestroyItem = 0x2d,        ///< DestroyItemGoal: walks up to a world object or pane and swings at it.
     TrackHuman = 0x30,         ///< TrackHumanGoal.
     FollowPlayer = 0x32,       ///< FollowPlayerGoal: keeps to the war chief's formation.
     FollowFormation = 0x33,    ///< FollowFormationGoal: walks to its formation slot.
