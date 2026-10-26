@@ -1933,6 +1933,34 @@ coney = "src/ai/targeting.h:scoreEnemy"
 status = "legacy"
 
 [[function]]
+address = 0x0029d558
+name = "ObjFilter_VandalisableInRange"
+page = "crew-wreck.md#smash-target"
+kind = "filter"
+role = "vandalisable, not finished, within a range"
+level = "inferred"
+coney = "src/ai/smash_goals.h:findSmashTarget"
+status = "legacy"
+
+[[function]]
+address = 0x0029d5f0
+name = "Ai_FindObject"
+page = "crew-wreck.md#stand-point"
+level = "confirmed-code"
+coney = "src/ai/smash_goals.h:findSmashTarget"
+status = "legacy"
+
+[[function]]
+address = 0x0029d928
+name = "Glass_ClaimPane"
+page = "crew-wreck.md#try-vandalise"
+kind = "helper"
+role = "`(radius, human, needRay, claim, needReach, centre)`: the panes within the radius (`GlassTaskManager_ListInRange`, 64), nearest first; the first intact one not claimed by the human's gang, **not alarmed** (pane bits `+0xf8` not both 1 and 2), upright (its up axis within 0.65 of vertical) and low enough (bottom at most his z + human `+0x548`); with `needRay`, a clear ray to its centre that crosses glass (result 2); with `needReach`, a navigation point at its spot that he can reach (`Nav_FindPolygonUnder` reads no stand-off); with `claim`, claimed for the gang for 7 s"
+level = "confirmed-code"
+coney = "src/ai/smash_goals.h:claimPane"
+status = "legacy"
+
+[[function]]
 address = 0x0029e250
 name = "Sectors_Construct"
 page = "ai-code.md#sectors"
@@ -2974,6 +3002,16 @@ coney = "src/ai/steal_goals.h:WarriorVandalStealGoal"
 status = "legacy"
 
 [[function]]
+address = 0x002bf118
+name = "WarriorVandalStealGoal_TryVandalise"
+page = "crew-wreck.md#try-vandalise"
+kind = "helper"
+role = "busy while he winds up a throw of what he holds; under the steal tactic: holding a throwable (not a breaking object, object flag `0x10000`): drops his target, stops while any held flag is set, turns to the nearest glass within 15 m once, else to the crowd ahead and queues the swing (attack kind 0, delay `0x7d`) with a 30/70 % line `0x8e`/`0x8f` every 8 s; every other update: a car within 15 m of the leader (and him within 20 m) with a free spot gets the car goal `0x002ddb40` (20 m); else a smash target (filter `0x0053f230`) gets GetItem (kind 4/5 objects) or the smash goal `0x002dd0c8`; every 1.5-3 s a glass pane (Glass_ClaimPane) gets the smash goal"
+level = "confirmed-code"
+coney = "src/ai/steal_goals.h:WarriorVandalStealGoal::tryVandalise"
+status = "legacy"
+
+[[function]]
 address = 0x002bf748
 name = "WarriorVandalStealGoal_Process"
 page = "ai-goals.md#goal-warrior-vandal-steal"
@@ -3690,6 +3728,36 @@ kind = "Process"
 role = "looks at it; done when someone else holds it or he has it; walks to it and picks it up"
 level = "confirmed-code"
 coney = "src/ai/steal_goals.h:GetItemGoal::process"
+status = "legacy"
+
+[[function]]
+address = 0x002dd0c8
+name = "DestroyItemGoal_Push"
+page = "crew-wreck.md#try-vandalise"
+kind = "pusher"
+role = "pushes DestroyItem on a human"
+level = "confirmed-code"
+coney = "src/ai/smash_goals.h:DestroyItemGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002dd148
+name = "DestroyItemGoal_Init"
+page = "crew-wreck.md#try-vandalise"
+kind = "init"
+role = "vtable `0x00541e90`; the object"
+level = "confirmed-code"
+coney = "src/ai/smash_goals.h:DestroyItemGoal"
+status = "legacy"
+
+[[function]]
+address = 0x002dd210
+name = "DestroyItemGoal_Process"
+page = "crew-wreck.md#stand-point"
+kind = "Process"
+role = "done when broken; walks beside it and hits it"
+level = "confirmed-code"
+coney = "src/ai/smash_goals.h:DestroyItemGoal::process"
 status = "legacy"
 
 [[function]]
@@ -5518,6 +5586,16 @@ kind = "reset"
 role = "on a full reset (1, `0xffff`): sets the ten handles of each of the 20 entries at `0x006eb318` (`0x30` bytes) to −1 (inferred: the cluster records)"
 level = "inferred"
 coney = "src/ai/steal_goals.h:StealClusters::clear"
+status = "legacy"
+
+[[function]]
+address = 0x00394f30
+name = "Object_IsVandalisable"
+page = "crew-wreck.md#smash-target"
+kind = "filter"
+role = "whether a world object may be smashed: worth 1 or more unless of class `dyn_masks`, not a break-and-enter door, explosive or fire barrel, and carried (anim set 4 or 5) or of a kind its record marks"
+level = "confirmed-code"
+coney = "src/gamemodes/level_items.h:LevelItems::smashable"
 status = "legacy"
 
 [[function]]
