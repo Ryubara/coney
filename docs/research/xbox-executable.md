@@ -108,21 +108,25 @@ Cheap at the file and function level, not below it.
 
 ### Runtime access {#runtime}
 
-xemu (QEMU-based) has a GDB stub (`-s`, TCP port 1234; `-S` starts paused) and the QEMU monitor (memory dumps,
-registers, trace events). GDB's remote protocol gives memory reads and writes, breakpoints and watchpoints, about
-what PCSX2's debugger and PINE give together. Coney has no tooling for it, and an observation in xemu is no
-runtime evidence for the PS2. Inferred from xemu's guest-debugging documentation; not tried.
+xemu (QEMU-based) has a GDB stub and the QEMU monitor (memory dumps, registers, snapshots). GDB's remote protocol
+gives memory reads and writes, breakpoints and watchpoints, about what PCSX2's debugger and PINE give together.
+Coney's tooling for it is [the coney-tools xemu commands](../guides/coney-tools-xemu.md): copies of the user's own
+xemu install claimed one per agent, a launch with the stub and monitor on the copy's own ports, reads, an `xemu` MCP
+server and run records with an `[xemu]` table. The first live run read the bytes `XBEH`, the XBE header magic, at the
+image base `0x00010000` of the running game: confirmed (runtime), run r-20261026-xbe-header-magic, on xemu
+0.8.139. An observation in xemu is runtime evidence for the Xbox only, never for the PS2.
 
 ### Recommendation {#recommendation}
 
-**Adopt the Xbox executable as an optional, read-only cross-reference for contributors; do not make it a reference and
-do not build xemu tooling.** It is not easier overall: game code is equally unnamed, MSVC's register artefacts and lower
-function coverage offset the cleaner x86 output, and its layouts differ from the PS2's. It does pay off for string-heavy
-and float-heavy code: front end, audio cues, scripting glue, camera and other vector maths. There, opening the Xbox twin
-of a PS2 function first (found through a shared string) shows its literals, `this` argument and float expressions
-quickly. Whoever does so cites only PS2 addresses as evidence and keeps the XBE project outside the repository. The
-exception is code the PS2 does not have: the port's own renderer, whose lighting, shadow map, fog and gamma ramp [Xbox
-lighting and shadows](xbox-lighting.md) reads in the XBE and cites at Xbox addresses.
+**Adopt the Xbox executable as an optional, read-only cross-reference for contributors; do not make it a reference.** It
+is not easier overall: game code is equally unnamed, MSVC's register artefacts and lower function coverage offset the
+cleaner x86 output, and its layouts differ from the PS2's. It does pay off for string-heavy and float-heavy code: front
+end, audio cues, scripting glue, camera and other vector maths. There, opening the Xbox twin of a PS2 function first
+(found through a shared string) shows its literals, `this` argument and float expressions quickly. Whoever does so cites
+only PS2 addresses as evidence and keeps the XBE project outside the repository. The exception is code the PS2 does not
+have: the port's own renderer, whose lighting, shadow map, fog and gamma ramp [Xbox lighting and
+shadows](xbox-lighting.md) reads in the XBE and cites at Xbox addresses; a question about it that the code leaves open
+is checked in the running Xbox game through [the xemu tooling](#runtime).
 
 ## Open questions
 
@@ -133,4 +137,5 @@ lighting and shadows](xbox-lighting.md) reads in the XBE and cites at Xbox addre
 ## How this was checked
 
 The evaluation ran on 2026-10-05, from code only: the two executables in a separate Ghidra project, as Method says.
-No claim on the page is runtime. The XBE's full SHA1 is `fe246a74501cd10d2ce89ca5dbda5080d2b2edcc`.
+One claim on the page is runtime: the XBE header magic in the running game ([Runtime access](#runtime)), read
+through the xemu tooling on 2026-10-26. The XBE's full SHA1 is `fe246a74501cd10d2ce89ca5dbda5080d2b2edcc`.

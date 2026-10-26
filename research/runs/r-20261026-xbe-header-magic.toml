@@ -3,12 +3,12 @@ id = "r-20261026-xbe-header-magic"
 date = "2026-10-26"
 kind = "method"
 tool = "xemu record-run"
-digest = "15141a93ad0f459be0f530d95f2a9da146def8d6c57820947a92904f616ead55"
+digest = "f846219ecac7ab0ea60b1e51db43c6c47e559066e0c5f29f73de69753bad4efc"
 
 [who]
-agent = "a0654ab905696843f"
-type = "tooling"
-model = "claude-sonnet-5-5"
+agent = "a6a39ba88cc60c3d2"
+type = "engineer"
+model = "claude-opus-5-5"
 source = "hook"
 
 [xemu]

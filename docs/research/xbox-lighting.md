@@ -367,8 +367,8 @@ described.
 ## Open questions
 
 Each says how to answer it: a further read of the Xbox executable in Ghidra, or a look at the running Xbox game in
-xemu over its GDB stub ([Runtime access](xbox-executable.md#runtime)), which Coney has no set-up or tooling for
-yet, so a runtime answer waits for one. The last is a PCSX2 check.
+xemu over its GDB stub with [the coney-tools xemu commands](../guides/coney-tools-xemu.md) and their MCP server
+([Runtime access](xbox-executable.md#runtime)), recorded as an xemu run. The last is a PCSX2 check.
 
 - **The shadow buffer's filtering**{#q-shadow-filter}: whether the Xbox's shadow-buffer compare samples one texel or
   filters four (the NV2A can filter shadow buffers), which decides how soft the edges are. Find out: a frame in xemu,
@@ -401,7 +401,7 @@ yet, so a runtime answer waits for one. The last is a PCSX2 check.
 
 ## How this was checked
 
-Code only: no Xbox emulator is set up on this machine, so no claim on this page is runtime. The Xbox executable is the
+Code only: no claim on this page is runtime (the xemu tooling came after this read). The Xbox executable is the
 NTSC-U `default.xbe` with SHA1 `fe246a74501cd10d2ce89ca5dbda5080d2b2edcc`. The Xbox executable was read in a private
 copy of the evaluation's Ghidra project ([Method](xbox-executable.md#method)), served by a second ghidra-mcp server on
 another port, never in the shared PS2 project; the PS2 side in the shared project. Read on 2026-10-25.
