@@ -506,6 +506,14 @@ void RailCamera::placeTrailing(std::optional<anim::Vec3> feet, anim::Vec3 veloci
     m_target = anim::Vec3{feet->x, feet->y, feet->z + offset.z};
     // 4. The goal: the target point's foot on the rail and 2 m toward him at the pitch, taken only when ahead of the
     // look-at point along the segment: the camera never goes back.
+    // The finish of both paths below, moving or not: with the height setting above 0 the camera is no higher than
+    // that over the target's feet.
+    const float feetZ = feet->z;
+    const auto applyCeiling = [this, feetZ] {
+        if (m_height.current > 0.0F) {
+            m_position.z = std::min(m_position.z, feetZ + m_height.current);
+        }
+    };
     const bool heldBefore = m_held;
     const anim::Vec3 start = m_position;
     chooseSegmentFor(m_target);
@@ -527,6 +535,7 @@ void RailCamera::placeTrailing(std::optional<anim::Vec3> feet, anim::Vec3 veloci
     }
     if (!move || m_held) {
         m_goal = m_lookAt;
+        applyCeiling();
         return;
     }
     // 6. The move: toward the goal by the target's forward speed plus 1 m/s, at most 40% of the gap; the segment
@@ -555,10 +564,7 @@ void RailCamera::placeTrailing(std::optional<anim::Vec3> feet, anim::Vec3 veloci
     m_position = placed;
     // 8. The look-at point again 2 m from the camera toward where it was, at the pitch.
     m_lookAt = pitchedLook(m_position, m_lookAt);
-    // The finish: with the height setting above 0 the camera is no higher than that over the target's feet.
-    if (m_height.current > 0.0F) {
-        m_position.z = std::min(m_position.z, feet->z + m_height.current);
-    }
+    applyCeiling();
 }
 
 CameraView RailCamera::view() const {

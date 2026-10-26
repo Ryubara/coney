@@ -95,7 +95,8 @@ void ArmiesGameOverMode::pressStart(int player, std::uint64_t nowMs) {
 ModeResult ArmiesGameOverMode::update(GameModeStack& stack, const FrameTime& frame) {
     const std::uint64_t nowMs = frame.gameTicks / (GameTimer::kTicksPerSecond / 1000);
     // **Coney's stand-in**: the original runs one frame of the world's phase-1 tasks, its streaming and its audio
-    // under the screen each update (Gm_ANGameOver_Update); Coney draws the level's last frame (m_frozen) instead.
+    // under the screen each update (Gm_ANGameOver_Update); Coney draws the level's last frame (m_frozen) instead, as
+    // the original does without the HUD.
     // The screen opens on the first frame, which knows the time.
     if (m_openPending) {
         m_openPending = false;
@@ -176,13 +177,14 @@ void ArmiesGameOverMode::close(GameModeStack& stack, gui::ArmiesGameOverChoice c
 }
 
 void ArmiesGameOverMode::render(const RenderTime& time) {
+    // Only the world's viewport under the menu, no HUD (GameMode_RenderViewportAlt `0x00156540`).
     const float level = lerp(m_fadeLevel.previous(), m_fadeLevel.current(), time.alpha);
     const std::function<void(graphics::RenderDevice&)> overlay = [this, level](graphics::RenderDevice& device) {
         graphics::ScreenFade::draw(device, level);
         m_layer.draw(device);
     };
     if (m_world != nullptr) {
-        m_world->renderWithOverlay(m_frozen, overlay);
+        m_world->renderWorldWithOverlay(m_frozen, overlay);
         return;
     }
     m_device.beginFrame(graphics::kBlack);

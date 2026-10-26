@@ -942,6 +942,8 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     std::unique_ptr<HudLayer> m_hud;           // the HUD's sheets, batches and pass (src/platform/hud_layer.h)
     // The layer renderWithOverlay() adds over the HUD for the render it runs; null otherwise.
     const std::function<void(graphics::RenderDevice&)>* m_overlay = nullptr;
+    // Whether the render renderWorldWithOverlay() runs leaves the HUD out.
+    bool m_hudHidden = false;
 };
 
 } // namespace coney::platform

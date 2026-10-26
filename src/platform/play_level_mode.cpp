@@ -784,7 +784,9 @@ void PlayLevelMode::render(const RenderTime& time) {
     if (effectsFirst) {
         m_engine.addFrameOverlay([this](RenderEngine& engine) { m_levelEffects->drawScreenEffects(engine); });
     }
-    m_engine.addFrameOverlay([this](RenderEngine& engine) { m_hud->draw(engine); });
+    if (!m_hudHidden) {
+        m_engine.addFrameOverlay([this](RenderEngine& engine) { m_hud->draw(engine); });
+    }
     if (m_levelEffects && !effectsFirst) {
         m_engine.addFrameOverlay([this](RenderEngine& engine) { m_levelEffects->drawScreenEffects(engine); });
     }
@@ -843,7 +845,9 @@ void PlayLevelMode::renderWithOverlay(const RenderTime& time,
 
 void PlayLevelMode::renderWorldWithOverlay(const RenderTime& time,
                                            const std::function<void(graphics::RenderDevice&)>& overlay) {
+    m_hudHidden = true;
     renderWithOverlay(time, overlay);
+    m_hudHidden = false;
 }
 
 world::DebugCamera PlayLevelMode::blendedFreeCamera(const Interpolated<world::DebugCamera>& camera, float alpha) {
