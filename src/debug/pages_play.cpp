@@ -350,6 +350,7 @@ void addFightersPage(DebugSession& session) {
             page.add(std::move(ahead));
             // The side the fighters take: Enemy (the default), Ally or Neutral.
             std::vector<std::string> sideChoices;
+            sideChoices.reserve(ai::kFighterSides.size());
             for (const ai::FighterSide side : ai::kFighterSides) {
                 sideChoices.emplace_back(ai::sideName(side));
             }

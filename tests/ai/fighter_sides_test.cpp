@@ -201,6 +201,7 @@ TEST_CASE("fighters beyond a gang's capacity go to a new gang of their side, and
     const int warriors = playerInWarriors(scene);
     FighterSides sides(scene.brains.gangs());
     std::vector<Brain*> allies;
+    allies.reserve(25);
     for (int i = 0; i < 25; ++i) {
         allies.push_back(&spawn(scene, sides, FighterSide::Ally, {10.0F + static_cast<float>(i), 30.0F, 0.0F}));
     }
