@@ -160,7 +160,9 @@ That run is an observation of Coney, not of the original:
   credits, GO sign and join messages, the timer's seconds form and the game-over screen (mode 0xd); with the pad idle
   the stage plays as [the original's first frames](#first-frames) do. Both join messages start on at the set-up and
   a panel's first attach clears its own ([The join messages](#the-join-messages); `repo:src/hud/armies_hud.cpp`), so
-  player 2's "PRESS THE START BUTTON TO JOIN" shows in play as in the original.
+  player 2's "PRESS THE START BUTTON TO JOIN" shows in play as in the original, centred on the panel's place
+  (`Font_Draw`'s flag `0x02`; both lines span about 0.60 to 0.87 of the width in Coney and 0.61 to 0.86 in the
+  original, confirmed (runtime) by the captures of 2026-10-26).
 
 ### Coney fixes (item 19) {#coney-fixes}
 
