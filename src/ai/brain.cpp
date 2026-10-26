@@ -35,6 +35,7 @@ constexpr int kRandomDelayMaxMs = 500;
 
 } // namespace
 
+// @coney-only trace naming; the original keeps no such count
 const char* targetCauseName(TargetCause cause) {
     switch (cause) {
     case TargetCause::Pick:
@@ -401,8 +402,10 @@ bool Brain::clearActions() {
     return true;
 }
 
+// @coney-only a reader of Coney's queue; the original reads its head in place
 Action* Brain::frontAction() { return m_actionCount == 0 ? nullptr : m_actions[m_actionFront].get(); }
 
+// @coney-only a reader of Coney's queue; the original reads its head in place
 const Action* Brain::frontAction() const { return m_actionCount == 0 ? nullptr : m_actions[m_actionFront].get(); }
 
 void Brain::flush() {
@@ -410,9 +413,9 @@ void Brain::flush() {
     clearActions();
 }
 
+// Coney's choice: the passes are bounded (twice the stack's size) where the original loops until a goal stops
+// (#635).
 void Brain::processGoals() {
-    // Coney's choice: the passes are bounded (twice the stack's size) where the original loops until a goal stops
-    // (#635).
     for (int pass = 0; pass < kMaxGoalPasses; ++pass) {
         Goal* top = topGoal();
         if (top == nullptr) {
@@ -535,6 +538,7 @@ void Brain::pushFightGoals(int durationMs) {
     pushGoal(std::make_unique<FightGoal>(durationMs));
 }
 
+// @orig 0x0028d538 Brain_AddEnemy (unknown)
 bool Brain::listEnemy(Brain& enemy) {
     if (&enemy == this || m_enemies.size() >= kMaxEnemies || std::ranges::find(m_enemies, &enemy) != m_enemies.end()) {
         return false;
@@ -623,6 +627,7 @@ bool Brain::claimSlot(Brain& attacker, bool force) {
     return true;
 }
 
+// @orig 0x0028cfe0 Brain_SetTarget (unknown)
 void Brain::releaseSlot(const Brain& attacker) {
     std::erase(m_slots, &attacker);
     m_fight.places.release(&attacker);
@@ -632,6 +637,7 @@ void Brain::releaseSlot(const Brain& attacker) {
     }
 }
 
+// @orig 0x0028df30 Brain_ClaimAttackSlot (unknown)
 void Brain::raiseSpacing(const Brain& attacker) {
     const GangFightValues values = attacker.gangFight();
     m_fight.spacing.raise(values.standingSpacing, values.downSpacing, m_type == BrainType::Warrior);
@@ -644,6 +650,7 @@ GangFightValues Brain::gangFight() const {
     return m_settings.gangFight[static_cast<std::size_t>(m_gang->kind())];
 }
 
+// Sets how many attackers may hold a slot (`+0x1e4`, at most kMaxAttackSlots); the holders past it lose theirs.
 void Brain::setAttackSlotCount(std::size_t count) {
     m_slotCount = std::min(count, kMaxAttackSlots);
     if (m_slots.size() > m_slotCount) {
@@ -706,6 +713,7 @@ void Brain::setTurnBoost(int boost) {
     }
 }
 
+// Sets the point a move aims at and its radius (moveAim(), moveAimRadius()).
 void Brain::setMoveAim(anim::Vec3 point, float radius) {
     m_moveAim = point;
     m_moveAimRadius = radius;
@@ -737,10 +745,12 @@ float Brain::distanceTo(const Brain& other) const {
     return std::hypot(to.x, to.y);
 }
 
+// @orig 0x002223e8 Human_CanSeeHuman (unknown)
 bool Brain::canSee(const Brain& other, float range) const {
     return canSeeHuman(m_collision, *m_human, other.human(), range);
 }
 
+// @orig 0x00222288 Human_HasLineOfSight (unknown)
 bool Brain::hasLineOfSight(const Brain& other) const {
     return lineOfSight(m_collision, m_human->position(), other.human().position()).clear;
 }
@@ -757,6 +767,7 @@ bool deliverEvent(Brain& brain, const BrainEvent& event) {
     return brain.onEvent(event);
 }
 
+// @coney-only Coney's brains hold pointers; the original's handles stop resolving on their own
 void Brain::forget(const Brain& other) {
     if (m_target == &other) {
         m_target = nullptr;

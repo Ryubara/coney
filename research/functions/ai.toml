@@ -1016,7 +1016,7 @@ kind = "helper"
 role = "gait 0, heading = the current one (think bookkeeping)"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::stopMove"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0028b358
@@ -1302,7 +1302,12 @@ page = "ai.md#original-structure"
 role = "call handler B / handler A"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::update"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the handler runs whatever the human's `+0xd8`, and the 90-update health sample (`+0x154`) is not taken"
+relation = "not-ported"
+issue = 635
 
 [[function]]
 address = 0x0028f928
@@ -1330,7 +1335,17 @@ page = "ai.md#original-structure"
 role = "handler A of every AI type"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::update"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the wanted-enemy refresh, timer A's expiry, the 44-update sight note of the target, the turf-leave check and the join-the-player's-gang flag"
+relation = "not-ported"
+issue = 635
+
+[[function.gaps]]
+what = "an out-of-health human and a suspended brain in a scene skip the goals too, and the goal loop is bounded"
+relation = "stand-in"
+issue = 635
 
 [[function]]
 address = 0x0028fe28

@@ -11,7 +11,7 @@ tag = 1
 tag = 7
 
 ["src/ai/ai_humans.cpp"]
-tag = 16
+tag = 13
 
 ["src/ai/ai_humans.h"]
 comment = 5
@@ -45,11 +45,10 @@ tag = 14
 comment = 4
 
 ["src/ai/brain.cpp"]
-comment = 2
-tag = 29
+tag = 19
 
 ["src/ai/brain.h"]
-comment = 40
+comment = 38
 tag = 1
 
 ["src/ai/brain_events.cpp"]
@@ -332,9 +331,6 @@ tag = 1
 
 ["src/audio/game_sound.cpp"]
 tag = 63
-
-["src/audio/game_sound.h"]
-comment = 1
 
 ["src/audio/human_sound_events.cpp"]
 tag = 9
@@ -1130,12 +1126,10 @@ comment = 1
 tag = 1
 
 ["src/human/human.cpp"]
-comment = 2
-tag = 52
+tag = 42
 
 ["src/human/human.h"]
-comment = 11
-tag = 3
+tag = 2
 
 ["src/human/human_animator.cpp"]
 tag = 38
@@ -1164,9 +1158,6 @@ tag = 2
 
 ["src/human/human_sounds.h"]
 comment = 1
-
-["src/human/humans.cpp"]
-tag = 7
 
 ["src/human/jump.cpp"]
 tag = 1
@@ -1530,9 +1521,6 @@ tag = 15
 
 ["src/scripting/sound_bindings.cpp"]
 tag = 19
-
-["src/scripting/sound_bindings.h"]
-tag = 1
 
 ["src/scripting/spawn_bindings.cpp"]
 tag = 3

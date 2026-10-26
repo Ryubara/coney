@@ -106,6 +106,7 @@ class ScriptSpawnerWorld final : public ai::SpawnerWorld {
         return spot;
     }
 
+    // @coney-only Coney's spawner world: what the spawners ask of the scripted brains
     [[nodiscard]] std::optional<anim::Vec3> playerPosition() const override {
         const ai::Brain* player = m_scripted->player();
         return player != nullptr ? std::optional(player->human().position()) : std::nullopt;
@@ -148,11 +149,13 @@ class ScriptSpawnerWorld final : public ai::SpawnerWorld {
         return !m_collision->rayCast(ray, kSeeThroughMaterials, 0).has_value();
     }
 
+    // @coney-only Coney's spawner world: what the spawners ask of the scripted brains
     [[nodiscard]] bool alive(double handle) const override {
         const auto found = m_scripted->bound().find(handle);
         return found != m_scripted->bound().end() && found->second->human().alive();
     }
 
+    // @coney-only Coney's spawner world: what the spawners ask of the scripted brains
     [[nodiscard]] bool policeGang(int gang) const override {
         const ai::Gang* found = m_scripted->owner().gangs().find(gang);
         return found != nullptr && found->kind() == ai::kPoliceKind;
@@ -206,6 +209,7 @@ class ScriptSpawnerWorld final : public ai::SpawnerWorld {
 
 } // namespace
 
+// @coney-only Coney's wiring of the mode's services
 GameplayMode::GameplayMode(graphics::RenderDevice& device, script::ScriptSystem& scripts,
                            script::BindingContext& context, GameState& state, CreatedHumans& humans,
                            world_objects::WorldFlags& flags, const script::RecordedCalls& recorded, LevelLoader loader,
@@ -227,6 +231,7 @@ GameplayMode::GameplayMode(graphics::RenderDevice& device, script::ScriptSystem&
     });
 }
 
+// @coney-only Coney's wiring of the mode's services
 GameplayMode::~GameplayMode() {
     endLevel();
     if (m_context.objects == &m_objects) {
@@ -887,11 +892,13 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
     return result;
 }
 
+// @coney-only a forwarder to the level (ScriptedPlayer::releasePlayerToAi())
 bool GameplayMode::releasePlayerToAi() {
     auto* scripted = dynamic_cast<ScriptedPlayer*>(m_level.get());
     return scripted != nullptr && scripted->releasePlayerToAi();
 }
 
+// @coney-only Coney's hand-off of the humans' sounds and speech to the sound; the original's humans play their own
 void GameplayMode::reportHumanSounds() {
     if (!m_scripted) {
         return;
@@ -1168,6 +1175,7 @@ void GameplayMode::callPadHandler() {
     }
 }
 
+// @coney-only Coney's wiring of the mode's services
 void GameplayMode::wireHub() {
     // The categories (`CfgChar` `+0x11b`) and the gang kinds' flee percentages (`CfgGang`'s ninth argument).
     auto types = std::make_shared<characters::CharacterTypes>(characters::CharacterTypes::fromRecorded(m_recorded));
@@ -1228,6 +1236,7 @@ void GameplayMode::wireHub() {
     m_scripted->hubHost().setLookups(std::move(lookups));
 }
 
+// @coney-only Coney's handle lookup (a human, a flag or a spawn record)
 std::optional<std::array<float, 3>> GameplayMode::objectPosition(double handle) const {
     if (m_scripted) {
         if (const std::optional<world_objects::Placement> human = m_scripted->humanPlacement(handle)) {
@@ -1247,6 +1256,7 @@ std::optional<std::array<float, 3>> GameplayMode::objectPosition(double handle) 
     return std::nullopt;
 }
 
+// @coney-only Coney's handle lookup (a tag spot or a flag)
 std::optional<anim::Vec3> GameplayMode::promptObjectPosition(double handle) const {
     // A tag spot is a particle system (`part_spray_tag`).
     if (m_effects) {
@@ -1262,6 +1272,7 @@ std::optional<anim::Vec3> GameplayMode::promptObjectPosition(double handle) cons
     return std::nullopt;
 }
 
+// @coney-only Coney's lookup of player 1's placement
 std::optional<anim::Vec3> GameplayMode::playerFeet() const {
     const HumanCreation* player = m_humans.player(1);
     if (player == nullptr || !m_scripted) {
@@ -1332,6 +1343,7 @@ void GameplayMode::updateActionPrompt() {
     }
 }
 
+// @coney-only Coney's wiring of the mode's services
 void GameplayMode::wireScoutServices() {
     ai::ScoutServices& scout = m_scripted->storyHost().scoutServices();
     scout.callerActive = false;
@@ -1385,6 +1397,7 @@ void GameplayMode::updateHiding() {
     }
 }
 
+// @coney-only Coney's frame drawing
 void GameplayMode::render(const RenderTime& time) {
     // The loading screen's tick, on game time.
     if (m_phase != Phase::Playing && m_loadingScreen != nullptr) {
@@ -1410,6 +1423,7 @@ void GameplayMode::render(const RenderTime& time) {
     m_device.present();
 }
 
+// @coney-only Coney's frame drawing
 void GameplayMode::renderWithOverlay(const RenderTime& time,
                                      const std::function<void(graphics::RenderDevice&)>& overlay) {
     if (auto* overlaid = dynamic_cast<OverlaidLevel*>(m_level.get())) {

@@ -81,7 +81,10 @@ std::unique_ptr<combat::AnimRangeList> classRanges(const combat::AnimRangeList* 
     return own;
 }
 
+// A point in the collision mesh's vector type, and back.
+// @coney-only conversion between Coney's two vector types
 raycast::Vec3 toMesh(anim::Vec3 v) { return raycast::Vec3{v.x, v.y, v.z}; }
+// @coney-only conversion between Coney's two vector types
 anim::Vec3 fromMesh(raycast::Vec3 v) { return anim::Vec3{v.x, v.y, v.z}; }
 
 // `v` across the ground, made unit length; zero when it has no horizontal part.
@@ -123,6 +126,7 @@ class WalkingOwner final : public physics::BodyOwner {
     [[nodiscard]] physics::Body* body() override { return m_body; }
     // `Human_OnContact` (`0x00219d50`) for the level: a climbing human passes through the fence it climbs (code 0);
     // every other triangle slides, with the contact scale (`0x20001`; docs/research/characters.md#walls, step 4).
+    // @orig 0x00219d50 Human_OnContact (unknown)
     [[nodiscard]] std::uint32_t onContact(const physics::Contact& contact) override {
         if (contact.triangle && !m_passThrough.empty()) {
             const std::uint8_t material = m_mesh.triangles()[*contact.triangle].material;
@@ -172,6 +176,7 @@ bool meetsCapsule(std::span<const PosedShape> before, std::span<const PosedShape
 
 } // namespace
 
+// @coney-only a lone human's input (step()) as the per-player record a pad would write
 PlayerRecord recordOf(const HumanInput& input) {
     return PlayerRecord{.stickX = input.stickX,
                         .stickY = input.stickY,
@@ -186,6 +191,7 @@ PlayerRecord recordOf(const HumanInput& input) {
                         .move = std::nullopt};
 }
 
+// @coney-only the trace's names
 const char* traversalName(Traversal traversal) {
     switch (traversal) {
     case Traversal::None:
@@ -213,6 +219,7 @@ Human::Human(const characters::AnimSet& anims, const AnimSlots& slots,
     std::ranges::copy(bindRotations, m_bindRotations.begin());
 }
 
+// @coney-only Coney's sound hand-off: the level plays what the human asked for; the original plays it in place
 std::vector<HumanSound> Human::takeSounds() {
     std::vector<HumanSound> sounds;
     // Clip event 11 carries the animation sound's id in its argument (0 plays nothing); 0x45 stops the sound the
@@ -233,12 +240,14 @@ std::vector<HumanSound> Human::takeSounds() {
     return sounds;
 }
 
+// @coney-only Coney's sound hand-off: the level plays what the human asked for; the original plays it in place
 void Human::reportSound(const HumanSound& sound) {
     if (m_reportSounds) {
         m_contactSounds.push_back(sound);
     }
 }
 
+// @coney-only Coney's sound hand-off: the level plays what the human asked for; the original plays it in place
 void Human::reportSounds(bool on) {
     // Switching it on again keeps what it holds: the animator's keepEvents() drops the kept clip events.
     if (on == m_reportSounds) {
@@ -1475,6 +1484,7 @@ void Human::followClimb(const raycast::CollisionMesh* mesh) {
     }
 }
 
+// @coney-only one human stepped alone (the tests); human::Humans runs the original's passes over all of them
 void Human::step(const HumanInput& input, const raycast::CollisionMesh* mesh) {
     m_record = recordOf(input);
     animate(mesh);

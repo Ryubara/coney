@@ -173,6 +173,7 @@ class Human final : public Holdable {
     /// Makes it fight as `profile` says (a player, or a human no player controls with its class's power class and
     /// health), from now and at every spawn(); its fighting starts afresh. A human is a player until told otherwise.
     void setFighterProfile(const FighterProfile& profile);
+    /// How it fights (setFighterProfile()).
     [[nodiscard]] const FighterProfile& fighterProfile() const { return m_profile; }
 
     /// Makes it another character where it is, as a human made with these arguments would be: it animates with
@@ -318,6 +319,7 @@ class Human final : public Holdable {
     [[nodiscard]] float speed() const;
     /// The gait of the whole velocity's length (`+0x1a8`, written with the velocity: a jump's vertical speed counts).
     [[nodiscard]] Gait gait() const;
+    /// Whether it is airborne (off the ground).
     [[nodiscard]] bool airborne() const { return m_airborne; }
     /// The human fell more than kOutOfWorldDepth below the mesh; it stays put until spawned again.
     [[nodiscard]] bool outOfWorld() const { return m_outOfWorld; }
@@ -363,6 +365,7 @@ class Human final : public Holdable {
     [[nodiscard]] std::uint32_t landings() const { return m_landings; }
     /// The last stick intent, after the camera's turn.
     [[nodiscard]] const StickIntent& intent() const { return m_intent; }
+    /// Its clips.
     [[nodiscard]] const HumanAnimator& animator() const { return m_animator; }
     /// `HuUseAnim`'s idle replacement, `name` loaded as `clip` (null for none: the own idle);
     /// HumanAnimator::setIdleClip(). The play mode applies ScriptState's override for the idle (`0x184`) through it.
@@ -401,7 +404,9 @@ class Human final : public Holdable {
     void playWorkout(const anim::AnimClip& enter, const std::array<const anim::AnimClip*, 3>& loops) {
         m_animator.playWorkout(enter, loops);
     }
+    /// The workout's loop while it plays (HumanAnimator::workoutLoop()); null otherwise.
     [[nodiscard]] anim::GaitBlendTask* workoutLoop() const { return m_animator.workoutLoop(); }
+    /// Ends the workout with its `exit` clip (HumanAnimator::endWorkout()).
     void endWorkoutClips(const anim::AnimClip* exit) { m_animator.endWorkout(exit); }
     /// **Coney's own**: the debug menus' Animation player plays `clip` on the human (HumanAnimator::playDebugClip(),
     /// docs/guides/debug-menu.md#animation-player); the original has nothing like it.
@@ -445,6 +450,7 @@ class Human final : public Holdable {
     /// which ambient emitters a player hears (`+0x5b7`, docs/research/sound-events.md#covered).
     /// @orig 0x002195e0 Human_SetCoverFlag5 (unknown)
     [[nodiscard]] bool onCoveredGround() const { return m_coveredGround; }
+    /// The speeds its clips give the locomotion (HumanAnimator::speeds()).
     [[nodiscard]] const Speeds& speeds() const { return m_animator.speeds(); }
     /// Stamina (record `+0x14a`).
     [[nodiscard]] const Stamina& stamina() const { return m_stamina; }
@@ -538,6 +544,7 @@ class Human final : public Holdable {
     /// Keeps where an attack started near it (event `0x10`) for its brain, which counts them (brain `+0x200`).
     void announceAttack(anim::Vec3 attacker) override { m_announced.push_back(attacker); }
     /// Where the attacks announced since the last call started, and forgets them (its brain takes them each update).
+    /// @coney-only Coney's hand-off to the brain; the original sends the brain its event at once
     [[nodiscard]] std::vector<anim::Vec3> takeAttackAnnouncements() { return std::exchange(m_announced, {}); }
     /// The slow-motion event (type `0x2e` on, `0x2f` off) the clip playing passed in the last update, if any; the
     /// later of the two when both did (docs/research/camera.md#slow-motion).
@@ -634,9 +641,11 @@ class Human final : public Holdable {
     [[nodiscard]] std::uint64_t flags() const override { return m_fighter.flags(); }
     /// Its character class (human `+0xcc`); its brain gives it (ai::Brain::setCharacterClass()), -1 until then.
     [[nodiscard]] int characterClass() const override { return m_characterClass; }
+    /// Sets its character class (characterClass()).
     void setCharacterClass(int characterClass) { m_characterClass = characterClass; }
     /// Its class's category is 13 (FighterProfile::bossClass).
     [[nodiscard]] bool bossClass() const override { return m_fighter.bossClass(); }
+    /// Whether its fighter's flags have `bit` (Fighter::hasFlag()).
     [[nodiscard]] bool hasFlag(std::uint64_t bit) const { return m_fighter.hasFlag(bit); }
     /// Sets (`on`) or clears the bits of `bits`.
     void setFlag(std::uint64_t bits, bool on) { m_fighter.setFlag(bits, on); }
@@ -744,6 +753,7 @@ class Human final : public Holdable {
     /// record or a loose object, which starts what it found on the human (or drops what he holds) and returns true.
     /// None: nothing.
     using ContextAction = std::function<bool(Human& human)>;
+    /// Sets the level's context action (ContextAction).
     void setContextAction(ContextAction action) { m_contextAction = std::move(action); }
     /// What triangle tries before the level's context action: the kind-0 record, a cuffed human to free, comes first
     /// in the kinds' order (docs/research/crimes.md#triangle). None: nothing.
@@ -752,6 +762,7 @@ class Human final : public Holdable {
     /// shapes, docs/research/objects.md#pane-break): the level breaks the panes whose bodies a sphere at `centre` of
     /// `radius` reaches. Humans::setBodyContact() gives it; null: nothing.
     using BodyContact = std::function<void(Human& human, anim::Vec3 centre, float radius)>;
+    /// Sets what its airborne body touches (BodyContact; not owned, null for nothing).
     void setBodyContact(const BodyContact* contact) { m_bodyContact = contact; }
     /// What a walking body slides along beyond the level's walls: the world objects' `BLOCKHUMANS` bodies
     /// (`Human_OnContact` slides along an object as along the level, docs/research/physics.md#contacts). Given the
@@ -760,6 +771,7 @@ class Human final : public Holdable {
     /// `RUNTARGET` body). Humans::setObjectPush() gives it; null: nothing.
     using ObjectPush =
         std::function<std::optional<anim::Vec3>(const Human& walker, anim::Vec3 centre, float radius, anim::Vec3 move)>;
+    /// Sets what it slides along beyond the walls (ObjectPush; not owned, null for nothing).
     void setObjectPush(const ObjectPush* push) { m_objectPush = push; }
     /// The humans its walking body meets (docs/research/physics.md#human-contacts): the characters' step gives every
     /// human its list each update (Humans::update()); the list may hold this human and null slots, which are skipped.

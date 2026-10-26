@@ -70,8 +70,8 @@ name = "AnimCursor_Advance"
 page = "formats/animation.md#original-structure"
 role = "advances the time; returns the overshoot past the end"
 level = "confirmed-code"
-coney = "src/animation/anim_pose.h:AnimCursor::advance"
-status = "legacy"
+coney = "src/human/face.cpp:roundedFrame"
+status = "compared"
 
 [[function]]
 address = 0x001045e0
