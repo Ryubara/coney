@@ -5,10 +5,12 @@
 
 #include <cstdint>
 #include <expected>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
@@ -38,6 +40,28 @@ using coney::StartUpFlow;
 
 namespace {
 
+// A loaded level that records how each frame was asked for: "frame", "with HUD" or "world only".
+class RecordingLevel final : public coney::GameMode, public coney::OverlaidLevel {
+  public:
+    explicit RecordingLevel(std::vector<std::string>& renders) : m_renders(renders) {}
+    [[nodiscard]] std::uint32_t id() const override { return 0x100; }
+    coney::ModeResult update(GameModeStack& /*stack*/, const coney::FrameTime& /*frame*/) override {
+        return coney::ModeResult::Stay;
+    }
+    void render(const coney::RenderTime& /*time*/) override { m_renders.emplace_back("frame"); }
+    void renderWithOverlay(const coney::RenderTime& /*time*/,
+                           const std::function<void(coney::graphics::RenderDevice&)>& /*overlay*/) override {
+        m_renders.emplace_back("with HUD");
+    }
+    void renderWorldWithOverlay(const coney::RenderTime& /*time*/,
+                                const std::function<void(coney::graphics::RenderDevice&)>& /*overlay*/) override {
+        m_renders.emplace_back("world only");
+    }
+
+  private:
+    std::vector<std::string>& m_renders;
+};
+
 // The start-up flow's modes with gameplay pushed alone in `level99` (checkpoint 3), an input script on port 1, and
 // the pause hooks recorded.
 struct Run {
@@ -52,7 +76,7 @@ struct Run {
     std::unique_ptr<coney::ScriptedInput> input;
     GameTimer timer;
 
-    explicit Run(std::string_view script) {
+    explicit Run(std::string_view script, GameplayMode::LevelLoader loader = {}) {
         input = std::make_unique<coney::ScriptedInput>(coney::parseInputScript(script).value());
         stack.setInput(input.get());
         timer.setFixedStep(true);
@@ -61,8 +85,8 @@ struct Run {
         };
         flow = std::make_unique<StartUpFlow>(
             device, stack, sheets, strings, coney::LegalScreenSettings{},
-            [this](std::string_view line) { log.emplace_back(line); }, coney::script::ScriptSource{},
-            GameplayMode::LevelLoader{}, std::nullopt, 0);
+            [this](std::string_view line) { log.emplace_back(line); }, coney::script::ScriptSource{}, std::move(loader),
+            std::nullopt, 0);
         flow->setSheetRecordLoader(
             [](std::uint32_t /*record*/) -> std::expected<coney::graphics::SpriteSheet, coney::Error> {
                 return coney::test::testFontSheet();
@@ -236,4 +260,21 @@ TEST_CASE("Armies game over: HUDLaunchANGameOver with the screen up closes it", 
     run.flow->launchArmiesGameOver();
     run.frames(1);
     CHECK(run.stack.topId() == GameplayMode::kId);
+}
+
+TEST_CASE("Armies game over: the screen shows the level's world under its menu, without the HUD", "[pause][armies]") {
+    // Expected: armies.md#game-over, confirmed (code): mode 0xd's update (Gm_ANGameOver_Update, 0x00155c78) renders
+    // only the world's viewport (GameMode_RenderViewportAlt, 0x00156540) and the menu, no HUD.
+    std::vector<std::string> renders;
+    Run run("",
+            [&renders](const coney::LevelStart& /*start*/, const coney::ScriptedCast& /*cast*/)
+                -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
+                return std::make_unique<RecordingLevel>(renders);
+            });
+    run.frames(2);
+    run.flow->launchArmiesGameOver();
+    run.frames(2);
+    REQUIRE(run.stack.topId() == coney::ArmiesGameOverMode::kId);
+    REQUIRE_FALSE(renders.empty());
+    CHECK(renders.back() == "world only");
 }

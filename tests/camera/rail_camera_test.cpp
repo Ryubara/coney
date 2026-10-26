@@ -220,6 +220,24 @@ TEST_CASE("the rail camera in mode 3 holds once it reaches the rail's first poin
     CHECK(rail.position().x == Approx(0.0F));
 }
 
+TEST_CASE("the rail camera in mode 3 keeps under its height setting over the target's feet while it stands still",
+          "[camera]") {
+    // Expected: camera.md#rail-mode3, confirmed (code): CamRail_PlaceMode3 (0x0013dcc8) ends both paths, moving or
+    // not, at the height ceiling: the camera at most setting 1 above the target's feet.
+    RailCamera rail = straightRail();
+    rail.modify(RailCamera::kMode3Pitch, -7.0F, 0.0F);
+    rail.activate();
+    rail.update(Vec3{5.0F, 4.0F, 0.0F}, false, kStep, Vec3{});
+    REQUIRE(rail.position().z == Approx(2.0F));
+    rail.modify(RailCamera::kHeight, 1.0F, 0.0F);
+    // He steps back the way he came: the goal lies behind, so the camera keeps its place along the rail, but no more
+    // than 1 m over his feet.
+    rail.update(Vec3{4.0F, 4.0F, 0.0F}, false, kStep, Vec3{-3.0F, 0.0F, 0.0F});
+    CHECK(rail.position().x == Approx(5.0F));
+    CHECK_FALSE(rail.held());
+    CHECK(rail.position().z == Approx(1.0F));
+}
+
 TEST_CASE("a fixed camera looks at its targets' average plus its offset; a third-person camera sits behind its target",
           "[camera]") {
     FixedCamera fixed(Vec3{0.0F, 0.0F, 5.0F}, Vec3{0.0F, 0.0F, 1.0F}, 50.0F, 0.1F, 300.0F);

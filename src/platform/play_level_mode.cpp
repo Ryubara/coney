@@ -841,6 +841,11 @@ void PlayLevelMode::renderWithOverlay(const RenderTime& time,
     m_overlay = nullptr;
 }
 
+void PlayLevelMode::renderWorldWithOverlay(const RenderTime& time,
+                                           const std::function<void(graphics::RenderDevice&)>& overlay) {
+    renderWithOverlay(time, overlay);
+}
+
 world::DebugCamera PlayLevelMode::blendedFreeCamera(const Interpolated<world::DebugCamera>& camera, float alpha) {
     // As the sandbox viewer blends its camera: the position, and the turn the short way round.
     const world::DebugCamera& from = camera.previous();

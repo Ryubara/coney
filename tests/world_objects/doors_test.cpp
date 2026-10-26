@@ -6,17 +6,21 @@
 
 #include <cmath>
 #include <cstdint>
+#include <numbers>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include "animation/anim_math.h"
 #include "core/name_hash.h"
 #include "raycast/collision_mesh.h"
 #include "support/object_fixtures.h"
 #include "world/path_map.h"
 #include "world_objects/level_objects.h"
+#include "world_objects/object_services.h"
 
 using coney::world_objects::Door;
 using coney::world_objects::DoorBreaking;
@@ -554,4 +558,55 @@ TEST_CASE("a lift's two-leaf door (dyn_door_ele_c) opens its leaves apart, the f
     const auto rise = [](const coney::world_objects::SlidingLeaf& leaf) { return leaf.position().z - leaf.closed.z; };
     CHECK(rise(door.slidingLeaves[0]) == Catch::Approx(1.6F));
     CHECK(rise(door.slidingLeaves[1]) == Catch::Approx(-1.6F));
+}
+
+TEST_CASE("a two-leaf sliding door's command puts its leaves back to the door's pose, the second turned about z; a "
+          "lift's pair keeps its own",
+          "[world_objects][doors]") {
+    // Expected: armies.md#garage-door, confirmed (code): SlidingDoor_StateCommand (0x003f5608) sets, for every type
+    // but dyn_door_ele_c, the first leaf's rotation to the door's and the second's to the door's turned 180 degrees
+    // about z, on every command; the slide direction SubSlidingDoor_PlaceLeaf (0x003f4950) worked out from the
+    // set-up's pose stays.
+    coney::test::ObjectWorldFixture fixture;
+    Doors doors;
+    // An up-and-down door (no property 7): its second leaf is set up turned about y.
+    const ObjectTypeInfo info{.className = "dyn_door_sliding",
+                              .hitpoints = 0,
+                              .size = {3.0F, 0.2F, 3.0F},
+                              .material = 9,
+                              .leafWidth = 1.5F,
+                              .property6 = 0.05F,
+                              .property7 = 0.0F,
+                              .property8 = 3.0F,
+                              .objectType = 0};
+    // The door turned a quarter round, so the turn's frame shows.
+    const float half = std::numbers::pi_v<float> / 4.0F;
+    const auto spawnTurned = [&](std::string type) -> const Door& {
+        DoorSpawn spawn = at(std::move(type));
+        spawn.rotation = coney::anim::Quat{0.0F, 0.0F, std::sin(half), std::cos(half)};
+        const double handle =
+            doors.spawn(fixture.handle(), spawn, &info, [&fixture] { return fixture.handle(); }, fixture.world).handle;
+        return *doors.find(handle);
+    };
+    const coney::anim::Vec3 up{0.0F, 0.0F, 1.0F};
+    const coney::anim::Vec3 across{1.0F, 0.0F, 0.0F};
+    const Door& portcullis = spawnTurned("dyn_door_portcullis");
+    REQUIRE(portcullis.slidingLeaves.size() == 2);
+    // Set up: the second leaf upside down (about y) and sliding down.
+    const coney::world_objects::SlidingLeaf& second = portcullis.slidingLeaves[1];
+    CHECK(coney::world_objects::rotate(second.rotation, up).z == Catch::Approx(-1.0F));
+    CHECK(second.axis.z == Catch::Approx(-1.0F));
+    doors.command(portcullis.handle, door_command::kOpen, fixture.world);
+    // After the command: upright again, its x the door's -x (the door's x is +y here), still sliding down.
+    CHECK(coney::world_objects::rotate(second.rotation, up).z == Catch::Approx(1.0F));
+    CHECK(coney::world_objects::rotate(second.rotation, across).y == Catch::Approx(-1.0F));
+    CHECK(second.axis.z == Catch::Approx(-1.0F));
+    CHECK(portcullis.slidingLeaves[0].rotation == portcullis.rotation);
+
+    // The lift's pair keeps the set-up's poses.
+    const Door& lift = spawnTurned("dyn_door_ele_c");
+    REQUIRE(lift.slidingLeaves.size() == 2);
+    const coney::anim::Quat liftSecond = lift.slidingLeaves[1].rotation;
+    doors.command(lift.handle, door_command::kOpen, fixture.world);
+    CHECK(lift.slidingLeaves[1].rotation == liftSecond);
 }

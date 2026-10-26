@@ -163,6 +163,10 @@ class OverlaidLevel {
     /// included) before the present.
     virtual void renderWithOverlay(const RenderTime& time,
                                    const std::function<void(graphics::RenderDevice&)>& overlay) = 0;
+    /// Draws the level's world for `time` without its HUD, with `overlay` over it before the present: the Armies game
+    /// over (mode 0xd) shows only the world's viewport under its menu (docs/research/armies.md#game-over).
+    virtual void renderWorldWithOverlay(const RenderTime& time,
+                                        const std::function<void(graphics::RenderDevice&)>& overlay) = 0;
 };
 
 class PauseMode;
@@ -293,6 +297,9 @@ class GameplayMode final : public GameMode {
     /// through the level when it is an OverlaidLevel; otherwise the level's frame without the overlay, or black with
     /// it while no level is loaded.
     void renderWithOverlay(const RenderTime& time, const std::function<void(graphics::RenderDevice&)>& overlay);
+    /// renderWithOverlay() without the level's HUD (OverlaidLevel::renderWorldWithOverlay()); a level that cannot
+    /// leave it out draws its frame, and black with the overlay while none is loaded.
+    void renderWorldWithOverlay(const RenderTime& time, const std::function<void(graphics::RenderDevice&)>& overlay);
 
     /// Lets START pause the game through `pause` (not owned; null: no pause): each frame of play ends with
     /// PauseMode::playFrame().

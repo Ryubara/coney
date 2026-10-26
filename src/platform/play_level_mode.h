@@ -195,6 +195,9 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     /// intro and result screen over play.
     void renderWithOverlay(const RenderTime& time,
                            const std::function<void(graphics::RenderDevice&)>& overlay) override;
+    /// renderWithOverlay() without the HUD: the Armies game over's world under its menu.
+    void renderWorldWithOverlay(const RenderTime& time,
+                                const std::function<void(graphics::RenderDevice&)>& overlay) override;
     /// One line: frames, the player's position, heading, speed, gait, clip and state, then the scenery's counts.
     [[nodiscard]] std::string summary() const;
 

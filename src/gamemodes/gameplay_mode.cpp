@@ -1444,6 +1444,15 @@ void GameplayMode::renderWithOverlay(const RenderTime& time,
     m_device.present();
 }
 
+void GameplayMode::renderWorldWithOverlay(const RenderTime& time,
+                                          const std::function<void(graphics::RenderDevice&)>& overlay) {
+    if (auto* overlaid = dynamic_cast<OverlaidLevel*>(m_level.get())) {
+        overlaid->renderWorldWithOverlay(time, overlay);
+        return;
+    }
+    renderWithOverlay(time, overlay);
+}
+
 void GameplayMode::exit() {
     // Left behind the loading screen: its sounds stop and it ends.
     if (m_loadingScreen != nullptr && m_phase != Phase::Playing) {
