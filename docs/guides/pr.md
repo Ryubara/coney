@@ -295,7 +295,9 @@ guarded:
   covers every cause of the pull request.
 - `--hours N` sets how long it lasts: `conclave.watch.hold_default_hours` (4) when left out, and no more than
   `hold_max_hours` (24). **A hold ends by itself**: the problem is then open again and told again, so a fix that stalls
-  cannot hide. A new push is a new problem (the event id names the head commit), so it is not held either.
+  cannot hide. A hold also covers only the head commit it was made on (the command reads it from the pull request
+  and stores its first seven digits): a new push is a new problem, so it is not held either, and the coordinator is
+  told again of what the new head still fails. A pull request whose head the command cannot read is not held (exit 2).
 - `--release` ends the pull request's hold now. `--list` prints the holds that run (`--json`: with their times).
 
 A hold is one small JSON file per pull request in the scratch directory (`conclave.watch.holds_dir`, `pr-holds`),

@@ -39,9 +39,11 @@ def events(report: dict[str, Any], *kinds: str) -> list[dict[str, Any]]:
     return [event for event in found if not kinds or event["kind"] in kinds]
 
 
-def read(layout: Layout, answers: dict[tuple[str, ...], Any] | None = None, **changes: Any) -> dict[str, Any]:
-    """A GitHub snapshot over the layout."""
-    return collect(sources(layout, FakeGh(answers or github_answers()), **changes), github=True)
+def read(
+    layout: Layout, answers: dict[tuple[str, ...], Any] | None = None, plain: tuple[str, ...] = (), **changes: Any
+) -> dict[str, Any]:
+    """A GitHub snapshot over the layout; `plain` names more worktrees whose branch has no task file."""
+    return collect(sources(layout, FakeGh(answers or github_answers()), plain, **changes), github=True)
 
 
 def hold_on(layout: Layout, pr: int = 812, hours: float = 4, **changes: Any) -> None:
@@ -149,6 +151,16 @@ def test_a_hold_on_another_pull_request_does_not_handle_the_event(layout: Layout
     assert events(read(layout), "check-failed")[0]["state"] == "open"
 
 
+def test_a_hold_does_not_cover_a_new_push(layout: Layout) -> None:
+    # pr.md#hold: a new push is a new problem, so a failing fix attempt is not silenced by the hold on the old head
+    hold_on(layout, head="bbbbbbb")
+    assert events(read(layout), "check-failed")[0]["state"] == "handled"
+    answers = github_answers()
+    answers[("pr", "list", "--state", "open")][0]["headRefOid"] = "c" * 40
+    [event] = events(read(layout, answers), "check-failed")
+    assert event["state"] == "open" and event["handled_by"] is None and event["guard"] is True
+
+
 def test_a_hold_that_ran_out_raises_the_same_event_again(layout: Layout) -> None:
     hold_on(layout, hours=-1)
     [event] = events(read(layout), "check-failed")
@@ -251,6 +263,26 @@ def test_numbered_questions_are_answered_by_their_own_number(layout: Layout) -> 
 def test_a_question_that_is_a_long_line_is_cut(layout: Layout) -> None:
     write_file(layout.scratch / "fix-new" / "QUESTION.md", "w" * 400 + "\n")
     assert len(events(read(layout), "question")[0]["text"]) < 260
+
+
+def test_a_question_from_a_branch_without_a_task_file_is_an_event(layout: Layout) -> None:
+    # most tracks are plain branches with a worktree and a scratch folder: they ask too, as they are released too
+    layout.worktree("fix-plain-9")
+    (layout.scratch / "fix-plain-9").mkdir()
+    write_file(layout.scratch / "fix-plain-9" / "QUESTION.md", "Which file?\n", when=1)
+    [event] = events(read(layout, plain=("fix-plain-9",)), "question")
+    assert event["ref"]["task"] == "fix-plain-9" and "Which file?" in event["text"]
+
+
+def test_a_question_in_a_folder_with_no_worktree_is_history(layout: Layout) -> None:
+    (layout.scratch / "old-branch").mkdir()
+    write_file(layout.scratch / "old-branch" / "QUESTION.md", "Long ago?\n", when=1)
+    assert events(read(layout), "question") == []
+
+
+def test_a_task_file_unit_asks_once_even_with_a_worktree(layout: Layout) -> None:
+    write_file(layout.scratch / "fix-new" / "QUESTION.md", "Once?\n", when=1)
+    assert len(events(read(layout), "question")) == 1
 
 
 def test_other_files_in_a_unit_folder_are_no_questions(layout: Layout) -> None:

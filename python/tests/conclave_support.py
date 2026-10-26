@@ -210,8 +210,8 @@ def make_layout(root: Path) -> Layout:
     return made
 
 
-def sources(made: Layout, gh: FakeGh | None = None, **changes: Any) -> Sources:
-    """Sources over the made-up layout."""
+def sources(made: Layout, gh: FakeGh | None = None, plain: tuple[str, ...] = (), **changes: Any) -> Sources:
+    """Sources over the made-up layout; `plain` names more worktrees of branches that have no task file."""
     trees = made.trees
     lanes = {
         "main": {
@@ -251,7 +251,11 @@ def sources(made: Layout, gh: FakeGh | None = None, **changes: Any) -> Sources:
         "scratch": made.scratch,
         "now": lambda: NOW,
         "gh": gh or FakeGh({}),
-        "worktrees": lambda: [(trees / "fix-frame-812", "fix-frame-812"), (trees / "fix-new", "fix-new")],
+        "worktrees": lambda: [
+            (trees / "fix-frame-812", "fix-frame-812"),
+            (trees / "fix-new", "fix-new"),
+            *((trees / name, name) for name in plain),
+        ],
         "remote_branches": lambda: set(),
         "pcsx2": lambda: [{"copy": "pcsx2", "state": "free", "claim": None, "running": False}],
         "builds": lambda: lanes,

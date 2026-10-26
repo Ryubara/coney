@@ -6,12 +6,13 @@ Four things need the coordinator and are found here, each as an event with an id
 * `check-failed` and `pr-stuck`: an open pull request that `repo pr-health` calls stuck (a failed required check, or a
   conflict, a CI run that never ends, auto-merge off). The id is the pull request, the cause and the head commit (and
   the failing checks), so a new push is a new event and the same failure read again is the same one. The state is
-  `handled` while a hold (`pr hold`) covers the cause, with the hold in `handled_by`; a hold that runs out makes the
-  event open again, which is why handled problems are listed.
+  `handled` while a hold (`pr hold`) covers the cause on that head, with the hold in `handled_by`; a hold that runs
+  out, or that was made on an earlier head, leaves the event open, which is why handled problems are listed.
 * `merged`: a pull request merged within `conclave.watch.merged_minutes`.
 * `unit-ready`: a release-queue file (`PR.md`) of a unit whose branch has no pull request since the file changed. The id
   carries the file's time, so a rewritten file is a new event; a unit that was released leaves the list.
-* `question`: `QUESTION.md` (or `QUESTION-<n>.md`) in a unit's scratch folder with no newer `ANSWER` of the same number.
+* `question`: `QUESTION.md` (or `QUESTION-<n>.md`) in the scratch folder of a task unit or of any branch with a worktree
+  (most tracks are plain branches, as for `unit-ready`) with no newer `ANSWER` of the same number.
 
 An event that cannot come back once handled leaves the list when it is handled. `guard` marks the events the stop guard
 holds the coordinator's turn end for (the pull request problems nobody owns). A kind whose source could not be read is
@@ -27,6 +28,7 @@ from pathlib import Path
 from typing import Any
 
 from coney_tools.conclave_sources import Sources, iso_utc
+from coney_tools.config import ConfigError
 from coney_tools.conventions import ConclaveWatch
 from coney_tools.pr_hold import Hold, HoldsRead, holds_folder, read_active
 
@@ -83,7 +85,7 @@ def _pull_problems(prs: dict[str, Any], holds: HoldsRead, now: datetime) -> list
         branch = str(item.get("branch") or row.get("branch") or "")
         detail = str(item.get("detail") or "")
         text = f"#{number}{' ' + branch if branch else ''}: {cause}{' ' + detail if detail else ''}"
-        hold = next((held for held in holds.holds if held.pr == number and held.covers(cause, now)), None)
+        hold = next((held for held in holds.holds if held.pr == number and held.covers(cause, now, head)), None)
         found.append(
             _event(
                 event_id,
@@ -189,6 +191,23 @@ def _questions(scratch: Path, tasks: list[str], rules: ConclaveWatch) -> list[di
     return found
 
 
+def _question_folders(src: Sources, report: dict[str, Any], unread: set[str]) -> list[str]:
+    """The scratch folders that may hold a question: the task units' and every branch that has a worktree.
+
+    A source that fails is named in `unread`, so a short list is never taken for "nobody asks"."""
+    units = report.get("units") or {}
+    names: set[str] = set()
+    if units.get("error"):
+        unread.add("question")
+    else:
+        names.update(str(row["task"]) for row in units.get("units", []))
+    try:
+        names.update(branch for _path, branch in src.coord.worktrees() if branch)
+    except (ConfigError, OSError):
+        unread.add("question")
+    return sorted(names)
+
+
 def collect_events(src: Sources, report: dict[str, Any], release: dict[str, Any] | None) -> dict[str, Any]:
     """The `events` section of a GitHub snapshot: the events, the kinds that could not be read and any unreadable hold.
 
@@ -212,11 +231,8 @@ def collect_events(src: Sources, report: dict[str, Any], release: dict[str, Any]
         unread.add("unit-ready")
     else:
         found += _ready_units(release)
-    units = report.get("units") or {}
-    if units.get("error"):
-        unread.add("question")
-    else:
-        found += _questions(scratch, [str(row["task"]) for row in units.get("units", [])], rules)
+    folders = _question_folders(src, report, unread)
+    found += _questions(scratch, folders, rules)
     found.sort(key=lambda event: (event["since"] or "", event["id"]))
     return {
         "error": None,

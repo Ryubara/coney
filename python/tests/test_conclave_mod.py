@@ -42,6 +42,17 @@ GUARD_FN = (
     "async function guard(api: EngineInterface): Promise<string | null> { return api.clock.now() > 1 ? 'x' : null }\n"
 )
 
+#: The mod's wake path, in the one shape the check accepts: the function that submits, taking the text; the watcher that
+#: calls it, once, with the text of the events due and only when something is due.
+WAKE_FN = (
+    "async function takeWake(api: EngineInterface, wake: string): Promise<void> {\n"
+    "  await api.prompt.submit({ text: wake })\n}\n"
+)
+WATCH_FN = (
+    "export async function watchNow(api: EngineInterface, found: string[]): Promise<void> {\n"
+    "  const due = pending(found)\n  if (due.length > 0) await takeWake(api, wakeText('x', due))\n}\n"
+)
+
 #: Each snippet is a way across the line that the check has to see, with a word its message must carry. They run as
 #: modules of the mod, with the engine's `$`, its `on` and a few stubs in scope (conclave_boundary.PRELUDE).
 CROSSINGS = [
@@ -565,32 +576,124 @@ CROSSINGS = [
         "classic.Stop must begin",
     ),
     (
-        GUARD_FN + "on('classic.Stop', async ($, e, next) => {\n  const r = await next(e)\n  const q = await guard($)\n"
+        GUARD_FN + "on('classic.Stop', async ($, e, next) => {\n  const r = await next(e)\n"
+        "  const q = r.block === undefined ? await guard($) : null\n"
         "  return q === null ? r : { ...r, block: q, preventContinuation: true }\n})",
         "classic.Stop must begin",
     ),
     (
-        GUARD_FN + "on('classic.Stop', async ($, e, next) => {\n  const r = await next(e)\n  const q = await guard($)\n"
+        GUARD_FN + "on('classic.Stop', async ($, e, next) => {\n  const r = await next(e)\n"
+        "  const q = r.block === undefined ? await guard($) : null\n"
         "  return q === null ? r : { additionalContext: [q] }\n})",
         "classic.Stop must begin",
     ),
     (
-        GUARD_FN + "on('classic.Stop', async ($, e, next) => {\n  const r = await next(e)\n  const q = await guard($)\n"
+        GUARD_FN + "on('classic.Stop', async ($, e, next) => {\n  const r = await next(e)\n"
+        "  const q = r.block === undefined ? await guard($) : null\n"
         "  if (name) return { ...r, block: 'always' }\n  return q === null ? r : { ...r, block: q }\n})",
         "classic.Stop must begin",
     ),
     (
         "async function guard(api: EngineInterface, e: unknown): Promise<string | null> { return e ? 'x' : null }\n"
-        "on('classic.Stop', async ($, e, next) => {\n  const r = await next(e)\n  const q = await guard($, e)\n"
+        "on('classic.Stop', async ($, e, next) => {\n  const r = await next(e)\n"
+        "  const q = r.block === undefined ? await guard($, e) : null\n"
         "  return q === null ? r : { ...r, block: q }\n})",
         "classic.Stop must begin",
     ),
     (
-        GUARD_FN + "on('classic.Stop', async ($, e, next) => {\n  const r = await next(e)\n  const q = await guard($)\n"
+        GUARD_FN + "on('classic.Stop', async ($, e, next) => {\n  const r = await next(e)\n"
+        "  const q = r.block === undefined ? await guard($) : null\n"
         "  await next(e)\n  return q === null ? r : { ...r, block: q }\n})",
         "uses `next`",
     ),
+    # A block set beneath (Tether's) is kept: asked only when there is none, and never replaced.
+    (
+        GUARD_FN + "on('classic.Stop', async ($, e, next) => {\n  const r = await next(e)\n  const q = await guard($)\n"
+        "  return q === null ? r : { ...r, block: q }\n})",
+        "classic.Stop must begin",
+    ),
+    (
+        GUARD_FN + "on('classic.Stop', async ($, e, next) => {\n  const r = await next(e)\n"
+        "  const q = r.block !== undefined ? null : await guard($)\n  return q === null ? r : { ...r, block: q }\n})",
+        "classic.Stop must begin",
+    ),
+    (
+        GUARD_FN + "on('classic.Stop', async ($, e, next) => {\n  const r = await next(e)\n"
+        "  const q = r.block === undefined ? await guard($) : 'x'\n  return q === null ? r : { ...r, block: q }\n})",
+        "classic.Stop must begin",
+    ),
+    (
+        GUARD_FN + "on('classic.Stop', async ($, e, next) => {\n  const r = await next(e)\n"
+        "  const q = r.additionalContext === undefined ? await guard($) : null\n"
+        "  return q === null ? r : { ...r, block: q }\n})",
+        "classic.Stop must begin",
+    ),
     ("on('classic.SubagentStop', async ($, e, next) => next(e))", "classic.SubagentStop"),
+    # A wake (conclave.md#boundary): `$.prompt.submit` is called in one place, with text built from the events due.
+    (
+        "$.clock.every(60000, async () => { await $.prompt.submit({ text: 'wake' }) })",
+        "may only be called as { text:",
+    ),  # a timer with a fixed wake: an idle wake
+    (
+        "async function f() { await $.prompt.submit({ text: 'wake up' }) }\nvoid f",
+        "may only be called as { text:",
+    ),  # a fixed text
+    (
+        "async function takeWake(api: EngineInterface, wake: string) { await api.prompt.submit({ text: 'fixed' }) }\n"
+        "void takeWake",
+        "may only be called as { text:",
+    ),  # not the parameter
+    (
+        WAKE_FN + "export async function fixed(api: EngineInterface) { await takeWake(api, 'wake up') }",
+        "must be built from the events due",
+    ),  # a fixed text, unconditionally
+    (
+        WAKE_FN + "export async function fixed(api: EngineInterface) { await takeWake(api, wakeText('x', ['a'])) }",
+        "must be built from the events due",
+    ),  # events made up on the spot
+    (
+        WAKE_FN + "export async function each(api: EngineInterface, found: string[]) {\n"
+        "  const due = pending(found)\n  await takeWake(api, wakeText('x', due))\n}",
+        "must be built from the events due",
+    ),  # not only when something is due
+    (
+        WAKE_FN + "export async function each(api: EngineInterface, found: string[]) {\n"
+        "  const due = pending(found)\n  if (name) await takeWake(api, wakeText('x', due))\n}",
+        "must be built from the events due",
+    ),  # a condition that is not 'something is due'
+    (
+        WAKE_FN + "export async function each(api: EngineInterface, found: string[]) {\n"
+        "  const due = found\n  if (due.length > 0) await takeWake(api, wakeText('x', due))\n}",
+        "must be built from the events due",
+    ),  # due is not what pending() found
+    (
+        WAKE_FN + "export async function each(api: EngineInterface, found: string[]) {\n"
+        "  const due = pending(found)\n  if (due.length > 0) {\n    api.clock.every(1000, () => {\n"
+        "      void takeWake(api, wakeText('x', due))\n    })\n  }\n}",
+        "must be built from the events due",
+    ),  # sent later, from a timer inside
+    (
+        WAKE_FN + WATCH_FN + "const again = takeWake\nvoid again",
+        "must be called exactly once",
+    ),  # the wake function used as a value
+    (
+        WAKE_FN + WATCH_FN + "export async function more(api: EngineInterface) { await takeWake(api, 'x') }",
+        "must be called exactly once",
+    ),  # a second way to send
+    (
+        WAKE_FN + WATCH_FN + "$.clock.every(1000, () => { void watchNow($, []) })",
+        "only be called from the callback of startPolling",
+    ),  # the watcher run by a timer of its own
+    (
+        WAKE_FN + WATCH_FN + "startPolling($, () => {})\nvoid watchNow",
+        "only be called from the callback of startPolling",
+    ),  # the watcher used as a value
+    (
+        WAKE_FN
+        + WATCH_FN
+        + "on('session.start', async ($, e, next) => {\n  await watchNow($, [])\n  return next(e)\n})",
+        "only be called from the callback of startPolling",
+    ),  # the watcher run at the start of a session
     ("const d = Object.getOwnPropertyDescriptor(Object, 'x')", "getOwnPropertyDescriptor"),
 ]
 
@@ -651,19 +754,30 @@ await $.process.run(argv, {
   ...(venv === null ? {} : { env: { UV_PROJECT_ENVIRONMENT: venv } }),
 })
 """,
-    "the stop guard, a wake, a toast and a draft read": """
+    "the stop guard, a toast and a draft read": """
 async function guard(api: EngineInterface): Promise<string | null> {
   const draft = (await api.prompt.read()).text
   if (draft !== '') api.ui.toast(`draft of ${draft.length}`)
-  await api.prompt.submit({ text: 'Coordinator: new work.' })
   return (await api.clock.now()) > 1 ? 'reason' : null
 }
 export const register: Register = on => {
   on('classic.Stop', async ($, e, next) => {
     const r = await next(e)
-    const reason = await guard($)
+    const reason = r.block === undefined ? await guard($) : null
     return reason === null ? r : { ...r, block: reason }
   }).catch(($, e, next) => next(e))
+}
+""",
+    "the wake, sent once for the events due and only after a read": WAKE_FN
+    + WATCH_FN
+    + """
+export const register: Register = on => {
+  on('session.start', async ($, e, next) => {
+    startPolling($, () => {
+      void watchNow($, []).catch(() => undefined)
+    })
+    return next(e)
+  })
 }
 """,
     "a comment that names what Tether keeps": (

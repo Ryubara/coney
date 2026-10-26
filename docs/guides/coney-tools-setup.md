@@ -113,7 +113,10 @@ What used to be two more pollers is Conclave's, from the same `coord status` ids
 [snapshot](conclave.md#snapshot) reads the same sources): the **release queue** (a `unit:` id, a [release
 queue](how-we-work.md#release-queue) file with no pull request yet) and the **pull requests** (a `pr:` id, with the
 owner and waiver records now `pr hold` and the stop guard now Conclave's). `coord status --ids` still prints those ids
-for any program that wants them.
+for any program that wants them. Tether's `prs` poller also treated a pull request whose worktree held a `.coney-busy`
+marker as owned (its `busyMarker` and `assignHours` settings); that goes with the poller, and only [`pr hold`](pr.md#hold)
+names an owner now: an agent working on a failing pull request is recorded with `pr hold <n> --who <agent>`, whatever
+marker its worktree holds.
 
 Tether starts a turn only for ids it has not told before, and never while a turn runs or you type. Ids still waiting
 are told again 30 minutes later, then after 60, 120 and at most every four hours (`remindMinutes`). The `builds`

@@ -6,6 +6,7 @@ clock; nothing reads GitHub."""
 
 import argparse
 import json
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -46,8 +47,15 @@ class Out:
         self.out: list[str] = []
         self.err: list[str] = []
 
-    def run(self, scratch: Path, *words: str, rules: ConclaveWatch = RULES, now: datetime = NOW) -> int:
-        return pr_hold.run_hold(args(*words), scratch, rules, now, self.out.append, self.err.append)
+    def run(
+        self,
+        scratch: Path,
+        *words: str,
+        rules: ConclaveWatch = RULES,
+        now: datetime = NOW,
+        head: Callable[[int], str] = lambda number: "a1b2c3d4e5f6" + "0" * 28,
+    ) -> int:
+        return pr_hold.run_hold(args(*words), scratch, rules, now, self.out.append, self.err.append, head)
 
 
 # --- the store ------------------------------------------------------------------------------------------------------
@@ -99,6 +107,21 @@ def test_a_hold_covers_every_cause_or_only_the_one_it_names() -> None:
     assert not hold(hours=-1).covers("conflict", NOW)
 
 
+def test_a_hold_covers_only_the_head_it_was_made_on() -> None:
+    # a new push is a new problem (pr.md#hold): the hold does not follow it
+    on_head = hold(head="a1b2c3d")
+    assert on_head.covers("conflict", NOW, "a1b2c3d") and not on_head.covers("conflict", NOW, "e5f6a7b")
+    assert not on_head.covers("conflict", NOW, "unknown") and not on_head.covers("conflict", NOW, None)
+    # a hold written before heads were recorded keeps covering whatever head the pull request has
+    assert hold().covers("conflict", NOW, "e5f6a7b") and hold().covers("conflict", NOW)
+
+
+def test_the_head_is_written_and_read_back(tmp_path: Path) -> None:
+    pr_hold.write(tmp_path, hold(head="a1b2c3d"))
+    assert pr_hold.read_active(tmp_path, NOW).holds[0].head == "a1b2c3d"
+    assert json.loads((tmp_path / "812.json").read_text(encoding="utf-8"))["head"] == "a1b2c3d"
+
+
 def test_a_waiver_is_a_hold_by_nobody(tmp_path: Path) -> None:
     pr_hold.write(tmp_path, hold(who=WAIVED, note="waiting for the runner pool"))
     assert pr_hold.read_active(tmp_path, NOW).holds[0].waived
@@ -126,6 +149,23 @@ def test_an_assignment_names_who_and_lasts_the_default_hours(tmp_path: Path) -> 
     [held] = pr_hold.read_active(tmp_path, NOW).holds
     assert held.who == "engineer-2" and held.until == NOW + timedelta(hours=RULES.hold_default_hours)
     assert "#812" in run.out[0] and "engineer-2" in run.out[0] and "2026-10-25T16:00:00Z" in run.out[0]
+
+
+def test_a_hold_records_the_head_commit_it_was_made_on(tmp_path: Path) -> None:
+    run = Out()
+    assert run.run(tmp_path, "812", "--who", "engineer-2") == 0
+    [held] = pr_hold.read_active(tmp_path, NOW).holds
+    assert held.head == "a1b2c3d" and "a1b2c3d" in run.out[0]
+
+
+def test_a_hold_whose_head_cannot_be_read_is_refused_and_writes_nothing(tmp_path: Path) -> None:
+    def broken(number: int) -> str:
+        raise OSError("gh pr view failed: not signed in")
+
+    run = Out()
+    assert run.run(tmp_path, "812", "--who", "engineer-2", head=broken) == 2
+    assert run.err == ["pr hold: cannot read the head commit of #812: gh pr view failed: not signed in"]
+    assert list(tmp_path.iterdir()) == []
 
 
 def test_a_hold_can_name_one_cause_a_time_and_a_note(tmp_path: Path) -> None:

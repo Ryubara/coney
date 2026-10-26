@@ -28,5 +28,8 @@ repository, not here, and they override any brief:
    `uv run --project python coney-tools build --agent <id> --preset dev --test`, never `cmake --build`, `ctest` or
    `ninja` directly ([`build`](../../docs/guides/coney-tools-build.md#build)).
 6. No game data in the repository, ever (`LEGAL.md`).
+7. A question you cannot go on without, and whose answer cannot wait for your report, goes in `QUESTION.md` in your
+   scratch folder (first line the question); the coordinator answers in `ANSWER.md` beside it or by message
+   ([Questions](../../docs/guides/conclave.md#questions)).
 
 Report what your brief asks for and what `docs/guides/how-we-work.md#agent-conduct` lists.

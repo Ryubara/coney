@@ -3,7 +3,10 @@
 Conclave is Coney's mod for Claude Code, a folder in the repository (`tools/claude-mod/`) that a session loads to get
 three things the shell cannot give it: a band above the prompt, a status line and a pane that stay on screen and update
 by themselves, and a shorter list of agent types for the model to choose from. It **draws and hides, and tells the
-coordinator what Coney itself raised; it never decides and never writes.** Every fact it shows comes from one command,
+coordinator what Coney itself raised; it never decides, and it writes nothing of the repository or of the
+tools' state.** What it does write is its own: the agent list this checkout saved and the events it has told, in the
+engine's store, and a wake, a toast or a stop-guard reason for the coordinator ([The watchers](#watchers)). Every fact
+it shows comes from one command,
 `coney-tools conclave snapshot`, so the mod holds no second copy of the formats that command reads (the task file, the
 stamp log, the claim cards, the hook settings), and every rule it displays is still held by the hooks, `coney-tools` and
 CI without it. A session started without the mod loses the display and the shorter list, and nothing else.
@@ -80,11 +83,11 @@ with nothing new is left alone, and the idle wake stays Tether's ([boundary](#bo
 
 | Kind | Raised when | Id (one occurrence) | Handled when | The wake says |
 | --- | --- | --- | --- | --- |
-| `check-failed` | An open pull request has a failed required check ([`repo pr-health`](coney-tools-repo.md#repo-pr-health), cause `checks-failed`) | `pr:812:checks-failed:<head>:<checks>`: the first seven characters of the head commit and a short hash of the failing checks, so a new push or another failing check is a new event | A running hold covers the cause ([`pr hold`](pr.md#hold)); a hold that runs out opens it again | Fix it or start an agent, then `pr hold <n> --who <agent>` |
+| `check-failed` | An open pull request has a failed required check ([`repo pr-health`](coney-tools-repo.md#repo-pr-health), cause `checks-failed`) | `pr:812:checks-failed:<head>:<checks>`: the first seven characters of the head commit and a short hash of the failing checks, so a new push or another failing check is a new event | A running hold covers the cause on that head ([`pr hold`](pr.md#hold)); a hold that runs out, or a new push, opens it again | Fix it or start an agent, then `pr hold <n> --who <agent>` |
 | `pr-stuck` | Any other `pr-health` cause: a conflict, a CI run that never ends, auto-merge off | `pr:812:conflict:<head>` | The same | The same |
 | `merged` | A pull request merged within `merged_minutes` (30) | `merged:<n>` | Never: it leaves the list when the window ends | Bring the issues it affected up to date ([After a merge](issues.md#after-a-merge)) |
 | `unit-ready` | A release-queue file (`PR.md`, `PR-<n>.md`) in the scratch folder of a unit with a worktree, and its branch has no pull request since the file last changed | `unit:<branch>:<file>:<time the file changed>`, so a rewritten file is a new event | The branch gets a pull request: it leaves the list | `coney-tools pr open <task>` |
-| `question` | `QUESTION.md` or `QUESTION-<n>.md` in a unit's scratch folder ([Questions](#questions)) | `question:<task>:<file>:<time the file changed>` | An `ANSWER.md` (`ANSWER-<n>.md`) written at or after the question's last change | Read it and answer |
+| `question` | `QUESTION.md` or `QUESTION-<n>.md` in the scratch folder of a task unit or of any branch with a worktree ([Questions](#questions)) | `question:<task>:<file>:<time the file changed>` | An `ANSWER.md` (`ANSWER-<n>.md`) written at or after the question's last change | Read it and answer |
 
 An event that can come back once handled (a pull request problem, when a hold runs out) stays in the list as
 `handled` with who holds it and until when, so the mod can tell the change. The others leave the list when they are
@@ -118,24 +121,31 @@ again (about 7 seconds, only when the last read had such a problem), so a hold r
 fixed itself, counts. It blocks at most `stop_max_blocks` (3) turn ends in a row for one reason, counts again from one
 after `stop_reset_minutes` (30) without a block, never blocks on a list it could not make current, and lets the turn
 end when it fails itself. Tether's own Stop guard for stopped agents is untouched: Conclave's block rides on the
-answer beneath it ([boundary](#boundary)).
+answer beneath it, and a block already set there is kept whole, with Conclave neither reading GitHub nor counting a
+block for that turn end ([boundary](#boundary)).
 
 ### Holds {#holds}
 
 [`coney-tools pr hold`](pr.md#hold) is how a pull request's problems get an owner. `pr hold 812 --who engineer-2` says
 that engineer-2 is fixing #812 for `hold_default_hours` (4; at most `hold_max_hours`, 24); without `--who` it is a
 waiver, a known wait, and `--note` says why. A hold covers every cause of the pull request or the one `--cause` names,
-is one file of the scratch directory (`conclave.watch.holds_dir`, one file per pull request, written whole), and ends
-by itself: when it runs out the problem is open again and is told again, so a fix that stalls cannot hide. Only the
-coordinator holds (`hooks.toml` refuses `pr hold` to the other roles). This replaces Tether's `pr_owner` tool and
-owner record.
+and the head commit it was made on: a new push is a new problem, so the hold does not follow it and the problem is
+open and told again. A hold is one file of the scratch directory (`conclave.watch.holds_dir`, one file per pull
+request, written whole), and ends by itself: when it runs out the problem is open again and is told again, so a fix
+that stalls cannot hide. Only the coordinator holds: `hooks.toml` refuses `pr hold` to the other roles, though the
+hold is only a file, so a role that writes it by hand is not stopped by that rule (the file is the coordinator's by
+convention, [Enforcement](enforcement.md)). This replaces Tether's `pr_owner` tool and owner record, and the
+`.coney-busy` marker that Tether's `prs` poller took as an owner: only a hold names an owner now.
 
 ### Questions {#questions}
 
-An agent that needs the coordinator's answer while it works writes `QUESTION.md` (or `QUESTION-<n>.md` for several) in
-its scratch folder, first line the question; the coordinator answers in `ANSWER.md` (`ANSWER-<n>.md`) beside it, or
-by message, and writes the file when it does. The names are `conclave.watch.question_prefix` and `answer_prefix`. The
-`conclave_ask` tool of a later step ([Planned](#planned)) will write these same files.
+An agent that needs the coordinator's answer while it works, and cannot go on without it, writes `QUESTION.md` (or
+`QUESTION-<n>.md` for several) in its scratch folder, first line the question; the coordinator answers in `ANSWER.md`
+(`ANSWER-<n>.md`) beside it, or by message, and writes the file when it does. The scratch folders read are those of the
+task units and of every branch that has a worktree (most tracks are plain branches, as for `unit-ready`); a folder with
+no worktree is history. The names are `conclave.watch.question_prefix` and `answer_prefix`. The engineer's rules say
+when to ask ([Agents](agents.md#roles)). The `conclave_ask` tool of a later step ([Planned](#planned)) will write these
+same files.
 
 ### Tether's pollers {#pollers}
 
@@ -168,8 +178,10 @@ tree and the types, so a renamed `$`, an alias, a spread or a cast cannot hide a
   carry the filter `{ command: 'conclave' }` and `ui.render` the filter `{ component: 'AbovePrompt' }` or `{ component:
   'Pane', requestId: 'conclave' }`, so neither answers one of Tether's commands or draws over one of its panes (a
   literal, or a const that holds `'conclave'`). `classic.Stop` has the one form `const r = await next(e)`, `const reason
-  = await guard($)` (a function of the mod's own, asked with `$` alone) and `return reason === null ? r : { ...r, block:
-  reason }`, so it adds the guard's block and nothing else to the answer beneath, and `e` goes nowhere but `next`.
+  = r.block === undefined ? await guard($) : null` (a function of the mod's own, asked with `$` alone and only when no
+  block is set beneath) and `return reason === null ? r : { ...r, block: reason }`, so it adds the guard's block and
+  nothing else to the answer beneath, a block already there (Tether's) is never replaced, and `e` goes nowhere but
+  `next`.
   `session.start` and `agent.offer` must end every path in `next(e)` (`agent.offer` may also return `{ isOffered: false
   }`, the answer that hides a type), and so must the `.catch` of any hook; a hook that answers for itself would drop
   what Tether adds beneath it. `classic.SessionStart` begins `const r = await next(e)` and only ever returns `r` from
@@ -189,10 +201,17 @@ tree and the types, so a renamed `$`, an alias, a spread or a cast cannot hide a
   registration, the one process, the prompt box, the store and the UI, or `$.plugin.root`. The prompt box is read bare
   (`$.prompt.read()`, for a draft) and written only by the wake, `$.prompt.submit({ text })`: the text alone, no other
   option; a toast is `$.ui.toast(text)`. So no `$.session.` or `$.model.` call, tool, file or agent API appears, nor any
-  other prompt call. It may be passed on only to a function of the mod's own that declares the parameter as
-  `EngineInterface`, or to the `read` and `update` of `claude-code` (the mod's own state). Copying it into another name,
-  spreading, destructuring, a computed name (`$['session']`), returning or storing it, putting it in an array or object,
-  and any `as` cast of it are refused, in parentheses or not.
+  other prompt call. **A wake is sent from one place only, the event-wake path.** `$.prompt.submit({ text })` is called
+  with the parameter of a function declaration of the mod's own (the wake function), which must be called exactly once,
+  and only called; that call sends `wakeText(<preamble>, due)` where `due` is a const given by `pending(...)`, in the
+  `then` of `if (due.length > 0)`, directly in a function declaration (the watcher), not in a closure or a timer inside
+  it; and the watcher may be referenced only by calls inside the callback given to `startPolling`, which runs after a
+  snapshot read. So a timer, a session start, a fixed text or text made up on the spot cannot send a wake: only a
+  snapshot's events due can. The cases that must fail are in `CROSSINGS`, among them a `$.clock.every` that submits a
+  fixed text and the watcher called from a timer. The engine may be passed on only to a function of the mod's own that
+  declares the parameter as `EngineInterface`, or to the `read` and `update` of `claude-code` (the mod's own state).
+  Copying it into another name, spreading, destructuring, a computed name (`$['session']`), returning or storing it,
+  putting it in an array or object, and any `as` cast of it are refused, in parentheses or not.
 - **Anything that hides a type from the check.** `any` anywhere in the mod, a `@ts-ignore`, `@ts-expect-error` or
   `@ts-nocheck` comment, and any type error in a runtime source (the check compiles it against the engine's types).
   Sources are TypeScript only, so there is no plain script the check cannot see into.
@@ -217,10 +236,12 @@ tree and the types, so a renamed `$`, an alias, a spread or a cast cannot hide a
   caught, and does not need to be: reading the prompt, a file or the session takes an engine call the list above
   refuses.
 
-Three things are not checked, by design. A word split by a call (above). What a function of the mod's own does with a
-part of `e` it is given (today's parts are strings, which cannot be changed). And whether the band's `ui.render` hook
+Four things are not checked, by design. A word split by a call (above). What a function of the mod's own does with a
+part of `e` it is given (today's parts are strings, which cannot be changed). Whether the band's `ui.render` hook
 passes the event on: the band answers in place of the hooks beneath it when it has something to draw, which is what a
-band is, and Tether does not hook `AbovePrompt`.
+band is, and Tether does not hook `AbovePrompt`. And that `startPolling` calls its callback only after a read, and that
+`pending` returns only events not yet woken: the wake path is confined to them, and mod tests (an idle snapshot never
+submits, a wake is sent once per event) hold what they do.
 
 Every code file in every subfolder of the mod is checked (only `tests/`, `types/` and the engine's own typings are
 not). The check is itself tested: each way across the line that a reviewer found, or that an earlier version of the
@@ -231,7 +252,7 @@ pass, and the real sources must pass. A session start never waits for Conclave (
 `claude-code` module. The engine's own types are written beside the mod only by a session that loads it (`claude
 --plugin-dir tools/claude-mod`); neither `claude plugin validate` nor `claude plugin test` writes them, and CI has no
 logged-in Claude Code to load it. So where they are absent the check reads a stub of the module in Coney's own words,
-`python/tests/conclave_engine_stub.d.ts`: only what the check looks at (`EngineInterface` and the eleven calls, `On`,
+`python/tests/conclave_engine_stub.d.ts`: only what the check looks at (`EngineInterface` and the fourteen calls, `On`,
 `Register` and the names the mod imports), with no type errors reported. The stub is in the repository (the maintainers
 allowed it on 2026-10-23: it holds no key, token, path, name or address, only the shapes the check reasons with, in
 Coney's own words), so CI runs the whole check. Where the check cannot run (no Node.js, no TypeScript, or the stub is

@@ -159,8 +159,8 @@ function isEngineFunction(callee) {
 
 const {
   unwrap, isName, plainProperties, constText, snapshotProblem, isRunOptions, inlineFunction, passingHookProblems,
-  sessionStartProblems, stopGuardProblems, NOT_THE_COMMAND,
-} = require('./conclave_boundary_syntax.cjs')({ ts, checker, req, mod, norm, isEngine, isOwn, isEngineFunction })
+  sessionStartProblems, stopGuardProblems, wakeProblems, NOT_THE_COMMAND,
+} = require('./conclave_boundary_syntax.cjs')({ ts, checker, req, mod, norm, program, runtimeFiles, isEngine, isOwn, isEngineFunction })
 
 /** Whether `call` is `<engine>.process.run(...)`. */
 function isProcessRun(call) {
@@ -294,10 +294,12 @@ function checkFile(sf, label, errors, events) {
     else if ([...props.keys()].some(one => one !== property && one !== text)) err(call, `$.${key} takes only ${property} and ${text}`)
   }
 
-  // A wake is the text alone: no `asUser`, no other option that changes how the engine takes it.
+  // A wake is the text alone: no `asUser`, no other option that changes how the engine takes it. And it is sent from
+  // one place, the event-wake path of the watchers (wakeProblems in conclave_boundary_syntax.cjs).
   function checkSubmit(call) {
     const props = call.arguments.length === 1 ? plainProperties(call.arguments[0]) : null
     if (props === null || props.size !== 1 || !props.has('text')) err(call, '$.prompt.submit takes only { text }')
+    for (const [node, why] of wakeProblems(call)) err(node, why)
   }
 
   // The filter of a hook: `command.run` is Conclave's own command only, `ui.render` its band and its pane only.

@@ -58,10 +58,11 @@ export const register: Register = on => {
   }).catch(($, e, next) => next(e))
 
   // The stop guard: the end of a coordinator's turn is held back, at most a few times in a row, while an open pull request
-  // has a problem nobody holds. The answer beneath (Tether's own guard for stopped agents) stays whole.
+  // has a problem nobody holds. The answer beneath (Tether's own guard for stopped agents) stays whole: a block already
+  // set there is kept as it is, and the guard then neither looks nor counts.
   on('classic.Stop', async ($, e, next) => {
     const r = await next(e)
-    const reason = await guardReason($)
+    const reason = r.block === undefined ? await guardReason($) : null
     return reason === null ? r : { ...r, block: reason }
   }).catch(($, e, next) => next(e))
 

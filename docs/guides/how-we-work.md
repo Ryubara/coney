@@ -569,7 +569,7 @@ flowchart LR
   ci --> rules["Branch protection<br/>on main:<br/>squash merge only"]
   rules --> main(["main"])
   text["check-title,<br/>check-body,<br/>check-docs"] -.-> push
-  tether["Conclave stop guard<br/>wakes for a stuck PR"] -.-> push
+  tether["Conclave stop guard<br/>blocks the turn end on<br/>a stuck PR"] -.-> push
   conv[".github/conventions.yml<br/>one source of the rules"] -.-> text
   conv -.-> ci
 ```

@@ -4,7 +4,8 @@
 A pull request with a failed check, a conflict or the like is a problem the coordinator must see (Conclave's watcher
 wakes it and its stop guard keeps the session from ending its turn on one). A *hold* ends that: it records that an agent
 is fixing the problem (`--who`) or that waiting is right (a waiver: no `--who`, a `--note` that says why), for a few
-hours, optionally for one cause. A hold that runs out raises the problem again, so a fix that stalls cannot hide.
+hours, optionally for one cause. A hold that runs out raises the problem again, so a fix that stalls cannot hide,
+and a hold covers the head commit it was made on: a new push is a new problem, so the hold does not follow it.
 
 The store is one JSON file per pull request in the scratch directory (`conclave.watch.holds_dir`), written atomically,
 so two commands never write one file and the snapshot (`conclave snapshot`) reads them without a lock. Only the
@@ -24,12 +25,15 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from coney_tools.audit_github import run_gh
 from coney_tools.build_cli import scratch_root
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import PR_HEALTH_CAUSES, ConclaveWatch, load_conventions
 
 #: The `who` of a waiver: a known wait, with nobody working on it.
 WAIVED = "waived"
+#: How many digits of a head commit a hold keeps (the snapshot's event ids keep as many).
+HEAD_DIGITS = 7
 #: The files of the store: `<pull request>.json`.
 HOLD_FILE = re.compile(r"^(\d+)\.json$")
 
@@ -47,14 +51,22 @@ class Hold:
     note: str
     #: When the hold was made.
     at: datetime
+    #: The first seven digits of the head commit the hold was made on; None (a file written before heads were
+    #: recorded) covers whatever head the pull request has.
+    head: str | None = None
 
     @property
     def waived(self) -> bool:
         """Whether this is a waiver (nobody works on the problem; the note says why waiting is right)."""
         return self.who == WAIVED
 
-    def covers(self, cause: str, now: datetime) -> bool:
-        """Whether the hold is still running at `now` and covers `cause`."""
+    def covers(self, cause: str, now: datetime, head: str | None = None) -> bool:
+        """Whether the hold is still running at `now`, covers `cause` and was made on the pull request's `head`.
+
+        `head` is the pull request's head commit now (seven digits, or None when it is not known): a hold made on
+        another head does not cover a push made since, and neither does one when the head cannot be told."""
+        if self.head is not None and (head is None or head[: len(self.head)] != self.head):
+            return False
         return self.until > now and (self.cause is None or self.cause == cause)
 
     def as_json(self) -> dict[str, Any]:
@@ -66,6 +78,7 @@ class Hold:
             "until": iso(self.until),
             "note": self.note,
             "at": iso(self.at),
+            "head": self.head,
         }
 
 
@@ -102,6 +115,9 @@ def _from_file(path: Path, number: int) -> Hold:
     cause = data.get("cause")
     if cause is not None and not isinstance(cause, str):
         raise ValueError("cause is not text")
+    head = data.get("head")
+    if head is not None and not isinstance(head, str):
+        raise ValueError("head is not text")
     who = data.get("who")
     if not isinstance(who, str) or not who:
         raise ValueError("who is missing")
@@ -112,6 +128,7 @@ def _from_file(path: Path, number: int) -> Hold:
         until=_moment(data.get("until")),
         note=str(data.get("note") or ""),
         at=_moment(data.get("at")),
+        head=head,
     )
 
 
@@ -185,7 +202,8 @@ def _line(held: Hold) -> str:
     """One hold as a line: the pull request, who, the cause, when it ends and the note."""
     who = "waived" if held.waived else held.who
     cause = held.cause or "every cause"
-    return f"#{held.pr} {who} ({cause}) until {iso(held.until)}" + (f": {held.note}" if held.note else "")
+    on = f" on {held.head}" if held.head else ""
+    return f"#{held.pr} {who} ({cause}){on} until {iso(held.until)}" + (f": {held.note}" if held.note else "")
 
 
 def run_hold(
@@ -195,8 +213,11 @@ def run_hold(
     now: datetime,
     out: Callable[[str], None],
     err: Callable[[str], None],
+    head_of: Callable[[int], str],
 ) -> int:
-    """`pr hold` against the store in `folder` at `now`: 0 done, 1 nothing to release, 2 a refused request."""
+    """`pr hold` against the store in `folder` at `now`: 0 done, 1 nothing to release, 2 a refused request.
+
+    `head_of` gives a pull request's head commit (OSError when it cannot be read): a hold is made on that head."""
     if args.list:
         if args.pr is not None or args.release or args.who is not None:
             err("pr hold: --list takes no pull request and no other option but --json")
@@ -231,6 +252,11 @@ def run_hold(
     if not 0 < hours <= rules.hold_max_hours:
         err(f"pr hold: --hours must be more than 0 and at most {rules.hold_max_hours}")
         return 2
+    try:
+        head = head_of(args.pr)[:HEAD_DIGITS]
+    except OSError as error:
+        err(f"pr hold: cannot read the head commit of #{args.pr}: {error}")
+        return 2
     held = Hold(
         pr=args.pr,
         who=args.who or WAIVED,
@@ -238,6 +264,7 @@ def run_hold(
         until=now + timedelta(hours=hours),
         note=args.note.strip(),
         at=now,
+        head=head,
     )
     write(folder, held, now)
     out(f"held {_line(held)}")
@@ -249,6 +276,14 @@ def _stderr(line: str) -> None:
     print(line, file=sys.stderr)
 
 
+def _head_of(number: int) -> str:
+    """A pull request's head commit, from `gh`; OSError when it cannot be read."""
+    answer = run_gh(["pr", "view", str(number), "--json", "headRefOid", "--jq", ".headRefOid"]).strip()
+    if not answer:
+        raise OSError(f"gh pr view gave no head commit for #{number}")
+    return answer
+
+
 def run(args: argparse.Namespace) -> int:
     """`pr hold` against the real store: the scratch directory of the checkout the command runs in."""
     try:
@@ -258,4 +293,4 @@ def run(args: argparse.Namespace) -> int:
     except ConfigError as error:
         _stderr(f"pr hold: {error}")
         return 2
-    return run_hold(args, folder, rules, datetime.now(UTC), print, _stderr)
+    return run_hold(args, folder, rules, datetime.now(UTC), print, _stderr, _head_of)

@@ -182,6 +182,12 @@ Some name commands that are planned (`pr open`) so that they are held from the d
 judges spelling: a command can be hidden from it, so these rules make a break visible and deliberate, not impossible.
 A setting of the wrong shape is ignored and an invalid pattern skipped, so one bad entry never disables the rest.
 
+**Asking the coordinator.** An agent that cannot go on without an answer, and whose report would come too late, writes
+`QUESTION.md` in its scratch folder (`QUESTION-<n>.md` for several), the first line the question and the lines after
+it what it needs to decide. [Conclave](conclave.md#questions) tells the coordinator, who answers by message or in
+`ANSWER.md` (`ANSWER-<n>.md`) beside the question; read that file, or look for the message, before going on. A
+question that can wait goes in the report. The coordinator reads these files for every branch with a worktree.
+
 Pick the role of an Agent call by what the agent does:
 
 | Start | For |

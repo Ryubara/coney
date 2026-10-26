@@ -103,9 +103,9 @@ uv run --project python coney-tools pr hold --list [--json]
 ```
 
 The coordinator's record that somebody holds a pull request's problems (an agent fixing them, or a waiver with a note):
-the problem is neither told by [Conclave's watchers](conclave.md#watchers) nor guarded while the hold runs, and is open
-again when it ends. It writes one file of the scratch directory and nothing on GitHub. What each form does, the limits
-and the exit codes: [pr hold](pr.md#hold).
+the problem is neither told by [Conclave's watchers](conclave.md#watchers) nor guarded while the hold runs on the head
+commit it was made on, and is open again when it ends or the pull request gets a new push. It writes one file of the
+scratch directory and nothing on GitHub. What each form does, the limits and the exit codes: [pr hold](pr.md#hold).
 
 ### pr check-commit {#pr-check-commit}
 
