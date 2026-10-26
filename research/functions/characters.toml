@@ -1715,7 +1715,7 @@ page = "characters.md#code-update"
 role = "The step control function (+0x1bc while a TakeStep runs): for an AI, one step clip by the angle between brain +0x110 and the facing (step, dash or fight shuffle), turned over half the clip, then leaves at once; waits while busy ([Step control](characters.md#step-control))."
 level = "confirmed-code"
 coney = "src/human/step_control.h:stepClipFor"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x002446b0

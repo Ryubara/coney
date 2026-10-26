@@ -1307,7 +1307,7 @@ kind = "helper"
 role = "re-scans enemies (`Brain_ScanEnemies`, one of 5 tokens per update) when the gang changed or the interval `+0x144` passed, × 4 in the fight stance or at detail level `+0x333` above 0 ([The enemy scan](ai.md#enemy-scan))"
 level = "confirmed-code"
 coney = "src/ai/scan_schedule.h:ScanSchedule::maybeScan"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0028fbb0

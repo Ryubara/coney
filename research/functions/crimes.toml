@@ -292,7 +292,7 @@ page = "crimes.md#code-crimes"
 role = "Unless the tag is gone: a 0.05 s fade into 336 (held `0x800000`), then the idle loop (anim state 0) or, in the fight stance, the fight idle + 1 transition (held `0x80000`) and the fight idle (state `0xb`); then `Tag_End` at once ([The end](crimes.md#tag-look))."
 level = "confirmed-code"
 coney = "src/human/human_animator.h:HumanAnimator::playTagEnd"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0027bc48

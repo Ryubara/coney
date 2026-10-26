@@ -1286,7 +1286,7 @@ page = "combat/index.md#code-reactions"
 role = "Starts reviving a downed partner; says 76 revive_reasure."
 level = "confirmed-code"
 coney = "src/gamemodes/gameplay_mode.h:GameplayMode::tryRevive"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00275678
