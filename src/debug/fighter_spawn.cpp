@@ -72,15 +72,18 @@ SpawnedFighters spawnFighters(PlayControls& play, std::size_t choice, int amount
     const std::vector<std::string> models = play.fighterModels();
     const float heading = play.playerHeadingDegrees();
     const anim::Vec3 feet = play.playerFeet();
+    // Allies stand at his back looking where he looks; the others stand ahead looking at him.
+    const bool behind = side == ai::FighterSide::Ally;
+    const float spotHeading = behind ? heading + 180.0F : heading;
+    const float facing = behind ? heading : heading + 180.0F;
     // A click's worth at a time; the next starts a row beyond the last row of the one before.
     float ahead = distance;
     for (int left = std::max(amount, 0); left > 0;) {
         const int batch = std::min(left, kMaxFighterAmount);
         const std::vector<std::string> picks = pickFighterModels(models, choice, batch, random);
-        const std::vector<anim::Vec3> spots = fighterSpots(feet, heading, ahead, batch);
+        const std::vector<anim::Vec3> spots = fighterSpots(feet, spotHeading, ahead, batch);
         for (std::size_t i = 0; i < spots.size(); ++i) {
-            // Each faces the player.
-            auto spawned = play.spawnFighterAs(spots[i], heading + 180.0F, picks[i], side);
+            auto spawned = play.spawnFighterAs(spots[i], facing, picks[i], side);
             if (!spawned) {
                 result.error = std::move(spawned.error());
                 return result;

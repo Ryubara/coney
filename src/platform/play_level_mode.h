@@ -299,7 +299,7 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     std::expected<void, Error> spawnFighter(anim::Vec3 feet, float headingDegrees);
     /// The models a fighter can be drawn as: the distinct models of characterChoices(), sorted.
     [[nodiscard]] std::vector<std::string> fighterModels() const;
-    /// Makes an AI fighter drawn as `model`.
+    /// Makes an AI fighter drawn as `model`, on `side` (ai::FighterSides::join() says which gang that puts it in).
     std::expected<void, Error> spawnFighterAs(anim::Vec3 feet, float headingDegrees, std::string_view model,
                                               ai::FighterSide side = ai::FighterSide::Enemy);
     /// How many AI humans there are in the world.

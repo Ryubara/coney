@@ -328,6 +328,10 @@ void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees, const std:
         m_ai->markDebugSpawned(made);
         bindDebugFighter(made, look, model);
     }
+    // With every gang slot in use the fighter has no gang, so it is nobody's friend or enemy: say so.
+    if (const ai::Brain* brain = m_ai->brainOf(made); brain != nullptr && brain->gang() == nullptr) {
+        m_print("fighters: no free gang slot, so a fighter was made with no gang\n");
+    }
     FighterMesh mesh;
     mesh.character = look.character;
     mesh.model = model;
@@ -364,7 +368,7 @@ void PlayLevelMode::clearFighters() {
 }
 
 std::string PlayLevelMode::fightersState() const {
-    // The player's health, then each fighter's health, top goal and queued actions.
+    // The player's health, then each fighter's gang, health, top goal and queued actions.
     std::string line = std::format("player health {}", m_player->human().health().value());
     const ai::Brains& brains = m_ai->brains();
     for (std::size_t i = 0; i < brains.size(); ++i) {
@@ -373,8 +377,10 @@ std::string PlayLevelMode::fightersState() const {
             continue;
         }
         const ai::Goal* top = brain.reactionGoal() != nullptr ? brain.reactionGoal() : brain.topGoal();
-        line += std::format("; health {} goal {:#x} actions {}", brain.human().health().value(),
-                            top != nullptr ? static_cast<int>(top->type()) : 0, brain.actionCount());
+        line += std::format("; {} health {} goal {:#x} actions {}",
+                            brain.gang() != nullptr ? brain.gang()->name() : std::string("no gang"),
+                            brain.human().health().value(), top != nullptr ? static_cast<int>(top->type()) : 0,
+                            brain.actionCount());
     }
     return line;
 }

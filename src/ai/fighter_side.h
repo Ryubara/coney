@@ -20,8 +20,15 @@ inline constexpr std::array<FighterSide, 3> kFighterSides{FighterSide::Enemy, Fi
 
 /// The side's name as the page shows it.
 [[nodiscard]] constexpr std::string_view sideName(FighterSide side) {
-    static_cast<void>(side);
-    return {};
+    switch (side) {
+    case FighterSide::Enemy:
+        return "Enemy";
+    case FighterSide::Ally:
+        return "Ally";
+    case FighterSide::Neutral:
+        return "Neutral";
+    }
+    return "Enemy";
 }
 
 } // namespace coney::ai
