@@ -3,9 +3,18 @@
 // the levels that have them, the credits, the GO sign's frames by mode and the join messages' blink.
 #include "hud/armies_hud.h"
 
+#include <algorithm>
 #include <cstdint>
+#include <string>
 
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
+
+#include "graphics/font.h"
+#include "graphics/overlay_camera.h"
+#include "graphics/sprite_batch.h"
+#include "hud/hud_canvas.h"
+#include "support/font_fixtures.h"
 
 using coney::hud::ArmiesHud;
 using coney::hud::GoSignMode;
@@ -114,4 +123,31 @@ TEST_CASE("a join message shows for a player who is not in, blinking every 500 m
     CHECK(armies.joinShowing(1));
     armies.setJoinMessage(1, false);
     CHECK_FALSE(armies.joinShowing(1));
+}
+
+TEST_CASE("a join message is centred on its panel's place, as Font_Draw's flag 2 centres each run", "[hud][armies]") {
+    // Expected: gui.md (Font_Draw 0x00179c30: flag 0x02 moves the start left by half the measured width);
+    // ANHud_Update sets the join text's alignment to 2 at the panel's place, (0.76, 0.08) for player 2. Confirmed
+    // (runtime) in level60: the original's two lines span about 0.61 to 0.86 of the width, centred near 0.73.
+    coney::graphics::Font font = coney::test::testFont();
+    coney::graphics::SpriteBatch batch{font.sheet(), 8192, 9000.0F};
+    coney::hud::HudCanvas canvas;
+    canvas.text.fonts = [&font](int /*slot*/) { return &font; };
+    canvas.text.textBatch = [&batch](int /*slot*/) { return &batch; };
+    ArmiesHud armies;
+    armies.levelSetUp();
+    armies.panelAttached(0);
+    armies.update(0, 60, {true, false});
+    REQUIRE(armies.joinShowing(1));
+    armies.render(canvas,
+                  [](std::uint32_t id) { return id == ArmiesHud::kJoinString ? std::string{"JOIN"} : std::string{}; });
+    REQUIRE_FALSE(batch.sprites().empty());
+    float left = batch.sprites().front().position.x;
+    float right = left;
+    for (const coney::graphics::Sprite& sprite : batch.sprites()) {
+        left = std::min(left, sprite.position.x - sprite.width / 2.0F);
+        right = std::max(right, sprite.position.x + sprite.width / 2.0F);
+    }
+    const float centre = coney::graphics::OverlayCamera::guiToOverlay(0.76F, 0.08F).x;
+    CHECK((left + right) / 2.0F == Catch::Approx(centre).margin(0.01));
 }
