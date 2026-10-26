@@ -455,6 +455,7 @@ if(CONEY_DEBUG_TOOLS)
         platform/disc_anim_player_test.cpp
         platform/disc_change_character_test.cpp
         platform/disc_debug_ai_sides_test.cpp
+        platform/disc_debug_no_gang_test.cpp
         platform/disc_debug_clear_fighters_test.cpp
         platform/disc_debug_fighter_sounds_test.cpp
         platform/disc_debug_movies_test.cpp

@@ -32,7 +32,7 @@ double handleOf(const Brain* brain) { return brain != nullptr ? brain->handle() 
 // The count Gangs::addMember() tests a gang's members against, which the fighter sides' rollover to a new gang reads.
 // Gangs::addMember() holds the same test inline, as the original does: keep the two alike.
 // @coney-only a named accessor for the member limit Gang_AddMember tests inline
-std::size_t Gang::capacity() const { return policeLike(m_kind) ? kGangMemberSlots : kGangMembers; }
+std::size_t Gang::capacity() const { return 0; } // stub: the limit is not read yet
 
 std::string_view Gang::handler(int message) const {
     const auto found = m_handlers.find(message);
