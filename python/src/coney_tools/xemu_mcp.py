@@ -206,7 +206,9 @@ def _step(server: Server, session: XemuSession, arguments: dict[str, Any]) -> ob
 def _screenshot(server: Server, session: XemuSession, arguments: dict[str, Any]) -> object:
     out = Path(arguments["out"]) if arguments.get("out") else server.capture_path(session.copy.name)
     refuse_inside_repo(out)
-    width, height, how = session.screenshot(out)
+    width, height, how = session.screenshot(
+        out, _count(arguments, "width", 640, 1, 1920), _count(arguments, "height", 480, 1, 1080)
+    )
     return f"{out}: {width} x {height} ({how}); a picture of the game: keep it in scratch, never commit it"
 
 
@@ -289,8 +291,13 @@ TOOLS: tuple[Tool, ...] = (
     ),
     Tool(
         "xemu_screenshot",
-        "Write the screen as a PNG (default: the shared scratch's xemu/ folder; never inside the repository).",
-        {"out": {"type": "string", "description": "the PNG's path, outside the repository"}},
+        "Write the screen as a PNG (default: the shared scratch's xemu/ folder; never inside the repository). "
+        "xemu's window is often not drawn, so the picture may be the guest's own front buffer, read at width x height.",
+        {
+            "out": {"type": "string", "description": "the PNG's path, outside the repository"},
+            "width": {"type": "integer", "description": "front buffer width, default 640 (1 to 1920)"},
+            "height": {"type": "integer", "description": "front buffer height, default 480 (1 to 1080)"},
+        },
         (),
         _screenshot,
     ),

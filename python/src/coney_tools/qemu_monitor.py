@@ -3,8 +3,9 @@
 `-monitor tcp:127.0.0.1:<port>,server,nowait` (docs/guides/coney-tools-xemu.md#monitor).
 
 The monitor answers what the GDB stub cannot: whether the guest runs (`info status`) without stopping it, pausing and
-resuming (`stop`, `cont`), the emulator's version, a picture of the screen (`screendump`) and the snapshots that are
-xemu's save states (`savevm`, `loadvm`, `info snapshots`, kept inside the copy's hard-disk image). It is a line
+resuming (`stop`, `cont`), QEMU's version (xemu's own is in its log), a picture of the screen (`screendump`, which xemu
+0.8.139 lacks) and the snapshots that are xemu's save states (`savevm`, `loadvm`, `info snapshots`, kept inside the
+copy's hard-disk image). It is a line
 protocol: a greeting, then for each command an echo of it, the answer and the prompt `(qemu) `. QEMU's line editor
 puts terminal escapes into the echo; they are removed.
 """

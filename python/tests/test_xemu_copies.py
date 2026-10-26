@@ -12,12 +12,14 @@ from coney_tools.config import ConfigError
 from coney_tools.xemu_copies import (
     COPY_SETTINGS,
     HDD_FILE,
+    Copy,
     Install,
     copy_name,
     discover_copies,
     dump_toml,
     find_install,
     get_setting,
+    logged_release,
     plan_copies,
     setup_copies,
 )
@@ -177,3 +179,12 @@ def test_a_bad_port_file_names_the_key(tmp_path: Path) -> None:
     (folder / "coney-copy.toml").write_text("gdb_port = 80\nmonitor_port = 4444\n", encoding="utf-8")
     with pytest.raises(ConfigError, match="gdb_port"):
         discover_copies(tmp_path)
+
+
+def test_the_release_is_read_from_the_copys_log(tmp_path: Path) -> None:
+    copy = Copy("xemu", make_copy(tmp_path, "xemu", 1234, 4444), 1234, 4444)
+    assert logged_release(copy) is None  # never run
+    (copy.path / "xemu.log").write_text("Created QEMU launch parameters: x\nxemu_version: 0.8.139\n", encoding="utf-8")
+    assert logged_release(copy) == "0.8.139"
+    (copy.path / "xemu.log").write_text("xemu_version: not-a-number\n", encoding="utf-8")
+    assert logged_release(copy) is None

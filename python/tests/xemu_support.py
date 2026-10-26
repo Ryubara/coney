@@ -39,7 +39,9 @@ class FakeGdbStub:
     and a breakpoint or watchpoint "hits" when the test calls `hit`. Memory is a sparse dict of bytes at addresses
     from `base`; reads outside `size` answer `E14`."""
 
-    def __init__(self, base: int = 0x00010000, size: int = 0x10000, ack: bool = True) -> None:
+    def __init__(
+        self, base: int = 0x00010000, size: int = 0x10000, ack: bool = True, attach_notice: bool = False
+    ) -> None:
         self.base = base
         self.size = size
         self.memory = bytearray(size)
@@ -48,6 +50,7 @@ class FakeGdbStub:
         self.registers["esp"] = 0x0001F000
         self.running = False
         self.ack = ack
+        self.attach_notice = attach_notice  # a running guest stopped by the attach sends `T02` unasked, as QEMU does
         self.no_ack = False
         self.breakpoints: set[tuple[int, int, int]] = set()
         self.packets: list[str] = []
@@ -104,7 +107,9 @@ class FakeGdbStub:
                 continue
             self.connections += 1
             self._client = client
-            self.running = False  # QEMU stops the guest when a debugger attaches
+            was_running, self.running = self.running, False  # QEMU stops the guest when a debugger attaches
+            if was_running and self.attach_notice:
+                self._send(client, "T02thread:01;")
             self._session(client)
             self._client = None
 
@@ -205,6 +210,7 @@ class FakeMonitor:
         self.commands: list[str] = []
         self.snapshots: list[str] = []
         self.paused = False
+        self.screendump = True  # xemu 0.8.139 has no `screendump`: "unknown command"
         self._server = socket.create_server(("127.0.0.1", 0))
         self.port: int = self._server.getsockname()[1]
         self._stop = threading.Event()
@@ -230,6 +236,8 @@ class FakeMonitor:
                 self.stub.running = True
             self.paused = False
             return ""
+        if words[:1] == ["screendump"] and not self.screendump:
+            return "unknown command: 'screendump'\r\n"
         if words[:1] == ["screendump"] and len(words) >= 2:
             path = Path(words[1].strip('"'))
             # A 2 x 1 PPM: the format QEMU writes when no -f is given.

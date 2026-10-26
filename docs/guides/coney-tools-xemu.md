@@ -48,7 +48,14 @@ install `xemu_install` names. The install's settings are its `xemu.toml`: `xemu_
 
 A second run copies only what changed and keeps each copy's disk image, and so its snapshots; `--refresh-hdd` copies
 the install's image again. A copy whose xemu runs is refused (exit code 1). `--dry-run` prints what would change.
-xemu reads `xemu.toml` beside its executable before the user's own, which is what keeps the copies apart.
+xemu reads `xemu.toml` beside its executable before the user's own, which is what keeps the copies apart (portable
+mode, confirmed on 0.8.139: its log says `base path: <the copy's folder>`, and it writes its log, shader cache and
+settings there, never into the install).
+
+Until this page's tools are on `main`, put `xemu_install` and `xemu_dvd` in the **worktree's own** `coney.local.toml`
+(a copy of the main one, which a worktree reads first), not in the main checkout's: a coney-tools without these keys
+refuses the file as having unknown keys, and so breaks every other worktree's checks. After the merge they belong in
+the main file.
 
 ### Headless settings {#settings}
 
@@ -59,15 +66,18 @@ way and its frames compare (`COPY_SETTINGS` in `repo:python/src/coney_tools/xemu
 | --- | --- | --- |
 | `general` `show_welcome`, `skip_boot_anim` | `false`, `true` | no window to dismiss, a shorter boot |
 | `general.updates` `check` | `false` | no update prompt |
-| `display.window` `fullscreen_on_boot`, `startup_size` | `false`, `640x480` | a window of a fixed size, never the whole screen |
+| `display.window` `fullscreen_on_startup`, `startup_size` | `false`, `640x480` | a window of a fixed size, never the whole screen |
 | `display.quality` `surface_scale` | `1` | a fixed render scale, so frames of two runs compare |
 | `display.ui` `show_notifications` | `false` | nothing drawn over the game |
 | `input` `auto_bind`, `background_input_capture` | `false`, `false` | the user's gamepad never drives an agent's game |
 | `input.bindings` `port1` | `keyboard` | the virtual pad: port 1 takes keys posted to the copy's window by handle |
 
-xemu ignores a key it does not know. The keys are checked against the maintainer's install at the first live run;
-what that run shows goes into this table. `launch` starts xemu through WMI, outside the agent's process tree, so it
-cannot take the keyboard focus ([How the launcher keeps the focus off](research-tools.md#driving-pcsx2)).
+xemu warns of a key it does not know, in the `xemu.log` beside its executable (`Warning: unrecognized key '...'`):
+read that log after a change to the table. Checked live on xemu 0.8.139 (Windows): every key is known, `skip_boot_anim`
+reaches QEMU as `short-animation=on` and the window is 640 x 480; the first draft's `fullscreen_on_boot` was wrong
+(the key is `fullscreen_on_startup`). That `port1 = 'keyboard'` is the keyboard binding is not yet exercised: no
+key has been sent to a copy. `launch` starts xemu through WMI, outside the agent's process tree, so it cannot take
+the keyboard focus ([How the launcher keeps the focus off](research-tools.md#driving-pcsx2)).
 
 ### Claims {#claims}
 
@@ -97,7 +107,10 @@ xemu inherits QEMU's GDB stub, the remote protocol GDB speaks (`repo:python/src/
 guest is 32-bit x86, and its virtual addresses are the XBE's (base `0x00010000`), so an address from a research page
 needs no translation. The stub is all-stop, which shapes every tool:
 
-- **Attaching stops the guest.** The tools resume a game that ran.
+- **Attaching stops the guest.** The tools resume a game that ran. QEMU also sends the stop (`T02`) unasked, ahead of
+  the answer to the first packet, when the guest ran at the attach; the client skips it (`connect` in `gdb_remote`).
+  Taken for the answer it shifted every reply by one, and every other `xemu read` of a running game failed with `not a
+  stop reply: 'PacketSize=...'` (found live, 6 of 12 attaches).
 - **A running guest reads nothing.** QEMU takes any byte it is sent then as a request to stop, so each read, write,
   register or breakpoint request stops the guest for as long as it takes and lets it run again: a read of a running
   game is a pause of milliseconds.
@@ -111,8 +124,13 @@ needs no translation. The stub is all-stop, which shapes every tool:
 
 QEMU's human monitor on the copy's monitor port (`repo:python/src/coney_tools/qemu_monitor.py`) answers what the stub
 cannot: whether the guest runs (`info status`) without stopping it, pause and resume (`stop`, `cont`), the version
-(`info version`), a picture of the screen (`screendump`) and the snapshots (`savevm`, `loadvm`, `info snapshots`).
-The tools keep the stub's view of the guest in step with the monitor's, so a pause from xemu's own menu is seen.
+(`info version`) and the snapshots (`savevm`, `loadvm`, `delvm`, `info snapshots`). The tools keep the stub's view of
+the guest in step with the monitor's, so a pause from xemu's own menu is seen. Two things differ from stock QEMU
+(xemu 0.8.139, QEMU 10.2.0):
+
+- `info version` answers QEMU's version (`10.2.0`), never xemu's. xemu's own release is the `xemu_version:` line at the
+  top of the copy's `xemu.log`, which `status` and the [run records](#run-records) read (`xemu v0.8.139 (QEMU 10.2.0)`).
+- There is **no `screendump`** (`unknown command`): see [the screenshot](#screenshot).
 
 ### The xemu MCP server {#mcp}
 
@@ -130,14 +148,25 @@ ports to pass. Claim in a shell first, so [the hook](agents.md#xemu-guard) knows
 | `xemu_write_register` | one register; pause first | |
 | `xemu_set_breakpoint`, `xemu_remove_breakpoint` | `kind` `break` (default) or `hardware`, or a watchpoint `write`, `read` or `access` of `length` bytes | |
 | `xemu_pause`, `xemu_continue`, `xemu_step` | pause; run (with `wait_seconds`, up to 60, wait for a point to hit and say where); run `count` instructions | |
-| `xemu_screenshot` | a PNG of the screen (`out`, default `xemu/<copy>-<time>.png` in the shared scratch folder; never inside a checkout) | yes |
+| `xemu_screenshot` | a PNG of the screen (`out`, default `xemu/<copy>-<time>.png` in the shared scratch folder; never inside a checkout; `width` and `height` of the [front buffer](#screenshot), default 640 x 480) | yes |
 | `xemu_list_snapshots`, `xemu_save_snapshot`, `xemu_load_snapshot` | the [snapshots](#snapshots) of your copy's disk image | list only |
 | `xemu_disconnect` | close your connection; the game stays running or paused as it was | |
 
 The reviewer's tool list holds the read-only tools only (`READ_ONLY_TOOLS` in the server, which a test holds
-`.claude/agents/reviewer.md` to). A screenshot uses the monitor's `screendump`; when that gives no picture (xemu draws
-its own window, which QEMU's console may not hold) it reads the copy's window by handle, never taking the focus. A
-screenshot is a picture of the game: it stays in scratch and is never committed.
+`.claude/agents/reviewer.md` to).
+
+#### The screenshot {#screenshot}
+
+`xemu_screenshot` tries three ways in turn and says which gave the picture: the monitor's `screendump` (xemu has
+none), the copy's window read by handle without taking the focus (used only when it is not all black), and the
+guest's own **front buffer**. On the maintainer's machine xemu's window read black (`PrintWindow` and a read of the
+screen both), while the game was drawing, so the third way is the one that works: the NV2A's scan-out start register
+`NV_PCRTC_START` (`0xFD600800`, which the Xbox kernel maps at its physical address) holds an offset into the
+console's RAM, the kernel maps RAM from `0x80000000`, and the pixels there are linear 32-bit BGRA (confirmed live
+at 640 x 480, the game's mode: a picture of the intro). The guest is stopped for the whole read so the picture is
+not torn, and runs on after it. `width` and `height` (default 640 x 480) say the size: the tool does not read the
+mode, so another size is the caller's to name. A screenshot is a picture of the game: it stays in scratch and is
+never committed.
 
 ### Snapshots and a state library {#snapshots}
 
@@ -160,10 +189,33 @@ their own: `xemu_save_snapshot NAME` writes one into the image, `xemu_load_snaps
 `record-run` writes `research/runs/<id>.toml` for an observation made on your claimed copy, as `pcsx2 record-run` does
 for PCSX2 ([Run records](research-evidence.md#run-records)): the method in words, the numbers read (`--value`), the
 addresses named (`--address`) and the snapshot the run started from (`--snapshot`, default `unknown`). The record has
-an `[xemu]` table, xemu's version as its monitor reports it and the copy, in place of `[pcsx2]`. A claim cites it as
-`confirmed (runtime), run <id>`, and [`research claims`](coney-tools-fidelity.md#research) accepts it only for a claim
-about the Xbox: a block, grading line or page that names one of `runs.xbox_words` in
-[.github/conventions.yml](repo:.github/conventions.yml) (`Xbox`, `XBE`, `xemu`), or a page named `xbox-*.md`.
+an `[xemu]` table, xemu's version (`v0.8.139`, from the copy's log: [the monitor](#monitor)) and the copy, in place
+of `[pcsx2]`. A claim cites it as `confirmed (runtime), run <id>`, and
+[`research claims`](coney-tools-fidelity.md#research) accepts it only for a claim about the Xbox: a block, grading
+line or page that names one of `runs.xbox_words` in [.github/conventions.yml](repo:.github/conventions.yml) (`Xbox`,
+`XBE`, `xemu`), or a page named `xbox-*.md`.
+
+### The first live run {#live-run}
+
+Run on 2026-10-25 with the maintainer's portable xemu 0.8.139 (Windows 11, `xemu_install` and `xemu_dvd` in a
+worktree's `coney.local.toml`), his install untouched (every file's time unchanged), a copy made by `setup-copies`
+(about 1 GB each, the disk image dominating) and an XISO of his own disc. What it showed:
+
+| Check | Result |
+| --- | --- |
+| `launch` | the game booted to its intro in the claimed copy; `-gdb tcp:127.0.0.1:1234` and `-monitor tcp:127.0.0.1:4444,server,nowait` accepted on the Windows build |
+| `read 0x00010000 --type u32 --count 4` | `1212498520` first, which is `0x48454258`: the bytes `XBEH`, the XBE header magic at the image base, as the executable page says |
+| portable lookup | xemu logged `base path` and `config path` in the copy's folder |
+| `xemu.toml` keys | all known except the draft's `fullscreen_on_boot`, fixed to `fullscreen_on_startup` ([the table](#settings)) |
+| `info version` | `10.2.0`, QEMU's; xemu's release comes from `xemu.log` |
+| `screendump` | not a command; the window read black while the game drew; the front buffer gives the picture ([the screenshot](#screenshot)) |
+| the stub | an unsolicited stop at the attach, now skipped ([the stub](#gdb)); pause, continue, registers and reads from the MCP server answered, and `eip` moved between pauses |
+| snapshots | `savevm`, `info snapshots` and `loadvm` work: one snapshot grew the copy's image by about 60 MB and a load kept the game running; `delvm NAME` through the monitor removes it (no tool yet) |
+| run record | `research/runs/r-20261026-xbe-header-magic.toml`, from `record-run` |
+| `release` | closed the copy's xemu and dropped the claim |
+
+Not exercised: a key sent to a copy's window (the virtual pad), a second copy running beside the first, `--paused`,
+breakpoints and watchpoints on the real game (they are tested against the fake stub only).
 
 <!-- command-reference:begin xemu -->
 ## Parameters of `xemu` {#xemu-parameters}

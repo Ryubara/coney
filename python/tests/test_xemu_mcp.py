@@ -10,9 +10,10 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
+from PIL import Image
 from xemu_support import FakeGdbStub, FakeMonitor, eventually, fake_xemu, make_copy
 
-from coney_tools import xemu_claims
+from coney_tools import xemu_claims, xemu_debug
 from coney_tools.config import ConfigError
 from coney_tools.xemu_claims import Registry
 from coney_tools.xemu_mcp import READ_ONLY_TOOLS, TOOLS, Server, parse_address, serve
@@ -69,6 +70,17 @@ def test_status_names_the_copy_and_its_version(rig: tuple[Server, FakeGdbStub, F
     status = json.loads(text)
     assert not failed and status["copy"] == "xemu" and status["running"] is True
     assert status["version"] == "8.2.50 (xemu-v0.8.110)"
+
+
+def test_status_names_xemus_own_release_from_the_copys_log(
+    rig: tuple[Server, FakeGdbStub, FakeMonitor, Registry],
+) -> None:
+    # A real xemu's `info version` is QEMU's ("10.2.0"); its own release is the first lines of its log.
+    server, _, monitor, registry = rig
+    monitor.version = "10.2.0"
+    (registry.copy("xemu").path / "xemu.log").write_text("xemu_version: 0.8.139\nxemu_commit: abc\n", encoding="utf-8")
+    text, failed = call(server, "xemu_status", agent="alice")
+    assert not failed and json.loads(text)["version"] == "xemu v0.8.139 (QEMU 10.2.0)"
 
 
 def test_a_read_of_a_running_game_leaves_it_running(rig: tuple[Server, FakeGdbStub, FakeMonitor, Registry]) -> None:
@@ -136,6 +148,40 @@ def test_a_screenshot_is_a_png_outside_the_repository(
     assert len(list((tmp_path / "scratch" / "xemu").glob("xemu-*.png"))) == 1
     text, failed = call(server, "xemu_screenshot", agent="alice", out=str(Path(__file__).parent / "shot.png"))
     assert failed and "inside the repository" in text
+
+
+def test_a_screenshot_falls_back_to_the_guests_front_buffer(
+    rig: tuple[Server, FakeGdbStub, FakeMonitor, Registry], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    # xemu has no `screendump` and its window may be black; the picture is then read from the guest's RAM: the scan-out
+    # start register holds an offset, the pixels follow at the kernel's mapping of RAM (the fake maps both low).
+    server, stub, monitor, _ = rig
+    monitor.screendump = False
+    monkeypatch.setattr(xemu_debug, "NV_PCRTC_START", 0x00010000)
+    monkeypatch.setattr(xemu_debug, "KERNEL_RAM", 0x00010000)
+    stub.poke(0x00010000, (0x100).to_bytes(4, "little"))
+    stub.poke(0x00010100, bytes([1, 2, 3, 255, 40, 50, 60, 255]))  # two BGRA pixels
+    stub.running = True
+    monitor.paused = False
+    out = tmp_path / "scratch" / "fb.png"
+    text, failed = call(server, "xemu_screenshot", agent="alice", out=str(out), width=2, height=1)
+    assert not failed and "2 x 1 (framebuffer)" in text
+    with Image.open(out) as image:
+        rgb = image.convert("RGB")
+        assert [rgb.getpixel((0, 0)), rgb.getpixel((1, 0))] == [(3, 2, 1), (60, 50, 40)]
+    assert stub.running  # the guest ran on afterwards
+    text, failed = call(server, "xemu_screenshot", agent="alice", out=str(out), width=5000)
+    assert failed and "width" in text
+
+
+def test_a_screenshot_names_every_way_it_failed(
+    rig: tuple[Server, FakeGdbStub, FakeMonitor, Registry], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    server, _, monitor, _ = rig
+    monitor.screendump = False
+    monkeypatch.setattr(xemu_debug, "RAM_SIZE", 16)  # the fake's scan-out start register is outside the fake's memory
+    text, failed = call(server, "xemu_screenshot", agent="alice", out=str(tmp_path / "scratch" / "x.png"))
+    assert failed and "screendump: " in text and "window: " in text and "framebuffer: " in text
 
 
 def test_snapshots_are_saved_listed_and_loaded(rig: tuple[Server, FakeGdbStub, FakeMonitor, Registry]) -> None:

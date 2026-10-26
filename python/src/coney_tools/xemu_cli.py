@@ -273,7 +273,7 @@ def run_record_run(args: argparse.Namespace) -> int:
     run_records_cli.precheck(root, pending)
     session = XemuSession(copy)
     try:
-        version = xemu_version(session.monitor().version())
+        version = xemu_version(session.version())
     except ConfigError as error:
         raise ConfigError(f"{copy.name}: {error}") from error
     finally:
@@ -283,8 +283,9 @@ def run_record_run(args: argparse.Namespace) -> int:
 
 
 def xemu_version(text: str) -> str:
-    """xemu's version as a record keeps it, from the monitor's `info version`: the xemu release (`v0.8.110` from
-    `... (xemu-v0.8.110)`) when the text names one, else the QEMU version it is built on, else `unknown`."""
+    """xemu's version as a record keeps it, from `XemuSession.version`: the xemu release (`v0.8.139` from
+    `xemu v0.8.139 (QEMU 10.2.0)`, or `v0.8.110` from `... (xemu-v0.8.110)`) when the text names one, else the QEMU
+    version it is built on, else `unknown`."""
     found = re.search(r"xemu[- ]?v?(\d+\.\d+\.\d+)", text, re.IGNORECASE)
     return f"v{found.group(1)}" if found else run_records_cli.short_version(text)
 

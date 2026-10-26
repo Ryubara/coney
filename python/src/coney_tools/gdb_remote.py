@@ -58,6 +58,8 @@ WRITE_CHUNK = 0x400
 POINT_KINDS: dict[str, int] = {"break": 0, "hardware": 1, "write": 2, "read": 3, "access": 4}
 
 _STOP_FIELD = re.compile(r"([^:;]+):([^;]*);")
+#: The head of a stop reply: a signal letter and two hex digits (`T05...`, `S02`, `W00`).
+_STOP_REPLY = re.compile(r"[STWX][0-9a-fA-F]{2}")
 
 
 class GdbError(ConfigError):
@@ -151,8 +153,8 @@ class GdbClient:
         except OSError as error:
             raise GdbError(f"no GDB stub on {self.host}:{self.port} ({error}); is xemu running with -gdb?") from error
         self._socket.settimeout(self.timeout)
-        supported = self._request("qSupported:swbreak+;hwbreak+")
-        if "QStartNoAckMode+" in supported and self._request("QStartNoAckMode") == "OK":
+        supported = self._request_skipping_stops("qSupported:swbreak+;hwbreak+")
+        if "QStartNoAckMode+" in supported and self._request_skipping_stops("QStartNoAckMode") == "OK":
             self._ack = False
         stop = parse_stop(self._request("?"))
         self.running = False
@@ -242,6 +244,17 @@ class GdbClient:
         """Send a packet and return the reply's data."""
         self._send(data)
         return self._read_packet(self.timeout)
+
+    def _request_skipping_stops(self, data: str) -> str:
+        """`_request` for the first packets of a connection, whose reply is not a stop reply: QEMU stops a running guest
+        when a debugger attaches and sends the stop (`T02`) on its own, ahead of the first reply (seen on xemu 0.8.139),
+        so a stop reply arriving here is that notice, not the answer, and is skipped."""
+        self._send(data)
+        for _ in range(4):
+            reply = self._read_packet(self.timeout)
+            if not _STOP_REPLY.fullmatch(reply[:3]):
+                return reply
+        raise GdbError(f"the stub on port {self.port} answered {data[:40]!r} with stop replies only")
 
     # -- running and stopping
 

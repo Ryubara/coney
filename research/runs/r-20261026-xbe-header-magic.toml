@@ -1,0 +1,30 @@
+version = 1
+id = "r-20261026-xbe-header-magic"
+date = "2026-10-26"
+kind = "method"
+tool = "xemu record-run"
+digest = "15141a93ad0f459be0f530d95f2a9da146def8d6c57820947a92904f616ead55"
+
+[who]
+agent = "a0654ab905696843f"
+type = "tooling"
+model = "claude-sonnet-5-5"
+source = "hook"
+
+[xemu]
+version = "v0.8.139"
+copy = "xemu"
+
+[start]
+state = "unknown"
+patches = []
+
+[run]
+name = ""
+method = "read four u32 at the XBE image base 0x00010000 through the GDB stub of a running xemu copy (the first is the magic XBEH, 0x48454258) while the game ran its intro"
+
+[values]
+magic_u32 = 1212498520
+
+[addresses]
+image_base = 0x00010000

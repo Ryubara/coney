@@ -23,6 +23,7 @@ None of these files may enter the repository (LEGAL.md): the root is refused whe
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import string
 import sys
@@ -49,13 +50,13 @@ PROGRAM_SUFFIXES: tuple[str, ...] = (".exe", ".dll")
 #: user's way and its frames compare: no welcome window or boot animation, no update check, a window (never full
 #: screen) of a fixed size at a fixed render scale, no notifications, and no gamepad bound automatically (the user's pad
 #: must never drive an agent's game; port 1 takes the keyboard, which `xemu` posts keys to by window handle). xemu
-#: ignores a key it does not know. Checked against the maintainer's install at the first live run
-#: (docs/guides/coney-tools-xemu.md#settings).
+#: warns of a key it does not know (xemu.log: `Warning: unrecognized key`). Checked against xemu 0.8.139 at the first
+#: live run (docs/guides/coney-tools-xemu.md#settings).
 COPY_SETTINGS: tuple[tuple[str, str, object], ...] = (
     ("general", "show_welcome", False),
     ("general", "skip_boot_anim", True),
     ("general.updates", "check", False),
-    ("display.window", "fullscreen_on_boot", False),
+    ("display.window", "fullscreen_on_startup", False),
     ("display.window", "startup_size", "640x480"),
     ("display.quality", "surface_scale", 1),
     ("display.ui", "show_notifications", False),
@@ -79,6 +80,19 @@ class Copy:
         """The copy's xemu program."""
         windows = self.path / "xemu.exe"
         return windows if windows.is_file() or sys.platform == "win32" else self.path / "xemu"
+
+
+def logged_release(copy: Copy) -> str | None:
+    """The xemu release the copy's program last started as (`0.8.139`), from the `xemu_version:` line xemu writes at the
+    top of `xemu.log` beside its executable: the monitor's `info version` names QEMU's version, never xemu's. None
+    when the copy has not run or the line is not a version number."""
+    try:
+        with (copy.path / "xemu.log").open(encoding="utf-8", errors="replace") as log:
+            head = log.read(4096)
+    except OSError:
+        return None
+    found = re.search(r"^xemu_version:\s*(\d+\.\d+\.\d+)\s*$", head, re.MULTILINE)
+    return found.group(1) if found else None
 
 
 def copy_name(index: int) -> str:
