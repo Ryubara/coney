@@ -361,3 +361,26 @@ TEST_CASE("a member whose human is deleted leaves the gang and drops the living 
     CHECK(scene.brains.gangs().countLiving(id, false) == 3);
     CHECK(scene.brains.gangs().countLiving(id, true) == 1);
 }
+
+TEST_CASE("a gang's capacity is the limit Gangs::addMember holds it to: 10, and 16 for the police kinds",
+          "[ai][gangs]") {
+    // Expected: unverified, #924 (the limit is Gang_AddMember's; the page's gangs read it through capacity())
+    AiScene scene;
+    Gangs& gangs = scene.brains.gangs();
+    struct Case {
+        int kind;
+        std::size_t limit;
+    };
+    for (const Case& c : {Case{coney::ai::kWarriorsKind, 10}, Case{19, 10}, Case{coney::ai::kPoliceKind, 16},
+                          Case{coney::ai::kPoliceLikeKind, 16}}) {
+        const int id = gangs.create(c.kind, "Kind" + std::to_string(c.kind));
+        REQUIRE(id >= 0);
+        CHECK(gangs.find(id)->capacity() == c.limit);
+        // Two more than it holds: the gang stops at its capacity, as addMember limits it.
+        for (std::size_t i = 0; i < c.limit + 2; ++i) {
+            gangs.addMember(id,
+                            scene.add({10.0F + static_cast<float>(i), 10.0F + static_cast<float>(c.kind), 0.0F}, 0.0F));
+        }
+        CHECK(gangs.find(id)->members().size() == c.limit);
+    }
+}

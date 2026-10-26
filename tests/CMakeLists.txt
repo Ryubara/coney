@@ -357,6 +357,7 @@ target_sources(coney_tests PRIVATE
     ai/attack_choice_test.cpp
     ai/attack_reach_test.cpp
     ai/fidget_action_test.cpp
+    ai/fighter_sides_test.cpp
     ai/fight_goal_test.cpp
     ai/fight_trace_test.cpp
     ai/fight_reactions_test.cpp
@@ -453,6 +454,8 @@ if(CONEY_DEBUG_TOOLS)
         gui/debug_menu_view_test.cpp
         platform/disc_anim_player_test.cpp
         platform/disc_change_character_test.cpp
+        platform/disc_debug_ai_sides_test.cpp
+        platform/disc_debug_no_gang_test.cpp
         platform/disc_debug_clear_fighters_test.cpp
         platform/disc_debug_fighter_sounds_test.cpp
         platform/disc_debug_movies_test.cpp

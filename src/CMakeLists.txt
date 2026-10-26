@@ -314,6 +314,7 @@ target_sources(coney_core PRIVATE
     ai/melee_goal.cpp
     ai/pedestrian_goal.cpp
     ai/perception.cpp
+    ai/fighter_sides.cpp
     ai/fight_book.cpp
     ai/fight_checks.cpp
     ai/hiding.cpp

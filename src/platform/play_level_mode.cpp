@@ -311,7 +311,8 @@ void PlayLevelMode::makeTargets(rw::Texture* texture) {
     }
 }
 
-void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees, const std::string& model, bool debugSpawned) {
+void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees, const std::string& model, bool debugSpawned,
+                               ai::FighterSide side) {
     // Dropped onto the ground below its spot, as a teleport is.
     raycast::Vec3 feet{spot.x, spot.y, spot.z + kTeleportDrop};
     if (!raycast::dropToGround(m_scenery->collision(), kTeleportDrop * 2.0F, feet)) {
@@ -322,10 +323,14 @@ void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees, const std:
     const CastLook look =
         model.empty() ? CastLook{.character = m_character.get(), .texture = m_texture} : castCharacter(model);
     human::Human& made = m_ai->spawnFighter(*look.character, &m_scenery->collision(),
-                                            anim::Vec3{feet.x, feet.y, feet.z}, headingDegrees);
+                                            anim::Vec3{feet.x, feet.y, feet.z}, headingDegrees, side);
     if (debugSpawned) {
         m_ai->markDebugSpawned(made);
         bindDebugFighter(made, look, model);
+    }
+    // With every gang slot in use the fighter has no gang, so it is nobody's friend or enemy: say so.
+    if (const ai::Brain* brain = m_ai->brainOf(made); brain != nullptr && brain->gang() == nullptr) {
+        m_print("fighters: no free gang slot, so a fighter was made with no gang\n");
     }
     FighterMesh mesh;
     mesh.character = look.character;
@@ -348,9 +353,9 @@ std::vector<std::string> PlayLevelMode::fighterModels() const {
     return {models.begin(), models.end()};
 }
 
-std::expected<void, Error> PlayLevelMode::spawnFighterAs(anim::Vec3 feet, float headingDegrees,
-                                                         std::string_view model) {
-    addFighter(feet, headingDegrees, std::string(model), true);
+std::expected<void, Error> PlayLevelMode::spawnFighterAs(anim::Vec3 feet, float headingDegrees, std::string_view model,
+                                                         ai::FighterSide side) {
+    addFighter(feet, headingDegrees, std::string(model), true, side);
     return {};
 }
 
@@ -363,7 +368,7 @@ void PlayLevelMode::clearFighters() {
 }
 
 std::string PlayLevelMode::fightersState() const {
-    // The player's health, then each fighter's health, top goal and queued actions.
+    // The player's health, then each fighter's gang, health, top goal and queued actions.
     std::string line = std::format("player health {}", m_player->human().health().value());
     const ai::Brains& brains = m_ai->brains();
     for (std::size_t i = 0; i < brains.size(); ++i) {
@@ -372,8 +377,10 @@ std::string PlayLevelMode::fightersState() const {
             continue;
         }
         const ai::Goal* top = brain.reactionGoal() != nullptr ? brain.reactionGoal() : brain.topGoal();
-        line += std::format("; health {} goal {:#x} actions {}", brain.human().health().value(),
-                            top != nullptr ? static_cast<int>(top->type()) : 0, brain.actionCount());
+        line += std::format("; {} health {} goal {:#x} actions {}",
+                            brain.gang() != nullptr ? brain.gang()->name() : std::string("no gang"),
+                            brain.human().health().value(), top != nullptr ? static_cast<int>(top->type()) : 0,
+                            brain.actionCount());
     }
     return line;
 }
