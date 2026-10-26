@@ -294,14 +294,14 @@ void FollowCamera::reset() {
 }
 
 void FollowCamera::activate() {
-    // **Coney's choice** (a stand-in): the glass tasks' update and the views' layout the original runs first, the
-    // activation step's split timers and collision latches, its reset of a camera whose player index is not below the
-    // player-camera count (the only branch that sets the hard band, from +0x334/+0x338, which player 1's camera with
-    // one player camera never takes, so Coney keeps its hard band as it is), its lost test with two player cameras,
-    // and the recovered distance it sets (+0x380) are not made here: Coney has one player camera and no recovered
-    // distance (docs/research/camera.md#setting-up).
-    // The activation step (0x00125e50): the look-at point snapped onto where the target stands now
-    // (Cam_Follow_RefreshLookAt), so a camera made current right after a teleport looks at the new place.
+    // **Coney's choice** (a stand-in): the glass tasks' update and the views' layout the original runs first, its
+    // reset of a camera whose player index is not below the player-camera count (the only branch that sets the hard
+    // band, from +0x334/+0x338, which player 1's camera with one player camera never takes, so Coney keeps its hard
+    // band as it is), its lost test with two player cameras, and the recovered distance it sets (+0x380) are not made
+    // here: Coney has one player camera and no recovered distance (docs/research/camera.md#setting-up).
+    // The activation step (0x00125e50), a stand-in without its split timers and collision latches, which Coney does
+    // not keep: the look-at point snapped onto where the target stands now (Cam_Follow_RefreshLookAt), so a camera
+    // made current right after a teleport looks at the new place.
     refreshTarget();
     m_lookAt = lookAtOf(m_targetFeet);
     snapAim();
