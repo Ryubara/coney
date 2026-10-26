@@ -11,6 +11,8 @@
 
 namespace coney::human {
 
+// Gives the animator the gait-speed factors now.
+// @coney-only debug tooling: the player's Movement speed tunables and the Entity editor's speed scale
 void Human::refreshSpeedFactors() {
     // The player's gait scales (the Movement tunables) and this human's own scale; the combat walk is the entity scale
     // alone, as its speed is a tunable of its own (Combat walk speed).
