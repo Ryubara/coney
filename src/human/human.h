@@ -23,6 +23,7 @@
 #include "human/carried_prop.h"
 #include "human/climb.h"
 #include "human/combatant.h"
+#include "human/face.h"
 #include "human/fighter.h"
 #include "human/holdable.h"
 #include "human/human_animator.h"
@@ -243,8 +244,28 @@ class Human final : public Holdable {
     /// `targets`), triangle's climb or jump, the lean and the animation state.
     void updateActions(std::span<Combatant* const> targets, const raycast::CollisionMesh* mesh);
 
-    /// The pose to draw now.
-    [[nodiscard]] anim::Pose pose() const { return m_animator.pose(m_bindRotations); }
+    /// The pose to draw now: its clips over the default pose, which is the face clips' (human/face.h) while the face is
+    /// shown (faceShown()), else the bind rotations it was made with.
+    /// @orig 0x00176d60 CharacterInstance_Sample (unknown)
+    [[nodiscard]] anim::Pose pose() const;
+
+    /// Its face's talk state: the mood its brain set and whether a line it says is playing.
+    [[nodiscard]] const FaceState& faceState() const { return m_faceState; }
+    /// Its face clips.
+    [[nodiscard]] const FaceLayer& faceLayer() const { return m_face; }
+    /// Sets the mood its face shows (a brain's, every fifth update: ai::faceMoodOf()).
+    void setFaceMood(FaceMood mood) { m_faceState.setMood(mood); }
+    /// Whether a line it says is playing (the sound's, each step): the start turns its face to the mood's speaking
+    /// clips, the end back (`Human_UpdateSpeech` and `Human_StopSpeech` begin and end the talk pose with the stream).
+    /// @coney-only glue: the original's speech update and stop call the begin and end themselves (`+0x170` marks
+    /// a begun line); Coney's speech lives in the sound, which hands its state over each step
+    void setSpeaking(bool speaking);
+    /// The rules its face follows (whose face shows, the face clips' random stream), human::Humans's; not owned, null
+    /// for none: then its face always shows and plays the first clip of a state every time.
+    void setFaceRules(FaceRules* rules) { m_faceRules = rules; }
+    /// Whether its face clips show now: the rules say so and it is neither down nor dead.
+    /// @orig 0x00223440 Human_UsesQueuedPose (unknown)
+    [[nodiscard]] bool faceShown() const;
 
     /// The skeleton its strike shapes are posed on: its character's (not owned; it must outlive the human). Null (the
     /// default): it has no strike shapes, and its attacks land at their hit update (combat::attackHitUpdate()).
@@ -1035,6 +1056,10 @@ class Human final : public Holdable {
     float m_stepSeconds = kStepSeconds;             // the characters' step (slow motion shortens it)
     std::uint64_t m_updates = 0;                    // updates stepped: combat's game time
     std::array<anim::Quat, anim::kPoseBones> m_bindRotations{};
+    FaceState m_faceState;            // the record's +0x1c (+0x24 is m_face's current())
+    FaceLayer m_face;                 // the instance's queue: the face clips
+    bool m_speaking = false;          // a line of its is alive (setSpeaking()), as +0x170
+    FaceRules* m_faceRules = nullptr; // setFaceRules(), not owned
     float m_scale = 1.0F;
     anim::Vec3 m_position;
     float m_heading = 0.0F;

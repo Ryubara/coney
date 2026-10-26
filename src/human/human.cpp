@@ -269,6 +269,12 @@ void Human::setFighterProfile(const FighterProfile& profile) {
     m_fighter.setLogName(m_logName);
 }
 
+anim::Pose Human::pose() const { return m_animator.pose(m_bindRotations); }
+
+bool Human::faceShown() const { return false; }
+
+void Human::setSpeaking(bool speaking) { m_speaking = speaking; }
+
 void Human::changeCharacter(const characters::AnimSet& anims, const combat::AnimRangeList* ranges,
                             std::span<const std::int16_t> classDamage, int damagePercent,
                             const FighterProfile& profile) {

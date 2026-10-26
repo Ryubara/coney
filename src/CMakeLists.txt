@@ -270,6 +270,7 @@ target_sources(coney_core PRIVATE
     human/human_flight.cpp
     human/human_hiding.cpp
     human/human_script.cpp
+    human/face.cpp
     human/humans.cpp
     human/locomotion_gate.cpp
     human/jump.cpp
@@ -295,6 +296,7 @@ target_sources(coney_core PRIVATE
     ai/address_person_goal.cpp
     ai/ai_config.cpp
     ai/ai_humans.cpp
+    ai/face_mood.cpp
     ai/attack_action.cpp
     ai/attack_choice.cpp
     ai/attack_kinds.cpp
