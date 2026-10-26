@@ -161,6 +161,8 @@ void Brain::update(std::uint64_t nowMs) {
     if (m_updates % kFaceMoodUpdates == 0) {
         m_human->setFaceMood(faceMoodOf(faceMoodFacts(*this)));
     }
+    // Coney's choice: a human out of health skips the goals too, and a suspended brain skips them in a scene as well
+    // (the original goes on there); #635 lists both.
     if (runsGoals && !held && !m_knockedOut && !m_human->airborne() && !m_human->fighter().health().depleted()) {
         // The enemy scan on this brain's own schedule, before the goals that pick from the list
         // (docs/research/ai-reimpl.md#unit-1). **Coney's reading**: a brain with no gang has no enemy gang to find and
@@ -409,6 +411,8 @@ void Brain::flush() {
 }
 
 void Brain::processGoals() {
+    // Coney's choice: the passes are bounded (twice the stack's size) where the original loops until a goal stops
+    // (#635).
     for (int pass = 0; pass < kMaxGoalPasses; ++pass) {
         Goal* top = topGoal();
         if (top == nullptr) {
