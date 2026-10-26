@@ -46,6 +46,7 @@ constexpr std::string_view kUsage =
     "             [--profiles DIR]\n"
     "             [--view-world NAME] [--view-character [NAME]] [--anim CLIP]\n"
     "             [--play-level NAME [--spawn NAME | --checkpoint N] [--start X,Y,Z,H[,D,YAW]]\n"
+    "             [--give ITEM,COUNT]...\n"
     "             [--trace FILE] [--script-trace FILE] [--scene NAME] [--camera X,Y,Z,QX,QY,QZ,QW[,FOV]]\n"
     "             [--freeze-world]] [--sandbox [NAME]]\n"
     "             [--assets DIR]\n"
@@ -94,6 +95,8 @@ constexpr std::string_view kUsage =
     "                     with --play-level: start player 1 there (feet in metres, heading in\n"
     "                     degrees) in place of the level's start, and the camera DISTANCE m from\n"
     "                     him with its view facing YAW degrees; a test aid for trace scenarios\n"
+    "  --give ITEM,COUNT  with --play-level: player 1 holds COUNT (0 to 9999) of inventory item ITEM\n"
+    "                     (0 to 22; 3 is spray paint) from the first step of play; repeatable; a test aid\n"
     "  --trace FILE       with --play-level: write the player's and the camera's state after every\n"
     "                     step to FILE, one CSV line per step\n"
     "  --trace-humans FILE with --play-level or --rumble (--trace in a match): write every human's\n"
@@ -333,6 +336,9 @@ std::expected<void, Error> checkSandbox(const Options& options) {
     }
     if (options.start.has_value() && !options.playLevel.has_value()) {
         return invalidArgument("--start needs --play-level: it places the player");
+    }
+    if (!options.gives.empty() && !options.playLevel.has_value()) {
+        return invalidArgument("--give needs --play-level: it fills player 1's inventory");
     }
     if (options.cameraPin.has_value() && !options.playLevel.has_value()) {
         return invalidArgument("--camera needs --play-level: it pins player 1's view");
@@ -666,6 +672,33 @@ std::expected<StartPlace, Error> parseStart(std::string_view text) {
                       .headingDegrees = values[3],
                       .cameraDistance = camera ? std::optional<float>(values[4]) : std::nullopt,
                       .cameraYawDegrees = camera ? std::optional<float>(values[5]) : std::nullopt};
+}
+
+// Parses the value after `--give`: ITEM,COUNT, an inventory item id from 0 to 22 and a count from 0 to kMaxGiftCount,
+// whole numbers in decimal digits.
+std::expected<ItemGift, Error> parseGift(std::string_view text) {
+    // One part: a whole number from 0 to `high`, or nothing.
+    const auto whole = [](std::string_view part, int high) -> std::optional<int> {
+        int value = 0;
+        if (!isAllDigits(part)) {
+            return std::nullopt;
+        }
+        const auto parsed = std::from_chars(part.data(), part.data() + part.size(), value);
+        if (parsed.ec != std::errc{} || value > high) {
+            return std::nullopt;
+        }
+        return value;
+    };
+    const std::size_t comma = text.find(',');
+    const std::optional<int> item = comma == std::string_view::npos ? std::nullopt : whole(text.substr(0, comma), 22);
+    const std::optional<int> count =
+        comma == std::string_view::npos ? std::nullopt : whole(text.substr(comma + 1), kMaxGiftCount);
+    if (!item || !count) {
+        return invalidArgument(
+            std::format("--give needs ITEM,COUNT: an item id from 0 to 22 and a count from 0 to {}, got \"{}\"",
+                        kMaxGiftCount, text));
+    }
+    return ItemGift{.item = *item, .count = *count};
 }
 
 // Splits `text` at its commas into decimal numbers; empty when any part is not one.
@@ -1132,6 +1165,15 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return std::unexpected(std::move(start.error()));
             }
             options.start = *start;
+        } else if (arg == "--give") {
+            if (i + 1 == args.size() || args[i + 1].empty()) {
+                return invalidArgument("--give needs ITEM,COUNT");
+            }
+            auto gift = parseGift(args[++i]);
+            if (!gift) {
+                return std::unexpected(std::move(gift.error()));
+            }
+            options.gives.push_back(*gift);
         } else if (arg == "--camera") {
             if (auto value = takeValue(args, i, cameraArg, "--camera", "X,Y,Z,QX,QY,QZ,QW[,FOV]"); !value) {
                 return std::unexpected(std::move(value.error()));

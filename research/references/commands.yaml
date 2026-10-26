@@ -313,7 +313,7 @@ entries:
     hex: 0x0024
     name: "circle + triangle"
     bound: ["combination press: circle + triangle"]
-    action: "Sprays a tag (664) where the player may tag."
+    action: "The spray (664) at the attack target, spending one spray paint; a pad-driven human with none does nothing."
     bound_in: [global.lua]
     toggled_in: [level93_chapter6.lua]
     source: "Player_Special (0x00287730)"

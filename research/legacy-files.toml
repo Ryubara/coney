@@ -190,7 +190,7 @@ comment = 1
 tag = 11
 
 ["src/ai/scripted_brains.cpp"]
-tag = 67
+tag = 66
 
 ["src/ai/scripted_brains.h"]
 comment = 5
@@ -1138,7 +1138,7 @@ comment = 11
 tag = 3
 
 ["src/human/human_animator.cpp"]
-tag = 39
+tag = 38
 
 ["src/human/human_animator.h"]
 comment = 4
@@ -1147,7 +1147,7 @@ comment = 4
 tag = 2
 
 ["src/human/human_held.cpp"]
-tag = 4
+tag = 3
 
 ["src/human/human_hiding.cpp"]
 tag = 1
@@ -1181,7 +1181,7 @@ tag = 1
 tag = 5
 
 ["src/human/player.cpp"]
-tag = 22
+tag = 21
 
 ["src/human/player.h"]
 comment = 6
@@ -1873,7 +1873,7 @@ citation = 16
 citation = 5
 
 ["tests/ai/scripted_humans_test.cpp"]
-citation = 21
+citation = 20
 
 ["tests/ai/scripted_story_test.cpp"]
 citation = 15
@@ -2031,9 +2031,6 @@ citation = 3
 ["tests/combat/anim_ranges_test.cpp"]
 citation = 3
 
-["tests/combat/attack_target_test.cpp"]
-citation = 4
-
 ["tests/combat/attacks_test.cpp"]
 citation = 17
 
@@ -2057,9 +2054,6 @@ citation = 4
 
 ["tests/combat/meters_test.cpp"]
 citation = 10
-
-["tests/combat/player_combat_test.cpp"]
-citation = 28
 
 ["tests/combat/rage_awards_test.cpp"]
 citation = 7
@@ -2512,7 +2506,7 @@ citation = 1
 citation = 7
 
 ["tests/human/script_state_test.cpp"]
-citation = 18
+citation = 17
 
 ["tests/human/stamina_test.cpp"]
 citation = 6

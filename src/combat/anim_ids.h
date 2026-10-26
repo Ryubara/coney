@@ -86,6 +86,7 @@ inline constexpr int kStrongGrappleRage =
 inline constexpr int kStrongGrapple = 657; ///< `SPECIAL_ATTACK2_FRONT`: the strong grapple's strike (rear 659).
 inline constexpr int kBreakObjectLow = 661;
 inline constexpr int kBreakObjectMid = 662;
+inline constexpr int kSpraySpecial = 664; ///< `SPECIAL_SPRAY`: circle + triangle, the spray at the attack's target.
 inline constexpr int kStereoStealEnd = 685;
 inline constexpr int kStereoStealFail = 686;
 

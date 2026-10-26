@@ -1,0 +1,35 @@
+version = 1
+id = "r-20261025-grounded-style-window"
+date = "2026-10-25"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "67886761c3c40051cc45aa0824cf64914ef521eced61a5e4bf382f5d6eba7f16"
+
+[who]
+agent = "a8990b8e06f944180"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-b"
+
+[start]
+state = "pedestrian-grab"
+patches = ["call-brains", "right-stick", "scripted-pad"]
+
+[run]
+name = ""
+method = "HuMakeGrounded(player, 1) through the lua recipe, then HuMakeGrounded(player, nil) to let him rise; the player's record +0x00 (state), +0x08 (held flags), +0x0c (move-style depth), the top style and +0x20 (anim id) read over PINE every 4 ms, 2 s down and 6 s after the release"
+
+[values]
+samples = 1755
+samples_style15_not_knocked_down = 0
+samples_style15_knocked_down_passing_refusal_while_lying = 439
+rise_anim = 199
+
+[addresses]
+record = 0x0065a840
+player_special_attack = 0x00263c90
+human_get_up = 0x0022f3c8

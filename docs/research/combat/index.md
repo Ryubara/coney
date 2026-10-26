@@ -602,10 +602,52 @@ tried at runtime. With `0x00510270` set (0 here) square outside a fight stance p
 **Specials** (`Player_Special`, `0x00287730`), confirmed (code): **cross + square** (`0x22`) outside a grab plays the
 special 653 (645 raging); **circle + cross** (`0x23`) is the **strong grapple**, a grab whose connecting clip is the
 strike 657 (649 raging) and which ends in the hold ([Strong grapple](../combat-grabs.md#strong-grapple)); **circle +
-triangle** (`0x24`) sprays a tag (664) where the player may tag (`0x00222818`). The id is 645 or 653 + 4 × variant + 0 /
-2 by side (`0x00263c90`). A special that is not paired needs and spends 0.25 of the power meter. At runtime (confirmed
+triangle** (`0x24`) is **the spray** 664 (`SPECIAL_SPRAY`, below). The id is 645 or 653 + 4 × variant + 0 / 2 by side
+(`0x00263c90`). A special that is not paired needs and spends 0.25 of the power meter. `Player_SpecialAttack` first
+pops the grounded move style 15 when the human is not knocked down (state `0x80000`); `Human_KnockDown` pushes 15
+with that state and `Human_GetUp` (`0x0022f3c8`) pops it as it clears the state, and a knockdown and its rise never
+showed 15 without `0x80000` (confirmed (runtime), run r-20261025-grounded-style-window), so a player reaching the pop
+was not seen. At runtime (confirmed
 (runtime)): cross held, square pressed 40 ms later played 653, power 400 → 300, the civilian lost 6 and fell (291,
 grounded 196, up with 199 2.0 s after the hit); circle + cross at a victim getting up played 359 and then `X1`.
+
+**The refusal**, confirmed (code) at `0x00287730`: none of the three starts while record `+0x08` holds any of
+`0xaeebf7ff`, or for a **player** (human `+0x1b0` not -1) **holding a world object** (`Human_IsHoldingObject`,
+`0x00224060`: the held object's type `+0x86` not 0, `0x00231a38`; whatever its anim set, and a held human is not one).
+A human no player controls is not refused for what it holds.
+
+**The spray** (`0x24`), confirmed (code) at `0x00287730` unless marked:
+
+1. A pad-driven human (per-player record `+0x1b` set) with no spray paint (`Human_GetSprayPaint`, `0x00222818`: an
+   AI's own count `+0x374`, a player's item 3) takes the command and does nothing more. A human its brain drives is not
+   asked for paint.
+2. Whatever is in the hand is dropped (`Human_DropHeld`, `0x00257f38`); by the refusal that is only ever an AI's.
+3. A fresh target search within 664's far range (`Player_FindAttackTarget`, `0x0027a4b0`), then 664 starts at that
+   target (`Attack_StartAtTarget`, `0x00261c80`): steered onto it within the range, else turned to face it, the chain
+   cleared and held flag `0x10` set; with no target it plays where he stands.
+4. One paint is taken (`Human_AddSprayPaint(h, -1)`, `0x00222868`: an AI's count kept within 0-9, a player's item 3
+   through the inventory, with no pick-up notice).
+5. **No warning and no kept target.** Nothing on this path calls `Human_WarnOfAttack` (`0x0021d5c0`, none of its
+   callers is `Player_Special`, `Attack_StartAtTarget` or `Attack_SteerToTarget` `0x002761c8`), so the human sprayed
+   at is not told of the attack. The search's result is passed to the start and not written to the target (human
+   `+0xc8`); the start, the steer and the chained clip's end callback (an empty function just before
+   `Attack_StartAtTarget`) leave it as it was.
+6. **The use event** (664's `use` at update 14, message `0xc1`, `Human_HandleMessage` `0x00245920`) only reads the
+   target: when the carried prop (`+0x348`) has type `+0x86` = `0x10` or the held object has type `+0x86` = `0x27`
+   (inferred: the clip's spray can, either way), and the kept target (`Human_GetTarget`) is a human, that human's
+   `+0x644` takes the sprayer's paint colour `+0x640` (byte-swapped; skipped while it is `0xefefefff`) and he gets
+   say-command `0x22`. So the paint lands on the target kept before the spray, not on the human the search found.
+
+At runtime (confirmed (runtime), run r-20261025-spray-keeps-no-target): with the player 1.2 m from a pedestrian and
+no target kept, the search found the pedestrian and 664 played at it, while human `+0xc8` stayed -1 at the start, at
+the use event and after the clip, which was followed by 389.
+
+This page said before that the command "sprays a tag where the player may tag"; the code starts an attack at a target,
+not at a tag spot (tag spots are triangle's, [Tagging](../crimes.md#tagging)). At runtime (confirmed (runtime), run
+r-20261025-circle-triangle-spray; level99 checkpoint 2 facing a pedestrian, the pad holding circle + triangle for one
+update): with 3 paint the player's playing anim id (record `+0x20`) went to 664 and the paint to 2, and the hand
+(`+0x338`) held an object while 664 played (inferred: the clip's own spray can); with no paint 664 never played, the
+paint stayed 0, and circle's release then played the grab's 71 and the miss 69 and 389, as a lone circle tap does.
 
 #### How a moving attack strikes {#moving-strikes}
 
@@ -1108,6 +1150,11 @@ open question below or the issue that tracks it. The ported functions and their 
   −237° for 180°, 153 +119° for +86.5°), while scaling the turn by the rate gives −0.2° for 149 (runtime −0.2°), +2.1°
   for 151 (+1.2°) and −0.9° for 153 (−3.5°) ([Where a throw goes](../combat-throws.md#throw-direction),
   [Root motion](../formats/animation.md#root-motion)). It would change every clip with a root turn, not only the throws.
+- **The AI's spray**{#q-ai-spray}: which AIs pick attack kind 15 (command `0x24`, [the spray](#run-attacks)) in a fight
+  and how often. `Human_CanUseAttackKind` (`0x002240e8`) lets any free human with paint pick it, and without paint
+  only a human no player controls (`+0x1b0` -1) ([Picking the attack kind](../ai.md#pick-attack)); how often a gang
+  fight in the original shows it has not been read. Coney's dispatcher plays the spray for an AI, but its AI leaves
+  kind 15 out of its picks until that is read, and no AI keeps the paint count (`+0x374`) the spray takes from.
 
 ## How this was checked
 

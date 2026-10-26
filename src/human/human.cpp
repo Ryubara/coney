@@ -1055,7 +1055,8 @@ void Human::fight(std::span<Combatant* const> targets, const raycast::CollisionM
                                   .objects = m_objectTargets,
                                   .strikeShapes = m_skeleton != nullptr,
                                   .mesh = mesh,
-                                  .sprinting = m_sprinting},
+                                  .sprinting = m_sprinting,
+                                  .padControlled = m_record.padDriven},
                      m_animator, m_heading);
 }
 

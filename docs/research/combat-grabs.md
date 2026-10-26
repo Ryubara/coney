@@ -180,7 +180,8 @@ the pair reaches the hold, and leaves the player holding the victim. Confirmed (
 confirmed (runtime) where marked.
 
 1. **Gates** (`Player_Special`, `0x00287730`): nothing while record `+0x08` has any of `0xaeebf7ff`, or while a
-   player holds an object of class 8 (`0x00224060`); then, command `0x23` → `Player_SpecialAttack(h, 1)`
+   player holds any world object (`0x00224060`: the held object's type `+0x86` not 0, whatever its anim set; a human
+   no player controls is not refused); then, command `0x23` → `Player_SpecialAttack(h, 1)`
    (`0x00263c90`). Command `0x22` calls it with 0.
 2. **Target**: a player always searches afresh (`0x0027a4b0`) and makes the result its target (`0x00226cd0`). The
    search takes every human within the **far range of anim id 1** (`AttackTable_GetFarRange(h, 1)`, `0x00254508`:

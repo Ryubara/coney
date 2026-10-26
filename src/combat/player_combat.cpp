@@ -408,10 +408,9 @@ void PlayerCombat::updateCommands(const CombatInput& input, const CombatTuning& 
         grabOrTackle(input, out);
         break;
     case command::kCrossSquare:
-        special(input, tuning, out);
-        break;
     case command::kCircleCross:
-        strongGrapple(input, out);
+    case command::kCircleTriangle:
+        special(input, tuning, out);
         break;
     default:
         break;
@@ -419,29 +418,49 @@ void PlayerCombat::updateCommands(const CombatInput& input, const CombatTuning& 
 }
 
 void PlayerCombat::special(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out) {
-    // Player_Special refuses a pad player holding an object, whatever the object: the melee weapon's throw (502 / 491,
-    // not built) is the armed command's, and when it is refused too the command does nothing, so the cross's own
-    // release swings (docs/research/combat-throws.md#bat-cross). Coney's choice: the held object's set stands for the
-    // original's test of a pad player holding any object, so an AI fighter with a weapon is refused too (#860).
-    if (input.animSet != 0 || (phaseFlags(input) & kSpecialRefusingPhases) != 0) {
+    // Nothing in an attack's or another move's phases, and nothing for a player with a world object in hand, whatever
+    // its anim set; a human no player controls is not refused for what it holds. With a melee weapon the throw (502 /
+    // 491, not built) is the armed command's, and when it is refused too the cross's own release swings
+    // (docs/research/combat-throws.md#bat-cross).
+    if ((phaseFlags(input) & kSpecialRefusingPhases) != 0 || (input.player && input.holdingObject)) {
         return;
     }
-    // Not paired, it needs and spends the endurance fraction of the meter; rage plays its own and spends nothing.
-    const bool raging = m_rage.raging();
-    if (!raging) {
-        if (m_power.fraction() < tuning.powerEndurance) {
+    if (input.command == command::kCrossSquare) {
+        // Not paired, it needs and spends the endurance fraction of the meter; rage plays its own and spends nothing.
+        const bool raging = m_rage.raging();
+        if (!raging) {
+            if (m_power.fraction() < tuning.powerEndurance) {
+                return;
+            }
+            m_power.spend(tuning.powerEndurance);
+        }
+        startAttack(raging ? anim_id::kSpecialRage : anim_id::kSpecial, tuning, out);
+    } else if (input.command == command::kCircleCross) {
+        strongGrapple(input, out);
+    } else if (input.command == command::kCircleTriangle) {
+        // The spray. A pad-driven human with no paint has the command taken and nothing more; one its brain drives is
+        // not asked for any.
+        if (input.padControlled && !input.hasSprayPaint) {
             return;
         }
-        m_power.spend(tuning.powerEndurance);
+        // What is held drops (nothing for a player, refused above with an object in hand) and one paint goes (the
+        // caller's, through `sprayed`); 664 starts at the human its own far range finds, warning no one and keeping
+        // the target it had (the fighter's search and steer, human::Fighter::attackTargetOf()). **Coney stand-in**:
+        // only the play mode's player 1 has a hand and paint the caller keeps; no AI keeps its paint count
+        // (docs/research/combat/index.md#q-ai-spray).
+        out.sprayed = true;
+        startAttack(anim_id::kSpraySpecial, tuning, out);
     }
-    startAttack(raging ? anim_id::kSpecialRage : anim_id::kSpecial, tuning, out);
 }
 
 void PlayerCombat::strongGrapple(const CombatInput& input, CombatOutput& out) {
+    // **Coney's choice**: the original first pops the grounded move style 15 when the human is not knocked down; Coney
+    // keeps no move-style stack, and the two go together: Human_KnockDown pushes 15 with state 0x80000 and Human_GetUp
+    // (`0x0022f3c8`) pops it as it clears 0x80000. At runtime a knockdown and its rise never showed 15 without
+    // 0x80000 (docs/research/combat/index.md#attacks).
     // The strike's clip is paired, so with nobody the search may grab nothing plays; the power meter is neither tested
-    // nor spent (the hold's drain starts with the grab, as for any). Player_Special's refusal of a held object applies
-    // to it as to the special (special()).
-    if (input.animSet != 0 || (phaseFlags(input) & kSpecialRefusingPhases) != 0 || !input.grabTargetInReach) {
+    // nor spent (the hold's drain starts with the grab, as for any).
+    if (!input.grabTargetInReach) {
         return;
     }
     m_chain.cancel();

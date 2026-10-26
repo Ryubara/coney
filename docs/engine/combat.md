@@ -352,8 +352,15 @@ it.
   ([PadSetHandlerEx](../references/bindings/input.md#padsethandlerex)). Only the pad-driven humans carry a pad command:
   Coney's brains write their commands straight to the record. Tracked by issue [#821](issue:821).
 - The special (cross + square outside a hold, [Specials](../research/combat/index.md#attacks)) is 653 (645 in rage), 655
-  (647) when the player stands on its target's rear; circle + triangle (the tag) is not built. Both specials are refused
-  on `0xaeebf7ff`. Tracked by issue [#821](issue:821).
+  (647) when the player stands on its target's rear. Circle + triangle is the spray 664
+  ([The spray](../research/combat/index.md#run-attacks)): `PlayerCombat::special` decides it and reports it
+  (`CombatOutput::sprayed`), the fighter plays it at the human its own search finds, warning no one and keeping the
+  target it had, and counts it (`Fighter::takeSprays()`), and the play mode takes one of player 1's spray paint for
+  each. All three are refused on `0xaeebf7ff` and for a player holding any object (`CombatInput::holdingObject`).
+  **Stand-ins**: the spray's search has only the human passes (`Player_FindAttackTarget`'s object and glass passes
+  are not built); only player 1 keeps a hand and paint for it (no AI keeps a paint count or drops a held object), and
+  the AI does not pick attack kind 15; the use event's paint on the target (`+0x644`) is not built. Tracked by issue
+  [#821](issue:821).
 - The strong grapple ([Strong grapple](../research/combat-grabs.md#strong-grapple)) is the grab with 657 / 659 (649 /
   651 in rage) as its connect and 658 / 660 on the victim, searched with anim 1's range within 54° of the stick, the
   clear line to the target (`0x0021c0a8`) not tested. Its damage is dealt on the snap to the hold, reported to the

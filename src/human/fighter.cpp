@@ -233,6 +233,14 @@ Combatant* Fighter::findAttackTarget(const FighterInput& input, int farId) const
 }
 
 Combatant* Fighter::attackTargetOf(int animId, const FighterInput& input, bool chainStep) const {
+    // The spray searches afresh at its own far range, whatever is in hand (`Player_Special`'s
+    // `Player_FindAttackTarget(h, 664)`, docs/research/combat-targets.md#targeting). The original's search also has an
+    // object pass and a glass pass between the human ones, and an object or a pane found there makes the spray play at
+    // no one (`Object_AsHuman` gives null). **Coney stand-in**: findAttackTarget() has only the human passes
+    // (docs/engine/combat.md).
+    if (animId == id::kSpraySpecial) {
+        return findAttackTarget(input, id::kSpraySpecial);
+    }
     const bool cross = !chainStep && input.command == combat::command::kCrossLongHold;
     const bool armed = m_animSet >= 1 && m_animSet <= 3;
     const combat::AttackTarget how = combat::attackTarget(animId, cross, armed, chainStep, lockTarget() != nullptr);
@@ -459,6 +467,10 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
     in.nowMs = input.nowMs;
     in.helpless = helpless;
     in.animSet = m_animSet;
+    in.holdingObject = m_holdingObject;
+    in.player = m_player;
+    in.padControlled = input.padControlled;
+    in.hasSprayPaint = m_hasSprayPaint;
     in.fightStance = lockTarget() != nullptr;
     m_snapTarget = nullptr;
     m_wallThrow.reset();
@@ -562,7 +574,7 @@ Holdable* Fighter::strongGrappleTarget(const FighterInput& input) {
     }
     Combatant* target = input.targets[found];
     m_target = target;
-    // The paired clip needs one that may be grabbed: within a quarter metre in height. **Coney choice**: the clear
+    // The paired clip needs one that may be grabbed: within a quarter metre in height. **Coney's choice**: the clear
     // line to it (`0x0021c0a8`) is not tested.
     if (std::fabs(target->position().z - input.position.z) > combat::kGrabbableHeight) {
         return nullptr;
@@ -662,7 +674,11 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
         animator.settleToIdle();
     }
 
-    // What the dispatcher started.
+    // What the dispatcher started. A spray is counted for whoever keeps the hand and the paint (takeSprays()); its 664
+    // plays below as any attack does.
+    if (out.sprayed) {
+        ++m_sprays;
+    }
     bool consumed = false;
     if (out.rageStarted) {
         m_rageStarted = true;
@@ -798,8 +814,12 @@ void Fighter::playAttack(int animId, const FighterInput& input, HumanAnimator& a
                          bool chainStep) {
     const float fade = chainStep ? kCombatFade : kAttackFade;
     // The start warns the attack's one target (event 0x10), whose brain then decides whether its range and field of
-    // view take it in; no one else hears of it (docs/research/combat/index.md#attack-warnings).
-    warnTarget(animId, input, chainStep);
+    // view take it in; no one else hears of it (docs/research/combat/index.md#attack-warnings). The spray warns no
+    // one: nothing on Player_Special's path to Attack_StartAtTarget (`0x00261c80`) calls Human_WarnOfAttack.
+    const bool spray = animId == id::kSpraySpecial;
+    if (!spray) {
+        warnTarget(animId, input, chainStep);
+    }
     // The special's id adds 2 when the attacker stands on its target's rear (`Player_SpecialAttack` `0x00263c90`,
     // after its target search): 655, 647 in rage (docs/research/combat/index.md#attacks).
     if (animId == id::kSpecial || animId == id::kSpecialRage) {
@@ -825,7 +845,15 @@ void Fighter::playAttack(int animId, const FighterInput& input, HumanAnimator& a
     if (input.strikeShapes && own != nullptr && switchesStrikeShapes(*own)) {
         m_shapeAttack = animId;
     }
+    // The spray turns and slides to the human its search found but keeps the target it had (human `+0xc8`): neither
+    // Attack_StartAtTarget nor the clip's use event (message `0xc1`, which only reads the target) writes it
+    // (docs/research/combat/index.md#run-attacks), so the steer's take is undone. **Coney stand-in**: that event's
+    // paint on the kept target (its `+0x644` takes the sprayer's colour) is not built.
+    Combatant* const kept = m_target;
     steer(animId, input, animator, heading, chainStep);
+    if (spray) {
+        m_target = kept;
+    }
     // A moving attack with the stick still at a run: the run resumes after it.
     if (isMovingAttack(animId) && input.stick.magnitude() > locomotionTuning().runThreshold) {
         animator.playCombatThenRun(clip, fade, held);

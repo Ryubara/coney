@@ -234,6 +234,9 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     /// in the world objects there, and every frame is drawn from that step with the scenery's animations held, so each
     /// frame shows the same picture: `--freeze-world`.
     void freezeWorld() { m_freezeWorld = true; }
+    /// Player 1 holds the counts `gifts` give from the first step of play on (applied once, before that step's
+    /// pickups): `--give`, Coney's test aid for captures that need an item.
+    void giveAtStart(std::vector<ItemGift> gifts) { m_gifts = std::move(gifts); }
     /// Whether the world is frozen now (freezeWorld() and its first step done).
     [[nodiscard]] bool worldFrozen() const { return m_freezeWorld && m_frozenSince.has_value(); }
 
@@ -819,6 +822,7 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     bool m_frozen = false;
     std::optional<CameraPin> m_pinnedCamera;                      // `--camera`
     bool m_freezeWorld = false;                                   // `--freeze-world`
+    std::vector<ItemGift> m_gifts;                                // `--give`'s counts, until the first step's pickups
     std::optional<std::uint64_t> m_frozenSince;                   // the game ticks of the step the world froze after
     std::optional<Interpolated<world::DebugCamera>> m_freeCamera; // at the last two steps, while it is on
     // The sandbox's targets, each drawn with its own copy of the character's mesh.

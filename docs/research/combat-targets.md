@@ -95,6 +95,7 @@ Angles are measured from an **aim heading**; distances are flat squared distance
 | Snaps 25 / 27 / 29 | their own search (`Player_FindSnapTarget`): nearest within 2.0 m and 45° of the stick that `TargetFilter_Enemy` accepts ([Combat](combat/index.md#attacks)) |
 | The charge 0 and the dive 1 | `Attack_FindNearestInReach`: humans **between the reach and the far range** (3.29-4.11 m, 2.22-3.00 m) inside 54°, then objects and glass; the charge only warns it, the dive takes it and steers over 0.1 s ([Combat](combat/index.md#charge-aim)) |
 | The special 653 and the strong grapple | `Player_FindAttackTarget` with the far range of id 0 (4.11 m) and of id 1 (3.0 m) ([Strong grapple](combat-grabs.md#strong-grapple)) |
+| The spray 664 (circle + triangle) | `Player_FindAttackTarget(h, 664)` (`0x0027a4b0`, from `Player_Special` `0x00287730`): the far range of 664 itself ([The spray](combat/index.md#run-attacks)) |
 
 **`Player_FindAttackTarget(h, id)`** (`0x0027a4b0`): one pass at the id's far range (not × 1.1) with
 `TargetFilter_EnemyStanding` inside 54°, then objects and glass, then, with no current target, the any-angle and the

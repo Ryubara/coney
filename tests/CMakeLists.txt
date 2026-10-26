@@ -137,6 +137,7 @@ add_executable(coney_tests
     platform/disc_level99_change_character_test.cpp
     platform/disc_scene_option_test.cpp
     platform/disc_bat_cross_test.cpp
+    platform/disc_spray_paint_test.cpp
     platform/disc_spawner_money_test.cpp
     platform/disc_credits_test.cpp
     platform/disc_pause_controls_test.cpp
@@ -296,6 +297,7 @@ target_sources(coney_tests PRIVATE
     human/body_test.cpp
     human/climb_test.cpp
     human/combat_test.cpp
+    human/spray_special_test.cpp
     human/throw_direction_test.cpp
     human/damage_flags_test.cpp
     human/combat_timing_test.cpp

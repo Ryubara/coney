@@ -43,8 +43,14 @@ struct CombatInput {
     bool inFight = true;                  ///< The fight test (`0x00224f28`, not researched) that lets R1 block.
     TargetKind target = TargetKind::None; ///< What square is aimed at.
     float objectHeight = 0.0F;            ///< A breakable target's point above the feet, metres.
-    int animSet = 0;                ///< The held object's anim set (SquareInput::heldSet); 0 with nothing in hand.
-    bool fightStance = false;       ///< In a fight stance (SquareInput::fightStance).
+    int animSet = 0; ///< The held object's anim set (SquareInput::heldSet); 0 with nothing in hand.
+    /// A world object in hand, whatever its anim set (`Human_IsHoldingObject`, `0x00224060`: the held object's type
+    /// `+0x86` not 0; a held human is not one).
+    bool holdingObject = false;
+    bool player = true;         ///< A player's human (`+0x1b0` not -1; Fighter::player()), not one no player controls.
+    bool padControlled = true;  ///< The per-player record's `+0x1b`: the pad drives the human, not its brain.
+    bool hasSprayPaint = false; ///< Spray paint left (`Human_GetSprayPaint`, `0x00222818`, not 0).
+    bool fightStance = false;   ///< In a fight stance (SquareInput::fightStance).
     bool grabTargetInReach = false; ///< The search found someone to grab for this circle or circle + cross.
     /// Both grab-block flags on the player (`0x40000000` and `0x80000000`, `HuBlockGrab`): circle starts no grab.
     bool grabBlocked = false;
@@ -80,6 +86,9 @@ struct CombatOutput {
     int grappleAnim = anim_id::kNone; ///< A strong grapple: its front strike (657, 649 raging), the grab's connect.
     bool tackleStarted = false;
     bool grabMissed = false; ///< Circle with nobody in reach: the intro, then the miss clip.
+    /// Circle + triangle started the spray (startAnim is anim_id::kSpraySpecial): the caller drops what is held and
+    /// takes one spray paint (a player's hand is empty here: special() refused one holding an object).
+    bool sprayed = false;
     GrabAction grabAction = GrabAction::None;
     MountAction mountAction = MountAction::None; ///< What the player did in the mount (startAnim is its clip).
     bool grabPowerOut = false;             ///< The grab broke because the power meter ran out (grabAction is LetGo).
@@ -175,16 +184,17 @@ class PlayerCombat {
     void startAttack(int animId, const CombatTuning& tuning, CombatOutput& out, int delayUpdates = 0);
     // The grabbing route.
     void updateGrabbing(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
-    // Cross + square outside a hold: the special 653 (645 in rage), which needs and spends a quarter of the power meter
-    // (docs/research/combat/index.md#attacks). Refused on kSpecialRefusingPhases and with an object in hand
-    // (CombatInput::animSet not 0: the original throws a melee weapon instead, which is not built; either way no
-    // special, docs/research/combat-throws.md#bat-cross). The fighter adds 2 from the target's rear
-    // (Fighter::playAttack()). **Coney choice**: circle + triangle (the tag) is not built.
+    // The three combinations outside a hold (docs/research/combat/index.md#run-attacks). Cross + square: the special
+    // 653 (645 in rage), which needs and spends a quarter of the power meter; the fighter adds 2 from the target's rear
+    // (Fighter::playAttack()). Circle + cross: strongGrapple(). Circle + triangle: the spray 664, which a pad-driven
+    // human needs paint for; the caller drops what is held and takes one paint (CombatOutput::sprayed). All three are
+    // refused on kSpecialRefusingPhases and for a player holding any object (with a melee weapon the original's armed
+    // command throws it first, which is not built; either way no special, docs/research/combat-throws.md#bat-cross).
     // @orig 0x00287730 Player_Special (unknown)
     void special(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
     // Circle + cross outside a hold: the strong grapple, a grab whose connect is the strike 657 (649 in rage), with no
-    // power check or cost; with nobody to grab, nothing (docs/research/combat-grabs.md#strong-grapple). Refused, like
-    // the special, with an object in hand (docs/research/combat-throws.md#bat-cross).
+    // power check or cost; with nobody to grab, nothing (docs/research/combat-grabs.md#strong-grapple). special() has
+    // already refused it as it refuses the special.
     // @orig 0x00263c90 Player_SpecialAttack (unknown)
     void strongGrapple(const CombatInput& input, CombatOutput& out);
     // The mounted route (after a tackle or a grab's mount): updateMount's move, played through the chain or the mode.

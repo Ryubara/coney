@@ -1,0 +1,40 @@
+version = 1
+id = "r-20261025-circle-triangle-spray"
+date = "2026-10-25"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "de733756e95297c00c78f8c7fe1422aba050c2fe66d9ed403f5ff1a5ecb917e9"
+
+[who]
+agent = "ae15875d39c52a286"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-b"
+
+[start]
+state = "pedestrian-grab"
+patches = ["call-brains", "right-stick", "scripted-pad"]
+
+[run]
+name = ""
+method = "PINE reads of the player's record +0x20 (anim id playing) every 30 ms after the pad recipe held circle + triangle for one update, and of inventory item 3's count before and after; first with no paint, then after give-item gave 3"
+
+[values]
+no_paint_paint_before = 0
+no_paint_paint_after = 0
+no_paint_spray_played = 0
+no_paint_release_grab_intro = 71
+no_paint_release_miss = 389
+paint_before = 3
+paint_after = 2
+paint_anim = 664
+per_player_1b = 1
+
+[addresses]
+record = 0x0065a840
+per_player = 0x00660fa8
+player_special = 0x00287730

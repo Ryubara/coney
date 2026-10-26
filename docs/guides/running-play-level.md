@@ -199,6 +199,11 @@ the last two puts the follow camera DISTANCE metres from him with its view facin
 trace scenario starts Coney where the original's save state stands, as `walk60` and `run_circle` do from slot 1's
 first trace row.
 
+`--give ITEM,COUNT` (with `--play-level`, repeatable) makes player 1 hold COUNT (0 to 9999) of inventory item ITEM (0
+to 22, [Inventory](../references/inventory.md); 3 is spray paint) from the first step of play, with no pick-up notice.
+It is a test aid for a capture that needs an item, such as circle + triangle's spray, which needs paint:
+`--give 3,2`.
+
 `--scene NAME` (with `--play-level`) plays the in-engine scene NAME at once, after any `--start`, as a level99
 cinematic: player 1 takes the role named `warrrecv` and the other roles are played by stand-ins drawn from the role's
 model (a role whose model Coney does not know is drawn as player 1's), letterboxed and skippable with cross or START

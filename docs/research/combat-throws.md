@@ -989,8 +989,10 @@ issue #228 ([the rule](#bat-cross)):
   *r*)), one update late on 50 of the 174 clips of [the frame data](combat-moves.md#frame-data) (19, 34 and the dive 1
   among them).
 - **Cross + square (`0x22`) and circle + cross (`0x23`) with an object in hand** do nothing in Coney, as in the
-  original's `Player_Special`, which refuses a pad player holding an object: `PlayerCombat::special` and
-  `strongGrapple` return when `CombatInput::animSet` is not 0 (sets 1-6). Before, `0x22` played the special 653
+  original's `Player_Special`, which refuses a pad player holding an object: `PlayerCombat::special` returns for a
+  player holding any object (`CombatInput::holdingObject`, whatever its anim set; until issue #860 it read the anim set
+  instead, so a human no player controls was refused too, [The spray](combat/index.md#run-attacks)). Before, `0x22`
+  played the special 653
   (spending a quarter of the power), whose phases refused the cross's own `0x10`, and `0x23` started a grab: the player
   saw a push, not a bat swing, and that was the likely cause of "cross sometimes does not start an attack". Now
   the cross's release plays 36 (47, 41 for a knife, a baton) on the next update. **Not built**: the original's
