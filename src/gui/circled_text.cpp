@@ -7,6 +7,9 @@
 
 namespace coney::gui {
 
+// Nothing to do beyond the members' own defaults: the parts, the reveal 1 (`+0x50`) and no circles (`+0x5f8`).
+CircledText::CircledText() = default;
+
 void CircledText::setBack(graphics::SpriteBatch* batch, std::size_t rect) {
     m_back.setBatch(batch);
     m_back.setRect(rect);

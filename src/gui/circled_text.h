@@ -64,7 +64,7 @@ class CircledText : public Widget {
 
     /// The parts, blank until setup(), and no circles in use.
     /// @orig 0x001d0aa8 CircledText_Construct (unknown)
-    CircledText() = default;
+    CircledText();
 
     /// The back sprite: `rect` of `batch` (not owned; null draws none).
     /// @coney-only sprite binding: the original's set-up takes the back sprite's word and batch
