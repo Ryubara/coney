@@ -52,7 +52,7 @@ int padOf(OptionSetting setting) {
 } // namespace
 
 OptionValues OptionValues::defaults(bool wideVideo) {
-    OptionValues values;
+    OptionValues values; // Coney's choice: no field for W_GameState + 0x454, which the original also clears
     values.wideVideo = wideVideo;
     return values;
 }
@@ -164,7 +164,7 @@ const std::array<OptionLayout, 8> OptionLayout::kModes{{
      .squareScale = 0.7F},
 }};
 
-OptionMenu::OptionMenu() {
+OptionMenu::OptionMenu() { // Coney's choice: no music handle (+0x45d4 = -1); the hook runs the loop
     for (BaseWidget* widget : {&m_barFrame, &m_barBack, &m_barFill, &m_squares[0], &m_squares[1]}) {
         widget->setVisible(true);
     }
@@ -378,6 +378,8 @@ void OptionMenu::colour() {
 }
 
 void OptionMenu::close() {
+    // Coney's choice: the pages, titles and input stay until the next open() rebuilds them (OptionPage_Shutdown, the
+    // titles' slot +0x6c, +0x40), and the title goes back to the first there.
     if (m_open && m_pageOpen && static_cast<OptionPage>(m_title) == OptionPage::Audio && m_hooks.previewMusic) {
         m_hooks.previewMusic(false, m_values.musicVolume);
     }
@@ -440,6 +442,7 @@ bool OptionMenu::handle(MenuCommand command) {
 }
 
 bool OptionMenu::pageCommand(MenuCommand command) {
+    // Coney's choice: no discard box (`+0x210`), which no code opens, so every command goes to the page.
     std::vector<std::unique_ptr<OptionItem>>& items = page();
     std::size_t& selected = m_selected.at(m_title);
     const OptionPage id = static_cast<OptionPage>(m_title);
@@ -502,6 +505,8 @@ bool OptionMenu::pageCommand(MenuCommand command) {
 }
 
 void OptionMenu::itemCommand(OptionItem& item, bool right) {
+    // Coney's choice: the page's changed flag (+0x214) and the brightness item's 0x0050ed08 / 0x0050ed0c are not
+    // kept: nothing found reads them but the discard box no code opens.
     switch (item.kind) {
     case OptionItemKind::Choice: {
         const std::size_t wanted = right ? 1 : 0;
@@ -633,6 +638,7 @@ void OptionMenu::revert() {
 }
 
 void OptionMenu::update(const GuiFrame& frame) {
+    // Coney's choice: no wait for the sheets to load (+0x10, OptionMenu_IsLoaded); the pause mode loads them first.
     for (TextWidget& title : m_titles) {
         title.update(frame);
     }
@@ -662,6 +668,7 @@ void OptionMenu::setFade(float fade) {
 }
 
 void OptionMenu::render(const GuiCanvas& canvas) const {
+    // Coney's choice: drawn once open, with no load wait (+0x10), and with no discard box (+0x210).
     if (!m_open) {
         return;
     }
