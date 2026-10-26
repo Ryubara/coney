@@ -240,6 +240,10 @@ void Human::reportSound(const HumanSound& sound) {
 }
 
 void Human::reportSounds(bool on) {
+    // Switching it on again keeps what it holds: the animator's keepEvents() drops the kept clip events.
+    if (on == m_reportSounds) {
+        return;
+    }
     m_reportSounds = on;
     m_animator.keepEvents(on);
 }

@@ -831,7 +831,7 @@ status = "legacy"
 [[function]]
 address = 0x0014c620
 name = "AudioDevice_LoadBank"
-page = "sound.md#device"
+page = "sound-device.md#device-functions"
 role = "slot `+0x30`: waits for stream 0, then loads `<name>.msb` into sound RAM at `+0x844` and `<name>.msd` into IOP memory at `+0x884` through stream 0 (`./ee_files/%s.msb` and `.msd` in the WAD; partial: the first 64 KB of the `.msb`), running the blocking update and the loading callback `0x0050b728` while it waits; then registers the index (`0x00151dc0`)"
 level = "confirmed-code"
 coney = "src/audio/sound_bank.h:loadSoundBank"
@@ -840,7 +840,7 @@ status = "legacy"
 [[function]]
 address = 0x0014d2d8
 name = "AudioDevice_Duration"
-page = "sound.md#device"
+page = "sound-device.md#device-functions"
 role = "slot `+0x48`: `⌊⌊size × 3.5⌋ / (2 × rate)⌋ × 1000` ms"
 level = "confirmed-code"
 coney = "src/audio/sound_engine.cpp:SoundEngine::durationMs"
@@ -849,7 +849,7 @@ status = "legacy"
 [[function]]
 address = 0x00150078
 name = "RateToPitch"
-page = "sound.md#device"
+page = "sound-device.md#device-functions"
 role = "`rate × 4096 / 48000`"
 level = "confirmed-code"
 coney = "src/audio/mixer.h:rateToPitch"

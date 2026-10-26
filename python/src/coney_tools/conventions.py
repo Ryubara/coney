@@ -1040,6 +1040,10 @@ class Research:
 PANE_MIN_COLUMNS_FLOOR = 15
 
 
+#: The file that holds a unit's `unit-ready` event back when `conclave.watch.unit_hold_file` is not written.
+DEFAULT_UNIT_HOLD_FILE = "HOLD.md"
+
+
 @dataclass(frozen=True)
 class ConclaveWatch:
     """The watchers of Conclave (docs/guides/conclave.md#watchers): which events are told to whom, and how often."""
@@ -1072,6 +1076,8 @@ class ConclaveWatch:
     #: The files of a unit's scratch folder that ask and answer a question: `<prefix>.md` or `<prefix>-<n>.md`.
     question_prefix: str
     answer_prefix: str
+    #: The file of a unit's scratch folder that holds its `unit-ready` event back for as long as it is there.
+    unit_hold_file: str
 
 
 @dataclass(frozen=True)
@@ -2078,7 +2084,9 @@ def _read_conclave_watch(data: object, where: str) -> ConclaveWatch:
         "question_prefix",
         "answer_prefix",
     )
-    table = _table(data, where, keys)
+    # `unit_hold_file` is optional so that a worktree made before the key existed still reads (a newer tool run on an
+    # older unit's conventions would otherwise refuse every unit in flight until it is rebased).
+    table = _table(data, where, keys, ("unit_hold_file",))
     numbers = {
         key: _count(table[key], _at(where, key))
         for key in keys
@@ -2093,6 +2101,9 @@ def _read_conclave_watch(data: object, where: str) -> ConclaveWatch:
     answer = _text(table["answer_prefix"], _at(where, "answer_prefix"))
     if question == answer:
         raise _fail(_at(where, "question_prefix"), "must differ from answer_prefix")
+    hold_file = _text(table.get("unit_hold_file", DEFAULT_UNIT_HOLD_FILE), _at(where, "unit_hold_file"))
+    if hold_file in {".", ".."} or any(mark in hold_file for mark in ("/", "\\", ":")):
+        raise _fail(_at(where, "unit_hold_file"), "a file name (one level, in the unit's scratch folder)")
     return ConclaveWatch(
         roles=_texts(table["roles"], _at(where, "roles")),
         preamble=_text(table["preamble"], _at(where, "preamble")),
@@ -2100,6 +2111,7 @@ def _read_conclave_watch(data: object, where: str) -> ConclaveWatch:
         holds_dir=holds_dir,
         question_prefix=question,
         answer_prefix=answer,
+        unit_hold_file=hold_file,
         **numbers,
     )
 

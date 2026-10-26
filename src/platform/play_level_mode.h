@@ -198,6 +198,7 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     /// One line: frames, the player's position, heading, speed, gait, clip and state, then the scenery's counts.
     [[nodiscard]] std::string summary() const;
 
+    /// Player 1.
     [[nodiscard]] const human::Player& player() const { return *m_player; }
     /// The sandbox's targets (none in a level).
     [[nodiscard]] std::span<human::TargetHuman* const> targets() const { return m_targetPointers; }
@@ -213,6 +214,7 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     [[nodiscard]] std::vector<graphics::ThrowArcVertex> throwArcRibbon(float alpha) const;
     /// Player 1's lock pick under way; null when none runs (docs/research/crimes.md#lockpick).
     [[nodiscard]] const world_objects::LockPick* lockPick() const { return m_lockPick ? &*m_lockPick : nullptr; }
+    /// Player 1's statistics as the play mode counts them.
     [[nodiscard]] const PlayStats& stats() const { return m_stats; }
 
     /// Writes the trace (human::traceHeader(), then human::traceLine() after every step) to the file at `path`,
@@ -344,10 +346,10 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     /// none (docs/research/combat-grabs.md#power-move-props).
     [[nodiscard]] std::optional<double> carriedPropOf(const human::Human& human) const;
 
-    /// Skins `character` in `pose`, leaned by `lean` and turned to `heading` at `feet`, into `positions` and `normals`
-    /// in the world (RenderWare's axes) for drawing.
+    /// Poses `mesh` as `character` in `pose`, leaned by `lean` and turned to `heading` at `feet`, in the world
+    /// (RenderWare's axes) for drawing (CharacterMesh::pose()).
     static void skin(const human::PlayerCharacter& character, const anim::Pose& pose, anim::Vec3 feet, float heading,
-                     float lean, std::vector<anim::Vec3>& positions, std::vector<anim::Vec3>& normals);
+                     float lean, CharacterMesh& mesh);
 
     /// ScriptedPlayer: a script's teleport of player 1 during play: placed (dropped onto the ground at most 0.5 m
     /// below, unless a scene holds him) with his health, meters and clip kept, his brain's front move popped, and for
@@ -497,6 +499,17 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     // The character `model` names, loaded once for every human of it; the scene's character when it is empty or fails
     // to load.
     CastLook castCharacter(const std::string& model);
+    // Gives a fighter the debug menus spawned, drawn as `look` for `model`, the character type it is drawn as (its
+    // voice set) and, in a level with scripts, a handle of its own in the scripts' hold, so that gameplay hands its
+    // sounds to the game's sound as it does a script's human's (the original plays every human's clip sounds,
+    // docs/research/sound.md#anim-sounds).
+    // Research: docs/guides/debug-menu.md#pages (AI fighters)
+    // @coney-only debug tooling: the original has no spawner
+    void bindDebugFighter(human::Human& made, const CastLook& look, const std::string& model);
+    // Takes the handles of the fighters the debug menus spawned out of the scripts' hold, before their removal.
+    // Research: docs/guides/debug-menu.md#pages (AI fighters)
+    // @coney-only debug tooling: the original has no spawner
+    void unbindDebugFighters();
     // --- play_level_objects.cpp: the level's glass panes and doors.
 
     // Points `objects` (the scripts' cast's, may be null) at the scenery's collision mesh and path data.
@@ -811,8 +824,6 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     int m_levelNumber = 0;              // the scene's level number (its models), 0 for a sandbox
     std::unique_ptr<human::Player> m_player;
     std::function<void(std::string_view)> m_print;
-    std::vector<anim::Vec3> m_positions;
-    std::vector<anim::Vec3> m_normals;
     std::unique_ptr<CharacterMesh> m_mesh;
     std::unique_ptr<PlayLighting> m_lights; // the level's lights (the cast's), or a stand-in
     Interpolated<float> m_drawDistance;     // at the last two steps
@@ -829,8 +840,6 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     struct Target {
         std::unique_ptr<human::TargetHuman> human;
         std::unique_ptr<CharacterMesh> mesh;
-        std::vector<anim::Vec3> positions;
-        std::vector<anim::Vec3> normals;
         bool frozen = false; // the Entity inspector's freeze: its step is skipped
     };
     std::vector<Target> m_targets;
@@ -847,8 +856,6 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     struct FighterMesh {
         const human::PlayerCharacter* character = nullptr; // the character it is skinned as
         std::unique_ptr<CharacterMesh> mesh;
-        std::vector<anim::Vec3> positions;
-        std::vector<anim::Vec3> normals;
         std::string model;   // the model it was spawned as; empty: the scene's character
         bool hidden = false; // its human was deleted
     };

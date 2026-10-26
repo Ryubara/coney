@@ -532,16 +532,6 @@ verified = 1
 evidence = 30
 history = 4
 
-["docs/research/sound.md"]
-front-matter = 1
-skeleton = 1
-verified = 1
-evidence = 55
-address-resolve = 1
-history = 4
-length = 146
-stale-wording = 2
-
 ["docs/research/stealth.md"]
 front-matter = 1
 skeleton = 1

@@ -12,10 +12,12 @@ from conventions_support import REPO
 
 from coney_tools import stamps
 from coney_tools.conclave_snapshot import Sources
-from coney_tools.conventions import load_conventions
+from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.coord_cli import Sources as CoordSources
 from coney_tools.issue_claim_model import Card
+from coney_tools.pr_ready import Readiness
 from coney_tools.task_file import TaskFile, render_task_file
+from coney_tools.unit import Unit
 
 CONVENTIONS = load_conventions(REPO)
 NOW = datetime(2026, 10, 23, 14, 0, tzinfo=UTC)
@@ -98,6 +100,16 @@ def stamp_steps(
             who={"kind": "tool", "agent": {"id": agent, "type": "engineer", "model": "m"}, "source": "hook"},
             clock=moment_at(when),
         )
+
+
+#: The change hash `ready_now` gives every unit.
+CHANGE = "c" * 40
+
+
+def ready_now(root: Path, unit: Unit, text: Path, conventions: Conventions, now: datetime) -> Readiness:
+    """A made-up answer to "would pr open pass the proof": yes, for the change `CHANGE`. The tests that weigh the
+    stamps themselves use real units (`test_conclave_ready`)."""
+    return Readiness(True, "", CHANGE)
 
 
 def card(issue: int, claimant: str = "example-maintainer", hours_idle: float = 10, **changes: Any) -> Card:
@@ -282,6 +294,7 @@ def sources(made: Layout, gh: FakeGh | None = None, plain: tuple[str, ...] = (),
         "coord": CoordSources(**coord),
         "free_bytes": lambda: 61 * 1024**3,
         "claims": lambda: [card(741), card(770, "contrib-a", hours_idle=50, scope=("assets/",))],
+        "ready": ready_now,
     }
     base.update(changes)
     return Sources(**base)

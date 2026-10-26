@@ -106,13 +106,7 @@ void renderWithLod(rw::Atomic* atomic, rw::gl3::InstanceDataHeader* header) {
         rw::gl3::setMaterial(flags, material->color, material->surfaceProps);
         rw::gl3::setTexture(0, material->texture);
         rw::SetRenderState(rw::VERTEXALPHA, inst->vertexAlpha || material->color.alpha != 0xFF);
-        RasterLodData lod;
-        if (material->texture != nullptr && material->texture->raster != nullptr) {
-            lod = *PLUGINOFFSET(RasterLodData, material->texture->raster, rasterLodOffset);
-        }
-        std::array<float, 4> values{lod.k, std::ldexp(1.0F, lod.l), distanceMipmaps ? 1.0F : 0.0F,
-                                    lod.fromPs2 ? 0.0F : 1.0F};
-        rw::gl3::setUniform(lodUniform, values.data());
+        setTextureLodFor(material);
         const bool lit = (lightBits & rw::gl3::VSLIGHT_MASK) != 0;
         const bool tested = rw::gl3::getAlphaTest() != 0;
         rw::gl3::Shader* shader =
@@ -183,5 +177,17 @@ void stopTextureLod() {
 }
 
 void setDistanceMipmaps(bool on) { distanceMipmaps = on; }
+
+const char* textureLodFragmentSource() { return kFragmentSource; }
+
+void setTextureLodFor(const rw::Material* material) {
+    RasterLodData lod;
+    if (material->texture != nullptr && material->texture->raster != nullptr) {
+        lod = *PLUGINOFFSET(RasterLodData, material->texture->raster, rasterLodOffset);
+    }
+    std::array<float, 4> values{lod.k, std::ldexp(1.0F, lod.l), distanceMipmaps ? 1.0F : 0.0F,
+                                lod.fromPs2 ? 0.0F : 1.0F};
+    rw::gl3::setUniform(lodUniform, values.data());
+}
 
 } // namespace coney::platform

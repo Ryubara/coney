@@ -1286,9 +1286,6 @@ tag = 8
 ["src/platform/character_lights.cpp"]
 comment = 1
 
-["src/platform/character_mesh.cpp"]
-comment = 1
-
 ["src/platform/character_viewer_mode.cpp"]
 comment = 1
 
@@ -1346,12 +1343,6 @@ comment = 1
 ["src/platform/play_level_inspect.cpp"]
 comment = 1
 
-["src/platform/play_level_mode.cpp"]
-comment = 1
-
-["src/platform/play_level_mode.h"]
-comment = 2
-
 ["src/platform/play_scenery.h"]
 comment = 1
 
@@ -1369,12 +1360,6 @@ comment = 2
 
 ["src/platform/scene_lighting.cpp"]
 comment = 1
-
-["src/platform/scene_stage.cpp"]
-comment = 2
-
-["src/platform/scene_stage.h"]
-comment = 3
 
 ["src/platform/texture_dictionary.cpp"]
 comment = 1
@@ -2573,9 +2558,6 @@ citation = 16
 
 ["tests/physics/sphere_triangle_test.cpp"]
 citation = 8
-
-["tests/platform/character_mesh_test.cpp"]
-citation = 1
 
 ["tests/platform/clip_recorder_test.cpp"]
 citation = 4

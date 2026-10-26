@@ -124,12 +124,15 @@ def bench_command(
     warmup: int,
     headless: bool,
     report: Path,
+    *,
+    cpu_skinning: bool = False,
 ) -> list[str]:
     """The command line of one bench run: no movies first; windowed runs present without waiting for the display
-    (`--vsync off`)."""
+    (`--vsync off`); `cpu_skinning` skins the humans on the CPU, to compare with the GPU's skinning."""
     command = [str(coney), "--disc", disc, "--play-level", level, "--skip-movies", "--frames", str(frames + warmup)]
     command += ["--bench", str(report), "--bench-fighters", str(fighters), "--bench-warmup", str(warmup)]
     command += ["--headless"] if headless else ["--vsync", "off", "--no-activate"]
+    command += ["--cpu-skinning"] if cpu_skinning else []
     return command
 
 
@@ -164,9 +167,21 @@ def run_bench(args: argparse.Namespace) -> int:
     out.mkdir(parents=True, exist_ok=True)
     reports = []
     for fighters in args.fighters:
-        stem = f"bench-{args.level}-{fighters}{'-headless' if args.headless else ''}"
+        stem = (
+            f"bench-{args.level}-{fighters}{'-headless' if args.headless else ''}{'-cpu' if args.cpu_skinning else ''}"
+        )
         report_path = (out / f"{stem}.json").resolve()
-        command = bench_command(coney, disc, args.level, fighters, args.frames, args.warmup, args.headless, report_path)
+        command = bench_command(
+            coney,
+            disc,
+            args.level,
+            fighters,
+            args.frames,
+            args.warmup,
+            args.headless,
+            report_path,
+            cpu_skinning=args.cpu_skinning,
+        )
         print(f"perf: {fighters} fighters ...", flush=True)
         with (out / f"{stem}.log").open("w", encoding="utf-8") as log:
             done = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=False)
@@ -204,7 +219,11 @@ def add_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser]) -> N
         help="play a level once per fighter count with `coney --bench` and print a table of the reports",
     )
     bench.add_argument("--coney", type=Path, help="Coney's executable; default: build/PRESET/src/platform/coney")
-    bench.add_argument("--preset", default="release", help="the build folder to take Coney from (default release)")
+    bench.add_argument(
+        "--preset",
+        default="playtest",
+        help="the build folder to take Coney from (default playtest: optimised, with the debug tools --bench needs)",
+    )
     bench.add_argument("--disc", help="the disc; default: game_dir from coney.local.toml")
     bench.add_argument("--level", default=DEFAULT_LEVEL, help=f"the level to play (default {DEFAULT_LEVEL})")
     bench.add_argument(
@@ -216,6 +235,11 @@ def add_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser]) -> N
     bench.add_argument("--frames", type=int, default=DEFAULT_FRAMES, help="frames measured per run (default 600)")
     bench.add_argument("--warmup", type=int, default=DEFAULT_WARMUP, help="frames before measuring (default 60)")
     bench.add_argument("--headless", action="store_true", help="no window: the simulation's cost alone")
+    bench.add_argument(
+        "--cpu-skinning",
+        action="store_true",
+        help="skin the humans on the CPU (coney --cpu-skinning), to compare with the GPU's skinning",
+    )
     bench.add_argument("--out", type=Path, required=True, help="the folder for the reports and logs (scratch)")
     table_parser = commands.add_parser("table", help="print the table of bench reports already written")
     table_parser.add_argument("reports", type=Path, nargs="+", help="the JSON reports, in row order")

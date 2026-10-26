@@ -182,6 +182,7 @@ PlayLevelMode::createWith(RenderEngine& engine, const io::Wad& wad, std::unique_
                                                             std::move(levelEffects)));
 }
 
+// The level's scenery, the player's character and mesh, the lights, the cast and the AI, ready for the first step.
 PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::unique_ptr<PlayScenery> scenery,
                              LoadedCharacter loaded, std::function<void(std::string_view)> print, std::string model,
                              const PlayerSetup& setup, const ScriptedCast* cast,
@@ -192,9 +193,7 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
       // A start with no snap is spawned without the mesh; the first update's ground snap then settles the feet.
       m_player(std::make_unique<human::Player>(*m_character, setup.snapToGround ? &m_scenery->collision() : nullptr,
                                                m_scenery->start(), human::playerClassOf(setup.types, setup.type))),
-      m_print(std::move(print)), m_positions(m_character->assets().model.vertices.size()),
-      m_normals(m_character->assets().model.vertices.size()), m_drawDistance(m_scenery->drawDistance()),
-      m_model(std::move(model)) {
+      m_print(std::move(print)), m_drawDistance(m_scenery->drawDistance()), m_model(std::move(model)) {
     m_texture = textureOf(m_dictionaries);
     // The blood of every human's second pass; without it humans are drawn in one pass.
     if (auto blood = BloodTextures::load(engine, wad); blood) {
@@ -202,7 +201,7 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
     } else {
         m_print(std::format("humans: no blood textures ({}); drawn without them\n", blood.error().message));
     }
-    m_mesh = std::make_unique<CharacterMesh>(m_character->assets().model, m_texture);
+    m_mesh = std::make_unique<CharacterMesh>(m_character->assets().model, m_texture, Skinning::Gpu);
     // The level's lights as its scripts set them, or a stand-in; the scenery draws with them too.
     m_lights = std::make_unique<PlayLighting>(engine, wad, cast != nullptr ? cast->lighting : nullptr,
                                               m_scenery->lightDirection(), m_print);
@@ -289,7 +288,6 @@ PlayLevelMode::~PlayLevelMode() {
 
 void PlayLevelMode::makeTargets(rw::Texture* texture) {
     const raycast::CollisionMesh& mesh = m_scenery->collision();
-    const std::size_t vertices = m_character->assets().model.vertices.size();
     std::uint32_t seed = 1;
     for (const SceneTarget& point : m_scenery->targets()) {
         // Dropped onto the ground below its spot, as a teleport is.
@@ -303,9 +301,7 @@ void PlayLevelMode::makeTargets(rw::Texture* texture) {
         target.human = std::make_unique<human::TargetHuman>(
             m_character->anims(), human::AnimSlots::player(), anim::referenceRotations(), point.health,
             anim::Vec3{feet.x, feet.y, feet.z}, point.headingDegrees * std::numbers::pi_v<float> / 180.0F, seed++);
-        target.mesh = std::make_unique<CharacterMesh>(m_character->assets().model, texture);
-        target.positions.resize(vertices);
-        target.normals.resize(vertices);
+        target.mesh = std::make_unique<CharacterMesh>(m_character->assets().model, texture, Skinning::Gpu);
         m_targetPointers.push_back(target.human.get());
         m_combatants.push_back(target.human.get());
         m_targets.push_back(std::move(target));
@@ -329,14 +325,12 @@ void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees, const std:
                                             anim::Vec3{feet.x, feet.y, feet.z}, headingDegrees);
     if (debugSpawned) {
         m_ai->markDebugSpawned(made);
+        bindDebugFighter(made, look, model);
     }
-    const std::size_t vertices = look.character->assets().model.vertices.size();
     FighterMesh mesh;
     mesh.character = look.character;
     mesh.model = model;
-    mesh.mesh = std::make_unique<CharacterMesh>(look.character->assets().model, look.texture);
-    mesh.positions.resize(vertices);
-    mesh.normals.resize(vertices);
+    mesh.mesh = std::make_unique<CharacterMesh>(look.character->assets().model, look.texture, Skinning::Gpu);
     m_fighterMeshes.push_back(std::move(mesh));
 }
 
@@ -362,7 +356,9 @@ std::expected<void, Error> PlayLevelMode::spawnFighterAs(anim::Vec3 feet, float 
 
 void PlayLevelMode::clearFighters() {
     // Only the fighters the menus spawned, taken out as a level's script deletes a human: their entries stay (so the
-    // meshes keep their indexes and the scripts' handles on the others stay good) and are no longer drawn.
+    // meshes keep their indexes and the scripts' handles on the others stay good) and are no longer drawn. Their own
+    // handles leave the scripts' hold first, as a deleted script human's do.
+    unbindDebugFighters();
     m_ai->removeDebugSpawned();
 }
 
@@ -481,28 +477,13 @@ std::expected<void, Error> PlayLevelMode::traceTo(const std::string& path) {
 void PlayLevelMode::enter() { m_scenery->preload(toRenderWare(m_player->camera().position())); }
 
 void PlayLevelMode::skin(const human::PlayerCharacter& character, const anim::Pose& pose, anim::Vec3 feet,
-                         float heading, float lean, std::vector<anim::Vec3>& positions,
-                         std::vector<anim::Vec3>& normals) {
-    // The pose, skinned in the character's space (game axes, the feet at the origin, facing +y).
+                         float heading, float lean, CharacterMesh& mesh) {
+    // The pose's skinning matrices in the character's space (game axes, the feet at the origin, facing +y), then
+    // leaned, turned, moved to the feet and into RenderWare's axes by the placement.
     const characters::CharacterModel& model = character.assets().model;
     const auto bones = anim::boneTransforms(character.skeleton(), pose);
     const std::vector<anim::Mat34> matrices = characters::skinningMatrices(model, bones);
-    characters::skinVertices(model, matrices, positions, normals);
-    // Then leaned into the turn about the forward axis at the feet (**Coney's choice** of axis and pivot: the
-    // research gives the lean's angle, not how the body takes it), turned by the heading about z, moved to the feet,
-    // and into RenderWare's axes.
-    const float lc = std::cos(-lean);
-    const float ls = std::sin(-lean);
-    const auto roll = [lc, ls](anim::Vec3 v) { return anim::Vec3{v.x * lc + v.z * ls, v.y, -v.x * ls + v.z * lc}; };
-    const float c = std::cos(heading);
-    const float s = std::sin(heading);
-    for (std::size_t i = 0; i < positions.size(); ++i) {
-        const anim::Vec3 p = roll(positions[i]);
-        const anim::Vec3 n = roll(normals[i]);
-        const anim::Vec3 placed{p.x * c - p.y * s + feet.x, p.x * s + p.y * c + feet.y, p.z + feet.z};
-        positions[i] = anim::Vec3{placed.x, placed.z, -placed.y};
-        normals[i] = directionToRenderWare(anim::Vec3{n.x * c - n.y * s, n.x * s + n.y * c, n.z});
-    }
+    mesh.pose(matrices, characterPlacement(feet, heading, lean));
 }
 
 void PlayLevelMode::drawCharacter() const {
@@ -743,25 +724,21 @@ void PlayLevelMode::render(const RenderTime& time) {
     };
     if (m_engine.drawsPixels()) {
         CONEY_PERF_ZONE("render.skin");
-        m_stage->skinPuppets(alpha,
-                             [](const human::PlayerCharacter& character, const anim::Pose& pose, anim::Vec3 feet,
-                                float heading, std::vector<anim::Vec3>& positions, std::vector<anim::Vec3>& normals) {
-                                 skin(character, pose, feet, heading, 0.0F, positions, normals);
-                             });
-        skin(playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading, snapshot.lean, m_positions, m_normals);
+        m_stage->skinPuppets(alpha, [](const human::PlayerCharacter& character, const anim::Pose& pose, anim::Vec3 feet,
+                                       float heading,
+                                       CharacterMesh& mesh) { skin(character, pose, feet, heading, 0.0F, mesh); });
+        skin(playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading, snapshot.lean, *m_mesh);
         m_attachedDraws.clear();
         poseHat(m_player->human(), playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading);
         poseHeldObject(m_player->human(), playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading);
         poseCarriedProp(m_player->human(), playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading);
-        m_mesh->update(m_positions, m_normals);
         const raycast::CollisionMesh& ground = m_scenery->collision();
         m_lights->addShadow(ground, snapshot.feet);
         ringFeet[ringKey(&m_player->human())] = snapshot.feet;
         for (Target& target : m_targets) {
             const human::TargetSnapshot pose =
                 human::interpolate(target.human->previous(), target.human->current(), alpha);
-            skin(*m_character, pose.pose, pose.feet, pose.heading, 0.0F, target.positions, target.normals);
-            target.mesh->update(target.positions, target.normals);
+            skin(*m_character, pose.pose, pose.feet, pose.heading, 0.0F, *target.mesh);
             m_lights->addShadow(ground, pose.feet);
             ringFeet[ringKey(target.human.get())] = pose.feet;
         }
@@ -783,12 +760,11 @@ void PlayLevelMode::render(const RenderTime& time) {
                 }
             }
             FighterMesh& mesh = m_fighterMeshes[i];
-            skin(*mesh.character, pose.pose, pose.feet, pose.heading, 0.0F, mesh.positions, mesh.normals);
+            skin(*mesh.character, pose.pose, pose.feet, pose.heading, 0.0F, *mesh.mesh);
             poseHat(*fighters[i].human, *mesh.character, pose.pose, pose.feet, pose.heading);
             // What he holds, posed by his own hand as player 1's is (docs/research/objects.md#given-weapon).
             poseHeldObject(*fighters[i].human, *mesh.character, pose.pose, pose.feet, pose.heading);
             poseCarriedProp(*fighters[i].human, *mesh.character, pose.pose, pose.feet, pose.heading);
-            mesh.mesh->update(mesh.positions, mesh.normals);
             m_lights->addShadow(ground, pose.feet);
             ringFeet[ringKey(fighters[i].human.get())] = pose.feet;
         }
