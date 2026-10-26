@@ -1343,9 +1343,6 @@ comment = 1
 ["src/platform/play_level_inspect.cpp"]
 comment = 1
 
-["src/platform/play_level_mode.h"]
-comment = 1
-
 ["src/platform/play_scenery.h"]
 comment = 1
 
