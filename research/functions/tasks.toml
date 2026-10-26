@@ -175,6 +175,19 @@ coney = "src/world_objects/glass.h:GlassPanes::release"
 status = "legacy"
 
 [[function]]
+address = 0x00390480
+name = "LightTask_SetParams"
+page = "script-types.md#light-type-lights"
+role = "adds the light task's point light to the light manager (no corona; the world too with flag 0x08), from the task's own values or from a given parameter block"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.cpp:GameplayMode::syncSystemLights"
+status = "compared"
+
+[[function.gaps]]
+what = "the path with a parameter block (LightTaskManager_CreateWithParams, the scene lights)"
+relation = "not-ported"
+
+[[function]]
 address = 0x003906b8
 name = "LightTask_Update"
 page = "tasks.md#code-lighting-flicker"
