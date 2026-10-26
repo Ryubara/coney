@@ -44,7 +44,7 @@ struct CircledTextSetup {
 /// texture rectangles by the reveal), and the texts are not revealed (Coney's text widget has no reveal); more than
 /// kCircles characters are dropped (the original has room for two and writes past them).
 ///
-/// Research: docs/research/gui.md#fn-circledtext
+/// Research: docs/research/circled-text.md#circled-text
 class CircledText : public Widget {
   public:
     /// The most circles the object holds (`+0x250` + `0x100` × i, i < 2).

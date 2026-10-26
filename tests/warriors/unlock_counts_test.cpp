@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The counts of unlockable records the statistics, mission-select and Rumble screens show
-// (docs/research/player-state.md#unlockable-counts), on synthetic records.
+// (docs/research/game-stats.md#counts), on synthetic records.
 #include <cstddef>
 #include <cstdint>
 
@@ -28,7 +28,7 @@ UnlockRecord rec(std::uint8_t level, std::uint8_t group, std::uint8_t item, std:
 TEST_CASE("the completion count takes every type but 0, 5 and 7-11 outside levels 1 and 4; group 1 counts distinct "
           "pairs of types 1-4 and 6",
           "[unlocks]") {
-    // Expected: player-state.md#unlockable-counts, confirmed (code)
+    // Expected: game-stats.md#counts, confirmed (code)
     UnlockRecords records;
     records.setCount(12);
     REQUIRE(records.set(0, rec(2, 0, 0, 4)));   // counted
@@ -71,7 +71,7 @@ TEST_CASE("the completion count takes every type but 0, 5 and 7-11 outside level
 
 TEST_CASE("a level's targets: the score, characters, arenas and distinct group-1 items; 60 and 101 cover ranges",
           "[unlocks]") {
-    // Expected: player-state.md#unlockable-counts, confirmed (code)
+    // Expected: game-stats.md#counts, confirmed (code)
     UnlockRecords records;
     records.setCount(12);
     REQUIRE(records.set(0, rec(9, 0, 0, 0)));  // the level-complete record
@@ -115,7 +115,7 @@ TEST_CASE("a level's targets: the score, characters, arenas and distinct group-1
 }
 
 TEST_CASE("the character count takes every type-4 record", "[unlocks]") {
-    // Expected: player-state.md#unlockable-counts, confirmed (code)
+    // Expected: game-stats.md#counts, confirmed (code)
     UnlockRecords records;
     records.setCount(3);
     REQUIRE(records.set(0, rec(1, 0, 0, 4)));

@@ -33,10 +33,11 @@ struct LevelRecord {
     double id = 0;    ///< `+0x00`, argument 1: the record's index in the table.
     std::string name; ///< `+0x14`, argument 2: the level name (`level100`): its `.lev`, `.lua`, packs and lists.
     /// `+0x24`, argument 3: hashed to release the level's dependency list; the mission's title, `<number>:<title>`,
-    /// which the pause header and the mission lists split at the `:` (docs/research/frontend.md#game-stats).
+    /// which the pause header and the mission lists split at the `:` (docs/research/game-stats.md#list).
     std::string secondName;
     std::string worldName;  ///< `+0x39`, argument 4: the streamed world's name.
-    std::string fourthName; ///< `+0x49`, argument 5: the level's name the menus show (docs/research/gui.md).
+    std::string fourthName; ///< `+0x49`, argument 5: the level's name the menus show
+                            ///< (docs/research/circled-text.md#header-title).
     double number = 0;      ///< `+0x04`, argument 6: the level number (`GetLevelId`), naming the intro movie `L<n>_IN`.
     /// Arguments 7-18, in order. They fill the section count (`+0x08`), the byte at `+0x0c`, the three flags at
     /// `+0x0d` (bit 1 plays the intro movie, bit 2 an outro movie), `+0x10` and the values at `+0x6c`-`+0x80`, in an
@@ -59,7 +60,7 @@ struct LevelRecord {
     static constexpr std::size_t kMissionValue = 1;
     /// Where in `values` the level's colour (`+0x7c`, `SUBWAY_*`: 1 orange, 2 green, 3 blue, 4 brown) and its
     /// picture's sprite word (`+0x80`) are. Inferred: the words name sheet-table records 22 and 23 exactly as
-    /// `GameStats_PickThumbBatch` splits the levels (docs/research/frontend.md#fn-gamestats).
+    /// `GameStats_PickThumbBatch` splits the levels (docs/research/game-stats.md#block).
     static constexpr std::size_t kSubwayValue = 10;
     static constexpr std::size_t kPictureValue = 11;
 };

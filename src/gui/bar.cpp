@@ -15,7 +15,7 @@ void Bar::setFill(float fraction) {
     m_fill = fraction > 0.0F ? std::min(fraction, 1.0F) : 0.0F;
 }
 
-// The meter's sprites, in the original's order (docs/research/hud.md#the-rage-meter).
+// The meter's sprites, in the original's order (docs/research/hud-bar.md#draw).
 void Bar::render(const GuiCanvas& /*canvas*/) const {
     // A hidden bar draws nothing (the original's drawn flag `+0x50`, and the alpha its visible and active flags clear).
     const std::size_t rects = m_batch != nullptr ? m_batch->sheet().page.rects.size() : 0;

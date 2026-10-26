@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The statistics screen (docs/research/frontend.md#game-stats): the time's words, the listed and shown missions, the
+// The statistics screen (docs/research/game-stats.md): the time's words, the listed and shown missions, the
 // summary's and a mission's lines with their colours, the background's colour cycle and back closing it. Synthetic
 // level records, unlockables and strings only.
 #include <cstddef>
@@ -69,7 +69,7 @@ UnlockRecord complete(std::uint8_t number) {
 
 TEST_CASE("the play time: minutes, hours and minutes, days only when asked, joined by commas, singular for 1",
           "[game_stats]") {
-    // Expected: frontend.md#game-stats, confirmed (code)
+    // Expected: game-stats.md#time-format, confirmed (code)
     const gui::GlobalStrings words = strings();
     CHECK(gui::formatPlayTime(&words, 0, false) == "0 minutes");
     CHECK(gui::formatPlayTime(&words, 61, false) == "1 minute");
@@ -83,7 +83,7 @@ TEST_CASE("the play time: minutes, hours and minutes, days only when asked, join
 }
 
 TEST_CASE("the area colours of LevelRecord_GetAreaColour", "[game_stats]") {
-    // Expected: frontend.md#game-stats, confirmed (code)
+    // Expected: game-stats.md#list, confirmed (code)
     CHECK(gui::areaColour(1) == coney::graphics::Rgba{132, 78, 37, 255});
     CHECK(gui::areaColour(2) == coney::graphics::Rgba{62, 98, 41, 255});
     CHECK(gui::areaColour(3) == coney::graphics::Rgba{42, 71, 141, 255});
@@ -91,7 +91,7 @@ TEST_CASE("the area colours of LevelRecord_GetAreaColour", "[game_stats]") {
 }
 
 TEST_CASE("a level's picture batch follows GameStats_PickThumbBatch", "[game_stats]") {
-    // Expected: frontend.md#fn-gamestats, confirmed (code)
+    // Expected: game-stats.md#block, confirmed (code)
     CHECK(gui::thumbBatchOf(95) == gui::ThumbBatch::Special);
     CHECK(gui::thumbBatchOf(60) == gui::ThumbBatch::Special);
     CHECK(gui::thumbBatchOf(101) == gui::ThumbBatch::Special);
@@ -101,7 +101,7 @@ TEST_CASE("a level's picture batch follows GameStats_PickThumbBatch", "[game_sta
 
 TEST_CASE("the list: levels with a mission byte, not 61-65 or 102-137, sorted, shown when complete or 95 and 101",
           "[game_stats]") {
-    // Expected: frontend.md#game-stats, confirmed (code)
+    // Expected: game-stats.md#list, confirmed (code)
     LevelTable table;
     REQUIRE(table.set(level(0, 100, 0, "", "front end", 0, 0)));              // no mission byte: not listed
     REQUIRE(table.set(level(1, 99, 1, "1:New", "Coney", 1, 0x16000b)));       // complete
@@ -176,7 +176,7 @@ TEST_CASE("the list: levels with a mission byte, not 61-65 or 102-137, sorted, s
 TEST_CASE("the screen's background cycles red, green, blue, each step moving on the first frame past 5 s; back closes "
           "it, accept does not",
           "[game_stats]") {
-    // Expected: frontend.md#game-stats, confirmed (code)
+    // Expected: game-stats.md#background, confirmed (code)
     using Screen = gui::GameStatsScreen;
     CHECK(Screen::backgroundColour(0, 0.0F) == coney::graphics::Rgba{150, 50, 50, 255});
     const coney::graphics::Rgba half = Screen::backgroundColour(0, 0.5F);
@@ -216,7 +216,7 @@ TEST_CASE("the screen's background cycles red, green, blue, each step moving on 
 TEST_CASE("the list: five entries at most centred on (0.185, 0.45), headers 0.35 x 0.09, each block under its "
           "header, the focused one's block opening 550 ms after it took the focus",
           "[game_stats]") {
-    // Expected: frontend.md#game-stats, confirmed (code)
+    // Expected: game-stats.md#placement, confirmed (code)
     using Screen = gui::GameStatsScreen;
     const gui::GlobalStrings text = strings();
     Screen screen;
@@ -285,7 +285,7 @@ TEST_CASE("the list: five entries at most centred on (0.185, 0.45), headers 0.35
 }
 
 TEST_CASE("a mission's block draws only the lines of its text that fit its shown height", "[game_stats]") {
-    // Expected: frontend.md#game-stats, speculative (Coney's choice: the original's text widget crops by height)
+    // Expected: game-stats.md#block, speculative (Coney's choice: the original's text widget crops by height)
     const gui::GlobalStrings text = strings();
     const coney::graphics::Font font = coney::test::testFont();
     coney::graphics::SpriteBatch batch(font.sheet(), 4096, 9000.0F);

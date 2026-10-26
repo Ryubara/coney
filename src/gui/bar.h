@@ -29,7 +29,7 @@ struct BarSetup {
 /// edge is Coney's reading of "fill red to v / 100".
 ///
 /// With end caps (setCaps(), the HUD meter `HudBar`'s four rectangles, as the pause Stats screen's bars draw them,
-/// docs/research/hud.md#the-rage-meter): each cap is as wide as its rectangle's u span (in overlay units), and the
+/// docs/research/hud-bar.md#draw): each cap is as wide as its rectangle's u span (in overlay units), and the
 /// inner width is the bar's width less the left cap's. Left to right, in the back colour unless named: the left cap
 /// from the left edge; the body, inner width wide, centred on the bar's middle (so it starts half a cap in); the fill
 /// in the fill colour from half a cap in over the inner width × the fill; the right cap from half a cap short of the

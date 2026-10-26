@@ -139,7 +139,7 @@ struct GameStatsBatches {
 /// Coney's choices: the picture is drawn whole in the shown height (the original cuts its texture by the reveal); the
 /// text shows the lines that fit the shown height (its share of the lines, rounded down).
 ///
-/// Research: docs/research/frontend.md#game-stats
+/// Research: docs/research/game-stats.md
 class GameStatsSubItem : public Widget {
   public:
     /// The picture column's width (`GameStatsSubItem_Setup`'s 0.35) and the text's gap after it.
@@ -222,7 +222,7 @@ class GameStatsSubItem : public Widget {
 /// scrolls with a reveal); a description the clip cuts is cut at the clip,
 /// and a header the clip would cut is hidden with the entries below it (the original reveals the last item in part).
 ///
-/// Research: docs/research/frontend.md#game-stats, docs/research/frontend.md#fn-gamestats
+/// Research: docs/research/game-stats.md#list, docs/research/game-stats.md#block
 class GameStatsScreen : public Widget {
   public:
     // Coney's choice: the default video mode's layout values only (GameStats_Init sets others for the other modes).

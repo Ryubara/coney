@@ -91,7 +91,7 @@ class UnlockRecords {
     /// @orig 0x004241d8 Unlocks_IsLevelComplete (unknown)
     [[nodiscard]] bool isLevelComplete(const SavedProgress& progress, std::uint8_t level) const;
 
-    /// The statistics screen's summary counts (docs/research/player-state.md#unlockable-counts).
+    /// The statistics screen's summary counts (docs/research/game-stats.md#counts).
     /// @orig 0x004245d8 Unlocks_CountUnlocked (unknown)
     [[nodiscard]] UnlockCounts countUnlocked(const SavedProgress& progress) const;
     /// One mission's targets and counts over the records of `level` (60: 60-64; 101: 101-137), groups 0 and 1 only.

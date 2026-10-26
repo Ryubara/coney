@@ -69,7 +69,7 @@ struct CircledTextHeaderSetup {
 /// bounds the count in the original, which has room for three); the characters and the subtitle take the update's
 /// size 1.7 (the set-up's 1.561 is replaced every update).
 ///
-/// Research: docs/research/gui.md#circled-text-header, docs/research/gui.md#circled-text-header-layout
+/// Research: docs/research/circled-text.md#pause-header, docs/research/circled-text.md#header-layout
 class CircledTextHeader : public Widget {
   public:
     /// The most circles the header holds.

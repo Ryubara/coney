@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // A check against the player's own disc that the statistics screen works as the hub's scripts reach it
-// (docs/research/frontend.md#game-stats): `level95` started as `coney --play-level` starts it, the binding
+// (docs/research/game-stats.md#mode): `level95` started as `coney --play-level` starts it, the binding
 // `ShowGameStatsInterface` called through the script system as the hub calls it; mode 0x13 comes up with its sheets
 // loaded, the disc's level table gives 23 story missions, and a fresh profile shows the two entries that are always
 // listed (the hub and the Rumble arenas); the d-pad moves down the list and triangle closes it, the mode leaving
@@ -39,7 +39,7 @@ constexpr std::uint64_t kClosed = 160;
 
 TEST_CASE("the disc's statistics screen: shown by the binding in the hub, moved and closed with the pad",
           "[disc][game_stats]") {
-    // Expected: frontend.md#game-stats, confirmed (code)
+    // Expected: game-stats.md#mode, confirmed (code)
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");

@@ -105,11 +105,11 @@ TEST_CASE("the disc's pause menu: Options changes the music volume and the camer
     REQUIRE(run.runToPlayFrame(kReverted));
     const bool invertedAfterBack = state.saved.pads[0].invertCamera;
 
-    std::printf("  pause options: %zu titles, Audio page music loop %d (after %d), music volume x100 %d -> %d, invert "
-                "P1 %d then %d after back\n",
-                titles, previewPlaying ? 1 : 0, previewAfter ? 1 : 0,
-                static_cast<int>(std::lround(musicBefore * 100.0F)),
-                static_cast<int>(std::lround(musicRaised * 100.0F)), inverted ? 1 : 0, invertedAfterBack ? 1 : 0);
+    std::printf(
+        "  pause options: %zu titles, Audio page music loop %d (after %d), music volume x100 %ld -> %ld, invert "
+        "P1 %d then %d after back\n",
+        titles, previewPlaying ? 1 : 0, previewAfter ? 1 : 0, std::lround(musicBefore * 100.0F),
+        std::lround(musicRaised * 100.0F), inverted ? 1 : 0, invertedAfterBack ? 1 : 0);
     CHECK(titles == coney::gui::kOptionPages);
     CHECK(previewPlaying);
     CHECK_FALSE(previewAfter);

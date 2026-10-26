@@ -11,7 +11,7 @@ tag = 1
 tag = 7
 
 ["src/ai/ai_humans.cpp"]
-tag = 13
+tag = 16
 
 ["src/ai/ai_humans.h"]
 comment = 5
@@ -955,6 +955,10 @@ tag = 5
 
 ["src/gui/scrolling_menu.cpp"]
 tag = 7
+
+["src/gui/text_layout.cpp"]
+comment = 1
+tag = 14
 
 ["src/gui/text_widget.cpp"]
 tag = 5
@@ -2338,6 +2342,9 @@ citation = 7
 
 ["tests/gui/text_layout_test.cpp"]
 citation = 11
+
+["tests/gui/widgets_test.cpp"]
+citation = 22
 
 ["tests/hud/credits_test.cpp"]
 citation = 9

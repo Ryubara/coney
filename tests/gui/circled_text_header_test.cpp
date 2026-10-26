@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The pause header (docs/research/gui.md#circled-text-header): how a title splits into circles, the colours and the
-// layout per video mode; and the smaller CircledText of the statistics screens (docs/research/gui.md#fn-circledtext):
-// its layout, reveal and colours. Over a synthetic font and sheet.
+// The pause header (docs/research/circled-text.md#pause-header): how a title splits into circles, the colours and the
+// layout per video mode; and the smaller CircledText of the statistics screens
+// (docs/research/circled-text.md#circled-text): its layout, reveal and colours. Over a synthetic font and sheet.
 #include "gui/circled_text_header.h"
 
 #include <cstddef>
@@ -50,7 +50,7 @@ float y0At(float y) {
 
 TEST_CASE("pause header: the characters before ':' are circled, the ':' adds the checkpoint's letter",
           "[circled_text_header]") {
-    // Expected: gui.md#circled-text-header, confirmed (code)
+    // Expected: circled-text.md#header-title, confirmed (code)
     CircledTextHeader header;
     header.setTitle("1:Coney", 2, "New Blood");
     REQUIRE(header.circles() == 2);
@@ -84,7 +84,7 @@ TEST_CASE("pause header: the characters before ':' are circled, the ':' adds the
 
 TEST_CASE("pause header: the checkpoint's letter is grey when set, and black from the next update",
           "[circled_text_header]") {
-    // Expected: gui.md#circled-text-header, confirmed (code)
+    // Expected: circled-text.md#header-title, confirmed (code)
     CircledTextHeader header;
     header.setTitle("1:Coney", 2, "New Blood");
     CHECK(header.letter(1).style().colour == coney::gui::kMenuGrey);
@@ -95,7 +95,7 @@ TEST_CASE("pause header: the checkpoint's letter is grey when set, and black fro
 
 TEST_CASE("pause header: the circles take the colour given, the last turns red, and the characters stay black",
           "[circled_text_header]") {
-    // Expected: gui.md#circled-text-header, confirmed (code)
+    // Expected: circled-text.md#header-colours, confirmed (code)
     HeaderCanvas fixture;
     CircledTextHeader header;
     header.setBatch(&fixture.sprites);
@@ -116,7 +116,7 @@ TEST_CASE("pause header: the circles take the colour given, the last turns red, 
 
 TEST_CASE("pause header: the default layout puts the title at 0.68 of y0, after circles 0.051 apart",
           "[circled_text_header]") {
-    // Expected: gui.md#circled-text-header-layout, confirmed (code)
+    // Expected: circled-text.md#header-layout, confirmed (code)
     HeaderCanvas fixture;
     CircledTextHeader header;
     header.setup(CircledTextHeaderSetup{});
@@ -152,7 +152,7 @@ TEST_CASE("pause header: the default layout puts the title at 0.68 of y0, after 
 }
 
 TEST_CASE("pause header: the video modes' factors", "[circled_text_header]") {
-    // Expected: gui.md#circled-text-header-layout, confirmed (code)
+    // Expected: circled-text.md#header-factors, confirmed (code)
     const CircledHeaderFactors wide = CircledHeaderFactors::forMode(true, false);
     CHECK(wide.ruleY == Approx(0.6F));
     CHECK(wide.letterY == 0.0F);
@@ -191,7 +191,7 @@ void setUpStatsHeader(CircledText& header, HeaderCanvas& fixture) {
 
 TEST_CASE("circled text: each circle adds a third of its width before and after itself, the text follows the last",
           "[circled_text]") {
-    // Expected: gui.md#fn-circledtext, confirmed (code)
+    // Expected: circled-text.md#ct-layout, confirmed (code)
     HeaderCanvas fixture;
     CircledText header;
     setUpStatsHeader(header, fixture);
@@ -220,7 +220,7 @@ TEST_CASE("circled text: each circle adds a third of its width before and after 
 
 TEST_CASE("circled text: the reveal shrinks the back and the circles from the bottom, their top edges kept",
           "[circled_text]") {
-    // Expected: gui.md#fn-circledtext, confirmed (code)
+    // Expected: circled-text.md#ct-layout, confirmed (code)
     HeaderCanvas fixture;
     CircledText header;
     setUpStatsHeader(header, fixture);
@@ -243,7 +243,7 @@ TEST_CASE("circled text: the reveal shrinks the back and the circles from the bo
 
 TEST_CASE("circled text: the characters take the focused colour when drawn unless black; set-up counts once",
           "[circled_text]") {
-    // Expected: gui.md#fn-circledtext, confirmed (code)
+    // Expected: circled-text.md#ct-drawing, confirmed (code)
     HeaderCanvas fixture;
     CircledText header;
     setUpStatsHeader(header, fixture);

@@ -179,7 +179,7 @@ TEST_CASE("pause stats: the description wraps at its leading AUTOINDENT width, e
 }
 
 TEST_CASE("pause stats: each bar draws the rage meter's left cap, body, fill and right cap", "[pause_stats]") {
-    // Expected: hud.md#the-rage-meter, confirmed (code)
+    // Expected: hud-bar.md#draw, confirmed (code)
     // A part_page0 stand-in: 58 rectangles over a 256 x 256 texture; 56 and 57 are 8 texels wide, so each cap is
     // 8 / 256 = 0.03125 overlay units wide (a cap is as wide as its rectangle's u span).
     coney::graphics::SpriteSheet sheet;

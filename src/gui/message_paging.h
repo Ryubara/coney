@@ -42,7 +42,7 @@ struct MessagePage {
 /// Coney's choice: a word wider than the width on a line of its own stays there (the original never finishes such a
 /// text).
 ///
-/// Research: docs/research/gui.md#fn-messagehud
+/// Research: docs/research/pause.md#stats-description
 /// @orig 0x001bac20 MessageHUD_WordWrap (unknown)
 [[nodiscard]] WrappedMessage wrapMessage(std::string_view text, float wrapWidth, const LineMeasure& measure);
 
@@ -50,7 +50,7 @@ struct MessagePage {
 /// lastLine, that `<CRM>` included, or to the end of the text. Coney's choice: nothing when the text has fewer
 /// lines than firstLine (the original copies from no text).
 ///
-/// Research: docs/research/gui.md#fn-messagehud
+/// Research: docs/research/pause.md#stats-description
 /// @orig 0x001baee0 MessageHUD_ClipToPage (unknown)
 [[nodiscard]] std::string clipToPage(std::string_view wrapped, const MessagePage& page);
 

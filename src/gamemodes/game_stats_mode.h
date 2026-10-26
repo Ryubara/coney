@@ -30,7 +30,7 @@ class GameModeStack;
 /// sets the store tint (`ScreenFx_EnterStore`) with a clear colour, neither of which shows under the screen's opaque
 /// background; Coney updates no world and draws the screen over black.
 ///
-/// Research: docs/research/frontend.md#game-stats
+/// Research: docs/research/game-stats.md#mode
 class GameStatsMode final : public GameMode {
   public:
     /// The original's id for this mode.
