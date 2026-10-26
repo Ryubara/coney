@@ -3,6 +3,7 @@
 // synthetic pad and synthetic strings.
 #include "gui/pause_menu/pause_menu.h"
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <format>
@@ -148,7 +149,7 @@ TEST_CASE("pause items: the hangout is offered in the 15 listed story levels onl
     CHECK(coney::gui::isRumbleLevel(100));
 }
 
-TEST_CASE("pause menu: opening tints the world over 1.4 s and fades the cycling background in over 3 s",
+TEST_CASE("pause menu: opening tints the world over 1.4 s; the background is drawn at the menu's alpha",
           "[pause_menu]") {
     // Expected: pause.md#opening-the-menu, confirmed (code)
     GlobalStrings strings = syntheticStrings();
@@ -170,19 +171,65 @@ TEST_CASE("pause menu: opening tints the world over 1.4 s and fades the cycling 
     CHECK_FALSE(menu.topHeader().label().visible());
     CHECK_FALSE(menu.headers()[0].visible());
     CHECK(menu.alpha() == Approx(255.0F));
+    CHECK(menu.usage().text() == "#1a");
 
+    // The 3 s fade-in the update computes is replaced by the menu's alpha before every draw, so it never shows.
     menu.update(GuiFrame{1000 + 1500, nullptr});
-    CHECK(menu.background().colour().a == 127);
-    // The cycle runs red, green, blue in index order: at 5 s it has reached green, at 10 s blue.
-    menu.update(GuiFrame{1000 + 5000, nullptr});
-    CHECK(menu.background().colour().r == 50);
-    CHECK(menu.background().colour().g == 150);
-    CHECK(menu.background().colour().b == 50);
     CHECK(menu.background().colour().a == 255);
-    menu.update(GuiFrame{1000 + 10000, nullptr});
-    CHECK(menu.background().colour().r == 50);
-    CHECK(menu.background().colour().g == 50);
-    CHECK(menu.background().colour().b == 150);
+}
+
+TEST_CASE("pause menu: the background's colour steps on the first update past 5 s, each leg starting from 0",
+          "[pause_menu]") {
+    // Expected: pause.md#opening-the-menu, confirmed (code)
+    PauseMenu menu;
+    menu.open(PauseMenuSetup{.level = 99}, 1000);
+    const auto colour = [&menu](std::uint64_t now) {
+        menu.update(GuiFrame{now, nullptr});
+        const coney::graphics::Rgba c = menu.background().colour();
+        return std::array<int, 3>{c.r, c.g, c.b};
+    };
+    // Red to green over the first leg: at 5 s exactly it is still the first leg, at its end.
+    CHECK(colour(1000 + 2500) == std::array<int, 3>{100, 100, 50});
+    CHECK(colour(1000 + 5000) == std::array<int, 3>{50, 150, 50});
+    // The first update past 5 s moves on to green and restarts the leg's clock there.
+    CHECK(colour(1000 + 5001) == std::array<int, 3>{50, 150, 50});
+    CHECK(colour(1000 + 7501) == std::array<int, 3>{50, 100, 100});
+    CHECK(colour(1000 + 10001) == std::array<int, 3>{50, 50, 150});
+    // Without updates between, a late update steps only once, and its leg starts at 0.
+    CHECK(colour(1000 + 30000) == std::array<int, 3>{50, 50, 150});
+    CHECK(colour(1000 + 32500) == std::array<int, 3>{100, 50, 100});
+}
+
+TEST_CASE("pause menu: the fade out truncates the alpha, zeroes it a frame late, and holds from the last fading frame",
+          "[pause_menu]") {
+    // Expected: pause.md#leaving, confirmed (code)
+    PauseMenu menu;
+    menu.open(PauseMenuSetup{.level = 99}, 1000);
+    Pad pad;
+    const auto frame = [&](std::uint64_t now, std::uint16_t buttons = 0) {
+        pad.update(sample(buttons));
+        menu.update(GuiFrame{now, &pad});
+    };
+    // START at exactly 1.5 s after opening is too early; a millisecond later it closes.
+    frame(2500, coney::pad::kStart);
+    CHECK_FALSE(menu.closing());
+    frame(2501);
+    frame(2502, coney::pad::kStart);
+    REQUIRE(menu.closing());
+    frame(2502 + 750);
+    CHECK(menu.alpha() == 127.0F);
+    // The last frame inside the fade still has some alpha; the next one only zeroes it.
+    frame(2502 + 1350);
+    CHECK(menu.alpha() == 25.0F);
+    frame(2502 + 1600);
+    CHECK(menu.alpha() == 0.0F);
+    CHECK_FALSE(menu.closed());
+    // The hold counts from the last frame inside the fade, and must be passed.
+    frame(2502 + 1350 + 500);
+    CHECK_FALSE(menu.closed());
+    frame(2502 + 1350 + 501);
+    CHECK(menu.closed());
+    CHECK_FALSE(menu.closing());
 }
 
 TEST_CASE("pause menu: triangle resumes with a 1.5 s fade and a 0.5 s hold", "[pause_menu]") {
@@ -234,12 +281,25 @@ TEST_CASE("pause menu: Objectives shows the lists, None for an empty one, and up
     paused.driver.tap(coney::pad::kDown);
     CHECK(paused.menu.selection() == 1);
     CHECK(paused.menu.screenLines() == std::vector<std::string>{"#109"});
-    // Up from the first refuses; triangle goes back to the grid.
+    // The overview gets no None: only the current and bonus lists are given one.
+    paused.driver.tap(coney::pad::kDown);
+    CHECK(paused.menu.selection() == 2);
+    CHECK(paused.menu.screenLines().empty());
+    paused.driver.tap(coney::pad::kDown);
+    CHECK(paused.menu.selection() == 2);
+    CHECK(paused.cues.back() == PauseMenu::kRefusedCue);
+    // Left and right are refused while a screen is open.
+    paused.cues.clear();
+    paused.driver.tap(coney::pad::kLeft);
+    CHECK(paused.cues == std::vector<int>{PauseMenu::kRefusedCue});
+    // Up from the first refuses; triangle goes back to the grid and its usage line.
+    paused.driver.tap(coney::pad::kUp);
     paused.driver.tap(coney::pad::kUp);
     paused.driver.tap(coney::pad::kUp);
     CHECK(paused.cues.back() == PauseMenu::kRefusedCue);
     paused.driver.tap(coney::pad::kTriangle);
     CHECK(paused.menu.screen() == PauseScreen::Grid);
+    CHECK(paused.menu.usage().text() == "#1a");
     CHECK_FALSE(paused.menu.closing());
 }
 
@@ -277,6 +337,7 @@ TEST_CASE("pause menu: Stats opens the Warrior's screen, and triangle closes it"
     paused.selectItem(PauseItem::Stats);
     paused.driver.tap(coney::pad::kCross);
     REQUIRE(paused.menu.screen() == PauseScreen::Stats);
+    CHECK(paused.menu.usage().text() == "#19");
     CHECK(paused.menu.screenLines() == std::vector<std::string>{"#f3", "#f4", "#f5", "#f6", "#f0"});
     paused.driver.tap(coney::pad::kDown);
     CHECK(paused.cues.back() == PauseMenu::kRefusedCue);
@@ -293,6 +354,8 @@ TEST_CASE("pause menu: Stats opens nothing without stats; Options opens its list
     paused.selectItem(PauseItem::Stats);
     paused.driver.tap(coney::pad::kCross);
     CHECK(paused.menu.screen() == PauseScreen::Grid);
+    // The usage line is still set to the Stats screen's, and the grid keeps the commands.
+    CHECK(paused.menu.usage().text() == "#19");
     paused.selectItem(PauseItem::Options);
     paused.driver.tap(coney::pad::kCross);
     CHECK(paused.menu.screen() == PauseScreen::Options);
@@ -317,12 +380,19 @@ TEST_CASE("pause menu: Controls takes the d-pad and cross: down to Tutorial, cro
     paused.selectItem(PauseItem::Controls);
     paused.driver.tap(coney::pad::kCross);
     REQUIRE(paused.menu.screen() == PauseScreen::Controls);
+    CHECK(paused.menu.usage().text() == "#1a");
+    paused.driver.tap(coney::pad::kCross);
+    REQUIRE(paused.menu.controls().page() == coney::gui::ControlPage::Controller);
+    CHECK(paused.menu.usage().text() == "#1e");
+    paused.driver.tap(coney::pad::kTriangle);
     paused.driver.tap(coney::pad::kDown);
     CHECK(paused.menu.controls().selected() == 1);
     paused.driver.tap(coney::pad::kCross);
     CHECK(paused.menu.controls().page() == coney::gui::ControlPage::Tutorial);
+    CHECK(paused.menu.usage().text() == "#19");
     paused.driver.tap(coney::pad::kTriangle);
     CHECK(paused.menu.controls().page() == coney::gui::ControlPage::None);
+    CHECK(paused.menu.usage().text() == "#1a");
     CHECK(paused.menu.screen() == PauseScreen::Controls);
     paused.driver.tap(coney::pad::kTriangle);
     CHECK(paused.menu.screen() == PauseScreen::Grid);
@@ -386,6 +456,10 @@ TEST_CASE("pause menu: in a Rumble level Replay asks 0x105 at once and Objective
     rumble.driver.tap(coney::pad::kCross);
     CHECK(rumble.menu.screen() == PauseScreen::Objectives);
     CHECK(rumble.menu.selection() == 2);
+    // A Rumble level's objectives stay on the overview: up and down are refused.
+    rumble.driver.tap(coney::pad::kUp);
+    CHECK(rumble.menu.selection() == 2);
+    CHECK(rumble.cues.back() == PauseMenu::kRefusedCue);
     rumble.driver.tap(coney::pad::kTriangle);
     rumble.selectItem(PauseItem::Restart);
     rumble.driver.tap(coney::pad::kCross);
