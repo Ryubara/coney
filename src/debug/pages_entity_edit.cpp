@@ -196,7 +196,7 @@ std::string selectedText(const DebugSession& session) {
 }
 
 // A group's submenu, filled by `fill` from the selection when it opens.
-MenuItem groupItem(DebugSession& session, std::string label, void (*fill)(MenuPage&, DebugSession&)) {
+MenuItem groupItem(DebugSession& session, const std::string& label, void (*fill)(MenuPage&, DebugSession&)) {
     return submenuItem(label, [&session, label, fill] {
         auto sub = std::make_shared<MenuPage>(label);
         sub->setRebuild([&session, fill](MenuPage& p) { fill(p, session); });

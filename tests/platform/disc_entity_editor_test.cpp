@@ -118,6 +118,10 @@ TEST_CASE("deleting a human the level's scripts hold goes the way a script's del
         }
     }
     REQUIRE(victim.has_value());
+    // The REQUIRE above ends the test; this lets clang-tidy see that too.
+    if (!victim) {
+        return;
+    }
     const coney::human::Human* human = fighters.humans()[*victim].human.get();
     const std::size_t before = liveCount(fighters);
     const std::size_t brainsBefore = fighters.brains().size();
@@ -193,6 +197,9 @@ TEST_CASE("edits to a human in a level land between steps and play goes on", "[d
         }
     }
     REQUIRE(pick.has_value());
+    if (!pick) {
+        return;
+    }
     coney::human::Human& human = *fighters.humans()[*pick].human;
     const EntityId id = kFirstAiId + *pick;
     const float scale = human.scale();

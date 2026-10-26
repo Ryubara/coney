@@ -410,7 +410,8 @@ TEST_CASE("a number item resets to the value the entity is configured with", "[d
     const MenuItem& scale = itemOn(*stats, "Scale");
     // Entity 7 is configured at 1.25, not 1.
     REQUIRE(scale.defaultValue.has_value());
-    CHECK(*scale.defaultValue == Approx(1.25));
+    // value_or rather than `*`: clang-tidy does not take the REQUIRE as a check.
+    CHECK(scale.defaultValue.value_or(0.0) == Approx(1.25));
     scale.setNumber(6.0);
     rig.step();
     REQUIRE(play.world.states[7].scale == 6.0);
