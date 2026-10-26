@@ -114,9 +114,9 @@ otherwise GetItem (kind 4). Only when the fetch gives nothing does the wreck ste
 
 ### The goal's update {#process}
 
-Confirmed (code) at `0x002bf748` (`WarriorVandalStealGoal_Process`).
+Confirmed (code) at the cited addresses.
 
-Each update, in this order:
+`WarriorVandalStealGoal_Process` (`0x002bf748`) does this each update, in this order:
 
 1. With no gang leader (`Gang_GetLeader`) it does nothing and keeps the goal (returns 0).
 2. While the brain's move failure (`+0x284`) is set, it counts the update in the goal's byte `+0x28`.
