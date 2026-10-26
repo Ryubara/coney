@@ -253,7 +253,8 @@ GameplayMode::~GameplayMode() {
 // @orig 0x001607b8 UnloadLevel (unknown)
 void GameplayMode::endLevel() {
     // The level first: its humans are what the brains refer to, its player what the cameras follow. Then the cameras,
-    // whose locator reads the scripts' hold, then the hold, then the brains it holds.
+    // whose locator reads the scripts' hold, then the hold, then the brains it holds. Coney's choice: the level file
+    // goes every time (UnloadLevel's keep), as each start loads its level whole.
     m_level.reset();
     // UnloadLevel's HUD shut-down: the level's hints, objectives, bars, timers and blips go with it (the radar stops
     // locating its objects), so every start of the next level, however it comes, finds the HUD clean.
