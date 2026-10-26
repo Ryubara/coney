@@ -494,7 +494,10 @@ Read in Ghidra: confirmed (code) where no other level is given.
 **Turning into an attack** (`Attack_Start`, `0x002625a8`): with the target within the attack's far range, it tells
 the target (`0x0021d5c0`) and steers with `0x002761c8`: turn and slide so that the target, moved by its velocity over
 the time to the hit + 0.1 s, sits at the clip's reach (+0.07 m for a target scaled above 1.1, else -0.1 m from behind).
-Beyond the range it only turns (`Attack_TurnToTarget`, `0x00276008`), capped at 8.
+Beyond the range it only turns (`Attack_TurnToTarget`, `0x00276008`): the attack's direction onto the target led
+by his velocity over the time to the clip's first event, over that same time, with no slide and no cap on the angle;
+the 8 there caps the lead's speed (a target faster than 8 m/s is led only as far as 8 m/s would take him). It also
+drops the target's own turn (`Human_ClearTurn`, `0x0023cf70`, on him), then the attacker's.
 
 **The turn does not face the target**: it turns so that the attack's **direction** points at it. The direction is the
 record's offset (`+0x0` / `+0x2`, read by `AttackTable_GetOffset` `0x00254418`), a unit vector in thousandths in the
@@ -974,13 +977,18 @@ square that touches him makes him say `0x58`.
 The original's rules are in [The fight stance](#fight-stance); issue #82 ported them. `Fighter::updateStance()`
 (`repo:src/human/fighter.cpp`) is the stance update, step by step, run before the player's commands as the dispatcher
 runs it, and `Fighter::updateL1()` the L1 handlers, outside the block, the busy gate and a hold;
-`Fighter::lockTarget()` is the lock-on movement's target, set only by the stance's step 3 and L1 (a throw leaves
-the lock bit but puts the player on the free movement, as `Human_MoveGrabbing` `0x00245310` does once he grabs no
-one; a let-go's `Grab_End` `0x00280548` restores the lock-on movement), and
+`Fighter::lockTarget()` is the lock-on movement's target, set only by the stance's step 3 and L1 (a throw keeps
+the lock but puts the player on the free movement, as `Human_MoveGrabbing` `0x00245310` does once he grabs no one, so
+step 3, which tests the movement, may lock again: a threat within 2 m or L1's lock held; a let-go's `Grab_End`
+`0x00280548` restores the lock-on movement). Neither runs while a throw or a grab's power move plays (state `0x1000`,
+where the dispatcher runs `Player_UpdatePowerMove` `0x0027df38` instead).
 `Human::combatWalk()` (`repo:src/human/human.cpp`) the lock-on walk, which faces the target within 2.5 m (or while L1
 locks it) and keeps the heading beyond it. The stance's search takes only threats: `human::Humans` marks the targets
 that are no threat (`ai::isThreat()`) or a pad player as the calm list, which only the stance's search skips (the
-attacks' picks still take them). 23, 24 and 501 store their pick and steer nothing (`Fighter::steer()`). The
+attacks' picks still take them). 23, 24 and 501 store their pick and steer nothing (`Fighter::steer()`), and only
+the attacks whose start calls `Player_EnterStance` enter the stance: not the charge, 23, 24, 501, the specials (653,
+645 and their rear ids), the spray 664, rage's start 643 or a held object's throws. Hidden, L1 held drops a target that
+is not standing only while its bit `0x8` is clear. The
 distances are `CombatTuning::stanceNear`, `stanceMid` and `stanceFar` at the values in play (`CfgDistances` is not
 read from the scripts).
 
@@ -996,7 +1004,8 @@ Where Coney still differs (stand-ins, each marked at the code):
 - L1's action delay is not modelled and a press acts as a hold ([L1's action delay](#open-questions)).
 - Square in the stance keeps its target out to 3 m (`kKeepTargetRange`, issue #895), where `0x005104c0` gives 2.5 m.
 
-Tests: `repo:tests/human/player_targeting_test.cpp` (one case per scenario of [The fight stance](#fight-stance)) and,
+Tests: `repo:tests/human/player_targeting_test.cpp` (one case per scenario of [The fight stance](#fight-stance)),
+`repo:tests/human/player_stance_test.cpp` (after a throw, the special, hidden L1) and,
 through the player's path, `repo:tests/platform/disc_level95_crew_lock_test.cpp`.
 
 ### The steer {#steer-coney}
@@ -1005,7 +1014,9 @@ Coney's steer (`repo:src/human/turn_and_slide.h`) turns at angle / `T` and slide
 `T` of [The two steers](#two-steers), starting the update after the clip, as [The steer into an
 attack](#attack-steer) describes, rather than snapping the facing or spreading the reach over the whole clip; and it
 tests the strike shapes along their sweep (`repo:src/human/strike_shapes.h`), as [Where the attacker stands at
-contact](#reach) shows the original does.
+contact](#reach) shows the original does. Beyond the far range it only turns, onto the target led over the time to
+the first event (`Attack_TurnToTarget`, `Fighter::steer()`, tested in `repo:tests/human/attack_turn_test.cpp`); the
+target's own turn is not dropped there, a `Combatant` offering none.
 
 ## Open questions
 

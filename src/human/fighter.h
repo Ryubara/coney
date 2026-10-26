@@ -97,9 +97,9 @@ inline constexpr float kPickHeight = 2.0F;
 inline constexpr float kObjectWideConeDegrees = 135.0F;
 /// The strong grapple's search range without an Anim Range List (Rembrandt's, **Coney's choice**).
 inline constexpr float kStrongGrappleFallbackRange = 3.0F;
-/// Beyond the attack's far range the attacker only turns, at most this much (**Coney's reading** of the research's
-/// "capped at 8": degrees).
-inline constexpr float kAttackTurnCapDegrees = 8.0F;
+/// Beyond the attack's far range the attacker only turns, onto the target led by his velocity; a lead faster than
+/// this (m/s) is cut to it (`Attack_TurnToTarget` `0x00276008`, docs/research/combat-targets.md#attack-steer).
+inline constexpr float kTurnLeadMaxSpeed = 8.0F;
 /// The player's health (Rembrandt's 900 at runtime, record `+0x146`).
 inline constexpr int kPlayerHealth = 900;
 /// A held human frees itself after this many of its own updates without its grabber keeping the hold
@@ -528,8 +528,8 @@ class Fighter {
     // (docs/research/combat-moves.md#input).
     void playAttack(int animId, const FighterInput& input, HumanAnimator& animator, float& heading, bool chainStep);
     // Turns (and within the far range slides) towards the target of attack `animId`, as Attack_Start steers: within
-    // the far range through steerOnto() with the time to the clip's first event; beyond it the facing turns at once,
-    // capped.
+    // the far range through steerOnto() with the time to the clip's first event; beyond it the attack's direction
+    // turns onto the led target over that time, with no slide.
     // @orig 0x00276008 Attack_TurnToTarget (unknown)
     void steer(int animId, const FighterInput& input, const HumanAnimator& animator, float& heading, bool chainStep);
     // A snap's steer onto the target its search found (m_snapTarget), through steerOnto() with

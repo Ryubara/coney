@@ -1307,12 +1307,11 @@ level = "confirmed-code"
 [[function]]
 address = 0x00276008
 name = "Attack_TurnToTarget"
-page = "combat-targets.md#targets"
-role = "an attack's turn and slide onto its target up to the clip's first event, or the turn alone ([Target selection](combat-targets.md#targets))"
+page = "combat-targets.md#attack-steer"
+role = "an attack's turn alone beyond its far range: the attack's direction onto the target led over the time to the clip's first event ([The steer into an attack](combat-targets.md#attack-steer))"
 level = "confirmed-code"
-note = "confirmed (code), runtime"
-coney = "src/human/fighter.h:Fighter::steer"
-status = "legacy"
+coney = "src/human/fighter.cpp:Fighter::steer"
+status = "compared"
 
 [[function]]
 address = 0x002761c8
