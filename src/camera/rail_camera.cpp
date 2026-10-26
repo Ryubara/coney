@@ -487,6 +487,8 @@ void RailCamera::placeTrailing(std::optional<anim::Vec3> feet, anim::Vec3 veloci
         m_lookAt = pitchedLook(m_position, m_target);
         m_goal = m_lookAt;
         m_placed = true;
+        // **Coney's stand-in**: the original also sets `+0x3ea` from the side the first target faces, which nothing
+        // reads (docs/research/camera.md#rail-mode3).
         return;
     }
     // No target: the camera keeps its place.
