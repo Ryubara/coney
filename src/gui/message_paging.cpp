@@ -39,6 +39,7 @@ WrappedMessage wrapMessage(std::string_view text, float wrapWidth, const LineMea
             } else if (c == '>') {
                 inTag = false;
             }
+            // Coney's choice: a word or a line may pass 255 characters, where the original's byte counters wrap.
             if (!inTag && c != '>') {
                 line += c;
             }
@@ -58,7 +59,7 @@ WrappedMessage wrapMessage(std::string_view text, float wrapWidth, const LineMea
         }
         // Too wide: the break goes before the last space or `<` before the trailing space, carrying a tag (or a
         // `<CRM>`) found there to the new line, and the same word is measured again on it. Coney's choice: with
-        // neither found (the first word), nothing is carried, where the original reads on before its buffer.
+        // neither found (a first line of one word), nothing is carried, where the original reads on before its buffer.
         std::string carried;
         const std::size_t at = wrapped.text.find_last_of(" <", wrapped.text.size() - 2);
         if (at != std::string::npos && wrapped.text[at] == '<') {
