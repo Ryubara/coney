@@ -174,11 +174,13 @@ at the addresses given.
   for every level record whose mission byte is 1-23.
 - **`Unlocks_CountUnlocked(&groupUnlocked, &groupTotal, &unlocked, &total)`** (`0x004245d8`), the statistics screen's
   summary ([Front end](frontend.md#game-stats)):
-    - `total` / `unlocked`: the records of types 1, 2, 3, 4 and 6 (Rumble modes, arenas, gangs, character types,
-      upgrades) whose **level** byte is neither 1 nor 4; the completion percentage is `unlocked` × 100 / `total`,
-      truncated;
-    - `groupTotal` / `groupUnlocked`: among the records of those five types in **group 1** (any level), the distinct
-      (level, item) pairs; only the first record of each pair is tested for `groupUnlocked`.
+    - `total` / `unlocked`: the records whose type is **not** 0, 5, 7, 8, 9, 10 or 11 (the test lists the excluded
+      types, so on the disc's records, types 0-11, it takes 1, 2, 3, 4 and 6: Rumble modes, arenas, gangs, character
+      types, upgrades) and whose **level** byte is neither 1 nor 4; the completion percentage is `unlocked` × 100 /
+      `total`, truncated;
+    - `groupTotal` / `groupUnlocked`: among the records of types 1, 2, 3, 4 and 6 (listed by name here) in **group 1**
+      (any level), the distinct (level, item) pairs, marked in a table at level × 100 + item; only the first record of
+      each pair is tested for `groupUnlocked`.
 - **`Unlockables_GetLevelTargets(level, &scoreTarget, &charUnlocked, &charTotal, &arenaUnlocked, &arenaTotal,
   &groupUnlocked, &groupTotal)`** (`0x00424298`), one mission's line on the statistics and mission-select screens.
   The records it looks at are the level's, where level 60 stands for 60-64 (the Armies of the Night stages) and 101

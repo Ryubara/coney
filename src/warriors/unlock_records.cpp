@@ -45,6 +45,7 @@ std::size_t UnlockRecords::unlock(SavedProgress& progress, std::uint8_t level, s
 }
 
 bool UnlockRecords::isLevelComplete(const SavedProgress& progress, std::uint8_t level) const {
+    // Coney's choice: every record is searched; the engine's version looks among the level's first 32 group-0 records.
     for (std::size_t index = 0; index < m_records.size(); ++index) {
         const UnlockRecord& record = m_records.at(index);
         if (record.level == level && record.group == 0 && record.item == 0) {
@@ -56,11 +57,19 @@ bool UnlockRecords::isLevelComplete(const SavedProgress& progress, std::uint8_t 
 
 namespace {
 
-// The types the completion and group-1 counts take: Rumble modes, arenas, gangs, character types and upgrades.
+// The types the group-1 counts take: Rumble modes, arenas, gangs, character types and upgrades.
+// @orig 0x004245d8 Unlocks_CountUnlocked (unknown)
+// @orig 0x00424298 Unlockables_GetLevelTargets (unknown)
 bool isCountedType(std::uint8_t type) { return type == 1 || type == 2 || type == 3 || type == 4 || type == 6; }
+
+// The types the completion count takes: every type but 0, 5 and 7-11 (the original lists the excluded ones, so a type
+// past 11 would count; the disc's records use 0-11).
+// @orig 0x004245d8 Unlocks_CountUnlocked (unknown)
+bool isCompletionType(std::uint8_t type) { return type != 0 && type != 5 && (type < 7 || type > 11); }
 
 // Whether a record of level `recordLevel` belongs to the level the targets are asked for: 60 stands for the Armies of
 // the Night stages 60-64, 101 for 101-137.
+// @orig 0x00424298 Unlockables_GetLevelTargets (unknown)
 bool inTargetLevel(int level, std::uint8_t recordLevel) {
     if (level == 60) {
         return recordLevel >= 60 && recordLevel <= 64;
@@ -72,6 +81,7 @@ bool inTargetLevel(int level, std::uint8_t recordLevel) {
 }
 
 // Counts `unlocked` toward `tally`.
+// @coney-only the tally type's increment, Coney's pair of counters
 void tallyOne(UnlockTally& tally, bool unlocked) {
     ++tally.total;
     tally.unlocked += unlocked ? 1 : 0;
@@ -88,18 +98,18 @@ unsigned UnlockCounts::percent() const {
 
 UnlockCounts UnlockRecords::countUnlocked(const SavedProgress& progress) const {
     UnlockCounts counts;
-    // The group-1 pairs already seen: only the first record of a pair is tested.
+    // The group-1 pairs already seen: only the first record of a pair is tested. Coney's choice: the pairs are kept
+    // whole; the original marks them in a table at level x 100 + item, which only differs for an item past 99.
     std::vector<std::pair<std::uint8_t, std::uint8_t>> pairs;
     for (std::size_t index = 0; index < m_records.size(); ++index) {
         const UnlockRecord& record = m_records.at(index);
-        if (!isCountedType(record.type)) {
-            continue;
-        }
         const bool unlocked = !progress.isLocked(index);
-        if (record.level != 1 && record.level != 4) {
+        // The completion count: the counted types outside levels 1 and 4.
+        if (isCompletionType(record.type) && record.level != 1 && record.level != 4) {
             tallyOne(counts.records, unlocked);
         }
-        if (record.group == 1 && std::ranges::find(pairs, std::pair{record.level, record.item}) == pairs.end()) {
+        if (record.group == 1 && isCountedType(record.type) &&
+            std::ranges::find(pairs, std::pair{record.level, record.item}) == pairs.end()) {
             pairs.emplace_back(record.level, record.item);
             tallyOne(counts.groupItems, unlocked);
         }

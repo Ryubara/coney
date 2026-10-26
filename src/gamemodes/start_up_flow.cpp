@@ -20,6 +20,7 @@ namespace coney {
 namespace {
 
 // The save system for `folder`: profiles on disk there, or for the run only when there is no folder (test mode).
+// @coney-only Coney's choice of profile store (disk or the run)
 std::unique_ptr<ProfileStore> makeProfileStore(const std::optional<std::filesystem::path>& folder, GameState& state) {
     if (folder.has_value()) {
         return std::make_unique<DiskProfileStore>(folder.value(), state);
@@ -61,8 +62,8 @@ StartUpFlow::StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack,
           device, loadSheet, strings, m_services, m_state, m_levelFlow, stack,
           [this] { return m_rumbleMenu.fromFrontEnd(); }, log),
       m_gameStats(
-          device, loadSheet, [this](std::uint32_t record) { return loadRecord(record); }, strings, m_services, m_state,
-          m_scripts, stack, log),
+          device, loadSheet, [this](std::uint32_t record) { return loadRecord(record); }, strings, m_services, m_fade,
+          m_state, m_scripts, stack, log),
       m_memoryCard(device, stack, m_levelFlow, loadSheet, strings, cardCheckingMs, log),
       m_legal(device, loadSheet, legal, log, &m_scripts) {
     m_state.language = legal.language;

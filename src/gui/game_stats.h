@@ -81,9 +81,9 @@ struct GameStatsLevel {
 struct GameStatsData {
     std::vector<GameStatsLevel> levels; ///< The list's levels, sorted; only the shown ones.
     UnlockCounts counts;                ///< The summary's counts.
-    std::size_t missionsDone = 0;       ///< Complete listed levels, less the special entries.
+    std::size_t missionsDone = 0;       ///< Shown (complete) levels, less the special entries.
     std::size_t missionsListed = 0;     ///< Listed levels less the three special entries.
-    std::uint32_t totalSeconds = 0;     ///< The listed missions' times plus slot 0's.
+    std::uint32_t totalSeconds = 0;     ///< The shown entries' times plus slot 0's.
 };
 
 /// Whether level record `record` belongs in the list: its mission byte is set and its number is not 61-65 or 102-137.
@@ -131,9 +131,10 @@ struct GameStatsBatches {
 /// One mission's block (our name `GameStatsSubItem`, `0x90` bytes): its header's description in the list, a picture
 /// column on the left and the text right of it, both opened by the reveal.
 ///
-/// - **Layout** (`GameStatsSubItem_Layout`): the picture (white) centred in a column kColumnWidth wide, as high as the
-///   block's shown height; the text kTextGap right of the column, top-aligned. The block is as high as the text x the
-///   reveal (`GameStatsSubItem_GetScaledRect`).
+/// - **Layout** (`GameStatsSubItem_Layout`): the block is placed by its x centre and its top; it is kColumnWidth wide
+///   (its text widget has width 0). The picture (white) is centred on x and on the shown height, kColumnWidth wide; the
+///   text starts kTextGap past the column, its first line half a size-1.0 line below the top. The block is as high as
+///   the text x the reveal (`GameStatsSubItem_GetScaledRect`).
 ///
 /// Coney's choices: the picture is drawn whole in the shown height (the original cuts its texture by the reveal); the
 /// text shows the lines that fit the shown height (its share of the lines, rounded down).
@@ -146,26 +147,32 @@ class GameStatsSubItem : public Widget {
     static constexpr float kTextGap = 0.02F;
     /// The text's base size; its `<SIZE 1.2>` makes the lines 1.2.
     static constexpr float kTextSize = 1.0F;
-    static constexpr float kLineSize = 1.2F;
+    /// The font size whose half line puts the text's first line below the block's top (`Font_Size(1.0)` in the
+    /// layout).
+    static constexpr float kLayoutFontSize = 1.0F;
 
+    /// The text widget set up at the base size, the menus' grey and the headers' font.
+    /// @coney-only Coney's construction (the original sets the text up in GameStatsSubItem_Setup)
     GameStatsSubItem();
 
     /// Sets the block up for `level`: its text and its picture from `batch` (null draws none).
     /// @orig 0x00217350 GameStatsSubItem_Setup (GameStatsSubItem.cpp)
     void setup(const GameStatsLevel& level, const GlobalStrings* strings, graphics::SpriteBatch* batch);
     /// The share shown, clamped to 0-1.
+    /// @coney-only the reveal setter of the original's widget base, as Coney's widgets take it
     void setReveal(float reveal);
     /// The share shown.
     [[nodiscard]] float reveal() const { return m_reveal; }
     /// The text's whole height (GUI units; the fonts do not change it).
+    /// @coney-only the text widget's height (`+0x38`), measured by Coney's layout
     [[nodiscard]] float fullHeight() const;
     /// The shown height: the text's height x the reveal.
     /// @orig 0x00217730 GameStatsSubItem_GetScaledRect (GameStatsSubItem.cpp)
     [[nodiscard]] float height() const { return fullHeight() * m_reveal; }
-    /// Places the block's top-left corner at GUI (x, y), showing `shown` of its height (the reveal, or less where the
-    /// list's clip cuts it).
+    /// Places the block with its centre at GUI x `x` and its top at `top`, showing `shown` of its height (the reveal,
+    /// or less where the list's clip cuts it).
     /// @orig 0x00217788 GameStatsSubItem_Layout (GameStatsSubItem.cpp)
-    void moveTo(float x, float y, float shown);
+    void moveTo(float x, float top, float shown);
 
     /// The block's text.
     [[nodiscard]] const TextWidget& text() const { return m_text; }
@@ -174,11 +181,16 @@ class GameStatsSubItem : public Widget {
     /// Whether the last moveTo() left anything to draw.
     [[nodiscard]] bool drawn() const { return m_drawn; }
 
+    /// The text's frame.
+    /// @coney-only Coney's frame step for the text widget
     void update(const GuiFrame& frame) override;
+    /// The picture, then the text, when anything is shown.
+    /// @coney-only the sub-item's render as Coney's widgets draw (the original's slot +0x38 is not traced)
     void render(const GuiCanvas& canvas) const override;
 
   private:
     // The text laid out whole, without fonts: its height and line count.
+    // @coney-only Coney's text measure
     [[nodiscard]] TextLayout fullLayout() const;
 
     BaseWidget m_picture{nullptr, 0};
@@ -192,16 +204,19 @@ class GameStatsSubItem : public Widget {
 /// list.
 ///
 /// - **List** (`GameStats_BuildMissionList`): a `ScrollingMenu` at (0.185, 0.45) with one entry per mission, a window
-///   of at most kVisible entries stacked down from there and clipped at kClipHeight. An entry is a `CircledText`
-///   header (kHeaderWidth x kHeaderHeight, circles kCircleWidth x kCircleHeight, back and circles both record 24
-///   rectangle 2, the back invisible, the characters black, the circles in the area's colour) with the mission's
-///   `GameStatsSubItem` as its description, under it.
+///   of at most kVisible entries stacked down from there, their heights clipped at kClipHeight. An entry is a
+///   `CircledText` header (kHeaderWidth x kHeaderHeight, circles kCircleWidth x kCircleHeight, back and circles both
+///   record 24 rectangle 2, the back invisible, the characters black, the circles in the area's colour; the special
+///   entries only a text) with the mission's `GameStatsSubItem` as its description.
+/// - **Stacking** (`ScrollingMenu_Update`, `ScrollingMenuItem_Update` / `_GetRect`): the first header is centred on the
+///   list's place, x and y; a block starts at its header's bottom less kRowOverlap (two screen lines) and is centred
+///   on the same x; the next header is one header and the shown block, less the overlap, below.
 /// - **Descriptions** (`ScrollingMenuItem_Update`): the focused entry's opens kRevealDelayMs after it took the focus,
 ///   by kRevealStep a frame (cue `0xd` as it starts); every other closes by the same step. The first entry's starts
 ///   open. Coney's reading: the focused one holds its reveal until the delay has run (so the first stays open).
 ///
 /// Coney's choices where the page is silent: the window keeps the cursor in its middle row and jumps (the original
-/// scrolls with a reveal); a description's left edge is its header's; a description the clip cuts is cut at the clip,
+/// scrolls with a reveal); a description the clip cuts is cut at the clip,
 /// and a header the clip would cut is hidden with the entries below it (the original reveals the last item in part).
 ///
 /// Research: docs/research/frontend.md#game-stats, docs/research/frontend.md#fn-gamestats
@@ -241,12 +256,17 @@ class GameStatsScreen : public Widget {
     static constexpr float kHeaderHeight = 0.09F;
     static constexpr float kCircleWidth = 0.065F;
     static constexpr float kCircleHeight = 0.11F;
+    /// How far a shown description reaches back into its header: 2 / the screen's height (448), in
+    /// `ScrollingMenuItem_Update` and `_GetRect`.
+    static constexpr float kRowOverlap = 2.0F / 448.0F;
     /// A description's delay after its entry takes the focus, and its reveal's step a frame (`0x005100d4`).
     static constexpr std::uint64_t kRevealDelayMs = 550;
     static constexpr float kRevealStep = 0.25F;
     /// The cue a description plays as it starts to open.
     static constexpr int kRevealCue = 0xd;
 
+    /// The summary and the usage line placed and given their fonts.
+    /// @coney-only Coney's construction (the original places them in GameStats_Init)
     GameStatsScreen();
 
     /// Shows strings from `strings` (which must outlive the screen; null shows empty texts).
@@ -279,10 +299,12 @@ class GameStatsScreen : public Widget {
 
     /// The background's colour `elapsedMs` after opening: red, green, blue and back, each a linear blend
     /// over kColourStepMs.
+    /// @orig 0x00216a60 GameStats_Update (GameStats.cpp)
     [[nodiscard]] static graphics::Rgba backgroundColour(std::uint64_t elapsedMs);
 
-    /// Whether the screen is open, and whether back closed it.
+    /// Whether the screen is open.
     [[nodiscard]] bool isOpen() const { return m_open; }
+    /// Whether back closed it.
     [[nodiscard]] bool closed() const { return m_closed; }
     /// The data it shows.
     [[nodiscard]] const GameStatsData& data() const { return m_data; }
@@ -290,16 +312,19 @@ class GameStatsScreen : public Widget {
     [[nodiscard]] const TextWidget& summary() const { return m_summary; }
     /// The list's cursor.
     [[nodiscard]] const ScrollingMenu& list() const { return m_list; }
-    /// Mission `index`'s header and sub-item.
+    /// Mission `index`'s header.
     [[nodiscard]] const CircledText& header(std::size_t index) const { return *m_headers.at(index); }
+    /// Mission `index`'s sub-item.
     [[nodiscard]] const GameStatsSubItem& subItem(std::size_t index) const { return *m_subItems.at(index); }
     /// The background sprite.
     [[nodiscard]] const BaseWidget& background() const { return m_background; }
 
   private:
     // The batch a level's picture comes from.
+    // @orig 0x00215490 GameStats_PickThumbBatch (GameStats.cpp)
     [[nodiscard]] graphics::SpriteBatch* thumbBatch(const GameStatsLevel& level) const;
     // Plays `cue`, if the screen has a way to.
+    // @coney-only Coney's optional sound sink
     void playCue(int cue) const;
 
     const GlobalStrings* m_strings = nullptr;

@@ -35,17 +35,21 @@ constexpr std::string_view kSubLabelGrey = "B2B2B2FF";
 constexpr std::size_t kSubItemLines = 5;
 
 // String `id`, or nothing without strings.
+// @coney-only a lookup that tolerates no strings (the tests')
 std::string_view text(const GlobalStrings* strings, std::uint32_t id) {
     return strings != nullptr ? strings->get(id) : std::string_view{};
 }
 
 // "unlocked/total".
+// @coney-only the "%d/%d" of the formats, shared by two ports
 std::string fraction(const UnlockTally& tally) { return std::format("{}/{}", tally.unlocked, tally.total); }
 
 // Whether `number` is one of the three special entries.
+// @coney-only the 95 / 60 / 101 test the original repeats in each function
 bool isSpecial(int number) { return number == 95 || number == 60 || number == 101; }
 
 // The low 16 bits of a sprite word: the rectangle.
+// @coney-only Coney's sprite-word split (the original's batch takes the whole word)
 std::size_t rectOf(std::uint32_t word) { return word & 0xffffU; }
 
 } // namespace
@@ -122,6 +126,7 @@ GameStatsData gatherGameStats(const LevelTable& levels, const UnlockRecords& unl
 
     GameStatsData data;
     data.counts = unlocks.countUnlocked(progress);
+    // Coney's choice: fewer than three listed records count as none (the original's count would go negative).
     data.missionsListed = listed.size() > 3 ? listed.size() - 3 : 0;
     std::uint64_t seconds = progress.missionBests.at(0).total;
     for (const std::size_t index : listed) {
@@ -135,28 +140,32 @@ GameStatsData gatherGameStats(const LevelTable& levels, const UnlockRecords& unl
         if (level.mission < progress.missionBests.size()) {
             level.best = progress.missionBests.at(level.mission);
         }
-        seconds += level.best.total;
-        if (level.complete && !level.special) {
-            ++data.missionsDone;
-        }
+        // Only the shown entries count: the complete levels, and the hub and the Rumble arenas always.
         if (!level.complete && level.number != 95 && level.number != 101) {
             continue;
         }
+        seconds += level.best.total;
+        if (!level.special) {
+            ++data.missionsDone;
+        }
 
-        // The header: the name (or the special's string), the title's number circled in the level's colour.
-        level.name = record.fourthName;
+        // The header: a special entry shows only its string, with nothing circled; a mission its name and its title's
+        // number circled in the level's colour (purple when the number reads as 0).
         if (level.number == 95) {
             level.name = text(strings, kHub);
         } else if (level.number == 60) {
             level.name = text(strings, kArmies);
         } else if (level.number == 101) {
             level.name = text(strings, kRumbleArenas);
+        } else {
+            level.name = record.fourthName;
+            const std::size_t colon = record.secondName.find(':');
+            level.circled =
+                colon != std::string::npos ? record.secondName.substr(0, std::min<std::size_t>(colon, 3)) : "";
+            int number = 0;
+            (void)std::from_chars(level.circled.data(), level.circled.data() + level.circled.size(), number);
+            level.circleColour = number == 0 ? kPurpleRgba : areaColour(record.values.at(LevelRecord::kSubwayValue));
         }
-        const std::size_t colon = record.secondName.find(':');
-        level.circled = colon != std::string::npos ? record.secondName.substr(0, std::min<std::size_t>(colon, 3)) : "";
-        int number = 0;
-        (void)std::from_chars(level.circled.data(), level.circled.data() + level.circled.size(), number);
-        level.circleColour = number == 0 ? kPurpleRgba : areaColour(record.values.at(LevelRecord::kSubwayValue));
 
         // The picture and the counts.
         level.pictureWord = static_cast<std::uint32_t>(record.values.at(LevelRecord::kPictureValue));
@@ -235,6 +244,7 @@ std::string gameStatsSubItemText(const GameStatsLevel& level, const GlobalString
     return out;
 }
 
+// The text widget's set-up: the base size, the menus' grey and the headers' font.
 GameStatsSubItem::GameStatsSubItem() {
     m_text.setup(TextWidgetSetup{.scale = kTextSize, .colour = kMenuGrey, .fontSlot = CircledText::kFontSlot});
 }
@@ -257,20 +267,23 @@ TextLayout GameStatsSubItem::fullLayout() const {
 
 float GameStatsSubItem::fullHeight() const { return fullLayout().height; }
 
-void GameStatsSubItem::moveTo(float x, float y, float shown) {
+void GameStatsSubItem::moveTo(float x, float top, float shown) {
     const TextLayout whole = fullLayout();
     const float full = whole.height;
     const float height = std::clamp(shown, 0.0F, 1.0F) * full;
     m_drawn = height > 0.0F;
-    // The picture centred in the left column, as high as the shown block.
-    m_picture.setup(BaseWidgetSetup{.x = x + (kColumnWidth / 2.0F),
-                                    .y = y + (height / 2.0F),
+    // The picture centred on the block's x and on its shown height, the column's width wide.
+    m_picture.setup(BaseWidgetSetup{.x = x,
+                                    .y = top + (height / 2.0F),
                                     .height = height,
                                     .width = graphics::OverlayCamera::guiWidthToOverlay(kColumnWidth)});
-    // The text right of the column, its first line's top at y; only the lines that fit the shown height.
+    // The block is as wide as the column (its text widget is set up with width 0), so its left edge is half a column
+    // left of x; the text starts kTextGap past the column, its first line half a size-1.0 line below the top (the
+    // original measures `Font_Size(1.0)` here, not the text's `<SIZE 1.2>`). Only the lines that fit the shown height.
     TextStyle& style = m_text.style();
-    style.x = x + kColumnWidth + kTextGap;
-    style.y = y + (graphics::fontMetrics(kTextSize * kLineSize).height / 2.0F);
+    const float left = x - (kColumnWidth / 2.0F);
+    style.x = left + kColumnWidth + kTextGap;
+    style.y = top + (graphics::fontMetrics(kLayoutFontSize).height / 2.0F);
     const auto fit =
         static_cast<std::size_t>((static_cast<float>(whole.lines) * height / std::max(full, 1e-6F)) + 1e-3F);
     style.firstLine = 0;
@@ -288,6 +301,7 @@ void GameStatsSubItem::render(const GuiCanvas& canvas) const {
     m_text.render(canvas);
 }
 
+// The summary's and the usage line's places and fonts.
 GameStatsScreen::GameStatsScreen() {
     m_summary.setup(
         TextWidgetSetup{.x = kSummaryX, .y = kSummaryY, .colour = kMenuGrey, .fontSlot = CircledText::kFontSlot});
@@ -347,10 +361,11 @@ void GameStatsScreen::open(GameStatsData data, std::uint64_t nowMs) {
     m_subItems.clear();
     for (const GameStatsLevel& level : m_data.levels) {
         auto header = std::make_unique<CircledText>();
-        // Back and circles are both `0x180002`; the back is made invisible.
+        // Back and circles are both `0x180002`; the back is made invisible. The list's x is the header's centre (the
+        // original's CircledText is placed by its centre); Coney's CircledText takes the left edge.
         header->setBack(m_batches.header, kHeaderRect);
         header->setCircleSprite(m_batches.header, kHeaderRect);
-        header->setup(CircledTextSetup{.x = kListX,
+        header->setup(CircledTextSetup{.x = kListX - (kHeaderWidth / 2.0F),
                                        .y = kListY,
                                        .width = kHeaderWidth,
                                        .height = kHeaderHeight,
@@ -358,9 +373,12 @@ void GameStatsScreen::open(GameStatsData data, std::uint64_t nowMs) {
                                        .circleHeight = kCircleHeight});
         header->setBackColour(graphics::Rgba{0, 0, 0, 0});
         header->setText(level.name);
-        header->setCircled(level.circled);
-        header->setCircleColour(level.circleColour);
-        header->setCharColour(graphics::kBlack);
+        // A special entry sets only its text: no circled characters, no colours.
+        if (!level.special) {
+            header->setCircled(level.circled);
+            header->setCharColour(graphics::kBlack);
+            header->setCircleColour(level.circleColour);
+        }
         m_headers.push_back(std::move(header));
         auto item = std::make_unique<GameStatsSubItem>();
         item->setup(level, m_strings, thumbBatch(level));
@@ -425,31 +443,36 @@ void GameStatsScreen::update(const GuiFrame& frame) {
             item.setReveal(item.reveal() + kRevealStep);
         }
     }
-    // The window's entries, stacked down from the list's place, clipped at kClipHeight.
+    // The window's entries, stacked down from the list's place: each header centred where the stack has reached, its
+    // block from the header's bottom less kRowOverlap, the next entry one header and the shown block (less the overlap)
+    // further down. The stacked heights are clipped at kClipHeight.
     const std::size_t first = m_list.firstVisible();
-    const float clip = kListY + kClipHeight;
-    float top = kListY;
+    float centre = kListY;
+    float used = 0.0F;
     for (std::size_t i = 0; i < m_headers.size(); ++i) {
         CircledText& header = *m_headers.at(i);
         GameStatsSubItem& item = *m_subItems.at(i);
         const bool inWindow = i >= first && i < first + m_list.visibleCount();
         // A header that ends on the clip fits (a little room for the sum's rounding).
-        const bool shown = inWindow && top + kHeaderHeight <= clip + kClipSlack;
+        const bool shown = inWindow && used + kHeaderHeight <= kClipHeight + kClipSlack;
         header.setVisible(shown);
         item.setVisible(shown);
         if (!shown) {
             continue;
         }
-        header.moveTo(top + (kHeaderHeight / 2.0F));
+        header.moveTo(centre);
         header.setFocused(i == m_list.selected());
         header.update(frame);
-        // The description under its header, cut where the clip ends.
+        // The block under its header, cut where the clip ends.
         const float full = item.fullHeight();
-        const float room = clip - (top + kHeaderHeight);
-        const float shownShare = full > 0.0F ? std::min(item.reveal(), room / full) : 0.0F;
-        item.moveTo(kListX, top + kHeaderHeight, shownShare);
+        const float room = kClipHeight - used - kHeaderHeight + kRowOverlap;
+        const float shownShare = full > 0.0F ? std::clamp(std::min(item.reveal(), room / full), 0.0F, 1.0F) : 0.0F;
+        item.moveTo(kListX, centre + (kHeaderHeight / 2.0F) - kRowOverlap, shownShare);
         item.update(frame);
-        top += kHeaderHeight + (full * shownShare);
+        const float shownHeight = full * shownShare;
+        const float step = kHeaderHeight + (shownHeight > 0.0F ? shownHeight - kRowOverlap : 0.0F);
+        centre += step;
+        used += step;
     }
     if (!m_closed && frame.pad != nullptr) {
         if (const std::optional<MenuCommand> command = m_input.dispatch(*frame.pad, frame.timeMs)) {

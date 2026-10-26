@@ -10,6 +10,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include "graphics/font.h"
 #include "gui/game_stats.h"
 #include "gui/global_strings.h"
 #include "warriors/level_table.h"
@@ -65,6 +66,7 @@ UnlockRecord complete(std::uint8_t number) {
 
 TEST_CASE("the play time: minutes, hours and minutes, days only when asked, joined by commas, singular for 1",
           "[game_stats]") {
+    // Expected: frontend.md#game-stats, confirmed (code)
     const gui::GlobalStrings words = strings();
     CHECK(gui::formatPlayTime(&words, 0, false) == "0 minutes");
     CHECK(gui::formatPlayTime(&words, 61, false) == "1 minute");
@@ -78,6 +80,7 @@ TEST_CASE("the play time: minutes, hours and minutes, days only when asked, join
 }
 
 TEST_CASE("the area colours of LevelRecord_GetAreaColour", "[game_stats]") {
+    // Expected: frontend.md#game-stats, confirmed (code)
     CHECK(gui::areaColour(1) == coney::graphics::Rgba{132, 78, 37, 255});
     CHECK(gui::areaColour(2) == coney::graphics::Rgba{62, 98, 41, 255});
     CHECK(gui::areaColour(3) == coney::graphics::Rgba{42, 71, 141, 255});
@@ -85,6 +88,7 @@ TEST_CASE("the area colours of LevelRecord_GetAreaColour", "[game_stats]") {
 }
 
 TEST_CASE("a level's picture batch follows GameStats_PickThumbBatch", "[game_stats]") {
+    // Expected: frontend.md#fn-gamestats, confirmed (code)
     CHECK(gui::thumbBatchOf(95) == gui::ThumbBatch::Special);
     CHECK(gui::thumbBatchOf(60) == gui::ThumbBatch::Special);
     CHECK(gui::thumbBatchOf(101) == gui::ThumbBatch::Special);
@@ -94,16 +98,17 @@ TEST_CASE("a level's picture batch follows GameStats_PickThumbBatch", "[game_sta
 
 TEST_CASE("the list: levels with a mission byte, not 61-65 or 102-137, sorted, shown when complete or 95 and 101",
           "[game_stats]") {
+    // Expected: frontend.md#game-stats, confirmed (code)
     LevelTable table;
-    REQUIRE(table.set(level(0, 100, 0, "", "front end", 0, 0)));          // no mission byte: not listed
-    REQUIRE(table.set(level(1, 99, 1, "1:New", "Coney", 1, 0x16000b)));   // complete
-    REQUIRE(table.set(level(2, 80, 2, "2:Next", "Street", 3, 0x160002))); // not complete: not shown
-    REQUIRE(table.set(level(3, 34, 4, "4:Dark", "Park", 2, 0x170004)));   // complete
-    REQUIRE(table.set(level(4, 95, 24, "", "hub", 0, 0x16000b)));         // always shown
-    REQUIRE(table.set(level(5, 60, 25, "", "stage", 0, 0x16000b)));       // shown when complete
-    REQUIRE(table.set(level(6, 61, 25, "", "stage 2", 0, 0)));            // 61-65: not listed
-    REQUIRE(table.set(level(7, 101, 26, "", "arena", 1, 0x21b0000)));     // always shown
-    REQUIRE(table.set(level(8, 102, 26, "", "arena 2", 1, 0)));           // 102-137: not listed
+    REQUIRE(table.set(level(0, 100, 0, "", "front end", 0, 0)));              // no mission byte: not listed
+    REQUIRE(table.set(level(1, 99, 1, "1:New", "Coney", 1, 0x16000b)));       // complete
+    REQUIRE(table.set(level(2, 80, 2, "2:Next", "Street", 3, 0x160002)));     // not complete: not shown
+    REQUIRE(table.set(level(3, 34, 4, "0:Dark", "Park", 2, 0x170004)));       // complete, number 0
+    REQUIRE(table.set(level(4, 95, 24, "", "hub", 0, 0x16000b)));             // always shown
+    REQUIRE(table.set(level(5, 60, 25, "", "stage", 0, 0x16000b)));           // shown when complete
+    REQUIRE(table.set(level(6, 61, 25, "", "stage 2", 0, 0)));                // 61-65: not listed
+    REQUIRE(table.set(level(7, 101, 26, "3:Rumble", "arena", 1, 0x21b0000))); // always shown, never circled
+    REQUIRE(table.set(level(8, 102, 26, "", "arena 2", 1, 0)));               // 102-137: not listed
 
     UnlockRecords unlocks;
     unlocks.setCount(4);
@@ -116,6 +121,7 @@ TEST_CASE("the list: levels with a mission byte, not 61-65 or 102-137, sorted, s
     progress.setLocked(2, false);
     progress.missionBests.at(0).total = 60;
     progress.missionBests.at(1).total = 600;
+    progress.missionBests.at(2).total = 7; // level 80, not shown: not counted
     progress.missionBests.at(4).total = 3000;
     progress.missionBests.at(4).bestScore = 5000;
 
@@ -128,18 +134,22 @@ TEST_CASE("the list: levels with a mission byte, not 61-65 or 102-137, sorted, s
     CHECK(data.levels.at(3).number == 101);
     CHECK(data.missionsListed == 3); // six listed, less the three specials
     CHECK(data.missionsDone == 2);
-    CHECK(data.totalSeconds == 60 + 600 + 3000);
+    CHECK(data.totalSeconds == 60 + 600 + 3000); // slot 0 and the shown entries only
 
     const gui::GameStatsLevel& first = data.levels.at(0);
     CHECK(first.name == "Coney");
     CHECK(first.circled == "1");
     CHECK(first.circleColour.r == 132); // area 1
     CHECK(first.pictureWord == 0x16000b);
+    CHECK(data.levels.at(1).circleColour == coney::graphics::Rgba{106, 65, 131, 255}); // reads as 0: purple
     const gui::GameStatsLevel& hub = data.levels.at(2);
     CHECK(hub.name == text.get(ids::kHub));
-    CHECK(hub.circleColour.r == 106); // no number: purple
+    CHECK(hub.circled.empty()); // the specials set only their text
     CHECK(hub.pictureWord == 0x180001);
-    CHECK(data.levels.at(3).pictureWord == 0x180003);
+    const gui::GameStatsLevel& rumble = data.levels.at(3);
+    CHECK(rumble.name == text.get(ids::kRumbleArenas));
+    CHECK(rumble.circled.empty()); // its title's "3" is not circled
+    CHECK(rumble.pictureWord == 0x180003);
 
     // A mission's block: the score below its goal, the characters, the time, two line breaks to make five lines.
     CHECK(gui::gameStatsSubItemText(data.levels.at(1), &text) ==
@@ -162,6 +172,7 @@ TEST_CASE("the list: levels with a mission byte, not 61-65 or 102-137, sorted, s
 
 TEST_CASE("the screen's background cycles red, green, blue over 5 s steps; back closes it, accept does not",
           "[game_stats]") {
+    // Expected: frontend.md#game-stats, confirmed (code)
     using Screen = gui::GameStatsScreen;
     CHECK(Screen::backgroundColour(0).r == 150);
     const coney::graphics::Rgba half = Screen::backgroundColour(2500);
@@ -185,9 +196,10 @@ TEST_CASE("the screen's background cycles red, green, blue over 5 s steps; back 
     CHECK(screen.closed());
 }
 
-TEST_CASE("the list: five entries at most from (0.185, 0.45), headers 0.35 x 0.09, the focused one's block opening "
-          "550 ms after it took the focus",
+TEST_CASE("the list: five entries at most centred on (0.185, 0.45), headers 0.35 x 0.09, each block under its "
+          "header, the focused one's block opening 550 ms after it took the focus",
           "[game_stats]") {
+    // Expected: frontend.md#game-stats, confirmed (code)
     using Screen = gui::GameStatsScreen;
     const gui::GlobalStrings text = strings();
     Screen screen;
@@ -204,20 +216,33 @@ TEST_CASE("the list: five entries at most from (0.185, 0.45), headers 0.35 x 0.0
     screen.open(data, 0);
     CHECK(screen.list().visibleCount() == 5);
     screen.update(gui::GuiFrame{16, nullptr});
+    // The first header's and block's parts are placed when they are drawn.
+    screen.render(gui::GuiCanvas{});
 
-    // The first entry's header at the top, its block open under it; the second header after the block.
+    // The first header centred on the list's place: 0.35 wide about x 0.185, so its text starts at the left edge 0.01.
     const gui::CircledText& first = screen.header(0);
     CHECK(first.visible());
     CHECK(first.height() == Approx(0.09F));
     CHECK(first.circleColour() == coney::graphics::Rgba{132, 78, 37, 255});
+    CHECK(first.text().style().y == Approx(0.45F));
+    CHECK(first.circles() == 1);
+
+    // Its block under it, overlapping the header by two screen lines (2 / 448): the picture centred on the list's x,
+    // as high as the block, the text 0.02 right of the 0.35 column, its first line half a size-1.0 line down.
+    const float overlap = 2.0F / 448.0F;
     const gui::GameStatsSubItem& block = screen.subItem(0);
     CHECK(block.reveal() == 1.0F);
     const float blockHeight = block.fullHeight();
     CHECK(blockHeight > 0.0F);
-    CHECK(block.picture().setupValues().x == Approx(0.185F + 0.175F));
-    CHECK(block.picture().setupValues().y == Approx(0.45F + 0.09F + (blockHeight / 2.0F)));
+    const float blockTop = 0.45F + 0.045F - overlap;
+    CHECK(block.picture().setupValues().x == Approx(0.185F));
+    CHECK(block.picture().setupValues().y == Approx(blockTop + (blockHeight / 2.0F)));
     CHECK(block.picture().setupValues().height == Approx(blockHeight));
-    CHECK(block.text().style().x == Approx(0.185F + 0.35F + 0.02F));
+    CHECK(block.text().style().x == Approx(0.185F - 0.175F + 0.35F + 0.02F));
+    CHECK(block.text().style().y == Approx(blockTop + (coney::graphics::fontMetrics(1.0F).height / 2.0F)));
+
+    // The second header centred one header and the shown block (less the overlap) further down.
+    CHECK(screen.header(1).text().style().y == Approx(0.45F + 0.09F + blockHeight - overlap));
     // The second entry's block is closed.
     CHECK(screen.subItem(1).reveal() == 0.0F);
     CHECK_FALSE(screen.subItem(1).drawn());

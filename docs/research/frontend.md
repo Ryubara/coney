@@ -1055,9 +1055,14 @@ Timed messages: `0xb5` checking the card (3,000 ms, `0x0015a328`), `0xae` format
 ### The statistics screen {#game-stats}
 
 `ShowGameStatsInterface` pushes game mode `0x13` ([HUD bindings](../references/bindings/hud.md#showgamestatsinterface));
-its `Enter` (`0x00159538`) runs `GameStats_Init` (`0x00215e78`) on the screen object at mode `+0x20`, and its update
-(`0x001596d0`) runs the screen's `Update` and `Render` once it is ready, with no world update. Confirmed (code);
-values are the default mode's (other modes set other globals at `0x005100e0`-`0x00510118` in `0x00215e78`).
+its `Enter` (`0x00159538`) sets the task manager's phase 0, clears the auto-close flag, sets the store tint
+(`ScreenFx_EnterStore`) with a clear colour, loads the sound bank `menu` (`0x0054ee50`) unless it is the current one
+and runs `GameStats_Init` (`0x00215e78`) on the screen object at mode `+0x20`. Its update (`0x001596d0`) runs one
+world frame and the screen's `Update` and `Render`; on the first frame the screen is ready it queues a fade in
+(`ScreenFx_Queue(1.0, 0)`), and once back has set the auto-close flag it queues a fade out (`ScreenFx_Queue(1.0, 1)`)
+and ends the mode on the first frame the fade is over (`0x005fdeb8 + 0x1d4` clear). Only the overlay is drawn
+(`ResourceMgr_RenderOverlay`). Confirmed (code); values are the default mode's (other modes set other globals at
+`0x005100e0`-`0x00510118` in `0x00215e78`).
 
 - **Background:** one sprite, word `0xc0005` (sheet-table record 12, rectangle 5), centred at (0.5, 0.5), 1.15 ×
   1.1, depth 8,000. Its colour moves from red (150, 50, 50) to green (50, 150, 50) to blue (50, 50, 150) and back,
@@ -1080,7 +1085,8 @@ values are the default mode's (other modes set other globals at `0x005100e0`-`0x
     - `0x64` and the **group-1 items**: distinct (level, item) pairs of group-1 records of those types, unlocked /
       total;
     - `0x62` and the counted records again, unlocked / total (the numbers behind the percentage);
-    - `0x66` and the total time, the sum of the listed missions' times plus slot 0's, formatted by
+    - `0x66` and the total time, slot 0's time plus the times of the entries the list shows (`+0x9c`, added by
+      `GameStats_BuildMissionList` only for the levels it adds: the complete ones, 95 and 101), formatted by
       `GameStats_FormatTime` (`0x00214f58`) without days, in gold (128, 100, 0).
   A value is drawn in red (134, 26, 26) when it is complete (100 %, or unlocked = total), otherwise gold (128, 100, 0),
   or purple (106, 65, 131) for the `0x64` line.
@@ -1099,8 +1105,16 @@ values are the default mode's (other modes set other globals at `0x005100e0`-`0x
   is given reveal 1.0 and focused at once, so the first block starts open. The menu's settings: `+0xc0` = 0
   (slot `+0xd8`), step `+0xc8` = 0.25 (slot `+0xf8`, `0x005100d4`), `+0x100` = 1 (slot `+0x1a0`), a window of at most
   **5 entries** (`+0xac` and `+0xb0` = min(5, count), slots `+0x128` and `+0x138`, `0x00510108` / `0x0051010c`) and a
-  clip height of **0.5** (`+0xb8`, slot `+0x130`, `0x00510110`), so the list runs from y 0.45 to 0.95 at most.
-  Confirmed (code) at `0x002155a8`.
+  clip height of **0.5** (`+0xb8`, slot `+0x130`, `0x00510110`): the stacked heights of the window's entries are
+  clipped at 0.5. Confirmed (code) at `0x002155a8`.
+    - **Placement:** the menu's position is the first entry's **centre**: `ScrollingMenu_Update` (`0x001e21d8`)
+      places each item at the menu's (x, y) plus the heights of the items above it, and the header (a `CircledText`)
+      is drawn about its position, its left edge at x − width / 2 (`CircledText_Update`, `0x001d1250`), so the first
+      header spans x 0.01-0.36 and is centred on y 0.45. Each item's height is the header's plus, when its description
+      shows, the description's shown height less 2 / the screen's height (`ScrollingMenuItem_GetRect`,
+      `0x001e0c90`); the description is placed at the item's x and at y + the header's height / 2 − 2 / the screen's
+      height (`ScrollingMenuItem_Update`, `0x001e0f98`, with `+0x78` = 0), that is from the header's bottom less two
+      screen lines. Confirmed (code).
     - the header: `CircledText_Setup` with circle width 0.065 and height 0.11 (`0x005100f8` / `0x005100fc`), size
       (0.35, 0.09) (`0x005100e4` / `0x005100e0`, the widget's `+0x30`), circle offset 0, text metrics `Font_Size(1.7)`,
       and **both its back sprite and its circle sprite the word `0x180002`** in the header batch (`+0x68`, sheet-table
@@ -1111,12 +1125,14 @@ values are the default mode's (other modes set other globals at `0x005100e0`-`0x
       by record byte `+0x7c`: **1 (132, 78, 37), 2 (62, 98, 41), 3 (42, 71, 141), 4 (74, 49, 29)**, alpha 255; any
       other value leaves the colour as it was (an uninitialised stack value; not seen). It is replaced by purple
       (106, 65, 131) when the number reads as 0 (`atoi`, `0x00433a68`). Confirmed (code). Levels 95, 60 and 101 set
-      only the text, strings `0x73`, `0x74` and `0x75`, with no circled characters and no colour;
-    - the sub-item (`GameStatsSubItem_Setup(0.35, ...)`, `0x00217350`; laid out by `0x00217788`): a picture column
-      **0.35** wide on the left, the picture (white, depth 11,000) centred in it and sized 0.35 × the block's shown
-      height, its texture cut by the reveal as it opens; the text 0.02 right of the column (x = left + 0.35 + 0.02),
-      top-aligned, given the same reveal. The block's width is the text's width + 0.35, its height the text's height
-      × the reveal. Confirmed (code);
+      only the text, strings `0x73`, `0x74` and `0x75`, with no circled characters and no colour, so their headers
+      show no number even where the record's title has one;
+    - the sub-item (`GameStatsSubItem_Setup(0.35, ...)`, `0x00217350`; laid out by `0x00217788`): placed by its x
+      centre and its top (the layout first moves its y down by half its shown height); its width is the text widget's
+      (0: it is set up with size 0) + 0.35, its height the text's height × the reveal. The picture (white, depth
+      11,000) is centred on the block's position, sized 0.35 × the shown height, its texture cut by the reveal as it
+      opens; the text starts at x − width / 2 + 0.35 + 0.02, its y half a `Font_Size(1.0)` line below the block's top,
+      given the same reveal. Confirmed (code);
     - the sub-item's picture is the level record's sprite word `+0x80` (`0x180001`, `0x180000` and `0x180003` for the
       three special entries) in the batch `0x00215490` picks; its text (`0x00216eb0`) has up to five lines, in this
       order: the score (`0x6d`, gold, with the goal `0x6e` in red after it when the score is below it; red alone
@@ -2096,7 +2112,7 @@ the file's first path-string function sit after the player panel's static initia
 | `0x00216eb0` | `GameStatsSubItem_BuildText` | the block's text (`+0x70`), [below](#game-stats) | confirmed (code) |
 | `0x00217350` | `GameStatsSubItem_Setup(width, item, level, word, batch)` | the level (`+0x74`), the text, the picture (`+0x68`, sprite `word` in `batch`) and a `ScrollingTextWidget` (`+0x6c`) at (0.05, 0.1) adjusted to the screen; its x moved by `width` | confirmed (code) |
 | `0x00217730` | `GameStatsSubItem_GetScaledRect` | slot `+0x70`: the block's rectangle (`+0x30`: the text's width + the column width `+0x60`) with its height × the reveal | confirmed (code) |
-| `0x00217788` | `GameStatsSubItem_Layout` | slot `+0x30`: the picture centred in the left column (`+0x60` wide, the shown height, texture cut by the reveal), the text 0.02 right of it, top-aligned, with the same reveal ([The statistics screen](#game-stats)) | confirmed (code) |
+| `0x00217788` | `GameStatsSubItem_Layout` | slot `+0x30`: y moved to the shown block's middle; the picture centred on the block's position (`+0x60` wide, the shown height, texture cut by the reveal), the text at the block's left edge + `+0x60` + 0.02, half a size-1.0 line below its top, with the same reveal ([The statistics screen](#game-stats)) | confirmed (code) |
 | `0x002175f8` | `GameStatsSubItem_Shutdown` | slot `+0x68`: the picture, the text widget and the text freed | confirmed (code) |
 
 ### Game-state functions {#warriors-functions}
@@ -2510,32 +2526,36 @@ and its gap; a line's height is one line of its text size; the flag `0x0063083c`
 **The statistics screen** (`repo:src/gui/game_stats.h`, `GameStatsScreen`; mode 0x13
 `repo:src/gamemodes/game_stats_mode.h`, `GameStatsMode`), written from [The statistics screen](#game-stats),
 [`GUI/GameStats.cpp`](#fn-gamestats) and [the counts](player-state.md#unlockable-counts):
-`ShowGameStatsInterface(onClose)` pushes the mode; its enter loads sheet-table records 12, 24, 22 and 23, and the first
-update gathers the list from the level table (the mission byte, area byte and picture word are the record's `order`,
-`subway` and last value, `LevelRecord::kMissionValue`, `kSubwayValue`, `kPictureValue`, corroborated by the picture
-words naming records 22 and 23 exactly as `GameStats_PickThumbBatch` splits the levels), the unlockables and the
-profile's mission bests. The list is sorted by the mission byte; the missions line counts the complete listed levels
-less the specials over the listed levels less 3. The summary (`gameStatsSummary`, pen at (0.01, 0.06), never wrapped)
-and each mission's block (`gameStatsSubItemText`) are the page's `sprintf` texts, every format and colour as given,
-with the time from `formatPlayTime` ("h hours, m minutes", the minutes always after the hours, days only when asked).
-The list shows at most 5 entries from (0.185, 0.45) in a clip height of 0.5: each entry a `CircledText` header
-([GUI](gui.md#fn-circledtext), `repo:src/gui/circled_text.h`) 0.35 × 0.09, its circles 0.065 × 0.11 and its back both
-`0x180002` (record 24 rectangle 2), the back invisible, the characters black, the circles in the area colour of
-`areaColour` (`LevelRecord_GetAreaColour`, also the mission select's) or purple without a number; under the header its
-`GameStatsSubItem` as the entry's description, the picture centred in a 0.35 column and the text 0.02 right of it,
-top-aligned. The focused entry's block opens 550 ms after it took the focus, 0.25 a frame, with cue `0xd`; the others
-close by the same step; the first starts open. The background cycles red, green and blue over 5 s steps; back pops the
-mode, whose exit calls `onClose`. On the NTSC-U disc 26 levels are listed, so the missions line counts 23, and a fresh
-profile shows the hub and the Rumble arenas only. Coney's choices where the page is silent: the window keeps the cursor
-in its middle row and jumps (the original scrolls with a reveal); the focused block holds its reveal until the delay
-has run (so the first stays open); a block's left edge is its header's; a block the clip cuts is cut at the clip, and a
-header the clip would cut is hidden with the entries below it (the original reveals the last item in part); a block's
-picture is drawn whole in the shown height (the original cuts
-its texture) and its text shows the lines that fit; the description's own focus, which the original's menu input
-waits on, is not modelled; an area byte other than 1-4 gives black (the original leaves the colour unwritten). Tests:
+`ShowGameStatsInterface(onClose)` pushes the mode; its enter loads the `menu` bank unless it is current and sheet-table
+records 12, 24, 22 and 23, and the first update gathers the list from the level table (the mission byte, area byte and
+picture word are the record's `order`, `subway` and last value, `LevelRecord::kMissionValue`, `kSubwayValue`,
+`kPictureValue`, corroborated by the picture words naming records 22 and 23 exactly as `GameStats_PickThumbBatch` splits
+the levels), the unlockables and the profile's mission bests. The list is sorted by the mission byte; the missions line
+counts the complete listed levels less the specials over the listed levels less 3, and the time adds the shown entries'
+times to slot 0's. The summary (`gameStatsSummary`, pen at (0.01, 0.06), never wrapped) and each mission's block
+(`gameStatsSubItemText`) are the page's `sprintf` texts, every format and colour as given, with the time from
+`formatPlayTime` ("h hours, m minutes", the minutes always after the hours, days only when asked). The list shows at
+most 5 entries, the first centred on (0.185, 0.45), stacked as the menu stacks them (each block from its header's bottom
+less 2 / 448, the next header one header and the shown block less that overlap below), their heights clipped at 0.5:
+each entry a `CircledText` header ([GUI](gui.md#fn-circledtext), `repo:src/gui/circled_text.h`) 0.35 × 0.09, its circles
+0.065 × 0.11 and its back both `0x180002` (record 24 rectangle 2), the back invisible, the characters black, the circles
+in the area colour of `areaColour` (`LevelRecord_GetAreaColour`, also the mission select's) or purple without a number,
+the specials with only their text; under the header its `GameStatsSubItem` as the entry's description, centred on the
+header's x: the picture 0.35 wide centred on it, the text 0.02 past the 0.35 column, half a size-1.0 line below the
+block's top. The focused entry's block opens 550 ms after it took the focus, 0.25 a frame, with cue `0xd`; the others
+close by the same step; the first starts open. The background cycles red, green and blue over 5 s steps; the screen
+fades in over 1 s when it is ready; back fades out over 1 s and the mode pops when the fade is over, its exit calling
+`onClose`. On the NTSC-U disc 26 levels are listed, so the missions line counts 23, and a fresh profile shows the hub
+and the Rumble arenas only. Coney's choices where the page is silent: the window keeps the cursor in its middle row and
+jumps (the original scrolls with a reveal); the focused block holds its reveal until the delay has run (so the first
+stays open); a block the clip cuts is cut at the clip, and a header the clip would cut is hidden with the entries below
+it (the original reveals the last item in part); a block's picture is drawn whole in the shown height (the original cuts
+its texture) and its text shows the lines that fit; the description's own focus, which the original's menu input waits
+on, is not modelled; an area byte other than 1-4 gives black (the original leaves the colour unwritten); the mode
+updates no world and sets no store tint (neither shows under the opaque background). Tests:
 `repo:tests/gui/game_stats_test.cpp` (the formats, the colours, the list's places and the blocks' reveal),
-`repo:tests/warriors/unlock_counts_test.cpp` and `repo:tests/platform/disc_game_stats_test.cpp`, which calls the
-binding in `level95` started as `--play-level` starts it and moves and closes the screen with the pad.
+`repo:tests/warriors/unlock_counts_test.cpp` and `repo:tests/platform/disc_game_stats_test.cpp`, which calls the binding
+in `level95` started as `--play-level` starts it and moves and closes the screen with the pad.
 
 ## Open questions
 
@@ -2545,8 +2565,9 @@ binding in `level95` started as `--play-level` starts it and moves and closes th
   `0x0063083c` set while the credits run is read for.
 - **The statistics screen** ([answered](#game-stats), 2026-10-11, for the sort, the missions count, every format,
   the list's and the entries' layout, the area colours, the circles' sprite and the one-entry-per-level structure).
-  Still open: a runtime screenshot of the screen to check the placement (reaching it needs the front end's
-  Statistics item driven over PINE).
+  Still open: a run record measuring the placement (a capture of the screen opened with `ShowGameStatsInterface` in
+  `level99` matched the code's placement by eye, 2026-10-26, with no record yet), and the line height of size-1.2
+  text, which looked about 7 % taller in that capture than Coney draws it.
 - **Mode 6 at boot** (answered for an unformatted card: no dialog, see [the flow](#mode-flow)): still open with no
   card, a formatted card without a save and a card with a save.
 - **Rumble mode** (answered for the entry, the way to the arena, the screens, the 23 values, the data's source, WAR

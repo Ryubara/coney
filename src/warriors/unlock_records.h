@@ -30,13 +30,14 @@ struct UnlockTally {
 
 /// What `Unlocks_CountUnlocked` gives the statistics screen's summary.
 struct UnlockCounts {
-    /// The records of types 1, 2, 3, 4 and 6 whose level is neither 1 nor 4.
+    /// The records of every type but 0, 5 and 7-11 (on the disc: 1, 2, 3, 4 and 6) whose level is neither 1 nor 4.
     UnlockTally records;
     /// The distinct (level, item) pairs of those types' group-1 records, any level; a pair is unlocked when its first
     /// record is.
     UnlockTally groupItems;
     /// The completion percentage: records.unlocked × 100 / records.total, truncated (`Float_ToUInt`); 0 with no
     /// records (Coney's guard: the original divides by the total).
+    /// @orig 0x00215150 GameStats_BuildSummary (GameStats.cpp)
     [[nodiscard]] unsigned percent() const;
 };
 
@@ -75,6 +76,7 @@ class UnlockRecords {
     /// The records.
     [[nodiscard]] const std::vector<UnlockRecord>& records() const { return m_records; }
     /// Record `index`; null past the table.
+    /// @coney-only Coney's checked access (the original's `Unlockables_GetRecord` does not check)
     [[nodiscard]] const UnlockRecord* record(std::size_t index) const;
 
     /// `UM_Unlock(level, group, item)`: unlocks every record whose first three bytes match, marking the newly
@@ -111,6 +113,7 @@ class UnlockRecords {
 
   private:
     // The first record of `type` and `data`; nothing when none matches.
+    // @coney-only the search isDataUnlocked() and isDataDirty() share
     [[nodiscard]] std::optional<std::size_t> find(std::uint8_t type, std::uint32_t data) const;
 
     std::size_t m_count = 0; // UM_SetNumUnlockables' count; 0 until set
@@ -118,8 +121,10 @@ class UnlockRecords {
 };
 
 /// The "new" mark of unlockable record `index` (SavedProgress::newBits, laid out as the locked bits).
+/// @coney-only the bit access the UM ports share
 [[nodiscard]] bool isMarkedNew(const SavedProgress& progress, std::size_t index);
 /// Sets or clears the "new" mark of record `index`; out of range does nothing.
+/// @coney-only the bit access the UM ports share
 void setMarkedNew(SavedProgress& progress, std::size_t index, bool marked);
 
 } // namespace coney

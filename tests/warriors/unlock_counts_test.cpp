@@ -25,25 +25,28 @@ UnlockRecord rec(std::uint8_t level, std::uint8_t group, std::uint8_t item, std:
 
 } // namespace
 
-TEST_CASE("the completion count takes types 1-4 and 6 outside levels 1 and 4; group 1 counts distinct pairs",
+TEST_CASE("the completion count takes every type but 0, 5 and 7-11 outside levels 1 and 4; group 1 counts distinct "
+          "pairs of types 1-4 and 6",
           "[unlocks]") {
+    // Expected: player-state.md#unlockable-counts, confirmed (code)
     UnlockRecords records;
-    records.setCount(11);
-    REQUIRE(records.set(0, rec(2, 0, 0, 4)));  // counted
-    REQUIRE(records.set(1, rec(2, 0, 0, 0)));  // type 0: not counted
-    REQUIRE(records.set(2, rec(1, 0, 0, 6)));  // level 1: not counted
-    REQUIRE(records.set(3, rec(4, 0, 0, 6)));  // level 4: not counted
-    REQUIRE(records.set(4, rec(3, 1, 1, 2)));  // counted; group-1 pair (3, 1)
-    REQUIRE(records.set(5, rec(3, 1, 1, 4)));  // counted; same pair, not tested for the group count
-    REQUIRE(records.set(6, rec(4, 1, 2, 6)));  // level 4: not in the total, but its group-1 pair (4, 2) counts
-    REQUIRE(records.set(7, rec(5, 1, 1, 7)));  // type 7: neither
-    REQUIRE(records.set(8, rec(9, 0, 3, 1)));  // counted
-    REQUIRE(records.set(9, rec(9, 0, 0, 3)));  // counted
-    REQUIRE(records.set(10, rec(2, 0, 0, 1))); // counted
+    records.setCount(12);
+    REQUIRE(records.set(0, rec(2, 0, 0, 4)));   // counted
+    REQUIRE(records.set(1, rec(2, 0, 0, 0)));   // type 0: not counted
+    REQUIRE(records.set(2, rec(1, 0, 0, 6)));   // level 1: not counted
+    REQUIRE(records.set(3, rec(4, 0, 0, 6)));   // level 4: not counted
+    REQUIRE(records.set(4, rec(3, 1, 1, 2)));   // counted; group-1 pair (3, 1)
+    REQUIRE(records.set(5, rec(3, 1, 1, 4)));   // counted; same pair, not tested for the group count
+    REQUIRE(records.set(6, rec(4, 1, 2, 6)));   // level 4: not in the total, but its group-1 pair (4, 2) counts
+    REQUIRE(records.set(7, rec(5, 1, 1, 7)));   // type 7: neither
+    REQUIRE(records.set(8, rec(9, 0, 3, 1)));   // counted
+    REQUIRE(records.set(9, rec(9, 0, 0, 3)));   // counted
+    REQUIRE(records.set(10, rec(2, 0, 0, 1)));  // counted
+    REQUIRE(records.set(11, rec(6, 1, 5, 12))); // type 12: counted, but not a group-1 type
 
     SavedProgress progress;
     UnlockCounts counts = records.countUnlocked(progress);
-    CHECK(counts.records.total == 6);
+    CHECK(counts.records.total == 7);
     CHECK(counts.records.unlocked == 0);
     CHECK(counts.groupItems.total == 2);
     CHECK(counts.groupItems.unlocked == 0);
@@ -56,7 +59,7 @@ TEST_CASE("the completion count takes types 1-4 and 6 outside levels 1 and 4; gr
     counts = records.countUnlocked(progress);
     CHECK(counts.records.unlocked == 2);
     CHECK(counts.groupItems.unlocked == 0);
-    CHECK(counts.percent() == 33); // 2 / 6, truncated
+    CHECK(counts.percent() == 28); // 2 / 7, truncated
 
     progress.setLocked(4, false);
     progress.setLocked(6, false);
@@ -68,6 +71,7 @@ TEST_CASE("the completion count takes types 1-4 and 6 outside levels 1 and 4; gr
 
 TEST_CASE("a level's targets: the score, characters, arenas and distinct group-1 items; 60 and 101 cover ranges",
           "[unlocks]") {
+    // Expected: player-state.md#unlockable-counts, confirmed (code)
     UnlockRecords records;
     records.setCount(12);
     REQUIRE(records.set(0, rec(9, 0, 0, 0)));  // the level-complete record
@@ -111,6 +115,7 @@ TEST_CASE("a level's targets: the score, characters, arenas and distinct group-1
 }
 
 TEST_CASE("the character count takes every type-4 record", "[unlocks]") {
+    // Expected: player-state.md#unlockable-counts, confirmed (code)
     UnlockRecords records;
     records.setCount(3);
     REQUIRE(records.set(0, rec(1, 0, 0, 4)));

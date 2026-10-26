@@ -3,7 +3,8 @@
 // (docs/research/frontend.md#game-stats): `level95` started as `coney --play-level` starts it, the binding
 // `ShowGameStatsInterface` called through the script system as the hub calls it; mode 0x13 comes up with its sheets
 // loaded, the disc's level table gives 23 story missions, and a fresh profile shows the two entries that are always
-// listed (the hub and the Rumble arenas); the d-pad moves down the list and triangle closes it, calling `onClose`. It
+// listed (the hub and the Rumble arenas); the d-pad moves down the list and triangle closes it, the mode leaving
+// after its fade out and calling `onClose`. It
 // runs only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only
 // (LEGAL.md).
 #include <array>
@@ -31,12 +32,14 @@ constexpr std::string_view kPad = "40 tap down\n"
 constexpr std::uint64_t kShow = 10;
 constexpr std::uint64_t kOpen = 30;
 constexpr std::uint64_t kMoved = 60;
-constexpr std::uint64_t kClosed = 100;
+constexpr std::uint64_t kFading = 100;
+constexpr std::uint64_t kClosed = 160;
 
 } // namespace
 
 TEST_CASE("the disc's statistics screen: shown by the binding in the hub, moved and closed with the pad",
           "[disc][game_stats]") {
+    // Expected: frontend.md#game-stats, confirmed (code)
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -65,6 +68,10 @@ TEST_CASE("the disc's statistics screen: shown by the binding in the hub, moved 
     REQUIRE(run.runToPlayFrame(kMoved));
     const std::size_t selected = screen.list().selected();
 
+    // Triangle has closed the screen, but the mode stays while its fade out runs.
+    REQUIRE(run.runToPlayFrame(kFading));
+    const bool fading = run.stack().topId() == coney::GameStatsMode::kId && screen.closed();
+
     REQUIRE(run.runToPlayFrame(kClosed));
     const bool gone = run.stack().topId() != coney::GameStatsMode::kId;
     std::size_t closedCalls = 0;
@@ -72,9 +79,9 @@ TEST_CASE("the disc's statistics screen: shown by the binding in the hub, moved 
         closedCalls += line.find("game stats: closed, calling ConeyGameStatsClosed") != std::string::npos ? 1 : 0;
     }
     std::printf("  game stats: on top %d, open %d, %zu missions listed, %zu shown, summary %zu bytes, sheet failures "
-                "%zu, selected %zu after down, closed %d with %zu onClose calls\n",
-                onTop ? 1 : 0, open ? 1 : 0, listed, shown, summaryLength, sheetFailures, selected, gone ? 1 : 0,
-                closedCalls);
+                "%zu, selected %zu after down, fading %d, closed %d with %zu onClose calls\n",
+                onTop ? 1 : 0, open ? 1 : 0, listed, shown, summaryLength, sheetFailures, selected, fading ? 1 : 0,
+                gone ? 1 : 0, closedCalls);
     CHECK(onTop);
     CHECK(open);
     CHECK(listed == 23);
@@ -82,6 +89,7 @@ TEST_CASE("the disc's statistics screen: shown by the binding in the hub, moved 
     CHECK(summaryLength > 0);
     CHECK(sheetFailures == 0);
     CHECK(selected == 1);
+    CHECK(fading);
     CHECK(gone);
     CHECK(closedCalls == 1);
 }
