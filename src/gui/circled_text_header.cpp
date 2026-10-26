@@ -60,7 +60,8 @@ void CircledTextHeader::setBatch(graphics::SpriteBatch* batch) {
 void CircledTextHeader::setup(const CircledTextHeaderSetup& setup) {
     m_setup = setup;
     // The texts: title, characters and subtitle in font slot 4, grey. The characters have no shadow: the original's
-    // render clears it before each is drawn.
+    // render clears it before each is drawn. Stand-in: the characters and the subtitle get the update's size 1.7
+    // here, where the original sets them up at 1.561 and every update replaces it.
     m_title.setup(TextWidgetSetup{.scale = kTitleSize, .colour = kMenuGrey, .fontSlot = kFontSlot});
     m_subtitle.setup(TextWidgetSetup{.scale = kSubtitleSize, .colour = kMenuGrey, .fontSlot = kFontSlot});
     for (TextWidget& letter : m_letters) {
@@ -193,6 +194,7 @@ void CircledTextHeader::render(const GuiCanvas& canvas) const {
         return;
     }
     place(canvas);
+    // The label (in the colour RenderColoured is given). Stand-in: the header has no child to draw after it.
     m_label.render(canvas);
     for (std::size_t i = 0; i < m_used; ++i) {
         m_circles.at(i).render(canvas);

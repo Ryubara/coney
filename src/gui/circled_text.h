@@ -55,7 +55,8 @@ class CircledText : public Widget {
     /// The back sprite's and the circles' colours from the set-up.
     static constexpr graphics::Rgba kBackColour{128, 128, 128, 255};
     static constexpr graphics::Rgba kCircleColour{160, 16, 16, 255};
-    /// The step divisor between circles (`0x0050ec64`: 3; 2 with device flag `0x02`, which Coney does not model).
+    /// The step divisor between circles (`0x0050ec64`: 3). Stand-in: 2 with device flag `0x02`, which Coney does not
+    /// model.
     static constexpr float kStepDivisor = 3.0F;
     /// How far below the row a circle sits, in circle heights (`0x0050ec68` = `circleH` × 0.1).
     static constexpr float kCircleDrop = 0.1F;
