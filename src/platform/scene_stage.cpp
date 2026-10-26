@@ -103,6 +103,7 @@ std::optional<scenes::RoleFrame> SceneStage::frameOf(double human, float alpha) 
     return blend(frame->previous(), frame->current(), alpha);
 }
 
+// Each bound puppet posed at its scene frame, blended between the last two steps.
 void SceneStage::skinPuppets(float alpha, const Skin& skin) {
     for (auto& [human, puppet] : m_puppets) {
         const auto bound = m_bound.find(human);
@@ -118,6 +119,7 @@ void SceneStage::skinPuppets(float alpha, const Skin& skin) {
     }
 }
 
+// Each puppet the scene has posed, through the caller's lit draw.
 void SceneStage::drawPuppets(const DrawPuppet& draw) {
     for (auto& [human, puppet] : m_puppets) {
         const auto bound = m_bound.find(human);

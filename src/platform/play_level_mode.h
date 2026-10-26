@@ -198,6 +198,7 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     /// One line: frames, the player's position, heading, speed, gait, clip and state, then the scenery's counts.
     [[nodiscard]] std::string summary() const;
 
+    /// Player 1.
     [[nodiscard]] const human::Player& player() const { return *m_player; }
     /// The sandbox's targets (none in a level).
     [[nodiscard]] std::span<human::TargetHuman* const> targets() const { return m_targetPointers; }
@@ -213,6 +214,7 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     [[nodiscard]] std::vector<graphics::ThrowArcVertex> throwArcRibbon(float alpha) const;
     /// Player 1's lock pick under way; null when none runs (docs/research/crimes.md#lockpick).
     [[nodiscard]] const world_objects::LockPick* lockPick() const { return m_lockPick ? &*m_lockPick : nullptr; }
+    /// Player 1's statistics as the play mode counts them.
     [[nodiscard]] const PlayStats& stats() const { return m_stats; }
 
     /// Writes the trace (human::traceHeader(), then human::traceLine() after every step) to the file at `path`,

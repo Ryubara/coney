@@ -175,6 +175,7 @@ CharacterMesh::CharacterMesh(const characters::CharacterModel& model, rw::Textur
     useCharacterSkin(m_blood, m_skin, *m_palette);
 }
 
+// Both atomics with their geometry and frames, then the mesh's texture reference.
 CharacterMesh::~CharacterMesh() {
     destroyAtomic(m_blood); // its materials drop their blood texture references
     destroyAtomic(m_atomic);

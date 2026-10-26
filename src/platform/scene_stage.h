@@ -126,20 +126,22 @@ class SceneStage final : public scenes::SceneHost {
         m_onObjectPose = std::move(mover);
     }
 
-    /// Skins the puppets for the frame between the last two steps, `alpha` of the way, with `skin` (the play mode's
-    /// skinning: character, pose, feet, heading onto the puppet's mesh).
+    /// The play mode's skinning: a character in a pose, at its feet with its heading, onto a puppet's mesh.
     using Skin =
         std::function<void(const human::PlayerCharacter&, const anim::Pose&, anim::Vec3, float, CharacterMesh&)>;
+    /// Skins the puppets for the frame between the last two steps, `alpha` of the way, with `skin`.
     void skinPuppets(float alpha, const Skin& skin);
+    /// What draws one puppet's mesh, lit as the play mode lights a human.
+    using DrawPuppet = std::function<void(CharacterMesh&)>;
     /// Draws each puppet the scene has posed through `draw`, which must light it as the play mode lights a human
     /// (PlayLighting::drawHumanPasses): a puppet's atomic belongs to no world, so rendering it bare crashes librw's
     /// lit pipeline (the `--scene` crash of issue 446). The caller has set the render states.
-    using DrawPuppet = std::function<void(CharacterMesh&)>;
     void drawPuppets(const DrawPuppet& draw);
     /// Draws the letterbox and the fade over the window, at game time `nowMs` (inside the frame).
     void drawOverlay(RenderEngine& engine, std::uint64_t nowMs) const;
-    /// The fade level at `nowMs` (0 clear, 1 black) and the bars' height (a fraction of the screen's).
+    /// The fade level (0 clear, 1 black).
     [[nodiscard]] float fadeLevel() const { return m_fade.level(); }
+    /// The bars' height at `nowMs`, a fraction of the screen's.
     [[nodiscard]] float barHeight(std::uint64_t nowMs) const { return m_letterbox.barHeight(nowMs); }
     /// How many puppets the stage holds (humans the play mode does not draw, loaded as characters).
     [[nodiscard]] std::size_t puppetCount() const { return m_puppets.size(); }

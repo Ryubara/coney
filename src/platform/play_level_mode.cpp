@@ -182,6 +182,7 @@ PlayLevelMode::createWith(RenderEngine& engine, const io::Wad& wad, std::unique_
                                                             std::move(levelEffects)));
 }
 
+// The level's scenery, the player's character and mesh, the lights, the cast and the AI, ready for the first step.
 PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::unique_ptr<PlayScenery> scenery,
                              LoadedCharacter loaded, std::function<void(std::string_view)> print, std::string model,
                              const PlayerSetup& setup, const ScriptedCast* cast,
