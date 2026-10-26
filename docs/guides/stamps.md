@@ -369,12 +369,15 @@ C++ tests run), does the same on the fix commit (default HEAD), then puts the br
   `fails-first/restore.json` in the unit's scratch folder before the first checkout and removed after the last: if a
   run is killed, the next one refuses while the worktree is detached and says `git checkout <branch>`; a restore that
   fails is reported as `COULD NOT RESTORE` with that command.
-* **Verdict.** `pass`: built at both commits, the test failed on the first and passed on the second. A failed run's
-  list of failed tests may be cut off (`... and N more`); a name missing from a cut-off list is not known to pass, so
-  that test is run alone. A test that
-  passes on the test commit detects nothing, and one that still fails on the fix does not prove it: both write a
-  `fail` stamp. A build that does not compile, a build left queued for a slot, or names that match no test are errors
-  with no stamp.
+* **Verdict.** `pass`: built at both commits, the test failed on the first and passed on the second. Which tests
+  failed is read from the build's log, the file whose path the build prints first (`log: ...`): ctest's own list of
+  failures there is one name a line, so a name with a comma in it stays whole, and a failed list the build cut short
+  loses none. The one-line `failed: a, b, ...` summary is never read for it, because it joins names with commas and is
+  cut at a width, even in the middle of a name. When the log cannot be read, or its list holds fewer names than ctest
+  counted, the run does not say which tests failed: each name is then run alone, and a name that did not pass alone
+  failed. A test that passes on the test commit detects nothing, and one that still fails on the fix does not
+  prove it: both write a `fail` stamp. A build that does not compile, a build left queued for a slot, or names
+  that match no test are errors with no stamp.
 * One stamp per test name (`--test` is repeatable; they are written together or not at all), covering both commits,
   the test files and the hashes of both runs' logs (kept in scratch as `red-` and `green-<test commit>-<fix commit>.log`).
 * A docs or tooling task has nothing to run: `--none REASON` (one line, at most 200 characters, given alone) stamps

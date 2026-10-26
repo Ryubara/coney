@@ -4,6 +4,7 @@
 import ast
 import subprocess
 import sys
+from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -16,17 +17,49 @@ from coney_tools.fails_first import BuildOutcome, FailsFirstError
 from coney_tools.unit import Unit
 
 WHO = {"kind": "tool", "tool": "test"}
-RED_OUTPUT = """log: /tmp/x.log
-build: ok in 5s
-test: FAILED (exit 8) in 3s (main lane): 0 passed, 1 failed of 1
-  failed: Widget ready frame
-result: FAILED at test: Widget ready frame
-"""
-GREEN_OUTPUT = """log: /tmp/x.log
-build: ok in 5s
-test: ok in 3s (main lane): 1 passed, 0 failed of 1
-result: ok
-"""
+ONE = ("Widget ready frame",)
+BOTH = ("Widget ready frame", "Widget other")
+#: The longest line a build summary may have (build_run.MAX_LINE) and how many failed names it lists (MAX_FAILED_TESTS).
+MAX_LINE = 220
+MAX_LISTED = 8
+
+
+def write_log(folder: Path, ran: Sequence[str], failed: Sequence[str]) -> Path:
+    """A build log with ctest's own result for `ran`: a line per test, the count and the list of the failed ones."""
+    folder.mkdir(parents=True, exist_ok=True)
+    path = folder / f"build-{len(list(folder.iterdir()))}.log"
+    lines = ["==== test: ctest --output-on-failure"]
+    for number, name in enumerate(ran, start=1):
+        state = "***Failed" if name in failed else "Passed"
+        lines.append(f"{number:>2}/{len(ran)} Test #{number}: {name} {'.' * 12}   {state}    0.01 sec")
+    percent = 100 * (len(ran) - len(failed)) // len(ran)
+    lines += ["", f"{percent}% tests passed, {len(failed)} tests failed out of {len(ran)}"]
+    if failed:
+        lines += ["", "The following tests FAILED:"]
+        lines += [f"\t{ran.index(name) + 1:>2} - {name} (Failed)" for name in failed]
+        lines.append("Errors while running CTest")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return path
+
+
+def build_output(log: Path, ran: Sequence[str], failed: Sequence[str]) -> str:
+    """What `coney-tools build --test -R` prints for a run of `ran` in which `failed` failed: the summary lines, with
+    the failed list joined by ", " and cut the way the build cuts it, and the path of the log that holds the rest."""
+    counts = f"{len(ran) - len(failed)} passed, {len(failed)} failed of {len(ran)}"
+    if not failed:
+        lines = [f"log: {log}", "build: ok in 5s", f"test: ok in 3s (main lane): {counts}", "result: ok"]
+    else:
+        shown = ", ".join(failed[:MAX_LISTED]).rstrip()
+        shown = shown if len(shown) <= MAX_LINE else shown[: MAX_LINE - 3] + "..."
+        more = f", ... and {len(failed) - MAX_LISTED} more (see the log)" if len(failed) > MAX_LISTED else ""
+        lines = [
+            f"log: {log}",
+            "build: ok in 5s",
+            f"test: FAILED (exit 8) in 3s (main lane): {counts}",
+            f"  failed: {shown}{more}",
+            f"result: FAILED at test: {failed[0]}",
+        ]
+    return "\n".join(lines) + "\n"
 
 
 class Clock:
@@ -64,8 +97,13 @@ class Repo:
         self.fix = git(self.root, "rev-parse", "HEAD").strip()
         self.unit = Unit("t", tmp_path / "scratch" / "t")
         self.seen: list[tuple[str, tuple[str, ...]]] = []
-        self.red = RED_OUTPUT
-        self.green = GREEN_OUTPUT
+        self.logs = tmp_path / "logs"
+        self.red = self.out(ONE, ONE)
+        self.green = self.out(ONE, ())
+
+    def out(self, ran: Sequence[str], failed: Sequence[str]) -> str:
+        """The build's output for a run of `ran` in which `failed` failed, with its log written to disk."""
+        return build_output(write_log(self.logs, ran, failed), ran, failed)
 
     def runner(self, root: Path, preset: str, names: tuple[str, ...]) -> BuildOutcome:
         """A fake build: red on the test commit, green on the fix commit."""
@@ -120,13 +158,13 @@ def test_the_names_are_anchored_for_ctest(repo: Repo) -> None:
 
 
 def test_a_test_that_passes_on_the_test_commit_is_a_fail_stamp(repo: Repo) -> None:
-    repo.red = GREEN_OUTPUT
+    repo.red = repo.out(ONE, ())
     [stamp] = repo.run()
     assert stamp.result == "fail" and stamp.detail["red"] == "passed"
 
 
 def test_a_test_that_still_fails_on_the_fix_is_a_fail_stamp(repo: Repo) -> None:
-    repo.green = RED_OUTPUT
+    repo.green = repo.out(ONE, ONE)
     [stamp] = repo.run()
     assert stamp.result == "fail" and stamp.detail["green"] == "failed"
 
@@ -136,15 +174,14 @@ def test_each_named_test_gets_its_own_stamp(repo: Repo) -> None:
 
     def runner_for(red: str) -> fails_first.Runner:
         def runner(root: Path, preset: str, names: tuple[str, ...]) -> BuildOutcome:
-            text = red if git(root, "rev-parse", "HEAD").strip() == first else GREEN_OUTPUT
+            text = red if git(root, "rev-parse", "HEAD").strip() == first else repo.out(BOTH, ())
             return fails_first.parse_build_output(text, 0 if "result: ok" in text else 1)
 
         return runner
 
-    both = RED_OUTPUT.replace("failed: Widget ready frame", "failed: Widget ready frame, Widget other")
-    [one, two] = run_two(repo, first, second, runner_for(both))
+    [one, two] = run_two(repo, first, second, runner_for(repo.out(BOTH, BOTH)))
     assert (one.result, two.result) == ("pass", "pass") and two.subject == "Widget other"
-    [three, four] = run_two(repo, first, second, runner_for(RED_OUTPUT))
+    [three, four] = run_two(repo, first, second, runner_for(repo.out(BOTH, ("Widget ready frame",))))
     assert (three.result, four.result) == ("pass", "fail") and four.detail["red"] == "passed"
 
 
@@ -212,30 +249,56 @@ def test_none_records_that_there_is_no_test_to_run(repo: Repo) -> None:
         fails_first.record_none(repo.unit, repo.root, " ", rules=rules(), who=WHO, clock=Clock())
 
 
-def test_the_build_output_is_read_for_its_verdict() -> None:
-    red = fails_first.parse_build_output(RED_OUTPUT, 1)
-    assert red.built and not red.ok and red.failed == ("Widget ready frame",) and not red.no_tests
-    green = fails_first.parse_build_output(GREEN_OUTPUT, 0)
-    assert green.built and green.ok and green.failed == ()
+def test_the_build_output_is_read_for_its_verdict(tmp_path: Path) -> None:
+    logs = tmp_path / "logs"
+    red = fails_first.parse_build_output(build_output(write_log(logs, ONE, ONE), ONE, ONE), 1)
+    assert red.built and not red.ok and red.failed == ONE and red.failed_known and not red.no_tests
+    green = fails_first.parse_build_output(build_output(write_log(logs, ONE, ()), ONE, ()), 0)
+    assert green.built and green.ok and green.failed == () and green.failed_known
     broken = fails_first.parse_build_output("configure: FAILED (exit 1)\nresult: FAILED at configure\n", 1)
     assert not broken.built
-    many = fails_first.parse_build_output(
-        "build: ok\n  failed: a, b, ... and 3 more (see the log)\nresult: FAILED at test: a\n", 1
-    )
-    assert many.failed == ("a", "b")
     assert fails_first.parse_build_output("result: QUEUED at build (exit 75); x\n", 75).queued
 
 
-TRUNCATED = chr(10).join(
-    [
-        "build: ok",
-        "test: FAILED (exit 8)",
-        "  failed: Widget ready frame, ... and 11 more (see the log)",
-        "result: FAILED at test",
-        "",
+def test_a_name_with_a_comma_is_read_whole_from_the_log(tmp_path: Path) -> None:
+    name = "CameraReset right after a teleport puts the camera behind the new place, read from the target"
+    ran = (name, "Camera other")
+    outcome = fails_first.parse_build_output(build_output(write_log(tmp_path, ran, (name,)), ran, (name,)), 1)
+    assert outcome.failed == (name,) and outcome.failed_known
+
+
+def long_names(count: int) -> tuple[str, ...]:
+    """Test names long enough that the build's summary line is cut in the middle of one."""
+    return tuple(
+        f"Camera placement case {n} with a rather long descriptive name so that the line is cut" for n in range(count)
+    )
+
+
+def test_a_failed_list_the_build_cut_mid_name_loses_no_name(tmp_path: Path) -> None:
+    ran = long_names(12)
+    text = build_output(write_log(tmp_path, ran, ran), ran, ran)
+    assert "long desc..., ... and 4 more" in text  # the summary really is cut in the middle of a name
+    outcome = fails_first.parse_build_output(text, 1)
+    assert outcome.failed == ran and outcome.failed_known
+
+
+def test_a_log_that_cannot_be_read_or_disagrees_with_its_count_leaves_the_names_unknown(tmp_path: Path) -> None:
+    ran = ("a", "b", "c")
+    text = build_output(write_log(tmp_path, ran, ("a", "b")), ran, ("a", "b"))
+    gone = fails_first.parse_build_output(text.replace(str(tmp_path), str(tmp_path / "missing")), 1)
+    assert not gone.failed_known and gone.failed == ()
+    log = Path(text.splitlines()[0].removeprefix("log: "))
+    counted_two = [
+        " 1/3 Test #1: a ....   ***Failed    0.01 sec",
+        "33% tests passed, 2 tests failed out of 3",
+        "The following tests FAILED:",
+        "\t 1 - a (Failed)",
     ]
-)
-BOTH = ("Widget ready frame", "Widget other")
+    log.write_text("\n".join(counted_two) + "\n", encoding="utf-8")  # ctest counted two failures, the log shows one
+    short = fails_first.parse_build_output(text, 1)
+    assert not short.failed_known and short.failed == ()
+    nothing = "log: x\nbuild: ok\ntest: FAILED\nresult: FAILED at test\n"
+    assert not fails_first.parse_build_output(nothing, 1).failed_known
 
 
 def two_tests(repo: Repo) -> tuple[str, str]:
@@ -269,40 +332,82 @@ def run_two(repo: Repo, first: str, second: str, runner: fails_first.Runner, **m
     return fails_first.run(repo.unit, repo.root, **arguments)  # type: ignore[arg-type]
 
 
-def test_a_truncated_failed_list_is_unknown_so_the_test_is_run_alone(repo: Repo) -> None:
+def commit_tests(repo: Repo, source: str, label: str) -> None:
+    """Replace the test file on a fresh branch from the base, commit it as the test commit and then a fix after it."""
+    git(repo.root, "checkout", "-q", "-B", "work", repo.base)
+    (repo.root / "tests").mkdir(exist_ok=True)
+    (repo.root / "tests" / "widget_test.cpp").write_text(source, encoding="utf-8")
+    git(repo.root, "add", "-A")
+    git(repo.root, "commit", "-q", "-m", label)
+    repo.test = git(repo.root, "rev-parse", "HEAD").strip()
+    (repo.root / "src" / "widget.cpp").write_text(f"int ready() {{ return {len(label)}; }}\n", encoding="utf-8")
+    git(repo.root, "commit", "-q", "-am", f"fix {label}")
+
+
+def test_a_test_whose_name_has_a_comma_is_graded_by_the_run_not_by_the_summary(repo: Repo) -> None:
+    name = "Widget ready, then drawn"
+    commit_tests(repo, f'TEST_CASE("{name}") {{}}\n', "comma")
+    repo.red, repo.green = repo.out((name,), (name,)), repo.out((name,), ())
+    [stamp] = repo.run(tests=(name,), test_commit=repo.test, fix_commit=None)
+    assert (stamp.result, stamp.detail["red"], stamp.detail["green"]) == ("pass", "failed", "passed")
+    assert [names for _, names in repo.seen] == [(name,), (name,)]  # settled by the log: no rerun
+
+
+def test_a_cut_summary_does_not_turn_failed_tests_into_passed_ones(repo: Repo) -> None:
+    names = long_names(5)
+    ran = (*names, "Other test one", "Other test two")
+    commit_tests(repo, "".join(f'TEST_CASE("{name}") {{}}\n' for name in names), "five tests")
+    repo.red, repo.green = repo.out(ran, names), repo.out(ran, ())
+    assert repo.red.split("failed: ")[1].splitlines()[0].endswith("...")  # the summary ends in the middle of a name
+    written = repo.run(tests=names, test_commit=repo.test, fix_commit=None)
+    assert [(s.subject, s.result) for s in written] == [(name, "pass") for name in names]
+    assert len(repo.seen) == 2  # one run per commit: the log settled every name
+
+
+def test_several_names_in_one_run_are_each_graded_by_the_log(repo: Repo) -> None:
+    first, second = two_tests(repo)
+    red = repo.out(BOTH, ("Widget other",))  # "Widget ready frame" passes on the test commit: it detects nothing
+    runs: list[tuple[str, ...]] = []
+
+    def runner(root: Path, preset: str, names: tuple[str, ...]) -> BuildOutcome:
+        runs.append(names)
+        text = red if git(root, "rev-parse", "HEAD").strip() == first else repo.out(BOTH, ())
+        return fails_first.parse_build_output(text, 0 if "result: ok" in text else 1)
+
+    written = run_two(repo, first, second, runner)
+    assert [(s.subject, s.result, s.detail["red"]) for s in written] == [
+        ("Widget ready frame", "fail", "passed"),
+        ("Widget other", "pass", "failed"),
+    ]
+    assert runs == [BOTH, BOTH]
+
+
+def test_names_the_log_does_not_settle_are_run_alone(repo: Repo) -> None:
     first, second = two_tests(repo)
     calls: list[tuple[str, tuple[str, ...]]] = []
 
     def runner(root: Path, preset: str, names: tuple[str, ...]) -> BuildOutcome:
         head = git(root, "rev-parse", "HEAD").strip()
         calls.append((head, names))
-        red = head == first
-        if len(names) > 1:
-            text = TRUNCATED if red else TRUNCATED.replace("Widget ready frame", "Widget third")
+        if len(names) > 1:  # a run whose log is not there says only that something failed
+            text = "build: ok\ntest: FAILED (exit 8)\nresult: FAILED at test\n"
         else:
-            text = RED_OUTPUT.replace("Widget ready frame", names[0]) if red else GREEN_OUTPUT
+            text = repo.out(names, names if head == first else ())
         return fails_first.parse_build_output(text, 0 if "result: ok" in text else 1)
 
     written = run_two(repo, first, second, runner)
     assert [(s.subject, s.result) for s in written] == [("Widget ready frame", "pass"), ("Widget other", "pass")]
-    assert (first, ("Widget other",)) in calls  # not in the cut-off list: asked alone
-    assert (second, ("Widget ready frame",)) in calls  # a failed run with a cut-off list does not say it passed
-    assert (second, ("Widget other",)) in calls
+    for commit in (first, second):
+        for name in BOTH:
+            assert (commit, (name,)) in calls
 
 
-def test_a_test_passes_on_the_fix_only_when_the_run_was_ok_or_it_ran_alone_and_was_ok(repo: Repo) -> None:
-    first, second = two_tests(repo)
-
-    def runner(root: Path, preset: str, names: tuple[str, ...]) -> BuildOutcome:
-        head = git(root, "rev-parse", "HEAD").strip()
-        if head == first:
-            return fails_first.parse_build_output(RED_OUTPUT.replace("Widget ready frame", ", ".join(BOTH)), 1)
-        text = "build: ok\ntest: FAILED\nresult: FAILED at test\n"  # failed with no names: stopped from outside
-        return fails_first.parse_build_output(
-            text if len(names) > 1 else GREEN_OUTPUT.replace("ok in 3s", "ok"), 1 if len(names) > 1 else 0
-        )
-
-    assert [s.result for s in run_two(repo, first, second, runner)] == ["pass", "pass"]
+def test_a_name_with_a_comma_that_is_run_alone_without_a_log_still_fails(repo: Repo) -> None:
+    # Alone, a run that did not pass is this test failing, whatever the cut or split summary says.
+    name = "Widget ready, then drawn"
+    text = f"build: ok\ntest: FAILED (exit 8)\n  failed: {name}\nresult: FAILED at test: {name}\n"
+    outcome = fails_first.parse_build_output(text, 1)
+    assert fails_first._states(repo.root, "dev", repo.runner, (name,), outcome, "abc", []) == {name: "failed"}
 
 
 def test_the_original_ref_is_written_down_before_the_first_checkout_and_removed_after(repo: Repo) -> None:
