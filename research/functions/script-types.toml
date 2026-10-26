@@ -190,6 +190,7 @@ status = "compared"
 [[function.gaps]]
 what = "every pile gets the loop; the original gives it only to one made with no parent handle"
 relation = "stand-in"
+issue = 994
 
 [[function]]
 address = 0x003d7f10

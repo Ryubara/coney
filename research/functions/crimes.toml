@@ -295,6 +295,35 @@ coney = "src/human/human_animator.h:HumanAnimator::playTagEnd"
 status = "legacy"
 
 [[function]]
+address = 0x002789d0
+name = "MiniGame_StartAtObject"
+page = "crimes.md#triangle"
+role = "Starts the lock pick (mode 2) or the stereo theft (mode 3) at the human's object: aligns him to it over 0.1 s (Human_AlignToObject), MiniGame_Start, then the clip after a 0.01 s blend, its loop, holding 0x2000000, the push sphere off."
+level = "confirmed-code"
+coney = "src/human/human.cpp:Human::startStereoTheft"
+status = "compared"
+
+[[function.gaps]]
+what = "the lock pick's place by the door (mode 2) and its clips"
+relation = "not-ported"
+issue = 991
+
+[[function.gaps]]
+what = "the top task's call and the push sphere switched off before the clips"
+relation = "not-ported"
+issue = 991
+
+[[function.gaps]]
+what = "Human_AlignToObject's 0.1 s turn and move onto the attack table's place (facing along the car's side): Coney turns to the stereo at once"
+relation = "stand-in"
+issue = 991
+
+[[function.gaps]]
+what = "the 0.01 s blend, held 0x2000000 on the chain and the record, anim state 0: Coney's combat fade, no held bit, its own state"
+relation = "stand-in"
+issue = 991
+
+[[function]]
 address = 0x0027bc48
 name = "Mash_IsQuitCommand"
 page = "crimes.md#original-structure"

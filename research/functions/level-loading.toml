@@ -13,10 +13,12 @@ status = "compared"
 [[function.gaps]]
 what = "the level file is unloaded on every exit, not only with a level change pending"
 relation = "stand-in"
+issue = 993
 
 [[function.gaps]]
 what = "the system music reset, the audio float +0x3fa5c, the outro movie and Device_SetFlipTimeLimit"
 relation = "not-ported"
+issue = 993
 
 [[function]]
 address = 0x00158580
@@ -73,10 +75,12 @@ status = "compared"
 [[function.gaps]]
 what = "the level file goes every time (keep is never set)"
 relation = "stand-in"
+issue = 993
 
 [[function.gaps]]
 what = "the far camera and black frames, the file and audio services, the pools, unlockables, distortion, trains, rage config, pads, rain, the stopwatch's service and the state flags and globals it clears"
 relation = "not-ported"
+issue = 993
 
 [[function]]
 address = 0x001612b0

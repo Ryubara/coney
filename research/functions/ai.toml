@@ -1269,6 +1269,7 @@ status = "compared"
 [[function.gaps]]
 what = "when lowered, the first holders stay rather than the nearest (no sort by distance), and the count is kept to the list's 16"
 relation = "stand-in"
+issue = 992
 
 [[function]]
 address = 0x0028dc80
@@ -1510,6 +1511,7 @@ status = "compared"
 [[function.gaps]]
 what = "a kind outside the table is ignored, where the original writes past it unchecked"
 relation = "stand-in"
+issue = 992
 
 [[function]]
 address = 0x002911f8
@@ -1648,6 +1650,7 @@ status = "compared"
 [[function.gaps]]
 what = "a member of the brain: the handle the worker resolves is its caller's, and Coney registers no BrSetMeleeRange binding (no script calls it)"
 relation = "stand-in"
+issue = 992
 
 [[function]]
 address = 0x00292ac0
@@ -5721,6 +5724,7 @@ status = "compared"
 [[function.gaps]]
 what = "the players are the scene's player brains but the asking one, measured horizontally from its human rather than by squared 3D distance from a point, and no distance is handed out"
 relation = "stand-in"
+issue = 992
 
 [[function]]
 address = 0x0041c2b0

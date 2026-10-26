@@ -57,6 +57,26 @@ what = "the duck's state 0x8000 (set with the dodge, cleared when R1 is let go),
 relation = "not-ported"
 issue = 683
 
+[[function.gaps]]
+what = "the move-style check (Human_CheckMoveStyles) each update"
+relation = "not-ported"
+issue = 990
+
+[[function.gaps]]
+what = "the d-pad objective recall (current and bonus objective)"
+relation = "not-ported"
+issue = 990
+
+[[function.gaps]]
+what = "the special idle (Human_UpdateSpecialIdle)"
+relation = "not-ported"
+issue = 990
+
+[[function.gaps]]
+what = "the pick-up swap flag (+0x5b8) cleared while triangle is not held"
+relation = "not-ported"
+issue = 990
+
 [[function]]
 address = 0x00387ad8
 name = "Car_Release"
@@ -186,6 +206,7 @@ status = "compared"
 [[function.gaps]]
 what = "the path with a parameter block (LightTaskManager_CreateWithParams, the scene lights)"
 relation = "not-ported"
+issue = 994
 
 [[function]]
 address = 0x003906b8
