@@ -16,9 +16,11 @@ namespace coney::ai {
 
 namespace {
 
-// The Warriors' filter (`Filter_IsThreatTo`): a cop only within 10 m and a threat; a civilian not at all (**Coney's
-// reading**: the ped type 3 with a threat response that would let one through is not modelled); any other when he is
-// a threat (isThreat()).
+// The Warriors' filter (`Filter_IsThreatTo`): a cop only within 10 m and a threat; a civilian (type 4) not at all; any
+// other when he is a threat (isThreat()) and a valid enemy (validEnemy(), which scanSees() tests right after it). The
+// civilian who would pass (ped type 3 with `+0x21c` set, not held from the rear) is not modelled, the `civl_co_di`
+// kind (type 6), which the original filters as any other, is refused, and a cop at exactly 10 m passes (the original
+// needs under 10 m): each a **Coney stand-in**.
 // @orig 0x0029bf98 Filter_IsThreatTo (unknown)
 bool warriorThreat(const Brain& scanner, const Brain& member) {
     if (member.type() == BrainType::Cop) {

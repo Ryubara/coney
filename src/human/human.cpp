@@ -1108,6 +1108,10 @@ void Human::updateMeters(bool sprintHeld) {
     m_sprinting = sprintAsked(sprintHeld, m_stamina.value());
 }
 
+// Triangle's action. Not built: the key path (Uncuff_WithKey) and a tag keeping the press. Its gates are a Coney
+// stand-in: the state mask 0x7bf9e9f7ff0 and the record's +0x08 mask 0x2fefefff are the caller's tests (tryActions():
+// airborne, climbing, the dispatcher's dropped phases, the busy stick) and a pick-up in progress here; the cuffed human
+// (kind 0) and the level's records are two callbacks where ContextAction_Use reads the record's kind.
 bool Human::tryContextAction() {
     // The level decides what the press does, whatever is in hand; not during a pick-up.
     if (m_pickUp) {
@@ -1497,6 +1501,8 @@ void Human::step(const HumanInput& input, const raycast::CollisionMesh* mesh) {
     updateActions(input.targets, mesh);
 }
 
+// **Coney stand-in** for Human_StepAnimation's two tests: every Coney human has its animator (the original steps only
+// one with an instance, +0xd8), and Coney poses on demand, so there is no bone cache to mark stale.
 void Human::animate(const raycast::CollisionMesh* mesh) {
     // The speed factors first: the Movement tunables change only between steps, and this is a step's first pass, before
     // any locomotion reads the speeds.

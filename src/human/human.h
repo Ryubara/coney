@@ -243,7 +243,7 @@ class Human final : public Holdable {
     /// The update's first pass, the animation step: the gait the last update left is kept for the dispatcher's gait
     /// tests, then every task advances (the clips' events moving the record's
     /// `+0x08`), and a climb follows its clips. Nothing for a human out of the world.
-    /// @orig 0x00249108 Humans_Update (unknown)
+    /// @orig 0x0023bd78 Human_StepAnimation (unknown)
     void animate(const raycast::CollisionMesh* mesh);
     /// The second pass, the state update: the record's stick turned by its camera; the locomotion (through the
     /// locomotion gate, human/locomotion_gate.h), the jump's air control or the climb's own motion, with the clip's
@@ -1119,7 +1119,7 @@ class Human final : public Holdable {
     void tryActions(const raycast::CollisionMesh* mesh, bool sprintHeld);
     // The context action triangle tries after a climb: the level's (setContextAction()), which also drops what is in
     // hand when there is nothing to take. Returns whether it did something.
-    // @orig 0x0027c120 Player_UpdateActions (unknown)
+    // @orig 0x002811f0 Player_TriangleAction (unknown)
     [[nodiscard]] bool tryContextAction();
     // A pick-up's step after the animation's: the turn, and the take at the clip's event; a clip replaced ends it.
     // @orig 0x0025e5a8 Human_PlayPickupClip (unknown)

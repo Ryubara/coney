@@ -899,6 +899,15 @@ coney = "src/audio/human_sound_events.h:HumanSoundEvents::impact"
 status = "legacy"
 
 [[function]]
+address = 0x00220df0
+name = "Hit_ResolveBlock"
+page = "sound-events.md#strike-human"
+role = "a strike's hit sound: the striking and the struck material"
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::strikeMaterialOf"
+status = "compared"
+
+[[function]]
 address = 0x00228228
 name = "HumanRecord_AreActionsBlocked"
 page = "sound-events.md#tag-lines"

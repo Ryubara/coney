@@ -269,11 +269,13 @@ class Fighter {
     [[nodiscard]] combat::ChainTargets chainTargets(const FighterInput& input);
     /// The snap's target: the nearest human within combat::kSnapSearchRange, combat::kSnapSearchCone of the stick's
     /// direction and combat::kSnapSearchHeight, standing, with health left and targetable (null for none).
-    /// **Coney stand-in**: the clear line to it (`0x00222a90`) is not tested.
+    /// The friendly and gang tests (`Human_IsFriendly` `0x00222a90`) are the targets list's: it holds only opposed
+    /// humans.
     /// The original's search is `0x0027aa38(h, 0x80)` (docs/research/combat/index.md#attacks).
     /// @orig 0x0027aa38 Player_FindSnapTarget (unknown)
     [[nodiscard]] static Combatant* snapTarget(const FighterInput& input);
-    /// The same search along heading `along` (radians).
+    /// The same search along heading `along` (radians). **Coney stand-in**: TargetFilter_Enemy's tests of the states
+    /// `0xe0000` and `0x1c00000000` and the held flags `0x40` and `0x402000` are not built.
     /// @orig 0x0027aa38 Player_FindSnapTarget (unknown)
     [[nodiscard]] static Combatant* snapTarget(const FighterInput& input, float along);
     /// Hits that reached a target, and the damage they did.

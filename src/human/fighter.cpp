@@ -1254,8 +1254,9 @@ bool Fighter::scoresRageOn(const Combatant& victim) {
 
 std::uint32_t Fighter::strikeMaterialOf(int animId, const combat::AnimRange* range,
                                         const HumanAnimator& animator) const {
-    // The strength: the hit code's (**Coney's reading** of the reaction's bits 4-5), one more for the Anim Range
-    // flags 0x600 or anim 11, at most 3 (docs/research/sound-events.md#strike-human).
+    // The strength: the hit code's (**Coney stand-in** for the reaction's bits 4-5, which Hit_PickReaction picks from
+    // the height and the flags), one more for the Anim Range flags 0x600 or anim 11, at most 3
+    // (docs/research/sound-events.md#strike-human).
     int strength = range != nullptr ? combat::decodeHitCode(range->kind).strength : 0;
     if ((range != nullptr && (range->flags & kStrongerHitFlags) != 0) || animId == kStrongerHitAnim) {
         ++strength;

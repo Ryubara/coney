@@ -1923,6 +1923,15 @@ coney = "src/ai/move_action.h:MoveAction::jumpLeg"
 status = "legacy"
 
 [[function]]
+address = 0x0029bf98
+name = "Filter_IsThreatTo"
+page = "ai-code.md#human-filters"
+role = "the Warriors' scan filter: a cop within 10 m and a threat, no civilian, else a threat and a valid enemy"
+level = "confirmed-code"
+coney = "src/ai/enemy_scan.cpp:warriorThreat"
+status = "compared"
+
+[[function]]
 address = 0x0029ce98
 name = "Brain_ScoreEnemy"
 page = "ai-code.md#enemy-list"

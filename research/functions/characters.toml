@@ -1564,6 +1564,15 @@ coney = "src/camera/slow_motion.h:SlowMotion::setScripted"
 status = "legacy"
 
 [[function]]
+address = 0x0023bd78
+name = "Human_StepAnimation"
+page = "characters.md#update"
+role = "a human's animation step: the instance's queued tasks"
+level = "confirmed-code"
+coney = "src/human/human.h:Human::animate"
+status = "compared"
+
+[[function]]
 address = 0x0023cd30
 name = "Human_UpdateLedSlots"
 page = "characters.md#code-update"
@@ -2057,6 +2066,15 @@ question = "combat-targets.md#q-alerted-stance"
 what = "a target in a scene is not dropped"
 relation = "stand-in"
 question = "combat-targets.md#q-clear-line"
+
+[[function]]
+address = 0x002811f0
+name = "Player_TriangleAction"
+page = "crimes.md#triangle"
+role = "triangle: the gates, the key uncuff, a tag's hold, then the context action"
+level = "confirmed-code"
+coney = "src/human/human.h:Human::tryContextAction"
+status = "compared"
 
 [[function]]
 address = 0x00281450
