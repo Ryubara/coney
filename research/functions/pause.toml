@@ -18,6 +18,11 @@ level = "confirmed-code"
 coney = "src/gamemodes/pause_mode.h:PauseMode::enter"
 status = "compared"
 
+[[function.gaps]]
+what = "`W_GameState + 0x56e0` = 1 is not set"
+relation = "not-ported"
+issue = 669
+
 [[function]]
 address = 0x0015dd38
 name = "PauseMode_Exit"
@@ -326,10 +331,10 @@ status = "legacy"
 address = 0x001db278
 name = "PauseMenu_OnConfirm"
 page = "pause.md#fn-pausemenu"
-role = "the Yes/No box's callback: 2 Yes, 3 No, 4 back"
+role = "the Yes/No box's callback: 2 (Yes) calls the handler the menu's flags pick, 3 (No) and 4 (back) the cancel handler"
 level = "confirmed-code"
 coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::onBoxCommand"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001db3c0
@@ -362,10 +367,10 @@ status = "compared"
 address = 0x001ddbc0
 name = "PauseMenu_FadeOut"
 page = "pause.md#fn-pausemenu"
-role = "the closing fade: once `+0x1b80` is set the menu's alpha falls to 0, then the mode pops"
+role = "the closing fade: the alpha falls over 1.5 s, cut to a byte; zeroed on the first update after; closed more than 0.5 s after the last update inside the fade"
 level = "confirmed-code"
-coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::animate"
-status = "legacy"
+coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::fadeOut"
+status = "compared"
 
 [[function]]
 address = 0x001ddcf8
@@ -380,37 +385,37 @@ status = "compared"
 address = 0x001de488
 name = "PauseMenu_CloseScreen"
 page = "pause.md#fn-pausemenu"
-role = "closes the open screen (Options once its back flag `+0x45d0` is set) and restores the headers"
+role = "closes the open screen (Options once its back flag `+0x45d0` is set), puts the headers back and sets the usage line to string `0x1a`"
 level = "confirmed-code"
 coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::closeScreen"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001de6c0
 name = "PauseMenu_SelectItem"
 page = "pause.md#fn-pausemenu"
-role = "accept on a grid item: opens its screen, the Yes/No box or resumes"
+role = "accept on a grid item: opens its screen, asks, or closes"
 level = "confirmed-code"
 coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::selectItem"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001ded68
 name = "PauseMenu_OnYesNoCommand"
 page = "pause.md#fn-pausemenu"
-role = "routes commands to the open Yes/No box (cues `0xe` and 8)"
+role = "the Yes/No box's commands: up and down cue `0xe`, accept cue 8, then the box"
 level = "confirmed-code"
 coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::onBoxCommand"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001dee00
 name = "PauseMenu_OnCommand"
 page = "pause.md#fn-pausemenu"
-role = "the grid owner's command handler, which sees every grid command first"
+role = "the grid owner's command handler: guards, the box, then a jump table of the six commands"
 level = "confirmed-code"
 coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::onGridCommand"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001df700

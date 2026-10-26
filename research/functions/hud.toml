@@ -871,8 +871,8 @@ name = "HudGenericBar_SetFill"
 page = "hud-bar.md#generic-fill"
 role = "when created, the fill (`+0x78`) clamped to 0-1"
 level = "confirmed-code"
-coney = "src/hud/scripted_bars.h:ScriptedBars::setPercentage"
-status = "legacy"
+coney = "src/gui/bar.h:Bar::setFill"
+status = "compared"
 
 [[function]]
 address = 0x001c8b08
