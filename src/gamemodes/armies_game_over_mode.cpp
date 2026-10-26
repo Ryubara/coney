@@ -103,7 +103,7 @@ ModeResult ArmiesGameOverMode::update(GameModeStack& stack, const FrameTime& fra
     // been traced, so Coney takes every Start there.
     for (std::size_t port = 0; port < 2; ++port) {
         const Pad& pad = stack.pads().port(port);
-        if (!playerIn(static_cast<int>(port))) {
+        if (port == 1 && !playerIn(1)) {
             continue;
         }
         if (pad.connected() && (pad.pressedWithRepeat() & pad::kStart) != 0) {
