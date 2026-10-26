@@ -306,13 +306,13 @@ from the runtime: PM_Light's bar starts at x 0); fill colour `+0x28`, fill fract
 
 The big header at the top of the story pause menu (the mission's title after one to three circled characters, the level
 name under it) is the class we call **`CircledTextHeader`** (constructor `0x001e7f50`, vtable `0x0053ca00`), a subclass
-of `IconTextHeader` (`0x001e77a0`, [function index](#fn-after-controlmenuhud)). It has **one instance**, the pause
-menu's top header at `0x006340c0`, built by `PauseMenu_StaticInit` (`0x001dfc80`, the only caller of the constructor)
-with the text "Current Objectives" (`0x108`); the two other pause headers (`0x00634c70`, `0x00634fe0`) are plain
-`IconTextHeader`s. Confirmed (code). The front-end screens that pass the allocator tag `CircledTextHeader` (mission
-select `0x001bc5a8` and `0x001bd838`, game stats `0x002155a8`) allocate `0x600` bytes and construct a
-[`CircledText`](#fn-circledtext) (`0x001d0aa8`) in them, a different and smaller class: the tag is only a name.
-Confirmed (code) at those call sites.
+of `IconTextHeader` (constructor `IconTextHeader_Construct` `0x001e77a0`, [function index](#fn-after-controlmenuhud)).
+It has **one instance**, the pause menu's top header at `0x006340c0`, built by `PauseMenu_StaticInit` (`0x001dfc80`, the
+only caller of the constructor) with the text "Current Objectives" (`0x108`); the two other pause headers (`0x00634c70`,
+`0x00634fe0`) are plain `IconTextHeader`s. Confirmed (code). The front-end screens that pass the allocator tag
+`CircledTextHeader` (mission select `0x001bc5a8` and `0x001bd838`, game stats `0x002155a8`) allocate `0x600` bytes and
+construct a [`CircledText`](#fn-circledtext) (`0x001d0aa8`) in them, a different and smaller class: the tag is only a
+name. Confirmed (code) at those call sites.
 
 **Parts** (offsets from the object; confirmed (code) at `0x001e7f50`, `0x001e7898`, `0x001e8368`):
 
@@ -321,13 +321,13 @@ Confirmed (code) at those call sites.
 | `+0x20` / `+0x30` | position (x at `+0x20`, y at `+0x28`) and box (width at `+0x30`) | the caller's |
 | `+0x360` | text offset (x at `+0x360`, y at `+0x368`) | the caller's |
 | `+0x50` | the child (the pause menu passes its current-objectives checklist) | placed under the header ([Layout](#circled-text-header-layout)) |
-| `+0x70` | the label, a markup text (`IconTextHeader`'s) | size 1.0, grey `0x005fd310`, font slot 3, the constructor's text |
-| `+0x260` | rule A, a `BaseWidget` (`IconTextHeader`'s) | the caller's sprite word, size 0.1, depth 8,000, grey `0x005fd310` |
-| `+0x390` | rule B, a `BaseWidget` | the same sprite word, depth 8,000, grey `0x005fd310` |
-| `+0x490` + `0x100` × i, i < 3 | three circles, `BaseWidget`s | `part_page0` rectangle 84 (sprite word `0x54`), depth 8,500, **black** (`0x005fd260`), size 0.082 × the circle scale |
-| `+0x790` + `0xd0` × i, i < 3 | a one-character `TextWidget` in each circle | font slot 4, `Font_Size(1.561)` |
-| `+0xa00` | the title, a `TextWidget` | font slot 4, `Font_Size(2.23)`, grey `0x005fd310` |
-| `+0xad0` | the subtitle, a `TextWidget` | font slot 4, `Font_Size(1.561)`, grey `0x005fd310` |
+| `+0x70` | the label, a markup text (`IconTextHeader`'s) | size 1.0, grey `0x005fd310`, font slot 3, the constructor's text; confirmed (code) |
+| `+0x260` | rule A, a `BaseWidget` (`IconTextHeader`'s) | the caller's sprite word, size 0.1, depth 8,000, grey `0x005fd310`; confirmed (code) |
+| `+0x390` | rule B, a `BaseWidget` | the same sprite word, depth 8,000, grey `0x005fd310`; confirmed (code) |
+| `+0x490` + `0x100` × i, i < 3 | three circles, `BaseWidget`s | `part_page0` rectangle 84 (sprite word `0x54`), depth 8,500, **black** (`0x005fd260`), size 0.082 × the circle scale; confirmed (code) |
+| `+0x790` + `0xd0` × i, i < 3 | a one-character `TextWidget` in each circle | font slot 4, `Font_Size(1.561)`, grey `0x005fd310`; confirmed (code) |
+| `+0xa00` | the title, a `TextWidget` | font slot 4, `Font_Size(2.23)`, grey `0x005fd310`; confirmed (code) |
+| `+0xad0` | the subtitle, a `TextWidget` | font slot 4, `Font_Size(1.561)`, grey `0x005fd310`; confirmed (code) |
 | `+0x370` | the title's characters (the text after the `:`) | |
 | `+0xba0` | the number of circles in use | |
 
@@ -382,10 +382,10 @@ text offset (ox, oy) and the factors below, in GUI coordinates ([HUD: coordinate
 - the title (`Font_Size(2.23)`) after the last circle at (x, `y0` × **d**), or at x 0.255 when there is no circle;
 - the label at (X − W / 2 + ox − 0.005, (Y + h / 2 − its height / 2 + oy + 0.1) × **e**);
 - the child at (the label's x + 0.005, (Y + h / 2 + 0.02 + 0.1 + g) × **f**), with g = −0.015 (−0.025 with flag `0x02`
-  alone; `0x001e7898`).
+  alone; confirmed (code) at `0x001e7898`).
 
-The factors per video mode (`CircledTextHeader_ApplyVideoMode`, `0x001e81c0`, run at the top of every update; device
-flags as on [Graphics](graphics.md#video-mode)):
+The factors per video mode (`CircledTextHeader_ApplyVideoMode`, `0x001e81c0`, run at the top of every update;
+confirmed (code); device flags as on [Graphics](graphics.md#video-mode)):
 
 | Flags | a `0x0050f2fc` | b `0x0050f300` | c `0x0050f304` | d `0x0050f308` | e `0x0050f30c` | f `0x0050f310` | s `0x0050f2dc` |
 | --- | --- | --- | --- | --- | --- | --- | --- |
