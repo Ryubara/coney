@@ -3,7 +3,6 @@
 
 #include <algorithm>
 #include <charconv>
-#include <cmath>
 #include <format>
 #include <utility>
 
@@ -104,6 +103,7 @@ graphics::Rgba areaColour(double area) {
     case 4:
         return {74, 49, 29, 255};
     default:
+        // Coney's choice: black; the original sets only the alpha and leaves the colour as it was (not seen).
         return graphics::kBlack;
     }
 }
@@ -111,7 +111,8 @@ graphics::Rgba areaColour(double area) {
 GameStatsData gatherGameStats(const LevelTable& levels, const UnlockRecords& unlocks, const SavedProgress& progress,
                               const GlobalStrings* strings) {
     using namespace game_stats_strings;
-    // The listed records, sorted by mission byte then number.
+    // The listed records, sorted by mission byte. Coney's choice: the level number breaks a tie, which the original's
+    // unstable sort leaves open (the disc's bytes are distinct).
     std::vector<std::size_t> listed;
     for (std::size_t index = 0; index < LevelTable::kCapacity; ++index) {
         if (const LevelRecord* record = levels.at(index); record != nullptr && isGameStatsListed(*record)) {
@@ -179,6 +180,7 @@ GameStatsData gatherGameStats(const LevelTable& levels, const UnlockRecords& unl
         level.targets = unlocks.levelTargets(progress, level.number);
         data.levels.push_back(std::move(level));
     }
+    // Coney's choice: the sum stops at the largest count (the original's would wrap).
     data.totalSeconds = static_cast<std::uint32_t>(std::min<std::uint64_t>(seconds, UINT32_MAX));
     return data;
 }
@@ -272,7 +274,8 @@ void GameStatsSubItem::moveTo(float x, float top, float shown) {
     const float full = whole.height;
     const float height = std::clamp(shown, 0.0F, 1.0F) * full;
     m_drawn = height > 0.0F;
-    // The picture centred on the block's x and on its shown height, the column's width wide.
+    // The picture centred on the block's x and on its shown height, the column's width wide. Coney's choice: drawn
+    // whole in the shown height (the original cuts its texture rectangle by the reveal).
     m_picture.setup(BaseWidgetSetup{.x = x,
                                     .y = top + (height / 2.0F),
                                     .height = height,
@@ -284,6 +287,7 @@ void GameStatsSubItem::moveTo(float x, float top, float shown) {
     const float left = x - (kColumnWidth / 2.0F);
     style.x = left + kColumnWidth + kTextGap;
     style.y = top + (graphics::fontMetrics(kLayoutFontSize).height / 2.0F);
+    // Coney's choice: the lines that fit the shown height are drawn (the original's text widget crops by height).
     const auto fit =
         static_cast<std::size_t>((static_cast<float>(whole.lines) * height / std::max(full, 1e-6F)) + 1e-3F);
     style.firstLine = 0;
@@ -308,16 +312,14 @@ GameStatsScreen::GameStatsScreen() {
     m_usage.setup(TextWidgetSetup{.x = kUsageX, .y = kUsageY, .colour = kMenuGrey, .fontSlot = kTextFontSlot});
 }
 
-graphics::Rgba GameStatsScreen::backgroundColour(std::uint64_t elapsedMs) {
-    const std::uint64_t step = (elapsedMs / kColourStepMs) % kColours.size();
-    const float t = static_cast<float>(elapsedMs % kColourStepMs) / static_cast<float>(kColourStepMs);
-    const graphics::Rgba from = kColours.at(step);
+graphics::Rgba GameStatsScreen::backgroundColour(std::size_t step, float share) {
+    const graphics::Rgba from = kColours.at(step % kColours.size());
     const graphics::Rgba to = kColours.at((step + 1) % kColours.size());
-    const auto mix = [t](std::uint8_t a, std::uint8_t b) {
-        return static_cast<std::uint8_t>(
-            std::lround(static_cast<float>(a) + ((static_cast<float>(b) - static_cast<float>(a)) * t)));
+    // Each channel a x (1 - share) + b x share, the fraction dropped.
+    const auto mix = [share](std::uint8_t a, std::uint8_t b) {
+        return static_cast<std::uint8_t>((static_cast<float>(a) * (1.0F - share)) + (static_cast<float>(b) * share));
     };
-    return graphics::Rgba{mix(from.r, to.r), mix(from.g, to.g), mix(from.b, to.b), 255};
+    return graphics::Rgba{mix(from.r, to.r), mix(from.g, to.g), mix(from.b, to.b), mix(from.a, to.a)};
 }
 
 graphics::SpriteBatch* GameStatsScreen::thumbBatch(const GameStatsLevel& level) const {
@@ -342,17 +344,18 @@ void GameStatsScreen::open(GameStatsData data, std::uint64_t nowMs) {
     m_data = std::move(data);
     m_open = true;
     m_closed = false;
-    m_openMs = nowMs;
+    // The colour cycle starts at red now (the summary's set-up stamps it).
+    m_stepStartMs = nowMs;
+    m_colourStep = 0;
     m_background.setBatch(m_batches.background);
-    // The background: 1.1 high and 1.15 / 1.1 as wide as its rectangle's shape makes it (Coney's reading of the
-    // set-up's 1.15 x 1.1).
-    m_background.setup(BaseWidgetSetup{.x = 0.5F, .y = 0.5F, .height = kBackgroundHeight, .colour = kColours.at(0)});
-    const float shapeWidth = m_background.overlaySize().first;
+    // The background: kBackgroundWidth (a GUI width, converted) by kBackgroundHeight, as each update sizes it.
     m_background.setup(BaseWidgetSetup{.x = 0.5F,
                                        .y = 0.5F,
                                        .height = kBackgroundHeight,
-                                       .width = shapeWidth * kBackgroundWidth / kBackgroundHeight,
+                                       .width = graphics::OverlayCamera::guiWidthToOverlay(kBackgroundWidth),
                                        .colour = kColours.at(0)});
+    // Coney's choice: the summary's bottom and the usage line's top, which the original also stores, are not kept
+    // (nothing reads them).
     m_summary.setText(gameStatsSummary(m_data, m_strings));
     m_usage.setText(m_strings != nullptr ? m_strings->get(game_stats_strings::kUsage) : std::string_view{});
 
@@ -425,7 +428,17 @@ void GameStatsScreen::update(const GuiFrame& frame) {
     if (!m_open) {
         return;
     }
-    m_background.setColour(backgroundColour(frame.timeMs - m_openMs));
+    // The colour: a step moves on (and starts again from now) on the first frame more than kColourStepMs after it
+    // began, showing its first colour; otherwise the colour is blended through the step.
+    const std::uint64_t inStep = frame.timeMs - m_stepStartMs;
+    float share = 0.0F;
+    if (inStep > kColourStepMs) {
+        m_colourStep = (m_colourStep + 1) % kColours.size();
+        m_stepStartMs = frame.timeMs;
+    } else {
+        share = static_cast<float>(inStep) / static_cast<float>(kColourStepMs);
+    }
+    m_background.setColour(backgroundColour(m_colourStep, share));
     m_summary.update(frame);
     m_usage.update(frame);
     // The descriptions: the focused one opens once the delay has run, the others close, a step a frame.
@@ -435,7 +448,8 @@ void GameStatsScreen::update(const GuiFrame& frame) {
             item.setReveal(item.reveal() - kRevealStep);
             continue;
         }
-        // The focused one holds until the delay has run (so the first, open from the start, stays open).
+        // Coney's choice: the focused one holds until the delay has run (so the first, open from the start, stays
+        // open); the description's own focus, which the original's menu input waits on, is not modelled.
         if (frame.timeMs - m_focusMs >= kRevealDelayMs && item.reveal() < 1.0F) {
             if (item.reveal() == 0.0F) {
                 playCue(kRevealCue);
@@ -453,7 +467,8 @@ void GameStatsScreen::update(const GuiFrame& frame) {
         CircledText& header = *m_headers.at(i);
         GameStatsSubItem& item = *m_subItems.at(i);
         const bool inWindow = i >= first && i < first + m_list.visibleCount();
-        // A header that ends on the clip fits (a little room for the sum's rounding).
+        // Coney's choice: the window jumps to keep the cursor in its middle row (the original scrolls with a reveal),
+        // and a header that ends on the clip fits (a little room for the sum's rounding).
         const bool shown = inWindow && used + kHeaderHeight <= kClipHeight + kClipSlack;
         header.setVisible(shown);
         item.setVisible(shown);
@@ -463,7 +478,8 @@ void GameStatsScreen::update(const GuiFrame& frame) {
         header.moveTo(centre);
         header.setFocused(i == m_list.selected());
         header.update(frame);
-        // The block under its header, cut where the clip ends.
+        // The block under its header. Coney's choice: a block the clip cuts is cut at the clip (the original reveals
+        // the last item in part).
         const float full = item.fullHeight();
         const float room = kClipHeight - used - kHeaderHeight + kRowOverlap;
         const float shownShare = full > 0.0F ? std::clamp(std::min(item.reveal(), room / full), 0.0F, 1.0F) : 0.0F;

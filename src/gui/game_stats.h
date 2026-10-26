@@ -199,7 +199,9 @@ class GameStatsSubItem : public Widget {
     bool m_drawn = false; // whether moveTo() left anything to draw
 };
 
-/// The statistics screen (`GUI/GameStats.cpp`, game mode 0x13's widget): the colour-cycling background, the summary,
+/// The statistics screen (`GUI/GameStats.cpp`, game mode 0x13's widget): the colour-cycling background (kColours, a
+/// step moving on the first frame more than kColourStepMs after the step began, the colour blended through the step),
+/// the summary,
 /// the list of complete missions and the usage line. Back closes it; accept does nothing; up and down move through the
 /// list.
 ///
@@ -297,10 +299,12 @@ class GameStatsScreen : public Widget {
     /// @orig 0x002169a8 GameStats_OnCommand (GameStats.cpp)
     void handle(MenuCommand command, std::uint64_t nowMs);
 
-    /// The background's colour `elapsedMs` after opening: red, green, blue and back, each a linear blend
-    /// over kColourStepMs.
+    /// The background's colour `share` (0-1) of the way through colour step `step` (0 red, 1 green, 2 blue, each
+    /// towards the next, blue back to red): each channel blended and cut to a whole number (`Colour_LerpPacked`).
     /// @orig 0x00216a60 GameStats_Update (GameStats.cpp)
-    [[nodiscard]] static graphics::Rgba backgroundColour(std::uint64_t elapsedMs);
+    [[nodiscard]] static graphics::Rgba backgroundColour(std::size_t step, float share);
+    /// The background's colour step now (0-2).
+    [[nodiscard]] std::size_t colourStep() const { return m_colourStep; }
 
     /// Whether the screen is open.
     [[nodiscard]] bool isOpen() const { return m_open; }
@@ -338,9 +342,10 @@ class GameStatsScreen : public Widget {
     std::vector<std::unique_ptr<GameStatsSubItem>> m_subItems;
     ScrollingMenu m_list;
     MenuInput m_input;
-    std::size_t m_focused = 0;   // the entry whose description may open
-    std::uint64_t m_focusMs = 0; // when it took the focus
-    std::uint64_t m_openMs = 0;
+    std::size_t m_focused = 0;       // the entry whose description may open
+    std::uint64_t m_focusMs = 0;     // when it took the focus
+    std::uint64_t m_stepStartMs = 0; // when the colour step began (`+0xa8`)
+    std::size_t m_colourStep = 0;    // the colour step (`+0xac`)
     bool m_open = false;
     bool m_closed = false;
 };

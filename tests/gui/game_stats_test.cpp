@@ -11,6 +11,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "graphics/font.h"
+#include "graphics/overlay_camera.h"
 #include "gui/game_stats.h"
 #include "gui/global_strings.h"
 #include "warriors/level_table.h"
@@ -170,22 +171,36 @@ TEST_CASE("the list: levels with a mission byte, not 61-65 or 102-137, sorted, s
           "<COLOR 505050FF>s102 <COLOR 806400FF>1 hour, 1 minute");
 }
 
-TEST_CASE("the screen's background cycles red, green, blue over 5 s steps; back closes it, accept does not",
+TEST_CASE("the screen's background cycles red, green, blue, each step moving on the first frame past 5 s; back closes "
+          "it, accept does not",
           "[game_stats]") {
     // Expected: frontend.md#game-stats, confirmed (code)
     using Screen = gui::GameStatsScreen;
-    CHECK(Screen::backgroundColour(0).r == 150);
-    const coney::graphics::Rgba half = Screen::backgroundColour(2500);
+    CHECK(Screen::backgroundColour(0, 0.0F) == coney::graphics::Rgba{150, 50, 50, 255});
+    const coney::graphics::Rgba half = Screen::backgroundColour(0, 0.5F);
     CHECK(half.r == 100);
     CHECK(half.g == 100);
-    CHECK(Screen::backgroundColour(5000).g == 150);
-    CHECK(Screen::backgroundColour(10000).b == 150);
-    CHECK(Screen::backgroundColour(15000).r == 150);
+    // The fraction is dropped: green a third of the way to blue is 150 x 2/3 + 50 x 1/3 = 116.7, cut to 116.
+    CHECK(Screen::backgroundColour(1, 1.0F / 3.0F).g == 116);
+    CHECK(Screen::backgroundColour(2, 1.0F).r == 150); // blue back to red
 
+    // The background is the converted GUI width 1.15 by 1.1.
     Screen screen;
     gui::GameStatsData data;
     data.levels.resize(3);
     screen.open(data, 0);
+    CHECK(screen.background().setupValues().width.value_or(0.0F) ==
+          Approx(coney::graphics::OverlayCamera::guiWidthToOverlay(1.15F)));
+    CHECK(screen.background().setupValues().height == Approx(1.1F));
+    // At 5,000 ms the first step is still blending; the first frame past it starts green afresh.
+    screen.update(gui::GuiFrame{5000, nullptr});
+    CHECK(screen.colourStep() == 0);
+    CHECK(screen.background().colour().g == 150);
+    screen.update(gui::GuiFrame{5016, nullptr});
+    CHECK(screen.colourStep() == 1);
+    CHECK(screen.background().colour() == coney::graphics::Rgba{50, 150, 50, 255});
+    screen.update(gui::GuiFrame{5016 + 2500, nullptr});
+    CHECK(screen.background().colour().b == 100);
     CHECK(screen.isOpen());
     CHECK(screen.list().count() == 3);
     screen.handle(gui::MenuCommand::Down, 1000);

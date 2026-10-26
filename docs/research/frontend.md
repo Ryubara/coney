@@ -1064,9 +1064,14 @@ and ends the mode on the first frame the fade is over (`0x005fdeb8 + 0x1d4` clea
 (`ResourceMgr_RenderOverlay`). Confirmed (code); values are the default mode's (other modes set other globals at
 `0x005100e0`-`0x00510118` in `0x00215e78`).
 
-- **Background:** one sprite, word `0xc0005` (sheet-table record 12, rectangle 5), centred at (0.5, 0.5), 1.15 ×
-  1.1, depth 8,000. Its colour moves from red (150, 50, 50) to green (50, 150, 50) to blue (50, 50, 150) and back,
-  each step a linear blend over 5,000 ms (`0x0051011c`, colours `0x00640c60`).
+- **Background:** one sprite, word `0xc0005` (sheet-table record 12, rectangle 5), centred at (0.5, 0.5), depth
+  8,000, sized every update to 1.15 × 1.1 with `BaseWidget_SetSize(..., convert 1)`, so the 1.15 is a GUI width the
+  device converts (`0x00195330`, × 640 / 448) and the sprite keeps that size (`BaseWidget_UpdateSize` mode 2). Its
+  colour moves from red (150, 50, 50) to green (50, 150, 50) to blue (50, 50, 150) and back (colours `0x00640c60`):
+  the step and its start time are set when the summary is built (`+0xac` = 0, `+0xa8` = now); on the first update
+  more than 5,000 ms (`0x0051011c`) after the step began the next step starts from that frame, shown at its first
+  colour, and otherwise the colour is the blend `Colour_LerpPacked` (`0x0017a258`) makes at the elapsed share, each
+  channel a × (1 − t) + b × t cut to a whole number. Confirmed (code) at `0x00216a60` and `0x00215150`.
 - **Summary** (a `ScrollingTextWidget` at (0.01, 0.06), `0x005100f0` / `0x005100f4`, set up with size 0 and given its
   text with wrap width 0, so it is never wrapped; text built by `0x00215150`): the title (string `0x60`,
   size 1.6, big font, grey 178), then five lines in size 1.2, each a grey (80, 80, 80) label and a value. The text is

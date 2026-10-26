@@ -90,6 +90,7 @@ void tallyOne(UnlockTally& tally, bool unlocked) {
 } // namespace
 
 unsigned UnlockCounts::percent() const {
+    // Coney's choice: 0 with no records (the original divides by the total).
     if (records.total == 0) {
         return 0;
     }
