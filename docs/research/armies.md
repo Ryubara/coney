@@ -298,7 +298,7 @@ timings, counted from `P1.Start03`'s `GoalMoveToFlag` in 60 Hz ticks (Coney's de
 
 So Coney's walk starts about 8 ticks sooner, the flag's message 8 comes a few ticks sooner after the stop, and the
 timer runs 6 ticks shorter (3031 steps of 33 ms counted, where the original's frames of about 33.4 ms took 6068 ticks):
-the game over comes about 0.3 s sooner in all. Why the walk starts sooner is not traced.
+the game over comes about 0.3 s sooner in all. Why the walk starts sooner is open ([q-walk-start](#q-walk-start)).
 
 - **The GO sign's bleep** (`vags/misc/bleep27`, restarted by `GoSign_Render` `0x0019ed28`) is a marked stand-in:
   Coney's sign is silent.
@@ -375,6 +375,12 @@ Find the writers of a brain's `+9` in Ghidra.
 
 By the code a leaf resting on its 60-tick interval starts 1 to 60 ticks after the command; this was not measured.
 Reading the garage leaf's offset each tick after `P1.Start02` in PCSX2 would show it.
+
+### When the walk starts {#q-walk-start}
+
+Swan starts moving 19 to 26 ticks after `GoalMoveToFlag` in the original and 14 in Coney. Whether the original's goal
+waits for its first route, a turn or the clip `P1.Start03` starts is not traced. A breakpoint on the goal's first
+locomotion request after `0x0035ff18`, read against the tick count, would show it.
 
 ## How this was checked
 
