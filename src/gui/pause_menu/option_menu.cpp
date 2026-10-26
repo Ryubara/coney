@@ -26,7 +26,8 @@ constexpr float kBrightnessBarY = 0.50F;
 // The bars' back and fill are drawn from the bar's place moved by this (`StatBarItem_Setup`).
 constexpr float kBarShiftX = -0.004F;
 constexpr float kBarShiftY = 0.004F;
-// Less than this from an end counts as at the end (the bar's 0.05 steps in floats).
+// Less than this from an end counts as at the end. Coney's choice: the original compares with 0 and 1 exactly, but
+// its FPU rounds toward zero, so the same exact compare on another FPU could take one more step at an end.
 constexpr float kBarEpsilon = 0.001F;
 
 // A colour as the markup's colour tag.
@@ -56,25 +57,33 @@ OptionValues OptionValues::defaults(bool wideVideo) {
 
 OptionLayout OptionLayout::forMode(Language language, bool widescreen, bool flag02) {
     OptionLayout layout;
-    if (widescreen) {
+    // German moves the Camera answers and Restore Default's; a mode below may move the Camera answers again.
+    if (language == Language::German) {
+        layout.cameraAnswersExtra = 0.1F;
+        layout.restoreAnswersOffset = 0.11F;
+    }
+    if (flag02 && widescreen) {
+        // Flags 0x02 and 0x04: the default places with smaller squares and the Camera answers 0.1 further right.
+        layout.squareScale = 0.7F;
+        layout.cameraAnswersExtra = 0.1F;
+    } else if (flag02) {
+        // Flag 0x02 alone: titles and rows closer together, the Camera answers further right, smaller squares.
+        layout.titleY = 0.32F;
+        layout.titleStep = 0.045F;
+        layout.lightingLabelY = 0.33F;
+        layout.rowY = 0.37F;
+        layout.rowStep = 0.04F;
+        layout.volumeRows[0] = 0.38F;
+        layout.volumeRows[1] = 0.415F;
+        layout.cameraAnswersExtra = 0.12F;
+        layout.squareScale = 0.7F;
+    } else if (widescreen) {
         // 16:9: everything starts higher.
         layout.titleY = 0.24F;
         layout.lightingLabelY = 0.24F;
         layout.rowY = 0.30F;
         layout.squaresY = 0.34F;
         layout.volumeRows = {0.31F, 0.345F, 0.395F, 0.43F};
-    } else if (flag02) {
-        // Flag 0x02 without 0x04: titles and rows closer together, the answers further right, smaller squares.
-        layout.titleY = 0.32F;
-        layout.titleStep = 0.045F;
-        layout.rowY = 0.37F;
-        layout.rowStep = 0.04F;
-        layout.answersOffset += 0.12F;
-        layout.squareScale = 0.7F;
-    }
-    if (language == Language::German) {
-        layout.cameraAnswersExtra = 0.1F;
-        layout.restoreAnswersOffset = 0.11F;
     }
     return layout;
 }
@@ -107,7 +116,7 @@ void OptionMenu::open(const GlobalStrings* strings, MenuInput& input, Hooks hook
     m_layout = layout;
     m_level = level;
     m_title = 0;
-    m_item = 0;
+    m_selected.fill(0);
     m_pageOpen = false;
     m_open = true;
     input.focus(nowMs);
@@ -280,7 +289,7 @@ void OptionMenu::colour() {
     for (std::size_t p = 0; p < kOptionPages; ++p) {
         const std::vector<std::unique_ptr<OptionItem>>& items = m_pages.at(p);
         for (std::size_t i = 0; i < items.size(); ++i) {
-            const bool selected = m_pageOpen && p == m_title && i == m_item;
+            const bool selected = m_pageOpen && p == m_title && i == m_selected.at(p);
             items.at(i)->labelText.style().colour = selected ? kMenuGrey : kDimGrey;
         }
     }
@@ -320,11 +329,15 @@ bool OptionMenu::handle(MenuCommand command) {
     }
     case MenuCommand::Left:
     case MenuCommand::Right:
+        playCue(kRefusedCue);
         return false;
     case MenuCommand::Accept:
-        // The page opens on its first item, remembering its values.
+        // The page opens on the item it was left on, remembering its values; Restore Default is on No again.
         m_pageOpen = true;
-        m_item = 0;
+        if (static_cast<OptionPage>(m_title) == OptionPage::RestoreDefault && !page().empty()) {
+            page().front()->choice = 1;
+            refreshAnswers(*page().front());
+        }
         m_heading.setText(string(option_strings::kTitles.at(m_title)));
         beginEdit();
         playCue(kAcceptCue);
@@ -343,6 +356,7 @@ bool OptionMenu::handle(MenuCommand command) {
 
 bool OptionMenu::pageCommand(MenuCommand command) {
     std::vector<std::unique_ptr<OptionItem>>& items = page();
+    std::size_t& selected = m_selected.at(m_title);
     const OptionPage id = static_cast<OptionPage>(m_title);
     const auto leavePage = [&] {
         if (id == OptionPage::Audio && m_hooks.previewMusic) {
@@ -353,41 +367,47 @@ bool OptionMenu::pageCommand(MenuCommand command) {
     case MenuCommand::Up:
     case MenuCommand::Down: {
         const bool up = command == MenuCommand::Up;
-        if ((up && m_item == 0) || (!up && m_item + 1 >= items.size())) {
+        if ((up && selected == 0) || (!up && selected + 1 >= items.size())) {
             playCue(kRefusedCue);
             return false;
         }
-        m_item = up ? m_item - 1 : m_item + 1;
+        selected = up ? selected - 1 : selected + 1;
         playCue(kMoveCue);
         colour();
         return false;
     }
     case MenuCommand::Left:
     case MenuCommand::Right:
-        if (m_item < items.size()) {
-            itemCommand(*items.at(m_item), command == MenuCommand::Right);
+        if (selected < items.size()) {
+            itemCommand(*items.at(selected), command == MenuCommand::Right);
         }
         return false;
     case MenuCommand::Accept: {
         // The item's accept (confirm mode applies its answer), cue 8, and the page closes keeping every value.
         bool restored = false;
-        if (m_item < items.size() && items.at(m_item)->confirm) {
-            OptionItem& item = *items.at(m_item);
+        if (selected < items.size() && items.at(selected)->confirm) {
+            OptionItem& item = *items.at(selected);
             restored = item.setting == OptionSetting::RestoreDefault && item.choice == 0;
             applyChoice(item, true);
         }
         playCue(kAcceptCue);
         leavePage();
         if (restored) {
-            // The menu reopens on the new values (`0x0050ed14`); Coney rebuilds the pages in place.
+            // The menu reopens on the new values (`0x0050ed14`), on its first title with every page on its first
+            // item; Coney rebuilds the pages in place.
             buildPages();
+            m_title = 0;
+            m_selected.fill(0);
         }
         return true;
     }
     case MenuCommand::Back:
         playCue(kBackCue);
-        // Vibration and Restore Default keep their values; the others put back what the page had when opened.
-        if (id != OptionPage::Vibration && id != OptionPage::RestoreDefault) {
+        // Vibration stops its preview rumble first; every page but Restore Default puts back what it had when opened.
+        if (id == OptionPage::Vibration && m_hooks.stopVibration) {
+            m_hooks.stopVibration();
+        }
+        if (id != OptionPage::RestoreDefault) {
             revert();
         }
         leavePage();
@@ -400,12 +420,8 @@ void OptionMenu::itemCommand(OptionItem& item, bool right) {
     switch (item.kind) {
     case OptionItemKind::Choice: {
         const std::size_t wanted = right ? 1 : 0;
-        if (item.choice == wanted) {
-            playCue(kRefusedCue);
-            return;
-        }
+        playCue(item.choice == wanted ? kRefusedCue : kMoveCue);
         item.choice = wanted;
-        playCue(kMoveCue);
         refreshAnswers(item);
         if (!item.confirm) {
             applyChoice(item, false);
@@ -414,12 +430,9 @@ void OptionMenu::itemCommand(OptionItem& item, bool right) {
     }
     case OptionItemKind::VolumeBar:
     case OptionItemKind::Brightness: {
-        if ((!right && item.bar <= kBarEpsilon) || (right && item.bar >= 1.0F - kBarEpsilon)) {
-            playCue(kRefusedCue);
-            return;
-        }
+        const bool atEnd = right ? item.bar >= 1.0F - kBarEpsilon : item.bar <= kBarEpsilon;
+        playCue(atEnd ? kRefusedCue : kMoveCue);
         item.bar = std::clamp(item.bar + (right ? kBarStep : -kBarStep), 0.0F, 1.0F);
-        playCue(kMoveCue);
         if (item.kind == OptionItemKind::Brightness) {
             // OptionMenu_AddBrightness: the brightness moves by 5 within 0-100.
             m_values.brightness =

@@ -90,8 +90,8 @@ struct OptionLayout {
     float squaresY = 0.38F;                                        ///< The brightness squares' y (`0x0050ed4c`).
     float squareScale = 1.0F;                                      ///< `0x0050ed44`.
 
-    /// The layout for `language` in the default video mode, in 16:9 (`widescreen`, device flag `0x04`) and with flag
-    /// `0x02` (`flag02`). Flag `0x08` is not modelled.
+    /// The layout for `language` in the default video mode, in 16:9 (`widescreen`, device flag `0x04`), with flag
+    /// `0x02` (`flag02`) and with both. Flag `0x08` is not modelled.
     /// @orig 0x001d86a8 OptionMenu_Open (OptionMenu.cpp)
     [[nodiscard]] static OptionLayout forMode(Language language, bool widescreen, bool flag02);
 };
@@ -143,19 +143,21 @@ struct OptionItem {
 /// replaces the list with that page, whose items are edited in place.
 ///
 /// - **Titles** at (0.26, 0.30 + 0.055 × i), `big_font` (slot 6) at 1.3, the selected one `0x005fd310`, the others
-///   `0x005fd320`; up and down move (cue 4, `0xe` at an end); accept opens the page (cue 8) and remembers its values;
-///   back (cue `0xf`) leaves the screen.
+///   `0x005fd320`; up and down move (cue 4, `0xe` at an end), left and right are refused (cue `0xe`); accept opens
+///   the page (cue 8) on the item it was left on and remembers its values (Restore Default on No again); back (cue
+///   `0xf`) leaves the screen.
 /// - **A page**: up and down move between its items (cue 4, `0xe` at an end), left and right go to the item; accept
 ///   (cue 8) closes the page keeping every value; back (cue `0xf`) closes it after putting back the values it had when
-///   opened, except on Vibration and Restore Default, which keep them. Camera, Audio and Vibration show the page's
-///   name as a heading at (0.26, 0.30), size 1.3.
+///   opened, except on Restore Default; on Vibration the preview rumble stops first. Camera, Audio and Vibration show
+///   the page's name as a heading at (0.26, 0.30), size 1.3.
 /// - **Choices** (On `0x12b` / Off `0x12c` and the others): the label (size 1.0, font slot 3, `0x005fd310` when
 ///   selected, else `0x005fd320`) with the answers 0.4 to its right ("A / B", font slot 4, the chosen one
 ///   `0x005fd310`); left picks the first answer and right the second (cue 4, `0xe` when already chosen) and the value
-///   changes at once, the first answer meaning on. Video and Restore Default are in confirm mode: left and right only
-///   move, accept applies (Normal or Wide; Yes restores the defaults); Restore Default starts on No.
+///   is set at once (again when already chosen), the first answer meaning on. Video and Restore Default are in confirm
+///   mode: left and right only move, accept applies (Normal or Wide; Yes restores the defaults); Restore Default starts
+///   on No.
 /// - **Volume bars** (Music, SoundFX): 0.54 wide, a white fill over a (21, 21, 21) back, 0.025 high; left and right
-///   step 0.05 within 0-1 (cue 4, `0xe` at an end) and set the volume each step.
+///   step 0.05 within 0-1 (cue 4, `0xe` at an end) and set the volume each press, at an end too.
 /// - **Brightness**: the bar at brightness / 100; left and right step the brightness by 5 within 0-100; two squares
 ///   0.09 × 0.065, the first in the brightness's grey, the second black; the hint `0x118` under the label.
 ///
@@ -163,10 +165,11 @@ struct OptionItem {
 ///
 /// Coney's choices where the page is silent (docs/research/pause.md#options): the bars' frame (sheet 12 rectangle 0)
 /// is drawn the bar's size; the bars' back and fill and the squares use sheet 12 rectangle 6 tinted; the page heading
-/// and the single-item pages' label sit at the heading's place; after Restore Default the pages are rebuilt from the
-/// new values and the title list stays on Restore Default; the Audio page's music loop and the vibration preview go to
-/// hooks the caller may leave empty; Video's Wide only sets the value (Coney has no video mode to switch, so the menus
-/// are not reopened).
+/// and the single-item pages' label sit at the heading's place; after Restore Default the pages are rebuilt in place
+/// from the new values (the original closes and reopens the menu, which puts the list back on its first title, as
+/// here); the Audio page's music loop and the vibration preview go to hooks the caller may leave empty; Video's Wide
+/// only sets the value (Coney has no video mode to switch, so the menus are not reopened); the page's discard box
+/// (`OptionPage` `+0x210`), which no code opens, is left out.
 ///
 /// Research: docs/research/pause.md#options, docs/research/pause.md#fn-optionmenu
 /// @orig 0x001d84a0 OptionMenu_Construct (OptionMenu.cpp)
@@ -254,8 +257,8 @@ class OptionMenu {
     [[nodiscard]] std::size_t selectedTitle() const { return m_title; }
     /// Whether a page is open.
     [[nodiscard]] bool pageOpen() const { return m_pageOpen; }
-    /// The selected item of the open page.
-    [[nodiscard]] std::size_t selectedItem() const { return m_item; }
+    /// The selected item of the selected title's page (each page keeps its own while the screen is open).
+    [[nodiscard]] std::size_t selectedItem() const { return m_selected.at(m_title); }
     /// Page `page`'s items.
     [[nodiscard]] const std::vector<std::unique_ptr<OptionItem>>& items(OptionPage page) const {
         return m_pages.at(static_cast<std::size_t>(page));
@@ -292,7 +295,7 @@ class OptionMenu {
     [[nodiscard]] const std::vector<std::unique_ptr<OptionItem>>& page() const { return m_pages.at(m_title); }
     // One command to the open page; true when it closes.
     bool pageCommand(MenuCommand command);
-    // Left or right on `item`.
+    // Left or right on `item`: an item at its end refuses (cue 0xe) but still sets its value and calls its setter.
     // @orig 0x001d7490 StatBarItem_OnCommand (OptionMenu.cpp)
     // @orig 0x001d7700 LightingItem_OnCommand (OptionMenu.cpp)
     // @orig 0x001d8440 OptionMenu_AddBrightness (OptionMenu.cpp)
@@ -313,7 +316,7 @@ class OptionMenu {
     // Remembers the open page's values (slot `+0xa0` of each item).
     // @orig 0x001d60e8 OptionPage_BeginEdit (OptionMenu.cpp)
     void beginEdit();
-    // Puts the open page's values back and applies them (slot `+0xa8`).
+    // Puts the open page's values back and applies them (slot `+0xa8`; OptionMenu_RevertPage).
     // @orig 0x001d6160 OptionPage_Revert (OptionMenu.cpp)
     void revert();
     // Sends the values to the apply hook (and the music loop its volume).
@@ -335,7 +338,8 @@ class OptionMenu {
     mutable BaseWidget m_barFill{nullptr, kSquareRect};
     mutable std::array<BaseWidget, 2> m_squares{BaseWidget{nullptr, kSquareRect}, BaseWidget{nullptr, kSquareRect}};
     std::size_t m_title = 0;
-    std::size_t m_item = 0;
+    // Each page's selected item (OptionPage +4): set to 0 by open() only, so a page reopens where it was left.
+    std::array<std::size_t, kOptionPages> m_selected{};
     bool m_pageOpen = false;
     bool m_open = false;
     float m_fade = 1.0F;
