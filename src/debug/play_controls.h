@@ -168,6 +168,7 @@ class PlayControls {
     virtual void clearFighters() {}
     /// Whether an idle fighter takes the player on when he comes within its melee range (ai::AiHumans::engaging()).
     [[nodiscard]] virtual bool fightersEngage() const { return false; }
+    /// Switches the engaging on or off; the default does nothing.
     virtual void setFightersEngage(bool /*on*/) {}
     /// One line on the fighters: each one's gang, health, top goal and front action, and the player's health.
     [[nodiscard]] virtual std::string fightersState() const { return "-"; }

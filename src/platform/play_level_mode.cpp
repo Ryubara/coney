@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <format>
 #include <numbers>
+#include <optional>
 #include <set>
 #include <string>
 #include <string_view>
@@ -30,6 +31,7 @@
 #include "graphics/human_blood.h"
 #include "human/human_animator.h"
 #include "human/player_trace.h"
+#include "platform/perf_probes.h"
 #include "platform/play_level_effects.h"
 #include "raycast/collision_mesh.h"
 #include "scenes/scene_list.h"
@@ -512,23 +514,35 @@ void PlayLevelMode::skin(const human::PlayerCharacter& character, const anim::Po
 
 void PlayLevelMode::drawCharacter() const {
     CONEY_PERF_ZONE("render.humans");
+    const DrawKindScope kind(DrawKind::Humans);
     rw::SetRenderState(rw::ZTESTENABLE, 1);
     rw::SetRenderState(rw::ZWRITEENABLE, 1);
     rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
-    m_lights->drawHumanPasses(*m_mesh, true, bloodTextureFor(m_player->human().health()));
+    drawHumanPasses(*m_mesh, true, bloodTextureFor(m_player->human().health()));
     for (const Target& target : m_targets) {
-        m_lights->drawHumanPasses(*target.mesh, false, bloodTextureFor(target.human->health()));
+        drawHumanPasses(*target.mesh, false, bloodTextureFor(target.human->health()));
     }
     const std::vector<ai::AiHuman>& fighters = m_ai->humans();
     for (std::size_t i = 0; i < m_fighterMeshes.size(); ++i) {
         const FighterMesh& fighter = m_fighterMeshes[i];
         if (!fighter.hidden) {
             rw::Texture* blood = i < fighters.size() ? bloodTextureFor(fighters[i].human->health()) : nullptr;
-            m_lights->drawHumanPasses(*fighter.mesh, false, blood);
+            drawHumanPasses(*fighter.mesh, false, blood);
         }
     }
     // A scene's puppets are lit like any human (a bare render of their atomics crashes: issue 446); no blood layer.
-    m_stage->drawPuppets([this](CharacterMesh& mesh) { m_lights->drawHumanPasses(mesh, false, nullptr); });
+    m_stage->drawPuppets([this](CharacterMesh& mesh) { drawHumanPasses(mesh, false, nullptr); });
+}
+
+void PlayLevelMode::drawHumanPasses(CharacterMesh& mesh, bool player, rw::Texture* blood) const {
+    // The marks are around the original's draw, not in it: the rig counts each atomic it draws, so the difference is
+    // the passes (0 too far, 1, or 2 with the blood layer), and the layer it names is drawn only shaded.
+    SceneLighting& scene = m_lights->scene();
+    const std::uint64_t before = scene.atomicsDrawn();
+    scene.setMeshLayer(mesh.bloodAtomic());
+    m_lights->drawHumanPasses(mesh, player, blood);
+    scene.setMeshLayer(nullptr);
+    mesh.setDrawnPasses(static_cast<std::size_t>(scene.atomicsDrawn() - before));
 }
 
 rw::Texture* PlayLevelMode::bloodTextureFor(const combat::Health& health) const {
@@ -833,6 +847,7 @@ void PlayLevelMode::render(const RenderTime& time) {
     // Between the `s` and the `d` world (step 7): the humans, the cars' opaque parts, the world objects.
     const auto drawObjects = [this, &drawCars, alpha] {
         drawCharacter();
+        const DrawKindScope kind(DrawKind::Objects);
         drawCars(graphics::CarPass::Opaque);
         drawWorldObjects(alpha);
     };
@@ -841,11 +856,14 @@ void PlayLevelMode::render(const RenderTime& time) {
     // (graphics.md#a-frame), the blob shadows, and the health rings over them. **Coney's choice**: the coronas, which
     // the original batches between the shadows and the rings, follow the rings (WorldRenderer::render draws them).
     const auto afterWorlds = [this, &drawCars, &snapshot, &blended, &ringFeet, alpha] {
+        std::optional<DrawKindScope> kind(std::in_place, DrawKind::Effects);
         if (m_levelEffects) {
             m_levelEffects->drawWater();
         }
+        kind.emplace(DrawKind::Objects);
         drawGlass();
         drawCars(graphics::CarPass::Glass);
+        kind.emplace(DrawKind::Effects);
         // The throw-aim arc, blended by its vertices' alpha among the see-through things (**Coney's stand-in** for its
         // place in WorldManager_Render's order, not traced).
         drawThrowArc(alpha);
@@ -858,10 +876,21 @@ void PlayLevelMode::render(const RenderTime& time) {
             m_lights->drawShadows();
             drawRings(ringFeet);
         }
+        kind.emplace(DrawKind::Other);
         drawSceneLines(snapshot, alpha);
     };
     CONEY_PERF_ZONE("render.scene");
-    m_scenery->draw(m_engine, blended, millisecondsOf(time.gameTicks), drawObjects, afterWorlds);
+    // The debug tools' mesh views, when set and on this frame, see every model drawn (MeshViewHook); otherwise the
+    // rig draws each model as it always does. The hook is set for this frame only: a frame it is off leaves none, so
+    // what an earlier frame set cannot reach this one. The NULL renderer asks too (its views draw nothing there:
+    // they leave the GL calls out themselves), so the tests see the hook wired.
+    MeshViewHook* views = m_meshViews && m_meshViews->beginFrame(*this) ? m_meshViews.get() : nullptr;
+    m_lights->scene().setMeshViews(views);
+    {
+        const DrawKindScope kind(DrawKind::Scenery);
+        m_scenery->draw(m_engine, blended, millisecondsOf(time.gameTicks), drawObjects, afterWorlds);
+    }
+    m_lights->scene().setMeshViews(nullptr);
 }
 
 void PlayLevelMode::renderWithOverlay(const RenderTime& time,

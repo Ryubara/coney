@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "platform/perf_probes.h"
 
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <cstdlib>
@@ -41,6 +42,10 @@ std::uint64_t g_uploadBytes = 0;
 std::uint64_t g_programs = 0;
 std::uint64_t g_textureBinds = 0;
 
+// The scene counters: each kind's totals, and the kind the draws count as now.
+std::array<DrawTotals, kDrawKinds> g_kinds{};
+DrawKind g_kind = DrawKind::Other;
+
 // The functions the wrappers forward to; null while they are not installed.
 PFNGLDRAWELEMENTSPROC g_drawElements = nullptr;
 PFNGLDRAWARRAYSPROC g_drawArrays = nullptr;
@@ -66,18 +71,26 @@ std::uint64_t trianglesOf(GLenum mode, GLsizei count) {
     }
 }
 
+// The vertices a draw of `count` sent.
+std::uint64_t verticesOf(GLsizei count) { return count > 0 ? static_cast<std::uint64_t>(count) : 0; }
+
+// Counts an indexed draw, then forwards it to the real glDrawElements.
 void APIENTRY countDrawElements(GLenum mode, GLsizei count, GLenum type, const void* indices) {
     ++g_draws;
     g_triangles += trianglesOf(mode, count);
+    recordDraw(trianglesOf(mode, count), verticesOf(count));
     g_drawElements(mode, count, type, indices);
 }
 
+// Counts an array draw, then forwards it to the real glDrawArrays.
 void APIENTRY countDrawArrays(GLenum mode, GLint first, GLsizei count) {
     ++g_draws;
     g_triangles += trianglesOf(mode, count);
+    recordDraw(trianglesOf(mode, count), verticesOf(count));
     g_drawArrays(mode, first, count);
 }
 
+// Counts the bytes of a buffer upload, then forwards it to the real glBufferData.
 void APIENTRY countBufferData(GLenum target, GLsizeiptr size, const void* data, GLenum usage) {
     if (data != nullptr) {
         ++g_uploads;
@@ -86,17 +99,20 @@ void APIENTRY countBufferData(GLenum target, GLsizeiptr size, const void* data, 
     g_bufferData(target, size, data, usage);
 }
 
+// Counts the bytes of a partial buffer upload, then forwards it to the real glBufferSubData.
 void APIENTRY countBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const void* data) {
     ++g_uploads;
     g_uploadBytes += static_cast<std::uint64_t>(size);
     g_bufferSubData(target, offset, size, data);
 }
 
+// Counts a shader program switch, then forwards it to the real glUseProgram.
 void APIENTRY countUseProgram(GLuint program) {
     ++g_programs;
     g_useProgram(program);
 }
 
+// Counts a texture bind, then forwards it to the real glBindTexture.
 void APIENTRY countBindTexture(GLenum target, GLuint texture) {
     ++g_textureBinds;
     g_bindTexture(target, texture);
@@ -106,16 +122,20 @@ void APIENTRY countBindTexture(GLenum target, GLuint texture) {
 
 void installPerfClock() { perf::setClock(&steadyNanoseconds); }
 
-// Stubs for the tests' commit: nothing is counted; the next commit implements them.
-DrawKindScope::DrawKindScope(DrawKind /*kind*/) : m_previous(DrawKind::Other) {}
+DrawKindScope::DrawKindScope(DrawKind kind) : m_previous(g_kind) { g_kind = kind; }
 
-DrawKindScope::~DrawKindScope() = default;
+DrawKindScope::~DrawKindScope() { g_kind = m_previous; }
 
-DrawKind currentDrawKind() { return DrawKind::Other; }
+DrawKind currentDrawKind() { return g_kind; }
 
-DrawTotals drawTotals(DrawKind /*kind*/) { return {}; }
+DrawTotals drawTotals(DrawKind kind) { return g_kinds.at(static_cast<std::size_t>(kind)); }
 
-void recordDraw(std::uint64_t /*triangles*/, std::uint64_t /*vertices*/) {}
+void recordDraw(std::uint64_t triangles, std::uint64_t vertices) {
+    DrawTotals& totals = g_kinds.at(static_cast<std::size_t>(g_kind));
+    ++totals.draws;
+    totals.triangles += triangles;
+    totals.vertices += vertices;
+}
 
 AllocationTotals allocationTotals() {
     return AllocationTotals{g_allocations.load(std::memory_order_relaxed),
@@ -149,6 +169,14 @@ void installGlCounters() {
     perf::addCounter("gl.upload_bytes", [] { return g_uploadBytes; });
     perf::addCounter("gl.programs", [] { return g_programs; });
     perf::addCounter("gl.textures", [] { return g_textureBinds; });
+    // The scene counters, by kind (docs/guides/performance.md#counters).
+    for (std::size_t i = 0; i < kDrawKinds; ++i) {
+        const auto kind = static_cast<DrawKind>(i);
+        const std::string base = std::string("scene.") + std::string(kDrawKindNames.at(i));
+        perf::addCounter(base + ".triangles", [kind] { return drawTotals(kind).triangles; });
+        perf::addCounter(base + ".vertices", [kind] { return drawTotals(kind).vertices; });
+        perf::addCounter(base + ".draws", [kind] { return drawTotals(kind).draws; });
+    }
 }
 
 std::string glRendererName() {

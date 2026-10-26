@@ -158,13 +158,28 @@ build/dev/src/platform/coney --headless --frames 3 --host 127.0.0.1:0
 ## The debug menus {#the-debug-menus}
 
 Every run has Coney's debug menu and, in a window, the developer overlay; [The debug menus](debug-menu.md) has the
-chords, the pages and how to add to them. Two options matter here: `--tunables FILE` names the file the tunable
+chords, the pages and how to add to them. Three options matter here: `--tunables FILE` names the file the tunable
 overrides are loaded from and saved to (a windowed run without it uses `coney-tunables.ini` in your config folder, a
-headless run none), and `--dev-overlay N` shows the overlay for the first N frames, a test aid
-([the overlay](debug-menu.md#the-developer-overlay)).
+headless run none), `--dev-overlay N` shows the overlay for the first N frames, a test aid
+([the overlay](debug-menu.md#the-developer-overlay)), and `--mesh-view SPEC` switches the Debug draw page's
+[mesh views](debug-menu.md#mesh-views) on from the first frame of play, for a screenshot of a view or the check that
+the views leave the frame as they found it.
+
+`SPEC` is a list of items separated by commas:
+
+| Item | Does |
+| --- | --- |
+| `wire=selection\|humans\|all` | the model wireframe on the inspector's selection, every human or everything drawn |
+| `view=wire\|material\|draw\|lod` | the mesh view: wireframe only, or flat by material, by draw call or by LOD |
+| `scope=selection\|humans\|all` | the models the mesh view applies to (default `all`) |
+| `normals`, `bones` | the selection's normals, its bone axes |
+| `select=nearest`, `select=player` | select the human nearest the player (the player when there is no other), or the player, in the Entity inspector |
+| `frames=N` | after N frames, switch every view off again and drop that selection |
 
 ```sh
 build/dev/src/platform/coney --tunables ../../scratch/tunables.ini
 build/dev/src/platform/coney --headless --frames 30 --input-script tests/support/debug_menu.txt
 build/dev/src/platform/coney --frames 60 --dev-overlay 30 --screenshot ../../scratch/overlay-hidden.png
+build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 --skip-movies --frames 90 \
+    --mesh-view wire=selection,select=nearest --screenshot ../../scratch/wire.png
 ```

@@ -31,8 +31,24 @@ namespace coney::platform {
 /// asks for the controls, so they never outlive the mode they act on in use.
 class PlayLevelControls final : public debug::PlayControls, public debug::EntityEditTarget {
   public:
-    /// The Entity inspector's id of player 1 in a play mode (the other ids are a kind's base plus an index).
+    /// The Entity inspector's ids in a play mode: player 1 is kInspectPlayerId; the others are a kind's base plus their
+    /// index in the mode's lists (an AI human keeps its index once removed, so its id lasts as long as it does) or,
+    /// for a world object, kInspectRecordBase plus its handle.
     static constexpr debug::EntityId kInspectPlayerId = 1;
+    static constexpr debug::EntityId kInspectTargetBase = 0x10000;
+    static constexpr debug::EntityId kInspectAiBase = 0x20000;
+    static constexpr debug::EntityId kInspectDoorBase = 0x30000;
+    static constexpr debug::EntityId kInspectPaneBase = 0x40000;
+    static constexpr debug::EntityId kInspectRecordBase = 0x100000000ULL;
+    /// The size of each indexed kind's range of ids.
+    static constexpr debug::EntityId kInspectRange = 0x10000;
+    /// The index `id` names in the kind whose ids start at `base`; nothing when it is another kind's.
+    [[nodiscard]] static std::optional<std::size_t> inspectIndexIn(debug::EntityId id, debug::EntityId base) {
+        if (id < base || id >= base + kInspectRange) {
+            return std::nullopt;
+        }
+        return static_cast<std::size_t>(id - base);
+    }
 
     /// The librw atomics `mode` draws entity `id` with (a human's body and its blood layer); empty for an object or
     /// an unknown id (play_level_mesh.cpp). The mesh views' selection.
@@ -157,13 +173,33 @@ class PlayLevelControls final : public debug::PlayControls, public debug::Entity
     // Takes the AI human at `index` out of the world the way a script's HuDelete does (play_level_edit.cpp).
     std::expected<void, Error> deleteAiHuman(std::size_t index);
 
-    // The entities of `mode` (Inspector::entities()) and what is known of one (Inspector::describe()).
+    // The entities of `mode` (Inspector::entities()).
     [[nodiscard]] static std::vector<debug::EntityRef> entitiesOf(const PlayLevelMode& mode);
+    // What is known of entity `id` of `mode`, in groups (Inspector::describe()).
     [[nodiscard]] static std::vector<debug::WatchGroup> describeIn(const PlayLevelMode& mode, debug::EntityId id);
     // Adds the collision shapes, the classified wireframe and the inspector's highlight to `lines`
     // (play_level_inspect.cpp).
     static void addInspectorLines(const PlayLevelMode& mode, const debug::DebugDrawOptions& options,
                                   debug::DebugLines& lines, const human::PlayerSnapshot& snapshot, float alpha);
+    // A human as the mode draws it this frame: its mesh, the character it is skinned as and its blended pose.
+    struct HumanDraw {
+        const CharacterMesh* mesh = nullptr;
+        const human::PlayerCharacter* character = nullptr;
+        anim::Pose pose;
+        anim::Vec3 feet;
+        float heading = 0.0F;
+        float lean = 0.0F;
+    };
+    // Entity `id` as a drawn human, `alpha` of a step (the player from `snapshot` when given, which a scene may pose);
+    // nothing for an object, a removed human or an unknown id (play_level_mesh.cpp).
+    [[nodiscard]] static std::optional<HumanDraw> humanDrawOf(const PlayLevelMode& mode, debug::EntityId id,
+                                                              float alpha, const human::PlayerSnapshot* snapshot);
+    // The Mesh group of entity `id`: its model's statistics and what the last frame drew of it; nothing when it is no
+    // drawn human.
+    [[nodiscard]] static std::optional<debug::WatchGroup> meshGroupOf(const PlayLevelMode& mode, debug::EntityId id);
+    // Adds the selection's normals and bone axes to `lines`, as `options` switch them (play_level_mesh.cpp).
+    static void addMeshLines(const PlayLevelMode& mode, const debug::DebugDrawOptions& options,
+                             debug::DebugLines& lines, const human::PlayerSnapshot& snapshot, float alpha);
     // Puts `primitives` in the mode's scenery in place of those spawned before: a level takes them as extras of their
     // own (sandboxExtras()), a sandbox rebuilds its world with them.
     std::expected<void, Error> setSpawned(std::vector<sandbox::Primitive> primitives);
