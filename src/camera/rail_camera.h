@@ -121,6 +121,7 @@ class RailCamera {
     /// The lead along the rail now, metres.
     [[nodiscard]] float lead() const { return m_lead.current; }
     /// Mode 3's pitch now (setting 5), degrees; below kAngleOff while off.
+    /// @coney-only a query for the tests; the original reads the setting in place
     [[nodiscard]] float mode3Pitch() const;
     /// The field of view now, degrees.
     [[nodiscard]] float fieldOfView() const { return m_fieldOfView.current; }
@@ -137,6 +138,7 @@ class RailCamera {
 
   private:
     // update()'s body: the easing and the placement by mode.
+    /// @orig 0x0013d010 CamRail_Update (unknown)
     void placeFor(std::optional<anim::Vec3> feet, bool leadLook, float seconds, anim::Vec3 velocity);
     // The target and look-at points of mode 0 or the leading modes from the feet (CamRail_UpdateTargetPoint).
     void makePoints(anim::Vec3 feet);
@@ -147,14 +149,18 @@ class RailCamera {
     // Modes 1 and 2: the lead ahead of or behind the target's place on the rail (CamRail_PlaceLeading).
     void placeLeading(anim::Vec3 feet, bool leadLook);
     // Mode 3's placement (CamRail_PlaceMode3): the start after an activation, else the trailing move.
+    /// @orig 0x0013dcc8 CamRail_PlaceMode3 (unknown)
     void placeTrailing(std::optional<anim::Vec3> feet, anim::Vec3 velocity, float seconds);
     // Mode 3's look-at point: 2 m from `from` toward `toward` in plan, at the mode's pitch.
+    /// @orig 0x0013dcc8 CamRail_PlaceMode3 (unknown)
     [[nodiscard]] anim::Vec3 pitchedLook(anim::Vec3 from, anim::Vec3 toward) const;
     // Mode 3's projection of `p` on the current segment, in plan, clamped only at the rail's two ends.
+    /// @orig 0x0013dcc8 CamRail_PlaceMode3 (unknown)
     [[nodiscard]] anim::Vec3 projectTrailing(anim::Vec3 p) const;
     // Picks the segment the target point is on (CamRail_ChooseSegment).
     void chooseSegment() { chooseSegmentFor(m_target); }
     // Picks the segment point `p` is on; a change sets the hand-over blend.
+    /// @orig 0x0013fba0 CamRail_ChooseSegment (unknown)
     void chooseSegmentFor(anim::Vec3 p);
     // The current segment's direction flattened to the ground plane and normalised; +y with no segment.
     [[nodiscard]] anim::Vec3 flatDirection() const;

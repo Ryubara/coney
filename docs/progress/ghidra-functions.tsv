@@ -4002,6 +4002,8 @@
 0x0020fd80	616	ANHud_Construct	1
 0x0020ffe8	776	ANHud_Destroy	1
 0x002102f0	1256	ANHud_ApplyVideoMode	1
+0x002107d8	8	ANHud_SetJoinMsg	0
+0x002107e0	8	ANHud_GetJoinMsg	0
 0x002107e8	920	ANHud_Init	1
 0x00210b80	400	ANHud_SetBanner	1
 0x00210d10	172	ANHud_Shutdown	1
@@ -5422,7 +5424,7 @@
 0x0028ceb8	28	Brain_StoreType	1
 0x0028ced8	28	Brain_SetHeld	1
 0x0028cef8	232	Brain_IsBusyWithScene	1
-0x0028cfe0	432	Brain_SetTarget	0
+0x0028cfe0	432	Brain_SetTarget	1
 0x0028d190	340	Brain_PushFightGoal	0
 0x0028d2e8	112	Brain_Fight	0
 0x0028d358	344	Brain_ValidateEnemy	1
@@ -6936,7 +6938,7 @@
 0x003065b0	72	Tactic_Free	1
 0x003065f8	56	Tactic_QueueFree	1
 0x00306630	92	Tactic_Construct	1
-0x00306690	324	Tactic_Start	0
+0x00306690	324	Tactic_Start	1
 0x003067d8	116	Tactic_Process	1
 0x00306850	164	Tactic_End	1
 0x003068f8	64	Tactic_SetCallback	1
@@ -7532,7 +7534,7 @@
 0x00328938	124		0
 0x003289b8	60		0
 0x003289f8	56		0
-0x00328a30	160		0
+0x00328a30	160	Lua_CallCClosure	1
 0x00328ad0	112		0
 0x00328b40	480		0
 0x00328d20	32		0
@@ -7796,7 +7798,7 @@
 0x003340f8	516		0
 0x00334300	272		0
 0x00334410	104		0
-0x00334478	3320		0
+0x00334478	3320	luaV_execute	0
 0x00335178	48		0
 0x00335218	52		0
 0x00335250	208		0
@@ -9495,7 +9497,7 @@
 0x00393538	1132	ThrownObject_OnContact	1
 0x003939a8	1140	WorldObject_OnImpact	1
 0x00393e20	560	WorldObject_Break	1
-0x00394050	1980	WorldObject_OnContact	0
+0x00394050	1980	WorldObject_OnContact	1
 0x00394810	268	WorldObject_BreakEffects	1
 0x00394920	1160	WorldObject_UpdateBodyContacts	1
 0x00394da8	376	WorldObject_ReportDamage	1
@@ -13682,6 +13684,7 @@
 0x004ec518	104	ANHudPanel2_DestroyWidget	1
 0x004ec580	104	ANHudPanel3_DestroyWidget	1
 0x004ec5e8	104	ANHudPanel4_DestroyWidget	1
+0x004ec650	16	ANHud_SetPlayer	1
 0x004ec660	932	PlayerHUD_DeletingDtor	1
 0x004eca20	416	GameStatsAddLevel_VecInsertAux	1
 0x004ecbc0	164	StatLevelSort_PushHeap	1

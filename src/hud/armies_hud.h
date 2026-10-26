@@ -82,6 +82,7 @@ class ArmiesHud {
     /// Whether panel `player`'s join message is on.
     [[nodiscard]] bool joinMessage(std::size_t player) const { return m_join.at(player); }
     /// Whether panel `player`'s join message shows now: on, the player not in, and on the blink's lit half.
+    /// @orig 0x00211938 ANHud_Draw (unknown)
     [[nodiscard]] bool joinShowing(std::size_t player) const;
 
     /// One HUD step at game time `nowMs` in level number `level`, with which players are in the game (their panel

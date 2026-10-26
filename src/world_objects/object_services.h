@@ -237,6 +237,7 @@ void markTriangles(ObjectWorld& world, std::span<const std::uint32_t> triangles,
 [[nodiscard]] anim::Quat turnAboutVertical(anim::Quat rotation, float degrees);
 /// `rotation` turned by `degrees` about the unit `axis` of its own frame (applied after it): the vertical sliding
 /// door's second leaf turns about its y axis (docs/research/script-types.md#sliding-doors).
+/// @orig 0x003f4950 SubSlidingDoor_PlaceLeaf (unknown)
 [[nodiscard]] anim::Quat turnAboutOwnAxis(anim::Quat rotation, anim::Vec3 axis, float degrees);
 
 /// `v` rotated by `rotation`.

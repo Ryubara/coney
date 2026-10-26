@@ -464,7 +464,7 @@ NativeFunction makeHudLaunchMissionFailed(const Factory& factory) {
 }
 
 // `HUDLaunchANGameOver(on)`: shows the Armies of the Night game-over mode; `on` is read and not used.
-// @orig 0x0036f1b8 HUDLaunchANGameOver (unknown)
+// @orig 0x0036f1b8 lua_HUDLaunchANGameOver (unknown)
 NativeFunction makeHudLaunchArmiesGameOver(const Factory& factory) {
     return [host = factory.context->host](std::span<const Value> /*args*/) {
         host->launchArmiesGameOver();

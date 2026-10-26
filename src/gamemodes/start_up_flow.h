@@ -10,6 +10,7 @@
 #include <string>
 #include <string_view>
 
+#include "gamemodes/armies_game_over_mode.h"
 #include "gamemodes/front_end_services.h"
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/gameplay_mode.h"
@@ -17,7 +18,6 @@
 #include "gamemodes/level_flow_mode.h"
 #include "gamemodes/memory_card_mode.h"
 #include "gamemodes/mission_complete_mode.h"
-#include "gamemodes/armies_game_over_mode.h"
 #include "gamemodes/mission_failed_mode.h"
 #include "gamemodes/pause_mode.h"
 #include "gamemodes/profile_manager_mode.h"
@@ -167,6 +167,8 @@ class StartUpFlow final : public script::BindingHost {
     /// @orig 0x00155308 Autosave_Request (unknown)
     void startSaveSequence() override;
     void launchMissionFailed(std::string_view reason) override;
+    /// Opens or closes the Armies of the Night game over (mode 0xd).
+    /// @orig 0x001cede8 HUD_LaunchANGameOver (unknown)
     void launchArmiesGameOver() override;
     void showRumbleModeIntro(std::string_view onDone, std::span<const std::string> names) override;
     void launchRumbleWin(std::string_view winner, std::string_view reason) override;

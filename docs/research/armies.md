@@ -124,8 +124,9 @@ panels' own state at the set-up:
 - So player 1's flag is cleared when the level script makes Swan, and player 2's stays on: in play (the panel not
   shown, `+0x40fc` 0) `ANHud_Draw` draws the join text, blinking every 500 ms. Read in PCSX2 during play: panel 1
   `+0x4614` = 0, panel 2 `+0x4614` = 1, `+0x40f4` = 1, `+0x40f8` and `+0x40fc` = 0.
-- Search note: a search for the operand `0x4614` finds the setter `0x002107d8`, the getter, `ANHud_Init`, `_Update`
-  and `_Draw`, but missed `0x004ec650` while that code was not yet a function.
+- Search note: a search for the operand `0x4614` finds the setter `0x002107d8` (`ANHud_SetJoinMsg`), the getter
+  `0x002107e0`, `ANHud_Init`, `_Update` and `_Draw`, but missed `0x004ec650` while that code was not yet a function.
+  Confirmed (code).
 
 ## Coney's implementation {#coney}
 

@@ -437,6 +437,95 @@ coney = "src/world_objects/object_tasks.h:ObjectiveMarker"
 status = "legacy"
 
 [[function]]
+address = 0x003f4950
+name = "SubSlidingDoor_PlaceLeaf"
+page = "script-types.md#sliding-doors"
+role = "places a sliding door's leaf along its slide"
+level = "confirmed-code"
+coney = "src/world_objects/doors.cpp:slideDirection"
+status = "compared"
+
+[[function]]
+address = 0x003f4c80
+name = "SlidingDoor_SpawnLeaves"
+page = "script-types.md#sliding-doors"
+role = "spawns a sliding door's leaves by its type"
+level = "confirmed-code"
+coney = "src/world_objects/doors.h:Doors::spawn"
+status = "compared"
+
+[[function.gaps]]
+what = "the leaves' spawn records pinned for streaming"
+relation = "not-ported"
+issue = 710
+
+[[function]]
+address = 0x003f5608
+name = "SlidingDoor_StateCommand"
+page = "script-types.md#sliding-doors"
+role = "a sliding door's open and close commands, with its triangles and links"
+level = "confirmed-code"
+coney = "src/world_objects/doors.h:Doors::command"
+status = "compared"
+
+[[function.gaps]]
+what = "the leaves' spawn records pinned for streaming"
+relation = "not-ported"
+issue = 710
+
+[[function]]
+address = 0x003f5a68
+name = "SubSlidingDoor_Update"
+page = "script-types.md#sliding-doors"
+role = "moves a sliding door's leaf along its slide and stops it at the end"
+level = "confirmed-code"
+coney = "src/world_objects/doors.cpp:stepSlidingLeaf"
+status = "compared"
+
+[[function.gaps]]
+what = "the leaves unpinned at the stop"
+relation = "not-ported"
+issue = 710
+
+[[function.gaps]]
+what = "the leaf's collision body moved with it"
+relation = "not-ported"
+issue = 707
+
+[[function]]
+address = 0x003f5d10
+name = "DynDoorSliding_Init"
+page = "script-types.md#sliding-doors"
+role = "a sliding door's set-up from its type"
+level = "confirmed-code"
+coney = "src/world_objects/doors.h:Doors::spawn"
+status = "compared"
+
+[[function.gaps]]
+what = "the leaves kept pinned until stopped"
+relation = "not-ported"
+issue = 710
+
+[[function]]
+address = 0x003f5ef0
+name = "DynDoorSliding_OnMessage"
+page = "script-types.md#sliding-doors"
+role = "a sliding door's messages: open by a human, start, stop, destroy"
+level = "confirmed-code"
+coney = "src/world_objects/doors.h:Doors::openBy"
+status = "compared"
+
+[[function.gaps]]
+what = "the destroy, detach and data messages"
+relation = "not-ported"
+issue = 707
+
+[[function.gaps]]
+what = "the start and stop messages' streaming pins"
+relation = "not-ported"
+issue = 710
+
+[[function]]
 address = 0x003f80f0
 name = "DoorSwing_SetUpType"
 page = "objects.md#original-structure"

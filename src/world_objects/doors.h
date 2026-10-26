@@ -345,8 +345,10 @@ class Doors {
     // A swinging door's update.
     static void update(Door& door, ObjectWorld& world);
     // A sliding door's set-up: its leaves, length, step, axis and sounds, then closed (command 7).
+    /// @orig 0x003f5d10 DynDoorSliding_Init (unknown)
     static void setUpSliding(Door& door, const ObjectTypeInfo* info, const HandleSource& handles, ObjectWorld& world);
     // A state command on a sliding door.
+    /// @orig 0x003f5608 SlidingDoor_StateCommand (unknown)
     static void runSlidingCommand(Door& door, int command, ObjectWorld& world);
     // The breakable swinging doors' and the barriers' hits.
     static void hitStore(Door& door, const ObjectHit& hit, ObjectWorld& world);

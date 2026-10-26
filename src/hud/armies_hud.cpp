@@ -33,6 +33,7 @@ constexpr std::uint8_t kTextFrames = 2;
 constexpr std::uint8_t kArrowFrames = 4;
 
 // A message's style at GUI x `x`, in `colour`, centred or from the left.
+// @coney-only the style Coney's text layout takes; the original sets each widget's colour and alignment in place
 gui::TextStyle styleAt(float x, graphics::Rgba colour, bool centred) {
     gui::TextStyle style = messageStyle(x);
     style.colour = colour;

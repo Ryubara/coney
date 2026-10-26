@@ -333,11 +333,14 @@ class GameplayMode final : public GameMode {
     /// none to hand.
     bool releasePlayerToAi();
     /// Whether player `player` (0 or 1) is in the level and not knocked out (the Armies game over's continue).
+    /// @orig 0x001cf468 ANGameOver_Update (unknown)
     [[nodiscard]] bool playerStanding(int player) const;
     /// Whether player `player` (0 or 1) is in the level (the game state's `+0x228` / `+0x22c` human).
+    /// @orig 0x001cf468 ANGameOver_Update (unknown)
     [[nodiscard]] bool playerIn(int player) const;
     /// Player `player` (0 or 1) healed in full and stood up (`Human_Heal(human, 1)`, through `HuRevive`'s revive): an
     /// Armies continue.
+    /// @orig 0x001557f8 ANGameOver_Toggle (unknown)
     void healPlayer(int player);
     /// Player 1's cameras for the level; null while no level is entered.
     [[nodiscard]] camera::Cameras* cameras() const { return m_cameras.get(); }

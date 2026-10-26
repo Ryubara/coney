@@ -110,10 +110,13 @@ class ArmiesGameOverMenu : public Widget {
 
   private:
     // String `id`, or empty without strings.
+    /// @coney-only a lookup in Coney's string table, which the original reads through GlobalString_Get
     [[nodiscard]] std::string_view string(std::uint32_t id) const;
     // Plays `cue`, if there is a sink.
+    /// @coney-only the sink Coney's menus play their cues through
     void playCue(int cue) const;
     // The end phase from `nowMs`: the texts and the grid placed, faded out.
+    /// @orig 0x001cf468 ANGameOver_Update (unknown)
     void startEnd(std::uint64_t nowMs);
 
     const GlobalStrings* m_strings = nullptr;

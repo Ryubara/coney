@@ -70,6 +70,7 @@ class ArmiesGameOverMode final : public GameMode {
     static constexpr std::string_view kQuitFunction = "runNextMission";
 
     /// Every reference must outlive the mode; `hud` holds the credits and join messages (null: no credits).
+    /// @coney-only wires Coney's services; the original's mode is a static object (`Gm_ANGameOver_StaticInit`)
     ArmiesGameOverMode(graphics::RenderDevice& device, PauseSheetLoader loadSheet, PauseRecordLoader loadRecord,
                        const gui::GlobalStrings& strings, FrontEndServices& services, GameState& state,
                        LevelFlowMode& levelFlow, GameModeStack& stack, hud::Hud* hud,
@@ -89,12 +90,16 @@ class ArmiesGameOverMode final : public GameMode {
     void launch();
 
     /// Loads the fonts; the screen opens on the next update.
+    /// @orig 0x00155b30 Gm_Mode0D_Enter (unknown)
     void enter() override;
     /// Start from either pad, the screen's frame and, once it has a choice, the close.
+    /// @orig 0x00155c78 Gm_ANGameOver_Update (unknown)
     ModeResult update(GameModeStack& stack, const FrameTime& frame) override;
     /// The world, the end phase's fade and the screen.
+    /// @orig 0x00155c78 Gm_ANGameOver_Update (unknown)
     void render(const RenderTime& time) override;
     /// Releases the fonts.
+    /// @orig 0x00155bc0 Gm_ANGameOver_Exit (unknown)
     void exit() override;
 
     /// The screen.
@@ -102,12 +107,16 @@ class ArmiesGameOverMode final : public GameMode {
 
   private:
     // Start pressed by `player`: the players continuing, a credit spent and F1.Time, or the end phase.
+    /// @orig 0x001cf468 ANGameOver_Update (unknown)
     void pressStart(int player, std::uint64_t nowMs);
     // The close: pops the mode and acts on the choice (ANGameOver_Toggle's pop half).
+    /// @orig 0x001557f8 ANGameOver_Toggle (unknown)
     void close(GameModeStack& stack, gui::ArmiesGameOverChoice choice);
     // Whether player `player` is in and standing.
+    /// @orig 0x001cf468 ANGameOver_Update (unknown)
     [[nodiscard]] bool playerUp(int player) const;
     // Whether player `player` is in the game.
+    /// @orig 0x001cf468 ANGameOver_Update (unknown)
     [[nodiscard]] bool playerIn(int player) const;
 
     graphics::RenderDevice& m_device;

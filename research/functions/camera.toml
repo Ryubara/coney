@@ -632,6 +632,15 @@ coney = "src/camera/rail_camera.h:RailCamera::setup"
 status = "legacy"
 
 [[function]]
+address = 0x0013b508
+name = "CamRail_Activate"
+page = "camera.md#fn-rail"
+role = "the rail camera's activation: places it on the rail at once"
+level = "confirmed-code"
+coney = "src/camera/rail_camera.h:RailCamera::activate"
+status = "compared"
+
+[[function]]
 address = 0x0013b780
 name = "CamRail_AppendPoint"
 page = "camera.md#fn-rail"
@@ -657,6 +666,15 @@ role = "Moves one rail setting toward its target by (target - current) × dt / t
 level = "confirmed-code"
 coney = "src/camera/rail_camera.h:EasedValue::step"
 status = "legacy"
+
+[[function]]
+address = 0x0013fac8
+name = "CamRail_SetMode3Angle"
+page = "camera.md#fn-rail"
+role = "`CamModifyRail` setting 5: switches the rail to mode 3 and sets its view pitch"
+level = "confirmed-code"
+coney = "src/camera/rail_camera.h:RailCamera::modify"
+status = "compared"
 
 [[function]]
 address = 0x00142578

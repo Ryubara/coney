@@ -38,6 +38,52 @@ coney = "src/hud/radar.h:addRadarDisc"
 status = "legacy"
 
 [[function]]
+address = 0x0019e030
+name = "GoSign_Setup"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "the Armies GO sign's set-up: off, placed for the language and the video mode"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::levelSetUp"
+status = "compared"
+
+[[function.gaps]]
+what = "the 16:9 and progressive layouts"
+relation = "not-ported"
+issue = 890
+
+[[function]]
+address = 0x0019e660
+name = "GoSign_StepBlink"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "steps the GO sign's frame every 300 ms, wrapping by mode"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::update"
+status = "compared"
+
+[[function]]
+address = 0x0019e758
+name = "GoSign_Update"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "the GO sign's update: its text and arrows by mode and frame"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::update"
+status = "compared"
+
+[[function.gaps]]
+what = "the 16:9 and progressive arrow size"
+relation = "not-ported"
+issue = 890
+
+[[function]]
+address = 0x0019ed28
+name = "GoSign_Render"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "draws the GO sign's text and arrows"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::render"
+status = "compared"
+
+[[function]]
 address = 0x0019f1b0
 name = "ActionPrompt_SetText"
 page = "hud-functions-parts.md#fn-pre-basewidget"
@@ -459,6 +505,42 @@ role = "players 0 and 1: the panel's interface `+0x54(n)` and `+0x4c(value, 0 wh
 level = "confirmed-code"
 coney = "src/hud/hud.h:Hud::setNumIndicator"
 status = "legacy"
+
+[[function]]
+address = 0x001b4690
+name = "HUD_ANSetGOSignMode"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "`HUDANSetGOSignMode`: the GO sign's mode byte"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::setGoSignMode"
+status = "compared"
+
+[[function]]
+address = 0x001b46a0
+name = "HUD_ANEnableJoinMsg"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "`HUDANEnableJoinMsg`: a player panel's join message on or off"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::setJoinMessage"
+status = "compared"
+
+[[function]]
+address = 0x001b46e0
+name = "HUD_ANSetCredits"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "`HUDANSetCredit`: the Armies credits left"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::setCredits"
+status = "compared"
+
+[[function]]
+address = 0x001b4700
+name = "HUD_ANGetCredits"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "`HUDANGetCredit`: the Armies credits left"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::credits"
+status = "compared"
 
 [[function]]
 address = 0x001b4740
@@ -1055,6 +1137,20 @@ coney = "src/hud/player_panel.h:PlayerPanel::show"
 status = "legacy"
 
 [[function]]
+address = 0x002107e8
+name = "ANHud_Init"
+page = "hud-functions-panels.md#fn-anhud"
+role = "the Armies player panel's set-up on its first attach; clears its join message"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::panelAttached"
+status = "compared"
+
+[[function.gaps]]
+what = "the panel's bars, score counter and target panel (Coney's story panel stands in)"
+relation = "not-ported"
+issue = 662
+
+[[function]]
 address = 0x00211ca0
 name = "PlayerHUD_Construct"
 page = "hud.md#original-structure"
@@ -1158,3 +1254,17 @@ page = "hud-functions-lua.md#panel-tally"
 level = "confirmed-code"
 coney = "src/gui/pause_menu/pause_items.h:isRumbleLevel"
 status = "legacy"
+
+[[function]]
+address = 0x004ec650
+name = "ANHud_SetPlayer"
+page = "hud-functions-panels.md#fn-anhud"
+role = "the Armies player panel's player and its join message on, from the level's set-up"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::levelSetUp"
+status = "compared"
+
+[[function.gaps]]
+what = "the panel's player index (the panels are not built)"
+relation = "not-ported"
+issue = 662

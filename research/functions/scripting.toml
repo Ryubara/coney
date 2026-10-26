@@ -1136,6 +1136,14 @@ coney = "src/scripting/rumble_match_bindings.cpp:makeHudLaunchRumbleWin"
 status = "legacy"
 
 [[function]]
+address = 0x0036f1b8
+name = "lua_HUDLaunchANGameOver"
+page = "../references/bindings/hud.md#hudlaunchangameover"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.cpp:makeHudLaunchArmiesGameOver"
+status = "compared"
+
+[[function]]
 address = 0x0036f218
 name = "lua_HUDLaunchMissionComplete"
 page = "../references/bindings/hud.md#hudlaunchmissioncomplete"
@@ -1256,6 +1264,30 @@ coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
 status = "legacy"
 
 [[function]]
+address = 0x003701c8
+name = "lua_HUDANEnableJoinMsg"
+page = "../references/bindings/hud.md#hudanenablejoinmsg"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addArmiesBindings"
+status = "compared"
+
+[[function]]
+address = 0x00370258
+name = "lua_HUDANSetCredit"
+page = "../references/bindings/hud.md#hudansetcredit"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addArmiesBindings"
+status = "compared"
+
+[[function]]
+address = 0x00370290
+name = "lua_HUDANGetCredit"
+page = "../references/bindings/hud.md#hudangetcredit"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addArmiesBindings"
+status = "compared"
+
+[[function]]
 address = 0x00370690
 name = "lua_HUDSetRadarObjectFlash"
 page = "../references/bindings/hud.md#hudsetradarobjectflash"
@@ -1326,6 +1358,14 @@ page = "../references/bindings/hud.md#hudaddradarhuman"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
 status = "legacy"
+
+[[function]]
+address = 0x00370c00
+name = "lua_HUDANSetGOSignMode"
+page = "../references/bindings/hud.md#hudansetgosignmode"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addArmiesBindings"
+status = "compared"
 
 [[function]]
 address = 0x00370c68

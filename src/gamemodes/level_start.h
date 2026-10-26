@@ -102,6 +102,7 @@ class QuietBindingHost final : public script::BindingHost {
     /// Keeps and logs the reason.
     void launchMissionFailed(std::string_view reason) override;
     /// Counts and logs the Armies of the Night game over.
+    /// @coney-only the quiet host's count, for the tests and the level starts that run no game over
     void launchArmiesGameOver() override;
     /// How many times `HUDLaunchANGameOver` was called.
     [[nodiscard]] int armiesGameOvers() const { return m_armiesGameOvers; }
