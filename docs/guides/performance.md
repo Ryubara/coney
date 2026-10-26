@@ -125,10 +125,10 @@ centre.
 ## Findings {#findings}
 
 Taken on 2026-10-25 with `coney-tools perf bench` and `perf bench --cpu-skinning` in the hub, from the `playtest`
-build at commit 89f4d372d: windowed, vsync off, a Ryzen 7 9800X3D with an RTX 5080 (NVIDIA driver 610.88). The
-machine was **not quiet**: two to four other builds and test runs held build slots, and the processor's load read 79
-to 100 %. The table gives the median frame of each run (the means carry the other builds' stalls), as the median of
-three interleaved repeats. The zones are medians too.
+build of the change that brought GPU skinning: windowed, vsync off, a Ryzen 7 9800X3D with an RTX 5080 (NVIDIA
+driver 610.88). The machine was **not quiet**: two to four other builds and test runs held build slots, and the
+processor's load read 79 to 100 %. The table gives the median frame of each run (the means carry the other builds'
+stalls), as the median of three interleaved repeats. The zones are medians too.
 
 | Fighters | Frame, CPU skinning (ms) | Frame, GPU skinning (ms) | Frames a second (GPU) | `render.skin`, CPU / GPU (ms) | Uploads a frame, CPU / GPU (KB) |
 | --- | --- | --- | --- | --- | --- |
