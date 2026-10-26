@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from html import escape
 from pathlib import Path
 
-from coney_tools import missions, progress_grid, progress_history, progress_picture, progress_render
+from coney_tools import missions, progress_grid, progress_history, progress_picture, progress_png, progress_render
 from coney_tools.config import ConfigError
 from coney_tools.progress import Progress
 
@@ -46,7 +46,7 @@ class Site:
     home_html: str = ""
     missions_html: str = ""
     history_html: str = ""
-    files: dict[str, str] = field(default_factory=dict)
+    files: dict[str, str | bytes] = field(default_factory=dict)
 
 
 # --- the mission picture ----------------------------------------------------------------------------------------------
@@ -250,6 +250,9 @@ def build_site(
         site.files[f"{SITE_DIR}/progress-size.svg"] = progress_grid.render_functions_svg(
             grid, True, uid="ps", standalone=True
         )
+        # The README's pictures (light and dark): the README embeds them by the site's address.
+        for theme, name in progress_png.FILES.items():
+            site.files[f"{SITE_DIR}/{name}"] = progress_png.render_home_png(grid, theme)
         summary = progress_grid.summary(grid)
         site.files[f"{SITE_DIR}/functions.json"] = _json(progress_grid.functions_table(grid))
     else:

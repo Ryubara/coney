@@ -58,8 +58,24 @@ so it is not counted.
 [![Understood](https://img.shields.io/endpoint?url=https%3A%2F%2Fryubara.github.io%2Fconey%2Fprogress%2Fbadges%2Funderstood.json)](https://ryubara.github.io/coney/progress/)
 [![Milestones](https://img.shields.io/endpoint?url=https%3A%2F%2Fryubara.github.io%2Fconey%2Fprogress%2Fbadges%2Fmilestones.json)](https://ryubara.github.io/coney/progress/)
 
-The figures are measured from `main` each time the [documentation](#documentation) is built, so they are never
-out of date. Per subsystem, the research coverage, the middleware and how it is all measured:
+<p>
+  <a href="https://ryubara.github.io/coney/">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://ryubara.github.io/coney/progress/readme-dark.png">
+      <img
+        alt="Coney's progress: a square for each function of the original's own code, with the counts"
+        src="https://ryubara.github.io/coney/progress/readme-light.png"
+        width="880">
+    </picture>
+  </a>
+</p>
+
+Each square is one function of the original's own code, in address order: green is reimplemented, the softer grey
+understood (named and cited), the stronger grey not yet started. The picture is the one on the
+[docs home page](https://ryubara.github.io/coney/), where pointing at a square names its function.
+
+The figures and the picture are measured from `main` each time the [documentation](#documentation) is built, so they
+are never out of date. Per subsystem, the research coverage, the middleware and how it is all measured:
 [Progress](docs/progress/index.md).
 
 ## Building and running

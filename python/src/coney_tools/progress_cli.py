@@ -157,6 +157,15 @@ def run_check(base: str = "origin/main", require_base: bool = False) -> int:
     return 0
 
 
+def write_site_file(target: Path, content: str | bytes) -> None:
+    """Writes one file of the site, creating its folder: text as UTF-8, a picture's bytes as they are."""
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if isinstance(content, bytes):
+        target.write_bytes(content)
+    else:
+        target.write_text(content, encoding="utf-8")
+
+
 def run_render(out_dir: Path, history: bool = True) -> int:
     """Write what the docs build publishes to `out_dir`: the filled pages, the badge JSON, the pictures and numbers.
 
@@ -188,10 +197,8 @@ def run_render(out_dir: Path, history: bool = True) -> int:
         (out_dir / "index.md").write_text(home_page, encoding="utf-8")
         for name, text in badges.items():
             (out_dir / progress_render.BADGES_DIR / name).write_text(text, encoding="utf-8")
-        for name, text in site.files.items():
-            target = out_dir / name
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(text, encoding="utf-8")
+        for name, content in site.files.items():
+            write_site_file(out_dir / name, content)
     except OSError as error:
         raise ConfigError(f"{out_dir}: cannot be written ({error})") from error
     print(

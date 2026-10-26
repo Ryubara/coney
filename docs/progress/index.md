@@ -29,7 +29,7 @@ How far Coney has come, measured four ways:
   missions' checkpoints the same way. The [history](history.md) shows how the shares moved day by day.
 
 The tables below are not in the repository: they are generated each time the documentation is built, so this page
-always shows the numbers of `main`, and the badges at the top of the repository's `README.md` read the same figures
+always shows the numbers of `main`, and the badges and the square chart in the repository's `README.md` read the same figures
 from the published site. The rest of this page is written by hand.
 
 <!-- progress:generated -->
