@@ -179,9 +179,10 @@ the original side by side also brought GetItem's wait for an object in flight, i
 point and the claim the goal's Resume drops after DestroyItem.
 
 Coney's disc test (`repo:tests/platform/disc_level80_wreck_test.cpp`, level80 checkpoint 3 through the game session,
-the same placings, 4500 updates): inside, 9 panes broken, 19 objects taken and objects held for 8331 member
-updates; outside, nothing broken or taken. The held-object check stays a `CHECK_NOFAIL` until
-[q-after-stock](#q-after-stock) is answered.
+the same placings, 4500 updates, five Warriors, so 22500 member updates; run of 2026-10-26 on the branch that added
+this page): inside, 9 panes broken, 19 objects taken, objects held for 8331 member updates, 14171 in GetItem and
+none in DestroyItem; outside, nothing broken, taken or held, all 22500 in GetItem. The held-object check stays a
+`CHECK_NOFAIL` until [q-after-stock](#q-after-stock) is answered (issue #955).
 
 ## Open questions
 
