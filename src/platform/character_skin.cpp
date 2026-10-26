@@ -103,8 +103,7 @@ void instanceSkinned(rw::Geometry* geometry, rw::gl3::InstanceDataHeader* header
             header->attribDesc[i] = attributes[i];
             header->attribDesc[i].stride = kStride;
         }
-        header->vertexBuffer =
-            rwNewT(rw::uint8, header->totalNumVertex * kStride, rw::MEMDUR_EVENT | rw::ID_GEOMETRY);
+        header->vertexBuffer = rwNewT(rw::uint8, header->totalNumVertex * kStride, rw::MEMDUR_EVENT | rw::ID_GEOMETRY);
         glGenBuffers(1, &header->vbo);
         const rw::MorphTarget& target = geometry->morphTargets[0];
         CONEY_ASSERT(data->weights.size() >= static_cast<std::size_t>(header->totalNumVertex) &&

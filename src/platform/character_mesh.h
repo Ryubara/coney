@@ -94,16 +94,16 @@ class CharacterMesh {
     // The GPU pose: the palette and the sphere from the bone boxes.
     void poseOnGpu(std::span<const anim::Mat34> placed);
 
-    rw::Atomic* m_atomic = nullptr;        // owned, with its geometry and frame
-    rw::Atomic* m_blood = nullptr;         // owned, with its geometry and frame
-    rw::Texture* m_texture = nullptr;      // one reference held
-    rw::Texture* m_bloodTexture = nullptr; // the dual layer's, as last set (its materials hold the references)
+    rw::Atomic* m_atomic = nullptr;                 // owned, with its geometry and frame
+    rw::Atomic* m_blood = nullptr;                  // owned, with its geometry and frame
+    rw::Texture* m_texture = nullptr;               // one reference held
+    rw::Texture* m_bloodTexture = nullptr;          // the dual layer's, as last set (its materials hold the references)
     std::vector<characters::SkinVertex> m_vertices; // the model's, for skinning on the CPU
-    std::vector<anim::Mat34> m_placed;             // this frame's skinning matrices with the placement
+    std::vector<anim::Mat34> m_placed;              // this frame's skinning matrices with the placement
     bool m_gpu = false;
-    SkinVertexData m_skin;                     // the shader's weights and bones (GPU)
-    std::unique_ptr<BonePalette> m_palette;    // this frame's bone matrices (GPU)
-    std::vector<BoneBox> m_boxes;              // per skin node (GPU)
+    SkinVertexData m_skin;                  // the shader's weights and bones (GPU)
+    std::unique_ptr<BonePalette> m_palette; // this frame's bone matrices (GPU)
+    std::vector<BoneBox> m_boxes;           // per skin node (GPU)
 };
 
 } // namespace coney::platform

@@ -6,7 +6,7 @@
 namespace rw {
 struct Material;
 struct Raster;
-}
+} // namespace rw
 
 namespace coney::platform {
 
@@ -14,8 +14,8 @@ namespace coney::platform {
 /// mip level by the texture's size on screen, the GS by distance. Atomics drawn through librw's default GL3 pipeline
 /// go through Coney's own shaders, which sample at an explicit level: by the distance and the texture's `K` while
 /// distance mipmaps are on (the streamed world's sectors), else level 0 (everything else, which the original draws
-/// bilinear). Characters skinned on the GPU (platform/character_skin.h) use the same fragment step. Textures not converted from
-/// a PS2 raster (Coney's own, such as the sandbox's) keep OpenGL's choice.
+/// bilinear). Characters skinned on the GPU (platform/character_skin.h) use the same fragment step. Textures not
+/// converted from a PS2 raster (Coney's own, such as the sandbox's) keep OpenGL's choice.
 ///
 /// Research: docs/research/rendering.md#world
 

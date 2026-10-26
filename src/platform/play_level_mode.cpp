@@ -192,8 +192,7 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
       // A start with no snap is spawned without the mesh; the first update's ground snap then settles the feet.
       m_player(std::make_unique<human::Player>(*m_character, setup.snapToGround ? &m_scenery->collision() : nullptr,
                                                m_scenery->start(), human::playerClassOf(setup.types, setup.type))),
-      m_print(std::move(print)), m_drawDistance(m_scenery->drawDistance()),
-      m_model(std::move(model)) {
+      m_print(std::move(print)), m_drawDistance(m_scenery->drawDistance()), m_model(std::move(model)) {
     m_texture = textureOf(m_dictionaries);
     // The blood of every human's second pass; without it humans are drawn in one pass.
     if (auto blood = BloodTextures::load(engine, wad); blood) {
@@ -721,10 +720,9 @@ void PlayLevelMode::render(const RenderTime& time) {
     };
     if (m_engine.drawsPixels()) {
         CONEY_PERF_ZONE("render.skin");
-        m_stage->skinPuppets(alpha, [](const human::PlayerCharacter& character, const anim::Pose& pose,
-                                       anim::Vec3 feet, float heading, CharacterMesh& mesh) {
-            skin(character, pose, feet, heading, 0.0F, mesh);
-        });
+        m_stage->skinPuppets(alpha, [](const human::PlayerCharacter& character, const anim::Pose& pose, anim::Vec3 feet,
+                                       float heading,
+                                       CharacterMesh& mesh) { skin(character, pose, feet, heading, 0.0F, mesh); });
         skin(playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading, snapshot.lean, *m_mesh);
         m_attachedDraws.clear();
         poseHat(m_player->human(), playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading);

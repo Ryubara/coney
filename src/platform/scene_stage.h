@@ -128,8 +128,8 @@ class SceneStage final : public scenes::SceneHost {
 
     /// Skins the puppets for the frame between the last two steps, `alpha` of the way, with `skin` (the play mode's
     /// skinning: character, pose, feet, heading onto the puppet's mesh).
-    using Skin = std::function<void(const human::PlayerCharacter&, const anim::Pose&, anim::Vec3, float,
-                                    CharacterMesh&)>;
+    using Skin =
+        std::function<void(const human::PlayerCharacter&, const anim::Pose&, anim::Vec3, float, CharacterMesh&)>;
     void skinPuppets(float alpha, const Skin& skin);
     /// Draws each puppet the scene has posed through `draw`, which must light it as the play mode lights a human
     /// (PlayLighting::drawHumanPasses): a puppet's atomic belongs to no world, so rendering it bare crashes librw's
