@@ -115,6 +115,9 @@ class Subject:
     #: Paths with uncommitted changes (tracked, or untracked and not ignored).
     dirty: tuple[str, ...]
     now: datetime
+    #: Each original address -> the keys of all the `@orig` functions at the tip that carry it (a `compared` stamp
+    #: belongs to one of them when there are several).
+    citing: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
 
 
 @dataclass
@@ -240,6 +243,7 @@ def load_subject(
         profile=profile,
         checks=tuple(proof_profiles.required_checks(rules, profile, paths)),
         changed=changed,
+        citing=orig_review.citing(after.values()),
         removed=removed,
         dirty=dirty_paths(root),
         now=now or datetime.now(UTC),
@@ -533,6 +537,8 @@ def _compared_one(
     """The study, the pairs and the `compared` stamp of one address of a changed function."""
     report = subject.report
     redo_study, redo_compare = f"orig study {address}", f"orig compare {address}"
+    if len(subject.citing.get(address, ())) > 1:  # then `compare` must be told which function
+        redo_compare += f" --coney-function '{unit.key}'"
 
     def refuse(text: str, redo: str = redo_compare) -> Refusal:
         return Refusal("compared", f"compared: {text}", redo)
@@ -576,9 +582,10 @@ def _compared_one(
         "pairs_sha256": orig_pairs.file_sha256(path),
         "coney_body_sha256": unit.body_sha256,
     }
-    if orig_review.current_compared(subject.root, report, address, covers, unit.key) is not None:
+    cited_by = subject.citing.get(address, ())
+    if orig_review.current_compared(subject.root, report, address, covers, unit.key, cited_by) is not None:
         return found
-    last = report.latest("compared", address)
+    last = report.latest("compared", address, function=unit.key, cited_by=cited_by)
     if last is None:
         found.append(refuse(f"{address}: {unit.coney} was never compared"))
     elif last.result != "pass":

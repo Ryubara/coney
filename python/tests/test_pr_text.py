@@ -8,7 +8,8 @@ from pathlib import Path
 
 import pytest
 from conventions_support import changed
-from pr_support import PARAGRAPH, Built, make
+from pr_support import PARAGRAPH, SOURCE_FILE, Built, make
+from test_orig_compare import TWO_FUNCTIONS
 
 from coney_tools import pr_proof, pr_text, stamps
 from coney_tools.config import ConfigError
@@ -306,6 +307,18 @@ def test_the_facts_name_every_stage_with_its_stamp_the_change_and_the_chain_head
     assert "- Check: profile `full`, preset `ci`, 412 passed, 0 failed, 0 skipped" in facts
     assert "build record `" in facts and "- Review: pass, Claude Opus 5.5, 1 function clean" in facts
     assert "Stand-ins:\n- `src/ai/widget.cpp:12` `the sound plays later`" in facts
+
+
+def test_two_functions_of_one_address_are_counted_by_their_own_compared_stamps(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    built.edit(SOURCE_FILE, TWO_FUNCTIONS)
+
+    def short() -> list[str]:
+        return pr_text._stage_lines(built.subject(), True)
+
+    assert "- Studied 1 of 1 functions" in short() and "- Compared 1 of 2 functions" in short()
+    built.compare(key="Widget::reset()")
+    assert "- Compared 2 of 2 functions" in short()
 
 
 def test_a_stage_that_has_not_run_is_said_so_in_the_facts(tmp_path: Path) -> None:

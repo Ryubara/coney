@@ -200,28 +200,35 @@ def _added_tests(env: ReviewEnv, base: str, tip: str) -> list[str]:
     return sorted(names)
 
 
-def _function_problems(env: ReviewEnv, functions: list[dict[str, Any]], report: stamps.Report) -> tuple[list[str], str]:
+def _function_problems(
+    env: ReviewEnv, functions: list[dict[str, Any]], report: stamps.Report, tip: str
+) -> tuple[list[str], str]:
     """The `compared` problems of the changed `@orig` functions, and the hash of all their pairs files."""
     problems: list[str] = []
     hashes: dict[str, str] = {}
+    # Every Coney function at the tip that carries an address: a function that shares one has a stamp of its own.
+    citing = orig_review.citing(orig_review.units_at(env.worktree, tip)) if functions else {}
     for function in functions:
         for address in function["addresses"]:
             name = f"{function['coney']} ({address})"
+            redo = f"original compare {address}"
+            if len(citing.get(address, ())) > 1:  # then `compare` must be told which function
+                redo += f" --coney-function '{function['key']}'"
             pairs = env.unit.mapping(address)
             try:
                 pairs_hash = orig_pairs.file_sha256(pairs)
             except orig_pairs.PairsError:
-                problems.append(f"compared: {name}: no pairs file (run `original compare {address}`)")
+                problems.append(f"compared: {name}: no pairs file (run `{redo}`)")
                 continue
             hashes[address] = pairs_hash
             covers = {orig_review.BODY_COVER: function["body_sha256"]}
-            stamp = orig_review.current_compared(env.worktree, report, address, covers, function["key"])
+            stamp = orig_review.current_compared(
+                env.worktree, report, address, covers, function["key"], citing.get(address, ())
+            )
             if stamp is None:
-                problems.append(f"compared: {name}: no current `compared` stamp (run `original compare {address}`)")
+                problems.append(f"compared: {name}: no current `compared` stamp (run `{redo}`)")
             elif stamp.covers.get("pairs_sha256") != pairs_hash:
-                problems.append(
-                    f"compared: {name}: the pairs file changed after it was compared (run `original compare {address}`)"
-                )
+                problems.append(f"compared: {name}: the pairs file changed after it was compared (run `{redo}`)")
     return problems, orig_pairs.set_sha256(hashes)
 
 
@@ -271,7 +278,7 @@ def build_packet(env: ReviewEnv, mode: str) -> tuple[dict[str, Any], list[str]]:
     report = stamps.verify(env.unit.stamps, env.conventions.stamps)
     problems += [f"stamp log: {p}" for p in report.problems if p.severity == "error"]
     functions = orig_review.pr_stamp(worktree, tip, base)["functions"] if tip != base else []
-    function_problems, pairs_set = _function_problems(env, functions, report)
+    function_problems, pairs_set = _function_problems(env, functions, report, tip)
     diff = env.change_hash(worktree, base, tip)
     try:
         text = pr_text_file.read(env.text_file)

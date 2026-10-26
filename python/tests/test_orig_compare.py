@@ -32,6 +32,13 @@ int Widget::update(int now) {
 }
 }  // namespace coney
 """
+#: A second function that ports another part of the same original function (both carry the same address).
+SECOND = """/// @orig 0x00501000 Widget_Update (Widget.cpp)
+void Widget::reset() {
+    count_ = 0;
+}
+"""
+TWO_FUNCTIONS = SOURCE.replace("}  // namespace coney" + chr(10), SECOND + "}  // namespace coney" + chr(10))
 WHO = {"kind": "tool", "tool": "test"}
 
 
@@ -97,6 +104,12 @@ class Setup:
         ]
         orig_pairs.write(self.path, file)
 
+    def cite_twice(self) -> None:
+        """Commit a second Coney function that carries the same `@orig` address as the first."""
+        (self.root / "src" / "widget.cpp").write_text(TWO_FUNCTIONS, encoding="utf-8")
+        git(self.root, "add", "-A")
+        git(self.root, "commit", "-q", "-m", "a second function")
+
     def stamps_of(self, step: str) -> list[Any]:
         """The stamps of one step."""
         return [s for s in stamps.verify(self.unit.stamps, rules()).stamps if s.step == step]
@@ -139,6 +152,19 @@ def test_a_complete_file_is_stamped_once(setup: Setup) -> None:
     assert stamp.covers["coney_body_sha256"] == unit.body_sha256
     assert stamp.detail["pairs"] == 5 and stamp.detail["stand-in"] == 1 and stamp.detail["copy_check"] == "ok"
     assert setup.run().status == "unchanged" and len(setup.stamps_of("compared")) == 1
+
+
+def test_two_functions_of_one_address_each_keep_their_own_compared_stamp(setup: Setup) -> None:
+    setup.cite_twice()
+    first, second = "Widget::update(int)", "Widget::reset()"
+    assert setup.run(key=first).status == "created"
+    setup.fill()
+    assert setup.run(key=first).status == "stamped"
+    assert setup.run(key=second).status == "stamped"
+    # Comparing the second function must not make the first one's stamp stale, nor the other way round.
+    assert setup.run(key=first).status == "unchanged"
+    assert setup.run(key=second).status == "unchanged"
+    assert [s.detail["coney"] for s in setup.stamps_of("compared")] == [first, second]
 
 
 def test_an_edited_pairs_file_is_stamped_again(setup: Setup) -> None:

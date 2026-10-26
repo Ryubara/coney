@@ -320,6 +320,21 @@ merge_reason = ""          # needed when lines cover more than one piece
    space](coney-tools-fidelity.md#body-hash)), and a count of the relations. A second run that changes nothing writes
    no stamp.
 
+### Two Coney functions, one address {#shared-address}
+
+When two Coney functions port parts of one original function
+(`FollowCamera::update` and `FollowCamera::resetWhenLost` both port `0x0012ae58`), both carry `@orig` with that address
+and share its study and pairs file, and each is compared with `--coney-function KEY`. A `compared` stamp is read **by
+address and Coney function**: the stamp names its function in `detail.coney` (the function's key), and while another
+function also carries the address, `compare`, `task review` and `pr verify` look only at the stamps that name this
+function, so comparing the second never makes the first stale, and a function with no stamp of its own is "never
+compared" even though its sibling has one. A function that is alone at its address reads every stamp of the address, as
+before: a stamp made before the function was named, or under a name since changed, still covers the only function that
+cites the address. A stamp that names no function covers neither of two functions that share an address (compare each
+again). The code is `Report.latest(..., function=, cited_by=)` and `Report.current(...)` in `coney_tools/stamps.py`,
+and `orig_review.citing` lists the functions at each address. A refusal for such a function says to run `orig compare
+<addr> --coney-function KEY`.
+
 A run that finds something wrong prints it and writes **no stamp**: this is an edit-and-rerun loop, and the log records
 verdicts, not drafts. The same holds for every environment fault (Ghidra down, a git error, a build that does not
 compile). Only the steps whose result is a verdict write a `fail` stamp: `fails-first`, `checked`, `reviewed` and a
@@ -393,6 +408,8 @@ C++ tests run), does the same on the fix commit (default HEAD), then puts the br
 `verify(folder, rules, require_stamps=, task=)` returning a `Report` (`ok`, `problems`, `head`, `latest(step,
 subject)`, `current(step, subject, covers)`) and `who_from_env(tool)`. A `pr-opened` stamp gets `chain_head` filled in by
 `append`. `current(...)` is how a later stage asks "does the newest passing stamp cover the hash I just recomputed?".
+For a `compared` stamp, `latest` and `current` also take the Coney function (`function=`) and every function citing the
+address (`cited_by=`) ([Two Coney functions, one address](#shared-address)).
 
 What the three steps bound to the change record (all unsigned, in the local log):
 

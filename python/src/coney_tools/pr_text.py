@@ -375,15 +375,23 @@ def _stand_ins(subject: pr_proof.Subject) -> list[str]:
 def _stage_lines(subject: pr_proof.Subject, short: bool) -> list[str]:
     """The per-stage lines of the facts; with `short` each stage is one count (the long form is over the limit)."""
     lines: list[str] = []
-    studied, compared = [], []
+    studied: list[tuple[str, stamps.Stamp | None]] = []
+    compared: list[tuple[str, stamps.Stamp | None, str]] = []
     for unit in subject.changed:
         for address in pr_proof._addresses(unit):
-            studied.append((address, _newest_pass(subject, "studied", address)))
-            compared.append((address, _newest_pass(subject, "compared", address)))
+            if address not in (done for done, _ in studied):  # one study serves every function of the address
+                studied.append((address, _newest_pass(subject, "studied", address)))
+            found = subject.report.latest(
+                "compared", address, function=unit.key, cited_by=subject.citing.get(address, ())
+            )
+            shared = len(subject.citing.get(address, ())) > 1  # then the line says which function it is for
+            compared.append(
+                (address, found if found is not None and found.result == "pass" else None, unit.coney if shared else "")
+            )
     if short:
         if studied:
             lines.append(f"- Studied {sum(1 for _, s in studied if s)} of {len(studied)} functions")
-            lines.append(f"- Compared {sum(1 for _, s in compared if s)} of {len(compared)} functions")
+            lines.append(f"- Compared {sum(1 for _, s, _ in compared if s)} of {len(compared)} functions")
     else:
         for address, stamp in studied:
             name = stamp.detail.get("name", "") if stamp else ""
@@ -392,9 +400,10 @@ def _stage_lines(subject: pr_proof.Subject, short: bool) -> list[str]:
                 if stamp
                 else f"- Not studied {code(address)}"
             )
-        for address, stamp in compared:
+        for address, stamp, name in compared:
+            of = f" {code(name)}" if name else ""
             if stamp is None:
-                lines.append(f"- Not compared {code(address)}")
+                lines.append(f"- Not compared {code(address)}{of}")
                 continue
             d = stamp.detail
             counts = (
@@ -402,7 +411,7 @@ def _stage_lines(subject: pr_proof.Subject, short: bool) -> list[str]:
                 f"{d.get('not-ported', 0)} not-ported)"
             )
             pairs_hash = str(stamp.covers.get("pairs_sha256", ""))[:12]
-            lines.append(f"- Compared {code(address)}: {counts} (stamp `{_h(stamp)}`, pairs `{pairs_hash}`)")
+            lines.append(f"- Compared {code(address)}{of}: {counts} (stamp `{_h(stamp)}`, pairs `{pairs_hash}`)")
     firsts = {s.subject: s for s in subject.report.stamps if s.step == "fails-first"}
     passed = [s for s in firsts.values() if s.result == "pass"]
     nones = [s for s in firsts.values() if s.result == "none"]

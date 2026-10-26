@@ -258,6 +258,56 @@ def test_latest_and_current_look_at_step_subject_and_covers(tmp_path: Path) -> N
     assert report.head == report.stamps[-1].hash and stamps.verify(tmp_path / "none", rules()).head == ZERO
 
 
+def test_a_function_finds_its_own_stamp_of_an_address_that_two_functions_cite(tmp_path: Path) -> None:
+    clock = Clock()
+    first, second = "Camera::update()", "Camera::reset()"
+    add(tmp_path, "compared", "0x1", covers={"coney_body_sha256": "aa" * 32}, detail={"coney": first}, clock=clock)
+    add(tmp_path, "compared", "0x1", covers={"coney_body_sha256": "bb" * 32}, detail={"coney": second}, clock=clock)
+    report = stamps.verify(tmp_path, rules())
+    both = (first, second)
+    mine = report.current("compared", "0x1", {"coney_body_sha256": "aa" * 32}, function=first, cited_by=both)
+    other = report.current("compared", "0x1", {"coney_body_sha256": "bb" * 32}, function=second, cited_by=both)
+    assert mine is not None and mine.seq == 1 and other is not None and other.seq == 2
+    # Without a function the newest stamp of the address still decides, as it always did.
+    assert report.current("compared", "0x1", {"coney_body_sha256": "aa" * 32}) is None
+
+
+def test_another_functions_later_stamp_or_failure_does_not_replace_a_pass(tmp_path: Path) -> None:
+    clock = Clock()
+    first, second = "Camera::update()", "Camera::reset()"
+    add(tmp_path, "compared", "0x1", detail={"coney": first}, clock=clock)
+    add(tmp_path, "compared", "0x1", result="fail", detail={"coney": second}, clock=clock)
+    report = stamps.verify(tmp_path, rules())
+    both = (first, second)
+    assert report.latest("compared", "0x1", function=first, cited_by=both) is not None
+    assert report.current("compared", "0x1", {"decompile_sha256": SHA}, function=first, cited_by=both) is not None
+    assert report.current("compared", "0x1", {"decompile_sha256": SHA}, function=second, cited_by=both) is None
+
+
+def test_a_function_with_no_stamp_of_its_own_finds_none_while_another_cites_the_address(tmp_path: Path) -> None:
+    add(tmp_path, "compared", "0x1", detail={"coney": "Camera::update()"})
+    report = stamps.verify(tmp_path, rules())
+    both = ("Camera::update()", "Camera::reset()")
+    assert report.latest("compared", "0x1", function="Camera::reset()", cited_by=both) is None
+    assert (
+        report.current("compared", "0x1", {"decompile_sha256": SHA}, function="Camera::reset()", cited_by=both) is None
+    )
+
+
+def test_a_stamp_that_names_no_function_covers_the_only_function_citing_its_address(tmp_path: Path) -> None:
+    clock = Clock()
+    add(tmp_path, "compared", "0x1", detail={}, clock=clock)
+    add(tmp_path, "compared", "0x2", detail={"coney": "Old::name()"}, clock=clock)
+    report = stamps.verify(tmp_path, rules())
+    assert report.latest("compared", "0x1", function="Camera::update()", cited_by=("Camera::update()",)) is not None
+    # The function was renamed since: it is still the only one citing the address, so the stamp still counts.
+    assert report.latest("compared", "0x2", function="New::name()", cited_by=("New::name()",)) is not None
+    # With a second function citing the address, a stamp that names neither belongs to neither.
+    assert (
+        report.latest("compared", "0x1", function="Camera::update()", cited_by=("Camera::update()", "B::b()")) is None
+    )
+
+
 def test_the_seal_names_the_stamp_before_it(tmp_path: Path) -> None:
     clock = Clock()
     before = add(tmp_path, step="reviewed", subject="", clock=clock)
