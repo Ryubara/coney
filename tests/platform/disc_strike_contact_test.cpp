@@ -125,7 +125,9 @@ std::vector<Seen> play(const coney::io::Wad& wad, std::vector<Press> presses, co
         }
         if (current) {
             Seen& now = seen[*current];
-            if (now.shapesOn < 0 && player.strikeShapes().anyOn()) {
+            // Only the shapes this attack's clip switched on: on a chain step the step before's are still on for an
+            // update.
+            if (now.shapesOn < 0 && player.strikeShapes().anyOn() && player.strikeAnim() == clip) {
                 now.shapesOn = k - clipStart;
             }
             if (now.damage < 0 && fighter.health().value() < health) {
