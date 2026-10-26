@@ -50,7 +50,7 @@ TEST_CASE("the wreck's smash search refuses an object only with the player neare
     const std::optional<coney::ai::SmashTarget> above =
         coney::ai::findSmashTarget(searcher, scene.player(), items, scene.services, 15.0F, 15.0F);
     REQUIRE(above.has_value());
-    CHECK(above->handle == 600.0);
+    CHECK(above.value_or(coney::ai::SmashTarget{}).handle == 600.0);
     FakeItems low;
     low.targets.push_back({.handle = 601, .position = {feet.x + 0.5F, feet.y, feet.z}, .animSet = 0});
     CHECK_FALSE(coney::ai::findSmashTarget(searcher, scene.player(), low, scene.services, 15.0F, 15.0F).has_value());
