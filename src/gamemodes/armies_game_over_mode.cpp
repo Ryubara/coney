@@ -190,6 +190,11 @@ void ArmiesGameOverMode::render(const RenderTime& time) {
     m_device.present();
 }
 
-void ArmiesGameOverMode::exit() { m_layer.release(); }
+void ArmiesGameOverMode::exit() {
+    // **Coney's stand-in**: the original closes the menu, finishes the tasks the screen held, resumes the audio and
+    // returns the game timer to its variable step (Gm_ANGameOver_Exit); Coney's level below held no tasks, its sound
+    // was not paused and its timer always steps fixed, so only the screen's fonts are released.
+    m_layer.release();
+}
 
 } // namespace coney
