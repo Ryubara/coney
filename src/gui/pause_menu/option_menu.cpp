@@ -31,11 +31,13 @@ constexpr float kBarShiftY = 0.004F;
 constexpr float kBarEpsilon = 0.001F;
 
 // A colour as the markup's colour tag.
+// @coney-only Coney draws a choice's answers as one marked-up text; the original keeps three text widgets
 std::string colourTag(graphics::Rgba colour) {
     return std::format("<COLOR {:02x}{:02x}{:02x}{:02x}>", colour.r, colour.g, colour.b, colour.a);
 }
 
 // The pad a per-pad setting belongs to: 1 for P2's, else 0.
+// @coney-only Coney's settings name their pad; the original passes the pad to the setter as its owner (+0x240)
 int padOf(OptionSetting setting) {
     switch (setting) {
     case OptionSetting::InvertP2:
@@ -55,38 +57,112 @@ OptionValues OptionValues::defaults(bool wideVideo) {
     return values;
 }
 
-OptionLayout OptionLayout::forMode(Language language, bool widescreen, bool flag02) {
-    OptionLayout layout;
-    // German moves the Camera answers and Restore Default's; a mode below may move the Camera answers again.
-    if (language == Language::German) {
-        layout.cameraAnswersExtra = 0.1F;
-        layout.restoreAnswersOffset = 0.11F;
-    }
-    if (flag02 && widescreen) {
-        // Flags 0x02 and 0x04: the default places with smaller squares and the Camera answers 0.1 further right.
-        layout.squareScale = 0.7F;
-        layout.cameraAnswersExtra = 0.1F;
-    } else if (flag02) {
-        // Flag 0x02 alone: titles and rows closer together, the Camera answers further right, smaller squares.
-        layout.titleY = 0.32F;
-        layout.titleStep = 0.045F;
-        layout.lightingLabelY = 0.33F;
-        layout.rowY = 0.37F;
-        layout.rowStep = 0.04F;
-        layout.volumeRows[0] = 0.38F;
-        layout.volumeRows[1] = 0.415F;
-        layout.cameraAnswersExtra = 0.12F;
-        layout.squareScale = 0.7F;
-    } else if (widescreen) {
-        // 16:9: everything starts higher.
-        layout.titleY = 0.24F;
-        layout.lightingLabelY = 0.24F;
-        layout.rowY = 0.30F;
-        layout.squaresY = 0.34F;
-        layout.volumeRows = {0.31F, 0.345F, 0.395F, 0.43F};
-    }
-    return layout;
-}
+// OptionMenu_Open's layout globals for each video mode and language (docs/research/pause.md#options), in the order
+// forMode() picks them: (mode × 2) + German, the mode 0 default (device flags 0x01), 1 16:9 (0x04), 2 flag 0x02, 3
+// both. German moves the Camera answers 0.1 (`0x0050edd0`) and Restore Default's to 0.11 (`0x0050ed80`); flag 0x02's
+// Camera answers (0.12, or 0.1 with 16:9) replace German's.
+const std::array<OptionLayout, 8> OptionLayout::kModes{{
+    // Default: the values OptionMenu_Open writes first.
+    {.titleY = 0.30F,
+     .titleStep = 0.055F,
+     .lightingLabelY = 0.29F,
+     .rowY = 0.36F,
+     .rowStep = 0.045F,
+     .answersOffset = 0.4F,
+     .cameraAnswersExtra = 0.0F,
+     .underAnswersOffset = 0.06F,
+     .restoreAnswersOffset = 0.06F,
+     .volumeRows = {0.37F, 0.405F, 0.455F, 0.49F},
+     .squaresY = 0.38F,
+     .squareScale = 1.0F},
+    {.titleY = 0.30F,
+     .titleStep = 0.055F,
+     .lightingLabelY = 0.29F,
+     .rowY = 0.36F,
+     .rowStep = 0.045F,
+     .answersOffset = 0.4F,
+     .cameraAnswersExtra = 0.1F,
+     .underAnswersOffset = 0.06F,
+     .restoreAnswersOffset = 0.11F,
+     .volumeRows = {0.37F, 0.405F, 0.455F, 0.49F},
+     .squaresY = 0.38F,
+     .squareScale = 1.0F},
+    // 16:9 (flag 0x04 without 0x02 or 0x08): everything starts higher.
+    {.titleY = 0.24F,
+     .titleStep = 0.055F,
+     .lightingLabelY = 0.24F,
+     .rowY = 0.30F,
+     .rowStep = 0.045F,
+     .answersOffset = 0.4F,
+     .cameraAnswersExtra = 0.0F,
+     .underAnswersOffset = 0.06F,
+     .restoreAnswersOffset = 0.06F,
+     .volumeRows = {0.31F, 0.345F, 0.395F, 0.43F},
+     .squaresY = 0.34F,
+     .squareScale = 1.0F},
+    {.titleY = 0.24F,
+     .titleStep = 0.055F,
+     .lightingLabelY = 0.24F,
+     .rowY = 0.30F,
+     .rowStep = 0.045F,
+     .answersOffset = 0.4F,
+     .cameraAnswersExtra = 0.1F,
+     .underAnswersOffset = 0.06F,
+     .restoreAnswersOffset = 0.11F,
+     .volumeRows = {0.31F, 0.345F, 0.395F, 0.43F},
+     .squaresY = 0.34F,
+     .squareScale = 1.0F},
+    // Flag 0x02 without 0x04: titles and rows closer together, the Camera answers further right, smaller squares.
+    {.titleY = 0.32F,
+     .titleStep = 0.045F,
+     .lightingLabelY = 0.33F,
+     .rowY = 0.37F,
+     .rowStep = 0.04F,
+     .answersOffset = 0.4F,
+     .cameraAnswersExtra = 0.12F,
+     .underAnswersOffset = 0.06F,
+     .restoreAnswersOffset = 0.06F,
+     .volumeRows = {0.38F, 0.415F, 0.455F, 0.49F},
+     .squaresY = 0.38F,
+     .squareScale = 0.7F},
+    {.titleY = 0.32F,
+     .titleStep = 0.045F,
+     .lightingLabelY = 0.33F,
+     .rowY = 0.37F,
+     .rowStep = 0.04F,
+     .answersOffset = 0.4F,
+     .cameraAnswersExtra = 0.12F,
+     .underAnswersOffset = 0.06F,
+     .restoreAnswersOffset = 0.11F,
+     .volumeRows = {0.38F, 0.415F, 0.455F, 0.49F},
+     .squaresY = 0.38F,
+     .squareScale = 0.7F},
+    // Flags 0x02 and 0x04: the default places with smaller squares and the Camera answers 0.1 further right.
+    {.titleY = 0.30F,
+     .titleStep = 0.055F,
+     .lightingLabelY = 0.29F,
+     .rowY = 0.36F,
+     .rowStep = 0.045F,
+     .answersOffset = 0.4F,
+     .cameraAnswersExtra = 0.1F,
+     .underAnswersOffset = 0.06F,
+     .restoreAnswersOffset = 0.06F,
+     .volumeRows = {0.37F, 0.405F, 0.455F, 0.49F},
+     .squaresY = 0.38F,
+     .squareScale = 0.7F},
+    {.titleY = 0.30F,
+     .titleStep = 0.055F,
+     .lightingLabelY = 0.29F,
+     .rowY = 0.36F,
+     .rowStep = 0.045F,
+     .answersOffset = 0.4F,
+     .cameraAnswersExtra = 0.1F,
+     .underAnswersOffset = 0.06F,
+     .restoreAnswersOffset = 0.11F,
+     .volumeRows = {0.37F, 0.405F, 0.455F, 0.49F},
+     .squaresY = 0.38F,
+     .squareScale = 0.7F},
+}};
 
 OptionMenu::OptionMenu() {
     for (BaseWidget* widget : {&m_barFrame, &m_barBack, &m_barFill, &m_squares[0], &m_squares[1]}) {
@@ -110,15 +186,15 @@ void OptionMenu::setSpriteBatch(graphics::SpriteBatch* batch) {
 
 void OptionMenu::open(const GlobalStrings* strings, MenuInput& input, Hooks hooks, const OptionValues& values,
                       const OptionLayout& layout, int level, std::uint64_t nowMs) {
+    namespace s = option_strings;
+    using enum OptionPage;
     m_strings = strings;
+    m_input = &input;
+    m_openedMs = nowMs;
     m_hooks = std::move(hooks);
     m_values = values;
     m_layout = layout;
     m_level = level;
-    m_title = 0;
-    m_selected.fill(0);
-    m_pageOpen = false;
-    m_open = true;
     input.focus(nowMs);
 
     // The seven titles, left-aligned one step apart in big_font.
@@ -128,7 +204,7 @@ void OptionMenu::open(const GlobalStrings* strings, MenuInput& input, Hooks hook
                                              .scale = kTitleSize,
                                              .colour = kDimGrey,
                                              .fontSlot = kTitleFontSlot});
-        m_titles.at(i).setText(string(option_strings::kTitles.at(i)));
+        m_titles.at(i).setText(string(s::kTitles.at(i)));
     }
     // The pages' heading (OptionPage_SetDescription: size 1.0 x 1.3, font slot 3).
     m_heading.setup(TextWidgetSetup{
@@ -139,102 +215,99 @@ void OptionMenu::open(const GlobalStrings* strings, MenuInput& input, Hooks hook
                                  .scale = kLabelSize,
                                  .colour = kDimGrey,
                                  .fontSlot = kLabelFontSlot});
-    m_hint.setText(string(option_strings::kLightingHint));
-    buildPages();
-    colour();
-    setFade(m_fade);
-}
+    m_hint.setText(string(s::kLightingHint));
 
-void OptionMenu::addChoice(OptionPage pageId, OptionSetting setting, std::uint32_t label,
-                           std::array<std::uint32_t, 2> answers, float x, float y, float ax, float ay,
-                           float labelScale) {
-    auto item = std::make_unique<OptionItem>();
-    item->setting = setting;
-    item->kind = OptionItemKind::Choice;
-    item->label = label;
-    item->answers = answers;
-    item->labelText.setup(
-        TextWidgetSetup{.x = x, .y = y, .scale = labelScale, .colour = kDimGrey, .fontSlot = kLabelFontSlot});
-    item->labelText.setText(string(label));
-    item->answersText.setup(
-        TextWidgetSetup{.x = ax, .y = ay, .scale = kLabelSize, .colour = kMenuGrey, .fontSlot = kAnswersFontSlot});
-    // The answer first shown is the current value; the first answer means on.
-    const OptionValues& v = m_values;
-    bool on = false;
-    switch (setting) {
-    case OptionSetting::InvertP1:
-    case OptionSetting::InvertP2:
-        on = v.invertCamera.at(static_cast<std::size_t>(padOf(setting)));
-        break;
-    case OptionSetting::AutoAdjustP1:
-    case OptionSetting::AutoAdjustP2:
-        on = v.autoAdjustCamera.at(static_cast<std::size_t>(padOf(setting)));
-        break;
-    case OptionSetting::VibrationP1:
-    case OptionSetting::VibrationP2:
-        on = v.vibration.at(static_cast<std::size_t>(padOf(setting)));
-        break;
-    case OptionSetting::Merge:
-        on = v.splitScreenMerge;
-        break;
-    case OptionSetting::Subtitles:
-        on = v.subtitles;
-        break;
-    case OptionSetting::ProLogic:
-        on = v.proLogic;
-        break;
-    case OptionSetting::Video:
-        // Normal (mode 0) is the first answer.
-        on = !v.wideVideo;
-        item->confirm = true;
-        break;
-    case OptionSetting::RestoreDefault:
-        // Always starts on No (`+0x4c0` = 1).
-        on = false;
-        item->confirm = true;
-        break;
-    default:
-        break;
-    }
-    item->choice = on ? 0 : 1;
-    item->savedChoice = item->choice;
-    refreshAnswers(*item);
-    m_pages.at(static_cast<std::size_t>(pageId)).push_back(std::move(item));
-}
-
-void OptionMenu::addBar(OptionPage pageId, OptionSetting setting, std::uint32_t label, float labelY, float barY) {
-    auto item = std::make_unique<OptionItem>();
-    item->setting = setting;
-    item->kind = setting == OptionSetting::Brightness ? OptionItemKind::Brightness : OptionItemKind::VolumeBar;
-    item->label = label;
-    const float scale = item->kind == OptionItemKind::Brightness ? kBigLabelSize : kLabelSize;
-    item->labelText.setup(
-        TextWidgetSetup{.x = kX, .y = labelY, .scale = scale, .colour = kDimGrey, .fontSlot = kLabelFontSlot});
-    item->labelText.setText(string(label));
-    item->barX = kX;
-    item->barY = barY;
-    switch (setting) {
-    case OptionSetting::Brightness:
-        item->bar = static_cast<float>(m_values.brightness) / static_cast<float>(kBrightnessMax);
-        break;
-    case OptionSetting::Music:
-        item->bar = m_values.musicVolume;
-        break;
-    default:
-        item->bar = m_values.soundFxVolume;
-        break;
-    }
-    item->savedBar = item->bar;
-    item->savedBrightness = m_values.brightness;
-    m_pages.at(static_cast<std::size_t>(pageId)).push_back(std::move(item));
-}
-
-void OptionMenu::buildPages() {
-    namespace s = option_strings;
-    using enum OptionPage;
+    // Every page empty, on its first item (OptionPage_Init).
     for (auto& items : m_pages) {
         items.clear();
     }
+
+    // Adds a choice (YesNoBox_Setup): label at (x, y), answers at (ax, ay), showing the current value.
+    const auto addChoice = [this](OptionPage pageId, OptionSetting setting, std::uint32_t label,
+                                  std::array<std::uint32_t, 2> answers, std::array<float, 4> place, float labelScale) {
+        auto item = std::make_unique<OptionItem>();
+        item->setting = setting;
+        item->kind = OptionItemKind::Choice;
+        item->label = label;
+        item->answers = answers;
+        item->labelText.setup(TextWidgetSetup{
+            .x = place[0], .y = place[1], .scale = labelScale, .colour = kDimGrey, .fontSlot = kLabelFontSlot});
+        item->labelText.setText(string(label));
+        item->answersText.setup(TextWidgetSetup{
+            .x = place[2], .y = place[3], .scale = kLabelSize, .colour = kMenuGrey, .fontSlot = kAnswersFontSlot});
+        // The answer first shown is the current value; the first answer means on.
+        const OptionValues& v = m_values;
+        bool on = false;
+        switch (setting) {
+        case OptionSetting::InvertP1:
+        case OptionSetting::InvertP2:
+            on = v.invertCamera.at(static_cast<std::size_t>(padOf(setting)));
+            break;
+        case OptionSetting::AutoAdjustP1:
+        case OptionSetting::AutoAdjustP2:
+            on = v.autoAdjustCamera.at(static_cast<std::size_t>(padOf(setting)));
+            break;
+        case OptionSetting::VibrationP1:
+        case OptionSetting::VibrationP2:
+            on = v.vibration.at(static_cast<std::size_t>(padOf(setting)));
+            break;
+        case OptionSetting::Merge:
+            on = v.splitScreenMerge;
+            break;
+        case OptionSetting::Subtitles:
+            on = v.subtitles;
+            break;
+        case OptionSetting::ProLogic:
+            on = v.proLogic;
+            break;
+        case OptionSetting::Video:
+            // Normal (mode 0) is the first answer.
+            on = !v.wideVideo;
+            item->confirm = true;
+            break;
+        case OptionSetting::RestoreDefault:
+            // Starts on No (`+0x4c0` = 1).
+            on = false;
+            item->confirm = true;
+            break;
+        default:
+            break;
+        }
+        item->choice = on ? 0 : 1;
+        item->savedChoice = item->choice;
+        refreshAnswers(*item);
+        m_pages.at(static_cast<std::size_t>(pageId)).push_back(std::move(item));
+    };
+
+    // Adds a bar (StatBarItem, or LightingItem for the brightness) at the value it edits.
+    const auto addBar = [this](OptionPage pageId, OptionSetting setting, std::uint32_t label, float labelY,
+                               float barY) {
+        auto item = std::make_unique<OptionItem>();
+        item->setting = setting;
+        item->kind = setting == OptionSetting::Brightness ? OptionItemKind::Brightness : OptionItemKind::VolumeBar;
+        item->label = label;
+        const float scale = item->kind == OptionItemKind::Brightness ? kBigLabelSize : kLabelSize;
+        item->labelText.setup(
+            TextWidgetSetup{.x = kX, .y = labelY, .scale = scale, .colour = kDimGrey, .fontSlot = kLabelFontSlot});
+        item->labelText.setText(string(label));
+        item->barX = kX;
+        item->barY = barY;
+        switch (setting) {
+        case OptionSetting::Brightness:
+            item->bar = static_cast<float>(m_values.brightness) / static_cast<float>(kBrightnessMax);
+            break;
+        case OptionSetting::Music:
+            item->bar = m_values.musicVolume;
+            break;
+        default:
+            item->bar = m_values.soundFxVolume;
+            break;
+        }
+        item->savedBar = item->bar;
+        item->savedBrightness = m_values.brightness;
+        m_pages.at(static_cast<std::size_t>(pageId)).push_back(std::move(item));
+    };
+
     const OptionLayout& l = m_layout;
     const float answersX = kX + l.answersOffset;
     // Lighting: the brightness bar, labelled with the page's name at 1.3.
@@ -252,26 +325,34 @@ void OptionMenu::buildPages() {
             continue;
         }
         const float y = l.rowY + (l.rowStep * static_cast<float>(i));
-        addChoice(Camera, camera.at(i).first, camera.at(i).second, {s::kOn, s::kOff}, kX, y,
-                  answersX + l.cameraAnswersExtra, y, kLabelSize);
+        addChoice(Camera, camera.at(i).first, camera.at(i).second, {s::kOn, s::kOff},
+                  {kX, y, answersX + l.cameraAnswersExtra, y}, kLabelSize);
     }
     // Audio: the two volume bars, then Pro Logic II.
     addBar(Audio, OptionSetting::Music, s::kMusic, l.volumeRows[0], l.volumeRows[1]);
     addBar(Audio, OptionSetting::SoundFx, s::kSoundFx, l.volumeRows[2], l.volumeRows[3]);
-    addChoice(Audio, OptionSetting::ProLogic, s::kProLogic, {s::kOn, s::kOff}, kX, kProLogicY, answersX, kProLogicY,
+    addChoice(Audio, OptionSetting::ProLogic, s::kProLogic, {s::kOn, s::kOff}, {kX, kProLogicY, answersX, kProLogicY},
               kLabelSize);
     // Video, Subtitles and Restore Default: one choice under the page's name.
-    addChoice(Video, OptionSetting::Video, s::kTitles.at(3), {s::kNormal, s::kWide}, kX, l.titleY, kX,
-              l.titleY + l.underAnswersOffset, kBigLabelSize);
-    addChoice(Subtitles, OptionSetting::Subtitles, s::kTitles.at(4), {s::kOn, s::kOff}, kX, l.titleY, kX,
-              l.titleY + l.underAnswersOffset, kBigLabelSize);
+    addChoice(Video, OptionSetting::Video, s::kTitles.at(3), {s::kNormal, s::kWide},
+              {kX, l.titleY, kX, l.titleY + l.underAnswersOffset}, kBigLabelSize);
+    addChoice(Subtitles, OptionSetting::Subtitles, s::kTitles.at(4), {s::kOn, s::kOff},
+              {kX, l.titleY, kX, l.titleY + l.underAnswersOffset}, kBigLabelSize);
     // Vibration: a row per pad.
-    addChoice(Vibration, OptionSetting::VibrationP1, s::kP1Controller, {s::kOn, s::kOff}, kX, l.rowY, answersX, l.rowY,
-              kLabelSize);
-    addChoice(Vibration, OptionSetting::VibrationP2, s::kP2Controller, {s::kOn, s::kOff}, kX, l.rowY + l.rowStep,
-              answersX, l.rowY + l.rowStep, kLabelSize);
-    addChoice(RestoreDefault, OptionSetting::RestoreDefault, s::kTitles.at(6), {s::kYes, s::kNo}, kX, l.titleY, kX,
-              l.titleY + l.restoreAnswersOffset, kBigLabelSize);
+    addChoice(Vibration, OptionSetting::VibrationP1, s::kP1Controller, {s::kOn, s::kOff},
+              {kX, l.rowY, answersX, l.rowY}, kLabelSize);
+    addChoice(Vibration, OptionSetting::VibrationP2, s::kP2Controller, {s::kOn, s::kOff},
+              {kX, l.rowY + l.rowStep, answersX, l.rowY + l.rowStep}, kLabelSize);
+    addChoice(RestoreDefault, OptionSetting::RestoreDefault, s::kTitles.at(6), {s::kYes, s::kNo},
+              {kX, l.titleY, kX, l.titleY + l.restoreAnswersOffset}, kBigLabelSize);
+
+    // The title list on its first title, every page on its first item.
+    m_title = 0;
+    m_selected.fill(0);
+    m_pageOpen = false;
+    m_open = true;
+    colour();
+    setFade(m_fade);
 }
 
 void OptionMenu::refreshAnswers(OptionItem& item) const {
@@ -393,11 +474,9 @@ bool OptionMenu::pageCommand(MenuCommand command) {
         playCue(kAcceptCue);
         leavePage();
         if (restored) {
-            // The menu reopens on the new values (`0x0050ed14`), on its first title with every page on its first
-            // item; Coney rebuilds the pages in place.
-            buildPages();
-            m_title = 0;
-            m_selected.fill(0);
+            // The menu reopens on the new values (`0x0050ed14`, OptionMenu_Update's close and open). Coney's
+            // choice: at once, not on the next update; `items` and `selected` are not used after it.
+            open(m_strings, *m_input, m_hooks, m_values, m_layout, m_level, m_openedMs);
         }
         return true;
     }

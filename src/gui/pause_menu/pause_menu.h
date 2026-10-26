@@ -210,6 +210,8 @@ class PauseMenu : public Widget {
     // Acts on grid item `code`.
     void selectItem(PauseItem item, std::uint64_t nowMs);
     // Opens the Options screen at `nowMs` (`OptionMenu_Open`, with the pausing player's input).
+    // @coney-only Coney's call into OptionMenu::open with the pause setup's values and layout; the original's
+    // PauseMenu_SelectItem and PauseMenu_ReturnToOptions open the menu through its slot +0xa8
     void openOptions(std::uint64_t nowMs);
     // Opens `screen` with selection `selection`.
     void openScreen(PauseScreen screen, std::size_t selection);

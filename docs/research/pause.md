@@ -283,7 +283,10 @@ default video mode (device flags `0x01`, [Coordinates](hud.md#coordinates)).
 
 **The title list.** Seven titles, left-aligned (alignment 4) at x **0.26**, y **0.30 + 0.055 × i** (`0x0050ed94`,
 `0x0050ed98`, `0x0050ed9c`), in `big_font` (font slot 6) at size **1.3** (`0x0050eda4`); the selected title in
-`0x005fd310`, the others in `0x005fd320` (`OptionMenu_Render` `0x001da880`). The first is selected on open.
+`0x005fd310`, the others in `0x005fd320` (`OptionMenu_Render` `0x001da880`). The first is selected on open. Up and
+down move (cue 4, `0xe` at an end), left and right are refused (cue `0xe`), accept opens the selected page (cue 8)
+after remembering its values (`OptionPage_BeginEdit`) and back (cue `0xf`) closes Options (`OptionMenu_OnCommand`
+`0x001da3f8`, whose jump table `0x005560f0` holds one case per command). Confirmed (code).
 
 | i | Page (string) | Items, top to bottom |
 | --- | --- | --- |
@@ -297,16 +300,19 @@ default video mode (device flags `0x01`, [Coordinates](hud.md#coordinates)).
 
 **Items.** Every item has a label (size 1.0, font slot 3, `0x005fd310` when selected and `0x005fd320` otherwise,
 `OptionPage_Render` `0x001d62d8`); the single-item pages and the brightness bar scale their label to **1.3**
-(`OptionItem_SetLabelScale`). Up and down move between a page's items (cue 4, `0xe` at an end; the first item is
-selected), left and right go to the item. The pages with several items show the page's name again as a heading
-(`OptionPage_SetDescription`: size 1.0 × 1.3, font slot 3) at **(0.26, 0.30)** (`0x0050edc4`, `0x0050edc8`):
-Camera, Audio and Vibration.
+(`OptionItem_SetLabelScale`). Up and down move between a page's items (cue 4, `0xe` at an end), left and right go
+to the item (`OptionPage_OnCommand` `0x001d5dc8`, jump table `0x00556080`). Each page keeps its selected item (`+4`)
+while Options is open: `OptionPage_Init` sets it to the first item when the menu opens, and opening the page again
+does not, so a page reopens on the item it was left on. Confirmed (code). The pages with several items show the
+page's name again as a heading (`OptionPage_SetDescription`: size 1.0 × 1.3, font slot 3) at **(0.26, 0.30)**
+(`0x0050edc4`, `0x0050edc8`): Camera, Audio and Vibration.
 
 - **On/off choices** (`YesNoBox`, the answers `0x12b` / `0x12c` with a "/" between, in font slot 4): the label at
   (x, y), the answers at (x + **0.4**, y) (`0x0050ed78`), the first answer at the given point and each next one after
   the previous one's width. The chosen answer is drawn in `0x005fd310`, the other in `0x005fd320`. Left picks the
   first answer, right the second (cue 4, `0xe` when it was already chosen) and calls the item's setter **at once**
-  with the selection (0 first, 1 second; `YesNoBox_OnCommand` `0x001d6c10`); every setter turns its option on for
+  with the selection (0 first, 1 second; `YesNoBox_OnCommand` `0x001d6c10`), also when the answer was already chosen,
+  so a refused left on an already-on vibration rumbles the pad again; every setter turns its option on for
   selection 0. The answer first shown is the current value. Camera items: x 0.26, y **0.36 + 0.045 × i**
   (`0x0050ed84`, `0x0050eda0`), their answers at x 0.66 (0.76 in German, `0x0050edd0` = 0.1); Vibration: the same
   rows from y 0.36 (`0x0050ed88`), answers at x 0.66.
@@ -315,13 +321,15 @@ Camera, Audio and Vibration.
   above. **Video** and **Restore Default** are in confirm mode (`+0x4c8`): left and right only move the choice, and
   accept calls the setter with 2 (first answer) or 3 (second). Video's first answer means Normal (video mode 0) and
   the second Wide (mode 1); its starting answer comes from the device (slot `+0xd4`, the widescreen state, inferred).
-  Restore Default always starts on **No** (`+0x4c0` = 1).
+  Restore Default starts on **No** (`+0x4c0` = 1) when the menu opens and again each time its page is opened
+  (`OptionMenu_OnCommand`'s accept on title 6, through the item pointer `0x0050edd4`). Confirmed (code).
 - **Pro Logic II**: an on/off choice at (0.26, 0.60) with answers at (0.66, 0.60) (`0x0050edcc`).
 - **Volume bars** (`StatBarItem`, Music then SoundFX): label at (0.26, 0.37) and (0.26, 0.455), bar at (0.26, 0.405)
   and (0.26, 0.49) (`0x0050edac`-`0x0050edc0`), width **0.54** (`0x0050eda8`). The bar is a sheet-12 rectangle-0
   frame centred at bar x + 0.27, with a white fill over a (21, 21, 21) back bar, both 0.025 high (`0x0050ed2c`),
   drawn from bar + (-0.004, +0.004) (`StatBarItem_Setup` `0x001d6ef8`). Left and right step the value by **0.05**
-  within 0-1 (cue 4, `0xe` at an end) and call the volume setter each step; the value starts at the game state's
+  within 0-1 (cue 4, `0xe` at an end) and call the volume setter on every press, an end's refused one too
+  (`StatBarItem_OnCommand` `0x001d7490`); the value starts at the game state's
   music (`+0x57ac`) or SoundFX (`+0x57a8`) volume.
 - **The brightness bar** (`LightingItem`): label at (0.26, 0.29) (`0x0050ed6c`, `0x0050ed70`), bar at (0.26, 0.50)
   (`0x0050ed74`), width 0.54, value = brightness / 100 (the game state's byte `+0x57a4`, 0-100). Left and right step
@@ -336,18 +344,29 @@ opened, a page closed), `0xf` back. The pause menu plays none of its own while O
 bars can be heard (`OptionMenu_Update` `0x001da658`); turning a pad's vibration on gives a 500 ms rumble of strength
 120 (`0x0050ed50`, `0x0050ed54`).
 
-**Back.** Back on a page returns to the title list (cue `0xf`); on every page but Vibration and Restore Default it
-first restores the values the page had when it was opened (`OptionPage_Revert`, each item's slot `+0xa8`, which
-calls the setter again), so **only accept keeps a change**: accept on a page item closes the page and keeps every
-value (`OptionPage_OnCommand` `0x001d5dc8`). Back on the title list closes Options and returns to the pause grid.
+**Back.** Back on a page returns to the title list (cue `0xf`). On Vibration it first stops the preview rumble
+(the pad `0x0050ecf0`'s motors set to 0). On every page but Restore Default it then restores the values the page had
+when it was opened (`OptionMenu_RevertPage` `0x001da9d0`, then `OptionPage_Revert`: each item's slot `+0xa8`, which
+calls the setter again, so putting a pad's vibration back on rumbles it), so **only accept keeps a change**: accept
+on a page item sends the item accept (a confirm-mode item applies its answer), plays cue 8, closes the page and
+keeps every value (`OptionPage_OnCommand` `0x001d5dc8`). Back on the title list closes Options and returns to the
+pause grid. Confirmed (code). This page said until 2026-10-26 that Vibration keeps its values on back: the case at
+`0x001d5f74` stops the preview and then falls through to the revert, which only Restore Default (`+8` = 6) skips.
+
+**Restore Default.** Yes sets the defaults ([save.md](save.md#options)) and the flag `0x0050ed14`; the next
+`OptionMenu_Update` closes and reopens the menu (slots `+0xb0` and `+0xa8`), which puts the title list back on its
+first title and every page on its first item. No clears the flag. Confirmed (code).
 
 **Other video modes.** `OptionMenu_Open` rewrites the globals for the device flags (`*0x0050cdb4`): with 16:9
 (`0x04`, without `0x02` or `0x08`) the titles, the page heading and the brightness label start at y 0.24, the Camera
 and Vibration rows at 0.30, the squares are at y 0.34 and the volume rows at 0.31 / 0.345 / 0.395 / 0.43; with flag
 `0x08` (without `0x02`) the titles start at 0.17 and step 0.075, the rows step 0.065 from 0.25 and the squares are
-1.2 × as big, at y 0.34; with flag `0x02` without `0x04` the titles start at 0.32 and step 0.045, the rows step 0.04
-from 0.37 (answers 0.12 further right) and the squares are 0.7 × as big. Confirmed (code); the meaning of flags `0x02`
-and `0x08` is not on [Graphics](graphics.md#video-mode).
+1.2 × as big, at y 0.34; with flag `0x02` without `0x04` the titles start at 0.32 and step 0.045, the brightness
+label is at 0.33, the rows step 0.04 from 0.37, the Music label and bar are at 0.38 and 0.415, the Camera answers
+are 0.12 further right (`0x0050edd0`, replacing German's 0.1; the other answers stay at + 0.4) and the squares are
+0.7 × as big; with `0x02` and `0x04` together only the squares (0.7 ×), the Camera answers (+ 0.1) and the back bar's
+offset change. Confirmed (code); the meaning of flags `0x02` and `0x08` is not on
+[Graphics](graphics.md#video-mode).
 
 ### The Controls screen {#controls-layout}
 
@@ -622,7 +641,7 @@ step 0x6f0: count +0, selection +4, index +8, 5 item pointers +0x0c, description
 | `0x001d5b30`, `0x001d5bc8` | `OptionPage_Shutdown`, `OptionPage_AddItem` | Frees the 5 items, description and box; adds to the first free of 5 slots. | confirmed (code) |
 | `0x001d5c38` | `OptionPage_SetDescription` | Description markup (size 1.0, `0x005fd310`, font slot 3, scale 1.3) at a position. | confirmed (code) |
 | `0x001d5cf0` | `OptionPage_OnConfirmBoxCommand` | Routes a command to the confirm box (up/down cue 0xe, accept cue 8). | confirmed (code) |
-| `0x001d5dc8` | `OptionPage_OnCommand` | Up/down move +4 (cue 4, 0xe at an end); left/right to the item (2/3); accept: item command 4, cue 8, close; back cue 0xf: Vibration (5) stops the preview, Restore Default (6) closes, others revert first. Returns 0 to close. | confirmed (code) |
+| `0x001d5dc8` | `OptionPage_OnCommand` | Up/down move +4 (cue 4, 0xe at an end); left/right to the item (2/3); accept: item command 4, cue 8, close; back cue 0xf: Vibration (5) stops the preview, then every page but Restore Default (6) reverts (`OptionMenu_RevertPage`). Returns 0 to close. | confirmed (code) |
 | `0x001d6060`, `0x001d60e8`, `0x001d6160` | `OptionPage_IsLoaded`, `OptionPage_BeginEdit`, `OptionPage_Revert` | Every item's slot +0x98 (loaded), +0xa0 (remember value), +0xa8 (restore and apply). | confirmed (code) |
 | `0x001d61d8`, `0x001d62d8` | `OptionPage_Update`, `OptionPage_Render` | Items, description, box when open; selected item `0x005fd310`, others `0x005fd320` via slot +0x78. | confirmed (code) |
 | `0x001d63f0`, `0x001d6430`, `0x001d64b0` | `OptionItem_Construct`, `_Destroy`, `_Setup` | Label markup +0x50; setup (slot +0x90) stores metrics +0x40 and the label (size 1.0, `0x005fd310`, slot 3), +0x240 = 2. | confirmed (code) |
@@ -656,7 +675,7 @@ step 0x6f0: count +0, selection +4, index +8, 5 item pointers +0x0c, description
 | `0x001d8620`, `0x001d86a0` | `OptionMenu_ApplyVolumes`, `OptionMenu_NoOp` | Slot +0x90 applies music (+0x57ac) and SoundFX (+0x57a8); slot +0x98 empty (created). | confirmed (code) |
 | `0x001d86a8` | `OptionMenu_Open` | Slot +0xa8: titles 0x117, 0x119, 0x122, 0x123, 0x124, 0x11f, 0x128 (font slot 6, scale 1.3) and every page's items; Merge omitted on level 102; Restore Default preselects No. | confirmed (code) |
 | `0x001da348` | `OptionMenu_Close` | Slot +0xb0: shuts pages and titles, stops the preview music. | confirmed (code) |
-| `0x001da3f8` | `OptionMenu_OnCommand` | Page open: to the page; else up/down titles 0-6 (cue 4/0xe), accept opens (BeginEdit, cue 8), back cue 0xf and +0x45d0 = 1. | confirmed (code) |
+| `0x001da3f8` | `OptionMenu_OnCommand` | Page open: to the page; else up/down titles 0-6 (cue 4/0xe), left/right cue 0xe, accept opens (Restore Default back on No, BeginEdit, cue 8), back cue 0xf and +0x45d0 = 1. | confirmed (code) |
 | `0x001da658` | `OptionMenu_Update` | Waits for load; ends the vibration preview; reopens after Restore Default; loops `vags/music/wonderwheel_mono` at music volume while Audio is open. | confirmed (code) |
 | `0x001da880` | `OptionMenu_Render` | Titles (selected `0x005fd310`, others `0x005fd320`) or the open page. | confirmed (code) |
 | `0x001da9b8`, `0x001da9d0`, `0x001daa38`, `0x001daa50` | `OptionMenu_CloseConfirmBox`, `_RevertPage`, `_SetPageChanged`, `_IsLoaded` | Current page's box closed, items reverted (+0x218 = 1), changed flag +0x214; all pages loaded. | confirmed (code) |
@@ -794,14 +813,19 @@ Coney stand-ins, each an open question below:
   [The Options screen](#options) and [`GUI/OptionMenu.cpp`](#fn-optionmenu)) follows this page: the seven titles, each
   page's items, places (`OptionLayout::forMode`, by language and video mode; Coney's pause mode opens the 4:3 one),
   colours, the answers' layout, the cues, the ranges and steps, applying at once or on accept (Video, Restore Default),
-  and back putting the page's values back except on Vibration and Restore Default. Every change goes at once into the
+  each page keeping its selected item, and back putting the page's values back except on Restore Default (Vibration
+  stopping its preview first). Each of the 23 ported functions was compared side by side with Ghidra on
+  2026-10-26 (`original compare`). Every change goes at once into the
   game state where [save.md](save.md#options) puts it (`storeOptionValues`), so the next autosave keeps it; the game
   then applies the volumes as the music and effects buses' volumes and P1's auto-adjust as the follow camera's
   auto-centre rule. The Audio page loops `music/wonderwheel_mono` and the previous track starts again when it closes.
   Coney's choices and gaps: the brightness, the camera's inversion, the vibration (and its 500 ms preview), the
   merge, Pro Logic II and the Video mode are only stored (Coney applies none of them yet); the bars' frame is drawn
-  the bar's size and their back, fill and the squares use sheet 12 rectangle 6 tinted; after Restore Default the
-  pages are rebuilt in place and the menus are not reopened; the half-word `W_GameState + 0x454` is not modelled.
+  the bar's size and their back, fill and the squares use sheet 12 rectangle 6 tinted; Restore Default's Yes
+  opens the Options menu again at once (the original waits for its next update) and the pause menu is not reopened; a bar
+  within 0.001 of an end counts as at the end (the original compares exactly, on an FPU that rounds toward zero); the
+  half-word `W_GameState + 0x454`, flag `0x08`'s layout, the bars' back-bar offset `0x0050ed30` and the page's
+  discard box (`+0x210`, which no code opens) are not modelled.
   Tests: `repo:tests/gui/option_menu_test.cpp`, `repo:tests/gui/pause_menu_test.cpp`,
   `repo:tests/gamemodes/pause_mode_test.cpp` and `repo:tests/platform/disc_pause_options_test.cpp` (START, the left
   stick at 70 % and cross in `level99` started as `--play-level` starts it: Music up one step and kept, Invert P1 on
@@ -839,7 +863,8 @@ Coney stand-ins, each an open question below:
   whether the menu's mission titles always have the `<number>:<title>` form.
 - The Controls screen and the Options menu (answered: [The Options screen](#options),
   [The Controls screen](#controls-layout)). Still open: which Controller-page labels are two lines long (the strings),
-  what the device flags `0x02` and `0x08` mean for the per-mode layouts, and a runtime check of the Options layout.
+  what the device flags `0x02` and `0x08` mean for the per-mode layouts, and a runtime check of the Options layout
+  in the other video modes. What the half-word `W_GameState + 0x454` that Restore Default clears is for.
 - The mission-failed items' actions (`0x001d2018` and the vtable `0x0053b598`). The Rumble result screen (mode
   0x14) is on [Rumble](rumble.md#result-screen).
 - What the menu's write to the screen-effects managers' `+0x214` does on close.

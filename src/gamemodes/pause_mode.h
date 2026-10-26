@@ -55,8 +55,10 @@ struct PauseHooks {
 
 /// The Options screen's values as `state` keeps them (docs/research/save.md#options): the brightness, the subtitles
 /// and, in GameState::saved, the volumes, the pads' options, the merge, Pro Logic II and the video mode.
+/// @coney-only Coney's bridge from GameState to the menu's values; OptionMenu_Open reads the game state itself
 [[nodiscard]] gui::OptionValues optionValuesOf(const GameState& state);
 /// Writes the Options screen's `values` into `state`, where each setter writes them (save.md#options).
+/// @coney-only Coney's bridge from the menu's values to GameState; the original's setters write it themselves
 void storeOptionValues(const gui::OptionValues& values, GameState& state);
 
 /// The loaded fonts and batches a pause-style menu draws with, and the 2D pass over them: one per mode.

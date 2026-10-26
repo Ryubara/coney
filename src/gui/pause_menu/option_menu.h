@@ -90,10 +90,15 @@ struct OptionLayout {
     float squaresY = 0.38F;                                        ///< The brightness squares' y (`0x0050ed4c`).
     float squareScale = 1.0F;                                      ///< `0x0050ed44`.
 
+    /// Each mode's and language's layout, as forMode() picks it (OptionMenu_Open's values; defined in option_menu.cpp).
+    static const std::array<OptionLayout, 8> kModes;
+
     /// The layout for `language` in the default video mode, in 16:9 (`widescreen`, device flag `0x04`), with flag
-    /// `0x02` (`flag02`) and with both. Flag `0x08` is not modelled.
-    /// @orig 0x001d86a8 OptionMenu_Open (OptionMenu.cpp)
-    [[nodiscard]] static OptionLayout forMode(Language language, bool widescreen, bool flag02);
+    /// `0x02` (`flag02`) and with both, from kModes. Flag `0x08` is not modelled.
+    [[nodiscard]] static OptionLayout forMode(Language language, bool widescreen, bool flag02) {
+        return kModes.at((((static_cast<std::size_t>(flag02) << 1U) | static_cast<std::size_t>(widescreen)) << 1U) |
+                         static_cast<std::size_t>(language == Language::German));
+    }
 };
 
 /// What one Options item is.
@@ -165,14 +170,13 @@ struct OptionItem {
 ///
 /// Coney's choices where the page is silent (docs/research/pause.md#options): the bars' frame (sheet 12 rectangle 0)
 /// is drawn the bar's size; the bars' back and fill and the squares use sheet 12 rectangle 6 tinted; the page heading
-/// and the single-item pages' label sit at the heading's place; after Restore Default the pages are rebuilt in place
-/// from the new values (the original closes and reopens the menu, which puts the list back on its first title, as
-/// here); the Audio page's music loop and the vibration preview go to hooks the caller may leave empty; Video's Wide
-/// only sets the value (Coney has no video mode to switch, so the menus are not reopened); the page's discard box
+/// and the single-item pages' label sit at the heading's place; Restore Default's Yes opens the menu again at once (the
+/// original does it on its next update); the Audio page's music loop and the vibration preview go to hooks the caller
+/// may leave empty; Video's Wide only sets the value (Coney has no video mode to switch, so the menus are not
+/// reopened); the page's discard box
 /// (`OptionPage` `+0x210`), which no code opens, is left out.
 ///
 /// Research: docs/research/pause.md#options, docs/research/pause.md#fn-optionmenu
-/// @orig 0x001d84a0 OptionMenu_Construct (OptionMenu.cpp)
 class OptionMenu {
   public:
     /// The titles' x and size, and their font slot.
@@ -223,10 +227,13 @@ class OptionMenu {
         std::function<void()> stopVibration;
     };
 
+    /// The screen, closed, with the bars' and squares' widgets shown (drawn only while a page with a bar is open).
+    /// @orig 0x001d84a0 OptionMenu_Construct (OptionMenu.cpp)
     OptionMenu();
 
-    /// Opens the screen on its title list, the first selected, with `values` and `layout`; `level` is the level's
-    /// number (level 102 has no Split Screen Merge). `strings` and `input` must outlive the menu's use.
+    /// Opens the screen on its title list, the first selected, every page on its first item, with `values` and
+    /// `layout`; `level` is the level's number (level 102 has no Split Screen Merge). `strings` and `input` must
+    /// outlive the menu's use. Restore Default opens it again with the new values.
     /// @orig 0x001d86a8 OptionMenu_Open (OptionMenu.cpp)
     void open(const GlobalStrings* strings, MenuInput& input, Hooks hooks, const OptionValues& values,
               const OptionLayout& layout, int level, std::uint64_t nowMs);
@@ -236,7 +243,6 @@ class OptionMenu {
 
     /// Acts on one command. Returns true when back leaves the screen (from the title list).
     /// @orig 0x001da3f8 OptionMenu_OnCommand (OptionMenu.cpp)
-    /// @orig 0x001d5dc8 OptionPage_OnCommand (OptionMenu.cpp)
     [[nodiscard]] bool handle(MenuCommand command);
 
     /// Advances the texts.
@@ -247,8 +253,10 @@ class OptionMenu {
     /// @orig 0x001d62d8 OptionPage_Render (OptionMenu.cpp)
     void render(const GuiCanvas& canvas) const;
     /// The menu's alpha, 0 to 1.
+    /// @coney-only the pause menu's fade handed to Coney's widgets; the original passes the alpha to each render
     void setFade(float fade);
     /// Draws the bars and squares into `batch` (sheet 12's); null draws none.
+    /// @coney-only Coney's sprite batches; the original's widgets hold their own sprites
     void setSpriteBatch(graphics::SpriteBatch* batch);
 
     /// The values now.
@@ -270,30 +278,30 @@ class OptionMenu {
     /// The brightness hint's widget.
     [[nodiscard]] const TextWidget& hint() const { return m_hint; }
     /// The texts shown now, in drawing order (for tests and the log).
+    /// @coney-only a test and log aid
     [[nodiscard]] std::vector<std::string> lines() const;
     /// The layout the screen was opened with.
     [[nodiscard]] const OptionLayout& layout() const { return m_layout; }
 
   private:
     // String `id`, or empty without strings.
+    // @coney-only Coney's string table lookup (the original calls GlobalString_Get)
     [[nodiscard]] std::string_view string(std::uint32_t id) const;
     // Plays `cue`, if there is a sink.
+    // @coney-only Coney's cue hook (the original calls the sound manager)
     void playCue(int cue) const;
-    // Builds every page's items from the values (OptionMenu_Open's second half).
-    void buildPages();
-    // Adds a choice to `page`: label `label` at (x, y), answers at (ax, ay).
-    void addChoice(OptionPage page, OptionSetting setting, std::uint32_t label, std::array<std::uint32_t, 2> answers,
-                   float x, float y, float ax, float ay, float labelScale);
-    // Adds a bar to `page`.
-    void addBar(OptionPage page, OptionSetting setting, std::uint32_t label, float labelY, float barY);
-    // The titles' and items' colours by the selection.
+    // The titles' and items' colours by the selection: the selected one `0x005fd310`, the others `0x005fd320`.
+    // @coney-only Coney sets them when the selection changes; the original picks them as it draws (OptionMenu_Render,
+    // OptionPage_Render), whose compared pairs point here
     void colour();
-    // Rebuilds a choice's answers text in its selection's colours.
+    // Rebuilds a choice's answers text: the chosen answer `0x005fd310`, the other `0x005fd320`, a "/" between.
+    // @orig 0x001d6b00 YesNoBox_RenderColoured (OptionMenu.cpp)
     void refreshAnswers(OptionItem& item) const;
     // The open page's items.
     [[nodiscard]] std::vector<std::unique_ptr<OptionItem>>& page() { return m_pages.at(m_title); }
     [[nodiscard]] const std::vector<std::unique_ptr<OptionItem>>& page() const { return m_pages.at(m_title); }
     // One command to the open page; true when it closes.
+    // @orig 0x001d5dc8 OptionPage_OnCommand (OptionMenu.cpp)
     bool pageCommand(MenuCommand command);
     // Left or right on `item`: an item at its end refuses (cue 0xe) but still sets its value and calls its setter.
     // @orig 0x001d7490 StatBarItem_OnCommand (OptionMenu.cpp)
@@ -320,9 +328,13 @@ class OptionMenu {
     // @orig 0x001d6160 OptionPage_Revert (OptionMenu.cpp)
     void revert();
     // Sends the values to the apply hook (and the music loop its volume).
+    // @coney-only Coney hands every change to its caller; the original's setters write the game state themselves
     void changed();
 
     const GlobalStrings* m_strings = nullptr;
+    // The input and time open() was given, for Restore Default's reopening.
+    MenuInput* m_input = nullptr;
+    std::uint64_t m_openedMs = 0;
     Hooks m_hooks;
     OptionValues m_values;
     OptionLayout m_layout;
