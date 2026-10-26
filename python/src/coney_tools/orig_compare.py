@@ -48,10 +48,15 @@ class CompareResult:
     counts: dict[str, int] = field(default_factory=dict)
 
 
+def units_citing(root: Path, address: str) -> list[orig_review.Unit]:
+    """Every Coney function that carries `@orig <address>` (the files as they are on disk)."""
+    number = int(address, 16)
+    return [u for u in orig_review.units_now(root) if number in u.addresses]
+
+
 def find_unit(root: Path, address: str, key: str | None = None) -> orig_review.Unit:
     """The Coney function that carries `@orig <address>`; CompareError when none or several (then `key` picks one)."""
-    number = int(address, 16)
-    found = [u for u in orig_review.units_now(root) if number in u.addresses]
+    found = units_citing(root, address)
     if key is not None:
         found = [u for u in found if u.key == key]
     if not found:
@@ -171,6 +176,8 @@ def compare(
     if report.current("studied", address, wanted) is None:
         raise CompareError(f"{address}: no current `studied` stamp for the saved study; run `original study {address}`")
     coney = find_unit(root, address, key)
+    # Two Coney functions can port parts of one original function: each keeps its own `compared` stamp.
+    cited_by = [u.key for u in units_citing(root, address)]
     path = unit.mapping(address)
     view = unit.compare(address)
     header = orig_pairs.header_from_cut(
@@ -229,7 +236,7 @@ def compare(
         "pairs_sha256": orig_pairs.file_sha256(path),
         "coney_body_sha256": coney.body_sha256,
     }
-    existing = report.current("compared", address, covers)
+    existing = report.current("compared", address, covers, function=coney.key, cited_by=cited_by)
     if existing is not None:
         result.status, result.stamp = "unchanged", existing
         return result

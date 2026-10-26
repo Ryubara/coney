@@ -312,7 +312,10 @@ def test_the_facts_name_every_stage_with_its_stamp_the_change_and_the_chain_head
 def test_two_functions_of_one_address_are_counted_by_their_own_compared_stamps(tmp_path: Path) -> None:
     built = make(tmp_path)
     built.edit(SOURCE_FILE, TWO_FUNCTIONS)
-    short = lambda: pr_text._stage_lines(built.subject(), True)  # noqa: E731
+
+    def short() -> list[str]:
+        return pr_text._stage_lines(built.subject(), True)
+
     assert "- Studied 1 of 1 functions" in short() and "- Compared 1 of 2 functions" in short()
     built.compare(key="Widget::reset()")
     assert "- Compared 2 of 2 functions" in short()

@@ -72,7 +72,7 @@ problem is printed with its prefix and what to redo; all problems are listed, no
 | --- | --- | --- |
 | `nothing to review`, `uncommitted changes` | The branch has a commit beyond the base; the worktree is clean | The engineer commits |
 | `stamp log:` | The log is intact ([Verifying a log](../stamps.md#verify)) | Report to the coordinator: the unit is unusable |
-| `compared:` | Each changed `@orig` function has a pairs file and a current `compared` stamp for its body and for that file | `original compare <addr>` |
+| `compared:` | Each changed `@orig` function has a pairs file and a current `compared` stamp for its body and for that file (two functions that cite one address each need their own: [Stamps](../stamps.md#shared-address)) | `original compare <addr>` (`--coney-function KEY` when several cite it) |
 | `copy-check:` | [`orig copy-check`](../coney-tools-fidelity.md#orig) finds no fingerprint on the lines added | The engineer, then `original compare` |
 | `fails-first:` | Each added C++ `TEST_CASE` has a passing `fails-first` stamp (Python tests are not stamped) | `original fails-first` |
 | `docs check:` | `docs check` passes on the changed pages, research pages included | The engineer |

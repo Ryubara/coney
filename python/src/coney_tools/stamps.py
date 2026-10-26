@@ -28,7 +28,7 @@ import os
 import re
 import sys
 import time
-from collections.abc import Callable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Collection, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -48,6 +48,8 @@ FIELDS = ("v", "seq", "task", "step", "subject", "result", "commit", "covers", "
 LEGACY_KEY = "sig"
 #: The `covers` key that binds a stamp to the change a branch makes (`pr_diff.change_of(...).sha256`).
 CHANGE = "diff_sha256"
+#: The `detail` key in which a `compared` stamp names the Coney function it was made for (`orig_review.Unit.key`).
+FUNCTION = "coney"
 #: The biggest `detail`, canonical bytes (a stamp stays under about a kilobyte).
 MAX_DETAIL = 2048
 _SEGMENT = re.compile(r"^(\d{4})\.jsonl$")
@@ -203,21 +205,46 @@ class Report:
         """The hash of the newest stamp, ZERO for an empty log."""
         return self.stamps[-1].hash if self.stamps else ZERO
 
-    def latest(self, step: str, subject: str | None = None, result: str | None = None) -> Stamp | None:
-        """The newest stamp of `step` (and `subject`, and `result`, when given), or None."""
+    def latest(
+        self,
+        step: str,
+        subject: str | None = None,
+        result: str | None = None,
+        *,
+        function: str | None = None,
+        cited_by: Collection[str] = (),
+    ) -> Stamp | None:
+        """The newest stamp of `step` (and `subject`, and `result`, when given), or None.
+
+        Two Coney functions can port parts of one original function and so cite one address, which is a `compared`
+        stamp's subject. Given the Coney function the caller asks for and every function that cites the address
+        (`cited_by`), only the stamps that name `function` (`FUNCTION` in their detail) count while another function
+        also cites the address; with `function` alone at the address every stamp of it counts, as a stamp made before
+        it was named does, so comparing one function never replaces the stamp of the other.
+        """
+        shared = function is not None and any(other != function for other in cited_by)
         for stamp in reversed(self.stamps):
             if (
                 stamp.step == step
                 and (subject is None or stamp.subject == subject)
                 and (result is None or stamp.result == result)
+                and (not shared or stamp.detail.get(FUNCTION) == function)
             ):
                 return stamp
         return None
 
-    def current(self, step: str, subject: str, covers: Mapping[str, str]) -> Stamp | None:
+    def current(
+        self,
+        step: str,
+        subject: str,
+        covers: Mapping[str, str],
+        *,
+        function: str | None = None,
+        cited_by: Collection[str] = (),
+    ) -> Stamp | None:
         """The newest passing stamp of `step` and `subject` when it covers exactly these hashes (the ones the caller
-        recomputed for the key names given), else None."""
-        stamp = self.latest(step, subject)  # the newest of any result: a later fail replaces an earlier pass
+        recomputed for the key names given), else None. `function` and `cited_by` pick the stamps as `latest` does."""
+        stamp = self.latest(step, subject, function=function, cited_by=cited_by)  # a later fail replaces a pass
         if stamp is None or stamp.result != "pass":
             return None
         if any(stamp.covers.get(name) != value for name, value in covers.items()):

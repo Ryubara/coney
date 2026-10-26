@@ -30,7 +30,7 @@ import json
 import re
 import subprocess
 from collections import defaultdict
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Collection, Iterable, Mapping
 from dataclasses import dataclass, field, replace
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -345,15 +345,32 @@ def recorded_body_is_current(root: Path, recorded: str | None, commit: str, key:
     return then is not None and then.legacy_sha256 == recorded and then.body_sha256 == body_sha256
 
 
+def citing(units: Iterable[Unit]) -> dict[str, tuple[str, ...]]:
+    """Every address (`0x00501000`) -> the keys of all the Coney functions that carry it: what a `compared` stamp's
+    lookup needs to tell a function that shares its address with another from the only one citing it."""
+    found: dict[str, list[str]] = {}
+    for unit in units:
+        for address in unit.addresses:
+            found.setdefault(f"0x{address:08x}", []).append(unit.key)
+    return {address: tuple(keys) for address, keys in found.items()}
+
+
 def current_compared(
-    root: Path, report: stamps.Report, address: str, covers: Mapping[str, str], key: str
+    root: Path,
+    report: stamps.Report,
+    address: str,
+    covers: Mapping[str, str],
+    key: str,
+    cited_by: Collection[str] = (),
 ) -> stamps.Stamp | None:
-    """The newest `compared` stamp of `address` when it passes and covers `covers`, where the function `key`'s body
-    hash (`BODY_COVER`) is read by `recorded_body_is_current`; else None."""
-    found = report.current("compared", address, covers)
+    """The newest `compared` stamp of the function `key` at `address` when it passes and covers `covers`, where the
+    function's body hash (`BODY_COVER`) is read by `recorded_body_is_current`; else None. `cited_by` is the key of every
+    Coney function that carries `address` (`citing`): while another one does, only the stamps made for `key` count, so
+    each of two functions of one original function keeps its own."""
+    found = report.current("compared", address, covers, function=key, cited_by=cited_by)
     if found is not None:
         return found
-    latest = report.latest("compared", address)
+    latest = report.latest("compared", address, function=key, cited_by=cited_by)
     if latest is None or latest.result != "pass":
         return None
     if any(latest.covers.get(name) != value for name, value in covers.items() if name != BODY_COVER):
