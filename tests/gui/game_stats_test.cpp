@@ -2,6 +2,7 @@
 // The statistics screen (docs/research/game-stats.md): the time's words, the listed and shown missions, the
 // summary's and a mission's lines with their colours, the background's colour cycle and back closing it. Synthetic
 // level records, unlockables and strings only.
+// Each new case here failed first on the unit's stubbed source (coney-tools original fails-first).
 #include <cstddef>
 #include <cstdint>
 #include <string>

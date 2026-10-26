@@ -2,6 +2,7 @@
 // Tests of the meter bar's fill (gui::Bar::setFill, the original's HudGenericBar_SetFill): kept in 0-1, and a value
 // that is not a number reads as empty.
 
+// Each new case here failed first on the unit's stubbed source (coney-tools original fails-first).
 #include <limits>
 
 #include <catch2/catch_approx.hpp>

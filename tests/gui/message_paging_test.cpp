@@ -67,7 +67,9 @@ TEST_CASE("word wrap: a word with a tag in it is measured only from the tag on",
     // Expected: pause.md#stats-description, confirmed (code)
     // "xxxxxx<CENTER>" has a `>`, so it is read as starting inside a tag: its "xxxxxx" takes no width and the line
     // stays "aa" (2).
-    CHECK(wrapMessage("aa xxxxxx<CENTER>", 4.0F, charCount).breaks == 0);
+    const WrappedMessage wrapped = wrapMessage("aa xxxxxx<CENTER>", 4.0F, charCount);
+    CHECK(wrapped.text == "aa xxxxxx<CENTER> ");
+    CHECK(wrapped.breaks == 0);
 }
 
 TEST_CASE("word wrap: CR and CR3 count as line breaks and start a new line; CRM and CR2 in the text do not",

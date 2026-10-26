@@ -163,6 +163,12 @@ TEST_CASE("pause stats: an unavailable screen is not placed", "[pause_stats]") {
     stats.update(GuiFrame{0, nullptr});
     CHECK(stats.name().setupValues().x == Approx(coney::gui::BaseWidgetSetup{}.x));
     CHECK(stats.bar(0).setupValues().x == Approx(coney::gui::BarSetup{}.x));
+    // Against a Warrior's screen, which the same update places at the base point.
+    const GlobalStrings strings = syntheticStrings();
+    PauseStats placed;
+    REQUIRE(placed.setup(rembrandt(), 1, &strings, false));
+    placed.update(GuiFrame{0, nullptr});
+    CHECK(placed.name().setupValues().x == Approx(0.42F));
 }
 
 TEST_CASE("pause stats: the description wraps at its leading AUTOINDENT width, else 0.55", "[pause_stats]") {

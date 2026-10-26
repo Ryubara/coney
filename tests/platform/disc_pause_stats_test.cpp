@@ -5,6 +5,7 @@
 // checkpoint's letter) with the level's name under it; the left stick pushed most of the way right to Stats, cross:
 // the player's Warrior's screen with its four bars and texts, its pictures loaded; triangle back to the grid. It runs
 // only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only (LEGAL.md).
+// Each new case here failed first on the unit's stubbed source (coney-tools original fails-first).
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>

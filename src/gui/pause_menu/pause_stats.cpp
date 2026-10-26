@@ -55,24 +55,11 @@ constexpr std::string_view kAutoIndent = "<AUTOINDENT ";
 
 // `colour` with its alpha × `fade`.
 // @coney-only Coney's fade of a colour; the original writes the menu's alpha byte into each part's colour
-graphics::Rgba faded(graphics::Rgba colour, float fade) {
-    colour.a = static_cast<std::uint8_t>(static_cast<float>(colour.a) * fade);
-    return colour;
-}
+graphics::Rgba faded(graphics::Rgba colour, float fade) { return {}; }
 
 // The wrap width of `text`: the number after a leading `<AUTOINDENT `, else `fallback`.
 // @orig 0x001bb390 MessageHUD_ReadAutoIndent (unknown)
-float autoIndentWidth(std::string_view text, float fallback) {
-    if (!text.starts_with(kAutoIndent)) {
-        return fallback;
-    }
-    // The number runs to the tag's `>`. Coney's choice: a number that does not read keeps the fallback, where the
-    // original's scan would leave its value unset.
-    std::string_view number = text.substr(kAutoIndent.size());
-    number = number.substr(0, number.find('>'));
-    const std::optional<double> width = parseDecimal(number);
-    return width ? static_cast<float>(*width) : fallback;
-}
+float autoIndentWidth(std::string_view text, float fallback) { return {}; }
 
 } // namespace
 
@@ -83,211 +70,36 @@ PauseStats::PauseStats()
       m_bars{{{nullptr, kBarRect}, {nullptr, kBarRect}, {nullptr, kBarRect}, {nullptr, kBarRect}}} {}
 
 // The kind's row: `Human_GetPortraitKind`'s character types and setup's switch on the kind.
-std::optional<StatsPortrait> PauseStats::portraitOf(int type) {
-    for (const KindEntry& entry : kKinds) {
-        if (std::ranges::find(entry.types, type) != entry.types.end()) {
-            return entry.portrait;
-        }
-    }
-    return std::nullopt;
-}
+std::optional<StatsPortrait> PauseStats::portraitOf(int type) { return {}; }
 
 // The four fills as setup computes them, before the bars clamp them.
-std::array<float, PauseStats::kBars> PauseStats::barValues(const WarriorStats& stats, int difficulty) {
-    const DifficultyRow& t = kDifficultyRows.at(static_cast<std::size_t>(std::clamp(difficulty, 0, 2)));
-    const float strength = (static_cast<float>(stats.damageScale) - t.t0) / (t.t1 - t.t0);
-    const float stamina = (static_cast<float>(stats.powerMax) + static_cast<float>(stats.staminaMax) - t.t2 + t.t4) /
-                          (t.t3 + t.t5 - t.t2 + t.t4);
-    const float health = static_cast<float>(stats.powerClassByte40) * kPerHealthByte;
-    const float rage = static_cast<float>(stats.rageMax) * kPerRage;
-    return {strength, std::min(stamina, 1.0F), std::min(health, 1.0F), std::min(rage, 1.0F)};
-}
+std::array<float, PauseStats::kBars> PauseStats::barValues(const WarriorStats& stats, int difficulty) { return {}; }
 
 // Hands each part the batch over its sheet.
-void PauseStats::setBatches(graphics::SpriteBatch* name, graphics::SpriteBatch* face, graphics::SpriteBatch* bars) {
-    for (BaseWidget& shadow : m_shadows) {
-        shadow.setBatch(name);
-    }
-    m_name.setBatch(name);
-    m_face.setBatch(face);
-    for (Bar& bar : m_bars) {
-        bar.setBatch(bars);
-        bar.setFillRect(kBarFillRect);
-        bar.setCaps(kBarLeftCapRect, kBarRightCapRect);
-    }
-}
+void PauseStats::setBatches(graphics::SpriteBatch* name, graphics::SpriteBatch* face, graphics::SpriteBatch* bars) {}
 
 bool PauseStats::setup(const std::optional<WarriorStats>& stats, int difficulty, const GlobalStrings* strings,
                        bool widescreen) {
-    m_portrait = stats ? portraitOf(stats->characterType) : std::nullopt;
-    // Stand-in: of the video modes' layouts only 16:9's (flag 0x04 alone: B's y 0.45) is modelled; the 0x08 and 0x02
-    // modes' offsets and size factor are not (docs/research/pause.md#stats-screen).
-    m_baseY = widescreen ? kWideBaseY : kBaseY;
-    if (!m_portrait || !stats) {
-        return false;
-    }
-    m_values = barValues(*stats, difficulty);
-    for (std::size_t i = 0; i < kBars; ++i) {
-        m_bars.at(i).setFill(m_values.at(i));
-    }
-    // The texts: the labels and the description, all grey `0x005fd310` in font slot 3.
-    const auto text = [strings](std::uint32_t id) { return strings != nullptr ? strings->get(id) : ""; };
-    static constexpr std::array<std::uint32_t, kBars> kLabels{stats_strings::kStrength, stats_strings::kStamina,
-                                                              stats_strings::kHealth, stats_strings::kRage};
-    for (std::size_t i = 0; i < kBars; ++i) {
-        m_labels.at(i).setup(TextWidgetSetup{.colour = kMenuGrey, .fontSlot = kTextFontSlot});
-        m_labels.at(i).setText(text(kLabels.at(i)));
-    }
-    // The description wraps at its leading `<AUTOINDENT>` width, else 0.55; its line window starts at the top: 0-5.
-    const std::string description{text(m_portrait->description)};
-    m_description.setup(TextWidgetSetup{
-        .colour = kMenuGrey, .fontSlot = kTextFontSlot, .wrapWidth = autoIndentWidth(description, kDescriptionWrap)});
-    m_description.setText(description);
-    m_page = MessagePage{.firstLine = 0, .lastLine = kDescriptionLastLine};
-    m_descriptionBreaks = 0;
-    // The menu's alpha back to full.
-    setFade(1.0F);
-    return true;
+    return {};
 }
 
 // Plays `cue` through the sink, if any.
-void PauseStats::playCue(int cue) const {
-    if (m_playCue) {
-        m_playCue(cue);
-    }
-}
+void PauseStats::playCue(int cue) const {}
 
-bool PauseStats::handle(MenuCommand command) {
-    switch (command) {
-    case MenuCommand::Up:
-        // `MessageHUD_PageUp`: the window up one line while its first line is above 0.
-        playCue(pageUp(m_page) ? kMoveCue : kRefusedCue);
-        return false;
-    case MenuCommand::Down:
-        // `MessageHUD_PageDown`: the window down one line while its last line is short of the text's last line.
-        playCue(pageDown(m_page, m_descriptionBreaks) ? kMoveCue : kRefusedCue);
-        return false;
-    case MenuCommand::Left:
-    case MenuCommand::Right:
-        playCue(kRefusedCue);
-        return false;
-    case MenuCommand::Back:
-        playCue(kBackCue);
-        return true;
-    case MenuCommand::Accept:
-        return false;
-    }
-    return false;
-}
+bool PauseStats::handle(MenuCommand command) { return {}; }
 
-void PauseStats::update(const GuiFrame& frame) {
-    // Only an available screen is placed. Coney's choice: it is placed at once, where the original first waits for
-    // its pictures (PauseStats_IsReady), since Coney loads them when the pause starts.
-    if (!available()) {
-        return;
-    }
-    const float x = kBaseX;
-    const float y = m_baseY;
+void PauseStats::update(const GuiFrame& frame) {}
 
-    // The name's left edge and its two black shadows. Setup gives the shadows alpha 128, but each draw sets every
-    // part's alpha to the menu's (BaseWidget_SetAlpha), so they are drawn opaque, at the menu's alpha.
-    const float portraitX = x + kPortraitDx;
-    const float portraitY = y + kPortraitDy;
-    m_name.setup(BaseWidgetSetup{.x = portraitX,
-                                 .y = portraitY,
-                                 .height = kPortraitSize,
-                                 .colour = faded(kPortraitTint, m_fade),
-                                 .anchor = SpriteAnchor::Left});
-    for (std::size_t i = 0; i < m_shadows.size(); ++i) {
-        m_shadows.at(i).setup(BaseWidgetSetup{.x = portraitX + kShadowOffsets.at(i).at(0),
-                                              .y = portraitY + kShadowOffsets.at(i).at(1),
-                                              .height = kPortraitSize,
-                                              .colour = faded(kShadowColour, m_fade),
-                                              .anchor = SpriteAnchor::Left});
-    }
-    // The name and face show the Warrior's own pictures, rectangle 0 of their records.
-    m_face.setup(BaseWidgetSetup{
-        .x = x + kBannerDx, .y = y + kBannerDy, .height = kBannerSize, .colour = faded(graphics::kWhite, m_fade)});
+void PauseStats::render(const GuiCanvas& canvas) const {}
 
-    // The bars and their labels, one row 0.05 apart.
-    for (std::size_t i = 0; i < kBars; ++i) {
-        const float step = kBarStep * static_cast<float>(i);
-        m_bars.at(i).setup(BarSetup{.x = x + kBarDx,
-                                    .y = y + kBarDy + step,
-                                    .width = kBarWidth,
-                                    .height = kBarHeight,
-                                    .backColour = faded(kBarBack, m_fade),
-                                    .fillColour = faded(kBarFill, m_fade)});
-        m_labels.at(i).style().x = kLabelX + kLabelOffsetX;
-        m_labels.at(i).style().y = y + kLabelDy + step + kLabelOffsetY;
-        m_labels.at(i).update(frame);
-    }
-    m_description.style().x = x + kDescriptionDx;
-    m_description.style().y = y + kDescriptionDy;
-    m_description.update(frame);
-}
-
-void PauseStats::render(const GuiCanvas& canvas) const {
-    // Only an available screen is drawn; Coney's choice: there is no ready wait to pass (see update()).
-    if (!available()) {
-        return;
-    }
-    for (const BaseWidget& shadow : m_shadows) {
-        shadow.render(canvas);
-    }
-    m_name.render(canvas);
-    m_face.render(canvas);
-    for (const Bar& bar : m_bars) {
-        bar.render(canvas);
-    }
-    // The bars' labels, which the original's bars draw with themselves.
-    for (const TextWidget& label : m_labels) {
-        label.render(canvas);
-    }
-    // The description's window of its wrapped lines, as its draw lays it out; the wrap counts its breaks even with
-    // no batch to draw into.
-    const TextLayout description = descriptionLayout(canvas);
-    if (m_description.visible() && canvas.textBatch) {
-        addTextSprites(description, canvas.textBatch);
-    }
-}
-
-TextLayout PauseStats::descriptionLayout(const GuiCanvas& canvas) const {
-    if (!canvas.fonts || m_description.text().empty()) {
-        return TextLayout{};
-    }
-    // Wrapped at the description's width, counting the breaks the down move stops at, then clipped to the window
-    // and laid out with no further wrap (`MessageHUD_Draw`).
-    const TextStyle& style = m_description.style();
-    const WrappedMessage wrapped = wrapMessage(m_description.text(), style.wrapWidth, lineMeasure(style, canvas.fonts));
-    m_descriptionBreaks = wrapped.breaks;
-    TextStyle page = style;
-    page.wrapWidth = 0.0F;
-    return layoutText(clipToPage(wrapped.text, m_page), page, canvas.fonts);
-}
+TextLayout PauseStats::descriptionLayout(const GuiCanvas& canvas) const { return {}; }
 
 // Counts the description's line breaks.
-void PauseStats::measure(const GuiCanvas& canvas) const { static_cast<void>(descriptionLayout(canvas)); }
+void PauseStats::measure(const GuiCanvas& canvas) const {}
 
-void PauseStats::setFade(float fade) {
-    m_fade = fade;
-    for (TextWidget& label : m_labels) {
-        label.setFade(fade);
-    }
-    m_description.setFade(fade);
-}
+void PauseStats::setFade(float fade) {}
 
 // The texts shown, for tests and the log.
-std::vector<std::string> PauseStats::lines() const {
-    std::vector<std::string> lines;
-    if (!available()) {
-        return lines;
-    }
-    for (const TextWidget& label : m_labels) {
-        lines.push_back(label.text());
-    }
-    lines.push_back(m_description.text());
-    return lines;
-}
+std::vector<std::string> PauseStats::lines() const { return {}; }
 
 } // namespace coney::gui

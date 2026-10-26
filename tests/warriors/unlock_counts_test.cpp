@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The counts of unlockable records the statistics, mission-select and Rumble screens show
 // (docs/research/game-stats.md#counts), on synthetic records.
+// Each new case here failed first on the unit's stubbed source (coney-tools original fails-first).
 #include <cstddef>
 #include <cstdint>
 

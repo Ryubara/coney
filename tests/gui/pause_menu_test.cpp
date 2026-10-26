@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The pause menu, its Yes/No box and the mission-failed menu (docs/research/pause.md), driven frame by frame with a
 // synthetic pad and synthetic strings.
+// Each new case here failed first on the unit's stubbed source (coney-tools original fails-first).
 #include "gui/pause_menu/pause_menu.h"
 
 #include <array>

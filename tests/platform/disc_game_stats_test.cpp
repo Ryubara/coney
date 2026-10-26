@@ -7,6 +7,7 @@
 // after its fade out and calling `onClose`. It
 // runs only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only
 // (LEGAL.md).
+// Each new case here failed first on the unit's stubbed source (coney-tools original fails-first).
 #include <array>
 #include <cstddef>
 #include <cstdint>

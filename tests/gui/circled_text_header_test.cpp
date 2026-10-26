@@ -2,6 +2,7 @@
 // The pause header (docs/research/circled-text.md#pause-header): how a title splits into circles, the colours and the
 // layout per video mode; and the smaller CircledText of the statistics screens
 // (docs/research/circled-text.md#circled-text): its layout, reveal and colours. Over a synthetic font and sheet.
+// Each new case here failed first on the unit's stubbed source (coney-tools original fails-first).
 #include "gui/circled_text_header.h"
 
 #include <cstddef>
