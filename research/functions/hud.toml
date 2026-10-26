@@ -1028,15 +1028,6 @@ coney = "src/gamemodes/gameplay_mode.h:GameplayMode::callTutorialCallback"
 status = "legacy"
 
 [[function]]
-address = 0x001dad88
-name = "HUD_SetObjective"
-page = "hud.md#original-structure"
-role = "`HUDSetObjective`"
-level = "confirmed-code"
-coney = "src/hud/hud.h:Hud::setObjective"
-status = "legacy"
-
-[[function]]
 address = 0x0020dc98
 name = "PlayerHUD_SetBanner"
 page = "hud.md#original-structure"

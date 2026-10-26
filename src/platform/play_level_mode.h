@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <expected>
 #include <fstream>
@@ -885,6 +886,7 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     std::optional<ObjectAttack> m_objectAttack;
     std::vector<world_objects::CarHitEffect> m_carHitEffects; // the cars' hit effects of the newest step
     GameOverCheck* m_gameOver = nullptr;                      // the game-over check (GameState::gameOver); not owned
+    const std::array<PadOptions, 2>* m_padOptions = nullptr;  // the pads' options (GameState::saved.pads); not owned
     std::function<void(std::string_view)> m_missionFailed;    // opens the mission-failed mode with a title
     bool m_failShown = false;                                 // the failure's first hand-off update ran
     bool m_wasMugging = false;                                // player 1 was mugging at the last step

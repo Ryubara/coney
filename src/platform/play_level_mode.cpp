@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <format>
 #include <numbers>
 #include <set>
@@ -48,6 +49,11 @@ constexpr float kTeleportDrop = 2.0F;
 constexpr float kFreeCameraSpeed = 8.0F;
 // How far debug lines are lifted off what they lie on, in metres.
 constexpr float kLineLift = 0.02F;
+// The player slot this mode's player plays in: player 1, the only player a level has in Coney yet. Stand-in for the
+// player's own slot (networking checklist item 3): the mode holds one player and nothing in it carries a slot yet,
+// so its pad, camera and options all mean player 1; giving the mode a player per slot is wider than the Options
+// screen and comes with the second player.
+constexpr std::size_t kPlayerSlot = 0;
 
 // A coloured line list for librw's 3D immediate mode, in RenderWare's axes.
 class LineList {
@@ -224,6 +230,7 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
         bindPickups(cast->pickups);
         m_sound = cast->sound;
         m_gameOver = cast->gameOver;
+        m_padOptions = cast->padOptions;
         m_missionFailed = cast->missionFailed;
         makeWorldObjects(*cast);
     }
@@ -554,6 +561,11 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
         applyAnimOverrides();
     }
     const anim::Vec3 before = m_player->human().position();
+    // The player's camera follows by its own pad's Auto Adjust option, which the Options screen may have changed
+    // (Cam_Follow_AutoFollow reads the byte of the camera's pad each update, docs/research/pause.md#options).
+    if (m_padOptions != nullptr) {
+        m_player->camera().setAutoAdjust(m_padOptions->at(kPlayerSlot).autoAdjustCamera);
+    }
     giveObjectTargets();
     stepObjectBodies();
     {
