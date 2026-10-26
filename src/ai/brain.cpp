@@ -111,6 +111,7 @@ Brain::~Brain() = default;
 // The brain whose human stands at `position` (the announced attacker); null when none does. **Coney reading**: the
 // announcement carries the attacker's position, so the attacker is the peer standing there (the boss counters answer
 // him, docs/research/ai-gangs.md#boss-diego-vargas).
+// @coney-only the announcement carries a position, so the attacker is found by where he stands
 Brain* Brain::announcer(anim::Vec3 position) const {
     if (m_peers == nullptr) {
         return nullptr;
@@ -124,6 +125,10 @@ Brain* Brain::announcer(anim::Vec3 position) const {
     return nullptr;
 }
 
+// Brain_Update's count and handler call, with Brain_UpdateGoals as an AI brain's handler (the declaration says the
+// rest; Brain_StopMove's tag stands at its call below).
+// @orig 0x0028f8b8 Brain_Update (unknown)
+// @orig 0x0028fbb0 Brain_UpdateGoals (unknown)
 void Brain::update(std::uint64_t nowMs) {
     m_nowMs = nowMs;
     // The attacks announced since the last update that this brain's range and field of view take in: events 0x10,
