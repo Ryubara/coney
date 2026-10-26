@@ -418,6 +418,13 @@ From `Commands_Match` (`0x00147940`; the tables are in [Commands](combat/index.m
   and a combo count of 1 or 2). Confirmed (code); how the swap blends is not traced. The 0.2 s is not a fade-in: at
   runtime `S1`'s hand is 0.447 m ahead of the player's feet on its update 1 and already 0.778 m on update 2, where it
   lands, against the pedestrian's head 0.842 m ahead. Confirmed (runtime), run r-20261026-strike-pose-entry.
+  The moving attacks start elsewhere. `Player_StartDive` (`0x00264878`) pushes its fade over **0.2 s**
+  (`AnimTaskBlendOut_Construct`, the call at `0x002649f0`), so the dive does fade in from the run, and passes 0 s
+  to its chained task, so it hands over to the next with no end blend. `Player_StartCharge` (`0x00264a80`: the
+  charge 0, the walk and run attacks 23 and 24, the armed 501) pushes a layer (type 5, `AnimTask5_Construct`
+  `0x00106240`, the call at `0x00264b7c`) with a fade-in of 0.3 s and a fade-out of 0; a zero fade-out starts the
+  layer in its playing phase, so its fade-in never runs and the clip shows at full weight from its first update.
+  Confirmed (code).
 
 ### Square, in order {#square}
 
@@ -776,6 +783,12 @@ update 8, its right hand on from update 6; `S1` again on update 2, in two runs, 
 head on update 1 and overlapping both the head and the spine on update 2. Confirmed (runtime), run
 r-20261026-strike-pose-entry.
 
+Two more `S1` runs at 1.0 m in the first session dealt **no damage**: the punch played out whole and the pedestrian's
+health stayed at 300 while the gap to him closed to 0.82 and 0.72 m (the scratch logs of run
+r-20261025-strike-contact-timing, not its values). Why is not known. Both came straight after earlier runs on the
+same loaded state, with no state reloaded between, so a pedestrian spawned for an earlier run may have stood in the way
+and taken the blow unread: speculative, not checked.
+
 ## In Coney
 
 The moves Coney plays and where they differ from the table above: [Combat differences](combat-diffs.md).
@@ -783,7 +796,8 @@ The moves Coney plays and where they differ from the table above: [Combat differ
 A free attack of a human with strike shapes takes the victim's health from the strike test, on the first update a
 shape touches him (`Human::testStrikes`, `Fighter::strikeContact`, after `Strike_Contact` `0x0021b290`, confirmed
 (code)). A new attack shows its clip's pose from its first update, as the original's 0 s fade does (`kAttackFade`
-in `repo:src/human/human_animator.h`, [Blend](#input)); a chain step still fades over 0.1 s, and the clip hands over to
+in `repo:src/human/human_animator.h`, [Blend](#input)); the dive fades in over 0.2 s as `Player_StartDive` does
+(`kDiveFade`); a chain step still fades over 0.1 s, and the clip hands over to
 the idle at its end with no 0.2 s blend (Coney stand-ins). With a fighter 1.0 m ahead in `level99` its damage shows 2
 updates into `S1`, 4 into `SS2`, 7 into `SSX3`, 8 into `X1` and 7 into 653, the original's updates
 (`repo:tests/platform/disc_strike_contact_test.cpp`). Until 2026-10-26 Coney faded each new attack in over 0.2 s,

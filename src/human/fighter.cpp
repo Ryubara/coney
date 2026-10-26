@@ -812,7 +812,8 @@ void Fighter::warnTarget(int animId, const FighterInput& input, bool chainStep) 
 
 void Fighter::playAttack(int animId, const FighterInput& input, HumanAnimator& animator, float& heading,
                          bool chainStep) {
-    const float fade = chainStep ? kCombatFade : kAttackFade;
+    // The dive's start fades in from the pose before it; every other start shows the clip's pose at once.
+    const float fade = chainStep ? kCombatFade : animId == id::kRunningAttackDive ? kDiveFade : kAttackFade;
     // The start warns the attack's one target (event 0x10), whose brain then decides whether its range and field of
     // view take it in; no one else hears of it (docs/research/combat/index.md#attack-warnings). The spray warns no
     // one: nothing on Player_Special's path to Attack_StartAtTarget (`0x00261c80`) calls Human_WarnOfAttack.

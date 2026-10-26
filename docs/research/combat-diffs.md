@@ -43,8 +43,7 @@ Coney does instead; an address cited here carries its level beside it.
 ### Timing and targets
 
 The original's rules are in one place: [Timing](combat-moves.md#timing), [Input](combat-moves.md#input) and
-[Targets](combat-targets.md#targeting). Coney (main at `f4562750`): `repo:src/combat/attacks.cpp`,
-`repo:src/human/fighter.cpp`.
+[Targets](combat-targets.md#targeting). Coney: `repo:src/combat/attacks.cpp`, `repo:src/human/fighter.cpp`.
 
 - **The hit update of a body without shapes.** The original deals a free attack's damage only through the strike
   test (`Strike_Contact`, `0x0021b290`, confirmed (code)): an attack whose clip switches no strike shape never hits.
@@ -59,11 +58,11 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 - **Taking a target by nearness.** Coney takes a target only from L1 or an attack; the original's stance logic takes
   the nearest enemy within 2 m every update (and locks it with the street's `CfgAutoLockAndCombat`), swaps it once the
   target is beyond 3 m and tracks enemies to 6 m.
-- **Blend into an attack.** Both show a new attack's pose from its first update, with no fade
-  ([Blend](combat-moves.md#input), confirmed (code)). Two differences are left: the original swaps a chain step's
-  clip inside the running task, where Coney fades it in over 0.1 s (`kCombatFade`), and the original blends the
-  attack's last 0.2 s into the idle after it, where Coney's clip hands over at once (`kAttackFade` in
-  `repo:src/human/human_animator.h`).
+- **Blend into an attack.** Both show a new attack's pose from its first update, with no fade, and both fade the
+  dive in over 0.2 s ([Blend](combat-moves.md#input), confirmed (code)). Two differences are left: the original
+  swaps a chain step's clip inside the running task, where Coney fades it in over 0.1 s (`kCombatFade`), and the
+  original blends the attack's last 0.2 s into the idle after it, where Coney's clip hands over at once (`kAttackFade`
+  in `repo:src/human/human_animator.h`).
 
 ### Square and cross
 

@@ -501,7 +501,8 @@ class Fighter {
     void playDecisions(const combat::CombatOutput& out, combat::CombatMode before, const FighterInput& input,
                        HumanAnimator& animator, float& heading);
     // Plays an attack the dispatcher started (`animId`), with what follows it, turning and sliding to its target: the
-    // clip's pose at once (kAttackFade), a chain step's after kCombatFade (docs/research/combat-moves.md#input).
+    // clip's pose at once (kAttackFade), the dive's after kDiveFade, a chain step's after kCombatFade
+    // (docs/research/combat-moves.md#input).
     void playAttack(int animId, const FighterInput& input, HumanAnimator& animator, float& heading, bool chainStep);
     // Turns (and within the far range slides) towards the target of attack `animId`, as Attack_Start steers: within
     // the far range through steerOnto() with the time to the clip's first event; beyond it the facing turns at once,

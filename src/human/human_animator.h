@@ -117,13 +117,21 @@ inline constexpr std::uint32_t kAnimWorkoutEnter = 691;
 inline constexpr std::uint32_t kAnimWorkoutExit = 692;
 inline constexpr std::uint32_t kAnimWorkoutLoop = 693;
 /// The fade into a new attack from the pose before it: none, so the attack's own pose shows from its first update.
-/// Every attack start pushes a fade task (type 9) of 0 s over the old tasks (`AnimTaskBlendOut_Construct` with `f12`
-/// cleared, at `0x0026281c` in `Attack_Start` and `0x0026248c` in `Attack_StartSolo`); the 0.2 s each passes to
-/// `AnimTaskChained_Construct` is the clip's blend into the idle after it, at its end
-/// (docs/research/combat-moves.md#input). **Coney stand-in**: that end blend is not built (the clip hands over at
+/// The standing starts push a fade task (type 9) of 0 s over the old tasks (`AnimTaskBlendOut_Construct` with `f12`
+/// cleared, at `0x0026281c` in `Attack_Start` and `0x0026248c` in `Attack_StartSolo`, and the same in StartSnap,
+/// StartAtTarget and StartGrounded); the 0.2 s each passes to `AnimTaskChained_Construct` is the clip's blend into the
+/// idle after it, at its end (docs/research/combat-moves.md#input). The charge and the run attacks (0, 23, 24, 501)
+/// show their pose at once too: `Player_StartCharge` pushes a layer whose 0.3 s fade-in its 0 s fade-out skips
+/// (`AnimTask5_Construct` at `0x00264b7c`). **Coney stand-in**: the end blend is not built (the clip hands over at
 /// once); a chain step, which the original swaps into the running task (its blend not traced), keeps kCombatFade.
+/// The dive fades in over kDiveFade instead.
 /// @orig 0x002625a8 Attack_Start (unknown)
 inline constexpr float kAttackFade = 0.0F;
+/// The fade into the dive (anim 1) from the pose before it: `Player_StartDive` pushes its fade task over 0.2 s
+/// (`AnimTaskBlendOut_Construct`, the call at `0x002649f0`), and gives its clip no end blend
+/// (docs/research/combat-moves.md#input).
+/// @orig 0x00264878 Player_StartDive (unknown)
+inline constexpr float kDiveFade = 0.2F;
 /// The fight idle (358, `ANIM_FIGHT_IDLE`) the attacks return to (docs/research/combat/index.md#attacks).
 inline constexpr std::uint32_t kAnimFightIdle = 358;
 /// 389 `NORMAL_FROM_FIGHT`, which a move ends in with the stick at rest: it holds neither a press nor the stick, which
