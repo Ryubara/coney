@@ -2286,6 +2286,11 @@ it, each with `CamSetupRail("rail", player, 22, {0, −0.25, 1.25}, 0.5, 90)`, t
   2 m from `Q` toward `P` in plan, at the pitch; the goal `+0x310` = the look-at point. `+0x3ea` = 1 when the first
   target stands to the left of the segment's direction (z of the cross product > 0). Switching setting 5 on later
   does not restart: the next start is the next activation. Confirmed (code).
+- **The pitch's start.** While setting 5 is off its current value is the lowest float; switched on, the update first
+  sets it to the camera's present pitch (`CamRail_PitchToPoint`, `0x0013f9b0`) and then eases it to the angle over
+  the time given (0 s in the Armies levels). An activation (`0x0013b508`) sets it, the field of view and the lead,
+  height, distance, shifts and fixed pitch at their targets at once and zeroes their times (not the look-at height
+  or setting 7). Confirmed (code).
 - **Projection in mode 3** (`0x00140308`): along the segment **in plan** (the plan distance divided by the plan
   length of the segment's unit vector, so the height follows the rail), and clamped only before the rail's first
   point and past its last; on an inner segment the point may run past the segment's end. Setting 0's reach is
@@ -3359,10 +3364,12 @@ The world viewer keeps its own free camera with the player camera's lens
 - **The rail, fixed and third-person cameras** (`src/camera/rail_camera.*`, `fixed_camera.*`, `third_camera.*`):
   the rail camera follows [Rail cameras](#rail) for player 1 (one target, the set-up's): the settings and their
   easing, the target and look-at points, the damping, mode 0's segment choice, foot, reach, hand-over, ceiling, fixed
-  pitch and end hold, and the leading modes. **Coney choices and stand-ins**: the end hold lasts only while its
-  condition does (what clears it is not traced); the tie between two nearest rail points, the 40% look-at catch-up
-  (`+0x3ec`), the `+0x330` vector, the split-screen halving and extras, mode 3 (settings 5, 6, 7) and the push out of
-  world collision are not built; a rail with no points stands 3 m behind and 1 m above the look-at point. The fixed
+  pitch and end hold, the leading modes and mode 3's start and trailing move. An activation (`CameraMakeActive`)
+  snaps the settings and runs one undamped 1/60 s update, as `CamRail_Activate` and `CamRail_Reset` do. **Coney
+  choices and stand-ins**: the end hold lasts only while its condition does (what clears it is not traced); the tie
+  between two nearest rail points, the 40% look-at catch-up (`+0x3ec`), the `+0x330` vector, the split-screen halving
+  and extras, mode 3's keep-in-frame step (setting 7 is kept, `0x00140d68` not built) and the push out of world
+  collision are not built; a rail with no points stands 3 m behind and 1 m above the look-at point. The fixed
   camera always looks at the average (the original's single-entry case is not traced). `CamDelete` forgets a fixed
   camera as it does a locked one and keeps third-person cameras.
 

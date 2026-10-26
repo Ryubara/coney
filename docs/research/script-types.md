@@ -2047,7 +2047,7 @@ material against what it hit, or puffs (`sub_shack_puff`) and bounces a few time
 The roll-up, portcullis, fence, lift, police, subway and spook doors. `dyn_door_sliding` makes, by its `CfgObj` name,
 one or two leaf objects (`dyn_dr_rollup`, `dyn_dr_portcullis`, `dyn_dr_fence_r`, `dyn_dr_fence_s`, `dyn_dr_ele`,
 `dyn_dr_ele_c`, `dyn_dr_pol`, `dyn_dr_subway`, `dyn_dr_spook_a` / `_b`), each a `sub_sliding_door`. The slide length
-is `CfgObj` value 7 (else 8), the axis byte (`+0x2d`) picks ±x or ±y (fences and police doors one more), the speed is
+is `CfgObj` value 7 (else 8), the axis byte (`+0x2d`) picks ±z or ±x (fences and police doors one more), the speed is
 twice value 6, and the open and close sounds are per type. Its command (message `0x22`, also `0x0b` when a human
 opens it): 2 or 8 open (leaves get state `0xd`, the collision triangles off), 3 or 7 close (`0xe`, triangles on), 5
 triangles off, 6 on, 10 / 11 the lock-pick glint on / off. Message `0x0c` answers "open". The leaf's update moves it
@@ -2064,11 +2064,13 @@ In detail, re-read 2026-10-21 for issue #85 (confirmed (code) at the addresses i
 - **The leaves and sounds by type name** (strings `0x00586450`-`0x00586590`): `dyn_door_rollup` one `dyn_dr_rollup`,
   `dyn_door_ele` one `dyn_dr_ele` and `dyn_door_pol` one `dyn_dr_pol`; the portcullis, both fences, `dyn_door_ele_c`
   and `dyn_door_subway` two leaves of their `dyn_dr_` type, `dyn_door_spook` `dyn_dr_spook_a` and `_b`. The first
-  leaf takes the door's pose; a second sits 2 × property 5 along the door's −x axis, turned (inferred: about the
-  vertical for the horizontal sliders; `dyn_door_ele_c` places its pair differently, not traced). The open and close
+  leaf takes the door's pose; a second sits 2 × property 5 along the door's −x axis (`dyn_door_ele_c`'s along its −z,
+  `0x003f4ffc`-`0x003f5160`), turned 180° about its own z, or about its own y when the axis byte is below 2
+  (`SubSlidingDoor_PlaceLeaf`), so the lift's second leaf slides down while the first slides up. The open and close
   sound is `0xd2479dee` for the roll-up, the lift doors and the spook door, `0x8a2b8511` for the portcullis and
   `0xf8638826` for the rest.
-- **A command** (`SlidingDoor_StateCommand`): 2 or 8 send the leaves state `0xd` (their update interval 2 ticks), set
+- **A command** (`SlidingDoor_StateCommand`): 2 or 8 send the leaves state `0xd` (their update interval 2 ticks; the
+  update already scheduled stands, so a leaf resting on its 60-tick interval starts 1 to 60 ticks later), set
   the door's state byte `+0x2c` to 2 (what message `0x0c` answers "open" for) and play the open sound, then as 5: both
   collision triangles off and **`NavLink_Open(number)`** (`0x003a4b00`, `NavLinks_OpenByNumber`: the links lose their
   avoid bit and the doorway's hole gets flag 8). 3 or 7 do the same with `0xe`, state 3 and the close sound, then as 6:
@@ -2077,6 +2079,14 @@ In detail, re-read 2026-10-21 for issue #85 (confirmed (code) at the addresses i
 - **The leaf's step** (`SubSlidingDoor_Update`, every 2 ticks while it slides): opening, while its offset is not past
   the length it adds the step, else it sets the length and rests; closing, while the offset is not below 0 it takes
   the step off, else it sets 0 and rests (interval `0x3c`). So it overshoots by up to one step before it settles.
+
+The messages (`DynDoorSliding_OnMessage`, `0x003f5ef0`): 8 detach, `0x0b` command 2, `0x0c` open when `+0x2c` is 2,
+`0x10` and `0x13` pin and unpin the leaves, `0x15` the door's destroy, `0x22` the command, `0x3e` its data.
+
+**In Coney** (`repo:src/world_objects/doors.cpp`, `Doors`): all of the above but the streaming pins, the leaves'
+collision bodies, messages 8, `0x15` and `0x3e` (issues #707, #710), and the lock-pick glint. Stand-in: a command
+starts a leaf's slide on its next 2-tick step, not on its pending update, as the late start has not been seen at
+runtime yet.
 
 `level60`'s garage is a `dyn_door_rollup` (door number 5, at (−94.69, 19.66)): `P1.Start02`'s `OpenDoor` opens the way
 the player then walks out by ([Armies of the Night](armies.md#first-frames)).

@@ -522,7 +522,8 @@ in `TutorialHUD.cpp`'s TU (inferred); `HUDLaunchANGameOver` and mode 0xd open it
 
 - **Countdown phase:** the title (string `0xce`, font slot 6, scale 2.0) at (0.5, 0.45), a digit counting **9 down to
   0, one step per 1,000 ms** (`0x0050ec0c`, scale 5.0) at (0.5, 0.6), the usage line `0xd6` at (0.5, 0.8). Start
-  (`0x800`) from either player (player 2's pad record is locked at open) plays cue 8; with credits left
+  (`0x800`) from player 1, or from player 2 only when his human (game state `+0x22c`) has a pad record, plays cue 8
+  (player 2's pad record is locked at open); with credits left
   (`0x00619910`) it spends one, sets close, calls the Lua function `F1.Time` and, while credits remain, shows both
   panels' join message; `+0x7ac`/`+0x7b0` record which players continue (alive ones). With no credit, or when the
   count ends (after 0 has shown for a step: ten steps in all), both players' views fade out to black over 2 s
@@ -538,8 +539,15 @@ in `TutorialHUD.cpp`'s TU (inferred); `HUDLaunchANGameOver` and mode 0xd open it
   full (`Human_Heal(human, 1)`), sets his state `0x20000000`, calls his HUD panel's slots `+0x24` and `+0x7c(0)` (the
   second inferred to turn his join message off) and sets `+0x14c` to 0. The layout values above are the NTSC defaults
   (`0x0050ebf0`-`0x0050ec24`); `ANGameOver_Open` moves the usage lines, the digit and the grid for other video modes.
-  A continue in `level64` (record number `0x40`) at checkpoint 4 is refused while the other player's brain `+9` is
-  set (not traced further).
+  A Start in `level64` (record number `0x40`) at section 4 is refused while the presser's own brain `+9` is set
+  (`+0x228`'s for player 1, `+0x22c`'s for player 2; what `+9` is was not traced). `HUD_LaunchANGameOver` toggles:
+  called with mode 0xd on top it pops it, with no choice made.
+
+**In Coney** (`repo:src/gamemodes/armies_game_over_mode.h`, `repo:src/gui/pause_menu/armies_game_over_menu.h`): all
+of the above for one view, with these stand-ins, each marked in the code: the screen closes on the frame of the choice
+(Coney's front-end audio cannot say when a cue has ended), the `level64` section 4 refusal is not built, only the
+NTSC layout is laid out, and the Armies score clear (`0x004229c0`, #704) and the `+0x14c` writes (#669) are left to
+their issues.
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
