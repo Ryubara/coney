@@ -380,9 +380,9 @@ state word `0x1000000`, and Rembrandt turned to the stick at 22.5° per update a
 50), never toward the target. **Without L2** he stayed locked (state `0x5`, `0x00241b90`) and walked backward facing
 the target (385, then 384, at 3.43 m/s) for 14 updates, until the target was dropped at 3.09 m, then turned and
 ran. That drop is step 5 above: the first update with the target beyond the 3 m keep distance (`0x005104c4`, 9 in
-play), L1's release window long run out (confirmed (code); `target_attack_walk_away` dropped it at 3.05 m the same
-way). So a player who
-holds L2 after an attack never walks toward the old target.
+play), L1's release window long run out (confirmed (code); `target_attack_walk_away` dropped it at 3.01 m the same
+way, confirmed (runtime), run r-20261026-target-attack-walk-away). So a player who holds L2 after an attack never walks
+toward the old target.
 
 **Lock-on** is the fight stance's movement state `0x00241b90` (the normal one is `0x00240e38`): the human is
 **locked** when it has a human or object target and either L1 is held (`CfgLockOn`), or `CfgAutoLock`,
@@ -393,8 +393,9 @@ play) is not dropped here but **ignored** unless `Human_IsLocked` (`0x00227c88`:
 whose type bits lack `0x100040`. Ignored, or with the settings not locking, the walk **keeps the heading**: the only
 turn left is the right stick's, capped by `Human_MaxTurn`, and only with `CfgStrafeRStick` (`0x005104d0`, written only
 by `Cfg_SetStrafeRStick` `0x0023a5f0`; 0 in play). With no target at all the movement hands control back to
-`0x00240e38`. Confirmed (code) at `0x00241b90`; confirmed (runtime) in `target_attack_walk_away` (the heading did not
-move between 2.5 and 3 m). The drop is the stance update's, at 3 m (step 5 above).
+`0x00240e38`. Confirmed (code) at `0x00241b90`; confirmed (runtime), run
+r-20261026-target-attack-walk-away (`target_attack_walk_away`: the heading did not move between 2.5 and 3 m). The drop
+is the stance update's, at 3 m (step 5 above).
 
 **L1**: pressed (`0x0027da10`) or held (`0x0027dc00`), it sets record `+0x00` `0x8`, enters the stance and picks a
 target; released (command 8, `0x00227b98`), it clears `0xc` and opens a 264 ms window in which a second tap picks and
@@ -425,7 +426,8 @@ not the script's; confirmed (runtime)):
 
 A target that the walk took beyond 2.5 m was dropped and the player went back to the walk start 413. By the code the
 walk ignores the target beyond 2.5 m and the stance drops it beyond 3 m; `target_attack_walk_away` told the two apart
-(the heading held from 2.5 m, the drop at 3.05 m; confirmed (runtime), above).
+(the heading held from 2.54 m, the drop at 3.01 m; confirmed (runtime), run r-20261026-target-attack-walk-away,
+above).
 
 **Combat-walk speed.** `0x00241b90` normalises the stick vector (dead zone 0.12) and multiplies it by `0x00221710`'s
 speed, so the stick's deflection does not change the speed (confirmed (code)). The clips 380-387 each cover 2.4 m in
@@ -448,6 +450,17 @@ without reloading, where the player walked into other bodies and objects, gave 2
 magnitude and then walks the pair backward at 1.125 m/s (front hold) or about 1.22 m/s (rear hold), as in [Moving a
 grab](combat-grabs.md#grab-turn). So a 35 % stick moves a grab not at all, a fight stance at 3.429 m/s, and the free
 player at the walk speed.
+
+**A grab or tackle enters the stance and locks during its intro** (confirmed (code)). `Player_GrabOrTackle`
+(`0x00284920`) calls `Player_EnterStance` before each thing circle starts: the tackle, the grab (a miss is a grab with
+no target), the mount on a downed victim, the pull-off of a tackler and a tandem; Square and Cross also enter it before
+a tandem. The strong grapple, which `Player_SpecialAttack` starts through `Grab_Start`, enters none. `Grab_Start`
+(`0x0026c548`) and `Tackle_Start` (`0x002707a8`) set only `+0x08` `0x10`, outside the busy gate `0x5c7fee0`; the
+grabbing state (`0xc0`) comes at the connect and the tackling one (`0x400`) from `Tackle_StartMount` at the intro's end
+(`Tackle_OnIntroEnd` `0x00270560`). Until then `Player_UpdateActions` (`0x0027c120`) still runs the stance update, so
+its step 3 locks the victim within 2 m (the nearest falls back on the target held). A throw then ends in `0x1005`
+with the lock it kept (inferred from the code; an unrecorded trace of a front throw showed state `0x1` on the grab's
+first update, `0x5` on the next and `0x1005` in the throw).
 
 **What an attack does to the lock** (the armed run sweep 501 and the moving attacks):
 
@@ -485,7 +498,7 @@ player at the walk speed.
   one does once his gang has been made an enemy (a civilian of kind 3 who fights back, `Hostile_Attack`, [AI
   goals](ai-goals.md)). The attack picks are wider: `TargetFilter_Enemy` (`0x00279410`) and `0x00279568` skip only
   allies and the same gang, so square still picks and hits a civilian, and the stance's fallback then locks onto him
-  while he is within 2 m (confirmed (runtime), `target_attack_walk_away`).
+  while he is within 2 m (confirmed (runtime), `target_attack_walk_away`, run r-20261026-target-attack-walk-away).
 
 ### The steer into an attack {#attack-steer}
 
@@ -987,8 +1000,10 @@ locks it) and keeps the heading beyond it. The stance's search takes only threat
 that are no threat (`ai::isThreat()`) or a pad player as the calm list, which only the stance's search skips (the
 attacks' picks still take them). 23, 24 and 501 store their pick and steer nothing (`Fighter::steer()`), and only
 the attacks whose start calls `Player_EnterStance` enter the stance: not the charge, 23, 24, 501, the specials (653,
-645 and their rear ids), the spray 664, rage's start 643 or a held object's throws. Hidden, L1 held drops a target that
-is not standing only while its bit `0x8` is clear. The
+645 and their rear ids), the spray 664, rage's start 643 or a held object's throws. A grab, a tackle, a miss and a
+tandem enter it as `Fighter::playDecisions()` starts them (not the strong grapple), and the stance update runs
+through a grab's or tackle's intro (the hold's gate starts at the connect), so it locks the victim. Hidden, L1 held
+drops a target that is not standing only while its bit `0x8` is clear. The
 distances are `CombatTuning::stanceNear`, `stanceMid` and `stanceFar` at the values in play (`CfgDistances` is not
 read from the scripts).
 

@@ -23,8 +23,8 @@ original does (with a link to the research) and where Coney's side lives. Coney'
 
 The original functions behind each entry are on the page it links, in that page's own Map and code index
 ([Combat](combat/index.md#original-structure), [Combat moves](combat-moves.md#original-structure)). The few an entry
-here names with an address (the mid-target test, the snap's search and filter, `Player_Special`) are graded where they
-are cited.
+here names with an address (the mid-target test, the snap's search and filter, `Strike_Contact`, `Player_Special`,
+`Player_FindLockTarget` `0x0027b2a8`, confirmed (code)) are graded where they are cited.
 
 ## Behaviour
 

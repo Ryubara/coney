@@ -42,8 +42,9 @@ constexpr int kStrongerHitAnim = 11;
 constexpr std::uint32_t kChargeFlags = 0x1400000;
 
 // Whether a player's attack `animId` enters the fight stance: its original start calls `Player_EnterStance`
-// (`0x00280068`). The charge (Player_Charge), the walk and run attacks 23 and 24 and the armed run sweep 501
-// (Player_StartCharge), the specials 653 and 645 and their rear ids (Player_Special and Player_SpecialAttack,
+// (`0x00280068`). The grab, the tackle, the mount, a miss and a tandem do not come here: playDecisions() enters the
+// stance where it starts them. The charge (Player_Charge), the walk and run attacks 23 and 24 and the armed run sweep
+// 501 (Player_StartCharge), the specials 653 and 645 and their rear ids (Player_Special and Player_SpecialAttack,
 // 0x00287730 and 0x00263c90), the spray 664, rage's start 643 (Player_TryStartRage) and a held object's throws (sets
 // 4-6, Player_CrossWithWeapon 0x002880d8) do not. Nor do square's solo 22 and the armed special's throw of a melee
 // weapon (Player_ThrowMeleeWeapon), which Coney does not build (docs/research/combat-targets.md#fight-stance).
@@ -729,6 +730,14 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
                             clips::kAttackHolds);
         consumed = true;
     }
+    // A grab, a tackle (or a mount on a downed victim), a miss and a tandem enter the fight stance as they start:
+    // `Player_GrabOrTackle` (`0x00284920`) calls `Player_EnterStance` (`0x00280068`) before each, found target or not,
+    // and Square and Cross before a tandem. The strong grapple, which `Player_SpecialAttack` starts through
+    // `Grab_Start`, enters none (docs/research/combat-targets.md#fight-stance).
+    const bool holdStarted = (out.grabStarted || out.tackleStarted) && out.grappleAnim == id::kNone;
+    if (m_player && (holdStarted || out.grabMissed || out.tandemBase != id::kNone)) {
+        m_stanceOn = true;
+    }
     if (out.tandemBase != id::kNone) {
         // The tandem at the victim the search found (no candidate: nothing starts, as with a vanished target).
         if (m_tandemCandidate != nullptr) {
@@ -918,7 +927,8 @@ void Fighter::steer(int animId, const FighterInput& input, const HumanAnimator& 
                     bool chainStep) {
     m_steer.clear();
     // A player's attack enters the fight stance (`Player_EnterStance` `0x00280068`, state 0x1) only where its start
-    // calls it: Square, Cross, the dive, the grab or tackle and the ground strike (attackEntersStance()).
+    // calls it: Square, Cross, the dive and the ground strike (attackEntersStance()). The grab, the tackle, a miss and
+    // a tandem enter it in playDecisions().
     if (m_player && attackEntersStance(animId)) {
         m_stanceOn = true;
     }
@@ -1326,11 +1336,15 @@ void Fighter::updateStance(const FighterInput& input, std::uint32_t phase) {
     }
     // The dispatcher's busy gate: a moving attack, a grab's start, a rise and the like keep the stance as it is. A
     // human holding another runs the hold's own update instead, and one in a throw aim runs no stance update
-    // (Player_UpdateStanceOrIdle). The original also skips it in states 0xf0000, goes to Player_UpdateActionsHidden
+    // (Player_UpdateStanceOrIdle). A grab's or a tackle's intro is not yet a hold: the grabbing state (0xc0) comes at
+    // the connect and the tackling one (0x400) from `Tackle_StartMount` at the intro's end (`Tackle_OnIntroEnd`
+    // `0x00270560`), so `Player_UpdateActions` (`0x0027c120`) still runs the stance through the intro and its step 3
+    // locks the victim. The original also skips it in states 0xf0000, goes to Player_UpdateActionsHidden
     // (0x0027e040) for a hidden player, drops the target of a player in a scene and ends a throw aim on L2.
     // **Coney's choice**: Coney's fighter reaches here in neither down state and runs the same update hidden (only the
     // lock is refused), the scene's drop is not made, and its throw aim is a script's, which L2 does not end.
-    if ((phase & kStanceGate) != 0 || m_held != nullptr || input.throwAiming) {
+    const bool holding = m_held != nullptr && m_pair != PairStage::Intro && !m_tacklePending;
+    if ((phase & kStanceGate) != 0 || holding || input.throwAiming) {
         return;
     }
     // A target gone from the list is gone: the original's handle resolves to no one.
