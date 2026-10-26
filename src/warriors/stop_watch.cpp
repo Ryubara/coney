@@ -4,12 +4,16 @@
 #include <cmath>
 #include <utility>
 
+#include "core/game_timer.h"
+
 namespace coney {
 
 namespace {
 
 // The gap between warning beeps, ms.
 constexpr std::int32_t kBeepGapMs = 1000;
+// GameTimer ticks in a millisecond.
+constexpr std::uint64_t kTicksPerMs = GameTimer::kTicksPerSecond / 1000;
 
 } // namespace
 
@@ -21,9 +25,9 @@ void StopWatch::set(std::int32_t timeMs, std::int32_t targetMs, std::string call
     m_lastBeep = kBeepGapMs;
 }
 
-void StopWatch::start(bool run, std::uint64_t nowMs) {
+void StopWatch::start(bool run, std::uint64_t nowTicks) {
     m_running = run;
-    m_lastMs = nowMs;
+    m_lastTicks = nowTicks;
 }
 
 void StopWatch::setWarning(std::int32_t warnMs) {
@@ -31,13 +35,15 @@ void StopWatch::setWarning(std::int32_t warnMs) {
     m_lastBeep = warnMs + kBeepGapMs;
 }
 
-StopWatch::Step StopWatch::step(std::uint64_t nowMs) {
+StopWatch::Step StopWatch::step(std::uint64_t nowTicks) {
     Step result;
-    if (!m_running || nowMs <= m_lastMs) {
+    const std::uint64_t nowMs = nowTicks / kTicksPerMs;
+    const std::uint64_t lastMs = m_lastTicks / kTicksPerMs;
+    if (!m_running || nowMs <= lastMs) {
         return result;
     }
-    const auto passed = static_cast<std::int64_t>(std::lround(static_cast<double>(nowMs - m_lastMs) * m_rate));
-    m_lastMs = nowMs;
+    const auto passed = static_cast<std::int64_t>(std::lround(static_cast<double>(nowMs - lastMs) * m_rate));
+    m_lastTicks = nowTicks;
     const bool down = m_target < m_time;
     const std::int64_t next =
         down ? static_cast<std::int64_t>(m_time) - passed : static_cast<std::int64_t>(m_time) + passed;

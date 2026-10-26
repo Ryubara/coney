@@ -358,7 +358,7 @@ void addWorldBindings(ScriptSystem& scripts, LuaVm& vm, GameState& state) {
         return binding::none();
     });
     add(vm, "W_StartStopWatch", [&scripts, &player](std::span<const Value> args) {
-        player.stopWatch.start(booleanArg(args, 0, false), scripts.now());
+        player.stopWatch.start(booleanArg(args, 0, false), scripts.nowTicks());
         return binding::none();
     });
     // @orig 0x00423638 W_GetStopWatchTime (unknown)

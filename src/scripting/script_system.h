@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "core/error.h"
+#include "core/game_timer.h"
 #include "scripting/lua_value.h"
 #include "scripting/lua_vm.h"
 
@@ -61,6 +62,8 @@ inline constexpr std::string_view kGlobalScript = "global.lua";
 /// Research: docs/research/scripting.md
 class ScriptSystem {
   public:
+    /// GameTimer ticks in a millisecond, between setTimeTicks() and now().
+    static constexpr std::uint64_t kTicksPerMs = GameTimer::kTicksPerSecond / 1000;
     /// Adds the game's bindings to a freshly made state. It runs on every create(), so the bindings may capture the
     /// state's script system but must not keep the VM past destroy().
     using BindingInstaller = std::function<void(ScriptSystem& scripts, LuaVm& vm)>;
@@ -132,8 +135,17 @@ class ScriptSystem {
     /// Sets the game time, in milliseconds, that schedule() counts from. A mode calls it at the top of its frame, so a
     /// call scheduled from that frame's input is timed from the frame.
     void setTime(std::uint64_t nowMs) { m_nowMs = nowMs; }
+    /// setTime() from the game timer's reading in GameTimer ticks, kept whole for nowTicks().
+    void setTimeTicks(std::uint64_t nowTicks) {
+        m_nowTicks = nowTicks;
+        m_nowMs = nowTicks / kTicksPerMs;
+    }
     /// The game time schedule() counts from.
     [[nodiscard]] std::uint64_t now() const { return m_nowMs; }
+    /// The same time in GameTimer ticks: setTimeTicks()'s reading while it still stands, else now()'s milliseconds.
+    [[nodiscard]] std::uint64_t nowTicks() const {
+        return m_nowTicks / kTicksPerMs == m_nowMs ? m_nowTicks : m_nowMs * kTicksPerMs;
+    }
 
     /// One frame of the scripts at game time `nowMs`, `stepSeconds` after the last: runs the scheduled calls that are
     /// due, then the update function with the step in milliseconds.
@@ -207,6 +219,7 @@ class ScriptSystem {
     std::uint64_t m_nextSequence = 0;
     std::string m_updateFunction;
     std::uint64_t m_nowMs = 0;
+    std::uint64_t m_nowTicks = 0; // setTimeTicks()'s reading
     std::uint64_t m_generation = 0;
     std::uint64_t m_errors = 0;
     std::uint64_t m_skippedBefore = 0;    // skipped calls of the states destroyed so far

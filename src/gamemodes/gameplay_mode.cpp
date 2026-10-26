@@ -792,7 +792,7 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
     updateUncuff();
     updateRevive();
     updateHiding();
-    m_scripts.setTime(nowMs);
+    m_scripts.setTimeTicks(frame.gameTicks);
     callPadHandler();
     // The end credits' last widget gone: the overlay pass's call of the Lua `CreditEnd` (Credits_Update,
     // docs/research/frontend.md#fn-credits), one step after the HUD's update that ended them.
@@ -836,7 +836,7 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
     updateTagging(stack.pads(), frame.seconds);
     updateTagPanel();
     updateActionPrompt();
-    runPlayerFrame(m_state, m_scripts, stack.pads(), nowMs, &m_objectServices.crimeServices());
+    runPlayerFrame(m_state, m_scripts, stack.pads(), frame.gameTicks, &m_objectServices.crimeServices());
     // The hint box's one step, where the original's HUD update stands in its frame: after this step's callbacks and
     // before the scheduled calls (a text set on a free box has already shown, in the call that set it).
     if (m_context.hud != nullptr) {

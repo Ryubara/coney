@@ -6,11 +6,14 @@
 #include <string>
 #include <vector>
 
+#include "core/game_timer.h"
+
 namespace coney {
 
-void runPlayerFrame(GameState& state, script::ScriptSystem& scripts, const Pads& pads, std::uint64_t nowMs,
+void runPlayerFrame(GameState& state, script::ScriptSystem& scripts, const Pads& pads, std::uint64_t nowTicks,
                     CrimeServices* crimes) {
     PlayerState& player = state.player;
+    const std::uint64_t nowMs = nowTicks / (GameTimer::kTicksPerSecond / 1000);
 
     // The Lua pad handlers of both ports' newly pressed buttons, lowest bit first.
     for (const std::size_t port : {std::size_t{0}, std::size_t{1}}) {
@@ -21,7 +24,7 @@ void runPlayerFrame(GameState& state, script::ScriptSystem& scripts, const Pads&
     }
 
     // The stopwatch; its callback once it reaches the target.
-    const StopWatch::Step watch = player.stopWatch.step(nowMs);
+    const StopWatch::Step watch = player.stopWatch.step(nowTicks);
     if (watch.finished && !player.stopWatch.callback().empty()) {
         scripts.call(player.stopWatch.callback());
     }

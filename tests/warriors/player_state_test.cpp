@@ -9,6 +9,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "core/game_timer.h"
 #include "core/pad.h"
 #include "core/pad_handlers.h"
 #include "warriors/crime_reports.h"
@@ -28,6 +29,15 @@ using coney::StatCategory;
 using coney::StopWatch;
 using coney::UnlockRecord;
 using coney::UnlockRecords;
+
+namespace {
+
+// `milliseconds` of game time in GameTimer ticks, the stopwatch's readings.
+constexpr std::uint64_t ms(std::uint64_t milliseconds) {
+    return milliseconds * (coney::GameTimer::kTicksPerSecond / 1000);
+}
+
+} // namespace
 namespace item = coney::item;
 namespace crime = coney::crime;
 
@@ -112,23 +122,23 @@ TEST_CASE("the stopwatch counts down by game time, stops at its target and beeps
     watch.set(5000, 0, "P1.TimesUp");
     watch.setWarning(3000);
     CHECK_FALSE(watch.running());
-    CHECK_FALSE(watch.step(100).finished); // not running: nothing moves
+    CHECK_FALSE(watch.step(ms(100)).finished); // not running: nothing moves
     CHECK(watch.time() == 5000);
 
-    watch.start(true, 1000);
-    CHECK_FALSE(watch.step(2000).beep);
+    watch.start(true, ms(1000));
+    CHECK_FALSE(watch.step(ms(2000)).beep);
     CHECK(watch.time() == 4000);
-    CHECK(watch.step(3000).beep); // 3000: inside the window
-    CHECK_FALSE(watch.step(3500).beep);
-    CHECK(watch.step(4000).beep); // a second after the last beep
+    CHECK(watch.step(ms(3000)).beep); // 3000: inside the window
+    CHECK_FALSE(watch.step(ms(3500)).beep);
+    CHECK(watch.step(ms(4000)).beep); // a second after the last beep
 
     // Stopped for a while: a resumed watch does not count the time it was stopped.
-    watch.start(false, 4000);
-    watch.start(true, 9000);
-    watch.step(9500);
+    watch.start(false, ms(4000));
+    watch.start(true, ms(9000));
+    watch.step(ms(9500));
     CHECK(watch.time() == 1500);
 
-    const StopWatch::Step end = watch.step(20000);
+    const StopWatch::Step end = watch.step(ms(20000));
     CHECK(end.finished);
     CHECK(watch.time() == 0);
     CHECK_FALSE(watch.running());
@@ -138,9 +148,9 @@ TEST_CASE("the stopwatch counts down by game time, stops at its target and beeps
 TEST_CASE("the stopwatch counts up to a target above it", "[stopwatch]") {
     StopWatch watch;
     watch.set(0, 1000, "Done");
-    watch.start(true, 0);
-    CHECK_FALSE(watch.step(999).finished);
-    CHECK(watch.step(1001).finished);
+    watch.start(true, ms(0));
+    CHECK_FALSE(watch.step(ms(999)).finished);
+    CHECK(watch.step(ms(1001)).finished);
     CHECK(watch.time() == 1000);
 }
 
@@ -270,6 +280,30 @@ TEST_CASE("crime reports: off, police offenders, one-way types, break-ins and cu
     CHECK(services.calls == std::vector<std::string>{"scene", "respond 4 1 6 0"});
     crimes.report(services, crime::kTagging, at, 0.0, 0.0, true, 0, 0);
     CHECK(services.calls.size() == 2); // tagging sends none
+}
+
+TEST_CASE("the stopwatch counts whole milliseconds an update and drops the rest: 99.999 s takes 3031 steps of 1/30 s",
+          "[stopwatch]") {
+    // Expected: armies.md#level60-start, confirmed (code): StopWatch_Update (0x004233f8) adds GameTimer_MsSince
+    // (0x004dca60: the ticks since its last reading divided by 294912, truncated) and keeps the whole reading, so each
+    // 33.33 ms step counts 33 ms; confirmed (runtime), run r-20261026-level60-clock: level60's 99999 ms took 6068
+    // ticks of 60 Hz from F1.Time to F1.TimerOut.
+    StopWatch watch;
+    watch.set(99999, 0, "F1.TimerOut");
+    std::uint64_t now = 0;
+    watch.start(true, now);
+    int steps = 0;
+    bool finished = false;
+    while (!finished && steps < 4000) {
+        now += coney::GameTimer::kFixedStepTicks;
+        ++steps;
+        finished = watch.step(now).finished;
+        if (steps == 1) {
+            CHECK(watch.time() == 99999 - 33);
+        }
+    }
+    CHECK(finished);
+    CHECK(steps == 3031);
 }
 
 TEST_CASE("forcing the crime level holds a gang wanted", "[crimes]") {

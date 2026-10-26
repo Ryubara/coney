@@ -234,10 +234,10 @@ TEST_CASE("the stopwatch runs in the player frame and calls its callback at the 
     h.scripts.setTime(1000);
     h.first("W_SetStopWatch", {Value(500.0), Value(0.0), str("Record")});
     h.first("W_StartStopWatch", {Value(1.0)});
-    coney::runPlayerFrame(h.state, h.scripts, pads, 1400);
+    coney::runPlayerFrame(h.state, h.scripts, pads, 1400 * coney::script::ScriptSystem::kTicksPerMs);
     CHECK(h.number("W_GetStopWatchTime") == 100);
     CHECK(h.recordedArgs.empty());
-    coney::runPlayerFrame(h.state, h.scripts, pads, 1600);
+    coney::runPlayerFrame(h.state, h.scripts, pads, 1600 * coney::script::ScriptSystem::kTicksPerMs);
     CHECK(h.number("W_GetStopWatchTime") == 0);
     CHECK(h.recordedArgs.size() == 1);
 }
