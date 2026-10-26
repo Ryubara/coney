@@ -101,7 +101,7 @@ void PauseMenu::open(const PauseMenuSetup& setup, std::uint64_t nowMs) {
     m_yesNo.close();
     m_yesNo.place(YesNoPlacement{});
 
-    // The background: centred, faded in and colour-cycled by animate().
+    // The background: centred, colour-cycled by animate() and drawn at the menu's alpha.
     m_background.setup(BaseWidgetSetup{.x = 0.5F, .y = 0.5F, .height = kBackgroundSize, .colour = kCycleColours[0]});
 
     // The top header: the mission's title, its circles in the level's colour (the last red), the level's name.
@@ -441,11 +441,11 @@ void PauseMenu::selectItem(PauseItem item, std::uint64_t nowMs) {
         openScreen(PauseScreen::Controls, 0);
         return;
     case PauseItem::Restart:
+        // Stand-in: the Restart screen's two choices and their help are Coney's centred texts (refreshScreen()).
         if (isRumbleLevel(m_setup.level)) {
             m_pending = PauseOutcome::RestartLevel;
             ask(pause_strings::kReplayQuestion);
         } else {
-            // Stand-in: the two choices and their help are Coney's centred texts (refreshScreen()).
             openScreen(PauseScreen::Restart, 1);
         }
         return;
