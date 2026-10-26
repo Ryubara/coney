@@ -210,9 +210,8 @@ GameSession::GameSession(RenderEngine& renderer, GameModeStack& stack, const io:
         .radarsBack = [this, radarsBeforePause] { m_flow->hud().radar().on = *radarsBeforePause; },
         // The Options screen's volumes as the music and effects buses' volumes (docs/research/save.md#options). The
         // pads' camera options need nothing here: the game state keeps them and each level's player camera reads
-        // its own pad's every update. Stand-in (issue "Apply a profile's saved options when it loads", being
-        // filed): the volumes are applied only when Options changes them, not when a profile loads, which the
-        // original's Profile_Read (0x00421ad0) does for each option.
+        // its own pad's every update. Stand-in (#957): the volumes are applied only when Options changes them, not
+        // when a profile loads, which the original's Profile_Read (0x00421ad0) does for each option.
         .applyOptions =
             [this](const gui::OptionValues& values) {
                 if (m_audio != nullptr) {

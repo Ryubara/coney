@@ -53,8 +53,11 @@ void drawOptionBar(graphics::SpriteBatch* parts, const OptionBarPlace& place, fl
         return;
     }
     const graphics::SpriteSheet& sheet = parts->sheet();
-    // The left cap's width at the bar's height, its texels square on screen (Coney's reading of HudBar_Draw, as the
-    // rage meter's, docs/research/hud.md#the-rage-meter); the strips run from its end over the rest of the width.
+    // Where the strips start. HudBar_Draw takes the left cap's width as its rectangle's UV width, centres the back on
+    // the bar and makes it that much narrower, so the strips start half a cap's width in. Stand-in (Coney's choice,
+    // shared with the rage meter, docs/research/hud.md#the-rage-meter): the cap is as wide as the bar's height makes
+    // its texels square, and the strips start at its end; for the option bars it lands within a pixel of the
+    // original's (pause.md#options).
     const float cap = place.height * texelShape(sheet, option_bar::kLeftCapRect, true).value_or(0.0F) *
                       (graphics::kLogicalHeight / graphics::kLogicalWidth);
     const float start = place.left + cap;

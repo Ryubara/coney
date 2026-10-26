@@ -643,8 +643,11 @@ page's name again as a heading (`OptionPage_SetDescription`: size 1.0 × 1.3, fo
 - **Volume bars** (`StatBarItem`, Music then SoundFX): label at (0.26, 0.37) and (0.26, 0.455), bar at (0.26, 0.405)
   and (0.26, 0.49) (`0x0050edac`-`0x0050edc0`), width **0.54** (`0x0050eda8`). What is drawn
   (`StatBarItem_RenderColoured` `0x001d73b0`, through `HudBar_Draw` `0x001a1138`): no frame, and two strips of
-  part_page0's rectangle 55 (sprite word `0x30036`), each over its meter's width less the left cap (rectangle 56) as
-  [the rage meter](hud.md#the-rage-meter) reads `HudBar_Draw`. First a dark back strip, (21, 21, 21) at full alpha even
+  part_page0's rectangle 55 (sprite word `0x30036`), each over its meter's width less the left cap's width.
+  `HudBar_Draw` takes that width as the cap rectangle's (56) UV width and centres the back on the meter, so the
+  strips start half a cap's width in. Confirmed (code). Coney takes the cap's width from the bar's height instead, as
+  its [rage meter](hud.md#the-rage-meter) does, and starts the strips at the cap's end; the pictures of the Audio
+  page match the original's within a pixel. First a dark back strip, (21, 21, 21) at full alpha even
   while the menu fades, over that whole width; then the fill strip over value × that width, in the item's label colour:
   `0x005fd310` for the selected item and `0x005fd320` for the others, at the menu's alpha. So on the Audio page the
   selected bar's fill is light and the other's dim. The caps and the meters' bodies are there but invisible:
@@ -664,7 +667,11 @@ page's name again as a heading (`OptionPage_SetDescription`: size 1.0 × 1.3, fo
   the bar by 0.05 and the brightness by **5** (`0x0050ecfc`), clamped 0-100 (`OptionMenu_AddBrightness`). Two
   squares 0.09 × 0.065 (sheet 12 rectangle 6) at (0.68, 0.38) and (0.74, 0.38) (`0x0050ed48`, `0x0050ed4c`, read by
   `LightingItem_Update` `0x001d7d10`), the first tinted by the brightness value, the second black; a hint
-  (`0x118`) in `0x005fd320`, size 1.0, font slot 3, at the label + (0, 0.06) (`0x0050ed3c`, `0x0050ed40`).
+  (`0x118`) in `0x005fd320`, size 1.0, font slot 3, at the label + (0, 0.06) (`0x0050ed3c`, `0x0050ed40`). The squares
+  and the hint are drawn opaque while the menu fades, unlike the labels and the bar's fill: `LightingItem_RenderColoured`
+  (`0x001d7e28`) gives the first square alpha `0xff`, `LightingItem_Setup` (`0x001d7958`) sets the second to
+  `0xff000000`, `BaseWidget_Render` (`0x001a2660`) draws each at its own alpha, and the hint's MessageHUD is never
+  given the menu's (only the page's description is, in `OptionPage_Render`). Confirmed (code).
 
 **Holding against an end.** Every refused move (a title or item at an end, a choice already chosen, a bar at 0 or 1)
 sets the menu's flag `+0x45cc`, and every move clears it (`OptionMenu_OnCommand`, `OptionPage_OnCommand`,
