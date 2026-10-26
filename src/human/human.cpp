@@ -1345,12 +1345,20 @@ void Human::endTagSpray() {
     }
 }
 
+// The stereo's use of the mini-game's start at an object (docs/research/crimes.md#triangle); the lock pick's use of it
+// is not ported (its clips are not built, crimes.md#coneys-implementation).
+// @orig 0x002789d0 MiniGame_StartAtObject (unknown)
 void Human::startStereoTheft(anim::Vec3 point, float stageTurns) {
+    // **Coney stand-in** for Human_AlignToObject: the original turns and moves the human over 0.1 s onto the attack
+    // table's place for the clip, facing along the car's side axis; here he turns to the stereo at once and stays put.
     const anim::Vec3 to = anim::subtract(point, m_position);
     if (std::hypot(to.x, to.y) > 1e-4F) {
         m_heading = headingOf(to);
     }
     m_velocity = anim::Vec3{};
+    // The mini-game (mode 3, MiniGame_Start's StereoTheft_Start), then 683 and its loop 684
+    // (Fighter::startStereoTheft).
+    // **Coney stand-in**: Coney's combat fade, not the original's 0.01 s blend.
     m_fighter.startStereoTheft(m_animator, nowMs(), stageTurns);
 }
 
