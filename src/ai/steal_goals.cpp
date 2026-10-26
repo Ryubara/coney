@@ -12,6 +12,7 @@
 #include "ai/attack_action.h"
 #include "ai/brain.h"
 #include "ai/crew.h"
+#include "ai/fidget_action.h"
 #include "ai/formations.h"
 #include "ai/gangs.h"
 #include "ai/move_action.h"
@@ -223,6 +224,8 @@ GoalStatus GetItemGoal::process(Brain& brain) {
         ++m_tries;
     }
     // 7. The walk to the point beside it.
+    // differs: the original leaves the fight stance here (Human_LeaveFightStance); Coney's AI has no stance state to
+    // leave (Coney stand-in, issue #959).
     const int gait = pointDistance < kGetItemJogWithin ? kJogGait : m_gait;
     brain.queueAction(
         std::make_unique<MoveAction>(MoveRequest{.point = *m_point, .radius = kGetItemWalkRadius, .gait = gait}));
@@ -267,17 +270,17 @@ WarriorStealTactic* WarriorVandalStealGoal::stealTactic(const Brain& brain) {
 }
 
 GoalStatus WarriorVandalStealGoal::process(Brain& brain) {
+    // 1. No leader: nothing this update, and the goal stays. **Coney's choice**: a leader out of the world counts as
+    //    none (the original's Gang_GetLeader picks another member then).
     Brain* leader = m_services->brain(m_leader);
-    // Coney stand-in (issue #644): with no leader the original keeps the goal (returns 0); Coney ends it.
     if (leader == nullptr || leader->human().outOfWorld()) {
-        return GoalStatus::Done;
-    }
-    // Coney stand-in (issue #644): the original tests queued actions after the fetch, and goes on while a fidget
-    // (held flag 0x100) runs.
-    if (brain.actionCount() > 0) {
         return GoalStatus::Stop;
     }
-    // The fetch: empty-handed under the gang's steal tactic, the object it hands him.
+    // 2. The updates counted while his last move stands failed (a byte, as the original's).
+    if (brain.moveFailure() != MoveFailure::None) {
+        ++m_failedMoves;
+    }
+    // 3. The fetch: empty-handed under the gang's steal tactic, the object it hands him.
     WarriorStealTactic* tactic = stealTactic(brain);
     if (tactic != nullptr && m_items != nullptr && brain.human().script().heldObject == 0.0 &&
         brain.gang() != nullptr) {
@@ -291,41 +294,69 @@ GoalStatus WarriorVandalStealGoal::process(Brain& brain) {
             m_claimed.reset();
         }
     }
-    // The wreck: a swing, a smash target or a pane. A goal it pushed starts in the same update; with only actions
-    // queued, or busy winding up a throw, he stops for this one.
+    // 4. Queued actions hold him, unless a fidget plays (held flag 0x100).
+    if (brain.actionCount() > 0 && (brain.human().heldFlags() & kFidgetHeldFlag) == 0) {
+        return GoalStatus::Stop;
+    }
+    // 5. The wreck: a swing, a smash target or a pane; it clears the follow deadline. A goal it pushed starts in the
+    //    same update; with only actions queued, or busy winding up a throw, he stops for this one.
     if (m_items != nullptr && tryVandalise(brain, *leader)) {
-        m_awayMs.reset();
+        m_followAtMs = 0;
         return brain.topGoal() == this ? GoalStatus::Stop : GoalStatus::Again;
     }
-    // Too far from the leader for a while: back to his slot.
+    // 6. The follow deadline, armed whenever it is clear (near the leader too), so it stays passed until a wreck.
+    const std::uint64_t now = brain.nowMs();
+    if (m_followAtMs == 0) {
+        m_followAtMs = now + kVandalStealFollowDelayMs;
+    }
+    // 7. Beyond his reach of the leader (3D), or the leader running: back to his slot once the deadline has passed,
+    //    but not while a failed move is being waited out (kVandalStealFailedMoveWait updates).
     const bool attacked = brain.gang() != nullptr && std::ranges::any_of(brain.gang()->members(), [](const Brain* m) {
                               return !m->attackSlots().empty();
                           });
     const float reach = attacked ? kVandalStealAttackedReach : kVandalStealLeaderReach;
-    // Coney stand-in (issue #644): "the leader runs" (his +0x1a8 above 3) is not read.
-    if (brain.distanceTo(*leader) > reach) {
-        // Coney stand-in (issue #644): the original arms its 2 s deadline whenever it is 0 and clears it only after
-        // a wreck; Coney times each spell away from the leader.
-        if (!m_awayMs) {
-            m_awayMs = brain.nowMs();
+    const anim::Vec3 at = brain.human().position();
+    const bool away =
+        anim::distance(at, leader->human().position()) > reach || leader->human().gait() > human::Gait::Jog;
+    if (away && m_followAtMs < now) {
+        if (m_failedMoves >= kVandalStealFailedMoveWait) {
+            brain.setMoveFailure(MoveFailure::None);
+            m_failedMoves = 0;
         }
-        if (brain.nowMs() - *m_awayMs >= kVandalStealFollowDelayMs) {
-            m_awayMs.reset();
-            if (brain.pushGoal(std::make_unique<FollowFormationGoal>(kVandalStealSlotReach))) {
-                return GoalStatus::Again;
-            }
+        if (m_failedMoves == 0 && brain.pushGoal(std::make_unique<FollowFormationGoal>(kVandalStealSlotReach))) {
+            return GoalStatus::Again;
         }
-        // Coney stand-in (issue #644): the original falls through to the action check and the turn.
+    }
+    // 8. Near him, or not following yet: actions queued hold him.
+    if (brain.actionCount() > 0) {
         return GoalStatus::Stop;
     }
-    m_awayMs.reset();
-    // Near him: his heading every 4 s.
-    if (brain.nowMs() >= m_nextTurnMs) {
-        m_nextTurnMs = brain.nowMs() + kVandalStealTurnMs;
-        const float heading = leader->human().heading();
-        // Coney stand-in (issue #644): the original turns to a point ahead in his heading with no threshold.
-        if (std::fabs(human::wrapAngle(heading - brain.human().heading())) > kCrewHeadingTurn) {
-            brain.queueAction(TurnAction::toHeading(heading));
+    // 9. His gang attacked: he looks all round.
+    if (attacked) {
+        brain.setSight(brain.sightRange(), kVandalStealAttackedView);
+        // differs: the original also enters the fight stance, keeps a valid target or takes the nearest enemy, and
+        // turns to him from beyond the far melee range or closes on him within it; Coney's AI has no stance state
+        // (Coney stand-in, issue #959).
+        return GoalStatus::Stop;
+    }
+    // 10. Not attacked: no target, the usual field of view, a look along the leader's facing every 4 s and now and
+    //     then a fidget.
+    {
+        // Human_DropTarget from Process.
+        const TargetCauseScope cause(brain, TargetCause::Order);
+        brain.setTarget(nullptr);
+    }
+    brain.setSight(brain.sightRange(), kDefaultFieldOfView);
+    // differs: in the fight stance with no enemy the original turns to the leader instead; Coney's AI has no stance
+    // state, so he is always out of it (Coney stand-in, issue #959).
+    if (m_nextTurnMs < now) {
+        m_nextTurnMs = now + kVandalStealTurnMs;
+        brain.queueAction(TurnAction::toPoint(anim::add(at, human::facing(leader->human().heading()))));
+    }
+    if (m_nextFidgetMs < now) {
+        m_nextFidgetMs = now + kVandalStealFidgetMs;
+        if (brain.rand100() < kVandalStealFidgetChance) {
+            brain.queueAction(std::make_unique<FidgetAction>(0, true, 0));
         }
     }
     return GoalStatus::Stop;

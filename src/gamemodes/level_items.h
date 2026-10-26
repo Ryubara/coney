@@ -82,7 +82,7 @@ class LevelItems final : public ai::ItemServices {
     /// of a class that strikes break. **Coney stand-in**: the original's own test, its record's `+0x40` & `0x30`, is
     /// not read; the classes strikes break (`dyn_masks`, `overhead_weapon`, `dyn_cashreg`) stand for it. The excluded
     /// vandalise zone (an object whose zone `+0x114` is `0x005148bc`, set by `CfgExcludedVandalizeZone`, which
-    /// level55's `Main` calls) is not ported (issue #241).
+    /// level55's `Main` calls) is not ported (issue #960).
     /// @orig 0x00394f30 Object_IsVandalisable (unknown)
     [[nodiscard]] static bool smashable(const world_objects::ObjectType& type);
     /// The smash target object `handle` at `at` of `type` makes: its anim set (`+0x87`) and whether a held breaking

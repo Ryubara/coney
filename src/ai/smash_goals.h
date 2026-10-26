@@ -82,11 +82,11 @@ class DestroyItemGoal final : public Goal {
 
 /// `Ai_FindObject(15, searcher, ray, {ObjFilter_VandalisableInRange, leader, range}, claim, reach)`: the nearest
 /// world object within `radius` of `searcher` that may be smashed (ItemServices::smashTargets()), lies within `range`
-/// of `leader`, is not claimed by the searcher's gang, has no player nearer than kSmashPlayerClear to it (3D), has a
-/// clear ray from the searcher (mask kSmashRayMask) that crosses no intact pane, and has a stand point (standPoint())
-/// the searcher can walk to; it is claimed for his gang for kSmashClaimMs. Nothing when none qualifies. **Coney
-/// stand-ins**: the reach test (`Nav_CanReach`) is a route the planner finds (RoutePlanner::walkDistance()); player 2
-/// is not looked at.
+/// of `leader`, is not claimed by the searcher's gang, has no player (any of his peers) nearer than kSmashPlayerClear
+/// to it (3D), has a clear ray from the searcher (mask kSmashRayMask) that crosses no intact pane, and has a stand
+/// point (standPoint()) the searcher can walk to; it is claimed for his gang for kSmashClaimMs. Nothing when none
+/// qualifies. **Coney stand-in**: the reach test (`Nav_CanReach`) is a route the planner finds
+/// (RoutePlanner::walkDistance()).
 /// @orig 0x0029d5f0 Ai_FindObject (unknown)
 /// @orig 0x0029d558 ObjFilter_VandalisableInRange (unknown)
 [[nodiscard]] std::optional<SmashTarget> findSmashTarget(Brain& searcher, const Brain& leader, ItemServices& items,

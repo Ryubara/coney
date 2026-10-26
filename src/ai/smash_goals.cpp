@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ai/smash_goals.h"
 
+#include <algorithm>
 #include <cmath>
 #include <memory>
+#include <vector>
 
 #include "ai/attack_action.h"
 #include "ai/brain.h"
@@ -93,7 +95,17 @@ std::optional<SmashTarget> findSmashTarget(Brain& searcher, const Brain& leader,
     const anim::Vec3 at = searcher.human().position();
     const anim::Vec3 leaderAt = leader.human().position();
     const int gang = gangOf(searcher);
-    const Brain* player = services.player();
+    // Every player but him (no peers: the services' player).
+    std::vector<const Brain*> players;
+    if (searcher.peers() != nullptr) {
+        for (const std::unique_ptr<Brain>& peer : *searcher.peers()) {
+            if (peer.get() != &searcher && peer->type() == BrainType::Player) {
+                players.push_back(peer.get());
+            }
+        }
+    } else if (const Brain* player = services.player(); player != nullptr && player != &searcher) {
+        players.push_back(player);
+    }
     for (const SmashTarget& target : items.smashTargets(at, radius)) {
         // The filter: within the range of the leader.
         if (anim::distance(leaderAt, target.position) >= range) {
@@ -102,10 +114,10 @@ std::optional<SmashTarget> findSmashTarget(Brain& searcher, const Brain& leader,
         if (items.claimedBy(target.handle, gang, searcher.nowMs())) {
             continue;
         }
-        // No player standing at it (an AI searcher's rule). Coney stand-in: player 1 only, where the original looks at
-        // every player.
-        if (player != nullptr && player != &searcher &&
-            anim::distance(player->human().position(), target.position) < kSmashPlayerClear) {
+        // No player standing at it (an AI searcher's rule), over every player.
+        if (std::ranges::any_of(players, [&target](const Brain* player) {
+                return anim::distance(player->human().position(), target.position) < kSmashPlayerClear;
+            })) {
             continue;
         }
         // A clear ray that crosses no intact pane.
