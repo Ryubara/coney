@@ -351,6 +351,7 @@ void OptionMenu::open(const GlobalStrings* strings, MenuInput& input, Hooks hook
     m_selected.fill(0);
     m_pageOpen = false;
     m_open = true;
+    input.setDpadRepeat(true);
     colour();
     setFade(m_fade);
 }
@@ -399,7 +400,10 @@ bool OptionMenu::handle(MenuCommand command) {
     case MenuCommand::Up:
     case MenuCommand::Down: {
         const bool up = command == MenuCommand::Up;
-        if ((up && m_title == 0) || (!up && m_title + 1 >= kOptionPages)) {
+        // A refused move stops the d-pad's auto-repeat until the next move (`+0x45cc`, read by OptionMenu_Update).
+        const bool refused = (up && m_title == 0) || (!up && m_title + 1 >= kOptionPages);
+        m_input->setDpadRepeat(!refused);
+        if (refused) {
             playCue(kRefusedCue);
             return false;
         }
@@ -448,7 +452,9 @@ bool OptionMenu::pageCommand(MenuCommand command) {
     case MenuCommand::Up:
     case MenuCommand::Down: {
         const bool up = command == MenuCommand::Up;
-        if ((up && selected == 0) || (!up && selected + 1 >= items.size())) {
+        const bool refused = (up && selected == 0) || (!up && selected + 1 >= items.size());
+        m_input->setDpadRepeat(!refused);
+        if (refused) {
             playCue(kRefusedCue);
             return false;
         }
@@ -500,6 +506,7 @@ void OptionMenu::itemCommand(OptionItem& item, bool right) {
     case OptionItemKind::Choice: {
         const std::size_t wanted = right ? 1 : 0;
         playCue(item.choice == wanted ? kRefusedCue : kMoveCue);
+        m_input->setDpadRepeat(item.choice != wanted);
         item.choice = wanted;
         refreshAnswers(item);
         if (!item.confirm) {
@@ -511,6 +518,7 @@ void OptionMenu::itemCommand(OptionItem& item, bool right) {
     case OptionItemKind::Brightness: {
         const bool atEnd = right ? item.bar >= 1.0F - kBarEpsilon : item.bar <= kBarEpsilon;
         playCue(atEnd ? kRefusedCue : kMoveCue);
+        m_input->setDpadRepeat(!atEnd);
         item.bar = std::clamp(item.bar + (right ? kBarStep : -kBarStep), 0.0F, 1.0F);
         if (item.kind == OptionItemKind::Brightness) {
             // OptionMenu_AddBrightness: the brightness moves by 5 within 0-100.
