@@ -90,11 +90,7 @@ int modelRecordType(int type, int playerIndex) {
     return characterClass.id;
 }
 
-bool isArmiesLevel(int levelNumber) {
-    // Fails-first stub: the port is put back by the next commit.
-    static_cast<void>(levelNumber);
-    return false;
-}
+bool isArmiesLevel(int levelNumber) { return levelNumber >= kFirstArmiesLevel && levelNumber <= kLastArmiesLevel; }
 
 std::optional<std::string> modelNameFor(int type, int playerIndex, int levelNumber, const CfgCharModel& modelOf) {
     if (!modelOf) {
