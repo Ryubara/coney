@@ -3,19 +3,36 @@
 # title becomes the title of the one commit on main (commits on the branch are dropped by the squash, so they are not
 # checked), and its description must follow the template (.github/pull_request_template.md). Actions are pinned to a
 # full commit SHA; the tag is in the comment beside it.
+#
+# It runs on `pull_request_target`, not `pull_request`, so that a pull request from a fork reaches its author the first
+# time: GitHub holds the `pull_request` workflows of a first-time contributor until a maintainer approves them, which
+# left outside pull requests with an unchecked title and an unfilled description until a person looked
+# (docs/guides/repo-conventions.md#workflows, "pull_request_target"). That is safe here only because of four rules,
+# which hygiene.yml and claim.yml follow too:
+#   1. Every job checks out the base branch only (no `ref`, no `repository`: a `pull_request_target` checkout is the
+#      base branch), so what runs is the repository's own `coney-tools`, never the pull request's code.
+#   2. Nothing from the pull request is run or built. The checks read the title and the description from the event and
+#      the list of changed files from the API (`gh api .../pulls/N/files`), never from a checkout of the branch.
+#   3. The title and the description are attacker-controlled: they reach a script only through an environment variable
+#      (and, for the description, a file written from it), never expanded into the script's text.
+#   4. The token is read-only (`contents: read`, `pull-requests: read`) and no secret is used.
+# The workflow that runs is the one on the base branch, so a pull request that edits this file is checked by the
+# version already merged; the edit takes effect when it merges.
 name: pr
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, edited, reopened, synchronize]
 
 permissions:
   contents: read
+  pull-requests: read
 
 # Editing the title or description reruns this workflow. Edits get their own group, so an edit never cancels the run of
-# a push that is still going (its jobs that skip edits would otherwise end up skipped, not checked).
+# a push that is still going (its jobs that skip edits would otherwise end up skipped, not checked). The group names
+# the pull request: on `pull_request_target` `github.ref` is the base branch, the same for every pull request.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.action == 'edited' }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}-${{ github.event.action == 'edited' }}
   cancel-in-progress: true
 
 jobs:
@@ -23,6 +40,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       # A title is attacker-controlled, so it reaches the checker only through an environment variable and stdin,
       # never expanded into the script's text. check-title exits 0 (pass), 1 (refused) or 2
@@ -40,19 +59,29 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          persist-credentials: false
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       # The description is attacker-controlled: it reaches the checker only through a file written from an
-      # environment variable, never expanded into the script's text. A pull request's checkout is a merge commit whose
-      # parents are the branch it merges into (HEAD^1) and the pull request's last commit (HEAD^2), so
-      # HEAD^1...HEAD^2 is what the pull request changes since it branched off.
+      # environment variable, never expanded into the script's text. The changed files come from the API, not from a
+      # checkout of the branch (this workflow never fetches the pull request's code): the same names `git diff
+      # --name-only` gives for what the pull request changes since it branched off. The API lists at most 3000 files;
+      # a pull request that big is refused rather than half-checked.
       - name: Check that the docs change with the code
         env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.pull_request.number }}
           PR_BODY: ${{ github.event.pull_request.body }}
         run: |
+          set -euo pipefail
+          [[ "$NUMBER" =~ ^[0-9]+$ ]] || { echo "unexpected pull request number" >&2; exit 1; }
           printf '%s\n' "$PR_BODY" > "$RUNNER_TEMP/pr-body.md"
-          git diff --name-only HEAD^1...HEAD^2 |
-            uv run --project python coney-tools pr check-docs --body "$RUNNER_TEMP/pr-body.md"
+          gh api --paginate "repos/$GH_REPO/pulls/$NUMBER/files" --jq '.[].filename' > "$RUNNER_TEMP/changed.txt"
+          if [ "$(wc -l < "$RUNNER_TEMP/changed.txt")" -ge 3000 ]; then
+            echo "the pull request changes 3000 files or more, which the API does not list in full: split it" >&2
+            exit 1
+          fi
+          uv run --project python coney-tools pr check-docs --body "$RUNNER_TEMP/pr-body.md" < "$RUNNER_TEMP/changed.txt"
 
   # The description must follow the template (.github/pull_request_template.md): its sections, a Summary and a
   # Testing section with text, who wrote the commits (one of the template's choices) and, when an AI took part, the
@@ -63,6 +92,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       # The description is attacker-controlled: it reaches the checker only through a file written from an
       # environment variable, never expanded into the script's text (the title likewise, as one quoted argument).

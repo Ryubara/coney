@@ -116,6 +116,38 @@ a setup problem (a program the step needs is missing), 75 from `ci result` while
 prints at most 40 lines of a failing step; run the step's tool by hand for the rest. What stays CI's: warnings only GCC
 emits, macOS, the sanitizers and clang-tidy (see [the local gate](testing.md#local-gate)).
 
+### ci pr {#ci-pr}
+
+```sh
+uv run --project python coney-tools ci pr --title TITLE --body FILE [--base origin/main] [--only STEP ...]
+    [--skip STEP ...] [--preset dev] [--agent ID]
+```
+
+Everything CI checks on a pull request, run before it is opened: [`ci run`](#ci-run) plus the pull request's
+text and the engine. It is the one command for a contributor whose agent has none of the Claude Code hooks
+([Agent tools other than Claude Code](agents.md#other-tools)), and it is what a person runs before `gh pr create`.
+`--title` is the title and `--body` a file holding the description written from the
+[template](repo:.github/pull_request_template.md). The steps run in this order and print one line each; the last five
+are the steps of `ci run`, with the same rules:
+
+| Step | CI job it is | What it does |
+| --- | --- | --- |
+| `title` | `title` | [`pr check-title`](coney-tools-pr.md#pr-check-title-usage): `area: Verb the rest`, the length, the tense, no trailing period |
+| `body` | `body` | [`pr check-body`](coney-tools-pr.md#pr-check-body-usage) with the title, so the `Runtime:` line of a title a player sees is checked, and with the branch's commits, so the `Model:` line names every model a `Co-Authored-By` trailer names (CI sees only the description and cannot) |
+| `docs-rule` | `docs` | [`pr check-docs`](coney-tools-pr.md#pr-check-docs-usage): a change to `src/` or `python/src/` changes `docs/` or `research/`, or the description has `Docs: none` |
+| `repo`, `orig`, `pre-commit`, `docs`, `python` | `python`, `format`, `markdownlint`, `mkdocs` | the steps of `ci run` above |
+| `engine` | `build-ok` | `coney-tools build --preset dev --test` (`--preset` and `--agent` change it), when a changed file is in the `engine` class of `paths` in `.github/conventions.yml` or in no class (CI runs everything for it); skipped for a change to docs or tools alone. It takes as long as a build and the tests do, so `--skip engine` leaves it out for a first pass |
+
+`--only` and `--skip` take these step names. The exit codes are those of `ci run`: 0 all passed, 1 a step
+failed (CI would refuse the pull request too), 2 a setup problem (the description file cannot be read, a program is
+missing). What stays CI's: the other compilers, macOS, the sanitizers and clang-tidy on the changed lines, and the
+checks that need the pull request itself (the `Fixes #N` issues' state, `dependencies`).
+
+CI's `pr` workflow (`title`, `docs`, `body`) runs on a fork's pull request without a maintainer's approval
+([Workflows](repo-conventions.md#pr-workflow)); its `build`, `python` and `docs` workflows run the contributor's code, so
+GitHub holds them for a first-time contributor until a maintainer approves them. This command is how the contributor
+finds out first.
+
 <!-- command-reference:begin ci -->
 ## Parameters of `ci` {#ci-parameters}
 

@@ -16,6 +16,7 @@ from coney_tools import (
     audio_cli,
     build_cli,
     check_cli,
+    check_pr,
     ci_cli,
     claim_progress,
     clips,
@@ -469,6 +470,17 @@ def _add_gate_commands(commands: Any) -> None:
     # Internal: where a --detach run's child records its outcome.
     changed.add_argument("--result-file", type=Path, help=argparse.SUPPRESS)
     commands.add_parser("result", help="the output and outcome of the worktree's last `ci run --detach`")
+    pr = commands.add_parser(
+        "pr",
+        help="what CI checks on a pull request, before you open it: title, description, the gate, the engine build",
+    )
+    pr.add_argument("--title", required=True, help="the pull request's title, `area: Verb the rest`")
+    pr.add_argument("--body", required=True, type=Path, help="a file holding the description, from the template")
+    pr.add_argument("--base", default="origin/main", help="the branch the change is measured from")
+    pr.add_argument("--only", action="append", choices=check_pr.STEPS, help="run only this step (repeatable)")
+    pr.add_argument("--skip", action="append", choices=check_pr.STEPS, help="leave this step out (repeatable)")
+    pr.add_argument("--preset", default=check_pr.DEFAULT_PRESET, help="the preset the engine step builds and tests")
+    pr.add_argument("--agent", help="your id for the engine step's build slot and log (default: as `build`)")
 
 
 def _add_wad_commands(groups: Any) -> None:
@@ -1119,6 +1131,8 @@ def _run(args: argparse.Namespace) -> int:
     if args.group == "ci":
         if args.command in ("run", "result"):
             return check_cli.run_check(args)
+        if args.command == "pr":
+            return check_pr.run_pr(args.base, args.title, args.body, args.only, args.skip, args.preset, args.agent)
         return ci_cli.run_ci(args)
     if args.group == "wad":
         return _run_wad(args)
