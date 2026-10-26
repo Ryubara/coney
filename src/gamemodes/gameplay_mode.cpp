@@ -680,6 +680,7 @@ void GameplayMode::loadLevel() {
                                              .sound = m_context.sound,
                                              .objectHandles = [this] { return m_scripts.nextObjectHandle(); },
                                              .gameOver = &m_state.gameOver,
+                                             .padOptions = &m_state.saved.pads,
                                              .missionFailed =
                                                  [this](std::string_view title) {
                                                      if (m_context.host != nullptr) {

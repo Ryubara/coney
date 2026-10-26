@@ -125,6 +125,24 @@ coney = "src/gui/pause_menu/yes_no_box.h:YesNoBox::handle"
 status = "legacy"
 
 [[function]]
+address = 0x001d7270
+name = "StatBarItem_Update"
+page = "pause.md#options"
+role = "An Options bar's first update: its meters sized from the undrawn sizing sprite and moved"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_bar.h:optionBarPlace"
+status = "compared"
+
+[[function]]
+address = 0x001d73b0
+name = "StatBarItem_RenderColoured"
+page = "pause.md#options"
+role = "Draws an Options bar: the back meter, then the fill meter in the item's colour"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_bar.h:drawOptionBar"
+status = "compared"
+
+[[function]]
 address = 0x001d7490
 name = "StatBarItem_OnCommand"
 page = "pause.md#fn-optionmenu"
@@ -319,7 +337,7 @@ name = "PauseMenu_Open"
 page = "pause.md#original-structure"
 role = "vtable `+0xa8` / `+0xb0`"
 level = "confirmed-code"
-coney = "src/gui/pause_menu/pause_items.h:pauseGrid"
+coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::open"
 status = "compared"
 
 [[function]]

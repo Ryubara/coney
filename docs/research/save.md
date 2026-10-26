@@ -322,8 +322,9 @@ runtime mode 6 was pushed 0.65 s after the cross on `PM_Subtitles`, with `level9
 
 **Too many profiles, no space**: `PM_TooManyProfiles` and `PM_NoSpace` are reachable only through `PM_Greet`'s
 results 1 and 2, which `PM_Greet` never returns (`0x00207e28`); a full card is handled by mode 6 and six profiles by
-hiding CREATE NEW PROFILE. Confirmed (code); that the two screens are left from the Xbox flow is inferred from their
-being unreachable here.
+hiding CREATE NEW PROFILE. Confirmed (code); that the two screens are left from the Xbox flow is speculative
+([q-xbox-profile-screens](#q-xbox-profile-screens)): their being unreachable here says nothing about where they came
+from.
 
 ### Script bindings {#bindings}
 
@@ -422,6 +423,12 @@ dialogs.
 - The second 640-bit unlockables set (`0x006fe948`): that it marks new unlocks is inferred.
 - The bit order of the unlockable and script-flag sets in the record (byte *i* / 8, bit *i* % 8 is inferred).
 - Which message a slot-1 card change shows (`0xa1`-`0xa4`) in each case, not traced.
+
+### The two unreachable profile screens {#q-xbox-profile-screens}
+
+Whether `PM_TooManyProfiles` and `PM_NoSpace`, unreachable on the PS2 (`PM_Greet` never returns 1 or 2), are the Xbox
+version's screens: testable by finding `PM_Greet` in the Xbox executable and checking whether it returns 1 and 2 there
+(speculative until then).
 
 ## How this was checked
 

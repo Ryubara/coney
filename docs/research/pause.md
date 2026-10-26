@@ -201,10 +201,10 @@ step 0x6f0: count +0, selection +4, index +8, 5 item pointers +0x0c, description
 | `0x001d6a90`, `0x001d6ad0`, `0x001d6b00` | `YesNoBox_Update`, `_Render`, `_RenderColoured` | Chosen answer `0x005fd310`, the other `0x005fd320`. | confirmed (code) |
 | `0x001d6c10` | `YesNoBox_OnCommand` | Left 0, right 1 (cue 4, 0xe if unchanged; page changed); immediate callback unless confirm mode; accept in confirm mode calls back 2 or 3, back 4. | confirmed (code) |
 | `0x001d6df8`, `0x001d6e80`, `0x001d7218` | `StatBarItem_Construct`, `_Destroy`, `_Shutdown` | Fill bar +0x250, back bar +0x2c0, three widgets; value +0x630 = 0.5. | confirmed (code) |
-| `0x001d6ef8` | `StatBarItem_Setup` | Slot +0xc0: sheet-12 rect-0 sprite (0xc0000), white fill and (21,21,21) back bar of height 0.025 (`0x0050ed2c`), sprite 0x30036, value clamped 0-1, callback +0x638. | confirmed (code) |
+| `0x001d6ef8` | `StatBarItem_Setup` | Slot +0xc0: an undrawn sheet-12 rect-0 sizing sprite (0xc0000) the item's width; fill and (21,21,21) back meters of sprite word 0x30036, height 0.025 (`0x0050ed2c`), caps and bodies transparent (+0x54, +0x58 = 0); value clamped 0-1, callback +0x638. | confirmed (code) |
 | `0x001d7238`, `0x001d7248` | `StatBarItem_SaveValue`, `StatBarItem_RevertValue` | +0x634 = value; restore and call back. | confirmed (code) |
-| `0x001d7270` | `StatBarItem_Update` | First update offsets the bars by 0.003 / -0.004 (`0x0050ed38`, `0x0050ed34`), back bar 0.04 (`0x0050ed30`) higher. | confirmed (code) |
-| `0x001d7350`, `0x001d73b0`, `0x001d7420` | `StatBarItem_Render`, `_RenderColoured`, `_IsLoaded` | Label, back then fill bar; tinted fill; bar and sprite batches resident. | confirmed (code) |
+| `0x001d7270` | `StatBarItem_Update` | First update: both meters as wide as the sizing sprite and its height less `0x0050ed30`, moved by (+0.003, -0.004) (`0x0050ed38`, `0x0050ed34`). | confirmed (code) |
+| `0x001d7350`, `0x001d73b0`, `0x001d7420` | `StatBarItem_Render`, `_RenderColoured`, `_IsLoaded` | Label, back then fill meter; the coloured one gives the fill the item's colour; bar and sprite batches resident. | confirmed (code) |
 | `0x001d7490` | `StatBarItem_OnCommand` | ±0.05 clamped 0-1 (cue 4, 0xe at an end), page changed, callback(value). | confirmed (code) |
 | `0x001d7648`, `0x001d7698`, `0x001d7c70` | `LightingItem_Construct`, `_Destroy`, `_Shutdown` | A StatBarItem plus two square widgets and a hint markup. | confirmed (code) |
 | `0x001d7700` | `LightingItem_OnCommand` | Bar ±0.05 and callback ±5 (`0x0050ecfc`) into OptionMenu_AddBrightness. | confirmed (code) |
@@ -628,15 +628,29 @@ page's name again as a heading (`OptionPage_SetDescription`: size 1.0 × 1.3, fo
   (`+ 0x0050ed7c` = 0.06; for Restore Default in German `0x0050ed80` = 0.11). Subtitles applies at once like the
   above. **Video** and **Restore Default** are in confirm mode (`+0x4c8`): left and right only move the choice, and
   accept calls the setter with 2 (first answer) or 3 (second). Video's first answer means Normal (video mode 0) and
-  the second Wide (mode 1); its starting answer comes from the device (slot `+0xd4`, the widescreen state, inferred).
+  the second Wide (mode 1); its starting answer comes from the device's slot `+0xd4`, the widescreen state: inferred
+  from `RwDevice_SetWidescreen` (`0x00194e28`), which stores the mode it is given at `+0x45c` and then calls the
+  same slot to choose between the 4:3 and the 16:9 aspect.
   Restore Default starts on **No** (`+0x4c0` = 1) when the menu opens and again each time its page is opened
   (`OptionMenu_OnCommand`'s accept on title 6, through the item pointer `0x0050edd4`). Confirmed (code).
 - **Pro Logic II**: an on/off choice at (0.26, 0.60) with answers at (0.66, 0.60) (`0x0050edcc`).
 - **Volume bars** (`StatBarItem`, Music then SoundFX): label at (0.26, 0.37) and (0.26, 0.455), bar at (0.26, 0.405)
-  and (0.26, 0.49) (`0x0050edac`-`0x0050edc0`), width **0.54** (`0x0050eda8`). The bar is a sheet-12 rectangle-0
-  frame centred at bar x + 0.27, with a white fill over a (21, 21, 21) back bar, both 0.025 high (`0x0050ed2c`),
-  drawn from bar + (-0.004, +0.004) (`StatBarItem_Setup` `0x001d6ef8`). Left and right step the value by **0.05**
-  within 0-1 (cue 4, `0xe` at an end) and call the volume setter on every press, an end's refused one too
+  and (0.26, 0.49) (`0x0050edac`-`0x0050edc0`), width **0.54** (`0x0050eda8`). What is drawn
+  (`StatBarItem_RenderColoured` `0x001d73b0`, through `HudBar_Draw` `0x001a1138`): no frame, and two strips of
+  part_page0's rectangle 55 (sprite word `0x30036`), each over its meter's width less the left cap (rectangle 56) as
+  [the rage meter](hud.md#the-rage-meter) reads `HudBar_Draw`. First a dark back strip, (21, 21, 21) at full alpha even
+  while the menu fades, over that whole width; then the fill strip over value × that width, in the item's label colour:
+  `0x005fd310` for the selected item and `0x005fd320` for the others, at the menu's alpha. So on the Audio page the
+  selected bar's fill is light and the other's dim. The caps and the meters' bodies are there but invisible:
+  `StatBarItem_Setup` (`0x001d6ef8`) clears both meters' `+0x54` and `+0x58`, which makes `HudBar_Draw` draw them with
+  alpha 0. The size and place drawn are the ones the bar's first update gives it (`StatBarItem_Update` `0x001d7270`,
+  which runs before the bar is first drawn): its height is the height of a sizing sprite (sheet 12 rectangle 0, the
+  item's width in overlay units, its height from the rectangle's shape, never drawn) less `0x0050ed30` (0.04; 0.025 with
+  device flag `0x02` alone, 0.055 with `0x02` and `0x04`; written by `OptionMenu_Open`), and its left end is at bar x −
+  0.001 (−0.004 from `StatBarItem_Setup`'s `0x0050ed28`, +0.003 from `0x0050ed38`) on the bar's y (+0.004 at set-up,
+  −0.004 from `0x0050ed34`). The 0.025 height and white fill `StatBarItem_Setup` gives the meters never reach the
+  screen. Confirmed (code). Left and right step the value by **0.05** within 0-1 (cue 4, `0xe` at an end) and call the
+  volume setter on every press, an end's refused one too
   (`StatBarItem_OnCommand` `0x001d7490`); the value starts at the game state's
   music (`+0x57ac`) or SoundFX (`+0x57a8`) volume.
 - **The brightness bar** (`LightingItem`): label at (0.26, 0.29) (`0x0050ed6c`, `0x0050ed70`), bar at (0.26, 0.50)
@@ -875,18 +889,23 @@ Coney stand-ins, each an open question below:
   page's items, places (`OptionLayout::forMode`, by language and video mode; Coney's pause mode opens the 4:3 one),
   colours, the answers' layout, the cues, the ranges and steps, applying at once or on accept (Video, Restore Default),
   each page keeping its selected item, the d-pad's repeat stopping at an end, and back putting the page's values
-  back except on Restore Default (Vibration stopping its preview first). Each of the 24 ported functions was
-  compared side by side with Ghidra on 2026-10-26 (`original compare`). Every change goes at once into the game
-  state where [save.md](save.md#options) puts it (`storeOptionValues`), so the next autosave keeps it; the game
-  then applies the volumes as the music and effects buses' volumes and P1's auto-adjust as the follow camera's
-  auto-centre rule. The Audio page loops `music/wonderwheel_mono` and the previous track starts again when it closes.
+  back except on Restore Default (Vibration stopping its preview first), and the bars as `StatBarItem_RenderColoured`
+  draws them after their first update (`repo:src/gui/pause_menu/option_bar.h`: no frame, the dark back and the fill
+  in the label's colour, into the batch of font slot 3, part_page0's). Each ported function was compared side by side
+  with Ghidra (`original compare`; the bars' and answers' again on 2026-10-26 after the review). Every change goes at
+  once into the game state where [save.md](save.md#options) puts it (`storeOptionValues`), so the next autosave keeps
+  it; the game then applies the volumes as the music and effects buses' volumes, and each level's player camera takes
+  its own pad's Auto Adjust from the game state every update (`FollowCamera::setAutoAdjust`, as
+  `Cam_Follow_AutoFollow` reads the byte of the camera's pad, [Camera](camera.md#heading)). The Audio page loops
+  `music/wonderwheel_mono` and the previous track starts again when it closes.
   Coney's choices and gaps: the brightness, the camera's inversion, the vibration (and its 500 ms preview), the
-  merge, Pro Logic II and the Video mode are only stored (Coney applies none of them yet); the bars' frame is drawn
-  the bar's size and their back, fill and the squares use sheet 12 rectangle 6 tinted; Restore Default's Yes
+  merge, Pro Logic II and the Video mode are only stored (Coney applies none of them yet), so Video's accept does not
+  reopen the menus as `OptionMenu_OnVideoChoice` does; the saved volumes are applied only when Options changes them,
+  not when a profile loads (a stand-in: `Profile_Read`, `0x00421ad0`, applies each option); Restore Default's Yes
   opens the Options menu again at once (the original waits for its next update) and the pause menu is not reopened; a bar
   within 0.001 of an end counts as at the end (the original compares exactly, on an FPU that rounds toward zero); the
-  half-word `W_GameState + 0x454`, flag `0x08`'s layout, the bars' back-bar offset `0x0050ed30` and the page's
-  discard box (`+0x210`, which no code opens) are not modelled.
+  half-word `W_GameState + 0x454`, flag `0x08`'s layout and the page's discard box (`+0x210`, which no code opens)
+  are not modelled.
   Tests: `repo:tests/gui/option_menu_test.cpp`, `repo:tests/gui/pause_menu_test.cpp`,
   `repo:tests/gamemodes/pause_mode_test.cpp` and `repo:tests/platform/disc_pause_options_test.cpp` (START, the left
   stick at 70 % and cross in `level99` started as `--play-level` starts it: Music up one step and kept, Invert P1 on

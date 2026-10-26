@@ -543,7 +543,8 @@ void FollowCamera::autoFollow(anim::Vec3 view, const FollowTarget& target, float
     }
     // The auto-centre rule follows a walk, run or sprint; the default rule only a run or sprint.
     const bool running = target.gait == kGaitRun || target.gait == kGaitSprint;
-    const bool centre = followTuning().autoCentre;
+    // The auto-centre rule needs the camera's player's Auto Adjust option (and Coney's debug switch).
+    const bool centre = m_autoAdjust && followTuning().autoCentre;
     if (!running && !(centre && target.gait == kGaitWalk)) {
         return;
     }
