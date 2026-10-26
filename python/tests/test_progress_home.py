@@ -9,6 +9,7 @@ researched and the unnamed helper untouched. One test builds the picture of the 
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -196,6 +197,114 @@ def test_the_real_home_picture_stays_light() -> None:
     assert len(html.encode()) < 250_000, len(html)
 
 
+# --- one name for each state -----------------------------------------------------------------------------------------
+
+
+def test_the_tooltip_labels_are_the_legends_for_every_progress_state() -> None:
+    """A hovered square names its state as the legend does: researched and untouched are both "Not yet started"."""
+    labels = progress_grid.home_state_labels()
+    assert labels == {
+        "a": "Reimplemented",
+        "r": "Reimplemented",
+        "u": "Understood",
+        "p": "Not yet started",
+        "t": "Not yet started",
+    }
+    assert set(labels) == set(progress_grid.STATE_CODES.values())
+    assert set(labels.values()) == set(progress_grid.HOME_LABELS.values())
+
+
+def test_the_home_section_hands_the_tooltip_script_the_legends_names(tmp_path: Path) -> None:
+    """data-labels is HOME_LABELS by state code, and the shared script prefers it to its own progress page names."""
+    html = progress_site.home_section(grid_of(make_grid_checkout(tmp_path)), None)
+    attr = re.search(r"data-labels='([^']*)'", html)
+    assert attr is not None
+    assert json.loads(attr.group(1)) == progress_grid.home_state_labels()
+    script = (REPO / "docs" / "javascripts" / "progress-grid.js").read_text(encoding="utf-8")
+    assert 'getAttribute("data-labels")' in script
+    # The progress page's own picture has no such attribute, so its tooltips keep the five state names.
+    root = make_grid_checkout(tmp_path / "b")
+    page = progress_site.build_site(root, progress.load(root), head=("2026-10-25", "abc1234"))
+    assert "data-labels" not in page.grid_html
+
+
+def test_the_home_blocks_text_names_only_home_states(tmp_path: Path) -> None:
+    """The block text shown before the table loads counts the folded states, never "Researched" or "Untouched"."""
+    svg = progress_grid.render_home_svg(grid_of(make_grid_checkout(tmp_path)))
+    titles = re.findall(r"<title>([^<]*)</title>", svg)
+    assert "Alpha: 1/3 reimplemented (33.3%)\nReimplemented 1 · Understood 1 · Not yet started 1" in titles
+    for word in ("Researched", "Untouched", "Audited"):
+        assert word not in svg
+
+
+def test_the_legend_and_the_tooltip_use_one_label_table() -> None:
+    """Nothing in the home path spells a state name of its own: every one is read from HOME_LABELS."""
+    source = (REPO / "python" / "src" / "coney_tools" / "progress_site.py").read_text(encoding="utf-8")
+    home = source[source.index("def home_section") : source.index("# --- the whole site")]
+    assert "HOME_LABELS" in home and "Not yet started" not in home
+
+
+# --- the colours ---------------------------------------------------------------------------------------------------
+
+
+def _luminance(colour: str) -> float:
+    """Relative luminance (WCAG) of `#rrggbb`."""
+
+    def channel(i: int) -> float:
+        c = int(colour[1 + 2 * i : 3 + 2 * i], 16) / 255
+        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+    return 0.2126 * channel(0) + 0.7152 * channel(1) + 0.0722 * channel(2)
+
+
+def _lightness(colour: str) -> float:
+    """CIE L* of `#rrggbb`, a perceptual lightness from 0 to 100."""
+    y = _luminance(colour)
+    return 116 * y ** (1 / 3) - 16 if y > 0.008856 else 903.3 * y
+
+
+def _contrast(a: str, b: str) -> float:
+    """WCAG contrast ratio of two colours."""
+    high, low = sorted((_luminance(a), _luminance(b)), reverse=True)
+    return (high + 0.05) / (low + 0.05)
+
+
+#: The docs site's page background in each theme (Material's default and slate schemes).
+PAGE = ("#ffffff", "#1e2129")
+
+
+def test_the_greys_are_swapped_so_understood_is_the_paler_one_on_the_light_page() -> None:
+    """The maintainer's scheme of 2026-10-26: Not yet started is the stronger grey and Understood the softer one."""
+    palette = progress_grid.HOME_PALETTE
+    light_understood, dark_understood = palette["understood"]
+    light_waiting, dark_waiting = palette["not-started"]
+    # Light page: Understood is lighter than Not yet started but darker than the old near-white (#e6e9ed).
+    assert _lightness(light_understood) > _lightness(light_waiting)
+    assert _lightness(light_understood) < _lightness("#e6e9ed")
+    # Dark page: Understood is the dimmer grey, as on the light page it is the softer one.
+    assert _lightness(dark_understood) < _lightness(dark_waiting)
+
+
+@pytest.mark.parametrize("theme", [0, 1])
+def test_the_three_states_are_distinct_and_readable_in_both_themes(theme: int) -> None:
+    """Each pair differs clearly in lightness, and every state stands out from the page behind it."""
+    colours = {state: palette[theme] for state, palette in progress_grid.HOME_PALETTE.items()}
+    states = list(colours)
+    # The green is a signal and needs the usual 3:1 against the page; the greys are quieter, but still show on it.
+    minimum = {"reimplemented": 3.0, "understood": 1.4, "not-started": 1.4}
+    for i, a in enumerate(states):
+        assert _contrast(colours[a], PAGE[theme]) >= minimum[a], a
+        for b in states[i + 1 :]:
+            assert abs(_lightness(colours[a]) - _lightness(colours[b])) >= 8, (a, b)
+
+
+def test_the_stylesheet_holds_the_swapped_greys() -> None:
+    css = (REPO / "docs" / "stylesheets" / "progress-grid.css").read_text(encoding="utf-8")
+    light = css[css.index(".progress-home {") :].split("}", 1)[0]
+    assert re.search(r"--cg-h-understood:\s*#d0d6dc;", light, re.IGNORECASE)
+    assert re.search(r"--cg-h-not-started:\s*#b0b8c2;", light, re.IGNORECASE)
+
+
 # --- the stylesheet ---------------------------------------------------------------------------------------------------
 
 
@@ -213,7 +322,7 @@ def test_the_stylesheet_holds_the_home_palette_in_both_themes() -> None:
 
 
 def test_the_tooltip_swatch_on_the_home_page_has_the_squares_colour() -> None:
-    """The shared tooltip names the progress page's state; on the home page its swatch shows the home colour."""
+    """The shared tooltip's swatch shows the square's home colour on the home page (its name is the legend's)."""
     css = (REPO / "docs" / "stylesheets" / "progress-grid.css").read_text(encoding="utf-8")
     for state, home in progress_grid.HOME_STATE_OF.items():
         rule = re.search(rf"\.progress-home \.cg-key\.cg-s-{state}\b[^{{]*\{{([^}}]*)\}}", css)

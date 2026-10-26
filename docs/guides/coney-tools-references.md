@@ -54,11 +54,17 @@ The [home page](../index.md) shows the same picture in a compact form, filled in
 marker by the same build (`progress_site.home_section`). The squares and their order are the progress page's, but
 the five states fold into three (`progress_grid.HOME_STATE_OF`): Reimplemented (audited included), Understood, and
 Not yet started (researched and untouched), coloured by the home page's own classes `cg-h-<state>` and palette
-(`HOME_PALETTE`, a darker green, a light gray and a dim gray, repeated under `.progress-home` in
-`progress-grid.css`; a test holds the two equal). There are no block labels: the blocks flow on from one another,
-`HOME_COLS` squares to a row (`progress_picture.flow`; each block's `data-o` is where it starts), so the picture is
-some 50 rows high. It reads the same `progress/functions.json` with the same script, so hovering or tapping a square
-shows the progress page's tooltip, Coney file included; on the home page the tooltip's swatch takes the home colour.
+(`HOME_PALETTE`, repeated under `.progress-home` in `progress-grid.css`; a test holds the two equal). Reimplemented is a
+darker green; the two greys read by lightness on both themes: **Understood is the softer grey and Not yet started the
+stronger one** (light page: `#d0d6dc` and `#b0b8c2`; dark page: `#4a5160` and `#9da5b0`), and a test keeps every pair
+of the three at least 8 L* apart and each one visible against the page (green 3:1, the greys 1.4:1). There are no
+block labels: the blocks flow on from one another, `HOME_COLS` squares to a row (`progress_picture.flow`; each
+block's `data-o` is where it starts), so the picture is some 50 rows high. It reads the same `progress/functions.json`
+with the same script, so hovering or tapping a square shows the progress page's tooltip, Coney file included, with
+the swatch in the home colour, and **the state named as the legend names it**: `HOME_LABELS` is the one table, and
+the section hands it to the script as `data-labels` (`progress_grid.home_state_labels`, by state code), so a
+researched or untouched square says "Not yet started", an audited one "Reimplemented". The block text shown before the
+table loads (`picture_blocks(..., home=True)`) counts the same three states. The progress page keeps its five names.
 `progress check` refuses a home page without its single marker, and `progress render` writes the filled page as
 `index.md`.
 
