@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261026-target-level95-ajax-walk"
+date = "2026-10-26"
+kind = "trace"
+tool = "pcsx2 record"
+digest = "66ce8c4b116d60a2bea238e69671877e149c8d249814d55641c65a33f9d10990"
+
+[who]
+agent = "a79590818d2525fcf"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["call-brains", "right-stick", "scripted-pad"]
+
+[run]
+name = "target_level95_ajax_walk"
+method = ""
+
+[values]
+updates = 91
+missed_updates = 0
+columns = 17
+
+[hashes]
+trace_csv = "53b285e614d7c92df298f50715c9ca74ba57474045912486cfbb859001c76ef8"

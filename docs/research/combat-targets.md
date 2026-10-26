@@ -296,11 +296,11 @@ Read in Ghidra: confirmed (code) where no other level is given.
      (no down test on that path); with none found, the current target unless it is out (state `0x80000000`, which
      `Human_PlayDeathReaction` sets, or `0x100000000`, or knocked out, `0x00227dd8`: state `0x40000`). **That fallback
      is how the target an attack picked gets locked**: within 2 m it passes step 3 as "the nearest" even when it is no
-     threat (confirmed (runtime) below). It also writes record `+0xd4` / `+0xd8`. Then, the search already made, a
-     current target in one of those three states or in a scene (`Human_IsInSceneState`) is dropped (and the lock bit
-     `0x8` cleared) unless his `+0x08` holds `0x400000`; when he was the nearest, there is none. A target knocked over
-     with health left (state `0x80000`) is **kept** (confirmed (code) at `0x0027ce90`; confirmed
-     (runtime), run `r-20261025-target-knockdown-kept`, below).
+     threat (confirmed (runtime), run r-20261026-target-attack-walk-away, below). It also writes record `+0xd4` /
+     `+0xd8`. Then, the search already made, a current target in one of those three states or in a scene
+     (`Human_IsInSceneState`) is dropped (and the lock bit `0x8` cleared) unless his `+0x08` holds `0x400000`; when
+     he was the nearest, there is none. A target knocked over with health left (state `0x80000`) is **kept**
+     (confirmed (code) at `0x0027ce90`; confirmed (runtime), run r-20261025-target-knockdown-kept, below).
   1. **The sprint**: state `0x1000000` is cleared, then set again while L2 is held with stamina (record `+0x14a`)
      and `+0x08` free of `0x10`, which also clears `0x8008` and drops the target ([Sprint](characters.md#sprint)). A
      target beyond **13 m** (169) loses the lock bit `0x8`.
@@ -338,22 +338,23 @@ sprint ends it (inferred from the steps above, `0x0027ce90`). A locked-on combat
 base speed, gait 3), so **square there skips the walk attack and goes to the snap or `S1`**, which is what level99's
 lesson 7 needs ([Attacks](combat/index.md#attacks)). At runtime L1 held gave state `0xd` (confirmed (runtime), below).
 
-**The whole path at runtime** (confirmed (runtime), PCSX2 2.9.129 (the PCSX2-MCP fork), copies of slot 6,
-the scenarios `target_*` of `repo:research/traces/scenarios/`, one sample per update; state is record `+0x00`, the
-movement state human `+0x1c0`, the target human `+0xc8`). The settings in play were `CfgAutoLockAndCombat` 1 (`0x005104b8`,
-the other three 0), near² 4, mid² 6.25, far² 9 (`0x005104bc`-`0x005104c4`) and `CfgStrafeRStick` 0 (`0x005104d0`).
+**The whole path at runtime** (confirmed (runtime), run r-20261026-target-l1-hold for the settings and, for each
+row, the run it names; the scenarios `target_*` of `repo:research/traces/scenarios/`, one sample per update; state is
+record `+0x00`, the movement state human `+0x1c0`, the target human `+0xc8`). The settings in play were
+`CfgAutoLockAndCombat` 1 (`0x005104b8`), near² 4, mid² 6.25, far² 9 (`0x005104bc`-`0x005104c4`) and
+`CfgStrafeRStick` 0 (`0x005104d0`).
 
 | Scenario | What the original did |
 | --- | --- |
-| `target_attack_walk_away`: `S1` at PoizoCiv, a **neutral** civilian (his gang, kind `0x17`, no enemy of the player's) 1 m ahead; stand 40 updates; stick 60 % back | The press update: state `0x1`, target PoizoCiv. The next update, still in `S1`'s wind-up (`+0x08` `0x1`, outside the busy gate): state `0x5` and `Human_FightStanceMove`, at 0.74 m. Standing, the lock held. Backing off: clip 384 at 3.43 m/s, PoizoCiv's bearing within 1° of the facing to 2.39 m, the heading unchanged from 2.5 to 3 m; at 3.05 m state 0, target none, the free movement |
-| `target_walk_past_friends`: walking at 60 % past Vermin (crew, the player's gang) at 0.69 m | Target none and state 0 on every update |
-| `target_walk_past_enemy`: PoizoCiv's gang made an enemy (`Gang_MakeEnemies` `0x0016acf0`, his brain kept alerted, below), 1 m to the side of the walk | Standing (updates 0-4, the gangs made enemies at update 2): state 0. As the stick was pushed (updates 5-6, gait 0 then 1): state `0x1` with no target (step 5's alerted enemy, 2.9 m away), then 0 while the walk started. At 1.99 m (update 16) state `0x1` only (`+0x08` held the run start's `0x10000000`, outside `0x320100`); four updates later (update 20), `+0x08` clear, at 1.65 m: state `0x5`, target him, the lock-on movement. Walking on at 3.43 m/s facing him, the player circled him (heading 147° → −28° as the camera followed) and the target went at 3.06 m |
-| `target_knockdown_kept` (run `r-20261025-target-knockdown-kept`): PoizoCiv made an enemy 1.5 m ahead, the player standing; at update 30 the game knocks him down (`Human_KnockDown` `0x0022f100`) | Locked from update 3 (state `0x5`, target him, `Human_FightStanceMove`); from update 31 his state word held `0x80000` with all 600 health, and the player kept him as the target, locked, on all 60 updates to the end |
-| `target_throw_end` (run `r-20261026-target-throw-end`): PoizoCiv 1.0 m ahead grabbed with circle, thrown straight ahead (circle with the stick at 0.9), the stick then held ahead at 0.6 | The grab: state `0x5` and `Human_FightStanceMove` from the intro, `0x45` in the hold with the grabbing movement (`0x00245310`). The throw's first update: state `0x1005`, `+0x08` `0x1` (outside the busy gate), the target kept and the movement already the free one (`0x00240e38`); no lock came back while he flew 1.1-1.8 m off for 27 updates. On the update the throw's clip ended, 5.6 m off: state 0, target none, and 413 started the walk at once |
-| `target_bat_sweep_run`: a bat in hand (`Human_PlaceItemInHand` `0x00238540`), a run at full stick, square at 2.73 m from the enemy 1.2 m to the side | 501 took him as the target; state 0 throughout; the heading stayed at −29.1° through the clip (no steer, no turn); the run went on at gait 4 past him (0.72 m), the target kept and never locked, until the run was stopped by a wall 6.68 m on (gait 3), when it went |
-| The same with square at 3.24 m (beyond the armed pick's 2.5 m × 1.1) | 501 with no target; the same straight run |
-| level95 checkpoint 2 (loaded with `load-checkpoint`), Cochise of the crew's gang 3 held 1.23 m beside Cleon walking at 60 % for 40 updates | Target none and state 0 on every update |
-| level95 checkpoint 2 (loaded with `load-checkpoint`), Cleon walked at 60 % from the checkpoint's spot (−184.9, 95.5) toward Ajax (crew, gang 2, standing at −177.5, 87.0); held at a corner near (−180.3, 90.0), as Coney's player is for a while on the same line, he was moved on over PINE to (−179.56, 88.51, heading −129.2), where Coney's player stood after the corner, and walked on into Ajax, stopping 0.71 m from him | Target none and state 0 on every update; Coney after this change walks the same line and stops 0.69 m from him with no target, where Coney before locked onto him from 1.6 m (the combat walk 381, turned to face him) |
+| `target_attack_walk_away` (run r-20261026-target-attack-walk-away): `S1` at PoizoCiv, a **neutral** civilian (his gang, kind `0x17`, no enemy of the player's) 1 m ahead; stand 40 updates; stick 60 % back | The press update: state `0x1`, target PoizoCiv. The next update, still in `S1`'s wind-up (`+0x08` `0x1`, outside the busy gate): state `0x5` and `Human_FightStanceMove`, at 0.73 m. Standing, the lock held. Backing off: clip 384 at 3.43 m/s, PoizoCiv's bearing within 1° of the facing to 2.46 m, the heading unchanged from 2.54 to 2.95 m; at 3.01 m state 0, target none, the free movement |
+| `target_walk_past_friends` (run r-20261026-target-walk-past-friends): walking at 60 % past Vermin (crew, the player's gang) at 0.69 m | Target none and state 0 on every update |
+| `target_walk_past_enemy` (run r-20261026-target-walk-past-enemy): PoizoCiv's gang made an enemy (`Gang_MakeEnemies` `0x0016acf0`, his brain kept alerted, below), 1 m to the side of the walk | Standing (updates 0-4, the gangs made enemies at update 2): state 0. From update 4 (gait 0): state `0x1` with no target (step 5's alerted enemy, 2.95 m away), then 0 from update 7 while the walk started. At 1.95 m (update 16) state `0x1` only (`+0x08` held the run start's `0x10000000`, outside `0x320100`); four updates later (update 20), `+0x08` clear, at 1.62 m: state `0x5`, target him, the lock-on movement. Walking on at 3.43 m/s facing him (his bearing within 9°), the player circled him (heading 147° → −30° as the camera followed) and the target went at 3.00 m |
+| `target_knockdown_kept` (run r-20261025-target-knockdown-kept): PoizoCiv made an enemy 1.5 m ahead, the player standing; at update 30 the game knocks him down (`Human_KnockDown` `0x0022f100`) | Locked from update 3 (state `0x5`, target him, `Human_FightStanceMove`); from update 31 his state word held `0x80000` with all 600 health, and the player kept him as the target, locked, on all 60 updates to the end |
+| `target_throw_end` (run r-20261026-target-throw-end): PoizoCiv 1.0 m ahead grabbed with circle, thrown straight ahead (circle with the stick at 0.9), the stick then held ahead at 0.6 | The grab: state `0x5` and `Human_FightStanceMove` from the intro, `0x45` in the hold with the grabbing movement (`0x00245310`). The throw's first update: state `0x1005`, `+0x08` `0x1` (outside the busy gate), the target kept and the movement already the free one (`0x00240e38`); no lock came back while he flew 1.1-1.8 m off for 27 updates. On the update the throw's clip ended, 5.6 m off: state 0, target none, and 413 started the walk at once |
+| `target_bat_sweep_run` (run r-20261026-target-bat-sweep-run): a bat in hand (`Human_PlaceItemInHand` `0x00238540`), a run at full stick, square at 2.73 m from the enemy 1.2 m to the side | 501 took him as the target; state 0 throughout; the heading stayed at −29.1° through the clip (no steer, no turn); the run went on at gait 4 past him (0.69 m), the target kept and never locked, until the run was stopped by a wall (gait 3, 6.87 m from him), when it went |
+| `target_bat_sweep_run_far` (run r-20261026-target-bat-sweep-run-far): the same with square at 3.24 m (beyond the armed pick's 2.5 m × 1.1) | 501 with no target; the same straight run |
+| `target_level95_crew_beside` (run r-20261026-target-level95-crew-beside): level95 checkpoint 2 (loaded with `load-checkpoint`), Cochise of the crew's gang 3 held 1.23 m beside Cleon walking at 60 % for 40 updates | Target none and state 0 on every update |
+| `target_level95_ajax_walk` (run r-20261026-target-level95-ajax-walk): level95 checkpoint 2 (loaded with `load-checkpoint`), Cleon placed at (−179.56, 88.51), heading −129.2°, where Coney's player stands after the corner on his walk from the checkpoint's spot toward Ajax (crew, gang 2, standing at −177.5, 87.0), and walked at 60 % into Ajax, stopping 0.71 m from him | Target none and state 0 on all 91 updates; Coney after this change walks the same line and stops 0.69 m from him with no target, where Coney before locked onto him from 1.6 m (the combat walk 381, turned to face him) |
 
 In level95 the crew's gangs (2 and 3, kind `0x13`) and the player's (0, kind 0) hold no friend or enemy bit for each
 other (gang `+0x38`, `+0x3c` read 0), so they are neutral: no friends (an attack may pick them) and no threat (the
@@ -402,12 +403,13 @@ update and every other command, so none runs under the busy gate (`+0x08` & `0x5
 for a hidden player (`Player_UpdateActionsHidden`, `0x0027e040`, instead), or on an update another command took; with
 no command, or `Human_IsBusy` (`0x00228258`), the dispatcher clears `0x8008`. A set-5 object in hand skips the held
 handler; the held handler itself does nothing while the per-player action delay runs (`PlayerRec_GetActionDelayLeft`),
-under `+0x08` `0x2000000`, while locked or in the throw aim, and with a target at a free sprint; hidden, it drops a
-target in state `0x3800f0000` instead of locking. The press acts only inside the release window (then searches and
+under `+0x08` `0x2000000`, while locked or in the throw aim, and with a target at a free sprint; hidden, it locks
+nothing, and while state `0x8` is still clear it drops a target in state `0x3800f0000` (once the hold has set
+`0x8`, with `0x20000000`, it keeps him). The press acts only inside the release window (then searches and
 runs the held handler). Confirmed (code) at the cited addresses. While aiming a throw
 (`Human_MoveThrowAim`, `0x00244770`) L1 leaves the aim; with weapon type 5 and no enemy target it enters mode `0x13`
-(`0x00227b30`). Confirmed (code); confirmed (runtime): L1 held gave state `0xd`, a target,
-and the movement state `0x00241b90`.
+(`0x00227b30`). Confirmed (code); confirmed (runtime), run r-20261026-target-l1-hold: L1 held with a
+neutral civilian 2 m ahead gave state `0xd`, a target, and the movement state `0x00241b90`.
 
 **At runtime** (confirmed (runtime), PoizoCiv 2 m ahead as the target): the street has `CfgLockOn` = 0, so **L1 alone
 does not lock**. With `CfgAutoLockAndCombat` written to 0, L1 held gave state `0xd` and a target, but the player kept

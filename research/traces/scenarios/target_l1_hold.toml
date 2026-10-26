@@ -1,0 +1,73 @@
+# slot 6: PoizoCiv, a neutral civilian, is put 2.0 m in front of the player, facing him, and L1 is held from update 5
+# for 60 updates with the stick at rest. The trace shows what L1 held does in the street (CfgLockOn 0): the state word
+# (0x8 L1, 0x4 lock, 0x1 stance), the target and the movement state. It also reads the street's stance settings
+# (CfgAutoLockAndCombat 0x005104b8, the near, mid and far distances squared 0x005104bc-0x005104c4, CfgStrafeRStick
+# 0x005104d0). Research: docs/research/combat-targets.md#fight-stance.
+description = "slot 6: L1 held with a neutral civilian 2 m ahead; the state word, target and movement; the stance settings"
+research = "docs/research/combat-targets.md#fight-stance"
+input = "target_l1_hold.txt"
+updates = 70
+fields = ["player"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick"]
+let = { enemy = 'human("PoizoCiv")' }
+setup = [
+  { address = "tf(enemy) + 0x0", type = "f32", value = "f32(tf(player)) - 2.0 * sin(heading(player))", until = 0 },
+  { address = "tf(enemy) + 0x4", type = "f32", value = "f32(tf(player) + 4) + 2.0 * cos(heading(player))", until = 0 },
+  { address = "tf(enemy) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 0 },
+  { address = "tf(enemy) + 0x18", type = "f32", value = "sin((heading(player) + pi) / 2)", until = 0 },
+  { address = "tf(enemy) + 0x1c", type = "f32", value = "cos((heading(player) + pi) / 2)", until = 0 },
+]
+
+[coney]
+level = "sandbox:combat"
+args = ["--spawn", "start"]
+
+[[field]]
+name = "state"                            # record +0x00, the state word's low half (0x1 stance, 0x4 lock, 0x8 L1)
+address = "rec(player) + 0x0"
+type = "u32"
+
+[[field]]
+name = "target"                           # human +0xc8, the target's handle index (-1 none)
+value = "hidx(u32(player + 0xc8))"
+
+[[field]]
+name = "move"                             # human +0x1c0, the movement state (0x241b90 lock-on, 0x240e38 free)
+address = "player + 0x1c0"
+type = "u32"
+
+[[field]]
+name = "dist"                             # metres from the player to PoizoCiv, on the ground
+value = "hypot(f32(tf(player)) - f32(tf(enemy)), f32(tf(player) + 4) - f32(tf(enemy) + 4))"
+
+[[field]]
+name = "bearing"                          # PoizoCiv's direction from the player's facing, degrees
+value = "wrap(deg(atan2(f32(tf(player)) - f32(tf(enemy)), f32(tf(enemy) + 4) - f32(tf(player) + 4)) - heading(player)))"
+
+[[field]]
+name = "autolock"                         # CfgAutoLockAndCombat
+address = "0x005104b8"
+type = "u32"
+
+[[field]]
+name = "near2"                            # the near distance squared
+address = "0x005104bc"
+type = "f32"
+
+[[field]]
+name = "mid2"                             # the mid distance squared
+address = "0x005104c0"
+type = "f32"
+
+[[field]]
+name = "far2"                             # the far distance squared
+address = "0x005104c4"
+type = "f32"
+
+[[field]]
+name = "strafe"                           # CfgStrafeRStick
+address = "0x005104d0"
+type = "u32"
