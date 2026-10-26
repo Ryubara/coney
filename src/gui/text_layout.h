@@ -48,10 +48,13 @@ struct TextStyle {
     TextAlignment alignment = TextAlignment::Left;
     int fontSlot = kTextFontSlot; ///< The font until `<BIGFONT>` changes it.
     std::uint32_t timeMs = 0;     ///< Game time since the text was first shown: `<PULSE>`, `<DISPLAYTIME>`.
-    /// The line window (`MessageHUD_ClipToPage`, the markup widget's `+0x1a4` and `+0x1a8`): only the lines from
-    /// firstLine to lastLine, both included, are drawn, firstLine's at y; the others take no room.
+    /// The line window (the markup widget's `+0x1a4` and `+0x1a8`): only the window lines from firstLine to lastLine,
+    /// both included, are drawn, firstLine's at y; the others take no room. Each line is a window line, unless paged.
     std::size_t firstLine = 0;
     std::size_t lastLine = SIZE_MAX;
+    /// Paged (`+0x1a0`, `MessageHUD_ClipToPage`): a window line ends only at a wrap break or `<CRM>`, the breaks the
+    /// original splits the page at, so a `<CR>`, `<CR2>` or `<CR3>` line stays in its window line.
+    bool paged = false;
 };
 
 /// One sprite of a laid-out text and the font slot whose batch draws it.
@@ -101,6 +104,7 @@ using FontLookup = std::function<const graphics::Font*(int slot)>;
 
 /// Adds the sprites of `layout` to the batch of each sprite's font slot; a slot with no batch (null) is skipped.
 /// Returns how many sprites a full batch dropped.
+/// @coney-only Coney's sprite batches, one per font slot
 std::size_t addTextSprites(const TextLayout& layout, const std::function<graphics::SpriteBatch*(int slot)>& batches);
 
 } // namespace coney::gui

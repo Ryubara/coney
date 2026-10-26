@@ -29,10 +29,11 @@ struct BarSetup {
 /// edge is Coney's reading of "fill red to v / 100".
 ///
 /// With end caps (setCaps(), the HUD meter `HudBar`'s four rectangles, as the pause Stats screen's bars draw them,
-/// docs/research/hud.md#the-rage-meter): left to right, the left cap in the back colour, the body over the inner width
-/// (the width less the left cap's) in the back colour, the fill over the inner width × the fill, the right cap in the
-/// back colour just past the width. Each cap is as wide as its rectangle's texels make it at the bar's height; the
-/// stretched body and fill are inset by one texel so that filtering stays inside them.
+/// docs/research/hud.md#the-rage-meter): each cap is as wide as its rectangle's u span (in overlay units), and the
+/// inner width is the bar's width less the left cap's. Left to right, in the back colour unless named: the left cap
+/// from the left edge; the body, inner width wide, centred on the bar's middle (so it starts half a cap in); the fill
+/// in the fill colour from half a cap in over the inner width × the fill; the right cap from half a cap short of the
+/// width. The stretched body and fill are inset by one texel left and right.
 ///
 /// Research: docs/research/gui.md#widget-classes
 /// @orig 0x001a0fd0 Bar::Bar (unknown)
@@ -43,6 +44,7 @@ class Bar : public Widget {
     /// Draws the fill from rectangle `rect` from now on (the HUD bars' body and fill are two rectangles).
     void setFillRect(std::size_t rect) { m_fillRect = rect; }
     /// Draws end caps from rectangles `left` and `right` from now on (the meter's form above).
+    /// @coney-only Coney's switch to the meter's form; the original's HudBar always draws its caps
     void setCaps(std::size_t left, std::size_t right) { m_caps = std::array<std::size_t, 2>{left, right}; }
 
     /// Draws into `batch` from now on (null draws nothing).
@@ -50,6 +52,7 @@ class Bar : public Widget {
     /// Places, sizes and colours the bar.
     void setup(const BarSetup& setup) { m_setup = setup; }
     /// The fill fraction, clamped to [0, 1].
+    /// @orig 0x001c2530 HudGenericBar_SetFill (unknown)
     void setFill(float fraction);
     /// The fill fraction.
     [[nodiscard]] float fill() const { return m_fill; }

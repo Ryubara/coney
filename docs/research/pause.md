@@ -326,9 +326,9 @@ Confirmed (code) at the addresses cited unless a line says otherwise.
 | `0x001e5498`, `0x001e5540` | `PauseStats_Construct`, `_Destroy` | name `+0x7b0`, shadows `+0x8b0`/`+0x9b0`, face `+0xab0`, 4 HudGenericBars `+0xbb0`, description `+0x1b70` | confirmed (code) |
 | `0x001e5618` | `PauseStats_Setup` | [The Stats screen](#stats-screen); from `PauseMenu_Open`: per-mode globals `0x0050f104`-`0x0050f2b8`; human of game state `+0x228`; class 0-8 picks name, face and string `0xea`-`0xf2`, else unavailable; bars Strength `0xf3`, Stamina `0xf4`, Health `0xf5`, Rage `0xf6` normalised by difficulty table `0x0050f230` (0x28 per difficulty, game state `+0x154`); description wrap width 0.55 and line window 0-5 | confirmed (code) |
 | `0x001e6530`, `0x001e6600` | `PauseStats_Shutdown`, `_IsReady` | releases; ready after 10 s or when both picture batches are resident | confirmed (code) |
-| `0x001e6698` | `PauseStats_OnCommand` | table `0x005568e0`: up/down `MessageHUD_PageUp`/`PageDown` (cue 4, `0xe` when stuck), left/right `0xe`, back `0xf` and `+0x7a0` = 1 | confirmed (code) |
-| `0x001e6778` | `PauseStats_Update` | name at base + (-0.08, -0.2), face + (-0.17, -0.099), bars at + (0.14, -0.11 + 0.05 i) 0.22 x 0.025 fill `0x0063ee38`, description + (-0.24, 0.1) | confirmed (code) |
-| `0x001e6cf0`, `0x001e6cf8` | `PauseStats_SetAlpha`, `_Render` | alpha `+0x1d70` | confirmed (code) |
+| `0x001e6698` | `PauseStats_OnCommand` | table `0x005568e0` by command (up, down, left, right, accept, back): up/down `MessageHUD_PageUp`/`PageDown` (cue 4, `0xe` when stuck), left/right `0xe`, accept nothing, back `0xf` and `+0x7a0` = 1 | confirmed (code) |
+| `0x001e6778` | `PauseStats_Update` | nothing while unavailable (`+0x04`, `+0x08`) or not ready (`PauseStats_IsReady`, kept in `+0x10`); then name at base + (-0.08, -0.2), face + (-0.17, -0.099), bars at + (0.14, -0.11 + 0.05 i) 0.22 x 0.025 fill `0x0063ee38`, description + (-0.24, 0.1) | confirmed (code) |
+| `0x001e6cf0`, `0x001e6cf8` | `PauseStats_SetAlpha`, `_Render` | alpha `+0x1d70` (setup sets 255); when available and ready, each part's alpha set to it, then shadows, name, face, bars and description drawn in that order | confirmed (code) |
 | `0x001e6e20`, `0x001e6e78` | `PauseStats_StaticInit`, `_StaticInitStub` | colours `0x0063ee30`/`0x0063ee38` = (150,30,30,255); stub in ctor list `0x00534134` | confirmed (code) |
 
 ### Game-state functions {#warriors-functions}
@@ -801,27 +801,28 @@ and banner the other way round.
 | Part | Where and how |
 | --- | --- |
 | name (`+0x7b0`) | left edge (anchor 1) at B + (−0.08, −0.2) = (0.42, 0.3), size 0.09 × k (`0x0050f130`), depth 15,000, tinted (150, 30, 30) (`0x0063ee30`) |
-| two shadows (`+0x8b0`, `+0x9b0`) | the name's sprite in black at alpha 128, depth 11,000, offset (+0.0025, +0.004) and (−0.001, −0.002) (`0x0050f2a8`-`0x0050f2b4`) |
+| two shadows (`+0x8b0`, `+0x9b0`) | the name's sprite in black, depth 11,000, offset (+0.0025, +0.004) and (−0.001, −0.002) (`0x0050f2a8`-`0x0050f2b4`); set up at alpha 128, but drawn **opaque**: before each draw `PauseStats_Render` sets every part's alpha to the menu's (`BaseWidget_SetAlpha`, `0x001a2638`, writes the colour's alpha byte `+0xb7`), replacing the 128 (confirmed (code); that it shows is inferred from the runtime shot's darker outline) |
 | face (`+0xab0`) | centred at B + (−0.17, −0.099) = (0.33, 0.401), size 0.3 × k (`0x0050f150`), white, depth 11,000 |
 | four bars (`HudGenericBar`, `+0xbb0` + `0x3f0` × i) | left edge at B + (0.14, −0.11 + 0.05 i) = (0.64, 0.39 / 0.44 / 0.49 / 0.54), 0.22 × 0.025 (× k), fill (150, 30, 30) (`0x0063ee38`), back (37, 37, 37), sprite word `0x30036`: resource instance 3, `part_page0`, rectangles 54 (body), 55 (fill), 56 and 57 (end caps), drawn as the rage meter is ([HUD: which sheet](hud.md#scripted-bars); `HudBar_Draw`, `0x001a1138`, reads the high half as an instance, not a sheet-table record) |
 | the bars' labels | each bar's label (a markup text of the `HudGenericBar`, font slot 3, grey `0x005fd310`, size 1.0), anchored at x 0.38 (`0x0050f2b8`), y B + −0.08, −0.03, 0.02, 0.07 = 0.42, 0.47, 0.52, 0.57 (`0x0050f178`, `0x0050f1a8`, `0x0050f1d8`, `0x0050f208`; `HudGenericBar_SetLabelPos`, `0x001c2520`), **plus the bar's label offset (0.04, −0.035)** (`0x0050e960` / `0x0050e964`, copied to bar `+0x3d0` / `+0x3d8` by `HudGenericBar_Setup` `0x001c1f80` and added by `HudGenericBar_Update` `0x001c22e8`): drawn at (0.42, 0.385 / 0.435 / 0.485 / 0.535), left-aligned (`HudGenericBar_SetLabelAlign(bar, 0)`: `Font_Draw` flags 0). So the labels start at the name's left edge (0.42), clear of the face (centred at 0.33). Strength `0xf3`, Stamina `0xf4`, Health `0xf5`, Rage `0xf6` |
 | description (`+0x1b70`) | a markup text at B + (−0.24, 0.1) = (0.26, 0.6), size 1.0, grey `0x005fd310`, font slot 3, paged and word-wrapped at 0.55 ([below](#stats-description)) |
 
 <span id="stats-description"></span>**The description** (`+0x1b70`, a `MessageHUD`). After setting the text,
-`PauseStats_Setup` calls
-`MessageHUD_ReadAutoIndent(0.55, widget, 0)` (`0x001bb390`): the **wrap width** (`+0x1d4`) is the number of a leading
-`<AUTOINDENT f>` tag, else 0.55. All nine descriptions (`0xea`-`0xf2`) begin with `<AUTOINDENT 0.55>` followed by
-`<COLOR B2B2B2FF>` (read over PINE, NTSC-U, English), so the width is 0.55 either way and the text is grey 178.
-Confirmed (code) for the call; the strings' tags inferred from reading them over PINE. Then it sets the widget's
-fields: paged `+0x1a0` = 1, first line `+0x1a4` = 0, last line `+0x1a8` = 5, word wrap `+0x1b8` = 1 and `+0x188` = 1
-(`<CR2>` / `<CRM>` allowed) ([GUI: the markup text's fields](gui.md#markup-text-fields)). Confirmed (code) at `0x001e5618`.
+`PauseStats_Setup` calls `MessageHUD_ReadAutoIndent(0.55, widget, 0)` (`0x001bb390`): the **wrap width** (`+0x1d4`) is
+the number of a leading `<AUTOINDENT f>` tag (the text must start with the tag's name and a space, and the number is
+read with `%f`), else 0.55. All nine descriptions (`0xea`-`0xf2`) begin with `<AUTOINDENT 0.55>` followed by `<COLOR
+B2B2B2FF>` (read over PINE, NTSC-U, English), so the width is 0.55 either way and the text is grey 178. Confirmed (code)
+for the call; the strings' tags inferred from reading them over PINE. Then it sets the widget's fields: paged `+0x1a0` =
+1, first line `+0x1a4` = 0, last line `+0x1a8` = 5, word wrap `+0x1b8` = 1 and `+0x188` = 1 (`<CR2>` / `<CRM>` allowed)
+([GUI: the markup text's fields](gui.md#markup-text-fields)). Confirmed (code) at `0x001e5618`.
 
 - **Wrapping** (`MessageHUD_WordWrap`, `0x001bac20`): each draw, words are added to a line while its measured width
   (tags stripped) stays within 0.55; the word that would pass it starts a new line (a `<CRM>` is inserted).
   `+0x1ac` counts the line breaks (inserted ones and the text's own `<CR>` / `<CR3` tags), so it is the line count
   less one.
 - **The line window** (`MessageHUD_ClipToPage`, `0x001baee0`): only the lines `+0x1a4` to `+0x1a8` **inclusive** are
-  drawn, so a page is **six lines** (0-5).
+  drawn, so a page is **six lines** (0-5). The window splits the text only at `<CRM>` (`0x00554af8`), the break the
+  wrap inserts: a line the text's own `<CR>` starts stays with the window line it is in, though `+0x1ac` counts it.
 - **Paging** (`PauseStats_OnCommand` `0x001e6698`): down calls `MessageHUD_PageDown` (`0x001bb000`), which moves both
   ends down one line while the last line `+0x1a8` is below `+0x1ac` (the index of the text's last line), so it stops
   when the text's last line is the window's bottom line; up calls `MessageHUD_PageUp` (`0x001bafd0`), which moves both
@@ -977,18 +978,19 @@ Coney stand-ins, each an open question below:
   `repo:tests/gui/pause_menu_test.cpp` and `repo:tests/platform/disc_pause_controls_test.cpp` (START, the left stick
   at 70 % and cross in `level99` started as `--play-level` starts it; with the disc's strings and fonts no Controller
   label runs into the one under it).
-- The Stats screen (`repo:src/gui/pause_menu/pause_stats.h`, `PauseStats`, written from
-  [The Stats screen](#stats-screen)): available for the nine Warriors' character types only; the four bars from the
-  difficulty table with the player's damage scale, power, stamina and rage maxima and his power class's byte `+0x40`
-  (`PlayLevelMode::warriorStats`, through the pause hook `warriorStats`); the places, colours and depths of the
-  table: the name (`+0x7b0`) in red over its two shadows and the face (`+0xab0`); each bar drawn as the rage meter,
+- The Stats screen (`repo:src/gui/pause_menu/pause_stats.h`, `PauseStats`, written from [The Stats
+  screen](#stats-screen)): available for the nine Warriors' character types only; the four bars from the difficulty
+  table with the player's damage scale, power, stamina and rage maxima and his power class's byte `+0x40`
+  (`PlayLevelMode::warriorStats`, through the pause hook `warriorStats`); the places, colours and depths of the table:
+  the name (`+0x7b0`) in red over its two shadows and the face (`+0xab0`); each bar drawn as the rage meter,
   `part_page0` rectangles 56 (left cap), 54 (body), 55 (fill) and 57 (right cap) (`Bar::setCaps`); the labels
-  left-aligned at their anchor plus the bars' label offset (0.04, −0.035), so at (0.42, 0.385 + 0.05 i); the
-  description wrapped at 0.55 and drawn through a line window of lines 0-5 (`TextStyle::firstLine` / `lastLine`, the
-  `MessageHUD_ClipToPage` window), which up and down move one line within the text (cue 4, or `0xe` at either
-  end); left and right refuse, back closes. Coney's choices: the down move's limit is the line count the last draw
-  measured (the original's draw counts it too); the screen is placed at once (Coney loads the pictures when the pause
-  starts); the `0x08` and `0x02` layouts are not modelled. Tests: `repo:tests/gui/pause_stats_test.cpp` (the caps,
+  left-aligned at their anchor plus the bars' label offset (0.04, −0.035), so at (0.42, 0.385 + 0.05 i); the description
+  wrapped at its leading `<AUTOINDENT>` width (else 0.55) and drawn through a paged line window of lines 0-5
+  (`TextStyle::firstLine` / `lastLine` / `paged`, the `MessageHUD_ClipToPage` window, split only at the wrap's breaks),
+  which up and down move one line within the text (cue 4, or `0xe` at either end); left and right refuse, back closes;
+  every part at the menu's alpha, the shadows opaque. Coney's choices: the down move's limit is the line count the last
+  draw measured (the original's draw counts it too); the screen is placed at once (Coney loads the pictures when the
+  pause starts); the `0x08` and `0x02` layouts are not modelled. Tests: `repo:tests/gui/pause_stats_test.cpp` (the caps,
   the labels' places, the window's moves), `repo:tests/gui/pause_menu_test.cpp` and
   `repo:tests/platform/disc_pause_stats_test.cpp` (START, the left stick at 70 % to Stats, cross in `level99`: five
   texts, four bars in (0, 1], every picture loaded).

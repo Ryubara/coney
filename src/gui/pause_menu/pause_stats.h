@@ -58,12 +58,13 @@ struct StatsPortrait {
 /// - **Availability** (setup()): only the nine Warriors' character types (portraitOf()) have a screen; for any other
 ///   (Ash, Lynx, anyone) it is unavailable and the pause menu's Stats item opens nothing.
 /// - **Layout** (default mode, base B = (0.5, 0.5); 16:9 moves B to y 0.45): the name (`+0x7b0`) with its left edge
-///   at (0.42, 0.3), 0.09 high, tinted (150, 30, 30), with two black shadows at alpha 128 offset (+0.0025, +0.004)
-///   and (−0.001, −0.002); the face (`+0xab0`) centred at (0.33, 0.401), 0.3 high; four bars 0.22 × 0.025 with their
-///   left edge at x 0.64 and y 0.39 + 0.05 i, fill (150, 30, 30) over (37, 37, 37), drawn as the rage meter from
-///   `part_page0` rectangles 54 (body), 55 (fill), 56 and 57 (end caps); their labels left-aligned at their anchor
-///   (0.38, 0.42 + 0.05 i) plus the bars' label offset (0.04, -0.035), so at (0.42, 0.385 + 0.05 i); the description
-///   at (0.26, 0.6), size 1.0, grey `0x005fd310`, font slot 3, wrapping at 0.55, showing the lines 0-5 of a window.
+///   at (0.42, 0.3), 0.09 high, tinted (150, 30, 30), with two black shadows offset (+0.0025, +0.004) and
+///   (−0.001, −0.002) (set up at alpha 128, drawn at the menu's alpha like every part); the face (`+0xab0`) centred at
+///   (0.33, 0.401), 0.3 high; four bars 0.22 × 0.025 with their left edge at x 0.64 and y 0.39 + 0.05 i, fill (150, 30,
+///   30) over (37, 37, 37), drawn as the rage meter from `part_page0` rectangles 54 (body), 55 (fill), 56 and 57 (end
+///   caps); their labels left-aligned at their anchor (0.38, 0.42 + 0.05 i) plus the bars' label offset (0.04, -0.035),
+///   so at (0.42, 0.385 + 0.05 i); the description at (0.26, 0.6), size 1.0, grey `0x005fd310`, font slot 3, wrapping
+///   at its leading `<AUTOINDENT>` width (else 0.55), showing the lines 0-5 of a window.
 /// - **Values** (barValues()): from the difficulty's row of the table at `0x0050f230`.
 /// - **Input** (handle()): up and down move the description's line window by one line (cue 4; `0xe` when it cannot
 ///   move: up at line 0, down once the text's last line is the window's bottom line), left and right play `0xe`, back
@@ -88,9 +89,10 @@ class PauseStats {
     static constexpr float kPortraitSize = 0.09F;
     static constexpr graphics::Rgba kPortraitTint{150, 30, 30, 255};
     static constexpr float kPortraitDepth = 15000.0F;
-    /// The two shadows' offsets from the name (`0x0050f2a8`-`0x0050f2b4`) and alpha.
+    /// The two shadows' offsets from the name (`0x0050f2a8`-`0x0050f2b4`) and colour as drawn (black; the alpha
+    /// is the menu's, which replaces setup's 128 on every draw).
     static constexpr std::array<std::array<float, 2>, 2> kShadowOffsets{{{0.0025F, 0.004F}, {-0.001F, -0.002F}}};
-    static constexpr std::uint8_t kShadowAlpha = 128;
+    static constexpr graphics::Rgba kShadowColour{0, 0, 0, 255};
     /// The face (`+0xab0`): offset from B, height, depth.
     static constexpr float kBannerDx = -0.17F;
     static constexpr float kBannerDy = -0.099F;
@@ -131,17 +133,20 @@ class PauseStats {
     PauseStats();
 
     /// The Stats screen of character type `type`: one of the nine Warriors' (the kinds 0-8 of `Human_GetPortraitKind`),
-    /// nothing for any other type.
+    /// nothing for any other type. Setup's switch on the kind (its pictures and text, or unavailable).
+    /// @orig 0x001e5618 PauseStats_Setup (unknown)
     [[nodiscard]] static std::optional<StatsPortrait> portraitOf(int type);
 
     /// The four bars' fills, Strength, Stamina, Health and Rage, for `stats` at difficulty `difficulty` (the game
     /// state's `+0x154`, clamped to 0-2 to pick the table's row t): Strength (damage_scale − t0) / (t1 − t0), not
     /// clamped; Stamina (power max + stamina max − t2 + t4) / (t3 + t5 − t2 + t4), at most 1; Health the power class's
-    /// byte `+0x40` / 100, at most 1; Rage the rage maximum / 150, at most 1.
+    /// byte `+0x40` / 100, at most 1; Rage the rage maximum / 150, at most 1. Setup's four fills.
+    /// @orig 0x001e5618 PauseStats_Setup (unknown)
     [[nodiscard]] static std::array<float, kBars> barValues(const WarriorStats& stats, int difficulty);
 
     /// Draws the name (and its shadows), the face and the bars into these batches (each over its sheet: the name's and
     /// face's records, `part_page0`; not owned, null: none).
+    /// @coney-only Coney's sprite batches; the original's widgets make their own batch instances
     void setBatches(graphics::SpriteBatch* name, graphics::SpriteBatch* face, graphics::SpriteBatch* bars);
 
     /// Sets the screen up for the pausing player, `stats` (nothing: no human), at `difficulty`, with `strings` (which
@@ -172,21 +177,30 @@ class PauseStats {
     [[nodiscard]] const std::array<float, kBars>& values() const { return m_values; }
     /// The parts, as placed by the last update().
     [[nodiscard]] const BaseWidget& name() const { return m_name; }
+    /// Shadow `index` (0 or 1).
     [[nodiscard]] const BaseWidget& shadow(std::size_t index) const { return m_shadows.at(index); }
+    /// The face.
     [[nodiscard]] const BaseWidget& face() const { return m_face; }
+    /// Bar `index` (0-3: Strength, Stamina, Health, Rage).
     [[nodiscard]] const Bar& bar(std::size_t index) const { return m_bars.at(index); }
+    /// Bar `index`'s label.
     [[nodiscard]] const TextWidget& label(std::size_t index) const { return m_labels.at(index); }
+    /// The description.
     [[nodiscard]] const TextWidget& description() const { return m_description; }
     /// The description's line window: its first and last lines shown.
     [[nodiscard]] std::size_t firstLine() const { return m_description.style().firstLine; }
+    /// The description window's last line shown.
     [[nodiscard]] std::size_t lastLine() const { return m_description.style().lastLine; }
     /// Counts the description's lines with `canvas`'s fonts, as render() does (the down move's limit).
+    /// @coney-only Coney's line count for the down move; the original's draw stores it (`+0x1ac`)
     void measure(const GuiCanvas& canvas) const;
     /// The texts shown, in drawing order (for tests and the log): the four labels and the description.
+    /// @coney-only a test and log aid
     [[nodiscard]] std::vector<std::string> lines() const;
 
   private:
     // Plays `cue`, if there is a sink.
+    // @coney-only Coney's sound sink; the original calls the sound system directly
     void playCue(int cue) const;
 
     std::function<void(int cue)> m_playCue;

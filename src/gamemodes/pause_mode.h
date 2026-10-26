@@ -84,11 +84,13 @@ class MenuLayer {
 
     /// Loads the fonts through `loadSheet`, a sprite sheet of record `record` through `loadRecord` into a batch of
     /// `capacity` at `depth` (none when `record` is unset); `log` gets a line for what fails, prefixed `who`.
+    /// @coney-only Coney's sprite batches and loaders; the original's widgets load their own pictures
     void load(const PauseSheetLoader& loadSheet, const PauseRecordLoader& loadRecord,
               std::optional<std::uint32_t> record, std::size_t capacity, float depth,
               const std::function<void(std::string_view)>& log, std::string_view who);
     /// Loads a second sheet, of record `record`, into a batch of `capacity` at `depth` (the pause menu's pad picture);
     /// `log` gets a line when it fails. Released with the rest.
+    /// @coney-only Coney's sprite batches and loaders; the original's widgets load their own pictures
     void loadSecond(const PauseRecordLoader& loadRecord, std::uint32_t record, std::size_t capacity, float depth,
                     const std::function<void(std::string_view)>& log, std::string_view who);
     /// The second sheet's batch; null when it did not load.
@@ -96,10 +98,12 @@ class MenuLayer {
     /// Loads one more sheet, of record `record` through `loadRecord`, or of resource `name` through `loadSheet` when
     /// `name` is not empty, into a batch of `capacity` at `depth`; `log` gets a line when it fails. Returns the batch
     /// (null when it did not load), which lives until release().
+    /// @coney-only Coney's sprite batches and loaders; the original's widgets load their own pictures
     graphics::SpriteBatch* loadExtra(const PauseSheetLoader& loadSheet, const PauseRecordLoader& loadRecord,
                                      std::string_view name, std::uint32_t record, std::size_t capacity, float depth,
                                      const std::function<void(std::string_view)>& log, std::string_view who);
     /// Releases everything load() made.
+    /// @coney-only Coney's sprite batches and loaders; the original's widgets load their own pictures
     void release();
 
     /// The canvas widgets render into.
@@ -110,6 +114,7 @@ class MenuLayer {
     /// Empties the pass (the step's sprites are listed again).
     void begin() { m_pass.empty(); }
     /// Queues every batch for drawing.
+    /// @coney-only Coney's render pass of the menu's batches
     void queue();
     /// Draws the queued sprites through `device`.
     void draw(graphics::RenderDevice& device) { m_pass.draw(device, m_camera); }
@@ -192,6 +197,7 @@ class PauseMode final : public GameMode {
     /// Draws through `device` with fonts from `loadSheet` and the background from `loadRecord`, shows `strings`, sends
     /// cues, banks and Lua calls to `services`, reloads levels through `state` and `levelFlow`, and draws the paused
     /// world through `world` (null: black). Every reference must outlive the mode; `log` gets a line per pause.
+    /// @coney-only Coney's mode wiring of the menu to its services and the game state
     PauseMode(graphics::RenderDevice& device, PauseSheetLoader loadSheet, PauseRecordLoader loadRecord,
               const gui::GlobalStrings& strings, FrontEndServices& services, GameState& state, LevelFlowMode& levelFlow,
               std::function<void(std::string_view)> log);
@@ -220,6 +226,7 @@ class PauseMode final : public GameMode {
     /// @orig 0x0015dd98 PauseMode_Update (unknown)
     ModeResult update(GameModeStack& stack, const FrameTime& frame) override;
     /// The paused world, the tint and the menu.
+    /// @coney-only Coney's frame: the frozen world under the tint and the menu's batches, through its renderer
     void render(const RenderTime& time) override;
     /// Restores the sound bank, resumes the sound, releases the fonts.
     /// @orig 0x0015dd38 PauseMode_Exit (unknown)

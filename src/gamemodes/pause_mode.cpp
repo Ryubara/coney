@@ -17,6 +17,7 @@ namespace coney {
 namespace {
 
 // Loads font `name` through `loadSheet`; logs and returns nothing when it fails.
+// @coney-only Coney's font loading
 std::optional<graphics::Font> loadFont(const PauseSheetLoader& loadSheet, std::string_view name,
                                        const std::function<void(std::string_view)>& log, std::string_view who) {
     if (!loadSheet) {
@@ -33,6 +34,7 @@ std::optional<graphics::Font> loadFont(const PauseSheetLoader& loadSheet, std::s
 }
 
 // The game time of `frame` in milliseconds.
+// @coney-only Coney's frame time in the menu's milliseconds
 std::uint64_t millisecondsOf(const FrameTime& frame) { return frame.gameTicks / (GameTimer::kTicksPerSecond / 1000); }
 
 } // namespace
