@@ -110,6 +110,29 @@ def test_a_code_change_needs_docs_or_the_docs_none_line() -> None:
     assert check_pr.step_docs_rule(changed, body(summary="Adds it.\n\nDocs: none"), CONVENTIONS).ok
 
 
+# --- the files of the pull request ---------------------------------------------------------------------------------
+
+
+def test_the_files_are_the_committed_ones_with_deletions_as_the_pull_request_lists_them(checkout: Path) -> None:
+    commit(checkout, "python/src/coney_tools/gone.py", "tools: Add gone")
+    git(checkout, "switch", "-q", "-c", "removal")
+    git(checkout, "rm", "-q", "python/src/coney_tools/gone.py")
+    git(checkout, "commit", "-q", "-m", "tools: Remove gone")
+    (checkout / "docs" / "uncommitted.md").write_text("x" + chr(10), encoding="utf-8")
+    listed = local_gate.pull_request_files(checkout, "work")
+    # The deleted file is listed (changed_files leaves it out) and the file not committed is not (changed_files has it).
+    assert listed == ["python/src/coney_tools/gone.py"]
+    assert "docs/uncommitted.md" in local_gate.changed_files(checkout, "work")
+    assert not check_pr.step_docs_rule(listed, body(), CONVENTIONS).ok
+
+
+def test_the_docs_rule_and_the_engine_step_read_the_pull_request_files(checkout: Path) -> None:
+    commit(checkout, "src/core/x.cpp")
+    (checkout / "docs" / "uncommitted.md").write_text("x" + chr(10), encoding="utf-8")
+    steps = check_pr.pr_steps(checkout, "main", "core: Add x", body(), "dev", "alice")
+    assert not steps["docs-rule"]().ok
+
+
 # --- the engine step ---------------------------------------------------------------------------------------------
 
 
@@ -149,6 +172,34 @@ def test_the_engine_step_runs_coney_tools_build_with_the_tests(checkout: Path, m
     assert command[1:4] == ["-m", "coney_tools.cli", "build"]
     assert command[4:] == ["--preset", "asan", "--test", "--agent", "alice"]
     assert "cmake" not in command and "ctest" not in command and "ninja" not in command
+
+
+def test_the_command_without_agent_gives_the_build_an_id_because_the_build_sees_no_terminal(
+    checkout: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`run_command` captures the build's output, so `build` is never typed in a terminal and refuses a run with no
+    `--agent`; the id has to be resolved here, in the process that may be one."""
+    monkeypatch.chdir(checkout)
+    commit(checkout, "src/core/x.cpp")
+    write_body(checkout)
+    seen: list[list[str]] = []
+    real_run = local_gate.run_command
+
+    def fake(command: list[str], cwd: Path) -> tuple[int, str]:
+        if command[0] == "git":
+            return real_run(command, cwd)
+        seen.append(command)
+        return 0, ""
+
+    monkeypatch.setattr(local_gate, "run_command", fake)
+    argv = ["check", "pr", "--base", "main", "--body", "body.md", "--title", "core: Add x", "--only", "engine"]
+    assert main(argv) == 0
+    build = seen[0]
+    assert "--agent" in build and build[build.index("--agent") + 1]
+    # An id the person gave is passed as it is.
+    seen.clear()
+    assert main([*argv, "--agent", "alice"]) == 0
+    assert seen[0][seen[0].index("--agent") + 1] == "alice"
 
 
 def test_the_engine_step_shows_the_end_of_a_failed_build(checkout: Path, monkeypatch: pytest.MonkeyPatch) -> None:

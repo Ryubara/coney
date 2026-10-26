@@ -13,11 +13,12 @@ check-docs`; nothing is copied.
 
 from __future__ import annotations
 
+import os
 import sys
 from collections.abc import Callable
 from pathlib import Path
 
-from coney_tools import check_cli, local_gate
+from coney_tools import build_cli, check_cli, local_gate
 from coney_tools.build_run import EXIT_QUEUED
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import Conventions, load_conventions
@@ -108,14 +109,24 @@ def pr_steps(
     """Every step of `STEPS` by name, for the change since `base` and the text `title` and `body`."""
     conventions = load_conventions(root)
     changed = local_gate.changed_files(root, base)
+    # The two checks of CI that read the pull request's file list read the committed one, deletions included.
+    listed = local_gate.pull_request_files(root, base)
     steps: dict[str, Callable[[], StepResult]] = {
         "title": lambda: step_title(title, conventions),
         "body": lambda: step_body(root, body, title, base, conventions),
-        "docs-rule": lambda: step_docs_rule(changed, body, conventions),
-        ENGINE_STEP: lambda: step_engine(root, changed, conventions, preset, agent),
+        "docs-rule": lambda: step_docs_rule(listed, body, conventions),
+        ENGINE_STEP: lambda: step_engine(root, listed, conventions, preset, agent),
     }
     steps.update(check_cli.changed_steps(root, base, changed))
     return steps
+
+
+def engine_agent(root: Path, agent: str | None) -> str:
+    """The id the engine step's `build` runs under. `build` takes its id from the user name only when it is typed in a
+    terminal, and the step runs it with its output captured, so it would refuse a run without one: the id is resolved
+    here, in the process that may be one: the given id, else a person's (`build`'s own default), else the worktree's
+    (`CONEY_AGENT`, else its folder name), the one a detached `check changed` names itself by."""
+    return agent or build_cli.default_agent_id() or check_cli.default_agent(root, os.environ)
 
 
 def run_pr(
@@ -133,7 +144,7 @@ def run_pr(
     body = _read(body_file, "the description")
     bind_children()  # an interrupted run leaves none of its programs behind
     wanted = [step for step in STEPS if (not only or step in only) and step not in (skip or [])]
-    steps = pr_steps(root, base, title.strip(), body, preset, agent)
+    steps = pr_steps(root, base, title.strip(), body, preset, engine_agent(root, agent))
     print(f"pull request {title.strip()!r}: changes since {base}")
     code = check_cli.run_steps(wanted, steps, "ci pr")
     if code == EXIT_QUEUED:

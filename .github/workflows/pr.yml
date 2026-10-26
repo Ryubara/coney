@@ -7,15 +7,17 @@
 # It runs on `pull_request_target`, not `pull_request`, so that a pull request from a fork reaches its author the first
 # time: GitHub holds the `pull_request` workflows of a first-time contributor until a maintainer approves them, which
 # left outside pull requests with an unchecked title and an unfilled description until a person looked
-# (docs/guides/repo-conventions.md#workflows, "pull_request_target"). That is safe here only because of four rules,
-# which hygiene.yml and claim.yml follow too:
+# (docs/guides/repo-conventions.md#pr-workflow). That is safe here only because of four rules. hygiene.yml and claim.yml
+# run on `pull_request_target` too and follow the first three; their tokens write (they comment and label), which this
+# one's never does:
 #   1. Every job checks out the base branch only (no `ref`, no `repository`: a `pull_request_target` checkout is the
 #      base branch), so what runs is the repository's own `coney-tools`, never the pull request's code.
 #   2. Nothing from the pull request is run or built. The checks read the title and the description from the event and
 #      the list of changed files from the API (`gh api .../pulls/N/files`), never from a checkout of the branch.
 #   3. The title and the description are attacker-controlled: they reach a script only through an environment variable
 #      (and, for the description, a file written from it), never expanded into the script's text.
-#   4. The token is read-only (`contents: read`, `pull-requests: read`) and no secret is used.
+#   4. The token is read-only (`contents: read`, and `pull-requests: read` on the `docs` job alone, the one that calls
+#      the API) and no secret is used.
 # The workflow that runs is the one on the base branch, so a pull request that edits this file is checked by the
 # version already merged; the edit takes effect when it merges.
 name: pr
@@ -26,7 +28,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read
 
 # Editing the title or description reruns this workflow. Edits get their own group, so an edit never cancels the run of
 # a push that is still going (its jobs that skip edits would otherwise end up skipped, not checked). The group names
@@ -56,6 +57,10 @@ jobs:
   # never later (AGENTS.md, Documentation). Editing the description re-runs the check.
   docs:
     runs-on: ubuntu-24.04
+    # The one job that calls the API (the pull request's file list); the others read only the base branch.
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

@@ -321,11 +321,15 @@ request's code. This one does not, by four rules a test holds (`python/tests/tes
    for the `docs` check from the API (`gh api repos/.../pulls/N/files`, at most 3000 files, refused beyond that), where
    it used to diff the merge commit.
 3. The title and description reach the checker only as an environment variable and a file made from it, as before.
-4. The token has `contents: read` and `pull-requests: read`, and the workflow uses no secret.
+4. The token has `contents: read`, plus `pull-requests: read` in the `docs` job alone (the one that calls the API; a
+   test refuses any other job-level `permissions`), and the workflow uses no secret.
 
 What the change costs. The workflow that runs is the one on `main`, so a pull request that edits `pr.yml` is checked
 by the old version and its edit takes effect when it merges. A pull request that was open when the change merged keeps its
-earlier results until it is pushed to or edited. The concurrency group names the pull request, because on
+earlier results until it is pushed to or edited. The same holds for the rules themselves: the checks run the base
+branch's `coney-tools` and `.github/conventions.yml`, so a pull request that adds a title area, changes the template's
+sections or fixes a checker is judged by the old rules, and its required checks may fail until a maintainer merges past
+them, while a local `check pr` uses the new ones. The concurrency group names the pull request, because on
 `pull_request_target` `github.ref` is the base branch and would have made every pull request cancel the others. The
 `build`, `python` and `docs` workflows stay on `pull_request`: they build and run the contributor's code, which is what
 the maintainer's approval of a first-time contributor is for.

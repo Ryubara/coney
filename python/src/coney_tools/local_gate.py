@@ -99,6 +99,15 @@ def changed_files(root: Path, base: str) -> list[str]:
     return sorted(names)
 
 
+def pull_request_files(root: Path, base: str) -> list[str]:
+    """The files a pull request of the commits since HEAD left `base` would list, as CI's `docs` job reads them from the
+    API: committed changes only (uncommitted and untracked files are not in a pull request), deleted files included,
+    a renamed file under its new name. Paths are relative to `root` with forward slashes, sorted."""
+    since = merge_base(root, base)
+    names = _git(root, "diff", "-z", "--name-only", "--diff-filter=ACDMRT", since, "HEAD").split("\0")
+    return sorted({name for name in names if name})
+
+
 def renamed_files(root: Path, base: str, similarity: int | None = None) -> dict[str, str]:
     """Each file renamed since HEAD left `base` (staged or committed, as git detects renames) -> its old path.
 

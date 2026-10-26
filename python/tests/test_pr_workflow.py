@@ -62,8 +62,15 @@ def test_no_expression_reaches_a_script_except_through_the_environment() -> None
 
 
 def test_the_token_reads_and_no_secret_is_used() -> None:
-    assert workflow()["permissions"] == {"contents": "read", "pull-requests": "read"}
+    assert workflow()["permissions"] == {"contents": "read"}
     assert "secrets." not in WORKFLOW.read_text(encoding="utf-8")
+
+
+def test_only_the_docs_job_may_read_pull_requests_and_no_job_widens_the_token_further() -> None:
+    allowed = {"docs": {"contents": "read", "pull-requests": "read"}}
+    for name, job in workflow()["jobs"].items():
+        # A job-level block replaces the workflow's, so one with a write scope (or any scope but these) is refused.
+        assert job.get("permissions", workflow()["permissions"]) == allowed.get(name, workflow()["permissions"]), name
 
 
 def test_nothing_from_the_pull_request_is_run_or_built() -> None:

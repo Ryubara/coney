@@ -127,8 +127,8 @@ Everything CI checks on a pull request, run before it is opened: [`ci run`](#ci-
 text and the engine. It is the one command for a contributor whose agent has none of the Claude Code hooks
 ([Agent tools other than Claude Code](agents.md#other-tools)), and it is what a person runs before `gh pr create`.
 `--title` is the title and `--body` a file holding the description written from the
-[template](repo:.github/pull_request_template.md). The steps run in this order and print one line each; the last five
-are the steps of `ci run`, with the same rules:
+[template](repo:.github/pull_request_template.md). The steps run in this order and print one line each; the five
+between the text steps and `engine` are the steps of `ci run`, with the same rules:
 
 | Step | CI job it is | What it does |
 | --- | --- | --- |
@@ -138,7 +138,16 @@ are the steps of `ci run`, with the same rules:
 | `repo`, `orig`, `pre-commit`, `docs`, `python` | `python`, `format`, `markdownlint`, `mkdocs` | the steps of `ci run` above |
 | `engine` | `build-ok` | `coney-tools build --preset dev --test` (`--preset` and `--agent` change it), when a changed file is in the `engine` class of `paths` in `.github/conventions.yml` or in no class (CI runs everything for it); skipped for a change to docs or tools alone. It takes as long as a build and the tests do, so `--skip engine` leaves it out for a first pass |
 
-`--only` and `--skip` take these step names. The exit codes are those of `ci run`: 0 all passed, 1 a step
+`--only` and `--skip` take these step names. `--base` (default `origin/main`) is the branch the change is measured
+from, for the files and for the `Model:` rule's commits: in a fork `origin` is the fork, so pass `--base upstream/main`
+after fetching it, and a cloud checkout of one branch needs the base fetched first
+([agents.md](agents.md#other-tools)). `docs-rule` and `engine` read the files the way CI's `docs` job lists them for the
+pull request: the committed changes since the base, deletions included, so commit first (the other steps also look at
+what is uncommitted, as `ci run` does). `--agent` is the id of the engine step's build; without it the step
+uses `build`'s own default for a person at a terminal, else the worktree's name (`CONEY_AGENT`, else the folder).
+The description must not hold a picture that is a local file (a picture has no address before the pull request exists):
+write `Screenshots: none (<reason>)` for the check and add the picture on GitHub after opening
+([CONTRIBUTING.md](repo:CONTRIBUTING.md)). The exit codes are those of `ci run`: 0 all passed, 1 a step
 failed (CI would refuse the pull request too), 2 a setup problem (the description file cannot be read, a program is
 missing). What stays CI's: the other compilers, macOS, the sanitizers and clang-tidy on the changed lines, and the
 checks that need the pull request itself (the `Fixes #N` issues' state, `dependencies`).

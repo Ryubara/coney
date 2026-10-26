@@ -113,11 +113,13 @@ learn.chatgpt.com), and says where a page is silent.
   ships none for Codex: the git hooks and `ci pr` are the gates that work in any tool. Source:
   [Hooks](https://learn.chatgpt.com/docs/hooks).
 - **MCP.** `codex mcp add <name> -- <command>` (or a `[mcp_servers.<name>]` table in `~/.codex/config.toml`, or in a
-  trusted project's `.codex/config.toml`) registers a stdio server; `.mcp.json` is not read. The page does not say that
-  the cloud agent can use a locally configured server. Coney's two servers need a disc, Ghidra and PCSX2 on the same
-  machine ([Ghidra](ghidra.md), [Driving PCSX2](research-tools.md#driving-pcsx2)), so a Codex task without them says so
-  in the description's Testing section and does no reverse engineering. Source:
-  [MCP](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
+  trusted project's `.codex/config.toml`) registers a stdio server. The page names no project-level `.mcp.json` (it
+  mentions that file only for servers a plugin provides), so assume Codex does not read ours and give it the two
+  commands. For the cloud it says only "Local MCP servers and transports may not be available in the cloud; check
+  connectivity and authentication separately", and not that a configured server runs there. Coney's two servers need
+  a disc, Ghidra and PCSX2 on the same machine ([Ghidra](ghidra.md),
+  [Driving PCSX2](research-tools.md#driving-pcsx2)), so a Codex task without them says so in the description's Testing
+  section and does no reverse engineering. Source: [MCP](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
 - **Local runs.** The sandbox is `read-only`, `workspace-write` (the default: edit the workspace and run routine
   commands) or `danger-full-access`, set with `sandbox_mode` and `approval_policy` in `config.toml`; more writable
   folders are `sandbox_workspace_write.writable_roots`. OpenAI's sandbox page gives neither the network access of a
@@ -132,12 +134,14 @@ learn.chatgpt.com), and says where a page is silent.
   does not say nested files and overrides are read there too. So the setup script has to fetch everything the checks
   need: uv, the Python project, the pre-commit hook environments and, for the engine, the pinned dependencies through
   the first configure (`coney-tools build --configure-only`; `build` also wants `--agent <id>` whenever it is not typed
-  in a terminal). A minimal setup script:
+  in a terminal), and the branch the change is measured from: a cloud checkout may hold only the task's branch, and
+  `check pr` measures from `origin/main` (`--base`). A minimal setup script:
 
     ```sh
     curl -LsSf https://astral.sh/uv/install.sh | sh
     uv sync --project python --frozen
     uvx pre-commit install --install-hooks
+    git fetch origin +refs/heads/main:refs/remotes/origin/main
     uv run --project python coney-tools doctor
     uv run --project python coney-tools build --preset dev --configure-only --agent codex
     ```

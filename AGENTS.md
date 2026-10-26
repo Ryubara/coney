@@ -29,8 +29,8 @@ starts at CONTRIBUTING.md, section Your first hour; the rest of this file is for
 - Docs: `.venv/Scripts/python -m mkdocs build --strict`; `coney-tools docs check`. Details: `docs/guides/building.md`.
 - On Windows, no local WSL builds or clang-tidy runs: GitHub CI is the Linux and macOS gate; fix failures forward.
 - Not Claude Code (Codex, Cursor, Gemini, Copilot): no `.claude/` hook runs for you. Run `uvx pre-commit install` once
-  per clone and `coney-tools ci pr --title "<title>" --body <file>` before a pull request (CONTRIBUTING.md,
-  "Agents other than Claude Code": setup, what to say when the disc, Ghidra or PCSX2 is missing).
+  per clone and `uv run --project python coney-tools ci pr --title "<title>" --body <file>` before a pull request
+  (CONTRIBUTING.md, "Agents other than Claude Code": setup, and what to say when the disc, Ghidra or PCSX2 is missing).
 
 ## Rules (never broken)
 
