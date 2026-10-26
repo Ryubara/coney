@@ -1,0 +1,101 @@
+# level80's pharmacy from inside (the mission 2 store, zone 24): as wreck_store.toml, but Cleon, Vermin and Rembrandt
+# are put between the display cases, whose panes stand between the crew and the stock, and the steal / wreck command
+# (5) is given through WarriorCommand_Dispatch (0x0041c4e0, forced). The hooks log each smash goal and car goal
+# pushed, each queued attack, each GetItem swing at glass, each pane broken, each AI pick-up and each owned object
+# taken, for 150 s. Research: docs/research/ai-goals.md#goal-warrior-vandal-steal, docs/research/ai.md#get-item. The
+# state is a file of your own (not a slot); Coney's side is tests/platform/disc_level80_wreck_test.cpp.
+description = "level80 pharmacy from inside: the crew's wreck / steal (command 5) by the display cases; GetItem swings at glass, panes broken"
+research = "docs/research/ai-goals.md#goal-warrior-vandal-steal"
+input = "wreck_store.txt"
+updates = 4500
+fields = ["player"]
+
+[original]
+state = "research-revive/l80_letsgo_clean.p2s"
+patches = ["scripted-pad", "right-stick", "call-brains", "take-owned", "steal-claim", "pickup-action",
+  "getitem-glass", "glass-break", "destroy-item-push", "destroy-car-push", "queue-attack"]
+let = { v = 'human("Vermin")', r = 'human("Rembrandt")' }
+setup = [
+  # Between the display cases inside the store, for three updates.
+  { address = "tf(player) + 0x0", type = "f32", value = "-243.5", frame = 60, until = 62 },
+  { address = "tf(player) + 0x4", type = "f32", value = "222.5", frame = 60, until = 62 },
+  { address = "tf(player) + 0x8", type = "f32", value = "1.25", frame = 60, until = 62 },
+  { address = "tf(v) + 0x0", type = "f32", value = "-244.5", frame = 60, until = 62 },
+  { address = "tf(v) + 0x4", type = "f32", value = "223.5", frame = 60, until = 62 },
+  { address = "tf(v) + 0x8", type = "f32", value = "1.25", frame = 60, until = 62 },
+  { address = "tf(r) + 0x0", type = "f32", value = "-242.5", frame = 60, until = 62 },
+  { address = "tf(r) + 0x4", type = "f32", value = "223.5", frame = 60, until = 62 },
+  { address = "tf(r) + 0x8", type = "f32", value = "1.25", frame = 60, until = 62 },
+  # Player 1's follow camera (0x005d9158) made his current camera (0x005d9150): the lesson's locked camera stays at
+  # the level start, and only a pane within 50 m of a player's camera has the body a strike breaks
+  # (docs/research/objects.md#pane-draw).
+  { address = "0x005d9150", type = "u32", value = "u32(0x005d9158)", frame = 64, until = 66 },
+  # Commands unlocked, player 1's menu unlocked, command 5 enabled for player 1 (game state +0x41e + 5).
+  { address = "u32(0x0051489c) + 0x411", type = "u8", value = "0", frame = 64 },
+  { address = "u32(0x0051489c) + 0x42e", type = "u8", value = "0", frame = 64 },
+  { address = "u32(0x0051489c) + 0x423", type = "u8", value = "1", frame = 64 },
+]
+calls = [
+  # WarriorCommand_Dispatch(state, chief, 5, forced, no position, 0).
+  { function = "0x0041c4e0", args = ["u32(0x0051489c)", "player", "5", "1", "0", "0"], frame = 66 },
+]
+
+[[field]]
+name = "money"
+address = "u32(0x0051489c) + 0x4fc"
+type = "s32"
+follow = true
+
+[[field]]
+name = "loot"
+address = "u32(0x0051489c) + 0x65c"
+type = "s32"
+follow = true
+
+[[field]]
+name = "clusters"
+address = "0x00511650"
+type = "u32"
+
+[[field]]
+name = "v_x"
+address = "tf(v) + 0x0"
+type = "f32"
+
+[[field]]
+name = "v_y"
+address = "tf(v) + 0x4"
+type = "f32"
+
+[[field]]
+name = "v_z"
+address = "tf(v) + 0x8"
+type = "f32"
+
+[[field]]
+name = "v_clip"
+address = "rec(v) + 0x20"
+type = "s32"
+
+[[field]]
+name = "r_x"
+address = "tf(r) + 0x0"
+type = "f32"
+
+[[field]]
+name = "r_y"
+address = "tf(r) + 0x4"
+type = "f32"
+
+[[field]]
+name = "r_z"
+address = "tf(r) + 0x8"
+type = "f32"
+
+[[field]]
+name = "r_clip"
+address = "rec(r) + 0x20"
+type = "s32"
+
+[coney]
+level = "level80"

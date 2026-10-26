@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // A level's loose objects as a player uses them with triangle (docs/research/combat-targets.md#breakables,
 // docs/research/combat-throws.md#bat): an object's message 0 and its prompt, the search over the spawn records, the
-// take, which adds a TYPE_SPECIAL's loot and money through the inventory callbacks or puts a weapon in hand, and the
-// drop.
+// take, which adds a TYPE_SPECIAL's loot and money through the inventory callbacks or puts a weapon in hand, the
+// drop, and the wreck's smash search over the same records (gamemodes::LevelItems).
 #include "gamemodes/level_pickups.h"
 
 #include <cstddef>
@@ -21,6 +21,7 @@
 
 #include "core/error.h"
 #include "core/name_hash.h"
+#include "gamemodes/level_items.h"
 #include "gui/global_strings.h"
 #include "scripting/binding_args.h"
 #include "scripting/lua_value.h"
@@ -31,6 +32,7 @@
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
 #include "warriors/inventory.h"
+#include "world_objects/flags.h"
 
 using coney::anim::Vec3;
 using coney::script::LuaVm;
@@ -483,4 +485,26 @@ TEST_CASE("an AI's take of loot removes it with nothing given, and a weapon goes
     pickups.drop(7, Vec3{10.0F, 12.0F, 0.0F});
     CHECK_FALSE(pickups.holderOf(7).has_value());
     CHECK_FALSE(h.records.find(7)->owned);
+}
+
+TEST_CASE("the wreck's smash search skips an object in flight", "[level_pickups][wreck]") {
+    // Ai_FindObject 0x0029d5f0 skips an object whose flags (vtable +0x54) have bit 26, the airborne flag 0x4000000.
+    Harness h;
+    wo::ObjectType bottle;
+    bottle.name = "bottle";
+    bottle.className = "simple_object";
+    bottle.value = 1;
+    bottle.animSet = 5;
+    h.types.add(bottle);
+    coney::LevelPickups pickups(h.scripts, h.state, h.records, h.types);
+    const wo::WorldFlags flags;
+    coney::LevelItems items(flags, pickups, h.records, h.types);
+    h.place(5, "bottle", Vec3{10.0F, 11.0F, 0.0F})->live = true;
+    h.place(6, "bottle", Vec3{10.0F, 12.0F, 0.0F})->live = true;
+
+    REQUIRE(items.smashTargets(kFeet, 15.0F).size() == 2);
+    pickups.setAirborne([](double object) { return object == 5.0; });
+    const std::vector<coney::ai::SmashTarget> targets = items.smashTargets(kFeet, 15.0F);
+    REQUIRE(targets.size() == 1);
+    CHECK(targets[0].handle == 6.0);
 }

@@ -42,6 +42,29 @@ struct SightLine {
 /// @orig 0x0024df40 Ray_IsClear (unknown)
 [[nodiscard]] SightLine lineOfSight(const raycast::CollisionMesh* mesh, anim::Vec3 from, anim::Vec3 to);
 
+/// The `GLASS` material: an intact pane's triangles (docs/research/objects.md#pane).
+inline constexpr std::uint8_t kGlassMaterial = 2;
+/// How far past its end a clear ray still looks for the pane it ends on, m. **Coney's reading**: a ray aimed at a
+/// pane's centre ends on its plane, where the cast may or may not count the crossing; the page does not say which.
+inline constexpr float kGlassEndSlack = 0.05F;
+
+/// What `Human_HasClearRayTo` found.
+struct ClearRay {
+    bool clear = false;        ///< Nothing but the see-through materials lies on the ray.
+    bool throughGlass = false; ///< It is clear and its result is `GLASS` (2): it crossed an intact pane.
+};
+
+/// `Human_HasClearRayTo(human, point, &result, mask)`: `Ray_IsClear` from 1.7 m above `feet` to 0.1 m above `point`
+/// through `mesh`, the triangles whose type bits meet `mask` skipped and kSightSeeThrough passed. Clear when nothing
+/// else is hit; the result is the material of an excluded triangle crossed (`CollisionMesh_RayTestCell` writes it
+/// while nothing solid is hit), so result 2 means an intact pane lies on the way. **Coney's reading**: result 2 when
+/// any enabled `GLASS` triangle lies on the clear ray (or within kGlassEndSlack past its end), whatever else
+/// see-through it crosses; the page says the last one written wins without the cells' order. With no mesh the ray is
+/// clear and crosses nothing. Research: docs/research/ai.md#get-item
+/// @orig 0x00222370 Human_HasClearRayTo (unknown)
+[[nodiscard]] ClearRay clearRayTo(const raycast::CollisionMesh* mesh, anim::Vec3 feet, anim::Vec3 point,
+                                  std::uint32_t mask);
+
 /// Whether `point` lies within `fieldOfView` (a full angle, radians) of `human`'s facing: the angle between the
 /// facing and the direction to the point in plan is at most half of it (the dot product against cos(fov × 0.5)). A
 /// point on the human counts as in view.

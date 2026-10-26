@@ -465,6 +465,8 @@ std::string_view goalTypeName(ai::GoalType type) {
         return "GuardFlag";
     case GetItem:
         return "GetItem";
+    case DestroyItem:
+        return "DestroyItem";
     case TrackHuman:
         return "TrackHuman";
     case FollowPlayer:

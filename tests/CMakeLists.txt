@@ -52,6 +52,7 @@ add_executable(coney_tests
     gamemodes/game_mode_stack_test.cpp
     gamemodes/idle_mode_test.cpp
     gamemodes/legal_screen_mode_test.cpp
+    gamemodes/level_items_test.cpp
     gamemodes/level_pickups_test.cpp
     gamemodes/loading_screen_test.cpp
     gamemodes/pause_mode_test.cpp
@@ -120,6 +121,7 @@ add_executable(coney_tests
     platform/disc_flash_test.cpp
     platform/disc_crew_commands_test.cpp
     platform/disc_given_weapon_test.cpp
+    platform/disc_level80_wreck_test.cpp
     platform/disc_revive_test.cpp
     platform/disc_level80_story_test.cpp
     platform/disc_level5_boss_camera_test.cpp
@@ -368,6 +370,7 @@ target_sources(coney_tests PRIVATE
     ai/brain_events_test.cpp
     ai/brain_test.cpp
     ai/crew_test.cpp
+    ai/smash_goals_test.cpp
     ai/steal_goals_test.cpp
     ai/disc_ai_config_test.cpp
     ai/disc_route_test.cpp
