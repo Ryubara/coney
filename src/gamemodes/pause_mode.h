@@ -170,7 +170,7 @@ class PauseMode final : public GameMode {
     static constexpr std::string_view kPreviewMusic = "music/wonderwheel_mono";
     /// The background's sheet record (docs/research/pause.md#layout-gui-coordinates) and its batch.
     static constexpr std::uint32_t kBackgroundRecord = 12;
-    static constexpr std::size_t kBackgroundCapacity = 1;
+    static constexpr std::size_t kBackgroundCapacity = 16;
 
     /// Draws through `device` with fonts from `loadSheet` and the background from `loadRecord`, shows `strings`, sends
     /// cues, banks and Lua calls to `services`, reloads levels through `state` and `levelFlow`, and draws the paused

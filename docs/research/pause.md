@@ -789,7 +789,23 @@ grids, the Yes/No box and the leaving actions follow this page; tests in `repo:t
 Coney stand-ins, each an open question below:
 
 - The headers (`CircledTextHeader`), the objective lists and the Restart and Quit screens are centred texts at Coney's
-  positions and colours; the Options screen is a list of its entries' names that does nothing on accept.
+  positions and colours.
+- The Options screen (`repo:src/gui/pause_menu/option_menu.h`, `OptionMenu`, written from
+  [The Options screen](#options) and [`GUI/OptionMenu.cpp`](#fn-optionmenu)) follows this page: the seven titles, each
+  page's items, places (`OptionLayout::forMode`, by language and video mode; Coney's pause mode opens the 4:3 one),
+  colours, the answers' layout, the cues, the ranges and steps, applying at once or on accept (Video, Restore Default),
+  and back putting the page's values back except on Vibration and Restore Default. Every change goes at once into the
+  game state where [save.md](save.md#options) puts it (`storeOptionValues`), so the next autosave keeps it; the game
+  then applies the volumes as the music and effects buses' volumes and P1's auto-adjust as the follow camera's
+  auto-centre rule. The Audio page loops `music/wonderwheel_mono` and the previous track starts again when it closes.
+  Coney's choices and gaps: the brightness, the camera's inversion, the vibration (and its 500 ms preview), the
+  merge, Pro Logic II and the Video mode are only stored (Coney applies none of them yet); the bars' frame is drawn
+  the bar's size and their back, fill and the squares use sheet 12 rectangle 6 tinted; after Restore Default the
+  pages are rebuilt in place and the menus are not reopened; the half-word `W_GameState + 0x454` is not modelled.
+  Tests: `repo:tests/gui/option_menu_test.cpp`, `repo:tests/gui/pause_menu_test.cpp`,
+  `repo:tests/gamemodes/pause_mode_test.cpp` and `repo:tests/platform/disc_pause_options_test.cpp` (START, the left
+  stick at 70 % and cross in `level99` started as `--play-level` starts it: Music up one step and kept, Invert P1 on
+  and put back by triangle).
 - The Controls screen (`repo:src/gui/pause_menu/control_menu.h`, `ControlMenu`, written from
   [`GUI/ControlMenuHUD.cpp`](#fn-controlmenuhud) and [The Controls screen](#controls-layout)) follows this page: the
   entries, the cues, the pages' title, the pad picture (sheet-table record `0x18f`, loaded by the pause mode), the 14

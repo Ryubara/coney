@@ -371,6 +371,8 @@ dialogs.
   front end; **stand-in**: it writes at once, with no mode 6 on top, and the "new game just started" case is not
   applied. `SetLUASaveDataBool` and `GetLUASaveDataBool` use the saved script flags 1-128; other numbers are kept
   for the run only (the original's fields past the saved words are not named).
+- The pause menu's Options screen ([Pause menu](pause.md#coneys-implementation)) writes its values into the game
+  state as the setters above do (`storeOptionValues` in `repo:src/gamemodes/pause_mode.h`), so the autosave keeps them.
 - Not yet: the money bank's adds (Coney has no inventories).
 - **Coney's choices**: bit *i* of the unlockable and script-flag sets is byte *i* / 8, bit *i* % 8 (the little-endian
   layout of 32-bit words, inferred); the three bytes after the brightness byte are written as zero; the date and time a

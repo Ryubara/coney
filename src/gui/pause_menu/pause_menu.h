@@ -85,8 +85,8 @@ struct PauseMenuSetup {
 ///   closed() and outcome() says what to do.
 ///
 /// Coney's stand-ins (docs/research/pause.md#coneys-implementation): the Stats screen is never available (Coney has no
-/// character stats), so Stats opens nothing; the Options screen is a list of its entries' names that does nothing on
-/// accept (`OptionMenu.cpp` not yet implemented); the Controls screen is ControlMenu; the headers
+/// character stats), so Stats opens nothing; the Options screen is OptionMenu and the Controls screen ControlMenu; the
+/// headers
 /// (`CircledTextHeader`), the objective lists and the Restart and Quit screens are centred texts at Coney's positions
 /// and colours; the menu waits for no sound before it closes; the co-op quit (Player 2 / All) is not offered (Coney has
 /// one player).
@@ -189,10 +189,6 @@ class PauseMenu : public Widget {
     /// The Options screen.
     [[nodiscard]] const OptionMenu& options() const { return m_options; }
 
-    /// The Options screen's entries (Coney's stand-in list, docs/research/pause.md#the-items-screens).
-    static constexpr std::array<std::string_view, 7> kOptionsEntries{
-        "Lighting", "Camera", "Audio", "Video", "Subtitles", "Vibration", "Restore Default"};
-
   private:
     // The quit destination the Quit screen offers at index i.
     enum class QuitChoice : std::uint8_t { Hangout, MainMenu, RumbleMode };
@@ -213,6 +209,8 @@ class PauseMenu : public Widget {
     void onBoxCommand(MenuCommand command, std::uint64_t nowMs);
     // Acts on grid item `code`.
     void selectItem(PauseItem item, std::uint64_t nowMs);
+    // Opens the Options screen at `nowMs` (`OptionMenu_Open`, with the pausing player's input).
+    void openOptions(std::uint64_t nowMs);
     // Opens `screen` with selection `selection`.
     void openScreen(PauseScreen screen, std::size_t selection);
     // Back to the grid.
