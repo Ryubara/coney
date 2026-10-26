@@ -164,9 +164,11 @@ std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
     }
 
     // The new player through the same creation as the mode's start, keeping where a fall out of the world puts him
-    // back, then moved to where the old one stood with the camera behind him.
+    // back, then moved to where the old one stood with the camera behind him (a debug tool's jump: his camera was made
+    // at the start).
     m_player = std::make_unique<human::Player>(*loaded->character, mesh, start, human::playerClassOf(m_types, type));
     m_player->teleport(mesh, here);
+    m_player->resetCamera();
     m_mesh = std::make_unique<CharacterMesh>(loaded->character->assets().model, textureOf(loaded->dictionaries));
     m_positions.assign(loaded->character->assets().model.vertices.size(), anim::Vec3{});
     m_normals.assign(m_positions.size(), anim::Vec3{});

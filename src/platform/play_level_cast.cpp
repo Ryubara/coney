@@ -120,10 +120,11 @@ void PlayLevelMode::takePlace(const ai::Brain& to) {
     // **Coney's stand-in** for HuChangePlayerGang's hand-over (docs/research/characters.md#level99-handover): the
     // original makes the chosen AI human player 1 and leaves the old one in the world as an AI until its gang is
     // deleted. Coney has one player human, so he takes the chosen human's place instead: put where it stands (placed
-    // there, the camera behind him), standing afresh as the chosen human does (nothing of the old body's fight carried
-    // over) with its meters as Human_MakePlayer leaves them (its own health scaled by its Warrior class, full power and
-    // stamina, human::makePlayerOf()), drawn as its model, named by its handle; the chosen human leaves the world, and
-    // the brains name the player by its handle (ai::ScriptedBrains::changePlayerGang()).
+    // there, the camera following him there by its own rules), standing afresh as the chosen human does (nothing of the
+    // old body's fight carried over) with its meters as Human_MakePlayer leaves them (its own health scaled by its
+    // Warrior class, full power and stamina, human::makePlayerOf()), drawn as its model, named by its handle; the
+    // chosen human leaves the world, and the brains name the player by its handle
+    // (ai::ScriptedBrains::changePlayerGang()).
     const human::Human& chosen = to.human();
     const human::PlayerStart start{.position = chosen.position(),
                                    .headingDegrees = chosen.heading() * 180.0F / std::numbers::pi_v<float>};

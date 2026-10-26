@@ -304,7 +304,7 @@ caller, not new logic ([Debug menus: adding a feature](debug-menu.md#adding-a-fe
 | `Coney.SetPlayerFrozen(on)` | `PlayLevelMode::setPlayerFrozen()` | Makes the player ignore the pad, or listen again | engine-only |
 | `Coney.ChangeCharacter(type)` | `human::Player::changeCharacter()`, `PlayLevelMode::changeCharacter()` | Rebuilds the player in place as a `CfgChar` character type: model, moves, class damage, power class, full health | engine-only |
 | `Coney.SetFreeCamera(on)` | `PlayLevelMode::setFreeCamera()`, `world::DebugCamera` | A camera flown by pad 1 while the player stands still | engine-only |
-| `Coney.ResetCamera()` | `human::Player::resetCamera()`, `camera::FollowCamera::place()` | Places the follow camera behind the player again, with nothing to blend from | engine-only |
+| `Coney.ResetCamera()` | `human::Player::resetCamera()`, `camera::FollowCamera::reset()` | Places the follow camera behind the player again as `CameraReset` does, with nothing to blend from | engine-only |
 | `Coney.SpawnObject(kind, ...)`, `Coney.ClearSpawned()` | `PlayLevelMode::spawn()`, `clearSpawned()`, `debug::spawnables()` | Adds a solid sandbox primitive (crate, wall, ramp, stairs) ahead of the player, or removes them; sandbox only | engine-only |
 | `Coney.SpawnFighter(x, y, z, heading [, model])`, `Coney.ClearFighters()` | `PlayLevelMode::spawnFighter()`, `spawnFighterAs()`, `clearFighters()`; `ai::AiHumans` | Adds or removes AI fighters that fight the player, as the scene's character or any human model the configuration names | engine-only |
 | `Coney.SetFightersEngage(on)` | `ai::AiHumans::setEngaging()` | Whether idle fighters take the player on | engine-only |

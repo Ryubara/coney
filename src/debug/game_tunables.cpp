@@ -107,19 +107,19 @@ void registerGameTunables(TunableRegistry& registry) {
     registry.add("Follow camera", "Leash near", &placed.leashNear)
         .range(0.5, 20, 0.1)
         .units("m")
-        .describe("Near edge of the distance band; applies when the camera is next placed");
+        .describe("Near edge of the distance band; applies to the next follow camera made (a level start)");
     registry.add("Follow camera", "Leash far", &placed.leashFar)
         .range(0.5, 20, 0.1)
         .units("m")
-        .describe("Far edge of the distance band; applies when the camera is next placed");
+        .describe("Far edge of the distance band; applies to the next follow camera made (a level start)");
     registry.add("Follow camera", "Pitch", &placed.pitchDegrees)
         .range(-20, 60, 1)
         .units("deg")
-        .describe("Target pitch; applies when the camera is next placed");
+        .describe("Target pitch; applies to the next follow camera made (a level start)");
     registry.add("Follow camera", "Look-at height", &placed.lookAtHeight)
         .range(0, 3, 0.05)
         .units("m")
-        .describe("Look-at point above the player's feet; applies when the camera is next placed");
+        .describe("Look-at point above the player's feet; applies to the next follow camera made (a level start)");
 
     // Display: Coney's own render-side settings (docs/guides/enhancements.md#where-the-settings-live).
     registry.add("Display", "Cutscene letterbox", &scenes::letterboxSettings().drawn)

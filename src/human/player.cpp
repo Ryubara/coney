@@ -208,6 +208,9 @@ Player::Player(const PlayerCharacter& character, const raycast::CollisionMesh* m
     m_humans.add(m_human, true);
     m_human.spawn(mesh, start.position, start.headingDegrees);
     m_camera = camera::FollowCamera(m_human.position(), m_human.heading());
+    // The camera reads where the driven human stands whenever it places itself, as the original's reads its target.
+    m_camera.setTargetSource(
+        [this] { return camera::FollowPlace{.feet = m_driven->position(), .heading = m_driven->heading()}; });
     m_current = capture();
     m_previous = m_current;
 }
@@ -228,35 +231,26 @@ void Player::changeCharacter(const PlayerCharacter& character, const raycast::Co
 
 void Player::teleport(const raycast::CollisionMesh* mesh, const PlayerStart& start) {
     // TeleportToFlag's two steps (Object_TeleportToFlag): the placement (Human_SetTransform), then the motion reset
-    // (Human_ResetMotion). Neither touches the camera.
+    // (Human_ResetMotion). Neither touches the camera: it follows by its own rules (FollowCamera::update()).
     m_driven->place(mesh, start.position, start.headingDegrees);
     m_driven->resetMotion();
-    cameraAfterPlacement();
 }
 
 void Player::place(const raycast::CollisionMesh* mesh, const PlayerStart& start) {
     // Teleport's one step (Object_Teleport): the placement, with no motion reset after it and no camera call.
     m_driven->place(mesh, start.position, start.headingDegrees);
-    cameraAfterPlacement();
-}
-
-void Player::cameraAfterPlacement() {
-    // **Coney stand-in**: the camera is put behind the player after every placement. The original's teleports call no
-    // camera code (docs/research/camera.md, Teleports): its follow camera follows the new position, and puts itself
-    // behind the player only when it is lost (its update's step 7, which Coney's follow update does not build). Coney's
-    // level start and a scene's end set up the follow camera through this cut (the camera is made before the scripts
-    // place the player), so it stays until both have their own; to measure: a short Teleport mid-play in PCSX2, whether
-    // the view glides to the new place.
-    resetCamera();
 }
 
 void Player::standAt(const raycast::CollisionMesh* mesh, const PlayerStart& start) {
+    // The walk there leaves him settled and the camera behind him: a debug tool's jump, not a script's teleport.
     m_driven->settle();
     teleport(mesh, start);
+    resetCamera();
 }
 
 void Player::resetCamera() {
-    m_camera = camera::FollowCamera(m_driven->position(), m_driven->heading());
+    // CameraReset, so what the scripts set on the camera (its configuration, the stick switch, the zoom) stays.
+    m_camera.reset();
     // A jump, not a move: both snapshots hold the new state, so a render does not blend across it.
     m_current = capture();
     m_previous = m_current;

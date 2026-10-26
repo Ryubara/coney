@@ -1,0 +1,46 @@
+version = 1
+id = "r-20261025-camera-glides-after-teleport"
+date = "2026-10-25"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "a2b65bcce7dcd4cfe4dc30035f60ebce8fb89c89c18f3e5ce59d32e77e63b6be"
+
+[who]
+agent = "aa37e5990be9991f9"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "street-end-run"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "level99 street end, player standing facing -x at (75.155, 41.135, 0.2231); the lua recipe ran Teleport(player, {75.155, 41.135, 0.2231}, -1) from 2 m north of it, and a script polled player 1's follow camera (Camera_GetPlayerCamera, 0x005d9150) over the debug server once per tick: its position +0x10 and look-at point +0x180, for the updates after the move; then the same with a 30 m move west to (45.155, 41.135)"
+
+[values]
+lookat_y_before = 43.135
+lookat_y_update1 = 42.735
+lookat_y_update2 = 42.415
+lookat_y_update3 = 42.159
+lookat_y_update4 = 41.9542
+lookat_y_update5 = 41.7904
+lookat_y_update6 = 41.4697
+lookat_y_update7 = 41.135
+camera_move_update1_m = 0.0066
+camera_move_updates1to7_m = 0.0589
+long_move_m = 30
+long_camera_x_before = 79.9717
+long_camera_x_update1 = 49.8293
+long_lookat_x_update1 = 45.155
+
+[addresses]
+cam_follow_update = 0x0012ae58
+cam_follow_reset = 0x00124d00
+player_camera = 0x005d9150
+object_teleport = 0x00385bb8

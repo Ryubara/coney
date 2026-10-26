@@ -494,6 +494,10 @@ constexpr std::uint32_t kStoreZone = 24;
 constexpr std::ptrdiff_t kThefts = 10;
 // The left stick's deflection for the walk through the store: a partial push, as a player walks.
 constexpr float kPartialStick = 0.6F;
+// Where the walk through the store goes first: inside the front doorway, as offsets (metres, x and y) from the front
+// door's flag `fStoreFront`, and how near counts as there.
+constexpr std::array<float, 2> kDoorwayIn{0.3F, -2.5F};
+constexpr float kNear = 0.5F;
 constexpr std::array<std::string_view, 2> kSceneNames{"l80_c6", "l80_c6_b"};
 
 // What a run showed, in order: each hint, objective and scene when it appears, by its key (a text the scripts did not
@@ -1060,7 +1064,15 @@ TEST_CASE("the disc's level80 checkpoint 3: Fox, Hold Up, the bottle thrown from
     CHECK(level.play()->player().human().script().heldObject == 0.0); // the player took nothing himself
 
     // 3.6: the back door, walked to with the left stick at 60 % through the store, its lock picked; checkpoint 4
-    // follows and chapter 4's first objective shows.
+    // follows and chapter 4's first objective shows. The walk first goes straight in through the front doorway: the
+    // flag stands at the doorway's edge, and the camera, which no longer cuts behind the player after the teleport
+    // (docs/research/teleports.md#camera), can turn the first steps of a slanted walk into the door frame.
+    const coney::anim::Vec3 inside{front.x + kDoorwayIn[0], front.y + kDoorwayIn[1], front.z};
+    const auto throughDoorway = [&level, inside] {
+        const coney::anim::Vec3 at = level.play()->player().human().position();
+        return std::hypot(at.x - inside.x, at.y - inside.y) < kNear;
+    };
+    REQUIRE(walkTo(inside, throughDoorway, kPartialStick));
     const coney::anim::Vec3 back = flagAt("fStoreBack");
     // There once the lock's prompt is offered (a pickable door in reach).
     const auto atBackDoor = [&level] { return level.play()->promptOffer().lock.has_value(); };

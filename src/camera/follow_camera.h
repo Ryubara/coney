@@ -2,7 +2,9 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <optional>
+#include <utility>
 
 #include "animation/anim_math.h"
 #include "raycast/collision_mesh.h"
@@ -55,7 +57,7 @@ struct FollowTuning {
 [[nodiscard]] FollowTuning& followTuning();
 
 /// The settings a new follow camera starts with when none are given: FollowSettings' defaults (level99's values)
-/// unless a debug menu changed them. A change applies when the camera is next placed (a level start or a reset).
+/// unless a debug menu changed them. A change applies to the next follow camera made (a level start).
 [[nodiscard]] FollowSettings& followDefaults();
 
 /// Yaw rate from the right stick's raw x byte (0-255, 128 at rest), radians a second: 150°/s at 0 falling to 60°/s
@@ -131,6 +133,16 @@ struct FollowTarget {
     /// A fall that began limp (state flag `0x1000000000`): the aim point moves 60% of the way an update.
     bool longFall = false;
 };
+
+/// Where the target stands now: its feet and its facing (radians, 0 facing +y).
+struct FollowPlace {
+    anim::Vec3 feet;
+    float heading = 0.0F;
+};
+
+/// Reads where the target stands at the moment of the call, as the original's camera reads its target's transform
+/// whenever it places itself (`Cam_Follow_PlaceAtHeading` gathers its targets first, `0x001250a8`).
+using FollowTargetSource = std::function<FollowPlace()>;
 
 /// The zoom presets of `CamSetFollowZoom` (docs/research/camera.md#script-calls).
 enum class FollowZoom : std::uint8_t {
@@ -231,14 +243,19 @@ class FollowCamera {
     static constexpr float kUnblockSeconds = 0.375F;
     /// The aim point's move an update during a long fall.
     static constexpr float kLongFallLag = 0.6F;
+    /// Update step 7, the reset when lost: with one player camera the camera is put behind its target as `CameraReset`
+    /// does when its held position is more than this share of the maximum distance from the look-at point across the
+    /// ground (one target), or the camera more than kLostHeight above or below the look-at point.
+    static constexpr float kLostDistanceShare = 1.3F;
+    static constexpr float kLostHeight = 30.0F;
 
     /// A camera on a target whose feet are at `targetFeet` facing `targetHeading` (radians, 0 facing +y): placed behind
     /// it at the leash band's near edge and the target pitch (**Coney's choice** for the reset, which is not traced).
     FollowCamera(anim::Vec3 targetFeet, float targetHeading, const FollowSettings& settings = followDefaults());
 
-    /// One update of `seconds`: the band's ease; the look-at point; right stick; auto-follow; the sprint zoom; leash;
-    /// pitch; height hold; position lag; hard band; world collision; timers. `rawRightX` / `rawRightY` are the pad's
-    /// raw right-stick bytes; `mesh` may be null (no collision).
+    /// One update of `seconds`: the band's ease; the look-at point; the reset when lost; right stick; auto-follow; the
+    /// sprint zoom; leash; pitch; height hold; position lag; hard band; world collision; timers. `rawRightX` /
+    /// `rawRightY` are the pad's raw right-stick bytes; `mesh` may be null (no collision).
     /// @orig 0x0012ae58 Cam_Follow_Update (Cam_Follow.cpp)
     void update(const FollowTarget& target, std::uint8_t rawRightX, std::uint8_t rawRightY,
                 const raycast::CollisionMesh* mesh, float seconds);
@@ -293,15 +310,25 @@ class FollowCamera {
     /// @orig 0x001250a8 Cam_Follow_PlaceAtHeading (Cam_Follow.cpp)
     void placeBehind(float degrees);
 
-    /// The follow camera made current directly (also at the end of a blend): the look-at point snapped, the camera
-    /// kept in its direction from it at its distance clamped to the band, the hard band set to the band and the wanted
-    /// near edge cleared.
+    /// The follow camera made current directly (also at the end of a blend): the look-at point snapped onto where the
+    /// target stands now (the target source when there is one), the field of view set to the wanted one at once, the
+    /// wanted near edge cleared and the camera kept in its direction from the look-at point at its distance clamped to
+    /// the band. The hard band is left as it is.
     /// @orig 0x00125cc0 Cam_Follow_Activate (Cam_Follow.cpp)
     void activate();
 
     /// Records where the target is without updating the camera, for a camera that is not current: reset() and
     /// activate() place it on the target's latest feet and facing.
     void observe(const FollowTarget& target);
+
+    /// Gives the camera a way to read where its target stands now (empty for none): placeBehind() (and so reset()),
+    /// placeAt() and activate() read it first, as the original's placement reads its target's transform, so a
+    /// `CameraReset` right after a teleport puts the camera behind the new place. Without one they use the feet and
+    /// facing last observed.
+    void setTargetSource(FollowTargetSource source) { m_source = std::move(source); }
+    /// Where the target stands now: from the source when there is one, else as last observed.
+    /// @coney-only the seam that reads the live target place; the original reads its target itself
+    [[nodiscard]] FollowPlace targetPlace() const;
 
     /// `CamEnable(0, on)`: the right stick and the zoom buttons act (on, as made) or not.
     void enableStick(bool on) { m_stickOn = on; }
@@ -315,7 +342,7 @@ class FollowCamera {
     /// this at the leash band's near edge behind the target.
     void place(anim::Vec3 targetFeet, float distance, float viewHeading);
     /// `CamSetFollowPos`: the camera put at `position` at once, its wanted position there too and its look-at point
-    /// snapped onto the target's last feet, with no blend.
+    /// snapped onto where the target stands now, with no blend.
     /// @orig 0x0011c638 Camera_SetFollowPosition (unknown)
     void placeAt(anim::Vec3 position);
 
@@ -437,6 +464,12 @@ class FollowCamera {
     [[nodiscard]] float aimHeight(const FollowTarget& target, float lookAtZ) const;
     // Puts the aim point on the look-at point and the eased facing on the target's: a camera placed at once.
     void snapAim();
+    // Update step 7: puts the camera behind the target (reset()) when it is lost, after the look-at point's step.
+    // @orig 0x0012ae58 Cam_Follow_Update (Cam_Follow.cpp)
+    void resetWhenLost();
+    // Takes the target's feet and facing from the source, when there is one.
+    // @coney-only the other half of that seam; the original gathers its targets itself
+    void refreshTarget();
     // Keep in view: turns toward `point` when it is more than a quarter of the field of view off the view's direction.
     // @orig 0x0012e170 Cam_Follow_KeepInView (Cam_Follow.cpp)
     void keepInView(anim::Vec3 point, float range, float seconds);
@@ -445,6 +478,7 @@ class FollowCamera {
     anim::Vec3 m_lookAt;
     anim::Vec3 m_wanted;
     anim::Vec3 m_position;
+    anim::Vec3 m_held; // the held position (+0x260): after the lag and the hard band, before the world collision
     float m_targetPitch;
     float m_lowerPitch;
     float m_zoomDistance;
@@ -492,6 +526,7 @@ class FollowCamera {
     anim::Vec3 m_blockPoint;
     anim::Vec3 m_targetFeet; // the target's latest feet and facing
     float m_targetHeading = 0.0F;
+    FollowTargetSource m_source; // where the target stands now; empty for none
 };
 
 } // namespace coney::camera

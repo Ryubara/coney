@@ -197,21 +197,23 @@ class Player {
     void update(const Pad& pad, const raycast::CollisionMesh* mesh, std::span<Combatant* const> targets = {});
 
     /// Moves the human to `start` as `TeleportToFlag` moves a human (place(), then Human::resetMotion(): his move
-    /// stops), so its health, meters and clip stay, and puts the camera behind him with nothing to blend from (a
-    /// stand-in, cameraAfterPlacement()). The scripts' `TeleportToFlag`, a scene's release and the hand-over use it.
+    /// stops), so its health, meters and clip stay. The camera is left alone: it follows him by its own rules, gliding
+    /// after a short move and putting itself behind him when lost (docs/research/camera.md#update). The scripts'
+    /// `TeleportToFlag`, a scene's release and the hand-over use it.
     /// @orig 0x00385db0 Object_TeleportToFlag (unknown)
     void teleport(const raycast::CollisionMesh* mesh, const PlayerStart& start);
     /// Moves the human to `start` as `Teleport` moves a human: the placement alone (Human::place() with `mesh` as the
-    /// ground, null for none), so his move goes on (docs/research/teleports.md#motion-reset); the camera as after
-    /// teleport(). The brain's part of the placement is the caller's (ai::Brain::placed()).
+    /// ground, null for none), so his move goes on (docs/research/teleports.md#motion-reset); the camera is left alone,
+    /// as by teleport(). The brain's part of the placement is the caller's (ai::Brain::placed()).
     /// @orig 0x00385bb8 Object_Teleport (unknown)
     void place(const raycast::CollisionMesh* mesh, const PlayerStart& start);
-    /// The human settled as after a walk (Human::settle()), then teleport(): the debug menus' teleport and `--start`,
-    /// which stand for the walk there.
+    /// The human settled as after a walk (Human::settle()), then teleport() and resetCamera(): the debug menus'
+    /// teleport and `--start`, which stand for the walk there.
     /// @coney-only a test aid's walk stand-in; the original has none
     void standAt(const raycast::CollisionMesh* mesh, const PlayerStart& start);
-    /// Places the camera behind the human again with the current follow settings (camera::followDefaults()), with
-    /// nothing to blend from: the debug menus' camera reset.
+    /// Places the camera behind the human again as `CameraReset` does (camera::FollowCamera::reset()), keeping what the
+    /// scripts set on it, with nothing to blend from: the debug menus' camera reset.
+    /// @coney-only the debug menus' reset; the scripts' CameraReset goes through camera::Cameras::reset()
     void resetCamera();
     /// Places the camera `distance` metres from the human's look-at point with its view facing `viewHeading` (radians),
     /// with nothing to blend from (camera::FollowCamera::place()): a trace's `--start`.
@@ -274,9 +276,6 @@ class Player {
   private:
     // The snapshot of the state now.
     [[nodiscard]] PlayerSnapshot capture() const;
-    // After a placement: the camera put behind the human (a stand-in: the original's teleports leave the camera alone).
-    // @coney-only the camera cut after a placement, which Coney's level start and scene ends rely on
-    void cameraAfterPlacement();
 
     PlayerStart m_start;
     combat::CommandTables m_tables = combat::CommandTables::street();
