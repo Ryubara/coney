@@ -95,9 +95,6 @@ functions before `Human_GetClump` at `0x00217a70` belong to `GameStatsSubItem.cp
 
 ## Data
 
-Every claim in this section is confirmed (code) at the address it cites unless its line says it is inferred,
-speculative or confirmed (runtime).
-
 ### The human object (0x6d0 bytes) {#the-human-object}
 
 Sixty humans live in one static array at `0x00640c80` (human `i` at `0x00640c80 + i × 0x6d0`), built at start-up by
@@ -706,9 +703,6 @@ The values "in play" were read in the street save's RAM and match every measured
 
 ## Behaviour
 
-Every claim in this section is confirmed (code) at the address it cites unless its line says it is inferred,
-speculative or confirmed (runtime).
-
 ### Creation {#creation}
 
 `HuCreate(name, type, {x, y, z}, headingDegrees, str, playerIndex, gang, flag)` (`0x00358428` → `0x00233d60`),
@@ -764,8 +758,7 @@ becomes player 1 when player 1 goes. What the engine calls "the player" (the rin
    one of the same gang kind counts); a chief becomes its gang's leader (gang `+0x44`).
 8. **Difficulty scaling**: health (record `+0x144`, `+0x146`) times a percentage, power maxima reloaded, attack damage
    times another percentage (bytes `+5` and `+6` of the record `0x00222b58` returns, confirmed (code);
-   `Human_ReleasePlayer` divides back). The health scaling is confirmed (runtime) too:
-   [Warrior classes](../references/warrior-classes.md).
+   `Human_ReleasePlayer` divides back).
 9. The war chief's default Warrior command 0 to its gang (`WarriorCommand_Dispatch`, `0x0041c4e0`, confirmed (code),
    [AI](ai-gangs.md#warrior-commands)), the gang's cached player data (`0x00166708`), physics body flag `0x400` and a
    wider body, the human flags of the table above. Returns 1.
