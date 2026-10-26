@@ -11,9 +11,7 @@ namespace coney::hud {
 
 namespace {
 
-// The credits line: "<label> <two digits>" at (0.75, 0.92) in (245, 184, 0) (`HUD_Update`, `0x0050d4bc`; the format
-// `0x00554650`).
-constexpr GuiPoint kCreditsPlace{0.75F, 0.92F};
+// The credits line's colour, (245, 184, 0).
 constexpr graphics::Rgba kArmiesYellow{245, 184, 0, 255};
 // The GO sign in the default video mode (`GoSign_Setup`): the text at (0.8, 0.3); in mode Text one arrow at
 // (0.78, 0.299) turned 4.72 radians, in mode Arrows three at (0.835 / 0.875 / 0.915, 0.39) unturned; arrows 0.06
@@ -22,8 +20,7 @@ constexpr GuiPoint kGoTextPlace{0.8F, 0.3F};
 constexpr float kGoTextScale = 3.9F;
 constexpr GuiPoint kGoSingleArrow{0.78F, 0.299F};
 constexpr float kGoSingleTurn = 4.72F;
-constexpr std::array<GuiPoint, 3> kGoArrows{GuiPoint{0.835F, 0.39F}, GuiPoint{0.875F, 0.39F},
-                                            GuiPoint{0.915F, 0.39F}};
+constexpr std::array<GuiPoint, 3> kGoArrows{GuiPoint{0.835F, 0.39F}, GuiPoint{0.875F, 0.39F}, GuiPoint{0.915F, 0.39F}};
 constexpr float kGoArrowSize = 0.06F;
 constexpr std::size_t kGoArrowRect = 4;
 // The join messages: grey (191, 191, 191), centred at the panel's place (the `ANHud` table `+0x110`).
@@ -45,7 +42,7 @@ gui::TextStyle styleAt(float x, graphics::Rgba colour, bool centred) {
 
 } // namespace
 
-void ArmiesHud::levelSetUp() {
+void ArmiesHud::levelSetUp(Language /*language*/) {
     m_goMode = static_cast<std::uint8_t>(GoSignMode::Off);
     m_goFrame = 0;
     m_join = {};
@@ -120,9 +117,9 @@ void ArmiesHud::render(const HudCanvas& canvas, const std::function<std::string(
             const graphics::UvRect uv = canvas.parts->sheet().page.rect(kGoArrowRect);
             if (m_goMode == static_cast<std::uint8_t>(GoSignMode::Text)) {
                 if (m_goFrame == 0) {
-                    canvas.parts->addSprite(guiSprite(kGoSingleArrow.x, kGoSingleArrow.y, kGoArrowSize, kGoArrowSize,
-                                                      uv, kArmiesYellow),
-                                            kGoSingleTurn);
+                    canvas.parts->addSprite(
+                        guiSprite(kGoSingleArrow.x, kGoSingleArrow.y, kGoArrowSize, kGoArrowSize, uv, kArmiesYellow),
+                        kGoSingleTurn);
                 }
             } else if (m_goFrame < kGoArrows.size()) {
                 const GuiPoint at = kGoArrows.at(m_goFrame);

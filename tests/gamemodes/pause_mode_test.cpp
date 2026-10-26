@@ -16,6 +16,7 @@
 #include "core/error.h"
 #include "core/game_timer.h"
 #include "core/input_script.h"
+#include "gamemodes/armies_game_over_mode.h"
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/gameplay_mode.h"
 #include "gamemodes/level_flow_mode.h"
@@ -23,6 +24,7 @@
 #include "gamemodes/start_up_flow.h"
 #include "gui/global_strings.h"
 #include "gui/pause_menu/pause_menu.h"
+#include "hud/hud.h"
 #include "support/font_fixtures.h"
 #include "support/recording_device.h"
 #include "warriors/level_table.h"
@@ -204,4 +206,34 @@ TEST_CASE("mission failed: the launch pushes mode 0xc, and Restart level reloads
     CHECK(run.flow->state().checkPoint == 1);
     CHECK(run.flow->levelFlow().chosenLevel() == 1);
     CHECK(run.soundPauses == std::vector<bool>{true, false});
+}
+
+TEST_CASE("Armies game over: player 2's Start counts only when he is in the game", "[pause][armies]") {
+    // Expected: pause.md#an-game-over, confirmed (code): ANGameOver_Update reads player 2's Start only when the game
+    // state's +0x22c human has a pad record.
+    Run run("1 p2 connect\n6 p2 tap start\n12 tap start\n");
+    // The level's set-up clears the credits: give them after it, as the stage's script does.
+    run.frames(2);
+    run.flow->hud().armies().setCredits(3);
+    run.flow->launchArmiesGameOver();
+    run.frames(8);
+    // Level99 here has no player 2: his Start spends nothing and the countdown goes on.
+    CHECK(run.flow->hud().armies().credits() == 3);
+    REQUIRE(run.stack.topId() == coney::ArmiesGameOverMode::kId);
+    CHECK_FALSE(run.flow->armiesGameOver().menu().choice());
+    // Player 1's Start spends a credit.
+    run.frames(4);
+    CHECK(run.flow->hud().armies().credits() == 2);
+}
+
+TEST_CASE("Armies game over: HUDLaunchANGameOver with the screen up closes it", "[pause][armies]") {
+    // Expected: pause.md#an-game-over, confirmed (code): ANGameOver_Toggle pops mode 0xd when it is on top.
+    Run run("");
+    run.frames(2);
+    run.flow->launchArmiesGameOver();
+    run.frames(2);
+    REQUIRE(run.stack.topId() == coney::ArmiesGameOverMode::kId);
+    run.flow->launchArmiesGameOver();
+    run.frames(1);
+    CHECK(run.stack.topId() == GameplayMode::kId);
 }

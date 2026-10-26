@@ -23,9 +23,7 @@ TEST_CASE("the Armies of the Night levels are 60 to 69, as the original's test t
 TEST_CASE("the GO sign starts off, blinks its one arrow in mode 0 and lights three in turn in mode 1, every 300 ms",
           "[hud][armies]") {
     ArmiesHud armies;
-    armies.setCredits(7);
     armies.levelSetUp();
-    CHECK(armies.credits() == 7);
     CHECK(armies.goSignMode() == static_cast<std::uint8_t>(GoSignMode::Off));
 
     armies.setGoSignMode(static_cast<std::uint8_t>(GoSignMode::Text));
@@ -48,11 +46,41 @@ TEST_CASE("the GO sign starts off, blinks its one arrow in mode 0 and lights thr
         CHECK(armies.goSignFrame() == frame % 4);
     }
 
-    // A story level has none of it; the credits outlive the level.
+    // A story level has none of it.
     armies.levelSetUp();
     armies.update(now, 99, {true, false});
     CHECK_FALSE(armies.active());
+}
+
+TEST_CASE("each level's set-up clears the Armies credits, which the stage's script sets again", "[hud][armies]") {
+    // Expected: hud-functions-parts.md#fn-pre-basewidget, confirmed (code): HUD_InitLevel zeroes HUD +0x190d0, the
+    // word 0x00619910 HUDANSetCredit writes.
+    ArmiesHud armies;
+    armies.setCredits(7);
     CHECK(armies.credits() == 7);
+    armies.levelSetUp();
+    CHECK(armies.credits() == 0);
+}
+
+TEST_CASE("the credits line sits at x 0.71 in the default video mode", "[hud][armies]") {
+    // Expected: hud-functions-parts.md#fn-pre-basewidget, confirmed (code): HUD_Update sets 0x0050d4bc to 0.75, then
+    // to 0.71 when the display flags 2, 4 and 8 are clear; y 0.92.
+    CHECK(ArmiesHud::kCreditsPlace.x == 0.71F);
+    CHECK(ArmiesHud::kCreditsPlace.y == 0.92F);
+}
+
+TEST_CASE("the GO sign sits 0.4 further left in Spanish and 0.02 in Italian", "[hud][armies]") {
+    // Expected: hud-functions-parts.md#fn-pre-basewidget, confirmed (code): GoSign_Setup's shift 0x0050cf98 by the
+    // game state's language +0x120.
+    ArmiesHud armies;
+    armies.levelSetUp(coney::Language::Spanish);
+    CHECK(armies.goSignShift() == 0.4F);
+    armies.levelSetUp(coney::Language::Italian);
+    CHECK(armies.goSignShift() == 0.02F);
+    armies.levelSetUp(coney::Language::French);
+    CHECK(armies.goSignShift() == 0.0F);
+    armies.levelSetUp(coney::Language::English);
+    CHECK(armies.goSignShift() == 0.0F);
 }
 
 TEST_CASE("a join message shows for a player who is not in, blinking every 500 ms", "[hud][armies]") {

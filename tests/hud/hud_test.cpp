@@ -718,6 +718,17 @@ TEST_CASE("the level's shut-down clears every hint, objective and panel the leve
     CHECK(hud.hints().showing().value_or(coney::hud::Hint{}).text == "next");
 }
 
+TEST_CASE("the Armies credits do not outlive a level: the next level's set-up clears them", "[hud][armies]") {
+    // Expected: hud-functions-parts.md#fn-pre-basewidget, confirmed (code): HUD_InitLevel zeroes HUD +0x190d0, the
+    // word 0x00619910 HUDANSetCredit writes, and the Armies stages carry their credits in the Lua save data.
+    Hud hud = makeHud(nullptr);
+    hud.levelSetUp();
+    hud.armies().setCredits(5);
+    hud.levelShutDown();
+    hud.levelSetUp();
+    CHECK(hud.armies().credits() == 0);
+}
+
 TEST_CASE("a context prompt's GSTRING.ACTIONBUTTON draws the triangle button, not the letter n", "[hud]") {
     // User item 9 ("n Give Weapon"): the prompt strings start with <MONEYFONT><ST></MONEYFONT> and a space, and in the
     // prompt's part_page0 font the <ST> character n inside <MONEYFONT> is rectangle 11 + ('n' - '0') = 73.

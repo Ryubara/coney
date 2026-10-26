@@ -135,8 +135,9 @@ TEST_CASE("the rail camera holds at the rail's end; its settings ease linearly; 
     CHECK(rail.lead() == Approx(2.0F));
 }
 
-TEST_CASE("the rail camera in mode 3 trails the Armies fighter forward only, at a fixed pitch, 1 m/s faster than he goes",
-          "[camera]") {
+TEST_CASE(
+    "the rail camera in mode 3 trails the Armies fighter forward only, at a fixed pitch, 1 m/s faster than he goes",
+    "[camera]") {
     // level60's Rail1: along -x at y = 39.5, 3.7 m up; the look-at offset (0, -0.25, 1.25); CamModifyRail(5, -7, 0).
     RailCamera rail;
     RailSetup setup;
@@ -178,6 +179,33 @@ TEST_CASE("the rail camera in mode 3 trails the Armies fighter forward only, at 
     // Below -360 the setting switches mode 3 off.
     rail.modify(RailCamera::kMode3Pitch, -400.0F, 0.0F);
     CHECK(rail.mode() == RailMode::Level);
+}
+
+TEST_CASE("the rail camera's mode 3 pitch switched on with a time eases from the camera's present pitch", "[camera]") {
+    // Expected: camera.md#rail-mode3, confirmed (code): CamRail_Update starts setting 5's pitch, while off, at the
+    // camera's present pitch (CamRail_PitchToPoint) and eases it to the target.
+    // A fixed look-down of 30 degrees first (setting 8), so the present pitch is far from mode 3's.
+    RailCamera rail = straightRail();
+    rail.modify(RailCamera::kPitch, -30.0F, 0.0F);
+    rail.update(Vec3{5.0F, 4.0F, 0.0F}, false, kStep, Vec3{});
+    const Vec3 toward{rail.lookAt().x - rail.position().x, rail.lookAt().y - rail.position().y,
+                      rail.lookAt().z - rail.position().z};
+    const float present = std::atan2(toward.z, std::hypot(toward.x, toward.y)) * 180.0F / std::numbers::pi_v<float>;
+    REQUIRE(std::abs(present - -7.0F) > 1.0F);
+    rail.modify(RailCamera::kMode3Pitch, -7.0F, 2.0F);
+    rail.update(Vec3{5.0F, 4.0F, 0.0F}, false, 1.0F, Vec3{});
+    CHECK(rail.mode3Pitch() == Approx((present + -7.0F) / 2.0F).margin(0.01F));
+}
+
+TEST_CASE("an activation snaps the rail camera's eased settings to their targets", "[camera]") {
+    // Expected: camera.md#rail, confirmed (code): CamRail_Activate sets the field of view and every eased setting to
+    // its target at once and zeroes their times.
+    RailCamera rail = straightRail();
+    rail.modify(RailCamera::kFieldOfView, 40.0F, 5.0F);
+    rail.modify(RailCamera::kMode3Pitch, -7.0F, 5.0F);
+    rail.activate();
+    CHECK(rail.fieldOfView() == Approx(40.0F));
+    CHECK(rail.mode3Pitch() == Approx(-7.0F));
 }
 
 TEST_CASE("the rail camera in mode 3 holds once it reaches the rail's first point", "[camera]") {

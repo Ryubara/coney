@@ -523,3 +523,35 @@ TEST_CASE("a roll-up door: closed at its set-up, OpenDoor slides its leaf up and
     tick(doors, fixture, 2 * 40);
     CHECK(door.slidingLeaves[0].offset == Catch::Approx(0.0F));
 }
+
+TEST_CASE("a lift's two-leaf door (dyn_door_ele_c) opens its leaves apart, the first up and the second down",
+          "[world_objects][doors]") {
+    // Expected: script-types.md#sliding-doors, confirmed (code): SlidingDoor_SpawnLeaves turns the second leaf 180
+    // degrees about its y axis and places it 2w along -z; SubSlidingDoor_PlaceLeaf turns a vertical door's second leaf
+    // about y, so it slides down.
+    coney::test::ObjectWorldFixture fixture;
+    Doors doors;
+    const ObjectTypeInfo info{.className = "dyn_door_sliding",
+                              .hitpoints = 0,
+                              .size = {2.0F, 0.2F, 3.0F},
+                              .material = 9,
+                              .leafWidth = 0.0F,
+                              .property6 = 0.007F,
+                              .property7 = 0.0F,
+                              .property8 = 1.6F,
+                              .objectType = 0};
+    const double handle =
+        doors
+            .spawn(
+                fixture.handle(), at("dyn_door_ele_c"), &info, [&fixture] { return fixture.handle(); }, fixture.world)
+            .handle;
+    const Door& door = *doors.find(handle);
+    REQUIRE(door.slidingLeaves.size() == 2);
+    CHECK(door.slidingLeaves[0].axis.z == Catch::Approx(1.0F));
+    CHECK(door.slidingLeaves[1].axis.z == Catch::Approx(-1.0F));
+    doors.command(handle, door_command::kOpen, fixture.world);
+    tick(doors, fixture, 2 * 130);
+    const auto rise = [](const coney::world_objects::SlidingLeaf& leaf) { return leaf.position().z - leaf.closed.z; };
+    CHECK(rise(door.slidingLeaves[0]) == Catch::Approx(1.6F));
+    CHECK(rise(door.slidingLeaves[1]) == Catch::Approx(-1.6F));
+}

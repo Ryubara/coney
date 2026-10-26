@@ -7,6 +7,7 @@
 #include <functional>
 #include <string>
 
+#include "core/language.h"
 #include "hud/hud_canvas.h"
 #include "hud/hud_layout.h"
 
@@ -40,11 +41,16 @@ class ArmiesHud {
     /// (`0x0050f9f0`).
     static constexpr std::uint64_t kGoBlinkMs = 300;
     static constexpr std::uint64_t kJoinBlinkMs = 500;
+    /// The credits line's place in the default video mode: "<label> <two digits>" (`HUD_Update`, `0x0050d4bc`,
+    /// `0x0050d4c0`; the format `0x00554650`).
+    static constexpr GuiPoint kCreditsPlace{0.75F, 0.92F};
 
-    /// The level's set-up (`HUD_InitLevel`), before the level's script: the GO sign Off, the join messages off (the
-    /// original allocates its `ANHud` panels afresh). The credits outlive levels.
+    /// The level's set-up (`HUD_InitLevel`), before the level's script, in the game's `language`: the GO sign Off and
+    /// placed for the language, the join messages off (the original allocates its `ANHud` panels afresh).
     /// @orig 0x0019e030 GoSign_Setup (unknown)
-    void levelSetUp();
+    void levelSetUp(Language language = Language::English);
+    /// How far left of its English place the GO sign sits in the set-up's language, in GUI units (`0x0050cf98`).
+    [[nodiscard]] float goSignShift() const { return 0.0F; }
     /// Whether the level in play is an Armies level (`HUD +0x225d5`), as the last update() was told: the stopwatch
     /// shows its seconds form then.
     [[nodiscard]] bool active() const { return m_active; }
@@ -71,8 +77,8 @@ class ArmiesHud {
 
     /// One HUD step at game time `nowMs` in level number `level`, with which players are in the game (their panel
     /// wanted); nothing outside an Armies level. The GO sign's blink
-    /// and the join messages' blink, which share one timer. **Coney choice**: both are timed by the game time, where the
-    /// original reads its real-time clock, so a test run blinks the same every time.
+    /// and the join messages' blink, which share one timer. **Coney choice**: both are timed by the game time, where
+    /// the original reads its real-time clock, so a test run blinks the same every time.
     /// @orig 0x0019e660 GoSign_StepBlink (unknown)
     /// @orig 0x0019e758 GoSign_Update (unknown)
     void update(std::uint64_t nowMs, int level, std::array<bool, kPlayers> playersIn);

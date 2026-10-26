@@ -29,8 +29,8 @@ struct RailSetup {
 
 /// How the rail camera places itself (`+0x3ed`).
 enum class RailMode : std::uint8_t {
-    Level,  ///< Mode 0, after `CamSetupRail`: at the target point's foot on the rail.
-    Ahead,  ///< Mode 1: `lead` metres ahead of the target along the rail.
+    Level,    ///< Mode 0, after `CamSetupRail`: at the target point's foot on the rail.
+    Ahead,    ///< Mode 1: `lead` metres ahead of the target along the rail.
     Behind,   ///< Mode 2: `lead` metres behind it.
     Trailing, ///< Mode 3 (`CamModifyRail(5, pitch)`, the Armies levels): trails the target forward only, at a pitch.
 };
@@ -67,8 +67,8 @@ class RailCamera {
     static constexpr std::uint32_t kMode3Pitch = 5;
     /// Metres: mode 3's margin inside the view's sides for the targets (eased, kept for the keep-in-frame step).
     static constexpr std::uint32_t kMode3Margin = 7;
-    static constexpr std::uint32_t kPitch = 8;       ///< A fixed look-at pitch, degrees; below -360 off.
-    static constexpr std::uint32_t kLookHeight = 9;  ///< The look-at offset's height, metres.
+    static constexpr std::uint32_t kPitch = 8;      ///< A fixed look-at pitch, degrees; below -360 off.
+    static constexpr std::uint32_t kLookHeight = 9; ///< The look-at offset's height, metres.
     /// An angle below this is off.
     static constexpr float kAngleOff = -360.0F;
 
@@ -115,6 +115,8 @@ class RailCamera {
     [[nodiscard]] RailMode mode() const { return m_mode; }
     /// The lead along the rail now, metres.
     [[nodiscard]] float lead() const { return m_lead.current; }
+    /// Mode 3's pitch now (setting 5), degrees; below kAngleOff while off.
+    [[nodiscard]] float mode3Pitch() const { return 0.0F; }
     /// The field of view now, degrees.
     [[nodiscard]] float fieldOfView() const { return m_fieldOfView.current; }
     /// Where it is.
@@ -173,9 +175,9 @@ class RailCamera {
     EasedValue m_mode3Pitch{.current = -std::numeric_limits<float>::max(),
                             .target = -std::numeric_limits<float>::max(),
                             .secondsLeft = 0.0F};
-    EasedValue m_mode3Margin; // setting 7
-    bool m_starting = false;  // +0x3e7: mode 3 starts over on the next update
-    anim::Vec3 m_goal;        // +0x310: mode 3's goal for the look-at point
+    EasedValue m_mode3Margin;        // setting 7
+    bool m_starting = false;         // +0x3e7: mode 3 starts over on the next update
+    anim::Vec3 m_goal;               // +0x310: mode 3's goal for the look-at point
     bool m_heightOffPending = false; // a negative height eases back to the present height, then switches off
     float m_blend = 0.0F;            // +0x3cc: the soft hand-over between segments, 0 when none
     bool m_held = false;
