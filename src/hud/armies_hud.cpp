@@ -13,7 +13,8 @@ namespace {
 
 // The credits line's colour, (245, 184, 0).
 constexpr graphics::Rgba kArmiesYellow{245, 184, 0, 255};
-// The GO sign in the default video mode (`GoSign_Setup`): the text at (0.8, 0.3); in mode Text one arrow at
+// The GO sign in the default video mode and English (`GoSign_Setup`; every x less the language's shift): the text at
+// (0.8, 0.3); in mode Text one arrow at
 // (0.78, 0.299) turned 4.72 radians, in mode Arrows three at (0.835 / 0.875 / 0.915, 0.39) unturned; arrows 0.06
 // square, `part_page0` rectangle 4 (sprite word 4), coloured as the text. Its font size is 3.9.
 constexpr GuiPoint kGoTextPlace{0.8F, 0.3F};
@@ -42,11 +43,24 @@ gui::TextStyle styleAt(float x, graphics::Rgba colour, bool centred) {
 
 } // namespace
 
-void ArmiesHud::levelSetUp(Language /*language*/) {
+void ArmiesHud::levelSetUp(Language language) {
+    m_credits = 0;
+    // The sign moves left for the longer Spanish and Italian words.
+    switch (language) {
+    case Language::Spanish:
+        m_goShift = kSpanishGoShift;
+        break;
+    case Language::Italian:
+        m_goShift = kItalianGoShift;
+        break;
+    default:
+        m_goShift = 0.0F;
+        break;
+    }
     m_goMode = static_cast<std::uint8_t>(GoSignMode::Off);
     m_goFrame = 0;
     m_join = {};
-    // **Coney choice**: a join message starts on its lit half (the panel's flag is not traced at its construction).
+    // **Coney's choice**: a join message starts on its lit half (the panel's flag is not traced at its construction).
     m_joinLit = {true, true};
     m_in = {};
 }
@@ -110,20 +124,21 @@ void ArmiesHud::render(const HudCanvas& canvas, const std::function<std::string(
     // started again whenever the last one ended) is not played.
     if (m_goMode == static_cast<std::uint8_t>(GoSignMode::Text) ||
         m_goMode == static_cast<std::uint8_t>(GoSignMode::Arrows)) {
-        gui::TextStyle style = styleAt(kGoTextPlace.x, kArmiesYellow, true);
+        gui::TextStyle style = styleAt(kGoTextPlace.x - m_goShift, kArmiesYellow, true);
         style.scale = kGoTextScale * messageStyle(0.0F).scale;
         drawMessage(canvas, text(kGoString), style, kGoTextPlace.y);
         if (canvas.parts != nullptr && kGoArrowRect < canvas.parts->sheet().page.rects.size()) {
             const graphics::UvRect uv = canvas.parts->sheet().page.rect(kGoArrowRect);
             if (m_goMode == static_cast<std::uint8_t>(GoSignMode::Text)) {
                 if (m_goFrame == 0) {
-                    canvas.parts->addSprite(
-                        guiSprite(kGoSingleArrow.x, kGoSingleArrow.y, kGoArrowSize, kGoArrowSize, uv, kArmiesYellow),
-                        kGoSingleTurn);
+                    canvas.parts->addSprite(guiSprite(kGoSingleArrow.x - m_goShift, kGoSingleArrow.y, kGoArrowSize,
+                                                      kGoArrowSize, uv, kArmiesYellow),
+                                            kGoSingleTurn);
                 }
             } else if (m_goFrame < kGoArrows.size()) {
                 const GuiPoint at = kGoArrows.at(m_goFrame);
-                canvas.parts->addSprite(guiSprite(at.x, at.y, kGoArrowSize, kGoArrowSize, uv, kArmiesYellow));
+                canvas.parts->addSprite(
+                    guiSprite(at.x - m_goShift, at.y, kGoArrowSize, kGoArrowSize, uv, kArmiesYellow));
             }
         }
     }

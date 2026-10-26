@@ -121,9 +121,14 @@ int randomBelow(GameRandom* random, int n) {
 }
 
 anim::Quat turnAboutVertical(anim::Quat rotation, float degrees) {
-    // The turn's half-angle quaternion about z, applied in the object's frame: rotation × turn.
+    return turnAboutOwnAxis(rotation, anim::Vec3{0.0F, 0.0F, 1.0F}, degrees);
+}
+
+anim::Quat turnAboutOwnAxis(anim::Quat rotation, anim::Vec3 axis, float degrees) {
+    // The turn's half-angle quaternion about the axis, applied in the object's frame: rotation × turn.
     const float half = degrees * std::numbers::pi_v<float> / 360.0F;
-    const anim::Quat turn{0.0F, 0.0F, std::sin(half), std::cos(half)};
+    const float sine = std::sin(half);
+    const anim::Quat turn{axis.x * sine, axis.y * sine, axis.z * sine, std::cos(half)};
     const anim::Quat& a = rotation;
     return anim::normalise(anim::Quat{a.w * turn.x + a.x * turn.w + a.y * turn.z - a.z * turn.y,
                                       a.w * turn.y - a.x * turn.z + a.y * turn.w + a.z * turn.x,

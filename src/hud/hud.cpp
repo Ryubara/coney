@@ -67,8 +67,9 @@ int Hud::attachPlayer(int slot, int type) {
 
 void Hud::levelSetUp() {
     m_radar.scriptOn = true;
-    // The Armies of the Night parts: the GO sign off, no join message (docs/research/armies.md).
-    m_armies.levelSetUp();
+    // The Armies of the Night parts: no credits, the GO sign off and placed for the language, no join message
+    // (docs/research/armies.md).
+    m_armies.levelSetUp(m_services.language ? m_services.language() : Language::English);
     // **Coney's stand-in** for HUD_Render's fade branch, which hides the spinner the memory-card screen left on at
     // the level's first fully faded frame (docs/research/hud.md#hud-spinner): a level's set-up hides it.
     m_spinner.set(false);
@@ -88,8 +89,6 @@ void Hud::levelShutDown() {
     // W_GameState's switches, which Coney keeps here: the game state outlives the level.
     fresh.m_gameTutorialText = m_gameTutorialText;
     fresh.m_firstObjectiveHintGiven = m_firstObjectiveHintGiven;
-    // The Armies of the Night credits are a global (`0x00619910`), which global.lua sets again at each load.
-    fresh.m_armies.setCredits(m_armies.credits());
     // Shown or hidden and the spinner are the screen's, not the level's: the next set-up hides both.
     fresh.m_visible = m_visible;
     fresh.m_spinner = m_spinner;
@@ -155,8 +154,7 @@ void Hud::setObjective(int slot, std::string_view text, int mode, bool silent, s
                                              ms, kCueObjective});
         }
         // The first slot-1 objective with the game's hints on queues one hint, once.
-        if (slot == 1 && m_gameTutorialText && !m_firstObjectiveHintGiven &&
-            !isArmiesLevel(m_levelNumber)) {
+        if (slot == 1 && m_gameTutorialText && !m_firstObjectiveHintGiven && !isArmiesLevel(m_levelNumber)) {
             m_firstObjectiveHintGiven = true;
             m_hints.queue(read(m_services.tutorialString, kFirstObjectiveHint), kGameHintPriority);
         }

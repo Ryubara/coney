@@ -79,9 +79,10 @@ StartUpFlow::StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack,
     m_pause.setWorld(&m_gameplay);
     m_missionFailed.setWorld(&m_gameplay);
     m_armiesGameOver.setWorld(&m_gameplay);
-    m_armiesGameOver.setHooks(ArmiesGameOverHooks{
-        .playerUp = [this](int player) { return m_gameplay.playerStanding(player); },
-        .healPlayer = [this](int player) { m_gameplay.healPlayer(player); }});
+    m_armiesGameOver.setHooks(
+        ArmiesGameOverHooks{.playerIn = [this](int player) { return m_gameplay.playerIn(player); },
+                            .playerUp = [this](int player) { return m_gameplay.playerStanding(player); },
+                            .healPlayer = [this](int player) { m_gameplay.healPlayer(player); }});
     // A Rumble match: the intro over play, the result screen over the world going on.
     m_gameplay.addOverlay(&m_rumbleIntro);
     // `--ai-player`: when the countdown has ended (FinishCountdown and the rules' StartIt done), player 1 is handed to

@@ -199,8 +199,8 @@ struct Door {
     int slideState = slide_state::kSlideClosed;
     std::uint32_t slideOpenSound = kSlidingDoorSound;
     std::uint32_t slideCloseSound = kSlidingDoorSound;
-    bool pickable = false;          ///< Data `+0x20`.
-    bool glint = false;             ///< The pickable glint (`sub_triglint`) is up.
+    bool pickable = false; ///< Data `+0x20`.
+    bool glint = false;    ///< The pickable glint (`sub_triglint`) is up.
     anim::Vec3 glintAt{};
     int state = door_state::kClosed;  ///< Data `+0x28`.
     int abandonedPicks = 0;           ///< Record `+0x29`: lock picks abandoned at it.
@@ -236,11 +236,11 @@ class Doors {
     /// leaves (the second at `position + rotation × (−2w, 0, 0)`, turned 180°), its triangles two-sided with bit
     /// `0x400`, bit `0x40` when it has hitpoints and the type's material (a cabin door also `0x800`, state 10), its
     /// links retagged for `_dclub` and `_liz`, and the lock-pick glint for the pickable types. A barrier gets its
-    /// triangles two-sided with `0x40` and `0x400` and, all but `dyn_door_chain_s`, its links retagged `0x40`. A sliding
-    /// door gets its type's leaves (setUpSliding(): the roll-up one `dyn_dr_rollup`), its slide (property 7 along the
-    /// leaf's x, else property 8 up it; the step twice property 6), its triangles two-sided with `0x400` and the
-    /// type's material, and starts closed (command 7). **Coney's reading** of a second leaf (the two-leaf types): 2w
-    /// along the door's x axis and turned 180° about the vertical, as a swinging door's.
+    /// triangles two-sided with `0x40` and `0x400` and, all but `dyn_door_chain_s`, its links retagged `0x40`. A
+    /// sliding door gets its type's leaves (setUpSliding(): the roll-up one `dyn_dr_rollup`), its slide (property 7
+    /// along the leaf's x, else property 8 up it; the step twice property 6), its triangles two-sided with `0x400` and
+    /// the type's material, and starts closed (command 7). **Coney's reading** of a second leaf (the two-leaf types):
+    /// 2w along the door's x axis and turned 180° about the vertical, as a swinging door's.
     ///
     /// `w` is the type's `CfgObj` argument 15, one leaf's width (docs/research/objects.md#leaves).
     /// @orig 0x00397230 Door_Spawn (unknown)
@@ -267,8 +267,9 @@ class Doors {
     void openToDegree(double handle, float degrees, ObjectWorld& world);
     /// Message `0x0b` (`DoorOpen(door, human)`): a closed door that is not pickable swings ±170° away from the human at
     /// `humanAt` (or to the kept angle), with the open sound. **Coney's stand-in** for "away": the sign of the dot
-    /// product of the door's turned y axis with the human-to-door direction.
+    /// product of the door's turned y axis with the human-to-door direction. A sliding door takes command 2 instead.
     /// @orig 0x003f9910 DoorSwing_OpenBy (unknown)
+    /// @orig 0x003f5ef0 DynDoorSliding_OnMessage (unknown)
     void openBy(double handle, anim::Vec3 humanAt, ObjectWorld& world);
     /// Message `0x0c` (`IsDoorOpen`): a swinging door only in state 5, a sliding door in slide_state::kSlideOpen.
     [[nodiscard]] bool isOpen(double handle) const;

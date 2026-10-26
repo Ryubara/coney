@@ -906,6 +906,8 @@ bool GameplayMode::playerStanding(int player) const {
     return brain != nullptr && !brain->knockedOut();
 }
 
+bool GameplayMode::playerIn(int player) const { return m_humans.player(player + 1) != nullptr; }
+
 void GameplayMode::healPlayer(int player) {
     if (const HumanCreation* created = m_humans.player(player + 1); created != nullptr && m_scripted) {
         m_scripted->humanHost().revive(created->handle);

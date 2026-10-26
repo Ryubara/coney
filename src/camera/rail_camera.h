@@ -98,9 +98,14 @@ class RailCamera {
     /// @orig 0x0013fac8 CamRail_SetMode3Angle (unknown)
     void modify(std::uint32_t param, float value, float seconds);
 
-    /// `CameraMakeActive` on the rail: mode 3 starts over on its next update (`+0x3e7`).
+    /// `CameraMakeActive` on the rail: the field of view and every eased setting but the look-at height and mode 3's
+    /// margin at their targets at once, the segment hand-over cleared, and mode 3 starting over on the next update
+    /// (`+0x3e7`), which does not damp the points (`+0x3e8`). Cameras::makeActive then runs that update, of
+    /// kActivationSeconds, when the rail has two points or more (`CamRail_Reset`).
     /// @orig 0x0013b508 CamRail_Activate (unknown)
-    void activate() { m_starting = true; }
+    void activate();
+    /// The update an activation runs, seconds (`0x3c888889`).
+    static constexpr float kActivationSeconds = 1.0F / 60.0F;
 
     /// One update of `seconds` with the target's feet at `feet` (nothing: no target, the update stops after the
     /// easing) and his locomotion's velocity `velocity` (mode 3 reads it): the settings eased, the target and look-at
@@ -116,7 +121,7 @@ class RailCamera {
     /// The lead along the rail now, metres.
     [[nodiscard]] float lead() const { return m_lead.current; }
     /// Mode 3's pitch now (setting 5), degrees; below kAngleOff while off.
-    [[nodiscard]] float mode3Pitch() const { return 0.0F; }
+    [[nodiscard]] float mode3Pitch() const;
     /// The field of view now, degrees.
     [[nodiscard]] float fieldOfView() const { return m_fieldOfView.current; }
     /// Where it is.
@@ -131,6 +136,8 @@ class RailCamera {
     [[nodiscard]] bool held() const { return m_held; }
 
   private:
+    // update()'s body: the easing and the placement by mode.
+    void placeFor(std::optional<anim::Vec3> feet, bool leadLook, float seconds, anim::Vec3 velocity);
     // The target and look-at points of mode 0 or the leading modes from the feet (CamRail_UpdateTargetPoint).
     void makePoints(anim::Vec3 feet);
     // Damps the target and look-at points toward last update's (0x0013bfe0).
@@ -177,6 +184,7 @@ class RailCamera {
                             .secondsLeft = 0.0F};
     EasedValue m_mode3Margin;        // setting 7
     bool m_starting = false;         // +0x3e7: mode 3 starts over on the next update
+    bool m_undamped = false;         // +0x3e8: the next update does not damp the points
     anim::Vec3 m_goal;               // +0x310: mode 3's goal for the look-at point
     bool m_heightOffPending = false; // a negative height eases back to the present height, then switches off
     float m_blend = 0.0F;            // +0x3cc: the soft hand-over between segments, 0 when none

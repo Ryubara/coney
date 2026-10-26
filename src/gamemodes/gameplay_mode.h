@@ -334,6 +334,8 @@ class GameplayMode final : public GameMode {
     bool releasePlayerToAi();
     /// Whether player `player` (0 or 1) is in the level and not knocked out (the Armies game over's continue).
     [[nodiscard]] bool playerStanding(int player) const;
+    /// Whether player `player` (0 or 1) is in the level (the game state's `+0x228` / `+0x22c` human).
+    [[nodiscard]] bool playerIn(int player) const;
     /// Player `player` (0 or 1) healed in full and stood up (`Human_Heal(human, 1)`, through `HuRevive`'s revive): an
     /// Armies continue.
     void healPlayer(int player);

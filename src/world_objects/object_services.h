@@ -62,7 +62,7 @@ struct ObjectTypeInfo {
     float property6 = 0.0F;
     float property7 = 0.0F;
     float property8 = 0.0F;
-    int objectType = 0;        ///< Argument 19: `TYPE_*` (object_type).
+    int objectType = 0; ///< Argument 19: `TYPE_*` (object_type).
 };
 
 /// Finds an object type's configuration by name; nothing when no `CfgObj` named it.
@@ -235,6 +235,9 @@ void markTriangles(ObjectWorld& world, std::span<const std::uint32_t> triangles,
 /// `rotation` turned by `degrees` about the vertical axis (applied after it, in the object's own frame): the half-angle
 /// quaternion the doors' swing builds (docs/research/objects.md#door-states).
 [[nodiscard]] anim::Quat turnAboutVertical(anim::Quat rotation, float degrees);
+/// `rotation` turned by `degrees` about the unit `axis` of its own frame (applied after it): the vertical sliding
+/// door's second leaf turns about its y axis (docs/research/script-types.md#sliding-doors).
+[[nodiscard]] anim::Quat turnAboutOwnAxis(anim::Quat rotation, anim::Vec3 axis, float degrees);
 
 /// `v` rotated by `rotation`.
 [[nodiscard]] anim::Vec3 rotate(anim::Quat rotation, anim::Vec3 v);

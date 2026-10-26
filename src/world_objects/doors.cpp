@@ -87,14 +87,16 @@ constexpr std::string_view kSwingingClass = "dyn_door_swinging";
 constexpr std::string_view kSlidingClass = "dyn_door_sliding";
 
 // One sliding door type SlidingDoor_SpawnLeaves names (`0x003f4c80`): its leaves' types, whether its axis byte goes
-// one further (`dyn_door_fence_s`, `dyn_door_pol`) and whether it plays the roll-up's sound (else kSlidingDoorSound;
-// the portcullis has its own).
+// one further (`dyn_door_fence_s`, `dyn_door_pol`), whether it plays the roll-up's sound (else kSlidingDoorSound;
+// the portcullis has its own) and whether its second leaf stands 2w along the door's -z instead of its -x (the lift's
+// `dyn_door_ele_c`).
 struct SlidingRow {
     std::string_view name;
     std::string_view leaf;
     std::string_view secondLeaf;
     bool axisOneMore;
     bool rollupSound;
+    bool secondBelow = false;
 };
 constexpr std::string_view kPortcullis = "dyn_door_portcullis";
 constexpr std::array kSlidingRows{
@@ -103,7 +105,7 @@ constexpr std::array kSlidingRows{
     SlidingRow{"dyn_door_fence_r", "dyn_dr_fence_r", "dyn_dr_fence_r", false, false},
     SlidingRow{"dyn_door_fence_s", "dyn_dr_fence_s", "dyn_dr_fence_s", true, false},
     SlidingRow{"dyn_door_ele", "dyn_dr_ele", "", false, true},
-    SlidingRow{"dyn_door_ele_c", "dyn_dr_ele_c", "dyn_dr_ele_c", false, true},
+    SlidingRow{"dyn_door_ele_c", "dyn_dr_ele_c", "dyn_dr_ele_c", false, true, true},
     SlidingRow{"dyn_door_pol", "dyn_dr_pol", "", true, false},
     SlidingRow{"dyn_door_subway", "dyn_dr_subway", "dyn_dr_subway", false, false},
     SlidingRow{"dyn_door_spook", "dyn_dr_spook_a", "dyn_dr_spook_b", false, true},
@@ -396,7 +398,7 @@ void Doors::setUpSliding(Door& door, const ObjectTypeInfo* info, const HandleSou
         door.slideAxis = 0;
     }
     door.slideStep = info != nullptr ? info->property6 * 2.0F : 0.0F;
-    // The leaves by type name: the first at the door's pose, a second 2w along its x axis, turned about.
+    // The leaves by type name: the first at the door's pose, a second 2w away and turned half round.
     const auto row = std::ranges::find(kSlidingRows, door.type, &SlidingRow::name);
     if (row != kSlidingRows.end()) {
         if (row->axisOneMore) {
@@ -416,10 +418,19 @@ void Doors::setUpSliding(Door& door, const ObjectTypeInfo* info, const HandleSou
             SlidingLeaf leaf;
             leaf.handle = handles ? handles() : kNoObject;
             leaf.model = std::string(model);
-            leaf.closed = second ? anim::add(door.position,
-                                             rotate(door.rotation, anim::Vec3{-2.0F * door.leafWidth, 0.0F, 0.0F}))
-                                 : door.position;
-            leaf.rotation = second ? turnAboutVertical(door.rotation, 180.0F) : door.rotation;
+            // A second leaf turns half round, about the door's y axis for an up-and-down slide (so it slides the
+            // other way) and about the vertical otherwise (SubSlidingDoor_PlaceLeaf), and stands 2w away from the
+            // first along the door's -x, or its -z for the lift's pair.
+            const anim::Vec3 apart = row->secondBelow ? anim::Vec3{0.0F, 0.0F, -2.0F * door.leafWidth}
+                                                      : anim::Vec3{-2.0F * door.leafWidth, 0.0F, 0.0F};
+            leaf.closed = second ? anim::add(door.position, rotate(door.rotation, apart)) : door.position;
+            if (!second) {
+                leaf.rotation = door.rotation;
+            } else if (door.slideAxis < 2) {
+                leaf.rotation = turnAboutOwnAxis(door.rotation, anim::Vec3{0.0F, 1.0F, 0.0F}, 180.0F);
+            } else {
+                leaf.rotation = turnAboutVertical(door.rotation, 180.0F);
+            }
             leaf.axis = rotate(leaf.rotation, slideDirection(door.slideAxis));
             door.slidingLeaves.push_back(std::move(leaf));
         }
@@ -431,7 +442,10 @@ void Doors::setUpSliding(Door& door, const ObjectTypeInfo* info, const HandleSou
 
 void Doors::runSlidingCommand(Door& door, int command, ObjectWorld& world) {
     NavLinks links(world.paths);
-    // The leaves take the door's command at once: a slide starts on their next step.
+    // The leaves take the door's command at once: a slide starts on their next step. **Coney's stand-in**: the
+    // original only shortens each leaf's update interval to 2 ticks, so a leaf at rest on its 60-tick cycle starts
+    // sliding 1 to 60 ticks later (SlidingDoor_StateCommand, Task_SetUpdateInterval `0x003a1630`; not yet seen at
+    // runtime). The triangles and links change at once either way.
     const auto slide = [&door](int motion) {
         for (SlidingLeaf& leaf : door.slidingLeaves) {
             leaf.motion = motion;

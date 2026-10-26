@@ -457,12 +457,17 @@ void Cameras::makeActive(double handle, float seconds) {
     if (ref->kind == CameraKind::Path && m_path) {
         m_path->activate();
     }
-    // The rail's mode 3 starts over on the update after an activation (CamRail_Activate).
+    // The rail snaps its settings and starts over (CamRail_Activate); with two points or more its reset runs one
+    // short update at once (CamRail_Reset), which does mode 3's start.
+    float placeSeconds = 0.0F;
     if (ref->kind == CameraKind::Rail && m_rail) {
         m_rail->activate();
+        if (m_rail->pointCount() >= 2) {
+            placeSeconds = RailCamera::kActivationSeconds;
+        }
     }
     // A tracking camera is placed on its target before it is first shown.
-    stepTracking(*ref, 0.0F);
+    stepTracking(*ref, placeSeconds);
     // A scene camera keeps the screen: the script changes what the scene returns to.
     if (m_current.kind == CameraKind::Scene) {
         if (!m_stack.empty()) {

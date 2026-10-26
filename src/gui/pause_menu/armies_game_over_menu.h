@@ -35,8 +35,8 @@ enum class ArmiesGameOverChoice : std::uint8_t {
 ///   y 0.57, the usage line 0x1c at (0.5, 0.62), all fading in over 2,000 ms; only then does accept take an item
 ///   (cue 8).
 ///
-/// Positions are the NTSC defaults (`0x0050ebf0`-`0x0050ec24`); the original moves some for other video modes in
-/// ANGameOver_Open, which Coney does not have.
+/// Positions are the NTSC defaults (`0x0050ebf0`-`0x0050ec24`). **Coney's stand-in**: the original moves some for
+/// other video modes (display flags 2, 4 and 8) in ANGameOver_Open, and Coney has only the default one.
 ///
 /// Research: docs/research/pause.md#an-game-over
 /// @orig 0x001cef10 ANGameOver_Open (unknown)
@@ -124,11 +124,11 @@ class ArmiesGameOverMenu : public Widget {
     OptionGrid m_grid;
     UsageInfo m_usage;
     std::optional<ArmiesGameOverChoice> m_choice;
-    std::uint64_t m_stepMs = 0;    // +0x964: when the digit last changed
+    std::uint64_t m_stepMs = 0;     // +0x964: when the digit last changed
     std::uint64_t m_endStartMs = 0; // +0x700
-    int m_count = kCountdownFrom;  // +0x968
+    int m_count = kCountdownFrom;   // +0x968
     bool m_open = false;
-    bool m_ending = false;      // +0x960
+    bool m_ending = false;       // +0x960
     bool m_acceptsInput = false; // +0x64: the end phase has faded in
 };
 

@@ -29,6 +29,9 @@ class LevelFlowMode;
 
 /// What the Armies of the Night game-over mode needs from the level below it.
 struct ArmiesGameOverHooks {
+    /// Whether player `player` (0 or 1) is in the game (the game state's `+0x228` / `+0x22c` human, whose pad record
+    /// the screen reads); empty: player 1 only.
+    std::function<bool(int player)> playerIn;
     /// Whether player `player` (0 or 1) is in the game and not knocked out (`Human_IsKnockedOut` on the game state's
     /// `+0x228` / `+0x22c` human); empty: player 1 only, standing.
     std::function<bool(int player)> playerUp;
@@ -36,8 +39,8 @@ struct ArmiesGameOverHooks {
     std::function<void(int player)> healPlayer;
 };
 
-/// Game mode 0xd, the Armies of the Night game over (`ANGameOver_Toggle`, `0x001557f8`): `HUDLaunchANGameOver` pushes it
-/// over gameplay (launch()), which then stands still beneath it, and it shows gui::ArmiesGameOverMenu.
+/// Game mode 0xd, the Armies of the Night game over (`ANGameOver_Toggle`, `0x001557f8`): `HUDLaunchANGameOver` pushes
+/// it over gameplay (launch()), which then stands still beneath it, and it shows gui::ArmiesGameOverMenu.
 ///
 /// - **Start** from either pad in the countdown: with a credit left (`HUDANSetCredit`'s counter) one is spent, the
 ///   Lua function `F1.Time` is called and, while credits remain, both panels' join messages come on; the players
@@ -49,10 +52,9 @@ struct ArmiesGameOverHooks {
 ///   **Replay** loads `level60` at section 1; **Quit** calls Lua `runNextMission(0)`, as the pause menu's quit to the
 ///   hangout does.
 ///
-/// Coney's stand-ins (docs/research/pause.md#an-game-over): the screen closes at once where the original waits for
-/// its last sound cue; the original's skip of a continue in `level64` checkpoint 4 (when player 2's brain `+9` is
-/// set) is not built; the panel call at slot `+0x24` on a continuing player is not traced and is left out; the
-/// sound is left playing.
+/// Coney's stand-ins (docs/research/pause.md#an-game-over), each marked where it acts: the screen closes at once where
+/// the original waits for its last sound cue; the original's refusal of a Start in `level64` section 4 while the
+/// presser's brain `+9` is set is not built; the sound is left playing.
 ///
 /// Research: docs/research/pause.md#an-game-over, docs/research/armies.md
 class ArmiesGameOverMode final : public GameMode {
@@ -80,7 +82,8 @@ class ArmiesGameOverMode final : public GameMode {
     /// Draws `world` (not owned; null: black) under the screen.
     void setWorld(GameplayMode* world) { m_world = world; }
 
-    /// `HUDLaunchANGameOver(on)` (on is read and not used): pushes the mode unless it is on top.
+    /// `HUDLaunchANGameOver(on)` (on is read and not used): pushes the mode, or, when it is on top, closes it with no
+    /// choice made (the original's toggle).
     /// @orig 0x001cede8 HUD_LaunchANGameOver (unknown)
     /// @orig 0x001557f8 ANGameOver_Toggle (unknown)
     void launch();
@@ -104,6 +107,8 @@ class ArmiesGameOverMode final : public GameMode {
     void close(GameModeStack& stack, gui::ArmiesGameOverChoice choice);
     // Whether player `player` is in and standing.
     [[nodiscard]] bool playerUp(int player) const;
+    // Whether player `player` is in the game.
+    [[nodiscard]] bool playerIn(int player) const;
 
     graphics::RenderDevice& m_device;
     PauseSheetLoader m_loadSheet;

@@ -13,7 +13,7 @@ namespace coney::camera {
 namespace {
 
 constexpr float kRadians = std::numbers::pi_v<float> / 180.0F;
-// Where the camera starts before it has a rail: this far behind (-y) and above the look-at point (**Coney choice**).
+// Where the camera starts before it has a rail: this far behind (-y) and above the look-at point (**Coney's choice**).
 constexpr float kNoRailBack = 3.0F;
 constexpr float kNoRailUp = 1.0F;
 // The fixed pitch's look-at point lies this far from the camera in plan.
@@ -92,6 +92,20 @@ float RailCamera::presentPitch() const {
     return std::atan2(toward.z, flatLength(toward)) / kRadians;
 }
 
+float RailCamera::mode3Pitch() const { return m_mode3Pitch.current / kRadians; }
+
+void RailCamera::activate() {
+    // Every eased setting the activation names jumps to its target with no time left; the look-at height and mode
+    // 3's margin keep easing.
+    for (EasedValue* value :
+         {&m_lead, &m_distance, &m_height, &m_fieldOfView, &m_shift, &m_lookShift, &m_pitch, &m_mode3Pitch}) {
+        value->set(value->target, 0.0F);
+    }
+    m_blend = 0.0F;
+    m_starting = true;
+    m_undamped = true;
+}
+
 void RailCamera::modify(std::uint32_t param, float value, float seconds) {
     switch (param) {
     case kDistance:
@@ -146,10 +160,9 @@ void RailCamera::modify(std::uint32_t param, float value, float seconds) {
             break;
         }
         m_mode = RailMode::Trailing;
-        // **Coney choice**: switched on from off with a time it starts at its target, where the original would ease
-        // from the lowest float (the levels give 0 s).
+        // Switched on from off it eases from the camera's present pitch (CamRail_Update's CamRail_PitchToPoint).
         if (m_mode3Pitch.current < kAngleOff * kRadians) {
-            m_mode3Pitch.set(value * kRadians, 0.0F);
+            m_mode3Pitch.set(presentPitch() * kRadians, 0.0F);
         }
         m_mode3Pitch.set(value * kRadians, seconds);
         break;
@@ -314,8 +327,8 @@ void RailCamera::placeLevel(anim::Vec3 feet) {
         }
     }
     // The ends: at the first point with the look-at point behind the rail's start, or at the last with it beyond the
-    // end, the camera keeps last update's view. **Coney choice**: what clears the hold is not traced, so it holds only
-    // while that is so.
+    // end, the camera keeps last update's view. **Coney's choice**: what clears the hold is not traced, so it holds
+    // only while that is so.
     m_held = false;
     if (m_count >= 2 && m_placed) {
         const bool atStart = m_segment == 0 && t <= 0.0F && project(0, m_lookAt).first < 0.0F;
@@ -377,6 +390,15 @@ void RailCamera::update(std::optional<anim::Vec3> feet, bool leadLook, float sec
     if (seconds <= 0.0F && m_placed) {
         return;
     }
+    placeFor(feet, leadLook, seconds, velocity);
+    // An update with time ends the activation's start and its undamped step, in any mode.
+    if (seconds > 0.0F) {
+        m_starting = false;
+        m_undamped = false;
+    }
+}
+
+void RailCamera::placeFor(std::optional<anim::Vec3> feet, bool leadLook, float seconds, anim::Vec3 velocity) {
     // The settings eased toward their targets; a height on its way off switches off once there.
     for (EasedValue* value : {&m_lead, &m_distance, &m_height, &m_fieldOfView, &m_shift, &m_lookShift, &m_pitch,
                               &m_lookHeight, &m_mode3Pitch, &m_mode3Margin}) {
@@ -404,7 +426,7 @@ void RailCamera::update(std::optional<anim::Vec3> feet, bool leadLook, float sec
         m_placed = true;
         return;
     }
-    if (m_placed) {
+    if (m_placed && !m_undamped) {
         damp(oldTarget, oldLook);
     }
     if (m_mode == RailMode::Level) {
@@ -465,10 +487,6 @@ void RailCamera::placeTrailing(std::optional<anim::Vec3> feet, anim::Vec3 veloci
         m_lookAt = pitchedLook(m_position, m_target);
         m_goal = m_lookAt;
         m_placed = true;
-        // The start flag goes with the first update that has time (the original skips updates without).
-        if (seconds > 0.0F) {
-            m_starting = false;
-        }
         return;
     }
     // No target: the camera keeps its place.

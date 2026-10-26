@@ -34,10 +34,14 @@ ArmiesGameOverMode::ArmiesGameOverMode(graphics::RenderDevice& device, PauseShee
 }
 
 void ArmiesGameOverMode::launch() {
-    m_log("armies: game over\n");
-    if (m_stack.topId() != kId) {
-        m_stack.push(*this);
+    // A second call while the screen is up toggles it off, with nothing chosen.
+    if (m_stack.topId() == kId) {
+        m_log("armies: game over closed\n");
+        m_stack.pop();
+        return;
     }
+    m_log("armies: game over\n");
+    m_stack.push(*this);
 }
 
 void ArmiesGameOverMode::enter() {
@@ -47,6 +51,13 @@ void ArmiesGameOverMode::enter() {
     m_continuing = {};
     m_fading = false;
     m_openPending = true;
+}
+
+bool ArmiesGameOverMode::playerIn(int player) const {
+    if (m_hooks.playerIn) {
+        return m_hooks.playerIn(player);
+    }
+    return player == 0;
 }
 
 bool ArmiesGameOverMode::playerUp(int player) const {
@@ -87,9 +98,14 @@ ModeResult ArmiesGameOverMode::update(GameModeStack& stack, const FrameTime& fra
         m_frozen = RenderTime{.alpha = 1.0F, .gameTicks = frame.gameTicks - frame.stepTicks, .index = 0};
         m_menu.open(nowMs);
     }
-    // Start from player 1, else player 2, in the countdown.
+    // Start from player 1, else player 2 when he is in the game, in the countdown. **Coney's stand-in**: the
+    // original also ignores the Start of a player whose brain `+9` is set in `level64` section 4; what `+9` is has not
+    // been traced, so Coney takes every Start there.
     for (std::size_t port = 0; port < 2; ++port) {
         const Pad& pad = stack.pads().port(port);
+        if (!playerIn(static_cast<int>(port))) {
+            continue;
+        }
         if (pad.connected() && (pad.pressedWithRepeat() & pad::kStart) != 0) {
             pressStart(static_cast<int>(port), nowMs);
             break;
@@ -107,6 +123,8 @@ ModeResult ArmiesGameOverMode::update(GameModeStack& stack, const FrameTime& fra
     m_layer.begin();
     m_menu.render(m_layer.canvas());
     m_layer.queue();
+    // **Coney's stand-in**: the screen closes on the frame of the choice, where the original waits for the menu's last
+    // sound cue to end (GameMenu_IsSoundDone, `0x001d1d08`), which Coney's front-end audio cannot report.
     if (const std::optional<gui::ArmiesGameOverChoice> choice = m_menu.choice()) {
         close(stack, *choice);
     }
@@ -126,6 +144,8 @@ void ArmiesGameOverMode::close(GameModeStack& stack, gui::ArmiesGameOverChoice c
             if (m_hooks.healPlayer) {
                 m_hooks.healPlayer(static_cast<int>(player));
             }
+            // The original also shows his ANHud panel again (slot `+0x24`, ANHud_Enable `0x0020fd40`); Coney's Armies
+            // panels are never hidden, so there is nothing to show.
             if (m_hud != nullptr) {
                 m_hud->armies().setJoinMessage(player, false);
             }

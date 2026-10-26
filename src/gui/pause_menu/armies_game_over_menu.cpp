@@ -20,6 +20,8 @@ void ArmiesGameOverMenu::playCue(int cue) const {
 }
 
 void ArmiesGameOverMenu::open(std::uint64_t nowMs) {
+    // The original also locks player 2's pad record while the screen is up (command cleared, record `+0x1b` 0 and
+    // `+0x1e` 1); in Coney the level below does not update under the screen, which has the same effect.
     m_open = true;
     m_ending = false;
     m_acceptsInput = false;
@@ -43,11 +45,10 @@ void ArmiesGameOverMenu::open(std::uint64_t nowMs) {
     m_usage.setLegend(string(kCountdownUsageString));
     m_usage.setFade(1.0F);
     // The end phase's grid, one row: Replay : Quit, the first selected.
-    m_grid.setup(OptionGridSetup{.y = kGridY,
-                                 .rows = {2},
-                                 .centreX = 0.5F,
-                                 .moveCue = PauseMenu::kMoveCue,
-                                 .playCue = [this](int cue) { playCue(cue); }});
+    m_grid.setup(OptionGridSetup{
+        .y = kGridY, .rows = {2}, .centreX = 0.5F, .moveCue = PauseMenu::kMoveCue, .playCue = [this](int cue) {
+            playCue(cue);
+        }});
     const auto add = [this](std::uint32_t text, ArmiesGameOverChoice code, bool separator) {
         (void)m_grid.addItem(OptionGridItem{.text = std::string(string(text)),
                                             .code = static_cast<int>(code),
