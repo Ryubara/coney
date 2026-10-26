@@ -111,14 +111,15 @@ graphics::Rgba areaColour(double area) {
 GameStatsData gatherGameStats(const LevelTable& levels, const UnlockRecords& unlocks, const SavedProgress& progress,
                               const GlobalStrings* strings) {
     using namespace game_stats_strings;
-    // The listed records, sorted by mission byte. Coney's choice: the level number breaks a tie, which the original's
-    // unstable sort leaves open (the disc's bytes are distinct).
+    // The listed records, in level-table order.
     std::vector<std::size_t> listed;
     for (std::size_t index = 0; index < LevelTable::kCapacity; ++index) {
         if (const LevelRecord* record = levels.at(index); record != nullptr && isGameStatsListed(*record)) {
             listed.push_back(index);
         }
     }
+    // Sorted by mission byte. Coney's choice: the level number breaks a tie, which the original's unstable sort leaves
+    // open (the disc's bytes are distinct).
     const auto key = [&levels](std::size_t index) {
         const LevelRecord& record = *levels.at(index);
         return std::pair{record.values.at(LevelRecord::kMissionValue), record.number};
@@ -309,6 +310,7 @@ void GameStatsSubItem::render(const GuiCanvas& canvas) const {
 GameStatsScreen::GameStatsScreen() {
     m_summary.setup(
         TextWidgetSetup{.x = kSummaryX, .y = kSummaryY, .colour = kMenuGrey, .fontSlot = CircledText::kFontSlot});
+    // Coney's choice: a text widget in the text font draws the usage line (the original's UsageInfo).
     m_usage.setup(TextWidgetSetup{.x = kUsageX, .y = kUsageY, .colour = kMenuGrey, .fontSlot = kTextFontSlot});
 }
 
@@ -331,6 +333,8 @@ graphics::SpriteBatch* GameStatsScreen::thumbBatch(const GameStatsLevel& level) 
     case ThumbBatch::Special:
         break;
     }
+    // Coney's choice: the specials' pictures come from the header batch, the same record 24 (the original makes a
+    // third batch over it).
     return m_batches.header;
 }
 
@@ -357,6 +361,7 @@ void GameStatsScreen::open(GameStatsData data, std::uint64_t nowMs) {
     // Coney's choice: the summary's bottom and the usage line's top, which the original also stores, are not kept
     // (nothing reads them).
     m_summary.setText(gameStatsSummary(m_data, m_strings));
+    // Coney's choice: the usage text goes to a text widget (the original's UsageInfo).
     m_usage.setText(m_strings != nullptr ? m_strings->get(game_stats_strings::kUsage) : std::string_view{});
 
     // The list: one entry per mission, its header with its sub-item as the description.
