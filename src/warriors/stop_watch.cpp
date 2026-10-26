@@ -25,6 +25,8 @@ void StopWatch::set(std::int32_t timeMs, std::int32_t targetMs, std::string call
 }
 
 void StopWatch::start(bool run, std::uint64_t nowTicks) {
+    // **Coney's stand-in**: the original also clears the beep's sound handle (`+0x44`); Coney's beep plays no sound,
+    // so it keeps none.
     m_running = run;
     m_lastTicks = nowTicks;
 }
@@ -58,7 +60,9 @@ StopWatch::Step StopWatch::step(std::uint64_t nowTicks) {
         return result;
     }
     m_time = static_cast<std::int32_t>(next);
-    // Counting down inside the warning window: a beep at most once a second.
+    // Counting down inside the warning window: a beep at most once a second. **Coney's stand-in**: the window is
+    // measured from 0, not from the target as the original's is, and the beep is reported for the caller instead of
+    // played (its sound handle `+0x44` not kept).
     if (down && m_time <= m_warning && m_time <= m_lastBeep - kBeepGapMs) {
         m_lastBeep = m_time;
         result.beep = true;
