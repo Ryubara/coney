@@ -2,6 +2,7 @@
 #pragma once
 
 #include <span>
+#include <vector>
 
 #include "animation/anim_math.h"
 #include "characters/character_model.h"
@@ -13,6 +14,28 @@ struct Texture;
 } // namespace rw
 
 namespace coney::platform {
+
+/// Where a character's mesh is skinned.
+enum class Skinning {
+    Cpu,
+    Gpu,
+};
+
+/// The placement of a character's space in the world in RenderWare's axes. (Stub: the identity.)
+[[nodiscard]] anim::Mat34 characterPlacement(anim::Vec3 feet, float heading, float lean);
+
+/// A box of vertices.
+struct BoneBox {
+    anim::Vec3 min;
+    anim::Vec3 max;
+    bool empty = true;
+};
+
+/// Each skin node's box of the vertices it moves. (Stub: none.)
+[[nodiscard]] std::vector<BoneBox> boneBoxes(const characters::CharacterModel& model);
+
+/// The box round every node's box as its matrix in `placed` moves it. (Stub: empty.)
+[[nodiscard]] BoneBox posedBox(std::span<const BoneBox> boxes, std::span<const anim::Mat34> placed);
 
 /// A character model as plain librw geometry, skinned on the CPU: the model's vertices and triangles in one librw
 /// atomic with one material per model material, textured with the character's texture. Each frame the skinned
@@ -30,7 +53,7 @@ class CharacterMesh {
     /// Builds the geometry of `model` in its unskinned (bind) positions. `texture` (may be null: untextured) is used by
     /// every material, as the models' materials name no texture of their own (characters.md); the mesh keeps a
     /// reference to it. Lit by the world's lights with the vertex normals, modulated by the material colour.
-    CharacterMesh(const characters::CharacterModel& model, rw::Texture* texture);
+    CharacterMesh(const characters::CharacterModel& model, rw::Texture* texture, Skinning skinning = Skinning::Cpu);
     ~CharacterMesh();
     CharacterMesh(const CharacterMesh&) = delete;
     CharacterMesh& operator=(const CharacterMesh&) = delete;
@@ -40,6 +63,12 @@ class CharacterMesh {
     /// Replaces every vertex's position and normal, in both atomics; both spans hold one entry per model vertex
     /// (checked by CONEY_ASSERT).
     void update(std::span<const anim::Vec3> positions, std::span<const anim::Vec3> normals);
+
+    /// Poses the mesh from skinning matrices and a placement. (Stub: does nothing.)
+    void pose(std::span<const anim::Mat34> skinning, const anim::Mat34& placement);
+
+    /// Whether the vertex shader skins this mesh. (Stub: never.)
+    [[nodiscard]] bool gpuSkinned() const { return false; }
 
     /// The librw atomic of the first pass, for drawing. Valid as long as this object.
     [[nodiscard]] rw::Atomic* atomic() const { return m_atomic; }

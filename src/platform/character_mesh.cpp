@@ -89,7 +89,8 @@ void writePose(rw::Atomic* atomic, std::span<const anim::Vec3> positions, std::s
 
 } // namespace
 
-CharacterMesh::CharacterMesh(const characters::CharacterModel& model, rw::Texture* texture) : m_texture(texture) {
+CharacterMesh::CharacterMesh(const characters::CharacterModel& model, rw::Texture* texture, Skinning /*skinning*/)
+    : m_texture(texture) {
     if (m_texture != nullptr) {
         m_texture->addRef();
     }
@@ -109,6 +110,14 @@ void CharacterMesh::update(std::span<const anim::Vec3> positions, std::span<cons
     writePose(m_atomic, positions, normals);
     writePose(m_blood, positions, normals);
 }
+
+void CharacterMesh::pose(std::span<const anim::Mat34> /*skinning*/, const anim::Mat34& /*placement*/) {}
+
+anim::Mat34 characterPlacement(anim::Vec3 /*feet*/, float /*heading*/, float /*lean*/) { return anim::Mat34{}; }
+
+std::vector<BoneBox> boneBoxes(const characters::CharacterModel& /*model*/) { return {}; }
+
+BoneBox posedBox(std::span<const BoneBox> /*boxes*/, std::span<const anim::Mat34> /*placed*/) { return {}; }
 
 void CharacterMesh::setBloodTexture(rw::Texture* texture) {
     if (texture == m_bloodTexture) {
