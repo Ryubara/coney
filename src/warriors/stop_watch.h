@@ -10,7 +10,8 @@ namespace coney {
 /// game. `W_SetStopWatch` sets its time, target and callback; `W_StartStopWatch` runs or stops it; each frame of play
 /// the time moves toward the target by the game time that passed, and on reaching it the watch stops and its callback
 /// is due. Its time is in milliseconds; the game timer's readings it takes are in GameTimer ticks, so a fixed-step test
-/// drives it exactly.
+/// drives it exactly. An update adds only the whole milliseconds since the last reading, so the watch runs slow by the
+/// fractions it drops: 99.999 s takes 3031 steps of 1/30 s (docs/research/armies.md#level60-start).
 ///
 /// **Coney's stand-ins:** the rate (`+0x10`), whose writer is not traced, is 1. The warning beep (sound `0x0058b9f0`,
 /// at most once a second inside the warning window while counting down) is reported by step() for the caller to play;
