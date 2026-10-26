@@ -458,9 +458,9 @@ a tandem. The strong grapple, which `Player_SpecialAttack` starts through `Grab_
 (`0x0026c548`) and `Tackle_Start` (`0x002707a8`) set only `+0x08` `0x10`, outside the busy gate `0x5c7fee0`; the
 grabbing state (`0xc0`) comes at the connect and the tackling one (`0x400`) from `Tackle_StartMount` at the intro's end
 (`Tackle_OnIntroEnd` `0x00270560`). Until then `Player_UpdateActions` (`0x0027c120`) still runs the stance update, so
-its step 3 locks the victim within 2 m (the nearest falls back on the target held). A throw then ends in `0x1005`
-with the lock it kept (inferred from the code; an unrecorded trace of a front throw showed state `0x1` on the grab's
-first update, `0x5` on the next and `0x1005` in the throw).
+its step 3 locks the victim within 2 m (the nearest falls back on the target held), and a throw keeps that lock
+(state `0x1005`). At runtime the grab's intro 71 showed state `0x1` on its first update and `0x5` from the next, at
+0.82 m, then `0x45` in the hold and `0x1005` in the throw (confirmed (runtime), run r-20261026-target-throw-end).
 
 **What an attack does to the lock** (the armed run sweep 501 and the moving attacks):
 
