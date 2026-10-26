@@ -3367,11 +3367,12 @@ The world viewer keeps its own free camera with the player camera's lens
   pitch and end hold, the leading modes and mode 3's start and trailing move. An activation (`CameraMakeActive`)
   snaps the settings and runs one undamped 1/60 s update, as `CamRail_Activate` and `CamRail_Reset` do. **Coney
   choices and stand-ins**: the end hold lasts only while its condition does (what clears it is not traced); the tie
-  between two nearest rail points, the 40% look-at catch-up (`+0x3ec`), the `+0x330` vector, the split-screen halving
-  and extras, mode 3's keep-in-frame step (setting 7 is kept, `0x00140d68` not built) and the push out of world
-  collision are not built; a rail with no points stands 3 m behind and 1 m above the look-at point. The fixed
-  camera always looks at the average (the original's single-entry case is not traced). `CamDelete` forgets a fixed
-  camera as it does a locked one and keeps third-person cameras.
+  between two nearest rail points (with the segment choice's other differences, [#956](issue:956)), the 40% look-at
+  catch-up (`+0x3ec`), the `+0x330` vector, the split-screen halving and extras, mode 3's keep-in-frame step
+  (setting 7 is kept, `0x00140d68` not built) and the push out of world collision are not built; a rail with no
+  points stands 3 m behind and 1 m above the look-at point. The fixed camera always looks at the average (the
+  original's single-entry case is not traced). `CamDelete` forgets a fixed camera as it does a locked one and keeps
+  third-person cameras.
 
 ### Notes for implementers {#notes}
 

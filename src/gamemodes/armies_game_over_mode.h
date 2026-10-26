@@ -52,11 +52,11 @@ struct ArmiesGameOverHooks {
 ///   **Replay** loads `level60` at section 1; **Quit** calls Lua `runNextMission(0)`, as the pause menu's quit to the
 ///   hangout does.
 ///
-/// Coney's stand-ins (docs/research/pause.md#an-game-over), each marked where it acts: the screen closes at once where
+/// Coney's stand-ins (docs/research/armies.md#coney), each marked where it acts: the screen closes at once where
 /// the original waits for its last sound cue; the original's refusal of a Start in `level64` section 4 while the
 /// presser's brain `+9` is set is not built; the sound is left playing.
 ///
-/// Research: docs/research/pause.md#an-game-over, docs/research/armies.md
+/// Research: docs/research/armies.md#game-over, docs/research/pause.md#an-game-over
 class ArmiesGameOverMode final : public GameMode {
   public:
     /// The original's id for this mode.

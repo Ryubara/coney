@@ -1,0 +1,48 @@
+version = 1
+id = "r-20261026-level60-idle"
+date = "2026-10-26"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "433c41a30de0f2c4e8889012a8b5ca919e68a31b4289d30b1c9e77fc7529c1cd"
+
+[who]
+agent = "a0706515f6d1f8ca7"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "street-end-run"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "level60 checkpoint 1 loaded with the load-checkpoint recipe from the state, pad idle to the end. Over PINE four times a second: the game tick count, player 1's position, speed and gait; window captures in a second thread, each named by the ticks read just before and after it. Read from the captures: the load screen (STAGE ONE art), the intro (garage, pedestrians, then the open garage with the car and Swan), play with the full HUD, the game-over count, then GAME OVER with Replay and Quit on black. The tick stops while the game-over screen is open"
+
+[values]
+load_screen_tick_from = 1
+load_screen_tick_to = 11
+intro_street_tick_from = 571
+intro_street_tick_to = 887
+intro_open_garage_tick_from = 1007
+intro_open_garage_tick_to = 1311
+start_x_cm = -9350
+start_y_cm = 1880
+walk_last_still_tick = 1231
+walk_first_moving_tick = 1245
+walk_speed_cm_per_s = 163
+walk_gait = 2
+walk_stopped_tick = 1411
+stop_x_mm = -94776
+stop_y_mm = 23540
+hud_timer_96_tick_from = 1431
+hud_timer_96_tick_to = 1737
+game_over_screen_tick = 7545
+game_over_end_phase_seen = 1
+
+[addresses]
+tick_count = 0x005104f4

@@ -15,19 +15,13 @@ tables, the **action prompts** (HUD `+0x6b40`, vtable `0x00539270`), the **crew 
 `0x00539370`, entries vtable `0x00539408`, `0x250` bytes each) and the `HudBar` meter. Files not named; evidence for
 the behaviour is confirmed (code) unless a row says otherwise.
 
-The Armies **credits line** beside the sign is the HUD's own (confirmed (code)): `HUDANSetCredit` writes the HUD word
-`+0x190d0` (`0x00619910`, the HUD at `0x00600840`), which `HUD_InitLevel` (`0x001ad588`) zeroes at every level's
-set-up, so the Armies stages carry their credits from one stage to the next in the Lua save data. `HUD_Update`
-(`0x001af010`) places the line at (0.75, 0.92) and then, in the default video mode (display flags 2, 4 and 8 clear),
-at x 0.71 (`0x0050d4bc`).
-
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
 | `0x0019dfb0` | `GoSign_Construct` | the GO sign: a `TextWidget` and three `BaseWidget` arrows (`+0xd0`, `+0x1d0`, `+0x2d0`); sound handle `+0x3d8` = -1 | confirmed (code) |
-| `0x0019e030` | `GoSign_Setup(sign, position)` | from the HUD's level set-up (`0x001ad588`): positions per video mode (globals `0x0050cf64`-`0x0050cfa4`, separate values for 16:9, PAL and progressive); text = global string `0xd3`, colour `0x00600040`, arrows size 0.08 in `(191, 191, 32, 255)` (GoSign_Update sets them to 0.06 and `0x00600040` every step); mode `+0x3d0` = 2 (off). Every x is less a shift by the game's language (game state `+0x120`, `0x0050cf98`): 0.4 in Spanish, 0.02 in Italian, else 0, so in the default video mode the text is at x 0.8 − shift, the single arrow 0.78 − shift, the three arrows 0.835 / 0.875 / 0.915 − shift | confirmed (code) |
+| `0x0019e030` | `GoSign_Setup(sign, position)` | from the HUD's level set-up (`0x001ad588`): positions per video mode (globals `0x0050cf64`-`0x0050cfa4`, separate values for 16:9, PAL and progressive); text = global string `0xd3`, colour `0x00600040`, arrows size 0.08 in `(191, 191, 32, 255)`; mode `+0x3d0` = 2 (off) | confirmed (code) |
 | `0x0019e5f8` | `GoSign_Shutdown` | releases the text and the arrows (HUD shutdown `0x001ae980`) | confirmed (code) |
 | `0x0019e660` | `GoSign_StepBlink` | every `*0x0050cfa8` ms of real time advances the frame byte `+0x3d1`, wrapping at 2 in mode 0 and at 4 in mode 1 | confirmed (code) |
-| `0x0019e758` | `GoSign_Update` | from `HUD_Update`, Armies of the Night levels only (`0x0041d110`). Mode `+0x3d0` is the byte `HUDANSetGOSignMode` writes (`0x0060f260` = HUD `+0xea20`): **0** the text plus one arrow blinking on frame 0; **1** the text and the three arrows lit one at a time (frames 0-2, frame 3 none); **other** everything hidden | confirmed (code) |
+| `0x0019e758` | `GoSign_Update` | from `HUD_Update`, Armies of the Night levels only (`0x0041d110`). Mode `+0x3d0` is the byte `HUDANSetGOSignMode` writes (`0x0060f260` = HUD `+0xea20`): **0** the text plus one arrow blinking on frame 0; **1** no text, the three arrows lit one at a time (frames 0-2, frame 3 none); **other** everything hidden | confirmed (code) |
 | `0x0019ed28` | `GoSign_Render` | unless mode 2: the text and arrows; outside the pause mode (`0xa`) and when the last one has ended, plays `vags/misc/bleep27` again (handle `+0x3d8`) | confirmed (code) |
 | `0x0019ee10`, `0x0019ee50` | `GoSignColour_StaticInit`, `_StaticInitStub` | static initialiser (ctor list `0x005340f4`): `0x00600040` = `(245, 184, 0, 255)` | confirmed (code) |
 | `0x0019ee70`, `0x0019eea0` | `GlobalString_Get(id)`, `GlobalString_Set(id, text)` | the UI string table `0x00600048` (an unset id gives the empty string `0x00553ba8`); `Set` stores a copy ([Strings](gui.md#strings)) | confirmed (code) |

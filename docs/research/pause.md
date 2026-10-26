@@ -522,32 +522,13 @@ in `TutorialHUD.cpp`'s TU (inferred); `HUDLaunchANGameOver` and mode 0xd open it
 
 - **Countdown phase:** the title (string `0xce`, font slot 6, scale 2.0) at (0.5, 0.45), a digit counting **9 down to
   0, one step per 1,000 ms** (`0x0050ec0c`, scale 5.0) at (0.5, 0.6), the usage line `0xd6` at (0.5, 0.8). Start
-  (`0x800`) from player 1, or from player 2 only when his human (game state `+0x22c`) has a pad record, plays cue 8
-  (player 2's pad record is locked at open); with credits left
+  (`0x800`) from either player (player 2's pad record is locked at open) plays cue 8; with credits left
   (`0x00619910`) it spends one, sets close, calls the Lua function `F1.Time` and, while credits remain, shows both
   panels' join message; `+0x7ac`/`+0x7b0` record which players continue (alive ones). With no credit, or when the
-  count ends (after 0 has shown for a step: ten steps in all), both players' views fade out to black over 2 s
-  (`ScreenFx_QueueEffect` `0x0018d450(2.0, view, 1)` on the two managers at `0x005fdeb8`; an earlier reading of this
-  page took them for sound channels) and the end phase starts. Confirmed (runtime), PCSX2 2.9.129, 2026-10-21: in
-  `level60` with the pad idle the end phase shows "GAME OVER" and "Replay : Quit" on black.
+  count ends, both sound channels fade (`0x0018d450(2.0, ...)`) and the end phase starts.
 - **End phase:** the text `0xcf` (scale 3.0) at (0.5, 0.5), a grid of `0xdb` : `0xdc` at (0.5, 0.57), the usage line
   `0x1c` at (0.5, 0.62), fading in over 2,000 ms (`0x0050ec28`); then accept takes item 0 (`+0x7a4`) or 1 (`+0x7a8`).
-- It closes (`ANGameOver_Toggle`) once the close flag is set and the last sound has ended. The close acts on the
-  choice: **Replay** sets section 1 (`GameState_SetSection`) and loads `level60` (`LevelFlow_LoadLevelByName`, the
-  string at `0x0054e7d8`); **Quit** sets game state `+0x14c` to 3 and calls Lua `runNextMission(0)` (`0x0054e798`, the
-  script system's call by name, a pushed 0 and a call of one argument); a **continue** heals each continuing player in
-  full (`Human_Heal(human, 1)`), sets his state `0x20000000`, calls his HUD panel's slots `+0x24` and `+0x7c(0)` (the
-  second inferred to turn his join message off) and sets `+0x14c` to 0. The layout values above are the NTSC defaults
-  (`0x0050ebf0`-`0x0050ec24`); `ANGameOver_Open` moves the usage lines, the digit and the grid for other video modes.
-  A Start in `level64` (record number `0x40`) at section 4 is refused while the presser's own brain `+9` is set
-  (`+0x228`'s for player 1, `+0x22c`'s for player 2; what `+9` is was not traced). `HUD_LaunchANGameOver` toggles:
-  called with mode 0xd on top it pops it, with no choice made.
-
-**In Coney** (`repo:src/gamemodes/armies_game_over_mode.h`, `repo:src/gui/pause_menu/armies_game_over_menu.h`): all
-of the above for one view, with these stand-ins, each marked in the code: the screen closes on the frame of the choice
-(Coney's front-end audio cannot say when a cue has ended), the `level64` section 4 refusal is not built, only the
-NTSC layout is laid out, and the Armies score clear (`0x004229c0`, #704) and the `+0x14c` writes (#669) are left to
-their issues.
+- It closes (`ANGameOver_Toggle`) once the close flag is set and the last sound has ended.
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |

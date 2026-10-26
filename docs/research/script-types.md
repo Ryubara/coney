@@ -12,7 +12,7 @@ record it keeps, and the helpers they share. It covers the stretch of `TaskEngin
 ([Source map](source-map.md#position)). The engine core below it (the task manager, the object, car, glass, light and
 scene managers) is on [Tasks](tasks.md) and the pages it links.
 
-## Original structure: the type table {#type-table}
+## The type table {#type-table}
 
 270 records of 20 bytes at `0x00512f28`: `{name, init, update, message, flags}`, confirmed (code) (read by
 `ScriptType_Find` `0x003c55e8` and `ScriptType_Get` `0x003c56c8`). The flags give the kind and so the manager that
@@ -293,12 +293,7 @@ sections below say which. The full list, in table order (names from the executab
 | 268 | `Wind_Manager` | particle | `0x004071b8` | `0x00407318` | `0x00407730` |
 | 269 | `wood_splinter_bit` | particle | `0x004077b8` | `0x00407ae0` | `0x00407d50` |
 
-## Data
-
-The type table's record is described [above](#type-table); each type's own data record and the constant tables it
-reads are given with the type, under [Behaviour](#by-address).
-
-## Behaviour: the types, by address {#by-address}
+## The types, by address {#by-address}
 
 In address order, which is the order of the source files. Each table row is one function.
 
@@ -465,8 +460,7 @@ at start). Flame data: `+0x00` its group's handle, `+0x04` step, `+0x08` fade st
 
 The barriers beside `dyn_door_fence` ([Breakable barriers](objects.md#barriers)) share its set-up: the init pops the
 links number and the two triangle sets, sets the model, makes the triangles two-sided, gives them type bits `0x400`
-and the type's material (property 3), retags the number's links (`0x003a4b30`, kind `0x40`; confirmed (code), as is
-the rest of this paragraph), and sets 10 hitpoints (data `+0x0c`,
+and the type's material (property 3), retags the number's links (`0x003a4b30`), and sets 10 hitpoints (data `+0x0c`,
 object `+0x128`) and a 60-tick update. A break clears both triangle sets (`0x003a46c8`), opens the links
 (`0x003a4b00`), makes dust and splinters (unless game state word 0 bit 2), throws debris objects with message `0x30`
 (unless word 3 bit 2), plays the material pair (unless word 3 bit 4) and marks data `+0x00` = −5; the update then
@@ -495,7 +489,7 @@ reports done, which removes the object (message 2). Messages 10 and `0x19` set h
 `+0x10d`), 1 a second value (data `+0x10`, object `+0x128` = 1), 5 above 0 or game state word 3 bit 1 sets data
 `+0x04` and leaves the path polygon's flag 8 off, else sets it. By model hash it adds a child: `part_torch_flame`,
 `part_firebarrel` (two models), `dyn_oil_reflect` or `part_fire_tiki`; one model converts the jump link at it into a
-door link and disables it. Its update and messages are at `0x003bf548` and `0x003bf1b8` (confirmed (code)).
+door link and disables it. Its update and messages are at `0x003bf548` and `0x003bf1b8`.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -728,7 +722,7 @@ four `sub_water` drops and two mist puffs within the particle budget (`0x003a5a5
   the rotation), a random 0.6-1.5, the fire sprite word `0xc0000` (batch 12, `part_fire`) and the explosion's batch;
   which popped value is the speed and which the size is not traced;
 - **one `sub_fireball_emitter`** (`0x003c4580`), which makes **six `sub_fireball`s** at scale 2.0, one along each of
-  ±x, ±y, ±z of the rotation, moving outward (confirmed (code));
+  ±x, ±y, ±z of the rotation, moving outward;
 - **one `sub_explosion_light`** at `p` + (0, 0, 0.5);
 - while the particle budget allows, **twenty `sub_debris`** at `p` + (0, 0, 0.5) with directions x, y ±0.5 and z
   0.25-1, life 30, size 0.25-0.35, white, `part_page1` rectangles 8-11, each then sent message `0x27` with
@@ -739,7 +733,7 @@ four `sub_water` drops and two mist puffs within the particle budget (`0x003a5a5
 roll, flags `0x80000`, colour from white at alpha `0xf0` toward alpha `0xbf`. Stages (interval, size): 1 tick to 0.2,
 then 8 ticks to 1.0 (at this stage it makes the `part_explosion` at its position and rotation), then 40 ticks to 1.5
 while the colour fades to alpha 0, then done: about 49 ticks. A particle's drawn sprite is 2 × size wide
-(`ParticleTask_Draw`, [GUI](gui.md#radar-icons)), so the flash grows to 3 m. Confirmed (code).
+(`ParticleTask_Draw`, [GUI](gui.md#radar-icons)), so the flash grows to 3 m.
 
 **`sub_fireball`** (`0x003c4a58`, `0x003c4c38`): `part_page1` rectangle 42 (batch 4), flags `0x80000`, a random roll
 and flip, velocity = the direction × scale × 1.25, size table `0x00512ea0` (0.8) × scale (1.6 for the emitter's 2.0),
@@ -750,7 +744,7 @@ much again (8, 10, 10, 8, 8, 10, 10 ticks) and setting the size to 0.8-0.88 × s
 small tables of interval, colour and size: `sub_fireball` 7 stages (`0x00512e80` intervals, `0x00512ec0` colours,
 `0x00512ea0` start size), `sub_flames` 7 (`0x00512ee0`, `0x00512f00`), `sub_explode` 3 (`0x00512e58`, `0x00512e68`).
 `sub_explosion_light` is a light: colour `0xdacaffff`, then `0xf45c1cff`, `0xf45c1a90`, `0xf4ba1f20`, off at the
-fourth step, done at the fifth. All confirmed (code) at the functions in the table below.
+fourth step, done at the fifth.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -772,8 +766,8 @@ fourth step, done at the fifth. All confirmed (code) at the functions in the tab
 
 ### `sub_burn` {#sub-burn}
 
-The burning patch a fire leaves (`0x003c40a0` init, [AI](ai.md) no-go spheres; confirmed (code)): it holds an AI no-go
-sphere (record `+0x14`, the sphere's index; below 65 means one is held) and grows in four steps.
+The burning patch a fire leaves (`0x003c40a0` init, [AI](ai.md) no-go spheres): it holds an AI no-go sphere (record
+`+0x14`, the sphere's index; below 65 means one is held) and grows in four steps.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -796,7 +790,6 @@ age, `+0x34` money pending (also written by message `0x27`). Confirmed (code) at
   are listed on [Objects](../references/objects.md)). A contact with the level runs `WorldObject_OnImpact`
   (`0x003939a8`), which sets object flag **`0x20000000`**, and `WorldObject_OnContact` (`0x00394050`) stores the
   **contact vector `+0xb0`**: the contact normal × the speed into the surface × dt (pointing out of the surface).
-  Confirmed (code).
 - **Landing**, on the next update that sees `0x20000000`: the flag is cleared and the velocity and spin are set to
   zero. When the normalised `+0xb0` has **z ≥ 0.9** (flat ground) the piece stays put (the airborne flag is not
   cleared here; [Settling](physics.md#settle) ends it on the floor) and makes its mess by name: `dyn_paintcan_brk` a
@@ -804,8 +797,7 @@ age, `+0x34` money pending (also written by message `0x27`). Confirmed (code) at
   is **removed**; `dyn_icecream_a_fade` a white `paint_splat` of 0.5-0.75, removed; `dyn_oilcan_brk` a `paint_splat`
   `0x221a0460` of 1.25-1.75, removed; `dyn_hotdog_c_fade` three small splats (0.2-0.35, 0.15-0.25 and 0.1-0.25, the
   last two 0.02 and 0.04 m along the normal) and six `sub_debris` crumbs, and stays; `dyn_steak_fade` a `sub_blo`
-  along −normal, and stays. On a steeper surface it is made airborne again and falls from rest. Confirmed (code); the
-  colour table is read only by `FadeObject_Update`.
+  along −normal, and stays. On a steeper surface it is made airborne again and falls from rest.
 - **Money** (any landing, flat or not): a piece whose model is `dyn_cashreg_c` (`0x59026f53`) and whose `+0x124` is 1
   sets `+0x34`. Once the age is past **60** with `+0x34` set, it spawns a **`dyn_money`** at its position +
   (0, 0, 0.47) m in its own pose, with itself as parent, holding **25 + `Random_Int(25)` = $25-50** (`+0x124`), and
@@ -819,7 +811,7 @@ age, `+0x34` money pending (also written by message `0x27`). Confirmed (code) at
   tint word `+0xc8` is at most `0xffffff00` (white with alpha 0 after the fade; any non-white tint passes the test at
   once), or when **no view sees its position with a 30 m margin** (`Cameras_IsPointVisibleAny(30, p)`,
   `0x003a51f8`: it fails only when the point lies more than 30 m outside one of a view camera's six frustum planes;
-  it is not a distance to the camera; confirmed (code), the plane test in `Camera_IsPointInPlayerView` `0x003a50e0`).
+  it is not a distance to the camera).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -838,9 +830,9 @@ age, `+0x34` money pending (also written by message `0x27`). Confirmed (code) at
 
 ### Spawn helpers {#spawn-helpers}
 
-Each opens the [message scratch](tasks.md#messages) (`Msg_Begin`, `0x003a2d20`), pushes its arguments, creates the named
-type (`Task_CreateParticleByName`) and closes the scratch (`Msg_End`, `0x003a2d40`); confirmed (code). Callers are the
-props' hit handlers ([`dyn_masks`](#dyn-masks), `MeleeWeapon_Break` and others).
+Each opens the [message scratch](tasks.md#messages) (`0x003a2d20`), pushes its arguments, creates the named type
+(`Task_CreateParticleByName`) and closes the scratch (`0x003a2d40`). Callers are the props' hit handlers
+([`dyn_masks`](#dyn-masks), `MeleeWeapon_Break` and others).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -892,8 +884,8 @@ sound level follows it (`SoundTask_SetFadeLevel`, alpha / 128); below 17 the sou
 ### The narrow and square flames {#flames}
 
 `part_narrowflame` and `part_squareflame_lrg`/`_med`/`_sml` share functions; their init (`Flame_Init`, `0x003c84f0`)
-tells them apart by name ([Particles](particles.md#type-record); confirmed (code)). They share one sprite batch
-(`0x0051447c`), freed when one is deleted outside level index 93 (`0x00514480` is the request).
+tells them apart by name ([Particles](particles.md#type-record)). They share one sprite batch (`0x0051447c`), freed
+when one is deleted outside level index 93 (`0x00514480` is the request).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -905,8 +897,7 @@ tells them apart by name ([Particles](particles.md#type-record); confirmed (code
 
 `part_fire_light_large` and `part_fire_light_medium` each own one `sub_fire2_light` (record `+0x00`; `+0x04` is 1 for
 the large one). `sub_fire2_light` is a light (flags `0x488`) of radius 7.5 × size (at most 15) that flickers through
-a four-entry colour table (`0x005144a8`, read by `SubFire2Light_Update`: `0xf45c1cff` and `0xf4ba1fff`, alternating)
-at 90-100 % of its radius every 5-15 ticks; size 0 makes it idle (interval 180). Confirmed (code).
+four colours (`0x005144a8`) at 90-100 % of its radius every 5-15 ticks; size 0 makes it idle (interval 180).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -921,10 +912,8 @@ at 90-100 % of its radius every 5-15 ticks; size 0 makes it idle (interval 180).
 The ten fire types (`part_fire`, `part_fire_large`, `part_torch_flame`, `part_firebarrel` ...
 [Particles](particles.md#type-record))
 share `Fire_Init` (`0x003ca050`) and the two below. A fire **streams with the cameras**: while it is on (`+0x04`) and
-not put out (`+0x0c`), each update it is lit (`FireParticle_SetUpByName`, `0x003c8b28`) when any view sees its
-position within the margin in data `+0x20` (`Cameras_IsPointVisibleAny`, `0x003a51f8`: a frustum test, not a
-distance, as for [`fade_object`](#fade-object)) and taken down (`Fire_Stop`) when none does (`+0x08` lit). Confirmed
-(code) at `Fire_Update` `0x003ca138`. Taking down removes the child (`+0x00`), the
+not put out (`+0x0c`), each update it is lit (`FireParticle_SetUpByName`, `0x003c8b28`) when a view camera is near
+(`0x003a51f8`) and taken down (`Fire_Stop`) when none is (`+0x08` lit). Taking down removes the child (`+0x00`), the
 AI no-go sphere (`+0x18`) and a sound (`+0x1c`), and deletes the task when `+0x0c` is 1.
 
 | Address | Name | Role | What it does | Evidence |
@@ -948,12 +937,12 @@ just took, shown over his head).
 
 ### `sub_fog`: a fog wisp {#fog-wisp}
 
-A wisp of `part_fog` ([Particles](particles.md#fog); init `SubFog_Init` `0x003ca658`; confirmed (code)). Record `+0x00`
-age, `+0x08` target colour, `+0x0c` fade-in steps, `+0x10` the camera it belongs to, `+0x14` fade step. It fades in
-toward its colour. It is **hidden** (alpha 0, updating every tick) when its camera is more than 20 m away, or out of
-view by more than 5 m, or within 10 m when that camera says so; within 4 m it is hidden and updates every 30 ticks. From
-its third update on, a wisp whose last colour had alpha 0 is done and lowers the wisp count `0x005144cc`. So is one
-whose camera is no longer the player view.
+A wisp of `part_fog` ([Particles](particles.md#fog); init `0x003ca658`). Record `+0x00` age, `+0x08` target colour,
+`+0x0c` fade-in steps, `+0x10` the camera it belongs to, `+0x14` fade step. It fades in toward its colour. It is
+**hidden** (alpha 0, updating every tick) when its camera is more than 20 m away, or out of view by more than 5 m, or
+within 10 m when that camera says so; within 4 m it is hidden and updates every 30 ticks. From its third update on, a
+wisp whose last colour had alpha 0 is done and lowers the wisp count `0x005144cc`. So is one whose camera is no longer
+the player view.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -988,9 +977,8 @@ start), `+0x04` broken, `+0x08` knocks counted, `+0x0c` the update interval. Con
 
 ### `dyn_bar_lamp` and `sub_barlamp_glow` {#bar-lamp}
 
-A hanging bar lamp (`dyn_bar_lamp`; its init `0x003cc3d0`, named by type record 10 at `0x00512ff0`, is not a function in
-the database; confirmed (code)) with two glow sprites (`sub_barlamp_glow`) as children (`+0x00`, `+0x04`). A glow's
-record: `+0x00` its sprite batch, `+0x04` removed.
+A hanging bar lamp (`dyn_bar_lamp`; its init `0x003cc3d0` is not a function in the database) with two glow sprites
+(`sub_barlamp_glow`) as children (`+0x00`, `+0x04`). A glow's record: `+0x00` its sprite batch, `+0x04` removed.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1012,8 +1000,7 @@ child task (its lights). Confirmed (code) at `0x003cc8b8`, `0x003cca88`, `0x003c
   **exploding**: state 10, every 2 ticks, flag `0x800000`.
 - **Exploding** (update, one step per update): step 2 drops the child and (except model `0xc4cb2a87`) throws it with a
   random spin; step 22 breaks the glass within 10 m (`0x003a5810` → `World_BreakGlassInRadius`), plays one of three
-  sounds and takes the wrecked model; step 45 goes back to idle, every 180 ticks. Confirmed (code), at the three
-  functions above.
+  sounds and takes the wrecked model; step 45 goes back to idle, every 180 ticks.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1136,8 +1123,8 @@ A pickable radio (flags `0x228001`, every 20 ticks) that plays chatter. Record: 
 
 ### Blood spray {#blood-spray}
 
-`part_blood_spray` sticks to a human at one of seven attach points (table `0x00514558`, indexed by `Random_Int(6)` in
-`PartBloodSpray_Init`; confirmed (code)) and sprays `sub_blood_spray` sprites. Related types are on [Blood](#blood).
+`part_blood_spray` sticks to a human at one of seven attach points (table `0x00514558`) and sprays `sub_blood_spray`
+sprites. Related types are on [Blood](#blood).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1149,7 +1136,7 @@ A pickable radio (flags `0x228001`, every 20 ticks) that plays chatter. Record: 
 ### Small emitters {#small-emitters}
 
 Types whose init only places them (flags 4) and, for some, adds a looping sound emitter (`Sound_AddScriptEmitter`
-`0x001172c8`); their update and message are empty stubs. Confirmed (code).
+`0x001172c8`); their update and message are empty stubs.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1181,7 +1168,7 @@ Types whose init only places them (flags 4) and, for some, adds a looping sound 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
 | `0x003d64d8` | `SubExplosionGroup_Init` | `sub_explosion_group` init | flags `0x404`; when the play-phase particle manager has room (`0x003a5a50`), twelve `sub_fade_flame` at random offsets round the popped point | confirmed (code) |
-| `0x003d70e8` | `PartExplosionScreenShake_Init` | `part_explosion_screen_shake` init | for every view, the camera's shake (camera vtable `+0x1d4` with 0.95, `+0x1dc` with 0.55; `0x003a4608`, `0x003a4668`): level 0.95 for 0.55 ([Camera](camera.md#world-shake)) | confirmed (code) |
+| `0x003d70e8` | `PartExplosionScreenShake_Init` | `part_explosion_screen_shake` init | for every view, the camera's shake (camera vtable `+0x1d4` with 0.95, `+0x1dc` with 0.55; `0x003a4608`, `0x003a4668`) | confirmed (code); the two values' roles inferred |
 | `0x003d71e8` | `PartExplosionScreenShake_Update` | `part_explosion_screen_shake` update | done on its first update | confirmed (code) |
 
 ### Fire truck lights {#firetruck}
@@ -1235,8 +1222,7 @@ unless marked:
 - **Sound** (only when the popped parent handle is 0): `Sound_AddScriptEmitter(0, 0x49d14d16, position)`, a
   `script_emitter` in [mode 3](sound.md#ambient) (a loop: started while a listener is within range, stopped beyond),
   range −1 → the class's `far` + 10 = **20 m**, filter 0 (a player on covered ground does not count), emitter
-  volume 1 (`0x001172c8`; the call confirmed (code), the mode and range from [Sound](sound.md#ambient)). The sound
-  (disc data, `BFW.SND` list): unnamed, streamed, 11,250 Hz, record volume 6,
+  volume 1 (`0x001172c8`). The sound (disc data, `BFW.SND` list): unnamed, streamed, 11,250 Hz, record volume 6,
   class 68 (near 1 m, far 10 m, flags `0x27`: looping).
 
 | Address | Name | Role | What it does | Evidence |
@@ -1288,8 +1274,7 @@ flash](#sub-shk).
 
 ### The level 2 subway {#subway}
 
-`part_level2_subway` moves through ten key positions (`0x006f2e00`, 16 bytes each, written once by
-`TaskTypes_InitConstantTables` `0x003e21c8`; confirmed (code)) with per-step intervals
+`part_level2_subway` moves through ten key positions (`0x006f2e00`, 16 bytes each) with per-step intervals
 (`0x00514588`): a passing train's light and noise. Record: `+0x00` the key, `+0x04` the pass step, `+0x08` running,
 `+0x0c` its `subway_loop` sound child. A `subway_loop`: `+0x00` the sound, `+0x04` stopping, `+0x08` the parent,
 `+0x0c` which sound.
@@ -1316,9 +1301,8 @@ emitter ([How the effect types are built](#effect-pattern)), hides itself (flags
 hums, adds a looping script sound emitter at its position (`Sound_AddScriptEmitter`); their update and message slots
 are empty stubs outside this list. The others react to the common switch messages of the effect types: **`0x12`**
 switches on and **`0x13`** switches off. `part_motorbike_gang` also shakes the player cameras through
-`0x003a4608` (the level) and `0x003a4668` (the time), the camera vtable's `+0x1d4` and `+0x1dc`, the same pair
-`sub_shk` uses ([Shake and gun flash](#sub-shk); [Camera](camera.md#world-shake)). Confirmed (code); this page called
-the second value a rate before `ScriptObj_SetCameraWorldShakeTime` was read.
+`0x003a4608` (amount) and `0x003a4668` (rate), the camera vtable's `+0x1d4` and `+0x1dc`, the same pair `sub_shk`
+uses ([Shake and gun flash](#sub-shk)).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1373,12 +1357,10 @@ colours in their light record (`+0x80` and `+0x84`, the colour drawn) and a radi
 ### The subway and the train {#subway-train}
 
 `part_pelham_subway` runs a train's passing effects along a fixed path: a static table (`TaskTypes_InitConstantTables`,
-run once at start-up) holds 9 points at `0x006f2ea0` (16 bytes each, up to `0x006f2f2c`; x 54 to 84, y 250 down to
-−80, z 4), and `0x005145b0` the update interval for each point. A run (init or message `0x12`) places the train at
-point 0 with its step counter at 8, so its first update wraps the counter to point 1, and it steps along the points;
-at each step it may spawn a `subway_loop` sound and a `sub_spark_effect` and, within 30 m of a camera, shakes every
-view (level 0.02 for 4 s, [Camera](camera.md#world-shake)). Confirmed (code) at the functions below; this page said
-13 points before the table's writer was read.
+run once at start-up) holds 13 points at `0x006f2ea0` (16 bytes each; x 54 to 84, y 250 down to −80, z 4), and
+`0x005145b0` the update interval for each point. Each run starts at point 8 and steps along the points; at each step
+it may spawn a `subway_loop` sound and a `sub_spark_effect` and, within 30 m of a camera, shakes it (level 0.02 for
+4 s, [Camera](camera.md#world-shake)).
 The same constructor fills the spark direction table at `0x006f2f30` (16 unit vectors) used by
 `sub_car_spark_emitter`. `part_train_sound` and `part_train_splat` are the train's sound and a body hit by it.
 
@@ -1692,9 +1674,7 @@ record volume 100, class 1 (near 1 m, far 20 m, flags 3: looping).
 
 ### `sub_triglint` {#triglint}
 
-Three glints at fixed offsets (`0x006f3160`, three 16-byte vectors turned by the triglint's rotation; sizes at
-`0x005146c0`), shown only while on screen. Confirmed (code) at `SubTriglint_SpawnGlints` `0x003eade8`, which reads
-the offsets through a computed address, so Ghidra lists no reference from it.
+Three glints at fixed offsets (`0x006f3160`, sizes at `0x005146c0`), shown only while on screen.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1848,17 +1828,15 @@ A breakable padlock. Data: `+0x00` state (−5 broken), `+0x04` hits taken, `+0x
 `+0x58`; message `0x19` sets it). Each hit (message 1) plays hash `0xf4bad950` and throws 1-3 `sub_anim_spark`
 sparks in gold colours; the model follows the damage left (`0x003a4c48`). The last hit throws 4-6 sparks, spawns a
 falling `dyn_lock_b` (sent message `0x30` with a push and a random spin), hides the lock, plays hash `0xe108f888`
-and marks it broken, so its update ends it. `0x003ee248` fills three small offset vectors (a few centimetres each)
-at `0x006f3160`, which `SubTriglint_SpawnGlints` reads as its glints' offsets ([`sub_triglint`](#triglint)); confirmed
-(code). This page said earlier that nothing reads them: Ghidra lists only the write, because the reader computes the
-address. It runs from the static-constructor table (`0x003ee318`, inferred).
+and marks it broken, so its update ends it. `0x003ee248` fills a constant transform at `0x006f3160` that nothing
+reads; it runs from the static-constructor table (`0x003ee318`, inferred).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
 | `0x003eda58` | `DynLockA_Init` | `dyn_lock_a` init | Model, hit count 0, hit points from CfgObj. | confirmed (code) |
 | `0x003edb28` | `DynLockA_OnMessage` | `dyn_lock_a` message | 1 hit (sparks, sound, model by damage; last hit drops a dyn_lock_b), 0x15 remove, 0x19 hit points. | confirmed (code) |
 | `0x003ee170` | `DynLockA_Update` | `dyn_lock_a` update | Done once broken; clears velocity after a contact. | confirmed (code) |
-| `0x003ee248` | `DynLock_InitStaticTransform` | helper (static initialiser body) | Static initialiser body: fills the three `sub_triglint` glint offsets at `0x006f3160`. | confirmed (code) |
+| `0x003ee248` | `DynLock_InitStaticTransform` | helper (static initialiser body) | Static initialiser body: fills a constant transform at 0x006f3160 (written only). | inferred |
 | `0x003ee318` | `DynLock_StaticInit` | static initialiser | Static initialiser (in the constructor table) calling 0x003ee248. | inferred |
 
 ### `dyn_cbradio` {#dyn-cbradio}
@@ -1999,7 +1977,7 @@ One `part_raindrops` per view (its init pops the view index). While on (message 
 size, count and colour) it drops count ÷ views splashes per update at random points 2-20 m ahead of that view's
 camera, on a surface found below (`0x003a36e0`, 15 m) that a player can see; under 15 m a `sub_ripple` too. A splash
 (sprite `0x10033`) doubles and fades in two updates; a ripple (sprite `0x27`, flat on the surface) grows to 3× and
-fades. Confirmed (code); the spawn half at `PartRaindrops_Update` `0x003f3178`.
+fades.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -2047,49 +2025,12 @@ material against what it hit, or puffs (`sub_shack_puff`) and bounces a few time
 The roll-up, portcullis, fence, lift, police, subway and spook doors. `dyn_door_sliding` makes, by its `CfgObj` name,
 one or two leaf objects (`dyn_dr_rollup`, `dyn_dr_portcullis`, `dyn_dr_fence_r`, `dyn_dr_fence_s`, `dyn_dr_ele`,
 `dyn_dr_ele_c`, `dyn_dr_pol`, `dyn_dr_subway`, `dyn_dr_spook_a` / `_b`), each a `sub_sliding_door`. The slide length
-is `CfgObj` value 7 (else 8), the axis byte (`+0x2d`) picks ±z or ±x (fences and police doors one more), the speed is
+is `CfgObj` value 7 (else 8), the axis byte (`+0x2d`) picks ±x or ±y (fences and police doors one more), the speed is
 twice value 6, and the open and close sounds are per type. Its command (message `0x22`, also `0x0b` when a human
 opens it): 2 or 8 open (leaves get state `0xd`, the collision triangles off), 3 or 7 close (`0xe`, triangles on), 5
 triangles off, 6 on, 10 / 11 the lock-pick glint on / off. Message `0x0c` answers "open". The leaf's update moves it
 along the axis until the length (or 0), then tells the door `0x13` and rests (`0xc`). Compare the
 [swinging doors](objects.md#door-states).
-
-In detail, re-read 2026-10-21 for issue #85 (confirmed (code) at the addresses in the table):
-
-- **The slide** (`SlidingDoor_SpawnLeaves`): with `CfgObj` property 7 (`f17`, `+0x70`) not 0 the length is property 7
-  (its sign kept) and the axis byte 2; otherwise the length is property 8 (`f18`, `+0x74`) and the axis byte 0;
-  `dyn_door_fence_s` and `dyn_door_pol` add 1. The leaf's direction (`SubSlidingDoor_PlaceLeaf`) is, in its own
-  frame, byte 0 up (+z), 1 down, 2 along +x, 3 along −x, turned by its pose. The door's step `+0x30` is twice property
-  6 (`f16`, `+0x6c`, `DynDoorSliding_Init`).
-- **The leaves and sounds by type name** (strings `0x00586450`-`0x00586590`): `dyn_door_rollup` one `dyn_dr_rollup`,
-  `dyn_door_ele` one `dyn_dr_ele` and `dyn_door_pol` one `dyn_dr_pol`; the portcullis, both fences, `dyn_door_ele_c`
-  and `dyn_door_subway` two leaves of their `dyn_dr_` type, `dyn_door_spook` `dyn_dr_spook_a` and `_b`. The first
-  leaf takes the door's pose; a second sits 2 × property 5 along the door's −x axis (`dyn_door_ele_c`'s along its −z,
-  `0x003f4ffc`-`0x003f5160`), turned 180° about its own z, or about its own y when the axis byte is below 2
-  (`SubSlidingDoor_PlaceLeaf`), so the lift's second leaf slides down while the first slides up. The open and close
-  sound is `0xd2479dee` for the roll-up, the lift doors and the spook door, `0x8a2b8511` for the portcullis and
-  `0xf8638826` for the rest.
-- **A command** (`SlidingDoor_StateCommand`): 2 or 8 send the leaves state `0xd` (their update interval 2 ticks; the
-  update already scheduled stands, so a leaf resting on its 60-tick interval starts 1 to 60 ticks later), set
-  the door's state byte `+0x2c` to 2 (what message `0x0c` answers "open" for) and play the open sound, then as 5: both
-  collision triangles off and **`NavLink_Open(number)`** (`0x003a4b00`, `NavLinks_OpenByNumber`: the links lose their
-  avoid bit and the doorway's hole gets flag 8). 3 or 7 do the same with `0xe`, state 3 and the close sound, then as 6:
-  triangles on and `NavLink_Close(number)`. Message `0x0b` (a human opens it) is command 2. The set-up ends with
-  command 7, so a sliding door starts shut, its links avoided and its doorway a hole in the walk mesh.
-- **The leaf's step** (`SubSlidingDoor_Update`, every 2 ticks while it slides): opening, while its offset is not past
-  the length it adds the step, else it sets the length and rests; closing, while the offset is not below 0 it takes
-  the step off, else it sets 0 and rests (interval `0x3c`). So it overshoots by up to one step before it settles.
-
-The messages (`DynDoorSliding_OnMessage`, `0x003f5ef0`): 8 detach, `0x0b` command 2, `0x0c` open when `+0x2c` is 2,
-`0x10` and `0x13` pin and unpin the leaves, `0x15` the door's destroy, `0x22` the command, `0x3e` its data.
-
-**In Coney** (`repo:src/world_objects/doors.cpp`, `Doors`): all of the above but the streaming pins, the leaves'
-collision bodies, messages 8, `0x15` and `0x3e` (issues #707, #710), and the lock-pick glint. Stand-in: a command
-starts a leaf's slide on its next 2-tick step, not on its pending update, as the late start has not been seen at
-runtime yet.
-
-`level60`'s garage is a `dyn_door_rollup` (door number 5, at (−94.69, 19.66)): `P1.Start02`'s `OpenDoor` opens the way
-the player then walks out by ([Armies of the Night](armies.md#first-frames)).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -2117,7 +2058,7 @@ pushed first, a link number and two collision triangles, makes both triangles tw
 `+0x54` = 4, update every 240 ticks). Data: object `+0xd8` / `+0xdc` the triangles, `+0xe0` the link number.
 Message **`0x22`** with argument 2 turns the triangles off (`0x003a46c8`) and opens the hole in the path graph for
 the link number (`0x003a4b00`, [A door's hole](objects.md#barriers)); argument 3 turns them back on (`0x003a4710`)
-and closes it (`0x003a4ae0`). Other arguments and messages do nothing. Confirmed (code).
+and closes it (`0x003a4ae0`). Other arguments and messages do nothing.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -2128,12 +2069,12 @@ and closes it (`0x003a4ae0`). Other arguments and messages do nothing. Confirmed
 ### Steam, hood smoke and the ominous smoke {#steam-family}
 
 The bigger vents and smokes built on `part_steam` ([Steam vents](particles.md#steam)). `part_steam_huge`,
-`part_steam_large` and `part_ominous_smoke` share the vent's message helpers: **10** switches the vent on (data `+0x2c`
-= 1, its spawn interval taken from data `+0x20`) or off (argument 0), **`0x12`** calls a helper that rotates (0, 0, −1)
-by the vent's rotation and throws the result away (no effect), and **`0x27`** is `CfgSteam` (`Steam_OnCfgSteam`). Their
-updates spawn `sub_smoke` puffs while on, a camera is near and the particle pool has room (`0x003a5a50`, confirmed
-(code)); the interval is data `+0x29` then, 60 ticks (180 for the ominous smoke) when no camera is near. The two car
-smokes are emitters that run a fixed number of updates.
+`part_steam_large` and `part_ominous_smoke` share the vent's message helpers: **10** switches the vent on (data
+`+0x2c` = 1, its spawn interval taken from data `+0x20`) or off (argument 0), **`0x12`** calls a helper that
+rotates (0, 0, −1) by the vent's rotation and throws the result away (no effect), and **`0x27`** is `CfgSteam`
+(`Steam_OnCfgSteam`). Their updates spawn `sub_smoke` puffs while on, a camera is near and the particle pool has room
+(`0x003a5a50`); the interval is data `+0x29` then, 60 ticks (180 for the ominous smoke) when no camera is near. The
+two car smokes are emitters that run a fixed number of updates.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -2247,8 +2188,7 @@ which hash is which model is traced only for the street trash ([Objects](objects
 ### `thrown_weapon` {#thrown-weapon}
 
 Small thrown objects (bottles, bricks). As `melee_weapon` plus a break by model. Two models (hashes `0x0191ccb4` and
-`0x26b7048b`) take a random tint from an eight-entry table at `0x00514770` (the second also with the `0x80` bit;
-confirmed (code) at `ThrownWeapon_Init`).
+`0x26b7048b`) take a random tint from an eight-entry table at `0x00514770` (the second also with the `0x80` bit).
 Data: `+0x20` state, `+0x24` update interval, `+0x30` a linked object's handle, `+0x34` / `+0x38` its counter.
 
 | Address | Name | Role | What it does | Evidence |
@@ -2273,8 +2213,8 @@ P is visible from a camera (10 m margin). With c the object's contact vector `+0
   colour `0xa5786490` and 0x55.
 - **`dyn_baseball`, `dyn_cueball`**: the dust and a `sub_rubble` along 0.15 c, 0.04, grey `0x909090ff`, 1.
 - `dyn_bong_f` (`0x26b7048b`): 10-14 coloured glass pieces in its own tint; `dyn_poolball08_` (`0x0191ccb4`) a rubble in
-  its tint (confirmed (code)); food, paint and oil cans: `WorldObject_HitEffectsByModel` along c; `dyn_mug`: a burst of
-  10-15 and `sub_detergent`; `dyn_drumstick`: 6 splinters; `dyn_rice_steamer`: 60 debris; and a few bursts by model.
+  its tint; food, paint and oil cans: `WorldObject_HitEffectsByModel` along c; `dyn_mug`: a burst of 10-15 and
+  `sub_detergent`; `dyn_drumstick`: 6 splinters; `dyn_rice_steamer`: 60 debris; and a few bursts by model.
 
 It plays **no sound**: the break's sound comes from the contact handler before it (the pair (bottle, bottle) at 1.0 and
 (bottle, surface) at 0.5 at the contact point on a floor, [Objects](objects.md#throws)). It removes nothing itself: with
@@ -2338,8 +2278,7 @@ update interval, `+0x0c` path flag set, `+0x10` / `+0x14` two sound handles.
 ### `Wind_Manager` {#wind-manager}
 
 One hidden task (update every 2) that owns the wind vectors at `0x006f31b0` and `0x006f31c0`, which the blowing
-litter and the steam puffs read ([Blowing litter](particles.md#garbage)). Its update is `0x00407318`. Confirmed
-(code): `WindManager_TypeInit` writes both vectors.
+litter and the steam puffs read ([Blowing litter](particles.md#garbage)). Its update is `0x00407318`.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -2395,18 +2334,3 @@ Dust puffs (from `part_s_shack_dust_puff`): a puff sprite (one of three) that gr
 | `0x00408860` | `SubShackPuff_Init` | `sub_shack_puff` init | as the aligned one, flags `0x1000` | confirmed (code) |
 | `0x00408a00` | `SubShackPuff_OnMessage` | `sub_shack_puff` message | an empty stub | confirmed (code) |
 | `0x00408a28` | `SubShackPuff_Update` | `sub_shack_puff` update | as the aligned one | confirmed (code) |
-
-## Coney's implementation
-
-Coney reimplements the types it needs in its own systems, each citing the section here: the effect types in
-`repo:src/effects/particles.cpp`, `repo:src/effects/particle_types.cpp` and `repo:src/effects/light_tasks.cpp` (the
-explosion family, the flies, the neon signs, the strober), the world objects in `repo:src/world_objects/`
-(`fade_object` in `loose_objects.cpp`, `pickup_item` and the Molotov in `pickups.cpp`, the cash registers in
-`props.h`, the hats in `hats.h`, the sliding doors in `object_services.h`). The particle types are looked up by name
-in `repo:src/effects/particle_types.h`, which gives each family of names one behaviour: a marked stand-in where the
-type's code on this page has not been ported, the traced recipe where it has (`sub_explode`, `part_explosion`).
-
-## Open questions
-
-Each section marks what is not traced where it arises ("not traced"); the largest gaps are the radio of `dyn_blaster`
-and the meaning of the surface id that hides a `blo_splat`.

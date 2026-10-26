@@ -14,7 +14,8 @@
 // The Armies of the Night parts of the HUD (levels 60-69, `GameState_IsArmiesLevel`): the credits line, the GO sign and
 // the players' join messages, which the HUD sets up and steps only in those levels. The two `ANHud` player panels
 // (health and power bars, portrait, boss picture) are not built: Coney's story panel stands in for them.
-// Research: docs/research/armies.md, docs/research/hud-functions-parts.md#fn-pre-basewidget,
+// Research: docs/research/armies.md#credits, docs/research/armies.md#go-sign,
+// docs/research/armies.md#the-join-messages, docs/research/hud-functions-parts.md#fn-pre-basewidget,
 // docs/research/hud-functions-panels.md#fn-anhud
 
 namespace coney::hud {

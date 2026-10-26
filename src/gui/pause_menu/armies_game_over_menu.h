@@ -38,7 +38,7 @@ enum class ArmiesGameOverChoice : std::uint8_t {
 /// Positions are the NTSC defaults (`0x0050ebf0`-`0x0050ec24`). **Coney's stand-in**: the original moves some for
 /// other video modes (display flags 2, 4 and 8) in ANGameOver_Open, and Coney has only the default one.
 ///
-/// Research: docs/research/pause.md#an-game-over
+/// Research: docs/research/pause.md#an-game-over, docs/research/armies.md#game-over
 /// @orig 0x001cef10 ANGameOver_Open (unknown)
 class ArmiesGameOverMenu : public Widget {
   public:

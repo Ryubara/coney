@@ -18,7 +18,8 @@
 // The doors level scripts spawn with `SpawnDoor`: the swinging doors (`dyn_door_swinging`, one or two leaves, a state
 // machine, lock picking, the breakable ones) and the breakable barriers (`dyn_door_fence` and its kin).
 // Research: docs/research/objects.md#doors, docs/research/objects.md#door-states, docs/research/objects.md#door-break,
-// docs/research/objects.md#barriers, docs/research/objects.md#lock-pick
+// docs/research/objects.md#barriers, docs/research/objects.md#lock-pick, docs/research/script-types.md#sliding-doors,
+// docs/research/armies.md#garage-door
 
 namespace coney::world_objects {
 
