@@ -37,6 +37,7 @@ constexpr std::uint64_t kBackOnGrid = 160;
 
 TEST_CASE("the disc's pause menu: the circled header and the Stats screen through the pad",
           "[disc][pause_menu][pause_stats]") {
+    // Expected: pause.md#stats-screen, confirmed (runtime)
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");

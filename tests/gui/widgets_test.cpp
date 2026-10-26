@@ -95,6 +95,7 @@ void sample(coney::Pad& pad, std::uint16_t buttons) {
 } // namespace
 
 TEST_CASE("widget: init runs once until shutdown", "[widgets]") {
+    // Expected: gui.md#widget-classes, confirmed (code)
     CountingWidget widget;
     widget.init();
     widget.init();
@@ -108,6 +109,7 @@ TEST_CASE("widget: init runs once until shutdown", "[widgets]") {
 }
 
 TEST_CASE("colour table: the menu colours at their addresses", "[widgets]") {
+    // Expected: gui.md#colour-table, confirmed (code)
     CHECK(coney::gui::kColourTable.size() == 26);
     CHECK(coney::gui::colourAt(0x005fd260) == Rgba{0, 0, 0, 255});
     CHECK(coney::gui::colourAt(0x005fd268) == Rgba{255, 255, 255, 255});
@@ -119,6 +121,7 @@ TEST_CASE("colour table: the menu colours at their addresses", "[widgets]") {
 }
 
 TEST_CASE("sprite widget: height in overlay units, width from the rectangle's shape, centred by default", "[widgets]") {
+    // Expected: gui.md#widget-classes, confirmed (code)
     SpriteBatch batch(twoRectSheet(), 10, 8500.0F);
     BaseWidget widget(&batch, 1);
     widget.setup(BaseWidgetSetup{.x = 0.25F, .y = 0.5F, .height = 0.1F, .colour = Rgba{255, 255, 255, 200}});
@@ -134,6 +137,7 @@ TEST_CASE("sprite widget: height in overlay units, width from the rectangle's sh
 }
 
 TEST_CASE("sprite widget: the left anchor moves it right by half its width; the shadow stays unshifted", "[widgets]") {
+    // Expected: gui.md#widget-classes, confirmed (code)
     SpriteBatch batch(twoRectSheet(), 10, 8500.0F);
     BaseWidget widget(&batch, 0);
     widget.setup(BaseWidgetSetup{.x = 0.0F,
@@ -160,6 +164,7 @@ TEST_CASE("sprite widget: the left anchor moves it right by half its width; the 
 }
 
 TEST_CASE("sprite widget: nothing when hidden, without a batch or past the sheet's rectangles", "[widgets]") {
+    // Expected: gui.md#widget-classes, confirmed (code)
     SpriteBatch batch(twoRectSheet(), 10, 8500.0F);
     BaseWidget hidden(&batch, 0);
     hidden.setVisible(false);
@@ -175,6 +180,7 @@ TEST_CASE("sprite widget: nothing when hidden, without a batch or past the sheet
 }
 
 TEST_CASE("text widget: lays out its text centred, faded, with its time from the first update", "[widgets]") {
+    // Expected: gui.md#widget-classes, confirmed (code)
     TextCanvas canvas;
     TextWidget text;
     text.setText("AB");
@@ -198,6 +204,7 @@ TEST_CASE("text widget: lays out its text centred, faded, with its time from the
 }
 
 TEST_CASE("text widget: set up left at x, centred on x, or ending at x", "[widgets]") {
+    // Expected: gui.md#widget-classes, confirmed (code)
     TextCanvas canvas;
     TextWidget text;
     text.setText("ABCD");
@@ -218,6 +225,7 @@ TEST_CASE("text widget: set up left at x, centred on x, or ending at x", "[widge
 }
 
 TEST_CASE("text widget: nothing drawn when hidden or without fonts", "[widgets]") {
+    // Expected: gui.md#widget-classes, confirmed (code)
     TextCanvas canvas;
     TextWidget text;
     text.setText("AB");
@@ -229,6 +237,7 @@ TEST_CASE("text widget: nothing drawn when hidden or without fonts", "[widgets]"
 }
 
 TEST_CASE("option grid: rows packed left from x, each row one pitch down; separators follow their item", "[widgets]") {
+    // Expected: gui.md#fn-optiongrid, confirmed (code)
     TextCanvas canvas;
     OptionGrid grid;
     grid.setup(OptionGridSetup{.y = 0.76F, .rows = {2, 1}, .leftX = 0.0F});
@@ -253,6 +262,7 @@ TEST_CASE("option grid: rows packed left from x, each row one pitch down; separa
 }
 
 TEST_CASE("option grid: a centred row is centred on its x", "[widgets]") {
+    // Expected: gui.md#fn-optiongrid, confirmed (code)
     TextCanvas canvas;
     OptionGrid grid;
     grid.setup(OptionGridSetup{.y = 0.745F, .rows = {2}, .centreX = 0.5F});
@@ -265,6 +275,7 @@ TEST_CASE("option grid: a centred row is centred on its x", "[widgets]") {
 
 TEST_CASE("option grid: colour only marks the selection, grey when focused; the separator keeps its colour",
           "[widgets]") {
+    // Expected: gui.md#fn-optiongrid, confirmed (code)
     TextCanvas canvas;
     coney::gui::MenuInput input;
     OptionGrid grid;
@@ -286,6 +297,7 @@ TEST_CASE("option grid: colour only marks the selection, grey when focused; the 
 }
 
 TEST_CASE("option grid: moves, wrap from three items, refused moves and disabled items", "[widgets]") {
+    // Expected: gui.md#fn-optiongrid, confirmed (code)
     std::vector<int> cues;
     OptionGrid grid;
     grid.setup(OptionGridSetup{
@@ -340,6 +352,7 @@ TEST_CASE("option grid: moves, wrap from three items, refused moves and disabled
 }
 
 TEST_CASE("option grid: a refused move stops the d-pad repeating until the next move", "[widgets]") {
+    // Expected: gui.md#fn-optiongrid, confirmed (code)
     coney::Pad pad;
     coney::gui::MenuInput input;
     OptionGrid grid;
@@ -361,6 +374,7 @@ TEST_CASE("option grid: a refused move stops the d-pad repeating until the next 
 }
 
 TEST_CASE("option grid: at most 50 items; taking focus resets the menu input", "[widgets]") {
+    // Expected: gui.md#fn-optiongrid, confirmed (code)
     OptionGrid grid;
     grid.setup(OptionGridSetup{});
     for (std::size_t i = 0; i < OptionGrid::kMaxItems; ++i) {
@@ -387,6 +401,7 @@ TEST_CASE("option grid: at most 50 items; taking focus resets the menu input", "
 }
 
 TEST_CASE("usage line: grey, size 1.0, part_page0, left-aligned or centred at its place", "[widgets]") {
+    // Expected: gui.md#fn-usageinfo, confirmed (code)
     UsageInfo usage;
     usage.place(0.0F, 0.87F, true);
     usage.setLegend("<X> ok");
@@ -405,6 +420,7 @@ TEST_CASE("usage line: grey, size 1.0, part_page0, left-aligned or centred at it
 }
 
 TEST_CASE("bar: the back at full width, the fill from the left edge", "[widgets]") {
+    // Expected: gui.md#widget-classes, inferred
     SpriteBatch batch(twoRectSheet(), 10, 8500.0F);
     coney::gui::Bar bar(&batch, 1);
     bar.setup(coney::gui::BarSetup{.x = 0.0F, .y = 0.815F, .width = 0.6F, .height = 0.025F});
@@ -423,6 +439,7 @@ TEST_CASE("bar: the back at full width, the fill from the left edge", "[widgets]
 }
 
 TEST_CASE("message box: a timed message closes after its time", "[widgets]") {
+    // Expected: frontend.md#message-box, confirmed (code)
     TextCanvas canvas;
     coney::gui::MessageBox box;
     box.showTimed("CHECKING", 3000, coney::gui::MessageStyle::Centre, 1000);
@@ -439,6 +456,7 @@ TEST_CASE("message box: a timed message closes after its time", "[widgets]") {
 }
 
 TEST_CASE("message box: a dialog's choices at 0.745, usage at 0.8; accept plays cue 8 and ends it", "[widgets]") {
+    // Expected: frontend.md#message-box, confirmed (code)
     TextCanvas canvas;
     coney::gui::MenuInput input;
     coney::Pad pad;
@@ -471,6 +489,7 @@ TEST_CASE("message box: a dialog's choices at 0.745, usage at 0.8; accept plays 
 }
 
 TEST_CASE("message box: a several-line message is centred as a block on y 0.5", "[widgets]") {
+    // Expected: frontend.md#message-box, confirmed (code)
     TextCanvas canvas;
     coney::gui::MessageBox box;
     box.showTimed("A<CR>B<CR>C", 1000, coney::gui::MessageStyle::Centre, 0);
@@ -481,6 +500,7 @@ TEST_CASE("message box: a several-line message is centred as a block on y 0.5", 
 }
 
 TEST_CASE("text wrap: a word that would pass the wrap width starts the next line", "[gui][text]") {
+    // Expected: gui.md#fn-messagehud, confirmed (code)
     const coney::graphics::Font font = coney::test::testFont();
     const coney::gui::FontLookup fonts = [&font](int /*slot*/) { return &font; };
     coney::gui::TextStyle style;
@@ -498,24 +518,34 @@ TEST_CASE("text wrap: a word that would pass the wrap width starts the next line
 }
 
 TEST_CASE("text line window: only the window's lines are drawn, its first at y; every line is counted", "[gui][text]") {
+    // Expected: pause.md#stats-description, confirmed (code)
     const coney::graphics::Font font = coney::test::testFont();
     const coney::gui::FontLookup fonts = [&font](int /*slot*/) { return &font; };
     coney::gui::TextStyle style;
     style.y = 0.3F;
-    const coney::gui::TextLayout whole = coney::gui::layoutText("A<CR>BB<CR>C<CR>D", style, fonts);
+    const coney::gui::TextLayout whole = coney::gui::layoutText("A<CRM>BB<CRM>C<CRM>D", style, fonts);
     REQUIRE(whole.sprites.size() == 5);
     style.firstLine = 1;
     style.lastLine = 2;
-    const coney::gui::TextLayout window = coney::gui::layoutText("A<CR>BB<CR>C<CR>D", style, fonts);
+    const coney::gui::TextLayout window = coney::gui::layoutText("A<CRM>BB<CRM>C<CRM>D", style, fonts);
     CHECK(window.lines == 4);
     REQUIRE(window.sprites.size() == 3);
     // Line 1 ("BB") takes line 0's place, line 2 line 1's.
     CHECK(window.sprites[0].sprite.position.y == Approx(whole.sprites[0].sprite.position.y));
     CHECK(window.sprites[2].sprite.position.y == Approx(whole.sprites[1].sprite.position.y));
     CHECK(window.height < whole.height);
+    // Not paged, every line is a window line: lines 1 and 2 are "B" and "C".
+    CHECK(coney::gui::layoutText("A<CRM>B<CR>C<CRM>D", style, fonts).sprites.size() == 2);
+    // Paged, the window counts only the wrap's breaks (`<CRM>`): window line 1 is "B<CR>C", 2 is "D", though every
+    // line is counted.
+    style.paged = true;
+    const coney::gui::TextLayout paged = coney::gui::layoutText("A<CRM>B<CR>C<CRM>D", style, fonts);
+    CHECK(paged.lines == 4);
+    CHECK(paged.sprites.size() == 3);
 }
 
 TEST_CASE("scrolling menu: no wrap, the refused cue at the ends, a 100 ms gap and a centred window", "[gui]") {
+    // Expected: frontend.md#rm-layout, confirmed (code)
     coney::gui::MenuInput input;
     coney::gui::ScrollingMenu menu;
     std::vector<int> cues;
@@ -549,6 +579,7 @@ TEST_CASE("scrolling menu: no wrap, the refused cue at the ends, a 100 ms gap an
 }
 
 TEST_CASE("option grid: the fade multiplies every item's alpha", "[gui]") {
+    // Expected: gui.md#fn-optiongrid, confirmed (code)
     TextCanvas canvas;
     coney::gui::OptionGrid grid;
     grid.setup(coney::gui::OptionGridSetup{.y = 0.5F});

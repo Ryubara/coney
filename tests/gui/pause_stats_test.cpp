@@ -16,6 +16,8 @@
 #include "graphics/font.h"
 #include "graphics/overlay_camera.h"
 #include "graphics/sprite_batch.h"
+#include "gui/bar.h"
+#include "gui/base_widget.h"
 #include "gui/global_strings.h"
 #include "support/font_fixtures.h"
 #include "support/recording_device.h"
@@ -53,6 +55,7 @@ WarriorStats rembrandt() {
 
 TEST_CASE("pause stats: the nine Warriors' types have a screen, with their pictures and text; others none",
           "[pause_stats]") {
+    // Expected: pause.md#stats-screen, confirmed (code)
     REQUIRE(PauseStats::portraitOf(9).has_value());
     const coney::gui::StatsPortrait swan = PauseStats::portraitOf(9).value_or(coney::gui::StatsPortrait{});
     CHECK(swan.kind == 0);
@@ -73,6 +76,7 @@ TEST_CASE("pause stats: the nine Warriors' types have a screen, with their pictu
 
 TEST_CASE("pause stats: the bars from the difficulty's row, Strength unclamped and the others at most 1",
           "[pause_stats]") {
+    // Expected: pause.md#stats-screen, confirmed (code)
     // Difficulty 1: t0 75, t1 192, t2 260, t3 600, t4 25, t5 160.
     const auto normal = PauseStats::barValues(rembrandt(), 1);
     CHECK(normal[0] == Approx((150.0F - 75.0F) / (192.0F - 75.0F)));
@@ -97,6 +101,7 @@ TEST_CASE("pause stats: the bars from the difficulty's row, Strength unclamped a
 
 TEST_CASE("pause stats: set up for a Warrior, placed from the base point, drawn with the labels and description",
           "[pause_stats]") {
+    // Expected: pause.md#stats-screen, confirmed (code)
     const GlobalStrings strings = syntheticStrings();
     PauseStats stats;
     CHECK_FALSE(stats.setup(std::nullopt, 1, &strings, false));
@@ -113,7 +118,8 @@ TEST_CASE("pause stats: set up for a Warrior, placed from the base point, drawn 
     CHECK(stats.name().setupValues().colour == PauseStats::kPortraitTint);
     CHECK(stats.shadow(0).setupValues().x == Approx(0.4225F));
     CHECK(stats.shadow(1).setupValues().y == Approx(0.298F));
-    CHECK(stats.shadow(0).setupValues().colour.a == 128);
+    // Setup gives the shadows alpha 128, but each draw sets every part's alpha to the menu's, so they are opaque.
+    CHECK(stats.shadow(0).setupValues().colour == coney::graphics::Rgba{0, 0, 0, 255});
     CHECK(stats.face().setupValues().x == Approx(0.33F));
     CHECK(stats.face().setupValues().y == Approx(0.401F));
     CHECK(stats.bar(0).setupValues().x == Approx(0.64F));
@@ -132,6 +138,15 @@ TEST_CASE("pause stats: set up for a Warrior, placed from the base point, drawn 
     CHECK(stats.firstLine() == 0);
     CHECK(stats.lastLine() == 5);
 
+    // The menu's alpha on every part, and setup puts it back to full.
+    stats.setFade(0.5F);
+    stats.update(GuiFrame{0, nullptr});
+    CHECK(stats.shadow(1).setupValues().colour.a == 127);
+    CHECK(stats.name().setupValues().colour.a == 127);
+    REQUIRE(stats.setup(rembrandt(), 1, &strings, false));
+    stats.update(GuiFrame{0, nullptr});
+    CHECK(stats.shadow(1).setupValues().colour.a == 255);
+
     // 16:9 moves only the base point's y, to 0.45.
     REQUIRE(stats.setup(rembrandt(), 1, &strings, true));
     stats.update(GuiFrame{0, nullptr});
@@ -139,9 +154,34 @@ TEST_CASE("pause stats: set up for a Warrior, placed from the base point, drawn 
     CHECK(stats.name().setupValues().x == Approx(0.42F));
 }
 
+TEST_CASE("pause stats: an unavailable screen is not placed", "[pause_stats]") {
+    // Expected: pause.md#stats-screen, confirmed (code)
+    PauseStats stats;
+    WarriorStats ash = rembrandt();
+    ash.characterType = 38;
+    REQUIRE_FALSE(stats.setup(ash, 1, nullptr, false));
+    stats.update(GuiFrame{0, nullptr});
+    CHECK(stats.name().setupValues().x == Approx(coney::gui::BaseWidgetSetup{}.x));
+    CHECK(stats.bar(0).setupValues().x == Approx(coney::gui::BarSetup{}.x));
+}
+
+TEST_CASE("pause stats: the description wraps at its leading AUTOINDENT width, else 0.55", "[pause_stats]") {
+    // Expected: pause.md#stats-description, confirmed (code)
+    GlobalStrings strings = syntheticStrings();
+    PauseStats stats;
+    strings.set(0xf0, "<AUTOINDENT 0.4><COLOR B2B2B2FF>Some words");
+    REQUIRE(stats.setup(rembrandt(), 1, &strings, false));
+    CHECK(stats.description().style().wrapWidth == Approx(0.4F));
+    // Only at the very start: a later tag, or none, leaves 0.55.
+    strings.set(0xf0, "Some <AUTOINDENT 0.4>words");
+    REQUIRE(stats.setup(rembrandt(), 1, &strings, false));
+    CHECK(stats.description().style().wrapWidth == Approx(0.55F));
+}
+
 TEST_CASE("pause stats: each bar draws the rage meter's left cap, body, fill and right cap", "[pause_stats]") {
-    // A part_page0 stand-in: 58 rectangles over a 256 x 256 texture; 56 and 57 are 8 x 16 texels, so at the bar's
-    // height 0.025 each cap is 0.0125 wide.
+    // Expected: hud.md#the-rage-meter, confirmed (code)
+    // A part_page0 stand-in: 58 rectangles over a 256 x 256 texture; 56 and 57 are 8 texels wide, so each cap is
+    // 8 / 256 = 0.03125 overlay units wide (a cap is as wide as its rectangle's u span).
     coney::graphics::SpriteSheet sheet;
     sheet.page.rects.assign(58, coney::graphics::UvRect{0.0F, 0.0F, 0.25F, 0.0625F});
     sheet.page.rects.at(56) = coney::graphics::UvRect{0.0F, 0.0F, 8.0F / 256.0F, 16.0F / 256.0F};
@@ -159,30 +199,39 @@ TEST_CASE("pause stats: each bar draws the rage meter's left cap, body, fill and
     const auto& body = bars.sprites()[1];
     const auto& fill = bars.sprites()[2];
     const auto& rightCap = bars.sprites()[3];
-    CHECK(leftCap.uv.u1 == Approx(8.0F / 256.0F));
-    CHECK(leftCap.width == Approx(0.0125F));
+    constexpr float kCap = 8.0F / 256.0F;
+    CHECK(leftCap.uv.u1 == Approx(kCap));
+    CHECK(leftCap.width == Approx(kCap));
     CHECK(leftCap.colour == PauseStats::kBarBack);
-    // The body over the inner width (0.22 less the left cap), the fill over its share, the right cap past the width.
-    CHECK(body.width == Approx(0.22F - 0.0125F));
+    // The body over the inner width (0.22 less the left cap), inset one texel left and right only.
+    CHECK(body.width == Approx(0.22F - kCap));
     CHECK(body.colour == PauseStats::kBarBack);
-    CHECK(fill.width == Approx((0.22F - 0.0125F) * stats.bar(0).fill()));
+    CHECK(body.uv.u0 == Approx(1.0F / 256.0F));
+    CHECK(body.uv.u1 == Approx(0.25F - (1.0F / 256.0F)));
+    CHECK(body.uv.v0 == Approx(0.0F));
+    CHECK(body.uv.v1 == Approx(0.0625F));
+    CHECK(fill.width == Approx((0.22F - kCap) * stats.bar(0).fill()));
     CHECK(fill.colour == PauseStats::kBarFill);
     CHECK(rightCap.uv.u0 == Approx(0.5F));
-    CHECK(rightCap.width == Approx(0.0125F));
-    // Side by side from the bar's left edge (0.64, 0.39); widths are overlay units, GUI widths × 640 / 448.
+    CHECK(rightCap.width == Approx(kCap));
+    // From the bar's left edge P (0.64, 0.39): the left cap over P to P + c, the body centred on P + W / 2, the fill
+    // from P + c / 2, the right cap from P + W - c / 2. Widths are overlay units, GUI widths x 640 / 448.
     const auto gui = [](float overlayWidth) { return overlayWidth * 448.0F / 640.0F; };
     const auto at = [](float x) { return OverlayCamera::guiToOverlay(x, 0.39F); };
-    CHECK(leftCap.position.x == Approx(at(0.64F + (gui(0.0125F) / 2.0F)).x));
+    const float filled = (0.22F - kCap) * stats.bar(0).fill();
+    CHECK(leftCap.position.x == Approx(at(0.64F + (gui(kCap) / 2.0F)).x));
     CHECK(leftCap.position.y == Approx(at(0.0F).y));
-    CHECK(body.position.x == Approx(at(0.64F + gui(0.0125F) + (gui(0.2075F) / 2.0F)).x));
-    CHECK(rightCap.position.x == Approx(at(0.64F + gui(0.22F) + (gui(0.0125F) / 2.0F)).x));
+    CHECK(body.position.x == Approx(at(0.64F + (gui(0.22F) / 2.0F)).x));
+    CHECK(fill.position.x == Approx(at(0.64F + (gui(kCap) / 2.0F) + (gui(filled) / 2.0F)).x));
+    CHECK(rightCap.position.x == Approx(at(0.64F + gui(0.22F)).x));
 }
 
 TEST_CASE("pause stats: up and down move the description's six-line window one line, within the text",
           "[pause_stats]") {
+    // Expected: pause.md#stats-description, confirmed (code)
     coney::gui::GlobalStrings strings = syntheticStrings();
-    // Rembrandt's description, eight lines.
-    strings.set(0xf0, "L0<CR>L1<CR>L2<CR>L3<CR>L4<CR>L5<CR>L6<CR>L7");
+    // Rembrandt's description, eight lines, broken where the wrap breaks them (`<CRM>`).
+    strings.set(0xf0, "L0<CRM>L1<CRM>L2<CRM>L3<CRM>L4<CRM>L5<CRM>L6<CRM>L7");
     const coney::graphics::Font font = coney::test::testFont();
     coney::graphics::SpriteBatch text(font.sheet(), 4096, 9000.0F);
     const coney::gui::GuiCanvas canvas{.fonts = [&font](int /*slot*/) { return &font; },
@@ -218,6 +267,7 @@ TEST_CASE("pause stats: up and down move the description's six-line window one l
 }
 
 TEST_CASE("pause stats: directions refuse, back closes", "[pause_stats]") {
+    // Expected: pause.md#stats-screen, confirmed (code)
     PauseStats stats;
     std::vector<int> cues;
     stats.setSoundSink([&cues](int cue) { cues.push_back(cue); });
