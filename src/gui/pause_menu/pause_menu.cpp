@@ -25,14 +25,17 @@ constexpr graphics::Rgba kCurrentGold{230, 180, 40, 255}; // the selected curren
 constexpr graphics::Rgba kBonusPurple{150, 70, 190, 255}; // the selected bonus header
 constexpr graphics::Rgba kChosenWhite = graphics::kWhite; // a selected choice (white at runtime)
 
-// The colour `a` is `t` (0 to 1) of the way to `b`.
-// @orig 0x001ddcf8 PauseMenu_Update (unknown)
-graphics::Rgba blend(graphics::Rgba a, graphics::Rgba b, float t) {
-    const auto mix = [t](std::uint8_t x, std::uint8_t y) {
-        return static_cast<std::uint8_t>(static_cast<float>(x) + ((static_cast<float>(y) - static_cast<float>(x)) * t));
+// The colour `t` (0 to 1) of the way from `from` to `to`: each channel from × (1 − t) + to × t in floats, truncated.
+// @orig 0x0017a258 Colour_LerpPacked (unknown)
+graphics::Rgba blend(graphics::Rgba from, graphics::Rgba to, float t) {
+    const auto mix = [t](std::uint8_t a, std::uint8_t b) {
+        return static_cast<std::uint8_t>((static_cast<float>(a) * (1.0F - t)) + (static_cast<float>(b) * t));
     };
-    return graphics::Rgba{mix(a.r, b.r), mix(a.g, b.g), mix(a.b, b.b), mix(a.a, b.a)};
+    return graphics::Rgba{mix(from.r, to.r), mix(from.g, to.g), mix(from.b, to.b), mix(from.a, to.a)};
 }
+
+// The usage line of the Controls screen's Controller page.
+constexpr std::uint32_t kUsageController = 0x1e;
 
 // The top header's place (`PauseMenu_Open`): its row (0.18 in 16:9), box width, text offset.
 constexpr float kTopHeaderY = 0.22F;
@@ -89,8 +92,12 @@ void PauseMenu::open(const PauseMenuSetup& setup, std::uint64_t nowMs) {
     m_outcome = PauseOutcome::Resume;
     m_pending = PauseOutcome::Resume;
     m_openMs = nowMs;
-    m_fadeOutMs = 0;
+    m_cycleMs = nowMs;
+    m_cycleLeg = 0;
+    m_fadeOutMs = nowMs;
+    m_lastFadeMs = nowMs;
     m_alpha = 255.0F;
+    m_ready = false;
     m_yesNo.close();
     m_yesNo.place(YesNoPlacement{});
 
@@ -102,7 +109,10 @@ void PauseMenu::open(const PauseMenuSetup& setup, std::uint64_t nowMs) {
                                              .factors = CircledHeaderFactors::forMode(setup.widescreen, setup.flag02)});
     m_topHeader.setCircleColour(pauseLevelColour(setup.level));
     m_topHeader.setTitle(setup.missionTitle, setup.checkpoint, setup.levelName);
-    m_topHeader.setLetterColour(graphics::kBlack);
+    // The letters are made black only in a gold level (until the first update makes them black anyway).
+    if (pauseLevelColour(setup.level) == kGold) {
+        m_topHeader.setLetterColour(graphics::kBlack);
+    }
     m_topHeader.setLabelColour(kDimGrey);
 
     // The Stats screen for the pausing player (`PauseStats_Setup`, every pause).
@@ -137,7 +147,7 @@ void PauseMenu::open(const PauseMenuSetup& setup, std::uint64_t nowMs) {
     m_grid.takeFocus(m_input, nowMs);
 
     m_usage.place(kUsageX, kUsageY, false);
-    m_usage.setLegend(string(UsageInfo::kMenuUsageString));
+    setUsage(UsageInfo::kInitialString);
 
     // The quit destinations, when Quit offers two (`+0x1bb0`).
     m_quitChoices.clear();
@@ -157,28 +167,34 @@ void PauseMenu::open(const PauseMenuSetup& setup, std::uint64_t nowMs) {
 }
 
 void PauseMenu::animate(std::uint64_t nowMs) {
-    // The background's colour: one leg of the cycle every kCycleLegMs, blended linearly.
-    const std::uint64_t since = nowMs - m_openMs;
-    const std::uint64_t leg = (since / kCycleLegMs) % kCycleColours.size();
-    const float t = static_cast<float>(since % kCycleLegMs) / static_cast<float>(kCycleLegMs);
-    graphics::Rgba colour = blend(kCycleColours.at(leg), kCycleColours.at((leg + 1) % kCycleColours.size()), t);
-
-    // The closing fade: 255 to 0 over kFadeOutMs, then closed kHoldMs after it reached 0.
+    // The closing fade; while open, the time a fade would start from is this update's.
     if (m_closing) {
-        const std::uint64_t fading = nowMs - m_fadeOutMs;
-        m_alpha = fading >= kFadeOutMs
-                      ? 0.0F
-                      : 255.0F * (1.0F - (static_cast<float>(fading) / static_cast<float>(kFadeOutMs)));
-        if (fading >= kFadeOutMs + kHoldMs) {
-            m_closed = true;
-        }
+        fadeOut(nowMs);
+    } else {
+        m_fadeOutMs = nowMs;
     }
+    // Stand-in: while closing, the original also turns both views' blur effects off (their `+0x214`); Coney's
+    // paused frame draws none.
 
-    // The background's alpha rises over kBackgroundFadeMs, under the menu's alpha.
-    const float fadeIn = std::min(1.0F, static_cast<float>(since) / static_cast<float>(kBackgroundFadeMs));
-    colour.a = static_cast<std::uint8_t>(255.0F * fadeIn * (m_alpha / 255.0F));
+    // The background's colour: the first update more than kCycleLegMs after the leg began moves on to the next
+    // colour and starts that leg there, at 0; otherwise the leg's share of the time blends to the next colour.
+    float t = 0.0F;
+    const std::uint64_t inLeg = nowMs - m_cycleMs;
+    if (inLeg > kCycleLegMs) {
+        m_cycleLeg = (m_cycleLeg + 1) % kCycleColours.size();
+        m_cycleMs = nowMs;
+    } else {
+        t = static_cast<float>(inLeg) / static_cast<float>(kCycleLegMs);
+    }
+    graphics::Rgba colour =
+        blend(kCycleColours.at(m_cycleLeg), kCycleColours.at((m_cycleLeg + 1) % kCycleColours.size()), t);
+
+    // The background's alpha: the original also fades it in over 3 s here, but its render replaces the alpha with
+    // the menu's before every draw (`BaseWidget_SetAlpha`, `0x001a2638`), so only the menu's alpha ever shows.
+    colour.a = static_cast<std::uint8_t>(m_alpha);
     m_background.setColour(colour);
 
+    // The menu's alpha on every widget (the render's alpha calls).
     const float fade = m_alpha / 255.0F;
     m_topHeader.setFade(fade);
     m_stats.setFade(fade);
@@ -195,16 +211,32 @@ void PauseMenu::animate(std::uint64_t nowMs) {
     m_grid.setFade(fade);
 }
 
+void PauseMenu::fadeOut(std::uint64_t nowMs) {
+    const std::uint64_t fading = nowMs - m_fadeOutMs;
+    if (fading < kFadeOutMs) {
+        // Inside the fade: the alpha falls linearly from 255, cut to a whole byte.
+        m_lastFadeMs = nowMs;
+        m_alpha = static_cast<float>(
+            static_cast<int>((1.0F - (static_cast<float>(fading) / static_cast<float>(kFadeOutMs))) * 255.0F));
+    } else if (m_alpha == 0.0F) {
+        // The hold counts from the last update inside the fade.
+        if (nowMs - m_lastFadeMs > kHoldMs) {
+            m_closing = false;
+            m_closed = true;
+        }
+    } else {
+        // The first update past the fade only clears what is left of the alpha.
+        m_alpha = 0.0F;
+    }
+}
+
 float PauseMenu::worldTint(std::uint64_t nowMs) const {
     if (!m_open) {
         return 0.0F;
     }
+    // Stand-in: the original blends both views' tint from the level's current tint to black; Coney's tint is the
+    // share of the way to black, from none.
     return std::min(1.0F, static_cast<float>(nowMs - m_openMs) / static_cast<float>(kTintMs));
-}
-
-void PauseMenu::startClosing(std::uint64_t nowMs) {
-    m_closing = true;
-    m_fadeOutMs = nowMs;
 }
 
 void PauseMenu::update(const GuiFrame& frame) {
@@ -212,6 +244,9 @@ void PauseMenu::update(const GuiFrame& frame) {
         return;
     }
     const std::uint64_t nowMs = frame.timeMs;
+    // Stand-in: the original waits for its headers and background to be ready (or 10 s) before it draws; Coney's
+    // widgets are ready at once, so the menu draws from the first update on.
+    m_ready = true;
     animate(nowMs);
     for (TextWidget& header : m_headers) {
         header.update(frame);
@@ -231,25 +266,36 @@ void PauseMenu::update(const GuiFrame& frame) {
     }
     m_yesNo.update(frame);
 
-    // Nothing is taken while closing.
-    if (m_closing || frame.pad == nullptr) {
-        return;
+    // Nothing is taken while closing or once closed. START closes from anywhere once more than the delay has passed;
+    // the other commands go to the box, the open screen or the grid (the command handler's dispatch).
+    if (!m_closing && !m_closed && frame.pad != nullptr) {
+        if (frame.pad->pressed(pad::kStart) && nowMs - m_openMs > kStartDelayMs) {
+            m_closing = true;
+        } else if (const std::optional<MenuCommand> command = m_input.dispatch(*frame.pad, nowMs)) {
+            if (m_yesNo.isOpen()) {
+                onBoxCommand(*command, nowMs);
+            } else if (m_screen != PauseScreen::Grid) {
+                onScreenCommand(*command, nowMs);
+            } else {
+                onGridCommand(*command, nowMs);
+            }
+        }
     }
-    // START closes from anywhere once the delay has passed.
-    if (frame.pad->pressed(pad::kStart) && nowMs - m_openMs >= kStartDelayMs) {
-        startClosing(nowMs);
-        return;
-    }
-    const std::optional<MenuCommand> command = m_input.dispatch(*frame.pad, nowMs);
-    if (!command) {
-        return;
-    }
-    if (m_yesNo.isOpen()) {
-        onBoxCommand(*command, nowMs);
-    } else if (m_screen != PauseScreen::Grid) {
-        onScreenCommand(*command, nowMs);
-    } else {
-        onGridCommand(*command, nowMs);
+
+    // The Controls screen's usage line follows its page, as the render sets it: the Tutorial's 0x19, the
+    // Controller's 0x1e, the two entries' 0x1a.
+    if (m_screen == PauseScreen::Controls) {
+        switch (m_controls.page()) {
+        case ControlPage::Tutorial:
+            setUsage(pause_strings::kUsageObjectives);
+            break;
+        case ControlPage::Controller:
+            setUsage(kUsageController);
+            break;
+        case ControlPage::None:
+            setUsage(UsageInfo::kInitialString);
+            break;
+        }
     }
 }
 
@@ -264,7 +310,7 @@ void PauseMenu::onGridCommand(MenuCommand command, std::uint64_t nowMs) {
     case MenuCommand::Back:
         // Triangle resumes (confirmed at runtime).
         playCue(kBackCue);
-        startClosing(nowMs);
+        m_closing = true;
         return;
     default:
         (void)m_grid.handle(command);
@@ -303,10 +349,12 @@ void PauseMenu::onScreenCommand(MenuCommand command, std::uint64_t nowMs) {
         return;
     case MenuCommand::Up:
     case MenuCommand::Down: {
-        // The screen's selection, without wrapping: an end refuses.
+        // The screen's selection, without wrapping: an end refuses, and so does a Rumble level's objectives screen,
+        // which stays on the overview.
         const std::size_t entries = screenEntries();
         const bool up = command == MenuCommand::Up;
-        if (entries == 0 || (up && m_selection == 0) || (!up && m_selection + 1 >= entries)) {
+        const bool fixed = m_screen == PauseScreen::Objectives && isRumbleLevel(m_setup.level);
+        if (fixed || entries == 0 || (up && m_selection == 0) || (!up && m_selection + 1 >= entries)) {
             playCue(kRefusedCue);
             return;
         }
@@ -342,6 +390,8 @@ void PauseMenu::onScreenCommand(MenuCommand command, std::uint64_t nowMs) {
         return;
     case MenuCommand::Left:
     case MenuCommand::Right:
+        // A screen takes no sideways move.
+        playCue(kRefusedCue);
         return;
     }
 }
@@ -352,31 +402,39 @@ void PauseMenu::onBoxCommand(MenuCommand command, std::uint64_t nowMs) {
         return;
     }
     if (*answer == YesNoAnswer::Yes) {
-        // `PauseMenu_OnConfirm(2)`: the confirmed choice closes the menu.
+        // `PauseMenu_OnConfirm(2)`: the confirmed choice closes the menu. It was picked when the box opened (the
+        // original picks the handler from the same flags now). Stand-in: the co-op quit's handler is never chosen.
         m_outcome = m_pending;
-        startClosing(nowMs);
+        m_closing = true;
     }
+    (void)nowMs;
     // No and back forget the quit and restart choices; the screen behind the box stays.
     m_pending = PauseOutcome::Resume;
     refreshScreen();
 }
 
 void PauseMenu::selectItem(PauseItem item, std::uint64_t nowMs) {
+    // Stand-in: the original shows the top header's label here and zeroes the lists' reveal timer
+    // (`0x0050ee20`-`0x0050ee2c`); Coney's headers and lists are refreshScreen()'s and are not animated.
     switch (item) {
     case PauseItem::Objectives:
+        setUsage(pause_strings::kUsageObjectives);
         openScreen(PauseScreen::Objectives, isRumbleLevel(m_setup.level) ? 2 : 0);
         return;
     case PauseItem::Stats:
-        // Only a Warrior has a Stats screen; for anyone else nothing opens.
+        // Only a Warrior has a Stats screen; for anyone else nothing opens, but the usage line is changed all the same.
+        setUsage(pause_strings::kUsageObjectives);
         if (m_stats.available()) {
             openScreen(PauseScreen::Stats, 0);
         }
         return;
     case PauseItem::Options:
+        // Stand-in: the screen's name is Coney's header line (refreshScreen()).
         openOptions(nowMs);
         return;
     case PauseItem::Controls:
-        // `ControlMenuHUD_Open`, with the pausing player's input.
+        // `ControlMenuHUD_Open`, with the pausing player's input. Stand-in: the original opens it once, when the menu
+        // opens, and Coney here each time; the screen's name is Coney's header line.
         m_controls.open(
             m_strings, m_input, [this](int cue) { playCue(cue); }, nowMs,
             ControlLayout::forMode(m_setup.language, m_setup.widescreen, m_setup.flag02));
@@ -387,13 +445,16 @@ void PauseMenu::selectItem(PauseItem item, std::uint64_t nowMs) {
             m_pending = PauseOutcome::RestartLevel;
             ask(pause_strings::kReplayQuestion);
         } else {
+            // Stand-in: the two choices and their help are Coney's centred texts (refreshScreen()).
             openScreen(PauseScreen::Restart, 1);
         }
         return;
     case PauseItem::Resume:
-        startClosing(nowMs);
+        m_closing = true;
         return;
     case PauseItem::Quit:
+        // Stand-in: the co-op quit (Player 2 / All) is not offered, as Coney has one player; the two destinations
+        // are Coney's centred texts (refreshScreen()).
         if (m_quitChoices.empty()) {
             m_pending = PauseOutcome::QuitToMainMenu;
             ask(pause_strings::kQuitQuestion);
@@ -420,8 +481,12 @@ void PauseMenu::openScreen(PauseScreen screen, std::size_t selection) {
 }
 
 void PauseMenu::closeScreen() {
+    // Stand-in: the original puts each screen's header texts back here (Coney's are refreshScreen()'s), and an
+    // Options screen opened by ShowOptionMenu (the game state's `+0x11c`) closes the whole menu; Coney's pause never
+    // opens on Options (PauseMode), so that is not modelled.
     m_screen = PauseScreen::Grid;
     m_selection = 0;
+    setUsage(UsageInfo::kInitialString);
     refreshScreen();
 }
 
@@ -429,6 +494,8 @@ void PauseMenu::ask(std::uint32_t question) {
     m_yesNo.open(string(question), string(pause_strings::kYes), string(pause_strings::kNo));
     refreshScreen();
 }
+
+void PauseMenu::setUsage(std::uint32_t id) { m_usage.setLegend(string(id)); }
 
 std::size_t PauseMenu::screenEntries() const {
     switch (m_screen) {
@@ -462,6 +529,7 @@ void PauseMenu::addLine(std::string_view text, float y, graphics::Rgba colour, i
     m_lines.push_back(std::move(line));
 }
 
+// Stand-in for the original's three IconTextHeaders and checklists (docs/research/pause.md#open-questions).
 void PauseMenu::refreshScreen() {
     namespace s = pause_strings;
     m_lines.clear();
@@ -483,7 +551,6 @@ void PauseMenu::refreshScreen() {
     m_headers.at(0).style().colour = kMenuGrey;
     m_headers.at(1).setVisible(false);
     m_headers.at(2).setVisible(false);
-    m_usage.setLegend(string(m_screen == PauseScreen::Objectives ? s::kUsageObjectives : UsageInfo::kMenuUsageString));
 
     // The screen behind an open Yes/No box is hidden (Coney's choice: the question sits where its lines are).
     if (m_yesNo.isOpen()) {
@@ -505,9 +572,10 @@ void PauseMenu::refreshScreen() {
             }
             header.style().colour = colour;
         }
+        // An empty current or bonus list shows None (the update adds it); the overview shows nothing.
         const std::vector<std::string>& list = m_setup.objectives.at(m_selection);
         float y = kHeaderY.at(m_selection) + kListGap;
-        if (list.empty()) {
+        if (list.empty() && m_selection < 2) {
             addLine(string(s::kNone), y, kMenuGrey, kTextFontSlot, 1.0F);
         }
         for (const std::string& line : list) {
@@ -573,29 +641,36 @@ std::vector<std::string> PauseMenu::screenLines() const {
 }
 
 void PauseMenu::render(const GuiCanvas& canvas) const {
-    if (!m_open || !visible()) {
+    // Nothing before the first update, or once the menu is closed.
+    if (!m_open || !m_ready || m_closed || !visible()) {
         return;
     }
     m_background.render(canvas);
+    // Stand-in: where the original draws the top header (a global widget) is not traced; Coney draws it here.
     m_topHeader.render(canvas);
+    // The open screen: Options, then Controls or Stats.
+    if (m_screen == PauseScreen::Options) {
+        m_options.render(canvas);
+    }
+    if (m_screen == PauseScreen::Controls) {
+        m_controls.render(canvas);
+    } else if (m_screen == PauseScreen::Stats) {
+        m_stats.render(canvas);
+    }
+    // Stand-in: the three headers and their lists are Coney's centred texts (refreshScreen()).
     for (const TextWidget& header : m_headers) {
         header.render(canvas);
     }
     for (const std::unique_ptr<TextWidget>& line : m_lines) {
         line->render(canvas);
     }
-    if (m_screen == PauseScreen::Controls) {
-        m_controls.render(canvas);
+    // The usage line, the grid and the box, except over an Options screen the menu was opened on.
+    if (m_screen == PauseScreen::Options && m_setup.openOnOptions) {
+        return;
     }
-    if (m_screen == PauseScreen::Options) {
-        m_options.render(canvas);
-    }
-    if (m_screen == PauseScreen::Stats) {
-        m_stats.render(canvas);
-    }
-    m_yesNo.render(canvas);
-    m_grid.render(canvas);
     m_usage.render(canvas);
+    m_grid.render(canvas);
+    m_yesNo.render(canvas);
 }
 
 } // namespace coney::gui
