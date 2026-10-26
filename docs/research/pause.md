@@ -338,6 +338,12 @@ page's name again as a heading (`OptionPage_SetDescription`: size 1.0 × 1.3, fo
   `LightingItem_Update` `0x001d7d10`), the first tinted by the brightness value, the second black; a hint
   (`0x118`) in `0x005fd320`, size 1.0, font slot 3, at the label + (0, 0.06) (`0x0050ed3c`, `0x0050ed40`).
 
+**Holding against an end.** Every refused move (a title or item at an end, a choice already chosen, a bar at 0 or 1)
+sets the menu's flag `+0x45cc`, and every move clears it (`OptionMenu_OnCommand`, `OptionPage_OnCommand`,
+`YesNoBox_OnCommand`, `StatBarItem_OnCommand`, `LightingItem_OnCommand`); `OptionMenu_Update` reads it to run the pad
+through the pass without auto-repeat (`MenuInput_PadPlainPass`, [GUI](gui.md)) instead of the repeating one, so a
+direction held against an end is refused once. `OptionMenu_Open` clears it. Confirmed (code).
+
 **Sounds.** Front-end cues ([Front end](frontend.md#input)): 4 a move, `0xe` a move refused, 8 an accept (a title
 opened, a page closed), `0xf` back. The pause menu plays none of its own while Options is open (`PauseMenu_PlayCue`
 `0x001ded00`). While the Audio page is open the menu loops `vags/music/wonderwheel_mono` at the music volume so the
@@ -813,10 +819,10 @@ Coney stand-ins, each an open question below:
   [The Options screen](#options) and [`GUI/OptionMenu.cpp`](#fn-optionmenu)) follows this page: the seven titles, each
   page's items, places (`OptionLayout::forMode`, by language and video mode; Coney's pause mode opens the 4:3 one),
   colours, the answers' layout, the cues, the ranges and steps, applying at once or on accept (Video, Restore Default),
-  each page keeping its selected item, and back putting the page's values back except on Restore Default (Vibration
-  stopping its preview first). Each of the 23 ported functions was compared side by side with Ghidra on
-  2026-10-26 (`original compare`). Every change goes at once into the
-  game state where [save.md](save.md#options) puts it (`storeOptionValues`), so the next autosave keeps it; the game
+  each page keeping its selected item, the d-pad's repeat stopping at an end, and back putting the page's values
+  back except on Restore Default (Vibration stopping its preview first). Each of the 24 ported functions was
+  compared side by side with Ghidra on 2026-10-26 (`original compare`). Every change goes at once into the game
+  state where [save.md](save.md#options) puts it (`storeOptionValues`), so the next autosave keeps it; the game
   then applies the volumes as the music and effects buses' volumes and P1's auto-adjust as the follow camera's
   auto-centre rule. The Audio page loops `music/wonderwheel_mono` and the previous track starts again when it closes.
   Coney's choices and gaps: the brightness, the camera's inversion, the vibration (and its 500 ms preview), the
