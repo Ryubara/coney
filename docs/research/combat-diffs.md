@@ -48,10 +48,10 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 
 - **The hit update of a body without shapes.** The original deals a free attack's damage only through the strike
   test (`Strike_Contact`, `0x0021b290`, confirmed (code)): an attack whose clip switches no strike shape never hits.
-  Coney does the same for every human with a skeleton (`Human::testStrikes`), within one update of the original at
-  1.0 m ([Runtime results](combat-moves.md#runtime)), but a victim with no strike shapes (the sandbox's targets) and
-  an attack whose clip switches no shape still take the hit on one update per id: the measured contact, or update 2
-  (`repo:src/combat/attacks.cpp`).
+  Coney does the same for every human with a skeleton (`Human::testStrikes`), on the original's update at 1.0 m for
+  `S1`, `SS2`, `SSX3`, `X1` and 653 ([Runtime results](combat-moves.md#runtime)), but a victim with no strike shapes
+  (the sandbox's targets) and an attack whose clip switches no shape still take the hit on one update per id: the
+  measured contact, or update 2 (`repo:src/combat/attacks.cpp`).
 - **The attack's target.** Coney searches afresh for every attack along the stick with the attack's own far range
   × 1.1 (`Fighter::steer`). The original keeps the current target for square in the stance (searching only without
   one or beyond 3 m), searches for cross with a fixed 2.0 m, keeps the target on a square chain step, and uses the
@@ -59,8 +59,11 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 - **Taking a target by nearness.** Coney takes a target only from L1 or an attack; the original's stance logic takes
   the nearest enemy within 2 m every update (and locks it with the street's `CfgAutoLockAndCombat`), swaps it once the
   target is beyond 3 m and tracks enemies to 6 m.
-- **Blend into an attack.** The original enters each new attack over 0.2 s and swaps a chain step's clip in place;
-  Coney fades every attack in over 0.1 s (`kCombatFade`).
+- **Blend into an attack.** Both show a new attack's pose from its first update, with no fade
+  ([Blend](combat-moves.md#input), confirmed (code)). Two differences are left: the original swaps a chain step's
+  clip inside the running task, where Coney fades it in over 0.1 s (`kCombatFade`), and the original blends the
+  attack's last 0.2 s into the idle after it, where Coney's clip hands over at once (`kAttackFade` in
+  `repo:src/human/human_animator.h`).
 
 ### Square and cross
 

@@ -116,10 +116,13 @@ inline constexpr float kWorkoutBlendSpeed = 16.0F;
 inline constexpr std::uint32_t kAnimWorkoutEnter = 691;
 inline constexpr std::uint32_t kAnimWorkoutExit = 692;
 inline constexpr std::uint32_t kAnimWorkoutLoop = 693;
-/// A new attack enters over this long from the pose before it (`AnimTaskChained_Construct(0.2, ...)` in `Attack_Start`
-/// and `Attack_StartSolo`, docs/research/combat-moves.md#input). **Coney's reading**: a chain step, which the original
-/// swaps into the running task (its blend not traced), keeps kCombatFade.
-inline constexpr float kAttackFade = 0.2F;
+/// The fade into a new attack from the pose before it: none, so the attack's own pose shows from its first update.
+/// Every attack start pushes a fade task (type 9) of 0 s over the old tasks (`AnimTaskBlendOut_Construct` with `f12`
+/// cleared, at `0x0026281c` in `Attack_Start` and `0x0026248c` in `Attack_StartSolo`); the 0.2 s each passes to
+/// `AnimTaskChained_Construct` is the clip's blend into the idle after it, at its end
+/// (docs/research/combat-moves.md#input). **Coney stand-in**: that end blend is not built (the clip hands over at
+/// once); a chain step, which the original swaps into the running task (its blend not traced), keeps kCombatFade.
+inline constexpr float kAttackFade = 0.0F;
 /// The fight idle (358, `ANIM_FIGHT_IDLE`) the attacks return to (docs/research/combat/index.md#attacks).
 inline constexpr std::uint32_t kAnimFightIdle = 358;
 /// 389 `NORMAL_FROM_FIGHT`, which a move ends in with the stick at rest: it holds neither a press nor the stick, which

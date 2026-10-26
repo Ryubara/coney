@@ -1,0 +1,51 @@
+version = 1
+id = "r-20261026-strike-pose-entry"
+date = "2026-10-26"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "968cffa1a5695668838c40a2266159965cc01fd1517efb911ffe313ed046ce65"
+
+[who]
+agent = "a048e6ac298182cc7"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = ["call-brains", "right-stick", "scripted-pad"]
+
+[run]
+name = ""
+method = "A Civilians0 pedestrian made 1.0 m ahead (spawn-human), emulation paused, the pad written over PINE, one frame advanced at a time; a sample kept only at an odd tick after a new even one, so each shows one whole update. Per update: the player's anim id, the target's health, the centre of the player's hand sphere (bone 19 for S1, 25 for X1; body +0x80 chain) and the target's head sphere and spine segment. Updates count from the first with the attack's anim id; positions in mm from the player's feet, forward toward the target; gaps are shape distance less radii. S1 twice, X1 once."
+
+[values]
+s1_contact_updates = 2
+s1_runs = 2
+s1_hand_k1_forward_mm = 447
+s1_hand_k1_height_mm = 1467
+s1_hand_k2_forward_mm = 778
+s1_hand_k2_height_mm = 1583
+s1_gap_head_k1_mm = 299
+s1_gap_spine_k1_mm = 220
+s1_gap_head_k2_mm = -16
+s1_gap_spine_k2_mm = -116
+s1_target_head_forward_mm = 842
+s1_target_head_height_mm = 1796
+s1_feet_k1_mm = 937
+s1_feet_k2_mm = 912
+x1_contact_updates = 8
+x1_shapes_on_update = 6
+target_distance_mm = 1000
+
+[addresses]
+human_test_strikes = 0x0033f110
+human_state_update = 0x0023fea8
+attack_start = 0x002625a8
+attack_start_solo = 0x00262368
+anim_task_blend_out_construct = 0x00106c80
+tick_count = 0x005104f4
