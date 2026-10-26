@@ -659,6 +659,15 @@ coney = "src/camera/rail_camera.h:RailCamera::update"
 status = "legacy"
 
 [[function]]
+address = 0x0013dcc8
+name = "CamRail_PlaceMode3"
+page = "camera.md#fn-rail"
+role = "mode 3's placement: the camera trails the hindmost target along the rail, forward only, at the mode's pitch"
+level = "confirmed-code"
+coney = "src/camera/rail_camera.h:RailCamera::placeTrailing"
+status = "compared"
+
+[[function]]
 address = 0x0013f930
 name = "CamRail_EaseValue"
 page = "camera.md#fn-rail"
@@ -674,6 +683,15 @@ page = "camera.md#fn-rail"
 role = "`CamModifyRail` setting 5: switches the rail to mode 3 and sets its view pitch"
 level = "confirmed-code"
 coney = "src/camera/rail_camera.h:RailCamera::modify"
+status = "compared"
+
+[[function]]
+address = 0x0013fba0
+name = "CamRail_ChooseSegment"
+page = "camera.md#fn-rail"
+role = "the rail segment for the target point: the nearest point's, else the one before or after it projects inside"
+level = "confirmed-code"
+coney = "src/camera/rail_camera.h:RailCamera::chooseSegmentFor"
 status = "compared"
 
 [[function]]

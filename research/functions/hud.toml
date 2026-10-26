@@ -1151,6 +1151,20 @@ relation = "not-ported"
 issue = 662
 
 [[function]]
+address = 0x00211938
+name = "ANHud_Draw"
+page = "hud-functions-panels.md#fn-anhud"
+role = "the Armies player panel's drawing, or its join text while the player is not in"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::joinShowing"
+status = "compared"
+
+[[function.gaps]]
+what = "the panel's parts, and a knocked-out player's panel no longer wanted"
+relation = "not-ported"
+issue = 662
+
+[[function]]
 address = 0x00211ca0
 name = "PlayerHUD_Construct"
 page = "hud.md#original-structure"

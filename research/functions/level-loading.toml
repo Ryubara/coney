@@ -2,6 +2,33 @@
 # The fields: docs/guides/research-function-database.md; `research render --check`.
 
 [[function]]
+address = 0x00155b30
+name = "Gm_Mode0D_Enter"
+page = "level-loading.md#game-mode-functions"
+role = "mode 0xd's Enter: the task manager's phase 1, the audio paused, the game-over menu opened"
+level = "confirmed-code"
+coney = "src/gamemodes/armies_game_over_mode.h:ArmiesGameOverMode::enter"
+status = "compared"
+
+[[function]]
+address = 0x00155bc0
+name = "Gm_ANGameOver_Exit"
+page = "level-loading.md#game-mode-functions"
+role = "mode 0xd's Exit: the menu closed, the held tasks finished, the audio resumed"
+level = "confirmed-code"
+coney = "src/gamemodes/armies_game_over_mode.h:ArmiesGameOverMode::exit"
+status = "compared"
+
+[[function]]
+address = 0x00155c78
+name = "Gm_ANGameOver_Update"
+page = "level-loading.md#game-mode-functions"
+role = "mode 0xd's Update: one world frame under the game-over menu"
+level = "confirmed-code"
+coney = "src/gamemodes/armies_game_over_mode.h:ArmiesGameOverMode::update"
+status = "compared"
+
+[[function]]
 address = 0x00158580
 name = "Gm_Level_Resume"
 page = "level-loading.md#original-structure"
