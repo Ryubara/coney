@@ -374,8 +374,8 @@ void addWorldBindings(ScriptSystem& scripts, LuaVm& vm, GameState& state) {
         player.stereoTheftHandler = binding::string(args, 0);
         return binding::none();
     });
-    // `CfgMultiplayerJoin(on)`. Turning it on also resets the join state through `0x0041a460(-1)`, which is not traced,
-    // so Coney keeps the flag only.
+    // `CfgMultiplayerJoin(on)`. **Coney's stand-in**: turning it on also resets the join state through
+    // `0x0041a460(-1)`, which is not traced, so Coney keeps the flag only.
     // @orig 0x0041da08 Cfg_SetMultiplayerJoin (unknown)
     add(vm, "CfgMultiplayerJoin", [&player](std::span<const Value> args) {
         player.multiplayerJoin = booleanArg(args, 0, false);

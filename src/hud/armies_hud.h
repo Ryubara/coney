@@ -7,6 +7,7 @@
 #include <functional>
 #include <string>
 
+#include "characters/character_class.h"
 #include "core/language.h"
 #include "hud/hud_canvas.h"
 #include "hud/hud_layout.h"
@@ -20,9 +21,9 @@
 
 namespace coney::hud {
 
-/// Whether level number `level` is an Armies of the Night level: 60 to 69, as the original's test takes it.
-/// @orig 0x0041d110 GameState_IsArmiesLevel (unknown)
-[[nodiscard]] constexpr bool isArmiesLevel(int level) { return level >= 60 && level <= 69; }
+/// Whether a level number is an Armies of the Night level (60 to 69): the one test, characters::isArmiesLevel(),
+/// which the HUD shares.
+using characters::isArmiesLevel;
 
 /// The GO sign's modes (`HUDANSetGOSignMode`, byte `0x0060f260`): any other value hides it as Off does.
 enum class GoSignMode : std::uint8_t {

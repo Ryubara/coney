@@ -28,7 +28,7 @@ struct CharacterClass {
 
 /// Whether level number `levelNumber` is one of the Armies of the Night bonus levels (the original takes 60-69; the
 /// disc has 60-64), which draw every character with its `<model>_a` model (`CfgChar`'s `+0x114`).
-/// @orig 0x0041d110 Level_IsArmies (unknown)
+/// @orig 0x0041d110 GameState_IsArmiesLevel (unknown)
 /// Research: docs/research/armies.md#what-it-is
 [[nodiscard]] bool isArmiesLevel(int levelNumber);
 
