@@ -224,6 +224,7 @@ class GameStatsSubItem : public Widget {
 /// Research: docs/research/frontend.md#game-stats, docs/research/frontend.md#fn-gamestats
 class GameStatsScreen : public Widget {
   public:
+    // Coney's choice: the default video mode's layout values only (GameStats_Init sets others for the other modes).
     /// The background's sprite (word `0xc0005`: record 12, rectangle 5), size and depth.
     static constexpr std::uint32_t kBackgroundRecord = 12;
     static constexpr std::size_t kBackgroundRect = 5;
