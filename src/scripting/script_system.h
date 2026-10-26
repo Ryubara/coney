@@ -136,6 +136,7 @@ class ScriptSystem {
     /// call scheduled from that frame's input is timed from the frame.
     void setTime(std::uint64_t nowMs) { m_nowMs = nowMs; }
     /// setTime() from the game timer's reading in GameTimer ticks, kept whole for nowTicks().
+    /// @coney-only the original's bindings read the game timer itself; Coney hands the scripts its reading
     void setTimeTicks(std::uint64_t nowTicks) {
         m_nowTicks = nowTicks;
         m_nowMs = nowTicks / kTicksPerMs;

@@ -262,18 +262,14 @@ One countdown (or count-up) timer for the whole game, the object at `*0x0051504c
 | `+0x20` | char[32] | the callback's name, kept as text (empty for none) |
 | `+0x40` / `+0x48` | s32 | warning window (ms) / time of the last warning beep; `W_SetStopWatch` sets 0 / 1000 |
 
-**Each frame of play** (mode 1 step 1, `0x004233f8`), while running and the game timer has advanced by `d` whole ms
-since the reading at `+0x00` (`GameTimer_MsSince`, `0x004dca60`, truncates; nothing happens while `d` is 0): the
-current time moves `d × rate` toward the target (down when the target is below it), and `+0x00` takes the timer's
-whole reading, so each update drops its fraction of a millisecond. At 30 updates a second the watch counts 33 ms an
-update and runs about 1% slow: `level60`'s 99,999 ms took 6068 ticks of 60 Hz (confirmed (runtime), run
-r-20261026-level60-clock). On reaching or passing the target
+**Each frame of play** (mode 1 step 1, `0x004233f8`), while running and the game timer has advanced by `d` ms: the
+current time moves `d × rate` toward the target (down when the target is below it). On reaching or passing the target
 it is clamped there, the watch stops, and the callback is found by name (slot `+0x4c`, dotted names work) and called
 with no arguments. While counting down within the warning window, a beep (sound `0x0058b9f0`) plays at most once a
 second. Confirmed (code) at `0x004233f8`. The HUD's display of it (`W_ShowStopWatch`) belongs to the HUD.
 
-Coney (`src/warriors/stop_watch.h`, stepped by `src/gamemodes/player_frame.h` before the scripts' frame, with the game
-timer's readings in its ticks): the rate is 1 and the warning beep is reported but plays no sound yet.
+Coney (`src/warriors/stop_watch.h`, stepped by `src/gamemodes/player_frame.h` before the scripts' frame): the rate is
+1 and the warning beep is reported but plays no sound yet.
 
 ### Message handlers {#message-handlers}
 

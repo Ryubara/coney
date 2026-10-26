@@ -299,6 +299,7 @@ class GameplayMode final : public GameMode {
     void renderWithOverlay(const RenderTime& time, const std::function<void(graphics::RenderDevice&)>& overlay);
     /// renderWithOverlay() without the level's HUD (OverlaidLevel::renderWorldWithOverlay()); a level that cannot
     /// leave it out draws its frame, and black with the overlay while none is loaded.
+    /// @coney-only glue to the play mode's render; the original's mode 0xd calls GameMode_RenderViewportAlt itself
     void renderWorldWithOverlay(const RenderTime& time, const std::function<void(graphics::RenderDevice&)>& overlay);
 
     /// Lets START pause the game through `pause` (not owned; null: no pause): each frame of play ends with
