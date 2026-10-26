@@ -262,7 +262,7 @@ class Brain {
     [[nodiscard]] Formation* following() const { return m_following; }
     void setFollowing(Formation* formation) { m_following = formation; }
     /// Its human's event once the gang has passed on it (handler C of `Brain_OnEvent`): nothing for a dead brain, else
-    /// its type's handler and the shared one (answerEvent(), docs/research/ai/index.md#brain-type-handlers). Returns
+    /// its type's handler and the shared one (answerEvent(), docs/research/ai-brain-types.md). Returns
     /// whether it was used.
     /// @orig 0x0028f928 Brain_OnEvent (unknown)
     bool onEvent(const BrainEvent& event);

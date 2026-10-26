@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The brains' event answers (docs/research/ai-brain-types.md#help-calls,
-// docs/research/ai/index.md#brain-type-handlers): a help call reaches the humans within its range and their hearing; a
+// docs/research/ai-brain-types.md): a help call reaches the humans within its range and their hearing; a
 // gang soldier who hears it takes his friend's side, fights the aggressor and walks over (HelpRespond); a soldier hit
 // by a stranger fights him. Synthetic scenes.
 #include "ai/brain_events.h"

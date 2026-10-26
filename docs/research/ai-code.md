@@ -20,8 +20,7 @@ below are the map: one per group of functions, in address order, with a row per 
 Every function of the gang module (`0x00162518`-`0x0016e388`, a range inferred from where the gang functions lie; the
 first rows, from `0x001624e0`, are the load screens' objects that share the stretch) not described in [Gangs, tactics
 and formations](ai/index.md#gangs), by address. Offsets are gang record offsets unless a spawner (0x130 at `+0x640`) or
-the
-configuration record (0x7a) is named. Script bindings are given by their Lua name ([Gang
+the configuration record (0x7a) is named. Script bindings are given by their Lua name ([Gang
 bindings](../references/bindings/gang.md)).
 
 | Address | Name | What it does | Evidence |
@@ -1747,8 +1746,8 @@ to the one that covers it.
 ## Coney's implementation
 
 The AI is in `repo:src/ai/`, each original function tagged with `@orig`; what Coney does differently is on
-[AI humans: Coney's implementation](ai/index.md#in-coney) and, for the gangs and tactics, on
-[Gangs: Coney's implementation](ai-gangs.md#coneys-implementation).
+[AI humans: Coney's implementation](ai/index.md#in-coney) and, for the gangs and tactics, on [Gangs: Coney's
+implementation](ai-gangs.md#coneys-implementation).
 
 ## Open questions
 

@@ -439,8 +439,7 @@ classes](../../references/warrior-classes.md), which lists every byte's reader.
    "other clear" on [Characters](../characters.md#sprint). R1 held is read from the pad record (`0x00147f98`, 0 when
    per-player `+0x19` is −1), so **an AI human never starts a block**: command 4 alone does nothing
    ([AI](../ai-fights.md#block)). The fight test fails while the human runs or sprints with record `+0x08` clear (gait 4
-   or
-   5, `0x00223a60`, `0x00223a98`), so **R1 at a run starts no block**: the run goes on and R1 only turns the camera
+   or 5, `0x00223a60`, `0x00223a98`), so **R1 at a run starts no block**: the run goes on and R1 only turns the camera
    round ([Camera](../camera.md#reverse)); the block starts the update the gait drops below 4. Confirmed (code);
    confirmed (runtime).
 2. The chain (`0x00280630`), then the sprint (`0x0027d5a0`). Confirmed (code).
@@ -986,10 +985,9 @@ attacked does any of this.
 ### Block (and no dodge) {#block}
 
 **R1 held** on a pad, in a fight stance, blocks (an AI human cannot block, [AI](../ai-fights.md#block)): anim state 21
-then 606
-`BLOCK_SUSTAIN` (605 `BLOCK_START` was not seen as the playing id), state flags `0x8001`. The stick at 0.8 to a side
-while blocking gives anim state 24, 607 `BLOCK_SHUFFLE`, turning in place. Cross pressed while blocking plays `X1` and
-returns to the block. Confirmed (runtime). No separate dodge command exists in the street's tables (confirmed
+then 606 `BLOCK_SUSTAIN` (605 `BLOCK_START` was not seen as the playing id), state flags `0x8001`. The stick at 0.8 to a
+side while blocking gives anim state 24, 607 `BLOCK_SHUFFLE`, turning in place. Cross pressed while blocking plays `X1`
+and returns to the block. Confirmed (runtime). No separate dodge command exists in the street's tables (confirmed
 (runtime)); the shuffle is the only evasive move found.
 
 **A hit on a block** (`0x00269f30`, from `Human_ApplyPendingDamage` while state `0x8000`), confirmed (code): a block

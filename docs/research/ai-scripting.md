@@ -2,9 +2,8 @@
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). Static reading in Ghidra;
 every claim is confirmed (code) at the cited address unless it says otherwise, as on [AI humans](ai/index.md), which
-this page
-was split from because that page had grown too large. The goals, actions and brain types that scripts drive are on [AI
-humans](ai/index.md#goals).
+this page was split from because that page had grown too large. The goals, actions and brain types that scripts drive
+are on [AI humans](ai/index.md#goals).
 
 ## How the scripts drive the AI {#script-control}
 
@@ -21,8 +20,7 @@ read in the code, which is almost always a call. Confirmed (code) at the address
    resumes when the new one ends), and the human's queued actions are cleared. No `Goal*` binding flushes first, so a
    script that wants the goal to be the only one calls `BrFlush` (or `BrFlushGoals`) just before, as the scripts usually
    do ([Goals](ai/index.md#goals), [one update](ai/index.md#update-goals)). `GoalJoinCinematic` with its last argument 1
-   also runs
-   the goal's first update at once. `GoalMelee` pushes two goals (FindEnemy, then Melee).
+   also runs the goal's first update at once. `GoalMelee` pushes two goals (FindEnemy, then Melee).
 2. **Actions.** `ActLookAt`, `ActTurnTo` and `ActTurnToDir` queue one action behind any queued ones; the goal on top
    keeps running ([ActLookAt](#look-at)).
 3. **The gang's tactic.** A `Tactic*` binding finds the gang, builds the tactic and sets it (`0x00165640`), which ends
@@ -33,8 +31,7 @@ read in the code, which is almost always a call. Confirmed (code) at the address
    callback receives (gang id, code) for each non-zero Process result and event code (`TacFinished` ... `TacAnimStart`,
    [Scripted tactics](ai-gangs.md#tactic-kinds)); the strategy library [below](#script-strategies) is built on it.
 4. **The brain's own handlers.** Between script calls, a brain's think and event handlers ([Brain
-   types](ai/index.md#brain-type-handlers)) keep pushing goals of their own: a fight (`Brain_Fight`, which needs threat
-   response
+   types](ai-brain-types.md)) keep pushing goals of their own: a fight (`Brain_Fight`, which needs threat response
    `+0x21c` ≠ 0, and pushes nothing under a tactic), a reaction to violence (`+0x267`), an investigation (`+0x224`) and
    so on. They push on top of a scripted goal, which resumes afterwards. The script turns them off in three ways:
     - `BrDead(h, true)` / `GangBrDead(gang, true)`: the brain keeps only `Brain_UpdateGoals` and no think or event
@@ -50,8 +47,7 @@ read in the code, which is almost always a call. Confirmed (code) at the address
 6. **Relations and perception.** `GangMakeEnemies` / `GangMakeFriends` (both ways), `GangMakeEnemiesOfType`,
    `GangMakeNeutralOfType`, `GangSetTargetable` (brain `+0x120`), `GangSetAlwaysSeen`, `BrSetFOV`, `GangSetHearRange`
    and `GangSetRespondPercentage` change whom the [enemy scan](ai-fights.md#enemy-scan) lists and who answers violence;
-   they push
-   nothing themselves.
+   they push nothing themselves.
 
 **Members joined later.** Every `Gang*` setter that writes brains (threat, investigate, targetable, world flags, dead,
 flush) walks the gang's **current** members only (`0x0016b3d0`, `0x0016b4f0`, `0x0016bac0`, `0x0016be30`, `0x0016aa98`,
@@ -351,8 +347,7 @@ bindings](../references/bindings/ai.md).
   fires; an action that refuses to abort stays ([Actions](ai/index.md#actions)).
 - **`BrDead` / `GangBrDead`** (`Brain_SetDead`, `0x00292330`): clear the **actions only** (the goals stay), set brain
   `+0x09` and reinstall the handlers ([Handlers](ai/index.md#handlers)). Inferred: a dead player brain no longer leaves
-  the
-  record to the pad, as `level99` sets its Warriors dead (`GangBrDead`) while it walks them through a scene.
+  the record to the pad, as `level99` sets its Warriors dead (`GangBrDead`) while it walks them through a scene.
 
 ### GoalMoveToFlag {#move-to-flag}
 
@@ -584,9 +579,9 @@ has no blip yet): blip type 2, 4 or 3 with icon 29, 31 or 30 at 0.8 for types 0,
    `+0x3f`, `+0x40`, `+0x42`, `+0x45` cleared; each player's 668 override removed; state 1 (unless 4 or 5); next scan
    0. Beyond 2 × range the greeting is forgotten (`+0x3d` = 0).
 2. **In range**: the sight test `Human_HasLineOfSight(dealer, player)` (`0x00222288`, [Sight](ai-fights.md#sight)); and,
-   once per
-   visit for each player, `money_give.anm` is bound to that player's anim 668 (`Human_SetAnimOverride` `0x00221aa0`),
-   in sight or not, so the clip is loaded before the pair plays it. Nothing plays it here: the money pair does.
+   once per visit for each player, `money_give.anm` is bound to that player's anim 668 (`Human_SetAnimOverride`
+   `0x00221aa0`), in sight or not, so the clip is loaded before the pair plays it. Nothing plays it here: the money pair
+   does.
 3. Nothing more while the dealer's actions are blocked (brain `+0x2e` > 0).
 4. **State 4** (after a rip-off): brain `+0x26c` = 5 and a `GoalMoveToExitFlag` (`0x002da8f8`; gait 4, arrival 2 m,
    flag message `0x66`) to the **nearest flag of activity 8** (`Flag_FindNearestByActivity` `0x004177d8`: of the
@@ -599,8 +594,7 @@ has no blip yet): blip type 2, 4 or 3 with icon 29, 31 or 30 at 0.8 for types 0,
    nearest the dealer. When that member is within 4 m of the dealer, the dealer within 4 m of home, the member someone's
    target (his brain's attacker list `+0x1a4` is not empty) and in the dealer's sight: `+0x46` = 1, and unless the
    dealer is talking, a [Spectate goal](ai-fights.md#spectate) is pushed (keep 8 m, 2-4 s between looks, an 8 s limit)
-   when the
-   member walks or stands (gait below 3); a turn to the player, the wary gesture and line; done.
+   when the member walks or stands (gait below 3); a turn to the player, the wary gesture and line; done.
 7. **Home**: more than 1 m from home and not playing 668: a move action home (gait 4, radius 1 m); done.
 8. **Facing**: more than 15° off the player: not yet greeted → turn to him (`TurnToPointAction`); done. Greeted → turn
    (and done) only when the player stands (gait 0) within 2 m.
@@ -666,8 +660,7 @@ once. Confirmed (code) at `0x002c74d8` and `0x002473bc`; the frame from the disc
 2. An attacker whose brain is a **Warrior** (type 3) and no threat to the dealer counts only when the dealer is the
    Warrior gang's chosen target (gang `+0x10`); otherwise nothing more.
 3. A help call (`Gang_BroadcastHelpCall`, 30 m). It is event `0x14` ([Help calls](ai-brain-types.md#help-calls)), which
-   every other
-   dealer **drops** ([Dealers](ai-brain-types.md#think-dealer)), so it moves no other seller.
+   every other dealer **drops** ([Dealers](ai-brain-types.md#think-dealer)), so it moves no other seller.
 4. When he may react (`DealerBrain_CanReactToHit` `0x00302df8`: not down or dead, and his top goal is the dealer goal
    (`0x80`), goal 1, or a Spectate goal (`0x10`) while he has no fight goal) and **the attacker's** brain is not a gang
    soldier's (type 2; the old reading "his brain" was wrong, the test reads the attacker's brain): with `GoalDealer` on
@@ -830,26 +823,23 @@ there is no player (`GameState_FindNearestPlayer` gives the nearest and its squa
 
 **The fight** (`RiotGoal_TryPickFight`, `0x002d1288`): only a rioter whose brain is type 2 (gang soldiers and thugs,
 [Types](ai/index.md#types)); any other never fights. One draw: *p* = `Random_Int(100)` < the player-fight chance
-`+0x35`. The
-candidates are the humans within 15 m (`0x002274a8`, up to 60, in human-slot order) and the first that passes is
-taken: brain not type 3 (an ally Warrior); no player controls him (human `+0x1b0` = −1) unless *p*; not friendly
-(`0x00290230`: same brain or `Gang_AreFriends`); no fight goal; nobody in his attack-slot list (brain `+0x1a4`);
-reached from the rioter in a straight line. Then threat response `+0x21c` = 2, `Brain_Fight(rioter, him, 8000, 1)`
-and the taunt `0x11` (`0x002205e0`). So the binding's sixth argument is the chance that **the player** may be picked,
-not a gang member.
+`+0x35`. The candidates are the humans within 15 m (`0x002274a8`, up to 60, in human-slot order) and the first that
+passes is taken: brain not type 3 (an ally Warrior); no player controls him (human `+0x1b0` = −1) unless *p*; not
+friendly (`0x00290230`: same brain or `Gang_AreFriends`); no fight goal; nobody in his attack-slot list (brain
+`+0x1a4`); reached from the rioter in a straight line. Then threat response `+0x21c` = 2,
+`Brain_Fight(rioter, him, 8000, 1)` and the taunt `0x11` (`0x002205e0`). So the binding's sixth argument is the chance
+that **the player** may be picked, not a gang member.
 
 **How the 8 s fight ends.** `Brain_Fight` → `Brain_PushFightGoal(brain, 8000)` pops any Melee and FindEnemy goals,
 pushes FindEnemy (`0x41`) and Melee (8), each given the 8000 ([Closing on the target](ai-fights.md#fight-approach)), and
-then the
-fight goal (15) with **its deadline `+0x24` = now + 8000 ms**
-(`FightGoal_Init`, `0x002b2c20`; `+0x20` is the separate 750-1000 ms first-attack timer). The fight goal's usual
-ends apply (no target, no attack slot, out of range, [The fight goal](ai-fights.md#fight)). Past the deadline, at each update
-with no actions queued, it **ends** (returns 2) when any of these holds: the fighter's class `+0x11b` is 13 and goal
-`+0x29` is 0; the fighter is not among the target's four active attackers (target brain `+0x1f0`, `0x002911a8`);
-the target brain's byte `+0x11f` is 0 (`Brain_IsAttackableBy(target, nil)`, not traced); the fighter has a goal
-`0x35` (FollowAndDefend). Otherwise it goes on attacking. Confirmed (code) at `0x002b3d0c`-`0x002b3d6c`. Under the
-fight goal the riot goal is in state 3, so when the fight (and the melee goals beneath it) are done, the rioter
-leaves.
+then the fight goal (15) with **its deadline `+0x24` = now + 8000 ms** (`FightGoal_Init`, `0x002b2c20`; `+0x20` is the
+separate 750-1000 ms first-attack timer). The fight goal's usual ends apply (no target, no attack slot, out of range,
+[The fight goal](ai-fights.md#fight)). Past the deadline, at each update with no actions queued, it **ends** (returns 2)
+when any of these holds: the fighter's class `+0x11b` is 13 and goal `+0x29` is 0; the fighter is not among the target's
+four active attackers (target brain `+0x1f0`, `0x002911a8`); the target brain's byte `+0x11f` is 0
+(`Brain_IsAttackableBy(target, nil)`, not traced); the fighter has a goal `0x35` (FollowAndDefend). Otherwise it goes on
+attacking. Confirmed (code) at `0x002b3d0c`-`0x002b3d6c`. Under the fight goal the riot goal is in state 3, so when the
+fight (and the melee goals beneath it) are done, the rioter leaves.
 
 ### GoalDevilRun {#devil-run}
 

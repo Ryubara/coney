@@ -767,8 +767,7 @@ only within its parent's `ObjShow` distance ([Drawing](#tint)).
 
 What a crew member does with a weapon the player hands him by triangle (the "Give Weapon" prompt, user item 37).
 The hand-over itself is [AI: the weapon swap](ai-brain-types.md#warrior-swap); this is what follows. Confirmed (code) at
-the
-addresses cited unless marked.
+the addresses cited unless marked.
 
 1. **It is in his hand, attached and drawn like the player's.** The swap places the object with
    `Human_PlaceObjectInHandByPickupClip` (`0x0024c6d8`), the same path as `HuPlaceItemInHand`: the first type-9 event
@@ -779,13 +778,13 @@ addresses cited unless marked.
    the human, so the weapon shows in the Warrior's hand on the next draw, posed by his bone cache. A left-hand or hat
    object (`pickup_anim` 5 or 6) has no type-9 event and stays on the ground (inferred, as for the scripted
    placement). The prompt that later offers it back ("Get Weapon", HUD string `0xd`, he holds) reads the same
-   `+0x338` ([AI: the Warriors' think](ai-brain-types.md#think-warrior), step 7).
-   **At runtime** (confirmed (runtime), PCSX2 2.9.129 (the PCSX2-MCP fork), copy `pcsx2-c`, 2026-10-21, `level99`
-   checkpoint 2 street (slot 6) with the `call-brains` hook): a Warrior made with the `spawn-crew` recipe 2 m in front
-   of Rembrandt, a `dyn_bat` put in Rembrandt's hand with `HuPlaceItemInHand`, then `Human_SwapHeldObjects`
-   (`0x00233b08`) called with the Warrior as receiver: Rembrandt's `+0x338` became the null handle, the Warrior's the
-   bat's handle, and the bat object read `+0x54` = `0x8021a091` (bit `0x10`, attached), parent `+0x58` = the Warrior,
-   bone `+0x6d` = 25 and local position (0.151, −0.288, −0.005); the frame showed the bat in the Warrior's right hand.
+   `+0x338` ([AI: the Warriors' think](ai-brain-types.md#think-warrior), step 7). **At runtime** (confirmed (runtime),
+   PCSX2 2.9.129 (the PCSX2-MCP fork), copy `pcsx2-c`, 2026-10-21, `level99` checkpoint 2 street (slot 6) with the
+   `call-brains` hook): a Warrior made with the `spawn-crew` recipe 2 m in front of Rembrandt, a `dyn_bat` put in
+   Rembrandt's hand with `HuPlaceItemInHand`, then `Human_SwapHeldObjects` (`0x00233b08`) called with the Warrior as
+   receiver: Rembrandt's `+0x338` became the null handle, the Warrior's the bat's handle, and the bat object read
+   `+0x54` = `0x8021a091` (bit `0x10`, attached), parent `+0x58` = the Warrior, bone `+0x6d` = 25 and local position
+   (0.151, −0.288, −0.005); the frame showed the bat in the Warrior's right hand.
 2. **He fights with it.** An AI attacks through the player's dispatcher ([Combat: an AI's
    attacks](combat-targets.md#ai-attacks)), and square and cross choose their clip by the **held object's set**
    (`0x00231a80`, [Combat: moving attacks with something in hand](combat-throws.md#armed-moves)), so a Warrior holding a

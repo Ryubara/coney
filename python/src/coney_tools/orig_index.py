@@ -109,7 +109,7 @@ class Index:
 class SectionGap:
     """A research section that tagged code links which cites no original address at all."""
 
-    link: str  # "docs/research/ai.md#brain"
+    link: str  # "docs/research/ai/index.md#brain"
     heading: str  # "" for a whole page, "(missing)" when the anchor is not on the page
     tags: tuple[IndexRow, ...]
 

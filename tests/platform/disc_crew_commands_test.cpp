@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // Checks against the player's own disc that the crew takes the Warrior commands as the original does
-// (docs/research/ai/index.md#warrior-commands, docs/research/ai/index.md#crew-gaps): `level80` played in the game
+// (docs/research/ai-gangs.md#warrior-commands, docs/research/ai/index.md#crew-gaps): `level80` played in the game
 // session as `coney --play-level level80 --checkpoint N` plays it (support/disc_session.h), its opening scene skipped
 // by tapping cross, then the orders given from the R2 menu with the right stick, as a player gives them. It runs only
 // when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only (LEGAL.md).

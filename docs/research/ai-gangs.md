@@ -2,10 +2,9 @@
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). Static reading in Ghidra;
 every claim is confirmed (code) at the cited address unless it says otherwise, as on [AI humans](ai/index.md), which
-this page
-was split from because that page had grown too large. The brain a gang member runs is on [AI humans](ai/index.md#brain);
-the
-tactic and goal classes are indexed on [AI code index](ai-code.md) and [AI goals](ai-goals.md).
+this page was split from because that page had grown too large. The brain a gang member runs is on [AI
+humans](ai/index.md#brain); the tactic and goal classes are indexed on [AI code index](ai-code.md) and [AI
+goals](ai-goals.md).
 
 ## Purpose
 
@@ -316,17 +315,15 @@ cited; the `level87` facts are from its scripts on the disc.
    the members of enemy gangs within the sight range (brain `+0x130`, 30 m when made; `HuSetLOSRange`), in front
    (field of view `+0x12c`, 110° when made; `BrSetFOV`) unless within the near radius, and in line of sight
    ([The enemy scan](ai-fights.md#enemy-scan), [Sight](ai-fights.md#sight)). The gangs must be enemies first:
-   `GangMakeEnemies`, or a
-   script form's `Enemies`.
+   `GangMakeEnemies`, or a script form's `Enemies`.
 2. **A new enemy** goes to the scanner's own event handler as event `0xb` (11): his script handlers, then
    `Gang_OnEvent`, which hands it to the gang's tactic, then his brain ([Events and
    GangSetMsgHandler](#gang-events)). `Brain_AddEnemy` sends the same event when the tactic's `+0x3c` flag is 0
    (types `0x12` and up).
 3. **A gang with no tactic**: the gang soldier's think (`GangBrain_Think` step 3, [Gang
-   soldiers](ai-brain-types.md#think-gang)) pushes
-   the fight (`Brain_PushFightGoal(−1)`) as soon as his threat response (`+0x21c`) is not 0 and his enemy list is
-   not empty. That is the plain "attack on sight". The shared handler's event `0xb` also sends a 20 m help call
-   flagged "new enemy" ([The shared event handler](ai-brain-types.md#shared-events)).
+   soldiers](ai-brain-types.md#think-gang)) pushes the fight (`Brain_PushFightGoal(−1)`) as soon as his threat response
+   (`+0x21c`) is not 0 and his enemy list is not empty. That is the plain "attack on sight". The shared handler's event
+   `0xb` also sends a 20 m help call flagged "new enemy" ([The shared event handler](ai-brain-types.md#shared-events)).
 4. **A gang with a tactic**: `Brain_PushFightGoal` returns at once, so the think starts no fight
    ([Tactics](#tactics)). The tactic turns the event into a callback code instead: HanginOut, Idle, Wander,
    TravelPath, MoveToFlag, Vandalize and Steal turn event 11 from one of their own members into code **3
@@ -397,9 +394,8 @@ Fix, in order:
 
 1. Call the scan (`ScanSchedule::maybeScan`) for every AI brain in the brain update, as `Brain_UpdateGoals` does,
    with the 5-per-update budget and the 2 s / 8 s interval (detail level and fight stance), not only for scouts.
-2. Add `GangBrain_Think` step 3 (and the cop's and Warriors' equivalents, [Brain
-   types](ai/index.md#brain-type-handlers)): with
-   threat response, no fight goal and a non-empty enemy list, `pushFightGoals`.
+2. Add `GangBrain_Think` step 3 (and the cop's and Warriors' equivalents, [Brain types](ai-brain-types.md)): with threat
+   response, no fight goal and a non-empty enemy list, `pushFightGoals`.
 3. HanginOut's awareness (× 0.75, − 20° unless `fullAware`) at its Start, undone at its End.
 4. Then `Brain_MaybeSpotPlayers` (event 10, code 4) for completeness.
 

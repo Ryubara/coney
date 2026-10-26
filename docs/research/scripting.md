@@ -1476,10 +1476,10 @@ further script call:
 2. Each Destroyer lists Cochise and Swan (in range and in sight); Cochise and Swan list the twelve.
 3. With no tactic, a threat response and a non-empty list, `GangBrain_Think` step 3 (`0x00304608`) pushes the fight
    (`Brain_PushFightGoal(−1)`: FindEnemy, Melee) on every Destroyer, and the Warrior think's step 1 does the same
-   for Cochise and Swan, who have Warrior brains (type 3) ([Gang soldiers](ai-brain-types.md#think-gang),
-   [The Warriors](ai-brain-types.md#think-warrior)). Melee hands out the attack slots: the soldiers who get one fight (goal
-   Fight), the rest wait in Spectate round the two, and a soldier who strays out of `vTurfDestroyers` takes a
-   LeftTurf goal back. Confirmed (code) for the steps; their order confirmed (runtime) below.
+   for Cochise and Swan, who have Warrior brains (type 3) ([Gang soldiers](ai-brain-types.md#think-gang), [The
+   Warriors](ai-brain-types.md#think-warrior)). Melee hands out the attack slots: the soldiers who get one fight (goal
+   Fight), the rest wait in Spectate round the two, and a soldier who strays out of `vTurfDestroyers` takes a LeftTurf
+   goal back. Confirmed (code) for the steps; their order confirmed (runtime) below.
 
 **At runtime** (2026-10-12, PCSX2 2.9.94; confirmed (runtime)). The game was entered at checkpoint 4 from a
 pad-patched level80 state by setting the game state's level (record 2) and checkpoint and reloading. Cleon's
@@ -1565,10 +1565,9 @@ Answers to the four questions of the implementer of issues #406 and #73 (2026-10
 - With the sight range `R` = 30 m (brain `+0x130`, read 30.0 on all twelve), Cleon at 15-19 m scores about
   4 × (30 − d) + 20 (a player) + 3 = 67-83, and Cochise or Swan at 1-3 m about 108-116 ([the
   score](ai-fights.md#enemy-score)), unless `Brain_CanTakeSlotOn` (`0x0028dc80`) makes them −999. Its first argument is
-  the
-  **enemy's** brain: it is false when the enemy's holders (`+0x1a4`) fill his maximum (`+0x1e4`, 4), the scorer is
-  not one of them and no holder is farther from the enemy than the scorer. Confirmed (code). So a `GoalFight`
-  soldier goes for Cleon only when Cochise and Swan both have four holders, all nearer to them than he is.
+  the **enemy's** brain: it is false when the enemy's holders (`+0x1a4`) fill his maximum (`+0x1e4`, 4), the scorer is
+  not one of them and no holder is farther from the enemy than the scorer. Confirmed (code). So a `GoalFight` soldier
+  goes for Cleon only when Cochise and Swan both have four holders, all nearer to them than he is.
 - Run 3 (confirmed (runtime)): before the order Swan had four holders, one of them `Destroyers1.Destroyer1`, and
   Cochise four. `GoalFight` released Destroyer1's place on Swan (three holders at update 0); at update 1 he had taken
   it back and targeted Swan, so Cleon was his target for less than one update. `Destroyers1.Destroyer2` (in

@@ -286,7 +286,7 @@ STARTERS: dict[str, dict[str, Any]] = {
         "([GUI: radar](../research/gui.md#radar-icons)).",
         "complete": "Every icon a script or the code uses and every blip type the code adds are listed. The numbers\n"
         "are read from the code and the scripts; what each icon marks is inferred from who uses it. Classes are the\n"
-        "character class byte `CfgChar` sets (`+0x11a`, [AI](../research/ai.md#types)).",
+        "character class byte `CfgChar` sets (`+0x11a`, [AI](../research/ai/index.md#types)).",
     },
     "levels": {
         "title": "Levels",

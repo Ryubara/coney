@@ -924,8 +924,7 @@ debug switch that is on in play (`0x005e5350`-`0x005e5368`); the full list is on
    [Graphics](graphics.md#code-camera-effects)); `Pads_Update`; the formations; the 60 player records (`0x00146078`,
    below).
 2. The gangs, then the **brains** (`Brains_Update`, `0x00293b28`, confirmed (code), [AI](ai/index.md#update)), which
-   write an
-   AI human's command into its player record as a pad would.
+   write an AI human's command into its player record as a pad would.
 3. For every human with an instance, `0x0023bd78` (the instance's animation step, `0x00175610`), then
    `0x00105570`.
 4. Per human: a position 1.3 above the human handed to `0x0019c3f0` for humans with flag `0x4000` (an effect or
@@ -3138,9 +3137,8 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   `tests/platform/disc_level99_handover_test.cpp` plays checkpoint 1 into 2 and steals the first stereo as the new
   player 1 (before, the theft named the old handle, `HuIsAPlayer` said no and the lesson stalled).
   `GangDelete` deletes the gang's members at once ([AI](ai/index.md#in-coney)); player 1, with no other human to go to,
-  is only
-  taken out of the gang. `tests/platform/disc_level99_street_test.cpp` plays the end of the combat course into the
-  street with the disc.
+  is only taken out of the gang. `tests/platform/disc_level99_street_test.cpp` plays the end of the combat course into
+  the street with the disc.
 - **The model** (`src/characters/character_class.h`, from [From a type to a model](#type-to-model)):
   `characterClassOf` is `Human_Init`'s switch, `modelRecordType` the player's plain-alias rule (a player made as a
   plain alias is drawn as the class's own type; a variant keeps its own), and `modelNameFor` takes the model name from

@@ -741,8 +741,7 @@ Confirmed (code) at each address; read in Ghidra on 2026-10-13. This corrects th
 4. `+0x14` (wait) = 0 for kinds 0, 1, 2 and 8, else 1. Return 0.
 
 The kinds the shared event handler uses ([The shared event handler](ai-brain-types.md#shared-events)) are 3 and 4, anims
-598
-and 599 (`0x256`, `0x257`).
+598 and 599 (`0x256`, `0x257`).
 
 **Update** (`0x002fb2f0`): with wait 0, done at once; with wait 1, 0 while held flags `0x300000` (either taunt
 flag) are set, else done.

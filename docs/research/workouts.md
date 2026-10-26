@@ -286,9 +286,8 @@ before the 26 s clock ran out.
 
 A Warrior at the bag spars with it through `GoalBoxer` ([Boxer goal](ai-goals.md#goal-boxer)): its brain's attack
 weights `+0x208` point at the table `0x00511120` (45 bytes, one per [attack kind](ai/index.md#attack-kinds)): kinds 1,
-3, 7,
-24, 31, 39 and 42 weigh 5 and kind 5 (`SS2`) weighs 10; every other kind 0. Confirmed (code). That AI goal is all the
-table serves: the player's workout does not read it.
+3, 7, 24, 31, 39 and 42 weigh 5 and kind 5 (`SS2`) weighs 10; every other kind 0. Confirmed (code). That AI goal is all
+the table serves: the player's workout does not read it.
 
 ## HUD {#hud}
 
@@ -370,11 +369,10 @@ toward the brain's heading: by the fight stance's AI word (24° an update) when 
 when stopped more than 15° off, not at all within 15° ([AI: Speed control and Turning](ai-moving.md#ai-turn)). Coney now
 runs a player whose pad a script took through the AI's stance control (`Human::aiCombatWalk`, the turn on the spot at
 the standing step, as for every AI, a stand-in for the turn clips; [AI: Facing the target](ai-fights.md#fight-facing)),
-so
-the goal's turn steers and it arrives (`repo:tests/ai/move_action_test.cpp`, and on the disc
-`repo:tests/platform/disc_hub_workout_test.cpp`). The headings were not the cause, but they were mirrored: a
-flag's degrees turn clockwise seen from above ([Flags](flags.md#position)), so `fWorkout[1]`'s 93 faces +x, at the bag,
-and Coney turned the player to face away from it until the flags' headings were negated (2026-10-20).
+so the goal's turn steers and it arrives (`repo:tests/ai/move_action_test.cpp`, and on the disc
+`repo:tests/platform/disc_hub_workout_test.cpp`). The headings were not the cause, but they were mirrored: a flag's
+degrees turn clockwise seen from above ([Flags](flags.md#position)), so `fWorkout[1]`'s 93 faces +x, at the bag, and
+Coney turned the player to face away from it until the flags' headings were negated (2026-10-20).
 
 **The cause, found and fixed** (Coney, 2026-10-11): `DeactivateWarchief` sets the player's brain dead, so the pad is
 given up and the goal runs, but the player stands in the fight stance locked on a foe (the bag, or any fighter near),
@@ -385,11 +383,10 @@ toward the brain's heading: by the fight stance's AI word (24° an update) when 
 when stopped more than 15° off, not at all within 15° ([AI: Speed control and Turning](ai-moving.md#ai-turn)). Coney now
 runs a player whose pad a script took through the AI's stance control (`Human::aiCombatWalk`, the turn on the spot at
 the standing step, as for every AI, a stand-in for the turn clips; [AI: Facing the target](ai-fights.md#fight-facing)),
-so
-the goal's turn steers and it arrives (`repo:tests/ai/move_action_test.cpp`, and on the disc
-`repo:tests/platform/disc_hub_workout_test.cpp`). The headings were not the cause, but they were mirrored: a
-flag's degrees turn clockwise seen from above ([Flags](flags.md#position)), so `fWorkout[1]`'s 93 faces +x, at the bag,
-and Coney turned the player to face away from it until the flags' headings were negated (2026-10-20).
+so the goal's turn steers and it arrives (`repo:tests/ai/move_action_test.cpp`, and on the disc
+`repo:tests/platform/disc_hub_workout_test.cpp`). The headings were not the cause, but they were mirrored: a flag's
+degrees turn clockwise seen from above ([Flags](flags.md#position)), so `fWorkout[1]`'s 93 faces +x, at the bag, and
+Coney turned the player to face away from it until the flags' headings were negated (2026-10-20).
 
 **The cycle games in Coney** (2026-10-11): `HuWorkout` follows [The engine side](#engine). A workout begins once all
 five clips load (the level's clip source, by the names the script gives) and, for the player who is his own target,

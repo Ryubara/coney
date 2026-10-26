@@ -383,9 +383,8 @@ icon sprite at `+0x480`. Confirmed (code) unless marked:
       string 4 showed ([Combat: revive at runtime](combat-reactions.md#revive-runtime)).
     - **Sight, no facing**: each candidate must also pass `Human_HasLineOfSight(player, him)` (`0x00222288`: a ray at
       1.7 m to his 1.7 m, else to his 1.0 m; it passes fences, railings and glass, [AI: sight](ai-fights.md#sight)). The
-      list's
-      field-of-view test is only consulted beyond 3 m (squared distance over 9), which the 3 m search never yields, so
-      **facing does not matter**.
+      list's field-of-view test is only consulted beyond 3 m (squared distance over 9), which the 3 m search never
+      yields, so **facing does not matter**.
     - **Which one**: the candidate nearest the player's position (`HandleArray16_NearestHandle`).
     - **The flash**: the count of item 1 in the inventory at `W_GameState + 0x480` (`Inventory_Count`, `0x0041e420`) for
       the **player's** panel index (human `+0x380`), or, failing that, for the **downed human's** `+0x380`. An inventory
@@ -449,9 +448,8 @@ Step 4 of the prompt's text, `ActionPrompt_FindNearbyHuman` (`0x001acd60`). Conf
   (`InfoTactic_Seat` and `BumLogicGoal_Setup` register kind 5 with HUD strings 8 and 10).
 - **Who sets it**: the brains, every think; no Lua binding. `WarriorBrain_Think` (`0x00305bfc`) and `PlayerBrain_Think`
   (`0x00303404`) write `+0x1b2` = 1 exactly when [the swap prompt](ai-brain-types.md#think-warrior)'s conditions hold
-  (else 0),
-  and then write the text of `GSTRING.HUD` string **`0xc`** (both hold an object), **`0xd`** (he holds) or **`0xe`**
-  (the player holds) straight into the human's message-handler component (human `+0xe8`): `+0x7c` = that text,
+  (else 0), and then write the text of `GSTRING.HUD` string **`0xc`** (both hold an object), **`0xd`** (he holds) or
+  **`0xe`** (the player holds) straight into the human's message-handler component (human `+0xe8`): `+0x7c` = that text,
   `+0x78` = 0.
 - **Its text**, in order: the component's `+0x78` read as a `GSTRING.HUD` id when it is **1-388** (slot `+0x20`,
   `0x0021d530`, message 0 only); else the text at `+0x7c` when not null (slot `+0x28`, `0x0021d550`); else HUD string

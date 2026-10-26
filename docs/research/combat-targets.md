@@ -193,8 +193,7 @@ Read in Ghidra: confirmed (code) where no other level is given.
    for 20 s, after popping a TauntPlayer goal on top. When the chief is a war chief (`+0x3ac` = 1) with a command in
    force, the command is re-issued as 0 and the chief's command menu is locked (`+0x42e` + player = 1). While one hits
    back, the [player's update](ai-brain-types.md#think-player) gives every free member within 15 m **TauntPlayer**: the
-   taunting
-   ring.
+   taunting ring.
 5. **Throws into teammates.** A thrown enemy strikes every body he flies into ([Throws](combat-throws.md#throws)): he is
    no friend of the teammate, so the bystander takes the crushing high reaction (300-303, a knockdown) with no health
    lost (the −60 is never applied).
@@ -714,8 +713,7 @@ reads it ([The dispatcher](combat/index.md#dispatch)). What differs for a human 
 - **Not for an AI**: the locked strafe attacks (`0x1f`-`0x21`, which need a pad and `Human_IsLocked`), the counter grab
   and counter tackle from square or cross (`Human_CanCounterGrab`, `Human_CanCounterTackle`: an AI has command 3
   instead, [AI](ai-fights.md#block)), starting a block ([The dispatcher](combat/index.md#dispatch)), and the climb and
-  jump on
-  triangle: an AI's triangle goes straight to `Player_TriangleAction` (`0x002811f0`).
+  jump on triangle: an AI's triangle goes straight to `Player_TriangleAction` (`0x002811f0`).
 
 **May this attack start now** (`Human_CanStartAttack(h, target, kind)`, `0x00224778`), asked by the attack action's
 Start (`0x002fa9a8`) and by goals before they queue one (EngageEnemy's charge, [AI](ai-fights.md#engage-enemy)). It refuses
@@ -777,10 +775,9 @@ when either human is grabbing or tackling, or the target is cuffed (`0x002fa9a8`
 - `Brain_Init` (`0x0028a9c0`) sets both to 1, and so does `Brain_SetTarget` (`0x0028cfe0`) when the last attacker
   leaves the target's attacker list (`+0x1a4`).
 - When an attacker claims a slot on the target (`Brain_ClaimAttackSlot`, `0x0028df30`, [AI](ai-fights.md#targets)), the
-  byte
-  is raised to the **attacker's gang's** [`CfgGang`](../references/bindings/config.md#cfggang) value: `+0x14a` =
-  max(itself, argument 2, gang record `+0x6c`) and `+0x14b` = max(itself, argument 3, `+0x6d`); a target whose brain
-  is type 3 (a Warrior) gets `+0x14a` = 1 instead.
+  byte is raised to the **attacker's gang's** [`CfgGang`](../references/bindings/config.md#cfggang) value: `+0x14a` =
+  max(itself, argument 2, gang record `+0x6c`) and `+0x14b` = max(itself, argument 3, `+0x6d`); a target whose brain is
+  type 3 (a Warrior) gets `+0x14a` = 1 instead.
 - `config_preload2.lua` gives most gangs 2 and 2; gang 1 3 and 3, gang 3 1 and 4, gangs 7 and 21 4 and 4, gang 8 2
   and 1, gang 13 1 and 1.
 

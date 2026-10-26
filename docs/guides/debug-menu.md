@@ -285,7 +285,7 @@ with no gang is no one's friend ([Gangs](../research/ai-gangs.md#gang-record),
 
 An ally is in a gang of its own that is the player's camp, not in his gang itself: a gang holds at most 10 brains and
 Coney's `Gangs::addMember()` drops the first of a full gang (a Coney choice; the original adds the member anyway,
-[Coney choices](../research/ai.md#coney)), so allies added to his own would push his crew out, and his crew's follow
+[Coney choices](../research/ai/index.md#in-coney)), so allies added to his own would push his crew out, and his crew's follow
 tactic would give them goals; a gang of his gang's kind is his friend by the original's own kind rule and takes his
 gang's enemy and friend masks. A side's gang that is full (10 members) is left for a new one of the same side
 (`Allies2`, `Allies3`), and at each spawn every live gang of the side, the full ones too, is brought in line with the

@@ -10,9 +10,9 @@ How the player hides and how guards find him: the shadow ground and the hidden s
 scouts and their sight, how being spotted fails a stealth section, the stealth kill and distractions. The Destroyers'
 hangout (level87, checkpoint 5) teaches all of it. Pieces documented elsewhere are linked, not repeated: the enemy
 scan and sight tests ([AI: the enemy scan](ai-fights.md#enemy-scan), [Sight](ai-fights.md#sight)), the Scout and
-PathScout goals'
-code rows ([AI goals](ai-goals.md#goal-scout)), the stealth kill's clip data ([Combat moves](combat-moves.md#stealth)),
-the radar's drawing ([GUI: the radar](gui.md#radar-icons)) and the wanted timers ([Crimes: wanted](crimes.md#wanted)).
+PathScout goals' code rows ([AI goals](ai-goals.md#goal-scout)), the stealth kill's clip data ([Combat
+moves](combat-moves.md#stealth)), the radar's drawing ([GUI: the radar](gui.md#radar-icons)) and the wanted timers
+([Crimes: wanted](crimes.md#wanted)).
 
 ## Original structure
 
@@ -98,10 +98,9 @@ goals for Warriors. While hidden the player does not enter the fight stance by h
 `Player_UpdateSprint` needs `0x200000` clear) and an L1 target is not locked on ([the stealth kill](#stealth-kill)).
 Confirmed (code) at the callers of `0x00230140`.
 
-**What hidden changes for the AI**: [the enemy scan](ai-fights.md#enemy-scan) and the spot test skip him
-([Seen or not](#seen)); the follow camera raises its look-at point to 1.65 m ([Camera](camera.md#update));
-his footsteps play at half volume ([Characters](characters.md)); the AI's enemy picks drop him
-([AI: the score](ai-fights.md#enemy-score)).
+**What hidden changes for the AI**: [the enemy scan](ai-fights.md#enemy-scan) and the spot test skip him ([Seen or
+not](#seen)); the follow camera raises its look-at point to 1.65 m ([Camera](camera.md#update)); his footsteps play at
+half volume ([Characters](characters.md)); the AI's enemy picks drop him ([AI: the score](ai-fights.md#enemy-score)).
 
 **The player's Warriors hide too** (`Player_UpdateHideOrder`, `0x0023e7e0`, while hidden on shadow ground, standing
 still: speed `+0x1ac` = 0, not busy, his gang able to help): after a delay (500 ms; with no command active, the time
@@ -365,8 +364,7 @@ Chapter 5 of `level87` (`level87_chap5_club.lua`) is the stealth tutorial. What 
 - **The HUD cue** ([HUD](hud.md#coneys-implementation)): the radar turns blue while he is hidden and back to grey,
   blending over 500 ms.
 - **Seen or not** (`repo:src/ai/enemy_scan.h`, [AI: the enemy scan](ai-fights.md#enemy-scan)): `Human_CanSeeHuman` and
-  the scan
-  see a hidden human only within 2 m.
+  the scan see a hidden human only within 2 m.
 - **Scouts and the call** (`repo:src/ai/tactic_scout.h`, [AI: Coney](ai/index.md#in-coney)): TacticScout's guards keep their
   posts and scan every 500 ms; one who spots, is hit by or is warned of an enemy fights him, and when the level allows
   it runs to the farthest phone flag in range and, 1.5 s later, starts the enemy gang's second wanted timer

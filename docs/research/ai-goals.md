@@ -6,8 +6,7 @@ Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038e
 ## Purpose
 
 The function-by-function index of the goal classes (`0x0029f000`-`0x002f9e00`). [AI humans](ai/index.md#goals) explains
-the
-goal stack, the vtable layout (`+0x0c` type, `+0x14` the class name, `+0x24` Start, `+0x2c` End, `+0x34` Resume,
+the goal stack, the vtable layout (`+0x0c` type, `+0x14` the class name, `+0x24` Start, `+0x2c` End, `+0x34` Resume,
 `+0x44` Process, `+0x4c` event) and the goals that matter most; this page names every function of every class and says
 in a line what it does. The rest of the AI code is on [AI code index](ai-code.md).
 

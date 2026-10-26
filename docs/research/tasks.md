@@ -332,10 +332,8 @@ before on [Characters](characters.md#update):
 4. With `0x005e5358`, the **gangs** (`0x0016d170`: 32 records of 0xb10 at `0x005e6e30`, a fifth of them per step;
    the gang's tactic through `0x00306630`).
 5. With `0x005e535c`, the **brains** (`Brains_Update`, `0x00293b28`, [AI](ai/index.md#update)): each enabled brain
-   thinks on
-   one step in five (brain *i* when *i* mod 5 = (`0x005104f4` >> 1) mod 5, confirmed (runtime)) and updates every
-   step. Brains write their human's **command** into its per-player record
-   `+0x20`, as a pad would.
+   thinks on one step in five (brain *i* when *i* mod 5 = (`0x005104f4` >> 1) mod 5, confirmed (runtime)) and updates
+   every step. Brains write their human's **command** into its per-player record `+0x20`, as a pad would.
 6. With `0x005e5360`, each human's animation step (`0x0023bd78`), then `0x00105570` (refresh the playing anim ids).
 7. Per human: an effect for flag `0x4000`, the player gang checks.
 8. With `0x005e5364`, each human's **state update**: vtable `+0x13c` (the locomotion for a pad-controlled human,

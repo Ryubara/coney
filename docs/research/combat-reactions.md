@@ -19,10 +19,9 @@ back up and the counter from the ground, being knocked out and revived with a fl
 can no longer help, and the blood a hit draws. A player sees a punch land, a man stagger or fall and get up, a man left
 on the ground, a flash bring a downed crewman back to his feet, and the "mission failed" screen. The AI's fight goals
 ([AI](ai/index.md#fight-reactions)), the grab and the mount ([Combat: grabs](combat-grabs.md)) and the HUD's health
-meter read
-the states set here. A bat's hit, which deals the bat's damage rather than the clip's, is on [Combat: throws, weapons in
-hand](combat-throws.md#bat-knockdown). The commands, the state bits and the tables every combat topic reads are on
-[Combat](combat/index.md#data).
+meter read the states set here. A bat's hit, which deals the bat's damage rather than the clip's, is on [Combat: throws,
+weapons in hand](combat-throws.md#bat-knockdown). The commands, the state bits and the tables every combat topic reads
+are on [Combat](combat/index.md#data).
 
 ## Map
 
@@ -210,9 +209,8 @@ places.
 attacks](combat-targets.md#ai-attacks), test 1) refuses every kind against a target holding any of **`0xc08200`**
 (`0x800000`, `0x400000`, `0x8000`, `0x200`), except for the target's own partner (target state `0x2000` and attacker
 state `0x1000`). The fight goal then picks again and waits ([AI](ai-fights.md#fight-order)), and the attack action's
-start asks
-the same test, so a queued attack does not start either. So a diver, a power move's or finisher's victim and the three
-humans of a tandem are left alone; a charger (`0x1000000` is not in the mask) is not.
+start asks the same test, so a queued attack does not start either. So a diver, a power move's or finisher's victim and
+the three humans of a tandem are left alone; a charger (`0x1000000` is not in the mask) is not.
 
 **2. No grab or tackle by a player.** `Human_CanBeGrabbed` (`0x002256a0`) refuses held `0x8fc57a60`, which has
 `0x1000000`, `0x800000` and `0x400000`.

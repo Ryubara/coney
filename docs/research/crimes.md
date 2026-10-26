@@ -1280,12 +1280,11 @@ the witnesses' message 7 and alert, the crime score 4-8 and the lines 128 / 143.
   [Root motion](formats/animation.md#root-motion)); the freer ends about 30 degrees past facing the cuffed human until
   that is fixed (the `[!mayfail]` disc case of `repo:tests/platform/disc_level80_test.cpp`).
 - **GetItem's swing at glass** ([AI: GetItem](ai/index.md#get-item)): at level80's pharmacy (scenario `steal_store`) two
-  Warriors
-  reached the glass branch 23 times each in 60 s and no pane broke. Whether the queued kind 0 played at all (the
-  anim-dispatch log of that run was not read), whether its strike reaches the pane's body from the standing point, and
-  whether the pharmacy's panes are alarmed or otherwise special are not known. The run was staged (checkpoint 1
-  state, the crew teleported inside, the order given through the dispatcher), so the mission's own path (the front
-  lock picked, the order given by the script) should be run before an implementer copies "they never break it".
+  Warriors reached the glass branch 23 times each in 60 s and no pane broke. Whether the queued kind 0 played at all
+  (the anim-dispatch log of that run was not read), whether its strike reaches the pane's body from the standing point,
+  and whether the pharmacy's panes are alarmed or otherwise special are not known. The run was staged (checkpoint 1
+  state, the crew teleported inside, the order given through the dispatcher), so the mission's own path (the front lock
+  picked, the order given by the script) should be run before an implementer copies "they never break it".
 
 - Which objects register context records of kinds 1, 4 and 5, and with what second value.
 - Who sets mini-game mode 4.

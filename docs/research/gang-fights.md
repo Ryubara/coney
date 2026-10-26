@@ -344,7 +344,7 @@ Side 1's AI members (with the player as chief) get the forced attack command, `W
 FollowAndAttack on the player, best enemy within 60 m of him, and no shared target. Their gang type 3 lets one of
 them swing at a standing man at a time (v2 1) and four at a downed one (v3 4).
 
-## In Coney
+## In Coney {#coney}
 
 Coney's state from reading `repo:src/ai/` (2026-10-12); each item names the rule above it implements.
 
