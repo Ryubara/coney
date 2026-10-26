@@ -702,7 +702,7 @@ name = "Human_HasLineOfSight"
 page = "ai.md#sight"
 level = "confirmed-code"
 coney = "src/ai/perception.h:lineOfSight"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x002223e8
@@ -710,7 +710,17 @@ name = "Human_CanSeeHuman"
 page = "ai.md#sight"
 level = "confirmed-code"
 coney = "src/ai/perception.h:canSeeHuman"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "no field of view: within range (and the shadow rule) only the line of sight decides; the near distance is not passed"
+relation = "not-ported"
+issue = 646
+
+[[function.gaps]]
+what = "the shadow rule is the enemy scan's (the viewer on shadow ground too) and its distance a fixed 2 m, not the caller's"
+relation = "not-ported"
+issue = 646
 
 [[function]]
 address = 0x002235f8
@@ -1199,7 +1209,7 @@ kind = "helper"
 role = "stores the current top index in `+0x2d` as the goal base, only when the stack is not empty; nothing is popped ([Tactics](ai-gangs.md#tactics))"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::markGoalBase"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0028d8c0
@@ -1209,7 +1219,7 @@ kind = "helper"
 role = "pops goals down to `+0x2d`, then clears it"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::popToGoalBase"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0028d910
@@ -1227,7 +1237,7 @@ page = "ai.md#original-structure"
 role = "the goal stack"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::findGoal"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0028d9f0

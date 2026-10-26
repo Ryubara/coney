@@ -772,9 +772,9 @@ void Brain::writeStick(anim::Vec3 way, float magnitude) {
     record.stickY = length > 1e-4F ? way.y / length * magnitude : 0.0F;
 }
 
-// The stick AttackAction_Update and AttackAction_Abort let go.
-// @orig 0x002fad70 AttackAction_Update (unknown)
-// @orig 0x002fad30 AttackAction_Abort (unknown)
+// Lets go the stick writeStick() wrote, when Coney's attack action ends.
+// @coney-only the original's AttackAction_Update (0x002fad70) and AttackAction_Abort (0x002fad30) write no stick;
+// it zeroes the stick's magnitude when the next attack starts (AttackAction_Start 0x002fa9a8)
 void Brain::releaseStick() {
     m_human->record().stickX = 0.0F;
     m_human->record().stickY = 0.0F;
