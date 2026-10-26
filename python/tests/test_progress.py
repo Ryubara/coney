@@ -68,6 +68,8 @@ ROADMAP = """# Roadmap
 BLOCK = f"before\n\n{progress_render.PAGE_MARKER}\n\nafter\n"
 # The committed history page, with its own marker.
 HISTORY_BLOCK = f"history\n\n{progress_render.HISTORY_MARKER}\n"
+# The committed home page, with the marker of its picture of functions.
+HOME_BLOCK = f"home\n\n{progress_render.HOME_MARKER}\n"
 
 
 def make_checkout(root: Path, functions: str = "", tags: str = "", listing: str = "") -> Path:
@@ -87,6 +89,7 @@ def make_checkout(root: Path, functions: str = "", tags: str = "", listing: str 
         (root / "docs" / "progress" / "ghidra-functions.tsv").write_text(listing, encoding="utf-8")
     (root / "docs" / "progress" / "index.md").write_text(BLOCK, encoding="utf-8")
     (root / "docs" / "progress" / "history.md").write_text(HISTORY_BLOCK, encoding="utf-8")
+    (root / "docs" / "index.md").write_text(HOME_BLOCK, encoding="utf-8")
     (root / "docs" / "roadmap.md").write_text(ROADMAP, encoding="utf-8")
     (root / "src" / "core").mkdir(parents=True)
     (root / "src" / "core" / "thing.h").write_text(tags, encoding="utf-8")
@@ -316,6 +319,10 @@ def test_render_writes_the_page_and_the_badges(tmp_path: Path, monkeypatch: pyte
     assert json.loads((out / "progress" / "progress.json").read_text(encoding="utf-8"))["functions"] == 1
     assert (out / "progress" / "history.svg").is_file() and (out / "progress" / "progress.svg").is_file()
     assert (root / "docs" / "progress" / "history.md").read_text(encoding="utf-8") == HISTORY_BLOCK
+    # The home page gets its picture of functions; the committed one keeps its marker.
+    home = (out / "index.md").read_text(encoding="utf-8")
+    assert home.startswith("home") and progress_render.HOME_MARKER not in home and "progress-home" in home
+    assert (root / "docs" / "index.md").read_text(encoding="utf-8") == HOME_BLOCK
 
 
 def test_render_follows_the_inputs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -364,6 +371,15 @@ def test_missing_history_marker_is_exit_2(
     (tmp_path / "docs" / "progress" / "history.md").write_text("no marker\n", encoding="utf-8")
     assert main(["progress", "check"]) == 2
     assert "history.md: needs exactly one <!-- progress:history -->" in capsys.readouterr().err
+
+
+def test_missing_home_marker_is_exit_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(make_checkout(tmp_path))
+    (tmp_path / "docs" / "index.md").write_text("no marker\n", encoding="utf-8")
+    assert main(["progress", "check"]) == 2
+    assert "index.md: needs exactly one <!-- progress:home -->" in capsys.readouterr().err
 
 
 def test_missing_marker_is_exit_2(

@@ -1,5 +1,6 @@
 /*
- * The progress picture's tooltips (docs/progress/index.md, docs/stylesheets/progress-grid.css).
+ * The progress picture's tooltips (docs/progress/index.md, docs/stylesheets/progress-grid.css), also on the home
+ * page's compact copy of it (docs/index.md), which shares the table, the markup and this script.
  *
  * The page already holds the picture as plain SVG with one tooltip per block, and every number in a table. This script
  * adds what a per-square element would cost too much for: it finds the square under the pointer from the data
@@ -99,6 +100,8 @@
           y: Number(group.getAttribute("data-y")),
           cols: Number(group.getAttribute("data-c")),
           count: Number(group.getAttribute("data-n")),
+          // Squares before the block's first one in its rows: set when the blocks flow on from one another (home page).
+          offset: Number(group.getAttribute("data-o") || 0),
           title: text,
         });
       });
@@ -140,19 +143,22 @@
       var box = svg.getBoundingClientRect();
       var view = svg.viewBox.baseVal;
       var pitch = Number(svg.getAttribute("data-pitch"));
+      // The strip above a block that holds its label: none in the home page's picture, which has no labels.
+      var label = Number(svg.getAttribute("data-label") || 0);
       var x = ((clientX - box.left) * view.width) / box.width;
       var y = ((clientY - box.top) * view.height) / box.height;
       var list = blocksBySvg.get(svg);
       for (var i = 0; i < list.length; i++) {
         var block = list[i];
-        var rows = Math.ceil(block.count / block.cols);
+        var rows = Math.ceil((block.offset + block.count) / block.cols);
         var inside = x >= block.x && x < block.x + block.cols * pitch;
         if (inside && y >= block.y && y < block.y + rows * pitch) {
-          var cell = Math.floor((y - block.y) / pitch) * block.cols + Math.floor((x - block.x) / pitch);
-          if (cell < block.count) {
+          var square = Math.floor((y - block.y) / pitch) * block.cols + Math.floor((x - block.x) / pitch);
+          var cell = square - block.offset;
+          if (cell >= 0 && cell < block.count) {
             return { block: block, cell: cell, pitch: pitch };
           }
-        } else if (inside && y >= block.y - 17 && y < block.y) {
+        } else if (inside && y >= block.y - label && y < block.y) {
           return { block: block, cell: -1, pitch: pitch };
         }
       }
@@ -165,8 +171,9 @@
         marker = document.createElementNS(SVG_NS, "rect");
         marker.setAttribute("class", "cg-hover");
       }
-      var column = hit.cell % hit.block.cols;
-      var row = Math.floor(hit.cell / hit.block.cols);
+      var square = hit.block.offset + hit.cell;
+      var column = square % hit.block.cols;
+      var row = Math.floor(square / hit.block.cols);
       marker.setAttribute("x", hit.block.x + column * hit.pitch - 0.5);
       marker.setAttribute("y", hit.block.y + row * hit.pitch - 0.5);
       marker.setAttribute("width", hit.pitch);

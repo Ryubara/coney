@@ -18,6 +18,8 @@ from coney_tools.progress import UNATTRIBUTED, Progress, ProgressError
 PAGE_MARKER = "<!-- progress:generated -->"
 #: Where docs/progress/history.md says "the chart and the table of days go here".
 HISTORY_MARKER = "<!-- progress:history -->"
+#: Where docs/index.md, the home page, says "the compact picture of functions goes here".
+HOME_MARKER = "<!-- progress:home -->"
 GENERATED_NOTE = (
     "<!-- Generated when the docs are built, from docs/progress/totals.toml, the function database\n"
     "     (research/functions/), the @orig tags in src/ and the roadmap's status table. Edit those, not this. -->"
@@ -243,6 +245,13 @@ def fill_history_page(text: str, block: str, path: str) -> str:
     if text.count(HISTORY_MARKER) != 1:
         raise ProgressError(f"{path}: needs exactly one {HISTORY_MARKER} line, where the chart and table go")
     return text.replace(HISTORY_MARKER, f"{GENERATED_NOTE}\n{block}")
+
+
+def fill_home_page(text: str, block: str, path: str) -> str:
+    """`text` (the committed docs/index.md) with HOME_MARKER replaced by the home page's picture `block`."""
+    if text.count(HOME_MARKER) != 1:
+        raise ProgressError(f"{path}: needs exactly one {HOME_MARKER} line, where the picture of functions goes")
+    return text.replace(HOME_MARKER, f"{GENERATED_NOTE}\n{block}")
 
 
 def _endpoint(label: str, message: str, color: str) -> str:

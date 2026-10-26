@@ -43,6 +43,8 @@ LEGACY_FUNCTIONS_FILE = DATA_DIR / "functions.toml"
 PAGE_FILE = DATA_DIR / "index.md"
 #: The committed history page, whose marker the build fills with the chart and the table of days.
 HISTORY_PAGE_FILE = DATA_DIR / "history.md"
+#: The site's home page, whose marker the build fills with the compact picture of functions.
+HOME_PAGE_FILE = Path("docs/index.md")
 ROADMAP_FILE = Path("docs/roadmap.md")
 SOURCE_DIR = Path("src")
 

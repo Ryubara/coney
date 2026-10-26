@@ -15,7 +15,8 @@ Blocks are the tracker's subsystems (the original's top-level source directories
 code last. Each function also knows its source file when the source map's per-file ranges
 (research/source-files.toml) place it, and the Coney source line that carries its `@orig` tag, for the page's tooltips.
 Nothing generated is committed: the docs build calls `build_grid` and writes the pictures and numbers into the site
-(progress_site.py).
+(progress_site.py). The home page shows the same squares folded into three states in its own palette
+(`HOME_STATE_OF`, `render_home_svg`).
 
 Research: docs/research/source-map.md (the file ranges, as research/source-files.toml),
 docs/guides/research-workflow.md#understood
@@ -66,6 +67,29 @@ CLASSES = {state: f"cg-s-{state}" for state in STATES}
 UNPLACED = frozenset({UNATTRIBUTED, "link-once"})
 #: Bytes one square stands for in the picture by size (a function gets at least one square).
 BYTES_PER_SQUARE = 512
+
+#: The home page's picture (docs/index.md, `render_home_svg`) folds the states into three, in the home page's own
+#: palette: what Coney has, what is understood and waits to be ported, and the rest. Its tooltips are the progress
+#: page's, so they still name a square's full state.
+HOME_STATES = ("reimplemented", "understood", "not-started")
+HOME_STATE_OF = {
+    "audited": "reimplemented",
+    "reimplemented": "reimplemented",
+    "understood": "understood",
+    "researched": "not-started",
+    "untouched": "not-started",
+}
+HOME_LABELS = {"reimplemented": "Reimplemented", "understood": "Understood", "not-started": "Not yet started"}
+HOME_CLASSES = {state: f"cg-h-{state}" for state in HOME_STATES}
+#: Fill of each home state, light and dark (the maintainer's scheme, issue #868: a darker green, a normal light gray,
+#: a dim gray that recedes into the page). docs/stylesheets/progress-grid.css repeats them; a test holds them equal.
+HOME_PALETTE = {
+    "reimplemented": ("#1a7f37", "#238636"),
+    "understood": ("#c1c8d0", "#9da5b0"),
+    "not-started": ("#e6e9ed", "#363b45"),
+}
+#: Squares in each row of the home picture: about 4 px a square in the home page's column, and some 50 rows in all.
+HOME_COLS = 240
 
 
 # --- the audit hook ---------------------------------------------------------------------------------------------------
@@ -372,4 +396,38 @@ def render_functions_svg(grid: Grid, by_size: bool, *, uid: str, standalone: boo
         palette=PALETTE,
         standalone=standalone,
         data_view="size" if by_size else "functions",
+    )
+
+
+def home_counts(grid: Grid) -> dict[str, int]:
+    """Functions in each home state, in HOME_STATES order."""
+    counts = dict.fromkeys(HOME_STATES, 0)
+    for f in grid.functions:
+        counts[HOME_STATE_OF[f.state]] += 1
+    return counts
+
+
+def render_home_svg(grid: Grid, *, uid: str = "ph") -> str:
+    """The home page's picture: the progress page's per-function blocks in the home states, as one unlabelled run.
+
+    The blocks and their order are `picture_blocks`', so square i of block b is function i of `functions_table`'s
+    block b and the progress page's script and table give its tooltip unchanged. They flow on from one another
+    (`progress_picture.flow`), so the whole picture is the functions in address order, `HOME_COLS` to a row.
+    """
+    count, _ = grid.total()
+    done, _ = grid.measure("reimplemented")
+    blocks = [
+        progress_picture.Block(b.label, b.title, [HOME_STATE_OF[state] for state in b.cells])
+        for b in picture_blocks(grid, False)
+    ]
+    return progress_picture.render_svg(
+        blocks,
+        uid=uid,
+        title=f"Coney's progress, one square per function of the original's own code ({count:,} functions)",
+        description=f"Grouped by source directory in address order: {done:,} of {count:,} functions are "
+        "reimplemented, the others understood or not yet started.",
+        classes=HOME_CLASSES,
+        palette=HOME_PALETTE,
+        data_view="functions",
+        flow_cols=HOME_COLS,
     )
