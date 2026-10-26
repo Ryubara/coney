@@ -1231,7 +1231,7 @@ class Standards:
 
     #: The legacy file of code and test files, relative to the checkout.
     legacy_file: str
-    #: Whether a touched file or `@orig` function below standard fails the check. False until the cutover (a warning).
+    #: Whether a touched file or `@orig` function below standard fails the check (an error) or only warns.
     enforce: bool
     #: The day the workflow went live, or None before it. From then on nothing new may be marked legacy.
     cutover: datetime | None

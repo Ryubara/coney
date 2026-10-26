@@ -1063,11 +1063,11 @@ standards:
   # test files below standard, each under the rules it fails with the number of findings at the last scan. The file only
   # shrinks: a file leaves it once it passes, and nothing new is added after the first scan.
   legacy_file: research/legacy-files.toml
-  # false: every report of `standards check` (a touched file or @orig function below standard, a mark out of step) is a
-  # warning and nothing fails. true from the cutover: each is an error.
-  enforce: false
+  # true (since the cutover): every report of `standards check` (a touched file or @orig function below standard, a
+  # mark out of step) is an error. false would make each a warning and nothing would fail.
+  enforce: true
   # The day the workflow went live ("YYYY-MM-DD"), empty before it. From then on a branch may not mark a function legacy.
-  cutover: ""
+  cutover: "2026-10-25"
   code:
     # The rules: `comment` (a doc comment on every public function a header declares, and a comment above every other
     # one whose name does not say everything: not a non-public definition of one statement, a special member with no

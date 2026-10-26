@@ -37,7 +37,10 @@ def add_parser(groups: Any) -> None:
     commands.add_parser(
         "prune", help="take the files that pass out of the legacy file and lower the counts; never adds"
     )
-    commands.add_parser("mark", help="give every ported function with no status the status legacy")
+    commands.add_parser(
+        "mark",
+        help="give every ported function with no status the status legacy (refused for a new port: record it compared)",
+    )
     check = commands.add_parser(
         "check", help="the marks are consistent and the files and functions the change touches meet the standard"
     )

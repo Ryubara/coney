@@ -1181,7 +1181,7 @@ tag = 1
 tag = 5
 
 ["src/human/player.cpp"]
-tag = 21
+tag = 20
 
 ["src/human/player.h"]
 comment = 6
@@ -2575,9 +2575,6 @@ citation = 1
 citation = 2
 
 ["tests/platform/disc_debug_movies_test.cpp"]
-citation = 1
-
-["tests/platform/disc_fall_camera_test.cpp"]
 citation = 1
 
 ["tests/platform/disc_fighter_models_test.cpp"]
