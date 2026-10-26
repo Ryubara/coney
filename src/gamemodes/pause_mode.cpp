@@ -253,10 +253,15 @@ bool PauseMode::toggle(GameModeStack& stack, int player) {
 }
 
 void PauseMode::enter() {
-    // The game's updates stop with gameplay below this mode; the sound pauses and the pause bank comes in.
+    // Stand-in: the Armies of the Night levels' own pause menu (`0x0050ec34`) is not ported; every level gets the
+    // story menu.
+    // The game's updates stop with gameplay below this mode (the original's task-manager phase 1), and the sound
+    // pauses. Stand-in: Coney has no pad vibration, so there is none to clear in the pad records.
     if (m_hooks.pauseSound) {
         m_hooks.pauseSound(true);
     }
+    // The sound state (Coney's: the bank) is remembered and the pause bank comes in. The original flushes the render
+    // device's queue before the load; Coney's renderer drains its own queue (a platform substitution).
     m_previousBank = m_services.bank();
     m_services.loadBank(kSoundBank);
     m_layer.load(m_loadSheet, m_loadRecord, kBackgroundRecord, kBackgroundCapacity, gui::PauseMenu::kBackgroundDepth,
@@ -292,7 +297,8 @@ void PauseMode::enter() {
 
 ModeResult PauseMode::update(GameModeStack& stack, const FrameTime& frame) {
     const std::uint64_t nowMs = millisecondsOf(frame);
-    // The menu opens on the first frame, which knows the time; the world is drawn as the game left it.
+    // Stand-in: the original opens the menu in Enter and stamps the start time from its real-time clock; Coney opens
+    // it on the first frame, which knows the game time. The world is drawn as the game left it.
     if (m_openPending) {
         m_openPending = false;
         m_frozen = RenderTime{.alpha = 1.0F, .gameTicks = frame.gameTicks - frame.stepTicks, .index = 0};
@@ -313,14 +319,18 @@ ModeResult PauseMode::update(GameModeStack& stack, const FrameTime& frame) {
         m_menu.open(setup, nowMs);
     }
 
+    // Stand-in: the mode's world frame (the tick, the task manager's phase 1, the cameras, the managers, streaming,
+    // the world update, the audio listener, the HUD's paused update) is not run: gameplay below is drawn as the game
+    // left it, and the device's present and the file service are the platform's.
     m_tint.commit();
+    // The menu's render comes before its update, as in the original: a frame shows the state the last update left.
     m_layer.begin();
-    m_menu.update(gui::GuiFrame{nowMs, &stack.pads().port(static_cast<std::size_t>(m_player))});
     m_menu.render(m_layer.canvas());
     m_layer.queue();
+    m_menu.update(gui::GuiFrame{nowMs, &stack.pads().port(static_cast<std::size_t>(m_player))});
     m_tint.current() = m_menu.worldTint(nowMs);
 
-    // The menu has faded out: pop and act on its outcome.
+    // The menu has faded out: pop and act on its outcome (the original's menu pops the mode from its update).
     if (m_menu.closed()) {
         (void)toggle(stack, m_player);
     }
@@ -343,6 +353,8 @@ void PauseMode::render(const RenderTime& time) {
 }
 
 void PauseMode::exit() {
+    // The menu's close. Stand-in: of `PauseMenu_Close` only what Coney models is done here (the Options screen's
+    // music loop ends, the batches are let go below; the tint ends with the mode); the war commands it issues are not.
     // A close from the Options screen's Audio page (START) ends its music loop too.
     if (m_services.musicPlaying(kPreviewMusic)) {
         m_services.stopMusic();

@@ -4,6 +4,7 @@
 // and sheet.
 
 #include <cstddef>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -420,6 +421,19 @@ TEST_CASE("bar: the back at full width, the fill from the left edge", "[widgets]
     CHECK(batch.sprites()[1].position == OverlayCamera::guiToOverlay(guiWidth * 0.4F / 2.0F, 0.815F));
     bar.setFill(2.0F);
     CHECK(bar.fill() == Approx(1.0F));
+}
+
+TEST_CASE("bar: the fill is clamped to 0-1, and a fill that is not a number is empty", "[widgets]") {
+    // Expected: hud-functions-panels.md#fn-generic-bar, confirmed (code)
+    coney::gui::Bar bar(nullptr, 0);
+    bar.setFill(-0.5F);
+    CHECK(bar.fill() == 0.0F);
+    bar.setFill(1.0F);
+    CHECK(bar.fill() == 1.0F);
+    bar.setFill(0.25F);
+    CHECK(bar.fill() == Approx(0.25F));
+    bar.setFill(std::numeric_limits<float>::quiet_NaN());
+    CHECK(bar.fill() == 0.0F);
 }
 
 TEST_CASE("message box: a timed message closes after its time", "[widgets]") {

@@ -8,8 +8,12 @@
 
 namespace coney::gui {
 
-// The fill, clamped to 0-1 as the generic bar's setter clamps it.
-void Bar::setFill(float fraction) { m_fill = std::clamp(fraction, 0.0F, 1.0F); }
+// The fill, clamped to 0-1 as the generic bar's setter clamps it: anything not above 0 (a NaN too) is empty.
+void Bar::setFill(float fraction) {
+    // Coney's choice: the original takes the fill only once the bar is initialised (`+0x0c`); Coney's bars are not
+    // init()ed by their screens, and every caller of the original sets the fill on a live bar, so none is refused.
+    m_fill = fraction > 0.0F ? std::min(fraction, 1.0F) : 0.0F;
+}
 
 // The meter's sprites, in the original's order (docs/research/hud.md#the-rage-meter).
 void Bar::render(const GuiCanvas& /*canvas*/) const {
