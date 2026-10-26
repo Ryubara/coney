@@ -29,7 +29,8 @@ double handleOf(const Brain* brain) { return brain != nullptr ? brain->handle() 
 
 } // namespace
 
-// The count Gangs::addMember() tests a gang's members against, and the fighter sides' rollover to a new gang.
+// The count Gangs::addMember() tests a gang's members against, which the fighter sides' rollover to a new gang reads.
+// Gangs::addMember() holds the same test inline, as the original does: keep the two alike.
 // @coney-only a named accessor for the member limit Gang_AddMember tests inline
 std::size_t Gang::capacity() const { return policeLike(m_kind) ? kGangMemberSlots : kGangMembers; }
 
@@ -320,7 +321,9 @@ void Gangs::addMember(int id, Brain& brain) {
         removeMember(brain);
         static_cast<void>(old->onEvent(brain, BrainEvent{.id = kGangMessageMembers, .other = &brain, .value = 0}));
     }
-    if (gang->m_members.size() >= gang->capacity() && !gang->m_members.empty()) {
+    // The limit Gang::capacity() names for the fighter sides; kept inline so this ported body stays as it was.
+    const std::size_t cap = policeLike(gang->m_kind) ? kGangMemberSlots : kGangMembers;
+    if (gang->m_members.size() >= cap && !gang->m_members.empty()) {
         removeMember(*gang->m_members.front());
     }
     gang->m_members.push_back(&brain);
