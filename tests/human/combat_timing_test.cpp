@@ -391,6 +391,7 @@ IncomingHit hitOf(int animId, int damage, int code, std::uint16_t flags = 0) {
 
 TEST_CASE("circle spammed with nobody in reach plays 71 and 69 once, in full; 389 takes the next circle",
           "[human][combat][timing]") {
+    // Expected: combat/index.md#input-return, confirmed (runtime)
     for (const int every : {2, 3, 4}) {
         Fight fight(timingCharacter(), 30.0F);
         // Taps from 10 (the grab on the release, 11) to 80, the stick at rest.
@@ -427,6 +428,7 @@ TEST_CASE("circle spammed with nobody in reach plays 71 and 69 once, in full; 38
 
 TEST_CASE("the stick at 60 % walks the player the update the grab miss's 69 ends; 389 never plays",
           "[human][combat][timing]") {
+    // Expected: combat/index.md#input-return, confirmed (runtime)
     Fight fight(timingCharacter(), 30.0F);
     // Circle every 3 updates from 10 to 31 (the last released inside 69), the stick at 60 % from 12 on.
     const Timeline line = Timeline::record(fight, taps("circle", 10, 31, 3) + "12 stick left 0 60\n", 90);
@@ -442,6 +444,7 @@ TEST_CASE("the stick at 60 % walks the player the update the grab miss's 69 ends
 }
 
 TEST_CASE("circle held with nobody in reach plays the tackle's 4 and 2 in full, then 389", "[human][combat][timing]") {
+    // Expected: combat/index.md#input-return, confirmed (runtime)
     Fight fight(timingCharacter(), 30.0F);
     // The tackle comes on the 7th sample held (16); circle tapped every 4 updates after the release.
     const std::string script = "10 press circle\n24 release circle\n" + taps("circle", 30, 120, 4);
@@ -460,6 +463,7 @@ TEST_CASE("circle held with nobody in reach plays the tackle's 4 and 2 in full, 
 
 TEST_CASE("square spammed plays S1, SS2 and SSS3 at their windows, each to its end, then S1 again",
           "[human][combat][timing]") {
+    // Expected: combat/index.md#input-return, confirmed (runtime)
     for (const int every : {2, 3, 4}) {
         Fight fight(timingCharacter(), 1.0F);
         const Timeline line = Timeline::record(fight, taps("square", 10, 100, every), 120);
@@ -484,6 +488,7 @@ TEST_CASE("square spammed plays S1, SS2 and SSS3 at their windows, each to its e
 
 TEST_CASE("S1: presses in its end phase and recovery are dropped; the next press and the stick come back as it ends",
           "[human][combat][timing]") {
+    // Expected: combat/index.md#input-return, confirmed (runtime)
     // S1 at 10 with nobody near; its length (20 updates at runtime) from a run with no other press.
     Fight alone(timingCharacter(), 30.0F);
     const Timeline single = Timeline::record(alone, "10 tap square\n", 60);
@@ -513,6 +518,7 @@ TEST_CASE("S1: presses in its end phase and recovery are dropped; the next press
 }
 
 TEST_CASE("cross spammed plays X1 on the release and XX2 at its window, each to its end", "[human][combat][timing]") {
+    // Expected: combat/index.md#input-return, confirmed (runtime)
     Fight fight(timingCharacter(), 1.0F);
     const Timeline line = Timeline::record(fight, taps("cross", 10, 100, 3), 130);
     // X1 starts on the first release (11); the next press (13) is buffered and plays XX2 when the window opens 10
@@ -526,6 +532,7 @@ TEST_CASE("cross spammed plays X1 on the release and XX2 at its window, each to 
 }
 
 TEST_CASE("X1 alone lasts 30 updates; the stick at 35 % walks him as it ends", "[human][combat][timing]") {
+    // Expected: combat/index.md#input-return, confirmed (runtime)
     Fight fight(timingCharacter(), 30.0F);
     const Timeline line = Timeline::record(fight, "10 tap cross\n12 stick left 0 35\n", 80);
     CHECK(line.startsOf(id::kAttackX1) == std::vector<int>{11});
@@ -537,6 +544,7 @@ TEST_CASE("X1 alone lasts 30 updates; the stick at 35 % walks him as it ends", "
 }
 
 TEST_CASE("with a bat, 34 lasts 37 updates and 36 lasts 35, as at runtime", "[human][combat][timing]") {
+    // Expected: combat-throws.md#bat-cross, confirmed (runtime)
     // 34's 28 frames at 0.75 give 38 updates; the original handed over to 389 after 37 (a Coney stand-in ends that
     // clip early, docs/research/combat-throws.md#bat-cross). 36's 26 frames give its 35.
     struct Case {
@@ -556,6 +564,7 @@ TEST_CASE("with a bat, 34 lasts 37 updates and 36 lasts 35, as at runtime", "[hu
 }
 
 TEST_CASE("square then cross spammed plays S1 and SX2, which plays to its end", "[human][combat][timing]") {
+    // Expected: combat-moves.md#input, confirmed (code)
     Fight fight(timingCharacter(), 1.0F);
     const Timeline line = Timeline::record(fight, "10 tap square\n" + taps("cross", 12, 60, 3), 80);
     CHECK(line.startsOf(id::kAttackS1) == std::vector<int>{10});
@@ -567,6 +576,7 @@ TEST_CASE("square then cross spammed plays S1 and SX2, which plays to its end", 
 }
 
 TEST_CASE("a snap plays to its end under square spam, then the stick at rest gives S1", "[human][combat][timing]") {
+    // Expected: combat/index.md#attacks, confirmed (code)
     // A human 1.1 m to the right for the snap to find (docs/research/combat/index.md#attacks), and the current target
     // ahead (the stance takes the nearest within 2 m; a snap never goes for the current target).
     Fight fight(timingCharacter(), 0.0F, 1.1F);
@@ -582,6 +592,7 @@ TEST_CASE("a snap plays to its end under square spam, then the stick at rest giv
 }
 
 TEST_CASE("the walk attack at 35 % plays to its end, then the stick walks him on", "[human][combat][timing]") {
+    // Expected: combat/index.md#attacks, confirmed (code)
     Fight fight(timingCharacter(), 30.0F);
     // Walking at 35 %, square every 3 updates from 30 to 45: 23 at the first, the rest dropped.
     const std::string script = "5 stick left 0 35\n" + taps("square", 30, 45, 3);
@@ -596,6 +607,7 @@ TEST_CASE("the walk attack at 35 % plays to its end, then the stick walks him on
 }
 
 TEST_CASE("the run attack drops every press and the run resumes as it ends", "[human][combat][timing]") {
+    // Expected: combat/index.md#input-return, confirmed (runtime)
     Fight fight(timingCharacter(), 60.0F);
     // A run (the stick full ahead), then square every 2 updates from 40 to 60, all inside the run attack.
     const std::string script = "0 stick left 0 100\n" + taps("square", 40, 60, 2);
@@ -614,6 +626,7 @@ TEST_CASE("the run attack drops every press and the run resumes as it ends", "[h
 }
 
 TEST_CASE("the charge and the dive play to their ends under cross or square spam", "[human][combat][timing]") {
+    // Expected: combat/index.md#run-attacks, confirmed (code)
     struct Case {
         std::string_view button;
         int clip;
@@ -639,6 +652,7 @@ TEST_CASE("the charge and the dive play to their ends under cross or square spam
 
 TEST_CASE("R1 held blocks; let go, a press is taken at once but the stick moves him 5 updates later",
           "[human][combat][timing]") {
+    // Expected: combat/index.md#input-return, confirmed (runtime)
     SECTION("the stick") {
         Fight fight(timingCharacter(), 30.0F);
         const std::string script = "10 press r1\n20 stick left 60 0\n30 tap cross\n90 release r1\n";
@@ -672,6 +686,7 @@ TEST_CASE("R1 held blocks; let go, a press is taken at once but the stick moves 
 
 TEST_CASE("a grab reads nothing until the hold stands; strikes then play one at a time, each to its end",
           "[human][combat][timing]") {
+    // Expected: combat-grabs.md#grabbing, confirmed (runtime)
     Fight fight(timingCharacter(), 1.5F);
     // Circle at 10 (the grab on 11), then square every 2 updates from 12: the intro and the connect play untouched.
     const Timeline line = Timeline::record(fight, "10 tap circle\n" + taps("square", 12, 120, 2), 140);
@@ -699,6 +714,7 @@ TEST_CASE("a grab reads nothing until the hold stands; strikes then play one at 
 }
 
 TEST_CASE("R1 spammed in a hold spins to the rear and back, each spin to its end", "[human][combat][timing]") {
+    // Expected: combat-grabs.md#grabbing, confirmed (runtime)
     Fight fight(timingCharacter(), 1.5F);
     const Timeline line = Timeline::record(fight, "10 tap circle\n" + taps("r1", 12, 110, 3), 130);
     REQUIRE(line.nthStart(kGrabConnect, 0) >= 0);
@@ -718,6 +734,7 @@ TEST_CASE("R1 spammed in a hold spins to the rear and back, each spin to its end
 
 TEST_CASE("circle spammed in a hold with the stick at 60 % throws once; the stick walks him when the throw ends",
           "[human][combat][timing]") {
+    // Expected: combat-throws.md#throws, confirmed (runtime)
     Fight fight(timingCharacter(), 1.5F);
     // The grab, then the stick 60 % ahead from 36 and circle every 3 updates from 40 to 66: one throw (147).
     const std::string script = "10 tap circle\n36 stick left 0 60\n" + taps("circle", 40, 66, 3);
@@ -730,7 +747,14 @@ TEST_CASE("circle spammed in a hold with the stick at 60 % throws once; the stic
     // No grab started in the throw (the circles in it are dropped), and the stick walks him at its end.
     CHECK(line.startsOf(id::kGrabPlayerIntro) == std::vector<int>{11});
     CHECK(line.freedAt(40) == over);
-    checkWalksFrom(line, over);
+    // The walk start at once; the body lies within 2 m, so the stance's step 3, off the throw's free movement, locks
+    // onto him and the stick walks him in the combat walk (combat-targets.md#fight-stance, confirmed (code)).
+    CHECK(line.at(over).clip == kWalkStart);
+    CHECK(line.movedAt(over) > 0);
+    CHECK(line.movedAt(over) <= over + 2);
+    CHECK(line.at(over + 15).clip >= 380);
+    CHECK(line.at(over + 15).clip <= 387);
+    CHECK(fight.human().fighter().lockTarget() == &fight.target());
     checkNothingLeft(fight);
     CHECK(fight.target().state() == TargetState::Grounded);
     CHECK_FALSE(fight.target().attached());
@@ -738,6 +762,7 @@ TEST_CASE("circle spammed in a hold with the stick at 60 % throws once; the stic
 
 TEST_CASE("L2 in a hold lets go: 95 plays to its end under circle spam, then the stick walks him round the target",
           "[human][combat][timing]") {
+    // Expected: combat-grabs.md#grabbing, confirmed (runtime)
     Fight fight(timingCharacter(), 1.5F);
     const std::string script =
         "10 tap circle\n40 press l2\n42 release l2\n44 stick left 0 60\n" + taps("circle", 44, 66, 3);
@@ -758,6 +783,7 @@ TEST_CASE("L2 in a hold lets go: 95 plays to its end under circle spam, then the
 
 TEST_CASE("a tackle plays its intro and hit in full under square spam; mounted, each strike plays to its end",
           "[human][combat][timing]") {
+    // Expected: combat-grabs.md#mount, confirmed (code)
     Fight fight(timingCharacter(), 2.0F);
     const std::string script = "10 press circle\n24 release circle\n" + taps("square", 21, 140, 3);
     const Timeline line = Timeline::record(fight, script, 160);
@@ -782,6 +808,7 @@ TEST_CASE("a tackle plays its intro and hit in full under square spam; mounted, 
 
 TEST_CASE("triangle spammed in a hold mugs once: the spin and the intro play to their ends",
           "[human][combat][timing]") {
+    // Expected: combat-throws.md#mugging, confirmed (runtime)
     Fight fight(timingCharacter(), 1.5F);
     const Timeline line = Timeline::record(fight, "10 tap circle\n" + taps("triangle", 40, 100, 3), 120);
     CHECK(line.startsOf(id::kGrabSpinToRear) == std::vector<int>{40});
@@ -794,6 +821,7 @@ TEST_CASE("triangle spammed in a hold mugs once: the spin and the intro play to 
 }
 
 TEST_CASE("rage's start plays to its end under square spam, the body held", "[human][combat][timing]") {
+    // Expected: combat-rage.md#rage-effects, confirmed (code)
     Fight fight(timingCharacter(), 30.0F);
     // Filled by gains, which hold the meter 5 s (a set meter decays at once).
     combat::RageMeter& rage = fight.human().fighter().combat().rage();
@@ -817,6 +845,7 @@ TEST_CASE("rage's start plays to its end under square spam, the body held", "[hu
 
 TEST_CASE("a duck's counter is asked once under square spam and plays to its end; R1 let go keeps the duck",
           "[human][combat][timing]") {
+    // Expected: combat/index.md#block, confirmed (code)
     for (const bool release : {false, true}) {
         Fight fight(timingCharacter(), 30.0F);
         // Blocking from 0 (let go at 13 in the second run); an attacker 1 m ahead warns at 10 (the duck on 11);
@@ -845,6 +874,7 @@ TEST_CASE("a duck's counter is asked once under square spam and plays to its end
 
 TEST_CASE("hit, the player reacts in full under square spam and the stick walks him when the reaction ends",
           "[human][combat][timing]") {
+    // Expected: combat-reactions.md#being-hit-runtime, confirmed (runtime)
     Fight fight(timingCharacter(), 30.0F);
     // An S1 from in front at 10 (272, 16 updates); square every 3 updates up to 23 and the stick at 60 % from 11.
     const Timeline line =
@@ -864,6 +894,7 @@ TEST_CASE("hit, the player reacts in full under square spam and the stick walks 
 
 TEST_CASE("stunned, the player acts again after 357; knocked down, mashing gets him up sooner and he acts after 199",
           "[human][combat][timing]") {
+    // Expected: combat-reactions.md#being-hit-runtime, confirmed (runtime)
     SECTION("stun") {
         Fight fight(timingCharacter(), 30.0F);
         // SX2 from in front (280, a stun): the reaction, then 357; square every 3 updates.
@@ -908,6 +939,7 @@ TEST_CASE("stunned, the player acts again after 357; knocked down, mashing gets 
 
 TEST_CASE("a clip that never started has no start: the timeline's lookups fail a check, never read an empty list",
           "[human][combat][timing]") {
+    // Expected: combat/index.md#input-return, confirmed (runtime) (nothing pressed, so no move starts)
     Fight fight(timingCharacter(), 30.0F);
     // Nothing pressed: the player only idles.
     const Timeline line = Timeline::record(fight, "", 10);

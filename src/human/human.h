@@ -66,6 +66,7 @@ struct HumanInput {
     combat::CommandId command = combat::command::kNone; ///< This update's command (combat::CommandMatcher).
     std::uint16_t buttons = 0;                          ///< The held buttons (the block reads R1).
     std::span<Combatant* const> targets;                ///< The humans that can be fought.
+    std::span<Combatant* const> calm;                   ///< Stub for the tests: not read yet.
 };
 
 /// A brain's move (brain `+0x110`, `+0x114`, `+0x90`): the heading and speed the locomotion follows in place of the

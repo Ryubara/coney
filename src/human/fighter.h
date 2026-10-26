@@ -300,6 +300,8 @@ class Fighter {
     /// The target the fight stance is locked onto (combat::lockedOn()): it has one and the lock-on settings lock; null
     /// otherwise. Locked, the human faces it every update and walks in the combat walk.
     [[nodiscard]] const Combatant* lockTarget() const;
+    /// Stub for the tests: no stance yet.
+    [[nodiscard]] bool inFightStance() const { return false; }
     /// The sounds its hits asked for since the last call (the hit sound of a hit it took), oldest first.
     [[nodiscard]] std::vector<HumanSound> takeSounds() { return std::exchange(m_sounds, {}); }
     /// Keeps the target from locking (`blocked`) or lets it lock again: while the human is hidden L1 picks a target

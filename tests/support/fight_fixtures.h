@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <algorithm>
 #include <bit>
 #include <cstdint>
 #include <map>
 #include <memory>
 #include <numbers>
+#include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -213,7 +215,8 @@ class Fight {
                                                   .actionPressed = trianglePressed,
                                                   .command = command,
                                                   .buttons = frame.buttons,
-                                                  .targets = m_targets},
+                                                  .targets = m_targets,
+                                                  .calm = m_calm},
                          m_mesh.get());
             m_target->step();
             for (const auto& other : m_others) {
@@ -229,6 +232,9 @@ class Fight {
 
     coney::human::Human& human() { return m_human; }
     coney::human::TargetHuman& target() { return *m_target; }
+    // Makes `target` one the player's fight stance never takes (no threat to him: a crew mate, a neutral civilian),
+    // as human::Humans marks such a human; his attacks still may.
+    void makeCalm(coney::human::Combatant& target) { m_calm.push_back(&target); }
 
   private:
     std::unique_ptr<raycast::CollisionMesh> m_mesh;
@@ -236,10 +242,44 @@ class Fight {
     std::unique_ptr<coney::human::TargetHuman> m_target;
     std::vector<std::unique_ptr<coney::human::TargetHuman>> m_others;
     std::vector<coney::human::Combatant*> m_targets;
+    std::vector<coney::human::Combatant*> m_calm;
     combat::CommandTables m_tables = combat::CommandTables::street();
     combat::CommandMatcher m_matcher;
     std::uint16_t m_lastButtons = 0;
     std::uint64_t m_frame = 0;
 };
+
+// What one update of a throw left: the player's target, whether the lock-on walk drives him, and his clip.
+struct ThrowSample {
+    const coney::human::Combatant* target = nullptr;
+    bool lockWalk = false;
+    std::uint32_t clip = 0;
+};
+
+// Grabs the fight's target 1.5 m ahead and throws it ahead with the stick at 60 % (with L1 held from the start when
+// `l1`), then stands; returns each update and the update the throw's clip started (-1 when it never did).
+inline std::pair<std::vector<ThrowSample>, int> throwAhead(Fight& fight, bool l1) {
+    std::string script = "10 tap circle\n36 stick left 0 60\n40 tap circle\n44 stick left 0 0\n";
+    if (l1) {
+        script = "0 press l1\n" + script;
+    }
+    std::vector<ThrowSample> line;
+    fight.run(script, 110, [&](std::uint64_t) {
+        const coney::human::Fighter& fighter = fight.human().fighter();
+        line.push_back(ThrowSample{.target = fighter.target(),
+                                   .lockWalk = fighter.lockTarget() != nullptr,
+                                   .clip = fight.human().animator().animId()});
+    });
+    const auto thrown =
+        std::ranges::find(line, static_cast<std::uint32_t>(combat::anim_id::kThrow1Front), &ThrowSample::clip);
+    return {line, thrown == line.end() ? -1 : static_cast<int>(thrown - line.begin())};
+}
+
+// The first update from `from` on whose clip is no longer the throw's.
+inline std::vector<ThrowSample>::const_iterator throwOver(const std::vector<ThrowSample>& line, int from) {
+    return std::find_if(line.begin() + from, line.end(), [](const ThrowSample& s) {
+        return s.clip != static_cast<std::uint32_t>(combat::anim_id::kThrow1Front);
+    });
+}
 
 } // namespace coney::test

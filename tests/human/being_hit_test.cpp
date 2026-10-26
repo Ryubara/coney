@@ -87,6 +87,7 @@ combat::GrabberState grabber(int power, bool hurt = false) {
 
 TEST_CASE("a hit plays the table's reaction and takes the attacker's damage as it is, with no rage",
           "[human][combat]") {
+    // Expected: combat-reactions.md#being-hit-runtime, confirmed (runtime)
     const FightCharacter character;
     Fight fight(character, 30.0F);
     // The civilian's S1 (14) from in front: 272.
@@ -106,6 +107,7 @@ TEST_CASE("a hit plays the table's reaction and takes the attacker's damage as i
 }
 
 TEST_CASE("the player's 200 ms stun goes straight to 357 when the reaction ends, with no 356", "[human][combat]") {
+    // Expected: combat-reactions.md#being-hit-runtime, confirmed (runtime)
     const FightCharacter character;
     Fight fight(character, 30.0F);
     ClipLog log;
@@ -129,6 +131,7 @@ TEST_CASE("the player's 200 ms stun goes straight to 357 when the reaction ends,
 }
 
 TEST_CASE("knocked down the player lies 2750 ms in 196, then rises with 199", "[human][combat]") {
+    // Expected: combat-reactions.md#being-hit-runtime, confirmed (runtime)
     const FightCharacter character;
     Fight fight(character, 30.0F);
     // XX2 (0x26, heavy) from in front: 288, which knocks down.
@@ -150,6 +153,7 @@ TEST_CASE("knocked down the player lies 2750 ms in 196, then rises with 199", "[
 }
 
 TEST_CASE("653's stun outlasts the rise: 199, then 357", "[human][combat]") {
+    // Expected: combat-reactions.md#being-hit-runtime, confirmed (runtime)
     const FightCharacter character;
     Fight fight(character, 30.0F);
     // The crushing special (0x39) with its stun: 303, down, stunned until the rise + 200 ms.
@@ -171,6 +175,7 @@ TEST_CASE("653's stun outlasts the rise: 199, then 357", "[human][combat]") {
 }
 
 TEST_CASE("presses during the knockdown's reaction do nothing; lying down each one cuts the time", "[human][combat]") {
+    // Expected: combat-reactions.md#being-hit-runtime, confirmed (runtime)
     const FightCharacter character;
     Fight fight(character, 30.0F);
     fight.human().takeHit(hitOf(13, 46, 0x26));
@@ -202,6 +207,7 @@ TEST_CASE("presses during the knockdown's reaction do nothing; lying down each o
 
 TEST_CASE("hit armour: in the wind-up the damage lands with no reaction; in the end phase the attack is lost",
           "[human][combat]") {
+    // Expected: combat-reactions.md#being-hit-runtime, confirmed (runtime)
     const FightCharacter character;
     {
         Fight fight(character, 30.0F);
@@ -234,6 +240,8 @@ TEST_CASE("hit armour: in the wind-up the damage lands with no reaction; in the 
 }
 
 TEST_CASE("a held block takes no damage; a warned duck lets the hit pass; strength 3 breaks it", "[human][combat]") {
+    // Expected: combat-reactions.md#being-hit-runtime, confirmed (runtime) (the block's 0 damage and reactions;
+    // strength 3 breaking it is confirmed (code) there)
     const FightCharacter character;
     Fight fight(character, 30.0F);
     fight.run("0 press r1\n", 5);
@@ -271,6 +279,7 @@ TEST_CASE("a held block takes no damage; a warned duck lets the hit pass; streng
 
 TEST_CASE("caught in a grab: square struggles, cross strikes back, circle escapes on a winning roll",
           "[human][combat]") {
+    // Expected: combat-grabs.md#grabbed, confirmed (code)
     const FightCharacter character;
     Fight fight(character, 30.0F);
     fight.human().catchInGrab(
@@ -314,6 +323,7 @@ TEST_CASE("caught in a grab: square struggles, cross strikes back, circle escape
 }
 
 TEST_CASE("R1 at the catch counters with 76; R1 in the hold reverses it to the rear hold", "[human][combat]") {
+    // Expected: combat-grabs.md#grabbed, confirmed (code)
     const FightCharacter character;
     {
         Fight fight(character, 30.0F);
@@ -357,6 +367,7 @@ TEST_CASE("R1 at the catch counters with 76; R1 in the hold reverses it to the r
 }
 
 TEST_CASE("a hit on a grabbing player costs it 0.6 of its power", "[human][combat]") {
+    // Expected: combat-grabs.md#grabbed, confirmed (runtime)
     const FightCharacter character;
     Fight fight(character, 1.5F);
     fight.run("5 tap circle\n", 30);
@@ -369,6 +380,7 @@ TEST_CASE("a hit on a grabbing player costs it 0.6 of its power", "[human][comba
 }
 
 TEST_CASE("out of power while hurt, the held target escapes and the player goes down", "[human][combat]") {
+    // Expected: combat-grabs.md#grabbed, confirmed (code)
     const FightCharacter character;
     Fight fight(character, 1.5F);
     fight.run("5 tap circle\n", 40);
@@ -384,11 +396,13 @@ TEST_CASE("out of power while hurt, the held target escapes and the player goes 
 }
 
 TEST_CASE("locked onto the target the stick at 0.6 walks the player at 3.429 m/s facing it", "[human][combat]") {
+    // Expected: combat-targets.md#fight-stance, confirmed (runtime)
     const FightCharacter character;
     Fight fight(character, 2.0F);
     Vec3 start;
     std::uint32_t walkClip = 0;
-    fight.run("0 tap l1\n3 stick left 60 0\n13 stick left 0 0\n", 14, [&](std::uint64_t frame) {
+    // L1 held, as at runtime: a tap's release clears the lock for an update (Player_OnL1Released clears 0xc).
+    fight.run("0 press l1\n3 stick left 60 0\n13 stick left 0 0\n", 14, [&](std::uint64_t frame) {
         if (frame == 2) {
             start = fight.human().position();
         }
@@ -406,20 +420,25 @@ TEST_CASE("locked onto the target the stick at 0.6 walks the player at 3.429 m/s
     CHECK((walkClip == 382 || walkClip == 381));
 }
 
-TEST_CASE("with CfgLockOn off and no auto-lock, L1 picks a target but the stick still turns the player",
+TEST_CASE("with CfgLockOn off and no auto-lock, L1 locks a target but the combat walk keeps the heading",
           "[human][combat]") {
+    // Expected: combat-targets.md#fight-stance, confirmed (runtime)
+    // At runtime (combat-targets.md#fight-stance) with CfgAutoLockAndCombat written to 0, L1 held gave state 0xd and a
+    // target, and the player kept his heading and walked in the combat-walk clips without turning to it: the lock-on
+    // movement (Human_FightStanceMove) faces nothing and turns only by the right stick, CfgStrafeRStick being off.
     const TuningScope scope;
     TuningScope::tuning().autoLockAndCombat = false;
     const FightCharacter character;
     Fight fight(character, 2.0F);
     fight.run("0 press l1\n3 stick left 60 0\n", 20);
     CHECK(fight.human().fighter().target() != nullptr);
-    CHECK(fight.human().fighter().lockTarget() == nullptr);
-    // Turned towards the stick's right, as a free player does.
-    CHECK(fight.human().heading() < -0.5F);
+    CHECK(fight.human().fighter().lockTarget() != nullptr);
+    CHECK(fight.human().heading() == Approx(0.0F).margin(0.01F));
+    CHECK(fight.human().speed() == Approx(coney::combat::combatTuning().combatWalkSpeed).margin(0.05F));
 }
 
 TEST_CASE("a target farther than 2.5 m is dropped and the lock ends", "[human][combat]") {
+    // Expected: combat-targets.md#fight-stance, confirmed (code)
     const FightCharacter character;
     Fight fight(character, 2.0F);
     fight.run("0 tap l1\n", 3);
@@ -431,6 +450,7 @@ TEST_CASE("a target farther than 2.5 m is dropped and the lock ends", "[human][c
 
 TEST_CASE("in a standing grab the full stick turns the pair and walks it backward; 0.8 does nothing",
           "[human][combat]") {
+    // Expected: combat-grabs.md#hold-walk, confirmed (code)
     const FightCharacter character;
     Fight fight(character, 1.5F);
     fight.run("5 tap circle\n", 40);
@@ -451,6 +471,7 @@ TEST_CASE("in a standing grab the full stick turns the pair and walks it backwar
 }
 
 TEST_CASE("the tackled victim sits at clip 210's pair event", "[human][combat]") {
+    // Expected: combat-grabs.md#hold-walk, confirmed (runtime)
     const FightCharacter character;
     Fight fight(character, 2.0F);
     fight.run("5 press circle\n15 release circle\n", 50);
@@ -462,6 +483,7 @@ TEST_CASE("the tackled victim sits at clip 210's pair event", "[human][combat]")
 }
 
 TEST_CASE("each human deals its own class's damage from its own copy of the list", "[human][combat]") {
+    // Expected: combat/index.md#damage-table, confirmed (code)
     const FightCharacter character;
     // A class with S1 at 30, scaled for a player at 115 %: 34. The shared list keeps its 17.
     std::array<std::int16_t, coney::combat::kClassDamageEntries> values{};
@@ -477,6 +499,7 @@ TEST_CASE("each human deals its own class's damage from its own copy of the list
 }
 
 TEST_CASE("a target's reaction moves it by the clip's root motion", "[human][combat]") {
+    // Expected: formats/animation.md#root-motion, confirmed (code)
     // The fight's clips with 272 pushing its human back at 1.5 m/s.
     std::vector<coney::test::LocomotionClip> clips = coney::test::locomotionClips();
     for (coney::test::LocomotionClip clip : coney::test::combatClips()) {
@@ -500,6 +523,7 @@ TEST_CASE("a target's reaction moves it by the clip's root motion", "[human][com
 }
 
 TEST_CASE("square in the duck's window counters with 617 at an attacker in front", "[human][combat]") {
+    // Expected: combat/index.md#block, confirmed (code)
     const FightCharacter character;
     Fight fight(character, 30.0F);
     fight.run("0 press r1\n", 5);
@@ -523,6 +547,7 @@ TEST_CASE("square in the duck's window counters with 617 at an attacker in front
 }
 
 TEST_CASE("six X1 hits in a row on the target halve the seventh's rage", "[human][combat]") {
+    // Expected: combat-rage.md#rage, confirmed (code)
     const FightCharacter character;
     Fight fight(character, 1.0F);
     // Cross every 40 updates (1.3 s), far apart enough that each is a new chain.
@@ -545,6 +570,7 @@ TEST_CASE("six X1 hits in a row on the target halve the seventh's rage", "[human
 
 TEST_CASE("a hit reports its sound at the attacker, a charge's body pair first, and contacts only while reporting",
           "[human][combat][sound]") {
+    // Expected: sound-events.md#strike-human, confirmed (code)
     namespace material = coney::human::material;
     const FightCharacter character;
     Fight fight(character, 30.0F);
@@ -584,6 +610,7 @@ TEST_CASE("a hit reports its sound at the attacker, a charge's body pair first, 
 }
 
 TEST_CASE("L2 drops the target on the update it is read, mid-attack and with L1 held", "[human][combat]") {
+    // Expected: combat-targets.md#fight-stance, confirmed (code)
     // X1 at a target 0.95 m ahead, L1 held throughout; L2 pressed in its wind-up drops the target there and then, and
     // nothing picks it again while L2 is held (docs/research/combat-targets.md#fight-stance). Without L2 the lock
     // holds.
@@ -602,6 +629,7 @@ TEST_CASE("L2 drops the target on the update it is read, mid-attack and with L1 
 
 TEST_CASE("charging or diving the player takes a hit's health but plays no reaction; a run takes the reaction",
           "[human][combat]") {
+    // Expected: combat-reactions.md#protected-moves, confirmed (code)
     // The charge (0) and the dive (1) with their lengths on the disc, as tests/human/moving_attacks_test.cpp builds
     // them; the synthetic clips play at 0.75, so a clip of `updates` lasts updates / 40 s.
     std::vector<coney::test::LocomotionClip> clips = coney::test::fightClips();
@@ -659,6 +687,7 @@ TEST_CASE("charging or diving the player takes a hit's health but plays no react
 }
 
 TEST_CASE("the held flags 0x1c16a40 cancel a hit's reaction; the attack phases and the step do not", "[combat]") {
+    // Expected: combat-reactions.md#protected-moves, confirmed (code)
     for (const std::uint32_t held :
          {0x1000000U, 0x800000U, 0x400000U, 0x10000U, 0x4000U, 0x2000U, 0x800U, 0x200U, 0x40U}) {
         CHECK(combat::heldCancelsReaction(held));

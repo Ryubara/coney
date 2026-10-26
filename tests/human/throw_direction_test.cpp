@@ -12,6 +12,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "animation/anim_math.h"
+#include "human/fighter_clips.h"
 #include "human/locomotion.h"
 #include "human/pair_placement.h"
 #include "support/fight_fixtures.h"
@@ -56,7 +57,8 @@ std::vector<coney::test::LocomotionClip> throwClips() {
     return clips;
 }
 
-// One throw as measured: the stick's heading on the press, the thrower's heading 5 updates on and at the end, and
+// One throw as measured: the stick's heading on the press, the thrower's heading 5 updates on and on the throw clip's
+// last update (after it the stance may lock onto the body lying near and turn him to it), and
 // where the victim landed in the stick's frame (metres right of and along the stick heading from where the thrower
 // stood on the update before the press).
 struct Throw {
@@ -105,8 +107,10 @@ Throw throwAt(float degrees, bool fromRear = false) {
         if (frame == kThrowFrame + 5) {
             out.headingAfterTurn = human.heading();
         }
+        if (frame >= kThrowFrame && coney::human::clips::isThrow(static_cast<int>(human.animator().animId()))) {
+            out.headingAtEnd = human.heading();
+        }
     });
-    out.headingAtEnd = fight.human().heading();
     out.victimHeadingAtEnd = fight.target().heading();
     out.landing = coney::human::toFrame(start, out.stickHeading, fight.target().position());
     return out;
@@ -119,6 +123,7 @@ bool near(float a, float b, float degrees) { return std::fabs(wrapAngle(a - b)) 
 
 TEST_CASE("from a front hold the thrower turns over 5 updates so the side's axis points along the stick",
           "[human][combat][throw]") {
+    // Expected: combat-throws.md#throw-direction, confirmed (code)
     // The stick's angle clockwise of the facing, and the side it falls on (0 front, 1 right, 2 rear, 3 left).
     struct Case {
         float degrees;
@@ -165,6 +170,7 @@ TEST_CASE("from a front hold the thrower turns over 5 updates so the side's axis
 
 TEST_CASE("from a rear hold the spin to the front plays first, then the side's throw, with no turn",
           "[human][combat][throw]") {
+    // Expected: combat-throws.md#throw-direction, confirmed (code)
     // The stick 60 degrees right of the facing (30 short of the right axis): the right throw (149), which goes along
     // the right axis, not the stick. (Item 6 of the page says 30 degrees, which item 2 makes a front throw.)
     const Throw thrown = throwAt(60.0F, true);
