@@ -325,6 +325,7 @@ class FollowCamera {
     /// after a teleport puts the camera behind the new place. Without one they use the feet and facing last observed.
     void setTargetSource(FollowTargetSource source) { m_source = std::move(source); }
     /// Where the target stands now: from the source when there is one, else as last observed.
+    /// @coney-only the seam that reads the live target place; the original reads its target itself
     [[nodiscard]] FollowPlace targetPlace() const;
 
     /// `CamEnable(0, on)`: the right stick and the zoom buttons act (on, as made) or not.
@@ -465,6 +466,7 @@ class FollowCamera {
     // @orig 0x0012ae58 Cam_Follow_Update (Cam_Follow.cpp)
     void resetWhenLost();
     // Takes the target's feet and facing from the source, when there is one.
+    // @coney-only the other half of that seam; the original gathers its targets itself
     void refreshTarget();
     // Keep in view: turns toward `point` when it is more than a quarter of the field of view off the view's direction.
     // @orig 0x0012e170 Cam_Follow_KeepInView (Cam_Follow.cpp)
