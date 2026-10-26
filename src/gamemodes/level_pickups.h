@@ -104,6 +104,14 @@ class LevelPickups {
     /// Asks `spent` which objects have lost their pickable flag since they were made (a weapon pile that ran out,
     /// world_objects::Props::pileSpent()); the search skips them. Empty: none has.
     void setSpent(std::function<bool(double object)> spent) { m_spent = std::move(spent); }
+    /// Asks `airborne` which objects are in flight (object flag `0x4000000`, world_objects::LooseObject::airborne):
+    /// the play mode's falling and thrown objects. Empty: none is.
+    void setAirborne(std::function<bool(double object)> airborne) { m_airborne = std::move(airborne); }
+    /// Whether object `handle` is in flight (setAirborne()).
+    [[nodiscard]] bool airborne(double handle) const {
+        (void)handle;
+        return false;
+    }
     /// The classes' own message 0 (a cash register's lift) goes to `native` from now on (empty: none).
     void setNativeMessage(NativeMessage native) { m_native = std::move(native); }
 
@@ -272,13 +280,14 @@ class LevelPickups {
     // An owned object `record` taken by `taker`: no longer owned, and the theft told (Item_TakeOwned).
     void takeOwned(world_objects::SpawnRecord& record, double taker);
 
-    std::set<double> m_inHand;           // the objects held, whose records stay
-    std::map<double, double> m_holders;  // who holds each object in m_inHand (0: not named)
-    OwnedTaken m_ownedTaken;             // the thefts' receiver
-    Locator m_locate;                    // the prompt objects that are not spawn records
-    std::function<bool(double)> m_spent; // objects no longer pickable
-    NativeMessage m_native;              // the classes' own message 0
-    Play2D m_play2D;                     // the items' pick-up sounds
+    std::set<double> m_inHand;              // the objects held, whose records stay
+    std::map<double, double> m_holders;     // who holds each object in m_inHand (0: not named)
+    OwnedTaken m_ownedTaken;                // the thefts' receiver
+    Locator m_locate;                       // the prompt objects that are not spawn records
+    std::function<bool(double)> m_spent;    // objects no longer pickable
+    std::function<bool(double)> m_airborne; // objects in flight
+    NativeMessage m_native;                 // the classes' own message 0
+    Play2D m_play2D;                        // the items' pick-up sounds
 };
 
 } // namespace coney

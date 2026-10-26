@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The Warriors' steal command (docs/research/ai-code.md#t2-warrior-steal, docs/research/ai-gangs.md#warrior-steal): the
 // tactic's store front and clusters, the claims that keep two Warriors off one object, the WarriorVandalSteal goal's
-// fetches and GetItem's walk and pick-up (docs/research/ai.md#get-item). Synthetic humans on a flat floor and a store
-// of stand-in objects; the level's side (ItemServices) is a fake that takes an object at once when a pick-up starts.
+// fetches and GetItem's walk and pick-up (docs/research/ai.md#get-item), and the wreck half of WarriorVandalSteal
+// (docs/research/crew-wreck.md: panes and smash targets). Synthetic humans on a flat floor and
+// a store of stand-in objects; the level's side (ItemServices) is a fake that takes an object at once when a pick-up
+// starts.
 #include "ai/steal_goals.h"
 
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -16,7 +20,10 @@
 #include "ai/gangs.h"
 #include "ai/goal.h"
 #include "ai/item_services.h"
+#include "ai/perception.h"
+#include "ai/smash_goals.h"
 #include "support/ai_fixtures.h"
+#include "support/collision_fixtures.h"
 
 using coney::ai::Brain;
 using coney::ai::GoalType;
@@ -46,6 +53,33 @@ class FakeItems final : public coney::ai::ItemServices {
     std::vector<coney::ai::StoreFlag> storeFlags;
     std::vector<Object> objects;
     std::vector<Take> takes;
+    std::vector<coney::ai::PaneView> glass;             // what panes() lists, whatever the centre and radius
+    std::vector<coney::ai::SmashTarget> targets;        // what smashTargets() lists, likewise
+    coney::ai::HeldUse use = coney::ai::HeldUse::Other; // what heldUse() says of any held object
+    std::vector<double> flying;                         // the objects in flight
+
+    [[nodiscard]] bool inFlight(double handle) const override { return std::ranges::contains(flying, handle); }
+
+    [[nodiscard]] std::vector<coney::ai::PaneView> panes(Vec3 /*centre*/, float /*radius*/) const override {
+        return glass;
+    }
+    [[nodiscard]] std::vector<coney::ai::SmashTarget> smashTargets(Vec3 /*centre*/, float /*radius*/) const override {
+        return targets;
+    }
+    [[nodiscard]] coney::ai::HeldUse heldUse(double /*handle*/) const override { return use; }
+    [[nodiscard]] std::optional<Vec3> objectPosition(double handle) const override {
+        for (const coney::ai::PaneView& pane : glass) {
+            if (pane.handle == handle) {
+                return pane.centre;
+            }
+        }
+        for (const coney::ai::SmashTarget& target : targets) {
+            if (target.handle == handle) {
+                return target.position;
+            }
+        }
+        return itemPosition(handle);
+    }
 
     [[nodiscard]] std::vector<coney::ai::StoreFlag> stores() const override { return storeFlags; }
     [[nodiscard]] std::vector<coney::ai::LooseItem> ownedItems(int zone) const override {
@@ -238,4 +272,287 @@ TEST_CASE("GetItem walks to the object and ends when it is gone before he gets t
     scene.run(2);
     CHECK(a.findGoal(GoalType::GetItem) == nullptr);
     CHECK(items.takes.empty());
+}
+
+TEST_CASE("under the wreck command with no store a Warrior walks up to a pane by the chief and swings at it",
+          "[ai][steal][wreck]") {
+    // A glass wall 3 m north of the chief (y 43, 3 m high); the pane is its middle, 1.5 m up, facing the crew.
+    AiScene scene;
+    const auto floor = std::move(scene.mesh);
+    std::vector<coney::test::Tri> pane = coney::test::wallFacingMinusY(43.0F, 30.0F, 50.0F, 0.0F, 3.0F);
+    for (coney::test::Tri& tri : pane) {
+        tri.material = coney::ai::kGlassMaterial;
+    }
+    scene.mesh = coney::test::makeMesh(coney::test::join(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F), pane));
+    // The brains' sight rays (the clear ray to the pane) read the same mesh.
+    scene.brains.setCollision(scene.mesh.get());
+    std::vector<Brain*> members;
+    const int gang = makeCrew(scene, 1, members);
+    FakeItems items;
+    items.glass.push_back(
+        {.handle = 500, .centre = {42.0F, 43.0F, 1.5F}, .normal = {0.0F, -1.0F, 0.0F}, .height = 3.0F});
+    static_cast<void>(steal(scene, gang, items));
+
+    bool sent = false;
+    bool swung = false;
+    for (int k = 0; k < 60 * 10 && !swung; ++k) {
+        scene.run(1);
+        const auto* goal = dynamic_cast<const coney::ai::DestroyItemGoal*>(members[0]->findGoal(GoalType::DestroyItem));
+        if (goal != nullptr && goal->object() == 500.0) {
+            sent = true;
+            swung = goal->swung();
+        }
+    }
+    CHECK(sent);
+    REQUIRE(swung);
+    // He swung within the goal's reach of the spot under the pane.
+    const Vec3 at = members[0]->human().position();
+    CHECK(std::hypot(at.x - 42.0F, at.y - 43.0F) <= coney::ai::kDestroyItemReach + 0.1F);
+    // The pane is claimed for the crew's gang.
+    CHECK(items.claimedBy(500, gang, members[0]->nowMs()));
+}
+
+TEST_CASE("under the wreck command a carried smash target is fetched and any other is struck where it stands",
+          "[ai][steal][wreck]") {
+    const auto run = [](int animSet) {
+        AiScene scene;
+        std::vector<Brain*> members;
+        const int gang = makeCrew(scene, 1, members);
+        FakeItems items;
+        items.targets.push_back({.handle = 600, .position = {44.0F, 36.0F, 0.0F}, .animSet = animSet});
+        // The target is also an object on the floor, as a carried one is (GetItem ends at once on one it cannot find).
+        items.add(600, {44.0F, 36.0F, 0.0F});
+        static_cast<void>(steal(scene, gang, items));
+        for (int k = 0; k < 30; ++k) {
+            scene.run(1);
+            if (members[0]->findGoal(GoalType::GetItem) != nullptr) {
+                return GoalType::GetItem;
+            }
+            if (members[0]->findGoal(GoalType::DestroyItem) != nullptr) {
+                return GoalType::DestroyItem;
+            }
+        }
+        return GoalType::WarriorVandalSteal;
+    };
+    CHECK(run(4) == GoalType::GetItem);
+    CHECK(run(5) == GoalType::GetItem);
+    CHECK(run(0) == GoalType::DestroyItem);
+}
+
+TEST_CASE("GetItem never takes an object through an intact pane; with the pane gone it takes it",
+          "[ai][steal][wreck]") {
+    // A shelf object 1 m behind a glass wall (y 43), a lone gang member 0.4 m in front of the glass and so within
+    // GetItem's reach of it; the question of issue #241 (docs/research/ai.md#get-item): the clear ray through the
+    // pane makes him swing at it, never take.
+    const auto takes = [](bool glass) {
+        AiScene scene;
+        const auto floor = std::move(scene.mesh);
+        std::vector<coney::test::Tri> wall = coney::test::wallFacingMinusY(43.0F, 30.0F, 50.0F, 0.0F, 3.0F);
+        for (coney::test::Tri& tri : wall) {
+            tri.material = coney::ai::kGlassMaterial;
+        }
+        const std::vector<coney::test::Tri> ground = coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F);
+        scene.mesh = coney::test::makeMesh(glass ? coney::test::join(ground, wall) : ground);
+        // The brains' sight rays (GetItem's clear ray to the object) read the same mesh.
+        scene.brains.setCollision(scene.mesh.get());
+        Brain& thief = scene.add({42.0F, 42.6F, 0.0F}, 0.0F);
+        FakeItems items;
+        items.add(1, {42.0F, 44.0F, 1.0F});
+        static_cast<void>(thief.pushGoal(std::make_unique<coney::ai::GetItemGoal>(1, 4, items)));
+        scene.run(60 * 10);
+        return items.takes.size();
+    };
+    CHECK(takes(true) == 0);
+    CHECK(takes(false) == 1);
+}
+
+TEST_CASE("GetItem with no clear ray to the object, facing it, counts a try and walks to the standing point",
+          "[ai][steal]") {
+    // A solid wall between the thief and an object 1 m north of him, within GetItem's reach: GetItemGoal_Process
+    // (0x002dc9f8) counts the try and falls through to the walk.
+    AiScene scene;
+    const auto floor = std::move(scene.mesh);
+    scene.mesh =
+        coney::test::makeMesh(coney::test::join(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F),
+                                                coney::test::wallFacingMinusY(43.5F, 30.0F, 50.0F, 0.0F, 3.0F)));
+    scene.brains.setCollision(scene.mesh.get());
+    Brain& thief = scene.add({42.0F, 43.0F, 0.0F}, 0.0F);
+    FakeItems items;
+    items.add(1, {42.0F, 44.0F, 1.0F});
+    REQUIRE(thief.pushGoal(std::make_unique<coney::ai::GetItemGoal>(1, 4, items)));
+    const auto* goal = dynamic_cast<const coney::ai::GetItemGoal*>(thief.findGoal(GoalType::GetItem));
+    REQUIRE(goal != nullptr);
+    for (int k = 0; k < 30 && goal->tries() == 0; ++k) {
+        scene.run(1);
+    }
+    REQUIRE(goal->tries() == 1);
+    CHECK(thief.actionCount() > 0);
+    CHECK(items.takes.empty());
+}
+
+namespace {
+
+// A crew of the player and one AI member 12 m east of him under the steal tactic with nothing to fetch, the member
+// holding an object `items` says he swings, with a pane in reach; the member plays a clip of anim `animId` holding
+// `held` for 10 s.
+Brain& swingingMember(AiScene& scene, FakeItems& items, std::uint32_t animId, std::uint32_t held,
+                      coney::anim::AnimClip& clip) {
+    const int gang = scene.brains.gangs().create(1, "Warriors");
+    scene.brains.gangs().addMember(gang, scene.player());
+    Brain& member = scene.add({52.0F, 40.0F, 0.0F}, 0.0F);
+    scene.brains.gangs().addMember(gang, member);
+    items.use = coney::ai::HeldUse::Swings;
+    items.glass.push_back(
+        {.handle = 500, .centre = {52.0F, 45.0F, 1.5F}, .normal = {0.0F, -1.0F, 0.0F}, .height = 3.0F});
+    static_cast<void>(steal(scene, gang, items));
+    member.human().script().heldObject = 700.0;
+    clip.duration = 10.0F;
+    member.human().playScripted(clip, animId, 1.0F, 0.0F, coney::human::HeldFlags{.held = held, .set = held});
+    return member;
+}
+
+} // namespace
+
+TEST_CASE("under the wreck command a Warrior winding up a throw of what he holds is busy: no swing, no walk back",
+          "[ai][steal][wreck]") {
+    // Human_IsSwingingHeld (0x002286a0): held flag 0x800000, or 0x1000010 with an object in hand during a throw clip
+    // (467 among them). TryVandalise (0x002bf118) then answers busy: nothing queued, and the walk back to the leader
+    // never starts.
+    const auto busy = [](std::uint32_t animId, std::uint32_t held) {
+        AiScene scene;
+        FakeItems items;
+        coney::anim::AnimClip clip;
+        Brain& member = swingingMember(scene, items, animId, held, clip);
+        bool queued = false;
+        for (int k = 0; k < 60 * 3; ++k) {
+            scene.run(1);
+            queued = queued || member.actionCount() > 0;
+        }
+        return !queued && member.findGoal(GoalType::FollowFormation) == nullptr;
+    };
+    CHECK(busy(999, 0x800000));
+    CHECK(busy(467, 0x1000010));
+}
+
+TEST_CASE("under the wreck command a Warrior holding a swung object with a held flag drops his target and stops",
+          "[ai][steal][wreck]") {
+    // TryVandalise (0x002bf118): with a throwable in hand, Human_DropTarget, then nothing while any held flag is set;
+    // the goal goes on to the walk back to the leader 12 m away.
+    AiScene scene;
+    FakeItems items;
+    coney::anim::AnimClip clip;
+    Brain& member = swingingMember(scene, items, 999, 0x100, clip);
+    Brain& foe = scene.add({60.0F, 40.0F, 0.0F}, 0.0F);
+    member.setTarget(&foe);
+    scene.run(1);
+    CHECK(member.target() == nullptr);
+    CHECK(member.actionCount() == 0);
+    bool followed = false;
+    for (int k = 0; k < 60 * 3 && !followed; ++k) {
+        scene.run(1);
+        followed = member.findGoal(GoalType::FollowFormation) != nullptr;
+    }
+    CHECK(followed);
+}
+
+TEST_CASE("GetItem waits while its object is in flight and picks it up once it has landed", "[ai][steal]") {
+    // GetItemGoal_Process (0x002dc9f8): the object's flag 0x4000000 set, the goal runs on and does nothing.
+    AiScene scene;
+    Brain& thief = scene.add({40.0F, 30.0F, 0.0F}, 0.0F);
+    FakeItems items;
+    items.add(1, {40.0F, 30.5F, 0.0F});
+    items.flying.push_back(1.0);
+    REQUIRE(thief.pushGoal(std::make_unique<coney::ai::GetItemGoal>(1.0, 4, items)));
+    scene.run(60);
+    CHECK(items.takes.empty());
+    CHECK(thief.findGoal(GoalType::GetItem) != nullptr);
+    items.flying.clear();
+    scene.run(60);
+    CHECK(items.takes.size() == 1);
+}
+
+TEST_CASE("GetItem's reach is measured from its standing point, not from the object", "[ai][steal]") {
+    // GetItemGoal_Process (0x002dc9f8): the squared distance from him to the goal's point (+0x10) under 2.25. The
+    // object rolls to his feet after the goal has set its point 6 m away: he walks to the point before the pick-up.
+    AiScene scene;
+    Brain& thief = scene.add({40.0F, 30.0F, 0.0F}, 0.0F);
+    FakeItems items;
+    items.add(1, {40.0F, 36.0F, 0.0F});
+    REQUIRE(thief.pushGoal(std::make_unique<coney::ai::GetItemGoal>(1.0, 4, items)));
+    // The goal starts and sets its point on the first update.
+    scene.run(1);
+    REQUIRE(items.takes.empty());
+    items.objects[0].position = {40.5F, 30.0F, 0.0F};
+    scene.run(5);
+    CHECK(items.takes.empty());
+    scene.run(60 * 10);
+    REQUIRE(items.takes.size() == 1);
+    // Taken near the standing point, not where he first stood.
+    CHECK(std::hypot(items.takes[0].standing.x - 40.0F, items.takes[0].standing.y - 36.0F) < coney::ai::kGetItemReach);
+}
+
+TEST_CASE("under the wreck command the claim on a struck target drops once DestroyItem is over", "[ai][steal][wreck]") {
+    // TryVandalise (0x002bf118) keeps the target in the goal's +0x10; WarriorVandalStealGoal_Resume (0x002bed30)
+    // clears its claim (+0xec) when the goal comes back on top, well before the search's 5 s run out.
+    AiScene scene;
+    std::vector<Brain*> members;
+    const int gang = makeCrew(scene, 1, members);
+    FakeItems items;
+    items.targets.push_back({.handle = 600, .position = {44.0F, 38.0F, 0.0F}, .animSet = 0});
+    static_cast<void>(steal(scene, gang, items));
+    bool sent = false;
+    for (int k = 0; k < 60 * 2 && !sent; ++k) {
+        scene.run(1);
+        sent = members[0]->findGoal(GoalType::DestroyItem) != nullptr;
+    }
+    REQUIRE(sent);
+    const std::uint64_t sentMs = members[0]->nowMs();
+    REQUIRE(items.claimedBy(600, gang, sentMs));
+    // The target is struck and gone from the list; the goal ends.
+    items.targets.clear();
+    bool over = false;
+    for (int k = 0; k < 60 * 3 && !over; ++k) {
+        scene.run(1);
+        over = members[0]->findGoal(GoalType::DestroyItem) == nullptr;
+    }
+    REQUIRE(over);
+    scene.run(2);
+    CHECK(members[0]->nowMs() < sentMs + coney::ai::kSmashClaimMs);
+    CHECK_FALSE(items.claimedBy(600, gang, members[0]->nowMs()));
+}
+
+TEST_CASE("DestroyItem walks to the object's own spot and swings within 1 m of it", "[ai][steal][wreck]") {
+    // DestroyItemGoal_Process (0x002dd210): Nav_FindPolygonUnder (0x00252410) never reads the stand-off or the
+    // direction it is given, so the stand point is the object's spot on the ground; the swing comes within 1 m of it.
+    AiScene scene;
+    Brain& striker = scene.add({40.0F, 30.0F, 0.0F}, 0.0F);
+    FakeItems items;
+    items.targets.push_back({.handle = 600, .position = {40.0F, 36.0F, 0.0F}, .animSet = 0});
+    REQUIRE(striker.pushGoal(std::make_unique<coney::ai::DestroyItemGoal>(600.0, false, items)));
+    const auto* goal = dynamic_cast<const coney::ai::DestroyItemGoal*>(striker.findGoal(GoalType::DestroyItem));
+    REQUIRE(goal != nullptr);
+    for (int k = 0; k < 60 * 10 && !goal->swung(); ++k) {
+        scene.run(1);
+    }
+    REQUIRE(goal->swung());
+    const Vec3 at = striker.human().position();
+    CHECK(std::hypot(at.x - 40.0F, at.y - 36.0F) <= coney::ai::kDestroyItemReach + 0.05F);
+}
+
+TEST_CASE("the wreck's smash search refuses an object only with the player nearer than 1 m to it in 3D",
+          "[ai][steal][wreck]") {
+    // Ai_FindObject (0x0029d5f0): an object a player is nearer than 1 m to (Vec_DistSq < 1.0) is skipped. One on a
+    // shelf 2 m above the player's feet is not; one at his feet is.
+    AiScene scene;
+    Brain& searcher = scene.add({42.0F, 40.0F, 0.0F}, 0.0F);
+    const Vec3 feet = scene.player().human().position();
+    FakeItems items;
+    items.targets.push_back({.handle = 600, .position = {feet.x + 0.5F, feet.y, feet.z + 2.0F}, .animSet = 0});
+    const std::optional<coney::ai::SmashTarget> above =
+        coney::ai::findSmashTarget(searcher, scene.player(), items, scene.services, 15.0F, 15.0F);
+    REQUIRE(above.has_value());
+    CHECK(above->handle == 600.0);
+    FakeItems low;
+    low.targets.push_back({.handle = 601, .position = {feet.x + 0.5F, feet.y, feet.z}, .animSet = 0});
+    CHECK_FALSE(coney::ai::findSmashTarget(searcher, scene.player(), low, scene.services, 15.0F, 15.0F).has_value());
 }

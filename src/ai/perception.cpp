@@ -70,4 +70,10 @@ bool canSeeHuman(const raycast::CollisionMesh* mesh, const human::Human& viewer,
     return lineOfSight(mesh, viewer.position(), other.position()).clear;
 }
 
+// Stub until the port: the default result.
+ClearRay clearRayTo(const raycast::CollisionMesh* /*mesh*/, anim::Vec3 /*feet*/, anim::Vec3 /*point*/,
+                    std::uint32_t /*mask*/) {
+    return {};
+}
+
 } // namespace coney::ai

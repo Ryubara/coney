@@ -86,4 +86,24 @@ void LevelItems::collectTakes(ai::Brains& brains) {
     }
 }
 
+// Stubs until the port: nothing may be smashed and no pane is listed.
+bool LevelItems::smashable(const world_objects::ObjectType& /*type*/) { return false; }
+
+ai::SmashTarget LevelItems::smashTargetOf(double /*handle*/, anim::Vec3 /*at*/,
+                                          const world_objects::ObjectType& /*type*/) {
+    return {};
+}
+
+std::vector<ai::SmashTarget> LevelItems::smashTargets(anim::Vec3 /*centre*/, float /*radius*/) const { return {}; }
+
+std::vector<ai::PaneView> LevelItems::panes(anim::Vec3 /*centre*/, float /*radius*/) const { return {}; }
+
+bool LevelItems::broken(double /*handle*/) const { return false; }
+
+bool LevelItems::inFlight(double /*handle*/) const { return false; }
+
+std::optional<anim::Vec3> LevelItems::objectPosition(double handle) const { return itemPosition(handle); }
+
+ai::HeldUse LevelItems::heldUse(double /*handle*/) const { return ai::HeldUse::Other; }
+
 } // namespace coney

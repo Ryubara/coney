@@ -308,6 +308,7 @@ target_sources(coney_core PRIVATE
     ai/brains.cpp
     ai/chase_goals.cpp
     ai/crew.cpp
+    ai/smash_goals.cpp
     ai/steal_goals.cpp
     ai/dealer_goal.cpp
     ai/engage_goals.cpp

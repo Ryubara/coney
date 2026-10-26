@@ -63,9 +63,9 @@ enum class TargetCause : std::uint8_t {
     Engage,    ///< The engage goal's re-target (`EngageEnemyGoal_Process`).
     Displaced, ///< Lost to a closer attacker taking the last attack slot (`Brain_ClaimAttackSlot`).
     Reaction,  ///< Its own state (stunned, wounded, knocked out, down) or a grab's or mount's partner.
-    Order,     ///< A tactic starting, the reset (event 2) or going for an item (`Human_DropTarget` from
-               ///< `Tactic_Start`, `GetItemGoal_Start`). The original's drop at Melee's end counts here too; Coney's
-               ///< keeps the target.
+    Order,     ///< A tactic starting, the reset (event 2), going for an item or the wreck's swing (`Human_DropTarget`
+               ///< from `Tactic_Start`, `GetItemGoal_Start`, `WarriorVandalStealGoal_TryVandalise`). The original's
+               ///< drop at Melee's end counts here too; Coney's keeps the target.
 };
 /// The number of TargetCause values.
 inline constexpr std::size_t kTargetCauseCount = 9;
