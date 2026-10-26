@@ -5,7 +5,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface } from 'claude-code'
 
-import type { Held, Offer } from '../types'
+import type { Held, Offer, StopState } from '../types'
 
 export const EMPTY: Held = {
   snapshot: null,
@@ -17,11 +17,12 @@ export const EMPTY: Held = {
 }
 
 // Change a tag when the value's shape changes: a reload then declines what the old code stored.
-const held = atom({ plugin: 'conclave', key: 'held' } as const, EMPTY, { shape: 'held-1' })
+const held = atom({ plugin: 'conclave', key: 'held' } as const, EMPTY, { shape: 'held-2' })
 const open = atom({ plugin: 'conclave', key: 'open' } as const, null)
 const now = atom({ plugin: 'conclave', key: 'now' } as const, 0)
 const role = atom({ plugin: 'conclave', key: 'role' } as const, null)
 const offer = atom({ plugin: 'conclave', key: 'offer' } as const, null, { shape: 'offer-1' })
+const stops = atom({ plugin: 'conclave', key: 'stops' } as const, null, { shape: 'stops-1' })
 
 /** The sections of the last good local and GitHub reads, merged. */
 export function getHeld($: EngineInterface): Promise<Held> {
@@ -76,4 +77,14 @@ export function setOffer($: EngineInterface, allowed: string[]): Promise<unknown
 /** Drops the frozen list, so nothing is hidden (the hook settings can no longer be read). */
 export function clearOffer($: EngineInterface): Promise<unknown> {
   return update($, offer, () => null)
+}
+
+/** The stop guard's count of turn ends it blocked in a row for one reason, or null. */
+export function getStops($: EngineInterface): Promise<StopState | null> {
+  return read($, stops)
+}
+
+/** Replaces the stop guard's count. */
+export function setStops($: EngineInterface, value: StopState | null): Promise<unknown> {
+  return update($, stops, () => value)
 }

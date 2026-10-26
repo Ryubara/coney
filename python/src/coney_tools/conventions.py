@@ -1041,6 +1041,40 @@ PANE_MIN_COLUMNS_FLOOR = 15
 
 
 @dataclass(frozen=True)
+class ConclaveWatch:
+    """The watchers of Conclave (docs/guides/conclave.md#watchers): which events are told to whom, and how often."""
+
+    #: The agent types of the sessions that are woken, toasted and held to the stop guard.
+    roles: tuple[str, ...]
+    #: The first line of a wake.
+    preamble: str
+    #: Seconds between GitHub reads in a session that watches (the events come from that read), pane open or not.
+    github_seconds: int
+    #: At least this many seconds between two wakes; events in between join the next one.
+    wake_gap_seconds: int
+    #: A wake waits this many minutes for a draft in the prompt box, then goes anyway.
+    defer_typing_minutes: int
+    #: A wake the engine refused is tried again after this many minutes.
+    resend_minutes: int
+    #: A merged pull request is news for this many minutes after the merge.
+    merged_minutes: int
+    #: The stop guard blocks at most this many turn ends in a row for one reason.
+    stop_max_blocks: int
+    #: The stop guard counts its blocks again from one after this many minutes without a block.
+    stop_reset_minutes: int
+    #: The first line of the stop guard's reason.
+    stop_preamble: str
+    #: The folder of the scratch directory that holds the holds on pull request problems, one file each.
+    holds_dir: str
+    #: How long `pr hold` lasts when it is given no time, and the longest it may last, in hours.
+    hold_default_hours: int
+    hold_max_hours: int
+    #: The files of a unit's scratch folder that ask and answer a question: `<prefix>.md` or `<prefix>-<n>.md`.
+    question_prefix: str
+    answer_prefix: str
+
+
+@dataclass(frozen=True)
 class Conclave:
     """Conclave, the Claude Code mod (docs/guides/conclave.md): what its snapshot sends and how it draws."""
 
@@ -1069,6 +1103,8 @@ class Conclave:
     unit_days: int
     #: A claim's countdown turns red in its last hours (it turns amber at `claims.warn_hours`).
     claim_red_hours: int
+    #: The watchers: Coney's own events, told to the coordinator once.
+    watch: ConclaveWatch
 
 
 #: Where a check can run (`ci.places[].where`), in the order the table lists them: `local` is `task check` or a git
@@ -2000,9 +2036,10 @@ def _read_conclave(data: object, where: str) -> Conclave:
         "merged_visible_minutes",
         "unit_days",
         "claim_red_hours",
+        "watch",
     )
     table = _table(data, where, keys)
-    numbers = {key: _count(table[key], _at(where, key)) for key in keys[2:]}
+    numbers = {key: _count(table[key], _at(where, key)) for key in keys[2:-1]}
     hooks_file = _text(table["hooks_file"], _at(where, "hooks_file"))
     if hooks_file.startswith(("/", "\\")) or ".." in hooks_file or ":" in hooks_file:
         raise _fail(_at(where, "hooks_file"), "a path inside the checkout")
@@ -2015,7 +2052,55 @@ def _read_conclave(data: object, where: str) -> Conclave:
     if numbers["github_idle_seconds"] < numbers["github_seconds"]:
         raise _fail(_at(where, "github_idle_seconds"), "must not be less than github_seconds")
     return Conclave(
-        claude_code=_text(table["claude_code"], _at(where, "claude_code")), hooks_file=hooks_file, **numbers
+        claude_code=_text(table["claude_code"], _at(where, "claude_code")),
+        hooks_file=hooks_file,
+        watch=_read_conclave_watch(table["watch"], _at(where, "watch")),
+        **numbers,
+    )
+
+
+def _read_conclave_watch(data: object, where: str) -> ConclaveWatch:
+    """The `conclave.watch` section: who is told of Coney's own events, and how often."""
+    keys = (
+        "roles",
+        "preamble",
+        "github_seconds",
+        "wake_gap_seconds",
+        "defer_typing_minutes",
+        "resend_minutes",
+        "merged_minutes",
+        "stop_max_blocks",
+        "stop_reset_minutes",
+        "stop_preamble",
+        "holds_dir",
+        "hold_default_hours",
+        "hold_max_hours",
+        "question_prefix",
+        "answer_prefix",
+    )
+    table = _table(data, where, keys)
+    numbers = {
+        key: _count(table[key], _at(where, key))
+        for key in keys
+        if key.endswith(("_seconds", "_minutes", "_blocks", "_hours"))
+    }
+    holds_dir = _text(table["holds_dir"], _at(where, "holds_dir"))
+    if holds_dir in {".", ".."} or any(mark in holds_dir for mark in ("/", "\\", ":")):
+        raise _fail(_at(where, "holds_dir"), "a folder name (one level, in the scratch directory)")
+    if numbers["hold_default_hours"] > numbers["hold_max_hours"]:
+        raise _fail(_at(where, "hold_default_hours"), "must not be more than hold_max_hours")
+    question = _text(table["question_prefix"], _at(where, "question_prefix"))
+    answer = _text(table["answer_prefix"], _at(where, "answer_prefix"))
+    if question == answer:
+        raise _fail(_at(where, "question_prefix"), "must differ from answer_prefix")
+    return ConclaveWatch(
+        roles=_texts(table["roles"], _at(where, "roles")),
+        preamble=_text(table["preamble"], _at(where, "preamble")),
+        stop_preamble=_text(table["stop_preamble"], _at(where, "stop_preamble")),
+        holds_dir=holds_dir,
+        question_prefix=question,
+        answer_prefix=answer,
+        **numbers,
     )
 
 

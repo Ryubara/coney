@@ -1036,6 +1036,24 @@ conclave:
   merged_visible_minutes: 10                     # a merged unit stays on the pane this long
   unit_days: 3                                   # a unit with no worktree stays on the pane this long after its last change
   claim_red_hours: 6                             # a claim's countdown is red in its last hours (amber from claims.warn_hours)
+  # The watchers (docs/guides/conclave.md#watchers): Coney's own events told to the coordinator once. Never an idle wake,
+  # which stays Tether's.
+  watch:
+    roles: [coordinator]                         # the sessions that are woken, toasted and held to the stop guard
+    preamble: "Coordinator: new work. Handle it or say why it can wait:"   # the first line of a wake
+    github_seconds: 120                          # between GitHub reads in a session that watches, pane open or not (idle: 300)
+    wake_gap_seconds: 60                         # at least this long between two wakes; events in between join the next
+    defer_typing_minutes: 10                     # a wake waits this long for a draft in the prompt box, then goes anyway
+    resend_minutes: 2                            # a wake the engine refused is tried again after this long
+    merged_minutes: 30                           # a merged pull request is news for this long after the merge
+    stop_max_blocks: 3                           # the stop guard blocks at most this many turn ends in a row for one reason
+    stop_reset_minutes: 30                       # ... and counts again from one after this long without a block
+    stop_preamble: "Open pull requests are in trouble and nobody holds the fix. Deal with each, or record who does:"
+    holds_dir: pr-holds                          # a hold on a pull request's problems: one file each, in the scratch directory
+    hold_default_hours: 4                        # `pr hold` lasts this long unless it is told another time
+    hold_max_hours: 24                           # and never longer, so a stalled fix cannot hide for ever
+    question_prefix: QUESTION                    # QUESTION.md or QUESTION-<n>.md in a unit's scratch folder is a question ...
+    answer_prefix: ANSWER                        # ... until ANSWER.md (ANSWER-<n>.md) is newer than it
 
 standards:
   # What a file is held to when a change touches it, and the files that do not meet it yet

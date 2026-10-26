@@ -31,13 +31,13 @@ TYPESCRIPT = "typescript@5.6.3"
 #: Code files of the mod's runtime; its tests, type contract and the engine's generated types are not part of it.
 CODE = ("*.ts", "*.tsx", "*.js", "*.jsx", "*.mjs", "*.cjs", "*.mts", "*.cts")
 NOT_RUNTIME = {"tests", "types", "node_modules", ".claude-plugin"}
-#: The events the mod hooks, and nothing else: none of them is one Tether acts on (`classic.SessionStart` is only read).
-EVENTS = {"session.start", "classic.SessionStart", "command.run", "agent.offer", "ui.render"}
+#: The events the mod hooks, and nothing else. `classic.SessionStart` is only read; `classic.Stop` is the stop guard on
+#: pull request problems nobody owns (the half of Tether's own Stop guard that Conclave took over with its pollers).
+EVENTS = {"session.start", "classic.SessionStart", "classic.Stop", "command.run", "agent.offer", "ui.render"}
 #: Events Tether hooks or whose work is Tether's (the checkpoint cycle, the cache guard, the idle wake, the HANDOFF
 #: message, the subagent limits). Named here so a crossing says which line it crosses.
 TETHER_EVENTS = {
     "classic.UserPromptSubmit",
-    "classic.Stop",
     "classic.SubagentStop",
     "classic.SessionEnd",
     "classic.PreCompact",
@@ -59,12 +59,16 @@ TETHER_EVENTS = {
     "agent.list",
 }
 #: Every `$.noun.method` the mod may call, and nothing else: the status line needs only the event's own `cwd` and
-#: `agent_type`, so no `$.session.` or `$.model.` call is allowed, and neither is a tool, a file, a prompt or a model.
+#: `agent_type`, so no `$.session.` or `$.model.` call is allowed, and neither is a tool, a file or a model. The prompt
+#: has two calls: `prompt.read` (is a person typing) and `prompt.submit`, which is the wake and is further confined
+#: to the event-wake path (`wakeProblems` in conclave_boundary_syntax.cjs).
 API_CALLS = {
     "clock.every",
     "clock.now",
     "command.register",
     "process.run",
+    "prompt.read",
+    "prompt.submit",
     "store.get",
     "store.set",
     "store.delete",
@@ -72,6 +76,7 @@ API_CALLS = {
     "ui.panes",
     "ui.resolve",
     "ui.status",
+    "ui.toast",
 }
 #: The one `$.noun.property` the mod reads (the folder it was loaded from).
 API_PROPERTIES = {"plugin.root"}
@@ -147,7 +152,7 @@ RUN = {
 #: anything but being named.
 PRELUDE = [
     "import type { EngineInterface, On, Register } from 'claude-code'",
-    "import { checkoutOf, venvOf } from '../src/snapshot'",
+    "import { checkoutOf, startPolling, venvOf } from '../src/snapshot'",
     "declare const $: EngineInterface",
     "declare const on: On",
     "declare const fn: never",
@@ -158,6 +163,8 @@ PRELUDE = [
     "declare function helper(...args: never[]): void",
     "declare function setup(...args: never[]): void",
     "declare function usage(): number",
+    "declare function pending(found: string[], more?: unknown): string[]",
+    "declare function wakeText(preamble: string, due: string[]): string",
 ]
 
 

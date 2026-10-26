@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from conclave_support import FakeGh, Layout, github_answers, make_layout, make_task, sources, stamp_steps
+from conclave_support import FakeGh, Layout, ago, github_answers, make_layout, make_task, sources, stamp_steps
 from conventions_support import REPO
 
 from coney_tools.conclave_snapshot import collect
@@ -40,8 +40,14 @@ def portable(value: Any, root: Path) -> Any:
 
 
 def fixture_layout(root: Path) -> Layout:
-    """The two units of the snapshot tests and a third that has merged."""
+    """The two units of the snapshot tests and a third that has merged; `fix-new` is ready for `pr open` and asks."""
     made = make_layout(root)
+    for name, text, hours in (
+        ("PR.md", "gameplay: Fix the uncuff steer\n", 2),
+        ("QUESTION.md", "Which step first?\n", 1),
+    ):
+        (made.scratch / "fix-new" / name).write_text(text, encoding="utf-8")
+        os.utime(made.scratch / "fix-new" / name, (ago(hours=hours).timestamp(),) * 2)
     make_task(made.scratch, "add-task-start", (799,), ("python/src/coney_tools/task_cli.py",))
     steps = load_conventions(REPO).stamps.steps
     stamp_steps(made.scratch, "add-task-start", [(step, "pass") for step in steps], hours_ago=1)

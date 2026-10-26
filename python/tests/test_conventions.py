@@ -681,6 +681,37 @@ def test_the_real_conclave_section() -> None:
     assert conclave.stale_after_reads >= 1
 
 
+def test_the_real_watch_settings_are_read() -> None:
+    watch = load_conventions(REPO).conclave.watch
+    # only the coordinator is woken, toasted and held to the stop guard; the wake text is one of these keys, so the mod
+    # holds none of it
+    assert watch.roles == ("coordinator",) and watch.preamble.endswith(":")
+    assert 0 < watch.hold_default_hours <= watch.hold_max_hours
+    assert watch.stop_max_blocks >= 1 and watch.wake_gap_seconds >= 1
+    assert watch.holds_dir == "pr-holds" and watch.question_prefix != watch.answer_prefix
+
+
+@pytest.mark.parametrize(
+    ("path", "value", "message"),
+    [
+        ("conclave.watch", REMOVE, "missing the key 'watch'"),
+        ("conclave.watch.roles", [], "expected a non-empty list"),
+        ("conclave.watch.roles", ["coordinator", "coordinator"], "a value is listed twice"),
+        ("conclave.watch.hold_default_hours", 0, "expected a whole number of 1 or more"),
+        ("conclave.watch.hold_default_hours", 99, "must not be more than hold_max_hours"),
+        ("conclave.watch.stop_max_blocks", 0, "expected a whole number of 1 or more"),
+        ("conclave.watch.stop_preamble", "", "expected non-empty text"),
+        ("conclave.watch.holds_dir", "../x", "a folder name"),
+        ("conclave.watch.holds_dir", "a/b", "a folder name"),
+        ("conclave.watch.question_prefix", "ANSWER", "must differ from answer_prefix"),
+        ("conclave.watch.unknown", 1, "unknown key 'unknown'"),
+    ],
+)
+def test_a_wrong_watch_section_is_refused(path: str, value: object, message: str) -> None:
+    with pytest.raises(ConventionsError, match=message):
+        parse_conventions(changed((path, value)))
+
+
 @pytest.mark.parametrize(
     ("path", "value", "message"),
     [

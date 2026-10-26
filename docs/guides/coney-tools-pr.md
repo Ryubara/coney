@@ -1,16 +1,17 @@
 # The coney-tools pull request commands
 
-The `pr` commands: whether a unit is ready to become a pull request, the text it carries, its release and the
-trailers of a commit. [`repo`](coney-tools-repo.md#repo) and [`task`](coney-tools-repo.md#task) are on the repository
-commands page; the other groups are listed in [the command line overview](coney-tools.md#groups).
+The `pr` commands: whether a unit is ready to become a pull request, the text it carries, its release, a hold on its
+problems and the trailers of a commit. [`repo`](coney-tools-repo.md#repo) and [`task`](coney-tools-repo.md#task) are on
+the repository commands page; the other groups are listed in [the command line overview](coney-tools.md#groups).
 
 ## pr {#pr}
 
 The checks on a pull request and its commits: whether a unit is ready to become a pull request (`pr verify`), the text
-it will carry (`pr text`), the release itself (`pr open`) and the trailers of a commit (`pr check-commit`). The
-pull-request checks of [repo](coney-tools-repo.md#repo) (`check-title`, `check-body`, `check-docs`) are planned to
-move here when the command groups are renamed ([Stamps](stamps.md) says the command names are placeholders for that
-pass). What the first three check and do, and what each refusal asks you to do, is [Releasing a pull request](pr.md).
+it will carry (`pr text`), the release itself (`pr open`), a hold on a pull request's problems (`pr hold`) and the
+trailers of a commit (`pr check-commit`). The pull-request checks of [repo](coney-tools-repo.md#repo) (`check-title`,
+`check-body`, `check-docs`) are planned to move here when the command groups are renamed ([Stamps](stamps.md) says the
+command names are placeholders for that pass). What the first three check and do, and what each refusal asks you to do,
+is [Releasing a pull request](pr.md).
 
 ### pr verify {#pr-verify}
 
@@ -92,6 +93,19 @@ Exit codes:
 | 2 | Cannot run: wrong caller, `gh` missing or old, no unit, dirty worktree, lock held, no fetch, a unit started from a base other than the default branch, `origin/HEAD` unset. Nothing was touched | fix the cause (the messages are in [pr open](pr.md#open)) |
 | 3 | Rebase conflict. The branch is as it was; `REBASE.md` in the task's folder lists the paths | send the paths to the engineer |
 | 4 | A git or GitHub step failed once the branch had been touched (the rebase, the lease, create, edit, merge, read-back), or auto-merge that must be off stays on (nothing is pushed then). The pull request may exist | run it again: every step is idempotent |
+
+### pr hold {#pr-hold}
+
+```sh
+uv run --project python coney-tools pr hold PR [--who NAME] [--hours N] [--cause CAUSE] [--note TEXT]
+uv run --project python coney-tools pr hold PR --release
+uv run --project python coney-tools pr hold --list [--json]
+```
+
+The coordinator's record that somebody holds a pull request's problems (an agent fixing them, or a waiver with a note):
+the problem is neither told by [Conclave's watchers](conclave.md#watchers) nor guarded while the hold runs on the head
+commit it was made on, and is open again when it ends or the pull request gets a new push. It writes one file of the
+scratch directory and nothing on GitHub. What each form does, the limits and the exit codes: [pr hold](pr.md#hold).
 
 ### pr check-commit {#pr-check-commit}
 
@@ -190,6 +204,26 @@ coney-tools pr open [TASK] [--worktree WORKTREE] [--text FILE] [--remote REMOTE]
 | `--no-auto-merge` | flag | off | open without turning on auto-merge (and turn it off if it is on) |
 | `--dry-run` | flag | off | try everything but the push and GitHub in a throwaway worktree |
 | `--json` | flag | off | print the result as one JSON object |
+
+### `pr hold` {#pr-hold-usage}
+
+Say that somebody owns a pull request's problems for a few hours, so the coordinator is not woken or kept from stopping
+for them (docs/guides/pr.md#hold).
+
+```text
+coney-tools pr hold [PR] [--who WHO] [--hours HOURS] [--cause CAUSE] [--note NOTE] [--release] [--list] [--json]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `[PR]` | integer | none | the pull request's number |
+| `--who WHO` | text | none | the agent or track fixing it; leave out for a waiver (--note then says why) |
+| `--hours HOURS` | number | none | how long the hold lasts (default and most: conclave.watch) |
+| `--cause CAUSE` | choice | none | hold only this cause (default: every cause). One of `checks-failed`, `conflict`, `ci-stuck`, `auto-merge-off`. |
+| `--note NOTE` | text | none | what is being done, or why waiting is right |
+| `--release` | flag | off | end the pull request's hold now |
+| `--list` | flag | off | print the holds that run |
+| `--json` | flag | off | print the result as JSON (with --list) |
 
 ### `pr check-commit` {#pr-check-commit-usage}
 

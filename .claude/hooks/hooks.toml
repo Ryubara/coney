@@ -48,12 +48,12 @@ deny_commit_under = ["/worktrees/coney/"]
 hint = "Give the work to an engineer (or the tooling agent), which commits in its own worktree."
 
 [roles.engineer]
-deny_coney_tools = ["pr open"]
+deny_coney_tools = ["pr open", "pr hold"]
 no_github_writes = true
 hint = "Push, pull requests and GitHub are the coordinator's. Ask it with a note in your report."
 
 [roles.tooling]
-deny_coney_tools = ["pr open"]
+deny_coney_tools = ["pr open", "pr hold"]
 no_github_writes = true
 hint = "Push, pull requests and GitHub are the coordinator's. Ask it with a note in your report."
 
@@ -69,7 +69,7 @@ write_only = [
 # Those files go in the scratch folder, never inside a checkout (a worktree or the main repository), where an engineer
 # could commit one by mistake.
 write_outside_checkouts = true
-deny_coney_tools = ["pr open"]
+deny_coney_tools = ["pr open", "pr hold"]
 # A reviewer starts no agent: any helper has Bash and no role rules, so it could write a stamp or a file for the
 # reviewer, and the reviewer would then grade work it had done. This refuses the Agent tool; the `deny_commands`
 # below refuse a session started from the shell.

@@ -351,7 +351,7 @@ def test_the_documented_tether_pollers_run_commands_that_parse() -> None:
     section = page[page.index("{#coord-wakes}") :]
     block = section[section.index("```json") + len("```json") : section.index("```", section.index("```json") + 7)]
     pollers = json.loads(block)["watch"]["pollers"]
-    assert {p["id"] for p in pollers} == {"triage", "release", "builds", "prs"}
+    assert {p["id"] for p in pollers} == {"triage", "builds"}
     triage = next(p for p in pollers if p["id"] == "triage")
     assert (triage["kind"], triage["labels"]) == ("issues", [coord_cli.TRIAGE_LABEL])
     for poller in pollers:

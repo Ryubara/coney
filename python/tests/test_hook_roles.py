@@ -150,6 +150,7 @@ def test_the_coordinator_may_write_about_those_commands_and_run_its_own() -> Non
         "echo 'coney-tools orig study'",
         "uv run --project python coney-tools build status",
         "uv run --project python coney-tools pr open t1",
+        "uv run --project python coney-tools pr hold 812 --list",
     ):
         assert roles.check(CONFIG, bash(command, agent_type="coordinator")) is None, command
 
@@ -219,6 +220,14 @@ def test_the_commit_folders_follow_a_windows_path_on_any_system() -> None:
 @pytest.mark.parametrize("agent_type", ["engineer", "tooling", "reviewer"])
 def test_no_one_but_the_coordinator_opens_a_pull_request(agent_type: str) -> None:
     assert roles.check(CONFIG, bash("uv run --project python coney-tools pr open t1", agent_type=agent_type))
+
+
+@pytest.mark.parametrize("agent_type", ["engineer", "tooling", "reviewer"])
+def test_no_one_but_the_coordinator_holds_a_pull_requests_problems(agent_type: str) -> None:
+    # a hold hides a pull request's problems from the coordinator's wake and stop guard, so it is the coordinator's call
+    command = "uv run --project python coney-tools pr hold 812 --who engineer-2"
+    assert roles.check(CONFIG, bash(command, agent_type=agent_type))
+    assert roles.check(CONFIG, bash(command, agent_type="coordinator")) is None
 
 
 def test_a_main_session_started_as_an_engineer_gets_the_github_rules_a_subagent_gets() -> None:
