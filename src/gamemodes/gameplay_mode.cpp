@@ -920,6 +920,9 @@ void GameplayMode::reportHumanSounds() {
     m_soundHumans = std::move(present);
     for (const auto& [handle, brain] : m_scripted->bound()) {
         human::Human& body = brain->human();
+        // A line he says that is playing turns his face to its speaking clips, its end back
+        // (Human_BeginTalkPose / Human_EndTalkPose, docs/research/face.md).
+        body.setSpeaking(m_context.sound != nullptr && m_context.sound->humanSpeaking(handle));
         const std::vector<human::HumanSound> sounds = body.takeSounds();
         if (sounds.empty() || m_context.sound == nullptr) {
             continue;

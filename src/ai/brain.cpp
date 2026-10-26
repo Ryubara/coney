@@ -8,6 +8,7 @@
 
 #include "ai/attack_views.h"
 #include "ai/brain_events.h"
+#include "ai/face_mood.h"
 #include "ai/fight_goal.h"
 #include "ai/gangs.h"
 #include "ai/melee_goal.h"
@@ -148,6 +149,12 @@ void Brain::update(std::uint64_t nowMs) {
     // @orig 0x0028ac18 Brain_StopMove (unknown)
     if (runsGoals) {
         stopMove();
+    }
+    // Every fifth update (the count +0x34 before this update adds to it) the face shows the mood of what the brain is
+    // doing: the player's brain first thing, an AI's after its move is stopped, whether or not its goals run
+    // (Brain_UpdateAlertness, docs/research/face.md).
+    if (m_updates % kFaceMoodUpdates == 0) {
+        m_human->setFaceMood(faceMoodOf(faceMoodFacts(*this)));
     }
     if (runsGoals && !held && !m_knockedOut && !m_human->airborne() && !m_human->fighter().health().depleted()) {
         // The enemy scan on this brain's own schedule, before the goals that pick from the list

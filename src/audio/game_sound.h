@@ -147,6 +147,9 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     void setListener(int listener) override;
     bool speak(const script::SpeechCall& call, std::string_view callback, std::optional<double> callbackArg) override;
     void shutUp(double human, bool force) override;
+    /// Whether `human`'s line is alive (Speech::speaking()), for the face's talk state.
+    /// @coney-only glue: the original's human reads its own stream (`+0x170`); Coney's speech lives in the sound
+    [[nodiscard]] bool humanSpeaking(double human) const override;
     std::optional<double> sayCommand(const script::CommandCall& call, std::string_view callback) override;
     void gameplayEntered() override;
     void levelLoadStarted(int levelNumber) override;

@@ -15,9 +15,9 @@
 // A human's face: the mood and talk state of its record (`+0x1c`) and the looping face clips that play on the
 // character instance's queue, under the body's clips. The face clips are anim ids 698-721, three per state: an even
 // state is a mood's resting face (angry, neutral, scared, excited), the odd state above it the same mood speaking, a
-// mouth that moves. A line that starts playing turns the state odd; its end turns it back. The face clips pose the face
-// bones (7-15: brow, jaw, lips, mouth corners, eyelid) of the default pose that every bone the body's clips leave out
-// takes, so the body's clips decide everything else.
+// mouth that moves. A line that starts playing turns the state odd; its end turns it back. The face clips pose the head
+// and the face bones (6-14: head, brow, jaw, lower lip, mouth corners, eyelid) of the default pose that every bone the
+// body's clips leave out takes, so the body's clips decide everything else.
 // Research: docs/research/face.md
 
 namespace coney::characters {
@@ -91,8 +91,8 @@ class FaceLayer {
     /// @orig 0x0010b858 FaceBlendOut_Update (unknown)
     void advance(float seconds, const characters::AnimSet& anims, const Draw& draw);
     /// The default pose with the face clips sampled over `reference`: the rotations every bone the body's clips leave
-    /// out takes. Only the head and the face bones up to 13 take the face's sample; the eyelid (14), the upper lip
-    /// (15) and every other bone keep `reference`. Without a face task, `reference` itself.
+    /// out takes. Only the head and the face bones up to the eyelid (14) take the face's sample; the upper lip (15)
+    /// and every other bone keep `reference`. Without a face task, `reference` itself.
     /// @orig 0x00176d60 CharacterInstance_Sample (unknown)
     /// @orig 0x001047d0 Instance_CopyRootSlots (unknown)
     [[nodiscard]] std::array<anim::Quat, anim::kPoseBones>
@@ -100,7 +100,6 @@ class FaceLayer {
     /// The anim id the state's face clips start from (record `+0x24`), or nothing before the first.
     [[nodiscard]] std::optional<std::size_t> current() const { return m_current; }
     /// The id the loop plays now, or nothing.
-    /// @coney-only a query for the tests and the debug tools; the original keeps it in the task's cursor
     /// @coney-only a query for the tests and the debug tools; the original keeps it in the task's cursor
     [[nodiscard]] std::optional<std::size_t> playing() const;
     /// The time into the clip playing, seconds of clip; 0 with none.
@@ -118,7 +117,6 @@ class FaceLayer {
         float rate = 1.0F;
     };
     // Moves `loop` on by `seconds`, taking a new random id at a clip's end.
-    // @orig 0x0010b6e0 FaceTask_Update (unknown)
     // @orig 0x0010b6e0 FaceTask_Update (unknown)
     static void advanceLoop(Loop& loop, float seconds, const characters::AnimSet& anims, const Draw& draw);
 

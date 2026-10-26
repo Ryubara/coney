@@ -92,6 +92,15 @@ coney = "src/animation/skeleton.h:boneTransforms"
 status = "legacy"
 
 [[function]]
+address = 0x001047d0
+name = "Instance_CopyRootSlots"
+page = "face.md#shown"
+role = "copies a sampled pose's rotations of bones 6-14 into the face's default pose"
+level = "confirmed-code"
+coney = "src/human/face.h:FaceLayer::defaults"
+status = "compared"
+
+[[function]]
 address = 0x00104a38
 name = "Anim_RateMultiplier"
 page = "animation.md#cursor"
@@ -198,6 +207,24 @@ page = "animation.md#task-types"
 level = "confirmed-code"
 coney = "src/animation/anim_task.h:GaitBlendTask::sample"
 status = "legacy"
+
+[[function]]
+address = 0x0010b6e0
+name = "FaceTask_Update"
+page = "face.md#face-clips"
+role = "advances the face clip; at its end binds a random id of its range from frame 0 (stream `0x006eb870`)"
+level = "confirmed-code"
+coney = "src/human/face.h:FaceLayer::advance"
+status = "compared"
+
+[[function]]
+address = 0x0010b858
+name = "FaceBlendOut_Update"
+page = "face.md#face-clips"
+role = "the face queue's fade: gives back itself and the old face task once its time is past its length"
+level = "confirmed-code"
+coney = "src/human/face.h:FaceLayer::advance"
+status = "compared"
 
 [[function]]
 address = 0x0010be40

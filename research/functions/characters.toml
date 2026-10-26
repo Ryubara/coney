@@ -28,6 +28,30 @@ coney = "src/characters/character_data.h:CharacterData::animation"
 status = "legacy"
 
 [[function]]
+address = 0x00176d60
+name = "CharacterInstance_Sample"
+page = "face.md#shown"
+role = "samples the face queue into the default pose when Human_UsesQueuedPose says so, then the body's stack"
+level = "confirmed-code"
+coney = "src/human/face.h:FaceLayer::defaults"
+status = "compared"
+
+[[function.gaps]]
+what = "the head look and torso twist within 30 m of the camera"
+relation = "not-ported"
+issue = 963
+
+[[function.gaps]]
+what = "the flag Instance_BuildBoneMatrices is given from the distance counter +0x2b0, and the draw object's +0x460"
+relation = "not-ported"
+issue = 963
+
+[[function.gaps]]
+what = "a bone of 6-14 that a face clip leaves out takes the reference pose, not the last human's value in the shared buffer"
+relation = "stand-in"
+question = "face.md#q-shared-buffer"
+
+[[function]]
 address = 0x00218008
 name = "Human_Init"
 page = "characters.md#original-structure"
@@ -257,6 +281,42 @@ role = "stamina maximum from the power class"
 level = "confirmed-code"
 coney = "src/human/stamina.h:Stamina::Stamina"
 status = "legacy"
+
+[[function]]
+address = 0x00223440
+name = "Human_UsesQueuedPose"
+page = "face.md#shown"
+role = "the face shows: in no scene, not down or dead, an AI Warrior or within 17.5 m of the nearest camera"
+level = "confirmed-code"
+coney = "src/human/human.h:Human::faceShown"
+status = "compared"
+
+[[function]]
+address = 0x002234f8
+name = "Human_BeginTalkPose"
+page = "face.md#talk-state"
+role = "an even talk state (record `+0x1c`) becomes the odd one above it"
+level = "confirmed-code"
+coney = "src/human/face.h:FaceState::beginTalk"
+status = "compared"
+
+[[function]]
+address = 0x00223548
+name = "Human_EndTalkPose"
+page = "face.md#talk-state"
+role = "an odd talk state becomes the even one below it"
+level = "confirmed-code"
+coney = "src/human/face.h:FaceState::endTalk"
+status = "compared"
+
+[[function]]
+address = 0x002235a0
+name = "Human_SetTalkState"
+page = "face.md#talk-state"
+role = "writes the mood, plus one while the state is odd"
+level = "confirmed-code"
+coney = "src/human/face.h:FaceState::setMood"
+status = "compared"
 
 [[function]]
 address = 0x00223c10
@@ -1930,6 +1990,15 @@ role = "Throws the worn hat off (unless HuSetKeepHat or kind 27): spin 8 rad/s, 
 level = "confirmed-code"
 coney = "src/platform/play_level_mode.h:PlayLevelMode::knockOffHat"
 status = "legacy"
+
+[[function]]
+address = 0x00259368
+name = "Human_UpdateFaceClip"
+page = "face.md#face-clips"
+role = "queues the talk state's face clips, fading the old ones out over 1/30 s (none into a speaking state)"
+level = "confirmed-code"
+coney = "src/human/face.h:FaceLayer::update"
+status = "compared"
 
 [[function]]
 address = 0x00259578

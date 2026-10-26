@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <span>
 #include <utility>
 #include <vector>
@@ -64,6 +65,11 @@ class Humans {
     /// Sets what a human's switched-on strike shapes meet beyond the humans (Human::testStrikes()); empty: nothing.
     void setStrikeContact(Human::StrikeContact contact) { m_strikeContact = std::move(contact); }
 
+    /// Sets whose face shows (FaceRules::shown); without a rule (the default) every face shows.
+    void setFaceShown(std::function<bool(const Human& human)> shown) { m_faceRules->shown = std::move(shown); }
+    /// Draws the face clips from the game's random table (GameRandom::kTableSize numbers), their own stream.
+    void setRandomTable(std::span<const std::uint32_t> table) { m_faceRules->random.setTable(table); }
+
     /// One characters' step, in the original's order (docs/research/tasks.md#humans-update): the records no pad
     /// drives lose their command; the brains write theirs; every human's animation; every human's state update (the
     /// locomotion, then its strike test against the humans it is opposed to and setStrikeContact()'s objects); every
@@ -100,6 +106,8 @@ class Humans {
     std::vector<Human*> m_victims;     // the strike test's list
     std::vector<Human*> m_contactList; // the humans the walking bodies meet this step (Human::setHumanContacts())
     std::uint64_t m_steps = 0;
+    // The rules every added human's face follows; on the heap, so a moved Humans keeps them where the humans point.
+    std::unique_ptr<FaceRules> m_faceRules = std::make_unique<FaceRules>();
 };
 
 } // namespace coney::human

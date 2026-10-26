@@ -1029,6 +1029,20 @@ coney = "src/ai/enemy_scan.h:scanEnemies"
 status = "legacy"
 
 [[function]]
+address = 0x0028bbf0
+name = "Brain_UpdateAlertness"
+page = "face.md#mood"
+role = "every fifth update the face's mood from the brain's state, tactic and goals"
+level = "confirmed-code"
+coney = "src/ai/face_mood.h:faceMoodOf"
+status = "compared"
+
+[[function.gaps]]
+what = "the burning test is always false: no human burns in Coney yet"
+relation = "stand-in"
+question = "face.md#q-burning"
+
+[[function]]
 address = 0x0028bf00
 name = "Brain_GetSightRange"
 page = "ai-code.md#perception"

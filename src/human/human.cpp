@@ -269,11 +269,28 @@ void Human::setFighterProfile(const FighterProfile& profile) {
     m_fighter.setLogName(m_logName);
 }
 
-anim::Pose Human::pose() const { return m_animator.pose(m_bindRotations); }
+anim::Pose Human::pose() const {
+    // The face clips sample first into the default pose that every bone the body's clips leave out takes. The rest of
+    // CharacterInstance_Sample (the head look, the torso twist, the bone-matrix flag) is not ported yet: #963.
+    if (faceShown() && m_face.current()) {
+        const std::array<anim::Quat, anim::kPoseBones> defaults = m_face.defaults(m_bindRotations, m_animator.anims());
+        return m_animator.pose(defaults);
+    }
+    return m_animator.pose(m_bindRotations);
+}
 
-bool Human::faceShown() const { return false; }
+bool Human::faceShown() const {
+    return (m_faceRules == nullptr || !m_faceRules->shown || m_faceRules->shown(*this)) && !downOrDead();
+}
 
-void Human::setSpeaking(bool speaking) { m_speaking = speaking; }
+void Human::setSpeaking(bool speaking) {
+    if (speaking && !m_speaking) {
+        m_faceState.beginTalk();
+    } else if (!speaking && m_speaking) {
+        m_faceState.endTalk();
+    }
+    m_speaking = speaking;
+}
 
 void Human::changeCharacter(const characters::AnimSet& anims, const combat::AnimRangeList* ranges,
                             std::span<const std::int16_t> classDamage, int damagePercent,
@@ -1484,6 +1501,12 @@ void Human::animate(const raycast::CollisionMesh* mesh) {
     const std::uint32_t beforeId = before != nullptr ? before->animId() : 0;
     const float beforeTime = before != nullptr ? before->time() : 0.0F;
     m_animator.advance(m_stepSeconds);
+    // The face's clips on the instance's queue advance with the body's (FaceTask_Update, FaceBlendOut_Update).
+    FaceLayer::Draw draw;
+    if (m_faceRules != nullptr) {
+        draw = [rules = m_faceRules](int low, int high) { return rules->random.range(low, high); };
+    }
+    m_face.advance(m_stepSeconds, m_animator.anims(), draw);
     followClimb(mesh);
     followPickUp();
     // A clip's turn to a point (the spray's intro, the uncuffing's), a step each update while the clip plays.
@@ -1925,6 +1948,9 @@ void Human::updateActions(std::span<Combatant* const> targets, const raycast::Co
     if (m_outOfWorld) {
         return;
     }
+    // The face's clips follow its talk state first (Human_UpdateActions calls Human_UpdateFaceClip before the pad's
+    // command, docs/research/face.md).
+    m_face.update(m_faceState, m_animator.anims(), faceShown());
     // Stamina and the sprint (a block clears it), combat, triangle, the lean, and the animation state. Combat first,
     // as the original's dispatcher reads the block and the chain before the commands; triangle keeps its climb,
     // context action and jump while combat does not hold the body (in a grab it mugs).

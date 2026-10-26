@@ -245,7 +245,8 @@ class Human final : public Holdable {
     void updateActions(std::span<Combatant* const> targets, const raycast::CollisionMesh* mesh);
 
     /// The pose to draw now: its clips over the default pose, which is the face clips' (human/face.h) while the face is
-    /// shown (faceShown()), else the bind rotations it was made with.
+    /// shown (faceShown()), else the bind rotations it was made with. Ports only the face's part of the original
+    /// (the default pose); its head look, torso twist and bone-matrix flag wait for #963.
     /// @orig 0x00176d60 CharacterInstance_Sample (unknown)
     [[nodiscard]] anim::Pose pose() const;
 
