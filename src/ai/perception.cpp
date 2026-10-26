@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ai/perception.h"
 
+#include <array>
 #include <cmath>
 #include <optional>
 
@@ -44,6 +45,39 @@ SightLine lineOfSight(const raycast::CollisionMesh* mesh, anim::Vec3 from, anim:
     return SightLine{.clear = second, .crossedMaterial = first->material};
 }
 
+ClearRay clearRayTo(const raycast::CollisionMesh* mesh, anim::Vec3 feet, anim::Vec3 point, std::uint32_t mask) {
+    if (mesh == nullptr) {
+        return ClearRay{.clear = true};
+    }
+    const anim::Vec3 from = raised(feet, kEyeHeight);
+    const anim::Vec3 way = anim::subtract(raised(point, 0.1F), from);
+    const float length = anim::length(way);
+    if (length < 1e-5F) {
+        return ClearRay{.clear = true};
+    }
+    const anim::Vec3 direction = anim::scale(way, 1.0F / length);
+    const raycast::Ray ray{
+        .origin = {from.x, from.y, from.z}, .direction = {direction.x, direction.y, direction.z}, .length = length};
+    if (mesh->rayCast(ray, kSightSeeThrough, mask)) {
+        return ClearRay{};
+    }
+    // The same ray against the panes alone: every material but GLASS left out.
+    static const std::array<std::uint8_t, 255> kAllButGlass = [] {
+        std::array<std::uint8_t, 255> list{};
+        std::uint8_t next = 0;
+        for (int material = 0; material < 256; ++material) {
+            if (material != kGlassMaterial) {
+                list.at(next++) = static_cast<std::uint8_t>(material);
+            }
+        }
+        return list;
+    }();
+    // Coney's choice: Ray_IsClear's result GLASS read as any GLASS triangle on the ray or kGlassEndSlack past it.
+    raycast::Ray probe = ray;
+    probe.length = length + kGlassEndSlack;
+    return ClearRay{.clear = true, .throughGlass = mesh->rayCast(probe, kAllButGlass, mask).has_value()};
+}
+
 bool inFieldOfView(float fieldOfView, const human::Human& human, anim::Vec3 point) {
     const anim::Vec3 to = anim::subtract(point, human.position());
     const float distance = std::hypot(to.x, to.y);
@@ -68,12 +102,6 @@ bool canSeeHuman(const raycast::CollisionMesh* mesh, const human::Human& viewer,
         return false;
     }
     return lineOfSight(mesh, viewer.position(), other.position()).clear;
-}
-
-// Stub until the port: the default result.
-ClearRay clearRayTo(const raycast::CollisionMesh* /*mesh*/, anim::Vec3 /*feet*/, anim::Vec3 /*point*/,
-                    std::uint32_t /*mask*/) {
-    return {};
 }
 
 } // namespace coney::ai

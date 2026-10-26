@@ -106,21 +106,15 @@ class ItemServices {
 
     /// Claims object or pane `handle` for `gang` until `untilMs` (object `+0xec` the gang, `+0xf0` the time).
     /// @coney-only the claims kept beside the objects, where the original writes them into the object
-    void claim(double handle, int gang, std::uint64_t untilMs) {
-        (void)handle;
-        (void)gang;
-        (void)untilMs;
-    }
+    void claim(double handle, int gang, std::uint64_t untilMs) { m_claims[handle] = Claim{gang, untilMs}; }
     /// Whether `handle` is claimed by `gang` at `nowMs`.
     /// @coney-only the claims kept beside the objects, where the original reads them from the object
     [[nodiscard]] bool claimedBy(double handle, int gang, std::uint64_t nowMs) const {
-        (void)handle;
-        (void)gang;
-        (void)nowMs;
-        return false; // stub
+        const auto found = m_claims.find(handle);
+        return found != m_claims.end() && found->second.gang == gang && nowMs < found->second.untilMs;
     }
     /// Drops the claim on `handle` (`+0xec` cleared).
-    void unclaim(double handle) { (void)handle; }
+    void unclaim(double handle) { m_claims.erase(handle); }
 
     /// Starts `brain`'s human picking up object `handle` (his pick-up clip for its height); the take follows at the
     /// clip's event. False, doing nothing, when it cannot start (the object gone, no clip).

@@ -108,10 +108,7 @@ class LevelPickups {
     /// the play mode's falling and thrown objects. Empty: none is.
     void setAirborne(std::function<bool(double object)> airborne) { m_airborne = std::move(airborne); }
     /// Whether object `handle` is in flight (setAirborne()).
-    [[nodiscard]] bool airborne(double handle) const {
-        (void)handle;
-        return false;
-    }
+    [[nodiscard]] bool airborne(double handle) const { return m_airborne && m_airborne(handle); }
     /// The classes' own message 0 (a cash register's lift) goes to `native` from now on (empty: none).
     void setNativeMessage(NativeMessage native) { m_native = std::move(native); }
 
