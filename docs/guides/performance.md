@@ -114,3 +114,34 @@ vertices' own box (**Coney's choice**: the original's choice of sphere is not tr
 geometry with the placement folded into the bone matrices. The character viewer and the reference images skin on the
 CPU. `--cpu-skinning` skins every human on the CPU in any run, to compare the two paths' pictures and times in one
 build.
+`platform::characterSkinOn()` says which path new meshes take, and `CharacterMesh::gpuSkinned()` which one a mesh took.
+
+The two paths draw the same picture. In one build on 2026-10-25, a frame with GPU skinning was compared with the same
+frame taken with `--cpu-skinning`. A close-up of the player in `level99` with the view pinned had 4 of 286,720 pixels
+different, each by one level of one channel. A frame of the hub with 25 fighters in motion had 503 pixels different
+(0.18 %): 495 by one level, and 8 on the edge of a figure, where a triangle's edge falls on the other side of a pixel
+centre.
+
+## Findings {#findings}
+
+Taken on 2026-10-25 with `coney-tools perf bench` and `perf bench --cpu-skinning` in the hub, from the `playtest`
+build at commit 89f4d372d: windowed, vsync off, a Ryzen 7 9800X3D with an RTX 5080 (NVIDIA driver 610.88). The
+machine was **not quiet**: two to four other builds and test runs held build slots, and the processor's load read 79
+to 100 %. The table gives the median frame of each run (the means carry the other builds' stalls), as the median of
+three interleaved repeats. The zones are medians too.
+
+| Fighters | Frame, CPU skinning (ms) | Frame, GPU skinning (ms) | Frames a second (GPU) | `render.skin`, CPU / GPU (ms) | Uploads a frame, CPU / GPU (KB) |
+| --- | --- | --- | --- | --- | --- |
+| 0 | 5.77 | 3.47 | 288 | 3.00 / 0.40 | 535 / 19 |
+| 10 | 8.34 | 3.84 | 261 | 5.16 / 0.69 | 891 / 28 |
+| 25 | 11.77 | 4.55 | 220 | 8.16 / 1.12 | 1,329 / 31 |
+| 50 | 17.91 | 6.83 | 146 | 13.45 / 1.92 | 2,058 / 36 |
+| 100 | 37.08 | 9.37 | 107 | 27.54 / 3.47 | 3,480 / 46 |
+
+- **Skinning.** GPU skinning makes 100 fighters about four times faster. What is left of `render.skin` is the work
+  each human's pose takes on the CPU (its bones' transforms, the skinning matrices and the palette), about 30 µs a
+  human.
+- **The empty hub.** At 0 fighters the hub still has its own 14 humans. Of the 3.47 ms, `step` is 1.92 ms, and nearly
+  all of that is `humans.brains` (1.58 ms). `render` is 1.32 ms (`render.scene` 0.96 ms over about 470 draw calls,
+  `render.skin` 0.40 ms), and `present` is 0.14 ms, almost all `present.swap`. The floor is CPU time spent in the AI's
+  brains, not the GPU, the 2D layers or waiting for the swap.
