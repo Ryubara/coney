@@ -62,7 +62,7 @@ void ArmiesHud::levelSetUp(Language language) {
     // Both panels ask their player to join until he is attached: in level60 player 2's "PRESS THE START BUTTON TO
     // JOIN" shows from the start of play (docs/research/armies.md#the-join-messages).
     m_join = {true, true};
-    // **Coney's choice**: a join message starts on its lit half (the panel's flag is not traced at its construction).
+    // **Coney's choice**: a join message starts on its lit half (the blink's first state is not traced).
     m_joinLit = {true, true};
     m_in = {};
 }
