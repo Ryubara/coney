@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
-#include <array>
 #include <cstdint>
 #include <expected>
 #include <functional>
@@ -145,9 +144,6 @@ struct ScriptedCast {
     std::function<double()> objectHandles;
     /// The game-over check the level runs each update (GameState::gameOver); null for none.
     GameOverCheck* gameOver = nullptr;
-    /// Each pad's options as the profile and the Options screen keep them (GameState::saved.pads, P1 first): the
-    /// level gives each player's camera its pad's Auto Adjust each update. Null for none (every camera keeps it on).
-    const std::array<PadOptions, 2>* padOptions = nullptr;
     /// Opens the mission-failed mode (0xc) with its title (the host's `launchMissionFailed`); empty for none.
     std::function<void(std::string_view title)> missionFailed;
 };

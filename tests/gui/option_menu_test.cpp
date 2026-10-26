@@ -548,7 +548,7 @@ coney::graphics::SpriteSheet sheet12() {
 }
 
 // The Audio page drawn with `layout` and `fade` into a synthetic sheet 12 batch and a synthetic part_page0 batch (the
-// one every font slot but big_font's draws into); no fonts, so the texts add nothing.
+// one every font slot but big_font's draws into, the original's batch 3); no fonts, so the texts add nothing.
 struct DrawnAudio {
     coney::graphics::SpriteBatch sheet{sheet12(), 64, 8500.0F};
     coney::graphics::SpriteBatch parts{coney::test::testFontSheet(), 64, 9000.0F};

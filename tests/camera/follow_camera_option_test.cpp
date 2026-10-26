@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The follow camera's own Auto Adjust option (docs/research/camera.md#heading): each camera reads its player's option,
-// not a setting shared by every camera.
+// The follow camera's own Auto Adjust option (docs/research/camera.md#heading): each camera reads its player's option
+// (the byte of its pad), not a setting shared by every camera.
 #include <cstdint>
 #include <numbers>
 

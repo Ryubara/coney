@@ -100,7 +100,7 @@ void registerGameTunables(TunableRegistry& registry) {
     registry.add("Follow camera", "Collision margin", &follow.collisionMargin).range(0, 2, 0.05).units("m");
     registry.add("Follow camera", "Closest after collision", &follow.minCollisionDistance).range(0, 5, 0.1).units("m");
     registry.add("Follow camera", "Auto-centre", &follow.autoCentre)
-        .describe("Coney's switch over every camera's Auto Adjust option: off, the slower default rule for all");
+        .describe("The original's auto-follow option: on, the auto-centre rule; off, the slower default rule");
     registry.add("Follow camera", "One player camera", &follow.onePlayerCamera)
         .describe("0x0050b19c = 1 (one player): a sprint pulls the camera in to the minimum distance");
     camera::FollowSettings& placed = camera::followDefaults();

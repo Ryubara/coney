@@ -17,6 +17,7 @@
 #include "audio/game_sound.h"
 #include "audio/object_sounds.h"
 #include "audio/sound_engine.h"
+#include "camera/follow_camera.h"
 #include "characters/character_types.h"
 #include "core/assert.h"
 #include "core/game_random.h"
@@ -208,15 +209,12 @@ GameSession::GameSession(RenderEngine& renderer, GameModeStack& stack, const io:
                 m_flow->hud().radar().on = {false, false};
             },
         .radarsBack = [this, radarsBeforePause] { m_flow->hud().radar().on = *radarsBeforePause; },
-        // The Options screen's volumes as the music and effects buses' volumes (docs/research/save.md#options). The
-        // pads' camera options need nothing here: the game state keeps them and each level's player camera reads
-        // its own pad's every update. Stand-in (issue "Apply a profile's saved options when it loads", being
-        // filed): the volumes are applied only when Options changes them, not when a profile loads, which the
-        // original's Profile_Read (0x00421ad0) does for each option.
+        // The Options screen's values the game has somewhere to apply (docs/research/save.md#options): the volumes
+        // as the music and effects buses' volumes, P1's camera auto-adjust as the follow camera's auto-centre rule.
         .applyOptions =
             [this](const gui::OptionValues& values) {
+                camera::followTuning().autoCentre = values.autoAdjustCamera[0];
                 if (m_audio != nullptr) {
-                    // The output's volume index 0 is the master volume; each bus's index is one past its number.
                     m_audio->setVolume(1 + static_cast<std::size_t>(audio::Bus::Music), values.musicVolume);
                     m_audio->setVolume(1 + static_cast<std::size_t>(audio::Bus::Sfx), values.soundFxVolume);
                 }
