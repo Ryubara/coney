@@ -294,21 +294,26 @@ void FollowCamera::reset() {
 }
 
 void FollowCamera::activate() {
-    // **Coney's choice** (a stand-in): the glass tasks' update and the views' layout the original runs first, its
-    // reset of another player's camera and its lost test with two player cameras, and the recovered distance it sets
-    // (+0x380) are not made here: Coney has one player camera and no recovered distance (docs/research/camera.md).
-    // The look-at point snapped; the camera kept in its direction from it, at its distance clamped to the band.
+    // **Coney's choice** (a stand-in): the glass tasks' update and the views' layout the original runs first, the
+    // activation step's split timers and collision latches, its reset of a camera whose player index is not below the
+    // player-camera count (the only branch that sets the hard band, from +0x334/+0x338, which player 1's camera with
+    // one player camera never takes, so Coney keeps its hard band as it is), its lost test with two player cameras,
+    // and the recovered distance it sets (+0x380) are not made here: Coney has one player camera and no recovered
+    // distance (docs/research/camera.md#setting-up).
+    // The activation step (0x00125e50): the look-at point snapped onto where the target stands now
+    // (Cam_Follow_RefreshLookAt), so a camera made current right after a teleport looks at the new place.
+    refreshTarget();
     m_lookAt = lookAtOf(m_targetFeet);
     snapAim();
+    // The field of view set to the wanted one at once (slot +0x194 with +0x394), the wanted near edge cleared.
+    m_fov = m_wantedFov;
+    m_wantedNear = -1.0F;
+    // The camera kept in its direction from the look-at point, at its distance clamped to the band.
     const anim::Vec3 offset = anim::subtract(m_position, m_lookAt);
     const float distance = std::clamp(anim::length(offset), bandNear(), bandFar());
     m_position = anim::add(m_lookAt, withLength(offset, distance));
     m_wanted = m_position;
     m_held = m_position;
-    // The hard band set to the band, the wanted near edge cleared.
-    m_hardNear = bandNear();
-    m_hardFar = bandFar();
-    m_wantedNear = -1.0F;
 }
 
 void FollowCamera::easeFieldOfView(float seconds) {

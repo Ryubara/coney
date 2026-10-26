@@ -310,9 +310,10 @@ class FollowCamera {
     /// @orig 0x001250a8 Cam_Follow_PlaceAtHeading (Cam_Follow.cpp)
     void placeBehind(float degrees);
 
-    /// The follow camera made current directly (also at the end of a blend): the look-at point snapped, the camera
-    /// kept in its direction from it at its distance clamped to the band, the hard band set to the band and the wanted
-    /// near edge cleared.
+    /// The follow camera made current directly (also at the end of a blend): the look-at point snapped onto where the
+    /// target stands now (the target source when there is one), the field of view set to the wanted one at once, the
+    /// wanted near edge cleared and the camera kept in its direction from the look-at point at its distance clamped to
+    /// the band. The hard band is left as it is.
     /// @orig 0x00125cc0 Cam_Follow_Activate (Cam_Follow.cpp)
     void activate();
 
@@ -320,9 +321,10 @@ class FollowCamera {
     /// activate() place it on the target's latest feet and facing.
     void observe(const FollowTarget& target);
 
-    /// Gives the camera a way to read where its target stands now (empty for none): placeBehind() (and so reset())
-    /// and placeAt() read it first, as the original's placement reads its target's transform, so a `CameraReset` right
-    /// after a teleport puts the camera behind the new place. Without one they use the feet and facing last observed.
+    /// Gives the camera a way to read where its target stands now (empty for none): placeBehind() (and so reset()),
+    /// placeAt() and activate() read it first, as the original's placement reads its target's transform, so a
+    /// `CameraReset` right after a teleport puts the camera behind the new place. Without one they use the feet and
+    /// facing last observed.
     void setTargetSource(FollowTargetSource source) { m_source = std::move(source); }
     /// Where the target stands now: from the source when there is one, else as last observed.
     /// @coney-only the seam that reads the live target place; the original reads its target itself

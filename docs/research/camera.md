@@ -233,8 +233,8 @@ The base camera's own methods, the frustum, the views and the shake, `0x00120868
 | `0x00125ac8` | `Cam_Follow_SetDefaultDistance` | Sets the default distance `+0x308` and the band default .. default + min(0.5, max - min). | confirmed (code) |
 | `0x00125b60` | `Cam_Follow_SetTargetPitch` | [`CamSetFollowAngle`](../references/bindings/camera.md#camsetfollowangle) core: target pitch (degrees) clamped to [`+0x3b0`, `+0x3ac`]; with snap, turns the view to it at once and sets the wanted/previous positions; clears the sprint latch `+0x466`. | confirmed (code) |
 | `0x00125c50` | `Cam_Follow_SetPosition` | [`CamSetFollowPos`](../references/bindings/camera.md#camsetfollowpos) core: snaps the look-at point, places the camera at a world position and sets its wanted and lag copies to it. | confirmed (code) |
-| `0x00125cc0` | `Cam_Follow_Activate` | Follow activation (vtable `+0x144`): recount targets, snap look-at, distance clamped to the band, hard band = band, wanted near edge cleared, recovered distance = near edge. [setting up](#setting-up). | confirmed (code) |
-| `0x00125e50` | `Cam_Follow_ActivateStep` | Follow activation step: places the camera at the band and snaps the look-at point; arms the split timers. | confirmed (code) |
+| `0x00125cc0` | `Cam_Follow_Activate` | Follow activation (vtable `+0x144`): the glass tasks and the views' layout, then the activation step (`0x00125e50`); with fewer than two player cameras, a camera whose player index (inferred) is not below their count is reset and its hard band set from `+0x334`/`+0x338`; with two, the lost test resets it; last, recovered distance = near edge. [setting up](#setting-up). | confirmed (code) |
+| `0x00125e50` | `Cam_Follow_ActivateStep` | Follow activation step: snaps the look-at point onto where the target stands now (`0x00127d48`), sets the field of view to the wanted one at once (slot `+0x194` with `+0x394`), clears the wanted near edge, keeps the camera's direction at its distance clamped to the band; arms the split timers. | confirmed (code) |
 | `0x001260e8` | `Cam_Follow_Deactivate` | Follow vtable `+0x154` (another camera taking over): ends a target takeover whose player left, re-lays out split views, clears the close-up flash (`0x00126370`), applies a pending heading target at once. | confirmed (code) |
 | `0x00126370` | `Cam_Follow_ClearFlash` | For both players' follow cameras clears the flash alpha `+0x478` and timer `+0x424`, and the colour controllers' alpha byte `+0x1b4`. | confirmed (code) |
 | `0x001263e8` | `Cam_Follow_StartShake` | Follow camera shake start (vtable call slot `+0x15c`): in the combat camera shakes are 0.66 as strong and the rumble thresholds lowered. [shake](#shake). | confirmed (code) |
@@ -674,9 +674,17 @@ The far clip is 115 for this camera ([The streamed world](world.md#player-camera
    at once; otherwise the blend camera (type 5, `0x0011fac8`) runs between the old and the new one ([Blends](#blends)).
    `CameraReset` (`0x00365a10`) then calls the camera's slot `+0x13c`. Confirmed (code).
 4. **Activation** (slot `+0x144`, `0x00125cc0`, whenever the follow camera becomes current directly, including at the
-   end of a blend): it recounts the targets, snaps the look-at point (no ease), keeps the camera's direction from the
-   look-at point but puts it at its distance clamped to the band, sets the hard band to the band, clears the wanted
-   near edge `+0x34c` (−1) and sets the recovered distance `+0x380` to the band's near edge. Confirmed (code).
+   end of a blend): it updates the glass tasks and lays out the views, then runs the activation step `0x00125e50`. That
+   step gathers the targets and snaps the look-at point onto **where the target stands now** (no ease,
+   `Cam_Follow_RefreshLookAt` `0x00127d48`), so a camera made current right after a teleport looks at the new place;
+   sets the **field of view to the wanted one at once** (slot `+0x194`, `ICamera_SetFov`, with `+0x394`); clears the
+   wanted near edge `+0x34c` (−1); and keeps the camera's direction from the look-at point but puts it at its distance
+   clamped to the band. Then, with fewer than two player cameras (`0x0050b19c`), a camera whose player index (slot
+   `+0x27c`, inferred) is not below their count is reset (`0x00124d00`) and only then gets its hard band
+   `+0x33c`/`+0x340` from `+0x334`/`+0x338`, so player 1's camera with one player camera keeps its hard band; with two
+   player cameras the lost test (one target and more than 1.3 × the maximum distance across the ground, or more than
+   30 m in height) resets it. Last, the recovered distance `+0x380` is set to the band's near edge. Confirmed (code) at
+   `0x00125cc0` and `0x00125e50`.
 
 **`CameraReset` on the follow camera** (`0x00124d00(camera, 1)`), confirmed (code): `0x00124f38(180, −1)` places the
 camera **behind the target** (heading 180° from its facing, inferred from `0x001250a8`) at a distance picked from the
