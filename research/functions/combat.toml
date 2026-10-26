@@ -541,6 +541,14 @@ role = "Starts a melee-weapon throw (clip 471 / 472 at a walk or run, or a stand
 level = "confirmed-code"
 
 [[function]]
+address = 0x00262368
+name = "Attack_StartSolo"
+page = "combat-moves.md#input"
+role = "starts an attack outside the chain (the special 653 among them): its pose at once (a 0 s fade over the old tasks), the combo count reset"
+level = "confirmed-code"
+coney = "src/human/human_animator.h:kAttackFade"
+
+[[function]]
 address = 0x002625a8
 name = "Attack_Start"
 page = "combat/index.md#attacks"
