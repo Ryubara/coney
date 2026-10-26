@@ -3,8 +3,7 @@ kind: topic
 system: combat
 owns:
   functions: [
-    "0x00254418", "0x00258e10", "0x00258e88", "0x002590f8", "0x0026f780", "0x0026f860", "0x00277458", "0x0027a4b0",
-    "0x0027d6e0",
+    "0x00258e10", "0x00258e88", "0x002590f8", "0x0026f780", "0x0026f860", "0x00277458", "0x0027d6e0",
   ]
 ---
 # Combat: moves, their timing and frame data
@@ -19,7 +18,9 @@ mechanics behind the moves (chains, block, grabs, damage, reactions, meters, tar
 [Combat](combat/index.md); this page indexes them by move, fills the moves that page leaves out (strafe attacks, the
 counters from square and cross, cross at a grounded target, tandems, stealth kills and the mounted victim's actions)
 and gives frame data for all of them. What a weapon in hand changes, the bat's cross among it, is on [Combat: throws,
-weapons in hand and mugging](combat-throws.md#weapons). Where Coney differs: [Combat differences](combat-diffs.md).
+weapons in hand and mugging](combat-throws.md#weapons). Which target each move goes for, the steer onto it and where
+the attacker stands at contact are on [Combat: targets](combat-targets.md#targeting). Where Coney differs: [Combat
+differences](combat-diffs.md).
 
 ## Map {#original-structure}
 
@@ -40,7 +41,6 @@ weapons in hand and mugging](combat-throws.md#weapons). Where Coney differs: [Co
 | `0x00258e10` / `0x0026f860` | `Tandem_CanStart` / `Tandem_Start` | the three-person tandem | confirmed (code) |
 | `0x00277458` | `Tandem_AlignThree` | places the three for a tandem: turns them and slides the grabber and the attacker over 1/15 s to the set's offsets ([Tandems](#tandem)) | confirmed (code); which body each step moves inferred |
 | `0x0026f780` | `Tandem_OnVictimIntroEnd` | the end of the victim's intro: the attacker's intro and end damage (ids +0 and +3) dealt as one hit | confirmed (code) |
-| `0x00254418` | `AttackTable_GetOffset` | a kind's pair offset (record `+0x160` + kind × 16, two millimetre words) when its reach is set | confirmed (code) |
 | `0x00258e88` / `0x002590f8` | `Human_CanCounterGrab` / `Human_CanCounterTackle` | whether a grab or tackle coming at the human can be countered | confirmed (code) |
 | `0x00264738` | `Player_StartStealthKill` | the stealth kill 637 / 639 / 641 | confirmed (code) |
 | `0x00261c80` | `Attack_StartAtTarget` | starts a strike on a target in a given state: 212, 661, 120, the push 21 | confirmed (code), runtime |
@@ -49,7 +49,7 @@ weapons in hand and mugging](combat-throws.md#weapons). Where Coney differs: [Co
 | `0x00261a08` | `Attack_StartGrounded` | a strike at a low target: 193, 194, the armed slot `0x13` | confirmed (code) |
 | `0x00269f30` | `Human_BlockHit` | whether a block stops a hit, by weapon set | confirmed (code) |
 | `0x00280630` / `0x00280708` | `Player_BufferChain` / `Player_UpdateChain` | the one-press chain buffer and the next attack ([Input](#input)) | confirmed (code), runtime |
-| `0x0027a6c0` / `0x0027a4b0` | `Player_PickTarget` / `Player_FindAttackTarget` | the attack target searches ([Targets](#targeting)) | confirmed (code) |
+| `0x0027a6c0` / `0x0027a4b0` | `Player_PickTarget` / `Player_FindAttackTarget` | the attack target searches ([Combat: targets](combat-targets.md#targeting)) | confirmed (code) |
 | `0x00147940` | `Commands_Match` | turns pad samples into one command per update ([Input](#input)) | confirmed (code) |
 
 Every function of the moves, with its role and level, is on [the combat function list](combat/functions.md).
@@ -412,240 +412,6 @@ From `Commands_Match` (`0x00147940`; the tables are in [Commands](combat/index.m
   chain step taken in the window swaps the clip inside the running task instead (`Attack_Start` with
   record `+0x08` `0x2` and a combo count of 1 or 2). Confirmed (code); how the swap blends is not traced.
 
-### Targets: which human each move goes for {#targeting}
-
-Everything in this section is confirmed (code) at the addresses cited unless a line says otherwise.
-
-Angles are measured from an **aim heading**; distances are flat squared
-distances between the humans' positions; "nearest" sorts by that distance (`SortByKeyAscending` `0x003868d0`).
-
-| Move | Target it uses |
-| --- | --- |
-| Square in the stance (`S1`, the low, mid and held strikes, the tandem, the counters) | the **current target** (human `+0xc8`), unless a pad player has none or it is beyond **3 m**: then a fresh `Player_PickTarget(2.0 m)` |
-| Square's moving attacks (23, 24, 193 from a run or walk) | a fresh `Player_PickTarget(2.0 m)` |
-| Cross (`X1`, 23, 24, 194, 661, 120) | always a fresh `Player_PickTarget(2.0 m)` for a player (`0x00287a18`) |
-| Armed square and cross | a fresh `Player_PickTarget(2.5 m)` |
-| A chain step | a cross step (`SX2`, `XX2`, `SSX3`) re-searches with `Player_FindAttackTarget(h, next id)` when not locked; a square step keeps the target |
-| Snaps 25 / 27 / 29 | their own search (`Player_FindSnapTarget`): nearest within 2.0 m and 45° of the stick that `TargetFilter_Enemy` accepts ([Combat](combat/index.md#attacks)) |
-| The charge 0 and the dive 1 | `Attack_FindNearestInReach`: humans **between the reach and the far range** (3.29-4.11 m, 2.22-3.00 m) inside 54°, then objects and glass; the charge only warns it, the dive takes it and steers over 0.1 s ([Combat](combat/index.md#charge-aim)) |
-| The special 653 and the strong grapple | `Player_FindAttackTarget` with the far range of id 0 (4.11 m) and of id 1 (3.0 m) ([Strong grapple](combat-grabs.md#strong-grapple)) |
-
-**`Player_PickTarget(range)`** (`0x0027a6c0`), in order; the first pass that finds anything ends the search:
-
-1. The current target is kept as it is only when it is a strikeable world object (`Target_ObjectFilter`
-   `0x0027a120` accepts only world objects): a **human target is always searched for again**.
-2. The aim heading is written to record `+0xd4`: the camera-turned stick's angle when the stick is above 0.01, else the
-   facing (`Player_GetAimHeading`). The cone `0x0051096c` is set to **0.9425 rad (54°) each side**
-   (`Target_AngleFromAimHeading` `0x002790a8`: the absolute wrapped difference).
-3. Humans within range × 1.1 inside the cone that `TargetFilter_Enemy` (`0x00279410`) accepts; then the same with
-   `TargetFilter_EnemyStanding` (`0x00279568`), which also takes humans in state `0xe0000` or held flags
-   `0x402000`. Both need a body, `Human_IsTargetable`, a height difference of at most 2 m, not friendly, another gang
-   (brain `+0x20c`), not down or dead, held flag `0x40` and state `0x1c00000000` clear.
-4. A car (`CarManager_FindTarget`, 1.0 m), then world objects within range, then glass panes within range, each
-   inside the cone ([Targets](combat-targets.md#targets)).
-5. With no current target only: humans within range × 0.9 **at any angle** (`TargetFilter_AnyAngle` `0x002797b0`).
-6. The cone widens to 2.356 rad (135°): world objects within range × 0.8, then humans within range × 0.7 **at any
-   angle** (`TargetFilter_Wide` `0x002796a0` has no angle test; it skips state `0x100000000` instead of "down").
-7. The nearest found wins. With nothing found, the previous target is kept when it is not a car, has a body and is
-   within range.
-
-**`Player_FindAttackTarget(h, id)`** (`0x0027a4b0`): one pass at the id's far range (not × 1.1) with
-`TargetFilter_EnemyStanding` inside 54°, then objects and glass, then, with no current target, the any-angle and the
-wide filters at the same range; nearest wins, else the previous target. Its aim heading is the stick's above 0.01,
-else the facing turned toward the id's offset point (`Attack_GetOffsetHeading` `0x00254310`; the plain aim heading
-when the id has no reach).
-
-**The current target between attacks** comes from the stance logic each update ([The fight
-stance](combat-targets.md#fight-stance)): the nearest enemy within 6 m is tracked; one within **2 m** enters the stance
-and becomes the target (and with the street's `CfgAutoLockAndCombat` the lock); it is swapped for the nearest within 2 m
-once the target is beyond 3 m; the lock bit goes beyond 13 m; the locked walk drops a target beyond 2.5 m unless L1
-(`+0x00` `0x8`) holds it. L1 pressed or held also picks one.
-
-**Turning onto it**: an attack whose target is within its far range turns and slides onto it; beyond, it only turns
-([Combat](combat-targets.md#targets)). Which steer runs, and so how long the slide lasts and where it aims, is set out in
-[The two steers](#two-steers) below. The turn does not face the target: it turns
-so that the attack's **direction** points at it. The direction is the record's offset (`+0x0` / `+0x2`, read by
-`AttackTable_GetOffset` `0x00254418`), a unit vector in thousandths in the attacker's frame (y forward; x right,
-inferred from 25 and 27):
-forward (0, 1000) or within a few degrees of it for the standing, moving and ground attacks (193: 7.6° right),
-(999, −12) right for 25, (−1000, 0) left for 27, (−39, −999) back for 29, and for the strafes 31 / 32 / 33
-3° / 9° left and 6° right of forward. The new heading is the goal's heading minus the direction's. Confirmed (code).
-
-#### The two steers {#two-steers}
-
-Read in Ghidra: confirmed (code) where no other level is given.
-
-There are two steer functions, and the attack record's **flag `0x8`** (record `+0x160` + kind × 16 `+0xc`,
-`AttackTable_GetFlags` `0x00254d60`) picks between them. Confirmed (code) unless marked:
-
-| | `Attack_SteerToTarget` (`0x002761c8`) | `Attack_SteerLed` (`0x00275678`) |
-| --- | --- | --- |
-| Used by | `Attack_Start` and `Attack_StartSnap` for a kind **without** flag `0x8`; always by `Attack_StartAtTarget` (`0x00261c80`, the specials from `Player_Special`), `Attack_StartSolo` and the other callers | `Attack_Start` (`0x002625a8`), `Attack_StartSnap` (`0x00264460`), `Attack_StartGrounded` and `Revive_Start` for a kind **with** flag `0x8`, when the word `0x005102c4` is non-zero |
-| Slide time | the caller's time, cut to the first event + 0.1 s. `Attack_Start`, `Attack_StartAtTarget` and `Attack_StartSolo` pass the time to the first event (`0x00101658`), so the slide lasts **the time to the first event**; `Attack_StartSnap` passes 0.1 s | always **the time to the first event + 0.1 s**; the caller's time is not read |
-| Target point | the target's position (its task `+0x10`) | the target's **slot point 0** (`Human_GetLedSlotPoint(target, 0)`, `0x00226aa0`) |
-| Lead, reach, turn | the same in both: the lead by the target's velocity × (first event + 0.1 s), cut to 0.5 m; the reach along the line in x and y; the goal at the attacker's own height | |
-
-`0x005102c4` is 1 on the disc and only read by these two callers (no write was found), so in practice flag `0x8`
-alone decides (inferred). So **653** (flags `0x26`) and **645** (`0x23`), both started by `Player_Special` through
-`Attack_StartAtTarget`, slide for their first event's time, while **`X1`** (`0x09`) slides for the first event +
-0.1 s. Neither the special's own `T` nor the event's type makes the difference; it is the steer. The snaps 25, 27
-and 29 (`0x1b` / `0x19` / `0x1b`) also have flag `0x8`, so they take the led steer too, and **not** the 0.1 s that
-`Attack_StartSnap` passes to the other one.
-
-**Slot point 0 is the target's head.** `Human_UpdateLedSlots` (`0x0023cd30`) sets slot 0 (`+0x1e0`) to the human's
-`+0x500` transform composed with his world transform, and `+0x500` holds bone 6 (the head) in the model's frame,
-the same value as bone-cache entry 6. Confirmed (runtime), `moves_reachX1_10_steer`:
-`+0x500` equalled bone 6 to 0.1 mm in every update, (0.000, 0.016, 1.735) at the press. So the head of a standing
-target that faces the attacker sits **0.016 m** in front of its position, toward the attacker, and the led steer's
-goal was 1.0215 m from the slot point and **1.0375 m** from the target's transform position. That is the 0.02-0.03 m
-measured below: the head's lean in the target's current pose, not an offset in the attack record (it changed from
-0.036 m to 0.016 m over the 15 updates before the press as the idle pose moved).
-
-**The head point moves with the pose.** `+0x500` is bone-cache entry 6 (`0x006b6880` + index × `0x470` + 6 × `0x20`)
-copied as it is, in the model frame: x to the human's right, y forward, z up, from his transform position (bone 0,
-the root, is not subtracted: it moves away with root motion while `+0x500` does not follow it). Slot 0 is not kept
-up to date: `Human_UpdateLedSlots` recomputes the slots only when they are read (`Human_GetLedSlotPoint`, its only
-caller) and the move is dirty (`+0x255`), so the led steer aims at the head **as it is when the attack starts**.
-Confirmed (code) at `0x00226aa0` and `0x0023cd30`; confirmed (runtime), `moves_head_reel` (slot 6, a cross combo at
-PoizoCiv standing 1.0 m ahead with his brain off; two runs gave the same values): slot 0 changed only on the updates
-an attack started (43 for `X1`, 54 for `XX2`), each time to that update's `+0x500`. The head's offset from the
-position, `+0x500` in metres:
-
-| Pose (clip) | x (right) | y (forward) | xy length | z | Evidence |
-| --- | --- | --- | --- | --- | --- |
-| idle 388 / 396 (target, brain off) | −0.008 to −0.003 | 0.012 to 0.037 | **0.013-0.037** | 1.728-1.734 | confirmed (runtime) |
-| fight idle 358 (the player, looping from update 88) | 0.024 to 0.051 | 0.075 to 0.165 | **0.09-0.165** | 1.540-1.558 | confirmed (runtime); for another human inferred |
-| reel 275 after `X1` (updates 52-63) | 0.083 to 0.273 | 0.031 to 0.137 | **0.15-0.28** | 1.469-1.601 | confirmed (runtime) |
-| reel 273 after `XX2` (updates 65-76) | −0.228 to 0.070 | 0.029 to 0.141 | **0.10-0.23** | 1.530-1.600 | confirmed (runtime) |
-| recovery 389 (updates 78-96) | −0.028 to 0.079 | 0.020 to 0.140 | 0.02-0.16 | 1.61-1.73 | confirmed (runtime) |
-
-Confirmed (runtime), from the table: the original's head really moves that far. In a reel it swings up to 0.28 m, mostly
-sideways, and drops by up to 0.26 m; in the fight idle the head leans 0.08-0.17 m forward. `XX2` started at update 54,
-two updates into the reel 275, and its steer aimed at (0.215, 0.132): **0.25 m** from the target's position, to his
-right. The fight idle was measured on the player, whose model shares the humans' skeleton (inferred); an AI target held
-in 358 was not recorded.
-
-#### Where the attacker stands at contact {#reach}
-
-Measured in PCSX2: confirmed (runtime) where no other level is given (PCSX2 2.9.94, no run record: [How this was
-checked](#how-this-was-checked)).
-
-**The steer sets the distance, both ways** (`Attack_SteerToTarget`, `0x002761c8`), confirmed (code) and (runtime).
-The goal is the target's predicted point minus the reach along the line from the attacker, and `Human_MoveToOver`
-(`0x0023d2b8`) slides the attacker there whatever the direction: a target nearer than the reach makes the attacker
-slide **back**. The prediction leads the target by its velocity (the target's `+0x30`, zero when its `+0x54` has
-`0x600`) × (the time to the first event + 0.1 s); when that lead is over 1 m and takes the target farther away it is
-cut to **0.5 m** long. The reach gets +0.07 m against a target scaled above 1.1, else −0.1 m when the attacker is
-behind it (`Human_GetSideOf` = 2). The slide only happens within the attack's far range (653: 1.97 m); beyond, the
-attack only turns.
-
-So in the original a free attack hits from a fixed stance whatever the starting distance, as long as the target is
-within the far range. At runtime (PCSX2, slot 6, PoizoCiv standing still: brain off, its move speed 0, velocity 0;
-the press update is k0; positions from the bone cache, `0x006b6880` + index × `0x470`, turned into world space with
-the transform; confirmed (runtime)):
-
-| Move, start | Distance after k1 / k2 / k3 | Then | Contact | Distance at contact (before / after the update) |
-| --- | --- | --- | --- | --- |
-| 653 from 1.0 m | 1.216 / 1.513 / **1.617** (slides back 0.62 m) | the clip's root motion: 1.455, 1.281 | **k7** | 1.172 / 1.120 |
-| 653 from 1.6 m | 1.591 / 1.663 / **1.617** | the same | **k7** | 1.172 / 1.120 |
-| 653 from 1.9 m | 1.779 / 1.738 / **1.617** | the same | **k7** | 1.172 / 1.120 |
-| `S1` from 1.5 m | 1.319 / 1.176 (no back slide; reach 1.03) | | **k3** | 1.176 / 1.034 |
-| `X1` from 1.0 / 1.3 / 1.6 m | a straight slide from k3 to k11 (below) | ends at 0.878-0.879 m | **k10** | 0.903 / 0.890, 0.976 / 0.930, 1.048 / 0.970 |
-| `X1` from 1.9 m | turns only (the far range is 1.90 m): 1.886 at k3, 1.747 at k10 | | **miss** | |
-
-Confirmed (runtime): from k3 on, the three 653 runs are the same to the millimetre: the steer ends at 1.62 m (the reach
-1.58 m and 0.04 m more, not explained: 653 takes the steer that aims at the target's position, not its head, [The two
-steers](#two-steers)) by k3, and the clip then carries the attacker 0.50 m forward to 1.12 m by the end of k7. The
-shapes are on k2-k8 (653) and k1-k9 (`S1`, from the hook).
-
-**Bones at contact** (confirmed (runtime)), in the attacker's frame (forward, right, height above the attacker's feet;
-metres). The pose
-before the contact update (k6's) and after it (k7's) bracket the test; the hands reach the target only in k7's
-pose:
-
-| Run | Pose | Left hand (19) | Right hand (25) | Target spine (3) | Target head (6) |
-| --- | --- | --- | --- | --- | --- |
-| 653, any start | after k6 | 0.78, −0.40, 1.21 | 0.78, +0.23, 1.22 | 1.22, −0.01, 1.18 | 1.16, −0.01, 1.74 |
-| 653, any start | after k7 | 0.99, −0.19, 1.28 | 0.99, +0.14, 1.25 | 1.17, −0.01, 1.18 | 1.11, −0.01, 1.74 |
-| `S1` from 1.5 m | after k2 | 0.73, +0.03, 1.61 | −0.03, +0.39, 1.32 | 1.21, +0.02, 1.18 | 1.15, +0.03, 1.73 |
-| `S1` from 1.5 m | after k3 | 0.73, +0.02, 1.60 | −0.06, +0.37, 1.32 | 1.07, +0.02, 1.18 | 1.01, +0.03, 1.73 |
-
-Confirmed (runtime): after k7 of 653 the hands are 0.24-0.28 m from the target's spine bone (0.51-0.52 m from the head);
-after k6, 0.50- 0.58 m. In world space for the 1.9 m run (attacker at (33.391, 37.943), heading 179°): left hand
-(33.537, 36.949, 1.500), right hand (33.204, 36.960, 1.471), spine (33.345, 36.778, 1.403), head (33.342, 36.831,
-1.959). `S1`'s left hand is 0.30 m from the head after k3.
-
-**`X1` against a standing target** (confirmed (runtime), PCSX2, slot 6, the same still PoizoCiv; cross
-tapped at k0, clip 11 from k2; the strike shapes read from the bodies themselves, as below). Two rules of the test
-decide where `X1` lands, and they hold for every move:
-
-- **The test is swept** (confirmed (code), `Human_TestStrikes` `0x0033f110`): each enabled shape is tested along its
-  move since the last update, from its previous posed point to the new one (shape `+0x20` to `+0x50` for a sphere),
-  not only where it ends. A shape is posed only while it is on, so its first posed update has no sweep (previous =
-  current). `X1`'s right hand never overlaps the target where it ends: at the contact the static gap is +0.013 m
-  from a 1.0 m start and +0.040 m from 1.6 m; only the sweep across the target's front touches.
-- **Contact and samples**: the contact update k10 is the one whose result is sample k10: the target's health first
-  drops in that sample (also in the `S1` and 653 runs above), and the shapes that overlap are the ones posed in it,
-  the hand sweeping from its k9 point to its k10 point.
-
-**The slide** is two motions added together, confirmed (runtime) with the steer's own fields (`moves_reachX1_10_steer`,
-`moves_reachX1_16_steer`):
-
-1. **The steer** (`Attack_SteerToTarget`, then `Human_MoveToOver` `0x0023d2b8`, which keeps the goal at human
-   `+0x310`, the velocity at `+0x2e0`, the time left at `+0x300` and an on flag at `+0x331`). On X1's first update
-   (k2) the goal is set **1.038-1.048 m** from the target's transform position, at the target's height: the reach
-   1.02 m from the target's head ([The two steers](#two-steers)), which leans 0.02-0.03 m toward the attacker. The attacker
-   slides to it at a **constant velocity over 0.308 s** (9.25 updates, k3-k11; the time to the clip's first event
-   plus 0.1 s): 1.824 m/s inward from 1.6 m, and **0.157 m/s backward** from 1.0 m (the goal is outside him). Confirmed
-   (runtime).
-2. **The clip's own root motion**, bone-cache entry 0 (`0x006b6880` + index × `0x470`, its second word the forward
-   speed in m/s): 0.42, 0.59, 0.62, 0.63, 0.57, 0.58, 0.70, 0.60, 0.47, 0.22 m/s over k3-k12, about **0.18 m
-   forward** in all, then about 0 (its first word, up to −1.17, is not a sideways speed: the attacker does not drift;
-   inferred, a turn).
-
-Confirmed (runtime): the attacker ends at the goal less the clip's 0.18 m: **0.870-0.880 m** from the target at k12
-whatever the start (0.879 from 1.3 m), and the target point is the target's own position, not a bone. From 1.0 m the
-steer moves him back while the clip carries him forward faster, so he still closes in (0.013-0.017 m per update). At the
-contact the attacker is **still moving in**: 0.890 m (from 1.0 m), 0.930 m (from 1.3 m), 0.970 m (from 1.6 m) after the
-contact update, never 1.02 m.
-
-**The hand and the target at contact** (confirmed (runtime)). In the attacker's frame (forward, right, up from his feet,
-metres; samples after each update; the attacker's scale 0.97 makes the hand sphere's radius 0.087). The hand's path is
-the same to the millimetre from every start; the target's shapes sit at the distance d:
-
-| Sample | Right hand sphere (25), r 0.087 | Target spine segment (3), r 0.18 | Target head (6), r 0.15 |
-| --- | --- | --- | --- |
-| k8 (first posed) | 0.009, +0.459, 1.627 | (d − 0.013, −0.03, 1.112) to (d + 0.003, −0.03, 1.492) | d − 0.06, 0.00, 1.781 |
-| k9 | 0.732, +0.233, 1.668 | the same | the same |
-| k10 (contact) | 0.823, −0.223, 1.536 | (d − 0.013, +0.04, 1.112) to (d + 0.003, +0.04, 1.492) | d − 0.06, +0.07, 1.781 |
-| k11 | 0.647, −0.592, 1.374 | (target recoiling) | |
-| k12 | 0.389, −0.707, 1.172 | | |
-
-Confirmed (runtime): the hand comes in at shoulder height and crosses from the attacker's right to his left in front of
-the target, a hook; between k9 and k10 it passes the top of the spine segment (1.49 m) where it meets the right-to-left
-line, 0.78 m ahead at 1.60 m high. With the attacker standing still through that update, the sweep touches the spine
-only when the distance after the update is at most **1.019 m** (the head at 1.00 m); an attacker still moving forward
-carries the start of the sweep back with him (the sweep is in world space), which costs reach: the 1.6 m run, 0.078 m
-forward in that update, hit with 0.022 m to spare at 0.970 m. Measured swept gaps (spine / head) at k10: −0.105 / −0.059
-(from 1.0 m), −0.064 / −0.028 (1.3 m), −0.022 / +0.013 (1.6 m). From 1.9 m, with no slide, the hand stays 0.68 m short.
-
-So a `X1` stance of 1.02 m with a static overlap test misses by a few centimetres on two counts (inferred from the
-runs above): the original's
-attacker is 0.89-0.97 m away when the hand crosses (and 0.88 m when the slide ends), and its hand is tested along
-its sweep.
-
-**A walking target** changes this through the lead (confirmed (runtime)). PoizoCiv walking in at 1.63 m/s (its AI on,
-placed until update 9): the 653 steer stopped near 1.7 m by k3 and contact came at k7 from 1.0 and 1.6 m and **k8** from
-1.9 m (the shapes' last live update), at 1.15-1.21 m. Pinned in place but still in its walk (velocity 1.6 m/s toward the
-attacker, position written every update), the lead put the attacker 1.9-1.95 m away at k3 and 653 **missed** from 1.0
-and 1.9 m, as did `S1` from 1.5 m. So runs against a pinned walking target understate what reaches (inferred; the right
-snap's miss may be this).
-
-Scenarios: `moves_reach653_10`, `moves_reach653_16`, `moves_reach653_19`, `moves_reachS1_15`, `moves_reachX1_10`,
-`moves_reachX1_13`, `moves_reachX1_16`, `moves_reachX1_19` (still target; the `X1` ones but the last also read the
-bodies' shapes), `moves_reachX1_10_steer`, `moves_reachX1_16_steer` (the steer's goal and the clip's root) and
-`moves_reach653_19_walk` (walking).
-
 ### Square, in order {#square}
 
 Read in Ghidra: confirmed (code) where no other level is given.
@@ -669,8 +435,8 @@ of `0x7bf9e9f4300` or record `+0x08` any of `0x100101f`; the buffered chain pres
    attacks](#strafe)). Otherwise on.
 3. **Snap** (stick above 0.95, more than 45° off the facing, a snap target): 25 / 27 / 29
    ([Combat](combat/index.md#attacks)).
-4. Re-pick the target (`Player_PickTarget(2.0)`, [Targets](#targeting)) when a pad player has none, or it is
-   farther than **2.5 m** (`0x005104c0`, 6.25 squared as `CfgDistances` sets it). No human but an
+4. Re-pick the target (`Player_PickTarget(2.0)`, [Targets](combat-targets.md#targeting)) when a pad player has
+   none, or it is farther than **2.5 m** (`0x005104c0`, 6.25 squared as `CfgDistances` sets it). No human but an
    object → `Player_ObjectAttack` ([Combat](combat-targets.md#breakables)).
 5. **Low target** (`Human_IsHighOrBusy`, `0x00225200`): the attacker's point stands more than 1.3 and less than
    1.8 m above the target's (`Object_HeightDiff` `0x00229a10`: attacker's z minus target's, of the point each
@@ -814,8 +580,8 @@ is the target pick's.
   type `+0x04` is 0) within 1.25 × the far range of id 3 (3.75 m) when held, or of id 70 (3.12 m) when tapped,
   first among the enemies within about 54° (`0x0051096c` = 0.9425 rad) of the aim heading (`Player_GetAimHeading`),
   then wider. So the held enemy the player faces is picked even when another enemy was his target.
-- Square keeps the current target and searches only without one or when it is too far ([Targets](#targeting));
-  cross always searches. A square at another, nearer target strikes that one.
+- Square keeps the current target and searches only without one or when it is too far
+  ([Targets](combat-targets.md#targeting)); cross always searches. A square at another, nearer target strikes that one.
 - Before the tandem test, square and cross can start something else at the same press: out of the stance and
   running, the run attacks 24 / 23 (or 193 at a low target); with the stick past 0.95, the strafes 31-33 (L1 locked)
   and the snaps 25 / 27 / 29; at a front-held target, 120. Circle has none of these: it puts the player in the stance
@@ -1045,14 +811,11 @@ or an AI's. Where the page is silent, these are **Coney's choices**:
 
 ## Open questions
 
-- **653's extra reach**{#q-653-reach}: where 653's 0.04 m beyond its 1.58 m reach comes from: its steer aims at the
-  target's position (task `+0x10`), not its head ([The two steers](#two-steers)); whether the clip's root motion over
-  k1-k3 adds it was not read.
 - **The low and mid states**{#q-low-mid-states}: the low and mid tests' state bits are read but not all named; which
   reactions put a human in them, and which point the height test compares (vtable `+0xac`).
 - **The right snap's miss**{#q-snap-right}: why the snap 25 slides the player 0.3-0.5 m away from a target pinned on its
   right and misses, when 27 hits one on the left. That target was pinned while walking, so the steer's lead may explain
-  it ([Contact](#reach)); not rerun against a still target.
+  it ([Contact](combat-targets.md#reach)); not rerun against a still target.
 - **The tandem intro's length**{#q-tandem-intro}: why the tandem intro ran 51 updates, not 36.
 - **The tandem's alignment**{#q-tandem-align}: `Tandem_AlignThree` (`0x00277458`) turns the three and slides two of
   them over 1/15 s to the set's offsets ([Map](#original-structure)); which body each turn and slide applies to is
@@ -1098,7 +861,7 @@ full deflection where the move needs more than 0.95 (snaps, strafes) and was oth
 **Shape windows and contacts** from runs recorded while `pcsx2 record` labelled every `strike-shape` and
 `strike-contact` call one update early ([Recording a trace](../guides/research-workflow.md#hooks)) are given re-labelled
 one update later, so that each contact falls in the update whose sample first shows the damage: the runs of [Runtime
-results](#runtime) and the `X1` contact runs of [Where the attacker stands at contact](#reach).
+results](#runtime).
 
 None of these runs has a run record; the runtime claims are of the old form, which the page keeps as a legacy page
 ([Evidence levels and run records](../guides/research-evidence.md#run-records)).

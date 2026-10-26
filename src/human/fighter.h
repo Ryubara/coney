@@ -65,7 +65,7 @@ enum class TandemRole : std::uint8_t {
 inline constexpr float kDefaultStrikeReach = 2.0F;
 /// The target search (`Player_PickTarget`): humans within the range × 1.1 and this many degrees of the stick's heading
 /// (or the facing with the stick at rest); with no current target, within the range × 0.9 at any angle; then within
-/// the range × 0.7 at any angle (docs/research/combat-moves.md#targeting).
+/// the range × 0.7 at any angle (docs/research/combat-targets.md#targeting).
 inline constexpr float kPickConeDegrees = 54.0F;
 inline constexpr float kPickConeScale = 1.1F;
 inline constexpr float kPickAnyScale = 0.9F;

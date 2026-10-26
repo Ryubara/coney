@@ -1,5 +1,5 @@
 description = "slot 6: cross (X1) at PoizoCiv standing still (its walk stopped: per-player record +0x1e = 0, no stick, its brain off (+0x08 = 0) with its move speed +0x114 at 0) 1.0 m ahead, placed until update 30 and then free; the hands' and the target's bone positions and rotations every update, and the first 12 physics shapes of each body (id +0x31, previous +0x20, +0x40, posed +0x50)"
-research = "docs/research/combat-moves.md"
+research = "docs/research/combat-targets.md#reach"
 input = "moves_reachX1_10.txt"
 updates = 70
 fields = ["player", "enemy"]

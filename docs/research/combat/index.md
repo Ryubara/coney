@@ -461,7 +461,7 @@ classes](../../references/warrior-classes.md), which lists every byte's reader.
 
 **Square** (`Player_Square`, `0x00286cc8`) takes a target from `Player_PickTarget(0x40000000, h)` (in the fight stance
 it keeps the current target within 2.5 m, `0x005104c0`, and searches only without one or beyond; cross always searches,
-[Combat moves](../combat-moves.md#targeting)), then, confirmed
+[Combat targets](../combat-targets.md#targeting)), then, confirmed
 (code):
 
 - a grounded target → 193 (`0x00261a08`); a tackled one → 212; a grabbed one → 120: these three are tested only on
@@ -525,7 +525,7 @@ m ahead, facing the player, and then left free (he walks in). Each hit is the up
 damage. The values held, except `X1`, which hit on update 8 in one run and 7 in two. Those three runs had the same input
 up to the hit, but the player's turn toward the target differed between them, so something outside the input varies. A
 target standing still further out is hit later (`X1` on 10 from 1.0-1.6 m, [Where the attacker
-stands](../combat-moves.md#reach)):
+stands](../combat-targets.md#reach)):
 
 | Id | Hit | Window `0x2` opens | End `0x4` | Idle again |
 | --- | --- | --- | --- | --- |

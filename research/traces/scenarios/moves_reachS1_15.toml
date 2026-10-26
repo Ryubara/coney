@@ -1,5 +1,5 @@
 description = "slot 6: square (S1) at PoizoCiv standing still (its walk stopped: per-player record +0x1e = 0, no stick, its brain off (+0x08 = 0) with its move speed +0x114 at 0) 1.5 m ahead, placed until update 30 and then free; the hands' and the target's bone positions every update"
-research = "docs/research/combat-moves.md"
+research = "docs/research/combat-targets.md#reach"
 input = "moves_reachS1_15.txt"
 updates = 70
 fields = ["player", "enemy"]

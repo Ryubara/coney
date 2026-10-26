@@ -285,7 +285,7 @@ Only the freer moves; the cuffed human stays where he was cuffed, facing the way
 `0x00260ca8` and `0x002761c8`, and confirmed (runtime) below.
 
 - **The steer.** `Uncuff_Start` calls `Attack_SteerToTarget(0.1, freer, cuffed, 325)` (`0x002761c8`), the attacks'
-  plain steer (the one without the lead, [the two steers](combat-moves.md#two-steers)). It takes the time as the
+  plain steer (the one without the lead, [the two steers](combat-targets.md#two-steers)). It takes the time as the
   smaller of 0.1 s and 325's time to its first event + 0.1 s, aims at the cuffed human's position (led by his
   velocity, which is none), clears the cuffed human's turn and the freer's (`Human_ClearTurn`, `0x0023cf70`), then
   turns the freer (`Human_TurnToOver`, `0x0023cf88`) so that the cuffed human lies along 325's direction in the Anim

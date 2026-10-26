@@ -149,7 +149,7 @@ namespace {
 // `from` (the enemy filters `0x00279410` / `0x00279568`; the gang test is the targets list's). With `down`, one knocked
 // down with health left counts too: the wide filter (`TargetFilter_Wide` `0x002796a0`) skips only the knocked out
 // (state `0x100000000`), not the down, which is how square finds a downed human for the grounded strike 193
-// (docs/research/combat-moves.md#targeting).
+// (docs/research/combat-targets.md#targeting).
 bool fightable(const Combatant& target, const anim::Vec3& from, bool down = false) {
     const bool state = target.state() == TargetState::Standing || (down && target.state() == TargetState::Grounded);
     return state && !target.health().depleted() && target.targetable() &&
@@ -472,7 +472,7 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
     }
     // Square's target decides the grounded strike: the current target in the stance within 3 m, else a fresh
     // Player_PickTarget (2.0 m, 2.5 m armed), whose wide pass finds a downed human at any angle when no standing one
-    // is near (docs/research/combat-moves.md#targeting). A standing human picked first takes the plain attack.
+    // is near (docs/research/combat-targets.md#targeting). A standing human picked first takes the plain attack.
     const bool keep = in.fightStance && m_target != nullptr &&
                       flatDistance(input.position, m_target->position()) <= combat::kKeepTargetRange;
     const bool armed = m_animSet >= 1 && m_animSet <= 3;
@@ -929,7 +929,7 @@ void Fighter::steerDive(const FighterInput& input, const HumanAnimator& animator
 
 void Fighter::steerSnap(int animId, const FighterInput& input, const HumanAnimator& animator, float heading) {
     // The turn puts the target along the snap's own direction (its side, the Anim Range List's offset), where its clip
-    // strikes, not straight ahead (docs/research/combat-moves.md#targeting).
+    // strikes, not straight ahead (docs/research/combat-targets.md#targeting).
     const Combatant* target = m_snapTarget;
     const anim::Vec3 to = anim::subtract(target->position(), input.position);
     const float distance = std::hypot(to.x, to.y);

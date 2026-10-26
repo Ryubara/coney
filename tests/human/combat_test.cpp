@@ -261,7 +261,7 @@ TEST_CASE("an attack turns and slides onto its target at a constant rate up to i
     REQUIRE(samples.size() > k + 12);
     CHECK(samples[k].heading == samples[k - 1].heading);
     // The synthetic X1's first event (the window at frame 5, rate 0.75) comes 0.222 s in: the turn and the slide last
-    // 0.322 s, 9 updates at one rate and two thirds of one more, then stop; no easing (combat-moves.md#reach).
+    // 0.322 s, 9 updates at one rate and two thirds of one more, then stop; no easing (combat-targets.md#reach).
     const float turnTime = (5.0F / 30.0F / 0.75F) + 0.1F;
     const float angle = std::atan2(-0.4F, 1.1F);
     const float perUpdate = angle * (1.0F / 30.0F) / turnTime;
@@ -286,7 +286,7 @@ TEST_CASE("an attack turns and slides onto its target at a constant rate up to i
 
 TEST_CASE("an attack without the led steer's flag slides and turns only up to its first event", "[human][combat]") {
     // X1's hit code without flag 0x8, as 653's and 645's: Attack_SteerToTarget over the time to the first event that
-    // Attack_Start passes, not that + 0.1 s (combat-moves.md#two-steers).
+    // Attack_Start passes, not that + 0.1 s (combat-targets.md#two-steers).
     FightCharacter character;
     character.ranges = coney::test::fightRanges({{id::kAttackX1, 0x01}});
     const NoAutoLock unlocked;
@@ -361,7 +361,7 @@ TEST_CASE("a snap turns the player so a human on the stick's side sits at the sn
     CHECK(fight.target().damageTaken() == 31);
     CHECK(fight.human().fighter().hitsLanded() == 1);
     // The steer, set on the snap's start (update 11) from the next update on. The snap's hit code has flag 0x8, so it
-    // takes the led steer over the time to its first event + 0.1 s (combat-moves.md#two-steers): the synthetic clip's
+    // takes the led steer over the time to its first event + 0.1 s (combat-targets.md#two-steers): the synthetic clip's
     // is at frame 3 at rate 0.75, so 0.133 s + 0.1 s, 7 updates at one rate. The facing turns to put the target at the
     // snap's direction on the disc, (0.999, -0.012), 90.7° to the right.
     const Vec3 to = coney::anim::subtract(fight.target().position(), played.positions[11]);

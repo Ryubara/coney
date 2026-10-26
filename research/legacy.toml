@@ -148,7 +148,7 @@ history = 3
 evidence = 32
 
 ["docs/research/combat-moves.md"]
-evidence = 44
+evidence = 24
 
 ["docs/research/combat-rage.md"]
 front-matter = 1
@@ -156,19 +156,13 @@ skeleton = 3
 verified = 1
 evidence = 29
 address-form = 2
-copied = 1
 history = 7
 
 ["docs/research/combat-reactions.md"]
 evidence = 33
 
 ["docs/research/combat-targets.md"]
-front-matter = 1
-skeleton = 4
-verified = 1
-evidence = 34
-copied = 1
-history = 3
+evidence = 37
 
 ["docs/research/combat-throws.md"]
 evidence = 44

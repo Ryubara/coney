@@ -309,6 +309,69 @@ def test_a_block_moved_and_edited_is_still_new(tmp_path: Path) -> None:
     assert any(f"{THROWS}:" in e and "a new confirmed (runtime) claim" in e for e in report.errors)
 
 
+LONG_REACH = REACH.replace("1.1 m", "1.1 m from the head, not the feet,")
+
+
+def long_reach_repo(tmp_path: Path) -> Path:
+    """`split_repo` whose base has the reach claim with a clause more (`LONG_REACH`)."""
+    root = split_repo(tmp_path)
+    edit(root, REACH, LONG_REACH)
+    git(root, "commit", "-q", "-am", "long")
+    git(root, "branch", "-f", "main", "HEAD")
+    return root
+
+
+def test_a_block_moved_with_a_clause_taken_out_is_not_new(tmp_path: Path) -> None:
+    # Dropping a wrong clause on the way adds no claim: every word left is the departed block's.
+    root = long_reach_repo(tmp_path)
+    move_reach(root, edited=REACH, source=LONG_REACH)
+    report = research_claims.build(root, base="main")
+    assert report.errors == []
+    assert any("legacy" in w for w in report.warnings)
+
+
+def test_a_moved_block_cut_to_a_fragment_is_still_new(tmp_path: Path) -> None:
+    # Its words are the departed block's, but fewer than half of them: not that block.
+    root = long_reach_repo(tmp_path)
+    move_reach(root, edited="Reach 1 m (confirmed (runtime)).", source=LONG_REACH)
+    report = research_claims.build(root, base="main")
+    assert any(f"{THROWS}:" in e and "a new confirmed (runtime) claim" in e for e in report.errors)
+
+
+def test_a_moved_block_cut_with_a_number_changed_is_still_new(tmp_path: Path) -> None:
+    # "1.3 m" became "1.0 m" on the way: the 1 and the 0 are words of the departed block, but 1.0 is not its number.
+    root = split_repo(tmp_path)
+    source = "The catch reach is 0.879 from 1.3 m, from the head, not the feet (confirmed (runtime))."
+    edit(root, REACH, source)
+    git(root, "commit", "-q", "-am", "long")
+    git(root, "branch", "-f", "main", "HEAD")
+    move_reach(root, edited="The catch reach is 0.879 from 1.0 m (confirmed (runtime)).", source=source)
+    report = research_claims.build(root, base="main")
+    assert any(f"{THROWS}:" in e and "a new confirmed (runtime) claim" in e for e in report.errors)
+
+
+def test_a_moved_block_cut_with_a_range_reordered_is_still_new(tmp_path: Path) -> None:
+    # Every word is still there, but 0.880-0.870 is not the range 0.870-0.880.
+    root = split_repo(tmp_path)
+    source = "The catch reach is 0.870-0.880 m from the head, not the feet (confirmed (runtime))."
+    edit(root, REACH, source)
+    git(root, "commit", "-q", "-am", "long")
+    git(root, "branch", "-f", "main", "HEAD")
+    move_reach(root, edited="The catch reach is 0.880-0.870 m (confirmed (runtime)).", source=source)
+    report = research_claims.build(root, base="main")
+    assert any(f"{THROWS}:" in e and "a new confirmed (runtime) claim" in e for e in report.errors)
+
+
+def test_a_moved_block_cut_with_its_words_reordered_is_still_new(tmp_path: Path) -> None:
+    # The same words in another order say something else: the head, not the feet, became the feet, not the head.
+    root = long_reach_repo(tmp_path)
+    move_reach(
+        root, edited="The catch reach is 1.1 m from the feet, not the head (confirmed (runtime)).", source=LONG_REACH
+    )
+    report = research_claims.build(root, base="main")
+    assert any(f"{THROWS}:" in e and "a new confirmed (runtime) claim" in e for e in report.errors)
+
+
 def test_a_new_block_next_to_a_moved_one_is_still_new(tmp_path: Path) -> None:
     root = split_repo(tmp_path)
     move_reach(root)
