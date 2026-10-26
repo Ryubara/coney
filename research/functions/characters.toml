@@ -1624,6 +1624,15 @@ coney = "src/camera/slow_motion.h:SlowMotion::setScripted"
 status = "legacy"
 
 [[function]]
+address = 0x0023bd78
+name = "Human_StepAnimation"
+page = "characters.md#update"
+role = "the characters' update's animation step: for a human with an instance, runs the instance's queued tasks (`0x00175610`) and marks its bone cache (`+0x460`) stale"
+level = "confirmed-code"
+coney = "src/human/human.cpp:Human::animate"
+status = "compared"
+
+[[function]]
 address = 0x0023cd30
 name = "Human_UpdateLedSlots"
 page = "characters.md#code-update"

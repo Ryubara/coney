@@ -1534,6 +1534,7 @@ void Human::step(const HumanInput& input, const raycast::CollisionMesh* mesh) {
     updateActions(input.targets, mesh);
 }
 
+// @orig 0x0023bd78 Human_StepAnimation (unknown)
 void Human::animate(const raycast::CollisionMesh* mesh) {
     // The gait the last update's velocity left, before this update moves the body: the dispatcher's gait tests read it
     // (fight()). It is taken here, in the first pass, so that step() and human::Humans, which runs the passes itself,
@@ -1552,6 +1553,9 @@ void Human::animate(const raycast::CollisionMesh* mesh) {
     const anim::AnimTask* before = m_animator.tasks().top();
     const std::uint32_t beforeId = before != nullptr ? before->animId() : 0;
     const float beforeTime = before != nullptr ? before->time() : 0.0F;
+    // Every Coney human has its instance, so the original's instance test (`+0xd8`) always passes. No bone cache is
+    // marked stale after the step (`+0x460`): **Coney's choice**, as the pose is sampled from the clips at each use
+    // (pose()), so nothing is ever stale.
     m_animator.advance(m_stepSeconds);
     // The face's clips on the instance's queue advance with the body's (FaceTask_Update, FaceBlendOut_Update).
     FaceLayer::Draw draw;
@@ -2007,13 +2011,19 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
     m_lastTurn = turn;
 }
 
+// @orig 0x00254e78 Human_UpdateActions (unknown)
 void Human::updateActions(std::span<Combatant* const> targets, const raycast::CollisionMesh* mesh) {
+    // The original returns for a human with no instance or no record (`+0xd8`, `+0xd4`); every Coney human has both.
+    // Nothing acts out of the world, where the original fails the mission.
     if (m_outOfWorld) {
         return;
     }
+    // Human_ReportBarsToHUD's health and power reach a HUD function that returns at once (docs/research/hud.md).
     // The face's clips follow its talk state first (Human_UpdateActions calls Human_UpdateFaceClip before the pad's
     // command, docs/research/face.md).
     m_face.update(m_faceState, m_animator.anims(), faceShown());
+    // **Coney's choice**: the `PadSetHandlerEx` handler, which the original calls here, runs after the level's step
+    // (GameplayMode::callPadHandler), so it never takes the human away mid-update and never holds back his commands.
     // Stamina and the sprint (a block clears it), combat, triangle, the lean, and the animation state. Combat first,
     // as the original's dispatcher reads the block and the chain before the commands; triangle keeps its climb,
     // context action and jump while combat does not hold the body (in a grab it mugs).
