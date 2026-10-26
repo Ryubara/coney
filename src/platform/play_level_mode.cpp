@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <format>
 #include <numbers>
 #include <set>
@@ -48,6 +49,11 @@ constexpr float kTeleportDrop = 2.0F;
 constexpr float kFreeCameraSpeed = 8.0F;
 // How far debug lines are lifted off what they lie on, in metres.
 constexpr float kLineLift = 0.02F;
+// The player slot this mode's player plays in: player 1, the only player a level has in Coney yet. Stand-in for the
+// player's own slot (networking checklist item 3): the mode holds one player and nothing in it carries a slot yet,
+// so its pad, camera and options all mean player 1; giving the mode a player per slot is wider than the Options
+// screen and comes with the second player.
+constexpr std::size_t kPlayerSlot = 0;
 
 // A coloured line list for librw's 3D immediate mode, in RenderWare's axes.
 class LineList {
@@ -224,6 +230,7 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
         bindPickups(cast->pickups);
         m_sound = cast->sound;
         m_gameOver = cast->gameOver;
+        m_padOptions = cast->padOptions;
         m_missionFailed = cast->missionFailed;
         makeWorldObjects(*cast);
     }
@@ -311,7 +318,8 @@ void PlayLevelMode::makeTargets(rw::Texture* texture) {
     }
 }
 
-void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees, const std::string& model, bool debugSpawned) {
+void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees, const std::string& model, bool debugSpawned,
+                               ai::FighterSide side) {
     // Dropped onto the ground below its spot, as a teleport is.
     raycast::Vec3 feet{spot.x, spot.y, spot.z + kTeleportDrop};
     if (!raycast::dropToGround(m_scenery->collision(), kTeleportDrop * 2.0F, feet)) {
@@ -322,10 +330,14 @@ void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees, const std:
     const CastLook look =
         model.empty() ? CastLook{.character = m_character.get(), .texture = m_texture} : castCharacter(model);
     human::Human& made = m_ai->spawnFighter(*look.character, &m_scenery->collision(),
-                                            anim::Vec3{feet.x, feet.y, feet.z}, headingDegrees);
+                                            anim::Vec3{feet.x, feet.y, feet.z}, headingDegrees, side);
     if (debugSpawned) {
         m_ai->markDebugSpawned(made);
         bindDebugFighter(made, look, model);
+    }
+    // With every gang slot in use the fighter has no gang, so it is nobody's friend or enemy: say so.
+    if (const ai::Brain* brain = m_ai->brainOf(made); brain != nullptr && brain->gang() == nullptr) {
+        m_print("fighters: no free gang slot, so a fighter was made with no gang\n");
     }
     FighterMesh mesh;
     mesh.character = look.character;
@@ -348,9 +360,9 @@ std::vector<std::string> PlayLevelMode::fighterModels() const {
     return {models.begin(), models.end()};
 }
 
-std::expected<void, Error> PlayLevelMode::spawnFighterAs(anim::Vec3 feet, float headingDegrees,
-                                                         std::string_view model) {
-    addFighter(feet, headingDegrees, std::string(model), true);
+std::expected<void, Error> PlayLevelMode::spawnFighterAs(anim::Vec3 feet, float headingDegrees, std::string_view model,
+                                                         ai::FighterSide side) {
+    addFighter(feet, headingDegrees, std::string(model), true, side);
     return {};
 }
 
@@ -363,7 +375,7 @@ void PlayLevelMode::clearFighters() {
 }
 
 std::string PlayLevelMode::fightersState() const {
-    // The player's health, then each fighter's health, top goal and queued actions.
+    // The player's health, then each fighter's gang, health, top goal and queued actions.
     std::string line = std::format("player health {}", m_player->human().health().value());
     const ai::Brains& brains = m_ai->brains();
     for (std::size_t i = 0; i < brains.size(); ++i) {
@@ -372,8 +384,10 @@ std::string PlayLevelMode::fightersState() const {
             continue;
         }
         const ai::Goal* top = brain.reactionGoal() != nullptr ? brain.reactionGoal() : brain.topGoal();
-        line += std::format("; health {} goal {:#x} actions {}", brain.human().health().value(),
-                            top != nullptr ? static_cast<int>(top->type()) : 0, brain.actionCount());
+        line += std::format("; {} health {} goal {:#x} actions {}",
+                            brain.gang() != nullptr ? brain.gang()->name() : std::string("no gang"),
+                            brain.human().health().value(), top != nullptr ? static_cast<int>(top->type()) : 0,
+                            brain.actionCount());
     }
     return line;
 }
@@ -547,6 +561,11 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
         applyAnimOverrides();
     }
     const anim::Vec3 before = m_player->human().position();
+    // The player's camera follows by its own pad's Auto Adjust option, which the Options screen may have changed
+    // (Cam_Follow_AutoFollow reads the byte of the camera's pad each update, docs/research/pause.md#options).
+    if (m_padOptions != nullptr) {
+        m_player->camera().setAutoAdjust(m_padOptions->at(kPlayerSlot).autoAdjustCamera);
+    }
     giveObjectTargets();
     stepObjectBodies();
     {

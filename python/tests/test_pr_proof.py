@@ -84,7 +84,7 @@ def test_a_change_that_touches_no_source_file_reads_no_source(tmp_path: Path, mo
 def test_a_change_to_a_header_or_a_deleted_source_file_is_scanned(tmp_path: Path) -> None:
     built = make(tmp_path)
     assert [u.coney for u in built.subject().changed] == ["Widget::update"]
-    assert pr_proof.changed_functions(built.root, built.base, built.tip, ["src/ai/widget.h"]) != ((), (), {})
+    assert pr_proof.changed_functions(built.root, built.base, built.tip, ["src/ai/widget.h"])[0] != ()
     assert pr_proof.changed_functions(built.root, built.base, built.tip, ["docs/guides/widget.md", "src/a.txt"]) == (
         (),
         (),
@@ -414,6 +414,15 @@ def test_two_functions_of_one_address_are_accepted_when_each_was_compared(tmp_pa
     cite_twice(built)
     built.compare(key="Widget::reset()")  # the stamp for Widget::update came with the unit; this one is the second's
     assert texts(built.verify(), "compared") == []
+
+
+def test_a_subject_lists_every_function_citing_an_address_and_a_scan_adds_it(tmp_path: Path) -> None:
+    """`citing` tells a `compared` stamp's function from its sibling; `scan=False` leaves it out, like `changed`."""
+    built = make(tmp_path)
+    cite_twice(built)
+    assert built.subject().citing == {ADDRESS: ("Widget::update(int)", "Widget::reset()")}
+    unscanned = built.subject(scan=False)
+    assert unscanned.citing == {} and pr_proof.scanned(unscanned).citing == built.subject().citing
 
 
 def test_the_second_function_of_one_address_is_refused_until_it_is_compared_itself(tmp_path: Path) -> None:

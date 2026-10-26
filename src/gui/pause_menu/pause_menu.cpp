@@ -16,11 +16,9 @@ namespace {
 // lists' look is not researched.
 constexpr float kCentreX = 0.5F;
 constexpr float kHeaderScale = 1.15F;
-constexpr float kChoiceY = 0.40F;     // the Restart and Quit screens' first choice
-constexpr float kChoicePitch = 0.06F; // between their choices
-constexpr float kHelpY = 0.56F;       // the selected choice's description
-constexpr float kEntryY = 0.30F;      // the Options and Controls screens' first entry
-constexpr float kEntryPitch = 0.05F;
+constexpr float kChoiceY = 0.40F;                         // the Restart and Quit screens' first choice
+constexpr float kChoicePitch = 0.06F;                     // between their choices
+constexpr float kHelpY = 0.56F;                           // the selected choice's description
 constexpr float kListGap = 0.05F;                         // from an objectives header to its first line
 constexpr float kListPitch = 0.04F;                       // between objective lines
 constexpr graphics::Rgba kCurrentGold{230, 180, 40, 255}; // the selected current-objectives header
@@ -108,7 +106,7 @@ void PauseMenu::open(const PauseMenuSetup& setup, std::uint64_t nowMs) {
     m_screen = PauseScreen::Grid;
     m_selection = 0;
     if (setup.openOnOptions) {
-        openScreen(PauseScreen::Options, 0);
+        openOptions(nowMs);
     } else {
         refreshScreen();
     }
@@ -147,6 +145,7 @@ void PauseMenu::animate(std::uint64_t nowMs) {
     m_usage.setFade(fade);
     m_yesNo.setFade(fade);
     m_controls.setFade(fade);
+    m_options.setFade(fade);
     m_grid.setFade(fade);
 }
 
@@ -178,6 +177,9 @@ void PauseMenu::update(const GuiFrame& frame) {
     m_usage.update(frame);
     if (m_screen == PauseScreen::Controls) {
         m_controls.update(frame);
+    }
+    if (m_screen == PauseScreen::Options) {
+        m_options.update(frame);
     }
     m_yesNo.update(frame);
 
@@ -231,6 +233,14 @@ void PauseMenu::onScreenCommand(MenuCommand command, std::uint64_t nowMs) {
         }
         return;
     }
+    // So does the Options screen, which plays its own cues (the menu plays none while it is open).
+    if (m_screen == PauseScreen::Options) {
+        if (m_options.handle(command)) {
+            closeScreen();
+            m_grid.takeFocus(m_input, nowMs);
+        }
+        return;
+    }
     switch (command) {
     case MenuCommand::Back:
         playCue(kBackCue);
@@ -272,7 +282,7 @@ void PauseMenu::onScreenCommand(MenuCommand command, std::uint64_t nowMs) {
             }
             ask(pause_strings::kQuitQuestion);
         }
-        // The Objectives and Options screens do nothing on accept here.
+        // The Objectives screen does nothing on accept.
         (void)nowMs;
         return;
     case MenuCommand::Left:
@@ -305,7 +315,7 @@ void PauseMenu::selectItem(PauseItem item, std::uint64_t nowMs) {
         // Coney has no character stats: the Stats screen is never available, so nothing opens.
         return;
     case PauseItem::Options:
-        openScreen(PauseScreen::Options, 0);
+        openOptions(nowMs);
         return;
     case PauseItem::Controls:
         // `ControlMenuHUD_Open`, with the pausing player's input.
@@ -336,6 +346,15 @@ void PauseMenu::selectItem(PauseItem item, std::uint64_t nowMs) {
     }
 }
 
+void PauseMenu::openOptions(std::uint64_t nowMs) {
+    OptionMenu::Hooks hooks = m_optionHooks;
+    hooks.playCue = [this](int cue) { playCue(cue); };
+    m_options.open(m_strings, m_input, std::move(hooks), m_setup.options,
+                   OptionLayout::forMode(m_setup.language, m_setup.widescreen, m_setup.flag02), m_setup.level, nowMs);
+    m_options.setFade(m_alpha / 255.0F);
+    openScreen(PauseScreen::Options, 0);
+}
+
 void PauseMenu::openScreen(PauseScreen screen, std::size_t selection) {
     m_screen = screen;
     m_selection = selection;
@@ -360,7 +379,6 @@ std::size_t PauseMenu::screenEntries() const {
     case PauseScreen::Objectives:
         return m_headers.size();
     case PauseScreen::Options:
-        return kOptionsEntries.size();
     case PauseScreen::Controls:
         return 0;
     case PauseScreen::Restart:
@@ -434,16 +452,9 @@ void PauseMenu::refreshScreen() {
         return;
     }
     case PauseScreen::Controls:
-        // ControlMenu draws itself.
+    case PauseScreen::Options:
+        // ControlMenu and OptionMenu draw themselves.
         return;
-    case PauseScreen::Options: {
-        for (std::size_t i = 0; i < kOptionsEntries.size(); ++i) {
-            const std::string_view name = kOptionsEntries.at(i);
-            addLine(name, kEntryY + (kEntryPitch * static_cast<float>(i)), i == m_selection ? kChosenWhite : kDimGrey,
-                    kBigFontSlot, 1.0F);
-        }
-        return;
-    }
     case PauseScreen::Restart:
     case PauseScreen::Quit: {
         // Two choices, the selected one white with its description under them.
@@ -481,6 +492,9 @@ std::vector<std::string> PauseMenu::screenLines() const {
     if (m_screen == PauseScreen::Controls) {
         return m_controls.lines();
     }
+    if (m_screen == PauseScreen::Options) {
+        return m_options.lines();
+    }
     std::vector<std::string> lines;
     lines.reserve(m_lines.size());
     for (const std::unique_ptr<TextWidget>& line : m_lines) {
@@ -502,6 +516,9 @@ void PauseMenu::render(const GuiCanvas& canvas) const {
     }
     if (m_screen == PauseScreen::Controls) {
         m_controls.render(canvas);
+    }
+    if (m_screen == PauseScreen::Options) {
+        m_options.render(canvas);
     }
     m_yesNo.render(canvas);
     m_grid.render(canvas);

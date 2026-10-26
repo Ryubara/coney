@@ -90,8 +90,9 @@ class PlayLevelControls final : public debug::PlayControls {
         return m_mode->spawnFighter(feet, headingDegrees);
     }
     [[nodiscard]] std::vector<std::string> fighterModels() const override { return m_mode->fighterModels(); }
-    std::expected<void, Error> spawnFighterAs(anim::Vec3 feet, float headingDegrees, std::string_view model) override {
-        return m_mode->spawnFighterAs(feet, headingDegrees, model);
+    std::expected<void, Error> spawnFighterAs(anim::Vec3 feet, float headingDegrees, std::string_view model,
+                                              ai::FighterSide side) override {
+        return m_mode->spawnFighterAs(feet, headingDegrees, model, side);
     }
     [[nodiscard]] std::size_t fighterCount() const override { return m_mode->fighterCount(); }
     void clearFighters() override { m_mode->clearFighters(); }

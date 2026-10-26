@@ -99,6 +99,9 @@ add_library(coney_core STATIC
     gui/pause_menu/pause_items.cpp
     gui/pause_menu/pause_menu.cpp
     gui/pause_menu/control_menu.cpp
+    gui/pause_menu/option_bar.cpp
+    gui/pause_menu/option_layout.cpp
+    gui/pause_menu/option_menu.cpp
     gui/pause_menu/yes_no_box.cpp
     gui/profile_management_gui/pm_controller.cpp
     gui/profile_management_gui/pm_extras.cpp
@@ -314,6 +317,7 @@ target_sources(coney_core PRIVATE
     ai/melee_goal.cpp
     ai/pedestrian_goal.cpp
     ai/perception.cpp
+    ai/fighter_sides.cpp
     ai/fight_book.cpp
     ai/fight_checks.cpp
     ai/hiding.cpp

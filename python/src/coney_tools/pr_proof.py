@@ -195,12 +195,13 @@ def _touches_source(paths: Sequence[str]) -> bool:
 def changed_functions(
     root: Path, base: str, tip: str, paths: Sequence[str]
 ) -> tuple[tuple[OrigUnit, ...], tuple[OrigUnit, ...], dict[str, tuple[str, ...]]]:
-    """The `@orig` functions the branch adds or changes, those it removes, and which functions at `tip` carry each
-    original address (`orig_review.citing`), between `base` and `tip`.
+    """The `@orig` functions the branch adds or changes, those it removes, between `base` and `tip`, and which Coney
+    functions at the tip cite each original address (`orig_review.citing`: a `compared` stamp belongs to one of
+    several functions that share an address, so the lookup needs all of them, not only the changed ones).
 
     Reading every source file at two commits takes seconds, so a change that touches no C++ file under `src/` (a
-    guide, a tool, a workflow) is known to add, change and remove none without reading them, and no address of
-    a changed function is left to look up."""
+    guide, a tool, a workflow) is known to add, change and remove none, and to need no stamp looked up, without reading
+    them."""
     if not _touches_source(paths):
         return (), (), {}
     before = {u.key: u for u in orig_review.units_at(root, base)}
@@ -234,9 +235,8 @@ def load_subject(
     it adds) chooses the ref its rules come from. ConfigError when a ref is unknown (fetch it first), or git or the
     rules cannot be read.
 
-    `scan=False` leaves out the `@orig` functions (`changed`, `removed` and `citing` are empty), which are the slow
-    part on a change under `src/`; `scanned` adds them. `refusals_before_scan` is what such a subject can already
-    refuse.
+    `scan=False` leaves out the `@orig` functions (`changed` and `removed` are empty), which are the slow part on a
+    change under `src/`; `scanned` adds them. `refusals_before_scan` is what such a subject can already refuse.
     """
     default = default_branch(root)
     remote_ref = f"{remote}/{default}"

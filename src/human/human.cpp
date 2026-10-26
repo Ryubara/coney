@@ -1648,7 +1648,16 @@ std::vector<PosedShape> Human::posedStrikeShapes(bool targets) const {
     } else {
         defs = m_strikes.active();
     }
-    const auto bones = anim::boneTransforms(*m_skeleton, pose());
+    // The shapes stand on the bones as the original's bone lookup hands them over: each position times the body
+    // scale, the rotation as posed (the offsets, lengths and radii are scaled in poseStrikeShapes()).
+    auto bones = anim::boneTransforms(*m_skeleton, pose());
+    // Coney's choice: the scale as set. Human_GetScale returns 1.0 for a human in a scene state whose scale is under
+    // 1.1, but Coney tracks the scene state only for player 1, so it is not modelled; the offsets, radii, lengths
+    // (poseStrikeShapes()), ledPoint() and bodyPoint() use the same unadjusted scale, so whoever ports the scene state
+    // changes them together.
+    for (anim::Mat34& bone : bones) {
+        bone.t = anim::scale(bone.t, m_scale);
+    }
     std::vector<PosedShape> posed = poseStrikeShapes(defs, bones, placement());
     // The capsule, while its strike flag is on: upright, its radius round the 2 m from the feet up.
     if (!targets && m_strikes.capsuleOn()) {
