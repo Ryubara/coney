@@ -92,23 +92,26 @@ void instanceSkinned(rw::Geometry* geometry, rw::gl3::InstanceDataHeader* header
     const SkinVertexData* data = *PLUGINOFFSET(const SkinVertexData*, geometry, verticesOffset);
     CONEY_ASSERT(data != nullptr && geometry->numTexCoordSets == 1);
     constexpr rw::uint32 kStride = 12 + 12 + 8 + 16 + 4;
+    // librw's allocation hint, as its own instance step gives: its duration and its kind are two enumerations.
+    constexpr rw::uint32 kMemoryHint =
+        static_cast<rw::uint32>(rw::MEMDUR_EVENT) | static_cast<rw::uint32>(rw::ID_GEOMETRY);
     if (!reinstance) {
         const std::array<rw::gl3::AttribDesc, 5> attributes{
             attribute(rw::gl3::ATTRIB_POS, GL_FLOAT, 3, 0), attribute(rw::gl3::ATTRIB_NORMAL, GL_FLOAT, 3, 12),
             attribute(rw::gl3::ATTRIB_TEXCOORDS0, GL_FLOAT, 2, 24), attribute(rw::gl3::ATTRIB_WEIGHTS, GL_FLOAT, 4, 32),
             attribute(rw::gl3::ATTRIB_INDICES, GL_UNSIGNED_BYTE, 4, 48)};
         header->numAttribs = static_cast<rw::int32>(attributes.size());
-        header->attribDesc = rwNewT(rw::gl3::AttribDesc, header->numAttribs, rw::MEMDUR_EVENT | rw::ID_GEOMETRY);
+        header->attribDesc = rwNewT(rw::gl3::AttribDesc, header->numAttribs, kMemoryHint);
         for (std::size_t i = 0; i < attributes.size(); ++i) {
             header->attribDesc[i] = attributes[i];
             header->attribDesc[i].stride = kStride;
         }
-        header->vertexBuffer = rwNewT(rw::uint8, header->totalNumVertex * kStride, rw::MEMDUR_EVENT | rw::ID_GEOMETRY);
+        header->vertexBuffer = rwNewT(rw::uint8, header->totalNumVertex * kStride, kMemoryHint);
         glGenBuffers(1, &header->vbo);
         const rw::MorphTarget& target = geometry->morphTargets[0];
         CONEY_ASSERT(data->weights.size() >= static_cast<std::size_t>(header->totalNumVertex) &&
                      data->indices.size() == data->weights.size());
-        for (rw::int32 i = 0; i < header->totalNumVertex; ++i) {
+        for (rw::uint32 i = 0; i < header->totalNumVertex; ++i) {
             rw::uint8* vertex = header->vertexBuffer + static_cast<std::size_t>(i) * kStride;
             const auto index = static_cast<std::size_t>(i);
             std::memcpy(vertex, &target.vertices[i], 12);
