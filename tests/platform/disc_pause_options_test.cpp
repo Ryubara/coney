@@ -51,6 +51,7 @@ constexpr std::uint64_t kReverted = 290;
 
 TEST_CASE("the disc's pause menu: Options changes the music volume and the camera's inversion through the pad",
           "[disc][pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code)
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");

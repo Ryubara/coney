@@ -113,6 +113,7 @@ struct Paused {
 
 TEST_CASE("pause items: the story grid is Objectives : Stats : Options / Controls : Restart : Resume : Quit",
           "[pause_menu]") {
+    // Expected: pause.md#the-items, confirmed (code)
     const coney::gui::PauseGridLayout story = coney::gui::pauseGrid(99);
     REQUIRE(story.items.size() == 7);
     CHECK(story.rows == std::vector<std::size_t>{3, 4});
@@ -137,6 +138,7 @@ TEST_CASE("pause items: the story grid is Objectives : Stats : Options / Control
 }
 
 TEST_CASE("pause items: the hangout is offered in the 15 listed story levels only", "[pause_menu]") {
+    // Expected: pause.md#the-items, confirmed (code)
     CHECK(coney::gui::offersHangout(34));
     CHECK(coney::gui::offersHangout(11));
     CHECK_FALSE(coney::gui::offersHangout(99));
@@ -148,6 +150,7 @@ TEST_CASE("pause items: the hangout is offered in the 15 listed story levels onl
 
 TEST_CASE("pause menu: opening tints the world over 1.4 s and fades the cycling background in over 3 s",
           "[pause_menu]") {
+    // Expected: pause.md#opening-the-menu, confirmed (code)
     GlobalStrings strings = syntheticStrings();
     PauseMenu menu;
     menu.setStrings(&strings);
@@ -177,6 +180,7 @@ TEST_CASE("pause menu: opening tints the world over 1.4 s and fades the cycling 
 }
 
 TEST_CASE("pause menu: triangle resumes with a 1.5 s fade and a 0.5 s hold", "[pause_menu]") {
+    // Expected: pause.md#leaving, confirmed (code)
     Paused paused(99);
     paused.driver.tap(coney::pad::kTriangle);
     CHECK(paused.menu.closing());
@@ -193,6 +197,7 @@ TEST_CASE("pause menu: triangle resumes with a 1.5 s fade and a 0.5 s hold", "[p
 }
 
 TEST_CASE("pause menu: START closes only once 1.5 s have passed since opening", "[pause_menu]") {
+    // Expected: pause.md#leaving, confirmed (code)
     Paused paused(99);
     paused.driver.tap(coney::pad::kStart);
     CHECK_FALSE(paused.menu.closing());
@@ -202,6 +207,7 @@ TEST_CASE("pause menu: START closes only once 1.5 s have passed since opening", 
 }
 
 TEST_CASE("pause menu: Resume closes, and the grid moves left and right through the rows", "[pause_menu]") {
+    // Expected: pause.md#input, confirmed (code)
     Paused paused(99);
     paused.selectItem(PauseItem::Resume);
     paused.driver.tap(coney::pad::kCross);
@@ -210,6 +216,7 @@ TEST_CASE("pause menu: Resume closes, and the grid moves left and right through 
 }
 
 TEST_CASE("pause menu: Objectives shows the lists, None for an empty one, and up and down choose", "[pause_menu]") {
+    // Expected: pause.md#the-items-screens, confirmed (code)
     PauseMenuSetup setup;
     setup.objectives[0] = {"Reach the park", "Find Cleon"};
     Paused paused(99, setup);
@@ -232,6 +239,7 @@ TEST_CASE("pause menu: Objectives shows the lists, None for an empty one, and up
 
 TEST_CASE("pause menu: Stats opens nothing without stats; Options opens its list, Controls its screen",
           "[pause_menu]") {
+    // Expected: pause.md#the-items-screens, confirmed (code)
     Paused paused(99);
     paused.selectItem(PauseItem::Stats);
     paused.driver.tap(coney::pad::kCross);
@@ -255,6 +263,7 @@ TEST_CASE("pause menu: Stats opens nothing without stats; Options opens its list
 TEST_CASE("pause menu: Controls takes the d-pad and cross: down to Tutorial, cross opens it, triangle twice resumes "
           "the grid",
           "[pause_menu][controls]") {
+    // Expected: pause.md#controls-layout, confirmed (code)
     Paused paused(99);
     paused.selectItem(PauseItem::Controls);
     paused.driver.tap(coney::pad::kCross);
@@ -272,6 +281,7 @@ TEST_CASE("pause menu: Controls takes the d-pad and cross: down to Tutorial, cro
 }
 
 TEST_CASE("pause menu: Restart Last Check Point is selected first and asks 0x103, No selected", "[pause_menu]") {
+    // Expected: pause.md#the-items-screens, confirmed (code)
     Paused paused(99);
     paused.selectItem(PauseItem::Restart);
     paused.driver.tap(coney::pad::kCross);
@@ -299,6 +309,7 @@ TEST_CASE("pause menu: Restart Last Check Point is selected first and asks 0x103
 }
 
 TEST_CASE("pause menu: Quit asks at once in level99 and offers the hangout first where it is open", "[pause_menu]") {
+    // Expected: pause.md#the-items-screens, confirmed (code)
     Paused story(99);
     story.selectItem(PauseItem::Quit);
     story.driver.tap(coney::pad::kCross);
@@ -321,6 +332,7 @@ TEST_CASE("pause menu: Quit asks at once in level99 and offers the hangout first
 
 TEST_CASE("pause menu: in a Rumble level Replay asks 0x105 at once and Objectives starts on the overview",
           "[pause_menu]") {
+    // Expected: pause.md#the-items-screens, confirmed (code)
     Paused rumble(102);
     rumble.driver.tap(coney::pad::kCross);
     CHECK(rumble.menu.screen() == PauseScreen::Objectives);
@@ -333,6 +345,7 @@ TEST_CASE("pause menu: in a Rumble level Replay asks 0x105 at once and Objective
 }
 
 TEST_CASE("yes/no box: up and down are refused, left and right swap, back answers Back", "[pause_menu]") {
+    // Expected: pause.md#the-items-screens, confirmed (code)
     YesNoBox box;
     std::vector<int> cues;
     box.setSoundSink([&cues](int cue) { cues.push_back(cue); });
@@ -347,6 +360,7 @@ TEST_CASE("yes/no box: up and down are refused, left and right swap, back answer
 }
 
 TEST_CASE("mission failed: the reason, rows of 1 and 2, and the title by language", "[pause_menu]") {
+    // Expected: pause.md#the-mission-failed-screen, confirmed (code)
     GlobalStrings strings = syntheticStrings();
     MissionFailedMenu menu;
     menu.setStrings(&strings);
@@ -374,6 +388,7 @@ TEST_CASE("mission failed: the reason, rows of 1 and 2, and the title by languag
 }
 
 TEST_CASE("mission failed: Last checkpoint ends at once; Quit asks first", "[pause_menu]") {
+    // Expected: pause.md#the-mission-failed-screen, confirmed (code)
     GlobalStrings strings = syntheticStrings();
     MissionFailedMenu menu;
     menu.setStrings(&strings);
@@ -401,6 +416,7 @@ TEST_CASE("mission failed: Last checkpoint ends at once; Quit asks first", "[pau
 
 TEST_CASE("pause menu: the Controls screen takes its layout from the language and video mode the menu opens with",
           "[pause_menu][controls]") {
+    // Expected: pause.md#controls-layout, confirmed (code)
     PauseMenuSetup setup;
     setup.language = coney::Language::French;
     setup.widescreen = true;
@@ -415,6 +431,7 @@ TEST_CASE("pause menu: the Controls screen takes its layout from the language an
 TEST_CASE("pause menu: Options takes the pad: cross opens Camera, left turns Invert P1 on and the game is told, "
           "triangle twice returns to the grid",
           "[pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code)
     PauseMenuSetup setup;
     setup.options.invertCamera = {false, false};
     std::vector<coney::gui::OptionValues> applied;

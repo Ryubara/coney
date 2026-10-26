@@ -96,6 +96,7 @@ struct Run {
 } // namespace
 
 TEST_CASE("pause: START pushes mode 0xa, pauses the sound and loads the pause bank", "[pause]") {
+    // Expected: pause.md#pausing, confirmed (code)
     Run run("5 tap start\n");
     run.frames(5);
     CHECK(run.stack.topId() == GameplayMode::kId);
@@ -112,6 +113,7 @@ TEST_CASE("pause: START pushes mode 0xa, pauses the sound and loads the pause ba
 }
 
 TEST_CASE("pause: triangle resumes after the fade and hold, and START is ignored for one frame after", "[pause]") {
+    // Expected: pause.md#leaving, confirmed (code)
     Run run("5 tap start\n20 tap triangle\n");
     run.frames(22);
     REQUIRE(run.flow->pause().menu().closing());
@@ -144,6 +146,7 @@ struct BankAudio final : coney::FrontEndAudio {
 } // namespace
 
 TEST_CASE("pause: closing puts back the level's own bank, not the front end's last", "[pause]") {
+    // Expected: pause.md#leaving, confirmed (code)
     // The front end loaded `menu`; the level's load then brought in its own bank `sound` without the front end (the
     // loading screen's end, docs/research/sound.md). Closing the pause must give the level `sound` back.
     Run run("5 tap start\n20 tap triangle\n");
@@ -159,6 +162,7 @@ TEST_CASE("pause: closing puts back the level's own bank, not the front end's la
 }
 
 TEST_CASE("pause: START closes the menu only after 1.5 s", "[pause]") {
+    // Expected: pause.md#leaving, confirmed (code)
     Run run("5 tap start\n20 tap start\n70 tap start\n");
     run.frames(30);
     CHECK_FALSE(run.flow->pause().menu().closing());
@@ -167,6 +171,7 @@ TEST_CASE("pause: START closes the menu only after 1.5 s", "[pause]") {
 }
 
 TEST_CASE("pause: Quit to the main menu leaves gameplay with checkpoint 1 and the level `menu` asked for", "[pause]") {
+    // Expected: pause.md#leaving, confirmed (code)
     // Seven items: Quit is the last; right six times from Objectives, then cross, left to Yes, cross.
     Run run("5 tap start\n15 tap right\n20 tap right\n25 tap right\n30 tap right\n35 tap right\n40 tap right\n"
             "45 tap cross\n55 tap left\n60 tap cross\n");
@@ -180,6 +185,7 @@ TEST_CASE("pause: Quit to the main menu leaves gameplay with checkpoint 1 and th
 }
 
 TEST_CASE("pause: Restart Last Check Point reloads the level at the same checkpoint", "[pause]") {
+    // Expected: pause.md#leaving, confirmed (code)
     // Restart is item 4: right four times, cross (the checkpoint choice is selected), cross, left to Yes, cross.
     Run run("5 tap start\n15 tap right\n20 tap right\n25 tap right\n30 tap right\n35 tap cross\n45 tap cross\n"
             "55 tap left\n60 tap cross\n");
@@ -192,6 +198,7 @@ TEST_CASE("pause: Restart Last Check Point reloads the level at the same checkpo
 }
 
 TEST_CASE("mission failed: the launch pushes mode 0xc, and Restart level reloads from checkpoint 1", "[pause]") {
+    // Expected: pause.md#the-mission-failed-screen, confirmed (code)
     // Down to the second row (Restart level), cross.
     Run run("15 tap down\n25 tap cross\n");
     run.frames(2);
@@ -209,6 +216,7 @@ TEST_CASE("mission failed: the launch pushes mode 0xc, and Restart level reloads
 
 TEST_CASE("pause: the Options screen's values read from and write to the game state where save.md puts them",
           "[pause][options]") {
+    // Expected: save.md#options, confirmed (code)
     coney::GameState state;
     state.brightness = 55;
     state.subtitles = true;

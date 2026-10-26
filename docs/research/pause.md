@@ -956,4 +956,7 @@ seen here:
   with the font's own left margin, and the memory at `0x0050eef0` reads 0.41, 0.35, 0.53.
 
 On 2026-10-26 the Options screen's functions were compared side by side with Ghidra (`original compare`); that
-corrected this page, which had said Vibration keeps its values on back.
+corrected this page, which had said Vibration keeps its values on back. The same day, in PCSX2 2.9.94 from the
+library state `street-end-run` (`level99`, checkpoint 2), the pad stepped frame by frame over the debug server:
+the Camera page, left on its third item and opened again, came back on that item (Auto Adjust P1 Cam), and Restore
+Default, left on Yes by back and opened again, came back on No.

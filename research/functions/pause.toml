@@ -16,7 +16,7 @@ name = "PauseMode_Enter"
 page = "pause.md#original-structure"
 level = "confirmed-code"
 coney = "src/gamemodes/pause_mode.h:PauseMode::enter"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0015dd38
@@ -24,7 +24,7 @@ name = "PauseMode_Exit"
 page = "pause.md#original-structure"
 level = "confirmed-code"
 coney = "src/gamemodes/pause_mode.h:PauseMode::exit"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0015dd98
@@ -32,7 +32,7 @@ name = "PauseMode_Update"
 page = "pause.md#original-structure"
 level = "confirmed-code"
 coney = "src/gamemodes/pause_mode.h:PauseMode::update"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001d1f88
@@ -296,6 +296,15 @@ coney = "src/gui/pause_menu/option_menu.h:OptionMenu::render"
 status = "compared"
 
 [[function]]
+address = 0x001dad88
+name = "HUD_SetObjective"
+page = "pause.md#fn-pausemenu"
+role = "adds, removes or ticks an objective in the pause menu's checklists (`HUDSetObjective`)"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::setObjective"
+status = "legacy"
+
+[[function]]
 address = 0x001db3c0
 name = "PauseMenu_Construct"
 page = "pause.md#original-structure"
@@ -311,7 +320,7 @@ page = "pause.md#original-structure"
 role = "vtable `+0xa8` / `+0xb0`"
 level = "confirmed-code"
 coney = "src/gui/pause_menu/pause_items.h:pauseGrid"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001ddcf8
@@ -320,7 +329,7 @@ page = "pause.md#original-structure"
 role = "vtable `+0x30` / `+0x38`"
 level = "confirmed-code"
 coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::update"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001df700
@@ -329,7 +338,7 @@ page = "pause.md#original-structure"
 role = "vtable `+0x30` / `+0x38`"
 level = "confirmed-code"
 coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::render"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001dfe20
