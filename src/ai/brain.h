@@ -26,7 +26,7 @@
 // actions, a target with an attack slot on it, enemies, and the numbers its fighting is paced by. The brains run at the
 // brains' place in the characters' step (ai::Brains), before every human's dispatcher, so what a brain writes is taken
 // that same update as a pad's press would be.
-// Research: docs/research/ai.md#brain, docs/research/ai.md#update-goals, docs/research/ai.md#targets
+// Research: docs/research/ai/index.md#brain, docs/research/ai/index.md#update-goals, docs/research/ai-fights.md#targets
 
 namespace coney::raycast {
 class CollisionMesh;
@@ -39,7 +39,7 @@ class Formation;
 class Gang;
 class ScriptServices;
 
-/// A brain's type (`+0x04`), from its character class's behaviour byte (docs/research/ai.md#types).
+/// A brain's type (`+0x04`), from its character class's behaviour byte (docs/research/ai/index.md#types).
 enum class BrainType : std::uint8_t {
     Player = 0,     ///< The player: its update only keeps books.
     Cop = 1,        ///< Cops.
@@ -97,10 +97,11 @@ inline constexpr std::size_t kGoalStackSize = 10;
 inline constexpr std::size_t kActionQueueSize = 8;
 inline constexpr std::size_t kMaxEnemies = 16;
 inline constexpr std::size_t kMaxAttackSlots = 16;
-/// A brain's defaults, the sparring Warriors' of `level99` as read at runtime (docs/research/ai.md#level99): attackers
-/// allowed on one human at once (`+0x1e4`, `BrSetNumAttackSlots`), the melee ranges near and far (`+0x13c`, `+0x140`,
-/// `BrSetMeleeRange`; a fight ends beyond the far range × 1.1), and the range (`+0x130`) and field of view (`+0x12c`, a
-/// half-angle in radians) within which a brain counts an attack's start (event `0x10`), with a clear line of sight.
+/// A brain's defaults, the sparring Warriors' of `level99` as read at runtime (docs/research/ai/index.md#level99):
+/// attackers allowed on one human at once (`+0x1e4`, `BrSetNumAttackSlots`), the melee ranges near and far (`+0x13c`,
+/// `+0x140`, `BrSetMeleeRange`; a fight ends beyond the far range × 1.1), and the range (`+0x130`) and field of view
+/// (`+0x12c`, a half-angle in radians) within which a brain counts an attack's start (event `0x10`), with a clear line
+/// of sight.
 inline constexpr std::size_t kDefaultAttackSlots = 4;
 inline constexpr float kDefaultMeleeNear = 3.0F;
 inline constexpr float kDefaultMeleeFar = 5.0F;
@@ -108,9 +109,9 @@ inline constexpr float kDefaultSightRange = 30.0F;
 inline constexpr float kDefaultFieldOfView = 1.92F;
 /// The threat response every brain is made with (`0x0028a570`, from `Human_Init`); 0 never fights.
 inline constexpr int kDefaultThreatResponse = 2;
-/// A brain thinks once every this many character steps (docs/research/ai.md#update).
+/// A brain thinks once every this many character steps (docs/research/ai/index.md#update).
 inline constexpr std::uint64_t kThinkPeriod = 5;
-/// `CfgAttackDelay`'s value for most kinds, ms (`config_preload2`, docs/research/ai.md#attack-action).
+/// `CfgAttackDelay`'s value for most kinds, ms (`config_preload2`, docs/research/ai-fights.md#attack-action).
 inline constexpr int kDefaultAttackDelayMs = 200;
 /// `CfgAttackDelay` by kind as `config_preload2` sets it, ms: the values the disc's scripts give, for a run without
 /// them.
@@ -127,7 +128,7 @@ inline constexpr int kDefaultAttackDelayMs = 200;
 /// The base chance to block (`CfgBaseChanceToBlock`, `0x00510ac8`, percent), 60 at runtime.
 inline constexpr int kDefaultBaseBlockChance = 60;
 
-/// The events Coney delivers to a human (`Human_OnEvent`, docs/research/ai.md#events): damage taken (1, a **Coney
+/// The events Coney delivers to a human (`Human_OnEvent`, docs/research/ai/index.md#events): damage taken (1, a **Coney
 /// stand-in** sender, Brains::reportDamage()), an enemy added to its brain
 /// (`0xb`, for the gang's tactic), an attack started on it within its brain's range and field of view (`0x10`), and its
 /// health run out (18, for its gang's message handler).
@@ -178,7 +179,7 @@ struct BrainSenses {
     bool reachable = true;
 };
 
-/// The configuration a brain fights by: what the configuration scripts set (docs/research/ai.md#fight).
+/// The configuration a brain fights by: what the configuration scripts set (docs/research/ai-fights.md#fight).
 struct FightSettings {
     AttackWeights attackWeights = attNormal(); ///< The class's `Att_*` table (`+0x298`).
     /// `CfgAttackDelay` by kind (the table at `0x006b6658`), ms.
@@ -214,7 +215,7 @@ class Brain {
     [[nodiscard]] bool enabled() const { return m_enabled; }
     void setEnabled(bool enabled) { m_enabled = enabled; }
 
-    // --- The scripts' hold (docs/research/ai-scripting.md#scripted, docs/research/ai.md#handlers).
+    // --- The scripts' hold (docs/research/ai-scripting.md#scripted, docs/research/ai/index.md#handlers).
 
     /// Whether a thug goes for the weapons lying in the level (`+0x265`, `BrSetThugWantsWeapon`). **Coney stand-in**:
     /// Coney has no weapons lying about yet, so it is only kept. True until set (**Coney choice**: the scripts turn it
@@ -261,8 +262,8 @@ class Brain {
     [[nodiscard]] Formation* following() const { return m_following; }
     void setFollowing(Formation* formation) { m_following = formation; }
     /// Its human's event once the gang has passed on it (handler C of `Brain_OnEvent`): nothing for a dead brain, else
-    /// its type's handler and the shared one (answerEvent(), docs/research/ai.md#brain-type-handlers). Returns whether
-    /// it was used.
+    /// its type's handler and the shared one (answerEvent(), docs/research/ai/index.md#brain-type-handlers). Returns
+    /// whether it was used.
     /// @orig 0x0028f928 Brain_OnEvent (unknown)
     bool onEvent(const BrainEvent& event);
     /// Whether its human's health running out has been told (event 18).
@@ -282,7 +283,7 @@ class Brain {
     [[nodiscard]] ScriptServices* services() const { return m_services; }
     void setServices(ScriptServices* services) { m_services = services; }
 
-    // --- The update (docs/research/ai.md#update-goals).
+    // --- The update (docs/research/ai/index.md#update-goals).
 
     /// One update at game time `nowMs`: for a type-0 brain (the player's) only its books, unless it is dead; for every
     /// other type, and a dead player's, Brain_UpdateGoals: the move cleared first (stopMove()), then skipped while the
@@ -399,7 +400,7 @@ class Brain {
     /// @orig 0x00292530 Brain_FlushAll (unknown)
     void flush();
 
-    // --- Fighting (docs/research/ai.md#targets).
+    // --- Fighting (docs/research/ai-fights.md#targets).
 
     /// `GoalFight(human, target)`: clears the actions, then fight() with no time limit (kNoFightLimit).
     /// @orig 0x002b2b90 Brain_StartFight (unknown)
@@ -409,17 +410,17 @@ class Brain {
     /// Returns false when the threat response is 0.
     /// @orig 0x0028d2e8 Brain_Fight (unknown)
     bool fight(Brain& target, int durationMs = kNoFightLimit);
-    /// Pushes the fight's three goals (docs/research/ai.md#targets): nothing while its gang has a tactic (the tactic
-    /// fights) or for a human down or out of health; otherwise it pops any Melee (8) or FindEnemy (`0x41`) goal with
-    /// every goal above it, then pushes FindEnemy, Melee and the fight goal (the top), each given `durationMs`.
+    /// Pushes the fight's three goals (docs/research/ai-fights.md#targets): nothing while its gang has a tactic (the
+    /// tactic fights) or for a human down or out of health; otherwise it pops any Melee (8) or FindEnemy (`0x41`) goal
+    /// with every goal above it, then pushes FindEnemy, Melee and the fight goal (the top), each given `durationMs`.
     /// **Coney choice**: the type-3 brain's AttackTarget (9) gate is left out (Coney builds no such goal).
     /// @orig 0x0028d190 Brain_PushFightGoal (unknown)
     void pushFightGoals(int durationMs);
     /// Whether the Melee goal may send the human after its target (`+0x2d3`, set when the brain is made, by a new
     /// target and when a Melee goal ends; cleared when the last move failed).
     /// Its fight books: the active-attacker places and spacing it gives its attackers, and its tackle meter
-    /// (docs/research/ai.md#attack-places). A slot claimed on it raises its spacing to the attacker's gang's `CfgGang`
-    /// values; its slot list emptied puts the spacing back to 1.
+    /// (docs/research/ai-fights.md#attack-places). A slot claimed on it raises its spacing to the attacker's gang's
+    /// `CfgGang` values; its slot list emptied puts the spacing back to 1.
     [[nodiscard]] FightBook& fightBook() { return m_fight; }
     [[nodiscard]] const FightBook& fightBook() const { return m_fight; }
     /// The `CfgGang` fight values of this brain's gang's kind (all 0 without a gang).
@@ -437,7 +438,7 @@ class Brain {
     void clearEnemies() { m_enemies.clear(); }
     /// Takes `target` (null for none) as the target: the old target's attack slot is released and one is claimed on
     /// the new; with `force` a full slot list gives up its farthest holder's slot whatever the distances
-    /// (docs/research/ai.md#attack-places).
+    /// (docs/research/ai-fights.md#attack-places).
     /// @orig 0x0028cfe0 Brain_SetTarget (unknown)
     void setTarget(Brain* target, bool force = false);
     /// The cause a target change is counted under (targetChanges()); TargetCause::Other unless a TargetCauseScope
@@ -477,7 +478,7 @@ class Brain {
     /// The turf limit (`+0x14d`): set, a gang with a turf may take enemies only inside it; the gang's alert state
     /// (Gang::setAlertState()) clears it while fighting and sets it again when calm. **Coney stand-ins**: set when a
     /// brain is made (the original's starting value is not on the page), and nothing reads it yet, as Coney keeps no
-    /// turf-only target test (docs/research/ai.md#enemy-score).
+    /// turf-only target test (docs/research/ai-fights.md#enemy-score).
     [[nodiscard]] bool keepsToTurf() const { return m_keepsToTurf; }
     void setKeepsToTurf(bool on) { m_keepsToTurf = on; }
     /// The melee ranges (`+0x13c`, `+0x140`, `BrSetMeleeRange`).
@@ -532,7 +533,7 @@ class Brain {
     // --- Writing the human's per-player record, as a pad would.
 
     /// Writes `command` into the record (`+0x20`). Only the command: the record's buttons are a pad's, and an AI has
-    /// none, so R1 held (command 4) never starts a block for it (docs/research/ai.md#block).
+    /// none, so R1 held (command 4) never starts a block for it (docs/research/ai-fights.md#block).
     /// @orig 0x00147ef0 PlayerRecord_SetCommand (unknown)
     void press(combat::CommandId command);
     /// Sets the move the human's locomotion follows in place of a stick (brain `+0x110` heading, `+0x114` speed): along
@@ -745,8 +746,8 @@ bool deliverEvent(Brain& brain, const BrainEvent& event);
 /// @orig 0x0022a2a8 Human_ReleasePlayer (unknown)
 void releaseToAi(Brain& brain, BrainType leftAs);
 
-/// `brain`'s reaction kind, which picks its gesture slots (docs/research/ai.md#fight-reposition): its type, but 0 for
-/// a gang brain of class role 13, and 3 for the player. **Coney stand-ins**: the player's 0 in co-op (game state
+/// `brain`'s reaction kind, which picks its gesture slots (docs/research/ai-fights.md#fight-reposition): its type, but
+/// 0 for a gang brain of class role 13, and 3 for the player. **Coney stand-ins**: the player's 0 in co-op (game state
 /// `+0x158` set) is not read; the AI has no co-op word, so the player is taken as alone. The class role is read
 /// through the gang's lookups (as helpLevel()'s is), so a gang brain with no gang keeps its type, 2.
 /// @orig 0x00291d48 Brain_GetReactionKind (unknown)

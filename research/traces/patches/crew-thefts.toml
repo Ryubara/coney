@@ -1,4 +1,4 @@
-# The crew-thefts pass (docs/research/crimes.md#owned-items, ai.md#get-item): the steal command at the level80
+# The crew-thefts pass (docs/research/crimes.md#owned-items, ai/index.md#get-item): the steal command at the level80
 # pharmacy, who claims and takes which owned object, and GetItem's swing at glass.
 
 [hook.take-owned]
@@ -35,7 +35,7 @@ log = [
 
 [hook.getitem-glass]
 description = "GetItem's Process (0x002dc9f8) within 1.5 m of its standing point with a ray to the object that crossed glass (result 2, at 0x002dce94): the human, the goal, the object's handle and the squared distance to the point."
-research = "docs/research/ai.md#get-item"
+research = "docs/research/ai/index.md#get-item"
 address = 0x002dce94
 # lui at,0x3e23; ori at,at,0xd70b
 original = [0x3c013e23, 0x3421d70b]

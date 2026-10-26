@@ -16,7 +16,7 @@ class Human;
 
 // What an AI human sees: the line of sight between two humans (two rays through the level's collision, which pass
 // through fences, railings and glass), the field of view, and "can see" (a range, then the line). The brains' attack
-// warnings, the enemy scores and the run-in ask these. Research: docs/research/ai.md#sight
+// warnings, the enemy scores and the run-in ask these. Research: docs/research/ai-fights.md#sight
 
 namespace coney::ai {
 

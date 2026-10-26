@@ -6,7 +6,7 @@ confirmed (code) at the cited address unless it says otherwise; nothing on this 
 
 ## Purpose
 
-The AI's goal, tactic and action engine is mostly named and cited ([AI humans](ai.md), [AI code index](ai-code.md),
+The AI's goal, tactic and action engine is mostly named and cited ([AI humans](ai/index.md), [AI code index](ai-code.md),
 [AI goals](ai-goals.md)), but a citation is not something to code from. This page splits what Coney
 has not reimplemented yet into **units** a contributor can finish with tests in one sitting (about 5 to 15
 functions each), ordered by dependency and payoff, and gives the first units a full specification: inputs and
@@ -25,7 +25,7 @@ units.
 built as stand-ins (for example, TacticAttack's melee goal). A unit lists those under "to correct": the contributor
 replaces the stand-in, and the function stays in `functions.toml`.
 
-Shared conventions on this page: *brain* `+n` is the AI brain record ([The brain](ai.md#brain)), *human* `+n` the
+Shared conventions on this page: *brain* `+n` is the AI brain record ([The brain](ai/index.md#brain)), *human* `+n` the
 human record, *gang* `+n` the gang record ([The gang](ai-gangs.md#gang-record)), *now* the game time in ms (game state
 `0x0050b734`, `+0x48`). A human's position is entry *human* `+0x92` of the 32-byte position table at `0x00714b00`.
 A human is an AI when *human* `+0x1b0` (its pad) is −1. *Living* in "living members" means the member's handle
@@ -34,7 +34,7 @@ or dead (`Gang_CountLiving(g, 1)`, `Human_IsDownOrDead` `0x00227e60`; only the v
 counts resolving handles; confirmed (code) at `0x00166158`). The HUD's gang counts all pass 1
 ([HUD](hud-functions-lua.md#gang-count-what)). Neither is `Gang_CountStanding` (`0x00166220`, `GangGetStandingCount`), which
 tests knocked out, state `0x100000000` and wounded separately (confirmed (code) at `0x00166220`). Goal kinds
-are the type ids of [Goals](ai.md#goals).
+are the type ids of [Goals](ai/index.md#goals).
 
 ## Original structure
 
@@ -43,7 +43,7 @@ unit below names its own functions.
 
 ## Data
 
-The records the units read are described on [The brain](ai.md#brain) and [The gang](ai-gangs.md#gang-record); each
+The records the units read are described on [The brain](ai/index.md#brain) and [The gang](ai-gangs.md#gang-record); each
 unit gives the offsets it uses.
 
 ## Behaviour
@@ -77,8 +77,8 @@ looks the two brains up).
 2. **The Warrior hit-back flag.** When *a* is a Warrior (brain type, *brain* `+0x04`, is 3) with *brain* `+0x2e5`
    set, and *b*'s human is a pad player: true. The same the other way round: *b* a Warrior with `+0x2e5` set and
    *a*'s human a pad player: true. The flag is set while a Warrior hits back at a player who hit him
-   ([The enemy scan](ai.md#enemy-scan)); the test is against **any** pad player, not only his chief. This
-   corrects "a Warrior ... and the chief" on [AI humans](ai.md#enemy-scan).
+   ([The enemy scan](ai-fights.md#enemy-scan)); the test is against **any** pad player, not only his chief. This
+   corrects "a Warrior ... and the chief" on [AI humans](ai-fights.md#enemy-scan).
 3. Otherwise true when `Gang_IsEnemyOf(a's gang, b's gang)` (*brain* `+0x20c`), or when both humans are pad
    players; else false.
 
@@ -94,13 +94,13 @@ null handle) and `WarriorCommand_Dispatch` (`0x0041c4e0`).
 4. Else *gang* `+0x10` = the handle, and every member slot (`+0x48`, 16 handles) whose human resolves and is an AI
    adds that human to its enemy list (`Brain_AddEnemy`). Players are skipped.
 
-The score's +400 for the shared target ([Choosing among enemies](ai.md#enemy-score)) then makes the crew converge.
+The score's +400 for the shared target ([Choosing among enemies](ai-fights.md#enemy-score)) then makes the crew converge.
 
 ### To correct in this unit (already tagged)
 
 | Address | Name | What Coney must change | Evidence |
 | --- | --- | --- | --- |
-| `0x0028fbb0` | `Brain_UpdateGoals` | Calls `Brain_MaybeScanEnemies` (`0x0028fa18`) for **every** brain on every update that is not skipped, after the 44-update line-of-sight check and the turf-leave check (every 5 updates when the gang has turf), before the reaction goal ([Brain_UpdateGoals](ai.md#update-goals)). Coney calls the scan only from the Scout tactic. | confirmed (code) |
+| `0x0028fbb0` | `Brain_UpdateGoals` | Calls `Brain_MaybeScanEnemies` (`0x0028fa18`) for **every** brain on every update that is not skipped, after the 44-update line-of-sight check and the turf-leave check (every 5 updates when the gang has turf), before the reaction goal ([Brain_UpdateGoals](ai/index.md#update-goals)). Coney calls the scan only from the Scout tactic. | confirmed (code) |
 | `0x0041c4e0` | `WarriorCommand_Dispatch` | Every command first clears the crew gang's shared target; the unforced attack command then sets it (`Gang_SetSharedTarget`) to the chief's lock-on target when he is locked on, the target is an AI and not friendly; else to the AI handle in game state `+0x280`, else `+0x284`. A forced command never sets it. | confirmed (code) in the gang-fight analysis (#273), not re-read here |
 | `0x002b3ab0` | `FightGoal_Process` | The once-a-second re-target to the nearest human straight ahead (sector 0, within 1.5 m) needs only: not the current target, `Brain_IsThreat`, and no GrabTarget goal (`0x1f`) on the stack. It then calls `Brain_SetTarget(brain, him, 1)` (slot forced) without checking the enemy list or `Brain_ValidateEnemy`. | confirmed (code) in the gang-fight analysis (#273) |
 | `0x00222a48` | `Human_IsThreatTo` | `Brain_IsThreat` on the two humans' brains, in place of Coney's enemy-list stand-in. | confirmed (code) |
@@ -115,7 +115,7 @@ farthest holder.
 and `Gang::setSharedTarget` (`repo:src/ai/gangs.h`); the scan runs from `Brain::update` through the gangs' one
 `ScanSchedule` (`repo:src/ai/scan_schedule.h`), which the Scout tactic now shares instead of scanning itself; the
 scan's step 2 (the gang's shared target) is in; the fight goal's re-target forces the slot, and a displaced holder
-loses his target ([Attack slots](ai.md#attack-places)); the attack command sets the shared target from the chief's
+loses his target ([Attack slots](ai-fights.md#attack-places)); the attack command sets the shared target from the chief's
 lock-on (`ScriptedStory::startWarriorCommand`). Tests: `repo:tests/ai/threats_test.cpp` and the dispatcher case in
 `repo:tests/ai/scripted_story_test.cpp`. Stand-ins and open questions:
 
@@ -454,7 +454,7 @@ member who has attackers (`Brain_HasAttackers`: his attack-slot list `+0x1a4` no
   slots last) and its first entry is checked with `Brain_ValidateEnemy`. Valid: the member counts toward the total,
   his goals down to and including a fight goal (`0xf`) are popped when one is on the stack, and EngageEnemy is
   pushed on that enemy with flags `0x8f` (`EngageEnemyGoal_Init(goal, brain, enemy handle, 0x8f)`,
-  [EngageEnemy](ai.md#engage-enemy)). Invalid: the member is skipped (no second choice) and does not count. This
+  [EngageEnemy](ai-fights.md#engage-enemy)). Invalid: the member is skipped (no second choice) and does not count. This
   corrects "their nearest valid enemy": the charge goes for the **farthest** listed enemy.
 
 ### Get their leader (`0x00322708`-`0x00322a40`)
@@ -462,7 +462,7 @@ member who has attackers (`Brain_HasAttackers`: his attack-slot list `+0x1a4` no
 - Init: gang, limit, vtable `0x00544300`, count `+0x10`, `+0x14` = −1 (saved global), `+0x18` opened,
   `+0x19` ordered, `+0x1a` saved byte.
 - Start (`0x00322988`): saves the gang kind's configuration byte `+0x6c` (`CfgGang` v2, the standing spacing,
-  [How many hit one man at once](ai.md#attack-places)) in `+0x1a` and the global `0x00510b54` in `+0x14`, then sets
+  [How many hit one man at once](ai-fights.md#attack-places)) in `+0x1a` and the global `0x00510b54` in `+0x14`, then sets
   the byte to 4 and the global to `0x12` (the enemy-leader score term, read as an integer). The byte is per gang
   **kind**, so every gang of that kind is affected while the order lasts.
 - End (`0x003229f8`): restores both.
@@ -580,7 +580,7 @@ Confirmed (code) at each address; read in Ghidra on 2026-10-13. The member walks
 throws it at the nearest enemy he can see, and goes back for the next, until the pile is gone, his end time passes or
 something else takes him over. The class list is on [AI goals](ai-goals.md#goal-object-pile).
 
-**Record** (a goal of the pool, [Goals](ai.md#goals)): `+0x00` brain, `+0x04` started, `+0x05` resume pending,
+**Record** (a goal of the pool, [Goals](ai/index.md#goals)): `+0x00` brain, `+0x04` started, `+0x05` resume pending,
 `+0x08` time limit (−1, none), `+0x0c` vtable `0x0053faf0`, `+0x10` **the pile's handle**, `+0x14` **the throw
 target's handle**, `+0x18` **the end time** (0 = none), `+0x1c` **walking** (set while his own GetItem walk is on
 top), `+0x1d` **interrupted** (once set, the goal ends).
@@ -591,7 +591,7 @@ top), `+0x1d` **interrupted** (once set, the goal ends).
 - **Init** (`0x002bae38`): the fields above; `+0x10` = the pile handle, `+0x14` = the null handle (`0x006ebd30`),
   `+0x18` = the duration argument, `+0x1c` = `+0x1d` = 0.
 - **Start** (`0x002bae80`, vtable `+0x24`): `+0x18` = 0 when it holds −1, else `+0x18` + *now* (the duration made
-  an end time). *Brain* `+0x21c` (the threat response, [The brain](ai.md#brain)) = 0. The Throw order passes −1,
+  an end time). *Brain* `+0x21c` (the threat response, [The brain](ai/index.md#brain)) = 0. The Throw order passes −1,
   so its members have no end time.
 - **Resume** (`0x002baec0`, `+0x34`): `+0x1c` = 0.
 - **Suspend** (`0x002baf08`, `+0x3c`): when `+0x1c` is 0, `+0x1d` = 1. So the goal survives being covered by its
@@ -620,12 +620,12 @@ top), `+0x1d` **interrupted** (once set, the goal ends).
        queue a PickUpItem action on the pile object (`PickUpItemAction_Init(action, brain, pile, delay 33 ms)`,
        `0x002faf98`; nothing when the action pool is full); return 0.
     3. Farther: leave the fight stance (`0x0022fef0`), `+0x1c` = 1, and push a GetItem goal on the pile
-       (`GetItemGoal_Init(goal, brain, pile handle, gait 4, limit −1)`, [GetItem](ai.md#get-item)); return 0. The
+       (`GetItemGoal_Init(goal, brain, pile handle, gait 4, limit −1)`, [GetItem](ai/index.md#get-item)); return 0. The
        push suspends this goal, which `+0x1c` keeps alive; GetItem's end resumes it, clearing `+0x1c`.
 8. **Armed** (throw):
     1. The target is `+0x14` resolved and checked with `Brain_ValidateEnemy(brain, it)` (`0x0028d358`). None: on
        every 10th update (*brain* `+0x34` % 10 = 0) pick one (`ObjectPileGoal_PickTarget`, below); return 0.
-    2. No line of sight to him (`Human_HasLineOfSight(self, him, 0, 0)`, [Sight](ai.md#sight)): `+0x14` = the null
+    2. No line of sight to him (`Human_HasLineOfSight(self, him, 0, 0)`, [Sight](ai-fights.md#sight)): `+0x14` = the null
        handle; return 0.
     3. `d²` = squared distance between the two; `R²` = `Attack_ReachSquared(d², self, kind 0)` (`0x00230d00`, the
        reach of attack kind 0 with what he holds: 30 m for held set 5, 15 m for set 4, else the attack table's
@@ -660,12 +660,12 @@ object first); an object claimed 2 s ago by the same gang (skipped) and by anoth
 ## Unit 7 and later: what each needs first {#unit-7}
 
 Unit 7 (the fight goal's Start, Resume, Suspend and End, the fidget and taunt actions, the pattern block, and the
-waiting ring of [The reposition](ai.md#fight-reposition), gang-fight need 7) is described by its sections and by
+waiting ring of [The reposition](ai-fights.md#fight-reposition), gang-fight need 7) is described by its sections and by
 the three below: the fidget and taunt actions and `Brain_TryPatternBlock`. Gang-fight needs 8 (event `0x15`'s
 taunts; its senders are on [Gang fights](gang-fights.md#waiting) rule 5) and 11 (the tandem, issue #84) are not
 units yet.
 
-The two actions use the action base of [Actions](ai.md#actions): `+0x00` brain, `+0x04` delay (s16 ms), `+0x06`
+The two actions use the action base of [Actions](ai/index.md#actions): `+0x00` brain, `+0x04` delay (s16 ms), `+0x06`
 started, `+0x08` vtable; Start returns 2 for "already done" (the action is dropped with only its destroy run) and 0
 to go on; Abort gets a **mode**, 0 when the action ended normally (`Brain_PopAction(brain, 0)` after Update returned
 2) and 1 when it is cleared (`Brain_ClearActions`, which stops at the first action whose Abort returns 0). In both
@@ -740,7 +740,8 @@ Confirmed (code) at each address; read in Ghidra on 2026-10-13. This corrects th
 3. Say the line (above).
 4. `+0x14` (wait) = 0 for kinds 0, 1, 2 and 8, else 1. Return 0.
 
-The kinds the shared event handler uses ([The shared event handler](ai.md#shared-events)) are 3 and 4, anims 598
+The kinds the shared event handler uses ([The shared event handler](ai-brain-types.md#shared-events)) are 3 and 4, anims
+598
 and 599 (`0x256`, `0x257`).
 
 **Update** (`0x002fb2f0`): with wait 0, done at once; with wait 1, 0 while held flags `0x300000` (either taunt
@@ -761,7 +762,7 @@ on a free human (anim `0x256`, flag `0x200000`, waits); kind 0 (anim `0x253`, no
 class-13 human (plays); cleared while the clip plays (stopped; refused while the flags remain).
 
 **Coney status (implemented, 2026-10-20).** `repo:src/ai/taunt_action.h` (`TauntAction`), queued by the gloating over
-a man put down (`gloatOver`, [The shared event handler](ai.md#shared-events)). The clip is the gang's for the
+a man put down (`gloatOver`, [The shared event handler](ai-brain-types.md#shared-events)). The clip is the gang's for the
 kind's anim at a random variant (`Gang::randomClip`) or the character's own; the kind-to-anim map is
 `ai::tauntAnim` (`Human_BuildAnimState`'s). Abort is ported: a normal end (Coney has no abort mode, so its own
 update having ended it) accepts and leaves the clip playing; otherwise the taunt stops, and a waiting taunt refuses
@@ -772,7 +773,7 @@ human's move while it plays; the line is said at one volume.
 ### `Brain_TryPatternBlock(brain, attacker)` (`0x00292158`) {#pattern-block}
 
 Confirmed (code); read in Ghidra on 2026-10-13. Called by the shared event handler on an attack warning (event
-`0x10`) when the attacker has a pad or is a Warrior ([The shared event handler](ai.md#shared-events), step 4.4),
+`0x10`) when the attacker has a pad or is a Warrior ([The shared event handler](ai-brain-types.md#shared-events), step 4.4),
 after *brain* `+0x200` was raised for this warning. It lets an AI in a fight block a player who repeats one pattern.
 
 1. `t` = his own class threshold, `Human_GetBlockPatternThreshold` (`0x002236c8`): (16 − class `+0x37`) / 16, or 0
@@ -784,7 +785,7 @@ after *brain* `+0x200` was raised for this warning. It lets an AI in a fight blo
 4. His top goal (*brain* `+0x2c` the top index, goals at *brain* `+0x40`) must exist and be a Fight goal (type
    `0xf`); else nothing.
 5. Clear his actions (`Brain_ClearActions`). When one refused (the queue, *brain* `+0x2e`, is not empty): nothing.
-6. `Goal_TryBlock(fight goal, 0)` (`0x0029f098`, [Blocking](ai.md#block)): with the chance argument 0 it uses his
+6. `Goal_TryBlock(fight goal, 0)` (`0x0029f098`, [Blocking](ai-fights.md#block)): with the chance argument 0 it uses his
    block chance, and it **always** blocks when **his current target** (*brain* `+0x124`, through
    `Brain_ValidateEnemy`) is pad-controlled (per-player `+0x1b`) and meets the same pattern test. So the block is
    certain only when the warning's attacker is the human he is fighting; another attacker gets the ordinary chance
@@ -792,7 +793,7 @@ after *brain* `+0x200` was raised for this warning. It lets an AI in a fight blo
    (*brain* `+0x2d`) and returns 1 when it pushed.
 7. When it pushed: if he is stunned and standing (`Human_IsStunnedStanding`, `0x00223bc0`: state `0x100000` without
    `0x80000`), end the stun (`Human_EndStun`, `0x0022f8d8`); then write command 4 (block) to his per-player record
-   (`0x00660f50` + index × `0x2c`, `+0x20`). As [Blocking](ai.md#block) says, command 4 does not make an AI block;
+   (`0x00660f50` + index × `0x2c`, `+0x20`). As [Blocking](ai-fights.md#block) says, command 4 does not make an AI block;
    the block goal's other effects do.
 
 **Tests (synthetic):** a class threshold of 0 (nothing); a player whose pattern byte reaches `t` attacking his
@@ -819,18 +820,18 @@ kept by the track (`UNITS.md`); the "Spec" column links the sections that descri
 | [5](#unit-5) | gang fights | Guard orders and the FightBackOff goal | 10 | 2,572 | [Unit 5](#unit-5) |
 | [6](#unit-6) | gang fights | Throw orders and the ObjectPile goal | 10 | 3,288 | [Unit 6](#unit-6) |
 | [7](#unit-7) | gang fights | Fight goal life cycle, waiting ring, fidget and taunt actions | 13 | 1,944 | [Unit 7](#unit-7) |
-| 8 | core | Brain core: `Steering`, `Brains` | 11 | 1,444 | [brain-steering](ai-code.md#brain-steering), [original-structure](ai.md#original-structure), [ai-pools](ai-code.md#ai-pools) ... |
-| 9 | core | Brain core: `Brain` | 12 | 3,540 | [brain](ai.md#brain), [brain-record](ai-code.md#brain-record), [moving](ai.md#moving) ... |
+| 8 | core | Brain core: `Steering`, `Brains` | 11 | 1,444 | [brain-steering](ai-code.md#brain-steering), [original-structure](ai/index.md#map), [ai-pools](ai-code.md#ai-pools) ... |
+| 9 | core | Brain core: `Brain` | 12 | 3,540 | [brain](ai/index.md#brain), [brain-record](ai-code.md#brain-record), [moving](ai/index.md#moving) ... |
 | 10 | core | Brain core: `Brain` | 12 | 1,544 | [brain-record](ai-code.md#brain-record), [perception](ai-code.md#perception), [enemy-list](ai-code.md#enemy-list) ... |
 | 11 | core | Brain core: `Brain` | 12 | 2,068 | [brain-events](ai-code.md#brain-events), [attack-slots](ai-code.md#attack-slots), [brain-record](ai-code.md#brain-record) ... |
 | 12 | core | Brain core: `Brain` | 12 | 1,136 | [goal-stack](ai-code.md#goal-stack), [attack-slots](ai-code.md#attack-slots), [update](camera.md#update) ... |
 | 13 | core | Brain core: `Brain` | 12 | 1,440 | [enemy-list](ai-code.md#enemy-list), [perception](ai-code.md#perception), [wanted-timers](ai-code.md#wanted-timers) ... |
-| 14 | core | Brain core: `Brain` | 12 | 1,508 | [wanted-timers](ai-code.md#wanted-timers), [attack-slots](ai-code.md#attack-slots), [attack-action](ai.md#attack-action) ... |
+| 14 | core | Brain core: `Brain` | 12 | 1,508 | [wanted-timers](ai-code.md#wanted-timers), [attack-slots](ai-code.md#attack-slots), [attack-action](ai-fights.md#attack-action) ... |
 | 15 | core | Brain core: `Brain` | 12 | 1,452 | [brain-events](ai-code.md#brain-events), [brain-record](ai-code.md#brain-record), [script-levers](ai-scripting.md#script-levers) ... |
 | 16 | core | Brain core: `Brain` | 12 | 1,308 | [script-bindings](ai-code.md#script-bindings), [perception](ai-code.md#perception), [address-person](ai-scripting.md#address-person) |
-| 17 | core | Brain core: `Brain` | 8 | 2,104 | [perception](ai-code.md#perception), [enemy-list](ai-code.md#enemy-list), [engage-enemy](ai.md#engage-enemy) ... |
+| 17 | core | Brain core: `Brain` | 8 | 2,104 | [perception](ai-code.md#perception), [enemy-list](ai-code.md#enemy-list), [engage-enemy](ai-fights.md#engage-enemy) ... |
 | 18 | core | Brain core: `AI` | 11 | 840 | [ai-pools](ai-code.md#ai-pools), [brain-events](ai-code.md#brain-events), [perception](ai-code.md#perception) |
-| 19 | core | Brain core: `Goal` | 12 | 2,556 | [original-structure](ai.md#original-structure), [ai-pools](ai-code.md#ai-pools), [goal-left-turf](ai-goals.md#goal-left-turf) ... |
+| 19 | core | Brain core: `Goal` | 12 | 2,556 | [original-structure](ai/index.md#map), [ai-pools](ai-code.md#ai-pools), [goal-left-turf](ai-goals.md#goal-left-turf) ... |
 | 20 | core | Brain core: `Goal` | 12 | 6,288 | [goal-ped-logic](ai-goals.md#goal-ped-logic), [goal-call-police](ai-goals.md#goal-call-police), [crimes](ai-gangs.md#crimes) ... |
 | 21 | core | Brain core: `Goal` | 12 | 2,788 | [goal-copper-patrol](ai-goals.md#goal-copper-patrol), [path-planning](ai-moving.md#path-planning), [goal-respond](ai-goals.md#goal-respond) ... |
 | 22 | core | Brain core: `Goal` | 12 | 2,164 | [goal-cower](ai-goals.md#goal-cower), [goal-call-gang](ai-goals.md#goal-call-gang), [goal-mark](ai-goals.md#goal-mark) ... |
@@ -847,7 +848,7 @@ kept by the track (`UNITS.md`); the "Spec" column links the sections that descri
 | 33 | core | Brain core: `Route` | 7 | 2,188 | [route-claims](ai-pathing.md#route-claims), [route-jump](ai-pathing.md#route-jump), [route-code](ai-code.md#route-code) |
 | 34 | core | Brain core: `Filter` | 12 | 1,496 | [human-filters](ai-code.md#human-filters), [wanted-timers](ai-code.md#wanted-timers), [goal-cop-interact](ai-goals.md#goal-cop-interact) |
 | 35 | core | Brain core: `Humans`, `HandleList`, `Handle`, `ObjFilter` | 14 | 2,716 | [human-filters](ai-code.md#human-filters) |
-| 36 | core | Brain core: `Ai`, `Glass`, `Sectors`, `LineTestCache` | 12 | 4,812 | [think-gang](ai.md#think-gang), [goal-helpers](ai-goals.md#goal-helpers), [goal-area-walker](ai-goals.md#goal-area-walker) ... |
+| 36 | core | Brain core: `Ai`, `Glass`, `Sectors`, `LineTestCache` | 12 | 4,812 | [think-gang](ai-brain-types.md#think-gang), [goal-helpers](ai-goals.md#goal-helpers), [goal-area-walker](ai-goals.md#goal-area-walker) ... |
 | 37 | core | Brain core: `FlagNet`, `FlagList`, `Stub`, `AiLists` | 13 | 1,952 | [goal-travel-flag-net](ai-goals.md#goal-travel-flag-net), [goal-flag-list](ai-goals.md#goal-flag-list), [goal-idle](ai-goals.md#goal-idle) ... |
 | 38 | actions | Actions: `Action`, `ParlayStartAction`, `PlayAnimAction` | 13 | 1,576 | [goal-stack](ai-code.md#goal-stack), [actions](ai-code.md#actions) |
 | 39 | actions | Actions: `DynLoopAnimAction`, `PlayAnimIdAction`, `GenToIdleAnimAction`, `NothingAction` | 12 | 980 | [actions](ai-code.md#actions) |
@@ -858,7 +859,7 @@ kept by the track (`UNITS.md`); the "Spec" column links the sections that descri
 | 44 | fight | Fight goals: `Attack`, `Gang`, `ManWeaponPileGoal`, `ObjectThrowerGoal` ... | 13 | 7,988 | [cars](ai-world.md#cars), [formation-code](ai-code.md#formation-code), [human-filters](ai-code.md#human-filters) ... |
 | 45 | fight | Fight goals: `AttackTargetGoal`, `AttackTarget`, `EngageEnemyGoal`, `ChaseGoal` | 14 | 5,688 | [goal-attack-target](ai-goals.md#goal-attack-target), [brain-types](ai-code.md#brain-types), [goal-engage-enemy](ai-goals.md#goal-engage-enemy) ... |
 | 46 | fight | Fight goals: `Chase`, `ChaseSupportGoal`, `GroundedGoal`, `StunnedGoal` | 15 | 6,192 | [goal-chase](ai-goals.md#goal-chase), [t2-pursue](ai-code.md#t2-pursue), [goal-chase-support](ai-goals.md#goal-chase-support) ... |
-| 47 | fight | Fight goals: `OnFireGoal`, `OnFire`, `WoundedGoal`, `Wounded` ... | 13 | 2,604 | [goal-reactions](ai-goals.md#goal-reactions), [brain-events](ai-code.md#brain-events), [block](ai.md#block) |
+| 47 | fight | Fight goals: `OnFireGoal`, `OnFire`, `WoundedGoal`, `Wounded` ... | 13 | 2,604 | [goal-reactions](ai-goals.md#goal-reactions), [brain-events](ai-code.md#brain-events), [block](ai-fights.md#block) |
 | 48 | fight | Fight goals: `RingGoal`, `StandGroundGoal`, `GrabTargetGoal` | 15 | 5,004 | [goal-ring](ai-goals.md#goal-ring), [goal-stand-ground](ai-goals.md#goal-stand-ground), [goal-grab-target](ai-goals.md#goal-grab-target) |
 | 49 | fight | Fight goals: `Gang0`, `FindEnemyGoal`, `HTLDefenseGoal` | 11 | 2,912 | [goal-copper-guard-arrested](ai-goals.md#goal-copper-guard-arrested), [goal-find-enemy](ai-goals.md#goal-find-enemy), [goal-htl-defense](ai-goals.md#goal-htl-defense) |
 | 50 | fight | Fight goals: `HTLDefenseFightGoal`, `HTLOffenseGoal` | 11 | 3,272 | [goal-htl-defense-fight](ai-goals.md#goal-htl-defense-fight), [goal-htl-offense](ai-goals.md#goal-htl-offense) |
@@ -866,7 +867,7 @@ kept by the track (`UNITS.md`); the "Spec" column links the sections that descri
 | 52 | fight | Fight goals: `CowerGoal`, `Cower`, `HostileGoal`, `Hostile` | 14 | 3,852 | [goal-cower](ai-goals.md#goal-cower), [goal-hostile](ai-goals.md#goal-hostile) |
 | 53 | fight | Fight goals: `CallGangGoal`, `CallGang`, `BackoffGoal`, `BoxerGoal` ... | 11 | 3,144 | [goal-call-gang](ai-goals.md#goal-call-gang), [goal-backoff](ai-goals.md#goal-backoff), [goal-boxer](ai-goals.md#goal-boxer) ... |
 | 54 | fight | Fight goals: `AvoidEnemiesGoal`, `AvoidEnemies`, `ConfrontGoal`, `Confront` | 13 | 5,964 | [goal-avoid-enemies](ai-goals.md#goal-avoid-enemies), [goal-confront-start](ai-goals.md#goal-confront-start) |
-| 55 | fight | Fight goals: `MaceGoal`, `GrabberGoal`, `GangBrain` | 13 | 5,612 | [goal-mace](ai-goals.md#goal-mace), [goal-grabber](ai-goals.md#goal-grabber), [types](ai.md#types) ... |
+| 55 | fight | Fight goals: `MaceGoal`, `GrabberGoal`, `GangBrain` | 13 | 5,612 | [goal-mace](ai-goals.md#goal-mace), [goal-grabber](ai-goals.md#goal-grabber), [types](ai/index.md#types) ... |
 | 56 | tactics | Tactics: `Tactic` | 12 | 1,540 | [t1-tactic-core](ai-code.md#t1-tactic-core), [tactics](ai-gangs.md#tactics), [t1-boss](ai-code.md#t1-boss) ... |
 | 57 | tactics | Tactics: `Tactic` | 12 | 2,512 | [t1-boss-luther](ai-code.md#t1-boss-luther), [t1-boss-birdie](ai-code.md#t1-boss-birdie), [t1-boss-virgil](ai-code.md#t1-boss-virgil) ... |
 | 58 | tactics | Tactics: `Tactic`, `AddressTactic`, `AvoidEnemiesTactic` | 15 | 3,744 | [t2-bindings](ai-code.md#t2-bindings), [t1-address](ai-code.md#t1-address), [t1-avoid-enemies](ai-code.md#t1-avoid-enemies) |
@@ -900,7 +901,7 @@ kept by the track (`UNITS.md`); the "Spec" column links the sections that descri
 | 86 | police | Police: `RespondGoal`, `RiotCopGoal`, `SpotCriminalGoal`, `CallForBackupGoal` | 15 | 6,664 | [goal-respond](ai-goals.md#goal-respond), [goal-riot-cop](ai-goals.md#goal-riot-cop), [goal-spot-criminal](ai-goals.md#goal-spot-criminal) ... |
 | 87 | police | Police: `LeaveAreaGoal`, `DisturbanceGoal` | 11 | 2,792 | [goal-leave-area](ai-goals.md#goal-leave-area), [goal-disturbance](ai-goals.md#goal-disturbance) |
 | 88 | police | Police: `CopInteractGoal`, `IssueWarningGoal`, `RiotGoal`, `Riot` | 14 | 5,688 | [goal-cop-interact](ai-goals.md#goal-cop-interact), [goal-issue-warning](ai-goals.md#goal-issue-warning), [goal-riot-helpers](ai-goals.md#goal-riot-helpers) ... |
-| 89 | police | Police: `CopBrain` | 7 | 9,812 | [brain-types](ai-code.md#brain-types), [think-cop](ai.md#think-cop) |
+| 89 | police | Police: `CopBrain` | 7 | 9,812 | [brain-types](ai-code.md#brain-types), [think-cop](ai-brain-types.md#think-cop) |
 | 90 | world | Civilian and world goals: `AreaWalkerGoal`, `HookerGoal`, `PathBlockerGoal`, `Ped` ... | 15 | 7,540 | [goal-area-walker](ai-goals.md#goal-area-walker), [goal-hooker](ai-goals.md#goal-hooker), [goal-path-blocker](ai-goals.md#goal-path-blocker) ... |
 | 91 | world | Civilian and world goals: `TravelFlagNetGoal`, `InteractGoal`, `Interact`, `PedInteractGoal` ... | 14 | 6,112 | [goal-travel-flag-net](ai-goals.md#goal-travel-flag-net), [goal-interact](ai-goals.md#goal-interact), [goal-ped-react-noise](ai-goals.md#goal-ped-react-noise) |
 | 92 | world | Civilian and world goals: `PedReactionGoal`, `PedestrianGoal`, `Pedestrian` | 12 | 3,688 | [goal-ped-reaction](ai-goals.md#goal-ped-reaction), [goal-pedestrian](ai-goals.md#goal-pedestrian) |
@@ -918,13 +919,13 @@ kept by the track (`UNITS.md`); the "Spec" column links the sections that descri
 | 104 | world | Civilian and world goals: `MoveToPositionGoal`, `MoveToHumanGoal`, `DestroyItemGoal`, `VandalizeItemGoal` | 15 | 3,160 | [goal-move-to](ai-goals.md#goal-move-to), [goal-warrior-vandal-steal](ai-goals.md#goal-warrior-vandal-steal), [goal-destroy-item](ai-goals.md#goal-destroy-item) ... |
 | 105 | world | Civilian and world goals: `DestroyCarGoal`, `DestroyCar`, `TrackHumanGoal`, `TravelPath` ... | 15 | 4,208 | [goal-warrior-vandal-steal](ai-goals.md#goal-warrior-vandal-steal), [goal-destroy-car](ai-goals.md#goal-destroy-car), [goal-track-human](ai-goals.md#goal-track-human) ... |
 | 106 | world | Civilian and world goals: `DevilRun`, `WanderGoal`, `ShadowGoal`, `PlayParlayAnimationGoal` ... | 13 | 3,016 | [goal-devil-run](ai-goals.md#goal-devil-run), [goal-wander](ai-goals.md#goal-wander), [goal-shadow](ai-goals.md#goal-shadow) ... |
-| 107 | world | Civilian and world goals: `JoinFixedSceneGoal`, `JoinCinematicGoal`, `JoinAnimationGoal`, `Shopkeeper` | 14 | 1,856 | [goal-join-fixed-scene](ai-goals.md#goal-join-fixed-scene), [goals](ai.md#goals), [humans](scenes.md#humans) ... |
+| 107 | world | Civilian and world goals: `JoinFixedSceneGoal`, `JoinCinematicGoal`, `JoinAnimationGoal`, `Shopkeeper` | 14 | 1,856 | [goal-join-fixed-scene](ai-goals.md#goal-join-fixed-scene), [goals](ai/index.md#goals), [humans](scenes.md#humans) ... |
 | 108 | world | Civilian and world goals: `ShopkeeperGoal`, `Shot` | 8 | 3,136 | [goal-shopkeeper](ai-goals.md#goal-shopkeeper), [goal-shot-tests](ai-goals.md#goal-shot-tests) |
 | 109 | world | Civilian and world goals: `HideAndSeekGoal`, `LeftTurfGoal` | 14 | 5,804 | [goal-hide-and-seek](ai-goals.md#goal-hide-and-seek), [t1-boss-virgil](ai-code.md#t1-boss-virgil), [goal-guard-flag](ai-goals.md#goal-guard-flag) ... |
-| 110 | world | Civilian and world goals: `RunFromTrainGoal`, `CivilianBrain` | 14 | 8,620 | [goal-run-from-train](ai-goals.md#goal-run-from-train), [brain-types](ai-code.md#brain-types), [think-civilian](ai.md#think-civilian) |
-| 111 | world | Civilian and world goals: `DealerBrain`, `CivlCoDiBrain`, `ShopkeeperBrain` | 8 | 3,116 | [brain-types](ai-code.md#brain-types), [think-dealer](ai.md#think-dealer), [types](ai.md#types) ... |
+| 110 | world | Civilian and world goals: `RunFromTrainGoal`, `CivilianBrain` | 14 | 8,620 | [goal-run-from-train](ai-goals.md#goal-run-from-train), [brain-types](ai-code.md#brain-types), [think-civilian](ai-brain-types.md#think-civilian) |
+| 111 | world | Civilian and world goals: `DealerBrain`, `CivlCoDiBrain`, `ShopkeeperBrain` | 8 | 3,116 | [brain-types](ai-code.md#brain-types), [think-dealer](ai-brain-types.md#think-dealer), [types](ai/index.md#types) ... |
 | 112 | boss | Bosses and special fighters: `BossDiego`, `BossDiegoScript`, `BossLizzies`, `BossLizziesGoal` ... | 14 | 4,996 | [goal-boss-diego](ai-goals.md#goal-boss-diego), [goal-boss-lizzies](ai-goals.md#goal-boss-lizzies), [goal-boss-luther](ai-goals.md#goal-boss-luther) ... |
-| 113 | boss | Bosses and special fighters: `BossChatterGoal`, `BossDiegoGoal`, `BigBrawlerGoal` | 9 | 9,752 | [goal-boss-chatter](ai-goals.md#goal-boss-chatter), [goal-boss-lizzies](ai-goals.md#goal-boss-lizzies), [melee-range](ai.md#melee-range) ... |
+| 113 | boss | Bosses and special fighters: `BossChatterGoal`, `BossDiegoGoal`, `BigBrawlerGoal` | 9 | 9,752 | [goal-boss-chatter](ai-goals.md#goal-boss-chatter), [goal-boss-lizzies](ai-goals.md#goal-boss-lizzies), [melee-range](ai-fights.md#melee-range) ... |
 | 114 | boss | Bosses and special fighters: `BigFighterGoal` | 12 | 3,076 | [goal-big-fighter](ai-goals.md#goal-big-fighter), [t1-boss-moe](ai-code.md#t1-boss-moe), [t1-boss-virgil](ai-code.md#t1-boss-virgil) |
 | 115 | boss | Bosses and special fighters: `BigFighterGoal` | 6 | 4,656 | [t1-boss-moe](ai-code.md#t1-boss-moe), [goal-big-fighter](ai-goals.md#goal-big-fighter) |
 | 116 | boss | Bosses and special fighters: `BigFighterAGoal` | 13 | 5,232 | [goal-big-fighter-a](ai-goals.md#goal-big-fighter-a), [brain-record](ai-code.md#brain-record), [t1-boss-chatterbox](ai-code.md#t1-boss-chatterbox) |

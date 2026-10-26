@@ -93,7 +93,7 @@ Confirmed (code) at `0x0033c288` and the step. Pool sizes are counts × bytes.
 | `+0x4f2a0`-`+0x4f3f0` | | the punch bag's body set: a human body, one segment (bone 3, radius 0.35, length 1.5, no offset, along the bone's x) and a capsule (radius 0.35, height 1.787 m); [Bodies](#bodies) |
 | `+0x4f450`-`+0x4f45c` | vector | every live body, by index (body `+0x20`): `+0x4f454` the array, `+0x4f458` / `+0x4f45c` count and capacity (inferred), all zeroed at construction; `+0x4f450` is not written ([Unit 15](physics-world.md#u15-construct)) |
 
-The 60 human body sets match the 60 human slots ([AI humans](ai.md)), inferred. Who allocates from which pool is
+The 60 human body sets match the 60 human slots ([AI humans](ai/index.md)), inferred. Who allocates from which pool is
 confirmed (code) by the callers: `Obj_CreatePhysicsBody` (world objects), `GlassPane_CreateBody`, `Car_MakeBodies`. The
 ten bone shapes are the strike shapes; their bones, sizes and events are on [Combat](combat/index.md#moving-strikes).
 

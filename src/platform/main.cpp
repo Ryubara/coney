@@ -246,8 +246,8 @@ coney::LevelScriptOptions levelScriptOptions(const coney::io::Wad& wad, std::str
 }
 
 // The setup of a sandbox's player: **Coney's choice**, level99's configuration (the combat training level whose
-// fighters the sandbox's stand in for, docs/research/ai.md#level99) for the AI fighters and the character types, from
-// its scripts run alone and quietly; the player is Rembrandt.
+// fighters the sandbox's stand in for, docs/research/ai/index.md#level99) for the AI fighters and the character types,
+// from its scripts run alone and quietly; the player is Rembrandt.
 coney::platform::PlayerSetup sandboxSetup(const coney::io::Wad& wad) {
     std::vector<std::uint32_t> table;
     const coney::LevelScriptRun run = coney::runLevelScriptAlone(

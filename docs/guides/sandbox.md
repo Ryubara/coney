@@ -150,7 +150,8 @@ one named `origin` at the origin. A layout without a `view` gets one named `star
 
 ### AI fighters {#ai-fighters}
 
-A fighter is an AI human with a brain ([AI humans](../research/ai.md#coney)): one of `level99`'s sparring Warriors, with
+A fighter is an AI human with a brain ([AI humans](../research/ai/index.md#in-coney)): one of `level99`'s sparring
+Warriors, with
 the configuration `level99`'s scripts give (its attack table, power class and attack delays), drawn with the player's
 model. It takes the player on once he comes within 5 m, then walks or runs to him, attacks by its class's weights and
 waits about 4 s between attacks (2 s while he targets it). It never blocks, as an AI cannot in the original. The debug

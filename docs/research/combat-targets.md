@@ -20,7 +20,7 @@ breakable objects and the stereo theft. A player sees it as whom his punch turns
 enemy and walks round him, how close he stands when the hit lands, what happens when he hits his own Warriors, when
 the gangs he fights may swing at him, and the glass, cabinets, fences and car radios a punch or a triangle opens.
 Every attack ([Combat moves](combat-moves.md)), the grab's search ([Grabs](combat-grabs.md)) and the AI's fight goals
-([AI](ai.md#check-attack)) start from the target this code picks. The commands, the state bits and the tables every
+([AI](ai-fights.md#check-attack)) start from the target this code picks. The commands, the state bits and the tables every
 combat topic reads are on [Combat](combat/index.md#data).
 
 ## Map
@@ -174,7 +174,7 @@ Read in Ghidra: confirmed (code) where no other level is given.
    (`Grab_IntroEnd`, `0x0026c1d8`, returns at once when `Human_GetTarget` is empty): 71 then 69 `GRAB_MISS` plays even
    with a teammate right in front. No grab, so no throw and no mount of a teammate. The hangout's sparring Warriors
    are grabbable because they are another gang: `level99` creates them in `CombatWarriors` and calls
-   `GangMakeEnemies(Warriors, CombatWarriors)` ([AI: the sparring fight](ai.md#level99-fight)).
+   `GangMakeEnemies(Warriors, CombatWarriors)` ([AI: the sparring fight](ai-fights.md#level99-fight)).
 3. **A swing that touches a teammate does land.** The strike test takes every body, allies too ([Moving
    strikes](combat/index.md#moving-strikes)), so `Strike_Contact` (`0x0021b290`) runs on the teammate: impact sound,
    hit effect, the damage stored as pending through `Human_DealDamage` (`0x0021d680`) with the event's hostile byte
@@ -192,7 +192,8 @@ Read in Ghidra: confirmed (code) where no other level is given.
    hitting back), clears the window and makes him push **AttackTarget** (`AttackTargetGoal_Push(him, chief, 20000)`)
    for 20 s, after popping a TauntPlayer goal on top. When the chief is a war chief (`+0x3ac` = 1) with a command in
    force, the command is re-issued as 0 and the chief's command menu is locked (`+0x42e` + player = 1). While one hits
-   back, the [player's update](ai.md#think-player) gives every free member within 15 m **TauntPlayer**: the taunting
+   back, the [player's update](ai-brain-types.md#think-player) gives every free member within 15 m **TauntPlayer**: the
+   taunting
    ring.
 5. **Throws into teammates.** A thrown enemy strikes every body he flies into ([Throws](combat-throws.md#throws)): he is
    no friend of the teammate, so the bystander takes the crushing high reaction (300-303, a knockdown) with no health
@@ -689,7 +690,7 @@ bodies' shapes), `moves_reachX1_10_steer`, `moves_reachX1_16_steer` (the steer's
 Read in Ghidra: confirmed (code) where no other level is given.
 
 An AI human attacks through the same dispatcher and attack functions as a player: the [attack
-action](ai.md#attack-action) writes a command into its per-player record and `Player_UpdateActions` (`0x0027c120`)
+action](ai-fights.md#attack-action) writes a command into its per-player record and `Player_UpdateActions` (`0x0027c120`)
 reads it ([The dispatcher](combat/index.md#dispatch)). What differs for a human that is not pad-controlled (per-player
 `+0x1b` = 0, human `+0x1b0` = −1):
 
@@ -702,7 +703,7 @@ reads it ([The dispatcher](combat/index.md#dispatch)). What differs for a human 
   ([The steer into an attack](#attack-steer)).
 - **The stick.** `Player_GetAimHeading` (`0x0021d1a0`) and the snap test read the per-player record's stick, which an
   AI's attack action clears and then writes only when the action has an angle (magnitude 1.0,
-  [AI](ai.md#attack-action)). Without one an AI aims along its facing and never snaps, and the walk attack 23 (stick
+  [AI](ai-fights.md#attack-action)). Without one an AI aims along its facing and never snaps, and the walk attack 23 (stick
   0.12 or more) does not happen.
 - **The run attack.** `Human_WantsRun` (`0x00225c10`) ignores the stick for an AI: it holds unless the state has
   `0x100000000` or any of `0x3981f3ff3` (the fight stance among them), any held flag is set, or the human carries an
@@ -712,11 +713,12 @@ reads it ([The dispatcher](combat/index.md#dispatch)). What differs for a human 
   strike as a player does.
 - **Not for an AI**: the locked strafe attacks (`0x1f`-`0x21`, which need a pad and `Human_IsLocked`), the counter grab
   and counter tackle from square or cross (`Human_CanCounterGrab`, `Human_CanCounterTackle`: an AI has command 3
-  instead, [AI](ai.md#block)), starting a block ([The dispatcher](combat/index.md#dispatch)), and the climb and jump on
+  instead, [AI](ai-fights.md#block)), starting a block ([The dispatcher](combat/index.md#dispatch)), and the climb and
+  jump on
   triangle: an AI's triangle goes straight to `Player_TriangleAction` (`0x002811f0`).
 
 **May this attack start now** (`Human_CanStartAttack(h, target, kind)`, `0x00224778`), asked by the attack action's
-Start (`0x002fa9a8`) and by goals before they queue one (EngageEnemy's charge, [AI](ai.md#engage-enemy)). It refuses
+Start (`0x002fa9a8`) and by goals before they queue one (EngageEnemy's charge, [AI](ai-fights.md#engage-enemy)). It refuses
 when:
 
 1. the target holds any of `0xc08200` in record `+0x08`, unless the target's state has `0x2000` and the attacker's
@@ -753,7 +755,7 @@ Then, by kind (the attacker "free" = its state has none of `0x7bf9e9f7ff0`; "vic
 | 42-44 | goal `0x17` on top while in state `0x80000`; otherwise state `0x800`, free of `0x7bf9e9f73f0`, and the target holding it |
 
 `AttackKind_IsCharge` (`0x00229b60`) is true for kinds **0 and 19-21**, the kinds the run-in may end on
-([AI](ai.md#engage-enemy)).
+([AI](ai-fights.md#engage-enemy)).
 
 **When the target may be attacked again.** The attack action's Start adds `Attack_GetNextAttackDelay(attacker, kind)`
 (`0x00231590`) to the **target** brain's `+0x1ec` (`Brain_SetAttackableTime`, `0x00290e78`, which first raises
@@ -774,7 +776,8 @@ when either human is grabbing or tackling, or the target is cuffed (`0x002fa9a8`
 
 - `Brain_Init` (`0x0028a9c0`) sets both to 1, and so does `Brain_SetTarget` (`0x0028cfe0`) when the last attacker
   leaves the target's attacker list (`+0x1a4`).
-- When an attacker claims a slot on the target (`Brain_ClaimAttackSlot`, `0x0028df30`, [AI](ai.md#targets)), the byte
+- When an attacker claims a slot on the target (`Brain_ClaimAttackSlot`, `0x0028df30`, [AI](ai-fights.md#targets)), the
+  byte
   is raised to the **attacker's gang's** [`CfgGang`](../references/bindings/config.md#cfggang) value: `+0x14a` =
   max(itself, argument 2, gang record `+0x6c`) and `+0x14b` = max(itself, argument 3, `+0x6d`); a target whose brain
   is type 3 (a Warrior) gets `+0x14a` = 1 instead.
@@ -783,7 +786,7 @@ when either human is grabbing or tackling, or the target is cuffed (`0x002fa9a8`
 
 So against an enemy of a spacing-2 gang's attackers, the next attacker may strike after **half** the last attack's
 clip, while a Warrior target makes them wait the whole clip. The attacker's own next attack (brain `+0x1e8`) is the
-separate attack delay ([AI](ai.md#attack-action)).
+separate attack delay ([AI](ai-fights.md#attack-action)).
 
 ### Breakables {#breakables}
 

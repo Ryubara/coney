@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The play mode's cast: the humans a level's scripts create (`HuCreate`), made AI humans in the scene once the level
 // has loaded, each drawn as the model its type names and fighting as its class, its brain bound to the handle the
-// scripts name it by (docs/research/ai.md#coney, docs/research/characters.md#creation).
+// scripts name it by (docs/research/ai/index.md#in-coney, docs/research/characters.md#creation).
 #include <array>
 #include <expected>
 #include <format>

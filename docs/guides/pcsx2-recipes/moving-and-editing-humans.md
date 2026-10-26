@@ -237,7 +237,7 @@ through `lua` (`BrFlushGoals`, `GoalFight`, `BrSetType`, `BrSuspend`, ...), whic
 | Preconditions | patches: none; running or paused |
 | Evidence | confirmed (code) |
 | Ghidra | `0x00293b28 Brains_Update`, `0x0028f928 Brain_OnEvent` |
-| Research | [research/ai.md#brain](../../research/ai.md#brain), [research/ai-gangs.md#gang-record](../../research/ai-gangs.md#gang-record) |
+| Research | [research/ai/index.md#brain](../../research/ai/index.md#brain), [research/ai-gangs.md#gang-record](../../research/ai-gangs.md#gang-record) |
 | Confirmed at runtime | 2026-10-21, copy `pcsx2-d`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6) |
 
 ```sh

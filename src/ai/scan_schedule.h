@@ -7,7 +7,7 @@
 // When each AI brain runs its enemy scan (ai/enemy_scan.h): every brain on its own interval, and at most five scans in
 // one update across all brains. The gangs own the one schedule of a scene (Gangs::scans()), refill its tokens at the
 // start of each update and every brain's update asks it (Brain::update()).
-// Research: docs/research/ai.md#enemy-scan, docs/research/ai-reimpl.md#unit-1
+// Research: docs/research/ai-fights.md#enemy-scan, docs/research/ai-reimpl.md#unit-1
 
 namespace coney::ai {
 

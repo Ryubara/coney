@@ -113,7 +113,7 @@ class PathMap {
     /// point's slab (every edge when it has no lists), each edge that crosses the point's row to its left counting
     /// +1 going down in y and −1 going up (edges flatter than 0.0001 in y skipped); inside when the sum is positive.
     /// **Coney choice**: which direction counts +1 is not traced; the disc's polygons are wound so that this one
-    /// takes in the route nodes they own (docs/research/ai.md#coney).
+    /// takes in the route nodes they own (docs/research/ai-moving.md#in-coney).
     /// @orig 0x0024eef0 PathPolygon_Contains (unknown)
     [[nodiscard]] bool inside(const PathPolygon& polygon, float x, float y) const;
     /// The first polygon that takes in (x, y) and has none of `excludeFlags`; nothing when none does.

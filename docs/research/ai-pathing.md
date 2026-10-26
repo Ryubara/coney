@@ -75,7 +75,8 @@ the addresses cited.
   another human on it (`Route_IsLinkBusy` `0x0029a3f0`, `0x0029a6c8`, [Jump legs](#route-jump)) makes this one hold
   the same way. The queue's waiting is inferred.
 
-**Confirmed (runtime)**, PCSX2 2.9.94, `level99` reloaded at checkpoint 3 (call hook, [below](ai.md#level99-save)) with
+**Confirmed (runtime)**, PCSX2 2.9.94, `level99` reloaded at checkpoint 3 (call hook,
+[below](ai-fights.md#level99-save)) with
 no input: Vermin (brain 5), set at (47.49, 42.97) by the script's `GoalMoveToFlag(Vermin, fVerminFencePoizo, 4, -1,
 -1, 0.5, 0, true)`, planned with mask `0xff` a route of two nodes, 205 (46.29, 25.29) then 204 (46.29, 24.29), linked
 by kind 8 (the leading nodes 137, 208 and 209 cut, the fence door 2 between 208 and 209 being open: its links'

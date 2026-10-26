@@ -160,7 +160,7 @@ Confirmed (code); offsets with "runtime" were checked on Rembrandt.
 | `+0x20` | this update's command id ([Buttons](#buttons)), read by `0x00147ef8`; cleared each update for a human without a pad (`0x00146000`) |
 | `+0x24` | a pending command (from table entries whose mask is `0xfe`) |
 
-A second per-human record of 0x2f0 bytes at `0x006d53f0 + i × 0x2f0` is the human's **brain** ([AI](ai.md#brain));
+A second per-human record of 0x2f0 bytes at `0x006d53f0 + i × 0x2f0` is the human's **brain** ([AI](ai/index.md#brain));
 confirmed (code) at `Human_GetBrain` (`0x0021d408`).
 
 ### The 0x180 record {#the-record}
@@ -203,9 +203,9 @@ The three airborne bits (`0x1c00000000`) are cleared on landing.
 player and `+0x1b8` otherwise (`0x00222b78`). Confirmed (code) for the reads at the cited addresses; Rembrandt's
 values confirmed (runtime). A street civilian (class 2) had a 0.35 hurt threshold, stun 750 ms, ground time 2000 ms,
 power 200, byte `+0x36` 4 (confirmed (runtime)). The AI's fields `+0x08` (block chance), `+0x0c` (block chance while
-hurt), `+0x24` (counter chance) and `+0x37` (the pattern-reading threshold) are on [AI](ai.md#block); `+0x32` and
+hurt), `+0x24` (counter chance) and `+0x37` (the pattern-reading threshold) are on [AI](ai-fights.md#block); `+0x32` and
 the bytes after `+0x37` are [below the table](#power-class-bytes). The sparring Warriors' class 40 is on
-[AI](ai.md#level99):
+[AI](ai/index.md#level99):
 
 | Field | Rembrandt (class 64) | Use |
 | --- | --- | --- |
@@ -324,13 +324,13 @@ the type's own record and the rest after the [remap](#type-to-model) from the cl
 
 | Stat | Field | Human | What it does | Evidence |
 | --- | --- | --- | --- | --- |
-| Behaviour | byte `+0x11a` | brain type | the AI's brain kind ([AI: types](ai.md#types)) | confirmed (code) |
+| Behaviour | byte `+0x11a` | brain type | the AI's brain kind ([AI: types](ai/index.md#types)) | confirmed (code) |
 | Category | byte `+0x11b` | (read from the record) | 14 the Warriors: a player takes his Warrior's power class; 13 the bosses and big fighters; the money class and the civilian reactions ([Starting money](crimes.md#starting-money)) | confirmed (code) |
 | Speed class | byte `+0x11c` | record `+0x164`-`+0x17c` | the [speed class](#speed-classes), a fallback the clips' own speeds replace in play | confirmed (code) |
 | Power class | byte `+0x11d` | `+0x1b8`, `+0x1b9` | below; a Warriors player's `+0x1b9` is his Warrior's | confirmed (code) |
 | Health | s16 `+0x116` | record `+0x144` / `+0x146` | health and its maximum (1800 for every Warrior, 600 for the street civilian) | confirmed (runtime) ([Combat: damage](combat-reactions.md#damage)) |
 | Damage table × damage scale | s16 × 45 at `+0xb8` | the human's Anim Range List | written over the list's damages when the model is attached (`0x00217a98`); a player's first times his Warrior class's damage % ([Damage](combat/index.md#damage-table)) | confirmed (code), confirmed (runtime) |
-| Attack table | byte × 45 at `+0x11e` | brain `+0x298` | an AI's weight for each attack kind ([AI](ai.md)) | confirmed (code) |
+| Attack table | byte × 45 at `+0x11e` | brain `+0x298` | an AI's weight for each attack kind ([AI](ai/index.md)) | confirmed (code) |
 | Range table | float × 45 at `+0x00` (÷ 100) | not traced | no reader found | not traced |
 | Hat | string `+0x14c` | the hat object | worn from creation ([Hats](#hats)) | confirmed (code) |
 | Voice | s16 `+0x118` | voice set | the folder of the type's speech ([Characters reference](../references/characters.md#fields); the binding page calls it a Warrior index) | inferred |
@@ -350,7 +350,7 @@ the type's own record and the rest after the [remap](#type-to-model) from the cl
 | Stun, down | s16 `+0x30`, `+0x34`; floats `+0x10`, `+0x14` | a stun's and a knockdown's length, ms, and their factors while hurt ([Reactions](combat-reactions.md#reactions)) |
 | Weapon stun | float `+0x00` | as the attacker, scales the victim's stun for weapon hits of 20-49 damage (`0x0022f658`) |
 | Grab struggle | byte `+0x36` | the grabbed human's strike costs the grabber 1 / n of its power (`0x0027fd68`) |
-| AI: block, counter, attack delay | floats `+0x08`, `+0x0c`, `+0x24`, `+0x1c`, `+0x20`; bytes `+0x37`, `+0x39` | the AI's block chances, counter chance, attack delay factors, pattern-reading threshold and throws at walls ([AI](ai.md#block)) |
+| AI: block, counter, attack delay | floats `+0x08`, `+0x0c`, `+0x24`, `+0x1c`, `+0x20`; bytes `+0x37`, `+0x39` | the AI's block chances, counter chance, attack delay factors, pattern-reading threshold and throws at walls ([AI](ai-fights.md#block)) |
 | Health bar | byte `+0x40` | the pause Stats screen's Health bar (`+0x40` / 100, [Stats screen](pause.md#stats-screen)); the health rings' span ([HUD](hud-radar.md#the-health-rings)) |
 | Not traced | `+0x32`, `+0x38`, `+0x3a`-`+0x3f`, `+0x41`, `+0x42` | stored; no reader found |
 
@@ -753,7 +753,7 @@ becomes player 1 when player 1 goes. What the engine calls "the player" (the rin
    ([HUD](hud.md#the-player-panel)); a panel still attached to another human is not free. The panel index goes to
    `+0x380`; the game state's per-panel record (`+0x168 + panel × 0x5c`) is reset.
 5. **Pad ownership**: the pad record's `+0x42` = the player slot; the human's per-player record `+0x19` = the pad.
-6. **Brain**: goals and actions cleared, type **0** (player, [AI](ai.md#types)).
+6. **Brain**: goals and actions cleared, type **0** (player, [AI](ai/index.md#types)).
 7. **War chief**: `+0x3ac` = 1 unless another listed player is already chief (with `W_GameState + 0x158` set, only
    one of the same gang kind counts); a chief becomes its gang's leader (gang `+0x44`).
 8. **Difficulty scaling**: health (record `+0x144`, `+0x146`) times a percentage, power maxima reloaded, attack damage
@@ -923,7 +923,8 @@ debug switch that is on in play (`0x005e5350`-`0x005e5368`); the full list is on
 1. The litter, ground fog and rain splashes (`0x00170c88`, `0x00171d38`, `0x00184568`,
    [Graphics](graphics.md#code-camera-effects)); `Pads_Update`; the formations; the 60 player records (`0x00146078`,
    below).
-2. The gangs, then the **brains** (`Brains_Update`, `0x00293b28`, confirmed (code), [AI](ai.md#update)), which write an
+2. The gangs, then the **brains** (`Brains_Update`, `0x00293b28`, confirmed (code), [AI](ai/index.md#update)), which
+   write an
    AI human's command into its player record as a pad would.
 3. For every human with an instance, `0x0023bd78` (the instance's animation step, `0x00175610`), then
    `0x00105570`.
@@ -1280,7 +1281,7 @@ the wheelchair, or else `PlayerLocomotion` (`0x00240e38`). Confirmed (code).
 
 Abort (`GiveWayAction_Abort`, `0x002fe658`) restores the saved boost once `TakeStepAction_Abort` agrees. **It also runs
 when the step ends normally**: a finished action is popped through `Action_AbortAndDestroy`, which calls Abort with
-argument 0 (always agreed) for any started action ([AI: Actions](ai.md#actions)). So the boost goes back however the
+argument 0 (always agreed) for any started action ([AI: Actions](ai/index.md#actions)). So the boost goes back however the
 GiveWay ends; nothing else restores it. The destroy (`GiveWayAction_Destroy`, `0x002fe6a8`) then clears brain
 `+0xcc` bit 1. Confirmed (code). `Brain_GiveWayTo` (`0x00289ed0`) sets the boost flag when the mover is a pad player
 (`+0x1b0` ≠ −1) whose stored gait `+0x1a8` is 3 (jog) or more, so an AI dashes out of a running player's way and
@@ -3136,7 +3137,8 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   end state after level 99's `GangDelete(0)` ([the hand-over](#level99-handover)) is the original's;
   `tests/platform/disc_level99_handover_test.cpp` plays checkpoint 1 into 2 and steals the first stereo as the new
   player 1 (before, the theft named the old handle, `HuIsAPlayer` said no and the lesson stalled).
-  `GangDelete` deletes the gang's members at once ([AI](ai.md#coney)); player 1, with no other human to go to, is only
+  `GangDelete` deletes the gang's members at once ([AI](ai/index.md#in-coney)); player 1, with no other human to go to,
+  is only
   taken out of the gang. `tests/platform/disc_level99_street_test.cpp` plays the end of the combat course into the
   street with the disc.
 - **The model** (`src/characters/character_class.h`, from [From a type to a model](#type-to-model)):
@@ -3277,7 +3279,7 @@ default ids are known, [Anim slots](#anim-slots)), and the
 - **Triangle flags `0x4` and `0x80`**: why two climbable flags (one for players only), and which surfaces carry them.
 - **The sprint's other clear** (answered: the block, [Combat](combat/index.md#dispatch)). Still open: what `0x00230140`,
   called when the sprint is set, does, and the fight test `0x00224f28`.
-- **The rest of the human**: the 0x180 record (the 0x2f0 record is the brain, [AI](ai.md#brain)), the state flags
+- **The rest of the human**: the 0x180 record (the 0x2f0 record is the brain, [AI](ai/index.md#brain)), the state flags
   tested by `0x002265f0` / `0x00226660`, and `Human_MakePlayer`'s steps.
 - **Level starts at runtime**: the list is read from the scripts; a runtime check would confirm a few. For each of
   `level2` checkpoint 1, `level95` chapter 1 and `level102` brawl, read player 1's transform (the table at

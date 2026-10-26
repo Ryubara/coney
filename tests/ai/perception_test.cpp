@@ -9,8 +9,8 @@
 #include "raycast/collision_mesh.h"
 #include "support/collision_fixtures.h"
 
-// The AI's line of sight through the level's collision (docs/research/ai.md#sight): eye to eye, then eye to chest,
-// passing through fences, railings and glass. Synthetic walls only.
+// The AI's line of sight through the level's collision (docs/research/ai-fights.md#sight): eye to eye, then eye to
+// chest, passing through fences, railings and glass. Synthetic walls only.
 
 using coney::ai::lineOfSight;
 using coney::anim::Vec3;

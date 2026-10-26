@@ -766,7 +766,8 @@ only within its parent's `ObjShow` distance ([Drawing](#tint)).
 #### A weapon given to a Warrior {#given-weapon}
 
 What a crew member does with a weapon the player hands him by triangle (the "Give Weapon" prompt, user item 37).
-The hand-over itself is [AI: the weapon swap](ai.md#warrior-swap); this is what follows. Confirmed (code) at the
+The hand-over itself is [AI: the weapon swap](ai-brain-types.md#warrior-swap); this is what follows. Confirmed (code) at
+the
 addresses cited unless marked.
 
 1. **It is in his hand, attached and drawn like the player's.** The swap places the object with
@@ -778,7 +779,7 @@ addresses cited unless marked.
    the human, so the weapon shows in the Warrior's hand on the next draw, posed by his bone cache. A left-hand or hat
    object (`pickup_anim` 5 or 6) has no type-9 event and stays on the ground (inferred, as for the scripted
    placement). The prompt that later offers it back ("Get Weapon", HUD string `0xd`, he holds) reads the same
-   `+0x338` ([AI: the Warriors' think](ai.md#think-warrior), step 7).
+   `+0x338` ([AI: the Warriors' think](ai-brain-types.md#think-warrior), step 7).
    **At runtime** (confirmed (runtime), PCSX2 2.9.129 (the PCSX2-MCP fork), copy `pcsx2-c`, 2026-10-21, `level99`
    checkpoint 2 street (slot 6) with the `call-brains` hook): a Warrior made with the `spawn-crew` recipe 2 m in front
    of Rembrandt, a `dyn_bat` put in Rembrandt's hand with `HuPlaceItemInHand`, then `Human_SwapHeldObjects`
@@ -803,9 +804,9 @@ addresses cited unless marked.
    hits as hard in a Warrior's hand as in the player's is open.
 4. **His choices change too.** `Brain_PickAttack` adds the **armed bonus** (+100 to every candidate of kinds 0-9 with
    a weight; category 14, the Warriors, is not one of the categories 9, 10, 13 that get 0) ([AI: picking the attack
-   kind](ai.md#pick-attack)); `Human_CanStartAttack` measures kinds 0, 1 and 5 with the set's clips (set 3: 36, 34,
+   kind](ai-fights.md#pick-attack)); `Human_CanStartAttack` measures kinds 0, 1 and 5 with the set's clips (set 3: 36, 34,
    35; set 2: 41, 39, 40; set 1: 47, 45, 46), and the fight goal lets an armed fighter attack from anywhere within
-   1.1 × the far range ([AI: objects in an AI's hands](ai.md#ai-objects)). A set 1 throwable lets kinds 0 and 1 reach
+   1.1 × the far range ([AI: objects in an AI's hands](ai/index.md#ai-objects)). A set 1 throwable lets kinds 0 and 1 reach
    12 m (thrown), set 4 15 m, set 5 30 m.
 5. **What he keeps.** Outside co-op a Warrior holding an object of kind 4 or 6 (the overhead props and the ghetto
    blasters) **drops it** once his enemy list is empty and no steal tactic runs (`WarriorBrain_Think` `0x003052f0`,
@@ -1917,7 +1918,7 @@ update. Confirmed (runtime); the bottle's path was not hooked.
 `dyn_keyboard`, `dyn_drumkit_a`, `dyn_drumkit_e`, `dyn_paintcan`, `dyn_detergent`, `dyn_cinderblok`, `dyn_bagcash`,
 `dyn_bagdrug` and one unnamed hash `0xe910f959`), or for none while set 3 has bit `0x1`; the break or the next update
 clears it. So the trash props mark the navigation mesh while they stand. Confirmed (code); what flag 8 means to the AI
-here is on [AI](ai.md).
+here is on [AI](ai/index.md).
 
 ### Trains (moving hazards) {#trains}
 
@@ -1949,7 +1950,7 @@ a segment's start, and takes the first segment whose length is greater; it ignor
 last segment, so with fewer than three points it finds nothing; the dodge goal's use:
 [RunFromTrain](ai-goals.md#goal-run-from-train)). `Trains_IsPathClear`
 (`0x00414188`) asks each running train (`TrainRecord_IsPathClear`, `0x00413c48`) whether a move from one point to
-another passes within its radius of a segment; [AI](ai.md) movement checks it. The record's constructor is
+another passes within its radius of a segment; [AI](ai/index.md) movement checks it. The record's constructor is
 `0x00413848`. Confirmed (code).
 
 ### Game-state functions {#warriors-functions}

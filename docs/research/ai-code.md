@@ -6,9 +6,9 @@ Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038e
 ## Purpose
 
 The function-by-function index of the AI code: the gang module (`0x00162518`-`0x0016e388`), and from `0x00288000`
-up the brain core, the actions, the brain types and the tactics. [AI humans](ai.md) explains how these pieces work
+up the brain core, the actions, the brain types and the tactics. [AI humans](ai/index.md) explains how these pieces work
 together and is the page to read first; this one names every function, says in a line what it does, and links to
-the section of [AI humans](ai.md) that covers it.
+the section of [AI humans](ai/index.md) that covers it.
 
 ## Original structure
 
@@ -19,7 +19,8 @@ below are the map: one per group of functions, in address order, with a row per 
 
 Every function of the gang module (`0x00162518`-`0x0016e388`, a range inferred from where the gang functions lie; the
 first rows, from `0x001624e0`, are the load screens' objects that share the stretch) not described in [Gangs, tactics
-and formations](ai.md#gangs), by address. Offsets are gang record offsets unless a spawner (0x130 at `+0x640`) or the
+and formations](ai/index.md#gangs), by address. Offsets are gang record offsets unless a spawner (0x130 at `+0x640`) or
+the
 configuration record (0x7a) is named. Script bindings are given by their Lua name ([Gang
 bindings](../references/bindings/gang.md)).
 
@@ -215,7 +216,7 @@ row is one function; names already in use are kept.
 ### Brain record helpers {#brain-record}
 
 Small helpers that read or reset fields of the 0x2f0-byte brain record at `0x006d53f0` (one per human slot,
-`Human_GetBrain`, `0x0021d408`; confirmed (code)); the record's layout is in [AI humans: the brain](ai.md#brain).
+`Human_GetBrain`, `0x0021d408`; confirmed (code)); the record's layout is in [AI humans: the brain](ai/index.md#brain).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -251,7 +252,7 @@ Small helpers that read or reset fields of the 0x2f0-byte brain record at `0x006
 ### Goal stack and action queue {#goal-stack}
 
 Queries and edits of the goal stack (`+0x40`, top index `+0x2c`) and the action queue (`+0x68`). How goals and
-actions run is in [AI humans: goals](ai.md#goals) and [actions](ai.md#actions).
+actions run is in [AI humans: goals](ai/index.md#goals) and [actions](ai/index.md#actions).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -296,7 +297,7 @@ The steering state at brain `+0xa0`, which bends a walk round other humans; see
 
 The enemy scan, sight tests, and the perception record at brain `+0xf8` that turns the head: idle moods pick
 something to glance at, look modes play short head-turn sequences through the head-look record at brain
-`+0x284`. Sight itself is in [AI humans: sight](ai.md#sight); the head-look moods are new here.
+`+0x284`. Sight itself is in [AI humans: sight](ai-fights.md#sight); the head-look moods are new here.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -309,7 +310,7 @@ something to glance at, look modes play short head-turn sequences through the he
 | `0x0028bf88` | `Brain_HasSeenPlayer` | helper | brain `+0x150 + i` | confirmed (code) |
 | `0x0028c0c8` | `Brain_NoteSpotter` | helper | stores who spotted (handle `+0x260`, his gang id `+0x264`), or clears it | confirmed (code) |
 | `0x0028c140` | `Brain_NoteLastSeenPos` | helper | a human's position into `+0x240` (unless he is hidden in shadow, or forced) | confirmed (code) |
-| `0x0028fa18` | `Brain_MaybeScanEnemies` | helper | re-scans enemies (`Brain_ScanEnemies`, one of 5 tokens per update) when the gang changed or the interval `+0x144` passed, × 4 in the fight stance or at detail level `+0x333` above 0 ([The enemy scan](ai.md#enemy-scan)) | confirmed (code) |
+| `0x0028fa18` | `Brain_MaybeScanEnemies` | helper | re-scans enemies (`Brain_ScanEnemies`, one of 5 tokens per update) when the gang changed or the interval `+0x144` passed, × 4 in the fight stance or at detail level `+0x333` above 0 ([The enemy scan](ai-fights.md#enemy-scan)) | confirmed (code) |
 | `0x0028fae8` | `Brain_MaybeSpotPlayers` | helper | drops the target while busy (`0x1f80874000`); every 1.5 s, × 4 in the fight stance or at detail level `+0x333` above 0, `Brain_SpotPlayers` | confirmed (code) |
 | `0x00293cd0` | `AI_TakeScanToken` | helper | at most 5 enemy scans per update (`0x00510ac0`; refusals counted at `0x00510ac4`) | confirmed (code) |
 | `0x00296908` | `Perception_Init` | helper | the perception record (brain `+0xf8`): look history cleared, 30-tick timer; resets the player's look flag | confirmed (code) |
@@ -362,7 +363,7 @@ something to glance at, look modes play short head-turn sequences through the he
 ### Enemy list and scoring {#enemy-list}
 
 The list of up to 16 enemies at brain `+0x164` and the score that picks among them; see
-[AI humans: choosing among enemies](ai.md#enemy-score) and [starting a fight](ai.md#targets).
+[AI humans: choosing among enemies](ai-fights.md#enemy-score) and [starting a fight](ai-fights.md#targets).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -385,7 +386,7 @@ The list of up to 16 enemies at brain `+0x164` and the score that picks among th
 ### Attack slots {#attack-slots}
 
 The attack slots at brain `+0x1a4` and the active attackers at `+0x1f0`, which limit how many humans hit one
-target at a time; see [AI humans: EngageEnemy](ai.md#engage-enemy).
+target at a time; see [AI humans: EngageEnemy](ai-fights.md#engage-enemy).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -420,7 +421,7 @@ A gang's turf (`+0x17c`) and its two wanted timers (gang `+0x5e8` and `+0x5f0`, 
   wanted (timer 0) and a cop already attacks him.
 - `Filter_IsChaseable` (`0x0029c628`), the police chase filter, also takes only humans whose gang's first timer is 0.
   Speculative: wanted gang members are left to the arrest goals and the chase is for lesser offenders.
-- `Brain_MayEngage` (`0x00290588`, outside this list) is described under [the Melee goal](ai.md#melee-goal).
+- `Brain_MayEngage` (`0x00290588`, outside this list) is described under [the Melee goal](ai-fights.md#melee-goal).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -433,7 +434,7 @@ A gang's turf (`+0x17c`) and its two wanted timers (gang `+0x5e8` and `+0x5f0`, 
 
 ### Events and calls for help {#brain-events}
 
-How a brain hears events and passes calls for help on; see [AI humans: events](ai.md#events).
+How a brain hears events and passes calls for help on; see [AI humans: events](ai/index.md#events).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -450,7 +451,7 @@ How a brain hears events and passes calls for help on; see [AI humans: events](a
 | `0x00291d08` | `Brain_CallForHelp` | helper | unless in shadow mode, a 5 m help call (`Gang_BroadcastHelpCall`) | confirmed (code) |
 | `0x00292158` | `Brain_TryPatternBlock` | helper | when the attacker's pattern (`+0x5d0`) reaches the human's block threshold and he is in a fight goal: a block (`Goal_TryBlock`), ending a stun, command 4; step by step: [AI plan](ai-reimpl.md#pattern-block) | confirmed (code) |
 | `0x002935d8` | `Brain_IsInHearRange` | helper | whether an event's distance is within the hearing radius (`+0x134`; `+0x138` for event 20) | confirmed (code) |
-| `0x00293640` | `Gang_BroadcastHelpCall` | helper | event `0x14` from the caller to every human within min(range, his `+0x138`), not only the gang; record `+0x00` aggressor, `+0x0c` the new-enemy flag, `+0x24` the caller ([Help calls](ai.md#help-calls)) | confirmed (code) |
+| `0x00293640` | `Gang_BroadcastHelpCall` | helper | event `0x14` from the caller to every human within min(range, his `+0x138`), not only the gang; record `+0x00` aggressor, `+0x0c` the new-enemy flag, `+0x24` the caller ([Help calls](ai-brain-types.md#help-calls)) | confirmed (code) |
 
 ### Script bindings {#script-bindings}
 
@@ -490,7 +491,7 @@ The workers behind the script commands that set brain fields, by handle; see
 ### Configuration {#ai-config}
 
 The `Cfg...` workers that set the AI's global tuning values; the melee ranges are in
-[AI humans: melee ranges](ai.md#melee-range), the score weights in [the score](ai.md#enemy-score).
+[AI humans: melee ranges](ai-fights.md#melee-range), the score weights in [the score](ai-fights.md#enemy-score).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -499,7 +500,7 @@ The `Cfg...` workers that set the AI's global tuning values; the melee ranges ar
 | `0x00294670` | `Cfg_SetMeleeFar` | helper | default far melee range (`0x00510ab8`) | confirmed (code) |
 | `0x00294680` | `Cfg_GetMeleeFar` | helper | reads it | confirmed (code) |
 | `0x00294690` | `Cfg_SetMeleeRange` | binding worker | `CfgSetMeleeRange`: both defaults | confirmed (code) |
-| `0x002946c0` | `Cfg_SetTargetingPoints` | binding worker | the score weights ([Enemy score](ai.md#enemy-score)) | confirmed (code) |
+| `0x002946c0` | `Cfg_SetTargetingPoints` | binding worker | the score weights ([Enemy score](ai-fights.md#enemy-score)) | confirmed (code) |
 | `0x00294718` | `Cfg_SetTargetingPointsEx` | binding worker | the other score weights | confirmed (code) |
 | `0x00294788` | `Cfg_SetDefaultFollowSlotSet` | binding worker | writes the slot set into every pool formation (`0x00294bf8`), in use or not | confirmed (code) |
 | `0x002947f0` | `Cfg_SetBaseChanceToBlock` | binding worker | `0x00510ac8` when 100 or less | confirmed (code) |
@@ -593,7 +594,7 @@ Following a planned route leg by leg, including climb, jump and smash legs; see
 ### Human lists and filters {#human-filters}
 
 Callbacks that accept or refuse a human or an object, and the helpers that build short handle lists with them.
-Goals use them to find targets, backup and partners ([AI humans: starting a fight](ai.md#targets)).
+Goals use them to find targets, backup and partners ([AI humans: starting a fight](ai-fights.md#targets)).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -658,7 +659,7 @@ attack check read it; see [AI humans: steering round humans](ai-moving.md#steeri
 ### Pools and global state {#ai-pools}
 
 Boot and level resets of the AI pools, global clocks, and a few one-line game-state setters; see
-[AI humans: the update](ai.md#update).
+[AI humans: the update](ai/index.md#update).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -683,7 +684,7 @@ Boot and level resets of the AI pools, global clocks, and a few one-line game-st
 
 ## Actions {#actions}
 
-The action classes in `0x002f9e48`-`0x002fee38` ([AI humans: actions](ai.md#actions) has the pool and the base
+The action classes in `0x002f9e48`-`0x002fee38` ([AI humans: actions](ai/index.md#actions) has the pool and the base
 fields). Each class has a vtable whose word `+0x0c` returns its type id and `+0x34` its name; the names below are the
 executable's. Start returns 2 when the action is already done, Abort 0 when it refuses, Update 2 when it is done.
 Confirmed (code) for the vtables and their slots.
@@ -702,7 +703,7 @@ Confirmed (code) for the vtables and their slots.
 | `LookAround` (10) | `0x00543060` | `0x002fe248` | `0x002fe280` | `0x002fe320` | `0x002fe360` | plays the look-around clip with a wide view |
 | `TakeStep` (11) | `0x00543020` | `0x002fe380` | `0x002fe3a8` | `0x002fe3d8` | `0x002fe428` | one step on a heading |
 | `GiveWay` (12) | `0x00542fe0` | `0x002fe568` | `0x002fe5d8` | `0x002fe658` | `0x002fe6c8` | a step aside for a human, looking at him |
-| `Attack` (13) | `0x00542ce0` | `0x002fa918` | `0x002fa9a8` | `0x002fad30` | `0x002fad70` | [The attack action](ai.md#attack-action) |
+| `Attack` (13) | `0x00542ce0` | `0x002fa918` | `0x002fa9a8` | `0x002fad30` | `0x002fad70` | [The attack action](ai-fights.md#attack-action) |
 | `PlayFidget` (15) | `0x00542c60` | `0x002f9f48` | `0x002f9f78` | `0x002fa0e0` | `0x002fa1e0` | an idle fidget clip, with an optional line |
 | `ParlayStart` (17) | `0x00542c20` | `0x002fa220` | `0x002fa248` | - | `0x002fa270` | waits for the pad to start a parley |
 | `PlayGenAnim` (20) | `0x00542b60` | `0x002fa5a0` | `0x002fa5e0` | `0x002fa608` | `0x002fa650` | a gang clip of an anim id |
@@ -815,7 +816,7 @@ Every function of the classes, and the helpers among them:
 | `0x002fe0a8` | `TurnToPointAction_Update` | `TurnTo` Update | the turn Update | confirmed (code) |
 | `0x002fe0c8` | `Action_LookAt` | binding worker | a `LookAt` action | confirmed (code) |
 | `0x002fe160` | `LookAtAction_Init` | `LookAt` init | the human's handle | confirmed (code) |
-| `0x002fe1b0` | `LookAtAction_Update` | `LookAt` Update | the heading to the human, taken each update ([Look at](ai.md#actions)) | confirmed (code) |
+| `0x002fe1b0` | `LookAtAction_Update` | `LookAt` Update | the heading to the human, taken each update ([Look at](ai/index.md#actions)) | confirmed (code) |
 | `0x002fe248` | `LookAroundAction_Init` | `LookAround` init | 2000 ms, 110° | confirmed (code) |
 | `0x002fe280` | `LookAroundAction_Start` | `LookAround` Start | deadline = clip `0x29e`'s length; field of view 4.71 rad and sight range `0x14d` while it plays (old values saved) | confirmed (code) |
 | `0x002fe320` | `LookAroundAction_Abort` | `LookAround` Abort | restores the field of view and range | confirmed (code) |
@@ -827,7 +828,7 @@ Every function of the classes, and the helpers among them:
 | `0x002fe568` | `GiveWayAction_Init` | `GiveWay` init | a step, the human, a boost flag; marks the brain (`+0xcc` bit 1) | confirmed (code) |
 | `0x002fe5d8` | `GiveWayAction_Start` | `GiveWay` Start | looks at him for 2 s, optional turn boost, then the step | confirmed (code) |
 | `0x002fe658` | `GiveWayAction_Abort` | `GiveWay` Abort | the step's Abort, the boost restored | confirmed (code) |
-| `0x002fe6a8` | `GiveWayAction_Destroy` | `GiveWay` destroy | clears brain `+0xcc` bit 1; Abort (with the boost) runs before it on a normal end too ([AI: Actions](ai.md#actions)) | confirmed (code) |
+| `0x002fe6a8` | `GiveWayAction_Destroy` | `GiveWay` destroy | clears brain `+0xcc` bit 1; Abort (with the boost) runs before it on a normal end too ([AI: Actions](ai/index.md#actions)) | confirmed (code) |
 | `0x002fe6c8` | `GiveWayAction_Update` | `GiveWay` Update | the step's Update | confirmed (code) |
 | `0x002fe6e8` | `MoveMeleeLineAction_Init` | `MoveMeleeLine` init | the human, a point | confirmed (code) |
 | `0x002fe720` | `MoveMeleeLineAction_Start` | `MoveMeleeLine` Start | a 2 s limit | confirmed (code) |
@@ -839,7 +840,7 @@ Every function of the classes, and the helpers among them:
 
 ## Brain types {#brain-types}
 
-The think and event handlers per brain type ([Types](ai.md#types) has the table and what each does).
+The think and event handlers per brain type ([Types](ai/index.md#types) has the table and what each does).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -863,10 +864,10 @@ The think and event handlers per brain type ([Types](ai.md#types) has the table 
 | `0x00303db8` | `WarChief_IsTargetInRange` | type 0 helper | the chief's target within his far melee range and not a Warrior hitting back | confirmed (code) |
 | `0x00303e68` | `Brain_HasAttackers` | helper | the attacker list (`+0x1a4`) is not empty | confirmed (code) |
 | `0x00303e90` | `PlayerBrain_OnEvent` | type 0 event | event 0 → the prompt; 11, 12, 20 consumed; others to the shared handler (`0x00292d80`) | confirmed (code) |
-| `0x00303f10` | `CivlCoDiBrain_Think` | type 6 think | the shopkeeper's think ([Shopkeepers](ai.md#think-shopkeeper)) | confirmed (code) at the table `0x00715568` |
+| `0x00303f10` | `CivlCoDiBrain_Think` | type 6 think | the shopkeeper's think ([Shopkeepers](ai-brain-types.md#think-shopkeeper)) | confirmed (code) at the table `0x00715568` |
 | `0x00304030` | `Brain_IsFreeToFight` | type 6 helper | alive and without a fight goal | confirmed (code) |
-| `0x00304228` | `CivlCoDiBrain_OnEvent` | type 6 event | the shopkeeper's events ([Shopkeepers](ai.md#think-shopkeeper)) | confirmed (code) at the table `0x007155a0` |
-| `0x00304c78` | `GangBrain_OnCrimeSeen` | type 2 crime witness | a gang member who sees a crime by someone hostile to him (`0x00290138`) and has no goal `0x9a` pushes Investigate (`0x5e`, 5 m, line 13) at the offender's position, or ReactNoise (`0x99`) under a Mark goal ([Gang soldiers](ai.md#think-gang)) | confirmed (code) |
+| `0x00304228` | `CivlCoDiBrain_OnEvent` | type 6 event | the shopkeeper's events ([Shopkeepers](ai-brain-types.md#think-shopkeeper)) | confirmed (code) at the table `0x007155a0` |
+| `0x00304c78` | `GangBrain_OnCrimeSeen` | type 2 crime witness | a gang member who sees a crime by someone hostile to him (`0x00290138`) and has no goal `0x9a` pushes Investigate (`0x5e`, 5 m, line 13) at the offender's position, or ReactNoise (`0x99`) under a Mark goal ([Gang soldiers](ai-brain-types.md#think-gang)) | confirmed (code) |
 | `0x00304fa8` | `GangBrain_OnEvent` | type 2 event | gang members' events | confirmed (code) at the table `0x007155a0` |
 | `0x003052f0` | `WarriorBrain_Think` | type 3 think | [The Warriors' pick-ups](ai-gangs.md#warrior-pickups) and the fight push | confirmed (code) |
 | `0x00306040` | `WarriorBrain_OnPrompt` | type 3 helper | triangle on a Warrior: when both are free and in reach (`0x0021c0a8`), faces him; line `0x92` as the player's | confirmed (code) |
@@ -1674,7 +1675,7 @@ playing, `+0x2b` the answer said.
    users. In each record in that order he takes the object nearest **him** that still exists and is not claimed by
    his gang; it is his when no gang mate stands within 1.5 m of its navigation point (else the next record).
 5. **The fetch** (`WarriorVandalStealGoal_TryFetch`): GetItem with gait **4** (a run) beyond 3 m of the standing
-   point, 3 within ([GetItem](ai.md#get-item)). A Warrior who gets nothing from the walk (no store, or every cluster
+   point, 3 within ([GetItem](ai/index.md#get-item)). A Warrior who gets nothing from the walk (no store, or every cluster
    blocked) waits 500 ms × his place in the gang, then fetches a smash target near the chief instead. At runtime
    (PCSX2 2.9.94, scenario `repo:research/traces/scenarios/steal_store.toml`, level80's pharmacy) the zone made **3
    clusters**; Rembrandt claimed from the second record of his walk, Vermin from the first. Confirmed (runtime).
@@ -1734,22 +1735,22 @@ stance, `0x2a7`/`0x2a8` out of it), and the order goes out when his line ends. T
 ## Data
 
 The records these functions work on are described on the pages that own them: the brain record on
-[AI humans: the brain](ai.md#brain), the gang and spawner records on [Gangs](ai-gangs.md#gangs), the tactic base fields
+[AI humans: the brain](ai/index.md#brain), the gang and spawner records on [Gangs](ai-gangs.md#gangs), the tactic base fields
 on [Tactics](ai-gangs.md#tactics). The pools and tables this index names (formations, queues, sectors, the strategy pool)
 carry their size and evidence where they are listed; each tactic's own fields are in its section above.
 
 ## Behaviour
 
-This page is an index; what the code does is on [AI humans](ai.md) and the pages it links, each section above pointing
+This page is an index; what the code does is on [AI humans](ai/index.md) and the pages it links, each section above pointing
 to the one that covers it.
 
 ## Coney's implementation
 
 The AI is in `repo:src/ai/`, each original function tagged with `@orig`; what Coney does differently is on
-[AI humans: Coney's implementation](ai.md#coney) and, for the gangs and tactics, on
+[AI humans: Coney's implementation](ai/index.md#in-coney) and, for the gangs and tactics, on
 [Gangs: Coney's implementation](ai-gangs.md#coneys-implementation).
 
 ## Open questions
 
 Each open point sits with its subject above (the WarriorSteal stand-ins in [WarriorSteal](#t2-warrior-steal)); the
-AI's open questions are on [AI humans](ai.md#open-questions).
+AI's open questions are on [AI humans](ai/index.md#open-questions).

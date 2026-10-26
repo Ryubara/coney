@@ -9,15 +9,15 @@
 // handler (gang soldiers and Warriors), then the shared one every type falls back on. A hit, a new enemy or an attack
 // warning sends a help call: violence (`0x14`) to every human in reach, which a gang soldier or a Warrior answers by
 // taking a side, fighting him and walking over (HelpRespondGoal).
-// Research: docs/research/ai.md#shared-events, docs/research/ai.md#brain-type-handlers,
-// docs/research/ai.md#help-calls, docs/research/ai-goals.md#goal-help-respond
+// Research: docs/research/ai-brain-types.md#shared-events, docs/research/ai/index.md#brain-type-handlers,
+// docs/research/ai-brain-types.md#help-calls, docs/research/ai-goals.md#goal-help-respond
 
 namespace coney::ai {
 
 class Brain;
 struct BrainEvent;
 
-/// The help calls' reaches, metres (docs/research/ai.md#help-calls).
+/// The help calls' reaches, metres (docs/research/ai-brain-types.md#help-calls).
 inline constexpr float kHelpCallShared = 20.0F; ///< The shared handler's, the Big* goals' and the mugging's.
 inline constexpr float kHelpCallBusy = 30.0F;   ///< A busy gang soldier hit by a player.
 

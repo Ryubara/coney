@@ -300,7 +300,7 @@ target_sources(coney_core PRIVATE
     human/target_human.cpp
     human/turn_and_slide.cpp
     human/victim.cpp)
-# The AI: brains, goals and actions, and the AI humans of a scene (docs/research/ai.md).
+# The AI: brains, goals and actions, and the AI humans of a scene (docs/research/ai/index.md).
 target_sources(coney_core PRIVATE
     ai/address_person_goal.cpp
     ai/ai_config.cpp

@@ -31,14 +31,6 @@ address-resolve = 2
 history = 1
 length = 743
 
-["docs/research/ai-moving.md"]
-front-matter = 1
-skeleton = 18
-verified = 1
-evidence = 103
-address-resolve = 2
-history = 1
-
 ["docs/research/ai-pathing.md"]
 front-matter = 1
 skeleton = 9
@@ -68,15 +60,6 @@ skeleton = 3
 verified = 1
 evidence = 22
 history = 1
-
-["docs/research/ai.md"]
-front-matter = 1
-skeleton = 2
-verified = 1
-evidence = 205
-address-resolve = 2
-history = 10
-length = 1522
 
 ["docs/research/animation.md"]
 front-matter = 1
@@ -261,13 +244,6 @@ address-form = 2
 address-resolve = 1
 history = 2
 length = 1017
-
-["docs/research/gang-fights.md"]
-front-matter = 1
-skeleton = 12
-verified = 1
-evidence = 25
-history = 11
 
 ["docs/research/graphics-restart.md"]
 front-matter = 1

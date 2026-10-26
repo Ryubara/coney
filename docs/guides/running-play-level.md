@@ -24,7 +24,8 @@ from your disc's executable; door 5 while the tutorial is locked), and an arena 
 (`--play-level level102`) uses the Rumble menu's default set-up ([Flags](../research/flags.md#coneys-implementation)).
 The scripts keep running in play, one script frame per step: their scheduled calls, their volume-box triggers and their
 message handlers, and every other human they create is an AI human with its own model, driven by the scripts' goals and
-gangs ([AI](../research/ai.md#coney)); bindings Coney lacks are skipped with a log line. A level whose script creates no
+gangs ([AI](../research/ai/index.md#in-coney)); bindings Coney lacks are skipped with a log line. A level whose script
+creates no
 player 1 puts him above the middle of its first world's part 1, Coney's stand-in. He walks, runs, sprints, turns and
 leans into turns, stops, steps onto kerbs under 25 cm, slides along walls, jumps, climbs fences and walls, and falls off
 ledges on the level's collision mesh, with the original's speeds, turn rates and clips: the walk or run start, a blend

@@ -194,7 +194,7 @@ cell's list, confirmed (code):
    as a hit, **but while nothing has been hit yet it still fills the result** (hit 0, `t`, the material at `+0x28`, the
    flags and the triangle), with no nearer-than test; a later real hit overwrites it, and once a real hit is kept
    excluded triangles are skipped. So a clear ray reports the material of a see-through triangle it crossed (the last
-   one tested): [AI: GetItem](ai.md#get-item) reads 2 (`GLASS`) as "an intact pane in the way". Confirmed (code) at
+   one tested): [AI: GetItem](ai/index.md#get-item) reads 2 (`GLASS`) as "an intact pane in the way". Confirmed (code) at
    `0x00350778`.
 5. Intersect: `RayTriangle_TwoSided` (`0x00337a60`) when flag bit 1 is set, otherwise `RayTriangle_OneSided`
    (`0x00337920`). Both are Möller-Trumbore tests that return `t` or -1. The one-sided test rejects a determinant

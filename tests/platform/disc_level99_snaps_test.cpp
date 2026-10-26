@@ -3,9 +3,9 @@
 // Checks against the player's own disc that lesson 7 of `level99`'s combat tutorial, the snaps, can be passed: the
 // level plays as `--play-level level99 --checkpoint 1` plays it, headless, driven by an input script through lessons
 // 1-6; once the lesson arms its callback the second wave stands round the player (its four follow slots 1 m around
-// him, docs/research/ai.md#level99-snaps), three snaps made as a player makes them with a gamepad (the stick pushed to
-// the screen's side the bum is on, to a real stick's rim, short of a full push, through the SDL layer's mapping, and
-// square pressed while it is held) land and score, `P1.SnapsDone` runs and lesson 8 arms its own callback
+// him, docs/research/ai/index.md#level99-snaps), three snaps made as a player makes them with a gamepad (the stick
+// pushed to the screen's side the bum is on, to a real stick's rim, short of a full push, through the SDL layer's
+// mapping, and square pressed while it is held) land and score, `P1.SnapsDone` runs and lesson 8 arms its own callback
 // (docs/research/scripting.md#level99-lessons). It runs only when the environment variable CONEY_DISC names the disc
 // and skips otherwise; it prints counts only (LEGAL.md).
 

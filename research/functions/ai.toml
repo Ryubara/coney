@@ -4,7 +4,7 @@
 [[function]]
 address = 0x00147ef0
 name = "PlayerRecord_SetCommand"
-page = "ai.md#original-structure"
+page = "ai/index.md#attack-kinds"
 role = "writes per-player `+0x20`"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::press"
@@ -67,7 +67,7 @@ status = "legacy"
 [[function]]
 address = 0x00164c20
 name = "Gang_OnEvent"
-page = "ai.md#original-structure"
+page = "ai-gangs.md#gang-events"
 role = "[gangs](ai-gangs.md#gangs)"
 level = "confirmed-code"
 coney = "src/ai/gangs.h:Gang::onEvent"
@@ -101,7 +101,7 @@ status = "legacy"
 [[function]]
 address = 0x00165b70
 name = "Gang_SetSharedTarget"
-page = "ai-code.md#gang-functions"
+page = "gang-fights.md#targets"
 role = "Target `+0x10`: checked through the leader's brain; unless friendly, every AI member adds it as an enemy. The null handle just clears it"
 level = "confirmed-code"
 coney = "src/ai/gangs.h:Gang::setSharedTarget"
@@ -548,7 +548,7 @@ status = "legacy"
 [[function]]
 address = 0x0016bb58
 name = "Gang_SetAttackable"
-page = "ai.md#sight"
+page = "ai-fights.md#sight"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/gangs.h:Gangs::setAttackable"
 status = "legacy"
@@ -653,7 +653,7 @@ status = "legacy"
 [[function]]
 address = 0x0021c0a8
 name = "Human_IsWayClearTo"
-page = "ai.md#warrior-swap"
+page = "ai-brain-types.md#warrior-swap"
 level = "confirmed-code"
 coney = "src/gamemodes/gameplay_mode.h:GameplayMode::wayClearTo"
 status = "legacy"
@@ -669,7 +669,7 @@ status = "legacy"
 [[function]]
 address = 0x00221cd8
 name = "Human_TurnToFaceObject"
-page = "ai.md#fight-facing"
+page = "ai-fights.md#fight-facing"
 level = "confirmed-code"
 coney = "src/ai/engage_goals.cpp:EngageEnemyGoal::process"
 status = "legacy"
@@ -685,7 +685,7 @@ status = "legacy"
 [[function]]
 address = 0x00222288
 name = "Human_HasLineOfSight"
-page = "ai.md#sight"
+page = "ai-fights.md#sight"
 level = "confirmed-code"
 coney = "src/ai/perception.h:lineOfSight"
 status = "legacy"
@@ -693,7 +693,7 @@ status = "legacy"
 [[function]]
 address = 0x002223e8
 name = "Human_CanSeeHuman"
-page = "ai.md#sight"
+page = "ai-fights.md#sight"
 level = "confirmed-code"
 coney = "src/ai/perception.h:canSeeHuman"
 status = "legacy"
@@ -701,7 +701,7 @@ status = "legacy"
 [[function]]
 address = 0x002235f8
 name = "Human_CounterChance"
-page = "ai.md#original-structure"
+page = "ai-fights.md#block"
 role = "power-class reads"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::counterChance"
@@ -710,7 +710,7 @@ status = "legacy"
 [[function]]
 address = 0x00223628
 name = "Human_BlockChance"
-page = "ai.md#original-structure"
+page = "ai-fights.md#block"
 role = "power-class reads"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::blockChance"
@@ -719,7 +719,7 @@ status = "legacy"
 [[function]]
 address = 0x00223800
 name = "Human_AttackDelay"
-page = "ai.md#original-structure"
+page = "ai-fights.md#attack-action"
 role = "power-class reads"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::attackDelayMs"
@@ -728,7 +728,7 @@ status = "legacy"
 [[function]]
 address = 0x00231090
 name = "AttackKind_ToCommand"
-page = "ai.md#original-structure"
+page = "ai/index.md#attack-kinds"
 level = "confirmed-code"
 coney = "src/ai/attack_kinds.h:commandOf"
 status = "legacy"
@@ -736,7 +736,7 @@ status = "legacy"
 [[function]]
 address = 0x00231198
 name = "AttackKind_ChainDelay"
-page = "ai.md#original-structure"
+page = "ai/index.md#attack-kinds"
 level = "confirmed-code"
 coney = "src/ai/attack_kinds.h:chainDelayMs"
 status = "legacy"
@@ -753,7 +753,7 @@ status = "legacy"
 [[function]]
 address = 0x0024df40
 name = "Ray_IsClear"
-page = "ai.md#get-item"
+page = "ai-fights.md#sight"
 level = "confirmed-code"
 coney = "src/ai/perception.h:lineOfSight"
 status = "legacy"
@@ -865,7 +865,7 @@ status = "legacy"
 [[function]]
 address = 0x00251a70
 name = "Route_AStar"
-page = "ai.md#original-structure"
+page = "ai-moving.md#path-planning"
 role = "[path planning](ai-moving.md#path-planning)"
 level = "confirmed-code"
 coney = "src/ai/route_planner.h:RoutePlanner::search"
@@ -922,7 +922,7 @@ status = "legacy"
 [[function]]
 address = 0x00288cc8
 name = "Steering_FindBlocker"
-page = "ai-code.md#brain-steering"
+page = "ai-moving.md#neighbour-sectors"
 kind = "helper"
 role = "of a list of nearby humans, not the target and not behind, the first whose 0.63 m disc the relative step hits ([the blocker test](ai-moving.md#neighbour-sectors))"
 level = "confirmed-code"
@@ -942,7 +942,7 @@ status = "legacy"
 [[function]]
 address = 0x00289010
 name = "Steering_TryDetour"
-page = "ai-code.md#brain-steering"
+page = "ai-moving.md#steering"
 kind = "helper"
 role = "when the human can walk straight to the detour point and it is not blocked (`0x00249050`): avoiding on, the point and its score stored"
 level = "confirmed-code"
@@ -962,7 +962,7 @@ status = "legacy"
 [[function]]
 address = 0x00289138
 name = "Human_SteerAroundHumans"
-page = "ai.md#original-structure"
+page = "ai-moving.md#steering"
 role = "[steering](ai-moving.md#steering)"
 level = "confirmed-code"
 coney = "src/ai/steering.h:steerAroundHumans"
@@ -981,7 +981,7 @@ status = "legacy"
 [[function]]
 address = 0x00289ed0
 name = "Brain_GiveWayTo"
-page = "ai-code.md#brain-steering"
+page = "ai-moving.md#giving-way"
 kind = "helper"
 role = "a standing AI in the way of a mover picks the first free sector of s, s+1, s+2, s−1, s+3, s+4, s−2 (s: straight off the mover's path) and queues a `GiveWay` step there, else asks that sector's human to give way ([Giving way](ai-moving.md#neighbour-sectors))"
 level = "confirmed-code"
@@ -991,7 +991,7 @@ status = "legacy"
 [[function]]
 address = 0x0028a248
 name = "Brain_PushAside"
-page = "ai-code.md#brain-steering"
+page = "ai-moving.md#giving-way"
 kind = "helper"
 role = "guards `Brain_GiveWayTo` against re-entry with brain flag `+0xcc` bit 4; a brain with bit 1 (already giving way) answers yes"
 level = "confirmed-code"
@@ -1001,7 +1001,7 @@ status = "legacy"
 [[function]]
 address = 0x0028abc0
 name = "Brain_CanBeChased"
-page = "ai-code.md#enemy-list"
+page = "ai-fights.md#enemy-score"
 kind = "helper"
 role = "whether a target can be chased: reachable (`+0x11e`), no train near, not on fire"
 level = "confirmed-code"
@@ -1021,7 +1021,7 @@ status = "legacy"
 [[function]]
 address = 0x0028b358
 name = "Brain_ScanEnemies"
-page = "ai-code.md#perception"
+page = "ai-fights.md#enemy-scan"
 kind = "helper"
 role = "the periodic enemy scan: lists nearby humans and keeps the enemy list and sight flags up to date"
 level = "confirmed-code"
@@ -1041,7 +1041,7 @@ status = "legacy"
 [[function]]
 address = 0x0028c1a8
 name = "Brain_InstallHandlers"
-page = "ai.md#original-structure"
+page = "ai/index.md#handlers"
 role = "gives a brain its type's handlers"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::setDead"
@@ -1050,7 +1050,7 @@ status = "legacy"
 [[function]]
 address = 0x0028c3b0
 name = "Brain_OnKnockedOut"
-page = "ai-code.md#brain-record"
+page = "ai/index.md#reaction-goals"
 kind = "helper"
 role = "on a knock-out: ends the reaction goal, clears goals and actions, drops the target"
 level = "confirmed-code"
@@ -1080,7 +1080,7 @@ status = "legacy"
 [[function]]
 address = 0x0028cfe0
 name = "Brain_SetTarget"
-page = "ai.md#original-structure"
+page = "ai-fights.md#targets"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::setTarget"
 status = "legacy"
@@ -1088,7 +1088,7 @@ status = "legacy"
 [[function]]
 address = 0x0028d190
 name = "Brain_PushFightGoal"
-page = "ai.md#original-structure"
+page = "ai-fights.md#targets"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::pushFightGoals"
 status = "legacy"
@@ -1096,7 +1096,7 @@ status = "legacy"
 [[function]]
 address = 0x0028d2e8
 name = "Brain_Fight"
-page = "ai.md#original-structure"
+page = "ai-fights.md#targets"
 role = "enemy, target and fight goal"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::fight"
@@ -1105,7 +1105,7 @@ status = "legacy"
 [[function]]
 address = 0x0028d358
 name = "Brain_ValidateEnemy"
-page = "ai-code.md#enemy-list"
+page = "ai-fights.md#enemy-score"
 kind = "helper"
 role = "returns a human when he may be chosen as an enemy"
 level = "confirmed-code"
@@ -1115,7 +1115,7 @@ status = "legacy"
 [[function]]
 address = 0x0028d538
 name = "Brain_AddEnemy"
-page = "ai.md#original-structure"
+page = "ai-fights.md#targets"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::addEnemy"
 status = "legacy"
@@ -1123,7 +1123,7 @@ status = "legacy"
 [[function]]
 address = 0x0028d758
 name = "Brain_PushGoal"
-page = "ai.md#original-structure"
+page = "ai/index.md#update-goals"
 role = "the goal stack"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::pushGoal"
@@ -1132,7 +1132,7 @@ status = "legacy"
 [[function]]
 address = 0x0028d7d8
 name = "Brain_PopGoal"
-page = "ai.md#original-structure"
+page = "ai/index.md#update-goals"
 role = "the goal stack"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::popGoal"
@@ -1161,7 +1161,7 @@ status = "legacy"
 [[function]]
 address = 0x0028d910
 name = "Brain_ClearGoals"
-page = "ai.md#original-structure"
+page = "ai/index.md#update-goals"
 role = "the goal stack"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::clearGoals"
@@ -1170,7 +1170,7 @@ status = "legacy"
 [[function]]
 address = 0x0028d960
 name = "Brain_FindGoal"
-page = "ai.md#original-structure"
+page = "ai/index.md#update-goals"
 role = "the goal stack"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::findGoal"
@@ -1179,7 +1179,7 @@ status = "legacy"
 [[function]]
 address = 0x0028d9f0
 name = "Brain_AllocAction"
-page = "ai.md#original-structure"
+page = "ai/index.md#actions"
 role = "the action queue"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::queueAction"
@@ -1188,7 +1188,7 @@ status = "legacy"
 [[function]]
 address = 0x0028da60
 name = "Brain_PopAction"
-page = "ai.md#original-structure"
+page = "ai/index.md#actions"
 role = "the action queue"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::popAction"
@@ -1197,7 +1197,7 @@ status = "legacy"
 [[function]]
 address = 0x0028db20
 name = "Brain_ClearActions"
-page = "ai.md#original-structure"
+page = "ai/index.md#actions"
 role = "the action queue"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::clearActions"
@@ -1216,7 +1216,7 @@ status = "legacy"
 [[function]]
 address = 0x0028de48
 name = "Brain_HasAttackSlot"
-page = "ai.md#original-structure"
+page = "ai-fights.md#attack-places"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::hasAttackSlot"
 status = "legacy"
@@ -1224,7 +1224,7 @@ status = "legacy"
 [[function]]
 address = 0x0028df30
 name = "Brain_ClaimAttackSlot"
-page = "ai.md#original-structure"
+page = "ai-fights.md#attack-places"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::claimSlot"
 status = "legacy"
@@ -1232,7 +1232,7 @@ status = "legacy"
 [[function]]
 address = 0x0028e248
 name = "Brain_QueueAttack"
-page = "ai.md#original-structure"
+page = "ai/index.md#attack-kinds"
 role = "queues one attack kind as one or more attack actions"
 level = "confirmed-code"
 coney = "src/ai/attack_kinds.h:chainOf"
@@ -1241,7 +1241,7 @@ status = "legacy"
 [[function]]
 address = 0x0028e708
 name = "Brain_PickAttack"
-page = "ai.md#original-structure"
+page = "ai-fights.md#pick-attack"
 level = "confirmed-code"
 coney = "src/ai/attack_choice.h:pickAttackKind"
 status = "legacy"
@@ -1259,7 +1259,7 @@ status = "legacy"
 [[function]]
 address = 0x0028f240
 name = "Brain_EndReactionGoal"
-page = "ai.md#original-structure"
+page = "ai/index.md#reaction-goals"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::updateReactionGoal"
 status = "legacy"
@@ -1267,7 +1267,7 @@ status = "legacy"
 [[function]]
 address = 0x0028f2b0
 name = "Brain_UpdateReactionGoal"
-page = "ai.md#original-structure"
+page = "ai/index.md#reaction-goals"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::updateReactionGoal"
 status = "legacy"
@@ -1275,7 +1275,7 @@ status = "legacy"
 [[function]]
 address = 0x0028f6c0
 name = "Brain_Think"
-page = "ai.md#original-structure"
+page = "ai/index.md#update"
 role = "call handler B / handler A"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::think"
@@ -1284,7 +1284,7 @@ status = "legacy"
 [[function]]
 address = 0x0028f8b8
 name = "Brain_Update"
-page = "ai.md#original-structure"
+page = "ai/index.md#update"
 role = "call handler B / handler A"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::update"
@@ -1293,7 +1293,7 @@ status = "legacy"
 [[function]]
 address = 0x0028f928
 name = "Brain_OnEvent"
-page = "ai.md#original-structure"
+page = "ai/index.md#events"
 role = "perception, reaction goal, then handler C"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::onEvent"
@@ -1302,9 +1302,9 @@ status = "legacy"
 [[function]]
 address = 0x0028fa18
 name = "Brain_MaybeScanEnemies"
-page = "ai-code.md#perception"
+page = "ai-fights.md#enemy-scan"
 kind = "helper"
-role = "re-scans enemies (`Brain_ScanEnemies`, one of 5 tokens per update) when the gang changed or the interval `+0x144` passed, × 4 in the fight stance or at detail level `+0x333` above 0 ([The enemy scan](ai.md#enemy-scan))"
+role = "re-scans enemies (`Brain_ScanEnemies`, one of 5 tokens per update) when the gang changed or the interval `+0x144` passed, × 4 in the fight stance or at detail level `+0x333` above 0 ([The enemy scan](ai-fights.md#enemy-scan))"
 level = "confirmed-code"
 coney = "src/ai/scan_schedule.h:ScanSchedule::maybeScan"
 status = "legacy"
@@ -1312,7 +1312,7 @@ status = "legacy"
 [[function]]
 address = 0x0028fbb0
 name = "Brain_UpdateGoals"
-page = "ai.md#original-structure"
+page = "ai/index.md#update-goals"
 role = "handler A of every AI type"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::update"
@@ -1321,7 +1321,7 @@ status = "legacy"
 [[function]]
 address = 0x0028fe28
 name = "Brain_RunActions"
-page = "ai.md#original-structure"
+page = "ai/index.md#actions"
 role = "the action queue"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::runActions"
@@ -1340,7 +1340,7 @@ status = "legacy"
 [[function]]
 address = 0x00290138
 name = "Brain_IsThreat"
-page = "ai-code.md#enemy-list"
+page = "ai-fights.md#enemy-scan"
 kind = "helper"
 role = "whether another brain is a threat: never himself; a Warrior hitting back (`+0x2e5`) and any pad player are threats to each other; else enemy gangs, or both players ([step by step](ai-reimpl.md#brain-is-threat))"
 level = "confirmed-code"
@@ -1380,7 +1380,7 @@ status = "legacy"
 [[function]]
 address = 0x002906b8
 name = "Brain_CheckAttack"
-page = "ai-code.md#attack-slots"
+page = "ai-fights.md#check-attack"
 kind = "helper"
 role = "whether to attack now: 2 cooling down, 3 not attackable, 1 out of the fight stance, 4 hold back near the leader, 8 another attacker is ready, 5 the police have him, 6 shuffle instead (he is held or armed), 7 a player shields him, else 0 or a free sector"
 level = "confirmed-code"
@@ -1390,7 +1390,7 @@ status = "legacy"
 [[function]]
 address = 0x00290ea8
 name = "Brain_IsAttackableBy"
-page = "ai.md#sight"
+page = "ai-fights.md#sight"
 level = "confirmed-code"
 coney = "src/ai/targeting.h:attackableBy"
 status = "legacy"
@@ -1398,7 +1398,7 @@ status = "legacy"
 [[function]]
 address = 0x00291008
 name = "Brain_ClaimActiveAttacker"
-page = "ai-code.md#attack-slots"
+page = "ai-fights.md#attack-places"
 kind = "helper"
 role = "takes one of the target's four active-attacker places (`+0x1f0`), within `+0x14a` (`+0x14b` while he is held); may displace an idle one"
 level = "confirmed-code"
@@ -1418,7 +1418,7 @@ status = "legacy"
 [[function]]
 address = 0x002911f8
 name = "Brain_GetAttackWeight"
-page = "ai.md#original-structure"
+page = "ai-fights.md#pick-attack"
 level = "confirmed-code"
 coney = "src/ai/attack_choice.h:pickAttackKind"
 status = "legacy"
@@ -1426,7 +1426,7 @@ status = "legacy"
 [[function]]
 address = 0x002912b0
 name = "Brain_PickSideInFight"
-page = "ai-code.md#brain-events"
+page = "ai-brain-types.md#help-calls"
 kind = "helper"
 role = "in a fight between two humans, the one to side against: the one who hits a friend, making gangs enemies when needed"
 level = "confirmed-code"
@@ -1436,7 +1436,7 @@ status = "legacy"
 [[function]]
 address = 0x00291960
 name = "Brain_OnViolenceSeen"
-page = "ai-code.md#brain-events"
+page = "ai-brain-types.md#think-gang"
 kind = "helper"
 role = "no goal `0x9a`: a free AI with threat response sides in a fight it sees (`Brain_PickSideInFight`); a busy Warrior near it looks on and may taunt (10 %); else fights and calls help; with goal `0x9a` pushes a watch goal (`0x002d84e0`)"
 level = "confirmed-code"
@@ -1592,7 +1592,7 @@ status = "legacy"
 [[function]]
 address = 0x00292d80
 name = "Brain_DefaultOnEvent"
-page = "ai.md#shared-events"
+page = "ai-brain-types.md#shared-events"
 level = "confirmed-code"
 coney = "src/ai/brain_events.h:answerEvent"
 status = "legacy"
@@ -1610,9 +1610,9 @@ status = "legacy"
 [[function]]
 address = 0x00293640
 name = "Gang_BroadcastHelpCall"
-page = "ai-code.md#brain-events"
+page = "ai-brain-types.md#help-calls"
 kind = "helper"
-role = "event `0x14` from the caller to every human within min(range, his `+0x138`), not only the gang; record `+0x00` aggressor, `+0x0c` the new-enemy flag, `+0x24` the caller ([Help calls](ai.md#help-calls))"
+role = "event `0x14` from the caller to every human within min(range, his `+0x138`), not only the gang; record `+0x00` aggressor, `+0x0c` the new-enemy flag, `+0x24` the caller ([Help calls](ai-brain-types.md#help-calls))"
 level = "confirmed-code"
 coney = "src/ai/brain_events.h:broadcastHelpCall"
 status = "legacy"
@@ -1620,7 +1620,7 @@ status = "legacy"
 [[function]]
 address = 0x00293768
 name = "AI_AlertNearby"
-page = "ai.md#help-calls"
+page = "ai-brain-types.md#help-calls"
 level = "confirmed-code"
 coney = "src/ai/brain_events.h:broadcastHelpCall"
 status = "legacy"
@@ -1628,7 +1628,7 @@ status = "legacy"
 [[function]]
 address = 0x00293b28
 name = "Brains_Update"
-page = "ai.md#original-structure"
+page = "ai/index.md#update"
 role = "step 5 of `Humans_Update`"
 level = "confirmed-code"
 coney = "src/ai/brains.h:Brains::update"
@@ -1637,7 +1637,7 @@ status = "legacy"
 [[function]]
 address = 0x00293c68
 name = "Formations_Update"
-page = "ai.md#original-structure"
+page = "ai-gangs.md#formations"
 role = "[formations](ai-gangs.md#formations)"
 level = "confirmed-code"
 coney = "src/ai/formations.h:Formations::update"
@@ -1726,7 +1726,7 @@ status = "legacy"
 [[function]]
 address = 0x002956d0
 name = "Formation_Plan"
-page = "ai.md#original-structure"
+page = "ai-gangs.md#formations"
 role = "[formations](ai-gangs.md#formations)"
 level = "confirmed-code"
 coney = "src/ai/formations.h:Formation::update"
@@ -1841,7 +1841,7 @@ status = "legacy"
 [[function]]
 address = 0x0029a8c0
 name = "Route_Request"
-page = "ai.md#original-structure"
+page = "ai-moving.md#path-planning"
 role = "[path planning](ai-moving.md#path-planning)"
 level = "confirmed-code"
 coney = "src/ai/route_planner.h:RoutePlanner::request"
@@ -1850,7 +1850,7 @@ status = "legacy"
 [[function]]
 address = 0x0029aa88
 name = "Route_Follow"
-page = "ai.md#original-structure"
+page = "ai-moving.md#route-follow"
 role = "[path planning](ai-moving.md#path-planning)"
 level = "confirmed-code"
 coney = "src/ai/route_follower.h:RouteFollower::waypoint"
@@ -1925,7 +1925,7 @@ status = "legacy"
 [[function]]
 address = 0x0029ce98
 name = "Brain_ScoreEnemy"
-page = "ai-code.md#enemy-list"
+page = "ai-fights.md#enemy-score"
 kind = "helper"
 role = "scores an enemy (−999 when ruled out, else weighted terms)"
 level = "confirmed-code"
@@ -2003,7 +2003,7 @@ status = "legacy"
 [[function]]
 address = 0x0029e5d8
 name = "Sectors_Update"
-page = "ai-code.md#sectors"
+page = "ai-moving.md#neighbour-sectors"
 kind = "helper"
 role = "the rebuild: humans within 1.5 m of the owner, counted and the nearest kept per sector; flags 3 when the nearest's squared distance is below 1.5 (1.22 m), else 1; bit 8 for a free player within 5.5 m ([Neighbour sectors](ai-moving.md#neighbour-sectors))"
 level = "confirmed-code"
@@ -2101,7 +2101,7 @@ status = "legacy"
 [[function]]
 address = 0x0029ed58
 name = "Goal_Start"
-page = "ai.md#original-structure"
+page = "ai/index.md#goals"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::processGoals"
 status = "legacy"
@@ -2109,7 +2109,7 @@ status = "legacy"
 [[function]]
 address = 0x0029edd8
 name = "Goal_End"
-page = "ai.md#original-structure"
+page = "ai/index.md#goals"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::popGoal"
 status = "legacy"
@@ -2117,7 +2117,7 @@ status = "legacy"
 [[function]]
 address = 0x0029ee30
 name = "Goal_Resume"
-page = "ai.md#original-structure"
+page = "ai/index.md#goals"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::processGoals"
 status = "legacy"
@@ -2125,7 +2125,7 @@ status = "legacy"
 [[function]]
 address = 0x0029eea0
 name = "Goal_Suspend"
-page = "ai.md#original-structure"
+page = "ai/index.md#goals"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::pushGoal"
 status = "legacy"
@@ -2133,7 +2133,7 @@ status = "legacy"
 [[function]]
 address = 0x0029eed8
 name = "Goal_Process"
-page = "ai.md#original-structure"
+page = "ai/index.md#goals"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::processGoals"
 status = "legacy"
@@ -2141,7 +2141,7 @@ status = "legacy"
 [[function]]
 address = 0x0029f098
 name = "Goal_TryBlock"
-page = "ai.md#original-structure"
+page = "ai-fights.md#block"
 level = "confirmed-code"
 coney = "src/ai/block_goal.h:tryBlock"
 status = "legacy"
@@ -2149,9 +2149,9 @@ status = "legacy"
 [[function]]
 address = 0x0029f230
 name = "Brain_PickBestEnemy"
-page = "ai-goals.md#goal-helpers"
+page = "ai-fights.md#enemy-score"
 kind = "helper"
-role = "the best-scoring valid enemy in the brain's enemy list ([the score](ai.md#enemy-score))"
+role = "the best-scoring valid enemy in the brain's enemy list ([the score](ai-fights.md#enemy-score))"
 level = "confirmed-code"
 coney = "src/ai/targeting.h:pickBestEnemy"
 status = "legacy"
@@ -2159,7 +2159,7 @@ status = "legacy"
 [[function]]
 address = 0x0029f3a8
 name = "Goal_AdjustEnemyScoreDefault"
-page = "ai.md#enemy-score"
+page = "ai-fights.md#enemy-score"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/goal.h:Goal::adjustEnemyScore"
 status = "legacy"
@@ -2326,7 +2326,7 @@ status = "legacy"
 [[function]]
 address = 0x002add08
 name = "Goal_Melee"
-page = "ai.md#targets"
+page = "ai-fights.md#targets"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
 status = "legacy"
@@ -2334,7 +2334,7 @@ status = "legacy"
 [[function]]
 address = 0x002ade10
 name = "MeleeGoal_Create"
-page = "ai.md#fight-durations"
+page = "ai-fights.md#melee-goal"
 level = "confirmed-code"
 coney = "src/ai/melee_goal.h:MeleeGoal"
 status = "legacy"
@@ -2352,9 +2352,9 @@ status = "legacy"
 [[function]]
 address = 0x002aebf8
 name = "MeleeGoal_Process"
-page = "ai-goals.md#goal-melee"
+page = "ai-fights.md#melee-goal"
 kind = "Process"
-role = "[Melee](ai.md#melee-goal)"
+role = "[Melee](ai-fights.md#melee-goal)"
 level = "confirmed-code"
 coney = "src/ai/melee_goal.h:MeleeGoal::process"
 status = "legacy"
@@ -2372,7 +2372,7 @@ status = "legacy"
 [[function]]
 address = 0x002af5b0
 name = "EngageEnemyGoal_Init"
-page = "ai-goals.md#goal-engage-enemy"
+page = "ai-fights.md#engage-enemy"
 kind = "init"
 role = "vtable `0x00540330`"
 level = "confirmed-code"
@@ -2402,9 +2402,9 @@ status = "legacy"
 [[function]]
 address = 0x002afa48
 name = "EngageEnemyGoal_Process"
-page = "ai-goals.md#goal-engage-enemy"
+page = "ai-fights.md#engage-enemy"
 kind = "Process"
-role = "[the run-in](ai.md#engage-enemy)"
+role = "[the run-in](ai-fights.md#engage-enemy)"
 level = "confirmed-code"
 coney = "src/ai/engage_goals.h:EngageEnemyGoal::process"
 status = "legacy"
@@ -2412,7 +2412,7 @@ status = "legacy"
 [[function]]
 address = 0x002b2b90
 name = "Brain_StartFight"
-page = "ai.md#targets"
+page = "ai-fights.md#targets"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/brain.h:Brain::startFight"
 status = "legacy"
@@ -2420,7 +2420,7 @@ status = "legacy"
 [[function]]
 address = 0x002b2c20
 name = "FightGoal_Init"
-page = "ai.md#original-structure"
+page = "ai-fights.md#fight"
 role = "goal type `0xf`"
 level = "confirmed-code"
 coney = "src/ai/fight_goal.h:FightGoal"
@@ -2429,7 +2429,7 @@ status = "legacy"
 [[function]]
 address = 0x002b2cd8
 name = "FightGoal_Start"
-page = "ai-goals.md#goal-fight"
+page = "ai-fights.md#fight"
 kind = "Start"
 role = "Resume"
 level = "confirmed-code"
@@ -2439,20 +2439,20 @@ status = "legacy"
 [[function]]
 address = 0x002b2d00
 name = "FightGoal_Resume"
-page = "ai-goals.md#goal-fight"
+page = "ai-fights.md#fight"
 kind = "Resume"
 role = "picks an attack kind against the target"
 level = "inferred"
-note = "also graded confirmed-code at [ai.md#fight](ai.md#fight); also graded confirmed-code at [gang-fights.md#switches](gang-fights.md#switches)"
+note = "also graded confirmed-code at [ai-fights.md#fight](ai-fights.md#fight); also graded confirmed-code at [gang-fights.md#switches](gang-fights.md#switches)"
 coney = "src/ai/fight_goal.h:FightGoal::resume"
 status = "legacy"
 
 [[function]]
 address = 0x002b2e28
 name = "FightGoal_TryTackle"
-page = "ai-goals.md#goal-fight"
+page = "ai-fights.md#try-tackle"
 kind = "helper"
-role = "the tackle try, first in the fight goal; driven by the gang's `CfgGang` value 7 and the brain's tackle meter `+0x148`; a cop picks `X1` over the tackle 75 % of the time ([The tackle try](ai.md#try-tackle))"
+role = "the tackle try, first in the fight goal; driven by the gang's `CfgGang` value 7 and the brain's tackle meter `+0x148`; a cop picks `X1` over the tackle 75 % of the time ([The tackle try](ai-fights.md#try-tackle))"
 level = "confirmed-code"
 coney = "src/ai/fight_goal.h:FightGoal::tryTackle"
 status = "legacy"
@@ -2460,9 +2460,9 @@ status = "legacy"
 [[function]]
 address = 0x002b2fc8
 name = "FightGoal_Reposition"
-page = "ai-goals.md#goal-fight"
+page = "ai-fights.md#fight-reposition"
 kind = "helper"
-role = "while `Brain_CheckAttack` says wait: holds the attacker in a ring 4-4.75 m from the target with a move-to-human action, a taunt fidget every 1-2 s ([The reposition](ai.md#fight-reposition))"
+role = "while `Brain_CheckAttack` says wait: holds the attacker in a ring 4-4.75 m from the target with a move-to-human action, a taunt fidget every 1-2 s ([The reposition](ai-fights.md#fight-reposition))"
 level = "confirmed-code"
 coney = "src/ai/fight_checks.h:repositionRing"
 status = "legacy"
@@ -2470,9 +2470,9 @@ status = "legacy"
 [[function]]
 address = 0x002b3360
 name = "FightGoal_TryGrab"
-page = "ai-goals.md#goal-fight"
+page = "ai-fights.md#try-grab"
 kind = "helper"
-role = "the grab and snap try before an attack in reach: snap stick angles from the sectors, side grab to `X1`, a rear grab at `CfgGang` value 8 × 25 % ([The grab and snap try](ai.md#try-grab))"
+role = "the grab and snap try before an attack in reach: snap stick angles from the sectors, side grab to `X1`, a rear grab at `CfgGang` value 8 × 25 % ([The grab and snap try](ai-fights.md#try-grab))"
 level = "confirmed-code"
 coney = "src/ai/fight_goal.h:FightGoal::tryGrab"
 status = "legacy"
@@ -2480,7 +2480,7 @@ status = "legacy"
 [[function]]
 address = 0x002b3ab0
 name = "FightGoal_Process"
-page = "ai.md#original-structure"
+page = "ai-fights.md#fight-order"
 role = "goal type `0xf`"
 level = "confirmed-code"
 coney = "src/ai/fight_goal.cpp:maybeTaunt"
@@ -2489,7 +2489,7 @@ status = "legacy"
 [[function]]
 address = 0x002b4098
 name = "SpectateGoal_Init"
-page = "ai.md#spectate"
+page = "ai-fights.md#spectate"
 level = "confirmed-code"
 coney = "src/ai/idle_goals.h:SpectateGoal"
 status = "legacy"
@@ -2507,7 +2507,7 @@ status = "legacy"
 [[function]]
 address = 0x002b4200
 name = "SpectateGoal_Start"
-page = "ai-goals.md#goal-spectate"
+page = "ai-fights.md#spectate"
 kind = "Start"
 role = "`SpectateGoal_Start`"
 level = "confirmed-code"
@@ -2527,7 +2527,7 @@ status = "legacy"
 [[function]]
 address = 0x002b4330
 name = "SpectateGoal_Process"
-page = "ai-goals.md#goal-spectate"
+page = "ai-fights.md#spectate"
 kind = "Process"
 role = "`SpectateGoal_Process`"
 level = "confirmed-code"
@@ -2559,7 +2559,7 @@ address = 0x002b4aa8
 name = "GroundedGoal_Process"
 page = "ai-goals.md#goal-reactions"
 kind = "Process"
-role = "Grounded: after about 1.9 s queues kind 42 on himself (one square command that cuts his ground time, inferred; [Combat](combat-reactions.md#ground-escape)) ([reactions](ai.md#fight-reactions))"
+role = "Grounded: after about 1.9 s queues kind 42 on himself (one square command that cuts his ground time, inferred; [Combat](combat-reactions.md#ground-escape)) ([reactions](ai/index.md#fight-reactions))"
 level = "inferred"
 note = "also graded confirmed-code at [combat-reactions.md#ground-escape](combat-reactions.md#ground-escape)"
 coney = "src/ai/fight_reactions.h:GroundedGoal::process"
@@ -2568,7 +2568,7 @@ status = "legacy"
 [[function]]
 address = 0x002b54d8
 name = "BlockGoal_Init"
-page = "ai.md#original-structure"
+page = "ai-fights.md#block"
 role = "goal type `0x1b`"
 level = "confirmed-code"
 coney = "src/ai/block_goal.h:BlockGoal"
@@ -2577,7 +2577,7 @@ status = "legacy"
 [[function]]
 address = 0x002b5520
 name = "BlockGoal_Start"
-page = "ai.md#original-structure"
+page = "ai-fights.md#block"
 role = "goal type `0x1b`"
 level = "confirmed-code"
 coney = "src/ai/block_goal.h:BlockGoal::start"
@@ -2586,7 +2586,7 @@ status = "legacy"
 [[function]]
 address = 0x002b5808
 name = "BlockGoal_Process"
-page = "ai.md#original-structure"
+page = "ai-fights.md#block"
 role = "goal type `0x1b`"
 level = "confirmed-code"
 coney = "src/ai/block_goal.h:BlockGoal::process"
@@ -2627,7 +2627,7 @@ address = 0x002b5b98
 name = "Grabbing_PickMove"
 page = "ai-goals.md#goal-reactions"
 kind = "helper"
-role = "the direction of a throw or push from a grab (left, ahead, right, behind): away from a held flag, into a wall or an enemy, else random ([reactions](ai.md#fight-reactions))"
+role = "the direction of a throw or push from a grab (left, ahead, right, behind): away from a held flag, into a wall or an enemy, else random ([reactions](ai/index.md#fight-reactions))"
 level = "confirmed-code"
 coney = "src/ai/fight_reactions.h:grabMoveDirection"
 status = "legacy"
@@ -2637,7 +2637,7 @@ address = 0x002b60c0
 name = "GrabbingGoal_Process"
 page = "ai-goals.md#goal-reactions"
 kind = "Process"
-role = "Grabbing: near a train command 5; a rear grab holds the victim up for a friend; else kind 24 (twice at 40 %), the throws 25/29 by `Grabbing_PickMove`, or 26-28 ([reactions](ai.md#fight-reactions))"
+role = "Grabbing: near a train command 5; a rear grab holds the victim up for a friend; else kind 24 (twice at 40 %), the throws 25/29 by `Grabbing_PickMove`, or 26-28 ([reactions](ai/index.md#fight-reactions))"
 level = "confirmed-code"
 coney = "src/ai/fight_reactions.h:GrabbingGoal::process"
 status = "legacy"
@@ -2657,7 +2657,7 @@ address = 0x002b6638
 name = "MountingGoal_Process"
 page = "ai-goals.md#goal-reactions"
 kind = "Process"
-role = "Mounting: near a train command 5; else a picked kind (45 and 36 do nothing), kind 35 twice chained 40 % of the time ([reactions](ai.md#fight-reactions))"
+role = "Mounting: near a train command 5; else a picked kind (45 and 36 do nothing), kind 35 twice chained 40 % of the time ([reactions](ai/index.md#fight-reactions))"
 level = "confirmed-code"
 coney = "src/ai/fight_reactions.h:MountingGoal::process"
 status = "legacy"
@@ -2677,7 +2677,7 @@ address = 0x002b6848
 name = "GrabbedGoal_Process"
 page = "ai-goals.md#goal-reactions"
 kind = "Process"
-role = "Grabbed: a civilian calls for help every 30 updates (10 m); with a threat response the grabber becomes the target and he struggles ([reactions](ai.md#fight-reactions))"
+role = "Grabbed: a civilian calls for help every 30 updates (10 m); with a threat response the grabber becomes the target and he struggles ([reactions](ai/index.md#fight-reactions))"
 level = "confirmed-code"
 coney = "src/ai/fight_reactions.h:HeldGoal::process"
 status = "legacy"
@@ -2697,7 +2697,7 @@ address = 0x002b6bb8
 name = "MountedGoal_Process"
 page = "ai-goals.md#goal-reactions"
 kind = "Process"
-role = "Mounted: calls for help and struggles ([reactions](ai.md#fight-reactions))"
+role = "Mounted: calls for help and struggles ([reactions](ai/index.md#fight-reactions))"
 level = "confirmed-code"
 coney = "src/ai/fight_reactions.h:HeldGoal::process"
 status = "legacy"
@@ -2705,7 +2705,7 @@ status = "legacy"
 [[function]]
 address = 0x002b75b8
 name = "Gang_SendHelper"
-page = "ai.md#help-calls"
+page = "ai-brain-types.md#help-calls"
 level = "confirmed-code"
 note = "the level is from [gang-fights.md#set-target-causes](gang-fights.md#set-target-causes)"
 coney = "src/ai/brain_events.h:sendHelper"
@@ -3024,7 +3024,7 @@ status = "legacy"
 [[function]]
 address = 0x002c0430
 name = "FindEnemyGoal_Init"
-page = "ai-goals.md#goal-find-enemy"
+page = "ai-fights.md#find-enemy"
 kind = "init"
 role = "vtable `0x00540a50`; `+0x10` / `+0x14` two ranges (90 and 30 from Brain_Fight), `+0x18` a byte, `+0x1c` the duration, `+0x20` its end time; a police brain (type 1) is added to the game's guarding cops; clears the spotter note"
 level = "confirmed-code"
@@ -3034,7 +3034,7 @@ status = "legacy"
 [[function]]
 address = 0x002c0748
 name = "FindEnemyGoal_Process"
-page = "ai.md#fight-durations"
+page = "ai-fights.md#find-enemy"
 level = "confirmed-code"
 coney = "src/ai/story_goals.h:FindEnemyGoal"
 status = "legacy"
@@ -3551,7 +3551,7 @@ status = "legacy"
 [[function]]
 address = 0x002da3b0
 name = "MoveToFlagGoal_Init"
-page = "ai.md#original-structure"
+page = "ai-scripting.md#move-to-flag"
 role = "goal type 1"
 level = "confirmed-code"
 coney = "src/ai/move_to_flag_goal.h:MoveToFlagGoal"
@@ -3586,7 +3586,7 @@ status = "legacy"
 [[function]]
 address = 0x002da588
 name = "MoveToFlagGoal_Process"
-page = "ai.md#original-structure"
+page = "ai-scripting.md#move-to-flag"
 role = "goal type 1"
 level = "confirmed-code"
 coney = "src/ai/move_to_flag_goal.h:MoveToFlagGoal::process"
@@ -4425,7 +4425,7 @@ status = "legacy"
 [[function]]
 address = 0x002fa918
 name = "AttackAction_Init"
-page = "ai.md#original-structure"
+page = "ai-fights.md#attack-action"
 level = "confirmed-code"
 coney = "src/ai/attack_action.h:AttackAction"
 status = "legacy"
@@ -4433,7 +4433,7 @@ status = "legacy"
 [[function]]
 address = 0x002fa9a8
 name = "AttackAction_Start"
-page = "ai.md#original-structure"
+page = "ai-fights.md#attack-action"
 level = "confirmed-code"
 coney = "src/ai/attack_action.h:AttackAction::start"
 status = "legacy"
@@ -4441,7 +4441,7 @@ status = "legacy"
 [[function]]
 address = 0x002fad30
 name = "AttackAction_Abort"
-page = "ai.md#original-structure"
+page = "ai-fights.md#attack-action"
 level = "confirmed-code"
 coney = "src/ai/attack_action.h:AttackAction::abort"
 status = "legacy"
@@ -4449,7 +4449,7 @@ status = "legacy"
 [[function]]
 address = 0x002fad70
 name = "AttackAction_Update"
-page = "ai.md#original-structure"
+page = "ai-fights.md#attack-action"
 level = "confirmed-code"
 coney = "src/ai/attack_action.h:AttackAction::update"
 status = "legacy"
@@ -4527,7 +4527,7 @@ status = "legacy"
 [[function]]
 address = 0x002fb9e8
 name = "MoveAction_Init"
-page = "ai.md#original-structure"
+page = "ai-moving.md#move-action"
 level = "confirmed-code"
 coney = "src/ai/move_action.h:MoveAction"
 status = "legacy"
@@ -4555,7 +4555,7 @@ status = "legacy"
 [[function]]
 address = 0x002fc158
 name = "MoveAction_CornerSpeed"
-page = "ai-code.md#actions"
+page = "ai-moving.md#corner-speed"
 kind = "`MoveTo` helper"
 role = "the corner speed of the next waypoints"
 level = "confirmed-code"
@@ -4565,7 +4565,7 @@ status = "legacy"
 [[function]]
 address = 0x002fc330
 name = "MoveAction_CheckStuck"
-page = "ai-code.md#actions"
+page = "ai-moving.md#move-action"
 kind = "`MoveTo` helper"
 role = "on the 61st update while moving: less than 0.2 m covered in 3D → brain `+0x284` = 3"
 level = "confirmed-code"
@@ -4583,7 +4583,7 @@ status = "legacy"
 [[function]]
 address = 0x002fc5c0
 name = "MoveAction_Update"
-page = "ai.md#original-structure"
+page = "ai-moving.md#move-action"
 level = "confirmed-code"
 coney = "src/ai/move_action.h:MoveAction::update"
 status = "legacy"
@@ -4591,7 +4591,7 @@ status = "legacy"
 [[function]]
 address = 0x002fcd90
 name = "Move_CornerSpeedLimit"
-page = "ai-code.md#actions"
+page = "ai-moving.md#steering"
 kind = "`MoveTo` helper"
 role = "the highest speed that still turns through a corner circle, stepping the gait down"
 level = "confirmed-code"
@@ -4601,7 +4601,7 @@ status = "legacy"
 [[function]]
 address = 0x002fcf50
 name = "MoveToHumanAction_Init"
-page = "ai.md#original-structure"
+page = "ai-moving.md#move-melee"
 level = "confirmed-code"
 coney = "src/ai/move_to_human_action.h:MoveToHumanAction"
 status = "legacy"
@@ -4701,7 +4701,7 @@ address = 0x002fe1b0
 name = "LookAtAction_Update"
 page = "ai-code.md#actions"
 kind = "`LookAt` Update"
-role = "the heading to the human, taken each update ([Look at](ai.md#actions))"
+role = "the heading to the human, taken each update ([Look at](ai/index.md#actions))"
 level = "confirmed-code"
 coney = "src/ai/turn_action.h:TurnAction::update"
 status = "legacy"
@@ -4791,7 +4791,7 @@ address = 0x002fe6a8
 name = "GiveWayAction_Destroy"
 page = "ai-code.md#actions"
 kind = "`GiveWay` destroy"
-role = "clears brain `+0xcc` bit 1; Abort (with the boost) runs before it on a normal end too ([AI: Actions](ai.md#actions))"
+role = "clears brain `+0xcc` bit 1; Abort (with the boost) runs before it on a normal end too ([AI: Actions](ai/index.md#actions))"
 level = "confirmed-code"
 coney = "src/ai/give_way.h:GiveWayAction::~GiveWayAction"
 status = "legacy"
@@ -4819,7 +4819,7 @@ status = "legacy"
 [[function]]
 address = 0x003035d8
 name = "PlayerBrain_Update"
-page = "ai-code.md#brain-types"
+page = "ai-brain-types.md#think-player"
 kind = "type 0 update"
 role = "target upkeep, hostiles counted, the [automatic commands](ai-gangs.md#warrior-auto-commands)"
 level = "confirmed-code"
@@ -4849,7 +4849,7 @@ status = "legacy"
 [[function]]
 address = 0x00304fa8
 name = "GangBrain_OnEvent"
-page = "ai-code.md#brain-types"
+page = "ai-brain-types.md#think-gang"
 kind = "type 2 event"
 role = "gang members' events"
 level = "confirmed-code"
@@ -4860,7 +4860,7 @@ status = "legacy"
 [[function]]
 address = 0x003052f0
 name = "WarriorBrain_Think"
-page = "ai-code.md#brain-types"
+page = "ai-brain-types.md#think-warrior"
 kind = "type 3 think"
 role = "[The Warriors' pick-ups](ai-gangs.md#warrior-pickups) and the fight push"
 level = "confirmed-code"
@@ -4870,7 +4870,7 @@ status = "legacy"
 [[function]]
 address = 0x00306040
 name = "WarriorBrain_OnPrompt"
-page = "ai-code.md#brain-types"
+page = "ai-brain-types.md#warrior-swap"
 kind = "type 3 helper"
 role = "triangle on a Warrior: when both are free and in reach (`0x0021c0a8`), faces him; line `0x92` as the player's"
 level = "confirmed-code"
@@ -4880,7 +4880,7 @@ status = "legacy"
 [[function]]
 address = 0x003063b0
 name = "WarriorBrain_OnEvent"
-page = "ai-code.md#brain-types"
+page = "ai-brain-types.md#think-warrior"
 kind = "type 3 event"
 role = "Warriors' events"
 level = "confirmed-code"
@@ -4891,7 +4891,7 @@ status = "legacy"
 [[function]]
 address = 0x00306690
 name = "Tactic_Start"
-page = "ai.md#original-structure"
+page = "ai-gangs.md#tactics"
 role = "[tactics](ai-gangs.md#tactics)"
 level = "confirmed-code"
 coney = "src/ai/tactic.h:Tactic::process"
@@ -4900,7 +4900,7 @@ status = "legacy"
 [[function]]
 address = 0x003067d8
 name = "Tactic_Process"
-page = "ai.md#original-structure"
+page = "ai-gangs.md#tactics"
 role = "[tactics](ai-gangs.md#tactics)"
 level = "confirmed-code"
 coney = "src/ai/tactic.h:Tactic::process"
@@ -4956,7 +4956,7 @@ status = "legacy"
 [[function]]
 address = 0x00307668
 name = "AttackTactic_ComputeSpacing"
-page = "ai-code.md#t1-attack"
+page = "gang-fights.md#rumble"
 kind = "helper"
 role = "from Start: takes the first member's enemy; none → `+0x2c` = 300; else `+0x30` = 1000 (50 when that enemy's `+0x1a8` > 2) and `+0x2c` = `+0x30` / living members (reading `+0x30` back, `lhu` at `0x00307710`); nothing else reads either halfword (`lh`, `lhu` and the delay-slot `_lh`, `_lhu` searched; [Gang fights](gang-fights.md#rumble) rule 1)"
 level = "confirmed-code"
@@ -4966,7 +4966,7 @@ status = "legacy"
 [[function]]
 address = 0x00307788
 name = "AttackTactic_GiveMelee"
-page = "ai-code.md#t1-attack"
+page = "gang-fights.md#rumble"
 kind = "helper"
 role = "each standing member without goal `0x6b`: threat response 2 (brain `+0x21c`), goals popped to the base and marked, `Goal_Melee`"
 level = "confirmed-code"
@@ -4976,7 +4976,7 @@ status = "legacy"
 [[function]]
 address = 0x00307878
 name = "AttackTactic_OnViolence"
-page = "ai-code.md#t1-attack"
+page = "gang-fights.md#help"
 kind = "helper"
 role = "event 20: the leader picks a side in the fight (`Brain_PickSideInFight`); each standing member with no goal melees that human, adds him as enemy and target, and sends a helper (`Gang_SendHelper`) when HelpRespond (`0x1d`) is not on his stack"
 level = "confirmed-code"
@@ -4986,7 +4986,7 @@ status = "legacy"
 [[function]]
 address = 0x00307d40
 name = "GangTactic_CheckFlee"
-page = "ai-code.md#t1-attack"
+page = "gang-fights.md#gang"
 kind = "helper"
 role = "`GangTactic_CheckFlee`, event 18 (a member down): with `+0xdf` (`GangCanFlee`) set and `+0xe0` (the living count `AttackTactic_Start` noted) above 0 (not for kind 6 with `+0xd9`), when the standing, uncuffed members number at most round(the kind's `CfgGang` v9 (`GangConfig_GetField72`) × that count / 100), each of them whose class byte `+0x11b` is 11 gets threat response 0, melee and a PedReaction (type 9) away from his enemy; sets `+0x32` (the gang fled)"
 level = "confirmed-code"
@@ -5006,7 +5006,7 @@ status = "legacy"
 [[function]]
 address = 0x003081a8
 name = "AttackTactic_Process"
-page = "ai-code.md#t1-attack"
+page = "gang-fights.md#help"
 level = "confirmed-code"
 note = "the level is from [ai-reimpl.md#attack-process](ai-reimpl.md#attack-process)"
 coney = "src/ai/tactic_attack.h:TacticAttack::update"
@@ -5601,7 +5601,7 @@ status = "legacy"
 [[function]]
 address = 0x0041c2b0
 name = "GameState_TurnWarriorCommands"
-page = "ai.md#warriors-functions"
+page = "ai/index.md#warriors-functions"
 role = "the workers of `TurnWarriorCommands` (all on or off) and `IssueWarriorCommand` (for player 1)"
 level = "confirmed-code"
 coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
@@ -5610,7 +5610,7 @@ status = "legacy"
 [[function]]
 address = 0x0041c2d0
 name = "GameState_IssueWarriorCommand"
-page = "ai.md#warriors-functions"
+page = "ai/index.md#warriors-functions"
 role = "the workers of `TurnWarriorCommands` (all on or off) and `IssueWarriorCommand` (for player 1)"
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:makeIssueWarriorCommand"
@@ -5627,7 +5627,7 @@ status = "legacy"
 [[function]]
 address = 0x0041d738
 name = "Cfg_SetEnemySpotting"
-page = "ai.md#warriors-functions"
+page = "ai/index.md#warriors-functions"
 role = "`CfgSetEnemySpotting`: `+0x56f8`; `CfgSetWarriorSpotting` clears `+0x56fc` whatever its argument"
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:makeCfgSetEnemySpotting"
@@ -5636,7 +5636,7 @@ status = "legacy"
 [[function]]
 address = 0x0041d748
 name = "Cfg_SetWarriorSpotting"
-page = "ai.md#warriors-functions"
+page = "ai/index.md#warriors-functions"
 role = "`CfgSetEnemySpotting`: `+0x56f8`; `CfgSetWarriorSpotting` clears `+0x56fc` whatever its argument"
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:makeCfgSetWarriorSpotting"
@@ -5645,7 +5645,7 @@ status = "legacy"
 [[function]]
 address = 0x0041d770
 name = "GameState_SetWarriorWeapons"
-page = "ai.md#warriors-functions"
+page = "ai/index.md#warriors-functions"
 role = "`CfgSetWarriorVandalize` (`+0x5700`) and `CfgWarriorWeapons` (`+0x5704`)"
 level = "confirmed-code"
 coney = "src/scripting/mission7_bindings.cpp:addMission7Bindings"
@@ -5654,7 +5654,7 @@ status = "legacy"
 [[function]]
 address = 0x0041da50
 name = "Cfg_SetTurfInvasion"
-page = "ai.md#warriors-functions"
+page = "ai/index.md#warriors-functions"
 role = "`CfgEnableTurfInvasion` (byte `+0x56e1`), `CfgEnableGrappleCounters` (`+0x56e3`), `CfgPowerupPickup` (`+0x56e5`)"
 level = "confirmed-code"
 coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
@@ -5663,7 +5663,7 @@ status = "legacy"
 [[function]]
 address = 0x0041da60
 name = "Cfg_SetGrappleCounters"
-page = "ai.md#warriors-functions"
+page = "ai/index.md#warriors-functions"
 role = "`CfgEnableTurfInvasion` (byte `+0x56e1`), `CfgEnableGrappleCounters` (`+0x56e3`), `CfgPowerupPickup` (`+0x56e5`)"
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
@@ -5672,7 +5672,7 @@ status = "legacy"
 [[function]]
 address = 0x0041da70
 name = "GameState_SetPowerupPickup"
-page = "ai.md#warriors-functions"
+page = "ai/index.md#warriors-functions"
 role = "`CfgEnableTurfInvasion` (byte `+0x56e1`), `CfgEnableGrappleCounters` (`+0x56e3`), `CfgPowerupPickup` (`+0x56e5`)"
 level = "confirmed-code"
 coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
@@ -5681,7 +5681,7 @@ status = "legacy"
 [[function]]
 address = 0x0041db08
 name = "GameState_EnableAllWarriorCommands"
-page = "ai.md#warriors-functions"
+page = "ai/index.md#warriors-functions"
 role = "the per-player allowed bytes `+0x41e + player × 7 + command`: all seven for every war chief / one for one human; both tell the command display (`WarCommandDisplay_SetAllowed`)"
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:makeWcEnableAllCommands"
@@ -5690,7 +5690,7 @@ status = "legacy"
 [[function]]
 address = 0x0041dbe8
 name = "GameState_EnableWarriorCommand"
-page = "ai.md#warriors-functions"
+page = "ai/index.md#warriors-functions"
 role = "the per-player allowed bytes `+0x41e + player × 7 + command`: all seven for every war chief / one for one human; both tell the command display (`WarCommandDisplay_SetAllowed`)"
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:makeWcEnableCommand"
@@ -5699,7 +5699,7 @@ status = "legacy"
 [[function]]
 address = 0x0041dc80
 name = "GameState_IssueWarriorCommandFor"
-page = "ai.md#warriors-functions"
+page = "ai/index.md#warriors-functions"
 role = "`WarriorCommand_Dispatch` for a human / byte `+0x418 + player` / the callback name"
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
@@ -5708,7 +5708,7 @@ status = "legacy"
 [[function]]
 address = 0x0041dcf0
 name = "GameState_LockWarriorCommands"
-page = "ai.md#warriors-functions"
+page = "ai/index.md#warriors-functions"
 role = "`WarriorCommand_Dispatch` for a human / byte `+0x418 + player` / the callback name"
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:makeWcLockCommands"
@@ -5717,7 +5717,7 @@ status = "legacy"
 [[function]]
 address = 0x0041dd40
 name = "GameState_SetWarriorCommandCallback"
-page = "ai.md#warriors-functions"
+page = "ai/index.md#warriors-functions"
 role = "`WarriorCommand_Dispatch` for a human / byte `+0x418 + player` / the callback name"
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:makeWcSetCallback"
@@ -5726,7 +5726,7 @@ status = "legacy"
 [[function]]
 address = 0x0041dd68
 name = "GameState_SetAutoSwitch"
-page = "ai.md#warriors-functions"
+page = "ai/index.md#warriors-functions"
 role = "`WCEnableAutomaticSwitching`: byte `+0x431` (1 at set-up), which turns the war chief's [automatic commands](ai-gangs.md#warrior-auto-commands) on or off"
 level = "confirmed-code"
 coney = "src/scripting/arena_bindings.cpp:addStateBindings"

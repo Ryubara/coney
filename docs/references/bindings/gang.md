@@ -529,7 +529,7 @@ on its brain against the target, so each walks up to it and fights it with the u
 of range or gone, or a newer goal replaces it.
 
 **Notes.** The target handle is not checked. The goal's constructor is 0x002af5b0 and its behaviour (Process 0x002afa48)
-a fight sub-goal ([AI](../../research/ai.md#fight)). The gang's tactic is left as it is.
+a fight sub-goal ([AI](../../research/ai-fights.md#fight)). The gang's tactic is left as it is.
 
 - **Evidence:** confirmed (code) at `0x0016a870`; detail: traced
 - **Wrapper** `0x00373930` (registered by `RegisterBindings`); **calls** `0x0016a870` `Gang_EngageEnemy`
@@ -811,7 +811,7 @@ bit (`+0x3c`) is cleared and its enemy bit (`+0x38`) set, as GangMakeEnemies doe
 later are not affected.
 
 **Notes.** If the gang is itself of that kind its own enemy bit is set too, but a gang always counts its own members as
-friends ([AI: gangs](../../research/ai.md)). The crime report uses the same routine one way for police gangs.
+friends ([AI: gangs](../../research/ai/index.md)). The crime report uses the same routine one way for police gangs.
 
 - **Evidence:** confirmed (code) at `0x0016ae60`, `0x0016c3a8`, `0x001690c8`; detail: traced
 - **Wrapper** `0x00373c68` (registered by `RegisterBindings`); **calls** `0x0016ae60` `Gang_MakeEnemiesOfType`,
@@ -1219,7 +1219,8 @@ GangSetLOS(gang, range)
 **Returns** nothing.
 
 Sets the sight range (brain `+0x130`, as `HuSetLOSRange`) of every current member of the gang: how far they see enemies,
-used with the field of view `+0x12c` by the sight checks ([AI](../../research/ai.md)). Later members keep their own.
+used with the field of view `+0x12c` by the sight checks ([AI](../../research/ai/index.md)). Later members keep their
+own.
 
 **Notes.** Unlike GangSetAttackable it does not check that the gang is in use; an unused slot's empty member list makes
 it a no-op.
@@ -1359,7 +1360,7 @@ police or its gang (`Goal_CallGang`), join the fight or react (PedReaction); wit
 
 **Notes.** Members spawned later keep their own default (set at brain init 0x0028a570, value not traced). Other brain
 kinds ignore the byte. The reaction rules (crime type enabled, 40 s since the gang's last report, chance) live in
-0x002ffb30; see [AI](../../research/ai.md).
+0x002ffb30; see [AI](../../research/ai/index.md).
 
 - **Evidence:** confirmed (code) at `0x0016bee0`, `0x002ffb30`; detail: traced
 - **Wrapper** `0x00374718` (registered by `RegisterBindings`); **calls** `0x0016bee0` `Gang_SetReactToViolence`,

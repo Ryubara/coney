@@ -5,7 +5,7 @@ compiled bytecode of `level95.lua` (`worksetup`), `level95_workout.lua` (`workou
 `Unlockables` list). Runtime claims were made in PCSX2 2.9.94 (2026-10-11) on a copy of quick-save slot 1 with the
 `scripted-pad`, `call-brains`, `workout-rep`, `workout-end`, `tutorial-callback` and `attack-score` patches
 ([patches](repo:research/traces/patches/)), switched to `level95` checkpoint 2 by calling `SetCheckPoint`'s worker
-`0x0041abc0(2)` and `MenuLoadLevel`'s worker `0x00160d78("level95")` as on [AI](ai.md#level99-save); the player (Cleon
+`0x0041abc0(2)` and `MenuLoadLevel`'s worker `0x00160d78("level95")` as on [AI](ai-fights.md#level99-save); the player (Cleon
 at that checkpoint) was put beside each station by writing his transform, and triangle, cross and square were pressed
 through the patched pad bytes, one update per press. Coney claims were made with the release build of 2026-10-10.
 
@@ -285,7 +285,8 @@ before the 26 s clock ran out.
 ### Boxer {#boxer}
 
 A Warrior at the bag spars with it through `GoalBoxer` ([Boxer goal](ai-goals.md#goal-boxer)): its brain's attack
-weights `+0x208` point at the table `0x00511120` (45 bytes, one per [attack kind](ai.md#attack-kinds)): kinds 1, 3, 7,
+weights `+0x208` point at the table `0x00511120` (45 bytes, one per [attack kind](ai/index.md#attack-kinds)): kinds 1,
+3, 7,
 24, 31, 39 and 42 weigh 5 and kind 5 (`SS2`) weighs 10; every other kind 0. Confirmed (code). That AI goal is all the
 table serves: the player's workout does not read it.
 
@@ -368,7 +369,8 @@ In the original a human no pad drives (per-player `+0x1b` = 0) is moved by `Huma
 toward the brain's heading: by the fight stance's AI word (24° an update) when asked to move, with a turn on the spot
 when stopped more than 15° off, not at all within 15° ([AI: Speed control and Turning](ai-moving.md#ai-turn)). Coney now
 runs a player whose pad a script took through the AI's stance control (`Human::aiCombatWalk`, the turn on the spot at
-the standing step, as for every AI, a stand-in for the turn clips; [AI: Facing the target](ai.md#fight-facing)), so
+the standing step, as for every AI, a stand-in for the turn clips; [AI: Facing the target](ai-fights.md#fight-facing)),
+so
 the goal's turn steers and it arrives (`repo:tests/ai/move_action_test.cpp`, and on the disc
 `repo:tests/platform/disc_hub_workout_test.cpp`). The headings were not the cause, but they were mirrored: a
 flag's degrees turn clockwise seen from above ([Flags](flags.md#position)), so `fWorkout[1]`'s 93 faces +x, at the bag,
@@ -380,9 +382,10 @@ and Coney's fight-stance walk (`Human::combatWalk`) turned every human it holds 
 whatever the brain asked. The turn action was overridden on every update; once it gave up, the goal queued another.
 In the original a human no pad drives (per-player `+0x1b` = 0) is moved by `Human_UpdateControl`, which turns it
 toward the brain's heading: by the fight stance's AI word (24° an update) when asked to move, with a turn on the spot
-when stopped more than 15° off, not at all within 15° ([AI: Speed control and Turning](ai.md#ai-turn)). Coney now
+when stopped more than 15° off, not at all within 15° ([AI: Speed control and Turning](ai-moving.md#ai-turn)). Coney now
 runs a player whose pad a script took through the AI's stance control (`Human::aiCombatWalk`, the turn on the spot at
-the standing step, as for every AI, a stand-in for the turn clips; [AI: Facing the target](ai.md#fight-facing)), so
+the standing step, as for every AI, a stand-in for the turn clips; [AI: Facing the target](ai-fights.md#fight-facing)),
+so
 the goal's turn steers and it arrives (`repo:tests/ai/move_action_test.cpp`, and on the disc
 `repo:tests/platform/disc_hub_workout_test.cpp`). The headings were not the cause, but they were mirrored: a
 flag's degrees turn clockwise seen from above ([Flags](flags.md#position)), so `fWorkout[1]`'s 93 faces +x, at the bag,

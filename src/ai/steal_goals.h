@@ -16,8 +16,8 @@
 // objects and hands them out, the WarriorVandalSteal goal each Warrior runs under it, and the GetItem goal that walks
 // to an object and picks it up. Taking an owned object is a theft the level reports (Item_TakeOwned, message 7 to the
 // volume boxes round it: gamemodes/level_items.h). Research: docs/research/ai-code.md#t2-warrior-steal,
-// docs/research/ai-gangs.md#warrior-steal, docs/research/crew-wreck.md,
-// docs/research/ai.md#get-item
+// docs/research/ai-gangs.md#warrior-steal, docs/research/ai-goals.md#goal-warrior-vandal-steal,
+// docs/research/crew-wreck.md, docs/research/ai/index.md#get-item
 
 namespace coney::ai {
 

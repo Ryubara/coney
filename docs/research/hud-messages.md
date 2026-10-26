@@ -382,7 +382,8 @@ icon sprite at `+0x480`. Confirmed (code) unless marked:
       flags](combat/index.md#human-flags)). Confirmed (runtime) on `level80`: beside a knocked-out Vermin with a flash,
       string 4 showed ([Combat: revive at runtime](combat-reactions.md#revive-runtime)).
     - **Sight, no facing**: each candidate must also pass `Human_HasLineOfSight(player, him)` (`0x00222288`: a ray at
-      1.7 m to his 1.7 m, else to his 1.0 m; it passes fences, railings and glass, [AI: sight](ai.md#sight)). The list's
+      1.7 m to his 1.7 m, else to his 1.0 m; it passes fences, railings and glass, [AI: sight](ai-fights.md#sight)). The
+      list's
       field-of-view test is only consulted beyond 3 m (squared distance over 9), which the 3 m search never yields, so
       **facing does not matter**.
     - **Which one**: the candidate nearest the player's position (`HandleArray16_NearestHandle`).
@@ -394,7 +395,7 @@ icon sprite at `+0x480`. Confirmed (code) unless marked:
       himself knocked out gets no prompt.
     - **No flash, no prompt beside a downed Warrior.** Without a flash the revive step fails and the steps after it
       run, but none of them offers a downed Warrior anything: the talk prompt (step 4) needs his `+0x1b2`, and
-      `WarriorBrain_Think` (`0x003052f0`, [the swap prompt](ai.md#think-warrior)) sets it only while
+      `WarriorBrain_Think` (`0x003052f0`, [the swap prompt](ai-brain-types.md#think-warrior)) sets it only while
       `HumanRecord_AreActionsBlocked` (`0x00228228`, state mask `0x7bf9e9f7ff0`) is false for him and his gait
       (`+0x1a8`) is 0. That mask holds `0x40000`, the knocked-out state (`Human_IsKnockedOut`, `0x00227dd8`, tests
       exactly `0x40000`), so a knocked-out Warrior's swap prompt ("Give Weapon", strings `0xc`-`0xe`) is cleared on
@@ -439,7 +440,7 @@ Step 4 of the prompt's text, `ActionPrompt_FindNearbyHuman` (`0x001acd60`). Conf
 
 - **Who is searched**: `Humans_FindAhead` (`0x002274a8`) lists up to 100 humans within **1.5 m** of the player's
   position (the same search as the revive test); the **first** in the list's order that passes is taken.
-- **Talkable** means both: the human's byte **`+0x1b2`** is set, and his brain type (brain `+0x04`, [AI](ai.md#types))
+- **Talkable** means both: the human's byte **`+0x1b2`** is set, and his brain type (brain `+0x04`, [AI](ai/index.md#types))
   is **0** (a player: the other player in co-op) or **3** (a Warrior). The human's interface at `+0x70` (vtable
   `0x0053f020`) also asks "has a message-0 handler or `+0x1b2`" (slot `+0x50`, `0x0021d570`), which `+0x1b2` already
   answers. Gang leaders, bums, dealers and shopkeepers also get `+0x1b2` from their goals (`InfoTactic_Seat`,
@@ -447,7 +448,8 @@ Step 4 of the prompt's text, `ActionPrompt_FindNearbyHuman` (`0x001acd60`). Conf
   types (2, 4, 5, 6) fail this test; their prompts come from the kind-4 and kind-5 context records of step 3
   (`InfoTactic_Seat` and `BumLogicGoal_Setup` register kind 5 with HUD strings 8 and 10).
 - **Who sets it**: the brains, every think; no Lua binding. `WarriorBrain_Think` (`0x00305bfc`) and `PlayerBrain_Think`
-  (`0x00303404`) write `+0x1b2` = 1 exactly when [the swap prompt](ai.md#think-warrior)'s conditions hold (else 0),
+  (`0x00303404`) write `+0x1b2` = 1 exactly when [the swap prompt](ai-brain-types.md#think-warrior)'s conditions hold
+  (else 0),
   and then write the text of `GSTRING.HUD` string **`0xc`** (both hold an object), **`0xd`** (he holds) or **`0xe`**
   (the player holds) straight into the human's message-handler component (human `+0xe8`): `+0x7c` = that text,
   `+0x78` = 0.

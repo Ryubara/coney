@@ -629,11 +629,11 @@ A gang member holds an enemy and the teammates stand by: who of them strikes. Co
 unless marked:
 
 1. **An AI teammate starts it through the grab.** The fight goal's attack pick (`Brain_PickAttack`, `0x0028e708`,
-   [AI](ai.md#pick-attack)) adds **+200** to kind 22 (the grab) when the target is grabbed from the rear (step 4.7),
+   [AI](ai-fights.md#pick-attack)) adds **+200** to kind 22 (the grab) when the target is grabbed from the rear (step 4.7),
    and more when several attackers share him (step 4.5). `Human_CanStartAttack` (`0x00224778`) allows kind 22 at a
    target in state `0x20` **only from in front of him** (`0x002672d0`), the same 45° front cone `Tandem_CanStart`
    asks, and refuses a target holding `0xc12200`'s overlap `0xc08200` (a victim already in a paired move). The
-   attack action writes command `0xd` (circle tapped, [AI](ai.md#attack-action)); the dispatcher's
+   attack action writes command `0xd` (circle tapped, [AI](ai-fights.md#attack-action)); the dispatcher's
    `Player_GrabOrTackle` (`0x00284920`) keeps the brain's target (it searches only for brain type 0), finds
    `Tandem_CanStart` true and calls `Tandem_Start(AI, victim, grabber)`. So the AI's "grab" at a rear-held enemy
    **is** the tandem. Each link is confirmed (code); the whole is confirmed (runtime) below.
@@ -742,7 +742,7 @@ Read in Ghidra: confirmed (code) where no other level is given.
 | `0x33` | `Player_OnCommand33` (`0x00281188`) | the pick-up search |
 | `0x32` | `Player_OnCommand32` (`0x002832c8`) | uncuff with a key |
 | `0x27` | `Player_TryRevive` (`0x00286ba8`) | revive a downed Warrior with a flash: 351 then 353 on the reviver, 354 on the revived ([Combat](combat-reactions.md#revive)); also d-pad left in the street's tables |
-| 5 (as L2 held) | `Player_UpdateGrabbing` / `Player_UpdateMounting` (`PlayerCmd_IsLetGo` `0x0027bf08`) | in a grab, let go (95 / 94); in the mount, get off (244 / 245, the victim rises with 199). The Grabbing and Mounting reaction goals send it every update near a train ([AI](ai.md#fight-reactions)) |
+| 5 (as L2 held) | `Player_UpdateGrabbing` / `Player_UpdateMounting` (`PlayerCmd_IsLetGo` `0x0027bf08`) | in a grab, let go (95 / 94); in the mount, get off (244 / 245, the victim rises with 199). The Grabbing and Mounting reaction goals send it every update near a train ([AI](ai/index.md#fight-reactions)) |
 | `0x19` | `Player_UpdateGrabbing` (`PlayerCmd_IsGrabSpin` `0x0027bd98`, as R1 pressed) | spin the grab: front to rear 78 / 79, rear to front 80 / 81 ([Combat](combat-grabs.md#grabbing)). The Grabbing goal sends it to turn a front-held victim to his attackers |
 
 Confirmed (code).
