@@ -369,6 +369,7 @@ class Human final : public Holdable {
     [[nodiscard]] const HumanAnimator& animator() const { return m_animator; }
     /// `HuUseAnim`'s idle replacement, `name` loaded as `clip` (null for none: the own idle);
     /// HumanAnimator::setIdleClip(). The play mode applies ScriptState's override for the idle (`0x184`) through it.
+    /// @orig 0x00221aa0 Human_SetAnimOverride (unknown)
     void setIdleClip(std::string_view name, const anim::AnimClip* clip) {
         m_idleClipName = std::string(name);
         m_animator.setIdleClip(clip);
@@ -419,6 +420,7 @@ class Human final : public Holdable {
     [[nodiscard]] const std::string& idleClipName() const { return m_idleClipName; }
     /// `HuUseAnyAnim`'s replacement for anim `id` other than the idle, `name` loaded as `clip` (null: the own clip
     /// plays); an empty `name` takes it out. HumanAnimator::setOverride().
+    /// @orig 0x00221aa0 Human_SetAnimOverride (unknown)
     void setOverrideClip(std::uint32_t id, std::string_view name, const anim::AnimClip* clip) {
         if (name.empty()) {
             m_overrideNames.erase(id);
