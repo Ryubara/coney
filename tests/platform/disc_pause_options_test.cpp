@@ -52,30 +52,19 @@ constexpr std::uint64_t kReverted = 290;
 
 // START; the stick right twice to Options, cross; down once (Camera), cross; down twice (Auto Adjust P1 Cam), right
 // (Off), cross keeps it; START plays on. Frames of play.
-constexpr std::string_view kAutoAdjustPad = "30 tap start
-                                            "
-                                            "80 stick left 70 0
-    82 stick left 0 0 "
-                      "92 stick left 70 0
-    94 stick left 0 0 "
-                      "110 tap cross
-                      "
-                      "130 stick left 0 -70
-    132 stick left 0 0 "
-                       "150 tap cross
-                       "
-                       "170 stick left 0 -70
-    172 stick left 0 0 "
-                       "182 stick left 0 -70
-    184 stick left 0 0 "
-                       "200 stick left 70 0
-    202 stick left 0 0 "
-                       "220 tap cross
-                       "
-                       "240 tap start
-                       ";
-    // Frames of play by which each step has happened.
-    constexpr std::uint64_t kAutoAdjustOff = 215;
+constexpr std::string_view kAutoAdjustPad = "30 tap start\n"
+                                            "80 stick left 70 0\n82 stick left 0 0\n"
+                                            "92 stick left 70 0\n94 stick left 0 0\n"
+                                            "110 tap cross\n"
+                                            "130 stick left 0 -70\n132 stick left 0 0\n"
+                                            "150 tap cross\n"
+                                            "170 stick left 0 -70\n172 stick left 0 0\n"
+                                            "182 stick left 0 -70\n184 stick left 0 0\n"
+                                            "200 stick left 70 0\n202 stick left 0 0\n"
+                                            "220 tap cross\n"
+                                            "240 tap start\n";
+// Frames of play by which each step has happened.
+constexpr std::uint64_t kAutoAdjustOff = 215;
 constexpr std::uint64_t kPlayingOn = 300;
 
 } // namespace
@@ -154,12 +143,8 @@ TEST_CASE("the disc's pause menu: Auto Adjust P1 Cam off reaches player 1's came
     REQUIRE(play != nullptr);
     const bool camera = play->player().camera().autoAdjust();
 
-    std::printf("  pause options: auto-adjust P1 %d -> %d (P2 %d), shared tuning %d, player 1's camera %d
-                ",
-                    before
-                    ? 1
-                    : 0,
-                stored ? 1 : 0, storedP2 ? 1 : 0, tuning ? 1 : 0, camera ? 1 : 0);
+    std::printf("  pause options: auto-adjust P1 %d -> %d (P2 %d), shared tuning %d, player 1's camera %d\n",
+                before ? 1 : 0, stored ? 1 : 0, storedP2 ? 1 : 0, tuning ? 1 : 0, camera ? 1 : 0);
     CHECK(before);
     CHECK_FALSE(stored);
     CHECK(storedP2);
