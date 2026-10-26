@@ -1032,7 +1032,7 @@ page = "frontend.md#fn-gamestats"
 role = "minutes, hours and minutes, or days, hours and minutes, with the singular or plural word (strings `0x67`-`0x6c`); without days the days count as hours"
 level = "confirmed-code"
 coney = "src/gui/game_stats.h:formatPlayTime"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00215150
@@ -1041,7 +1041,7 @@ page = "frontend.md#fn-gamestats"
 role = "the summary text (`+0x90`)"
 level = "confirmed-code"
 coney = "src/gui/game_stats.h:gameStatsSummary"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00215490
@@ -1050,7 +1050,7 @@ page = "frontend.md#fn-gamestats"
 role = "the batch of a level's picture: `+0x74` for levels 95, 60 and 101, `+0x70` for 2, 3, 5, 9, 11, 20, 31, 34, 51, 52, 54 and 55, `+0x6c` for the rest"
 level = "confirmed-code"
 coney = "src/gui/game_stats.h:thumbBatchOf"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x002155a8
@@ -1059,7 +1059,7 @@ page = "frontend.md#fn-gamestats"
 role = "the `ScrollingMenu` (`+0x88`) of headers and sub-items"
 level = "confirmed-code"
 coney = "src/gui/game_stats.h:GameStatsScreen::open"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00215ca0
@@ -1068,7 +1068,7 @@ page = "frontend.md#fn-gamestats"
 role = "the level records to list (byte `+0x0c` set, level not 61-65 and not 102-137), appended to the vector `+0x60` and sorted (`0x004ed068`, `0x004ed388`)"
 level = "confirmed-code"
 coney = "src/gui/game_stats.h:isGameStatsListed"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00215ce8
@@ -1077,7 +1077,7 @@ page = "frontend.md#fn-gamestats"
 role = "the level records to list (byte `+0x0c` set, level not 61-65 and not 102-137), appended to the vector `+0x60` and sorted (`0x004ed068`, `0x004ed388`)"
 level = "confirmed-code"
 coney = "src/gui/game_stats.h:gatherGameStats"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00215da0
@@ -1086,7 +1086,7 @@ page = "frontend.md#fn-gamestats"
 role = "the level records to list (byte `+0x0c` set, level not 61-65 and not 102-137), appended to the vector `+0x60` and sorted (`0x004ed068`, `0x004ed388`)"
 level = "confirmed-code"
 coney = "src/gui/game_stats.h:gatherGameStats"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00215e78
@@ -1095,7 +1095,7 @@ page = "frontend.md#fn-gamestats"
 role = "from mode `0x13`'s `Enter` (`0x00159538`, code Ghidra has not made a function): everything below"
 level = "confirmed-code"
 coney = "src/gui/game_stats.h:GameStatsScreen::open"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x002166d0
@@ -1104,7 +1104,7 @@ page = "frontend.md#fn-gamestats"
 role = "slot `+0x68`: frees every part and the five batches; slot `+0x88`: created, batches `+0x64`, `+0x6c`, `+0x70`, `+0x74` resident and the menu ready"
 level = "confirmed-code"
 coney = "src/gui/game_stats.h:GameStatsScreen::close"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x002169a8
@@ -1113,7 +1113,7 @@ page = "frontend.md#fn-gamestats"
 role = "back (5) closes the screen (`0x00159520(1)`); accept (4) is taken and does nothing"
 level = "confirmed-code"
 coney = "src/gui/game_stats.h:GameStatsScreen::handle"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x002169e0
@@ -1122,7 +1122,7 @@ page = "frontend.md#fn-gamestats"
 role = "the menu updated and placed; slot `+0x30`: the background's colour, then every part; slot `+0x38`: background, summary, menu, usage text"
 level = "confirmed-code"
 coney = "src/gui/game_stats.h:GameStatsScreen::update"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00216a60
@@ -1131,7 +1131,7 @@ page = "frontend.md#fn-gamestats"
 role = "the menu updated and placed; slot `+0x30`: the background's colour, then every part; slot `+0x38`: background, summary, menu, usage text"
 level = "confirmed-code"
 coney = "src/gui/game_stats.h:GameStatsScreen::update"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00216d48
@@ -1140,7 +1140,7 @@ page = "frontend.md#fn-gamestats"
 role = "the menu updated and placed; slot `+0x30`: the background's colour, then every part; slot `+0x38`: background, summary, menu, usage text"
 level = "confirmed-code"
 coney = "src/gui/game_stats.h:GameStatsScreen::render"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00216eb0
@@ -1149,7 +1149,7 @@ page = "frontend.md#fn-gamestatssubitem"
 role = "the block's text (`+0x70`), [below](frontend.md#game-stats)"
 level = "confirmed-code"
 coney = "src/gui/game_stats.h:gameStatsSubItemText"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00217350
@@ -1158,7 +1158,7 @@ page = "frontend.md#fn-gamestatssubitem"
 role = "the level (`+0x74`), the text, the picture (`+0x68`, sprite `word` in `batch`) and a `ScrollingTextWidget` (`+0x6c`) at (0.05, 0.1) adjusted to the screen; its x moved by `width`"
 level = "confirmed-code"
 coney = "src/gui/game_stats.h:GameStatsSubItem::setup"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00217730
@@ -1167,7 +1167,7 @@ page = "frontend.md#fn-gamestatssubitem"
 role = "slot `+0x70`: the block's rectangle (`+0x30`: the text's width + the column width `+0x60`) with its height × the reveal"
 level = "confirmed-code"
 coney = "src/gui/game_stats.h:GameStatsSubItem::height"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00217788
@@ -1176,7 +1176,7 @@ page = "frontend.md#fn-gamestatssubitem"
 role = "slot `+0x30`: the picture centred in the left column (`+0x60` wide, the shown height, texture cut by the reveal), the text 0.02 right of it, top-aligned, with the same reveal ([The statistics screen](frontend.md#game-stats))"
 level = "confirmed-code"
 coney = "src/gui/game_stats.h:GameStatsSubItem::moveTo"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0041b0f0
@@ -1256,7 +1256,7 @@ page = "frontend.md#warriors-functions"
 role = "two colours (RGB, alpha 255) chosen by the record's area byte `+0x7c` (1-4); used by the mission-select screen and the end-of-mission list"
 level = "confirmed-code"
 coney = "src/gui/game_stats.h:areaColour"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00424298
@@ -1265,4 +1265,4 @@ page = "frontend.md#warriors-functions"
 role = "counts a level's targets for the mission screens: the highest item of its group-0 records × 1000 (the score target), type-4 and type-2 records (total and unlocked) and group-1 distinct items (total and unlocked); level 60 stands for all Armies levels 60-64 and 101 for 101-137"
 level = "confirmed-code"
 coney = "src/warriors/unlock_records.h:UnlockRecords::levelTargets"
-status = "legacy"
+status = "compared"

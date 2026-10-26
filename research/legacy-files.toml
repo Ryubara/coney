@@ -780,9 +780,6 @@ comment = 1
 ["src/gamemodes/sheet_viewer_mode.cpp"]
 tag = 4
 
-["src/gamemodes/start_up_flow.cpp"]
-tag = 21
-
 ["src/gamemodes/text_viewer_mode.cpp"]
 tag = 3
 
@@ -1603,9 +1600,6 @@ tag = 5
 
 ["src/warriors/tag_session.h"]
 comment = 2
-
-["src/warriors/unlock_records.cpp"]
-tag = 4
 
 ["src/warriors/unlockables.cpp"]
 tag = 1

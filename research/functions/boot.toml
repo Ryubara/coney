@@ -15,7 +15,7 @@ name = "GameStatsMode_Enter"
 page = "boot.md#game-mode"
 level = "confirmed-code"
 coney = "src/gamemodes/game_stats_mode.h:GameStatsMode::enter"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0015cae0
