@@ -2026,6 +2026,15 @@ coney = "src/combat/grabbed.h:updateGrabbed"
 status = "legacy"
 
 [[function]]
+address = 0x00280068
+name = "Player_EnterStance"
+page = "combat-targets.md#fight-stance"
+role = "Enters the player's fight stance (state 0x1) after ending his hiding (Human_ClearHiddenState)."
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::enterStance"
+status = "compared"
+
+[[function]]
 address = 0x002801e8
 name = "Player_ExitStanceAndLock"
 page = "combat-targets.md#fight-stance"
