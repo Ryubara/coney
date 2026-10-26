@@ -114,9 +114,9 @@ class AiHumans {
     [[nodiscard]] bool playerReleased() const { return m_playerReleased; }
 
     /// Whether an idle fighter starts a fight with the player when he is within its far melee range: Coney's stand-in
-    /// for the level scripts' `GoalFight` calls (`level99_combat.lua`, docs/research/ai/index.md#level99), which a scene
-    /// without its script needs. On by default. Only a fighter whose gang is an enemy of the player's takes part: an
-    /// ally or a neutral waits to be attacked or to see an enemy of its own.
+    /// for the level scripts' `GoalFight` calls (`level99_combat.lua`, docs/research/ai/index.md#level99), which a
+    /// scene without its script needs. On by default. Only a fighter whose gang is an enemy of the player's takes part:
+    /// an ally or a neutral waits to be attacked or to see an enemy of its own.
     [[nodiscard]] bool engaging() const { return m_engaging; }
     void setEngaging(bool on) { m_engaging = on; }
 
