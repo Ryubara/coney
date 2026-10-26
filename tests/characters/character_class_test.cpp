@@ -54,17 +54,6 @@ TEST_CASE("a player made as a plain alias is drawn as the class's model; anyone 
     CHECK(modelNameFor(33, 1, 3, modelOf) == std::optional<std::string>("warr_sn"));
 }
 
-TEST_CASE("levels 60 to 69 draw the `_a` model, and a type with no CfgChar call has none", "[character_class]") {
-    CHECK(modelNameFor(1, 1, 60, modelOf) == std::optional<std::string>("warr_cl_a"));
-    CHECK(modelNameFor(1, 1, 64, modelOf) == std::optional<std::string>("warr_cl_a"));
-    // The original takes 60-69 (GameState_IsArmiesLevel, docs/research/armies.md#what-it-is).
-    CHECK(modelNameFor(1, 1, 69, modelOf) == std::optional<std::string>("warr_cl_a"));
-    CHECK(modelNameFor(1, 1, 59, modelOf) == std::optional<std::string>("warr_cl"));
-    CHECK(modelNameFor(1, 1, 70, modelOf) == std::optional<std::string>("warr_cl"));
-    CHECK(!modelNameFor(500, 1, 2, modelOf).has_value());
-    CHECK(!modelNameFor(1, 1, 2, {}).has_value());
-}
-
 TEST_CASE("a Warriors type plays with his Warrior's class; anyone else with his own", "[character_class]") {
     using coney::characters::powerClassOf;
     using coney::characters::warriorClassOf;

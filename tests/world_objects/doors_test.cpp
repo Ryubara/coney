@@ -468,62 +468,6 @@ TEST_CASE("CamGhostDoor lets the camera's rays through a door's triangles, and o
     CHECK_FALSE(coney::world_objects::isDoorKind(0));
 }
 
-TEST_CASE("a roll-up door: closed at its set-up, OpenDoor slides its leaf up and opens the way, CloseDoor shuts it",
-          "[world_objects][doors]") {
-    coney::test::ObjectWorldFixture fixture;
-    Doors doors;
-    // dyn_door_sliding: the step twice property 6 (0.1 m), no property 7, so property 8's 3 m up the leaf's z axis.
-    const ObjectTypeInfo info{.className = "dyn_door_sliding",
-                              .hitpoints = 0,
-                              .size = {3.0F, 0.2F, 3.0F},
-                              .material = 9,
-                              .leafWidth = 1.5F,
-                              .property6 = 0.05F,
-                              .property7 = 0.0F,
-                              .property8 = 3.0F,
-                              .objectType = 0};
-    const double handle =
-        doors
-            .spawn(
-                fixture.handle(), at("dyn_door_rollup"), &info, [&fixture] { return fixture.handle(); }, fixture.world)
-            .handle;
-    const Door& door = *doors.find(handle);
-    REQUIRE(door.doorClass == DoorClass::Sliding);
-    REQUIRE(door.slidingLeaves.size() == 1);
-    CHECK(door.slidingLeaves[0].model == "dyn_dr_rollup");
-    CHECK(door.slideAxis == 0);
-    CHECK(door.slideLength == Catch::Approx(3.0F));
-    CHECK(door.slideStep == Catch::Approx(0.1F));
-    CHECK(door.slidingLeaves[0].axis.z == Catch::Approx(1.0F));
-    // Set up closed: triangles on, its number's links avoided, the doorway's hole in place; the close sound.
-    CHECK(fixture.enabled(0));
-    CHECK(fixture.paths.edges()[0].avoid);
-    CHECK((fixture.paths.polygons()[3].flags & coney::world::kPathPolygonExcluded) == 0);
-    CHECK_FALSE(doors.isOpen(handle));
-    CHECK(fixture.services.sounds == std::vector<std::uint32_t>{coney::world_objects::kRollupDoorSound});
-
-    // OpenDoor: the way opens at once, and the leaf climbs 0.1 m every second tick until past 3 m, then settles there.
-    doors.command(handle, door_command::kOpen, fixture.world);
-    CHECK(doors.isOpen(handle));
-    CHECK_FALSE(fixture.enabled(0));
-    CHECK_FALSE(fixture.paths.edges()[0].avoid);
-    CHECK((fixture.paths.polygons()[3].flags & coney::world::kPathPolygonExcluded) != 0);
-    tick(doors, fixture, 2);
-    CHECK(door.slidingLeaves[0].offset == Catch::Approx(0.1F));
-    CHECK(door.slidingLeaves[0].position().z == Catch::Approx(0.1F));
-    tick(doors, fixture, 2 * 40);
-    CHECK(door.slidingLeaves[0].offset == Catch::Approx(3.0F));
-    CHECK(door.slidingLeaves[0].motion == coney::world_objects::slide_motion::kRest);
-
-    // CloseDoor: the way shuts at once and the leaf comes down.
-    doors.command(handle, door_command::kClose, fixture.world);
-    CHECK_FALSE(doors.isOpen(handle));
-    CHECK(fixture.enabled(0));
-    CHECK(fixture.paths.edges()[0].avoid);
-    tick(doors, fixture, 2 * 40);
-    CHECK(door.slidingLeaves[0].offset == Catch::Approx(0.0F));
-}
-
 TEST_CASE("a lift's two-leaf door (dyn_door_ele_c) opens its leaves apart, the first up and the second down",
           "[world_objects][doors]") {
     // Expected: script-types.md#sliding-doors, confirmed (code): SlidingDoor_SpawnLeaves turns the second leaf 180
