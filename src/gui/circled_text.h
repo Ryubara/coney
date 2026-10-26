@@ -45,7 +45,6 @@ struct CircledTextSetup {
 /// kCircles characters are dropped (the original has room for two and writes past them).
 ///
 /// Research: docs/research/gui.md#fn-circledtext
-/// @orig 0x001d0aa8 CircledText_Construct (unknown)
 class CircledText : public Widget {
   public:
     /// The most circles the object holds (`+0x250` + `0x100` × i, i < 2).
@@ -62,6 +61,10 @@ class CircledText : public Widget {
     static constexpr float kCircleDrop = 0.1F;
     /// The font slot of the texts (the menus' text font).
     static constexpr int kFontSlot = 4;
+
+    /// The parts, blank until setup(), and no circles in use.
+    /// @orig 0x001d0aa8 CircledText_Construct (unknown)
+    CircledText() = default;
 
     /// The back sprite: `rect` of `batch` (not owned; null draws none).
     /// @coney-only sprite binding: the original's set-up takes the back sprite's word and batch
