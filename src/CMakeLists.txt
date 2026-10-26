@@ -272,6 +272,7 @@ target_sources(coney_core PRIVATE
     human/way_clear.cpp
     human/human_flight.cpp
     human/human_hiding.cpp
+    human/human_debug.cpp
     human/human_script.cpp
     human/humans.cpp
     human/locomotion_gate.cpp
@@ -471,6 +472,7 @@ if(CONEY_DEBUG_TOOLS)
         debug/combat_tunables.cpp
         debug/debug_lines.cpp
         debug/debug_session.cpp
+        debug/entity_edit.cpp
         debug/entity_inspect.cpp
         debug/fighter_spawn.cpp
         debug/game_tunables.cpp
@@ -487,6 +489,7 @@ if(CONEY_DEBUG_TOOLS)
         debug/pages_anim.cpp
         debug/pages_engine.cpp
         debug/pages_entity.cpp
+        debug/pages_entity_edit.cpp
         debug/pages_hud.cpp
         debug/pages_movies.cpp
         debug/pages_net.cpp

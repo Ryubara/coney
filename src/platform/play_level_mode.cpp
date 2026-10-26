@@ -491,12 +491,22 @@ std::expected<void, Error> PlayLevelMode::traceTo(const std::string& path) {
 void PlayLevelMode::enter() { m_scenery->preload(toRenderWare(m_player->camera().position())); }
 
 void PlayLevelMode::skin(const human::PlayerCharacter& character, const anim::Pose& pose, anim::Vec3 feet,
-                         float heading, float lean, CharacterMesh& mesh) {
+                         float heading, float lean, CharacterMesh& mesh, float scale) {
     // The pose's skinning matrices in the character's space (game axes, the feet at the origin, facing +y), then
     // leaned, turned, moved to the feet and into RenderWare's axes by the placement.
     const characters::CharacterModel& model = character.assets().model;
     const auto bones = anim::boneTransforms(character.skeleton(), pose);
-    const std::vector<anim::Mat34> matrices = characters::skinningMatrices(model, bones);
+    std::vector<anim::Mat34> matrices = characters::skinningMatrices(model, bones);
+    // A scaled body (the Entity editor's) grows about the feet, in the character's space: before the placement, so the
+    // feet stay where they are, and the shader's normalised normal keeps the lighting.
+    if (scale != 1.0F) {
+        for (anim::Mat34& matrix : matrices) {
+            matrix = anim::Mat34{.x = anim::scale(matrix.x, scale),
+                                 .y = anim::scale(matrix.y, scale),
+                                 .z = anim::scale(matrix.z, scale),
+                                 .t = anim::scale(matrix.t, scale)};
+        }
+    }
     mesh.pose(matrices, characterPlacement(feet, heading, lean));
 }
 
@@ -746,7 +756,8 @@ void PlayLevelMode::render(const RenderTime& time) {
         m_stage->skinPuppets(alpha, [](const human::PlayerCharacter& character, const anim::Pose& pose, anim::Vec3 feet,
                                        float heading,
                                        CharacterMesh& mesh) { skin(character, pose, feet, heading, 0.0F, mesh); });
-        skin(playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading, snapshot.lean, *m_mesh);
+        skin(playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading, snapshot.lean, *m_mesh,
+             m_player->human().meshScale());
         m_attachedDraws.clear();
         poseHat(m_player->human(), playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading);
         poseHeldObject(m_player->human(), playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading);
@@ -779,7 +790,7 @@ void PlayLevelMode::render(const RenderTime& time) {
                 }
             }
             FighterMesh& mesh = m_fighterMeshes[i];
-            skin(*mesh.character, pose.pose, pose.feet, pose.heading, 0.0F, *mesh.mesh);
+            skin(*mesh.character, pose.pose, pose.feet, pose.heading, 0.0F, *mesh.mesh, fighters[i].human->meshScale());
             poseHat(*fighters[i].human, *mesh.character, pose.pose, pose.feet, pose.heading);
             // What he holds, posed by his own hand as player 1's is (docs/research/objects.md#given-weapon).
             poseHeldObject(*fighters[i].human, *mesh.character, pose.pose, pose.feet, pose.heading);

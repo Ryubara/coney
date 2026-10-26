@@ -49,6 +49,8 @@ class Stamina {
     void refill(const RefillBlocks& blocks, float seconds);
     /// Fills it to the maximum (human flag `0x4000000`; Coney's debug menus).
     void fill();
+    /// Sets it to `value` points, clamped to 0..maximum, the carried fraction dropped (Coney's debug menus).
+    void set(int value);
 
     [[nodiscard]] int value() const { return m_value; }
     [[nodiscard]] int maximum() const { return m_maximum; }

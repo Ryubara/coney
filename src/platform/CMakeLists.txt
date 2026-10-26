@@ -79,6 +79,7 @@ if(CONEY_DEBUG_TOOLS)
         perf_bench.cpp
         play_level_anim.cpp
         play_level_controls.cpp
+        play_level_edit.cpp
         play_level_inspect.cpp
         reference_renderer.cpp
         sandbox_play_scenery.cpp

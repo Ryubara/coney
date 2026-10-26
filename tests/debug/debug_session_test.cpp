@@ -88,6 +88,7 @@ TEST_CASE("every page of a session opens and every item on it is well formed", "
                                                                    "HUD",
                                                                    "Debug draw",
                                                                    "Entity inspector",
+                                                                   "Entity editor",
                                                                    "Display",
                                                                    "Audio",
                                                                    "Network",

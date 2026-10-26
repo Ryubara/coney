@@ -13,6 +13,7 @@
 #include "characters/character_choice.h"
 #include "core/error.h"
 #include "debug/anim_catalog.h"
+#include "debug/entity_edit.h"
 #include "debug/entity_inspect.h"
 #include "human/place.h"
 #include "sandbox/sandbox_layout.h"
@@ -225,6 +226,9 @@ class PlayControls {
     [[nodiscard]] virtual bool entityFrozen(EntityId /*id*/) const { return false; }
     /// Freezes entity `id`, or lets it go; nothing for an entity that cannot be frozen.
     virtual void setEntityFrozen(EntityId /*id*/, bool /*frozen*/) {}
+    /// What the Entity editor edits (docs/guides/debug-menu.md#entity-editor): the mode's humans and objects, called
+    /// between simulation steps by the debug session's input gate. Null by default: the mode cannot be edited.
+    [[nodiscard]] virtual EntityEditTarget* entityEdits() { return nullptr; }
 };
 
 /// The spot `distance` metres in front of feet `feet` facing `headingDegrees` (0 faces +y, counter-clockwise from
