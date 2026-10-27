@@ -79,14 +79,14 @@ jobs:
           case "$EVENT_NAME" in
             issues | pull_request_target)
               [[ "$NUMBER" =~ ^[0-9]+$ ]] || { echo "unexpected item number" >&2; exit 1; }
-              uv run --project python coney-tools repo hygiene --event "$NUMBER" --apply
+              uv run --project python coney-tools repo post-findings --event "$NUMBER" --apply
               ;;
             push)
               # Exit code 1 means "a pull request is stuck", which is the report, not a failure of this run.
-              uv run --project python coney-tools repo pr-health --labels --apply || [ "$?" -eq 1 ]
+              uv run --project python coney-tools pr list-stuck --labels --apply || [ "$?" -eq 1 ]
               ;;
             *)
-              uv run --project python coney-tools repo hygiene --sweep --apply
-              uv run --project python coney-tools repo pr-health --labels --apply || [ "$?" -eq 1 ]
+              uv run --project python coney-tools repo post-findings --sweep --apply
+              uv run --project python coney-tools pr list-stuck --labels --apply || [ "$?" -eq 1 ]
               ;;
           esac

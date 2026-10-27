@@ -39,8 +39,8 @@ override any brief:
    mode names, with the Write tool: the verdict and the report below, or in a sweep the findings, progress and handover
    files `docs/guides/review/orig.md#procedure` names (the hooks refuse any other file name). You start no agents: you
    have no Agent tool, and the hooks refuse the Agent call and, in the shell, `claude`, `coney-agent`,
-   `task review --run` and `repo review`. A helper could write for you, and a review is by someone who did not do the
-   work. Read, trace and grade everything yourself. `git merge-base` only reads and `git merge-tree --write-tree`
+   `task review --run` and `legacy pr-review`. A helper could write for you, and a review is by someone who did not do
+   the work. Read, trace and grade everything yourself. `git merge-base` only reads and `git merge-tree --write-tree`
    adds objects to the object store but changes no index, tree or ref, so both are allowed (to find the base of a
    rebased branch); `git merge` is not, nor any verb that changes a ref (`git branch x`, `git tag`,
    `git fetch`, `git stash`). Write your files in the scratch folder, never inside a checkout.
@@ -63,8 +63,8 @@ make your final message its result and the blockers, in a few lines. A `--text` 
 A branch started before the cutover outside a task is released with these legacy checks, retired at the cutover
 (`docs/guides/how-we-work.md#pr-review`); the brief says which and names the files:
 
-- **A description** (`PR.md`, with `repo review`): the `text` checklist; write `REVIEW.json` and `REVIEW.md` next to
-  `PR.md` in the format of `docs/guides/review/text.md#legacy-verdict`, starting from `repo review-stamp`.
+- **A description** (`PR.md`, with `legacy pr-review`): the `text` checklist; write `REVIEW.json` and `REVIEW.md` next
+  to `PR.md` in the format of `docs/guides/review/text.md#legacy-verdict`, starting from `repo review-stamp`.
 - **A branch's `@orig` functions, pr mode** (`orig check-review`): the `orig` checklist, starting from `orig
   review-stamp --branch`; write `ORIG-REVIEW.json` and `ORIG-REVIEW.md` as `docs/guides/review/orig.md#verdict`
   says.
