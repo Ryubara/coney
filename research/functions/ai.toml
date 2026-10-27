@@ -1392,7 +1392,7 @@ status = "legacy"
 [[function]]
 address = 0x0028f8b8
 name = "Brain_Update"
-page = "ai.md#update"
+page = "ai.md#original-structure"
 role = "count the update (+0x34), then call handler A"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::update"

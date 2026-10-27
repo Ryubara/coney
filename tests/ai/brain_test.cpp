@@ -213,7 +213,7 @@ TEST_CASE("a brain counts its update before its goals run and sets the face's mo
     brain.update(stepMs(5));
     CHECK(brain.human().faceState().value() == static_cast<int>(coney::human::FaceMood::Neutral));
     // The goals read the count this update has already added to.
-    // Expected: ai.md#update, confirmed (code)
+    // Expected: face.md#mood, confirmed (code)
     CHECK(counting.seen == std::vector<std::uint64_t>{1, 2, 3, 4, 5});
 }
 

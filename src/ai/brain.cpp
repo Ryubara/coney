@@ -133,7 +133,7 @@ Brain* Brain::announcer(anim::Vec3 position) const {
 // @orig 0x0028fbb0 Brain_UpdateGoals (unknown)
 void Brain::update(std::uint64_t nowMs) {
     m_nowMs = nowMs;
-    // Brain_Update counts first (+0x34): the mood and the goals read this update's number (docs/research/ai.md#update).
+    // Brain_Update counts first (+0x34): the mood and the goals read this update's number (docs/research/face.md#mood).
     ++m_updates;
     // The attacks announced since the last update that this brain's range and field of view take in: events 0x10,
     // which count the warnings (+0x200) unless the gang's tactic takes them or the brain is dead.

@@ -257,11 +257,7 @@ is enabled (`+0x08`) and whose human passes `0x0023d790`:
   character steps (6 Hz), staggered across brains. Confirmed (runtime): a hook on `0x0028f6c0` over 215 steps matched
   the formula on every step, with `counter` the tick counter `0x005104f4`; brains whose human fails `0x0023d790`
   (in the street save, Vermin and the suspended Ash) do not think at all.
-- **Update** (`Brain_Update`, handler A) every step. It first adds one to the brain's update count (`+0x34`), so
-  everything the handler reads of the count (the [face's mood](face.md#mood) every fifth count, the goals' periodic
-  checks) sees this update's number, 1 on the first update; then, only while the human's `+0xd8` is set, it stores
-  the health percent on every 90th count (`Brain_StoreHealth`), calls handler A and clears the attack warnings
-  (`+0x200`). Confirmed (code) at `0x0028f8b8`.
+- **Update** (`Brain_Update`, handler A) every step.
 
 Then the [waypoint queues](ai-moving.md#queues). [Formations](ai-gangs.md#formations) (step 2) and
 [gangs](ai-gangs.md#gang-update) (step 4) run before the brains.

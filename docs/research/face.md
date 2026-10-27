@@ -95,9 +95,10 @@ Confirmed (code) at the cited addresses.
 
 `Brain_UpdateAlertness` (`0x0028bbf0`) sets the mood through `Human_SetTalkState` when the brain's update count
 (`+0x34`) divides by 5. `Brain_Update` (`0x0028f8b8`) adds one to the count before it calls the brain's handler that
-runs this test, so the count includes the current update: the mood is set on the 5th, 10th, 15th update and so on
-([the update](ai.md#update)). The player's brain calls it first thing; an AI brain calls it
-after its move is stopped and before the test that skips a suspended brain's goals. In order:
+runs this test, so the count includes the current update: the mood is set on the 5th, 10th, 15th update and so on, and
+every other check the handler makes on the count (the goals' periodic ones) reads it the same way. The player's brain
+calls it first thing; an AI brain calls it after its move is stopped and before the test that skips a suspended brain's
+goals. In order:
 
 1. **Scared** when the human is down or dead (`Human_IsDownOrDead`, `0x00227e60`), cuffed (`Human_IsCuffed`,
    `0x00223b70`) or burning (`Human_IsOnFire`, `0x00227fb8`).
