@@ -738,7 +738,7 @@ coney = "src/ai/enemy_scan.cpp:maySpectate"
 status = "compared"
 
 [[function.gaps]]
-what = "a scanner who may not start a fight (Brain_MayStartFight 0x002904e0) passes unless his class role is 10: not ported, as with it the disc's level3 rooftop chase loses Snow for AI seeds 0 and 5"
+what = "a scanner whose class role Coney cannot look up is not passed as one whose role is not 10 (the original always reads one)"
 relation = "stand-in"
 issue = 1011
 
@@ -1544,6 +1544,21 @@ role = "whether the brain holds an attack slot or has a target"
 level = "confirmed-code"
 coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
 status = "legacy"
+
+[[function]]
+address = 0x002904e0
+name = "Brain_MayStartFight"
+page = "ai-fights.md#enemy-scan"
+kind = "helper"
+role = "no Chase goal (`0x0c`), the top goal not `0x8a`, the gang not fighting (alert state `+0x32` not 1) and no fight goal"
+level = "confirmed-code"
+coney = "src/ai/enemy_scan.cpp:mayStartFight"
+status = "compared"
+
+[[function.gaps]]
+what = "Coney builds no Chase goal (0x0c), so that test never refuses"
+relation = "stand-in"
+issue = 1011
 
 [[function]]
 address = 0x002906b8

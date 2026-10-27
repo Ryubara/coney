@@ -2,9 +2,13 @@
 #include "ai/enemy_scan.h"
 
 #include <algorithm>
+#include <cstddef>
+#include <optional>
 #include <vector>
 
+#include "ai/fidget_action.h"
 #include "ai/gangs.h"
+#include "ai/goal.h"
 #include "ai/perception.h"
 #include "ai/script_services.h"
 #include "ai/targeting.h"
@@ -45,14 +49,44 @@ float nearRadius(const Brain& scanner, const Brain& member) {
 // @orig 0x0028b358 Brain_ScanEnemies (unknown)
 bool down(const Brain& brain) { return brain.human().downOrDead(); }
 
-// Whether `scanner` may list `member` before the filter and sight (step 1.2): always for a Warrior; else only when he
-// is a pad player or `member` stands less than 1.9 m above him.
+// Whether `brain` may start a fight: no Chase goal (`0x0c`) on his stack, his top goal not the balcony boss's
+// (`0x8a`), his gang not fighting (alert state `+0x32` not 1, as `Gang_SetAlertState` `0x00164a28` sets it) and no
+// fight goal (Melee or LeftTurf, the goals Brain::hasFightGoal() looks for, read here on a const brain). A brain with
+// no gang counts as calm (the original always has one). **Coney stand-in** (#1011): Coney builds no Chase goal, so
+// that test never refuses.
+// @orig 0x002904e0 Brain_MayStartFight (unknown)
+bool mayStartFight(const Brain& brain) {
+    constexpr auto kChase = static_cast<GoalType>(0x0c);
+    bool chase = false;
+    bool fight = false;
+    for (std::size_t k = 0; k < brain.goalCount(); ++k) {
+        const GoalType type = brain.goalAt(k)->type();
+        chase = chase || type == kChase;
+        fight = fight || type == GoalType::Melee || type == GoalType::LeftTurf;
+    }
+    if (chase) {
+        return false;
+    }
+    if (const Goal* top = brain.topGoal(); top != nullptr && top->type() == GoalType::BigLedgeThrower) {
+        return false;
+    }
+    const Gang* gang = brain.gang();
+    return (gang == nullptr || gang->alertState() != kGangFighting) && !fight;
+}
+
+// Whether `scanner` may list `member` before the filter and sight (step 1.2): always for a Warrior; for a brain that
+// may not start a fight unless his class role is 10; else only when he is a pad player or `member` stands less than
+// 1.9 m above him.
 // @orig 0x002225d8 Human_MaySpectate (unknown)
 bool maySpectate(const Brain& scanner, const Brain& member) {
-    // The original also passes a scanner who may not start a fight (`Brain_MayStartFight` `0x002904e0`: a Chase goal,
-    // the balcony boss's top goal, a gang of kind 1 or a fight goal) unless his class role is 10; with that ported the
-    // disc's level3 rooftop chase loses Snow for AI seeds 0 and 5, so it waits as a **Coney stand-in** (#1011).
+    constexpr int kAlwaysLimitedRole = 10;
     if (scanner.type() == BrainType::Warrior) {
+        return true;
+    }
+    // **Coney stand-in** (#1011): a class role Coney does not know (no lookup) is not counted as "not 10"; the height
+    // limit applies to him as before.
+    const std::optional<int> role = classRole(scanner);
+    if (!mayStartFight(scanner) && role.has_value() && *role != kAlwaysLimitedRole) {
         return true;
     }
     // **Coney stand-in** (#1011): 3 or more investigations (`+0x2d0`) also pass, but Coney builds no investigate goal,

@@ -712,7 +712,7 @@ defaults in brackets where they differ):
 | Term (flag) | When | Points |
 | --- | --- | --- |
 | base | the scorer cannot chase him (`Brain_CanBeChased` `0x0028abc0` false on the enemy, or scorer `+0x2d3` clear, or the enemy outside the scorer gang's turf) | −5 (`0x00510b94`) |
-| `0x1` distance | always with this flag: beyond the scorer's sight range `R` (brain `+0x130`; a gang of kind 1 uses at least 30 m, `0x0028bf00`) the score is **−999** | + 4.0 × (`R` − distance) (`0x00510b4c`) [3.0] |
+| `0x1` distance | always with this flag: beyond the scorer's sight range `R` (brain `+0x130`; at least 30 m while his gang is fighting, alert state `+0x32` 1, `0x0028bf00`) the score is **−999** | + 4.0 × (`R` − distance) (`0x00510b4c`) [3.0] |
 | `0x2` near the leader | the scorer gang's leader (`Gang_GetLeader` `0x00165678`) is not the enemy and is within `R` of him | + 3.0 × (`R` − that distance) (`0x00510b50`) |
 | `0x4` enemy leads his gang | the enemy is his gang's leader and the scorer's brain is not type 3 | + 6 (`0x00510b54`) [3] |
 | `0x8` stunned | `0x100000` set and `0x80000` clear | + 1 (`0x00510b58`) |
@@ -787,9 +787,9 @@ time since last drawn):
 is 1, 0 would force level 0). The AI uses it to do less far away: [steering](ai-moving.md#steering) is off above 2, the
 [corner speed](ai-moving.md#move-action) and the [riot](ai-scripting.md#riot) scale with it.
 
-**The scan** (`Brain_ScanEnemies(brain, filter)` `0x0028b358`). A human who is down or dead empties his list. Else,
-with `R` the sight range (`Brain_GetSightRange` `0x0028bf00`: `+0x130`, at least 30 m in a gang of kind 1) and `c` =
-cos(field of view / 2):
+**The scan** (`Brain_ScanEnemies(brain, filter)` `0x0028b358`). A human who is down or dead empties his list. Else, with
+`R` the sight range (`Brain_GetSightRange` `0x0028bf00`: `+0x130`, at least 30 m while his gang is fighting, gang
+`+0x32` 1) and `c` = cos(field of view / 2):
 
 1. For each of the 32 gangs that is active (gang `+0x18`) and an enemy of his (`Gang_IsEnemyOf` `0x00168fe0`: the
    enemy bit of the other's id in gang `+0x38`; never between kinds 1 and 23, nor during a global truce), each of its
@@ -798,11 +798,15 @@ cos(field of view / 2):
        `+0x2d5` is set.
     2. Unless the member's gang is always seen (gang `+0xdc`): `Human_MaySpectate` (`0x002225d8`) must allow him:
        always for a Warrior (brain type 3) and for a brain that may not start a fight (`Brain_MayStartFight`
-       `0x002904e0`: a Chase goal `0x0c` on his stack, his top goal `0x8a`, his gang of kind 1 or a fight goal),
-       unless his class `+0x11b` is 10; otherwise, with fewer than 3 investigations (brain `+0x2d0`, which
-       `InvestigateGoal_Start` counts) and not a pad player (human `+0x1b0` is −1), he lists only a member less than
-       1.9 m times the vertical sight modifier (`0x00510ad4`, `CfgVerticalSightModifier`) above him. Confirmed (code)
-       at both addresses.
+       `0x002904e0`: a Chase goal `0x0c` on his stack, his top goal `0x8a`, his gang fighting (gang `+0x32`, the
+       alert state `Gang_SetAlertState` `0x00164a28` sets, is 1) or a fight goal (`Brain_HasFightGoal` `0x00290348`:
+       Melee `0x08` or `0x3f`)), unless his class `+0x11b` is 10; otherwise, with fewer than 3 investigations (brain
+       `+0x2d0`, which `InvestigateGoal_Start` counts) and not a pad player (human `+0x1b0` is −1), he lists only a
+       member less than 1.9 m times the vertical sight modifier (`0x00510ad4`, `CfgVerticalSightModifier`) above him.
+       Confirmed (code) at the three addresses. So a man already in a fight sees his enemies at any height: in
+       `level3`'s rooftop chase the Hi-Hat pursuers (class roles 11 and 12, a Melee goal under their devil run) list
+       the Warriors on the roofs above them. Inferred from Coney's run of the chase (the disc's classes and the scan
+       ported as above).
     3. The filter `+0x15c` must accept him: `Brain_IsValidEnemyOf` (`0x0029bf60`, `Brain_ValidateEnemy` on the
        scanner's brain) for every type but the Warriors, whose filter is `Filter_IsThreatTo` (`0x0029bf98`): a cop
        only within 10 m and when `Brain_IsThreat` (`0x00290138`, below) calls him a threat; a civilian (type
@@ -1042,11 +1046,11 @@ chance, `+0x37` the pattern-reading threshold ([Power classes](characters.md#pow
   each new one as event `0xb` (its script's handler, else its type's; a tactic through `Brain::addEnemy`). A gang always
   seen (`GangSetAlwaysSeen`) skips the spectate test and the sight step, and the spectate test is `Human_MaySpectate`'s
   (`maySpectate`). `ScanSchedule` runs it every interval (2 s, cops 1 s, × 4 locked on in the stance, or a goal's own)
-  with five scans an update at most. **Coney stand-ins** (#1011): the spectate test's pass for a scanner who may not
-  start a fight is not ported (with it the disc's level3 rooftop chase loses Snow for two AI seeds), the investigation
-  count is taken as 0 and the vertical sight modifier is not applied; nothing sets the gang's chosen target; the
-  civilians' ped type, the hostile counts, the radar's enemy marks, the detail level's slowdown and the rescan on a gang
-  change are not built. The Scout tactic (below) scans its members at their posts.
+  with five scans an update at most. **Coney stand-ins** (#1011): the spectate test does not pass a scanner whose class
+  role Coney cannot look up (the original always has one), Coney builds no Chase goal (`0x0c`) for `mayStartFight` to
+  find, the investigation count is taken as 0 and the vertical sight modifier is not applied; nothing sets the gang's
+  chosen target; the civilians' ped type, the hostile counts, the radar's enemy marks, the detail level's slowdown and
+  the rescan on a gang change are not built. The Scout tactic (below) scans its members at their posts.
 - **Blocking**: `BlockGoal` never produces a block: Coney's block starts only on R1 held in the record's buttons,
   which only a pad writes, so its command 4 does nothing. It turns the human's hit reactions off
   (`Fighter::setHitReactionsOff`, bit `0x800`) from its start until its sixth update with the human free; rolls the
