@@ -329,21 +329,25 @@ refused unless all three hold:
 3. **The slot of its kind is free**: the kind from `TASK.md`, the liveness from `unit.json`, its worktree and the stamp
    log (`task start` counts the same way), whether a unit is a workflow unit from its issues' claim cards, the numbers
    from the conventions, so the hook copies none of it. A full slot refuses with the busy units, each with its kind
-   and since when, and what frees one. A second start for a unit whose agent has not run `task start` yet is refused
-   too.
+   and since when, and what frees one. A second start for a slot-holding unit whose agent has not run `task start`
+   yet is refused too; a workflow unit keeps no reservation, so a second start for it is not.
 
 A start that is let through keeps the slot for the agent (`slot.json`) until its `task start` makes the unit. Every
 GitHub read happens before the slot lock is taken, so a slow GitHub never holds the lock.
 
-**When GitHub cannot be read** (down, rate-limited, `gh` logged out, or a read over 20 seconds), only the claim goes
-unchecked. The slot is still counted, under the lock, and kept for the agent; no unit counts as a workflow unit
-(neither the one being started nor the others, since the label is read from the same cards), so a full slot still
-refuses, even for a workflow task. A start let through this way leaves a line `let through with a check skipped` in
-`coney-hooks.log`.
+**When GitHub cannot be read** (down, rate-limited, `gh` logged out, or hanging), only the claim goes unchecked. A read
+is killed after 20 seconds (`GH_READ_SECONDS`), the first read that fails ends the reading (every other issue is then
+taken as unreadable at once), and no read starts once 20 seconds (`GH_BUDGET_SECONDS`) have passed since the first, so
+the reads take at most 40 seconds however many units are live; with the 40-second lock wait that is `ADMIT_MAX_SECONDS`
+in `task_slots.py`, and the hook waits 110 seconds (`TIMEOUT` in `slot_guard.py`, held above it by a test). A unit whose
+card was not read counts as holding a slot. The slot is still counted, under the lock, and kept for the agent; no unit
+counts as a workflow unit (neither the one being started nor the others, since the label is read from the same cards),
+so a full slot still refuses, even for a workflow task. A start let through this way leaves a line `let through with a
+check skipped` in `coney-hooks.log`.
 
 **What the guard cannot do.** It is a hook that judges what the coordinator writes, not a security boundary:
 
-- **A tool that cannot judge passes the call.** If `coney-tools` crashes, `uv` is missing, the check times out (100
+- **A tool that cannot judge passes the call.** If `coney-tools` crashes, `uv` is missing, the check times out (110
   seconds) or the slot lock cannot be had (held for 40 seconds, or a scratch folder that cannot be written), the call
   goes through uncounted and a line is written to `coney-hooks.log` in the temp folder (only the tool's own refusal,
   exit code 3, blocks). A GitHub that cannot be read is narrower: the claim alone is not checked (above). Read that log
@@ -367,11 +371,13 @@ refuses, even for a workflow task. A start let through this way leaves a line `l
 - **Only the coordinator is held to it.** An engineer's own helpers are not checked.
 - **`task start` counts without the lock.** Two engineers started by hand without a reservation can both pass `task
   start` at the limit; with the guard each is counted as it is reserved.
-- **A crash can let two calls count at once.** The slot lock is broken when it is older than 30 seconds. If, in the
-  instant a waiter breaks it, the lock has just been renewed by a new holder and a third caller takes it before the
-  waiter can put the renewed one back, the new holder and the third caller both count until one of them releases
-  (`_break_stale` in `task_slots.py`, and the test that reproduces it). It needs a crash or a holder stuck for 30
-  seconds and three calls within one rename; at worst one start is counted twice.
+- **A lock left past its stale age can let two calls count at once.** The slot lock is broken when it is older than
+  30 seconds. A holder that is stuck rather than crashed then overlaps with the caller that broke its lock. And if
+  one waiter (A) renames the stale lock aside just after another caller (B) broke it and took a fresh one, and a
+  third caller (C) takes the free lock before A can put B's back, B and C are both inside the count until one of
+  them releases (`_break_stale` in `task_slots.py`, and the test that reproduces it). That needs a stuck holder and
+  three callers, or a crashed one and four (the one that left the lock, A, B and C), within one rename; the effect
+  is that two calls may both take the last free slot: one start over the limit.
 
 `coney-tools task slots` shows the slots at any time ([task](coney-tools-repo.md#task)); [Conclave](conclave.md) and
 Tether keep their own state (the band's units, the live agents) and are not asked to count slots.

@@ -519,19 +519,19 @@ The coordinator's triage step ([Task files](issues.md#task-files)); the rules ar
   failure stops it with exit 2; running it again for a started task finishes what is missing and changes nothing else.
   A fix task opens its parent's unit instead of making one. The coordinator's role may not run it
   (`.claude/hooks/hooks.toml`).
-* `slots` shows the [engineer slots](agents.md#slots): the units holding each of the task and fix slots (in work,
-  with a record that cannot be read, or reserved for an agent that has not run `task start` yet), the workflow
-  units that hold none (read from their issues' claim cards on GitHub; a unit whose cards cannot be read is counted
-  and named), the fix tasks waiting (oldest first) and the worktrees no unit record names, which no slot counts;
-  `--json` prints the same as data. `--admit` is the check the coordinator's Agent guard runs
-  (`.claude/hooks/slot_guard.py`). For an `--agent-type` that holds a slot (`engineer`, `tooling`) it needs the
-  task from `--task` or from the `Task id: <id>` line of the brief (`--brief FILE`, or `-` for standard input), the
-  task file, a claim that is held now (one bounded read of the claim cards of each issue from GitHub) and a free
-  slot; it exits 0 when the agent may start, **3 with the reasons when it is refused**, and any other code (a
-  crash is 1, a bad option or a slot lock it cannot have 2) when it could not judge. A GitHub that cannot be read
-  leaves only the claim unchecked: the slot is counted as usual (no unit counts as a workflow unit then), and a start
-  let through prints a `warning:` line, which the guard logs. `--reserve` keeps the slot
-  for the agent for `tasks.start.slots.reserve_minutes` or until its `task start`. Other types pass without a line.
+* `slots` shows the [engineer slots](agents.md#slots): the units holding each of the task and fix slots (in work, with a
+  record that cannot be read, or reserved for an agent that has not run `task start` yet), the workflow units that hold
+  none (read from their issues' claim cards on GitHub; a unit whose cards cannot be read is counted and named), the fix
+  tasks waiting (oldest first) and the worktrees no unit record names, which no slot counts; `--json` prints the same as
+  data. `--admit` is the check the coordinator's Agent guard runs (`.claude/hooks/slot_guard.py`). For an `--agent-type`
+  that holds a slot (`engineer`, `tooling`) it needs the task from `--task` or from the `Task id: <id>` line of the
+  brief (`--brief FILE`, or `-` for standard input), the task file, a claim that is held now (one read of the claim
+  cards of each issue from GitHub, 20 seconds each, none started after 20 seconds, none after the first that fails) and
+  a free slot; it exits 0 when the agent may start, **3 with the reasons when it is refused**, and any other code (a
+  crash is 1, a bad option or a slot lock it cannot have 2) when it could not judge. A GitHub that cannot be read leaves
+  only the claim unchecked: the slot is counted as usual (no unit counts as a workflow unit then), and a start let
+  through prints a `warning:` line, which the guard logs. `--reserve` keeps the slot for the agent for
+  `tasks.start.slots.reserve_minutes` or until its `task start`. Other types pass without a line.
 * `leads` runs the leads search alone: one line per match with the source, the place and why it matched, then the terms
   that matched nothing. `--issue N` also matches the addresses, names, paths and references that issue writes.
 * `index` rebuilds the cached index (`<scratch>/leads/index.json`, also rebuilt when `HEAD` moved or after

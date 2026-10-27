@@ -13,10 +13,10 @@ Only the main session's coordinator is held to it: an engineer starting its own 
 not. The hook passes the call when `coney-tools` cannot run: a refusal is the tool's own exit code, `REFUSED`, with the
 reasons on its standard output; every other outcome (a crash exits 1, a bad option 2, no `uv` at all) is a line in
 `coney-hooks.log` and the call goes through, as the PR guard does. A start the tool let through with a check skipped
-(GitHub could not be read, so the claim was not checked) prints a `warning:` line, which is logged too. It is
-standard-library only,
-registered through `dispatch.py`. Exit code 2 blocks the call and shows stderr to the agent; every other outcome
-exits 0.
+(GitHub could not be read, so the claim was not checked) prints a `warning:` line, which is logged too.
+
+It is standard-library only, registered through `dispatch.py`. Exit code 2 blocks the call and shows stderr to the
+agent; every other outcome exits 0.
 """
 
 from __future__ import annotations
@@ -30,9 +30,10 @@ import time
 from collections.abc import Callable
 from pathlib import Path
 
-#: Seconds `coney-tools task slots --admit` may take (a `uv run` start-up, the stamp logs, the slot lock, which it may
-#: wait 40 seconds for).
-TIMEOUT = 100
+#: Seconds `coney-tools task slots --admit` may take: its own longest run (`task_slots.ADMIT_MAX_SECONDS`, 80: the
+#: GitHub reads within their budget, then the 40 s slot lock wait) and 30 s for the `uv run` start-up and the stamp
+#: logs. A test holds it at least 20 s above that number: a hook that times out passes the call uncounted.
+TIMEOUT = 110
 #: The exit code `coney-tools task slots --admit` gives a refused start (`task_slots.REFUSED`; a test holds them equal).
 REFUSED = 3
 #: The role the guard holds to the rule.

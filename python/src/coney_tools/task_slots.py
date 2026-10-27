@@ -67,6 +67,14 @@ LOCK_WAIT_SECONDS = 40.0
 #: How long the lock file may go on refusing to be made (PermissionError) while no lock file is there before the
 #: folder is taken as one that cannot be written: a deletion in flight on Windows clears in milliseconds.
 LOCK_DENIED_SECONDS = 2.0
+#: How long one GitHub read of an issue's claim cards may take (the `gh` call is killed then), and after how long
+#: since the first read no further read starts: a check reads GitHub for at most their sum.
+GH_READ_SECONDS = 20.0
+GH_BUDGET_SECONDS = 20.0
+#: The longest a `task slots --admit` can take apart from starting Python: the read phase, then the lock wait. The
+#: hook's `TIMEOUT` is this plus a margin for `uv run` (a test holds them together); a hook that timed out would pass
+#: the call uncounted.
+ADMIT_MAX_SECONDS = GH_BUDGET_SECONDS + GH_READ_SECONDS + LOCK_WAIT_SECONDS
 
 #: A `Task id: <id>` line of a brief: the line starts with the words, with no list mark, quote or bold in front, so a
 #: brief that quotes the rule does not satisfy it. The brief's line ends are made `\n` first.
@@ -78,34 +86,40 @@ ReadCard = Callable[[int], Card | None]
 
 
 class Cards:
-    """The held claim cards of the issues one check needs, each read from GitHub at most once.
+    """The held claim cards of the issues one check needs, each read from GitHub at most once, within one budget.
 
-    After `freeze` nothing more is read (an issue not read before is unreadable): the reads happen before the slot lock
-    is taken, so a slow GitHub never holds the lock past its stale age."""
+    The first read that fails ends the reading: every issue not read yet is then unreadable at once, so a GitHub that
+    hangs costs one `GH_READ_SECONDS` timeout, not one per issue. No read starts once `GH_BUDGET_SECONDS` have passed
+    since the first, so the whole read phase is at most `GH_BUDGET_SECONDS + GH_READ_SECONDS`. After `freeze` nothing
+    more is read: the reads happen before the slot lock is taken, so a slow GitHub never holds the lock past its stale
+    age."""
 
-    def __init__(self, read: ReadCard) -> None:
+    def __init__(self, read: ReadCard, clock: Callable[[], float] = time.monotonic) -> None:
         self._read = read
+        self._clock = clock
         self._known: dict[int, Card | None] = {}
-        self._failed: dict[int, str] = {}
-        self._frozen = False
+        self._stop = ""
+        self._started: float | None = None
 
     def freeze(self) -> None:
         """Read nothing more from GitHub."""
-        self._frozen = True
+        self._stop = self._stop or "it was not read before the slot lock was taken"
 
     def held(self, number: int) -> Card | None:
-        """The held card of issue `number`, or None; ConfigError when it cannot be read (or was not read before the
-        freeze)."""
+        """The held card of issue `number`, or None; ConfigError when it cannot be read: a read failed before, the
+        budget is spent, or it was not read before the freeze."""
         if number in self._known:
             return self._known[number]
-        if number in self._failed:
-            raise ConfigError(self._failed[number])
-        if self._frozen:
-            raise ConfigError(f"the claim card of #{number} was not read before the slot lock was taken")
+        if self._started is None:
+            self._started = self._clock()
+        elif not self._stop and self._clock() - self._started >= GH_BUDGET_SECONDS:
+            self._stop = f"GitHub took more than {GH_BUDGET_SECONDS:.0f} s for the claim cards"
+        if self._stop:
+            raise ConfigError(f"the claim card of #{number} was not read: {self._stop}")
         try:
             card = self._read(number)
         except (ConfigError, OSError) as error:
-            self._failed[number] = str(error)
+            self._stop = f"an earlier read failed ({error})"
             raise ConfigError(str(error)) from error
         self._known[number] = card
         return card
@@ -394,6 +408,7 @@ def admit(
     read_card: ReadCard,
     task: str | None = None,
     reserve: bool = False,
+    clock: Callable[[], float] = time.monotonic,
 ) -> Verdict:
     """Whether the coordinator may start an agent of `agent_type` now.
 
@@ -402,7 +417,7 @@ def admit(
     `read_card`) and a free slot of its kind. When GitHub cannot be read only the claim goes unchecked (the verdict's
     `warning` says so): the task is not exempt then, the slot is counted and a full slot still refuses. A start that
     passes with `reserve` is recorded as a reservation, under a lock so that Agent calls made together are counted one
-    after the other; every GitHub read happens before the lock."""
+    after the other; every GitHub read happens before the lock, within the budget of `Cards` (`clock` times it)."""
     slots = conventions.tasks.start.slots
     if not holds_a_slot(agent_type, conventions):
         return Verdict(True, f"{agent_type or 'this agent'} holds no slot")
@@ -416,13 +431,13 @@ def admit(
     found = _read_task(scratch, named, conventions)
     if isinstance(found, str):
         return Verdict(False, f"Blocked: {found}. {_howto()} (docs/guides/agents.md#slots).\n")
-    cards = Cards(read_card)
+    cards = Cards(read_card, clock)
     warning = ""
     try:
         problem = claim_problem(found, cards)
     except ConfigError as error:
         problem = None
-        warning = f"the claim of '{named}' was not checked, GitHub could not be read ({error}); its slot is counted"
+        warning = f"the claim of '{named}' was not checked, GitHub could not be read ({error})"
     if problem is not None:
         return Verdict(
             False,
@@ -431,7 +446,7 @@ def admit(
         )
     if exempt_issues(found.issues, cards, conventions):
         return Verdict(
-            True, f"{named} is a workflow task (its issue has the workflow label): no slot until the cutover"
+            True, f"{named} is a workflow task (its issue has the workflow label): no slot until the cutover", warning
         )
     slot = slot_of(found.kind)
 
@@ -504,8 +519,9 @@ def _break_stale(path: Path) -> None:
     was a new holder's lock that took the place of the stale one between the look and the rename, and it is linked back.
     The window that stays open: when a third caller makes a new lock in the instant between that rename and the link
     back, the link fails, and the displaced holder and the third caller both hold the lock until the first of them
-    releases (each removes only its own nonce). That needs a lock left past the stale age (a crash, or a holder stuck
-    for 30 seconds) and three callers interleaved within one rename; the effect is at most one start counted twice.
+    releases (each removes only its own nonce). That needs a lock left past the stale age and, with this waiter, three
+    callers interleaved within one rename (four with a crashed holder); the two inside may both take the last free
+    slot, one start over the limit.
     The renamed-aside file is always removed."""
     try:
         if time.time() - path.stat().st_mtime <= LOCK_STALE_SECONDS:

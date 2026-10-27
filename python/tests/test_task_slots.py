@@ -13,6 +13,7 @@ import os
 import subprocess
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import replace
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -49,6 +50,11 @@ class Scene:
         #: Whether GitHub cannot be read, and the tasks whose cards were read, in order.
         self.down = False
         self.claim_asked: list[str] = []
+        #: Every issue GitHub was asked for, and what to do on each read (a hang, a look at the lock).
+        self.reads: list[int] = []
+        self.on_read: Callable[[int], None] | None = None
+        #: The monotonic clock of the GitHub reads.
+        self.seconds = 0.0
         #: The issues of each task (each task gets its own unless given).
         self.issues_of: dict[str, tuple[int, ...]] = {}
         self._next_issue = 100
@@ -130,6 +136,9 @@ class Scene:
 
     def read_card(self, number: int) -> Card | None:
         """The stand-in for one issue's claim cards on GitHub."""
+        self.reads.append(number)
+        if self.on_read is not None:
+            self.on_read(number)
         if self.down:
             raise ConfigError("cannot read from GitHub with gh (offline)")
         self.claim_asked += [name for name, issues in self.issues_of.items() if number in issues]
@@ -143,7 +152,7 @@ class Scene:
             brief,
             self.now(),
             self.read_card,
-            **options,  # type: ignore[arg-type]
+            **{"clock": lambda: self.seconds, **options},  # type: ignore[arg-type]
         )
 
     def scan(self) -> task_slots.Scan:
@@ -809,6 +818,105 @@ def test_a_workflow_task_still_needs_its_claim(scene: Scene) -> None:
     scene.task("t-flow", kind="tooling", workflow=True)
     scene.release("t-flow")
     assert not scene.admit(brief("t-flow"), agent_type="tooling").allowed
+
+
+def hang(scene: Scene, seconds: float = task_slots.GH_READ_SECONDS) -> Callable[[int], None]:
+    """A GitHub read that takes `seconds` (the `gh` call's timeout by default) and then fails."""
+
+    def read(number: int) -> None:
+        scene.seconds += seconds
+        raise ConfigError(f"gh timed out after {seconds:.0f} s")
+
+    return read
+
+
+def four_live_units(scene: Scene) -> None:
+    """Three task units and a fix unit in work: every slot full, five issues to read with a new task's."""
+    full(scene)
+    scene.unit("f-fix", kind="fix")
+
+
+def test_a_hanging_github_costs_one_read_not_one_per_issue(scene: Scene) -> None:
+    four_live_units(scene)
+    scene.task("d-four")
+    scene.on_read = hang(scene)
+    verdict = scene.admit(brief("d-four"), reserve=True)
+    assert scene.reads == [scene.issues_of["d-four"][0]] and scene.seconds == task_slots.GH_READ_SECONDS
+    assert not verdict.allowed and "no task slot is free" in verdict.message  # still counted
+
+
+def test_a_hanging_github_with_a_free_slot_still_reserves_it(scene: Scene) -> None:
+    scene.unit("a-one")
+    scene.unit("b-two")
+    scene.task("d-four")
+    scene.on_read = hang(scene)
+    verdict = scene.admit(brief("d-four"), reserve=True)
+    assert len(scene.reads) == 1 and verdict.allowed and "not checked" in verdict.warning
+    assert scene.holders() == ["a-one", "b-two", "d-four"]
+
+
+def test_no_read_starts_once_the_budget_is_spent(scene: Scene) -> None:
+    four_live_units(scene)
+    scene.task("d-four")
+
+    def slow(number: int) -> None:
+        scene.seconds += 15.0  # each read succeeds, slowly
+
+    scene.on_read = slow
+    verdict = scene.admit(brief("d-four"))
+    assert len(scene.reads) == 2  # at 0 s and at 15 s; the third would start at 30 s, over the 20 s budget
+    assert scene.seconds <= task_slots.GH_BUDGET_SECONDS + task_slots.GH_READ_SECONDS
+    assert not verdict.allowed and "Counted because GitHub could not say" in verdict.message
+
+
+def test_the_admit_budget_adds_up() -> None:
+    assert task_slots.ADMIT_MAX_SECONDS == (
+        task_slots.GH_BUDGET_SECONDS + task_slots.GH_READ_SECONDS + task_slots.LOCK_WAIT_SECONDS
+    )
+    assert task_cli.GH_CHECK_SECONDS == task_slots.GH_READ_SECONDS
+
+
+def test_github_is_never_read_while_the_slot_lock_is_held(scene: Scene) -> None:
+    four_live_units(scene)
+    scene.task("d-four")
+    lock = scene.scratch / task_slots.LOCK_FILE
+
+    def outside_the_lock(number: int) -> None:
+        assert not lock.exists(), f"#{number} was read under the slot lock"
+
+    scene.on_read = outside_the_lock
+    scene.admit(brief("d-four"), reserve=True)
+    assert len(scene.reads) == 5  # the task's issue and the four live units'
+
+
+def test_a_unit_started_between_the_two_counts_is_counted_not_read(scene: Scene) -> None:
+    scene.unit("a-one")
+    scene.task("d-four")
+    late: list[int] = []
+
+    def start_one_late(number: int) -> None:
+        if number == scene.issues_of["a-one"][0] and not late:  # the first count is reading the live units
+            scene.unit("zz-late")
+            late.extend(scene.issues_of["zz-late"])
+
+    scene.on_read = start_one_late
+    verdict = scene.admit(brief("d-four"), reserve=True)
+    assert late and late[0] not in scene.reads
+    assert verdict.allowed and "3 of 3 task slots in use" in verdict.message
+
+
+def test_a_workflow_task_of_several_issues_keeps_the_claim_warning(scene: Scene) -> None:
+    scene.task("t-flow", kind="tooling", workflow=True, issues=(40, 41))
+    second = 41
+
+    def second_fails(number: int) -> None:
+        if number == second:
+            raise ConfigError("gh timed out")
+
+    scene.on_read = second_fails
+    scene.cards[40] = replace(scene.cards[40], exempt=True)
+    verdict = scene.admit(brief("t-flow"), agent_type="tooling")
+    assert verdict.allowed and "workflow task" in verdict.message and "not checked" in verdict.warning
 
 
 def test_a_second_agent_for_a_unit_that_has_not_started_yet_is_refused(scene: Scene) -> None:

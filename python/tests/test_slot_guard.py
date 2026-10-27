@@ -144,6 +144,16 @@ def test_the_refusal_code_is_the_one_the_tool_exits_with() -> None:
     assert GUARD.REFUSED == task_slots.REFUSED
 
 
+def test_the_hook_waits_longer_than_the_longest_check() -> None:
+    # A hook that times out passes the call uncounted, so its budget covers the tool's own longest run (the GitHub
+    # reads within their budget, then the lock wait) and the `uv run` start-up; Claude Code's timeout for the
+    # PreToolUse dispatcher covers the hook.
+    assert GUARD.TIMEOUT >= task_slots.ADMIT_MAX_SECONDS + 20
+    settings = json.loads((REPO / ".claude" / "settings.json").read_text(encoding="utf-8"))
+    (entry,) = settings["hooks"]["PreToolUse"]
+    assert entry["hooks"][0]["timeout"] > GUARD.TIMEOUT
+
+
 def test_a_refusal_with_no_words_is_not_a_block(tmp_path: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("tempfile.gettempdir", lambda: str(tmp_path))
     assert GUARD.refusal(call(), Fake(GUARD.REFUSED, "")) is None

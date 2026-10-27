@@ -131,7 +131,7 @@ def _workspace_trees(root: Path) -> list[Path]:
 
 
 #: How long one `gh` call of the claim check may take: the Agent guard waits for it, and GitHub down must not hold it.
-GH_CHECK_SECONDS = 20
+GH_CHECK_SECONDS = task_slots.GH_READ_SECONDS
 
 
 def _bounded_gh(arguments: list[str]) -> str:
