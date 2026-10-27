@@ -756,9 +756,6 @@ tag = 4
 ["src/gamemodes/movie_player.cpp"]
 tag = 5
 
-["src/gamemodes/pause_mode.cpp"]
-tag = 8
-
 ["src/gamemodes/player_frame.cpp"]
 tag = 2
 
@@ -782,9 +779,6 @@ comment = 1
 
 ["src/gamemodes/sheet_viewer_mode.cpp"]
 tag = 4
-
-["src/gamemodes/start_up_flow.cpp"]
-tag = 21
 
 ["src/gamemodes/text_viewer_mode.cpp"]
 tag = 3
@@ -856,9 +850,6 @@ tag = 2
 ["src/graphics/throw_arc.cpp"]
 tag = 2
 
-["src/gui/bar.cpp"]
-tag = 1
-
 ["src/gui/base_widget.cpp"]
 tag = 2
 
@@ -891,9 +882,6 @@ tag = 6
 
 ["src/gui/pause_menu/mission_failed_menu.cpp"]
 tag = 5
-
-["src/gui/pause_menu/pause_menu.cpp"]
-tag = 18
 
 ["src/gui/pause_menu/yes_no_box.cpp"]
 tag = 7
@@ -1616,9 +1604,6 @@ tag = 5
 
 ["src/warriors/tag_session.h"]
 comment = 2
-
-["src/warriors/unlock_records.cpp"]
-tag = 4
 
 ["src/warriors/unlockables.cpp"]
 tag = 1

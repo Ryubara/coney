@@ -220,6 +220,14 @@ GameSession::GameSession(RenderEngine& renderer, GameModeStack& stack, const io:
                     m_audio->setVolume(1 + static_cast<std::size_t>(audio::Bus::Sfx), values.soundFxVolume);
                 }
             },
+        // The Stats screen's reading of the pausing player: Coney has player 1 only.
+        .warriorStats = [this](int player) -> std::optional<gui::WarriorStats> {
+            PlayLevelMode* level = play();
+            if (level == nullptr || player != 0) {
+                return std::nullopt;
+            }
+            return level->warriorStats();
+        },
     });
 }
 

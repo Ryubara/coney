@@ -139,11 +139,14 @@ nav:
           - Lighting: research/lighting.md
           - "Rendering: a frame's passes": research/rendering.md
           - Start-up and the front end: research/frontend.md
+          - The statistics screen: research/game-stats.md
           - "Input: pads and player commands": research/input.md
           - GUI, sprite sheets and text: research/gui.md
+          - Circled texts and headers: research/circled-text.md
           - In-game HUD: research/hud.md
           - "HUD messages: objectives, hints, prompts and scripted bars": research/hud-messages.md
           - "HUD radar, target panel and health rings": research/hud-radar.md
+          - The meter bar's draw: research/hud-bar.md
           - "HUD function index: widgets, radar frame and the HUD interface": research/hud-functions-parts.md
           - "HUD function index: the HUDLua bindings": research/hud-functions-lua.md
           - "HUD function index: message, mission select and panel files": research/hud-functions-panels.md

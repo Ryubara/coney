@@ -14,6 +14,7 @@
 #include <rw.h>
 
 #include "characters/character_data.h"
+#include "combat/power_class.h"
 
 namespace coney::platform {
 
@@ -75,6 +76,23 @@ std::string PlayLevelMode::characterState() const {
                              traits->damagePercent == 0 ? 100 : traits->damagePercent);
     }
     return state;
+}
+
+gui::WarriorStats PlayLevelMode::warriorStats() const {
+    const combat::PlayerCombat& fight = m_player->human().fighter().combat();
+    gui::WarriorStats stats{.characterType = m_type,
+                            .damageScale = 0,
+                            .powerMax = fight.power().maximum(),
+                            .staminaMax = m_player->human().stamina().maximum(),
+                            .rageMax = fight.rage().maximum(),
+                            .powerClassByte40 = combat::kPlayerPowerClass.ringByte};
+    if (const std::optional<characters::PlayerTraits> traits = m_types.playerTraitsOf(m_type)) {
+        stats.damageScale = traits->damagePercent;
+        if (traits->powerClass) {
+            stats.powerClassByte40 = traits->powerClass->ringByte;
+        }
+    }
+    return stats;
 }
 
 void PlayLevelMode::swapPlayerModel(LoadedCharacter loaded, const std::string& model) {

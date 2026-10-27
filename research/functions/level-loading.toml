@@ -18,6 +18,15 @@ coney = "src/gamemodes/gameplay_mode.h:GameplayMode::suspend"
 status = "legacy"
 
 [[function]]
+address = 0x001596d0
+name = "GameStats_Update"
+page = "game-stats.md#mode"
+role = "mode 0x13 (the statistics screen) `Update`: one world frame (phase 0), the stats widget (`+0x20`; its fade-in queued once it is ready, `+0xd4`), the overlay; with auto-close (`0x0050c6e4`) a fade-out is queued once and the mode pops when the fade ends (`0x005fdeb8 + 0x1d4`)"
+level = "confirmed-code"
+coney = "src/gamemodes/game_stats_mode.h:GameStatsMode::update"
+status = "compared"
+
+[[function]]
 address = 0x0015f248
 name = "RumbleResult_Exit"
 page = "level-loading.md#game-mode-functions"

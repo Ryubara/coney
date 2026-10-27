@@ -60,6 +60,7 @@ add_library(coney_core STATIC
     gamemodes/profile_manager_mode.cpp
     gamemodes/rumble_intro_layer.cpp
     gamemodes/rumble_menu_mode.cpp
+    gamemodes/game_stats_mode.cpp
     gamemodes/rumble_result_mode.cpp
     gamemodes/start_up_flow.cpp
     graphics/font.cpp
@@ -90,8 +91,12 @@ add_library(coney_core STATIC
     physics/sphere_triangle.cpp
     gui/bar.cpp
     gui/base_widget.cpp
+    gui/circled_text.cpp
+    gui/circled_text_header.cpp
+    gui/game_stats.cpp
     gui/global_strings.cpp
     gui/markup.cpp
+    gui/message_paging.cpp
     gui/menu_input.cpp
     gui/message_box.cpp
     gui/option_grid.cpp
@@ -102,6 +107,7 @@ add_library(coney_core STATIC
     gui/pause_menu/option_bar.cpp
     gui/pause_menu/option_layout.cpp
     gui/pause_menu/option_menu.cpp
+    gui/pause_menu/pause_stats.cpp
     gui/pause_menu/yes_no_box.cpp
     gui/profile_management_gui/pm_controller.cpp
     gui/profile_management_gui/pm_extras.cpp
