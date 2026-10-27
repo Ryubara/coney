@@ -1691,7 +1691,17 @@ page = "characters.md#original-structure"
 role = "slope factor, physics sweep, ground snap"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::moveOnGround"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "riding (+0x280) and held flag 0x40 (nothing collides: the plain move, no snap) are not ported"
+relation = "not-ported"
+issue = 684
+
+[[function.gaps]]
+what = "the detail level is not updated each move (Human_UpdateLod), the slope rule skips no state, and the snap is not skipped in game modes 8, 0xb and 0x11"
+relation = "not-ported"
+issue = 1003
 
 [[function]]
 address = 0x0023db48
@@ -1798,7 +1808,17 @@ page = "characters.md#code-update"
 role = "The step control function (+0x1bc while a TakeStep runs): for an AI, one step clip by the angle between brain +0x110 and the facing (step, dash or fight shuffle), turned over half the clip, then leaves at once; waits while busy ([Step control](characters.md#step-control))."
 level = "confirmed-code"
 coney = "src/human/step_control.h:stepClipFor"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "a control override (+0x1c6, Human_RestoreControl) and the button-tap move control are not ported"
+relation = "not-ported"
+issue = 1003
+
+[[function.gaps]]
+what = "a human riding something (+0x280) does not wait"
+relation = "not-ported"
+issue = 684
 
 [[function]]
 address = 0x002446b0

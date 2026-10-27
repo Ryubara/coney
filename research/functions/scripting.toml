@@ -1928,7 +1928,12 @@ name = "VolumeBoxes_SendDamageMessage"
 page = "scripting.md#triggers"
 level = "confirmed-code"
 coney = "src/world_objects/object_services.h:ObjectServices::damageDone"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the 30 m alert after the damage message (AI_AlertNearby 0x00293768)"
+relation = "not-ported"
+issue = 1003
 
 [[function]]
 address = 0x00413198
