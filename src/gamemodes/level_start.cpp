@@ -47,7 +47,12 @@ void loadPlacedObjects(script::ScriptSystem& scripts, world_objects::SpawnRecord
         return;
     }
     const std::string_view text(reinterpret_cast<const char*>(bytes->data()), bytes->size());
+    // Stand-in (#711): the original reads lines while a line is left and the count lasts, so a short file keeps the
+    // records before its end and an unreadable line still adds a record; Coney's parse refuses the whole file. Not
+    // ported (#711): the start and end of the file's records in the object list, which the saved removed-records bits
+    // count from.
     const auto objects = world_objects::parsePlacedObjects(text);
+
     if (!objects) {
         scripts.log(std::format("level: {}: {}", name, objects.error().message));
         return;

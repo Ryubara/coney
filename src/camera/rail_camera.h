@@ -111,7 +111,9 @@ class RailCamera {
     /// One update of `seconds` with the target's feet at `feet` (nothing: no target, the update stops after the
     /// easing) and his locomotion's velocity `velocity` (mode 3 reads it): the settings eased, the target and look-at
     /// points made and damped, then the camera placed by its mode; with `leadLook` (switch 7) a leading mode moves the
-    /// look-at point along the rail by the lead.
+    /// look-at point along the rail by the lead. That reading of switch 7 is a stand-in (#1017): the original's puts
+    /// the camera off the rail beside the target and looks at the target point.
+
     /// @orig 0x0013d010 CamRail_Update (unknown)
     void update(std::optional<anim::Vec3> feet, bool leadLook, float seconds, anim::Vec3 velocity = {});
 

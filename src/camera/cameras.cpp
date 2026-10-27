@@ -138,7 +138,7 @@ void Cameras::keepHumansInView(const raycast::CollisionMesh* mesh) {
     for (const double human : found->second.keptInView) {
         const std::optional<anim::Vec3> feet = m_locate(human);
         if (!feet) {
-            continue; // Coney's choice: the original's loop stops at a human it cannot find
+            continue; // stand-in (#1017): the original's loop stops at the first human it cannot find
         }
         const auto before = m_keptBefore.find(human);
         const anim::Vec3 from = before != m_keptBefore.end() ? before->second : *feet;
@@ -150,6 +150,8 @@ void Cameras::keepHumansInView(const raycast::CollisionMesh* mesh) {
                 m_move(human, now);
             }
         }
+        // Not ported (#1017): a human in the falling states is landed here and his new height eased 30% of the way
+        // from the old.
         m_keptBefore.insert_or_assign(human, now);
     }
 }
@@ -206,6 +208,7 @@ std::optional<double> Cameras::setupPath(double handle, double start, float seco
     if (!from) {
         return std::nullopt; // Coney's choice: no start camera, no path (the original's case is not traced)
     }
+    // Not ported (#549): a start camera of another player's kind (rail, follow, hood) swapped for this player's own.
     const CameraView view = viewOf(*from);
     if (m_pathHandle == 0.0) {
         m_pathHandle = handle;
@@ -281,7 +284,10 @@ void Cameras::modifyRail(std::uint32_t param, float value, float seconds) {
 }
 
 void Cameras::createFixed(double handle, double target, const FixedCamera& camera) {
+    // Stand-in (#692): the original resolves the target first and makes no camera for a handle that names nothing;
+    // Coney's binding (makeCameraCreateFixed) tests only for NilHandle, so a stale handle still makes one.
     m_fixed.insert_or_assign(handle, camera);
+
     if (std::ranges::find(m_targets, target) == m_targets.end()) {
         (void)this->target(0, target);
     }
@@ -447,11 +453,15 @@ void Cameras::makeActive(double handle, float seconds) {
     if (m_missionFailed && m_current.kind == CameraKind::Failed) {
         return;
     }
+    // Not ported: the player argument, other players' cameras and the split-screen views and hand-overs (#549); the
+    // third argument's script function, stored and called when the camera is made current, and the previous base
+    // camera's deactivation (#951).
     const std::optional<CameraRef> ref = find(handle);
     if (!ref) {
         return;
     }
     if (ref->kind == CameraKind::Win) {
+
         startWin();
     }
     if (ref->kind == CameraKind::Path && m_path) {
@@ -552,7 +562,8 @@ void Cameras::setFollowAngle(float degrees) {
 }
 
 void Cameras::beginScene(const CameraView& view) {
-    // The camera underneath a blend is its destination. Coney's choice: no depth limit (the original's holds two).
+    // The camera underneath a blend is its destination. Stand-in (#1017): no depth limit, where the original's stack
+    // holds two; scenes do not nest in play, so it never fills.
     if (m_current.kind != CameraKind::None && m_current.kind != CameraKind::Scene) {
         m_stack.push_back(m_current);
     }

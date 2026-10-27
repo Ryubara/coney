@@ -81,7 +81,12 @@ std::optional<int> playerOfHuman(CreatedHumans* humans, double handle) {
 // test of unlockable (6, 7), which raises the flash's limit to 4 (docs/research/player-state.md#pickup-callback).
 // @orig 0x0041e5b0 Inventory_AddItem (unknown)
 void syncReviveLimit(GameState& state) {
+    // Stand-in (#696): the original asks the upgrade at every add; Coney asks it only before InvGiveItem and
+    // InvGiveRevive, so the other adds keep the last answer. Stand-in (#704): the original keeps every item's count
+    // within its bounds from the table at 0x0058b300; Coney's Inventory bounds the revives only. Not ported (#696): a
+    // positive add of spray paint raising the game state's hint bits.
     state.player.inventory.setReviveUpgrade(
+
         state.player.unlocks.isDataUnlocked(state.saved, kUpgradeType, kExtraReviveUpgrade));
 }
 

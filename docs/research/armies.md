@@ -60,7 +60,7 @@ Read in the scripts and the screens' code; each line gives its level.
 | Behaviour | Function | Section |
 | --- | --- | --- |
 | Is this an Armies level (60-69) | `0x0041d110` `GameState_IsArmiesLevel` | [Rules](#stages) |
-| Character models: every human drawn with its type's `_a` model | the model choice | [Characters: from a type to a model](characters.md#type-to-model) |
+| Character models: every human drawn with its type's `_a` model, by `Human_Init`'s own test of levels 60-64 (not the 60-69 above) | `0x00218008` `Human_Init` | [Characters: from a type to a model](characters.md#type-to-model) |
 | Camera: the rail's mode 3, trailing the hindmost fighter at a fixed downward pitch, forward only | `0x0013dcc8` `CamRail_PlaceMode3` | [Camera: mode 3](camera.md#rail-mode3) |
 | HUD: the two `ANHud` panels (health, power, the boss picture) | `0x00210e48` `ANHud_Update`, `0x00211938` `ANHud_Draw` | [HUD: the Armies panel](hud-functions-panels.md#fn-anhud) |
 | The join message at the set-up and its clear on the first attach | `0x004ec650` `ANHud_SetPlayer`, `0x002107e8` `ANHud_Init` | [The join messages](#the-join-messages) |
@@ -331,7 +331,9 @@ against 17 to 23), and the timer runs 6 ticks shorter (3031 steps of 33 ms count
   update would leave a two-leaf up-and-down door's second leaf turned about z where the original's ends turned about y
   ([q-leaf-place](#q-leaf-place)).
 - `characters::isArmiesLevel` takes levels 60-69, as the original's test does
-  (`repo:src/characters/character_class.cpp`).
+  (`repo:src/characters/character_class.cpp`); the `_a` models follow `Human_Init`'s own test of levels 60-64
+  (`characters::modelNameFor`).
+
 - **The black screen (item 19)**, reproduced in a disc test: the debug menu's Levels page listed every record of the
   level table, `101 armies` among them. Chosen from a level in play, the level flow loaded a record with no
   `armies.lua`, no objects and no streamed world, so nothing played and the screen stayed black. Since the fix the

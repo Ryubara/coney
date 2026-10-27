@@ -2,6 +2,7 @@
 #include "hud/hud.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <format>
 #include <numbers>
@@ -28,8 +29,17 @@ constexpr GuiPoint kArmiesStopWatchPlace{0.49F, 0.10F};
 constexpr graphics::Rgba kPlayerBlipColour{178, 178, 178, 255};
 constexpr float kPlayerBlipSize = 0.03F;
 
+// Whether the action prompt's base y `base` takes the raise: ActionPrompt_Update adds it only to the bases 0.86, 0.78,
+// 1.0 and 0.8 (docs/research/hud-messages.md#action-prompts); the clubhouse's 0.125 takes none.
+// @orig 0x0019f528 ActionPrompt_Update (unknown)
+bool promptBaseRaised(float base) {
+    constexpr std::array<float, 4> kRaisedBases{0.86F, 0.78F, 1.0F, 0.8F};
+    return std::ranges::find(kRaisedBases, base) != kRaisedBases.end();
+}
+
 // The radars a player argument names: 0 or 1 one, anything else (2, the default) both: the two functions' choice of
-// radar. **Coney's choice**: a value other than 0, 1 or 2 means both (the original hands it on unchecked as an index).
+// radar. **Coney's choice**: a value other than 0, 1 or 2 means both, where the original hands it on unchecked as an
+// index into its two radars, a read past them that Coney does not reproduce.
 // @orig 0x001b4328 HUD_RadarOn (unknown)
 // @orig 0x001b43a8 HUD_RadarOff (unknown)
 std::array<bool, kPlayers> radarsOf(int player) {
@@ -45,8 +55,8 @@ std::array<bool, kPlayers> radarsOf(int player) {
 } // namespace
 
 // The arrow's place step: the direction (sin angle, -cos angle) / 20 / frames times the bob's counter, added to its
-// base (the counter's stepping is Hud::update's). **Coney's choice**: the frames are fixed at the default 10;
-// `HUDSetInstArrowAnimSpeed`'s value is kept but not used.
+// base (the counter's stepping is Hud::update's). **Coney's stand-in** (#1018): the frames are fixed at the default
+// 10; `HUDSetInstArrowAnimSpeed`'s value is kept but not used.
 // @orig 0x001b7330 InstArrow_Update (unknown)
 GuiPoint InstructionArrow::offset() const {
     return GuiPoint{step * std::sin(angle) / kArrowBobDivisor, -step * std::cos(angle) / kArrowBobDivisor};
@@ -158,7 +168,10 @@ void Hud::setObjective(int slot, std::string_view text, int mode, bool silent, s
         return;
     }
     std::optional<ChecklistLine>& line = m_checklist.slots.at(static_cast<std::size_t>(slot));
+    // Not ported (#662): a text that starts with a tag other than <AUTOINDENT takes Objective_GetIconPrefix's prefix
+    // instead of the standard header, and the first-objective hint also needs Tutorial_IsHintUnlocked(0x15).
     switch (mode) {
+
     case kObjectiveSet:
         line = ChecklistLine{std::string(text), false};
         if (!silent && slot < 2) {
@@ -179,8 +192,11 @@ void Hud::setObjective(int slot, std::string_view text, int mode, bool silent, s
             line = ChecklistLine{std::string(text), false};
         }
         line->marked = true;
-        // Two messages: the heading, then the text.
+        // Two messages: the heading, then the text. Stand-in (#662): the original rebuilds the mode-0 header for slot
+        // 0 or 1 and flushes it and the bare text from the scroll-in queue, and for slot 1 shows the Bonus complete
+        // announcement once per player.
         m_scrollIn.queue(ScrollInMessage{objectiveHeader(slot), kObjectiveMessagePlace, ms, kCueObjective});
+
         m_scrollIn.queue(ScrollInMessage{std::string(text), kObjectiveMessagePlace, ms, std::nullopt});
         break;
     case kObjectiveSetMarked:
@@ -438,8 +454,8 @@ void Hud::update(const HudFrame& frame) {
             announcement->reset();
         }
     }
-    // 3. The arrow's bob: up by 2 a frame to the top, back down by 0.5. **Coney's choice**: the step moves before the
-    // draw, so the arrow runs one frame ahead of the original's, which places it and then steps.
+    // 3. The arrow's bob: up by 2 a frame to the top, back down by 0.5. **Coney's stand-in** (#1018): the step moves
+    // before the draw, so the arrow runs one frame ahead of the original's, which places it and then steps.
     if (m_arrow.on) {
         if (m_arrow.rising) {
             m_arrow.step += kArrowStepUp;
@@ -492,8 +508,9 @@ void Hud::renderRadar(const HudCanvas& canvas) const {
         return;
     }
     // The disc's centre in overlay-camera space at depth 1.0; R = 0.9 × 0.19 × w / 2 of the overlay view's width,
-    // stretched by the default video mode. **Coney's choice**: w is the measured 1.33 (kRadarViewWidth), not read from
-    // the active camera, and only the default video mode's stretch is laid out.
+    // stretched by the default video mode. **Coney's choice** (#890): w is the default mode's measured 1.33
+    // (kRadarViewWidth), not read from the active camera, and only the default video mode's stretch is laid out (the
+    // 16:9 and progressive modes' factors are not ported).
     const graphics::OverlayPoint centre{kRadarX, kRadarY, kRadarDepth};
     if (canvas.radarMap != nullptr && m_radar.map.usable()) {
         addRadarDisc(*canvas.radarMap, centre, kRadarRadius * kRadarStretchX, kRadarRadius * kRadarStretchY, m_radar,
@@ -519,11 +536,17 @@ void Hud::renderBlips(const HudCanvas& canvas, graphics::OverlayPoint centre) co
         return;
     }
     const graphics::SpriteSheet& sheet = canvas.parts->sheet();
+    // Not ported (#1018): an objective blip within 20 m but over 1 m above or below the player re-colours and re-sizes
+    // icons 27, 28 and 22; fixed-point blips; type-12 blips re-coloured; icons 25 and 26 moved to their own batch; an
+    // enemy dot's mark timer. Hint 22 for such a blip (#332) and the two players' arrow icons (#549) neither.
     for (const auto& [handle, blip] : m_radar.blips) {
-        // **Coney's choice**: a blip whose object cannot be found is skipped, not freed (the original frees the slot
-        // of a dead handle; Coney cannot yet locate every kind of object).
+        // **Coney's choice** (#1018): a blip whose object cannot be found is skipped, not freed (the original frees the
+        // slot of a dead handle; Coney cannot yet locate every kind of object).
         const std::optional<anim::Vec3> at = m_locate(handle);
+        // Stand-in (#1018): every shown blip draws while the radar is on; the original shows the dots inside and
+        // beyond the zoom by the radar's shown, hidden and `+0x18` flags, enemy and police dots only while marked.
         if (!at || !radarBlipShown(blip, m_radar.updates) || blip.icon < 0 ||
+
             static_cast<std::size_t>(blip.icon) >= sheet.page.rects.size()) {
             continue;
         }
@@ -599,7 +622,8 @@ void Hud::renderScores(const HudCanvas& canvas) const {
             continue;
         }
         // **Coney's choice**: the label and the score are two texts of the text font at Coney's places, where the
-        // original composes one `<SIZE 0.8>label: score` markup text.
+        // original composes one `<SIZE 0.8>label: score` markup text: its places and font are not on the research
+        // page yet (hud_layout.h, kScoreRowsPlace).
         const float y = kScoreRowsPlace.y + (static_cast<float>(i) * kScoreRowStep);
         drawPlainText(canvas, gui::kTextFontSlot, row.label, kScoreRowsPlace.x, y, metrics, row.colour);
         drawPlainText(canvas, gui::kTextFontSlot, std::to_string(row.score), kScoreRowsPlace.x + kScoreValueOffset, y,
@@ -613,13 +637,15 @@ void Hud::renderScores(const HudCanvas& canvas) const {
         style.alignment = gui::TextAlignment::Centre;
         drawMessage(canvas, std::format("{}{:02}", m_stopWatch.label, ms / 1000), style, kArmiesStopWatchPlace.y);
     } else if (m_stopWatch.shown) {
-        // Minutes:seconds, the seconds truncated. **Coney's choice**: plain white text at Coney's place, the minutes
-        // not padded; the original right-aligns `%2u:%02u` in a markup text at (1.0, 0.24).
+        // Elsewhere: the label (markup) and `%2u:%02u`, the minutes padded to two places and the seconds truncated,
+        // right-aligned at (1.0, 0.24) (StopWatchHud_UpdateMinutes, StopWatchHud_ApplyVideoMode's default mode; the
+        // other video modes' places are not ported, #890).
         const std::int32_t ms = m_services.stopWatchTime ? std::max(0, m_services.stopWatchTime()) : 0;
         const std::int32_t seconds = ms / 1000;
-        const std::string text = std::format("{}{}:{:02}", m_stopWatch.label, seconds / 60, seconds % 60);
-        drawPlainText(canvas, gui::kTextFontSlot, text, kStopWatchPlace.x, kStopWatchPlace.y, metrics,
-                      graphics::kWhite);
+        gui::TextStyle style = messageStyle(kStopWatchPlace.x);
+        style.alignment = gui::TextAlignment::Right;
+        drawMessage(canvas, std::format("{}{:2}:{:02}", m_stopWatch.label, seconds / 60, seconds % 60), style,
+                    kStopWatchPlace.y);
     }
 }
 
@@ -708,15 +734,15 @@ void Hud::render(const HudCanvas& canvas) const {
 // @orig 0x0019f850 ActionPrompt_Render (unknown)
 // @orig 0x0019f528 ActionPrompt_Update (unknown)
 void Hud::renderPrompt(const HudCanvas& canvas) const {
+    // Not ported: the two players' places and prompts (#549); the icon's size in the 16:9 and progressive modes (#890).
     // The cycle's icon, under the text: a `part_page0` button centred on the prompt's anchor (the base y plus the
     // raise, without the multi-line lift), 0.1 high, during the blink's on half.
     const ActionCycle& cycle = m_cycles.at(0);
     if (cycle.on && cycle.iconOn && canvas.parts != nullptr && cycle.icon() < canvas.parts->sheet().page.rects.size() &&
         canvas.text.fonts) {
         const graphics::UvRect uv = canvas.parts->sheet().page.rect(cycle.icon());
-        // **Coney's choice**: the raise is added to the clubhouse's base too; the original adds it only to the bases
-        // 0.86, 0.78, 1.0 and 0.8.
-        const float y = (m_clubActionText ? kClubPromptY : kPromptPlace.y) + promptRaise(canvas.text.fonts);
+        const float base = m_clubActionText ? kClubPromptY : kPromptPlace.y;
+        const float y = base + (promptBaseRaised(base) ? promptRaise(canvas.text.fonts) : 0.0F);
         canvas.parts->addSprite(guiSprite(kPromptPlace.x, y,
                                           squareTexelWidth(canvas.parts->sheet(), uv, kCycleIconSize), kCycleIconSize,
                                           uv, kPromptColour));
@@ -732,13 +758,16 @@ void Hud::renderPrompt(const HudCanvas& canvas) const {
     style.alignment = gui::TextAlignment::Centre;
     // Its time since the text was set, which steps the stick tags (the revive prompt's stick picture).
     style.timeMs = static_cast<std::uint32_t>(m_nowMs - std::min(m_promptSinceMs.at(0), m_nowMs));
-    // The base y plus the raise; a prompt of several lines moves up a further step per line.
-    const gui::TextLayout measured = gui::layoutText(text, style, canvas.text.fonts);
-    // The clubhouse puts the text near the top (HUDEnableClubActionText). **Coney's choice**: the raise is added to
-    // that base too, as for the icon.
-    float y = (m_clubActionText ? kClubPromptY : kPromptPlace.y) + promptRaise(canvas.text.fonts);
-    if (measured.lines > 1) {
-        y -= kPromptLineRaise * static_cast<float>(measured.lines);
+    // The base y plus the raise, where a prompt of several lines moves up a further step per line (the raise `+0x46c`
+    // holds both). The clubhouse puts the text near the top (HUDEnableClubActionText), a base that takes neither.
+    const float base = m_clubActionText ? kClubPromptY : kPromptPlace.y;
+    float y = base;
+    if (promptBaseRaised(base)) {
+        const gui::TextLayout measured = gui::layoutText(text, style, canvas.text.fonts);
+        y += promptRaise(canvas.text.fonts);
+        if (measured.lines > 1) {
+            y -= kPromptLineRaise * static_cast<float>(measured.lines);
+        }
     }
     style.y = y;
     gui::addTextSprites(gui::layoutText(text, style, canvas.text.fonts), canvas.text.textBatch);

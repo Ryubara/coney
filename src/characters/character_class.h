@@ -59,9 +59,12 @@ inline constexpr int kOtherWarriorClass = 9;
 /// @orig 0x00222ba8 Human_WarriorPowerClassOfType (unknown)
 [[nodiscard]] int warriorPowerClassOf(int type);
 
-/// The power class a human of `type` plays with, as `Human_Init` sets `+0x1b8` and `+0x1b9`: the type's own `CfgChar`
-/// byte `+0x11d` (`ownClass`), except that a player (`player`) of category kWarriorsCategory takes
-/// warriorPowerClassOf().
+/// The power class a human of `type` plays with, as `Human_Init` sets `+0x1b9`: the type's own `CfgChar` byte `+0x11d`
+/// (`ownClass`), except that a type of category kWarriorsCategory takes warriorPowerClassOf() (`+0x1b8` always keeps
+/// the record's byte; docs/research/characters.md#power-classes). **Coney's stand-in**: the `player` gate is Coney's;
+/// the original gives the Warrior's class to any human of that category. Its one caller (CharacterTypes::
+/// playerTraitsOf) passes true, so nothing differs in play.
+
 [[nodiscard]] int powerClassOf(int type, int category, int ownClass, bool player);
 
 /// The index of `CfgChar`'s model-name argument (0-based): the tenth argument, after the type, four bytes, the health,

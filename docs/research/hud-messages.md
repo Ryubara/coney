@@ -316,8 +316,10 @@ icon sprite at `+0x480`. Confirmed (code) unless marked:
 - **Set-up** (`ActionPrompt_Setup`, `0x0019ef80`, from the HUD's init `0x001adb60`): position x **0.5**, base y
   `+0x464` = **0.86** (read at runtime; the code compares it with 0.86, 0.78, 1.0 and 0.8 for the other modes), size
   0.06, colour **(128, 128, 128, 255)**, font slot 3 (`part_page0`), not visible; `+0x468` the player.
-- **Place** (`ActionPrompt_Update`, `0x0019f528`): one player: x 0.5, centred; y = base + the raise `+0x46c`. Two
-  players: x 0.33 or 0.66 (`0x0050cfcc` / `0x0050cfd0`, 0.25 / 0.74 in 16:9).
+- **Place** (`ActionPrompt_Update`, `0x0019f528`): one player: x 0.5, centred; y = base + the raise `+0x46c` when the
+  base is 0.86, 0.78, 1.0 or 0.8, else the base alone (the clubhouse's 0.125, `HUDEnableClubActionText`, takes no
+  raise); the icon's y the same with the raise `+0x470`. Two players: x 0.33 or 0.66 (`0x0050cfcc` / `0x0050cfd0`,
+  0.25 / 0.74 in 16:9).
 - **Text, alignment and size.** The widget itself is left-aligned: its alignment byte `+0x17c` is 0 from the constructor
   (`0x001b8f98`), and nothing on the prompt's path sets it (runtime: 0 for both prompts). The centring comes from the
   **text**: every HUD string the code picks for the prompt (strings 0, 1, 4 and 9) opens with `<CENTER>`, which centres

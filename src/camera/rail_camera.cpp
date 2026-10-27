@@ -20,10 +20,11 @@ constexpr float kNoRailUp = 1.0F;
 constexpr float kPitchReach = 6.0F;
 // A pitch of exactly 0 is taken as this (0x0013fb30).
 constexpr float kZeroPitch = -0.05F;
-// The hand-over between segments starts at this share and grows by kBlendStep an update, ending at 1 or once the
-// step is under kBlendDone metres.
+// Mode 0's hand-over between segments (CamRail_UpdatePosition, docs/research/camera.md#rail step 3): it starts at this
+// share and is multiplied by kBlendGrowth an update; it ends once the grown share reaches 1 or the unblended step is
+// under kBlendDone metres in plan.
 constexpr float kBlendStart = 0.1F;
-constexpr float kBlendStep = 0.05F;
+constexpr float kBlendGrowth = 1.05F;
 constexpr float kBlendDone = 0.01F;
 // Mode 3 (docs/research/camera.md#rail-mode3): the look-at point stands this far from the camera in plan; it moves at
 // most this share of the gap to its goal in one update, at the target's forward speed plus the base speed (`+0x1a4`);
@@ -193,7 +194,9 @@ std::pair<float, float> RailCamera::project(std::size_t i, anim::Vec3 p) const {
     return {anim::dot(anim::subtract(p, a), ab) / length, length};
 }
 
-void RailCamera::makePoints(anim::Vec3 feet) { // stand-in: one target, so the mean is his feet
+// Not ported: setting 3 and 4's and the offset's halving in split screen (#549); with two targets, mode 0's look-at
+// point kept at P and modes 1 and 2 pulling P back toward the camera (#1017).
+void RailCamera::makePoints(anim::Vec3 feet) { // stand-in (#1017): one target, so the mean is his feet
     const anim::Vec3 offset{m_setup.offset.x, m_setup.offset.y, m_lookHeight.current};
     if (m_mode != RailMode::Level) {
         // The leading modes: the offset added, the look-at point the target point.
@@ -216,8 +219,12 @@ void RailCamera::makePoints(anim::Vec3 feet) { // stand-in: one target, so the m
     }
 }
 
+// Not ported (#1017): the original returns at once while the target is in the falling states (the target's state is
+// not passed in), and while `+0x3ec` is 1 (set after a shake, not built) the look-at point moves only 40% of the way
+// each update until it arrives.
 void RailCamera::damp(anim::Vec3 oldTarget, anim::Vec3 oldLook) {
-    // The rise tests need a segment with a length in plan (Coney's choice: any; the original's, 1e-5 squared).
+    // The rise tests need a segment with a length in plan. Stand-in (#1017): any length above 0; the original's plan
+    // length squared above 1e-5.
     const bool riseTests =
         m_count >= 2 && flatLength(anim::subtract(m_points.at(m_segment + 1), m_points.at(m_segment))) > 0.0F;
     const auto dampOne = [riseTests](anim::Vec3 old, anim::Vec3 now) {
@@ -307,13 +314,16 @@ void RailCamera::placeLevel(anim::Vec3 feet) {
             q.y += away.y / plan * move;
         }
     }
-    // The hand-over between segments.
+    // The hand-over between segments: the blend's share of the step while it goes on; on its last update the
+    // camera takes the unblended point.
     if (m_blend > 0.0F && m_placed) {
-        const anim::Vec3 step = anim::scale(anim::subtract(q, before), m_blend);
-        q = anim::add(before, step);
-        m_blend = std::min(m_blend + kBlendStep, 1.0F);
-        if (m_blend >= 1.0F || anim::length(step) < kBlendDone) {
+        const anim::Vec3 step = anim::subtract(q, before);
+        const float grown = m_blend * kBlendGrowth;
+        if (((step.x * step.x) + (step.y * step.y)) < kBlendDone * kBlendDone || grown >= 1.0F) {
             m_blend = 0.0F;
+        } else {
+            q = anim::add(before, anim::scale(step, m_blend));
+            m_blend = grown;
         }
     }
     // The height: a ceiling over the target's feet. Stand-in: 0 is on here, off in the original (#1017).
@@ -330,8 +340,9 @@ void RailCamera::placeLevel(anim::Vec3 feet) {
         }
     }
     // The ends: at the first point with the look-at point behind the rail's start, or at the last with it beyond the
-    // end, the camera keeps last update's view. **Coney's choice**: what clears the hold is not traced, so it holds
-    // only while that is so.
+    // end, the camera keeps last update's view. **Coney's choice** (#1017): what clears the hold is not traced, so it
+    // holds only while that is so, and a camera held at the start of placement is placed again here where the
+    // original puts it back (with P) without placing.
     m_held = false;
     if (m_count >= 2 && m_placed) {
         const bool atStart = m_segment == 0 && t <= 0.0F && project(0, m_lookAt).first < 0.0F;
@@ -344,6 +355,8 @@ void RailCamera::placeLevel(anim::Vec3 feet) {
             return;
         }
     }
+    // Not ported (#1017): the world collision (CamRail_Collide, with two targets or held CamRail_CollideTwoTargets)
+    // and, after a shake moved the view, the camera faced again and `+0x3ec` stepped.
     m_position = q;
 }
 
@@ -384,6 +397,11 @@ void RailCamera::placeLeading(anim::Vec3 feet, bool leadLook) {
     if (m_height.current > 0.0F) {
         m_position.z = feet.z + m_height.current;
     }
+    // Not ported (#1017): with two or more targets the lead point moves on by the farthest a target is ahead (on each
+    // segment), CamRail_CollideTwoTargets, and the re-facing after a shake; the push out of nearby humans (#165).
+    // Switch 7: stand-in (#1017): the original puts the camera off the rail, the lead from P toward the rail point,
+    // pulls it back short of the world with two rays and a 0.5 m sphere, and looks at P; Coney keeps the camera on the
+    // rail and moves the look-at point on by the lead.
     if (leadLook) {
         m_lookAt = anim::add(m_lookAt, anim::scale(direction, sense * m_lead.current));
     }
@@ -394,7 +412,9 @@ void RailCamera::update(std::optional<anim::Vec3> feet, bool leadLook, float sec
         return;
     }
     placeFor(feet, leadLook, seconds, velocity);
+    // Not ported (#549): the split-screen extras (CamRail_UpdateSplitScreen) and the co-op flash's fade.
     // An update with time ends the activation's start and its undamped step, in any mode.
+
     if (seconds > 0.0F) {
         m_starting = false;
         m_undamped = false;
