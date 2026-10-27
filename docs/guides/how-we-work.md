@@ -2,18 +2,20 @@
 
 This page is the map of Coney's workflow: the road from an issue to a commit on `main`, who walks each stage, which
 command ends it and what it must prove, and how many engineers work at once without stepping on each other. It is the
-same for every contributor, person or agent. It stays high level and links to the guide that holds the detail. Start
+same for the project's agents and maintainers; a person contributing from a fork follows
+[CONTRIBUTING.md](repo:CONTRIBUTING.md) and needs no stamps. It stays high level and links to the guide that holds the
+detail. Start
 with [Who is who](#who-is-who), the roles in one table, then [The pipeline](#the-pipeline), the stages in order.
 [How the work is run](#how-it-runs) shows how the roles fit together and how many work at once, and
 [How the rules are enforced](#enforcement) shows which check stops what. The diagrams on this page illustrate; the text
 beside each is the rule.
 
 Four principles hold the workflow together. **Results, not rituals:** each stage has a required result, and how an
-engineer reaches it is its own choice. **Tools prove, people judge:** every stage ends with a command that checks its
-result and writes a [stamp](stamps.md#log), and the judgement left to a person or a reviewer is a small, closed
-question. **Enforced, not remembered:** a rule lives in a hook, a tool or a CI check, defined once in
-[.github/conventions.yml](repo:.github/conventions.yml), and the guides explain it. **Ask, don't guess:** at a
-[decision point](#decision-points) an engineer asks the coordinator.
+engineer reaches it is its own choice. **Tools prove, people judge:** each stage from Start to Open ends with a command
+that checks its result and writes a [stamp](stamps.md#log), and the judgement left to a person or a reviewer is a small,
+closed question. **Enforced, not remembered:** a rule lives in a hook, a tool or a CI check, defined once in
+[.github/conventions.yml](repo:.github/conventions.yml), and the guides explain it. **Ask, don't guess:** at a [decision
+point](#decision-points) an engineer asks the coordinator.
 
 ## Who is who {#who-is-who}
 
@@ -32,12 +34,16 @@ hook holds each to its own commands and files ([Which role to start](agents.md#r
 | **Tether** | A Claude Code plugin ([Waking the coordinator](coney-tools-setup.md#coord-wakes)) | The session and the machine | Nothing; it keeps the session healthy (context, cache, clearing) and starts a coordinator turn | Between the coordinator's turns |
 | **GitHub CI** | The required checks and the ruleset on `main` ([What CI runs](building.md#what-ci-runs)) | Each pushed pull request | Check results; the squash merge, once every check passes and auto-merge is on | After `pr open` pushes |
 
-## The pipeline
+## The pipeline {#the-pipeline}
 
 A piece of work travels from an issue to `main` through the stages below. The coordinator triages and claims it,
 the engineer takes it from Start to Check in its own worktree, a reviewer judges it, and the coordinator opens the pull
-request and tidies after the merge. Each stage ends with a command that writes a [stamp](stamps.md#log) into the task's
-log, and the next stage's command refuses while a stamp it needs is missing or stale, so no stage is skipped.
+request and tidies after the merge. Each stage from Start to Open ends with a command that writes a
+[stamp](stamps.md#log) into the task's log (Triage, CI, the merge and After merge write none). Three commands refuse
+while an earlier result is missing or stale: `original compare` (the study), `task review` (every changed `@orig`
+function compared, every added test failed first, `docs check`) and `pr open` (the whole chain, `checked` and
+`reviewed` included). `task check` reads no earlier stamp, so a skipped stage meets the next of these three, never
+earlier.
 
 ```mermaid
 ---
@@ -70,14 +76,13 @@ flowchart TB
   check --> review --> open --> ci --> merge --> after
 ```
 
-*Figure: the road from an issue to `main`, top to bottom. A finding in Review sends the work back to the engineer, who
-fixes it in a new commit and runs Check and Review again; a red CI check becomes a fix task ([Slots](#slots)).*
+*Figure: the road from an issue to `main`, top to bottom.*
 
 | # | Stage | Who | Run | Required result | Stamp | Detail |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Triage | Coordinator | (labels) | The issue has its type, area and priority, `S-ready-to-start`, and fits one reviewable pull request; `P-critical` issues first | none | [Triage](issues.md#triage) |
 | 2 | Claim | Coordinator | `coney-tools task create <issue>... --terms ... --scope ...` | The claim Action assigned the issue and it settled; `TASK.md` holds the goal, Done, scope, leads and decision points | `assigned` (written by Start) | [Task files](issues.md#task-files) |
-| 3 | Start | Engineer | `coney-tools task start <task>` | Branch and worktree from `main`, the unit record, a free slot | `claimed` | [Starting a task](issues.md#starting) |
+| 3 | Start | Engineer | `coney-tools task start <task>` | Branch and worktree from `main`, the unit record; reports the free slots, and refuses a start over the limit from the cutover | `claimed` | [Starting a task](issues.md#starting) |
 | 4 | Study | Engineer (and its helpers) | `coney-tools original study <addr>`; PCSX2 for what a player sees | Per function: the decompile, callers, callees and data reads saved and hashed, the lines numbered and cut into pieces; the expected values found (code or runtime); research claims written and graded | `studied` per address | [Study](stamps.md#study), [The engineer's steps](#engineer-steps) |
 | 5 | Port | Engineer | `coney-tools build --agent <id> --preset dev --test -R ...`; `coney-tools original fails-first` | The test is written first from the study's result, cites its expected values and fails; the port makes it pass; the copy check is clean | `fails-first` per test | [Fails first](stamps.md#fails-first), [Testing](testing.md) |
 | 6 | Compare | Engineer | `coney-tools original compare <addr>` | Every numbered line of each ported function is in a pair (`same`, `stand-in` with a reason, `not-ported` with an issue) | `compared` per function | [Pairs](stamps.md#pairs), [Compare](stamps.md#compare) |
@@ -86,15 +91,17 @@ fixes it in a new commit and runs Check and Review again; a red CI check becomes
 | 9 | Open the pull request | Coordinator | `coney-tools pr open <task>` | The stamps hold for this change; the generated text passes CI's checks; pushed, opened, auto-merge on | `pr-opened` | [pr open](pr.md#open), [Opening the pull request](#release-queue) |
 | 10 | CI | GitHub | (automatic) | Every required check passes | none | [What CI runs](building.md#what-ci-runs) |
 | 11 | Squash merge | GitHub, or a maintainer for `merge.manual_paths` | (auto-merge) | One commit on `main` with the pull request's title | none | [Merging safely](#merging) |
-| 12 | After merge | Coordinator | `/repo-hygiene`, `coney-tools workspace clean --apply` | The issues it lists under Issues affected edited, its issues closed, the worktree, build folder and the scratch folder's game data removed | none | [After a merge](issues.md#after-a-merge) |
+| 12 | After merge | Coordinator | `/repo-hygiene`, `coney-tools workspace clean --apply` | The issues it lists under Issues affected edited, its issues closed, the merged worktree and old build folders removed | none | [After a merge](issues.md#after-a-merge) |
 
 - **Study, Port and Compare repeat per function**; Check, Review and Open once per tip. Review may run while Check
   runs, on the same tip; the task moves on when both pass. A commit after either makes it stale.
 - **A docs or tooling task** (kinds `docs`, `tooling`) has no Study and no pairs, and records `fails-first` as none with
   `original fails-first --none <reason>`; a task that changes a research page still grades its claims. A tooling task's
   Python tests come first all the same, and the reviewer checks that they did.
-- **A refusal names the stage to redo.** `pr open` and the stage commands list every missing or stale stamp with the
-  command that makes it, and the work goes back to the engineer, never to the coordinator's hands.
+- **A finding sends the work back.** A finding in Review goes to the engineer, who fixes it in a new commit and runs
+  Check and Review again; a red CI check becomes a fix task ([Slots](#slots)).
+- **A refusal names the stage to redo.** `pr open`, `task review` and `original compare` list every missing or stale
+  result with the command that makes it, and the work goes back to the engineer, never to the coordinator's hands.
 
 ### Decision points {#decision-points}
 
@@ -182,8 +189,7 @@ flowchart TB
   coord -- "pr open" --> gh
 ```
 
-*Figure: who does what. The maintainer decides, the coordinator claims and assigns, engineers in the slots do the work,
-reviewers judge it, and only the coordinator writes to GitHub, through the claim Action and `pr open`.*
+*Figure: who does what; only the coordinator writes to GitHub, through the claim Action and `pr open`.*
 
 What each role is, reads and writes is in [Who is who](#who-is-who); what is left here is how they fit together:
 
@@ -196,16 +202,16 @@ What each role is, reads and writes is in [Who is who](#who-is-who); what is lef
   ([Which model](agents.md#models)).
 - **The reviewer reads what someone else wrote** and reports; it never edits. One `reviewer` takes every kind of change
   and the description ([Task review](review/task.md)).
-- **Pull requests open only through `pr open`**, run by the coordinator once Check and Review hold
-  ([Opening the pull request](#release-queue)).
+- **Pull requests open through `pr open`**, run by the coordinator once Check and Review hold, and from the cutover
+  by no other route ([Opening the pull request](#release-queue)).
 
 ### Slots {#slots}
 
 At most three task engineers and one fix engineer work at once on a machine (`tasks.start.slots` in
-[.github/conventions.yml](repo:.github/conventions.yml)); `task start` and the coordinator's Agent guard enforce them
-([Engineer slots](agents.md#slots), which has the rule in full). There
-are no standing teams: the coordinator assigns the next task from the triaged issues, `P-critical` first and then by
-priority, whenever a slot frees.
+[.github/conventions.yml](repo:.github/conventions.yml)); `task start` refuses a start over the limit and the
+coordinator's Agent guard refuses the engineer before it starts ([Engineer slots](agents.md#slots) has the rule in
+full). There are no standing teams: the coordinator assigns the next task from the triaged issues, `P-critical` first
+and then by priority, whenever a slot frees.
 
 - **A slot frees when its task passes Review.** The engineer's job ends there; its slot takes the next task while the
   pull request runs CI.
@@ -213,8 +219,9 @@ priority, whenever a slot frees.
   oldest failure first. If the engineer that wrote the task is still running, the fix goes to it; otherwise a fresh
   engineer takes it, and may take the next queued fix while its context is warm. A fix redoes only the stamps it made
   stale and goes out with `pr open` on the same pull request ([Starting a task](issues.md#starting)).
-- **Reviewers and helpers are outside the slots**, and so are design, documentation and tooling work on the workflow
-  itself and work in other repositories.
+- **Reviewers and helpers are outside the slots**, and so is work in other repositories. Until the cutover so are
+  units that build the workflow itself, as the count is only reported; from it a docs or tooling task counts like any
+  other ([Slots](issues.md#slots) holds the rule).
 - **Two engineers never work in the same functions.** A claim carries its scope, and `task create` warns when another
   held claim's scope overlaps.
 
@@ -309,18 +316,14 @@ coordinator then opens the pull request.
   and every `gh` command that writes (a pull request, a comment, a label, a review, a merge, a rerun, `gh api` with a
   method other than GET) when a subagent runs it, and the role rules refuse `pr open` to an engineer or reviewer
   ([Which role to start](agents.md#roles)).
-- **`coney-tools pr open <task>` is the only way a pull request opens** ([pr open](pr.md#open)). It proves the unit
-  (`pr verify`: the stamp chain, `checked` and `reviewed` for this change, every changed `@orig` function compared),
-  writes the title and description from the template, the task and the stamps (`pr text`), rebases, pushes with a
-  lease, opens or updates the pull request with one `--attach` per picture, turns on auto-merge (except for a change to
-  a path in `merge.manual_paths`: the conventions, `AGENTS.md`, the hooks and settings, which a maintainer merges) and
-  reads it back. It does not wait for CI room: a pull request runs only the jobs its change can break
-  ([What CI runs](building.md#what-ci-runs)). A refusal lists every stage to redo and goes back to the engineer; a
-  rebase conflict (exit 3) goes back with the paths. `pr open --dry-run` tries everything but the push.
-- **The PR guard holds every other route.** A hook (`.claude/hooks/pr_guard.py`) checks a hand-typed `gh pr create`
-  or `gh pr edit` against CI's `title` and `body` checks, and with `pull_requests.open_only` on in
-  [.github/conventions.yml](repo:.github/conventions.yml) it refuses the hand-typed routes in every session, the
-  coordinator's too ([The PR guard](enforcement.md#pr-guard)).
+- **`coney-tools pr open <task>` opens the pull request** ([pr open](pr.md#open)): it proves the unit, writes the
+  text, pushes and turns on auto-merge, and does not wait for CI room. A refusal lists every stage to redo and goes back
+  to the engineer; a change to a path in `merge.manual_paths` is merged by a maintainer.
+- **The PR guard holds the other routes.** A hook (`.claude/hooks/pr_guard.py`) checks a hand-typed `gh pr create`
+  or `gh pr edit` against CI's `title` and `body` checks. `pull_requests.open_only` in
+  [.github/conventions.yml](repo:.github/conventions.yml) is off until the cutover; with it on, `pr open` is the only
+  way a pull request opens and the hook refuses the hand-typed routes in every session, the coordinator's too
+  ([The PR guard](enforcement.md#pr-guard)).
 - **A failure CI finds** (another platform, a check that cannot run locally) becomes a fix task in the fix slot
   ([Slots](#slots), [When a pull request fails checks](agents.md#ci-failures)). Stale failures restart themselves:
   `coney-tools repo pr-health --rerun --apply` reruns a required check that failed because the runner or GitHub did,
@@ -427,11 +430,11 @@ the `issue-check` workflow checks every issue opened or edited on the website or
 comment listing the problems. The audit flags what slips past all three ([Filing an issue](issues.md#filing)).
 
 **Claiming is one comment.** Whoever takes an issue (a person, an agent, the coordinator) claims it with `/claim`, and a
-GitHub Action assigns it, sets the status label and keeps a claim card with the deadline; a claim idle for 72 hours is
-released. The coordinator's `coney-tools task create` makes the claim and writes the task file
-([Claiming an issue](issues.md#claiming), [Task files](issues.md#task-files)); the engineer then runs
-`coney-tools task start`, which makes the branch, worktree and unit record ([Starting a task](issues.md#starting)).
-Nobody works on an issue without a claim.
+GitHub Action assigns it, sets the status label and keeps a claim card with the deadline; from the cutover
+(`claims.release`) a claim idle for 72 hours is released, after a warning at 48. The coordinator's `coney-tools task
+create` makes the claim and writes the task file ([Claiming an issue](issues.md#claiming), [Task
+files](issues.md#task-files)); the engineer then runs `coney-tools task start`, which makes the branch, worktree and
+unit record ([Starting a task](issues.md#starting)). Nobody works on an issue without a claim.
 
 **A pull request merges only when every task in it is finished.** Its Checklist lists what it finishes, all ticked, and
 CI refuses an unticked item; there is no "Remaining" list. Work an agent finds that is not part of its task goes in its
@@ -509,7 +512,7 @@ config:
 ---
 flowchart LR
   hooks["Claude Code hooks<br/>refuse the wrong<br/>command or role"] --> pre["pre-commit<br/>format, lint,<br/>512 KB limit"]
-  pre --> stamps["Stage commands<br/>refuse a missing<br/>or stale stamp"]
+  pre --> stamps["Stage commands<br/>check earlier<br/>stamps"]
   stamps --> push["pr open<br/>verifies the stamps,<br/>only the coordinator"]
   push --> ci["CI required<br/>checks"]
   ci --> rules["Branch protection<br/>on main:<br/>squash merge only"]
@@ -519,17 +522,17 @@ flowchart LR
   conv[".github/conventions.yml<br/>one source of the rules"] -.-> ci
 ```
 
-*Figure: the guards between a line of code and `main`, in the order a change meets them. Dotted arrows show what else
-holds a stage and where the rules are read from.*
+*Figure: the guards between a line of code and `main`, in the order a change meets them.*
 
-The guards, with the rule each one holds (the diagram only orders them):
+The guards, with the rule each one holds (the diagram only orders them; its dotted arrows show what else holds a stage
+and where the rules are read from):
 
 | Guard | What it refuses | Where it is documented |
 | --- | --- | --- |
 | Claude Code hooks (`.claude/hooks/`) | A raw `cmake --build`, `ctest` or `ninja`; a raw `gh` command that writes an issue; a push or GitHub write from a subagent; a wait loop with no bound; an agent started with `isolation: "worktree"` or with no Coney role; a tool call the session's role does not allow; a write to a stamp log; a `Co-Authored-By` trailer that names the wrong model | [The hooks](agents.md#hooks), [Enforcement map](enforcement.md#hooks) |
 | pre-commit (`.pre-commit-config.yaml`) | Unformatted C++ (clang-format) and Python (ruff); a Markdown line over 120 characters; trailing whitespace, broken YAML or TOML; any file over 512 KB, which is usually game data; a read of the real clock outside the frame pacer; a commit message with the wrong trailers | [Formatting and pre-commit](building.md#formatting-and-pre-commit) |
 | Claim Action and `task create` | A second claim on an issue; a claim on an issue that is not ready, is blocked by unfinished work, or over the claimant's limit; any other claim while a `P-critical` issue has none | [Claiming an issue](issues.md#claiming) |
-| Stage commands (`task start`, `original compare`, `task check`, `task review`) | A start without a held claim or a free slot; a compare with a line in no pair or a copied line; a Check or Review whose earlier stamps are missing or stale; a review recorded by the change's author | [Stamps](stamps.md), [task check](coney-tools-repo.md#task-check), [Task review](review/task.md) |
+| Stage commands (`task start`, `original compare`, `task check`, `task review`) | A start without a held claim (and, from the cutover, over the slot limit); a compare with no current study, a line in no pair or a copied line; a Check whose gate fails; a Review whose compared or fails-first stamps are missing or stale, or one recorded by the change's author | [Stamps](stamps.md), [task check](coney-tools-repo.md#task-check), [Task review](review/task.md) |
 | `pr open` | A unit whose stamps do not hold for the change, a generated title or description CI would refuse, a caller who is an engineer or reviewer. The stages are enforced here, locally, not in CI | [Opening the pull request](#release-queue), [pr open](pr.md#open) |
 | Conclave stop guard | A coordinator turn that ends while a pull request has a failed required check, a conflict, a stuck check or auto-merge off and nobody holds it | [Conclave](conclave.md#watchers) |
 | CI required checks | `title`, `docs`, `body`, `build-ok`, `python-ok`, `format`, `mkdocs`, `markdownlint`, `actionlint`, `clang-tidy`, `dependencies` | [What CI runs](building.md#what-ci-runs) |
@@ -615,8 +618,9 @@ At the cutover, in one change of [.github/conventions.yml](repo:.github/conventi
    at 48 hours and released at 72 ([Claiming an issue](issues.md#claiming)).
 3. `tasks.start.slots.enforce` turns on: a start over the slot limit is refused ([Slots](issues.md#slots)).
 4. The [legacy release checks](#pr-review) and their commands (`repo review`, `repo check-review`, `repo review-stamp`,
-   `orig review-stamp`, `orig check-review`, `orig record`) are removed, and the old names of renamed `coney-tools`
-   commands stop working.
+   `orig review-stamp`, `orig check-review`) are removed, and the old names of renamed `coney-tools` commands stop
+   working. `orig record` goes once the sweep of [legacy fidelity](#fidelity-audit) is filed, and that sweep uses `orig
+   review-stamp --folder` too, so it is filed before this step.
 5. The heads-up in the README that asks contributors to wait is removed.
 6. Tether keeps only the session's health; its Coney pollers and pull request guard are removed, as Conclave holds them.
 7. Branches started before the cutover become tasks when they are picked up, their work and review findings the

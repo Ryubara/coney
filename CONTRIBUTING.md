@@ -68,10 +68,10 @@ included, and prints how to fix each problem ([Check your setup](docs/guides/bui
    (every page ends with what it was checked against; a wrong claim is worth fixing), a test, a tool or build
    problem, or an issue labelled `good first issue` or `help wanted` in the issue tracker. A change to what a player sees
    (`gameplay`, `graphics`, `audio`) must also be compared with the original running, which needs the research tools
-   below; talk to a maintainer in the issue first. Take the issue before you start: comment `/claim` on it, and a
-   GitHub Action assigns it to you, so nobody else works on it ([Claiming an issue](docs/guides/issues.md#claiming)).
-   Write the test first ([Testing](docs/guides/testing.md)) and
-   keep the code in the style of [Conventions](docs/guides/conventions.md).
+   below; talk to a maintainer in the issue first. If the change is an issue labelled `S-ready-to-start`, comment
+   `/claim` on it before you start, and a GitHub Action assigns it to you so nobody else works on it ([Claiming an
+   issue](docs/guides/issues.md#claiming)). Write the test first ([Testing](docs/guides/testing.md)) and keep the code
+   in the style of [Conventions](docs/guides/conventions.md).
 6. **Check, commit, open the pull request.** Branch from `main`, make the change, then run the one command that does
    what CI would fail on for the files you touched (for the docs check it needs the setup in [Writing these
    docs](docs/guides/writing-docs.md#setup-once); CI adds clang-tidy on your changed lines, the other compilers and the

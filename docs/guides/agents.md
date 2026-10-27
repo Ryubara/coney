@@ -229,8 +229,8 @@ Claude Fable is not used for agent work. Always name the model when starting an 
 
 **Escalate on signals, not on hope.** Move a task up a model when the agent fails the same check twice, has to make
 a call the page does not settle, or touches a subsystem it was not briefed on. Record which model did which kind of
-task and how often its work came back (CI failures, review findings, play-test bugs) in the track's state file, so the
-table above follows evidence.
+task and how often its work came back (CI failures, review findings, play-test bugs) in the coordinator's state file,
+so the table above follows evidence.
 
 ## Briefing a fresh agent {#briefs}
 
@@ -545,7 +545,7 @@ vendor, a commit it cannot find), and a person committing outside Claude Code ne
   in a shell, which a hook refuses.
 - **Keep tool output small.** Print counts, the failing lines and the end of a log, never a whole log: every line an
   agent reads stays in its context for the rest of the task.
-- **Do not message a finished agent.** Start a new one from its report and the track's
+- **Do not message a finished agent.** Start a new one from its report and the task's
   [STATUS.md](how-we-work.md#status).
 - **No agent waits on CI.** An engineer commits locally, runs Check, and is done when its task passes Review; it
   never pushes. The coordinator opens the pull request with `pr open` ([Opening the pull

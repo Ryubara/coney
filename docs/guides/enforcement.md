@@ -182,8 +182,8 @@ edited on the GitHub website; and a person at their own terminal, which runs no 
 | Every `@orig` function a branch adds or changes matches the original and is our own expression | [Orig review](review/orig.md) | `reviewer` (judgement) in `task review`; `pr verify` requires a `compared` stamp and a `clean` or `diff-deliberate-ok` class for each changed function's body (`orig check-review` for a legacy branch) | judgement, gated at release |
 | No "Generated with" line in a pull request or issue | [AGENTS.md](repo:AGENTS.md) | None in the repository | written; best point `repo check-body` and `issue check` |
 | One feature per pull request; a diff holds only that change | [How we work](how-we-work.md#working-in-parallel) | `reviewer`, the coordinator | judgement |
-| Run the local gate before Review | [Testing](testing.md#local-gate) | `task check` writes the `checked` stamp; `task review` and `pr open` refuse without a current one | enforced |
-| A stacked pull request says `Depends on #N`, has no auto-merge and is never merged into its base | [How we work](how-we-work.md#release-queue) | `repo audit` `pr.stacked-*`, `pr.merged-into-base` | partly (after the fact) |
+| Run the local gate before Review | [Testing](testing.md#local-gate) | `task check` writes the `checked` stamp; `pr open` refuses without a current one (`task review` does not need it) | enforced |
+| A stacked pull request says `Depends on #N`, has no auto-merge and is never merged into its base | [Audit checks](repo-conventions.md#audit-checks) | `repo audit` `pr.stacked-*`, `pr.merged-into-base` | partly (after the fact) |
 | A pull request does not merge while a pull request it `Depends on` is unmerged | [Repository conventions](repo-conventions.md#workflows) | CI `dependencies` (required, `ci dependencies`); it reruns when a dependency merges (`ci rerun-dependencies`) | enforced at CI |
 | A failed run on `main` (nightly, push or manual) is an issue at once | [Repository conventions](repo-conventions.md#workflows) | CI `ci-failure`: `ci report-failure` opens a `P-critical` issue or comments on the open one | enforced at CI |
 | No pull request sits conflicting or failing | [How we work](how-we-work.md#merging) | `hygiene.yml` labels; Conclave's stop guard blocks the coordinator's turn end ([Conclave](conclave.md#watchers)) until a problem is held (`pr hold`) | enforced (Conclave) |
@@ -266,6 +266,6 @@ Checks being built; their rows change when they merge:
 
 No program can tell whether a test proves the fix, a picture shows what its caption says, a claim's evidence level is
 right or a pull request holds one feature. Those rules live in the reviewer checklists ([Reviewing](review/index.md))
-and the `reviewer` agent's instructions ([The description review](how-we-work.md#pr-review)); a program checks the
+and the `reviewer` agent's instructions ([Task review](review/task.md)); a program checks the
 shape around them (a `Runtime:` line exists and has numbers; a verdict is fresh) so the reviewer's time goes to the
 meaning.

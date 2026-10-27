@@ -78,7 +78,7 @@ do not invent it.
 | `pr.base-merged` | The author rebases onto `main` (`git rebase --onto origin/main <old base> <branch>`); then `gh pr edit N --base main`. |
 | `pr.merged-into-base` | Close by hand the issues the pull request fixes, with a comment naming it, and move the work onto `main`. |
 | `ws.scratch` | Look at the paths the finding lists (a generic `.bin` can be a tool file), then delete the finished work's captures from its scratch folder (generated media may be deleted), or ask the track. |
-| `files.pointer`, `files.exist`, `files.address`, `files.forms`, `files.template`, `files.ci-scope`, `files.ci-places`, `files.large-file-limit`, `files.game-files`, `files.markdown-hook` | A change to the repository: make it on a branch in a worktree as one unit, with the check's rule from the conventions, and queue it ([the release queue](../../../docs/guides/how-we-work.md#release-queue)). |
+| `files.pointer`, `files.exist`, `files.address`, `files.forms`, `files.template`, `files.ci-scope`, `files.ci-places`, `files.large-file-limit`, `files.game-files`, `files.markdown-hook` | A change to the repository: make it on a branch in a worktree as one task, with the check's rule from the conventions, and take it through the pipeline ([the pipeline](../../../docs/guides/how-we-work.md#the-pipeline)). |
 
 ### `maintainer`: stop
 
@@ -116,6 +116,6 @@ so in the report so that it is fixed at the source (the conventions or the check
 
 * Change only what a finding names. No bulk relabelling, no mass closing, no rewriting an issue that has no finding.
 * Never put game data, a local path or the repository's address in a body or a comment.
-* A fix that needs a repository change is a unit on a branch, like any other, and goes through the release queue.
+* A fix that needs a repository change is a task on a branch, like any other, and goes through the pipeline.
 * This skill and the `hygiene` workflow share one source of rules, `.github/conventions.yml`; when a rule needs
   changing, change it there and rerun `coney-tools repo render`, not in this file.

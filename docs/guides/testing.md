@@ -1,8 +1,8 @@
 # Testing
 
-Coney's tracks never stop to wait for someone to play their work: finished work merges once the automated checks
+Coney's engineers never stop to wait for someone to play their work: finished work merges once the automated checks
 pass, and play-testing happens at milestones. That only works if the tests are strong enough to stand in for a
-player, and if every track proves its work the same way. This page is that standard: what "done" means for each kind
+player, and if every task proves its work the same way. This page is that standard: what "done" means for each kind
 of work, the rules every test follows, and where the checks run. How to build and run them is in
 [Building and testing](building.md).
 
@@ -45,7 +45,7 @@ evidence names what was compared and gives numbers: "trace diff walk60, 600 upda
 tolerance", "PCSX2 slot 3 reads 0x00271f40 = 4, Coney's field = 4". A disagreement is not hidden: it becomes a fix
 in the same pull request, or an open question on the research page and a marked [stand-in](#stand-ins) in the code.
 The captures and logs stay in the scratch folder while the pull request is open, because the reviewer opens them
-([The description review](how-we-work.md#pr-review)).
+([Task review](review/task.md)).
 
 A change the original cannot say anything about has no comparison, and says so with a reason that is not
 convenience: "refactor with no change to behaviour (the existing trace diff still shows 0 differences)", "the
@@ -307,7 +307,7 @@ PCSX2 captures or reads compared with Coney's), or `Runtime: none (<reason>)`:
 `coney-tools repo check-body --title "<title>"` refuses the description without it. CI's `body` job runs that command
 with the pull request's title, and `repo check-review` runs it with line 1 of `PR.md`, so the message is the same
 locally and in CI. The check refuses a missing, empty or numberless line (and `none` without a reason); the reviewer
-refuses one with nothing behind it in the scratch folder ([The description review](how-we-work.md#pr-review)). Any
+refuses one with nothing behind it in the scratch folder ([Task review](review/task.md)). Any
 other title area leaves the line out.
 
 ### Capturing and attaching {#pr-media}
@@ -334,7 +334,7 @@ other title area leaves the line out.
   gameplay, not a letterboxed scene, a loading or black screen or a menu; the right level and place; the frame and
   options the text states. A before and after pair must differ: two identical shots mean a capture went wrong, so take
   it again. The `reviewer` agent checks the same before release, and `repo check-review` refuses byte-identical
-  images ([The description review](how-we-work.md#pr-review)).
+  images ([Task review](review/task.md)).
 - **Video.** A short clip (10 seconds at most) of Coney comes from `coney --record`, one of the original from
   `coney-tools pcsx2 clip`, and both go up only with `coney-tools clips publish`: the rules and how each is kept are
   in [Clips](#clips) below. Never a screen recorder.
@@ -474,5 +474,5 @@ MSVC accepts but the others reject is the usual cause: see [Portability traps](c
 People play a play-test build (the `playtest` preset: optimised, with the debug menus) at milestones, from one list
 of what changed and how to reach it (commands that start
 through the player's path). Nobody waits for them: work merges on the automated gate. A finding comes back as a fix
-on the owning track, starting with a test that reproduces it. A mission stays **Pending approval** until a maintainer
+task, starting with a test that reproduces it. A mission stays **Pending approval** until a maintainer
 has played it ([Missions](research-data.md#missions)).

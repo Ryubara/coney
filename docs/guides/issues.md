@@ -576,7 +576,7 @@ A brief may be just "issue #N" ([Briefing](agents.md#briefs)); the issue holds t
   ([Testing](testing.md#done)). The pull request description has a `Fixes #N` line in its Summary.
 - **Agents write to GitHub only through `coney-tools issue`.** No comments, labels or pull requests, and an issue only
   with `issue create`, `edit` or `link` ([Filing an issue](#filing)), and only when the brief says to: the
-  coordinator does the rest, from the same release queue as pull requests ([How we work](how-we-work.md)). An agent
+  coordinator does the rest ([How we work](how-we-work.md#coordinator)). An agent
   reports what it would say (the finding, the question for the reporter, the status change) in its message to the
   coordinator. `.claude/hooks/push_guard.py` refuses a subagent's `gh` command that writes; `coney-tools issue` runs
   `gh` itself, so filing stays possible when the brief allows it.
