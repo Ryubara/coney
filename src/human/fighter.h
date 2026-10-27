@@ -541,8 +541,8 @@ class Fighter {
     // @orig 0x00286cc8 Player_Square (unknown)
     // @orig 0x00287a18 Player_Cross (unknown)
     [[nodiscard]] Combatant* attackTargetOf(int animId, const FighterInput& input, bool chainStep) const;
-    // The strike reach of attack `animId`.
-    // @orig 0x00230930 Attack_FarReachSquared (unknown)
+    // The far range of attack `animId` (AnimRangeList::farRange()); 2 m without a record, a stand-in.
+    // @orig 0x00254508 AttackTable_GetFarRange (unknown)
     [[nodiscard]] float reachOf(int animId) const;
     // The attack warning of attack `animId`'s start (event 0x10): to its one target only, never to the other humans
     // around. A player's pad path warns the target it picked at any distance, an AI's start only one within the clip's
