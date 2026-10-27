@@ -60,14 +60,16 @@ make your final message its result and the blockers, in a few lines. A `--text` 
 
 ## Release checks that predate `task review`
 
-The release step still runs these until they are retired; the task says which and names the files:
+A branch started before the cutover outside a task is released with these legacy checks, retired at the cutover
+(`docs/guides/how-we-work.md#pr-review`); the brief says which and names the files:
 
 - **A description** (`PR.md`, with `repo review`): the `text` checklist; write `REVIEW.json` and `REVIEW.md` next to
   `PR.md` in the format of `docs/guides/review/text.md#legacy-verdict`, starting from `repo review-stamp`.
 - **A branch's `@orig` functions, pr mode** (`orig check-review`): the `orig` checklist, starting from `orig
   review-stamp --branch`; write `ORIG-REVIEW.json` and `ORIG-REVIEW.md` as `docs/guides/review/orig.md#verdict`
   says.
-- **A sweep of existing code** (the fidelity audit): `docs/guides/review/orig.md#procedure`.
+- **A sweep of existing code** (legacy fidelity, `docs/guides/how-we-work.md#fidelity-audit`):
+  `docs/guides/review/orig.md#procedure`.
 
 Report in the finding format of `docs/guides/review/index.md`, ending with the verdict.
 

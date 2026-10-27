@@ -62,6 +62,8 @@ grep); it changes no worktree, commits nothing and does not touch GitHub.
 
 ## The release check that predates `task review` {#legacy-verdict}
 
+One of the [legacy release checks](../how-we-work.md#pr-review), for a branch started before the cutover outside a task;
+it is retired at the cutover, and a task's description is judged in `task review` instead.
 `coney-tools repo review PR.md --worktree <worktree>` runs the reviewer on one description and then `repo check-review`.
 The reviewer starts from `repo review-stamp PR.md --worktree <worktree>`, which prints the `tip`, the description's
 `body_sha256` and each local image's `sha256`, and refuses (title and body reasons, no stamp) a description that CI

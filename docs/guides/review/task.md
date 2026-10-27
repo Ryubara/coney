@@ -206,6 +206,7 @@ their listing forms (`git branch -a`, `git tag -l`, `git stash list`, `git workt
 
 ## Release checks that predate it {#legacy}
 
-`repo review` (the description) and `orig check-review` (a branch's `@orig` functions) still gate a release until
-`pr open` replaces them. They run the same `reviewer` agent and keep their own verdict files; the formats are in
-[Description review](text.md#legacy-verdict) and [Orig review](orig.md#verdict).
+`repo review` (the description) and `orig check-review` (a branch's `@orig` functions) gate the release of a branch
+started before the cutover outside a task, and are retired at the cutover
+([Legacy release checks](../how-we-work.md#pr-review)). They run the same `reviewer` agent and keep their own verdict
+files; the formats are in [Description review](text.md#legacy-verdict) and [Orig review](orig.md#verdict).

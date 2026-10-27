@@ -403,8 +403,17 @@ removes any left behind. Never attach a clip with `gh` directly, never commit on
 
 ### The local gate {#local-gate}
 
-Before reporting work or merging it, in your own worktree, run the one command that checks what CI would fail on for
-the files you touched, and fix what it prints:
+The gate is `coney-tools task check`, the Check stage of [the pipeline](how-we-work.md#the-pipeline): on the committed
+tip of a task it runs the whole list below for the change's kind and writes the `checked` stamp that Review and
+`pr open` require ([profiles and checks](coney-tools-repo.md#task-check)). It leaves to CI the warnings only GCC emits,
+macOS, the sanitizers and clang-tidy.
+
+```sh
+uv run --project python coney-tools task check <task>
+```
+
+While working, one command checks what CI would fail on for the files you touched; it is an aid, not the gate, and
+the quickest check for a person contributing without a task:
 
 ```sh
 uv run --project python coney-tools check changed
@@ -413,26 +422,23 @@ uv run --project python coney-tools check changed
 It runs pre-commit on the changed files, the page standards on the changed pages and `mkdocs build --strict` when docs
 changed, ruff, pytest and mypy when `python/` or `.claude/` changed, `orig check` when `src/` changed (a new gameplay
 function carries `@orig` or `@coney-only`), and `repo check`. [The command's page](coney-tools-build.md#check) has the
-options. It does not replace `coney-tools task check`
-([profiles and checks](coney-tools-repo.md#task-check)), the gate that runs the whole list for the change's kind and
-writes the `checked` stamp, nor the list below, which is the whole gate, and it leaves to CI the warnings only GCC emits,
-macOS, the sanitizers and clang-tidy.
+options.
 
 **clang-tidy is CI's alone.** It is not run locally (on Windows there are no local WSL builds or clang-tidy runs):
 every pull request that changes engine files gets a required `clang-tidy` check on the lines it changes, and the whole
 codebase is tidied nightly ([clang-tidy](clang-tidy.md)). It catches what MSVC lets through, such as an unchecked
 `std::optional` access (`bugprone-unchecked-optional-access`) or a use after a move. A finding is an annotation on the
-pull request; fix it forward on the branch and let CI check again. A designated initializer that skips a field
-(`-Wmissing-designated-field-initializers`) is caught by the GCC and Clang builds instead, whose `-Wall -Wextra`
+pull request; it is fixed as a fix task on the branch ([Slots](how-we-work.md#slots)). A designated initializer that
+skips a field (`-Wmissing-designated-field-initializers`) is caught by the GCC and Clang builds instead, whose `-Wall -Wextra`
 warnings are errors in the `ci`, `ci-release` and `asan` presets (`CONEY_WARNINGS_AS_ERRORS`); clang-tidy's `-*` turns
 off its compiler diagnostics.
 
-The command runs on Windows, Linux and macOS. Nobody checks it by hand on all three, so CI does: the `python` workflow
+`check changed` runs on Windows, Linux and macOS. Nobody checks it by hand on all three, so CI does: the `python` workflow
 runs its `repo` and `pre-commit` steps on every operating system it tests (`--base HEAD^1`, the branch a pull request's
 merge commit joins), and a step that works on one system and not another fails there. A person on Linux or macOS who
 finds a difference fixes it forward.
 
-The whole gate:
+The whole gate, which `task check` runs:
 
 - **Engine changes:** the `ci` preset build and its tests with the disc configured, in one command:
   `uv run --project python coney-tools build --agent <id> --preset ci --test` (it waits for a free
@@ -451,7 +457,7 @@ The whole gate:
 
 Commands and presets: [Building and testing](building.md).
 
-The whole gate runs once per unit, as its final check before the unit is reported ready for release. While working,
+The whole gate runs once per tip, in `task check`, before Review. While working,
 check with the `dev` preset and only the tests the change touches (`ctest --preset dev -R <pattern>`, disc tests
 included when they are the ones affected). Builds share a few slots on one machine, and a full `ci` build with the whole
 suite holds one for 15 to 30 minutes, so running it for every step makes everyone else wait.
