@@ -74,6 +74,8 @@ class Brains {
     /// The distance from `brain`'s human to its nearest enemy with health left, or nothing when it has none: the query
     /// the camera's sprint zoom asks the player's brain (docs/research/camera.md#sprint-zoom).
     /// The part of the follow camera's update that reads the player's brain, kept beside the brains it walks.
+    /// Stand-in: only enemies with health left, measured across the ground; the original's latch takes each of the
+    /// brain's 16 enemy handles that still resolves and its squared 3D distance (0x004db5b0).
     /// @orig 0x0012ae58 Cam_Follow_Update (Cam_Follow.cpp)
     [[nodiscard]] static std::optional<float> nearestEnemy(const Brain& brain);
 
