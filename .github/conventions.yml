@@ -423,8 +423,9 @@ tasks:
       task: 3                                     # task units in work per machine (every kind but fix)
       fix: 1                                      # fix units in work: a failed CI check, one at a time, the oldest first
       enforce: true
-      # A task whose issue carries `claims.exempt_label` (the units that build the new workflow) holds no slot. The
-      # cutover sets this false, and they count like any other unit.
+      # A task whose issue carries `claims.exempt_label` now (the units that build the new workflow; read from its held
+      # claim card) holds no slot. The cutover sets this false in the change that turns claims.adopt/release on (a
+      # test fails otherwise), and they count like any other unit.
       exempt_workflow: true
       agent_types: [engineer, tooling]
       reserve_minutes: 45                         # an agent let start keeps its slot this long before its `task start`

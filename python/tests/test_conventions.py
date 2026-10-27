@@ -594,10 +594,18 @@ def test_the_real_claim_rules() -> None:
 def test_the_real_task_start_rules() -> None:
     start = load_conventions(REPO).tasks.start
     assert start.unit_file == "unit.json"
-    # Enforced since 2026-10-27; tooling units for the cutover hold no slot until the cutover.
+    # Enforced since 2026-10-27; workflow units hold no slot until the cutover.
     assert (start.slots.task, start.slots.fix, start.slots.enforce) == (3, 1, True)
-    assert start.slots.exempt_workflow is True and start.slots.agent_types == ("engineer", "tooling")
+    assert start.slots.agent_types == ("engineer", "tooling")
     assert start.slots.reserve_minutes > 0
+
+
+def test_the_workflow_exemption_from_the_slots_ends_at_the_cutover() -> None:
+    # The cutover is the change that turns `claims.adopt` and `claims.release` on (docs/guides/issues.md#claiming); the
+    # same change must turn `tasks.start.slots.exempt_workflow` off, or this fails (docs/guides/agents.md#slots).
+    conventions = load_conventions(REPO)
+    cut_over = conventions.claims.adopt or conventions.claims.release
+    assert not (cut_over and conventions.tasks.start.slots.exempt_workflow)
 
 
 @pytest.mark.parametrize(

@@ -556,7 +556,9 @@ A machine runs at most `tasks.start.slots.task` task units and `tasks.start.slot
 `task start` refuses a start over the limit and names the busy units while `tasks.start.slots.enforce` is on. The
 rule, who counts, what frees a slot, the unit record it counts and the guard that checks the claim and the slot
 before an engineer is started are in [Engineer slots](agents.md#slots); `coney-tools task slots` shows who holds what.
-A task whose issue has the `workflow` label holds no slot until the cutover (its file says `workflow: true`).
+A task whose issue has the `workflow` label holds no slot until the cutover; the label is read from the issue's claim
+card each time, not copied into the task file. Work in other repositories (Tether, Conclave's own plugin repository)
+has no unit here and is not counted.
 
 ## Working from an issue {#agents}
 

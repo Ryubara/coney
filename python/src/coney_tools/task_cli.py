@@ -27,13 +27,14 @@ from coney_tools import stamps, task_check, task_slots
 from coney_tools.audit_github import Runner, run_gh
 from coney_tools.config import ConfigError, find_repo_root, load_config, main_checkout, workspace_folder
 from coney_tools.conventions import Conventions, load_conventions
-from coney_tools.issue_claim_model import parse_scope
+from coney_tools.issue_claim_model import Card, parse_scope
 from coney_tools.issue_claim_remote import GhRemote, Remote
 from coney_tools.task_create import CreateEnv, CreateRequest, create_task, match_lines
 from coney_tools.task_leads import LeadsResult, Searcher
 from coney_tools.task_leads_index import CachedIndex, prepare_index
 from coney_tools.task_review import add_review_parser, run_review_command
 from coney_tools.task_start import StartEnv, StartRequest, start_task
+from coney_tools.unit_record import UnitRecord
 from coney_tools.workspace_clean import list_worktrees
 
 
@@ -153,11 +154,25 @@ def _run_slots(
     now: Callable[[], datetime],
     remote: Remote | None,
 ) -> int:
-    """`task slots`: the report, or with `--admit` the verdict on one start (0 may start, 3 refused). A GitHub that
-    cannot be read is a ConfigError (exit 2): the guard lets the call through and logs it."""
+    """`task slots`: the report, or with `--admit` the verdict on one start (0 may start, 3 refused). The claim cards
+    (whether a claim is held, whether an issue has the workflow label) are read from GitHub, each call bounded; a
+    GitHub that cannot be read leaves the claim unchecked and counts every unit, with a `warning:` line."""
     scratch = scratch_folder(root)
+    rules = conventions.claims
+    github = remote or GhRemote(rules.bot_login, rules.card_marker, rules.reply_marker, _bounded_gh)
+
+    def read_card(number: int) -> Card | None:
+        """The held claim card of one issue."""
+        return task_slots.held_card(github, number, conventions)
+
     if not args.admit:
-        current = task_slots.scan(scratch, conventions, now(), _workspace_trees(root))
+        cards = task_slots.Cards(read_card)
+
+        def exemption(record: UnitRecord) -> bool | None:
+            """A live unit's exemption, from its claim cards."""
+            return task_slots.exempt_issues(record.issues, cards, conventions)
+
+        current = task_slots.scan(scratch, conventions, now(), _workspace_trees(root), exemption)
         if args.json:
             print(json.dumps(task_slots.as_json(current, conventions), indent=2))
         else:
@@ -168,19 +183,10 @@ def _run_slots(
         brief = sys.stdin.buffer.read().decode("utf-8", errors="replace")
     elif args.brief:
         brief = Path(args.brief).read_text(encoding="utf-8")
-    rules = conventions.claims
-    github = remote or GhRemote(rules.bot_login, rules.card_marker, rules.reply_marker, _bounded_gh)
-    verdict = task_slots.admit(
-        scratch,
-        conventions,
-        args.agent_type,
-        brief,
-        now(),
-        lambda task: task_slots.claim_problem(task, github, conventions),
-        args.task,
-        args.reserve,
-    )
+    verdict = task_slots.admit(scratch, conventions, args.agent_type, brief, now(), read_card, args.task, args.reserve)
     print(verdict.message.rstrip("\n"))
+    if verdict.warning:
+        print(f"warning: {verdict.warning}")
     return 0 if verdict.allowed else task_slots.REFUSED
 
 

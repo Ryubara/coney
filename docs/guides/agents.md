@@ -289,12 +289,13 @@ the open issues, `P-critical` first.
 | --- | --- | --- |
 | **Task unit** | An `engineer` or `tooling` agent on a task of kind `feature`, `docs`, `tooling` or `ci-fix` | A held claim, and one of the 3 task slots |
 | **Fix unit** | An agent on a `kind: fix` task, made by `task create --fix-of` after a CI check failed on the pull request of a task that passed Review | A held claim (its parent's), and the fix slot |
-| **Workflow unit** | A task whose issue carries the `workflow` label (`claims.exempt_label`) when `task create` makes its file: a unit that builds the new workflow. The file says `workflow: true` | A held claim, no slot, while `tasks.start.slots.exempt_workflow` is on; **the cutover turns it off** and such units count like the rest. Tooling that is not the workflow takes a slot |
+| **Workflow unit** | A task whose issue carries the `workflow` label (`claims.exempt_label`) now: a unit that builds the new workflow. Only someone who may label issues sets it; it is read from the issue's held claim card (`exempt`, which the claim Action recomputes from the label on every pass), never from a file in the scratch folder, so a label added or removed after `task create` counts from the next pass | A held claim, no slot, while `tasks.start.slots.exempt_workflow` is on; **the cutover turns it off** (a test fails if `claims.adopt` or `claims.release` is on while it is still on) and such units count like the rest. Tooling that is not the workflow takes a slot |
 | **Reviewer** | A `reviewer` (every review, [Task review](review/task.md)) | Neither |
 | **Helper** | An `Explore`, `Plan` or `claude-code-guide` agent, a `fork`, and any agent an engineer starts for its own task (no cap) | Neither |
 
 There is no `Slot: none`: an `engineer` or `tooling` agent has a unit, or it is not started. The types that need neither
-(the last two rows) take no `Task id:` line.
+(the last two rows) take no `Task id:` line. Work in other repositories (Tether, Conclave's own plugin repository) has
+no unit here and is not counted.
 
 **The slot belongs to the unit, not to the agent's life.** A unit takes its slot at `task start` (an agent the
 coordinator has just started holds it from the Agent call, for at most `reserve_minutes`, so that four calls made
@@ -318,25 +319,39 @@ running, the fix goes to it directly. The fix is held to the failing check; only
 no other guard refused it) and asks `coney-tools task slots --admit`, with the brief on standard input. For an
 `engineer` or `tooling` agent (the types in `tasks.start.slots.agent_types`, in any letter case) the brief must carry a
 line `Task id: <id>` that starts the line, with no list mark, quote or bold in front of it (so a brief that quotes the
-rule does not satisfy it), and the call is refused unless all three hold:
+rule does not satisfy it; the first such line counts, and Windows line ends are read like any other), and the call is
+refused unless all three hold:
 
 1. **The task record exists**: `<scratch>/<id>/TASK.md`, which `task create` writes only after its claim held.
 2. **The claim is held now**: each issue of the task has a claim card on GitHub, held by the task's claimant for this
    task (a fix's: its parent's). One comments read per issue, bounded (`GH_CHECK_SECONDS`, 20). A claim that was
    released since `task create` (idle too long, `/unclaim`, lost) refuses the start.
 3. **The slot of its kind is free**: the kind from `TASK.md`, the liveness from `unit.json`, its worktree and the stamp
-   log (`task start` counts the same way), the numbers from the conventions, so the hook copies none of it. A full slot
-   refuses with the busy units, each with its kind and since when, and what frees one. A second start for a unit whose
-   agent has not run `task start` yet is refused too.
+   log (`task start` counts the same way), whether a unit is a workflow unit from its issues' claim cards, the numbers
+   from the conventions, so the hook copies none of it. A full slot refuses with the busy units, each with its kind
+   and since when, and what frees one. A second start for a unit whose agent has not run `task start` yet is refused
+   too.
 
-A start that is let through keeps the slot for the agent (`slot.json`) until its `task start` makes the unit.
+A start that is let through keeps the slot for the agent (`slot.json`) until its `task start` makes the unit. Every
+GitHub read happens before the slot lock is taken, so a slow GitHub never holds the lock.
+
+**When GitHub cannot be read** (down, rate-limited, `gh` logged out, or a read over 20 seconds), only the claim goes
+unchecked. The slot is still counted, under the lock, and kept for the agent; no unit counts as a workflow unit
+(neither the one being started nor the others, since the label is read from the same cards), so a full slot still
+refuses, even for a workflow task. A start let through this way leaves a line `let through with a check skipped` in
+`coney-hooks.log`.
 
 **What the guard cannot do.** It is a hook that judges what the coordinator writes, not a security boundary:
 
-- **The one hole: a tool that cannot judge passes the call.** If `coney-tools` crashes, `uv` is missing, the check
-  times out or GitHub cannot be read, the call goes through and a line is written to `coney-hooks.log` in the temp
-  folder (only the tool's own refusal, exit code 3, blocks). That is the one way an engineer starts without the check,
-  so read that log when agents start that should not have.
+- **A tool that cannot judge passes the call.** If `coney-tools` crashes, `uv` is missing, the check times out (100
+  seconds) or the slot lock cannot be had (held for 40 seconds, or a scratch folder that cannot be written), the call
+  goes through uncounted and a line is written to `coney-hooks.log` in the temp folder (only the tool's own refusal,
+  exit code 3, blocks). A GitHub that cannot be read is narrower: the claim alone is not checked (above). Read that log
+  when agents start that should not have.
+- **Sessions a person starts are not Agent calls.** An engineer session started from the terminal or the launcher
+  (`claude --agent engineer`, `coney-agent`) is not seen by the guard; its `task start` is the only check.
+- **The first `Task id:` line wins.** A brief with two different ones is judged by the first; the agent may read the
+  other.
 - **The brief is the coordinator's word.** A `Task id:` of a live unit passes whatever the agent is then told to do (a
   restart after a `/clear` is the same call), so the engineer's own `task start`, which refuses a start over the limit
   and checks the claim, is the real backstop; the guard moves the refusal to where the coordinator sees it.
@@ -352,6 +367,11 @@ A start that is let through keeps the slot for the agent (`slot.json`) until its
 - **Only the coordinator is held to it.** An engineer's own helpers are not checked.
 - **`task start` counts without the lock.** Two engineers started by hand without a reservation can both pass `task
   start` at the limit; with the guard each is counted as it is reserved.
+- **A crash can let two calls count at once.** The slot lock is broken when it is older than 30 seconds. If, in the
+  instant a waiter breaks it, the lock has just been renewed by a new holder and a third caller takes it before the
+  waiter can put the renewed one back, the new holder and the third caller both count until one of them releases
+  (`_break_stale` in `task_slots.py`, and the test that reproduces it). It needs a crash or a holder stuck for 30
+  seconds and three calls within one rename; at worst one start is counted twice.
 
 `coney-tools task slots` shows the slots at any time ([task](coney-tools-repo.md#task)); [Conclave](conclave.md) and
 Tether keep their own state (the band's units, the live agents) and are not asked to count slots.

@@ -4,24 +4,25 @@
 
 A machine runs `tasks.start.slots.task` task units and `tasks.start.slots.fix` fix units at a time. A unit holds its
 slot from `task start` until a passing `reviewed` stamp (a fix: its own) or `finished`, or until its worktree is gone;
-a unit whose log cannot be trusted, or whose record cannot be read, keeps its slot. The task records say everything:
-the kind and the `workflow` flag are in `<scratch>/<task>/TASK.md`, the unit in `unit.json`, the progress in the stamp
-log. Between the coordinator's Agent call and the engineer's `task start` the agent has no unit yet, so `admit
---reserve` writes a short-lived `slot.json` beside the task file (`tasks.start.slots.reserve_minutes`); a unit record
-that was started after it replaces it.
+a unit whose log cannot be trusted, or whose record cannot be read, keeps its slot. The kind is in
+`<scratch>/<task>/TASK.md`, the unit in `unit.json`, the progress in the stamp log. Between the coordinator's Agent
+call and the engineer's `task start` the agent has no unit yet, so `admit --reserve` writes a short-lived `slot.json`
+beside the task file (`tasks.start.slots.reserve_minutes`); a unit record that was started after it replaces it.
 
 Only a unit with a `unit.json` is counted: work that predates `task start` is invisible to the count (`task slots`
-lists its worktrees as "without a unit record"). A task whose issue carried `claims.exempt_label` when `task create`
-made its file (the units that build the new workflow) holds no slot while `tasks.start.slots.exempt_workflow` is on;
-the cutover turns it off. `kind: fix` takes the fix slot, every other kind a task slot.
+lists its worktrees as "without a unit record"). A unit whose issue carries `claims.exempt_label` now (the units that
+build the new workflow) holds no slot while `tasks.start.slots.exempt_workflow` is on; the cutover turns it off. The
+label is read from the issue's held claim card on GitHub (its `exempt`, which the claim Action recomputes from the
+label on every pass), never from a file here, so nobody grants the exemption by editing the scratch folder; a unit
+whose card cannot be read counts. `kind: fix` takes the fix slot, every other kind a task slot.
 
 The Agent guard (`.claude/hooks/slot_guard.py`) runs `coney-tools task slots --admit` for each Agent call of the
 coordinator. No `engineer` or `tooling` agent starts without a held claim: the brief carries a `Task id: <id>` line, the
 task file must exist (`task create` writes it only after its claim held), the claim must be held now (read from the
-claim cards on GitHub, one bounded call per issue) and the slot of its kind must be free. There is no `Slot: none`:
-the types that hold no slot (a reviewer, the read-only helpers) need no line at all. The brief is still the
-coordinator's word for what the agent will do, so the engineer's own `task start`, which counts the same way, is the
-backstop. Nothing else here reads GitHub.
+claim cards on GitHub, one bounded call per issue) and the slot of its kind must be free. When GitHub cannot be read
+the claim alone goes unchecked: the slot is still counted and reserved. The types that hold no slot (a reviewer, the
+read-only helpers) need no line at all. The brief is still the coordinator's word for what the agent will do, so the
+engineer's own `task start`, which counts the same way, is the backstop.
 """
 
 from __future__ import annotations
@@ -44,14 +45,15 @@ from coney_tools import stamps
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
 from coney_tools.issue_claim_engine import latest_held, stored_cards
-from coney_tools.issue_claim_model import iso_time, parse_time
+from coney_tools.issue_claim_model import Card, iso_time, parse_time
 from coney_tools.issue_claim_remote import Remote
 from coney_tools.task_file import TASK_ID, TaskFile, TaskFileError, parse_task_file
 from coney_tools.unit_record import UnitRecord, UnitRecordError, read_record
 
 #: The exit code of `task slots --admit` for a start that is refused. Any other failure (0 is a start that may go
-#: ahead) is a tool that could not judge, and the guard lets the call through: a crash exits 1, a bad option 2, and so
-#: does a GitHub that cannot be read.
+#: ahead) is a tool that could not judge, and the guard lets the call through: a crash exits 1, a bad option or a slot
+#: lock that cannot be had 2. A GitHub that cannot be read is neither: the claim goes unchecked and the slot is still
+#: counted (exit 0 with a `warning:` line, or 3 for a full slot).
 REFUSED = 3
 #: The reservation file in a task's scratch folder, and its format version.
 RESERVATION_FILE = "slot.json"
@@ -62,14 +64,57 @@ LOCK_FILE = ".slots.lock"
 #: longer than the stale age, so that a lock left by a crash is broken by the first caller to wait it out.
 LOCK_STALE_SECONDS = 30.0
 LOCK_WAIT_SECONDS = 40.0
+#: How long the lock file may go on refusing to be made (PermissionError) while no lock file is there before the
+#: folder is taken as one that cannot be written: a deletion in flight on Windows clears in milliseconds.
+LOCK_DENIED_SECONDS = 2.0
 
 #: A `Task id: <id>` line of a brief: the line starts with the words, with no list mark, quote or bold in front, so a
-#: brief that quotes the rule does not satisfy it.
+#: brief that quotes the rule does not satisfy it. The brief's line ends are made `\n` first.
 _TASK_LINE = re.compile(r"^[ \t]*task id[ \t]*:[ \t]*(?P<id>[A-Za-z0-9][A-Za-z0-9-]*)(?=[ \t]|$)", re.I | re.M)
 
-#: Judges the claims of a task: why one is not held now, or None when every issue's claim is held by the task's
-#: claimant for the task. Raises ConfigError when GitHub cannot be read.
-ClaimCheck = Callable[[TaskFile], str | None]
+#: Reads the held claim card of an issue from GitHub: the card, or None when no card is held. ConfigError when GitHub
+#: cannot be read.
+ReadCard = Callable[[int], Card | None]
+
+
+class Cards:
+    """The held claim cards of the issues one check needs, each read from GitHub at most once.
+
+    After `freeze` nothing more is read (an issue not read before is unreadable): the reads happen before the slot lock
+    is taken, so a slow GitHub never holds the lock past its stale age."""
+
+    def __init__(self, read: ReadCard) -> None:
+        self._read = read
+        self._known: dict[int, Card | None] = {}
+        self._failed: dict[int, str] = {}
+        self._frozen = False
+
+    def freeze(self) -> None:
+        """Read nothing more from GitHub."""
+        self._frozen = True
+
+    def held(self, number: int) -> Card | None:
+        """The held card of issue `number`, or None; ConfigError when it cannot be read (or was not read before the
+        freeze)."""
+        if number in self._known:
+            return self._known[number]
+        if number in self._failed:
+            raise ConfigError(self._failed[number])
+        if self._frozen:
+            raise ConfigError(f"the claim card of #{number} was not read before the slot lock was taken")
+        try:
+            card = self._read(number)
+        except (ConfigError, OSError) as error:
+            self._failed[number] = str(error)
+            raise ConfigError(str(error)) from error
+        self._known[number] = card
+        return card
+
+
+def held_card(remote: Remote, number: int, conventions: Conventions) -> Card | None:
+    """The held claim card of issue `number`: one read of its comments. ConfigError when GitHub cannot be read."""
+    found = latest_held(stored_cards(remote.comments(number), conventions.claims))
+    return found.card if found is not None else None
 
 
 @dataclass(frozen=True)
@@ -101,6 +146,8 @@ class Scan:
     queued_fixes: tuple[str, ...]
     #: The worktrees given to `scan` that no unit record names: work the count cannot see.
     unknown_trees: tuple[Path, ...] = ()
+    #: Units counted because the `workflow` label of their issues could not be read from GitHub.
+    unchecked: tuple[str, ...] = ()
 
     def held(self, slot: str) -> list[Holder]:
         """The holders of one slot, oldest first."""
@@ -114,6 +161,8 @@ class Verdict:
     allowed: bool
     #: What to tell the caller: the refusal's reasons, or a note on why the start is fine.
     message: str
+    #: A start that was let through with a check skipped (GitHub could not be read): the guard logs it.
+    warning: str = ""
 
 
 def slot_of(kind: str) -> str:
@@ -127,10 +176,20 @@ def limit(conventions: Conventions, slot: str) -> int:
     return slots.fix if slot == "fix" else slots.task
 
 
-def is_exempt(workflow: bool, conventions: Conventions) -> bool:
-    """Whether a unit holds no slot: its task file says `workflow` (its issue carried `claims.exempt_label`) and
-    `tasks.start.slots.exempt_workflow` is on."""
-    return workflow and conventions.tasks.start.slots.exempt_workflow
+def exempt_issues(issues: Iterable[int], cards: Cards, conventions: Conventions) -> bool | None:
+    """Whether a unit on these issues holds no slot: `tasks.start.slots.exempt_workflow` is on and the held claim card
+    of one of them says `exempt` (the issue carries `claims.exempt_label` now). None when a card cannot be read: the
+    caller counts the unit."""
+    if not conventions.tasks.start.slots.exempt_workflow:
+        return False
+    try:
+        return any(card is not None and card.exempt for card in (cards.held(number) for number in issues))
+    except ConfigError:
+        return None
+
+
+#: Says whether a started unit holds no slot (True), holds one (False) or cannot be told (None, counted).
+Exemption = Callable[[UnitRecord], bool | None]
 
 
 def holds_a_slot(agent_type: str, conventions: Conventions) -> bool:
@@ -180,15 +239,23 @@ def _front(path: Path) -> dict[str, Any] | None:
     return front if isinstance(front, dict) else None
 
 
-def scan(scratch: Path, conventions: Conventions, now: datetime, trees: Iterable[Path] = ()) -> Scan:
+def scan(
+    scratch: Path,
+    conventions: Conventions,
+    now: datetime,
+    trees: Iterable[Path] = (),
+    exemption: Exemption | None = None,
+) -> Scan:
     """The units and reservations on this machine that hold a slot, and the fix tasks waiting to start.
 
     A unit counts while its record, its worktree and no passing Review (or `finished`) since the claim exist; a log that
     cannot be trusted, or a record that cannot be read (while its folder has a task file), keeps the unit counted. A
-    folder that is not a task is ignored. `trees` are the worktrees of the workspace: those no readable record names
+    folder that is not a task is ignored. `exemption` says which live units are workflow units (from their claim
+    cards); without it every unit counts. `trees` are the worktrees of the workspace: those no readable record names
     come back as `unknown_trees`."""
     holders: list[Holder] = []
     exempt: list[str] = []
+    unchecked: list[str] = []
     queued: list[tuple[datetime, str]] = []
     known: set[Path] = set()
     if not scratch.is_dir():
@@ -197,7 +264,6 @@ def scan(scratch: Path, conventions: Conventions, now: datetime, trees: Iterable
         if not folder.is_dir():
             continue
         front = _front(folder / conventions.tasks.file)
-        workflow = bool(front and front.get("workflow") is True)
         record: UnitRecord | None = None
         unit_path = folder / conventions.tasks.start.unit_file
         if unit_path.is_file():
@@ -214,10 +280,13 @@ def scan(scratch: Path, conventions: Conventions, now: datetime, trees: Iterable
                 report = stamps.verify(scratch / record.log_task / "stamps", conventions.stamps)
                 live = not (report.ok and unit_over(record, report))
         if record is not None and live:
-            if is_exempt(workflow, conventions):
+            free = exemption(record) if exemption is not None else False
+            if free:
                 exempt.append(record.task)
-            else:
-                holders.append(Holder(record.task, record.kind, slot_of(record.kind), "in work", record.started))
+                continue
+            if free is None:
+                unchecked.append(record.task)
+            holders.append(Holder(record.task, record.kind, slot_of(record.kind), "in work", record.started))
             continue
         reserved = _reservation(folder / RESERVATION_FILE, now, conventions)
         if reserved is not None and (record is None or reserved.since > record.started):
@@ -230,7 +299,7 @@ def scan(scratch: Path, conventions: Conventions, now: datetime, trees: Iterable
                 continue
     queued.sort()
     unknown = tuple(tree for tree in trees if tree.resolve() not in known)
-    return Scan(tuple(holders), tuple(exempt), tuple(name for _, name in queued), unknown)
+    return Scan(tuple(holders), tuple(exempt), tuple(name for _, name in queued), unknown, tuple(unchecked))
 
 
 def brief_task(brief: str) -> str | None:
@@ -238,11 +307,11 @@ def brief_task(brief: str) -> str | None:
 
     A line counts only when it starts with the words: a list bullet, a quote or bold in front of them (a brief that
     quotes the rule) does not, and neither does the placeholder `<id>`."""
-    found = _TASK_LINE.search(brief)
+    found = _TASK_LINE.search(brief.replace("\r\n", "\n").replace("\r", "\n"))
     return found.group("id").lower() if found is not None else None
 
 
-def claim_problem(task: TaskFile, remote: Remote, conventions: Conventions) -> str | None:
+def claim_problem(task: TaskFile, cards: Cards) -> str | None:
     """Why the claim of `task` is not held now, or None while every issue's claim is the claimant's for this task.
 
     One read of the issue's comments each (the claim cards): a claim released since `task create` wrote the file
@@ -250,10 +319,9 @@ def claim_problem(task: TaskFile, remote: Remote, conventions: Conventions) -> s
     read."""
     expected = task.parent or task.task
     for number in task.issues:
-        found = latest_held(stored_cards(remote.comments(number), conventions.claims))
-        if found is None:
+        card = cards.held(number)
+        if card is None:
             return f"the claim on #{number} is not held now (released, never made, or idle too long)"
-        card = found.card
         if card.claimant != task.claimant:
             return f"#{number} is claimed by {card.claimant}, and the task file names {task.claimant}"
         if card.task != expected:
@@ -295,6 +363,11 @@ def _full(scan_: Scan, slot: str, conventions: Conventions, task: TaskFile) -> s
         f"'{task.task}' ({task.kind}) may not start now. Busy:"
     ]
     lines += [f"  - {holder.line()}" for holder in held]
+    if scan_.unchecked:
+        lines.append(
+            f"Counted because GitHub could not say whether their issue has the workflow label: "
+            f"{', '.join(scan_.unchecked)}."
+        )
     lines.append(
         "A slot frees when its unit passes Review (`task review --record`), is finished or loses its worktree; "
         "the agent of a unit that waits for CI holds none. Start this agent when one of them does"
@@ -318,17 +391,18 @@ def admit(
     agent_type: str,
     brief: str,
     now: datetime,
-    claim_check: ClaimCheck,
+    read_card: ReadCard,
     task: str | None = None,
     reserve: bool = False,
 ) -> Verdict:
     """Whether the coordinator may start an agent of `agent_type` now.
 
     A type that holds no slot (`holds_a_slot`) always passes. An `engineer` or `tooling` agent needs, in this order: a
-    unit (`task`, or the brief's `Task id:` line), its task file, a claim that is held now (`claim_check`; ConfigError
-    from it means GitHub could not be read and nothing is decided) and a free slot of its kind. A start that passes with
-    `reserve` is recorded as a reservation, under a lock so that Agent calls made together are counted one after the
-    other."""
+    unit (`task`, or the brief's `Task id:` line), its task file, a claim that is held now (the claim cards, through
+    `read_card`) and a free slot of its kind. When GitHub cannot be read only the claim goes unchecked (the verdict's
+    `warning` says so): the task is not exempt then, the slot is counted and a full slot still refuses. A start that
+    passes with `reserve` is recorded as a reservation, under a lock so that Agent calls made together are counted one
+    after the other; every GitHub read happens before the lock."""
     slots = conventions.tasks.start.slots
     if not holds_a_slot(agent_type, conventions):
         return Verdict(True, f"{agent_type or 'this agent'} holds no slot")
@@ -342,23 +416,38 @@ def admit(
     found = _read_task(scratch, named, conventions)
     if isinstance(found, str):
         return Verdict(False, f"Blocked: {found}. {_howto()} (docs/guides/agents.md#slots).\n")
-    problem = claim_check(found)
+    cards = Cards(read_card)
+    warning = ""
+    try:
+        problem = claim_problem(found, cards)
+    except ConfigError as error:
+        problem = None
+        warning = f"the claim of '{named}' was not checked, GitHub could not be read ({error}); its slot is counted"
     if problem is not None:
         return Verdict(
             False,
             f"Blocked: '{named}' has a task file but no claim to work under: {problem}. "
             "Claim the issue again with `task create` (docs/guides/agents.md#slots).\n",
         )
-    if is_exempt(found.workflow, conventions):
-        return Verdict(True, f"{named} is a workflow task, which holds no slot until the cutover")
+    if exempt_issues(found.issues, cards, conventions):
+        return Verdict(
+            True, f"{named} is a workflow task (its issue has the workflow label): no slot until the cutover"
+        )
     slot = slot_of(found.kind)
+
+    def exemption(record: UnitRecord) -> bool | None:
+        """A live unit's exemption, from the cards read for this check."""
+        return exempt_issues(record.issues, cards, conventions)
+
+    scan(scratch, conventions, now, exemption=exemption)  # reads the other units' cards before the lock
+    cards.freeze()
     with locked(scratch, reserve):
-        current = scan(scratch, conventions, now)
+        current = scan(scratch, conventions, now, exemption=exemption)
         mine = [holder for holder in current.holders if holder.task == named]
         others = [holder for holder in current.held(slot) if holder.task != named]
         count = len(others) + 1
         if mine and not (reserve and mine[0].state == "reserved"):
-            return Verdict(True, f"{named} holds a {slot} slot already ({mine[0].state})")
+            return Verdict(True, f"{named} holds a {slot} slot already ({mine[0].state})", warning)
         if mine:
             return Verdict(
                 False,
@@ -374,7 +463,7 @@ def admit(
             note += " (over the limit, which is not enforced: tasks.start.slots.enforce)"
         if reserve:
             write_reservation(scratch / named, found, slot, agent_type, now)
-        return Verdict(True, note)
+        return Verdict(True, note, warning)
 
 
 def write_reservation(folder: Path, task: TaskFile, slot: str, agent_type: str, now: datetime) -> None:
@@ -393,23 +482,31 @@ def write_reservation(folder: Path, task: TaskFile, slot: str, agent_type: str, 
     temporary.replace(folder / RESERVATION_FILE)
 
 
-def _take(path: Path, nonce: str) -> bool:
-    """Make the lock file holding `nonce`; False when somebody holds it. On Windows a create that meets a file whose
-    deletion is in flight raises PermissionError instead of FileExistsError: both mean "held, try again"."""
+def _take(path: Path, nonce: str) -> str:
+    """Make the lock file holding `nonce`: `taken`, `held` when it exists, or `denied` when the create raised
+    PermissionError. On Windows a create that meets a file whose deletion is in flight raises PermissionError instead
+    of FileExistsError, and so does a folder that may not be written: `locked` tells them apart by how long it lasts."""
     try:
         handle = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-    except (FileExistsError, PermissionError):
-        return False
+    except FileExistsError:
+        return "held"
+    except PermissionError:
+        return "denied"
     with os.fdopen(handle, "w", encoding="utf-8") as lock:
         lock.write(nonce)
-    return True
+    return "taken"
 
 
 def _break_stale(path: Path) -> None:
     """Remove the lock file when it is older than `LOCK_STALE_SECONDS`, so that of two waiters only one removes it.
 
-    The file is renamed away first (one rename wins, the other finds nothing); if the renamed file turns out fresh, it
-    was a new holder's lock that took the place of the stale one between the look and the rename, and it is put back."""
+    The file is renamed away first (one rename wins, the other finds nothing). If the renamed file turns out fresh, it
+    was a new holder's lock that took the place of the stale one between the look and the rename, and it is linked back.
+    The window that stays open: when a third caller makes a new lock in the instant between that rename and the link
+    back, the link fails, and the displaced holder and the third caller both hold the lock until the first of them
+    releases (each removes only its own nonce). That needs a lock left past the stale age (a crash, or a holder stuck
+    for 30 seconds) and three callers interleaved within one rename; the effect is at most one start counted twice.
+    The renamed-aside file is always removed."""
     try:
         if time.time() - path.stat().st_mtime <= LOCK_STALE_SECONDS:
             return
@@ -417,10 +514,14 @@ def _break_stale(path: Path) -> None:
         path.replace(aside)
     except OSError:
         return
-    with contextlib.suppress(OSError):
+    try:
         if time.time() - aside.stat().st_mtime <= LOCK_STALE_SECONDS:
-            os.link(aside, path)  # fails while another lock stands; then that one wins and this one is gone
-        aside.unlink()
+            os.link(aside, path)  # fails while another lock stands: the window the docstring names
+    except OSError:
+        pass
+    finally:
+        with contextlib.suppress(OSError):
+            aside.unlink()
 
 
 def _release(path: Path, nonce: str) -> None:
@@ -441,8 +542,9 @@ def locked(
 
     A lock older than `LOCK_STALE_SECONDS` is taken as a crashed process's and broken; a caller waits for
     `LOCK_WAIT_SECONDS` (longer, so a crash costs one wait, not a refusal to count) and then raises ConfigError (the
-    guard passes the call). The file holds its owner's nonce, and only the owner removes it. Nothing is locked when
-    `needed` is false."""
+    guard passes the call). A create refused with PermissionError while no lock file is there for
+    `LOCK_DENIED_SECONDS` is a folder that cannot be written, and raises ConfigError at once instead of waiting. The
+    file holds its owner's nonce, and only the owner removes it. Nothing is locked when `needed` is false."""
     if not needed:
         yield
         return
@@ -450,10 +552,17 @@ def locked(
     scratch.mkdir(parents=True, exist_ok=True)
     nonce = uuid.uuid4().hex
     deadline = clock() + LOCK_WAIT_SECONDS
-    while not _take(path, nonce):
+    denied_since: float | None = None
+    while (outcome := _take(path, nonce)) != "taken":
+        if outcome == "denied" and not path.exists():
+            denied_since = clock() if denied_since is None else denied_since
+            if clock() - denied_since > LOCK_DENIED_SECONDS:
+                raise ConfigError(f"{path}: the slot lock cannot be made (permission denied; is {scratch} writable?)")
+        else:
+            denied_since = None
         _break_stale(path)
         if clock() > deadline:
-            raise ConfigError(f"{path}: another Agent call holds the slot lock")
+            raise ConfigError(f"{path}: another Agent call has held the slot lock for {LOCK_WAIT_SECONDS:.0f} s")
         sleep(0.05)
     try:
         yield
@@ -472,6 +581,8 @@ def report(current: Scan, conventions: Conventions) -> list[str]:
     slots = conventions.tasks.start.slots
     if current.exempt:
         lines.append(f"no slot (workflow units until the cutover): {', '.join(current.exempt)}")
+    if current.unchecked:
+        lines.append(f"counted, the workflow label could not be read from GitHub: {', '.join(current.unchecked)}")
     if current.queued_fixes:
         lines.append(f"fix tasks waiting, oldest first: {', '.join(current.queued_fixes)}")
     if current.unknown_trees:
@@ -496,6 +607,7 @@ def as_json(current: Scan, conventions: Conventions) -> dict[str, Any]:
             for slot in ("task", "fix")
         },
         "exempt": list(current.exempt),
+        "unchecked": list(current.unchecked),
         "queued_fixes": list(current.queued_fixes),
         "worktrees_without_unit": [tree.name for tree in current.unknown_trees],
     }

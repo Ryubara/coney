@@ -71,11 +71,11 @@ class World:
 
     # -- the scene
 
-    def claim(self, issue: int = 10, task: str = TASK, login: str = USER) -> None:
-        """A held claim, as `task create` leaves it."""
+    def claim(self, issue: int = 10, task: str = TASK, login: str = USER, exempt: bool = False) -> None:
+        """A held claim, as `task create` leaves it; `exempt` when the issue carries the `workflow` label."""
         if issue not in self.github.items:
             self.github.add_issue(issue)
-        plant_claim(self.github, issue, login, task=task)
+        plant_claim(self.github, issue, login, task=task, exempt=exempt)
 
     def task_file(self, task: str = TASK, **changes: object) -> Path:
         """Write the task file of `task` the way `task create` does; returns its path."""
@@ -94,10 +94,12 @@ class World:
         path.write_text(render_task_file(TaskFile(**values)), encoding="utf-8")  # type: ignore[arg-type]
         return path
 
-    def ready(self, task: str = TASK, issues: tuple[int, ...] = (10,), **changes: object) -> None:
-        """A claimed task with its task file: what `task start` needs."""
+    def ready(
+        self, task: str = TASK, issues: tuple[int, ...] = (10,), workflow: bool = False, **changes: object
+    ) -> None:
+        """A claimed task with its task file: what `task start` needs; `workflow` labels its issues."""
         for number in issues:
-            self.claim(number, task)
+            self.claim(number, task, exempt=workflow)
         self.task_file(task, issues=issues, **changes)
 
     def push_to_origin(self, name: str = "later.txt") -> str:
@@ -624,17 +626,18 @@ def test_a_claim_made_without_a_task_id_says_so(world: World) -> None:
 def plant_unit(
     world: World, task: str, kind: str = "feature", end: str | None = None, tree: bool = True, workflow: bool = False
 ) -> None:
-    """Another unit of this machine: a record, a worktree folder and a log that ends at `end` (reviewed, finished);
-    with `workflow`, a task file that says the unit builds the new workflow."""
+    """Another unit of this machine on the issue its name starts with: a record, a worktree folder and a log that ends
+    at `end` (reviewed, finished); with `workflow`, its issue carries the `workflow` label (on its claim card)."""
     folder = world.scratch / task
+    issue = int(task.split("-", 1)[0])
     if workflow:
-        world.task_file(task, kind=kind, workflow=True)
+        world.claim(issue, task, exempt=True)
     tree_path = world.worktree(task)
     if tree:
         tree_path.mkdir(parents=True)
     write_record(
         folder / "unit.json",
-        UnitRecord(task, kind, (30,), USER, task, tree_path, "origin/main", "b" * 40, world.clock.now()),
+        UnitRecord(task, kind, (issue,), USER, task, tree_path, "origin/main", "b" * 40, world.clock.now()),
     )
     steps = ["assigned", "claimed", *([end] if end else [])]
     for step in steps:
@@ -708,6 +711,34 @@ def test_a_unit_of_a_workflow_task_is_not_counted(world: World) -> None:
     world.ready()
     assert world.run() == 0
     assert "slots: 3 of 3 task slots in use" in world.said()
+
+
+def test_a_workflow_label_added_after_task_create_exempts_the_start(world: World) -> None:
+    for number in range(30, 33):
+        plant_unit(world, f"{number}-x")
+    world.ready(kind="tooling")
+    assert world.run() == 1
+    world.claim(10, TASK, exempt=True)  # the label was added; the claim Action's next pass updates the card
+    assert world.run() == 0 and "holds no slot" in world.said()
+
+
+def test_a_workflow_label_removed_after_task_create_ends_the_exemption(world: World) -> None:
+    for number in range(30, 33):
+        plant_unit(world, f"{number}-x")
+    world.ready(kind="tooling", workflow=True)
+    world.claim(10, TASK, exempt=False)  # the label was removed
+    assert world.run() == 1 and "3 task units are in work" in world.said()
+
+
+def test_a_task_file_that_says_workflow_does_not_exempt_the_start(world: World) -> None:
+    for number in range(30, 33):
+        plant_unit(world, f"{number}-x")
+    world.ready(kind="tooling")
+    path = world.scratch / TASK / world.conventions.tasks.file
+    text = path.read_text(encoding="utf-8").replace("\n---\n# Task", "\nworkflow: true\n---\n# Task", 1)
+    path.write_text(text, encoding="utf-8")
+    assert "workflow: true" in path.read_text(encoding="utf-8")
+    assert world.run() == 1
 
 
 def test_a_unit_that_passed_review_finished_or_lost_its_worktree_holds_no_slot(world: World) -> None:

@@ -2,9 +2,8 @@
 """The task file: `scratch/<task>/TASK.md`, written by `task create`, read by the tools after it and by the engineer.
 
 A small YAML block between `---` lines holds what the tools read (`task`, `issues`, `kind`, `claimant`, `claimed_at`,
-`scope`, `terms`, `parent` for a fix task, `workflow` for a unit that builds the new workflow); the sections below it
-are prose the coordinator prunes. The section names are fixed so a tool and a person find the same thing in the same
-place (docs/guides/issues.md#task-files).
+`scope`, `terms`, and `parent` for a fix task); the sections below it are prose the coordinator prunes. The section
+names are fixed so a tool and a person find the same thing in the same place (docs/guides/issues.md#task-files).
 """
 
 from __future__ import annotations
@@ -58,14 +57,11 @@ class TaskFile:
     sections: dict[str, str] = field(default_factory=dict)
     #: For a fix task, the task whose unit (branch, worktree, stamp log) the fix works in; empty otherwise.
     parent: str = ""
-    #: An issue of the task carried `claims.exempt_label` when the file was made: the task builds the new workflow, and
-    #: holds no engineer slot while `tasks.start.slots.exempt_workflow` is on (docs/guides/agents.md#slots).
-    workflow: bool = False
 
 
 def render_task_file(task: TaskFile) -> str:
     """The text of a task file: the YAML block, the title, then every section in order (missing ones empty)."""
-    front: dict[str, object] = {
+    front = {
         "task": task.task,
         "issues": list(task.issues),
         "kind": task.kind,
@@ -76,8 +72,6 @@ def render_task_file(task: TaskFile) -> str:
     }
     if task.parent:
         front["parent"] = task.parent
-    if task.workflow:
-        front["workflow"] = True
     block = yaml.safe_dump(front, default_flow_style=None, sort_keys=False, allow_unicode=True, width=1000).strip()
     lines = ["---", block, "---", f"# Task {task.task}", ""]
     for name in SECTIONS:
@@ -115,9 +109,6 @@ def parse_task_file(text: str, tasks: Tasks) -> TaskFile:
         raise TaskFileError(f"the task has a parent '{parent}' but its kind is '{kind}': only a fix task has a parent")
     if parent and not TASK_ID.match(parent):
         raise TaskFileError(f"the parent '{parent}' is not a task id")
-    workflow = front.get("workflow", False)
-    if not isinstance(workflow, bool):
-        raise TaskFileError(f"'workflow' is {workflow!r}: true or false")
     body = parts[1]
     headings = list(_HEADING.finditer(body))
     sections: dict[str, str] = {}
@@ -139,7 +130,6 @@ def parse_task_file(text: str, tasks: Tasks) -> TaskFile:
         terms=tuple(str(item) for item in front["terms"] or ()),
         sections=sections,
         parent=parent,
-        workflow=workflow,
     )
 
 

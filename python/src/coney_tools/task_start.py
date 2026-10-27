@@ -12,7 +12,8 @@ task (`kind: fix`, made by `task create --fix-of`) makes no branch or worktree: 
 fixes, so it gets a record that points there, and its `claimed` stamp joins that task's log.
 
 The engineer slots (`task_slots`) are counted and reported here, and a start over the limit is refused while
-`tasks.start.slots.enforce` is on; a kind in `tasks.start.slots.exempt_kinds` holds no slot. GitHub is read through
+`tasks.start.slots.enforce` is on; a task whose issue carries the `workflow` label now (`claims.exempt_label`, read
+from its held claim card) holds no slot while `tasks.start.slots.exempt_workflow` is on. GitHub is read through
 `Remote` and the clock and the agent's identity are passed in, so the tests touch neither the network nor the hooks.
 """
 
@@ -78,22 +79,28 @@ def front_sha256(task: TaskFile) -> str:
         "terms": list(task.terms),
         "parent": task.parent,
     }
-    if task.workflow:  # added only when set, so the hash of a task made before the flag existed does not change
-        front["workflow"] = True
     return stamps.sha256_hex(stamps.canonical(front))
 
 
 # --- slots ----------------------------------------------------------------------------------------------------------
 
 
-def _slot_check(task: TaskFile, env: StartEnv) -> tuple[str, str | None]:
-    """(the slot line for the report, the refusal when the limit is enforced and exceeded)."""
+def _slot_check(task: TaskFile, env: StartEnv, engine: Engine) -> tuple[str, str | None]:
+    """(the slot line for the report, the refusal when the limit is enforced and exceeded). Whether a unit is a
+    workflow unit comes from the held claim cards `engine` read (their `exempt`), not from any file here."""
     conventions = env.conventions
     slots = conventions.tasks.start.slots
-    if task_slots.is_exempt(task.workflow, conventions):
-        return "slots: a workflow task holds no slot (tasks.start.slots.exempt_workflow)", None
+    held_cards = engine.held_cards()
+    cards = task_slots.Cards(held_cards.get)
+    if task_slots.exempt_issues(task.issues, cards, conventions):
+        return "slots: a workflow task (its issue has the workflow label) holds no slot until the cutover", None
+
+    def exemption(record: UnitRecord) -> bool | None:
+        """Another unit's exemption, from the same cards."""
+        return task_slots.exempt_issues(record.issues, cards, conventions)
+
     kind = task_slots.slot_of(task.kind)
-    held = task_slots.scan(env.scratch, conventions, env.now()).held(kind)
+    held = task_slots.scan(env.scratch, conventions, env.now(), exemption=exemption).held(kind)
     others = [holder for holder in held if holder.task != task.task]
     maximum = task_slots.limit(conventions, kind)
     count = len(others) + 1
@@ -359,7 +366,7 @@ def start_task(request: StartRequest, env: StartEnv) -> int:
         out(f"refused: {problem}")
         return 1
     record_path = env.scratch / request.task / conventions.tasks.start.unit_file
-    slot_line, slot_problem = _slot_check(task, env)
+    slot_line, slot_problem = _slot_check(task, env, engine)
     if record_path.is_file():
         return _resume(read_record(record_path), record_path, task, env, slot_line, request.dry_run)
     if not task.parent:

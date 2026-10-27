@@ -255,13 +255,20 @@ def make_engine(github: FakeGitHub, clock: Clock, conventions: Conventions = LIV
 
 
 def plant_claim(
-    github: FakeGitHub, number: int, login: str, at: datetime | None = None, task: str | None = None
+    github: FakeGitHub,
+    number: int,
+    login: str,
+    at: datetime | None = None,
+    task: str | None = None,
+    exempt: bool = False,
 ) -> None:
-    """A claim another run made: the assignee, the working label and a card, without going through the engine."""
+    """A claim another run made: the assignee, the working label and a card, without going through the engine. With
+    `exempt`, the issue carries `claims.exempt_label` and the card says so, as the claim Action's pass leaves it."""
     from coney_tools.issue_claim_model import Card, render_card
 
     view = github.items[number].view
     kept = tuple(label for label in view.labels if not label.startswith("S-"))
-    github.items[number].view = replace(view, assignees=(login,), labels=(*kept, RULES.working_label))
-    card = Card(issue=number, claimant=login, claimed_at=at or github.clock.now(), task=task)
+    extra = (RULES.exempt_label,) if exempt and RULES.exempt_label not in kept else ()
+    github.items[number].view = replace(view, assignees=(login,), labels=(*kept, *extra, RULES.working_label))
+    card = Card(issue=number, claimant=login, claimed_at=at or github.clock.now(), task=task, exempt=exempt)
     github.create_comment(number, render_card(card, RULES))

@@ -116,6 +116,22 @@ def test_a_tool_that_cannot_run_passes_the_call_and_leaves_a_line(
     assert "could not check the slots (exit 2)" in (tmp_path / "coney-hooks.log").read_text(encoding="utf-8")
 
 
+def test_a_start_let_through_with_the_claim_unchecked_leaves_a_line(
+    tmp_path: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("tempfile.gettempdir", lambda: str(tmp_path))
+    out = "1 of 3 task slots in use with x-1\nwarning: the claim of 'x-1' was not checked, GitHub could not be read"
+    assert GUARD.refusal(call(), Fake(0, out)) is None
+    log = (tmp_path / "coney-hooks.log").read_text(encoding="utf-8")
+    assert "let through with a check skipped: the claim of 'x-1' was not checked" in log
+
+
+def test_a_plain_start_leaves_no_line(tmp_path: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("tempfile.gettempdir", lambda: str(tmp_path))
+    assert GUARD.refusal(call(), Fake(0, "1 of 3 task slots in use with x-1")) is None
+    assert not (tmp_path / "coney-hooks.log").exists()
+
+
 @pytest.mark.parametrize("code", [1, 2, 4, 127, 255])
 def test_every_exit_code_but_the_refusal_passes_the_call(
     code: int, tmp_path: Any, monkeypatch: pytest.MonkeyPatch

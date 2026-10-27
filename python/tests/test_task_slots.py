@@ -24,6 +24,7 @@ from claim_support import Clock, FakeGitHub, plant_claim
 from coney_tools import stamps, task_cli, task_slots
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
+from coney_tools.issue_claim_model import Card, render_card
 from coney_tools.issue_claim_remote import Remote
 from coney_tools.task_file import TaskFile, render_task_file
 from coney_tools.unit_record import UnitRecord, write_record
@@ -34,7 +35,8 @@ USER = "Ryubara"
 
 
 class Scene:
-    """A scratch folder with tasks in it, a clock and the committed conventions."""
+    """A scratch folder with tasks in it, the claim cards GitHub holds for them, a clock and the committed
+    conventions."""
 
     def __init__(self, tmp_path: Path) -> None:
         self.scratch = tmp_path / "scratch"
@@ -42,20 +44,33 @@ class Scene:
         self.trees = tmp_path / "worktrees"
         self.clock = Clock()
         self.conventions: Conventions = CONVENTIONS
-        #: What the claim check answers (None: the claim is held) and the tasks it was asked about.
-        self.claim_result: str | None = None
+        #: The held claim cards on GitHub by issue, as the claim Action keeps them (`exempt` from the label).
+        self.cards: dict[int, Card] = {}
+        #: Whether GitHub cannot be read, and the tasks whose cards were read, in order.
+        self.down = False
         self.claim_asked: list[str] = []
+        #: The issues of each task (each task gets its own unless given).
+        self.issues_of: dict[str, tuple[int, ...]] = {}
+        self._next_issue = 100
         #: GitHub for the command tests: the claim cards `task create` would have left.
         self.github = FakeGitHub(self.clock)
 
     def now(self) -> datetime:
         return self.clock.now()
 
-    def task(self, name: str, kind: str = "feature", age_minutes: int = 0, **changes: object) -> Path:
-        """A task file as `task create` writes it, claimed `age_minutes` ago."""
+    def task(
+        self, name: str, kind: str = "feature", age_minutes: int = 0, workflow: bool = False, **changes: object
+    ) -> Path:
+        """A task file as `task create` writes it, claimed `age_minutes` ago, and its held claim cards (labelled
+        `workflow` when asked)."""
+        issues = changes.pop("issues", None)
+        if issues is None:
+            issues = (self._next_issue,)
+            self._next_issue += 1
+        self.issues_of[name] = issues  # type: ignore[assignment]
         values: dict[str, object] = {
             "task": name,
-            "issues": (10,),
+            "issues": issues,
             "kind": kind,
             "claimant": USER,
             "claimed_at": self.now() - timedelta(minutes=age_minutes),
@@ -65,10 +80,26 @@ class Scene:
         if kind == "fix":
             values["parent"] = "parent"
         values.update(changes)
+        for number in issues:  # type: ignore[attr-defined]
+            claimed_for = str(values.get("parent") or name)
+            self.cards[number] = Card(issue=number, claimant=USER, claimed_at=self.now(), task=claimed_for)
+        if workflow:
+            self.label(name, True)
         path = self.scratch / name / self.conventions.tasks.file
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(render_task_file(TaskFile(**values)), encoding="utf-8")  # type: ignore[arg-type]
         return path
+
+    def label(self, name: str, on: bool) -> None:
+        """Add or remove the `workflow` label of the task's issues: the claim Action's next pass sets the card's
+        `exempt`."""
+        for number in self.issues_of[name]:
+            self.cards[number] = replace(self.cards[number], exempt=on)
+
+    def release(self, name: str) -> None:
+        """The claims of the task were released since `task create` (idle, `/unclaim`)."""
+        for number in self.issues_of[name]:
+            self.cards.pop(number, None)
 
     def unit(
         self, name: str, kind: str = "feature", end: str | None = None, tree: bool = True, **changes: object
@@ -80,7 +111,7 @@ class Scene:
             tree_path.mkdir(parents=True, exist_ok=True)
         write_record(
             self.scratch / name / "unit.json",
-            UnitRecord(name, kind, (10,), USER, name, tree_path, "origin/main", "b" * 40, self.now()),
+            UnitRecord(name, kind, self.issues_of[name], USER, name, tree_path, "origin/main", "b" * 40, self.now()),
         )
         for step in ["assigned", "claimed", *([end] if end else [])]:
             stamps.append(
@@ -97,10 +128,12 @@ class Scene:
                 clock=self.now,
             )
 
-    def claim_check(self, task: TaskFile) -> str | None:
-        """The stand-in for the claim cards on GitHub."""
-        self.claim_asked.append(task.task)
-        return self.claim_result
+    def read_card(self, number: int) -> Card | None:
+        """The stand-in for one issue's claim cards on GitHub."""
+        if self.down:
+            raise ConfigError("cannot read from GitHub with gh (offline)")
+        self.claim_asked += [name for name, issues in self.issues_of.items() if number in issues]
+        return self.cards.get(number)
 
     def admit(self, brief: str, agent_type: str = "engineer", **options: object) -> task_slots.Verdict:
         return task_slots.admit(
@@ -109,12 +142,22 @@ class Scene:
             agent_type,
             brief,
             self.now(),
-            self.claim_check,
+            self.read_card,
             **options,  # type: ignore[arg-type]
         )
 
+    def scan(self) -> task_slots.Scan:
+        """What holds the slots, with each live unit's exemption read from its cards."""
+        cards = task_slots.Cards(self.read_card)
+        return task_slots.scan(
+            self.scratch,
+            self.conventions,
+            self.now(),
+            exemption=lambda record: task_slots.exempt_issues(record.issues, cards, self.conventions),
+        )
+
     def holders(self, slot: str = "task") -> list[str]:
-        return [holder.task for holder in task_slots.scan(self.scratch, self.conventions, self.now()).held(slot)]
+        return [holder.task for holder in self.scan().held(slot)]
 
 
 @pytest.fixture
@@ -179,8 +222,52 @@ def test_a_unit_with_a_damaged_log_keeps_its_slot(scene: Scene) -> None:
 
 def test_a_workflow_unit_holds_no_slot_but_is_listed(scene: Scene) -> None:
     scene.unit("a-flow", kind="tooling", workflow=True)
-    current = task_slots.scan(scene.scratch, scene.conventions, scene.now())
+    current = scene.scan()
     assert current.holders == () and current.exempt == ("a-flow",)
+
+
+def test_without_the_cards_every_unit_counts(scene: Scene) -> None:
+    scene.unit("a-flow", kind="tooling", workflow=True)
+    assert [h.task for h in task_slots.scan(scene.scratch, scene.conventions, scene.now()).holders] == ["a-flow"]
+
+
+def test_the_label_added_after_task_create_exempts_the_unit(scene: Scene) -> None:
+    scene.unit("a-flow", kind="tooling")
+    assert scene.holders() == ["a-flow"]
+    scene.label("a-flow", True)
+    assert scene.holders() == [] and scene.scan().exempt == ("a-flow",)
+
+
+def test_the_label_removed_after_task_create_ends_the_exemption(scene: Scene) -> None:
+    scene.unit("a-flow", kind="tooling", workflow=True)
+    scene.label("a-flow", False)
+    assert scene.holders() == ["a-flow"]
+
+
+def mark_workflow_by_hand(scene: Scene, name: str) -> None:
+    """Edit `workflow: true` into the YAML block of a task file, as somebody might."""
+    path = scene.scratch / name / scene.conventions.tasks.file
+    text = path.read_text(encoding="utf-8").replace("\n---\n# Task", "\nworkflow: true\n---\n# Task", 1)
+    path.write_text(text, encoding="utf-8")
+    assert "workflow: true" in path.read_text(encoding="utf-8")
+
+
+def test_a_task_file_that_says_workflow_grants_nothing(scene: Scene) -> None:
+    # Only the label (through the claim card) exempts: a hand edit of TASK.md does not.
+    full(scene)
+    mark_workflow_by_hand(scene, "a-one")
+    assert scene.holders() == ["a-one", "b-two", "c-three"]
+    scene.task("d-four")
+    mark_workflow_by_hand(scene, "d-four")
+    assert not scene.admit(brief("d-four")).allowed
+
+
+def test_a_unit_whose_cards_cannot_be_read_is_counted_and_named(scene: Scene) -> None:
+    scene.unit("a-flow", kind="tooling", workflow=True)
+    scene.down = True
+    current = scene.scan()
+    assert [h.task for h in current.holders] == ["a-flow"] and current.unchecked == ("a-flow",)
+    assert any("could not be read" in line and "a-flow" in line for line in task_slots.report(current, CONVENTIONS))
 
 
 def test_tooling_that_is_not_the_workflow_holds_a_slot(scene: Scene) -> None:
@@ -203,7 +290,7 @@ def test_folders_that_are_not_units_are_ignored(scene: Scene) -> None:
 def test_a_unit_record_that_cannot_be_read_keeps_its_slot(scene: Scene) -> None:
     scene.task("a-odd")
     (scene.scratch / "a-odd" / "unit.json").write_text("{", encoding="utf-8")
-    current = task_slots.scan(scene.scratch, scene.conventions, scene.now())
+    current = scene.scan()
     assert [(h.task, h.state) for h in current.holders] == [("a-odd", "record unreadable")]
 
 
@@ -255,6 +342,16 @@ def test_the_brief_names_its_task(text: str) -> None:
 )
 def test_a_brief_that_quotes_the_rule_or_marks_it_up_names_nothing(text: str) -> None:
     assert task_slots.brief_task(text) is None
+
+
+@pytest.mark.parametrize("ending", ["\r\n", "\r"])
+def test_a_brief_with_windows_or_old_mac_line_ends_names_its_task(ending: str) -> None:
+    assert task_slots.brief_task(ending.join(["Intro", "Task id: 733-fix-it", "more", ""])) == "733-fix-it"
+    assert task_slots.brief_task("Task id: 733-fix-it" + ending) == "733-fix-it"
+
+
+def test_the_first_task_id_line_of_a_brief_wins() -> None:
+    assert task_slots.brief_task("Task id: first-one\nTask id: second-one\n") == "first-one"
 
 
 # --- admit ----------------------------------------------------------------------------------------------------------
@@ -509,11 +606,20 @@ def run(
     return code, capsys.readouterr().out
 
 
-def claimed(scene: Scene, name: str, issue: int = 10, login: str = USER) -> None:
-    """The claim `task create` made for `name`, held on GitHub now."""
-    if issue not in scene.github.items:
-        scene.github.add_issue(issue)
-    plant_claim(scene.github, issue, login, task=name)
+def claimed(scene: Scene, name: str, issue: int | None = None, login: str = USER) -> None:
+    """The claim `task create` made for `name`, held on GitHub now (on the task's own issue unless one is given)."""
+    number = issue if issue is not None else scene.issues_of[name][0]
+    if number not in scene.github.items:
+        scene.github.add_issue(number)
+    plant_claim(scene.github, number, login, task=name)
+
+
+def workflow_card(scene: Scene, name: str) -> None:
+    """The held card of a task whose issue carries the `workflow` label, on the command tests' GitHub."""
+    number = scene.issues_of[name][0]
+    scene.github.add_issue(number)
+    card = Card(issue=number, claimant=USER, claimed_at=scene.now(), task=name, exempt=True)
+    scene.github.create_comment(number, render_card(card, CONVENTIONS.claims))
 
 
 def test_the_report_lists_both_slots(
@@ -521,7 +627,8 @@ def test_the_report_lists_both_slots(
 ) -> None:
     scene.unit("a-one")
     scene.unit("b-fix", kind="fix")
-    scene.unit("t-flow", kind="tooling", workflow=True)
+    scene.unit("t-flow", kind="tooling")
+    workflow_card(scene, "t-flow")
     scene.task("c-fix", kind="fix")
     code, out = run(scene, monkeypatch, capsys)
     assert code == 0
@@ -547,7 +654,7 @@ def test_admit_reads_the_brief_from_standard_input(
         scene, monkeypatch, capsys, "--admit", "--agent-type=engineer", "--brief", "-", stdin=brief("d-four")
     )
     assert code == 3 and "no task slot is free" in out and "a-one" in out
-    claimed(scene, "a-one", 10)
+    claimed(scene, "a-one")
     code, out = run(scene, monkeypatch, capsys, "--admit", "--task", "a-one")
     assert code == 0 and "holds a task slot already" in out
 
@@ -566,7 +673,7 @@ def test_admit_reserves_only_when_asked(
 def test_a_task_file_whose_claim_was_released_is_refused(
     scene: Scene, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    scene.task("d-four")
+    scene.task("d-four", issues=(10,))
     scene.github.add_issue(10)  # the issue is there, the claim card is not
     code, out = run(scene, monkeypatch, capsys, "--admit", "--brief", "-", "--reserve", stdin=brief("d-four"))
     assert code == task_slots.REFUSED and "no claim to work under" in out and "not held now" in out
@@ -576,7 +683,7 @@ def test_a_task_file_whose_claim_was_released_is_refused(
 def test_a_claim_held_by_someone_else_or_for_another_task_is_refused(
     scene: Scene, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    scene.task("d-four")
+    scene.task("d-four", issues=(10,))
     claimed(scene, "d-four", login="alice")
     code, out = run(scene, monkeypatch, capsys, "--admit", "--task", "d-four")
     assert code == 3 and "claimed by alice" in out
@@ -589,7 +696,7 @@ def test_a_fix_task_works_under_the_claim_of_its_parent(
     scene: Scene, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     scene.task("e-fix", kind="fix", parent="the-parent")
-    claimed(scene, "the-parent")
+    claimed(scene, "the-parent", scene.issues_of["e-fix"][0])
     assert run(scene, monkeypatch, capsys, "--admit", "--task", "e-fix")[0] == 0
 
 
@@ -603,16 +710,59 @@ def test_a_held_claim_with_a_full_slot_is_refused_for_the_slot(
     assert code == 3 and "no task slot is free" in out and "no claim" not in out
 
 
-def test_a_github_that_cannot_be_read_is_not_a_refusal(
+class Down:
+    """A GitHub that cannot be read."""
+
+    def comments(self, number: int) -> list[object]:
+        raise ConfigError("cannot read from GitHub with gh (offline)")
+
+
+def test_a_github_that_cannot_be_read_skips_the_claim_but_still_counts_and_reserves(
     scene: Scene, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    class Down:
-        def comments(self, number: int) -> list[object]:
-            raise ConfigError("cannot read from GitHub with gh (offline)")
-
     scene.task("d-four")
-    with pytest.raises(ConfigError, match="offline"):
-        run(scene, monkeypatch, capsys, "--admit", "--task", "d-four", remote=Down())  # type: ignore[arg-type]
+    down: Remote = Down()  # type: ignore[assignment]
+    code, out = run(scene, monkeypatch, capsys, "--admit", "--task", "d-four", "--reserve", remote=down)
+    assert code == 0 and "1 of 3 task slots" in out
+    assert "warning: the claim of 'd-four' was not checked" in out and "offline" in out
+    assert (scene.scratch / "d-four" / task_slots.RESERVATION_FILE).is_file()
+
+
+def test_a_github_that_cannot_be_read_does_not_open_a_full_slot(
+    scene: Scene, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    full(scene)
+    scene.task("d-four")
+    down: Remote = Down()  # type: ignore[assignment]
+    code, out = run(scene, monkeypatch, capsys, "--admit", "--task", "d-four", "--reserve", remote=down)
+    assert code == task_slots.REFUSED and "no task slot is free" in out
+    assert not (scene.scratch / "d-four" / task_slots.RESERVATION_FILE).exists()
+
+
+def test_a_github_that_cannot_be_read_counts_a_workflow_task(scene: Scene) -> None:
+    full(scene)
+    scene.task("t-flow", kind="tooling", workflow=True)
+    scene.down = True
+    verdict = scene.admit(brief("t-flow"), agent_type="tooling")
+    assert not verdict.allowed and "no task slot is free" in verdict.message
+
+
+def test_the_report_counts_every_unit_when_github_cannot_be_read(
+    scene: Scene, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    scene.unit("a-one")
+    down: Remote = Down()  # type: ignore[assignment]
+    code, out = run(scene, monkeypatch, capsys, remote=down)
+    assert code == 0 and "task slots: 1 of 3 in use" in out and "could not be read from GitHub: a-one" in out
+
+
+def test_the_report_reads_the_workflow_label_from_the_claim_card(
+    scene: Scene, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    scene.unit("t-flow", kind="tooling")
+    workflow_card(scene, "t-flow")
+    code, out = run(scene, monkeypatch, capsys)
+    assert code == 0 and "task slots: 0 of 3 in use" in out and "workflow units until the cutover): t-flow" in out
 
 
 def test_the_bounded_gh_call_fails_with_an_oserror_when_it_takes_too_long(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -636,7 +786,7 @@ def test_a_task_id_with_no_task_file_is_refused_before_the_claim_is_asked(scene:
 
 def test_a_task_file_with_a_released_claim_is_refused_and_keeps_nothing(scene: Scene) -> None:
     scene.task("c-three")
-    scene.claim_result = "the claim on #10 is not held now (released, never made, or idle too long)"
+    scene.release("c-three")
     verdict = scene.admit(brief("c-three"), reserve=True)
     assert not verdict.allowed and "no claim to work under" in verdict.message and "task create" in verdict.message
     assert scene.claim_asked == ["c-three"] and scene.holders() == []
@@ -652,12 +802,12 @@ def test_a_held_claim_does_not_open_a_full_slot(scene: Scene) -> None:
     full(scene)
     scene.task("d-four")
     verdict = scene.admit(brief("d-four"))
-    assert not verdict.allowed and "no task slot is free" in verdict.message and scene.claim_asked == ["d-four"]
+    assert not verdict.allowed and "no task slot is free" in verdict.message and scene.claim_asked[0] == "d-four"
 
 
 def test_a_workflow_task_still_needs_its_claim(scene: Scene) -> None:
     scene.task("t-flow", kind="tooling", workflow=True)
-    scene.claim_result = "the claim on #10 is not held now"
+    scene.release("t-flow")
     assert not scene.admit(brief("t-flow"), agent_type="tooling").allowed
 
 
@@ -705,17 +855,36 @@ def test_a_permission_error_from_a_lock_being_deleted_is_contention_not_a_crash(
     assert failures == []
 
 
-def test_a_permission_error_that_never_clears_gives_up_with_a_config_error(
+def test_a_folder_that_cannot_be_written_fails_at_once_and_says_so(
     scene: Scene, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     def denied(path: object, flags: int, *rest: int) -> int:
         raise PermissionError(13, "denied")
 
     monkeypatch.setattr(os, "open", denied)
-    ticks = iter(range(0, 1000, 10))
+    ticks = iter(float(tick) for tick in range(1000))  # one second a tick
     with (
-        pytest.raises(ConfigError),
-        task_slots.locked(scene.scratch, clock=lambda: float(next(ticks)), sleep=lambda _: None),
+        pytest.raises(ConfigError, match="permission denied") as raised,
+        task_slots.locked(scene.scratch, clock=lambda: next(ticks), sleep=lambda _: None),
+    ):
+        pass
+    assert "holds the slot lock" not in str(raised.value)
+    assert next(ticks) < task_slots.LOCK_DENIED_SECONDS + 5  # it did not wait out LOCK_WAIT_SECONDS
+
+
+def test_a_permission_error_while_a_lock_file_stands_is_a_held_lock(
+    scene: Scene, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (scene.scratch / task_slots.LOCK_FILE).write_text("someone", encoding="utf-8")
+
+    def denied(path: object, flags: int, *rest: int) -> int:
+        raise PermissionError(13, "denied")
+
+    monkeypatch.setattr(os, "open", denied)
+    ticks = iter(float(tick) for tick in range(1000))
+    with (
+        pytest.raises(ConfigError, match="has held the slot lock"),
+        task_slots.locked(scene.scratch, clock=lambda: next(ticks), sleep=lambda _: None),
     ):
         pass
 
@@ -794,6 +963,36 @@ def test_a_lock_that_turned_fresh_before_the_rename_is_put_back(scene: Scene, mo
     monkeypatch.setattr(Path, "replace", renewed_first)
     task_slots._break_stale(lock)
     assert lock.read_text(encoding="utf-8") == "new holder" and list(scene.scratch.glob("*.stale-*")) == []
+
+
+def test_a_put_back_that_loses_to_a_new_holder_leaves_no_file_and_two_holders(
+    scene: Scene, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The window `_break_stale` documents: the waiter renamed a fresh lock aside (its holder renewed it between the look
+    # and the rename) and, before it could link it back, a third caller made a new lock. The put-back fails; the aside
+    # file is removed all the same, and both holders keep going until each releases only its own nonce.
+    lock = scene.scratch / task_slots.LOCK_FILE
+    lock.write_text("displaced", encoding="utf-8")
+    old = time.time() - task_slots.LOCK_STALE_SECONDS - 5
+    os.utime(lock, (old, old))
+    real_replace = Path.replace
+
+    def renewed_first(self: Path, target: Path) -> Path:
+        os.utime(self, None)
+        return real_replace(self, target)
+
+    def third_caller_first(source: object, target: object) -> None:
+        Path(str(target)).write_text("third", encoding="utf-8")
+        raise FileExistsError(17, "exists")
+
+    monkeypatch.setattr(Path, "replace", renewed_first)
+    monkeypatch.setattr(os, "link", third_caller_first)
+    task_slots._break_stale(lock)
+    assert lock.read_text(encoding="utf-8") == "third" and list(scene.scratch.glob("*.stale-*")) == []
+    task_slots._release(lock, "displaced")
+    assert lock.read_text(encoding="utf-8") == "third"  # the displaced holder does not remove the third's lock
+    task_slots._release(lock, "third")
+    assert not lock.exists()
 
 
 def test_a_lock_is_released_only_by_its_owner(scene: Scene) -> None:

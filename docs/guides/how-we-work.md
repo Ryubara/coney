@@ -535,7 +535,8 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
   a line `Task id: <id>` from `task create`, and a hook refuses the start when the task file is missing, the claim
   is no longer held or the slot of its kind is full, naming the busy units. There is no `Slot: none`. Units that
   build the new workflow (issues with the `workflow` label) hold no slot until the cutover.
-  The guard passes the call when its tool cannot run, and counts only units with a unit record: what it does not
+  The guard passes the call when its tool cannot run, checks no claim (but still counts the slot) when GitHub
+  cannot be read, and counts only units with a unit record: what it does not
   cover is listed in [Engineer slots](agents.md#slots).
 - **Merge on the automated gate, not on play-tests.** Pull requests merge once the
   [checks](testing.md#local-gate) pass; the coordinator fixes small gate failures (lint, formatting, generated

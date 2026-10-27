@@ -932,8 +932,8 @@ class TaskSlots:
     fix: int
     #: Whether `task start` and the coordinator's Agent guard refuse a unit over the limit; false only reports it.
     enforce: bool
-    #: Whether a task whose issue carried `claims.exempt_label` (the units that build the new workflow) holds no slot;
-    #: the cutover turns it off, and such a unit then counts like any other.
+    #: Whether a task whose issue carries `claims.exempt_label` (the units that build the new workflow, read from the
+    #: issue's held claim card) holds no slot; the cutover turns it off, and such a unit then counts like any other.
     exempt_workflow: bool
     #: The agent types that need a held claim and hold a slot when the coordinator starts one (`engineer`, `tooling`);
     #: a reviewer and the read-only helpers need neither.

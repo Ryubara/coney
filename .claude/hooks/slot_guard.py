@@ -1,17 +1,20 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Claude Code PreToolUse hook: the coordinator may not start an engineer whose slot is full.
+"""Claude Code PreToolUse hook: the coordinator may not start an engineer or tooling agent without a held claim and
+a free slot.
 
 The rule (docs/guides/agents.md#slots): a machine runs 3 task units and 1 fix unit at a time, a unit holds its slot
 until it passes Review, and the agent of a unit that waits for CI holds none. This guard asks `coney-tools task slots
 --admit` before each Agent call of the coordinator; the tool reads the task records (`TASK.md` for the kind, `unit.json`
-and the stamp log for the liveness, a short reservation for an agent that has not run `task start` yet) and the
-numbers in `.github/conventions.yml`, so none of that is copied here. The brief names the unit with a `Task id: <id>`
-line, or says `Slot: none <reason>` for work that has no unit.
+and the stamp log for the liveness, a short reservation for an agent that has not run `task start` yet), the claim
+cards on GitHub and the numbers in `.github/conventions.yml`, so none of that is copied here. The brief names the unit
+with a `Task id: <id>` line; an engineer or tooling agent without one is refused.
 
 Only the main session's coordinator is held to it: an engineer starting its own helpers (`agent_type` is its own) is
 not. The hook passes the call when `coney-tools` cannot run: a refusal is the tool's own exit code, `REFUSED`, with the
 reasons on its standard output; every other outcome (a crash exits 1, a bad option 2, no `uv` at all) is a line in
-`coney-hooks.log` and the call goes through, as the PR guard does. It is standard-library only,
+`coney-hooks.log` and the call goes through, as the PR guard does. A start the tool let through with a check skipped
+(GitHub could not be read, so the claim was not checked) prints a `warning:` line, which is logged too. It is
+standard-library only,
 registered through `dispatch.py`. Exit code 2 blocks the call and shows stderr to the agent; every other outcome
 exits 0.
 """
@@ -99,6 +102,10 @@ def refusal(payload: object, runner: Runner | None = None) -> str | None:
         return out + "\n"
     if code != 0:
         record(f"could not check the slots (exit {code}): {out[-300:]}")
+    else:
+        for line in out.splitlines():
+            if line.startswith("warning:"):
+                record(f"let through with a check skipped: {line[len('warning:') :].strip()[:300]}")
     return None
 
 
