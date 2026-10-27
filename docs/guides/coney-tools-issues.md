@@ -22,7 +22,7 @@ Drafts, checks and files issues in their form's exact shape ([Filing an issue](i
 read from `issues` in `.github/conventions.yml` and from the form files in `.github/ISSUE_TEMPLATE/`; nothing is
 copied into the code.
 
-* `draft` prints a blank body: the form's `###` headings in order, each preceded by an HTML comment with the form's
+* `template` prints a blank body: the form's `###` headings in order, each preceded by an HTML comment with the form's
   description, required or optional, and the allowed values (the Area's `A-` labels, a bug's dropdown choices), then
   the `From:` line. The form is `task` unless you name `bug`.
 * `check` validates a title and a body file (`-` reads stdin) and prints one line per problem, tagged with its kind
@@ -40,7 +40,7 @@ copied into the code.
   `issue set-parent` command to run if only that step fails. `--dry-run` checks and prints the `gh` commands, running
   none.
 * `edit` runs the same check on the new body (with `--title`, or the issue's current title read with `gh`) before
-  `gh issue edit`. `link` makes an existing issue a sub-issue of another.
+  `gh issue edit`. `set-parent` makes an existing issue a sub-issue of another.
 * `titles` lists the open issues whose title breaks the title rule, each with a proposed title, how sure the proposal is
   (`auto`, or `review` when a verb or an area was guessed or the title was cut) and the `gh issue edit` command that
   applies it; it changes nothing. `--apply` runs the `auto` renames, `--include-review` the others too (the

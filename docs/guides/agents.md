@@ -673,7 +673,7 @@ hook checks the one call that picks the copy (`.claude/hooks/pcsx2_guard.py`, th
   runs** (a local-scope `pcsx2` entry or an older checkout may not require it itself, and two agents that leave it out
   share the server's `default` connection), and checks it wherever it is given: it must be an id of your claiming
   commands and, on `pcsx2_connect`, the id the copy is claimed as, so nobody acts in another agent's name by mistake.
-  It does not check on a later call that the claim is still live (after a `release` or a takeover the old id still
+  It does not check on a later call that the claim is still live (after a `pcsx2 unclaim` or a takeover the old id still
   passes; the server frees an idle name within 30 minutes). Your tool list shows whether the installed server has
   the `agent` argument (it is among `pcsx2_connect`'s arguments). A command that gets no reply in time closes its
   connection (a late reply could answer your next command), and closing one fails the command waiting on it at once
@@ -696,7 +696,7 @@ hook checks the one call that picks the copy (`.claude/hooks/pcsx2_guard.py`, th
 to a copy you did not claim, but another agent's `pcsx2_connect` to its *own* claim moves yours (your next write then
 lands in its game), and `mode: "debug"` leaves the PINE half of the previous connection. There, **call `pcsx2_status`
 before the first write of a task and after any pause** to see which copy you are connected to, and prefer what needs no
-shared server: `coney-tools pcsx2 ...` (`record`, `recipe`, `clip`) and, from a script, `DebugClient.claimed("<your
+shared server: `coney-tools pcsx2 ...`, `trace original`, `clips record` and, from a script, `DebugClient.claimed("<your
 id>")` (`coney_tools.debug_server`), which connects to the debug server of the claim you hold and refuses any other.
 `coney-tools pcsx2 check-claim --agent <id> --debug-port N --pine-port M` makes the claim check on a pair of ports.
 

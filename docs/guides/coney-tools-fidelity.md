@@ -134,7 +134,7 @@ the working tree.
     * The exit code is 0 for a pass (which is recorded in the ledger), 1 for a refusal with the reasons, and 2 when
       the branch cannot be found.
     * The release step calls `orig_review.gate` (or `check_verdict_file`, which writes nothing).
-* `record` adds the rows of sweep `FINDINGS.tsv` files ([Sweep findings](review/orig.md#findings)) to the ledger.
+* `record-findings` adds the rows of sweep `FINDINGS.tsv` files ([Sweep findings](review/orig.md#findings)) to the ledger.
   Each row is matched by address and Coney name to the units at `--ref`, the commit the sweep read; rows that match
   nothing are printed. It then prints how many units at HEAD are unreviewed, stale, or in each class.
 

@@ -17,7 +17,7 @@ are measurements of the game and stay in your scratch folder.
 uv run --project python coney-tools trace original research/traces/scenarios/walk60.toml --out ../../scratch/walk60-original.csv
 ```
 
-`record` copies the scenario's quick-save slot (read only), or the state file it names under `scratch_dir`, to
+`trace original` copies the scenario's quick-save slot (read only), or the state file it names under `scratch_dir`, to
 `<scratch_dir>/pcsx2/<scenario>.p2s` with the patches applied, starts PCSX2 on the copy with `-fastboot -statefile`
 (through a hard link to the disc when its path has commas or parentheses), waits until the patched state runs, plays the
 script and samples every update, then closes PCSX2 and warns if a file appeared in its `sstates/` folder. The folders

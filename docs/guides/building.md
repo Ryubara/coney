@@ -486,8 +486,8 @@ that a change to the code also changes the docs ([Research workflow](research-wo
 Screenshots sections and no unticked item in the Checklist
 ([CONTRIBUTING.md](repo:CONTRIBUTING.md#setting-up),
 [What a pull request shows](testing.md#pr-evidence)).
-`coney-tools wad` reads the archive on your own disc (`info`, `list`, `extract`, `names`), `coney-tools pcsx2` and
-`coney-tools trace` record the original's per-update traces in PCSX2 and compare them with Coney's; [The coney-tools
+`coney-tools wad` reads the archive on your own disc (`info`, `list`, `extract`, `recover-names`), `coney-tools pcsx2`
+and `coney-tools trace` record the original's per-update traces in PCSX2 and compare them with Coney's; [The coney-tools
 command line](coney-tools.md) shows how to run each command.
 
 ## Formatting and pre-commit
