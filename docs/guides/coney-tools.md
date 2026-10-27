@@ -105,13 +105,17 @@ so they go, with these ids, once those pages are touched and cite the disc page.
 Many commands were renamed in October 2026 so that each name says what the command does, no two names clash (`ci
 run` sat beside `task check`) and the halves of a pair share a group (`trace original` beside `trace coney`). Until
 the workflow cutover an old name still works: `coney-tools` rewrites it to the new one before it runs and says so in one
-line on stderr, such as ``coney-tools: `ci run` is renamed to `ci run`; the old name stops working at the
-cutover``. The old names, and the four renamed options (`workspace clean --stale-wait-hours`, `extract --xbox`, `build
---max-wait`, `clips clean --dry-run`, which is the default now), live in one table,
-[renames.py](repo:python/src/coney_tools/renames.py); no page, parser or generated block knows them. Write the new
-names; the guards that match a command by name (`.claude/hooks/hooks.toml`, the PCSX2 guard) match both until the
-cutover deletes the old ones. The two review commands that moved to [`legacy`](coney-tools-repo.md#legacy) keep their
-old names until that group goes.
+line on stderr, such as ``coney-tools: `check changed` is renamed to `ci run`; the old name stops working at the
+cutover``. The old names, and the four options that changed (`workspace clean --shell-hours` is now
+`--stale-wait-hours`, `extract --xbox` is `--xbox-disc`, `build --slots-wait-timeout` is `--max-wait`, and `clips
+clean --dry-run` is gone because a dry run is the default now), live in one table,
+[renames.py](repo:python/src/coney_tools/renames.py); no parser or generated block knows them. Write the new names.
+To find the new name of an old one you meet in a page, run the old command with `--help`: the notice names the new
+one and nothing else happens. The pages that still carry an old name are the 13 legacy research pages (a name-only
+edit would count as touching them, [Legacy pages](writing-docs.md#legacy-pages)) and the history sentences in a few
+others ("recorded with `pcsx2 record`"). The guards that match a command by name (`.claude/hooks/hooks.toml`, the
+PCSX2 guard) match both names until the cutover deletes the old ones. The two review commands that moved to
+[`legacy`](coney-tools-repo.md#legacy) stay, under their new names, until `task review` and `pr open` replace them.
 
 ## The parameter reference {#parameter-reference}
 

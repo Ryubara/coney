@@ -1,10 +1,10 @@
 # The rules for running the repository: commits, pull requests, issues, labels, merging and hygiene. This file is the
-# one source of truth for every rule a program can check. coney-tools (repo check, check-title, check-docs,
-# check-body, labels, check changed) reads it through coney_tools/conventions.py, which refuses an unknown key, a
-# wrong type and a duplicate key, so a typo or a bad merge fails loudly instead of being ignored. The issue forms, the
-# pull request template and the GitHub ruleset are not read from here: they stay in their own files and a test checks
-# them against this one. Prose (the why, the judgement) lives in the guides: docs/guides/repo-conventions.md says
-# what each key means and where its reasons are.
+# one source of truth for every rule a program can check. coney-tools (repo check-conventions, pr check-title,
+# check-docs and check-body, repo sync-labels, ci run) reads it through coney_tools/conventions.py, which refuses an
+# unknown key, a wrong type and a duplicate key, so a typo or a bad merge fails loudly instead of being ignored. The
+# issue forms, the pull request template and the GitHub ruleset are not read from here: they stay in their own files
+# and a test checks them against this one. Prose (the why, the judgement) lives in the guides:
+# docs/guides/repo-conventions.md says what each key means and where its reasons are.
 #
 # Change a rule here, run `coney-tools repo render` (it rewrites the blocks that show the lists in AGENTS.md,
 # CONTRIBUTING.md and the guides) and commit the result in the same commit as the guide that explains the rule. YAML
@@ -219,7 +219,7 @@ pull_requests:
       no_ai: "a person"
     # The Model line must also name each model that a `Co-Authored-By` trailer (commits.trailers) of the branch's
     # commits names, matched case-insensitively anywhere on the line; checked where the branch is at hand
-    # (docs/guides/coney-tools-repo.md, repo check-body).
+    # (docs/guides/coney-tools-pr.md, pr check-body).
     model: {label: "Model:", none: "n/a", names_trailer_models: true}
   # The release gate on the reviewer agent's description verdict (`coney-tools legacy pr-review`, `legacy check-pr-review`). The agent
   # (.claude/agents/<agent>.md) writes both files next to the description file. The verdict binds to what it
@@ -1059,7 +1059,7 @@ runs:
   max_bytes: 8192                                # the writer checks it too; the repository's file check is 512 KB
   max_values: 64                                 # values, addresses and run args together
   max_text: 600                                  # characters of the method, and of any other text field
-  kinds: [recipe, trace, method]                 # recipe: pcsx2 recipe run; trace: pcsx2 record; method: pcsx2 record-run
+  kinds: [recipe, trace, method]    # recipe: pcsx2 recipes run; trace: trace original; method: pcsx2 record-run
 
 conclave:
   # Conclave, the Claude Code mod in tools/claude-mod (docs/guides/conclave.md). The mod only draws what

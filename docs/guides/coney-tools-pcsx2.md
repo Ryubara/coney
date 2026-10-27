@@ -194,7 +194,7 @@ and records the level, checkpoint, player position and heading by running the `w
 state's own memory, or over a claimed copy's PINE port with `--copy`; flags win over both, and `unknown` is allowed for
 the level and checkpoint. The PCSX2 version and the date come from the file, and the patches it holds from comparing
 its memory with `research/traces/patches/`. Catalog writes hold a lock file, so two agents adding at once both
-land. `use` writes a copy of a state into the claimed copy's `library-states/` folder (after checking the library file
+land. `hand-out` writes a copy of a state into the claimed copy's `library-states/` folder (after checking the library file
 against the catalog), with any `--patch` applied as `states patch` does, and prints the path; `--launch` starts PCSX2
 on it. The library file is never played on or changed. `verify` hashes the files against the catalog and lists any
 that is missing, changed or not listed (exit code 1). `render` rewrites the list between the markers of

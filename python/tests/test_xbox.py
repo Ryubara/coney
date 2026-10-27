@@ -423,7 +423,7 @@ def test_resource_kind_by_chunk_types() -> None:
 
 
 def test_files_and_info(xiso: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    assert main(["xbox", "files", str(xiso)]) == 0
+    assert main(["xbox", "disc-files", str(xiso)]) == 0
     out = capsys.readouterr().out
     assert "audio/xbox000.xwb" in out and "partition at byte 0x0: 5 files, 1 directories" in out
     names = tmp_path / "names.txt"
@@ -455,7 +455,7 @@ def test_names_trusts_candidates_and_checks_guesses(
     candidates = tmp_path / "ps2names.txt"
     candidates.write_text("global.pak\n", encoding="utf-8")
     out = tmp_path / "found.txt"
-    assert main(["xbox", "names", str(xiso), str(out), "--candidates", str(candidates)]) == 0
+    assert main(["xbox", "match-names", str(xiso), str(out), "--candidates", str(candidates)]) == 0
     assert "recovered 5 names for 5 of 9 entries" in capsys.readouterr().out
     # global.pak is a candidate and intro.scn the record's own name; level7.lev comes from the level range,
     # level7_objs.txt and combat_room.lev (a bare word) from the Lua bytecode. start.lua is never mentioned, and
@@ -470,7 +470,7 @@ def test_names_trusts_candidates_and_checks_guesses(
 
 
 def test_names_refuses_a_file_inside_the_repository(xiso: Path, repo: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    assert main(["xbox", "names", str(xiso), str(repo / "names.txt")]) == 2
+    assert main(["xbox", "match-names", str(xiso), str(repo / "names.txt")]) == 2
     assert "inside the repository" in capsys.readouterr().err
 
 
@@ -510,7 +510,7 @@ def ps2_folder(root: Path) -> Path:
 
 
 def test_resources_and_ps2_overlap(xiso: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    assert main(["xbox", "resources", str(xiso), "--ps2", str(ps2_folder(tmp_path / "ps2"))]) == 0
+    assert main(["xbox", "resource-info", str(xiso), "--ps2", str(ps2_folder(tmp_path / "ps2"))]) == 0
     out = capsys.readouterr().out
     assert "containers: 1 packs, 3 standalone resources" in out
     assert "resources: 5, chunks: 7" in out
@@ -520,7 +520,7 @@ def test_resources_and_ps2_overlap(xiso: Path, tmp_path: Path, capsys: pytest.Ca
 
 
 def test_textures_counts_and_ps2_comparison(xiso: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    assert main(["xbox", "textures", str(xiso), "--ps2", str(ps2_folder(tmp_path / "ps2"))]) == 0
+    assert main(["xbox", "texture-info", str(xiso), "--ps2", str(ps2_folder(tmp_path / "ps2"))]) == 0
     out = capsys.readouterr().out
     assert "texture chunks: 3, readable: 3" in out
     assert "DXT1  2" in out and "DXT4/5  1" in out

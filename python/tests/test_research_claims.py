@@ -86,7 +86,7 @@ def make_repo(tmp_path: Path, text: str = GRABS, *, records: bool = True) -> Pat
             id=RUN,
             date="2026-10-23",
             kind="recipe",
-            tool="pcsx2 recipe run",
+            tool="pcsx2 recipes run",
             agent="a",
             agent_type="engineer",
             model="m",

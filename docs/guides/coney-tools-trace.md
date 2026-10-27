@@ -18,9 +18,8 @@ per character update, then closes PCSX2. It prints the updates recorded, the rea
 updates missed. The scenario names a quick-save slot (`slot`) or a state file under the scratch folder (`state`);
 `--state` copies another state, `--attach` records a PCSX2 already running a patched state, and `--keep-open` leaves
 PCSX2 running; the claim is released at the end when `trace original` made it. The CSV is a measurement of the game: it
-is refused inside the repository. With
-hooks among the scenario's patches it also writes each hook's call log to `<CSV stem>.<hook>.csv` beside it, and
-makes the scenario's `calls` ([Hooks](research-traces.md#hooks)).
+is refused inside the repository. With hooks among the scenario's patches it also writes each hook's call log to
+`<CSV stem>.<hook>.csv` beside it, and makes the scenario's `calls` ([Hooks](research-traces.md#hooks)).
 
 `--recording P2M2` takes the pad from a PCSX2 input recording instead of the scenario's input script, so a runtime
 trace can be repeated exactly: the recording (and its start savestate `<P2M2>_SaveState.p2s`, patched as the

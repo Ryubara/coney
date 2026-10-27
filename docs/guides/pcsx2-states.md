@@ -21,9 +21,9 @@ uv run --project python coney-tools pcsx2 claim --agent ME
 uv run --project python coney-tools pcsx2 states hand-out ID --copy COPY --agent ME [--patch NAME ...] [--launch]
 ```
 
-`use` writes a **copy** of the state into the claimed copy's `library-states/` folder (the library's file is checked
+`hand-out` writes a **copy** of the state into the claimed copy's `library-states/` folder (the library's file is checked
 against its hash first and is never played on), with any patches your recipe needs applied
-([`prepare-state`](coney-tools-pcsx2.md#pcsx2) does the same for a file of your own), and prints its path. With `--launch`
+([`states patch`](coney-tools-pcsx2.md#pcsx2) does the same for a file of your own), and prints its path. With `--launch`
 it also starts PCSX2 on it. Then run recipes, record a trace or take pictures as usual
 ([Driving PCSX2](research-tools.md#driving-pcsx2)). A state that already holds a patch lists it in `show`; do not
 apply that patch again, the copy would be refused.

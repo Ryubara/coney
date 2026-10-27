@@ -158,8 +158,8 @@ def test_text_writes_the_title_and_the_description_that_the_repo_checks_accept(
     body = (built.unit.dir / "PR-BODY.md").read_text(encoding="utf-8")
     assert title == "gameplay: Fix the widget ready frame\n" and f"pr text work: ok: {title.strip()}" in out
     assert PARAGRAPH in body and "\r" not in body and body.endswith("\n")
-    assert main(["repo", "check-title", str(built.unit.dir / "PR-TITLE.txt")]) == 0
-    assert main(["repo", "check-body", "--body", str(built.unit.dir / "PR-BODY.md"), "--title", title.strip()]) == 0
+    assert main(["pr", "check-title", str(built.unit.dir / "PR-TITLE.txt")]) == 0
+    assert main(["pr", "check-body", "--body", str(built.unit.dir / "PR-BODY.md"), "--title", title.strip()]) == 0
 
 
 def test_text_writes_nothing_when_a_check_fails_or_on_a_dry_run(

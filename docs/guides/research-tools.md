@@ -74,7 +74,7 @@ render`.
 **States first.** Do not drive the original to a place someone has already been: the [state
 library](pcsx2-states.md) keeps shared save states (a pedestrian to grab, a fence to jump, a store door, a window to
 break), each with its level, checkpoint, the player's position and what it is set up for. **Check it first** with
-`coney-tools pcsx2 states list`, start a claimed copy on one with `states use ID --copy COPY --agent ID --launch` (it
+`coney-tools pcsx2 states list`, start a claimed copy on one with `states hand-out ID --copy COPY --agent ID --launch` (it
 hands out a copy, so the library file is never changed), and **add any state you make that others could use** with
 `states add`, saying in `--made-by` how you got there. It is also the fast way back to a level or checkpoint, in place
 of the `load-checkpoint` recipe's slow reload.

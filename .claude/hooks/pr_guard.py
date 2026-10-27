@@ -127,7 +127,7 @@ def problems(call: PrCall, runner: Runner) -> list[str]:
     found: list[str] = []
     title = call.title if call.title is not None and "$" not in call.title else None
     if title is not None:
-        code, out = runner(["repo", "check-title", "-"], title + "\n")
+        code, out = runner(["pr", "check-title", "-"], title + "\n")
         if _refused(code, out):
             found.append(out)
     if call.body_file is None or "$" in call.body_file or "%" in call.body_file:
@@ -138,7 +138,7 @@ def problems(call: PrCall, runner: Runner) -> list[str]:
             return found
         path = Path(call.cwd) / path
     if path.is_file():
-        args = ["repo", "check-body", "--body", str(path)]
+        args = ["pr", "check-body", "--body", str(path)]
         if title is not None:
             args += ["--title", title]
         if call.attach:

@@ -412,7 +412,7 @@ def test_pcsx2_clip_uses_pcsx2s_own_capture_and_never_the_screen(
             (videos / "The Warriors 2026-10-12.mp4").write_bytes(b"\0" * 100)
 
     def no_screen(*args: Any, **kwargs: Any) -> Any:
-        raise AssertionError("pcsx2 clip read the screen or a window")
+        raise AssertionError("clips record read the screen or a window")
 
     def encode(args: Sequence[str], runner: Any = None) -> None:
         clips.refuse_screen_capture(args)  # its input is PCSX2's own capture file

@@ -319,9 +319,8 @@ def _patches_in(memory: StateMemory) -> tuple[str, ...]:
 
 def run_use(library: Library, state_id: str, copy: str, agent: str, patch_names: list[str], launch: bool) -> int:
     """`states hand-out`: write a copy of the state into the claimed copy's `library-states/` folder (with the named
-    patches
-    applied) and print its path; the library file is only read, and checked against the catalog first. With `launch`
-    it also starts PCSX2 on the copy."""
+    patches applied) and print its path; the library file is only read, and checked against the catalog first. With
+    `launch` it also starts PCSX2 on the copy."""
     registry = claims.default_registry()
     claim = registry.require_claim(agent, copy)
     entry = library.get(state_id)

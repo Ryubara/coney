@@ -381,7 +381,7 @@ kept by the code, not by memory or by this page:
 | --- | --- |
 | **Only the game's own picture.** Never a screen, desktop or window capture. | Coney's frames are read back from its own frame buffer (`RenderEngine::setFrameTap()`) and piped to FFmpeg's standard input, its only input (`clips::videoEncodeArguments()`, tested). The original's come from PCSX2's own capture of its GS output (`clips record`), re-encoded from that file. Every FFmpeg command `coney-tools` runs goes through `clips.run_ffmpeg`, which refuses any capture device (`gdigrab`, `ddagrab`, `x11grab`, `avfoundation`, `dshow`, `lavfi`, ...) and any input that is not a file; a test checks that `clips record` never calls `pcsx2 screenshot`'s window read. |
 | **Nothing private in the frames or the file.** No debug overlay, log, FPS counter, path, user name or window chrome; no metadata. | Coney reads the frame before the debug menus and the developer overlay are drawn and switches the debug lines off while recording; there is no window chrome in a frame buffer. `clips record` turns every PCSX2 on-screen display element off for the run. Every encode strips metadata and chapters (`-map_metadata -1`, `-map_chapters -1`), writes bit-exact headers and drops x264's settings note; a clip's name is plain letters, digits, `.`, `_`, `-`. `clips check` and `clips publish` refuse a clip whose ffprobe tags go beyond the fixed ones every MP4 carries. |
-| **Deleted once uploaded.** | `coney-tools clips publish` is the only upload: it posts the comment (or description) with `gh --attach` and deletes each clip only when gh reports success, keeping them and saying so otherwise. `coney-tools clips clean` deletes clips older than 24 hours from every task's clips folder. |
+| **Deleted once uploaded.** | `coney-tools clips publish` is the only upload: it posts the comment (or description) with `gh --attach` and deletes each clip only when gh reports success, keeping them and saying so otherwise. `coney-tools clips clean` lists the clips older than 24 hours in every task's clips folder, and with `--apply` deletes them. |
 | **Only in the scratch folder.** `<workspace>/scratch/<task>/clips/`, never in a worktree. | `coney --record`, `clips record`, `clips check` and `clips publish` refuse a path inside any git checkout or outside a `clips` folder (`clips::checkClipPath()`, `platform::checkClipLocation()`, `clips.check_clip_path`). |
 | **Short.** 10 seconds by default and at most. | `--record-seconds` and `clips record --seconds` refuse more; every encode cuts at the length (`-t`); `clips publish` refuses a longer file. The cap is `workspace.clips.max_seconds` in [.github/conventions.yml](repo:.github/conventions.yml), and a test checks that Coney's `kMaxClipSeconds` equals it. |
 
@@ -397,9 +397,9 @@ uv run --project python coney-tools clips record STATE --out "$CLIPS/original.mp
 ```
 
 An agent that cannot publish (agents do not post to GitHub: the coordinator does) names its clips in its report and
-leaves them in the clips folder; the coordinator publishes them after it opens the pull request, and `clips clean`
-removes any left behind. Never attach a clip with `gh` directly, never commit one, and never reference one in
-`PR.md` (`check-body` refuses the local path): the clip goes in as a comment of its own. The commands:
+leaves them in the clips folder; the coordinator publishes them after it opens the pull request, and
+`clips clean --apply` removes any left behind. Never attach a clip with `gh` directly, never commit one, and never
+reference one in `PR.md` (`pr check-body` refuses the local path): the clip goes in as a comment of its own. The commands:
 [coney-tools clips](coney-tools-pcsx2.md#clips), [Recording a clip](running-options.md#record).
 
 ## Where the checks run {#where}

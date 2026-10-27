@@ -280,9 +280,10 @@ repository, and a guard refuses its output in the repository ([coney-tools](../.
 111 of the 467 chunks have no recovered file name, so their decompiles are named by the entry's hash
 ([Compiled Lua chunks](lua-chunks.md#open-questions)). What depends on it: research finds a level's script by name
 in the index, so an unnamed script is found only through the natives and handlers the index lists for it. How to
-find out: `wad names` keeps only names it finds as strings ([coney-tools](../../guides/coney-tools-disc.md#names)); the
-rest could come from names a script builds at run time (a `doFile` of a concatenated name, read in the decompiles
-that call it) hashed the same way ([Name hashing](../name-hash.md)).
+find out: `wad recover-names` keeps only names it finds as strings
+([coney-tools](../../guides/coney-tools-disc.md#names)); the rest could come from names a script builds at run time
+(a `doFile` of a concatenated name, read in the decompiles that call it) hashed the same way
+([Name hashing](../name-hash.md)).
 
 ### Whether the game links Lua's parser {#q-parser}
 

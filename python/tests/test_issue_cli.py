@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for coney_tools.issue_cli (`issue template`, `check`, `create`, `edit`, `link`) and the `issue.form` audit
-rule.
+"""Tests for coney_tools.issue_cli (`issue template`, `check`, `create`, `edit`, `set-parent`) and the `issue.form`
+audit rule.
 
 `gh` is a recording fake, so nothing reaches the network; the files on main are a made-up tree.
 """
@@ -77,14 +77,14 @@ def write(tmp_path: Path, text: str) -> str:
 
 
 def test_draft_prints_the_task_form_by_default_and_the_bug_form_on_request(capsys: CaptureFixture[str]) -> None:
-    assert cli.main(["issue", "draft"]) == 0
+    assert cli.main(["issue", "template"]) == 0
     assert "### Fix list or steps" in capsys.readouterr().out
-    assert cli.main(["issue", "draft", "bug"]) == 0
+    assert cli.main(["issue", "template", "bug"]) == 0
     assert "### Steps to reproduce" in capsys.readouterr().out
 
 
 def test_draft_of_an_unknown_form_is_a_usage_error(capsys: CaptureFixture[str]) -> None:
-    assert cli.main(["issue", "draft", "epic"]) == 2
+    assert cli.main(["issue", "template", "epic"]) == 2
     assert "no form 'epic'" in capsys.readouterr().err
 
 

@@ -451,8 +451,8 @@ def add_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser]) -> N
         description=(
             "Prints what waits for the coordinator: the local parts always (PCSX2 copies, build slots and results, "
             "the release queue's PR*.md files, the tracks' STATUS.md), and with --github the open issues, pull "
-            "requests (with the pr-health report) and the CI queue. `action` lists stable ids of the work waiting. "
-            "Exit code 0; a section that cannot be read carries its error."
+            "requests (with the `pr list-stuck` report) and the CI queue. `action` lists stable ids of the work "
+            "waiting. Exit code 0; a section that cannot be read carries its error."
         ),
     )
     status.add_argument("--json", action="store_true", help="print the report as JSON")

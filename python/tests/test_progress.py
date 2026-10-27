@@ -347,7 +347,7 @@ def test_render_refuses_inconsistent_inputs(
 def test_show_json(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
     """`show --json` reports the shares, milestones and subsystems computed from the inputs."""
     monkeypatch.chdir(make_checkout(tmp_path, ONE_FUNCTION, ONE_TAG, ONE_LISTING))
-    assert main(["progress", "show", "--json"]) == 0
+    assert main(["progress", "summary", "--json"]) == 0
     data = json.loads(capsys.readouterr().out)
     assert data["reimplemented"] == {"bytes": 128, "total": 3072, "percent": 4.167, "functions": 1}
     assert data["researched"]["bytes"] == 1024
@@ -512,13 +512,13 @@ def test_sizes_command_checks_the_listings_sizes(
     """The size of a reimplemented function is the Ghidra listing's; the command holds it to the disc's code."""
     root, disc = sizes_checkout(tmp_path, "0x00001010\t16\tF1010\t0\n")
     monkeypatch.chdir(root)
-    assert main(["progress", "sizes", str(disc)]) == 0
+    assert main(["progress", "check-sizes", str(disc)]) == 0
     out = capsys.readouterr().out
     assert "0x00001010 F1010: size 16, span to the next known function 16" in out
     assert "0x00001020 F1020: size -, span to the next known function 16" in out  # the listing has no function here
     # A size past the next function is an error.
     (root / "docs" / "progress" / "ghidra-functions.tsv").write_text("0x00001020\t32\tF1020\t0\n", encoding="utf-8")
-    assert main(["progress", "sizes", str(disc)]) == 1
+    assert main(["progress", "check-sizes", str(disc)]) == 1
     assert "error: size 32 runs past" in capsys.readouterr().out
 
 
@@ -528,7 +528,7 @@ def test_sizes_span_stops_at_the_next_reimplemented_function(
     """A reimplemented function nothing calls (a virtual method) still ends the span of the one before it."""
     root, disc = sizes_checkout(tmp_path, "0x00001010\t8\tF1010\t0\n", (0x1010, 0x1018))
     monkeypatch.chdir(root)
-    assert main(["progress", "sizes", str(disc)]) == 0
+    assert main(["progress", "check-sizes", str(disc)]) == 0
     out = capsys.readouterr().out
     assert "0x00001010 F1010: size 8, span to the next known function 8" in out
     assert "0x00001018 F1018: size -, span to the next known function 8" in out
@@ -538,7 +538,7 @@ def test_sizes_command_with_nothing_reimplemented(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     monkeypatch.chdir(make_checkout(tmp_path / "repo"))
-    assert main(["progress", "sizes", str(tmp_path)]) == 0
+    assert main(["progress", "check-sizes", str(tmp_path)]) == 0
     assert "nothing to check" in capsys.readouterr().out
 
 
@@ -644,7 +644,7 @@ def test_understood_is_rendered(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     page_path.write_text(RESEARCH_PAGE.replace("| `Alpha_Step` | |", "| `Alpha_Step` | inferred |"), encoding="utf-8")
     assert main(["progress", "render", str(out)]) == 0
     assert understood.read_text(encoding="utf-8") != before
-    assert main(["progress", "show", "--json"]) == 0
+    assert main(["progress", "summary", "--json"]) == 0
 
 
 def test_without_a_listing_nothing_is_measured(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -695,11 +695,11 @@ def test_no_size_says_why(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsy
     """Without the listing file the sizes are missing for want of it; with it, for want of a function at the address."""
     bare = make_checkout(tmp_path / "bare", ONE_FUNCTION, ONE_TAG)
     monkeypatch.chdir(bare)
-    assert main(["progress", "show"]) == 0
+    assert main(["progress", "summary"]) == 0
     assert "1 functions have no size: there is no docs/progress/ghidra-functions.tsv" in capsys.readouterr().out
     assert "no docs/progress/ghidra-functions.tsv" in progress_render.render_page(progress.load(bare))
     lacking = make_checkout(tmp_path / "lacking", ONE_FUNCTION, ONE_TAG, "0x00001100\t8\tOther\t0\n")
     monkeypatch.chdir(lacking)
-    assert main(["progress", "show"]) == 0
+    assert main(["progress", "summary"]) == 0
     assert "1 functions have no size: the Ghidra listing has no function at their address" in capsys.readouterr().out
     assert "the Ghidra listing has no function at their address." in progress_render.render_page(progress.load(lacking))

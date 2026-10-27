@@ -188,21 +188,21 @@ def test_render_and_check(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsy
     _checkout(tmp_path, GOOD)
     monkeypatch.chdir(tmp_path)
     folder = tmp_path / natives.PAGES_DIR
-    assert main(["natives", "render", "--check"]) == 1
+    assert main(["bindings", "render", "--check"]) == 1
     assert not folder.exists()
-    assert main(["natives", "render"]) == 0
-    assert main(["natives", "render", "--check"]) == 0
+    assert main(["bindings", "render"]) == 0
+    assert main(["bindings", "render", "--check"]) == 0
     # A CRLF checkout of the same text is still up to date.
     index = folder / "index.md"
     index.write_bytes(index.read_bytes().replace(b"\n", b"\r\n"))
-    assert main(["natives", "render", "--check"]) == 0
+    assert main(["bindings", "render", "--check"]) == 0
     (folder / "world.md").write_text("edited\n", encoding="utf-8")
     (folder / "old.md").write_text("a removed category\n", encoding="utf-8")
-    assert main(["natives", "render", "--check"]) == 1
+    assert main(["bindings", "render", "--check"]) == 1
     assert "world.md, old.md" in capsys.readouterr().out
-    assert main(["natives", "render"]) == 0
+    assert main(["bindings", "render"]) == 0
     assert not (folder / "old.md").exists()
-    assert main(["natives", "render", "--check"]) == 0
+    assert main(["bindings", "render", "--check"]) == 0
 
 
 def test_render_refuses_a_broken_file(
@@ -211,7 +211,7 @@ def test_render_refuses_a_broken_file(
     """Problems are printed and nothing is written."""
     _checkout(tmp_path, GOOD.replace("category: world", "category: weather"))
     monkeypatch.chdir(tmp_path)
-    assert main(["natives", "render"]) == 1
+    assert main(["bindings", "render"]) == 1
     assert "weather.yaml: not a category" in capsys.readouterr().out
     assert not (tmp_path / natives.PAGES_DIR).exists()
 
@@ -220,7 +220,7 @@ def test_stats(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.C
     """`stats` prints the counts."""
     _checkout(tmp_path, GOOD)
     monkeypatch.chdir(tmp_path)
-    assert main(["natives", "stats"]) == 0
+    assert main(["bindings", "stats"]) == 0
     out = capsys.readouterr().out
     assert "bindings: 3 (4 registrations)" in out
     assert "used by scripts: 2; boot to menu: 1; mission 1: 1" in out
@@ -297,9 +297,9 @@ def test_cpp_table(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pyte
     _checkout(tmp_path, GOOD)
     monkeypatch.chdir(tmp_path)
     (tmp_path / "src" / "debug").mkdir(parents=True)
-    assert main(["natives", "cpp", "--check"]) == 1
-    assert main(["natives", "cpp"]) == 0
-    assert main(["natives", "cpp", "--check"]) == 0
+    assert main(["bindings", "render-cpp", "--check"]) == 1
+    assert main(["bindings", "render-cpp"]) == 0
+    assert main(["bindings", "render-cpp", "--check"]) == 0
     text = (tmp_path / natives_cpp.CPP_FILE).read_text(encoding="utf-8")
     assert (
         'kArgs_MakeThing{{{"label", A::String, "", 0}, {"pos", A::NumberTable, "", 3}, '
@@ -310,7 +310,7 @@ def test_cpp_table(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pyte
     # Categories in page order: world before sound before debug.
     assert text.index('{"MakeThing"') < text.index('{"PlayIt"') < text.index('{"unusedThing"')
     (tmp_path / natives_cpp.CPP_FILE).write_text("stale\n", encoding="utf-8")
-    assert main(["natives", "cpp", "--check"]) == 1
+    assert main(["bindings", "render-cpp", "--check"]) == 1
     assert "stale" in capsys.readouterr().out
 
 

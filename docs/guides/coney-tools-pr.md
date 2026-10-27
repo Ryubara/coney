@@ -247,12 +247,11 @@ findings: `add S-conflict to #12 (conflict with main)`, `remove S-failing from #
 `--labels --apply`). `hygiene.pr_health.labels` in `.github/conventions.yml` maps the causes to labels (`conflict` to
 `S-conflict`, `checks-failed` to `S-failing`); a pull request with the cause gets the label, one without it loses the
 label (a draft is never stuck, so it carries neither), and no other label is ever added or removed.
-`--labels --apply` makes the
-changes through `gh api` on the issue labels endpoints and needs a token that may write issues; the exit code is still
-the findings' (the `hygiene` workflow accepts 1). While GitHub answers `UNKNOWN` for a pull request's mergeability the
-command rereads up to `hygiene.pr_health.unknown_retries` times, `unknown_wait_seconds` apart, and a pull request still
-unknown keeps its conflict label as it is. The labels must exist in the repository with their colours: `repo sync-labels
---apply` creates them from `labels.list`.
+`--labels --apply` makes the changes through `gh api` on the issue labels endpoints and needs a token that may write
+issues; the exit code is still the findings' (the `hygiene` workflow accepts 1). While GitHub answers `UNKNOWN` for a
+pull request's mergeability the command rereads up to `hygiene.pr_health.unknown_retries` times,
+`unknown_wait_seconds` apart, and a pull request still unknown keeps its conflict label as it is. The labels must
+exist in the repository with their colours: `repo sync-labels --apply` creates them from `labels.list`.
 
 **`--rerun`** restarts CI that failed for a reason that no longer holds, so a stuck pull request does not wait for a
 person to notice. It adds a line per run, `#<n> <branch> rerun <checks> (run <id>): <why> -> <outcome>`, and in

@@ -707,7 +707,7 @@ class Clips:
     max_seconds: int
     #: A clip bigger than this many megabytes is reported.
     warn_mb: int
-    #: `clips clean` deletes clips older than this many hours.
+    #: `clips clean --apply` deletes clips older than this many hours (without `--apply` it lists them).
     keep_hours: int
 
 

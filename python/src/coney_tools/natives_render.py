@@ -362,21 +362,18 @@ def index_page(masterlist: Masterlist) -> str:
         " `Table.field` or as a callback string, transitively) and the two helpers the engine calls when a mission"
         f" ends, `UnlockAndLoad` and `runNextMission` ({mission} bindings, listed with their status on"
         " [Mission 1 coverage](mission1.md); `coney-tools bindings scan-usage --first-mission` sets the marker from the"
-        " disc). Each later"
-        " level of the story is read the same way, and its bindings are listed on [Story coverage](story.md)"
-        " (`coney-tools bindings scan-usage --story`). A binding"
-        " no script uses still works if a mod calls it, but nothing in the game has exercised it, so its description"
-        " is less certain."
+        " disc). Each later level of the story is read the same way, and its bindings are listed on [Story"
+        " coverage](story.md) (`coney-tools bindings scan-usage --story`). A binding no script uses still works if"
+        " a mod calls it, but nothing in the game has exercised it, so its description is less certain."
     )
     out += ["", "## Coney status {#coney-status}", ""]
     out += _wrap(
         "Every entry has a **Coney** field: *not implemented*, *partial* or *implemented*, the default being *not"
         " implemented*. It is the `coney` key of the entry in `research/bindings/`, which"
         " `coney-tools bindings sync-coney` sets from Coney's own binding table (`src/scripting/script_bindings.cpp`),"
-        " so it"
-        " is never kept up to date by hand: a binding Coney implements is *implemented*, one it hands to a stand-in"
-        " for a subsystem it does not have yet is *partial*, and a stub, or a binding missing from the table, is *not"
-        " implemented*. CI fails when the field and the table disagree."
+        " so it is never kept up to date by hand: a binding Coney implements is *implemented*, one it hands to a"
+        " stand-in for a subsystem it does not have yet is *partial*, and a stub, or a binding missing from the table,"
+        " is *not implemented*. CI fails when the field and the table disagree."
     )
     out.append("")
     out += _wrap(
@@ -458,8 +455,7 @@ def story_page(masterlist: Masterlist) -> str:
         " `global.lua` helpers they reach and the engine's two end-of-mission callbacks count too, so each set is an"
         " upper bound. **New** are the bindings no earlier level calls, the first mission's included: implementing"
         " the levels in order, these are the ones each level adds. `coney-tools bindings scan-usage --story` sets each"
-        " entry's"
-        " `usage.levels` from the disc."
+        " entry's `usage.levels` from the disc."
     )
     out += [
         "",

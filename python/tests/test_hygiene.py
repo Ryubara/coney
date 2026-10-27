@@ -450,7 +450,7 @@ def test_with_on_sweep_the_sweep_comments_on_items_up_to_the_limit(
 
 def test_the_command_needs_an_event_or_a_sweep(capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit) as stop:
-        main(["repo", "hygiene"])
+        main(["repo", "post-findings"])
     assert stop.value.code == 2
     assert "one of the arguments --event --sweep is required" in capsys.readouterr().err
 

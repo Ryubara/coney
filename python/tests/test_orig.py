@@ -260,7 +260,7 @@ def test_the_commands_write_their_files(checkout: Path, monkeypatch: pytest.Monk
     issues = checkout / "issues.json"
     issues.write_text(json.dumps(ISSUES), encoding="utf-8")
     out = checkout.parent / "out"
-    assert main(["orig", "queue", "--out", str(out), "--ghidra", "listing", "--issues", str(issues)]) == 0
+    assert main(["orig", "legacy-queue", "--out", str(out), "--ghidra", "listing", "--issues", str(issues)]) == 0
     assert sorted(p.name for p in out.iterdir()) == sorted([*orig_cli.INDEX_FILES, "queue.md", "queue.tsv"])
     assert "0x00100010\tBrain_Think\tBrain.cpp\tBrain::think" in (out / "index.tsv").read_text(encoding="utf-8")
     assert "docs/research/made-up.md#thinking" in (out / "research-gaps.md").read_text(encoding="utf-8")

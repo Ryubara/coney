@@ -112,7 +112,7 @@ def run_clip(
     ffmpeg = clips.find_tool("ffmpeg")
     registry = pcsx2_claims.default_registry()
     claim, created = registry.claim_for_run(agent, flags[0], os.getpid())
-    # The staging folder sits in the clips folder, so `clips clean` removes whatever a failed run leaves.
+    # The staging folder sits in the clips folder, so `clips clean --apply` removes whatever a failed run leaves.
     staging = target.parent / f"{target.stem}.pcsx2-capture"
     shutil.rmtree(staging, ignore_errors=True)
     staging.mkdir()

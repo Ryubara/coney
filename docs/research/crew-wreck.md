@@ -238,4 +238,4 @@ object spawn and the type's flags), and log both at level80's store in PCSX2 for
 
 The store runs are the scenarios `repo:research/traces/scenarios/wreck_store_inside.toml` and
 `repo:research/traces/scenarios/wreck_store.toml` with the patch `repo:research/traces/patches/crew-wreck.toml`,
-recorded with `coney-tools pcsx2 record` (PCSX2 v2.9.129) on 2026-10-26; the counts are the hooks' call counts.
+recorded with `coney-tools trace original` (PCSX2 v2.9.129) on 2026-10-26; the counts are the hooks' call counts.

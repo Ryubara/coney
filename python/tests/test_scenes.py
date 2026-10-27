@@ -177,7 +177,7 @@ def test_wad_scenes_command(tmp_path: Path, capsys: pytest.CaptureFixture[str]) 
     disc.mkdir()
     (disc / "WARRIORS.DIR").write_bytes(struct.pack("<I12x", len(files)) + directory)
     (disc / "WARRIORS.WAD").write_bytes(wad_bytes)
-    assert main(["wad", "scenes", str(disc)]) == 0
+    assert main(["wad", "scene-info", str(disc)]) == 0
     out = capsys.readouterr().out
     assert "3 records" in out and "parsed: 2 headers, 1 segments, 0 failed" in out
     assert "track event types: 26:2, 28:2" in out

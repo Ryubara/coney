@@ -396,8 +396,8 @@ def test_cli_commands(space: Space, monkeypatch: pytest.MonkeyPatch, capsys: pyt
     assert "dry run" in capsys.readouterr().out
     assert main(["workspace", "clean", "--apply", "--build-hours", "1", "--worktree-hours", "0.5"]) == 0
     assert not path.exists()
-    assert main(["workspace", "disk", "--min-gb", "0"]) == 0
-    assert main(["workspace", "disk", "--min-gb", "100000000"]) == 1
+    assert main(["workspace", "check-space", "--min-gb", "0"]) == 0
+    assert main(["workspace", "check-space", "--min-gb", "100000000"]) == 1
 
 
 def test_disk_minimum_defaults_to_the_conventions(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

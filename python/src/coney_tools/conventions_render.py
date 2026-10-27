@@ -200,9 +200,8 @@ def _pr_rules(conventions: Conventions) -> list[str]:
         lines += _bullet(
             f"`{ai.model.label}` also names every model that a `{conventions.commits.trailers.ai_co_author.key}` "
             "trailer on the branch's commits names (any case, anywhere on the line), whoever wrote them. It is checked "
-            "where the branch is at hand: `legacy check-pr-review`, and `pr check-body` given `--worktree`; "
-            "CI's `body` "
-            "job sees only the description."
+            "where the branch is at hand: `legacy check-pr-review`, and `pr check-body` given `--worktree`; CI's "
+            "`body` job sees only the description."
         )
     if not rules.local_paths:
         lines += _bullet(
@@ -221,8 +220,8 @@ def _pr_review(conventions: Conventions) -> list[str]:
         "`severity` `blocker` or `note`, `where` and `text`)."
     )
     lines += _bullet(
-        "`legacy check-pr-review` passes only when the description's title (line 1) and body (the rest) pass `repo "
-        "check-title` and `pr check-body` (a local image is allowed, as `gh --attach` uploads it), the verdict is "
+        "`legacy check-pr-review` passes only when the description's title (line 1) and body (the rest) pass "
+        "`pr check-title` and `pr check-body` (a local image is allowed, as `gh --attach` uploads it), the verdict is "
         "`pass` with no `blocker` finding, `tip` is the worktree's HEAD, `body_sha256` is the description file's "
         "hash now and every local image the description shows is listed with its hash now; any new commit, edit or "
         "replaced picture makes the verdict stale."

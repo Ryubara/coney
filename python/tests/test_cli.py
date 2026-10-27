@@ -49,7 +49,7 @@ def test_repo_check_fails_with_exit_1_when_a_pointer_file_is_missing(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     monkeypatch.chdir(write_checkout(tmp_path))
-    assert main(["repo", "check"]) == 1
+    assert main(["repo", "check-conventions"]) == 1
     assert "CLAUDE.md: missing" in capsys.readouterr().out
 
 
@@ -59,7 +59,7 @@ def test_repo_check_passes_with_the_conventions_and_the_pointer_files(
     monkeypatch.chdir(write_checkout(tmp_path))
     for name in ("CLAUDE.md", "GEMINI.md"):
         (tmp_path / name).write_text("@AGENTS.md\n", encoding="utf-8")
-    assert main(["repo", "check"]) == 0
+    assert main(["repo", "check-conventions"]) == 0
     assert capsys.readouterr().out.splitlines() == ["conventions: ok", "pointer files: ok"]
 
 
@@ -68,7 +68,7 @@ def test_repo_check_without_the_conventions_file_exits_2(
 ) -> None:
     (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
     monkeypatch.chdir(tmp_path)
-    assert main(["repo", "check"]) == 2
+    assert main(["repo", "check-conventions"]) == 2
     err = capsys.readouterr().err
     assert "conventions.yml" in err and "Traceback" not in err
 
@@ -77,7 +77,7 @@ def test_repo_check_with_a_mistake_in_the_conventions_names_the_key(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     monkeypatch.chdir(write_checkout(tmp_path, changed(("merge.auto_merge", "yes"))))
-    assert main(["repo", "check"]) == 2
+    assert main(["repo", "check-conventions"]) == 2
     assert "merge.auto_merge: expected true or false" in capsys.readouterr().err
 
 
@@ -96,7 +96,7 @@ def test_check_title_passes_with_exit_0(
 ) -> None:
     monkeypatch.chdir(title_checkout(tmp_path))
     (tmp_path / "msg").write_text("# a comment\n\ndocs: Add the guide\n\nBody.\n", encoding="utf-8")
-    assert main(["repo", "check-title", "msg"]) == 0
+    assert main(["pr", "check-title", "msg"]) == 0
     assert capsys.readouterr().out.strip() == "title: ok"
 
 
@@ -105,7 +105,7 @@ def test_check_title_refuses_with_exit_1_and_one_line(
 ) -> None:
     monkeypatch.chdir(title_checkout(tmp_path))
     (tmp_path / "msg").write_text("web: Added the guide.\n", encoding="utf-8")
-    assert main(["repo", "check-title", "msg"]) == 1
+    assert main(["pr", "check-title", "msg"]) == 1
     out = capsys.readouterr().out.strip().splitlines()
     assert len(out) == 1
     assert out[0].startswith("title refused: 'web: Added the guide.'") and "unknown area 'web'" in out[0]
@@ -115,7 +115,7 @@ def test_check_title_refuses_with_exit_1_and_one_line(
 def test_check_title_reads_stdin(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(title_checkout(tmp_path))
     monkeypatch.setattr("sys.stdin", io.StringIO("docs: Add the guide\n"))
-    assert main(["repo", "check-title", "-"]) == 0
+    assert main(["pr", "check-title", "-"]) == 0
 
 
 def test_check_title_with_unusable_rules_exits_2(
@@ -124,7 +124,7 @@ def test_check_title_with_unusable_rules_exits_2(
     monkeypatch.chdir(title_checkout(tmp_path))
     (tmp_path / ".github" / "conventions.yml").write_text("{}\n", encoding="utf-8")
     (tmp_path / "msg").write_text("docs: Add the guide\n", encoding="utf-8")
-    assert main(["repo", "check-title", "msg"]) == 2
+    assert main(["pr", "check-title", "msg"]) == 2
     err = capsys.readouterr().err
     assert "conventions.yml" in err and "Traceback" not in err
 
@@ -133,31 +133,31 @@ def test_check_title_with_an_unreadable_file_exits_2(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     monkeypatch.chdir(title_checkout(tmp_path))
-    assert main(["repo", "check-title", "missing.txt"]) == 2
+    assert main(["pr", "check-title", "missing.txt"]) == 2
     assert "missing.txt" in capsys.readouterr().err
 
 
 def test_check_title_of_an_empty_message_is_refused(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(title_checkout(tmp_path))
     (tmp_path / "msg").write_text("\n# only a comment\n", encoding="utf-8")
-    assert main(["repo", "check-title", "msg"]) == 1
+    assert main(["pr", "check-title", "msg"]) == 1
 
 
 def test_check_docs_passes_when_the_docs_change_with_the_code(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("sys.stdin", io.StringIO("src/core/a.cpp\nresearch/references/cars.yaml\n"))
-    assert main(["repo", "check-docs"]) == 0
+    assert main(["pr", "check-docs"]) == 0
 
 
 def test_check_docs_passes_for_changes_that_are_not_code(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("sys.stdin", io.StringIO(".github/workflows/pr.yml\npython/tests/test_cli.py\ntests/a.cpp\n"))
-    assert main(["repo", "check-docs"]) == 0
+    assert main(["pr", "check-docs"]) == 0
 
 
 def test_check_docs_refuses_code_without_docs(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     monkeypatch.setattr("sys.stdin", io.StringIO("python/src/coney_tools/wad.py\nsrc/core/a.cpp\n"))
-    assert main(["repo", "check-docs"]) == 1
+    assert main(["pr", "check-docs"]) == 1
     out = capsys.readouterr().out.strip().splitlines()
     assert len(out) == 1 and out[0].startswith(
         "docs refused: changes code (python/src/coney_tools/wad.py, src/core/a.cpp)"
@@ -170,20 +170,20 @@ def test_check_docs_accepts_a_docs_none_line_in_the_body(tmp_path: Path, monkeyp
         "## What and why\n\nA rename.\n\ndocs: NONE - no behaviour change\n", encoding="utf-8"
     )
     monkeypatch.setattr("sys.stdin", io.StringIO("src\\core\\a.cpp\n"))
-    assert main(["repo", "check-docs", "--body", str(tmp_path / "body.md")]) == 0
+    assert main(["pr", "check-docs", "--body", str(tmp_path / "body.md")]) == 0
 
 
 def test_check_docs_ignores_a_docs_none_inside_a_sentence(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     (tmp_path / "body.md").write_text("I will say Docs: none later.\n", encoding="utf-8")
     monkeypatch.setattr("sys.stdin", io.StringIO("src/core/a.cpp\n"))
-    assert main(["repo", "check-docs", "--body", str(tmp_path / "body.md")]) == 1
+    assert main(["pr", "check-docs", "--body", str(tmp_path / "body.md")]) == 1
 
 
 def test_check_docs_with_an_unreadable_body_exits_2(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     monkeypatch.setattr("sys.stdin", io.StringIO("src/core/a.cpp\n"))
-    assert main(["repo", "check-docs", "--body", str(tmp_path / "missing.md")]) == 2
+    assert main(["pr", "check-docs", "--body", str(tmp_path / "missing.md")]) == 2
     assert "cannot be read" in capsys.readouterr().err
 
 
@@ -212,20 +212,20 @@ def test_check_body_passes_with_exit_0(
 ) -> None:
     monkeypatch.chdir(body_checkout(tmp_path))
     (tmp_path / "body.md").write_text(GOOD_BODY, encoding="utf-8")
-    assert main(["repo", "check-body", "--body", "body.md", "--title", "tools: Add a check"]) == 0
+    assert main(["pr", "check-body", "--body", "body.md", "--title", "tools: Add a check"]) == 0
     assert capsys.readouterr().out.strip() == "body: ok"
 
 
 def test_check_body_reads_stdin_when_given_no_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(body_checkout(tmp_path))
     monkeypatch.setattr("sys.stdin", io.StringIO(GOOD_BODY))
-    assert main(["repo", "check-body"]) == 0
+    assert main(["pr", "check-body"]) == 0
 
 
 def test_check_body_reads_stdin_for_a_dash(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(body_checkout(tmp_path))
     monkeypatch.setattr("sys.stdin", io.StringIO(GOOD_BODY))
-    assert main(["repo", "check-body", "--body", "-"]) == 0
+    assert main(["pr", "check-body", "--body", "-"]) == 0
 
 
 def test_check_body_refuses_with_exit_1_and_one_line(
@@ -233,7 +233,7 @@ def test_check_body_refuses_with_exit_1_and_one_line(
 ) -> None:
     monkeypatch.chdir(body_checkout(tmp_path))
     monkeypatch.setattr("sys.stdin", io.StringIO("## Summary\n\n<!-- placeholder -->\n"))
-    assert main(["repo", "check-body"]) == 1
+    assert main(["pr", "check-body"]) == 1
     out = capsys.readouterr().out.strip().splitlines()
     assert len(out) == 1 and out[0].startswith("body refused: ")
     assert "'## Summary' is empty" in out[0] and "'## AI use'" in out[0]
@@ -244,7 +244,7 @@ def test_check_body_refuses_an_unchecked_checklist_item(
 ) -> None:
     monkeypatch.chdir(body_checkout(tmp_path))
     monkeypatch.setattr("sys.stdin", io.StringIO(GOOD_BODY.replace("- [x] The check", "- [ ] Later (#12)")))
-    assert main(["repo", "check-body"]) == 1
+    assert main(["pr", "check-body"]) == 1
     out = capsys.readouterr().out
     assert "finish it or take it out" in out and "Later" in out
 
@@ -255,16 +255,16 @@ def test_check_body_accepts_local_images_only_when_asked(
     monkeypatch.chdir(body_checkout(tmp_path))
     local = GOOD_BODY.replace("Screenshots: none (no change)", "![after](./shots/after.png)")
     (tmp_path / "body.md").write_text(local, encoding="utf-8")
-    assert main(["repo", "check-body", "--body", "body.md"]) == 1
+    assert main(["pr", "check-body", "--body", "body.md"]) == 1
     assert "is a local file" in capsys.readouterr().out
-    assert main(["repo", "check-body", "--body", "body.md", "--local-images"]) == 0
+    assert main(["pr", "check-body", "--body", "body.md", "--local-images"]) == 0
 
 
 def test_check_body_with_an_unreadable_file_exits_2(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     monkeypatch.chdir(body_checkout(tmp_path))
-    assert main(["repo", "check-body", "--body", "missing.md"]) == 2
+    assert main(["pr", "check-body", "--body", "missing.md"]) == 2
     assert "cannot be read" in capsys.readouterr().err
 
 
@@ -274,7 +274,7 @@ def test_check_body_with_unusable_rules_exits_2(
     (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr("sys.stdin", io.StringIO(GOOD_BODY))
-    assert main(["repo", "check-body"]) == 2
+    assert main(["pr", "check-body"]) == 2
     assert "conventions.yml" in capsys.readouterr().err
 
 
@@ -293,7 +293,7 @@ def test_check_body_with_a_worktree_refuses_a_model_the_line_does_not_name(
     monkeypatch.chdir(body_checkout(tmp_path))
     branch = branch_with_opus(tmp_path)
     (tmp_path / "body.md").write_text(GOOD_BODY, encoding="utf-8")
-    argv = ["repo", "check-body", "--body", "body.md", "--worktree", str(branch), "--base", "main~1"]
+    argv = ["pr", "check-body", "--body", "body.md", "--worktree", str(branch), "--base", "main~1"]
     assert main(argv) == 1
     out = capsys.readouterr().out
     assert "Claude Opus 5.5" in out and "Co-Authored-By" in out
@@ -307,7 +307,7 @@ def test_check_body_without_a_worktree_does_not_read_the_commits(
     # What CI's `body` job runs: the description alone.
     monkeypatch.chdir(body_checkout(tmp_path))
     monkeypatch.setattr("sys.stdin", io.StringIO(GOOD_BODY))
-    assert main(["repo", "check-body"]) == 0
+    assert main(["pr", "check-body"]) == 0
 
 
 def test_check_body_with_a_worktree_git_cannot_read_exits_2(
@@ -315,7 +315,7 @@ def test_check_body_with_a_worktree_git_cannot_read_exits_2(
 ) -> None:
     monkeypatch.chdir(body_checkout(tmp_path))
     monkeypatch.setattr("sys.stdin", io.StringIO(GOOD_BODY))
-    assert main(["repo", "check-body", "--worktree", str(tmp_path / "missing")]) == 2
+    assert main(["pr", "check-body", "--worktree", str(tmp_path / "missing")]) == 2
     assert "origin/main" in capsys.readouterr().err
 
 
@@ -369,7 +369,7 @@ def test_check_body_with_a_player_facing_title_refuses_a_missing_runtime_line(
 ) -> None:
     monkeypatch.chdir(runtime_checkout(tmp_path))
     monkeypatch.setattr("sys.stdin", io.StringIO(RUNTIME_BODY))
-    assert main(["repo", "check-body", "--title", "gameplay: Fix the heading"]) == 1
+    assert main(["pr", "check-body", "--title", "gameplay: Fix the heading"]) == 1
     out = capsys.readouterr().out
     assert out.startswith("body refused: ") and "Runtime: <evidence>" in out and "'gameplay'" in out
 
@@ -380,7 +380,7 @@ def test_check_body_with_a_player_facing_title_accepts_evidence_or_a_reasoned_no
     monkeypatch.chdir(runtime_checkout(tmp_path))
     for line in ("Runtime: trace diff of 600 updates, 0 differences", "Runtime: none (a rename)"):
         monkeypatch.setattr("sys.stdin", io.StringIO(RUNTIME_BODY.replace("3 passed", f"3 passed\n- {line}")))
-        assert main(["repo", "check-body", "--title", "audio: Fix the cue"]) == 0
+        assert main(["pr", "check-body", "--title", "audio: Fix the cue"]) == 0
 
 
 def test_check_body_with_another_area_does_not_need_the_runtime_line(
@@ -388,7 +388,7 @@ def test_check_body_with_another_area_does_not_need_the_runtime_line(
 ) -> None:
     monkeypatch.chdir(runtime_checkout(tmp_path))
     monkeypatch.setattr("sys.stdin", io.StringIO(RUNTIME_BODY))
-    assert main(["repo", "check-body", "--title", "tools: Add a check"]) == 0
+    assert main(["pr", "check-body", "--title", "tools: Add a check"]) == 0
     assert capsys.readouterr().out.strip() == "body: ok"
 
 
@@ -397,7 +397,7 @@ def test_check_body_without_a_title_says_the_runtime_line_was_not_checked(
 ) -> None:
     monkeypatch.chdir(runtime_checkout(tmp_path))
     monkeypatch.setattr("sys.stdin", io.StringIO(RUNTIME_BODY))
-    assert main(["repo", "check-body"]) == 0
+    assert main(["pr", "check-body"]) == 0
     assert "Runtime:" in capsys.readouterr().out
 
 

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The `coney-tools pcsx2 claim | release | status | check-ports | keys | screenshot` commands (the claims are in
+"""The `coney-tools pcsx2 claim | unclaim | status | check-claim | send-keys | screenshot` commands (the claims are in
 pcsx2_claims.py, the Win32 calls in pcsx2_proc.py). Nothing here focuses a window: keys are posted to a window's
 handle and screenshots read it by handle, so the user keeps the keyboard."""
 

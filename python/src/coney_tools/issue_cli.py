@@ -2,9 +2,9 @@
 """The `coney-tools issue ...` commands: draft an issue, check it, and file, edit or link it only after the check.
 
 An issue filed with a bare `gh issue create --body` skips the issue form, so nothing guarded its sections, its
-labels or its links. These commands put the guard before the write: `draft` prints what to fill in, `check` says what
-is wrong, and `create`, `edit` and `link` are the only way agents and the coordinator write an issue to GitHub
-(docs/guides/issues.md#filing). The rules come from `.github/conventions.yml` and the form files through
+labels or its links. These commands put the guard before the write: `template` prints what to fill in, `check` says
+what is wrong, and `create`, `edit` and `set-parent` are the only way agents and the coordinator write an issue to
+GitHub (docs/guides/issues.md#filing). The rules come from `.github/conventions.yml` and the form files through
 `coney_tools.issue_form`. `gh` is run as a subprocess through an injected runner, so the tests never touch the network;
 `--dry-run` prints the commands without running any that writes.
 """
@@ -42,7 +42,7 @@ _CREATED = re.compile(r"/issues/(?P<number>\d+)\s*$")
 
 
 def add_issue_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
-    """Add the `issue` group: `draft`, `check`, `create`, `edit`, `link`, `titles` and `impact`."""
+    """Add the `issue` group: `template`, `check`, `create`, `edit`, `set-parent`, `titles` and `impact`."""
     group = groups.add_parser(
         "issue", help="draft, check and file issues in their form's shape (docs/guides/issues.md)"
     )

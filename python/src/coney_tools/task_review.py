@@ -211,7 +211,7 @@ def _function_problems(
     for function in functions:
         for address in function["addresses"]:
             name = f"{function['coney']} ({address})"
-            redo = f"original compare {address}"
+            redo = f"orig compare {address}"
             if len(citing.get(address, ())) > 1:  # then `compare` must be told which function
                 redo += f" --coney-function '{function['key']}'"
             pairs = env.unit.mapping(address)

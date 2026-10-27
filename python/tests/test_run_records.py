@@ -26,7 +26,7 @@ def record(**changes: Any) -> RunRecord:
         id="r-20261023-find-human",
         date="2026-10-23",
         kind="recipe",
-        tool="pcsx2 recipe run",
+        tool="pcsx2 recipes run",
         agent="tooling-1",
         agent_type="engineer",
         model="claude-opus-5-5",
@@ -83,7 +83,7 @@ def test_a_trace_record_holds_a_file_hash() -> None:
     trace = record(
         id="r-20261023-walk60",
         kind="trace",
-        tool="pcsx2 record",
+        tool="trace original",
         name="walk60",
         args={},
         values={"updates": 600, "missed_updates": 0},

@@ -9,8 +9,8 @@
 # size cap and a timeout), carries no token, stays in memory and is never stored, run or quoted in a comment.
 #
 # The comments never edit an issue's title, body, labels or state, and delete nothing. The one write beyond comments
-# (the maintainer approved it on 2026-10-12): on every push to the default branch, and in the sweep, `coney-tools repo
-# pr-health --labels --apply` puts `S-conflict` on each open pull request that conflicts with the default branch and
+# (the maintainer approved it on 2026-10-12): on every push to the default branch, and in the sweep, `coney-tools pr
+# list-stuck --labels --apply` puts `S-conflict` on each open pull request that conflicts with the default branch and
 # `S-failing` on each that fails a required check, and takes the label off when that is fixed (`hygiene.pr_health` of
 # the conventions; those two labels only, never another). GitHub works out whether a pull request conflicts only when
 # asked, so a push to main is the moment the answer changes. It is not a required check (it is not in

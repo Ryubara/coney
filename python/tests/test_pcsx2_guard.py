@@ -238,6 +238,7 @@ def test_a_debug_client_of_a_copy_without_a_debug_server_says_so(tmp_path: Path,
         ("coney-tools pcsx2 release --agent other", []),
         ("coney-tools pcsx2 keys --agent other --copy pcsx2 space", []),
         ("coney-tools pcsx2 recipe --agent alice list", ["alice"]),
+        ("coney-tools trace mission --side original s.toml --out o --agent alice", ["alice"]),
         # The new names of the claiming commands outside the pcsx2 group, and of the recipes (coney_tools.renames).
         ("coney-tools trace original s.toml --out o.csv --agent alice", ["alice"]),
         ("coney-tools trace events --side original s.toml --out o --agent alice", ["alice"]),

@@ -362,13 +362,13 @@ def test_a_recipe_that_fails_writes_no_record(checkout: Path, tmp_path: Path, mo
 
 
 def test_record_needs_the_state_and_state_needs_record(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    main(["pcsx2", "recipe", "run", "where", "--copy", "pcsx2-z", "--agent", "tooling-1", "--record"])
+    main(["pcsx2", "recipes", "run", "where", "--copy", "pcsx2-z", "--agent", "tooling-1", "--record"])
     assert "--record needs --state" in capsys.readouterr().err
-    main(["pcsx2", "recipe", "run", "where", "--copy", "pcsx2-z", "--agent", "tooling-1", "--state", "unknown"])
+    main(["pcsx2", "recipes", "run", "where", "--copy", "pcsx2-z", "--agent", "tooling-1", "--state", "unknown"])
     assert "--state and --name belong to --record" in capsys.readouterr().err
 
 
-# --- pcsx2 record --run-record ----------------------------------------------------------------------------------------
+# --- trace original --run-record --------------------------------------------------------------------------------------
 
 
 def fake_recording() -> Recording:

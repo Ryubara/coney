@@ -579,6 +579,7 @@ def test_open_only_off_in_the_conventions_leaves_the_checks_of_a_hand_typed_comm
         ("uv run --project python coney-tools pcsx2 claim --agent a", True),
         ("coney-tools trace original s.toml --out o.csv --agent a", True),
         ("coney-tools trace events --side original s.toml --out o --agent a", True),
+        ("coney-tools trace mission --side original s.toml --out o --agent a", True),
         ("coney-tools clips record x.p2s --out c.mp4 --agent a", True),
         ("coney-tools trace coney s.toml --out o.csv", False),
         ("coney-tools clips publish --pr 1 c.mp4", False),

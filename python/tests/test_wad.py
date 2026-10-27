@@ -287,7 +287,7 @@ def test_extract_refuses_a_folder_inside_the_repository(
 def test_names_recovers_from_elf_and_wad(tmp_path: Path, repo: Path, capsys: pytest.CaptureFixture[str]) -> None:
     disc = make_folder(tmp_path / "d")
     out = tmp_path / "found.txt"
-    assert main(["wad", "names", str(disc), str(out)]) == 0
+    assert main(["wad", "recover-names", str(disc), str(out)]) == 0
     assert "recovered 3 of 4 names" in capsys.readouterr().out
     assert out.read_text(encoding="utf-8").splitlines() == ["alpha.lua", "beta.dat", "gamma.txt"]
 
@@ -296,7 +296,7 @@ def test_names_refuses_an_output_file_inside_the_repository(
     tmp_path: Path, repo: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     disc = make_folder(tmp_path / "d")
-    assert main(["wad", "names", str(disc), str(repo / "names.txt")]) == 2
+    assert main(["wad", "recover-names", str(disc), str(repo / "names.txt")]) == 2
     assert "inside the repository" in capsys.readouterr().err
 
 
@@ -308,7 +308,7 @@ def test_names_finds_names_inside_wad_entries_without_an_elf(tmp_path: Path, rep
 
 
 def test_too_many_paths_is_exit_2(tmp_path: Path, repo: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    assert main(["wad", "names", "a", "b", "c"]) == 2
+    assert main(["wad", "recover-names", "a", "b", "c"]) == 2
     assert "too many arguments" in capsys.readouterr().err
 
 

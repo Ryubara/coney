@@ -2,10 +2,9 @@
 """The C++ signature table of the script bindings, generated from the masterlist for Coney's debug menus.
 
 `coney-tools bindings render-cpp` writes `src/debug/native_signatures.cpp` from `research/bindings/<category>.yaml`:
-every
-binding's name, category and the shape of its arguments and results, which the debug menus use to build an argument
-editor for any binding (docs/guides/debug-menu.md#natives). Only names, types and defaults go in: curated reference
-data, never a description, game text or script source.
+every binding's name, category and the shape of its arguments and results, which the debug menus use to build an
+argument editor for any binding (docs/guides/debug-menu.md#natives). Only names, types and defaults go in: curated
+reference data, never a description, game text or script source.
 """
 
 from __future__ import annotations

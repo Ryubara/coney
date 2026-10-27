@@ -639,7 +639,7 @@ def test_the_repository_scenarios_load() -> None:
 
 
 def test_a_paused_start_is_step_0_and_resumes_once(tmp_path: Path, fake_pine: tuple[FakeGame, int]) -> None:
-    # pcsx2 record --recording: emulation is paused at the recording's first frame until step 0 is sampled.
+    # trace original --recording: emulation is paused at the recording's first frame until step 0 is sampled.
     game, port = fake_pine
     scenario = load_scenario(_repo(tmp_path, ""), tmp_path)
     game.polls_per_update = 10**9

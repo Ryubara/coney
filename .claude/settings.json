@@ -69,6 +69,7 @@
       "Bash(uv run --project python coney-tools pr check-title*)",
       "Bash(uv run --project python coney-tools pr check-body*)",
       "Bash(uv run --project python coney-tools pr check-docs*)",
+      "Bash(uv run --project python coney-tools legacy check-pr-review*)",
       "Bash(uv run --project python coney-tools missions render*)",
       "Bash(uv run --project python coney-tools natives render*)",
       "Bash(uv run --project python coney-tools bindings render*)",
@@ -89,6 +90,7 @@
       "PowerShell(uv run --project python coney-tools pr check-title*)",
       "PowerShell(uv run --project python coney-tools pr check-body*)",
       "PowerShell(uv run --project python coney-tools pr check-docs*)",
+      "PowerShell(uv run --project python coney-tools legacy check-pr-review*)",
       "PowerShell(uv run --project python pytest *)",
       "PowerShell(uv run --project python coney-tools build*)"
     ],
