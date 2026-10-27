@@ -100,7 +100,7 @@ anim::Vec3 flatUnit(anim::Vec3 v) {
 // the body is moved at once by the second clip's root displacement; at runtime the wall and short-wall climbs did jump
 // (1.06 m forward and 1.29 m up onto a trash can, as clip 456's displacement and the top), while the fence climb was
 // carried through by its second clip's own root motion. So walls move at once (rising to the top found behind the
-// face), and fences go by the clip.
+// face), and fences go by the clip: Coney's choice, where the code moves every climb so at its first clip's end.
 // @orig 0x00281450 Climb_RunningClipEnd (unknown)
 // @orig 0x00281838 Climb_StandingClipEnd (unknown)
 bool movesAtOnce(ClimbKind kind) { return kind == ClimbKind::Wall || kind == ClimbKind::ShortWall; }
