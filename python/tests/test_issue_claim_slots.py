@@ -10,6 +10,7 @@ and released after their notice.
 
 from datetime import timedelta
 
+import pytest
 from audit_support import CONVENTIONS
 from claim_support import LIVE, START, Clock, FakeGitHub
 
@@ -434,3 +435,49 @@ def test_a_maintainers_claim_is_never_released_for_being_over_the_limit() -> Non
     scene.clock.advance(hours=RULES.deadline_hours - RULES.warn_hours + 2)
     scene.engine().sweep()
     assert all(scene.held(n) for n in (1, 2, 3, 4)) and github.others(4) == []
+
+
+def _regained_scene() -> Scene:
+    """Alice holds #1, #2 and #3 after a ready pull request on #1 closed unmerged; the sweep has not run yet."""
+    scene = Scene(conventions=LIVE)
+    scene.say(1, "alice", "/claim")
+    scene.say(2, "alice", "/claim")
+    scene.pull_request(1, 60, "alice")
+    scene.say(3, "alice", "/claim")
+    scene.pull_request(1, 60, "alice", state="closed")
+    return scene
+
+
+def test_a_permission_github_will_not_say_is_treated_as_a_maintainers_and_nothing_is_released(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    scene = _regained_scene()
+    github = scene.github
+    # A transient API error: the permission lookup answers nothing at all (not "none", which is a 404).
+    monkeypatch.setattr(github, "permission", lambda login: None)
+    result = scene.engine().sweep()
+    assert any("could not read alice's permission" in line for line in result.lines)
+    assert github.others(3) == [] and card_of(github, 3).over_warned_at is None
+    scene.clock.advance(hours=RULES.deadline_hours + 1)
+    scene.engine().sweep()
+    assert all(scene.held(n) for n in (1, 2, 3))
+    # Once GitHub says she is a contributor, the same claim is warned (first) as it would have been.
+    monkeypatch.undo()
+    scene.engine().sweep()
+    assert card_of(github, 3).over_warned_at is not None and scene.held(3)
+
+
+def test_a_claimant_under_the_limit_again_loses_the_regained_mark_so_a_later_overrun_is_not_warned_for_ever() -> None:
+    scene = _regained_scene()
+    github = scene.github
+    assert card_of(github, 1).regained
+    # She gives #2 up before the sweep: nothing is over the limit any more, and the mark goes from every claim.
+    scene.say(2, "alice", "/unclaim")
+    result = scene.engine().sweep()
+    assert result.errors == []
+    assert not card_of(github, 1).regained and not card_of(github, 3).regained
+    assert github.others(3) == []
+    # Still over the limit through a warning, the mark stays: the claimant is not forgiven for a toggled count.
+    again = _regained_scene()
+    again.engine().sweep()
+    assert card_of(again.github, 1).regained and card_of(again.github, 3).over_warned_at is not None

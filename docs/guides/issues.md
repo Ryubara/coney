@@ -450,8 +450,8 @@ hand-added second assignee is removed, and a claim that lost a race is marked `l
 
 **Never released unwarned.** A claim is released only after its warning, and never sooner than 24 hours (the
 deadline less the warning hours) after the warning was posted: the card's deadline is the later of the two. So a claim
-the sweep first sees late (GitHub starts scheduled workflows late under load, and on 2026-10-23 to 2026-10-27 the
-hourly sweep ran every 2 to 6 hours) still gets its full notice, and when `claims.release` is switched on at the
+the sweep first sees late (GitHub starts scheduled workflows late under load, so the hourly sweep can run only every
+few hours) still gets its full notice, and when `claims.release` is switched on at the
 cutover a claim that was already idle for days is warned first, not released on the spot.
 
 **Trying it before the cutover.** An issue that carries `claim-trial` (`claims.trial`) is treated as if adoption
@@ -471,11 +471,12 @@ or a commit is pushed (or the job is re-run).
 **`/progress` from the stamps.** `task create` posts `/progress assigned`, `task start` `claimed` and `pr open`
 `pr-opened`; between them, every passing stage stamp (`studied`, `fails-first`, also with no test, `compared`,
 `checked`, `reviewed`) posts `/progress <stage>` on the unit's issues, so a claim whose work goes on keeps its clock. A
-new stage is posted at once, the same stage again after 12 hours (`claims.progress_refresh_hours`), remembered in
-`claim-progress.json` in the task's scratch folder, per issue, so an issue whose post failed is tried again at the
-next stamp. A post that takes longer than 30 seconds (`claims.progress_post_seconds`) fails like any other, so a slow
-network cannot hang a stamp command. A stamp log with no unit record (a task not started with `task
-start`) posts nothing, and a post that fails is a warning: the stamp stands.
+new stage is posted at once, the same stage again after 12 hours (`claims.progress_refresh_hours`, which must be
+less than `claims.warn_hours`), remembered in `claim-progress.json` in the task's scratch folder, per issue, so an
+issue whose post failed is tried again at the next stamp. A post that takes longer than 30 seconds
+(`claims.progress_post_seconds`) fails like any other, so a slow network cannot hang a stamp command. A stamp log with
+no unit record (a task not started with `task start`) posts nothing, and a post that fails is a warning: the stamp
+stands.
 
 **An issue labelled `S-in-progress` or `S-pending-review` with nobody assigned** (the old way of picking one up) is
 neither adopted nor released. The sweep lists it, the audit reports it as `issue.claim-orphan` in the hygiene report,
@@ -643,6 +644,10 @@ claim: a maintainer who is over the limit again is logged and left alone (the to
 claimant's count changed since (a claim stopped or started counting, even twice between two sweeps), the sweep gives a
 fresh notice instead of releasing, but never one that reaches past twice the notice after the first warning, so a pull
 request toggled between ready and draft cannot put the release off for ever.
+A claimant whose permission GitHub cannot report (an error that is not "not found") is treated as a maintainer for that
+sweep and logged, so a transient failure never releases a maintainer's claim. The warn-first handling lasts only while
+the claimant is over the limit: once none of their claims is, the sweep clears the mark, and a later overrun found by a
+sweep (two `/claim`s that raced) is released at once again.
 
 The claim itself stays held either way, with its card and its deadline, until it is merged or released. So three units
 waiting for CI never refuse a fourth claim.

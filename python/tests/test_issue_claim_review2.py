@@ -11,7 +11,8 @@ from claim_support import RULES, Clock, FakeGitHub, make_engine, plant_claim
 
 from coney_tools import conventions_render
 from coney_tools import issue_claim_model as model
-from coney_tools.issue_claim_engine import Activity, Engine
+from coney_tools.issue_claim_engine import Engine
+from coney_tools.issue_claim_pass import Activity
 
 
 @pytest.fixture

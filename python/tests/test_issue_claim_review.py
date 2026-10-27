@@ -12,8 +12,9 @@ from claim_support import RULES, START, Clock, FakeGitHub, idle_past_deadline, m
 from coney_tools import issue_claim_cli as cli
 from coney_tools import issue_claim_model as model
 from coney_tools.config import ConfigError
-from coney_tools.issue_claim_engine import Activity, Engine
+from coney_tools.issue_claim_engine import Engine
 from coney_tools.issue_claim_model import Command, Rejected
+from coney_tools.issue_claim_pass import Activity
 from coney_tools.issue_claim_rules import check_claim, is_maintainer, overrun
 
 

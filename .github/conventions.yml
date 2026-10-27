@@ -417,7 +417,7 @@ claims:
   warn_hours: 48                                  # idle time at which the claimant is mentioned once
   # A passing stage stamp (studied, fails-first, compared, checked, reviewed) posts `/progress <stage>` on the unit's
   # issues: at once for a new stage, and for the same stage again only after this many hours, so a day of compares
-  # keeps the claim alive without a comment for each.
+  # keeps the claim alive without a comment for each. Less than warn_hours, or a long stage would be warned first.
   progress_refresh_hours: 12
   progress_post_seconds: 30                       # the longest one of those posts may take before it is a warning
   reply_keep_hours: 24                            # the sweep deletes a refusal reply this long after its command is gone

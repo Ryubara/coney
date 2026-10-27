@@ -1960,6 +1960,9 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
     numbers = {key: _count(table[key], _at(where, key)) for key in counts}
     if numbers["warn_hours"] >= numbers["deadline_hours"]:
         raise _fail(_at(where, "warn_hours"), "must be less than deadline_hours")
+    if numbers["progress_refresh_hours"] >= numbers["warn_hours"]:
+        # A stage stamp's /progress must renew the clock before the warning, or a long stage would be warned.
+        raise _fail(_at(where, "progress_refresh_hours"), "must be less than warn_hours")
     stages = _texts(table["stages"], _at(where, "stages"))
     ends = _texts(table["limit_ends_at"], _at(where, "limit_ends_at"))
     _names_in(ends, stages, _at(where, "limit_ends_at"), "in claims.stages")

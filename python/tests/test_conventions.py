@@ -258,6 +258,38 @@ BAD: list[tuple[str, tuple[tuple[str, object], ...], str]] = [
         (("claims.warn_hours", 80),),
         r"claims\.warn_hours: must be less than deadline_hours",
     ),
+    (
+        "a progress refresh that is not before the warning",
+        (("claims.progress_refresh_hours", 48),),
+        r"claims\.progress_refresh_hours: must be less than warn_hours",
+    ),
+    (
+        "a progress post time of zero",
+        (("claims.progress_post_seconds", 0),),
+        r"claims\.progress_post_seconds: expected a whole number of 1 or more",
+    ),
+    (
+        "a limit stage that is not a claim stage",
+        (("claims.limit_ends_at", ["reviewed", "shipped"]),),
+        r"claims\.limit_ends_at: 'shipped' is not in claims\.stages",
+    ),
+    (
+        "a trial label that is not a label",
+        (("claims.trial.label", "claim-trails"),),
+        r"claims\.trial\.label: 'claim-trails' is not in labels\.list",
+    ),
+    (
+        "a trial that warns after it releases",
+        (("claims.trial.warn_hours", 2),),
+        r"claims\.trial\.warn_hours: must be less than deadline_hours",
+    ),
+    (
+        "a trial with no hours",
+        (("claims.trial.deadline_hours", 0),),
+        r"claims\.trial\.deadline_hours: expected a whole number of 1 or more",
+    ),
+    ("a require_on_pr that is not a flag", (("claims.require_on_pr", "yes"),), r"claims\.require_on_pr: expected true"),
+    ("a missing trial", (("claims.trial", REMOVE),), r"claims: missing the key 'trial'"),
     ("a bad claim marker", (("claims.card_marker", "a b"),), r"claims\.card_marker: letters, digits and hyphens"),
     (
         "an exempt label that is not a label",

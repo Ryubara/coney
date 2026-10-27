@@ -131,10 +131,10 @@ def test_retries_that_run_out_report_what_each_attempt_did(
     engine: Engine, github: FakeGitHub, clock: Clock, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     github.say(10, "alice", "/claim")
-    from coney_tools import issue_claim_engine
+    from coney_tools import issue_claim_engine, issue_claim_pass
 
     def always_stale(work: object) -> None:
-        raise issue_claim_engine._Stale("#10: the claim changed meanwhile")
+        raise issue_claim_pass.Stale("#10: the claim changed meanwhile")
 
     monkeypatch.setattr(engine, "_still_current", always_stale)
     lines, errors = cli.run_event(engine, "issue_comment", comment_event(10), CONVENTIONS, clock.now)

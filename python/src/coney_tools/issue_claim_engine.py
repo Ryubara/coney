@@ -10,7 +10,7 @@ at `claims.warn_hours` of idleness and the release at `claims.deadline_hours`. E
 `claim.yml` runs one claim job at a time for the whole repository, so two runs never act on one issue together.
 A backstop stays for whatever else writes (a person editing a card, a run started by hand): before the first change
 of each step and before every card write the pass reads the issue's cards again, and when one changed since it
-began, it starts over from what GitHub holds now (`_Stale`), first undoing a release it had begun. Two cards of one
+began, it starts over from what GitHub holds now (`Stale`), first undoing a release it had begun. Two cards of one
 claimant are merged into the first.
 
 The card keeps only what GitHub cannot tell later (the claim's time, scope, task, last stage and activity, the ids of
@@ -20,18 +20,18 @@ handled commands); the claimant, the status and the pull request are recomputed 
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass, field, replace
+from dataclasses import replace
 from datetime import datetime, timedelta
 
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Claims, Conventions
+from coney_tools.issue_claim_limits import LimitEnforcement
 from coney_tools.issue_claim_model import (
     Card,
     Command,
     Rejected,
     command_shaped,
     handled_with,
-    is_card,
     parse_card,
     parse_command,
     render_card,
@@ -39,6 +39,7 @@ from coney_tools.issue_claim_model import (
     reply_target,
     show_time,
 )
+from coney_tools.issue_claim_pass import Activity, Pass, Stale, Stored, SweepResult, latest_held, stored_cards
 from coney_tools.issue_claim_remote import Comment, IssueView, LinkedPr, Remote
 from coney_tools.issue_claim_rules import (
     active_cards,
@@ -54,59 +55,7 @@ from coney_tools.issue_form import section_heading
 ATTEMPTS = 4
 
 
-class _Stale(ConfigError):
-    """Another run wrote a card of this issue after this pass read it: the pass starts over from fresh data.
-
-    When the passes run out, `lines` holds what each attempt did.
-    """
-
-    def __init__(self, message: str, lines: list[str] | None = None) -> None:
-        super().__init__(message)
-        self.lines = lines or []
-
-
-@dataclass
-class Stored:
-    """A card as it stands on GitHub: the comment that holds it (None until it is first posted) and its text."""
-
-    comment_id: int | None
-    card: Card
-    text: str = ""
-
-
-@dataclass(frozen=True)
-class Activity:
-    """A sign of life the triggering event reports: a pull request opened, reopened, made ready or pushed to."""
-
-    at: datetime
-    #: The login of the pull request's author; only the claimant's (or a maintainer's) pull request counts.
-    by: str
-
-
-@dataclass
-class _Pass:
-    """What one `reconcile` of one issue holds while it works."""
-
-    issue: IssueView
-    comments: list[Comment]
-    stored: list[Stored]
-    active: Stored | None
-    log: list[str] = field(default_factory=list)
-    #: The ids of the command comments acted on in this pass.
-    processed: set[int] = field(default_factory=set)
-    #: The claimant's own open pull request that is ready for review (not a draft): the idle clock waits for it.
-    in_review: int | None = None
-
-
-@dataclass
-class SweepResult:
-    """What a sweep did: one line per action and one per issue it could not finish."""
-
-    lines: list[str] = field(default_factory=list)
-    errors: list[str] = field(default_factory=list)
-
-
-class Engine:
+class Engine(LimitEnforcement):
     """The claim logic over a `Remote`, with an injected clock; nothing else is global."""
 
     def __init__(self, remote: Remote, conventions: Conventions, now: Callable[[], datetime]) -> None:
@@ -165,7 +114,7 @@ class Engine:
                     return done
         finally:
             self.rules = self._base_rules
-        raise _Stale(f"#{number}: the claim kept changing under {ATTEMPTS} passes; the next run finishes it", log)
+        raise Stale(f"#{number}: the claim kept changing under {ATTEMPTS} passes; the next run finishes it", log)
 
     def _rules_for(self, issue: IssueView) -> Claims:
         """The rules for one issue: the repository's, or for an issue with the trial label adoption and the idle
@@ -181,18 +130,18 @@ class Engine:
         number = issue.number
         comments = self.remote.comments(number)
         stored = self._stored_cards(comments)
-        work = _Pass(issue, comments, stored, latest_held(stored))
+        work = Pass(issue, comments, stored, latest_held(stored))
         self._refresh_held(work)
         try:
             self._commands(work)
             self._sync(work, activity)
-        except _Stale:
+        except Stale:
             log.extend(work.log)
             log.append(f"#{number}: another run changed the claim meanwhile; starting over")
             return None
         return log + work.log
 
-    def _refresh_held(self, work: _Pass) -> None:
+    def _refresh_held(self, work: Pass) -> None:
         """Make the repository-wide cache agree with what this issue's comments just showed."""
         held = self.held_cards()
         if work.active is None:
@@ -202,7 +151,7 @@ class Engine:
 
     # -- commands
 
-    def _commands(self, work: _Pass) -> None:
+    def _commands(self, work: Pass) -> None:
         """Act on every command comment not yet handled, oldest first, and delete each afterwards."""
         done = {item for stored in work.stored for item in stored.card.handled}
         for comment in work.comments:
@@ -233,13 +182,13 @@ class Engine:
             else:
                 work.log.append(f"#{work.issue.number}: could not delete the command comment {comment.id}")
 
-    def _reply(self, work: _Pass, comment: Comment, reason: str) -> None:
+    def _reply(self, work: Pass, comment: Comment, reason: str) -> None:
         """Answer a refused command with a bot comment that names the command comment's id."""
         text = f"{reply_first_line(self.rules, comment.id)}\nNot done for @{comment.login}: {reason}"
         self.remote.create_comment(work.issue.number, text)
         work.log.append(f"#{work.issue.number}: refused {comment.login}: {reason}")
 
-    def _claim(self, work: _Pass, comment: Comment, command: Command) -> None:
+    def _claim(self, work: Pass, comment: Comment, command: Command) -> None:
         """`/claim`: a scope update on the claimant's own claim, or a new claim after the checks."""
         number = work.issue.number
         active = work.active
@@ -307,7 +256,7 @@ class Engine:
             labels = (*labels, self.rules.claimable_status)
         return replace(issue, assignees=(), labels=labels)
 
-    def _own_claim(self, work: _Pass, comment: Comment, command: Command, active: Stored) -> None:
+    def _own_claim(self, work: Pass, comment: Comment, command: Command, active: Stored) -> None:
         """`/claim scope: ...` on the claimant's own claim replaces the scope; the task cannot change."""
         card = active.card
         if command.scope is None and command.task is None:
@@ -333,7 +282,7 @@ class Engine:
         )
         work.log.append(f"#{work.issue.number}: {comment.login} changed the scope")
 
-    def _audit_new_claim(self, work: _Pass, comment: Comment, stored: Stored, maintainer: bool) -> None:
+    def _audit_new_claim(self, work: Pass, comment: Comment, stored: Stored, maintainer: bool) -> None:
         """Parallel runs on other issues can overrun the limit or the `P-critical` rule: recount from fresh data and
         release this claim, with a reply, if it is the one that is over."""
         self._held = None
@@ -350,7 +299,7 @@ class Engine:
         self._reply(work, comment, f"your claim was released again: {why} (another claim landed at the same time)")
         self._release(work, stored, stored.card, f"released: {why}", "released", check_fresh=False)
 
-    def _renew(self, work: _Pass, comment: Comment) -> None:
+    def _renew(self, work: Pass, comment: Comment) -> None:
         """`/claim renew`: the claimant starts the idle clock again."""
         active = work.active
         if active is None or active.card.claimant != comment.login:
@@ -372,7 +321,7 @@ class Engine:
         )
         work.log.append(f"#{work.issue.number}: {comment.login} renewed the claim")
 
-    def _progress(self, work: _Pass, comment: Comment, command: Command) -> None:
+    def _progress(self, work: Pass, comment: Comment, command: Command) -> None:
         """`/progress <stage>`: the claimant records a stage, which is activity."""
         active = work.active
         if active is None or active.card.claimant != comment.login:
@@ -408,7 +357,7 @@ class Engine:
         )
         work.log.append(f"#{work.issue.number}: {comment.login} reached {command.stage}")
 
-    def _unclaim(self, work: _Pass, comment: Comment) -> None:
+    def _unclaim(self, work: Pass, comment: Comment) -> None:
         """`/unclaim`: the claimant, or a maintainer, gives the claim up."""
         active = work.active
         if active is None:
@@ -423,13 +372,13 @@ class Engine:
 
     # -- keeping the card and the issue true
 
-    def _drop_warning(self, work: _Pass, card: Card) -> None:
+    def _drop_warning(self, work: Pass, card: Card) -> None:
         """Delete the warning comment of a card, if it has one."""
         if card.warning_comment is not None:
             self.remote.delete_comment(card.warning_comment)
             work.log.append(f"#{work.issue.number}: removed the expiry warning")
 
-    def _set_status_label(self, work: _Pass, want: str) -> None:
+    def _set_status_label(self, work: Pass, want: str) -> None:
         """Leave exactly one status label on the issue: `want`.
 
         A paused label (`S-blocked`, `S-needs-info`, `S-on-hold`) a maintainer put on a claimed issue stays: the claim
@@ -449,7 +398,7 @@ class Engine:
         kept = tuple(label for label in work.issue.labels if not label.startswith(self._status_prefix))
         work.issue = replace(work.issue, labels=(*kept, want))
 
-    def _unpaused_status(self, work: _Pass) -> list[str]:
+    def _unpaused_status(self, work: Pass) -> list[str]:
         """The status labels on the issue that are not paused ones."""
         return [
             label
@@ -457,7 +406,7 @@ class Engine:
             if label.startswith(self._status_prefix) and label not in self.rules.paused_labels
         ]
 
-    def _status_label_changes(self, work: _Pass, want: str) -> bool:
+    def _status_label_changes(self, work: Pass, want: str) -> bool:
         """Whether `_set_status_label(work, want)` would write a label now: no on a paused issue (a block keeps its
         labels; a hold writes only to take the claim's label off, once), otherwise when `want` is missing. One write
         it does not see: with no paused label, a second status label is removed without the guard."""
@@ -466,7 +415,7 @@ class Engine:
             return any(label in self.rules.hold_labels for label in labels) and bool(self._unpaused_status(work))
         return want not in labels
 
-    def _drop_unpaused_status(self, work: _Pass) -> None:
+    def _drop_unpaused_status(self, work: Pass) -> None:
         """Remove every status label that is not a paused one: a hold leaves the issue with its paused labels only."""
         drop = self._unpaused_status(work)
         for label in drop:
@@ -476,7 +425,7 @@ class Engine:
             work.issue = replace(work.issue, labels=kept)
             work.log.append(f"#{work.issue.number}: removed {', '.join(drop)}: the issue is on hold")
 
-    def _save(self, work: _Pass, stored: Stored, card: Card) -> None:
+    def _save(self, work: Pass, stored: Stored, card: Card) -> None:
         """Write `card` into its comment (post it first if it is new) when its text changed, and keep the cache."""
         held = self.held_cards()
         if card.active:
@@ -496,16 +445,16 @@ class Engine:
         if work.active is stored and not card.active:
             work.active = None
 
-    def _still_current(self, work: _Pass) -> None:
-        """Raise `_Stale` when the issue's cards on GitHub are no longer the ones this pass holds: another run wrote
+    def _still_current(self, work: Pass) -> None:
+        """Raise `Stale` when the issue's cards on GitHub are no longer the ones this pass holds: another run wrote
         one (a `/progress`, a new card) since this pass read them, and writing now would undo it."""
         comments = self.remote.comments(work.issue.number)
         fresh = {item.comment_id: item.card for item in stored_cards(comments, self.rules)}
         mine = {item.comment_id: parse_card(item.text, self.rules) for item in work.stored if item.comment_id}
         if fresh != mine:
-            raise _Stale(f"#{work.issue.number}: the claim changed meanwhile")
+            raise Stale(f"#{work.issue.number}: the claim changed meanwhile")
 
-    def _unchanged(self, work: _Pass, stored: Stored) -> bool:
+    def _unchanged(self, work: Pass, stored: Stored) -> bool:
         """Whether the card on GitHub is still the one this pass read and no new command waits: re-read before a
         release, so a `/claim renew` or a `/progress` that arrived meanwhile is never undone."""
         comments = self.remote.comments(work.issue.number)
@@ -533,7 +482,7 @@ class Engine:
 
     def _release(
         self,
-        work: _Pass,
+        work: Pass,
         stored: Stored,
         card: Card,
         why: str,
@@ -574,13 +523,13 @@ class Engine:
                     over_warning_comment=None,
                 ),
             )
-        except _Stale:
+        except Stale:
             self._undo_release(work, stored, before, keep_assignees)
             raise
         work.log.append(f"#{number}: claim of {card.claimant} ended ({why})")
         return True
 
-    def _undo_release(self, work: _Pass, stored: Stored, before: IssueView, keep_assignees: bool) -> None:
+    def _undo_release(self, work: Pass, stored: Stored, before: IssueView, keep_assignees: bool) -> None:
         """Put back the assignees and the status label a release removed when the card changed under it and the
         claimant still holds the issue (a `/progress` landed, or a re-claim posted a new card); the pass starts over
         and decides again from fresh data.
@@ -612,7 +561,7 @@ class Engine:
 
     # -- rebuilding the state from GitHub
 
-    def _sync(self, work: _Pass, activity: Activity | None) -> None:
+    def _sync(self, work: Pass, activity: Activity | None) -> None:
         """Rebuild the card from the issue's assignees, labels and pull requests, then apply the deadlines."""
         number = work.issue.number
         work.issue = self.remote.issue(number)
@@ -643,7 +592,7 @@ class Engine:
         self._follow_pull_request(work, active, activity)
         self._deadlines(work, active)
 
-    def _settle_race(self, work: _Pass) -> None:
+    def _settle_race(self, work: Pass) -> None:
         """Two held claims on one issue (a dropped run, a hand assignment): the earliest `claimed_at` keeps it."""
         held = [stored for stored in work.stored if stored.card.active]
         if len(held) < 2:
@@ -673,7 +622,7 @@ class Engine:
         work.active = winner
         work.issue = self.remote.issue(work.issue.number)
 
-    def _merge_twin(self, work: _Pass, keeper: Stored, twin: Stored) -> None:
+    def _merge_twin(self, work: Pass, keeper: Stored, twin: Stored) -> None:
         """A second card of the same claim (two runs posted one each): its handled commands join the first card and
         it is deleted, or marked `lost` when it cannot be."""
         merged = keeper.card
@@ -703,7 +652,7 @@ class Engine:
             self._save(work, twin, ended)
         work.log.append(f"#{work.issue.number}: merged a second card of the claim of {keeper.card.claimant}")
 
-    def _close(self, work: _Pass) -> None:
+    def _close(self, work: Pass) -> None:
         """A closed issue's held claim ends: merged when a pull request closed it, else released."""
         active = work.active
         if active is None:
@@ -722,7 +671,7 @@ class Engine:
         else:
             self._release(work, active, card, "the issue was closed", "released")
 
-    def _note_orphan(self, work: _Pass) -> None:
+    def _note_orphan(self, work: Pass) -> None:
         """An open issue that says it is being worked on but has no assignee and no claim cannot be released or
         followed: report it (the sweep and the audit's `issue.claim-orphan`), do not touch it."""
         labels = work.issue.labels
@@ -737,7 +686,7 @@ class Engine:
                 f"claim it with `task create` or set it back to `{self.rules.released_label}`"
             )
 
-    def _adopt(self, work: _Pass) -> None:
+    def _adopt(self, work: Pass) -> None:
         """An open issue assigned by hand gets a card, so the deadline covers it too."""
         assignees = tuple(login for login in work.issue.assignees if login != self.rules.bot_login)
         if not assignees or work.issue.state != "open":
@@ -760,7 +709,7 @@ class Engine:
         self._save(work, fresh, card)
         work.log.append(f"#{work.issue.number}: adopted the hand assignment to {assignees[0]}")
 
-    def _follow_pull_request(self, work: _Pass, stored: Stored, activity: Activity | None) -> None:
+    def _follow_pull_request(self, work: Pass, stored: Stored, activity: Activity | None) -> None:
         """Status, label and activity follow the open pull request of the claimant (or a maintainer) that closes the
         issue; someone else's pull request does not count as the claim's."""
         card = stored.card
@@ -831,7 +780,7 @@ class Engine:
                 return True
         return False
 
-    def _deadlines(self, work: _Pass, stored: Stored) -> None:
+    def _deadlines(self, work: Pass, stored: Stored) -> None:
         """The warning at `claims.warn_hours` of idleness, the release at `claims.deadline_hours`."""
         if not self.rules.release:
             return
@@ -874,7 +823,7 @@ class Engine:
             self._drop_warning(work, card)
             self._save(work, stored, card.changed(warned_at=None, warning_comment=None))
 
-    def _waiting_for(self, work: _Pass, card: Card) -> str | None:
+    def _waiting_for(self, work: Pass, card: Card) -> str | None:
         """Why the idle clock waits: a paused label a maintainer set, or the claim's open pull request in review."""
         paused = [label for label in work.issue.labels if label in self.rules.paused_labels]
         if paused:
@@ -933,141 +882,6 @@ class Engine:
                 result.errors.append(f"#{number}: {error}")
         return result
 
-    def _enforce_limits(self) -> list[str]:
-        """Release the claims that are over the limit of open claims or of a task, on fresh data (the late ones only).
-
-        A claim assigned by hand and adopted is not counted: nobody was asked to check it against a limit; nor is an
-        exempt one (`claims.exempt_label`), which `overrun` never finds over.
-        """
-        self._held = None
-        held = list(self.held_cards().values())
-        late: list[tuple[Card, str]] = []
-        for card in held:
-            if card.adopted:
-                continue
-            why = overrun(card, held, self.is_maintainer(card.claimant), self.rules)
-            if why is not None:
-                late.append((card, why))
-        lines: list[str] = []
-        # A claimant whose count came back (a ready pull request closed unmerged) is over the limit through no new
-        # claim, so the newest claims past the limit get a warning and their notice first, as an idle claim does.
-        regained = {card.claimant for card in held if card.regained}
-        for card, why in late:
-            if card.claimant in regained:
-                lines.extend(self._warn_or_release_over(card, why, held))
-                continue
-            issue = self.remote.issue(card.issue)
-            comments = self.remote.comments(card.issue)
-            stored = stored_cards(comments, self.rules)
-            work = _Pass(issue, comments, stored, latest_held(stored))
-            if work.active is None or work.active.card.claimant != card.claimant:
-                continue
-            try:
-                ended = self._release(work, work.active, work.active.card, f"released: {why}", "released")
-            except _Stale:
-                ended = False
-                work.log.append(f"#{card.issue}: the claim changed meanwhile; the next sweep looks again")
-            if ended:
-                notice = f"{reply_first_line(self.rules, 0)}\nClaim released: {why}; finish or give up another first."
-                self.remote.create_comment(card.issue, notice)
-            lines.extend(work.log)
-        flagged = {card.issue for card, _ in late}
-        for card in held:
-            if card.over_warned_at is not None and card.issue not in flagged:
-                lines.extend(self._clear_over_warning(card))
-        return lines
-
-    def _over_pass(self, card: Card) -> _Pass | None:
-        """A pass over the issue of `card` for a write of the sweep's limit check; None when the claim is not the
-        claimant's any more."""
-        issue = self.remote.issue(card.issue)
-        comments = self.remote.comments(card.issue)
-        stored = stored_cards(comments, self.rules)
-        work = _Pass(issue, comments, stored, latest_held(stored))
-        if work.active is None or work.active.card.claimant != card.claimant:
-            return None
-        return work
-
-    def _warn_or_release_over(self, card: Card, why: str, held: list[Card]) -> list[str]:
-        """A claim past the limit of a claimant whose count came back: warn the claimant and start the notice (the
-        one an idle claim gets); release the claim only once the notice has run out and it is still over. Never
-        sooner, so work in progress is not lost to a pull request that was closed.
-
-        It follows the idle release: off until the cutover (`claims.release`, or the trial label on this issue), when
-        a sweep only says what it would do, and never for a maintainer's claim (the limit of 3 is theirs to keep).
-        A claim whose claimant's count changed since the warning (`flips`: a ready pull request toggled between two
-        sweeps) gets a fresh notice, but never later than twice the notice after the first warning.
-        """
-        work = self._over_pass(card)
-        if work is None or work.active is None:
-            return []
-        number = card.issue
-        if self.is_maintainer(card.claimant):
-            return [
-                f"#{number}: {card.claimant} is over the limit ({why}); a maintainer's claim is never released for it"
-            ]
-        rules = self._rules_for(work.issue)
-        notice = card.over_notice(rules)
-        if not rules.release:
-            hours = int(notice.total_seconds() // 3600)
-            return [
-                f"#{number}: would warn {card.claimant}: over the limit ({why}), and release the claim after "
-                f"{hours} h (release is off until the cutover)"
-            ]
-        active = work.active
-        current = active.card
-        now = self._now()
-        flips = sum(c.flips for c in held if c.claimant == current.claimant)
-        due = current.over_deadline(rules)
-        cap = current.over_cap(rules)
-        self.rules = rules
-        try:
-            if due is None or cap is None or (current.over_flips != flips and now < cap):
-                # A first warning, or a fresh notice: the claimant's count changed since the last one.
-                self._still_current(work)
-                self._drop_over_warning(work, current)
-                first = current.over_first_at or now if current.over_warned_at is not None else now
-                started = current.changed(over_warned_at=now, over_first_at=first, over_flips=flips)
-                until = started.over_deadline(rules) or now + notice
-                comment = self.remote.create_comment(
-                    number,
-                    f"@{current.claimant} you hold more open claims than the limit allows ({why}): this claim is "
-                    f"released at {show_time(until)} unless you finish or `/unclaim` another claim first.",
-                )
-                self._save(work, active, started.changed(over_warning_comment=comment))
-                work.log.append(f"#{number}: warned {current.claimant}: over the limit ({why})")
-            elif now >= due:
-                if self._release(work, active, current, f"released: {why}", "released"):
-                    first_line = reply_first_line(rules, 0)
-                    self.remote.create_comment(
-                        number, f"{first_line}\nClaim released: {why}; finish or give up another first."
-                    )
-        except _Stale:
-            work.log.append(f"#{number}: the claim changed meanwhile; the next sweep looks again")
-        finally:
-            self.rules = self._base_rules
-        return work.log
-
-    def _clear_over_warning(self, card: Card) -> list[str]:
-        """The claimant is under the limit again: take the over-limit warning of this claim back."""
-        work = self._over_pass(card)
-        if work is None or work.active is None:
-            return []
-        try:
-            self._still_current(work)
-            self._drop_over_warning(work, work.active.card)
-            self._save(work, work.active, work.active.card.changed(over_warned_at=None, over_warning_comment=None))
-            work.log.append(f"#{card.issue}: no longer over the limit")
-        except _Stale:
-            work.log.append(f"#{card.issue}: the claim changed meanwhile; the next sweep looks again")
-        return work.log
-
-    def _drop_over_warning(self, work: _Pass, card: Card) -> None:
-        """Delete the over-limit warning comment of a card, if it has one."""
-        if card.over_warning_comment is not None:
-            self.remote.delete_comment(card.over_warning_comment)
-            work.log.append(f"#{work.issue.number}: removed the over-the-limit warning")
-
     def _clean_replies(self, now: datetime) -> list[str]:
         """Delete refusal replies older than `claims.reply_keep_hours` whose command comment is gone."""
         keep = timedelta(hours=self.rules.reply_keep_hours)
@@ -1082,21 +896,3 @@ class Engine:
                 if reply_target(reply.body, self.rules) not in present and self.remote.delete_comment(reply.id):
                     lines.append(f"#{number}: deleted the old reply {reply.id}")
         return lines
-
-
-def stored_cards(comments: list[Comment], rules: Claims) -> list[Stored]:
-    """The claim cards among comments: written by the bot, starting as a card, with a readable hidden JSON."""
-    found: list[Stored] = []
-    for comment in comments:
-        if comment.login != rules.bot_login or not is_card(comment.body, rules):
-            continue
-        card = parse_card(comment.body, rules)
-        if card is not None:
-            found.append(Stored(comment.id, card, comment.body))
-    return found
-
-
-def latest_held(stored: list[Stored]) -> Stored | None:
-    """The held card of an issue: the newest card, if it is held."""
-    held = [item for item in stored if item.card.active]
-    return held[-1] if held else None

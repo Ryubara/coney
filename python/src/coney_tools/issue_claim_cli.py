@@ -26,8 +26,9 @@ from typing import Any
 from coney_tools.audit_github import Runner, run_gh
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import Claims, Conventions, load_conventions
-from coney_tools.issue_claim_engine import Activity, Engine
+from coney_tools.issue_claim_engine import Engine
 from coney_tools.issue_claim_model import Card, Command, iso_time, parse_command, show_time
+from coney_tools.issue_claim_pass import Activity
 from coney_tools.issue_claim_post import PostEnv, post_claim_command
 from coney_tools.issue_claim_remote import GhRemote, Remote
 from coney_tools.issue_claim_rules import trial_rules

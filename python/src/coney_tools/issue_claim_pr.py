@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from coney_tools.conventions import Conventions
-from coney_tools.issue_claim_engine import latest_held, stored_cards
+from coney_tools.issue_claim_pass import latest_held, stored_cards
 from coney_tools.issue_claim_remote import Remote
 from coney_tools.issue_claim_rules import is_maintainer
 

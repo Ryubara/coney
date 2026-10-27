@@ -7,7 +7,8 @@ import pytest
 from claim_support import BOT, RULES, START, Clock, FakeGitHub, idle_past_deadline, make_engine
 
 from coney_tools import issue_claim_model as model
-from coney_tools.issue_claim_engine import Activity, Engine
+from coney_tools.issue_claim_engine import Engine
+from coney_tools.issue_claim_pass import Activity
 from coney_tools.issue_claim_remote import Blocker
 
 
