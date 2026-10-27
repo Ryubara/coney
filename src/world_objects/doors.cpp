@@ -660,7 +660,10 @@ void Doors::openBy(double handle, anim::Vec3 humanAt, ObjectWorld& world) {
 // @orig 0x003fb8d0 DynDoorSwinging_OnMessage (unknown)
 // @orig 0x003f9910 DoorSwing_OpenBy (unknown)
 void Doors::openAway(Door& door, anim::Vec3 humanAt, ObjectWorld& world) {
+    // Stand-in (#707): the closed and not-pickable test is message 0x0b's; DoorSwing_OpenBy itself has none, so the
+    // store door's break (DoorSwing_Hit) opens it however it stands in the original.
     if (door.doorClass != DoorClass::Swinging || door.ended || door.pickable || door.state != door_state::kClosed) {
+
         return;
     }
     resetLeaves(door);
