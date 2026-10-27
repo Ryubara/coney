@@ -31,6 +31,8 @@ void StopWatch::start(bool run, std::uint64_t nowTicks) {
     m_lastTicks = nowTicks;
 }
 
+// StopWatch_Show's warning-window step (the display step is Hud::showStopWatch's).
+// @orig 0x00423670 StopWatch_Show (unknown)
 void StopWatch::setWarning(std::int32_t warnMs) {
     m_warning = warnMs;
     m_lastBeep = warnMs + kBeepGapMs;

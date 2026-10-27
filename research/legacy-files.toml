@@ -974,9 +974,6 @@ comment = 1
 ["src/hud/hint_box.cpp"]
 tag = 10
 
-["src/hud/hud.cpp"]
-tag = 16
-
 ["src/hud/hud_audio.h"]
 tag = 1
 
@@ -1421,9 +1418,6 @@ tag = 1
 ["src/scripting/hub_world_bindings.cpp"]
 tag = 8
 
-["src/scripting/hud_bindings.cpp"]
-tag = 15
-
 ["src/scripting/human_bindings.cpp"]
 tag = 18
 
@@ -1552,9 +1546,6 @@ tag = 1
 
 ["src/warriors/profile_store.cpp"]
 tag = 7
-
-["src/warriors/stop_watch.cpp"]
-tag = 1
 
 ["src/warriors/story_state.h"]
 tag = 1
