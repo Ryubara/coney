@@ -4,7 +4,7 @@
 // Who is a threat to whom: the test the fight goal's re-target, picking a side in a fight, giving way and the enemy
 // scan's Warrior filter share. Two pad players are always threats to each other, as are a Warrior hitting back and any
 // pad player; otherwise only the members of an enemy gang are (Gangs::enemies(), which a truce lifts).
-// Research: docs/research/ai-reimpl.md#brain-is-threat, docs/research/ai.md#enemy-scan
+// Research: docs/research/ai-reimpl.md#brain-is-threat, docs/research/ai-fights.md#enemy-scan
 
 namespace coney::ai {
 

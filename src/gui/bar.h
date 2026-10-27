@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <array>
 #include <cstddef>
+#include <optional>
 
 #include "graphics/render_device.h"
 #include "graphics/sprite_batch.h"
@@ -26,31 +28,47 @@ struct BarSetup {
 /// The left edge at the position is inferred from the runtime (PM_Light's bar starts at x 0); the fill drawn from that
 /// edge is Coney's reading of "fill red to v / 100".
 ///
+/// With end caps (setCaps(), the HUD meter `HudBar`'s four rectangles, as the pause Stats screen's bars draw them,
+/// docs/research/hud-bar.md#draw): each cap is as wide as its rectangle's u span (in overlay units), and the
+/// inner width is the bar's width less the left cap's. Left to right, in the back colour unless named: the left cap
+/// from the left edge; the body, inner width wide, centred on the bar's middle (so it starts half a cap in); the fill
+/// in the fill colour from half a cap in over the inner width × the fill; the right cap from half a cap short of the
+/// width. The stretched body and fill are inset by one texel left and right.
+///
 /// Research: docs/research/gui.md#widget-classes
 /// @orig 0x001a0fd0 Bar::Bar (unknown)
 class Bar : public Widget {
   public:
     /// A bar drawing rectangle `rect` of `batch`'s sheet. `batch` (not owned) must outlive the bar; null draws nothing.
-    Bar(graphics::SpriteBatch* batch, std::size_t rect) : m_batch(batch), m_rect(rect) {}
+    Bar(graphics::SpriteBatch* batch, std::size_t rect) : m_batch(batch), m_rect(rect), m_fillRect(rect) {}
+    /// Draws the fill from rectangle `rect` from now on (the HUD bars' body and fill are two rectangles).
+    void setFillRect(std::size_t rect) { m_fillRect = rect; }
+    /// Draws end caps from rectangles `left` and `right` from now on (the meter's form above).
+    /// @coney-only Coney's switch to the meter's form; the original's HudBar always draws its caps
+    void setCaps(std::size_t left, std::size_t right) { m_caps = std::array<std::size_t, 2>{left, right}; }
 
     /// Draws into `batch` from now on (null draws nothing).
     void setBatch(graphics::SpriteBatch* batch) { m_batch = batch; }
     /// Places, sizes and colours the bar.
     void setup(const BarSetup& setup) { m_setup = setup; }
     /// The fill fraction, clamped to [0, 1].
+    /// @orig 0x001c2530 HudGenericBar_SetFill (unknown)
     void setFill(float fraction);
     /// The fill fraction.
     [[nodiscard]] float fill() const { return m_fill; }
     /// The set-up.
     [[nodiscard]] const BarSetup& setupValues() const { return m_setup; }
 
-    /// Adds the back, then the fill (when not empty). Nothing when hidden, without a batch or past the sheet.
+    /// Adds the back, then the fill (when not empty), with the caps when set. Nothing when hidden, without a batch or
+    /// past the sheet.
     /// @orig 0x001a1138 Bar_Render (unknown)
     void render(const GuiCanvas& canvas) const override;
 
   private:
     graphics::SpriteBatch* m_batch;
     std::size_t m_rect;
+    std::size_t m_fillRect;                           // the fill's rectangle; the back's unless set
+    std::optional<std::array<std::size_t, 2>> m_caps; // the left and right caps' rectangles, when drawn
     BarSetup m_setup;
     float m_fill = 0.0F;
 };

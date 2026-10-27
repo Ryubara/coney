@@ -323,12 +323,12 @@ Confirmed (code) at the addresses cited unless a line says otherwise.
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
-| `0x001e5498`, `0x001e5540` | `PauseStats_Construct`, `_Destroy` | portrait `+0x7b0`, shadows `+0x8b0`/`+0x9b0`, banner `+0xab0`, 4 HudGenericBars `+0xbb0`, description `+0x1b70` | confirmed (code) |
-| `0x001e5618` | `PauseStats_Setup` | [The Stats screen](#stats-screen); from `PauseMenu_Open`: per-mode globals `0x0050f104`-`0x0050f2b8`; human of game state `+0x228`; class 0-8 picks portrait, banner and string `0xea`-`0xf2`, else unavailable; bars Strength `0xf3`, Stamina `0xf4`, Health `0xf5`, Rage `0xf6` normalised by difficulty table `0x0050f230` (0x28 per difficulty, game state `+0x154`); description reveal 0.55 s | confirmed (code) |
-| `0x001e6530`, `0x001e6600` | `PauseStats_Shutdown`, `_IsReady` | releases; ready after 10 s or when both portrait batches are resident | confirmed (code) |
-| `0x001e6698` | `PauseStats_OnCommand` | table `0x005568e0`: up/down `MessageHUD_PageUp`/`PageDown` (cue 4, `0xe` when stuck), left/right `0xe`, back `0xf` and `+0x7a0` = 1 | confirmed (code) |
-| `0x001e6778` | `PauseStats_Update` | portrait at base + (-0.08, -0.2), banner + (-0.17, -0.099), bars at + (0.14, -0.11 + 0.05 i) 0.22 x 0.025 fill `0x0063ee38`, description + (-0.24, 0.1) | confirmed (code) |
-| `0x001e6cf0`, `0x001e6cf8` | `PauseStats_SetAlpha`, `_Render` | alpha `+0x1d70` | confirmed (code) |
+| `0x001e5498`, `0x001e5540` | `PauseStats_Construct`, `_Destroy` | name `+0x7b0`, shadows `+0x8b0`/`+0x9b0`, face `+0xab0`, 4 HudGenericBars `+0xbb0`, description `+0x1b70` | confirmed (code) |
+| `0x001e5618` | `PauseStats_Setup` | [The Stats screen](#stats-screen); from `PauseMenu_Open`: per-mode globals `0x0050f104`-`0x0050f2b8`; human of game state `+0x228`; class 0-8 picks name, face and string `0xea`-`0xf2`, else unavailable; bars Strength `0xf3`, Stamina `0xf4`, Health `0xf5`, Rage `0xf6` normalised by difficulty table `0x0050f230` (0x28 per difficulty, game state `+0x154`); description wrap width 0.55 and line window 0-5 | confirmed (code) |
+| `0x001e6530`, `0x001e6600` | `PauseStats_Shutdown`, `_IsReady` | releases; ready after 10 s or when both picture batches are resident | confirmed (code) |
+| `0x001e6698` | `PauseStats_OnCommand` | table `0x005568e0` by command (up, down, left, right, accept, back): up/down `MessageHUD_PageUp`/`PageDown` (cue 4, `0xe` when stuck), left/right `0xe`, accept nothing, back `0xf` and `+0x7a0` = 1 | confirmed (code) |
+| `0x001e6778` | `PauseStats_Update` | nothing while unavailable (`+0x04`, `+0x08`) or not ready (`PauseStats_IsReady`, kept in `+0x10`); then name at base + (-0.08, -0.2), face + (-0.17, -0.099), bars at + (0.14, -0.11 + 0.05 i) 0.22 x 0.025 fill `0x0063ee38`, description + (-0.24, 0.1) | confirmed (code) |
+| `0x001e6cf0`, `0x001e6cf8` | `PauseStats_SetAlpha`, `_Render` | alpha `+0x1d70` (setup sets 255); when available and ready, each part's alpha set to it, then shadows, name, face, bars and description drawn in that order | confirmed (code) |
 | `0x001e6e20`, `0x001e6e78` | `PauseStats_StaticInit`, `_StaticInitStub` | colours `0x0063ee30`/`0x0063ee38` = (150,30,30,255); stub in ctor list `0x00534134` | confirmed (code) |
 
 ### Game-state functions {#warriors-functions}
@@ -400,7 +400,7 @@ Default video mode, [GUI coordinates](hud.md#coordinates). Confirmed (code) at `
 | Part | Where |
 | --- | --- |
 | background | sheet record 12 rectangle 5 (sprite word `0xc0005`), centred at (0.5, 0.5), size 1.05 (0.9 when the device's slot `+0xb8` is set), depth 7,000, white tinted by the colour cycle |
-| three headers | the top one a `CircledTextHeader` ([GUI: the pause header](gui.md#circled-text-header)), the other two `IconTextHeader`s (`0x001e77a0`), at y 0.22, 0.46 and 0.68 (16:9: 0.18, 0.42, 0.64), x 0.5, box width 0.5; built with "Current Objectives" (`0x108`), "Bonus Objectives" (`0x107`) and "Overview" (`0x106`), their texts swapped per screen (the top one shows the mission's title on the grid, "OPTIONS" `0x116` on Options, "CONTROLS" `0x173` on Controls) |
+| three headers | the top one a `CircledTextHeader` ([Circled texts: the pause header](circled-text.md#pause-header)), the other two `IconTextHeader`s (`0x001e77a0`), at y 0.22, 0.46 and 0.68 (16:9: 0.18, 0.42, 0.64), x 0.5, box width 0.5; built with "Current Objectives" (`0x108`), "Bonus Objectives" (`0x107`) and "Overview" (`0x106`), their texts swapped per screen (the top one shows the mission's title on the grid, "OPTIONS" `0x116` on Options, "CONTROLS" `0x173` on Controls) |
 | item grid | rows of 3 and 4 items (3 and 3 in `level95`, the hangout, and in Rumble levels), centred on x 0.5, first row at y 0.86, font scale 1.15, grey `0x005fd320`, font slot 3, a `" : "` after every item but the last of a row |
 | usage line | centred at (0.5, 0.97) |
 | Yes/No box | the question at (0.26, 0.55), the answers at (0.6, 0.75) (`0x0050ee10`-`0x0050ee1c`) |
@@ -499,14 +499,15 @@ rises from 0 to 255 over the first 3,000 ms. Confirmed (code).
 Confirmed (code) at the addresses cited unless a line says otherwise.
 
 The header above the grid is the menu's one `CircledTextHeader`; its parts, text rules, drawing and layout per video
-mode are on [GUI: the pause header](gui.md#circled-text-header). What the pause menu feeds it (`PauseMenu_Open`,
+mode are on [Circled texts: the pause header](circled-text.md#pause-header). What the pause menu feeds it (`PauseMenu_Open`,
 `0x001dbee0`), confirmed (code):
 
 - **Text:** the game state's mission title (`+0x134`), or the Rumble mode's title in a Rumble level; the subtitle is
   the level's name.
-- **Drawing:** on the grid only the top header is drawn, through `RenderColoured` in grey `0x005fd320` (80, 80, 80)
-  with the menu's fade alpha (`PauseMenu_Render`, `0x001df700`); that colour reaches only the hidden label, so the
-  circles keep their colours and the title and subtitle stay grey 178.
+- **Drawing:** after the open screen (Options, then Controls or Stats) come the three headers, the top one first; on the
+  grid only the top header is drawn, through `RenderColoured` in grey `0x005fd320` (80, 80, 80) with the menu's fade
+  alpha (`PauseMenu_Render`, `0x001df700`); that colour reaches only the hidden label, so the circles keep their colours
+  and the title and subtitle stay grey 178.
 - **Circle colour:** all three circles take the colour `PauseMenu_GetLevelColour` (`0x001db928`) gives the current
   level's number (the level record's `+0x04`), from the table below, tested in order, the first list that holds the
   level deciding. The header then turns its last circle red. With gold the menu also asks for black letters, which the
@@ -547,7 +548,7 @@ Confirmed (code) at the addresses cited unless a line says otherwise.
   (selection 0-2, starting at 0, or 2 in a Rumble level). An empty list shows "None" (`0x109`, `0x001dd0b8`). The
   lists are the checklists `HUDSetObjective` fills ([HUD: objectives](hud-messages.md#objectives-hudsetobjective)).
   Usage line `0x19` (up/down select, triangle back). Selected header gold (current) or purple (bonus), the others grey.
-- **Stats** (1): only when the Stats screen is available (`+0x3bb8`): the character's portrait, the name banner, four
+- **Stats** (1): only when the Stats screen is available (`+0x3bb8`): the Warrior's name and face, four
   bars (Strength `0xf3`, Stamina `0xf4`, Health `0xf5`, Rage `0xf6`) and a description paragraph
   ([The Stats screen](#stats-screen)). Otherwise nothing opens.
 - **Options** (2): opens the Options menu (`0x0062a1a0`, `OptionMenu.cpp`) inside the pause menu, header "OPTIONS"
@@ -757,16 +758,23 @@ down move with the menu's own input and cues; back plays `0xf` and returns to th
 
 Confirmed (code) at the addresses cited unless a line says otherwise.
 
-The Stats item shows the pausing player's Warrior: a portrait, a name banner, four bars and a description. The screen
+The Stats item shows the pausing player's Warrior: his name, his face, four bars and a description. The screen
 is a `GameMenu` subclass at menu `+0x3bb0` ([function index](#fn-after-controlmenuhud)), set up on every pause by
-`PauseStats_Setup` (`0x001e5618`) and placed by `PauseStats_Update` (`0x001e6778`). Confirmed (code) unless marked.
+`PauseStats_Setup` (`0x001e5618`) and placed by `PauseStats_Update` (`0x001e6778`).
+
+**Seen at runtime** (from the `street-end-run` state, Rembrandt on normal: Start, right, cross through the pad): the
+screen matches the layout below. The red picture with the black shadows is his **name** (the widget at `+0x7b0`), the
+picture to its lower left his **face** (`+0xab0`); the four labels start at the name's left edge, right of the face;
+the bars' fills measure Strength 0.34 (normal: (115 − 75) / (192 − 75)), Stamina 0.57, Health 0.35 and Rage 0.52
+(78 / 150); the description is five lines, its widget (menu `+0x3bb0` + `+0x1b70`) reading wrap width 0.55, line
+window 0-5 and 4 line breaks. Confirmed (runtime), run r-20261026-pause-stats-screen.
 
 **Who and whether.** The human is the pausing player's (game state `+0x228` + 4 × the player). Its portrait kind
 (`Human_GetPortraitKind`, `0x00229570`, by character type) picks the pictures and the text; only kinds 0-8, the nine
 Warriors below, have a screen. Any other kind (Ash, Lynx, the extra soldier, anyone else) makes it unavailable, and the
 Stats item then opens nothing:
 
-| Kind | Character types | Warrior | Portrait sprite word | Banner sprite word | Description string |
+| Kind | Character types | Warrior | Name sprite word (`+0x7b0`) | Face sprite word (`+0xab0`) | Description string |
 | --- | --- | --- | --- | --- | --- |
 | 0 | 5, 7, 8, 9, 10 | Swan | `0x310000` | `0x1970000` | `0xf2` |
 | 1 | 15, 17 | Cochise | `0x220000` | `0x1920000` | `0xec` |
@@ -781,17 +789,50 @@ Stats item then opens nothing:
 The other kinds: 9 (types 38-40, Ash), 10 (43, 44), 11 (45-48, Lynx), 12 (any type without a crew slot) or 20 + the
 human's slot byte `+0x1b0`. The Warrior names come from [Characters](../references/characters.md).
 
+Both words are sheet-table records (high half) with rectangle 0: the widgets are `BaseWidget`s with instance −1,
+which read the high half as a record ([GUI: widgets](gui.md#widget-classes)). Which picture is which: the `+0x7b0`
+widget is tinted red (150, 30, 30) and drawn over two black shadows, the treatment of a title, and it is the name at
+runtime (above); the `+0xab0` widget is white and is the face. Earlier versions of this page called them portrait
+and banner the other way round.
+
 **Layout** (default video mode, GUI coordinates; base B = (0.5, 0.5), `0x0050f110`/`0x0050f118`; a size factor k =
 1.0, `0x0050f104`):
 
 | Part | Where and how |
 | --- | --- |
-| portrait (`+0x7b0`) | left edge (anchor 1) at B + (−0.08, −0.2) = (0.42, 0.3), size 0.09 × k (`0x0050f130`), depth 15,000, tinted (150, 30, 30) (`0x0063ee30`) |
-| two shadows (`+0x8b0`, `+0x9b0`) | the portrait's sprite in black at alpha 128, depth 11,000, offset (+0.0025, +0.004) and (−0.001, −0.002) (`0x0050f2a8`-`0x0050f2b4`) |
-| banner (`+0xab0`) | centred at B + (−0.17, −0.099) = (0.33, 0.401), size 0.3 × k (`0x0050f150`), white, depth 11,000 |
-| four bars (`HudGenericBar`, `+0xbb0` + `0x3f0` × i) | left edge at B + (0.14, −0.11 + 0.05 i) = (0.64, 0.39 / 0.44 / 0.49 / 0.54), 0.22 × 0.025 (× k), fill (150, 30, 30) (`0x0063ee38`), back (37, 37, 37), sprite word `0x30036` (`menu_system` rectangle 54) |
-| the bars' labels | left-aligned at x 0.38 (`0x0050f2b8`), y B + −0.08, −0.03, 0.02, 0.07 = 0.42, 0.47, 0.52, 0.57 (`0x0050f178`, `0x0050f1a8`, `0x0050f1d8`, `0x0050f208`): Strength `0xf3`, Stamina `0xf4`, Health `0xf5`, Rage `0xf6` |
-| description (`+0x1b70`) | a markup text at B + (−0.24, 0.1) = (0.26, 0.6), size 1.0, grey `0x005fd310`, font slot 3; then `MessageHUD_ReadAutoIndent` (`0x001bb390`) with 0.55 (pause.md's earlier "reveal 0.55 s"; meaning not traced) |
+| name (`+0x7b0`) | left edge (anchor 1) at B + (−0.08, −0.2) = (0.42, 0.3), size 0.09 × k (`0x0050f130`), depth 15,000, tinted (150, 30, 30) (`0x0063ee30`) |
+| two shadows (`+0x8b0`, `+0x9b0`) | the name's sprite in black, depth 11,000, offset (+0.0025, +0.004) and (−0.001, −0.002) (`0x0050f2a8`-`0x0050f2b4`); set up at alpha 128, but drawn **opaque**: before each draw `PauseStats_Render` sets every part's alpha to the menu's (`BaseWidget_SetAlpha`, `0x001a2638`, writes the colour's alpha byte `+0xb7`), replacing the 128 (confirmed (code); that it shows is inferred from the runtime shot's darker outline) |
+| face (`+0xab0`) | centred at B + (−0.17, −0.099) = (0.33, 0.401), size 0.3 × k (`0x0050f150`), white, depth 11,000 |
+| four bars (`HudGenericBar`, `+0xbb0` + `0x3f0` × i) | left edge at B + (0.14, −0.11 + 0.05 i) = (0.64, 0.39 / 0.44 / 0.49 / 0.54), 0.22 × 0.025 (× k), fill (150, 30, 30) (`0x0063ee38`), back (37, 37, 37), sprite word `0x30036`: resource instance 3, `part_page0`, rectangles 54 (body), 55 (fill), 56 and 57 (end caps), drawn as the rage meter is ([the draw](hud-bar.md#draw), [HUD: which sheet](hud.md#scripted-bars); `HudBar_Draw`, `0x001a1138`, reads the high half as an instance, not a sheet-table record) |
+| the bars' labels | each bar's label (a markup text of the `HudGenericBar`, font slot 3, grey `0x005fd310`, size 1.0), anchored at x 0.38 (`0x0050f2b8`), y B + −0.08, −0.03, 0.02, 0.07 = 0.42, 0.47, 0.52, 0.57 (`0x0050f178`, `0x0050f1a8`, `0x0050f1d8`, `0x0050f208`; `HudGenericBar_SetLabelPos`, `0x001c2520`), **plus the bar's label offset (0.04, −0.035)** (`0x0050e960` / `0x0050e964`, copied to bar `+0x3d0` / `+0x3d8` by `HudGenericBar_Setup` `0x001c1f80` and added by `HudGenericBar_Update` `0x001c22e8`): drawn at (0.42, 0.385 / 0.435 / 0.485 / 0.535), left-aligned (`HudGenericBar_SetLabelAlign(bar, 0)`: `Font_Draw` flags 0). So the labels start at the name's left edge (0.42), clear of the face (centred at 0.33). Strength `0xf3`, Stamina `0xf4`, Health `0xf5`, Rage `0xf6` |
+| description (`+0x1b70`) | a markup text at B + (−0.24, 0.1) = (0.26, 0.6), size 1.0, grey `0x005fd310`, font slot 3, paged and word-wrapped at 0.55 ([below](#stats-description)) |
+
+<span id="stats-description"></span>**The description** (`+0x1b70`, a `MessageHUD`). After setting the text,
+`PauseStats_Setup` calls `MessageHUD_ReadAutoIndent(0.55, widget, 0)` (`0x001bb390`): the **wrap width** (`+0x1d4`) is
+the number of a leading `<AUTOINDENT f>` tag (the text must start with the tag's name and a space, and the number is
+read with `%f`), else 0.55. All nine descriptions (`0xea`-`0xf2`) begin with `<AUTOINDENT 0.55>` followed by `<COLOR
+B2B2B2FF>` (read over PINE, NTSC-U, English), so the width is 0.55 either way and the text is grey 178. Confirmed (code)
+for the call; the strings' tags inferred from reading them over PINE. Then it sets the widget's fields: paged `+0x1a0` =
+1, first line `+0x1a4` = 0, last line `+0x1a8` = 5, word wrap `+0x1b8` = 1 and `+0x188` = 1 (`<CR2>` / `<CRM>` allowed)
+([GUI: the markup text's fields](gui.md#markup-text-fields)). Confirmed (code) at `0x001e5618`.
+
+- **Wrapping** (`MessageHUD_WordWrap`, `0x001bac20`): each draw, words are added to a line while its measured width
+  (tags stripped) stays within 0.55; the word that would pass it starts a new line (a `<CRM>` is inserted).
+  `+0x1ac` counts the line breaks (inserted ones and the text's own `<CR>` / `<CR3` tags; a `<CRM>` or `<CR2>`
+  already in the text is not counted), so it is the line count less one. The break goes before the last space or `<`
+  written so far, so a line of one word carries the previous `<CRM>` along: an empty line, and that word joins the
+  next one even past the width. A word that holds a `>` counts as starting inside a tag, so what comes before its
+  first `>` is not measured. `MessageHUD_Draw` (`0x001bb038`) wraps when `+0x1b8` is set and clips to the window only
+  when `+0x1a0` is set too. Confirmed (code) at `0x001bac20` and `0x001bb038`.
+- **The line window** (`MessageHUD_ClipToPage`, `0x001baee0`): only the lines `+0x1a4` to `+0x1a8` **inclusive** are
+  drawn, so a page is **six lines** (0-5). The window splits the text only at `<CRM>` (`0x00554af8`), the break the
+  wrap inserts: a line the text's own `<CR>` starts stays with the window line it is in, though `+0x1ac` counts it.
+- **Paging** (`PauseStats_OnCommand` `0x001e6698`): down calls `MessageHUD_PageDown` (`0x001bb000`), which moves both
+  ends down one line while the last line `+0x1a8` is below `+0x1ac` (the index of the text's last line), so it stops
+  when the text's last line is the window's bottom line; up calls `MessageHUD_PageUp` (`0x001bafd0`), which moves both
+  up one line while the first is above 0. A move plays cue 4; a refused one `0xe`. The scroll is one line, not a page.
+  A description of six lines or fewer never moves: Rembrandt's has five (runtime, above), so up and down both refuse.
+  Confirmed (code); the window and line count confirmed (runtime), run r-20261026-pause-stats-screen.
 
 Other video modes: with device flag `0x04` alone (16:9) only B's y changes, to 0.45; flag `0x08` (not `0x02`) and the
 two `0x02` modes rewrite most offsets and set k = 0.7 (`0x02` modes), values in `0x001e5618` not listed here.
@@ -819,7 +860,7 @@ easy, 1 normal, 2 hard and above (inferred).
 
 **Input** (`PauseStats_OnCommand`, `0x001e6698`): up and down page the description (`MessageHUD_PageUp` /
 `_PageDown`, cue 4, or `0xe` when it cannot move), left and right only play `0xe`, back plays `0xf` and closes the
-screen. The screen waits for its pictures (`PauseStats_IsReady`: both portrait batches resident, or 10 s) before it is
+screen. The screen waits for its pictures (`PauseStats_IsReady`: both picture batches resident, or 10 s) before it is
 placed, and is drawn with the menu's fade alpha (`PauseStats_SetAlpha`).
 
 ### Leaving {#leaving}
@@ -895,8 +936,16 @@ grids, the Yes/No box and the leaving actions follow this page; tests in `repo:t
 
 Coney stand-ins, each an open question below:
 
-- The headers (`CircledTextHeader`), the objective lists and the Restart and Quit screens are centred texts at Coney's
-  positions and colours.
+- The top header is the `CircledTextHeader` ([Circled texts](circled-text.md#pause-header), [The top
+  header](#the-top-header)): the mission's title is the current level record's `+0x24` text (Coney's reading of the game
+  state's `+0x134`, which `InitLevel` copies from the level's names; on the disc `level99`'s gives the circled `1`, the
+  checkpoint letter and "Coney", as the runtime screenshot shows), the subtitle its `+0x49` name, the circles in the
+  level's colour (`pauseLevelColour`, the last red), drawn on every screen at the menu's fade, after the open screen as
+  the first of the original's three headers. Its label (string `0xe7`, or `0xe8` with `<ROBJ_N>`) is set but always
+  hidden: where it shows on the other screens is an open question, so the two lower headers, the names over Objectives,
+  Options and Controls, the objective lists and the Restart and Quit screens stay centred texts at Coney's positions and
+  colours. Tests: `repo:tests/gui/pause_menu_test.cpp` and `repo:tests/platform/disc_pause_stats_test.cpp` (two circles,
+  a title and a subtitle in `level99`).
 - The Options screen (`repo:src/gui/pause_menu/option_menu.h`, `OptionMenu`, written from
   [The Options screen](#options) and [`GUI/OptionMenu.cpp`](#fn-optionmenu)) follows this page: the seven titles, each
   page's items, places (`OptionLayout::forMode`, by language and video mode; Coney's pause mode opens the 4:3 one),
@@ -934,7 +983,33 @@ Coney stand-ins, each an open question below:
   `repo:tests/gui/pause_menu_test.cpp` and `repo:tests/platform/disc_pause_controls_test.cpp` (START, the left stick
   at 70 % and cross in `level99` started as `--play-level` starts it; with the disc's strings and fonts no Controller
   label runs into the one under it).
-- The Stats screen is never available (Coney has no character stats), so Stats opens nothing.
+- The Stats screen (`repo:src/gui/pause_menu/pause_stats.h`, `PauseStats`, written from [The Stats
+  screen](#stats-screen)): available for the nine Warriors' character types only; the four bars from the difficulty
+  table with the player's damage scale, power, stamina and rage maxima and his power class's byte `+0x40`
+  (`PlayLevelMode::warriorStats`, through the pause hook `warriorStats`); the places, colours and depths of the table:
+  the name (`+0x7b0`) in red over its two shadows and the face (`+0xab0`); each bar drawn as the rage meter,
+  `part_page0` rectangles 56 (left cap), 54 (body), 55 (fill) and 57 (right cap) (`Bar::setCaps`); the labels
+  left-aligned at their anchor plus the bars' label offset (0.04, −0.035), so at (0.42, 0.385 + 0.05 i); the description
+  wrapped at its leading `<AUTOINDENT>` width (else 0.55) and drawn through a paged line window of lines 0-5
+  (`TextStyle::firstLine` / `lastLine` / `paged`, the `MessageHUD_ClipToPage` window, split only at the wrap's breaks),
+  which up and down move one line within the text (cue 4, or `0xe` at either end); left and right refuse, back closes;
+  every part at the menu's alpha, the shadows opaque. Coney's choices: the down move's limit is the line count the last
+  draw measured (the original's draw counts it too); the screen is placed at once (Coney loads the pictures when the
+  pause starts); the `0x08` and `0x02` layouts are not modelled. A known difference: Rembrandt's description is five
+  lines on both, but Coney breaks them at other words (the original's first line ends "skills when", Coney's
+  "skills"). The wrap is not the cause: `MessageHUD_WordWrap` measures each line with `Font_Measure` in the metrics of
+  `Font_Size(1.0)` times the base size 1.0 (`MessageHUD_GetScaledMetrics` `0x001b94e0`, `MessageHUD_Setup`
+  `0x001b9090` called with font size 1.0 by `PauseStats_Setup` `0x001e5618`), proportional (`MessageHUD_Construct`
+  `0x001b8f98` sets `+0x180` = 1), as Coney does; the view aspect enters only the line height. The cause is Coney's
+  glyph width (`repo:src/graphics/font.cpp`, `roundTexels`), which truncates each rectangle's texel size after adding
+  0.5, where `Font_Measure` (`0x00179958`) and `Font_Draw` (`0x00179c30`) keep the sum unrounded ([Text](gui.md#text)):
+  confirmed (code) at those addresses. With the unrounded width, Coney's wrap of the disc's description gives the
+  original's five lines word for word (a local disc test, the characters per line 34, 35, 37, 34, 20 against 29, 26,
+  33, 37, 35 rounded). The fix touches every proportional text, so it is left to its own change
+  ([#1012](issue:1012), [q-glyph-width](#q-glyph-width)). Tests: `repo:tests/gui/pause_stats_test.cpp` (the caps,
+  the labels' places, the window's moves), `repo:tests/gui/pause_menu_test.cpp` and
+  `repo:tests/platform/disc_pause_stats_test.cpp` (START, the left stick at 70 % to Stats, cross in `level99`: five
+  texts, four bars in (0, 1], every picture loaded).
 - The menu does not wait for its last cue to end before it pops.
 - The tint is a black quad rising to opaque over 1.4 s, under the menu; the mission-failed fade is the mode's own.
 - Leaving pops mode 1 directly instead of setting `W_GameState + 0x14c` = 3; the game state's `+0x11c`, `+0x118` and
@@ -947,11 +1022,17 @@ Coney stand-ins, each an open question below:
 
 ## Open questions
 
-- The Stats screen ([answered](#stats-screen) for its layout, values and availability; the flag `+0x3bb8` is taken to
-  be what `PauseStats_Setup`'s slot `+0x44` call sets, inferred). Still open: the meaning of the 0.55 passed to
-  `MessageHUD_ReadAutoIndent`, the unused floats t6-t9 of the difficulty table, the `0x08` and `0x02` layouts, and a
-  runtime screenshot to check the computed positions and the portrait's red tint.
-- The header widget ([answered](gui.md#circled-text-header): one to three circles, the level's colour and a
+- The Stats screen ([answered](#stats-screen) for its layout, values, availability, the name and face pictures, the
+  bars' sprites, the labels' offset and the description's wrap width, line window and paging, with a runtime check;
+  the flag `+0x3bb8` is taken to be what `PauseStats_Setup`'s slot `+0x44` call sets, inferred). Still open: the
+  unused floats t6-t9 of the difficulty table and the `0x08` and `0x02` layouts.
+- <span id="q-glyph-width"></span>The Stats description's line breaks: Coney's `Font::glyphWidth` truncates
+  `texels + 0.5` where `Font_Measure` (`0x00179958`) keeps it unrounded, so Coney breaks the description at other
+  words ([Coney's implementation](#coneys-implementation)). Answered for the cause; open until the font's width
+  follows the original, which changes every proportional text and wants its own runtime comparison of a few screens.
+  Why the truncation loses a texel on some glyphs is inferred from the rectangles' quarter-texel inset
+  ([GUI](gui.md)): their sizes in texels sit just under or over a whole number.
+- The header widget ([answered](circled-text.md#pause-header): one to three circles, the level's colour and a
   red checkpoint circle). Still open: a screenshot of the 16:9 pause menu (the layout's title factor is 0 there) and
   whether the menu's mission titles always have the `<number>:<title>` form.
 - The Controls screen and the Options menu (answered: [The Options screen](#options),

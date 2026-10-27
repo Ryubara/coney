@@ -25,6 +25,7 @@ using coney::ai::GoalType;
 using coney::anim::Vec3;
 
 TEST_CASE("a stationary thrower faces the nearest enemy, plays its throw and waits its delay", "[ai][riot]") {
+    // Expected: ai-goals.md#goal-stationary-thrower, confirmed (code)
     coney::test::AiScene scene;
     Brain& thrower = scene.add(Vec3{20.0F, 20.0F, 0.0F}, 0.0F);
     Brain& enemy = scene.add(Vec3{20.0F, 26.0F, 0.0F}, 180.0F);
@@ -47,6 +48,7 @@ TEST_CASE("a stationary thrower faces the nearest enemy, plays its throw and wai
 }
 
 TEST_CASE("a stationary thrower with no enemy in three quarters of its sight throws nothing", "[ai][riot]") {
+    // Expected: ai-goals.md#goal-stationary-thrower, confirmed (code)
     coney::test::AiScene scene;
     Brain& thrower = scene.add(Vec3{20.0F, 20.0F, 0.0F}, 0.0F);
     Brain& enemy = scene.add(Vec3{20.0F, 20.0F + (thrower.sightRange() * 0.8F), 0.0F}, 180.0F);
@@ -89,6 +91,7 @@ bool fought(const Brain& brain, const Brain& other) {
 } // namespace
 
 TEST_CASE("a gang rioter near a player picks a fight with a civilian and then leaves", "[ai][riot]") {
+    // Expected: ai-scripting.md#riot, confirmed (code)
     coney::test::AiScene scene;
     Brain& rioter = scene.add(Vec3{40.0F, 46.0F, 0.0F}, 0.0F);
     Brain& civilian = scene.add(Vec3{42.0F, 48.0F, 0.0F}, 0.0F, BrainType::Civilian);
@@ -109,6 +112,7 @@ TEST_CASE("a gang rioter near a player picks a fight with a civilian and then le
 }
 
 TEST_CASE("a rioter whose nearest player is outside the gang's turf decides at once and leaves", "[ai][riot]") {
+    // Expected: ai-scripting.md#riot, confirmed (code)
     coney::test::AiScene scene;
     Brain& rioter = scene.add(Vec3{40.0F, 46.0F, 0.0F}, 0.0F);
     Brain& civilian = scene.add(Vec3{42.0F, 48.0F, 0.0F}, 0.0F, BrainType::Civilian);
@@ -130,6 +134,7 @@ TEST_CASE("a rioter whose nearest player is outside the gang's turf decides at o
 }
 
 TEST_CASE("a civilian rioter picks no fight, and a decision with neither fight nor act ends the riot", "[ai][riot]") {
+    // Expected: ai-scripting.md#riot, confirmed (code)
     coney::test::AiScene scene;
     Brain& rioter = scene.add(Vec3{40.0F, 46.0F, 0.0F}, 0.0F, BrainType::Civilian);
     Brain& civilian = scene.add(Vec3{42.0F, 48.0F, 0.0F}, 0.0F, BrainType::Civilian);
@@ -148,6 +153,7 @@ TEST_CASE("a civilian rioter picks no fight, and a decision with neither fight n
 }
 
 TEST_CASE("a rioter picks the player only when the player-fight draw allows it", "[ai][riot]") {
+    // Expected: ai-scripting.md#riot, confirmed (code)
     for (const int chance : {0, 100}) {
         coney::test::AiScene scene;
         Brain& rioter = scene.add(Vec3{40.0F, 44.0F, 0.0F}, 0.0F);
@@ -159,7 +165,10 @@ TEST_CASE("a rioter picks the player only when the player-fight draw allows it",
                                                                                            .playerFightChance = chance,
                                                                                            .shout = false},
                                                                       harness.services)));
-        // Each second the rioter is put back near the player, so the decision finds him in range.
+        // Each second the rioter is put back near the player, so the decision finds him in range: the decision updates
+        // are the 60th, 120th and so on (the count includes the update), so after 59 updates each placing comes just
+        // before one, and the rest of the second lets the fight start.
+        scene.run(59);
         for (int k = 0; k < 20 && !riotOf(rioter)->decided(); ++k) {
             rioter.human().place(Vec3{40.0F, 44.0F, 0.0F}, 0.0F);
             scene.run(60);
@@ -170,6 +179,7 @@ TEST_CASE("a rioter picks the player only when the player-fight draw allows it",
 }
 
 TEST_CASE("a rioter's decided acts count down, each looking for a target, before it leaves", "[ai][riot]") {
+    // Expected: ai-scripting.md#riot, confirmed (code)
     coney::test::AiScene scene;
     Brain& rioter = scene.add(Vec3{40.0F, 46.0F, 0.0F}, 0.0F);
     RiotHarness harness(scene, {});
@@ -190,6 +200,7 @@ TEST_CASE("a rioter's decided acts count down, each looking for a target, before
 }
 
 TEST_CASE("a roaming rioter far from the player first heads for a point 15 m from him", "[ai][riot]") {
+    // Expected: ai-scripting.md#riot, confirmed (code)
     coney::test::AiScene scene;
     Brain& rioter = scene.add(Vec3{40.0F, 70.0F, 0.0F}, 0.0F);
     RiotHarness harness(scene, {});

@@ -18,16 +18,16 @@ struct PowerClass {
     int stunMs = 200;                ///< `+0x30`: a stun's length.
     int groundMs = 2750;             ///< `+0x34`: how long a knockdown keeps it down.
     int struggleDivisor = 3;         ///< Byte `+0x36`: the grab struggle's divisor.
-    // What only an AI reads (docs/research/ai.md#block, docs/research/ai.md#attack-action). The attack delay's factors
-    // are Rembrandt's as read at runtime; the three chances are **Coney choices** until the disc's are read (the
-    // configuration's `CfgPowerClass`, ai::AiConfig).
+    // What only an AI reads (docs/research/ai-fights.md#block, docs/research/ai-fights.md#attack-action). The attack
+    // delay's factors are Rembrandt's as read at runtime; the three chances are **Coney choices** until the disc's are
+    // read (the configuration's `CfgPowerClass`, ai::AiConfig).
     float blockChance = 0.5F;           ///< `+0x08`: the chance to block, times the base chance to block.
     float hurtBlockChance = 0.25F;      ///< `+0x0c`: the same while hurt.
     float attackDelayFactor = 3.0F;     ///< `+0x1c`: `CfgAttackDelay`'s factor.
     float attackDelayDownFactor = 3.0F; ///< `+0x20`: the same against a downed target.
     float counterChance = 0.1F;         ///< `+0x24`, 0-1: the chance, each update of a block, to press R1.
     /// Byte `+0x39` (`CfgPowerClass` argument 22, 0-1): a grabber of this class throws his man into a wall next to
-    /// them when there is one (`Grabbing_PickMove`, docs/research/ai.md#fight-reactions).
+    /// them when there is one (`Grabbing_PickMove`, docs/research/ai/index.md#fight-reactions).
     bool throwsAtWalls = false;
     /// Byte `+0x40` (`CfgPowerClass` argument 29, 0-100): the health rings span byte / 100 of their circle (35 for
     /// Rembrandt's class 64, read at runtime; docs/research/hud-radar.md#the-health-rings), and the pause Stats

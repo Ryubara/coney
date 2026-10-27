@@ -1027,7 +1027,12 @@ name = "Radio_Update"
 page = "sound.md#radios"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/radios.h:Radios::update"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the menu and top-mode stop, the update interval, the task flag and the fall test are not ported; the hearing tests are the cameras' range (Cameras_IsWithinRange), which Coney measures from player 1"
+relation = "not-ported"
+issue = 1008
 
 [[function]]
 address = 0x00419030

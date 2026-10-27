@@ -1,0 +1,37 @@
+version = 1
+id = "r-20261027-warrior-health-scale"
+date = "2026-10-27"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "0115ecfd05982635b73bb4b5ff8f85546c0e7987cd7f9537d4698db4953bffdf"
+
+[who]
+agent = "ac9a08b339a6a528d"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "street-end-run"
+patches = []
+
+[run]
+name = ""
+method = "From the street-end-run state (level99 checkpoint 2, normal), with no input: the humans recipe listed the humans, then the health recipe read the health record (+0x144 health, +0x146 maximum) of the player Rembrandt and of the AI Warriors Ash and Vermin"
+
+[values]
+player_health_max = 900
+player_health = 314
+ash_health_max = 1800
+ash_health = 629
+vermin_health_max = 1800
+vermin_health = 1800
+
+[addresses]
+rembrandt = 0x00641a20
+ash = 0x006420f0
+vermin = 0x00640c80

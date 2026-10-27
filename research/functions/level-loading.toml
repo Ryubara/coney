@@ -2,6 +2,25 @@
 # The fields: docs/guides/research-function-database.md; `research render --check`.
 
 [[function]]
+address = 0x00158488
+name = "Gm_Level_Exit"
+page = "level-loading.md#unload"
+role = "mode 1's Exit: stops the ambient sounds, every sound and the music, calls UnloadLevel, and with a level change pending plays the outro movie and unloads the level file"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.cpp:GameplayMode::exit"
+status = "compared"
+
+[[function.gaps]]
+what = "the level file is unloaded on every exit, not only with a level change pending"
+relation = "stand-in"
+issue = 993
+
+[[function.gaps]]
+what = "the system music reset, the audio float +0x3fa5c, the outro movie and Device_SetFlipTimeLimit"
+relation = "not-ported"
+issue = 993
+
+[[function]]
 address = 0x00158580
 name = "Gm_Level_Resume"
 page = "level-loading.md#original-structure"
@@ -16,6 +35,15 @@ page = "level-loading.md#original-structure"
 level = "confirmed-code"
 coney = "src/gamemodes/gameplay_mode.h:GameplayMode::suspend"
 status = "legacy"
+
+[[function]]
+address = 0x001596d0
+name = "GameStats_Update"
+page = "game-stats.md#mode"
+role = "mode 0x13 (the statistics screen) `Update`: one world frame (phase 0), the stats widget (`+0x20`; its fade-in queued once it is ready, `+0xd4`), the overlay; with auto-close (`0x0050c6e4`) a fade-out is queued once and the mode pops when the fade ends (`0x005fdeb8 + 0x1d4`)"
+level = "confirmed-code"
+coney = "src/gamemodes/game_stats_mode.h:GameStatsMode::update"
+status = "compared"
 
 [[function]]
 address = 0x0015f248
@@ -43,6 +71,25 @@ role = "copies up to 32 characters to `0x005e6d88`, or clears it"
 level = "confirmed-code"
 coney = "src/scripting/level_bindings.cpp:makeSetStartGameCallback"
 status = "legacy"
+
+[[function]]
+address = 0x001607b8
+name = "UnloadLevel"
+page = "level-loading.md#unload"
+role = "the level's teardown: sounds, black frames, the dependency list, humans, boxes, gangs, HUD, tasks, objects, cars, flags, cameras, the world, resources, lights and a fresh Lua state"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.cpp:GameplayMode::endLevel"
+status = "compared"
+
+[[function.gaps]]
+what = "the level file goes every time (keep is never set)"
+relation = "stand-in"
+issue = 993
+
+[[function.gaps]]
+what = "the far camera and black frames, the file and audio services, the pools, unlockables, distortion, trains, rage config, pads, rain, the stopwatch's service and the state flags and globals it clears"
+relation = "not-ported"
+issue = 993
 
 [[function]]
 address = 0x001612b0

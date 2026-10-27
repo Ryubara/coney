@@ -106,6 +106,12 @@ class CharacterMesh {
     /// Sets the dual layer's texture (null: none); its materials hold their own reference.
     void setBloodTexture(rw::Texture* texture);
 
+    /// How many passes the last frame drew of it: 0 (too far, not drawn), 1 (the texture) or 2 (with the blood layer),
+    /// as PlayLevelMode::drawHumanPasses() records it; the Entity inspector's Mesh group counts its draw calls from it.
+    [[nodiscard]] std::size_t drawnPasses() const { return m_drawnPasses; }
+    /// Records the passes drawn this frame.
+    void setDrawnPasses(std::size_t passes) { m_drawnPasses = passes; }
+
   private:
     // The CPU pose: blends each vertex into both atomics' geometry, in the character's space.
     void poseOnCpu(std::span<const anim::Mat34> skinning);
@@ -123,6 +129,7 @@ class CharacterMesh {
     SkinVertexData m_skin;                  // the shader's weights and bones (GPU)
     std::unique_ptr<BonePalette> m_palette; // this frame's bone matrices (GPU)
     std::vector<BoneBox> m_boxes;           // per skin node (GPU)
+    std::size_t m_drawnPasses = 0;          // setDrawnPasses()
 };
 
 } // namespace coney::platform

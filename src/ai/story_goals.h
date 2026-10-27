@@ -110,10 +110,10 @@ class TravelPathGoal final : public Goal {
     int m_current = -1;
 };
 
-/// The FindEnemy goal (type `0x41`, docs/research/ai.md#find-enemy), the bottom of a fight's three goals: it runs once
-/// the Melee goal above it has ended. Past its time limit (the push + its duration; none for kNoFightLimit) it is done;
-/// while the brain's target can still be fought it starts the fight again (Brain::fight() with its duration, which
-/// pops it and pushes the three goals again); with no such target it is done.
+/// The FindEnemy goal (type `0x41`, docs/research/ai-fights.md#find-enemy), the bottom of a fight's three goals: it
+/// runs once the Melee goal above it has ended. Past its time limit (the push + its duration; none for kNoFightLimit)
+/// it is done; while the brain's target can still be fought it starts the fight again (Brain::fight() with its
+/// duration, which pops it and pushes the three goals again); with no such target it is done.
 /// **Coney stand-in** for `GoalMelee` and the crew's attack command (a *searching* goal, the default constructor): with
 /// no target it looks once a second for the nearest standing human hostile to the human (its gang's enemy, or on its
 /// enemy list) within its sight range and fights him, and never ends by itself; the original's best-enemy scoring and

@@ -32,6 +32,7 @@ from coney_tools.docs_engine import FOLDER as ENGINE_FOLDER
 from coney_tools.docs_engine import INDEX as ENGINE_INDEX
 from coney_tools.docs_engine import check_engine, index_finding
 from coney_tools.docs_link_moves import touched_lines
+from coney_tools.docs_link_resolve import link_resolver
 from coney_tools.docs_page import Finding, Page, kind_of, read_page
 from coney_tools.docs_style import check_style
 from coney_tools.research_catalog import load_catalog
@@ -229,8 +230,8 @@ def change_touches(root: Path, base: str, names: Iterable[str], similarity: int 
     since = local_gate.merge_base(root, base)
     moves = local_gate.renamed_files(root, base, similarity)
     gone = local_gate.removed_files(root, base, similarity)
-    resolves = _link_resolver(root)
-    held = _link_resolver(root, since)
+    resolves = link_resolver(root)
+    held = link_resolver(root, since)
     touches: dict[str, Touch] = {}
     for name in names:
         if kind_of(name) != "research":
@@ -261,36 +262,6 @@ def change_touches(root: Path, base: str, names: Iterable[str], similarity: int 
 def _file_lines(root: Path, name: str) -> list[str]:
     """The lines of the page `name` as the checkout holds it, which the diff of the change is read against."""
     return (root / name).read_text(encoding="utf-8", errors="replace").splitlines()
-
-
-def _page_text(root: Path, path: str, since: str | None) -> str | None:
-    """The text of `path` in the checkout, or as the commit `since` held it, or None when it is no file there."""
-    if since is None:
-        file = root / path
-        return file.read_text(encoding="utf-8", errors="replace") if file.is_file() else None
-    code, text = local_gate.run_command(["git", "-C", str(root), "show", f"{since}:{path}"], root)
-    return text if code == 0 else None
-
-
-def _link_resolver(root: Path, since: str | None = None) -> Callable[[str, str], bool]:
-    """A test for "this page exists in the checkout and holds this anchor" (any, when the anchor is empty); each page is
-    read once. With `since` (a commit) it reads the pages as that commit held them instead of the checkout."""
-    anchors: dict[str, set[str] | None] = {}
-
-    def resolves(path: str, anchor: str) -> bool:
-        """Whether `path` exists and, for a Markdown page, holds `anchor`."""
-        if path not in anchors:
-            text = _page_text(root, path, since)
-            if text is None:
-                anchors[path] = None
-            elif path.endswith(".md"):
-                anchors[path] = read_page(text).anchors
-            else:
-                anchors[path] = set()
-        found = anchors[path]
-        return found is not None and (not anchor or anchor in found)
-
-    return resolves
 
 
 #: What a change can touch that moves the legacy file's truth without editing the file: a research page, the

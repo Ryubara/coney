@@ -11,7 +11,7 @@ make them through the binding list in research/bindings/. Only names, ids and nu
 Each `topic_*` function returns the entries of one list, in page order; the pure functions under them take a word
 reader and the walked scripts, so the tests can feed them synthetic memory and calls.
 
-Research: docs/research/camera.md#types, docs/research/graphics.md#screen-effects, docs/research/ai.md#goals.
+Research: docs/research/camera.md#types, docs/research/graphics.md#screen-effects, docs/research/ai/index.md#goals.
 """
 
 from __future__ import annotations

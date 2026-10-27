@@ -675,7 +675,7 @@ each call site, 2026-10-12:
   `@orig 0x0034fc08 CollisionMaterial_GetName (unknown)`; the file is inferred to be in `RayCast/`, not read.
 - **The world ray.** `CollisionMesh::rayCast` returns `std::optional<RayHit>` and skips an excluded triangle
   **before** intersecting (`collision_mesh.cpp`, the exclusion test in the cell loop), so it cannot report the
-  see-through triangle a clear ray crossed, which [AI: GetItem](ai.md#get-item) reads as "an intact pane in the way".
+  see-through triangle a clear ray crossed, which [AI: GetItem](ai/index.md#get-item) reads as "an intact pane in the way".
   Add a world-ray result that mirrors the original's: `hit`, `t`, normal, material (preset 1), flags, area and
   triangle, filled as [above](#u16-world-ray), with a `worldRayCast(level, ray, result&, exclude, mask)` that sets
   only `material = 1` and `hit = false` before the walk and leaves the rest of the caller's result alone.

@@ -188,7 +188,7 @@ void Fighter::startHold(Holdable& victim, const FighterInput& input, float& head
     m_turnStep = wrapAngle(toVictim - heading) / static_cast<float>(m_turnUpdates);
     m_victimTurnStep = 0.0F;
     // The victim is left alone until the connect stops it (`Grab_Connect`): a human may still act (an AI's R1 in
-    // these updates is its counter, docs/research/ai.md#block).
+    // these updates is its counter, docs/research/ai-fights.md#block).
     m_pair = PairStage::Intro;
 }
 

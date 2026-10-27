@@ -171,7 +171,12 @@ page = "crimes.md#original-structure"
 role = "the mash's outcome"
 level = "confirmed-code"
 coney = "src/gamemodes/gameplay_uncuff.cpp:GameplayMode::uncuffSucceeded"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "hint 19's count, the 0.01 s blend and held flags 0x2000000 and 0x10000 on the end clips, the push spheres, stop calls and records' +0x18 are not ported"
+relation = "not-ported"
+issue = 664
 
 [[function]]
 address = 0x00260a70
@@ -180,7 +185,12 @@ page = "crimes.md#original-structure"
 role = "the mash's outcome"
 level = "confirmed-code"
 coney = "src/gamemodes/gameplay_mode.h:GameplayMode::updateUncuff"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the freer's end blends with kCombatFade, not 0.01 s, and holds no 0x2000000; the push spheres, stop calls and records' +0x18 are not ported"
+relation = "not-ported"
+issue = 664
 
 [[function]]
 address = 0x00260ca8
@@ -189,7 +199,12 @@ page = "crimes.md#original-structure"
 role = "the uncuff mash's start ([Uncuffing](crimes.md#uncuffing))"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::startUncuff"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "action 0x15, the push spheres set to 0, the top tasks' stop calls and the records' +0x18 are not ported"
+relation = "not-ported"
+issue = 664
 
 [[function]]
 address = 0x00273a68
@@ -279,7 +294,12 @@ page = "crimes.md#original-structure"
 role = "the spray clips and the turn to the tag"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::startTagSpray"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the push sphere set to 0, record +0x18, the action and +0x3ba cleared, and the top task stopped are not ported"
+relation = "not-ported"
+issue = 664
 
 [[function]]
 address = 0x00278210
@@ -298,6 +318,40 @@ role = "Unless the tag is gone: a 0.05 s fade into 336 (held `0x800000`), then t
 level = "confirmed-code"
 coney = "src/human/human_animator.h:HumanAnimator::playTagEnd"
 status = "compared"
+
+[[function.gaps]]
+what = "the top task's stop call and the push sphere set to 0 are not ported"
+relation = "not-ported"
+issue = 664
+
+[[function]]
+address = 0x002789d0
+name = "MiniGame_StartAtObject"
+page = "crimes.md#triangle"
+role = "Starts the lock pick (mode 2) or the stereo theft (mode 3) at the human's object: aligns him to it over 0.1 s (Human_AlignToObject), MiniGame_Start, then the clip after a 0.01 s blend, its loop, holding 0x2000000, the push sphere off."
+level = "confirmed-code"
+coney = "src/human/human.cpp:Human::startStereoTheft"
+status = "compared"
+
+[[function.gaps]]
+what = "the lock pick's place by the door (mode 2) and its clips"
+relation = "not-ported"
+issue = 991
+
+[[function.gaps]]
+what = "the top task's call and the push sphere switched off before the clips"
+relation = "not-ported"
+issue = 991
+
+[[function.gaps]]
+what = "Human_AlignToObject's 0.1 s turn and move onto the attack table's place (facing along the car's side): Coney turns to the stereo at once"
+relation = "stand-in"
+issue = 991
+
+[[function.gaps]]
+what = "the 0.01 s blend, held 0x2000000 on the chain and the record, anim state 0: Coney's combat fade, no held bit, its own state"
+relation = "stand-in"
+issue = 991
 
 [[function]]
 address = 0x0027bc48
@@ -340,7 +394,12 @@ page = "crimes.md#original-structure"
 role = "taking an owned item: witnesses, the shoplifting score"
 level = "confirmed-code"
 coney = "src/world_objects/volume_boxes.h:VolumeBoxes::sendTheft"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "only the boxes' message 7: the 30 m alert, statistic 4-8 for a player taker (or every player for a player-led Warrior) and the AI taker's stealitem line are not ported"
+relation = "not-ported"
+issue = 1003
 
 [[function]]
 address = 0x00417af0

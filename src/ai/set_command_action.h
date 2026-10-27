@@ -9,7 +9,7 @@
 // The set-command action: an AI presses one pad command through its per-player record, as a player's pad would, with
 // no target, pacing or stick of its own. The grab spin a grabber hands his man over with, and the bosses' throws, go
 // this way.
-// Research: docs/research/ai-code.md, docs/research/ai.md#fight-reactions
+// Research: docs/research/ai-code.md, docs/research/ai/index.md#fight-reactions
 
 namespace coney::ai {
 

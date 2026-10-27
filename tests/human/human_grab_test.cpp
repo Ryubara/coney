@@ -207,7 +207,7 @@ TEST_CASE("the full stick drags a held human with the grabber, at the hold's off
 
 TEST_CASE("circle held tackles another human: it is mounted and its reaction goal is the tackled one",
           "[human][combat]") {
-    // Expected: combat-grabs.md#grab, confirmed (code) (the tackled victim's reaction goal: ai.md#reaction-goals)
+    // Expected: combat-grabs.md#grab, confirmed (code) (the tackled victim's reaction goal: ai/index.md#reaction-goals)
     const FightCharacter character;
     HumanFight fight(character, 2.0F);
     fight.run("5 press circle\n15 release circle\n50 tap square\n", 70);

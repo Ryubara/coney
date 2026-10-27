@@ -34,6 +34,11 @@ struct LocomotionClip {
     float pairX = 0.0F;           ///< The type-8 event's x (with `reach` as its y: a pair event's offset).
     std::vector<std::array<std::uint16_t, 2>> markers{}; ///< More events with no vector: (frame, type) each.
     std::uint32_t flags = 0;                             ///< The descriptor's clip flags (anim::AnimClip::flags).
+    /// The jaw's (pose bone 8, or `jawBone`) stored rotation x (sin(angle / 2) × 32767, a turn about x held for the
+    /// whole clip); 0 for no rotation channel at all, as the locomotion clips.
+    std::int16_t jawX = 0;
+    /// The pose bone `jawX` turns: the jaw (8) unless a test moves the channel to another bone.
+    std::uint8_t jawBone = 8;
 };
 
 /// The synthetic climb clips: for each of the four climbs (437 fence, 443 short fence, 449 wall, 455 short wall), a
@@ -249,6 +254,12 @@ inline Bytes locomotionResource(const std::vector<LocomotionClip>& clips) {
         const Bytes sectionB = clipKeys({{0, 0, 0, 0}});
         Bytes keys = sectionA;
         keys.append(sectionB.span());
+        // Section C: the jaw's channel, one key held for the clip.
+        Bytes sectionC;
+        if (clip.jawX != 0) {
+            sectionC = clipKeys({{0, clip.jawX, 0, 0}});
+            keys.append(sectionC.span());
+        }
         // A climb clip's reach or a pair's offset: one type-8 event at frame 0 whose vector is (pairX, reach, 0),
         // stored as a position key.
         if (clip.reach > 0.0F) {
@@ -271,6 +282,10 @@ inline Bytes locomotionResource(const std::vector<LocomotionClip>& clips) {
         fields.displacementY = clip.speed * clip.duration;
         fields.duration = clip.duration;
         fields.flags = clip.flags;
+        if (clip.jawX != 0) {
+            fields.mask = 1ULL << clip.jawBone;
+            fields.channels = 1;
+        }
         // Markers: an event each, with no vector.
         for (const std::array<std::uint16_t, 2>& marker : clip.markers) {
             Bytes event;
@@ -281,7 +296,8 @@ inline Bytes locomotionResource(const std::vector<LocomotionClip>& clips) {
         fields.events = static_cast<std::uint16_t>((clip.reach > 0.0F ? 1U : 0U) + (clip.knockdown ? 1U : 0U) +
                                                    clip.markers.size());
         chunks.push_back(chunk(anim::kAnimKeyframesChunk, keys));
-        chunks.push_back(chunk(anim::kAnimDataChunk, clipDescriptor(fields, sectionA.size(), sectionB.size(), 0)));
+        chunks.push_back(
+            chunk(anim::kAnimDataChunk, clipDescriptor(fields, sectionA.size(), sectionB.size(), sectionC.size())));
     }
     // The Anim Range List: a count, then 722 records of 16 bytes, flags at +0x0e.
     Bytes rangeList;

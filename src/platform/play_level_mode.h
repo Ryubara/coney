@@ -36,6 +36,7 @@
 #include "gamemodes/gameplay_mode.h"
 #include "graphics/render_device.h"
 #include "graphics/throw_arc.h"
+#include "gui/pause_menu/pause_stats.h"
 #include "hud/health_rings.h"
 #include "human/place.h"
 #include "human/player.h"
@@ -45,6 +46,7 @@
 #include "platform/character_mesh.h"
 #include "platform/hud_layer.h"
 #include "platform/humans_trace.h"
+#include "platform/mesh_view_hook.h"
 #include "platform/placed_objects.h"
 #include "platform/play_lighting.h"
 #include "platform/play_scenery.h"
@@ -145,7 +147,7 @@ using SceneLines = std::function<std::vector<SceneLine>(const PlayLevelMode& mod
 /// layout's `target` lines, Coney's passive targets (human::TargetHuman) stepped after the player, and AI fighters (a
 /// layout's `fighter` lines, or spawned from the debug menus), humans with a brain stepped in the player's characters'
 /// step; both are drawn with the player's model. The parts follow docs/research/characters.md,
-/// docs/research/combat/index.md, docs/research/ai.md and docs/research/camera.md; the mode is Coney's own glue.
+/// docs/research/combat/index.md, docs/research/ai/index.md and docs/research/camera.md; the mode is Coney's own glue.
 ///
 /// A level entered through gameplay also brings its glass panes and doors (ScriptedCast::objects,
 /// play_level_objects.cpp): they get the level's collision mesh and path data, tick twice a step, take player 1's
@@ -246,6 +248,11 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     /// Sets the lines render() draws into the scene each frame, through the camera and tested against depth (the debug
     /// tools' Debug draw page, PlayLevelControls::sceneLines()); empty draws none.
     void setSceneLines(SceneLines lines) { m_sceneLines = std::move(lines); }
+    /// Sets the debug tools' mesh views (docs/guides/debug-menu.md#mesh-views), which render() asks at each frame's
+    /// start and, while they are on, hands every model the scene draws (MeshViewHook); null: none, and every model is
+    /// drawn as the game draws it.
+    /// @coney-only the debug tools' mesh views; the original has none
+    void setMeshViews(std::shared_ptr<MeshViewHook> views) { m_meshViews = std::move(views); }
 
     // Coney's own capabilities and views of the play: the debug menus' Player, Camera, Spawner and AI fighters pages
     // reach them through PlayLevelControls, and the disc tests call them.
@@ -321,6 +328,10 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     [[nodiscard]] int playerType() const { return m_type; }
     /// One line of the player's character and classes.
     [[nodiscard]] std::string characterState() const;
+    /// What the pause menu's Stats screen reads of player 1 (docs/research/pause.md#stats-screen): his type, his
+    /// Warrior class's damage scale, his power class's byte `+0x40` and his power, stamina and rage maxima. **Coney's
+    /// choice**: a type with no recorded Warrior class or power class gives the player's defaults, as he plays with.
+    [[nodiscard]] gui::WarriorStats warriorStats() const;
     /// Rebuilds the player as `type` (the debug menus' Change character): the model a player of the type is drawn
     /// as and its files (the anim set, the moves' Anim Range List, the speeds its clips give), loaded as the mode's
     /// start loads them, and his class as the start's player takes it (human::playerClassOf(): the class's damage
@@ -568,10 +579,10 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     // the first whose offer is within ai::kDealReach in plan and whose feet are within the prompt height of the human's
     // waist deals. Returns whether one took the press.
     bool tryDeal(human::Human& human);
-    // Player 1's triangle beside a Warrior whose swap prompt is up (docs/research/ai.md#warrior-swap): the Warriors
-    // ahead within 1.5 m are asked nearest first; the first that does not refuse turns to him over 0.2 s and the two
-    // swap what they hold at once, and player 1 says `give_me` when he now holds something. Returns whether one took
-    // the press. **Coney's stand-in**: the two-player swap is not built.
+    // Player 1's triangle beside a Warrior whose swap prompt is up (docs/research/ai-brain-types.md#warrior-swap): the
+    // Warriors ahead within 1.5 m are asked nearest first; the first that does not refuse turns to him over 0.2 s and
+    // the two swap what they hold at once, and player 1 says `give_me` when he now holds something. Returns whether one
+    // took the press. **Coney's stand-in**: the two-player swap is not built.
     // @orig 0x00306040 WarriorBrain_OnPrompt (unknown)
     bool trySwap(human::Human& human, const world_objects::SightBlocked& blocked);
     // A deal's outcome for player 1: the item and money moved for a sale or a rip-off, and the dealer's line.
@@ -780,6 +791,9 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
 
     // Draws the humans: their lights, the render states, each mesh in its two passes.
     void drawCharacter() const;
+    // Draws one human's passes (PlayLighting::drawHumanPasses), with his blood layer marked for the mesh views and the
+    // passes drawn recorded on his mesh for the Mesh group; the game's draw itself is untouched.
+    void drawHumanPasses(CharacterMesh& mesh, bool player, rw::Texture* blood) const;
     // The blood texture of the second pass of a human with `health`, or null when it shows none.
     [[nodiscard]] rw::Texture* bloodTextureFor(const combat::Health& health) const;
     // The view from a camera pose (RenderWare's axes) through the player camera's lens, with `drawDistance`.
@@ -833,7 +847,8 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     Interpolated<float> m_drawDistance;     // at the last two steps
     PlayStats m_stats;
     std::uint32_t m_lastAnimId = 0;
-    SceneLines m_sceneLines; // setSceneLines()
+    SceneLines m_sceneLines;                   // setSceneLines()
+    std::shared_ptr<MeshViewHook> m_meshViews; // setMeshViews()
     bool m_frozen = false;
     std::optional<CameraPin> m_pinnedCamera;                      // `--camera`
     bool m_freezeWorld = false;                                   // `--freeze-world`

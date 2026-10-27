@@ -7,6 +7,7 @@
 
 #include <rw.h>
 
+#include "platform/perf_probes.h"
 #include "platform/sprite_sheets.h"
 #include "platform/texture_lod.h"
 #include "platform/world_atomic.h"
@@ -132,6 +133,7 @@ SceneLighting::SceneLighting(graphics::LevelLighting& lighting, std::optional<gr
     : m_lighting(lighting), m_coronaSheet(std::move(coronas)), m_shadowSheet(std::move(shadows)),
       m_world(rw::World::create()), m_mirrors(graphics::kLightCapacity, nullptr) {}
 
+// Takes the rig's lights and world down.
 SceneLighting::~SceneLighting() {
     // Lights out of the world first, then each light and its frame, which Light::destroy leaves alone.
     for (rw::Light* light : m_inWorld) {
@@ -198,6 +200,17 @@ void SceneLighting::useLights(const graphics::LightSelection& selection) {
 }
 
 void SceneLighting::renderInRig(rw::Atomic* atomic) {
+    ++m_atomicsDrawn;
+    // Without the mesh views the atomic is drawn as it always is; with them they decide what is drawn, by the kind the
+    // caller's scope names (the play mode marks the scenery, the humans and the objects it draws).
+    if (m_meshViews == nullptr) {
+        renderLit(atomic);
+        return;
+    }
+    m_meshViews->draw(atomic, currentDrawKind(), atomic == m_meshLayer, [this, atomic] { renderLit(atomic); });
+}
+
+void SceneLighting::renderLit(rw::Atomic* atomic) {
     // librw lights an atomic's point lights only when the atomic is in the current world: put it there for the draw.
     rw::World* current = rw::engine->currentWorld;
     rw::World* home = atomic->world;

@@ -60,6 +60,7 @@ add_library(coney_core STATIC
     gamemodes/profile_manager_mode.cpp
     gamemodes/rumble_intro_layer.cpp
     gamemodes/rumble_menu_mode.cpp
+    gamemodes/game_stats_mode.cpp
     gamemodes/rumble_result_mode.cpp
     gamemodes/start_up_flow.cpp
     graphics/font.cpp
@@ -90,8 +91,12 @@ add_library(coney_core STATIC
     physics/sphere_triangle.cpp
     gui/bar.cpp
     gui/base_widget.cpp
+    gui/circled_text.cpp
+    gui/circled_text_header.cpp
+    gui/game_stats.cpp
     gui/global_strings.cpp
     gui/markup.cpp
+    gui/message_paging.cpp
     gui/menu_input.cpp
     gui/message_box.cpp
     gui/option_grid.cpp
@@ -102,6 +107,7 @@ add_library(coney_core STATIC
     gui/pause_menu/option_bar.cpp
     gui/pause_menu/option_layout.cpp
     gui/pause_menu/option_menu.cpp
+    gui/pause_menu/pause_stats.cpp
     gui/pause_menu/yes_no_box.cpp
     gui/profile_management_gui/pm_controller.cpp
     gui/profile_management_gui/pm_extras.cpp
@@ -274,6 +280,7 @@ target_sources(coney_core PRIVATE
     human/human_hiding.cpp
     human/human_debug.cpp
     human/human_script.cpp
+    human/face.cpp
     human/humans.cpp
     human/locomotion_gate.cpp
     human/jump.cpp
@@ -294,11 +301,12 @@ target_sources(coney_core PRIVATE
     human/target_human.cpp
     human/turn_and_slide.cpp
     human/victim.cpp)
-# The AI: brains, goals and actions, and the AI humans of a scene (docs/research/ai.md).
+# The AI: brains, goals and actions, and the AI humans of a scene (docs/research/ai/index.md).
 target_sources(coney_core PRIVATE
     ai/address_person_goal.cpp
     ai/ai_config.cpp
     ai/ai_humans.cpp
+    ai/face_mood.cpp
     ai/attack_action.cpp
     ai/attack_choice.cpp
     ai/attack_kinds.cpp
@@ -482,6 +490,8 @@ if(CONEY_DEBUG_TOOLS)
         debug/lua_console.cpp
         debug/menu_model.cpp
         debug/menu_navigator.cpp
+        debug/mesh_stats.cpp
+        debug/mesh_views.cpp
         debug/native_caller.cpp
         debug/native_signatures.cpp
         debug/object_watch.cpp

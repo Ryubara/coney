@@ -10,6 +10,9 @@ tag = 1
 ["src/ai/ai_config.cpp"]
 tag = 7
 
+["src/ai/ai_humans.cpp"]
+tag = 13
+
 ["src/ai/ai_humans.h"]
 comment = 5
 
@@ -41,12 +44,8 @@ tag = 14
 ["src/ai/boss_goals.h"]
 comment = 4
 
-["src/ai/brain.cpp"]
-comment = 2
-tag = 29
-
 ["src/ai/brain.h"]
-comment = 40
+comment = 38
 tag = 1
 
 ["src/ai/brain_events.cpp"]
@@ -327,9 +326,6 @@ tag = 1
 ["src/audio/game_sound.cpp"]
 tag = 63
 
-["src/audio/game_sound.h"]
-comment = 1
-
 ["src/audio/human_sound_events.cpp"]
 tag = 9
 
@@ -599,9 +595,6 @@ comment = 1
 ["src/debug/net_controls.h"]
 comment = 3
 
-["src/debug/play_controls.h"]
-comment = 1
-
 ["src/debug/tunables.cpp"]
 comment = 1
 
@@ -665,9 +658,6 @@ tag = 1
 
 ["src/gamemodes/game_mode_stack.cpp"]
 tag = 7
-
-["src/gamemodes/gameplay_mode.cpp"]
-tag = 30
 
 ["src/gamemodes/gameplay_mode.h"]
 comment = 1
@@ -747,9 +737,6 @@ tag = 4
 ["src/gamemodes/movie_player.cpp"]
 tag = 5
 
-["src/gamemodes/pause_mode.cpp"]
-tag = 8
-
 ["src/gamemodes/player_frame.cpp"]
 tag = 2
 
@@ -773,9 +760,6 @@ comment = 1
 
 ["src/gamemodes/sheet_viewer_mode.cpp"]
 tag = 4
-
-["src/gamemodes/start_up_flow.cpp"]
-tag = 21
 
 ["src/gamemodes/text_viewer_mode.cpp"]
 tag = 3
@@ -847,9 +831,6 @@ tag = 2
 ["src/graphics/throw_arc.cpp"]
 tag = 2
 
-["src/gui/bar.cpp"]
-tag = 1
-
 ["src/gui/base_widget.cpp"]
 tag = 2
 
@@ -882,9 +863,6 @@ tag = 6
 
 ["src/gui/pause_menu/mission_failed_menu.cpp"]
 tag = 5
-
-["src/gui/pause_menu/pause_menu.cpp"]
-tag = 18
 
 ["src/gui/pause_menu/yes_no_box.cpp"]
 tag = 7
@@ -1116,7 +1094,7 @@ tag = 1
 tag = 38
 
 ["src/human/human_animator.h"]
-comment = 4
+comment = 3
 
 ["src/human/human_flight.cpp"]
 tag = 2
@@ -1267,9 +1245,6 @@ comment = 1
 ["src/platform/front_end_scene.cpp"]
 comment = 1
 
-["src/platform/game_session.h"]
-comment = 1
-
 ["src/platform/hud_layer.cpp"]
 comment = 2
 
@@ -1294,19 +1269,10 @@ comment = 3
 ["src/platform/parked_cars.cpp"]
 comment = 1
 
-["src/platform/perf_probes.cpp"]
-comment = 6
-
 ["src/platform/placed_objects.cpp"]
 comment = 2
 
 ["src/platform/placed_objects.h"]
-comment = 1
-
-["src/platform/play_level_controls.h"]
-comment = 1
-
-["src/platform/play_level_inspect.cpp"]
 comment = 1
 
 ["src/platform/play_scenery.h"]
@@ -1323,9 +1289,6 @@ comment = 1
 
 ["src/platform/sandbox_viewer_mode.h"]
 comment = 2
-
-["src/platform/scene_lighting.cpp"]
-comment = 1
 
 ["src/platform/texture_dictionary.cpp"]
 comment = 1
@@ -1497,9 +1460,6 @@ tag = 15
 ["src/scripting/sound_bindings.cpp"]
 tag = 19
 
-["src/scripting/sound_bindings.h"]
-tag = 1
-
 ["src/scripting/spawn_bindings.cpp"]
 tag = 3
 
@@ -1582,9 +1542,6 @@ tag = 5
 
 ["src/warriors/tag_session.h"]
 comment = 2
-
-["src/warriors/unlock_records.cpp"]
-tag = 4
 
 ["src/warriors/unlockables.cpp"]
 tag = 1
@@ -1754,9 +1711,6 @@ citation = 4
 ["tests/ai/brain_events_test.cpp"]
 citation = 6
 
-["tests/ai/brain_test.cpp"]
-citation = 24
-
 ["tests/ai/crew_test.cpp"]
 citation = 17
 
@@ -1798,9 +1752,6 @@ citation = 29
 
 ["tests/ai/perception_test.cpp"]
 citation = 4
-
-["tests/ai/riot_goals_test.cpp"]
-citation = 8
 
 ["tests/ai/route_planner_test.cpp"]
 citation = 15
@@ -2122,9 +2073,6 @@ citation = 3
 
 ["tests/debug/pad_menu_input_test.cpp"]
 citation = 4
-
-["tests/debug/play_pages_test.cpp"]
-citation = 15
 
 ["tests/debug/story_missions_test.cpp"]
 citation = 3

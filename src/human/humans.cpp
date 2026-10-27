@@ -11,6 +11,7 @@ namespace coney::human {
 
 // @coney-only bookkeeping: Coney's list of the humans in its characters' step
 void Humans::add(Human& human, bool padControlled) {
+    human.setFaceRules(m_faceRules.get());
     m_humans.push_back(&human);
     m_padControlled.push_back(padControlled);
     m_fightsTargets.push_back(padControlled);

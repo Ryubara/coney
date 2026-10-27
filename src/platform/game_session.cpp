@@ -220,6 +220,14 @@ GameSession::GameSession(RenderEngine& renderer, GameModeStack& stack, const io:
                     m_audio->setVolume(1 + static_cast<std::size_t>(audio::Bus::Sfx), values.soundFxVolume);
                 }
             },
+        // The Stats screen's reading of the pausing player: Coney has player 1 only.
+        .warriorStats = [this](int player) -> std::optional<gui::WarriorStats> {
+            PlayLevelMode* level = play();
+            if (level == nullptr || player != 0) {
+                return std::nullopt;
+            }
+            return level->warriorStats();
+        },
     });
 }
 
@@ -329,6 +337,7 @@ std::expected<std::unique_ptr<GameMode>, Error> GameSession::loadLevel(const Lev
         return std::unexpected(std::move(mode.error()));
     }
     (*mode)->setSceneLines(m_sceneLines);
+    (*mode)->setMeshViews(m_meshViews);
     (*mode)->setSounds(m_audio != nullptr ? &m_audio->sounds() : nullptr);
     // The game's HUD, which the scripts' bindings act on.
     (*mode)->useHud(m_flow->hud());

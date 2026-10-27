@@ -366,7 +366,7 @@ Confirmed (code) at the cited addresses unless a line says otherwise.
   after it clears, inferred: both run from the brain's stamp `+0x10`; [Drawing a human](graphics.md#human-draw)),
   and **point lights are skipped**. `+0x2d4` is set by `Brain_SetHiddenInShadow` (`0x0028ee88`) from the ground
   check `0x0023eab8` when the triangle under the feet has flag bit 4 ([Collision](collision.md#triangles)): the
-  player hiding in a shadow (inferred; [AI](ai.md#block) shows the same flag shrinking how far an attack is noticed
+  player hiding in a shadow (inferred; [AI](ai-fights.md#block) shows the same flag shrinking how far an attack is noticed
   to 2 m).
 - **Alpha**: faded out from 60 to 70 m (`0x0050cc64`) and in over the first second after `+0x30` ([Drawing a
   human](graphics.md#human-draw)).

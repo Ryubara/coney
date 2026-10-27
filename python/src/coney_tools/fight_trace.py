@@ -54,7 +54,7 @@ ATTACK_COMMANDS = {
     0x23: "grapple",
 }
 
-#: The goal type ids (src/ai/goal.h, docs/research/ai.md#goals) by the name a report shows.
+#: The goal type ids (src/ai/goal.h, docs/research/ai/index.md#goals) by the name a report shows.
 GOAL_NAMES = {
     0x00: "idle",
     0x01: "move_to_flag",

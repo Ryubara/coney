@@ -9,7 +9,7 @@
 // The fidget action (`PlayFidget`, type 15): the human says a line and plays a fidget clip by anim id, and the action
 // lasts while the clip plays. The fight goal's waiting attackers queue it as their taunt (anim `0x25b`, the combat
 // fidgets, which the gang's clip table fills while it fights).
-// Research: docs/research/ai-reimpl.md#fidget-action, docs/research/ai.md#fight-reposition
+// Research: docs/research/ai-reimpl.md#fidget-action, docs/research/ai-fights.md#fight-reposition
 
 namespace coney::ai {
 

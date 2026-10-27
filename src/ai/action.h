@@ -5,7 +5,7 @@
 
 // A brain's action: a short step (press one attack, walk to the target) in its queue of eight. Only the front action
 // runs: once its delay is over the brain starts it and updates it in the same update, and pops it when it is done.
-// Research: docs/research/ai.md#actions, docs/research/ai.md#update-goals
+// Research: docs/research/ai/index.md#actions, docs/research/ai/index.md#update-goals
 
 namespace coney::ai {
 

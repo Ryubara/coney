@@ -201,7 +201,8 @@ TEST_CASE("GoalFight pushes no fight goal for a member of a gang under a tactic"
 
 TEST_CASE("GoalFight pushes FindEnemy, Melee and the fight goal, replacing the last fight's and what is above it",
           "[ai][scripted]") {
-    // Brain_PushFightGoal (docs/research/ai.md#targets): the old Melee and FindEnemy go with everything above them.
+    // Brain_PushFightGoal (docs/research/ai-fights.md#targets): the old Melee and FindEnemy go with everything above
+    // them.
     AiScene scene;
     Brain& brain = scene.add({40.0F, 42.0F, 0.0F}, 180.0F);
     brain.pushGoal(std::make_unique<coney::ai::IdleGoal>());
@@ -236,9 +237,9 @@ TEST_CASE("GoalFight starts nothing at threat response 0 and pushes no goal unde
 
 TEST_CASE("GoalFight from beyond the fight goal's range runs in with EngageEnemy and charges out of the run",
           "[ai][scripted]") {
-    // level99's sparring Warriors are sent from about 9 m (docs/research/ai.md#fight-approach): the fight goal ends
-    // at once, the Melee goal pushes EngageEnemy, which runs at the standing target with the charge armed and attacks
-    // within 1.6 m.
+    // level99's sparring Warriors are sent from about 9 m (docs/research/ai-fights.md#fight-approach): the fight goal
+    // ends at once, the Melee goal pushes EngageEnemy, which runs at the standing target with the charge armed and
+    // attacks within 1.6 m.
     AiScene scene;
     Brain& brain = scene.add({40.0F, 49.0F, 0.0F}, 180.0F);
     REQUIRE(brain.distanceTo(scene.player()) > brain.meleeFar() * coney::ai::kFightRangeScale);

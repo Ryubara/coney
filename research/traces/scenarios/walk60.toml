@@ -11,7 +11,7 @@ slot = 1
 patches = ["scripted-pad", "right-stick"]
 
 [coney]
-# Slot 1 is level99 at checkpoint 3 (docs/research/ai.md#level99-save), with Rembrandt walked to the end of a street:
+# Slot 1 is level99 at checkpoint 3 (docs/research/ai-fights.md#level99-save), with Rembrandt walked to the end of a street:
 # Coney starts him and the camera where the slot's first trace row has them (the camera 5.3 m away, its view 2.05°
 # right of his facing).
 level = "level99"

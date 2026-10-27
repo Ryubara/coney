@@ -11,7 +11,7 @@
 // object search that finds a world object worth smashing near the war chief (`Ai_FindObject` with the
 // vandalisable-in-range filter) and the pane search that claims a glass pane for a gang (`Glass_ClaimPane`). The
 // Warriors' wreck command uses all three (ai/steal_goals.h). Research: docs/research/crew-wreck.md (the smash test, the
-// stand point), docs/research/ai.md#get-item
+// stand point), docs/research/ai/index.md#get-item
 
 namespace coney::ai {
 

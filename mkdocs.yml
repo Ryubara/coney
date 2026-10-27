@@ -139,11 +139,14 @@ nav:
           - Lighting: research/lighting.md
           - "Rendering: a frame's passes": research/rendering.md
           - Start-up and the front end: research/frontend.md
+          - The statistics screen: research/game-stats.md
           - "Input: pads and player commands": research/input.md
           - GUI, sprite sheets and text: research/gui.md
+          - Circled texts and headers: research/circled-text.md
           - In-game HUD: research/hud.md
           - "HUD messages: objectives, hints, prompts and scripted bars": research/hud-messages.md
           - "HUD radar, target panel and health rings": research/hud-radar.md
+          - The meter bar's draw: research/hud-bar.md
           - "HUD function index: widgets, radar frame and the HUD interface": research/hud-functions-parts.md
           - "HUD function index: the HUDLua bindings": research/hud-functions-lua.md
           - "HUD function index: message, mission select and panel files": research/hud-functions-panels.md
@@ -158,6 +161,7 @@ nav:
           - Characters: research/characters.md
           - "Characters: placing a human (teleports)": research/teleports.md
           - "Animation system: code": research/animation.md
+          - "The face: talk states and face clips": research/face.md
           - Inventory, unlockables and statistics: research/player-state.md
           - "Workouts: the hangout gym": research/workouts.md
           - Profiles, options and saving: research/save.md
@@ -173,7 +177,9 @@ nav:
           - "Stealth: hiding, guards and distractions": research/stealth.md
           - Tasks (the TaskEngine): research/tasks.md
           - "World objects: tint, glass, doors": research/objects.md
-          - AI humans: research/ai.md
+          - "AI humans: brains, goals and actions": research/ai/index.md
+          - "AI fights: the fight goal, closing in and blocking": research/ai-fights.md
+          - "AI brain types: think and event handlers": research/ai-brain-types.md
           - "Gang fights: how a gang fights together": research/gang-fights.md
 
           - "AI moving: gaits, path planning, routes and steering": research/ai-moving.md

@@ -415,7 +415,7 @@ class Fighter {
     /// The AI counter (command 3) this human (one no pad drives) pressed on its last update while free to counter
     /// (combat::aiCounterAllowed()), with what each counter would deal from its Anim Range List, once: the grabber or
     /// tackler whose intro is under way takes it and plays the pair (answerCounter()).
-    /// Research: docs/research/ai.md#block
+    /// Research: docs/research/ai-fights.md#block
     [[nodiscard]] std::optional<CounterPress> takeCounterPress();
     /// The grabbing player's movement: with the hold standing still (no move playing) and the stick beyond
     /// CombatTuning::grabTurnStick, turns `heading` towards the stick's heading `stickHeading` + 180° (the grabber's
@@ -515,7 +515,7 @@ class Fighter {
     /// The repeat tracker of the player's hits.
     [[nodiscard]] const combat::RepeatTracker& repeats() const { return m_repeat; }
     /// Whether a hit plays no reaction (human `+0xe0` bit `0x800`): the hit still takes its health, but the human's
-    /// clip goes on. The AI's block goal sets it for its first updates (docs/research/ai.md#block).
+    /// clip goes on. The AI's block goal sets it for its first updates (docs/research/ai-fights.md#block).
     [[nodiscard]] bool hitReactionsOff() const { return hasFlag(flag::kNoReact); }
     /// Turns the hit reactions off (`off`) or on: flag::kNoReact (hitReactionsOff()).
     void setHitReactionsOff(bool off) { setFlag(flag::kNoReact, off); }
