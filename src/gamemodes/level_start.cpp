@@ -106,8 +106,8 @@ LevelStart runLevelScript(script::ScriptSystem& scripts, GameState& state, Creat
         scripts.call("AddFlag", args);
     }
 
-    // Steps 9-10: the preload services the file manager, so the checkpoint scripts the level asked for with
-    // preLoadFile arrive and run here, before the start (docs/research/level-loading.md, inferred).
+    // Steps 9-10: the preload services the file manager, so the checkpoint scripts the level asked for with preLoadFile
+    // arrive and run here, before the start (inferred); stand-in: the original services it first as the objects load.
     scripts.servicePreloads(true);
 
     // The start callback the script set (an arena's DoRules, which places the players), called once; Coney's choice:
