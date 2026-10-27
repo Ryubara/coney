@@ -612,8 +612,8 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
 }
 
 Holdable* Fighter::strongGrappleTarget(const FighterInput& input) {
-    // Humans that can be held and fought, standing with health left, searched along the stick as pickTarget() does;
-    // the one found becomes the target.
+    // Humans that can be held, standing with health left, in the cone along the stick: a stand-in for the search
+    // Player_FindAttackTarget makes (no any-angle, wide or kept-target pass). The one found becomes the target.
     std::vector<combat::TargetCandidate> candidates;
     candidates.reserve(input.targets.size());
     for (Combatant* target : input.targets) {
