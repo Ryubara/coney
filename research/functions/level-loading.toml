@@ -5,7 +5,7 @@
 address = 0x00158488
 name = "Gm_Level_Exit"
 page = "level-loading.md#unload"
-role = "mode 1's Exit: stops the ambient sounds, every sound and the music, calls UnloadLevel, and with a level change pending plays the outro movie and unloads the level file"
+role = "mode 1's Exit: the ambient emitters off, every sound stopped, the system music off, the music stopped, the pitch back to 1.0, then UnloadLevel and, with a level change pending, the outro movie and the level file's unload"
 level = "confirmed-code"
 coney = "src/gamemodes/gameplay_mode.cpp:GameplayMode::exit"
 status = "compared"
@@ -16,7 +16,7 @@ relation = "stand-in"
 issue = 993
 
 [[function.gaps]]
-what = "the system music reset, the audio float +0x3fa5c, the outro movie and Device_SetFlipTimeLimit"
+what = "the outro movie, the world unload on a level change and Device_SetFlipTimeLimit"
 relation = "not-ported"
 issue = 993
 

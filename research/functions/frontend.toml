@@ -45,20 +45,6 @@ relation = "not-ported"
 issue = 1009
 
 [[function]]
-address = 0x00158488
-name = "Gm_Level_Exit"
-page = "level-loading.md#unload"
-role = "mode 1's exit: the ambient emitters off, every sound stopped, the system music off, the music stopped, the pitch back to 1.0, then `UnloadLevel` and, on a level change, the outro movie"
-level = "confirmed-code"
-coney = "src/audio/game_sound.cpp:GameSound::gameplayLeft"
-status = "compared"
-
-[[function.gaps]]
-what = "the outro movie, the world unload on a level change and the flip limit"
-relation = "not-ported"
-issue = 993
-
-[[function]]
 address = 0x00159a58
 name = "Gm_Legal_Enter"
 page = "frontend.md#original-structure"
