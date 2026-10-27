@@ -118,6 +118,24 @@ coney = "src/scripting/player_bindings.cpp:addWorldBindings"
 status = "compared"
 
 [[function]]
+address = 0x002365f0
+name = "Cfg_SetLockPickHandlers"
+page = "crimes.md#code-crimes"
+role = "`CfgSetLockPickHandler`: the lock pick's start and two end handlers"
+level = "confirmed-code"
+coney = "src/scripting/object_bindings.cpp:makeCfgSetLockPickHandler"
+status = "compared"
+
+[[function]]
+address = 0x00236698
+name = "Cfg_SetLockPickStageFailHandler"
+page = "crimes.md#code-crimes"
+role = "`CfgSetLockPickStageFailHandler`: the missed press's handler"
+level = "confirmed-code"
+coney = "src/scripting/object_bindings.cpp:makeCfgSetLockPickStageFailHandler"
+status = "compared"
+
+[[function]]
 address = 0x00238100
 name = "Human_SetMoney"
 page = "crimes.md#starting-money"

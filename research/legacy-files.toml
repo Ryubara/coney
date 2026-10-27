@@ -1467,9 +1467,6 @@ tag = 10
 ["src/scripting/mission7_bindings.cpp"]
 tag = 7
 
-["src/scripting/object_bindings.cpp"]
-tag = 21
-
 ["src/scripting/player_bindings.cpp"]
 tag = 9
 
@@ -1625,9 +1622,6 @@ tag = 10
 ["src/world_objects/cars.h"]
 tag = 3
 
-["src/world_objects/doors.cpp"]
-tag = 34
-
 ["src/world_objects/drawn_poses.cpp"]
 tag = 1
 
@@ -1675,9 +1669,6 @@ tag = 1
 
 ["src/world_objects/object_list.cpp"]
 tag = 2
-
-["src/world_objects/object_services.cpp"]
-tag = 9
 
 ["src/world_objects/object_tasks.cpp"]
 tag = 9
