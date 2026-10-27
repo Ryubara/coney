@@ -75,7 +75,9 @@ def test_an_open_pull_request_of_the_claimant_suspends_the_release(
     github.link_pr(10, 60, "closed", head_date=None, author="alice")
     engine.reconcile(10)
     assert card_of(github, 10).waiting is None and card_of(github, 10).activity == clock.now()
-    clock.advance(hours=71)
+    clock.advance(hours=49)
+    engine.reconcile(10)  # the warning
+    clock.advance(hours=22)
     engine.reconcile(10)
     assert github.view(10).assignees == ("alice",)
     clock.advance(hours=2)

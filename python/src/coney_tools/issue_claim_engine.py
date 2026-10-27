@@ -104,7 +104,9 @@ class Engine:
 
     def __init__(self, remote: Remote, conventions: Conventions, now: Callable[[], datetime]) -> None:
         self.remote = remote
-        self.rules: Claims = conventions.claims
+        #: The rules of the repository; `rules` is these, or the trial's for the issue a pass is working on.
+        self._base_rules: Claims = conventions.claims
+        self.rules: Claims = self._base_rules
         self._status_prefix = conventions.labels.status_prefix
         self._blocked_heading = section_heading(conventions, "blocked-by")
         self._now = now
@@ -145,23 +147,49 @@ class Engine:
         `activity` is the pull request event that triggered the pass, if one did.
         """
         log: list[str] = []
-        for _ in range(ATTEMPTS):
-            issue = self.remote.issue(number)
-            if issue.is_pr:
-                return log
-            comments = self.remote.comments(number)
-            stored = self._stored_cards(comments)
-            work = _Pass(issue, comments, stored, latest_held(stored))
-            self._refresh_held(work)
-            try:
-                self._commands(work)
-                self._sync(work, activity)
-            except _Stale:
-                log.extend(work.log)
-                log.append(f"#{number}: another run changed the claim meanwhile; starting over")
-                continue
-            return log + work.log
+        try:
+            for _ in range(ATTEMPTS):
+                issue = self.remote.issue(number)
+                if issue.is_pr:
+                    return log
+                self.rules = self._rules_for(issue)
+                done = self._attempt(issue, log, activity)
+                if done is not None:
+                    return done
+        finally:
+            self.rules = self._base_rules
         raise _Stale(f"#{number}: the claim kept changing under {ATTEMPTS} passes; the next run finishes it", log)
+
+    def _rules_for(self, issue: IssueView) -> Claims:
+        """The rules for one issue: the repository's, or for an issue with the trial label adoption and the idle
+        release switched on with the trial's hours (`claims.trial`), so they can be tried before the cutover."""
+        base = self._base_rules
+        if base.trial.label not in issue.labels:
+            return base
+        return replace(
+            base,
+            adopt=True,
+            release=True,
+            warn_hours=base.trial.warn_hours,
+            deadline_hours=base.trial.deadline_hours,
+        )
+
+    def _attempt(self, issue: IssueView, log: list[str], activity: Activity | None) -> list[str] | None:
+        """One pass over the issue: its log lines, or None when another run changed it meanwhile (`log` then holds
+        what this pass did, and the caller starts over)."""
+        number = issue.number
+        comments = self.remote.comments(number)
+        stored = self._stored_cards(comments)
+        work = _Pass(issue, comments, stored, latest_held(stored))
+        self._refresh_held(work)
+        try:
+            self._commands(work)
+            self._sync(work, activity)
+        except _Stale:
+            log.extend(work.log)
+            log.append(f"#{number}: another run changed the claim meanwhile; starting over")
+            return None
+        return log + work.log
 
     def _refresh_held(self, work: _Pass) -> None:
         """Make the repository-wide cache agree with what this issue's comments just showed."""
@@ -262,7 +290,11 @@ class Engine:
         self._save(work, fresh, card)
         work.issue = self.remote.issue(number)
         half = " (finished a claim that stopped half way)" if resuming else ""
-        work.log.append(f"#{number}: {comment.login} claimed it{half}")
+        # Who counts as what, in the log: the live test reads it to see the permission GitHub gave the Action.
+        role = "a maintainer" if maintainer else "a contributor"
+        permission = self._permissions.get(comment.login) or f"unknown, association {comment.association}"
+        exempt = f", outside the limit (`{self.rules.exempt_label}`)" if card.exempt else ""
+        work.log.append(f"#{number}: {comment.login} claimed it{half} as {role} (permission {permission}){exempt}")
         self._audit_new_claim(work, comment, fresh, maintainer)
 
     def _before_own_claim(self, issue: IssueView) -> IssueView:
@@ -755,16 +787,18 @@ class Engine:
             )
             self._save(work, stored, ended)
             card = stored.card
-        if now >= card.deadline(self.rules):
+        # Released only after a warning and its full notice (`Card.deadline`): never unwarned.
+        if card.warned_at is not None and now >= card.deadline(self.rules):
             self._release(work, stored, card, f"idle {self.rules.deadline_hours} h", "released")
         elif now >= card.warn_at(self.rules):
             if card.warned_at is None:
                 self._still_current(work)
-                left = max(1, -(-int((card.deadline(self.rules) - now).total_seconds()) // 3600))
+                deadline = card.changed(warned_at=now).deadline(self.rules)
+                left = max(1, -(-int((deadline - now).total_seconds()) // 3600))
                 comment = self.remote.create_comment(
                     work.issue.number,
                     f"@{card.claimant} your claim of this issue expires in about {left} h "
-                    f"({show_time(card.deadline(self.rules))}): record `/progress <stage>`, push to its pull request "
+                    f"({show_time(deadline)}): record `/progress <stage>`, push to its pull request "
                     "or write `/claim renew` to keep it.",
                 )
                 self._save(work, stored, card.changed(warned_at=now, warning_comment=comment))

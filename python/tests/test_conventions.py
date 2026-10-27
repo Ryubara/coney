@@ -103,7 +103,14 @@ def test_the_real_labels_are_in_their_families() -> None:
         and len(labels.names("priority")) == 4
     )
     assert labels.names("status")[0] == "S-needs-triage" and len(labels.names("status")) == 10
-    assert labels.names("other") == ("good first issue", "help wanted", "duplicate", "wontfix", "workflow")
+    assert labels.names("other") == (
+        "good first issue",
+        "help wanted",
+        "duplicate",
+        "wontfix",
+        "workflow",
+        "claim-trial",
+    )
     assert labels.names() == tuple(label.name for label in labels.list)
 
 

@@ -222,6 +222,7 @@ time. A closed issue carries none ([What a closed issue keeps](#closed)).
 | | `duplicate` | This issue already exists |
 | | `wontfix` | This will not be worked on |
 | | `workflow` | Builds the new workflow; its claim is outside the open-claims limit |
+| | `claim-trial` | A throwaway issue for testing the claim Action; never real work |
 <!-- conventions:end -->
 
 `S-on-hold` is for work that was started and then paused on purpose, such as a held branch that becomes a task
@@ -319,9 +320,14 @@ mandatory until the new workflow starts ([How we work](how-we-work.md)); two swi
 - `S-on-hold` also takes the place of the claim's own label: while it is on, the claimed issue loses `S-in-progress` (or
   `S-pending-review`), and when it comes off while the claim stands, that label comes back.
 - Release is off until the cutover: a claim is released after 72 hours without activity (`/progress`, a pull request
-  opened, reopened, made ready or pushed to by the claimant, `/claim renew`); the claimant is mentioned at 48 hours. The
-  stages `/progress` accepts: `assigned`, `claimed`, `studied`, `fails-first`, `compared`, `checked`, `reviewed`,
-  `pr-opened`, `fix`, `finished`.
+  opened, reopened, made ready or pushed to by the claimant, `/claim renew`); the claimant is mentioned at 48 hours, and
+  a claim is never released sooner than 24 hours after that warning. The stages `/progress` accepts: `assigned`,
+  `claimed`, `studied`, `fails-first`, `compared`, `checked`, `reviewed`, `pr-opened`, `fix`, `finished`; a passing
+  stage stamp posts it, the same stage again after 12 hours.
+- An issue labelled `claim-trial` (a throwaway test issue) has adoption and release on whatever the switches say, with a
+  warning at 1 and a release at 2 hours.
+- The `claim` check of a pull request wants every issue it closes (`Fixes #N`) held by a claim of its author (a
+  maintainer's: by any claim); a problem only warns until the cutover.
 - Adoption is off until the cutover: the sweep gives a card (and the deadline) to an issue assigned by hand. The text
   after `scope:` is at most 400 characters, and at most 10 `Fixes #N` lines of one pull request event are acted on.
 - The sweep runs on the cron `7 * * * *` (UTC): it repairs cards, answers unhandled commands, releases claims over the
@@ -398,12 +404,13 @@ like any claim, as the issue stood before it (so a closed or untriaged issue is 
 **The claim card.** The Action posts one comment per claim and keeps editing it: who claimed, when, the task and the
 scope, the status (claimed, the stage, `PR #N open`, merged, released, lost), the claimant's other open claims, and the
 Expiration. From the cutover GitHub shows the Expiration as a live countdown ("in 3 days", then hours) from the
-`<relative-time datetime="...">` element, with the exact UTC deadline as its text; until then the card says it is not
-enforced yet. A hidden JSON block on the card's last line carries the same fields for the tools (`task create`'s overlap
-warning, `coney-tools claim list`, the mod); the visible words are never parsed. The card keeps only what GitHub cannot
-tell later (the time of the claim, the scope, the task, the last stage and activity, the ids of handled commands). The
-claimant, the status, the pull request and the labels are recomputed from the assignee, the labels and the linked pull
-requests on every pass, so a card that drifted is repaired, not trusted.
+`<relative-time datetime="...">` element, with the exact UTC deadline as its text (already now on a `claim-trial` issue,
+below); until then the card says it is not enforced yet. A hidden JSON block on the card's last line carries the same
+fields for the tools (`task create`'s overlap warning, `coney-tools claim list`, the mod); the visible words are never
+parsed. The card keeps only what GitHub cannot tell later (the time of the claim, the scope, the task, the last stage
+and activity, the ids of handled commands). The claimant, the status, the pull request and the labels are recomputed
+from the assignee, the labels and the linked pull requests on every pass, so a card that drifted is repaired, not
+trusted.
 
 **Status labels.** A claimed issue has exactly one `S-` label: `S-in-progress`, or `S-pending-review` while the
 claimant's pull request is open. The exception is a maintainer's `S-blocked`, `S-needs-info` or `S-on-hold`
@@ -433,6 +440,33 @@ no check closes without a lock. The sweep (or the audit) catches the result on i
 its clock starts. When an issue has two assignees, the next pass leaves one: the earliest claim keeps the issue, a
 hand-added second assignee is removed, and a claim that lost a race is marked `lost` and names the winner.
 
+**Never released unwarned.** A claim is released only after its warning, and never sooner than 24 hours (the
+deadline less the warning hours) after the warning was posted: the card's deadline is the later of the two. So a claim
+the sweep first sees late (GitHub starts scheduled workflows late under load, and on 2026-10-23 to 2026-10-27 the
+hourly sweep ran every 2 to 6 hours) still gets its full notice, and when `claims.release` is switched on at the
+cutover a claim that was already idle for days is warned first, not released on the spot.
+
+**Trying it before the cutover.** An issue that carries `claim-trial` (`claims.trial`) is treated as if adoption
+and the release were on, with a warning after 1 hour and a release after 2, whatever `claims.adopt` and
+`claims.release` say. It is for a throwaway test issue only (the label says so): the [live test](#live-test) uses it to
+watch the countdown, the warning, the release and the adoption on GitHub without switching them on for everyone.
+Taking the label off puts the issue back under the repository's switches on the next pass.
+
+**Work starts with a claim.** The tools hold an engineer to it (`task start` and `pr open` refuse a task whose claim is
+not the signed-in account's), and the `claim` job of the `pr` workflow holds every pull request to it: each issue the
+description closes (`Fixes #N`) must have a held claim whose claimant is the pull request's author, or the author is a
+maintainer, whose pull request may close anyone's claimed issue, as the Action counts it. A bot's pull request is not
+checked. Until the cutover (`claims.require_on_pr` false) a problem is a warning annotation on the pull request and the
+check passes; from then it fails. A claim made after the pull request opened is seen when the description is edited
+or a commit is pushed (or the job is re-run).
+
+**`/progress` from the stamps.** `task create` posts `/progress assigned`, `task start` `claimed` and `pr open`
+`pr-opened`; between them, every passing stage stamp (`studied`, `fails-first`, also with no test, `compared`,
+`checked`, `reviewed`) posts `/progress <stage>` on the unit's issues, so a claim whose work goes on keeps its clock. A
+new stage is posted at once, the same stage again after 12 hours (`claims.progress_refresh_hours`), remembered in
+`claim-progress.json` in the task's scratch folder. A stamp log with no unit record (a task not started with `task
+start`) posts nothing, and a post that fails is a warning: the stamp stands.
+
 **An issue labelled `S-in-progress` or `S-pending-review` with nobody assigned** (the old way of picking one up) is
 neither adopted nor released. The sweep lists it, the audit reports it as `issue.claim-orphan` in the hygiene report,
 and the coordinator either claims it with `task create` or sets it back to `S-ready-to-start`.
@@ -446,17 +480,26 @@ answered within a minute or two, by its own job or the next one. One that no job
 by the next sweep that runs; a sweep waiting in the queue can be cancelled too, which delays that by an hour. Only
 commands are caught up: a cancelled issue or pull request event is read back by the next pass of that issue (its pull
 requests, assignees and labels), at the latest by the sweep. A comment that is no command, and a label event for any
-label but a paused one or `workflow`, starts no job. Something outside the queue can still write (a person editing a
-card, `claim run` or `claim sweep` started by hand), so the Action keeps a backstop: before its first change of each
-step and before every card write it reads the issue's cards again and starts the pass over when one changed, and two
-cards of one claimant are merged into the first (its handled commands, stage, scope and latest activity). `task create`
-adds a 60-second settle before it trusts a claim ([Task files](#task-files)).
+label but a paused one, `workflow` or `claim-trial`, starts no job. Something outside the queue can still write (a
+person editing a card, `claim run` or `claim sweep` started by hand), so the Action keeps a backstop: before its first
+change of each step and before every card write it reads the issue's cards again and starts the pass over when one
+changed, and two cards of one claimant are merged into the first (its handled commands, stage, scope and latest
+activity). `task create` adds a 60-second settle before it trusts a claim ([Task files](#task-files)).
 
 **If the Action cannot delete a comment** (its token may not), the card and the labels are still right and the command's
 id is on the card, so it is not acted on again; a maintainer deletes the comment by hand.
 
-`coney-tools claim list [--json]` prints the held claims; `claim run` and `claim sweep` are what the workflow runs
-([coney-tools](coney-tools-issues.md#claim)).
+`coney-tools claim list [--json]` prints the held claims; `claim run` and `claim sweep` are what the workflow runs,
+`claim check-pr` what the `pr` workflow runs, and `claim is-command` the test the user-level no-comment-as-user hook
+asks before it lets a comment through ([coney-tools](coney-tools-issues.md#claim)).
+
+### The live test {#live-test}
+
+The claim Action is proven on GitHub, not only in the tests, on a throwaway issue labelled `claim-trial`: a written
+plan of steps, each with what the issue, its labels, its card and the Action's log should show, run by the coordinator
+(the maintainer for the steps that need a second account), then the issue is closed as not planned and its comments
+deleted. The plan and its results are kept in the unit's scratch folder; a change to the claim Action reruns the steps
+it touches.
 
 ## Task files {#task-files}
 

@@ -56,6 +56,18 @@ _SEGMENT = re.compile(r"^(\d{4})\.jsonl$")
 HEX = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
 _TIME = "%Y-%m-%dT%H:%M:%SZ"
 
+#: Told about every write, by name, after it is on disk: `(log folder, stamps written)`. The command line registers
+#: `claim_progress.observer()`, which posts `/progress` for a stage; an observer never fails or undoes the write.
+_OBSERVERS: dict[str, Callable[[Path, list[Stamp]], None]] = {}
+
+
+def observe(name: str, observer: Callable[[Path, list[Stamp]], None] | None) -> None:
+    """Register `observer` under `name` (registering again replaces it), or remove it with None."""
+    if observer is None:
+        _OBSERVERS.pop(name, None)
+    else:
+        _OBSERVERS[name] = observer
+
 
 class StampError(ConfigError):
     """A stamp cannot be written, or the log cannot be trusted."""
@@ -500,6 +512,11 @@ def append_many(
             written.append(stamp)
             previous = stamp
         _write_lines(folder, "".join(stamp.line + "\n" for stamp in written), rules.segment_bytes)
+    for name, observer in list(_OBSERVERS.items()):
+        try:
+            observer(folder, written)
+        except (ConfigError, OSError) as error:
+            print(f"warning: {name}: {error}", file=sys.stderr)
     return written
 
 

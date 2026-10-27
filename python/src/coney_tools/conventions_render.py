@@ -330,7 +330,20 @@ def _claim_rules(conventions: Conventions) -> list[str]:
     lines += _bullet(
         f"Release is {state}: a claim is released after {claims.deadline_hours} hours without activity (`/progress`, a "
         f"pull request opened, reopened, made ready or pushed to by the claimant, `/claim renew`); the claimant is "
-        f"mentioned at {claims.warn_hours} hours. The stages `/progress` accepts: {_codes(claims.stages)}."
+        f"mentioned at {claims.warn_hours} hours, and a claim is never released sooner than "
+        f"{claims.deadline_hours - claims.warn_hours} hours after that warning. The stages `/progress` accepts: "
+        f"{_codes(claims.stages)}; a passing stage stamp posts it, the same stage again after "
+        f"{claims.progress_refresh_hours} hours."
+    )
+    lines += _bullet(
+        f"An issue labelled `{claims.trial.label}` (a throwaway test issue) has adoption and release on whatever the "
+        f"switches say, with a warning at {claims.trial.warn_hours} and a release at "
+        f"{claims.trial.deadline_hours} hours."
+    )
+    pr_check = "fails" if claims.require_on_pr else "only warns until the cutover"
+    lines += _bullet(
+        "The `claim` check of a pull request wants every issue it closes (`Fixes #N`) held by a claim of its author "
+        f"(a maintainer's: by any claim); a problem {pr_check}."
     )
     adopt = "on" if claims.adopt else "off until the cutover"
     lines += _bullet(

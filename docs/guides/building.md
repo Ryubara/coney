@@ -565,7 +565,7 @@ job no workflow has, or a required check is in none.
 | clang-tidy: the lines a change touches; the whole codebase nightly, in a manual run and for a build-setup change | CI: every pull request, a push to main, a push to a release branch, nightly, a manual run | `build/clang-tidy` |
 | Python: ruff, mypy, pytest, the repository, render and progress checks | local; CI: every pull request, a push to main, a push to a release branch | `python/python`, `python/python-ok` |
 | Docs: mkdocs strictly, markdownlint, actionlint, the page standards | local; CI: every pull request, a push to main, a push to a release branch | `docs/mkdocs`, `docs/markdownlint`, `docs/actionlint` |
-| The pull request's title, description and docs | CI: every pull request | `pr/title`, `pr/docs`, `pr/body` |
+| The pull request's title, description, docs and claimed issues | CI: every pull request | `pr/title`, `pr/docs`, `pr/body`, `pr/claim` |
 | `Depends on #N` pull requests are merged | CI: every pull request, a push to main | `dependencies/dependencies`, `dependencies/rerun` |
 | The gate that stands for the build jobs | CI: every pull request, a push to main, a push to a release branch, nightly, a manual run | `build/build-ok` |
 | Which jobs a change needs | CI: every pull request, a push to main, a push to a release branch, nightly, a manual run | `build/changes`, `python/changes` |

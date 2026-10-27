@@ -214,8 +214,16 @@ class Card:
         return max(self.claimed_at, self.last_activity or self.claimed_at)
 
     def deadline(self, rules: Claims) -> datetime:
-        """When the claim is released if nothing happens: `claims.deadline_hours` after the last activity."""
-        return self.activity + timedelta(hours=rules.deadline_hours)
+        """When the claim is released if nothing happens: `claims.deadline_hours` after the last activity, but never
+        sooner than the warning's notice (`deadline_hours - warn_hours`) after the warning was given.
+
+        So a claim is never released unwarned: one already idle past the deadline when the release is switched on,
+        or when the sweep ran late, is warned first and keeps the full notice.
+        """
+        idle = self.activity + timedelta(hours=rules.deadline_hours)
+        if self.warned_at is None:
+            return idle
+        return max(idle, self.warned_at + timedelta(hours=rules.deadline_hours - rules.warn_hours))
 
     def warn_at(self, rules: Claims) -> datetime:
         """When the claimant is warned: `claims.warn_hours` after the last activity."""

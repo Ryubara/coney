@@ -390,6 +390,13 @@ claims:
   # by hand; release = the 48 h warning and the 72 h release are enforced (the card says so until then).
   adopt: false
   release: false
+  # Until then both can be tried on one issue: an issue that carries `trial.label` is treated as if adopt and release
+  # were on, with these idle hours instead (the live test of docs/guides/issues.md#claiming uses a throwaway issue).
+  trial: {label: claim-trial, warn_hours: 1, deadline_hours: 2}
+  # The `claim` check of .github/workflows/pr.yml: every issue a pull request closes (`Fixes #N`) must be held by a
+  # claim of the pull request's author (a maintainer's pull request: by any claim). false until the cutover: the check
+  # only warns.
+  require_on_pr: false
   critical_label: P-critical                      # while one has no claim, only a P-critical issue can be claimed
   claimable_status: S-ready-to-start              # the only status an issue can be claimed in, for everyone
   working_label: S-in-progress                    # on a claimed issue
@@ -397,6 +404,10 @@ claims:
   released_label: S-ready-to-start                # on an issue after /unclaim, an idle release or a lost claim
   deadline_hours: 72                              # idle time (no /progress, push to the pull request or renew) before release
   warn_hours: 48                                  # idle time at which the claimant is mentioned once
+  # A passing stage stamp (studied, fails-first, compared, checked, reviewed) posts `/progress <stage>` on the unit's
+  # issues: at once for a new stage, and for the same stage again only after this many hours, so a day of compares
+  # keeps the claim alive without a comment for each.
+  progress_refresh_hours: 12
   reply_keep_hours: 24                            # the sweep deletes a refusal reply this long after its command is gone
   command_lookback_hours: 24                      # the sweep looks for unhandled command comments this far back
   catch_up_minutes: 30                            # every run also handles other issues' commands this recent
@@ -501,6 +512,7 @@ labels:
     - {name: duplicate, color: cfd3d7, description: "This issue already exists"}
     - {name: wontfix, color: ffffff, description: "This will not be worked on"}
     - {name: workflow, color: d4c5f9, description: "Builds the new workflow; its claim is outside the open-claims limit"}
+    - {name: claim-trial, color: fef2c0, description: "A throwaway issue for testing the claim Action; never real work"}
 
 hygiene:
   # The one issue the weekly sweep reports on: one comment on it, edited in place; the workflow creates the issue if it
@@ -1152,7 +1164,7 @@ ci:
     - {id: clang-tidy, check: "clang-tidy: the lines a change touches; the whole codebase nightly, in a manual run and for a build-setup change", where: [ci, main, release, nightly, manual], jobs: ["build/clang-tidy"]}
     - {id: python, check: "Python: ruff, mypy, pytest, the repository, render and progress checks", where: [local, ci, main, release], jobs: ["python/python", "python/python-ok"]}
     - {id: docs, check: "Docs: mkdocs strictly, markdownlint, actionlint, the page standards", where: [local, ci, main, release], jobs: ["docs/mkdocs", "docs/markdownlint", "docs/actionlint"]}
-    - {id: pull-request, check: "The pull request's title, description and docs", where: [ci], jobs: ["pr/title", "pr/docs", "pr/body"]}
+    - {id: pull-request, check: "The pull request's title, description, docs and claimed issues", where: [ci], jobs: ["pr/title", "pr/docs", "pr/body", "pr/claim"]}
     - {id: dependencies, check: "`Depends on #N` pull requests are merged", where: [ci, main], jobs: ["dependencies/dependencies", "dependencies/rerun"]}
     - {id: gates, check: "The gate that stands for the build jobs", where: [ci, main, release, nightly, manual], jobs: ["build/build-ok"]}
     - {id: scope, check: "Which jobs a change needs", where: [ci, main, release, nightly, manual], jobs: ["build/changes", "python/changes"]}

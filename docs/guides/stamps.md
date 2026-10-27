@@ -411,6 +411,11 @@ subject)`, `current(step, subject, covers)`) and `who_from_env(tool)`. A `pr-ope
 For a `compared` stamp, `latest` and `current` also take the Coney function (`function=`) and every function citing the
 address (`cited_by=`) ([Two Coney functions, one address](#shared-address)).
 
+After a write, `append_many` tells the observers registered with `observe(name, observer)` what it wrote; an observer
+that fails is a warning and never undoes the stamp. The command line registers one: a passing stage stamp posts
+`/progress <stage>` on the unit's issues, so the claim's idle clock restarts while the work goes on
+([`/progress` from the stamps](issues.md#claiming)).
+
 What the three steps bound to the change record (all unsigned, in the local log):
 
 | Step | `covers` | `detail` (at most 2 KB) |

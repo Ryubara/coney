@@ -834,6 +834,17 @@ class ClaimLimits:
 
 
 @dataclass(frozen=True)
+class ClaimTrial:
+    """Adoption and the idle release tried on the issues that carry one label, before they are on for every issue."""
+
+    #: The label that marks an issue for the trial (a throwaway test issue).
+    label: str
+    #: The idle hours of a trial claim: the warning, then the release.
+    warn_hours: int
+    deadline_hours: int
+
+
+@dataclass(frozen=True)
 class Claims:
     """Claiming an issue: the commands, the claim card, the limits, the labels and the deadlines."""
 
@@ -871,8 +882,15 @@ class Claims:
     adopt: bool
     #: Whether the warning and the release for idleness are enforced.
     release: bool
+    #: An issue with the trial label is treated as if `adopt` and `release` were on, with the trial's hours.
+    trial: ClaimTrial
+    #: Whether the `claim` check of a pull request fails (true) or only warns (false) when an issue it closes is not
+    #: claimed by its author.
+    require_on_pr: bool
     deadline_hours: int
     warn_hours: int
+    #: A stage stamp posts `/progress` for a new stage at once, and for the same stage again after this many hours.
+    progress_refresh_hours: int
     reply_keep_hours: int
     command_lookback_hours: int
     #: Every claim run also handles the unhandled commands of other issues this recent (a run GitHub cancelled).
@@ -1875,6 +1893,7 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
     counts = (
         "deadline_hours",
         "warn_hours",
+        "progress_refresh_hours",
         "reply_keep_hours",
         "command_lookback_hours",
         "catch_up_minutes",
@@ -1902,6 +1921,8 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
             "hold_labels",
             "adopt",
             "release",
+            "trial",
+            "require_on_pr",
             *labels,
             *counts,
         ),
@@ -1933,6 +1954,16 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
     numbers = {key: _count(table[key], _at(where, key)) for key in counts}
     if numbers["warn_hours"] >= numbers["deadline_hours"]:
         raise _fail(_at(where, "warn_hours"), "must be less than deadline_hours")
+    trial_where = _at(where, "trial")
+    trial_table = _table(table["trial"], trial_where, ("label", "warn_hours", "deadline_hours"))
+    trial = ClaimTrial(
+        label=_text(trial_table["label"], _at(trial_where, "label")),
+        warn_hours=_count(trial_table["warn_hours"], _at(trial_where, "warn_hours")),
+        deadline_hours=_count(trial_table["deadline_hours"], _at(trial_where, "deadline_hours")),
+    )
+    _names_in((trial.label,), label_names, _at(trial_where, "label"), "in labels.list")
+    if trial.warn_hours >= trial.deadline_hours:
+        raise _fail(_at(trial_where, "warn_hours"), "must be less than deadline_hours")
     return Claims(
         bot_login=_text(table["bot_login"], _at(where, "bot_login")),
         card_marker=markers["card_marker"],
@@ -1947,6 +1978,8 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
         hold_labels=hold,
         adopt=_flag(table["adopt"], _at(where, "adopt")),
         release=_flag(table["release"], _at(where, "release")),
+        trial=trial,
+        require_on_pr=_flag(table["require_on_pr"], _at(where, "require_on_pr")),
         limits=ClaimLimits(
             maintainer=_count(limits["maintainer"], _at(limits_where, "maintainer")),
             contributor=_count(limits["contributor"], _at(limits_where, "contributor")),
