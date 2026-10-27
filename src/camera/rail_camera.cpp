@@ -348,7 +348,7 @@ void RailCamera::placeLevel(anim::Vec3 feet) {
 }
 
 void RailCamera::placeLeading(anim::Vec3 feet, bool leadLook) {
-    // The target's place on the rail: its nearest point of the segments in plan.
+    // The target's place on the rail: its nearest point of the segments in plan. Stand-in (#85): no segment steps.
     float bestAway = std::numeric_limits<float>::max();
     float along = 0.0F;
     float total = 0.0F;
@@ -363,7 +363,7 @@ void RailCamera::placeLeading(anim::Vec3 feet, bool leadLook) {
         }
         total += length;
     }
-    // The lead ahead or behind, clamped to the rail's ends.
+    // The lead ahead or behind, clamped to the rail's ends. Stand-in (#85): walked along the rail's segments.
     const float sense = m_mode == RailMode::Ahead ? 1.0F : -1.0F;
     float left = std::clamp(along + (sense * m_lead.current), 0.0F, total);
     anim::Vec3 direction{0.0F, 1.0F, 0.0F};
