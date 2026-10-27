@@ -52,8 +52,7 @@ bool down(const Brain& brain) { return brain.human().downOrDead(); }
 // Whether `brain` may start a fight: no Chase goal (`0x0c`) on his stack, his top goal not the balcony boss's
 // (`0x8a`), his gang not fighting (alert state `+0x32` not 1, as `Gang_SetAlertState` `0x00164a28` sets it) and no
 // fight goal (Melee or LeftTurf, the goals Brain::hasFightGoal() looks for, read here on a const brain). A brain with
-// no gang counts as calm (the original always has one). **Coney stand-in** (#1011): Coney builds no Chase goal, so
-// that test never refuses.
+// no gang counts as calm (the original always has one).
 // @orig 0x002904e0 Brain_MayStartFight (unknown)
 bool mayStartFight(const Brain& brain) {
     constexpr auto kChase = static_cast<GoalType>(0x0c);
@@ -64,6 +63,7 @@ bool mayStartFight(const Brain& brain) {
         chase = chase || type == kChase;
         fight = fight || type == GoalType::Melee || type == GoalType::LeftTurf;
     }
+    // **Coney stand-in** (#1011): Coney builds no Chase goal, so this test never refuses.
     if (chase) {
         return false;
     }
