@@ -206,6 +206,14 @@ class Card:
     #: `regained` claim), and the id of that warning comment so it can be deleted.
     over_warned_at: datetime | None = None
     over_warning_comment: int | None = None
+    #: When the first warning of this over-the-limit episode was given; a fresh notice (after the claimant's count
+    #: changed meanwhile) never reaches past twice the notice after it. None before a warning.
+    over_first_at: datetime | None = None
+    #: The claimant's `flips` (all their held claims) when the warning was given: a different total at the next sweep
+    #: means a claim stopped or started counting in between, even if the claimant is over the limit again by now.
+    over_flips: int = 0
+    #: How many times this claim's `counted` has changed, for the check above.
+    flips: int = 0
 
     def __post_init__(self) -> None:
         """A card with no last activity has had none since the claim."""
@@ -239,12 +247,25 @@ class Card:
             return idle
         return max(idle, self.warned_at + timedelta(hours=rules.deadline_hours - rules.warn_hours))
 
-    def over_deadline(self, rules: Claims) -> datetime | None:
-        """When the claim is released for being over the open-claims limit: the notice (`deadline_hours` less
-        `warn_hours`, the same notice an idle claim gets) after the warning; None while it has no warning."""
+    def over_notice(self, rules: Claims) -> timedelta:
+        """The notice before a release for being over the limit: the one an idle claim gets (`deadline_hours` less
+        `warn_hours`)."""
+        return timedelta(hours=rules.deadline_hours - rules.warn_hours)
+
+    def over_cap(self, rules: Claims) -> datetime | None:
+        """The latest moment a release for being over the limit can be put off by fresh notices: twice the notice
+        after the first warning of the episode. None while it has no warning."""
         if self.over_warned_at is None:
             return None
-        return self.over_warned_at + timedelta(hours=rules.deadline_hours - rules.warn_hours)
+        return (self.over_first_at or self.over_warned_at) + 2 * self.over_notice(rules)
+
+    def over_deadline(self, rules: Claims) -> datetime | None:
+        """When the claim is released for being over the open-claims limit: the notice after the warning, but never
+        past `over_cap`; None while it has no warning."""
+        cap = self.over_cap(rules)
+        if self.over_warned_at is None or cap is None:
+            return None
+        return min(self.over_warned_at + self.over_notice(rules), cap)
 
     def warn_at(self, rules: Claims) -> datetime:
         """When the claimant is warned: `claims.warn_hours` after the last activity."""
@@ -313,6 +334,9 @@ def _data(card: Card) -> dict[str, Any]:
         "regained": card.regained,
         "over_warned_at": when(card.over_warned_at),
         "over_warning_comment": card.over_warning_comment,
+        "over_first_at": when(card.over_first_at),
+        "over_flips": card.over_flips,
+        "flips": card.flips,
     }
 
 
@@ -441,6 +465,9 @@ def parse_card(body: str, rules: Claims) -> Card | None:
             regained=bool(data.get("regained", False)),
             over_warned_at=_moment(data.get("over_warned_at")),
             over_warning_comment=int(over) if (over := data.get("over_warning_comment")) is not None else None,
+            over_first_at=_moment(data.get("over_first_at")),
+            over_flips=int(data.get("over_flips", 0)),
+            flips=int(data.get("flips", 0)),
         )
     except (ValueError, KeyError, TypeError):
         return None

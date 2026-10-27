@@ -8,10 +8,13 @@ names. The count comes back when that pull request closes unmerged, and the newe
 and released after their notice.
 """
 
+from datetime import timedelta
+
 from audit_support import CONVENTIONS
-from claim_support import START, Clock, FakeGitHub
+from claim_support import LIVE, START, Clock, FakeGitHub
 
 from coney_tools import issue_claim_model as model
+from coney_tools.conventions import Conventions
 from coney_tools.issue_claim_engine import Engine
 
 OFF = CONVENTIONS
@@ -29,15 +32,16 @@ def card_of(github: FakeGitHub, number: int) -> model.Card:
 class Scene:
     """Issues 1 to 8 on an in-memory GitHub, and a way to act as a person and let the Action look."""
 
-    def __init__(self, issues: int = 8) -> None:
+    def __init__(self, issues: int = 8, conventions: Conventions = OFF) -> None:
+        self.conventions = conventions
         self.clock = Clock()
         self.github = FakeGitHub(self.clock)
         for number in range(1, issues + 1):
             self.github.add_issue(number, labels=READY)
 
     def engine(self) -> Engine:
-        """An engine on the repository's rules as committed (adoption and release off)."""
-        return Engine(self.github, OFF, self.clock.now)
+        """An engine on the scene's rules: the repository's as committed (adoption and release off), or `LIVE`."""
+        return Engine(self.github, self.conventions, self.clock.now)
 
     def say(self, number: int, login: str, text: str) -> None:
         """`login` comments `text` on the issue and the Action handles it."""
@@ -80,7 +84,7 @@ def test_a_maintainers_review_stops_counting_but_a_stage_is_still_a_stage() -> N
     assert card_of(github, 1).freed and not card_of(github, 1).counted
     scene.say(2, "Ryubara", "/progress finished")
     assert not card_of(github, 2).counted
-    assert Engine(github, OFF, scene.clock.now).sweep().errors == []
+    assert scene.engine().sweep().errors == []
 
 
 def test_a_contributor_cannot_end_the_count_by_commenting_a_stage() -> None:
@@ -102,7 +106,7 @@ def test_a_contributor_cannot_end_the_count_by_commenting_a_stage() -> None:
     # The Action says so in its log: the stage was recorded, the slot was not freed.
     github.say(1, "alice", "/progress fix")
     assert any("frees a slot only for a maintainer" in line for line in scene.engine().reconcile(1))
-    assert Engine(github, OFF, scene.clock.now).sweep().errors == []
+    assert scene.engine().sweep().errors == []
     assert scene.held(1) and scene.held(2) and not scene.held(3)
 
 
@@ -134,7 +138,7 @@ def test_a_ready_pull_request_frees_the_slot_for_anyone_and_a_draft_does_not() -
 
 
 def test_the_count_comes_back_when_the_pull_request_closes_unmerged_and_the_newest_are_warned_then_released() -> None:
-    scene = Scene()
+    scene = Scene(conventions=LIVE)
     github = scene.github
     scene.say(1, "alice", "/claim")
     scene.say(2, "alice", "/claim")
@@ -146,7 +150,7 @@ def test_the_count_comes_back_when_the_pull_request_closes_unmerged_and_the_newe
     card = card_of(github, 1)
     assert card.counted and card.regained and card.status == "claimed"
     # Over the limit: the sweep warns for the newest claim (#3) and releases nothing yet.
-    result = Engine(github, OFF, scene.clock.now).sweep()
+    result = scene.engine().sweep()
     assert result.errors == [] and not any("ended" in line for line in result.lines)
     assert all(scene.held(n) for n in (1, 2, 3))
     assert len(github.others(3)) == 1 and "@alice you hold more open claims than the limit" in github.others(3)[0].body
@@ -155,13 +159,13 @@ def test_the_count_comes_back_when_the_pull_request_closes_unmerged_and_the_newe
     assert warned.over_warned_at == START and "Over the limit" in github.cards(3)[-1].body
     # A sweep inside the notice does nothing more (no second warning), and she takes no new claim meanwhile.
     scene.clock.advance(hours=RULES.deadline_hours - RULES.warn_hours - 1)
-    Engine(github, OFF, scene.clock.now).sweep()
+    scene.engine().sweep()
     assert scene.held(3) and len(github.others(3)) == 1
     scene.say(4, "alice", "/claim")
     assert not scene.held(4) and "3 open claim(s)" in github.replies(4)[-1].body
     # The notice runs out: the newest claim is released, with its warning removed, and the other two stay.
     scene.clock.advance(hours=2)
-    result = Engine(github, OFF, scene.clock.now).sweep()
+    result = scene.engine().sweep()
     assert not scene.held(3) and scene.held(1) and scene.held(2)
     assert card_of(github, 3).status == "released" and "more than 2 open claims" in (
         card_of(github, 3).released_why or ""
@@ -172,23 +176,23 @@ def test_the_count_comes_back_when_the_pull_request_closes_unmerged_and_the_newe
 
 
 def test_giving_a_claim_up_clears_the_over_limit_warning() -> None:
-    scene = Scene()
+    scene = Scene(conventions=LIVE)
     github = scene.github
     scene.say(1, "alice", "/claim")
     scene.say(2, "alice", "/claim")
     scene.pull_request(1, 60, "alice")
     scene.say(3, "alice", "/claim")
     scene.pull_request(1, 60, "alice", state="closed")
-    Engine(github, OFF, scene.clock.now).sweep()
+    scene.engine().sweep()
     assert card_of(github, 3).over_warned_at is not None
     # She finishes or gives up #2 within the notice: the claim in danger is no longer over, and its warning goes.
     scene.say(2, "alice", "/unclaim")
-    Engine(github, OFF, scene.clock.now).sweep()
+    scene.engine().sweep()
     kept = card_of(github, 3)
     assert kept.active and kept.over_warned_at is None and kept.over_warning_comment is None
     assert not any("you hold more open claims" in c.body for c in github.comment_list[3])
-    scene.clock.advance(hours=RULES.deadline_hours)
-    Engine(github, OFF, scene.clock.now).sweep()
+    scene.clock.advance(hours=RULES.deadline_hours - RULES.warn_hours + 1)
+    scene.engine().sweep()
     assert scene.held(1) and scene.held(3)
 
 
@@ -262,7 +266,7 @@ def test_one_ready_pull_request_frees_one_claim_however_many_issues_it_names_or_
     scene.say(4, "alice", "/claim")
     assert not scene.held(4) and "2 open claim(s) (2 at most for a contributor)" in github.replies(4)[-1].body
     # The sweep agrees: nothing over the limit, nothing warned.
-    result = Engine(github, OFF, scene.clock.now).sweep()
+    result = scene.engine().sweep()
     assert result.errors == [] and all(card_of(github, n).over_warned_at is None for n in (1, 2, 3))
     # A second ready pull request frees one more claim: the oldest it names (each pull request frees one).
     scene.link(61, "alice", (2, 3))
@@ -323,3 +327,110 @@ def test_a_regained_claim_is_not_exempt_from_the_order_either() -> None:
         model.Card(issue=n, claimant="alice", claimed_at=START.replace(minute=n), regained=n == 1) for n in (1, 2, 3)
     ]
     assert [overrun(c, cards, False, RULES) is None for c in cards] == [True, True, False]
+
+
+def test_a_toggled_pull_request_gets_a_fresh_notice_but_never_past_twice_the_notice() -> None:
+    """The warning is keyed to the claimant's count: made ready (under the limit) at +23 h and a draft again (over) at
+    +24.5 h, with no sweep between, the claim is not released at once; the notice starts again, and a second toggle
+    cannot put the release off beyond twice the notice after the first warning."""
+    scene = Scene(conventions=LIVE)
+    github = scene.github
+    notice = RULES.deadline_hours - RULES.warn_hours
+    scene.say(1, "alice", "/claim")
+    scene.say(2, "alice", "/claim")
+    scene.pull_request(1, 60, "alice")
+    scene.say(3, "alice", "/claim")
+    scene.pull_request(1, 60, "alice", state="closed")
+    scene.engine().sweep()
+    first = card_of(github, 3)
+    assert first.over_warned_at == START and first.over_first_at == START
+    scene.clock.advance(hours=23)
+    scene.pull_request(1, 60, "alice")  # ready again: she is under the limit, and no sweep sees it
+    scene.clock.advance(hours=1.5)
+    scene.pull_request(1, 60, "alice", draft=True)  # a draft again: over the limit again, 24.5 h after the warning
+    result = scene.engine().sweep()
+    assert scene.held(3) and not any("ended" in line for line in result.lines)
+    again = card_of(github, 3)
+    assert again.over_warned_at == START + timedelta(hours=24.5) and again.over_first_at == START
+    assert again.over_deadline(RULES) == START + timedelta(hours=2 * notice)  # the cap, not 24.5 h + notice
+    warnings = [c for c in github.comment_list[3] if "you hold more open claims" in c.body]
+    assert len(warnings) == 1 and "2026-10-24 12:00 UTC" in warnings[0].body
+    # A second toggle cannot push it beyond the cap.
+    scene.clock.advance(hours=5)
+    scene.pull_request(1, 60, "alice")
+    scene.clock.advance(hours=1)
+    scene.pull_request(1, 60, "alice", draft=True)
+    scene.engine().sweep()
+    assert scene.held(3) and card_of(github, 3).over_deadline(RULES) == START + timedelta(hours=2 * notice)
+    scene.clock.advance(hours=2 * notice - 30.5 - 0.5)
+    scene.engine().sweep()
+    assert scene.held(3)
+    scene.clock.advance(hours=1)
+    scene.engine().sweep()
+    assert not scene.held(3) and card_of(github, 3).status == "released"
+
+
+def test_a_warning_given_before_a_dip_is_not_released_on_the_old_notice() -> None:
+    """Without the toggle in the sweep gap the notice is the plain one: released 24 h after the warning."""
+    scene = Scene(conventions=LIVE)
+    scene.say(1, "alice", "/claim")
+    scene.say(2, "alice", "/claim")
+    scene.pull_request(1, 60, "alice")
+    scene.say(3, "alice", "/claim")
+    scene.pull_request(1, 60, "alice", state="closed")
+    scene.engine().sweep()
+    scene.clock.advance(hours=RULES.deadline_hours - RULES.warn_hours + 0.5)
+    scene.engine().sweep()
+    assert not scene.held(3)
+
+
+def test_the_over_limit_release_is_off_until_the_cutover_and_says_what_it_would_do() -> None:
+    scene = Scene()
+    github = scene.github
+    scene.say(1, "alice", "/claim")
+    scene.say(2, "alice", "/claim")
+    scene.pull_request(1, 60, "alice")
+    scene.say(3, "alice", "/claim")
+    scene.pull_request(1, 60, "alice", state="closed")
+    result = scene.engine().sweep()
+    assert any("#3: would warn alice" in line and "release is off until the cutover" in line for line in result.lines)
+    assert github.others(3) == [] and card_of(github, 3).over_warned_at is None
+    scene.clock.advance(hours=200)
+    scene.engine().sweep()
+    assert scene.held(1) and scene.held(2) and scene.held(3)
+    # `/claim` still refuses a new claim meanwhile.
+    scene.say(4, "alice", "/claim")
+    assert not scene.held(4)
+
+
+def test_the_trial_label_runs_the_over_limit_release_on_one_issue_before_the_cutover() -> None:
+    scene = Scene()
+    github = scene.github
+    github.add_issue(9, labels=(*READY, RULES.trial.label))
+    scene.say(1, "alice", "/claim")
+    scene.say(2, "alice", "/claim")
+    scene.pull_request(1, 60, "alice")
+    scene.say(9, "alice", "/claim")
+    scene.pull_request(1, 60, "alice", state="closed")
+    scene.engine().sweep()
+    assert "@alice you hold more open claims" in github.others(9)[0].body
+    # The trial's notice is its idle hours (2 h less 1 h), not a day.
+    scene.clock.advance(hours=RULES.trial.deadline_hours - RULES.trial.warn_hours + 0.2)
+    scene.engine().sweep()
+    assert not scene.held(9) and scene.held(1) and scene.held(2)
+
+
+def test_a_maintainers_claim_is_never_released_for_being_over_the_limit() -> None:
+    scene = Scene(conventions=LIVE)
+    github = scene.github
+    for number in (1, 2, 3):
+        scene.say(number, "Ryubara", "/claim")
+    scene.pull_request(1, 60, "Ryubara")
+    scene.say(4, "Ryubara", "/claim")
+    assert scene.held(4)
+    scene.pull_request(1, 60, "Ryubara", state="closed")
+    result = scene.engine().sweep()
+    assert any("a maintainer's claim is never released for it" in line for line in result.lines)
+    scene.clock.advance(hours=RULES.deadline_hours - RULES.warn_hours + 2)
+    scene.engine().sweep()
+    assert all(scene.held(n) for n in (1, 2, 3, 4)) and github.others(4) == []

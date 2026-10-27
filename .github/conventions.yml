@@ -381,11 +381,12 @@ claims:
   exempt_label: workflow
   # A claim stops counting toward the limit when a maintainer records one of these stages (the tools post them; a
   # contributor's comment frees nothing, being free to write), or while a pull request of its claimant that closes the
-  # issue is open and not a draft (one such pull request frees one task's slot, the oldest it closes, however many
-  # issues it names): the limit stands for the engineers' task slots, and a slot frees when the unit passes review and
-  # takes the next task while CI runs (docs/guides/issues.md#slots). A stage frees the slot for good; a pull request
-  # closed unmerged gives the count back, and the newest claims then over the limit are warned and released after the
-  # notice (deadline_hours less warn_hours). The claim itself stays held either way.
+  # issue is open and not a draft (one such pull request frees one task's slot: the oldest it closes and the issues of
+  # that task it names, however many issues it names): the limit stands for the engineers' task slots, and a slot
+  # frees when the unit passes review and takes the next task while CI runs (docs/guides/issues.md#slots). A stage
+  # frees the slot for good; a pull request closed unmerged gives the count back, and the newest claims then over the
+  # limit are warned and, once `release` is on (or the trial label is), released after the notice (deadline_hours less
+  # warn_hours), never a maintainer's. The claim itself stays held either way.
   limit_ends_at: [reviewed, pr-opened, fix, finished]
   scope_max_characters: 400                       # the text after `scope:` in /claim
   closing_per_event: 10                           # `Fixes #N` lines of one pull request event that are acted on
@@ -395,7 +396,9 @@ claims:
   # working_label (or review_label); when it comes off and the claim still stands, that label comes back.
   hold_labels: [S-on-hold]
   # Both false until the cutover (docs/guides/issues.md#claiming): adopt = the sweep gives a card to an issue assigned
-  # by hand; release = the 48 h warning and the 72 h release are enforced (the card says so until then).
+  # by hand; release = the 48 h warning and the 72 h release are enforced (the card says so until then), and so is
+  # the warning and release of a claim that is over the limit after its pull request was closed unmerged (until then
+  # a sweep only logs what it would do).
   adopt: false
   release: false
   # Until then both can be tried on one issue: an issue that carries `trial.label` is treated as if adopt and release

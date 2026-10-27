@@ -319,7 +319,8 @@ def _claim_rules(conventions: Conventions) -> list[str]:
         f"maintainer records {ends} (their tools do, after the review), or, for anyone, while the claimant's own pull "
         "request that closes it is open and not a draft, which frees one task's slot (the oldest it closes), however "
         "many issues it names; a pull request closed unmerged gives the count back, and the newest claims then over "
-        "the limit are warned and released after the notice. It stays held until it ends."
+        "the limit are warned and, once release is on, released after the notice (never a maintainer's). It stays "
+        "held until it ends."
     )
     lines += _bullet(
         f"While an open `{claims.critical_label}` issue that can be claimed has no claim, only a "
@@ -341,7 +342,8 @@ def _claim_rules(conventions: Conventions) -> list[str]:
         f"mentioned at {claims.warn_hours} hours, and a claim is never released sooner than "
         f"{claims.deadline_hours - claims.warn_hours} hours after that warning. The stages `/progress` accepts: "
         f"{_codes(claims.stages)}; a passing stage stamp posts it, the same stage again after "
-        f"{claims.progress_refresh_hours} hours."
+        f"{claims.progress_refresh_hours} hours. The same switch gates the release of claims over the limit "
+        "(below); until it is on, a sweep only says what it would do."
     )
     lines += _bullet(
         f"An issue labelled `{claims.trial.label}` (a throwaway test issue) has adoption and release on whatever the "

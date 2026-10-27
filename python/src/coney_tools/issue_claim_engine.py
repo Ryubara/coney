@@ -398,6 +398,7 @@ class Engine:
                 stage=command.stage,
                 freed=freed,
                 counted=card.counted and not freed,
+                flips=card.flips + (1 if card.counted and freed else 0),
                 last_activity=comment.created_at,
                 last_activity_why="progress",
                 warned_at=None,
@@ -688,6 +689,7 @@ class Engine:
             counted=keeper.card.counted and twin.card.counted,
             freed=keeper.card.freed or twin.card.freed,
             regained=keeper.card.regained or twin.card.regained,
+            flips=keeper.card.flips + twin.card.flips,
             last_activity=newer.activity,
             last_activity_why=newer.last_activity_why,
         )
@@ -779,6 +781,9 @@ class Engine:
             "exempt": self.rules.exempt_label in work.issue.labels,
             "counted": counted,
             "regained": card.regained or (counted and not card.counted),
+            # Every change of the count, so a warning for being over the limit can tell the claimant was under it
+            # meanwhile, between two sweeps.
+            "flips": card.flips + (1 if counted != card.counted else 0),
         }
         moments = [open_pr.head_date if open_pr else None, activity.at if activity and counts(activity.by) else None]
         pushed = [moment for moment in moments if moment is not None]
@@ -949,7 +954,7 @@ class Engine:
         regained = {card.claimant for card in held if card.regained}
         for card, why in late:
             if card.claimant in regained:
-                lines.extend(self._warn_or_release_over(card, why))
+                lines.extend(self._warn_or_release_over(card, why, held))
                 continue
             issue = self.remote.issue(card.issue)
             comments = self.remote.comments(card.issue)
@@ -983,35 +988,64 @@ class Engine:
             return None
         return work
 
-    def _warn_or_release_over(self, card: Card, why: str) -> list[str]:
-        """A claim past the limit of a claimant whose count came back: the first time, warn the claimant and start the
-        notice (`deadline_hours` less `warn_hours`, as for an idle claim); once the notice has run out and the claim is
-        still over, release it. Never sooner, so work in progress is not lost to a pull request that was closed."""
+    def _warn_or_release_over(self, card: Card, why: str, held: list[Card]) -> list[str]:
+        """A claim past the limit of a claimant whose count came back: warn the claimant and start the notice (the
+        one an idle claim gets); release the claim only once the notice has run out and it is still over. Never
+        sooner, so work in progress is not lost to a pull request that was closed.
+
+        It follows the idle release: off until the cutover (`claims.release`, or the trial label on this issue), when
+        a sweep only says what it would do, and never for a maintainer's claim (the limit of 3 is theirs to keep).
+        A claim whose claimant's count changed since the warning (`flips`: a ready pull request toggled between two
+        sweeps) gets a fresh notice, but never later than twice the notice after the first warning.
+        """
         work = self._over_pass(card)
         if work is None or work.active is None:
             return []
+        number = card.issue
+        if self.is_maintainer(card.claimant):
+            return [
+                f"#{number}: {card.claimant} is over the limit ({why}); a maintainer's claim is never released for it"
+            ]
+        rules = self._rules_for(work.issue)
+        notice = card.over_notice(rules)
+        if not rules.release:
+            hours = int(notice.total_seconds() // 3600)
+            return [
+                f"#{number}: would warn {card.claimant}: over the limit ({why}), and release the claim after "
+                f"{hours} h (release is off until the cutover)"
+            ]
         active = work.active
         current = active.card
-        due = current.over_deadline(self.rules)
+        now = self._now()
+        flips = sum(c.flips for c in held if c.claimant == current.claimant)
+        due = current.over_deadline(rules)
+        cap = current.over_cap(rules)
+        self.rules = rules
         try:
-            if due is None:
+            if due is None or cap is None or (current.over_flips != flips and now < cap):
+                # A first warning, or a fresh notice: the claimant's count changed since the last one.
                 self._still_current(work)
-                until = self._now() + timedelta(hours=self.rules.deadline_hours - self.rules.warn_hours)
+                self._drop_over_warning(work, current)
+                first = current.over_first_at or now if current.over_warned_at is not None else now
+                started = current.changed(over_warned_at=now, over_first_at=first, over_flips=flips)
+                until = started.over_deadline(rules) or now + notice
                 comment = self.remote.create_comment(
-                    card.issue,
+                    number,
                     f"@{current.claimant} you hold more open claims than the limit allows ({why}): this claim is "
                     f"released at {show_time(until)} unless you finish or `/unclaim` another claim first.",
                 )
-                self._save(work, active, current.changed(over_warned_at=self._now(), over_warning_comment=comment))
-                work.log.append(f"#{card.issue}: warned {current.claimant}: over the limit ({why})")
-            elif self._now() >= due:
+                self._save(work, active, started.changed(over_warning_comment=comment))
+                work.log.append(f"#{number}: warned {current.claimant}: over the limit ({why})")
+            elif now >= due:
                 if self._release(work, active, current, f"released: {why}", "released"):
-                    first = reply_first_line(self.rules, 0)
+                    first_line = reply_first_line(rules, 0)
                     self.remote.create_comment(
-                        card.issue, f"{first}\nClaim released: {why}; finish or give up another first."
+                        number, f"{first_line}\nClaim released: {why}; finish or give up another first."
                     )
         except _Stale:
-            work.log.append(f"#{card.issue}: the claim changed meanwhile; the next sweep looks again")
+            work.log.append(f"#{number}: the claim changed meanwhile; the next sweep looks again")
+        finally:
+            self.rules = self._base_rules
         return work.log
 
     def _clear_over_warning(self, card: Card) -> list[str]:

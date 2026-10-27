@@ -319,7 +319,8 @@ hold back. `claims.trial` is no switch: it only lets one test issue try adoption
   records `reviewed`, `pr-opened`, `fix` or `finished` (their tools do, after the review), or, for anyone, while the
   claimant's own pull request that closes it is open and not a draft, which frees one task's slot (the oldest it
   closes), however many issues it names; a pull request closed unmerged gives the count back, and the newest claims then
-  over the limit are warned and released after the notice. It stays held until it ends.
+  over the limit are warned and, once release is on, released after the notice (never a maintainer's). It stays held
+  until it ends.
 - While an open `P-critical` issue that can be claimed has no claim, only a `P-critical` issue can be claimed.
 - A claimed issue that carries `S-blocked`, `S-needs-info`, `S-on-hold` keeps that label; the claim stays and its
   release clock waits, as it does while the claimant's pull request is open.
@@ -329,7 +330,8 @@ hold back. `claims.trial` is no switch: it only lets one test issue try adoption
   opened, reopened, made ready or pushed to by the claimant, `/claim renew`); the claimant is mentioned at 48 hours, and
   a claim is never released sooner than 24 hours after that warning. The stages `/progress` accepts: `assigned`,
   `claimed`, `studied`, `fails-first`, `compared`, `checked`, `reviewed`, `pr-opened`, `fix`, `finished`; a passing
-  stage stamp posts it, the same stage again after 12 hours.
+  stage stamp posts it, the same stage again after 12 hours. The same switch gates the release of claims over the limit
+  (below); until it is on, a sweep only says what it would do.
 - An issue labelled `claim-trial` (a throwaway test issue) has adoption and release on whatever the switches say, with a
   warning at 1 and a release at 2 hours.
 - The `claim` check of a pull request wants every issue it closes (`Fixes #N`) held by a claim of its author (a
@@ -625,22 +627,37 @@ trusts two signs of a freed slot and no more:
   does not count. A draft costs nothing to open and frees nothing, and neither does another person's pull request (a
   maintainer's included: the slot is the claimant's unit). A pull request is cheap to open and to edit, so for a
   claimant who is not a maintainer **one pull request frees one task's slot**: the oldest of the claimant's held claims
-  that it closes, with the other issues of that task (they count as one claim), however many issues it names or comes to
-  name; the rest keep counting. A maintainer's own ready pull request frees every claim it closes. If the pull request is
-  closed unmerged (or made a draft again) the count comes back (`regained` on the card), and the claimant may then hold
-  more claims than the limit. `/claim` refuses a new one meanwhile, and the sweep gives the newest claims past the limit
-  a warning comment (the card shows `Over the limit`) and releases them after the same notice an idle claim gets
-  (`claims.deadline_hours` less `claims.warn_hours`, 24 hours), unless the claimant finishes or gives up another claim
-  first, which takes the warning back. A pull request of another repository that names the issue is ignored.
+  that it closes, and those issues of that task which it names too (they count as one claim; a task issue it does not
+  name keeps counting), however many issues it names or comes to name; the rest keep counting. A maintainer's own ready
+  pull request frees every claim it closes. If the pull request is closed unmerged (or made a draft again) the count
+  comes back (`regained` on the card), and the claimant may then hold more claims than the limit. `/claim` refuses a
+  new one meanwhile, and the sweep gives the newest claims past the limit a warning comment (the card shows `Over the
+  limit`) and releases them after the same notice an idle claim gets (`claims.deadline_hours` less `claims.warn_hours`,
+  24 hours), unless the claimant finishes or gives up another claim first, which takes the warning back. A pull
+  request of another repository that names the issue is ignored.
+
+That release follows the idle release: it is off until the cutover (`claims.release`; a sweep only logs `would warn
+...`), and the `claim-trial` label turns it on for one issue, with the trial's hours. It never touches a maintainer's
+claim: a maintainer who is over the limit again is logged and left alone (the tools' own path is safe anyway: the
+`reviewed` stage freed the claim for good first). A warning is kept true to the state it was given in: if the
+claimant's count changed since (a claim stopped or started counting, even twice between two sweeps), the sweep gives a
+fresh notice instead of releasing, but never one that reaches past twice the notice after the first warning, so a pull
+request toggled between ready and draft cannot put the release off for ever.
 
 The claim itself stays held either way, with its card and its deadline, until it is merged or released. So three units
 waiting for CI never refuse a fourth claim.
 
-What risk remains, accepted: a maintainer who writes the stage by hand frees a slot without a review (a maintainer is
-trusted with the limit of 3, and the stamp is how the tools do it). A contributor with several ready pull requests,
-each freeing its own task, holds that many claims above the limit while they stand, at the cost of the pull requests
-the maintainers see in the list; and when one is closed the extra claims live out their 24-hour notice. The claims they
-hold meanwhile still pass the pull request check and the idle clock like any other.
+What risk remains, accepted:
+
+- A maintainer who writes the stage by hand frees a slot without a review, and one ready pull request of a maintainer
+  frees every claim it closes, and can be edited to close more: a maintainer is trusted with the limit of 3, and the
+  stamp is how the tools do it.
+- A contributor with several ready pull requests, each freeing its own task, holds that many claims above the limit
+  while they stand, at the cost of the pull requests the maintainers see in the list; when one is closed the extra claims
+  live out their 24-hour notice (after the cutover; until then they are kept).
+- Toggling a pull request between ready and draft puts the release off by up to one more notice, to twice the notice
+  after the first warning at most.
+- The claims they hold meanwhile still pass the pull request check and the idle clock like any other.
 
 ## Working from an issue {#agents}
 
