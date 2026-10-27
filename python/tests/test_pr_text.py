@@ -71,6 +71,25 @@ def without_issues_affected(built: Built) -> str:
     return text.replace("## Issues affected\n\nNone (no open issue is affected)\n\n", "")
 
 
+def test_a_branch_that_adds_a_title_area_is_held_to_the_default_branchs_areas(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    text = (built.unit.dir / "PR.md").read_text(encoding="utf-8")
+    assert problems(generate(built)) == []
+    built.edit_rules(("commits.title.areas.sneaky", "an area only this branch has"))
+    generated = generate(built, text.replace("gameplay: Fix the widget", "sneaky: Fix the widget", 1))
+    assert any("sneaky" in t for t in problems(generated)), problems(generated)
+
+
+def test_a_branch_that_drops_the_runtime_line_for_gameplay_is_held_to_the_default_branchs_rule(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    text = (built.unit.dir / "PR.md").read_text(encoding="utf-8")
+    without = text.replace("- Runtime: trace diff widget60, 600 updates, 0 outside tolerance\n", "")
+    assert without != text
+    built.edit_rules(("pull_requests.runtime.areas", ["graphics", "audio"]))
+    generated = generate(built, without)
+    assert any("Runtime" in t for t in problems(generated)), problems(generated)
+
+
 def test_a_section_the_conventions_add_is_generated_as_a_todo_the_checks_refuse(tmp_path: Path) -> None:
     built = make(tmp_path)
     sections = [*built.conventions.pull_requests.sections, "Rollout"]

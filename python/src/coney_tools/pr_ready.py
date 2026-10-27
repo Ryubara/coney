@@ -46,8 +46,8 @@ class Proof:
 
     @property
     def conventions(self) -> Conventions:
-        """The proof rules (`proof` and the path classes) from the remote's default branch; every other section is the
-        branch's own. What steers a release is `Run.rules`, which is wholly the default branch's."""
+        """The rules the proof was held to: every section that decides a release from the remote's default branch, the
+        rest of the branch's own file (`Run.rules` is the same, for `pr open`'s own steps)."""
         return self.subject.conventions
 
 

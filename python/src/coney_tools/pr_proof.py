@@ -7,10 +7,11 @@ for the change on the branch, each with the exact message and the command to red
 together with all the others, not alone. `pr open` will run the same function before it pushes.
 
 What the stamps are bound to is the *change* (`pr_diff.change_sha256`), not the tip, so a clean rebase keeps them. The
-profiles, the checks they need and the build preset are read from `origin/<default branch>` (the branch `origin/HEAD`
-names), never from the branch being released (`conventions.load_proof_rules_at`, the reader `task check` uses too),
-and the required profile and checks come from `proof_profiles`, the functions `task check` stamps with, so the two
-always agree.
+rules are read from `origin/<default branch>` (the branch `origin/HEAD` names), never from the branch being released:
+every section that decides whether a release is allowed (`conventions.load_release_rules_at`: the stamps, who may
+review, the pull request and commit rules, the path classes, the proof's profiles, checks and build preset). The
+required profile and checks come from `proof_profiles`, the functions `task check` stamps with, so the two always
+agree.
 
 Nothing here writes: no stamp, no file, no git state.
 """
@@ -46,7 +47,7 @@ from coney_tools.conventions import (
     Conventions,
     ConventionsError,
     load_conventions_leniently,
-    load_proof_rules_at,
+    load_release_rules_at,
 )
 from coney_tools.orig_index import SOURCE_DIR, SOURCE_SUFFIXES
 from coney_tools.orig_review import Unit as OrigUnit
@@ -103,9 +104,11 @@ class Subject:
     task: str
     #: The task's kind (`TASK.md`).
     kind: str
-    #: The branch's rules, with `proof` and the path scope classes as `origin/<default branch>` has them.
+    #: The rules the release is held to: every section that decides a release (`load_release_rules_at`) as
+    #: `origin/<default branch>` has it, the rest of the branch's own file.
     conventions: Conventions
-    #: Where `proof` came from: `base`, `branch` while the base has no `proof` section yet, or `given` (a test's).
+    #: Where the proof rules came from: `base`, `branch` while the base has no `proof` section yet, or `given` (a
+    #: test's, which replace all of them).
     rules_from: str
     remote_ref: str
     tip: str
@@ -236,7 +239,7 @@ def load_subject(
     `origin/<default branch>` (`conventions` replaces them, for the tests), the stamp log and the `@orig` functions it
     changes.
 
-    The default branch is the one `origin`'s `HEAD` names (`default_branch`), and the proof rules are always read from
+    The default branch is the one `origin`'s `HEAD` names (`default_branch`), and the release rules are always read from
     `origin/<default branch>`, whatever `remote` is: nothing the branch holds or names (its conventions file, a remote
     it adds) chooses the ref its rules come from. ConfigError when a ref is unknown (fetch it first), or git or the
     rules cannot be read.
@@ -257,7 +260,7 @@ def load_subject(
         rules, rules_from = conventions, "given"
     else:
         try:
-            rules, rules_from = load_proof_rules_at(root, rules_ref, load_conventions_leniently(root, say))
+            rules, rules_from = load_release_rules_at(root, rules_ref, load_conventions_leniently(root, say))
         except ConventionsError as error:
             raise ConfigError(str(error)) from error
     tip = _git(root, "rev-parse", "--verify", "HEAD").strip()

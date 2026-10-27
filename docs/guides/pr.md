@@ -9,11 +9,36 @@ options and exit codes are in [the pull request commands](coney-tools-pr.md#pr);
 each refusal asks you to do.
 
 The proof is the unit's [stamp log](stamps.md#log), kept in the task's scratch folder. The commands trust nothing they
-can recompute: every hash a stamp covers is computed again from the files and the git tree, and the rules that
-say which checks a change needs are read from the remote's default branch, never from the branch being released. Some
-others, such as who may review, are still the branch's own until [#1044](issue:1044) moves them
-([`pr open`](#open) says which). A stage that fails is reported together with all the others, each with the command
-to run again.
+can recompute: every hash a stamp covers is computed again from the files and the git tree, and every rule that
+decides whether a release is allowed is read from the remote's default branch, never from the branch being released
+([Where the rules come from](#rules)). A stage that fails is reported together with all the others, each with the
+command to run again.
+
+## Where the rules come from {#rules}
+
+A branch can edit `.github/conventions.yml`, and the tool that releases it cannot trust the edit: a branch that sets
+`stamps.require_hook_source` to false or widens the models that may review would otherwise loosen its own gate. So
+`pr verify`, `pr text` and `pr open` read each section that decides whether a release is allowed from
+`origin/<default branch>` (the branch `origin/HEAD` names, whatever `--remote` is) and only the rest from the branch
+(`load_release_rules_at`, one reader for the three commands):
+
+| Section of `.github/conventions.yml` | Source | What in a release it decides |
+| --- | --- | --- |
+| `stamps` | default branch | The stamp log's steps, the pairs vocabulary and `require_hook_source` (the hook identity on every stamp) |
+| `tasks.review` | default branch | Who may review, on which model, which paths are research, and the files of a review |
+| `proof` | default branch | The `Check` profiles, the checks each needs and the build preset |
+| `paths` | default branch | The CI scope classes, the gameplay folders (a test that failed first) and the docs paths (`Docs: none`) |
+| `pull_requests` | default branch | The description's sections, `Runtime:`, `Docs: none`, pictures and the AI use section |
+| `commits` | default branch | The title's areas, verbs and length, and the trailers |
+| `repo`, `merge`, `claims` | default branch | The repository, what auto-merge does and the claim cards (`pr open`'s own steps) |
+| `tasks` other than `review` (the task file's name and kinds, `task start`) and every other section | the branch | Nothing that decides a release |
+
+A default branch that has no `proof` section yet (it is older than the section) leaves `proof` and `paths` to the
+branch, and the first line says `rules of branch`. A key the tool does not know in the default branch's sections is
+skipped, as it is in the branch's file ([How it is read](repo-conventions.md#how-it-is-read)); a missing key or a wrong
+value there stops the run (exit 2) and names `origin/<default branch>:.github/conventions.yml`, and the branch's own
+rules are never used instead. [`task check`](coney-tools-repo.md#task-check) reads `proof` and the scope lists from the
+same place.
 
 ## The stages {#stages}
 
@@ -47,10 +72,11 @@ and the unit goes to a maintainer. The `Check` profile the change needs is the f
 hold the [CI scope class](building.md#what-a-pull-request-runs) of every changed path (a path in no class means `full`),
 and the checks it must have run are that profile's, less those `proof.only_when` says do not apply: the same functions
 (`proof_profiles`) [`task check`](coney-tools-repo.md#task-check) stamps with. The `proof` section and the path classes
-are read from `origin/<default branch>` (`load_proof_rules_at`), so a branch cannot shrink them. The default branch is
-the one `origin/HEAD` names (as `git clone` sets it; else run `git remote set-head origin --auto`), never the branch's
-own conventions file, and `--remote` chooses only the base of the change, not where the rules come from; while the base
-has no `proof` section yet, the branch's own are used and the first line says `rules of branch`.
+are read from `origin/<default branch>`, so a branch cannot shrink them, and so is every other rule that decides a
+release ([Where the rules come from](#rules)). The default branch is the one `origin/HEAD` names (as `git clone` sets it;
+else run `git remote set-head origin --auto`), never the branch's own conventions file, and `--remote` chooses only the
+base of the change, not where the rules come from; while the base has no `proof` section yet, the branch's own are used
+and the first line says `rules of branch`.
 
 What it refuses, exactly (`<...>` is filled in):
 
@@ -200,17 +226,15 @@ commit: what is pushed is exactly what Check and Review saw. Its options and exi
    `TASK.md`; the worktree exists, is on the unit's branch (not detached, no rebase or merge in progress) and is clean.
    One `pr open` of a task runs at a time (the lock file `pr-open.lock` in the task's folder; a dry run takes no lock).
    The default branch is the one `origin`'s `HEAD` names (as for `pr verify`), fetched, and the sections that steer
-   a release (`repo`, `pull_requests`, `merge`, `claims`, `stamps`, and so the claims client's bot login and markers)
-   are read from `origin/<default branch>` whatever `--remote` is, never from the branch under release. A unit
+   a release ([Where the rules come from](#rules), and so the claims client's bot login and markers) are read from
+   `origin/<default branch>` whatever `--remote` is, never from the branch under release. A unit
    that `task start` cut from any other base (a stacked task) is refused: the rules never come from an unmerged branch.
    The branch's own `.github/conventions.yml` is read leniently by `pr open`, `pr verify` and `pr text`: a key the tool
    does not know is skipped with a `note: ... ignoring <key>` line (the first release of a branch that adds a rule is
    read by the tool `main` already has), while a missing key, a wrong value and a misspelt required key are still
-   errors ([How it is read](repo-conventions.md#how-it-is-read)). Not everything of that file is the base's: the proof
-   (`proof` and the `paths` scope lists `docs_only`, `tools_only` and `engine`) is always read from
-   `origin/<default branch>`, and `pr open` reads the sections above from there for its own steps, but the rest that
-   `pr verify` and the proof inside `pr open` use, among them `stamps` and `tasks.review`, is still the branch's own
-   ([#1044](issue:1044)).
+   errors ([How it is read](repo-conventions.md#how-it-is-read)). What it skips adds no steering, because the sections
+   that decide a release are not the branch's: `pr open`, `pr verify` and `pr text` read them from the default branch
+   (the proof inside `pr open` too), and the branch's file is read only for the rest.
 2. **The claim (exit 1).** Each issue of the task is claimed by the person running the command (the card is present and
    not released); otherwise the message names the claimant.
 3. **The pull request (exit 1).** The branch's pull request is looked up (`gh pr list --head`). Merged: refused.

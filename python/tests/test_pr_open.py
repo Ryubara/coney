@@ -11,9 +11,10 @@ from pathlib import Path
 
 import pytest
 import yaml
+from conventions_support import changed
 from git_support import git
 from pr_open_support import OPENER, PNG, REPO, Open, make_open, picture, show
-from pr_support import make
+from pr_support import UNVERIFIED, make
 
 from coney_tools import conventions, identity, pr_open, pr_open_unit, pr_publish, unit_record
 from coney_tools.cli import main
@@ -760,6 +761,23 @@ def test_the_merge_rules_come_from_the_default_branch_not_from_the_branch_under_
     assert "auto-merge" in opened.said[-1] and opened.said[-1].endswith("auto-merge off)")
 
 
+def test_a_branch_that_loosens_the_stamp_rules_is_refused_by_the_default_branchs(tmp_path: Path) -> None:
+    opened = docs_unit(tmp_path)
+    built = opened.built
+    # the default branch asks that every stamp says a hook vouched for it; this branch's own file does not, and a
+    # Check stamp was written without the hook identity
+    opened.advance_main(
+        ".github/conventions.yml",
+        yaml.safe_dump(changed(("stamps.require_hook_source", True))),
+        "ci: require the hook identity",
+    )
+    git(built.root, "fetch", "-q", "origin", "main")
+    built.stamp("checked", covers={"diff_sha256": built.diff}, detail={"profile": "docs", "checks": []}, who=UNVERIFIED)
+    assert opened.run() == 1
+    assert "without the hook identity (source unverified)" in opened.text(), opened.text()
+    assert opened.gh.writes() == [] and "refs/heads/work" not in git(built.origin, "for-each-ref")
+
+
 def test_the_release_rules_are_read_once_from_the_remotes_default_branch(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -767,7 +785,7 @@ def test_the_release_rules_are_read_once_from_the_remotes_default_branch(
     seen: list[str] = []
     real = conventions.load_release_rules_at
 
-    def spy(root: Path, ref: str, own: Conventions) -> Conventions:
+    def spy(root: Path, ref: str, own: Conventions) -> tuple[Conventions, str]:
         seen.append(ref)
         return real(root, ref, own)
 
@@ -860,7 +878,7 @@ def test_a_branch_that_names_another_default_branch_in_its_own_file_changes_noth
     seen: list[str] = []
     real = conventions.load_release_rules_at
 
-    def spy(root: Path, ref: str, own: Conventions) -> Conventions:
+    def spy(root: Path, ref: str, own: Conventions) -> tuple[Conventions, str]:
         seen.append(ref)
         return real(root, ref, own)
 
@@ -902,7 +920,7 @@ def test_the_rules_come_from_origin_even_when_the_release_goes_to_another_remote
     seen: list[str] = []
     real = conventions.load_release_rules_at
 
-    def spy(root: Path, ref: str, own: Conventions) -> Conventions:
+    def spy(root: Path, ref: str, own: Conventions) -> tuple[Conventions, str]:
         seen.append(ref)
         return real(root, ref, own)
 

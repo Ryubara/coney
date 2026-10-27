@@ -164,7 +164,7 @@ def fetch(run: Run) -> str:
                 EXIT_UNABLE, f"cannot fetch {pr_proof.RULES_REMOTE} {default}: {done.stderr.strip() or 'failed'}"
             )
     try:
-        run.rules = load_release_rules_at(run.root, rules_ref, run.conventions)
+        run.rules, _ = load_release_rules_at(run.root, rules_ref, run.conventions)
     except ConventionsError as error:
         raise Stop(EXIT_UNABLE, str(error)) from error
     return upstream
