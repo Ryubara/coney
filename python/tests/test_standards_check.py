@@ -556,3 +556,104 @@ def test_on_the_real_rules_a_branch_may_not_add_to_the_legacy_file_or_mark_a_fun
     messages = [r.message for r in reports]
     assert any("src/ai/new.cpp is added" in m for m in messages)
     assert any("marked legacy since the cutover" in m for m in messages)
+
+
+# --- a research link that follows a page move ------------------------------------------------------------------------
+
+PAGE = "# The AI\n\n" + "".join(f"Line {n} of the page.\n" for n in range(12)) + "\n## Brain {#brain}\n\nThinks.\n"
+OLD_REF = "docs/research/ai.md#brain"
+NEW_REF = "docs/research/ai/index.md#brain"
+#: A source file with a comment above its first statement that cites the page, and a function below the standard.
+LINKED_SOURCE = GOOD_SOURCE.replace("    int a = 1;", "    int a = 1;  // REF") + (
+    "\nint guess() {\n    int a = 1;\n    a += 1;\n    return a;\n}\n"
+)
+LINKED_TEST = BAD_TEST.replace("    CHECK", "    // {ref}\n    CHECK")
+
+
+def move_page_and_edit(root: Path, files: dict[str, str]) -> None:
+    """Commit on a branch that moves the AI page to its folder and writes `files`."""
+    git(root, "checkout", "-q", "-b", "work")
+    (root / "docs/research/ai").mkdir()
+    git(root, "mv", "docs/research/ai.md", "docs/research/ai/index.md")
+    for name, text in files.items():
+        (root / name).write_text(text, encoding="utf-8")
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "work")
+
+
+def linked(root: Path) -> list[sc.Report]:
+    """What the touch-it rule reports for the branch, on the real conventions."""
+    conv = conventions(**{"standards.enforce": True})
+    return sc.touched(root, conv, sc.scan_tree(root, conv), "main")
+
+
+def test_a_file_whose_only_change_is_a_comment_link_following_a_moved_page_is_untouched(tmp_path: Path) -> None:
+    root = build(
+        tmp_path,
+        {
+            "docs/research/ai.md": PAGE,
+            "src/ai/brain.cpp": LINKED_SOURCE.replace("REF", OLD_REF),
+            "tests/ai/a_test.cpp": LINKED_TEST.replace("REF", OLD_REF),
+        },
+    )
+    move_page_and_edit(
+        root,
+        {
+            "src/ai/brain.cpp": LINKED_SOURCE.replace("REF", NEW_REF),
+            "tests/ai/a_test.cpp": LINKED_TEST.replace("REF", NEW_REF),
+        },
+    )
+    # neither file owes the standard it is below, and the ported function the comment sits in owes no comparison
+    assert linked(root) == []
+
+
+def test_a_comment_link_move_with_another_edit_in_the_file_touches_it(tmp_path: Path) -> None:
+    root = build(tmp_path, {"docs/research/ai.md": PAGE, "src/ai/brain.cpp": LINKED_SOURCE.replace("REF", OLD_REF)})
+    edited = LINKED_SOURCE.replace("REF", NEW_REF).replace("a += 1;", "a += 2;", 1)
+    move_page_and_edit(root, {"src/ai/brain.cpp": edited})
+    found = linked(root)
+    assert {r.rule for r in found} == {"comment", "tag", "compared"}
+    assert all(r.path == "src/ai/brain.cpp" for r in found)
+
+
+def test_a_comment_link_move_with_another_edit_on_its_line_touches_the_file(tmp_path: Path) -> None:
+    root = build(tmp_path, {"docs/research/ai.md": PAGE, "src/ai/brain.cpp": LINKED_SOURCE.replace("REF", OLD_REF)})
+    move_page_and_edit(root, {"src/ai/brain.cpp": LINKED_SOURCE.replace("REF", NEW_REF + ", and more")})
+    assert {r.rule for r in linked(root)} == {"comment", "tag", "compared"}
+
+
+def test_a_comment_link_rewrite_with_no_matching_move_touches_the_file(tmp_path: Path) -> None:
+    root = build(
+        tmp_path,
+        {
+            "docs/research/ai.md": PAGE,
+            "docs/research/stays.md": "# Stays\n\n## Other {#other}\n\nText.\n",
+            "src/ai/brain.cpp": LINKED_SOURCE.replace("REF", "docs/research/stays.md"),
+        },
+    )
+    # the page it cites stayed, though another page moved in the same change
+    move_page_and_edit(root, {"src/ai/brain.cpp": LINKED_SOURCE.replace("REF", "docs/research/stays.md#other")})
+    assert {r.rule for r in linked(root)} == {"comment", "tag", "compared"}
+
+
+def test_a_comment_link_rewrite_to_a_page_that_does_not_exist_touches_the_file(tmp_path: Path) -> None:
+    root = build(tmp_path, {"docs/research/ai.md": PAGE, "src/ai/brain.cpp": LINKED_SOURCE.replace("REF", OLD_REF)})
+    move_page_and_edit(root, {"src/ai/brain.cpp": LINKED_SOURCE.replace("REF", "docs/research/ai/brain.md#brain")})
+    assert {r.rule for r in linked(root)} == {"comment", "tag", "compared"}
+
+
+def test_a_link_move_inside_a_string_that_looks_like_a_comment_touches_the_file(tmp_path: Path) -> None:
+    code = GOOD_SOURCE.replace("    int a = 1;", '    auto s = "// REF";')
+    root = build(tmp_path, {"docs/research/ai.md": PAGE, "src/ai/brain.cpp": code.replace("REF", OLD_REF)})
+    move_page_and_edit(root, {"src/ai/brain.cpp": code.replace("REF", NEW_REF)})
+    assert {r.rule for r in linked(root)} == {"compared"}
+
+
+def test_a_form_feed_in_the_file_does_not_shift_the_lines_of_a_link_move_in_a_string(tmp_path: Path) -> None:
+    # git counts newlines only: a line split at the form feed would put the string under the comment line above it
+    pad = "    // " + "padding " * 8 + "\n"
+    code = GOOD_SOURCE.replace("// Adds one.", "// Adds one.\f// and more.")
+    code = code.replace("    int a = 1;", pad + '    auto s = "REF";')
+    root = build(tmp_path, {"docs/research/ai.md": PAGE, "src/ai/brain.cpp": code.replace("REF", OLD_REF)})
+    move_page_and_edit(root, {"src/ai/brain.cpp": code.replace("REF", NEW_REF)})
+    assert {r.rule for r in linked(root)} == {"compared"}
