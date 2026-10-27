@@ -220,7 +220,8 @@ and then by priority, whenever a slot frees.
   stale and goes out with `pr open` on the same pull request ([Starting a task](issues.md#starting)).
 - **Reviewers and helpers are outside the slots**, and so is work in other repositories. Until the cutover so are
   units that build the workflow itself, as the count is only reported; from it a docs or tooling task counts like any
-  other ([Slots](issues.md#slots) holds the rule).
+  other ([Slots](issues.md#slots) holds the rule). Their claims are outside the open-claims limit too, by the
+  `workflow` label.
 - **Two engineers never work in the same functions.** A claim carries its scope, and `task create` warns when another
   held claim's scope overlaps.
 
@@ -435,7 +436,10 @@ GitHub Action assigns it, sets the status label and keeps a claim card with the 
 (`claims.release`) a claim idle for 72 hours is released, after a warning at 48. The coordinator's `coney-tools task
 create` makes the claim and writes the task file ([Claiming an issue](issues.md#claiming), [Task
 files](issues.md#task-files)); the engineer then runs `coney-tools task start`, which makes the branch, worktree and
-unit record ([Starting a task](issues.md#starting)). Nobody works on an issue without a claim.
+unit record ([Starting a task](issues.md#starting)). Nobody works on an issue without a claim. The coordinator gives a
+claim back or renews it with `coney-tools claim unclaim` and `claim renew`, never by hand, and the claim of an issue
+labelled `workflow` (a unit that builds the workflow itself) is outside the open-claims limit
+([Claiming an issue](issues.md#claiming)).
 
 **A pull request merges only when every task in it is finished.** Its Checklist lists what it finishes, all ticked, and
 CI refuses an unticked item; there is no "Remaining" list. Work an agent finds that is not part of its task goes in its
@@ -532,7 +536,7 @@ and where the rules are read from):
 | --- | --- | --- |
 | Claude Code hooks (`.claude/hooks/`) | A raw `cmake --build`, `ctest` or `ninja`; a raw `gh` command that writes an issue; a push or GitHub write from a subagent; a wait loop with no bound; an agent started with `isolation: "worktree"` or with no Coney role; a tool call the session's role does not allow; a write to a stamp log; a `Co-Authored-By` trailer that names the wrong model | [The hooks](agents.md#hooks), [Enforcement map](enforcement.md#hooks) |
 | pre-commit (`.pre-commit-config.yaml`) | Unformatted C++ (clang-format) and Python (ruff); a Markdown line over 120 characters; trailing whitespace, broken YAML or TOML; any file over 512 KB, which is usually game data; a read of the real clock outside the frame pacer; a commit message with the wrong trailers | [Formatting and pre-commit](building.md#formatting-and-pre-commit) |
-| Claim Action and `task create` | A second claim on an issue; a claim on an issue that is not ready, is blocked by unfinished work, or over the claimant's limit; any other claim while a `P-critical` issue has none | [Claiming an issue](issues.md#claiming) |
+| Claim Action and `task create` | A second claim on an issue; a claim on an issue that is not ready, is blocked by unfinished work, or over the claimant's limit (a `workflow` unit's claim is not counted); any other claim while a `P-critical` issue has none | [Claiming an issue](issues.md#claiming) |
 | Stage commands (`task start`, `original compare`, `task check`, `task review`) | A start without a held claim (and, from the cutover, over the slot limit); a compare with no current study, a line in no pair or a copied line; a Check whose gate fails; a Review whose compared or fails-first stamps are missing or stale, or one recorded by the change's author | [Stamps](stamps.md), [task check](coney-tools-repo.md#task-check), [Task review](review/task.md) |
 | `pr open` | A unit whose stamps do not hold for the change, a generated title or description CI would refuse, a caller who is an engineer or reviewer. The stages are enforced here, locally, not in CI | [Opening the pull request](#release-queue), [pr open](pr.md#open) |
 | Conclave stop guard | A coordinator turn that ends while a pull request has a failed required check, a conflict, a stuck check or auto-merge off and nobody holds it | [Conclave](conclave.md#watchers) |
