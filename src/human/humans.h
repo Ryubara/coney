@@ -29,7 +29,8 @@ namespace coney::human {
 class Humans {
   public:
     /// What runs at the brains' place in the step (after the records, before the animation): it writes the AI humans'
-    /// records, as `Brains_Update` writes their commands (docs/research/ai.md#update); ai::Brains::hook() gives one.
+    /// records, as `Brains_Update` writes their commands (docs/research/ai/index.md#update); ai::Brains::hook() gives
+    /// one.
     using BrainsHook = std::function<void(std::span<Human* const> humans)>;
 
     /// Whether one human fights another: `opposed(attacker, victim)`. The gangs give it (ai::Gangs::friends(), whose

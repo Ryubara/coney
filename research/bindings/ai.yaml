@@ -206,7 +206,7 @@
   depth: thorough
   notes: >-
     Clearing stops at an action that refuses to abort (an attack in progress), so that one and those behind it stay
-    ([AI: actions](../../research/ai.md)).
+    ([AI: actions](../../research/ai/index.md)).
   usage: {chunks: 34, calls: 67, boot: false, mission1: false, result_used: false, levels: [20]}
   coney: implemented
 
@@ -238,7 +238,7 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    With no goal left the brain falls back to its idle behaviour ([AI](../../research/ai.md)).
+    With no goal left the brain falls back to its idle behaviour ([AI](../../research/ai/index.md)).
   usage: {chunks: 40, calls: 84, boot: false, mission1: false, result_used: false, levels: [5, 86, 51, 52]}
   coney: implemented
 
@@ -266,7 +266,7 @@
     Runs one update of the goal on top of the human's goal stack (brain `+0x40` + top index `+0x2c` × 4) at once
     instead of waiting for the next brain update, so a goal just given takes effect in the same frame: Goal_Process
     starts or resumes it if needed and then calls its Process, unless its time limit has passed or the human has no
-    model ([AI: goal stack](../../research/ai.md)).
+    model ([AI: goal stack](../../research/ai/index.md)).
   evidence: confirmed-code
   depth: thorough
   notes: >-
@@ -348,7 +348,7 @@
   description: >-
     Tells whether anyone is currently attacking the human: attackers claim one of the target's attack slots before
     they close in (Brain_ClaimAttackSlot, 0x0028df30; at most `+0x1e4`, set by BrSetNumAttackSlots), and this tests
-    whether the slot list is non-empty ([AI](../../research/ai.md)). One script calls it.
+    whether the slot list is non-empty ([AI](../../research/ai/index.md)). One script calls it.
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [54]}
@@ -422,7 +422,7 @@
   notes: >-
     Only the civilian think reads `+0x228`; other brain kinds ignore it. Skipped when the human's character flag
     `+0x11b` is 6 or the player's brain `+0x2d5` is set. What reaction 0xaf looks like is not traced
-    ([AI](../../research/ai.md)).
+    ([AI](../../research/ai/index.md)).
   usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false, levels: [92, 11]}
 
 - name: BrSetThugWantsWeapon
@@ -768,7 +768,7 @@
   depth: thorough
   notes: >-
     Constructor 0x002af5b0 (vtable 0x00540330, Process 0x002afa48); a flag at goal `+0x34` is set only when the
-    human's `+0x1a8` is below 3 and 0x00223e20 is false, not traced. Fight behaviour: [AI](../../research/ai.md).
+    human's `+0x1a8` is below 3 and 0x00223e20 is false, not traced. Fight behaviour: [AI](../../research/ai/index.md).
   usage: {chunks: 4, calls: 5, boot: false, mission1: false, result_used: false, levels: [81, 20]}
   coney: implemented
 
@@ -2103,7 +2103,7 @@
   depth: thorough
   notes: >-
     Threat choice 0x002d4f40 and the flee-point test 0x002d4fc0 are not traced. Byte `+0x333` is the same one route
-    following uses (ai.md); why the despawn needs it is open.
+    following uses (ai/index.md); why the despawn needs it is open.
   usage: {chunks: 4, calls: 11, boot: false, mission1: false, result_used: false, levels: [86, 93, 92, 20]}
 
 - name: GoalGrabTarget

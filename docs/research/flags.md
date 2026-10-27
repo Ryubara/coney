@@ -60,7 +60,7 @@ The rest of `flags.cpp` and `WorldPath.cpp`, confirmed (code) at each address; n
 | `0x00416dc0` / `0x00416e10` | `Vec_HeadingXY` / `Vec_HeadingYX` | the heading from one point to another, `atan2(dy, dx)` / `atan2(dx, dy)` | confirmed (code) |
 | `0x004176d8` | `Flags_NearestUsable(human, pos, dist)` | the nearest enabled flag with no user that `0x00416718` admits the human to; the squared plan distance to `dist` | confirmed (code) |
 | `0x00417670` | `Human_NearestUsableFlag` | the same from the human's position, only when its brain's byte `+0x2d1` is set | confirmed (code) |
-| `0x004177d8` | `Flag_FindNearestByActivity(pos, activity, dist, skip, reach)` | the nearest enabled flag of an activity other than `skip`, straight-line distance; with `reach` set only one `Nav_CanReach` reaches; squared distance to `dist` ([AI](ai.md) uses it for exits) | confirmed (code) |
+| `0x004177d8` | `Flag_FindNearestByActivity(pos, activity, dist, skip, reach)` | the nearest enabled flag of an activity other than `skip`, straight-line distance; with `reach` set only one `Nav_CanReach` reaches; squared distance to `dist` ([AI](ai/index.md) uses it for exits) | confirmed (code) |
 | `0x00416b68` / `0x004161d8` | `Flag_SetPosition(handle, pos)` / `Flag_SetPositionRaw` | resolves the handle and writes `+0x10` with `w` = 1 / writes `+0x10` as given | confirmed (code) |
 | `0x004161b8` / `0x00416ed0` | `Flag_ReleaseUser(flag, h)` / `Flag_GetOwner(handle)` | clears the user to `NilHandle` only if it is `h` / `FlagGetOwner`: the user, `NilHandle` for a non-flag | confirmed (code) |
 | `0x004171e8` | `Flags_FarthestOfActivity` | the farthest enabled flag of an activity from an object | confirmed (code) |

@@ -379,7 +379,7 @@ TEST_CASE("a script's follow slots survive later configuration calls; only the d
         return Value(table);
     };
     // The defaults first (a level's configuration), then lesson 7's four slots 1 m around the player, ahead, right,
-    // behind and left (docs/research/ai.md#level99-snaps).
+    // behind and left (docs/research/ai/index.md#level99-snaps).
     level.call("CfgSetDefaultFollowSlotSet",
                {Value(0.0), numbers({-1.25, -1.0, 1.25, -1.0, -2.75, -1.0, 2.75, -1.0, 0.0, -2.0,
                                      0.0,   -3.0, 0.0,  -4.0, 0.0,   -5.0, 0.0,  -6.0, 0.0, 0.0})});

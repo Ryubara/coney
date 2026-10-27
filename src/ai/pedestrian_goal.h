@@ -9,7 +9,7 @@
 #include "world_objects/flag_net.h"
 
 // The pedestrian goal (type 0x69) that `FlagNetTraverse` pushes: a human wandering along the level's flag network.
-// Research: docs/references/bindings/world.md#flagnettraverse, docs/research/ai.md#goals
+// Research: docs/references/bindings/world.md#flagnettraverse, docs/research/ai/index.md#goals
 
 namespace coney::ai {
 

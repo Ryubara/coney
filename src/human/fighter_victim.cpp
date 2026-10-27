@@ -176,7 +176,7 @@ void Fighter::takePending(const FighterInput& input, HumanAnimator& animator) {
     if (!hit.react || grabbed() || m_holdState.has_value() || reactMode != combat::CombatMode::Free) {
         return;
     }
-    // With reactions off (an AI's block goal, docs/research/ai.md#block) the hit only takes health.
+    // With reactions off (an AI's block goal, docs/research/ai-fights.md#block) the hit only takes health.
     if (hitReactionsOff()) {
         return;
     }

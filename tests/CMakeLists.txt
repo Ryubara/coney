@@ -367,7 +367,7 @@ target_sources(coney_tests PRIVATE
 # The collision writer the sandbox and the Spawner use (the sandbox's own tests are the debug tools', below).
 target_sources(coney_tests PRIVATE
     raycast/collision_builder_test.cpp)
-# The AI humans' brains (docs/research/ai.md).
+# The AI humans' brains (docs/research/ai/index.md).
 target_sources(coney_tests PRIVATE
     ai/face_mood_test.cpp
     ai/attack_choice_test.cpp

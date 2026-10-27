@@ -9,8 +9,8 @@
 #include "raycast/collision_mesh.h"
 #include "support/collision_fixtures.h"
 
-// The AI's line of sight through the level's collision (docs/research/ai.md#sight): eye to eye, then eye to chest,
-// passing through fences, railings and glass. Synthetic walls only.
+// The AI's line of sight through the level's collision (docs/research/ai-fights.md#sight): eye to eye, then eye to
+// chest, passing through fences, railings and glass. Synthetic walls only.
 
 using coney::ai::lineOfSight;
 using coney::anim::Vec3;
@@ -53,7 +53,8 @@ TEST_CASE("the second ray to the chest sees under what blocks the eyes", "[ai][s
 }
 
 TEST_CASE("a clear ray through an intact pane says so; a wall stops it; an open way crosses nothing", "[ai][sight]") {
-    // Human_HasClearRayTo's result 2 (docs/research/ai.md#get-item): GetItem swings at the pane instead of taking.
+    // Human_HasClearRayTo's result 2 (docs/research/ai/index.md#get-item): GetItem swings at the pane instead of
+    // taking.
     const Vec3 shelf{40.0F, 46.0F, 1.0F};
     const auto glass = makeMesh(join(floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F),
                                      wallFacingMinusY(43.0F, 30.0F, 50.0F, 0.0F, 4.0F, 0, coney::ai::kGlassMaterial)));

@@ -20,7 +20,7 @@
 // characters' step (on the enemy side) with the brains at their place in it, and the player's own brain (type 0) that
 // keeps his books (his enemies, which the camera's sprint zoom asks about). Front-end neutral: the play mode draws the
 // humans from their snapshots, and the sandbox, the debug menus and the tests spawn them here.
-// Research: docs/research/ai.md, docs/research/tasks.md#humans-update
+// Research: docs/research/ai/index.md, docs/research/tasks.md#humans-update
 
 namespace coney::ai {
 
@@ -114,9 +114,9 @@ class AiHumans {
     [[nodiscard]] bool playerReleased() const { return m_playerReleased; }
 
     /// Whether an idle fighter starts a fight with the player when he is within its far melee range: Coney's stand-in
-    /// for the level scripts' `GoalFight` calls (`level99_combat.lua`, docs/research/ai.md#level99), which a scene
-    /// without its script needs. On by default. Only a fighter whose gang is an enemy of the player's takes part: an
-    /// ally or a neutral waits to be attacked or to see an enemy of its own.
+    /// for the level scripts' `GoalFight` calls (`level99_combat.lua`, docs/research/ai/index.md#level99), which a
+    /// scene without its script needs. On by default. Only a fighter whose gang is an enemy of the player's takes part:
+    /// an ally or a neutral waits to be attacked or to see an enemy of its own.
     [[nodiscard]] bool engaging() const { return m_engaging; }
     void setEngaging(bool on) { m_engaging = on; }
 

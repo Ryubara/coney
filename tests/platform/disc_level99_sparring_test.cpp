@@ -3,17 +3,19 @@
 // Checks against the player's own disc that the last lesson of `level99`'s combat tutorial is a fight: the level plays
 // as `--play-level level99 --checkpoint 1` plays it, headless; once the intro is skipped the script's own set-up of
 // the lesson is called as the research's saved state was made (`AddFenceWarriors1`, the fence gang made friends with
-// the Warriors, `P1.SetupWarriors`, docs/research/ai.md#level99-save), the scene `l99_c5` plays and its return
+// the Warriors, `P1.SetupWarriors`, docs/research/ai-fights.md#level99-save), the scene `l99_c5` plays and its return
 // function `P1.SendWarriors` gives each of the three sparring Warriors `GoalFight` on a player who stands still
-// (the recording `warriors_passive`, docs/research/ai.md#level99-fight). Then each Warrior must close on the player
-// and attack him, running in with the EngageEnemy goal the Melee goal pushes (docs/research/ai.md#fight-approach), and
-// exactly one must charge (faster than the run); the sparring gang must be id 4 with no tactic and threat
-// response 2, the two fence gangs under a cheering crowd. It runs only when the environment variable CONEY_DISC names
-// the disc and skips otherwise; it prints counts, distances and speeds only (LEGAL.md).
+// (the recording `warriors_passive`, docs/research/ai-fights.md#level99-fight). Then each Warrior must close on the
+// player and attack him, running in with the EngageEnemy goal the Melee goal pushes
+// (docs/research/ai-fights.md#fight-approach), and exactly one must charge (faster than the run); the sparring gang
+// must be id 4 with no tactic and threat response 2, the two fence gangs under a cheering crowd. It runs only when the
+// environment variable CONEY_DISC names the disc and skips otherwise; it prints counts, distances and speeds only
+// (LEGAL.md).
 //
 // Only the first Warrior charges, as in the original: his charge makes the player busy, and the other two, a little
 // behind him because they steer round each other, stop at the first re-plan that finds the player busy within 3.75 m
-// (EngageEnemy step 9, docs/research/ai.md#level99-fight). So their run-ins end beyond the 1.6 m run-in distance.
+// (EngageEnemy step 9, docs/research/ai-fights.md#level99-fight). So their run-ins end beyond the 1.6 m run-in
+// distance.
 
 #include <algorithm>
 #include <array>
@@ -78,24 +80,24 @@ constexpr std::uint64_t kSceneWait = 1500;
 // How long the fight is watched after the scene, in frames (10 s at 30 per second).
 constexpr int kFightFrames = 300;
 // The taunts are counted over as long as the original's recording of the fight ran: 1,198 updates from the three
-// run-ins (docs/research/ai.md#fight-reposition).
+// run-ins (docs/research/ai-fights.md#fight-reposition).
 constexpr int kTauntFrames = 1198;
 // The taunt's line, `cheer2`.
 constexpr int kTauntLine = 0x11;
 // How near every Warrior comes to the player: 0.75 × his far melee range (5 m), the distance within which the run-in
-// may stop for a busy target (EngageEnemy step 9, `0x002afa48`, docs/research/ai.md#engage-enemy). Beyond it the run-in
-// stops only for a target this Warrior may not attack, and step 5 has just made the player attackable.
+// may stop for a busy target (EngageEnemy step 9, `0x002afa48`, docs/research/ai-fights.md#engage-enemy). Beyond it the
+// run-in stops only for a target this Warrior may not attack, and step 5 has just made the player attackable.
 constexpr float kCloseRange = 3.75F;
-// The run's top speed, m/s: a Warrior faster than this is charging (docs/research/ai.md#level99-fight).
+// The run's top speed, m/s: a Warrior faster than this is charging (docs/research/ai-fights.md#level99-fight).
 constexpr float kRunSpeed = 7.8F;
 // The run-in distance, m: the charge starts only within it (EngageEnemy step 11, `0x002afa48`,
-// docs/research/ai.md#engage-charge).
+// docs/research/ai-fights.md#engage-charge).
 constexpr float kRunIn = 1.6F;
 // What one update at the charge's speed (up to 11.7 m/s) can take beyond that before the charge is seen, m.
 constexpr float kChargeSeenSlack = 0.4F;
-// The sparring Warriors' gang (docs/research/ai.md#level99-fight).
+// The sparring Warriors' gang (docs/research/ai-fights.md#level99-fight).
 constexpr std::string_view kSparringGang = "CombatWarriors";
-// Its id: the gangs are made in record order, and it is the fifth (docs/research/ai.md#level99-fight).
+// Its id: the gangs are made in record order, and it is the fifth (docs/research/ai-fights.md#level99-fight).
 constexpr int kSparringGangId = 4;
 
 // The disc named by CONEY_DISC, opened; nothing when it is not set.
@@ -292,15 +294,16 @@ void playSparringFight(std::uint32_t seed) {
     REQUIRE(sparring >= 0);
     const coney::ai::Gang* gang = level.fighters().brains().gangs().find(sparring);
     REQUIRE(gang != nullptr);
-    // Who fights (docs/research/ai.md#level99-fight): the sparring gang is id 4, has no tactic and keeps the threat
-    // response 2 every brain is made with, so its GoalFight runs in full; the fence gangs cheer under a crowd tactic.
+    // Who fights (docs/research/ai-fights.md#level99-fight): the sparring gang is id 4, has no tactic and keeps the
+    // threat response 2 every brain is made with, so its GoalFight runs in full; the fence gangs cheer under a crowd
+    // tactic.
     CHECK(sparring == kSparringGangId);
     CHECK(gang->tactic() == nullptr);
     for (const coney::ai::Brain* member : gang->members()) {
         CHECK(member->threatResponse() == coney::ai::kDefaultThreatResponse);
     }
-    // Their gesture slots (docs/research/ai.md#fight-reposition): gang brains of reaction kind 2 with help level 2,
-    // so they may take both of kind 2's slots, as the original's sparring Warriors did (scenario warriors_gestures).
+    // Their gesture slots (docs/research/ai-fights.md#fight-reposition): gang brains of reaction kind 2 with help level
+    // 2, so they may take both of kind 2's slots, as the original's sparring Warriors did (scenario warriors_gestures).
     for (const coney::ai::Brain* member : gang->members()) {
         std::printf("  level99 sparring Warrior (seed %u): reaction kind %d, help level %d\n", seed,
                     coney::ai::reactionKind(*member), coney::ai::helpLevel(*member));
@@ -404,8 +407,8 @@ void playSparringFight(std::uint32_t seed) {
             UNSCOPED_INFO(line);
         }
     }
-    // What every AI sequence of the lesson keeps (docs/research/ai.md#level99-fight). The three stand 8.6-9.0 m off,
-    // beyond 1.1 × their far range, so each fight goal ends at once and the Melee goal sends each in with an
+    // What every AI sequence of the lesson keeps (docs/research/ai-fights.md#level99-fight). The three stand 8.6-9.0 m
+    // off, beyond 1.1 × their far range, so each fight goal ends at once and the Melee goal sends each in with an
     // EngageEnemy run; each comes within 0.75 × far; the lesson's fight starts. How the run-ins end is the AI's
     // draws: in the recording one Warrior charged and two stopped short at 2.1-2.6 m, while other sequences give no
     // charge, a tackle charge (which mounts the player), or a stop at the charge distance when no charge kind is

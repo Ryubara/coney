@@ -177,7 +177,9 @@ nav:
           - "Stealth: hiding, guards and distractions": research/stealth.md
           - Tasks (the TaskEngine): research/tasks.md
           - "World objects: tint, glass, doors": research/objects.md
-          - AI humans: research/ai.md
+          - "AI humans: brains, goals and actions": research/ai/index.md
+          - "AI fights: the fight goal, closing in and blocking": research/ai-fights.md
+          - "AI brain types: think and event handlers": research/ai-brain-types.md
           - "Gang fights: how a gang fights together": research/gang-fights.md
 
           - "AI moving: gaits, path planning, routes and steering": research/ai-moving.md

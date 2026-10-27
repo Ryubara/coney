@@ -4,14 +4,14 @@
 title: "AI goal types"
 about: |
   Every goal class a brain can have on its goal stack, by the type id the class reports, with the script
-  bindings that push it ([AI: goals](../research/ai.md#goals), [AI bindings](bindings/ai.md)). A goal binding's
+  bindings that push it ([AI: goals](../research/ai/index.md#goals), [AI bindings](bindings/ai.md)). A goal binding's
   callback is called 33 ms after the goal ends with the human's handle and whether the goal completed
   ([scripted goals](../research/ai-scripting.md#scripted)).
 complete: |
   All {count} goal classes are listed, read from their vtables in the executable: type ids 0-158, with 10, 30,
   76, 77, 81, 97, 98, 106, 139 and 151 unused. 67 have a binding that makes them (found by following each binding's
   code three calls deep); the others are pushed by the game's own AI. What a goal does is written only where the
-  [AI](../research/ai.md) page traces it; the class names are the game's.
+  [AI](../research/ai/index.md) page traces it; the class names are the game's.
 defaults: {source: "SLUS_212.15, goal vtables (type +0x0c, name +0x14) and the bindings' code", evidence: confirmed-code}
 entries:
   - {id: 0, name: Idle, vtable: 0x005418f0, process: 0x002cb138}
@@ -22,16 +22,16 @@ entries:
   - {id: 5, name: MoveToPosition, vtable: 0x00541fb0, process: 0x002dc338}
   - {id: 6, name: MoveToHuman, vtable: 0x00541f50, process: 0x002dc578, bindings: [GoalMoveToHuman], calls: 11, scripts: [hifi.lua, level86.lua, survival.lua], meaning: "Go to a human"}
   - {id: 7, name: RunFromTrain, vtable: 0x00542ac0, process: 0x002f9c88}
-  - {id: 8, name: Melee, vtable: 0x00540450, process: 0x002aebf8, bindings: [GangCanFlee, GoalDevilRun, GoalMelee, TacticBossScenarioE, TacticBossScenarioF, TacticBossScenarioG, TacticBossScenarioH, TacticPathScout], calls: 63, scripts: [level14.lua, level2_clinic.lua, level2_clubhouse.lua, level31_birdie.lua, level3_chase.lua, level52_chapter1.lua], meaning: "Under a fight goal: sends the fighter in (EngageEnemy) and pushes fight goals once in range ([AI](../research/ai.md#melee-goal))"}
+  - {id: 8, name: Melee, vtable: 0x00540450, process: 0x002aebf8, bindings: [GangCanFlee, GoalDevilRun, GoalMelee, TacticBossScenarioE, TacticBossScenarioF, TacticBossScenarioG, TacticBossScenarioH, TacticPathScout], calls: 63, scripts: [level14.lua, level2_clinic.lua, level2_clubhouse.lua, level31_birdie.lua, level3_chase.lua, level52_chapter1.lua], meaning: "Under a fight goal: sends the fighter in (EngageEnemy) and pushes fight goals once in range ([AI](../research/ai-fights.md#melee-goal))"}
   - {id: 9, name: AttackTarget, vtable: 0x005403f0, process: 0x002af278}
-  - {id: 11, name: EngageEnemy, vtable: 0x00540330, process: 0x002afa48, bindings: [GangEngageEnemy, GoalDevilRun, GoalEngageEnemy, GoalGetItem, GoalGrabTarget], calls: 63, scripts: ["36763710", caps.lua, level20_mainstreet.lua, level20_marketplace.lua, level20_temple.lua, level31_reddevil.lua], meaning: "The run-in to a fight target, ending close by or with a charge ([AI](../research/ai.md#engage-enemy))"}
+  - {id: 11, name: EngageEnemy, vtable: 0x00540330, process: 0x002afa48, bindings: [GangEngageEnemy, GoalDevilRun, GoalEngageEnemy, GoalGetItem, GoalGrabTarget], calls: 63, scripts: ["36763710", caps.lua, level20_mainstreet.lua, level20_marketplace.lua, level20_temple.lua, level31_reddevil.lua], meaning: "The run-in to a fight target, ending close by or with a charge ([AI](../research/ai-fights.md#engage-enemy))"}
   - {id: 12, name: Chase, vtable: 0x0053fcd0, process: 0x002b1860}
   - {id: 13, name: ChaseSupport, vtable: 0x0053fc70, process: 0x002b2410}
   - {id: 14, name: Shadow, vtable: 0x00541a10, process: 0x002e2d90}
-  - {id: 15, name: Fight, vtable: 0x005402d0, process: 0x002b3ab0, bindings: [GangSetReactToViolence, GoalFight, GoalGetItem, GoalGrabTarget, GoalHoldPosition, GoalShopkeeper, TacticDomination], calls: 60, scripts: ["36763710", caps.lua, kinghill.lua, level20_mainstreet.lua, level20_marketplace.lua, level20_temple.lua], meaning: "The fight goal ([AI](../research/ai.md#fight))"}
+  - {id: 15, name: Fight, vtable: 0x005402d0, process: 0x002b3ab0, bindings: [GangSetReactToViolence, GoalFight, GoalGetItem, GoalGrabTarget, GoalHoldPosition, GoalShopkeeper, TacticDomination], calls: 60, scripts: ["36763710", caps.lua, kinghill.lua, level20_mainstreet.lua, level20_marketplace.lua, level20_temple.lua], meaning: "The fight goal ([AI](../research/ai-fights.md#fight))"}
   - {id: 16, name: Spectate, vtable: 0x00540270, process: 0x002b4330}
   - {id: 17, name: Cower, vtable: 0x005411d0, process: 0x002d4fe8, bindings: [GoalCallGang, GoalCallPolice, GoalCower], calls: 15, scripts: [level14.lua, level20_mainstreet.lua, level82_chapter2.lua, level86.lua, level92_chapter2.lua, level93_chapter1.lua]}
-  - {id: 18, name: Grabbing, vtable: 0x00540150, process: 0x002b60c0, meaning: "Reaction: grabbing someone ([reaction goals](../research/ai.md#reaction-goals))"}
+  - {id: 18, name: Grabbing, vtable: 0x00540150, process: 0x002b60c0, meaning: "Reaction: grabbing someone ([reaction goals](../research/ai/index.md#reaction-goals))"}
   - {id: 19, name: Mounting, vtable: 0x005400f0, process: 0x002b6638, meaning: "Reaction: mounting a grounded human"}
   - {id: 20, name: Grabbed, vtable: 0x00540090, process: 0x002b6848, meaning: "Reaction: being grabbed"}
   - {id: 21, name: Mounted, vtable: 0x00540030, process: 0x002b6bb8, meaning: "Reaction: being mounted"}
@@ -40,7 +40,7 @@ entries:
   - {id: 24, name: Stunned, vtable: 0x005401b0, process: 0x002b4bb8, meaning: "Reaction: stunned"}
   - {id: 25, name: OnFire, vtable: 0x0053ff70, process: 0x002b4f40, meaning: "Reaction: on fire"}
   - {id: 26, name: Wounded, vtable: 0x0053ff10, process: 0x002b52c0, meaning: "Reaction: wounded"}
-  - {id: 27, name: Blocking, vtable: 0x0053feb0, process: 0x002b5808, bindings: [GangSetReactToViolence], calls: 3, scripts: [level20_marketplace.lua], meaning: "Blocking an attack ([AI](../research/ai.md#block))"}
+  - {id: 27, name: Blocking, vtable: 0x0053feb0, process: 0x002b5808, bindings: [GangSetReactToViolence], calls: 3, scripts: [level20_marketplace.lua], meaning: "Blocking an attack ([AI](../research/ai-fights.md#block))"}
   - {id: 28, name: FightBackOff, vtable: 0x0053fdf0, process: 0x002b7258}
   - {id: 29, name: HelpRespond, vtable: 0x0053fd90, process: 0x002b7900}
   - {id: 31, name: GrabTarget, vtable: 0x00540390, process: 0x002bb858, bindings: [GoalGrabTarget], calls: 3, scripts: [level95_vigilante.lua, mercy.lua], meaning: "Grab the target"}
@@ -77,7 +77,7 @@ entries:
   - {id: 62, name: StandIdle, vtable: 0x00541230, process: 0x002d4a80, bindings: [GoalStandIdle]}
   - {id: 63, name: LeftTurf, vtable: 0x00542a60, process: 0x002f8e70}
   - {id: 64, name: CopperGuard, vtable: 0x00540bd0, process: 0x002c0a10, event: 0x002c0bc8, bindings: [GoalCopperGuard]}
-  - {id: 65, name: FindEnemy, vtable: 0x00540a50, process: 0x002c0748, bindings: [GangCanFlee, GoalMelee, TacticBossScenarioE, TacticBossScenarioF, TacticBossScenarioG, TacticBossScenarioH, TacticPathScout], calls: 30, scripts: [level14.lua, level2_clinic.lua, level2_clubhouse.lua, level31_birdie.lua, level52_chapter1.lua, level62_boppers.lua], meaning: "Under Melee: restarts the fight while the target is valid ([AI](../research/ai.md#find-enemy))"}
+  - {id: 65, name: FindEnemy, vtable: 0x00540a50, process: 0x002c0748, bindings: [GangCanFlee, GoalMelee, TacticBossScenarioE, TacticBossScenarioF, TacticBossScenarioG, TacticBossScenarioH, TacticPathScout], calls: 30, scripts: [level14.lua, level2_clinic.lua, level2_clubhouse.lua, level31_birdie.lua, level52_chapter1.lua, level62_boppers.lua], meaning: "Under Melee: restarts the fight while the target is valid ([AI](../research/ai-fights.md#find-enemy))"}
   - {id: 66, name: CopperPatrol, vtable: 0x00540b70, process: 0x002c11d8, bindings: [GoalCopperPatrol], calls: 4, scripts: ["36763710", level52.lua]}
   - {id: 67, name: GeneralParlay, vtable: 0x00541890, process: 0x002cb5d0, bindings: [GoalStartParlay]}
   - {id: 68, name: PedLogicPath, vtable: 0x0053f970, process: 0x002a62d8, bindings: [GoalPedestrianPath]}

@@ -11,8 +11,8 @@
 #include "support/ai_fixtures.h"
 #include "support/collision_fixtures.h"
 
-// The AI's enemy scan (docs/research/ai.md#enemy-scan): what a scanner lists, what it keeps and drops, and when it
-// scans. Synthetic floors; the player (slot 0) in one gang, the guards in an enemy gang.
+// The AI's enemy scan (docs/research/ai-fights.md#enemy-scan): what a scanner lists, what it keeps and drops, and when
+// it scans. Synthetic floors; the player (slot 0) in one gang, the guards in an enemy gang.
 
 using coney::ai::Brain;
 using coney::ai::scanEnemies;

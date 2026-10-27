@@ -146,7 +146,7 @@ using SceneLines = std::function<std::vector<SceneLine>(const PlayLevelMode& mod
 /// layout's `target` lines, Coney's passive targets (human::TargetHuman) stepped after the player, and AI fighters (a
 /// layout's `fighter` lines, or spawned from the debug menus), humans with a brain stepped in the player's characters'
 /// step; both are drawn with the player's model. The parts follow docs/research/characters.md,
-/// docs/research/combat/index.md, docs/research/ai.md and docs/research/camera.md; the mode is Coney's own glue.
+/// docs/research/combat/index.md, docs/research/ai/index.md and docs/research/camera.md; the mode is Coney's own glue.
 ///
 /// A level entered through gameplay also brings its glass panes and doors (ScriptedCast::objects,
 /// play_level_objects.cpp): they get the level's collision mesh and path data, tick twice a step, take player 1's
@@ -573,10 +573,10 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     // the first whose offer is within ai::kDealReach in plan and whose feet are within the prompt height of the human's
     // waist deals. Returns whether one took the press.
     bool tryDeal(human::Human& human);
-    // Player 1's triangle beside a Warrior whose swap prompt is up (docs/research/ai.md#warrior-swap): the Warriors
-    // ahead within 1.5 m are asked nearest first; the first that does not refuse turns to him over 0.2 s and the two
-    // swap what they hold at once, and player 1 says `give_me` when he now holds something. Returns whether one took
-    // the press. **Coney's stand-in**: the two-player swap is not built.
+    // Player 1's triangle beside a Warrior whose swap prompt is up (docs/research/ai-brain-types.md#warrior-swap): the
+    // Warriors ahead within 1.5 m are asked nearest first; the first that does not refuse turns to him over 0.2 s and
+    // the two swap what they hold at once, and player 1 says `give_me` when he now holds something. Returns whether one
+    // took the press. **Coney's stand-in**: the two-player swap is not built.
     // @orig 0x00306040 WarriorBrain_OnPrompt (unknown)
     bool trySwap(human::Human& human, const world_objects::SightBlocked& blocked);
     // A deal's outcome for player 1: the item and money moved for a sale or a rip-off, and the dealer's line.

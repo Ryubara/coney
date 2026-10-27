@@ -83,8 +83,8 @@ struct BrainMove {
     anim::Vec3 aim{};
 };
 
-/// A human's per-player record (`0x00660f50 + i × 0x2c`, docs/research/ai.md#brain): what drives it each update. A
-/// pad writes it for the player (human::Player); a brain writes the command and the stick for an AI human, as a pad
+/// A human's per-player record (`0x00660f50 + i × 0x2c`, docs/research/ai/index.md#brain): what drives it each update.
+/// A pad writes it for the player (human::Player); a brain writes the command and the stick for an AI human, as a pad
 /// would (docs/research/tasks.md#humans-update). The human reads nothing else of its input.
 struct PlayerRecord {
     float stickX = 0.0F;        ///< Left stick, -1 (left) to 1 (right).

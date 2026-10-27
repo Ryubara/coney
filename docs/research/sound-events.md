@@ -242,7 +242,7 @@ Confirmed (code):
    a state flag of `0x1f80974000` or record `+0x108` ahead of the game time), whose actions are not blocked
    (`0x00228228`: no state flag of `0x7bf9e9f7ff0`), whose brain has no queued actions (`+0x2e` ≤ 0), and who is within
    the **tagger's** far melee range (his brain `+0x140`, 5.0 m unless `BrSetMeleeRange` changed it;
-   [AI](ai.md#melee-range)) of the tagger, by the squared distance between their positions.
+   [AI](ai-fights.md#melee-range)) of the tagger, by the squared distance between their positions.
 3. **Pick**: not the nearest. The first counting slot is taken; every later counting slot replaces it when
    `Random_Int(100)` (stream `0x006eb8a0`) is 50 or more. So the last counting slot wins at 50 %, the one before at 25
    %, and the first at 1/2^(n−1) of n.
@@ -404,7 +404,7 @@ listed below with the commands (number and name, [Speech](../references/speech.m
 interrupt (cuts the speaker's current line; without it nothing is said while he speaks), **C** played as a cutting
 line (`Human_PlaySpeechCutting`), **N** not duckable, **L** the speaker looks at a target. "Gesture" means only when
 `Ambient_MayGesture` allows ([above](#command-ids)). Every call goes through the voice table, so a command the
-speaker's voice set has no line for says nothing. The triggers are the functions' own (their pages: [AI](ai.md),
+speaker's voice set has no line for says nothing. The triggers are the functions' own (their pages: [AI](ai/index.md),
 [Combat](combat/index.md), [Crimes](crimes.md)); a "variable" command is a parameter of the goal or action. Confirmed
 (code) for every call's arguments.
 

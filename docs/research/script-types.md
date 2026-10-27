@@ -766,7 +766,7 @@ fourth step, done at the fifth.
 
 ### `sub_burn` {#sub-burn}
 
-The burning patch a fire leaves (`0x003c40a0` init, [AI](ai.md) no-go spheres): it holds an AI no-go sphere (record
+The burning patch a fire leaves (`0x003c40a0` init, [AI](ai/index.md) no-go spheres): it holds an AI no-go sphere (record
 `+0x14`, the sphere's index; below 65 means one is held) and grows in four steps.
 
 | Address | Name | Role | What it does | Evidence |

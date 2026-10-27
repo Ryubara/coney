@@ -3,7 +3,7 @@
 // A check against the player's own disc: every level's path data decodes, its route nodes lie in the polygons that own
 // them, and the route planner finds its way between seeded pairs of `level99`'s nodes. It runs only when the
 // environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only, never data (LEGAL.md).
-// docs/research/ai.md#coney has the results.
+// docs/research/ai-moving.md#in-coney has the results.
 
 #include <algorithm>
 #include <array>

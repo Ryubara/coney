@@ -11,8 +11,9 @@ Each `topic_*` function returns the entries of one list, in page order; the pure
 scripts so the tests can feed them synthetic chunks. The topics themselves, and their starting prose, are defined here
 too and registered in `refs_topics` and `refs_cli`.
 
-Research: docs/research/characters.md#power-classes, docs/research/combat/index.md, docs/research/ai.md#attack-kinds,
-docs/research/frontend.md#rumble, docs/research/gui.md#statistics, docs/guides/research-data.md#reference-lists.
+Research: docs/research/characters.md#power-classes, docs/research/combat/index.md,
+docs/research/ai/index.md#attack-kinds, docs/research/frontend.md#rumble, docs/research/gui.md#statistics,
+docs/guides/research-data.md#reference-lists.
 """
 
 from __future__ import annotations
@@ -60,7 +61,7 @@ for _types, _warrior, _power, _who in (
         WARRIOR_TYPES[_type] = (_warrior, _power, _who)
 OTHER_WARRIOR_CLASS, OTHER_POWER_CLASS = 9, 7
 
-#: `AttackKind_ToCommand` (`0x00231090`): the command id an AI attack of each kind writes (docs/research/ai.md).
+#: `AttackKind_ToCommand` (`0x00231090`): the command id an AI attack of each kind writes (docs/research/ai/index.md).
 ATTACK_COMMANDS: dict[int, int | str] = {}
 for _kinds, _command in (
     ((0, 32, 43), 0x10),

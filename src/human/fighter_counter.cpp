@@ -13,7 +13,7 @@
 
 // The AI's counter (command 3) to a grab or a tackle coming at it, as a paired move: the victim of the intro presses
 // the command (its block goal's roll, ai::BlockGoal), and the human in the intro plays the pair on its own update.
-// Research: docs/research/ai.md#block, docs/research/combat-moves.md#counters
+// Research: docs/research/ai-fights.md#block, docs/research/combat-moves.md#counters
 
 namespace coney::human {
 

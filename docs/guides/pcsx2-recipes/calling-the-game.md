@@ -119,17 +119,17 @@ when one consumed it. The brain's own handler is the function at brain `+0x28` (
 `+0x24`): `WarriorBrain_OnEvent` `0x003063b0` for a Warrior, `PlayerBrain_OnEvent` `0x00303e90` for the player. The
 runner builds a record at `0x000c8000` (spare memory): `+0x00` the human who caused it, as the human's address
 (confirmed at runtime for event `0xb`, which a Warrior keeps at brain `+0x27c`), `+0x04` the other party, `+0x20` the
-event id ([the event record](../../research/ai.md#event-record): 0 the prompt, 1 hit (with `+0x11` set to count as an
-attack), 2 reset, `0xb` a new enemy, ...). The brain's goals may be refilled in the same update, so check an effect that
-stays (a Warrior's noted enemy, its target).
+event id ([the event record](../../research/ai-brain-types.md#event-record): 0 the prompt, 1 hit (with `+0x11` set to
+count as an attack), 2 reset, `0xb` a new enemy, ...). The brain's goals may be refilled in the same update, so check an
+effect that stays (a Warrior's noted enemy, its target).
 
 | | |
 | --- | --- |
-| Parameters | `who` (human): the human's name; empty for the player; `event` (number): the event id (ai.md#event-record); `causer` (expr, default `0`): record +0x00: the human who caused it (an address), 0 none; `other` (expr, default `0`): record +0x04: the other party, 0 none |
+| Parameters | `who` (human): the human's name; empty for the player; `event` (number): the event id (ai-brain-types.md#event-record); `causer` (expr, default `0`): record +0x00: the human who caused it (an address), 0 none; `other` (expr, default `0`): record +0x04: the other party, 0 none |
 | Preconditions | patches: `call-brains`; emulation running |
 | Evidence | confirmed (runtime) |
 | Ghidra | `0x0021d480 Human_OnEvent`, `0x0028f928 Brain_OnEvent`, `0x00384c38 ScriptHandler_Deliver` |
-| Research | [research/ai.md#event-record](../../research/ai.md#event-record), [research/ai.md#events](../../research/ai.md#events) |
+| Research | [research/ai-brain-types.md#event-record](../../research/ai-brain-types.md#event-record), [research/ai/index.md#events](../../research/ai/index.md#events) |
 | Confirmed at runtime | 2026-10-21, copy `pcsx2-d`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6); event 0xb to Ash (a Warrior) with Civilians2 as causer: consumed, brain +0x27c held Civilians2's address and +0x280 was 1 |
 
 ```sh

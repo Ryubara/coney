@@ -4,7 +4,7 @@ Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038e
 `coney-tools wad scenes` ([coney-tools](../guides/coney-tools.md#scenes)) parsed all 2,765 records of the NTSC-U disc on
 2026-10-06 and prints counts and hashes only. Runtime claims come from the `warriors_passive` trace
 (`repo:research/traces/scenarios/warriors_passive.toml`, recorded in PCSX2 2.9.94 on 2026-10-05,
-[AI](ai.md#level99-fight)) and from [Characters](characters.md#creation), and from the scene-binding hooks of
+[AI](ai-fights.md#level99-fight)) and from [Characters](characters.md#creation), and from the scene-binding hooks of
 [Cast at runtime](#cast-runtime) (`repo:research/traces/scenarios/scene_cast_state.toml` and
 `repo:research/traces/scenarios/scene_cast_fence.toml`, PCSX2 2.9.94, 2026-10-11).
 

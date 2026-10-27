@@ -20,7 +20,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = 
 
 [hook.queue-attack]
 description = "Each call of Brain_QueueAttack (0x0028e248): the caller, the brain, the human the attack is aimed at, the attack kind and the command delay."
-research = "docs/research/ai.md#get-item"
+research = "docs/research/ai/index.md#get-item"
 address = 0x0028e248
 # addiu sp,sp,-0x80; sq s3,0x30(sp)
 original = [0x27bdff80, 0x7fb30030]

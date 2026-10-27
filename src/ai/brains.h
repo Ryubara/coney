@@ -16,7 +16,8 @@
 // staggered by its index, and updates on every step, at the brains' place in the characters' step (human::Humans), so
 // after the pads have written the player's record and before any human's dispatcher. The formations and the gangs,
 // which the original steps just before the brains, are stepped first. Game time comes from the steps run (1/30 s each),
-// so a run is the same on every machine. Research: docs/research/ai.md#update, docs/research/tasks.md#humans-update
+// so a run is the same on every machine. Research: docs/research/ai/index.md#update,
+// docs/research/tasks.md#humans-update
 
 namespace coney::ai {
 

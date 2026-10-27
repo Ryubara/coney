@@ -438,8 +438,8 @@ classes](../../references/warrior-classes.md), which lists every byte's reader.
    (`0x0027ffa0`), and returns 0 on command 4 (R1 held), so nothing else runs while R1 is held. This is the sprint's
    "other clear" on [Characters](../characters.md#sprint). R1 held is read from the pad record (`0x00147f98`, 0 when
    per-player `+0x19` is −1), so **an AI human never starts a block**: command 4 alone does nothing
-   ([AI](../ai.md#block)). The fight test fails while the human runs or sprints with record `+0x08` clear (gait 4 or
-   5, `0x00223a60`, `0x00223a98`), so **R1 at a run starts no block**: the run goes on and R1 only turns the camera
+   ([AI](../ai-fights.md#block)). The fight test fails while the human runs or sprints with record `+0x08` clear (gait 4
+   or 5, `0x00223a60`, `0x00223a98`), so **R1 at a run starts no block**: the run goes on and R1 only turns the camera
    round ([Camera](../camera.md#reverse)); the block starts the update the gait drops below 4. Confirmed (code);
    confirmed (runtime).
 2. The chain (`0x00280630`), then the sprint (`0x0027d5a0`). Confirmed (code).
@@ -453,7 +453,7 @@ classes](../../references/warrior-classes.md), which lists every byte's reader.
    `0x24` → `0x00287730`; **`0x20` → charge**; **`0x21` → dive**; **`0xf` → square**; **`0x10` → cross** (weapon types
    4, 5, 6 → `0x002880d8` instead); **`0xd`, `0xe` → grab or tackle**; `0x27` → `0x00286ba8`; 7 (L1 pressed) →
    `0x0027da10`; 6 (L1 held) → `0x0027dc00`; 8 → `0x00227b98` / `0x00227a90` ([Targets](../combat-targets.md#targets));
-   **3 → the AI's grab or tackle counter** (`0x0027d6e0`), only when per-player `+0x1b` is 0 ([AI](../ai.md#block)).
+   **3 → the AI's grab or tackle counter** (`0x0027d6e0`), only when per-player `+0x1b` is 0 ([AI](../ai-fights.md#block)).
    Commands `0x30`-`0x39` are not made by the street's tables; scripts or weapons make them (inferred). `0x00288838`
    acts only for armed weapon types; `0x30` matches no branch of `0x00287730` (inferred: unused there).
 
@@ -984,10 +984,10 @@ attacked does any of this.
 
 ### Block (and no dodge) {#block}
 
-**R1 held** on a pad, in a fight stance, blocks (an AI human cannot block, [AI](../ai.md#block)): anim state 21 then 606
-`BLOCK_SUSTAIN` (605 `BLOCK_START` was not seen as the playing id), state flags `0x8001`. The stick at 0.8 to a side
-while blocking gives anim state 24, 607 `BLOCK_SHUFFLE`, turning in place. Cross pressed while blocking plays `X1` and
-returns to the block. Confirmed (runtime). No separate dodge command exists in the street's tables (confirmed
+**R1 held** on a pad, in a fight stance, blocks (an AI human cannot block, [AI](../ai-fights.md#block)): anim state 21
+then 606 `BLOCK_SUSTAIN` (605 `BLOCK_START` was not seen as the playing id), state flags `0x8001`. The stick at 0.8 to a
+side while blocking gives anim state 24, 607 `BLOCK_SHUFFLE`, turning in place. Cross pressed while blocking plays `X1`
+and returns to the block. Confirmed (runtime). No separate dodge command exists in the street's tables (confirmed
 (runtime)); the shuffle is the only evasive move found.
 
 **A hit on a block** (`0x00269f30`, from `Human_ApplyPendingDamage` while state `0x8000`), confirmed (code): a block
@@ -1055,13 +1055,13 @@ update of 616):
 
 - When the brain's `+0x3c` holds a reaction goal of type `0x17`, the knocked-down goal, the answer is no
   (`0x002b4aa0` returns 0). (An earlier reading called `+0x3c` a tactic; it is the reaction goal,
-  [AI](../ai.md#reaction-goals).)
+  [AI](../ai/index.md#reaction-goals).)
 - Otherwise the brain's active entry (`brain + 0x40` indexed by `brain + 0x2c`) answers:
     - Type `0x1b` (`0x002b5698`), the block goal built by `0x002b54d8` and pushed by `0x0029f098` with a random
       block chance (a quarter of it for brain type 3). It says yes when the human is ducking (record `+0x08` has
       `0x1000`, `0x00223b28`) and the goal's bytes `+0x14` and `+0x16` are both 1. `+0x16` is 1 from construction;
       `+0x14` is written by the goal's Start (`0x002b5520`): 1 when a second roll under the block chance succeeds
-      ([AI](../ai.md#block)).
+      ([AI](../ai-fights.md#block)).
     - Type `0x85`, the big fighter's goal (`BigFighterGoal_WantsCounter`, `0x002eab50`; vtable `0x00542940`, built by
       `0x002e9cd0`). It says yes when
       the human's body scale (`+0x65c`) is at most 1.1, it is ducking, and the goal's u16 `+0x28` is `0x0101`.
@@ -1161,7 +1161,7 @@ open question below or the issue that tracks it. The ported functions and their 
   [Root motion](../formats/animation.md#root-motion)). It would change every clip with a root turn, not only the throws.
 - **The AI's spray**{#q-ai-spray}: which AIs pick attack kind 15 (command `0x24`, [the spray](#run-attacks)) in a fight
   and how often. `Human_CanUseAttackKind` (`0x002240e8`) lets any free human with paint pick it, and without paint
-  only a human no player controls (`+0x1b0` -1) ([Picking the attack kind](../ai.md#pick-attack)); how often a gang
+  only a human no player controls (`+0x1b0` -1) ([Picking the attack kind](../ai-fights.md#pick-attack)); how often a gang
   fight in the original shows it has not been read. Coney's dispatcher plays the spray for an AI, but its AI leaves
   kind 15 out of its picks until that is read, and no AI keeps the paint count (`+0x374`) the spray takes from.
 
