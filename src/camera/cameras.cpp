@@ -138,7 +138,7 @@ void Cameras::keepHumansInView(const raycast::CollisionMesh* mesh) {
     for (const double human : found->second.keptInView) {
         const std::optional<anim::Vec3> feet = m_locate(human);
         if (!feet) {
-            continue;
+            continue; // Coney's choice: the original's loop stops at a human it cannot find
         }
         const auto before = m_keptBefore.find(human);
         const anim::Vec3 from = before != m_keptBefore.end() ? before->second : *feet;
@@ -204,7 +204,7 @@ std::optional<double> Cameras::setupPath(double handle, double start, float seco
                                          float fieldOfView, float farClip) {
     const std::optional<CameraRef> from = find(start);
     if (!from) {
-        return std::nullopt;
+        return std::nullopt; // Coney's choice: no start camera, no path (the original's case is not traced)
     }
     const CameraView view = viewOf(*from);
     if (m_pathHandle == 0.0) {
@@ -552,7 +552,7 @@ void Cameras::setFollowAngle(float degrees) {
 }
 
 void Cameras::beginScene(const CameraView& view) {
-    // The camera underneath a blend is its destination.
+    // The camera underneath a blend is its destination. Coney's choice: no depth limit (the original's holds two).
     if (m_current.kind != CameraKind::None && m_current.kind != CameraKind::Scene) {
         m_stack.push_back(m_current);
     }
