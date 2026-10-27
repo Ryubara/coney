@@ -1809,6 +1809,20 @@ coney = "src/scripting/hub_bindings.cpp:makeGangClearHandlers"
 status = "legacy"
 
 [[function]]
+address = 0x00385918
+name = "Object_GetHitpoints"
+page = "scripting.md#bindings"
+role = "`GetHitpoints`: a world object's `+0x128`, 0 for none"
+level = "confirmed-code"
+coney = "src/scripting/object_bindings.cpp:makeGetHitpoints"
+status = "compared"
+
+[[function.gaps]]
+what = "the hitpoints of world objects other than doors and barriers"
+relation = "not-ported"
+issue = 85
+
+[[function]]
 address = 0x00385950
 name = "Object_GetTypeBits"
 page = "scripting.md#bindings"

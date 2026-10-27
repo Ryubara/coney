@@ -14,6 +14,10 @@ namespace coney::world_objects {
 namespace {
 
 // Applies one triangle's write to `mesh`; an index outside it is skipped.
+// The original's triangle writes: an index past the mesh is skipped, bits are added, bit 0 set or cleared.
+// @orig 0x003a4710 CollisionTri_SetFlag1 (unknown)
+// @orig 0x003a46c8 CollisionTri_ClearFlag1 (unknown)
+// @orig 0x003a4768 Collision_SetTriangleTwoSided (unknown)
 void applyWrite(raycast::CollisionMesh& mesh, std::uint32_t index, const TriangleWrite& write) {
     const std::span<raycast::CollisionTriangle> all = mesh.mutableTriangles();
     if (index >= all.size()) {
@@ -32,6 +36,7 @@ void applyWrite(raycast::CollisionMesh& mesh, std::uint32_t index, const Triangl
 }
 
 // Switches the triangles of `mesh` wholly inside `write`'s box.
+// @coney-only forwards a kept box switch to the mesh (CollisionMesh::setEnabledInBox)
 void applyBox(raycast::CollisionMesh& mesh, const BoxWrite& write) {
     mesh.setEnabledInBox(raycast::Vec3{write.low[0], write.low[1], write.low[2]},
                          raycast::Vec3{write.high[0], write.high[1], write.high[2]}, write.on);
@@ -39,6 +44,8 @@ void applyBox(raycast::CollisionMesh& mesh, const BoxWrite& write) {
 
 } // namespace
 
+// Binds the level's mesh and applies the writes kept before it was bound.
+// @coney-only Coney keeps the writes made before the play mode binds the mesh
 void ObjectWorld::bindCollision(raycast::CollisionMesh* mesh) {
     collision = mesh;
     if (collision == nullptr) {
@@ -75,12 +82,16 @@ void ObjectWorld::bindCollision(raycast::CollisionMesh* mesh) {
     }
 }
 
+// @coney-only forgets the kept writes
 void ObjectWorld::clearWrites() {
     triangleWrites.clear();
     boxWrites.clear();
     nextWriteOrder = 1;
 }
 
+// Turns the triangles on or off, kept for a mesh bound later (docs/research/collision.md#enable).
+// @orig 0x003a4710 CollisionTri_SetFlag1 (unknown)
+// @orig 0x003a46c8 CollisionTri_ClearFlag1 (unknown)
 void setTrianglesEnabled(ObjectWorld& world, std::span<const std::uint32_t> triangles, bool on) {
     for (const std::uint32_t index : triangles) {
         TriangleWrite& kept = world.triangleWrites[index];
@@ -92,6 +103,7 @@ void setTrianglesEnabled(ObjectWorld& world, std::span<const std::uint32_t> tria
     }
 }
 
+// @coney-only keeps and forwards a box switch; the mesh walk is CollisionMesh::setEnabledInBox
 void setTrianglesEnabledInBox(ObjectWorld& world, std::array<float, 3> low, std::array<float, 3> high, bool on) {
     const BoxWrite write{.low = low, .high = high, .on = on, .order = world.nextWriteOrder++};
     world.boxWrites.push_back(write);
@@ -113,6 +125,7 @@ void markTriangles(ObjectWorld& world, std::span<const std::uint32_t> triangles,
     }
 }
 
+// @coney-only Coney's GameRandom for a 0 to n - 1 draw
 int randomBelow(GameRandom* random, int n) {
     if (random == nullptr || n <= 0) {
         return 0;
@@ -120,6 +133,7 @@ int randomBelow(GameRandom* random, int n) {
     return random->range(0, n - 1);
 }
 
+// @coney-only quaternion helper
 anim::Quat turnAboutVertical(anim::Quat rotation, float degrees) {
     return turnAboutOwnAxis(rotation, anim::Vec3{0.0F, 0.0F, 1.0F}, degrees);
 }
@@ -136,6 +150,7 @@ anim::Quat turnAboutOwnAxis(anim::Quat rotation, anim::Vec3 axis, float degrees)
                                       a.w * turn.w - a.x * turn.x - a.y * turn.y - a.z * turn.z});
 }
 
+// @coney-only quaternion helper
 anim::Vec3 rotate(anim::Quat rotation, anim::Vec3 v) {
     return anim::transformDirection(anim::matrixFromQuat(rotation), v);
 }
