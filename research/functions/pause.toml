@@ -389,7 +389,12 @@ page = "pause.md#fn-pausemenu"
 role = "adds, removes or ticks an objective in the pause menu's checklists (`HUDSetObjective`)"
 level = "confirmed-code"
 coney = "src/hud/hud.h:Hud::setObjective"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "Objective_GetIconPrefix's prefixes, mode 2's header rebuild and Bonus complete announcement, and the hint's unlock test"
+relation = "not-ported"
+issue = 662
 
 [[function]]
 address = 0x001db278

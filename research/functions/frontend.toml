@@ -32,7 +32,17 @@ name = "Gm_Level_Enter"
 page = "frontend.md#original-structure"
 level = "confirmed-code"
 coney = "src/gamemodes/gameplay_mode.h:GameplayMode::enter"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the players synced (GameState_SyncPlayers): player slots and pads"
+relation = "not-ported"
+issue = 548
+
+[[function.gaps]]
+what = "the level-end countdown of 180 frames"
+relation = "not-ported"
+issue = 669
 
 [[function]]
 address = 0x00159a58
@@ -169,7 +179,12 @@ name = "InitLevel"
 page = "frontend.md#original-structure"
 level = "confirmed-code"
 coney = "src/gamemodes/gameplay_mode.h:GameplayMode::enter"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "entering an Armies of the Night level from another level keeps whether player 2 is in"
+relation = "not-ported"
+issue = 548
 
 [[function]]
 address = 0x00160d78
@@ -1185,7 +1200,7 @@ page = "frontend.md#warriors-functions"
 role = "`SetMultiplayerCallback`: the name at `+0x3a4` (null when empty)"
 level = "confirmed-code"
 coney = "src/scripting/player_bindings.cpp:addWorldBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0041d788
@@ -1230,7 +1245,7 @@ page = "frontend.md#warriors-functions"
 role = "`CfgMultiplayerJoin`: `GameState_SetJoinAllowed`"
 level = "confirmed-code"
 coney = "src/scripting/player_bindings.cpp:addWorldBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0041dd90

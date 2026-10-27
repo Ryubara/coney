@@ -2136,7 +2136,7 @@ name = "StopWatch_Start"
 page = "scripting.md#stopwatch"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/warriors/stop_watch.h:StopWatch::start"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x004233f8
@@ -2144,7 +2144,7 @@ name = "StopWatch_Update"
 page = "scripting.md#stopwatch"
 level = "confirmed-code"
 coney = "src/warriors/stop_watch.h:StopWatch::step"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x004235e0
@@ -2170,7 +2170,7 @@ page = "scripting.md#warriors-functions"
 role = "the stopwatch's current time (`+0x08`, ms)"
 level = "confirmed-code"
 coney = "src/scripting/player_bindings.cpp:addWorldBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00423670

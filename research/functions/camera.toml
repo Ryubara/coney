@@ -215,7 +215,12 @@ page = "camera.md#fn-script"
 role = "[`CamModifyRail`](../references/bindings/camera.md#cammodifyrail): a rail setting's target and ease time. [rail](camera.md#rail)."
 level = "confirmed-code"
 coney = "src/camera/rail_camera.h:RailCamera::modify"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the player argument and each player's rail (-1 writes every player's): Coney has player 1's rail only"
+relation = "not-ported"
+issue = 549
 
 [[function]]
 address = 0x0011dcf0
@@ -278,7 +283,17 @@ page = "camera.md#fn-manager"
 role = "Makes a camera current for a player, optionally blending (Cam_Transition `0x0011fac8`) over the given time; while a scene camera is current it replaces the camera the scene returns to instead. [blends](camera.md#blends)."
 level = "confirmed-code"
 coney = "src/camera/cameras.h:Cameras::makeActive"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the player argument, other players' cameras, split-screen views and their hand-overs: Coney has player 1's cameras only"
+relation = "not-ported"
+issue = 549
+
+[[function.gaps]]
+what = "the third argument's script function, stored and called when the camera is made current, and the previous base camera's deactivation"
+relation = "not-ported"
+issue = 951
 
 [[function]]
 address = 0x0011fbb0
@@ -656,7 +671,12 @@ page = "camera.md#fn-rail"
 role = "Rail camera update: ease settings and lead, targets, target point, damping, placement by mode, split extras. [rail](camera.md#rail)."
 level = "confirmed-code"
 coney = "src/camera/rail_camera.h:RailCamera::update"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the split-screen extras (CamRail_UpdateSplitScreen) and the co-op flash's fade"
+relation = "not-ported"
+issue = 549
 
 [[function]]
 address = 0x0013dcc8

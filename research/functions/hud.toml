@@ -288,7 +288,27 @@ page = "hud-functions-parts.md#fn-hudinterface"
 role = "per-level set-up (from `InitLevel`, `0x0015fe90`): the layout floats for the video mode, then every part of [the HUD object](hud.md#hud-object) that is not yet set up, the two player panels (`ANHud` panels allocated in levels 60-69, otherwise the static ones at `+0x19130`), the Armies of the Night widgets (`0x0041d110`); ends hidden (`HUD_Hide`) with `+0x177a4` = `+0x177ac` = `+0x177b4` = 1"
 level = "confirmed-code"
 coney = "src/hud/hud.h:Hud::levelSetUp"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the mission item icons, the status column, HudLabel and the menus' level hook"
+relation = "not-ported"
+issue = 662
+
+[[function.gaps]]
+what = "the crew status list"
+relation = "not-ported"
+issue = 515
+
+[[function.gaps]]
+what = "the split-screen divider sprites"
+relation = "not-ported"
+issue = 549
+
+[[function.gaps]]
+what = "an Armies level's ANHud player panels (Coney's story panel stands in)"
+relation = "not-ported"
+issue = 570
 
 [[function]]
 address = 0x001ae980
@@ -315,7 +335,32 @@ page = "hud-functions-parts.md#fn-hudinterface"
 role = "the HUD's frame ([The HUD's frame](hud.md#the-huds-frame)); `a` and `b` go to the two radars' updates (`0x001c5210`)"
 level = "confirmed-code"
 coney = "src/gamemodes/gameplay_mode.h:GameplayMode::updateActionPrompt"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the split-screen divider layout and sprites"
+relation = "not-ported"
+issue = 549
+
+[[function.gaps]]
+what = "the menus' countdown at +0x20ac"
+relation = "not-ported"
+issue = 682
+
+[[function.gaps]]
+what = "the caption pager, HudLabel, mission item icons, the Armies +0x1911c and +0xe050 widgets, and the radar's pending blips cleared"
+relation = "not-ported"
+issue = 662
+
+[[function.gaps]]
+what = "the crew status list"
+relation = "not-ported"
+issue = 515
+
+[[function.gaps]]
+what = "the Rumble intro screen (RM_Intro_Update)"
+relation = "not-ported"
+issue = 661
 
 [[function]]
 address = 0x001b1688
@@ -324,7 +369,22 @@ page = "hud-functions-parts.md#fn-hudinterface"
 role = "the HUD's draw ([The HUD's frame](hud.md#the-huds-frame))"
 level = "confirmed-code"
 coney = "src/hud/hud.h:Hud::render"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the split-screen divider sprites"
+relation = "not-ported"
+issue = 549
+
+[[function.gaps]]
+what = "HudLabel, the caption pager, the mission item icons, the status column, the Armies widgets, the prompts' Armies gate and the letterbox's radar and command steps"
+relation = "not-ported"
+issue = 662
+
+[[function.gaps]]
+what = "the crew status list"
+relation = "not-ported"
+issue = 515
 
 [[function]]
 address = 0x001b1f38
@@ -369,7 +429,7 @@ page = "hud-functions-parts.md#fn-hudinterface"
 role = "binds a panel to a human (`Human_MakePlayer`): for slot < 2 and a panel not locked (`+0x40f8`), init once (interface `+0x14`), reset (`+0x24`), bind (`+0x34`); hidden unless the HUD is shown; returns slot or -1"
 level = "confirmed-code"
 coney = "src/hud/hud.h:Hud::attachPlayer"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001b24d0

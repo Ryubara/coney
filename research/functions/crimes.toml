@@ -115,7 +115,7 @@ page = "crimes.md#code-crimes"
 role = "`CfgSetSteroTheftHandler`: interns the stereo theft's Lua handler (0x0051027c)."
 level = "confirmed-code"
 coney = "src/scripting/player_bindings.cpp:addWorldBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00238100

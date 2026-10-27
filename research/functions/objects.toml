@@ -280,7 +280,7 @@ page = "objects.md#original-structure"
 role = "pushes the door's arguments, creates it by type name"
 level = "confirmed-code"
 coney = "src/scripting/object_bindings.cpp:makeSpawnDoor"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00398598
@@ -377,7 +377,12 @@ name = "DoorFence_Init"
 page = "objects.md#original-structure"
 level = "confirmed-code"
 coney = "src/world_objects/doors.h:Doors::spawn"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the model by fence class, dyn_door_vargas' child object and the hit mode"
+relation = "not-ported"
+issue = 707
 
 [[function]]
 address = 0x003b3220
@@ -385,7 +390,7 @@ name = "DoorFence_Update"
 page = "objects.md#original-structure"
 level = "confirmed-code"
 coney = "src/world_objects/doors.h:Doors::tick"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x003e29e8
@@ -550,7 +555,12 @@ page = "objects.md#original-structure"
 role = "message `0x0b`: a human opens it, away from them"
 level = "confirmed-code"
 coney = "src/scripting/object_bindings.cpp:makeDoorOpen"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the side test's sign and a kept angle's command 5 before it"
+relation = "not-ported"
+issue = 707
 
 [[function]]
 address = 0x003f9ad0
@@ -576,7 +586,7 @@ name = "SubSwingingDoor_Update"
 page = "objects.md#original-structure"
 level = "confirmed-code"
 coney = "src/world_objects/doors.cpp:stepLeaf"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x003fb5f8
@@ -584,7 +594,7 @@ name = "DoorSwinging_Init"
 page = "objects.md#original-structure"
 level = "confirmed-code"
 coney = "src/world_objects/doors.h:Doors::spawn"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x003fbba0
@@ -592,7 +602,7 @@ name = "DynDoorSwinging_Update"
 page = "objects.md#original-structure"
 level = "confirmed-code"
 coney = "src/world_objects/doors.h:Doors::tick"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x003fe490
