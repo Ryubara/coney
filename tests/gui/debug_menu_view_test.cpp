@@ -4,6 +4,7 @@
 #include "gui/debug_menu_view.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -79,6 +80,7 @@ void openPage(DebugSession& session, std::string_view title) {
 
 } // namespace
 
+// Expected: unverified, #1031 (the pad menu is Coney's own; the original has none)
 TEST_CASE("the bitmap font has a glyph for every printable character and merges pixel runs", "[debug][gui]") {
     CHECK(BitmapFont::glyph('-') == std::array<std::uint8_t, 7>{0, 0, 0, 0x1f, 0, 0, 0});
     CHECK(BitmapFont::glyph('\x01') == BitmapFont::glyph('?'));
@@ -97,6 +99,7 @@ TEST_CASE("the bitmap font has a glyph for every printable character and merges 
     CHECK(BitmapFont::measure("abc", 1.0F) == 18.0F);
 }
 
+// Expected: unverified, #1031 (the pad menu is Coney's own; the original has none)
 TEST_CASE("every item kind has a renderer in the pad menu", "[debug][gui]") {
     TunableRegistry tunables;
     DebugSession session(tunables, DebugServices{}, nullptr);
@@ -122,6 +125,7 @@ TEST_CASE("every item kind has a renderer in the pad menu", "[debug][gui]") {
     CHECK(device.draws[0].texture == nullptr);
 }
 
+// Expected: unverified, #1031 (the pad menu is Coney's own; the original has none)
 TEST_CASE("the view tells the navigator how many rows fit and draws nothing while closed", "[debug][gui]") {
     TunableRegistry tunables;
     DebugSession session(tunables, DebugServices{}, nullptr);
@@ -138,6 +142,7 @@ TEST_CASE("the view tells the navigator how many rows fit and draws nothing whil
     CHECK(session.navigator().visibleRows() < 44);
 }
 
+// Expected: unverified, #1031 (the pad menu is Coney's own; the original has none)
 TEST_CASE("the Display page's overlays draw with the menu closed", "[debug][gui]") {
     TunableRegistry tunables;
     DebugSession session(tunables, DebugServices{}, nullptr);
@@ -154,12 +159,57 @@ TEST_CASE("the Display page's overlays draw with the menu closed", "[debug][gui]
     CHECK(painter.drew("PAUSED"));
 }
 
+// Expected: unverified, #1031 (the pad menu is Coney's own; the original has none)
 TEST_CASE("text that does not fit is cut and marked", "[debug][gui]") {
     RecordingPainter painter;
     CHECK(coney::gui::fitText(painter, "short", 60.0F) == "short");
     CHECK(coney::gui::fitText(painter, "a long label", 30.0F) == "a lo~");
 }
 
+// A painter whose glyphs differ in width (a narrow `i`, a wide `W`), which counts the characters it measures.
+class CountingPainter final : public coney::gui::DebugTextPainter {
+  public:
+    [[nodiscard]] float lineHeight() const override { return 10.0F; }
+    [[nodiscard]] float measure(std::string_view text) const override {
+        measured += text.size();
+        float width = 0.0F;
+        for (const char c : text) {
+            width += c == 'i' ? 2.0F : c == 'W' ? 9.0F : 6.0F;
+        }
+        return width;
+    }
+    void text(std::string_view /*text*/, float /*x*/, float /*y*/, coney::graphics::Rgba /*colour*/) override {}
+    void flush(coney::graphics::RenderDevice& /*device*/) override {}
+
+    mutable std::size_t measured = 0;
+};
+
+// Expected: unverified, #1031 (the pad menu is Coney's own; the original has none)
+TEST_CASE("text cut to fit keeps the longest prefix that fits with its mark", "[debug][gui]") {
+    CountingPainter painter;
+    // 6 + 2 + 9 + 6 = 23 px for "aiWb"; the mark takes 6 more.
+    CHECK(coney::gui::fitText(painter, "aiWbcdef", 29.0F) == "aiWb~");
+    CHECK(coney::gui::fitText(painter, "aiWbcdef", 28.9F) == "aiW~");
+    CHECK(coney::gui::fitText(painter, "aiWbcdef", 48.0F) == "aiWbcdef");
+    CHECK(coney::gui::fitText(painter, "aiWbcdef", 3.0F) == "~");
+}
+
+TEST_CASE("cutting a very long text to fit measures it a bounded number of times", "[debug][gui]") {
+    // Expected: unverified, #1031 (Coney's own debug menu; the original has none)
+    // The AI fighters page's State line with 300 fighters is over 10,000 characters, of which a row shows a few dozen:
+    // cutting one character at a time and measuring the rest again measured ~100 million characters a frame
+    // (docs/guides/performance.md#ai-page-1031).
+    CountingPainter painter;
+    std::string text;
+    for (int i = 0; i < 300; ++i) {
+        text += "; Warriors health 100 goal 0x12 actions 3";
+    }
+    const std::string fitted = coney::gui::fitText(painter, text, 200.0F);
+    CHECK(fitted == "; Warriors health 100 goal 0x12 ~"); // 197 px with the mark; one more character makes 203
+    CHECK(painter.measured <= 40 * text.size());
+}
+
+// Expected: unverified, #1031 (the pad menu is Coney's own; the original has none)
 TEST_CASE("the bitmap painter draws flat quads in one call", "[debug][gui]") {
     coney::gui::BitmapTextPainter painter;
     coney::test::RecordingDevice device;
@@ -173,6 +223,7 @@ TEST_CASE("the bitmap painter draws flat quads in one call", "[debug][gui]") {
     CHECK(device.draws.size() == 1); // nothing queued, nothing drawn
 }
 
+// Expected: unverified, #1031 (the pad menu is Coney's own; the original has none)
 TEST_CASE("the game font painter sizes the font to the line and draws through the 2D pass", "[debug][gui]") {
     coney::gui::GameFontPainter painter(coney::test::testFont(), 10.0F);
     coney::test::RecordingDevice device;
