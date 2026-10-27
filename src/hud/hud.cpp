@@ -438,7 +438,8 @@ void Hud::update(const HudFrame& frame) {
             announcement->reset();
         }
     }
-    // 3. The arrow's bob: up by 2 a frame to the top, back down by 0.5.
+    // 3. The arrow's bob: up by 2 a frame to the top, back down by 0.5. **Coney's choice**: the step moves before the
+    // draw, so the arrow runs one frame ahead of the original's, which places it and then steps.
     if (m_arrow.on) {
         if (m_arrow.rising) {
             m_arrow.step += kArrowStepUp;
@@ -491,7 +492,8 @@ void Hud::renderRadar(const HudCanvas& canvas) const {
         return;
     }
     // The disc's centre in overlay-camera space at depth 1.0; R = 0.9 × 0.19 × w / 2 of the overlay view's width,
-    // stretched by the default video mode.
+    // stretched by the default video mode. **Coney's choice**: w is the measured 1.33 (kRadarViewWidth), not read from
+    // the active camera, and only the default video mode's stretch is laid out.
     const graphics::OverlayPoint centre{kRadarX, kRadarY, kRadarDepth};
     if (canvas.radarMap != nullptr && m_radar.map.usable()) {
         addRadarDisc(*canvas.radarMap, centre, kRadarRadius * kRadarStretchX, kRadarRadius * kRadarStretchY, m_radar,
@@ -596,6 +598,8 @@ void Hud::renderScores(const HudCanvas& canvas) const {
         if (!row.active) {
             continue;
         }
+        // **Coney's choice**: the label and the score are two texts of the text font at Coney's places, where the
+        // original composes one `<SIZE 0.8>label: score` markup text.
         const float y = kScoreRowsPlace.y + (static_cast<float>(i) * kScoreRowStep);
         drawPlainText(canvas, gui::kTextFontSlot, row.label, kScoreRowsPlace.x, y, metrics, row.colour);
         drawPlainText(canvas, gui::kTextFontSlot, std::to_string(row.score), kScoreRowsPlace.x + kScoreValueOffset, y,
@@ -609,7 +613,8 @@ void Hud::renderScores(const HudCanvas& canvas) const {
         style.alignment = gui::TextAlignment::Centre;
         drawMessage(canvas, std::format("{}{:02}", m_stopWatch.label, ms / 1000), style, kArmiesStopWatchPlace.y);
     } else if (m_stopWatch.shown) {
-        // Minutes:seconds, the seconds truncated.
+        // Minutes:seconds, the seconds truncated. **Coney's choice**: plain white text at Coney's place, the minutes
+        // not padded; the original right-aligns `%2u:%02u` in a markup text at (1.0, 0.24).
         const std::int32_t ms = m_services.stopWatchTime ? std::max(0, m_services.stopWatchTime()) : 0;
         const std::int32_t seconds = ms / 1000;
         const std::string text = std::format("{}{}:{:02}", m_stopWatch.label, seconds / 60, seconds % 60);
@@ -709,6 +714,8 @@ void Hud::renderPrompt(const HudCanvas& canvas) const {
     if (cycle.on && cycle.iconOn && canvas.parts != nullptr && cycle.icon() < canvas.parts->sheet().page.rects.size() &&
         canvas.text.fonts) {
         const graphics::UvRect uv = canvas.parts->sheet().page.rect(cycle.icon());
+        // **Coney's choice**: the raise is added to the clubhouse's base too; the original adds it only to the bases
+        // 0.86, 0.78, 1.0 and 0.8.
         const float y = (m_clubActionText ? kClubPromptY : kPromptPlace.y) + promptRaise(canvas.text.fonts);
         canvas.parts->addSprite(guiSprite(kPromptPlace.x, y,
                                           squareTexelWidth(canvas.parts->sheet(), uv, kCycleIconSize), kCycleIconSize,
@@ -727,7 +734,8 @@ void Hud::renderPrompt(const HudCanvas& canvas) const {
     style.timeMs = static_cast<std::uint32_t>(m_nowMs - std::min(m_promptSinceMs.at(0), m_nowMs));
     // The base y plus the raise; a prompt of several lines moves up a further step per line.
     const gui::TextLayout measured = gui::layoutText(text, style, canvas.text.fonts);
-    // The clubhouse puts the text near the top (HUDEnableClubActionText).
+    // The clubhouse puts the text near the top (HUDEnableClubActionText). **Coney's choice**: the raise is added to
+    // that base too, as for the icon.
     float y = (m_clubActionText ? kClubPromptY : kPromptPlace.y) + promptRaise(canvas.text.fonts);
     if (measured.lines > 1) {
         y -= kPromptLineRaise * static_cast<float>(measured.lines);
