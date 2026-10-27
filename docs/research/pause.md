@@ -1006,7 +1006,7 @@ Coney stand-ins, each an open question below:
   confirmed (code) at those addresses. With the unrounded width, Coney's wrap of the disc's description gives the
   original's five lines word for word (a local disc test, the characters per line 34, 35, 37, 34, 20 against 29, 26,
   33, 37, 35 rounded). The fix touches every proportional text, so it is left to its own change
-  ([q-glyph-width](#q-glyph-width)). Tests: `repo:tests/gui/pause_stats_test.cpp` (the caps,
+  ([#1012](issue:1012), [q-glyph-width](#q-glyph-width)). Tests: `repo:tests/gui/pause_stats_test.cpp` (the caps,
   the labels' places, the window's moves), `repo:tests/gui/pause_menu_test.cpp` and
   `repo:tests/platform/disc_pause_stats_test.cpp` (START, the left stick at 70 % to Stats, cross in `level99`: five
   texts, four bars in (0, 1], every picture loaded).
@@ -1029,8 +1029,7 @@ Coney stand-ins, each an open question below:
 - <span id="q-glyph-width"></span>The Stats description's line breaks: Coney's `Font::glyphWidth` truncates
   `texels + 0.5` where `Font_Measure` (`0x00179958`) keeps it unrounded, so Coney breaks the description at other
   words ([Coney's implementation](#coneys-implementation)). Answered for the cause; open until the font's width
-  follows the original, which changes every proportional text and wants its own runtime comparison of a few screens
-  (tracked in [#1012](issue:1012)).
+  follows the original, which changes every proportional text and wants its own runtime comparison of a few screens.
   Why the truncation loses a texel on some glyphs is inferred from the rectangles' quarter-texel inset
   ([GUI](gui.md)): their sizes in texels sit just under or over a whole number.
 - The header widget ([answered](circled-text.md#pause-header): one to three circles, the level's colour and a
