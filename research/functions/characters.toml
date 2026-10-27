@@ -2203,7 +2203,12 @@ page = "characters.md#original-structure"
 role = "reach window, start point, the three-clip chain"
 level = "confirmed-code"
 coney = "src/human/climb.h:withinClimbReach"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the swallowed press (beyond reach within twice it, or the top's space blocked: true for a player, no climb), the held set 4 and 6 drops, the overlay drop and the push sphere are not ported"
+relation = "not-ported"
+issue = 664
 
 [[function]]
 address = 0x00282370

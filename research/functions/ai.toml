@@ -157,7 +157,12 @@ name = "Spawner_PlaceOutOfView"
 page = "ai-gangs.md#spawner-placement"
 level = "confirmed-code"
 coney = "src/ai/spawners.h:outOfSightNode"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the two-player camera choice and the other player's view test are not ported"
+relation = "not-ported"
+issue = 549
 
 [[function]]
 address = 0x001681a0
