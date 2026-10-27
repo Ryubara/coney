@@ -63,6 +63,9 @@ constexpr int kOtherWarriorPowerClass = 7;
 // (docs/research/armies.md#what-it-is).
 constexpr int kFirstArmiesLevel = 60;
 constexpr int kLastArmiesLevel = 69;
+// The last level whose humans Human_Init draws with the `_a` model: its own test takes 60-64
+// (docs/research/characters.md#type-to-model).
+constexpr int kLastArmiesModelLevel = 64;
 
 } // namespace
 
@@ -82,6 +85,8 @@ CharacterClass characterClassOf(int type) {
     return CharacterClass{.id = type, .variant = false};
 }
 
+// Human_Init's choice of the CfgChar record a human is drawn from: a player made as a plain alias takes the class's.
+// @orig 0x00218008 Human_Init (unknown)
 int modelRecordType(int type, int playerIndex) {
     const CharacterClass characterClass = characterClassOf(type);
     if (playerIndex < 1 || characterClass.variant) {
@@ -92,12 +97,15 @@ int modelRecordType(int type, int playerIndex) {
 
 bool isArmiesLevel(int levelNumber) { return levelNumber >= kFirstArmiesLevel && levelNumber <= kLastArmiesLevel; }
 
+// Human_Init's model: the record's model name, its `_a` one in an Armies of the Night level (+0x112 or +0x114).
+// @orig 0x00218008 Human_Init (unknown)
 std::optional<std::string> modelNameFor(int type, int playerIndex, int levelNumber, const CfgCharModel& modelOf) {
     if (!modelOf) {
         return std::nullopt;
     }
     std::optional<std::string> model = modelOf(modelRecordType(type, playerIndex));
-    if (model && isArmiesLevel(levelNumber)) {
+    // Human_Init's own test, 60-64, not GameState_IsArmiesLevel's 60-69.
+    if (model && levelNumber >= kFirstArmiesLevel && levelNumber <= kLastArmiesModelLevel) {
         *model += "_a";
     }
     return model;
@@ -121,6 +129,8 @@ int warriorPowerClassOf(int type) {
     return warrior == kOtherWarriorClass ? kOtherWarriorPowerClass : kFirstWarriorPowerClass + warrior;
 }
 
+// Human_Init's power class bytes (+0x1b8, +0x1b9): a Warriors player takes his Warrior's, anyone else the record's.
+// @orig 0x00218008 Human_Init (unknown)
 int powerClassOf(int type, int category, int ownClass, bool player) {
     return player && category == kWarriorsCategory ? warriorPowerClassOf(type) : ownClass;
 }

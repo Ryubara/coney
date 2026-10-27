@@ -33,7 +33,11 @@ constexpr std::uint64_t kSettleSteps = 30;
 
 // Reads `<level>_objs.txt` through the scripts' source and adds its objects to `records` and its emitters to
 // `particles` (when given: a particle system of the line's name at its pose, its fields past the pose unused, and no
-// handle, as the loader keeps none), logging the counts, or why there were none.
+// handle, as the loader keeps none), logging the counts, or why there were none. InitLevel's step 7 names the file
+// (docs/research/level-loading.md#initlevel); ObjectList_LoadObjsFile reads it and makes each emitter's particle task
+// (docs/research/objects.md#objs-file), its lines parsed and added by placed_objects_file.h.
+// @orig 0x0015fe90 InitLevel (InitLevel.cpp)
+// @orig 0x00398598 ObjectList_LoadObjsFile (unknown)
 void loadPlacedObjects(script::ScriptSystem& scripts, world_objects::SpawnRecords& records, std::string_view level,
                        effects::ParticleSystems* particles) {
     const std::string name = std::format("{}_objs.txt", level);
@@ -65,6 +69,8 @@ void loadPlacedObjects(script::ScriptSystem& scripts, world_objects::SpawnRecord
 
 } // namespace
 
+// InitLevel's script steps (the header's comment says which).
+// @orig 0x0015fe90 InitLevel (InitLevel.cpp)
 LevelStart runLevelScript(script::ScriptSystem& scripts, GameState& state, CreatedHumans& humans,
                           world_objects::WorldFlags& flags, std::string_view level,
                           world_objects::SpawnRecords* records, effects::ParticleSystems* particles) {
@@ -100,11 +106,12 @@ LevelStart runLevelScript(script::ScriptSystem& scripts, GameState& state, Creat
         scripts.call("AddFlag", args);
     }
 
-    // Steps 9-10: the preload services the file manager, so the checkpoint scripts the level asked for with
-    // preLoadFile arrive and run here, before the start (docs/research/level-loading.md, inferred).
+    // Steps 9-10: the preload services the file manager, so the checkpoint scripts the level asked for with preLoadFile
+    // arrive and run here, before the start (inferred); stand-in: the original services it first as the objects load.
     scripts.servicePreloads(true);
 
-    // The start callback the script set (an arena's DoRules, which places the players), called once.
+    // The start callback the script set (an arena's DoRules, which places the players), called once; Coney's choice:
+    // here, before the level loads, where InitLevel calls it at its end (the header's comment says why).
     if (!state.startGameCallback.empty()) {
         const std::string callback = std::exchange(state.startGameCallback, std::string{});
         scripts.call(callback);
@@ -122,6 +129,7 @@ LevelStart runLevelScript(script::ScriptSystem& scripts, GameState& state, Creat
 
 // The player's turning as the preload scripts configure it (`CfgSetTurnRates`, `CfgTurnRate` in config_preload2.lua,
 // recorded by their stubs): the values the original plays with (docs/research/characters.md#movement-constants).
+// @coney-only Coney's replay of the recorded configuration calls into the turning's setters
 void applyTurnConfig(const script::RecordedCalls& recorded) {
     // A recorded argument as a float; nil and strings count as nothing.
     const auto numberAt = [](const std::vector<script::Value>& args, std::size_t i) -> std::optional<float> {
@@ -148,6 +156,8 @@ void applyTurnConfig(const script::RecordedCalls& recorded) {
     }
 }
 
+// Keeps and logs the kind (the declaration says when it is a new end).
+// @coney-only the quiet host of Coney's level runs without the menus
 void QuietBindingHost::launchMissionComplete(int kind) {
     m_complete = kind;
     m_missionComplete = m_missionComplete || !m_unlocking;
@@ -163,6 +173,8 @@ void QuietBindingHost::launchArmiesGameOver() {
     }
 }
 
+// Keeps and logs the reason.
+// @coney-only the quiet host of Coney's level runs without the menus
 void QuietBindingHost::launchMissionFailed(std::string_view reason) {
     m_failed = std::string(reason);
     if (m_log) {
@@ -217,6 +229,8 @@ LevelScripts::LevelScripts(const script::ScriptSource& source, std::string_view 
     m_state.currentLevel = m_state.levels.find(level).value_or(0);
 }
 
+// The mission-complete mode's ending for a level run alone (its port is MissionCompleteMode).
+// @coney-only Coney's test way through a mission's end without the modes
 bool LevelScripts::completeMission() {
     m_host.clearMissionComplete();
     m_host.setUnlocking(true);
@@ -232,11 +246,15 @@ bool LevelScripts::completeMission() {
     return called;
 }
 
+// The saved progress handed on, as the story keeps it between levels.
+// @coney-only Coney's test way from one level to the next without the modes
 void LevelScripts::carryProgressTo(LevelScripts& next) const {
     next.m_state.saved = m_state.saved;
     next.m_state.luaSaveFloats = m_state.luaSaveFloats;
 }
 
+// The level's script start run once, then its first second of script frames (the header's comment).
+// @coney-only Coney's test way into a level without the menus
 LevelScriptRun runLevelScriptAlone(const script::ScriptSource& source, std::string_view level, int checkpoint,
                                    const std::function<void(std::string_view)>& log,
                                    const LevelScriptOptions& options) {

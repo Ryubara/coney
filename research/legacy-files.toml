@@ -467,9 +467,6 @@ tag = 3
 ["src/characters/character_assets.cpp"]
 tag = 3
 
-["src/characters/character_class.cpp"]
-tag = 3
-
 ["src/characters/character_data.cpp"]
 tag = 3
 
@@ -706,9 +703,6 @@ tag = 19
 ["src/gamemodes/level_pickups.h"]
 comment = 2
 
-["src/gamemodes/level_start.cpp"]
-tag = 8
-
 ["src/gamemodes/load_entry_mode.cpp"]
 tag = 4
 
@@ -729,9 +723,6 @@ tag = 4
 
 ["src/gamemodes/movie_player.cpp"]
 tag = 5
-
-["src/gamemodes/player_frame.cpp"]
-tag = 2
 
 ["src/gamemodes/profile_manager_mode.cpp"]
 tag = 5
@@ -1458,9 +1449,6 @@ tag = 7
 ["src/scripting/object_bindings.cpp"]
 tag = 21
 
-["src/scripting/player_bindings.cpp"]
-tag = 9
-
 ["src/scripting/rumble_bindings.cpp"]
 tag = 5
 
@@ -1469,9 +1457,6 @@ tag = 5
 
 ["src/scripting/scene_bindings.cpp"]
 tag = 8
-
-["src/scripting/script_bindings.cpp"]
-tag = 19
 
 ["src/scripting/script_system.cpp"]
 tag = 15
