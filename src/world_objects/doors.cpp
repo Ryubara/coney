@@ -431,10 +431,10 @@ void Doors::setUpSliding(Door& door, const ObjectTypeInfo* info, const HandleSou
     // Its triangles two-sided with the door bit and the type's material, then closed (command 7).
     markTriangles(world, door.triangles, raycast::kTriangleTwoSided | kTriangleDoorBit, door.material);
     runSlidingCommand(door, door_command::kCloseToo, world);
-    // Each leaf's first update places it, after that command's pose reset (SubSlidingDoor_PlaceLeaf): the first at
-    // the door's pose; a second turned half round, about the door's y axis for an up-and-down slide (so it slides the
-    // other way) and about the vertical otherwise. Its slide direction comes from this pose and is kept from then on,
-    // whatever later commands do to the pose.
+    // Each leaf placed (SubSlidingDoor_PlaceLeaf): the first at the door's pose, a second turned half round about the
+    // door's y for an up-and-down slide, else about the vertical; its slide direction is kept from then. **Coney's
+    // stand-in**: placed at set-up, where the original places it on its first update; a command before that leaves
+    // such a second leaf turned about y there and about z here (docs/research/armies.md#q-leaf-place).
     for (std::size_t i = 0; i < door.slidingLeaves.size(); ++i) {
         SlidingLeaf& leaf = door.slidingLeaves[i];
         if (i == 0) {

@@ -157,6 +157,11 @@ ticks are the game's 60 Hz count:
   the whole milliseconds since its last reading (`GameTimer_MsSince`, `0x004dca60`, truncates) and then keeps the
   timer's whole reading, so a 33.33 ms frame counts 33 ([Scripting: the stopwatch](scripting.md#stopwatch)). The game
   clock itself kept time: at tick 7541 the game timer read 125,726 ms, the same as its real time.
+- **Six ticks are not traced.** Inferred from the truncation: any update of 33.0 to 33.99 ms counts 33, so the
+  99,999 ms take 3031 updates of two ticks, 6062 ticks, whether a frame is 33.33 ms or the run's average of about
+  33.35 ms. The original's 6068 ticks are three more updates: one that counted less than 33 ms, an update the watch
+  skipped, or a start or end a frame away from the script steps the breakpoints caught. Which one is open
+  ([q-timer-gap](#q-timer-gap)).
 
 ### The HUD in play {#hud-in-play}
 
@@ -296,9 +301,10 @@ timings, counted from `P1.Start03`'s `GoalMoveToFlag` in 60 Hz ticks (Coney's de
 | `F1.Time` (`W_SetStopWatch`) | 254 | 268 |
 | `F1.TimerOut` (`HUDLaunchANGameOver`) | 6316 | 6336 |
 
-So Coney's walk starts about 8 ticks sooner, the flag's message 8 comes a few ticks sooner after the stop, and the
-timer runs 6 ticks shorter (3031 steps of 33 ms counted, where the original's frames of about 33.4 ms took 6068 ticks):
-the game over comes about 0.3 s sooner in all. Why the walk starts sooner is open ([q-walk-start](#q-walk-start)).
+So Coney's walk starts about 8 ticks sooner, the flag's message 8 comes 3 to 9 ticks sooner after the stop (14 ticks
+against 17 to 23), and the timer runs 6 ticks shorter (3031 steps of 33 ms counted, 6062 ticks, against the original's
+6068): the game over comes about 0.3 s sooner in all. Why each of the three differs is open
+([q-walk-start](#q-walk-start), [q-flag-message](#q-flag-message), [q-timer-gap](#q-timer-gap)).
 
 - **The GO sign's bleep** (`vags/misc/bleep27`, restarted by `GoSign_Render` `0x0019ed28`) is a marked stand-in:
   Coney's sign is silent.
@@ -320,7 +326,10 @@ the game over comes about 0.3 s sooner in all. Why the walk starts sooner is ope
   and the `+0x14c` writes (issue #669) are left to their issues.
 - **The sliding doors**: all of [the garage door](#garage-door) but the streaming pins (issue #710), the leaves'
   collision bodies and messages 8, `0x15` and `0x3e` (issue #707), and the lock-pick glint. Stand-in: a command starts a
-  leaf's slide on its next 2-tick step, not on its pending update ([q-slide-start](#q-slide-start)).
+  leaf's slide on its next 2-tick step, not on its pending update ([q-slide-start](#q-slide-start)). Stand-in: Coney
+  places the leaves at the set-up, after its command 7, not on their first update, so a command that came before that
+  update would leave a two-leaf up-and-down door's second leaf turned about z where the original's ends turned about y
+  ([q-leaf-place](#q-leaf-place)).
 - `characters::isArmiesLevel` takes levels 60-69, as the original's test does
   (`repo:src/characters/character_class.cpp`).
 - **The black screen (item 19)**, reproduced in a disc test: the debug menu's Levels page listed every record of the
@@ -381,6 +390,31 @@ Reading the garage leaf's offset each tick after `P1.Start02` in PCSX2 would sho
 Swan starts moving 19 to 26 ticks after `GoalMoveToFlag` in the original and 14 in Coney. Whether the original's goal
 waits for its first route, a turn or the clip `P1.Start03` starts is not traced. A breakpoint on the goal's first
 locomotion request after `0x0035ff18`, read against the tick count, would show it.
+
+### When the flag's message 8 comes {#q-flag-message}
+
+After Swan stops, the flag's message 8 comes 17 to 23 ticks later in the original and 14 in Coney. The goal sends it
+from its End (`MoveToFlagGoal_End`, `0x002da4a0`) once he is inside the radius and turned to the flag's heading
+([GoalMoveToFlag](ai-scripting.md#move-to-flag)); whether the original's extra ticks are that turn, the goal's update
+interval or the stop itself is not traced. A breakpoint on `0x002da4a0` in PCSX2, with Swan's heading and position read
+each tick from his stop, would show which.
+
+### The timer's last six ticks {#q-timer-gap}
+
+The original's 99,999 ms took 6068 ticks where the whole-millisecond count makes 6062 ([the timer](#timer)); the three
+updates more are not traced. Counting the original's `StopWatch_Update` (`0x004233f8`) calls from `F1.Time`'s
+`W_SetStopWatch` to `F1.TimerOut` in PCSX2, reading the watch's time at `+0x08` and the game timer at each call, would
+show whether an update counted less than 33 ms, one was skipped, or the watch started or ended a frame apart from the
+script steps.
+
+### When a leaf is placed {#q-leaf-place}
+
+The original places a sliding leaf on its own first update (`SubSlidingDoor_PlaceLeaf`, `0x003f4950`), after any
+command that came before it; Coney places it at the door's set-up. The two differ only for a two-leaf up-and-down door
+that gets a command before its leaves' first update. Whether any level does is not known: a search of the decompiled
+scripts for `OpenDoor` and `CloseDoor` on such a door in the frame its level loads, or a breakpoint on
+`SlidingDoor_StateCommand` (`0x003f5608`) before the first `SubSlidingDoor_Update` (`0x003f5a68`) of a level with one,
+would settle it.
 
 ## How this was checked
 
