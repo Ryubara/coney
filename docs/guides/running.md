@@ -32,7 +32,9 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--no-audio | --audio-test]
       [--skip-movies] [--rumble TYPE [--arena N] [--gang-size N]]
       [--profiles DIR] [--dev-overlay N] [--no-activate] [--window-display DISPLAY] [--event-log FILE] [--pad-pipe]
-      [--record FILE [--record-seconds N]] [--bench FILE [--bench-fighters N] [--bench-warmup N]]
+      [--record FILE [--record-seconds N]]
+      [--bench FILE [--bench-fighters N] [--bench-allies N] [--bench-god] [--bench-spawn-step N] [--bench-warmup N]
+        [--bench-measure N] [--bench-frames FILE] [--bench-real-time]]
       [--log-file FILE] [--log-verbose CATEGORIES]
       [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME] [--cpu-skinning]
 ```

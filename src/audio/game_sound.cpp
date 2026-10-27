@@ -14,6 +14,7 @@
 
 #include "animation/anim_math.h"
 #include "audio/music_player.h"
+#include "audio/type_traits.h"
 #include "camera/camera_view.h"
 #include "camera/cameras.h"
 #include "characters/character_class.h"
@@ -177,24 +178,7 @@ HumanTraits GameSound::traitsOf(int type, double human) const {
         return traits;
     }
     if (m_context->recorded != nullptr) {
-        const script::RecordedCalls& recorded = *m_context->recorded;
-        // The type's last CfgChar record: its women's voices and its class.
-        const std::span<const std::vector<script::Value>> chars = recorded.calls("CfgChar");
-        for (auto call = chars.rbegin(); call != chars.rend(); ++call) {
-            const std::optional<characters::CharacterType> parsed = characters::parseCfgChar(*call);
-            if (parsed && parsed->type == type) {
-                traits.female = parsed->female.value_or(0) == 1;
-                traits.bossClass = parsed->category.value_or(0) == human::kBossCategory;
-                break;
-            }
-        }
-        // CfgBreathingSound's first argument is the combat factor (game state +0x24c).
-        if (const std::span<const std::vector<script::Value>> breathing = recorded.calls("CfgBreathingSound");
-            !breathing.empty() && !breathing.back().empty()) {
-            if (const std::optional<double> factor = breathing.back().front().number(); factor) {
-                traits.combatFactor = static_cast<float>(*factor);
-            }
-        }
+        traits = typeTraits(*m_context->recorded, type);
     }
     // HuEnableSoundCommands(false) silences him.
     if (m_context->ai != nullptr) {

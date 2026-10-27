@@ -52,7 +52,9 @@ constexpr std::string_view kUsage =
     "             [--assets DIR]\n"
     "             [--event-log FILE] [--pad-pipe] [--trace-humans FILE]\n"
     "             [--ai-player] [--ai-seed N]\n"
-    "             [--bench FILE [--bench-fighters N] [--bench-warmup N]]\n"
+    "             [--bench FILE [--bench-fighters N] [--bench-allies N] [--bench-god]\n"
+    "                           [--bench-warmup N] [--bench-frames FILE] [--bench-real-time]\n"
+    "                           [--bench-spawn-step N] [--bench-measure N]]\n"
     "             [--log-file FILE] [--log-verbose CATEGORIES]\n"
     "             [--dev-overlay N]\n"
     "             [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]\n"
@@ -110,7 +112,17 @@ constexpr std::string_view kUsage =
     "                     write its summary (frame times, zones, counters) to FILE as JSON\n"
     "  --bench-fighters N with --bench: spawn N AI fighters (0 to 1000) in front of the player on\n"
     "                     the first frame of play\n"
-    "  --bench-warmup N   with --bench: frames of play left unmeasured first (default 60)\n"
+    "  --bench-allies N   with --bench: also spawn N AI allies (0 to 1000) behind the player\n"
+    "  --bench-god        with --bench: make the player invincible when the fighters spawn\n"
+    "  --bench-spawn-step N with --bench: spawn the fighters (and make the player invincible)\n"
+    "                     once N steps of play have run; the warm-up counts from there\n"
+    "  --bench-warmup N   with --bench: frames left unmeasured after the spawn (default 60)\n"
+    "  --bench-measure N  with --bench: end the run once N frames are measured (--frames stays\n"
+    "                     the longest it may take)\n"
+    "  --bench-frames FILE with --bench: also write every measured frame (its length, zones and\n"
+    "                     counters) to FILE as CSV\n"
+    "  --bench-real-time  with --bench: pace the run by the real clock as a player's run is (30\n"
+    "                     steps a second, frames as fast as they go), not one step a frame\n"
     "  --script-trace FILE with --play-level levelN: write every script binding call, and every call\n"
     "                     into the scripts, with its arguments to FILE, one line each\n"
     "  --event-log FILE   write what a player would notice (binding calls, calls into the scripts,\n"
@@ -292,16 +304,22 @@ std::expected<void, Error> checkRumble(const Options& options) {
 // Refuses `--bench` and its options where they cannot work: part of checkSandbox(), with the other play options.
 std::expected<void, Error> checkBench(const Options& options) {
     if (!options.benchFile.has_value()) {
-        if (options.benchFighters.has_value() || options.benchWarmup.has_value()) {
-            return invalidArgument("--bench-fighters and --bench-warmup need --bench: they set up the measured run");
+        if (options.benchFighters.has_value() || options.benchWarmup.has_value() || options.benchAllies.has_value() ||
+            options.benchGod || options.benchFramesFile.has_value() || options.benchRealTime ||
+            options.benchSpawnStep.has_value() || options.benchMeasure.has_value()) {
+            return invalidArgument("--bench-fighters, --bench-allies, --bench-god, --bench-warmup, --bench-frames, "
+                                   "--bench-real-time, --bench-spawn-step and --bench-measure need --bench: they set "
+                                   "up the measured run");
         }
         return {};
     }
     if (!options.playLevel.has_value() || !options.frameLimit.has_value()) {
         return invalidArgument("--bench needs --play-level and --frames: it measures a level played for N frames");
     }
-    if (options.benchWarmup.value_or(kDefaultBenchWarmup) >= *options.frameLimit) {
-        return invalidArgument("--bench needs more --frames than its warm-up (--bench-warmup, default 60)");
+    // Each frame runs at least one step in lockstep, so the spawn's step and the warm-up must come before the end.
+    if (options.benchSpawnStep.value_or(0) + options.benchWarmup.value_or(kDefaultBenchWarmup) >= *options.frameLimit) {
+        return invalidArgument("--bench needs more --frames than its spawn step and warm-up (--bench-spawn-step, "
+                               "--bench-warmup, default 60)");
     }
     return {};
 }
@@ -796,6 +814,9 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
     std::optional<std::string> aiSeedArg;        // as typed, likewise
     std::optional<std::string> benchFightersArg; // as typed, likewise
     std::optional<std::string> benchWarmupArg;   // as typed, likewise
+    std::optional<std::string> benchAlliesArg;   // as typed, likewise
+    std::optional<std::string> benchSpawnArg;    // as typed, likewise
+    std::optional<std::string> benchMeasureArg;  // as typed, likewise
     bool aiPlayer = false;                       // `--ai-player`, which goes into the Rumble launch
     std::optional<std::string> cameraArg;        // as typed, likewise
     std::optional<std::string> renderSizeArg;    // as typed, likewise
@@ -1155,6 +1176,42 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return std::unexpected(std::move(warmup.error()));
             }
             options.benchWarmup = *warmup;
+        } else if (arg == "--bench-allies") {
+            if (auto value = takeValue(args, i, benchAlliesArg, "--bench-allies", "a number of allies"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+            auto allies = parseRange("--bench-allies", benchAlliesArg.value_or(std::string{}), 0, kMaxBenchFighters);
+            if (!allies) {
+                return std::unexpected(std::move(allies.error()));
+            }
+            options.benchAllies = *allies;
+        } else if (arg == "--bench-god") {
+            options.benchGod = true;
+        } else if (arg == "--bench-spawn-step") {
+            if (auto value = takeValue(args, i, benchSpawnArg, "--bench-spawn-step", "a number of steps"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+            auto step = parseRange("--bench-spawn-step", benchSpawnArg.value_or(std::string{}), 0, kMaxFrameLimit);
+            if (!step) {
+                return std::unexpected(std::move(step.error()));
+            }
+            options.benchSpawnStep = *step;
+        } else if (arg == "--bench-measure") {
+            if (auto value = takeValue(args, i, benchMeasureArg, "--bench-measure", "a number of frames"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+            auto measure = parseRange("--bench-measure", benchMeasureArg.value_or(std::string{}), 1, kMaxFrameLimit);
+            if (!measure) {
+                return std::unexpected(std::move(measure.error()));
+            }
+            options.benchMeasure = *measure;
+        } else if (arg == "--bench-real-time") {
+            options.benchRealTime = true;
+        } else if (arg == "--bench-frames") {
+            if (auto value = takeValue(args, i, options.benchFramesFile, "--bench-frames", "the path of a CSV file");
+                !value) {
+                return std::unexpected(std::move(value.error()));
+            }
         } else if (arg == "--gang-size") {
             if (auto value = takeValue(args, i, gangSizeArg, "--gang-size", "the fighters a side"); !value) {
                 return std::unexpected(std::move(value.error()));
