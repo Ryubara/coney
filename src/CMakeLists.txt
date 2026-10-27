@@ -454,6 +454,7 @@ add_library(
     audio/sound_stream.cpp
     audio/speech.cpp
     audio/test_tone.cpp
+    audio/type_traits.cpp
     audio/voice_table.cpp)
 coney_target_defaults(coney_audio)
 target_link_libraries(coney_audio PUBLIC coney_core)
