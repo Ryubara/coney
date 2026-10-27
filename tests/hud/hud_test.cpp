@@ -733,6 +733,23 @@ TEST_CASE("on the clubhouse's base the action prompt takes no raise: only the ba
           Approx(coney::graphics::OverlayCamera::guiToOverlay(0.5F, coney::hud::kPromptPlace.y +
                                                                         hud.promptRaise(canvas.canvas.text.fonts))
                      .y));
+    // The text takes neither the raise nor the lift of a prompt of several lines on the clubhouse's base: its first
+    // line sits as far from the same text's at the normal base as 0.125 is from 0.86 plus the raise less two lifts.
+    hud.stopActionCycle(0);
+    hud.setActionPrompt(0, "Lift<CR>again");
+    step(hud, 33);
+    const auto firstLineY = [&canvas, &hud](bool club) {
+        canvas.text.clear();
+        hud.setClubActionText(club);
+        hud.render(canvas.canvas);
+        REQUIRE_FALSE(canvas.text.sprites().empty());
+        return canvas.text.sprites()[0].position.y;
+    };
+    const float normal = firstLineY(false);
+    const float club = firstLineY(true);
+    const float normalBase =
+        coney::hud::kPromptPlace.y + hud.promptRaise(canvas.canvas.text.fonts) - (2.0F * coney::hud::kPromptLineRaise);
+    CHECK(club - normal == Approx(normalBase - coney::hud::kClubPromptY).margin(1e-5));
 }
 
 TEST_CASE("the stopwatch's minutes form is its label and %2u:%02u, right-aligned at (1.0, 0.24)", "[hud]") {
