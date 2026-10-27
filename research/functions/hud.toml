@@ -85,11 +85,11 @@ status = "legacy"
 [[function]]
 address = 0x001a1138
 name = "HudBar_Draw"
-page = "hud-functions-parts.md#fn-pre-basewidget"
-role = "the end caps (rectangles +2, +3), back (+0), fill (+1) and an optional second fill `+0x3c`; a flash below `flashBelow` and a fading trail, both unused: every caller passes 0 for both ([The rage meter](hud.md#the-rage-meter))"
+page = "hud-bar.md#draw"
+role = "the end caps (rectangles +2, +3), the body (+0), the capacity and fill strips (+1); a flash below `flashBelow` and a fading trail, both unused: every caller passes 0 for both ([The draw](hud-bar.md#draw))"
 level = "confirmed-code"
 coney = "src/gui/bar.h:Bar::render"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001a3338
@@ -868,11 +868,11 @@ status = "legacy"
 [[function]]
 address = 0x001c2530
 name = "HudGenericBar_SetFill"
-page = "hud-functions-panels.md#fn-generic-bar"
+page = "hud-bar.md#generic-fill"
 role = "when created, the fill (`+0x78`) clamped to 0-1"
 level = "confirmed-code"
-coney = "src/hud/scripted_bars.h:ScriptedBars::setPercentage"
-status = "legacy"
+coney = "src/gui/bar.h:Bar::setFill"
+status = "compared"
 
 [[function]]
 address = 0x001c8b08
