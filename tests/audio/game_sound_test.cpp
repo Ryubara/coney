@@ -848,6 +848,57 @@ TEST_CASE("gameplay's load screen loads load_NN, defers SndLoadBank, then loads 
     CHECK(rig.engine().stats().started >= 1);
 }
 
+// docs/research/level-loading.md#unload (`Gm_Level_Exit` 0x00158488): the system music off and the pitch at 1.0, so
+// neither reaches the front end or the next level.
+TEST_CASE("gameplay's exit turns the system music off and sets the pitch back to 1.0", "[audio][music]") {
+    Rig rig;
+    coney::StoryState& story = rig.state.story;
+    rig.call("SoundSetMusicTrack", {Value(0.0), str(kGull)});
+    rig.call("SoundSetSystemMusicState", {Value(1.0)});
+    rig.call("SndSetPitchMod", {Value(0.5)});
+    REQUIRE(story.systemMusic);
+    REQUIRE(story.musicHold == 1);
+    REQUIRE(rig.engine().pitchFactor() == Approx(0.5F));
+    rig.sound.gameplayLeft();
+    CHECK_FALSE(story.systemMusic);
+    CHECK(story.musicMood == -1);
+    CHECK(story.musicHold == -1);
+    CHECK(rig.engine().pitchFactor() == Approx(1.0F));
+    // Already off: only the scripts' hold on the mood ends.
+    story.musicHold = 2;
+    rig.sound.gameplayLeft();
+    CHECK_FALSE(story.systemMusic);
+    CHECK(story.musicHold == -1);
+}
+
+// docs/research/level-loading.md#mode-1 (`Gm_Level_Enter` 0x001582e0, step 1): the three moods' track lists emptied
+// (`SystemMusic_SetTracks` 0x0010e9e0 with no tracks) and the reverb's default kept (type 1, depth 0.1).
+TEST_CASE("gameplay's enter empties the moods' tracks and sets the reverb's default", "[audio][music]") {
+    Rig rig;
+    coney::StoryState& story = rig.state.story;
+    rig.call("SoundSetMusicTrack", {Value(0.0), str(kGull)});
+    rig.call("SoundSetMusicTrack", {Value(1.0), str(kGull), str(kCrow)});
+    rig.call("SoundSetMusicTrack", {Value(2.0), str(kCrow)});
+    rig.call("SoundSetEffect", {Value(5.0), Value(0.5), Value(3.0), Value(4.0)});
+    rig.call("SoundEnableSystemMusic", {Value()});
+    REQUIRE_FALSE(story.systemMusic);
+    rig.sound.gameplayEntered();
+    for (const std::vector<std::uint32_t>& tracks : story.moodTracks) {
+        CHECK(tracks.empty());
+    }
+    CHECK(story.reverbType == 1);
+    CHECK(story.reverbDepth == Approx(0.1F));
+    CHECK(story.reverbDelay == 0);
+    CHECK(story.reverbFeedback == 0);
+    // No mood playing: the system music stays off.
+    CHECK_FALSE(story.systemMusic);
+    // Emptying the mood that plays forces a new pick and turns the system music on.
+    story.musicMood = 1;
+    rig.sound.gameplayEntered();
+    CHECK(story.systemMusic);
+    CHECK(story.musicMood == -1);
+}
+
 // docs/research/ai.md#fight-reposition (`Ambient_MayGesture` 0x00291ed0): two gesture slots per reaction kind, of
 // which a brain may take as many as its help level; a slot frees when its holder stops speaking.
 TEST_CASE("a gesture takes a free slot of the speaker's reaction kind, up to his help level", "[audio][speech]") {

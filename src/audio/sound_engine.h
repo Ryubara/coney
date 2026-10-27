@@ -243,6 +243,7 @@ class SoundEngine {
     [[nodiscard]] float soundVolume() const { return m_soundVolume; }
     /// The global pitch factor (SndSetPitchMod, 1).
     void setPitchFactor(float factor) { m_pitchFactor = factor; }
+    [[nodiscard]] float pitchFactor() const { return m_pitchFactor; }
     /// The duck factor for directional sounds under a non-duckable one (SndSetNIDuck, 0.2).
     void setNonDuckableDuck(float factor) { m_niDuck = factor; }
     /// Whose sounds are a player's: the owner ids that play() calls give for the players' humans.
