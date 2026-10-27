@@ -199,9 +199,13 @@ class Card:
     #: stays free from then on. Only a maintainer's stage counts; anyone else's comment is free to write.
     freed: bool = False
     #: The claim counted again after it had stopped (its ready pull request was closed unmerged or made a draft). The
-    #: claimant may then hold more claims than the limit allows; the sweep releases none for it (work in progress),
-    #: and no new claim is taken until they are under.
+    #: claimant may then hold more claims than the limit allows; the sweep warns the newest ones past the limit and
+    #: releases them after the notice, instead of at once (work in progress), and no new claim is taken meanwhile.
     regained: bool = False
+    #: When the claimant was told this claim is over the limit and will be released (only for a claimant with a
+    #: `regained` claim), and the id of that warning comment so it can be deleted.
+    over_warned_at: datetime | None = None
+    over_warning_comment: int | None = None
 
     def __post_init__(self) -> None:
         """A card with no last activity has had none since the claim."""
@@ -234,6 +238,13 @@ class Card:
         if self.warned_at is None:
             return idle
         return max(idle, self.warned_at + timedelta(hours=rules.deadline_hours - rules.warn_hours))
+
+    def over_deadline(self, rules: Claims) -> datetime | None:
+        """When the claim is released for being over the open-claims limit: the notice (`deadline_hours` less
+        `warn_hours`, the same notice an idle claim gets) after the warning; None while it has no warning."""
+        if self.over_warned_at is None:
+            return None
+        return self.over_warned_at + timedelta(hours=rules.deadline_hours - rules.warn_hours)
 
     def warn_at(self, rules: Claims) -> datetime:
         """When the claimant is warned: `claims.warn_hours` after the last activity."""
@@ -300,6 +311,8 @@ def _data(card: Card) -> dict[str, Any]:
         "counted": card.counted,
         "freed": card.freed,
         "regained": card.regained,
+        "over_warned_at": when(card.over_warned_at),
+        "over_warning_comment": card.over_warning_comment,
     }
 
 
@@ -362,6 +375,12 @@ def render_card(card: Card, rules: Claims) -> str:
             "- **Limit:** no longer counted toward the open-claims limit (its review passed, or its pull request is "
             "open and ready)"
         )
+    over = card.over_deadline(rules)
+    if card.active and over is not None:
+        lines.append(
+            f"- **Over the limit:** the claimant holds more open claims than the limit allows; this one is released "
+            f"at {show_time(over)} unless another is finished or given up first"
+        )
     if card.open_claims:
         lines.append(f"- **Open claims of {card.claimant}:** " + ", ".join(f"#{number}" for number in card.open_claims))
     lines += ["", f"<!-- {rules.card_marker}-data {_hidden_json(_data(card))} -->"]
@@ -420,6 +439,8 @@ def parse_card(body: str, rules: Claims) -> Card | None:
             counted=bool(data.get("counted", True)),
             freed=bool(data.get("freed", False)),
             regained=bool(data.get("regained", False)),
+            over_warned_at=_moment(data.get("over_warned_at")),
+            over_warning_comment=int(over) if (over := data.get("over_warning_comment")) is not None else None,
         )
     except (ValueError, KeyError, TypeError):
         return None

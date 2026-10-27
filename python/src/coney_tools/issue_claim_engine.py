@@ -39,7 +39,7 @@ from coney_tools.issue_claim_model import (
     reply_target,
     show_time,
 )
-from coney_tools.issue_claim_remote import Comment, IssueView, Remote
+from coney_tools.issue_claim_remote import Comment, IssueView, LinkedPr, Remote
 from coney_tools.issue_claim_rules import (
     active_cards,
     check_claim,
@@ -553,6 +553,7 @@ class Engine:
         self._still_current(work)
         before = work.issue
         self._drop_warning(work, card)
+        self._drop_over_warning(work, card)
         if not keep_assignees:
             if work.issue.assignees:
                 self.remote.unassign(number, work.issue.assignees)
@@ -563,7 +564,13 @@ class Engine:
                 work,
                 stored,
                 card.changed(
-                    status=status, released_at=self._now(), released_why=why, warned_at=None, warning_comment=None
+                    status=status,
+                    released_at=self._now(),
+                    released_why=why,
+                    warned_at=None,
+                    warning_comment=None,
+                    over_warned_at=None,
+                    over_warning_comment=None,
                 ),
             )
         except _Stale:
@@ -761,11 +768,10 @@ class Engine:
 
         linked = self.remote.linked_prs(work.issue.number)
         open_pr = next((pr for pr in linked if pr.state == "open" and counts(pr.author)), None)
-        # The slot is free while a ready pull request (not a draft) closes the issue, or once a maintainer's stage freed
-        # it. A draft costs nothing to open, so it does not free it; and a pull request closed unmerged gives the count
-        # back, which may leave the claimant over the limit (nothing is released for that: `overrun` skips it).
-        ready = any(pr.state == "open" and not pr.draft and counts(pr.author) for pr in linked)
-        counted = not card.freed and not ready
+        # The slot is free once a maintainer's stage freed it, or while the claimant's own ready pull request (not a
+        # draft) frees it. A draft costs nothing to open, so it does not free it; and a pull request closed unmerged
+        # gives the count back, which may leave the claimant over the limit (the sweep warns, then releases).
+        counted = not card.freed and not self._freed_by_pull_request(card, linked)
         changes: dict[str, object] = {
             "status": "pr-open" if open_pr else "claimed",
             "pr": open_pr.number if open_pr else None,
@@ -787,6 +793,38 @@ class Engine:
             self._still_current(work)
         self._set_status_label(work, want)
         self._save(work, stored, card.changed(**changes))
+
+    def _ready_prs(self, card: Card, linked: list[LinkedPr]) -> set[int]:
+        """The claimant's own open pull requests among `linked` that are ready for review (not drafts). Another
+        person's, a maintainer's included, is not the claimant's unit, so it frees nothing."""
+        return {pr.number for pr in linked if pr.state == "open" and not pr.draft and pr.author == card.claimant}
+
+    def _freed_by_pull_request(self, card: Card, linked: list[LinkedPr]) -> bool:
+        """Whether a ready pull request of the claimant frees this claim's slot.
+
+        A maintainer's ready pull request frees every claim it closes (a maintainer is trusted with the limit). For
+        anyone else one pull request frees one task's slot: the oldest task among the claimant's held claims that the
+        pull request closes, with all that task's claims; the others it names keep counting. A pull request is cheap
+        to open and to edit, so without that bound one of them would free any number of claims. The choice is the
+        same from every issue's pass (it depends on the claims' ages only), so the passes agree.
+        """
+        ready = self._ready_prs(card, linked)
+        if not ready:
+            return False
+        if self.is_maintainer(card.claimant):
+            return True
+        held = {**self.held_cards(), card.issue: card}
+        peers = [c for c in held.values() if c.claimant == card.claimant and c.active and not c.exempt]
+        links = {
+            c.issue: ready if c.issue == card.issue else self._ready_prs(c, self.remote.linked_prs(c.issue))
+            for c in peers
+        }
+        for number in sorted(ready):
+            closing = [c for c in peers if number in links[c.issue]]
+            first = min(closing, key=lambda c: (c.claimed_at, c.issue), default=None)
+            if first is not None and first.task_key == card.task_key:
+                return True
+        return False
 
     def _deadlines(self, work: _Pass, stored: Stored) -> None:
         """The warning at `claims.warn_hours` of idleness, the release at `claims.deadline_hours`."""
@@ -906,7 +944,13 @@ class Engine:
             if why is not None:
                 late.append((card, why))
         lines: list[str] = []
+        # A claimant whose count came back (a ready pull request closed unmerged) is over the limit through no new
+        # claim, so the newest claims past the limit get a warning and their notice first, as an idle claim does.
+        regained = {card.claimant for card in held if card.regained}
         for card, why in late:
+            if card.claimant in regained:
+                lines.extend(self._warn_or_release_over(card, why))
+                continue
             issue = self.remote.issue(card.issue)
             comments = self.remote.comments(card.issue)
             stored = stored_cards(comments, self.rules)
@@ -922,7 +966,73 @@ class Engine:
                 notice = f"{reply_first_line(self.rules, 0)}\nClaim released: {why}; finish or give up another first."
                 self.remote.create_comment(card.issue, notice)
             lines.extend(work.log)
+        flagged = {card.issue for card, _ in late}
+        for card in held:
+            if card.over_warned_at is not None and card.issue not in flagged:
+                lines.extend(self._clear_over_warning(card))
         return lines
+
+    def _over_pass(self, card: Card) -> _Pass | None:
+        """A pass over the issue of `card` for a write of the sweep's limit check; None when the claim is not the
+        claimant's any more."""
+        issue = self.remote.issue(card.issue)
+        comments = self.remote.comments(card.issue)
+        stored = stored_cards(comments, self.rules)
+        work = _Pass(issue, comments, stored, latest_held(stored))
+        if work.active is None or work.active.card.claimant != card.claimant:
+            return None
+        return work
+
+    def _warn_or_release_over(self, card: Card, why: str) -> list[str]:
+        """A claim past the limit of a claimant whose count came back: the first time, warn the claimant and start the
+        notice (`deadline_hours` less `warn_hours`, as for an idle claim); once the notice has run out and the claim is
+        still over, release it. Never sooner, so work in progress is not lost to a pull request that was closed."""
+        work = self._over_pass(card)
+        if work is None or work.active is None:
+            return []
+        active = work.active
+        current = active.card
+        due = current.over_deadline(self.rules)
+        try:
+            if due is None:
+                self._still_current(work)
+                until = self._now() + timedelta(hours=self.rules.deadline_hours - self.rules.warn_hours)
+                comment = self.remote.create_comment(
+                    card.issue,
+                    f"@{current.claimant} you hold more open claims than the limit allows ({why}): this claim is "
+                    f"released at {show_time(until)} unless you finish or `/unclaim` another claim first.",
+                )
+                self._save(work, active, current.changed(over_warned_at=self._now(), over_warning_comment=comment))
+                work.log.append(f"#{card.issue}: warned {current.claimant}: over the limit ({why})")
+            elif self._now() >= due:
+                if self._release(work, active, current, f"released: {why}", "released"):
+                    first = reply_first_line(self.rules, 0)
+                    self.remote.create_comment(
+                        card.issue, f"{first}\nClaim released: {why}; finish or give up another first."
+                    )
+        except _Stale:
+            work.log.append(f"#{card.issue}: the claim changed meanwhile; the next sweep looks again")
+        return work.log
+
+    def _clear_over_warning(self, card: Card) -> list[str]:
+        """The claimant is under the limit again: take the over-limit warning of this claim back."""
+        work = self._over_pass(card)
+        if work is None or work.active is None:
+            return []
+        try:
+            self._still_current(work)
+            self._drop_over_warning(work, work.active.card)
+            self._save(work, work.active, work.active.card.changed(over_warned_at=None, over_warning_comment=None))
+            work.log.append(f"#{card.issue}: no longer over the limit")
+        except _Stale:
+            work.log.append(f"#{card.issue}: the claim changed meanwhile; the next sweep looks again")
+        return work.log
+
+    def _drop_over_warning(self, work: _Pass, card: Card) -> None:
+        """Delete the over-limit warning comment of a card, if it has one."""
+        if card.over_warning_comment is not None:
+            self.remote.delete_comment(card.over_warning_comment)
+            work.log.append(f"#{work.issue.number}: removed the over-the-limit warning")
 
     def _clean_replies(self, now: datetime) -> list[str]:
         """Delete refusal replies older than `claims.reply_keep_hours` whose command comment is gone."""

@@ -453,3 +453,21 @@ def test_claim_list_says_whether_a_claim_counts_and_uses_the_trial_hours_for_a_t
     assert rows[8]["deadline"] == "2026-10-25T12:00:00Z"  # the repository's 72 hours
     assert cli.run_claim(parse("list"), gh) == 0
     assert "#7 alice claimed: scope not stated; expires 2026-10-22 14:00 UTC" in capsys.readouterr().out
+
+
+def test_a_pull_request_of_another_repository_is_not_a_linked_pull_request() -> None:
+    """GitHub may list a pull request of another repository that names the issue; its number means nothing here and
+    it must never free a slot, so only the pull requests whose base is this repository are kept."""
+
+    def node(number: int, base: str | None) -> dict[str, Any]:
+        found: dict[str, Any] = {"number": number, "state": "OPEN", "merged": False, "commits": {"nodes": []}}
+        found["author"] = {"login": "alice"}
+        found["baseRepository"] = {"nameWithOwner": base} if base else None
+        return found
+
+    nodes = [node(3, "Owner/Repo"), node(4, "alice/fork"), node(5, None)]
+    data = {
+        "repository": {"nameWithOwner": "owner/repo", "issue": {"closedByPullRequestsReferences": {"nodes": nodes}}}
+    }
+    found = remote(Gh({"graphql": json.dumps({"data": data})})).linked_prs(5)
+    assert [(pr.number, pr.repository) for pr in found] == [(3, "Owner/Repo")]

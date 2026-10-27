@@ -69,6 +69,9 @@ class LinkedPr:
     author: str = ""
     #: A draft is still being written: it is activity, but the clock does not wait for its review.
     draft: bool = False
+    #: The repository the pull request is for (`owner/name`), "" when GitHub does not say. `GhRemote.linked_prs`
+    #: keeps only the ones of this repository: a number means nothing in another.
+    repository: str = ""
 
 
 @dataclass(frozen=True)
@@ -301,9 +304,10 @@ class GhRemote:
     def linked_prs(self, number: int) -> list[LinkedPr]:
         """The pull requests that close issue `number`, with the date of each head commit."""
         query = (
-            "query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){issue(number:$number){"
-            "closedByPullRequestsReferences(first:10,includeClosedPrs:true){nodes{number state merged isDraft "
-            "author{login} commits(last:1){nodes{commit{committedDate}}}}}}}}"
+            "query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){nameWithOwner "
+            "issue(number:$number){closedByPullRequestsReferences(first:10,includeClosedPrs:true){nodes{number state "
+            "merged isDraft author{login} baseRepository{nameWithOwner} "
+            "commits(last:1){nodes{commit{committedDate}}}}}}}}"
         )
         data = self._json(
             [
@@ -320,18 +324,26 @@ class GhRemote:
             ]
         )
         try:
-            issue = data["data"]["repository"]["issue"]  # type: ignore[index]
-            nodes = issue["closedByPullRequestsReferences"]["nodes"]
+            repository = data["data"]["repository"]  # type: ignore[index]
+            nodes = repository["issue"]["closedByPullRequestsReferences"]["nodes"]
         except (KeyError, TypeError):
             return []
+        here = str(repository.get("nameWithOwner") or "").lower()
         found: list[LinkedPr] = []
         for node in nodes or []:
+            # A pull request of another repository that names this issue is not this repository's work: its number
+            # would be taken for one here. When the answer does not name this repository at all, nothing is compared.
+            base = str((node.get("baseRepository") or {}).get("nameWithOwner") or "")
+            if here and base.lower() != here:
+                continue
             state = "merged" if node.get("merged") else str(node.get("state", "OPEN")).lower()
             commits = (node.get("commits") or {}).get("nodes") or []
             date = commits[0]["commit"].get("committedDate") if commits else None
             author = (node.get("author") or {}).get("login", "")
             draft = bool(node.get("isDraft"))
-            found.append(LinkedPr(int(node["number"]), state, parse_time(date) if date else None, str(author), draft))
+            found.append(
+                LinkedPr(int(node["number"]), state, parse_time(date) if date else None, str(author), draft, base)
+            )
         return found
 
     # -- writing

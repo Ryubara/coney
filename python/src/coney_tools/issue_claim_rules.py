@@ -167,17 +167,17 @@ def overrun(card: Card, held: Iterable[Card], maintainer: bool, rules: Claims) -
     if (and only if) it is among the late ones. Adopted claims (assigned by hand) are not counted, nor are exempt ones
     (`claims.exempt_label`): an exempt claim is never over the limit, but the cap of a task holds for it too, as
     `check_claim`'s `issues_in_task` counts it at claim time. A claim whose slot is free (a maintainer's stage of
-    `claims.limit_ends_at`, or a ready pull request) is not counted either; one whose count came back (`regained`,
-    a pull request closed unmerged) is never released for it, though `check_claim` still counts it, so the claimant
-    takes no new claim until under the limit.
+    `claims.limit_ends_at`, or a ready pull request) is not counted either. A claim whose count came back (`regained`,
+    a pull request closed unmerged) counts like any other, so the newest claims past the limit are the over ones; the
+    engine releases them after a warning, not at once, when the claimant has one.
     """
     mine = [c for c in held if c.active and c.claimant == card.claimant and not c.adopted]
     if card not in mine and card.issue not in {c.issue for c in mine}:
         mine.append(card)
-    if not card.exempt and card.counted and not card.regained:
+    if not card.exempt and card.counted:
         first: dict[str, tuple[datetime, int]] = {}
         for c in mine:
-            if c.exempt or not c.counted or c.regained:
+            if c.exempt or not c.counted:
                 continue
             key = c.task_key
             mark = (c.claimed_at, c.issue)

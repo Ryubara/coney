@@ -316,9 +316,10 @@ def _claim_rules(conventions: Conventions) -> list[str]:
     ends = _join_or([f"`{stage}`" for stage in claims.limit_ends_at])
     lines += _bullet(
         "A claim stops counting toward the limit when the engineer's slot frees, as the unit passes review: once a "
-        f"maintainer records {ends} (their tools do, after the review), or "
-        "while its pull request is open and not a draft, for anyone; a pull request closed unmerged gives the count "
-        "back. It stays held until it ends."
+        f"maintainer records {ends} (their tools do, after the review), or, for anyone, while the claimant's own pull "
+        "request that closes it is open and not a draft, which frees one task's slot (the oldest it closes), however "
+        "many issues it names; a pull request closed unmerged gives the count back, and the newest claims then over "
+        "the limit are warned and released after the notice. It stays held until it ends."
     )
     lines += _bullet(
         f"While an open `{claims.critical_label}` issue that can be claimed has no claim, only a "

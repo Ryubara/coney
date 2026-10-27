@@ -316,8 +316,10 @@ hold back. `claims.trial` is no switch: it only lets one test issue try adoption
   is refused by it; the cap of a task still holds. Only someone who may label issues (triage access or more) can set the
   label.
 - A claim stops counting toward the limit when the engineer's slot frees, as the unit passes review: once a maintainer
-  records `reviewed`, `pr-opened`, `fix` or `finished` (their tools do, after the review), or while its pull request is
-  open and not a draft, for anyone; a pull request closed unmerged gives the count back. It stays held until it ends.
+  records `reviewed`, `pr-opened`, `fix` or `finished` (their tools do, after the review), or, for anyone, while the
+  claimant's own pull request that closes it is open and not a draft, which frees one task's slot (the oldest it
+  closes), however many issues it names; a pull request closed unmerged gives the count back, and the newest claims then
+  over the limit are warned and released after the notice. It stays held until it ends.
 - While an open `P-critical` issue that can be claimed has no claim, only a `P-critical` issue can be claimed.
 - A claimed issue that carries `S-blocked`, `S-needs-info`, `S-on-hold` keeps that label; the claim stays and its
   release clock waits, as it does while the claimant's pull request is open.
@@ -619,15 +621,26 @@ trusts two signs of a freed slot and no more:
   review) does not take the slot back, as a slot is not taken back either. A contributor's, or anyone else's, comment
   of the same words is recorded as activity and a stage, but frees nothing (the log says so): otherwise a
   `/progress reviewed` written by hand on each claim would hold any number of them.
-- **A ready pull request.** While an open pull request that is not a draft closes the issue and is the claimant's (or a
-  maintainer's), the claim does not count, for anyone. A draft costs nothing to open and frees nothing. If that pull
-  request is closed unmerged (or made a draft again) the count comes back (`regained` on the card): the claimant may then
-  hold more claims than the limit, and the Action releases none of them for that (they are work in progress), but
-  `/claim` refuses a new one until the claimant is under the limit.
+- **A ready pull request.** While the claimant's own open pull request that closes the issue is not a draft, the claim
+  does not count. A draft costs nothing to open and frees nothing, and neither does another person's pull request (a
+  maintainer's included: the slot is the claimant's unit). A pull request is cheap to open and to edit, so for a
+  claimant who is not a maintainer **one pull request frees one task's slot**: the oldest of the claimant's held claims
+  that it closes, with the other issues of that task (they count as one claim), however many issues it names or comes to
+  name; the rest keep counting. A maintainer's own ready pull request frees every claim it closes. If the pull request is
+  closed unmerged (or made a draft again) the count comes back (`regained` on the card), and the claimant may then hold
+  more claims than the limit. `/claim` refuses a new one meanwhile, and the sweep gives the newest claims past the limit
+  a warning comment (the card shows `Over the limit`) and releases them after the same notice an idle claim gets
+  (`claims.deadline_hours` less `claims.warn_hours`, 24 hours), unless the claimant finishes or gives up another claim
+  first, which takes the warning back. A pull request of another repository that names the issue is ignored.
 
 The claim itself stays held either way, with its card and its deadline, until it is merged or released. So three units
-waiting for CI never refuse a fourth claim. A maintainer who writes the stage by hand frees a slot without a review; that
-is accepted, because a maintainer is trusted with the limit of 3 and the stamp is how the tools do it.
+waiting for CI never refuse a fourth claim.
+
+What risk remains, accepted: a maintainer who writes the stage by hand frees a slot without a review (a maintainer is
+trusted with the limit of 3, and the stamp is how the tools do it). A contributor with several ready pull requests,
+each freeing its own task, holds that many claims above the limit while they stand, at the cost of the pull requests
+the maintainers see in the list; and when one is closed the extra claims live out their 24-hour notice. The claims they
+hold meanwhile still pass the pull request check and the idle clock like any other.
 
 ## Working from an issue {#agents}
 

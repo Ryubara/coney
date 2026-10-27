@@ -381,9 +381,11 @@ claims:
   exempt_label: workflow
   # A claim stops counting toward the limit when a maintainer records one of these stages (the tools post them; a
   # contributor's comment frees nothing, being free to write), or while a pull request of its claimant that closes the
-  # issue is open and not a draft: the limit stands for the engineers' task slots, and a slot frees when the unit passes
-  # review and takes the next task while CI runs (docs/guides/issues.md#slots). A stage frees the slot for good; a pull
-  # request closed unmerged gives the count back. The claim itself stays held either way.
+  # issue is open and not a draft (one such pull request frees one task's slot, the oldest it closes, however many
+  # issues it names): the limit stands for the engineers' task slots, and a slot frees when the unit passes review and
+  # takes the next task while CI runs (docs/guides/issues.md#slots). A stage frees the slot for good; a pull request
+  # closed unmerged gives the count back, and the newest claims then over the limit are warned and released after the
+  # notice (deadline_hours less warn_hours). The claim itself stays held either way.
   limit_ends_at: [reviewed, pr-opened, fix, finished]
   scope_max_characters: 400                       # the text after `scope:` in /claim
   closing_per_event: 10                           # `Fixes #N` lines of one pull request event that are acted on
