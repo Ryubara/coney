@@ -229,8 +229,9 @@ inline std::vector<std::size_t> passesOfHumans(const coney::platform::PlayLevelC
     return passes;
 }
 
-// A level of the game session, started and played until the opening scene is skipped and the player has his pad, on the
-// Null renderer or (`window`) a hidden OpenGL window; false (and the run unfinished) when it does not get there.
+// A level of the game session, started and played until the opening scene is skipped and the player has his pad, on
+// whatever renderer the `DiscSession` was made with (Null, or a hidden window); false (and the run unfinished) when it
+// does not get there.
 inline bool playLevel(coney::test::DiscSession& run, std::string_view level) {
     run.session().startAtLevel(level, 1);
     if (!run.runUntilPlay()) {
