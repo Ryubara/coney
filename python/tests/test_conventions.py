@@ -103,7 +103,7 @@ def test_the_real_labels_are_in_their_families() -> None:
         and len(labels.names("priority")) == 4
     )
     assert labels.names("status")[0] == "S-needs-triage" and len(labels.names("status")) == 10
-    assert labels.names("other") == ("good first issue", "help wanted", "duplicate", "wontfix")
+    assert labels.names("other") == ("good first issue", "help wanted", "duplicate", "wontfix", "workflow")
     assert labels.names() == tuple(label.name for label in labels.list)
 
 
@@ -207,6 +207,11 @@ BAD: list[tuple[str, tuple[tuple[str, object], ...], str]] = [
         r"claims\.warn_hours: must be less than deadline_hours",
     ),
     ("a bad claim marker", (("claims.card_marker", "a b"),), r"claims\.card_marker: letters, digits and hyphens"),
+    (
+        "an exempt label that is not a label",
+        (("claims.exempt_label", "workflw"),),
+        r"claims: 'workflw' is not in labels\.list",
+    ),
     (
         "a hold label that does not pause the claim",
         (("claims.hold_labels", ["S-in-progress"]),),

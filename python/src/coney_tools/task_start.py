@@ -170,8 +170,19 @@ def _claim_problem(task: TaskFile, user: str, expected_task: str, engine: Engine
 
 
 def _limit_problem(task: TaskFile, user: str, engine: Engine) -> str | None:
-    """Why `user` holds more open claims than the limit allows, or None (a fix task reuses its claim)."""
-    held = engine.held_cards().values()
+    """Why `user` holds more open claims than the limit allows, or None (a fix task reuses its claim).
+
+    A card's `exempt` flag follows the issue's label only when a claim run passes over it, and a burst of label events
+    leaves some cards stale until the sweep (GitHub cancels pending jobs); so the label is read from each of the
+    user's issues here, as `task create`'s checks read it, and a stale card cannot refuse the start.
+    """
+    label = engine.rules.exempt_label
+    held = [
+        card
+        if card.exempt or card.claimant != user
+        else card.changed(exempt=label in engine.remote.issue(card.issue).labels)
+        for card in engine.held_cards().values()
+    ]
     open_tasks = open_task_keys(held, user, 0)
     maintainer = engine.is_maintainer(user)
     limit = limit_for(maintainer, engine.rules)

@@ -468,7 +468,7 @@ def test_a_stopped_settle_says_how_to_give_the_claims_back(world: World) -> None
 
     world.hooks.append(intrude)
     assert world.run(issues=(10, 11), name="pair") == 1
-    assert "(write `/unclaim` on each to give them back)" in world.said() and "#10" in world.said()
+    assert "`coney-tools claim unclaim 10" in world.said() and "#10" in world.said()
 
 
 def test_issue_text_cannot_break_the_sections_of_the_file(world: World) -> None:
