@@ -484,7 +484,10 @@ class Human final : public Holdable {
     }
     /// Knocked out, state `0x40000`, as Coney models it: its health run out (`Human_OnHealthOut` 0x002674c0 knocks a
     /// player, flag `0x4`, out through `Human_KnockOut` 0x00230328) or a script's `HuSetConscious(false)`
-    /// (docs/research/combat-reactions.md#knocked-out-bit).
+    /// (docs/research/combat-reactions.md#knocked-out-bit). Stand-in: Coney keeps no state word, so health run out
+    /// counts as knocked out for every human; in the original one without flag `0x4` may be wounded instead (flag
+    /// `0x8`) or made dead by a kind-29 hit, without the bit. A human with no record (`+0xd4`) counts as knocked out
+    /// there; every Coney human has one.
     /// @orig 0x00227dd8 Human_IsKnockedOut (unknown)
     [[nodiscard]] bool knockedOut() const { return m_fighter.health().depleted() || m_script.knockedOut; }
     /// Whether `Player_UseItemCommand` refuses the flash's press outright: down or dead, cuffed, airborne
