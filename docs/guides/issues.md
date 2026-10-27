@@ -343,6 +343,10 @@ contains `/claim` is never one); the Action deletes each real command after acti
 | `/unclaim` | Gives the claim up: unassigns, back to `S-ready-to-start` | the claimant, or a maintainer |
 | `/progress <stage>` | Records a stage (`assigned`, `studied`, ...); the tools post it at each stage | the claimant |
 
+The coordinator writes none of these by hand: `task create` posts `/claim`, the stage tools post `/progress`, and
+`coney-tools claim unclaim N` and `claim renew N` post the other two and wait for the Action's answer
+([coney-tools](coney-tools-issues.md#claim)).
+
 A comment that starts with `/claim`, `/unclaim` or `/progress` but is not exactly one of them gets a reply from the bot
 (`<!-- coney-claim-reply:ID -->`, naming the comment) saying what to write, and **stays**: only a comment that was a
 real command is deleted, a refused one included. A reply is deleted by the sweep a day after its command comment is

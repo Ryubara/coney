@@ -3,7 +3,8 @@
 
 `claim run` is the whole workflow step: it takes the event's name and its payload file (never text from the event on a
 command line), picks the issue or issues the event concerns and reconciles each; `schedule` and `workflow_dispatch`
-run the sweep. `claim sweep` runs the sweep by hand, `claim list` prints the held claims (`--json` for the mod).
+run the sweep. `claim sweep` runs the sweep by hand, `claim list` prints the held claims (`--json` for the mod), and
+`claim unclaim` and `claim renew` post those commands for the signed-in account (`issue_claim_post.py`).
 (docs/guides/issues.md#claiming) `gh` is run through an injected runner, so the tests never touch the network.
 """
 
@@ -13,6 +14,7 @@ import argparse
 import json
 import re
 import sys
+import time
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
@@ -23,6 +25,7 @@ from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.issue_claim_engine import Activity, Engine
 from coney_tools.issue_claim_model import Card, iso_time, show_time
+from coney_tools.issue_claim_post import PostEnv, post_claim_command
 from coney_tools.issue_claim_remote import GhRemote, Remote
 
 
@@ -40,6 +43,13 @@ def add_claim_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser]
     commands.add_parser("sweep", help="reconcile every claimed issue and every unhandled command now")
     listing = commands.add_parser("list", help="print the held claims")
     listing.add_argument("--json", action="store_true", help="print the cards' data as JSON for the mod")
+    for verb, what in (
+        ("unclaim", "give claims back: post /unclaim on each issue and wait for the claim Action"),
+        ("renew", "start the idle clock of your claims again: post /claim renew on each issue and wait"),
+    ):
+        post = commands.add_parser(verb, help=what)
+        post.add_argument("issues", metavar="ISSUE", type=int, nargs="+", help="the issue numbers")
+        post.add_argument("--no-wait", action="store_true", help="post and return without waiting for the answer")
 
 
 def _remote(conventions: Conventions, run: Runner) -> GhRemote:
@@ -126,12 +136,20 @@ def _pull_request_activity(name: str, payload: dict[str, Any], now: Callable[[],
     return Activity(now(), login)
 
 
-def run_claim(args: argparse.Namespace, run: Runner = run_gh, now: Callable[[], datetime] = _utc_now) -> int:
+def run_claim(
+    args: argparse.Namespace,
+    run: Runner = run_gh,
+    now: Callable[[], datetime] = _utc_now,
+    sleep: Callable[[float], None] = time.sleep,
+) -> int:
     """Dispatch a `claim` command; 0 on success, 1 when an issue could not be finished."""
     conventions = load_conventions(find_repo_root(Path.cwd()))
     remote = _remote(conventions, run)
     if args.command == "list":
         return _list(remote, conventions, args.json)
+    if args.command in ("unclaim", "renew"):
+        env = PostEnv(remote, conventions, now, sleep)
+        return post_claim_command(args.command, list(args.issues), env, wait=not args.no_wait)
     engine = Engine(remote, conventions, now)
     if args.command == "sweep":
         result = engine.sweep()
