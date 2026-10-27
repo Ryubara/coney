@@ -7,7 +7,17 @@ name = "Human_CreatePhysicsBody"
 page = "physics-bodies.md#u9-callers"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::heal"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "Coney keeps no physics body on the human: none is freed or taken from the pool, each sweep builds its own (human.cpp Human::sweep)"
+relation = "not-ported"
+issue = 376
+
+[[function.gaps]]
+what = "the heavy bag's body (class 0x1cc, flag 0x200)"
+relation = "not-ported"
+issue = 109
 
 [[function]]
 address = 0x00335b08

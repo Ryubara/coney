@@ -157,7 +157,12 @@ name = "Spawner_PlaceOutOfView"
 page = "ai-gangs.md#spawner-placement"
 level = "confirmed-code"
 coney = "src/ai/spawners.h:outOfSightNode"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the two-player camera choice and the other player's view test are not ported"
+relation = "not-ported"
+issue = 549
 
 [[function]]
 address = 0x001681a0
@@ -651,6 +656,20 @@ coney = "src/ai/spawners.h:Spawners::pickType"
 status = "legacy"
 
 [[function]]
+address = 0x0016d860
+name = "Spawner_MakeHuman"
+page = "ai-gangs.md#spawners"
+role = "a gang spawner's human: a free human, its name, Human_Init with the type, gang and position, the spawner's heading, its slot on the brain, the item in hand, then the spawner's callback with (human, gang, spawner name)"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.cpp:ScriptSpawnerWorld::spawn"
+status = "compared"
+
+[[function.gaps]]
+what = "with no free human the knocked-out humans are not polled (Humans_PollKnockedOut), and the spawner's item (`+0x1c`, SpawnerCall::anim) is not put in the human's hand"
+relation = "not-ported"
+issue = 645
+
+[[function]]
 address = 0x0021c0a8
 name = "Human_IsWayClearTo"
 page = "ai-brain-types.md#warrior-swap"
@@ -688,7 +707,7 @@ name = "Human_HasLineOfSight"
 page = "ai-fights.md#sight"
 level = "confirmed-code"
 coney = "src/ai/perception.h:lineOfSight"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x002223e8
@@ -696,7 +715,17 @@ name = "Human_CanSeeHuman"
 page = "ai-fights.md#sight"
 level = "confirmed-code"
 coney = "src/ai/perception.h:canSeeHuman"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "no field of view: within range (and the shadow rule) only the line of sight decides; the near distance is not passed"
+relation = "not-ported"
+issue = 646
+
+[[function.gaps]]
+what = "the shadow rule is the enemy scan's (the viewer on shadow ground too) and its distance a fixed 2 m, not the caller's"
+relation = "not-ported"
+issue = 646
 
 [[function]]
 address = 0x002235f8
@@ -999,6 +1028,16 @@ coney = "src/ai/give_way.h:pushAside"
 status = "legacy"
 
 [[function]]
+address = 0x0028ab28
+name = "Brain_SetMoveSpeed"
+page = "ai-moving.md#ai-gaits"
+kind = "helper"
+role = "stores a move speed in brain `+0x114`"
+level = "confirmed-code"
+coney = "src/ai/brain.cpp:Brain::setMove"
+status = "compared"
+
+[[function]]
 address = 0x0028abc0
 name = "Brain_CanBeChased"
 page = "ai-fights.md#enemy-score"
@@ -1016,7 +1055,7 @@ kind = "helper"
 role = "gait 0, heading = the current one (think bookkeeping)"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::stopMove"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0028b358
@@ -1027,6 +1066,20 @@ role = "the periodic enemy scan: lists nearby humans and keeps the enemy list an
 level = "confirmed-code"
 coney = "src/ai/enemy_scan.h:scanEnemies"
 status = "legacy"
+
+[[function]]
+address = 0x0028bbf0
+name = "Brain_UpdateAlertness"
+page = "face.md#mood"
+role = "every fifth update the face's mood from the brain's state, tactic and goals"
+level = "confirmed-code"
+coney = "src/ai/face_mood.h:faceMoodOf"
+status = "compared"
+
+[[function.gaps]]
+what = "the burning test is always false: no human burns in Coney yet"
+relation = "stand-in"
+question = "face.md#q-burning"
 
 [[function]]
 address = 0x0028bf00
@@ -1078,12 +1131,37 @@ coney = "src/ai/brain.h:Brain::setTurnBoost"
 status = "legacy"
 
 [[function]]
+address = 0x0028ceb8
+name = "Brain_StoreType"
+page = "ai-code.md#brain-record"
+kind = "helper"
+role = "stores the brain type (`+0x04`) and installs its handlers"
+level = "confirmed-code"
+coney = "src/ai/brain.cpp:Brain::setType"
+status = "compared"
+
+[[function.gaps]]
+what = "no handlers are installed: Coney's update, think and event calls pick by the type each time, and the same type again changes nothing; Brain_InstallHandlers' player-brain work is that function's own gap"
+relation = "stand-in"
+issue = 635
+
+[[function]]
 address = 0x0028cfe0
 name = "Brain_SetTarget"
 page = "ai-fights.md#targets"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::setTarget"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the target is taken only when its slot is claimed, and only on a brain whose +0x120 is set; Coney takes it and claims on any"
+relation = "not-ported"
+issue = 649
+
+[[function.gaps]]
+what = "the wanted state, the spotter, the last seen position and +0x2d3 / +0x148 are not kept; the same target claims its slot again"
+relation = "not-ported"
+issue = 649
 
 [[function]]
 address = 0x0028d190
@@ -1118,7 +1196,17 @@ name = "Brain_AddEnemy"
 page = "ai-fights.md#targets"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::addEnemy"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "nothing is listed while this human is down or dead"
+relation = "not-ported"
+issue = 649
+
+[[function.gaps]]
+what = "no hostile count (+0x152, Brain_CountHostile): Coney lists this human in the enemy's list instead"
+relation = "not-ported"
+issue = 649
 
 [[function]]
 address = 0x0028d758
@@ -1146,7 +1234,7 @@ kind = "helper"
 role = "stores the current top index in `+0x2d` as the goal base, only when the stack is not empty; nothing is popped ([Tactics](ai-gangs.md#tactics))"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::markGoalBase"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0028d8c0
@@ -1156,7 +1244,7 @@ kind = "helper"
 role = "pops goals down to `+0x2d`, then clears it"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::popToGoalBase"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0028d910
@@ -1174,7 +1262,7 @@ page = "ai/index.md#update-goals"
 role = "the goal stack"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::findGoal"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0028d9f0
@@ -1204,6 +1292,21 @@ coney = "src/ai/brain.h:Brain::clearActions"
 status = "legacy"
 
 [[function]]
+address = 0x0028db88
+name = "Brain_SetAttackSlotCountRaw"
+page = "ai-code.md#attack-slots"
+kind = "helper"
+role = "sets the maximum attack slots (`+0x1e4`); when lowered, keeps the nearest holders"
+level = "confirmed-code"
+coney = "src/ai/brain.cpp:Brain::setAttackSlotCount"
+status = "compared"
+
+[[function.gaps]]
+what = "when lowered, the first holders stay rather than the nearest (no sort by distance), and the count is kept to the list's 16"
+relation = "stand-in"
+issue = 992
+
+[[function]]
 address = 0x0028dc80
 name = "Brain_CanTakeSlotOn"
 page = "ai-code.md#attack-slots"
@@ -1227,7 +1330,12 @@ name = "Brain_ClaimAttackSlot"
 page = "ai-fights.md#attack-places"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::claimSlot"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the spacing is raised again for a holder, the down spacing whatever the state, a Warrior's not set to 1; the farthest holder displaced gets no full Brain_SetTarget"
+relation = "not-ported"
+issue = 649
 
 [[function]]
 address = 0x0028e248
@@ -1285,10 +1393,15 @@ status = "legacy"
 address = 0x0028f8b8
 name = "Brain_Update"
 page = "ai/index.md#update"
-role = "call handler B / handler A"
+role = "count the update (+0x34), then call handler A"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::update"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the handler runs whatever the human's `+0xd8`, and the 90-update health sample (`+0x154`) is not taken"
+relation = "not-ported"
+issue = 635
 
 [[function]]
 address = 0x0028f928
@@ -1316,7 +1429,17 @@ page = "ai/index.md#update-goals"
 role = "handler A of every AI type"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::update"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the wanted-enemy refresh, timer A's expiry, the 44-update sight note of the target, the turf-leave check and the join-the-player's-gang flag"
+relation = "not-ported"
+issue = 635
+
+[[function.gaps]]
+what = "an out-of-health human and a suspended brain in a scene skip the goals too, and the goal loop is bounded"
+relation = "stand-in"
+issue = 635
 
 [[function]]
 address = 0x0028fe28
@@ -1414,6 +1537,21 @@ role = "clears a human from the four places"
 level = "confirmed-code"
 coney = "src/ai/attack_places.h:ActivePlaces::release"
 status = "legacy"
+
+[[function]]
+address = 0x002911e8
+name = "Brain_StoreAttackWeight"
+page = "ai-code.md#brain-record"
+kind = "helper"
+role = "one attack kind's weight, `+0x298 + kind`"
+level = "confirmed-code"
+coney = "src/ai/brain.cpp:Brain::setAttackWeight"
+status = "compared"
+
+[[function.gaps]]
+what = "a kind outside the table is ignored, where the original writes past it unchecked"
+relation = "stand-in"
+issue = 992
 
 [[function]]
 address = 0x002911f8
@@ -1538,6 +1676,21 @@ role = "degrees to radians into `+0x12c`"
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
 status = "legacy"
+
+[[function]]
+address = 0x00292938
+name = "Brain_SetMeleeRange"
+page = "ai-code.md#script-bindings"
+kind = "binding worker"
+role = "near `+0x13c`, far `+0x140`"
+level = "confirmed-code"
+coney = "src/ai/brain.cpp:Brain::setMeleeRange"
+status = "compared"
+
+[[function.gaps]]
+what = "a member of the brain: the handle the worker resolves is its caller's, and Coney registers no BrSetMeleeRange binding (no script calls it)"
+relation = "stand-in"
+issue = 992
 
 [[function]]
 address = 0x00292ac0
@@ -1900,7 +2053,12 @@ kind = "helper"
 role = "steers at the climb point for up to 31 tries and starts a climb"
 level = "confirmed-code"
 coney = "src/ai/move_action.h:MoveAction::followLeg"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the climb is asked of the human each update and its start read through the human's traversal, not tried at once; the run (gait 4) is set before the try, not after a failed one"
+relation = "stand-in"
+issue = 641
 
 [[function]]
 address = 0x0029b9b0
@@ -1910,7 +2068,12 @@ kind = "helper"
 role = "within 4.5 m of the point, tries to climb and advances the route"
 level = "confirmed-code"
 coney = "src/ai/move_action.h:earlyClimbDue"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the early climb is asked of the human and its start read on the move action's next update, not tried at once (route state, advance and +0x11d set there)"
+relation = "stand-in"
+issue = 641
 
 [[function]]
 address = 0x0029baa8
@@ -4436,7 +4599,32 @@ name = "AttackAction_Start"
 page = "ai-fights.md#attack-action"
 level = "confirmed-code"
 coney = "src/ai/attack_action.h:AttackAction::start"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the wait flags 0x5c0221f keep the action running when the attack cannot start, and Human_CanStartAttack is not asked (Coney: the health left)"
+relation = "not-ported"
+issue = 674
+
+[[function.gaps]]
+what = "the stick is not cleared at the start, and the brain's target is not set to the human attacked"
+relation = "not-ported"
+issue = 674
+
+[[function.gaps]]
+what = "the busy test before the attackable time is Coney's humanBusy, not grabbing/tackling/cuffed"
+relation = "not-ported"
+issue = 674
+
+[[function.gaps]]
+what = "the held weapon (class 1 subtype 11) does not turn the kind to 23 beyond reach"
+relation = "not-ported"
+issue = 674
+
+[[function.gaps]]
+what = "the stick toward the target for the snap (kind 10) is Coney's own; this function writes no stick for it"
+relation = "not-ported"
+issue = 674
 
 [[function]]
 address = 0x002fad30
@@ -5597,6 +5785,21 @@ role = "whether a world object may be smashed: worth 1 or more unless of class `
 level = "confirmed-code"
 coney = "src/gamemodes/level_items.h:LevelItems::smashable"
 status = "legacy"
+
+[[function]]
+address = 0x00419ee0
+name = "GameState_FindNearestPlayer"
+page = "ai/index.md#warriors-functions"
+kind = "helper"
+role = "the nearest listed player to a point, the squared distance out"
+level = "confirmed-code"
+coney = "src/ai/brain.cpp:Brain::nearestPlayer"
+status = "compared"
+
+[[function.gaps]]
+what = "the players are the scene's player brains but the asking one, measured horizontally from its human rather than by squared 3D distance from a point, and no distance is handed out"
+relation = "stand-in"
+issue = 992
 
 [[function]]
 address = 0x0041c2b0

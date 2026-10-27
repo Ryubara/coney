@@ -1,0 +1,43 @@
+version = 1
+id = "r-20261026-face-talk-state"
+date = "2026-10-26"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "e94600825176f0cf956bd35ce9147a7eac3f81f1f3f808da8206df9e3932303c"
+
+[who]
+agent = "ac898a9db1abac45f"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "PINE reads of each human's record +0x1c (talk state), record +0x24 (face clip playing) and human +0x334 (camera distance) in level99; then HuSpeak through the lua recipe on PoizoCiv and on Rembrandt, reading the same fields about once a second during and after the line"
+
+[values]
+near_state = 2
+near_face = 704
+bum_state = 6
+bum_face = 716
+far_civilian_distance_m = 32.36
+far_civilian_face = -1
+speaking_state = 3
+speaking_face = 707
+after_line_state = 2
+after_line_face = 704
+humans_read = 9
+
+[addresses]
+talk_state = 0x002235a0
+begin_talk = 0x002234f8
+update_face_clip = 0x00259368
+uses_queued_pose = 0x00223440

@@ -28,6 +28,30 @@ coney = "src/characters/character_data.h:CharacterData::animation"
 status = "legacy"
 
 [[function]]
+address = 0x00176d60
+name = "CharacterInstance_Sample"
+page = "face.md#shown"
+role = "samples the face queue into the default pose when Human_UsesQueuedPose says so, then the body's stack"
+level = "confirmed-code"
+coney = "src/human/face.h:FaceLayer::defaults"
+status = "compared"
+
+[[function.gaps]]
+what = "the head look and torso twist within 30 m of the camera"
+relation = "not-ported"
+issue = 963
+
+[[function.gaps]]
+what = "the flag Instance_BuildBoneMatrices is given from the distance counter +0x2b0, and the draw object's +0x460"
+relation = "not-ported"
+issue = 963
+
+[[function.gaps]]
+what = "a bone of 6-14 that a face clip leaves out takes the reference pose, not the last human's value in the shared buffer"
+relation = "stand-in"
+question = "face.md#q-shared-buffer"
+
+[[function]]
 address = 0x00218008
 name = "Human_Init"
 page = "characters.md#original-structure"
@@ -44,7 +68,22 @@ role = "the body's contact handler: landings, fences while climbing, objects"
 level = "confirmed-code"
 note = "confirmed (code) for the parts cited"
 coney = "src/gamemodes/level_pickups.h:LevelPickups::walkOver"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "kinds 29 (moving vehicle) and 34 (train) and an airborne human's contacts with humans (the strike and the scaled code 4) are not ported"
+relation = "not-ported"
+issue = 1008
+
+[[function.gaps]]
+what = "charge and jump targets, the pass-through after a strike and an object's flag 0x200 answer are not ported"
+relation = "not-ported"
+issue = 712
+
+[[function.gaps]]
+what = "the thrown victim's armed wall sound (+0x3bd) is not ported"
+relation = "not-ported"
+issue = 684
 
 [[function]]
 address = 0x0021a490
@@ -53,7 +92,12 @@ page = "characters.md#original-structure"
 role = "the push-out sphere (or a bone segment) while airborne and in some states"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::pushOutInAir"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "only the airborne sphere is ported: the grab skips, an AI's 0.35 radius, the grounded push at bone 2 and the bone 6 to bone 3 segment collide are not"
+relation = "not-ported"
+issue = 1008
 
 [[function]]
 address = 0x0021cda8
@@ -137,6 +181,15 @@ coney = "src/audio/human_sound_events.h:HumanSoundEvents::animSound"
 status = "legacy"
 
 [[function]]
+address = 0x00221260
+name = "Human_GetAttribute"
+page = "physics.md#attributes"
+role = "the human's float attributes: 1 is 82.0, 7 the push weight (+0x27c), any other 0"
+level = "confirmed-code"
+coney = "src/human/human.cpp:Human::pushWeight"
+status = "compared"
+
+[[function]]
 address = 0x002212d0
 name = "Human_GetTurnRateForGait"
 page = "characters.md#ai-locomotion"
@@ -187,7 +240,12 @@ page = "characters.md#code-core"
 role = "Puts a clip into one of the seven override slots (`+0x3c8`) for an anim id, or releases the slot when the clip is 0; marks the state when the current anim is overridden."
 level = "confirmed-code"
 coney = "src/human/script_state.h:ScriptState::setAnimOverride"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "a name that does not load frees the slot; the anim playing now is restarted with the new clip (state flag 0x20000000) only for the idle; the result is 1 only for a loaded clip"
+relation = "not-ported"
+issue = 695
 
 [[function]]
 address = 0x00221c20
@@ -266,6 +324,42 @@ role = "stamina maximum from the power class"
 level = "confirmed-code"
 coney = "src/human/stamina.h:Stamina::Stamina"
 status = "legacy"
+
+[[function]]
+address = 0x00223440
+name = "Human_UsesQueuedPose"
+page = "face.md#shown"
+role = "the face shows: in no scene, not down or dead, an AI Warrior or within 17.5 m of the nearest camera"
+level = "confirmed-code"
+coney = "src/human/human.h:Human::faceShown"
+status = "compared"
+
+[[function]]
+address = 0x002234f8
+name = "Human_BeginTalkPose"
+page = "face.md#talk-state"
+role = "an even talk state (record `+0x1c`) becomes the odd one above it"
+level = "confirmed-code"
+coney = "src/human/face.h:FaceState::beginTalk"
+status = "compared"
+
+[[function]]
+address = 0x00223548
+name = "Human_EndTalkPose"
+page = "face.md#talk-state"
+role = "an odd talk state becomes the even one below it"
+level = "confirmed-code"
+coney = "src/human/face.h:FaceState::endTalk"
+status = "compared"
+
+[[function]]
+address = 0x002235a0
+name = "Human_SetTalkState"
+page = "face.md#talk-state"
+role = "writes the mood, plus one while the state is odd"
+level = "confirmed-code"
+coney = "src/human/face.h:FaceState::setMood"
+status = "compared"
 
 [[function]]
 address = 0x00223c10
@@ -1564,6 +1658,15 @@ coney = "src/camera/slow_motion.h:SlowMotion::setScripted"
 status = "legacy"
 
 [[function]]
+address = 0x0023bd78
+name = "Human_StepAnimation"
+page = "characters.md#update"
+role = "the characters' update's animation step: for a human with an instance, runs the instance's queued tasks (`0x00175610`) and marks its bone cache (`+0x460`) stale"
+level = "confirmed-code"
+coney = "src/human/human.cpp:Human::animate"
+status = "compared"
+
+[[function]]
 address = 0x0023cd30
 name = "Human_UpdateLedSlots"
 page = "characters.md#code-update"
@@ -1608,7 +1711,17 @@ page = "characters.md#original-structure"
 role = "slope factor, physics sweep, ground snap"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::moveOnGround"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "riding (+0x280) and held flag 0x40 (nothing collides: the plain move, no snap) are not ported"
+relation = "not-ported"
+issue = 684
+
+[[function.gaps]]
+what = "the detail level is not updated each move (Human_UpdateLod), the slope rule skips no state, and the snap is not skipped in game modes 8, 0xb and 0x11"
+relation = "not-ported"
+issue = 1003
 
 [[function]]
 address = 0x0023db48
@@ -1644,7 +1757,22 @@ page = "characters.md#original-structure"
 role = "1.5 m ray down from 1 m above the feet"
 level = "confirmed-code"
 coney = "src/ai/hiding.h:updateHiding"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the hide rule runs for the player only: his gang's members, the other humans, the hide order (Player_UpdateHideOrder) and an AI's molotov drop are not ported; held flag 0x800 does not stop the fall; the last ground position is the snapped feet, not the feet before the snap"
+relation = "not-ported"
+issue = 1008
+
+[[function.gaps]]
+what = "the split view's radar tint (two players in one view) is not ported"
+relation = "not-ported"
+issue = 549
+
+[[function.gaps]]
+what = "a riding human's snap (no move, material 5 on a miss) is not ported"
+relation = "not-ported"
+issue = 684
 
 [[function]]
 address = 0x0023f158
@@ -1680,7 +1808,17 @@ page = "characters.md#original-structure"
 role = "stick → velocity and heading"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::updateState"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the walk-speed state (0x00227d98), the skid's camera-mode test and the +0x3bb rotation lock are not ported"
+relation = "not-ported"
+issue = 1008
+
+[[function.gaps]]
+what = "an AI's control override restore is not ported"
+relation = "not-ported"
+issue = 1003
 
 [[function]]
 address = 0x002427e8
@@ -1715,7 +1853,17 @@ page = "characters.md#code-update"
 role = "The step control function (+0x1bc while a TakeStep runs): for an AI, one step clip by the angle between brain +0x110 and the facing (step, dash or fight shuffle), turned over half the clip, then leaves at once; waits while busy ([Step control](characters.md#step-control))."
 level = "confirmed-code"
 coney = "src/human/step_control.h:stepClipFor"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "a control override (+0x1c6, Human_RestoreControl) and the button-tap move control are not ported"
+relation = "not-ported"
+issue = 1003
+
+[[function.gaps]]
+what = "a human riding something (+0x280) does not wait"
+relation = "not-ported"
+issue = 684
 
 [[function]]
 address = 0x002446b0
@@ -1950,6 +2098,15 @@ coney = "src/platform/play_level_mode.h:PlayLevelMode::knockOffHat"
 status = "legacy"
 
 [[function]]
+address = 0x00259368
+name = "Human_UpdateFaceClip"
+page = "face.md#face-clips"
+role = "queues the talk state's face clips, fading the old ones out over 1/30 s (none into a speaking state)"
+level = "confirmed-code"
+coney = "src/human/face.h:FaceLayer::update"
+status = "compared"
+
+[[function]]
 address = 0x00259578
 name = "Human_ChooseAnimState"
 page = "characters.md#original-structure"
@@ -2036,7 +2193,12 @@ role = "the player's commands each update: climb, jump, block, sprint"
 level = "confirmed-code"
 note = "confirmed (code) for the parts cited"
 coney = "src/combat/player_combat.h:PlayerCombat::update"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the turn-limited triangle path, the throw aim refusal, an AI's triangle, the drop when nothing was done and the held-triangle retry are not ported"
+relation = "not-ported"
+issue = 664
 
 [[function]]
 address = 0x0027ce90
@@ -2054,7 +2216,17 @@ name = "Climb_OnFirstClipEndRun"
 page = "characters.md#original-structure"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::followClimb"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the face at the first clip's end need not be climbable (any face goes on), the stance's fight idle and the push sphere are not ported"
+relation = "not-ported"
+issue = 664
+
+[[function.gaps]]
+what = "only walls move onto the top at once (Coney's choice from the runtime runs); the code moves every climb so"
+relation = "stand-in"
+issue = 664
 
 [[function]]
 address = 0x00281838
@@ -2062,7 +2234,17 @@ name = "Climb_OnFirstClipEndStand"
 page = "characters.md#original-structure"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::followClimb"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the face at the first clip's end need not be climbable (any face goes on), the stance's fight idle and the push sphere are not ported"
+relation = "not-ported"
+issue = 664
+
+[[function.gaps]]
+what = "only walls move onto the top at once (Coney's choice from the runtime runs); the code moves every climb so"
+relation = "stand-in"
+issue = 664
 
 [[function]]
 address = 0x00281c20
@@ -2071,7 +2253,12 @@ page = "characters.md#original-structure"
 role = "reach window, start point, the three-clip chain"
 level = "confirmed-code"
 coney = "src/human/climb.h:withinClimbReach"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the swallowed press (beyond reach within twice it, or the top's space blocked: true for a player, no climb), the held set 4 and 6 drops, the overlay drop and the push sphere are not ported"
+relation = "not-ported"
+issue = 664
 
 [[function]]
 address = 0x00282370
@@ -2089,7 +2276,12 @@ page = "characters.md#original-structure"
 role = "the two forward probes; fence, wall and their short forms"
 level = "confirmed-code"
 coney = "src/human/climb.h:probeClimb"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "held flags 0x84240 do not refuse the climb, and a face only the high ray meets is not climbed as a tall one"
+relation = "not-ported"
+issue = 664
 
 [[function]]
 address = 0x002829e8
@@ -2098,7 +2290,12 @@ page = "characters.md#original-structure"
 role = "the jump's checks; take-off gait and height"
 level = "confirmed-code"
 coney = "src/human/jump.h:jumpAllowed"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "no jump is refused for a held object of anim set 4 or 6 or in the fight stance"
+relation = "not-ported"
+issue = 664
 
 [[function]]
 address = 0x0029ade0
