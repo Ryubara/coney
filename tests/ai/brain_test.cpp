@@ -799,3 +799,29 @@ TEST_CASE("a brain's reaction kind is its type, the player's a Warrior's; cops a
     CHECK(coney::ai::helpLevel(thug) == 2);
     CHECK(coney::ai::helpLevel(dealer) == 2);
 }
+
+// Expected: unverified, #1031 (Coney's own lookup: the brains' table is Coney's container, the original indexes its 60
+// brains by slot)
+TEST_CASE("each human's brain is found after brains are added and removed", "[ai]") {
+    coney::test::AiScene scene;
+    Brain& first = scene.add({40.0F, 42.0F, 0.0F}, 180.0F);
+    Brain& middle = scene.add({40.0F, 44.0F, 0.0F}, 180.0F);
+    Brain& last = scene.add({40.0F, 46.0F, 0.0F}, 180.0F);
+    Human& middleHuman = middle.human();
+    CHECK(scene.brains.find(first.human()) == &first);
+    CHECK(scene.brains.find(middleHuman) == &middle);
+    CHECK(scene.brains.find(last.human()) == &last);
+    // A removed brain is gone; the others keep theirs as the slots after it close up.
+    scene.brains.remove(middleHuman);
+    CHECK(scene.brains.find(middleHuman) == nullptr);
+    CHECK(scene.brains.find(first.human()) == &first);
+    CHECK(scene.brains.find(last.human()) == &last);
+    CHECK(last.slot() == 2);
+    // Given a brain again, the human is found with the new one.
+    Brain& again = scene.brains.add(middleHuman, BrainType::Gang, {}, 9);
+    CHECK(scene.brains.find(middleHuman) == &again);
+    // A human with no brain has none.
+    Human stranger(scene.character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 1.0F,
+                   &scene.character.ranges);
+    CHECK(scene.brains.find(stranger) == nullptr);
+}
