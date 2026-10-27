@@ -52,11 +52,14 @@ void stepSystemMusic(StoryState& story, script::SoundHost* sound, GameRandom& ra
 }
 
 void setSystemMusic(StoryState& story, script::SoundHost* sound, bool on) {
+    // Either way the scripts' hold on the mood ends (the hold flag cleared, the held mood handed back to the game).
     story.musicHold = -1;
     if (on == story.systemMusic) {
         return;
     }
     story.systemMusic = on;
+    // Coney's choice: a new pick is due at the next step (stepSystemMusic), where the original picks at once; the
+    // mood is the same, a step later.
     story.musicMood = -1;
     if (!on && sound != nullptr) {
         sound->stopMusic();

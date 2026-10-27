@@ -28,8 +28,8 @@ namespace coney {
 void stepSystemMusic(StoryState& story, script::SoundHost* sound, GameRandom& random, int mood);
 
 /// Turns the system music on or off: the scripts' hold on the mood ends either way; a change also asks for a new pick
-/// (the original hands the mood back to the game and picks at once; Coney's next step picks) and, turning it off, stops
-/// the music on `sound` (null stops nothing).
+/// and, turning it off, stops the music on `sound` (null stops nothing). **Coney's choice**: the pick is the next
+/// step's (stepSystemMusic()), where the original picks at once.
 /// @orig 0x0041a008 GameState_SetSystemMusic (unknown)
 void setSystemMusic(StoryState& story, script::SoundHost* sound, bool on);
 
