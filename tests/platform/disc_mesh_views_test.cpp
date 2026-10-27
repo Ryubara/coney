@@ -126,27 +126,29 @@ TEST_CASE(
         PlayLevelControls::atomicsOf(*play, PlayLevelControls::kInspectPlayerId);
     REQUIRE(body.size() == 2);
     CHECK(drawnAtomic(body[0]) == 1);
-    const std::optional<MeshFacts> facts = meshFactsOf(*controls.inspect(), PlayLevelControls::kInspectPlayerId);
-    REQUIRE(facts.has_value());
-    CHECK(facts->passes == 1 + static_cast<std::size_t>(drawnAtomic(body[1])));
+    const std::optional<MeshFacts> found = meshFactsOf(*controls.inspect(), PlayLevelControls::kInspectPlayerId);
+    REQUIRE(found.has_value());
+    const MeshFacts facts = found.value_or(MeshFacts{});
+    CHECK(facts.passes == 1 + static_cast<std::size_t>(drawnAtomic(body[1])));
     CHECK(count(DrawKind::Humans, true) == drawnAtomic(body[1]));
-    CHECK(facts->drawCalls == facts->materials * facts->passes);
+    CHECK(facts.drawCalls == facts.materials * facts.passes);
     // No other layer is marked: only a human's blood.
     CHECK(count(DrawKind::Humans, true) + count(DrawKind::Objects, true) + count(DrawKind::Other, true) ==
           drawnAtomic(body[1]));
     std::printf("mesh views: level99 in a window, %td scenery, %td human and %td object draws a frame; the player's "
                 "%zu pass(es)\n",
                 count(DrawKind::Scenery, false), count(DrawKind::Humans, false), count(DrawKind::Objects, false),
-                facts->passes);
+                facts.passes);
 
     // Off for a frame, the hook is asked and not called, the game draws the same passes, and the next frame it is
     // handed the models again.
     hook->on = false;
     run.run(1);
     CHECK(hook->calls.empty());
-    const std::optional<MeshFacts> off = meshFactsOf(*controls.inspect(), PlayLevelControls::kInspectPlayerId);
-    REQUIRE(off.has_value());
-    CHECK(off->passes == facts->passes);
+    const std::optional<MeshFacts> foundOff = meshFactsOf(*controls.inspect(), PlayLevelControls::kInspectPlayerId);
+    REQUIRE(foundOff.has_value());
+    const MeshFacts off = foundOff.value_or(MeshFacts{});
+    CHECK(off.passes == facts.passes);
     hook->on = true;
     run.run(1);
     CHECK_FALSE(hook->calls.empty());
@@ -178,19 +180,20 @@ TEST_CASE("the Mesh group counts a drawn human's model, and what is not a drawn 
         REQUIRE(atomics[0] != nullptr);
         REQUIRE(atomics[1] != nullptr);
         CHECK(atomics[0] != atomics[1]);
-        const std::optional<MeshFacts> facts = meshFactsOf(*controls.inspect(), id);
-        REQUIRE(facts.has_value());
-        CHECK(facts->triangles == static_cast<std::size_t>(atomics[0]->geometry->numTriangles));
-        CHECK(facts->materials == static_cast<std::size_t>(atomics[0]->geometry->matList.numMaterials));
-        CHECK(facts->drawCalls == facts->materials * facts->passes);
+        const std::optional<MeshFacts> found = meshFactsOf(*controls.inspect(), id);
+        REQUIRE(found.has_value());
+        const MeshFacts facts = found.value_or(MeshFacts{});
+        CHECK(facts.triangles == static_cast<std::size_t>(atomics[0]->geometry->numTriangles));
+        CHECK(facts.materials == static_cast<std::size_t>(atomics[0]->geometry->matList.numMaterials));
+        CHECK(facts.drawCalls == facts.materials * facts.passes);
         // Where it is skinned: the vertex shader once the engine runs the skin pipeline (a window), else the CPU.
-        CHECK(facts->skinnedOn == (drawn && coney::platform::characterSkinOn() ? "GPU" : "CPU"));
+        CHECK(facts.skinnedOn == (drawn && coney::platform::characterSkinOn() ? "GPU" : "CPU"));
         // A human near the player is drawn in one pass, or two with blood on him; the Null renderer draws none.
         if (drawn) {
-            CHECK(facts->passes >= 1);
-            CHECK(facts->passes <= 2);
+            CHECK(facts.passes >= 1);
+            CHECK(facts.passes <= 2);
         } else {
-            CHECK(facts->passes == 0);
+            CHECK(facts.passes == 0);
         }
     }
     // Different humans have different atomics.
@@ -213,10 +216,11 @@ TEST_CASE("the Mesh group counts a drawn human's model, and what is not a drawn 
     yard.run(2);
     const std::vector<EntityId> after = humanIds(*controls.inspect());
     REQUIRE(after.size() == humans.size() + 1);
-    const std::optional<MeshFacts> distant = meshFactsOf(*controls.inspect(), after.back());
-    REQUIRE(distant.has_value());
-    CHECK(distant->passes == 0);
-    CHECK(distant->drawCalls == 0);
+    const std::optional<MeshFacts> foundDistant = meshFactsOf(*controls.inspect(), after.back());
+    REQUIRE(foundDistant.has_value());
+    const MeshFacts distant = foundDistant.value_or(MeshFacts{});
+    CHECK(distant.passes == 0);
+    CHECK(distant.drawCalls == 0);
 
     // The fighters the debug menus spawned (the two ahead and the far one, the last AI humans listed) are gone once
     // they are cleared: no Mesh group, no atomics. The layout's own humans stay.

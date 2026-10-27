@@ -148,22 +148,24 @@ TEST_CASE("the flat view draws the selection alone, or every human, and the mode
     mode.setMeshViews(views);
 
     // The selection alone: a flat pass over each of its materials, none over anyone else.
-    const std::optional<MeshFacts> selected = meshFactsOf(*controls.inspect(), humans[1]);
-    REQUIRE(selected.has_value());
+    const std::optional<MeshFacts> foundSelected = meshFactsOf(*controls.inspect(), humans[1]);
+    REQUIRE(foundSelected.has_value());
+    const MeshFacts selected = foundSelected.value_or(MeshFacts{});
     yard.run(1);
-    CHECK(views->passDraws() == selected->materials);
+    CHECK(views->passDraws() == selected.materials);
 
     // Every human: each one drawn as a body gets its materials' passes, the blood layer none.
     options.mesh.viewScope = coney::debug::MeshScope::Humans;
     yard.run(1);
     std::size_t expected = 0;
     for (const EntityId id : humans) {
-        const std::optional<MeshFacts> facts = meshFactsOf(*controls.inspect(), id);
-        REQUIRE(facts.has_value());
-        expected += facts->passes > 0 ? facts->materials : 0;
+        const std::optional<MeshFacts> found = meshFactsOf(*controls.inspect(), id);
+        REQUIRE(found.has_value());
+        const MeshFacts facts = found.value_or(MeshFacts{});
+        expected += facts.passes > 0 ? facts.materials : 0;
     }
     CHECK(views->passDraws() == expected);
-    CHECK(expected > selected->materials);
+    CHECK(expected > selected.materials);
 
     // Everything: the sandbox's own blocks are drawn by its renderer, so the humans are all there is to draw here.
     options.mesh.viewScope = coney::debug::MeshScope::Everything;
@@ -175,7 +177,7 @@ TEST_CASE("the flat view draws the selection alone, or every human, and the mode
     options.inspected = coney::debug::kNoEntity;
     yard.run(1);
     CHECK(views->passDraws() == 0);
-    std::printf("flat view: %zu passes on one human, %zu on every human\n", selected->materials, expected);
+    std::printf("flat view: %zu passes on one human, %zu on every human\n", selected.materials, expected);
 }
 
 TEST_CASE("with every mesh view off a real frame is the same pixel for pixel as without the hook, and after "

@@ -121,12 +121,16 @@ inline std::optional<MeshFacts> meshFactsOf(const coney::debug::EntityInspect& i
     }
     const std::vector<std::size_t> numbers = numbersIn(*calls);
     REQUIRE(numbers.size() == 3);
-    MeshFacts facts{.drawCalls = numbers[0], .materials = numbers[1], .passes = numbers[2]};
     const std::optional<std::string> triangles = coney::debug::watchValue(groups, "Mesh", "Triangles");
     REQUIRE(triangles.has_value());
-    facts.triangles = numbersIn(*triangles).front();
-    facts.skinnedOn = coney::debug::watchValue(groups, "Mesh", "Skinned on").value_or("");
-    return facts;
+    // Read through `value_or` so that the check above is the only way the value is missing.
+    const std::vector<std::size_t> triangleNumbers = numbersIn(triangles.value_or(""));
+    REQUIRE_FALSE(triangleNumbers.empty());
+    return MeshFacts{.drawCalls = numbers[0],
+                     .materials = numbers[1],
+                     .passes = numbers[2],
+                     .triangles = triangleNumbers.front(),
+                     .skinnedOn = coney::debug::watchValue(groups, "Mesh", "Skinned on").value_or("")};
 }
 
 // The ids of the humans the inspector lists, player 1 first.
@@ -223,8 +227,7 @@ inline Opened openYard(Yard& yard, bool window) {
 inline std::vector<std::size_t> passesOfHumans(const coney::platform::PlayLevelControls& controls) {
     std::vector<std::size_t> passes;
     for (const EntityId id : humanIds(*controls.inspect())) {
-        const std::optional<MeshFacts> facts = meshFactsOf(*controls.inspect(), id);
-        passes.push_back(facts ? facts->passes : 0);
+        passes.push_back(meshFactsOf(*controls.inspect(), id).value_or(MeshFacts{}).passes);
     }
     return passes;
 }
