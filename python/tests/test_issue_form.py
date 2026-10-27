@@ -142,7 +142,7 @@ def test_optional_sections_may_be_left_out() -> None:
 
 def test_a_body_without_headings_is_told_to_start_from_the_draft() -> None:
     text = messages("Follow-up to #346. The physics work does not wire it in.\n\nBlocked on #346.\n")
-    assert "no form headings" in text and "issue draft task" in text
+    assert "no form headings" in text and "issue template task" in text
 
 
 def test_a_heading_at_level_two_is_named_with_the_level_the_form_uses() -> None:

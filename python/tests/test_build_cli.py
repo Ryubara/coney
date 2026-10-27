@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Tests for the `coney-tools build` command line (coney_tools.build_cli): its flags, the precheck, the printed summary
-and exit codes, `build status` and `build release`. The toolchain is a fake; the claims are real folders in a
+and exit codes, `build status` and `build unclaim`. The toolchain is a fake; the claims are real folders in a
 temporary directory."""
 
 import getpass

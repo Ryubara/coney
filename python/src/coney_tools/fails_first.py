@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""`coney-tools original fails-first`: a test that fails on the test commit and passes on the fix commit.
+"""`coney-tools orig fails-first`: a test that fails on the test commit and passes on the fix commit.
 
 The workflow writes the test first and commits it alone (docs/guides/stamps.md#fails-first); the test must fail
 (proving it detects the problem) and then pass once the fix is committed. This runs the named tests twice through

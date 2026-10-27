@@ -8,7 +8,7 @@ states and crime types are the code's own numbers, with the scripts' uses counte
 executable. Only names, ids and numbers are kept, never a script's code or a file's bytes.
 
 The pure functions take the walked scripts (`lua4.ChunkFacts` by script name) so the tests can feed them synthetic
-facts; the `topic_*` functions are the disc readers `refs extract` calls.
+facts; the `topic_*` functions are the disc readers `refs refresh` calls.
 
 Research: docs/research/objects.md, docs/research/ai-gangs.md#spawners, docs/research/ai-gangs.md#crimes,
 docs/research/lighting.md#record, docs/guides/research-data.md#reference-lists.

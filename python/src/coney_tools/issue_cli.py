@@ -207,7 +207,7 @@ def _print_result(result: issue_form.CheckResult) -> None:
 
 
 def run_draft(form: str | None) -> int:
-    """`issue draft`: print the blank body of a form."""
+    """`issue template`: print the blank body of a form."""
     root = find_repo_root(Path.cwd())
     conventions = load_conventions(root)
     spec = issue_form.load_form(root, conventions, form or conventions.issues.cli_uses_form)
@@ -237,7 +237,7 @@ def markdown_comment(result: issue_form.CheckResult) -> str:
     lines += [f"- **{problem.kind}**: {problem.message}" for problem in result.problems]
     lines += [
         "",
-        f"`coney-tools issue draft {result.form}` prints the form's exact shape, and "
+        f"`coney-tools issue template {result.form}` prints the form's exact shape, and "
         "[Filing an issue](../blob/main/docs/guides/issues.md#filing) explains the rules. Edit the issue; this "
         "comment is updated when you do, and removed once the issue passes.",
     ]
@@ -323,7 +323,7 @@ def run_create(args: argparse.Namespace, run: Runner = audit_github.run_gh) -> i
     if args.parent is not None:
         if found is None:
             print(
-                f"coney-tools: could not read the new issue's number from {created!r}; link it with `issue link`",
+                f"coney-tools: could not read the new issue's number from {created!r}; link it with `issue set-parent`",
                 file=sys.stderr,
             )
             return 1
@@ -332,7 +332,7 @@ def run_create(args: argparse.Namespace, run: Runner = audit_github.run_gh) -> i
         except OSError as error:
             print(
                 f"coney-tools: the issue exists ({created}) but linking it to #{args.parent} failed: {error}\n"
-                f"  link it with: coney-tools issue link {found.group('number')} --parent {args.parent}",
+                f"  link it with: coney-tools issue set-parent {found.group('number')} --parent {args.parent}",
                 file=sys.stderr,
             )
             return 1
@@ -373,7 +373,7 @@ def run_edit(args: argparse.Namespace, run: Runner = audit_github.run_gh) -> int
 
 
 def run_link(args: argparse.Namespace, run: Runner = audit_github.run_gh) -> int:
-    """`issue link`: make an existing issue a sub-issue of another."""
+    """`issue set-parent`: make an existing issue a sub-issue of another."""
     try:
         link_sub_issue(args.number, args.parent, run, args.dry_run)
     except OSError as error:

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""`coney-tools pcsx2 recipe list | show | run | render`: the shared recipes of research/pcsx2-recipes.toml.
+"""`coney-tools pcsx2 recipes list | show | run | render`: the shared recipes of research/pcsx2-recipes.toml.
 
 `run` works only on a copy the agent holds a claim on and whose PCSX2 runs (the claims of pcsx2_claims.py), over that
 copy's PINE port and, for the emulation steps, its debug server port: never someone else's game.
@@ -33,9 +33,9 @@ def add_commands(commands: Any) -> None:
     sub = recipe.add_subparsers(dest="recipe_command", required=True)
     sub.add_parser("list", help="list every recipe with its one-line summary")
     show = sub.add_parser("show", help="print one recipe: what it does, its parameters, preconditions and steps")
-    show.add_argument("name", help="the recipe's name (pcsx2 recipe list shows them)")
+    show.add_argument("name", help="the recipe's name (pcsx2 recipes list shows them)")
     run = sub.add_parser("run", help="run a recipe on a PCSX2 copy you hold a claim on")
-    run.add_argument("name", help="the recipe's name (pcsx2 recipe list shows them)")
+    run.add_argument("name", help="the recipe's name (pcsx2 recipes list shows them)")
     run.add_argument("--copy", required=True, help="the claimed copy (pcsx2, pcsx2-b, ...)")
     run.add_argument("--agent", required=True, help="your id (must hold the claim)")
     run.add_argument("--arg", action="append", default=[], metavar="NAME=VALUE", help="a parameter; repeatable")
@@ -56,7 +56,7 @@ def add_commands(commands: Any) -> None:
 
 
 def run_command(args: Any) -> int:
-    """Dispatch a `pcsx2 recipe` command."""
+    """Dispatch a `pcsx2 recipes` command."""
     try:
         if args.recipe_command == "render":
             return recipes_render.run_render(args.check)
@@ -143,7 +143,7 @@ def run_recipe(
         # Informational: the runner cannot tell which state the copy was started from.
         print(
             f"note: {name} was confirmed from the library state {recipe.state} "
-            f"(`coney-tools pcsx2 states use {recipe.state} --copy {copy} --agent {agent} --launch`)"
+            f"(`coney-tools pcsx2 states hand-out {recipe.state} --copy {copy} --agent {agent} --launch`)"
         )
     held = run_records_cli.claimed_copy(agent, copy)
     assert held.port is not None  # claimed_copy refuses a copy without PINE
@@ -153,7 +153,7 @@ def run_recipe(
         pending = run_records_cli.draft(
             root,
             kind="recipe",
-            tool="pcsx2 recipe run",
+            tool="pcsx2 recipes run",
             run_name=record.name or name,
             copy=copy,
             state=record.state,

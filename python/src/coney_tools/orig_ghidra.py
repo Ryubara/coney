@@ -4,7 +4,7 @@ matches the tag, and which original functions do the tagged ones call that no ta
 
 Two sources answer the first question. A running ghidra-mcp (docs/guides/ghidra.md) answers it for the project as
 it is now, and also gives each function's callees. Without one, the committed listing
-`docs/progress/ghidra-functions.tsv` (addresses, sizes and our names, exported by `coney-tools progress ghidra`)
+`docs/progress/ghidra-functions.tsv` (addresses, sizes and our names, exported by `coney-tools ghidra export-names`)
 answers it as of its last export; the callees then stay unknown. Only reading endpoints are called, so the checks
 are safe on the server every engineer shares, and nothing of the original's code is read or written.
 """

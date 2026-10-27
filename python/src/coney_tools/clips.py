@@ -2,7 +2,7 @@
 """In-game video clips for issues and pull requests: where they may live, what they may hold, and their upload.
 
 A clip shows the game's own picture only: Coney's frames, read back from its own frame buffer (`coney --record`), or
-the original's, from PCSX2's own capture of its GS output (`coney-tools pcsx2 clip`). Nothing in the tools grabs the
+the original's, from PCSX2's own capture of its GS output (`coney-tools clips record`). Nothing in the tools grabs the
 screen or a window: `run_ffmpeg`, the one way the tools start FFmpeg, refuses any capture device as an input
 (`refuse_screen_capture`). The rules (docs/guides/testing.md#clips), each enforced here:
 

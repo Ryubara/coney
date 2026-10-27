@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The `local` checks of `coney-tools repo audit`: the workspace beside the checkout, read only.
 
-`workspace clean` and `workspace disk` act on the same things; the audit only reports them, with the command that fixes
+`workspace clean` and `workspace check-space` act on the same things; the audit only reports them, with the command that
+fixes
 each, so a coordinator sees disk space, merged worktrees and leftover captures next to the GitHub findings. The limits
 come from `workspace` in `.github/conventions.yml`. Nothing here deletes or changes a file.
 """

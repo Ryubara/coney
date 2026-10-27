@@ -37,7 +37,7 @@ string hashes to an entry. Each name here was checked against its hash.
 
 Evidence levels used: confirmed-code.
 
-- name recovery (coney-tools wad names and the WAD survey)
+- name recovery (coney-tools wad recover-names and the WAD survey)
 
 ## Fields
 

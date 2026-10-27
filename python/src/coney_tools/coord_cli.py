@@ -6,7 +6,7 @@ wake the session when new ids appear (docs/guides/coney-tools-setup.md#coord-wak
 touch the network: the PCSX2 copies (the rows of `pcsx2 status --json`), the build slots and queues
 (`build status --json`), each worktree's last detached build (`build result`), the release queue (the `PR*.md` files in
 the scratch folders) and the tracks (each scratch folder's `STATUS.md`). `--github` adds the open issues (ids and
-labels, no titles), the open pull requests with the `repo pr-health` report, the CI queue's counts and, for the
+labels, no titles), the open pull requests with the `pr list-stuck` report, the CI queue's counts and, for the
 release queue, which units already have a pull request.
 
 `action` lists what waits for the coordinator as stable ids: a new id is new work, and an id that leaves the list was
@@ -114,7 +114,7 @@ class Sources:
     builds: Callable[[], dict[str, Any]] = lambda: {}
     #: A worktree's last detached build (`build result --json`), or None.
     build_result: Callable[[Path], dict[str, Any] | None] = build_cli.result_record
-    #: The judge of `repo pr-health`: (open pull requests, required checks, now) to its JSON report.
+    #: The judge of `pr list-stuck`: (open pull requests, required checks, now) to its JSON report.
     health: Callable[[list[dict[str, Any]], tuple[str, ...], datetime], dict[str, Any]] | None = None
 
 
@@ -304,7 +304,7 @@ def _ci_state(pull: dict[str, Any], required: tuple[str, ...]) -> str:
 
 
 def _prs(src: Sources, now: datetime) -> dict[str, Any]:
-    """The open pull requests (number, branch, draft, mergeable, checks, age) and the `repo pr-health` report."""
+    """The open pull requests (number, branch, draft, mergeable, checks, age) and the `pr list-stuck` report."""
     pulls, required = pr_health.fetch(src.default_branch, src.gh, f"{pr_health.PULL_FIELDS},updatedAt,headRefOid")
     health = src.health(pulls, required, now) if src.health else {"stuck": [], "other": [], "notices": []}
     causes: dict[int, list[str]] = {}

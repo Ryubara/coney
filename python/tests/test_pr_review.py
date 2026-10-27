@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for coney_tools.pr_review: the description hash, the review stamp, `repo check-review` and `repo review`.
+"""Tests for coney_tools.pr_review: the description hash, the review stamp, `legacy check-pr-review` and `legacy
+pr-review`.
 
 Synthetic fixtures only: a made-up description file, made-up image bytes, a fake branch tip and a fake `claude`
 launcher, all under pytest's temporary folder.

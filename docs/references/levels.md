@@ -12,7 +12,7 @@ from `<name>.lev` and its section packs `<name>_<k>.pak` ([Level loading](../res
     is `global.lua`'s `runNextMission` and the hub's `fRunMission`, the flashbacks the hub's
     `FBMission` ([Scripts](../research/scripting.md#run-next-mission)); a Rumble arena lists the modes
     whose flag scripts were found. Titles are `GSTRING.MISSIONNAME` of the English string file (confirmed (data):
-    read from the disc by `refs extract`, the title string only; the hub has none). Where each level puts the
+    read from the disc by `refs refresh`, the title string only; the hub has none). Where each level puts the
     player: [Level starts](level-starts.md).
 
 111 entries. Data: `research/references/levels.yaml`.

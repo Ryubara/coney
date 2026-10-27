@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""`coney-tools original study <addr>`: read one original function from Ghidra, save it, number it, cut it.
+"""`coney-tools orig study <addr>`: read one original function from Ghidra, save it, number it, cut it.
 
 The study is the first half of the side-by-side check (docs/guides/stamps.md#study). From the running ghidra-mcp server
 (the same HTTP endpoints `orig index` reads, reading ones only) it takes the function's decompile, Ghidra's hash of its
@@ -249,14 +249,14 @@ def _read_json(path: Path) -> Any:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
-        raise StudyError(f"{path}: cannot be read ({error}); run `original study` again") from error
+        raise StudyError(f"{path}: cannot be read ({error}); run `orig study` again") from error
 
 
 def load_study(unit: Unit, address: str) -> Study:
     """The saved study of `address`: its files re-read, the decompile's hash and the cut checked against `study.json`.
 
     StudyError when nothing is saved, the decompile was changed since, or the cutter now cuts it differently (then
-    `original study --recut` makes a new study from the saved text).
+    `orig study --recut` makes a new study from the saved text).
     """
     folder = unit.study(address)
     meta = _read_json(folder / "study.json")
@@ -278,7 +278,7 @@ def load_study(unit: Unit, address: str) -> Study:
         },
     )
     if study.cut_sha256 != meta["cut_sha256"]:
-        raise StudyError(f"{address}: the cutter now cuts it differently; run `original study {address} --recut`")
+        raise StudyError(f"{address}: the cutter now cuts it differently; run `orig study {address} --recut`")
     return study
 
 
@@ -331,7 +331,7 @@ def study(
     if fetch is None:
         folder = unit.study(address)
         if not (folder / "study.json").is_file():
-            raise StudyError(f"{address}: nothing saved to re-cut; run `original study {address}` with Ghidra up")
+            raise StudyError(f"{address}: nothing saved to re-cut; run `orig study {address}` with Ghidra up")
         meta = _read_json(folder / "study.json")
         try:
             saved = (folder / "decompile.c").read_bytes()
@@ -344,7 +344,7 @@ def study(
         if last is None or last.result != "pass":
             raise StudyError(
                 f"{address}: no passing studied stamp in {unit.stamps} to re-cut from; "
-                f"fetch it from Ghidra with `original study {address}`"
+                f"fetch it from Ghidra with `orig study {address}`"
             )
         bound = {
             "identity_sha256": _identity_hash(
@@ -365,12 +365,12 @@ def study(
         )
         if not differ and predates:
             raise StudyError(
-                f"{address}: this study's stamp predates the identity check; run `original study {address}` again"
+                f"{address}: this study's stamp predates the identity check; run `orig study {address}` again"
             )
         if differ:
             raise StudyError(
                 f"{folder}: {', '.join(differ)} is not what the latest studied stamp ({last.hash[:12]}) covers "
-                f"(the saved files were changed); fetch it from Ghidra again with `original study {address}`"
+                f"(the saved files were changed); fetch it from Ghidra again with `orig study {address}`"
             )
         raw = saved.decode("utf-8")
         fetched: Mapping[str, Any] = {

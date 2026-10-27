@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""`coney-tools orig copy-check`: decompiler fingerprints in the C++ lines a change adds.
+"""`coney-tools orig check-copy`: decompiler fingerprints in the C++ lines a change adds.
 
 Coney ports the original's behaviour and writes it in its own code (docs/guides/conventions.md#porting): a line that
 still carries what Ghidra's output looks like was transcribed, not ported. This check finds the marks that cannot be
@@ -211,7 +211,7 @@ def run(base: str, every_line: bool) -> int:
     if found:
         counts = {kind: sum(1 for f in found if f.kind == kind) for kind, _ in FINGERPRINTS}
         summary = ", ".join(f"{kind} {count}" for kind, count in counts.items() if count)
-        print(f"orig copy-check: {len(found)} decompiler fingerprint(s) in {scope} ({summary})")
+        print(f"orig check-copy: {len(found)} decompiler fingerprint(s) in {scope} ({summary})")
         return 1
-    print(f"orig copy-check: ok (no decompiler fingerprint in {scope})")
+    print(f"orig check-copy: ok (no decompiler fingerprint in {scope})")
     return 0

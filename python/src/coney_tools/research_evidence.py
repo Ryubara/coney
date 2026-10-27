@@ -217,7 +217,8 @@ def _level_forms(
             "evidence",
             line,
             "no run record exists yet (research/runs/ is missing): a runtime claim waits for one. Write it with "
-            "`coney-tools pcsx2 record-run` (or `pcsx2 recipe run --record`, `pcsx2 record --run-record`), commit it "
+            "`coney-tools pcsx2 record-run` (or `pcsx2 recipes run --record`, `trace original --run-record`), "
+            "commit it "
             "with the page and cite it as `confirmed (runtime), run <id>`. What no run observed is speculative, with "
             "an open question",
         )

@@ -244,7 +244,7 @@ def read_pages_in(root: Path) -> dict[str, str]:
 
 
 def test_the_pages_are_up_to_date() -> None:
-    assert read_pages() == recipes_render.render(recipes.load(ROOT)), "run `coney-tools pcsx2 recipe render`"
+    assert read_pages() == recipes_render.render(recipes.load(ROOT)), "run `coney-tools pcsx2 recipes render`"
 
 
 def test_every_page_keeps_to_the_line_length_outside_tables_and_code() -> None:

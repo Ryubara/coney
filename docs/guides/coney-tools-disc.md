@@ -96,7 +96,7 @@ coney-tools wad info [DISC] [--names NAMES]
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `[DISC]` | text | none | a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml |
-| `--names NAMES` | path | none | a names file, one name per line (made by `wad names`) |
+| `--names NAMES` | path | none | a names file, one name per line (made by `wad recover-names`) |
 
 ### `wad list` {#wad-list-usage}
 
@@ -109,7 +109,7 @@ coney-tools wad list [DISC] [--names NAMES]
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `[DISC]` | text | none | a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml |
-| `--names NAMES` | path | none | a names file, one name per line (made by `wad names`) |
+| `--names NAMES` | path | none | a names file, one name per line (made by `wad recover-names`) |
 
 ### `wad extract` {#wad-extract-usage}
 
@@ -122,7 +122,7 @@ coney-tools wad extract [DISC] OUT_DIR [[DISC] OUT_DIR ...] [--names NAMES] [--o
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `[DISC] OUT_DIR [[DISC] OUT_DIR ...]` | text | required | [DISC] (a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml) and OUT_DIR |
-| `--names NAMES` | path | none | a names file, one name per line (made by `wad names`) |
+| `--names NAMES` | path | none | a names file, one name per line (made by `wad recover-names`) |
 | `--only HASH_OR_NAME [HASH_OR_NAME ...]` | text | none | extract just these entries |
 
 ### `wad recover-names` {#wad-recover-names-usage}

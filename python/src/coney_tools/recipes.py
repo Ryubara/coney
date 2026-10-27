@@ -4,7 +4,7 @@ a field, call one of the game's functions), so no engineer has to work an addres
 
 A recipe lives in `research/pcsx2-recipes.toml` as a table `[recipe.NAME]`: what it does, its parameters, the steps a
 runner makes over PINE (and the PCSX2-MCP fork's debug server), its preconditions, the evidence for it and the Ghidra
-address that justifies it, and when it was last confirmed at runtime. `coney-tools pcsx2 recipe run` makes the steps;
+address that justifies it, and when it was last confirmed at runtime. `coney-tools pcsx2 recipes run` makes the steps;
 `recipe render` writes the recipe pages (docs/guides/pcsx2-recipes.md, the index, and one page per group in
 docs/guides/pcsx2-recipes/) from the same file.
 
@@ -17,7 +17,7 @@ ghidra = ["0x00390180 Handle_Resolve"]
 evidence = "confirmed-runtime"
 patches = []                    # patches or hooks of research/traces/patches/ the running state must hold
 emulation = "either"            # "running", "paused" or "either"
-state = "pedestrian-grab"       # optional: the PCSX2 state library state it starts from (`pcsx2 states use`)
+state = "pedestrian-grab"       # optional: the PCSX2 state library state it starts from (`pcsx2 states hand-out`)
 confirmed_runtime = { date = "2026-10-21", copy = "pcsx2-d", pcsx2 = "2.9.129", state = "level99 street" }
 params = [ { name = "who", kind = "text", default = "", help = "a human's name; empty for the player" } ]
 steps = [

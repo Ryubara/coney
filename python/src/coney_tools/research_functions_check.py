@@ -143,7 +143,7 @@ def check(
                 container = _container(starts, listed, entry.address)
                 message = (
                     f"{label}: not a function entry in {listing_file} "
-                    "(a wrong address, or the listing needs `coney-tools progress ghidra`)"
+                    "(a wrong address, or the listing needs `coney-tools ghidra export-names`)"
                 )
                 if container is not None:
                     # Inside a function Ghidra lists, so not the start of another: the address is wrong.

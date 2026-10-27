@@ -1,6 +1,6 @@
 # The PCSX2 recipes: the shared, verified ways to do basic things in the running original (NTSC-U SLUS_212.15), so
-# no engineer works an address out again. `coney-tools pcsx2 recipe list | show | run` reads this file and
-# `coney-tools pcsx2 recipe render` writes docs/guides/pcsx2-recipes.md and one page per group in
+# no engineer works an address out again. `coney-tools pcsx2 recipes list | show | run` reads this file and
+# `coney-tools pcsx2 recipes render` writes docs/guides/pcsx2-recipes.md and one page per group in
 # docs/guides/pcsx2-recipes/ from it (CI runs `--check`).
 # Schema: python/src/coney_tools/recipes.py. Names, addresses and our own descriptions only: no game data
 # (LEGAL.md). A recipe lands only once it has been run in PCSX2 (confirmed_runtime). Found a new technique? Add it
@@ -23,24 +23,24 @@ Each recipe is one thing an engineer often needs to do in the original running i
 one, change a field, call one of the game's functions or a script binding, load a checkpoint. Every recipe has been
 run in PCSX2 and says when, on which copy and from which state; each names the Ghidra address that justifies it and
 the research page that explains it. The list is generated from `research/pcsx2-recipes.toml` by
-`coney-tools pcsx2 recipe render`; edit that file, never these pages. The recipes are in groups, one page each;
+`coney-tools pcsx2 recipes render`; edit that file, never these pages. The recipes are in groups, one page each;
 this page lists every recipe under its group and links to its section.
 
 Run a recipe on a copy you hold a claim on ([Driving PCSX2](research-tools.md#driving-pcsx2)):
 `coney-tools pcsx2 claim --agent ID`, `coney-tools pcsx2 launch --agent ID STATE`, then
-`coney-tools pcsx2 recipe run NAME --copy COPY --agent ID --arg name=value`. `recipe list` lists them and
+`coney-tools pcsx2 recipes run NAME --copy COPY --agent ID --arg name=value`. `recipe list` lists them and
 `recipe show NAME` prints one. The runner talks to the copy's PINE port (and its debug server for the emulation
 steps), so the `pcsx2` MCP server must be connected in `mode: "debug"`, which leaves PINE free. It checks first that
 the copy runs, that you hold its claim, that the emulation is running or paused as the recipe needs, and that the
 running state holds every patch the recipe names: a patch goes into a copy of a state with
-`coney-tools pcsx2 prepare-state SOURCE OUT --patch NAME ...` before PCSX2 starts on it.
+`coney-tools pcsx2 states patch SOURCE OUT --patch NAME ...` before PCSX2 starts on it.
 
 A run that backs a research claim is recorded: add `--record --state ID` (the library state the copy started from, or
 `unknown`) and a good run writes `research/runs/<id>.toml` with the numbers it showed, for the page to cite as
 `confirmed (runtime), run <id>` ([Run records](research-evidence.md#run-records)).
 
 Start from the shared state library rather than driving to the same place again: `coney-tools pcsx2 states list`
-shows the saved places ([PCSX2 states](pcsx2-states.md)) and `coney-tools pcsx2 states use ID --copy COPY --agent ID
+shows the saved places ([PCSX2 states](pcsx2-states.md)) and `coney-tools pcsx2 states hand-out ID --copy COPY --agent ID
 --launch` starts your copy on one. A recipe that needs a particular scene names its state among its preconditions (`recipe run` prints it; the runner
 cannot tell which state the copy was started from).
 
@@ -52,7 +52,7 @@ used as a level script uses it; [the script bindings](../references/bindings/ind
 arguments.
 
 **Input: prefer recordings.** For runtime evidence that depends on input, drive the original with a PCSX2 input
-recording (`pcsx2 record --recording`, [Input recordings](research-tools.md#input-recordings)): it replays the
+recording (`trace original --recording`, [Input recordings](research-tools.md#input-recordings)): it replays the
 same pad frame by frame. The `scripted-pad` recipes are for closed-loop drivers that decide each input from
 what the game shows, which a recording cannot do.
 """
@@ -351,7 +351,7 @@ call block at `0x000af000` every update: the function's address at `+0x0` (0 whe
 writes the arguments, then the address; the hook clears the address, makes the call on the game's thread, stores
 `v0` and counts it. Only integer and pointer arguments: a function that takes a float in `f12` gets whatever is
 there, so call such functions through their script binding with `lua`. The state must have the hook installed
-(`pcsx2 prepare-state ... --patch call-brains`) and the game must be running.
+(`pcsx2 states patch ... --patch call-brains`) and the game must be running.
 """
 research = ["docs/guides/research-traces.md#hooks"]
 ghidra = ["0x00293b28 Brains_Update"]
@@ -806,7 +806,7 @@ and `0x005de3ac`-`0x005de3af` the right stick's x, y and the left stick's x, y. 
 Sticks are given as an input script's percentages (y up) and turned into bytes exactly as Coney does
 (`160 + round(0.95 v)` above 0, `95 - round(0.95 |v|)` below, 128 at rest), so both games see the same stick; use
 partial deflections ([Drive it like a gamepad](testing.md#gamepad)). The patch must be in the state before the code is
-compiled: `pcsx2 prepare-state SOURCE OUT --patch scripted-pad right-stick`, then launch OUT. Find the player as the
+compiled: `pcsx2 states patch SOURCE OUT --patch scripted-pad right-stick`, then launch OUT. Find the player as the
 human whose `+0x1b0` is 0 (`find-player`); the per-player record is indexed by its `+0x92`. For input that does not
 depend on what the game shows, use an input recording instead ([Input recordings](research-tools.md#input-recordings)).
 """
@@ -934,7 +934,7 @@ the level's record by name (`0x0015c7b0`), sets mode 8's next level (`0x005e5d90
 `+0x14c` to 3, and the front end then loads the level, whose script starts at that checkpoint
 ([InitLevel](../research/level-loading.md#initlevel)). The recipe runs both in one `lua` chunk. The load takes several
 seconds; run `where` afterwards. A save state is the faster way back to the same place: take one from the
-[state library](pcsx2-states.md) (`coney-tools pcsx2 states list --level LEVEL`, then `states use`), or, when it is
+[state library](pcsx2-states.md) (`coney-tools pcsx2 states list --level LEVEL`, then `states hand-out`), or, when it is
 not there, make one with the debug server's save (`pcsx2_save_state` to a file of your own, never a quick-save slot)
 and add it with `states add`, so nobody has to load the level again.
 """

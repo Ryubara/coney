@@ -1,5 +1,5 @@
 # World flags: a part of research/references/flags.yaml, which holds the list's prose and
-# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+# defaults. Written by `coney-tools refs refresh`, which keeps the hand-written fields.
 entries:
   - {id: "level52:fSWalk", level: level52, name: fSWalk, heading: 0, script: level52}
   - {id: "level52:fHideEliminator2_03", level: level52, name: fHideEliminator2_03, pos: [505.6, -166.3, 0], heading: 324, activity: 21, script: level52}

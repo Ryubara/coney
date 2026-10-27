@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for `original study`: a fake ghidra-mcp serving an invented function, files in a temporary scratch folder."""
+"""Tests for `orig study`: a fake ghidra-mcp serving an invented function, files in a temporary scratch folder."""
 
 import json
 from datetime import UTC, datetime, timedelta
@@ -42,7 +42,7 @@ int Widget_Update(long param_1,int param_2)
 
 
 class FakeGhidra:
-    """Serves the endpoints `original study` reads, for one invented function."""
+    """Serves the endpoints `orig study` reads, for one invented function."""
 
     def __init__(self) -> None:
         self.text = WIDGET
@@ -276,7 +276,7 @@ def test_recut_refuses_a_decompile_that_was_edited_after_the_study(tmp_path: Pat
         saved.read_text(encoding="utf-8").replace("  Widget_PlaySound(param_1,0x2a);\n", ""), encoding="utf-8"
     )
     before = len(stamp_list(tmp_path))
-    with pytest.raises(StudyError, match="original study"):
+    with pytest.raises(StudyError, match="orig study"):
         run(tmp_path, None)
     assert len(stamp_list(tmp_path)) == before
 
@@ -407,7 +407,7 @@ def predate_the_identity(unit_dir: Path) -> None:
 def test_recut_says_when_the_stamp_predates_the_identity_check(tmp_path: Path) -> None:
     run(tmp_path, FakeGhidra())
     predate_the_identity(tmp_path / "t")
-    with pytest.raises(StudyError, match="predates the identity check; run `original study"):
+    with pytest.raises(StudyError, match="predates the identity check; run `orig study"):
         run(tmp_path, None)
 
 

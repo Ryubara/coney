@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for `coney-tools repo pr-health`: made-up pull requests in the shape `gh pr list --json` gives, no network."""
+"""Tests for `coney-tools pr list-stuck`: made-up pull requests in the shape `gh pr list --json` gives, no network."""
 
 import argparse
 import json

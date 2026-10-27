@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Read the engine reference lists from the player's own executable and scripts: camera types and switches, screen
-effects and AI goal types (`coney-tools refs extract`).
+effects and AI goal types (`coney-tools refs refresh`).
 
 Camera types are checked against each class's own type function (vtable slot `+0x1e8`) and named by the class tag
 the game allocates them with; screen effects come from the queue's jump table, the effect-layer tags and the

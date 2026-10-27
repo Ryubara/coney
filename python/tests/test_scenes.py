@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for the scene record reader and `wad scenes`, on made-up records built here byte by byte."""
+"""Tests for the scene record reader and `wad scene-info`, on made-up records built here byte by byte."""
 
 import struct
 import zlib
@@ -162,7 +162,7 @@ def test_scene_list_round_trip() -> None:
 
 
 def test_wad_scenes_command(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """`wad scenes` finds records by name, and a cut name by content, then prints counts only."""
+    """`wad scene-info` finds records by name, and a cut name by content, then prints counts only."""
     records = made_up_scene()
     long_name = "sixteen_chars_ab"  # the list holds 16 characters; the file's real name is longer
     records[long_name] = header_record(long_name.encode(), b"", 30, 1.0)

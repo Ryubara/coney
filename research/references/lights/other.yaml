@@ -1,5 +1,5 @@
 # Lights: a part of research/references/lights.yaml, which holds the list's prose and
-# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+# defaults. Written by `coney-tools refs refresh`, which keeps the hand-written fields.
 entries:
   - {id: "global:1", type: directional, pos: [0, 0, 0], radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}
   - {id: "global:2", type: directional, pos: [0, 0, 0], radius: 0, cone: 1, flicker: 0, group: 1, state: 1, script: global}

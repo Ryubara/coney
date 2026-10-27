@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""`coney-tools repo hygiene`: what the `hygiene` workflow runs. Writes the audit's findings back as comments.
+"""`coney-tools repo post-findings`: what the `hygiene` workflow runs. Writes the audit's findings back as comments.
 
 `--event N` is for one issue or pull request that just changed: it audits GitHub, then creates, edits or resolves that
 item's one comment. `--sweep` is the weekly run: it audits the checkout and GitHub, keeps the report comment on the
@@ -142,7 +142,8 @@ def _audit_args(args: argparse.Namespace) -> argparse.Namespace:
 def run_hygiene(
     args: argparse.Namespace, remote: Remote | None = None, now: datetime | None = None, fetch: Fetch = download
 ) -> int:
-    """Run `coney-tools repo hygiene`; `remote`, `now` and `fetch` (the attachment download) are replaced in tests."""
+    """Run `coney-tools repo post-findings`; `remote`, `now` and `fetch` (the attachment download) are replaced in
+    tests."""
     root = find_repo_root(Path.cwd())
     conventions = load_conventions(root)
     github: Remote = remote if remote is not None else GhRemote()

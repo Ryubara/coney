@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""`coney-tools pcsx2 clip`: a short clip of the original, from PCSX2's own video capture of its GS output.
+"""`coney-tools clips record`: a short clip of the original, from PCSX2's own video capture of its GS output.
 
 PCSX2 encodes the frames its GS renders (and the sound its SPU2 mixes) with its own FFmpeg, from inside the
 emulator; nothing on the desktop is read. For the run, the claimed copy's ini switches that capture on, sends it to
@@ -102,7 +102,7 @@ def run_clip(
     flags: tuple[Path | None, Path | None, Path | None],
     agent: str | None,
 ) -> int:
-    """`pcsx2 clip`: start PCSX2 on `state` under `agent`'s claim, capture `seconds` of its GS output and sound with
+    """`clips record`: start PCSX2 on `state` under `agent`'s claim, capture `seconds` of its GS output and sound with
     PCSX2's own capture, and write the clip to `out` (checked as clips.check_clip_path says). The claim is released
     afterwards when this call made it."""
     rules = clips.clip_rules()

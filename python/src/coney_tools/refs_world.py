@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Read the world reference lists from the player's own disc: world flags, object zones, volume boxes, and the
-scenes and movies (`coney-tools refs extract`).
+scenes and movies (`coney-tools refs refresh`).
 
 Flags, zones and boxes come from the level scripts' calls (`AddFlag`, `ObjEnableZone`, `ObjSpawn`, `AddVolumeBox`,
 `GangAddTurfBox`); scenes from the scene list `scene_list.cnk` and the scripts' `ScenePreload` calls; movies from the

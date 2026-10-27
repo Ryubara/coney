@@ -65,7 +65,7 @@ measures too. A port tagged at an address the listing has no function at yet cou
 until Ghidra defines it. Before the database held the list (October 2026) the sizes were kept by hand in
 `docs/progress/functions.toml`, estimated from the disc; the move changed the Reimplemented bar from 33.3% to 33.9%,
 mostly because the hand-kept sizes of a few large functions were too small and 19 had none. `coney-tools progress
-sizes` still checks the sizes against your own disc. How to use the commands: [The progress
+check-sizes` still checks the sizes against your own disc. How to use the commands: [The progress
 commands](../guides/coney-tools-references.md#progress).
 
 ## How the picture is drawn {#the-picture}

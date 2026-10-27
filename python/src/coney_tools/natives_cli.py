@@ -54,7 +54,7 @@ def run_render(check_only: bool) -> int:
         if not check_only:
             (folder / name).unlink()
     if check_only and stale:
-        print(f"natives: stale: {', '.join(stale)}; run `uv run --project python coney-tools natives render`")
+        print(f"natives: stale: {', '.join(stale)}; run `uv run --project python coney-tools bindings render`")
         return 1
     print(f"natives: {'updated ' + ', '.join(stale) if stale else 'up to date'} ({len(masterlist.bindings)} bindings)")
     return 0
@@ -77,7 +77,7 @@ def run_cpp(check_only: bool) -> int:
     if check_only and stale:
         print(
             f"natives: {natives_cpp.CPP_FILE.as_posix()} is stale;"
-            " run `uv run --project python coney-tools natives cpp`"
+            " run `uv run --project python coney-tools bindings render-cpp`"
         )
         return 1
     if stale:
@@ -138,7 +138,7 @@ def run_coney(check_only: bool) -> int:
     if check_only and stale:
         print(
             f"natives: coney status stale in {', '.join(stale)}; run"
-            " `uv run --project python coney-tools natives coney`"
+            " `uv run --project python coney-tools bindings sync-coney`"
         )
         return 1
     counts = collections.Counter(table.values())
@@ -177,10 +177,11 @@ def run_mission1(disc_arg: str | None, check_only: bool) -> int:
     )
     if check_only and stale:
         print(
-            f"natives: mission1 stale in {', '.join(stale)}; run `uv run --project python coney-tools natives mission1`"
+            f"natives: mission1 stale in {', '.join(stale)}; "
+            "run `uv run --project python coney-tools bindings scan-usage --first-mission`"
         )
         return 1
-    state = f"updated {', '.join(stale)}; run `natives render`" if stale else "mission1 up to date"
+    state = f"updated {', '.join(stale)}; run `bindings render`" if stale else "mission1 up to date"
     print(f"natives: {state}")
     return 0
 
@@ -244,9 +245,10 @@ def run_missions(disc_arg: str | None, check_only: bool) -> int:
     stale = _rewrite_data(root, lambda text: natives_mission.set_levels(text, levels_of), check_only)
     if check_only and stale:
         print(
-            f"natives: levels stale in {', '.join(stale)}; run `uv run --project python coney-tools natives missions`"
+            f"natives: levels stale in {', '.join(stale)}; "
+            "run `uv run --project python coney-tools bindings scan-usage --story`"
         )
         return 1
-    state = f"updated {', '.join(stale)}; run `natives render`" if stale else "levels up to date"
+    state = f"updated {', '.join(stale)}; run `bindings render`" if stale else "levels up to date"
     print(f"natives: {state}")
     return 0

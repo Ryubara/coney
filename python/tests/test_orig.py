@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for `coney-tools orig index` and `orig queue`, on a made-up checkout with invented addresses and names."""
+"""Tests for `coney-tools orig index` and `orig legacy-queue`, on a made-up checkout with invented addresses and
+names."""
 
 import dataclasses
 import json

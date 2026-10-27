@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Read the gameplay reference lists from the player's own disc: inventory items, unlockables, power and Warrior
-classes, attack kinds and tables, hat fittings, the Rumble roster and the statistics (`coney-tools refs extract`).
+classes, attack kinds and tables, hat fittings, the Rumble roster and the statistics (`coney-tools refs refresh`).
 
 All of them come from what the configuration scripts pass to the `Cfg*` bindings and from the tables `global.lua`
 builds (`Unlockables`, `PointsMatrix`); what the numbers mean comes from the research pages, kept here as small
@@ -1119,7 +1119,7 @@ STATISTICS = Topic(
 #: The topics of this module, in index order.
 TOPICS = (INVENTORY, UNLOCKABLES, POWER_CLASSES, WARRIOR_CLASSES, ATTACKS, HATS, RUMBLE, STATISTICS)
 
-#: `coney-tools refs extract`'s readers for them.
+#: `coney-tools refs refresh`'s readers for them.
 EXTRACTORS = {
     "inventory": topic_inventory,
     "unlockables": topic_unlockables,

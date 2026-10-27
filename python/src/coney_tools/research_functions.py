@@ -168,7 +168,7 @@ def _string(item: dict[str, Any], key: str, label: str, problems: list[str], *, 
 def _decompiled(text: str, key: str, label: str, problems: list[str]) -> None:
     """Note a problem when the free text `text` carries decompiler output (LEGAL.md#research-limits).
 
-    The marks are `orig copy-check`'s (Ghidra's made-up names and types, a raw read at a byte offset), so the database
+    The marks are `orig check-copy`'s (Ghidra's made-up names and types, a raw read at a byte offset), so the database
     and the C++ refuse the same things, as the research pages do (`docs check`'s `decompile`: an unnamed function is
     cited by its address, not as `FUN_...`). `goto` is left out: in prose it is a word.
     """

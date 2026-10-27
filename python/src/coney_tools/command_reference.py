@@ -9,7 +9,7 @@ Every group of the command line has one block in the guide page of its cluster, 
     <!-- command-reference:end -->
 
 `docs render` rewrites the blocks, `--check` changes nothing and fails when one is stale, as CI does, and
-`check_blocks` is the same gate as a list of problems for `repo audit --files` (so `check changed` and CI run it): a
+`check_blocks` is the same gate as a list of problems for `repo audit --files` (so `ci run` and CI run it): a
 group with no block, a group with two, a marker that names no group, a stale block (one finding for each, naming its
 group) and a command or parameter that has no help text. A command added by someone else appears in its group's block
 when the block is rendered again; a new group needs its markers placed once, on the page of the cluster it belongs to.

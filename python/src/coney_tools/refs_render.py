@@ -294,7 +294,7 @@ def index(
         ]
     lines += [
         "Everything here is a name, an id, a number or our own short description, read from the player's own disc by",
-        "`coney-tools refs extract` and checked by hand. No game text, script source, model or image from the disc is",
+        "`coney-tools refs refresh` and checked by hand. No game text, script source, model or image from the disc is",
         'copied ([LEGAL.md](repo:LEGAL.md#no-game-data), "Reference lists").',
         "",
         "## Lists",
@@ -340,14 +340,14 @@ def index(
         "| Particle effects (traced sprites) | the sprite scaled to fit 64 x 64 | `particles/<name>.png` | "
         "`particles/part_fire.png` |",
         "",
-        "`coney-tools refs extract` fills an entry's `image` field when its file exists; a missing image is simply",
+        "`coney-tools refs refresh` fills an entry's `image` field when its file exists; a missing image is simply",
         "left out of the table.",
         "",
         "## Contributing",
         "",
         "Edit the YAML in `research/references/`, then run `uv run --project python coney-tools refs render`. The",
         "hand-written fields (who a character is, what a constant means) are kept when the lists are refreshed from",
-        "the disc with `coney-tools refs extract`. The schema and rules are in",
+        "the disc with `coney-tools refs refresh`. The schema and rules are in",
         "[The research data](../guides/research-data.md#reference-lists).",
     ]
     return "\n".join(lines) + "\n"

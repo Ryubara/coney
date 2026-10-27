@@ -793,7 +793,7 @@ def test_running_a_recipe_with_a_start_state_names_it(
     monkeypatch.setattr(pcsx2_claims, "default_registry", no_registry)
     with pytest.raises(ConfigError, match="stop here"):
         recipes_cli.run_recipe(book, "spawn-human", "pcsx2-z", "me", [], False)
-    assert "states use pedestrian-grab --copy pcsx2-z --agent me --launch" in capsys.readouterr().out
+    assert "states hand-out pedestrian-grab --copy pcsx2-z --agent me --launch" in capsys.readouterr().out
 
 
 # -- recipes name a library state

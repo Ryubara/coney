@@ -41,7 +41,7 @@ from coney_tools.pcsx2_states import (
 from coney_tools.pine import PineClient, PineError
 from coney_tools.wad import refuse_inside_repo
 
-#: The folder of a PCSX2 copy that holds the files `states use` hands out (outside `sstates/`, where the quick-save
+#: The folder of a PCSX2 copy that holds the files `states hand-out` hands out (outside `sstates/`, where the quick-save
 #: slots live).
 USE_FOLDER = "library-states"
 #: The page whose marked block `render` rewrites.
@@ -318,7 +318,8 @@ def _patches_in(memory: StateMemory) -> tuple[str, ...]:
 
 
 def run_use(library: Library, state_id: str, copy: str, agent: str, patch_names: list[str], launch: bool) -> int:
-    """`states use`: write a copy of the state into the claimed copy's `library-states/` folder (with the named patches
+    """`states hand-out`: write a copy of the state into the claimed copy's `library-states/` folder (with the named
+    patches
     applied) and print its path; the library file is only read, and checked against the catalog first. With `launch`
     it also starts PCSX2 on the copy."""
     registry = claims.default_registry()

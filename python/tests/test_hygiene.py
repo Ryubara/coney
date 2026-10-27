@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for `coney-tools repo hygiene` and the hygiene workflow: made-up GitHub data and a fake remote, no network."""
+"""Tests for `coney-tools repo post-findings` and the hygiene workflow: made-up GitHub data and a fake remote, no
+network."""
 
 import argparse
 import dataclasses
@@ -345,7 +346,7 @@ def snapshot_file(tmp_path: Path, **kwargs: Any) -> Path:
 
 
 def namespace(snapshot: Path, event: int | None = None, apply: bool = True) -> argparse.Namespace:
-    """The parsed options of `repo hygiene`."""
+    """The parsed options of `repo post-findings`."""
     return argparse.Namespace(event=event, sweep=event is None, apply=apply, snapshot=snapshot)
 
 
@@ -502,7 +503,7 @@ def test_it_reacts_to_item_events_and_can_be_run_by_hand() -> None:
 def test_it_labels_the_pull_requests_on_every_push_to_the_default_branch() -> None:
     assert triggers(workflow())["push"] == {"branches": [CONVENTIONS.repo.default_branch]}
     text = WORKFLOW.read_text(encoding="utf-8")
-    assert text.count("coney-tools repo pr-health --labels --apply") == 2  # the push case and the sweep
+    assert text.count("coney-tools pr list-stuck --labels --apply") == 2  # the push case and the sweep
     assert "push)" in text and "github.event_name == 'push'" in text
 
 
@@ -526,7 +527,7 @@ def test_a_comment_workflow_is_not_a_required_check() -> None:
 
 def test_the_workflow_runs_the_command_the_conventions_describe() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
-    assert "coney-tools repo hygiene --event" in text and "coney-tools repo hygiene --sweep" in text
+    assert "coney-tools repo post-findings --event" in text and "coney-tools repo post-findings --sweep" in text
     assert "--apply" in text
 
 

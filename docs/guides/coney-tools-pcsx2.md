@@ -28,9 +28,9 @@ command that starts PCSX2 needs one.
 
 ```sh
 uv run --project python coney-tools pcsx2 claim --agent ID [--copy NAME] [--json]
-uv run --project python coney-tools pcsx2 release --agent ID [--copy NAME] [--force]
+uv run --project python coney-tools pcsx2 unclaim --agent ID [--copy NAME] [--force]
 uv run --project python coney-tools pcsx2 status [--json]
-uv run --project python coney-tools pcsx2 check-ports --agent ID [--debug-port N] [--pine-port N]
+uv run --project python coney-tools pcsx2 check-claim --agent ID [--debug-port N] [--pine-port N]
 ```
 
 `claim` takes a free copy (or the named one) atomically and prints its folder, PINE port and debug server port (a line
@@ -56,7 +56,7 @@ the debug server and PINE ports of one copy whose live claim ID holds, and exits
 MCP server, a hook makes the same check before `pcsx2_connect` ([The PCSX2 MCP guard](agents.md#pcsx2-guard)).
 
 ```sh
-uv run --project python coney-tools pcsx2 keys --agent ID --copy NAME KEY [KEY...] [--hold-ms N] [--gap-ms N]
+uv run --project python coney-tools pcsx2 send-keys --agent ID --copy NAME KEY [KEY...] [--hold-ms N] [--gap-ms N]
 uv run --project python coney-tools pcsx2 screenshot --copy NAME --out PNG
 ```
 
@@ -66,7 +66,7 @@ arrows, `f1`..`f12`), each held `--hold-ms` (default 300). `screenshot` writes t
 handle, so it works while other windows cover it (not while it is minimised); it is refused inside the repository.
 
 ```sh
-uv run --project python coney-tools pcsx2 prepare-state SOURCE OUT [--patch NAME ...]
+uv run --project python coney-tools pcsx2 states patch SOURCE OUT [--patch NAME ...]
 ```
 
 Copies a save state (a `.p2s` file, or `slot:N` for quick-save slot N, which is only read) to `OUT` with the named
@@ -75,7 +75,7 @@ repository or in PCSX2's `sstates/` folder, and refuses the copy when the state 
 instruction words. PCSX2 saves states with zstd, which Python reads from 3.14 (uv installs it).
 
 ```sh
-uv run --project python coney-tools pcsx2 repack-state SOURCE OUT
+uv run --project python coney-tools pcsx2 states repack SOURCE OUT
 ```
 
 Copies a save state (a `.p2s` file or `slot:N`, only read) to `OUT` with every compressed entry rewritten with plain
@@ -94,14 +94,14 @@ returns once PINE answers; when the copy runs the debug server, it also waits fo
 only way agents start PCSX2: it never takes the keyboard focus (WMI starts the
 process outside the agent's process tree; why: [Driving PCSX2](research-tools.md#driving-pcsx2)). With
 `CONEY_WINDOW_DISPLAY` set ([Which display](running-options.md#window-display)), it moves each PCSX2 window onto that
-display as it appears, without activating it; `pcsx2 record` does the same. It refuses to
+display as it appears, without activating it; `trace original` does the same. It refuses to
 start when something already serves PINE or the copy's debug server port. It runs under `--agent`'s claim (made, and
 kept, if you hold none) and records
 PCSX2's pid in it;
 `--pcsx2-dir` must be that claim's copy.
 
 ```sh
-uv run --project python coney-tools pcsx2 record SCENARIO --out CSV --agent ID [--state SOURCE] [--attach] [--keep-open]
+uv run --project python coney-tools trace original SCENARIO --out CSV --agent ID [--state SOURCE] [--attach] [--keep-open]
                                      [--recording P2M2] [--run-record --library-state ID|unknown [--run-name NAME]]
 ```
 
@@ -153,7 +153,7 @@ back), checking each copy's SHA-256. A different file already there needs `--for
 in the copy with the MCP server's `pcsx2_input_recording` ([Input recordings](research-tools.md#input-recordings)).
 
 ```sh
-uv run --project python coney-tools pcsx2 clip STATE --out CLIP --agent ID [--seconds N] [--iso DISC] [--scratch DIR]
+uv run --project python coney-tools clips record STATE --out CLIP --agent ID [--seconds N] [--iso DISC] [--scratch DIR]
 ```
 
 Records a short clip of the original (`--seconds`, 1 to 10, default 10) with **PCSX2's own video capture of its GS
@@ -172,11 +172,11 @@ and likewise `--scratch DIR` (an absolute path) without `scratch_dir`.
 handle). PCSX2 starts on `STATE` under `--agent`'s claim, released at the end when `clip` made it.
 
 ```sh
-uv run --project python coney-tools pcsx2 recipe list
-uv run --project python coney-tools pcsx2 recipe show NAME
-uv run --project python coney-tools pcsx2 recipe run NAME --copy COPY --agent ID [--arg NAME=VALUE ...] [--json]
+uv run --project python coney-tools pcsx2 recipes list
+uv run --project python coney-tools pcsx2 recipes show NAME
+uv run --project python coney-tools pcsx2 recipes run NAME --copy COPY --agent ID [--arg NAME=VALUE ...] [--json]
     [--record --state ID|unknown [--name NAME]]
-uv run --project python coney-tools pcsx2 recipe render [--check]
+uv run --project python coney-tools pcsx2 recipes render [--check]
 ```
 
 The shared [PCSX2 recipes](pcsx2-recipes.md) of `research/pcsx2-recipes.toml` (the schema is the docstring of
@@ -225,7 +225,7 @@ uv run --project python coney-tools pcsx2 states list [--level LEVEL] [--tag TAG
 uv run --project python coney-tools pcsx2 states show ID [--json]
 uv run --project python coney-tools pcsx2 states add FILE --id ID --desc TEXT [--level L] [--checkpoint N] [--tag T ...]
     [--made-by TEXT] [--author NAME] [--copy COPY --agent ID] [--position X,Y,Z] [--heading DEG] [--no-read]
-uv run --project python coney-tools pcsx2 states use ID --copy COPY --agent ID [--patch NAME ...] [--launch]
+uv run --project python coney-tools pcsx2 states hand-out ID --copy COPY --agent ID [--patch NAME ...] [--launch]
 uv run --project python coney-tools pcsx2 states verify [ID ...]
 uv run --project python coney-tools pcsx2 states render [--out PAGE]
 ```
@@ -434,7 +434,7 @@ coney-tools pcsx2 recipes show NAME
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `NAME` | text | required | the recipe's name (pcsx2 recipe list shows them) |
+| `NAME` | text | required | the recipe's name (pcsx2 recipes list shows them) |
 
 ### `pcsx2 recipes run` {#pcsx2-recipes-run-usage}
 
@@ -447,7 +447,7 @@ coney-tools pcsx2 recipes run NAME --copy COPY --agent AGENT [--arg NAME=VALUE] 
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `NAME` | text | required | the recipe's name (pcsx2 recipe list shows them) |
+| `NAME` | text | required | the recipe's name (pcsx2 recipes list shows them) |
 | `--copy COPY` | text | required | the claimed copy (pcsx2, pcsx2-b, ...) |
 | `--agent AGENT` | text | required | your id (must hold the claim) |
 | `--arg NAME=VALUE` | text | none | a parameter; repeatable |
@@ -624,8 +624,8 @@ uv run --project python coney-tools clips clean [--older-than HOURS] [--dry-run]
 ```
 
 In-game video clips for issues and pull requests, made by `coney --record` ([Recording a
-clip](running-options.md#record)) or `pcsx2 clip` (above). The rules and why: [Clips](testing.md#clips); the limits are
-`workspace.clips` in `.github/conventions.yml`.
+clip](running-options.md#record)) or `clips record` (above). The rules and why: [Clips](testing.md#clips); the limits
+are `workspace.clips` in `.github/conventions.yml`.
 
 * `folder` makes and prints a task's clips folder, `<scratch>/<task>/clips/`, where `<scratch>` is the workspace's
   shared scratch folder (`../../scratch` beside the main checkout).
@@ -638,7 +638,7 @@ clip](running-options.md#record)) or `pcsx2 clip` (above). The rules and why: [C
   fails, it keeps them and says so (exit 1). A body may place a clip with a `./clips/<name>.mp4` reference, which gh
   replaces with the upload when the clip is named the same way. It is the only way clips are uploaded.
 * `clean` deletes every file in the task clips folders older than `keep_hours` (24; `--older-than` overrides it),
-  including what a failed recording left (part files, a `pcsx2 clip` staging folder); `--dry-run` only counts.
+  including what a failed recording left (part files, a `clips record` staging folder); `--dry-run` only counts.
 
 FFmpeg and ffprobe are found in `ffmpeg_dir` of `coney.local.toml`, else beside `CONEY_FFMPEG` (the variable Coney's
 `--record` reads), else on `PATH`. Every FFmpeg command the tools run goes through `clips.run_ffmpeg`, which refuses a

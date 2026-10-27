@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for `coney-tools orig copy-check`: decompiler fingerprints in changed C++ lines, on invented code only."""
+"""Tests for `coney-tools orig check-copy`: decompiler fingerprints in changed C++ lines, on invented code only."""
 
 from pathlib import Path
 

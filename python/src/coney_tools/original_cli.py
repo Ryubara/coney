@@ -52,7 +52,7 @@ def add_commands(commands: Any) -> None:
         description=(
             "The first run writes mapping/<addr>.toml with one blank pair per piece. Fill in coney and relation, then "
             "run it again: it checks coverage, relations, locations, stand-in comments, that the Coney file is "
-            "committed and that `orig copy-check` is clean, and only then appends the `compared` stamp."
+            "committed and that `orig check-copy` is clean, and only then appends the `compared` stamp."
         ),
     )
     compare.add_argument("address", help="the function's address, such as 0x00230d00")
@@ -134,7 +134,7 @@ def run(args: argparse.Namespace) -> int:
 def _study(
     args: argparse.Namespace, root: Path, conventions: Conventions, folder: unit.Unit, address: str, who: dict[str, Any]
 ) -> int:
-    """`original study`."""
+    """`orig study`."""
     fetch = None if args.recut else http_fetch(args.url.rstrip("/"))
     result = orig_study.study(
         folder,
@@ -149,9 +149,7 @@ def _study(
     for piece in result.cut.pieces:
         kinds[piece.kind] = kinds.get(piece.kind, 0) + 1
     listing = folder.study(address) / "numbered.txt"
-    print(
-        f"original study: {address} {study.name}: {len(result.cut.statements)} lines, {len(result.cut.pieces)} pieces"
-    )
+    print(f"orig study: {address} {study.name}: {len(result.cut.statements)} lines, {len(result.cut.pieces)} pieces")
     print("  pieces: " + ", ".join(f"{count} {kind}" for kind, count in sorted(kinds.items())))
     print(f"  callers {len(study.callers)}, callees {len(study.callees)}, globals {len(study.globals)}")
     print(f"  numbered decompile (scratch only, never commit): {listing}")
@@ -167,7 +165,7 @@ def _study(
     mapping = folder.mapping(address)
     # The pairs header binds the decompile's hash, so a rename makes the file stale as much as a change does.
     if result.change in ("changed", "renamed") and mapping.is_file():
-        print(f"  the pairs file {mapping} was made for the old study: run `original compare {address} --carry`")
+        print(f"  the pairs file {mapping} was made for the old study: run `orig compare {address} --carry`")
     # Where the function is already described, so a study starts from the page that owns it (research where).
     for line in research_where.study_lines(root, int(address, 16)):
         print(line)
@@ -175,17 +173,17 @@ def _study(
 
 
 def _verify(args: argparse.Namespace, folder: unit.Unit, address: str) -> int:
-    """`original verify`."""
+    """`orig verify`."""
     saved = orig_study.load_study(folder, address)
     state = orig_study.freshness(saved, http_fetch(args.url.rstrip("/")))
-    print(f"original verify: {address} {saved.name}: {state}")
+    print(f"orig verify: {address} {saved.name}: {state}")
     return 0 if state != "stale" else 1
 
 
 def _compare(
     args: argparse.Namespace, root: Path, conventions: Conventions, folder: unit.Unit, address: str, who: dict[str, Any]
 ) -> int:
-    """`original compare`."""
+    """`orig compare`."""
     result = orig_compare.compare(
         folder,
         root,
@@ -201,7 +199,7 @@ def _compare(
         print(result.view_path.read_text(encoding="utf-8"), end="")
     print(f"pairs file: {result.pairs_path}")
     if result.status == "created":
-        print(f"original compare: wrote {result.counts['pairs']} blank pairs, one per piece")
+        print(f"orig compare: wrote {result.counts['pairs']} blank pairs, one per piece")
         print("  fill in `coney` (path:line) and `relation` for each, then run it again")
         return 1
     for dropped in result.dropped:
@@ -209,12 +207,12 @@ def _compare(
     if result.status == "refused":
         for problem in result.problems:
             print(f"  {problem}")
-        print(f"original compare: refused, {len(result.problems)} problem(s); nothing stamped")
+        print(f"orig compare: refused, {len(result.problems)} problem(s); nothing stamped")
         return 1
     counts = result.counts
     stamp = result.stamp
     print(
-        f"original compare: {address} {result.status}: {counts['pairs']} pairs over {counts['pieces']} pieces "
+        f"orig compare: {address} {result.status}: {counts['pairs']} pairs over {counts['pieces']} pieces "
         f"({counts['same']} same, {counts['stand-in']} stand-in, {counts['not-ported']} not-ported)"
         + (f"; stamp #{stamp.seq}" if stamp else "")
     )
@@ -224,21 +222,21 @@ def _compare(
 def _fails_first(
     args: argparse.Namespace, root: Path, conventions: Conventions, folder: unit.Unit, who: dict[str, Any]
 ) -> int:
-    """`original fails-first`."""
+    """`orig fails-first`."""
     rules = conventions.stamps
     if args.none is not None and (args.test or args.test_commit or args.fix_commit):
-        print("original fails-first: --none runs nothing; give it alone, without --test or --test-commit")
+        print("orig fails-first: --none runs nothing; give it alone, without --test or --test-commit")
         return 2
     if args.none is not None:
         stamp = fails_first.record_none(folder, root, args.none, rules=rules, who=who)
-        print(f"original fails-first: none ({stamp.detail['reason']}); stamp #{stamp.seq}")
+        print(f"orig fails-first: none ({stamp.detail['reason']}); stamp #{stamp.seq}")
         return 0
     if not args.test or not args.test_commit:
-        print("original fails-first: give --test NAME (once per test) and --test-commit SHA, or --none REASON")
+        print("orig fails-first: give --test NAME (once per test) and --test-commit SHA, or --none REASON")
         return 2
     agent = args.agent or who["agent"]["id"]
     if agent == "unknown":
-        print("original fails-first: give --agent ID (the build slots need one)")
+        print("orig fails-first: give --agent ID (the build slots need one)")
         return 2
     written = fails_first.run(
         folder,
@@ -253,7 +251,7 @@ def _fails_first(
     )
     for stamp in written:
         print(
-            f"original fails-first: {stamp.subject}: {stamp.result} "
+            f"orig fails-first: {stamp.subject}: {stamp.result} "
             f"(test commit {stamp.detail['red']}, fix commit {stamp.detail['green']}); stamp #{stamp.seq}"
         )
     return 0 if all(s.result == "pass" for s in written) else 1

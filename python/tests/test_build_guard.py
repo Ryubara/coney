@@ -70,7 +70,7 @@ ALLOWED = [
     "uv run --project python coney-tools build --agent a --preset dev --test",
     "uv run --project python coney-tools build --agent a --preset dev --test -R core",
     "coney-tools build status",
-    "coney-tools build release --agent a",
+    "coney-tools build unclaim --agent a",
     "cmake --version",
     "cmake -E copy a b",
     "cmake -E remove_directory build/x",

@@ -1,4 +1,4 @@
-# Patches for copies of PCSX2 save states (`coney-tools pcsx2 prepare-state`, `pcsx2 record`), applied to the copy's
+# Patches for copies of PCSX2 save states (`coney-tools pcsx2 states patch`, `trace original`), applied to the copy's
 # eeMemory.bin before PCSX2 starts on it, so the code is patched before the recompiler first compiles it. Each code
 # edit names the instruction word the state must hold (checked: a copy is refused on a mismatch) and the word that
 # replaces it, as little-endian 32-bit words of NTSC-U SLUS_212.15. Format: python/src/coney_tools/pcsx2_state.py.

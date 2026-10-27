@@ -36,7 +36,7 @@ Before work that a player sees is done, its behaviour is compared with the origi
   updates compared and the first step outside tolerance (or none).
 - **The same moment from a PCSX2 save state and from Coney**, captured and compared: load the saved slot in a PCSX2
   copy you hold a claim on, read the values or take the picture
-  ([Driving PCSX2](research-tools.md#driving-pcsx2); the ready-made recipes for it are `coney-tools pcsx2 recipe`,
+  ([Driving PCSX2](research-tools.md#driving-pcsx2); the ready-made recipes for it are `coney-tools pcsx2 recipes`,
   which is being added and gets its own guide page), put Coney in the same place, and compare the named values or the
   two pictures. Use it for one-off facts: a constant, a flag, a state after an event, how a scene looks.
 
@@ -247,7 +247,7 @@ reimplementation replaces it.
 
 A reviewer should see what was tested and what the result looks like without running anything. The pull request
 description ([the template](repo:.github/pull_request_template.md)) has two sections for it, and CI refuses a
-description that leaves either empty (`coney-tools repo check-body`). All of what CI checks in a description is the
+description that leaves either empty (`coney-tools pr check-body`). All of what CI checks in a description is the
 `pull_requests` section of [.github/conventions.yml](repo:.github/conventions.yml), shown here as a generated block
 (`coney-tools repo render`):
 
@@ -268,11 +268,11 @@ description that leaves either empty (`coney-tools repo check-body`). All of wha
 - Testing: when the title's area is one a player sees (`gameplay`, `graphics`, `audio`), a line starting `Runtime:` with
   the evidence from the original running (a trace diff, an event diff, or named PCSX2 captures or reads compared with
   Coney's, with numbers) or `Runtime: none (<reason>)`. It is checked given the title (CI's `body` job and
-  `repo check-review` give it).
+  `legacy check-pr-review` give it).
 - AI use: after `Commits written by:` one of `a person`, `an AI`, `an AI, edited by a person`, `a person, with AI help`;
   unless it is `a person`, `Model:` names the model (`n/a` is not enough).
 - `Model:` also names every model that a `Co-Authored-By` trailer on the branch's commits names (any case, anywhere on
-  the line), whoever wrote them. It is checked where the branch is at hand: `repo check-review`, and `repo check-body`
+  the line), whoever wrote them. It is checked where the branch is at hand: `legacy check-pr-review`, and `pr check-body`
   given `--worktree`; CI's `body` job sees only the description.
 - The text names no path on your machine (`scratch/`, `../../`, `C:\`) outside an image reference.
 <!-- conventions:end -->
@@ -307,8 +307,8 @@ PCSX2 captures or reads compared with Coney's), or `Runtime: none (<reason>)`:
 - Runtime: none (refactor with no change in behaviour; the existing trace diff still shows 0 differences)
 ```
 
-`coney-tools repo check-body --title "<title>"` refuses the description without it. CI's `body` job runs that command
-with the pull request's title, and `repo check-review` runs it with line 1 of `PR.md`, so the message is the same
+`coney-tools pr check-body --title "<title>"` refuses the description without it. CI's `body` job runs that command
+with the pull request's title, and `legacy check-pr-review` runs it with line 1 of `PR.md`, so the message is the same
 locally and in CI. The check refuses a missing, empty or numberless line (and `none` without a reason); the reviewer
 refuses one with nothing behind it in the scratch folder ([Task review](review/task.md)). Any
 other title area leaves the line out.
@@ -336,10 +336,10 @@ other title area leaves the line out.
 - **Look at each picture before using it.** Open every capture and check that it shows what its caption says:
   gameplay, not a letterboxed scene, a loading or black screen or a menu; the right level and place; the frame and
   options the text states. A before and after pair must differ: two identical shots mean a capture went wrong, so take
-  it again. The `reviewer` agent checks the same before release, and `repo check-review` refuses byte-identical
+  it again. The `reviewer` agent checks the same before release, and `legacy check-pr-review` refuses byte-identical
   images ([Task review](review/task.md)).
 - **Video.** A short clip (10 seconds at most) of Coney comes from `coney --record`, one of the original from
-  `coney-tools pcsx2 clip`, and both go up only with `coney-tools clips publish`: the rules and how each is kept are
+  `coney-tools clips record`, and both go up only with `coney-tools clips publish`: the rules and how each is kept are
   in [Clips](#clips) below. Never a screen recorder.
 - **Agents** keep every capture in `scratch/<branch>/shots/` and write real image references in the pull request
   text (`PR.md`), paths relative to the scratch folder: `![Coney after](./shots/after.png)`. `coney-tools pr open`
@@ -379,11 +379,11 @@ kept by the code, not by memory or by this page:
 
 | Rule | How the code keeps it |
 | --- | --- |
-| **Only the game's own picture.** Never a screen, desktop or window capture. | Coney's frames are read back from its own frame buffer (`RenderEngine::setFrameTap()`) and piped to FFmpeg's standard input, its only input (`clips::videoEncodeArguments()`, tested). The original's come from PCSX2's own capture of its GS output (`pcsx2 clip`), re-encoded from that file. Every FFmpeg command `coney-tools` runs goes through `clips.run_ffmpeg`, which refuses any capture device (`gdigrab`, `ddagrab`, `x11grab`, `avfoundation`, `dshow`, `lavfi`, ...) and any input that is not a file; a test checks that `pcsx2 clip` never calls `pcsx2 screenshot`'s window read. |
-| **Nothing private in the frames or the file.** No debug overlay, log, FPS counter, path, user name or window chrome; no metadata. | Coney reads the frame before the debug menus and the developer overlay are drawn and switches the debug lines off while recording; there is no window chrome in a frame buffer. `pcsx2 clip` turns every PCSX2 on-screen display element off for the run. Every encode strips metadata and chapters (`-map_metadata -1`, `-map_chapters -1`), writes bit-exact headers and drops x264's settings note; a clip's name is plain letters, digits, `.`, `_`, `-`. `clips check` and `clips publish` refuse a clip whose ffprobe tags go beyond the fixed ones every MP4 carries. |
+| **Only the game's own picture.** Never a screen, desktop or window capture. | Coney's frames are read back from its own frame buffer (`RenderEngine::setFrameTap()`) and piped to FFmpeg's standard input, its only input (`clips::videoEncodeArguments()`, tested). The original's come from PCSX2's own capture of its GS output (`clips record`), re-encoded from that file. Every FFmpeg command `coney-tools` runs goes through `clips.run_ffmpeg`, which refuses any capture device (`gdigrab`, `ddagrab`, `x11grab`, `avfoundation`, `dshow`, `lavfi`, ...) and any input that is not a file; a test checks that `clips record` never calls `pcsx2 screenshot`'s window read. |
+| **Nothing private in the frames or the file.** No debug overlay, log, FPS counter, path, user name or window chrome; no metadata. | Coney reads the frame before the debug menus and the developer overlay are drawn and switches the debug lines off while recording; there is no window chrome in a frame buffer. `clips record` turns every PCSX2 on-screen display element off for the run. Every encode strips metadata and chapters (`-map_metadata -1`, `-map_chapters -1`), writes bit-exact headers and drops x264's settings note; a clip's name is plain letters, digits, `.`, `_`, `-`. `clips check` and `clips publish` refuse a clip whose ffprobe tags go beyond the fixed ones every MP4 carries. |
 | **Deleted once uploaded.** | `coney-tools clips publish` is the only upload: it posts the comment (or description) with `gh --attach` and deletes each clip only when gh reports success, keeping them and saying so otherwise. `coney-tools clips clean` deletes clips older than 24 hours from every task's clips folder. |
-| **Only in the scratch folder.** `<workspace>/scratch/<task>/clips/`, never in a worktree. | `coney --record`, `pcsx2 clip`, `clips check` and `clips publish` refuse a path inside any git checkout or outside a `clips` folder (`clips::checkClipPath()`, `platform::checkClipLocation()`, `clips.check_clip_path`). |
-| **Short.** 10 seconds by default and at most. | `--record-seconds` and `pcsx2 clip --seconds` refuse more; every encode cuts at the length (`-t`); `clips publish` refuses a longer file. The cap is `workspace.clips.max_seconds` in [.github/conventions.yml](repo:.github/conventions.yml), and a test checks that Coney's `kMaxClipSeconds` equals it. |
+| **Only in the scratch folder.** `<workspace>/scratch/<task>/clips/`, never in a worktree. | `coney --record`, `clips record`, `clips check` and `clips publish` refuse a path inside any git checkout or outside a `clips` folder (`clips::checkClipPath()`, `platform::checkClipLocation()`, `clips.check_clip_path`). |
+| **Short.** 10 seconds by default and at most. | `--record-seconds` and `clips record --seconds` refuse more; every encode cuts at the length (`-t`); `clips publish` refuses a longer file. The cap is `workspace.clips.max_seconds` in [.github/conventions.yml](repo:.github/conventions.yml), and a test checks that Coney's `kMaxClipSeconds` equals it. |
 
 The steps, for an agent:
 
@@ -393,7 +393,7 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 -
 uv run --project python coney-tools clips check "$CLIPS/after.mp4"
 uv run --project python coney-tools clips publish --pr 123 --body "Coney after the fix" "$CLIPS/after.mp4"
 # the original: --iso and --scratch are needed when coney.local.toml has no game_dir or scratch_dir; --out is absolute, from any checkout
-uv run --project python coney-tools pcsx2 clip STATE --out "$CLIPS/original.mp4" --agent ID --iso /path/to/warriors.iso --scratch /path/to/scratch
+uv run --project python coney-tools clips record STATE --out "$CLIPS/original.mp4" --agent ID --iso /path/to/warriors.iso --scratch /path/to/scratch
 ```
 
 An agent that cannot publish (agents do not post to GitHub: the coordinator does) names its clips in its report and
@@ -419,12 +419,12 @@ While working, one command checks what CI would fail on for the files you touche
 the quickest check for a person contributing without a task:
 
 ```sh
-uv run --project python coney-tools check changed
+uv run --project python coney-tools ci run
 ```
 
 It runs pre-commit on the changed files, the page standards on the changed pages and `mkdocs build --strict` when docs
-changed, ruff, pytest and mypy when `python/` or `.claude/` changed, `orig check` when `src/` changed (a new gameplay
-function carries `@orig` or `@coney-only`), and `repo check`. [The command's page](coney-tools-build.md#check) has the
+changed, ruff, pytest and mypy when `python/` or `.claude/` changed, `orig check-tags` when `src/` changed (a new gameplay
+function carries `@orig` or `@coney-only`), and `repo check-conventions`. [The command's page](coney-tools-build.md#check) has the
 options.
 
 **clang-tidy is CI's alone.** It is not run locally (on Windows there are no local WSL builds or clang-tidy runs):
@@ -436,7 +436,7 @@ skips a field (`-Wmissing-designated-field-initializers`) is caught by the GCC a
 warnings are errors in the `ci`, `ci-release` and `asan` presets (`CONEY_WARNINGS_AS_ERRORS`); clang-tidy's `-*` turns
 off its compiler diagnostics.
 
-`check changed` runs on Windows, Linux and macOS. Nobody checks it by hand on all three, so CI does: the `python` workflow
+`ci run` runs on Windows, Linux and macOS. Nobody checks it by hand on all three, so CI does: the `python` workflow
 runs its `repo` and `pre-commit` steps on every operating system it tests (`--base HEAD^1`, the branch a pull request's
 merge commit joins), and a step that works on one system and not another fails there. A person on Linux or macOS who
 finds a difference fixes it forward.
@@ -451,9 +451,9 @@ The whole gate, which `task check` runs:
 - **Python:** `ruff check` and `ruff format --check` on `python/` and `.claude/hooks/`, `mypy` and `pytest` on
   `python/`; a Python test is not stamped `fails-first` (that stamp is for the `TEST_CASE`s of an `@orig` change): a
   tooling task's tests-first rule rests on the reviewer and on pytest in its `checked` stamp ([pr
-  verify](pr.md#verify)); `coney-tools repo check`; `coney-tools progress check` (the progress inputs; its tables
-  are built into the docs, not committed); and every generator's `--check` (`natives render`, `natives coney`,
-  `natives cpp`, `refs render`, `missions render`, `research render`, `pcsx2 recipe render`). Rerun a generator
+  verify](pr.md#verify)); `coney-tools repo check-conventions`; `coney-tools progress check` (the progress inputs; its tables
+  are built into the docs, not committed); and every generator's `--check` (`bindings render`, `bindings sync-coney`,
+  `bindings render-cpp`, `refs render`, `missions render`, `research render`, `pcsx2 recipes render`). Rerun a generator
   without `--check` when you change what it reads.
 - **Everything:** `uvx pre-commit run --all-files` leaves the tree unchanged, markdownlint passes,
   `mkdocs build --strict` passes, and `coney-tools docs check` passes on the pages you touched.

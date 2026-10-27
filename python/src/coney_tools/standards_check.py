@@ -362,7 +362,7 @@ def _touched_functions(
 ) -> list[Report]:
     """The ported functions whose lines a changed file touches that are not `compared`. A function is held to its tags
     wherever they are written: above it, inside its body, or on its declaration (most ports carry `@orig` in the
-    header), the declaration matched overload by overload as `orig check` matches it (`TagCoverage`)."""
+    header), the declaration matched overload by overload as `orig check-tags` matches it (`TagCoverage`)."""
     wanted = {n for n in diffs if n.startswith(f"{SOURCE_DIR.as_posix()}/")}
     if not wanted:
         return []

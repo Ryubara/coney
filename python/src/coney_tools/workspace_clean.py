@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""`coney-tools workspace clean` and `workspace disk`: keep the workspace's drive from filling up.
+"""`coney-tools workspace clean` and `workspace check-space`: keep the workspace's drive from filling up.
 
 Every track works in its own worktree under `worktrees/coney/`, and a build of the engine is about 4 GB, so ninety
 forgotten worktrees fill a drive (it happened: 3 GB were left and builds broke). `clean` removes the worktrees whose
@@ -73,7 +73,7 @@ BUILD_CLAIMS_DIR = "build-claims"
 #: Default idle hours before a merged worktree is removed (so one just created from `main` is not taken for merged).
 DEFAULT_WORKTREE_HOURS = 1.0
 
-#: Default minimum free space in GB for `workspace disk`.
+#: Default minimum free space in GB for `workspace check-space`.
 DEFAULT_MIN_GB = 30.0
 
 #: Branches that are never deleted, whatever the state of their worktree.
@@ -747,7 +747,7 @@ def _conventions_workspace(checkout: Path) -> Workspace | None:
 
 
 def run_disk(cwd: Path, workspace: Path | None, min_gb: float | None = None) -> int:
-    """Run `workspace disk`: print the free space of the workspace's drive; 1 when it is below `min_gb`.
+    """Run `workspace check-space`: print the free space of the workspace's drive; 1 when it is below `min_gb`.
 
     Without `min_gb` the limit is `workspace.disk_min_free_gb` of the conventions file (30 GB when that is unreadable).
     """

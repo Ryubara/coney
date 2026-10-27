@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The release gate on a pull request's description: `coney-tools repo review`, `check-review` and `review-stamp`.
+"""The release gate on a pull request's description: `coney-tools legacy pr-review`, `check-review` and `review-stamp`.
 
-`repo check-body` checks a description's structure; it cannot see that a screenshot shows a loading screen instead of
+`pr check-body` checks a description's structure; it cannot see that a screenshot shows a loading screen instead of
 gameplay, that a before and after pair is the same file, or that a count in Testing appears in no log. The
 `reviewer` agent (`.claude/agents/reviewer.md`) reads the description, the branch's diff, the logs it cites and
 every picture it shows, and writes a verdict next to the description file. This module binds that verdict to what was
@@ -254,7 +254,7 @@ def _verdict_problems(pr_file: Path, worktree: Path, rules: Review, head_of: Hea
     stamp = make_stamp(pr_file, worktree, head_of)
     verdict_path = pr_file.parent / rules.verdict_file
     if not verdict_path.is_file():
-        return [f"no {rules.verdict_file} next to {pr_file.name}: run `coney-tools repo review` first"]
+        return [f"no {rules.verdict_file} next to {pr_file.name}: run `coney-tools legacy pr-review` first"]
     try:
         data = json.loads(verdict_path.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, ValueError) as error:

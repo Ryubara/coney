@@ -4,7 +4,7 @@
 A reader with an address, a Ghidra name, a source file or a word wants the page that describes it before anything else
 (docs/guides/research-where.md). The index answers from the data the tools already keep: the Ghidra listing, the source
 files and their ranges, the pages' `owns`, the function database and the glossary, plus a read of the research pages
-for the other places that cite an address and the open questions that name it. `original study` prints the same lines
+for the other places that cite an address and the open questions that name it. `orig study` prints the same lines
 for the function it studies, so the engineer knows where to write before reading the decompile.
 
 Research: docs/guides/research-where.md
@@ -447,7 +447,7 @@ def to_json(result: Result) -> dict[str, Any]:
 
 
 def study_lines(root: Path, address: int) -> list[str]:
-    """The lines `original study` prints under its own: where the function is described. A lookup that cannot run
+    """The lines `orig study` prints under its own: where the function is described. A lookup that cannot run
     (a malformed data file) says so in one line instead of failing the study."""
     try:
         report = Index.load(root).address(address)

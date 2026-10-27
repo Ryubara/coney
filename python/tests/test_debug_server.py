@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for coney_tools.debug_server and `pcsx2 record --recording`: the PCSX2-MCP fork's JSON protocol against a
+"""Tests for coney_tools.debug_server and `trace original --recording`: the PCSX2-MCP fork's JSON protocol against a
 fake server, the answers of its input_recording command, the `.p2m2` header, and a replay recorded against a fake
 debug server and a fake PINE game. No PCSX2 and no game data: every recording here is made up."""
 
@@ -216,7 +216,7 @@ def test_play_sends_the_path_relative_to_the_data_folder(debug_server: Callable[
     assert server.commands == [{"cmd": "input_recording", "action": "play", "path": "recordings/coney-record/a.p2m2"}]
 
 
-# --- pcsx2 record --recording -----------------------------------------------------------------------------------------
+# --- trace original --recording ---------------------------------------------------------------------------------------
 
 
 def test_a_savestate_recording_is_staged_with_its_patched_state(

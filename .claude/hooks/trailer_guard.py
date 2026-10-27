@@ -4,7 +4,7 @@
 An agent ends its commits with `Co-Authored-By: <its model> <noreply@anthropic.com>` (AGENTS.md). The coordinator's
 session gets a system reminder naming the coordinator's own model for that line, and subagents see the reminder too
 and copy it: on 2026-10-13 a Sonnet agent twice credited Opus. The pull request's Model line then followed the wrong
-trailer, and `coney-tools repo check-body --worktree` passed because the body and the trailers agreed with each other.
+trailer, and `coney-tools pr check-body --worktree` passed because the body and the trailers agreed with each other.
 
 Claude Code puts no model in a hook's input, so this hook reads it from the transcript of the agent that ran the
 command (the fields it reads or ignores are listed in docs/guides/agents.md#trailer-guard):

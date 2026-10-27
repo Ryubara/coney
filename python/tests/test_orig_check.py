@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for `coney-tools orig check`: new gameplay functions must carry `@orig` or `@coney-only`, on a made-up git
+"""Tests for `coney-tools orig check-tags`: new gameplay functions must carry `@orig` or `@coney-only`, on a made-up git
 checkout whose base commit already holds some untagged code."""
 
 from pathlib import Path

@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for coney_tools.issue_cli (`issue draft`, `check`, `create`, `edit`, `link`) and the `issue.form` audit rule.
+"""Tests for coney_tools.issue_cli (`issue template`, `check`, `create`, `edit`, `link`) and the `issue.form` audit
+rule.
 
 `gh` is a recording fake, so nothing reaches the network; the files on main are a made-up tree.
 """
@@ -219,7 +220,7 @@ def test_create_reports_a_gh_failure_and_a_failed_link(tmp_path: Path, capsys: C
     linked = parse("create", "--title", TITLE, "--body", write(tmp_path, GOOD), "--offline", "--parent", "334")
     assert issue_cli.run_create(linked, FakeGh(fail_on="api repos/{owner}/{repo}/issues/401")) == 1
     err = capsys.readouterr().err
-    assert "the issue exists" in err and "coney-tools issue link 401 --parent 334" in err
+    assert "the issue exists" in err and "coney-tools issue set-parent 401 --parent 334" in err
 
 
 def test_create_with_attachments_accepts_a_local_screenshot(tmp_path: Path) -> None:

@@ -73,7 +73,7 @@ class Untagged:
     lines: int
     exempt: bool = False  # needs no tag or marker: a one-statement inline member, an empty constructor or destructor
     params: str = ""  # the parameter types, which tell overloads apart
-    legacy: bool = False  # marked only by the older wording, which `orig check` reads as no marker on new code
+    legacy: bool = False  # marked only by the older wording, which `orig check-tags` reads as no marker on new code
 
     @property
     def key(self) -> tuple[str, str, str, str]:
@@ -240,7 +240,7 @@ class TagCoverage:
     A declaration covers a definition with the same scope, name and parameter types, looked up in the same file
     pair (`brain.h`, `brain.cpp`), then the same folder, then (for a member) anywhere. When the parameter types differ
     (a declaration and its definition spelt differently) a declaration still covers it if its name is not
-    overloaded. A file's private helper is covered only by a declaration in its own file. `orig check` and the
+    overloaded. A file's private helper is covered only by a declaration in its own file. `orig check-tags` and the
     touch-it rule of `standards check` both match a definition to its declaration this way.
     """
 
@@ -345,8 +345,8 @@ def find_untagged(
 ) -> tuple[list[Untagged], dict[str, int]]:
     """The functions defined in the `gameplay` folders (or only in `paths` among them) with no tag and no marker, and
     the counts of what was looked at: `in_scope`, `tagged`, `marker` and `legacy` (the older wording). With
-    `with_legacy`, the functions marked only by the older wording are listed too (`legacy` set): `orig check` accepts
-    that wording only on functions that had it before the check existed."""
+    `with_legacy`, the functions marked only by the older wording are listed too (`legacy` set): `orig check-tags`
+    accepts that wording only on functions that had it before the check existed."""
     coverage = TagCoverage(sources)
     untagged: list[Untagged] = []
     counts = {"in_scope": 0, "tagged": 0, "marker": 0, "legacy": 0}

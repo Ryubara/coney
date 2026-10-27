@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The text and the plan of the hygiene workflow's comments (`coney-tools repo hygiene`): pure, no network.
+"""The text and the plan of the hygiene workflow's comments (`coney-tools repo post-findings`): pure, no network.
 
 The audit (`coney-tools repo audit`) reports where the repository departs from `.github/conventions.yml`. This module
 turns the findings of the `github` scope into what the workflow writes back, and decides which writes are needed:

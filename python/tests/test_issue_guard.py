@@ -120,7 +120,7 @@ ALLOWED = [
     "gh api graphql -f query='query { viewer { login } }'",
     "uv run --project python coney-tools issue create --title x --body f.md",
     "uv run --project python coney-tools issue edit 5 --body f.md",
-    "coney-tools issue draft task > body.md",
+    "coney-tools issue template task > body.md",
     'echo "gh issue create is blocked"',
     "echo 'run gh issue edit 5 --body-file f.md instead'",
     'git commit -m "document gh issue create and gh issue edit --body"',
@@ -218,7 +218,7 @@ def test_a_blocked_call_exits_2_and_names_the_replacement(
 ) -> None:
     code, err = run(monkeypatch, capsys, payload("gh issue create --title x"))
     assert code == 2
-    assert "coney-tools issue" in err and "issue draft" in err
+    assert "coney-tools issue" in err and "issue template" in err
 
 
 def test_the_powershell_tool_is_checked_the_same_way(

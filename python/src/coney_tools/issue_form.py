@@ -369,7 +369,7 @@ def _check_headings(spec: FormSpec, preamble: str, blocks: list[Block], found: l
             IssueProblem(
                 "headings",
                 f"no form headings: write the body with the {spec.name} form's '{marks}' headings "
-                f"(coney-tools issue draft {spec.name} prints them). Sections: {names}",
+                f"(coney-tools issue template {spec.name} prints them). Sections: {names}",
             )
         )
         return {}
@@ -387,7 +387,7 @@ def _check_headings(spec: FormSpec, preamble: str, blocks: list[Block], found: l
                 IssueProblem(
                     "headings",
                     f"'{_hashes(block.level)} {block.name}': {block.name!r} is not a section of the {spec.name} "
-                    f"form ('coney-tools issue draft {spec.name}' lists its sections)",
+                    f"form ('coney-tools issue template {spec.name}' lists its sections)",
                 )
             )
             continue

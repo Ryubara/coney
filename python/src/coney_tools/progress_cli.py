@@ -274,7 +274,9 @@ def run_import_functions(file: Path | None, dry_run: bool, show_all: bool) -> in
     rows = progress_import.read_legacy(path)
     listing = progress_research.load_listing(root / progress_research.LISTING_FILE)
     if listing is None:
-        raise ConfigError(f"no {progress_research.LISTING_FILE.as_posix()}; run `coney-tools progress ghidra` first")
+        raise ConfigError(
+            f"no {progress_research.LISTING_FILE.as_posix()}; run `coney-tools ghidra export-names` first"
+        )
     sources = orig_index.read_sources(root)
     plan = progress_import.plan(
         rows,
@@ -329,7 +331,7 @@ def run_ghidra(url: str | None, check_only: bool) -> int:
         print(f"ghidra: {progress_research.LISTING_FILE.as_posix()} is up to date")
         return 0
     if check_only:
-        print(f"ghidra: {progress_research.LISTING_FILE.as_posix()} is stale; run `coney-tools progress ghidra`")
+        print(f"ghidra: {progress_research.LISTING_FILE.as_posix()} is stale; run `coney-tools ghidra export-names`")
         return 1
     path.write_bytes(text.encode("utf-8"))
     print(f"ghidra: wrote {progress_research.LISTING_FILE.as_posix()}; the docs build now uses it")
@@ -342,7 +344,9 @@ def run_backlog(out_dir: Path) -> int:
     state = progress.load(find_repo_root(Path.cwd()))
     u = state.understanding
     if u is None:
-        raise ConfigError(f"no {progress_research.LISTING_FILE.as_posix()}; run `coney-tools progress ghidra` first")
+        raise ConfigError(
+            f"no {progress_research.LISTING_FILE.as_posix()}; run `coney-tools ghidra export-names` first"
+        )
     try:
         out_dir.mkdir(parents=True, exist_ok=True)
         rows = u.by_subsystem([s.name for s in state.totals.subsystems])

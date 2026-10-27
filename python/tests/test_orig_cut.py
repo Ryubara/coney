@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for the statement numbering and piece cutting of `original study`, on invented decompiler-style text only
+"""Tests for the statement numbering and piece cutting of `orig study`, on invented decompiler-style text only
 (no text from the game, ever)."""
 
 import pytest

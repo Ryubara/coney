@@ -335,7 +335,7 @@ def _make_copy(source: Path, out: Path, patches: list[Patch], pcsx2_dir: Path | 
 
 
 def run_prepare_state(source: str, out: Path, patch_names: list[str], pcsx2_dir: Path | None) -> int:
-    """`pcsx2 prepare-state`: copy a state with patches applied."""
+    """`pcsx2 states patch`: copy a state with patches applied."""
     try:
         pcsx2 = pcsx2_dir or _config_paths().get("pcsx2_dir")
         state = _source_state(source, pcsx2)
@@ -348,7 +348,7 @@ def run_prepare_state(source: str, out: Path, patch_names: list[str], pcsx2_dir:
 
 
 def run_repack_state(source: str, out: Path, pcsx2_dir: Path | None) -> int:
-    """`pcsx2 repack-state`: copy a state with plain deflate in place of zstd."""
+    """`pcsx2 states repack`: copy a state with plain deflate in place of zstd."""
     refuse_inside_repo(out)
     try:
         pcsx2 = pcsx2_dir or _config_paths().get("pcsx2_dir")
@@ -361,7 +361,7 @@ def run_repack_state(source: str, out: Path, pcsx2_dir: Path | None) -> int:
     return 0
 
 
-#: Where `pcsx2 record --recording` puts the recording it replays, below the copy's folder (the debug server plays
+#: Where `trace original --recording` puts the recording it replays, below the copy's folder (the debug server plays
 #: only files inside PCSX2's data folder).
 REPLAY_FOLDER = Path("recordings") / "coney-record"
 
@@ -436,7 +436,7 @@ def run_launch(
     state: Path | None, pcsx2_dir: Path | None, iso: Path | None, scratch: Path | None, agent: str | None = None
 ) -> int:
     """`pcsx2 launch`: start PCSX2 on a state file (None: boot the disc) under `agent`'s claim, wait for its game,
-    and leave it running. Without a claim of the agent's on that copy it makes one (kept: `pcsx2 release` ends it)."""
+    and leave it running. Without a claim of the agent's on that copy it makes one (kept: `pcsx2 unclaim` ends it)."""
     registry = pcsx2_claims.default_registry()
     claim, created = registry.claim_for_run(agent, pcsx2_dir, None)
     try:
@@ -451,7 +451,7 @@ def run_launch(
     print(
         f"PCSX2 runs {state or 'the disc'} (pid {emulator.pid}) on {claim.copy}; PINE on port {emulator.port}, {debug}"
     )
-    print(f"{claim.agent} keeps the claim on {claim.copy}; `coney-tools pcsx2 release --agent {claim.agent}` ends it")
+    print(f"{claim.agent} keeps the claim on {claim.copy}; `coney-tools pcsx2 unclaim --agent {claim.agent}` ends it")
     return 0
 
 
@@ -478,7 +478,7 @@ def _trace_draft(scenario_path: Path, lets: list[str], request: run_records_cli.
     pending = run_records_cli.draft(
         root,
         kind="trace",
-        tool="pcsx2 record",
+        tool="trace original",
         run_name=request.name or scenario_path.stem,
         copy=run_records_cli.COPY_STAND_IN,
         state=request.state,
@@ -513,7 +513,7 @@ def run_record(
     recording: Path | None = None,
     record: run_records_cli.RecordRequest | None = None,
 ) -> int:
-    """`pcsx2 record`: play a scenario on the original and write its trace, under `agent`'s claim: the one it holds
+    """`trace original`: play a scenario on the original and write its trace, under `agent`'s claim: the one it holds
     (kept for it afterwards), else one made here and released at the end, also on an error or Ctrl-C (unless
     `keep_open`). `lets` (`NAME=EXPRESSION`) give or replace names of the scenario's `let`. With `recording` (a
     `.p2m2` input recording), the pad comes from replaying it through the debug server, from its own start. With

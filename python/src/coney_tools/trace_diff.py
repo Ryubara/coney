@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Compares two per-update traces: the original's (`coney-tools pcsx2 record`) and Coney's (`coney --trace`).
+"""Compares two per-update traces: the original's (`coney-tools trace original`) and Coney's (`coney --trace`).
 
 Both are CSV files with a `step` column (1 for the first update of a run; frame N of an input script is step N + 1)
 and the same names for the same quantities. The diff takes each column the two share, aligns the rows by step (Coney's

@@ -263,7 +263,7 @@ coney-tools trace events-diff ORIGINAL CONEY [--rules RULES] [--kinds KIND [KIND
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `ORIGINAL` | path | required | the original's event log (trace events --side original) |
-| `CONEY` | path | required | Coney's event log (coney --event-log, or trace mission) |
+| `CONEY` | path | required | Coney's event log (coney --event-log, or trace events) |
 | `--rules RULES` | path | none | the rules file; default: research/traces/events.toml |
 | `--kinds KIND [KIND ...]` | text | none | compare these kinds (default: the rules' list) |
 | `--window WINDOW` | integer | none | the timing window in updates (default: the rules') |

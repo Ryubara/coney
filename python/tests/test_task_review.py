@@ -66,7 +66,7 @@ kind: system
 """
 WHO_ENGINEER = {
     "kind": "tool",
-    "tool": "coney-tools original compare",
+    "tool": "coney-tools orig compare",
     "agent": {"id": "e1", "type": "engineer", "model": "claude-sonnet-5-5"},
     "source": "hook",
 }
@@ -176,9 +176,9 @@ class Rig:
         )
 
     def compare(self, body: str | None = None, function: str = "") -> None:
-        """What `original compare` leaves for Brain::think: a pairs file and a `compared` stamp covering it (the body
+        """What `orig compare` leaves for Brain::think: a pairs file and a `compared` stamp covering it (the body
         hash `body`, when a stamp from before the hash left comments out is wanted). `function` is the key of the
-        function compared, written in the stamp's detail as `original compare` does (empty: a stamp from before it)."""
+        function compared, written in the stamp's detail as `orig compare` does (empty: a stamp from before it)."""
         from coney_tools import orig_review
 
         pairs = self.unit.mapping("0x00100010")
@@ -617,7 +617,7 @@ def test_a_subagent_that_did_the_work_may_not_review_it(rig: Rig, capsys: pytest
 
 
 def test_a_reviewers_own_compared_stamp_bars_it_from_reviewing(rig: Rig, capsys: pytest.CaptureFixture[str]) -> None:
-    # `[roles.reviewer]` does not deny `original compare`: the check has to catch what the reviewer wrote itself.
+    # `[roles.reviewer]` does not deny `orig compare`: the check has to catch what the reviewer wrote itself.
     me = caller("agent-r1", "reviewer", "s1")
     stamped_by(rig, me, "compared", "0x00100020")
     rig.write_verdict()

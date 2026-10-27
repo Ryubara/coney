@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for `coney-tools repo pr-health --labels`: made-up pull requests and a fake `gh`, no network."""
+"""Tests for `coney-tools pr list-stuck --labels`: made-up pull requests and a fake `gh`, no network."""
 
 import argparse
 import json

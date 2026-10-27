@@ -474,7 +474,7 @@ def _add_gate_commands(commands: Any) -> None:
 def _add_wad_commands(groups: Any) -> None:
     """Register `coney-tools wad ...`."""
     disc_help = "a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml"
-    names_help = "a names file, one name per line (made by `wad names`)"
+    names_help = "a names file, one name per line (made by `wad recover-names`)"
     wad = groups.add_parser("wad", help="read the game's WARRIORS.DIR / WARRIORS.WAD archive")
     commands = wad.add_subparsers(dest="command", required=True)
     info = commands.add_parser("info", help="entry count, sizes and a breakdown by first four bytes")
@@ -966,7 +966,7 @@ def _add_trace_commands(groups: Any) -> None:
     _add_pcsx2_flags(mission)
     events = commands.add_parser("events-diff", help="compare two event logs in order; exit 1 when Coney lacks some")
     events.add_argument("original", type=Path, help="the original's event log (trace events --side original)")
-    events.add_argument("coney", type=Path, help="Coney's event log (coney --event-log, or trace mission)")
+    events.add_argument("coney", type=Path, help="Coney's event log (coney --event-log, or trace events)")
     events.add_argument("--rules", type=Path, help="the rules file; default: research/traces/events.toml")
     events.add_argument("--kinds", nargs="+", metavar="KIND", help="compare these kinds (default: the rules' list)")
     events.add_argument("--window", type=int, help="the timing window in updates (default: the rules')")

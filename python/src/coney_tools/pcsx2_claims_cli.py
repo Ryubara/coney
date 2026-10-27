@@ -54,7 +54,7 @@ def _warn_sdl(copies: list[claims.Copy]) -> None:
 
 
 def run_release(agent: str, copy: str | None, force: bool) -> int:
-    """`pcsx2 release`: close the copy's PCSX2 and drop the claim."""
+    """`pcsx2 unclaim`: close the copy's PCSX2 and drop the claim."""
     for claim, closed in _registry().release(agent, copy, force):
         print(f"released {claim.copy} (held by {claim.agent}){'; closed its PCSX2' if closed else ''}")
     return 0
@@ -120,7 +120,7 @@ def run_status(as_json: bool, max_age_hours: float | None) -> int:
 
 
 def run_check_ports(agent: str, debug_port: int | None, pine_port: int | None) -> int:
-    """`pcsx2 check-ports`: succeed only when the ports are those of one copy that `agent` holds. Run it before pointing
+    """`pcsx2 check-claim`: succeed only when the ports are those of one copy that `agent` holds. Run it before pointing
     a client (the pcsx2 MCP server's `pcsx2_connect`, a script) at ports you were given or read: a copy another agent
     holds is refused with a ClaimError (exit 2) naming its holder."""
     claim = claims.default_registry().require_ports([agent], debug_port=debug_port, pine_port=pine_port)
@@ -139,7 +139,7 @@ def _running_copy(agent: str, name: str) -> tuple[claims.Registry, int]:
 
 
 def run_keys(agent: str, copy: str, keys: list[str], hold_ms: int, gap_ms: int) -> int:
-    """`pcsx2 keys`: post keys to the copy's window by handle. The window is never focused: with no focus a key may
+    """`pcsx2 send-keys`: post keys to the copy's window by handle. The window is never focused: with no focus a key may
     not reach PCSX2, and then the command says so rather than taking the focus."""
     chords = pcsx2_proc.parse_chords(keys)
     _, pid = _running_copy(agent, copy)

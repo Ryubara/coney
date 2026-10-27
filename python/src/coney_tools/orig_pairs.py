@@ -130,7 +130,7 @@ def render(file: PairsFile) -> str:
     """The file as TOML text with LF newlines."""
     h = file.header
     out = [
-        f"# Pairs for the original function at {h.address} ({h.name}): `coney-tools original compare {h.address}`",
+        f"# Pairs for the original function at {h.address} ({h.name}): `coney-tools orig compare {h.address}`",
         "# checks and stamps this file. Edit the pairs; leave [function] alone (it binds the file to its study).",
         '# relation: same | stand-in (note = why; a comment at the code says so too) | not-ported (issue = "#N").',
         "# A pair over several pieces needs merge_reason. No text of the original goes in this file.",
@@ -238,7 +238,7 @@ def check_structure(
         if differs:
             problems.append(
                 f"the file is bound to another study ({differs} differs); bring its pairs forward with "
-                f"`original compare {address} --carry`"
+                f"`orig compare {address} --carry`"
             )
             return problems
     expected = tuple(orig_cut.format_lines(p.lines) for p in cut.pieces)
@@ -249,7 +249,7 @@ def check_structure(
     ):
         problems.append(
             "the file was made for another cut of the function (the study changed); bring its pairs forward with "
-            f"`original compare {address} --carry`"
+            f"`orig compare {address} --carry`"
         )
         return problems
     owner = orig_cut.piece_of_line(cut)

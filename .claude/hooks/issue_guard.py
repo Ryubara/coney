@@ -69,10 +69,10 @@ _REMOTE = re.compile(r"[/:](?P<repo>[\w.-]+/[\w.-]+?)(?:\.git)?/?$")
 
 MESSAGE = (
     "Blocked: issues are filed and edited only through coney-tools, which checks the body against the issue form "
-    "first (docs/guides/issues.md, 'Filing an issue'). Draft: `uv run --project python coney-tools issue draft task "
+    "first (docs/guides/issues.md, 'Filing an issue'). Draft: `uv run --project python coney-tools issue template task "
     "> <file>`, fill it in, check it with `coney-tools issue check --title ... --body <file>`, then "
     "`coney-tools issue create --title ... --body <file>` (or `coney-tools issue edit N --body <file>`, or "
-    "`coney-tools issue link N --parent P`). Labels, titles, comments and closing stay with `gh`.\n"
+    "`coney-tools issue set-parent N --parent P`). Labels, titles, comments and closing stay with `gh`.\n"
 )
 
 

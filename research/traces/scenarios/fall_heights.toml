@@ -1,5 +1,5 @@
 # Falls from several heights (issue #111): slot 1 stands Rembrandt in level99's street; at frame 5 his feet are put
-# `rise` metres up (default 120; `pcsx2 record --let rise=20` for another height) and he falls with the stick at rest.
+# `rise` metres up (default 120; `trace original --let rise=20` for another height) and he falls with the stick at rest.
 # The trace shows the follow camera every update on the way down and after the landing: its position, look-at point,
 # distance and pitch, the aim point the view faces and its lag, and the player's height and vertical speed.
 # Research: docs/research/camera.md#long-fall.

@@ -1,5 +1,5 @@
 # Levels: a Coney game reference list. The page docs/references/levels.md is generated
-# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# from this file by `coney-tools refs render`; `coney-tools refs refresh` refreshes the fields read from the
 # disc and keeps the hand-written ones. Schema and rules: docs/guides/research-data.md#reference-lists.
 title: Levels
 about: |
@@ -11,7 +11,7 @@ complete: |
   is `global.lua`'s `runNextMission` and the hub's `fRunMission`, the flashbacks the hub's
   `FBMission` ([Scripts](../research/scripting.md#run-next-mission)); a Rumble arena lists the modes
   whose flag scripts were found. Titles are `GSTRING.MISSIONNAME` of the English string file (confirmed (data):
-  read from the disc by `refs extract`, the title string only; the hub has none). Where each level puts the
+  read from the disc by `refs refresh`, the title string only; the hub has none). Where each level puts the
   player: [Level starts](level-starts.md).
 defaults: {source: "config_preload3.lua, levelNames; titles: config_strings_en.lua, GSTRING.MISSIONNAME", evidence: inferred}
 entries:

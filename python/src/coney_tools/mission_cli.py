@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The `coney-tools trace mission` and `trace events-diff` commands: a mission playthrough on either game, and the
+"""The `coney-tools trace events` and `trace events-diff` commands: a mission playthrough on either game, and the
 comparison of two event logs (docs/guides/coney-tools-trace.md#trace)."""
 
 from __future__ import annotations
@@ -131,7 +131,7 @@ def run_mission_coney(
     follow: Path | None = None,
     follow_from: str | None = None,
 ) -> int:
-    """`trace mission --side coney`: play the scenario's course on Coney, or with `follow` the route recorded there
+    """`trace events --side coney`: play the scenario's course on Coney, or with `follow` the route recorded there
     (RouteFollower), from the event `follow_from` ("kind name", found in the event log beside the route) on when
     given, the course playing until then; Coney writes the event log to `out`."""
     from coney_tools.trace_cli import _coney_executable, _disc
@@ -168,7 +168,7 @@ def run_mission_original(
     agent: str | None,
     updates: int | None = None,
 ) -> int:
-    """`trace mission --side original`: play the scenario's course on PCSX2 from its patched state and write the
+    """`trace events --side original`: play the scenario's course on PCSX2 from its patched state and write the
     original's event log to `out`, under `agent`'s claim (made, and released at the end, when it holds none)."""
     from coney_tools import pcsx2_cli
 

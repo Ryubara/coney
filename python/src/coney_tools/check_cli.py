@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The `coney-tools check changed` command: what CI would fail on, checked locally for the files a change touched.
+"""The `coney-tools ci run` command: what CI would fail on, checked locally for the files a change touched.
 
 It is the step before handing a unit over (docs/guides/testing.md#local-gate). Each step runs only when the change
 touches what it checks; the command prints one line per step and exits 1 when any step fails. clang-tidy is not a step:
 CI tidies the lines of every pull request (`ci_tidy`) and the whole codebase nightly. `--detach` runs the whole gate in
-the background, as `build --detach` does, and `check result` reads its outcome.
+the background, as `build --detach` does, and `ci result` reads its outcome.
 """
 
 from __future__ import annotations
@@ -104,7 +104,7 @@ def _step_repo(root: Path) -> StepResult:
 
 
 def _step_orig(root: Path, base: str, changed: list[str]) -> StepResult:
-    """`coney-tools orig check` and `orig copy-check`, which CI runs: a new function in a gameplay folder carries
+    """`coney-tools orig check-tags` and `orig check-copy`, which CI runs: a new function in a gameplay folder carries
     `@orig` or `@coney-only`, every folder of `src/` is listed as gameplay or Coney-only, and no changed C++ line
     carries a decompiler fingerprint (docs/guides/conventions.md#porting)."""
     if not any(name.startswith("src/") for name in changed):
@@ -296,9 +296,9 @@ def run_changed(base: str, only: list[str] | None, skip: list[str] | None) -> in
             print(f"     {line}")
         failed = failed or not result.ok
     if failed:
-        print("coney-tools check changed: FAILED (CI would fail too)")
+        print("coney-tools ci run: FAILED (CI would fail too)")
         return 1
-    print("coney-tools check changed: ok. CI only: GCC-only warnings, macOS, sanitizers, clang-tidy on changed lines.")
+    print("coney-tools ci run: ok. CI only: GCC-only warnings, macOS, sanitizers, clang-tidy on changed lines.")
     return 0
 
 
@@ -338,7 +338,7 @@ def _start_detached(args: argparse.Namespace) -> int:
     if previous is not None and previous.get("state") == "running" and build_cli._alive(previous):
         raise ConfigError(
             f"a detached check of {previous.get('agent')} is still running (pid {previous.get('pid')}): "
-            "`coney-tools check result` shows how it ends"
+            "`coney-tools ci result` shows how it ends"
         )
     output = folder / DETACHED_OUTPUT
     agent = default_agent(root, os.environ)
@@ -347,8 +347,7 @@ def _start_detached(args: argparse.Namespace) -> int:
     pid = build_cli.spawn_detached(_child_command(args, result), root, output)
     print(f"detached: pid {pid}, output in {output}")
     print(
-        "write STATUS.md and stop, or do other work: `coney-tools check result` shows the outcome "
-        "(exit 75 while it runs)"
+        "write STATUS.md and stop, or do other work: `coney-tools ci result` shows the outcome (exit 75 while it runs)"
     )
     return 0
 
@@ -384,7 +383,7 @@ def _detached_child(args: argparse.Namespace) -> int:
 
 
 def run_result(directory: Path) -> int:
-    """`check result`: the output and outcome of the worktree's last --detach gate. Exit: the gate's own code once it
+    """`ci result`: the output and outcome of the worktree's last --detach gate. Exit: the gate's own code once it
     has ended, 75 while it runs, 1 when there is none or it ended without a result."""
     root = find_repo_root(directory)
     folder = _scratch_folder(root)

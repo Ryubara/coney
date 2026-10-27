@@ -327,7 +327,7 @@ def test_reading_the_variables_or_writing_about_them_is_not_refused(command: str
 @pytest.mark.parametrize(
     "command",
     [
-        'export "CONEY_AGENT_TYPE=reviewer"; coney-tools original study 0x1',
+        'export "CONEY_AGENT_TYPE=reviewer"; coney-tools orig study 0x1',
         "export 'CONEY_AGENT_ID'=x; coney-tools build",
         'export CONEY_AGEN""T_ID=x; coney-tools build',
         "n=CONEY_AGENT_ID; export $n=x; coney-tools build",

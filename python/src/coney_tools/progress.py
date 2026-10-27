@@ -206,7 +206,8 @@ class Progress:
         """Why a reimplemented function can have no size: the listing is missing, or it lacks a function there."""
         if self.understanding is None:
             return (
-                "there is no docs/progress/ghidra-functions.tsv, which gives the sizes (`coney-tools progress ghidra`)"
+                "there is no docs/progress/ghidra-functions.tsv, which gives the sizes "
+                "(`coney-tools ghidra export-names`)"
             )
         return "the Ghidra listing has no function at their address"
 
@@ -240,7 +241,7 @@ class Progress:
         return result
 
     def to_json(self) -> dict[str, Any]:
-        """The summary as plain data, for `coney-tools progress show --json`."""
+        """The summary as plain data, for `coney-tools progress summary --json`."""
         game = self.totals.game_bytes
         return {
             "reimplemented": _share(self.reimplemented_bytes, game) | {"functions": len(self.functions)},

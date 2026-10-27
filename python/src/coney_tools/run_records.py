@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Run records: what a research page's `confirmed (runtime)` claim cites (docs/guides/research-evidence.md#run-records).
 
-A record is `research/runs/<id>.toml`, written by the tools that drive PCSX2 (`pcsx2 recipe run --record`,
-`pcsx2 record --run-record`, `pcsx2 record-run`) and by nothing else, so the method cannot be paraphrased away. It holds
+A record is `research/runs/<id>.toml`, written by the tools that drive PCSX2 (`pcsx2 recipes run --record`,
+`trace original --run-record`, `pcsx2 record-run`) and by nothing else, so the method cannot be paraphrased away. It
+holds
 who ran it, the PCSX2 version and copy, the state and patches it started from, the recipe, the trace or the method in
 words, and the values read: names, numbers and addresses only, never memory or game text (LEGAL.md). The rules (the id,
 the sizes, the kinds) are `runs` in `.github/conventions.yml`, and the folder is `research.files.runs` there. Those

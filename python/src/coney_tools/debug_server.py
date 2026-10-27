@@ -4,7 +4,7 @@
 The fork (docs/guides/research-tools.md#driving-pcsx2) builds a JSON server into PCSX2 on the port its ini names
 (`[EmuCore]` `EnableDebugServer`, `DebugServerPort`). The protocol is newline-delimited JSON over TCP: a request is one
 object `{"cmd": NAME, ...}` and a line, the answer one object and a line with `"ok"` true, or false and an `"error"`.
-Unlike PINE it serves several clients at once (a thread each), so `pcsx2 record` can use it beside an agent's MCP
+Unlike PINE it serves several clients at once (a thread each), so `trace original` can use it beside an agent's MCP
 server. Only the commands Coney's tools need are wrapped here: `status`, `emulation` and `input_recording`.
 
 `input_recording` drives PCSX2's own input recording, as its "Input Recording" menu does: `play` loads the recording's

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The issue labels: `labels` of `.github/conventions.yml` is the source; `coney-tools repo labels` syncs them.
+"""The issue labels: `labels` of `.github/conventions.yml` is the source; `coney-tools repo sync-labels` syncs them.
 
 Reading and validating the labels is `coney_tools.conventions`; this module turns them into `gh` commands.
 """

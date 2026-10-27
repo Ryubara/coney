@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Checks on the repository itself, run by `coney-tools repo check`, `check-title`, `check-docs`, `check-body`, CI."""
+"""Checks on the repository itself, run by `coney-tools repo check-conventions`, `pr check-title`, `check-docs`,
+`check-body` and CI."""
 
 from __future__ import annotations
 
