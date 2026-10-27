@@ -1,0 +1,52 @@
+# slot 6: walking past the crew and a neutral civilian, nothing pressed: Vermin (a Warrior, the player's gang 0) stands
+# 2 m ahead and 1 m to the right, Civilians2 (gang 3, neutral) 4 m ahead and 1 m to the left, both facing the player,
+# who walks straight ahead at 60 % between them. Does either become the target, or the stance or lock start?
+# Research: docs/research/combat-targets.md#fight-stance.
+description = "slot 6: walk at 60 % past Vermin (crew) and a neutral civilian 1 m to either side; any target or lock?"
+research = "docs/research/combat-targets.md#fight-stance"
+input = "target_walk_past_friends.txt"
+updates = 100
+fields = ["player"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick"]
+let = { mate = 'human("Vermin")', civ = 'human("Civilians2")' }
+setup = [
+  { address = "tf(mate) + 0x0", type = "f32", value = "f32(tf(player)) - 2.0 * sin(heading(player)) + 1.0 * cos(heading(player))", until = 0 },
+  { address = "tf(mate) + 0x4", type = "f32", value = "f32(tf(player) + 4) + 2.0 * cos(heading(player)) + 1.0 * sin(heading(player))", until = 0 },
+  { address = "tf(mate) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 0 },
+  { address = "tf(mate) + 0x18", type = "f32", value = "sin((heading(player) + pi) / 2)", until = 0 },
+  { address = "tf(mate) + 0x1c", type = "f32", value = "cos((heading(player) + pi) / 2)", until = 0 },
+  { address = "tf(civ) + 0x0", type = "f32", value = "f32(tf(player)) - 4.0 * sin(heading(player)) + -1.0 * cos(heading(player))", until = 0 },
+  { address = "tf(civ) + 0x4", type = "f32", value = "f32(tf(player) + 4) + 4.0 * cos(heading(player)) + -1.0 * sin(heading(player))", until = 0 },
+  { address = "tf(civ) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 0 },
+  { address = "tf(civ) + 0x18", type = "f32", value = "sin((heading(player) + pi) / 2)", until = 0 },
+  { address = "tf(civ) + 0x1c", type = "f32", value = "cos((heading(player) + pi) / 2)", until = 0 },
+]
+
+[coney]
+level = "sandbox:combat"
+args = ["--spawn", "start"]
+
+[[field]]
+name = "state"                            # record +0x00, the state word's low half (0x1 stance, 0x4 lock, 0x8 L1)
+address = "rec(player) + 0x0"
+type = "u32"
+
+[[field]]
+name = "target"                           # human +0xc8, the target's handle index (-1 none)
+value = "hidx(u32(player + 0xc8))"
+
+[[field]]
+name = "move"                             # human +0x1c0, the movement state (0x241b90 lock-on, 0x240e38 free)
+address = "player + 0x1c0"
+type = "u32"
+
+[[field]]
+name = "d_mate"
+value = "hypot(f32(tf(player)) - f32(tf(mate)), f32(tf(player) + 4) - f32(tf(mate) + 4))"
+
+[[field]]
+name = "d_civ"
+value = "hypot(f32(tf(player)) - f32(tf(civ)), f32(tf(player) + 4) - f32(tf(civ) + 4))"

@@ -101,8 +101,8 @@ anim::Vec3 flatUnit(anim::Vec3 v) {
 // (1.06 m forward and 1.29 m up onto a trash can, as clip 456's displacement and the top), while the fence climb was
 // carried through by its second clip's own root motion. So walls move at once (rising to the top found behind the
 // face), and fences go by the clip: Coney's choice, where the code moves every climb so at its first clip's end.
-// @orig 0x00281450 Climb_RunningClipEnd (unknown)
-// @orig 0x00281838 Climb_StandingClipEnd (unknown)
+// @orig 0x00281450 Climb_OnFirstClipEndRun (unknown)
+// @orig 0x00281838 Climb_OnFirstClipEndStand (unknown)
 bool movesAtOnce(ClimbKind kind) { return kind == ClimbKind::Wall || kind == ClimbKind::ShortWall; }
 
 // The walking body's owner as the physics world's sweep sees it (docs/research/physics-bodies.md#u3-records), for one
@@ -1070,9 +1070,16 @@ void Human::combatWalk(const Combatant& target, bool gated) {
         aiCombatWalk(gated);
         return;
     }
-    // The player faces the target every update.
+    // The player faces the target every update while it is within the mid distance or L1 locks it (`Human_IsLocked`),
+    // and the lock-on settings lock; beyond, the walk keeps his heading (the right stick would turn it with
+    // `CfgStrafeRStick`, off in play).
     const anim::Vec3 to = anim::subtract(target.position(), m_position);
-    if (std::hypot(to.x, to.y) > 1e-4F) {
+    const float distance = std::hypot(to.x, to.y);
+    const combat::CombatTuning& tuning = combat::combatTuning();
+    const bool near = m_fighter.l1Locked() || distance <= tuning.stanceMid;
+    // **Coney's choice**: a car as the target (its box's nearest side faced) and the right stick's turn with
+    // `CfgStrafeRStick` are not built: Coney's lock targets are humans, and the setting is off in play.
+    if (near && combat::lockedOn(tuning, true, (m_record.buttons & pad::kL1) != 0) && distance > 1e-4F) {
         m_heading = headingOf(to);
     }
     m_turn = TurnState{};
@@ -1095,8 +1102,8 @@ void Human::combatWalk(const Combatant& target, bool gated) {
     m_animator.playCombatWalk(static_cast<std::uint32_t>(combat::combatWalkClip(clockwise)));
 }
 
-// @orig 0x00254e78 Human_UpdateActions (unknown)
-void Human::fight(std::span<Combatant* const> targets, const raycast::CollisionMesh* mesh) {
+void Human::fight(std::span<Combatant* const> targets, const raycast::CollisionMesh* mesh,
+                  std::span<Combatant* const> calm) {
     // The stick in the facing frame: x to the player's right, y ahead.
     const float relative = wrapAngle(m_intent.angle - kPi / 2.0F - m_heading);
     const combat::Stick stick{-m_intent.magnitude * std::sin(relative), m_intent.magnitude * std::cos(relative)};
@@ -1114,16 +1121,23 @@ void Human::fight(std::span<Combatant* const> targets, const raycast::CollisionM
                                   .heading = m_heading,
                                   .nowMs = nowMs,
                                   .targets = targets,
+                                  .calm = calm,
                                   .stepSeconds = m_stepSeconds,
                                   .objects = m_objectTargets,
                                   .strikeShapes = m_skeleton != nullptr,
                                   .mesh = mesh,
                                   .sprinting = m_sprinting,
-                                  .padControlled = m_record.padDriven},
+                                  .padControlled = m_record.padDriven,
+                                  .throwAiming = m_script.throwAiming},
                      m_animator, m_heading);
+    // An attack, a grab, a tackle, a miss or a tandem entered the stance: `Player_EnterStance` (`0x00280068`) ends the
+    // hiding through `Human_ClearHiddenState` (`0x00230140`), which a hidden player's own actions reach
+    // (`Player_UpdateActionsHidden` `0x0027e040` calls the grab, square and cross; docs/research/stealth.md#hidden).
+    if (m_fighter.takeStanceEntered() && m_hidden) {
+        clearHiding();
+    }
 }
 
-// @orig 0x00254e78 Human_UpdateActions (unknown)
 void Human::updateMeters(bool sprintHeld) {
     // The drain at the sprint gait (nothing while an action's clip plays), which ends the sprint when it empties; the
     // refill otherwise; then the sprint flag, cleared and set again while L2 is held and stamina lasts.
@@ -1140,7 +1154,10 @@ void Human::updateMeters(bool sprintHeld) {
     m_sprinting = sprintAsked(sprintHeld, m_stamina.value());
 }
 
-// @orig 0x0027c120 Player_UpdateActions (unknown)
+// Triangle's action. Not built: the key path (Uncuff_WithKey) and a tag keeping the press. Its gates are a Coney
+// stand-in: the state mask 0x7bf9e9f7ff0 and the record's +0x08 mask 0x2fefefff are the caller's tests (tryActions():
+// airborne, climbing, the dispatcher's dropped phases, the busy stick) and a pick-up in progress here; the cuffed human
+// (kind 0) and the level's records are two callbacks where ContextAction_Use reads the record's kind.
 bool Human::tryContextAction() {
     // The level decides what the press does, whatever is in hand; not during a pick-up.
     if (m_pickUp) {
@@ -1219,21 +1236,28 @@ bool Human::idleUnderControl() const {
 bool Human::runStepControl() {
     // The control moves nothing itself: the clip's root motion does.
     m_velocity = anim::Vec3{0.0F, 0.0F, m_velocity.z};
-    // Waits while the human is busy, held by combat, wounded, or anything is held on the record.
+    // Waits while the human is busy, held by combat, wounded, or anything is held on the record. Only a brain enters
+    // the control (enterStepControl()), so the original's branch for a pad-driven human is never needed. **Coney
+    // stand-in**: the fighter states (holdsMovement()) stand for the state bits 0xe0000, and the riding attachment
+    // (+0x280) is not tested (Coney's only attachment is a grab's, which returns before this control).
     if (stickBusy(gateInput()) || m_fighter.holdsMovement(m_animator) || m_script.wounded || m_animator.flags() != 0) {
         return true;
     }
     // The clip toward the heading, then the idle (the fight idle in the stance), holding the step bit while it
     // plays; it fades in over 0.2 s.
     constexpr float kStepFade = 0.2F;
-    const bool stance = m_fighter.lockTarget() != nullptr;
+    const bool stance = m_fighter.inFightStance();
     CONEY_ASSERT(m_stepRequest.has_value()); // run only with a step asked for
+    // **Coney stand-in**: the heading and turn boost are the brain's at the entry (StepRequest), where the original
+    // reads the brain's at this update.
     const StepClip step = stepClipFor(m_stepRequest->heading, m_heading, stance, m_stepRequest->boost);
     m_stepRequest.reset();
     const anim::AnimClip* found = m_animator.anims().clip(step.clip);
     if (found == nullptr) {
         return true;
     }
+    // **Coney stand-in**: one 0.2 s fade, not the original's 0.1 s blend-out then 0.2 s fade in; the push sphere stays
+    // on.
     m_animator.playCombat(clips::one(step.clip), stance ? kAnimFightIdle : clips::kIdle, AnimState::Attack, kStepFade,
                           HeldFlags{.held = clips::kStepHeld, .set = clips::kStepHeld});
     // The turn to the end facing, at a constant rate over half the clip's play time; under 0.01 rad, none.
@@ -1340,10 +1364,12 @@ bool Human::tagSprayPlaying() const {
 // @orig 0x002783b0 Tag_EndSprayClips (unknown)
 void Human::endTagSpray() {
     // A finished or abandoned spray ends through 336 (Tag_EndSprayClips), whose event 0x31 drops the can; the fight
-    // stance is the lock on a target (the original tests the state word's 0x3).
+    // stance is Fighter::inFightStance() (the state word's 0x3).
     m_clipTurn.reset();
+    // **Coney stand-in**: the end plays only while the spray's clips play (the original: while the tag exists), the
+    // anim state is AnimState::Attack (the original's codes 0 and 0xb), and the push sphere stays on.
     if (tagSprayPlaying()) {
-        m_animator.playTagEnd(m_fighter.lockTarget() != nullptr);
+        m_animator.playTagEnd(m_fighter.inFightStance());
     }
 }
 
@@ -1541,10 +1567,12 @@ void Human::step(const HumanInput& input, const raycast::CollisionMesh* mesh) {
     m_record = recordOf(input);
     animate(mesh);
     updateState(mesh);
+    setCalm(input.calm);
     updateActions(input.targets, mesh);
 }
 
-// @orig 0x0023bd78 Human_StepAnimation (unknown)
+// **Coney stand-in** for Human_StepAnimation's two tests: every Coney human has its animator (the original steps only
+// one with an instance, +0xd8), and Coney poses on demand, so there is no bone cache to mark stale.
 void Human::animate(const raycast::CollisionMesh* mesh) {
     // The speed factors first: the Movement tunables change only between steps, and this is a step's first pass, before
     // any locomotion reads the speeds.
@@ -2027,6 +2055,8 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
 
 // @orig 0x00254e78 Human_UpdateActions (unknown)
 void Human::updateActions(std::span<Combatant* const> targets, const raycast::CollisionMesh* mesh) {
+    // The calm list given for this call only.
+    const std::span<Combatant* const> calm = std::exchange(m_calm, {});
     // The original returns for a human with no instance or no record (`+0xd8`, `+0xd4`); every Coney human has both.
     // Nothing acts out of the world, where the original fails the mission.
     if (m_outOfWorld) {
@@ -2052,7 +2082,7 @@ void Human::updateActions(std::span<Combatant* const> targets, const raycast::Co
         return;
     }
     if (!m_airborne && !m_climbRun && !m_script.arrested && !m_script.workingOut) {
-        fight(targets, mesh);
+        fight(targets, mesh, calm);
     }
     if (m_record.actionPressed && !m_fighter.holdsMovement(m_animator) && !m_script.arrested && !m_script.workingOut) {
         tryActions(mesh, m_record.sprintHeld);

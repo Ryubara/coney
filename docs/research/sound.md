@@ -6,7 +6,7 @@ owns:
   functions: [
     "0x00143f68", "0x0021e400", "0x0021e698", "0x002205e0", "0x00354d28", "0x003ac4d0",
     "0x003ac600", "0x003ac7e8", "0x003ad440", "0x00419030", "0x00419108", "0x00419150", "0x004193e8", "0x00419fc8",
-    "0x0041a060", "0x0041b4c0", "0x0041cc40", "0x0041d480", "0x0041d920", "0x0041d930",
+    "0x0041a008", "0x0041a060", "0x0041b4c0", "0x0041cc40", "0x0041d480", "0x0041d920", "0x0041d930",
   ]
 ---
 # Sound
@@ -399,6 +399,7 @@ inventory, statistics, flags, configuration workers) that belong to this page, b
 | `0x00419150` | `Breathing_Update` | each frame (from `0x0041a370`): while the camera frames combat (`Camera_IsCombatFraming`) the loop fades in over `+0x250` ms; once it does not, it fades out over `+0x254` ms and stops at 0 | confirmed (code) |
 | `0x004193e8` | `Breathing_Configure` | `CfgBreathingSound`'s worker: game state `+0x258` the sound hash, `+0x250` fade-in ms, `+0x254` fade-out ms | confirmed (code) |
 | `0x00419fc8` | `GameState_SetMusicMood` | the system music's mood `+0x40c`; mood 4 switches the system music off and stores 3 | confirmed (code) |
+| `0x0041a008` | `GameState_SetSystemMusic` | the system music on or off (`+0x3f8`); either way the scripts' hold `+0x3f4` is cleared; a change also hands the mood back to the game (`+0x40c` = 3), stops the music track when turning off and picks a mood at once (`SystemMusic_UpdateMood`). Its 11 callers: `Snd_SetMusicTrack` (`0x00113ed0`), `Sound_EnableSystemMusic` (`0x00113ea8`), `Snd_DisableCombatMusic` (`0x00113e30`), `SystemMusic_SetTracks` (`0x0010e9e0`), `GameState_SetMusicMood` (`0x00419fc8`), `GameState_ResetForLevel` (`0x00418c68`, from `InitLevel`), mode 1's exit (`0x00158488`) and update (`0x00158728`), and the scene task's start, end and abort (`0x0039d870`, `0x0039f450`, `0x0039ec60`) | confirmed (code) |
 | `0x0041a060` | `SystemMusic_UpdateMood` | every 30th update, and from `GameState_SetSystemMusic` and `Gang_SetAlertState`: with system music off (`+0x3f8` 0) mood 4; otherwise, unless locked (`+0x3f4`) outside mood 3, picks a mood from player 1's gang and the nearest other gang: 1 (combat) when one of that gang's members fights ours, or when it is farther than both radii + 30 m but at least `CfgGangSizeForCombatMusic` strong (`0x005148a8`) and in sight of a player; 2 when our gang is hunted (`Gang_IsBeingHunted`); else 0 | confirmed (code); the reading of each test inferred from the callees' names |
 | `0x0041b4c0` | `GameState_SetMusicStateCallback` | the name at `+0x384`; from the set-up and `Snd_SetMusicStateCallback` | confirmed (code) |
 | `0x0041d480` | `Cfg_SetBreathingSound` | `CfgBreathingSound(v, in, out, name)`: the sound's hash and fades to `Breathing_Configure`, `v` to `+0x24c` | confirmed (code) |
@@ -428,7 +429,7 @@ Fields used here (offsets from `*(0x0050aa84)`); defaults from `0x0010f618` and 
 | `+0x3fa28` | the next load-screen number, 0-6 (random at start-up, `0x0010f768`) |
 | `+0x3fa34` | low-priority sounds started this update (reset each update) |
 | `+0x3fa38` | the current bank's name (16 chars); `+0x3fa48` the bank to load after loading (`none`) |
-| `+0x3fa58` | defer `SndLoadBank` to the end of loading (set by mode 1's enter, `0x00158334`) |
+| `+0x3fa58` | defer `SndLoadBank` to the end of loading (set by mode 1's enter, `0x00158334`, and cleared by it as soon as `InitLevel` returns; confirmed (code) at `0x001582e0`) |
 | `+0x3fa5c` | global pitch factor (`SndSetPitchMod`, 1.0) |
 | `+0x3faa8` | pan mode: 0 two-ear pan (default; forced when there are two players), else an angle table (`0x005d8600`) |
 | `+0x3faac` | duck factor for directional sounds under a non-duckable one (`SndSetNIDuck`, 0.2) |
@@ -623,14 +624,14 @@ nothing in this build. Volumes reach the device as `int(v × 16383) & 0x7fff` pe
 
 #### Reverb {#reverb}
 
-`SoundSetEffect(type, depth, delay, feedback)` (`AudioManager_SetEffect`, `0x00113000`) sets
-the SPU2 effect on both cores: device slot `+0xa0` sends IOP command `0x13` (core, type, depth × 32,767 on the left
-and right, delay, feedback; a type of 10 or more is refused), then slot `+0xa8` command `0x15`, the effect's return
-volume, the depth on both sides (`0x00113118`). `SoundEnableEffects(on)` keeps the flag at `+0x1c4`; off also sends
-command `0x17` on both cores at once (`0x001130c8`). Mode 1's enter (`0x00158334`) sets the bank deferral
-`+0x3fa58` and calls `SoundSetEffect` with type 1
-([bindings](../references/bindings/sound.md#soundseteffect)). Confirmed (code); that the types are the SPU2 library's
-ten reverb presets (off, rooms, studios, hall, space, echo, delay, pipe) is inferred from the limit of 10.
+`SoundSetEffect(type, depth, delay, feedback)` (`AudioManager_SetEffect`, `0x00113000`) sets the SPU2 effect on both
+cores: device slot `+0xa0` sends IOP command `0x13` (core, type, depth × 32,767 on the left and right, delay, feedback;
+a type of 10 or more is refused), then slot `+0xa8` command `0x15`, the effect's return volume, the depth on both sides
+(`0x00113118`). `SoundEnableEffects(on)` keeps the flag at `+0x1c4`; off also sends command `0x17` on both cores at once
+(`0x001130c8`). Mode 1's enter (`0x00158334`) sets the bank deferral `+0x3fa58` and calls `SoundSetEffect` with type 1
+and depth 0.1 ([bindings](../references/bindings/sound.md#soundseteffect)). Confirmed (code); that the types are the
+SPU2 library's ten reverb presets (off, rooms, studios, hall, space, echo, delay, pipe) is inferred from the limit of
+10.
 
 **Pause** (`SoundPauseSound`, `0x0010fb20` / `0x0010fb68`): sets `+0x3fa24` and pauses or resumes every voice through
 the device (`0x0014c5e0` / `0x0014c600`). Confirmed (code).
@@ -971,7 +972,7 @@ at start-up (`DjLines_Init`, `0x00116848`); names are under `vags/character/voic
 
 In the per-checkpoint and per-level tables each entry's `NN` runs 1 to its count in turn, one step per failure.
 
-### Speech lines by name
+### Speech lines by name {#speech-lines}
 
 `HuSpeak` and `HuSpeakNI` take a sound name (`vags/speeches/l31/l31_t7_001`). The `global.lua` helper `SetVag(name)`
 builds one from a short name: `l11_t25_006` stands for `vags/speeches/l11/l11_t25_006`, the folder being the name's
@@ -1336,14 +1337,18 @@ line as a cut-able one (`CommandCall::cutting` false, [q-uncut](sound.md#q-uncut
 cutting, are not built); `HuSpeak`'s fifth argument is not read, and neither speaker turns to a look-at target; a
 human's voice set is his type's own `CfgChar` voice (no alias rule, no `HuSetVoiceIndex`); the fixed list of blocked
 lines is not applied ([q-blocked](sound.md#q-blocked)); `SndSetListener` 0 is the camera and 1 the player
-([q-listener](sound.md#q-listener)); the bank deferral of mode 1's enter ends with the load screen
-([q-bank-deferral](sound.md#q-bank-deferral)). The system music (`repo:src/gamemodes/system_music.h`) keeps each mood's
-track hashes and, while on, loops a random track of the mood each frame's surroundings give when the mood changes; the
-mood is 1 while an AI human with health left targets player 1 with a fight or melee goal, else 0 (the hunted mood 2, its
-chase goals not built, never comes, [q-mood](sound.md#q-mood)), the pick draws from the game's random index, and the
-fades are the music player's own. `SoundSetEffect` and `SoundEnableEffects` are kept in the game state only. Not built:
-reverb, the other ambient bindings (`AddAmbientSoundEmitter`, `SetAmbientEmitterVolumeMod`) and the game's own speech
-commands outside the animation sounds. The hub's sound bindings (`repo:src/scripting/hub_world_bindings.cpp`):
+([q-listener](sound.md#q-listener)); the bank deferral of mode 1's enter ends with the load screen (`InitLevel` step
+11), where the original ends it once `InitLevel` has returned (no script runs between the two in Coney: the start
+callback of step 13 runs in its level script's step, so the same loads wait). The system music
+(`repo:src/gamemodes/system_music.h`) keeps each mood's track hashes and, while on, loops a random track of the mood
+each frame's surroundings give when the mood changes; the mood is 1 while an AI human with health left targets player 1
+with a fight or melee goal, else 0 (the hunted mood 2, its chase goals not built, never comes,
+[q-mood](sound.md#q-mood)), the pick draws from the game's random index, and the fades are the music player's own. Mode
+1's enter empties the three moods' track lists and its exit turns the system music off and the pitch factor back to 1.0,
+as the original's do ([Level loading](level-loading.md#mode-1)). `SoundSetEffect` and `SoundEnableEffects` are kept in
+the game state only, as is the reverb's default (type 1, depth 0.1) that mode 1's enter sets. Not built: reverb, the
+other ambient bindings (`AddAmbientSoundEmitter`, `SetAmbientEmitterVolumeMod`) and the game's own speech commands
+outside the animation sounds. The hub's sound bindings (`repo:src/scripting/hub_world_bindings.cpp`):
 `EnableAmbientEmitter` switches an emitter off (it stops its sound and plays nothing more) and on; `SoundPlay` plays a
 sound once at a point; `SndLoadMatrix` empties the sound matrix and runs `<name>_preload.lua` when the name changes;
 `HuSay` speaks a line with no callback.
@@ -1426,7 +1431,6 @@ Each says what is unknown, what depends on it and how to find out.
   loaded well before it plays would show it.
 - **The soundtrack's mix**{#q-soundtrack-mix}: whether a scene soundtrack holds the dialogue alone or a full mix, and
   what the 20 unused stereo sounds are. Listen to a decoded soundtrack against its scene.
-- **The bank deferral**{#q-bank-deferral}: who ends `+0x3fa58`. Coney ends it with the load screen.
 - **The blocked lines**{#q-blocked}: `0x00114c98` holds a hand-written list for levels 11, 20, 31, 34, 82, 83, 84, 92
   and 95 (some by checkpoint, game state `+0x33a`), each naming voice sets, commands and 1-based lines, which is not
   tabulated. Coney does not apply it until it is.

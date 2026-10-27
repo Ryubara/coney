@@ -185,6 +185,16 @@ level = "confirmed-code"
 coney = "src/audio/speech.h:Speech::update"
 status = "legacy"
 
+[[function.gaps]]
+what = "no talk pose, no prepared start, no queued voice (`+0x184`) and no two-speaker stop"
+relation = "not-ported"
+issue = 1009
+
+[[function.gaps]]
+what = "the human's `+0x16c` is not cleared when the line ends"
+relation = "not-ported"
+issue = 1009
+
 [[function]]
 address = 0x0021ec38
 name = "Human_StopSpeech"
@@ -272,7 +282,7 @@ page = "characters.md#original-structure"
 role = "the jump's velocity, then airborne"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::launchJump"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00221a00
@@ -304,7 +314,7 @@ page = "characters.md#code-core"
 role = "Heading from the human to a point (Math_Atan2), then Human_TurnToOver over the given time."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::turnToFace"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00222370
@@ -498,7 +508,12 @@ page = "characters.md#original-structure"
 role = "the reverse: frees the pad and panel, leaves the player list, AI again"
 level = "confirmed-code"
 coney = "src/ai/ai_humans.h:AiHumans::releasePlayer"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "releasing a player leaves out the pair break, the other brains' enemy counts, the gear, the stats and inventory (second argument), the target drops, the HUD panel and tag, the class's rescale of health and power, the body's scales, the class flags and the type 2 for +0x19d; switchPlayer() does not clear the left human's goals and actions"
+relation = "not-ported"
+issue = 1011
 
 [[function]]
 address = 0x0022a770
@@ -1460,6 +1475,11 @@ level = "confirmed-code"
 coney = "src/scripting/sound_bindings.cpp:makeHuSpeak"
 status = "legacy"
 
+[[function.gaps]]
+what = "the speaker does not look at the call's target while the line plays"
+relation = "not-ported"
+issue = 1009
+
 [[function]]
 address = 0x00239558
 name = "Human_ShutUp"
@@ -1477,6 +1497,11 @@ role = "`HuSpeakNI`: the variant of `HuSpeak` that Human_ActionDialog and AI dia
 level = "confirmed-code"
 coney = "src/scripting/sound_bindings.cpp:makeHuSpeak"
 status = "legacy"
+
+[[function.gaps]]
+what = "the speaker does not look at the call's target while the line plays"
+relation = "not-ported"
+issue = 1009
 
 [[function]]
 address = 0x00239788
@@ -1713,7 +1738,7 @@ name = "Human_StepAnimation"
 page = "characters.md#update"
 role = "the characters' update's animation step: for a human with an instance, runs the instance's queued tasks (`0x00175610`) and marks its bone cache (`+0x460`) stale"
 level = "confirmed-code"
-coney = "src/human/human.cpp:Human::animate"
+coney = "src/human/human.h:Human::animate"
 status = "compared"
 
 [[function]]
@@ -2088,7 +2113,7 @@ page = "characters.md#original-structure"
 role = "stamina drain while sprinting, the rage drain, and the power meter's drain and empty-meter let-go only while grabbing or tackling ([The power move holds no one](slow-motion.md#power-move))"
 level = "confirmed-code"
 coney = "src/combat/meters.h:RageMeter::update"
-status = "legacy"
+status = "compared"
 
 [[function.gaps]]
 what = "the power meter's drain while blocking or ducking, and its stop in state 0x4000000"
@@ -2112,7 +2137,7 @@ page = "characters.md#original-structure"
 role = "stamina refill (and the second meter)"
 level = "confirmed-code"
 coney = "src/human/stamina.h:Stamina::refill"
-status = "legacy"
+status = "compared"
 
 [[function.gaps]]
 what = "state 0x4000000 fills stamina and power"
@@ -2254,11 +2279,45 @@ issue = 664
 address = 0x0027ce90
 name = "Player_UpdateSprint"
 page = "characters.md#original-structure"
-role = "clears the sprint flag and sets it again while L2 is held"
+role = "The pad player's stance update: drops a target that is out, the sprint, a run leaving the stance, a threat within 2 m entering it and locking, the hold and the end."
 level = "confirmed-code"
 note = "confirmed (code), runtime"
-coney = "src/human/fighter.h:Fighter::trackTarget"
-status = "legacy"
+coney = "src/human/fighter.h:Fighter::updateStance"
+status = "compared"
+
+[[function.gaps]]
+what = "the standing stance before an alerted enemy within 20 m (step 5) is not entered"
+relation = "stand-in"
+question = "combat-targets.md#q-alerted-stance"
+
+[[function.gaps]]
+what = "a target in a scene is not dropped"
+relation = "stand-in"
+question = "combat-targets.md#q-clear-line"
+
+[[function]]
+address = 0x002811f0
+name = "Player_TriangleAction"
+page = "crimes.md#triangle"
+role = "triangle: the gates, the key uncuff, a tag's hold, then the context action"
+level = "confirmed-code"
+coney = "src/human/human.h:Human::tryContextAction"
+status = "compared"
+
+[[function.gaps]]
+what = "the state mask 0x7bf9e9f7ff0 and the record's +0x08 mask 0x2fefefff that refuse the press: Coney's caller tests the human airborne, climbing, in a dropped phase or busy, and a pick-up in progress"
+relation = "stand-in"
+issue = 1011
+
+[[function.gaps]]
+what = "the key path (a cuffed human by an empty-handed one, either with a key: the cue, the key spent, Uncuff_WithKey)"
+relation = "not-ported"
+issue = 664
+
+[[function.gaps]]
+what = "a tag in progress (the particle object at +0x36c) keeps the press"
+relation = "not-ported"
+issue = 664
 
 [[function]]
 address = 0x00281450

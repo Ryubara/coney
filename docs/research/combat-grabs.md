@@ -74,7 +74,9 @@ at the addresses they cite, the runtime ones measured in PCSX2 2.9.94 as each on
 `Player_GrabOrTackle` (`0x00284920`), confirmed (code):
 
 1. Refused while record `+0x08` has any of `0xfc7eaf7`, or while human `+0x1be` is -1 with `+0x1c0` pointing at
-   `Human_MoveThrowAim` (`0x00244770`, aiming a throw). Confirmed (code).
+   `Human_MoveThrowAim` (`0x00244770`, aiming a throw). A tap (or any circle with `0x100000000`) is also refused when
+   the human has both grab-block flags `0x80000000` and `0x40000000` (`HuBlockGrab`), before any search, stance,
+   mount or tandem; a hold without `0x100000000` takes the tackle's path, which never reads them. Confirmed (code).
 2. When its brain's `+0x04` is 0, it searches afresh with `Player_FindCounterTarget(far × 1.25)` (`0x0027ac30`) and
    makes the result its target: for a tackle the far range of id 3 (2.999 m, so 3.75 m), for a grab that of id 70
    `GRAB_INTRO` (2.499 m, so 3.12 m). Confirmed (code); the ranges are Rembrandt's, read from the disc.
@@ -377,9 +379,11 @@ the holds and strikes and carried only the spins' and connects' root motion (78:
   (`0x005102e8`), confirmed (code). At runtime the stick held 60 % and 80 % right did nothing; full right turned the pair.
 - The wanted heading is the stick's angle (pad `+0x08` / `+0x0c`) **+ 180°**: the grabber turns its back to the
   stick and walks backward along it, pulling the victim.
-- The turn per update, for an angle `d` still to turn: `r = min(max, max × (1 − cos(|d| × π / 4)) / 2 + prev × k)`, `k`
-  0.8 (`0x00510314`), or −0.5 when the direction reverses within 45°; the smoothing branch is taken because `0x00510308`
-  is 1, with 4.0 at `0x00510318`. The formula is confirmed (code); the values are those in play, written by
+- The turn per update, for an angle `d` still to turn: `r = min(max, max × (1 − cos(|d| × π / 4)) / 2 + prev × k)`, at
+  least 0, where `prev` is the last update's `r` before it was cut to the angle left (human `+0x5e0`), `k` 0.8
+  (`0x00510314`), or −0.5 when `|d|` is under 45° and `d`'s sign is the other of the last update's angle left (human
+  `+0x5e4`); the pair turns by `r`, or by all of `d` when `r` is not smaller; the smoothing branch is taken because
+  `0x00510308` is 1, with 4.0 at `0x00510318`. The formula is confirmed (code); the values are those in play, written by
   `CfgTurnRate` (`Cfg_SetTurnRate`, `0x0023a5f8`, [Movement constants](characters.md#movement-constants)); the
   executable's own defaults differ (0.5 at `0x00510314`). `max` comes from `0x002213d8`, which for a grab reads the
   table at `0x005101b0`: 0.192 rad (11° per update) for a player, 0.0262 for the AI. Runtime table: 0.192, 0.0262,
@@ -632,8 +636,8 @@ updates of 96), 68 when 104 was still playing; the
 `CfgButtonMash` plays no part here: its only reader is the theft game ([Stereo theft](combat-targets.md#stereo-theft)).
 
 **When the player's victim breaks free**: the grab drains the grabber's power (15 per second) and `Human_UpdateMeters`
-(`0x002562d0`) ends it when the meter reaches 0. If the victim has flag `0x20000` or `0x4000`, or the grabber is hurt
-(and the victim lacks `0x2000000000`), the victim **escapes** through `0x0026cc18`; otherwise both let go (95 / 94). A
+(`0x002562d0`) ends it when the meter reaches 0. A victim with `0x2000000000` never escapes; one without it **escapes**
+through `0x0026cc18` when it has flag `0x20000` or `0x4000` or the grabber is hurt; otherwise both let go (95 / 94). A
 tackle dismounts (`Mount_GetOff`, `0x00271470`). Confirmed (code); confirmed (runtime): from 25 power the grab drained
 at 15 per second and broke with 95 / 94; with the player hurt (200 of 900 health) the civilian escaped with 100, the
 player played 101, was knocked down and stunned (`0x180005`), lay in 196 and rose with 199 2.78 s later; the escapee
@@ -702,6 +706,10 @@ original does more, none of which Coney has:
    follows the grabber's.
 3. The walk speed from the style's walk clip (86 from the front, 88 from behind), not a fixed tunable.
 4. No walk while mugging, and the pair stops when the victim's sweep against the world fails.
+5. The turn's carried rate ([Moving a grab](#grab-turn)): Coney's `combat::grabTurnStep` carries the last step, cut to
+   the angle left and 0 once the heading is reached, and reads a reverse from its sign; the original carries the rate
+   before the cut (`+0x5e0`) and reads the last angle left (`+0x5e4`), so Coney's turn starts slower again after the
+   pair has reached the stick's direction (#1011).
 
 The check that will show it: a rear hold with a full stick plays 88 on the grabber and 89 on the victim within one
 update of each other, moves at clip 88's speed directly away from the grabber's facing, and returns to 84 / 85 when the

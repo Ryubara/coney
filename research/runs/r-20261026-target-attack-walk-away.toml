@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261026-target-attack-walk-away"
+date = "2026-10-26"
+kind = "trace"
+tool = "pcsx2 record"
+digest = "4583a19ee80f43f94e5652e3020d88b88a420141e305643ee6236384b7faa3a5"
+
+[who]
+agent = "a79590818d2525fcf"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = "target_attack_walk_away"
+method = ""
+
+[values]
+updates = 141
+missed_updates = 0
+columns = 18
+
+[hashes]
+trace_csv = "46a2cb24f443e82fba06df608794f80105c28ad9696fccaf424de3358240566c"

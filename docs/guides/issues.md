@@ -217,10 +217,11 @@ time. A closed issue carries none ([What a closed issue keeps](#closed)).
 | | `S-on-hold` | Status: paused by decision; a branch may exist; not in progress |
 | | `S-conflict` | Status: a pull request conflicts with main (set by CI) |
 | | `S-failing` | Status: a pull request fails a required check (set by CI) |
-| GitHub's own | `good first issue` | Good for newcomers |
+| Other | `good first issue` | Good for newcomers |
 | | `help wanted` | Extra attention is needed |
 | | `duplicate` | This issue already exists |
 | | `wontfix` | This will not be worked on |
+| | `workflow` | Builds the new workflow; its claim is outside the open-claims limit |
 <!-- conventions:end -->
 
 `S-on-hold` is for work that was started and then paused on purpose, such as a held branch that becomes a task
@@ -309,6 +310,9 @@ mandatory until the new workflow starts ([How we work](how-we-work.md)); two swi
   (`S-pending-review` while its pull request is open); a release or `/unclaim` sets `S-ready-to-start`.
 - A maintainer (someone with `admin` or `write` permission on the repository) holds 3 open claims at most, a contributor
   2. Issues whose cards share a `task:` id count as one claim, and a task holds 3 issues at most.
+- The claim of an issue labelled `workflow` (a unit that builds the new workflow) neither counts toward that limit nor
+  is refused by it; the cap of a task still holds. Only someone who may label issues (triage access or more) can set the
+  label.
 - While an open `P-critical` issue that can be claimed has no claim, only a `P-critical` issue can be claimed.
 - A claimed issue that carries `S-blocked`, `S-needs-info`, `S-on-hold` keeps that label; the claim stays and its
   release clock waits, as it does while the claimant's pull request is open.
@@ -340,6 +344,10 @@ contains `/claim` is never one); the Action deletes each real command after acti
 | `/unclaim` | Gives the claim up: unassigns, back to `S-ready-to-start` | the claimant, or a maintainer |
 | `/progress <stage>` | Records a stage (`assigned`, `studied`, ...); the tools post it at each stage | the claimant |
 
+The coordinator writes none of these by hand: `task create` posts `/claim`, the stage tools post `/progress`, and
+`coney-tools claim unclaim N` and `claim renew N` post the other two and wait for the Action's answer
+([coney-tools](coney-tools-issues.md#claim)).
+
 A comment that starts with `/claim`, `/unclaim` or `/progress` but is not exactly one of them gets a reply from the bot
 (`<!-- coney-claim-reply:ID -->`, naming the comment) saying what to write, and **stays**: only a comment that was a
 real command is deleted, a refused one included. A reply is deleted by the sweep a day after its command comment is
@@ -360,6 +368,24 @@ mentions the claimant (its title), and so does the 48-hour warning.
    fix task reuses its claim. A maintainer is whoever the repository gives write permission or more (asked of GitHub by
    login); only if GitHub will not say does the comment's own association decide, and then only the repository's OWNER
    counts.
+
+**Workflow units are outside the limit.** An issue labelled `workflow` (`claims.exempt_label`) builds the new workflow
+for the cutover, and its claim neither counts toward the open-claims limit nor is refused by it, as those units are
+not counted in the engineer [slots](#slots) either (a maintainer decision, 2026-10-27). The label is the mark because
+only someone who may label issues can set it (triage access or more; nothing checks who set it, so the repository
+gives triage only to people the maintainer trusts with it), while a task id chosen by whoever claims could be named
+anything. The card says `Limit: not counted`, and its hidden JSON carries `exempt`, which every pass sets again from the
+label. The cap of a task (3 issues) holds for an exempt claim too.
+
+A label event for `workflow` starts a claim run, so the card usually follows within a minute or two, and at the latest
+by the sweep: the jobs run one at a time and GitHub cancels a pending one when another arrives, so labelling several
+issues in a burst leaves some cards stale. After labelling several, run the sweep by hand (`gh workflow run claim.yml
+--ref main`) or label one issue at a time. A stale card cannot refuse a start: `task start` reads the label of each of
+the account's claimed issues itself, as `task create`'s checks do.
+
+Taking the label off makes the claim count from the next pass, and when that puts its claimant over the limit, the next
+sweep releases the claimant's youngest claim by the time of its first claim, which may be another unit's live claim, not
+the one that lost the label; give a claim back with `claim unclaim` first if that matters.
 
 After it assigns, the Action recounts the claimant's claims and the `P-critical` issues on fresh data, a backstop for a
 run started outside the one-at-a-time queue (below). A claim that turns out to be over the limit (the newest of its
@@ -420,11 +446,11 @@ answered within a minute or two, by its own job or the next one. One that no job
 by the next sweep that runs; a sweep waiting in the queue can be cancelled too, which delays that by an hour. Only
 commands are caught up: a cancelled issue or pull request event is read back by the next pass of that issue (its pull
 requests, assignees and labels), at the latest by the sweep. A comment that is no command, and a label event for any
-label but a paused one, starts no job. Something outside the queue can still write (a person editing a card, `claim run`
-or `claim sweep` started by hand), so the Action keeps a backstop: before its first change of each step and before every
-card write it reads the issue's cards again and starts the pass over when one changed, and two cards of one claimant are
-merged into the first (its handled commands, stage, scope and latest activity). `task create` adds a 60-second settle
-before it trusts a claim ([Task files](#task-files)).
+label but a paused one or `workflow`, starts no job. Something outside the queue can still write (a person editing a
+card, `claim run` or `claim sweep` started by hand), so the Action keeps a backstop: before its first change of each
+step and before every card write it reads the issue's cards again and starts the pass over when one changed, and two
+cards of one claimant are merged into the first (its handled commands, stage, scope and latest activity). `task create`
+adds a 60-second settle before it trusts a claim ([Task files](#task-files)).
 
 **If the Action cannot delete a comment** (its token may not), the card and the labels are still right and the command's
 id is on the card, so it is not acted on again; a maintainer deletes the comment by hand.

@@ -64,7 +64,9 @@ void registerCombatTunables(TunableRegistry& registry) {
     registry.add(kCategory, "Auto lock", &tuning.autoLock).describe("CfgAutoLock: locks onto any target");
     registry.add(kCategory, "Auto lock and combat", &tuning.autoLockAndCombat)
         .describe("CfgAutoLockAndCombat: locks onto any target");
-    registry.add(kCategory, "Target drop distance", &tuning.targetDropDistance).range(0, 10, 0.1).units("m");
+    registry.add(kCategory, "Stance near distance", &tuning.stanceNear).range(0, 10, 0.1).units("m");
+    registry.add(kCategory, "Stance mid distance", &tuning.stanceMid).range(0, 10, 0.1).units("m");
+    registry.add(kCategory, "Stance far distance", &tuning.stanceFar).range(0, 10, 0.1).units("m");
     registry.add(kCategory, "Combat walk speed", &tuning.combatWalkSpeed).range(0, 10, 0.01).units("m/s");
 
     // Turning a grab.

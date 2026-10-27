@@ -957,20 +957,21 @@ Read 2026-10-11, the rise counter 2026-10-13 (`src/combat`, `src/human`, `src/ai
 
 ### The revive {#revive-coney}
 
-Coney builds it for player 1 (`repo:src/gamemodes/gameplay_revive.cpp`, `repo:src/human/human_revive.cpp`, the
-tests as `combat::mayRevive` in `repo:src/combat/revive.h`): d-pad left beside a revivable partner, the tests of
+Coney builds it for player 1 (`repo:src/gamemodes/gameplay_revive.cpp`, `repo:src/human/human_revive.cpp`, the tests as
+`combat::mayRevive` in `repo:src/combat/revive.h`): d-pad left beside a revivable partner, the tests of
 [Reviving](#revive), 76, the led steer, the chain 351, 353 and the idle (through 389 out of the stance) holding
-`0x8000000`, and at 351's end, however it ends, the flash, cue 23, 75, the full heal and 354, 389 and the idle on the
-revived, holding `0x8000`. Every Warrior and every player is made revivable: `ai::startingFlags` gives a human its brain
-type's flags of the table in [Human flags](combat/index.md#human-flags) as its brain is made (`Brains::add`), and
-`ai::releasedFlags` those of a player handed back to the AI (`AiHumans::switchPlayer`). A Warrior downed in a fight (his
-health gone) counts as knocked out, as one a script knocked out does. So beside a crew Warrior downed in any fight the
-prompt shows with a flash and d-pad left revives him, with no script call (user item 8). The disc test
-`repo:tests/platform/disc_revive_test.cpp` downs a `level80` Warrior with a strike, walks player 1 to him by the stick
-at 60 % and revives him: 351 ran 22 updates, 353 34, 389 25 and the revived's 354 73, each counted with the update it
-starts (the runtime read 21, 33, 25 and 72), the steer turned him over 25 updates to 8.8° left of the
-line to the head at the press (351's direction on the disc is 10° to the right; the runtime 11-13°), and he ended
-0.81 m from the head (351's reach 1.04 m less its root motion; the runtime 0.70-0.71 m from a standing Warrior).
+`0x8000000`, and at 351's end, however it ends, the flash, cue 23, 75, the full heal and on the revived 354 holding
+`0x8000`, then 389 and his idle, or with the reviver in the fight stance straight into the fight idle. Every Warrior and
+every player is made revivable: `ai::startingFlags` gives a human its brain type's flags of the table in
+[Human flags](combat/index.md#human-flags) as its brain is made (`Brains::add`), and `ai::releasedFlags` those of a player
+handed back to the AI (`AiHumans::switchPlayer`). A Warrior downed in a fight (his health gone) counts as knocked out,
+as one a script knocked out does. So beside a crew Warrior downed in any fight the prompt shows with a flash and d-pad
+left revives him, with no script call (user item 8). The disc test `repo:tests/platform/disc_revive_test.cpp` downs a
+`level80` Warrior with a strike, walks player 1 to him by the stick at 60 % and revives him: 351 ran 22 updates, 353 34,
+389 25 and the revived's 354 73, each counted with the update it starts (the runtime read 21, 33, 25 and 72), the steer
+turned him over 25 updates to 8.8° left of the line to the head at the press (351's direction on the disc is 10° to the
+right; the runtime 11-13°), and he ended 0.81 m from the head (351's reach 1.04 m less its root motion; the runtime
+0.70-0.71 m from a standing Warrior).
 Readings and stand-ins:
 
 - **Blocked** is the swap prompt's reading of the state mask (knocked out, cuffed, wounded) plus anything that keeps
@@ -983,7 +984,8 @@ Readings and stand-ins:
 - **The led steer** (`Fighter::steerRevive`) turns him to the line to the downed human's head, less 351's direction,
   and slides him to 351's reach from it, both over 351's time to its first event + 0.1 s, as an attack's led steer.
 - The pair ids, `Human_SetPartner`, the `+0xe4` calls and the push spheres have no counterpart.
-- The revived's 389 is taken from the reviver's anim set (the whole get-up is one paired chain).
+- The revived's 389 is taken from the reviver's anim set (the whole get-up is one paired chain); the original chains it
+  on his own stack from his own set (#1011).
 - **Human_Init's other flags**: cops and dealers get `0x2000` and `0x40000`; **stand-in**: the 1-in-2 woundable `0x8`
   of the other brain types is not given (no Coney code reads it, and the roll would shift every seeded run).
 - **Not built**: an AI Warrior reviving ([SaveHuman](ai-goals.md#goal-save-human)) and a co-op partner's flash.

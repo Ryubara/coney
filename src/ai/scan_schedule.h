@@ -22,8 +22,8 @@ inline constexpr std::uint64_t kScanSlowFactor = 4;
 inline constexpr int kScanTokens = 5;
 
 /// When each brain scans (`Brain_MaybeScanEnemies`): every interval (kScanIntervalMs, a cop's kScanIntervalCopMs,
-/// or one set with setInterval(); × 4 while it is locked on in the fight stance), at most kScanTokens scans an update.
-/// **Coney's reading**: the human's detail level (its distance to the camera), which also slows the scan, is not built,
+/// or one set with setInterval(); × 4 in the fight stance), at most kScanTokens scans an update.
+/// **Coney stand-in**: the human's detail level (its distance to the camera), which also slows the scan, is not built,
 /// nor the rescan when the gang changes.
 class ScanSchedule {
   public:

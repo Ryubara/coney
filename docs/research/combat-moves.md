@@ -540,11 +540,12 @@ A **tandem** is a three-person move: a player strikes a victim another human hol
 - **Started from square, cross, circle tapped or circle held**, when the target is held from the rear (state `0x20`, by
   anyone: a gang member or another player), the attacker stands within 45° of the victim's front
   (`Human_GetSideOf(victim, attacker, 1)` = 0), and the victim's held flags have none of `0xc12200`. Square and cross
-  test it after the target-state strikes; circle tests it before grabbing ([Combat](combat-grabs.md#grab), step 3). The
-  three callers (`Player_Square`, `Player_Cross`, `Player_GrabOrTackle`) are the only ones, and none tests for a pad:
-  they are the dispatcher's, which an AI human runs too ([An AI's attacks](combat-targets.md#ai-attacks)). Square and
-  cross pressed **together** (command `0x22`) are not among them: that is the special 653, which hits the victim and
-  breaks the hold. Every input, with runtime checks: [Which button starts it](#tandem-input).
+  test it after the target-state strikes; circle tests it before grabbing ([Combat](combat-grabs.md#grab), step 3), and
+  a tap with both grab-block flags returns before it ([Human flags](combat/index.md#human-flags)). The three callers
+  (`Player_Square`, `Player_Cross`, `Player_GrabOrTackle`) are the only ones, and none tests for a pad: they are the
+  dispatcher's, which an AI human runs too ([An AI's attacks](combat-targets.md#ai-attacks)). Square and cross pressed
+  **together** (command `0x22`) are not among them: that is the special 653, which hits the victim and breaks the hold.
+  Every input, with runtime checks: [Which button starts it](#tandem-input).
 - **The set**: a bat or baton in hand → 181-186; a knife → 187-192; otherwise 163-168, 169-174 or 175-180 at random.
   Each set has an intro and an end for the grabber, victim and attacker (ids +0 to +5).
 - The three are linked and placed by the set's pair offsets. At the **end of the victim's intro** the attacker's

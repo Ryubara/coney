@@ -23,8 +23,8 @@ original does (with a link to the research) and where Coney's side lives. Coney'
 
 The original functions behind each entry are on the page it links, in that page's own Map and code index
 ([Combat](combat/index.md#original-structure), [Combat moves](combat-moves.md#original-structure)). The few an entry
-here names with an address (the mid-target test, the snap's search and filter, `Player_Special`) are graded where they
-are cited.
+here names with an address (the mid-target test, the snap's search and filter, `Strike_Contact`, `Player_Special`,
+`Player_FindLockTarget` `0x0027b2a8`, confirmed (code)) are graded where they are cited.
 
 ## Behaviour
 
@@ -51,13 +51,17 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
   `S1`, `SS2`, `SSX3`, `X1` and 653 ([Runtime results](combat-moves.md#runtime)), but a victim with no strike shapes
   (the sandbox's targets) and an attack whose clip switches no shape still take the hit on one update per id: the
   measured contact, or update 2 (`repo:src/combat/attacks.cpp`).
-- **The attack's target.** Coney searches afresh for every attack along the stick with the attack's own far range
-  × 1.1 (`Fighter::steer`). The original keeps the current target for square in the stance (searching only without
-  one or beyond 3 m), searches for cross with a fixed 2.0 m, keeps the target on a square chain step, and uses the
-  far range only through `Player_FindAttackTarget` (cross chain steps, the specials).
-- **Taking a target by nearness.** Coney takes a target only from L1 or an attack; the original's stance logic takes
-  the nearest enemy within 2 m every update (and locks it with the street's `CfgAutoLockAndCombat`), swaps it once the
-  target is beyond 3 m and tracks enemies to 6 m.
+- **The attack's target.** Both pick an attack's target by the original's rules ([Which target each move goes
+  for](combat-targets.md#targeting)): square in the stance keeps the current target, cross picks afresh within 2.0 m
+  (2.5 m armed), a square chain step keeps it, a cross chain step without the lock and the specials search with
+  `Player_FindAttackTarget`, and the walk and run attacks 23, 24 and 501 only store their pick, with no steer, turn or
+  stance. Two differences are left: square in the stance keeps its target out to 3 m (`kKeepTargetRange`), where the
+  original picks afresh beyond the stance's mid distance (2.5 m in play); and the spray's search has only the human
+  passes, not the original's object and glass passes (`Fighter::attackTargetOf`).
+- **L1's pick.** The original's L1 searches for its target with its own passes out to 6 m (`Player_FindLockTarget`,
+  `0x0027b2a8`, confirmed (code), [L1's own search](combat-targets.md#q-l1-search)); Coney's L1 picks as square does,
+  within 2.5 m (`Fighter::updateL1`, a stand-in). Taking the nearest threat within 2 m, as the original's stance
+  update does, is ported ([The fight stance](combat-targets.md#fight-stance)).
 - **Blend into an attack.** Both show a new attack's pose from its first update, with no fade, and both fade the
   dive in over 0.2 s ([Blend](combat-moves.md#input), confirmed (code)). Two differences are left: the original
   swaps a chain step's clip inside the running task, where Coney fades it in over 0.1 s (`kCombatFade`), and the
@@ -97,12 +101,6 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
   snap's target as the current target ([Combat](combat/index.md#attacks)).
 - **Object targets**: only glass panes; doors and loose objects are not targets, and the approach from far × 1.5 is
   missing ([Breakables](combat-targets.md#breakables)).
-
-### Stance
-
-- **The fight stance** is a stand-in (locked onto a target), not the original's enter and leave rules
-  ([The fight stance](combat-targets.md#fight-stance)). Every gate that tests the stance (moving attacks, strafes, the
-  snaps' path) inherits it.
 
 ### Grabs, tackles and the mount
 

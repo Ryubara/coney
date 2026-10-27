@@ -254,6 +254,7 @@ class Engine:
             scope=command.scope or (),
             task=command.task,
             handled=(comment.id,),
+            exempt=self.rules.exempt_label in work.issue.labels,
         )
         fresh = Stored(None, card)
         work.stored.append(fresh)
@@ -693,6 +694,7 @@ class Engine:
             claimed_at=self._now(),
             adopted=True,
             last_activity_why="assigned by hand",
+            exempt=self.rules.exempt_label in work.issue.labels,
         )
         fresh = Stored(None, card)
         work.stored.append(fresh)
@@ -714,6 +716,8 @@ class Engine:
         changes: dict[str, object] = {
             "status": "pr-open" if open_pr else "claimed",
             "pr": open_pr.number if open_pr else None,
+            # The label can come and go: the claim is outside the limit while the issue carries it.
+            "exempt": self.rules.exempt_label in work.issue.labels,
         }
         moments = [open_pr.head_date if open_pr else None, activity.at if activity and counts(activity.by) else None]
         pushed = [moment for moment in moments if moment is not None]
@@ -832,7 +836,8 @@ class Engine:
     def _enforce_limits(self) -> list[str]:
         """Release the claims that are over the limit of open claims or of a task, on fresh data (the late ones only).
 
-        A claim assigned by hand and adopted is not counted: nobody was asked to check it against a limit.
+        A claim assigned by hand and adopted is not counted: nobody was asked to check it against a limit; nor is an
+        exempt one (`claims.exempt_label`), which `overrun` never finds over.
         """
         self._held = None
         held = list(self.held_cards().values())

@@ -221,6 +221,7 @@ int introUpdates(int base) {
 } // namespace
 
 TEST_CASE("an ally's grab from behind holds the enemy in state 0x20, which another human sees", "[human][tandem]") {
+    // Expected: combat-moves.md#tandem, confirmed (code)
     const FightCharacter character;
     TandemFight fight(character);
     fight.allyHoldsFromBehind();
@@ -233,6 +234,7 @@ TEST_CASE("an ally's grab from behind holds the enemy in state 0x20, which anoth
 TEST_CASE("square at an enemy an ally holds from behind plays the tandem: the three intros, 400 at the victim's intro "
           "end, the ally let go into the fight stance",
           "[human][tandem]") {
+    // Expected: combat-moves.md#tandem, confirmed (runtime)
     const FightCharacter character;
     TandemFight fight(character);
     fight.allyHoldsFromBehind();
@@ -264,6 +266,7 @@ TEST_CASE("square at an enemy an ally holds from behind plays the tandem: the th
 }
 
 TEST_CASE("the tandem's start warns its victim alone, not a bystander", "[human][tandem]") {
+    // Expected: combat/index.md#attack-warnings, confirmed (code)
     // docs/research/combat/index.md#attack-warnings: the tandem start passes its victim to Human_WarnOfAttack; a
     // bystander the player could fight, 3 m to the side, hears nothing of it.
     const FightCharacter character;
@@ -279,6 +282,7 @@ TEST_CASE("the tandem's start warns its victim alone, not a bystander", "[human]
 }
 
 TEST_CASE("cross, circle tapped and circle held start the tandem as square does", "[human][tandem]") {
+    // Expected: combat-moves.md#tandem-input, confirmed (code)
     const FightCharacter character;
     for (const std::string_view script : {"2 tap cross\n", "2 tap circle\n", "2 press circle\n10 release circle\n"}) {
         TandemFight fight(character);
@@ -293,6 +297,7 @@ TEST_CASE("cross, circle tapped and circle held start the tandem as square does"
 
 TEST_CASE("no tandem from the victim's side, at a victim held from the front, or with nobody holding him",
           "[human][tandem]") {
+    // Expected: combat-moves.md#tandem, confirmed (code)
     const FightCharacter character;
     SECTION("from his side") {
         // 1.0 m ahead and 1.5 m to his right: beyond the 45-degree front cone.
@@ -318,6 +323,7 @@ TEST_CASE("no tandem from the victim's side, at a victim held from the front, or
 }
 
 TEST_CASE("a bat in hand plays the bat's set and deals 50 + 500", "[human][tandem]") {
+    // Expected: combat-moves.md#tandem, confirmed (code)
     const FightCharacter character;
     TandemFight fight(character);
     fight.player().fighter().setAnimSet(3);
@@ -330,6 +336,7 @@ TEST_CASE("a bat in hand plays the bat's set and deals 50 + 500", "[human][tande
 }
 
 TEST_CASE("a lethal tandem lets the victim finish his end clip before he dies", "[human][tandem]") {
+    // Expected: combat-reactions.md#protected-moves, confirmed (code)
     const FightCharacter character;
     // 300 health: 400 defeats him (Human_IsDamageDefeating).
     TandemFight fight(character, 1.8F, 0.0F, 1.0F, 300);
@@ -358,6 +365,7 @@ TEST_CASE("a lethal tandem lets the victim finish his end clip before he dies", 
 }
 
 TEST_CASE("a hit from a fourth human on the tandem's victim takes health but plays no reaction", "[human][tandem]") {
+    // Expected: combat-reactions.md#protected-moves, confirmed (code)
     // The victim holds 0x400000 and the other two 0x800000 (docs/research/combat-reactions.md#protected-moves): a
     // fourth human's hit is taken with no reaction, so the tandem plays on.
     const FightCharacter character;
@@ -390,4 +398,29 @@ TEST_CASE("a hit from a fourth human on the tandem's victim takes health but pla
     REQUIRE(hit);
     CHECK(fight.enemy().fighter().health().value() == 590);
     CHECK(static_cast<int>(clipAfterHit) == base + 1);
+}
+
+TEST_CASE("the player's tandem from square or cross puts him in the fight stance", "[human][tandem][targeting]") {
+    // Expected: combat-targets.md#fight-stance, confirmed (code). Player_Square 0x00286cc8 and Player_Cross 0x00287a18
+    // call Player_EnterStance 0x00280068 on their way to Tandem_Start (Player_GrabOrTackle 0x00284920 does so before
+    // circle's). The player stands 2.5 m off, beyond the stance's own 2 m, so nothing else enters it.
+    for (const std::string_view script : {"2 tap square\n", "2 tap cross\n"}) {
+        INFO(script);
+        const FightCharacter character;
+        TandemFight fight(character, 2.5F);
+        fight.allyHoldsFromBehind();
+        REQUIRE_FALSE(fight.player().fighter().inFightStance());
+        int start = -1;
+        bool stanceAtStart = false;
+        fight.run(script, 40, [&](std::uint64_t index) {
+            const auto player = static_cast<int>(fight.player().animator().animId());
+            if (start < 0 && player >= combat::kTandem1 && player < combat::kTandem1 + 30 &&
+                (player - combat::kTandem1) % 6 == 2) {
+                start = static_cast<int>(index);
+                stanceAtStart = fight.player().fighter().inFightStance();
+            }
+        });
+        REQUIRE(start >= 0);
+        CHECK(stanceAtStart);
+    }
 }

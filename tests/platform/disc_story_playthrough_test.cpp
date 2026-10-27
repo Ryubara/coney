@@ -41,10 +41,11 @@ using coney::human::Traversal;
 
 // What a leg of a route asks of the driver.
 enum class Move : std::uint8_t {
-    Run,   // sprint (L2 held) at full deflection to the point; done within kArrived of it
-    Climb, // sprint (L2 held) at the point beyond a face, tapping triangle from kClimbTapWithin of it; done once a
-           // climb has ended
-    Jump, // sprint (L2 held) along the leg's line and tap triangle from the point's x on; done once the jump has landed
+    Run,    // sprint (L2 held) at full deflection to the point; done within kArrived of it
+    Climb,  // sprint (L2 held) at the point beyond a face, tapping triangle from kClimbTapWithin of it; done once a
+            // climb has ended
+    Jump,   // sprint (L2 held) along the leg's line and tap triangle from the point's x on; done once the jump has
+            // landed, or once he is back on his feet after running off the edge past the point (the tap came too late)
     Charge, // sprint (L2 held) along the leg's line and tap cross from the point's x on; done once a charge has ended
             // kChargeThrough past the point, else he backs off kChargeBackOff and charges again
 };
@@ -166,12 +167,14 @@ class RouteDriver final : public coney::InputSource {
     [[nodiscard]] int climbs() const { return m_climbs; }
     [[nodiscard]] int jumps() const { return m_jumps; }
     [[nodiscard]] int charges() const { return m_charges; }
+    // Jump legs crossed by running off the edge instead of jumping.
+    [[nodiscard]] int drops() const { return m_drops; }
 
   private:
     // Moves on past the legs `human` has finished: a run once he is at its point, a climb or a jump once one began
-    // and he is back on his feet, a charge once one began and ended past the barrier row. A charge that ended short
-    // of it (it stops where it meets a barrier, and does not always break it) sends him back for another run-up
-    // through the gap or at the barrier again.
+    // (for a jump, also a drop off the edge past its point) and he is back on his feet, a charge once one began and
+    // ended past the barrier row. A charge that ended short of it (it stops where it meets a barrier, and does not
+    // always break it) sends him back for another run-up through the gap or at the barrier again.
     void advance(const coney::human::Human& human) {
         while (!done()) {
             const Leg& leg = m_route[m_leg];
@@ -200,9 +203,16 @@ class RouteDriver final : public coney::InputSource {
                 break;
             }
             case Move::Jump:
-                m_sawMove = m_sawMove || traversal == Traversal::Jumping;
+                // A tap that lands on the last update before the edge comes too late: he runs off it and drops
+                // instead (traversal Falling). Every gap's far side is lower, so the drop may still carry him over;
+                // if it does not, the kill box fails the mission. Without this he stood at the aim point waiting for
+                // a jump that had already been missed while the pursuers caught up (AI seeds 0 and 5 once a scuffle
+                // with the crew nudged his line by 0.2 m before the jump at x -64.5).
+                m_jumped = m_jumped || traversal == Traversal::Jumping;
+                m_sawMove = m_sawMove || m_jumped || (traversal == Traversal::Falling && human.position().x >= leg.x);
                 finished = m_sawMove && (traversal == Traversal::None || traversal == Traversal::RunStop);
-                m_jumps += finished ? 1 : 0;
+                m_jumps += finished && m_jumped ? 1 : 0;
+                m_drops += finished && !m_jumped ? 1 : 0;
                 break;
             case Move::Charge: {
                 const coney::anim::Vec3 feet = human.position();
@@ -227,6 +237,7 @@ class RouteDriver final : public coney::InputSource {
             }
             ++m_leg;
             m_sawMove = false;
+            m_jumped = false;
         }
     }
 
@@ -260,10 +271,12 @@ class RouteDriver final : public coney::InputSource {
     std::size_t m_leg = 0;
     bool m_sawMove = false;
     float m_climbFromZ = 0.0F; // the height the climb under way began at
+    bool m_jumped = false;     // a Jump leg's jump began (not a drop off the edge)
     bool m_backingOff = false; // a charge ended short of the barrier row: back to the run-up point
     int m_climbs = 0;
     int m_jumps = 0;
     int m_charges = 0;
+    int m_drops = 0;
     std::uint64_t m_frame = 0;
 };
 
@@ -347,9 +360,9 @@ void playChase(std::uint32_t seed) {
     const std::uint64_t errors = run.session().flow().scripts().errors();
     const int health = play != nullptr ? play->player().human().health().value() : 0;
     std::printf("  level3 checkpoint 4 chase, ai seed %u: checkpoint %.0f after %llu frames of play, legs %zu of "
-                "%zu, climbs %d, jumps %d, charges %d, health %d, %llu script errors, %s\n",
+                "%zu, climbs %d, jumps %d, drops %d, charges %d, health %d, %llu script errors, %s\n",
                 seed, state.checkPoint, static_cast<unsigned long long>(run.playFrames()), driver.legsDone(),
-                kChaseRoute.size(), driver.climbs(), driver.jumps(), driver.charges(), health,
+                kChaseRoute.size(), driver.climbs(), driver.jumps(), driver.drops(), driver.charges(), health,
                 static_cast<unsigned long long>(errors), failed() ? "failed" : "not failed");
     CHECK(errors == 0);
     CHECK_FALSE(commandsOn);

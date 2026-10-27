@@ -128,9 +128,10 @@ struct NetEndpoint {
 
 /// Settings taken from the command line.
 struct Options {
-    /// Stop after this many frames; unset means run until the window closes. Tests and CI use it. A frame here is
-    /// one fixed 1/30 s step and one render: `--frames` puts Coney in test mode (isTestMode()).
-    std::optional<int> frameLimit;
+    // Members are grouped by alignment (8-byte, then 4-byte, then 1-byte) so the struct packs without padding
+    // (clang-tidy's clang-analyzer-optin.performance.Padding): a new member goes to the group of its alignment,
+    // after the others there, not beside the option it belongs to.
+    // 8-byte-aligned: strings, vectors and structs that hold them.
     /// `--disc`: the player's disc, a folder (a mounted disc) or an ISO 9660 image, exactly as typed.
     std::optional<std::string> discPath;
     /// `--install DISC`: install the PS2 disc (a mounted disc, a folder of its files or an ISO image) into the folder
@@ -169,18 +170,9 @@ struct Options {
     /// `--spawn`: the spawn point of a sandbox layout the player starts at (`--play-level sandbox:NAME`); the layout's
     /// first when unset. Requires playLevel to name a sandbox.
     std::optional<std::string> spawn;
-    /// `--checkpoint`: the checkpoint a level played with `--play-level` starts at, as `SetCheckPoint` sets it before
-    /// the level loads; 1 when unset. Requires playLevel to name a level, not a sandbox.
-    std::optional<int> checkpoint;
     /// `--scene`: an in-engine scene (`l99_c1`) the play mode plays at once, with stand-ins bound to its roles and
     /// player 1 to his: Coney's test aid. Requires playLevel to name a level.
     std::optional<std::string> scene;
-    /// `--start X,Y,Z,HEADING[,DISTANCE,YAW]`: put player 1 (and the camera) there once the level or layout has
-    /// started (StartPlace). Requires playLevel.
-    std::optional<StartPlace> start;
-    /// `--camera X,Y,Z,QX,QY,QZ,QW[,FOV]`: player 1's view pinned there for the whole run (CameraPin). Requires
-    /// playLevel.
-    std::optional<CameraPin> cameraPin;
     /// `--give ITEM,COUNT`, repeatable: the counts player 1 holds from the first step of play (ItemGift). Requires
     /// playLevel.
     std::vector<ItemGift> gives;
@@ -192,10 +184,6 @@ struct Options {
     /// this file, to compare a gang fight with the original's (docs/guides/running-play-level.md#tracing). Requires
     /// playLevel or rumble.
     std::optional<std::string> humansTraceFile;
-    /// `--ai-seed N`: vary the AI's random draws by N (0 to 2,147,483,647): the game's random stream starts at index N
-    /// (GameRandom::startAt()) and every brain's and the gangs' generator is seeded through ai::variedSeed(). Unset is
-    /// 0, the usual run; the same N plays the same run. Requires playLevel or rumble.
-    std::optional<std::uint32_t> aiSeed;
     /// `--script-trace`: write every binding call the level's scripts make, and every call into them by name, to this
     /// file, one line each with its arguments (script::ScriptSystem::traceCalls()), to see where a mission's scripts
     /// wait. Requires playLevel with a level.
@@ -222,20 +210,12 @@ struct Options {
     /// test mode; needs a window (not headless, `--load` or `--render-references`); the path must pass
     /// clips::checkClipPath().
     std::optional<std::string> recordPath;
-    /// `--record-seconds`: the clip's length, 1 to clips::kMaxClipSeconds; unset: the cap. Requires recordPath.
-    std::optional<int> recordSeconds;
-    /// `--render-size WxH`: the frame's size (RenderSize) in place of the window's usual one. Needs a window (not
-    /// headless, `--load` or `--render-references`).
-    std::optional<RenderSize> renderSize;
     /// `--bench`: measure a `--play-level` run with the profiler (core/perf.h) and write its summary as JSON to this
     /// file at the end (docs/guides/performance.md). Coney's own debug tooling. Requires playLevel and frameLimit.
     std::optional<std::string> benchFile;
-    /// `--bench-fighters N`: spawn N AI fighters in front of the player on the level's first frame of play, as the
-    /// debug menus' AI fighters page does, to measure the cost of many (0 to kMaxBenchFighters). Requires benchFile.
-    std::optional<int> benchFighters;
-    /// `--bench-warmup N`: the frames after the first frame of play that the bench does not measure (the fighters
-    /// settling, the caches filling); unset: kDefaultBenchWarmup. Must leave frames to measure. Requires benchFile.
-    std::optional<int> benchWarmup;
+    /// `--bench-frames FILE`: also write every measured frame (its length, each zone and counter) to this file as CSV,
+    /// to study the worst frames rather than the spread. Requires benchFile.
+    std::optional<std::string> benchFramesFile;
     /// `--input-script`: play the pad input in this file (src/core/input_script.h) instead of reading the keyboard
     /// and gamepads: the scripted input of test mode.
     std::optional<std::string> inputScript;
@@ -248,10 +228,6 @@ struct Options {
     /// `--profiles`: the folder the player profiles are kept in, one file per profile (docs/research/save.md#coney);
     /// unset: `profiles` in the user's data folder for a normal run, and none (profiles last the run) in test mode.
     std::optional<std::string> profilesDir;
-    /// `--dev-overlay`: show the debug menus' developer overlay for this many frames from the start, then hide it; a
-    /// test aid for checking that the overlay leaves the frame as it found it (docs/guides/debug-menu.md). Ignored
-    /// without a window.
-    std::optional<int> devOverlayFrames;
     /// `--mesh-view`: the Debug draw page's mesh views to switch on from the first frame of play, as the debug tools
     /// parse it (debug::parseMeshViewSpec(), docs/guides/debug-menu.md#mesh-views); a test aid and the way to take a
     /// screenshot of a view.
@@ -267,6 +243,65 @@ struct Options {
     /// `--names`: a text file of model and object type names, one per line, that `--render-references` files images
     /// under. Requires renderReferences.
     std::optional<std::string> namesFile;
+    /// `--window-display VALUE`: the display the window opens on, centred (core/window_display.h): a 1-based index in
+    /// the window system's list, part of a display's name, or `portrait`. Unset: the `CONEY_WINDOW_DISPLAY`
+    /// environment variable, else the window system's own placement. Either one set also keeps the window from taking
+    /// the keyboard focus (as --no-activate does). A debug aid that keeps agents' runs off the
+    /// display a person works on (docs/guides/running-options.md#window-display).
+    std::optional<std::string> windowDisplay;
+    /// `--host [[ADDR:]PORT]`: host a network game from the start, listening on PORT (default kDefaultNetPort) of
+    /// ADDR (default every interface). Cannot be combined with `--join`.
+    std::optional<NetEndpoint> netHost;
+    /// `--join ADDR[:PORT]`: join the network game at ADDR from the start. Cannot be combined with `--host`.
+    std::optional<NetEndpoint> netJoin;
+    /// `--net-name NAME`: the player name sent when joining or hosting (the Network page's Player name); main checks
+    /// it is a valid one (1 to 32 printable ASCII characters).
+    std::optional<std::string> netName;
+    // 4-byte-aligned: ints and structs of floats or ints.
+    /// Stop after this many frames; unset means run until the window closes. Tests and CI use it. A frame here is
+    /// one fixed 1/30 s step and one render: `--frames` puts Coney in test mode (isTestMode()).
+    std::optional<int> frameLimit;
+    /// `--checkpoint`: the checkpoint a level played with `--play-level` starts at, as `SetCheckPoint` sets it before
+    /// the level loads; 1 when unset. Requires playLevel to name a level, not a sandbox.
+    std::optional<int> checkpoint;
+    /// `--start X,Y,Z,HEADING[,DISTANCE,YAW]`: put player 1 (and the camera) there once the level or layout has
+    /// started (StartPlace). Requires playLevel.
+    std::optional<StartPlace> start;
+    /// `--camera X,Y,Z,QX,QY,QZ,QW[,FOV]`: player 1's view pinned there for the whole run (CameraPin). Requires
+    /// playLevel.
+    std::optional<CameraPin> cameraPin;
+    /// `--ai-seed N`: vary the AI's random draws by N (0 to 2,147,483,647): the game's random stream starts at index N
+    /// (GameRandom::startAt()) and every brain's and the gangs' generator is seeded through ai::variedSeed(). Unset is
+    /// 0, the usual run; the same N plays the same run. Requires playLevel or rumble.
+    std::optional<std::uint32_t> aiSeed;
+    /// `--record-seconds`: the clip's length, 1 to clips::kMaxClipSeconds; unset: the cap. Requires recordPath.
+    std::optional<int> recordSeconds;
+    /// `--render-size WxH`: the frame's size (RenderSize) in place of the window's usual one. Needs a window (not
+    /// headless, `--load` or `--render-references`).
+    std::optional<RenderSize> renderSize;
+    /// `--bench-fighters N`: spawn N AI fighters in front of the player on the level's first frame of play, as the
+    /// debug menus' AI fighters page does, to measure the cost of many (0 to kMaxBenchFighters). Requires benchFile.
+    std::optional<int> benchFighters;
+    /// `--bench-warmup N`: the frames after the first frame of play that the bench does not measure (the fighters
+    /// settling, the caches filling); unset: kDefaultBenchWarmup. Must leave frames to measure. Requires benchFile.
+    std::optional<int> benchWarmup;
+    /// `--bench-allies N`: also spawn N AI allies behind the player on the first frame of play, as the AI fighters
+    /// page's Ally side does, so a crowd fights itself and not only the player (0 to kMaxBenchFighters). Requires
+    /// benchFile.
+    std::optional<int> benchAllies;
+    /// `--bench-spawn-step N`: spawn the fighters and make the player invincible once N fixed steps of play have run
+    /// (an input script's frames count the same steps), not on the first frame of play, so a run can first take the
+    /// player somewhere (out of the hub's clubhouse into the streets). The warm-up counts from that frame. Requires
+    /// benchFile.
+    std::optional<int> benchSpawnStep;
+    /// `--bench-measure N`: end the run once N frames after the warm-up are measured (1 or more), so a real-time
+    /// bench, whose frames before the spawn are many and vary, measures as many as asked; `--frames` stays the
+    /// longest the run may take. Unset: measure until `--frames`. Requires benchFile.
+    std::optional<int> benchMeasure;
+    /// `--dev-overlay`: show the debug menus' developer overlay for this many frames from the start, then hide it; a
+    /// test aid for checking that the overlay leaves the frame as it found it (docs/guides/debug-menu.md). Ignored
+    /// without a window.
+    std::optional<int> devOverlayFrames;
     /// `--fps-cap N`: draw at most N frames a second, 0 for no cap (the default; vsync still limits the rate while
     /// it is on). 30 is the original's rhythm: one step and one render per frame, nothing blended
     /// (docs/guides/running-options.md#frame-rate). Not in test mode.
@@ -274,7 +309,15 @@ struct Options {
     /// `--rumble TYPE [--arena N] [--gang-size N]`: start a Rumble match of that mode as QUICK RUMBLE does, whatever
     /// the menu chose. Requires discPath; cannot be combined with `--load`, the viewers, `--play-level` or `--sandbox`.
     std::optional<RumbleLaunch> rumble;
-    // The flags and the one-byte settings last, so the fields above pack without padding.
+    // 1-byte-aligned: enums and flags.
+    /// `--bench-god`: make player 1 invincible when the fighters spawn (the Entity editor's Invincible), so a long
+    /// bench among enemies does not end in his death. Requires benchFile.
+    bool benchGod = false;
+    /// `--bench-real-time`: pace the bench by the real clock as a player's run is (fixed steps at 30 a second, frames
+    /// as fast as they go, rendered between steps), not in test mode's lockstep of one step a frame, so the frames that
+    /// run a step and those that only render both show. The run still ends after `--frames` frames. Requires
+    /// benchFile.
+    bool benchRealTime = false;
     /// `--help` was given: print usageText() and exit 0.
     bool showHelp = false;
     /// `--verify`: with installFrom, re-read every file already installed and copy again any that changed.
@@ -303,12 +346,6 @@ struct Options {
     /// `--no-activate`: the window opens without taking the keyboard focus from the one in use, so a run started by
     /// an agent or a tool never interrupts the person typing (activatesWindow()).
     bool noActivate = false;
-    /// `--window-display VALUE`: the display the window opens on, centred (core/window_display.h): a 1-based index in
-    /// the window system's list, part of a display's name, or `portrait`. Unset: the `CONEY_WINDOW_DISPLAY`
-    /// environment variable, else the window system's own placement. Either one set also keeps the window from taking
-    /// the keyboard focus (as --no-activate does). A debug aid that keeps agents' runs off the
-    /// display a person works on (docs/guides/running-options.md#window-display).
-    std::optional<std::string> windowDisplay;
     /// `--kind`: the lists `--render-references` renders; unset renders all of them. Requires renderReferences.
     std::optional<ReferenceKind> referenceKind;
     /// `--no-audio`: no sound output at all: no mixer, no device (the debug menu's Audio page says so).
@@ -320,14 +357,6 @@ struct Options {
     /// `--skip-movies`: every movie is skipped at once, as if it had ended
     /// (docs/research/movies.md#coneys-implementation).
     bool skipMovies = false;
-    /// `--host [[ADDR:]PORT]`: host a network game from the start, listening on PORT (default kDefaultNetPort) of
-    /// ADDR (default every interface). Cannot be combined with `--join`.
-    std::optional<NetEndpoint> netHost;
-    /// `--join ADDR[:PORT]`: join the network game at ADDR from the start. Cannot be combined with `--host`.
-    std::optional<NetEndpoint> netJoin;
-    /// `--net-name NAME`: the player name sent when joining or hosting (the Network page's Player name); main checks
-    /// it is a valid one (1 to 32 printable ASCII characters).
-    std::optional<std::string> netName;
     /// `--cpu-skinning`: skin every human by CharacterMesh's CPU path, to compare it with the GPU's
     /// (docs/guides/performance.md#gpu-skinning). Coney's own debug tooling.
     bool cpuSkinning = false;

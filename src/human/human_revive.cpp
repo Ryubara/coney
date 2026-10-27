@@ -22,7 +22,7 @@ void Human::startRevive(const Combatant& downed) {
     constexpr std::array<std::uint32_t, 3> kOutOfStance{combat::kReviveBeginAnim, combat::kReviveEndAnim,
                                                         clips::kNormalFromFight};
     constexpr std::array<std::uint32_t, 2> kInStance{combat::kReviveBeginAnim, combat::kReviveEndAnim};
-    const bool stance = m_fighter.lockTarget() != nullptr;
+    const bool stance = m_fighter.inFightStance();
     const std::span<const std::uint32_t> chain =
         stance ? std::span<const std::uint32_t>(kInStance) : std::span<const std::uint32_t>(kOutOfStance);
     m_animator.playCombat(chain, stance ? kAnimFightIdle : clips::kIdle, AnimState::Attack, combat::kReviveFadeSeconds,
@@ -37,12 +37,18 @@ void Human::playRevived(const Human& reviver) {
     // Healed in full (`Human_Heal` with "full"): wounding over, up from the ground with all his health.
     setWounded(false);
     revive();
-    // Up with 354 as the pair's clip from the reviver's set, holding 0x8000, then his idle through 389 (he wakes out
-    // of the fight stance). **Coney's reading**: 389 comes from the reviver's set too, as the chain is one paired task.
+    // Up with 354 as the pair's clip from the reviver's set, holding 0x8000, then the loop of the reviver's idle set:
+    // out of the fight stance through 389 into the idle; with the reviver in the stance straight into the fight idle
+    // (set 0xb), no 389. **Coney stand-in** (#1011): 389 comes from the reviver's set with 354, where the original
+    // chains it on the revived man's own stack from his own set.
     m_velocity = anim::Vec3{};
-    constexpr std::array<std::uint32_t, 2> kUp{combat::kRevivedAnim, clips::kNormalFromFight};
-    m_animator.playPaired(kUp, reviver.animator().anims(), clips::kIdle, AnimState::Attack, 0.0F,
-                          HeldFlags{.held = combat::kRevivedHeld, .set = combat::kRevivedHeld});
+    constexpr std::array<std::uint32_t, 2> kUpOutOfStance{combat::kRevivedAnim, clips::kNormalFromFight};
+    constexpr std::array<std::uint32_t, 1> kUpInStance{combat::kRevivedAnim};
+    const bool stance = reviver.m_fighter.inFightStance();
+    const std::span<const std::uint32_t> chain =
+        stance ? std::span<const std::uint32_t>(kUpInStance) : std::span<const std::uint32_t>(kUpOutOfStance);
+    m_animator.playPaired(chain, reviver.animator().anims(), stance ? kAnimFightIdle : clips::kIdle, AnimState::Attack,
+                          0.0F, HeldFlags{.held = combat::kRevivedHeld, .set = combat::kRevivedHeld});
 }
 
 } // namespace coney::human

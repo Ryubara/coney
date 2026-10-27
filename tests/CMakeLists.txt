@@ -21,6 +21,8 @@ add_executable(coney_tests
     core/mesh_view_option_test.cpp
     core/options_test.cpp
     core/perf_test.cpp
+    core/perf_bench_options_test.cpp
+    core/perf_frames_test.cpp
     core/pad_test.cpp
     core/player_options_test.cpp
     core/window_display_test.cpp
@@ -156,6 +158,7 @@ add_executable(coney_tests
     platform/disc_game_stats_test.cpp
     platform/disc_level99_player2_test.cpp
     platform/disc_hub_workout_test.cpp
+    platform/disc_level95_crew_lock_test.cpp
     platform/disc_level99_street_test.cpp
     platform/disc_level99_vermin_fence_test.cpp
     platform/disc_level99_world_test.cpp
@@ -322,6 +325,9 @@ target_sources(coney_tests PRIVATE
     human/damage_flags_test.cpp
     human/combat_timing_test.cpp
     human/moving_attacks_test.cpp
+    human/attack_turn_test.cpp
+    human/player_stance_test.cpp
+    human/player_targeting_test.cpp
     human/being_hit_test.cpp
     human/rise_counter_test.cpp
     human/human_grab_test.cpp
@@ -418,7 +424,8 @@ target_sources(coney_tests PRIVATE
 target_sources(coney_tests PRIVATE audio/adpcm_test.cpp audio/disc_sound_test.cpp audio/game_sound_test.cpp
                                    audio/mixer_test.cpp audio/music_player_test.cpp audio/object_sounds_test.cpp
                                    audio/sound_data_test.cpp audio/sound_engine_test.cpp audio/sound_matrix_test.cpp scripting/sound_bindings_test.cpp
-                                   audio/human_sound_events_test.cpp animation/clip_sound_events_test.cpp)
+                                   audio/human_sound_events_test.cpp animation/clip_sound_events_test.cpp
+                                   audio/type_traits_test.cpp)
 # Network play: the bit stream, the transports, the protocol and the sessions over the loopback, and ENet on 127.0.0.1
 # (docs/guides/multiplayer.md).
 target_sources(coney_tests PRIVATE net/bit_stream_test.cpp net/input_buffer_test.cpp net/link_conditioner_test.cpp

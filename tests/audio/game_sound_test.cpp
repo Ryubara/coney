@@ -225,6 +225,7 @@ AmbientEmitterSetup gulls(std::uint8_t mode, int plays = -1) {
 
 } // namespace
 
+// Expected: sound.md#voice-table, confirmed (code)
 TEST_CASE("the voice table counts each set's lines and says them in turn", "[audio][speech]") {
     const std::vector<std::string> names = voiceLines();
     VoiceTable table;
@@ -271,6 +272,7 @@ TEST_CASE("the voice table counts each set's lines and says them in turn", "[aud
     CHECK(table.percent(0, 12) == 40);
 }
 
+// Expected: sound.md#ambient, confirmed (code)
 TEST_CASE("a timed ambient emitter plays after its delay, once a second at most, not over its own sound",
           "[audio][ambient]") {
     EmitterRig r;
@@ -317,6 +319,7 @@ TEST_CASE("a timed ambient emitter plays after its delay, once a second at most,
     CHECK(r.emitters.sound(8) == coney::crc32(kCrow));
 }
 
+// Expected: sound.md#ambient, confirmed (code)
 TEST_CASE("an ambient emitter out of range plays nothing; its plays run out; its filter picks the players",
           "[audio][ambient]") {
     SECTION("out of range") {
@@ -370,6 +373,7 @@ TEST_CASE("an ambient emitter out of range plays nothing; its plays run out; its
     }
 }
 
+// Expected: sound.md#ambient, confirmed (code)
 TEST_CASE("the ambient modes: 3 loops in range, 4 plays at once then times, 5 cuts its sound", "[audio][ambient]") {
     SECTION("mode 3") {
         EmitterRig r;
@@ -421,6 +425,7 @@ TEST_CASE("the ambient modes: 3 loops in range, 4 plays at once then times, 5 cu
     }
 }
 
+// Expected: sound.md#ambient, confirmed (code)
 TEST_CASE("the ambient bindings fill the table and place a level's emitters", "[audio][ambient]") {
     Rig rig;
     rig.call("AddAmbientSound", {Value(3.0), str(kGull)});
@@ -455,6 +460,7 @@ TEST_CASE("the ambient bindings fill the table and place a level's emitters", "[
     CHECK(rig.sound.emitters().emitterCount() == 0);
 }
 
+// Expected: sound.md#ambient, confirmed (code)
 TEST_CASE("a _DAM_ emitter plays only from 2 s to 15 s after a noise", "[audio][ambient]") {
     Rig rig;
     rig.call("AddAmbientSound", {Value(3.0), str(kGull)});
@@ -480,6 +486,7 @@ TEST_CASE("a _DAM_ emitter plays only from 2 s to 15 s after a noise", "[audio][
     CHECK(rig.sound.damageWindowOpen());
 }
 
+// Expected: sound.md#speech-lines, confirmed (code)
 TEST_CASE("HuSpeak plays a line at the speaker and calls back when it ends", "[audio][speech]") {
     Rig rig;
     rig.call("HuSpeak", {Value(20.0), str(kLine), str("OnLine"), Value(7.0)});
@@ -496,6 +503,7 @@ TEST_CASE("HuSpeak plays a line at the speaker and calls back when it ends", "[a
     CHECK(rig.sound.speech().lines() == 0);
 }
 
+// Expected: sound.md#speech-lines, confirmed (code)
 TEST_CASE("HuSpeakNI cuts a line that may be cut; HuShutUp(true) stops it; a missing line or human calls back at once",
           "[audio][speech]") {
     Rig rig;
@@ -547,6 +555,7 @@ constexpr std::uint32_t kDieSound = 58;  // `die`: over a line, cuts
 
 } // namespace
 
+// Expected: sound.md#speech-cut-in, confirmed (code)
 TEST_CASE("a grunt over a HuSpeakNI line leaves it playing and its callback runs once", "[audio][speech][cut-in]") {
     Rig rig;
     addVocalEntry(rig, kGruntPunch);
@@ -575,6 +584,7 @@ TEST_CASE("a grunt over a HuSpeakNI line leaves it playing and its callback runs
     CHECK(rig.sound.speech().lines() == 0);
 }
 
+// Expected: sound.md#speech-cut-in, confirmed (code)
 TEST_CASE("a grunt over a HuSpeak line replaces it and the line's callback is never reported",
           "[audio][speech][cut-in]") {
     Rig rig;
@@ -591,6 +601,7 @@ TEST_CASE("a grunt over a HuSpeak line replaces it and the line's callback is ne
     CHECK(rig.callbacks.empty());
 }
 
+// Expected: sound.md#speech-cut-in, confirmed (code)
 TEST_CASE("a cutting vocal id is refused over a line that may not be cut", "[audio][speech][cut-in]") {
     Rig rig;
     addVocalEntry(rig, kDieSound);
@@ -610,6 +621,7 @@ TEST_CASE("a cutting vocal id is refused over a line that may not be cut", "[aud
     CHECK(rig.callbacks.empty());
 }
 
+// Expected: sound.md#speech-lines, confirmed (code)
 TEST_CASE("HuShutUp(false) leaves a HuSpeakNI line playing; HuShutUp(true) stops it and the callback follows",
           "[audio][speech][cut-in]") {
     Rig rig;
@@ -638,6 +650,7 @@ TEST_CASE("HuShutUp(false) leaves a HuSpeakNI line playing; HuShutUp(true) stops
     CHECK(rig.callbacks == std::vector<double>{7.0, 9.0});
 }
 
+// Expected: sound.md#speech-cut-in, confirmed (code)
 TEST_CASE("the waiting start and the cutting start differ over a line that may not be cut", "[audio][speech][cut-in]") {
     Rig rig;
     rig.call("HuSpeakNI", {Value(20.0), str(kLine), str("OnLine"), Value(1.0)});
@@ -661,6 +674,7 @@ TEST_CASE("the waiting start and the cutting start differ over a line that may n
     CHECK(rig.callbacks.size() == 4);
 }
 
+// Expected: sound.md#speech-cut-in, confirmed (code)
 TEST_CASE("a speech command that interrupts follows the same rule", "[audio][speech][cut-in]") {
     Rig rig;
     std::vector<Value> cfgChar(17, Value(0.0));
@@ -701,6 +715,7 @@ TEST_CASE("a speech command that interrupts follows the same rule", "[audio][spe
     CHECK(rig.callbacks == std::vector<double>{20.0});
 }
 
+// Expected: sound.md#speech-lines, confirmed (code)
 TEST_CASE("without the game's sound a speech binding calls back at once", "[audio][speech]") {
     Rig rig(false);
     rig.call("HuSpeakNI", {Value(20.0), str(kLine), str("OnLine"), Value(6.0)});
@@ -709,6 +724,7 @@ TEST_CASE("without the game's sound a speech binding calls back at once", "[audi
     CHECK(rig.callbacks == std::vector<double>{6.0, 20.0});
 }
 
+// Expected: sound.md#speech, confirmed (code)
 TEST_CASE("SoundPlayCommand says the speaker's voice set's lines in turn", "[audio][speech]") {
     Rig rig;
     // Ash's type 40 has voice set 3 (CfgChar's twelfth argument).
@@ -737,6 +753,7 @@ TEST_CASE("SoundPlayCommand says the speaker's voice set's lines in turn", "[aud
     CHECK(rig.sound.voices().percent(3, 12) == 30);
 }
 
+// Expected: sound.md#warriors-functions, confirmed (code)
 TEST_CASE("the angry breathing fades in while the camera frames a fight and out after", "[audio]") {
     Rig r;
     r.call("CfgBreathingSound", {Value(1.0), Value(5000.0), Value(2000.0), str(kBreath)});
@@ -763,6 +780,7 @@ TEST_CASE("the angry breathing fades in while the camera frames a fight and out 
     CHECK_FALSE(r.sound.breathingPlays());
 }
 
+// Expected: sound.md#warriors-functions, confirmed (code)
 TEST_CASE("without CfgBreathingSound the camera's framing breathes nothing", "[audio]") {
     Rig r;
     r.sound.setCombatFraming(true);
@@ -770,6 +788,7 @@ TEST_CASE("without CfgBreathingSound the camera's framing breathes nothing", "[a
     CHECK_FALSE(r.sound.breathingPlays());
 }
 
+// Expected: sound.md#q-listener, inferred
 TEST_CASE("the listener sits at player 1's camera, or at the player for listener 1", "[audio]") {
     Rig rig;
     coney::camera::FollowCamera follow{coney::anim::Vec3{40.0F, 40.0F, 0.0F}, 0.0F};
@@ -791,6 +810,7 @@ TEST_CASE("the listener sits at player 1's camera, or at the player for listener
 
 // #404, docs/research/sound.md#scene-world-sound: while a cinematic runs the original hears from the scene camera
 // (`0x00158d58`), its position and its ears, even when SndSetListener chose the player.
+// Expected: sound.md#scene-world-sound, confirmed (code)
 TEST_CASE("during a cinematic the listener is the scene camera, also for listener 1", "[audio][scenes]") {
     Rig rig;
     coney::camera::FollowCamera follow{coney::anim::Vec3{40.0F, 40.0F, 0.0F}, 0.0F};
@@ -825,6 +845,7 @@ TEST_CASE("during a cinematic the listener is the scene camera, also for listene
     CHECK(rig.sound.listener().position.z == Approx(GameSound::kPlayerEarHeight));
 }
 
+// Expected: sound.md#banks, confirmed (code)
 TEST_CASE("gameplay's load screen loads load_NN, defers SndLoadBank, then loads the level's bank", "[audio]") {
     Rig rig;
     rig.sound.gameplayEntered();
@@ -848,8 +869,77 @@ TEST_CASE("gameplay's load screen loads load_NN, defers SndLoadBank, then loads 
     CHECK(rig.engine().stats().started >= 1);
 }
 
+// `Gm_Level_Exit` 0x00158488 (research/functions/frontend.toml): the system music off (`GameState_SetSystemMusic`) and
+// the pitch at 1.0, so neither reaches the front end or the next level.
+// Expected: sound.md#warriors-functions, confirmed (code)
+TEST_CASE("gameplay's exit turns the system music off and sets the pitch back to 1.0", "[audio][music]") {
+    Rig rig;
+    coney::StoryState& story = rig.state.story;
+    rig.call("SoundSetMusicTrack", {Value(0.0), str(kGull)});
+    rig.call("SoundSetSystemMusicState", {Value(1.0)});
+    rig.call("SndSetPitchMod", {Value(0.5)});
+    REQUIRE(story.systemMusic);
+    REQUIRE(story.musicHold == 1);
+    REQUIRE(rig.engine().pitchFactor() == Approx(0.5F));
+    rig.sound.gameplayLeft();
+    CHECK_FALSE(story.systemMusic);
+    CHECK(story.musicMood == -1);
+    CHECK(story.musicHold == -1);
+    CHECK(rig.engine().pitchFactor() == Approx(1.0F));
+    // Already off: only the scripts' hold on the mood ends.
+    story.musicHold = 2;
+    rig.sound.gameplayLeft();
+    CHECK_FALSE(story.systemMusic);
+    CHECK(story.musicHold == -1);
+}
+
+// The system music is the game state's: with no sound engine (--no-audio) the exit still turns it off.
+// Expected: sound.md#warriors-functions, confirmed (code)
+TEST_CASE("gameplay's exit turns the system music off with no sound engine", "[audio][music]") {
+    Rig rig;
+    coney::audio::Mixer mixer;
+    coney::audio::SoundPlayer silent{mixer};
+    GameSound quiet{silent};
+    quiet.connect(nullptr, &rig.context);
+    rig.state.story.systemMusic = true;
+    rig.state.story.musicHold = 1;
+    quiet.gameplayLeft();
+    CHECK_FALSE(rig.state.story.systemMusic);
+    CHECK(rig.state.story.musicHold == -1);
+}
+
+// `Gm_Level_Enter` 0x001582e0, step 1 (docs/research/level-loading.md#mode-1): the three moods' track lists emptied
+// (`SystemMusic_SetTracks` 0x0010e9e0 with no tracks) and the reverb's default kept (type 1, depth 0.1).
+// Expected: sound.md#reverb, sound.md#function-index, confirmed (code)
+TEST_CASE("gameplay's enter empties the moods' tracks and sets the reverb's default", "[audio][music]") {
+    Rig rig;
+    coney::StoryState& story = rig.state.story;
+    rig.call("SoundSetMusicTrack", {Value(0.0), str(kGull)});
+    rig.call("SoundSetMusicTrack", {Value(1.0), str(kGull), str(kCrow)});
+    rig.call("SoundSetMusicTrack", {Value(2.0), str(kCrow)});
+    rig.call("SoundSetEffect", {Value(5.0), Value(0.5), Value(3.0), Value(4.0)});
+    rig.call("SoundEnableSystemMusic", {Value()});
+    REQUIRE_FALSE(story.systemMusic);
+    rig.sound.gameplayEntered();
+    for (const std::vector<std::uint32_t>& tracks : story.moodTracks) {
+        CHECK(tracks.empty());
+    }
+    CHECK(story.reverbType == 1);
+    CHECK(story.reverbDepth == Approx(0.1F));
+    CHECK(story.reverbDelay == 0);
+    CHECK(story.reverbFeedback == 0);
+    // No mood playing: the system music stays off.
+    CHECK_FALSE(story.systemMusic);
+    // Emptying the mood that plays forces a new pick and turns the system music on.
+    story.musicMood = 1;
+    rig.sound.gameplayEntered();
+    CHECK(story.systemMusic);
+    CHECK(story.musicMood == -1);
+}
+
 // docs/research/ai-fights.md#fight-reposition (`Ambient_MayGesture` 0x00291ed0): two gesture slots per reaction kind,
 // of which a brain may take as many as its help level; a slot frees when its holder stops speaking.
+// Expected: ai-fights.md#fight-reposition, confirmed (code)
 TEST_CASE("a gesture takes a free slot of the speaker's reaction kind, up to his help level", "[audio][speech]") {
     Rig rig;
     coney::camera::FollowCamera follow{coney::anim::Vec3{2.0F, 0.0F, 0.0F}, 0.0F};

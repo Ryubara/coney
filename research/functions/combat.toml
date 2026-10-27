@@ -63,7 +63,12 @@ page = "combat/index.md#damage-table"
 role = "computes a hit's damage"
 level = "confirmed-code"
 coney = "src/combat/meters.h:strikeDamage"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "a strike leaves out a held object's damage bonus, the power upgrade's bonus, a friend's statistics and the Warrior's line, the hit effect and the world contact's dust; objects take their hits on the object attack's path"
+relation = "not-ported"
+issue = 1011
 
 [[function]]
 address = 0x0021c570
@@ -120,6 +125,15 @@ coney = "src/combat/meters.h:PowerMeter::fraction"
 status = "legacy"
 
 [[function]]
+address = 0x00226c30
+name = "Human_SetTarget"
+page = "combat-targets.md#fight-stance"
+role = "Takes a human as the target, refused for a pad player locked by L1 (state 0x8 and 0x4)."
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::takeTarget"
+status = "compared"
+
+[[function]]
 address = 0x00227a90
 name = "Human_ExitThrowAim"
 page = "combat/index.md#dispatch"
@@ -128,12 +142,30 @@ coney = "src/combat/throw_aim.h:ThrowAimState::leave"
 status = "legacy"
 
 [[function]]
+address = 0x00227b98
+name = "Player_OnL1Released"
+page = "combat-targets.md#fight-stance"
+role = "L1 let go: clears state 0xc and opens the 264 ms release window (record +0xf4)."
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::updateL1"
+status = "compared"
+
+[[function]]
 address = 0x00227dd8
 name = "Human_IsKnockedOut"
 page = "combat-reactions.md#knocked-out-bit"
 role = "state `0x40000`, or no record: knocked out by the health running out or by a script"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::knockedOut"
+status = "compared"
+
+[[function]]
+address = 0x00228340
+name = "Human_IsInFightStance"
+page = "combat-targets.md#fight-stance"
+role = "Whether record +0x00 holds a fight-stance bit (0x3)."
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::inFightStance"
 status = "compared"
 
 [[function]]
@@ -414,7 +446,17 @@ role = "movement in a fight stance; lock-on"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/human/human.h:Human::combatWalk"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "a car as the target is not built"
+relation = "stand-in"
+issue = 1011
+
+[[function.gaps]]
+what = "the right stick's turn (CfgStrafeRStick, off in play) is not built"
+relation = "stand-in"
+issue = 1011
 
 [[function]]
 address = 0x00244e78
@@ -432,7 +474,17 @@ page = "combat-grabs.md#grab-turn"
 role = "movement states of the held victim and of a grabbing player"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::moveGrab"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "an AI grabber's movement callback in a grab is not built"
+relation = "not-ported"
+issue = 1011
+
+[[function.gaps]]
+what = "the carried turn is the last step, cut to the angle left (0 once the heading is reached), and the reverse test reads its sign; the original carries the rate before the cut (+0x5e0) and reads the last angle left (+0x5e4)"
+relation = "stand-in"
+issue = 1011
 
 [[function]]
 address = 0x002542e8
@@ -458,7 +510,7 @@ name = "AttackTable_GetFarRange"
 page = "combat/index.md#block"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/attack_reach.h:farReach"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x002548f0
@@ -581,7 +633,12 @@ page = "combat/index.md#attacks"
 role = "starts an attack clip, its pose at once (a 0 s fade over the old tasks), counts the combo"
 level = "confirmed-code"
 coney = "src/combat/attacks.h:AttackChain::start"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "an attack's start does not set the push sphere to 0"
+relation = "not-ported"
+issue = 1011
 
 [[function]]
 address = 0x00262920
@@ -631,7 +688,12 @@ role = "the special or strong grapple: target search, id by rage, variant and si
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/combat/player_combat.h:PlayerCombat::strongGrapple"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the strong grapple searches only the cone pass of Player_FindAttackTarget, and every fighter searches, not only a player"
+relation = "stand-in"
+issue = 684
 
 [[function]]
 address = 0x00263eb8
@@ -665,7 +727,7 @@ name = "Player_StartCharge"
 page = "combat-targets.md#fight-stance"
 level = "confirmed-code"
 coney = "src/human/fighter.cpp:Fighter::steer"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00264bd8
@@ -683,7 +745,7 @@ page = "combat-rage.md#rage"
 role = "rage gain"
 level = "confirmed-code"
 coney = "src/combat/meters.h:RageMeter::add"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x002653d8
@@ -692,7 +754,12 @@ page = "combat-rage.md#hit-score-skips"
 role = "a hit's rage awards and the repeat tracker"
 level = "confirmed-code"
 coney = "src/combat/rage_awards.h:awardHitRage"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "a hit's rage award does not skip a friend, and the tutorial's attack callback is not built"
+relation = "not-ported"
+issue = 1011
 
 [[function]]
 address = 0x00265c28
@@ -1284,7 +1351,17 @@ page = "combat/index.md#code-reactions"
 role = "Ends a revive: the partner takes the item, interface cue 0x17, the revived says 75 revive_thank and is healed."
 level = "confirmed-code"
 coney = "src/gamemodes/gameplay_mode.h:GameplayMode::finishRevive"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "a revive's finish leaves out the two humans' task calls and body +0x3c and the revived's old top task and push sphere"
+relation = "not-ported"
+issue = 1011
+
+[[function.gaps]]
+what = "the revived man's 389 comes from the reviver's anim set with 354, where the original chains it on his own stack from his own set"
+relation = "stand-in"
+issue = 1011
 
 [[function]]
 address = 0x002752a0
@@ -1293,7 +1370,22 @@ page = "combat/index.md#code-reactions"
 role = "Starts reviving a downed partner; says 76 revive_reasure."
 level = "confirmed-code"
 coney = "src/gamemodes/gameplay_mode.h:GameplayMode::tryRevive"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the pair id is not kept, and Human_SetPartner is not built"
+relation = "stand-in"
+issue = 1011
+
+[[function.gaps]]
+what = "the say 76 is the game mode's; the two calls on both humans before it are not built"
+relation = "stand-in"
+issue = 1011
+
+[[function.gaps]]
+what = "the push sphere is not switched off"
+relation = "stand-in"
+issue = 1011
 
 [[function]]
 address = 0x00275678
@@ -1302,7 +1394,12 @@ page = "combat-targets.md#led-steer"
 role = "the turn and slide into an attack, and its led variant"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::steerOnto"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the led steer takes the big-target and rear reach changes of the plain steer (steerReach()); the target's own turn is not cleared"
+relation = "stand-in"
+issue = 1011
 
 [[function]]
 address = 0x002759c0
@@ -1314,12 +1411,11 @@ level = "confirmed-code"
 [[function]]
 address = 0x00276008
 name = "Attack_TurnToTarget"
-page = "combat-targets.md#targets"
-role = "an attack's turn and slide onto its target up to the clip's first event, or the turn alone ([Target selection](combat-targets.md#targets))"
+page = "combat-targets.md#attack-steer"
+role = "an attack's turn alone beyond its far range: the attack's direction onto the target led over the time to the clip's first event ([The steer into an attack](combat-targets.md#attack-steer))"
 level = "confirmed-code"
-note = "confirmed (code), runtime"
-coney = "src/human/fighter.h:Fighter::steer"
-status = "legacy"
+coney = "src/human/fighter.cpp:Fighter::steer"
+status = "compared"
 
 [[function]]
 address = 0x002761c8
@@ -1329,7 +1425,12 @@ role = "an attack's turn and slide onto its target up to the clip's first event,
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/human/fighter.h:Fighter::steerOnto"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the plain steer onto a world object (its attach point) or another object is not built"
+relation = "not-ported"
+issue = 1011
 
 [[function]]
 address = 0x002766b0
@@ -1437,6 +1538,8 @@ name = "TargetFilter_StanceEnemy"
 page = "combat/index.md#code-targets"
 role = "The stance's nearest-enemy filter: a targetable, unfriendly, non-pad human within 2 m in height who is a threat (gangs enemies), not down, dead or held; a neutral civilian is refused."
 level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::nearestStanceEnemy"
+status = "compared"
 
 [[function]]
 address = 0x002792c8
@@ -1530,7 +1633,12 @@ name = "Player_FindAttackTarget"
 page = "combat-targets.md#targeting"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::findAttackTarget"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the object and glass passes are not searched; the current target is kept only fightable within the range, where the original keeps any that is no car and whose object query holds"
+relation = "stand-in"
+issue = 1011
 
 [[function]]
 address = 0x0027a6c0
@@ -1539,7 +1647,26 @@ page = "combat-targets.md#targets"
 role = "keeps or searches a target for an action"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::pickTarget"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "square's objects, panes and cars are searched only when no human is found, cars with the other objects, where the original searches the car, objects and panes between the human passes"
+relation = "stand-in"
+issue = 1011
+
+[[function]]
+address = 0x0027aa38
+name = "Player_FindSnapTarget"
+page = "combat-targets.md#targeting"
+role = "the snap's target: the nearest enemy within 2 m and 45 degrees of a direction"
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::snapTarget"
+status = "compared"
+
+[[function.gaps]]
+what = "TargetFilter_Enemy's reaction and held-flag tests are not built (standing with health left stands for down, dead, grabbed or tackled)"
+relation = "stand-in"
+issue = 1011
 
 [[function]]
 address = 0x0027ad80
@@ -1555,7 +1682,26 @@ page = "combat/index.md#code-targets"
 role = "The charge and dive's target: the nearest human between the clip's reach and far range within 54 degrees, then objects and glass ([where they aim](combat/index.md#charge-aim))."
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::nearestInReach"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the charge and dive search does not fall back on objects and glass when no human is in reach"
+relation = "not-ported"
+issue = 1011
+
+[[function]]
+address = 0x0027b1a0
+name = "Player_FindNearestEnemy"
+page = "combat-targets.md#fight-stance"
+role = "The stance's nearest threat within the far distance, kept when the line to it is clear; else the target held unless it is out."
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::nearestStanceEnemy"
+status = "compared"
+
+[[function.gaps]]
+what = "the clear-line test (0x0021c240) is not made: the nearest is always taken"
+relation = "stand-in"
+question = "combat-targets.md#q-clear-line"
 
 [[function]]
 address = 0x0027b2a8
@@ -1908,6 +2054,20 @@ role = "Command 0x25 (d-pad down)."
 level = "confirmed-code"
 
 [[function]]
+address = 0x0027d5a0
+name = "Player_UpdateStanceOrIdle"
+page = "combat-targets.md#fight-stance"
+role = "The dispatcher's stance step: outside state 0xf0000 and the throw aim, a pad player runs the stance update (a scene drops the target)."
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::updateStance"
+status = "compared"
+
+[[function.gaps]]
+what = "a scene's target drop is not made (Coney's targets report no scene)"
+relation = "stand-in"
+question = "combat-targets.md#q-clear-line"
+
+[[function]]
 address = 0x0027d6e0
 name = "Player_TryCounterGrab"
 page = "combat-moves.md#counters"
@@ -1934,6 +2094,25 @@ level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/combat/attacks.h:runningAttackAllowed"
 status = "legacy"
+
+[[function]]
+address = 0x0027dc00
+name = "Player_OnL1Held"
+page = "combat-targets.md#fight-stance"
+role = "L1 held: picks a target when there is none and locks one there (state 0x8, Player_LockOn), unless delayed, busy, locked, aiming or sprinting."
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::updateL1"
+status = "compared"
+
+[[function.gaps]]
+what = "the pick is square's within 2.5 m, not Player_FindLockTarget's passes to 6 m"
+relation = "stand-in"
+question = "combat-targets.md#q-l1-search"
+
+[[function.gaps]]
+what = "the per-player action delay is not modelled"
+relation = "stand-in"
+question = "combat-targets.md#q-l1-delay"
 
 [[function]]
 address = 0x0027df38
@@ -1985,6 +2164,24 @@ coney = "src/combat/grabbed.h:updateGrabbed"
 status = "legacy"
 
 [[function]]
+address = 0x00280068
+name = "Player_EnterStance"
+page = "combat-targets.md#fight-stance"
+role = "Enters the player's fight stance (state 0x1) after ending his hiding (Human_ClearHiddenState)."
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::enterStance"
+status = "compared"
+
+[[function]]
+address = 0x002801e8
+name = "Player_ExitStanceAndLock"
+page = "combat-targets.md#fight-stance"
+role = "Leaves the stance and the lock (state 0x5 cleared, the combo count zeroed) and the lock-on movement."
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::leaveStance"
+status = "compared"
+
+[[function]]
 address = 0x002802a0
 name = "Pair_Attach"
 page = "combat-grabs.md#grab-posing"
@@ -2016,7 +2213,12 @@ page = "combat/index.md#attacks"
 role = "buffers the next button in record `+0xb8` and plays the next attack of the combo when the chain window opens"
 level = "confirmed-code"
 coney = "src/combat/attacks.h:AttackChain::update"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the chain's held presses (commands 13 and 14) and the third step's hold variants, and the armed chain, are not built"
+relation = "not-ported"
+issue = 1011
 
 [[function]]
 address = 0x00280d20
@@ -2143,7 +2345,32 @@ role = "circle: target search, then grab or tackle"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/combat/player_combat.h:PlayerCombat::grabOrTackle"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "a throw aim does not refuse circle, and flag 0x100000000 does not refuse the tackle"
+relation = "stand-in"
+issue = 1011
+
+[[function.gaps]]
+what = "the circle search also runs for a brain-driven player and a miss keeps the target"
+relation = "stand-in"
+issue = 1011
+
+[[function.gaps]]
+what = "a downed human is not mounted (the search skips him) and a tackle at a human who is tackling does not pull him off; the pull-off and its warning are not built"
+relation = "stand-in"
+issue = 1011
+
+[[function.gaps]]
+what = "the victim is not warned, and command 33's check before a grab is not made"
+relation = "stand-in"
+issue = 1011
+
+[[function.gaps]]
+what = "a circle tap with both grab-block flags still starts a tandem; the original refuses the tap before its tandem test"
+relation = "stand-in"
+issue = 1011
 
 [[function]]
 address = 0x002854b0
@@ -2194,7 +2421,12 @@ page = "combat/index.md#attacks"
 role = "square: standing, walking, running, snap, grounded and object attacks"
 level = "confirmed-code"
 coney = "src/combat/attack_target.h:attackTarget"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "square leaves out 212 at a mid-height target, the counter grab and tackle, the moving snaps of a human no pad drives, and the switch 0x00510270's path"
+relation = "not-ported"
+issue = 1011
 
 [[function]]
 address = 0x00287730
@@ -2228,7 +2460,12 @@ role = "cross: the X attacks"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/combat/attack_target.h:attackTarget"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "cross leaves out the object attack, the grounded strikes 193 and 194, 661 at a mid-height target, 120 at a grabbed one, the counter grab and tackle, and the switch 0x00510270's solo 22"
+relation = "not-ported"
+issue = 1011
 
 [[function]]
 address = 0x002880d8

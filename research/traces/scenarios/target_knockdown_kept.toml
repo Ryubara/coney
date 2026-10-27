@@ -1,0 +1,60 @@
+# slot 6: an enemy knocked down with health left: PoizoCiv's gang is made an enemy of the player's at update 2
+# (Gang_MakeEnemies 0x0016acf0), his brain kept alerted, and he stands 1.5 m ahead facing the player, who stands
+# still and locks on. At update 30 the game knocks him down (Human_KnockDown 0x0022f100, state 0x80000). Does the
+# stance keep him as the target while he lies with health left? Research: docs/research/combat-targets.md#fight-stance.
+description = "slot 6: an enemy 1.5 m ahead locked, then knocked down; is he kept as the target while down"
+research = "docs/research/combat-targets.md#fight-stance"
+input = "target_knockdown_kept.txt"
+updates = 90
+fields = ["player"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "call-brains"]
+let = { enemy = 'human("PoizoCiv")' }
+setup = [
+  { address = "tf(enemy) + 0x0", type = "f32", value = "f32(tf(player)) - 1.5 * sin(heading(player))", until = 0 },
+  { address = "tf(enemy) + 0x4", type = "f32", value = "f32(tf(player) + 4) + 1.5 * cos(heading(player))", until = 0 },
+  { address = "tf(enemy) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 0 },
+  { address = "tf(enemy) + 0x18", type = "f32", value = "sin((heading(player) + pi) / 2)", until = 0 },
+  { address = "tf(enemy) + 0x1c", type = "f32", value = "cos((heading(player) + pi) / 2)", until = 0 },
+  { address = "brain(enemy) + 0x21c", type = "u32", value = "1", frame = 0, until = 200 },
+]
+# A civilian gang (kind 0x17) whose members are all unalerted is made neutral again every update
+# (Gang_CheckNeutralRule 0x00169d30), so PoizoCiv's brain is kept alerted (+0x21c).
+calls = [
+  { function = "0x0016acf0", args = ["s16(u32(brain(player) + 0x20c) + 0x30)", "s16(u32(brain(enemy) + 0x20c) + 0x30)"], frame = 2 },
+  { function = "0x0022f100", args = ["enemy", "player", "0"], frame = 30 },
+]
+
+[coney]
+level = "sandbox:combat"
+args = ["--spawn", "start"]
+
+[[field]]
+name = "state"                            # record +0x00, the state word's low half (0x1 stance, 0x4 lock, 0x8 L1)
+address = "rec(player) + 0x0"
+type = "u32"
+
+[[field]]
+name = "target"                           # human +0xc8, the target's handle index (-1 none)
+value = "hidx(u32(player + 0xc8))"
+
+[[field]]
+name = "move"                             # human +0x1c0, the movement state (0x241b90 lock-on, 0x240e38 free)
+address = "player + 0x1c0"
+type = "u32"
+
+[[field]]
+name = "enemy_state"                      # PoizoCiv's record +0x00 (0x80000 knocked down)
+address = "rec(enemy) + 0x0"
+type = "u32"
+
+[[field]]
+name = "enemy_health"                     # PoizoCiv's record +0x144
+address = "rec(enemy) + 0x144"
+type = "s16"
+
+[[field]]
+name = "dist"
+value = "hypot(f32(tf(player)) - f32(tf(enemy)), f32(tf(player) + 4) - f32(tf(enemy) + 4))"

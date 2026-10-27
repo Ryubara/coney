@@ -162,8 +162,8 @@ void PlayLevelMode::stepRings(const Pad& pad, const WorldView& view, std::uint64
     ringPlayer.selectPressed = (pad.pressed() & pad::kSelect) != 0;
     // A flash used since the last update asks for the rings (the panel request the update clears).
     ringPlayer.flashUsed = std::exchange(m_flashRingRequest, false);
-    // **Coney's stand-in** for the fight stance (record `+0x00` & 3): locked onto a target or blocking.
-    ringPlayer.fightStance = fighter.lockTarget() != nullptr || fighter.blocking();
+    // The fight stance (record `+0x00` & 3), which the block also holds.
+    ringPlayer.fightStance = fighter.inFightStance() || fighter.blocking();
     ringPlayer.holdingL1 = (pad.buttons() & pad::kL1) != 0;
     if (const human::Combatant* target = fighter.target(); target != nullptr) {
         if (const auto* human = dynamic_cast<const human::Human*>(target); human != nullptr) {

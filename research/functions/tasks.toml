@@ -17,7 +17,17 @@ page = "tasks.md#original-structure"
 role = "the locomotion's \"no stick\" test ([below](tasks.md#locomotion-gate))"
 level = "confirmed-code"
 coney = "src/human/locomotion_gate.h:stickBusy"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the pad lock (HuLockPad, player record +0x1e) does not make the human busy, so a locked pad's stick still walks him"
+relation = "not-ported"
+issue = 1011
+
+[[function.gaps]]
+what = "Coney's combat states stand for the state word's busy bits 0x79b9e1e0f30"
+relation = "stand-in"
+issue = 1011
 
 [[function]]
 address = 0x00245920

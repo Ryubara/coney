@@ -141,6 +141,12 @@ struct Summary {
 /// first member's string values.
 [[nodiscard]] std::string toJson(const Summary& summary, const std::vector<std::pair<std::string, std::string>>& meta);
 
+/// The frames `records` (from recorded()) as CSV, one row each: the frame's number from 0, its length in milliseconds,
+/// then each zone's time in milliseconds and each counter's growth, named in a header row
+/// (`frame,frame_ms,step_ms,...`) by the zones and counters registered now. For `--bench-frames`, to find the worst
+/// frames and what grew in them.
+[[nodiscard]] std::string framesCsv(const std::vector<FrameRecord>& records);
+
 /// Forgets every zone time, counter, record and the enabled state; the names stay registered (call sites keep their
 /// indices). For tests.
 void resetForTests();

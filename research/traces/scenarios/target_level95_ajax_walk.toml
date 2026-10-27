@@ -1,0 +1,43 @@
+# level95 checkpoint 2 (loaded with the load-checkpoint recipe before an --attach run): Cleon is placed at
+# (-179.56, 88.51), heading -129.2 degrees, where Coney's player stands after the corner on his walk from the
+# checkpoint's spot toward Ajax (a crew mate of gang 2, standing at about (-177.5, 87.0)), and walks on at 60 % into
+# him. Does the stance take Ajax, or lock, as Coney's player once did from 1.6 m? Research:
+# docs/research/combat-targets.md#fight-stance.
+description = "level95 cp 2: from (-179.56, 88.51) walk at 60 % into Ajax, a crew mate: any target or stance"
+research = "docs/research/combat-targets.md#fight-stance"
+input = "target_level95_ajax_walk.txt"
+updates = 90
+fields = ["player"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "call-brains"]
+let = { mate = 'human("Ajax")' }
+setup = [
+  { address = "tf(player) + 0x0", type = "f32", value = "-179.56", until = 0 },
+  { address = "tf(player) + 0x4", type = "f32", value = "88.51", until = 0 },
+  { address = "tf(player) + 0x18", type = "f32", value = "sin(-129.2 * pi / 360)", until = 0 },
+  { address = "tf(player) + 0x1c", type = "f32", value = "cos(-129.2 * pi / 360)", until = 0 },
+]
+
+[coney]
+level = "level95"
+args = ["--checkpoint", "2"]
+
+[[field]]
+name = "state"                            # record +0x00, the state word's low half (0x1 stance, 0x4 lock, 0x8 L1)
+address = "rec(player) + 0x0"
+type = "u32"
+
+[[field]]
+name = "target"                           # human +0xc8, the target's handle index (-1 none)
+value = "hidx(u32(player + 0xc8))"
+
+[[field]]
+name = "move"                             # human +0x1c0, the movement state (0x241b90 lock-on, 0x240e38 free)
+address = "player + 0x1c0"
+type = "u32"
+
+[[field]]
+name = "dist"                             # metres from the player to the crew mate, on the ground
+value = "hypot(f32(tf(player)) - f32(tf(mate)), f32(tf(player) + 4) - f32(tf(mate) + 4))"
