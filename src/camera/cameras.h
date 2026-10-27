@@ -76,7 +76,8 @@ class Cameras {
     using Locator = std::function<std::optional<anim::Vec3>(double handle)>;
 
     /// The cameras with the switches as a level's camera reset leaves them.
-    /// @orig 0x00122b80 Cameras_ResetLevel (unknown): the switches' defaults
+    /// Its part of the original: the switches' defaults.
+    /// @orig 0x00122b80 Cameras_ResetLevel (unknown)
     Cameras();
 
     /// Hands the manager player 1's follow camera (which must outlive it, or be detached with nullptr) and makes it
@@ -172,7 +173,8 @@ class Cameras {
     /// `CamSetupPoizo`: the one path camera started over from the view of the camera `start` names
     /// (PathCamera::setup()) and its handle, `handle` the first time and the same one after; nothing when `start` names
     /// no camera.
-    /// @orig 0x0011c9e0 Camera_SetupPoizo (unknown): the start camera's lookup and the handle
+    /// Its part of the original: the start camera's lookup and the handle.
+    /// @orig 0x0011c9e0 Camera_SetupPoizo (unknown)
     [[nodiscard]] std::optional<double> setupPath(double handle, double start, float seconds, std::string onEnd,
                                                   float fieldOfView, float farClip);
     /// `CamAddPoizoPoint`: a point appended to the path; false without a path camera.
@@ -223,7 +225,8 @@ class Cameras {
 
     /// `CameraCreateFixed`: keeps `camera` under `handle` and puts the human `target` on the shared target list when it
     /// is not there and the list has room.
-    /// @orig 0x0011c6b8 Camera_CreateFixed (unknown): the camera kept and its target put on the list
+    /// Its part of the original: the camera kept and its target put on the list.
+    /// @orig 0x0011c6b8 Camera_CreateFixed (unknown)
     void createFixed(double handle, double target, const FixedCamera& camera);
     /// The fixed camera with `handle`, or null.
     /// @coney-only a lookup by handle
@@ -300,14 +303,16 @@ class Cameras {
 
     /// A scene with a camera starts: the current camera (a blend's destination) is pushed on the stack and the scene
     /// camera, showing `view`, made current at once.
-    /// @orig 0x00120450 CameraStack_Push (unknown): the push; SceneTask_Start's port calls this
+    /// Its part of the original: the push; SceneTask_Start's port calls this.
+    /// @orig 0x00120450 CameraStack_Push (unknown)
     void beginScene(const CameraView& view);
     /// The scene camera's view this update.
     /// @coney-only Coney's hand-off of the scene player's camera view
     void setSceneView(const CameraView& view);
     /// The scene ends: the camera on the stack is popped, reset and made current over `blendSeconds` (0 or below: a
     /// cut), the scene camera released, and the cameras updated once with kSceneSettleSeconds.
-    /// @orig 0x00120488 CameraStack_Pop (unknown): the pop; SceneTask_End's port calls this
+    /// Its part of the original: the pop; SceneTask_End's port calls this.
+    /// @orig 0x00120488 CameraStack_Pop (unknown)
     void endScene(float blendSeconds);
     /// The cameras the scenes will return to, oldest first.
     [[nodiscard]] const std::vector<CameraRef>& stack() const { return m_stack; }
@@ -350,13 +355,16 @@ class Cameras {
     /// @coney-only finds the target's placement for WinCamera's start (0x001439d8)
     void startWin();
     // Makes `ref` current at once, running the follow camera's activation.
-    /// @orig 0x0011ee08 Camera_MakeActive (Cam_ICamera.cpp): the switch at once and the camera's activation
+    /// Its part of the original: the switch at once and the camera's activation.
+    /// @orig 0x0011ee08 Camera_MakeActive (Cam_ICamera.cpp)
     void setCurrent(CameraRef ref);
     // Starts a blend from the view shown now to `ref`, or cuts when there is nothing to blend from.
-    /// @orig 0x0011ee08 Camera_MakeActive (Cam_ICamera.cpp): the blend or the cut
+    /// Its part of the original: the blend or the cut.
+    /// @orig 0x0011ee08 Camera_MakeActive (Cam_ICamera.cpp)
     void switchTo(CameraRef ref, float seconds);
     // The current locked camera's update of its listed humans (keepInView()), with the level's `mesh`.
-    /// @orig 0x00135ca8 LockedCam_KeepHumansInView (unknown): the loop over the list
+    /// Its part of the original: the loop over the list.
+    /// @orig 0x00135ca8 LockedCam_KeepHumansInView (unknown)
     void keepHumansInView(const raycast::CollisionMesh* mesh);
     // One update of the rail, fixed or third-person camera `ref` names, from where its target is now.
     /// @coney-only hands each tracking camera its target's place; their own updates are the ports

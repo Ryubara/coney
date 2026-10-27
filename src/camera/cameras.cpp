@@ -15,7 +15,7 @@ constexpr std::uint8_t kStickRest = 128;
 // The switches a level's camera reset turns off; the rest are on (0x00122b80).
 constexpr std::array<std::size_t, 2> kSwitchesOff{1, 13};
 
-// The follow camera's view: at its position facing its aim point, through its lens and `farClip`.
+// The follow camera's view: at its position facing its aim point, through its lens and `farClip`. @coney-only glue
 CameraView followView(const FollowCamera& follow, float farClip) {
     return viewLookingAt(follow.position(), follow.aimPoint(), follow.fieldOfView(), follow.nearClip(), farClip);
 }
