@@ -605,6 +605,12 @@ A task whose issue has the `workflow` label holds no slot until the cutover; the
 card each time, not copied into the task file. Work in other repositories (Tether, Conclave's own plugin repository)
 has no unit here and is not counted.
 
+The open-claims limit follows the slots: the maintainer's limit of 3 stands for the 3 task slots, so a claim stops
+counting toward it when the unit's slot frees. The passing `reviewed` stamp posts `/progress reviewed`, and from that
+stage on (`claims.limit_ends_at`: `reviewed`, `pr-opened`, `fix`, `finished`), or once the claimant's pull request is
+open, the card says `Limit: no longer counted` and keeps `counted: false` for good; the claim itself stays held, with
+its card and its deadline, until it is merged or released. So three units waiting for CI never refuse a fourth claim.
+
 ## Working from an issue {#agents}
 
 A brief may be just "issue #N" ([Briefing](agents.md#briefs)); the issue holds the rest.
