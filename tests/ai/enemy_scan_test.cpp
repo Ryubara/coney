@@ -41,6 +41,7 @@ bool lists(const Brain& brain, const Brain& other) {
 } // namespace
 
 TEST_CASE("a guard lists an enemy in his cone and sight, and only behind him within the near radius", "[ai][scan]") {
+    // Expected: ai-fights.md#enemy-scan, confirmed (code)
     coney::test::AiScene scene;
     scene.brains.setCollision(scene.mesh.get());
     // The guard at (40, 50) faces -y, toward the player at (40, 40).
@@ -67,6 +68,7 @@ TEST_CASE("a guard lists an enemy in his cone and sight, and only behind him wit
 }
 
 TEST_CASE("a wall hides an enemy, and a friend or an enemy beyond the sight range is never listed", "[ai][scan]") {
+    // Expected: ai-fights.md#enemy-scan, confirmed (code)
     coney::test::AiScene scene;
     scene.mesh =
         coney::test::makeMesh(coney::test::join(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F),
@@ -84,6 +86,7 @@ TEST_CASE("a wall hides an enemy, and a friend or an enemy beyond the sight rang
 }
 
 TEST_CASE("an enemy out of sight is dropped beyond 3 m and kept within it", "[ai][scan]") {
+    // Expected: ai-fights.md#enemy-scan, confirmed (code)
     coney::test::AiScene scene;
     scene.mesh =
         coney::test::makeMesh(coney::test::join(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F),
@@ -105,6 +108,7 @@ TEST_CASE("an enemy out of sight is dropped beyond 3 m and kept within it", "[ai
 }
 
 TEST_CASE("the schedule scans each brain once an interval, at most five an update", "[ai][scan]") {
+    // Expected: ai-fights.md#enemy-scan, confirmed (code)
     coney::test::AiScene scene;
     std::vector<Brain*> guards;
     guards.reserve(7);
@@ -127,4 +131,49 @@ TEST_CASE("the schedule scans each brain once an interval, at most five an updat
     CHECK(schedule.maybeScan(scene.brains.gangs(), *guards[5], 33));
     CHECK_FALSE(schedule.maybeScan(scene.brains.gangs(), *guards[0], 33));
     CHECK(schedule.maybeScan(scene.brains.gangs(), *guards[0], 500));
+}
+
+TEST_CASE("a gang always seen is listed anywhere in sight range, behind the scanner and behind a wall", "[ai][scan]") {
+    // Expected: ai-fights.md#enemy-scan, confirmed (code). Brain_ScanEnemies 0x0028b358 reads the member's gang's
+    // always-seen byte (+0xdc, GangSetAlwaysSeen 0x0016bde8): set, it skips Human_MaySpectate and the whole sight step
+    // (near radius, view cone, line of sight); the shadow rule and the filter still apply.
+    coney::test::AiScene scene;
+    scene.mesh =
+        coney::test::makeMesh(coney::test::join(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F),
+                                                coney::test::wallFacingPlusY(45.0F, 30.0F, 50.0F, 0.0F, 4.0F)));
+    scene.brains.setCollision(scene.mesh.get());
+    // 10 m off, facing away, a wall between them.
+    Brain& guard = scene.add(Vec3{40.0F, 50.0F, 0.0F}, 0.0F);
+    makeSides(scene, {&guard});
+    scene.run(1);
+    REQUIRE_FALSE(scanSees(guard, scene.player()));
+    auto& gangs = scene.brains.gangs();
+    REQUIRE(scene.player().gang() != nullptr);
+    gangs.setAlwaysSeen(scene.player().gang()->id(), true);
+    CHECK(scanSees(guard, scene.player()));
+    guard.forget(scene.player());
+    CHECK(scanEnemies(gangs, guard) == 1);
+    CHECK(lists(guard, scene.player()));
+}
+
+TEST_CASE("a wounded scanner's list goes, an arrested one's stays", "[ai][scan]") {
+    // Expected: ai-fights.md#enemy-scan and characters.md (Human_IsWounded 0x00227d98: state 0x10000), confirmed
+    // (code). Brain_ScanEnemies 0x0028b358 empties the list of a scanner Human_IsDownOrDead 0x00227e60 calls down:
+    // states 0x180050000, dead, dying, knocked out or wounded (0x10000); arrested is none of them.
+    for (const bool wounded : {true, false}) {
+        INFO((wounded ? "wounded" : "arrested"));
+        coney::test::AiScene scene;
+        scene.brains.setCollision(scene.mesh.get());
+        Brain& guard = scene.add(Vec3{40.0F, 50.0F, 0.0F}, 180.0F);
+        makeSides(scene, {&guard});
+        scene.run(1);
+        REQUIRE(lists(guard, scene.player()));
+        if (wounded) {
+            guard.human().setWounded(true);
+        } else {
+            guard.human().setArrested(true);
+        }
+        scanEnemies(scene.brains.gangs(), guard);
+        CHECK(lists(guard, scene.player()) != wounded);
+    }
 }

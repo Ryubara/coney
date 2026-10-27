@@ -538,9 +538,11 @@ TEST_CASE("a player with both grab-block flags starts no grab; his tackle still 
     }
 }
 
-TEST_CASE("out of power, a victim with double damage or auto-escape escapes; with no-escape it is let go",
+TEST_CASE("out of power, a victim with double damage or auto-escape escapes; with no-escape it is let go whatever "
+          "else it has",
           "[human][combat]") {
-    // Expected: combat-grabs.md#grabbed, confirmed (code)
+    // Expected: combat-grabs.md#grabbed, confirmed (code). Human_UpdateMeters 0x002562d0 tests 0x2000000000 first:
+    // with it the grab is released (Grab_Release), whether the victim has 0x20000 or 0x4000 or the grabber is hurt.
     const FightCharacter character;
     // Grabs the other human with `otherFlags`, hurts the player when `hurt`, empties the power; whether the victim
     // escaped (the player down) rather than being let go.
@@ -563,8 +565,9 @@ TEST_CASE("out of power, a victim with double damage or auto-escape escapes; wit
     CHECK(escapes(flag::kAutoEscape, false));
     CHECK(escapes(0, true));
     CHECK_FALSE(escapes(flag::kNoEscape, true));
-    // The escape flags win over no-escape.
-    CHECK(escapes(flag::kDoubleDamage | flag::kNoEscape, true));
+    // No-escape wins over the escape flags.
+    CHECK_FALSE(escapes(flag::kDoubleDamage | flag::kNoEscape, false));
+    CHECK_FALSE(escapes(flag::kAutoEscape | flag::kNoEscape, true));
 }
 
 TEST_CASE("an AI attacker's double damage gets through the player's hit armour", "[human][combat]") {

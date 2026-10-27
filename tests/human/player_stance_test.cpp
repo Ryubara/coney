@@ -179,3 +179,27 @@ TEST_CASE("a grab or an attack from hiding ends the hiding", "[human][combat][ta
         CHECK(started);
     }
 }
+
+TEST_CASE("leaving the shadow with a target, the hidden state lasts until the 4 s grace's end is past",
+          "[human][targeting][stealth]") {
+    // Expected: stealth.md#hidden, confirmed (code). Human_UpdateActions 0x00254e78 ends the grace when its end is
+    // below the game time, so the update whose time is the end itself is still hidden.
+    Fight fight(character(), 1.5F);
+    fight.run("", 5);
+    REQUIRE(fight.human().fighter().target() != nullptr);
+    fight.human().enterHiding();
+    fight.human().leaveHiding();
+    REQUIRE(fight.human().hidden());
+    const std::uint64_t end = fight.human().nowMs() + coney::human::Human::kHideGraceMs;
+    std::uint64_t lastHidden = 0;
+    std::uint64_t firstOut = 0;
+    fight.run("", 150, [&](std::uint64_t) {
+        if (fight.human().hidden()) {
+            lastHidden = fight.human().nowMs();
+        } else if (firstOut == 0) {
+            firstOut = fight.human().nowMs();
+        }
+    });
+    CHECK(lastHidden == end);
+    CHECK(firstOut > end);
+}
