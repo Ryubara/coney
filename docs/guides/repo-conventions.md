@@ -300,7 +300,7 @@ themselves; the skill is what acts on them.
 
 | Rule | Guide |
 | --- | --- |
-| Commit titles, squash merging, who merges, the release queue | [How we work](how-we-work.md), [CONTRIBUTING.md](repo:CONTRIBUTING.md#commits) |
+| Commit titles, squash merging, who merges, opening the pull request | [How we work](how-we-work.md), [CONTRIBUTING.md](repo:CONTRIBUTING.md#commits) |
 | What a reviewer holds a commit, a branch and a pull request title to | [Commit review](review/commits.md) |
 | Pull request descriptions: Testing, Screenshots, Checklist | [Testing](testing.md#pr-evidence), [Issues](issues.md#follow-up-work) |
 | Labels, forms, triage, what a closed issue keeps | [Issues](issues.md) |

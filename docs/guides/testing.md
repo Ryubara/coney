@@ -1,8 +1,8 @@
 # Testing
 
-Coney's tracks never stop to wait for someone to play their work: finished work merges once the automated checks
+Coney's engineers never stop to wait for someone to play their work: finished work merges once the automated checks
 pass, and play-testing happens at milestones. That only works if the tests are strong enough to stand in for a
-player, and if every track proves its work the same way. This page is that standard: what "done" means for each kind
+player, and if every task proves its work the same way. This page is that standard: what "done" means for each kind
 of work, the rules every test follows, and where the checks run. How to build and run them is in
 [Building and testing](building.md).
 
@@ -45,7 +45,7 @@ evidence names what was compared and gives numbers: "trace diff walk60, 600 upda
 tolerance", "PCSX2 slot 3 reads 0x00271f40 = 4, Coney's field = 4". A disagreement is not hidden: it becomes a fix
 in the same pull request, or an open question on the research page and a marked [stand-in](#stand-ins) in the code.
 The captures and logs stay in the scratch folder while the pull request is open, because the reviewer opens them
-([The description review](how-we-work.md#pr-review)).
+([Task review](review/task.md)).
 
 A change the original cannot say anything about has no comparison, and says so with a reason that is not
 convenience: "refactor with no change to behaviour (the existing trace diff still shows 0 differences)", "the
@@ -307,7 +307,7 @@ PCSX2 captures or reads compared with Coney's), or `Runtime: none (<reason>)`:
 `coney-tools repo check-body --title "<title>"` refuses the description without it. CI's `body` job runs that command
 with the pull request's title, and `repo check-review` runs it with line 1 of `PR.md`, so the message is the same
 locally and in CI. The check refuses a missing, empty or numberless line (and `none` without a reason); the reviewer
-refuses one with nothing behind it in the scratch folder ([The description review](how-we-work.md#pr-review)). Any
+refuses one with nothing behind it in the scratch folder ([Task review](review/task.md)). Any
 other title area leaves the line out.
 
 ### Capturing and attaching {#pr-media}
@@ -334,7 +334,7 @@ other title area leaves the line out.
   gameplay, not a letterboxed scene, a loading or black screen or a menu; the right level and place; the frame and
   options the text states. A before and after pair must differ: two identical shots mean a capture went wrong, so take
   it again. The `reviewer` agent checks the same before release, and `repo check-review` refuses byte-identical
-  images ([The description review](how-we-work.md#pr-review)).
+  images ([Task review](review/task.md)).
 - **Video.** A short clip (10 seconds at most) of Coney comes from `coney --record`, one of the original from
   `coney-tools pcsx2 clip`, and both go up only with `coney-tools clips publish`: the rules and how each is kept are
   in [Clips](#clips) below. Never a screen recorder.
@@ -403,8 +403,17 @@ removes any left behind. Never attach a clip with `gh` directly, never commit on
 
 ### The local gate {#local-gate}
 
-Before reporting work or merging it, in your own worktree, run the one command that checks what CI would fail on for
-the files you touched, and fix what it prints:
+The gate is `coney-tools task check`, the Check stage of [the pipeline](how-we-work.md#the-pipeline): on the committed
+tip of a task it runs the whole list below for the change's kind and writes the `checked` stamp that Review and
+`pr open` require ([profiles and checks](coney-tools-repo.md#task-check)). It leaves to CI the warnings only GCC emits,
+macOS, the sanitizers and clang-tidy.
+
+```sh
+uv run --project python coney-tools task check <task>
+```
+
+While working, one command checks what CI would fail on for the files you touched; it is an aid, not the gate, and
+the quickest check for a person contributing without a task:
 
 ```sh
 uv run --project python coney-tools check changed
@@ -413,26 +422,23 @@ uv run --project python coney-tools check changed
 It runs pre-commit on the changed files, the page standards on the changed pages and `mkdocs build --strict` when docs
 changed, ruff, pytest and mypy when `python/` or `.claude/` changed, `orig check` when `src/` changed (a new gameplay
 function carries `@orig` or `@coney-only`), and `repo check`. [The command's page](coney-tools-build.md#check) has the
-options. It does not replace `coney-tools task check`
-([profiles and checks](coney-tools-repo.md#task-check)), the gate that runs the whole list for the change's kind and
-writes the `checked` stamp, nor the list below, which is the whole gate, and it leaves to CI the warnings only GCC emits,
-macOS, the sanitizers and clang-tidy.
+options.
 
 **clang-tidy is CI's alone.** It is not run locally (on Windows there are no local WSL builds or clang-tidy runs):
 every pull request that changes engine files gets a required `clang-tidy` check on the lines it changes, and the whole
 codebase is tidied nightly ([clang-tidy](clang-tidy.md)). It catches what MSVC lets through, such as an unchecked
 `std::optional` access (`bugprone-unchecked-optional-access`) or a use after a move. A finding is an annotation on the
-pull request; fix it forward on the branch and let CI check again. A designated initializer that skips a field
-(`-Wmissing-designated-field-initializers`) is caught by the GCC and Clang builds instead, whose `-Wall -Wextra`
+pull request; it is fixed as a fix task on the branch ([Slots](how-we-work.md#slots)). A designated initializer that
+skips a field (`-Wmissing-designated-field-initializers`) is caught by the GCC and Clang builds instead, whose `-Wall -Wextra`
 warnings are errors in the `ci`, `ci-release` and `asan` presets (`CONEY_WARNINGS_AS_ERRORS`); clang-tidy's `-*` turns
 off its compiler diagnostics.
 
-The command runs on Windows, Linux and macOS. Nobody checks it by hand on all three, so CI does: the `python` workflow
+`check changed` runs on Windows, Linux and macOS. Nobody checks it by hand on all three, so CI does: the `python` workflow
 runs its `repo` and `pre-commit` steps on every operating system it tests (`--base HEAD^1`, the branch a pull request's
 merge commit joins), and a step that works on one system and not another fails there. A person on Linux or macOS who
 finds a difference fixes it forward.
 
-The whole gate:
+The whole gate, which `task check` runs:
 
 - **Engine changes:** the `ci` preset build and its tests with the disc configured, in one command:
   `uv run --project python coney-tools build --agent <id> --preset ci --test` (it waits for a free
@@ -451,7 +457,7 @@ The whole gate:
 
 Commands and presets: [Building and testing](building.md).
 
-The whole gate runs once per unit, as its final check before the unit is reported ready for release. While working,
+The whole gate runs once per tip, in `task check`, before Review. While working,
 check with the `dev` preset and only the tests the change touches (`ctest --preset dev -R <pattern>`, disc tests
 included when they are the ones affected). Builds share a few slots on one machine, and a full `ci` build with the whole
 suite holds one for 15 to 30 minutes, so running it for every step makes everyone else wait.
@@ -468,5 +474,5 @@ MSVC accepts but the others reject is the usual cause: see [Portability traps](c
 People play a play-test build (the `playtest` preset: optimised, with the debug menus) at milestones, from one list
 of what changed and how to reach it (commands that start
 through the player's path). Nobody waits for them: work merges on the automated gate. A finding comes back as a fix
-on the owning track, starting with a test that reproduces it. A mission stays **Pending approval** until a maintainer
+task, starting with a test that reproduces it. A mission stays **Pending approval** until a maintainer
 has played it ([Missions](research-data.md#missions)).

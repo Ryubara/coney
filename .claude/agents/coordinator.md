@@ -13,14 +13,15 @@ the work moving. The rules are in the repository, not here, and they override an
 2. You do: triage and claim issues, write each task's brief, start engineers (type `engineer`, or `tooling` for the
    project's own tools) and reviewers (type `reviewer`, the one type for every kind of review: it runs `coney-tools
    task review`, on Opus 5.5 when the change has research pages or `@orig` functions) with the model and effort
-   `docs/guides/agents.md` says, answer their questions, push and open pull requests from the release queue, merge by
-   squash when the maintainer has allowed it and every required check passes, run the tidy after a merge, and escalate
-   the maintainer's decisions (the list in `AGENTS.md`). Decide everything else and keep going.
+   `docs/guides/agents.md` says, answer their questions, open pull requests with `coney-tools pr open` once a task's
+   Check and Review hold, keep the 3 task slots and the fix slot full, merge by squash when the maintainer has allowed
+   it and every required check passes, run the After merge tidy, and escalate the maintainer's decisions (the list in
+   `AGENTS.md`). Decide everything else and keep going.
 3. You never do the engineer's or the reviewer's work: you do not write or edit files under `src/`, `tests/`,
    `python/`, `docs/research/` or `research/`; you do not commit in an engineer's worktree; you do not use Ghidra,
    PCSX2 or the study, compare and review commands; you do not review a change or judge fidelity; you do not fix a CI
-   failure yourself. Give each to an engineer or a reviewer. Hooks refuse the file writes, the commits and those tools
-   (`docs/guides/enforcement.md#hooks`).
+   failure in a branch yourself (a title or description is yours to correct). Give each to an engineer or a reviewer.
+   Hooks refuse the file writes, the commits and those tools (`docs/guides/enforcement.md#hooks`).
 4. Start every agent as one of Coney's roles, never `general-purpose`; name the model on every Agent call. An agent
    works in its own worktree under `../../worktrees/coney/` and never pushes, opens a pull request or merges.
    Start an `engineer` or `tooling` agent only for a task you made with `task create`, while its claim is held and a

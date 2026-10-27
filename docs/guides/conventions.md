@@ -350,9 +350,10 @@ branch or lambda (an accessor, a setter, a forwarder) and a constructor or destr
 folders of `paths.coney_only` (`src/platform/`, `src/core/`, `src/fileio/`, `src/debug/`, `src/net/`, `src/sandbox/`)
 are Coney's own by nature and need no marker; every folder of `src/` is in one of the two lists.
 `coney-tools orig check` ([orig](coney-tools-fidelity.md#orig)), run by `check changed` and CI, refuses a new function that
-says neither, and a new folder in neither list. The functions written before the rule are the fidelity audit's
-backlog (`orig index`); the older wording ("Coney's own", "(no @orig)") is still read as a marker on them until
-they are converted, never on a new function. [The standards](coney-tools-standards.md#standards) do not count it at
+says neither, and a new folder in neither list. The functions written before the rule are
+[legacy](how-we-work.md#fidelity-audit) (`orig index`); the older wording ("Coney's own", "(no @orig)") is still
+read as a marker on them until they are converted, never on a new function. [The
+standards](coney-tools-standards.md#standards) do not count it at
 all: a file a change touches is converted as a whole, each such function getting `@orig` or `@coney-only`.
 
 ### Coney-only capabilities {#coney-only-capabilities}

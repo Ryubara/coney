@@ -3,9 +3,10 @@
 This is the rubric for comparing a Coney function that carries an `@orig` tag with the original function at that
 address, in the shared Ghidra project (NTSC-U `SLUS_212.15`, [Ghidra](../ghidra.md)). The
 [reviewer agent](../agents.md#reviewer) applies it to a task's changed functions ([Task review](task.md): the `orig`
-kind of its packet), to a branch's before release (pr mode) and to whole folders of existing code (sweep mode). The
-[fidelity audit](../how-we-work.md#fidelity-audit) uses it as well. The rule it checks is [Porting, not
-transcribing](../conventions.md#porting).
+kind of its packet), to a legacy branch's before release (pr mode, one of the
+[legacy release checks](../how-we-work.md#pr-review), retired at the cutover) and to whole folders of existing code
+(sweep mode, whose findings become issues: [Legacy fidelity](../how-we-work.md#fidelity-audit)). The rule it checks
+is [Porting, not transcribing](../conventions.md#porting).
 
 **Rubric version: 1.** The version is `pull_requests.orig_review.rubric_version` in
 [.github/conventions.yml](repo:.github/conventions.yml). Raise both together when a class or a count changes
@@ -161,7 +162,7 @@ file and the Coney function it names, decompiles each address (`disassemble_func
 opens callees as far as the comparison needs, gives each function exactly one [class](#classes) and writes it into the
 `functions` of `REVIEW.json` ([format](task.md#verdict)).
 
-**Pr mode**, for the release check that predates `task review`:
+**Pr mode**, for the legacy release check that predates `task review` (retired at the cutover):
 
 1. Run `uv run --project python coney-tools orig review-stamp --branch <branch> --base <base>` from the main checkout
    (or `--worktree <path>`). It prints the `tip`, the `base` and the `@orig` functions the branch adds or changes: each
@@ -179,7 +180,8 @@ opens callees as far as the comparison needs, gives each function exactly one [c
    class, note), then what was sampled and why. The final message is the verdict and the blockers, in a few lines.
 
 **Sweep mode** works on a group folder under the workspace's `scratch/orig-sweep/` and a scope of `src/` folders or
-addresses ([Sweep findings](#findings)):
+addresses ([Sweep findings](#findings)). It is a mode for the legacy-fidelity sweep and ends when that sweep is filed,
+at the [cutover](../how-we-work.md#cutover):
 
 1. Run `uv run --project python coney-tools orig review-stamp --folder <src/folder/>` (or `--address 0x...`,
    repeatable) from the main checkout. It lists the functions in scope that the ledger has not reviewed at their
@@ -197,8 +199,9 @@ At 500k context, write `PROGRESS.md` and a handover note in the group folder and
 ## The pull request verdict {#verdict}
 
 `task review` records a function's class in its own verdict file ([Task review](task.md#verdict)). The release check
-that predates it, `orig check-review`, reads the file below until `pr open` replaces it. In pr mode the agent writes
-`ORIG-REVIEW.json` and `ORIG-REVIEW.md` next to the description file (`PR.md`). The JSON has exactly these keys:
+that predates it, `orig check-review`, reads the file below for a legacy branch until the cutover removes it. In pr mode
+the agent writes `ORIG-REVIEW.json` and `ORIG-REVIEW.md` next to the description file (`PR.md`). The JSON has exactly
+these keys:
 
 | Key | Holds |
 | --- | --- |

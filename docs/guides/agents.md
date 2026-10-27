@@ -21,7 +21,7 @@ so a fresh clone gets the same setup as the maintainer's machine:
 | `.mcp.json` | The debugging servers: `ghidra-mcp` (the shared Ghidra project) and `pcsx2` (the emulator, over the PCSX2-MCP fork's debug server and PINE) | Claude Code; other tools take the same two commands in their own MCP config |
 | `.claude/agents/` | The roles: `coordinator` (the main session), `engineer`, `tooling`, `reviewer` | Claude Code |
 | `.claude/skills/` | The coordinator's skills: `repo-hygiene` ([the skill](repo-conventions.md#hygiene-skill)) | Claude Code |
-| `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and `coney-tools build` allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)), and `gh` commands naming a video file, which only `coney-tools clips publish` uploads ([Clips](testing.md#clips)); `export CONEY_AGENT_TOKEN=*`, the [identity](#identity) prefix the dispatcher adds; hooks, run by one dispatcher (`.claude/hooks/dispatch.py`, [The hooks](#hooks)), that refuse a raw `cmake --build`, `ctest` or `ninja` ([Builds and tests](#builds)), a wait loop with no bound ([Bounded waits](#bounded-waits)), a raw `gh` command that writes an issue (`.claude/hooks/issue_guard.py`, [Filing an issue](issues.md#filing)), an Agent call with `isolation: "worktree"` or with no Coney role as its type (`.claude/hooks/agent_guard.py`, [Where an agent works](#worktrees), [Which role to start](#roles)), a tool call the role of the session does not allow (`.claude/hooks/roles.py`), a call of the shared `pcsx2` MCP server on a copy the caller has not claimed (`.claude/hooks/pcsx2_guard.py`, [The PCSX2 MCP guard](#pcsx2-guard)), a `gh pr create` or `gh pr edit` whose title or description CI would refuse and, once `pull_requests.open_only` is on, every hand-typed way of opening a pull request (`.claude/hooks/pr_guard.py`, [The PR guard](enforcement.md#pr-guard)), and, inside a subagent, `git push` or a `gh` command that writes to GitHub (`.claude/hooks/push_guard.py`, [The release queue](how-we-work.md#release-queue)) and, after a `git commit`, a `Co-Authored-By` trailer that names another model than the agent runs on (`.claude/hooks/trailer_guard.py`, [Commit trailers](#trailer-guard)) | Claude Code |
+| `.claude/settings.json` | Shared permissions: the project's checks, generators, tests and `coney-tools build` allowed; `git stash` and stopping programs by name refused ([Sharing one machine](how-we-work.md#shared-machine)), and `gh` commands naming a video file, which only `coney-tools clips publish` uploads ([Clips](testing.md#clips)); `export CONEY_AGENT_TOKEN=*`, the [identity](#identity) prefix the dispatcher adds; hooks, run by one dispatcher (`.claude/hooks/dispatch.py`, [The hooks](#hooks)), that refuse a raw `cmake --build`, `ctest` or `ninja` ([Builds and tests](#builds)), a wait loop with no bound ([Bounded waits](#bounded-waits)), a raw `gh` command that writes an issue (`.claude/hooks/issue_guard.py`, [Filing an issue](issues.md#filing)), an Agent call with `isolation: "worktree"` or with no Coney role as its type (`.claude/hooks/agent_guard.py`, [Where an agent works](#worktrees), [Which role to start](#roles)), a tool call the role of the session does not allow (`.claude/hooks/roles.py`), a call of the shared `pcsx2` MCP server on a copy the caller has not claimed (`.claude/hooks/pcsx2_guard.py`, [The PCSX2 MCP guard](#pcsx2-guard)), a `gh pr create` or `gh pr edit` whose title or description CI would refuse and, once `pull_requests.open_only` is on, every hand-typed way of opening a pull request (`.claude/hooks/pr_guard.py`, [The PR guard](enforcement.md#pr-guard)), and, inside a subagent, `git push` or a `gh` command that writes to GitHub (`.claude/hooks/push_guard.py`, [Opening the pull request](how-we-work.md#release-queue)) and, after a `git commit`, a `Co-Authored-By` trailer that names another model than the agent runs on (`.claude/hooks/trailer_guard.py`, [Commit trailers](#trailer-guard)) | Claude Code |
 | `tools/claude-mod/` | Conclave, the Claude Code mod: a band, a status line, a pane, the shorter list of agent types and, for the coordinator, the watchers that tell it Coney's own events ([Conclave](conclave.md)) | Claude Code, with `--plugin-dir` |
 | `.claude/hooks/` | The dispatcher `dispatch.py` that `settings.json` runs for every event ([The hooks](#hooks)), the guard scripts it runs, the role rules and identity injection (`roles.py`, `identity.py`), their settings `hooks.toml`, and `ruff.toml` (the package's rules; ruff lints the hooks like `python/`, [Conventions](conventions.md#python)) | Claude Code |
 
@@ -98,7 +98,8 @@ review <task> --record` ([Task review](review/task.md)). A person runs `task rev
 headless reviewer. Any later commit, or an edit to the description, makes a recorded review stale. A fix to the code
 after an `@orig` review therefore comes before the review of the description, which is part of the same pass.
 
-Two release checks that predate `task review` still run the same agent, until `pr open` replaces them:
+A branch started before the cutover, outside a task, is released with the [legacy release
+checks](how-we-work.md#pr-review), which run the same agent and are retired at the cutover:
 
 - **The description**, with `coney-tools repo review` ([repo review](coney-tools-repo.md#repo-review)); the verdict is
   `REVIEW.json` next to `PR.md` ([Description](review/text.md#legacy-verdict)).
@@ -106,12 +107,13 @@ Two release checks that predate `task review` still run the same agent, until `p
   scratch folder that holds `PR.md`; it writes `ORIG-REVIEW.json` and `ORIG-REVIEW.md` there. When `orig review-stamp
   --branch` lists no function, no run is needed. A rebase that leaves the functions as they were keeps the verdict.
 
-**Sweep mode**, on existing code, serves the [fidelity audit](how-we-work.md#fidelity-audit). Give it a `src/` folder or
+**Sweep mode** reviews existing code for [legacy fidelity](how-we-work.md#fidelity-audit), until the sweep is filed
+(it ends at the [cutover](how-we-work.md#cutover)). Give it a `src/` folder or
 a list of addresses and a group folder under `scratch/orig-sweep/`. It reviews what `orig review-stamp --folder` lists
 as unreviewed or stale, writes `FINDINGS.tsv` and `PROGRESS.md`, records the findings with `coney-tools orig record`,
 and returns a summary that the launcher saves as `SUMMARY.md`. Run one agent per folder, and leave out the folders that
-another audit or open branch owns. The coordinator turns each finding that is not `clean` or `diff-deliberate-ok` into
-a fix unit.
+a held claim's scope covers. The coordinator files each finding that is not `clean` or `diff-deliberate-ok` as an
+issue, which becomes an ordinary task.
 
 ## What a run costs {#cost}
 
@@ -164,7 +166,7 @@ the role from the hook input's `agent_type` (a subagent's type; for the main ses
 
 | Role | Is | May not (a hook refuses it) |
 | --- | --- | --- |
-| `coordinator` | The main session: triage, briefs, answers, pushes and opens pull requests, merges, the maintainer's contact | Write under `src/`, `tests/`, `python/`, `docs/research/`, `research/`; `git commit` in a unit's worktree; the Ghidra and PCSX2 tools; the study, compare, check and review commands of the new workflow |
+| `coordinator` | The main session: triage, briefs, answers, pushes and opens pull requests, merges, the maintainer's contact | Write under `src/`, `tests/`, `python/`, `docs/research/`, `research/`; `git commit` in a unit's worktree; the Ghidra and PCSX2 tools; the study, compare, check and review commands of the [pipeline](how-we-work.md#the-pipeline) |
 | `engineer` | A subagent: one task, any method | `git push` and every GitHub write, `coney-tools pr open`, `pr hold`, `claim unclaim` and `claim renew` |
 | `tooling` | A subagent for the project's own tools and process | The same as the engineer; it may edit `src/` (warning fixes) |
 | `reviewer` | A subagent that reports | `coney-tools pr open`, `pr hold`, `claim unclaim` and `claim renew`; writing any file but its verdict and notes (`REVIEW.json`, `REVIEW.md`, `ORIG-REVIEW.*`, `FINDINGS.tsv`, `PROGRESS.md`, `HANDOVER.md`, `SUMMARY.md`, and `CODE-REVIEW*.md` for the report of a [review outside `task review`](review/task.md#report)) or any of those inside a checkout or with a colon in its name, a git command that changes a ref, the index, the tree or the worktrees (`commit`, `add`, `stage`, `rm`, `mv`, `reset`, `restore`, `checkout`, `checkout-index`, `switch`, `merge`, `mergetool`, `rebase`, `cherry-pick`, `revert`, `apply`, `am`, `clean`, `pull`, `fetch`, `bisect`, `stash`, `read-tree`, `update-ref`, `update-index`, `sparse-checkout`, `replace`, `pack-refs`, `gc`, `prune`, `repack`, `maintenance run`, `filter-branch`, `symbolic-ref` with two names or `-d`, `worktree add`/`move`/`remove`/`prune`, `notes add` and the other note writes, `reflog expire`/`delete`, `remote add`/`remove`/`rename`/`set-url`/`set-head`/`set-branches`/`update`/`prune`, `submodule update` and the other submodule writes, and `branch` or `tag` with anything but listing options, also after global options such as `--no-pager` or `-C dir`; `merge-base` and `merge-tree` pass, and so do `stash list`, `worktree list`, `remote -v`, `remote show`, `symbolic-ref HEAD`, `branch -a`, `tag -l`), GitHub writes, any Agent call (`allow_agent_types = []`: a helper has Bash and could write for it), starting a session from the shell (`claude`, `coney-agent`, `task review --run`, `repo review`) |
@@ -228,8 +230,8 @@ Claude Fable is not used for agent work. Always name the model when starting an 
 
 **Escalate on signals, not on hope.** Move a task up a model when the agent fails the same check twice, has to make
 a call the page does not settle, or touches a subsystem it was not briefed on. Record which model did which kind of
-task and how often its work came back (CI failures, review findings, play-test bugs) in the track's state file, so the
-table above follows evidence.
+task and how often its work came back (CI failures, review findings, play-test bugs) in the coordinator's state file,
+so the table above follows evidence.
 
 ## Briefing a fresh agent {#briefs}
 
@@ -256,7 +258,8 @@ instead of repeating it:
 - "Read `AGENTS.md`, [How we work](how-we-work.md), [Testing](testing.md) and this page first; they override the
   brief";
 - how it runs ([Running without losing the cache](#cache)): it works local-first, never pushes or waits on CI, and
-  hands each finished unit to the [release queue](how-we-work.md#release-queue);
+  is done when its task passes Review; the coordinator then opens the pull request
+  ([Opening the pull request](how-we-work.md#release-queue));
 - disk: it writes its id into `.coney-busy` in its worktree as it starts (`echo <id> > .coney-busy`; an empty marker
   older than a day is ignored by the cleanup) and deletes it when it finishes, and before reporting a
   unit finished it deletes its own `build/` folder; a build is about 6 GB per preset, and with the shared
@@ -264,9 +267,9 @@ instead of repeating it:
   ([Cleanup](workspace.md#cleanup));
 - builds: "build and test only with `coney-tools build --agent <id> ...`, in the background" ([Builds and
   tests](#builds)); the brief does not paste the flags;
-- the local gate command, named in full, as part of "done": `uv run --project python coney-tools check changed`
-  ([The local gate](testing.md#local-gate)), run in the agent's worktree before it reports a unit finished. An agent
-  that is not told runs only the checks it knows of, and CI finds the rest;
+- the stages, as part of "done": `coney-tools task check` on the committed tip, then `task review` by a reviewer
+  ([The pipeline](how-we-work.md#the-pipeline), [The local gate](testing.md#local-gate)); `coney-tools check changed`
+  is an aid while working, not the gate;
 - only the facts the agent cannot find in the repository (a log path, a question to answer, the state file).
 
 Engineers who drive the original use the [PCSX2 recipes](pcsx2-recipes.md) for the basic things (finding a human,
@@ -384,17 +387,17 @@ Tether keep their own state (the band's units, the live agents) and are not aske
 
 ## Where an agent works {#worktrees}
 
-Every agent works in a worktree at `../../worktrees/coney/<branch>/` on a branch its brief names, and creates it
-itself (`git worktree add ../../worktrees/coney/<branch> -b <branch> origin/main`); an engineer given a task that
-`task create` made runs `coney-tools task start <task id>` instead, which makes the same worktree and the rest of the
-unit ([Starting a task](issues.md#starting)). **Never start an agent with the
-Agent tool's `isolation: "worktree"` option.** It creates the worktree for you under the main checkout's
-`.claude/worktrees/` with an automatic branch name, which is outside the layout [AGENTS.md](repo:AGENTS.md) fixes:
-the virus scanner exclusion a machine sets for the worktrees folder (without it a build starves the CPU) does not
-cover it, the `.coney-busy` marker and [the workspace cleanup](workspace.md#cleanup) do not look there, and the
-branch name is not the one the release queue and `STATUS.md` use. A hook (`.claude/hooks/agent_guard.py`, run by the
-dispatcher for the Agent tool) refuses the call and points here; start the agent again without
-`isolation`. The same hook refuses an agent that is not one of the roles ([Which role to start](#roles)).
+Every agent works in a worktree at `../../worktrees/coney/<branch>/` on a branch its brief names, and creates it itself
+(`git worktree add ../../worktrees/coney/<branch> -b <branch> origin/main`); an engineer given a task that `task create`
+made runs `coney-tools task start <task id>` instead, which makes the same worktree and the rest of the unit ([Starting
+a task](issues.md#starting)). **Never start an agent with the Agent tool's `isolation: "worktree"` option.** It creates
+the worktree for you under the main checkout's `.claude/worktrees/` with an automatic branch name, which is outside the
+layout [AGENTS.md](repo:AGENTS.md) fixes: the virus scanner exclusion a machine sets for the worktrees folder (without
+it a build starves the CPU) does not cover it, the `.coney-busy` marker and [the workspace
+cleanup](workspace.md#cleanup) do not look there, and the branch name is not the task id that the unit record, the
+stamps and `pr open` use. A hook (`.claude/hooks/agent_guard.py`, run by the dispatcher for the Agent tool) refuses the
+call and points here; start the agent again without `isolation`. The same hook refuses an agent that is not one of the
+roles ([Which role to start](#roles)).
 
 ## The hooks {#hooks}
 
@@ -543,11 +546,12 @@ vendor, a commit it cannot find), and a person committing outside Claude Code ne
   in a shell, which a hook refuses.
 - **Keep tool output small.** Print counts, the failing lines and the end of a log, never a whole log: every line an
   agent reads stays in its context for the rest of the task.
-- **Do not message a finished agent.** Start a new one from its report and the track's
+- **Do not message a finished agent.** Start a new one from its report and the task's
   [STATUS.md](how-we-work.md#status).
-- **No agent waits on CI.** An agent commits locally, runs the local checks, hands each finished unit to the
-  coordinator's [release queue](how-we-work.md#release-queue) and goes on; it never pushes. The coordinator pushes,
-  watches CI and sends a failure to a fresh agent ([When a pull request fails checks](#ci-failures)). An agent that
+- **No agent waits on CI.** An engineer commits locally, runs Check, and is done when its task passes Review; it
+  never pushes. The coordinator opens the pull request with `pr open` ([Opening the pull
+  request](how-we-work.md#release-queue)), watches CI and sends a failure to the fix slot
+  ([When a pull request fails checks](#ci-failures)). An agent that
   sat idle past its cache lifetime would re-write its whole context, often hundreds of thousands of tokens, when it
   resumed.
 - **Keep the coordinator small.** The coordinator re-reads its whole conversation on every turn and is the context a
@@ -641,8 +645,8 @@ wakes up and writes its whole context again, which on 2026-10-12 cost about 1.1 
   no budget). Write `STATUS.md` naming the worktree and the command, and end your turn. Whoever continues runs
   `coney-tools build result --dir <worktree>`: exit 75 while it runs, then the run's summary, log path and exit code
   ([`build result`](coney-tools-build.md#build)).
-- `coney-tools check changed --detach` runs the whole local gate in the background; whoever continues runs
-  `coney-tools check result` in the worktree ([`check`](coney-tools-build.md#check)).
+- `coney-tools check changed --detach` runs the CI-style checks of the changed files in the background; whoever
+  continues runs `coney-tools check result` in the worktree ([`check`](coney-tools-build.md#check)).
 
 ## The PCSX2 MCP guard {#pcsx2-guard}
 
@@ -723,43 +727,43 @@ clean`, which stops shells older than three hours waiting on files unchanged for
 
 ## When a pull request fails checks {#ci-failures}
 
-A failing check is a small, well-defined task: a **fix task** (`task create --fix-of`, kind `fix`) that runs in the
-fix slot, one at a time and the oldest failure first ([Engineer slots](#slots)). It goes to a **fresh agent with a
-tight brief** (carrying the `Task id:` of the fix task), not back to the agent that wrote the pull request: that
-agent's job ended when its unit passed Review, and an agent idle past its cache lifetime re-writes its whole context
-when it resumes. Messaging it re-writes that context (rule 2 in [What a run costs](#cost)), often hundreds of
-thousands of tokens, for a fix of a few lines. The one exception is an engineer that is still running when its check
-fails: the fix goes to it directly. The coordinator is the one that watches CI.
+A failing check on a pull request is a small, well-defined task, so it becomes a **fix task** in the fix slot
+([Slots](how-we-work.md#slots), [Engineer slots](#slots)), not a hand fix by the coordinator. The coordinator watches
+CI; the engineer that wrote the pull request has moved on. The one exception is a failure that is only the pull
+request's title or description (a long title, a missing `Docs: none`), a few tool calls the coordinator makes itself:
+nothing in the branch changes, so it takes no slot.
 
 1. The coordinator reads only the failure: `gh pr checks <n>` for which checks failed, then the end of the failing
    job's log (`gh run view <id> --log-failed`, last lines). It does not read the whole log.
-2. If the fix is a few tool calls (a long line, a title, a missing `Docs: none`), the coordinator does it itself.
-3. Otherwise it starts a fresh agent on the pull request's branch, in the branch's worktree, with a brief of the
-   branch, the failing check, the log lines that matter and "done" (the check passes locally and the fix is
-   committed; the coordinator pushes it). The model follows [Which model](#models): Haiku or Sonnet for a lint,
-   format, title or docs failure with a clear message; Opus when the cause is unknown or the failure is a test or
-   build in code that needs judgement.
-4. Several failures with the same cause go to one agent. Unrelated failures wait for the fix slot in turn, the oldest
-   first; a fix a few tool calls long is the coordinator's own (step 2) and takes no slot.
-5. If the same check fails a second time, escalate a model, as above, instead of repeating the same fix.
+2. It makes the fix task with `coney-tools task create --fix-of <issue>`, which reuses the claim, and writes the
+   failing check and the log lines that matter into the task file ([Task files](issues.md#task-files)).
+3. If the engineer that wrote the task is still running, the fix goes to it, with its context warm. Otherwise a fresh
+   engineer takes the fix slot, runs `task start` on the fix (it opens the parent's unit:
+   [Starting a task](issues.md#starting)) and works on the pull request's branch. Fixes wait their turn, oldest
+   failure first; an engineer that finished one may take the next while its context is warm. Messaging a finished
+   agent instead re-writes its whole context (rule 2 in [What a run costs](#cost)), often hundreds of thousands of
+   tokens, for a fix of a few lines. Several failures with the same cause go to one engineer.
+4. The fix stays inside the failing check and redoes only the stamps it made stale: the pairs if an `@orig` function
+   changed, Check always, Review only if reviewed code changed. Then the coordinator runs `pr open <issue>-fix`, which
+   updates the same pull request ([pr open](pr.md#open)).
+5. The model follows [Which model](#models): Sonnet for a lint, format, title or docs failure with a clear message;
+   Opus when the cause is unknown or the failure is a test or build in code that needs judgement. If the same check
+   fails a second time, escalate a model instead of repeating the same fix.
 
 ## CI capacity {#ci-capacity}
 
 GitHub Actions on this repository runs about 20 jobs at once (5 of them on macOS), shared by every pull request, and a
-full code pull request queues 4 builds plus sanitizers (about 20 minutes). A queue that backs up blocks every merge,
-and an agent waiting on it re-writes its context. So CI never holds an agent back:
+full code pull request queues 4 builds plus sanitizers (about 20 minutes). CI never holds an agent back:
 
-1. **Agents work local-first.** They commit, run every local check that applies and hand each pull-request-sized
-   unit to the coordinator ([The release queue](how-we-work.md#release-queue)). CI should only find what the local
-   platform cannot see.
-2. **Only the coordinator pushes.** Before releasing a unit it looks at the queue,
-   `gh run list --status queued --limit 50 --json databaseId --jq length` and the same with `--status in_progress`,
-   and releases when there is room: engine fixes first, then what unblocks other work.
+1. **Agents work local-first.** The engineer's stages end at Review, on this machine, and the full suite with the disc
+   runs in `task check`, which CI cannot run. CI finds only what the local platform cannot see.
+2. **Only the coordinator pushes**, through `pr open`, as soon as Check and Review hold; it does not wait for room in
+   the queue.
 3. **Each push starts a run** and cancels the pull request's previous one, so a branch is pushed once it is ready,
    not after every commit. A merge to `main` likewise cancels `main`'s older run, so a merge round costs one build
    ([What CI runs](building.md#what-ci-runs)).
 4. **A pull request runs only the jobs its change can break** ([What CI runs](building.md#what-ci-runs)), so
-   documentation-only units are cheap to release.
+   documentation-only pull requests are cheap.
 
 ## Checking a run {#check}
 

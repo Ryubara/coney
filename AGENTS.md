@@ -14,12 +14,12 @@ in `../../scratch/`; game files, emulators and tool installs live beside the rep
 
 ## How we work
 
-Read `docs/guides/how-we-work.md` before starting: the pipeline, the engineer role, the coordinator, sharing one machine
-and merging. Whoever starts agents follows `docs/guides/agents.md` (fork or fresh, which model, briefs, long commands
-and the prompt cache). Nobody waits for a person to play their work: the automated tests are the gate, so every piece of
-work proves itself as `docs/guides/testing.md` defines ("done" per kind of work, the player's path, gamepad input,
-playthrough tests, the checks to run before reporting). A person contributing starts at CONTRIBUTING.md, section Your
-first hour; the rest of this file is for agents.
+Read `docs/guides/how-we-work.md` before starting: the pipeline from issue to merge, the slots (3 task engineers and 1
+fix engineer), the coordinator, sharing one machine and merging. Whoever starts agents follows `docs/guides/agents.md`
+(fork or fresh, which model, briefs, long commands and the prompt cache). Nobody waits for a person to play their work:
+the automated tests are the gate, so every piece of work proves itself as `docs/guides/testing.md` defines ("done" per
+kind of work, the player's path, gamepad input, playthrough tests, the checks to run before reporting). A person
+contributing starts at CONTRIBUTING.md, section Your first hour; the rest of this file is for agents.
 
 ## Build and test
 
@@ -52,9 +52,9 @@ first hour; the rest of this file is for agents.
   change the installer or launcher; change these conventions.
 <!-- conventions:end -->
 - Whoever pushes a pull-request branch may `git push --force-with-lease` it.
-- **Local first; no agent pushes or waits on CI.** An agent commits, runs every applicable local check, writes each
-  pull request's title and description to its scratch folder and tells the coordinator, who releases it when CI has
-  room from the [queue](docs/guides/how-we-work.md#release-queue) with [`coney-tools pr open`](docs/guides/pr.md#open).
+- **Local first; no agent pushes or waits on CI.** An engineer takes a claimed task through the pipeline to a passing
+  `task check` and `task review`, runs every applicable local check and writes the pull request's title and description
+  to its scratch folder; the coordinator runs [`coney-tools pr open`](docs/guides/pr.md#open).
 
 ## Code
 
@@ -106,5 +106,5 @@ the block.
   pull request: the maintainer does, or a coordinator the maintainer has allowed to, and only by squash once every
   required check passes and the pull request follows these rules. A pull request or issue you write carries no
   "Generated with" line; the template's AI use section is where the model is named.
-- A track's status lives in `STATUS.md` in its scratch folder, not in a draft pull request
-  (`docs/guides/how-we-work.md`, "Track status").
+- A task's status lives in its task file, unit record, stamp log and `STATUS.md` in its scratch folder, not in a draft
+  pull request (`docs/guides/how-we-work.md`, "Unit status").

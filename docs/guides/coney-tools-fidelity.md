@@ -1,6 +1,6 @@
 # The coney-tools fidelity and research commands
 
-The commands behind the fidelity audit and the research pages: [`orig`](#orig) indexes the `@orig` tags,
+The commands behind legacy fidelity and the research pages: [`orig`](#orig) indexes the `@orig` tags,
 [`original`](#original) studies an original function and compares it with Coney's, [`stamp`](#stamp) verifies a unit's
 stamp log, [`research`](#research) keeps the function database and reports the claims a branch changed on the
 research pages, and [`lua`](#lua) decompiles the game's compiled scripts, a research aid. The other groups are listed in
@@ -9,7 +9,7 @@ holds a touched file to them, has [its own page](coney-tools-standards.md).
 
 ## orig {#orig}
 
-The fidelity audit compares each function Coney reimplements with the original function at its `@orig` address in
+The legacy-fidelity sweep compares each function Coney reimplements with the original function at its `@orig` address in
 Ghidra ([The @orig tag](conventions.md#comments-and-orig)). The `orig` commands give it its index and its order of
 work. They only read: the source, the research pages, the shared Ghidra project through reading endpoints, and the
 open issues through `gh`.
@@ -50,7 +50,7 @@ punctuation, so `DVDWadIndex::Find` matches `DVDWadIndex_Find`, and a binding's 
 full live run asks the server about each of the 2,400 tagged functions twice (the function, its callees), one request
 at a time; on the development machine it took about 11 seconds.
 
-`orig queue` writes the same files and the audit's queue, `queue.md` (a table per `src/` directory, then the first
+`orig queue` writes the same files and the sweep's queue, `queue.md` (a table per `src/` directory, then the first
 `--show` entries) and `queue.tsv` (every entry). An entry is an original function with each Coney place that tags it,
 or an untagged function; its score adds up its reasons (`orig_queue.WEIGHTS`):
 
@@ -63,7 +63,7 @@ or an untagged function; its score adds up its reasons (`orig_queue.WEIGHTS`):
 * for untagged code, its kind and length.
 
 `--issues FILE` reads a saved `gh issue list --json number,title,body,labels,comments` instead of asking GitHub. The
-order is a starting point for the audit team, which re-ranks as it learns. The files hold addresses, names, paths and
+order is a starting point for the sweep, which re-ranks as it learns. The files hold addresses, names, paths and
 issue numbers, never the original's code; they change with every pull request that touches `src/`, so they are
 regenerated when needed and never committed.
 
@@ -81,7 +81,7 @@ untagged function, moving it to another file of its folder, or renaming its file
 passes; removing a tag, adding an untagged overload, changing an untagged function's parameter types, or growing an
 exempt accessor into more than one statement fails.
 The older wording ("Coney's own", "(no @orig)") marks only functions that had it at `--base`; a new function needs
-`@coney-only <reason>`. The functions that said neither before the check existed are the audit's backlog in
+`@coney-only <reason>`. The functions that said neither before the check existed are the sweep's backlog in
 `untagged.tsv`. Each finding names the file, line and function and what to add; exit code 1 when there is one.
 `check changed` runs it as its `orig` step and CI's `python` job runs it with `--base HEAD^1`.
 

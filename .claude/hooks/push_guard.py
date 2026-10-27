@@ -2,10 +2,10 @@
 """Claude Code PreToolUse hook: a subagent never pushes and never writes to GitHub; the coordinator does.
 
 Agents work local-first: an agent commits on its branch, writes the pull request's description to its scratch folder
-and tells the coordinator, who pushes and opens the pull request when CI has room (AGENTS.md;
+and tells the coordinator, who pushes and opens the pull request with `coney-tools pr open` (AGENTS.md;
 docs/guides/how-we-work.md#release-queue). An agent reads issues and pull requests and writes nothing to GitHub: no
-push, pull request, comment, label or review (docs/guides/issues.md#agents). A push from an agent spends CI the queue
-was keeping for something else, and a comment would go out under the maintainer's account.
+push, pull request, comment, label or review (docs/guides/issues.md#agents). A push from an agent skips the proof
+`pr open` makes first, and a comment would go out under the maintainer's account.
 
 Claude Code gives a hook an `agent_id` only when the call comes from a subagent (docs/guides/agents.md#trailer-guard),
 so the main session, the coordinator, is never refused. Inside a subagent this hook, registered in
@@ -118,9 +118,10 @@ _QUOTED = re.compile(r"'[^']*'|\"(?:[^\"\\]|\\.)*\"")
 MESSAGE = (
     "Blocked: {what}. A subagent never pushes and never writes to GitHub (no pull request, comment, label, review, "
     "merge or rerun): commit on your branch, write the pull request's title and description to your scratch folder, "
-    "and tell the coordinator, who pushes from the release queue (docs/guides/how-we-work.md#release-queue, "
-    "docs/guides/issues.md#agents). Reading stays allowed: gh pr view/list/diff/checks, gh issue view/list, gh run "
-    "view/list, gh api GET. An issue your brief says to file goes through `coney-tools issue create`.\n"
+    "and tell the coordinator, who opens the pull request with `coney-tools pr open` "
+    "(docs/guides/how-we-work.md#release-queue, docs/guides/issues.md#agents). Reading stays allowed: "
+    "gh pr view/list/diff/checks, gh issue view/list, gh run view/list, gh api GET. "
+    "An issue your brief says to file goes through `coney-tools issue create`.\n"
 )
 
 

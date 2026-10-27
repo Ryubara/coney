@@ -68,8 +68,10 @@ included, and prints how to fix each problem ([Check your setup](docs/guides/bui
    (every page ends with what it was checked against; a wrong claim is worth fixing), a test, a tool or build
    problem, or an issue labelled `good first issue` or `help wanted` in the issue tracker. A change to what a player sees
    (`gameplay`, `graphics`, `audio`) must also be compared with the original running, which needs the research tools
-   below; talk to a maintainer in the issue first. Write the test first ([Testing](docs/guides/testing.md)) and
-   keep the code in the style of [Conventions](docs/guides/conventions.md).
+   below; talk to a maintainer in the issue first. If the change is an issue labelled `S-ready-to-start`, comment
+   `/claim` on it before you start, and a GitHub Action assigns it to you so nobody else works on it ([Claiming an
+   issue](docs/guides/issues.md#claiming)). Write the test first ([Testing](docs/guides/testing.md)) and keep the code
+   in the style of [Conventions](docs/guides/conventions.md).
 6. **Check, commit, open the pull request.** Branch from `main`, make the change, then run the one command that does
    what CI would fail on for the files you touched (for the docs check it needs the setup in [Writing these
    docs](docs/guides/writing-docs.md#setup-once); CI adds clang-tidy on your changed lines, the other compilers and the
@@ -101,7 +103,8 @@ and the research pages), and the PCSX2 save states and traces. Start from the re
 want ([Research workflow](docs/guides/research-workflow.md)).
 
 **What is for the project's agents, not for you.** The coordinator's build queue and claims (`pcsx2 claim`,
-`build` slots, `STATUS.md`), the release queue that pushes pull requests, the Tether and Claude Code configuration
+`build` slots, `STATUS.md`), the task files, stamps and `pr open` that turn their work into pull requests
+([How we work](docs/guides/how-we-work.md#the-pipeline)), the Tether and Claude Code configuration
 (`.claude/`, `.mcp.json`), `PR.md` and the `reviewer`, and most of [How we work](docs/guides/how-we-work.md) and
 [Running agents](docs/guides/agents.md). You can ignore all of it; a pull request you open yourself follows the
 same rules in the template. One thing reaches you if you use Claude Code in this checkout: start it with
@@ -291,7 +294,7 @@ The repository also ships the agent tool configuration (`.mcp.json` for the Ghid
 `.claude/agents/` for the roles, `.claude/settings.json` for shared permissions); what each holds and how to set
 it up: [Setting up an agent tool](docs/guides/agents.md#setup).
 
-If an agent writes your pull request's description, have the `reviewer` agent check it before you open the pull
-request: `uv run --project python coney-tools repo review <PR.md> --worktree <your checkout>`. It opens every
-screenshot and checks the text against the diff and your test logs
-([The description review](docs/guides/how-we-work.md#pr-review)).
+The project's own agents work through the [pipeline](docs/guides/how-we-work.md#the-pipeline): a claimed task, the
+stamps of each stage, a review by the `reviewer` agent with `coney-tools task review` (it opens every screenshot and
+checks the text against the diff and the test logs, [Task review](docs/guides/review/task.md)) and `pr open`. If you
+work with an agent of your own, you need none of that: your pull request follows the rules above.

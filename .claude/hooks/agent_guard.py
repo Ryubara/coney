@@ -7,7 +7,7 @@ Two rules, both for the Agent tool, registered in `.claude/settings.json`:
    checkout's `.claude/worktrees/` with an automatic branch name. Coney's agents work in
    `../../worktrees/coney/<branch>/` on a branch the brief names: the Defender exclusion that keeps builds from
    starving the CPU covers only that folder, and the workspace tools (`coney-tools workspace clean`, the
-   `.coney-busy` marker, the release queue) look only there (docs/guides/agents.md, "Where an agent works"). The
+   `.coney-busy` marker, `coney-tools task`) look only there (docs/guides/agents.md, "Where an agent works"). The
    agent creates its own worktree with `git worktree add`, as its brief says.
 2. **A Coney role, never the generic agent.** A call with no `subagent_type` (which Claude Code runs as
    "general-purpose"), or with "general-purpose" or "claude", carries none of the role instructions the repository

@@ -535,7 +535,7 @@ by the nightly one; the nightly and hand-started `build` runs are never cancelle
 | Workflow | Jobs |
 | --- | --- |
 | `build` | `ci` preset build and tests on Linux (GCC 13 and Clang 19) and macOS (Apple Clang); the release build (`ci-release`) and its tests on Windows (MSVC) and Linux (GCC 13); `asan` preset on Linux Clang 19 and macOS; clang-tidy (the lines a pull request changes; every file nightly, by hand and for a build-setup change); pre-commit over every file; the `build-ok` gate |
-| `python` | ruff, mypy, pytest and the local gate (`check changed`: its `repo` and `pre-commit` steps) on Windows, Linux and macOS; the repository checks (`repo check`, `repo render --check`, `repo audit --files`, `progress check`, `orig check` and `orig copy-check` with `--base HEAD^1`, the generators' `--check`) on Linux; the `python-ok` gate |
+| `python` | ruff, mypy, pytest and `check changed` (its `repo` and `pre-commit` steps) on Windows, Linux and macOS; the repository checks (`repo check`, `repo render --check`, `repo audit --files`, `progress check`, `orig check` and `orig copy-check` with `--base HEAD^1`, the generators' `--check`) on Linux; the `python-ok` gate |
 | `dependencies` | a pull request whose description says `Depends on #N` waits until #N is merged (`ci dependencies`); when a pull request merges, the waiting ones are rerun (`ci rerun-dependencies`) |
 | `ci-failure` | a failed `build`, `python` or `docs` run on `main` (nightly, push or manual) opens a `P-critical` issue, or comments on the open one (`ci report-failure`) |
 | `docs` | `mkdocs build --strict`, the page standards on a pull request's changed pages ([`docs check`](writing-docs.md#checking)), markdownlint over every Markdown file, actionlint over the workflows |
@@ -593,7 +593,7 @@ gate, and a failure there is fixed forward on the branch.
 ### What a pull request runs {#what-a-pull-request-runs}
 
 Runners are shared (about 20 jobs at once, 5 of them on macOS), so a pull request runs only what its change can break.
-Two checks are given up on purpose: an engine-only pull request no longer runs the local gate's `pre-commit` step
+Two checks are given up on purpose: an engine-only pull request no longer runs the `pre-commit` step of `check changed`
 or the repository checks on Windows or macOS, because they do not depend on the OS (below) and `format` still runs
 pre-commit over every file on Linux. A `changes` job at the start of `build` and `python` decides, with
 `.github/scripts/ci-scope.sh`. It sorts each changed file into the first of three classes of
@@ -624,15 +624,16 @@ moving a file out of `src/` is an engine change. Why each class runs what it run
   read C++ files (the `@orig` tags, the binding table, the debug menus' signature table), and its tests read
   `research/traces/`, `tests/` and `cmake/`. Those reads do not depend on the OS: each normalises CRLF to LF (or reads
   text in universal-newline mode) and compares contents.
-- **Python runs on every OS only when the tools changed** (or a file no class names): ruff, mypy, pytest and the local
-  gate (`check changed`: its `repo` and `pre-commit` steps) are run on each OS because the tools behave differently
+- **Python runs on every OS only when the tools changed** (or a file no class names): ruff, mypy, pytest and
+  `check changed` (its `repo` and `pre-commit` steps) are run on each OS because the tools behave differently
   there (paths, command-line length, programs, line endings). An engine-only change does not change those tools.
 - **In the python job, the OS-independent repository checks run once, on Linux:** `repo check`, `repo render --check`,
   `repo audit --files`, `progress check` and the generators' `--check` (`natives`, `refs`, `missions`). `repo check`
-  and `repo render --check` are part of `repo audit --files`, which the local gate's `repo` step still runs on every OS.
-- **The `format` job and the local gate's `pre-commit` step both run pre-commit,** on purpose: `format` runs every
-  hook on every file on Linux, the gate runs `coney-tools check changed` (its own grouping of the changed files and its
-  program lookup) on each OS the python job tests. Dropping either would lose a check the other does not make.
+  and `repo render --check` are part of `repo audit --files`, which the `repo` step of `check changed` still runs on
+  every OS.
+- **The `format` job and the `pre-commit` step of `check changed` both run pre-commit,** on purpose: `format` runs every
+  hook on every file on Linux, `check changed` runs it (with its own grouping of the changed files and its program
+  lookup) on each OS the python job tests. Dropping either would lose a check the other does not make.
 
 The lists, generated from [.github/conventions.yml](repo:.github/conventions.yml) (`coney-tools repo render`; a
 trailing `/` is a folder and `*` matches within one folder level). `ci-scope.sh` reads them from the file, so there is

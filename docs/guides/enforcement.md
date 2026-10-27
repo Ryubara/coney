@@ -21,8 +21,7 @@ where?" When you write a rule into a guide, add its row here in the same commit;
 | --- | --- | --- | --- |
 | Claude Code hook (`.claude/hooks/`, one dispatcher) | A command or tool call before it runs | Every agent's call, in milliseconds; spelling only, so never a security boundary ([The hooks](#hooks)) | `build_guard.py`, `issue_guard.py`, `roles.py` |
 | pre-commit (`.pre-commit-config.yaml`) | The files of a commit, and (at the `commit-msg` stage) its message | On commit when installed, in `check changed` and in CI's `format` job (all files; not the message check) | clang-format, the 512 KB guard, `no-real-clock`, `commit-message` |
-| `coney-tools check changed` | The files a branch changed | Before a unit is handed over ([The local gate](testing.md#local-gate)) | `repo audit --files`, mkdocs, pytest |
-| Release gate (`repo check-review`) | The description file, its pictures and the branch tip | Before the coordinator pushes ([The description review](how-we-work.md#pr-review)) | Model line against the trailers |
+| Stage commands (`task check`, `task review`) and `pr open` | The committed change, its stamps, the description and its pictures | At Check, Review and before the push ([The pipeline](how-we-work.md#the-pipeline)) | the whole gate for the change's kind, the reviewer's verdict, the stamps `pr open` proves |
 | CI required check | The pushed branch and the pull request's text | After the push; a failure costs a CI round | `title`, `body`, `docs`, `build-ok` |
 | Audit and hygiene (`repo audit`, `hygiene.yml`, Tether) | GitHub and the workspace as they are | After the fact, as findings | `issue.labels`, `ws.scratch` |
 | Review (the `reviewer`) | Meaning: whether a test proves the fix, a claim is backed | Per change, by an agent | [Reviewing](review/index.md) |
@@ -177,14 +176,14 @@ edited on the GitHub website; and a person at their own terminal, which runs no 
 | A change to `src/` or `python/src/` changes `docs/` or `research/`, or says `Docs: none` | [AGENTS.md](repo:AGENTS.md) | CI `docs` (required, `repo check-docs`) | enforced at CI |
 | A pull request opens only through `coney-tools pr open` | [How we work](how-we-work.md#release-queue) | [The PR guard](#pr-guard) refuses the hand-typed routes behind `pull_requests.open_only` in `.github/conventions.yml` | partly: `pr open` exists and gates the release; the switch is off until one real pull request has gone through it, so a hand-typed `gh pr create` is only checked |
 | A task's review is recorded only by a reviewer who did not work on it, with every checklist, `@orig` function, research page and picture answered, bound to the change | [Task review](review/task.md) | `task review --record` (`review_verdict.problems`; the identity rules of `tasks.review`) writes the `reviewed` stamp; nothing else does | enforced when the hooks vouch for the caller; `source: unverified` otherwise |
-| Every description is reviewed by the `reviewer` and passes `repo check-review` before it is pushed | [How we work](how-we-work.md#release-queue) | `.claude/hooks/pr_guard.py` runs CI's title and body checks before `gh pr create` and `gh pr edit`; the verdict itself is `repo check-review`, run by hand | partly: the hook does not require a fresh verdict |
+| Every description is reviewed by the `reviewer` before it is pushed | [Task review](review/task.md) | `task review` judges the description with the change; `pr open` requires the `reviewed` stamp over this text; a branch outside a task uses the [legacy release checks](how-we-work.md#pr-review) (`repo check-review`, run by hand) | enforced through `pr open`; partly for legacy branches |
 | A unit is ready to become a pull request: its stamp log is intact, Check, the compared functions and Review hold for the change, and the generated title and description pass the checks CI runs | [Releasing a pull request](pr.md) | `pr verify` and `pr text`, run by hand; [`pr open`](pr.md#open) runs them before it pushes | enforced for a release that goes through `pr open` (see the switch above) |
 | Reimplemented code is ported, not transcribed: no decompiler names, `undefined` types, raw offset reads or `goto` | [Conventions](conventions.md#porting) | `orig copy-check` in `check changed` and CI's `python` job | enforced (the mechanical signs) |
-| Every `@orig` function a branch adds or changes matches the original and is our own expression | [Orig review](review/orig.md) | `reviewer` (judgement); `orig check-review` before release (a passing verdict covering each changed function's body) | judgement, gated at release |
+| Every `@orig` function a branch adds or changes matches the original and is our own expression | [Orig review](review/orig.md) | `reviewer` (judgement) in `task review`; `pr verify` requires a `compared` stamp and a `clean` or `diff-deliberate-ok` class for each changed function's body (`orig check-review` for a legacy branch) | judgement, gated at release |
 | No "Generated with" line in a pull request or issue | [AGENTS.md](repo:AGENTS.md) | None in the repository | written; best point `repo check-body` and `issue check` |
 | One feature per pull request; a diff holds only that change | [How we work](how-we-work.md#working-in-parallel) | `reviewer`, the coordinator | judgement |
-| Run the local gate before handing a unit over | [Testing](testing.md#local-gate) | CI finds what it missed, a CI round later | written; best point a stamp `check changed` writes, which the release gate reads |
-| A stacked pull request says `Depends on #N`, has no auto-merge and is never merged into its base | [How we work](how-we-work.md#release-queue) | `repo audit` `pr.stacked-*`, `pr.merged-into-base` | partly (after the fact) |
+| Run the local gate before Review | [Testing](testing.md#local-gate) | `task check` writes the `checked` stamp; `pr open` refuses without a current one (`task review` does not need it) | enforced |
+| A stacked pull request says `Depends on #N`, has no auto-merge and is never merged into its base | [Audit checks](repo-conventions.md#audit-checks) | `repo audit` `pr.stacked-*`, `pr.merged-into-base` | partly (after the fact) |
 | A pull request does not merge while a pull request it `Depends on` is unmerged | [Repository conventions](repo-conventions.md#workflows) | CI `dependencies` (required, `ci dependencies`); it reruns when a dependency merges (`ci rerun-dependencies`) | enforced at CI |
 | A failed run on `main` (nightly, push or manual) is an issue at once | [Repository conventions](repo-conventions.md#workflows) | CI `ci-failure`: `ci report-failure` opens a `P-critical` issue or comments on the open one | enforced at CI |
 | No pull request sits conflicting or failing | [How we work](how-we-work.md#merging) | `hygiene.yml` labels; Conclave's stop guard blocks the coordinator's turn end ([Conclave](conclave.md#watchers)) until a problem is held (`pr hold`) | enforced (Conclave) |
@@ -257,18 +256,16 @@ edited on the GitHub website; and a person at their own terminal, which runs no 
 
 ## Checks being added {#in-progress}
 
-Tracks adding checks now; their rows change when they merge:
+Checks being built; their rows change when they merge:
 
-- **Docs standard** (`coney-tools docs check`): the research page skeleton, `Verified against`, an evidence level near
-  each address, no machine paths or "not yet" wording, on the pages a change touches.
-- **New untagged gameplay code** (`coney-tools orig check`): a new function in a gameplay folder carries `@orig` or a
-  Coney-only marker.
 - **Networking checklist**: review items for network code.
+- **The cutover switches** ([The cutover](how-we-work.md#cutover)): `pull_requests.open_only`, `claims.adopt`,
+  `claims.release`, and `tasks.start.slots.exempt_workflow` turning off.
 
 ## What stays judgement {#judgement}
 
 No program can tell whether a test proves the fix, a picture shows what its caption says, a claim's evidence level is
 right or a pull request holds one feature. Those rules live in the reviewer checklists ([Reviewing](review/index.md))
-and the `reviewer` agent's instructions ([The description review](how-we-work.md#pr-review)); a program checks the
+and the `reviewer` agent's instructions ([Task review](review/task.md)); a program checks the
 shape around them (a `Runtime:` line exists and has numbers; a verdict is fresh) so the reviewer's time goes to the
 meaning.
