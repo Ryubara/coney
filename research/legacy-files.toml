@@ -330,9 +330,6 @@ tag = 15
 ["src/audio/audio_format.h"]
 tag = 1
 
-["src/audio/game_sound.cpp"]
-tag = 63
-
 ["src/audio/game_sound.h"]
 comment = 1
 

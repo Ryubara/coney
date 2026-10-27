@@ -35,6 +35,25 @@ coney = "src/gamemodes/gameplay_mode.h:GameplayMode::enter"
 status = "legacy"
 
 [[function]]
+address = 0x00158488
+name = "Gm_Level_Exit"
+page = "level-loading.md#unload"
+role = "mode 1's exit: the ambient emitters off, every sound and the music stopped, the pitch back to 1.0, then `UnloadLevel` and, on a level change, the outro movie"
+level = "confirmed-code"
+coney = "src/audio/game_sound.cpp:GameSound::gameplayLeft"
+status = "compared"
+
+[[function.gaps]]
+what = "the global pitch factor is not set back to 1.0 on exit (only by the next level's enter)"
+relation = "not-ported"
+issue = 1007
+
+[[function.gaps]]
+what = "the system music is not switched off on exit (`GameState_SetSystemMusic(0)`)"
+relation = "not-ported"
+issue = 1007
+
+[[function]]
 address = 0x00159a58
 name = "Gm_Legal_Enter"
 page = "frontend.md#original-structure"
