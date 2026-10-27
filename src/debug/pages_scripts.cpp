@@ -222,7 +222,7 @@ void addConsolePage(DebugSession& session) {
                 false);
             line.history = session.console().history();
             line.maxLength = 120;
-            line.help = "A Lua statement or expression: SCENETEST = 1, GetLevelId(2), =ToInt(3.7).";
+            line.help = "A Lua statement or expression: SCENETEST = 'l99_c1', GetLevelId(2), =ToInt(3.7).";
             page.add(std::move(line));
             auto file = std::make_shared<std::string>();
             MenuItem runFile = textItem(
@@ -309,6 +309,31 @@ void fillSandboxLayouts(MenuPage& page, DebugSession& session) {
 
 } // namespace
 
+// Build the scene-test editor once for either debug front end; names are data, never console source.
+static std::shared_ptr<MenuPage> sceneTestPage(DebugSession& session) {
+    auto page = std::make_shared<MenuPage>("Scene test");
+    auto level = std::make_shared<std::string>("level99");
+    auto scene = std::make_shared<std::string>("l99_c1");
+    page->add(
+        textItem("Level", [level] { return *level; }, [level](const std::string& value) { *level = value; }, false));
+    page->add(textItem(
+        "Scene name", [scene] { return *scene; }, [scene](const std::string& value) { *scene = value; }, false));
+    page->add(actionItem("Load",
+                         [&session, level, scene] {
+                             const auto& load = session.services().loadSceneTest;
+                             if (level->empty() || scene->empty()) {
+                                 session.print("scene test: enter both a level and a scene name");
+                             } else if (!load) {
+                                 session.print("scene test: no level loader in this run");
+                             } else {
+                                 session.print(load(*level, *scene) ? "scene test: loading " + *level + " / " + *scene
+                                                                    : "scene test: level could not be loaded");
+                             }
+                         }))
+        .withHelp("Reloads the level, setting SCENETEST after global.lua and before its own scene-test dispatcher.");
+    return page;
+}
+
 void addLevelsPage(DebugSession& session) {
     session.model().addPage(
         "Levels",
@@ -322,6 +347,8 @@ void addLevelsPage(DebugSession& session) {
                 session.print(loader(name) ? std::format("levels: loading {}", name)
                                            : std::format("levels: {} could not be loaded", name));
             };
+            page.add(submenuItem("Scene test", [&session] { return sceneTestPage(session); }))
+                .withHelp("Run a scene supported by the level's own scene-test path.");
             auto typed = std::make_shared<std::string>();
             page.add(textItem(
                          "Load by name", [typed] { return *typed; },

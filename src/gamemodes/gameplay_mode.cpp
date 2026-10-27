@@ -35,6 +35,7 @@
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/pause_mode.h"
 #include "gamemodes/player_frame.h"
+#include "gamemodes/scene_test_start.h"
 #include "gamemodes/system_music.h"
 #include "gui/global_strings.h"
 #include "hud/hud.h"
@@ -588,6 +589,26 @@ void GameplayMode::enter() {
 // @orig 0x0015fe90 InitLevel (InitLevel.cpp)
 // @orig 0x001c3de0 Radar_Setup (RadarHUD.cpp)
 void GameplayMode::loadLevel() {
+    prepareLevelLoad();
+    // InitLevel's script step: the level script creates player 1 at the checkpoint's start, before anything streams.
+    const LevelStart& start =
+        m_start.emplace(runLevelScript(m_scripts, m_state, m_humans, m_flags, m_levelName, m_context.spawnRecords,
+                                       m_effects ? &m_effects->particles : nullptr));
+    finishLevelLoad(start);
+}
+
+void GameplayMode::loadSceneTestLevel(std::string_view scene) {
+    prepareLevelLoad();
+    auto start = runSceneTestLevelScript(m_scripts, m_state, m_humans, m_flags, m_levelName, scene,
+                                         m_context.spawnRecords, m_effects ? &m_effects->particles : nullptr);
+    if (!start) {
+        m_log(std::format("gameplay: scene test {}: {}\n", scene, start.error().message));
+        return;
+    }
+    finishLevelLoad(m_start.emplace(std::move(*start)));
+}
+
+void GameplayMode::prepareLevelLoad() {
     startPlayerLevel(m_state);
     // InitLevel's HUD set-up, before the script: the level starts with the HUD hidden until something shows it.
     if (m_context.hud != nullptr) {
@@ -618,10 +639,9 @@ void GameplayMode::loadLevel() {
             return at ? std::optional(anim::Vec3{(*at)[0], (*at)[1], (*at)[2]}) : std::nullopt;
         });
     }
-    // InitLevel's script step: the level script creates player 1 at the checkpoint's start, before anything streams.
-    const LevelStart& start =
-        m_start.emplace(runLevelScript(m_scripts, m_state, m_humans, m_flags, m_levelName, m_context.spawnRecords,
-                                       m_effects ? &m_effects->particles : nullptr));
+}
+
+void GameplayMode::finishLevelLoad(const LevelStart& start) {
     // The run log's level load: its lines carry the checkpoint the level started at from here on.
     logging::setCheckpoint(start.checkpoint);
     logging::info(logging::Category::World, std::format("level load: {} checkpoint {}", start.level, start.checkpoint));

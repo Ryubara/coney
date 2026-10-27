@@ -220,7 +220,7 @@ class PauseMode;
 /// - Leaving (exit) is `UnloadLevel`'s script part only: a fresh Lua state.
 ///
 /// Research: docs/research/level-loading.md#mode-1, docs/research/level-loading.md#story-into-level99
-class GameplayMode final : public GameMode {
+class GameplayMode : public GameMode {
   public:
     /// The original's id for this mode.
     static constexpr std::uint32_t kId = 1;
@@ -353,9 +353,22 @@ class GameplayMode final : public GameMode {
     /// The loose objects and action objects a player uses with triangle; null while no level is entered.
     [[nodiscard]] const LevelPickups* pickups() const { return m_pickups ? &*m_pickups : nullptr; }
 
+  protected:
+    /// InitLevel's script step and the level from the loader, entered (its preload).
+    virtual void loadLevel();
+    /// Loads the level through its own scene-test dispatcher, at the ordinary loading-screen phase.
+    /// @coney-only Debug entry; ordinary level startup keeps its original script path.
+    void loadSceneTestLevel(std::string_view scene);
+
   private:
-    // InitLevel's script step and the level from the loader, entered (its preload).
-    void loadLevel();
+    // InitLevel's player and HUD setup, before either script runs.
+    // @orig 0x0015fe90 InitLevel (unknown)
+    // Research: docs/research/level-loading.md#mode-1
+    void prepareLevelLoad();
+    // InitLevel's loading after its script selected the start, preserving the streaming and enter order.
+    // @orig 0x0015fe90 InitLevel (unknown)
+    // Research: docs/research/level-loading.md#mode-1
+    void finishLevelLoad(const LevelStart& start);
     // The end of InitLevel: the intro movie; play follows.
     void startPlay();
     // The loading screen's phases for one step; true once play may run in this step.

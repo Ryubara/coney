@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "gamemodes/level_start.h"
+#include "gamemodes/scene_test_start.h"
 
 #include <array>
 #include <cmath>
@@ -63,11 +64,10 @@ void loadPlacedObjects(script::ScriptSystem& scripts, world_objects::SpawnRecord
         std::format("level: {} placed {} objects and {} emitters of {} lines", name, added, emitters, objects->size()));
 }
 
-} // namespace
-
-LevelStart runLevelScript(script::ScriptSystem& scripts, GameState& state, CreatedHumans& humans,
-                          world_objects::WorldFlags& flags, std::string_view level,
-                          world_objects::SpawnRecords* records, effects::ParticleSystems* particles) {
+// Reset the script-owned state before entering a new level.
+// @orig 0x0015fe90 InitLevel (InitLevel.cpp)
+// Research: docs/research/level-loading.md#initlevel.
+void resetLevelScriptState(GameState& state, CreatedHumans& humans, world_objects::WorldFlags& flags) {
     // The humans and flags of the level before are gone: the original's unload frees every slot and the flag pool.
     humans.clear();
     flags.clear();
@@ -79,8 +79,14 @@ LevelStart runLevelScript(script::ScriptSystem& scripts, GameState& state, Creat
         state.characters.warriorCommands.at(player).fill(true);
         state.story.menuLocked.at(player) = false;
     }
-    scripts.enterLevel(level);
+}
 
+// Complete the script startup in its existing order, regardless of how the level chunk was entered.
+// @orig 0x0015fe90 InitLevel (InitLevel.cpp)
+// Research: docs/research/level-loading.md#initlevel.
+LevelStart finishLevelScript(script::ScriptSystem& scripts, GameState& state, CreatedHumans& humans,
+                             std::string_view level, world_objects::SpawnRecords* records,
+                             effects::ParticleSystems* particles) {
     // Step 7: the level's placed objects, into the spawn records.
     if (records != nullptr) {
         loadPlacedObjects(scripts, *records, level, particles);
@@ -116,6 +122,53 @@ LevelStart runLevelScript(script::ScriptSystem& scripts, GameState& state, Creat
     start.checkpoint = static_cast<int>(std::trunc(state.checkPoint));
     if (const HumanCreation* player = humans.player(1); player != nullptr && (player->position || player->teleported)) {
         start.player = *player;
+    }
+    return start;
+}
+
+} // namespace
+
+// Keep ordinary entry's global-before-level sequence between the existing reset and finish phases.
+// @orig 0x0015fe90 InitLevel (InitLevel.cpp)
+// Research: docs/research/level-loading.md#initlevel.
+LevelStart runLevelScript(script::ScriptSystem& scripts, GameState& state, CreatedHumans& humans,
+                          world_objects::WorldFlags& flags, std::string_view level,
+                          world_objects::SpawnRecords* records, effects::ParticleSystems* particles) {
+    resetLevelScriptState(state, humans, flags);
+    scripts.enterLevel(level);
+    return finishLevelScript(scripts, state, humans, level, records, particles);
+}
+
+// The debug entry uses the level's dispatcher after global.lua has initialized its environment.
+// @coney-only Scene-test startup, docs/research/scenes.md#scene-test.
+std::expected<LevelStart, Error> runSceneTestLevelScript(script::ScriptSystem& scripts, GameState& state,
+                                                         CreatedHumans& humans, world_objects::WorldFlags& flags,
+                                                         std::string_view level, std::string_view scene,
+                                                         world_objects::SpawnRecords* records,
+                                                         effects::ParticleSystems* particles) {
+    if (level.empty() || scene.empty()) {
+        return fail(ErrorCode::InvalidArgument, "scene test needs a level and scene name");
+    }
+    CONEY_ASSERT(scripts.exists());
+    const std::uint64_t errorsBefore = scripts.errors();
+    resetLevelScriptState(state, humans, flags);
+    // A failed entry must not leave its debug flag or start callback available to a later frame.
+    const auto failed = [&scripts, &state](std::string_view stage) {
+        scripts.vm().setGlobal("SCENETEST", script::Value{});
+        state.startGameCallback.clear();
+        return fail(ErrorCode::Invalid, std::format("scene test: {} failed", stage));
+    };
+    if (!scripts.runFile(script::kGlobalScript)) {
+        return failed("global script");
+    }
+    // Store a value directly; scene names are data, never console source to evaluate.
+    scripts.vm().setGlobal("SCENETEST", script::Value(std::string(scene)));
+    if (!scripts.runFile(std::format("{}.lua", level))) {
+        return failed("level script");
+    }
+    LevelStart start = finishLevelScript(scripts, state, humans, level, records, particles);
+    if (scripts.errors() != errorsBefore) {
+        return failed("preloads or start callback");
     }
     return start;
 }

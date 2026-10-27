@@ -349,3 +349,30 @@ TEST_CASE("the Time page writes a bug report: the run log's ring through the ser
     CHECK(bare.log().last(1) == std::vector<std::string>{"bug report: the last 1 events written to the log"});
     coney::logging::reset();
 }
+
+// Coney's scene-test menu passes names as data and waits for an explicit load action.
+// Expected: unverified, #283 (the debug entry accepts names as data and requires an explicit load action).
+TEST_CASE("scene-test menu requests a level and scene name only on Load", "[debug][scene-test]") {
+    TunableRegistry tunables;
+    DebugServices services;
+    std::vector<std::string> asked;
+    services.loadSceneTest = [&asked](std::string_view level, std::string_view scene) {
+        asked = {std::string(level), std::string(scene)};
+        return true;
+    };
+    DebugSession session(tunables, services, nullptr);
+    const auto levels = session.model().openPage("Levels");
+    REQUIRE(levels != nullptr);
+    const auto* entry = levels->find("Scene test");
+    REQUIRE(entry != nullptr);
+    const auto page = entry->open();
+    REQUIRE(page != nullptr);
+    REQUIRE(page->find("Level") != nullptr);
+    REQUIRE(page->find("Scene name") != nullptr);
+    REQUIRE(page->find("Load") != nullptr);
+    page->find("Level")->setText("level99");
+    page->find("Scene name")->setText("l99_c1");
+    CHECK(asked.empty());
+    page->find("Load")->run();
+    CHECK(asked == std::vector<std::string>{"level99", "l99_c1"});
+}

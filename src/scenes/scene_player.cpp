@@ -511,6 +511,13 @@ class SceneTask {
         if (m_request.cinematic && m_system.m_chainSkip && m_request.chain) {
             return;
         }
+        // Segment buffers are shared: the first looping track must not discard a part that another track or
+        // role still reads this update. Restart once every active runner is back in the persistent header.
+        if (m_request.looping && m_slot.newestPart() > 1 &&
+            std::ranges::all_of(m_tracks, [](const TrackRun& run) { return run.done || run.part == 0; }) &&
+            std::ranges::all_of(m_roles, [](const RoleRun& run) { return !run.inScene || run.part == 0; })) {
+            m_system.m_cache.restartChain(m_slot);
+        }
         const std::size_t newest = m_slot.newestPart();
         if (!SceneCache::hasPart(m_slot, newest + 1)) {
             return;
@@ -570,9 +577,6 @@ class SceneTask {
                 run.partStartFrame = 0.0F;
                 run.time = over + (static_cast<float>(m_loopFrame) / kSceneFrameRate);
                 run.eventFrame = static_cast<int>(m_loopFrame) - 1;
-                if (m_slot.newestPart() > 1) {
-                    m_system.m_cache.restartChain(m_slot);
-                }
                 following = trackOf(run);
             } else {
                 run.time = track->duration;
