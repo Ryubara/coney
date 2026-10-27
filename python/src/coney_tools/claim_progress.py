@@ -8,8 +8,9 @@ tells its observers what it wrote (`stamps.observe`), and the command line regis
 passing stamp (or a `fails-first` of `none`) in a log whose folder holds a unit record (`tasks.start.unit_file`), it
 posts `/progress <step>` on each issue of the unit as the signed-in account, the way `task start` does.
 
-A new stage is posted at once; the same stage again only after `claims.progress_refresh_hours`, remembered in
-`claim-progress.json` beside the record. A failure to post is a warning on stderr and never touches the stamp. Under
+A new stage is posted at once; the same stage again only after `claims.progress_refresh_hours`, remembered per issue in
+`claim-progress.json` beside the record (an issue whose post failed is tried again at the next stamp). A post that
+takes longer than `claims.progress_post_seconds`, or fails, is a warning on stderr and never touches the stamp. Under
 pytest the real `gh` is never used: a test passes its own `post`.
 """
 
@@ -22,6 +23,7 @@ from collections.abc import Callable, Sequence
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+from coney_tools.audit_github import run_gh
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.issue_claim_model import iso_time, parse_time
@@ -39,11 +41,16 @@ Post = Callable[[int, str], object]
 
 
 def _gh_post(conventions: Conventions) -> Post:
-    """Post through `gh` as the signed-in account."""
+    """Post through `gh` as the signed-in account; a post that takes longer than `claims.progress_post_seconds` fails
+    (a warning), so a slow network cannot hang a stamp command."""
     from coney_tools.issue_claim_remote import GhRemote
 
     rules = conventions.claims
-    return GhRemote(rules.bot_login, rules.card_marker, rules.reply_marker).post_command
+
+    def run(arguments: list[str]) -> str:
+        return run_gh(arguments, timeout=rules.progress_post_seconds)
+
+    return GhRemote(rules.bot_login, rules.card_marker, rules.reply_marker, run).post_command
 
 
 def stage_reached(written: Sequence[Stamp]) -> str | None:
@@ -78,24 +85,40 @@ def post_progress(
         warn(f"warning: /progress {step} not posted: {error}")
         return []
     state_path = unit_dir / STATE_FILE
-    try:
-        state = json.loads(state_path.read_text(encoding="utf-8"))
-        last_step, last_at = str(state["step"]), parse_time(str(state["at"]))
-    except (OSError, ValueError, KeyError, TypeError):
-        last_step, last_at = "", None
+    state = _read_state(state_path)
     refresh = timedelta(hours=conventions.claims.progress_refresh_hours)
-    if step == last_step and last_at is not None and now - last_at < refresh:
-        return []
     posted: list[int] = []
     for number in record.issues:
+        # Each issue keeps its own mark, so one whose post failed is tried again at the next stamp.
+        last = state.get(number)
+        if last is not None and last[0] == step and now - last[1] < refresh:
+            continue
         try:
             post(number, f"/progress {step}")
-            posted.append(number)
         except (ConfigError, OSError) as error:
             warn(f"warning: /progress {step} was not posted on #{number} ({error}); the next stamp tries again")
+            continue
+        posted.append(number)
+        state[number] = (step, now)
     if posted:
-        state_path.write_text(json.dumps({"step": step, "at": iso_time(now)}) + "\n", encoding="utf-8")
+        _write_state(state_path, state)
     return posted
+
+
+def _read_state(path: Path) -> dict[int, tuple[str, datetime]]:
+    """The last stage posted on each issue and when, from `claim-progress.json`; empty when it is missing or damaged."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        issues = data["issues"]
+        return {int(number): (str(item["step"]), parse_time(str(item["at"]))) for number, item in issues.items()}
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return {}
+
+
+def _write_state(path: Path, state: dict[int, tuple[str, datetime]]) -> None:
+    """Save the last stage posted on each issue."""
+    issues = {str(number): {"step": step, "at": iso_time(at)} for number, (step, at) in sorted(state.items())}
+    path.write_text(json.dumps({"issues": issues}, indent=1) + "\n", encoding="utf-8")
 
 
 def observer(post: Post | None = None) -> Callable[[Path, list[Stamp]], None]:

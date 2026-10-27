@@ -893,6 +893,8 @@ class Claims:
     warn_hours: int
     #: A stage stamp posts `/progress` for a new stage at once, and for the same stage again after this many hours.
     progress_refresh_hours: int
+    #: The longest one `/progress` post of a stage stamp may take, so a slow network cannot hang the stamp command.
+    progress_post_seconds: int
     reply_keep_hours: int
     command_lookback_hours: int
     #: Every claim run also handles the unhandled commands of other issues this recent (a run GitHub cancelled).
@@ -1896,6 +1898,7 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
         "deadline_hours",
         "warn_hours",
         "progress_refresh_hours",
+        "progress_post_seconds",
         "reply_keep_hours",
         "command_lookback_hours",
         "catch_up_minutes",

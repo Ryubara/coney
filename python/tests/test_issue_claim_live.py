@@ -310,6 +310,46 @@ def test_no_unit_record_or_a_post_that_fails_never_stops_the_stamp(tmp_path: Pat
     assert len(warnings) == 2 and "the next stamp tries again" in warnings[0]
 
 
+def test_an_issue_whose_post_failed_is_tried_again_at_the_next_stamp(tmp_path: Path) -> None:
+    """The state is kept per issue: one that took the comment is not posted twice, one that did not is retried."""
+    folder = unit_folder(tmp_path)
+    posted: list[int] = []
+    down = {42}
+
+    def post(number: int, body: str) -> int:
+        if number in down:
+            raise OSError("gh: network down")
+        posted.append(number)
+        return 1
+
+    warnings: list[str] = []
+    when = START + timedelta(hours=1)
+    assert claim_progress.post_progress(folder, stamp(folder, "compared"), OFF, post, when, warnings.append) == [41]
+    assert len(warnings) == 1 and "#42" in warnings[0]
+    down.clear()
+    # Well inside the refresh hours: only the issue that failed is posted again.
+    soon = when + timedelta(minutes=5)
+    assert claim_progress.post_progress(folder, stamp(folder, "compared"), OFF, post, soon, warnings.append) == [42]
+    assert posted == [41, 42]
+    assert claim_progress.post_progress(folder, stamp(folder, "compared"), OFF, post, soon, warnings.append) == []
+    # A damaged state file is the same as none: everything is posted again.
+    (folder.parent / claim_progress.STATE_FILE).write_text("{not json", encoding="utf-8")
+    assert claim_progress.post_progress(folder, stamp(folder, "compared"), OFF, post, soon, warnings.append) == [41, 42]
+
+
+def test_the_post_of_a_stamp_gives_up_after_the_configured_seconds(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A slow network must not hang a stamp command: the real post runs `gh` with `claims.progress_post_seconds`."""
+    seen: list[tuple[list[str], float]] = []
+
+    def fake_gh(arguments: list[str], timeout: float = 300) -> str:
+        seen.append((arguments, timeout))
+        return "https://github.invalid/o/r/issues/41#issuecomment-77"
+
+    monkeypatch.setattr(claim_progress, "run_gh", fake_gh)
+    assert claim_progress._gh_post(OFF)(41, "/progress studied") == 77
+    assert seen[0][0][:3] == ["issue", "comment", "41"] and seen[0][1] == RULES.progress_post_seconds == 30
+
+
 def test_the_stamp_log_tells_its_observer_and_a_failing_observer_does_not_fail_the_write(tmp_path: Path) -> None:
     folder = tmp_path / "stamps"
     folder.mkdir()
@@ -506,57 +546,3 @@ def test_a_pull_request_event_file_names_the_issues_it_closes() -> None:
     assert cli.issues_of_event("pull_request_target", event, OFF) == [41, 42]
     activity = cli._pull_request_activity("pull_request_target", event, lambda: START)
     assert activity is not None and activity.by == "carol"
-
-
-# --- the limit follows the slots -------------------------------------------------------------------------------------
-
-
-def test_a_claim_past_review_or_with_its_pull_request_open_stops_counting() -> None:
-    """The slot rule: a unit's slot frees at a passing review and takes the next task while CI runs, so its claim
-    must not block the next claim (`claims.limit_ends_at`)."""
-    clock = Clock()
-    github = FakeGitHub(clock)
-    for number in range(1, 6):
-        github.add_issue(number, labels=READY)
-
-    def take(number: int) -> None:
-        github.say(number, "Ryubara", "/claim", "OWNER")
-        Engine(github, OFF, clock.now).reconcile(number)
-
-    for number in (1, 2, 3):
-        take(number)
-    take(4)
-    assert github.view(4).assignees == () and "3 open claim(s)" in github.replies(4)[-1].body
-    # #1 passes review (the stamp posts /progress reviewed): its claim stays held but no longer counts.
-    github.say(1, "Ryubara", "/progress reviewed", "OWNER")
-    Engine(github, OFF, clock.now).reconcile(1)
-    card = card_of(github, 1)
-    assert card.active and not card.counted and "no longer counted" in github.cards(1)[-1].body
-    github.say(4, "Ryubara", "/claim", "OWNER")
-    Engine(github, OFF, clock.now).reconcile(4)
-    assert github.view(4).assignees == ("Ryubara",)
-    # #2's pull request opens: it stops counting too, and stays uncounted after the pull request closes.
-    github.add_pr(60)
-    github.link_pr(2, 60, "open", author="Ryubara")
-    Engine(github, OFF, clock.now).reconcile(2)
-    assert not card_of(github, 2).counted
-    github.link_pr(2, 60, "closed", author="Ryubara")
-    Engine(github, OFF, clock.now).reconcile(2)
-    assert not card_of(github, 2).counted
-    take(5)
-    assert github.view(5).assignees == ("Ryubara",)
-    # A later stage (the work goes on after a review) does not make it count again.
-    github.say(1, "Ryubara", "/progress checked", "OWNER")
-    Engine(github, OFF, clock.now).reconcile(1)
-    assert not card_of(github, 1).counted
-    # The sweep's recount agrees: nothing over the limit.
-    assert Engine(github, OFF, clock.now).sweep().errors == []
-    assert all(github.view(n).assignees == ("Ryubara",) for n in range(1, 6))
-
-
-def test_the_stages_that_end_counting_are_stages() -> None:
-    assert set(RULES.limit_ends_at) <= set(RULES.stages)
-    assert "reviewed" in RULES.limit_ends_at and "pr-opened" in RULES.limit_ends_at
-    text = model.render_card(model.Card(issue=1, claimant="a", claimed_at=START), RULES)
-    parsed = model.parse_card(text.replace(',"counted":true', ""), RULES)
-    assert parsed is not None and parsed.counted

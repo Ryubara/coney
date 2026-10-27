@@ -379,9 +379,11 @@ claims:
   # do not count either. Only someone who may label issues (triage access or more) can set it; the cap of a task
   # still holds.
   exempt_label: workflow
-  # A claim stops counting toward the limit once its card reaches one of these stages, or its claimant's pull request
-  # is open: the limit stands for the engineers' task slots, and a slot frees when the unit passes review and takes the
-  # next task while CI runs (docs/guides/issues.md#slots). It never counts again; the claim itself stays held.
+  # A claim stops counting toward the limit when a maintainer records one of these stages (the tools post them; a
+  # contributor's comment frees nothing, being free to write), or while a pull request of its claimant that closes the
+  # issue is open and not a draft: the limit stands for the engineers' task slots, and a slot frees when the unit passes
+  # review and takes the next task while CI runs (docs/guides/issues.md#slots). A stage frees the slot for good; a pull
+  # request closed unmerged gives the count back. The claim itself stays held either way.
   limit_ends_at: [reviewed, pr-opened, fix, finished]
   scope_max_characters: 400                       # the text after `scope:` in /claim
   closing_per_event: 10                           # `Fixes #N` lines of one pull request event that are acted on
@@ -412,6 +414,7 @@ claims:
   # issues: at once for a new stage, and for the same stage again only after this many hours, so a day of compares
   # keeps the claim alive without a comment for each.
   progress_refresh_hours: 12
+  progress_post_seconds: 30                       # the longest one of those posts may take before it is a warning
   reply_keep_hours: 24                            # the sweep deletes a refusal reply this long after its command is gone
   command_lookback_hours: 24                      # the sweep looks for unhandled command comments this far back
   catch_up_minutes: 30                            # every run also handles other issues' commands this recent

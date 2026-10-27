@@ -192,9 +192,16 @@ class Card:
     waiting: str | None = None
     #: The issue carries `claims.exempt_label`: the claim is outside the open-claims limit (recomputed every pass).
     exempt: bool = False
-    #: Whether the claim still counts toward the limit: false from the first stage of `claims.limit_ends_at` or the
-    #: claimant's open pull request on (the unit's slot is free), and it stays false.
+    #: Whether the claim counts toward the limit now: false once `freed` is set or while the claim has a pull request
+    #: that is open and not a draft (the unit's slot is free), recomputed every pass.
     counted: bool = True
+    #: A maintainer recorded a stage of `claims.limit_ends_at` (their tools do, when the review passes): the slot
+    #: stays free from then on. Only a maintainer's stage counts; anyone else's comment is free to write.
+    freed: bool = False
+    #: The claim counted again after it had stopped (its ready pull request was closed unmerged or made a draft). The
+    #: claimant may then hold more claims than the limit allows; the sweep releases none for it (work in progress),
+    #: and no new claim is taken until they are under.
+    regained: bool = False
 
     def __post_init__(self) -> None:
         """A card with no last activity has had none since the claim."""
@@ -291,6 +298,8 @@ def _data(card: Card) -> dict[str, Any]:
         "waiting": card.waiting,
         "exempt": card.exempt,
         "counted": card.counted,
+        "freed": card.freed,
+        "regained": card.regained,
     }
 
 
@@ -350,7 +359,8 @@ def render_card(card: Card, rules: Claims) -> str:
         lines.append(f"- **Limit:** not counted toward the open-claims limit (`{rules.exempt_label}`)")
     elif card.active and not card.counted:
         lines.append(
-            "- **Limit:** no longer counted toward the open-claims limit (reviewed, or its pull request is open)"
+            "- **Limit:** no longer counted toward the open-claims limit (its review passed, or its pull request is "
+            "open and ready)"
         )
     if card.open_claims:
         lines.append(f"- **Open claims of {card.claimant}:** " + ", ".join(f"#{number}" for number in card.open_claims))
@@ -408,6 +418,8 @@ def parse_card(body: str, rules: Claims) -> Card | None:
             waiting=str(data["waiting"]) if data.get("waiting") else None,
             exempt=bool(data.get("exempt", False)),
             counted=bool(data.get("counted", True)),
+            freed=bool(data.get("freed", False)),
+            regained=bool(data.get("regained", False)),
         )
     except (ValueError, KeyError, TypeError):
         return None

@@ -304,9 +304,10 @@ All the logic is in `python/src/coney_tools/issue_claim_*.py` and the rules are 
   claim](issues.md#claiming)). A bot's pull request is not checked. With `claims.require_on_pr` false each problem is
   a `::warning::` annotation and the exit is 0; true makes them `::error::` and exit 1.
 * `is-command` exits 0 and prints the kind when the text is exactly one claim command of `claims.commands` (a stage
-  `/progress` knows), and 1 with the reason otherwise; `-` reads the text from stdin. The user-level
-  no-comment-as-user hook asks it before it lets a `gh issue comment` through, so the command shapes are read from the
-  conventions, not copied into the hook.
+  `/progress` knows), and 1 with the reason otherwise; `-` reads the text from stdin. It is for the user-level
+  no-comment-as-user hook, which is outside the repository: once the maintainer installs the updated hook it asks this
+  command before it lets a `gh issue comment` through, so the command shapes are read from the conventions, not copied
+  into the hook (the installed one still copies them).
 
 Every argument and option:
 
@@ -315,7 +316,7 @@ Every argument and option:
 | `run` | `--event NAME` | required | The GitHub event's name: `issue_comment`, `issues`, `pull_request_target` (also `pull_request`), `schedule` or `workflow_dispatch`; any other name is an error (exit 2) |
 | `run` | `--payload FILE` | required | The event's JSON file (`$GITHUB_EVENT_PATH`); it must hold a JSON object. Only the issue or pull request number, a pull request's `Fixes #N` lines (at most `claims.closing_per_event`), its action and its author are taken from it |
 | `sweep` | none | | Reconciles every issue that may need it, enforces the limits, lists the orphans and deletes old replies |
-| `list` | `--json` | off | Prints the held claims as JSON (issue, claimant, status, task, scope, stage, pull request, `claimed_at`, `last_activity`, `deadline` (null while the clock waits), `waiting` (what it waits for), `warned`, `adopted`, `exempt` (outside the limit: `claims.exempt_label`)) instead of one line each |
+| `list` | `--json` | off | Prints the held claims as JSON (issue, claimant, status, task, scope, stage, pull request, `claimed_at`, `last_activity`, `deadline` (null while the clock waits; an issue with the trial label uses the trial's hours), `waiting` (what it waits for), `warned`, `adopted`, `exempt` (outside the limit: `claims.exempt_label`), `counted` (whether the claim counts toward the open-claims limit: false when exempt, when a maintainer's stage freed its slot or while its pull request is open and ready)) instead of one line each |
 | `unclaim`, `renew` | `ISSUE ...` | required | The issues whose claims to give back or renew, handled in turn |
 | `unclaim`, `renew` | `--no-wait` | off | Posts and returns without waiting for the Action's answer |
 | `check-pr` | `--payload FILE` | required | The `pull_request` event's JSON file (`$GITHUB_EVENT_PATH`): the author, the author's association and the description are read from it, the claim cards from GitHub |

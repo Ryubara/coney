@@ -214,11 +214,12 @@ def parse_snapshot(data: Mapping[str, Any]) -> Snapshot:
 Runner = Callable[[list[str]], str]
 
 
-def run_gh(arguments: list[str]) -> str:
-    """Run a `gh` command (read only) and return its output; OSError with its message when it fails or is missing."""
+def run_gh(arguments: list[str], timeout: float = 300) -> str:
+    """Run a `gh` command and return its output; OSError with its message when it fails, is missing or is not done in
+    `timeout` seconds."""
     try:
         done = subprocess.run(
-            ["gh", *arguments], capture_output=True, text=True, encoding="utf-8", timeout=300, check=False
+            ["gh", *arguments], capture_output=True, text=True, encoding="utf-8", timeout=timeout, check=False
         )
     except (OSError, subprocess.SubprocessError) as error:
         raise OSError(f"gh could not run: {error}") from error

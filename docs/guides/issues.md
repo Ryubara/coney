@@ -303,8 +303,9 @@ To work on an issue, take it: one comment, answered by a GitHub Action, so that 
 issue and nobody has to remember to say so. It is the same for everyone, the maintainers and the coordinator included
 (the coordinator's `coney-tools task create` posts the comment, [Task files](#task-files)). The rules are `claims` of
 `.github/conventions.yml`; the first list below is generated from it. Claiming is available now but nothing makes it
-mandatory until the new workflow starts ([How we work](how-we-work.md)); two switches, `claims.adopt` and
-`claims.release`, are off until then and say below what they hold back.
+mandatory until the new workflow starts ([How we work](how-we-work.md)); three switches, `claims.adopt`,
+`claims.release` and `claims.require_on_pr`, are off until then (the cutover sets all three) and say below what they
+hold back. `claims.trial` is no switch: it only lets one test issue try adoption and the release early.
 
 <!-- conventions:begin claim-rules -->
 - An issue can be claimed only when it carries `S-ready-to-start`, whoever claims it. A claim sets `S-in-progress`
@@ -314,8 +315,9 @@ mandatory until the new workflow starts ([How we work](how-we-work.md)); two swi
 - The claim of an issue labelled `workflow` (a unit that builds the new workflow) neither counts toward that limit nor
   is refused by it; the cap of a task still holds. Only someone who may label issues (triage access or more) can set the
   label.
-- A claim stops counting toward the limit once its card reaches `reviewed`, `pr-opened`, `fix`, `finished` or its pull
-  request is open, as the engineer's slot frees when the unit passes review; it stays held until it ends.
+- A claim stops counting toward the limit when the engineer's slot frees, as the unit passes review: once a maintainer
+  records `reviewed`, `pr-opened`, `fix` or `finished` (their tools do, after the review), or while its pull request is
+  open and not a draft, for anyone; a pull request closed unmerged gives the count back. It stays held until it ends.
 - While an open `P-critical` issue that can be claimed has no claim, only a `P-critical` issue can be claimed.
 - A claimed issue that carries `S-blocked`, `S-needs-info`, `S-on-hold` keeps that label; the claim stays and its
   release clock waits, as it does while the claimant's pull request is open.
@@ -466,7 +468,9 @@ or a commit is pushed (or the job is re-run).
 `pr-opened`; between them, every passing stage stamp (`studied`, `fails-first`, also with no test, `compared`,
 `checked`, `reviewed`) posts `/progress <stage>` on the unit's issues, so a claim whose work goes on keeps its clock. A
 new stage is posted at once, the same stage again after 12 hours (`claims.progress_refresh_hours`), remembered in
-`claim-progress.json` in the task's scratch folder. A stamp log with no unit record (a task not started with `task
+`claim-progress.json` in the task's scratch folder, per issue, so an issue whose post failed is tried again at the
+next stamp. A post that takes longer than 30 seconds (`claims.progress_post_seconds`) fails like any other, so a slow
+network cannot hang a stamp command. A stamp log with no unit record (a task not started with `task
 start`) posts nothing, and a post that fails is a warning: the stamp stands.
 
 **An issue labelled `S-in-progress` or `S-pending-review` with nobody assigned** (the old way of picking one up) is
@@ -606,10 +610,24 @@ card each time, not copied into the task file. Work in other repositories (Tethe
 has no unit here and is not counted.
 
 The open-claims limit follows the slots: the maintainer's limit of 3 stands for the 3 task slots, so a claim stops
-counting toward it when the unit's slot frees. The passing `reviewed` stamp posts `/progress reviewed`, and from that
-stage on (`claims.limit_ends_at`: `reviewed`, `pr-opened`, `fix`, `finished`), or once the claimant's pull request is
-open, the card says `Limit: no longer counted` and keeps `counted: false` for good; the claim itself stays held, with
-its card and its deadline, until it is merged or released. So three units waiting for CI never refuse a fourth claim.
+counting toward it when the unit's slot frees. The Action sees only GitHub, where a comment costs nothing, so it
+trusts two signs of a freed slot and no more:
+
+- **A maintainer's stage.** The passing `reviewed` stamp posts `/progress reviewed` as the signed-in account, and a
+  maintainer's `/progress` with a stage of `claims.limit_ends_at` (`reviewed`, `pr-opened`, `fix`, `finished`) frees the
+  slot for good: the card says `Limit: no longer counted`, keeps `freed: true`, and a later stage (more work after the
+  review) does not take the slot back, as a slot is not taken back either. A contributor's, or anyone else's, comment
+  of the same words is recorded as activity and a stage, but frees nothing (the log says so): otherwise a
+  `/progress reviewed` written by hand on each claim would hold any number of them.
+- **A ready pull request.** While an open pull request that is not a draft closes the issue and is the claimant's (or a
+  maintainer's), the claim does not count, for anyone. A draft costs nothing to open and frees nothing. If that pull
+  request is closed unmerged (or made a draft again) the count comes back (`regained` on the card): the claimant may then
+  hold more claims than the limit, and the Action releases none of them for that (they are work in progress), but
+  `/claim` refuses a new one until the claimant is under the limit.
+
+The claim itself stays held either way, with its card and its deadline, until it is merged or released. So three units
+waiting for CI never refuse a fourth claim. A maintainer who writes the stage by hand frees a slot without a review; that
+is accepted, because a maintainer is trusted with the limit of 3 and the stamp is how the tools do it.
 
 ## Working from an issue {#agents}
 

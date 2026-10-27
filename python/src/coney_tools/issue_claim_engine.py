@@ -40,7 +40,14 @@ from coney_tools.issue_claim_model import (
     show_time,
 )
 from coney_tools.issue_claim_remote import Comment, IssueView, Remote
-from coney_tools.issue_claim_rules import active_cards, check_claim, is_maintainer, overrun, unclaimed_critical
+from coney_tools.issue_claim_rules import (
+    active_cards,
+    check_claim,
+    is_maintainer,
+    overrun,
+    trial_rules,
+    unclaimed_critical,
+)
 from coney_tools.issue_form import section_heading
 
 #: How many times one `reconcile` starts over when another run changed the issue's cards meanwhile.
@@ -166,13 +173,7 @@ class Engine:
         base = self._base_rules
         if base.trial.label not in issue.labels:
             return base
-        return replace(
-            base,
-            adopt=True,
-            release=True,
-            warn_hours=base.trial.warn_hours,
-            deadline_hours=base.trial.deadline_hours,
-        )
+        return trial_rules(base)
 
     def _attempt(self, issue: IssueView, log: list[str], activity: Activity | None) -> list[str] | None:
         """One pass over the issue: its log lines, or None when another run changed it meanwhile (`log` then holds
@@ -380,13 +381,23 @@ class Engine:
         card = active.card
         self._still_current(work)
         self._drop_warning(work, card)
+        # The unit's slot is free from this stage on (its review passed): the claim stops counting, for good. Only a
+        # maintainer's stage frees it (their tools post it after the review); a comment is free for anyone to write, so
+        # for everyone else the count ends at a ready pull request (`_follow_pull_request`).
+        ends = command.stage in self.rules.limit_ends_at
+        freed = card.freed or (ends and self.is_maintainer(comment.login, comment.association))
+        if ends and not freed:
+            work.log.append(
+                f"#{work.issue.number}: {comment.login} reached {command.stage}, which frees a slot only for a "
+                "maintainer; the claim still counts until its pull request is ready"
+            )
         self._save(
             work,
             active,
             card.changed(
                 stage=command.stage,
-                # The unit's slot is free from this stage on (its review passed): the claim stops counting, for good.
-                counted=card.counted and command.stage not in self.rules.limit_ends_at,
+                freed=freed,
+                counted=card.counted and not freed,
                 last_activity=comment.created_at,
                 last_activity_why="progress",
                 warned_at=None,
@@ -668,6 +679,8 @@ class Engine:
             scope=newer.scope or older.scope,
             task=keeper.card.task or twin.card.task,
             counted=keeper.card.counted and twin.card.counted,
+            freed=keeper.card.freed or twin.card.freed,
+            regained=keeper.card.regained or twin.card.regained,
             last_activity=newer.activity,
             last_activity_why=newer.last_activity_why,
         )
@@ -748,13 +761,18 @@ class Engine:
 
         linked = self.remote.linked_prs(work.issue.number)
         open_pr = next((pr for pr in linked if pr.state == "open" and counts(pr.author)), None)
+        # The slot is free while a ready pull request (not a draft) closes the issue, or once a maintainer's stage freed
+        # it. A draft costs nothing to open, so it does not free it; and a pull request closed unmerged gives the count
+        # back, which may leave the claimant over the limit (nothing is released for that: `overrun` skips it).
+        ready = any(pr.state == "open" and not pr.draft and counts(pr.author) for pr in linked)
+        counted = not card.freed and not ready
         changes: dict[str, object] = {
             "status": "pr-open" if open_pr else "claimed",
             "pr": open_pr.number if open_pr else None,
             # The label can come and go: the claim is outside the limit while the issue carries it.
             "exempt": self.rules.exempt_label in work.issue.labels,
-            # An open pull request of the claim: the unit is past review, its slot free; it never counts again.
-            "counted": card.counted and open_pr is None,
+            "counted": counted,
+            "regained": card.regained or (counted and not card.counted),
         }
         moments = [open_pr.head_date if open_pr else None, activity.at if activity and counts(activity.by) else None]
         pushed = [moment for moment in moments if moment is not None]

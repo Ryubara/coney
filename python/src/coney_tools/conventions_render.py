@@ -313,9 +313,12 @@ def _claim_rules(conventions: Conventions) -> list[str]:
         "toward that limit nor is refused by it; the cap of a task still holds. Only someone who may label issues "
         "(triage access or more) can set the label."
     )
+    ends = _join_or([f"`{stage}`" for stage in claims.limit_ends_at])
     lines += _bullet(
-        f"A claim stops counting toward the limit once its card reaches {_codes(claims.limit_ends_at)} or its "
-        "pull request is open, as the engineer's slot frees when the unit passes review; it stays held until it ends."
+        "A claim stops counting toward the limit when the engineer's slot frees, as the unit passes review: once a "
+        f"maintainer records {ends} (their tools do, after the review), or "
+        "while its pull request is open and not a draft, for anyone; a pull request closed unmerged gives the count "
+        "back. It stays held until it ends."
     )
     lines += _bullet(
         f"While an open `{claims.critical_label}` issue that can be claimed has no claim, only a "
