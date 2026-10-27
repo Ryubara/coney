@@ -154,11 +154,15 @@ constexpr std::uint16_t kTriangleDoorBit = 0x400;
 constexpr std::uint16_t kTriangleBreakableBit = 0x40;
 
 // Whether `list` holds `name`.
+// @coney-only a lookup in Coney's type lists
 template <std::size_t N> bool listed(const std::array<std::string_view, N>& list, std::string_view name) {
     return std::ranges::find(list, name) != list.end();
 }
 
 // The default leaf model of `type`: dyn_dr_ and the name after dyn_door_.
+// The leaf names DoorSwing_SetUpType spawns, by Coney's rule instead of one string per type
+// (docs/research/objects.md#leaves).
+// @orig 0x003f80f0 DoorSwing_SetUpType (unknown)
 std::string leafModelOf(std::string_view type) {
     if (type.starts_with(kDoorPrefix)) {
         return std::string(kLeafPrefix) + std::string(type.substr(kDoorPrefix.size()));
@@ -169,6 +173,7 @@ std::string leafModelOf(std::string_view type) {
 // The model a door draws when the Object List has none for its own (Coney's stand-in): dyn_dr_ and the name after
 // dyn_door_, less a leading "dbl" (dyn_door_fence draws dyn_dr_fence, dyn_door_dblwoodfnce_xl's leaves
 // dyn_dr_woodfnce_xl).
+// @coney-only a stand-in model for a type the Object List has no model for
 std::string fallbackModelOf(std::string_view type) {
     std::string model = leafModelOf(type);
     constexpr std::string_view kDouble = "dbl";
@@ -243,6 +248,10 @@ void stepLeaf(DoorLeaf& leaf) {
 }
 
 // The two loose pieces a breaking type leaves.
+// The pieces DoorSwing_Hit (the cabins) and DoorSwing_HitBreakable (liz, stall, dclub) spawn at the break
+// (docs/research/objects.md#door-break).
+// @orig 0x003f9ad0 DoorSwing_Hit (unknown)
+// @orig 0x003fa438 DoorSwing_HitBreakable (unknown)
 std::array<std::string_view, 2> wreckOf(std::string_view type) {
     if (type == kLiz) {
         return {"dyn_dre_liz_e", "dyn_dre_liz_f"};
@@ -263,6 +272,10 @@ std::array<std::string_view, 2> wreckOf(std::string_view type) {
 }
 
 // How a swinging type takes hits.
+// The message handler's choice of hit (DoorSwing_HitBreakable for liz, stall and dclub, else DoorSwing_Hit) and
+// DoorSwing_Hit's by type (the store, the cabins; docs/research/objects.md#door-break).
+// @orig 0x003fb8d0 DynDoorSwinging_OnMessage (unknown)
+// @orig 0x003f9ad0 DoorSwing_Hit (unknown)
 DoorBreaking breakingOf(std::string_view type) {
     if (type == kStore) {
         return DoorBreaking::Store;
@@ -277,6 +290,7 @@ DoorBreaking breakingOf(std::string_view type) {
 }
 
 // Plays the material pair `a` × `b` at `at`.
+// @coney-only the call into Coney's object services
 void playPair(ObjectWorld& world, std::uint8_t a, std::uint8_t b, anim::Vec3 at) {
     if (world.services != nullptr) {
         world.services->playMaterialPair(a, b, at);
@@ -284,6 +298,10 @@ void playPair(ObjectWorld& world, std::uint8_t a, std::uint8_t b, anim::Vec3 at)
 }
 
 // The dust and the splinters of a splintering door's or a barrier's hit.
+// The dust (two radii) and the 20 splinters both hits make (docs/research/objects.md#door-break,
+// docs/research/objects.md#barriers).
+// @orig 0x003fa438 DoorSwing_HitBreakable (unknown)
+// @orig 0x003b2180 DoorFence_OnHit (unknown)
 void dustAndSplinters(ObjectWorld& world, anim::Vec3 at) {
     if (world.services == nullptr) {
         return;
@@ -313,6 +331,8 @@ DoorTypeSetup swingingDoorSetup(std::string_view type) {
     return setup;
 }
 
+// The kind of door a CfgObj class name makes.
+// @coney-only Coney's class lookup; the original makes the class's own object by its name
 DoorClass doorClassOf(std::string_view className) {
     if (className == kSwingingClass) {
         return DoorClass::Swinging;
@@ -500,6 +520,9 @@ void Doors::command(double handle, int command, ObjectWorld& world) {
     }
 }
 
+// The swinging door's state commands (docs/research/objects.md#door-states); a sliding door's go to
+// runSlidingCommand().
+// @orig 0x003f9770 DoorSwing_StateCommand (unknown)
 void Doors::runCommand(Door& door, int command, ObjectWorld& world) {
     if (door.doorClass == DoorClass::Sliding && !door.removed) {
         runSlidingCommand(door, command, world);
@@ -565,6 +588,8 @@ void Doors::setPickable(double handle, bool pickable, ObjectWorld& world) {
     command(handle, pickable ? door_command::kPickableOn : door_command::kPickableOffToo, world);
 }
 
+// Pickable on: the glint, and the door's collision body removed (docs/research/objects.md#lock-pick).
+// @orig 0x003f9588 DoorSwing_SetPickable (unknown)
 void Doors::pickableOn(Door& door, ObjectWorld& world) {
     // Only a door that is (nearly) closed takes the glint.
     if (door.angle >= kPickableMaxAngle) {
@@ -578,6 +603,8 @@ void Doors::pickableOn(Door& door, ObjectWorld& world) {
     }
 }
 
+// Pickable off: the glint gone and the collision body back (docs/research/objects.md#lock-pick).
+// @orig 0x003f9588 DoorSwing_SetPickable (unknown)
 void Doors::pickableOff(Door& door, ObjectWorld& world) {
     door.pickable = false;
     door.glint = false;
@@ -586,6 +613,9 @@ void Doors::pickableOff(Door& door, ObjectWorld& world) {
     }
 }
 
+// Message 0x42 (`DoorOpenDegree`): swing to the angle, or keep it while pickable
+// (docs/research/objects.md#door-states).
+// @orig 0x003fb8d0 DynDoorSwinging_OnMessage (unknown)
 void Doors::openToDegree(double handle, float degrees, ObjectWorld& world) {
     Door* door = findMutable(handle);
     if (door == nullptr || door->doorClass != DoorClass::Swinging || door->ended) {
@@ -615,6 +645,10 @@ void Doors::openBy(double handle, anim::Vec3 humanAt, ObjectWorld& world) {
     }
 }
 
+// Message 0x0b on a door that is closed and not pickable: open away from the human
+// (docs/research/objects.md#door-states).
+// @orig 0x003fb8d0 DynDoorSwinging_OnMessage (unknown)
+// @orig 0x003f9910 DoorSwing_OpenBy (unknown)
 void Doors::openAway(Door& door, anim::Vec3 humanAt, ObjectWorld& world) {
     if (door.doorClass != DoorClass::Swinging || door.ended || door.pickable || door.state != door_state::kClosed) {
         return;
@@ -633,6 +667,10 @@ void Doors::openAway(Door& door, anim::Vec3 humanAt, ObjectWorld& world) {
     startOpening(door, world);
 }
 
+// Message 0x0c (`IsDoorOpen`): a swinging door in state 5, a sliding door slid open
+// (docs/research/objects.md#door-states).
+// @orig 0x003fb8d0 DynDoorSwinging_OnMessage (unknown)
+// @orig 0x003f5ef0 DynDoorSliding_OnMessage (unknown)
 bool Doors::isOpen(double handle) const {
     const Door* door = find(handle);
     if (door != nullptr && door->doorClass == DoorClass::Sliding) {
@@ -641,6 +679,10 @@ bool Doors::isOpen(double handle) const {
     return door != nullptr && door->doorClass == DoorClass::Swinging && door->state == door_state::kOpen;
 }
 
+// The step the state command, DoorSwing_OpenBy and message 0x42 share: state 3 and the open sound; the next
+// tick's update is DoorSwing_SwingTo's reschedule (docs/research/objects.md#door-states).
+// @orig 0x003f9770 DoorSwing_StateCommand (unknown)
+// @orig 0x003f8fd0 DoorSwing_SwingTo (unknown)
 void Doors::startOpening(Door& door, ObjectWorld& world) {
     door.state = door_state::kOpening;
     playSound(door, door.setup.openSound, world);
@@ -648,6 +690,9 @@ void Doors::startOpening(Door& door, ObjectWorld& world) {
     door.countdown = 1;
 }
 
+// Each leaf's target: the door's rotation turned by the angle, the right leaf's by its negation
+// (docs/research/objects.md#leaves).
+// @orig 0x003f8fd0 DoorSwing_SwingTo (unknown)
 void Doors::swingTo(Door& door) {
     // The left leaf turns by the angle from its closed pose, the right by the negated angle from its turned base.
     for (std::size_t leaf = 0; leaf < door.leaves.size(); ++leaf) {
@@ -657,6 +702,8 @@ void Doors::swingTo(Door& door) {
     }
 }
 
+// The leaves back in their closed poses at once (docs/research/objects.md#leaves).
+// @orig 0x003f9368 DoorSwing_ResetLeaves (unknown)
 void Doors::resetLeaves(Door& door) {
     for (DoorLeaf& leaf : door.leaves) {
         leaf.target = leaf.base;
@@ -667,6 +714,7 @@ void Doors::resetLeaves(Door& door) {
     }
 }
 
+// @coney-only the call into Coney's object services (Sound_PlayHashAt at the door)
 void Doors::playSound(const Door& door, std::uint32_t sound, ObjectWorld& world) {
     if (world.services != nullptr) {
         world.services->playSound(sound, door.position);
@@ -704,6 +752,9 @@ bool Doors::hit(double handle, const ObjectHit& hit, ObjectWorld& world) {
     return false;
 }
 
+// dyn_door_store's hit: broken by its last hitpoint, it swings open away from the attacker
+// (docs/research/objects.md#door-break).
+// @orig 0x003f9ad0 DoorSwing_Hit (unknown)
 void Doors::hitStore(Door& door, const ObjectHit& hit, ObjectWorld& world) {
     // Only the hit that takes its last hitpoint: the sounds, its triangles off, and it swings open away from them.
     if (door.hitpoints <= 0) {
@@ -719,6 +770,8 @@ void Doors::hitStore(Door& door, const ObjectHit& hit, ObjectWorld& world) {
     openAway(door, hit.attackerAt, world);
 }
 
+// A cabin door's hit: the sound, the leaves' break below 7 and the wreck at 0 (docs/research/objects.md#door-break).
+// @orig 0x003f9ad0 DoorSwing_Hit (unknown)
 void Doors::hitCabin(Door& door, const ObjectHit& hit, ObjectWorld& world) {
     playSound(door, kDoorHitSound, world);
     door.hitpoints -= hitDamage(hit.kind);
@@ -741,6 +794,9 @@ void Doors::hitCabin(Door& door, const ObjectHit& hit, ObjectWorld& world) {
     }
 }
 
+// dyn_door_liz's, dyn_door_dclub's and dyn_door_stall's hit: dust, splinters, model stages, the wreck
+// (docs/research/objects.md#door-break).
+// @orig 0x003fa438 DoorSwing_HitBreakable (unknown)
 void Doors::hitSplinters(Door& door, const ObjectHit& hit, ObjectWorld& world) {
     dustAndSplinters(world, hit.point);
     playPair(world, door.material, material::kConcrete, hit.point);
@@ -773,6 +829,9 @@ void Doors::hitSplinters(Door& door, const ObjectHit& hit, ObjectWorld& world) {
     }
 }
 
+// The break both hits end in: triangles off, the two loose pieces, state 6 (docs/research/objects.md#door-break).
+// @orig 0x003f9ad0 DoorSwing_Hit (unknown)
+// @orig 0x003fa438 DoorSwing_HitBreakable (unknown)
 void Doors::wreck(Door& door, ObjectWorld& world) {
     setTrianglesEnabled(world, door.triangles, false);
     if (world.services != nullptr) {
@@ -785,6 +844,8 @@ void Doors::wreck(Door& door, ObjectWorld& world) {
     door.state = door_state::kBroken;
 }
 
+// A barrier's hit: damage, dust and splinters, and at 0 the break by class (docs/research/objects.md#barriers).
+// @orig 0x003b2180 DoorFence_OnHit (unknown)
 void Doors::hitBarrier(Door& door, const ObjectHit& hit, ObjectWorld& world) {
     // Every hit: its damage, dust and splinters; one that leaves hitpoints does nothing more.
     door.hitpoints -= hitDamage(hit.kind);
@@ -830,6 +891,8 @@ void Doors::hitBarrier(Door& door, const ObjectHit& hit, ObjectWorld& world) {
     door.hidden = true;
 }
 
+// Message 0x15: flag 0x40 and update interval 2 (docs/research/objects.md#door-states).
+// @orig 0x003fb8d0 DynDoorSwinging_OnMessage (unknown)
 void Doors::destroy(double handle) {
     Door* door = findMutable(handle);
     if (door == nullptr || door->doorClass != DoorClass::Swinging || door->ended) {
@@ -851,17 +914,25 @@ std::size_t Doors::destroyInRadius(anim::Vec3 centre, float radius) {
     return count;
 }
 
+// Message 0x19: the hitpoints, a swinging door's or a barrier's (docs/research/objects.md#door-states,
+// docs/research/objects.md#barriers).
+// @orig 0x003fb8d0 DynDoorSwinging_OnMessage (unknown)
+// @orig 0x003b3158 DoorFence_OnMessage (unknown)
 void Doors::setHitpoints(double handle, int hitpoints) {
     if (Door* door = findMutable(handle)) {
         door->hitpoints = hitpoints;
     }
 }
 
+// The hitpoints Object_GetHitpoints reads (object +0x128), 0 for no door (docs/research/objects.md#doors).
+// @orig 0x00385918 Object_GetHitpoints (unknown)
 int Doors::hitpoints(double handle) const {
     const Door* door = find(handle);
     return door != nullptr ? door->hitpoints : 0;
 }
 
+// A barrier's message 10: whether it can be hit (docs/research/objects.md#barriers).
+// @orig 0x003b3158 DoorFence_OnMessage (unknown)
 void Doors::setHittable(double handle, bool hittable) {
     if (Door* door = findMutable(handle); door != nullptr && door->doorClass == DoorClass::Barrier) {
         door->hittable = hittable;
@@ -907,6 +978,8 @@ void Doors::tick(ObjectWorld& world) {
     }
 }
 
+// A swinging door's update: a destroyed door's self-hit, then the state steps (docs/research/objects.md#door-states).
+// @orig 0x003fbba0 DynDoorSwinging_Update (unknown)
 void Doors::update(Door& door, ObjectWorld& world) {
     // A destroyed door raises its interval each update and hits itself on reaching 3.
     if (door.destroying) {
@@ -964,6 +1037,8 @@ void Doors::lockPickSucceeded(double handle, anim::Vec3 humanAt, ObjectWorld& wo
     openAway(*door, humanAt, world);
 }
 
+// The count of abandoned picks at a swinging door, true on the third (docs/research/objects.md#lock-pick).
+// @orig 0x003f8048 DoorSwing_CountLockPick (unknown)
 bool Doors::lockPickAbandoned(double handle) {
     Door* door = findMutable(handle);
     if (door == nullptr || door->doorClass != DoorClass::Swinging) {
@@ -973,16 +1048,19 @@ bool Doors::lockPickAbandoned(double handle) {
     return door->abandonedPicks == kAbandonsReported;
 }
 
+// @coney-only a lookup by handle
 const Door* Doors::find(double handle) const {
     const auto found = std::ranges::find(m_doors, handle, &Door::handle);
     return found == m_doors.end() ? nullptr : &*found;
 }
 
+// @coney-only a lookup by handle
 Door* Doors::findMutable(double handle) {
     const auto found = std::ranges::find(m_doors, handle, &Door::handle);
     return found == m_doors.end() ? nullptr : &*found;
 }
 
+// @coney-only a lookup by triangle
 const Door* Doors::findByTriangle(std::uint32_t triangle) const {
     const auto found = std::ranges::find_if(m_doors, [triangle](const Door& door) {
         return door.triangles[0] == triangle || door.triangles[1] == triangle;
@@ -990,6 +1068,7 @@ const Door* Doors::findByTriangle(std::uint32_t triangle) const {
     return found == m_doors.end() ? nullptr : &*found;
 }
 
+// @coney-only a lookup by leaf handle
 const Door* Doors::findByLeaf(double leaf) const {
     const auto found = std::ranges::find_if(m_doors, [leaf](const Door& door) {
         return std::ranges::find(door.leaves, leaf, &DoorLeaf::handle) != door.leaves.end();
@@ -997,6 +1076,8 @@ const Door* Doors::findByLeaf(double leaf) const {
     return found == m_doors.end() ? nullptr : &*found;
 }
 
+// What each door draws: its leaves, or its own model.
+// @coney-only drawing glue
 std::vector<DoorDraw> doorDraws(const Doors& doors) {
     std::vector<DoorDraw> draws;
     for (const Door& door : doors.doors()) {

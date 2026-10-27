@@ -42,16 +42,19 @@ constexpr std::size_t kCfgWarriorClassTag = 9;
 constexpr std::size_t kCfgWarriorClassMash = 8;
 
 // Argument `i` truncated to a whole number, as tolua reads an integer.
+// @coney-only tolua argument reading
 int intArg(std::span<const Value> args, std::size_t i) {
     return static_cast<int>(std::trunc(binding::number(args, i)));
 }
 
 // Argument `i` as a boolean as tolua reads one: anything but nil (and an absent argument: `fallback`).
+// @coney-only tolua argument reading
 bool boolArg(std::span<const Value> args, std::size_t i, bool fallback) {
     return i < args.size() ? !args[i].isNil() : fallback;
 }
 
 // Argument `i` as `N` numbers t[1]..t[N] of a table; zeros for what is missing, as tolua reads it.
+// @coney-only tolua argument reading
 template <std::size_t N> std::array<float, N> numbersArg(std::span<const Value> args, std::size_t i) {
     std::array<float, N> out{};
     if (i >= args.size() || args[i].table() == nullptr) {
@@ -64,6 +67,7 @@ template <std::size_t N> std::array<float, N> numbersArg(std::span<const Value> 
 }
 
 // Argument `i` as a point.
+// @coney-only tolua argument reading
 anim::Vec3 pointArg(std::span<const Value> args, std::size_t i) {
     const std::array<float, 3> p = numbersArg<3>(args, i);
     return anim::Vec3{p[0], p[1], p[2]};
@@ -71,6 +75,7 @@ anim::Vec3 pointArg(std::span<const Value> args, std::size_t i) {
 
 // Where the object `handle` is: a pane, door or leaf, an `ObjSpawn` object, a human the scripts made, or a flag;
 // nothing otherwise.
+// @coney-only a lookup across Coney's object stores
 std::optional<anim::Vec3> positionOf(const BindingContext& context, double handle) {
     if (context.objects != nullptr) {
         if (const std::optional<anim::Vec3> at = context.objects->positionOf(handle)) {
@@ -142,6 +147,7 @@ NativeFunction makeSpawnDoor(const BindingContext& context, std::function<double
 }
 
 // Sets the glass type `CfgSetGlassProperties(type, windowLink, alarm, sprite, brokenSprite)` names in `glass`.
+// @coney-only argument reading the binding and the recorded replay share
 void setGlassType(world_objects::GlassPanes& glass, std::span<const Value> args) {
     glass.setType(intArg(args, 0),
                   world_objects::GlassType{.windowLink = boolArg(args, 1, false),
@@ -167,6 +173,11 @@ NativeFunction makeCfgSetGlassProperties(const BindingContext& context) {
 
 // A binding that sends the door its first argument names the state command `command` (`OpenDoor`, `CloseDoor`,
 // `DisableDoorCollision`).
+// Door_Open, Door_Close and Door_DisableCollision: message 0x22 with command 2, 3 or 5
+// (docs/research/objects.md#door-states).
+// @orig 0x00396ea0 Door_Open (unknown)
+// @orig 0x00397010 Door_Close (unknown)
+// @orig 0x00397338 Door_DisableCollision (unknown)
 NativeFunction makeDoorCommand(const BindingContext& context, int command) {
     return [context = &context, command](std::span<const Value> args) {
         world_objects::LevelObjects* const objects = context->objects;
@@ -178,6 +189,7 @@ NativeFunction makeDoorCommand(const BindingContext& context, int command) {
 }
 
 // `ObjectChangeState(object, state)`: message 0x22 with the state.
+// @orig 0x003976c8 Obj_ChangeState (unknown)
 NativeFunction makeObjectChangeState(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
         world_objects::LevelObjects* const objects = context->objects;
@@ -216,6 +228,7 @@ NativeFunction makeDoorOpen(const BindingContext& context) {
 }
 
 // `DoorOpenDegree(door, degrees)`: message 0x42.
+// @orig 0x00396e28 Door_OpenToAngle (unknown)
 NativeFunction makeDoorOpenDegree(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
         world_objects::LevelObjects* const objects = context->objects;
@@ -227,6 +240,7 @@ NativeFunction makeDoorOpenDegree(const BindingContext& context) {
 }
 
 // `IsDoorOpen(door)`: message 0x0c, true only in state 5.
+// @orig 0x00397508 Door_IsOpen (unknown)
 NativeFunction makeIsDoorOpen(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
         world_objects::LevelObjects* const objects = context->objects;
@@ -235,6 +249,7 @@ NativeFunction makeIsDoorOpen(const BindingContext& context) {
 }
 
 // `GetHitpoints(object)`: a door's or barrier's hitpoints; 0 for anything else.
+// @orig 0x00385918 Object_GetHitpoints (unknown)
 NativeFunction makeGetHitpoints(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
         world_objects::LevelObjects* const objects = context->objects;
@@ -243,6 +258,8 @@ NativeFunction makeGetHitpoints(const BindingContext& context) {
 }
 
 // `GetLeftDoorHandle(door)` / `GetRightDoorHandle(door)` (message 0x10): a leaf's handle, NilHandle without one.
+// @orig 0x00397400 Door_GetLeftLeaf (unknown)
+// @orig 0x00397478 Door_GetRightLeaf (unknown)
 NativeFunction makeLeafHandle(const BindingContext& context, std::size_t leaf) {
     return [context = &context, leaf](std::span<const Value> args) {
         world_objects::LevelObjects* const objects = context->objects;
@@ -293,6 +310,7 @@ NativeFunction makeBreakObjectsInRadius(const BindingContext& context) {
 }
 
 // `DisableDoorLink(pos)`, `EnableDoorLink(pos)`, `ConvertJumpToDoor(pos)`: the nearest link within 5 m and its reverse.
+// @coney-only tolua glue; the link work is NavLinks's
 NativeFunction makeLinkByPosition(const BindingContext& context, void (world_objects::NavLinks::*change)(anim::Vec3)) {
     return [context = &context, change](std::span<const Value> args) {
         world_objects::LevelObjects* const objects = context->objects;
@@ -305,6 +323,7 @@ NativeFunction makeLinkByPosition(const BindingContext& context, void (world_obj
 }
 
 // `CfgSetLockPickHandler(start, stop, success)`: the lock pick's three callbacks.
+// @orig 0x002365f0 Cfg_SetLockPickHandlers (unknown)
 NativeFunction makeCfgSetLockPickHandler(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
         world_objects::LevelObjects* const objects = context->objects;
@@ -318,6 +337,7 @@ NativeFunction makeCfgSetLockPickHandler(const BindingContext& context) {
 }
 
 // `CfgSetLockPickStageFailHandler(fn)`: the callback of a missed press.
+// @orig 0x00236698 Cfg_SetLockPickStageFailHandler (unknown)
 NativeFunction makeCfgSetLockPickStageFailHandler(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
         world_objects::LevelObjects* const objects = context->objects;
@@ -330,6 +350,7 @@ NativeFunction makeCfgSetLockPickStageFailHandler(const BindingContext& context)
 
 } // namespace
 
+// @coney-only reads Coney's recorded CfgObj calls; the original keeps a type table
 std::optional<world_objects::ObjectTypeInfo> objectTypeFromCfgObj(const RecordedCalls* recorded,
                                                                   std::string_view name) {
     if (recorded == nullptr) {
@@ -356,12 +377,14 @@ std::optional<world_objects::ObjectTypeInfo> objectTypeFromCfgObj(const Recorded
     return std::nullopt;
 }
 
+// @coney-only replays Coney's recorded CfgSetGlassProperties calls
 void applyRecordedGlassTypes(const RecordedCalls& recorded, world_objects::GlassPanes& glass) {
     for (const std::vector<Value>& call : recorded.calls("CfgSetGlassProperties")) {
         setGlassType(glass, std::span<const Value>(call));
     }
 }
 
+// @coney-only reads Coney's recorded CfgWarriorClass calls
 int lockPickDifficulty(const RecordedCalls* recorded, int warriorClass) {
     if (recorded == nullptr) {
         return 0;
@@ -377,6 +400,7 @@ int lockPickDifficulty(const RecordedCalls* recorded, int warriorClass) {
     return difficulty;
 }
 
+// @coney-only reads Coney's recorded CfgWarriorClass calls
 int tagDifficulty(const RecordedCalls* recorded, int warriorClass) {
     if (recorded == nullptr) {
         return 0;
@@ -392,6 +416,7 @@ int tagDifficulty(const RecordedCalls* recorded, int warriorClass) {
     return difficulty;
 }
 
+// @coney-only reads Coney's recorded CfgWarriorClass calls
 int warriorMashByte(const RecordedCalls* recorded, int warriorClass) {
     if (recorded == nullptr) {
         return 0;
@@ -407,6 +432,7 @@ int warriorMashByte(const RecordedCalls* recorded, int warriorClass) {
     return value;
 }
 
+// @coney-only registers the bindings
 void addObjectBindings(LuaVm& vm, const BindingContext& context, const std::function<double()>& nextHandle) {
     vm.registerFunction("SpawnBreakableGlass", makeSpawnBreakableGlass(context, nextHandle));
     vm.registerFunction("SpawnDoor", makeSpawnDoor(context, nextHandle));
