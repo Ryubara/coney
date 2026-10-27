@@ -900,7 +900,7 @@ and [Characters](characters.md#level-starts):
   loader by `main`. It snaps the start to the ground as `HuCreate` does (a 2.5 m ray from 1 m above).
 - **`--play-level NAME [--checkpoint N]`** enters the level through gameplay too, after the preloads, a fresh state,
   `SetCheckPoint(N)` and the level's index (`LevelScripts`), so its scripts and their humans run in play as in the
-  story ([AI](ai/index.md#in-coney), [Scripts](scripting.md#coneys-implementation)).
+  story ([AI](ai.md#coney), [Scripts](scripting.md#coneys-implementation)).
 - **Disc check (NTSC-U, 2026-10-05, positions only):** `coney_tests "[disc][story]"` finds player 1 at the
   [Level starts](../references/level-starts.md) values for `level99` checkpoints 1 and 2, `level2` 3, `level3` 4 and
   `level5` 2, with the name and type each lists; `level99` checkpoint 1 makes 2 humans with no script error.
@@ -1025,7 +1025,7 @@ that the counted records fit, walks every path's slab lists (16 `s16` starts at 
 lists and each list ended by a negative value, a path with a negative first start having none) and requires the chunk
 to be `align16(end of the furthest list + 4)` bytes ([Path data](#path-data)). The disc test (`[disc][level]`) counts
 77,678 bytes of edge lists and 770 bytes of tails over the 64 files. `world::PathMap` (`src/world/path_map.h`) decodes
-the records for the AI's route planner, with the inside and walkable-line tests ([AI](ai/index.md#in-coney)).
+the records for the AI's route planner, with the inside and walkable-line tests ([AI](ai.md#coney)).
 
 **The Object List** (2026-10-06): `world_objects::ObjectList` (`src/world_objects/object_list.h`) parses the chunk
 and finds a record by name ([The Object List](#the-object-list)); Coney's reference renderer
