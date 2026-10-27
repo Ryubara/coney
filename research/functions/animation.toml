@@ -55,6 +55,11 @@ level = "confirmed-code"
 coney = "src/animation/anim_task.h:AnimTaskStack::keepEvents"
 status = "compared"
 
+[[function.gaps]]
+what = "a type-10 event's message 0x8a carries the event's position; Coney's release flag carries none"
+relation = "not-ported"
+issue = 1008
+
 [[function]]
 address = 0x001041f8
 name = "AnimCursor_Init"
