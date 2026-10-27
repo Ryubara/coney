@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <expected>
 #include <functional>
@@ -117,7 +118,7 @@ class ScriptedPlayer {
 /// and gangs they give goals to, and player 1's cameras. The scripts' hold on the brains holds their calls until the
 /// level makes the humans (ai::ScriptedBrains::release()). Everything is gameplay's, valid until the level is unloaded.
 ///
-/// Research: docs/research/ai.md#coney, docs/research/characters.md#creation
+/// Research: docs/research/ai/index.md#in-coney, docs/research/characters.md#creation
 struct ScriptedCast {
     CreatedHumans* humans = nullptr;                 ///< The scripts' humans, in the order of their `HuCreate` calls.
     const script::RecordedCalls* recorded = nullptr; ///< The configuration the scripts recorded (the classes).
@@ -144,6 +145,9 @@ struct ScriptedCast {
     std::function<double()> objectHandles;
     /// The game-over check the level runs each update (GameState::gameOver); null for none.
     GameOverCheck* gameOver = nullptr;
+    /// Each pad's options as the profile and the Options screen keep them (GameState::saved.pads, P1 first): the
+    /// level gives each player's camera its pad's Auto Adjust each update. Null for none (every camera keeps it on).
+    const std::array<PadOptions, 2>* padOptions = nullptr;
     /// Opens the mission-failed mode (0xc) with its title (the host's `launchMissionFailed`); empty for none.
     std::function<void(std::string_view title)> missionFailed;
 };

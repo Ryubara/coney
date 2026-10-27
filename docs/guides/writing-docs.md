@@ -433,7 +433,8 @@ changed lines: a link split over lines of which only the `](target)` line change
 at a blank line); and a list item rewrapped by the longer target is no touch when the list markers (`-`, `1.`) stand on
 the same lines of the hunk on both sides. A link to a page that stayed, to a target that resolves nowhere, to a `repo:`
 path or an address, an image, or any other edit on the line is a touch of that line. So moving a page does not end the
-excuse of every page that links to it.
+excuse of every page that links to it. The same rule frees a source or test file whose only change is a comment's
+reference to a moved research page, with its own reading of a comment: [the standards](coney-tools-standards.md#standards).
 
 `coney-tools docs legacy` prints what a scan finds; `--prune` takes out what is fixed and lowers the counts, `--check`
 exits 1 when the file lists something that passes or grew since the branch left `--base`. The file is first written by

@@ -13,7 +13,7 @@
 // Three goals the level scripts give: backing away from a human (`GoalBackoff`, type `0x9b`), a bum's ambient
 // behaviour (`GoalBumLogic`, type `0x4f`) and going to a usable world flag to use it (`GoalMoveToUseFlag`, type 4).
 // Only their constructors are traced; what they do each update is Coney's, marked on each.
-// Research: docs/research/ai.md#goals, docs/references/bindings/ai.md#goalbackoff,
+// Research: docs/research/ai/index.md#goals, docs/references/bindings/ai.md#goalbackoff,
 // docs/references/bindings/ai.md#goalbumlogic, docs/references/bindings/ai.md#goalmovetouseflag
 
 namespace coney::ai {

@@ -10,7 +10,7 @@
 // grabbed, grabbing, tackling). One is made from the human's state when none is active, and it holds the goal stack
 // off until the state is over; then it ends and the stack's top takes up again. Because the brains run before the
 // humans' state update, a reaction goal comes and goes one update after its state (confirmed at runtime).
-// Research: docs/research/ai.md#reaction-goals
+// Research: docs/research/ai/index.md#reaction-goals
 
 namespace coney::ai {
 

@@ -13,20 +13,23 @@ docs/guides/coney-tools-standards.md#standards:
 gone, a ported function with no mark, a file or rule added to the legacy file since the branch left its base and, from
 the cutover, a function marked legacy since then. `touched` is the touch-it rule: a source or test file the change
 touches is held to the whole standard (listed or not), and so is a ported function the change touches. Every report of
-both is a warning until `standards.enforce` is true and an error after: nothing in `check` fails a pull request before
-the cutover. The two together are `check`, which `docs check` runs when a change can move them.
+both is a warning while `standards.enforce` is false and an error once it is true, as it is from the cutover: with the
+switch off nothing in `check` fails a pull request. The two together are `check`, which `docs check` runs when a
+change can move them.
 """
 
 from __future__ import annotations
 
 import dataclasses
-import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from coney_tools import local_gate
+from coney_tools.code_link_moves import CodeDiff, touched_code_lines
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
+from coney_tools.docs_link_resolve import link_resolver
 from coney_tools.orig_index import SOURCE_DIR, TagCoverage, read_sources
 from coney_tools.orig_scan import SourceFile, Tag
 from coney_tools.research_functions import (
@@ -50,8 +53,6 @@ from coney_tools.standards_scan import Finding, counts, scan_code, scan_tests
 LEGACY = "legacy"
 COMPARED = "compared"
 
-_HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(?P<start>\d+)(?:,(?P<count>\d+))? @@", re.MULTILINE)
-
 
 @dataclass(frozen=True)
 class Report:
@@ -61,7 +62,7 @@ class Report:
     line: int
     rule: str
     message: str
-    #: Whether it fails the check: `standards.enforce`, so false (a warning) until the cutover.
+    #: Whether it fails the check: `standards.enforce` (an error when true, a warning when false).
     error: bool
 
 
@@ -227,7 +228,7 @@ def problems(root: Path, conventions: Conventions, scan: Scan, base: str | None 
             conventions.research.files.functions,
             1,
             "status",
-            f'{item} is ported and has no status: run `coney-tools standards mark` to give it `status = "legacy"`',
+            f'{item} is ported and has no status: record it as `status = "compared"` after its side-by-side comparison',
             error,
         )
         for item in counted.unmarked
@@ -277,16 +278,32 @@ def _added_since(root: Path, conventions: Conventions, listed: LegacyFiles, sinc
 # --- touching --------------------------------------------------------------------------------------------------------
 
 
-def _changed_lines(root: Path, since: str, name: str) -> frozenset[int] | None:
-    """The lines of `name` the change added or changed (committed or not), or None for a new file (all of them)."""
-    if _file_at(root, since, name) is None:
+def _code_diff(
+    root: Path,
+    since: str,
+    name: str,
+    gone: set[str],
+    resolves: Callable[[str, str], bool],
+    held: Callable[[str, str], bool],
+) -> CodeDiff | None:
+    """What the change touched of `name` (committed or not), or None for a new file (all of it). A hunk that only
+    rewrites research references in comments to follow a page the change moved touches nothing (`code_link_moves`)."""
+    before = _file_at(root, since, name)
+    if before is None:
         return None
     diff = local_gate.run_command(["git", "-C", str(root), "diff", "-U0", since, "--", name], root)[1]
-    lines: set[int] = set()
-    for hunk in _HUNK.finditer(diff):
-        start, count = int(hunk.group("start")), int(hunk.group("count") or 1)
-        lines.update(range(start, start + max(count, 1)))
-    return frozenset(lines)
+    after = (root / name).read_bytes().decode("utf-8", errors="replace")
+    return touched_code_lines(diff, gone, resolves, held, _git_lines(before), _git_lines(after))
+
+
+def _git_lines(text: str) -> list[str]:
+    """The lines of `text` as git counts them: broken at a newline only (`str.splitlines` also breaks at a form feed,
+    U+0085, U+2028 and others, which would shift the diff's line numbers onto the wrong lines), without a trailing
+    carriage return."""
+    lines = text.split("\n")
+    if lines[-1] == "":
+        lines.pop()
+    return [line.removesuffix("\r") for line in lines]
 
 
 def _ported(root: Path, conventions: Conventions) -> dict[int, Entry]:
@@ -310,9 +327,17 @@ def touched(
     names = names if names is not None else local_gate.changed_files(root, base)
     found: list[Report] = []
     findings = scan.findings()
-    for name in names:
-        if not rules_of(name, standards):
-            continue
+    since = local_gate.merge_base(root, base)
+    # What the pages moved is read as `docs check` reads it (`docs_check.change_touches`).
+    gone = local_gate.removed_files(root, base, conventions.research.moved_similarity)
+    resolves, held = link_resolver(root), link_resolver(root, since)
+    diffs: dict[str, CodeDiff | None] = {
+        name: _code_diff(root, since, name, gone, resolves, held) for name in names if rules_of(name, standards)
+    }
+    for name in diffs:
+        diff = diffs[name]
+        if diff is not None and diff.link_moves_only:
+            continue  # a file whose only change is its comments' research links following a moved page
         by_rule: dict[str, list[Finding]] = {}
         for item in findings.get(name, []):
             by_rule.setdefault(item.rule, []).append(item)
@@ -328,27 +353,27 @@ def touched(
                     error,
                 )
             )
-    found.extend(_touched_functions(root, conventions, scan, base, names, error))
+    found.extend(_touched_functions(root, conventions, scan, since, diffs, error))
     return found
 
 
 def _touched_functions(
-    root: Path, conventions: Conventions, scan: Scan, base: str, names: list[str], error: bool
+    root: Path, conventions: Conventions, scan: Scan, since: str, diffs: dict[str, CodeDiff | None], error: bool
 ) -> list[Report]:
     """The ported functions whose lines a changed file touches that are not `compared`. A function is held to its tags
     wherever they are written: above it, inside its body, or on its declaration (most ports carry `@orig` in the
     header), the declaration matched overload by overload as `orig check` matches it (`TagCoverage`)."""
-    wanted = {n for n in names if n.startswith(f"{SOURCE_DIR.as_posix()}/")}
+    wanted = {n for n in diffs if n.startswith(f"{SOURCE_DIR.as_posix()}/")}
     if not wanted:
         return []
-    since = local_gate.merge_base(root, base)
     database = _ported(root, conventions)
     coverage = TagCoverage(scan.sources)
     found: list[Report] = []
     for source in scan.sources:
         if source.path not in wanted:
             continue
-        changed = _changed_lines(root, since, source.path)
+        diff = diffs[source.path]
+        changed = None if diff is None else diff.lines
         for function in source.functions:
             span = range(function.line, function.line + max(function.lines, 1))
             if changed is not None and not any(line in changed for line in span):

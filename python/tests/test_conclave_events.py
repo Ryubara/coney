@@ -9,6 +9,7 @@ from typing import Any
 
 import pytest
 from conclave_support import (
+    CHANGE,
     CONVENTIONS,
     NOW,
     FakeGh,
@@ -23,6 +24,7 @@ from conclave_support import (
 from coney_tools import pr_hold
 from coney_tools.conclave_snapshot import collect
 from coney_tools.pr_hold import Hold
+from coney_tools.pr_ready import Readiness
 
 RULES = CONVENTIONS.conclave.watch
 
@@ -207,7 +209,8 @@ def test_a_merge_older_than_the_window_is_not_news(layout: Layout) -> None:
 def test_a_unit_with_a_pr_file_and_no_pull_request_is_ready(layout: Layout) -> None:
     write_file(layout.scratch / "fix-new" / "PR.md", when=2)
     [event] = events(read(layout), "unit-ready")
-    assert event["id"] == f"unit:fix-new:PR.md:{iso(ago(hours=2))}" and event["guard"] is False
+    assert event["id"] == f"unit:fix-new:PR.md:{CHANGE[:12]}" and event["guard"] is False
+    assert event["since"] == iso(ago(hours=2))
     assert event["ref"]["task"] == "fix-new" and "pr open fix-new" in event["do"]
 
 
@@ -216,11 +219,39 @@ def test_a_unit_whose_branch_has_a_pull_request_is_not_ready(layout: Layout) -> 
     assert events(read(layout), "unit-ready") == []
 
 
-def test_a_rewritten_pr_file_is_a_new_event(layout: Layout) -> None:
+def test_a_rewritten_pr_file_is_the_same_event_while_the_change_it_covers_is_the_same(layout: Layout) -> None:
     first = write_file(layout.scratch / "fix-new" / "PR.md", when=3)
+    old = events(read(layout), "unit-ready")[0]
+    write_file(first, "rewritten\n", when=1)
+    [again] = events(read(layout), "unit-ready")
+    assert again["id"] == old["id"] and again["since"] != old["since"]
+
+
+def test_a_unit_whose_change_moved_on_is_a_new_event(layout: Layout) -> None:
+    write_file(layout.scratch / "fix-new" / "PR.md", when=3)
     old = events(read(layout), "unit-ready")[0]["id"]
-    write_file(first, when=1)
-    assert events(read(layout), "unit-ready")[0]["id"] != old
+    moved = Readiness(True, "", "d" * 40)
+    [again] = events(read(layout, ready=lambda root, unit, text, conventions, now: moved), "unit-ready")
+    assert again["id"] != old
+
+
+def test_a_unit_that_is_not_ready_raises_no_event_and_one_that_cannot_be_told_marks_the_kind_unread(
+    layout: Layout,
+) -> None:
+    write_file(layout.scratch / "fix-new" / "PR.md", when=3)
+    no = Readiness(False, "checked: no passing Check; run task check", "")
+    assert events(read(layout, ready=lambda root, unit, text, conventions, now: no), "unit-ready") == []
+    unknown = Readiness(False, "origin/HEAD is not set here", unknown=True)
+    section = read(layout, ready=lambda root, unit, text, conventions, now: unknown)["events"]
+    assert "unit-ready" in section["unread"] and [e for e in section["events"] if e["kind"] == "unit-ready"] == []
+
+
+def test_a_unit_with_a_hold_file_raises_no_event_until_the_file_goes(layout: Layout) -> None:
+    write_file(layout.scratch / "fix-new" / "PR.md", when=3)
+    hold = write_file(layout.scratch / "fix-new" / RULES.unit_hold_file, "waiting for capacity\n")
+    assert events(read(layout), "unit-ready") == []
+    hold.unlink()
+    assert len(events(read(layout), "unit-ready")) == 1
 
 
 def test_several_units_of_one_branch_are_several_events(layout: Layout) -> None:

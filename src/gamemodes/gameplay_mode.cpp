@@ -79,6 +79,9 @@ class ScriptSpawnerWorld final : public ai::SpawnerWorld {
         : m_scripted(&scripted), m_scripts(&scripts), m_cameras(cameras), m_boxes(boxes), m_collision(collision),
           m_random(&random) {}
 
+    // Spawner_PlaceOutOfView's camera, random draw and turf steps around the search (ai::outOfSightNode())
+    // (docs/research/ai-gangs.md#spawner-placement).
+    // @orig 0x001673b8 Spawner_PlaceOutOfView (unknown)
     [[nodiscard]] std::optional<anim::Vec3> outOfSight(float value, int gang) override {
         const std::optional<anim::Vec3> player = playerPosition();
         const ai::RoutePlanner* planner = m_scripted->owner().planner();
@@ -107,6 +110,7 @@ class ScriptSpawnerWorld final : public ai::SpawnerWorld {
         return spot;
     }
 
+    // @coney-only Coney's spawner world: what the spawners ask of the scripted brains
     [[nodiscard]] std::optional<anim::Vec3> playerPosition() const override {
         const ai::Brain* player = m_scripted->player();
         return player != nullptr ? std::optional(player->human().position()) : std::nullopt;
@@ -149,16 +153,21 @@ class ScriptSpawnerWorld final : public ai::SpawnerWorld {
         return !m_collision->rayCast(ray, kSeeThroughMaterials, 0).has_value();
     }
 
+    // @coney-only Coney's spawner world: what the spawners ask of the scripted brains
     [[nodiscard]] bool alive(double handle) const override {
         const auto found = m_scripted->bound().find(handle);
         return found != m_scripted->bound().end() && found->second->human().alive();
     }
 
+    // @coney-only Coney's spawner world: what the spawners ask of the scripted brains
     [[nodiscard]] bool policeGang(int gang) const override {
         const ai::Gang* found = m_scripted->owner().gangs().find(gang);
         return found != nullptr && found->kind() == ai::kPoliceKind;
     }
 
+    // Spawner_MakeHuman's human, made through the scripts' own `HuCreate` so it is kept and numbered as a script's
+    // (docs/research/ai-gangs.md#spawners).
+    // @orig 0x0016d860 Spawner_MakeHuman (unknown)
     double spawn(const ai::SpawnRequest& request) override {
         auto position = std::make_shared<script::Table>();
         for (std::size_t i = 0; i < request.position.size(); ++i) {
@@ -181,6 +190,8 @@ class ScriptSpawnerWorld final : public ai::SpawnerWorld {
         return made->front().number().value_or(0.0);
     }
 
+    // Spawner_MakeHuman's last step: the spawner's callback with (human, gang, spawner name).
+    // @orig 0x0016d860 Spawner_MakeHuman (unknown)
     void spawned(std::string_view callback, double handle, int gang, std::string_view spawner) override {
         // A name that is not a function calls nothing, without a message (0x0016d860 checks before it calls).
         if (!m_scripts->hasFunction(callback)) {
@@ -207,6 +218,7 @@ class ScriptSpawnerWorld final : public ai::SpawnerWorld {
 
 } // namespace
 
+// @coney-only Coney's wiring of the mode's services
 GameplayMode::GameplayMode(graphics::RenderDevice& device, script::ScriptSystem& scripts,
                            script::BindingContext& context, GameState& state, CreatedHumans& humans,
                            world_objects::WorldFlags& flags, const script::RecordedCalls& recorded, LevelLoader loader,
@@ -228,6 +240,7 @@ GameplayMode::GameplayMode(graphics::RenderDevice& device, script::ScriptSystem&
     });
 }
 
+// @coney-only Coney's wiring of the mode's services
 GameplayMode::~GameplayMode() {
     endLevel();
     if (m_context.objects == &m_objects) {
@@ -238,9 +251,11 @@ GameplayMode::~GameplayMode() {
     }
 }
 
+// @orig 0x001607b8 UnloadLevel (unknown)
 void GameplayMode::endLevel() {
     // The level first: its humans are what the brains refer to, its player what the cameras follow. Then the cameras,
-    // whose locator reads the scripts' hold, then the hold, then the brains it holds.
+    // whose locator reads the scripts' hold, then the hold, then the brains it holds. Coney's choice: the level file
+    // goes every time (UnloadLevel's keep), as each start loads its level whole.
     m_level.reset();
     // UnloadLevel's HUD shut-down: the level's hints, objectives, bars, timers and blips go with it (the radar stops
     // locating its objects), so every start of the next level, however it comes, finds the HUD clean.
@@ -569,6 +584,10 @@ void GameplayMode::enter() {
     startPlay();
 }
 
+// InitLevel's steps 4-10 behind the loading screen: the HUD set-up with the radar's map (Radar_Setup's sheet and
+// floats from the level record), the level script, the pick-ups, then the level entered.
+// @orig 0x0015fe90 InitLevel (InitLevel.cpp)
+// @orig 0x001c3de0 Radar_Setup (RadarHUD.cpp)
 void GameplayMode::loadLevel() {
     prepareLevelLoad();
     // InitLevel's script step: the level script creates player 1 at the checkpoint's start, before anything streams.
@@ -670,6 +689,7 @@ void GameplayMode::finishLevelLoad(const LevelStart& start) {
             [this](double taker, double object, anim::Vec3 at) { sendTheftMessage(taker, object, at); });
         // The steal command's tactic fetches from the same objects, at the store fronts among the flags.
         m_items.emplace(m_flags, *m_pickups, *m_context.spawnRecords, *m_context.objectTypes);
+        m_items->setObjects(m_context.objects);
         if (m_scripted) {
             m_scripted->setItems(&*m_items);
         }
@@ -700,6 +720,7 @@ void GameplayMode::finishLevelLoad(const LevelStart& start) {
                                              .sound = m_context.sound,
                                              .objectHandles = [this] { return m_scripts.nextObjectHandle(); },
                                              .gameOver = &m_state.gameOver,
+                                             .padOptions = &m_state.saved.pads,
                                              .missionFailed =
                                                  [this](std::string_view title) {
                                                      if (m_context.host != nullptr) {
@@ -715,6 +736,7 @@ void GameplayMode::finishLevelLoad(const LevelStart& start) {
     m_level->enter();
 }
 
+// @orig 0x0015fe90 InitLevel (InitLevel.cpp)
 void GameplayMode::startPlay() {
     // A level that failed to load asks for no movie.
     if (!m_level) {
@@ -729,6 +751,8 @@ void GameplayMode::startPlay() {
     }
 }
 
+// InitLevel's loading-screen steps (LoadScreen_Begin, the sounds, LoadScreen_End) spread over the mode's steps.
+// @orig 0x0015fe90 InitLevel (InitLevel.cpp)
 bool GameplayMode::updateLoadingScreen(const FrameTime& frame) {
     LoadingScreen& screen = *m_loadingScreen;
     const std::uint64_t msPerTick = GameTimer::kTicksPerSecond / 1000;
@@ -782,6 +806,8 @@ ModeResult GameplayMode::update(GameModeStack& stack, const FrameTime& frame) {
     return result;
 }
 
+// Mode 1's frame of play in the original's order (docs/research/level-loading.md#a-frame-of-play).
+// @orig 0x00158728 Gm_Level_Update (unknown)
 ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& frame) {
     // The level's step (the characters, the cameras, the streaming), then the scripts' frame, as a frame of play
     // orders them.
@@ -905,11 +931,13 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
     return result;
 }
 
+// @coney-only a forwarder to the level (ScriptedPlayer::releasePlayerToAi())
 bool GameplayMode::releasePlayerToAi() {
     auto* scripted = dynamic_cast<ScriptedPlayer*>(m_level.get());
     return scripted != nullptr && scripted->releasePlayerToAi();
 }
 
+// @coney-only Coney's hand-off of the humans' sounds and speech to the sound; the original's humans play their own
 void GameplayMode::reportHumanSounds() {
     if (!m_scripted) {
         return;
@@ -940,6 +968,9 @@ void GameplayMode::reportHumanSounds() {
     m_soundHumans = std::move(present);
     for (const auto& [handle, brain] : m_scripted->bound()) {
         human::Human& body = brain->human();
+        // A line he says that is playing turns his face to its speaking clips, its end back
+        // (Human_BeginTalkPose / Human_EndTalkPose, docs/research/face.md).
+        body.setSpeaking(m_context.sound != nullptr && m_context.sound->humanSpeaking(handle));
         const std::vector<human::HumanSound> sounds = body.takeSounds();
         if (sounds.empty() || m_context.sound == nullptr) {
             continue;
@@ -983,6 +1014,7 @@ script::HumanSoundCall humanSoundCallOf(double handle, const ai::Brain& brain, c
                                   .gestureSlots = ai::helpLevel(brain)};
 }
 
+// @orig 0x00390480 LightTask_SetParams (unknown)
 void GameplayMode::syncSystemLights() {
     if (!m_effects || !m_lighting) {
         return;
@@ -1021,6 +1053,9 @@ void GameplayMode::syncSystemLights() {
     m_systemLights = std::move(lit);
 }
 
+// @orig 0x003e85b8 PartStrobeRed_Init (unknown)
+// @orig 0x003e8678 PartStrobeRed_OnMessage (unknown)
+// @orig 0x003d7e30 PartGarbageFlies_Init (unknown)
 void GameplayMode::syncSystemSounds() {
     if (!m_effects || m_context.sound == nullptr) {
         return;
@@ -1032,7 +1067,8 @@ void GameplayMode::syncSystemSounds() {
     std::map<std::uint32_t, SystemEmitter> kept;
     for (const effects::ParticleSystem& system : m_effects->particles.systems()) {
         const bool strobe = system.type->behaviour == effects::ParticleBehaviour::Strobe;
-        // Only the garbage flies themselves have a sound (their `_ns` spawner's and the light bugs' have none).
+        // Only the garbage flies themselves have a sound (their `_ns` spawner's and the light bugs' have none). Coney
+        // stand-in: every pile has it, where the original gives it only to one made with no parent handle.
         const bool flies = system.type->name == "part_garbage_flies";
         if (!strobe && !flies) {
             continue;
@@ -1074,6 +1110,7 @@ void GameplayMode::syncSystemSounds() {
     m_systemEmitters = std::move(kept);
 }
 
+// @orig 0x003ad440 Radio_Update (unknown)
 void GameplayMode::updateRadios() {
     if (m_radios.all().empty()) {
         return;
@@ -1118,6 +1155,7 @@ void GameplayMode::updateRadios() {
                     [this](const std::string& function) { m_scripts.call(function, std::vector<script::Value>{}); });
 }
 
+// @orig 0x00415378 VolumeBox_Update (unknown)
 void GameplayMode::updateBoxes(std::uint64_t nowMs) {
     if (m_context.boxes == nullptr || m_context.messages == nullptr || !m_scripted) {
         return;
@@ -1128,6 +1166,7 @@ void GameplayMode::updateBoxes(std::uint64_t nowMs) {
     });
 }
 
+// @orig 0x00413018 VolumeBoxes_SendDamageMessage (unknown)
 void GameplayMode::sendDamageMessage(double human, double object) {
     if (m_context.boxes == nullptr || m_context.messages == nullptr || !m_scripted) {
         return;
@@ -1143,6 +1182,7 @@ void GameplayMode::sendDamageMessage(double human, double object) {
     }
 }
 
+// @orig 0x00412dc8 Item_TakeOwned (unknown)
 void GameplayMode::sendTheftMessage(double taker, double object, anim::Vec3 at) {
     if (m_context.boxes == nullptr || m_context.messages == nullptr) {
         return;
@@ -1183,6 +1223,7 @@ void GameplayMode::callPadHandler() {
     }
 }
 
+// @coney-only Coney's wiring of the mode's services
 void GameplayMode::wireHub() {
     // The categories (`CfgChar` `+0x11b`) and the gang kinds' flee percentages (`CfgGang`'s ninth argument).
     auto types = std::make_shared<characters::CharacterTypes>(characters::CharacterTypes::fromRecorded(m_recorded));
@@ -1243,6 +1284,7 @@ void GameplayMode::wireHub() {
     m_scripted->hubHost().setLookups(std::move(lookups));
 }
 
+// @coney-only Coney's handle lookup (a human, a flag or a spawn record)
 std::optional<std::array<float, 3>> GameplayMode::objectPosition(double handle) const {
     if (m_scripted) {
         if (const std::optional<world_objects::Placement> human = m_scripted->humanPlacement(handle)) {
@@ -1262,6 +1304,7 @@ std::optional<std::array<float, 3>> GameplayMode::objectPosition(double handle) 
     return std::nullopt;
 }
 
+// @coney-only Coney's handle lookup (a tag spot or a flag)
 std::optional<anim::Vec3> GameplayMode::promptObjectPosition(double handle) const {
     // A tag spot is a particle system (`part_spray_tag`).
     if (m_effects) {
@@ -1277,6 +1320,7 @@ std::optional<anim::Vec3> GameplayMode::promptObjectPosition(double handle) cons
     return std::nullopt;
 }
 
+// @coney-only Coney's lookup of player 1's placement
 std::optional<anim::Vec3> GameplayMode::playerFeet() const {
     const HumanCreation* player = m_humans.player(1);
     if (player == nullptr || !m_scripted) {
@@ -1347,6 +1391,7 @@ void GameplayMode::updateActionPrompt() {
     }
 }
 
+// @coney-only Coney's wiring of the mode's services
 void GameplayMode::wireScoutServices() {
     ai::ScoutServices& scout = m_scripted->storyHost().scoutServices();
     scout.callerActive = false;
@@ -1387,6 +1432,8 @@ void GameplayMode::wireScoutServices() {
     scout.setSecondWanted = [this](int gang) { m_state.player.crimes.setSecondWanted(gang, m_scripts.now()); };
 }
 
+// Human_SnapToGround's hide rule after the ground snap, with its HUD_RadarSetTintBlue call.
+// @orig 0x0023eab8 Human_SnapToGround (unknown)
 void GameplayMode::updateHiding() {
     ai::Brain* player = m_scripted ? m_scripted->player() : nullptr;
     if (player == nullptr || !m_brains) {
@@ -1400,6 +1447,7 @@ void GameplayMode::updateHiding() {
     }
 }
 
+// @coney-only Coney's frame drawing
 void GameplayMode::render(const RenderTime& time) {
     // The loading screen's tick, on game time.
     if (m_phase != Phase::Playing && m_loadingScreen != nullptr) {
@@ -1425,6 +1473,7 @@ void GameplayMode::render(const RenderTime& time) {
     m_device.present();
 }
 
+// @coney-only Coney's frame drawing
 void GameplayMode::renderWithOverlay(const RenderTime& time,
                                      const std::function<void(graphics::RenderDevice&)>& overlay) {
     if (auto* overlaid = dynamic_cast<OverlaidLevel*>(m_level.get())) {
@@ -1440,6 +1489,9 @@ void GameplayMode::renderWithOverlay(const RenderTime& time,
     m_device.present();
 }
 
+// Mode 1's Exit, then UnloadLevel's level and script steps (docs/research/level-loading.md#unload).
+// @orig 0x00158488 Gm_Level_Exit (unknown)
+// @orig 0x001607b8 UnloadLevel (unknown)
 void GameplayMode::exit() {
     // Left behind the loading screen: its sounds stop and it ends.
     if (m_loadingScreen != nullptr && m_phase != Phase::Playing) {

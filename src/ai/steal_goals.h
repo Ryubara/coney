@@ -16,8 +16,8 @@
 // objects and hands them out, the WarriorVandalSteal goal each Warrior runs under it, and the GetItem goal that walks
 // to an object and picks it up. Taking an owned object is a theft the level reports (Item_TakeOwned, message 7 to the
 // volume boxes round it: gamemodes/level_items.h). Research: docs/research/ai-code.md#t2-warrior-steal,
-// docs/research/ai-gangs.md#warrior-steal, docs/research/ai-goals.md#goal-warrior-vandal-steal,
-// docs/research/ai.md#get-item
+// docs/research/ai-gangs.md#warrior-steal, docs/research/crew-wreck.md,
+// docs/research/ai/index.md#get-item
 
 namespace coney::ai {
 
@@ -40,22 +40,47 @@ inline constexpr std::uint64_t kStealClaimMs = 5000;
 /// It is handed out only with no enemy within this distance of it, metres.
 inline constexpr float kStealEnemyClear = 1.5F;
 
-/// GetItem's reach: within this distance in plan of the object it picks it up, metres.
+/// GetItem's reach: nearer than this to its standing point (3D, 2.25 squared in the code) it picks the object up,
+/// metres.
 inline constexpr float kGetItemReach = 1.5F;
 /// It gives up after this many tries.
 inline constexpr int kGetItemTries = 11;
-/// Its walk ends this near its point, metres; within kGetItemJogWithin of it the walk jogs (gait 3).
+/// Its walk ends this near its point, metres; nearer than kGetItemJogWithin to it (3D) the walk jogs (gait 3).
 inline constexpr float kGetItemWalkRadius = 0.36F;
 inline constexpr float kGetItemJogWithin = 3.0F;
+/// With a pane between him and the object it steps to its point first when farther than this from it, metres; it
+/// swings (attack kind 0 on himself) after kGetItemSwingDelayMs; with no clear ray it turns to the object when more
+/// than kGetItemTurn off (radians, 15 degrees). Research: docs/research/ai/index.md#get-item
+inline constexpr float kGetItemGlassStep = 0.4F;
+inline constexpr std::int16_t kGetItemSwingDelayMs = 0x21;
+inline constexpr float kGetItemTurn = 0.2617994F;
 
 /// WarriorVandalSteal keeps within this distance of the leader (kVandalStealAttackedReach while his gang is attacked),
-/// metres, walking back to its slot (FollowFormation, kVandalStealSlotReach) after kVandalStealFollowDelayMs away.
+/// metres, walking back to its slot (FollowFormation, kVandalStealSlotReach) once its deadline,
+/// kVandalStealFollowDelayMs after it was armed, has passed; after a failed move it waits kVandalStealFailedMoveWait
+/// updates first. Research: docs/research/crew-wreck.md#process
 inline constexpr float kVandalStealLeaderReach = 3.0F;
 inline constexpr float kVandalStealAttackedReach = 15.0F;
 inline constexpr float kVandalStealSlotReach = 0.75F;
 inline constexpr std::uint64_t kVandalStealFollowDelayMs = 2000;
-/// It turns to the leader's heading every this long, ms.
+inline constexpr std::uint8_t kVandalStealFailedMoveWait = 31;
+/// It turns to the leader's facing every this long, ms, and every kVandalStealFidgetMs fidgets kVandalStealFidgetChance
+/// times in 100.
 inline constexpr std::uint64_t kVandalStealTurnMs = 4000;
+inline constexpr std::uint64_t kVandalStealFidgetMs = 3000;
+inline constexpr int kVandalStealFidgetChance = 30;
+/// Its field of view while his gang is attacked: all round (brain `+0x12c` = 2 pi).
+inline constexpr float kVandalStealAttackedView = 6.2831855F;
+/// The held flag a fidget's clip holds (`Human_HasHeld100`): queued actions do not hold him while it is set.
+inline constexpr std::uint32_t kFidgetHeldFlag = 0x100;
+/// The wreck's reach (`0x005148b8`, 15.0): the glass he turns to with something in hand, the smash targets around
+/// him and near the leader, and the panes around the leader, metres.
+inline constexpr float kVandalReach = 15.0F;
+/// The swing with something in hand: attack kind 0 on himself after this many ms (`0x7d`).
+inline constexpr std::int16_t kVandalSwingDelayMs = 0x7d;
+/// A pane is looked for at most once in a random 1.5-3 s, ms.
+inline constexpr std::uint64_t kVandalPaneMinMs = 1500;
+inline constexpr std::uint64_t kVandalPaneMaxMs = 3000;
 
 /// One cluster record: the objects within kStealClusterRadius of each other, and how many Warriors were sent to it.
 struct StealCluster {
@@ -101,11 +126,16 @@ class StealClusters {
 };
 
 /// `Goal_GetItem(human, kind, object)` (type `0x2c`): walks to the object and picks it up. Done when the object is
-/// gone, when he (or anyone) holds it, after the pick-up, after a failed walk or after kGetItemTries tries. Within
-/// kGetItemReach in plan of it he starts the pick-up (ItemServices::startPickUp(), a try); farther he walks to the
-/// standing point beside it (gait 3 within kGetItemJogWithin, else the goal's), arriving within kGetItemWalkRadius.
+/// gone, when he (or anyone) holds it, after the pick-up, after a failed walk or after kGetItemTries tries; while it
+/// is in flight (ItemServices::inFlight()) it waits. Nearer than kGetItemReach to its standing point (3D), with a clear
+/// ray to it (clearRayTo(), mask 0) he starts the pick-up (ItemServices::startPickUp(), a try); when that ray crosses
+/// an intact pane he steps to the standing point, turns to the object and swings at the pane (attack kind 0 on
+/// himself), counting no try, so nothing is ever taken through glass; with no clear ray he turns to it, or, facing it,
+/// counts a try and walks on to the standing point. Farther he walks to the standing point beside it (gait 3 within
+/// kGetItemJogWithin, else the goal's), arriving within kGetItemWalkRadius.
 /// **Coney stand-ins**: dropping a held weapon at Start, the look at the object, an enemy holding it (the fight or the
-/// engage), clearing the way (kind 17), the ray test and its cross press, and the wait on held flags are not built;
+/// engage), clearing the way (kind 17), the wait on held flags and leaving the fight stance before the walk (issue
+/// #959) are not built;
 /// the standing point is the planner's navigation point under the object at his height (RoutePlanner::navPoint()),
 /// or the object's own place without a planner.
 /// @orig 0x002dc7a0 GetItemGoal_Init (unknown)
@@ -147,13 +177,25 @@ class WarriorStealTactic;
 /// `WarriorVandalSteal(leader)` (type `0x83`, vtable `0x005404b0`): what each Warrior runs under the steal / wreck
 /// command. Empty-handed under the gang's steal tactic, he takes the object the tactic hands him
 /// (StealClusters::claim()) and fetches it (GetItemGoal). Otherwise, beyond kVandalStealLeaderReach of the leader
-/// (kVandalStealAttackedReach while his gang is attacked) for kVandalStealFollowDelayMs, he walks back to his slot in
-/// the leader's formation (FollowFormationGoal, kVandalStealSlotReach); near him he turns to the leader's heading
-/// every kVandalStealTurnMs. **Coney stand-ins**: the wreck with no store (smash targets, glass, cars, the swing and
-/// its lines), the wait of 500 ms × his place in the gang, the fight stance and the turn to an enemy while his gang
-/// is attacked, the fidgets and "the leader runs" are not built; the fetch's gait (4) is not on the page.
+/// (kVandalStealAttackedReach while his gang is attacked) or with the leader running, once the follow deadline has
+/// passed, he walks back to his slot in the leader's formation (FollowFormationGoal, kVandalStealSlotReach); else
+/// with his gang attacked he looks all round, and not attacked he drops his target, turns to the leader's facing every
+/// kVandalStealTurnMs and now and then fidgets (process()). In between, the wreck (tryVandalise()): while he winds up a
+/// throw of what he holds he is
+/// busy and does nothing new; with an object in hand that he swings (a throwable, or of kind 4 or 6) he drops his
+/// target and, unless a clip holds any flag, turns once to the nearest whole pane within kVandalReach, else swings
+/// (attack kind 0 on himself after kVandalSwingDelayMs); a breaking object in hand goes on to the smash targets, any
+/// other object stops the wreck. On every even update, the nearest smash target within kVandalReach of him and of
+/// the leader (findSmashTarget()) is fetched when it is carried (anim set 4 or 5: GetItemGoal) and struck where it
+/// stands otherwise (DestroyItemGoal), and at most once in a random
+/// kVandalPaneMinMs-kVandalPaneMaxMs a pane the leader can reach within kVandalReach (claimPane()) is struck.
+/// **Coney stand-ins**: the cars (DestroyCar, `0x002ddb40`), the turn to the crowd ahead before the swing and its
+/// 30/70 % lines `0x8e` / `0x8f`, the drop of a held breaking object before a fetch (`Human_DropHeld`), the wait of
+/// 500 ms × his place in the gang and the fight stance (issue #959: entered with the turn to an enemy while his
+/// gang is attacked) are not built; the fetch's gait (4) is not on the page.
 /// @orig 0x002bec58 WarriorVandalStealGoal_Init (unknown)
 /// @orig 0x002bee78 WarriorVandalStealGoal_TryFetch (unknown)
+/// @orig 0x002bf118 WarriorVandalStealGoal_TryVandalise (unknown)
 class WarriorVandalStealGoal final : public Goal {
   public:
     /// The gait of its fetch (**Coney stand-in**).
@@ -174,7 +216,9 @@ class WarriorVandalStealGoal final : public Goal {
     /// Leaves the formation.
     /// @orig 0x002bee08 WarriorVandalStealGoal_End (unknown)
     void end(Brain& brain) override;
-    /// The update (above).
+    /// The update (above, docs/research/crew-wreck.md#process): no leader keeps the goal; the fetch; queued actions
+    /// hold him unless a fidget plays; the wreck, which clears the follow deadline; the deadline armed when clear; the
+    /// follow; then the look.
     /// @orig 0x002bf748 WarriorVandalStealGoal_Process (unknown)
     [[nodiscard]] GoalStatus process(Brain& brain) override;
 
@@ -184,14 +228,23 @@ class WarriorVandalStealGoal final : public Goal {
   private:
     // The gang's steal tactic, when his gang runs one; null otherwise.
     [[nodiscard]] static WarriorStealTactic* stealTactic(const Brain& brain);
+    // The wreck half: busy while he winds up a throw, a swing with what he holds, else a smash target or a pane to
+    // break; true when he is busy or it gave him something to do.
+    // @orig 0x002bf118 WarriorVandalStealGoal_TryVandalise (unknown)
+    [[nodiscard]] bool tryVandalise(Brain& brain, Brain& leader);
 
     ScriptServices* m_services;
     Formations* m_formations;
     ItemServices* m_items;
     double m_leader;
-    std::optional<double> m_claimed;       // +0x10
-    std::optional<std::uint64_t> m_awayMs; // since when he is too far from the leader
-    std::uint64_t m_nextTurnMs = 0;
+    std::optional<double> m_claimed;  // +0x10
+    std::uint64_t m_followAtMs = 0;   // +0x14: the follow deadline, 0 when clear
+    std::uint64_t m_nextFidgetMs = 0; // +0x18
+    std::uint64_t m_nextTurnMs = 0;   // +0x1c
+    std::uint8_t m_failedMoves = 0;   // +0x28: updates counted while his move stands failed
+    std::uint64_t m_nextPaneMs = 0;   // +0x20
+    bool m_turnedToGlass = false;     // +0x2a
+    std::optional<double> m_struck;   // +0x10: the smash target or pane DestroyItem was sent to
 };
 
 /// The steal / wreck command's tactic (command 5, type `0x26`, vtable `0x005441c0`): every 2 s it picks the store

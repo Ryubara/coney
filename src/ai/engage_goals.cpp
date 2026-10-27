@@ -159,7 +159,7 @@ GoalStatus EngageEnemyGoal::process(Brain& brain) {
             return GoalStatus::Stop;
         }
         // A timed body turn over 0.3 s, not the brain's move, which the next update clears
-        // (docs/research/ai.md#fight-facing).
+        // (docs/research/ai-fights.md#fight-facing).
         // @orig 0x00221cd8 Human_TurnToFaceObject (unknown)
         brain.human().turnToFace(target->human().position(), kStopTurnSeconds);
         return arrive(brain, *target);

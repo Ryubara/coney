@@ -31,10 +31,12 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps] [--tunables FILE]
       [--no-audio | --audio-test]
       [--skip-movies] [--rumble TYPE [--arena N] [--gang-size N]]
-      [--profiles DIR] [--dev-overlay N] [--no-activate] [--window-display DISPLAY] [--event-log FILE] [--pad-pipe]
-      [--record FILE [--record-seconds N]] [--bench FILE [--bench-fighters N] [--bench-warmup N]]
+      [--profiles DIR] [--dev-overlay N] [--mesh-view SPEC] [--no-activate] [--window-display DISPLAY] [--event-log FILE]
+      [--pad-pipe] [--record FILE [--record-seconds N]]
+      [--bench FILE [--bench-fighters N] [--bench-allies N] [--bench-god] [--bench-spawn-step N] [--bench-warmup N]
+        [--bench-measure N] [--bench-frames FILE] [--bench-real-time]]
       [--log-file FILE] [--log-verbose CATEGORIES]
-      [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]
+      [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME] [--cpu-skinning]
 ```
 
 That is the command line of a build with the debug tools (`dev`, `playtest`, `ci`). The release build a player gets
@@ -144,7 +146,7 @@ just starts `coney`. A `--disc` on the command line always wins.
 * [`--no-audio`, `--audio-test`](running-options.md#sound): the sound.
   {#sound}
 * [`--host`, `--join`](running-options.md#network-play): network play.
-* [`--tunables`, `--dev-overlay`](running-options.md#the-debug-menus): the debug menus' options.
+* [`--tunables`, `--dev-overlay`, `--mesh-view`](running-options.md#the-debug-menus): the debug menus' options.
 
 ### [Loading and viewing your disc](running-viewers.md)
 

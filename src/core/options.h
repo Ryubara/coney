@@ -236,6 +236,30 @@ struct Options {
     /// `--bench-warmup N`: the frames after the first frame of play that the bench does not measure (the fighters
     /// settling, the caches filling); unset: kDefaultBenchWarmup. Must leave frames to measure. Requires benchFile.
     std::optional<int> benchWarmup;
+    /// `--bench-allies N`: also spawn N AI allies behind the player on the first frame of play, as the AI fighters
+    /// page's Ally side does, so a crowd fights itself and not only the player (0 to kMaxBenchFighters). Requires
+    /// benchFile.
+    std::optional<int> benchAllies;
+    /// `--bench-god`: make player 1 invincible when the fighters spawn (the Entity editor's Invincible), so a long
+    /// bench among enemies does not end in his death. Requires benchFile.
+    bool benchGod = false;
+    /// `--bench-frames FILE`: also write every measured frame (its length, each zone and counter) to this file as CSV,
+    /// to study the worst frames rather than the spread. Requires benchFile.
+    std::optional<std::string> benchFramesFile;
+    /// `--bench-real-time`: pace the bench by the real clock as a player's run is (fixed steps at 30 a second, frames
+    /// as fast as they go, rendered between steps), not in test mode's lockstep of one step a frame, so the frames that
+    /// run a step and those that only render both show. The run still ends after `--frames` frames. Requires
+    /// benchFile.
+    bool benchRealTime = false;
+    /// `--bench-spawn-step N`: spawn the fighters and make the player invincible once N fixed steps of play have run
+    /// (an input script's frames count the same steps), not on the first frame of play, so a run can first take the
+    /// player somewhere (out of the hub's clubhouse into the streets). The warm-up counts from that frame. Requires
+    /// benchFile.
+    std::optional<int> benchSpawnStep;
+    /// `--bench-measure N`: end the run once N frames after the warm-up are measured (1 or more), so a real-time
+    /// bench, whose frames before the spawn are many and vary, measures as many as asked; `--frames` stays the
+    /// longest the run may take. Unset: measure until `--frames`. Requires benchFile.
+    std::optional<int> benchMeasure;
     /// `--input-script`: play the pad input in this file (src/core/input_script.h) instead of reading the keyboard
     /// and gamepads: the scripted input of test mode.
     std::optional<std::string> inputScript;
@@ -252,6 +276,10 @@ struct Options {
     /// test aid for checking that the overlay leaves the frame as it found it (docs/guides/debug-menu.md). Ignored
     /// without a window.
     std::optional<int> devOverlayFrames;
+    /// `--mesh-view`: the Debug draw page's mesh views to switch on from the first frame of play, as the debug tools
+    /// parse it (debug::parseMeshViewSpec(), docs/guides/debug-menu.md#mesh-views); a test aid and the way to take a
+    /// screenshot of a view.
+    std::optional<std::string> meshView;
     /// `--render-references`: the folder to write a reference image of every character, object, car, radar icon and
     /// traced particle effect into (in its `characters`, `objects`, `cars`, `radar` and `particles` folders), then
     /// exit. Requires discPath and a window (not headless); cannot be
@@ -324,6 +352,9 @@ struct Options {
     /// `--net-name NAME`: the player name sent when joining or hosting (the Network page's Player name); main checks
     /// it is a valid one (1 to 32 printable ASCII characters).
     std::optional<std::string> netName;
+    /// `--cpu-skinning`: skin every human by CharacterMesh's CPU path, to compare it with the GPU's
+    /// (docs/guides/performance.md#gpu-skinning). Coney's own debug tooling.
+    bool cpuSkinning = false;
 };
 
 /// The largest `--fps-cap`.

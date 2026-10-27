@@ -12,17 +12,16 @@ namespace coney::ai {
 
 AiHumans::AiHumans(human::Player& player, const human::PlayerCharacter& character, AiConfig config)
     : m_player(player), m_character(character), m_config(std::move(config)), m_ownBrains(std::make_unique<Brains>()),
-      m_brains(m_ownBrains.get()) {
+      m_brains(m_ownBrains.get()), m_sides(m_brains->gangs()) {
     install();
-    // The player's gang and the fighters', enemies of each other; who fights whom in the step follows the gangs.
-    m_playerGang = m_brains->gangs().create(kWarriorsKind, "Warriors");
-    m_fighterGang = m_brains->gangs().create(kFighterGangKind, "Fighters");
-    m_brains->gangs().makeEnemies(m_playerGang, m_fighterGang);
-    m_brains->gangs().addMember(m_playerGang, *m_playerBrain);
+    // The player's gang; the fighters' gangs are made at their spawn, as enemies of it, his allies or neither, and who
+    // fights whom in the step follows the gangs.
+    m_brains->gangs().addMember(m_brains->gangs().create(kWarriorsKind, "Warriors"), *m_playerBrain);
 }
 
 AiHumans::AiHumans(human::Player& player, const human::PlayerCharacter& character, AiConfig config, Brains& brains)
-    : m_player(player), m_character(character), m_config(std::move(config)), m_brains(&brains), m_engaging(false) {
+    : m_player(player), m_character(character), m_config(std::move(config)), m_brains(&brains), m_engaging(false),
+      m_sides(brains.gangs()) {
     install();
 }
 
@@ -113,25 +112,29 @@ Brain& AiHumans::spawn(const human::PlayerCharacter& character, const AiConfig& 
     return brain;
 }
 
-human::Human& AiHumans::spawnFighter(const raycast::CollisionMesh* mesh, anim::Vec3 feet, float headingDegrees) {
-    return spawnFighter(m_character, mesh, feet, headingDegrees);
+// The scene's character on `side`.
+// @coney-only debug tooling: the original has no spawner
+human::Human& AiHumans::spawnFighter(const raycast::CollisionMesh* mesh, anim::Vec3 feet, float headingDegrees,
+                                     FighterSide side) {
+    return spawnFighter(m_character, mesh, feet, headingDegrees, side);
 }
 
+// A fighter as `character`, put in a gang of its side.
+// @coney-only debug tooling: the original has no spawner
 human::Human& AiHumans::spawnFighter(const human::PlayerCharacter& character, const raycast::CollisionMesh* mesh,
-                                     anim::Vec3 feet, float headingDegrees) {
+                                     anim::Vec3 feet, float headingDegrees, FighterSide side) {
     Brain& brain = spawn(character, m_config, mesh, feet, headingDegrees);
-    m_brains->gangs().addMember(fighterGang(), brain);
+    m_humans.back().side = side;
+    m_sides.join(side, brain, *m_playerBrain);
     return brain.human();
 }
 
-int AiHumans::fighterGang() {
-    if (m_fighterGang < 0) {
-        m_fighterGang = m_brains->gangs().create(kFighterGangKind, "Fighters");
-        if (const Gang* players = m_playerBrain->gang(); players != nullptr) {
-            m_brains->gangs().makeEnemies(players->id(), m_fighterGang);
-        }
-    }
-    return m_fighterGang;
+// Only an enemy of the player's gang is sent at him by the engaging stand-in.
+// @coney-only the engaging stand-in is Coney's own (a level script's GoalFight does this in the original)
+bool AiHumans::hostileToPlayer(const Brain& brain) const {
+    const Gang* mine = brain.gang();
+    const Gang* players = m_playerBrain->gang();
+    return mine == nullptr || players == nullptr || Gangs::enemies(mine, players);
 }
 
 void AiHumans::remove(const human::Human& human) {
@@ -206,7 +209,8 @@ void AiHumans::step() {
         for (const AiHuman& entry : m_humans) {
             Brain* brain = m_brains->find(*entry.human);
             if (brain != nullptr && Brain::fightable(*brain) && brain->goalCount() == 0 &&
-                brain->reactionGoal() == nullptr && brain->distanceTo(*m_playerBrain) <= brain->meleeFar()) {
+                brain->reactionGoal() == nullptr && hostileToPlayer(*brain) &&
+                brain->distanceTo(*m_playerBrain) <= brain->meleeFar()) {
                 brain->startFight(*m_playerBrain);
             }
         }

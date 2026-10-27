@@ -687,7 +687,7 @@ NativeFunction makeCfgRageHandlers(const BindingContext& context) {
 
 // `CfgSetDefaultFollowSlotSet(set, slots)`: set 0 or 1; the first nine (x, y) pairs of the 20 numbers, kept in the
 // rules and written into every formation, those in use too (the only binding that touches those:
-// docs/research/ai.md#level99-snaps).
+// docs/research/ai/index.md#level99-snaps).
 // @orig 0x00294788 Cfg_SetDefaultFollowSlotSet (unknown)
 NativeFunction makeCfgSetDefaultFollowSlotSet(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {

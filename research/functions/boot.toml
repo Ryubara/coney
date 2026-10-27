@@ -10,6 +10,14 @@ coney = "src/core/game_timer.h:GameTimer::update"
 status = "legacy"
 
 [[function]]
+address = 0x00159538
+name = "GameStatsMode_Enter"
+page = "game-stats.md#mode"
+level = "confirmed-code"
+coney = "src/gamemodes/game_stats_mode.h:GameStatsMode::enter"
+status = "compared"
+
+[[function]]
 address = 0x0015cae0
 name = "Gm_Mode0C_Enter"
 page = "boot.md#game-mode"

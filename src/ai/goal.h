@@ -6,18 +6,18 @@
 // A brain's goal: a long-lived intention (fight this human, block for a while, lie down until the knockdown is over)
 // that a brain keeps on its stack of ten, or as its reaction goal. The brain drives it (ai::Brain): it starts the goal,
 // or resumes it after the goal above it was popped, only when its action queue is empty, then processes it.
-// Research: docs/research/ai.md#goals, docs/research/ai.md#update-goals
+// Research: docs/research/ai/index.md#goals, docs/research/ai/index.md#update-goals
 
 namespace coney::ai {
 
 class Brain;
 
-/// A fight's duration meaning none (`GoalFight` passes −1, docs/research/ai.md#fight-durations).
+/// A fight's duration meaning none (`GoalFight` passes −1, docs/research/ai-fights.md#fight-durations).
 inline constexpr int kNoFightLimit = -1;
 /// The duration of every fight goal a Melee goal pushes, ms (its `+0x18`).
 inline constexpr int kMeleeFightMs = 4000;
 
-/// The goal types Coney builds, by the original's type ids (the vtable's `+0x0c`, docs/research/ai.md#goals).
+/// The goal types Coney builds, by the original's type ids (the vtable's `+0x0c`, docs/research/ai/index.md#goals).
 enum class GoalType : std::uint8_t {
     Idle = 0x00,               ///< IdleGoal: stands in place.
     MoveToFlag = 0x01,         ///< MoveToFlagGoal.
@@ -43,6 +43,7 @@ enum class GoalType : std::uint8_t {
     PlayGenAnim = 0x26,        ///< PlayGenAnimGoal: one generic clip.
     GuardFlag = 0x2b,          ///< GuardFlagGoal: keeps to a flag.
     GetItem = 0x2c,            ///< GetItemGoal: walks to a loose object and picks it up.
+    DestroyItem = 0x2d,        ///< DestroyItemGoal: walks up to a world object or pane and swings at it.
     TrackHuman = 0x30,         ///< TrackHumanGoal.
     FollowPlayer = 0x32,       ///< FollowPlayerGoal: keeps to the war chief's formation.
     FollowFormation = 0x33,    ///< FollowFormationGoal: walks to its formation slot.

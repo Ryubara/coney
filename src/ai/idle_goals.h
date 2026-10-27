@@ -7,7 +7,8 @@
 
 // Two goals that keep a human out of a fight: Idle (type 0), which holds its place, and Spectate (type `0x10`), which
 // watches a man from a distance for a while, for the Melee goal with no one to fight, the dealer and the crowd.
-// Research: docs/research/ai-gangs.md#tactics, docs/research/ai-scripting.md#dealer, docs/research/ai.md#spectate
+// Research: docs/research/ai-gangs.md#tactics, docs/research/ai-scripting.md#dealer,
+// docs/research/ai-fights.md#spectate
 
 namespace coney::ai {
 
@@ -54,9 +55,9 @@ class SpectateGoal final : public Goal {
     /// @orig 0x002b4200 SpectateGoal_Start (unknown)
     /// @orig 0x002b4158 SpectateGoal_PickTarget (unknown)
     void start(Brain& brain) override;
-    /// One update (docs/research/ai.md#spectate): past the time limit, done; a failed last move clears the chase flag;
-    /// every 3 s the watched man is picked again. No valid man: done with join, else wait. With join he is made an
-    /// enemy. Out of sight, done. With join and may engage, not after a failed move: an EngageEnemy goal at him when
+    /// One update (docs/research/ai-fights.md#spectate): past the time limit, done; a failed last move clears the chase
+    /// flag; every 3 s the watched man is picked again. No valid man: done with join, else wait. With join he is made
+    /// an enemy. Out of sight, done. With join and may engage, not after a failed move: an EngageEnemy goal at him when
     /// he runs (checked one update in five) or, with the chase flag, beyond the far range. Otherwise, with the actions
     /// free and the pause over: beyond 10 m a move toward him (gait 2, 4 when he runs or with join, radius far + 2 m);
     /// with join, between the keep distance and 2 m more, 51 % a turn to face him; else a move that holds him between

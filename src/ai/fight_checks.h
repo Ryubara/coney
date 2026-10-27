@@ -7,7 +7,7 @@
 // The fight goal's two waits: whether attacker A may attack target T now (`Brain_CheckAttack`, a "go" or a reason to
 // wait), and, when he must wait, the ring round T he holds meanwhile (`FightGoal_Reposition`'s band and limit) and
 // whether he taunts. Pure decisions; the fight goal fills them from the two brains.
-// Research: docs/research/ai.md#check-attack, docs/research/ai.md#fight-reposition
+// Research: docs/research/ai-fights.md#check-attack, docs/research/ai-fights.md#fight-reposition
 
 namespace coney::ai {
 
@@ -84,7 +84,7 @@ struct RepositionInput {
 
 /// The tackle meter (brain `+0x148`): it fills while the target keeps running off or swings a weapon, and the fight
 /// goal's tackle try fires once it passes the gang's threshold.
-/// Research: docs/research/ai.md#try-tackle
+/// Research: docs/research/ai-fights.md#try-tackle
 class TackleMeter {
   public:
     /// The meter's cap.

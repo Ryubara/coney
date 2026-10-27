@@ -69,6 +69,7 @@
 #include "install/known_discs.h"
 #include "platform/audio_output.h"
 #include "platform/audio_output_controls.h"
+#include "platform/character_skin.h"
 #include "platform/character_viewer_mode.h"
 #include "platform/clip_recorder.h"
 #include "platform/debug_menus.h"
@@ -81,6 +82,7 @@
 #include "platform/imgui_overlay.h"
 #include "platform/install_command.h"
 #include "platform/log_output.h"
+#include "platform/mesh_views.h"
 #include "platform/net_play.h"
 #include "platform/net_play_controls.h"
 #include "platform/pad_pipe.h"
@@ -245,8 +247,8 @@ coney::LevelScriptOptions levelScriptOptions(const coney::io::Wad& wad, std::str
 }
 
 // The setup of a sandbox's player: **Coney's choice**, level99's configuration (the combat training level whose
-// fighters the sandbox's stand in for, docs/research/ai.md#level99) for the AI fighters and the character types, from
-// its scripts run alone and quietly; the player is Rembrandt.
+// fighters the sandbox's stand in for, docs/research/ai/index.md#level99) for the AI fighters and the character types,
+// from its scripts run alone and quietly; the player is Rembrandt.
 coney::platform::PlayerSetup sandboxSetup(const coney::io::Wad& wad) {
     std::vector<std::uint32_t> table;
     const coney::LevelScriptRun run = coney::runLevelScriptAlone(
@@ -311,6 +313,9 @@ int main(int argc, char** argv) {
         return 1;
     }
     const std::unique_ptr<coney::platform::LogOutput> runLog = std::move(*logOutput);
+    // `--cpu-skinning`: the humans skinned by CharacterMesh's CPU path, to compare it with the GPU's
+    // (docs/guides/performance.md#gpu-skinning).
+    coney::platform::allowCharacterSkin(!options->cpuSkinning);
 
     // `--event-log` and `--pad-pipe`: the events go to the file, and to the driver as `@ev` lines (a hint's line
     // breaks become spaces there, one event a line). Opened before anything runs, so the first event is in it; the
@@ -733,9 +738,11 @@ int main(int argc, char** argv) {
         return cap == kStepsPerSecond ? coney::FramePacing::Lockstep : coney::FramePacing::Interpolated;
     };
     const auto fpsCap = static_cast<std::uint32_t>(options->fpsCap.value_or(0));
-    coney::FrameClock clock(testMode ? coney::FramePacing::Lockstep : pacingFor(fpsCap));
+    // `--bench-real-time` paces a bench as a player's run, though `--frames` makes it test mode otherwise.
+    const bool lockstep = testMode && !options->benchRealTime;
+    coney::FrameClock clock(lockstep ? coney::FramePacing::Lockstep : pacingFor(fpsCap));
     std::optional<coney::platform::FramePacer> pacer;
-    if (!testMode) {
+    if (!lockstep) {
         pacer.emplace(fpsCap, options->showFps ? std::function<void(std::string_view)>(logText)
                                                : std::function<void(std::string_view)>());
     }
@@ -930,13 +937,18 @@ int main(int argc, char** argv) {
     const auto sandboxHudPlaying = [&audio](coney::hud::HudSoundHandle sound) {
         return audio && audio->sounds().isPlaying(coney::audio::VoiceHandle{sound});
     };
+    // The Debug draw page's mesh views, which every play mode draws its models through (one for the run: they keep
+    // only the options and their own librw light, destroyed with the last mode before the renderer stops).
+    const auto meshViews = std::make_shared<coney::platform::MeshViews>(debugSession.debugDraw());
     if (playLevel) {
         playLevel->setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
+        playLevel->setMeshViews(meshViews);
         playLevel->setSounds(audio ? &audio->sounds() : nullptr);
         playLevel->hud()->setSoundOutput(sandboxHudSound, sandboxHudStop, sandboxHudPlaying);
     }
     if (session) {
         session->setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
+        session->setMeshViews(meshViews);
     }
     // The mode a sandbox or a new game session replaces: the sandbox's play mode or the sandbox viewer; null when
     // neither runs.
@@ -973,6 +985,7 @@ int main(int argc, char** argv) {
             sandboxViewer.reset();
             playLevel = std::move(*mode);
             playLevel->setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
+            playLevel->setMeshViews(meshViews);
             playLevel->setSounds(audio ? &audio->sounds() : nullptr);
             playLevel->hud()->setSoundOutput(sandboxHudSound, sandboxHudStop, sandboxHudPlaying);
             modes.push(*playLevel);
@@ -1007,6 +1020,7 @@ int main(int argc, char** argv) {
         coney::platform::GameSession& started = makeSession();
         started.attachAudio(audio.get());
         started.setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
+        started.setMeshViews(meshViews);
         if (scene) {
             started.startSceneTest(name, *scene);
         } else {
@@ -1059,6 +1073,10 @@ int main(int argc, char** argv) {
     // How long a `--play-level` run may wait for its level to play before it gives up: 10 minutes of frames, longer
     // than any loading screen and intro movie.
     constexpr std::uint64_t kPlayStartFrames = 18000;
+    // A real-time bench draws its loading screen as fast as it goes, far more than 30 frames a second, so it waits
+    // for more of them.
+    constexpr std::uint64_t kRealTimeStartFrames = kPlayStartFrames * 100;
+    const std::uint64_t playStartFrames = lockstep ? kPlayStartFrames : kRealTimeStartFrames;
     std::uint64_t frameIndex = 0;
     std::optional<std::uint64_t> playOrigin;
     const auto playFramesDone = [&]() {
@@ -1072,12 +1090,14 @@ int main(int argc, char** argv) {
                 renderer.requestCapture(frame + *playFrameLimit - 1, *screenshotPath);
             }
         }
-        if (!playOrigin && frame >= kPlayStartFrames) {
+        if (!playOrigin && frame >= playStartFrames) {
             logError(std::format("{} never started playing", *commandLineLevel));
             return true;
         }
-        const bool done = playOrigin && frame - *playOrigin >= *playFrameLimit;
-        // `--bench`: the fighters on the first frame of play, the recording from the end of the warm-up.
+        // `--bench-measure` ends the run once its frames are measured, before `--frames` when they come first.
+        const bool done = playOrigin && (frame - *playOrigin >= *playFrameLimit || (bench && bench->measured()));
+        // `--bench`: the fighters on the first frame of play (or at `--bench-spawn-step`), the recording from the end
+        // of the warm-up.
         if (bench && playOrigin && !done) {
             bench->playFrame(frame - *playOrigin, debugSession.play());
         }
@@ -1153,8 +1173,33 @@ int main(int argc, char** argv) {
     } else if (audio) {
         hooks.endFrame = [&audio](std::uint32_t steps) { audio->endFrame(steps); };
     }
+    // `--mesh-view`: the mesh views from the first frame of play, switched off again after its frames.
+    std::optional<coney::platform::MeshViewRun> meshViewRun;
+    if (const std::optional<std::string>& spec = options->meshView; spec) {
+        auto parsed = coney::debug::parseMeshViewSpec(*spec);
+        if (!parsed) {
+            std::fprintf(stderr, "coney: %s\n", parsed.error().message.c_str());
+            return 2;
+        }
+        meshViewRun.emplace(*parsed);
+        hooks.beginFrame = [inner = std::move(hooks.beginFrame), &meshViewRun, &debugSession] {
+            meshViewRun->frame(debugSession);
+            return inner();
+        };
+    }
     // Network play receives before each step and sends after it.
     coney::platform::addNetPlayHooks(hooks, netPlay, pacer.has_value());
+    // `--bench-spawn-step` counts the steps of play.
+    if (bench) {
+        hooks.afterStep = [inner = std::move(hooks.afterStep), &bench, &playOrigin] {
+            if (inner) {
+                inner();
+            }
+            if (playOrigin) {
+                bench->noteStep();
+            }
+        };
+    }
     // `--record`: a clip of the frames as the game draws them (read back before the menus above are drawn) and of
     // the steps' sound (docs/guides/testing.md#clips). It starts at once, or with `--play-level` at the level's first
     // frame of play, as `--frames` counts; without `--frames` the run ends when the clip is done.
@@ -1242,7 +1287,8 @@ int main(int argc, char** argv) {
                                    {"headless", options->headless ? "yes" : "no"},
                                    {"vsync", options->vsync ? "on" : "off"},
                                    {"build", CONEY_BUILD_TYPE},
-                                   {"renderer", coney::platform::glRendererName()}});
+                                   {"renderer", coney::platform::glRendererName()},
+                                   {"skinning", coney::platform::characterSkinOn() ? "gpu" : "cpu"}});
         if (!line) {
             std::fprintf(stderr, "coney: %s\n", line.error().message.c_str());
             return 1;

@@ -1,0 +1,27 @@
+# The crew-wreck pass (docs/research/ai-goals.md#goal-warrior-vandal-steal, issue #241): what the Warriors break
+# under the steal / wreck command (command 5) at level80's pharmacy and on the street: the smash goals they are
+# given, the attacks they queue and the panes that break.
+
+[hook.destroy-item-push]
+description = "Each call of DestroyItemGoal_Push (0x002dd0c8, a smash goal pushed): the human's handle, the object's (a world object or a glass pane) and the caller."
+research = "docs/research/ai-goals.md#goal-destroy-item"
+address = 0x002dd0c8
+# addiu sp,sp,-0x50; sw a0,0x0(sp)
+original = [0x27bdffb0, 0xafa40000]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }, { value = "a1", name = "object" }]
+
+[hook.destroy-car-push]
+description = "Each call of DestroyCarGoal_Push (0x002ddb40, a car goal pushed): the human's handle, the car's and the caller."
+research = "docs/research/ai-goals.md#goal-destroy-car"
+address = 0x002ddb40
+# addiu sp,sp,-0x60; sw a0,0x0(sp)
+original = [0x27bdffa0, 0xafa40000]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }, { value = "a1", name = "car" }]
+
+[hook.queue-attack]
+description = "Each call of Brain_QueueAttack (0x0028e248): the caller, the brain, the human the attack is aimed at, the attack kind and the command delay."
+research = "docs/research/ai/index.md#get-item"
+address = 0x0028e248
+# addiu sp,sp,-0x80; sq s3,0x30(sp)
+original = [0x27bdff80, 0x7fb30030]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "brain" }, { value = "a1", name = "target" }, { value = "a2", name = "kind" }, { value = "a3", name = "delay" }]

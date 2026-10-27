@@ -1,8 +1,8 @@
 # The AI's reaction goals: the fighter of civ_fight knocked down by the player's square chain (S1, SS2, SSS3: square
 # every 2 updates), three times, so its brain makes the knocked-down reaction goal (0x17) and drops it when it
-# stands. Research: docs/research/ai.md#reaction-goals.
+# stands. Research: docs/research/ai/index.md#reaction-goals.
 description = "slot 6: PoizoCiv as a type-2 fighter knocked down by SSS3 three times; the reaction goal"
-research = "docs/research/ai.md#reaction-goals"
+research = "docs/research/ai/index.md#reaction-goals"
 input = "civ_knockdown.txt"
 updates = 330
 fields = ["player", "enemy"]

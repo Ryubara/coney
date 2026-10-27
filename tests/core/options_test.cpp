@@ -1016,3 +1016,14 @@ TEST_CASE("the give option fills player 1's inventory in a played level", "[opti
     CHECK_FALSE(parse(std::array<std::string_view, 4>{"--disc", "x", "--give", "3,2"}).has_value());
     CHECK(coney::usageText().find("--give ITEM,COUNT") != std::string_view::npos);
 }
+
+TEST_CASE("the cpu-skinning option is off unless given and is listed in the usage text", "[options]") {
+    // Expected: ../guides/performance.md#gpu-skinning, Coney's own debug option (no counterpart in the original)
+    auto on = parse(std::array<std::string_view, 5>{"--disc", "x", "--play-level", "level95", "--cpu-skinning"});
+    REQUIRE(on.has_value());
+    CHECK(on->cpuSkinning);
+    auto off = parse(std::array<std::string_view, 4>{"--disc", "x", "--play-level", "level95"});
+    REQUIRE(off.has_value());
+    CHECK_FALSE(off->cpuSkinning);
+    CHECK(coney::usageText().find("--cpu-skinning") != std::string_view::npos);
+}

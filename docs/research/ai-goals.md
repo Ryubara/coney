@@ -5,8 +5,8 @@ Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038e
 
 ## Purpose
 
-The function-by-function index of the goal classes (`0x0029f000`-`0x002f9e00`). [AI humans](ai.md#goals) explains the
-goal stack, the vtable layout (`+0x0c` type, `+0x14` the class name, `+0x24` Start, `+0x2c` End, `+0x34` Resume,
+The function-by-function index of the goal classes (`0x0029f000`-`0x002f9e00`). [AI humans](ai/index.md#goals) explains
+the goal stack, the vtable layout (`+0x0c` type, `+0x14` the class name, `+0x24` Start, `+0x2c` End, `+0x34` Resume,
 `+0x44` Process, `+0x4c` event) and the goals that matter most; this page names every function of every class and says
 in a line what it does. The rest of the AI code is on [AI code index](ai-code.md).
 
@@ -18,7 +18,7 @@ Helpers the goals below call, at the start of the goals' file.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
-| `0x0029f230` | `Brain_PickBestEnemy` | helper | the best-scoring valid enemy in the brain's enemy list ([the score](ai.md#enemy-score)) | confirmed (code) |
+| `0x0029f230` | `Brain_PickBestEnemy` | helper | the best-scoring valid enemy in the brain's enemy list ([the score](ai-fights.md#enemy-score)) | confirmed (code) |
 | `0x0029f3c8` | `Ai_RandomNavPoint` | helper | a random point at a distance from a position, in any direction or within ± an angle of the facing; up to 5 tries for one on the navigation areas (`Nav_FindArea`), optionally connected to the start (`Nav_IsConnected`), dropped to the ground; 1 when found | confirmed (code) |
 | `0x0029f710` | `Ai_SetRunningMoveSpeed` | helper | when the brain has actions and the current one is a move action, changes its speed; 1 when done | confirmed (code) |
 | `0x0029f790` | `Ai_SetRunningMoveTarget` | helper | when the current action is a move action, gives it a new target point; 1 when done | confirmed (code) |
@@ -155,7 +155,7 @@ Throws objects found near him at a target.
 | `0x002a3e50` | `Goal_ObjectThrower` | binding | `GoalObjectThrower` | confirmed (code) |
 | `0x002a3f50` | `ObjectThrowerGoal_Init` | init | vtable `0x0053f310` | confirmed (code) |
 | `0x002a4138` | `ObjectThrowerGoal_End` | End | leaves the fight stance, clears human `+0x128` and object flag `0x40000`, calls the goal's Lua callback with the human's handle | confirmed (code) |
-| `0x002a4230` | `ObjectThrowerGoal_Process` | Process | fight stance; ends when a hostile is visible within the stop radius or after `maxThrows`; turns to a random target flag, aims and presses cross after pace/2 to pace seconds; empty-handed fetches the nearest weapon with GetItem ([ObjectThrower](ai.md#ai-objects)) | confirmed (code) |
+| `0x002a4230` | `ObjectThrowerGoal_Process` | Process | fight stance; ends when a hostile is visible within the stop radius or after `maxThrows`; turns to a random target flag, aims and presses cross after pace/2 to pace seconds; empty-handed fetches the nearest weapon with GetItem ([ObjectThrower](ai/index.md#ai-objects)) | confirmed (code) |
 | `0x002a4aa0` | `LineTestCache_Reset` | reset | on a full reset clears the handle at `0x006e93f8` that `BossTactic_Process` caches | inferred |
 | `0x002a4ac8` | `LineTestCache_StaticInit` | static init | from the static initialiser table (`0x00534174`): calls the reset | confirmed (code) |
 
@@ -414,14 +414,14 @@ A list of 128 flags (`0x006e9440`, 20 bytes each) used by the pedestrians and th
 
 ### Melee (type 8) {#goal-melee}
 
-[The Melee goal](ai.md#melee-goal).
+[The Melee goal](ai-fights.md#melee-goal).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
 | `0x002ade60` | `MeleeGoal_End` | End | sets brain `+0x2d3` and calls `0x00226f70` | confirmed (code) |
 | `0x002ade90` | `Melee_TryPickUpWeapon` | helper | an unarmed fighter who may not chase (`+0x265`): goes for a weapon within 20 m (10 m for some) with `Goal_GetItem` | confirmed (code) |
 | `0x002ae028` | `Melee_Reposition` | helper | after a failed approach, one of four moves by distance and a draw: a shuffle (2 s), fidget `0x25b`, a wait (3 s) or a move to the target (2 s) | confirmed (code) |
-| `0x002aebf8` | `MeleeGoal_Process` | Process | [Melee](ai.md#melee-goal) | confirmed (code) |
+| `0x002aebf8` | `MeleeGoal_Process` | Process | [Melee](ai-fights.md#melee-goal) | confirmed (code) |
 
 ### AttackTarget (type 9) {#goal-attack-target}
 
@@ -439,7 +439,7 @@ Attacks one target until it is down or gone.
 
 ### EngageEnemy (type 0xb) {#goal-engage-enemy}
 
-[EngageEnemy: the run-in](ai.md#engage-enemy).
+[EngageEnemy: the run-in](ai-fights.md#engage-enemy).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -448,7 +448,7 @@ Attacks one target until it is down or gone.
 | `0x002af670` | `EngageEnemyGoal_Start` | Start | arms the charge, a taunt, the timers, brain `+0x0b` + 1 | confirmed (code) |
 | `0x002af8d0` | `EngageEnemyGoal_End` | End | restores `+0x0b`, clears the actions | confirmed (code) |
 | `0x002afa08` | `EngageEnemyGoal_Stop` | helper | `EngageEnemyGoal_Stop` | confirmed (code) |
-| `0x002afa48` | `EngageEnemyGoal_Process` | Process | [the run-in](ai.md#engage-enemy) | confirmed (code) |
+| `0x002afa48` | `EngageEnemyGoal_Process` | Process | [the run-in](ai-fights.md#engage-enemy) | confirmed (code) |
 
 ### Chase (type 0xc) {#goal-chase}
 
@@ -461,7 +461,7 @@ Chases an enemy who runs, with a radar blip when the chaser is after the player'
 | `0x002b0970` | `ChaseGoal_Resume` | Resume | out of sight: a move to his last point (gait 4, 2 within 8 m); the run anim set | confirmed (code) |
 | `0x002b0b60` | `ChaseGoal_Suspend` | Suspend | the normal anim set, releases the flag | confirmed (code) |
 | `0x002b0bf0` | `ChaseGoal_End` | End | restores the brain bytes, drops the target, removes the blip | confirmed (code) |
-| `0x002b0c88` | `Chase_InvestigateCar` | event | from `PursueTactic_OnCar` `0x003181e8` on a crime event (23) at a car: unless the offender is friendly, pushes Investigate (`0x002cf8f8`, type `0x5e`) at the crime point (5 m, line 13, the offender's handle) ([Cover, cars and trains](ai.md#ai-hazards)) | confirmed (code) |
+| `0x002b0c88` | `Chase_InvestigateCar` | event | from `PursueTactic_OnCar` `0x003181e8` on a crime event (23) at a car: unless the offender is friendly, pushes Investigate (`0x002cf8f8`, type `0x5e`) at the crime point (5 m, line 13, the offender's handle) ([Cover, cars and trains](ai/index.md#ai-hazards)) | confirmed (code) |
 | `0x002b0ed8` | `Chase_PlayGangClip` | helper | the gang's clip `0x29c`, else anim `0x29e` after 500-750 ms | confirmed (code) |
 | `0x002b0fd0` | `Chase_PickSearchPoint` | helper | a random point ahead within the search cone, reachable | confirmed (code) |
 | `0x002b1230` | `Chase_Search` | helper | the target lost beyond 5 m (10 m when hidden): walk to a search point, else a gang clip | confirmed (code) |
@@ -483,7 +483,7 @@ Joins a gang leader's chase in formation.
 
 ### Fight (type 0xf) {#goal-fight}
 
-[The fight goal](ai.md#fight).
+[The fight goal](ai-fights.md#fight).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -491,13 +491,13 @@ Joins a gang leader's chase in formation.
 | `0x002b2d00` | `FightGoal_Resume` | Resume | picks an attack kind against the target | inferred |
 | `0x002b2d70` | `FightGoal_Suspend` | Suspend | releases its attack slot on the target (`0x00291178`), clears `+0x28` | confirmed (code) |
 | `0x002b2dd8` | `FightGoal_End` | End | clears the actions | confirmed (code) |
-| `0x002b2e28` | `FightGoal_TryTackle` | helper | the tackle try, first in the fight goal; driven by the gang's `CfgGang` value 7 and the brain's tackle meter `+0x148`; a cop picks `X1` over the tackle 75 % of the time ([The tackle try](ai.md#try-tackle)) | confirmed (code) |
-| `0x002b2fc8` | `FightGoal_Reposition` | helper | while `Brain_CheckAttack` says wait: holds the attacker in a ring 4-4.75 m from the target with a move-to-human action, a taunt fidget every 1-2 s ([The reposition](ai.md#fight-reposition)) | confirmed (code) |
-| `0x002b3360` | `FightGoal_TryGrab` | helper | the grab and snap try before an attack in reach: snap stick angles from the sectors, side grab to `X1`, a rear grab at `CfgGang` value 8 × 25 % ([The grab and snap try](ai.md#try-grab)) | confirmed (code) |
+| `0x002b2e28` | `FightGoal_TryTackle` | helper | the tackle try, first in the fight goal; driven by the gang's `CfgGang` value 7 and the brain's tackle meter `+0x148`; a cop picks `X1` over the tackle 75 % of the time ([The tackle try](ai-fights.md#try-tackle)) | confirmed (code) |
+| `0x002b2fc8` | `FightGoal_Reposition` | helper | while `Brain_CheckAttack` says wait: holds the attacker in a ring 4-4.75 m from the target with a move-to-human action, a taunt fidget every 1-2 s ([The reposition](ai-fights.md#fight-reposition)) | confirmed (code) |
+| `0x002b3360` | `FightGoal_TryGrab` | helper | the grab and snap try before an attack in reach: snap stick angles from the sectors, side grab to `X1`, a rear grab at `CfgGang` value 8 × 25 % ([The grab and snap try](ai-fights.md#try-grab)) | confirmed (code) |
 
 ### Spectate (type 0x10) {#goal-spectate}
 
-[Spectate](ai.md#spectate).
+[Spectate](ai-fights.md#spectate).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -516,7 +516,7 @@ Goals for what happens to the body: grabbed, tackled, on the ground, stunned, on
 | `0x002b49f8` | `GroundedGoal_Init` | init | Grounded (`0x17`), vtable `0x00540210` | confirmed (code) |
 | `0x002b4a38` | `GroundedGoal_Start` | Start | notes the attacker (brain `+0x124`) and the start time | confirmed (code) |
 | `0x002b4aa0` | `GroundedGoal_WantsCounter` | helper | Grounded never counters: 0 | confirmed (code) |
-| `0x002b4aa8` | `GroundedGoal_Process` | Process | Grounded: after about 1.9 s queues kind 42 on himself (one square command that cuts his ground time, inferred; [Combat](combat-reactions.md#ground-escape)) ([reactions](ai.md#fight-reactions)) | inferred |
+| `0x002b4aa8` | `GroundedGoal_Process` | Process | Grounded: after about 1.9 s queues kind 42 on himself (one square command that cuts his ground time, inferred; [Combat](combat-reactions.md#ground-escape)) ([reactions](ai/index.md#fight-reactions)) | inferred |
 | `0x002b4b88` | `StunnedGoal_Init` | init | Stunned (`0x18`), vtable `0x005401b0` | confirmed (code) |
 | `0x002b4bb8` | `StunnedGoal_Process` | Process | Stunned: no target; done when no longer stunned | confirmed (code) |
 | `0x002b4c00` | `OnFireGoal_Init` | init | OnFire (`0x19`), vtable `0x0053ff70` | confirmed (code) |
@@ -533,15 +533,15 @@ Goals for what happens to the body: grabbed, tackled, on the ground, stunned, on
 | `0x002b5a98` | `GrabbingGoal_Init` | init | Grabbing (`0x12`), vtable `0x00540150` | confirmed (code) |
 | `0x002b5ad0` | `GrabbingGoal_Start` | Start | a let-go chance of the class value × 10 %, none with a FollowAndDefend (`0x35`) goal; goal `0x7d`'s flag | confirmed (code) |
 | `0x002b5b58` | `GrabbingGoal_End` | End | when still grabbing, clears the hold timer (`+0x148` of the held record) | confirmed (code) |
-| `0x002b5b98` | `Grabbing_PickMove` | helper | the direction of a throw or push from a grab (left, ahead, right, behind): away from a held flag, into a wall or an enemy, else random ([reactions](ai.md#fight-reactions)) | confirmed (code) |
+| `0x002b5b98` | `Grabbing_PickMove` | helper | the direction of a throw or push from a grab (left, ahead, right, behind): away from a held flag, into a wall or an enemy, else random ([reactions](ai/index.md#fight-reactions)) | confirmed (code) |
 | `0x002b60b0` | `Grabbing_NoDelay` | helper | −1.0 (no delay) | confirmed (code) |
-| `0x002b60c0` | `GrabbingGoal_Process` | Process | Grabbing: near a train command 5; a rear grab holds the victim up for a friend; else kind 24 (twice at 40 %), the throws 25/29 by `Grabbing_PickMove`, or 26-28 ([reactions](ai.md#fight-reactions)) | confirmed (code) |
+| `0x002b60c0` | `GrabbingGoal_Process` | Process | Grabbing: near a train command 5; a rear grab holds the victim up for a friend; else kind 24 (twice at 40 %), the throws 25/29 by `Grabbing_PickMove`, or 26-28 ([reactions](ai/index.md#fight-reactions)) | confirmed (code) |
 | `0x002b65f8` | `MountingGoal_Init` | init | Mounting (`0x13`, the tackler on top), vtable `0x005400f0` | confirmed (code) |
-| `0x002b6638` | `MountingGoal_Process` | Process | Mounting: near a train command 5; else a picked kind (45 and 36 do nothing), kind 35 twice chained 40 % of the time ([reactions](ai.md#fight-reactions)) | confirmed (code) |
+| `0x002b6638` | `MountingGoal_Process` | Process | Mounting: near a train command 5; else a picked kind (45 and 36 do nothing), kind 35 twice chained 40 % of the time ([reactions](ai/index.md#fight-reactions)) | confirmed (code) |
 | `0x002b6818` | `GrabbedGoal_Init` | init | Grabbed (`0x14`), vtable `0x00540090` | confirmed (code) |
-| `0x002b6848` | `GrabbedGoal_Process` | Process | Grabbed: a civilian calls for help every 30 updates (10 m); with a threat response the grabber becomes the target and he struggles ([reactions](ai.md#fight-reactions)) | confirmed (code) |
+| `0x002b6848` | `GrabbedGoal_Process` | Process | Grabbed: a civilian calls for help every 30 updates (10 m); with a threat response the grabber becomes the target and he struggles ([reactions](ai/index.md#fight-reactions)) | confirmed (code) |
 | `0x002b6b88` | `MountedGoal_Init` | init | Mounted (`0x15`, tackled), vtable `0x00540030` | confirmed (code) |
-| `0x002b6bb8` | `MountedGoal_Process` | Process | Mounted: calls for help and struggles ([reactions](ai.md#fight-reactions)) | confirmed (code) |
+| `0x002b6bb8` | `MountedGoal_Process` | Process | Mounted: calls for help and struggles ([reactions](ai/index.md#fight-reactions)) | confirmed (code) |
 | `0x002b6dc0` | `ArrestedGoal_Init` | init | Arrested (`0x16`), vtable `0x0053ffd0` | confirmed (code) |
 | `0x002b6df8` | `ArrestedGoal_Start` | Start | releases the target of an AttackTarget goal (9) on the stack | confirmed (code) |
 | `0x002b6e78` | `ArrestedGoal_End` | End | leaves the fight stance | confirmed (code) |
@@ -584,7 +584,7 @@ the clip's length ([Characters](characters.md#ai-locomotion), `0x0025c240`); the
 goals in four level80 runs (PCSX2 2.9.94, every human read once per update), the 214 that needed more than 15° lasted
 a median of **10 updates** whatever the angle (15-30°: 10; 30-60°: 10; 60-90°: 10; ranges 1-50), and the 518 within
 15° a median of 2. Confirmed (runtime). While the goal is on top nothing under it runs
-([Brain_UpdateGoals](ai.md#update-goals)), so a soldier whose target was cleared keeps none until it ends: only an
+([Brain_UpdateGoals](ai/index.md#update-goals)), so a soldier whose target was cleared keeps none until it ends: only an
 event can give him one (a hit, event 1: `Brain_SetTarget(hitter, forced)`; a violence event, `0x14`: with no target he
 retries `Brain_SetTarget(side)`, not forced), and `HelpRespondGoal_Process` also ends it on a brain-counter update
 divisible by 30 when his enemy list is not empty. Confirmed (code) at `0x00304fa8`, `0x00291960`, `0x002b7900`.
@@ -776,7 +776,7 @@ him.
 
 ### HoldPosition (type 0x36) {#goal-hold-position}
 
-`GoalHoldPosition` ([goal types](ai.md#goals)): keep to a radius round a point and fight from there.
+`GoalHoldPosition` ([goal types](ai/index.md#goals)): keep to a radius round a point and fight from there.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -817,7 +817,7 @@ A cop guards a cuffed Warrior and walks him off when he is free to be taken.
 
 ### FindEnemy (type 0x41) {#goal-find-enemy}
 
-The goal under Melee that restarts a fight ([The FindEnemy goal](ai.md#find-enemy)); its Process is there.
+The goal under Melee that restarts a fight ([The FindEnemy goal](ai-fights.md#find-enemy)); its Process is there.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1373,7 +1373,7 @@ A civilian crouches in fear, with three dyn clips, and may run.
 
 ### Hostile (type 0x72) {#goal-hostile}
 
-A civilian's angry reaction ([Civilians](ai.md#civilians)).
+A civilian's angry reaction ([Civilians](ai/index.md#civilians)).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1853,7 +1853,7 @@ Diego, and Vargas at stage 3: [The Diego and Vargas fight](ai-gangs.md#boss-dieg
 
 A boss fighter (Lua `GoalBigFighter`). Big Mo has it in level 11, set to the tactic's stage, and Virgil has it in
 stage 3 of level 93 ([AI: The boss fights](ai-gangs.md#boss-fights)). "Giant" means a model scale above 1.1. Confirmed (code)
-at `0x002eabc8`, `0x002ea3c8`, `0x002ea218` and `0x002ea038`, with the [attack kinds](ai.md#attack-kinds) as numbered
+at `0x002eabc8`, `0x002ea3c8`, `0x002ea218` and `0x002ea038`, with the [attack kinds](ai/index.md#attack-kinds) as numbered
 there.
 
 **The fields**:

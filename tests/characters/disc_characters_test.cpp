@@ -62,10 +62,29 @@ struct CharacterTotals {
     float lowest = 1e9F;       // the lowest skinned vertex height over them
     float highest = -1e9F;     // the highest
     float bone2Largest = 0.0F; // the largest angle between a model's bind rotation of bone 2 and the reference, degrees
-    float bone2Smallest = 1e9F; // the smallest
-    std::uint64_t bone2Off = 0; // models whose bone 2 bind is more than 1 degree from the reference
-    std::uint64_t bonesOff = 0; // bones (2-33, over the models) whose bind is more than 10 degrees from it
+    float bone2Smallest = 1e9F;     // the smallest
+    std::uint64_t bone2Off = 0;     // models whose bone 2 bind is more than 1 degree from the reference
+    std::uint64_t bonesOff = 0;     // bones (2-33, over the models) whose bind is more than 10 degrees from it
+    std::uint64_t weightsShort = 0; // distinct vertices whose weights sum below 1 (the decoder keeps them as stored)
+    std::uint64_t weightsOver = 0;  // ... and above 1
+    double deficitSum = 0.0;        // 1 - the sum, over every distinct vertex
+    float smallestSum = 2.0F;       // the smallest sum of a vertex's weights
 };
+
+// Adds a model's vertex weight sums to the totals: the stored weights lose the low bits that hold the bone, so a sum
+// may fall short of 1, and anything placed after the blend must not count on it (CharacterMesh::pose()).
+void sumWeights(const coney::characters::CharacterModel& model, CharacterTotals& totals) {
+    for (const coney::characters::SkinVertex& vertex : model.vertices) {
+        float sum = 0.0F;
+        for (const float weight : vertex.weights) {
+            sum += weight;
+        }
+        totals.weightsShort += sum < 1.0F ? 1 : 0;
+        totals.weightsOver += sum > 1.0F ? 1 : 0;
+        totals.deficitSum += 1.0 - static_cast<double>(sum);
+        totals.smallestSum = std::min(totals.smallestSum, sum);
+    }
+}
 
 // Whether a model has the shape characters.md gives every skinned character.
 bool hasCharacterShape(const coney::characters::CharacterModel& model) {
@@ -173,6 +192,7 @@ TEST_CASE("every character in the Character List loads, skins and finds its text
             totals.shapeMismatches += hasCharacterShape(assets->model) ? 0 : 1;
             totals.vertices += assets->model.vertices.size();
             totals.triangles += assets->model.triangles.size();
+            sumWeights(assets->model, totals);
             // Pose with the character's first clip, as the viewer does by default.
             if (!assets->data.clips().empty()) {
                 poseAndSkin(assets->model, *assets->data.clips().front(), totals);
@@ -226,6 +246,10 @@ TEST_CASE("every character in the Character List loads, skins and finds its text
         static_cast<double>(totals.bone2Smallest), static_cast<double>(totals.bone2Largest),
         static_cast<unsigned long long>(totals.bone2Off), static_cast<unsigned long long>(totals.models.size()),
         static_cast<unsigned long long>(totals.bonesOff));
+    std::printf("  weights: %llu of %llu vertices sum below 1, %llu above; smallest sum %.6f, mean shortfall %.3g\n",
+                static_cast<unsigned long long>(totals.weightsShort), static_cast<unsigned long long>(totals.vertices),
+                static_cast<unsigned long long>(totals.weightsOver), static_cast<double>(totals.smallestSum),
+                totals.vertices == 0 ? 0.0 : totals.deficitSum / static_cast<double>(totals.vertices));
     CHECK(totals.failures == 0);
     CHECK(totals.shapeMismatches == 0);
     CHECK(totals.emptyDictionaries == 0);

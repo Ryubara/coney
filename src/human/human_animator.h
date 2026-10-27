@@ -328,7 +328,13 @@ class HumanAnimator {
     /// The newest task's gait blend value, or -1 when it is not a gait blend.
     [[nodiscard]] float gaitValue() const;
     [[nodiscard]] const anim::AnimTaskStack& tasks() const { return m_tasks; }
+    /// The gait speeds in use: the clips' (speedsOf()), times speedFactors() once Human has set them.
     [[nodiscard]] const Speeds& speeds() const { return m_speeds; }
+    /// Multiplies each gait speed (`base` the combat walk's, the others as Speeds names them) by a factor; 1 in all is
+    /// the clips' own. Coney's debug tooling (the Entity editor's speed scale, the Movement tunables); Human sets it.
+    void setSpeedFactors(const Speeds& factors);
+    /// The factors setSpeedFactors() set; all 1 at first.
+    [[nodiscard]] const Speeds& speedFactors() const { return m_factors; }
     [[nodiscard]] const characters::AnimSet& anims() const { return *m_anims; }
 
   private:
@@ -368,6 +374,8 @@ class HumanAnimator {
     AnimSlots m_normalSlots; // the slots without the hidden style
     bool m_stealth = false;  // setStealthStyle()
     Speeds m_speeds;
+    Speeds m_factors{1.0F, 1.0F, 1.0F, 1.0F, 1.0F, 1.0F}; // setSpeedFactors()
+    Speeds m_applied;                                     // what setSpeedFactors() last put in m_speeds
     anim::AnimTaskStack m_tasks;
     AnimState m_state = AnimState::None;
     const anim::AnimTask* m_debugTask = nullptr; // playDebugClip()'s task while AnimState::Debug; only compared

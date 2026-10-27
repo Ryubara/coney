@@ -16,7 +16,12 @@ name = "PauseMode_Enter"
 page = "pause.md#original-structure"
 level = "confirmed-code"
 coney = "src/gamemodes/pause_mode.h:PauseMode::enter"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "`W_GameState + 0x56e0` = 1 is not set"
+relation = "not-ported"
+issue = 669
 
 [[function]]
 address = 0x0015dd38
@@ -24,7 +29,7 @@ name = "PauseMode_Exit"
 page = "pause.md#original-structure"
 level = "confirmed-code"
 coney = "src/gamemodes/pause_mode.h:PauseMode::exit"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0015dd98
@@ -32,7 +37,7 @@ name = "PauseMode_Update"
 page = "pause.md#original-structure"
 level = "confirmed-code"
 coney = "src/gamemodes/pause_mode.h:PauseMode::update"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001d1f88
@@ -62,6 +67,42 @@ coney = "src/gui/pause_menu/mission_failed_menu.h:MissionFailedMenu::update"
 status = "legacy"
 
 [[function]]
+address = 0x001d5dc8
+name = "OptionPage_OnCommand"
+page = "pause.md#fn-optionmenu"
+role = "Up and down move between the items, left and right go to the item, accept closes the page keeping its values, back reverts (but on Restore Default) and closes"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_menu.h:OptionMenu::pageCommand"
+status = "compared"
+
+[[function]]
+address = 0x001d60e8
+name = "OptionPage_BeginEdit"
+page = "pause.md#fn-optionmenu"
+role = "Remembers each item's value when the page opens"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_menu.h:OptionMenu::beginEdit"
+status = "compared"
+
+[[function]]
+address = 0x001d6160
+name = "OptionPage_Revert"
+page = "pause.md#fn-optionmenu"
+role = "Puts each item's remembered value back and calls its setter"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_menu.h:OptionMenu::revert"
+status = "compared"
+
+[[function]]
+address = 0x001d62d8
+name = "OptionPage_Render"
+page = "pause.md#fn-optionmenu"
+role = "Draws the page's items (the selected one highlighted) and its heading"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_menu.h:OptionMenu::render"
+status = "compared"
+
+[[function]]
 address = 0x001d6738
 name = "YesNoBox_Setup"
 page = "pause.md#fn-optionmenu"
@@ -69,6 +110,15 @@ role = "Label, answers 299/300, callback +0x4c4, owner +0x240, confirm mode +0x4
 level = "confirmed-code"
 coney = "src/gui/pause_menu/yes_no_box.h:YesNoBox"
 status = "legacy"
+
+[[function]]
+address = 0x001d6b00
+name = "YesNoBox_RenderColoured"
+page = "pause.md#fn-optionmenu"
+role = "Draws a choice's label and answers, the chosen answer highlighted"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_menu.h:OptionMenu::refreshAnswers"
+status = "compared"
 
 [[function]]
 address = 0x001d6c10
@@ -80,6 +130,213 @@ coney = "src/gui/pause_menu/yes_no_box.h:YesNoBox::handle"
 status = "legacy"
 
 [[function]]
+address = 0x001d7270
+name = "StatBarItem_Update"
+page = "pause.md#options"
+role = "An Options bar's first update: its meters sized from the undrawn sizing sprite and moved"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_bar.h:optionBarPlace"
+status = "compared"
+
+[[function]]
+address = 0x001d73b0
+name = "StatBarItem_RenderColoured"
+page = "pause.md#options"
+role = "Draws an Options bar: the back meter, then the fill meter in the item's colour"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_bar.h:drawOptionBar"
+status = "compared"
+
+[[function]]
+address = 0x001d7490
+name = "StatBarItem_OnCommand"
+page = "pause.md#fn-optionmenu"
+role = "Steps a volume bar by 0.05 within 0-1 and calls its setter"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_menu.h:OptionMenu::itemCommand"
+status = "compared"
+
+[[function]]
+address = 0x001d7700
+name = "LightingItem_OnCommand"
+page = "pause.md#fn-optionmenu"
+role = "Steps the brightness bar by 0.05 and the brightness by 5"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_menu.h:OptionMenu::itemCommand"
+status = "compared"
+
+[[function]]
+address = 0x001d7ef0
+name = "OptionMenu_OnVibrationChoice"
+page = "pause.md#fn-optionmenu"
+role = "Sets a pad's vibration; on starts a 500 ms preview rumble"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_menu.h:OptionMenu::applyChoice"
+status = "compared"
+
+[[function]]
+address = 0x001d7f90
+name = "OptionMenu_OnInvertChoice"
+page = "pause.md#fn-optionmenu"
+role = "Sets a pad's camera inversion"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_menu.h:OptionMenu::applyChoice"
+status = "compared"
+
+[[function]]
+address = 0x001d7ff0
+name = "OptionMenu_OnAutoAdjustChoice"
+page = "pause.md#fn-optionmenu"
+role = "Sets a pad's camera auto-adjust"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_menu.h:OptionMenu::applyChoice"
+status = "compared"
+
+[[function]]
+address = 0x001d8050
+name = "OptionMenu_OnMergeChoice"
+page = "pause.md#fn-optionmenu"
+role = "Sets the split-screen merge"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_menu.h:OptionMenu::applyChoice"
+status = "compared"
+
+[[function]]
+address = 0x001d80a8
+name = "OptionMenu_OnSubtitlesChoice"
+page = "pause.md#fn-optionmenu"
+role = "Sets the subtitles"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_menu.h:OptionMenu::applyChoice"
+status = "compared"
+
+[[function]]
+address = 0x001d80e0
+name = "OptionMenu_OnRestoreDefaults"
+page = "pause.md#fn-optionmenu"
+role = "Restore Default's Yes: every option back to its default and the menu reopened"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_menu.h:OptionValues::defaults"
+status = "compared"
+
+[[function]]
+address = 0x001d8208
+name = "OptionMenu_OnProLogicChoice"
+page = "pause.md#fn-optionmenu"
+role = "Sets Pro Logic II"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_menu.h:OptionMenu::applyChoice"
+status = "compared"
+
+[[function]]
+address = 0x001d8258
+name = "OptionMenu_OnVideoChoice"
+page = "pause.md#fn-optionmenu"
+role = "Video's accept: selects the video mode and reopens the menus"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_menu.h:OptionMenu::applyChoice"
+status = "compared"
+
+[[function]]
+address = 0x001d83e0
+name = "OptionMenu_SetSoundFxVolume"
+page = "pause.md#fn-optionmenu"
+role = "Sets the SoundFX volume"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_menu.h:OptionMenu::applyBar"
+status = "compared"
+
+[[function]]
+address = 0x001d8410
+name = "OptionMenu_SetMusicVolume"
+page = "pause.md#fn-optionmenu"
+role = "Sets the music volume"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_menu.h:OptionMenu::applyBar"
+status = "compared"
+
+[[function]]
+address = 0x001d8440
+name = "OptionMenu_AddBrightness"
+page = "pause.md#fn-optionmenu"
+role = "Adds to the brightness, clamped 0-100"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_menu.h:OptionMenu::itemCommand"
+status = "compared"
+
+[[function]]
+address = 0x001d84a0
+name = "OptionMenu_Construct"
+page = "pause.md#fn-optionmenu"
+role = "Builds the menu: seven titles and seven pages"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_menu.h:OptionMenu::OptionMenu"
+status = "compared"
+
+[[function]]
+address = 0x001d86a8
+name = "OptionMenu_Open"
+page = "pause.md#fn-optionmenu"
+role = "Lays the menu out for the video mode and builds the titles and every page's items from the game state"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_menu.h:OptionMenu::open"
+status = "compared"
+
+[[function]]
+address = 0x001da348
+name = "OptionMenu_Close"
+page = "pause.md#fn-optionmenu"
+role = "Shuts the pages and titles and stops the Audio page's music"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_menu.h:OptionMenu::close"
+status = "compared"
+
+[[function]]
+address = 0x001da3f8
+name = "OptionMenu_OnCommand"
+page = "pause.md#fn-optionmenu"
+role = "The title list's commands; with a page open, the page's"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_menu.h:OptionMenu::handle"
+status = "compared"
+
+[[function]]
+address = 0x001da658
+name = "OptionMenu_Update"
+page = "pause.md#fn-optionmenu"
+role = "Ends the vibration preview, reopens after Restore Default, loops the Audio page's music"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_menu.h:OptionMenu::update"
+status = "compared"
+
+[[function]]
+address = 0x001da880
+name = "OptionMenu_Render"
+page = "pause.md#fn-optionmenu"
+role = "Draws the titles (the selected one highlighted) or the open page"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/option_menu.h:OptionMenu::render"
+status = "compared"
+
+[[function]]
+address = 0x001dad88
+name = "HUD_SetObjective"
+page = "pause.md#fn-pausemenu"
+role = "adds, removes or ticks an objective in the pause menu's checklists (`HUDSetObjective`)"
+level = "confirmed-code"
+coney = "src/hud/hud.h:Hud::setObjective"
+status = "legacy"
+
+[[function]]
+address = 0x001db278
+name = "PauseMenu_OnConfirm"
+page = "pause.md#fn-pausemenu"
+role = "the Yes/No box's callback: 2 (Yes) calls the handler the menu's flags pick, 3 (No) and 4 (back) the cancel handler"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::onBoxCommand"
+status = "compared"
+
+[[function]]
 address = 0x001db3c0
 name = "PauseMenu_Construct"
 page = "pause.md#original-structure"
@@ -89,13 +346,31 @@ coney = "src/gui/pause_menu/pause_menu.h:PauseMenu"
 status = "legacy"
 
 [[function]]
+address = 0x001db928
+name = "PauseMenu_GetLevelColour"
+page = "pause.md#fn-pausemenu"
+role = "the top header's circle colour by level number: four colour groups by level list, else black"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_menu.h:pauseLevelColour"
+status = "compared"
+
+[[function]]
 address = 0x001dbee0
 name = "PauseMenu_Open"
 page = "pause.md#original-structure"
 role = "vtable `+0xa8` / `+0xb0`"
 level = "confirmed-code"
-coney = "src/gui/pause_menu/pause_items.h:pauseGrid"
-status = "legacy"
+coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::open"
+status = "compared"
+
+[[function]]
+address = 0x001ddbc0
+name = "PauseMenu_FadeOut"
+page = "pause.md#fn-pausemenu"
+role = "the closing fade: the alpha falls over 1.5 s, cut to a byte; zeroed on the first update after; closed more than 0.5 s after the last update inside the fade"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::fadeOut"
+status = "compared"
 
 [[function]]
 address = 0x001ddcf8
@@ -104,7 +379,43 @@ page = "pause.md#original-structure"
 role = "vtable `+0x30` / `+0x38`"
 level = "confirmed-code"
 coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::update"
-status = "legacy"
+status = "compared"
+
+[[function]]
+address = 0x001de488
+name = "PauseMenu_CloseScreen"
+page = "pause.md#fn-pausemenu"
+role = "closes the open screen (Options once its back flag `+0x45d0` is set), puts the headers back and sets the usage line to string `0x1a`"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::closeScreen"
+status = "compared"
+
+[[function]]
+address = 0x001de6c0
+name = "PauseMenu_SelectItem"
+page = "pause.md#fn-pausemenu"
+role = "accept on a grid item: opens its screen, asks, or closes"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::selectItem"
+status = "compared"
+
+[[function]]
+address = 0x001ded68
+name = "PauseMenu_OnYesNoCommand"
+page = "pause.md#fn-pausemenu"
+role = "the Yes/No box's commands: up and down cue `0xe`, accept cue 8, then the box"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::onBoxCommand"
+status = "compared"
+
+[[function]]
+address = 0x001dee00
+name = "PauseMenu_OnCommand"
+page = "pause.md#fn-pausemenu"
+role = "the grid owner's command handler: guards, the box, then a jump table of the six commands"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::onGridCommand"
+status = "compared"
 
 [[function]]
 address = 0x001df700
@@ -113,7 +424,7 @@ page = "pause.md#original-structure"
 role = "vtable `+0x30` / `+0x38`"
 level = "confirmed-code"
 coney = "src/gui/pause_menu/pause_menu.h:PauseMenu::render"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001dfe20
@@ -267,6 +578,60 @@ role = "alpha `+0x954`; selected `0x005fd310`, other `0x005fd320`"
 level = "confirmed-code"
 coney = "src/gui/pause_menu/control_menu.h:ControlMenu::render"
 status = "legacy"
+
+[[function]]
+address = 0x001e5498
+name = "PauseStats_Construct"
+page = "pause.md#fn-after-controlmenuhud"
+role = "builds the Stats screen's widgets: name, two shadows, face, four bars and the description"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_stats.h:PauseStats::PauseStats"
+status = "compared"
+
+[[function]]
+address = 0x001e5618
+name = "PauseStats_Setup"
+page = "pause.md#stats-screen"
+role = "on each pause: picks the Warrior's pictures and text by portrait kind, fills the four bars from the difficulty table, sets the description's wrap and line window"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_stats.h:PauseStats::setup"
+status = "compared"
+
+[[function]]
+address = 0x001e6698
+name = "PauseStats_OnCommand"
+page = "pause.md#stats-screen"
+role = "up and down move the description's line window one line, left and right refuse, back closes"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_stats.h:PauseStats::handle"
+status = "compared"
+
+[[function]]
+address = 0x001e6778
+name = "PauseStats_Update"
+page = "pause.md#stats-screen"
+role = "places the name, face, bars, labels and description from the base and the size factor"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_stats.h:PauseStats::update"
+status = "compared"
+
+[[function]]
+address = 0x001e6cf0
+name = "PauseStats_SetAlpha"
+page = "pause.md#fn-after-controlmenuhud"
+role = "stores the screen's alpha"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_stats.h:PauseStats::setFade"
+status = "compared"
+
+[[function]]
+address = 0x001e6cf8
+name = "PauseStats_Render"
+page = "pause.md#fn-after-controlmenuhud"
+role = "draws the widgets at the screen's alpha"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_stats.h:PauseStats::render"
+status = "compared"
 
 [[function]]
 address = 0x0041d1b0

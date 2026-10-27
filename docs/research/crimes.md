@@ -1178,7 +1178,7 @@ it is a spawn record, a flag or a particle system (`LevelPickups::actionObject()
 [action prompt](hud-messages.md#action-prompts) and hands it triangle, whose handler calls `HuTag`. **Coney's stand-ins**:
 any picked crew mate may gesture (the gesture slots are not kept), and the busy test is the actions-blocked one;
 the spray clips stop at the end (back to the idle); an AI human given `HuTag` becomes the spot's tagger at once
-(its fade in) without walking to the flag (`GoalTag` walks him there first, [AI](ai.md#coney)). A spot telling
+(its fade in) without walking to the flag (`GoalTag` walks him there first, [AI](ai/index.md#in-coney)). A spot telling
 an AI tagger he is done (message `0x13`, at the end of its fade or when hidden) ends his spray as `Tag_End` does:
 he gets event 14 with the tag and whether it is fully painted (**Coney's reading**: the human's handling of `0x13`
 is not traced). Each human's tag colour (`repo:src/human/tag_colour.h`, 2026-10-11) is the four bytes of `+0x640`:
@@ -1279,12 +1279,12 @@ the witnesses' message 7 and alert, the crime score 4-8 and the lines 128 / 143.
   Coney (108.8 degrees against 81.0), because Coney does not scale a clip's root turn by the task's rate (issue #263,
   [Root motion](formats/animation.md#root-motion)); the freer ends about 30 degrees past facing the cuffed human until
   that is fixed (the `[!mayfail]` disc case of `repo:tests/platform/disc_level80_test.cpp`).
-- **GetItem's swing at glass** ([AI: GetItem](ai.md#get-item)): at level80's pharmacy (scenario `steal_store`) two Warriors
-  reached the glass branch 23 times each in 60 s and no pane broke. Whether the queued kind 0 played at all (the
-  anim-dispatch log of that run was not read), whether its strike reaches the pane's body from the standing point, and
-  whether the pharmacy's panes are alarmed or otherwise special are not known. The run was staged (checkpoint 1
-  state, the crew teleported inside, the order given through the dispatcher), so the mission's own path (the front
-  lock picked, the order given by the script) should be run before an implementer copies "they never break it".
+- **GetItem's swing at glass** ([AI: GetItem](ai/index.md#get-item)): at level80's pharmacy (scenario `steal_store`) two
+  Warriors reached the glass branch 23 times each in 60 s and no pane broke. Whether the queued kind 0 played at all
+  (the anim-dispatch log of that run was not read), whether its strike reaches the pane's body from the standing point,
+  and whether the pharmacy's panes are alarmed or otherwise special are not known. The run was staged (checkpoint 1
+  state, the crew teleported inside, the order given through the dispatcher), so the mission's own path (the front lock
+  picked, the order given by the script) should be run before an implementer copies "they never break it".
 
 - Which objects register context records of kinds 1, 4 and 5, and with what second value.
 - Who sets mini-game mode 4.

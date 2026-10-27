@@ -9,7 +9,7 @@ target_sources(coney_platform PRIVATE level_file.cpp texture_lookup.cpp world_re
 # Dynamic objects' models, drawn where the scripts and scenes put them (docs/research/objects.md#coneys-implementation).
 target_sources(coney_platform PRIVATE object_models.cpp placed_objects.cpp)
 # The character viewer (docs/research/characters.md#coneys-implementation).
-target_sources(coney_platform PRIVATE character_lights.cpp character_mesh.cpp)
+target_sources(coney_platform PRIVATE character_lights.cpp character_mesh.cpp character_skin.cpp)
 target_sources(coney_platform PRIVATE blood_textures.cpp play_lighting.cpp scene_lighting.cpp)
 # Playing a level as Rembrandt (docs/guides/running-play-level.md#playing-a-level), in a level's scenery or a sandbox's.
 target_sources(coney_platform PRIVATE play_level_cast.cpp play_level_character.cpp play_level_hats.cpp play_level_mode.cpp play_level_objects.cpp play_level_props.cpp play_level_scene.cpp play_level_throw_aim.cpp
@@ -76,10 +76,13 @@ if(CONEY_DEBUG_TOOLS)
         imgui_model_view.cpp
         imgui_overlay.cpp
         imgui_ui_scale.cpp
+        mesh_views.cpp
         perf_bench.cpp
         play_level_anim.cpp
         play_level_controls.cpp
+        play_level_edit.cpp
         play_level_inspect.cpp
+        play_level_mesh.cpp
         reference_renderer.cpp
         sandbox_play_scenery.cpp
         sandbox_renderer.cpp

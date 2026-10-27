@@ -193,12 +193,12 @@ def test_the_marks_are_only_warnings_until_the_check_is_enforced(tmp_path: Path)
     # A listed file that now passes, a listed file that is gone and a ported function with no status.
     root = build(tmp_path, {"src/ai/ok.cpp": GOOD_SOURCE}, status="")
     write_legacy(root, {"src/ai/ok.cpp": {"tag": 1}, "src/ai/gone.cpp": {"tag": 1}})
-    result, conv = scan(root)
-    found = sc.problems(root, conv, result)
+    conv = conventions(**{"standards.enforce": False})
+    found = sc.problems(root, conv, sc.scan_tree(root, conv))
     assert {p.rule for p in found} == {"legacy", "status"} and len(found) == 3
     assert not any(p.error for p in found)
     assert sum("standards prune" in p.message for p in found) == 2
-    assert any("standards mark" in p.message for p in found)
+    assert any('status = "compared"' in p.message and "standards mark" not in p.message for p in found)
 
 
 def test_the_marks_are_errors_once_the_check_is_enforced(tmp_path: Path) -> None:
@@ -227,7 +227,7 @@ def test_nothing_fails_the_check_while_it_is_not_enforced(tmp_path: Path) -> Non
             "src/ai/brain.cpp": BAD_SOURCE + "// x\n",
         },
     )
-    conv = conventions(**{"standards.cutover": "2026-11-01"})
+    conv = conventions(**{"standards.cutover": "2026-11-01", "standards.enforce": False})
     reports = sc.check(root, conv, "main")
     assert not any(r.error for r in reports)
     assert {"legacy", "status", "comment", "tag"} <= {r.rule for r in reports}
@@ -268,11 +268,11 @@ def test_the_first_legacy_file_may_be_added_when_the_base_has_none(tmp_path: Pat
     assert sc.problems(root, conv, result, "main") == []
 
 
-def test_a_function_marked_legacy_since_the_base_is_refused_only_after_the_cutover(tmp_path: Path) -> None:
+def test_a_function_marked_legacy_since_the_base_is_refused_only_while_a_cutover_is_set(tmp_path: Path) -> None:
     root = build(tmp_path, {}, status='status = "compared"\n')
     branch(root, {"research/functions/ai.toml": f'# ai\n\n{ENTRY}status = "legacy"\n'})
-    before, conv = scan(root)
-    assert sc.problems(root, conv, before, "main") == []
+    conv = conventions(**{"standards.cutover": ""})
+    assert sc.problems(root, conv, sc.scan_tree(root, conv), "main") == []
     after = conventions(**{"standards.cutover": "2026-11-01"})
     found = sc.problems(root, after, sc.scan_tree(root, after), "main")
     assert [p.rule for p in found] == ["status"] and "marked legacy since the cutover" in found[0].message
@@ -281,11 +281,11 @@ def test_a_function_marked_legacy_since_the_base_is_refused_only_after_the_cutov
 # --- touching --------------------------------------------------------------------------------------------------------
 
 
-def test_a_touched_file_below_the_standard_is_a_warning_before_the_cutover(tmp_path: Path) -> None:
+def test_a_touched_file_below_the_standard_is_a_warning_while_not_enforced(tmp_path: Path) -> None:
     root = build(tmp_path, {"src/ai/brain.cpp": BAD_SOURCE, "src/ai/other.cpp": BAD_SOURCE})
     branch(root, {"src/ai/brain.cpp": BAD_SOURCE + "\n// More.\n"})
-    result, conv = scan(root)
-    found = sc.touched(root, conv, result, "main")
+    conv = conventions(**{"standards.enforce": False})
+    found = sc.touched(root, conv, sc.scan_tree(root, conv), "main")
     files = {(r.path, r.rule, r.error) for r in found}
     assert ("src/ai/brain.cpp", "comment", False) in files and ("src/ai/brain.cpp", "tag", False) in files
     # the file the change leaves alone is not held to the standard
@@ -314,8 +314,8 @@ def test_a_touched_file_that_meets_the_standard_has_no_report(tmp_path: Path) ->
 def test_a_touched_ported_function_must_be_compared(tmp_path: Path) -> None:
     root = build(tmp_path, {"src/ai/brain.cpp": GOOD_SOURCE})
     branch(root, {"src/ai/brain.cpp": GOOD_SOURCE.replace("a += 1;", "a += 2;")})
-    result, conv = scan(root)
-    found = sc.touched(root, conv, result, "main")
+    conv = conventions(**{"standards.enforce": False})
+    found = sc.touched(root, conv, sc.scan_tree(root, conv), "main")
     assert [(r.path, r.rule, r.error) for r in found] == [("src/ai/brain.cpp", "compared", False)]
     assert "0x00123456 Brain_Think" in found[0].message
 
@@ -489,3 +489,171 @@ def test_the_real_data_describes_a_checkout_that_exists() -> None:
     # the standards of the real conventions point at folders and a database the checks read
     conv = parse_conventions(real_data())
     assert conv.standards.legacy_file.endswith(".toml") and conv.research.files.functions == "research/functions"
+
+
+# --- the cutover: the real conventions enforce ------------------------------------------------------------------------
+
+
+def test_the_real_conventions_enforce_the_standards_from_the_cutover_day() -> None:
+    standards = parse_conventions(real_data()).standards
+    assert standards.enforce is True
+    assert standards.cutover is not None and standards.cutover.date().isoformat() == "2026-10-25"
+
+
+def test_on_the_real_rules_a_touched_legacy_file_left_below_the_standard_is_an_error(tmp_path: Path) -> None:
+    # Three files below the standard are listed; the change touches two of them and the third is left alone.
+    files = {"src/ai/brain.cpp": BAD_SOURCE, "src/ai/other.cpp": BAD_SOURCE, "tests/ai/a_test.cpp": BAD_TEST}
+    root = build(tmp_path, files)
+    both = {"comment": 1, "tag": 1}
+    write_legacy(root, {"src/ai/brain.cpp": both, "src/ai/other.cpp": both, "tests/ai/a_test.cpp": {"citation": 1}})
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "list")
+    # a line of the ported function changes, so it is owed its comparison too
+    branch(
+        root, {"src/ai/brain.cpp": BAD_SOURCE.replace("a += 1;", "a += 2;"), "tests/ai/a_test.cpp": BAD_TEST + "// y\n"}
+    )
+    reports = sc.check(root, conventions(), "main")
+    assert reports and all(r.error for r in reports)
+    assert {(r.path, r.rule) for r in reports} == {
+        ("src/ai/brain.cpp", "comment"),
+        ("src/ai/brain.cpp", "tag"),
+        ("src/ai/brain.cpp", "compared"),
+        ("tests/ai/a_test.cpp", "citation"),
+    }
+
+
+def test_on_the_real_rules_a_touched_legacy_file_brought_up_to_the_standard_passes(tmp_path: Path) -> None:
+    root = build(
+        tmp_path, {"src/ai/brain.cpp": BAD_SOURCE, "tests/ai/a_test.cpp": BAD_TEST}, status='status = "compared"\n'
+    )
+    write_legacy(root, {"src/ai/brain.cpp": {"comment": 1, "tag": 1}, "tests/ai/a_test.cpp": {"citation": 1}})
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "list")
+    # the change fixes both files and takes them out of the legacy file, as `standards prune` does
+    branch(root, {"src/ai/brain.cpp": GOOD_SOURCE, "tests/ai/a_test.cpp": GOOD_TEST})
+    write_legacy(root, {})
+    assert sc.check(root, conventions(), "main") == []
+
+
+def test_on_the_real_rules_a_branch_may_not_add_to_the_legacy_file_or_mark_a_function_legacy(tmp_path: Path) -> None:
+    root = build(
+        tmp_path, {"src/ai/brain.cpp": GOOD_SOURCE, "src/ai/new.cpp": BAD_SOURCE}, status='status = "compared"\n'
+    )
+    write_legacy(root, {})
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "empty list")
+    branch(
+        root,
+        {
+            "research/legacy-files.toml": format_legacy_files(
+                LegacyFiles({"src/ai/new.cpp": {"comment": 1, "tag": 1}})
+            ),
+            "research/functions/ai.toml": f'# ai\n\n{ENTRY}status = "legacy"\n',
+        },
+    )
+    reports = sc.check(root, conventions(), "main")
+    assert all(r.error for r in reports)
+    messages = [r.message for r in reports]
+    assert any("src/ai/new.cpp is added" in m for m in messages)
+    assert any("marked legacy since the cutover" in m for m in messages)
+
+
+# --- a research link that follows a page move ------------------------------------------------------------------------
+
+PAGE = "# The AI\n\n" + "".join(f"Line {n} of the page.\n" for n in range(12)) + "\n## Brain {#brain}\n\nThinks.\n"
+OLD_REF = "docs/research/ai.md#brain"
+NEW_REF = "docs/research/ai/index.md#brain"
+#: A source file with a comment above its first statement that cites the page, and a function below the standard.
+LINKED_SOURCE = GOOD_SOURCE.replace("    int a = 1;", "    int a = 1;  // REF") + (
+    "\nint guess() {\n    int a = 1;\n    a += 1;\n    return a;\n}\n"
+)
+LINKED_TEST = BAD_TEST.replace("    CHECK", "    // {ref}\n    CHECK")
+
+
+def move_page_and_edit(root: Path, files: dict[str, str]) -> None:
+    """Commit on a branch that moves the AI page to its folder and writes `files`."""
+    git(root, "checkout", "-q", "-b", "work")
+    (root / "docs/research/ai").mkdir()
+    git(root, "mv", "docs/research/ai.md", "docs/research/ai/index.md")
+    for name, text in files.items():
+        (root / name).write_text(text, encoding="utf-8")
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "work")
+
+
+def linked(root: Path) -> list[sc.Report]:
+    """What the touch-it rule reports for the branch, on the real conventions."""
+    conv = conventions(**{"standards.enforce": True})
+    return sc.touched(root, conv, sc.scan_tree(root, conv), "main")
+
+
+def test_a_file_whose_only_change_is_a_comment_link_following_a_moved_page_is_untouched(tmp_path: Path) -> None:
+    root = build(
+        tmp_path,
+        {
+            "docs/research/ai.md": PAGE,
+            "src/ai/brain.cpp": LINKED_SOURCE.replace("REF", OLD_REF),
+            "tests/ai/a_test.cpp": LINKED_TEST.replace("REF", OLD_REF),
+        },
+    )
+    move_page_and_edit(
+        root,
+        {
+            "src/ai/brain.cpp": LINKED_SOURCE.replace("REF", NEW_REF),
+            "tests/ai/a_test.cpp": LINKED_TEST.replace("REF", NEW_REF),
+        },
+    )
+    # neither file owes the standard it is below, and the ported function the comment sits in owes no comparison
+    assert linked(root) == []
+
+
+def test_a_comment_link_move_with_another_edit_in_the_file_touches_it(tmp_path: Path) -> None:
+    root = build(tmp_path, {"docs/research/ai.md": PAGE, "src/ai/brain.cpp": LINKED_SOURCE.replace("REF", OLD_REF)})
+    edited = LINKED_SOURCE.replace("REF", NEW_REF).replace("a += 1;", "a += 2;", 1)
+    move_page_and_edit(root, {"src/ai/brain.cpp": edited})
+    found = linked(root)
+    assert {r.rule for r in found} == {"comment", "tag", "compared"}
+    assert all(r.path == "src/ai/brain.cpp" for r in found)
+
+
+def test_a_comment_link_move_with_another_edit_on_its_line_touches_the_file(tmp_path: Path) -> None:
+    root = build(tmp_path, {"docs/research/ai.md": PAGE, "src/ai/brain.cpp": LINKED_SOURCE.replace("REF", OLD_REF)})
+    move_page_and_edit(root, {"src/ai/brain.cpp": LINKED_SOURCE.replace("REF", NEW_REF + ", and more")})
+    assert {r.rule for r in linked(root)} == {"comment", "tag", "compared"}
+
+
+def test_a_comment_link_rewrite_with_no_matching_move_touches_the_file(tmp_path: Path) -> None:
+    root = build(
+        tmp_path,
+        {
+            "docs/research/ai.md": PAGE,
+            "docs/research/stays.md": "# Stays\n\n## Other {#other}\n\nText.\n",
+            "src/ai/brain.cpp": LINKED_SOURCE.replace("REF", "docs/research/stays.md"),
+        },
+    )
+    # the page it cites stayed, though another page moved in the same change
+    move_page_and_edit(root, {"src/ai/brain.cpp": LINKED_SOURCE.replace("REF", "docs/research/stays.md#other")})
+    assert {r.rule for r in linked(root)} == {"comment", "tag", "compared"}
+
+
+def test_a_comment_link_rewrite_to_a_page_that_does_not_exist_touches_the_file(tmp_path: Path) -> None:
+    root = build(tmp_path, {"docs/research/ai.md": PAGE, "src/ai/brain.cpp": LINKED_SOURCE.replace("REF", OLD_REF)})
+    move_page_and_edit(root, {"src/ai/brain.cpp": LINKED_SOURCE.replace("REF", "docs/research/ai/brain.md#brain")})
+    assert {r.rule for r in linked(root)} == {"comment", "tag", "compared"}
+
+
+def test_a_link_move_inside_a_string_that_looks_like_a_comment_touches_the_file(tmp_path: Path) -> None:
+    code = GOOD_SOURCE.replace("    int a = 1;", '    auto s = "// REF";')
+    root = build(tmp_path, {"docs/research/ai.md": PAGE, "src/ai/brain.cpp": code.replace("REF", OLD_REF)})
+    move_page_and_edit(root, {"src/ai/brain.cpp": code.replace("REF", NEW_REF)})
+    assert {r.rule for r in linked(root)} == {"compared"}
+
+
+def test_a_form_feed_in_the_file_does_not_shift_the_lines_of_a_link_move_in_a_string(tmp_path: Path) -> None:
+    # git counts newlines only: a line split at the form feed would put the string under the comment line above it
+    pad = "    // " + "padding " * 8 + "\n"
+    code = GOOD_SOURCE.replace("// Adds one.", "// Adds one.\f// and more.")
+    code = code.replace("    int a = 1;", pad + '    auto s = "REF";')
+    root = build(tmp_path, {"docs/research/ai.md": PAGE, "src/ai/brain.cpp": code.replace("REF", OLD_REF)})
+    move_page_and_edit(root, {"src/ai/brain.cpp": code.replace("REF", NEW_REF)})
+    assert {r.rule for r in linked(root)} == {"compared"}

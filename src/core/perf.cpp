@@ -308,6 +308,32 @@ std::string toJson(const Summary& summary, const std::vector<std::pair<std::stri
     return out;
 }
 
+std::string framesCsv(const std::vector<FrameRecord>& records) {
+    const State& s = state();
+    std::string out = "frame,frame_ms";
+    for (const std::string& name : s.zoneNames) {
+        out += std::format(",{}_ms", name);
+    }
+    for (const Counter& counter : s.counters) {
+        out += std::format(",{}", counter.name);
+    }
+    out += '\n';
+    for (std::size_t frame = 0; frame < records.size(); ++frame) {
+        const FrameRecord& record = records[frame];
+        out += std::format("{},{:.3f}", frame, static_cast<double>(record.frameNanoseconds) / 1e6);
+        // A zone or counter first seen after this frame was recorded reads 0 here, as in summarise().
+        for (std::size_t zone = 0; zone < s.zoneNames.size(); ++zone) {
+            const std::uint64_t value = zone < record.zones.size() ? record.zones[zone] : 0;
+            out += std::format(",{:.3f}", static_cast<double>(value) / 1e6);
+        }
+        for (std::size_t counter = 0; counter < s.counters.size(); ++counter) {
+            out += std::format(",{}", counter < record.counters.size() ? record.counters[counter] : 0);
+        }
+        out += '\n';
+    }
+    return out;
+}
+
 void resetForTests() {
     State& s = state();
     s.enabled = false;

@@ -53,7 +53,12 @@ page = "animation.md#clip-queries"
 role = "the events a cursor passes ([Paired tasks](formats/animation.md#paired-tasks))"
 level = "confirmed-code"
 coney = "src/animation/anim_task.h:AnimTaskStack::keepEvents"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "a type-10 event's message 0x8a carries the event's position; Coney's release flag carries none"
+relation = "not-ported"
+issue = 1008
 
 [[function]]
 address = 0x001041f8
@@ -70,8 +75,8 @@ name = "AnimCursor_Advance"
 page = "formats/animation.md#original-structure"
 role = "advances the time; returns the overshoot past the end"
 level = "confirmed-code"
-coney = "src/animation/anim_pose.h:AnimCursor::advance"
-status = "legacy"
+coney = "src/human/face.cpp:roundedFrame"
+status = "compared"
 
 [[function]]
 address = 0x001045e0
@@ -90,6 +95,15 @@ role = "[Bone transforms](formats/animation.md#bone-transforms)"
 level = "confirmed-code"
 coney = "src/animation/skeleton.h:boneTransforms"
 status = "legacy"
+
+[[function]]
+address = 0x001047d0
+name = "Instance_CopyRootSlots"
+page = "face.md#shown"
+role = "copies a sampled pose's rotations of bones 6-14 into the face's default pose"
+level = "confirmed-code"
+coney = "src/human/face.h:FaceLayer::defaults"
+status = "compared"
 
 [[function]]
 address = 0x00104a38
@@ -200,6 +214,24 @@ coney = "src/animation/anim_task.h:GaitBlendTask::sample"
 status = "legacy"
 
 [[function]]
+address = 0x0010b6e0
+name = "FaceTask_Update"
+page = "face.md#face-clips"
+role = "advances the face clip; at its end binds a random id of its range from frame 0 (stream `0x006eb870`)"
+level = "confirmed-code"
+coney = "src/human/face.h:FaceLayer::advance"
+status = "compared"
+
+[[function]]
+address = 0x0010b858
+name = "FaceBlendOut_Update"
+page = "face.md#face-clips"
+role = "the face queue's fade: gives back itself and the old face task once its time is past its length"
+level = "confirmed-code"
+coney = "src/human/face.h:FaceLayer::advance"
+status = "compared"
+
+[[function]]
 address = 0x0010be40
 name = "AmbientManager_MarkEvent"
 page = "animation.md#ambient"
@@ -216,6 +248,11 @@ role = "`+0x1b788` = 1 from 2 s to 15 s after that stamp; `+0x1b790` = 1 while t
 level = "confirmed-code"
 coney = "src/audio/game_sound.cpp:GameSound::damageWindowOpen"
 status = "legacy"
+
+[[function.gaps]]
+what = "the event stamp is not cleared 15 s after it, and the window opens at 2 s exactly, not after it"
+relation = "not-ported"
+issue = 650
 
 [[function]]
 address = 0x0010c100

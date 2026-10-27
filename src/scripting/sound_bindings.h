@@ -196,6 +196,7 @@ class SoundHost {
     virtual void playMusic(std::uint32_t track, bool loop, std::string_view callback) = 0;
     /// The system music's pick: `track` looping, cross-faded over `fadeBars` bars (0: a cut at the bar). By default
     /// playMusic() without a fade.
+    /// @coney-only the default of a host with no cross-fade (a test's); GameSound cross-fades
     virtual void playSystemMusic(std::uint32_t track, int /*fadeBars*/) { playMusic(track, true, {}); }
     /// `SoundStopMusicTrack()`.
     virtual void stopMusic() = 0;
@@ -212,6 +213,9 @@ class SoundHost {
     /// `HuShutUp(human, force)`: stops the line the human is saying; without `force`, not a line that may not be cut
     /// (a HuSpeakNI line). The line's callback is kept and runs at the next update.
     virtual void shutUp(double human, bool force) = 0;
+    /// Whether a line the human says is playing (its stream alive): what turns his face to its speaking clips
+    /// (human/face.h). False by default (a host with no speech).
+    [[nodiscard]] virtual bool humanSpeaking(double /*human*/) const { return false; }
     /// Makes a human say a speech command; the callback is called with the speaker's handle when the line ends. The
     /// line's handle, or nothing when no line plays (the caller then runs the callback).
     virtual std::optional<double> sayCommand(const CommandCall& call, std::string_view callback) = 0;

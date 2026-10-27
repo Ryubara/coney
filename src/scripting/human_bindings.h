@@ -305,7 +305,7 @@ class HumanBindingHost {
     virtual void applyRules(const CharacterRules& /*rules*/) {}
     /// `CfgSetDefaultFollowSlotSet`: set `set`'s default follow slots, (x, y) m, written into every formation in use
     /// as well as kept for those made later. Only this binding touches the formations in use; the other configuration
-    /// bindings' applyRules() must not (docs/research/ai.md#level99-snaps).
+    /// bindings' applyRules() must not (docs/research/ai/index.md#level99-snaps).
     virtual void setDefaultFollowSlots(int /*set*/, std::span<const std::pair<float, float>> /*slots*/) {}
 };
 

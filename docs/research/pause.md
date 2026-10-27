@@ -1,9 +1,22 @@
+---
+kind: system
+system: pause
+owns:
+  ranges:
+    - "0x001cede8-0x001cfec0"
+    - "0x001cfec0-0x001d0aa8"
+    - "0x001d1848-0x001d1f88"
+    - "0x001d1f88-0x001d2e00"
+    - "0x001d5808-0x001dab30"
+    - "0x001dab30-0x001dfe20"
+    - "0x001dfe20-0x001e09e8"
+    - "0x001e3458-0x001e5498"
+    - "0x001e5498-0x001e6e98"
+  functions: ["0x00154f28", "0x0015dbb8", "0x0015dd38", "0x0015dd98", "0x0041d1b0"]
+---
 # The pause menu and the mission-failed screen
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). Runtime claims were made in
-PCSX2 2.9.94 (2026-10-06) on a copy of quick-save slot 1 (`level99`, checkpoint 3), pressing the pad over PINE (the
-`scripted-pad` patch, [Driving PCSX2](../guides/research-workflow.md#driving-pcsx2)), reading memory and measuring
-screenshots of the 640 × 448 picture; they say so.
+Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`).
 
 ## Purpose
 
@@ -47,14 +60,297 @@ Options screen) and `ControlMenuHUD.cpp` (the Controls screen) ([Source map](sou
 
 A level whose number is 60-69 (`0x0041d110`: the Armies of the Night stages, [Levels](../references/levels.md)) uses
 the Armies of the Night menu; every other level the story menu. "Rumble level" below means a level numbered 100 or
-more (`0x0041d160`), where the same menu offers other items.
+more (`0x0041d160`), where the same menu offers other items. Confirmed (code).
+
+### Function index {#function-index}
+
+Every function of the pause, options and controls menus, by source file in address order, with the name it has in Ghidra
+(ours); each is confirmed (code) at its address unless its row says otherwise. Rows link to the section that
+describes the behaviour where there is one. The files and ranges are from the [Source map](source-map.md#gui).
+
+### The Armies of the Night game-over screen {#an-game-over}
+
+Confirmed (code) at the addresses cited unless a line says otherwise.
+
+A `GameMenu` (vtable `0x0053b1b0`, input `0x0053b188`, object `0x00623040`, colour `0x006239c0` = (150, 30, 30, 255))
+in `TutorialHUD.cpp`'s TU (inferred); `HUDLaunchANGameOver` and mode 0xd open it
+([HUDLaunchANGameOver](../references/bindings/hud.md#hudlaunchangameover)). Positions are GUI coordinates. Confirmed
+(code):
+
+- **Countdown phase:** the title (string `0xce`, font slot 6, scale 2.0) at (0.5, 0.45), a digit counting **9 down to
+  0, one step per 1,000 ms** (`0x0050ec0c`, scale 5.0) at (0.5, 0.6), the usage line `0xd6` at (0.5, 0.8). Start
+  (`0x800`) from either player (player 2's pad record is locked at open) plays cue 8; with credits left
+  (`0x00619910`) it spends one, sets close, calls the Lua function `F1.Time` and, while credits remain, shows both
+  panels' join message; `+0x7ac`/`+0x7b0` record which players continue (alive ones). With no credit, or when the
+  count ends, both sound channels fade (`0x0018d450(2.0, ...)`) and the end phase starts.
+- **End phase:** the text `0xcf` (scale 3.0) at (0.5, 0.5), a grid of `0xdb` : `0xdc` at (0.5, 0.57), the usage line
+  `0x1c` at (0.5, 0.62), fading in over 2,000 ms (`0x0050ec28`); then accept takes item 0 (`+0x7a4`) or 1 (`+0x7a8`).
+- It closes (`ANGameOver_Toggle`) once the close flag is set and the last sound has ended.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001cede8` | `HUD_LaunchANGameOver` | calls `ANGameOver_Toggle` | confirmed (code) |
+| `0x001cee08` / `0x001cee58` | `ANGameOver_Construct` / `_Destroy` | the base plus the digit (`+0x7c0`) and title (`+0x890`) `TextWidget`s | confirmed (code) |
+| `0x001ceec0`, `0x001ceef0` | `ANGameOver_Init`, `_Shutdown` | slots `+0x90`, `+0x68`: the base's | confirmed (code) |
+| `0x001cef10` | `ANGameOver_Open` | slot `+0xa8`: patches its layout per video mode, then builds the parts above, count 9 | confirmed (code) |
+| `0x001cf358` | `ANGameOver_Close` | slot `+0xb0`: the base's close, releases the texts, unlocks player 2's record | confirmed (code) |
+| `0x001cf3a8` | `ANGameOver_OnCommand` | the input handler: accept after the fade, cue 8, item 0 or 1, close; calls `0x004229c0` on the stats object (`0x006fe490`) | confirmed (code) |
+| `0x001cf468` | `ANGameOver_Update` | slot `+0x30`: Start, credits, countdown, phases | confirmed (code) |
+| `0x001cfc78` | `ANGameOver_Render` | slot `+0x38`: the phase's parts; the end fade | confirmed (code) |
+| `0x001cfe50`, `0x001cfea0` | `ANGameOver_StaticInit`, `_GlobalCtor` | builds the object and its colour; the GCC constructor stub (list entry `0x00534114`) | confirmed (code) |
+
+### The Armies of the Night pause menu {#an-pause-menu}
+
+Confirmed (code) at the addresses cited unless a line says otherwise.
+
+A `PauseMenu` subclass (vtable `0x0053b298`, input `0x0053b270`, object `0x006239d0`, colour `0x006294b0` = (170, 20,
+20, 255)), in its own TU (stub `0x001d0a88`; inferred), used in levels 60-69. Confirmed (code):
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001cfec0` | `ANPauseMenu_OnConfirm` | the Yes/No callback: 2 (yes) calls the menu's slot `+0xb8`, 3 or 4 its slot `+0xc8` (the vtable entries `0x0053b354` and `0x0053b364`: code Ghidra holds no function for; the first sets quit, closing and to-the-hangout (`+0x1b70`, `+0x1b7c`, `+0x1b94`), the second clears the box flag `+0x1ba0`) | confirmed (code) |
+| `0x001cff48` / `0x001cff98` | `ANPauseMenu_Construct` / `_Destroy` | the base plus a title `TextWidget` (`+0x5930`) and a grid (`+0x5a00`) | confirmed (code) |
+| `0x001d0010` | `ANPauseMenu_Open` | slot `+0xa8`: the pausing player's input record; title `0xd0` (font slot 6, scale 2.95) at (0.5, 0.46); usage `0x1c` at (0.5, 0.58); a grid `0xd1` : `0xd2` (scale 1.15) at (0.5, 0.535); a Yes/No box, question `0x102`, answers `0x3b` / `0x3c`, at (0.28, 0.65) and (0.73, 1.45), callback `0x001cfec0` | confirmed (code) |
+| `0x001d0448` | `ANPauseMenu_Close` | slot `+0xb0`: releases the title, grid and box | confirmed (code) |
+| `0x001d0480` | `ANPauseMenu_OnCommand` | accept: item 0 closes (resume), item 1 opens the Yes/No box and calls `0x004229c0` on the stats object; back closes; while the box is open, input goes to `0x001ded68` | confirmed (code) |
+| `0x001d0548` | `ANPauseMenu_Update` | slot `+0x30`: Start closes; places the parts; the selected item's alpha falls and rises over 2 × 1,000 ms (`0x0050ec5c`); closes through `PauseMenu_Toggle` once the last sound ends | confirmed (code) |
+| `0x001d09d8` | `ANPauseMenu_Render` | slot `+0x38`: title, grid, usage, and the box when open | confirmed (code) |
+| `0x001d0a38`, `0x001d0a88` | `ANPauseMenu_StaticInit`, `_GlobalCtor` | builds the object and its colour; the constructor stub (list entry `0x00534118`) | confirmed (code) |
+
+### The `GameMenu` base (no path string) {#fn-gamemenu}
+
+Confirmed (code) at the addresses cited unless a line says otherwise.
+
+`0x001d1848`-`0x001d1d28`, in the TU that ends at the stub `0x001d2de0` (with `CircledText` and the mission-failed
+menu). The base of the story pause menu, the mission-failed and Armies of the Night game-over screens, the Options and
+Controls menus and the Rumble result screen (vtable `0x0053b4b0`, input interface `0x0053b488` at `+0x5c`). Fields:
+`+0x40` the locked pad record, `+0x60` close requested, `+0x64` input accepted (set when the fade-in ends), `+0x70`
+background (`BaseWidget`), `+0x170` title (markup text), `+0x360` grid (`OptionGrid`), `+0x430` usage line
+(`UsageInfo`), `+0x700` fade start, `+0x704` open time, `+0x708` fading, `+0x70c` title text, `+0x78c` the last
+sound. Confirmed (code).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001d1848` / `0x001d18d8` | `GameMenu_Construct` / `_Destroy` | the parts above; sound handle -1; slot `+0x60` | confirmed (code) |
+| `0x001d1958` | `GameMenu_Init` | slot `+0x90`: sets up the title text (size 1.0, grey 128) | confirmed (code) |
+| `0x001d19a8` | `GameMenu_Shutdown` | slot `+0x68`: slot `+0x98`, clears the title | confirmed (code) |
+| `0x001d19e8` | `GameMenu_ReleaseSprites` | slot `+0x98`, shared by every subclass: releases the background and the grid | confirmed (code) |
+| `0x001d1a18` | `GameMenu_SetTitle` | slot `+0xa0`: copies the text to `+0x70c` and shows it; nil clears | confirmed (code) |
+| `0x001d1aa0` | `GameMenu_Open` | slot `+0xa8`: hides the HUD for a menu and both radars, ends both players' rage mode (`Human_EndRageMode`), locks player 1's pad record (`+0x1b` = 0, `+0x1e` = 1), stamps the open and fade times, clears `+0x10`, `+0x60`, `+0x64` | confirmed (code) |
+| `0x001d1c48` | `GameMenu_Close` | slot `+0xb0`: slot `+0x98`, both sound channels back (`0x0018d450(0, channel)`), unlocks the pad record | confirmed (code) |
+| `0x001d1cd8` / `0x001d1d08` | `GameMenu_IsBackgroundLoaded` / `_IsSoundDone` | the background's batch is resident; the last sound has ended | confirmed (code) |
+| `0x001d1d28` | `GameMenu_Render` | slot `+0x38`: from 1,000 ms after opening (`0x0050ec7c`) fades background, title, grid and usage in over 3,000 ms (`0x0050ec78`); at the end plays the sound named at `0x00555c88`, sets `+0x64` and hides the 19 widgets at HUD `+0x137e0` (not identified) | confirmed (code) |
+
+### The mission-failed menu {#fn-missionfailed}
+
+Confirmed (code) at the addresses cited unless a line says otherwise.
+
+A `GameMenu` (vtable `0x0053b598`, input `0x0053b570`, object `0x006294c0`, pointer `0x0050ec8c`;
+[The mission-failed screen](#the-mission-failed-screen)). Fields: `+0x7a0` quit, `+0x7a4` restart, `+0x7a8` last
+checkpoint, `+0x7ac` to the hangout chosen; `+0x7b0` the `HUDSetMissionFailedCallbacks` name (31 bytes); `+0x7d0` the
+`level95` layout; `+0x7e0` the Yes/No box (question text `+0x830`); `+0xcb0` the box is open. Confirmed (code).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001d1f88` | `MissionFailed_Launch` | [The mission-failed screen](#the-mission-failed-screen) | confirmed (code) |
+| `0x001d1fb8` | `MissionFailed_SetReason` | the reason through the menu's `SetTitle` (slot `+0xa0`) | confirmed (code) |
+| `0x001d1ff0`, `0x001d2398` | `MissionFailed_SetCallbacks`, `MissionFailedMenu_SetCallbacks` | `HUDSetMissionFailedCallbacks`: copy the name (nil clears) | confirmed (code) |
+| `0x001d2018` | `MissionFailedMenu_OnConfirm` | the Yes/No callback: 2 (yes) closes the menu with the choice; 3 or 4 close the box and clear the four choices | confirmed (code) |
+| `0x001d2070` / `0x001d20c8` | `MissionFailedMenu_Construct` / `_Destroy` | the base plus the Yes/No box | confirmed (code) |
+| `0x001d2128` | `MissionFailedMenu_Init` | slot `+0x90`: per video mode and for languages 1 and 2 (`W_GameState + 0x120`) patches the layout globals `0x0050ec94`-`0x0050ecb4`; the base's init | confirmed (code) |
+| `0x001d2368` | `MissionFailedMenu_Shutdown` | slot `+0x68` | confirmed (code) |
+| `0x001d23d0` | `MissionFailedMenu_Open` | slot `+0xa8` ([above](#the-mission-failed-screen)) | confirmed (code) |
+| `0x001d2970` | `MissionFailedMenu_YesNoInput` | while the box is open: up/down cue `0xe`, accept cue 8, then `YesNoBox_OnCommand` | confirmed (code) |
+| `0x001d2a10` | `MissionFailedMenu_OnCommand` | accept (cue 8): item 0 closes with "last checkpoint" (`+0x7a8`) or, in `level95`, "to the hangout" (`+0x7ac`); item 1 asks "restart?" (string `0x105`, `+0x7a4`), or in `level95` "quit?"; item 2 asks "quit?" (`0x102`, `+0x7a0`); the box opens with No selected | confirmed (code) |
+| `0x001d2b90` | `MissionFailedMenu_Update` | slot `+0x30`: waits until the background, usage line and grid are ready, then places the picture, reason, grid, usage and box; closes through `MissionFailed_Toggle` once the sound ends | confirmed (code) |
+| `0x001d2d68` | `MissionFailedMenu_Render` | slot `+0x38`: the base's render, plus the box when open | confirmed (code) |
+| `0x001d2db0`, `0x001d2de0` | `MissionFailedMenu_StaticInit`, `_GlobalCtor` | builds the object; the constructor stub (list entry `0x0053411c`) | confirmed (code) |
+
+### `GUI/OptionMenu.cpp` {#fn-optionmenu}
+
+Confirmed (code) at the addresses cited unless a line says otherwise.
+
+The functions run from `0x001d5808` to `0x001dab30` (inferred: the [Source map](source-map.md#gui) gives the file
+`0x001d5900`-`0x001dab10`; the range here is widened to the neighbouring unnamed functions): the pause menu's Options
+screen. `OptionMenu` (vtable `0x0053b9a8`, input `0x0053b980` at
++0x5c, object `0x0062a1a0`, pointer `0x0050ecec`) owns 7 page titles (+0x7a0 step 0x1f0) and 7 `OptionPage`s (+0x1530
+step 0x6f0: count +0, selection +4, index +8, 5 item pointers +0x0c, description +0x20, confirm box +0x220, box open
++0x210, changed +0x214). Items: `OptionItem` base (vtable `0x0053bcd0`), `OptionItemOnOffType` = `YesNoBox`
+(`0x0053bc08`, 0x4d0), `OptionItemStatBarType` = `StatBarItem` (`0x0053bb38`, 0x640), `OptionItemLightingType` =
+`LightingItem` (`0x0053ba68`, 0xa40). The option values and their defaults: [save.md](save.md#options).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001d5808` | `OptionPage_OnDiscardConfirm` | Page confirm-box callback: 2 reverts the page, 3/4 close the box. No code in the file opens that box (string 0x12f). | inferred |
+| `0x001d5870`, `0x001d58a8` | `OptionPage_Construct`, `OptionPage_Destroy` | Description markup +0x20, confirm box +0x220. | confirmed (code) |
+| `0x001d5900` | `OptionPage_Init` | Clears count, selection and 5 slots, index +8; per-mode box layout `0x0050ed18`-`0x0050ed24`; box string 0x12f with Yes 0x3b / No 0x3c. | confirmed (code) |
+| `0x001d5b30`, `0x001d5bc8` | `OptionPage_Shutdown`, `OptionPage_AddItem` | Frees the 5 items, description and box; adds to the first free of 5 slots. | confirmed (code) |
+| `0x001d5c38` | `OptionPage_SetDescription` | Description markup (size 1.0, `0x005fd310`, font slot 3, scale 1.3) at a position. | confirmed (code) |
+| `0x001d5cf0` | `OptionPage_OnConfirmBoxCommand` | Routes a command to the confirm box (up/down cue 0xe, accept cue 8). | confirmed (code) |
+| `0x001d5dc8` | `OptionPage_OnCommand` | Up/down move +4 (cue 4, 0xe at an end); left/right to the item (2/3); accept: item command 4, cue 8, close; back cue 0xf: Vibration (5) stops the preview, then every page but Restore Default (6) reverts (`OptionMenu_RevertPage`). Returns 0 to close. | confirmed (code) |
+| `0x001d6060`, `0x001d60e8`, `0x001d6160` | `OptionPage_IsLoaded`, `OptionPage_BeginEdit`, `OptionPage_Revert` | Every item's slot +0x98 (loaded), +0xa0 (remember value), +0xa8 (restore and apply). | confirmed (code) |
+| `0x001d61d8`, `0x001d62d8` | `OptionPage_Update`, `OptionPage_Render` | Items, description, box when open; selected item `0x005fd310`, others `0x005fd320` via slot +0x78. | confirmed (code) |
+| `0x001d63f0`, `0x001d6430`, `0x001d64b0` | `OptionItem_Construct`, `_Destroy`, `_Setup` | Label markup +0x50; setup (slot +0x90) stores metrics +0x40 and the label (size 1.0, `0x005fd310`, slot 3), +0x240 = 2. | confirmed (code) |
+| `0x001d6570`, `0x001d6590`, `0x001d65c8` | `OptionItem_SetPosition`, `_SetLabelScale`, `_Update` | Moves the label; label font size from a scale; updates the label. | confirmed (code) |
+| `0x001d65e8`, `0x001d6620` | `OptionItem_Render`, `OptionItem_RenderColoured` | Label in `0x005fd310`, or in a given colour (slot +0x78). | confirmed (code) |
+| `0x001d6480` | `YesNoBox_SetLabelFlag` | Label fields +0x1d8 and +0x208 = flag, then re-lays the label; every caller passes 1. | inferred |
+| `0x001d6670`, `0x001d66d0` | `YesNoBox_Construct`, `YesNoBox_Destroy` | Answer texts +0x250, +0x320 and the "/" +0x3f0; selection +0x4c0. | confirmed (code) |
+| `0x001d6738` | `YesNoBox_Setup` | Label, answers 299/300, callback +0x4c4, owner +0x240, confirm mode +0x4c8. | confirmed (code) |
+| `0x001d6908`, `0x001d6910`, `0x001d6960`, `0x001d6980` | `YesNoBox_Shutdown`, `_SetAnswers`, `_SetPosition`, `_SetAnswersPosition` | Empty shutdown; replace the answers; move the label; lay out answer, "/", answer by width. | confirmed (code) |
+| `0x001d6a50`, `0x001d6a60` | `YesNoBox_SaveSelection`, `YesNoBox_RevertSelection` | Slot +0xa0 saves the selection at +0x4cc (was undefined, created); slot +0xa8 restores it and calls the callback. | confirmed (code) |
+| `0x001d6a90`, `0x001d6ad0`, `0x001d6b00` | `YesNoBox_Update`, `_Render`, `_RenderColoured` | Chosen answer `0x005fd310`, the other `0x005fd320`. | confirmed (code) |
+| `0x001d6c10` | `YesNoBox_OnCommand` | Left 0, right 1 (cue 4, 0xe if unchanged; page changed); immediate callback unless confirm mode; accept in confirm mode calls back 2 or 3, back 4. | confirmed (code) |
+| `0x001d6df8`, `0x001d6e80`, `0x001d7218` | `StatBarItem_Construct`, `_Destroy`, `_Shutdown` | Fill bar +0x250, back bar +0x2c0, three widgets; value +0x630 = 0.5. | confirmed (code) |
+| `0x001d6ef8` | `StatBarItem_Setup` | Slot +0xc0: an undrawn sheet-12 rect-0 sizing sprite (0xc0000) the item's width; fill and (21,21,21) back meters of sprite word 0x30036, height 0.025 (`0x0050ed2c`), caps and bodies transparent (+0x54, +0x58 = 0); value clamped 0-1, callback +0x638. | confirmed (code) |
+| `0x001d7238`, `0x001d7248` | `StatBarItem_SaveValue`, `StatBarItem_RevertValue` | +0x634 = value; restore and call back. | confirmed (code) |
+| `0x001d7270` | `StatBarItem_Update` | First update: both meters as wide as the sizing sprite and its height less `0x0050ed30`, moved by (+0.003, -0.004) (`0x0050ed38`, `0x0050ed34`). | confirmed (code) |
+| `0x001d7350`, `0x001d73b0`, `0x001d7420` | `StatBarItem_Render`, `_RenderColoured`, `_IsLoaded` | Label, back then fill meter; the coloured one gives the fill the item's colour; bar and sprite batches resident. | confirmed (code) |
+| `0x001d7490` | `StatBarItem_OnCommand` | ±0.05 clamped 0-1 (cue 4, 0xe at an end), page changed, callback(value). | confirmed (code) |
+| `0x001d7648`, `0x001d7698`, `0x001d7c70` | `LightingItem_Construct`, `_Destroy`, `_Shutdown` | A StatBarItem plus two square widgets and a hint markup. | confirmed (code) |
+| `0x001d7700` | `LightingItem_OnCommand` | Bar ±0.05 and callback ±5 (`0x0050ecfc`) into OptionMenu_AddBrightness. | confirmed (code) |
+| `0x001d7958` | `LightingItem_Setup` | Bar at level/100 (`0x0050ecf8`, `0x0050ed00`); two sheet-12 rect-6 squares (0xc0006, 0.09 × 0.065 × `0x0050ed44`), the second black; hint string 0x118 in grey. | confirmed (code) |
+| `0x001d7cb0`, `0x001d7ce0` | `LightingItem_SaveValue`, `LightingItem_RevertValue` | Saves `Gamma_Get()` at +0x644; restores with `Gamma_Set`. | confirmed (code) |
+| `0x001d7d10`, `0x001d7de8`, `0x001d7e28`, `0x001d7e98` | `LightingItem_Update`, `_Render`, `_RenderColoured`, `_IsLoaded` | Level from W_GameState +0x57a4; bar, squares (first tinted when coloured), hint. | confirmed (code) |
+| `0x001d7ef0` | `OptionMenu_OnVibrationChoice` | Dirty `0x00630840` = 1; on gives a preview rumble of strength 120 (`0x0050ed50`) for 500 ms (`0x0050ed54`). | confirmed (code) |
+| `0x001d7f90`, `0x001d7ff0`, `0x001d8050` | `OptionMenu_OnInvertChoice`, `_OnAutoAdjustChoice`, `_OnMergeChoice` | Set invert / auto-adjust per pad and merge to choice == 0; mark dirty. | confirmed (code) |
+| `0x001d80a8`, `0x001d8208` | `OptionMenu_OnSubtitlesChoice`, `OptionMenu_OnProLogicChoice` | W_GameState +0x438 / sound manager +0x3faa8 = choice == 0; both were undefined code, created. | confirmed (code) |
+| `0x001d80e0` | `OptionMenu_OnRestoreDefaults` | Yes: brightness 40, volumes 0.9, invert off, auto-adjust on, merge on, vibration on, +0x454 = 0, subtitles and Pro Logic off, reopen flag `0x0050ed14`. | confirmed (code) |
+| `0x001d8258` | `OptionMenu_OnVideoChoice` | 2/3 select video mode 0/1 (`0x00194e28`), close and reopen pause and options menus, return to Options, re-lay the lock-pick dials. | confirmed (code) |
+| `0x001d83e0`, `0x001d8410`, `0x001d8440` | `OptionMenu_SetSoundFxVolume`, `_SetMusicVolume`, `_AddBrightness` | Volume setters (dirty); brightness + delta clamped 0-100. | confirmed (code) |
+| `0x001d84a0`, `0x001d8558`, `0x001d8658` | `OptionMenu_Construct`, `_Destroy`, `_Shutdown` | GameMenu base, 7 titles, 7 pages, music handle +0x45d4 = -1. | confirmed (code) |
+| `0x001d8620`, `0x001d86a0` | `OptionMenu_ApplyVolumes`, `OptionMenu_NoOp` | Slot +0x90 applies music (+0x57ac) and SoundFX (+0x57a8); slot +0x98 empty (created). | confirmed (code) |
+| `0x001d86a8` | `OptionMenu_Open` | Slot +0xa8: titles 0x117, 0x119, 0x122, 0x123, 0x124, 0x11f, 0x128 (font slot 6, scale 1.3) and every page's items; Merge omitted on level 102; Restore Default preselects No. | confirmed (code) |
+| `0x001da348` | `OptionMenu_Close` | Slot +0xb0: shuts pages and titles, stops the preview music. | confirmed (code) |
+| `0x001da3f8` | `OptionMenu_OnCommand` | Page open: to the page; else up/down titles 0-6 (cue 4/0xe), left/right cue 0xe, accept opens (Restore Default back on No, BeginEdit, cue 8), back cue 0xf and +0x45d0 = 1. | confirmed (code) |
+| `0x001da658` | `OptionMenu_Update` | Waits for load; ends the vibration preview; reopens after Restore Default; loops `vags/music/wonderwheel_mono` at music volume while Audio is open. | confirmed (code) |
+| `0x001da880` | `OptionMenu_Render` | Titles (selected `0x005fd310`, others `0x005fd320`) or the open page. | confirmed (code) |
+| `0x001da9b8`, `0x001da9d0`, `0x001daa38`, `0x001daa50` | `OptionMenu_CloseConfirmBox`, `_RevertPage`, `_SetPageChanged`, `_IsLoaded` | Current page's box closed, items reverted (+0x218 = 1), changed flag +0x214; all pages loaded. | confirmed (code) |
+| `0x001daaa8`, `0x001dab10` | `OptionMenu_StaticInit`, `OptionMenu_StaticInitStub` | Construct the menu at `0x0062a1a0` (constructor list `0x00534124`); end of the TU. | confirmed (code) |
+
+### After `GUI/OptionMenu.cpp` (no path string): the pause menu {#fn-pausemenu}
+
+Confirmed (code) at the addresses cited unless a line says otherwise.
+
+From `0x001dab30` up to `RumbleResult_Launch` (`0x001dfe20`): `PauseMenu` (vtable `0x0053bdc0`, input `0x0053bd98`,
+object `0x0062e790`, pointer
+`0x0050eddc`) and the objective checklists it holds; the objective calls are described in
+[hud.md](hud-messages.md#objectives-hudsetobjective).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001dab30` | `Objective_GetIconPrefix` | Maps an objective's leading tag (`<ROBJ_N>`, `<YOBJ_N>`, `<BOBJ_N>`, `<ARREST_N>`, `<DEAD_N>`, `<FLASH_N>`, `<SPRAY_N>`, `<PEDRAT_N>`, `<CALLGANG_N>`, `<NICON>`) to its icon prefix; dots use colour tags 3, 4, 6. | confirmed (code) |
+| `0x001dad88`, `0x001db248` | `HUD_SetObjective`, `HUD_RemoveAllGoalText` | Add/remove/tick an objective in the checklists; clear the current-objectives list. | confirmed (code) |
+| `0x001db278` | `PauseMenu_OnConfirm` | Yes/No box callback: 2 Yes, 3 No, 4 back. | confirmed (code) |
+| `0x001db3c0` | `PauseMenu_Construct` | Yes/No box +0x1bd0, three checklists +0x20d0 step 0x360, grid +0x2b00, usage +0x2dd0, Controls +0x30a0, background +0x3a90, Stats +0x3bb0. | confirmed (code) |
+| `0x001db4b0` | `PauseMenu_ResetState` | Zeroes the stats block (+0xa40, 0x1130 bytes) and choice flags; screen selection +0x3a74 = 3. | confirmed (code) |
+| `0x001db550` | `PauseMenu_Init` | Slot +0x90: headers (`0x006340c0`, `0x00634c70`, `0x00634fe0`), checklists, Quit box (0x102, confirm mode). | confirmed (code) |
+| `0x001db7e8`, `0x001db870` | `PauseMenu_Shutdown`, `PauseMenu_ReleaseScreens` | Slot +0x68 checklists, background, usage, box; slot +0x98 headers, usage, background. | confirmed (code) |
+| `0x001db8e8` | `ArrayU32_Contains` | Linear search of a word array. | confirmed (code) |
+| `0x001db918` | `PauseMenu_Quit` | Slot +0xb8: quit chosen +0x1b70 and closing +0x1b80. | confirmed (code) |
+| `0x001db928` | `PauseMenu_GetLevelColour` | Top header colour by level number: (37,100,60), (38,61,94), (76,53,44) or (186,139,53) groups, else black; it only tests the lists (`PauseMenu_Open` asks for the black letters with `CircledTextHeader_SetLetterColour` `0x001e8658` at `0x001dc1ec`). | confirmed (code) |
+| `0x001dbb78` | `PauseMenu_ApplyVideoMode` | Layout globals `0x0050edfc`-`0x0050ee6c` and `0x00635350`-`0x00635364` per device flags. | confirmed (code) |
+| `0x001dbee0`, `0x001dcb20` | `PauseMenu_Open`, `PauseMenu_Close` | Slots +0xa8 / +0xb0 (see the opening and leaving sections); close issues pending war commands and clears the screen tint byte +0x214. | confirmed (code) |
+| `0x001dcac0` | `PauseMenu_ReturnToOptions` | Screen and Options open (+0x1b88, +0x3a78); grid moved right twice (once in Rumble). | confirmed (code) |
+| `0x001dcc00`, `0x001dd1d0` | `PauseMenu_ClearChecklist`, `PauseMenu_CountOpenObjectives` | Clear one list; count its open lines. | confirmed (code) |
+| `0x001dcc28`, `0x001dce80` | `PauseMenu_AnnounceCurrentObjective`, `PauseMenu_AnnounceBonusObjective` | Story levels: first open objective as a scroll-in with its tag's icon (default 0x1c / 0x16), cue 0x15. | confirmed (code) |
+| `0x001dd0b8`, `0x001dd178`, `0x001dd1a0` | `PauseMenu_AddObjective`, `_RemoveObjective`, `_MarkObjectiveDone` | List 2 cleared before adding; lists 0/1 drop their "None" (0x109) line. | confirmed (code) |
+| `0x001dd1f8`, `0x001dd258` | `Widget_ReapplyRect`, `Widget_GrowRectHeight` | Re-set a widget's rectangle; grow its height (min 0). | confirmed (code) |
+| `0x001dd2e0`, `0x001dd3d8` | `PauseMenu_SlideChecklistY`, `PauseMenu_SlideHeaderY` | Move toward a target y by 0.02 (`0x0050ee20`). | confirmed (code) |
+| `0x001dd4d0` | `PauseMenu_AnimateObjectives` | Every 2 ms (`0x0050ee7c`): headers 0.02, list reveal 0.01 (`0x0050ee24`), gaps 0.05 (`0x0050ee74`, `0x0050ee78`). | confirmed (code) |
+| `0x001ddbc0`, `0x001ddcf8`, `0x001df700` | `PauseMenu_FadeOut`, `PauseMenu_Update`, `PauseMenu_Render` | Fade, update (slot +0x30) and render (slot +0x38); see the sections above. | confirmed (code) |
+| `0x001de488` | `PauseMenu_CloseScreen` | Closes the open screen (Options once its back flag +0x45d0 is set) and restores the headers. | confirmed (code) |
+| `0x001de6c0`, `0x001dee00`, `0x001ded68` | `PauseMenu_SelectItem`, `PauseMenu_OnCommand`, `PauseMenu_OnYesNoCommand` | Accept on a grid item; grid owner handler; Yes/No routing (cue 0xe/8). | confirmed (code) |
+| `0x001ded00`, `0x001ded48` | `PauseMenu_PlayCue`, `PauseMenu_GetSelectedItem` | Cue unless Options is open (+0x2bc4 when a screen is); grid selection. | confirmed (code) |
+| `0x001df3a8`, `0x001df448`, `0x001df4b0`, `0x001df4c8` | `PauseMenu_QuitPlayerTwo`, `_QuitToRumbleQuick`, `_QuitToMainMenu`, `_QuitToHangout` | Slots +0xd0, +0xd8 (+0x1b98), +0xe8 (+0x1b9c), +0xe0 (+0x1b94). | confirmed (code) |
+| `0x001df4e0` | `PauseMenu_IsReady` | 10 s after opening, or headers and background ready (player not raging). | confirmed (code) |
+| `0x001df5e8`, `0x001df6d0` | `PauseMenu_CancelChoice`, `PauseMenu_ApplyFadeAlpha` | Slot +0xc8 clears quit/restart choice; colour with menu alpha +0x3b9c while closing. | confirmed (code) |
+| `0x001dfc08`, `0x001dfc40` | `PauseMenu_ResetStatSlots`, `PauseMenu_ClearObjectives` | 100 records (+0xa44 step 0x2c) = -1; clears lists 2, 0, 1 on level load (`0x0015fe90`). | confirmed (code) |
+| `0x001dfc80`, `0x001dfe00` | `PauseMenu_StaticInit`, `PauseMenu_StaticInitStub` | Headers 0x108/0x107/0x106, colour cycle `0x00635368`-`0x00635388`; list `0x00534128`. | confirmed (code) |
+
+### After the pause menu (no path string): Rumble result screen {#fn-rumbleresult}
+
+Confirmed (code) at the addresses cited unless a line says otherwise.
+
+From `0x001dfe20` up to `ScrollingMenuItem_Construct` (`0x001e09e8`): `RumbleResult` (vtable `0x0053bee0`, input
+`0x0053beb8`, object `0x00635390`, pointer
+`0x0050ee94`); behaviour in [rumble.md](rumble.md#result-screen).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001dfe20`, `0x001dfe88` | `RumbleResult_Launch`, `RumbleResult_SetReason` | Pushes mode 0x14, sets winner (slot +0xa0) and the reason text (+0xa70). | confirmed (code) |
+| `0x001dfef0`, `0x001dff40`, `0x001dffa8`, `0x001dffd8` | `RumbleResult_Construct`, `_Destroy`, `_Init`, `_Shutdown` | Second grid +0x7b0, markup +0x880; init sets +0x04 = 1. | confirmed (code) |
+| `0x001e0008`, `0x001e0430` | `RumbleResult_Open`, `RumbleResult_Close` | Slots +0xa8 / +0xb0; open applies a screen effect and hides lock-pick dials. | confirmed (code) |
+| `0x001e0460`, `0x001e0560`, `0x001e0778` | `RumbleResult_OnCommand`, `_Update`, `_Render` | Input, update (+0x30), render (+0x38; choices after `0x0050eec0`, fade `0x0050eeb8`). | confirmed (code) |
+| `0x001e0998`, `0x001e09c8` | `RumbleResult_StaticInit`, `RumbleResult_StaticInitStub` | Constructs `0x00635390`; list `0x0053412c`. | confirmed (code) |
+
+### `GUI/ControlMenuHUD.cpp` {#fn-controlmenuhud}
+
+Confirmed (code) at the addresses cited unless a line says otherwise.
+
+The functions run from `0x001e3458` to `0x001e5478` (inferred: the [Source map](source-map.md#gui) gives the file
+`0x001e3520`-`0x001e5478`): the pause menu's Controls screen, two entries opening the controller picture page or the
+tutorial tips page. Both pages derive from a small `ControlPage` base and are static objects built at start-up.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001e3458`, `0x001e34c0` | `ControlPage_Construct`, `_Destroy` | vtable `0x0053c658`, interface `0x0053c630`; title TextWidget `+0x60`, alpha `+0x130` | confirmed (code) |
+| `0x001e3520` | `ControlPage_Init` | slot `+0x90`: title at (`0x0050eee4`, `0x0050eee8`), size 1.3, `0x005fd310`, font slot 4 | confirmed (code) |
+| `0x001e35d8`, `0x001e35f8`, `0x001e3670` | `ControlPage_Shutdown`, `_Update`, `_Render` | slots `+0x68`/`+0x30`/`+0x38`: the title, with alpha | confirmed (code) |
+| `0x001e36a8`, `0x001e3758` | `TutorialPage_Construct`, `_Destroy` | vtable `0x0053c588`, interface `0x0053c560`, object `0x00637be0`; 23 titles `+0x150`, 23 texts `+0x3960` (0x270 each), menu `+0x140` | confirmed (code) |
+| `0x001e3828` | `TutorialPage_Init` | ScrollingMenu at (`0x0050eef0`, `0x0050eef4`); tip i = title string `0x145`+i (focus colour (134,26,26)) with text `0x15c`+i as description; visible `0x0050ef00` = 8 (10 with 16:9, 9 with device flag `0x02`), clip height `0x0050ef0c` = 0.5; title `0x131` ([layout](#controls-layout)) | confirmed (code) |
+| `0x001e3d98` | `TutorialPage_Shutdown` | frees the menu, shuts the texts down | confirmed (code) |
+| `0x001e3e60` | `TutorialPage_OnCommand` | forwards to the menu; back: cue `0xf`, returns true | confirmed (code) |
+| `0x001e3ed0`, `0x001e3f38` | `TutorialPage_Update`, `_Render` | title and menu | confirmed (code) |
+| `0x001e3f98`, `0x001e4050` | `ControllerPage_Construct`, `_Destroy` | vtable `0x0053c4b8`, interface `0x0053c490`, object `0x00635e80`; 7 + 7 labels `+0x140`/`+0xed0`, picture `+0x1c60` | confirmed (code) |
+| `0x001e4130` | `ControllerPage_Init` | label table `0x0050ef20` (`0x0050f000` in mode `0x02` without `0x04`) copied to `0x0063ed50`; label 1's x moved by the language (game state `+0x120`: German -0.02, French 0.16; 0.22 in the other table for any language but English); picture sprite `0x18f0000` at (0.5, 0.58), size 0.51 x 0.45, depth 11000; labels `0x132`-`0x138` align 5, `0x139`-`0x13f` align 4; title `0x130` ([layout](#controls-layout)) | confirmed (code) |
+| `0x001e4540`, `0x001e45f8` | `ControllerPage_Shutdown`, `_IsReady` | releases; ready when the picture batch `+0x1d24` is resident | confirmed (code) |
+| `0x001e4618` | `ControllerPage_OnCommand` | table `0x005567b0`: directions cue `0xe`, back cue `0xf` and true | confirmed (code) |
+| `0x001e46c0`, `0x001e4820` | `ControllerPage_Update`, `_Render` | picture size and place, labels from the table; render with alpha | confirmed (code) |
+| `0x001e4908`, `0x001e4988` | `ControlMenuHUD_Construct`, `_Destroy` | GameMenu subclass, vtable `0x0053c3d0`, interface `0x0053c3a8`; entries `+0x7a0`/`+0x870` | confirmed (code) |
+| `0x001e4a30` | `ControlMenuHUD_Open` | slot `+0xa8`: pausing player's input (pause menu `+0x1bc0`); entries Controller `0x130` at (0.26, 0.29), Tutorial `0x131` 0.06 below, size 1.3; pages `+0x940`/`+0x944` Init; `+0x948`-`+0x954` reset | confirmed (code) |
+| `0x001e4e28`, `0x001e4ea8` | `ControlMenuHUD_Close`, `_ArePagesReady` | slot `+0xb0`; both pages' slot `+0x98` | confirmed (code) |
+| `0x001e4f18` | `ControlMenuHUD_OnCommand` | open page: forwarded, closed on true; else table `0x005567d0`: up/down cue 4 (`0xe` at an end), left/right `0xe`, accept opens (cue 8 for Controller), back cue `0xf`, leave `+0x94c` | confirmed (code) |
+| `0x001e5130` | `ControlMenuHUD_Update` | waits for pages; plain pad pass; entries or the open page | confirmed (code) |
+| `0x001e52f8`, `0x001e5300` | `ControlMenuHUD_SetAlpha`, `_Render` | alpha `+0x954`; selected `0x005fd310`, other `0x005fd320` | confirmed (code) |
+| `0x001e5438`, `0x001e5478` | `ControlMenuHUD_StaticInit`, `_StaticInitStub` | builds both pages; stub in ctor list `0x00534130` ends the file | confirmed (code) |
+
+### After `GUI/ControlMenuHUD.cpp` (no path string): the Stats screen {#fn-after-controlmenuhud}
+
+Confirmed (code) at the addresses cited unless a line says otherwise.
+
+`0x001e5498`-`0x001e6e78`: the pause menu's Stats screen (pause menu `+0x3bb0`), a GameMenu subclass (vtable
+`0x0053c728`, interface `0x0053c700`) with its own static-init stub, so a file of its own (inferred).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001e5498`, `0x001e5540` | `PauseStats_Construct`, `_Destroy` | name `+0x7b0`, shadows `+0x8b0`/`+0x9b0`, face `+0xab0`, 4 HudGenericBars `+0xbb0`, description `+0x1b70` | confirmed (code) |
+| `0x001e5618` | `PauseStats_Setup` | [The Stats screen](#stats-screen); from `PauseMenu_Open`: per-mode globals `0x0050f104`-`0x0050f2b8`; human of game state `+0x228`; class 0-8 picks name, face and string `0xea`-`0xf2`, else unavailable; bars Strength `0xf3`, Stamina `0xf4`, Health `0xf5`, Rage `0xf6` normalised by difficulty table `0x0050f230` (0x28 per difficulty, game state `+0x154`); description wrap width 0.55 and line window 0-5 | confirmed (code) |
+| `0x001e6530`, `0x001e6600` | `PauseStats_Shutdown`, `_IsReady` | releases; ready after 10 s or when both picture batches are resident | confirmed (code) |
+| `0x001e6698` | `PauseStats_OnCommand` | table `0x005568e0` by command (up, down, left, right, accept, back): up/down `MessageHUD_PageUp`/`PageDown` (cue 4, `0xe` when stuck), left/right `0xe`, accept nothing, back `0xf` and `+0x7a0` = 1 | confirmed (code) |
+| `0x001e6778` | `PauseStats_Update` | nothing while unavailable (`+0x04`, `+0x08`) or not ready (`PauseStats_IsReady`, kept in `+0x10`); then name at base + (-0.08, -0.2), face + (-0.17, -0.099), bars at + (0.14, -0.11 + 0.05 i) 0.22 x 0.025 fill `0x0063ee38`, description + (-0.24, 0.1) | confirmed (code) |
+| `0x001e6cf0`, `0x001e6cf8` | `PauseStats_SetAlpha`, `_Render` | alpha `+0x1d70` (setup sets 255); when available and ready, each part's alpha set to it, then shadows, name, face, bars and description drawn in that order | confirmed (code) |
+| `0x001e6e20`, `0x001e6e78` | `PauseStats_StaticInit`, `_StaticInitStub` | colours `0x0063ee30`/`0x0063ee38` = (150,30,30,255); stub in ctor list `0x00534134` | confirmed (code) |
+
+### Game-state functions {#warriors-functions}
+
+Confirmed (code) at the addresses cited unless a line says otherwise.
+
+Functions in the address range `0x00417af0`-`0x00424e50` (inferred to be one module of the game state; the
+[Source map](source-map.md#gui) puts its first function in `W_ActionableManager.cpp`: inventory, statistics, flags, configuration
+workers) that belong to this page, by address.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x0041dd78` | `GameState_RequestOptionMenu` | `+0x11c` = 1 | confirmed (code) |
+| `0x004229c0` | `Stats_ClearArmiesScores` | zeroes the Armies score (`+0x04`) of both players in the list (`W_GameState + 0x228`); from the game-over and pause menus' quit or retry | confirmed (code) |
 
 ## Data
 
-Every value in this section is confirmed (code) at the address it cites unless its line says it is inferred or
-confirmed (runtime).
+Every value in this section is confirmed (code) at the address it cites unless its line says it is inferred.
 
 ### The menu's fields
+
+Confirmed (code) at the addresses cited unless a line says otherwise.
 
 The story menu (at least `0x4354` bytes: the Stats screen at `+0x3bb0` reaches `+0x4350`); confirmed (code) at the
 functions in the table above.
@@ -96,24 +392,25 @@ functions in the table above.
 
 ### Layout (GUI coordinates)
 
+Confirmed (code) at the addresses cited unless a line says otherwise.
+
 Default video mode, [GUI coordinates](hud.md#coordinates). Confirmed (code) at `0x001dbee0`, `0x001db550`,
 `0x001ddcf8` and the constants at `0x0050ede0`-`0x0050ee8c`.
 
 | Part | Where |
 | --- | --- |
 | background | sheet record 12 rectangle 5 (sprite word `0xc0005`), centred at (0.5, 0.5), size 1.05 (0.9 when the device's slot `+0xb8` is set), depth 7,000, white tinted by the colour cycle |
-| three headers | the top one a `CircledTextHeader` ([GUI: the pause header](gui.md#circled-text-header)), the other two `IconTextHeader`s (`0x001e77a0`), at y 0.22, 0.46 and 0.68 (16:9: 0.18, 0.42, 0.64), x 0.5, box width 0.5; built with "Current Objectives" (`0x108`), "Bonus Objectives" (`0x107`) and "Overview" (`0x106`), their texts swapped per screen (the top one shows the mission's title on the grid, "OPTIONS" `0x116` on Options, "CONTROLS" `0x173` on Controls) |
+| three headers | the top one a `CircledTextHeader` ([Circled texts: the pause header](circled-text.md#pause-header)), the other two `IconTextHeader`s (`0x001e77a0`), at y 0.22, 0.46 and 0.68 (16:9: 0.18, 0.42, 0.64), x 0.5, box width 0.5; built with "Current Objectives" (`0x108`), "Bonus Objectives" (`0x107`) and "Overview" (`0x106`), their texts swapped per screen (the top one shows the mission's title on the grid, "OPTIONS" `0x116` on Options, "CONTROLS" `0x173` on Controls) |
 | item grid | rows of 3 and 4 items (3 and 3 in `level95`, the hangout, and in Rumble levels), centred on x 0.5, first row at y 0.86, font scale 1.15, grey `0x005fd320`, font slot 3, a `" : "` after every item but the last of a row |
 | usage line | centred at (0.5, 0.97) |
 | Yes/No box | the question at (0.26, 0.55), the answers at (0.6, 0.75) (`0x0050ee10`-`0x0050ee1c`) |
-
-**Runtime check** (screen fractions turned into GUI units): the grid's rows at y 0.86 and 0.91, the usage line at 0.97,
-the quit question's left edge at x 0.26 and its "Yes/No" at (0.60, 0.75).
 
 **16:9** (device flags `0x04`): the background becomes 1.4 wide and 1.1 high (0.9 high when flag `0x02` is also set)
 and is drawn with anchor 2 (`0x001a21e8`). Confirmed (code) at `0x001ddcf8`.
 
 ### The items
+
+Confirmed (code) at the addresses cited unless a line says otherwise.
 
 The grid items (`0x001dbee0`), each with the code `PauseMenu_SelectItem` acts on. Texts are global strings
 ([GUI: strings](gui.md#strings)); the names here are their English text:
@@ -129,15 +426,18 @@ The grid items (`0x001dbee0`), each with the code `PauseMenu_SelectItem` acts on
 | 6 | Quit (`0xfd`) | Quit | no |
 
 A Rumble level's grid reads Rules : Options : Controls / Replay : Resume : Quit (`PauseMenu_Open`
-`0x001dc56c`-`0x001dc5a4`, confirmed (code); confirmed (runtime) in the `level102` War Party, 2026-10-21). The
-first item is selected when the menu opens. Confirmed (code); the story order and look confirmed (runtime).
+`0x001dc56c`-`0x001dc5a4`). The first item is selected when the menu opens. Confirmed (code); PCSX2 showed the same
+grids ([How this was checked](#how-this-was-checked)).
 
 ## Behaviour
 
-Every claim in this section is confirmed (code) at the address it cites unless its line says it is inferred or
-confirmed (runtime).
+Every claim in this section is confirmed (code) at the address it cites unless its line says it is inferred; each
+subsection says so in its first line. What was also seen in PCSX2 is listed under
+[How this was checked](#how-this-was-checked).
 
 ### Pausing
+
+Confirmed (code) at the addresses cited unless a line says otherwise.
 
 **When.** Mode 1's update ([Level loading](level-loading.md)) checks each player with a pad record (per-player
 `+0x1b` set): START pressed (pad mask `0x800`), or the game state's `+0x11c` set (the Options menu requested by
@@ -170,6 +470,8 @@ the menu's `Update`. It always returns "stay"; the menu pops the mode itself. Co
 
 ### Opening the menu
 
+Confirmed (code) at the addresses cited unless a line says otherwise.
+
 `PauseMenu_Open` (`0x001dbee0`), confirmed (code):
 
 - tints both views' screen effects ([Graphics](graphics.md#screen-effects)) to **black over 1.4 s** (`0x0018c988(1.4,
@@ -190,21 +492,22 @@ When the game state's `+0x11c` is set, it opens straight onto the Options screen
 `0x001dfc80`), in index order **(150, 50, 50)** red, **(50, 150, 50)** green and **(50, 50, 150)** blue
 (`0xff323296`, `0xff329632`, `0xff963232`), each blended linearly to the next, blue back to red, over
 **5,000 ms** (`0x0050ee88`), forever; the alpha
-rises from 0 to 255 over the first 3,000 ms. Confirmed (code); the order confirmed (runtime, 2026-10-21: about 3.6 s
-after START the background is mostly green (red blending into green) in `level99` checkpoint 1 and in the `level102`
-War Party alike, where blue would come first if the order ran the other way).
+rises from 0 to 255 over the first 3,000 ms. Confirmed (code).
 
 ### The top header {#the-top-header}
 
+Confirmed (code) at the addresses cited unless a line says otherwise.
+
 The header above the grid is the menu's one `CircledTextHeader`; its parts, text rules, drawing and layout per video
-mode are on [GUI: the pause header](gui.md#circled-text-header). What the pause menu feeds it (`PauseMenu_Open`,
+mode are on [Circled texts: the pause header](circled-text.md#pause-header). What the pause menu feeds it (`PauseMenu_Open`,
 `0x001dbee0`), confirmed (code):
 
 - **Text:** the game state's mission title (`+0x134`), or the Rumble mode's title in a Rumble level; the subtitle is
   the level's name.
-- **Drawing:** on the grid only the top header is drawn, through `RenderColoured` in grey `0x005fd320` (80, 80, 80)
-  with the menu's fade alpha (`PauseMenu_Render`, `0x001df700`); that colour reaches only the hidden label, so the
-  circles keep their colours and the title and subtitle stay grey 178.
+- **Drawing:** after the open screen (Options, then Controls or Stats) come the three headers, the top one first; on the
+  grid only the top header is drawn, through `RenderColoured` in grey `0x005fd320` (80, 80, 80) with the menu's fade
+  alpha (`PauseMenu_Render`, `0x001df700`); that colour reaches only the hidden label, so the circles keep their colours
+  and the title and subtitle stay grey 178.
 - **Circle colour:** all three circles take the colour `PauseMenu_GetLevelColour` (`0x001db928`) gives the current
   level's number (the level record's `+0x04`), from the table below, tested in order, the first list that holds the
   level deciding. The header then turns its last circle red. With gold the menu also asks for black letters, which the
@@ -220,6 +523,8 @@ mode are on [GUI: the pause header](gui.md#circled-text-header). What the pause 
 
 ### Input
 
+Confirmed (code) at the addresses cited unless a line says otherwise.
+
 The grid ([OptionGrid](gui.md#widget-classes)) passes every command to `PauseMenu_OnCommand` (`0x001dee00`) first.
 Commands 0-5 are up, down, left, right, accept and back. Nothing is taken while closing (`+0x1b7c`, `+0x1b80`), and
 while the Yes/No box is open every command goes to it (`0x001ded68`: up and down play cue `0xe`, accept cue 8, left
@@ -227,8 +532,7 @@ and right move between Yes and No). Confirmed (code). Without an item's screen o
 
 - **left / right / up / down** move in the grid (the grid's own handling);
 - **accept** (cross): cue 8, set `+0x1b88` and run `PauseMenu_SelectItem` with the selected code;
-- **back** (triangle): cue `0xf`, then **resume** (`+0x1b80` = 1). Confirmed (runtime: triangle on the grid resumed
-  the game).
+- **back** (triangle): cue `0xf`, then **resume** (`+0x1b80` = 1).
 
 With an item's screen open, back closes the screen (`0x001de488`) and returns to the grid; up and down move the
 screen's selection `+0x3a74` (cue 4, or `0xe` at an end), and accept acts on it. **START** closes the menu from
@@ -236,13 +540,15 @@ anywhere once 1,500 ms (`0x0050ee8c`) have passed since it opened (`+0x3ba4`). C
 
 ### The items' screens
 
-`PauseMenu_SelectItem` (`0x001de6c0`), confirmed (code); each confirmed (runtime) by a screenshot:
+Confirmed (code) at the addresses cited unless a line says otherwise.
+
+`PauseMenu_SelectItem` (`0x001de6c0`), confirmed (code); each screen was also seen in PCSX2:
 
 - **Objectives** (0): the three headers stacked, the selected one expanded to its list; up and down choose the header
   (selection 0-2, starting at 0, or 2 in a Rumble level). An empty list shows "None" (`0x109`, `0x001dd0b8`). The
   lists are the checklists `HUDSetObjective` fills ([HUD: objectives](hud-messages.md#objectives-hudsetobjective)).
   Usage line `0x19` (up/down select, triangle back). Selected header gold (current) or purple (bonus), the others grey.
-- **Stats** (1): only when the Stats screen is available (`+0x3bb8`): the character's portrait, the name banner, four
+- **Stats** (1): only when the Stats screen is available (`+0x3bb8`): the Warrior's name and face, four
   bars (Strength `0xf3`, Stamina `0xf4`, Health `0xf5`, Rage `0xf6`) and a description paragraph
   ([The Stats screen](#stats-screen)). Otherwise nothing opens.
 - **Options** (2): opens the Options menu (`0x0062a1a0`, `OptionMenu.cpp`) inside the pause menu, header "OPTIONS"
@@ -262,7 +568,8 @@ anywhere once 1,500 ms (`0x0050ee8c`) have passed since it opened (`+0x3ba4`). C
   Mode (`0x110`) and To Hangout or To Main Menu.
 
 **The Yes/No box** (`0x001d6738`, `0x001d6910`): the question, then "Yes" (`0x3b`) "/" "No" (`0x3c`), **No selected**
-(confirmed (runtime)). Yes calls `PauseMenu_OnConfirm` with 2, No with 3, back with 4; No and back close the box
+(inferred from the PCSX2 picture; the write that selects it is not traced). Yes calls `PauseMenu_OnConfirm` with 2, No
+with 3, back with 4; No and back close the box
 (vtable `+0xcc`, `0x001df5e8`, clearing the quit and restart choices). Yes, story: Quit sets `+0x1b70` and closes
 (`0x001db918`); a restart closes (`0x004e8718`; the choice was set when the box opened); quitting the second player
 runs `0x001df3a8` (the menu stays open). Yes, Rumble: `0x001df448`, `0x001df4c8` or `0x001df4b0` set the Rumble quit
@@ -274,6 +581,8 @@ missions played after the hangout opens is inferred.
 
 ### The Options screen {#options}
 
+Confirmed (code) at the addresses cited unless a line says otherwise.
+
 The Options menu (`OptionMenu.cpp`, object `0x0062a1a0`) shows a list of seven page titles; accepting one replaces
 the list with that page, whose items are edited in place. The names below are ours, each with its global string id
 ([GUI: strings](gui.md#strings)); the values each item writes, and their defaults, are on
@@ -283,7 +592,10 @@ default video mode (device flags `0x01`, [Coordinates](hud.md#coordinates)).
 
 **The title list.** Seven titles, left-aligned (alignment 4) at x **0.26**, y **0.30 + 0.055 × i** (`0x0050ed94`,
 `0x0050ed98`, `0x0050ed9c`), in `big_font` (font slot 6) at size **1.3** (`0x0050eda4`); the selected title in
-`0x005fd310`, the others in `0x005fd320` (`OptionMenu_Render` `0x001da880`). The first is selected on open.
+`0x005fd310`, the others in `0x005fd320` (`OptionMenu_Render` `0x001da880`). The first is selected on open. Up and
+down move (cue 4, `0xe` at an end), left and right are refused (cue `0xe`), accept opens the selected page (cue 8)
+after remembering its values (`OptionPage_BeginEdit`) and back (cue `0xf`) closes Options (`OptionMenu_OnCommand`
+`0x001da3f8`, whose jump table `0x005560f0` holds one case per command). Confirmed (code).
 
 | i | Page (string) | Items, top to bottom |
 | --- | --- | --- |
@@ -297,16 +609,19 @@ default video mode (device flags `0x01`, [Coordinates](hud.md#coordinates)).
 
 **Items.** Every item has a label (size 1.0, font slot 3, `0x005fd310` when selected and `0x005fd320` otherwise,
 `OptionPage_Render` `0x001d62d8`); the single-item pages and the brightness bar scale their label to **1.3**
-(`OptionItem_SetLabelScale`). Up and down move between a page's items (cue 4, `0xe` at an end; the first item is
-selected), left and right go to the item. The pages with several items show the page's name again as a heading
-(`OptionPage_SetDescription`: size 1.0 × 1.3, font slot 3) at **(0.26, 0.30)** (`0x0050edc4`, `0x0050edc8`):
-Camera, Audio and Vibration.
+(`OptionItem_SetLabelScale`). Up and down move between a page's items (cue 4, `0xe` at an end), left and right go
+to the item (`OptionPage_OnCommand` `0x001d5dc8`, jump table `0x00556080`). Each page keeps its selected item (`+4`)
+while Options is open: `OptionPage_Init` sets it to the first item when the menu opens, and opening the page again
+does not, so a page reopens on the item it was left on. Confirmed (code). The pages with several items show the
+page's name again as a heading (`OptionPage_SetDescription`: size 1.0 × 1.3, font slot 3) at **(0.26, 0.30)**
+(`0x0050edc4`, `0x0050edc8`): Camera, Audio and Vibration.
 
 - **On/off choices** (`YesNoBox`, the answers `0x12b` / `0x12c` with a "/" between, in font slot 4): the label at
   (x, y), the answers at (x + **0.4**, y) (`0x0050ed78`), the first answer at the given point and each next one after
   the previous one's width. The chosen answer is drawn in `0x005fd310`, the other in `0x005fd320`. Left picks the
   first answer, right the second (cue 4, `0xe` when it was already chosen) and calls the item's setter **at once**
-  with the selection (0 first, 1 second; `YesNoBox_OnCommand` `0x001d6c10`); every setter turns its option on for
+  with the selection (0 first, 1 second; `YesNoBox_OnCommand` `0x001d6c10`), also when the answer was already chosen,
+  so a refused left on an already-on vibration rumbles the pad again; every setter turns its option on for
   selection 0. The answer first shown is the current value. Camera items: x 0.26, y **0.36 + 0.045 × i**
   (`0x0050ed84`, `0x0050eda0`), their answers at x 0.66 (0.76 in German, `0x0050edd0` = 0.1); Vibration: the same
   rows from y 0.36 (`0x0050ed88`), answers at x 0.66.
@@ -314,21 +629,56 @@ Camera, Audio and Vibration.
   (`+ 0x0050ed7c` = 0.06; for Restore Default in German `0x0050ed80` = 0.11). Subtitles applies at once like the
   above. **Video** and **Restore Default** are in confirm mode (`+0x4c8`): left and right only move the choice, and
   accept calls the setter with 2 (first answer) or 3 (second). Video's first answer means Normal (video mode 0) and
-  the second Wide (mode 1); its starting answer comes from the device (slot `+0xd4`, the widescreen state, inferred).
-  Restore Default always starts on **No** (`+0x4c0` = 1).
+  the second Wide (mode 1); its starting answer comes from the device's slot `+0xd4`, the widescreen state: inferred
+  from `RwDevice_SetWidescreen` (`0x00194e28`), which stores the mode it is given at `+0x45c` and then calls the
+  same slot to choose between the 4:3 and the 16:9 aspect.
+  Restore Default starts on **No** (`+0x4c0` = 1) when the menu opens and again each time its page is opened
+  (`OptionMenu_OnCommand`'s accept on title 6, through the item pointer `0x0050edd4`). Confirmed (code).
 - **Pro Logic II**: an on/off choice at (0.26, 0.60) with answers at (0.66, 0.60) (`0x0050edcc`).
+- **Auto Adjust P1 / P2 Cam** reach one camera each. `Options_SetAutoAdjust` (`0x00418aa8`) writes the game state's
+  `+0x448 + pad × 4` and the byte `0x0050b240 + pad`; `Cam_Follow_AutoFollow` (`0x00129c78`) reads that byte, and the
+  second per-pad byte `0x0050b248` beside it, at the index the camera's own slot `+0x27c` returns
+  (`0x00129de4`-`0x00129e30`), and runs the auto-centre rule only when both are set
+  ([Camera](camera.md#heading)). Confirmed (code). That the index is the camera's pad is inferred from the setter,
+  which writes the same bytes by the pad.
 - **Volume bars** (`StatBarItem`, Music then SoundFX): label at (0.26, 0.37) and (0.26, 0.455), bar at (0.26, 0.405)
-  and (0.26, 0.49) (`0x0050edac`-`0x0050edc0`), width **0.54** (`0x0050eda8`). The bar is a sheet-12 rectangle-0
-  frame centred at bar x + 0.27, with a white fill over a (21, 21, 21) back bar, both 0.025 high (`0x0050ed2c`),
-  drawn from bar + (-0.004, +0.004) (`StatBarItem_Setup` `0x001d6ef8`). Left and right step the value by **0.05**
-  within 0-1 (cue 4, `0xe` at an end) and call the volume setter each step; the value starts at the game state's
+  and (0.26, 0.49) (`0x0050edac`-`0x0050edc0`), width **0.54** (`0x0050eda8`). What is drawn
+  (`StatBarItem_RenderColoured` `0x001d73b0`, through `HudBar_Draw` `0x001a1138`): no frame, and two strips of
+  part_page0's rectangle 55 (sprite word `0x30036`), each over its meter's width less the left cap's width.
+  `HudBar_Draw` takes that width as the cap rectangle's (56) UV width and centres the back on the meter, so the
+  strips start half a cap's width in. Confirmed (code). Coney takes the cap's width from the bar's height instead, as
+  its [rage meter](hud.md#the-rage-meter) does, and starts the strips at the cap's end; the pictures of the Audio
+  page match the original's within a pixel. First a dark back strip, (21, 21, 21) at full alpha even
+  while the menu fades, over that whole width; then the fill strip over value × that width, in the item's label colour:
+  `0x005fd310` for the selected item and `0x005fd320` for the others, at the menu's alpha. So on the Audio page the
+  selected bar's fill is light and the other's dim. The caps and the meters' bodies are there but invisible:
+  `StatBarItem_Setup` (`0x001d6ef8`) clears both meters' `+0x54` and `+0x58`, which makes `HudBar_Draw` draw them with
+  alpha 0. The size and place drawn are the ones the bar's first update gives it (`StatBarItem_Update` `0x001d7270`,
+  which runs before the bar is first drawn): its height is the height of a sizing sprite (sheet 12 rectangle 0, the
+  item's width in overlay units, its height from the rectangle's shape, never drawn) less `0x0050ed30` (0.04; 0.025 with
+  device flag `0x02` alone, 0.055 with `0x02` and `0x04`; written by `OptionMenu_Open`), and its left end is at bar x −
+  0.001 (−0.004 from `StatBarItem_Setup`'s `0x0050ed28`, +0.003 from `0x0050ed38`) on the bar's y (+0.004 at set-up,
+  −0.004 from `0x0050ed34`). The 0.025 height and white fill `StatBarItem_Setup` gives the meters never reach the
+  screen. Confirmed (code). Left and right step the value by **0.05** within 0-1 (cue 4, `0xe` at an end) and call the
+  volume setter on every press, an end's refused one too
+  (`StatBarItem_OnCommand` `0x001d7490`); the value starts at the game state's
   music (`+0x57ac`) or SoundFX (`+0x57a8`) volume.
 - **The brightness bar** (`LightingItem`): label at (0.26, 0.29) (`0x0050ed6c`, `0x0050ed70`), bar at (0.26, 0.50)
   (`0x0050ed74`), width 0.54, value = brightness / 100 (the game state's byte `+0x57a4`, 0-100). Left and right step
   the bar by 0.05 and the brightness by **5** (`0x0050ecfc`), clamped 0-100 (`OptionMenu_AddBrightness`). Two
   squares 0.09 × 0.065 (sheet 12 rectangle 6) at (0.68, 0.38) and (0.74, 0.38) (`0x0050ed48`, `0x0050ed4c`, read by
   `LightingItem_Update` `0x001d7d10`), the first tinted by the brightness value, the second black; a hint
-  (`0x118`) in `0x005fd320`, size 1.0, font slot 3, at the label + (0, 0.06) (`0x0050ed3c`, `0x0050ed40`).
+  (`0x118`) in `0x005fd320`, size 1.0, font slot 3, at the label + (0, 0.06) (`0x0050ed3c`, `0x0050ed40`). The squares
+  and the hint are drawn opaque while the menu fades, unlike the labels and the bar's fill: `LightingItem_RenderColoured`
+  (`0x001d7e28`) gives the first square alpha `0xff`, `LightingItem_Setup` (`0x001d7958`) sets the second to
+  `0xff000000`, `BaseWidget_Render` (`0x001a2660`) draws each at its own alpha, and the hint's MessageHUD is never
+  given the menu's (only the page's description is, in `OptionPage_Render`). Confirmed (code).
+
+**Holding against an end.** Every refused move (a title or item at an end, a choice already chosen, a bar at 0 or 1)
+sets the menu's flag `+0x45cc`, and every move clears it (`OptionMenu_OnCommand`, `OptionPage_OnCommand`,
+`YesNoBox_OnCommand`, `StatBarItem_OnCommand`, `LightingItem_OnCommand`); `OptionMenu_Update` reads it to run the pad
+through the pass without auto-repeat (`MenuInput_PadPlainPass`, [GUI](gui.md)) instead of the repeating one, so a
+direction held against an end is refused once. `OptionMenu_Open` clears it. Confirmed (code).
 
 **Sounds.** Front-end cues ([Front end](frontend.md#input)): 4 a move, `0xe` a move refused, 8 an accept (a title
 opened, a page closed), `0xf` back. The pause menu plays none of its own while Options is open (`PauseMenu_PlayCue`
@@ -336,26 +686,40 @@ opened, a page closed), `0xf` back. The pause menu plays none of its own while O
 bars can be heard (`OptionMenu_Update` `0x001da658`); turning a pad's vibration on gives a 500 ms rumble of strength
 120 (`0x0050ed50`, `0x0050ed54`).
 
-**Back.** Back on a page returns to the title list (cue `0xf`); on every page but Vibration and Restore Default it
-first restores the values the page had when it was opened (`OptionPage_Revert`, each item's slot `+0xa8`, which
-calls the setter again), so **only accept keeps a change**: accept on a page item closes the page and keeps every
-value (`OptionPage_OnCommand` `0x001d5dc8`). Back on the title list closes Options and returns to the pause grid.
+**Back.** Back on a page returns to the title list (cue `0xf`). On Vibration it first stops the preview rumble
+(the pad `0x0050ecf0`'s motors set to 0). On every page but Restore Default it then restores the values the page had
+when it was opened (`OptionMenu_RevertPage` `0x001da9d0`, then `OptionPage_Revert`: each item's slot `+0xa8`, which
+calls the setter again, so putting a pad's vibration back on rumbles it), so **only accept keeps a change**: accept
+on a page item sends the item accept (a confirm-mode item applies its answer), plays cue 8, closes the page and
+keeps every value (`OptionPage_OnCommand` `0x001d5dc8`). Back on the title list closes Options and returns to the
+pause grid. Confirmed (code): the back case at `0x001d5f74` stops the preview and then falls through to the revert,
+which only Restore Default (`+8` = 6) skips.
+
+**Restore Default.** Yes sets the defaults ([save.md](save.md#options)) and the flag `0x0050ed14`; the next
+`OptionMenu_Update` closes and reopens the menu (slots `+0xb0` and `+0xa8`), which puts the title list back on its
+first title and every page on its first item. No clears the flag. Confirmed (code).
 
 **Other video modes.** `OptionMenu_Open` rewrites the globals for the device flags (`*0x0050cdb4`): with 16:9
 (`0x04`, without `0x02` or `0x08`) the titles, the page heading and the brightness label start at y 0.24, the Camera
 and Vibration rows at 0.30, the squares are at y 0.34 and the volume rows at 0.31 / 0.345 / 0.395 / 0.43; with flag
 `0x08` (without `0x02`) the titles start at 0.17 and step 0.075, the rows step 0.065 from 0.25 and the squares are
-1.2 × as big, at y 0.34; with flag `0x02` without `0x04` the titles start at 0.32 and step 0.045, the rows step 0.04
-from 0.37 (answers 0.12 further right) and the squares are 0.7 × as big. Confirmed (code); the meaning of flags `0x02`
-and `0x08` is not on [Graphics](graphics.md#video-mode).
+1.2 × as big, at y 0.34; with flag `0x02` without `0x04` the titles start at 0.32 and step 0.045, the brightness
+label is at 0.33, the rows step 0.04 from 0.37, the Music label and bar are at 0.38 and 0.415, the Camera answers
+are 0.12 further right (`0x0050edd0`, replacing German's 0.1; the other answers stay at + 0.4) and the squares are
+0.7 × as big; with `0x02` and `0x04` together only the squares (0.7 ×), the Camera answers (+ 0.1) and the back bar's
+offset change. Confirmed (code); the meaning of flags `0x02` and `0x08` is not on
+[Graphics](graphics.md#video-mode).
 
 ### The Controls screen {#controls-layout}
+
+Confirmed (code) at the addresses cited unless a line says otherwise.
 
 `ControlMenuHUD` (`ControlMenuHUD.cpp`) shows two entries, Controller (`0x130`) at (0.26, 0.29) and Tutorial
 (`0x131`) 0.06 below, size 1.3 (`0x001e4a30`). Each page shows its title at **(0.26, 0.29)** (`0x0050eee4`,
 `0x0050eee8`), size 1.3, `0x005fd310`, font slot 4 (`ControlPage_Init` `0x001e3520`). Confirmed (code).
 
-**Controller page** (`ControllerPage_Init` `0x001e4130`, `_Update` `0x001e46c0`). The pad picture (sprite word
+**Controller page** (`ControllerPage_Init` `0x001e4130`, `ControllerPage_Update` `0x001e46c0`). The pad picture (sprite
+word
 `0x18f0000`, depth 11,000) is centred at (0.5, **0.58**) and sized **0.51 × 0.45** (`0x0050f0e8`, `0x0050f0e0`,
 `0x0050f0e4`, written by the init). Fourteen labels, each a markup text of size 1.0, colour `0x005fd310`, font slot
 3, placed from the table at `0x0050ef20` (fourteen `{x, 0, y, 0}` entries copied to `0x0063ed50`): seven on the left
@@ -380,9 +744,8 @@ cue `0xe`; back plays `0xf` and returns to the entries (`0x001e4618`).
 **(0.41, 0.35)** (`0x0050eef0`, `0x0050eef4`) of the **23 tips**, in order: tip *i* has the title string `0x145` +
 *i* and, as its description, the text `0x15c` + *i*. Each title and text is a `ScrollingTextWidget` 0.3 wide **centred**
 on that x (`ScrollingTextWidget_Update` `0x001e32a0` places the text at x − width / 2 + offset, the offset 0), so the
-text starts at 0.26 (confirmed (runtime): in PCSX2 at `level99` checkpoint 1 the first tip starts where the "Tutorial"
-title does, at 0.286 of the frame with the font's own left margin; the memory at `0x0050eef0` reads 0.41, 0.35, 0.53),
-font slot 3, size 1.0, wrapping at **0.53** (`0x0050eef8`; the first argument of `ScrollingTextWidget_SetText` is the wrap
+text starts at 0.26 (PCSX2 agrees: [How this was checked](#how-this-was-checked)), font slot 3, size 1.0, wrapping at
+**0.53** (`0x0050eef8`; the first argument of `ScrollingTextWidget_SetText` is the wrap
 width that `MessageHUD_ReadAutoIndent` stores). A title is drawn in `0x005fd320`, and in **(134, 26, 26)** while
 selected; the selected tip's text unfolds under it (the menu's description reveal: 550 ms delay, step 0.25 per
 update, offset 0.01 below, `0x0050eefc`). The menu shows **8** tips at once (`0x0050ef00` and `0x0050ef10`, both 8
@@ -393,16 +756,25 @@ down move with the menu's own input and cues; back plays `0xf` and returns to th
 
 ### The Stats screen {#stats-screen}
 
-The Stats item shows the pausing player's Warrior: a portrait, a name banner, four bars and a description. The screen
+Confirmed (code) at the addresses cited unless a line says otherwise.
+
+The Stats item shows the pausing player's Warrior: his name, his face, four bars and a description. The screen
 is a `GameMenu` subclass at menu `+0x3bb0` ([function index](#fn-after-controlmenuhud)), set up on every pause by
-`PauseStats_Setup` (`0x001e5618`) and placed by `PauseStats_Update` (`0x001e6778`). Confirmed (code) unless marked.
+`PauseStats_Setup` (`0x001e5618`) and placed by `PauseStats_Update` (`0x001e6778`).
+
+**Seen at runtime** (from the `street-end-run` state, Rembrandt on normal: Start, right, cross through the pad): the
+screen matches the layout below. The red picture with the black shadows is his **name** (the widget at `+0x7b0`), the
+picture to its lower left his **face** (`+0xab0`); the four labels start at the name's left edge, right of the face;
+the bars' fills measure Strength 0.34 (normal: (115 − 75) / (192 − 75)), Stamina 0.57, Health 0.35 and Rage 0.52
+(78 / 150); the description is five lines, its widget (menu `+0x3bb0` + `+0x1b70`) reading wrap width 0.55, line
+window 0-5 and 4 line breaks. Confirmed (runtime), run r-20261026-pause-stats-screen.
 
 **Who and whether.** The human is the pausing player's (game state `+0x228` + 4 × the player). Its portrait kind
 (`Human_GetPortraitKind`, `0x00229570`, by character type) picks the pictures and the text; only kinds 0-8, the nine
 Warriors below, have a screen. Any other kind (Ash, Lynx, the extra soldier, anyone else) makes it unavailable, and the
 Stats item then opens nothing:
 
-| Kind | Character types | Warrior | Portrait sprite word | Banner sprite word | Description string |
+| Kind | Character types | Warrior | Name sprite word (`+0x7b0`) | Face sprite word (`+0xab0`) | Description string |
 | --- | --- | --- | --- | --- | --- |
 | 0 | 5, 7, 8, 9, 10 | Swan | `0x310000` | `0x1970000` | `0xf2` |
 | 1 | 15, 17 | Cochise | `0x220000` | `0x1920000` | `0xec` |
@@ -417,17 +789,50 @@ Stats item then opens nothing:
 The other kinds: 9 (types 38-40, Ash), 10 (43, 44), 11 (45-48, Lynx), 12 (any type without a crew slot) or 20 + the
 human's slot byte `+0x1b0`. The Warrior names come from [Characters](../references/characters.md).
 
+Both words are sheet-table records (high half) with rectangle 0: the widgets are `BaseWidget`s with instance −1,
+which read the high half as a record ([GUI: widgets](gui.md#widget-classes)). Which picture is which: the `+0x7b0`
+widget is tinted red (150, 30, 30) and drawn over two black shadows, the treatment of a title, and it is the name at
+runtime (above); the `+0xab0` widget is white and is the face. Earlier versions of this page called them portrait
+and banner the other way round.
+
 **Layout** (default video mode, GUI coordinates; base B = (0.5, 0.5), `0x0050f110`/`0x0050f118`; a size factor k =
 1.0, `0x0050f104`):
 
 | Part | Where and how |
 | --- | --- |
-| portrait (`+0x7b0`) | left edge (anchor 1) at B + (−0.08, −0.2) = (0.42, 0.3), size 0.09 × k (`0x0050f130`), depth 15,000, tinted (150, 30, 30) (`0x0063ee30`) |
-| two shadows (`+0x8b0`, `+0x9b0`) | the portrait's sprite in black at alpha 128, depth 11,000, offset (+0.0025, +0.004) and (−0.001, −0.002) (`0x0050f2a8`-`0x0050f2b4`) |
-| banner (`+0xab0`) | centred at B + (−0.17, −0.099) = (0.33, 0.401), size 0.3 × k (`0x0050f150`), white, depth 11,000 |
-| four bars (`HudGenericBar`, `+0xbb0` + `0x3f0` × i) | left edge at B + (0.14, −0.11 + 0.05 i) = (0.64, 0.39 / 0.44 / 0.49 / 0.54), 0.22 × 0.025 (× k), fill (150, 30, 30) (`0x0063ee38`), back (37, 37, 37), sprite word `0x30036` (`menu_system` rectangle 54) |
-| the bars' labels | left-aligned at x 0.38 (`0x0050f2b8`), y B + −0.08, −0.03, 0.02, 0.07 = 0.42, 0.47, 0.52, 0.57 (`0x0050f178`, `0x0050f1a8`, `0x0050f1d8`, `0x0050f208`): Strength `0xf3`, Stamina `0xf4`, Health `0xf5`, Rage `0xf6` |
-| description (`+0x1b70`) | a markup text at B + (−0.24, 0.1) = (0.26, 0.6), size 1.0, grey `0x005fd310`, font slot 3; then `MessageHUD_ReadAutoIndent` (`0x001bb390`) with 0.55 (pause.md's earlier "reveal 0.55 s"; meaning not traced) |
+| name (`+0x7b0`) | left edge (anchor 1) at B + (−0.08, −0.2) = (0.42, 0.3), size 0.09 × k (`0x0050f130`), depth 15,000, tinted (150, 30, 30) (`0x0063ee30`) |
+| two shadows (`+0x8b0`, `+0x9b0`) | the name's sprite in black, depth 11,000, offset (+0.0025, +0.004) and (−0.001, −0.002) (`0x0050f2a8`-`0x0050f2b4`); set up at alpha 128, but drawn **opaque**: before each draw `PauseStats_Render` sets every part's alpha to the menu's (`BaseWidget_SetAlpha`, `0x001a2638`, writes the colour's alpha byte `+0xb7`), replacing the 128 (confirmed (code); that it shows is inferred from the runtime shot's darker outline) |
+| face (`+0xab0`) | centred at B + (−0.17, −0.099) = (0.33, 0.401), size 0.3 × k (`0x0050f150`), white, depth 11,000 |
+| four bars (`HudGenericBar`, `+0xbb0` + `0x3f0` × i) | left edge at B + (0.14, −0.11 + 0.05 i) = (0.64, 0.39 / 0.44 / 0.49 / 0.54), 0.22 × 0.025 (× k), fill (150, 30, 30) (`0x0063ee38`), back (37, 37, 37), sprite word `0x30036`: resource instance 3, `part_page0`, rectangles 54 (body), 55 (fill), 56 and 57 (end caps), drawn as the rage meter is ([the draw](hud-bar.md#draw), [HUD: which sheet](hud.md#scripted-bars); `HudBar_Draw`, `0x001a1138`, reads the high half as an instance, not a sheet-table record) |
+| the bars' labels | each bar's label (a markup text of the `HudGenericBar`, font slot 3, grey `0x005fd310`, size 1.0), anchored at x 0.38 (`0x0050f2b8`), y B + −0.08, −0.03, 0.02, 0.07 = 0.42, 0.47, 0.52, 0.57 (`0x0050f178`, `0x0050f1a8`, `0x0050f1d8`, `0x0050f208`; `HudGenericBar_SetLabelPos`, `0x001c2520`), **plus the bar's label offset (0.04, −0.035)** (`0x0050e960` / `0x0050e964`, copied to bar `+0x3d0` / `+0x3d8` by `HudGenericBar_Setup` `0x001c1f80` and added by `HudGenericBar_Update` `0x001c22e8`): drawn at (0.42, 0.385 / 0.435 / 0.485 / 0.535), left-aligned (`HudGenericBar_SetLabelAlign(bar, 0)`: `Font_Draw` flags 0). So the labels start at the name's left edge (0.42), clear of the face (centred at 0.33). Strength `0xf3`, Stamina `0xf4`, Health `0xf5`, Rage `0xf6` |
+| description (`+0x1b70`) | a markup text at B + (−0.24, 0.1) = (0.26, 0.6), size 1.0, grey `0x005fd310`, font slot 3, paged and word-wrapped at 0.55 ([below](#stats-description)) |
+
+<span id="stats-description"></span>**The description** (`+0x1b70`, a `MessageHUD`). After setting the text,
+`PauseStats_Setup` calls `MessageHUD_ReadAutoIndent(0.55, widget, 0)` (`0x001bb390`): the **wrap width** (`+0x1d4`) is
+the number of a leading `<AUTOINDENT f>` tag (the text must start with the tag's name and a space, and the number is
+read with `%f`), else 0.55. All nine descriptions (`0xea`-`0xf2`) begin with `<AUTOINDENT 0.55>` followed by `<COLOR
+B2B2B2FF>` (read over PINE, NTSC-U, English), so the width is 0.55 either way and the text is grey 178. Confirmed (code)
+for the call; the strings' tags inferred from reading them over PINE. Then it sets the widget's fields: paged `+0x1a0` =
+1, first line `+0x1a4` = 0, last line `+0x1a8` = 5, word wrap `+0x1b8` = 1 and `+0x188` = 1 (`<CR2>` / `<CRM>` allowed)
+([GUI: the markup text's fields](gui.md#markup-text-fields)). Confirmed (code) at `0x001e5618`.
+
+- **Wrapping** (`MessageHUD_WordWrap`, `0x001bac20`): each draw, words are added to a line while its measured width
+  (tags stripped) stays within 0.55; the word that would pass it starts a new line (a `<CRM>` is inserted).
+  `+0x1ac` counts the line breaks (inserted ones and the text's own `<CR>` / `<CR3` tags; a `<CRM>` or `<CR2>`
+  already in the text is not counted), so it is the line count less one. The break goes before the last space or `<`
+  written so far, so a line of one word carries the previous `<CRM>` along: an empty line, and that word joins the
+  next one even past the width. A word that holds a `>` counts as starting inside a tag, so what comes before its
+  first `>` is not measured. `MessageHUD_Draw` (`0x001bb038`) wraps when `+0x1b8` is set and clips to the window only
+  when `+0x1a0` is set too. Confirmed (code) at `0x001bac20` and `0x001bb038`.
+- **The line window** (`MessageHUD_ClipToPage`, `0x001baee0`): only the lines `+0x1a4` to `+0x1a8` **inclusive** are
+  drawn, so a page is **six lines** (0-5). The window splits the text only at `<CRM>` (`0x00554af8`), the break the
+  wrap inserts: a line the text's own `<CR>` starts stays with the window line it is in, though `+0x1ac` counts it.
+- **Paging** (`PauseStats_OnCommand` `0x001e6698`): down calls `MessageHUD_PageDown` (`0x001bb000`), which moves both
+  ends down one line while the last line `+0x1a8` is below `+0x1ac` (the index of the text's last line), so it stops
+  when the text's last line is the window's bottom line; up calls `MessageHUD_PageUp` (`0x001bafd0`), which moves both
+  up one line while the first is above 0. A move plays cue 4; a refused one `0xe`. The scroll is one line, not a page.
+  A description of six lines or fewer never moves: Rembrandt's has five (runtime, above), so up and down both refuse.
+  Confirmed (code); the window and line count confirmed (runtime), run r-20261026-pause-stats-screen.
 
 Other video modes: with device flag `0x04` alone (16:9) only B's y changes, to 0.45; flag `0x08` (not `0x02`) and the
 two `0x02` modes rewrite most offsets and set k = 0.7 (`0x02` modes), values in `0x001e5618` not listed here.
@@ -455,16 +860,17 @@ easy, 1 normal, 2 hard and above (inferred).
 
 **Input** (`PauseStats_OnCommand`, `0x001e6698`): up and down page the description (`MessageHUD_PageUp` /
 `_PageDown`, cue 4, or `0xe` when it cannot move), left and right only play `0xe`, back plays `0xf` and closes the
-screen. The screen waits for its pictures (`PauseStats_IsReady`: both portrait batches resident, or 10 s) before it is
+screen. The screen waits for its pictures (`PauseStats_IsReady`: both picture batches resident, or 10 s) before it is
 placed, and is drawn with the menu's fade alpha (`PauseStats_SetAlpha`).
 
 ### Leaving {#leaving}
 
+Confirmed (code) at the addresses cited unless a line says otherwise.
+
 **Closing** (`PauseMenu_FadeOut`, `0x001ddbc0`): once `+0x1b80` is set the menu's alpha falls from 255 to 0 over
 **1,500 ms** (`0x0050ee80`); 500 ms (`0x0050ee84`) after it reaches 0, `+0x1b7c` is set; when the last accept or back
 sound has ended, `PauseMenu_Update` calls `PauseMenu_Toggle`, which pops mode 0xa. The screen effects keep their tint
-until the mode is gone (the menu writes `+0x214` of both managers, not traced). **Runtime check:** after triangle the
-mode stack still held the pause mode at 1.5 s and was back to mode 1 at 3.5 s; the screen was black at 1.5 s.
+until the mode is gone (the menu writes `+0x214` of both managers, not traced).
 
 **Then `PauseMenu_Toggle`** (`0x00154f28`), confirmed (code):
 
@@ -484,6 +890,8 @@ mode stack still held the pause mode at 1.5 s and was back to mode 1 at 3.5 s; t
 What a reload restores from `SetCheckPoint` is on [Scripts](scripting.md#run-next-mission).
 
 ### The mission-failed screen
+
+Confirmed (code) at the addresses cited unless a line says otherwise.
 
 `HUDLaunchMissionFailed(reason)` (`MissionFailed_Launch`, `0x001d1f88`) sets `W_GameState + 0x118` = 2, stores the
 reason (`0x001d1fb8`) and pushes **mode 0xc** (`0x00155408`), whose `Enter` (`0x0015cae0`) switches the task manager to
@@ -507,266 +915,6 @@ What each item does goes through `runNextMission(0)` and the reload above ([Scri
 the items' actions are in `MissionFailedMenu_OnCommand` (`0x001d2a10`) and the Yes/No callback `0x001d2018`
 ([The mission-failed menu](#fn-missionfailed)).
 
-## Function index {#function-index}
-
-Every function of the pause, options and controls menus, by source file in address order, with the name it has in Ghidra
-(ours); each is confirmed (code) at its address unless its row says otherwise. Rows link to the section that
-describes the behaviour where there is one. The files and ranges are from the [Source map](source-map.md#gui).
-
-### The Armies of the Night game-over screen {#an-game-over}
-
-A `GameMenu` (vtable `0x0053b1b0`, input `0x0053b188`, object `0x00623040`, colour `0x006239c0` = (150, 30, 30, 255))
-in `TutorialHUD.cpp`'s TU (inferred); `HUDLaunchANGameOver` and mode 0xd open it
-([HUDLaunchANGameOver](../references/bindings/hud.md#hudlaunchangameover)). Positions are GUI coordinates. Confirmed
-(code):
-
-- **Countdown phase:** the title (string `0xce`, font slot 6, scale 2.0) at (0.5, 0.45), a digit counting **9 down to
-  0, one step per 1,000 ms** (`0x0050ec0c`, scale 5.0) at (0.5, 0.6), the usage line `0xd6` at (0.5, 0.8). Start
-  (`0x800`) from either player (player 2's pad record is locked at open) plays cue 8; with credits left
-  (`0x00619910`) it spends one, sets close, calls the Lua function `F1.Time` and, while credits remain, shows both
-  panels' join message; `+0x7ac`/`+0x7b0` record which players continue (alive ones). With no credit, or when the
-  count ends, both sound channels fade (`0x0018d450(2.0, ...)`) and the end phase starts.
-- **End phase:** the text `0xcf` (scale 3.0) at (0.5, 0.5), a grid of `0xdb` : `0xdc` at (0.5, 0.57), the usage line
-  `0x1c` at (0.5, 0.62), fading in over 2,000 ms (`0x0050ec28`); then accept takes item 0 (`+0x7a4`) or 1 (`+0x7a8`).
-- It closes (`ANGameOver_Toggle`) once the close flag is set and the last sound has ended.
-
-| Address | Name | What it does | Evidence |
-| --- | --- | --- | --- |
-| `0x001cede8` | `HUD_LaunchANGameOver` | calls `ANGameOver_Toggle` | confirmed (code) |
-| `0x001cee08` / `0x001cee58` | `ANGameOver_Construct` / `_Destroy` | the base plus the digit (`+0x7c0`) and title (`+0x890`) `TextWidget`s | confirmed (code) |
-| `0x001ceec0`, `0x001ceef0` | `ANGameOver_Init`, `_Shutdown` | slots `+0x90`, `+0x68`: the base's | confirmed (code) |
-| `0x001cef10` | `ANGameOver_Open` | slot `+0xa8`: patches its layout per video mode, then builds the parts above, count 9 | confirmed (code) |
-| `0x001cf358` | `ANGameOver_Close` | slot `+0xb0`: the base's close, releases the texts, unlocks player 2's record | confirmed (code) |
-| `0x001cf3a8` | `ANGameOver_OnCommand` | the input handler: accept after the fade, cue 8, item 0 or 1, close; calls `0x004229c0` on the stats object (`0x006fe490`) | confirmed (code) |
-| `0x001cf468` | `ANGameOver_Update` | slot `+0x30`: Start, credits, countdown, phases | confirmed (code) |
-| `0x001cfc78` | `ANGameOver_Render` | slot `+0x38`: the phase's parts; the end fade | confirmed (code) |
-| `0x001cfe50`, `0x001cfea0` | `ANGameOver_StaticInit`, `_GlobalCtor` | builds the object and its colour; the GCC constructor stub (list entry `0x00534114`) | confirmed (code) |
-
-### The Armies of the Night pause menu {#an-pause-menu}
-
-A `PauseMenu` subclass (vtable `0x0053b298`, input `0x0053b270`, object `0x006239d0`, colour `0x006294b0` = (170, 20,
-20, 255)), in its own TU (stub `0x001d0a88`; inferred), used in levels 60-69. Confirmed (code):
-
-| Address | Name | What it does | Evidence |
-| --- | --- | --- | --- |
-| `0x001cfec0` | `ANPauseMenu_OnConfirm` | the Yes/No callback: 2 (yes) calls the menu's slot `+0xb8`, 3 or 4 its slot `+0xc8` (targets `0x004e8248` / `0x004e8260`, not analysed) | confirmed (code) |
-| `0x001cff48` / `0x001cff98` | `ANPauseMenu_Construct` / `_Destroy` | the base plus a title `TextWidget` (`+0x5930`) and a grid (`+0x5a00`) | confirmed (code) |
-| `0x001d0010` | `ANPauseMenu_Open` | slot `+0xa8`: the pausing player's input record; title `0xd0` (font slot 6, scale 2.95) at (0.5, 0.46); usage `0x1c` at (0.5, 0.58); a grid `0xd1` : `0xd2` (scale 1.15) at (0.5, 0.535); a Yes/No box, question `0x102`, answers `0x3b` / `0x3c`, at (0.28, 0.65) and (0.73, 1.45), callback `0x001cfec0` | confirmed (code) |
-| `0x001d0448` | `ANPauseMenu_Close` | slot `+0xb0`: releases the title, grid and box | confirmed (code) |
-| `0x001d0480` | `ANPauseMenu_OnCommand` | accept: item 0 closes (resume), item 1 opens the Yes/No box and calls `0x004229c0` on the stats object; back closes; while the box is open, input goes to `0x001ded68` | confirmed (code) |
-| `0x001d0548` | `ANPauseMenu_Update` | slot `+0x30`: Start closes; places the parts; the selected item's alpha falls and rises over 2 × 1,000 ms (`0x0050ec5c`); closes through `PauseMenu_Toggle` once the last sound ends | confirmed (code) |
-| `0x001d09d8` | `ANPauseMenu_Render` | slot `+0x38`: title, grid, usage, and the box when open | confirmed (code) |
-| `0x001d0a38`, `0x001d0a88` | `ANPauseMenu_StaticInit`, `_GlobalCtor` | builds the object and its colour; the constructor stub (list entry `0x00534118`) | confirmed (code) |
-
-### The `GameMenu` base (no path string) {#fn-gamemenu}
-
-`0x001d1848`-`0x001d1d28`, in the TU that ends at the stub `0x001d2de0` (with `CircledText` and the mission-failed
-menu). The base of the story pause menu, the mission-failed and Armies of the Night game-over screens, the Options and
-Controls menus and the Rumble result screen (vtable `0x0053b4b0`, input interface `0x0053b488` at `+0x5c`). Fields:
-`+0x40` the locked pad record, `+0x60` close requested, `+0x64` input accepted (set when the fade-in ends), `+0x70`
-background (`BaseWidget`), `+0x170` title (markup text), `+0x360` grid (`OptionGrid`), `+0x430` usage line
-(`UsageInfo`), `+0x700` fade start, `+0x704` open time, `+0x708` fading, `+0x70c` title text, `+0x78c` the last
-sound. Confirmed (code).
-
-| Address | Name | What it does | Evidence |
-| --- | --- | --- | --- |
-| `0x001d1848` / `0x001d18d8` | `GameMenu_Construct` / `_Destroy` | the parts above; sound handle -1; slot `+0x60` | confirmed (code) |
-| `0x001d1958` | `GameMenu_Init` | slot `+0x90`: sets up the title text (size 1.0, grey 128) | confirmed (code) |
-| `0x001d19a8` | `GameMenu_Shutdown` | slot `+0x68`: slot `+0x98`, clears the title | confirmed (code) |
-| `0x001d19e8` | `GameMenu_ReleaseSprites` | slot `+0x98`, shared by every subclass: releases the background and the grid | confirmed (code) |
-| `0x001d1a18` | `GameMenu_SetTitle` | slot `+0xa0`: copies the text to `+0x70c` and shows it; nil clears | confirmed (code) |
-| `0x001d1aa0` | `GameMenu_Open` | slot `+0xa8`: hides the HUD for a menu and both radars, ends both players' rage mode (`Human_EndRageMode`), locks player 1's pad record (`+0x1b` = 0, `+0x1e` = 1), stamps the open and fade times, clears `+0x10`, `+0x60`, `+0x64` | confirmed (code) |
-| `0x001d1c48` | `GameMenu_Close` | slot `+0xb0`: slot `+0x98`, both sound channels back (`0x0018d450(0, channel)`), unlocks the pad record | confirmed (code) |
-| `0x001d1cd8` / `0x001d1d08` | `GameMenu_IsBackgroundLoaded` / `_IsSoundDone` | the background's batch is resident; the last sound has ended | confirmed (code) |
-| `0x001d1d28` | `GameMenu_Render` | slot `+0x38`: from 1,000 ms after opening (`0x0050ec7c`) fades background, title, grid and usage in over 3,000 ms (`0x0050ec78`); at the end plays the sound named at `0x00555c88`, sets `+0x64` and hides the 19 widgets at HUD `+0x137e0` (not identified) | confirmed (code) |
-
-### The mission-failed menu {#fn-missionfailed}
-
-A `GameMenu` (vtable `0x0053b598`, input `0x0053b570`, object `0x006294c0`, pointer `0x0050ec8c`;
-[The mission-failed screen](#the-mission-failed-screen)). Fields: `+0x7a0` quit, `+0x7a4` restart, `+0x7a8` last
-checkpoint, `+0x7ac` to the hangout chosen; `+0x7b0` the `HUDSetMissionFailedCallbacks` name (31 bytes); `+0x7d0` the
-`level95` layout; `+0x7e0` the Yes/No box (question text `+0x830`); `+0xcb0` the box is open. Confirmed (code).
-
-| Address | Name | What it does | Evidence |
-| --- | --- | --- | --- |
-| `0x001d1f88` | `MissionFailed_Launch` | [The mission-failed screen](#the-mission-failed-screen) | confirmed (code) |
-| `0x001d1fb8` | `MissionFailed_SetReason` | the reason through the menu's `SetTitle` (slot `+0xa0`) | confirmed (code) |
-| `0x001d1ff0`, `0x001d2398` | `MissionFailed_SetCallbacks`, `MissionFailedMenu_SetCallbacks` | `HUDSetMissionFailedCallbacks`: copy the name (nil clears) | confirmed (code) |
-| `0x001d2018` | `MissionFailedMenu_OnConfirm` | the Yes/No callback: 2 (yes) closes the menu with the choice; 3 or 4 close the box and clear the four choices | confirmed (code) |
-| `0x001d2070` / `0x001d20c8` | `MissionFailedMenu_Construct` / `_Destroy` | the base plus the Yes/No box | confirmed (code) |
-| `0x001d2128` | `MissionFailedMenu_Init` | slot `+0x90`: per video mode and for languages 1 and 2 (`W_GameState + 0x120`) patches the layout globals `0x0050ec94`-`0x0050ecb4`; the base's init | confirmed (code) |
-| `0x001d2368` | `MissionFailedMenu_Shutdown` | slot `+0x68` | confirmed (code) |
-| `0x001d23d0` | `MissionFailedMenu_Open` | slot `+0xa8` ([above](#the-mission-failed-screen)) | confirmed (code) |
-| `0x001d2970` | `MissionFailedMenu_YesNoInput` | while the box is open: up/down cue `0xe`, accept cue 8, then `YesNoBox_OnCommand` | confirmed (code) |
-| `0x001d2a10` | `MissionFailedMenu_OnCommand` | accept (cue 8): item 0 closes with "last checkpoint" (`+0x7a8`) or, in `level95`, "to the hangout" (`+0x7ac`); item 1 asks "restart?" (string `0x105`, `+0x7a4`), or in `level95` "quit?"; item 2 asks "quit?" (`0x102`, `+0x7a0`); the box opens with No selected | confirmed (code) |
-| `0x001d2b90` | `MissionFailedMenu_Update` | slot `+0x30`: waits until the background, usage line and grid are ready, then places the picture, reason, grid, usage and box; closes through `MissionFailed_Toggle` once the sound ends | confirmed (code) |
-| `0x001d2d68` | `MissionFailedMenu_Render` | slot `+0x38`: the base's render, plus the box when open | confirmed (code) |
-| `0x001d2db0`, `0x001d2de0` | `MissionFailedMenu_StaticInit`, `_GlobalCtor` | builds the object; the constructor stub (list entry `0x0053411c`) | confirmed (code) |
-
-### `GUI/OptionMenu.cpp` {#fn-optionmenu}
-
-The functions run from `0x001d5808` to `0x001dab30` (inferred: the [Source map](source-map.md#gui) gives the file
-`0x001d5900`-`0x001dab10`; the range here is widened to the neighbouring unnamed functions): the pause menu's Options
-screen. `OptionMenu` (vtable `0x0053b9a8`, input `0x0053b980` at
-+0x5c, object `0x0062a1a0`, pointer `0x0050ecec`) owns 7 page titles (+0x7a0 step 0x1f0) and 7 `OptionPage`s (+0x1530
-step 0x6f0: count +0, selection +4, index +8, 5 item pointers +0x0c, description +0x20, confirm box +0x220, box open
-+0x210, changed +0x214). Items: `OptionItem` base (vtable `0x0053bcd0`), `OptionItemOnOffType` = `YesNoBox`
-(`0x0053bc08`, 0x4d0), `OptionItemStatBarType` = `StatBarItem` (`0x0053bb38`, 0x640), `OptionItemLightingType` =
-`LightingItem` (`0x0053ba68`, 0xa40). The option values and their defaults: [save.md](save.md#options).
-
-| Address | Name | What it does | Evidence |
-| --- | --- | --- | --- |
-| `0x001d5808` | `OptionPage_OnDiscardConfirm` | Page confirm-box callback: 2 reverts the page, 3/4 close the box. No code in the file opens that box (string 0x12f). | inferred |
-| `0x001d5870`, `0x001d58a8` | `OptionPage_Construct`, `OptionPage_Destroy` | Description markup +0x20, confirm box +0x220. | confirmed (code) |
-| `0x001d5900` | `OptionPage_Init` | Clears count, selection and 5 slots, index +8; per-mode box layout `0x0050ed18`-`0x0050ed24`; box string 0x12f with Yes 0x3b / No 0x3c. | confirmed (code) |
-| `0x001d5b30`, `0x001d5bc8` | `OptionPage_Shutdown`, `OptionPage_AddItem` | Frees the 5 items, description and box; adds to the first free of 5 slots. | confirmed (code) |
-| `0x001d5c38` | `OptionPage_SetDescription` | Description markup (size 1.0, `0x005fd310`, font slot 3, scale 1.3) at a position. | confirmed (code) |
-| `0x001d5cf0` | `OptionPage_OnConfirmBoxCommand` | Routes a command to the confirm box (up/down cue 0xe, accept cue 8). | confirmed (code) |
-| `0x001d5dc8` | `OptionPage_OnCommand` | Up/down move +4 (cue 4, 0xe at an end); left/right to the item (2/3); accept: item command 4, cue 8, close; back cue 0xf: Vibration (5) stops the preview, Restore Default (6) closes, others revert first. Returns 0 to close. | confirmed (code) |
-| `0x001d6060`, `0x001d60e8`, `0x001d6160` | `OptionPage_IsLoaded`, `OptionPage_BeginEdit`, `OptionPage_Revert` | Every item's slot +0x98 (loaded), +0xa0 (remember value), +0xa8 (restore and apply). | confirmed (code) |
-| `0x001d61d8`, `0x001d62d8` | `OptionPage_Update`, `OptionPage_Render` | Items, description, box when open; selected item `0x005fd310`, others `0x005fd320` via slot +0x78. | confirmed (code) |
-| `0x001d63f0`, `0x001d6430`, `0x001d64b0` | `OptionItem_Construct`, `_Destroy`, `_Setup` | Label markup +0x50; setup (slot +0x90) stores metrics +0x40 and the label (size 1.0, `0x005fd310`, slot 3), +0x240 = 2. | confirmed (code) |
-| `0x001d6570`, `0x001d6590`, `0x001d65c8` | `OptionItem_SetPosition`, `_SetLabelScale`, `_Update` | Moves the label; label font size from a scale; updates the label. | confirmed (code) |
-| `0x001d65e8`, `0x001d6620` | `OptionItem_Render`, `OptionItem_RenderColoured` | Label in `0x005fd310`, or in a given colour (slot +0x78). | confirmed (code) |
-| `0x001d6480` | `YesNoBox_SetLabelFlag` | Label fields +0x1d8 and +0x208 = flag, then re-lays the label; every caller passes 1. | inferred |
-| `0x001d6670`, `0x001d66d0` | `YesNoBox_Construct`, `YesNoBox_Destroy` | Answer texts +0x250, +0x320 and the "/" +0x3f0; selection +0x4c0. | confirmed (code) |
-| `0x001d6738` | `YesNoBox_Setup` | Label, answers 299/300, callback +0x4c4, owner +0x240, confirm mode +0x4c8. | confirmed (code) |
-| `0x001d6908`, `0x001d6910`, `0x001d6960`, `0x001d6980` | `YesNoBox_Shutdown`, `_SetAnswers`, `_SetPosition`, `_SetAnswersPosition` | Empty shutdown; replace the answers; move the label; lay out answer, "/", answer by width. | confirmed (code) |
-| `0x001d6a50`, `0x001d6a60` | `YesNoBox_SaveSelection`, `YesNoBox_RevertSelection` | Slot +0xa0 saves the selection at +0x4cc (was undefined, created); slot +0xa8 restores it and calls the callback. | confirmed (code) |
-| `0x001d6a90`, `0x001d6ad0`, `0x001d6b00` | `YesNoBox_Update`, `_Render`, `_RenderColoured` | Chosen answer `0x005fd310`, the other `0x005fd320`. | confirmed (code) |
-| `0x001d6c10` | `YesNoBox_OnCommand` | Left 0, right 1 (cue 4, 0xe if unchanged; page changed); immediate callback unless confirm mode; accept in confirm mode calls back 2 or 3, back 4. | confirmed (code) |
-| `0x001d6df8`, `0x001d6e80`, `0x001d7218` | `StatBarItem_Construct`, `_Destroy`, `_Shutdown` | Fill bar +0x250, back bar +0x2c0, three widgets; value +0x630 = 0.5. | confirmed (code) |
-| `0x001d6ef8` | `StatBarItem_Setup` | Slot +0xc0: sheet-12 rect-0 sprite (0xc0000), white fill and (21,21,21) back bar of height 0.025 (`0x0050ed2c`), sprite 0x30036, value clamped 0-1, callback +0x638. | confirmed (code) |
-| `0x001d7238`, `0x001d7248` | `StatBarItem_SaveValue`, `StatBarItem_RevertValue` | +0x634 = value; restore and call back. | confirmed (code) |
-| `0x001d7270` | `StatBarItem_Update` | First update offsets the bars by 0.003 / -0.004 (`0x0050ed38`, `0x0050ed34`), back bar 0.04 (`0x0050ed30`) higher. | confirmed (code) |
-| `0x001d7350`, `0x001d73b0`, `0x001d7420` | `StatBarItem_Render`, `_RenderColoured`, `_IsLoaded` | Label, back then fill bar; tinted fill; bar and sprite batches resident. | confirmed (code) |
-| `0x001d7490` | `StatBarItem_OnCommand` | ±0.05 clamped 0-1 (cue 4, 0xe at an end), page changed, callback(value). | confirmed (code) |
-| `0x001d7648`, `0x001d7698`, `0x001d7c70` | `LightingItem_Construct`, `_Destroy`, `_Shutdown` | A StatBarItem plus two square widgets and a hint markup. | confirmed (code) |
-| `0x001d7700` | `LightingItem_OnCommand` | Bar ±0.05 and callback ±5 (`0x0050ecfc`) into OptionMenu_AddBrightness. | confirmed (code) |
-| `0x001d7958` | `LightingItem_Setup` | Bar at level/100 (`0x0050ecf8`, `0x0050ed00`); two sheet-12 rect-6 squares (0xc0006, 0.09 × 0.065 × `0x0050ed44`), the second black; hint string 0x118 in grey. | confirmed (code) |
-| `0x001d7cb0`, `0x001d7ce0` | `LightingItem_SaveValue`, `LightingItem_RevertValue` | Saves `Gamma_Get()` at +0x644; restores with `Gamma_Set`. | confirmed (code) |
-| `0x001d7d10`, `0x001d7de8`, `0x001d7e28`, `0x001d7e98` | `LightingItem_Update`, `_Render`, `_RenderColoured`, `_IsLoaded` | Level from W_GameState +0x57a4; bar, squares (first tinted when coloured), hint. | confirmed (code) |
-| `0x001d7ef0` | `OptionMenu_OnVibrationChoice` | Dirty `0x00630840` = 1; on gives a preview rumble of strength 120 (`0x0050ed50`) for 500 ms (`0x0050ed54`). | confirmed (code) |
-| `0x001d7f90`, `0x001d7ff0`, `0x001d8050` | `OptionMenu_OnInvertChoice`, `_OnAutoAdjustChoice`, `_OnMergeChoice` | Set invert / auto-adjust per pad and merge to choice == 0; mark dirty. | confirmed (code) |
-| `0x001d80a8`, `0x001d8208` | `OptionMenu_OnSubtitlesChoice`, `OptionMenu_OnProLogicChoice` | W_GameState +0x438 / sound manager +0x3faa8 = choice == 0; both were undefined code, created. | confirmed (code) |
-| `0x001d80e0` | `OptionMenu_OnRestoreDefaults` | Yes: brightness 40, volumes 0.9, invert off, auto-adjust on, merge on, vibration on, +0x454 = 0, subtitles and Pro Logic off, reopen flag `0x0050ed14`. | confirmed (code) |
-| `0x001d8258` | `OptionMenu_OnVideoChoice` | 2/3 select video mode 0/1 (`0x00194e28`), close and reopen pause and options menus, return to Options, re-lay the lock-pick dials. | confirmed (code) |
-| `0x001d83e0`, `0x001d8410`, `0x001d8440` | `OptionMenu_SetSoundFxVolume`, `_SetMusicVolume`, `_AddBrightness` | Volume setters (dirty); brightness + delta clamped 0-100. | confirmed (code) |
-| `0x001d84a0`, `0x001d8558`, `0x001d8658` | `OptionMenu_Construct`, `_Destroy`, `_Shutdown` | GameMenu base, 7 titles, 7 pages, music handle +0x45d4 = -1. | confirmed (code) |
-| `0x001d8620`, `0x001d86a0` | `OptionMenu_ApplyVolumes`, `OptionMenu_NoOp` | Slot +0x90 applies music (+0x57ac) and SoundFX (+0x57a8); slot +0x98 empty (created). | confirmed (code) |
-| `0x001d86a8` | `OptionMenu_Open` | Slot +0xa8: titles 0x117, 0x119, 0x122, 0x123, 0x124, 0x11f, 0x128 (font slot 6, scale 1.3) and every page's items; Merge omitted on level 102; Restore Default preselects No. | confirmed (code) |
-| `0x001da348` | `OptionMenu_Close` | Slot +0xb0: shuts pages and titles, stops the preview music. | confirmed (code) |
-| `0x001da3f8` | `OptionMenu_OnCommand` | Page open: to the page; else up/down titles 0-6 (cue 4/0xe), accept opens (BeginEdit, cue 8), back cue 0xf and +0x45d0 = 1. | confirmed (code) |
-| `0x001da658` | `OptionMenu_Update` | Waits for load; ends the vibration preview; reopens after Restore Default; loops `vags/music/wonderwheel_mono` at music volume while Audio is open. | confirmed (code) |
-| `0x001da880` | `OptionMenu_Render` | Titles (selected `0x005fd310`, others `0x005fd320`) or the open page. | confirmed (code) |
-| `0x001da9b8`, `0x001da9d0`, `0x001daa38`, `0x001daa50` | `OptionMenu_CloseConfirmBox`, `_RevertPage`, `_SetPageChanged`, `_IsLoaded` | Current page's box closed, items reverted (+0x218 = 1), changed flag +0x214; all pages loaded. | confirmed (code) |
-| `0x001daaa8`, `0x001dab10` | `OptionMenu_StaticInit`, `OptionMenu_StaticInitStub` | Construct the menu at `0x0062a1a0` (constructor list `0x00534124`); end of the TU. | confirmed (code) |
-
-### After `GUI/OptionMenu.cpp` (no path string): the pause menu {#fn-pausemenu}
-
-`0x001dab30`-`0x001dfe20`: `PauseMenu` (vtable `0x0053bdc0`, input `0x0053bd98`, object `0x0062e790`, pointer
-`0x0050eddc`) and the objective checklists it holds; the objective calls are described in
-[hud.md](hud-messages.md#objectives-hudsetobjective).
-
-| Address | Name | What it does | Evidence |
-| --- | --- | --- | --- |
-| `0x001dab30` | `Objective_GetIconPrefix` | Maps an objective's leading tag (`<ROBJ_N>`, `<YOBJ_N>`, `<BOBJ_N>`, `<ARREST_N>`, `<DEAD_N>`, `<FLASH_N>`, `<SPRAY_N>`, `<PEDRAT_N>`, `<CALLGANG_N>`, `<NICON>`) to its icon prefix; dots use colour tags 3, 4, 6. | confirmed (code) |
-| `0x001dad88`, `0x001db248` | `HUD_SetObjective`, `HUD_RemoveAllGoalText` | Add/remove/tick an objective in the checklists; clear the current-objectives list. | confirmed (code) |
-| `0x001db278` | `PauseMenu_OnConfirm` | Yes/No box callback: 2 Yes, 3 No, 4 back. | confirmed (code) |
-| `0x001db3c0` | `PauseMenu_Construct` | Yes/No box +0x1bd0, three checklists +0x20d0 step 0x360, grid +0x2b00, usage +0x2dd0, Controls +0x30a0, background +0x3a90, Stats +0x3bb0. | confirmed (code) |
-| `0x001db4b0` | `PauseMenu_ResetState` | Zeroes the stats block (+0xa40, 0x1130 bytes) and choice flags; screen selection +0x3a74 = 3. | confirmed (code) |
-| `0x001db550` | `PauseMenu_Init` | Slot +0x90: headers (`0x006340c0`, `0x00634c70`, `0x00634fe0`), checklists, Quit box (0x102, confirm mode). | confirmed (code) |
-| `0x001db7e8`, `0x001db870` | `PauseMenu_Shutdown`, `PauseMenu_ReleaseScreens` | Slot +0x68 checklists, background, usage, box; slot +0x98 headers, usage, background. | confirmed (code) |
-| `0x001db8e8` | `ArrayU32_Contains` | Linear search of a word array. | confirmed (code) |
-| `0x001db918` | `PauseMenu_Quit` | Slot +0xb8: quit chosen +0x1b70 and closing +0x1b80. | confirmed (code) |
-| `0x001db928` | `PauseMenu_GetLevelColour` | Top header colour by level number: (37,100,60), (38,61,94), (76,53,44) or (186,139,53) groups, else black; it only tests the lists (`PauseMenu_Open` asks for the black letters with `CircledTextHeader_SetLetterColour` `0x001e8658` at `0x001dc1ec`). | confirmed (code) |
-| `0x001dbb78` | `PauseMenu_ApplyVideoMode` | Layout globals `0x0050edfc`-`0x0050ee6c` and `0x00635350`-`0x00635364` per device flags. | confirmed (code) |
-| `0x001dbee0`, `0x001dcb20` | `PauseMenu_Open`, `PauseMenu_Close` | Slots +0xa8 / +0xb0 (see the opening and leaving sections); close issues pending war commands and clears the screen tint byte +0x214. | confirmed (code) |
-| `0x001dcac0` | `PauseMenu_ReturnToOptions` | Screen and Options open (+0x1b88, +0x3a78); grid moved right twice (once in Rumble). | confirmed (code) |
-| `0x001dcc00`, `0x001dd1d0` | `PauseMenu_ClearChecklist`, `PauseMenu_CountOpenObjectives` | Clear one list; count its open lines. | confirmed (code) |
-| `0x001dcc28`, `0x001dce80` | `PauseMenu_AnnounceCurrentObjective`, `PauseMenu_AnnounceBonusObjective` | Story levels: first open objective as a scroll-in with its tag's icon (default 0x1c / 0x16), cue 0x15. | confirmed (code) |
-| `0x001dd0b8`, `0x001dd178`, `0x001dd1a0` | `PauseMenu_AddObjective`, `_RemoveObjective`, `_MarkObjectiveDone` | List 2 cleared before adding; lists 0/1 drop their "None" (0x109) line. | confirmed (code) |
-| `0x001dd1f8`, `0x001dd258` | `Widget_ReapplyRect`, `Widget_GrowRectHeight` | Re-set a widget's rectangle; grow its height (min 0). | confirmed (code) |
-| `0x001dd2e0`, `0x001dd3d8` | `PauseMenu_SlideChecklistY`, `PauseMenu_SlideHeaderY` | Move toward a target y by 0.02 (`0x0050ee20`). | confirmed (code) |
-| `0x001dd4d0` | `PauseMenu_AnimateObjectives` | Every 2 ms (`0x0050ee7c`): headers 0.02, list reveal 0.01 (`0x0050ee24`), gaps 0.05 (`0x0050ee74`, `0x0050ee78`). | confirmed (code) |
-| `0x001ddbc0`, `0x001ddcf8`, `0x001df700` | `PauseMenu_FadeOut`, `PauseMenu_Update`, `PauseMenu_Render` | Fade, update (slot +0x30) and render (slot +0x38); see the sections above. | confirmed (code) |
-| `0x001de488` | `PauseMenu_CloseScreen` | Closes the open screen (Options once its back flag +0x45d0 is set) and restores the headers. | confirmed (code) |
-| `0x001de6c0`, `0x001dee00`, `0x001ded68` | `PauseMenu_SelectItem`, `PauseMenu_OnCommand`, `PauseMenu_OnYesNoCommand` | Accept on a grid item; grid owner handler; Yes/No routing (cue 0xe/8). | confirmed (code) |
-| `0x001ded00`, `0x001ded48` | `PauseMenu_PlayCue`, `PauseMenu_GetSelectedItem` | Cue unless Options is open (+0x2bc4 when a screen is); grid selection. | confirmed (code) |
-| `0x001df3a8`, `0x001df448`, `0x001df4b0`, `0x001df4c8` | `PauseMenu_QuitPlayerTwo`, `_QuitToRumbleQuick`, `_QuitToMainMenu`, `_QuitToHangout` | Slots +0xd0, +0xd8 (+0x1b98), +0xe8 (+0x1b9c), +0xe0 (+0x1b94). | confirmed (code) |
-| `0x001df4e0` | `PauseMenu_IsReady` | 10 s after opening, or headers and background ready (player not raging). | confirmed (code) |
-| `0x001df5e8`, `0x001df6d0` | `PauseMenu_CancelChoice`, `PauseMenu_ApplyFadeAlpha` | Slot +0xc8 clears quit/restart choice; colour with menu alpha +0x3b9c while closing. | confirmed (code) |
-| `0x001dfc08`, `0x001dfc40` | `PauseMenu_ResetStatSlots`, `PauseMenu_ClearObjectives` | 100 records (+0xa44 step 0x2c) = -1; clears lists 2, 0, 1 on level load (`0x0015fe90`). | confirmed (code) |
-| `0x001dfc80`, `0x001dfe00` | `PauseMenu_StaticInit`, `PauseMenu_StaticInitStub` | Headers 0x108/0x107/0x106, colour cycle `0x00635368`-`0x00635388`; list `0x00534128`. | confirmed (code) |
-
-### After the pause menu (no path string): Rumble result screen {#fn-rumbleresult}
-
-`0x001dfe20`-`0x001e09e8`: `RumbleResult` (vtable `0x0053bee0`, input `0x0053beb8`, object `0x00635390`, pointer
-`0x0050ee94`); behaviour in [rumble.md](rumble.md#result-screen).
-
-| Address | Name | What it does | Evidence |
-| --- | --- | --- | --- |
-| `0x001dfe20`, `0x001dfe88` | `RumbleResult_Launch`, `RumbleResult_SetReason` | Pushes mode 0x14, sets winner (slot +0xa0) and the reason text (+0xa70). | confirmed (code) |
-| `0x001dfef0`, `0x001dff40`, `0x001dffa8`, `0x001dffd8` | `RumbleResult_Construct`, `_Destroy`, `_Init`, `_Shutdown` | Second grid +0x7b0, markup +0x880; init sets +0x04 = 1. | confirmed (code) |
-| `0x001e0008`, `0x001e0430` | `RumbleResult_Open`, `RumbleResult_Close` | Slots +0xa8 / +0xb0; open applies a screen effect and hides lock-pick dials. | confirmed (code) |
-| `0x001e0460`, `0x001e0560`, `0x001e0778` | `RumbleResult_OnCommand`, `_Update`, `_Render` | Input, update (+0x30), render (+0x38; choices after `0x0050eec0`, fade `0x0050eeb8`). | confirmed (code) |
-| `0x001e0998`, `0x001e09c8` | `RumbleResult_StaticInit`, `RumbleResult_StaticInitStub` | Constructs `0x00635390`; list `0x0053412c`. | confirmed (code) |
-
-### `GUI/ControlMenuHUD.cpp` {#fn-controlmenuhud}
-
-The functions run from `0x001e3458` to `0x001e5478` (inferred: the [Source map](source-map.md#gui) gives the file
-`0x001e3520`-`0x001e5478`): the pause menu's Controls screen, two entries opening the controller picture page or the
-tutorial tips page. Both pages derive from a small `ControlPage` base and are static objects built at start-up.
-
-| Address | Name | What it does | Evidence |
-| --- | --- | --- | --- |
-| `0x001e3458`, `0x001e34c0` | `ControlPage_Construct`, `_Destroy` | vtable `0x0053c658`, interface `0x0053c630`; title TextWidget `+0x60`, alpha `+0x130` | confirmed (code) |
-| `0x001e3520` | `ControlPage_Init` | slot `+0x90`: title at (`0x0050eee4`, `0x0050eee8`), size 1.3, `0x005fd310`, font slot 4 | confirmed (code) |
-| `0x001e35d8`, `0x001e35f8`, `0x001e3670` | `ControlPage_Shutdown`, `_Update`, `_Render` | slots `+0x68`/`+0x30`/`+0x38`: the title, with alpha | confirmed (code) |
-| `0x001e36a8`, `0x001e3758` | `TutorialPage_Construct`, `_Destroy` | vtable `0x0053c588`, interface `0x0053c560`, object `0x00637be0`; 23 titles `+0x150`, 23 texts `+0x3960` (0x270 each), menu `+0x140` | confirmed (code) |
-| `0x001e3828` | `TutorialPage_Init` | ScrollingMenu at (`0x0050eef0`, `0x0050eef4`); tip i = title string `0x145`+i (focus colour (134,26,26)) with text `0x15c`+i as description; visible `0x0050ef00` = 8 (10 with 16:9, 9 with device flag `0x02`), clip height `0x0050ef0c` = 0.5; title `0x131` ([layout](#controls-layout)) | confirmed (code) |
-| `0x001e3d98` | `TutorialPage_Shutdown` | frees the menu, shuts the texts down | confirmed (code) |
-| `0x001e3e60` | `TutorialPage_OnCommand` | forwards to the menu; back: cue `0xf`, returns true | confirmed (code) |
-| `0x001e3ed0`, `0x001e3f38` | `TutorialPage_Update`, `_Render` | title and menu | confirmed (code) |
-| `0x001e3f98`, `0x001e4050` | `ControllerPage_Construct`, `_Destroy` | vtable `0x0053c4b8`, interface `0x0053c490`, object `0x00635e80`; 7 + 7 labels `+0x140`/`+0xed0`, picture `+0x1c60` | confirmed (code) |
-| `0x001e4130` | `ControllerPage_Init` | label table `0x0050ef20` (`0x0050f000` in mode `0x02` without `0x04`) copied to `0x0063ed50`; label 1's x moved by the language (game state `+0x120`: German -0.02, French 0.16; 0.22 in the other table for any language but English); picture sprite `0x18f0000` at (0.5, 0.58), size 0.51 x 0.45, depth 11000; labels `0x132`-`0x138` align 5, `0x139`-`0x13f` align 4; title `0x130` ([layout](#controls-layout)) | confirmed (code) |
-| `0x001e4540`, `0x001e45f8` | `ControllerPage_Shutdown`, `_IsReady` | releases; ready when the picture batch `+0x1d24` is resident | confirmed (code) |
-| `0x001e4618` | `ControllerPage_OnCommand` | table `0x005567b0`: directions cue `0xe`, back cue `0xf` and true | confirmed (code) |
-| `0x001e46c0`, `0x001e4820` | `ControllerPage_Update`, `_Render` | picture size and place, labels from the table; render with alpha | confirmed (code) |
-| `0x001e4908`, `0x001e4988` | `ControlMenuHUD_Construct`, `_Destroy` | GameMenu subclass, vtable `0x0053c3d0`, interface `0x0053c3a8`; entries `+0x7a0`/`+0x870` | confirmed (code) |
-| `0x001e4a30` | `ControlMenuHUD_Open` | slot `+0xa8`: pausing player's input (pause menu `+0x1bc0`); entries Controller `0x130` at (0.26, 0.29), Tutorial `0x131` 0.06 below, size 1.3; pages `+0x940`/`+0x944` Init; `+0x948`-`+0x954` reset | confirmed (code) |
-| `0x001e4e28`, `0x001e4ea8` | `ControlMenuHUD_Close`, `_ArePagesReady` | slot `+0xb0`; both pages' slot `+0x98` | confirmed (code) |
-| `0x001e4f18` | `ControlMenuHUD_OnCommand` | open page: forwarded, closed on true; else table `0x005567d0`: up/down cue 4 (`0xe` at an end), left/right `0xe`, accept opens (cue 8 for Controller), back cue `0xf`, leave `+0x94c` | confirmed (code) |
-| `0x001e5130` | `ControlMenuHUD_Update` | waits for pages; plain pad pass; entries or the open page | confirmed (code) |
-| `0x001e52f8`, `0x001e5300` | `ControlMenuHUD_SetAlpha`, `_Render` | alpha `+0x954`; selected `0x005fd310`, other `0x005fd320` | confirmed (code) |
-| `0x001e5438`, `0x001e5478` | `ControlMenuHUD_StaticInit`, `_StaticInitStub` | builds both pages; stub in ctor list `0x00534130` ends the file | confirmed (code) |
-
-### After `GUI/ControlMenuHUD.cpp` (no path string): the Stats screen {#fn-after-controlmenuhud}
-
-`0x001e5498`-`0x001e6e78`: the pause menu's Stats screen (pause menu `+0x3bb0`), a GameMenu subclass (vtable
-`0x0053c728`, interface `0x0053c700`) with its own static-init stub, so a file of its own (inferred).
-
-| Address | Name | What it does | Evidence |
-| --- | --- | --- | --- |
-| `0x001e5498`, `0x001e5540` | `PauseStats_Construct`, `_Destroy` | portrait `+0x7b0`, shadows `+0x8b0`/`+0x9b0`, banner `+0xab0`, 4 HudGenericBars `+0xbb0`, description `+0x1b70` | confirmed (code) |
-| `0x001e5618` | `PauseStats_Setup` | [The Stats screen](#stats-screen); from `PauseMenu_Open`: per-mode globals `0x0050f104`-`0x0050f2b8`; human of game state `+0x228`; class 0-8 picks portrait, banner and string `0xea`-`0xf2`, else unavailable; bars Strength `0xf3`, Stamina `0xf4`, Health `0xf5`, Rage `0xf6` normalised by difficulty table `0x0050f230` (0x28 per difficulty, game state `+0x154`); description reveal 0.55 s | confirmed (code) |
-| `0x001e6530`, `0x001e6600` | `PauseStats_Shutdown`, `_IsReady` | releases; ready after 10 s or when both portrait batches are resident | confirmed (code) |
-| `0x001e6698` | `PauseStats_OnCommand` | table `0x005568e0`: up/down `MessageHUD_PageUp`/`PageDown` (cue 4, `0xe` when stuck), left/right `0xe`, back `0xf` and `+0x7a0` = 1 | confirmed (code) |
-| `0x001e6778` | `PauseStats_Update` | portrait at base + (-0.08, -0.2), banner + (-0.17, -0.099), bars at + (0.14, -0.11 + 0.05 i) 0.22 x 0.025 fill `0x0063ee38`, description + (-0.24, 0.1) | confirmed (code) |
-| `0x001e6cf0`, `0x001e6cf8` | `PauseStats_SetAlpha`, `_Render` | alpha `+0x1d70` | confirmed (code) |
-| `0x001e6e20`, `0x001e6e78` | `PauseStats_StaticInit`, `_StaticInitStub` | colours `0x0063ee30`/`0x0063ee38` = (150,30,30,255); stub in ctor list `0x00534134` | confirmed (code) |
-
-### Game-state functions {#warriors-functions}
-
-Functions in the address range `0x00417af0`-`0x00424e50` (inferred to be one module of the game state; the
-[Source map](source-map.md#gui) puts its first function in `W_ActionableManager.cpp`: inventory, statistics, flags, configuration
-workers) that belong to this page, by address.
-
-| Address | Name | What it does | Evidence |
-| --- | --- | --- | --- |
-| `0x0041dd78` | `GameState_RequestOptionMenu` | `+0x11c` = 1 | confirmed (code) |
-| `0x004229c0` | `Stats_ClearArmiesScores` | zeroes the Armies score (`+0x04`) of both players in the list (`W_GameState + 0x228`); from the game-over and pause menus' quit or retry | confirmed (code) |
-
 ## Coney's implementation
 
 Written from this page: `repo:src/gui/pause_menu/` (`PauseMenu`, `YesNoBox`, `MissionFailedMenu`, the item table
@@ -788,8 +936,42 @@ grids, the Yes/No box and the leaving actions follow this page; tests in `repo:t
 
 Coney stand-ins, each an open question below:
 
-- The headers (`CircledTextHeader`), the objective lists and the Restart and Quit screens are centred texts at Coney's
-  positions and colours; the Options screen is a list of its entries' names that does nothing on accept.
+- The top header is the `CircledTextHeader` ([Circled texts](circled-text.md#pause-header), [The top
+  header](#the-top-header)): the mission's title is the current level record's `+0x24` text (Coney's reading of the game
+  state's `+0x134`, which `InitLevel` copies from the level's names; on the disc `level99`'s gives the circled `1`, the
+  checkpoint letter and "Coney", as the runtime screenshot shows), the subtitle its `+0x49` name, the circles in the
+  level's colour (`pauseLevelColour`, the last red), drawn on every screen at the menu's fade, after the open screen as
+  the first of the original's three headers. Its label (string `0xe7`, or `0xe8` with `<ROBJ_N>`) is set but always
+  hidden: where it shows on the other screens is an open question, so the two lower headers, the names over Objectives,
+  Options and Controls, the objective lists and the Restart and Quit screens stay centred texts at Coney's positions and
+  colours. Tests: `repo:tests/gui/pause_menu_test.cpp` and `repo:tests/platform/disc_pause_stats_test.cpp` (two circles,
+  a title and a subtitle in `level99`).
+- The Options screen (`repo:src/gui/pause_menu/option_menu.h`, `OptionMenu`, written from
+  [The Options screen](#options) and [`GUI/OptionMenu.cpp`](#fn-optionmenu)) follows this page: the seven titles, each
+  page's items, places (`OptionLayout::forMode`, by language and video mode; Coney's pause mode opens the 4:3 one),
+  colours, the answers' layout, the cues, the ranges and steps, applying at once or on accept (Video, Restore Default),
+  each page keeping its selected item, the d-pad's repeat stopping at an end, and back putting the page's values
+  back except on Restore Default (Vibration stopping its preview first), and the bars as `StatBarItem_RenderColoured`
+  draws them after their first update (`repo:src/gui/pause_menu/option_bar.h`: no frame, the dark back and the fill
+  in the label's colour, into the batch of font slot 3, part_page0's). Each ported function was compared side by side
+  with Ghidra (`original compare`; the bars' and answers' again on 2026-10-26 after the review). Every change goes at
+  once into the game state where [save.md](save.md#options) puts it (`storeOptionValues`), so the next autosave keeps
+  it; the game then applies the volumes as the music and effects buses' volumes, and each level's player camera takes
+  its own pad's Auto Adjust from the game state every update (`FollowCamera::setAutoAdjust`, as
+  `Cam_Follow_AutoFollow` reads the byte of the camera's pad, above). The Audio page loops
+  `music/wonderwheel_mono` and the previous track starts again when it closes.
+  Coney's choices and gaps: the brightness, the camera's inversion, the vibration (and its 500 ms preview), the
+  merge, Pro Logic II and the Video mode are only stored (Coney applies none of them yet), so Video's accept does not
+  reopen the menus as `OptionMenu_OnVideoChoice` does; the saved volumes are applied only when Options changes them,
+  not when a profile loads (a stand-in: `Profile_Read`, `0x00421ad0`, applies each option); Restore Default's Yes
+  opens the Options menu again at once (the original waits for its next update) and the pause menu is not reopened; a bar
+  within 0.001 of an end counts as at the end (the original compares exactly, on an FPU that rounds toward zero); the
+  half-word `W_GameState + 0x454`, flag `0x08`'s layout and the page's discard box (`+0x210`, which no code opens)
+  are not modelled.
+  Tests: `repo:tests/gui/option_menu_test.cpp`, `repo:tests/gui/pause_menu_test.cpp`,
+  `repo:tests/gamemodes/pause_mode_test.cpp` and `repo:tests/platform/disc_pause_options_test.cpp` (START, the left
+  stick at 70 % and cross in `level99` started as `--play-level` starts it: Music up one step and kept, Invert P1 on
+  and put back by triangle).
 - The Controls screen (`repo:src/gui/pause_menu/control_menu.h`, `ControlMenu`, written from
   [`GUI/ControlMenuHUD.cpp`](#fn-controlmenuhud) and [The Controls screen](#controls-layout)) follows this page: the
   entries, the cues, the pages' title, the pad picture (sheet-table record `0x18f`, loaded by the pause mode), the 14
@@ -801,7 +983,33 @@ Coney stand-ins, each an open question below:
   `repo:tests/gui/pause_menu_test.cpp` and `repo:tests/platform/disc_pause_controls_test.cpp` (START, the left stick
   at 70 % and cross in `level99` started as `--play-level` starts it; with the disc's strings and fonts no Controller
   label runs into the one under it).
-- The Stats screen is never available (Coney has no character stats), so Stats opens nothing.
+- The Stats screen (`repo:src/gui/pause_menu/pause_stats.h`, `PauseStats`, written from [The Stats
+  screen](#stats-screen)): available for the nine Warriors' character types only; the four bars from the difficulty
+  table with the player's damage scale, power, stamina and rage maxima and his power class's byte `+0x40`
+  (`PlayLevelMode::warriorStats`, through the pause hook `warriorStats`); the places, colours and depths of the table:
+  the name (`+0x7b0`) in red over its two shadows and the face (`+0xab0`); each bar drawn as the rage meter,
+  `part_page0` rectangles 56 (left cap), 54 (body), 55 (fill) and 57 (right cap) (`Bar::setCaps`); the labels
+  left-aligned at their anchor plus the bars' label offset (0.04, −0.035), so at (0.42, 0.385 + 0.05 i); the description
+  wrapped at its leading `<AUTOINDENT>` width (else 0.55) and drawn through a paged line window of lines 0-5
+  (`TextStyle::firstLine` / `lastLine` / `paged`, the `MessageHUD_ClipToPage` window, split only at the wrap's breaks),
+  which up and down move one line within the text (cue 4, or `0xe` at either end); left and right refuse, back closes;
+  every part at the menu's alpha, the shadows opaque. Coney's choices: the down move's limit is the line count the last
+  draw measured (the original's draw counts it too); the screen is placed at once (Coney loads the pictures when the
+  pause starts); the `0x08` and `0x02` layouts are not modelled. A known difference: Rembrandt's description is five
+  lines on both, but Coney breaks them at other words (the original's first line ends "skills when", Coney's
+  "skills"). The wrap is not the cause: `MessageHUD_WordWrap` measures each line with `Font_Measure` in the metrics of
+  `Font_Size(1.0)` times the base size 1.0 (`MessageHUD_GetScaledMetrics` `0x001b94e0`, `MessageHUD_Setup`
+  `0x001b9090` called with font size 1.0 by `PauseStats_Setup` `0x001e5618`), proportional (`MessageHUD_Construct`
+  `0x001b8f98` sets `+0x180` = 1), as Coney does; the view aspect enters only the line height. The cause is Coney's
+  glyph width (`repo:src/graphics/font.cpp`, `roundTexels`), which truncates each rectangle's texel size after adding
+  0.5, where `Font_Measure` (`0x00179958`) and `Font_Draw` (`0x00179c30`) keep the sum unrounded ([Text](gui.md#text)):
+  confirmed (code) at those addresses. With the unrounded width, Coney's wrap of the disc's description gives the
+  original's five lines word for word (a local disc test, the characters per line 34, 35, 37, 34, 20 against 29, 26,
+  33, 37, 35 rounded). The fix touches every proportional text, so it is left to its own change
+  ([#1012](issue:1012), [q-glyph-width](#q-glyph-width)). Tests: `repo:tests/gui/pause_stats_test.cpp` (the caps,
+  the labels' places, the window's moves), `repo:tests/gui/pause_menu_test.cpp` and
+  `repo:tests/platform/disc_pause_stats_test.cpp` (START, the left stick at 70 % to Stats, cross in `level99`: five
+  texts, four bars in (0, 1], every picture loaded).
 - The menu does not wait for its last cue to end before it pops.
 - The tint is a black quad rising to opaque over 1.4 s, under the menu; the mission-failed fade is the mode's own.
 - Leaving pops mode 1 directly instead of setting `W_GameState + 0x14c` = 3; the game state's `+0x11c`, `+0x118` and
@@ -814,16 +1022,23 @@ Coney stand-ins, each an open question below:
 
 ## Open questions
 
-- The Stats screen ([answered](#stats-screen) for its layout, values and availability; the flag `+0x3bb8` is taken to
-  be what `PauseStats_Setup`'s slot `+0x44` call sets, inferred). Still open: the meaning of the 0.55 passed to
-  `MessageHUD_ReadAutoIndent`, the unused floats t6-t9 of the difficulty table, the `0x08` and `0x02` layouts, and a
-  runtime screenshot to check the computed positions and the portrait's red tint.
-- The header widget ([answered](gui.md#circled-text-header): one to three circles, the level's colour and a
+- The Stats screen ([answered](#stats-screen) for its layout, values, availability, the name and face pictures, the
+  bars' sprites, the labels' offset and the description's wrap width, line window and paging, with a runtime check;
+  the flag `+0x3bb8` is taken to be what `PauseStats_Setup`'s slot `+0x44` call sets, inferred). Still open: the
+  unused floats t6-t9 of the difficulty table and the `0x08` and `0x02` layouts.
+- <span id="q-glyph-width"></span>The Stats description's line breaks: Coney's `Font::glyphWidth` truncates
+  `texels + 0.5` where `Font_Measure` (`0x00179958`) keeps it unrounded, so Coney breaks the description at other
+  words ([Coney's implementation](#coneys-implementation)). Answered for the cause; open until the font's width
+  follows the original, which changes every proportional text and wants its own runtime comparison of a few screens.
+  Why the truncation loses a texel on some glyphs is inferred from the rectangles' quarter-texel inset
+  ([GUI](gui.md)): their sizes in texels sit just under or over a whole number.
+- The header widget ([answered](circled-text.md#pause-header): one to three circles, the level's colour and a
   red checkpoint circle). Still open: a screenshot of the 16:9 pause menu (the layout's title factor is 0 there) and
   whether the menu's mission titles always have the `<number>:<title>` form.
 - The Controls screen and the Options menu (answered: [The Options screen](#options),
   [The Controls screen](#controls-layout)). Still open: which Controller-page labels are two lines long (the strings),
-  what the device flags `0x02` and `0x08` mean for the per-mode layouts, and a runtime check of the Options layout.
+  what the device flags `0x02` and `0x08` mean for the per-mode layouts, and a runtime check of the Options layout
+  in the other video modes. What the half-word `W_GameState + 0x454` that Restore Default clears is for.
 - The mission-failed items' actions (`0x001d2018` and the vtable `0x0053b598`). The Rumble result screen (mode
   0x14) is on [Rumble](rumble.md#result-screen).
 - What the menu's write to the screen-effects managers' `+0x214` does on close.
@@ -832,3 +1047,29 @@ Coney stand-ins, each an open question below:
   colours of the headers, the item screens, the Yes/No box's texts and the objective lists' gold and purple.
 - Which Rumble quit `0x001fe1a8` picks, and when the Rumble Quit screen offers To Hangout rather than To Main Menu.
 - What the tint `0x0018c988` reaches (Coney: opaque black), and whether the HUD is drawn under the paused menu.
+
+## How this was checked
+
+The runtime observations were made in PCSX2 2.9.94 (2026-10-06, and the Rumble ones 2026-10-21) on a copy of
+quick-save slot 1 (`level99`, checkpoint 3), pressing the pad over PINE (the `scripted-pad` patch,
+[Driving PCSX2](../guides/research-workflow.md#driving-pcsx2)), reading memory and measuring screenshots of the
+640 × 448 picture. No run record was written for them, so the page grades each claim by the code and lists what was
+seen here:
+
+- the grid's rows at y 0.86 and 0.91, the usage line at 0.97, the quit question's left edge at x 0.26 and its
+  "Yes/No" at (0.60, 0.75) (screen fractions turned into GUI units); the story grid's order and look; a Rumble level's
+  grid in the `level102` War Party;
+- the background colour cycle: about 3.6 s after START the background is mostly green (red blending into green) in
+  `level99` checkpoint 1 and in the `level102` War Party alike, where blue would come first if the order ran the other
+  way;
+- triangle on the grid resumed the game; after it the mode stack still held the pause mode at 1.5 s and was back to
+  mode 1 at 3.5 s, and the screen was black at 1.5 s;
+- each item's screen by a screenshot, and the Yes/No box with No selected;
+- the Controls screen's Tutorial page: the first tip starts where the "Tutorial" title does, at 0.286 of the frame
+  with the font's own left margin, and the memory at `0x0050eef0` reads 0.41, 0.35, 0.53.
+
+On 2026-10-26 the Options screen's functions were compared side by side with Ghidra (`original compare`); that
+corrected this page, which had said Vibration keeps its values on back. The same day, in PCSX2 2.9.94 from the
+library state `street-end-run` (`level99`, checkpoint 2), the pad stepped frame by frame over the debug server:
+the Camera page, left on its third item and opened again, came back on that item (Auto Adjust P1 Cam), and Restore
+Default, left on Yes by back and opened again, came back on No.

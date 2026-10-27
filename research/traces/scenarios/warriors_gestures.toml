@@ -1,7 +1,7 @@
 # level99's sparring fight, as warriors_taunts (the same state, input, fields and hooks), with the gesture slots
 # Ambient_MayGesture keeps (0x006cddf8, two handles per reaction kind): kind 2, the sparring Warriors' brain type, and
 # kind 3, the Warriors' and the player's. Research: docs/research/sound-events.md#command-ids. The state is not a
-# quick-save slot: make it as ai.md#level99-save says.
+# quick-save slot: make it as ai-fights.md#level99-save says.
 description = "level99 sparring fight against a still player (no input): the gesture slots of reaction kinds 2 and 3 beside the taunts"
 research = "docs/research/sound-events.md#command-ids"
 input = "warriors_passive.txt"

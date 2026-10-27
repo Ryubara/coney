@@ -86,7 +86,7 @@ with nothing new is left alone, and the idle wake stays Tether's ([boundary](#bo
 | `check-failed` | An open pull request has a failed required check ([`repo pr-health`](coney-tools-repo.md#repo-pr-health), cause `checks-failed`) | `pr:812:checks-failed:<head>:<checks>`: the first seven characters of the head commit and a short hash of the failing checks, so a new push or another failing check is a new event | A running hold covers the cause on that head ([`pr hold`](pr.md#hold)); a hold that runs out, or a new push, opens it again | Fix it or start an agent, then `pr hold <n> --who <agent>` |
 | `pr-stuck` | Any other `pr-health` cause: a conflict, a CI run that never ends, auto-merge off | `pr:812:conflict:<head>` | The same | The same |
 | `merged` | A pull request merged within `merged_minutes` (30) | `merged:<n>` | Never: it leaves the list when the window ends | Bring the issues it affected up to date ([After a merge](issues.md#after-a-merge)) |
-| `unit-ready` | A release-queue file (`PR.md`, `PR-<n>.md`) in the scratch folder of a unit with a worktree, and its branch has no pull request since the file last changed | `unit:<branch>:<file>:<time the file changed>`, so a rewritten file is a new event | The branch gets a pull request: it leaves the list | `coney-tools pr open <task>` |
+| `unit-ready` | A release-queue file (`PR.md`, `PR-<n>.md`) in the scratch folder of a unit with a worktree, its branch has no pull request since the file changed, no `HOLD.md` lies beside it and [`pr open` would pass its proof](#ready) | `unit:<branch>:<file>:<change>`: the first twelve digits of the [change](stamps.md#change) the stamps cover, so editing the file or rebasing the branch is the same event and a new commit is a new one | The branch gets a pull request: it leaves the list. The proof stops holding, or a hold is made: it leaves the list too, and is told again if it holds again | `coney-tools pr open <task>` |
 | `question` | `QUESTION.md` or `QUESTION-<n>.md` in the scratch folder of a task unit or of any branch with a worktree ([Questions](#questions)) | `question:<task>:<file>:<time the file changed>` | An `ANSWER.md` (`ANSWER-<n>.md`) written at or after the question's last change | Read it and answer |
 
 An event that can come back once handled (a pull request problem, when a hold runs out) stays in the list as
@@ -124,6 +124,28 @@ end when it fails itself. Tether's own Stop guard for stopped agents is untouche
 answer beneath it, and a block already set there is kept whole, with Conclave neither reading GitHub nor counting a
 block for that turn end ([boundary](#boundary)).
 
+### When a unit is ready {#ready}
+
+A `PR.md` in a unit's scratch folder says the engineer wrote the description, not that the unit can be released: the
+first live wake (2026-10-26) listed twenty units for one that `pr open` would have opened, the rest still checking, with
+a failed or missing review, with a review that no longer covered the change after a rebase, or held on purpose. So a
+file in the release queue is only a candidate, and the unit is **ready** when the proof `pr open` makes before it pushes
+([step 4](pr.md#open): `pr verify`'s stages and `pr text`'s checks) finds nothing to refuse. It is one function,
+`pr_ready.readiness`, which `pr open` itself runs (`pr_ready.prove`), so the wake and the command cannot disagree about
+the stamps. Not covered are the checks of `pr open` that depend on GitHub or on the moment of release: the claim, a
+merged or closed pull request and the rebase, which `pr open` makes and reports as it always did.
+
+The proof is asked from the cheapest reading to the dearest and stops at the first refusal, so a read of twenty
+candidates costs about what one ready unit does: the stamp log alone (no passing `checked` or `reviewed` stamp: a check
+still running, a failed or missing review), then the change as git sees it (a Check or Review made for another change,
+which is what a rebase or a new commit does to a stamp, or uncommitted work in the worktree), and only a unit whose
+stamps cover its change has its `@orig` functions read and its description checked in full. A change that touches no C++
+file under `src/` has none to read, so that unit's whole proof takes about half a second; a change under `src/` takes
+seconds, and is asked again at every GitHub read until the unit gets its pull request. A folder with no task file is not
+a task unit (`pr open` refuses it), and a proof that could not be read at all (an unknown default branch, unreadable
+rules) names `unit-ready` in `unread` rather than saying "not ready". The read writes nothing: git runs with no
+optional locks, so it never makes an engineer's `git commit` fail.
+
 ### Holds {#holds}
 
 [`coney-tools pr hold`](pr.md#hold) is how a pull request's problems get an owner. `pr hold 812 --who engineer-2` says
@@ -136,6 +158,13 @@ that stalls cannot hide. Only the coordinator holds: `hooks.toml` refuses `pr ho
 hold is only a file, so a role that writes it by hand is not stopped by that rule (the file is the coordinator's by
 convention, [Enforcement](enforcement.md)). This replaces Tether's `pr_owner` tool and owner record, and the
 `.coney-busy` marker that Tether's `prs` poller took as an owner: only a hold names an owner now.
+
+**Holding a unit.** A unit that is ready but must wait on purpose (a stale unit waiting for capacity, a stacked branch
+waiting for its base) is held by a file: `HOLD.md` (`conclave.watch.unit_hold_file`) in its scratch folder, with a line
+that says why. While the file is there the unit raises no `unit-ready` event, and when the coordinator deletes it the
+unit is ready again and is told once more. Unlike a hold on a pull request it has no time and no command: it is a
+decision of the coordinator's, to lift by hand, like an `ANSWER.md`, and the engineer sees why in its own folder. It
+holds back only the `unit-ready` event of that folder; a question the unit asks is still told.
 
 ### Questions {#questions}
 
@@ -318,7 +347,7 @@ read keeps the pull requests, claim overlaps and events of the last GitHub read.
 | `units` | Each unit: task file, stage from the stamp log, build, worktree, overlaps, pull request | `scratch/<task>/TASK.md`, the stamp log, `coord status` |
 | `builds`, `machine` | Build slots and queues; free disk with its two limits | `build status`, the workspace drive |
 | `claims`, `prs`, `issues` | Held claims with deadlines and titles; open and merged pull requests; the issues the pane names (`--github` only) | the claim cards, `repo pr-health`, `gh` |
-| `events` | The [watchers' events](#watchers), each with an id and a state, the kinds that could not be read (`unread`) and any hold file that could not (`holds_problems`) (`--github` only) | `repo pr-health`, the release queue, the holds (`pr hold`), the question files of the unit folders |
+| `events` | The [watchers' events](#watchers), each with an id and a state, the kinds that could not be read (`unread`) and any hold file that could not (`holds_problems`) (`--github` only) | `repo pr-health`, the release queue with the proof of [each unit in it](#ready), the holds (`pr hold`, `HOLD.md`), the question files of the unit folders |
 
 A section that cannot be read holds only its `error`, and the others stand. The object carries `schema` (2 since the
 events); the mod refuses a higher number than it was built for. A unit's **stage** is the step after the highest one

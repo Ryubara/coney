@@ -13,7 +13,7 @@
 // attack table and damage table (`CfgChar`), the power class's AI fields (`CfgPowerClass`), the attack delays
 // (`CfgAttackDelay`) and the base chance to block (`CfgBaseChanceToBlock`), read from the calls the scripts made
 // (script::RecordedCalls). Without the disc's scripts the research's reference values stand in.
-// Research: docs/research/ai.md#level99, docs/references/bindings/config.md
+// Research: docs/research/ai/index.md#level99, docs/references/bindings/config.md
 
 namespace coney::ai {
 
