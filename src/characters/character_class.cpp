@@ -101,6 +101,8 @@ std::optional<std::string> modelNameFor(int type, int playerIndex, int levelNumb
         return std::nullopt;
     }
     std::optional<std::string> model = modelOf(modelRecordType(type, playerIndex));
+    // Coney's choice: the Armies test of GameState_IsArmiesLevel (60-69); Human_Init's own test is 60-64, which are the
+    // same levels on the disc.
     if (model && isArmiesLevel(levelNumber)) {
         *model += "_a";
     }
