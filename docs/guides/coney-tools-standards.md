@@ -54,6 +54,26 @@ And the touch-it rule ([Touch a page, fix the page](writing-docs.md#touch-it), f
   overload by overload as [`orig check`](coney-tools-fidelity.md#orig) matches them, so touching one overload owes
   only its own address.
 
+**A comment's research link that follows a page move is no touch.** A hunk of a source or test file's diff that only
+rewrites research references in comments does not touch the file (nor the functions whose lines it sits in) when every
+reference it changes follows a page the same change moved: the rules of [a link rewrite in a
+page](writing-docs.md#legacy-pages), applied to `docs/research/<page>.md#anchor` (also `research/<page>.md#anchor`,
+and on a `// Expected:` line a bare `<page>.md#anchor`) with the page's path taken from the repository root. The old
+page is renamed or deleted in the change and the new target resolves, or the anchor's section moved between two pages
+that stayed. As for a page, when the old page is gone the new anchor is not compared with the old one: it only has to
+exist, so a comment redirected to another section of the new page is no touch either. A reference counts only in a
+comment, as a scan of the file's lines reads it (`comment_spans.py`): after a `//` that is not inside a string or a
+character literal, or inside a `/* ... */`, which a line of a block comment is read from the lines above it. Code on
+the same line, a `"// ..."` string (also one a trailing backslash continues over lines, and next to an `L'"'` or
+`u8'"'` character literal) and a raw string are not comment, so a link move there is a touch. The rest of the
+hunk must be unchanged, line by line (the indent included), or, when every line on both sides is nothing but a comment
+of the same kind and none is empty, as one paragraph that clang-format reflowed because the longer path pushed a line
+past the width (the words are equal). So any other edit in the hunk, a reference to a page that stayed or that
+resolves nowhere, a reference that only changed its form, and a link move in code or a string are a touch, and a file
+with one such hunk is held to the standard as a whole. This is what lets a restructure that moves a research page
+repoint the files that cite it without those files owing the standard; the check is `code_link_moves.py`, which
+`standards_check` calls for each touched file.
+
 Enforcement is on: `standards.enforce` is true and `standards.cutover` is 2026-10-25 in
 [.github/conventions.yml](repo:.github/conventions.yml). Every report of `check` is an error, so a change that touches a
 file below the standard without bringing the whole file up to it, touches a ported function that is not `compared`, adds
@@ -66,7 +86,8 @@ job of CI and the docs step of [`check changed`](coney-tools-build.md#check) hol
 The group is `standards`, not `legacy`: that name is reserved for the retired review commands.
 
 `standards` is `standards_scan.py` (the scanners), `standards_file.py` (the legacy file), `standards_check.py`
-(the marks and the touch-it rule) and `standards_cli.py`; the C++ is read with the reader of `orig_scan.py`.
+(the marks and the touch-it rule), `code_link_moves.py` and `comment_spans.py` (the comment link moves) and
+`standards_cli.py`; the C++ is read with the reader of `orig_scan.py`.
 
 <!-- command-reference:begin standards -->
 ## Parameters of `standards` {#standards-parameters}

@@ -12,6 +12,7 @@
 
 #include "gamemodes/front_end_services.h"
 #include "gamemodes/game_mode_stack.h"
+#include "gamemodes/game_stats_mode.h"
 #include "gamemodes/gameplay_mode.h"
 #include "gamemodes/legal_screen_mode.h"
 #include "gamemodes/level_flow_mode.h"
@@ -48,9 +49,9 @@ namespace coney {
 /// It is also what the script bindings reach outside the script system (script::BindingHost): `ShowProfileManager`
 /// shows the menus, `MenuLoadLevel` chooses a level in the level flow, `HUDLaunchMissionComplete` pushes the
 /// mission-complete mode, `HuCreate` and `AddFlag` keep the level scripts' humans and flags, `ScreenQueueEffect` starts
-/// a fade, `ShowRumbleModeInterface` pushes the Rumble menu (mode 0x11), `SSMC_StartLoadSequence` and
-/// `SSMC_StartDeleteSequence` push the memory-card mode (6) to read the profiles again or after a delete, and music
-/// and movies go to FrontEndServices.
+/// a fade, `ShowRumbleModeInterface` pushes the Rumble menu (mode 0x11), `ShowGameStatsInterface` the statistics screen
+/// (0x13), `SSMC_StartLoadSequence` and `SSMC_StartDeleteSequence` push the memory-card mode (6) to read the profiles
+/// again or after a delete, and music and movies go to FrontEndServices.
 ///
 /// Research: docs/research/boot.md#main, docs/research/frontend.md#mode-flow, docs/research/scripting.md
 class StartUpFlow final : public script::BindingHost {
@@ -64,6 +65,7 @@ class StartUpFlow final : public script::BindingHost {
     /// `cardCheckingMs` is how long the memory-card mode shows its "checking" message:
     /// MemoryCardMode::kCheckingMessageMs in the game, 0 (the default) in the frame-scripted tests (MemoryCardMode
     /// gives why).
+    /// @coney-only Coney's owner of the modes and services `main` sets up
     StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack, const ProfileManagerMode::SheetLoader& loadSheet,
                 gui::GlobalStrings& strings, LegalScreenSettings legal,
                 const std::function<void(std::string_view)>& log, script::ScriptSource scripts = {},
@@ -75,12 +77,14 @@ class StartUpFlow final : public script::BindingHost {
     /// level flow, asks for the memory-card boot check, pushes the memory-card mode, then the legal screen, and asks
     /// for the start-up movies, which the movie player pushes over them all so they play first (the original plays them
     /// before the pushes). Coney leaves out the controller check and its error mode (the pads are always read).
+    /// @coney-only Coney's order of `main`'s pushes (docs/research/boot.md#main), not one original function
     void start();
 
     /// Coney's direct start in place of start(): makes the Lua state and pushes only the level flow, which runs the
     /// preloads and the front end's fresh state itself and starts `level` at `checkpoint` in gameplay as a level chosen
     /// from the menus starts (LevelFlowMode::startAtLevel(), where `ready` is described). No movies, legal screen,
     /// memory-card check or menus; everything else (gameplay, the pause, the mission screens) is the story's own.
+    /// @coney-only the `--play-level` start, a test and debug aid
     void startAtLevel(std::string_view level, int checkpoint, std::function<void()> ready = {});
 
     /// The services the modes share.
@@ -117,6 +121,7 @@ class StartUpFlow final : public script::BindingHost {
     /// `loadRecord` from now on; until then they are not drawn.
     void setSheetRecordLoader(PauseRecordLoader loadRecord) { m_loadRecord = std::move(loadRecord); }
     /// Gives the pause and mission-failed modes the game's hooks (sound, objectives, radars).
+    /// @coney-only Coney's wiring of the game's hooks into two modes
     void setPauseHooks(const PauseHooks& hooks);
     /// Mode 0x11.
     [[nodiscard]] RumbleMenuMode& rumbleMenu() { return m_rumbleMenu; }
@@ -125,9 +130,12 @@ class StartUpFlow final : public script::BindingHost {
     /// `--ai-seed N`: the game's random stream starts at N (GameRandom::startAt()) and each level's brains are made
     /// with variation N (GameplayMode::setAiVariation()), so the AI draws differently from a run with another N and
     /// the same as one with this N. Call it before the first frame.
+    /// @coney-only the `--ai-seed` option, a test aid
     void setAiSeed(std::uint32_t seed);
     /// Mode 0x14.
     [[nodiscard]] RumbleResultMode& rumbleResult() { return m_rumbleResult; }
+    /// Mode 0x13.
+    [[nodiscard]] GameStatsMode& gameStats() { return m_gameStats; }
     /// The humans the level scripts created.
     [[nodiscard]] const CreatedHumans& humans() const { return m_humans; }
     /// The level's world flags.
@@ -140,8 +148,14 @@ class StartUpFlow final : public script::BindingHost {
     /// The in-game HUD the scripts' HUD bindings act on (the original's one HUD object); the play mode draws it.
     [[nodiscard]] hud::Hud& hud() { return m_hud; }
 
+    /// `ShowProfileManager(onRumble, onStartGame)`: the menus (mode 0x12).
+    /// @coney-only the binding's route to its mode in Coney's start-up flow (the binding is ported in scripting)
     void showProfileManager(std::string_view onRumble, std::string_view onStartGame) override;
+    /// `ShowRumbleModeInterface(onCancel, onStart, players)`: the Rumble menu (mode 0x11).
+    /// @coney-only the binding's route to its mode in Coney's start-up flow (the binding is ported in scripting)
     void showRumbleModeInterface(std::string_view onCancel, std::string_view onStart, double players) override;
+    /// `MenuLoadLevel(level)`: the level flow's chosen level.
+    /// @coney-only the binding's route to its mode in Coney's start-up flow (the binding is ported in scripting)
     void menuLoadLevel(std::string_view level) override;
 
     /// The debug menus' jump to `level` at `checkpoint`, from the front end or from a level in play: sets the
@@ -151,24 +165,49 @@ class StartUpFlow final : public script::BindingHost {
     /// have not filled it yet, or a wrong name) or the level flow is not on the stack.
     ///
     /// Coney's tool: the original's debug menus are not in the retail game (docs/research/debug.md#not-present).
+    /// @coney-only the debug menus' level jump
     bool jumpToLevel(std::string_view level, int checkpoint);
+    /// A movie, through FrontEndServices.
+    /// @coney-only the binding's route to its mode in Coney's start-up flow (the binding is ported in scripting)
     void playMovie(std::string_view name) override;
+    /// A music track, through FrontEndServices.
+    /// @coney-only the binding's route to its mode in Coney's start-up flow (the binding is ported in scripting)
     void playMusic(std::string_view track) override;
+    /// Stops the music, through FrontEndServices.
+    /// @coney-only the binding's route to its mode in Coney's start-up flow (the binding is ported in scripting)
     void stopMusic() override;
+    /// `ScreenQueueEffect(type, seconds)`: the screen fade.
+    /// @coney-only the binding's route to its mode in Coney's start-up flow (the binding is ported in scripting)
     void queueScreenEffect(int type, double seconds) override;
+    /// `HUDLaunchMissionComplete(kind)`: the mission-complete mode (0xb).
+    /// @coney-only the binding's route to its mode in Coney's start-up flow (the binding is ported in scripting)
     void launchMissionComplete(int kind) override;
+    /// `SSMC_StartLoadSequence`: the memory-card mode (6), to read the profiles again.
+    /// @coney-only the binding's route to its mode in Coney's start-up flow (the binding is ported in scripting)
     void startLoadSequence() override;
+    /// `SSMC_StartDeleteSequence`: the memory-card mode (6), after a delete.
+    /// @coney-only the binding's route to its mode in Coney's start-up flow (the binding is ported in scripting)
     void startDeleteSequence() override;
     /// SSMC_StartSaveSequence: the autosave, when a profile is in use and the level is not the front end. **Coney's
     /// stand-in**: the save is written at once, with no memory-card mode on top, and the new-game case is not applied.
     /// @orig 0x00155308 Autosave_Request (unknown)
     void startSaveSequence() override;
+    /// The mission-failed mode (0xc) with `reason`.
+    /// @coney-only the binding's route to its mode in Coney's start-up flow (the binding is ported in scripting)
     void launchMissionFailed(std::string_view reason) override;
+    /// The Rumble intro over play.
+    /// @coney-only the binding's route to its mode in Coney's start-up flow (the binding is ported in scripting)
     void showRumbleModeIntro(std::string_view onDone, std::span<const std::string> names) override;
+    /// The Rumble result mode (0x14).
+    /// @coney-only the binding's route to its mode in Coney's start-up flow (the binding is ported in scripting)
     void launchRumbleWin(std::string_view winner, std::string_view reason) override;
+    /// `ShowGameStatsInterface(onClose)`: the statistics screen (mode 0x13).
+    /// @coney-only the binding's route to its mode in Coney's start-up flow (the binding is ported in scripting)
+    void showGameStats(std::string_view onClose) override;
 
   private:
     // The sheet of sprite-sheet table record `record`, through the loader set, or an error without one.
+    // @coney-only Coney's sheet loading glue
     [[nodiscard]] std::expected<graphics::SpriteSheet, Error> loadRecord(std::uint32_t record) const;
 
     GameModeStack& m_stack;
@@ -200,6 +239,7 @@ class StartUpFlow final : public script::BindingHost {
     RumbleMenuMode m_rumbleMenu;
     RumbleIntroLayer m_rumbleIntro;
     RumbleResultMode m_rumbleResult;
+    GameStatsMode m_gameStats;
     MemoryCardMode m_memoryCard;
     LegalScreenMode m_legal;
 };

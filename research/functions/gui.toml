@@ -113,8 +113,44 @@ name = "MessageHUD_WordWrap"
 page = "gui.md#fn-messagehud"
 role = "splits the text at spaces, measures each line with its tags stripped, and inserts `<CRM>` before the word that takes the line past the wrap width (`+0x1d4`); the line count goes to `+0x1ac`"
 level = "confirmed-code"
-coney = "src/hud/hint_box.h:wrapText"
-status = "legacy"
+coney = "src/gui/message_paging.h:wrapMessage"
+status = "compared"
+
+[[function]]
+address = 0x001baee0
+name = "MessageHUD_ClipToPage"
+page = "gui.md#fn-messagehud"
+role = "keeps only the wrapped lines from `+0x1a4` to `+0x1a8`, both included, split at `<CRM>`: a scrolling page of a long text"
+level = "confirmed-code"
+coney = "src/gui/message_paging.h:clipToPage"
+status = "compared"
+
+[[function]]
+address = 0x001bafd0
+name = "MessageHUD_PageUp"
+page = "gui.md#fn-messagehud"
+role = "moves the line window `+0x1a4`/`+0x1a8` up one line while `+0x1a4` is above 0; false at the top"
+level = "confirmed-code"
+coney = "src/gui/message_paging.h:pageUp"
+status = "compared"
+
+[[function]]
+address = 0x001bb000
+name = "MessageHUD_PageDown"
+page = "gui.md#fn-messagehud"
+role = "moves the line window down one line while `+0x1a8` is below the line count `+0x1ac`; false at the last line"
+level = "confirmed-code"
+coney = "src/gui/message_paging.h:pageDown"
+status = "compared"
+
+[[function]]
+address = 0x001bb390
+name = "MessageHUD_ReadAutoIndent"
+page = "gui.md#fn-messagehud"
+role = "the wrap width (`+0x1d4`): the number after a leading `<AUTOINDENT f>`, or the width given"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/pause_stats.cpp:autoIndentWidth"
+status = "compared"
 
 [[function]]
 address = 0x001c3de0
@@ -288,6 +324,105 @@ coney = "src/gui/usage_info.h:UsageInfo::setLegend"
 status = "legacy"
 
 [[function]]
+address = 0x001d0aa8
+name = "CircledText_Construct"
+page = "circled-text.md#circled-text"
+role = "vtable `0x0053b390`, `0x5fc` bytes: the back sprite, two circles with a character each and the main text; slot `+0x60`"
+level = "confirmed-code"
+coney = "src/gui/circled_text.h:CircledText::CircledText"
+status = "compared"
+
+[[function]]
+address = 0x001d0d18
+name = "CircledText_Setup"
+page = "circled-text.md#ct-setup"
+role = "slot `+0xc0` `(circleW, circleH, owner, pos, size, circleOff, metrics, backSprite, circleSprite, backInst, circleInst)`, once: back depth 8,400 grey (128, 128, 128); circles depth 8,500 red (160, 16, 16); step divisor `0x0050ec64` = 3 (2 with flag `0x02`); circle drop `0x0050ec68` = `circleH` × 0.1; reveal 1.0"
+level = "confirmed-code"
+coney = "src/gui/circled_text.h:CircledText::setup"
+status = "compared"
+
+[[function]]
+address = 0x001d0fe8
+name = "CircledText_SetText"
+page = "circled-text.md#ct-setup"
+role = "slot `+0xc8`: the main text"
+level = "confirmed-code"
+coney = "src/gui/circled_text.h:CircledText::setText"
+status = "compared"
+
+[[function]]
+address = 0x001d1008
+name = "CircledText_SetCircled"
+page = "circled-text.md#ct-setup"
+role = "slot `+0xd0`: one character of the string per circle, the count its length with no bound"
+level = "confirmed-code"
+coney = "src/gui/circled_text.h:CircledText::setCircled"
+status = "compared"
+
+[[function]]
+address = 0x001d1098
+name = "CircledText_SetCircleColour"
+page = "circled-text.md#ct-setup"
+role = "slot `+0xd8`: the circles' colour"
+level = "confirmed-code"
+coney = "src/gui/circled_text.h:CircledText::setCircleColour"
+status = "compared"
+
+[[function]]
+address = 0x001d1108
+name = "CircledText_SetCharColour"
+page = "circled-text.md#ct-setup"
+role = "slot `+0xe0`: the characters' colour"
+level = "confirmed-code"
+coney = "src/gui/circled_text.h:CircledText::setCharColour"
+status = "compared"
+
+[[function]]
+address = 0x001d1178
+name = "CircledText_SetBackColour"
+page = "circled-text.md#ct-setup"
+role = "slot `+0xe8`: the back sprite's colour"
+level = "confirmed-code"
+coney = "src/gui/circled_text.h:CircledText::setBackColour"
+status = "compared"
+
+[[function]]
+address = 0x001d11c8
+name = "CircledText_SetReveal"
+page = "circled-text.md#ct-setup"
+role = "slot `+0xa8`: the reveal, clamped to 0-1"
+level = "confirmed-code"
+coney = "src/gui/circled_text.h:CircledText::setReveal"
+status = "compared"
+
+[[function]]
+address = 0x001d11f8
+name = "CircledText_GetRect"
+page = "circled-text.md#ct-setup"
+role = "slot `+0x70`: the rectangle with its height × the reveal"
+level = "confirmed-code"
+coney = "src/gui/circled_text.h:CircledText::height"
+status = "compared"
+
+[[function]]
+address = 0x001d1250
+name = "CircledText_Update"
+page = "circled-text.md#ct-layout"
+role = "slot `+0x30`: the back over the rectangle, circle i centred at the left edge + `circleOff` + (2i + 1) × `circleW` / 3, the text after the last circle; heights and textures cut by the reveal, top edges kept"
+level = "confirmed-code"
+coney = "src/gui/circled_text.h:CircledText::update"
+status = "compared"
+
+[[function]]
+address = 0x001d16e8
+name = "CircledText_Render"
+page = "circled-text.md#ct-drawing"
+role = "slot `+0x38`: back sprite, text (focused colour when slot `+0xa0` is true), each circle and its character (recoloured to the focused colour unless black)"
+level = "confirmed-code"
+coney = "src/gui/circled_text.h:CircledText::render"
+status = "compared"
+
+[[function]]
 address = 0x001d3ef0
 name = "OptionGrid_Construct"
 page = "gui.md#original-structure"
@@ -385,6 +520,105 @@ role = "slot `+0x1b8`: `+0x104` = 0, unfocuses the old item (releases its descri
 level = "confirmed-code"
 coney = "src/gui/scrolling_menu.h:ScrollingMenu::handle"
 status = "legacy"
+
+[[function]]
+address = 0x001e7e58
+name = "IconTextHeader_SetText"
+page = "circled-text.md#pause-header"
+role = "the label's text (`+0x70`)"
+level = "confirmed-code"
+coney = "src/gui/circled_text_header.h:CircledTextHeader::setLabel"
+status = "compared"
+
+[[function]]
+address = 0x001e7ea8
+name = "IconTextHeader_SetVisible"
+page = "circled-text.md#header-drawing"
+role = "shows or hides the label, rule A and the child (the pause grid hides them)"
+level = "confirmed-code"
+coney = "src/gui/circled_text_header.h:CircledTextHeader::setLabelVisible"
+status = "compared"
+
+[[function]]
+address = 0x001e7f50
+name = "CircledTextHeader_Construct"
+page = "circled-text.md#pause-header"
+role = "vtable `0x0053ca00`, the pause menu's top header only ([The pause header](circled-text.md#pause-header)): rule B `+0x390`, 3 circles `+0x490`, 3 letters `+0x790`, title `+0xa00`, subtitle `+0xad0`"
+level = "confirmed-code"
+coney = "src/gui/circled_text_header.h:CircledTextHeader::CircledTextHeader"
+status = "compared"
+
+[[function]]
+address = 0x001e81c0
+name = "CircledTextHeader_ApplyVideoMode"
+page = "circled-text.md#header-factors"
+role = "the layout factors per video mode ([The layout factors](circled-text.md#header-factors))"
+level = "confirmed-code"
+coney = "src/gui/circled_text_header.h:CircledHeaderFactors::forMode"
+status = "compared"
+
+[[function]]
+address = 0x001e8368
+name = "CircledTextHeader_Setup"
+page = "circled-text.md#pause-header"
+role = "slot `+0xa8`: title size 2.23, letters and subtitle 1.561, font slot 4; circles `part_page0` rectangle 84, black, depth 8,500, 0.082 × the circle scale"
+level = "confirmed-code"
+coney = "src/gui/circled_text_header.h:CircledTextHeader::setup"
+status = "compared"
+
+[[function]]
+address = 0x001e85e8
+name = "CircledTextHeader_SetCircleColour"
+page = "circled-text.md#header-colours"
+role = "all three circles' colour"
+level = "confirmed-code"
+coney = "src/gui/circled_text_header.h:CircledTextHeader::setCircleColour"
+status = "compared"
+
+[[function]]
+address = 0x001e8658
+name = "CircledTextHeader_SetLetterColour"
+page = "circled-text.md#header-colours"
+role = "all three letters' colour, until the next update makes them black"
+level = "confirmed-code"
+coney = "src/gui/circled_text_header.h:CircledTextHeader::setLetterColour"
+status = "compared"
+
+[[function]]
+address = 0x001e86c8
+name = "CircledTextHeader_Update"
+page = "circled-text.md#header-layout"
+role = "slot `+0x30`: the factors, then rule A and B, the row y0 from the title's line height, the subtitle, the circles from x 0.272 0.051 apart, the title, the label and the child; used letters made opaque black"
+level = "confirmed-code"
+coney = "src/gui/circled_text_header.h:CircledTextHeader::update"
+status = "compared"
+
+[[function]]
+address = 0x001e8d00
+name = "CircledTextHeader_Render"
+page = "circled-text.md#header-drawing"
+role = "slot `+0x38`: label, child, circles and letters, rule B, title, subtitle; rule A never drawn"
+level = "confirmed-code"
+coney = "src/gui/circled_text_header.h:CircledTextHeader::render"
+status = "compared"
+
+[[function]]
+address = 0x001e8dd0
+name = "CircledTextHeader_RenderColoured"
+page = "circled-text.md#header-drawing"
+role = "slot `+0xd0`: the same in a given label colour and alpha (the pause menu's fade)"
+level = "confirmed-code"
+coney = "src/gui/circled_text_header.h:CircledTextHeader::render"
+status = "compared"
+
+[[function]]
+address = 0x001e8ee0
+name = "CircledTextHeader_SetTitle"
+page = "circled-text.md#header-title"
+role = "characters before the first `:` get circles; each `:` after the first character adds a circle with `@` + the checkpoint (game state `+0x33a`); the rest is the title; the last circle red `0x005fd328`; the subtitle the current level's name"
+level = "confirmed-code"
+coney = "src/gui/circled_text_header.h:CircledTextHeader::setTitle"
+status = "compared"
 
 [[function]]
 address = 0x001e95c0
