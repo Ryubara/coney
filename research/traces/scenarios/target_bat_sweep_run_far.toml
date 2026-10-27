@@ -1,0 +1,61 @@
+# The same as target_bat_sweep_run with square two updates earlier, about 3.2 m from PoizoCiv: beyond the armed pick's
+# 2.5 m x 1.1, so 501 should start with no target.
+# slot 6: a bat sweep at a run past an enemy. A bat (dyn_bat_tuff) is put in the player's hand at update 3
+# (Human_PlaceItemInHand 0x00238540); PoizoCiv's gang is made an enemy of the player's at update 2 (Gang_MakeEnemies
+# 0x0016acf0), his brain kept alerted (+0x21c) so that Gang_CheckNeutralRule (0x00169d30) leaves it so, and he stands
+# 8 m along the heading the stick straight down runs (-32.8 degrees, toward the camera) and 1.2 m to the right.
+# The player runs at full stick and taps square as he comes up beside him (the armed run sweep 501), then runs on.
+# Does the sweep's pick become a lock, steer or turn the player, and does the run go on along the stick?
+# Research: docs/research/combat-targets.md#fight-stance.
+description = "slot 6: the bat sweep at a run with square at 3.2 m, beyond the armed pick's 2.5 m x 1.1: 501 with no target"
+research = "docs/research/combat-targets.md#fight-stance"
+input = "target_bat_sweep_run_far.txt"
+updates = 110
+fields = ["player"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "call-brains"]
+let = { enemy = 'human("PoizoCiv")' }
+setup = [
+  { address = "tf(enemy) + 0x0", type = "f32", value = "f32(tf(player)) - 8.0 * sin(rad(-32.8)) + 1.2 * cos(rad(-32.8))", until = 0 },
+  { address = "tf(enemy) + 0x4", type = "f32", value = "f32(tf(player) + 4) + 8.0 * cos(rad(-32.8)) + 1.2 * sin(rad(-32.8))", until = 0 },
+  { address = "tf(enemy) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 0 },
+  { address = "tf(enemy) + 0x18", type = "f32", value = "sin((rad(-32.8) + pi) / 2)", until = 0 },
+  { address = "tf(enemy) + 0x1c", type = "f32", value = "cos((rad(-32.8) + pi) / 2)", until = 0 },
+  { address = "brain(enemy) + 0x21c", type = "u32", value = "1", frame = 0, until = 200 },
+  { address = "0x000c0000", type = "u32", value = "0x5f6e7964", frame = 0, until = 0 },
+  { address = "0x000c0004", type = "u32", value = "0x5f746162", frame = 0, until = 0 },
+  { address = "0x000c0008", type = "u32", value = "0x66667574", frame = 0, until = 0 },
+  { address = "0x000c000c", type = "u32", value = "0", frame = 0, until = 0 },
+]
+calls = [
+  { function = "0x0016acf0", args = ["s16(u32(brain(player) + 0x20c) + 0x30)", "s16(u32(brain(enemy) + 0x20c) + 0x30)"], frame = 2 },
+  { function = "0x00238540", args = ["u32(player + 0x90)", "0x000c0000"], frame = 3 },
+]
+
+[coney]
+level = "sandbox:combat"
+args = ["--spawn", "start"]
+
+[[field]]
+name = "state"                            # record +0x00, the state word's low half (0x1 stance, 0x4 lock, 0x8 L1)
+address = "rec(player) + 0x0"
+type = "u32"
+
+[[field]]
+name = "target"                           # human +0xc8, the target's handle index (-1 none)
+value = "hidx(u32(player + 0xc8))"
+
+[[field]]
+name = "move"                             # human +0x1c0, the movement state (0x241b90 lock-on, 0x240e38 free)
+address = "player + 0x1c0"
+type = "u32"
+
+[[field]]
+name = "dist"
+value = "hypot(f32(tf(player)) - f32(tf(enemy)), f32(tf(player) + 4) - f32(tf(enemy) + 4))"
+
+[[field]]
+name = "bearing"                          # PoizoCiv's direction from the player's facing, degrees
+value = "wrap(deg(atan2(f32(tf(player)) - f32(tf(enemy)), f32(tf(enemy) + 4) - f32(tf(player) + 4)) - heading(player)))"

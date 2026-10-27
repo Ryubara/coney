@@ -41,13 +41,50 @@ constexpr int kStrongerHitAnim = 11;
 // The record bits of the run attack, the charge and the dive: a strike with them also sounds as body on body.
 constexpr std::uint32_t kChargeFlags = 0x1400000;
 
+// Whether a player's attack `animId` enters the fight stance: its original start calls `Player_EnterStance`
+// (`0x00280068`). A grab, tackle, mount, miss or tandem does not come here (enterStanceForHold() enters it). The charge
+// (Player_Charge), the walk and run attacks 23 and 24 and the armed run sweep 501 (Player_StartCharge), the specials
+// 653 and 645 and their rear ids (Player_Special and Player_SpecialAttack, 0x00287730 and 0x00263c90), the spray 664,
+// rage's start 643 (Player_TryStartRage) and a held object's throws (sets 4-6, Player_CrossWithWeapon 0x002880d8) do
+// not. Nor do square's solo 22 and the armed special's throw of a melee weapon (Player_ThrowMeleeWeapon), which Coney
+// does not build (docs/research/combat-targets.md#fight-stance).
+// @coney-only a list of the attack starts that call Player_EnterStance; the original makes the call in each start
+bool attackEntersStance(int animId) {
+    switch (animId) {
+    case id::kRunningAttackCharge:
+    case id::kAttackFromWalk:
+    case id::kAttackFromRun:
+    case id::kArmedAttackFromRun:
+    case id::kSpecial:
+    case id::kSpecialRear:
+    case id::kSpecialRage:
+    case id::kSpecialRageRear:
+    case id::kSpraySpecial:
+    case id::kRageStart:
+    case id::kOneHandedThrow:
+    case id::kOneHandedThrowFromWalk:
+    case id::kOneHandedThrowFromRun:
+    case id::kBarrelThrow:
+    case id::kBarrelThrowFromWalk:
+    case id::kBarrelThrowFromRun:
+    case id::kGhettoThrow:
+    case id::kGhettoThrowFromWalk:
+    case id::kGhettoThrowFromRun:
+        return false;
+    default:
+        return true;
+    }
+}
+
 // Whether `animId` is a moving attack, after which the run may go on.
+// @coney-only Coney's grouping of the run attacks, for the animator's holds and the run resumed after them
 bool isMovingAttack(int animId) {
     return animId == id::kRunningAttackCharge || animId == id::kRunningAttackDive || animId == id::kAttackFromRun ||
            animId == id::kArmedAttackFromRun;
 }
 
 // Whether `clip` switches a strike shape on (one bone's, or all of them): its attack strikes through the shapes.
+// @coney-only a test over the clip's events, for Coney's strike-shape attacks
 bool switchesStrikeShapes(const anim::AnimClip& clip) {
     return std::ranges::any_of(clip.events, [](const anim::ClipEvent& event) {
         return event.type == kEventStrikeOn || event.type == kEventStrikeAllOn;
@@ -55,6 +92,7 @@ bool switchesStrikeShapes(const anim::AnimClip& clip) {
 }
 
 // The horizontal distance between two points.
+// @coney-only a maths helper
 float flatDistance(const anim::Vec3& a, const anim::Vec3& b) { return std::hypot(b.x - a.x, b.y - a.y); }
 
 // The character class whose damage from a Warrior is quartered: `bopp_bo`, the Boppers' boss.
@@ -150,6 +188,9 @@ namespace {
 // down with health left counts too: the wide filter (`TargetFilter_Wide` `0x002796a0`) skips only the knocked out
 // (state `0x100000000`), not the down, which is how square finds a downed human for the grounded strike 193
 // (docs/research/combat-targets.md#targeting).
+// @orig 0x0027a6c0 Player_PickTarget (unknown)
+// @orig 0x0027a4b0 Player_FindAttackTarget (unknown)
+// @orig 0x0027b058 Attack_FindNearestInReach (unknown)
 bool fightable(const Combatant& target, const anim::Vec3& from, bool down = false) {
     const bool state = target.state() == TargetState::Standing || (down && target.state() == TargetState::Grounded);
     return state && !target.health().depleted() && target.targetable() &&
@@ -158,6 +199,8 @@ bool fightable(const Combatant& target, const anim::Vec3& from, bool down = fals
 
 // The nearest fightable target of `input` within `reach` and, when `cone` is above 0, within `cone` degrees of the
 // heading `along`, a downed one too with `down`; null for none.
+// @orig 0x0027a6c0 Player_PickTarget (unknown)
+// @orig 0x0027a4b0 Player_FindAttackTarget (unknown)
 Combatant* nearestFightable(const FighterInput& input, float along, float reach, float cone, bool down = false) {
     Combatant* best = nullptr;
     float bestDistance = reach;
@@ -176,7 +219,9 @@ Combatant* nearestFightable(const FighterInput& input, float along, float reach,
     return best;
 }
 
-// The search's last resort: the current target, when it is still fightable within `range`.
+// The last resort: the current target, fightable within `range` (a stand-in for the original's object query).
+// @orig 0x0027a6c0 Player_PickTarget (unknown)
+// @orig 0x0027a4b0 Player_FindAttackTarget (unknown)
 Combatant* keptTarget(const FighterInput& input, const Combatant* current, float range) {
     if (current == nullptr || !fightable(*current, input.position) ||
         flatDistance(input.position, current->position()) > range) {
@@ -188,6 +233,9 @@ Combatant* keptTarget(const FighterInput& input, const Combatant* current, float
 
 // The heading a search runs along: the stick's when it is pushed (its angle is positive to the right, headings grow to
 // the left), else the facing turned by `offset`.
+// @orig 0x0027a6c0 Player_PickTarget (unknown)
+// @orig 0x0027a4b0 Player_FindAttackTarget (unknown)
+// @orig 0x0027b058 Attack_FindNearestInReach (unknown)
 float aimHeading(const FighterInput& input, float offset) {
     return input.stick.magnitude() > kPickStick ? input.heading - (input.stick.angleDegrees() * kDegrees)
                                                 : wrapAngle(input.heading + offset);
@@ -198,7 +246,7 @@ float aimHeading(const FighterInput& input, float offset) {
 Combatant* Fighter::pickTarget(const FighterInput& input, float range, const Combatant* current) {
     const float along = aimHeading(input, 0.0F);
     // The passes in order; the first that finds anyone ends the search. (The objects' passes between them are
-    // pickObjectTarget()'s.)
+    // pickObjectTarget()'s, a stand-in: square tries the objects only when no human is found.)
     if (Combatant* found = nearestFightable(input, along, range * kPickConeScale, kPickConeDegrees); found != nullptr) {
         return found;
     }
@@ -265,9 +313,15 @@ Combatant* Fighter::attackTargetOf(int animId, const FighterInput& input, bool c
 }
 
 const Combatant* Fighter::lockTarget() const {
+    // A player's lock-on movement runs while he is locked, unless a throw put him on the free one.
+    if (m_player) {
+        return m_lockOn && !m_lockMoveFree ? m_target : nullptr;
+    }
     return !m_lockBlocked && combat::lockedOn(combat::combatTuning(), m_target != nullptr, m_l1Held) ? m_target
                                                                                                      : nullptr;
 }
+
+bool Fighter::inFightStance() const { return m_player ? m_stanceOn : lockTarget() != nullptr; }
 
 void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& heading) {
     // The strikes reported are the strike test's of this update's state pass, then this update's own.
@@ -370,8 +424,20 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     stepAlignment(heading);
     followPairClips(input, animator, heading);
 
-    // 4. The duck's counter takes a square or cross in its window; then the dispatcher decides, and the fighter plays
-    // what it decided.
+    // 4. A player's stance and target, then the L1 handlers, before his commands (`Player_UpdateActions` `0x0027c120`
+    // runs `Player_UpdateStanceOrIdle` just ahead of them); the duck's counter takes a square or cross in its window;
+    // then the dispatcher decides, and the fighter plays what it decided. **Coney's choice**: the original skips the
+    // stance update and the L1 handlers on an update where `Player_BufferChain` (`0x00280630`) takes a chain press or
+    // starts the chained attack; Coney's chain runs inside the dispatcher after them (PlayerCombat::update()), so on
+    // that update they run too, at most one update apart from the original.
+    // While a throw or a grab's power move plays (state 0x1000, `Human_IsThrowing` `0x002239e0`) the dispatcher runs
+    // `Player_UpdatePowerMove` (`0x0027df38`) in their place.
+    const bool powerMove = clips::isThrow(static_cast<int>(animator.animId())) ||
+                           (m_combat.mode() == combat::CombatMode::Grabbing && m_combat.powerMove() != id::kNone);
+    if (m_player && !powerMove) {
+        updateStance(input, animator.flags());
+        updateL1(input, animator.flags());
+    }
     combat::CombatInput in = combatInput(input, animator, false);
     if (riseCountered || duckCounter(input, animator)) {
         in.command = combat::command::kNone;
@@ -430,18 +496,9 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
         // And the hold's side: a grab from its rear (state 0x20) is what a tandem starts at.
         m_held->holdSide(grabbing && m_rear);
     }
-    trackTarget(FighterInput{.command = input.command,
-                             .buttons = input.buttons,
-                             .stick = input.stick,
-                             .padStick = input.padStick,
-                             .gait = input.gait,
-                             .position = input.position,
-                             .heading = heading,
-                             .nowMs = input.nowMs,
-                             .targets = input.targets,
-                             .stepSeconds = input.stepSeconds,
-                             .sprinting = input.sprinting},
-                animator.flags());
+    if (!m_player) {
+        trackTarget(input);
+    }
     noteClip(animator);
 }
 
@@ -471,7 +528,7 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
     in.player = m_player;
     in.padControlled = input.padControlled;
     in.hasSprayPaint = m_hasSprayPaint;
-    in.fightStance = lockTarget() != nullptr;
+    in.fightStance = inFightStance();
     m_snapTarget = nullptr;
     m_wallThrow.reset();
     if (helpless) {
@@ -555,8 +612,8 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
 }
 
 Holdable* Fighter::strongGrappleTarget(const FighterInput& input) {
-    // Humans that can be held and fought, standing with health left, searched along the stick as pickTarget() does;
-    // the one found becomes the target.
+    // Humans that can be held, standing with health left, in the cone along the stick: a stand-in for the search
+    // Player_FindAttackTarget makes (no any-angle, wide or kept-target pass). The one found becomes the target.
     std::vector<combat::TargetCandidate> candidates;
     candidates.reserve(input.targets.size());
     for (Combatant* target : input.targets) {
@@ -686,6 +743,7 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
                             clips::kAttackHolds);
         consumed = true;
     }
+    enterStanceForHold(out);
     if (out.tandemBase != id::kNone) {
         // The tandem at the victim the search found (no candidate: nothing starts, as with a vanished target).
         if (m_tandemCandidate != nullptr) {
@@ -720,6 +778,16 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
         Holdable* thrown = frontThrow ? m_held : nullptr;
         if (frontThrow) {
             alignWallThrow(out, input, heading);
+        }
+        // The throw ends the grab with no Grab_End: the grabbing movement (`Human_MoveGrabbing` `0x00245310`) finds
+        // him grabbing no one and puts the free locomotion (`Human_PlayerLocomotion` `0x00240e38`) in place of the
+        // lock-on movement it had saved. The lock (0x4) and the target stay. Off the lock-on movement the stance
+        // update's step 3 may enter again: a threat within 2 m, or L1's lock held, locks him at once. With neither, as
+        // at runtime, the stance dropped the thrown target 5.6 m off on the update the throw's clip ended and 413
+        // walked him at once (run r-20261026-target-throw-end). A let-go (Grab_End) restores the lock-on movement
+        // instead.
+        if (out.grabAction == combat::GrabAction::Throw) {
+            m_lockMoveFree = m_lockOn;
         }
         playGrabAction(out, animator);
         if (thrown != nullptr) {
@@ -874,6 +942,12 @@ void Fighter::playAttack(int animId, const FighterInput& input, HumanAnimator& a
 void Fighter::steer(int animId, const FighterInput& input, const HumanAnimator& animator, float& heading,
                     bool chainStep) {
     m_steer.clear();
+    // A player's attack enters the fight stance (`Player_EnterStance` `0x00280068`, state 0x1) only where its start
+    // calls it: Square, Cross, the dive and the ground strike (attackEntersStance()). The grab, the tackle, a miss and
+    // a tandem enter it in enterStanceForHold().
+    if (m_player && attackEntersStance(animId)) {
+        enterStance();
+    }
     // A snap steers onto the human its own search found, which becomes the target
     // (docs/research/combat/index.md#attacks).
     if (m_snapTarget != nullptr && (animId == id::kSnapRight || animId == id::kSnapLeft || animId == id::kSnapBack)) {
@@ -886,6 +960,13 @@ void Fighter::steer(int animId, const FighterInput& input, const HumanAnimator& 
     // (docs/research/combat/index.md#charge-aim).
     // @orig 0x00264a80 Player_StartCharge (unknown)
     if (animId == id::kRunningAttackCharge) {
+        return;
+    }
+    // The walk and run attacks (23, 24) and the armed run sweep (501) play the same way (`Player_Square` `0x00286cc8`
+    // starts them through Player_StartCharge): the pick (2.0 m, 2.5 m armed) is only stored as the target, and only
+    // warned; no steer, no turn, and no stance or lock (docs/research/combat-targets.md#fight-stance).
+    if (animId == id::kAttackFromWalk || animId == id::kAttackFromRun || animId == id::kArmedAttackFromRun) {
+        m_target = attackTargetOf(animId, input, chainStep);
         return;
     }
     if (animId == id::kRunningAttackDive) {
@@ -906,14 +987,23 @@ void Fighter::steer(int animId, const FighterInput& input, const HumanAnimator& 
     }
     // The steer turns the attack's direction, not the front, at the target.
     const float direction = attackDirection(animId);
-    // Beyond the far range it only turns, a little, at once.
+    const float toEvent = timeToEvent(animId, animator);
+    // Beyond the far range it only turns (`Attack_TurnToTarget` `0x00276008`): the attack's direction onto the target
+    // led by his velocity over the time to the clip's first event, a lead faster than 8 m/s cut to that speed, the turn
+    // spread over the same time; no slide. **Coney stand-in**: the original also drops the target's own turn
+    // (Human_ClearTurn on him), which a Combatant does not offer, as in steerOnto().
+    // @orig 0x00276008 Attack_TurnToTarget (unknown)
     if (distance > far) {
-        const float cap = kAttackTurnCapDegrees * kDegrees;
-        heading = wrapAngle(heading + std::clamp(wrapAngle(headingOf(to) - direction - heading), -cap, cap));
+        const anim::Vec3 velocity = target->velocity();
+        const float speed = std::sqrt(velocity.x * velocity.x + velocity.y * velocity.y + velocity.z * velocity.z);
+        const float leadSeconds = speed > kTurnLeadMaxSpeed ? toEvent * (kTurnLeadMaxSpeed / speed) : toEvent;
+        const anim::Vec3 led =
+            anim::subtract(anim::add(target->position(), anim::scale(velocity, leadSeconds)), input.position);
+        const float aim = std::hypot(led.x, led.y) > 1e-4F ? headingOf(led) : headingOf(to);
+        m_steer.turnToOver(heading, wrapAngle(aim - direction), toEvent);
         return;
     }
     // Within it, the steer the attack's flag picks; Attack_Start gives the other steer the time to the first event.
-    const float toEvent = timeToEvent(animId, animator);
     steerOnto(animId, *target, input, toEvent, toEvent, heading);
 }
 
@@ -974,7 +1064,7 @@ void Fighter::steerOnto(int animId, const Combatant& target, const FighterInput&
     const bool led = ledAllowed && ledSteer(animId);
     const float time = led ? toEvent + kSteerLeadExtraSeconds : std::min(seconds, toEvent + kSteerLeadExtraSeconds);
     // The led steer aims at the target's head (slot point 0), read once here as the attack starts; the other at its
-    // position (docs/research/combat-targets.md#led-steer).
+    // position (docs/research/combat-targets.md#led-steer). A stand-in: both take steerReach()'s big and rear changes.
     const anim::Vec3 point = led ? target.ledPoint() : target.position();
     const anim::Vec3 to = anim::subtract(point, input.position);
     const auto clipId = static_cast<std::uint32_t>(clips::clipOf(animId));
@@ -1093,11 +1183,12 @@ void Fighter::strikeContact(Combatant& victim, int animId, anim::Vec3 position, 
 }
 
 bool Fighter::powerOutEscape(const Combatant& victim) const {
+    // No-escape is tested first: with it the grab is released whatever else holds.
     const std::uint64_t flags = victim.flags();
-    if ((flags & (flag::kDoubleDamage | flag::kAutoEscape)) != 0) {
-        return true;
+    if ((flags & flag::kNoEscape) != 0) {
+        return false;
     }
-    return hurt() && (flags & flag::kNoEscape) == 0;
+    return (flags & (flag::kDoubleDamage | flag::kAutoEscape)) != 0 || hurt();
 }
 
 void Fighter::applyHit(Combatant& victim, int animId, int damage, bool heldMove, anim::Vec3 attacker,
@@ -1164,8 +1255,9 @@ bool Fighter::scoresRageOn(const Combatant& victim) {
 
 std::uint32_t Fighter::strikeMaterialOf(int animId, const combat::AnimRange* range,
                                         const HumanAnimator& animator) const {
-    // The strength: the hit code's (**Coney's reading** of the reaction's bits 4-5), one more for the Anim Range
-    // flags 0x600 or anim 11, at most 3 (docs/research/sound-events.md#strike-human).
+    // The strength: the hit code's (**Coney stand-in** for the reaction's bits 4-5, which Hit_PickReaction picks from
+    // the height and the flags), one more for the Anim Range flags 0x600 or anim 11, at most 3
+    // (docs/research/sound-events.md#strike-human).
     int strength = range != nullptr ? combat::decodeHitCode(range->kind).strength : 0;
     if ((range != nullptr && (range->flags & kStrongerHitFlags) != 0) || animId == kStrongerHitAnim) {
         ++strength;
@@ -1183,7 +1275,7 @@ void Fighter::earnRage(int animId, std::uint64_t nowMs, bool isThrow) {
     }
 }
 
-void Fighter::trackTarget(const FighterInput& input, std::uint32_t phase) {
+void Fighter::trackTarget(const FighterInput& input) {
     const combat::CombatTuning& tuning = combat::combatTuning();
     // A target that left the fight is dropped: gone from the list, out of health, or down.
     if (m_target != nullptr) {
@@ -1195,47 +1287,258 @@ void Fighter::trackTarget(const FighterInput& input, std::uint32_t phase) {
             m_target = nullptr;
         }
     }
-    // L2 held (`Player_UpdateSprint`): with stamina left and +0x08 free of 0x10 the sprint drops the target on the
-    // update it is read, mid-attack too, and L1 does not keep it (the drop is refused only while locked, and the sprint
-    // has just cleared the lock); held without stamina, a stance with +0x08 clear is left. Either way nothing else of
-    // the stance runs this update, so L1 picks nothing either. Not in a hold, which the busy gate keeps out
-    // (docs/research/combat-targets.md#fight-stance).
-    if (m_player && (input.buttons & pad::kL2) != 0 && m_held == nullptr) {
-        if ((input.sprinting && (phase & combat::kPhaseGrabStart) == 0) || phase == 0) {
-            m_target = nullptr;
-        }
-        return;
-    }
     // L1 pressed or held picks one when there is none. **Coney's choice**: it searches as far as a target is kept.
     if (m_target == nullptr &&
         (input.command == combat::command::kL1Pressed || input.command == combat::command::kL1Held)) {
-        m_target = pickTarget(input, tuning.targetDropDistance);
+        m_target = pickTarget(input, tuning.stanceMid);
     }
-    if (!m_player) {
+}
+
+Combatant* Fighter::nearestStanceEnemy(const FighterInput& input, float range) const {
+    // **Coney's choice**: the original first sets the search's half-angle (54 degrees, kPickConeDegrees) and stores the
+    // aim heading in record +0xd4 / +0xd8 for the searches after it; Coney's searches each work the aim out themselves.
+    Combatant* best = nullptr;
+    float bestDistance = range;
+    for (Combatant* target : input.targets) {
+        // The attacks pick from every target; the stance only from the threats (TargetFilter_StanceEnemy refuses a
+        // friend, a pad player and a human that is no threat, Human_IsThreatTo). Its down, dead and state 0xe0000
+        // refusals are Coney's Standing test in fightable(); its +0x08 0x40 refusal is the held bit's.
+        if (!fightable(*target, input.position) || (target->heldFlags() & kStanceRefuseHeld) != 0 ||
+            std::ranges::find(input.calm, target) != input.calm.end()) {
+            continue;
+        }
+        const float distance = flatDistance(input.position, target->position());
+        if (distance <= bestDistance) {
+            best = target;
+            bestDistance = distance;
+        }
+    }
+    // **Coney stand-in**: the original keeps the nearest only when the line to him is clear (`Human_IsClearToTarget`
+    // `0x0021c240`, a capsule cast), and returns the target held when it is not; Coney makes no clear-line test, so
+    // the nearest is always taken (docs/research/combat-targets.md#open-questions).
+    if (best != nullptr) {
+        return best;
+    }
+    // None found: the target held, unless he is out (knocked out, dying or dead: Coney's targets with no health left).
+    return m_target != nullptr && !m_target->health().depleted() ? m_target : nullptr;
+}
+
+void Fighter::takeTarget(Combatant* target) {
+    // A pad player locked by L1 keeps the target he has (Human_SetTarget and Human_DropTarget refuse). The stance's
+    // candidates are already targetable (fightable()). **Coney's choice**: the original also hands the target to the
+    // player's brain (Brain_SetTarget); Coney's player has no brain.
+    if (!l1Locked()) {
+        m_target = target;
+    }
+}
+
+void Fighter::leaveStance() {
+    // The stance bit and the lock (0x5), and with it the lock-on movement (Human_RestoreControl). **Coney's choice**:
+    // the power move's extension count (+0xbc) that the original zeroes here is zeroed where each power move starts.
+    m_stanceOn = false;
+    m_lockOn = false;
+}
+
+void Fighter::enterStance() {
+    // `Human_ClearHiddenState` (`0x00230140`) first, then state 0x1; the human ends the hiding when it reads
+    // takeStanceEntered(). **Coney's choice**: the stance timer the original also sets (`0x002800b8`) is read by
+    // nothing, so it is not kept.
+    m_stanceEntered = true;
+    m_stanceOn = true;
+}
+
+void Fighter::enterStanceForHold(const combat::CombatOutput& out) {
+    // A grab, a tackle (or a mount on a downed victim), a miss and a tandem enter the fight stance as they start:
+    // `Player_GrabOrTackle` calls `Player_EnterStance` before each, found target or not, and Square and Cross before a
+    // tandem. The strong grapple, which `Player_SpecialAttack` starts through `Grab_Start`, enters none
+    // (docs/research/combat-targets.md#fight-stance). The rest of `Player_GrabOrTackle` is
+    // PlayerCombat::grabOrTackle()'s (the refusals, the tandem first, the miss), combatInput()'s (the searches) and
+    // startHold()'s and startTandem()'s (the starts). **Coney stand-in** (#1011): of it these are not built: circle in
+    // a throw aim and the tackle with flag `0x100000000` (flag::kBlockTackle) are not refused; the search runs for a
+    // brain-driven player too and a miss keeps the target instead of setting the none found; a downed human is not
+    // mounted (the search skips him); a tackle at a human who is tackling does not pull him off; command 33's check
+    // before a grab is not made; a circle tap with both grab-block flags still starts a tandem, which the original
+    // refuses before its tandem test; and a grab or tackle does not warn its victim (`Human_WarnOfAttack`). The
+    // record's `+0xb8` count is zeroed where each power move starts, and a Coney target always has an anim stack
+    // (`+0xd8`).
+    const bool holdStarted = (out.grabStarted || out.tackleStarted) && out.grappleAnim == id::kNone;
+    if (m_player && (holdStarted || out.grabMissed || out.tandemBase != id::kNone)) {
+        enterStance();
+    }
+}
+
+void Fighter::updateStance(const FighterInput& input, std::uint32_t phase) {
+    const combat::CombatTuning& tuning = combat::combatTuning();
+    // The block (R1 held, Player_UpdateActions): the lock and its movement end, the stance stays (state 0x8001), and
+    // nothing else of the stance runs while R1 is held.
+    if (blocking()) {
+        m_lockOn = false;
+        m_stanceOn = true;
         return;
     }
-    // The player's stance (`0x0027ce90`), unless L1 or a hold keeps the target: running (gait 4 or 5 with +0x08 clear)
-    // drops it; otherwise the nearest enemy within 2 m becomes the target when there is none (and +0x08 holds nothing
-    // outside 0x320100), or replaces one beyond 3 m (with +0x08 clear). **Coney's readings**: the stance timer and the
-    // alerted-enemy rule that keep the stance on are not modelled (Coney's stance is the lock, lockTarget()).
-    if (m_l1Held || m_held != nullptr) {
+    // The lock-on movement hands control back to the free one once there is no target (Human_FightStanceMove).
+    if (m_lockOn && m_target == nullptr) {
+        m_lockOn = false;
+    }
+    // The dispatcher's busy gate: a moving attack, a grab's start, a rise and the like keep the stance as it is. A
+    // human holding another runs the hold's own update instead, and one in a throw aim runs no stance update
+    // (Player_UpdateStanceOrIdle). A grab's or a tackle's intro is not yet a hold: the grabbing state (0xc0) comes at
+    // the connect and the tackling one (0x400) from `Tackle_StartMount` at the intro's end (`Tackle_OnIntroEnd`
+    // `0x00270560`), so `Player_UpdateActions` (`0x0027c120`) still runs the stance through the intro and its step 3
+    // locks the victim. The original also skips it in states 0xf0000, goes to Player_UpdateActionsHidden
+    // (0x0027e040) for a hidden player, drops the target of a player in a scene and ends a throw aim on L2.
+    // **Coney's choice**: Coney's fighter reaches here in neither down state and runs the same update hidden (only the
+    // lock is refused), the scene's drop is not made, and its throw aim is a script's, which L2 does not end.
+    const bool holding = m_held != nullptr && m_pair != PairStage::Intro && !m_tacklePending;
+    if ((phase & kStanceGate) != 0 || holding || input.throwAiming) {
         return;
     }
+    // A target gone from the list is gone: the original's handle resolves to no one.
+    if (m_target != nullptr && std::ranges::find(input.targets, m_target) == input.targets.end()) {
+        m_target = nullptr;
+    }
+    // 0. The nearest threat within the far distance, else the target held unless he is out. Then a target that is
+    // out (knocked out, dying or dead) is dropped with L1's bit, unless his +0x08 holds 0x400000; a target knocked
+    // over with health left is kept. When the nearest was the target dropped, there is none. **Coney stand-in**: the
+    // original also drops a target in a scene (Human_IsInSceneState), which Coney's targets do not report.
+    Combatant* nearest = nearestStanceEnemy(input, tuning.stanceFar);
+    if (m_target != nullptr && m_target->health().depleted() && (m_target->heldFlags() & kStanceKeepHeld) == 0) {
+        if (nearest == m_target) {
+            nearest = nullptr;
+        }
+        m_l1Lock = false;
+        m_target = nullptr;
+    }
+    const float toNearest =
+        nearest != nullptr ? flatDistance(input.position, nearest->position()) : tuning.stanceFar + 1.0F;
+    // 1. The sprint (L2 with stamina, +0x08 free of 0x10: the state 0x1000000 that input.sprinting is) clears L1's
+    // bit and drops the target; a target beyond 13 m loses L1's bit. **Coney's choice**: the original also ends the
+    // hidden state (0x200000, Human_ClearHiddenState) here and in step 2; Coney's ends it in Human::updateHiding(),
+    // which reads the same sprint.
+    if (input.sprinting && (phase & combat::kPhaseGrabStart) == 0) {
+        m_l1Lock = false;
+        takeTarget(nullptr);
+    }
+    const float toTarget = m_target != nullptr ? flatDistance(input.position, m_target->position()) : tuning.stanceFar;
+    if (toTarget > kL1ForgetDistance) {
+        m_l1Lock = false;
+    }
+    // 2. L2 held, a free run or a free sprint: nothing else happens, and a stance with +0x08 clear is left with its
+    // target. The lock-on walk moves at the combat walk's speed (gait 3), so a run never starts inside it.
+    // **Coney's choice**: the original's other cause (flag +0xe0 0x8000000000 while not locked) and a state code 0xe
+    // (in step 5 also 0xb) turning into action 7 on the way out have no counterpart in Coney's player.
+    const bool l2 = (input.buttons & pad::kL2) != 0;
     const bool running = (input.gait == Gait::Run || input.gait == Gait::Sprint) && phase == 0;
-    if (running) {
+    if (l2 || running) {
+        if (m_stanceOn && phase == 0) {
+            m_l1Lock = false;
+            takeTarget(nullptr);
+            leaveStance();
+        }
+        return;
+    }
+    // 3. Off the lock-on movement (`Human_FightStanceMove`: not locked, or locked while a throw put him on the free
+    // movement) and not hidden (state 0x200000, setLockBlocked()), a threat (or the target kept) within the near
+    // distance, or L1's lock (0x8 with 0x4, which a throw keeps), enters the stance: the nearest becomes the target
+    // (the first only while +0x08 holds nothing outside 0x320100) and the lock-on movement starts (Player_LockOn). A
+    // player holding a set-4 object enters nothing. **Coney's choice**: the original also tests flag +0xe0
+    // 0x200000000000, and clears states 0x1008000 on entering; Coney's player has neither (the sprint is
+    // input.sprinting, made again each update).
+    const bool lockWalk = m_lockOn && !m_lockMoveFree;
+    if (!lockWalk && !m_lockBlocked && (toNearest <= tuning.stanceNear || l1Locked())) {
+        if (m_animSet == 4) {
+            return;
+        }
+        m_stanceOn = true;
+        if (m_target == nullptr && (phase & ~kStanceTakeAllowed) == 0) {
+            takeTarget(nearest);
+        }
+        if (m_target != nullptr) {
+            takeTarget(nearest);
+            m_lockOn = m_target != nullptr;
+            m_lockMoveFree = false;
+        }
+        return;
+    }
+    // 4. It holds while L1's release window runs, or while the target is within the far distance; a target beyond the
+    // mid distance is swapped for a threat within the near one.
+    if (m_target != nullptr && input.nowMs < m_l1WindowEndMs) {
+        return;
+    }
+    if (toNearest <= tuning.stanceNear && toTarget > tuning.stanceMid) {
+        if (phase == 0) {
+            takeTarget(nearest);
+        }
+        return;
+    }
+    // It also holds while L1's bit is set and he is hidden (0x00227cd8).
+    if (toTarget < tuning.stanceFar || input.nowMs <= m_l1WindowEndMs || phase != 0 || l1Locked() ||
+        (m_l1Lock && m_lockBlocked)) {
+        return;
+    }
+    // 5. It ends: the target is dropped and the stance and its lock are left. **Coney stand-in**: the original keeps a
+    // standing player in the stance (no lock) while an alerted enemy stands within 20 m in his 120 degree view (brain
+    // list +0x164, +0x21c); Coney's fighter does not see the brains' lists, so that stance is not entered.
+    m_target = nullptr;
+    leaveStance();
+}
+
+void Fighter::updateL1(const FighterInput& input, std::uint32_t phase) {
+    // Player_UpdateActions reaches the L1 handlers only out of the block (R1 held), the busy gate and a hold; the
+    // stance update's own returns do not skip them. With no command it clears L1's bit (0x8008). **Coney's choice**:
+    // its Human_IsBusy (0x00228258) state test, which also clears the bit, is not made: Coney's player keeps no such
+    // state word.
+    if (blocking() || (phase & kStanceGate) != 0 || m_held != nullptr) {
+        return;
+    }
+    if (input.command == combat::command::kNone) {
+        m_l1Lock = false;
+        return;
+    }
+    // Let go (the matcher's release command; in a throw aim it ends the aim instead): L1's bit and the lock clear
+    // (0xc) and the release window opens.
+    if (input.command == combat::command::kL1Released) {
+        if (!input.throwAiming) {
+            m_l1Lock = false;
+            m_lockOn = false;
+            m_l1WindowEndMs = input.nowMs + kL1ReleaseWindowMs;
+        }
+        return;
+    }
+    if (input.command != combat::command::kL1Pressed && input.command != combat::command::kL1Held) {
+        return;
+    }
+    // Held does nothing with a set-5 object in hand (the dispatcher's test), under +0x08 0x2000000, while locked, in a
+    // throw aim or at a sprint. **Coney stand-in**: the per-player action delay (PlayerRec_GetActionDelayLeft, player
+    // state +0x4d / +0x50) that also refuses it is not modelled, and a press is taken as a hold (Player_OnL1Pressed
+    // 0x0027da10 picks only inside the release window, and the hold that follows picks anyway).
+    if (m_animSet == 5 || (phase & kL1HeldRefused) != 0 || l1Locked() || input.throwAiming ||
+        input.gait == Gait::Sprint) {
+        return;
+    }
+    // With no target one is picked, and one there is locked (state 0x8 and Player_LockOn, which a hidden player
+    // skips). Hidden, while L1's bit is still clear, a target that is not standing (state 0x3800f0000) is dropped
+    // instead; once the hold has set the bit he is kept. **Coney stand-in**: the pick is square's within the mid
+    // distance; the original's L1 search (`Player_FindLockTarget` 0x0027b2a8) runs its own passes out to 6 m
+    // (docs/research/combat-targets.md#open-questions).
+    if (m_target == nullptr) {
+        m_target = pickTarget(input, combat::combatTuning().stanceMid);
+    }
+    if (m_target == nullptr) {
+        return;
+    }
+    if (m_lockBlocked && !m_l1Lock && m_target->state() != TargetState::Standing) {
         m_target = nullptr;
         return;
     }
-    Combatant* nearest = nearestFightable(input, input.heading, kStanceTrackRange, 0.0F);
-    if (nearest == nullptr || flatDistance(input.position, nearest->position()) > kStanceEnterRange) {
-        return;
+    if (!m_lockBlocked) {
+        m_lockOn = true;
+        m_lockMoveFree = false;
+        m_stanceOn = true;
     }
-    const bool takes = m_target == nullptr && (phase & ~kStanceTakeAllowed) == 0;
-    const bool swaps =
-        m_target != nullptr && phase == 0 && flatDistance(input.position, m_target->position()) > kStanceSwapRange;
-    if (takes || swaps) {
-        m_target = nearest;
-    }
+    // L1's bit (0x8). **Coney's choice**: a hidden player's hold also sets state 0x20000000, which Coney's player keeps
+    // no state word for.
+    m_l1Lock = true;
 }
 
 } // namespace coney::human

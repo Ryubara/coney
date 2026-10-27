@@ -95,9 +95,8 @@ struct SquareInput {
     /// The held object's anim set (its `+0x87`; 0 with nothing in hand): 1-3 take the armed branch (armedAttack()).
     int heldSet = 0;
     /// In a fight stance (record `+0x00` bits `0x3`, `0x00228340`): no unarmed run or walk attack, so square goes on to
-    /// the snap test and `S1`, cross to `X1`; the armed run attack 501 does not test it. **Coney stand-in** for the
-    /// stance: the fighter is locked onto a target (Fighter::lockTarget()); the original's stance rules
-    /// (`0x0027ce90`, docs/research/combat/index.md) are not built.
+    /// the snap test and `S1`, cross to `X1`; the armed run attack 501 does not test it. A player's stance is
+    /// Fighter::inFightStance(), his stance update (`0x0027ce90`, docs/research/combat-targets.md#fight-stance).
     bool fightStance = false;
     bool snapNeedsTarget = true; ///< CombatTuning::snapNeedsTarget.
     /// The snap's search found a human on the stick's side that is not the current target (the caller searches:

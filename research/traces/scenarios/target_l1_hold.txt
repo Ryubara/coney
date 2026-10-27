@@ -1,0 +1,3 @@
+# L1 held from update 5 for 60 updates, the stick at rest. Frames are character updates of 1/30 s.
+5 press l1
+65 release l1

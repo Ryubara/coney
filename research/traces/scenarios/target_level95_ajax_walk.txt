@@ -1,0 +1,3 @@
+# The stick 60 % straight ahead from update 2 for 80 updates. Frames are character updates of 1/30 s.
+2 stick left 0 60
+82 stick left 0 0

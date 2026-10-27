@@ -928,6 +928,40 @@ coney = "src/audio/human_sound_events.h:HumanSoundEvents::impact"
 status = "legacy"
 
 [[function]]
+address = 0x00220df0
+name = "Hit_ResolveBlock"
+page = "sound-events.md#strike-human"
+role = "a strike's hit sound: the striking and the struck material"
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::strikeMaterialOf"
+status = "compared"
+
+[[function.gaps]]
+what = "a boss-class victim with flag 0x10 counting as blocking, and its block flag"
+relation = "not-ported"
+issue = 652
+
+[[function.gaps]]
+what = "the strength comes from the attack's hit code, not from the reaction Hit_PickReaction picks by the height difference"
+relation = "stand-in"
+issue = 652
+
+[[function.gaps]]
+what = "no hit sound when the attacker's body +0x1a0 has +0x38 set"
+relation = "not-ported"
+issue = 652
+
+[[function.gaps]]
+what = "the striking bone (head, forearms and hands, shins and feet) and the head struck: read from the clip's name and a high hit"
+relation = "stand-in"
+issue = 652
+
+[[function.gaps]]
+what = "the punchbag victim (class 460) and its BAG material (108)"
+relation = "not-ported"
+issue = 652
+
+[[function]]
 address = 0x00228228
 name = "HumanRecord_AreActionsBlocked"
 page = "sound-events.md#tag-lines"

@@ -49,6 +49,7 @@ TEST_CASE(
     "a reviver turns and slides to 351's reach from the downed human's head, then plays 351, 353 and 389 into his "
     "idle, holding 0x8000000",
     "[human][revive]") {
+    // Expected: combat-reactions.md#revive, confirmed (code) and confirmed (runtime)
     const coney::test::FightCharacter character(reviveClips());
     const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
     Human reviver(character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 1.0F,
@@ -110,6 +111,7 @@ TEST_CASE(
 
 TEST_CASE("a downed human revived is up with full health, plays 354 holding 0x8000, then 389 and his idle",
           "[human][revive]") {
+    // Expected: combat-reactions.md#revive, confirmed (code) and confirmed (runtime)
     const coney::test::FightCharacter character(reviveClips());
     const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
     Human reviver(character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 1.0F,
@@ -139,4 +141,44 @@ TEST_CASE("a downed human revived is up with full health, plays 354 holding 0x80
     CHECK(order[0] == combat::kRevivedAnim);
     CHECK(order[1] == coney::human::kAnimNormalFromFight);
     CHECK(order[2] == 388);
+}
+
+namespace {
+
+// The revived human's clips over `updates` updates after playRevived(), each change once.
+std::vector<std::uint32_t> revivedOrder(Human& downed, const coney::raycast::CollisionMesh* mesh, int updates) {
+    std::vector<std::uint32_t> order{downed.animator().animId()};
+    for (int update = 0; update < updates; ++update) {
+        downed.step(still(), mesh);
+        if (const std::uint32_t id = downed.animator().animId(); id != order.back()) {
+            order.push_back(id);
+        }
+    }
+    return order;
+}
+
+} // namespace
+
+TEST_CASE("revived by a man in the fight stance, the downed human goes from 354 straight into the fight idle",
+          "[human][revive]") {
+    // Expected: combat-reactions.md#revive, confirmed (code). Revive_Finish 0x00274ee0 tests Human_IsInFightStance on
+    // the reviver: in it, the paired 354 hands over to the idle loop of the reviver's set (the fight idle, set 0xb)
+    // with no 389 chained between.
+    const coney::test::FightCharacter character(reviveClips());
+    // The reviver with an enemy 1 m ahead: the stance update's step 3 puts him in the fight stance.
+    coney::test::Fight fight(character, 1.0F);
+    fight.run("", 5);
+    REQUIRE(fight.human().fighter().inFightStance());
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human downed(character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 1.0F,
+                 &character.ranges);
+    downed.spawn(mesh.get(), Vec3{20.0F, 20.0F, 0.0F}, 0.0F);
+    downed.fighter().health().set(0);
+    downed.step(still(), mesh.get());
+
+    downed.playRevived(fight.human());
+    const std::vector<std::uint32_t> order = revivedOrder(downed, mesh.get(), 60);
+    REQUIRE(order.size() >= 2);
+    CHECK(order[0] == combat::kRevivedAnim);
+    CHECK(order[1] == coney::human::kAnimFightIdle);
 }

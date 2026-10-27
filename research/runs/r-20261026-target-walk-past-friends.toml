@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261026-target-walk-past-friends"
+date = "2026-10-26"
+kind = "trace"
+tool = "pcsx2 record"
+digest = "cf6a020899d86175dfc2a21feb6a7598db2efa56ab82c573266b42343586651d"
+
+[who]
+agent = "a79590818d2525fcf"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = "target_walk_past_friends"
+method = ""
+
+[values]
+updates = 101
+missed_updates = 0
+columns = 18
+
+[hashes]
+trace_csv = "b0a21dfa4e8a972b038c50d1c6b0ed41a0c313d036b4f8bfd75435ace1a7350a"

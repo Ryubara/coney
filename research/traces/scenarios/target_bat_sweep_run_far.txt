@@ -1,0 +1,5 @@
+# Full stick straight down (toward the camera) from update 5, a run; square tapped at update 28; the stick held to
+# update 100. Frames are character updates of 1/30 s.
+5 stick left 0 -100
+28 tap square
+100 stick left 0 0

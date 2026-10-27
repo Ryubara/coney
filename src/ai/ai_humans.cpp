@@ -6,10 +6,12 @@
 #include <span>
 #include <utility>
 
+#include "ai/threats.h"
 #include "animation/anim_pose.h"
 
 namespace coney::ai {
 
+// @coney-only scene glue: Coney's owner of a scene's AI humans and their hooks into the characters' step
 AiHumans::AiHumans(human::Player& player, const human::PlayerCharacter& character, AiConfig config)
     : m_player(player), m_character(character), m_config(std::move(config)), m_ownBrains(std::make_unique<Brains>()),
       m_brains(m_ownBrains.get()), m_sides(m_brains->gangs()) {
@@ -19,12 +21,14 @@ AiHumans::AiHumans(human::Player& player, const human::PlayerCharacter& characte
     m_brains->gangs().addMember(m_brains->gangs().create(kWarriorsKind, "Warriors"), *m_playerBrain);
 }
 
+// @coney-only scene glue: Coney's owner of a level's AI humans and their hooks into the characters' step
 AiHumans::AiHumans(human::Player& player, const human::PlayerCharacter& character, AiConfig config, Brains& brains)
     : m_player(player), m_character(character), m_config(std::move(config)), m_brains(&brains), m_engaging(false),
       m_sides(brains.gangs()) {
     install();
 }
 
+// @coney-only scene glue: installs the brains, gangs and threats as hooks of Coney's characters' step
 void AiHumans::install() {
     // The player's brain is the first slot, as the player is the first human.
     m_playerBrain = &m_brains->add(m_player.body(), BrainType::Player, m_config.settings, 1);
@@ -34,19 +38,33 @@ void AiHumans::install() {
         const Brain* b = m_brains->find(victim);
         return !Gangs::friends(a != nullptr ? a->gang() : nullptr, b != nullptr ? b->gang() : nullptr);
     });
+    // The player's stance takes only a threat (`TargetFilter_StanceEnemy` 0x002791b0 through `Human_IsThreatTo`).
+    // **Coney's choice**: a human without a brain (none in the original) stays a threat, as it was a target.
+    m_player.humans().setThreat([this](const human::Human& human, const human::Human& other) {
+        const Brain* a = m_brains->find(human);
+        const Brain* b = m_brains->find(other);
+        return a == nullptr || b == nullptr || isThreat(*a, *b);
+    });
     m_player.humans().setBrains([this](std::span<human::Human* const> /*humans*/) { step(); });
 }
 
+// @coney-only glue: hands a brain the callback that turns the pad off (the original's brain writes the player's record)
 void AiHumans::givePad(Brain& brain) {
     // A dead player brain takes the pad away (`GangBrDead` on the Warriors).
     brain.setPadControl([this](bool padControlled) { m_player.setPadControlled(padControlled); });
 }
 
+// @orig 0x0041a8c0 Player_SwitchHuman (unknown)
+// @orig 0x0022a2a8 Human_ReleasePlayer (unknown)
 void AiHumans::switchPlayer(Brain& to, BrainType leftAs) {
     if (&to == m_playerBrain) {
         return;
     }
-    // The human left behind fights as `leftAs`, with the flags Human_ReleasePlayer gives that brain type.
+    // The human left behind fights as `leftAs`, with the flags Human_ReleasePlayer gives that brain type. **Coney
+    // stand-in** (#1011): the rest of Human_ReleasePlayer is not done here: the target drops outside co-op, the clear
+    // of his goals and actions (releaseToAi() does it), the class's rescale of health and power, the gear, the
+    // statistics and inventory, the pair break with another player, every brain's enemy counts, the HUD panel and
+    // tag, the body's scales and the class flags.
     m_playerBrain->setType(leftAs);
     human::Human& left = m_playerBrain->human();
     const std::uint64_t released = releasedFlags(left.flags(), leftAs);
@@ -75,6 +93,7 @@ bool AiHumans::releasePlayer(BrainType leftAs) {
     return true;
 }
 
+// @coney-only scene glue: takes Coney's hooks out of the characters' step
 AiHumans::~AiHumans() {
     // The pad back on the player's own human before the AI humans go.
     m_player.drive(m_player.body());
@@ -85,10 +104,12 @@ AiHumans::~AiHumans() {
     }
     m_player.humans().setBrains({});
     m_player.humans().setOpposition({});
+    m_player.humans().setThreat({});
     m_player.setPadControlled(true);
     m_player.setNearestEnemy(std::nullopt);
 }
 
+// @coney-only glue: Coney's maker of an AI human for the debug spawner, the layouts and the tests
 Brain& AiHumans::spawn(const human::PlayerCharacter& character, const AiConfig& config,
                        const raycast::CollisionMesh* mesh, anim::Vec3 feet, float headingDegrees) {
     const FighterClass& kind = config.fighter;
@@ -143,6 +164,7 @@ void AiHumans::remove(const human::Human& human) {
     }
 }
 
+// @coney-only bookkeeping: Coney's deferred removal from its step and brains lists
 void AiHumans::takeOutRemoved() {
     for (const human::Human* human : m_removing) {
         const auto found =
@@ -157,6 +179,7 @@ void AiHumans::takeOutRemoved() {
     m_removing.clear();
 }
 
+// @coney-only scene glue: empties Coney's list of AI humans
 void AiHumans::clear() {
     for (const AiHuman& entry : m_humans) {
         if (entry.removed) {
@@ -197,12 +220,14 @@ std::size_t AiHumans::liveCount() const {
     }));
 }
 
+// @coney-only test aid: starts a fight with the player through Brain::startFight()
 void AiHumans::fightPlayer(const human::Human& fighter) {
     if (Brain* brain = m_brains->find(fighter); brain != nullptr && brain != m_playerBrain) {
         brain->startFight(*m_playerBrain);
     }
 }
 
+// @coney-only glue: the brains' place in Coney's characters' step, with the engaging stand-in
 void AiHumans::step() {
     // The stand-in for the level script's GoalFight: an idle fighter takes the player on once he is in range.
     if (m_engaging && Brain::fightable(*m_playerBrain)) {
@@ -219,6 +244,7 @@ void AiHumans::step() {
     m_player.setNearestEnemy(Brains::nearestEnemy(*m_playerBrain));
 }
 
+// @coney-only render glue: the snapshots Coney draws between steps
 void AiHumans::capture() {
     // The humans deleted during the step leave it now, outside the characters' step.
     takeOutRemoved();
@@ -228,6 +254,7 @@ void AiHumans::capture() {
     }
 }
 
+// @coney-only render glue: a human's snapshot for drawing
 human::TargetSnapshot AiHumans::snapshotOf(const human::Human& human) {
     return human::TargetSnapshot{.feet = human.position(), .heading = human.heading(), .pose = human.pose()};
 }

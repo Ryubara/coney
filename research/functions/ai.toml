@@ -728,6 +728,31 @@ relation = "not-ported"
 issue = 646
 
 [[function]]
+address = 0x002225d8
+name = "Human_MaySpectate"
+page = "ai-fights.md#enemy-scan"
+kind = "helper"
+role = "the enemy scan's height rule: a Warrior, a brain that may not start a fight (but class role 10), one with 3 investigations or a pad player passes; else the member must stand less than 1.9 m (times the vertical sight modifier) above"
+level = "confirmed-code"
+coney = "src/ai/enemy_scan.cpp:maySpectate"
+status = "compared"
+
+[[function.gaps]]
+what = "a scanner whose class role Coney cannot look up is not passed as one whose role is not 10 (the original always reads one)"
+relation = "stand-in"
+issue = 1011
+
+[[function.gaps]]
+what = "the investigation count (+0x2d0) is taken as 0: Coney builds no investigate goal to raise it"
+relation = "stand-in"
+issue = 1011
+
+[[function.gaps]]
+what = "the 1.9 m limit is not scaled by CfgVerticalSightModifier (0x00510ad4)"
+relation = "stand-in"
+issue = 1011
+
+[[function]]
 address = 0x002235f8
 name = "Human_CounterChance"
 page = "ai-fights.md#block"
@@ -1065,7 +1090,17 @@ kind = "helper"
 role = "the periodic enemy scan: lists nearby humans and keeps the enemy list and sight flags up to date"
 level = "confirmed-code"
 coney = "src/ai/enemy_scan.h:scanEnemies"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the enemy scan does not mark the enemies on the HUD radar"
+relation = "not-ported"
+issue = 1011
+
+[[function.gaps]]
+what = "the hostile counts (Brain_CountHostile, Brain_UncountHostile) are not kept"
+relation = "not-ported"
+issue = 1011
 
 [[function]]
 address = 0x0028bbf0
@@ -1420,7 +1455,17 @@ kind = "helper"
 role = "re-scans enemies (`Brain_ScanEnemies`, one of 5 tokens per update) when the gang changed or the interval `+0x144` passed, × 4 in the fight stance or at detail level `+0x333` above 0 ([The enemy scan](ai-fights.md#enemy-scan))"
 level = "confirmed-code"
 coney = "src/ai/scan_schedule.h:ScanSchedule::maybeScan"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the rescan when the gang changed is not built"
+relation = "stand-in"
+issue = 1011
+
+[[function.gaps]]
+what = "the detail level (+0x333) is not read: neither its x4 out of the stance nor its level 0 test"
+relation = "stand-in"
+issue = 1011
 
 [[function]]
 address = 0x0028fbb0
@@ -1499,6 +1544,21 @@ role = "whether the brain holds an attack slot or has a target"
 level = "confirmed-code"
 coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
 status = "legacy"
+
+[[function]]
+address = 0x002904e0
+name = "Brain_MayStartFight"
+page = "ai-fights.md#enemy-scan"
+kind = "helper"
+role = "no Chase goal (`0x0c`), the top goal not `0x8a`, the gang not fighting (alert state `+0x32` not 1) and no fight goal"
+level = "confirmed-code"
+coney = "src/ai/enemy_scan.cpp:mayStartFight"
+status = "compared"
+
+[[function.gaps]]
+what = "Coney builds no Chase goal (0x0c), so that test never refuses"
+relation = "stand-in"
+issue = 1011
 
 [[function]]
 address = 0x002906b8
@@ -2084,6 +2144,30 @@ role = "starts a jump leg when the gap needs it, else walks on"
 level = "confirmed-code"
 coney = "src/ai/move_action.h:MoveAction::jumpLeg"
 status = "legacy"
+
+[[function]]
+address = 0x0029bf98
+name = "Filter_IsThreatTo"
+page = "ai-code.md#human-filters"
+role = "the Warriors' scan filter: a cop within 10 m and a threat, no civilian, else a threat and a valid enemy"
+level = "confirmed-code"
+coney = "src/ai/enemy_scan.cpp:warriorThreat"
+status = "compared"
+
+[[function.gaps]]
+what = "a cop at exactly 10 m passes (the original needs under 10 m)"
+relation = "stand-in"
+issue = 1011
+
+[[function.gaps]]
+what = "the civl_co_di kind (type 6) is refused as a civilian; the original filters it as any other"
+relation = "stand-in"
+issue = 1011
+
+[[function.gaps]]
+what = "a civilian passes only of ped type 3 (+0x26c) with +0x21c set and not grabbed from the rear: Coney refuses every civilian"
+relation = "stand-in"
+issue = 1011
 
 [[function]]
 address = 0x0029ce98

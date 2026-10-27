@@ -1,0 +1,41 @@
+# level95 checkpoint 2 (loaded with the load-checkpoint recipe before an --attach run): Cochise, a crew mate of gang
+# 3 (neutral to the player's gang 0: no friend or enemy bit), is held 1.23 m to the right of Cleon every update while
+# Cleon walks straight ahead at 60 % for 40 updates. Does the stance take a crew mate, or lock? Research:
+# docs/research/combat-targets.md#fight-stance.
+description = "level95 cp 2: walk at 60 % with Cochise held 1.23 m beside: any target or stance"
+research = "docs/research/combat-targets.md#fight-stance"
+input = "target_level95_crew_beside.txt"
+updates = 50
+fields = ["player"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "call-brains"]
+let = { mate = 'human("Cochise")' }
+setup = [
+  { address = "tf(mate) + 0x0", type = "f32", value = "f32(tf(player)) + 1.23 * cos(heading(player))", until = 45 },
+  { address = "tf(mate) + 0x4", type = "f32", value = "f32(tf(player) + 4) + 1.23 * sin(heading(player))", until = 45 },
+  { address = "tf(mate) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 45 },
+]
+
+[coney]
+level = "level95"
+args = ["--checkpoint", "2"]
+
+[[field]]
+name = "state"                            # record +0x00, the state word's low half (0x1 stance, 0x4 lock, 0x8 L1)
+address = "rec(player) + 0x0"
+type = "u32"
+
+[[field]]
+name = "target"                           # human +0xc8, the target's handle index (-1 none)
+value = "hidx(u32(player + 0xc8))"
+
+[[field]]
+name = "move"                             # human +0x1c0, the movement state (0x241b90 lock-on, 0x240e38 free)
+address = "player + 0x1c0"
+type = "u32"
+
+[[field]]
+name = "dist"                             # metres from the player to the crew mate, on the ground
+value = "hypot(f32(tf(player)) - f32(tf(mate)), f32(tf(player) + 4) - f32(tf(mate) + 4))"

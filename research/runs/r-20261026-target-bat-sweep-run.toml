@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261026-target-bat-sweep-run"
+date = "2026-10-26"
+kind = "trace"
+tool = "pcsx2 record"
+digest = "6f7023d5c24b4444d35b90309521e9116d5939630ff21f26520a7ac377d2fa6c"
+
+[who]
+agent = "a79590818d2525fcf"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["call-brains", "right-stick", "scripted-pad"]
+
+[run]
+name = "target_bat_sweep_run"
+method = ""
+
+[values]
+updates = 111
+missed_updates = 0
+columns = 18
+
+[hashes]
+trace_csv = "99f87b81ba5b0733471b3cb788e092c5d33553976d8e59d97f6514fb3ab3b629"

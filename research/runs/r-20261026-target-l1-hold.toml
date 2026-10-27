@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261026-target-l1-hold"
+date = "2026-10-26"
+kind = "trace"
+tool = "pcsx2 record"
+digest = "69724975a2b89f862fd1a681e278daca307659793f931bdcfed5b347b0660f02"
+
+[who]
+agent = "a79590818d2525fcf"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = "target_l1_hold"
+method = ""
+
+[values]
+updates = 71
+missed_updates = 0
+columns = 23
+
+[hashes]
+trace_csv = "51be3c020049f70f782c5dfc9ef64470fdc7e460d38fe845580180304b121e30"

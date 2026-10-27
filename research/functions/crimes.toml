@@ -70,7 +70,12 @@ page = "crimes.md#original-structure"
 role = "the stereo's set-up and outcome"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::startStereoTheft"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "starting a stereo theft leaves out the mini-game camera, the hint 0x12, the HUD's display, the record's +0x110, the task call and state 0x8000"
+relation = "not-ported"
+issue = 1011
 
 [[function]]
 address = 0x0022e020
