@@ -10,9 +10,6 @@ tag = 1
 ["src/ai/ai_config.cpp"]
 tag = 7
 
-["src/ai/ai_humans.cpp"]
-tag = 13
-
 ["src/ai/ai_humans.h"]
 comment = 5
 
