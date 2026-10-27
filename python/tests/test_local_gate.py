@@ -174,9 +174,9 @@ def test_ci_and_docs_run_the_same_mypy_command_as_the_gate() -> None:
     wanted = " ".join(check_cli.MYPY_COMMAND)
     workflow = (REPO / ".github" / "workflows" / "python.yml").read_text(encoding="utf-8")
     assert f"- run: {wanted}\n" in workflow.replace("\r\n", "\n")
-    # building.md shows the whole command; coney-tools-build.md's table shows it after `uv run --project python`.
+    # building.md shows the whole command; coney-tools-ci.md's table shows it after `uv run --project python`.
     short = " ".join(check_cli.MYPY_COMMAND[4:])
-    for guide, words in (("building.md", wanted), ("coney-tools-build.md", f"`{short}`")):
+    for guide, words in (("building.md", wanted), ("coney-tools-ci.md", f"`{short}`")):
         text = (REPO / "docs" / "guides" / guide).read_text(encoding="utf-8")
         assert words in text, guide
     # conventions.md only names the flag, but it must be the one the command uses.
