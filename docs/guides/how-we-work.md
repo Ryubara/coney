@@ -19,10 +19,10 @@ hook holds each to its own commands and files ([Which role to start](agents.md#r
 | **`coordinator`** | The main session ([The coordinator](#coordinator)) | The state file, issues, the release queue, GitHub | Tasks, briefs, pull requests and merges; the only role that writes to GitHub. No code, tests or research, and none of the commands of steps 2 to 7 | Always; Conclave and Tether start its turns |
 | **Tether** | A Claude Code plugin ([Waking the coordinator](coney-tools-setup.md#coord-wakes)) | The machine and GitHub | Nothing; it starts a coordinator turn | Between the coordinator's turns |
 | **Conclave** | Coney's own Claude Code mod ([Conclave](conclave.md)) | `coney-tools conclave snapshot` | Nothing; it draws, and starts a coordinator turn for Coney's own events | In a session loaded with it, between the coordinator's turns |
-| **`engineer`** | Agent, Opus (Sonnet without reverse engineering: [Which model](agents.md#models)) | Its brief, the guides, the original, research pages | Code, tests, pages and docs on its own branch, its stamps, `PR.md`. Never pushes or runs `pr open` | One per task, in a [standing team](#teams) |
+| **`engineer`** | Agent, Opus (Sonnet without reverse engineering: [Which model](agents.md#models)) | Its brief, the guides, the original, research pages | Code, tests, pages and docs on its own branch, its stamps, `PR.md`. Never pushes or runs `pr open` | One per task, in one of the [slots](agents.md#slots); its job ends when its unit passes Review |
 | **`tooling`** | Agent, Sonnet; the engineer's rules for the project's own tools | The guides and the tool's code; no Ghidra or PCSX2 | Tools, workflows, hooks and their guides, on its own branch. Never pushes | One per task about the tools or the process |
 | **`reviewer`** | Agent, Opus for research and `@orig`, smaller for docs and tooling ([The reviewer](agents.md#reviewer)) | The diff, the packet, the [checklists](review/index.md), the original (read only) | Its verdict and report, nothing else; it never edits | Once per committed change, by someone other than its author; again after a later commit |
-| **Standing teams** | Five lists of work, staffed by engineers ([Standing teams](#teams)) | Their team's list | Units for the release queue | Always staffed |
+| **Standing teams** | Five lists of work that the engineers in the [slots](agents.md#slots) are drawn from ([Standing teams](#teams)) | Their team's list | Units for the release queue | Whenever a slot is free |
 | **GitHub CI** | The required checks and the ruleset on `main` ([What CI runs](building.md#what-ci-runs)) | Each pushed pull request | Check results; the squash merge, once every check passes and auto-merge is on | After the coordinator pushes |
 
 ## The pipeline
@@ -187,9 +187,9 @@ What each role is, reads and writes is in [Who is who](#who-is-who); what is lef
 
 ### Standing teams {#teams}
 
-Five teams are kept staffed at all times. When an engineer finishes or stops, the coordinator starts the next one
-from that team's list at once instead of waiting; many issues are in work together, one engineer each, and two
-engineers never work in the same functions.
+Five lists of work feed the engineer slots ([Engineer slots](agents.md#slots): 3 task units and 1 fix unit at a time).
+When a unit passes Review its slot is free, and the coordinator starts the next engineer from the most urgent list at
+once instead of waiting; two engineers never work in the same functions.
 
 1. **Reimplementation:** functions of the original that Coney has not ported yet, and the open feature issues.
 2. **Missions:** building the missions and fixing their checkpoints (`research/missions.yaml`).
@@ -525,10 +525,19 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
 - **Bring the issues up to date after every merge.** Each pull request lists the open issues it affects in its Issues
   affected section; once it merges the coordinator edits each of them, and `pr.affected-unedited` reports the ones left
   ([After a merge](issues.md#after-a-merge)).
-- **Keep every team staffed.** The [standing teams](#teams) are never left empty: when an engineer finishes, the
-  next open item of that team's list gets an engineer at once (unfinished fixes, subsystems that differ from the
-  original, missions still to build, the audit's next subsystem), one issue per engineer. The priorities are on the
-  [roadmap](../roadmap.md#priorities).
+- **Keep the slots full, and never over them.** A machine runs 3 task units and 1 fix unit of engineer work
+  ([Engineer slots](agents.md#slots)). When a unit passes Review (an engineer's job ends there; it is not kept for
+  CI) the coordinator starts the next engineer in the freed slot from the [standing teams](#teams)' lists at once
+  (unfinished fixes, subsystems that differ from the original, missions still to build, the audit's next
+  subsystem), one task per engineer; the priorities are on the [roadmap](../roadmap.md#priorities). A failed CI
+  check becomes a `kind: fix` task for the fix slot, the oldest failure first ([When a pull request fails
+  checks](agents.md#ci-failures)). **No engineer or tooling agent starts without a held claim:** its brief carries
+  a line `Task id: <id>` from `task create`, and a hook refuses the start when the task file is missing, the claim
+  is no longer held or the slot of its kind is full, naming the busy units. There is no `Slot: none`. Units that
+  build the new workflow (issues with the `workflow` label) hold no slot until the cutover.
+  The guard passes the call when its tool cannot run, checks no claim (but still counts the slot) when GitHub
+  cannot be read, and counts only units with a unit record: what it does not
+  cover is listed in [Engineer slots](agents.md#slots).
 - **Merge on the automated gate, not on play-tests.** Pull requests merge once the
   [checks](testing.md#local-gate) pass; the coordinator fixes small gate failures (lint, formatting, generated
   pages) itself instead of sending the work back.

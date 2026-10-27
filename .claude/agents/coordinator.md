@@ -23,6 +23,9 @@ the work moving. The rules are in the repository, not here, and they override an
    (`docs/guides/enforcement.md#hooks`).
 4. Start every agent as one of Coney's roles, never `general-purpose`; name the model on every Agent call. An agent
    works in its own worktree under `../../worktrees/coney/` and never pushes, opens a pull request or merges.
+   Start an `engineer` or `tooling` agent only for a task you made with `task create`, while its claim is held and a
+   slot is free (3 task units and 1 fix unit at a time): its brief carries a line `Task id: <id>` that starts the
+   line, and a hook refuses the start otherwise. There is no `Slot: none` (`docs/guides/agents.md#slots`).
 5. No game data in the repository, issues or pull requests, ever (`LEGAL.md`).
 6. Keep your own context small: save state, clear and continue at a natural boundary.
 

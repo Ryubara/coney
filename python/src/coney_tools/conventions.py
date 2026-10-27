@@ -930,8 +930,16 @@ class TaskSlots:
     task: int
     #: Fix units in work (a fix of a pull request that failed in CI).
     fix: int
-    #: Whether `task start` refuses a unit over the limit; false until the cutover, when it only reports.
+    #: Whether `task start` and the coordinator's Agent guard refuse a unit over the limit; false only reports it.
     enforce: bool
+    #: Whether a task whose issue carries `claims.exempt_label` (the units that build the new workflow, read from the
+    #: issue's held claim card) holds no slot; the cutover turns it off, and such a unit then counts like any other.
+    exempt_workflow: bool
+    #: The agent types that need a held claim and hold a slot when the coordinator starts one (`engineer`, `tooling`);
+    #: a reviewer and the read-only helpers need neither.
+    agent_types: tuple[str, ...]
+    #: How long the guard keeps the slot of an agent it let start, while the agent has not yet run `task start`.
+    reserve_minutes: int
 
 
 @dataclass(frozen=True)
@@ -2012,7 +2020,11 @@ def _read_tasks(data: object, where: str) -> Tasks:
     if "/" in unit_file or "\\" in unit_file or unit_file == file:
         raise _fail(_at(start_where, "unit_file"), "a file name, not a path, and not the task file's")
     slots_where = _at(start_where, "slots")
-    slots = _table(start["slots"], slots_where, ("task", "fix", "enforce"))
+    slots = _table(
+        start["slots"],
+        slots_where,
+        ("task", "fix", "enforce", "exempt_workflow", "agent_types", "reserve_minutes"),
+    )
     return Tasks(
         kinds=_texts(table["kinds"], _at(where, "kinds")),
         file=file,
@@ -2023,6 +2035,9 @@ def _read_tasks(data: object, where: str) -> Tasks:
                 task=_count(slots["task"], _at(slots_where, "task")),
                 fix=_count(slots["fix"], _at(slots_where, "fix")),
                 enforce=_flag(slots["enforce"], _at(slots_where, "enforce")),
+                exempt_workflow=_flag(slots["exempt_workflow"], _at(slots_where, "exempt_workflow")),
+                agent_types=_texts(slots["agent_types"], _at(slots_where, "agent_types")),
+                reserve_minutes=_count(slots["reserve_minutes"], _at(slots_where, "reserve_minutes")),
             ),
         ),
         review=_read_task_review(table["review"], _at(where, "review")),

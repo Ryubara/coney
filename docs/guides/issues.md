@@ -552,14 +552,13 @@ redone. A release posts `/progress pr-opened` on each issue once, which the clai
 
 ### Slots {#slots}
 
-A machine runs a limited number of task units and of fix units at a time (`tasks.start.slots` in
-[.github/conventions.yml](repo:.github/conventions.yml)). A unit holds its slot from
-`task start` until a passing `reviewed` stamp follows its `claimed` stamp (a fix: its own), a `finished` stamp, or until
-its worktree is gone; a unit whose log cannot be trusted keeps its slot. The limit is for code work under the finished
-workflow, so until the cutover `task start` only reports the count (`slots: N of L task slots in use`, with a note
-when N is over L) and design, documentation and tooling work runs in parallel; the cutover sets
-`tasks.start.slots.enforce`, and a start over the limit is then refused. Work in other repositories (Tether, Conclave's
-own plugin repository) has no unit here and is not counted.
+A machine runs at most `tasks.start.slots.task` task units and `tasks.start.slots.fix` fix units at a time, and
+`task start` refuses a start over the limit and names the busy units while `tasks.start.slots.enforce` is on. The
+rule, who counts, what frees a slot, the unit record it counts and the guard that checks the claim and the slot
+before an engineer is started are in [Engineer slots](agents.md#slots); `coney-tools task slots` shows who holds what.
+A task whose issue has the `workflow` label holds no slot until the cutover; the label is read from the issue's claim
+card each time, not copied into the task file. Work in other repositories (Tether, Conclave's own plugin repository)
+has no unit here and is not counted.
 
 ## Working from an issue {#agents}
 

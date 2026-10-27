@@ -34,6 +34,12 @@ def identity_folder(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
     return folder
 
 
+@pytest.fixture(autouse=True)
+def no_slot_check(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The coordinator's Agent calls below must not start `coney-tools`: the slot check lets every start through."""
+    monkeypatch.setattr(DISPATCH.guard_module("slot_guard"), "run_coney_tools", lambda args, stdin: (0, "ok"))
+
+
 def pre(tool: str, tool_input: dict[str, Any], **extra: Any) -> str:
     """A PreToolUse payload as the JSON text Claude Code sends, from a session started as the coordinator unless
     `agent_type` says otherwise; `agent_type=None` is a session with no role (a plain `claude`), which `require_role`

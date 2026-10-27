@@ -19,7 +19,7 @@ from claim_support import Clock, FakeGitHub, plant_claim
 from conventions_support import REPO
 from git_support import git
 
-from coney_tools import stamps, task_cli, task_start, unit
+from coney_tools import stamps, task_cli, task_slots, task_start, unit
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
 from coney_tools.issue_claim_model import Card, parse_time, render_card
@@ -71,11 +71,11 @@ class World:
 
     # -- the scene
 
-    def claim(self, issue: int = 10, task: str = TASK, login: str = USER) -> None:
-        """A held claim, as `task create` leaves it."""
+    def claim(self, issue: int = 10, task: str = TASK, login: str = USER, exempt: bool = False) -> None:
+        """A held claim, as `task create` leaves it; `exempt` when the issue carries the `workflow` label."""
         if issue not in self.github.items:
             self.github.add_issue(issue)
-        plant_claim(self.github, issue, login, task=task)
+        plant_claim(self.github, issue, login, task=task, exempt=exempt)
 
     def task_file(self, task: str = TASK, **changes: object) -> Path:
         """Write the task file of `task` the way `task create` does; returns its path."""
@@ -94,10 +94,12 @@ class World:
         path.write_text(render_task_file(TaskFile(**values)), encoding="utf-8")  # type: ignore[arg-type]
         return path
 
-    def ready(self, task: str = TASK, issues: tuple[int, ...] = (10,), **changes: object) -> None:
-        """A claimed task with its task file: what `task start` needs."""
+    def ready(
+        self, task: str = TASK, issues: tuple[int, ...] = (10,), workflow: bool = False, **changes: object
+    ) -> None:
+        """A claimed task with its task file: what `task start` needs; `workflow` labels its issues."""
         for number in issues:
-            self.claim(number, task)
+            self.claim(number, task, exempt=workflow)
         self.task_file(task, issues=issues, **changes)
 
     def push_to_origin(self, name: str = "later.txt") -> str:
@@ -621,15 +623,21 @@ def test_a_claim_made_without_a_task_id_says_so(world: World) -> None:
 # --- slots ----------------------------------------------------------------------------------------------------------
 
 
-def plant_unit(world: World, task: str, kind: str = "feature", end: str | None = None, tree: bool = True) -> None:
-    """Another unit of this machine: a record, a worktree folder and a log that ends at `end` (reviewed, finished)."""
+def plant_unit(
+    world: World, task: str, kind: str = "feature", end: str | None = None, tree: bool = True, workflow: bool = False
+) -> None:
+    """Another unit of this machine on the issue its name starts with: a record, a worktree folder and a log that ends
+    at `end` (reviewed, finished); with `workflow`, its issue carries the `workflow` label (on its claim card)."""
     folder = world.scratch / task
+    issue = int(task.split("-", 1)[0])
+    if workflow:
+        world.claim(issue, task, exempt=True)
     tree_path = world.worktree(task)
     if tree:
         tree_path.mkdir(parents=True)
     write_record(
         folder / "unit.json",
-        UnitRecord(task, kind, (30,), USER, task, tree_path, "origin/main", "b" * 40, world.clock.now()),
+        UnitRecord(task, kind, (issue,), USER, task, tree_path, "origin/main", "b" * 40, world.clock.now()),
     )
     steps = ["assigned", "claimed", *([end] if end else [])]
     for step in steps:
@@ -656,7 +664,14 @@ def test_the_slots_in_use_are_reported(world: World) -> None:
     assert "slots: 3 of 3 task slots in use" in world.said()
 
 
-def test_over_the_slot_limit_is_only_reported_before_the_cutover(world: World) -> None:
+def with_enforce(world: World, enforce: bool) -> None:
+    """Set `tasks.start.slots.enforce` for the world."""
+    start = replace(world.conventions.tasks.start, slots=replace(world.conventions.tasks.start.slots, enforce=enforce))
+    world.conventions = replace(world.conventions, tasks=replace(world.conventions.tasks, start=start))
+
+
+def test_over_the_slot_limit_is_only_reported_when_it_is_not_enforced(world: World) -> None:
+    with_enforce(world, False)
     for number in range(30, 33):
         plant_unit(world, f"{number}-x")
     world.ready()
@@ -664,14 +679,66 @@ def test_over_the_slot_limit_is_only_reported_before_the_cutover(world: World) -
     assert "slots: 4 of 3 task slots in use" in world.said() and "not enforced" in world.said()
 
 
-def test_over_the_slot_limit_is_refused_once_it_is_enforced(world: World) -> None:
-    start = replace(world.conventions.tasks.start, slots=replace(world.conventions.tasks.start.slots, enforce=True))
-    world.conventions = replace(world.conventions, tasks=replace(world.conventions.tasks, start=start))
+def test_over_the_slot_limit_is_refused_while_it_is_enforced(world: World) -> None:
     for number in range(30, 33):
         plant_unit(world, f"{number}-x")
     world.ready()
     assert world.run() == 1
     assert "3 task units are in work" in world.said() and "tasks.start.slots" in world.said() and untouched(world)
+    assert "30-x" in world.said()
+
+
+def test_a_workflow_task_holds_no_slot_and_is_never_refused(world: World) -> None:
+    for number in range(30, 33):
+        plant_unit(world, f"{number}-x")
+    world.ready(kind="tooling", workflow=True)
+    assert world.run() == 0
+    assert "holds no slot" in world.said()
+
+
+def test_tooling_that_is_not_the_workflow_is_counted_and_refused_like_any_task(world: World) -> None:
+    for number in range(30, 33):
+        plant_unit(world, f"{number}-x")
+    world.ready(kind="tooling")
+    assert world.run() == 1
+    assert "3 task units are in work" in world.said()
+
+
+def test_a_unit_of_a_workflow_task_is_not_counted(world: World) -> None:
+    plant_unit(world, "30-a")
+    plant_unit(world, "31-b")
+    plant_unit(world, "32-flow", kind="tooling", workflow=True)
+    world.ready()
+    assert world.run() == 0
+    assert "slots: 3 of 3 task slots in use" in world.said()
+
+
+def test_a_workflow_label_added_after_task_create_exempts_the_start(world: World) -> None:
+    for number in range(30, 33):
+        plant_unit(world, f"{number}-x")
+    world.ready(kind="tooling")
+    assert world.run() == 1
+    world.claim(10, TASK, exempt=True)  # the label was added; the claim Action's next pass updates the card
+    assert world.run() == 0 and "holds no slot" in world.said()
+
+
+def test_a_workflow_label_removed_after_task_create_ends_the_exemption(world: World) -> None:
+    for number in range(30, 33):
+        plant_unit(world, f"{number}-x")
+    world.ready(kind="tooling", workflow=True)
+    world.claim(10, TASK, exempt=False)  # the label was removed
+    assert world.run() == 1 and "3 task units are in work" in world.said()
+
+
+def test_a_task_file_that_says_workflow_does_not_exempt_the_start(world: World) -> None:
+    for number in range(30, 33):
+        plant_unit(world, f"{number}-x")
+    world.ready(kind="tooling")
+    path = world.scratch / TASK / world.conventions.tasks.file
+    text = path.read_text(encoding="utf-8").replace("\n---\n# Task", "\nworkflow: true\n---\n# Task", 1)
+    path.write_text(text, encoding="utf-8")
+    assert "workflow: true" in path.read_text(encoding="utf-8")
+    assert world.run() == 1
 
 
 def test_a_unit_that_passed_review_finished_or_lost_its_worktree_holds_no_slot(world: World) -> None:
@@ -695,9 +762,15 @@ def test_a_unit_with_a_damaged_log_keeps_its_slot(world: World) -> None:
 def test_a_folder_that_is_not_a_unit_is_ignored(world: World) -> None:
     (world.scratch / "pcsx2").mkdir(parents=True)
     (world.scratch / "30-odd").mkdir()
-    (world.scratch / "30-odd" / "unit.json").write_text("{", encoding="utf-8")
     world.ready()
     assert world.run() == 0 and "slots: 1 of 3 task slots in use" in world.said()
+
+
+def test_a_unit_record_that_cannot_be_read_keeps_its_slot(world: World) -> None:
+    (world.scratch / "30-odd").mkdir(parents=True)
+    (world.scratch / "30-odd" / "unit.json").write_text("{", encoding="utf-8")
+    world.ready()
+    assert world.run() == 0 and "slots: 2 of 3 task slots in use" in world.said()
 
 
 # --- a fix task -----------------------------------------------------------------------------------------------------
@@ -803,6 +876,7 @@ def test_a_fix_reuses_the_claim_so_the_limit_does_not_apply(world: World) -> Non
 
 
 def test_fix_slots_are_counted_apart_from_task_slots(world: World) -> None:
+    with_enforce(world, False)
     plant_unit(world, "40-fix", kind="fix")
     started_parent(world)
     fix_file(world)
@@ -815,7 +889,8 @@ def test_a_fix_is_over_when_a_review_passes_after_it_started(world: World) -> No
     started_parent(world)
     fix_file(world)
     assert world.run(FIX) == 0
-    assert task_start.units_in_work(world.scratch, world.conventions).fix == [FIX]
+    held = task_slots.scan(world.scratch, world.conventions, world.clock.now())
+    assert [holder.task for holder in held.held("fix")] == [FIX]
     stamps.append(
         world.scratch / TASK / "stamps",
         rules=RULES,
@@ -829,9 +904,9 @@ def test_a_fix_is_over_when_a_review_passes_after_it_started(world: World) -> No
         who=WHO,
         clock=world.clock.now,
     )
-    in_work = task_start.units_in_work(world.scratch, world.conventions)
+    held = task_slots.scan(world.scratch, world.conventions, world.clock.now())
     # The parent has passed review too, so neither unit holds a slot.
-    assert in_work.fix == [] and in_work.task == []
+    assert held.holders == ()
 
 
 # --- the command line -----------------------------------------------------------------------------------------------

@@ -179,5 +179,5 @@ def test_input_the_hook_cannot_read_never_blocks(
 
 
 def test_the_dispatcher_runs_the_hook_for_the_agent_tool_only() -> None:
-    assert guards_run("Agent") == ["agent_guard"]
+    assert guards_run("Agent") == ["agent_guard", "slot_guard"]
     assert "agent_guard" not in guards_run("Bash", "ls")
