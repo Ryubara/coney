@@ -43,6 +43,19 @@ def test_a_task_file_survives_its_text() -> None:
     assert list(parsed.sections) == list(SECTIONS)
 
 
+def test_the_workflow_flag_is_written_only_when_set_and_survives_the_text() -> None:
+    plain = task_file.render_task_file(sample())
+    assert "workflow" not in plain and task_file.parse_task_file(plain, TASKS).workflow is False
+    flagged = task_file.render_task_file(sample(workflow=True))
+    assert "workflow: true" in flagged and task_file.parse_task_file(flagged, TASKS).workflow is True
+
+
+def test_a_workflow_flag_that_is_not_true_or_false_is_refused() -> None:
+    text = task_file.render_task_file(sample(workflow=True)).replace("workflow: true", "workflow: maybe")
+    with pytest.raises(task_file.TaskFileError, match="'workflow' is 'maybe'"):
+        task_file.parse_task_file(text, TASKS)
+
+
 def test_every_section_is_there_in_order_even_when_empty() -> None:
     text = task_file.render_task_file(sample(sections={}))
     headings = [line for line in text.splitlines() if line.startswith("## ")]

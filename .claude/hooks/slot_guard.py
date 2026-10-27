@@ -9,8 +9,9 @@ numbers in `.github/conventions.yml`, so none of that is copied here. The brief 
 line, or says `Slot: none <reason>` for work that has no unit.
 
 Only the main session's coordinator is held to it: an engineer starting its own helpers (`agent_type` is its own) is
-not. The hook passes the call when `coney-tools` cannot run (a refusal is exit code 1 with the reasons; any other
-failure is a line in `coney-hooks.log` and the call goes through), as the PR guard does. It is standard-library only,
+not. The hook passes the call when `coney-tools` cannot run: a refusal is the tool's own exit code, `REFUSED`, with the
+reasons on its standard output; every other outcome (a crash exits 1, a bad option 2, no `uv` at all) is a line in
+`coney-hooks.log` and the call goes through, as the PR guard does. It is standard-library only,
 registered through `dispatch.py`. Exit code 2 blocks the call and shows stderr to the agent; every other outcome
 exits 0.
 """
@@ -26,8 +27,11 @@ import time
 from collections.abc import Callable
 from pathlib import Path
 
-#: Seconds `coney-tools task slots --admit` may take (a `uv run` start-up, the stamp logs, the slot lock).
-TIMEOUT = 60
+#: Seconds `coney-tools task slots --admit` may take (a `uv run` start-up, the stamp logs, the slot lock, which it may
+#: wait 40 seconds for).
+TIMEOUT = 100
+#: The exit code `coney-tools task slots --admit` gives a refused start (`task_slots.REFUSED`; a test holds them equal).
+REFUSED = 3
 #: The role the guard holds to the rule.
 ROLE = "coordinator"
 AGENT_TOOLS = ("Agent", "Task")
@@ -46,10 +50,20 @@ def record(what: str) -> None:
         return
 
 
+def root_folder() -> Path:
+    """The checkout the session started in, where `coney-tools` runs from."""
+    return Path(os.environ.get("CLAUDE_PROJECT_DIR") or Path(__file__).resolve().parents[2])
+
+
+def tool_command(args: list[str]) -> list[str]:
+    """The command line that runs `coney-tools <args>`."""
+    return ["uv", "run", "--quiet", "--project", str(root_folder() / "python"), "coney-tools", *args]
+
+
 def run_coney_tools(args: list[str], stdin: str) -> tuple[int, str]:
     """Run `coney-tools <args>` from the main checkout; (2, why) when it cannot be started."""
-    root = Path(os.environ.get("CLAUDE_PROJECT_DIR") or Path(__file__).resolve().parents[2])
-    command = ["uv", "run", "--quiet", "--project", str(root / "python"), "coney-tools", *args]
+    root = root_folder()
+    command = tool_command(args)
     # uv warns when the session's VIRTUAL_ENV is not the project's; the warning would end up in the refusal.
     env = {name: value for name, value in os.environ.items() if name != "VIRTUAL_ENV"}
     try:
@@ -59,7 +73,7 @@ def run_coney_tools(args: list[str], stdin: str) -> tuple[int, str]:
     except (OSError, subprocess.SubprocessError) as error:
         return 2, str(error)
     out = done.stdout.decode("utf-8", errors="replace").strip()
-    if done.returncode != 1:  # a refusal is the tool's own words; anything else keeps its error text for the log
+    if done.returncode != REFUSED:  # a refusal is the tool's own words; anything else keeps its error text for the log
         out = (out + "\n" + done.stderr.decode("utf-8", errors="replace")).strip()
     return done.returncode, out
 
@@ -81,7 +95,7 @@ def refusal(payload: object, runner: Runner | None = None) -> str | None:
     agent_type = kind.strip() if isinstance(kind, str) else ""
     args = ["task", "slots", "--admit", f"--agent-type={agent_type}", "--brief", "-", "--reserve"]
     code, out = (runner or run_coney_tools)(args, prompt if isinstance(prompt, str) else "")
-    if code == 1 and "Traceback (most recent call last)" not in out:
+    if code == REFUSED and out:
         return out + "\n"
     if code != 0:
         record(f"could not check the slots (exit {code}): {out[-300:]}")

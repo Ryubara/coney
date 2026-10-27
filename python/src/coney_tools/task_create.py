@@ -179,6 +179,7 @@ def build_task_file(
         terms=request.terms,
         sections=sections,
         parent=parent,
+        workflow=any(conventions.claims.exempt_label in issue.labels for issue in issues),
     )
 
 

@@ -237,9 +237,9 @@ A brief is part of the context the agent carries on every request, so it is shor
 instead of repeating it:
 
 - the role (engineer or support), the model, the worktree and the scratch folder;
-- the unit, as a line of its own `Task id: <id>` (the id `task create` printed; the engineer runs `task start <id>`),
-  or `Slot: none <reason>` for work that has no unit (another repository, a read-only survey, a measurement): the
-  coordinator's start of the agent is refused without one ([Engineer slots](#slots));
+- for an `engineer` or `tooling` agent, the unit, as a line of its own that starts with the words, `Task id: <id>`
+  (the id `task create` printed once its claim held; the engineer runs `task start <id>`): the coordinator's start
+  of the agent is refused without one, or when the claim is no longer held ([Engineer slots](#slots));
 - the task and the scope it owns, the files it must not touch, and what "done" means for it
   ([Testing](testing.md#done)), and that it reports it in the pull request's Testing and Screenshots sections, with
   its captures saved in `scratch/<branch>/shots/` and referenced in `PR.md` as `![alt](./shots/file.png)`
@@ -280,44 +280,81 @@ issue stays the one place to read it.
 
 ## Engineer slots {#slots}
 
-A machine runs **3 task units and 1 fix unit** of engineer work at a time (maintainer's decision, 2026-10-27; the
-numbers are `tasks.start.slots` in [.github/conventions.yml](repo:.github/conventions.yml)). There are no teams:
-the coordinator keeps the slots full from the open issues, `P-critical` first.
+A machine runs **3 task units and 1 fix unit** of engineer work at a time, and **no engineer or tooling agent starts
+without a held claim** (maintainer's decisions, 2026-10-27; the numbers are `tasks.start.slots` in
+[.github/conventions.yml](repo:.github/conventions.yml)). There are no teams: the coordinator keeps the slots full from
+the open issues, `P-critical` first.
 
-| Is | What | Takes a slot? |
+| Is | What | Needs a claim and takes a slot? |
 | --- | --- | --- |
-| **Task unit** | An engineer or tooling agent on a task of kind `feature`, `docs` or `ci-fix` (the kinds in `tasks.kinds` but `fix` and the exempt ones) | One of the 3 task slots |
-| **Fix unit** | An agent on a `kind: fix` task, made by `task create --fix-of` after a CI check failed on the pull request of a task that passed Review | The fix slot |
-| **Tooling unit for the cutover** | A task of kind `tooling`, which builds the new workflow | None, until the cutover: `exempt_kinds` in the conventions lists it, and the cutover pull request empties the list |
-| **Reviewer** | A `reviewer` (every review, [Task review](review/task.md)) | None |
-| **Helper** | An `Explore`, `Plan` or `claude-code-guide` agent, a `fork`, and any agent an engineer starts for its own task (no cap) | None |
-| **Other work** | A brief with `Slot: none <reason>`: another repository (Tether, Conclave's plugin), a survey that writes nothing | None, and no unit |
+| **Task unit** | An `engineer` or `tooling` agent on a task of kind `feature`, `docs`, `tooling` or `ci-fix` | A held claim, and one of the 3 task slots |
+| **Fix unit** | An agent on a `kind: fix` task, made by `task create --fix-of` after a CI check failed on the pull request of a task that passed Review | A held claim (its parent's), and the fix slot |
+| **Workflow unit** | A task whose issue carries the `workflow` label (`claims.exempt_label`) when `task create` makes its file: a unit that builds the new workflow. The file says `workflow: true` | A held claim, no slot, while `tasks.start.slots.exempt_workflow` is on; **the cutover turns it off** and such units count like the rest. Tooling that is not the workflow takes a slot |
+| **Reviewer** | A `reviewer` (every review, [Task review](review/task.md)) | Neither |
+| **Helper** | An `Explore`, `Plan` or `claude-code-guide` agent, a `fork`, and any agent an engineer starts for its own task (no cap) | Neither |
+
+There is no `Slot: none`: an `engineer` or `tooling` agent has a unit, or it is not started. The types that need neither
+(the last two rows) take no `Task id:` line.
 
 **The slot belongs to the unit, not to the agent's life.** A unit takes its slot at `task start` (an agent the
 coordinator has just started holds it from the Agent call, for at most `reserve_minutes`, so that four calls made
 together are counted one after the other) and frees it at the first of: a passing `reviewed` stamp for it (a fix: its
 own), `finished`, or its worktree gone. **An engineer's job ends when its unit passes Review**: it reports, and the
-coordinator starts the next task in the slot while CI runs; the engineer is not kept for CI. A unit whose stamp log
-cannot be verified keeps its slot.
+coordinator starts the next task in the slot while CI runs; the engineer is not kept for CI. A unit whose stamp log or
+`unit.json` cannot be read keeps its slot. A unit that was abandoned (its engineer died before Review) holds its slot
+until its worktree is removed (`git worktree remove`, after anything worth keeping is committed or saved) or a
+`finished` stamp is written for it; `task slots` shows who holds what. A reservation of an agent whose call was
+denied or never started lapses after `reserve_minutes`; to start sooner, delete its `slot.json` (the refusal names the
+path).
 
 **A CI failure is a fix task.** When a required check fails on a pull request, the coordinator makes a `kind: fix`
-task for it (`task create --fix-of <issue>`) and starts an agent on it when the fix slot is free: one at a time,
-**the oldest failure first** (`task slots` lists the waiting fix tasks oldest first, and the refusal names them). If
-the engineer of the original task is still running, the fix goes to it directly. The fix is held to the failing check;
-only the stamps it made stale are redone ([When a pull request fails checks](#ci-failures)).
+task for it (`task create --fix-of <issue>`) and starts an agent on it when the fix slot is free: one at a time, **the
+oldest failure first**. That order is the coordinator's rule: `task slots` and a refused fix start list the waiting fix
+tasks oldest first, but the guard does not refuse a younger one. If the engineer of the original task is still
+running, the fix goes to it directly. The fix is held to the failing check; only the stamps it made stale are redone
+([When a pull request fails checks](#ci-failures)).
 
-**How it is enforced.** `.claude/hooks/slot_guard.py` runs for every Agent call of the coordinator (last, only when no
-other guard refused it) and asks `coney-tools task slots --admit` with the brief on standard input. The tool knows
-the unit from the task records, not from the agent: the kind from `<scratch>/<task>/TASK.md`, the liveness from
-`unit.json`, its worktree and the stamp log (`task_start` counts the same way), and the numbers from the conventions,
-so the hook copies none of it. Without a `Task id:` or `Slot: none` line in the brief, for an `engineer` or
-`tooling` agent, the call is refused; with one whose slot is full, it is refused with the busy units, each with its
-kind and since when, and what frees one. A start that is let through keeps the slot for the agent (`slot.json`)
-until its `task start` makes the unit. `task start` repeats the count for the engineer that was started some other way.
-The hook passes the call when `coney-tools` cannot run (a line in `coney-hooks.log`), as the other guards do. An
-engineer's own helpers are not checked: only the coordinator is held to it. `coney-tools task slots` shows the slots
-at any time ([task](coney-tools-repo.md#task)); [Conclave](conclave.md) and Tether keep their own state (the band's
-units, the live agents) and are not asked to count slots.
+**What the guard checks.** `.claude/hooks/slot_guard.py` runs for every Agent call of the coordinator (last, only when
+no other guard refused it) and asks `coney-tools task slots --admit`, with the brief on standard input. For an
+`engineer` or `tooling` agent (the types in `tasks.start.slots.agent_types`, in any letter case) the brief must carry a
+line `Task id: <id>` that starts the line, with no list mark, quote or bold in front of it (so a brief that quotes the
+rule does not satisfy it), and the call is refused unless all three hold:
+
+1. **The task record exists**: `<scratch>/<id>/TASK.md`, which `task create` writes only after its claim held.
+2. **The claim is held now**: each issue of the task has a claim card on GitHub, held by the task's claimant for this
+   task (a fix's: its parent's). One comments read per issue, bounded (`GH_CHECK_SECONDS`, 20). A claim that was
+   released since `task create` (idle too long, `/unclaim`, lost) refuses the start.
+3. **The slot of its kind is free**: the kind from `TASK.md`, the liveness from `unit.json`, its worktree and the stamp
+   log (`task start` counts the same way), the numbers from the conventions, so the hook copies none of it. A full slot
+   refuses with the busy units, each with its kind and since when, and what frees one. A second start for a unit whose
+   agent has not run `task start` yet is refused too.
+
+A start that is let through keeps the slot for the agent (`slot.json`) until its `task start` makes the unit.
+
+**What the guard cannot do.** It is a hook that judges what the coordinator writes, not a security boundary:
+
+- **The one hole: a tool that cannot judge passes the call.** If `coney-tools` crashes, `uv` is missing, the check
+  times out or GitHub cannot be read, the call goes through and a line is written to `coney-hooks.log` in the temp
+  folder (only the tool's own refusal, exit code 3, blocks). That is the one way an engineer starts without the check,
+  so read that log when agents start that should not have.
+- **The brief is the coordinator's word.** A `Task id:` of a live unit passes whatever the agent is then told to do (a
+  restart after a `/clear` is the same call), so the engineer's own `task start`, which refuses a start over the limit
+  and checks the claim, is the real backstop; the guard moves the refusal to where the coordinator sees it.
+- **Only units with a `unit.json` are counted.** `unit.json` is written by `task start` of the new workflow, so the
+  count binds nothing that predates it: the worktrees of the old workflow hold no slot, and the coordinator counts
+  them by hand until they end. `task slots` lists the worktrees no unit record names ("without a unit record") so the
+  gap is visible.
+- **The agent type is the caller's choice**, read from `subagent_type` (any case, blanks stripped; `agent_guard.py`
+  refuses an unknown or missing type, so a spelling variant of `engineer` does not get past either). A call that picks
+  a type that needs no claim for work that writes (`Explore` and `Plan` have Bash; a `fork` is the coordinator's own
+  conversation, and `reviewer` writes only its verdict files) is not caught: the role rules in `hooks.toml` limit
+  what those types may do, not what the coordinator says they are for.
+- **Only the coordinator is held to it.** An engineer's own helpers are not checked.
+- **`task start` counts without the lock.** Two engineers started by hand without a reservation can both pass `task
+  start` at the limit; with the guard each is counted as it is reserved.
+
+`coney-tools task slots` shows the slots at any time ([task](coney-tools-repo.md#task)); [Conclave](conclave.md) and
+Tether keep their own state (the band's units, the live agents) and are not asked to count slots.
 
 ## Where an agent works {#worktrees}
 

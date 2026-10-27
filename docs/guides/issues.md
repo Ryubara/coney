@@ -552,17 +552,11 @@ redone. A release posts `/progress pr-opened` on each issue once, which the clai
 
 ### Slots {#slots}
 
-A machine runs at most `tasks.start.slots.task` task units and `tasks.start.slots.fix` fix units at a time
-([.github/conventions.yml](repo:.github/conventions.yml); the rule and who enforces it: [Engineer
-slots](agents.md#slots)). A `kind: fix` unit takes the fix slot, every other kind a task slot, except the kinds in
-`exempt_kinds` (the tooling units that build the new workflow, until its cutover), which hold none. A unit holds its
-slot from `task start` (or, for the agent the coordinator has just started, from the Agent call, as a short
-reservation `slot.json` beside the task file that lapses after `reserve_minutes`) until a passing `reviewed` stamp
-follows its `claimed` stamp (a fix: its own), a `finished` stamp, or until its worktree is gone; a unit whose log
-cannot be trusted keeps its slot. A unit waiting in CI holds none. With `enforce` on (since 2026-10-27) `task start`
-refuses a start over the limit and names the busy units, and the coordinator's Agent guard refuses it earlier.
-`coney-tools task slots` shows who holds what. Work in other repositories (Tether, Conclave's own plugin repository)
-has no unit here and is not counted.
+A machine runs at most `tasks.start.slots.task` task units and `tasks.start.slots.fix` fix units at a time, and
+`task start` refuses a start over the limit and names the busy units while `tasks.start.slots.enforce` is on. The
+rule, who counts, what frees a slot, the unit record it counts and the guard that checks the claim and the slot
+before an engineer is started are in [Engineer slots](agents.md#slots); `coney-tools task slots` shows who holds what.
+A task whose issue has the `workflow` label holds no slot until the cutover (its file says `workflow: true`).
 
 ## Working from an issue {#agents}
 

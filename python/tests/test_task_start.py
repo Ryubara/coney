@@ -621,9 +621,14 @@ def test_a_claim_made_without_a_task_id_says_so(world: World) -> None:
 # --- slots ----------------------------------------------------------------------------------------------------------
 
 
-def plant_unit(world: World, task: str, kind: str = "feature", end: str | None = None, tree: bool = True) -> None:
-    """Another unit of this machine: a record, a worktree folder and a log that ends at `end` (reviewed, finished)."""
+def plant_unit(
+    world: World, task: str, kind: str = "feature", end: str | None = None, tree: bool = True, workflow: bool = False
+) -> None:
+    """Another unit of this machine: a record, a worktree folder and a log that ends at `end` (reviewed, finished);
+    with `workflow`, a task file that says the unit builds the new workflow."""
     folder = world.scratch / task
+    if workflow:
+        world.task_file(task, kind=kind, workflow=True)
     tree_path = world.worktree(task)
     if tree:
         tree_path.mkdir(parents=True)
@@ -680,18 +685,26 @@ def test_over_the_slot_limit_is_refused_while_it_is_enforced(world: World) -> No
     assert "30-x" in world.said()
 
 
-def test_a_tooling_task_holds_no_slot_and_is_never_refused(world: World) -> None:
+def test_a_workflow_task_holds_no_slot_and_is_never_refused(world: World) -> None:
     for number in range(30, 33):
         plant_unit(world, f"{number}-x")
-    world.ready(kind="tooling")
+    world.ready(kind="tooling", workflow=True)
     assert world.run() == 0
     assert "holds no slot" in world.said()
 
 
-def test_a_unit_of_an_exempt_kind_is_not_counted(world: World) -> None:
+def test_tooling_that_is_not_the_workflow_is_counted_and_refused_like_any_task(world: World) -> None:
+    for number in range(30, 33):
+        plant_unit(world, f"{number}-x")
+    world.ready(kind="tooling")
+    assert world.run() == 1
+    assert "3 task units are in work" in world.said()
+
+
+def test_a_unit_of_a_workflow_task_is_not_counted(world: World) -> None:
     plant_unit(world, "30-a")
     plant_unit(world, "31-b")
-    plant_unit(world, "32-tools", kind="tooling")
+    plant_unit(world, "32-flow", kind="tooling", workflow=True)
     world.ready()
     assert world.run() == 0
     assert "slots: 3 of 3 task slots in use" in world.said()
@@ -718,9 +731,15 @@ def test_a_unit_with_a_damaged_log_keeps_its_slot(world: World) -> None:
 def test_a_folder_that_is_not_a_unit_is_ignored(world: World) -> None:
     (world.scratch / "pcsx2").mkdir(parents=True)
     (world.scratch / "30-odd").mkdir()
-    (world.scratch / "30-odd" / "unit.json").write_text("{", encoding="utf-8")
     world.ready()
     assert world.run() == 0 and "slots: 1 of 3 task slots in use" in world.said()
+
+
+def test_a_unit_record_that_cannot_be_read_keeps_its_slot(world: World) -> None:
+    (world.scratch / "30-odd").mkdir(parents=True)
+    (world.scratch / "30-odd" / "unit.json").write_text("{", encoding="utf-8")
+    world.ready()
+    assert world.run() == 0 and "slots: 2 of 3 task slots in use" in world.said()
 
 
 # --- a fix task -----------------------------------------------------------------------------------------------------

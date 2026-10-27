@@ -9,12 +9,15 @@ that command and check what it sends, whom it holds to the rule and what it does
 import importlib.util
 import io
 import json
+import sys
 from types import ModuleType
 from typing import Any
 
 import pytest
 from conventions_support import REPO
 from hooks_support import DISPATCH, guards_run
+
+from coney_tools import task_slots
 
 SCRIPT = REPO / ".claude" / "hooks" / "slot_guard.py"
 
@@ -68,7 +71,7 @@ def test_the_coordinator_start_is_sent_to_the_tool_with_the_brief_and_the_type()
 
 
 def test_a_refusal_of_the_tool_is_the_hooks_reason() -> None:
-    reason = GUARD.refusal(call(), Fake(1, "Blocked: no task slot is free on this machine (3 of 3 in use)."))
+    reason = GUARD.refusal(call(), Fake(3, "Blocked: no task slot is free on this machine (3 of 3 in use)."))
     assert reason is not None and reason.startswith("Blocked: no task slot is free") and reason.endswith("\n")
 
 
@@ -87,13 +90,13 @@ def test_a_call_with_no_type_is_sent_with_an_empty_type() -> None:
 
 @pytest.mark.parametrize("agent_type", ["engineer", "tooling", "reviewer", None, "general-purpose"])
 def test_only_the_coordinator_is_held_to_the_rule(agent_type: object) -> None:
-    fake = Fake(1, "Blocked")
+    fake = Fake(3, "Blocked")
     assert GUARD.refusal(call(agent_type=agent_type), fake) is None and fake.calls == []
 
 
 @pytest.mark.parametrize("tool", ["Bash", "Read", "Write", "mcp__x__y"])
 def test_other_tools_pass_untouched(tool: str) -> None:
-    fake = Fake(1, "Blocked")
+    fake = Fake(3, "Blocked")
     payload = call()
     payload["tool_name"] = tool
     assert GUARD.refusal(payload, fake) is None and fake.calls == []
@@ -113,15 +116,27 @@ def test_a_tool_that_cannot_run_passes_the_call_and_leaves_a_line(
     assert "could not check the slots (exit 2)" in (tmp_path / "coney-hooks.log").read_text(encoding="utf-8")
 
 
-def test_a_crash_of_the_tool_is_not_a_refusal(tmp_path: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize("code", [1, 2, 4, 127, 255])
+def test_every_exit_code_but_the_refusal_passes_the_call(
+    code: int, tmp_path: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setattr("tempfile.gettempdir", lambda: str(tmp_path))
-    assert GUARD.refusal(call(), Fake(1, "Traceback (most recent call last):\n  boom")) is None
+    assert GUARD.refusal(call(), Fake(code, "")) is None
+
+
+def test_the_refusal_code_is_the_one_the_tool_exits_with() -> None:
+    assert GUARD.REFUSED == task_slots.REFUSED
+
+
+def test_a_refusal_with_no_words_is_not_a_block(tmp_path: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("tempfile.gettempdir", lambda: str(tmp_path))
+    assert GUARD.refusal(call(), Fake(GUARD.REFUSED, "")) is None
 
 
 def test_main_blocks_with_exit_2_and_the_reason_on_stderr(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    monkeypatch.setattr(GUARD, "run_coney_tools", Fake(1, "Blocked: full"))
+    monkeypatch.setattr(GUARD, "run_coney_tools", Fake(3, "Blocked: full"))
     monkeypatch.setattr("sys.stdin", io.TextIOWrapper(io.BytesIO(json.dumps(call()).encode("utf-8"))))
     assert GUARD.main() == 2
     assert "Blocked: full" in capsys.readouterr().err
@@ -151,7 +166,7 @@ def dispatch_agent(
 
 
 def test_a_full_slot_blocks_the_call_through_the_dispatcher(monkeypatch: pytest.MonkeyPatch) -> None:
-    fake = Fake(1, "Blocked: no task slot is free on this machine (3 of 3 in use).")
+    fake = Fake(3, "Blocked: no task slot is free on this machine (3 of 3 in use).")
     code, _, err = dispatch_agent(monkeypatch, fake)
     assert code == 2 and "no task slot is free" in err and len(fake.calls) == 1
 
@@ -180,12 +195,12 @@ def test_the_runner_starts_the_tool_from_the_project_without_the_sessions_virtua
 
     def fake_run(command: list[str], **options: Any) -> Done:
         seen.update(command=command, **options)
-        return Done(1, "Blocked: full\n", "warning: VIRTUAL_ENV does not match")
+        return Done(task_slots.REFUSED, "Blocked: full\n", "warning: VIRTUAL_ENV does not match")
 
     monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
     monkeypatch.setenv("VIRTUAL_ENV", "elsewhere")
     monkeypatch.setattr("subprocess.run", fake_run)
-    assert GUARD.run_coney_tools(["task", "slots"], "brief") == (1, "Blocked: full")
+    assert GUARD.run_coney_tools(["task", "slots"], "brief") == (task_slots.REFUSED, "Blocked: full")
     assert seen["command"][:5] == ["uv", "run", "--quiet", "--project", str(tmp_path / "python")]
     assert seen["command"][5:] == ["coney-tools", "task", "slots"] and seen["input"] == b"brief"
     assert "VIRTUAL_ENV" not in seen["env"] and seen["cwd"] == tmp_path
@@ -202,3 +217,39 @@ def test_the_runner_reports_a_tool_that_cannot_start(monkeypatch: pytest.MonkeyP
 
     monkeypatch.setattr("subprocess.run", fail)
     assert GUARD.run_coney_tools(["task"], "") == (2, "uv")
+
+
+# --- the real runner against a real crash ----------------------------------------------------------------------------
+
+
+def stand_in_tool(monkeypatch: pytest.MonkeyPatch, script: str) -> None:
+    """Make the hook run a Python one-liner where it would run `coney-tools`."""
+    monkeypatch.setattr(GUARD, "tool_command", lambda args: [sys.executable, "-c", script])
+
+
+def test_a_real_crash_of_the_tool_passes_the_call_and_leaves_a_line(
+    tmp_path: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("tempfile.gettempdir", lambda: str(tmp_path))
+    stand_in_tool(monkeypatch, "raise RuntimeError('boom')")  # Python exits 1 with the traceback on stderr
+    assert GUARD.refusal(call()) is None
+    log = (tmp_path / "coney-hooks.log").read_text(encoding="utf-8")
+    assert "could not check the slots (exit 1)" in log and "RuntimeError: boom" in log
+
+
+def test_a_real_refusal_blocks_with_the_tools_words_and_not_its_stderr(monkeypatch: pytest.MonkeyPatch) -> None:
+    script = f"import sys; sys.stderr.write('uv warning'); print('Blocked: full'); sys.exit({task_slots.REFUSED})"
+    stand_in_tool(monkeypatch, script)
+    assert GUARD.refusal(call()) == "Blocked: full\n"
+
+
+def test_a_real_success_passes(monkeypatch: pytest.MonkeyPatch) -> None:
+    stand_in_tool(monkeypatch, "print('ok')")
+    assert GUARD.refusal(call()) is None
+
+
+def test_the_real_tool_refuses_an_unknown_task_through_the_hook(tmp_path: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    # End to end: the hook runs the real `coney-tools task slots --admit` for an engineer brief that names no task id.
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(REPO))
+    reason = GUARD.refusal(call(prompt="Fix the doors."))
+    assert reason is not None and "names no unit" in reason and "Task id: <id>" in reason

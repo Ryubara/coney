@@ -175,6 +175,20 @@ def test_the_default_kind_follows_the_labels(world: World) -> None:
     assert default_kind(view.__class__(**{**view.__dict__, "labels": ("A-tools",)})) == "tooling"
 
 
+def test_the_task_file_says_workflow_when_the_issue_has_the_exempt_label(world: World) -> None:
+    world.github.add_issue(10, labels=("task", "A-tools", "S-ready-to-start", CONVENTIONS.claims.exempt_label))
+    assert world.run() == 0
+    path = next(world.scratch.glob("*/TASK.md"))
+    assert parse_task_file(path.read_text(encoding="utf-8"), CONVENTIONS.tasks).workflow is True
+
+
+def test_the_task_file_of_an_ordinary_issue_is_not_a_workflow_task(world: World) -> None:
+    assert world.run() == 0
+    path = next(world.scratch.glob("*/TASK.md"))
+    text = path.read_text(encoding="utf-8")
+    assert parse_task_file(text, CONVENTIONS.tasks).workflow is False and "workflow:" not in text
+
+
 # --- several issues, one task -----------------------------------------------------------------------------------------
 
 

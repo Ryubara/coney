@@ -932,11 +932,11 @@ class TaskSlots:
     fix: int
     #: Whether `task start` and the coordinator's Agent guard refuse a unit over the limit; false only reports it.
     enforce: bool
-    #: Task kinds that hold no slot (until the cutover: the tooling units that build the new workflow); a kind that
-    #: is not listed counts, a `fix` in the fix slot and the others in the task slots.
-    exempt_kinds: tuple[str, ...]
-    #: The agent types that hold a slot when the coordinator starts one for a task (`engineer`, `tooling`); a reviewer
-    #: and the read-only helpers hold none.
+    #: Whether a task whose issue carried `claims.exempt_label` (the units that build the new workflow) holds no slot;
+    #: the cutover turns it off, and such a unit then counts like any other.
+    exempt_workflow: bool
+    #: The agent types that need a held claim and hold a slot when the coordinator starts one (`engineer`, `tooling`);
+    #: a reviewer and the read-only helpers need neither.
     agent_types: tuple[str, ...]
     #: How long the guard keeps the slot of an agent it let start, while the agent has not yet run `task start`.
     reserve_minutes: int
@@ -2021,13 +2021,12 @@ def _read_tasks(data: object, where: str) -> Tasks:
         raise _fail(_at(start_where, "unit_file"), "a file name, not a path, and not the task file's")
     slots_where = _at(start_where, "slots")
     slots = _table(
-        start["slots"], slots_where, ("task", "fix", "enforce", "exempt_kinds", "agent_types", "reserve_minutes")
+        start["slots"],
+        slots_where,
+        ("task", "fix", "enforce", "exempt_workflow", "agent_types", "reserve_minutes"),
     )
-    kinds = _texts(table["kinds"], _at(where, "kinds"))
-    exempt_kinds = _texts(slots["exempt_kinds"], _at(slots_where, "exempt_kinds"), empty_ok=True)
-    _names_in(exempt_kinds, kinds, _at(slots_where, "exempt_kinds"), "task kind")
     return Tasks(
-        kinds=kinds,
+        kinds=_texts(table["kinds"], _at(where, "kinds")),
         file=file,
         leads=LeadsRules(**numbers),
         start=TaskStart(
@@ -2036,7 +2035,7 @@ def _read_tasks(data: object, where: str) -> Tasks:
                 task=_count(slots["task"], _at(slots_where, "task")),
                 fix=_count(slots["fix"], _at(slots_where, "fix")),
                 enforce=_flag(slots["enforce"], _at(slots_where, "enforce")),
-                exempt_kinds=exempt_kinds,
+                exempt_workflow=_flag(slots["exempt_workflow"], _at(slots_where, "exempt_workflow")),
                 agent_types=_texts(slots["agent_types"], _at(slots_where, "agent_types")),
                 reserve_minutes=_count(slots["reserve_minutes"], _at(slots_where, "reserve_minutes")),
             ),

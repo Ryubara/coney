@@ -411,19 +411,21 @@ tasks:
   kinds: [feature, fix, docs, tooling, ci-fix]
   file: TASK.md
   # `task start` (docs/guides/issues.md#starting): the unit record it writes beside the task file, and the engineer
-  # slots (docs/guides/issues.md#slots; the rule: docs/guides/agents.md#slots). A machine runs `task` units of work and
-  # `fix` units at a time: a unit holds its slot from `task start` (or from the moment the coordinator's Agent call for
-  # it was let through, `reserve_minutes`) until a passing Review. `task start` and the Agent guard
-  # (.claude/hooks/slot_guard.py, which runs `coney-tools task slots --admit`) refuse a start over the limit while
-  # `enforce` is true (maintainer, 2026-10-27). `exempt_kinds` hold no slot: the tooling units that build the new
-  # workflow's cutover; the cutover empties it. `agent_types` are the subagent types that hold a slot.
+  # slots (the rule: docs/guides/agents.md#slots). A machine runs `task` units of work and `fix` units at a time: a unit
+  # holds its slot from `task start` (or from the moment the coordinator's Agent call for it was let through,
+  # `reserve_minutes`) until a passing Review. `task start` and the Agent guard (.claude/hooks/slot_guard.py, which
+  # runs `coney-tools task slots --admit`) refuse a start over the limit while `enforce` is true (maintainer,
+  # 2026-10-27). Only units with a unit record are counted. `agent_types` are the subagent types the coordinator may
+  # start only for a task with a held claim (`Task id:` in the brief), and that hold a slot.
   start:
     unit_file: unit.json                          # the unit record, in the task's scratch folder
     slots:
-      task: 3                                     # task units in work per machine (every kind but fix and the exempt kinds)
+      task: 3                                     # task units in work per machine (every kind but fix)
       fix: 1                                      # fix units in work: a failed CI check, one at a time, the oldest first
       enforce: true
-      exempt_kinds: [tooling]
+      # A task whose issue carries `claims.exempt_label` (the units that build the new workflow) holds no slot. The
+      # cutover sets this false, and they count like any other unit.
+      exempt_workflow: true
       agent_types: [engineer, tooling]
       reserve_minutes: 45                         # an agent let start keeps its slot this long before its `task start`
   leads:

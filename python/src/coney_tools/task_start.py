@@ -68,7 +68,7 @@ class StartEnv:
 
 def front_sha256(task: TaskFile) -> str:
     """The SHA-256 of what the tools read from a task file (its YAML block), not of the prose the coordinator prunes."""
-    front = {
+    front: dict[str, Any] = {
         "task": task.task,
         "issues": list(task.issues),
         "kind": task.kind,
@@ -78,6 +78,8 @@ def front_sha256(task: TaskFile) -> str:
         "terms": list(task.terms),
         "parent": task.parent,
     }
+    if task.workflow:  # added only when set, so the hash of a task made before the flag existed does not change
+        front["workflow"] = True
     return stamps.sha256_hex(stamps.canonical(front))
 
 
@@ -88,8 +90,8 @@ def _slot_check(task: TaskFile, env: StartEnv) -> tuple[str, str | None]:
     """(the slot line for the report, the refusal when the limit is enforced and exceeded)."""
     conventions = env.conventions
     slots = conventions.tasks.start.slots
-    if task_slots.is_exempt(task.kind, conventions):
-        return f"slots: a {task.kind} task holds no slot (tasks.start.slots.exempt_kinds)", None
+    if task_slots.is_exempt(task.workflow, conventions):
+        return "slots: a workflow task holds no slot (tasks.start.slots.exempt_workflow)", None
     kind = task_slots.slot_of(task.kind)
     held = task_slots.scan(env.scratch, conventions, env.now()).held(kind)
     others = [holder for holder in held if holder.task != task.task]

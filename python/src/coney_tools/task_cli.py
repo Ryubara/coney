@@ -25,7 +25,7 @@ from pathlib import Path
 
 from coney_tools import stamps, task_check, task_slots
 from coney_tools.audit_github import Runner, run_gh
-from coney_tools.config import ConfigError, find_repo_root, load_config, workspace_folder
+from coney_tools.config import ConfigError, find_repo_root, load_config, main_checkout, workspace_folder
 from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.issue_claim_model import parse_scope
 from coney_tools.issue_claim_remote import GhRemote, Remote
@@ -34,6 +34,7 @@ from coney_tools.task_leads import LeadsResult, Searcher
 from coney_tools.task_leads_index import CachedIndex, prepare_index
 from coney_tools.task_review import add_review_parser, run_review_command
 from coney_tools.task_start import StartEnv, StartRequest, start_task
+from coney_tools.workspace_clean import list_worktrees
 
 
 def add_task_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
@@ -70,7 +71,8 @@ def add_task_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser])
     slots.add_argument(
         "--admit",
         action="store_true",
-        help="check a start instead of listing: exit 0 when it may, 1 with the busy units when a slot is full",
+        help="check a start instead of listing: exit 0 when it may, 3 with the reasons when it is refused "
+        "(any other code: it could not judge)",
     )
     slots.add_argument("--agent-type", default="engineer", help="with --admit: the subagent type (default: engineer)")
     slots.add_argument("--task", help="with --admit: the task id (default: the `Task id:` line of the brief)")
@@ -116,11 +118,46 @@ def _index(root: Path, conventions: Conventions, run: Runner | None, refresh: bo
     return prepare_index(root, conventions, cache, _head(root), now, run, refresh)
 
 
-def _run_slots(args: argparse.Namespace, root: Path, conventions: Conventions, now: Callable[[], datetime]) -> int:
-    """`task slots`: the report, or with `--admit` the verdict on one start (0 may start, 1 refused)."""
+def _workspace_trees(root: Path) -> list[Path]:
+    """The worktrees git lists under the workspace's `worktrees/` folder (never the main checkout); none when git
+    cannot say."""
+    try:
+        base = workspace_folder(root, "worktrees").resolve()
+        listed = list_worktrees(main_checkout(root))[1:]
+    except (ConfigError, OSError):
+        return []
+    return [tree.path for tree in listed if tree.path.resolve().is_relative_to(base)]
+
+
+#: How long one `gh` call of the claim check may take: the Agent guard waits for it, and GitHub down must not hold it.
+GH_CHECK_SECONDS = 20
+
+
+def _bounded_gh(arguments: list[str]) -> str:
+    """Run a `gh` command (read only) for at most `GH_CHECK_SECONDS`; OSError when it fails or takes longer."""
+    try:
+        done = subprocess.run(
+            ["gh", *arguments], capture_output=True, text=True, encoding="utf-8", timeout=GH_CHECK_SECONDS, check=False
+        )
+    except (OSError, subprocess.SubprocessError) as error:
+        raise OSError(f"gh could not run: {error}") from error
+    if done.returncode != 0:
+        raise OSError(f"gh {' '.join(arguments[:2])} failed: {done.stderr.strip() or done.stdout.strip()}")
+    return done.stdout
+
+
+def _run_slots(
+    args: argparse.Namespace,
+    root: Path,
+    conventions: Conventions,
+    now: Callable[[], datetime],
+    remote: Remote | None,
+) -> int:
+    """`task slots`: the report, or with `--admit` the verdict on one start (0 may start, 3 refused). A GitHub that
+    cannot be read is a ConfigError (exit 2): the guard lets the call through and logs it."""
     scratch = scratch_folder(root)
     if not args.admit:
-        current = task_slots.scan(scratch, conventions, now())
+        current = task_slots.scan(scratch, conventions, now(), _workspace_trees(root))
         if args.json:
             print(json.dumps(task_slots.as_json(current, conventions), indent=2))
         else:
@@ -131,9 +168,20 @@ def _run_slots(args: argparse.Namespace, root: Path, conventions: Conventions, n
         brief = sys.stdin.buffer.read().decode("utf-8", errors="replace")
     elif args.brief:
         brief = Path(args.brief).read_text(encoding="utf-8")
-    verdict = task_slots.admit(scratch, conventions, args.agent_type, brief, now(), args.task, args.reserve)
+    rules = conventions.claims
+    github = remote or GhRemote(rules.bot_login, rules.card_marker, rules.reply_marker, _bounded_gh)
+    verdict = task_slots.admit(
+        scratch,
+        conventions,
+        args.agent_type,
+        brief,
+        now(),
+        lambda task: task_slots.claim_problem(task, github, conventions),
+        args.task,
+        args.reserve,
+    )
     print(verdict.message.rstrip("\n"))
-    return 0 if verdict.allowed else 1
+    return 0 if verdict.allowed else task_slots.REFUSED
 
 
 def run_task(
@@ -152,7 +200,7 @@ def run_task(
     conventions = load_conventions(root)
     rules = conventions.claims
     if args.command == "slots":
-        return _run_slots(args, root, conventions, now)
+        return _run_slots(args, root, conventions, now, remote)
     if args.command == "index":
         index = _index(root, conventions, None if args.no_gh else run, True, now())
         print(f"index: {len(index.entries)} entries at {index.head[:10]}")

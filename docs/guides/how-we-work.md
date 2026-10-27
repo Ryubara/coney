@@ -525,15 +525,18 @@ starts and briefs the tracks, routes questions between them, merges and ships. I
 - **Bring the issues up to date after every merge.** Each pull request lists the open issues it affects in its Issues
   affected section; once it merges the coordinator edits each of them, and `pr.affected-unedited` reports the ones left
   ([After a merge](issues.md#after-a-merge)).
-- **Keep the slots full, and never over them.** A machine runs 3 task units and 1 fix unit of engineer work ([Engineer
-  slots](agents.md#slots)). When a unit passes Review (an engineer's job ends there; it is not kept for CI) the
-  coordinator starts the next engineer in the freed slot from the [standing teams](#teams)' lists at once (unfinished
-  fixes, subsystems that differ from the original, missions still to build, the audit's next subsystem), one task per
-  engineer; the priorities are on the [roadmap](../roadmap.md#priorities). A failed CI check becomes a `kind: fix`
-  task for the fix slot, the oldest failure first ([When a pull request fails checks](agents.md#ci-failures)). Every
-  brief of an `engineer` or `tooling` agent names its unit with a `Task id: <id>` line (or says `Slot: none <reason>`
-  for work that has no unit: another repository, a read-only survey), and a hook refuses a start whose slot is full,
-  naming the busy units. Tooling units for the new workflow's cutover hold no slot until the cutover.
+- **Keep the slots full, and never over them.** A machine runs 3 task units and 1 fix unit of engineer work
+  ([Engineer slots](agents.md#slots)). When a unit passes Review (an engineer's job ends there; it is not kept for
+  CI) the coordinator starts the next engineer in the freed slot from the [standing teams](#teams)' lists at once
+  (unfinished fixes, subsystems that differ from the original, missions still to build, the audit's next
+  subsystem), one task per engineer; the priorities are on the [roadmap](../roadmap.md#priorities). A failed CI
+  check becomes a `kind: fix` task for the fix slot, the oldest failure first ([When a pull request fails
+  checks](agents.md#ci-failures)). **No engineer or tooling agent starts without a held claim:** its brief carries
+  a line `Task id: <id>` from `task create`, and a hook refuses the start when the task file is missing, the claim
+  is no longer held or the slot of its kind is full, naming the busy units. There is no `Slot: none`. Units that
+  build the new workflow (issues with the `workflow` label) hold no slot until the cutover.
+  The guard passes the call when its tool cannot run, and counts only units with a unit record: what it does not
+  cover is listed in [Engineer slots](agents.md#slots).
 - **Merge on the automated gate, not on play-tests.** Pull requests merge once the
   [checks](testing.md#local-gate) pass; the coordinator fixes small gate failures (lint, formatting, generated
   pages) itself instead of sending the work back.

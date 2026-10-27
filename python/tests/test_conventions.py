@@ -596,7 +596,7 @@ def test_the_real_task_start_rules() -> None:
     assert start.unit_file == "unit.json"
     # Enforced since 2026-10-27; tooling units for the cutover hold no slot until the cutover.
     assert (start.slots.task, start.slots.fix, start.slots.enforce) == (3, 1, True)
-    assert start.slots.exempt_kinds == ("tooling",) and start.slots.agent_types == ("engineer", "tooling")
+    assert start.slots.exempt_workflow is True and start.slots.agent_types == ("engineer", "tooling")
     assert start.slots.reserve_minutes > 0
 
 
@@ -608,7 +608,7 @@ def test_the_real_task_start_rules() -> None:
         (("tasks.start.slots.task", 0), r"tasks\.start\.slots\.task: expected a whole number"),
         (("tasks.start.slots.enforce", "yes"), r"tasks\.start\.slots\.enforce"),
         (("tasks.start.slots.extra", 1), "unknown key 'extra'"),
-        (("tasks.start.slots.exempt_kinds", ["nope"]), r"tasks\.start\.slots\.exempt_kinds.*'nope' is not task kind"),
+        (("tasks.start.slots.exempt_workflow", "yes"), r"tasks\.start\.slots\.exempt_workflow"),
         (("tasks.start.slots.agent_types", []), r"tasks\.start\.slots\.agent_types: expected a non-empty list"),
         (("tasks.start.slots.reserve_minutes", 0), r"tasks\.start\.slots\.reserve_minutes: expected a whole number"),
         (("tasks.start", REMOVE), "missing the key 'start'"),
