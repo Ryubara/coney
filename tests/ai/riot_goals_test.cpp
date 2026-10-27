@@ -159,7 +159,10 @@ TEST_CASE("a rioter picks the player only when the player-fight draw allows it",
                                                                                            .playerFightChance = chance,
                                                                                            .shout = false},
                                                                       harness.services)));
-        // Each second the rioter is put back near the player, so the decision finds him in range.
+        // Each second the rioter is put back near the player, so the decision finds him in range: the decision updates
+        // are the 60th, 120th and so on (the count includes the update), so after 59 updates each placing comes just
+        // before one, and the rest of the second lets the fight start.
+        scene.run(59);
         for (int k = 0; k < 20 && !riotOf(rioter)->decided(); ++k) {
             rioter.human().place(Vec3{40.0F, 44.0F, 0.0F}, 0.0F);
             scene.run(60);
