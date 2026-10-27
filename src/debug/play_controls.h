@@ -15,6 +15,7 @@
 #include "debug/anim_catalog.h"
 #include "debug/entity_edit.h"
 #include "debug/entity_inspect.h"
+#include "debug/mesh_views.h"
 #include "human/place.h"
 #include "sandbox/sandbox_layout.h"
 
@@ -43,6 +44,7 @@ struct DebugDrawOptions {
     bool contacts = false;       ///< The contacts the last walking sweep slid along: a point and its normal.
     std::uint64_t inspected = 0; ///< The Entity inspector's selection (an EntityId; 0 for none).
     bool highlight = true;       ///< Mark the inspected entity in the scene.
+    MeshViewOptions mesh;        ///< The mesh views: wireframes, flat views, normals and bone axes (mesh_views.h).
 };
 
 /// One object the Spawner page can put in front of the player: a sandbox primitive and the name the page shows. The
@@ -166,6 +168,7 @@ class PlayControls {
     virtual void clearFighters() {}
     /// Whether an idle fighter takes the player on when he comes within its melee range (ai::AiHumans::engaging()).
     [[nodiscard]] virtual bool fightersEngage() const { return false; }
+    /// Switches the engaging on or off; the default does nothing.
     virtual void setFightersEngage(bool /*on*/) {}
     /// One line on the fighters: each one's gang, health, top goal and front action, and the player's health.
     [[nodiscard]] virtual std::string fightersState() const { return "-"; }

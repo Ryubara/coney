@@ -82,6 +82,7 @@
 #include "platform/imgui_overlay.h"
 #include "platform/install_command.h"
 #include "platform/log_output.h"
+#include "platform/mesh_views.h"
 #include "platform/net_play.h"
 #include "platform/net_play_controls.h"
 #include "platform/pad_pipe.h"
@@ -917,13 +918,18 @@ int main(int argc, char** argv) {
     const auto sandboxHudPlaying = [&audio](coney::hud::HudSoundHandle sound) {
         return audio && audio->sounds().isPlaying(coney::audio::VoiceHandle{sound});
     };
+    // The Debug draw page's mesh views, which every play mode draws its models through (one for the run: they keep
+    // only the options and their own librw light, destroyed with the last mode before the renderer stops).
+    const auto meshViews = std::make_shared<coney::platform::MeshViews>(debugSession.debugDraw());
     if (playLevel) {
         playLevel->setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
+        playLevel->setMeshViews(meshViews);
         playLevel->setSounds(audio ? &audio->sounds() : nullptr);
         playLevel->hud()->setSoundOutput(sandboxHudSound, sandboxHudStop, sandboxHudPlaying);
     }
     if (session) {
         session->setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
+        session->setMeshViews(meshViews);
     }
     // The mode a sandbox or a new game session replaces: the sandbox's play mode or the sandbox viewer; null when
     // neither runs.
@@ -960,6 +966,7 @@ int main(int argc, char** argv) {
             sandboxViewer.reset();
             playLevel = std::move(*mode);
             playLevel->setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
+            playLevel->setMeshViews(meshViews);
             playLevel->setSounds(audio ? &audio->sounds() : nullptr);
             playLevel->hud()->setSoundOutput(sandboxHudSound, sandboxHudStop, sandboxHudPlaying);
             modes.push(*playLevel);
@@ -994,6 +1001,7 @@ int main(int argc, char** argv) {
         coney::platform::GameSession& started = makeSession();
         started.attachAudio(audio.get());
         started.setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
+        started.setMeshViews(meshViews);
         started.startAtLevel(name, checkpoint);
         debugSession.print(std::format("levels: playing {} at checkpoint {}", name, checkpoint));
     };
@@ -1133,6 +1141,20 @@ int main(int argc, char** argv) {
         };
     } else if (audio) {
         hooks.endFrame = [&audio](std::uint32_t steps) { audio->endFrame(steps); };
+    }
+    // `--mesh-view`: the mesh views from the first frame of play, switched off again after its frames.
+    std::optional<coney::platform::MeshViewRun> meshViewRun;
+    if (const std::optional<std::string>& spec = options->meshView; spec) {
+        auto parsed = coney::debug::parseMeshViewSpec(*spec);
+        if (!parsed) {
+            std::fprintf(stderr, "coney: %s\n", parsed.error().message.c_str());
+            return 2;
+        }
+        meshViewRun.emplace(*parsed);
+        hooks.beginFrame = [inner = std::move(hooks.beginFrame), &meshViewRun, &debugSession] {
+            meshViewRun->frame(debugSession);
+            return inner();
+        };
     }
     // Network play receives before each step and sends after it.
     coney::platform::addNetPlayHooks(hooks, netPlay, pacer.has_value());

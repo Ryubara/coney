@@ -49,8 +49,9 @@ count more than once, and record which numbers were taken quiet.
 ## The in-game view {#overlay}
 
 The debug menus' **Performance** page ([The debug menus](debug-menu.md#pages)) turns the profiler on and off
-(*Measure*) and shows the frame time (plotted in the developer overlay) and every zone's and counter's mean over the
-last 60 frames. It works in any run, at any frame rate; while *Measure* is off nothing is timed.
+(*Measure*) and shows the frame time (plotted in the developer overlay), the [scene counters](#counters) by kind, a
+line each (*Scenery*, *Humans*, *Objects*, *Effects*, *Other*), and every zone's and counter's mean over the last 60
+frames. It works in any run, at any frame rate; while *Measure* is off nothing is timed.
 
 ## Zones {#zones}
 
@@ -92,6 +93,13 @@ A counter is a running total sampled at the end of each frame; the report gives 
 | `gl.uploads`, `gl.upload_bytes` | buffer uploads (`glBufferData` with data, `glBufferSubData`) and their bytes |
 | `gl.programs`, `gl.textures` | shader program switches and texture binds: state changes |
 | `alloc.count`, `alloc.bytes` | C++ heap allocations on every thread (a counting `operator new`) |
+| `scene.<kind>.draws`, `.triangles`, `.vertices` | the same draws split by what was drawn, `<kind>` one of `scenery` (the streamed world, the skyline), `humans` (their bodies), `objects` (world objects, doors, cars, glass, carried props), `effects` (water, particles, glints, blob shadows, health rings, the throw arc) and `other` (the 2D layers, menus, movies, debug lines); vertices are what the draws sent, an indexed draw's index count |
+
+The scene counters are kept by the same wrappers: the play mode's render marks each part of the frame with the kind
+it draws (`platform::DrawKindScope`, `src/platform/perf_probes.h`), and a draw counts as the innermost kind open, else
+`other`. The Performance page has a line for each kind that sums its draws a frame, `92.4k tris 160.2k verts 410
+draws` on *Scenery*, and a bench report has them as every counter. With a [mesh view](debug-menu.md#mesh-views) on, its
+passes are draws too and count with the model's kind.
 
 The OpenGL counters wrap the functions librw's loader fills in (`glad_glDrawElements` and the rest), so librw itself is
 unchanged. The allocation counter replaces the global `operator new` in the executable and the tests; librw's and SDL's
