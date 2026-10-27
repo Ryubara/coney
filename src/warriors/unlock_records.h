@@ -35,8 +35,8 @@ struct UnlockCounts {
     /// The distinct (level, item) pairs of those types' group-1 records, any level; a pair is unlocked when its first
     /// record is.
     UnlockTally groupItems;
-    /// The completion percentage: records.unlocked × 100 / records.total, truncated (`Float_ToUInt`); 0 with no
-    /// records (Coney's guard: the original divides by the total).
+    /// The completion percentage: (records.unlocked / records.total) × 100 in single precision, dividing first,
+    /// truncated (`Float_ToUInt`); 0 with no records (Coney's guard: the original divides by the total).
     /// @orig 0x00215150 GameStats_BuildSummary (GameStats.cpp)
     [[nodiscard]] unsigned percent() const;
 };

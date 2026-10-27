@@ -646,8 +646,6 @@ void PauseMenu::render(const GuiCanvas& canvas) const {
         return;
     }
     m_background.render(canvas);
-    // Stand-in: where the original draws the top header (a global widget) is not traced; Coney draws it here.
-    m_topHeader.render(canvas);
     // The open screen: Options, then Controls or Stats.
     if (m_screen == PauseScreen::Options) {
         m_options.render(canvas);
@@ -657,7 +655,9 @@ void PauseMenu::render(const GuiCanvas& canvas) const {
     } else if (m_screen == PauseScreen::Stats) {
         m_stats.render(canvas);
     }
-    // Stand-in: the three headers and their lists are Coney's centred texts (refreshScreen()).
+    // The top header, the first of the original's three headers (`+0x2af0`), drawn after the open screen.
+    m_topHeader.render(canvas);
+    // Stand-in: the other two headers and the lists are Coney's centred texts (refreshScreen()).
     for (const TextWidget& header : m_headers) {
         header.render(canvas);
     }

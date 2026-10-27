@@ -86,7 +86,6 @@ and its command listener `0x0053eea0`.
 | `+0x90` | the summary's text | confirmed (code) |
 | `+0x94` / `+0x9c` | the missions-done count and the time sum `GameStats_BuildMissionList` adds up ([The summary](#summary-text)) | confirmed (code) at `0x002155a8` |
 | `+0xa8` / `+0xac` | the background step's start time and its index | confirmed (code) at `0x00215150` |
-| `+0xd4` | ready: set on the first update the screen's parts are resident | confirmed (code) at `0x001596d0` |
 
 A block (`GameStatsSubItem`, vtable `0x0053ef58`, `0x90` bytes) holds its picture at `+0x68`, a `ScrollingTextWidget` at
 `+0x6c`, its text at `+0x70`, its level at `+0x74` and its picture column's width at `+0x60`. Confirmed (code) at
@@ -108,13 +107,15 @@ Confirmed (code) at the cited addresses. `ShowGameStatsInterface` pushes game mo
 ([HUD bindings](../references/bindings/hud.md#showgamestatsinterface)).
 
 - **Enter** (`GameStatsMode_Enter`, `0x00159538`): puts the task manager in phase 0, clears the auto-close flag
-  (`0x0050c6e4`), enters the store tint (`ScreenFx_EnterStore`, `0x0018e6b8`) with a clear colour, loads the sound
-  bank named at `0x0054ee50` (`menu`) unless it is the current bank, and runs `GameStats_Init` (`0x00215e78`) on the
-  screen object.
+  (`0x0050c6e4`), sets the mode's own two flags (not the screen object's): `+0xd0`, the fade out queued, to 0 and
+  `+0xd4`, the fade in still to queue, to 1; enters the store tint (`ScreenFx_EnterStore`, `0x0018e6b8`) with a clear
+  colour, loads the sound bank named at `0x0054ee50` (`menu`) unless it is the current bank, and runs `GameStats_Init`
+  (`0x00215e78`) on the screen object.
 - **Update** (`GameStats_Update`, `0x001596d0`): one world frame, then the screen's update and render, and the overlay
-  only (`ResourceMgr_RenderOverlay`, `0x00185d20`). On the first frame the screen is ready it queues a fade in over
-  1 s (`ScreenFx_Queue`, `0x0018b168`). Once the auto-close flag is set it queues a fade out over 1 s, once, and pops
-  the mode on the first frame that fade is over (the fade's busy flag at `0x005fdeb8` + `0x1d4`).
+  only (`ResourceMgr_RenderOverlay`, `0x00185d20`). On the first frame the screen is ready (`GameStats_IsReady`) while
+  `+0xd4` is set it clears `+0xd4` and queues a fade in over 1 s (`ScreenFx_Queue`, `0x0018b168`). Once the auto-close
+  flag is set it queues a fade out over 1 s, once (`+0xd0` set), and pops the mode on the first frame that fade is over
+  (the fade's busy flag at `0x005fdeb8` + `0x1d4`).
 - **Input** (`GameStats_OnCommand`, `0x002169a8`): back (command 5) sets the auto-close flag (`GameStats_SetAutoClose`,
   `0x00159520`); accept (4) is taken and does nothing; the list's own input moves the focus. The mode's exit runs the
   script's `onClose` callback.
@@ -150,8 +151,9 @@ characters) and its arguments at `0x002153b4`-`0x00215458`.
 - The title (string `0x60`) in the big font at size 1.6, grey 178 (`B2B2B2FF`), then a line break; every line after it
   is size 1.2.
 - Five lines, each a label in grey 80 (`505050FF`), the value's colour tag, a space and the value:
-    1. string `0x61` and the **completion percentage**: unlocked × 100 / total over the counted records
-       ([The counts](#counts)), truncated (`Float_ToUInt`, `0x0042c718`), with a `%` after it;
+    1. string `0x61` and the **completion percentage**: (unlocked / total) × 100 over the counted records
+       ([The counts](#counts)) in single precision, dividing first (`0x00215290`), truncated (`Float_ToUInt`,
+       `0x0042c718`), with a `%` after it; so 53 of 100 shows 52;
     2. string `0x63` and the **missions**, done / listed: `GameStats_BuildMissionList` adds one to `+0x94` for each
        entry it adds that is not one of the specials 95, 60 and 101, so done is the complete listed levels; listed is
        every listed level less 3;

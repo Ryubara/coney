@@ -94,7 +94,9 @@ unsigned UnlockCounts::percent() const {
     if (records.total == 0) {
         return 0;
     }
-    return static_cast<unsigned>(static_cast<float>(records.unlocked) * 100.0F / static_cast<float>(records.total));
+    // Divided first, then times 100, in single precision as the original does: the order changes some results (53 of
+    // 100 is 52).
+    return static_cast<unsigned>(static_cast<float>(records.unlocked) / static_cast<float>(records.total) * 100.0F);
 }
 
 UnlockCounts UnlockRecords::countUnlocked(const SavedProgress& progress) const {
