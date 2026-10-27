@@ -53,6 +53,7 @@ RailCamera straightRail() {
 TEST_CASE("the rail camera in mode 0 frames a chase as level3's main framing does: shifted, within reach, under a "
           "ceiling",
           "[camera]") {
+    // Expected: camera.md#rail, confirmed (code)
     RailCamera rail;
     RailSetup setup;
     setup.fieldOfView = 78.0F;
@@ -80,6 +81,7 @@ TEST_CASE("the rail camera in mode 0 frames a chase as level3's main framing doe
 }
 
 TEST_CASE("the rail camera leads its target ahead or behind along the rail, clamped to the rail's ends", "[camera]") {
+    // Expected: camera.md#rail, confirmed (code)
     RailCamera rail = straightRail();
     rail.setLead(3.0F, 0.0F, true);
     rail.update(Vec3{12.0F, 4.0F, 0.0F}, true, kStep);
@@ -95,6 +97,7 @@ TEST_CASE("the rail camera leads its target ahead or behind along the rail, clam
 
 TEST_CASE("the rail camera holds at the rail's end; its settings ease linearly; the pitch fixes the look-at point",
           "[camera]") {
+    // Expected: camera.md#fn-rail, confirmed (code)
     RailCamera rail = straightRail();
     rail.update(Vec3{15.0F, 4.0F, 0.0F}, false, kStep);
     CHECK(rail.position().x == Approx(15.0F));
@@ -138,6 +141,7 @@ TEST_CASE("the rail camera holds at the rail's end; its settings ease linearly; 
 TEST_CASE(
     "the rail camera in mode 3 trails the Armies fighter forward only, at a fixed pitch, 1 m/s faster than he goes",
     "[camera]") {
+    // Expected: camera.md#rail-mode3, confirmed (code)
     // level60's Rail1: along -x at y = 39.5, 3.7 m up; the look-at offset (0, -0.25, 1.25); CamModifyRail(5, -7, 0).
     RailCamera rail;
     RailSetup setup;
@@ -209,6 +213,7 @@ TEST_CASE("an activation snaps the rail camera's eased settings to their targets
 }
 
 TEST_CASE("the rail camera in mode 3 holds once it reaches the rail's first point", "[camera]") {
+    // Expected: camera.md#rail-mode3, confirmed (code)
     RailCamera rail = straightRail();
     rail.modify(RailCamera::kMode3Pitch, -7.0F, 0.0F);
     rail.activate();
@@ -240,6 +245,7 @@ TEST_CASE("the rail camera in mode 3 keeps under its height setting over the tar
 
 TEST_CASE("a fixed camera looks at its targets' average plus its offset; a third-person camera sits behind its target",
           "[camera]") {
+    // Expected: camera.md#fixed-third, confirmed (code)
     FixedCamera fixed(Vec3{0.0F, 0.0F, 5.0F}, Vec3{0.0F, 0.0F, 1.0F}, 50.0F, 0.1F, 300.0F);
     CHECK(fixed.view().farClip == Approx(FixedCamera::kMaxFarClip));
     const std::array<Vec3, 2> targets{Vec3{10.0F, 0.0F, 0.0F}, Vec3{20.0F, 10.0F, 0.0F}};
@@ -262,6 +268,7 @@ TEST_CASE("a fixed camera looks at its targets' average plus its offset; a third
 
 TEST_CASE("the cameras' manager keeps one rail camera, fixed cameras on the target list and third-person cameras",
           "[camera]") {
+    // Expected: camera.md#fn-manager, confirmed (code)
     Cameras cameras;
     cameras.setPlacer([](double handle) -> std::optional<std::pair<Vec3, float>> {
         if (handle == 3.0) {

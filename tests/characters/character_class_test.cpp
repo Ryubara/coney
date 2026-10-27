@@ -27,6 +27,7 @@ std::optional<std::string> modelOf(int type) {
 } // namespace
 
 TEST_CASE("Human_Init's switch maps a type to its class, as a plain alias or a variant", "[character_class]") {
+    // Expected: characters.md#type-to-model, confirmed (code)
     CHECK(characterClassOf(2).id == 1);
     CHECK(!characterClassOf(2).variant);
     CHECK(characterClassOf(4).id == 1);
@@ -44,6 +45,7 @@ TEST_CASE("Human_Init's switch maps a type to its class, as a plain alias or a v
 
 TEST_CASE("a player made as a plain alias is drawn as the class's model; anyone else as the type's own",
           "[character_class]") {
+    // Expected: characters.md#type-to-model, confirmed (code)
     CHECK(modelRecordType(2, 1) == 1);
     CHECK(modelRecordType(2, 0) == 2);
     CHECK(modelRecordType(32, 1) == 32);
@@ -55,6 +57,7 @@ TEST_CASE("a player made as a plain alias is drawn as the class's model; anyone 
 }
 
 TEST_CASE("levels 60 to 69 draw the `_a` model, and a type with no CfgChar call has none", "[character_class]") {
+    // Expected: armies.md#what-it-is, confirmed (code)
     CHECK(modelNameFor(1, 1, 60, modelOf) == std::optional<std::string>("warr_cl_a"));
     CHECK(modelNameFor(1, 1, 64, modelOf) == std::optional<std::string>("warr_cl_a"));
     // The original takes 60-69 (GameState_IsArmiesLevel, docs/research/armies.md#what-it-is).
@@ -66,6 +69,7 @@ TEST_CASE("levels 60 to 69 draw the `_a` model, and a type with no CfgChar call 
 }
 
 TEST_CASE("a Warriors type plays with his Warrior's class; anyone else with his own", "[character_class]") {
+    // Expected: characters.md#power-classes, confirmed (code)
     using coney::characters::powerClassOf;
     using coney::characters::warriorClassOf;
     using coney::characters::warriorPowerClassOf;

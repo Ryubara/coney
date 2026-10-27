@@ -64,6 +64,7 @@ struct Canvas {
 
 TEST_CASE("a hint stays until cleared unless its markup times it; a text set on a free box shows at once with cue 0x15",
           "[hud]") {
+    // Expected: hud-messages.md#hints-hudsettutorialtext, confirmed (code)
     KeepingAudio audio;
     Hud hud = makeHud(&audio);
     step(hud, 0);
@@ -93,6 +94,7 @@ TEST_CASE("a hint stays until cleared unless its markup times it; a text set on 
 }
 
 TEST_CASE("two nil-then-text pairs in one update leave nothing queued; the same text twice shows twice", "[hud]") {
+    // Expected: hud-messages.md#hint-queue-runtime, confirmed (runtime)
     // P1.StartSnaps's four calls in one tick: the box showed the text, cleared it and showed it again, cue twice
     // (docs/research/hud-messages.md#hint-queue-runtime).
     KeepingAudio audio;
@@ -115,6 +117,7 @@ TEST_CASE("two nil-then-text pairs in one update leave nothing queued; the same 
 }
 
 TEST_CASE("a timed hint's successor shows on the step after it ends; a withdrawn hint's at once", "[hud]") {
+    // Expected: hud-messages.md#hint-queue-runtime, confirmed (runtime)
     Hud hud = makeHud(nullptr);
     step(hud, 0);
     hud.hints().queue("<DISPLAYTIME 3000>held", 1);
@@ -145,6 +148,7 @@ TEST_CASE("a timed hint's successor shows on the step after it ends; a withdrawn
 }
 
 TEST_CASE("hints queue by priority, first in first out within one; a full queue drops", "[hud]") {
+    // Expected: hud-messages.md#hints-hudsettutorialtext, confirmed (code)
     coney::hud::HintBox box;
     // The most urgent priority showing, so the rest wait in the queue.
     box.queue("showing", 0);
@@ -169,6 +173,7 @@ TEST_CASE("hints queue by priority, first in first out within one; a full queue 
 
 TEST_CASE("a more urgent hint interrupts; the interrupted one starts again later; flushing removes by priority",
           "[hud]") {
+    // Expected: hud-messages.md#hints-hudsettutorialtext, confirmed (code)
     Hud hud = makeHud(nullptr);
     step(hud, 0);
     hud.hints().queue("<DISPLAYTIME 5000>low", 3);
@@ -197,6 +202,7 @@ TEST_CASE("a more urgent hint interrupts; the interrupted one starts again later
 }
 
 TEST_CASE("HUDSetObjective sets the checklist and queues the header and text at (0.025, 0.88)", "[hud]") {
+    // Expected: hud-messages.md#objectives-hudsetobjective, confirmed (code)
     KeepingAudio audio;
     Hud hud = makeHud(&audio);
     hud.setObjective(0, "Reach the park", 0, false, 8000);
@@ -231,6 +237,7 @@ TEST_CASE("HUDSetObjective sets the checklist and queues the header and text at 
 }
 
 TEST_CASE("the objective header's first glyph is the icon rectangle, not the letter", "[hud]") {
+    // Expected: gui.md#moneyfont, confirmed (code)
     // Issue #235: the header drew "ANew Objective", the icon character as a plain letter. The icon tags are rectangles
     // of the money font (28 for <YOBJ>, 22 for <BOBJ>, docs/research/gui.md#moneyfont), so the header wraps the tag in
     // <MONEYFONT>; the heading after it is ordinary text.
@@ -259,6 +266,7 @@ TEST_CASE("the objective header's first glyph is the icon rectangle, not the let
 }
 
 TEST_CASE("completing an objective (mode 2) queues the icon header, then the text", "[hud]") {
+    // Expected: hud-messages.md#objectives-hudsetobjective, confirmed (code)
     // Issue #238. hud.md: "two scroll-in messages, the header with the HUD string 0xe5/0xe6 and then the text". The
     // header is the same icon header as mode 0's (so its icon is the rectangle, #235), alone; the text follows as a
     // plain message. Which string reads "complete" is an open question (hud.md), so only the order, the
@@ -280,6 +288,7 @@ TEST_CASE("completing an objective (mode 2) queues the icon header, then the tex
 }
 
 TEST_CASE("the first slot-1 objective with game hints on queues tutorial hint 0x15 once", "[hud]") {
+    // Expected: hud-messages.md#objectives-hudsetobjective, confirmed (code)
     Hud hud = makeHud(nullptr);
     step(hud, 0);
     hud.setObjective(1, "a", 0, false, 8000);
@@ -293,6 +302,7 @@ TEST_CASE("the first slot-1 objective with game hints on queues tutorial hint 0x
 }
 
 TEST_CASE("an announcement hides the messages and the hint box; a message hides the hint box", "[hud]") {
+    // Expected: hud-messages.md#announcements-and-other-messages, confirmed (code)
     KeepingAudio audio;
     Hud hud = makeHud(&audio);
     Canvas canvas;
@@ -326,6 +336,7 @@ TEST_CASE("an announcement hides the messages and the hint box; a message hides 
 }
 
 TEST_CASE("the action prompt sits at (0.5, 0.86) in grey, raised over the hint box or message below", "[hud]") {
+    // Expected: hud-messages.md#action-prompts, confirmed (code)
     Hud hud = makeHud(nullptr);
     Canvas canvas;
     hud.setActionPrompt(0, "Pick up");
@@ -360,6 +371,7 @@ TEST_CASE("the action prompt sits at (0.5, 0.86) in grey, raised over the hint b
 }
 
 TEST_CASE("nothing is drawn and the radars go off while the letterbox is in", "[hud]") {
+    // Expected: hud.md#showing-and-hiding, confirmed (code)
     Hud hud = makeHud(nullptr);
     Canvas canvas;
     hud.hints().queue("hint", 1);
@@ -378,6 +390,7 @@ TEST_CASE("nothing is drawn and the radars go off while the letterbox is in", "[
 }
 
 TEST_CASE("the hint box sits on the bottom left, its box grown round the text", "[hud]") {
+    // Expected: hud.md#hint-box-layout-0x0050eb50, confirmed (code)
     Hud hud = makeHud(nullptr);
     Canvas canvas;
     hud.hints().queue("Press X to attack", 1);
@@ -395,6 +408,7 @@ TEST_CASE("the hint box sits on the bottom left, its box grown round the text", 
 }
 
 TEST_CASE("a long hint wraps at spaces outside tags to the box's width", "[hud]") {
+    // Expected: hud.md#hint-box-layout-0x0050eb50, confirmed (code)
     const coney::graphics::Font font = coney::test::testFont();
     const coney::gui::FontLookup fonts = [&font](int) { return &font; };
     const coney::gui::TextStyle style = coney::hud::HintBox::textStyle();
@@ -409,6 +423,7 @@ TEST_CASE("a long hint wraps at spaces outside tags to the box's width", "[hud]"
 }
 
 TEST_CASE("the wrap measures each line with its tags stripped and takes a leading AUTOINDENT's width", "[hud]") {
+    // Expected: hud.md#hint-box-layout-0x0050eb50, confirmed (code)
     const coney::graphics::Font font = coney::test::testFont();
     const coney::gui::FontLookup fonts = [&font](int) { return &font; };
     const coney::gui::TextStyle style = coney::hud::HintBox::textStyle();
@@ -424,6 +439,7 @@ TEST_CASE("the wrap measures each line with its tags stripped and takes a leadin
 }
 
 TEST_CASE("counter panels: five to take, shown for a time after a change, in rows from the top", "[hud]") {
+    // Expected: hud.md#item-counters, confirmed (code)
     KeepingAudio audio;
     coney::hud::CounterPanels panels;
     for (int i = 0; i < 5; ++i) {
@@ -449,6 +465,7 @@ TEST_CASE("counter panels: five to take, shown for a time after a change, in row
 }
 
 TEST_CASE("the instruction arrow bobs up by 2 a frame to 10 and back by 0.5", "[hud]") {
+    // Expected: hud-messages.md#the-instruction-arrow-hudenableinstarrow, confirmed (code)
     Hud hud = makeHud(nullptr);
     hud.enableArrow(true, 0.5F, 0.3F, 3.14159265F);
     std::vector<float> steps;
@@ -471,6 +488,7 @@ TEST_CASE("the instruction arrow bobs up by 2 a frame to 10 and back by 0.5", "[
 }
 
 TEST_CASE("the radar disc turns blue only while the HUD shows, blending over 500 ms", "[hud][hiding]") {
+    // Expected: hud-radar.md#the-radar-on-screen, confirmed (code)
     Hud hud = makeHud(nullptr);
     hud.hideAll();
     hud.setRadarTint(0, coney::hud::RadarTint::Blue);
@@ -492,6 +510,7 @@ TEST_CASE("the radar disc turns blue only while the HUD shows, blending over 500
 }
 
 TEST_CASE("radars: on and off by player, off during a screen fade and back after it, kept by HideHud", "[hud]") {
+    // Expected: hud.md#radars-across-a-scene, confirmed (code)
     Hud hud = makeHud(nullptr);
     hud.radarOff(2);
     CHECK_FALSE(hud.radar().on[0]);
@@ -514,6 +533,7 @@ TEST_CASE("radars: on and off by player, off during a screen fade and back after
 }
 
 TEST_CASE("HideHud draws nothing; panels attach once and HidePlayerHud keeps them hidden", "[hud]") {
+    // Expected: hud.md#showing-and-hiding, confirmed (code)
     Hud hud = makeHud(nullptr);
     Canvas canvas;
     CHECK(hud.attachPlayer(0, 32) == 0);
@@ -539,6 +559,7 @@ TEST_CASE("HideHud draws nothing; panels attach once and HidePlayerHud keeps the
 
 TEST_CASE("the letterbox going out shows the HUD a scene's HideHud hid, on the second step with the bars out",
           "[hud]") {
+    // Expected: hud.md#who-shows-the-hud-again, confirmed (code)
     Hud hud = makeHud(nullptr);
     Canvas canvas;
     REQUIRE(hud.attachPlayer(0, 32) == 0);
@@ -585,6 +606,7 @@ TEST_CASE("the letterbox going out shows the HUD a scene's HideHud hid, on the s
 
 TEST_CASE("RestoreHud keeps each part's own flags; the radars come back by themselves after the bars when on",
           "[hud]") {
+    // Expected: hud.md#who-shows-the-hud-again, confirmed (code)
     Hud hud = makeHud(nullptr);
     REQUIRE(hud.attachPlayer(0, 32) == 0);
     // A panel HidePlayerHud forbids stays hidden through RestoreHud; a radar that is off stays off.
@@ -616,6 +638,7 @@ TEST_CASE("RestoreHud keeps each part's own flags; the radars come back by thems
 }
 
 TEST_CASE("a level starts with the HUD hidden and the radars' automatic return on", "[hud]") {
+    // Expected: hud.md#showing-and-hiding, confirmed (code)
     Hud hud = makeHud(nullptr);
     REQUIRE(hud.attachPlayer(0, 32) == 0);
     hud.radarOff(2);
@@ -630,6 +653,7 @@ TEST_CASE("a level starts with the HUD hidden and the radars' automatic return o
 }
 
 TEST_CASE("the action cycle swaps its word every framesPerIcon updates and blinks on and off", "[hud]") {
+    // Expected: hud-messages.md#action-prompts, confirmed (code)
     coney::hud::ActionCycle cycle{.on = true, .framesPerIcon = 4, .blinkFrames = 6, .iconA = 79, .iconB = 73};
     // The first update swaps already, then every fourth: B for updates 0-3, A for 4-7, B for 8-11.
     std::vector<std::uint32_t> icons;
@@ -645,6 +669,7 @@ TEST_CASE("the action cycle swaps its word every framesPerIcon updates and blink
 }
 
 TEST_CASE("the action cycle hides the prompt's text and draws its button at the prompt's anchor", "[hud]") {
+    // Expected: hud-messages.md#action-prompts, confirmed (code)
     Hud hud = makeHud(nullptr);
     Canvas canvas;
     coney::graphics::SpriteSheet sheet;
@@ -676,6 +701,7 @@ TEST_CASE("the action cycle hides the prompt's text and draws its button at the 
 
 TEST_CASE("the level's shut-down clears every hint, objective and panel the level left, and keeps the game's",
           "[hud]") {
+    // Expected: hud.md#hud-object, confirmed (code)
     // docs/research/hud.md#hud-object: UnloadLevel's HUD_ShutdownLevel runs every part's shutdown; the hint box's
     // clears its text, both lists and the tutorial callback.
     Hud hud = makeHud(nullptr);
@@ -746,6 +772,7 @@ TEST_CASE("an Armies level asks the absent player 2 to join from its set-up: att
 }
 
 TEST_CASE("a context prompt's GSTRING.ACTIONBUTTON draws the triangle button, not the letter n", "[hud]") {
+    // Expected: hud-messages.md#action-prompts, confirmed (code)
     // User item 9 ("n Give Weapon"): the prompt strings start with <MONEYFONT><ST></MONEYFONT> and a space, and in the
     // prompt's part_page0 font the <ST> character n inside <MONEYFONT> is rectangle 11 + ('n' - '0') = 73.
     Hud hud = makeHud(nullptr);
@@ -761,6 +788,7 @@ TEST_CASE("a context prompt's GSTRING.ACTIONBUTTON draws the triangle button, no
 }
 
 TEST_CASE("the revive prompt's stick picture alternates with the prompt's own time", "[hud]") {
+    // Expected: hud-messages.md#action-prompts, confirmed (code)
     // HUD string 4's form: <SDL> in big_font's money font is rectangle 259 (its character 4), then 257 (character 2),
     // by turns every 500 ms, counted from when the prompt's text was set (the widget's stick timer).
     Hud hud = makeHud(nullptr);

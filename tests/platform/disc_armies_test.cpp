@@ -61,6 +61,7 @@ constexpr std::uint64_t kCountdownFrames = 11 * 30;
 
 TEST_CASE("the disc's level60: the debug menus reach Armies of the Night's first stage, not a black screen",
           "[disc][story][armies]") {
+    // Expected: unverified, #85 (Coney's own debug menus)
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -113,6 +114,7 @@ TEST_CASE("the disc's level60: the debug menus reach Armies of the Night's first
 
 TEST_CASE("the disc's level60 with the pad idle: the walk out, the Armies HUD, the timer and the game over",
           "[disc][story][armies]") {
+    // Expected: armies.md#first-frames, confirmed (runtime)
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");

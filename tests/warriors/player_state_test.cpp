@@ -42,6 +42,7 @@ namespace item = coney::item;
 namespace crime = coney::crime;
 
 TEST_CASE("the inventory clamps counts at 0 and revives at 3, or 4 with the upgrade", "[inventory]") {
+    // Expected: player-state.md#inventory, confirmed (code)
     Inventory inventory;
     CHECK(inventory.give(0, item::kMoney, 25) == 25);
     CHECK(inventory.give(0, item::kMoney, -40) == -25);
@@ -60,6 +61,7 @@ TEST_CASE("the inventory clamps counts at 0 and revives at 3, or 4 with the upgr
 }
 
 TEST_CASE("setting money tells the HUD and spray paint raises its hint once", "[inventory]") {
+    // Expected: player-state.md#warriors-functions, confirmed (code)
     Inventory inventory;
     inventory.setMoney(1, -5);
     CHECK(inventory.count(1, item::kMoney) == 0);
@@ -76,6 +78,7 @@ TEST_CASE("setting money tells the HUD and spray paint raises its hint once", "[
 }
 
 TEST_CASE("CfgInventoryItem configures both players' slots", "[inventory]") {
+    // Expected: player-state.md#inventory, confirmed (code)
     Inventory inventory;
     inventory.configure(6, "dyn_key", 0, "powerup", 30000);
     for (const int player : {0, 1}) {
@@ -91,6 +94,7 @@ TEST_CASE("CfgInventoryItem configures both players' slots", "[inventory]") {
 }
 
 TEST_CASE("a category scores count times points; harmony is the maximum less its points", "[stats]") {
+    // Expected: player-state.md#statistics, confirmed (code)
     PlayerStats stats;
     stats.setPoints(0, 0, 1000);
     stats.setPoints(3, 1, 4);
@@ -118,6 +122,7 @@ TEST_CASE("a category scores count times points; harmony is the maximum less its
 
 TEST_CASE("the stopwatch counts down by game time, stops at its target and beeps once a second near it",
           "[stopwatch]") {
+    // Expected: scripting.md#stopwatch, confirmed (code)
     StopWatch watch;
     watch.set(5000, 0, "P1.TimesUp");
     watch.setWarning(3000);
@@ -146,6 +151,7 @@ TEST_CASE("the stopwatch counts down by game time, stops at its target and beeps
 }
 
 TEST_CASE("the stopwatch counts up to a target above it", "[stopwatch]") {
+    // Expected: scripting.md#stopwatch, confirmed (code)
     StopWatch watch;
     watch.set(0, 1000, "Done");
     watch.start(true, ms(0));
@@ -155,6 +161,7 @@ TEST_CASE("the stopwatch counts up to a target above it", "[stopwatch]") {
 }
 
 TEST_CASE("UM_Unlock unlocks matching records into the profile's bits and marks them new", "[unlocks]") {
+    // Expected: player-state.md#unlockables, confirmed (code)
     UnlockRecords records;
     coney::SavedProgress progress;
     records.setCount(4);
@@ -216,6 +223,7 @@ struct RecordingServices final : coney::CrimeServices {
 } // namespace
 
 TEST_CASE("a crime report turns the police on the gang, sends responders and starts 10 s of wanted", "[crimes]") {
+    // Expected: ai-gangs.md#crimes, confirmed (code)
     CrimeReports crimes;
     RecordingServices services;
     crimes.setResponders(crime::kAssault, 2);
@@ -246,6 +254,7 @@ TEST_CASE("a crime report turns the police on the gang, sends responders and sta
 }
 
 TEST_CASE("crime reports: off, police offenders, one-way types, break-ins and custom counts", "[crimes]") {
+    // Expected: ai-gangs.md#crimes, confirmed (code)
     CrimeReports crimes;
     RecordingServices services;
     const CrimePosition at{0, 0, 0};
@@ -307,6 +316,7 @@ TEST_CASE("the stopwatch counts whole milliseconds an update and drops the rest:
 }
 
 TEST_CASE("forcing the crime level holds a gang wanted", "[crimes]") {
+    // Expected: ai-gangs.md#crimes, confirmed (code)
     CrimeReports crimes;
     RecordingServices services;
     crimes.report(services, crime::kTheft, CrimePosition{}, 1.0, 0.0, false, 0, 0);
@@ -321,6 +331,7 @@ TEST_CASE("forcing the crime level holds a gang wanted", "[crimes]") {
 }
 
 TEST_CASE("the second wanted timer runs 10 s on its own, forced or not", "[crimes]") {
+    // Expected: ai-gangs.md#crimes, confirmed (code)
     CrimeReports crimes;
     RecordingServices services;
     crimes.setSecondWanted(4, 1000);
@@ -338,6 +349,7 @@ TEST_CASE("the second wanted timer runs 10 s on its own, forced or not", "[crime
 }
 
 TEST_CASE("pad handlers are kept under the highest bit of the mask", "[pad_handlers]") {
+    // Expected: player-state.md#warriors-functions, confirmed (code)
     coney::PadHandlers handlers;
     handlers.set(0, coney::pad::kCross | coney::pad::kSquare, "OnSquare");
     handlers.set(0, coney::pad::kL2, "OnL2");
@@ -354,6 +366,7 @@ TEST_CASE("pad handlers are kept under the highest bit of the mask", "[pad_handl
 }
 
 TEST_CASE("a checkpoint copy restores the inventories and statistics", "[player_state]") {
+    // Expected: player-state.md#warriors-functions, confirmed (code)
     coney::PlayerState state;
     state.inventory.give(0, item::kMoney, 40);
     state.stats.add(0, 3, 0, 2);

@@ -21,6 +21,7 @@ using coney::hud::GoSignMode;
 using coney::hud::isArmiesLevel;
 
 TEST_CASE("the Armies of the Night levels are 60 to 69, as the original's test takes them", "[hud][armies]") {
+    // Expected: armies.md#what-it-is, confirmed (code)
     CHECK_FALSE(isArmiesLevel(59));
     CHECK(isArmiesLevel(60));
     CHECK(isArmiesLevel(64));
@@ -31,6 +32,7 @@ TEST_CASE("the Armies of the Night levels are 60 to 69, as the original's test t
 
 TEST_CASE("the GO sign starts off, blinks its one arrow in mode 0 and lights three in turn in mode 1, every 300 ms",
           "[hud][armies]") {
+    // Expected: armies.md#go-sign, confirmed (code)
     ArmiesHud armies;
     armies.levelSetUp();
     CHECK(armies.goSignMode() == static_cast<std::uint8_t>(GoSignMode::Off));
@@ -109,6 +111,7 @@ TEST_CASE("each level's set-up turns both join messages on, and a panel's first 
 }
 
 TEST_CASE("a join message shows for a player who is not in, blinking every 500 ms", "[hud][armies]") {
+    // Expected: armies.md#the-join-messages, confirmed (code)
     ArmiesHud armies;
     armies.levelSetUp();
     armies.setJoinMessage(0, true);
@@ -126,6 +129,7 @@ TEST_CASE("a join message shows for a player who is not in, blinking every 500 m
 }
 
 TEST_CASE("a join message is centred on its panel's place, as Font_Draw's flag 2 centres each run", "[hud][armies]") {
+    // Expected: armies.md#the-join-messages, confirmed (code)
     // Expected: gui.md (Font_Draw 0x00179c30: flag 0x02 moves the start left by half the measured width);
     // ANHud_Update sets the join text's alignment to 2 at the panel's place, (0.76, 0.08) for player 2. Confirmed
     // (runtime) in level60: the original's two lines span about 0.61 to 0.86 of the width, centred near 0.73.

@@ -597,6 +597,7 @@ TEST_CASE("pause menu: the Controls screen takes its layout from the language an
 }
 
 TEST_CASE("Armies game over: the countdown from 9, one step a second, then the end phase", "[pause_menu]") {
+    // Expected: pause.md#an-game-over, confirmed (code)
     GlobalStrings strings = syntheticStrings();
     ArmiesGameOverMenu menu;
     menu.setStrings(&strings);
@@ -628,6 +629,7 @@ TEST_CASE("Armies game over: the countdown from 9, one step a second, then the e
 }
 
 TEST_CASE("Armies game over: Start with a credit continues, without one ends the countdown", "[pause_menu]") {
+    // Expected: pause.md#an-game-over, confirmed (code)
     GlobalStrings strings = syntheticStrings();
     std::vector<int> cues;
     ArmiesGameOverMenu credit;
@@ -648,6 +650,7 @@ TEST_CASE("Armies game over: Start with a credit continues, without one ends the
 }
 
 TEST_CASE("Armies game over: the end phase takes input only once faded in", "[pause_menu]") {
+    // Expected: pause.md#an-game-over, confirmed (code)
     GlobalStrings strings = syntheticStrings();
     ArmiesGameOverMenu menu;
     menu.setStrings(&strings);

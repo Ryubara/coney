@@ -18,6 +18,7 @@ using coney::debug::DebugSession;
 using coney::debug::TunableRegistry;
 
 TEST_CASE("the story missions are 18, in order, each with at least one checkpoint", "[debug]") {
+    // Expected: unverified, #85 (Coney's own debug menus)
     const auto& missions = coney::debug::storyMissions();
     REQUIRE(missions.size() == 18);
     for (std::size_t i = 0; i < missions.size(); ++i) {
@@ -30,6 +31,7 @@ TEST_CASE("the story missions are 18, in order, each with at least one checkpoin
 }
 
 TEST_CASE("the Missions page lists the missions and jumps to a checkpoint through the loader", "[debug]") {
+    // Expected: unverified, #85 (Coney's own debug menus)
     TunableRegistry tunables;
     std::vector<std::pair<std::string, int>> started;
     DebugServices services;
@@ -57,6 +59,7 @@ TEST_CASE("the Missions page lists the missions and jumps to a checkpoint throug
 }
 
 TEST_CASE("the Missions page says so when the run cannot start a mission", "[debug]") {
+    // Expected: unverified, #85 (Coney's own debug menus)
     TunableRegistry tunables;
     DebugSession session(tunables, DebugServices{}, nullptr);
     const auto page = session.model().openPage("Missions");
@@ -70,6 +73,7 @@ TEST_CASE("the Missions page says so when the run cannot start a mission", "[deb
 // cannot load (docs/research/armies.md#coney-fixes).
 TEST_CASE("the Missions page lists the flashbacks and Armies of the Night after the story and starts a stage",
           "[debug]") {
+    // Expected: unverified, #85 (Coney's own debug menus)
     const auto& bonus = coney::debug::bonusMissions();
     for (const coney::debug::BonusMission& mission : bonus) {
         CHECK(mission.checkpoints >= 1);

@@ -69,6 +69,7 @@ void tick(Doors& doors, coney::test::ObjectWorldFixture& fixture, int n) {
 } // namespace
 
 TEST_CASE("the swinging door types' set-up", "[world_objects][doors]") {
+    // Expected: objects.md#doors, confirmed (code)
     const auto gate = coney::world_objects::swingingDoorSetup("dyn_door_big_gate");
     CHECK(gate.leaves == 2);
     CHECK(gate.openSound == 0x43e4b743U);
@@ -91,6 +92,7 @@ TEST_CASE("the swinging door types' set-up", "[world_objects][doors]") {
 }
 
 TEST_CASE("a spawned double door: leaves, triangles, hitpoints", "[world_objects][doors]") {
+    // Expected: objects.md#leaves, confirmed (code)
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info = swinging(100);
@@ -113,6 +115,7 @@ TEST_CASE("a spawned double door: leaves, triangles, hitpoints", "[world_objects
 }
 
 TEST_CASE("OpenDoor swings, and collision goes 29 ticks later; CloseDoor brings it back", "[world_objects][doors]") {
+    // Expected: objects.md#opening, confirmed (code)
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info = swinging(100);
@@ -154,6 +157,7 @@ TEST_CASE("OpenDoor swings, and collision goes 29 ticks later; CloseDoor brings 
 }
 
 TEST_CASE("DoorOpen swings away from the human, only from closed", "[world_objects][doors]") {
+    // Expected: objects.md#opening, confirmed (code)
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info = swinging(100);
@@ -175,6 +179,7 @@ TEST_CASE("DoorOpen swings away from the human, only from closed", "[world_objec
 }
 
 TEST_CASE("a pickable door refuses to open and keeps a DoorOpenDegree", "[world_objects][doors]") {
+    // Expected: objects.md#lock-pick, confirmed (code)
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info = swinging(100);
@@ -199,6 +204,7 @@ TEST_CASE("a pickable door refuses to open and keeps a DoorOpenDegree", "[world_
 }
 
 TEST_CASE("SetDoorPickable(false) stops the pickers; the third abandoned pick counts", "[world_objects][doors]") {
+    // Expected: objects.md#lock-pick, confirmed (code)
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info = swinging(100);
@@ -222,6 +228,7 @@ TEST_CASE("SetDoorPickable(false) stops the pickers; the third abandoned pick co
 }
 
 TEST_CASE("the store door: one hit swings it open away from the attacker", "[world_objects][doors]") {
+    // Expected: objects.md#door-break, confirmed (code)
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info = swinging(1, coney::world_objects::object_type::kBreakAndEnterDoor);
@@ -238,6 +245,7 @@ TEST_CASE("the store door: one hit swings it open away from the attacker", "[wor
 }
 
 TEST_CASE("a cabin door: two plain hits break a leaf, three the door", "[world_objects][doors]") {
+    // Expected: objects.md#door-break, confirmed (code)
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info = swinging(12);
@@ -265,6 +273,7 @@ TEST_CASE("a cabin door: two plain hits break a leaf, three the door", "[world_o
 }
 
 TEST_CASE("dyn_door_liz: model stages, then wreck pieces and the links opened", "[world_objects][doors]") {
+    // Expected: objects.md#door-break, confirmed (code)
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info = swinging(100);
@@ -290,6 +299,7 @@ TEST_CASE("dyn_door_liz: model stages, then wreck pieces and the links opened", 
 }
 
 TEST_CASE("dyn_door_stall breaks on its first hit", "[world_objects][doors]") {
+    // Expected: objects.md#door-break, confirmed (code)
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info = swinging(10);
@@ -303,6 +313,7 @@ TEST_CASE("dyn_door_stall breaks on its first hit", "[world_objects][doors]") {
 }
 
 TEST_CASE("other swinging doors ignore hits; a destroyed one hits itself", "[world_objects][doors]") {
+    // Expected: objects.md#door-break, confirmed (code)
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info = swinging(12);
@@ -326,6 +337,7 @@ TEST_CASE("other swinging doors ignore hits; a destroyed one hits itself", "[wor
 
 TEST_CASE("a barrier: links charged through, boards, hidden, then removed with its body at its next update",
           "[world_objects][doors]") {
+    // Expected: objects.md#barriers, confirmed (code)
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info{
@@ -369,6 +381,7 @@ TEST_CASE("a barrier: links charged through, boards, hidden, then removed with i
 }
 
 TEST_CASE("walls throw no boards; message 10 stops a barrier being hit", "[world_objects][doors]") {
+    // Expected: objects.md#barriers, confirmed (code)
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info{.className = "dyn_door_fence", .hitpoints = 3};
@@ -391,6 +404,7 @@ TEST_CASE("walls throw no boards; message 10 stops a barrier being hit", "[world
 
 TEST_CASE("the doors draw their leaves at their poses and a barrier as its model until it breaks",
           "[world_objects][doors]") {
+    // Expected: objects.md#leaves, confirmed (code)
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo store = swinging(1, coney::world_objects::object_type::kBreakAndEnterDoor);
@@ -427,6 +441,7 @@ TEST_CASE("the doors draw their leaves at their poses and a barrier as its model
 
 TEST_CASE("a door whose model is not listed falls back to dyn_dr_ and its name, less a leading dbl",
           "[world_objects][doors]") {
+    // Expected: objects.md#models, confirmed (code)
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo fence{.className = "dyn_door_fence", .hitpoints = 10};
@@ -442,6 +457,7 @@ TEST_CASE("a door whose model is not listed falls back to dyn_dr_ and its name, 
 
 TEST_CASE("CamGhostDoor lets the camera's rays through a door's triangles, and only a door's",
           "[world_objects][doors]") {
+    // Expected: camera.md#notes, confirmed (code)
     coney::test::ObjectWorldFixture fixture;
     coney::world_objects::LevelObjects objects;
     objects.world = fixture.world;
@@ -474,6 +490,7 @@ TEST_CASE("CamGhostDoor lets the camera's rays through a door's triangles, and o
 
 TEST_CASE("a roll-up door: closed at its set-up, OpenDoor slides its leaf up and opens the way, CloseDoor shuts it",
           "[world_objects][doors]") {
+    // Expected: script-types.md#sliding-doors, confirmed (code)
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     // dyn_door_sliding: the step twice property 6 (0.1 m), no property 7, so property 8's 3 m up the leaf's z axis.
