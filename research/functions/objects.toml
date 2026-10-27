@@ -287,8 +287,18 @@ address = 0x00398598
 name = "ObjectList_LoadObjsFile"
 page = "objects.md#objs-file"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
-coney = "src/world_objects/placed_objects_file.h:parsePlacedObjects"
-status = "legacy"
+coney = "src/gamemodes/level_start.cpp:loadPlacedObjects"
+status = "compared"
+
+[[function.gaps]]
+what = "a file shorter than its count, or a line that does not read, keeps what it read; Coney refuses the whole file"
+relation = "not-ported"
+issue = 711
+
+[[function.gaps]]
+what = "the range of the file's records in the object list (+0x1c, +0x1e)"
+relation = "not-ported"
+issue = 711
 
 [[function]]
 address = 0x00398940
