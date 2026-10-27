@@ -2146,7 +2146,17 @@ name = "Climb_OnFirstClipEndRun"
 page = "characters.md#original-structure"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::followClimb"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the face at the first clip's end need not be climbable (any face goes on), the stance's fight idle and the push sphere are not ported"
+relation = "not-ported"
+issue = 664
+
+[[function.gaps]]
+what = "only walls move onto the top at once (Coney's choice from the runtime runs); the code moves every climb so"
+relation = "stand-in"
+issue = 664
 
 [[function]]
 address = 0x00281838
@@ -2154,7 +2164,17 @@ name = "Climb_OnFirstClipEndStand"
 page = "characters.md#original-structure"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::followClimb"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the face at the first clip's end need not be climbable (any face goes on), the stance's fight idle and the push sphere are not ported"
+relation = "not-ported"
+issue = 664
+
+[[function.gaps]]
+what = "only walls move onto the top at once (Coney's choice from the runtime runs); the code moves every climb so"
+relation = "stand-in"
+issue = 664
 
 [[function]]
 address = 0x00281c20
