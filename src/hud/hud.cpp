@@ -28,7 +28,10 @@ constexpr GuiPoint kArmiesStopWatchPlace{0.49F, 0.10F};
 constexpr graphics::Rgba kPlayerBlipColour{178, 178, 178, 255};
 constexpr float kPlayerBlipSize = 0.03F;
 
-// The radars a player argument names: 0 or 1 one, anything else (2, the default) both.
+// The radars a player argument names: 0 or 1 one, anything else (2, the default) both: the two functions' choice of
+// radar. **Coney's choice**: a value other than 0, 1 or 2 means both (the original hands it on unchecked as an index).
+// @orig 0x001b4328 HUD_RadarOn (unknown)
+// @orig 0x001b43a8 HUD_RadarOff (unknown)
 std::array<bool, kPlayers> radarsOf(int player) {
     if (player == 0) {
         return {true, false};
@@ -41,12 +44,17 @@ std::array<bool, kPlayers> radarsOf(int player) {
 
 } // namespace
 
+// The arrow's place step: the direction (sin angle, -cos angle) / 20 / frames times the bob's counter, added to its
+// base (the counter's stepping is Hud::update's). **Coney's choice**: the frames are fixed at the default 10;
+// `HUDSetInstArrowAnimSpeed`'s value is kept but not used.
+// @orig 0x001b7330 InstArrow_Update (unknown)
 GuiPoint InstructionArrow::offset() const {
     return GuiPoint{step * std::sin(angle) / kArrowBobDivisor, -step * std::cos(angle) / kArrowBobDivisor};
 }
 
 Hud::Hud(HudServices services) : m_services(std::move(services)), m_hints(m_services.sound) {}
 
+// @coney-only the lookup through the HUD's string services, which may be absent in a test
 std::string Hud::read(const std::function<std::string(std::uint32_t)>& service, std::uint32_t id) {
     return service ? service(id) : std::string{};
 }
@@ -128,6 +136,8 @@ void Hud::showPlayers() {
     }
 }
 
+// HUD_SetObjective's header step: the slot's icon, the HUD colour and the heading string.
+// @orig 0x001dad88 HUD_SetObjective (unknown)
 std::string Hud::objectiveHeader(int slot) const {
     // The objective icon (yellow for slot 0 at 0.8, blue for slot 1), the HUD colour, the heading string. The icon
     // tags are rectangles of the money font (<YOBJ> 28, <BOBJ> 22), so each sits inside <MONEYFONT>; outside it the tag
@@ -181,6 +191,8 @@ void Hud::setObjective(int slot, std::string_view text, int mode, bool silent, s
     }
 }
 
+// Clears the current objectives: Coney's checklist slot 0.
+// @orig 0x001db248 HUD_RemoveAllGoalText (unknown)
 void Hud::removeGoalText() { m_checklist.slots.at(0).reset(); }
 
 void Hud::setAnnouncement(int kind, std::string_view text, bool flag) {
@@ -270,6 +282,8 @@ void Hud::radarOff(int player) {
     m_radar.scriptOn = false;
 }
 
+// Radar_Render's colour table (`0x0050e9e8`) read by the disc's state.
+// @orig 0x001c60b0 Radar_Render (RadarHUD.cpp)
 graphics::Rgba radarTintColour(RadarTint tint) { return tint == RadarTint::Blue ? kRadarBlueColour : kRadarDiscColour; }
 
 void Hud::setRadarTint(std::size_t player, RadarTint tint) {
@@ -282,6 +296,8 @@ void Hud::setRadarTint(std::size_t player, RadarTint tint) {
     m_radar.tintChangedMs.at(player) = m_nowMs;
 }
 
+// Radar_Render's disc colour: within 500 ms of a change of state, the blend from the previous state's colour.
+// @orig 0x001c60b0 Radar_Render (RadarHUD.cpp)
 graphics::Rgba Hud::radarColour(std::size_t player) const {
     const graphics::Rgba from = radarTintColour(m_radar.previousTint.at(player));
     const graphics::Rgba to = radarTintColour(m_radar.tint.at(player));
@@ -446,6 +462,10 @@ void Hud::setRadarRange(float near, float far) {
     m_radar.zoom = near;
 }
 
+// The radar's step: Radar_Update's copy of the player's place and the camera, and the objective blips' flash count;
+// Radar_Render's easing of the zoom, which Coney steps here with the rest of the update.
+// @orig 0x001c5210 Radar_Update (RadarHUD.cpp)
+// @orig 0x001c60b0 Radar_Render (RadarHUD.cpp)
 void Hud::updateRadar(const HudFrame& frame) {
     // The view and the zoom's easing by the game time since the last step.
     const std::uint64_t elapsed =
@@ -464,6 +484,8 @@ void Hud::updateRadar(const HudFrame& frame) {
     }
 }
 
+// Radar_Render's gate and place: the disc only while the radar is on and the map is there, at the disc's centre.
+// @orig 0x001c60b0 Radar_Render (RadarHUD.cpp)
 void Hud::renderRadar(const HudCanvas& canvas) const {
     if (!m_radar.on.at(0) || !m_radar.view.known) {
         return;
@@ -479,6 +501,7 @@ void Hud::renderRadar(const HudCanvas& canvas) const {
     renderPlayerArrow(canvas, centre);
 }
 
+// @coney-only drawing glue: hands the crime panel's own render the disc's centre and Coney's shape batch
 void Hud::renderCrimePanel(const HudCanvas& canvas) const {
     // The arcs share the disc's centre, untextured, among the 2D shapes.
     if (canvas.shapes != nullptr) {
@@ -486,13 +509,16 @@ void Hud::renderCrimePanel(const HudCanvas& canvas) const {
     }
 }
 
+// Radar_Update's blips: each blip follows its object, is placed on the disc and shows or not by its kind; Coney
+// draws the dots here, where the original moves its dot widgets for the sprite pass.
+// @orig 0x001c5210 Radar_Update (RadarHUD.cpp)
 void Hud::renderBlips(const HudCanvas& canvas, graphics::OverlayPoint centre) const {
     if (canvas.parts == nullptr || !m_locate) {
         return;
     }
     const graphics::SpriteSheet& sheet = canvas.parts->sheet();
     for (const auto& [handle, blip] : m_radar.blips) {
-        // **Coney choice**: a blip whose object cannot be found is skipped, not freed (the original frees the slot
+        // **Coney's choice**: a blip whose object cannot be found is skipped, not freed (the original frees the slot
         // of a dead handle; Coney cannot yet locate every kind of object).
         const std::optional<anim::Vec3> at = m_locate(handle);
         if (!at || !radarBlipShown(blip, m_radar.updates) || blip.icon < 0 ||
@@ -510,6 +536,9 @@ void Hud::renderBlips(const HudCanvas& canvas, graphics::OverlayPoint centre) co
     }
 }
 
+// Radar_Update's player arrow (the type-9 blip): at the disc's centre, 0.03 wide, turned by the player's heading
+// minus the camera's.
+// @orig 0x001c5210 Radar_Update (RadarHUD.cpp)
 void Hud::renderPlayerArrow(const HudCanvas& canvas, graphics::OverlayPoint centre) const {
     if (canvas.parts == nullptr || kRadarPlayerIcon >= canvas.parts->sheet().page.rects.size()) {
         return;
@@ -542,6 +571,7 @@ void Hud::renderPlayerArrow(const HudCanvas& canvas, graphics::OverlayPoint cent
     canvas.parts->addTriangle(topLeft, bottomRight, bottomLeft);
 }
 
+// @coney-only drawing glue: the instruction arrow widget's sprite, which the original's sprite pass draws
 void Hud::renderArrow(const HudCanvas& canvas) const {
     if (!m_arrow.on || canvas.minigames == nullptr || kArrowRect >= canvas.minigames->sheet().page.rects.size()) {
         return;
@@ -555,6 +585,10 @@ void Hud::renderArrow(const HudCanvas& canvas) const {
         m_arrow.angle);
 }
 
+// The scoreboard rows' text and the stopwatch's two forms (minutes:seconds, or the Armies of the Night seconds).
+// @orig 0x001ccf10 TextProgressHud_Compose (unknown)
+// @orig 0x001cd5e8 StopWatchHud_UpdateMinutes (unknown)
+// @orig 0x001cd748 StopWatchHud_UpdateSeconds (unknown)
 void Hud::renderScores(const HudCanvas& canvas) const {
     const graphics::FontMetrics metrics = metricsOfHeight(kScoreRowHeight);
     for (std::size_t i = 0; i < kTextProgressRows; ++i) {
@@ -584,6 +618,7 @@ void Hud::renderScores(const HudCanvas& canvas) const {
     }
 }
 
+// @coney-only glue: each menu's command names, enabled commands and lock from the HUD's services
 void Hud::renderWarCommands(const HudCanvas& canvas) const {
     for (std::size_t player = 0; player < kPlayers; ++player) {
         WarCommandDisplay::Look look;
@@ -663,6 +698,10 @@ void Hud::render(const HudCanvas& canvas) const {
     }
 }
 
+// ActionPrompt_Render's draw of player 0's prompt (the cycle's icon while on, then the text) and ActionPrompt_Update's
+// placing of both, which Coney works out at the draw.
+// @orig 0x0019f850 ActionPrompt_Render (unknown)
+// @orig 0x0019f528 ActionPrompt_Update (unknown)
 void Hud::renderPrompt(const HudCanvas& canvas) const {
     // The cycle's icon, under the text: a `part_page0` button centred on the prompt's anchor (the base y plus the
     // raise, without the multi-line lift), 0.1 high, during the blink's on half.
