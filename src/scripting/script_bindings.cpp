@@ -295,6 +295,7 @@ NativeFunction makeRandom(const Factory& factory) {
 }
 
 // The model-name argument of type `type`'s `CfgChar` call among the recorded configuration; nothing when there is none.
+// @coney-only a lookup in Coney's record of the CfgChar stub calls; the original reads its character table
 std::optional<std::string> recordedCfgCharModel(const RecordedCalls* recorded, int type) {
     if (recorded == nullptr) {
         return std::nullopt;
@@ -313,6 +314,7 @@ std::optional<std::string> recordedCfgCharModel(const RecordedCalls* recorded, i
 
 // The carry fields of type `type`'s last recorded `CfgChar` call (arguments 3, 13, 15 and 16); a type with none
 // rolls with category 0, no cap and no object.
+// @coney-only a lookup in Coney's record of the CfgChar stub calls; the original reads its character table
 characters::CarryConfig recordedCarryConfig(const RecordedCalls* recorded, int type) {
     constexpr std::size_t kCategory = 2;
     constexpr std::size_t kAltRecord = 12;
@@ -338,6 +340,7 @@ characters::CarryConfig recordedCarryConfig(const RecordedCalls* recorded, int t
 
 // Category `category`'s last recorded `CfgCharClassAttribs(class, min, max, chance, noObject, bonusChance, bonus)`;
 // zeros for a category no call set, as the game state starts.
+// @coney-only a lookup in Coney's record of the CfgCharClassAttribs stub calls; the original reads its class table
 characters::ClassMoney recordedClassMoney(const RecordedCalls* recorded, int category) {
     characters::ClassMoney money;
     money.bonus = 0.0F;
@@ -360,6 +363,7 @@ characters::ClassMoney recordedClassMoney(const RecordedCalls* recorded, int cat
 }
 
 // The current level's number (its record's `+0x04`); 0 when the table has no record for it.
+// @coney-only a lookup in Coney's level table
 int currentLevelNumber(const GameState& state) {
     const LevelRecord* record = state.levels.at(state.currentLevel);
     return record != nullptr ? static_cast<int>(record->number) : 0;
@@ -477,6 +481,7 @@ NativeFunction makeHudLaunchArmiesGameOver(const Factory& factory) {
 // Schedules the Lua function named by string argument `i` (none for nil or a number) with the scene id, to run at the
 // scripts' next update: the original calls it later too (on the file's arrival, at the scene's end), never inside the
 // binding, and `SuperRunScene` stores its table only after `ScenePreload` returns.
+// @coney-only part of Coney's scene stand-in (docs/research/scenes.md)
 void scheduleSceneCallback(ScriptSystem& scripts, std::span<const Value> args, std::size_t i, double scene) {
     if (i >= args.size() || args[i].type() != Value::Type::String) {
         return;
@@ -487,6 +492,7 @@ void scheduleSceneCallback(ScriptSystem& scripts, std::span<const Value> args, s
 
 // `ScenePreload(name, onLoaded)`: a new handle as the scene's id, and **Coney's stand-in** for the load: `onLoaded` is
 // called with the id at the next script update (docs/research/scenes.md#loading).
+// @coney-only Coney's stand-in for the scene load (docs/research/scenes.md#loading)
 NativeFunction makeStandInScenePreload(const Factory& factory) {
     return [scripts = factory.scripts, handles = factory.handles](std::span<const Value> args) {
         const double scene = handles->next;
@@ -499,6 +505,7 @@ NativeFunction makeStandInScenePreload(const Factory& factory) {
 // `ScenePlayCinematic(scene, delay, onEnd, ...)`, `ScenePlayAnimation` and `ScenePlayFixedScene` (`onEnd` third in
 // each): true, and **Coney's stand-in** for the scene: it ends at once, its end function called with the scene id at
 // the next script update (docs/research/scenes.md#ending). A looping scene ends too.
+// @coney-only Coney's stand-in for the scene's play (docs/research/scenes.md#ending)
 NativeFunction makeStandInScenePlay(const Factory& factory) {
     return [scripts = factory.scripts](std::span<const Value> args) {
         scheduleSceneCallback(*scripts, args, 2, binding::number(args, 0));
@@ -509,6 +516,7 @@ NativeFunction makeStandInScenePlay(const Factory& factory) {
 // ---- Routed bindings: handed to the host's stand-ins ----
 
 // `PlayMovie(name)`.
+// @coney-only tolua argument reading, routed to the host's movie player
 NativeFunction makePlayMovie(const Factory& factory) {
     return [host = factory.context->host](std::span<const Value> args) {
         host->playMovie(binding::string(args, 0));
@@ -517,6 +525,7 @@ NativeFunction makePlayMovie(const Factory& factory) {
 }
 
 // `ShowRumbleModeInterface(onCancel, onStart, n)`.
+// @coney-only tolua argument reading, routed to the host's Rumble menu
 NativeFunction makeShowRumbleModeInterface(const Factory& factory) {
     return [host = factory.context->host](std::span<const Value> args) {
         host->showRumbleModeInterface(binding::string(args, 0), binding::string(args, 1), binding::number(args, 2));
@@ -568,18 +577,22 @@ constexpr std::array<std::string_view, 5> kStringBindings{"CfgAnnounceMessage", 
                                                           "CfgTutorialMessage", "CfgWarriorCommand"};
 
 // Shorthands for the table below.
+// @coney-only a shorthand of Coney's binding table
 constexpr BindingInfo real(std::string_view name) {
     return BindingInfo{name, BindingKind::Real, StubResult::Nothing, false};
 }
 // A binding routed to the host (BindingKind::Routed).
+// @coney-only a shorthand of Coney's binding table
 constexpr BindingInfo routed(std::string_view name) {
     return BindingInfo{name, BindingKind::Routed, StubResult::Nothing, false};
 }
 // A stub binding, returning `result`.
+// @coney-only a shorthand of Coney's binding table
 constexpr BindingInfo stub(std::string_view name, StubResult result = StubResult::Nothing) {
     return BindingInfo{name, BindingKind::Stub, result, false};
 }
 // A stub binding whose calls are recorded.
+// @coney-only a shorthand of Coney's binding table
 constexpr BindingInfo recording(std::string_view name) {
     return BindingInfo{name, BindingKind::Stub, StubResult::Nothing, true};
 }
@@ -1331,6 +1344,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
 });
 
 // A stub's function: keeps the arguments when it records, then returns its default.
+// @coney-only Coney's stub bindings; the original binds every function
 NativeFunction makeStub(const BindingInfo& info, const BindingContext& context,
                         const std::shared_ptr<HandleCounter>& handles) {
     return [info, recorded = context.recorded, handles](std::span<const Value> args) -> binding::Results {
@@ -1358,13 +1372,16 @@ NativeFunction makeStub(const BindingInfo& info, const BindingContext& context,
 
 } // namespace
 
+// @coney-only Coney's binding table, for the tests and the debug tools
 std::span<const BindingInfo> bindingTable() { return kBindings; }
 
+// @coney-only Coney's binding table, for the tests and the debug tools
 std::size_t bindingCount(BindingKind kind) {
     return static_cast<std::size_t>(
         std::ranges::count_if(kBindings, [kind](const BindingInfo& info) { return info.kind == kind; }));
 }
 
+// @coney-only Coney's record of the stub bindings' calls
 void RecordedCalls::add(std::string_view binding, std::span<const Value> args) {
     std::vector<Value> kept;
     kept.reserve(args.size());
@@ -1397,11 +1414,13 @@ void RecordedCalls::add(std::string_view binding, std::span<const Value> args) {
     found->second.push_back(std::move(kept));
 }
 
+// @coney-only Coney's record of the stub bindings' calls
 std::span<const std::vector<Value>> RecordedCalls::calls(std::string_view binding) const {
     const auto found = m_calls.find(binding);
     return found == m_calls.end() ? std::span<const std::vector<Value>>{} : std::span(found->second);
 }
 
+// @coney-only Coney's record of the stub bindings' calls
 std::size_t RecordedCalls::total() const {
     std::size_t total = 0;
     for (const auto& entry : m_calls) {

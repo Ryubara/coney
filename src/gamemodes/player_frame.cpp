@@ -10,6 +10,10 @@
 
 namespace coney {
 
+// The players' frame, in the original's order (the header's comment): Pad_Update's last step (the Lua pad handlers of
+// the buttons pressed) and StopWatch_Update's callback; the step and the wanted timers are their own ports.
+// @orig 0x00144fb0 Pad_Update (unknown)
+// @orig 0x004233f8 StopWatch_Update (unknown)
 void runPlayerFrame(GameState& state, script::ScriptSystem& scripts, const Pads& pads, std::uint64_t nowTicks,
                     CrimeServices* crimes) {
     PlayerState& player = state.player;
@@ -34,6 +38,9 @@ void runPlayerFrame(GameState& state, script::ScriptSystem& scripts, const Pads&
     player.crimes.update(crimes != nullptr ? *crimes : none, nowMs);
 }
 
+// The level's crime state cleared among InitLevel's resets: the wanted timers live in the gangs' records there
+// (Gangs_ResetAll), in the players' state in Coney.
+// @orig 0x0015fe90 InitLevel (InitLevel.cpp)
 void startPlayerLevel(GameState& state) { state.player.crimes.clearLevel(); }
 
 } // namespace coney

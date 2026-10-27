@@ -26,6 +26,7 @@ constexpr std::uint8_t kUpgradeType = 6;
 constexpr std::uint32_t kExtraReviveUpgrade = 7;
 
 // Argument `i` truncated to a whole number, as tolua reads an integer.
+// @coney-only tolua argument reading
 int intArg(std::span<const Value> args, std::size_t i) {
     const double value = std::trunc(binding::number(args, i));
     if (!std::isfinite(value)) {
@@ -35,6 +36,7 @@ int intArg(std::span<const Value> args, std::size_t i) {
 }
 
 // Argument `i` as an unsigned integer, as tolua reads one: the number truncated, then its low 32 bits.
+// @coney-only tolua argument reading
 std::uint32_t unsignedArg(std::span<const Value> args, std::size_t i) {
     const double value = std::trunc(binding::number(args, i));
     if (!std::isfinite(value)) {
@@ -44,6 +46,7 @@ std::uint32_t unsignedArg(std::span<const Value> args, std::size_t i) {
 }
 
 // Argument `i` as tolua reads a boolean with a default: absent is the default, nil or false (and 0) false.
+// @coney-only tolua argument reading
 bool booleanArg(std::span<const Value> args, std::size_t i, bool fallback) {
     if (i >= args.size()) {
         return fallback;
@@ -55,12 +58,14 @@ bool booleanArg(std::span<const Value> args, std::size_t i, bool fallback) {
 }
 
 // A player argument (1 or 2, default 1) as the inventory's 0-based index; -1 for any other value.
+// @coney-only tolua argument reading
 int playerArg(std::span<const Value> args, std::size_t i) {
     const int player = i < args.size() ? intArg(args, i) : 1;
     return player == 1 || player == 2 ? player - 1 : -1;
 }
 
 // The 0-based player whose human has `handle`; nothing for no human or an AI human.
+// @coney-only a lookup in Coney's created humans
 std::optional<int> playerOfHuman(CreatedHumans* humans, double handle) {
     if (humans == nullptr) {
         return std::nullopt;
@@ -72,7 +77,9 @@ std::optional<int> playerOfHuman(CreatedHumans* humans, double handle) {
     return human->playerIndex - 1;
 }
 
-// The revive limit follows the upgrade, which the profile may have unlocked since the last give.
+// The revive limit follows the upgrade, which the profile may have unlocked since the last give: Inventory_AddItem's
+// test of unlockable (6, 7), which raises the flash's limit to 4 (docs/research/player-state.md#pickup-callback).
+// @orig 0x0041e5b0 Inventory_AddItem (unknown)
 void syncReviveLimit(GameState& state) {
     state.player.inventory.setReviveUpgrade(
         state.player.unlocks.isDataUnlocked(state.saved, kUpgradeType, kExtraReviveUpgrade));
@@ -121,6 +128,7 @@ void addInventoryItem(ScriptSystem& scripts, GameState& state, int player, int i
 namespace {
 
 // Registers one binding that reads the state through `state`.
+// @coney-only Coney's binding registration
 template <typename Body> void add(LuaVm& vm, std::string_view name, Body body) {
     vm.registerFunction(name, NativeFunction(std::move(body)));
 }
@@ -213,6 +221,7 @@ void addInventoryBindings(ScriptSystem& scripts, LuaVm& vm, GameState& state) {
 }
 
 // The statistics bindings (docs/references/bindings/level.md#statadd and the ones after it).
+// @coney-only Coney's binding registration: tolua argument reading over PlayerStats, whose functions are the ports
 void addStatBindings(LuaVm& vm, const BindingContext& context) {
     GameState& state = *context.state;
     PlayerStats& stats = state.player.stats;
@@ -402,6 +411,7 @@ void addWorldBindings(ScriptSystem& scripts, LuaVm& vm, GameState& state) {
 
 } // namespace
 
+// @coney-only Coney's binding registration
 void addPlayerBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& context) {
     GameState& state = *context.state;
     addInventoryBindings(scripts, vm, state);
