@@ -179,6 +179,9 @@ void Brains::keepBooks(Brain& player) {
 
 std::optional<float> Brains::nearestEnemy(const Brain& brain) {
     std::optional<float> nearest;
+    // Stand-in: only enemies with health left, measured across the ground; the original's latch takes each of the
+    // brain's 16 enemy handles that still resolves and its squared 3D distance (0x004db5b0,
+    // docs/research/camera.md#sprint-zoom).
     for (const Brain* enemy : brain.enemies()) {
         if (!Brain::fightable(*enemy)) {
             continue;
