@@ -1064,7 +1064,7 @@ void Fighter::steerOnto(int animId, const Combatant& target, const FighterInput&
     const bool led = ledAllowed && ledSteer(animId);
     const float time = led ? toEvent + kSteerLeadExtraSeconds : std::min(seconds, toEvent + kSteerLeadExtraSeconds);
     // The led steer aims at the target's head (slot point 0), read once here as the attack starts; the other at its
-    // position (docs/research/combat-targets.md#led-steer).
+    // position (docs/research/combat-targets.md#led-steer). A stand-in: both take steerReach()'s big and rear changes.
     const anim::Vec3 point = led ? target.ledPoint() : target.position();
     const anim::Vec3 to = anim::subtract(point, input.position);
     const auto clipId = static_cast<std::uint32_t>(clips::clipOf(animId));
