@@ -47,6 +47,7 @@ import contextlib
 import importlib.util
 import io
 import json
+import os
 import re
 import sys
 import tempfile
@@ -362,7 +363,9 @@ def other_harness(name: str, payload: dict[str, Any], config: dict[str, Any] | N
     stderr) in that harness's own format.
 
     The call's role is `harness.role` (default `contributor`), the identity token is left out (it is Claude Code's), and
-    a call that stands for several (a Codex patch of several files) is refused when any of them is.
+    a call that stands for several (a Codex patch of several files) is refused when any of them is. While it judges,
+    `$CLAUDE_PROJECT_DIR` is this checkout: `pr_guard.py` and `pcsx2_guard.py` read it first, and another tool may
+    have none, or one inherited from a Claude Code session of another checkout.
     """
     if config is None:
         config, problem = load_settings()
@@ -371,10 +374,18 @@ def other_harness(name: str, payload: dict[str, Any], config: dict[str, Any] | N
     settings = dict(config)
     settings["identity"] = {"enabled": False}
     reasons: list[str] = []
-    for call in harness.claude_calls(name, payload, harness.role(config)):
-        code, _, err = pre_tool_use(call, json.dumps(call), settings)
-        if code == 2 and err not in reasons:
-            reasons.append(err)
+    before = os.environ.get("CLAUDE_PROJECT_DIR")
+    os.environ["CLAUDE_PROJECT_DIR"] = str(HOOKS.parent.parent)
+    try:
+        for call in harness.claude_calls(name, payload, harness.role(config)):
+            code, _, err = pre_tool_use(call, json.dumps(call), settings)
+            if code == 2 and err not in reasons:
+                reasons.append(err)
+    finally:
+        if before is None:
+            os.environ.pop("CLAUDE_PROJECT_DIR", None)
+        else:
+            os.environ["CLAUDE_PROJECT_DIR"] = before
     return harness.answer(name, "".join(reasons) if reasons else None)
 
 

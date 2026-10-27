@@ -156,12 +156,18 @@ def _api_writes(args: str) -> bool:
 
 def refused(command: str) -> str | None:
     """Why the command is refused inside a subagent, or None when it only reads."""
+    what = refused_write(command)
+    return None if what is None else MESSAGE.format(what=what)
+
+
+def refused_write(command: str) -> str | None:
+    """The GitHub write the command makes (`` `git push` ``, `` `gh pr create` ``), or None when it only reads."""
     text = _clean(command)
     # Commands start outside quotes: mask the inside of each quoted string (keeping its quotes and length, so it
     # stays one argument and the offsets still point into `text`) before finding where a command starts.
     bare = _QUOTED.sub(lambda match: match.group(0)[0] + "x" * (len(match.group(0)) - 2) + match.group(0)[-1], text)
     if _GIT_PUSH.search(bare):
-        return MESSAGE.format(what="`git push`")
+        return "`git push`"
     for call in _GH.finditer(bare):
         group, verb = call.group("group"), call.group("verb") or ""
         if group in _PRINTS:
@@ -170,13 +176,13 @@ def refused(command: str) -> str | None:
             # The arguments as written (the verb slot may hold the first one), with their quoted text.
             args = text[call.end("group") : call.end("args")]
             if _api_writes(args):
-                return MESSAGE.format(what="a `gh api` call that writes")
+                return "a `gh api` call that writes"
             continue
         if group in READS:
             allowed = READS[group]
             if allowed is None or verb in allowed:
                 continue
-        return MESSAGE.format(what=f"`{f'gh {group} {verb}'.strip()}`")
+        return f"`{f'gh {group} {verb}'.strip()}`"
     return None
 
 

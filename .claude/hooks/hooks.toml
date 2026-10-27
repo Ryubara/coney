@@ -40,8 +40,9 @@ default_role = "contributor"
 # start with the Agent tool; an empty list: none), deny_write_dirs (folders of a checkout that Edit and Write may not
 # change), write_only (the only file names Edit and Write may change), write_outside_checkouts (true: those only
 # outside any checkout), deny_commit_under (a git commit whose directory lies under one of these is refused),
-# no_github_writes (push_guard's rules, also for a session with no agent id), hint (what to do instead). Commands and
-# tools that do not exist yet are listed ahead of their phase.
+# no_github_writes (push_guard's rules, also for a session with no agent id), push_hint (the text of those refusals
+# instead of push_guard's, which sends a subagent to the coordinator), hint (what to do instead). Commands and tools that
+# do not exist yet are listed ahead of their phase.
 
 [roles.coordinator]
 deny_tool_prefixes = ["mcp__ghidra-mcp__", "mcp__pcsx2__"]
@@ -119,7 +120,12 @@ hint = "A reviewer reports: write your files only in your scratch folder, outsid
 
 [roles.contributor]
 # A session of another agent tool (Codex, Gemini CLI, Antigravity, Cursor, Copilot, Grok Build) that names no role:
-# it works on its branch and commits; the person pushes and opens the pull request after `coney-tools ci pr`.
+# it works on its branch and commits; the person pushes and opens the pull request after `coney-tools ci pr`. It may
+# not edit the hook files that judge it (a shell command still can: docs/guides/enforcement.md#harnesses, Limits).
 deny_coney_tools = ["pr open", "pr hold"]
+deny_write_dirs = [
+  ".claude/hooks", ".claude/settings.json", ".codex", ".gemini", ".agents", ".cursor", ".github/hooks", ".grok",
+]
 no_github_writes = true
-hint = "Push and open the pull request yourself, from your own terminal, after `coney-tools ci pr` (CONTRIBUTING.md, Agents other than Claude Code)."
+push_hint = "Your person pushes and opens the pull request from their own terminal, after `coney-tools ci pr` (CONTRIBUTING.md, Agents other than Claude Code)."
+hint = "Ask your person: Coney's hook files and pull requests are theirs to change (CONTRIBUTING.md, Agents other than Claude Code)."

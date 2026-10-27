@@ -133,18 +133,36 @@ ships a hook file for each one that reads hooks from a project, and every file r
 tool's call into the Claude Code call the guards read (its shell tool into `Bash`, a file write or edit into `Write`
 with `file_path` and `content`, a Codex patch into one `Write` per file it touches, the folder into `cwd`) and the
 refusal back into the tool's own format; the guards and rules above run unchanged and do not know which tool called.
-Claude Code's own path is unchanged. The dispatcher finds the project from its own location, never from
-`$CLAUDE_PROJECT_DIR`, and each hook file finds the dispatcher with `git rev-parse --show-toplevel` or from the project
-root the tool runs it in. Tests: `python/tests/test_hook_harnesses.py` feeds each tool's documented payload to the
-adapter and checks that a raw `cmake --build`, a hand-typed `gh pr create` and a `contributor`'s `git push` are refused
-in that tool's format, and that ordinary commands pass.
+Claude Code's own path is unchanged. The dispatcher finds the project from its own location, and while it judges a
+call of another tool it sets `$CLAUDE_PROJECT_DIR` to that checkout for the two guards that read the variable first
+(`pr_guard.py`, `pcsx2_guard.py`), so a value inherited from elsewhere never points them at another checkout. Each hook
+file finds the dispatcher with `git rev-parse --show-toplevel` or from the project root the tool runs it in. Tests:
+`python/tests/test_hook_harnesses.py` feeds each tool's documented payload to the adapter and checks that a raw
+`cmake --build`, a hand-typed `gh pr create` and a `contributor`'s `git push` are refused in that tool's format, that
+ordinary commands pass, and what becomes of an unlisted tool name, the other event forms and a broken adapter.
+
+**Tool names: by name, then by shape.** The adapter maps the names each vendor documents: shell tools (`Bash`,
+`Shell`, `run_shell_command`, `run_command`, `exec_command`, `run_terminal_cmd`, `terminal`, `local_shell`,
+`unified_exec`; `powershell` to `PowerShell`), file writes, edits and deletions (`Write`, `Edit`, `create`, `edit`,
+`write_file`, `replace`, `write_to_file`, `replace_file_content`, `multi_replace_file_content`, `edit_file`,
+`str_replace`, `search_replace`, `Delete`, `delete_file`, Codex's `apply_patch`, ...) and reads (`Read`, `view`,
+`view_file`, `read_file`, `read_many_files`); the lists are `SHELL_TOOLS`, `WRITE_TOOLS` and `READ_TOOLS` in
+`harness.py`. A name in none of them is read by its arguments (`harness.by_shape`), so a tool a vendor adds or renames
+is still judged: a string `command` (or `CommandLine`, `commandLine`, `cmd`) is judged as a shell command (a Codex
+patch when it starts with `*** Begin Patch`), and a file path with text to write, or a path alone under a name that
+says it changes a file (`write`, `edit`, `delete`, `remove`, `move`, `rename`, `create`, `patch`, `replace`, `insert`,
+`append`, `save`), as a `Write`; a call with both shapes is judged both ways. Anything else (searches, web fetches, MCP
+tools) keeps its name, and only the rules that read every tool's input apply to it (`protect.py`).
 
 **Roles in other tools.** A session of another tool has no agent type, so its role is `CONEY_AGENT_ROLE` from the
 environment the tool was started with (an agent's command cannot change the hook's environment, and `identity.py`
 refuses a command that sets `CONEY_AGENT_*` anyway), else `[harnesses] default_role` in `hooks.toml`: `contributor`.
 `[roles.contributor]` refuses `pr open`, `pr hold` and every GitHub write (`push_guard.py`'s list: `git push`,
-`gh pr create`, comments, `gh api` writes): the person pushes and opens the pull request from their own terminal after
-`coney-tools ci pr`. A name that is no role leaves the session read-only, as `require_role` does in Claude Code.
+`gh pr create`, comments, `gh api` writes), with its own `push_hint` instead of `push_guard.py`'s text about a
+coordinator: the person pushes and opens the pull request from their own terminal after `coney-tools ci pr`. Its
+`deny_write_dirs` keep its edits out of the hook files that judge it (`.claude/hooks/`, `.claude/settings.json`,
+`.codex/`, `.gemini/`, `.agents/`, `.cursor/`, `.github/hooks/`, `.grok/`). A name that is no role leaves the session
+read-only, as `require_role` does in Claude Code, and the refusal names `CONEY_AGENT_ROLE` (not `coney-agent`).
 
 | Tool | Project hook file (committed) | Event we use | How it denies (what the adapter sends) | Tools the hook sees | Trust before a project hook runs |
 | --- | --- | --- | --- | --- | --- |
@@ -152,12 +170,12 @@ refuses a command that sets `CONEY_AGENT_*` anyway), else `[harnesses] default_r
 | OpenAI Codex | `.codex/hooks.json` | `PreToolUse` | `hookSpecificOutput.permissionDecision: "deny"` | shell (`Bash`, also unified exec), `apply_patch`, MCP tools, other local function tools; not hosted tools such as web search | the project's `.codex/` layer must be trusted and each hook reviewed with `/hooks`; trust is by hash, so a changed hook is skipped until reviewed again |
 | Gemini CLI | `.gemini/settings.json` (`hooks`) | `BeforeTool` | `{"decision": "deny", "reason": ...}` | every tool (`run_shell_command`, `write_file`, `replace`, MCP) | project hooks are fingerprinted; a new or changed one warns before it runs |
 | Google Antigravity (app, IDE, CLI) | `.agents/hooks.json` | `PreToolUse` | `{"decision": "deny", "reason": ...}` (and `{"decision": "allow"}` when it passes) | every tool (`run_command`, `write_to_file`, `replace_file_content`, ...) | not on the page; the IDE and app list hooks under Customizations |
-| Cursor (editor and `cursor-agent`) | `.cursor/hooks.json` | `preToolUse` | `{"permission": "deny", "user_message": ..., "agent_message": ...}` | `Shell`, `Read`, `Write`, `Grep`, `Delete`, `Task`, MCP | the workspace must be trusted |
-| GitHub Copilot (CLI, cloud agent, VS Code) | `.github/hooks/coney.json` | `preToolUse` | `{"permissionDecision": "deny", "permissionDecisionReason": ...}` | `bash`, `powershell`, `view`, `create`, `edit`, `glob`, `grep`, `task`, `web_fetch`, MCP | workspace admission in the CLI; VS Code needs a trusted workspace and `chat.useHooks` (Preview); the cloud agent runs `.github/hooks/*.json` itself |
-| xAI Grok Build | `.grok/hooks/coney.json` | `PreToolUse` | `{"decision": "deny", "reason": ...}` | its built-in tools (matchers take Claude Code names: `Bash`, `Read`, `Edit`) and MCP | `/hooks-trust` or `--trust` once per repository, kept in `~/.grok/trusted_folders.toml` |
+| Cursor (editor and `cursor-agent`) | `.cursor/hooks.json` | `preToolUse` | every deny key (see How a refusal is written, below), its own `{"permission": "deny", "user_message": ..., "agent_message": ...}` among them | `Shell`, `Read`, `Write`, `Grep`, `Delete`, `Task`, MCP | the workspace must be trusted |
+| GitHub Copilot (CLI, cloud agent, VS Code) | `.github/hooks/coney.json` | `preToolUse` | every deny key, its own `{"permissionDecision": "deny", "permissionDecisionReason": ...}` among them | `bash`, `powershell`, `view`, `create`, `edit`, `glob`, `grep`, `task`, `web_fetch`, MCP | workspace admission in the CLI; VS Code needs a trusted workspace and `chat.useHooks` (Preview); the cloud agent runs `.github/hooks/*.json` itself |
+| xAI Grok Build | `.grok/hooks/coney.json` | `PreToolUse` | every deny key, its own `{"decision": "deny", "reason": ...}` among them | its built-in tools (matchers take Claude Code names: `Bash`, `Read`, `Edit`) and MCP | `/hooks-trust` or `--trust` once per repository, kept in `~/.grok/trusted_folders.toml` |
 
-Every tool in the table reads hooks from the project; none of the tools named in the decision lacks them. What each
-vendor's own page says, read on 2026-10-27:
+The maintainer's decision of 2026-10-27 names these six tools, and every one of them reads hooks from the project.
+What each vendor's own page says, read on 2026-10-27:
 
 - **Codex** ([Hooks](https://learn.chatgpt.com/docs/hooks)). `hooks.json` or `[hooks]` in `config.toml`, at
   `~/.codex/` and `<repo>/.codex/`; events `PreToolUse`, `PermissionRequest`, `PostToolUse`, `PreCompact`,
@@ -187,24 +205,37 @@ vendor's own page says, read on 2026-10-27:
   [Third-party hooks](https://cursor.com/docs/reference/third-party-hooks)). Project `.cursor/hooks.json`, run from the
   project root; user `~/.cursor/hooks.json`. `preToolUse` gets `tool_name` (`Shell`, `Read`, `Write`, `Grep`, `Delete`,
   `Task`, `MCP:<tool>`), `tool_input` (`command` and `working_directory` for `Shell`), `cwd`, `workspace_roots` and
-  `cursor_version`; exit code 2 denies too; another failure passes unless `failClosed`. On Windows the app runs hooks in
+  `cursor_version`; exit code 2 denies too; another failure passes unless `failClosed`, and for a permission hook an
+  exit 0 with output that does not match the schema blocks. The matcher is "Regex that filters when the hook runs. An
+  empty string or `"*"` matches everything." The page's `preToolUse` output, quoted on 2026-10-27:
+  `{"permission": "allow" | "deny", "user_message": "<message shown in client when denied>", "agent_message":
+  "<message sent to agent when denied>", "updated_input": { "command": "npm ci" }}` (`ask` is accepted but not enforced
+  for `preToolUse`); `beforeShellExecution` answers the same three keys. On Windows the app runs hooks in
   PowerShell. Cursor also runs the hooks of `.claude/settings.json` (on by default: "Include Third-Party Plugins,
   Skills, and Other Configs"), so in Cursor the dispatcher may run twice for one call: harmless, both judge the same.
 - **GitHub Copilot** ([Hooks reference](https://docs.github.com/en/copilot/reference/hooks-reference),
   [VS Code](https://code.visualstudio.com/docs/copilot/customization/hooks)). `.github/hooks/*.json` (the only place the
   cloud agent reads); the CLI also reads `.github/copilot/settings.json` and `.claude/settings.json`. `preToolUse`
-  stdin is `sessionId`, `timestamp`, `cwd`, `toolName`, `toolArgs`; a PascalCase `PreToolUse` switches to Claude Code's
-  field and tool names. A handler has `bash` and `powershell` commands, `cwd` and `timeoutSec` (default 30). For
-  `preToolUse`, exit code 2 and any other failure deny ("fail-closed") and a timeout passes; the cloud agent runs only
-  `bash` and treats `ask` as deny.
+  stdin is `sessionId`, `timestamp`, `cwd`, `toolName`, `toolArgs`; a PascalCase `PreToolUse` switches to snake_case
+  fields "to match the VS Code Copilot extension format" (`hook_event_name`, `session_id`, `timestamp`, `cwd`,
+  `tool_name`, `tool_input`) and Claude Code's tool names (`Bash`, not `bash`). A handler has `bash` and `powershell`
+  commands, `cwd` and `timeoutSec` (default 30). For `preToolUse`, exit code 2 denies "even if that JSON reports
+  `permissionDecision: "allow"`", any other non-zero exit denies ("fail-closed") and a timeout passes; the cloud agent
+  runs only `bash` and treats `ask` as deny. Neither page shows a `hookSpecificOutput` wrapper: the GitHub reference
+  lists the output fields only (`permissionDecision`, `permissionDecisionReason`, `modifiedArgs`), and VS Code's page,
+  quoted on 2026-10-27, gives `{"permissionDecision": "deny", "permissionDecisionReason": "This operation requires
+  manual review."}` as top-level keys. VS Code's page now reads `.github/hooks/*.json` and `.claude/settings.json` as
+  the CLI does, and names no terminal or edit tool, which the adapter then reads by shape.
 - **Grok Build** ([Hooks](https://docs.x.ai/build/features/hooks)). Project `.grok/hooks/*.json`, personal
   `~/.grok/hooks/*.json`; it also reads `.claude/settings.json` and `.cursor/hooks.json`, so one call can reach the
   dispatcher three times (the adapter goes by the payload, not by the file's `--harness`). Events `SessionStart`,
   `SessionEnd`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `PermissionDenied`, `Stop` and
   others; stdin is camelCase (`hookEventName`, `sessionId`, `cwd`, `workspaceRoot`, `toolName`, `toolInput`). Deny with
-  exit code 2 or `{"decision": "deny", "reason": ...}`; a timeout, crash or bad output passes. Timeout in seconds,
-  default 5 (ours is 200, which the PR guard's checks need). The page names no native tool names, so the adapter reads
-  a call by its arguments when it does not know the name.
+  exit code 2 or, quoted on 2026-10-27, `{ "decision": "deny", "reason": "Unsafe command detected" }`; a timeout,
+  crash or bad output passes. Timeout in seconds, default 5 (ours is 200, which the PR guard's checks need). The page
+  names no native tool names ("Claude tool names such as `Bash`, `Read`, and `Edit` are mapped to Grok's
+  automatically"), so the adapter reads a call by its arguments when it does not know the name; nor does it say how it
+  reads the answer of a `.claude/settings.json` or `.cursor/hooks.json` hook.
 
 **How the files are written.** Each command is `uv run --no-project --python ">=3.12" python <dispatcher> --harness
 <name>; exit 0`: the interpreter is pinned as for Claude Code, and the exit code is always 0, because a launcher that
@@ -213,6 +244,17 @@ refusal is the JSON. `; exit 0` works in sh, bash, zsh and PowerShell alike; `$(
 double quotes works in sh and PowerShell, not in `cmd.exe` (Codex on Windows is untested). The timeouts are at least
 twice the PR guard's check time, as Claude Code's are. These files are `merge.manual_paths`: the maintainer merges a
 change to them.
+
+**How a refusal is written.** Codex gets Claude Code's `hookSpecificOutput`, Gemini CLI and Antigravity a `decision` and
+a `reason`, as their pages show. Cursor, Copilot and Grok Build also run other tools' hook files
+(`.claude/settings.json`, and for Grok `.cursor/hooks.json`), and their pages do not say which format they read the
+answer of such a file in, so they get every deny key at once: `permission`, `user_message`, `agent_message`,
+`permissionDecision`, `permissionDecisionReason`, `decision`, `reason` and `hookSpecificOutput`. A key a tool does not
+read is ignored (Cursor blocks on output that does not match its schema, which is a refusal too), so a wrong guess of
+the format can never turn a refusal into a silent allow. The exit code stays 0 even where a tool documents exit 2 as a
+deny: the `; exit 0` that keeps a launcher failure from locking Copilot also hides the dispatcher's own code, and a
+command that kept exit 2 but dropped other failures would need a different spelling for sh and PowerShell in the one
+command string Cursor and Codex run.
 
 **What stays Claude Code's.** Parts of the guards have no counterpart in the other tools, and pass there:
 
@@ -228,9 +270,20 @@ change to them.
 - `require_role` and `coney-agent`: another tool's session is `contributor` by default instead of read-only.
 - `powershell_modes` and `permission_mode`, and the `PostToolUse`, `PostToolUseFailure`, `PermissionDenied` and
   `SessionStart` events.
+- The rules that match Claude Code's MCP tool names: `pcsx2_guard.py`'s route for `mcp__pcsx2__` calls and a role's
+  `deny_tool_prefixes` (the coordinator's `mcp__ghidra-mcp__`, `mcp__pcsx2__`). Gemini CLI, Cursor (`MCP:<tool>`),
+  Copilot and the others name MCP tools their own way and the adapter keeps those names, so these rules pass. A
+  `contributor` has no Ghidra or PCSX2 server of Coney's; a session of another tool started as `coordinator` is not
+  held to its MCP prefixes.
 
 **Limits.** All of it reads spelling, as in Claude Code, and a person can turn hooks off in every tool (decline the
-trust, disable them in `/hooks`, Codex's `[features] hooks = false`, Copilot's `disableAllHooks`). Nothing in the
+trust, disable them in `/hooks`, Codex's `[features] hooks = false`, Copilot's `disableAllHooks`). The guards are off,
+with no refusal, when the launcher cannot start (no `uv`, no Python 3.12: every command ends in `; exit 0`) or when
+`harness.py` does not import (a broken checkout): the dispatcher then answers every other tool's call with no
+objection, as a broken guard does in Claude Code, and leaves a `harness:` line in `coney-hooks.log` in the system temp
+folder, which is where to look when a tool seems unguarded. A `contributor` may not edit the hook files with a file
+tool, but a shell command can still change them (`sed`, `git checkout`); Codex then skips the changed hook until a
+person reviews it again, and the other tools run whatever the file now says. Nothing in the
 repository can stop that, so `ci pr` and CI stay the backstop: CI's `title`, `body` and `docs` jobs and the build
 run on every pull request, whatever made it.
 

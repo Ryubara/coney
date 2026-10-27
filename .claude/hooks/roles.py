@@ -11,7 +11,8 @@ agent it was started as (`claude --agent coordinator`). The rules live in `hooks
 * **a role's refusals**: tools by name prefix, `coney-tools` commands, shell commands by pattern, folders Edit and
   Write may not change, the only files a role may write (with `write_outside_checkouts`, only outside any checkout), a
   `git commit` under a unit worktree, and the GitHub writes `push_guard.py` refuses (also for a main session, which has
-  no agent id), and `allow_agent_types`, the only `subagent_type`s the role may start with the Agent tool.
+  no agent id; with the role's `push_hint` when it has no coordinator to ask), and `allow_agent_types`, the only
+  `subagent_type`s the role may start with the Agent tool.
 
 Like every guard it judges spelling, never a security boundary: a command can be hidden from it. A setting of the
 wrong shape is ignored, and an invalid pattern is skipped, so one bad entry never disables the rest. Standard library
@@ -159,9 +160,15 @@ def _shell_refusal(role: str, rules: dict[str, Any], payload: dict[str, Any]) ->
         return _refuse(role, "commit in a unit's worktree", rules)
     if rules.get("no_github_writes") is True and not payload.get("agent_id"):
         # A subagent is already held to this by push_guard.py; a main session started as this role has no agent id.
-        reason = hooklib.load_guard("push_guard").refused(_command(payload))
-        if isinstance(reason, str) and reason:
-            return reason
+        guard = hooklib.load_guard("push_guard")
+        what = guard.refused_write(_command(payload))
+        if isinstance(what, str) and what:
+            # push_guard's text sends a subagent to the coordinator; a role with no coordinator (`contributor`, whose
+            # person pushes) says what to do in its own `push_hint`.
+            push_hint = rules.get("push_hint")
+            if isinstance(push_hint, str) and push_hint:
+                return _refuse(role, f"run {what}: no agent writes to GitHub", {"hint": push_hint})
+            return str(guard.MESSAGE.format(what=what))
     return None
 
 
@@ -193,6 +200,14 @@ def missing_role_refusal(config: dict[str, Any], payload: dict[str, Any]) -> str
     allowed = hooklib.strings(config.get("readonly_tools")) or ["Read", "Grep", "Glob"]
     if payload.get("tool_name") in allowed:
         return None
+    tool = payload.get("harness")
+    if isinstance(tool, str) and tool != "claude":
+        # A session of another agent tool (harness.py): its role comes from the environment, not from `coney-agent`.
+        return (
+            f"Blocked: `CONEY_AGENT_ROLE` names no Coney role (`{role_of(payload)}`), so this {tool} session may only "
+            f"read ({', '.join(allowed)}). Start the tool with `CONEY_AGENT_ROLE` unset (a `contributor`) or set to a "
+            "role of .claude/hooks/hooks.toml (docs/guides/enforcement.md#harnesses).\n"
+        )
     return (
         "Blocked: this session has no Coney role, so it may only read "
         f"({', '.join(allowed)}). Start Claude Code with the session launcher, `coney-agent` (or "

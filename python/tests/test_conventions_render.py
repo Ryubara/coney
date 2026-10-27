@@ -365,7 +365,7 @@ def test_every_block_is_used_somewhere_in_this_repository() -> None:
 
 def test_the_agents_file_keeps_its_rules_in_blocks_and_stays_short() -> None:
     assert "commit-rules" in used_blocks() and "AGENTS.md" in used_blocks()["commit-rules"]
-    assert len((REPO / "AGENTS.md").read_text(encoding="utf-8").splitlines()) <= 113
+    assert len((REPO / "AGENTS.md").read_text(encoding="utf-8").splitlines()) <= 110
 
 
 def test_the_files_that_used_to_type_the_lists_by_hand_hold_the_blocks() -> None:

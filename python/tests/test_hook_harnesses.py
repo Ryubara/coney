@@ -13,6 +13,7 @@ import json
 import os
 import shutil
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -104,7 +105,7 @@ def grok(command: str) -> dict[str, Any]:
 
 
 #: (name, payload maker, whether its answer is a refusal, the answer it gives for "no objection").
-SHAPES = {
+SHAPES: dict[str, tuple[Callable[[str], dict[str, Any]], Callable[[dict[str, Any]], bool], str]] = {
     "codex": (codex, lambda out: out["hookSpecificOutput"]["permissionDecision"] == "deny", ""),
     "gemini": (gemini, lambda out: out["decision"] == "deny", "{}"),
     "antigravity": (antigravity, lambda out: out["decision"] == "deny", '{"decision": "allow"}'),
@@ -116,7 +117,8 @@ SHAPES = {
 
 def run(name: str, payload: dict[str, Any], named: str | None = None) -> tuple[int, str, str]:
     """The dispatcher's answer to a payload given with `--harness <named>` (the harness's own name by default)."""
-    return DISPATCH.answer_any(json.dumps(payload), name if named is None else named)
+    answer: tuple[int, str, str] = DISPATCH.answer_any(json.dumps(payload), name if named is None else named)
+    return answer
 
 
 def refused(name: str, payload: dict[str, Any]) -> str:
@@ -354,3 +356,171 @@ def test_the_codex_command_finds_the_dispatcher_from_any_folder() -> None:
     )
     assert done.returncode == 0, done.stderr
     assert json.loads(done.stdout)["hookSpecificOutput"]["permissionDecision"] == "deny", done.stdout
+
+
+# --- tool names the adapter does not know, and the other tool forms ------------------------------------------------
+
+#: A shell tool under a name in none of the adapter's lists, one per harness (VS Code's terminal tool among them).
+UNLISTED_SHELLS: dict[str, Callable[[str], dict[str, Any]]] = {
+    "codex": lambda command: {**codex(""), "tool_name": "shell_command", "tool_input": {"command": command}},
+    "gemini": lambda command: {**gemini(""), "tool_name": "execute", "tool_input": {"command": command}},
+    "antigravity": lambda command: {
+        **antigravity(""), "toolCall": {"name": "bash_tool", "args": {"CommandLine": command}}},
+    "cursor": lambda command: {**cursor(""), "tool_name": "execute", "tool_input": {"command": command}},
+    "copilot": lambda command: {**copilot(""), "toolName": "run_in_terminal", "toolArgs": {"command": command}},
+    "grok": lambda command: {**grok(""), "toolName": "run_terminal", "toolInput": {"command": command}},
+}  # fmt: skip
+
+
+@pytest.mark.parametrize("name", list(UNLISTED_SHELLS))
+def test_an_unlisted_shell_tool_is_judged_by_its_arguments(name: str) -> None:
+    make = UNLISTED_SHELLS[name]
+    assert "coney-tools build" in refused(name, make(BUILD))
+    refused(name, make(PUSH))
+    _, _, allowed = SHAPES[name]
+    assert run(name, make("git status")) == (0, allowed, "")
+
+
+def test_an_unlisted_file_tool_is_judged_as_a_write(monkeypatch: pytest.MonkeyPatch) -> None:
+    # VS Code's edit tool: a path and the code to write; a deletion: a path and a name that says it changes the file.
+    monkeypatch.setenv(harness.ROLE_VARIABLE, "coordinator")
+    edit = {
+        **copilot(""),
+        "toolName": "insert_edit_into_file",
+        "toolArgs": {"filePath": f"{ROOT}/src/a.cpp", "code": "x"},
+    }
+    assert "src/" in refused("copilot", edit)
+    remove = {**grok(""), "toolName": "remove_file", "toolInput": {"path": f"{ROOT}/src/a.cpp"}}
+    assert "src/" in refused("grok", remove)
+
+
+def test_an_unlisted_editor_with_a_command_word_is_judged_both_ways(monkeypatch: pytest.MonkeyPatch) -> None:
+    # An editor tool whose `command` names the edit (`str_replace`) is read as a shell call and as a write.
+    monkeypatch.setenv(harness.ROLE_VARIABLE, "coordinator")
+    payload = {**grok(""), "toolName": "text_editor", "toolInput": {
+        "command": "str_replace", "path": f"{ROOT}/src/a.cpp", "old_str": "a", "new_str": "b"}}  # fmt: skip
+    tools = [call["tool_name"] for call in harness.claude_calls("grok", payload, "coordinator")]
+    assert tools == ["Bash", "Write"]
+    assert "src/" in refused("grok", payload)
+
+
+def test_an_unlisted_tool_with_no_command_or_write_keeps_its_name() -> None:
+    payload = {**gemini(""), "tool_name": "mcp_pcsx2_pcsx2_status", "tool_input": {}}
+    (call,) = harness.claude_calls("gemini", payload, "contributor")
+    assert call["tool_name"] == "mcp_pcsx2_pcsx2_status"
+    search = {**copilot(""), "toolName": "grep", "toolArgs": {"pattern": "x", "path": ROOT}}
+    assert harness.claude_calls("copilot", search, "contributor")[0]["tool_name"] == "grep"
+    assert run("copilot", search) == (0, "", "")
+
+
+def test_a_cursor_delete_and_a_copilot_edit_are_writes(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(harness.ROLE_VARIABLE, "coordinator")
+    delete = {**cursor(""), "tool_name": "Delete", "tool_input": {"path": f"{ROOT}/src/a.cpp"}}
+    assert "src/" in refused("cursor", delete)
+    edit = {
+        **copilot(""),
+        "toolName": "edit",
+        "toolArgs": {"path": f"{ROOT}/src/a.cpp", "old_str": "a", "new_str": "b"},
+    }
+    assert "src/" in refused("copilot", edit)
+
+
+def test_cursor_before_shell_execution_is_judged() -> None:
+    payload = {
+        "conversation_id": "c1", "hook_event_name": "beforeShellExecution", "cursor_version": "3.3.0",
+        "workspace_roots": [ROOT], "command": PUSH, "cwd": ROOT,
+    }  # fmt: skip
+    assert "git push" in refused("cursor", payload)
+
+
+def test_a_copilot_powershell_call_is_judged_as_powershell() -> None:
+    payload = {**copilot(""), "toolName": "powershell", "toolArgs": {"command": BUILD}}
+    assert harness.claude_calls("copilot", payload, "contributor")[0]["tool_name"] == "PowerShell"
+    assert "coney-tools build" in refused("copilot", payload)
+
+
+@pytest.mark.parametrize("name", harness.UNION_HARNESSES)
+def test_the_tools_that_borrow_hook_files_get_every_deny_key(name: str) -> None:
+    # Cursor, Copilot and Grok Build also run other tools' hook files: no wrong guess of the format lets a call through.
+    make, _, _ = SHAPES[name]
+    out = json.loads(refused(name, make(PUSH)))
+    assert out["permission"] == out["permissionDecision"] == out["decision"] == "deny"
+    assert out["hookSpecificOutput"]["permissionDecision"] == "deny"
+    assert out["reason"] == out["permissionDecisionReason"] == out["agent_message"] == out["user_message"]
+
+
+def test_a_vs_code_form_with_a_camel_case_event_is_refused() -> None:
+    # A payload with `hookEventName` and Claude Code's field names (as an older VS Code page showed it) reads as Grok
+    # Build's; the answer carries Copilot's and Claude Code's keys as well.
+    payload = {"hookEventName": "PreToolUse", "sessionId": "s1", "timestamp": "2026-10-27T10:00:00Z", "cwd": ROOT,
+               "tool_name": "Bash", "tool_input": {"command": PUSH}}  # fmt: skip
+    code, out, _ = DISPATCH.answer_any(json.dumps(payload), None)
+    answer = json.loads(out)
+    assert code == 0 and answer["permissionDecision"] == "deny"
+    assert answer["hookSpecificOutput"]["permissionDecision"] == "deny"
+
+
+# --- the contributor's messages and its hook files -------------------------------------------------------------------
+
+
+def test_a_contributors_push_names_its_person_not_a_coordinator() -> None:
+    out = refused("codex", codex(PUSH))
+    reason = json.loads(out)["hookSpecificOutput"]["permissionDecisionReason"]
+    assert "Your person pushes" in reason and "coordinator" not in reason
+
+
+def test_an_engineers_push_still_names_the_coordinator(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(harness.ROLE_VARIABLE, "engineer")
+    assert "coordinator" in refused("codex", codex(PUSH))
+
+
+@pytest.mark.parametrize(
+    "path", [".claude/hooks/hooks.toml", ".claude/settings.json", ".codex/hooks.json", ".github/hooks/coney.json"]
+)
+def test_a_contributor_may_not_edit_the_hook_files(path: str) -> None:
+    payload = {**gemini(""), "tool_name": "write_file", "tool_input": {"file_path": f"{ROOT}/{path}", "content": "{}"}}
+    assert "Ask your person" in refused("gemini", payload)
+
+
+def test_an_unknown_role_in_another_tool_is_told_about_the_variable(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(harness.ROLE_VARIABLE, "boss")
+    out = refused("cursor", cursor("git status"))
+    assert "CONEY_AGENT_ROLE" in out and "coney-agent" not in out
+
+
+# --- the dispatcher around the adapters ------------------------------------------------------------------------------
+
+
+def test_the_guards_see_this_checkout_as_the_project(monkeypatch: pytest.MonkeyPatch) -> None:
+    # pr_guard.py and pcsx2_guard.py read $CLAUDE_PROJECT_DIR first; another tool may have one of another checkout.
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", "/somewhere/else")
+    seen: list[str | None] = []
+
+    def judge(call: dict[str, Any], raw: str, settings: dict[str, Any]) -> tuple[int, str, str]:
+        seen.append(os.environ.get("CLAUDE_PROJECT_DIR"))
+        return 0, "", ""
+
+    monkeypatch.setattr(DISPATCH, "pre_tool_use", judge)
+    assert run("codex", codex("ls")) == (0, "", "")
+    assert seen == [str(hooklib.CHECKOUT)]
+    assert os.environ["CLAUDE_PROJECT_DIR"] == "/somewhere/else"
+
+
+def test_an_adapter_that_does_not_import_lets_other_tools_through(monkeypatch: pytest.MonkeyPatch) -> None:
+    # As for a broken guard in Claude Code: the call passes and the log says why (docs/guides/enforcement.md, Limits).
+    lines: list[str] = []
+    monkeypatch.setattr(DISPATCH, "HARNESS_ERROR", "ImportError: broken")
+    monkeypatch.setattr(DISPATCH, "record", lines.append)
+    assert run("codex", codex(PUSH)) == (0, "", "")
+    assert lines == ["harness: ImportError: broken"]
+    # Claude Code's own path does not need the adapters.
+    raw = json.dumps({"hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {"command": "ls"}})
+    assert DISPATCH.answer_any(raw, None) == DISPATCH.answer(raw)
+
+
+def test_an_unknown_harness_name_is_logged_and_read_by_the_payload(monkeypatch: pytest.MonkeyPatch) -> None:
+    lines: list[str] = []
+    monkeypatch.setattr(DISPATCH, "record", lines.append)
+    code, out, _ = DISPATCH.answer_any(json.dumps(grok(PUSH)), "windsurf")
+    assert code == 0 and json.loads(out)["decision"] == "deny"
+    assert lines == ["harness: unknown --harness 'windsurf', read as grok"]

@@ -329,7 +329,7 @@ by the old version and its edit takes effect when it merges. A pull request that
 earlier results until it is pushed to or edited. The same holds for the rules themselves: the checks run the base
 branch's `coney-tools` and `.github/conventions.yml`, so a pull request that adds a title area, changes the template's
 sections or fixes a checker is judged by the old rules, and its required checks may fail until a maintainer merges past
-them, while a local `check pr` uses the new ones. The concurrency group names the pull request, because on
+them, while a local `ci pr` uses the new ones. The concurrency group names the pull request, because on
 `pull_request_target` `github.ref` is the base branch and would have made every pull request cancel the others. The
 `build`, `python` and `docs` workflows stay on `pull_request`: they build and run the contributor's code, which is what
 the maintainer's approval of a first-time contributor is for.

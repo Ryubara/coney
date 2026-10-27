@@ -19,7 +19,8 @@ Studio), the coordinator, sharing one machine and merging. Whoever starts agents
 or fresh, which model, briefs, long commands and the prompt cache). Nobody waits for a person to play their work: the
 automated tests are the gate, so every piece of work proves itself as `docs/guides/testing.md` defines ("done" per kind
 of work, the player's path, gamepad input, playthrough tests, the checks to run before reporting). A person contributing
-starts at CONTRIBUTING.md, section Your first hour; the rest of this file is for agents.
+starts at CONTRIBUTING.md, section Your first hour; the rest of this file is for agents. In other tools: `uvx pre-commit
+install`; `ci pr --title` before a pull request.
 
 ## Build and test
 
@@ -28,9 +29,6 @@ starts at CONTRIBUTING.md, section Your first hour; the rest of this file is for
 - Python: `uv run --project python pytest python/tests`; `uvx pre-commit run --all-files` before committing.
 - Docs: `.venv/Scripts/python -m mkdocs build --strict`; `coney-tools docs check`. Details: `docs/guides/building.md`.
 - On Windows, no local WSL builds or clang-tidy runs: GitHub CI is the Linux and macOS gate; fix failures forward.
-- Not Claude Code (Codex, Gemini, Antigravity, Cursor, Copilot, Grok): the repo's hooks run for you once trusted. Run
-  `uvx pre-commit install` once per clone and `uv run --project python coney-tools ci pr --title "<title>" --body
-  <file>` before a pull request (CONTRIBUTING.md, "Agents other than Claude Code"; no disc, Ghidra or PCSX2: say so).
 
 ## Rules (never broken)
 

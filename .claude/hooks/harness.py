@@ -12,18 +12,23 @@ Claude Code:
   Claude Code's (a Claude Code session with no role may only read; a Cursor session would be locked out).
 * **`claude_calls`** turns one tool call of the harness into the Claude Code calls the guards read: its shell tool
   becomes `Bash` (`PowerShell` for Copilot's), a file write or edit becomes `Write` with `file_path` and `content`
-  (Codex's `apply_patch` one per file it touches, a deletion with no content), a read becomes `Read`, and any other
-  tool keeps its name. The working directory goes into `cwd`; the role into `agent_type` (`role`).
-* **`answer`** gives the harness its own refusal: Codex the Claude Code JSON, Gemini CLI, Antigravity and Grok a
-  `decision`, Cursor a `permission`, Copilot a `permissionDecision`. Always with exit code 0: Copilot denies a call
-  whose hook exits with anything else, and every config ends its command with `|| exit 0` so a launcher that cannot
-  start does not lock the tools (the same reason as for Claude Code, docs/guides/agents.md#hooks).
+  (Codex's `apply_patch` one per file it touches, a deletion with no content), a read becomes `Read`. A name in none
+  of the lists is read by its arguments (`by_shape`): a string `command` makes it a shell call, a file path with text
+  to write (or a name that says it changes a file) a `Write`; anything else (MCP tools, searches) keeps its name. The
+  working directory goes into `cwd`; the role into `agent_type` (`role`).
+* **`answer`** gives the harness its refusal: Codex the Claude Code JSON, Gemini CLI and Antigravity a `decision`.
+  Cursor, Copilot and Grok Build also run other tools' hook files (`.claude/settings.json`, `.cursor/hooks.json`) and
+  may read the answer by that file's format, so they get every deny key at once (`UNION_HARNESSES`): a key the tool
+  does not read is ignored, and a wrong guess of the format never becomes a silent allow. Always with exit code 0:
+  Copilot denies a call whose hook exits with anything else, and every config ends its command with `; exit 0` so a
+  launcher that cannot start does not lock the tools (the same reason as for Claude Code, docs/guides/agents.md#hooks).
 
 A session of another harness has no agent type, so its role comes from `CONEY_AGENT_ROLE` in the environment the
 harness was started with (no agent's command can change it; `identity.py` refuses one that tries), else
 `[harnesses] default_role` of `hooks.toml`, `contributor`. The identity token is Claude Code's only: the other
 harnesses get no `updatedInput`, so their `coney-tools` commands are recorded as unverified. The project root is this
-file's checkout (`hooklib.CHECKOUT`), never `$CLAUDE_PROJECT_DIR`. Standard library only.
+file's checkout (`hooklib.CHECKOUT`), never `$CLAUDE_PROJECT_DIR`: `dispatch.other_harness` sets that variable to the
+checkout while it judges, for the guards that read it. Standard library only.
 """
 
 from __future__ import annotations
@@ -109,8 +114,16 @@ TEXT_KEYS = (
     "CodeContent",
     "ReplacementContent",
     "code_edit",
+    "code",
     "text",
 )
+#: Words in a tool name the adapter does not know that say the tool changes a file: such a call with a path and no text
+#: (a deletion, a move) is judged as a `Write` with no content.
+_WRITE_WORDS = re.compile(
+    r"write|edit|delete|remove|move|rename|create|patch|replace|insert|append|save", re.IGNORECASE
+)
+#: The harnesses that get every deny key at once (see `answer`).
+UNION_HARNESSES = ("cursor", "copilot", "grok")
 #: The arguments that name the folder a command runs in.
 CWD_KEYS = ("cwd", "Cwd", "working_directory", "dir_path", "workdir")
 
@@ -241,6 +254,26 @@ def _cwd(harness: str, payload: dict[str, Any], arguments: dict[str, Any]) -> st
     return _first(payload, ("workspaceRoot",)) or ""
 
 
+def by_shape(name: str, arguments: dict[str, Any], cwd: str) -> list[dict[str, Any]] | None:
+    """The Claude Code calls an unlisted tool stands for, read by its arguments; None when they show neither a shell
+    command nor a file write (the call then keeps its name).
+
+    Both shapes are judged when both are there (an editor tool whose `command` names the edit, `str_replace`, and
+    whose `path` and text are the write), so a call is refused when either reading of it is."""
+    calls: list[dict[str, Any]] = []
+    command = _first(arguments, COMMAND_KEYS)
+    if command is not None and command.lstrip().startswith("*** Begin Patch"):
+        calls += [{"tool_name": "Write", "tool_input": file} for file in patch_files(command, cwd)]
+    elif command is not None:
+        shell = "PowerShell" if re.search(r"powershell|pwsh", name, re.IGNORECASE) else "Bash"
+        calls.append({"tool_name": shell, "tool_input": {"command": command}})
+    path = _first(arguments, PATH_KEYS)
+    text = _text(arguments)
+    if path and (text or _WRITE_WORDS.search(name)):
+        calls.append({"tool_name": "Write", "tool_input": {"file_path": _join(cwd, path), "content": text}})
+    return calls or None
+
+
 def claude_calls(harness: str, payload: dict[str, Any], role: str) -> list[dict[str, Any]]:
     """The Claude Code PreToolUse payloads that stand for this tool call (empty when it is no call to judge)."""
     if not is_pre_tool(harness, payload):
@@ -262,6 +295,10 @@ def claude_calls(harness: str, payload: dict[str, Any], role: str) -> list[dict[
         ]
     if key in READ_TOOLS and path:
         return [{**base, "tool_name": "Read", "tool_input": {"file_path": _join(cwd, path)}}]
+    known = key in WRITE_TOOLS or key in READ_TOOLS
+    shaped = None if known else by_shape(name, arguments, cwd)
+    if shaped is not None:
+        return [{**base, **call} for call in shaped]
     return [{**base, "tool_name": name, "tool_input": arguments}]
 
 
@@ -280,18 +317,27 @@ def answer(harness: str, reason: str | None) -> tuple[int, str, str]:
     if reason is None:
         allowed = {"gemini": "{}", "cursor": "{}", "antigravity": json.dumps({"decision": "allow"})}
         return 0, allowed.get(harness, ""), ""
-    if harness == "codex":
-        decision: dict[str, Any] = {
-            "hookSpecificOutput": {
-                "hookEventName": "PreToolUse",
-                "permissionDecision": "deny",
-                "permissionDecisionReason": reason,
-            }
+    claude: dict[str, Any] = {
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "deny",
+            "permissionDecisionReason": reason,
         }
-    elif harness == "cursor":
-        decision = {"permission": "deny", "user_message": reason, "agent_message": reason}
-    elif harness == "copilot":
-        decision = {"permissionDecision": "deny", "permissionDecisionReason": reason}
-    else:  # gemini, antigravity, grok
+    }
+    if harness == "codex":
+        decision = claude
+    elif harness in UNION_HARNESSES:
+        # Cursor's own keys, Copilot's, Grok Build's and Claude Code's together (docs/guides/enforcement.md#harnesses).
+        decision = {
+            "permission": "deny",
+            "user_message": reason,
+            "agent_message": reason,
+            "permissionDecision": "deny",
+            "permissionDecisionReason": reason,
+            "decision": "deny",
+            "reason": reason,
+            **claude,
+        }
+    else:  # gemini, antigravity
         decision = {"decision": "deny", "reason": reason}
     return 0, json.dumps(decision), reason
