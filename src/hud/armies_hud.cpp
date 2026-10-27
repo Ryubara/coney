@@ -93,6 +93,8 @@ void ArmiesHud::panelAttached(std::size_t player) {
 }
 
 void ArmiesHud::panelEnabled(std::size_t player) {
+    // Wanted again, so a knock-out's drop is undone. Not ported (#662): PlayerHUD_Show, as the panel's parts are not
+    // built.
     if (player < kPlayers) {
         m_dropped.at(player) = false;
         m_dropping.at(player) = false;
