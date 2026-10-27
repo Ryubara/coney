@@ -145,6 +145,7 @@ struct Scene {
 
 TEST_CASE("a goal starts only once the action queue is empty, and a push suspends the top and clears the actions",
           "[ai]") {
+    // Expected: ai.md#update-goals, confirmed (code)
     Scene scene;
     Brain& brain = scene.add({45.0F, 40.0F, 0.0F}, 0.0F, BrainType::Gang);
     std::vector<std::string> log;
@@ -217,6 +218,7 @@ TEST_CASE("a brain counts its update before its goals run and sets the face's mo
 }
 
 TEST_CASE("a goal pushed from a popped goal's End stays on the stack", "[ai]") {
+    // Expected: ai.md#update-goals, confirmed (code)
     Scene scene;
     Brain& brain = scene.add({45.0F, 40.0F, 0.0F}, 0.0F, BrainType::Gang);
     std::vector<std::string> log;
@@ -232,6 +234,7 @@ TEST_CASE("a goal pushed from a popped goal's End stays on the stack", "[ai]") {
 }
 
 TEST_CASE("a done goal is popped and the new top is processed in the same update", "[ai]") {
+    // Expected: ai.md#update-goals, confirmed (code)
     Scene scene;
     Brain& brain = scene.add({45.0F, 40.0F, 0.0F}, 0.0F, BrainType::Gang);
     std::vector<std::string> log;
@@ -247,6 +250,7 @@ TEST_CASE("a done goal is popped and the new top is processed in the same update
 
 TEST_CASE("the stack holds ten goals and the queue eight actions; a refused abort keeps the actions from it on",
           "[ai]") {
+    // Expected: ai.md#brain, confirmed (code)
     Scene scene;
     Brain& brain = scene.add({45.0F, 40.0F, 0.0F}, 0.0F, BrainType::Gang);
     std::vector<std::string> log;
@@ -269,6 +273,7 @@ TEST_CASE("the stack holds ten goals and the queue eight actions; a refused abor
 }
 
 TEST_CASE("an action's delay counts down against the time of the brain's last update", "[ai]") {
+    // Expected: ai.md#actions, confirmed (code)
     Scene scene;
     Brain& brain = scene.add({45.0F, 40.0F, 0.0F}, 0.0F, BrainType::Gang);
     std::vector<std::string> log;
@@ -282,6 +287,7 @@ TEST_CASE("an action's delay counts down against the time of the brain's last up
 }
 
 TEST_CASE("each brain thinks one character step in five, staggered by its slot, and updates every step", "[ai]") {
+    // Expected: ai.md#update, confirmed (runtime)
     Scene scene;
     for (int k = 0; k < 6; ++k) {
         scene.add({30.0F + static_cast<float>(k), 30.0F, 0.0F}, 0.0F, BrainType::Gang);
@@ -310,6 +316,7 @@ TEST_CASE("each brain thinks one character step in five, staggered by its slot, 
 }
 
 TEST_CASE("a Warrior waits the attack delay times its class's factor, halved when its target targets it", "[ai]") {
+    // Expected: ai.md#attack-action, confirmed (code)
     Scene scene;
     Brain& gang = scene.add({41.0F, 40.0F, 0.0F}, 270.0F, BrainType::Gang);
     // 200 ms × 20 = 4 s; a kind of 1000 ms × 20; halved, 2 s.
@@ -339,6 +346,7 @@ TEST_CASE("a Warrior waits the attack delay times its class's factor, halved whe
 }
 
 TEST_CASE("an attack on a busy target leaves the target's attackable time alone", "[ai]") {
+    // Expected: ai.md#attack-action, confirmed (code)
     Scene scene;
     Brain& gang = scene.add({41.0F, 40.0F, 0.0F}, 270.0F, BrainType::Gang);
     gang.setTarget(&scene.playerBrain());
@@ -355,6 +363,7 @@ TEST_CASE("an attack on a busy target leaves the target's attackable time alone"
 }
 
 TEST_CASE("the attack action writes its command once, as it starts, and waits on the attack's held flags", "[ai]") {
+    // Expected: ai.md#attack-action, confirmed (code)
     Scene scene;
     Brain& gang = scene.add({40.0F, 41.0F, 0.0F}, 180.0F, BrainType::Gang);
     gang.setTarget(&scene.playerBrain());
@@ -381,6 +390,7 @@ TEST_CASE("the attack action writes its command once, as it starts, and waits on
 }
 
 TEST_CASE("a brain counts the attack starts its range and field of view take in", "[ai]") {
+    // Expected: ai.md#block, confirmed (code)
     Scene scene;
     // The AI at (40, 50) facing +y (heading 0).
     Brain& gang = scene.add({40.0F, 50.0F, 0.0F}, 0.0F, BrainType::Gang);
@@ -403,6 +413,7 @@ TEST_CASE("a brain counts the attack starts its range and field of view take in"
 }
 
 TEST_CASE("a brain does not count an attack start it has no line of sight to", "[ai][sight]") {
+    // Expected: ai.md#block, confirmed (code)
     Scene scene;
     Brain& gang = scene.add({40.0F, 50.0F, 0.0F}, 0.0F, BrainType::Gang);
     // A wall 1 m ahead of the AI, between it and the attacker 2 m ahead.
@@ -426,6 +437,7 @@ TEST_CASE("a brain does not count an attack start it has no line of sight to", "
 }
 
 TEST_CASE("an AI's block goal writes R1 held but never blocks; it has no pad", "[ai]") {
+    // Expected: ai.md#block, confirmed (code)
     Scene scene;
     Brain& gang = scene.add({40.0F, 41.5F, 0.0F}, 180.0F, BrainType::Gang);
     gang.setTarget(&scene.playerBrain());
@@ -450,6 +462,7 @@ TEST_CASE("an AI's block goal writes R1 held but never blocks; it has no pad", "
 }
 
 TEST_CASE("the block goal turns hit reactions off until its sixth update and ends one update after its time", "[ai]") {
+    // Expected: ai.md#block, confirmed (code)
     Scene scene;
     Brain& gang = scene.add({40.0F, 45.0F, 0.0F}, 180.0F, BrainType::Gang);
     gang.setTarget(&scene.playerBrain());
@@ -479,6 +492,7 @@ TEST_CASE("the block goal turns hit reactions off until its sixth update and end
 }
 
 TEST_CASE("a block goal without a target leaves the hit reactions on", "[ai]") {
+    // Expected: ai.md#block, confirmed (code)
     Scene scene;
     Brain& gang = scene.add({40.0F, 45.0F, 0.0F}, 180.0F, BrainType::Gang);
     REQUIRE(gang.pushGoal(std::make_unique<coney::ai::BlockGoal>()));
@@ -488,6 +502,7 @@ TEST_CASE("a block goal without a target leaves the hit reactions on", "[ai]") {
 }
 
 TEST_CASE("a hit with reactions off takes health and plays no reaction", "[ai]") {
+    // Expected: ai.md#block, confirmed (code)
     Scene scene;
     Brain& gang = scene.add({40.0F, 41.0F, 0.0F}, 180.0F, BrainType::Gang);
     Human& ai = gang.human();
@@ -512,6 +527,7 @@ bool inGrabIntro(const Human& human) {
 
 TEST_CASE("the counter test passes only for a Warrior's brain against a grab's or a tackle's intro aimed at it",
           "[ai]") {
+    // Expected: ai.md#block, confirmed (code)
     Scene scene;
     Brain& warrior = scene.add({40.0F, 41.2F, 0.0F}, 180.0F, BrainType::Warrior);
     warrior.setTarget(&scene.playerBrain());
@@ -537,6 +553,7 @@ TEST_CASE("the counter test passes only for a Warrior's brain against a grab's o
 }
 
 TEST_CASE("only a type-3 brain facing the grabber may counter", "[ai]") {
+    // Expected: ai.md#block, confirmed (code)
     Scene scene;
     Brain& gang = scene.add({40.0F, 41.2F, 0.0F}, 180.0F, BrainType::Gang);
     Brain& turned = scene.add({39.0F, 40.0F, 0.0F}, 90.0F, BrainType::Warrior);
@@ -558,6 +575,7 @@ TEST_CASE("only a type-3 brain facing the grabber may counter", "[ai]") {
 }
 
 TEST_CASE("an AI's counter in the block time answers the player's grab with 76, the player playing 77", "[ai]") {
+    // Expected: ai.md#block, confirmed (code)
     Scene scene;
     Brain& warrior = scene.add({40.0F, 41.2F, 0.0F}, 180.0F, BrainType::Warrior);
     coney::human::FighterProfile profile = warrior.human().fighterProfile();
@@ -590,6 +608,7 @@ TEST_CASE("an AI's counter in the block time answers the player's grab with 76, 
 }
 
 TEST_CASE("a block extended while the target attacks punishes in its last second", "[ai]") {
+    // Expected: ai.md#block, confirmed (code)
     Scene scene;
     Brain& gang = scene.add({40.0F, 41.2F, 0.0F}, 180.0F, BrainType::Gang);
     gang.setTarget(&scene.playerBrain());
@@ -633,6 +652,7 @@ TEST_CASE("a block extended while the target attacks punishes in its last second
 }
 
 TEST_CASE("a reaction goal comes and goes one update after the state that calls for it", "[ai]") {
+    // Expected: ai.md#reaction-goals, confirmed (code)
     Scene scene;
     Brain& gang = scene.add({40.0F, 41.0F, 0.0F}, 180.0F, BrainType::Gang);
     Human& ai = gang.human();
@@ -654,6 +674,7 @@ TEST_CASE("a reaction goal comes and goes one update after the state that calls 
 
 TEST_CASE("a human starts with its brain type's flags, and a player handed back to the AI takes them again",
           "[ai][revive]") {
+    // Expected: combat/index.md#human-flags, confirmed (code)
     namespace flag = coney::human::flag;
     using coney::ai::releasedFlags;
     using coney::ai::startingFlags;
@@ -688,6 +709,7 @@ TEST_CASE("a human starts with its brain type's flags, and a player handed back 
 }
 
 TEST_CASE("the brains' variation moves every brain's and the gangs' rolls, the same for the same variation", "[ai]") {
+    // Expected: rumble.md#coney, Coney's choice (the per-brain generators are Coney's own)
     Scene scene;
     Human& human = scene.player();
     // Three scenes' brains for the same slot seed: the default (variation 0), and two runs of variation 9.
@@ -722,6 +744,7 @@ TEST_CASE("the brains' variation moves every brain's and the gangs' rolls, the s
 
 TEST_CASE("a player released to the AI takes his class's brain, loses his goals, actions and pad, keeps fighting flags",
           "[ai][revive]") {
+    // Expected: characters.md#players, confirmed (code)
     namespace flag = coney::human::flag;
     Scene scene;
     Brain& player = scene.playerBrain();
@@ -756,6 +779,7 @@ TEST_CASE("a player released to the AI takes his class's brain, loses his goals,
 // brain may take (`Brain_GetHelpLevel` 0x00291db8).
 TEST_CASE("a brain's reaction kind is its type, the player's a Warrior's; cops and Warriors take one gesture slot",
           "[ai]") {
+    // Expected: ai.md#fight-reposition, confirmed (code)
     coney::test::AiScene scene;
     using coney::ai::BrainType;
     const coney::ai::Brain& player = scene.player();

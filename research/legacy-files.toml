@@ -1111,7 +1111,7 @@ tag = 1
 tag = 38
 
 ["src/human/human_animator.h"]
-comment = 4
+comment = 3
 
 ["src/human/human_flight.cpp"]
 tag = 2
@@ -1749,9 +1749,6 @@ citation = 4
 ["tests/ai/brain_events_test.cpp"]
 citation = 6
 
-["tests/ai/brain_test.cpp"]
-citation = 24
-
 ["tests/ai/crew_test.cpp"]
 citation = 17
 
@@ -1793,9 +1790,6 @@ citation = 29
 
 ["tests/ai/perception_test.cpp"]
 citation = 4
-
-["tests/ai/riot_goals_test.cpp"]
-citation = 8
 
 ["tests/ai/route_planner_test.cpp"]
 citation = 15

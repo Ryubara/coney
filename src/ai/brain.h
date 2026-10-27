@@ -283,13 +283,14 @@ class Brain {
     void setServices(ScriptServices* services) { m_services = services; }
 
     // --- The update (docs/research/ai.md#update-goals).
-    /// One update at game time `nowMs`: the update count first (updates()), then for a type-0 brain (the player's)
-    /// only its books, unless it is dead; for every other type, and a dead player's, Brain_UpdateGoals: the move
-    /// cleared first (stopMove()), then skipped while the human is airborne, out of health, its gang is suspended or
-    /// the brain is; the enemy scan when its schedule allows (Gangs::scans(), ScanSchedule::maybeScan(); a brain with
-    /// no gang has none); the reaction goal when the human's state calls for one, else the goal stack; then the
-    /// actions. The human's attack announcements within the range and field of view are delivered at the start as
-    /// events `0x10` (deliverEvent()), which count the warnings (`+0x200`); the count is cleared at the end.
+
+    /// One update at game time `nowMs`: for a type-0 brain (the player's) only its books, unless it is dead; for every
+    /// other type, and a dead player's, Brain_UpdateGoals: the move cleared first (stopMove()), then skipped while the
+    /// human is airborne, out of health, its gang is suspended or the brain is; the enemy scan when its schedule allows
+    /// (Gangs::scans(), ScanSchedule::maybeScan(); a brain with no gang has none); the reaction goal when the human's
+    /// state calls for one, else the goal stack; then the actions. The human's attack announcements within the range
+    /// and field of view are delivered at the start as events `0x10` (deliverEvent()), which count the warnings
+    /// (`+0x200`); the count is cleared at the end.
     /// @orig 0x0028f8b8 Brain_Update (unknown)
     /// @orig 0x0028fbb0 Brain_UpdateGoals (unknown)
     void update(std::uint64_t nowMs);
@@ -298,7 +299,7 @@ class Brain {
     /// (GoalFight, ai::AiHumans).
     /// @orig 0x0028f6c0 Brain_Think (unknown)
     void think(std::uint64_t nowMs);
-    /// Updates and thinks so far (`+0x34`, `+0x38`); during an update the count already includes it.
+    /// Updates and thinks so far (`+0x34`, `+0x38`).
     [[nodiscard]] std::uint64_t updates() const { return m_updates; }
     [[nodiscard]] std::uint64_t thinks() const { return m_thinks; }
     /// The game time of the update under way (or the last), ms (`+0x30`).
