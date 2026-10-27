@@ -58,6 +58,7 @@ class RecordingServices final : public world_objects::ObjectServices {
     std::vector<std::pair<double, anim::Vec3>> moves;     // moveObject()
     int dusts = 0;
     int splinterCount = 0;
+    std::vector<anim::Vec3> splintersAt; ///< Where each splinters() call made its splinters.
     int bursts = 0;
     std::vector<double> stopped;
     std::vector<Script> scripts;
@@ -97,7 +98,10 @@ class RecordingServices final : public world_objects::ObjectServices {
     void setValue(double object, std::uint32_t value) override { values.emplace_back(object, value); }
     void moveObject(double object, anim::Vec3 at) override { moves.emplace_back(object, at); }
     void dust(anim::Vec3 /*at*/, float /*radius*/) override { ++dusts; }
-    void splinters(anim::Vec3 /*at*/, int count) override { splinterCount += count; }
+    void splinters(anim::Vec3 at, int count) override {
+        splinterCount += count;
+        splintersAt.push_back(at);
+    }
     void burst(anim::Vec3 /*at*/) override { ++bursts; }
     void stopHumansTargeting(double object) override { stopped.push_back(object); }
     void callScript(std::string_view function, double human, double door) override {
