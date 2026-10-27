@@ -506,3 +506,57 @@ def test_a_pull_request_event_file_names_the_issues_it_closes() -> None:
     assert cli.issues_of_event("pull_request_target", event, OFF) == [41, 42]
     activity = cli._pull_request_activity("pull_request_target", event, lambda: START)
     assert activity is not None and activity.by == "carol"
+
+
+# --- the limit follows the slots -------------------------------------------------------------------------------------
+
+
+def test_a_claim_past_review_or_with_its_pull_request_open_stops_counting() -> None:
+    """The slot rule: a unit's slot frees at a passing review and takes the next task while CI runs, so its claim
+    must not block the next claim (`claims.limit_ends_at`)."""
+    clock = Clock()
+    github = FakeGitHub(clock)
+    for number in range(1, 6):
+        github.add_issue(number, labels=READY)
+
+    def take(number: int) -> None:
+        github.say(number, "Ryubara", "/claim", "OWNER")
+        Engine(github, OFF, clock.now).reconcile(number)
+
+    for number in (1, 2, 3):
+        take(number)
+    take(4)
+    assert github.view(4).assignees == () and "3 open claim(s)" in github.replies(4)[-1].body
+    # #1 passes review (the stamp posts /progress reviewed): its claim stays held but no longer counts.
+    github.say(1, "Ryubara", "/progress reviewed", "OWNER")
+    Engine(github, OFF, clock.now).reconcile(1)
+    card = card_of(github, 1)
+    assert card.active and not card.counted and "no longer counted" in github.cards(1)[-1].body
+    github.say(4, "Ryubara", "/claim", "OWNER")
+    Engine(github, OFF, clock.now).reconcile(4)
+    assert github.view(4).assignees == ("Ryubara",)
+    # #2's pull request opens: it stops counting too, and stays uncounted after the pull request closes.
+    github.add_pr(60)
+    github.link_pr(2, 60, "open", author="Ryubara")
+    Engine(github, OFF, clock.now).reconcile(2)
+    assert not card_of(github, 2).counted
+    github.link_pr(2, 60, "closed", author="Ryubara")
+    Engine(github, OFF, clock.now).reconcile(2)
+    assert not card_of(github, 2).counted
+    take(5)
+    assert github.view(5).assignees == ("Ryubara",)
+    # A later stage (the work goes on after a review) does not make it count again.
+    github.say(1, "Ryubara", "/progress checked", "OWNER")
+    Engine(github, OFF, clock.now).reconcile(1)
+    assert not card_of(github, 1).counted
+    # The sweep's recount agrees: nothing over the limit.
+    assert Engine(github, OFF, clock.now).sweep().errors == []
+    assert all(github.view(n).assignees == ("Ryubara",) for n in range(1, 6))
+
+
+def test_the_stages_that_end_counting_are_stages() -> None:
+    assert set(RULES.limit_ends_at) <= set(RULES.stages)
+    assert "reviewed" in RULES.limit_ends_at and "pr-opened" in RULES.limit_ends_at
+    text = model.render_card(model.Card(issue=1, claimant="a", claimed_at=START), RULES)
+    parsed = model.parse_card(text.replace(',"counted":true', ""), RULES)
+    assert parsed is not None and parsed.counted

@@ -51,12 +51,13 @@ def active_cards(cards: Iterable[Card]) -> list[Card]:
 
 
 def open_task_keys(cards: Iterable[Card], claimant: str, except_issue: int) -> set[str]:
-    """The tasks `claimant` holds open that count toward the limit (issues of one task count once; an exempt claim
-    does not count), not counting issue `except_issue`."""
+    """The tasks `claimant` holds open that count toward the limit (issues of one task count once; an exempt claim,
+    and one past `claims.limit_ends_at` or with its pull request open, does not count), not counting issue
+    `except_issue`."""
     return {
         card.task_key
         for card in cards
-        if card.active and not card.exempt and card.claimant == claimant and card.issue != except_issue
+        if card.active and card.counted and not card.exempt and card.claimant == claimant and card.issue != except_issue
     }
 
 
@@ -154,15 +155,16 @@ def overrun(card: Card, held: Iterable[Card], maintainer: bool, rules: Claims) -
     issues of a task past `issues_per_task`. Every parallel run applies the same order, so each releases its own claim
     if (and only if) it is among the late ones. Adopted claims (assigned by hand) are not counted, nor are exempt ones
     (`claims.exempt_label`): an exempt claim is never over the limit, but the cap of a task holds for it too, as
-    `check_claim`'s `issues_in_task` counts it at claim time.
+    `check_claim`'s `issues_in_task` counts it at claim time. A claim past `claims.limit_ends_at` (its slot is free) is
+    not counted either.
     """
     mine = [c for c in held if c.active and c.claimant == card.claimant and not c.adopted]
     if card not in mine and card.issue not in {c.issue for c in mine}:
         mine.append(card)
-    if not card.exempt:
+    if not card.exempt and card.counted:
         first: dict[str, tuple[datetime, int]] = {}
         for c in mine:
-            if c.exempt:
+            if c.exempt or not c.counted:
                 continue
             key = c.task_key
             mark = (c.claimed_at, c.issue)

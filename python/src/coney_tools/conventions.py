@@ -864,6 +864,8 @@ class Claims:
     limits: ClaimLimits
     #: A claim of an issue with this label is outside the open-claims limit (the units that build the workflow).
     exempt_label: str
+    #: The stages at which a claim stops counting toward the limit (its slot is free); an open pull request does too.
+    limit_ends_at: tuple[str, ...]
     critical_label: str
     #: The one status an issue can be claimed in.
     claimable_status: str
@@ -1923,6 +1925,7 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
             "release",
             "trial",
             "require_on_pr",
+            "limit_ends_at",
             *labels,
             *counts,
         ),
@@ -1954,6 +1957,9 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
     numbers = {key: _count(table[key], _at(where, key)) for key in counts}
     if numbers["warn_hours"] >= numbers["deadline_hours"]:
         raise _fail(_at(where, "warn_hours"), "must be less than deadline_hours")
+    stages = _texts(table["stages"], _at(where, "stages"))
+    ends = _texts(table["limit_ends_at"], _at(where, "limit_ends_at"))
+    _names_in(ends, stages, _at(where, "limit_ends_at"), "in claims.stages")
     trial_where = _at(where, "trial")
     trial_table = _table(table["trial"], trial_where, ("label", "warn_hours", "deadline_hours"))
     trial = ClaimTrial(
@@ -1979,6 +1985,7 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
         adopt=_flag(table["adopt"], _at(where, "adopt")),
         release=_flag(table["release"], _at(where, "release")),
         trial=trial,
+        limit_ends_at=ends,
         require_on_pr=_flag(table["require_on_pr"], _at(where, "require_on_pr")),
         limits=ClaimLimits(
             maintainer=_count(limits["maintainer"], _at(limits_where, "maintainer")),

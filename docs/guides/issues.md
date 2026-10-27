@@ -314,6 +314,8 @@ mandatory until the new workflow starts ([How we work](how-we-work.md)); two swi
 - The claim of an issue labelled `workflow` (a unit that builds the new workflow) neither counts toward that limit nor
   is refused by it; the cap of a task still holds. Only someone who may label issues (triage access or more) can set the
   label.
+- A claim stops counting toward the limit once its card reaches `reviewed`, `pr-opened`, `fix`, `finished` or its pull
+  request is open, as the engineer's slot frees when the unit passes review; it stays held until it ends.
 - While an open `P-critical` issue that can be claimed has no claim, only a `P-critical` issue can be claimed.
 - A claimed issue that carries `S-blocked`, `S-needs-info`, `S-on-hold` keeps that label; the claim stays and its
   release clock waits, as it does while the claimant's pull request is open.

@@ -314,6 +314,10 @@ def _claim_rules(conventions: Conventions) -> list[str]:
         "(triage access or more) can set the label."
     )
     lines += _bullet(
+        f"A claim stops counting toward the limit once its card reaches {_codes(claims.limit_ends_at)} or its "
+        "pull request is open, as the engineer's slot frees when the unit passes review; it stays held until it ends."
+    )
+    lines += _bullet(
         f"While an open `{claims.critical_label}` issue that can be claimed has no claim, only a "
         f"`{claims.critical_label}` issue can be claimed."
     )

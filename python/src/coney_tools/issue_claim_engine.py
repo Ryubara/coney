@@ -385,6 +385,8 @@ class Engine:
             active,
             card.changed(
                 stage=command.stage,
+                # The unit's slot is free from this stage on (its review passed): the claim stops counting, for good.
+                counted=card.counted and command.stage not in self.rules.limit_ends_at,
                 last_activity=comment.created_at,
                 last_activity_why="progress",
                 warned_at=None,
@@ -665,6 +667,7 @@ class Engine:
             stage=newer.stage or older.stage,
             scope=newer.scope or older.scope,
             task=keeper.card.task or twin.card.task,
+            counted=keeper.card.counted and twin.card.counted,
             last_activity=newer.activity,
             last_activity_why=newer.last_activity_why,
         )
@@ -750,6 +753,8 @@ class Engine:
             "pr": open_pr.number if open_pr else None,
             # The label can come and go: the claim is outside the limit while the issue carries it.
             "exempt": self.rules.exempt_label in work.issue.labels,
+            # An open pull request of the claim: the unit is past review, its slot free; it never counts again.
+            "counted": card.counted and open_pr is None,
         }
         moments = [open_pr.head_date if open_pr else None, activity.at if activity and counts(activity.by) else None]
         pushed = [moment for moment in moments if moment is not None]
