@@ -1146,7 +1146,17 @@ name = "Brain_SetTarget"
 page = "ai.md#original-structure"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::setTarget"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the target is taken only when its slot is claimed, and only on a brain whose +0x120 is set; Coney takes it and claims on any"
+relation = "not-ported"
+issue = 649
+
+[[function.gaps]]
+what = "the wanted state, the spotter, the last seen position and +0x2d3 / +0x148 are not kept; the same target claims its slot again"
+relation = "not-ported"
+issue = 649
 
 [[function]]
 address = 0x0028d190
@@ -2033,7 +2043,12 @@ kind = "helper"
 role = "steers at the climb point for up to 31 tries and starts a climb"
 level = "confirmed-code"
 coney = "src/ai/move_action.h:MoveAction::followLeg"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the climb is asked of the human each update and its start read through the human's traversal, not tried at once; the run (gait 4) is set before the try, not after a failed one"
+relation = "stand-in"
+issue = 641
 
 [[function]]
 address = 0x0029b9b0
@@ -2043,7 +2058,12 @@ kind = "helper"
 role = "within 4.5 m of the point, tries to climb and advances the route"
 level = "confirmed-code"
 coney = "src/ai/move_action.h:earlyClimbDue"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the early climb is asked of the human and its start read on the move action's next update, not tried at once (route state, advance and +0x11d set there)"
+relation = "stand-in"
+issue = 641
 
 [[function]]
 address = 0x0029baa8

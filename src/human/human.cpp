@@ -793,7 +793,7 @@ bool Human::linkedWith(const Human& other) const {
            (other.m_uncuffing != nullptr && other.m_uncuffing == this);
 }
 
-// @orig 0x0033d498 PhysicsBody_SweepHumanMask (unknown)
+// @orig 0x00221260 Human_GetAttribute (unknown)
 float Human::pushWeight() const {
     // Every link sets both humans' weight to 1e9, and so does an arrest.
     constexpr float kImmovable = 1e9F;

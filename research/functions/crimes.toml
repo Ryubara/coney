@@ -274,7 +274,12 @@ page = "crimes.md#original-structure"
 role = "the spray clips and the turn to the tag"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::startTagSpray"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the push sphere set to 0, record +0x18, the action and +0x3ba cleared, and the top task stopped are not ported"
+relation = "not-ported"
+issue = 664
 
 [[function]]
 address = 0x00278210

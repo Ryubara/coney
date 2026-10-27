@@ -161,6 +161,15 @@ coney = "src/audio/human_sound_events.h:HumanSoundEvents::animSound"
 status = "legacy"
 
 [[function]]
+address = 0x00221260
+name = "Human_GetAttribute"
+page = "physics.md#attributes"
+role = "the human's float attributes: 1 is 82.0, 7 the push weight (+0x27c), any other 0"
+level = "confirmed-code"
+coney = "src/human/human.cpp:Human::pushWeight"
+status = "compared"
+
+[[function]]
 address = 0x002212d0
 name = "Human_GetTurnRateForGait"
 page = "characters.md#ai-locomotion"
