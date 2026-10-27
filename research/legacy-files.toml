@@ -424,9 +424,6 @@ tag = 1
 ["src/camera/camera_view.cpp"]
 tag = 5
 
-["src/camera/cameras.cpp"]
-tag = 28
-
 ["src/camera/failed_camera.cpp"]
 tag = 1
 
@@ -451,9 +448,6 @@ tag = 2
 
 ["src/camera/path_camera.cpp"]
 tag = 4
-
-["src/camera/rail_camera.cpp"]
-tag = 10
 
 ["src/camera/slow_motion.h"]
 comment = 1
