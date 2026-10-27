@@ -42,6 +42,7 @@ struct EasedValue {
     float secondsLeft = 0.0F;
 
     /// Sets a new target reached in `seconds` (at once for 0 or less).
+    /// @coney-only Coney's store of a setting's target and time; the original writes the two fields in place
     void set(float value, float seconds);
     /// One update of `seconds`: the current value moved by the remaining distance over the remaining time.
     /// @orig 0x0013f930 CamRail_EaseValue (unknown)
@@ -114,7 +115,9 @@ class RailCamera {
     /// @orig 0x0013d010 CamRail_Update (unknown)
     void update(std::optional<anim::Vec3> feet, bool leadLook, float seconds, anim::Vec3 velocity = {});
 
-    /// What it shows.
+    /// What it shows: the view the update's end builds from the position and look-at point, in every mode.
+    /// @orig 0x0013d010 CamRail_Update (unknown)
+    /// @orig 0x0013dcc8 CamRail_PlaceMode3 (unknown)
     [[nodiscard]] CameraView view() const;
     /// How it places itself.
     [[nodiscard]] RailMode mode() const { return m_mode; }
@@ -140,13 +143,18 @@ class RailCamera {
     // update()'s body: the easing and the placement by mode.
     /// @orig 0x0013d010 CamRail_Update (unknown)
     void placeFor(std::optional<anim::Vec3> feet, bool leadLook, float seconds, anim::Vec3 velocity);
-    // The target and look-at points of mode 0 or the leading modes from the feet (CamRail_UpdateTargetPoint).
+    // The target and look-at points of mode 0 or the leading modes from the feet.
+    /// @orig 0x0013bad0 CamRail_UpdateTargetPoint (unknown)
     void makePoints(anim::Vec3 feet);
-    // Damps the target and look-at points toward last update's (0x0013bfe0).
+    // Damps the target and look-at points toward last update's.
+    /// @orig 0x0013bfe0 CamRail_DampTargetPoint (unknown)
     void damp(anim::Vec3 oldTarget, anim::Vec3 oldLook);
-    // Mode 0's placement (CamRail_UpdatePosition).
+    // Mode 0's placement; the projection on the segment and setting 0's pull are CamRail_ProjectOnSegment's, inlined.
+    /// @orig 0x0013d6b0 CamRail_UpdatePosition (unknown)
+    /// @orig 0x00140308 CamRail_ProjectOnSegment (unknown)
     void placeLevel(anim::Vec3 feet);
-    // Modes 1 and 2: the lead ahead of or behind the target's place on the rail (CamRail_PlaceLeading).
+    // Modes 1 and 2: the lead ahead of or behind the target's place on the rail.
+    /// @orig 0x0013e708 CamRail_PlaceLeading (unknown)
     void placeLeading(anim::Vec3 feet, bool leadLook);
     // Mode 3's placement (CamRail_PlaceMode3): the start after an activation, else the trailing move.
     /// @orig 0x0013dcc8 CamRail_PlaceMode3 (unknown)
@@ -162,11 +170,16 @@ class RailCamera {
     // Picks the segment point `p` is on; a change sets the hand-over blend.
     /// @orig 0x0013fba0 CamRail_ChooseSegment (unknown)
     void chooseSegmentFor(anim::Vec3 p);
-    // The current segment's direction flattened to the ground plane and normalised; +y with no segment.
+    // The current segment's direction flattened to the ground plane and normalised; +y with no segment: the
+    // direction step of the target point's shifts.
+    /// @orig 0x0013bad0 CamRail_UpdateTargetPoint (unknown)
     [[nodiscard]] anim::Vec3 flatDirection() const;
-    // Where `p` projects on segment `i` (0 at its first point, its length at the second) and the segment's length.
+    // Where `p` projects on segment `i` (0 at its first point, its length at the second) and the segment's length:
+    // the projection step of CamRail_ProjectOnSegment.
+    /// @orig 0x00140308 CamRail_ProjectOnSegment (unknown)
     [[nodiscard]] std::pair<float, float> project(std::size_t i, anim::Vec3 p) const;
     // The present pitch from the camera to its look-at point, degrees.
+    /// @orig 0x0013f9b0 CamRail_PitchToPoint (unknown)
     [[nodiscard]] float presentPitch() const;
 
     RailSetup m_setup;

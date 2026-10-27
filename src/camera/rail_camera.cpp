@@ -36,7 +36,7 @@ constexpr float kTrailBlendGrowth = 1.15F;
 constexpr float kTrailBlendDone = 0.3F;
 constexpr float kTrailEndSquared = 1e-10F;
 
-// The length of a vector across the ground.
+// The length of a vector across the ground. @coney-only a maths helper
 float flatLength(anim::Vec3 v) { return std::hypot(v.x, v.y); }
 
 } // namespace
