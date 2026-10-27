@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <expected>
 #include <optional>
@@ -8,21 +9,21 @@
 #include <utility>
 #include <vector>
 
+#include "ai/fighter_side.h"
 #include "core/error.h"
-
-namespace coney {
-struct Options;
-}
+#include "core/options.h"
 
 namespace coney::debug {
 class PlayControls;
-}
+class SpawnRandom;
+} // namespace coney::debug
 
 namespace coney::platform {
 
 /// `--bench`: a measured `--play-level` run (docs/guides/performance.md). On the level's first frame of play (or once
 /// `--bench-spawn-step` steps of play have run) it spawns `--bench-fighters` AI fighters in front of the player and
-/// `--bench-allies` behind him, as the debug menus' AI fighters page does, and with `--bench-god` makes him invincible;
+/// `--bench-allies` behind him (`--bench-neutrals` beyond the enemies), as the debug menus' AI fighters page does,
+/// first putting him at `--bench-place` when given, and with `--bench-god` makes him invincible;
 /// `--bench-warmup` frames later it starts recording every frame's profile (core/perf.h); at the end it writes the
 /// summary as JSON, and with `--bench-frames` every frame as CSV. The run itself is the usual test-mode run: lockstep,
 /// scripted, the same steps every time, so two builds measured with the same command did the same work
@@ -47,8 +48,11 @@ class PerfBench {
     std::expected<std::string, Error> finish(std::vector<std::pair<std::string, std::string>> meta);
 
   private:
-    /// Spawns the fighters and, with `--bench-god`, makes player 1 invincible; failures are kept for the report.
+    /// Puts player 1 at `--bench-place`, spawns the fighters and, with `--bench-god`, makes him invincible; failures
+    /// are kept for the report.
     void spawn(debug::PlayControls* play);
+    /// Spawns `amount` fighters of `side`, their models drawn from `random`; returns how many, keeping a failure.
+    std::size_t spawnSide(debug::PlayControls& play, int amount, ai::FighterSide side, debug::SpawnRandom& random);
     /// `--bench-god`: the Entity editor's Invincible on player 1; a failure is kept for the report.
     void makePlayerInvincible(debug::PlayControls* play);
 
@@ -56,6 +60,8 @@ class PerfBench {
     std::string m_framesFile; // `--bench-frames`: empty for none
     int m_fighters = 0;
     int m_allies = 0;
+    int m_neutrals = 0;
+    std::optional<StartPlace> m_place; // `--bench-place`
     bool m_god = false;
     std::uint64_t m_spawnStep = 0;             // `--bench-spawn-step`
     std::uint64_t m_steps = 0;                 // steps of play run so far
@@ -66,6 +72,7 @@ class PerfBench {
     std::uint64_t m_frames = 0;
     std::size_t m_spawned = 0;
     std::size_t m_alliesSpawned = 0;
+    std::size_t m_neutralsSpawned = 0;
     std::string m_spawnError; // why fewer fighters than asked were spawned
     std::string m_godError;   // why the player could not be made invincible
 };

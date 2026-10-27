@@ -19,9 +19,18 @@ so the bench measures `frames - warmup` frames. The rest of the bench's options:
 | `--bench-allies N` | Also spawns N AI allies behind the player (the AI fighters page's Ally side), so the crowd fights itself |
 | `--bench-god` | Makes player 1 invincible when the fighters spawn (the Entity editor's Invincible) |
 | `--bench-spawn-step N` | Spawns the fighters once N fixed steps of play have run, so an input script can first take the player somewhere; the warm-up counts from there |
-| `--bench-measure N` | Ends the run once N frames are measured; `--frames` stays the longest the run may take |
+| `--bench-measure N` | Ends the run once N frames are measured; `--frames` stays the longest the run may take, and `--screenshot` saves the last measured frame |
 | `--bench-frames FILE` | Also writes every measured frame (its length, each zone, each counter) as CSV, to study the worst frames |
 | `--bench-real-time` | Paces the run by the real clock as a player's run is (30 steps a second, frames as fast as they go), not one step a frame |
+| `--bench-place X,Y,Z,HEADING` | Puts the player there (the debug menus' teleport, dropped onto the ground) just before the fighters spawn, so they spawn round him at that spot; `--start` does not work in a level whose script makes the player, as the hub's does |
+| `--bench-neutrals N` | Also spawns N neutral fighters (the page's Neutral side) in front of the player, beyond the enemies' rows |
+| `--bench-fps` | Shows the debug menus' FPS counter (the Display page's) from the start, so a screenshot shows the frame rate; it reads the real clock, so it needs `--bench-real-time` (a lockstep run shows `fps: lockstep`) |
+
+**Look at the crowd.** The follow camera stays behind the player wherever the fight turns him, often at a wall, which
+hides the cost of drawing the crowd. Pin the view on the fight with `--camera`
+([Matched views](running-play-level.md#matched-views)) and check it with `--screenshot`: for the spot below,
+`--camera -176.6,125,18,0,-0.3007,0.9537,0` looks down the street from 18 m up, 23 m behind the player, pitched 35°
+down, and holds the whole brawl.
 
 The first measure of a change is a lockstep bench: the same steps every time, so only the times differ. The worst
 frames a player sees are a real-time bench's: there most frames only render and one in several runs a step, so a
@@ -229,3 +238,67 @@ that #930 covers. A sweep of the per-human and per-event paths for the same patt
 measurably: the other lookups in the recorded configuration (`CfgGang`, `CfgHat`, `CfgObj`, `CfgWarriorClass`, a
 speaker's voice set) compare the first argument without parsing and run per binding call or per spoken line, and the
 1,500 allocations left in a step (the sounds each human hands over, the step's lists) take well under a millisecond.
+
+### A brawl of 300 fighters (#1031) {#crowd-1031}
+
+Taken on 2026-10-27 from two `playtest` builds of the fix's branch, one with the fix taken out, on the machine above,
+windowed, vsync off, at 3840 × 2126, with no build running beside them (other agents' work kept the processor busy: 76 %
+at one reading). The run is the one the user played: level95 checkpoint 1, the player put in the street at the spot
+below as the fighters spawn, 150 enemies in front of him and 150 allies behind him, god mode, the view pinned on the
+crowd:
+
+```sh
+coney --disc DISC --play-level level95 --skip-movies --bench out.json --bench-frames out.csv \
+    --bench-fighters 150 --bench-allies 150 --bench-god --bench-spawn-step 100 \
+    --bench-place -176.60,102.09,0.24,178.9 --camera -176.6,125,18,0,-0.3007,0.9537,0 --bench-fps \
+    --bench-warmup 300 --bench-measure 3000 --frames 200000 --bench-real-time --vsync off --no-activate
+```
+
+The lockstep runs leave out `--bench-real-time` and measure 600 frames (`--frames 3000`). Two study zones, around each
+human's gathering of its targets in `humans.actions` and around the strike victims' list in `humans.state`, and a
+counter of the brain lookups were added for the study and are not kept.
+
+**The cause.** Whether two humans may fight (`human::Humans::opposed`) asks the AI for each one's brain
+(`ai::Brains::find`) and compares their gangs, and the lookup walked every brain in slot order until it found the
+human's. The test runs for every pair: each human gathers the humans it may hit every step, and each striking human
+the victims of its strike, so with 300 fighters a step made 207,000 lookups that visited 32.5 million brains, and the
+gathering alone took a median 14.8 ms of a 31 ms step. A step over its 33 ms then makes the frames that follow run two
+or three steps to catch up, each as long, which is the drop to a few frames a second until the fight thins out. The
+lookup is now a hash table kept beside the brains (the first brain a human was given, as the walk found it), and the
+gathering takes 2.6 ms. The game does the same: the allocations per step, a fingerprint of the work, are identical
+before and after in lockstep (median 3,718, maximum 5,446).
+
+| 150 enemies and 150 allies, crowd view | Before | After |
+| --- | --- | --- |
+| Lockstep frame, median / p99 (ms) | 42.7 / 59.6 | 29.2 / 39.7 |
+| Lockstep step, median / p99 (ms) | 31.2 / 45.8 | 18.3 / 26.9 |
+| Gathering the targets per step, median (ms) | 14.8 | 2.6 |
+| `humans.actions` per step, median (ms) | 17.9 | 5.3 |
+| Real-time frame, mean (two runs, ms) | 35.4 / 38.8 | 23.7 / 22.3 |
+| Real-time frame p99 (two runs, ms) | 102.9 / 98.8 | 50.4 / 38.9 |
+| Real-time frames over 33.3 ms a minute (two runs) | 657 / 751 | 312 / 218 |
+| Real-time frames over 50 ms a minute (two runs) | 249 / 314 | 25 / 4 |
+
+The same with the follow camera (it ends up facing a wall as the fight turns the player): lockstep frame 44.8 ms
+before, 28.7 ms after, render 11.4 and 10.5 ms. Every human is posed for drawing whether it is on screen or not
+(`render.skin` 7.9 ms in either view), so the view moves the render by under a millisecond here. With 150 enemies and
+150 neutrals the lockstep frame went from 38.9 to 24.3 ms.
+
+**What is left.** A step of the brawl is now `humans.state` 8.2 ms (3.5 ms of it the strike tests, which test a
+striking human's capsules against every opposed human; the rest the walking bodies' sweeps against every other
+human's capsule), `humans.actions` 5.3 ms (2.6 ms gathering, each pair still two hash lookups), `humans.brains` 2.7 ms
+and the fighters' pose snapshots 0.8 ms; the render is 10.6 ms, of which posing the 313 humans is 7.9 ms. The worst
+real-time frames left are the ones that run two steps while many fighters strike at once (the strike tests up to 17 ms
+a step). The sweeps and strikes are port code of the original's pair loops, so a broad phase that skips the far pairs
+without changing a result is its own task.
+
+### The AI fighters page with a crowd (#1031) {#ai-page-1031}
+
+With 300 fighters, the pad menu open on the AI fighters page took 1.4 to 1.8 s a frame, in `present.debug_overlays`
+(1,397 ms median in the run above, the menu opened by an input script: L3 and R3, twelve downs, cross). The page's
+*State* line holds every fighter's gang, health, goal and actions, well over 10,000 characters with 300, and the pad
+menu's `gui::fitText` cut a value that does not fit one character at a time, measuring all that was left each time: of
+the order of 100 million characters measured a frame (n²/2 for n over 10,000). It now finds the longest prefix that fits
+by a binary search (the same text, about 15 measures), and the page costs 0.78 ms a frame (median; most of it building
+the State line), with the frame at 30.4 ms against 29.2 ms with the menu closed. The developer overlay's windows, which
+draw the same page through Dear ImGui and never call `fitText`, were not slow with the same crowd (the user's report).

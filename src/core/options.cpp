@@ -54,7 +54,8 @@ constexpr std::string_view kUsage =
     "             [--ai-player] [--ai-seed N]\n"
     "             [--bench FILE [--bench-fighters N] [--bench-allies N] [--bench-god]\n"
     "                           [--bench-warmup N] [--bench-frames FILE] [--bench-real-time]\n"
-    "                           [--bench-spawn-step N] [--bench-measure N]]\n"
+    "                           [--bench-spawn-step N] [--bench-measure N]\n"
+    "                           [--bench-place X,Y,Z,H] [--bench-neutrals N] [--bench-fps]]\n"
     "             [--log-file FILE] [--log-verbose CATEGORIES]\n"
     "             [--dev-overlay N] [--mesh-view SPEC]\n"
     "             [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]\n"
@@ -123,6 +124,12 @@ constexpr std::string_view kUsage =
     "                     counters) to FILE as CSV\n"
     "  --bench-real-time  with --bench: pace the run by the real clock as a player's run is (30\n"
     "                     steps a second, frames as fast as they go), not one step a frame\n"
+    "  --bench-place X,Y,Z,HEADING with --bench: put the player there (dropped onto the ground)\n"
+    "                     just before the fighters spawn\n"
+    "  --bench-neutrals N with --bench: also spawn N neutral AI fighters (0 to 1000) beyond the\n"
+    "                     enemies\n"
+    "  --bench-fps        with --bench: show the debug menus' FPS counter from the start (it reads\n"
+    "                     the real clock: with --bench-real-time)\n"
     "  --script-trace FILE with --play-level levelN: write every script binding call, and every call\n"
     "                     into the scripts, with its arguments to FILE, one line each\n"
     "  --event-log FILE   write what a player would notice (binding calls, calls into the scripts,\n"
@@ -309,10 +316,11 @@ std::expected<void, Error> checkBench(const Options& options) {
     if (!options.benchFile.has_value()) {
         if (options.benchFighters.has_value() || options.benchWarmup.has_value() || options.benchAllies.has_value() ||
             options.benchGod || options.benchFramesFile.has_value() || options.benchRealTime ||
-            options.benchSpawnStep.has_value() || options.benchMeasure.has_value()) {
-            return invalidArgument("--bench-fighters, --bench-allies, --bench-god, --bench-warmup, --bench-frames, "
-                                   "--bench-real-time, --bench-spawn-step and --bench-measure need --bench: they set "
-                                   "up the measured run");
+            options.benchSpawnStep.has_value() || options.benchMeasure.has_value() || options.benchPlace.has_value() ||
+            options.benchNeutrals.has_value() || options.benchFps) {
+            return invalidArgument("--bench-fighters, --bench-allies, --bench-neutrals, --bench-god, --bench-warmup, "
+                                   "--bench-frames, --bench-real-time, --bench-spawn-step, --bench-measure, "
+                                   "--bench-place and --bench-fps need --bench: they set up the measured run");
         }
         return {};
     }
@@ -820,6 +828,8 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
     std::optional<std::string> benchAlliesArg;   // as typed, likewise
     std::optional<std::string> benchSpawnArg;    // as typed, likewise
     std::optional<std::string> benchMeasureArg;  // as typed, likewise
+    std::optional<std::string> benchPlaceArg;    // as typed, likewise
+    std::optional<std::string> benchNeutralsArg; // as typed, likewise
     bool aiPlayer = false;                       // `--ai-player`, which goes into the Rumble launch
     std::optional<std::string> cameraArg;        // as typed, likewise
     std::optional<std::string> renderSizeArg;    // as typed, likewise
@@ -1212,6 +1222,29 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return std::unexpected(std::move(measure.error()));
             }
             options.benchMeasure = *measure;
+        } else if (arg == "--bench-place") {
+            if (auto value = takeValue(args, i, benchPlaceArg, "--bench-place", "X,Y,Z,HEADING"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+            // As --start's spot, without its camera.
+            auto place = parseStart(benchPlaceArg.value_or(std::string{}));
+            if (!place || place->cameraDistance.has_value()) {
+                return invalidArgument(std::format("--bench-place needs X,Y,Z,HEADING (decimal numbers), got \"{}\"",
+                                                   benchPlaceArg.value_or(std::string{})));
+            }
+            options.benchPlace = *place;
+        } else if (arg == "--bench-fps") {
+            options.benchFps = true;
+        } else if (arg == "--bench-neutrals") {
+            if (auto value = takeValue(args, i, benchNeutralsArg, "--bench-neutrals", "a number of neutrals"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+            auto neutrals =
+                parseRange("--bench-neutrals", benchNeutralsArg.value_or(std::string{}), 0, kMaxBenchFighters);
+            if (!neutrals) {
+                return std::unexpected(std::move(neutrals.error()));
+            }
+            options.benchNeutrals = *neutrals;
         } else if (arg == "--bench-real-time") {
             options.benchRealTime = true;
         } else if (arg == "--bench-frames") {
