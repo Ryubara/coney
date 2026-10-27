@@ -403,7 +403,7 @@ queue first (inferred from the callers; no lock exists).
 
 `0x005e5580` holds a device error state; the value 3 makes the readers push the error mode (`0x00157930(errorMode,
 1, 3)`). The sound device's update sets it (`0x0014c140`) from MultiStream's disc-error check: 4 for error -1, 5 for
--3, 3 for any other ([Sound: the PS2 sound device](sound.md#device)). Confirmed (code); what -1 and -3 are (the
+-3, 3 for any other ([Sound: the PS2 sound device](sound-device.md#device)). Confirmed (code); what -1 and -3 are (the
 IOP's error codes) is not traced.
 
 ### Buffer sizes and limits

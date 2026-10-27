@@ -55,7 +55,7 @@ too (any of the six, comma-separated, or `all`). Every line, `detail` included, 
 | `combat` | Damage (`detail`), knock-downs and deaths |
 | `script` | The level scripts: errors, bindings Coney lacks, what the scripts print (`detail`, console only) |
 | `world` | Level loads, checkpoints, cutscenes, the level flow, objects, cars |
-| `engine` | Everything else: start-up, sound, pads, the front end's screens, the summaries at the end |
+| `engine` | Everything else: start-up, sound, pads, the front end's screens, the summaries at the end, the debug menus' [Entity editor](debug-menu.md#entity-editor) edits (`entity edit: applied 7 health 40`) |
 
 Most subsystems log through a plain text callback (`std::function<void(std::string_view)>`) and name themselves at the
 start of each line. Those lines keep their text and get their category from that prefix (`logging::routeOf()`, the

@@ -11,6 +11,7 @@
 #include "graphics/light_manager.h"
 #include "graphics/particle_page.h"
 #include "hud/health_rings.h"
+#include "platform/mesh_view_hook.h"
 #include "world/view_frustum.h"
 #include "world_objects/glass.h"
 
@@ -80,6 +81,19 @@ class SceneLighting {
     /// @orig 0x0017b2e0 GroundRing_DrawQueued (unknown)
     void drawGroundRings(std::span<const hud::GroundRing> rings, std::span<const hud::TargetMarker> markers) const;
 
+    /// Hands every atomic drawn from now on to the debug tools' mesh views (`hook`, which must outlive its use), or to
+    /// nobody (null: each is drawn as it always is, the hook not consulted).
+    /// @coney-only the debug tools' mesh views (docs/guides/debug-menu.md#mesh-views); the original has none
+    void setMeshViews(MeshViewHook* hook) { m_meshViews = hook; }
+    /// Marks `atomic` as a second layer of the model drawn around it (a human's blood pass), which the mesh views draw
+    /// only with the shaded draw; null: none. The caller marks it, so the original's draw functions stay as they are.
+    /// @coney-only the debug tools' mesh views (docs/guides/debug-menu.md#mesh-views); the original has none
+    void setMeshLayer(const rw::Atomic* atomic) { m_meshLayer = atomic; }
+    /// How many atomics the rig has drawn since it was made, with or without the mesh views: the play mode counts a
+    /// human's passes from it for the Entity inspector's Mesh group.
+    /// @coney-only the Entity inspector's Mesh group (docs/guides/debug-menu.md#mesh-group)
+    [[nodiscard]] std::uint64_t atomicsDrawn() const { return m_atomicsDrawn; }
+
     /// This frame's camera (RenderWare's axes), as beginFrame() was given it.
     [[nodiscard]] const world::CameraPose& pose() const { return m_pose; }
     /// The light manager, for the summary.
@@ -90,18 +104,24 @@ class SceneLighting {
   private:
     // Puts the lights of `selection` into the rig's world, mirrored from the manager's records.
     void useLights(const graphics::LightSelection& selection);
-    // Draws `atomic` inside the rig's world, so librw lights it with the rig's lights.
+    // Draws `atomic` inside the rig's world (renderLit()), or through the mesh views' hook while one is set, as the
+    // kind the caller's DrawKindScope names.
     void renderInRig(rw::Atomic* atomic);
+    // Draws `atomic` inside the rig's world, so librw lights it with the rig's lights, with its dual layer.
+    void renderLit(rw::Atomic* atomic);
     // The librw light that mirrors record `index`, made on first use with the record's type.
     rw::Light* mirror(std::uint16_t index);
 
     graphics::LevelLighting& m_lighting;
     std::optional<graphics::SpriteSheet> m_coronaSheet;
     std::optional<graphics::SpriteSheet> m_shadowSheet;
-    rw::World* m_world = nullptr;      // owned: holds the current atomic's lights
-    std::vector<rw::Light*> m_mirrors; // owned, with their frames; null where none is made yet
-    std::vector<rw::Light*> m_inWorld; // the mirrors now in m_world
-    world::CameraPose m_pose;          // this frame's camera
+    rw::World* m_world = nullptr;            // owned: holds the current atomic's lights
+    std::vector<rw::Light*> m_mirrors;       // owned, with their frames; null where none is made yet
+    std::vector<rw::Light*> m_inWorld;       // the mirrors now in m_world
+    world::CameraPose m_pose;                // this frame's camera
+    MeshViewHook* m_meshViews = nullptr;     // setMeshViews(); null: none
+    const rw::Atomic* m_meshLayer = nullptr; // setMeshLayer()
+    std::uint64_t m_atomicsDrawn = 0;        // atomicsDrawn()
 };
 
 } // namespace coney::platform

@@ -242,8 +242,8 @@ address = "u32(u32(player + 0xd8) + 0x2cc) + 0x24"
 type = "u32"
 follow = true
 
-# An AI human the scenario names `enemy` (its `let`): its brain (docs/research/ai.md#brain) and what it does. Goal and
-# action vtables name their classes (docs/research/ai.md#goals: 0x005402d0 the fight goal, 0x0053feb0 the block
+# An AI human the scenario names `enemy` (its `let`): its brain (docs/research/ai/index.md#brain) and what it does. Goal and
+# action vtables name their classes (docs/research/ai/index.md#goals: 0x005402d0 the fight goal, 0x0053feb0 the block
 # goal; #attack-action: 0x00542ce0 the attack action, 0x005431e0 move-to-human). The brain's times are in the game's
 # milliseconds (`now`).
 [[enemy]]
@@ -779,7 +779,7 @@ follow = true
 # one), `goal_at(brain, k)` the type id of goal stack slot k (docs/references/goal-types.md; -1 above the top),
 # `goal_type(vtable)` a goal class's type id, `handles(address, n)` how many of n words there are
 # handles (neither 0 nor 0xffffffff).
-# Research: docs/research/ai.md (#brain, #goals, #gangs, #fight), docs/research/combat/index.md (#state-flags,
+# Research: docs/research/ai/index.md (#brain, #goals, #gangs, #fight), docs/research/combat/index.md (#state-flags,
 # #record-fields), docs/research/rumble.md#gang-battle-trace. Goal type 15 is Fight, 27 Blocking, 8 Melee, 11
 # EngageEnemy, 65 FindEnemy.
 [[humans]]
@@ -788,7 +788,7 @@ address = "h + 0x1b0"
 type = "s8"
 
 [[humans]]
-name = "btype"                            # brain type: 0 player, 1 cop, 2 gang, 3 Warrior (ai.md#types)
+name = "btype"                            # brain type: 0 player, 1 cop, 2 gang, 3 Warrior (ai/index.md#types)
 address = "brain(h) + 0x04"
 type = "s32"
 
@@ -939,7 +939,7 @@ name = "target"                           # human index of the brain's target (+
 value = "hidx(u32(brain(h) + 0x124))"
 
 [[humans]]
-name = "goals"                            # goals on the brain's stack (ai.md#brain)
+name = "goals"                            # goals on the brain's stack (ai/index.md#brain)
 value = "s8(brain(h) + 0x2c) + 1"
 
 [[humans]]
@@ -980,7 +980,7 @@ address = "brain(h) + 0x2e"
 type = "s8"
 
 [[humans]]
-name = "action"                           # the front action's vtable (ai.md#actions), 0 none
+name = "action"                           # the front action's vtable (ai/index.md#actions), 0 none
 value = "min(max(s8(brain(h) + 0x2e), 0), 1) * u32(u32(brain(h) + 0x68 + 4 * u8(brain(h) + 0x2f)) + 0x8)"
 
 [[humans]]

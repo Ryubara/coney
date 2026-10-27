@@ -4,8 +4,9 @@
 #include <cstdint>
 
 namespace rw {
+struct Material;
 struct Raster;
-}
+} // namespace rw
 
 namespace coney::platform {
 
@@ -13,8 +14,8 @@ namespace coney::platform {
 /// mip level by the texture's size on screen, the GS by distance. Atomics drawn through librw's default GL3 pipeline
 /// go through Coney's own shaders, which sample at an explicit level: by the distance and the texture's `K` while
 /// distance mipmaps are on (the streamed world's sectors), else level 0 (everything else, which the original draws
-/// bilinear). Skinned humans keep librw's skin pipeline; their textures have no mipmaps. Textures not converted from
-/// a PS2 raster (Coney's own, such as the sandbox's) keep OpenGL's choice.
+/// bilinear). Characters skinned on the GPU (platform/character_skin.h) use the same fragment step. Textures not
+/// converted from a PS2 raster (Coney's own, such as the sandbox's) keep OpenGL's choice.
 ///
 /// Research: docs/research/rendering.md#world
 
@@ -35,5 +36,13 @@ void stopTextureLod();
 
 /// Chooses how the next atomics pick their texture levels: by distance (the streamed world) or level 0 (the rest).
 void setDistanceMipmaps(bool on);
+
+/// The fragment step of Coney's shaders (sampling at the chosen level, fog, the alpha test), for another pipeline
+/// that draws as the default one does (platform/character_skin.h). Its inputs are v_color, v_tex0, v_fog and v_depth.
+[[nodiscard]] const char* textureLodFragmentSource();
+
+/// Sets the shaders' level uniform for drawing `material` (its texture's `K` and `L`), as the default pipeline's
+/// render step does before each mesh.
+void setTextureLodFor(const rw::Material* material);
 
 } // namespace coney::platform

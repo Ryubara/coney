@@ -11,7 +11,7 @@
 // attacks it, its attacks, blocks, grabs and falls), so a big fight can be compared with the original's by behaviour
 // statistics (`coney-tools trace fight-report`). The columns the player's trace and the original's recorder share
 // carry the same names and units. Coney's own tool; the original has none.
-// Research: docs/research/feel.md#method, docs/research/ai.md#brain
+// Research: docs/research/feel.md#method, docs/research/ai/index.md#brain
 
 namespace coney::human {
 class Human;

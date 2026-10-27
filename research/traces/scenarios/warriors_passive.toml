@@ -1,10 +1,10 @@
 # level99's sparring fight as the script runs it: the state is saved as `P1.SetupWarriors` starts its scene, so the
 # scene's end calls `P1.SendWarriors`, which wakes the three `CombatWarriors` (classes 58-60, brain type 2,
 # `Att_Normal`) and gives each `GoalFight(warrior, player, 0)`. The player stands still for the whole fight (the
-# script's 50 s stopwatch). Research: docs/research/ai.md#level99-fight. The state is not a quick-save slot: make it
-# as ai.md#level99-save says and pass it with --state.
+# script's 50 s stopwatch). Research: docs/research/ai-fights.md#level99-fight. The state is not a quick-save slot: make it
+# as ai-fights.md#level99-save says and pass it with --state.
 description = "level99 sparring fight: the three type-2 Warriors against a still player (no input); commands and pacing"
-research = "docs/research/ai.md#level99-fight"
+research = "docs/research/ai-fights.md#level99-fight"
 input = "warriors_passive.txt"
 updates = 1700
 fields = ["player", "enemy"]

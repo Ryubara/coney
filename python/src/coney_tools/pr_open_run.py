@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""What the steps of `coney-tools pr open` share: the request, the machine, a run's state and the proof of one tip.
+"""What the steps of `coney-tools pr open` share: the request, the machine and a run's state.
 
 Kept apart from the steps (`pr_open`, `pr_open_publish`) so both can use them (docs/guides/pr.md#open).
 """
@@ -12,7 +12,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from coney_tools import identity, pr_proof, pr_text, stamps
+from coney_tools import identity, stamps
 from coney_tools.conventions import Conventions
 from coney_tools.issue_claim_remote import Remote
 from coney_tools.pr_proof import Refusal
@@ -110,21 +110,3 @@ class Run:
             self.log.append(line)
         else:
             self.env.say(line)
-
-
-@dataclass
-class Proof:
-    """The checks of `pr verify` and `pr text` on one tip."""
-
-    subject: pr_proof.Subject
-    refusals: list[Refusal]
-    generated: pr_text.Generated | None
-    pictures: list[tuple[str, Path, str]]
-    models: list[str]
-    notes: list[str]
-
-    @property
-    def conventions(self) -> Conventions:
-        """The proof rules (`proof` and the path classes) from the remote's default branch; every other section is the
-        branch's own. What steers a release is `Run.rules`, which is wholly the default branch's."""
-        return self.subject.conventions

@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261026-wreck-store"
+date = "2026-10-26"
+kind = "trace"
+tool = "pcsx2 record"
+digest = "3e20e8187f316d199269eb61fa4be5b9797ccc6b4c13531d1f28b209cfa97fea"
+
+[who]
+agent = "a526697c25b1e352b"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["call-brains", "destroy-car-push", "destroy-item-push", "getitem-glass", "glass-break", "pickup-action", "queue-attack", "right-stick", "scripted-pad", "steal-claim", "take-owned"]
+
+[run]
+name = "wreck_store"
+method = ""
+
+[values]
+updates = 4501
+missed_updates = 0
+columns = 24
+
+[hashes]
+trace_csv = "6c8a6194352e233336389ccb7fc43f4afe8ce94a57167684a9a9b99af0e9a7ad"

@@ -318,7 +318,7 @@ TEST_CASE("the disc's level80 checkpoint 4: the last Destroyer down ends the mis
     // 4.2: TT_8 asks for the attack order: R2 held, the right stick up-left, R2 let go. The order is given as soon as
     // the hint is up, whether or not a scroll-in message covers its box: Cochise and Swan's own fight may end, and they
     // join the crew, before the box shows (inferred: their fight goals end at their deadline,
-    // docs/research/ai.md#fight).
+    // docs/research/ai-fights.md#fight).
     const bool asked = until([&] { return shown.hint == "TT_8" && session.flow().hud().visible(); }, kWait);
     if (!asked) {
         dump();

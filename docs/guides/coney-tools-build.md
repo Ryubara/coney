@@ -506,19 +506,20 @@ coney-tools build release --agent RELEASE_AGENT [--force] [--slot SLOT] [--lane 
 
 ```sh
 uv run --project python coney-tools perf bench --out FOLDER [--fighters 0,10,25,50,100] [--level level95]
-    [--frames 600] [--warmup 60] [--headless] [--preset release] [--coney EXE] [--disc DISC]
+    [--frames 600] [--warmup 60] [--headless] [--cpu-skinning] [--preset playtest] [--coney EXE] [--disc DISC]
 uv run --project python coney-tools perf table REPORT.json ...
 ```
 
 `perf bench` plays the level (the hub, `level95`, by default) once per fighter count with `coney --bench`
 ([Performance](performance.md#bench)): each run spawns that many AI fighters on the first frame of play, leaves
 `--warmup` frames unmeasured and measures `--frames` more, windowed with `--vsync off` (or `--headless`: the
-simulation alone), with `--skip-movies`. Each report and its log go to
+simulation alone), with `--skip-movies`; `--cpu-skinning` skins the humans on the CPU instead of the GPU
+([GPU skinning](performance.md#gpu-skinning)), and its reports' names end in `-cpu`. Each report and its log go to
 `--out` (a scratch folder), named for the level, the count and headless; the command prints one Markdown table of
 the frame times (mean, 95th and 99th percentile, frames a second), the main zones and the counters, and a line per
-build and renderer the rows came from. Coney is `build/PRESET/src/platform/coney` (`release` by default: measure an
-optimised build), the disc `game_dir`. Exit 1 when a run fails. `perf table` prints the same table from reports
-already written.
+build and renderer the rows came from. Coney is `build/PRESET/src/platform/coney` (`playtest` by default: an
+optimised build with the debug tools, which `--bench` needs), the disc `game_dir`. Exit 1 when a run fails.
+`perf table` prints the same table from reports already written.
 
 <!-- command-reference:begin perf -->
 ## Parameters of `perf` {#perf-parameters}
@@ -531,19 +532,20 @@ Play a level once per fighter count with `coney --bench` and print a table of th
 
 ```text
 coney-tools perf bench [--coney CONEY] [--preset PRESET] [--disc DISC] [--level LEVEL] [--fighters FIGHTERS]
-    [--frames FRAMES] [--warmup WARMUP] [--headless] --out OUT
+    [--frames FRAMES] [--warmup WARMUP] [--headless] [--cpu-skinning] --out OUT
 ```
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `--coney CONEY` | path | none | Coney's executable; default: build/PRESET/src/platform/coney |
-| `--preset PRESET` | text | `release` | the build folder to take Coney from (default release) |
+| `--preset PRESET` | text | `playtest` | the build folder to take Coney from (default playtest: optimised, with the debug tools --bench needs) |
 | `--disc DISC` | text | none | the disc; default: game_dir from coney.local.toml |
 | `--level LEVEL` | text | `level95` | the level to play (default level95) |
 | `--fighters FIGHTERS` | text | `0, 10, 25, 50, 100` | the fighter counts, comma-separated (default 0,10,25,50,100) |
 | `--frames FRAMES` | integer | `600` | frames measured per run (default 600) |
 | `--warmup WARMUP` | integer | `60` | frames before measuring (default 60) |
 | `--headless` | flag | off | no window: the simulation's cost alone |
+| `--cpu-skinning` | flag | off | skin the humans on the CPU (coney --cpu-skinning), to compare with the GPU's skinning |
 | `--out OUT` | path | required | the folder for the reports and logs (scratch) |
 
 ### `perf table` {#perf-table-usage}

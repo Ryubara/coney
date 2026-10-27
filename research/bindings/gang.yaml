@@ -629,7 +629,7 @@
     - {name: range, lua: number, ctype: float, desc: "Sight range in metres, written to every current member's brain (`+0x130`)."}
   description: >-
     Sets the sight range (brain `+0x130`, as `HuSetLOSRange`) of every current member of the gang: how far they see
-    enemies, used with the field of view `+0x12c` by the sight checks ([AI](../../research/ai.md)). Later members keep
+    enemies, used with the field of view `+0x12c` by the sight checks ([AI](../../research/ai/index.md)). Later members keep
     their own.
   evidence: confirmed-code
   depth: thorough
@@ -672,7 +672,7 @@
   depth: thorough
   notes: >-
     The target handle is not checked. The goal's constructor is 0x002af5b0 and its behaviour (Process 0x002afa48) a
-    fight sub-goal ([AI](../../research/ai.md#fight)). The gang's tactic is left as it is.
+    fight sub-goal ([AI](../../research/ai-fights.md#fight)). The gang's tactic is left as it is.
   usage: {chunks: 10, calls: 18, boot: false, mission1: false, result_used: false, levels: [80, 86, 93, 52, 92, 20]}
   coney: implemented
 
@@ -795,7 +795,7 @@
   depth: thorough
   notes: >-
     If the gang is itself of that kind its own enemy bit is set too, but a gang always counts its own members as
-    friends ([AI: gangs](../../research/ai.md)). The crime report uses the same routine one way for police gangs.
+    friends ([AI: gangs](../../research/ai/index.md)). The crime report uses the same routine one way for police gangs.
   usage: {chunks: 8, calls: 17, boot: false, mission1: false, result_used: false, levels: [3, 93, 9, 54]}
   coney: implemented
 
@@ -1089,7 +1089,7 @@
   notes: >-
     Members spawned later keep their own default (set at brain init 0x0028a570, value not traced). Other brain kinds
     ignore the byte. The reaction rules (crime type enabled, 40 s since the gang's last report, chance) live in
-    0x002ffb30; see [AI](../../research/ai.md).
+    0x002ffb30; see [AI](../../research/ai/index.md).
   usage: {chunks: 1, calls: 3, boot: false, mission1: false, result_used: false, levels: [20]}
 
 - name: GangCallForHelp

@@ -163,8 +163,8 @@ coney::GameplayMode::LevelLoader playLoader(coney::platform::RenderEngine& rende
 }
 
 // Suspends the brain (BrSuspend) of every human created so far who is not in player 1's gang, so that a check of the
-// pad is not cut short by the AI's grabs and attacks (docs/research/ai.md#coney). With `done`, a human already in it
-// is skipped and each one suspended is added, so that it can run every update as spawners add humans.
+// pad is not cut short by the AI's grabs and attacks (docs/research/ai/index.md#in-coney). With `done`, a human already
+// in it is skipped and each one suspended is added, so that it can run every update as spawners add humans.
 void suspendOtherGangs(coney::LevelScripts& scripts, std::set<double>* done = nullptr) {
     const coney::HumanCreation* player = scripts.humans().player(1);
     if (player == nullptr) {
@@ -243,8 +243,8 @@ MissionRun playMission(const coney::io::Wad& wad, std::string_view level, int ch
         return run;
     }
     // The walk checks the pad alone: the other gangs' brains are suspended (BrSuspend) so that none grabs or downs
-    // the player in those 2 s (the AI grabs and tackles, docs/research/ai.md#coney). A grab or mount already on the
-    // player is first let finish, the pad at rest, for up to 30 s: a suspended mounter never gets off.
+    // the player in those 2 s (the AI grabs and tackles, docs/research/ai/index.md#in-coney). A grab or mount already
+    // on the player is first let finish, the pad at rest, for up to 30 s: a suspended mounter never gets off.
     const coney::human::Human& player = play->player().human();
     const auto free = [&player] { return player.state() == coney::human::TargetState::Standing && !player.attached(); };
     pad.pause();

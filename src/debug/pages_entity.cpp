@@ -23,8 +23,9 @@ namespace {
 // What the page shows when no mode lists entities.
 constexpr std::string_view kNoEntities = "no entities: --play-level, or a sandbox from the Levels page";
 // The groups the inspector shows, in order; an entity has the ones that apply to it.
-constexpr std::array<std::string_view, 10> kGroups{"Identity", "Transform", "Locomotion", "Animation", "State flags",
-                                                   "Meters",   "AI",        "Physics",    "Combat",    "Object"};
+constexpr std::array<std::string_view, 11> kGroups{"Identity",    "Transform", "Locomotion", "Animation",
+                                                   "State flags", "Meters",    "AI",         "Physics",
+                                                   "Combat",      "Object",    "Mesh"};
 // How far off the camera's view an entity may be for Looked at to pick it, in degrees.
 constexpr float kLookDegrees = 12.0F;
 // How far from the entity Teleport player to it puts the player, in metres.
@@ -243,6 +244,42 @@ void addShapeDrawItems(MenuPage& page, DebugDrawOptions& draw) {
            "The strike shapes switched on (red) and the spine and head they hit (yellow).");
     toggle("Contacts", draw.contacts,
            "Where the walking sphere touched what it slid along this step, and the normals.");
+}
+
+void addMeshViewItems(MenuPage& page, DebugDrawOptions& draw) {
+    MeshViewOptions& mesh = draw.mesh;
+    // A scope choice over `scope`; `withOff` lists Off first, else the choice starts at the selection.
+    const auto scopeChoice = [&page](std::string label, MeshScope& scope, bool withOff, std::string help) {
+        std::vector<std::string> names{"selection", "all humans", "everything"};
+        const std::size_t first = withOff ? 0 : 1;
+        if (withOff) {
+            names.insert(names.begin(), "off");
+        }
+        page.add(choiceItem(
+                     std::move(label), std::move(names),
+                     [&scope, first] {
+                         const auto index = static_cast<std::size_t>(scope);
+                         return index >= first ? index - first : 0;
+                     },
+                     [&scope, first](std::size_t index) { scope = static_cast<MeshScope>(index + first); }))
+            .withHelp(std::move(help));
+    };
+    scopeChoice("Model wireframe", mesh.wireframe, true,
+                "The models' own triangles as lines over the shaded scene, following the animation: the inspector's "
+                "selection (white), every human (green) or everything drawn (objects orange, scenery grey).");
+    page.add(choiceItem(
+                 "Mesh view", {"shaded", "wireframe only", "by material", "by draw call", "by LOD"},
+                 [&mesh] { return static_cast<std::size_t>(mesh.view); },
+                 [&mesh](std::size_t index) { mesh.view = static_cast<MeshShading>(index); }))
+        .withHelp("Shaded draws as the game does; the others draw the models of Mesh view on as their edges alone, or "
+                  "flat and unlit, one colour per material, per draw call, or per level of detail and fade.");
+    scopeChoice("Mesh view on", mesh.viewScope, false, "Which models the mesh view applies to.");
+    page.add(toggleItem(
+                 "Normals", [&mesh] { return mesh.normals; }, [&mesh](bool on) { mesh.normals = on; }))
+        .withHelp("The selection's vertex normals, as short blue lines from the posed model.");
+    page.add(toggleItem(
+                 "Bone axes", [&mesh] { return mesh.boneAxes; }, [&mesh](bool on) { mesh.boneAxes = on; }))
+        .withHelp("The selection's bones: each one's axes (x red, y green, z blue) and a line to its parent.");
 }
 
 // NOLINTEND(bugprone-exception-escape)

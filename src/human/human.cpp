@@ -71,6 +71,7 @@ constexpr float kLastStickFadePerStep = 0.8F;
 
 // A human's own copy of `ranges` with its class's damage written over it, or null when it has no class table (then it
 // uses `ranges` as it is). Each human keeps its own list, so its class decides only its own damage.
+// @coney-only each human's own copy of its damage list; the class's write itself is combat::applyClassDamage()
 std::unique_ptr<combat::AnimRangeList> classRanges(const combat::AnimRangeList* ranges,
                                                    std::span<const std::int16_t> classDamage, int damagePercent) {
     if (ranges == nullptr || classDamage.empty()) {
@@ -81,10 +82,15 @@ std::unique_ptr<combat::AnimRangeList> classRanges(const combat::AnimRangeList* 
     return own;
 }
 
+// A point in the collision mesh's vector type, and back.
+// @coney-only conversion between Coney's two vector types
 raycast::Vec3 toMesh(anim::Vec3 v) { return raycast::Vec3{v.x, v.y, v.z}; }
+// @coney-only conversion between Coney's two vector types
 anim::Vec3 fromMesh(raycast::Vec3 v) { return anim::Vec3{v.x, v.y, v.z}; }
 
 // `v` across the ground, made unit length; zero when it has no horizontal part.
+// @orig 0x002826f0 Climb_TryStart (unknown)
+// @orig 0x002829e8 Player_TryJump (unknown)
 anim::Vec3 flatUnit(anim::Vec3 v) {
     const float length = std::hypot(v.x, v.y);
     return length > 1e-6F ? anim::Vec3{v.x / length, v.y / length, 0.0F} : anim::Vec3{};
@@ -94,7 +100,9 @@ anim::Vec3 flatUnit(anim::Vec3 v) {
 // the body is moved at once by the second clip's root displacement; at runtime the wall and short-wall climbs did jump
 // (1.06 m forward and 1.29 m up onto a trash can, as clip 456's displacement and the top), while the fence climb was
 // carried through by its second clip's own root motion. So walls move at once (rising to the top found behind the
-// face), and fences go by the clip.
+// face), and fences go by the clip: Coney's choice, where the code moves every climb so at its first clip's end.
+// @orig 0x00281450 Climb_RunningClipEnd (unknown)
+// @orig 0x00281838 Climb_StandingClipEnd (unknown)
 bool movesAtOnce(ClimbKind kind) { return kind == ClimbKind::Wall || kind == ClimbKind::ShortWall; }
 
 // The walking body's owner as the physics world's sweep sees it (docs/research/physics-bodies.md#u3-records), for one
@@ -123,6 +131,7 @@ class WalkingOwner final : public physics::BodyOwner {
     [[nodiscard]] physics::Body* body() override { return m_body; }
     // `Human_OnContact` (`0x00219d50`) for the level: a climbing human passes through the fence it climbs (code 0);
     // every other triangle slides, with the contact scale (`0x20001`; docs/research/characters.md#walls, step 4).
+    // @orig 0x00219d50 Human_OnContact (unknown)
     [[nodiscard]] std::uint32_t onContact(const physics::Contact& contact) override {
         if (contact.triangle && !m_passThrough.empty()) {
             const std::uint8_t material = m_mesh.triangles()[*contact.triangle].material;
@@ -172,6 +181,7 @@ bool meetsCapsule(std::span<const PosedShape> before, std::span<const PosedShape
 
 } // namespace
 
+// @coney-only a lone human's input (step()) as the per-player record a pad would write
 PlayerRecord recordOf(const HumanInput& input) {
     return PlayerRecord{.stickX = input.stickX,
                         .stickY = input.stickY,
@@ -186,6 +196,7 @@ PlayerRecord recordOf(const HumanInput& input) {
                         .move = std::nullopt};
 }
 
+// @coney-only the trace's names
 const char* traversalName(Traversal traversal) {
     switch (traversal) {
     case Traversal::None:
@@ -204,15 +215,18 @@ const char* traversalName(Traversal traversal) {
     return "?";
 }
 
+// @coney-only the object's construction; the original's creation is spawn() (Human_Init)
 Human::Human(const characters::AnimSet& anims, const AnimSlots& slots,
              std::span<const anim::Quat, anim::kPoseBones> bindRotations, float scale,
              const combat::AnimRangeList* ranges, std::span<const std::int16_t> classDamage, int damagePercent)
     : m_animator(anims, slots), m_ownRanges(classRanges(ranges, classDamage, damagePercent)),
       m_classDamage(classDamage.begin(), classDamage.end()), m_damagePercent(damagePercent),
-      m_ranges(m_ownRanges != nullptr ? m_ownRanges.get() : ranges), m_fighter(m_ranges), m_scale(scale) {
+      m_ranges(m_ownRanges != nullptr ? m_ownRanges.get() : ranges), m_fighter(m_ranges), m_scale(scale),
+      m_configuredScale(scale) {
     std::ranges::copy(bindRotations, m_bindRotations.begin());
 }
 
+// @coney-only Coney's sound hand-off: the level plays what the human asked for; the original plays it in place
 std::vector<HumanSound> Human::takeSounds() {
     std::vector<HumanSound> sounds;
     // Clip event 11 carries the animation sound's id in its argument (0 plays nothing); 0x45 stops the sound the
@@ -233,13 +247,19 @@ std::vector<HumanSound> Human::takeSounds() {
     return sounds;
 }
 
+// @coney-only Coney's sound hand-off: the level plays what the human asked for; the original plays it in place
 void Human::reportSound(const HumanSound& sound) {
     if (m_reportSounds) {
         m_contactSounds.push_back(sound);
     }
 }
 
+// @coney-only Coney's sound hand-off: the level plays what the human asked for; the original plays it in place
 void Human::reportSounds(bool on) {
+    // Switching it on again keeps what it holds: the animator's keepEvents() drops the kept clip events.
+    if (on == m_reportSounds) {
+        return;
+    }
     m_reportSounds = on;
     m_animator.keepEvents(on);
 }
@@ -256,6 +276,7 @@ void Human::applyDamageModifier(float factor) {
     combat::applyClassDamage(*m_ownRanges, scaled, m_damagePercent);
 }
 
+// @coney-only Coney's player-or-AI fighting set-up; the original reads the player number and power class in place
 void Human::setFighterProfile(const FighterProfile& profile) {
     m_profile = profile;
     m_fighter = Fighter(m_ranges, 1, m_profile);
@@ -265,6 +286,30 @@ void Human::setFighterProfile(const FighterProfile& profile) {
     m_fighter.setLogName(m_logName);
 }
 
+anim::Pose Human::pose() const {
+    // The face clips sample first into the default pose that every bone the body's clips leave out takes. The rest of
+    // CharacterInstance_Sample (the head look, the torso twist, the bone-matrix flag) is not ported yet: #963.
+    if (faceShown() && m_face.current()) {
+        const std::array<anim::Quat, anim::kPoseBones> defaults = m_face.defaults(m_bindRotations, m_animator.anims());
+        return m_animator.pose(defaults);
+    }
+    return m_animator.pose(m_bindRotations);
+}
+
+bool Human::faceShown() const {
+    return (m_faceRules == nullptr || !m_faceRules->shown || m_faceRules->shown(*this)) && !downOrDead();
+}
+
+void Human::setSpeaking(bool speaking) {
+    if (speaking && !m_speaking) {
+        m_faceState.beginTalk();
+    } else if (!speaking && m_speaking) {
+        m_faceState.endTalk();
+    }
+    m_speaking = speaking;
+}
+
+// @coney-only the debug menus' character change in place; the original has no such call
 void Human::changeCharacter(const characters::AnimSet& anims, const combat::AnimRangeList* ranges,
                             std::span<const std::int16_t> classDamage, int damagePercent,
                             const FighterProfile& profile) {
@@ -278,6 +323,7 @@ void Human::changeCharacter(const characters::AnimSet& anims, const combat::Anim
     m_ownRanges = std::move(own);
 }
 
+// @coney-only how the human lies for its attackers (the Combatant view); the original tests its state bits in place
 TargetState Human::state() const {
     const Victim& victim = m_fighter.victim();
     if (m_fighter.health().depleted()) {
@@ -293,10 +339,13 @@ TargetState Human::state() const {
     return m_fighter.grabbed() ? TargetState::Held : TargetState::Standing;
 }
 
+// @coney-only accessor: the horizontal speed of the velocity
 float Human::speed() const { return std::hypot(m_velocity.x, m_velocity.y); }
 
+// @coney-only accessor: the gait the original keeps at `+0x1a8`, worked out from the velocity
 Gait Human::gait() const { return gaitOfSpeed(anim::length(m_velocity), m_animator.speeds()); }
 
+// @coney-only the bits the locomotion gate reads, bundled; the original reads them from the human in place
 GateInput Human::gateInput() const {
     // **Coney choice**: no state code is kept. The original's 5 is the locomotion's own mark for turning in place,
     // written while the velocity is already gated (the idle's fade, a skid), and 6 is not traced; neither gates an
@@ -307,12 +356,14 @@ GateInput Human::gateInput() const {
                      .attached = m_fighter.grabbed() || m_fighter.holdAttached()};
 }
 
+// @coney-only the debug watch's summary of the gates
 bool Human::stickHeld() const {
     const GateInput gate = gateInput();
     return m_script.arrested || m_script.workingOut || m_fighter.holdsMovement(m_animator) || stickBusy(gate) ||
            stickVelocityGated(gate);
 }
 
+// @coney-only a summary of the traversal for the trace, the watch and the move action
 Traversal Human::traversal() const {
     if (m_climbRun) {
         return Traversal::Climbing;
@@ -460,6 +511,7 @@ void Human::putBack(const raycast::CollisionMesh* ground, anim::Vec3 position, f
     resetMotion();
 }
 
+// @orig 0x00240e38 Human_PlayerLocomotion (unknown)
 void Human::locomote(bool gated) {
     // A human no pad drives follows its brain by the AI's own rules.
     if (m_moveSpeed.has_value() && m_record.move.has_value() && !m_record.padDriven) {
@@ -616,6 +668,7 @@ void Human::applyRootMotion(const anim::Pose& pose) {
     m_heading = wrapAngle(m_heading + root.turn * 30.0F * m_stepSeconds);
 }
 
+// @orig 0x00219d50 Human_OnContact (unknown)
 std::span<const std::uint8_t> Human::passThrough() const {
     if (m_climbRun && m_climbRun->over) {
         return kFenceMaterials;
@@ -708,17 +761,23 @@ Human::Swept Human::sweep(const raycast::CollisionMesh& mesh, anim::Vec3 velocit
     return swept;
 }
 
+// @orig 0x0021ce08 Human_CreatePhysicsBody (unknown)
 float Human::walkingSphereRadius() const {
-    return m_profile.player ? playerWalkingRadius(m_scale) : aiWalkingRadius(m_scale);
+    return m_profile.player ? playerWalkingRadius(collisionScale()) : aiWalkingRadius(collisionScale());
 }
 
+// @coney-only for the debug shapes and the watch
 float Human::walkingSphereCentreHeight() const { return walkingSphereRadius() + bodyTuning().footGap; }
 
-float Human::airSphereRadius() const { return bodyTuning().airRadius * m_scale; }
+// @orig 0x0021a490 Human_PushOutInAir (unknown)
+float Human::airSphereRadius() const { return bodyTuning().airRadius * collisionScale(); }
 
+// @coney-only Coney's stand-in body capsule (the 2 m upright one), shared by the contacts, the revive's way test
+// and the debug shapes
 UprightCapsule Human::uprightCapsule() const {
     // **Coney's choice**: the 2 m upright capsule the strikes take too, not posed from the head bone each time.
-    return UprightCapsule{.feet = m_position, .top = kStrikeCapsuleHeight * m_scale, .radius = capsuleRadius()};
+    return UprightCapsule{
+        .feet = m_position, .top = kStrikeCapsuleHeight * collisionScale(), .radius = capsuleRadius()};
 }
 
 bool Human::blocksHumans() const {
@@ -736,6 +795,7 @@ bool Human::linkedWith(const Human& other) const {
            (other.m_uncuffing != nullptr && other.m_uncuffing == this);
 }
 
+// @orig 0x00221260 Human_GetAttribute (unknown)
 float Human::pushWeight() const {
     // Every link sets both humans' weight to 1e9, and so does an arrest.
     constexpr float kImmovable = 1e9F;
@@ -880,6 +940,7 @@ void Human::moveOnGround(const raycast::CollisionMesh& mesh) {
     snapToGround(mesh, feet);
 }
 
+// @orig 0x0023d8c8 Human_Move (unknown)
 void Human::moveInAir(const raycast::CollisionMesh& mesh) {
     const anim::Vec3 push = std::exchange(m_pendingPush, anim::Vec3{});
     const anim::Vec3 displacement = anim::add(anim::scale(m_velocity, m_stepSeconds), anim::Vec3{push.x, push.y, 0.0F});
@@ -939,6 +1000,7 @@ void Human::moveInAir(const raycast::CollisionMesh& mesh) {
     m_position = feet;
 }
 
+// @orig 0x00240e38 Human_PlayerLocomotion (unknown)
 void Human::holdForCombat() {
     // The clip moves the body (its root motion is added after this), with a grab's alignment slide.
     const anim::Vec3 slide = m_fighter.takeSlide();
@@ -1003,7 +1065,7 @@ void Human::aiCombatWalk(bool gated) {
 
 void Human::combatWalk(const Combatant& target, bool gated) {
     // A human no pad drives runs the AI's stance control: its brain's move, never the target, turns it
-    // (docs/research/ai.md#fight-facing).
+    // (docs/research/ai-fights.md#fight-facing).
     if (!m_record.padDriven) {
         aiCombatWalk(gated);
         return;
@@ -1033,6 +1095,7 @@ void Human::combatWalk(const Combatant& target, bool gated) {
     m_animator.playCombatWalk(static_cast<std::uint32_t>(combat::combatWalkClip(clockwise)));
 }
 
+// @orig 0x00254e78 Human_UpdateActions (unknown)
 void Human::fight(std::span<Combatant* const> targets, const raycast::CollisionMesh* mesh) {
     // The stick in the facing frame: x to the player's right, y ahead.
     const float relative = wrapAngle(m_intent.angle - kPi / 2.0F - m_heading);
@@ -1060,6 +1123,7 @@ void Human::fight(std::span<Combatant* const> targets, const raycast::CollisionM
                      m_animator, m_heading);
 }
 
+// @orig 0x00254e78 Human_UpdateActions (unknown)
 void Human::updateMeters(bool sprintHeld) {
     // The drain at the sprint gait (nothing while an action's clip plays), which ends the sprint when it empties; the
     // refill otherwise; then the sprint flag, cleared and set again while L2 is held and stamina lasts.
@@ -1076,6 +1140,7 @@ void Human::updateMeters(bool sprintHeld) {
     m_sprinting = sprintAsked(sprintHeld, m_stamina.value());
 }
 
+// @orig 0x0027c120 Player_UpdateActions (unknown)
 bool Human::tryContextAction() {
     // The level decides what the press does, whatever is in hand; not during a pick-up.
     if (m_pickUp) {
@@ -1111,6 +1176,7 @@ bool Human::startPickUp(double handle, anim::Vec3 point, std::uint32_t clip) {
     return true;
 }
 
+// @orig 0x00278018 Tag_StartSprayClips (unknown)
 void Human::turnOverClip(std::uint32_t clip, anim::Vec3 point, float share) {
     const anim::AnimClip* found = m_animator.clip(clip);
     if (found == nullptr) {
@@ -1149,6 +1215,7 @@ bool Human::idleUnderControl() const {
            !m_fighter.holdState().has_value() && m_animator.flags() == 0;
 }
 
+// @orig 0x00243420 Human_StepControl (unknown)
 bool Human::runStepControl() {
     // The control moves nothing itself: the clip's root motion does.
     m_velocity = anim::Vec3{0.0F, 0.0F, m_velocity.z};
@@ -1227,6 +1294,7 @@ void Human::startUncuff(Human& cuffed, float mashFactor) {
     m_fighter.combat().startTheft(combat::TheftKind::Mash, nowMs(), 1.0F, mashFactor);
 }
 
+// @coney-only a query for the uncuff's update; the original tests the clip in place
 bool Human::uncuffPlaying() const {
     const std::uint32_t id = m_animator.animId();
     return id == clips::kReleaseIntro || id == clips::kReleaseLoop;
@@ -1241,12 +1309,15 @@ void Human::endUncuff(bool hit) {
                           AnimState::Attack, kCombatFade);
 }
 
+// @orig 0x00260ca8 Uncuff_Start (unknown)
 void Human::playUncuffReact(const Human& freer) {
     m_velocity = anim::Vec3{};
     m_animator.playPaired(clips::one(clips::kReleaseIntroReact), freer.animator().anims(), clips::kReleaseLoopReact,
                           AnimState::Hold, kUncuffFade);
 }
 
+// @orig 0x002606e8 Uncuff_MashSuccess (unknown)
+// @orig 0x00260a70 Uncuff_MashFail (unknown)
 void Human::endUncuffReact(const Human& freer, bool freed) {
     if (freed) {
         m_animator.playPaired(clips::one(clips::kReleaseEndReact), freer.animator().anims(), clips::kIdle,
@@ -1257,13 +1328,16 @@ void Human::endUncuffReact(const Human& freer, bool freed) {
     m_animator.playCombat(clips::kNoClips, clips::kArrestedIdle, AnimState::Hold);
 }
 
+// @coney-only a query for the tag's update; the original's intro end hook starts the stick game
 bool Human::tagSprayLooping() const { return m_animator.animId() == clips::kTaggingLoop; }
 
+// @coney-only a query for the tag's and the update's gates; the original tests the clips in place
 bool Human::tagSprayPlaying() const {
     const std::uint32_t id = m_animator.animId();
     return id == clips::kTaggingIntro || id == clips::kTaggingLoop || id == clips::kTaggingRestart;
 }
 
+// @orig 0x002783b0 Tag_EndSprayClips (unknown)
 void Human::endTagSpray() {
     // A finished or abandoned spray ends through 336 (Tag_EndSprayClips), whose event 0x31 drops the can; the fight
     // stance is the lock on a target (the original tests the state word's 0x3).
@@ -1273,20 +1347,30 @@ void Human::endTagSpray() {
     }
 }
 
+// The stereo's use of the mini-game's start at an object (docs/research/crimes.md#triangle). **Coney stand-in**: only
+// the stereo starts here, so no mode is tested; the lock pick's part is not ported (its clips are not built).
+// @orig 0x002789d0 MiniGame_StartAtObject (unknown)
 void Human::startStereoTheft(anim::Vec3 point, float stageTurns) {
+    // **Coney stand-in** for Human_AlignToObject: the original turns and moves the human over 0.1 s onto the attack
+    // table's place for the clip, facing along the car's side axis; here he turns to the stereo at once and stays put.
     const anim::Vec3 to = anim::subtract(point, m_position);
     if (std::hypot(to.x, to.y) > 1e-4F) {
         m_heading = headingOf(to);
     }
     m_velocity = anim::Vec3{};
+    // The mini-game (mode 3, MiniGame_Start's StereoTheft_Start), then 683 and its loop 684 (Fighter's start).
+    // **Coney stand-ins**: Coney's combat fade, not the original's 0.01 s blend; Coney's anim state Hold, not state 0;
+    // no held 0x2000000 on the record or the clip. Not ported: the push sphere switched off.
     m_fighter.startStereoTheft(m_animator, nowMs(), stageTurns);
 }
 
+// @coney-only a query for the theft's update; the original tests the clip in place
 bool Human::stereoTheftPlaying() const {
     const std::uint32_t id = m_animator.animId();
     return id == clips::kStereoStealIntro || id == clips::kStereoStealLoop;
 }
 
+// @orig 0x0025e5a8 Human_PickUpMessage (unknown)
 void Human::followPickUp() {
     if (!m_pickUp) {
         return;
@@ -1303,6 +1387,8 @@ void Human::followPickUp() {
     }
 }
 
+// @orig 0x002826f0 Climb_TryStart (unknown)
+// @orig 0x00281c20 Climb_Start (unknown)
 bool Human::tryClimb(const raycast::CollisionMesh& mesh, anim::Vec3 direction) {
     // The forward rays reach further for a player at the run or sprint gait, who then climbs in the running form.
     const ClimbTuning& tuning = climbTuning();
@@ -1342,6 +1428,7 @@ bool Human::tryClimb(const raycast::CollisionMesh& mesh, anim::Vec3 direction) {
     return true;
 }
 
+// @orig 0x002829e8 Player_TryJump (unknown)
 bool Human::tryJump(const raycast::CollisionMesh* mesh, anim::Vec3 direction) {
     // `HuBlockJump` skips the jump altogether.
     if (hasFlag(flag::kBlockJump)) {
@@ -1379,7 +1466,7 @@ bool Human::launchJump(anim::Vec3 velocity) {
 
 void Human::tryActions(const raycast::CollisionMesh* mesh, bool sprintHeld) {
     // Nothing in the air or while climbing; nothing while the record's +0x08 drops the dispatcher's commands (a
-    // recovery, a landing) or makes the human busy (an attack's phases, the run stop). **Coney choice**: triangle's
+    // recovery, a landing) or makes the human busy (an attack's phases, the run stop). **Coney's choice**: triangle's
     // actions take the dispatcher's mask and the stick step's, as they take the stick's direction.
     if (m_airborne || m_climbRun || (m_animator.flags() & combat::kDispatchDroppingPhases) != 0 ||
         stickBusy(gateInput())) {
@@ -1405,6 +1492,7 @@ void Human::tryActions(const raycast::CollisionMesh* mesh, bool sprintHeld) {
     }
 }
 
+// @coney-only clears Coney's climb record (ClimbRun); the original keeps the climb in its clips
 void Human::endClimb() {
     m_climbRun.reset();
     m_climbProbe.reset();
@@ -1448,6 +1536,7 @@ void Human::followClimb(const raycast::CollisionMesh* mesh) {
     }
 }
 
+// @coney-only one human stepped alone (the tests); human::Humans runs the original's passes over all of them
 void Human::step(const HumanInput& input, const raycast::CollisionMesh* mesh) {
     m_record = recordOf(input);
     animate(mesh);
@@ -1455,7 +1544,11 @@ void Human::step(const HumanInput& input, const raycast::CollisionMesh* mesh) {
     updateActions(input.targets, mesh);
 }
 
+// @orig 0x0023bd78 Human_StepAnimation (unknown)
 void Human::animate(const raycast::CollisionMesh* mesh) {
+    // The speed factors first: the Movement tunables change only between steps, and this is a step's first pass, before
+    // any locomotion reads the speeds.
+    refreshSpeedFactors();
     // The gait the last update's velocity left, before this update moves the body: the dispatcher's gait tests read it
     // (fight()). It is taken here, in the first pass, so that step() and human::Humans, which runs the passes itself,
     // both keep it.
@@ -1473,7 +1566,16 @@ void Human::animate(const raycast::CollisionMesh* mesh) {
     const anim::AnimTask* before = m_animator.tasks().top();
     const std::uint32_t beforeId = before != nullptr ? before->animId() : 0;
     const float beforeTime = before != nullptr ? before->time() : 0.0F;
-    m_animator.advance(m_stepSeconds);
+    // Every Coney human has its instance, so the original's instance test (`+0xd8`) always passes. No bone cache is
+    // marked stale after the step (`+0x460`): **Coney's choice**, as the pose is sampled from the clips at each use
+    // (pose()), so nothing is ever stale.
+    m_animator.advance(m_stepSeconds * m_animRate);
+    // The face's clips on the instance's queue advance with the body's (FaceTask_Update, FaceBlendOut_Update).
+    FaceLayer::Draw draw;
+    if (m_faceRules != nullptr) {
+        draw = [rules = m_faceRules](int low, int high) { return rules->random.range(low, high); };
+    }
+    m_face.advance(m_stepSeconds * m_animRate, m_animator.anims(), draw);
     followClimb(mesh);
     followPickUp();
     // A clip's turn to a point (the spray's intro, the uncuffing's), a step each update while the clip plays.
@@ -1557,6 +1659,7 @@ void endAllRage(std::span<Human* const> humans) {
     }
 }
 
+// @orig 0x00101dd8 Anim_FireFrameEvents (unknown)
 void Human::noteReleaseEvent(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime) {
     constexpr std::uint16_t kReleaseEvent = 10;
     const anim::AnimTask* top = m_animator.tasks().top();
@@ -1630,8 +1733,10 @@ void Human::noteStrikeEvents(const anim::AnimTask* before, std::uint32_t beforeI
     }
 }
 
+// @coney-only bundles the feet, heading, lean and scale for Coney's posing helpers
 BodyPlacement Human::placement() const {
-    return BodyPlacement{.feet = m_position, .heading = m_heading, .lean = m_lean, .scale = m_scale};
+    // The strike shapes are collision: sized by the collision scale, which is the mesh's unless an edit keeps it.
+    return BodyPlacement{.feet = m_position, .heading = m_heading, .lean = m_lean, .scale = collisionScale()};
 }
 
 std::vector<PosedShape> Human::posedStrikeShapes(bool targets) const {
@@ -1644,12 +1749,21 @@ std::vector<PosedShape> Human::posedStrikeShapes(bool targets) const {
     } else {
         defs = m_strikes.active();
     }
-    const auto bones = anim::boneTransforms(*m_skeleton, pose());
+    // The shapes stand on the bones as the original's bone lookup hands them over: each position times the body
+    // scale, the rotation as posed (the offsets, lengths and radii are scaled in poseStrikeShapes()).
+    auto bones = anim::boneTransforms(*m_skeleton, pose());
+    // Coney's choice: the scale as set. Human_GetScale returns 1.0 for a human in a scene state whose scale is under
+    // 1.1, but Coney tracks the scene state only for player 1, so it is not modelled; the offsets, radii, lengths
+    // (poseStrikeShapes()), ledPoint() and bodyPoint() use the same unadjusted scale, so whoever ports the scene state
+    // changes them together.
+    for (anim::Mat34& bone : bones) {
+        bone.t = anim::scale(bone.t, m_scale);
+    }
     std::vector<PosedShape> posed = poseStrikeShapes(defs, bones, placement());
     // The capsule, while its strike flag is on: upright, its radius round the 2 m from the feet up.
     if (!targets && m_strikes.capsuleOn()) {
-        const float radius = kStrikeCapsuleRadius * m_scale;
-        const float top = kStrikeCapsuleHeight * m_scale;
+        const float radius = kStrikeCapsuleRadius * collisionScale();
+        const float top = kStrikeCapsuleHeight * collisionScale();
         posed.push_back(PosedShape{.a = anim::add(m_position, anim::Vec3{0.0F, 0.0F, radius}),
                                    .b = anim::add(m_position, anim::Vec3{0.0F, 0.0F, top - radius}),
                                    .radius = radius,
@@ -1911,10 +2025,19 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
     m_lastTurn = turn;
 }
 
+// @orig 0x00254e78 Human_UpdateActions (unknown)
 void Human::updateActions(std::span<Combatant* const> targets, const raycast::CollisionMesh* mesh) {
+    // The original returns for a human with no instance or no record (`+0xd8`, `+0xd4`); every Coney human has both.
+    // Nothing acts out of the world, where the original fails the mission.
     if (m_outOfWorld) {
         return;
     }
+    // Human_ReportBarsToHUD's health and power reach a HUD function that returns at once (docs/research/hud.md).
+    // The face's clips follow its talk state first (Human_UpdateActions calls Human_UpdateFaceClip before the pad's
+    // command, docs/research/face.md).
+    m_face.update(m_faceState, m_animator.anims(), faceShown());
+    // **Coney's choice**: the `PadSetHandlerEx` handler, which the original calls here, runs after the level's step
+    // (GameplayMode::callPadHandler), so it never takes the human away mid-update and never holds back his commands.
     // Stamina and the sprint (a block clears it), combat, triangle, the lean, and the animation state. Combat first,
     // as the original's dispatcher reads the block and the chain before the commands; triangle keeps its climb,
     // context action and jump while combat does not hold the body (in a grab it mugs).

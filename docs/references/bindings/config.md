@@ -907,10 +907,10 @@ CfgEnableGrappleCounters(enabled)
 
 Sets the grapple-counter switch (byte at game state `+0x56e3`). While it is set, any AI with a counter chance above 0
 may answer a grab or tackle with a counter move; while it is 0, only a human with brain type 3 or a class whose `+0x11b`
-is 13 can ([AI](../../research/ai.md)). Strikes are never countered this way.
+is 13 can ([AI](../../research/ai/index.md)). Strikes are never countered this way.
 
-**Notes.** Reader: the counter tests on ai.md (`0x00223e20`). Which humans brain type 3 and class `+0x11b` 13 are is
-open. The byte's value before any call is not traced.
+**Notes.** Reader: the counter tests on ai/index.md (`0x00223e20`). Which humans brain type 3 and class `+0x11b` 13 are
+is open. The byte's value before any call is not traced.
 
 - **Evidence:** confirmed (code) at `0x0041da60`; detail: traced
 - **Wrapper** `0x0036c1d8` (registered by `RegisterBindings`); **calls** `0x0041da60` `Cfg_SetGrappleCounters`
@@ -1732,7 +1732,7 @@ CfgPowerClass(classId, p2, p3, p4, p5, p6, p7, p8, f9, f10, f11, f12, f13, f14, 
 | 19 | `n19` | number, truncated to an integer | Byte at +0x37, clamped 0-15. |
 | 20 | `f20` | number (single precision) | Float at +0x24, clamped to 0-1. |
 | 21 | `n21` | number, truncated to an integer | Byte at +0x38, clamped 0-127. |
-| 22 | `flag22` | number, truncated to an integer | Byte at +0x39, clamped 0-1: when 1, an AI grabber of this class throws or pushes into a wall next to the pair (Grabbing_PickMove 0x002b5b98, ai.md#fight-reactions). |
+| 22 | `flag22` | number, truncated to an integer | Byte at +0x39, clamped 0-1: when 1, an AI grabber of this class throws or pushes into a wall next to the pair (Grabbing_PickMove 0x002b5b98, ai/index.md#fight-reactions). |
 | 23 | `n23` | number, truncated to an integer | Byte at +0x3a. |
 | 24 | `n24` | number, truncated to an integer | Byte at +0x3b. |
 | 25 | `n25` | number, truncated to an integer | Byte at +0x3c. |

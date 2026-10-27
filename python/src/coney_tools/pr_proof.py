@@ -17,13 +17,14 @@ Nothing here writes: no stamp, no file, no git state.
 
 from __future__ import annotations
 
+import dataclasses
 import hashlib
 import json
 import subprocess
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 from coney_tools import (
@@ -42,6 +43,7 @@ from coney_tools import (
 )
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions, ConventionsError, load_conventions, load_proof_rules_at
+from coney_tools.orig_index import SOURCE_DIR, SOURCE_SUFFIXES
 from coney_tools.orig_review import Unit as OrigUnit
 from coney_tools.unit import Unit, tracked_files
 
@@ -150,7 +152,9 @@ def _git(root: Path, *args: str) -> str:
 
 def dirty_paths(root: Path) -> tuple[str, ...]:
     """The paths of `root` with uncommitted changes: tracked files that differ, and untracked files not ignored."""
-    out = _git(root, "status", "--porcelain", "-z", "--untracked-files=all")
+    # `--no-optional-locks`: a read that refreshes the index would hold its lock, and fail an engineer's commit that
+    # runs at the same moment (Conclave asks this for every unit, in the background).
+    out = _git(root, "--no-optional-locks", "status", "--porcelain", "-z", "--untracked-files=all")
     entries = [e for e in out.split("\0") if e]
     paths: list[str] = []
     skip = False
@@ -181,6 +185,36 @@ def default_branch(root: Path) -> str:
     return ref.removeprefix(f"refs/remotes/{RULES_REMOTE}/")
 
 
+def _touches_source(paths: Sequence[str]) -> bool:
+    """Whether a changed path is a C++ file under `src/`, the only place an `@orig` function can be added, changed or
+    removed (`orig_review.files_at` reads nothing else)."""
+    folder = SOURCE_DIR.as_posix() + "/"
+    return any(p.startswith(folder) and PurePosixPath(p).suffix in SOURCE_SUFFIXES for p in paths)
+
+
+def changed_functions(
+    root: Path, base: str, tip: str, paths: Sequence[str]
+) -> tuple[tuple[OrigUnit, ...], tuple[OrigUnit, ...], dict[str, tuple[str, ...]]]:
+    """The `@orig` functions the branch adds or changes, those it removes, between `base` and `tip`, and which Coney
+    functions at the tip cite each original address (`orig_review.citing`: a `compared` stamp belongs to one of
+    several functions that share an address, so the lookup needs all of them, not only the changed ones).
+
+    Reading every source file at two commits takes seconds, so a change that touches no C++ file under `src/` (a
+    guide, a tool, a workflow) is known to add, change and remove none, and to need no stamp looked up, without reading
+    them."""
+    if not _touches_source(paths):
+        return (), (), {}
+    before = {u.key: u for u in orig_review.units_at(root, base)}
+    after = {u.key: u for u in orig_review.units_at(root, tip)}
+    changed = tuple(
+        u
+        for u in after.values()
+        if u.key not in before or before[u.key].body_sha256 != u.body_sha256 or before[u.key].addresses != u.addresses
+    )
+    removed = tuple(u for key, u in before.items() if key not in after)
+    return changed, removed, orig_review.citing(after.values())
+
+
 def load_subject(
     root: Path,
     unit: Unit,
@@ -190,6 +224,7 @@ def load_subject(
     remote: str = "origin",
     now: datetime | None = None,
     conventions: Conventions | None = None,
+    scan: bool = True,
 ) -> Subject:
     """Read the unit at `root` (its worktree): the branch tip, where it left `<remote>/<default branch>`, the rules of
     `origin/<default branch>` (`conventions` replaces them, for the tests), the stamp log and the `@orig` functions it
@@ -199,6 +234,9 @@ def load_subject(
     `origin/<default branch>`, whatever `remote` is: nothing the branch holds or names (its conventions file, a remote
     it adds) chooses the ref its rules come from. ConfigError when a ref is unknown (fetch it first), or git or the
     rules cannot be read.
+
+    `scan=False` leaves out the `@orig` functions (`changed` and `removed` are empty), which are the slow part on a
+    change under `src/`; `scanned` adds them. `refusals_before_scan` is what such a subject can already refuse.
     """
     default = default_branch(root)
     remote_ref = f"{remote}/{default}"
@@ -219,14 +257,7 @@ def load_subject(
     change = pr_diff.change_of(root, remote_ref, tip)
     base, paths = change.base, change.paths
     profile = proof_profiles.required_profile(rules, paths)
-    before = {u.key: u for u in orig_review.units_at(root, base)}
-    after = {u.key: u for u in orig_review.units_at(root, tip)}
-    changed = tuple(
-        u
-        for u in after.values()
-        if u.key not in before or before[u.key].body_sha256 != u.body_sha256 or before[u.key].addresses != u.addresses
-    )
-    removed = tuple(u for key, u in before.items() if key not in after)
+    changed, removed, citing = changed_functions(root, base, tip, paths) if scan else ((), (), {})
     return Subject(
         root=root,
         unit=unit,
@@ -243,11 +274,34 @@ def load_subject(
         profile=profile,
         checks=tuple(proof_profiles.required_checks(rules, profile, paths)),
         changed=changed,
-        citing=orig_review.citing(after.values()),
+        citing=citing,
         removed=removed,
         dirty=dirty_paths(root),
         now=now or datetime.now(UTC),
     )
+
+
+def scanned(subject: Subject) -> Subject:
+    """`subject` with the `@orig` functions its change adds, changes and removes read in (`load_subject(scan=False)`
+    leaves them out)."""
+    changed, removed, citing = changed_functions(subject.root, subject.base, subject.tip, subject.paths)
+    return dataclasses.replace(subject, changed=changed, removed=removed, citing=citing)
+
+
+def refusals_before_scan(subject: Subject) -> list[Refusal]:
+    """What a subject read with `scan=False` can already refuse, without reading an `@orig` function: uncommitted
+    changes, a Check that is missing, failed or made for another change, and a Review that is missing, failed or made
+    for another change. Each is a refusal `verify` finds too (these are the same functions), so a unit refused here is
+    refused there; one that passes here may still be refused there, by the stages that need the functions."""
+    found = _dirty_refusals(subject)
+    found += check_checked(subject)
+    stamp = subject.report.latest("reviewed")
+    refused = _reviewed_unsettled(stamp)
+    if refused is not None:
+        return [*found, refused]
+    assert stamp is not None  # a missing stamp is refused above
+    stale = _review_change_stale(subject, stamp)
+    return [*found, *([stale] if stale is not None else [])]
 
 
 def pairs_set_sha256(unit: Unit, addresses: Sequence[str]) -> str:
@@ -286,6 +340,15 @@ def _redo(step: str, subject: str = "") -> str:
 # --- the whole ------------------------------------------------------------------------------------------------------
 
 
+def _dirty_refusals(subject: Subject) -> list[Refusal]:
+    """The refusal for a worktree with uncommitted changes (the stamps are bound to what is committed)."""
+    if not subject.dirty:
+        return []
+    shown = ", ".join(subject.dirty[:5]) + (f" and {len(subject.dirty) - 5} more" if len(subject.dirty) > 5 else "")
+    text = f"worktree: uncommitted changes: {shown}; the engineer commits or removes them"
+    return [Refusal("worktree", text, "engineer")]
+
+
 def verify(
     subject: Subject,
     text: TextHashes | None = None,
@@ -299,13 +362,7 @@ def verify(
     trusted.
     """
     result = ProofResult(subject)
-    if subject.dirty:
-        shown = ", ".join(subject.dirty[:5]) + (f" and {len(subject.dirty) - 5} more" if len(subject.dirty) > 5 else "")
-        result.refusals.append(
-            Refusal(
-                "worktree", f"worktree: uncommitted changes: {shown}; the engineer commits or removes them", "engineer"
-            )
-        )
+    result.refusals += _dirty_refusals(subject)
     log, intact = check_log(subject)
     result.refusals += log
     if not intact:
@@ -436,12 +493,10 @@ def check_checked(subject: Subject) -> list[Refusal]:
     """Step 2: a passing `checked` stamp for this change, of a big enough profile, with the checks it lists and (for a
     full Check) the build record it names."""
     stamp = subject.report.latest("checked")
-    if stamp is None:
-        return [Refusal("checked", "checked: no passing Check; run task check", "task check")]
-    if stamp.result != "pass":
-        return [
-            Refusal("checked", "checked: the newest Check failed; fix what it found and run task check", "task check")
-        ]
+    refused = _checked_unsettled(stamp)
+    if refused is not None:
+        return [refused]
+    assert stamp is not None  # a missing stamp is refused above
     if stamp.covers.get(stamps.CHANGE) != subject.diff_sha256:
         saved = stamp.covers.get(stamps.CHANGE)
         text = f"checked: stale: the branch changed since Check (diff {_hex(saved)} now {_hex(subject.diff_sha256)})"
@@ -476,6 +531,17 @@ def check_checked(subject: Subject) -> list[Refusal]:
     if set(subject.checks) & set(proof.build.checks):
         found += _build_record(subject, stamp)
     return found
+
+
+def _checked_unsettled(stamp: stamps.Stamp | None) -> Refusal | None:
+    """The refusal when the newest `checked` stamp is missing or did not pass, whatever it covers."""
+    if stamp is None:
+        return Refusal("checked", "checked: no passing Check; run task check", "task check")
+    if stamp.result != "pass":
+        return Refusal(
+            "checked", "checked: the newest Check failed; fix what it found and run task check", "task check"
+        )
+    return None
 
 
 def _build_record(subject: Subject, stamp: stamps.Stamp) -> list[Refusal]:
@@ -727,6 +793,41 @@ def _worked_on(subject: Subject, reviewer: Mapping[str, object]) -> bool:
     )
 
 
+def _reviewed_unsettled(stamp: stamps.Stamp | None) -> Refusal | None:
+    """The refusal when the newest `reviewed` stamp is missing or is a failed Review, whatever it covers."""
+    if stamp is None:
+        return Refusal("reviewed", "reviewed: not reviewed", "task review")
+    if stamp.result != "pass" or stamp.detail.get("verdict", "pass") != "pass":
+        blockers = stamp.detail.get("blockers", 0)
+        count = (
+            f"{blockers} blocking finding{'s' if blockers != 1 else ''}"
+            if isinstance(blockers, int)
+            else "blocking findings"
+        )
+        return Refusal("reviewed", f"reviewed: Review failed ({count}, see the verdict)", "task review")
+    return None
+
+
+def _review_change_stale(subject: Subject, stamp: stamps.Stamp) -> Refusal | None:
+    """The refusal when the Review `stamp` was made for another change than the branch makes now."""
+    if stamp.covers.get(stamps.CHANGE) == subject.diff_sha256:
+        return None
+    text = (
+        f"reviewed: stale: the branch changed since Review (diff {_hex(stamp.covers.get('diff_sha256'))} now "
+        f"{_hex(subject.diff_sha256)})"
+    )
+    return Refusal("reviewed", text, "task review")
+
+
+def unsettled(report: stamps.Report) -> list[Refusal]:
+    """What the stamp log alone refuses, without reading git: no passing `checked` stamp, no passing `reviewed` stamp.
+
+    These are the first refusals of `check_checked` and `check_reviewed`, which use the same two functions, so a
+    caller that wants a cheap answer first (Conclave's `unit-ready`) can never say something `verify` would not."""
+    found = [_checked_unsettled(report.latest("checked")), _reviewed_unsettled(report.latest("reviewed"))]
+    return [refusal for refusal in found if refusal is not None]
+
+
 def check_reviewed(subject: Subject, text: TextHashes | None) -> list[Refusal]:
     """Step 4: a passing `reviewed` stamp for this change, these pairs and this text, that covers every changed function
     with a passing class, by a reviewer who did not work on the task."""
@@ -735,24 +836,14 @@ def check_reviewed(subject: Subject, text: TextHashes | None) -> list[Refusal]:
     def refuse(message: str, redo: str = "task review") -> Refusal:
         return Refusal("reviewed", f"reviewed: {message}", redo)
 
-    if stamp is None:
-        return [refuse("not reviewed")]
-    if stamp.result != "pass" or stamp.detail.get("verdict", "pass") != "pass":
-        blockers = stamp.detail.get("blockers", 0)
-        count = (
-            f"{blockers} blocking finding{'s' if blockers != 1 else ''}"
-            if isinstance(blockers, int)
-            else "blocking findings"
-        )
-        return [refuse(f"Review failed ({count}, see the verdict)")]
+    refused = _reviewed_unsettled(stamp)
+    if refused is not None:
+        return [refused]
+    assert stamp is not None  # a missing stamp is refused above
     stale: list[Refusal] = []
-    if stamp.covers.get(stamps.CHANGE) != subject.diff_sha256:
-        stale.append(
-            refuse(
-                f"stale: the branch changed since Review (diff {_hex(stamp.covers.get('diff_sha256'))} now "
-                f"{_hex(subject.diff_sha256)})"
-            )
-        )
+    changed_since = _review_change_stale(subject, stamp)
+    if changed_since is not None:
+        stale.append(changed_since)
     if stamp.covers.get("pairs_set_sha256") != pairs_set_sha256(subject.unit, changed_addresses(subject.changed)):
         stale.append(refuse("stale: the pairs changed since Review"))
     if text is not None:
@@ -824,5 +915,8 @@ __all__ = [
     "dirty_paths",
     "load_subject",
     "pairs_set_sha256",
+    "refusals_before_scan",
+    "scanned",
+    "unsettled",
     "verify",
 ]

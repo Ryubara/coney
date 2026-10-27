@@ -9,7 +9,7 @@
 // Two goals that take one human to another: the move-to-human goal (`GoalMoveToHuman`), which runs to a human and stops
 // near him, and the engage-enemy goal, the run-in of a fight, which the Melee goal pushes at a distant target and the
 // scripts push with `GoalEngageEnemy`. Survival's spawned police are sent at the players with them.
-// Research: docs/research/ai.md#engage-enemy, docs/references/bindings/ai.md#goalmovetohuman,
+// Research: docs/research/ai-fights.md#engage-enemy, docs/references/bindings/ai.md#goalmovetohuman,
 // docs/references/bindings/ai.md#goalengageenemy
 
 namespace coney::ai {
@@ -21,9 +21,9 @@ inline constexpr std::uint32_t kMoveToHumanReissueMs = 1000;
 /// Updates the move-to-human goal waits after a failed route before trying again.
 inline constexpr int kMoveToHumanRetryUpdates = 30;
 
-/// The engage goal's numbers (docs/research/ai.md#engage-enemy): the charge's range (`+0x30`, 2.56 squared), the stop's
-/// share of the far melee range, the give-up distance, the re-plan and re-target periods, the move's radius, the fan
-/// per attack slot, and how near a new target must be to be taken (`Human_CanSeeHuman`'s 9 m).
+/// The engage goal's numbers (docs/research/ai-fights.md#engage-enemy): the charge's range (`+0x30`, 2.56 squared), the
+/// stop's share of the far melee range, the give-up distance, the re-plan and re-target periods, the move's radius, the
+/// fan per attack slot, and how near a new target must be to be taken (`Human_CanSeeHuman`'s 9 m).
 inline constexpr float kChargeRange = 1.6F;
 inline constexpr float kEngageStopShare = 0.75F;
 inline constexpr float kEngageGiveUpRange = 20.0F;
@@ -64,16 +64,16 @@ class MoveToHumanGoal final : public Goal {
     int m_failedUpdates = 0;        // updates since a failed route
 };
 
-/// The engage-enemy goal (type 11): the run-in (docs/research/ai.md#engage-enemy). The Melee goal pushes it at a target
-/// beyond the fight goal's range; it runs at him (gait 4, 5 when he runs), re-planning every 250 ms, and ends, handing
-/// back to the Melee goal, by stopping and turning to him: within 0.75 × the far melee range when he is busy, or when
-/// the charge is not armed and he walks or stands; or after a failed move. Armed (he was at least the far range away at
-/// its start, or he runs), it attacks out of the run within 1.6 m: a cop's X1 (50 %, 80 % at a gang member) or tackle,
-/// anyone else's pick (ai::pickAttackFor()), which ends the run-in when it is not a charge kind; it presses once the
-/// kind can start, as one attack action (the X1 along the runner's heading); another human the near one in the sector
-/// of the target's record the runner comes from disarms the charge (the runner himself there waits). It gives up only
-/// far off and out of sight, and has no time limit. It clears the target's `+0x1ec`, so the fight may attack him at
-/// once. The re-target takes the nearest enemy it can see within 9 m; out of sight is the line of sight
+/// The engage-enemy goal (type 11): the run-in (docs/research/ai-fights.md#engage-enemy). The Melee goal pushes it at a
+/// target beyond the fight goal's range; it runs at him (gait 4, 5 when he runs), re-planning every 250 ms, and ends,
+/// handing back to the Melee goal, by stopping and turning to him: within 0.75 × the far melee range when he is busy,
+/// or when the charge is not armed and he walks or stands; or after a failed move. Armed (he was at least the far range
+/// away at its start, or he runs), it attacks out of the run within 1.6 m: a cop's X1 (50 %, 80 % at a gang member) or
+/// tackle, anyone else's pick (ai::pickAttackFor()), which ends the run-in when it is not a charge kind; it presses
+/// once the kind can start, as one attack action (the X1 along the runner's heading); another human the near one in the
+/// sector of the target's record the runner comes from disarms the charge (the runner himself there waits). It gives up
+/// only far off and out of sight, and has no time limit. It clears the target's `+0x1ec`, so the fight may attack him
+/// at once. The re-target takes the nearest enemy it can see within 9 m; out of sight is the line of sight
 /// (ai::lineOfSight()); it sprints only with more than half its stamina. **Coney stand-ins**: the target is busy while
 /// not standing or while his record holds an attack's flags (kAttackWaitFlags); the lead applies while the runner
 /// stands in his sectors 3-5, fanned 9° per attack slot index; "actions blocked" ends nothing (a human down waits); the

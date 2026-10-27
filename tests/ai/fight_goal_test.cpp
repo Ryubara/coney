@@ -27,7 +27,7 @@
 
 // The fight goal with the attack choice: the active-attacker places that make a gang take turns, and the tackle try.
 // Synthetic clips only; game time is the steps run (1/30 s each).
-// Research: docs/research/ai.md#fight
+// Research: docs/research/ai-fights.md#fight
 
 using coney::ai::Brain;
 using coney::ai::BrainType;

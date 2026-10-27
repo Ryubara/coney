@@ -671,7 +671,7 @@ All on NTSC-U `SLUS_212.15`.
 | The play tick | `TaskManager_TickGame` (`0x003a2ea0`) once per frame; **while** the bus clock holds at least two 60 Hz ticks (`0x960000` COP0 counts) it runs a pair of 60 Hz ticks, so a long frame catches up with several pairs; the rest carries over. At 29.97 frames a second that is one pair a frame, and two in about one frame of 1,000 | confirmed (code) and (runtime), [Tasks: the play tick](../research/tasks.md#tick) |
 | Frames | 29.97 a second, two fields each | confirmed (runtime), same page |
 | Characters: movement, combat, animation, brains | `Humans_Update` (`0x00249108`) is called on both ticks, its body runs on every second: **30 Hz** | confirmed (code) and (runtime), same page |
-| AI thinking | inside the characters' step; some rules count steps (a think every fifth step) | confirmed (code), [AI](../research/ai.md) |
+| AI thinking | inside the characters' step; some rules count steps (a think every fifth step) | confirmed (code), [AI](../research/ai/index.md) |
 | Scheduled objects: doors, props, particles, cars, scene tasks | the timing wheel, one bucket per **60 Hz** tick, each object every `interval` ticks | confirmed (code) and (runtime), [The wheel](../research/tasks.md#wheel) |
 | Physics step | every **60 Hz** tick; it settles landed objects and refreshes a bound, and moves no human | confirmed (code), [Physics: 30 or 60 Hz](../research/physics.md#tick-rate) |
 | Cameras | at the end of each characters' step, **30 Hz** | confirmed (code), [Cameras](../research/camera.md) |

@@ -4002,6 +4002,8 @@
 0x0020fd80	616	ANHud_Construct	1
 0x0020ffe8	776	ANHud_Destroy	1
 0x002102f0	1256	ANHud_ApplyVideoMode	1
+0x002107d8	8	ANHud_SetJoinMsg	0
+0x002107e0	8	ANHud_GetJoinMsg	0
 0x002107e8	920	ANHud_Init	1
 0x00210b80	400	ANHud_SetBanner	1
 0x00210d10	172	ANHud_Shutdown	1
@@ -5422,7 +5424,7 @@
 0x0028ceb8	28	Brain_StoreType	1
 0x0028ced8	28	Brain_SetHeld	1
 0x0028cef8	232	Brain_IsBusyWithScene	1
-0x0028cfe0	432	Brain_SetTarget	0
+0x0028cfe0	432	Brain_SetTarget	1
 0x0028d190	340	Brain_PushFightGoal	0
 0x0028d2e8	112	Brain_Fight	0
 0x0028d358	344	Brain_ValidateEnemy	1
@@ -6846,6 +6848,7 @@
 0x002fc158	468	MoveAction_CornerSpeed	1
 0x002fc330	180	MoveAction_CheckStuck	1
 0x002fc3e8	48	MoveAction_ResetSpeed	1
+0x002fc420	316	MoveAction_Start	0
 0x002fc560	92	MoveAction_Abort	1
 0x002fc5c0	2000	MoveAction_Update	0
 0x002fcd90	292	Move_CornerSpeedLimit	1
@@ -6936,7 +6939,7 @@
 0x003065b0	72	Tactic_Free	1
 0x003065f8	56	Tactic_QueueFree	1
 0x00306630	92	Tactic_Construct	1
-0x00306690	324	Tactic_Start	0
+0x00306690	324	Tactic_Start	1
 0x003067d8	116	Tactic_Process	1
 0x00306850	164	Tactic_End	1
 0x003068f8	64	Tactic_SetCallback	1
@@ -7532,7 +7535,7 @@
 0x00328938	124		0
 0x003289b8	60		0
 0x003289f8	56		0
-0x00328a30	160		0
+0x00328a30	160	Lua_CallCClosure	1
 0x00328ad0	112		0
 0x00328b40	480		0
 0x00328d20	32		0
@@ -7796,7 +7799,7 @@
 0x003340f8	516		0
 0x00334300	272		0
 0x00334410	104		0
-0x00334478	3320		0
+0x00334478	3320	luaV_execute	0
 0x00335178	48		0
 0x00335218	52		0
 0x00335250	208		0
@@ -9495,7 +9498,7 @@
 0x00393538	1132	ThrownObject_OnContact	1
 0x003939a8	1140	WorldObject_OnImpact	1
 0x00393e20	560	WorldObject_Break	1
-0x00394050	1980	WorldObject_OnContact	0
+0x00394050	1980	WorldObject_OnContact	1
 0x00394810	268	WorldObject_BreakEffects	1
 0x00394920	1160	WorldObject_UpdateBodyContacts	1
 0x00394da8	376	WorldObject_ReportDamage	1
@@ -9855,33 +9858,52 @@
 0x003a8790	72	SubShk_OnMessage	1
 0x003a87d8	1160	SubShk_Update	1
 0x003a8c60	332	SubGun_Init	1
+0x003a8db0	8		0
 0x003a8db8	160	SubGun_Update	1
 0x003a8e58	240	SubGlt_Init	1
+0x003a8f48	8		0
 0x003a8f50	320	SubGlt_Update	1
 0x003a9090	468	SubBlo_Init	1
+0x003a9268	8		0
 0x003a9270	416	SubBlo_Update	1
 0x003a9410	532	SubPuk_Init	1
+0x003a9628	8		0
 0x003a9630	736	SubPuk_Update	1
 0x003a9910	620	PukSplat_Init	1
+0x003a9b80	8		0
 0x003a9b88	240	PukSplat_Update	1
 0x003a9c78	276	SubDus_Init	1
+0x003a9d90	8		0
+0x003a9d98	8		0
 0x003a9da0	384	SubPee_Init	1
+0x003a9f20	8		0
 0x003a9f28	388	SubPee_Update	1
 0x003aa0b0	324	PeeTracer_Init	1
+0x003aa1f8	8		0
 0x003aa200	476	PeeTracer_Update	1
 0x003aa3e0	324	PeePee_Init	1
+0x003aa528	8		0
 0x003aa530	364	PeePee_Update	1
 0x003aa6a0	592	SubPla_Init	1
+0x003aa8f0	8		0
+0x003aa8f8	8		0
 0x003aa900	312	SubSpr_Init	1
+0x003aaa38	8		0
 0x003aaa40	808	SubSpr_Update	1
 0x003aad68	440	SprayMist_Init	1
+0x003aaf20	8		0
 0x003aaf28	488	SprayMist_Update	1
 0x003ab110	428	PowerMist_Init	1
+0x003ab2c0	8		0
 0x003ab2c8	280	PowerMist_Update	1
 0x003ab3e0	452	SubSmk_Init	1
+0x003ab5a8	8		0
 0x003ab5b0	976	SubSmk_Update	1
 0x003ab980	896	SubAnimNotes_Init	1
+0x003abd00	8		0
+0x003abd08	8		0
 0x003abd10	256	SubSpk_Init	1
+0x003abe10	8		0
 0x003abe18	816	SubSpk_Update	1
 0x003ac148	392	SubAnimSpark_Init	1
 0x003ac2d0	40	SubAnimSpark_OnMessage	1
@@ -9892,38 +9914,57 @@
 0x003ac7e8	3156	Radio_HandleMessage	0
 0x003ad440	2176	Radio_Update	0
 0x003adcc0	1064	BloSplat_Init	1
+0x003ae0e8	8		0
 0x003ae0f0	140	BloSplat_Update	1
 0x003ae180	292	Bloosh_Init	1
+0x003ae2a8	8		0
 0x003ae2b0	120	Bloosh_Update	1
 0x003ae328	496	BloodMist_Init	1
+0x003ae518	8		0
 0x003ae520	484	BloodMist_Update	1
 0x003ae708	364	BloodSplatGround_Init	1
+0x003ae878	8		0
 0x003ae880	268	BloodSplatGround_Update	1
 0x003ae990	476	BloodSplatter_Init	1
+0x003aeb70	8		0
 0x003aeb78	1800	BloodSplatter_Update	1
 0x003af280	656	BloodDrop_Init	1
+0x003af510	8		0
 0x003af518	116	BloodDrop_Update	1
 0x003af590	400	BloodSpray_Init	1
+0x003af720	8		0
 0x003af728	116	BloodSpray_Update	1
 0x003af7a0	608	SubBloodEffect_Init	1
+0x003afa00	8		0
 0x003afa08	1724	SubBloodEffect_Update	1
 0x003b00c8	276	SubBloodGush_Init	1
+0x003b01e0	8		0
 0x003b01e8	1544	SubBloodGush_Update	1
 0x003b07f0	260	SweatSpray_Init	1
+0x003b08f8	8		0
 0x003b0900	144	SweatSpray_Update	1
 0x003b0990	440	SweatMist_Init	1
+0x003b0b48	8		0
 0x003b0b50	384	SweatMist_Update	1
 0x003b0cd0	536	SweatDrop_Init	1
+0x003b0ee8	8		0
 0x003b0ef0	116	SweatDrop_Update	1
 0x003b0f68	388	SubSweatEffect_Init	1
+0x003b10f0	8		0
 0x003b10f8	872	SubSweatEffect_Update	1
 0x003b1460	904	SubPunchFlash_Init	1
+0x003b17e8	8		0
+0x003b17f0	8		0
 0x003b17f8	544	SubPch_Init	1
+0x003b1a18	8		0
+0x003b1a20	8		0
 0x003b1a28	544	Fir_Respawn	1
 0x003b1c48	168	Fir_Init	1
 0x003b1cf0	512	Fir_Update	1
+0x003b1ef0	8		0
 0x003b1ef8	256	FirGroup_Init	1
 0x003b1ff8	380	FirGroup_Update	1
+0x003b2178	8		0
 0x003b2180	3520	DoorFence_OnHit	1
 0x003b2f40	536	DoorFence_Init	1
 0x003b3158	196	DoorFence_OnMessage	1
@@ -9936,6 +9977,7 @@
 0x003b5440	88	DynDoorBnstr_Update	1
 0x003b5498	332	DynDoorChainS_Init	1
 0x003b55e8	480	DynDoorChainS_OnMessage	1
+0x003b57c8	8		0
 0x003b57d0	384	DynDoorFenceO_Init	1
 0x003b5950	2180	DynDoorFenceO_OnMessage	1
 0x003b61d8	68	DynDoorFenceO_Update	1
@@ -9972,25 +10014,34 @@
 0x003c1610	1352	DynChand_OnMessage	1
 0x003c1b58	764	DynChand_Update	1
 0x003c1e58	396	SpawnDelayed_Init	1
+0x003c1fe8	8		0
 0x003c1ff0	436	SpawnDelayed_Update	1
 0x003c21a8	832	SubDebris_Init	1
 0x003c24e8	1376	SubDebris_Update	1
 0x003c2a48	108	SubDebris_OnMessage	1
 0x003c2ab8	228	PartWater_Init	1
+0x003c2ba0	8		0
 0x003c2ba8	1228	PartWater_Update	1
 0x003c3078	364	SubWater_Init	1
+0x003c31e8	8		0
 0x003c31f0	596	SubWater_Update	1
 0x003c3448	1888	PartExplosion_Init	1
+0x003c3ba8	8		0
 0x003c3bb0	84	PartExplosion_Update	1
 0x003c3c08	408	SubExplosionEmbers_Init	1
+0x003c3da0	8		0
 0x003c3da8	756	SubExplosionEmbers_Update	1
 0x003c40a0	368	SubBurn_Init	1
 0x003c4210	108	SubBurn_OnMessage	1
 0x003c4280	768	SubBurn_Update	1
 0x003c4580	1224	SubFireballEmitter_Init	1
+0x003c4a48	8		0
+0x003c4a50	8		0
 0x003c4a58	468	SubFireball_Init	1
+0x003c4c30	8		0
 0x003c4c38	376	SubFireball_Update	1
 0x003c4db0	512	SubFlames_Init	1
+0x003c4fb0	8		0
 0x003c4fb8	504	SubFlames_Update	1
 0x003c51b0	152	SubExplosionLight_Init	1
 0x003c5248	40	SubExplosionLight_OnMessage	1
@@ -10043,6 +10094,7 @@
 0x003c87a0	104	Flame_Update	1
 0x003c8808	360	FireLight_Init	1
 0x003c8970	432	FireLight_OnMessage	1
+0x003c8b20	8		0
 0x003c8b28	5196	FireParticle_SetUpByName	1
 0x003c9f78	216	Fire_Stop	1
 0x003ca050	232	Fire_Init	1
@@ -10063,6 +10115,7 @@
 0x003cb220	3700	DynTable_OnHit	1
 0x003cc098	192	DynTable_OnMessage	1
 0x003cc158	616	DynTable_Update	1
+0x003cc3d0	316		0
 0x003cc510	316	DynBarLamp_OnMessage	1
 0x003cc650	44	DynBarLamp_Update	1
 0x003cc680	352	SubBarlampGlow_Init	1
@@ -10073,8 +10126,11 @@
 0x003cca88	1244	DynExplodingCar_OnMessage	1
 0x003ccf68	1884	DynExplodingCar_Update	1
 0x003cd6c8	228	SubMovingLight_Init	1
+0x003cd7b0	8		0
+0x003cd7b8	8		0
 0x003cd7c0	808	DynFluorSwing_Init	1
 0x003cdae8	156	DynFluorSwing_OnMessage	1
+0x003cdb88	8		0
 0x003cdb90	276	DynLizzies_Init	1
 0x003cdca8	15184	DynLizzies_OnMessage	1
 0x003d17f8	56	DynLizzies_Update	1
@@ -10095,6 +10151,7 @@
 0x003d38e0	136	OnOffLight_Update	1
 0x003d3968	388	DynOnOff_Init	1
 0x003d3af0	300	DynOnOff_OnMessage	1
+0x003d3c20	8		0
 0x003d3c28	260	DynPile_Init	1
 0x003d3d30	808	DynPile_OnMessage	1
 0x003d4058	164	DynPile_Update	1
@@ -10102,10 +10159,14 @@
 0x003d41f8	1772	DynWalktalk_OnMessage	1
 0x003d48e8	808	DynWalktalk_Update	1
 0x003d4c10	436	SubBloodSpray_Init	1
+0x003d4dc8	8		0
 0x003d4dd0	400	SubBloodSpray_Update	1
 0x003d4f60	356	PartBloodSpray_Init	1
+0x003d50c8	8		0
 0x003d50d0	572	PartBloodSpray_Update	1
 0x003d5310	160	PartCokeMachine_Init	1
+0x003d53b0	8		0
+0x003d53b8	8		0
 0x003d53c0	288	CoplightsLensFlare_Init	1
 0x003d54e0	88	CoplightsLensFlare_OnMessage	1
 0x003d5538	220	CoplightsLensFlare_Update	1
@@ -10116,9 +10177,14 @@
 0x003d5f68	1304	PartCopcarLights_OnMessage	1
 0x003d6480	88	PartCopcarLights_Update	1
 0x003d64d8	3068	SubExplosionGroup_Init	1
+0x003d70d8	8		0
+0x003d70e0	8		0
 0x003d70e8	248	PartExplosionScreenShake_Init	1
+0x003d71e0	8		0
 0x003d71e8	72	PartExplosionScreenShake_Update	1
 0x003d7230	144	PartFear_Init	1
+0x003d72c0	8		0
+0x003d72c8	8		0
 0x003d72d0	464	SubFiretruckLight_Init	1
 0x003d74a0	200	SubFiretruckLight_OnMessage	1
 0x003d7568	272	SubFiretruckLight_Update	1
@@ -10129,29 +10195,44 @@
 0x003d7c38	160	PartFirePlume_OnMessage	1
 0x003d7cd8	344	PartFirePlume_Update	1
 0x003d7e30	212	PartGarbageFlies_Init	1
+0x003d7f08	8		0
 0x003d7f10	620	PartGarbageFlies_Update	1
 0x003d8180	176	PartGarbageFliesNs_Init	1
+0x003d8230	8		0
+0x003d8238	8		0
 0x003d8240	160	PartGasmeter_Init	1
+0x003d82e0	8		0
+0x003d82e8	8		0
 0x003d82f0	220	PartGeneratorSparks_Init	1
+0x003d83d0	8		0
 0x003d83d8	536	PartGeneratorSparks_Update	1
 0x003d85f0	168	SubGhostLight_Init	1
 0x003d8698	152	SubGhostLight_OnMessage	1
 0x003d8730	232	SubGhostLight_Update	1
 0x003d8818	188	PartGhostLight_Init	1
 0x003d88d8	196	PartGhostLight_OnMessage	1
+0x003d89a0	8		0
 0x003d89a8	188	GunLightFlash_Init	1
+0x003d8a68	8		0
 0x003d8a70	68	GunLightFlash_Update	1
 0x003d8ab8	204	SubMuzzleFlash_Init	1
+0x003d8b88	8		0
 0x003d8b90	68	SubMuzzleFlash_Update	1
 0x003d8bd8	444	PartGunFlash_Init	1
+0x003d8d98	8		0
 0x003d8da0	980	PartGunFlash_Update	1
 0x003d9178	160	PartLargeAc_Init	1
+0x003d9218	8		0
+0x003d9220	8		0
 0x003d9228	160	PartLargeAcTwo_Init	1
+0x003d92c8	8		0
+0x003d92d0	8		0
 0x003d92d8	168	SubLavaLight_Init	1
 0x003d9380	152	SubLavaLight_OnMessage	1
 0x003d9418	236	SubLavaLight_Update	1
 0x003d9508	188	PartLavaLight_Init	1
 0x003d95c8	196	PartLavaLight_OnMessage	1
+0x003d9690	8		0
 0x003d9698	120	SubwayLoop_Init	1
 0x003d9710	140	SubwayLoop_OnMessage	1
 0x003d97a0	272	SubwayLoop_Update	1
@@ -10159,27 +10240,40 @@
 0x003d9978	208	PartLevel2Subway_OnMessage	1
 0x003d9a48	596	PartLevel2Subway_Update	1
 0x003d9ca0	168	PartLightBugs_Init	1
+0x003d9d48	8		0
 0x003d9d50	632	PartLightBugs_Update	1
 0x003d9fc8	172	PartMotorbikeGang_Init	1
 0x003da078	224	PartMotorbikeGang_OnMessage	1
 0x003da158	288	PartMotorbikeGang_Update	1
 0x003da278	160	PartOpenAirVent_Init	1
+0x003da318	8		0
+0x003da320	8		0
 0x003da328	236	PartOrangeNeon_Init	1
+0x003da418	8		0
+0x003da420	8		0
 0x003da428	196	PartPelhamSubway_Init	1
 0x003da4f0	208	PartPelhamSubway_OnMessage	1
 0x003da5c0	596	PartPelhamSubway_Update	1
 0x003da818	236	PartPinkNeon_Init	1
+0x003da908	8		0
 0x003da910	44	PartPinkNeon_Update	1
 0x003da940	156	PartRidecartSound_Init	1
 0x003da9e0	208	PartRidecartSound_OnMessage	1
 0x003daab0	88	PartRidecartSound_Update	1
 0x003dab08	160	PartRotateVent_Init	1
+0x003daba8	8		0
+0x003dabb0	8		0
 0x003dabb8	160	PartSmallAc_Init	1
+0x003dac58	8		0
+0x003dac60	8		0
 0x003dac68	136	PartSShackDustPuff_Init	1
 0x003dacf0	200	PartSShackDustPuff_OnMessage	1
+0x003dadb8	8		0
 0x003dadc0	364	SubwaySpark_Init	1
+0x003daf30	8		0
 0x003daf38	524	SubwaySpark_Update	1
 0x003db148	188	SubwaySparkLightFlash_Init	1
+0x003db208	8		0
 0x003db210	132	SubwaySparkLightFlash_Update	1
 0x003db298	204	PartSSubwaySparks_Init	1
 0x003db368	376	PartSSubwaySparks_OnMessage	1
@@ -10188,54 +10282,84 @@
 0x003db5c0	208	PartTrainSound_OnMessage	1
 0x003db690	1204	PartTrainSound_Update	1
 0x003dbb48	416	SubTrainSplat_Init	1
+0x003dbce8	8		0
 0x003dbcf0	804	SubTrainSplat_Update	1
 0x003dc018	332	SubBloodGout_Init	1
+0x003dc168	8		0
 0x003dc170	508	SubBloodGout_Update	1
 0x003dc370	364	SubTrainSplatMist_Init	1
+0x003dc4e0	8		0
 0x003dc4e8	364	SubTrainSplatMist_Update	1
 0x003dc658	1200	PartTrainSplat_Init	1
+0x003dcb08	8		0
 0x003dcb10	84	PartTrainSplat_Update	1
 0x003dcb68	160	PartTransFive_Init	1
+0x003dcc08	8		0
+0x003dcc10	8		0
 0x003dcc18	160	PartTransFour_Init	1
+0x003dccb8	8		0
+0x003dccc0	8		0
 0x003dccc8	160	PartTransOne_Init	1
+0x003dcd68	8		0
+0x003dcd70	8		0
 0x003dcd78	160	PartTransThree_Init	1
+0x003dce18	8		0
+0x003dce20	8		0
 0x003dce28	160	PartTransTwo_Init	1
+0x003dcec8	8		0
+0x003dced0	8		0
 0x003dced8	392	PartTv_Init	1
+0x003dd060	8		0
 0x003dd068	292	PartTv_Update	1
 0x003dd190	300	SubTvLight_Init	1
 0x003dd2c0	180	SubTvLight_OnMessage	1
 0x003dd378	444	SubTvLight_Update	1
 0x003dd538	260	PartTvLight_Init	1
+0x003dd640	8		0
+0x003dd648	8		0
 0x003dd650	236	UrineSpray_Init	1
+0x003dd740	8		0
 0x003dd748	188	UrineSpray_Update	1
 0x003dd808	176	PartUrineSpray_Init	1
 0x003dd8b8	124	PartUrineSpray_OnMessage	1
 0x003dd938	592	PartUrineSpray_Update	1
 0x003ddb88	224	PartUrineStain2_Init	1
+0x003ddc68	8		0
 0x003ddc70	252	PartUrineStain2_Update	1
 0x003ddd70	836	RotatingObject_Init	1
 0x003de0b8	796	RotatingObject_OnMessage	1
 0x003de3d8	608	RotatingObject_Update	1
 0x003de638	152	SubBlightGlow_Init	1
+0x003de6d0	8		0
+0x003de6d8	8		0
 0x003de6e0	372	SubBlight_Init	1
 0x003de858	152	SubBlight_OnMessage	1
+0x003de8f0	8		0
 0x003de8f8	340	SubFlamingDebris_Init	1
 0x003dea50	312	SubFlamingDebris_OnMessage	1
 0x003deb88	68	SubFlamingDebris_Update	1
 0x003debd0	176	SubCarSteamEmitter_Init	1
+0x003dec80	8		0
 0x003dec88	256	SubCarSteamEmitter_Update	1
 0x003ded88	360	SubCarRubble_Init	1
+0x003deef0	8		0
 0x003deef8	320	SubCarRubble_Update	1
 0x003df038	364	SubCarSparks_Init	1
+0x003df1a8	8		0
 0x003df1b0	120	SubCarSparks_Update	1
 0x003df228	1116	SubCarSparkEmitter_Init	1
+0x003df688	8		0
+0x003df690	8		0
 0x003df698	148	SubCarDamage_Init	1
 0x003df730	1412	SubCarDamage_OnMessage	1
+0x003dfcb8	8		0
 0x003dfcc0	340	SubFireLight_Init	1
 0x003dfe18	200	SubFireLight_OnMessage	1
 0x003dfee0	224	SubFireLight_Update	1
 0x003dffc0	224	SubFireSmoke_Init	1
+0x003e00a0	8		0
 0x003e00a8	500	SubFireSmoke_Update	1
+0x003e02a8	264		0
 0x003e03b0	40	SubNeonLight_OnMessage	1
 0x003e03d8	348	SubNeonLight_Update	1
 0x003e0538	268	SubNeonLight2_Init	1
@@ -10248,15 +10372,19 @@
 0x003e0d00	320	SubPoliceLight_OnMessage	1
 0x003e0e40	268	SubPoliceLight_Update	1
 0x003e0f50	760	Spark_Init	1
+0x003e1248	8		0
 0x003e1250	480	Spark_Update	1
 0x003e1430	188	SparkLightFlash_Init	1
+0x003e14f0	8		0
 0x003e14f8	128	SparkLightFlash_Update	1
 0x003e1578	196	SubSparkEffect_Init	1
+0x003e1640	8		0
 0x003e1648	748	SubSparkEffect_Update	1
 0x003e1938	204	SubSwingingObj_Init	1
 0x003e1a08	540	SubSwingingObj_OnMessage	1
 0x003e1c28	692	SubSwingingObj_Update	1
 0x003e1ee0	492	SubThrownDustPuff_Init	1
+0x003e20d0	8		0
 0x003e20d8	240	SubThrownDustPuff_Update	1
 0x003e21c8	2048	TaskTypes_InitConstantTables	1
 0x003e29c8	32	TaskTypes_StaticInit	1
@@ -10264,17 +10392,22 @@
 0x003e2d90	712	GlassScript_OnMessage	0
 0x003e3058	136	GlassScript_Update	1
 0x003e30e0	740	SubColouredGlass_Init	1
+0x003e33c8	8		0
 0x003e33d0	752	SubColouredGlass_Update	1
 0x003e36c0	812	SubColouredShards_Init	1
+0x003e39f0	8		0
 0x003e39f8	836	SubColouredShards_Update	1
 0x003e3d40	752	Miniglass_Init	1
 0x003e4030	40	Miniglass_OnMessage	1
 0x003e4058	1160	Miniglass_Update	1
 0x003e44e0	844	GlassTest_Init	0
+0x003e4830	8		0
 0x003e4838	932	GlassTest_Update	0
 0x003e4be0	204	SubGlass_Init	1
+0x003e4cb0	8		0
 0x003e4cb8	984	SubGlass_Update	1
 0x003e5090	208	SubStainedGlass_Init	1
+0x003e5160	8		0
 0x003e5168	2700	SubStainedGlass_Update	1
 0x003e5bf8	260	RadarDot_Init	1
 0x003e5d00	428	RadarDot_SetBlipMode	1
@@ -10315,20 +10448,25 @@
 0x003e81a8	52	SmallLight_Update	1
 0x003e81e0	172	PartSmallLight_Init	1
 0x003e8290	364	PartSmallLight_OnMessage	1
+0x003e8400	8		0
 0x003e8408	168	Strober_Init	1
 0x003e84b0	100	Strober_OnMessage	1
 0x003e8518	156	Strober_Update	1
 0x003e85b8	192	PartStrobeRed_Init	1
 0x003e8678	264	PartStrobeRed_OnMessage	1
+0x003e8780	8		0
 0x003e8788	152	SubwayLight_Init	1
 0x003e8820	100	SubwayLight_OnMessage	1
+0x003e8888	8		0
 0x003e8890	428	SubwayLensflare_Init	1
+0x003e8a40	8		0
 0x003e8a48	364	SubwayLensflare_Update	1
 0x003e8bb8	296	PartSubwayLight_Init	1
 0x003e8ce0	100	PartSubwayLight_OnMessage	1
 0x003e8d48	196	PartSubwayLight_Update	1
 0x003e8e10	156	PartSmallerLight_Init	1
 0x003e8eb0	232	PartSmallerLight_OnMessage	1
+0x003e8f98	8		0
 0x003e8fa0	828	DynIcon_Init	1
 0x003e92e0	240	DynIcon_Update	1
 0x003e93d0	160	DynIcon_SetColourFade	1
@@ -10374,16 +10512,21 @@
 0x003ebae8	136	DynMotelNeon_OnMessage	1
 0x003ebb70	872	DynMotelNeon_Update	1
 0x003ebed8	272	SubPaintSplat_Init	1
+0x003ebfe8	8		0
 0x003ebff0	356	SubPaintSplat_Update	1
 0x003ec158	572	PaintSplat_Init	1
+0x003ec398	8		0
 0x003ec3a0	348	PaintSplat_Update	1
 0x003ec500	996	SubPlasterDrop_Init	1
+0x003ec8e8	8		0
+0x003ec8f0	8		0
 0x003ec8f8	400	FlashingLight_RelayNearby	1
 0x003eca88	588	SubFlashingLight_Init	1
 0x003eccd8	240	SubFlashingLight_OnMessage	1
 0x003ecdc8	432	SubFlashingLight_Update	1
 0x003ecf78	144	PartPlasterDrop_Init	1
 0x003ed008	956	PartPlasterDrop_OnMessage	1
+0x003ed3c8	8		0
 0x003ed3d0	464	DynSkullGlow_Init	1
 0x003ed5a0	112	DynSkullGlow_OnMessage	1
 0x003ed610	264	DynSkullGlow_Update	1
@@ -10504,8 +10647,10 @@
 0x003f72c8	176	SteamLarge_OnMessage	1
 0x003f7378	384	SteamLarge_Update	1
 0x003f74f8	128	SubHoodSmoke_Init	1
+0x003f7578	8		0
 0x003f7580	508	SubHoodSmoke_Update	1
 0x003f7780	176	SubCarSteam_Init	1
+0x003f7830	8		0
 0x003f7838	1088	SubCarSteam_Update	1
 0x003f7c78	400	OminousSmoke_Init	1
 0x003f7e08	176	OminousSmoke_OnMessage	1
@@ -10566,6 +10711,7 @@
 0x00404c48	2484	DynMolotov_OnMessage	1
 0x00405600	708	DynMolotov_Update	1
 0x004058c8	312	MolotovSmoke_Init	1
+0x00405a00	8		0
 0x00405a08	460	MolotovSmoke_Update	1
 0x00405bd8	188	SubMolotovLight_Init	1
 0x00405c98	248	SubMolotovLight_OnMessage	1
@@ -13595,6 +13741,8 @@
 0x004e8068	152	TutorialQueueList_Clear	1
 0x004e8100	156	TutorialQueueList_Delete	1
 0x004e81a0	156	HintBoxQueue_Delete	1
+0x004e8248	20		0
+0x004e8260	8		0
 0x004e8270	124	SafeDelete_OptionGridShutdown	1
 0x004e82f0	124	SafeDelete_OptionGridShutdown2	1
 0x004e8370	416	OptionGridAddItem_VecInsertAux	1
@@ -13682,6 +13830,7 @@
 0x004ec518	104	ANHudPanel2_DestroyWidget	1
 0x004ec580	104	ANHudPanel3_DestroyWidget	1
 0x004ec5e8	104	ANHudPanel4_DestroyWidget	1
+0x004ec650	16	ANHud_SetPlayer	1
 0x004ec660	932	PlayerHUD_DeletingDtor	1
 0x004eca20	416	GameStatsAddLevel_VecInsertAux	1
 0x004ecbc0	164	StatLevelSort_PushHeap	1
@@ -13714,6 +13863,8 @@
 0x004edb38	112	HandleArray16_PruneDead	1
 0x004edba8	372	HandleArray16_SortByDistance	1
 0x004edd20	32	HandleArray16_SortNearest	1
+0x004edd40	8	Brain_StubThink	0
+0x004edd48	8	Brain_StubOnEvent	0
 0x004edd50	180	Brain_ConstructMembers	1
 0x004ede08	192	HandleArray16_NearestHandle	1
 0x004edec8	48	ObjFilterHasFlags_DeletingDtor	1
@@ -13722,6 +13873,7 @@
 0x004edf58	48	ObjFilterNearestWithFlags_DeletingDtor	1
 0x004edf88	48	ObjFilterVandalisable_DeletingDtor	1
 0x004edff0	48	ObjFilter_DeletingDtor	1
+0x004eef40	8	MoveAction_Destroy	0
 0x004ef2a8	48	TacticType1a_DeletingDtor	1
 0x004ef2d8	8	TacticType1a_GetType	1
 0x004ef2e0	44	TacticType1a_IsCombatType	1

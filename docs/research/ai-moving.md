@@ -1,22 +1,76 @@
+---
+kind: topic
+system: ai
+owns:
+  functions: [
+    "0x002221e0", "0x00243848", "0x0024fbf8", "0x00250708", "0x00250760", "0x00251070", "0x002511c8", "0x002513a8",
+    "0x00251680", "0x002517b0", "0x00251890", "0x00251a70", "0x00288cc8", "0x00289010", "0x00289138", "0x00289ed0",
+    "0x0028a248", "0x0028aac0", "0x0028ab28", "0x0029a8c0", "0x0029aa88", "0x0029b4b8", "0x0029b6d8", "0x0029e5d8",
+    "0x0029eb38", "0x002fb9e8", "0x002fc158", "0x002fc330", "0x002fc420", "0x002fc560", "0x002fc5c0", "0x002fcd90",
+    "0x002fcf50", "0x004eef40",
+  ]
+---
 # AI moving: gaits, path planning, routes and steering {#moving}
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). Static reading in Ghidra;
-every claim is confirmed (code) at the cited address unless it says otherwise, as on [AI humans](ai.md), which this page
-was split from because that page had grown too large. The overview of the brain, its goals and its actions stays on [AI
-humans](ai.md#brain).
+Verified against: `SLUS_212.15` (NTSC-U); runtime claims cite run records or, for the older ones, How this was checked.
 
-An AI moves by writing brain fields, never a stick: `+0x110` the heading to move along, `+0x114` the speed (through
-`0x0028ab28`; `0x0028aac0(brain, 0)` stops), `+0x90` the point aimed at and `+0x118` its radius; the human's control
-(`Human_UpdateControl`) moves it from those: speeds, turn limits, start and turn clips are on
-[Characters](characters.md#ai-locomotion). A gait's speed is `Human_SpeedForGait` (`0x0022ae40`): 1.6286 m/s walking,
-7.8012 m/s running. Confirmed (runtime): the civilian's per-player stick magnitude stayed 0 through its move and
-move-to-human actions; only the attack action wrote a stick (1.0, for throws).
+## Summary
 
-From 8 m behind the player (confirmed (runtime)): a turn on the spot (clip 398), the run start 414, the run 410 at
-7.80 m/s, then at 1.29 m a charge (`0x20`). Closer, the move-to-human action walks in the fight-stance clips 372-380 at
-about 2.3 m/s.
+An AI human walks, runs and sprints to where its goals send it, round the walls and fences of the level and round
+the people in its way, and in a fight shuffles round its target. It never touches a stick: a goal or action writes a
+heading, a speed and an aim point into the brain, and the human's control turns that into movement. This page is that
+movement: the gaits and their speeds, the turn limits, the move action and its corner speed, the fight's footwork
+(MoveMelee), path planning over the level's path data, following a route with its climbs and jumps, the neighbour
+sectors, the steering round other humans, giving way and the waypoint queues.
 
-## Gaits and speeds {#ai-gaits}
+How it works, in a paragraph: a move action asks for a route only when the straight line to its point is not walkable
+on the path polygons; A\* over the level's route nodes gives one, which the follower walks waypoint by waypoint,
+skipping what it can see past, climbing and jumping on the links that say so. Each update the steering may bend the
+walk round the human most in the way, and the corner speed slows a runner before a turn too tight for his gait.
+
+What this page is not: the brain and its goals are on [AI humans](ai/index.md); the human's own locomotion, clips and
+speeds on [Characters](characters.md#ai-locomotion); the level's path data on [Level loading](level-loading.md#path-data);
+holes, waypoint claims and jump legs on [AI pathing](ai-pathing.md).
+
+## Map
+
+| Behaviour | Function | Section |
+| --- | --- | --- |
+| A gait's speed, the speed control | `0x0028aac0` `Brain_SetMoveGait`, `0x00243848` `Human_UpdateControl` | [Gaits and speeds](#ai-gaits) |
+| The turn limit | `0x002213d8` `Human_MaxTurn` | [Turning](#ai-turn) |
+| Moving to a point | `0x002fb9e8` `MoveAction_Init`, `0x002fc420` `MoveAction_Start`, `0x002fc5c0` `MoveAction_Update` | [The move action](#move-action) |
+| Braking for corners | `0x002fc158` `MoveAction_CornerSpeed`, `0x002fcd90` `Move_CornerSpeedLimit` | [The corner speed](#corner-speed) |
+| The fight's footwork | `0x002fcf50` `MoveToHumanAction_Init` | [MoveMelee](#move-melee) |
+| Asking for a route, A\* and building it | `0x0029a8c0` `Route_Request`, `0x00251a70` `Route_AStar`, `0x002513a8` `Route_Build` | [Path planning](#path-planning) |
+| The walkable line | `0x0024fbf8` `Nav_IsWalkableLine` | [Path planning](#path-planning) |
+| Following a route | `0x0029aa88` `Route_Follow` | [Following a route](#route-follow) |
+| Who stands round a human | `0x0029e5d8` `Sectors_Update` | [Neighbour sectors](#neighbour-sectors) |
+| Steering round humans | `0x00289138` `Human_SteerAroundHumans` | [Steering](#steering) |
+| Stepping aside | `0x0028a248` `Brain_PushAside`, `0x00289ed0` `Brain_GiveWayTo` | [Giving way](#giving-way) |
+| Queues at choke edges | `0x00299778` | [Waypoint queues](#queues) |
+
+The entry points are the move actions' Start and Update, which `Brain_RunActions` calls
+([AI humans](ai/index.md#update-goals)), and `Human_UpdateControl`, the human's control. Confirmed (code) at
+`0x0028fe28` and `0x00243848`.
+
+## Data
+
+| Field | Meaning | Evidence |
+| --- | --- | --- |
+| brain `+0x110` | the heading to move along, written by the move actions (`MoveAction_Update` `0x002fc5c0`) | confirmed (code) |
+| brain `+0x114` | the speed asked for, through `Brain_SetMoveSpeed` (`0x0028ab28`); `Brain_SetMoveGait(brain, 0)` (`0x0028aac0`) stops | confirmed (code) |
+| brain `+0x90` / `+0x118` | the point aimed at and its radius (`MoveAction_Update` `0x002fc5c0`) | confirmed (code) |
+| brain `+0xa0` | the steering state ([Steering](#steering)) | confirmed (code) |
+| brain `+0xe0` | the route state ([Following a route](#route-follow)) | confirmed (code) |
+| brain `+0x284` | why the last move failed: 1 no polygon or route, 2 or 4 an edge, 3 stuck (`MoveAction_CheckStuck` `0x002fc330`) | confirmed (code) |
+
+The human's control (`Human_UpdateControl` `0x00243848`) moves him from those fields: speeds, turn limits, start and
+turn clips are on [Characters](characters.md#ai-locomotion). Confirmed (code) at `0x00243848`. The sector record is
+under [Neighbour sectors](#neighbour-sectors).
+
+## Behaviour
+
+### Gaits and speeds {#ai-gaits}
 
 An AI never writes a stick: a goal or action sets the brain's move speed `+0x114`, usually from a **gait**, and the
 human's control turns that into velocity ([Turning](#ai-turn), below for the speed). Confirmed (code) at the
@@ -40,7 +94,8 @@ addresses cited.
 | 5 | sprint | `+0x17c` | 10.245 |
 | (stance) | fight-stance walk | `+0x164` | 3.429 (clip 380; 372 for an AI with turn boost ≤ 0, [brain bytes](ai-gangs.md#brain-boosts)) |
 
-The speeds are each class's own clip speeds; Rembrandt's are confirmed (runtime) on [Characters](characters.md).
+The speeds are each class's own clip speeds; Rembrandt's were read at run time ([Characters](characters.md)). What a
+civilian's move looked like in a run: [How this was checked](#runtime-civilian-move).
 
 **The gait each goal asks for** (the gait argument of its move actions; confirmed (code) at each Process):
 
@@ -50,7 +105,7 @@ The speeds are each class's own clip speeds; Rembrandt's are confirmed (runtime)
 | 2 (walk) | pedestrians and their flags (`0x69`, PedFlag, AreaWalker, Hooker, Peddler), StandIdle, Mark, Scout, PathScout, Backoff, Ring, StandGround, Confront, CopPatrol, CopInteract, CopperGuardArrested, BigThrower's hold, the walk back of HoldPosition |
 | 3 (jog) | ChaseSupport (3 m), GetItem within 3 m of the object, BigThrower, StationaryShooter's return, Hide near the leader |
 | 4 (run) | EngageEnemy, [GoalRiot](ai-scripting.md#riot), Investigate, Respond, RiotCop, Tag, GrabTarget, Mace, Grabber, BigDefender, LeftTurf (back into the turf), FollowAndAttack / FollowAndDefend beyond reach, the Melee goal's GetItem |
-| 5 (sprint) | Scatter, RunFromTrain, CallGang, Hide away from the leader; EngageEnemy after a running target while stamina is above 50 % ([Sight](ai.md#sight)) |
+| 5 (sprint) | Scatter, RunFromTrain, CallGang, Hide away from the leader; EngageEnemy after a running target while stamina is above 50 % ([Sight](ai-fights.md#sight)) |
 | chosen | Shadow: the leader's gait (2 at first, 3 beyond 50 m); AvoidEnemies: 5, or 4 below 50 % power, or the goal's own; FollowFormation and FollowObject: a speed between walk and 1.25 × sprint ([follow](ai-gangs.md#warrior-follow)); Spectate: 2, or 4 when the watched man runs |
 
 **Speed control** (`Human_UpdateControl` `0x00243848`, the non-pad branch), each update, with `v*` = brain `+0x114`:
@@ -66,13 +121,15 @@ The speeds are each class's own clip speeds; Rembrandt's are confirmed (runtime)
    more than 2 m/s short, never past `w`.
 5. **Slowing**: − 32 m/s² (1.067 m/s per update) down to `w`. Diego and Vargas (classes `0x77`, `0x78`) running or
    sprinting with `w` = 0 stop at once with action 9 (a stop clip).
-6. **Far away** (detail level `+0x333` 2 or more, [The enemy scan](ai.md#enemy-scan)) and no held flag of `0x310c0880`:
+6. **Far away** (detail level `+0x333` 2 or more, [The enemy scan](ai-fights.md#enemy-scan)) and no held flag of `0x310c0880`:
    velocity = `w` along brain `+0x110`, and the heading is **set** to `+0x110` at once (no turn limit, no clips).
 7. Otherwise the turn ([Turning](#ai-turn)). **Stopped** (`w` = 0): when the heading error is above 15° and no
    flag is held, a turn on the spot starts (`Human_StartTurnOnSpot`, the clip is [Human](characters.md)'s); within
    15° nothing turns. A rear grabber turns at twice the limit and walks.
 
-## Turning {#ai-turn}
+### Turning {#ai-turn}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
 
 A human with no pad (per-player `+0x1b` = 0) is moved by `Human_UpdateControl` (`0x00243848`, the default control
 `Human_SetUpdateControl` `0x00227c48` installs), not by the stick code (`Human_PlayerLocomotion` `0x00240e38`). Each
@@ -103,7 +160,9 @@ Hz a walking AI turns 360°/s, a running one 120°/s, unboosted. Confirmed (code
 player's stance turn (`0x005101d8`), and an AI's is always `0x005101dc`'s 24° ([Characters](characters.md#ai-locomotion)).
 The rows are tested top down, so a wounded AI turns 0.375° per update even in a fight stance.
 
-## The move action {#move-action}
+### The move action {#move-action}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
 
 Vtable `0x00542f20`, confirmed (code) at the addresses cited. `MoveAction_Init` (`0x002fb9e8`) takes the radius, the
 point, the gait (its speed goes to `+0x40`), an option bit, a start delay, an object to face (`+0x3c`, 0 for none) and
@@ -155,15 +214,15 @@ a "flag kind `0x12`" bit.
         - 0 when `Route_TryClimbNear` starts an early climb.
     - So **steering never runs on climb, jump or charge legs**, nor while held at a node. It runs on walked legs
       (kinds 1, 2 and `0x10`) and on the walk up to a climb. Once a climb has started (`+0x12` = 0), the climb itself
-      holds the human (step 1's busy test, inferred).
+      holds the human (step 1's busy test, inferred from the climb's held flags).
 - Brain `+0x284` says why a move failed: 1 no polygon or no route, 2 or 4 an edge it cannot take, 3 stuck.
 - **Nothing keeps a move going between actions** (confirmed (code)). `Brain_UpdateGoals` (`0x0028fbb0`) starts
   every think with `Brain_StopMove` (`0x0028ac18`): speed `+0x114` 0 (`Brain_SetMoveGait(brain, 0)`) and heading
   `+0x110` = the human's facing; only a move action's Update (step 7 above) writes `+0x90`, `+0x110`, `+0x118` and
   the speed back, each update. **Abort** (`0x002fc560`) sets the abort bit, ends the avoidance (`0x00289108`) and
   frees the route (`0x0029aa20`); it writes none of the move fields, and **destroy** (vtable `+0x24`, `0x004eef40`)
-  is empty. So when a move is replaced (`GoalMoveToFlag`'s Resume, `0x002da550`: `Brain_ClearActions`, then
-  `Human_DropTarget` `0x00226f70`, which only clears the target) the human is asked to stand for every think in
+  is empty. So when a move is replaced (by `MoveToFlagGoal_Resume` (`0x002da550`), which clears the actions and then
+  calls `Human_DropTarget` (`0x00226f70`), which only clears the target) the human is asked to stand for every think in
   which the new action is still counting its start delay: `Action_Update` (`0x002f9e48`) takes the time since the
   brain's previous think (`+0x30`) off the delay, the first time too, and returns before the class's Update while
   any is left. `GoalMoveToFlag`'s delay is `Random_IntRange(0, 250)` ms, so a draw within one update (about 33 ms)
@@ -171,7 +230,7 @@ a "flag kind `0x12`" bit.
   slows a walk to rest in two updates and restarts it at once at the walking speed
   ([Characters](characters.md#ai-locomotion)).
 
-## The corner speed {#corner-speed}
+### The corner speed {#corner-speed}
 
 How fast a routed AI may take the next corners. Confirmed (code) at the addresses cited; not measured.
 
@@ -213,11 +272,13 @@ How fast a routed AI may take the next corners. Confirmed (code) at the addresse
 So a running AI brakes for a tight corner by the time the arc would leave the path polygons, and starts braking for the
 second corner at the distance a 32 m/s² stop needs.
 
-## The move-to-human action (MoveMelee) {#move-melee}
+### The move-to-human action (MoveMelee) {#move-melee}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
 
 Type 2, `MoveMelee` (vtable `0x005431e0`), made by `MoveToHumanAction_Init(near, far, action, brain, human, delay,
 limit)` (`0x002fcf50`): the fight's footwork, which keeps a distance band from one human. The fight goal's approach,
-[the reposition](ai.md#fight-reposition), Spectate and Backoff use it. Confirmed (code) at the addresses cited.
+[the reposition](ai-fights.md#fight-reposition), Spectate and Backoff use it. Confirmed (code) at the addresses cited.
 
 Fields: `+0x0c` the human's handle, `+0x10` / `+0x14` near² / far², `+0x18` the side counter, `+0x1c` the radial
 counter, `+0x20` the time limit (made absolute at Start), `+0x24` "no stance" (class `+0x11b` 6 or 7,
@@ -252,7 +313,9 @@ counter, `+0x20` the time limit (made absolute at Start), `+0x24` "no stance" (c
 So a waiting attacker backs off over 10 updates when too close, runs in over 10 when too far, and circles 10 updates
 at a time to a free side, facing his man.
 
-## Path planning {#path-planning}
+### Path planning {#path-planning}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
 
 The route request (`0x0029a8c0`), with its state at brain `+0xe0` (`+0x04` the route, `+0x08` the waypoint radius,
 `+0x0c` a state, `+0x10` the waypoint index, `+0x14` an edge mask). Confirmed (code). It plans over the level's
@@ -265,8 +328,8 @@ on the ground holds a kind-4 link from 395 on a roof 4 m up, and 395 none back).
 **The edge mask** (`u16` route state `+0x14`, brain `+0xf4`) is **`0xff`** for every human: the route state's
 initialiser (`0x0029a388`) sets it, nothing in the move action or `GoalMoveToFlag` changes it, and the goals that do
 change it put `0xff` back in their End. So a scripted move admits every link kind on the disc (1, 2, 4, 8, `0x10`,
-`0x80`); only `0x100` is outside it. Confirmed (code) at the writers, and at runtime
-([Vermin's fence](#route-follow)). The other writers: `0x13` in the Start of the goals at `0x002aafd0` and
+`0x80`); only `0x100` is outside it. Confirmed (code) at the writers. The other writers: `0x13` in the Start of the
+goals at `0x002aafd0` and
 `0x002c1470`, `0xbf` (no `0x40`) after a failed move in `0x002ab4b8`, and `| 0x100` for a Warrior (brain type 3) in
 `GoalHide`'s Start (`HideGoal_StartMask` `0x002cc908`) and, in `FollowFormationGoal_Start` (`0x002dfe30`), for a
 Warrior on the levels whose level-table id (`+0x04` of the `0x84`-byte entry) is `0xe`, `0x33`, `0x34` or `0x52`.
@@ -277,7 +340,8 @@ it does is switch off the [ClimbFilter](#path-planning) extra costs in the edge 
 5: a Warrior hiding, or following on those four levels, takes climbs at their plain distance. Confirmed (code) at
 `0x00251890` and `0x002511c8`; the disc count is a check of the files.
 
-**The link kinds on the disc** (NTSC-U, all 64 `.lev` files' path data, counts only, 2026-10-11; "one-way" is a D
+**The link kinds on the disc** (NTSC-U, all 64 `.lev` files' path data, counts only, [a disc check](#disc-link-kinds);
+"one-way" is a D
 record with no record of the same kind back). The meanings are inferred from the geometry and the follower's handlers:
 
 | Kind | Links | One-way | Length in plan | Height change along the step | Meaning |
@@ -292,7 +356,7 @@ record with no record of the same kind back). The meanings are inferred from the
 No link on the disc has `0x40` or `0x100`; the charge kind `0x40` is given at run time by a breakable door or pane
 ([Objects](objects.md#nav-links)). Polygon `s16 +0x02` (summed into the area's first path at load) is non-zero in
 1,257 of the 1,754 areas, 1,251 of which own route nodes; 60 areas own nodes but have 0 there, so a request between
-two areas refuses them (inferred: "on the graph").
+two areas refuses them (inferred from the request's test: "on the graph").
 
 1. Find the human's polygon (`Human_GetNavPolygon` `0x00247958`, cached at human `+0x1b4` with its point at `+0x2b0`;
    fallbacks `0x002505b0`, `0x0024e218`; see [A point in a hole](ai-pathing.md#path-holes)). None → `+0x284` = 1, fail.
@@ -302,7 +366,8 @@ two areas refuses them (inferred: "on the graph").
    The destination's area is then `Nav_FindArea` (`0x00250708`) of the point itself, with **no fallback**: none →
    `+0x284` = 1 and the request returns 2 (the move action ends at once).
 3. Otherwise both ends must be in one polygon, or both polygons must be on the graph (polygon `s16 +0x02` ≠ 0;
-   inferred meaning). Each end's node is the nearest of its polygon's nodes (the A record's count and first index)
+   inferred from the request's test). Each end's node is the nearest of its polygon's nodes (the A record's count and
+   first index)
    that it reaches in a straight line (`0x00251150` → `0x00250e98`, `0x0024f290`), trying up to 30 by distance.
 4. **A\*** (`Route_AStar` `0x00251a70`), from the destination's node to the start's, so the parent links read in
    walking order. Confirmed (code):
@@ -377,15 +442,10 @@ polygon out of every test below, so an opened door's hole stops cutting the area
     4. A crossing: the end point needs an area. Its polygons are crossed the same way, keeping the **farthest**
        crossing, and the line passes only when the two crossing points are within 0.02 m (dist² < 0.0004): the
        segment leaves one area where it enters the next. Any edge in between, a hole's included, refuses the line.
-- **What blocks a line at a fence** is the fence's **hole** in the path polygons, not its collision. Confirmed
-  (runtime), from the path data of a `level99` state at checkpoint 3 (PCSX2 2.9.94, over the straight line Vermin's
-  `GoalMoveToFlag` asks for, (47.49, 42.97) to (46.30, 20.22); both ends lie in the street's area, whose outline is
-  polygon 0): the segment crosses two holes of that area, a 4-vertex hole of flags 7 spanning x 44.14 to 50.61 and
-  y 24.38 to 25.19 (the climbable fence, 6.5 × 0.8 m) at t = 0.78 and 0.82, and the hole of fence door 2 (x 44.93 to
-  49.50, y 30.79 to 31.56, flags 7) at t = 0.50 and 0.54. The nearest and farthest crossings are metres apart, so the
-  line is refused and a route is made ([Vermin's fence](#route-follow)). An opened door's hole gets flag 8
-  ([Objects](objects.md#nav-links)) and drops out; the fence's never does. A test that treats the area as the union
-  of its polygons (a hole counted as walkable) lets the line through.
+- **What blocks a line at a fence** is the fence's **hole** in the path polygons, not its collision: the test reads
+  only the polygons (above). An opened door's hole gets flag 8 ([Objects](objects.md#nav-links)) and drops out; the
+  fence's never does. A test that treats the area as the union of its polygons (a hole counted as walkable) lets the
+  line through. `level99`'s fence shows it ([How this was checked](#runtime-fence)).
 - **The hazard spheres** (`0x00221f80`, confirmed (code)): 64 records of `0x40` bytes at `0x0065ff50`, `+0x00` the
   centre, `+0x10` / `+0x20` its box (min / max), `+0x30` (r + 0.3)², `+0x34` (r + 0.8)², `+0x38` a word (0 from the
   only adder), `+0x3c` in use; their count is `0x00510170`, cleared at level start (`0x00217f68`). The test runs only
@@ -397,9 +457,8 @@ polygon out of every test below, so an opened door's hole stops cutting the area
   avoided, `0x00253078` → `0x00252c90`: bit 31 of every D record whose edge passes within r + 0.3, counted so overlapping
   spheres release it only once), and `0x002199c0` removes one. The only adder is `0x003a5a90`, called by the fire
   particle types (`0x003c40a0`, and `0x003c8b28` from `0x003ca050`, [Particles](particles.md)) with r random in 0.5 to
-  0.75 m: an AI's straight line refuses to run into a fire. In the checkpoint 3 state the count was 0, so
-  `0x00221f80` returned 0 at once. Confirmed (runtime) for the count; that fires are the only source is confirmed
-  (code) from the single call site.
+  0.75 m: an AI's straight line refuses to run into a fire. That fires are the only source is confirmed (code) from
+  the single call site; a run found none in `level99` ([How this was checked](#runtime-hazards)).
 - **A node in a straight line** (`0x0024f290`, the end-node search's test): refused when a hazard sphere blocks it
   (`0x00221f80`) or when the segment crosses an edge of any of the area's polygons without flag 8 or the mask (0
   there).
@@ -416,11 +475,13 @@ polygon out of every test below, so an opened door's hole stops cutting the area
 `0x00251d28` is a second A* search that stops at the first node beyond a distance outside a cone of
 directions, skipping bit-31 edges; its one caller places spawned humans out of sight ([The search](ai-gangs.md#spawner-search)).
 
-### A point in a hole {#path-holes}
+#### A point in a hole {#path-holes}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
 
 The point-in-a-hole test and its fallbacks are on [AI pathing: a point in a hole](ai-pathing.md#path-holes).
 
-## Following a route {#route-follow}
+### Following a route {#route-follow}
 
 **The route state** (brain `+0xe0`): `+0x00` the brain, `+0x04` the route, `+0x08` the waypoint radius, `+0x0c` the
 state (1 jumping, 2 dropping, 3 climbing, 4 climbing a `0x80` ledge, 5 finished), `+0x10` `s8` the waypoint index,
@@ -511,16 +572,20 @@ without being walked to: the climb itself carried the human over it. The arrival
 (`0x0023f9d0`) only ever sets `+0x11d` (when it is 0 and the front action is a move); only the move action clears it,
 and when a steering detour is running the flag ends the detour (`0x00288ad0`) instead of moving the route on.
 
-### Waypoint claims {#route-claims}
+#### Waypoint claims {#route-claims}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
 
 The 40-entry claim table (the nearer of two humans on a node goes first) is on [AI pathing: waypoint
 claims](ai-pathing.md#route-claims).
 
-## Jump legs {#route-jump}
+### Jump legs {#route-jump}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
 
 The jump and drop legs of a route are on [AI pathing: jump legs](ai-pathing.md#route-jump).
 
-## Neighbour sectors {#neighbour-sectors}
+### Neighbour sectors {#neighbour-sectors}
 
 Each human has a record of who stands round him in eight 45° sectors. The fight's footwork
 ([MoveMelee](#move-melee)), the grab and snap tries, [the steering](#steering) and giving way all read it.
@@ -569,7 +634,8 @@ steering, the fight goal's re-target and grab tries) or 500 ms (giving way). A r
    (The thresholds look like metres compared against a squared distance. What is described here is what the code
    does.)
 5. **Bit 8** is set only when the owner is an AI (human `+0x1b0` = −1). It marks a nearby player who is not already
-   part of this fight (inferred meaning). Each player human is checked (game state `+0x228`, count `+0x224`). Bit 8
+   part of this fight (inferred from the tests below). Each player human is checked (game state `+0x228`, count
+   `+0x224`). Bit 8
    is set in the player's sector when all of these hold:
     - he is not busy (`Human_IsBusy`);
     - he is within **5.5 m** (30.25 squared);
@@ -603,8 +669,9 @@ when a reader needs it (the probe byte is 1):
 | `Sectors_TurnWay` `0x0029ec90` | +1 or −1, the shorter way round from one sector to another |
 
 **A point in a sector** (`Sectors_GetPoint(distance, out, record, k)` `0x0029e350`): the owner's position plus
-*distance* along his **current** heading + *k* × 45° (not the stored `+0x40`), at his height (inferred, as for the
-probe). The steering passes 1 m ([Steering round humans](#steering), the standing case). The other caller is
+*distance* along his **current** heading + *k* × 45° (not the stored `+0x40`), at his height (inferred from
+`Vec_FromHeading`, as
+for the probe). The steering passes 1 m ([Steering round humans](#steering), the standing case). The other caller is
 `Human_DropCarried` (`0x00232c60`).
 
 **Giving way** (`Brain_GiveWayTo` `0x00289ed0`, reached only through `Brain_PushAside` `0x0028a248`) is the
@@ -632,7 +699,9 @@ the list from `Humans_FindAhead`: every human within min(2 `L`, 10 m) of the wal
 4. The blocker is the human with the smallest *t* / |*r*|. That fraction is also returned. So the test sweeps a circle
    along the relative motion over one step; it is not a corridor or a cone.
 
-## Steering round humans {#steering}
+### Steering round humans {#steering}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
 
 `Human_SteerAroundHumans` (`0x00289138`) bends a [move action](#move-action)'s walk round the one human most in the
 way. `MoveAction_Update` (`0x002fc5c0`) calls it every update with the steering state (brain `+0xa0`), the move's
@@ -670,7 +739,8 @@ override acts from the next update on, for n updates.
 
 **One call**, in order (P my position, s my speed, human `+0x1ac`):
 
-1. Not enabled, or brain `+0xec` set (inferred: held in a [waypoint queue](#queues)) → return 0. Human `+0x333` above
+1. Not enabled, or brain `+0xec` set (inferred from the queue's writes: held in a [waypoint queue](#queues)) → return 0.
+   Human `+0x333` above
    2 → avoidance off, return 0.
 2. **Between decisions**: the counter `+0x28` is read, stored back plus one, and the **old** value compared with 3 ×
    human `+0x333` (with `+0x333` = 0 it decides every update). Below it: when avoiding, aim := held point and return
@@ -693,7 +763,8 @@ override acts from the next update on, for n updates.
 8. **The blocker.** `Steering_FindBlocker` (`0x00288cc8`): of the listed humans, skipping my target (brain `+0x124`)
    and anyone behind (D · (B − P) < 0), the one whose 0.63 m disc (`0x00289d68`) a ray from P along the relative step
    (S minus his predicted step) hits first. His predicted step is his facing × 0.75 × his speed when his brain
-   `+0x04` is 0 (inferred: a player), else `Steering_ClampStep(0.75)` toward his aim (below). It returns him and
+   `+0x04` is 0 (inferred from brain type 0: a player), else `Steering_ClampStep(0.75)` toward his aim (below). It
+   returns him and
    **t** = the hit distance ÷ the relative step's length: the fraction of the 0.75 s step at which the two touch
    (1e9 for none; [the ray test](#neighbour-sectors)). No blocker → when avoiding aim := held point and return 1, else
    return 0.
@@ -783,7 +854,7 @@ override acts from the next update on, for n updates.
     with flag bit 4 (`0x10`, the result's `+0x2c`), the bit the ground snap passes on as "under cover"
     ([Collision: triangles](collision.md#triangles)). A point with no ground within 2.1 m, or on any other surface
     first, passes. So it rules out detour points on those 1,052 marked triangles, not drops; what bit 4 marks is
-    inferred. When both tests pass, avoiding := the blocker, score := t and
+    inferred from the ground snap's use of it. When both tests pass, avoiding := the blocker, score := t and
     held point := the point; then aim := X. Return 1 either way. **Note:** in cases 1-3 the point checked and held is
     the **aim the move passed in**, not X (`a2` is the aim at `0x00289cfc`), so X steers only the deciding update and
     the human then heads for the held aim until the next decision; case 0 checks and holds its own point. Inferred to
@@ -801,7 +872,9 @@ this update instead of its own; either way the aim goes to brain `+0x90` (`0x002
 `Brain_GiveWayTo` (`0x00289ed0`) and `Brain_PushAside` (`0x0028a248`) are the standing side of it: an AI standing in
 a mover's way steps into a free 45° sector round it ([Giving way](#neighbour-sectors)).
 
-## Giving way {#giving-way}
+### Giving way {#giving-way}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
 
 A standing AI in a mover's way steps aside one sector (45°) with a **GiveWay** action. Confirmed (code) at
 `Brain_GiveWayTo` (`0x00289ed0`) unless marked. The step itself, its clips and how it ends are on the Human side:
@@ -812,8 +885,8 @@ line through `point` along `step`. Its seven callers, confirmed (code) at the ca
 
 | Caller (call) | When | mover, stander | point, step |
 | --- | --- | --- | --- |
-| `Route_IsJumpLegClear` (`0x0029a3f0`, call `0x0029a66c`) | a route follower about to take a jump leg (link bit 4) | the follower, the first blocker | his position, unit(waypoint *i* − waypoint *i* − 1) |
-| `Route_IsClimbLegClear` (`0x0029a6c8`, call `0x0029a86c`) | a route follower about to take a climb leg (link bit `0x80`) | the follower, the first blocker | his position, unit(waypoint *i* − his position) |
+| `Route_IsLinkBusy` (`0x0029a3f0`, call `0x0029a66c`) | a route follower about to take a jump leg (link bit 4) | the follower, the first blocker | his position, unit(waypoint *i* − waypoint *i* − 1) |
+| `Route_IsJumpLinkBusy` (`0x0029a6c8`, call `0x0029a86c`) | a route follower about to take a climb leg (link bit `0x80`) | the follower, the first blocker | his position, unit(waypoint *i* − his position) |
 | `Gang_ClearWayForLeader` (`0x002942c8`, call `0x002945bc`) | the Warriors' follow tactic, on its timer | the gang leader, each member in his way | the leader's position, his forward |
 | `WarriorBrain_Think` (`0x003052f0`, call `0x00306004`) | a Warrior getting out of the way, every 12 thinks | the Warrior, the nearest gang mate | the Warrior's position, his forward |
 | `SaveHumanGoal_Process` (`0x002b8ad8`, call `0x002b9368`) | a rescuer within 1 m of the downed human, touching someone | the rescuer, the human he touches | the goal point, unit(goal point − rescuer) |
@@ -824,8 +897,8 @@ The answer (yes or no) is used only by `Brain_GiveWayTo`'s own recursion; every 
 
 **The two route legs** (`Route_Follow` `0x0029aa88`). For a follower with detail level `+0x333` < 2 whose claim on the
 current waypoint *i* holds (`Nav_ClaimWaypoint`), the leg out of *i* (to *i* + 1) is tested first, then the leg into
-*i* (from *i* − 1), each only when its link has bit 4 (`Route_IsJumpLegClear(route, leg end, 1)`) or bit `0x80`
-(`Route_IsClimbLegClear(route, leg end, 1)`). A 0 (blocked, or a refused claim) marks the route `+0x16`; within 2 m of
+*i* (from *i* − 1), each only when its link has bit 4 (`Route_IsLinkBusy(route, leg end, 1)`) or bit `0x80`
+(`Route_IsJumpLinkBusy(route, leg end, 1)`). A 0 (blocked, or a refused claim) marks the route `+0x16`; within 2 m of
 waypoint *i* the follower then holds there at speed 0 (`Brain_StopMove`) for this update. Both tests return 1 when clear:
 
 - the jump leg looks for humans within 1 m in plan of the segment from waypoint *n* − 1 to *n* and within 2 m in
@@ -854,7 +927,8 @@ a call that pushed someone. Nothing happens unless the gang has a leader whose s
 Then his actions are cleared (`Brain_ClearActions`, result ignored) and `Brain_PushAside(leader, him, leader's
 position, leader's forward)` runs; the function returns 1 when anyone was pushed.
 
-**A Warrior making room** (`WarriorBrain_Think`, step 9 under [The Warriors](ai.md#think-warrior)). On the thinks where
+**A Warrior making room** (`WarriorBrain_Think`, step 9 under [The Warriors](ai-brain-types.md#think-warrior)). On the
+thinks where
 step 9 runs, after the blocked-ray turn (whether or not that turned him): the nearest member of his gang
 (`HandleArray16_Nearest` on gang `+0x48`, excluding himself) is pushed when he is not busy, his actions are not
 blocked (`HumanRecord_AreActionsBlocked`), he is within 1 m, he has neither a Scatter (`0x37`) nor a HoldPosition
@@ -863,7 +937,7 @@ blocked (`HumanRecord_AreActionsBlocked`), he is within 1 m, he has neither a Sc
 **A rescuer's way** (`SaveHumanGoal_Process`, state 1: within 1.1 × the near range `+0x140` of the goal point). In the
 fight stance with no queued action: farther than 0.75 m from the goal point, an enemy (`Brain_PickBestEnemy`) is fought
 off first; else, farther than 1 m, he moves closer (gait 2, turn boost + 1). Within 1 m,
-`Human_CapsuleOverlaps(rescuer, downed)` names what his capsule touches (inferred: not the downed human).
+`Human_CapsuleOverlaps(rescuer, downed)` names what his capsule touches (inferred from the arguments: not the downed human).
 A human who is not a threat (`Brain_IsThreat`) has his actions cleared; when that
 works, `Brain_PushAside(rescuer, him, goal point, unit(goal point − rescuer))` and the rescuer queues a `Nothing`
 action of 1500 ms. When the clear is refused, the rescuer turns to face him and plays anim action `0x21`. A threat
@@ -918,10 +992,191 @@ is computed and not used.
 `Brain_PushAside(stander, that human, the stander's own position, step)`. The first yes ends the search with yes.
 So a crowd can ripple outwards, at most one level deep per call because of bit 4. With no yes, the answer is no.
 
-## Waypoint queues {#queues}
+### Waypoint queues {#queues}
 
-20 records of 0x90 at `0x006cde30` (mask `0x006ce970`), updated after the brains (`0x00299778`); inferred: queues at
+Confirmed (code) at the cited addresses unless a line says otherwise.
+
+20 records of 0x90 at `0x006cde30` (mask `0x006ce970`), updated after the brains (`0x00299778`); inferred from the
+layout: queues at
 choke edges. `0x00299538` lays up to 6 points one metre apart along the edge (`+0x00`, 16 bytes each; count `+0x88`)
 between its endpoints `+0x60` / `+0x64`, with 6 humans at `+0x68` and their "settled" flags at `+0x80`. Each update,
 humans whose brain `+0xec` is 1 or 2 keep their point and the others are reassigned (`0x00299a08` when there are more
 humans than points, else `0x00299b50`), then up to 5 passes swap pairs whose paths cross. Confirmed (code).
+
+## In Coney
+
+- **Routes** (`world::PathMap`, `RoutePlanner`): the path data decoded ([Path data](level-loading.md#path-data)), the
+  inside test, the walkable-line test, the request (the human's polygon, the straight line, the ends' nodes within 30
+  tries), A\* from the destination's node with the edge costs and the 65000 cap, the retry with `0x8c` and the jump
+  detour, and routes from a pool of 32 with the leading, shortcut (4 ahead) and trailing cuts and the nodes' use
+  counts. A brain gets the level's planner from `Brains::setPlanner` (the play mode gives one from the level file's
+  path data, `PlayScenery::pathMap`); with none, every move goes straight.
+- **Moving** (`MoveAction`, `RouteFollower`): straight when the line is walkable, else the route's waypoints (0.25 m,
+  moving on when reached and every 6th call, skipping what is in a straight line); the straight re-check every 30
+  updates; the turn on the spot beyond 30° while standing; the corner speed; the stuck test; brain `+0x284`
+  (`Brain::moveFailure`). A human its brain drives moves by the AI's own rules (`human::Human::aiLocomote`, the player's
+  locomotion unchanged): a constant turn step by gait (12° walking or standing, 6° jogging, 4° running, 2.5° sprinting,
+  0.375° wounded) times the turn boost plus one, or divided by one minus a negative boost (`Brain::setTurnBoost`,
+  [`+0x0b`](ai-gangs.md#brain-boosts)), with no easing; a speed that starts at the asked speed up to 2 m/s, gains 8 m/s²
+  (32 while more than 2 m/s short) and loses 32 m/s²; a wounded human asked to move walks. The move's corner speed
+  predicts the turn with the same steps. **Stand-in**: a standing human more than 15° off turns at the standing step
+  instead of playing turn clips 395-398. `Brain::update` clears the move first (`Brain::stopMove`, as `Brain_StopMove` starts
+  `Brain_UpdateGoals`), so the human follows only what this update's goals and actions wrote. In a fight stance (the
+  fighter locked onto a target) a human no pad drives runs `Human::aiCombatWalk`
+  ([An AI's locomotion](characters.md#ai-locomotion)), and so does a player whose pad a script took (per-player
+  `+0x1b` clear, his brain set dead), so a script's turn steers a player locked on a foe, as the workouts'
+  GoalMoveToFlag at the heavy bag needs ([Workouts](workouts.md#coney)): the facing turns to the brain's heading
+  at the AI's own stance
+  word (24°, `human::aiStanceTurn`, which the player's tuning does not change) whenever the move asks for a speed, at
+  the standing step (the stand-in above) when it stands more than 15° off, and 0.375° whatever the speed when wounded;
+  the feet go along the line to the move's point (`Brain::setMoveAim`, `+0x90`) at the combat-walk speed (the walk when
+  wounded) when it asks for more than 0.1. With no move the human keeps its facing: it does not track its target. The
+  move-to-human action aims 2 m along its way, as `MoveMelee` does. **Stand-in**: the fight goal's reposition,
+  standing within its ring, turns the human to its target (the move's heading, at speed 0), where the original's
+  band-keeping move circles him facing him; without it the `level5` bosses kept whatever facing their last attack
+  left and the pad-driven boss-fight disc test lost the fight. EngageEnemy's stop turns the human to its target
+  with the 0.3 s body turn (`Human::turnToFace`), not with the move. Only a pad's human faces its target every update.
+  Before (found 2026-10-11) the stance faced the target, so a move that had to turn first asked for speed 0 for good:
+  `level5`'s Vargas, sent to his flag by his BigBrawler with the player beside him, stood at his 67 % cap. Tests:
+  `repo:tests/ai/move_action_test.cpp` ("locked onto a target, ..." and the cases after it).
+  Every search uses the mask `0xff`; a leg of kind 8 or `0x80` is a climb: the human runs at the waypoint (gait 4) and
+  tries the player's climb start toward it each update (`PlayerRecord::climbToward`), giving up after 31 failed updates;
+  a leg whose avoid bit is set is refused, but for a charge. `level99`'s Vermin climbs his fence this way.
+- **Neighbour sectors** (`Sectors`, `repo:src/ai/sectors.h`, `Brain::sectors`): eight 45° sectors per brain (0 ahead,
+  rising anticlockwise in Coney's headings, the mirror of the game's clockwise order: **to fix**; an edge goes
+  to the lower index on the left half), rebuilt when the caller's age (1000 or 500
+  ms) has passed: each human within 1.5 m counted, the nearest kept, the flags from his squared distance (3 below 1.5,
+  1 below 2.5), the free-player flag 8 for an AI within 5.5 m; the lazy wall probe 1.5 m out at the stored heading along
+  the path data's walkable line; the readers (blocked, free, wall, cost, all clear, held by, the turn way) and the
+  point in a sector. **Coney choices**: a record never built is always rebuilt (the original's clock is far past 0);
+  a player is busy for flag 8 when not standing or with a busy record bit; with no trains, the probe's train test
+  never fails.
+- **Steering round humans** (`repo:src/ai/steering.h`, [Steering](ai-moving.md#steering)): every move action update,
+  after the route's aim and outside climb, jump and charge legs, `steerAroundHumans` finds the blocker (the 0.63 m disc
+  against the relative 0.75 s step) and passes a standing one 1 m beside him, steps 1 m aside from the contact head-on or
+  overtaking (overtaking only with right of way), goes round behind a crossing one, or yields (stop for an update,
+  match his speed, or 0.75 × for a same-way human off to the side); of two humans heading for the same route node the
+  one held there follows at 0.75 × the other's speed. A steered aim is reached within 0.3 m; speed changes go through
+  the state's override, which the move takes in place of its gait's speed from the next update. The held detour point
+  is the move's own aim, as in the original. The detour raises the turn boost by one while it lasts; a move's start
+  clears it, with the score, the detour's decision count and the slow counter seeded with the human's index. The
+  corner check is `Move_CornerSpeedLimit` as traced (the circle tangent to the facing through the point, 2R tan(ω/2)
+  per update for each gait, stepping down while a gait allows as much), and `Steering_TryDetour` refuses a point whose
+  first ground within 2.1 m below is a triangle with flag `0x10` (`groundProbeBelow`). The sector a standing AI gives
+  way into is chosen (s, s+1, s+2, s−1, s+3, s+4, s−2 from straight off the mover's path, in a record at most 500 ms
+  old). **Coney choices**: the detail level is 0, so a decision is made every update; a speed tie goes to the lower
+  brain slot, and the brain's slot stands for the human's index; the mover's line for giving way is unbounded.
+  **Stand-in**: with no waypoint claims (`Nav_ClaimWaypoint`), "held at the node" (route state `+0x16`) is read as
+  "he is nearer the shared node than I am", the human the claim would keep. **Left out**: the waypoint claims and
+  queues.
+- **Giving way** (`repo:src/ai/give_way.h`, [Giving way](ai-moving.md#giving-way); the step in `repo:src/human/step_control.h`,
+  [Characters: Step control](characters.md#step-control)): `pushAside` (yes while a GiveWay lives, no inside another
+  push-aside, both brains marked for the call) and `giveWayTo` (an AI's or a "dead" brain, no threat either way, the
+  stander idle under his control); the first free sector gets a `GiveWayAction` on the facing + sector × 45° after
+  0-124 ms, dashing (turn boost + 1) from a player at a jog or faster, else the human nearest in each sector is asked
+  in turn. `TakeStepAction` stops the move and enters the human's step control, which waits while he is busy, then
+  plays one clip (the fight stance's shuffle while locked on, the step, or the dash with a boost) holding `0x80000`
+  and turns him to its end facing over half of it; the action ends with the clip. The script's `ActGiveWay` asks a
+  human with fewer than 8 actions to give way to the other along his facing. Callers so far: `ActGiveWay` only.
+  **Coney's readings**: the side clip is the one toward the heading (so a step to the left plays the left clip); the
+  step's heading goes to the step control directly, not through the brain's heading; grabbed, grabbing or in a hold
+  stand for the step's refusing state bits `0x180f3ff0`. **Coney choice**: every abort is the polite one. A
+  finished action is aborted before it is freed (`Action_AbortAndDestroy`), so the boost goes back in Abort alone.
+  **Stand-ins**: the 2 s look at the mover (no head look-ats); the push sphere stays on during the step; a Warrior's
+  `+0x2e5` mode in the threat test; brain flag
+  `+0xcc` bit 2. **Left out**: the other callers (the route's busy links, `Gang_ClearWayForLeader`,
+  `WarriorBrain_Think`, `SaveHumanGoal_Process`).
+- **Disc check (NTSC-U, counts only):** `coney_tests "[disc][routes]"` decodes all 64 levels' path data; 42,373 of the
+  43,234 route nodes lie inside the polygon that owns them. Of 500 seeded pairs of `level99`'s 415 nodes, 32 are a
+  straight line, 269 routed (3,208 route nodes), 34 refused (a polygon off the graph), 162 not linked at all over
+  the default mask's links, none lost by the search, and 3 lost at the ends (the check has no ground probe, so a node
+  over another floor finds the wrong polygon). Of 300 seeded pairs of linked nodes on each of `level80`, `level87` and
+  `level99`, the search finds every one but `level80`'s two routes of more than 128 nodes.
+
+**Coney choices for moving.** The inside test counts an edge going down in y as +1 (the sign under which the route
+nodes lie in their polygons; the clockwise polygons then contain nothing). A polygon's A record takes the next nodes
+in order (the counts add up to the C records in every file; `+0x08` does not always hold the running index).
+The search holds 1000 nodes open and 3000 closed, fails a route of more than 128 nodes and costs a step as the
+original does ([Pathing: status and fixes](ai-pathing.md#pathing-fixes), items 1 and 2). `0x0051059c` is 1 and
+`0x005105a0` 0. An end off every polygon counts on the nearest within 1 m and takes its nearest node; the shortcut
+takes any edge that links back. The walkable line crosses every edge of the two areas rather than the slab lists',
+finds the start's area from the point, and has no hazard spheres (Coney has no fire to add them). A point's area
+(the walkable line's ends and the request's start and end polygons) is found on the ground as
+[`0x00250760`](ai-moving.md#path-planning) does, with the collision triangle's **area byte** as the "ground's collision
+byte" (the material byte finds no area under `level80`'s upper walkway, where the area byte finds the walkway's) from a
+ray 10 m down; an area whose box holds the point but whose polygons do not is passed over, and with no ground found the
+area is looked up in plan. A start standing in a hole of the path polygons (an obstacle's padded footprint: `level87`'s
+checkpoint 4 start
+is in a 2.3 × 1.7 m hole of flags 7) plans from the point its human's polygon would come from
+(`RoutePlanner::navPoint()`): the nearest point on an edge of its candidate area within 20 m (the first edge under
+0.18 m ending the look), else the first of eight probes 1 m out that an area takes in; the walkable-line tests from
+such a start run from that point too, and the body is not moved. A destination in a hole fails the request. **Coney
+choices**: a probe keeps the point's height and finds its area by the ground probe (no drop to the collision, no ray
+test), and with no edge in reach there is no edge point. `level87`'s checkpoint 4 start plans from a diagonal probe
+1.41 m out; before, every line from it, and so every route, failed. A climb leg's climb
+that has ended moves the
+follower on past the leg's waypoint (the original's step there is open). The fast climber's early start is built
+(`ai::earlyClimbDue`): on a walked leg whose next leg is a climb, a human with flag `0x2` at the run or sprint tries
+the climb toward the climb's far waypoint while within 4.5 m (3D) of it, and when the climb starts the route moves on
+onto the climb's leg; the climb probes measure along a unit direction (`Human::tryClimb`), so a brain's request, the way
+to its waypoint, no longer scales the face's distance. Before (issue #232), a fast climber ran on to the climb's near
+waypoint, too close for the running climb ((r1 + r2) × 0.4), and ran into the fence for the leg's 31 tries; `level99`'s
+Vermin then climbed standing, 85 updates. The corner speed looks only at the waypoints up to the first whose leg on
+has bit `0x4` or `0x80` (`RouteFollower::cornerPoints`, `MoveAction_CollectPoints` `0x002fbd18`), so a run-up to a
+jump keeps its gait's speed (issue #104). The charge (`0x40`), the link's clear test and the waypoint claims are not
+built. A jump leg (kind 4) takes
+its take-off and landing points, the drop or the arc and the 1.5 m landing test as above; the brain does not run while
+the human is airborne, so the move notices the landing by the human's landing count, and the arc counts as having
+reached the landing point when it lands within the waypoint radius plus one update's travel at the launch's plan
+speed (the original tests the arrival in the air, every update).
+A corner is the turn at the next two waypoints, simulated as an arc at the gait's turn rate
+from the waypoint, the trial falling by 1 m/s; the braking distance is 0.5 s at the first corner's speed, within which
+the slower of the two corners' speeds is used. A move clears `+0x284` at its start and waits while the human is busy
+(`Human_IsBusy`). The look-at's turn value is kept, not read; no turn is ever refused its abort.
+
+## Open questions
+
+- **The polygon flag `+0x02`**{#q-polygon-graph}: what sets it in the level files (non-zero for most areas with route
+  nodes, [Path planning](#path-planning)), and the goals that search with the mask `0x13` (`0x002aafd0`,
+  `0x002c1470`). Reading the level files' writer, or the tool that made them, is the way in.
+- **The level ids of the `0x100` mask**{#q-mask-levels}: whether the level-table ids `0xe`, `0x33`, `0x34` and `0x52`
+  are `level14`, `level51`, `level52` and `level82` ([follow](ai-gangs.md#warrior-follow)); the level table's names
+  answer it.
+- **The inside test's sign**{#q-inside-sign}: which edge sign the inside test counts +1, and what the clockwise
+  polygons (most of them, nearly all with polygon flag 1 or 2) are for if they contain nothing.
+- **Vermin's fence clips**{#q-fence-clips}: which climb clips Vermin's fence plays (tall or short fence, standing or
+  running); a clip trace of the climb would show it.
+- **Vermin's window jump**{#q-window-jump}: what stopped Vermin's route jump at the `level99` window (x 47.76, by the
+  panes at x 47.40) in the window-jump state, and whether a normal play-through clears it first; no run has seen a
+  jump land on its point.
+- **The steering score**{#q-steering-score}: who reads the detour's score `+0x3c` ([Steering](#steering)); a search for
+  loads of brain `+0xdc` would find it.
+
+## How this was checked
+
+### The civilian's move {#runtime-civilian-move}
+
+PCSX2 2.9.94, the `civ_fight` and `civ_approach` scenarios of [AI humans: runtime
+checks](ai/index.md#how-this-was-checked): the
+civilian's per-player stick magnitude stayed 0 through its move and move-to-human actions; only the attack action wrote
+a stick (1.0, for throws). From 8 m behind the player it turned on the spot (clip 398), started the run (414), ran (410)
+at 7.80 m/s and at 1.29 m charged (`0x20`). Closer, the move-to-human action walked it in the fight-stance clips
+372-380 at about 2.3 m/s.
+
+### Vermin's fence {#runtime-fence}
+
+PCSX2 2.9.94, from the path data of a `level99` state at checkpoint 3, over the straight line Vermin's
+`GoalMoveToFlag` asks for, (47.49, 42.97) to (46.30, 20.22); both ends lie in the street's area, whose outline is
+polygon 0. The segment crosses two holes of that area: a 4-vertex hole of flags 7 spanning x 44.14 to 50.61 and
+y 24.38 to 25.19 (the climbable fence, 6.5 × 0.8 m) at t = 0.78 and 0.82, and the hole of fence door 2 (x 44.93 to
+49.50, y 30.79 to 31.56, flags 7) at t = 0.50 and 0.54. The nearest and farthest crossings are metres apart, so the
+line is refused and a route is made.
+
+### The hazard spheres {#runtime-hazards}
+
+In the same checkpoint 3 state the sphere count `0x00510170` was 0, so `0x00221f80` returned 0 at once.
+
+### The link kinds {#disc-link-kinds}
+
+Disc check, NTSC-U: the counts of [the link kinds](#path-planning) were made over all 64 `.lev` files' path data on
+2026-10-11.

@@ -179,6 +179,20 @@ coney = "src/world_objects/props.h:Props::takeFromPile"
 status = "legacy"
 
 [[function]]
+address = 0x003d7e30
+name = "PartGarbageFlies_Init"
+page = "script-types.md#flies"
+role = "`part_garbage_flies` init: placed (flags 4), every 60 ticks, and with no parent handle a looping script sound emitter"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.cpp:GameplayMode::syncSystemSounds"
+status = "compared"
+
+[[function.gaps]]
+what = "every pile gets the loop; the original gives it only to one made with no parent handle"
+relation = "stand-in"
+issue = 994
+
+[[function]]
 address = 0x003d7f10
 name = "PartGarbageFlies_Update"
 page = "script-types.md#flies"
@@ -265,6 +279,24 @@ role = "red and dark in a four-step cycle; done when off"
 level = "confirmed-code"
 coney = "src/effects/light_tasks.cpp:updateStrober"
 status = "legacy"
+
+[[function]]
+address = 0x003e85b8
+name = "PartStrobeRed_Init"
+page = "script-types.md#small-lights-functions"
+role = "`part_strobe_red` init: placed (flags 4), every 60 ticks, a disabled `alarm_emitter` for alarmbell_loop"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.cpp:GameplayMode::syncSystemSounds"
+status = "compared"
+
+[[function]]
+address = 0x003e8678
+name = "PartStrobeRed_OnMessage"
+page = "script-types.md#small-lights-functions"
+role = "`part_strobe_red` message: 0x12 spawns a `strober` and enables the alarm; 0x13 ends the strober and disables it"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.cpp:GameplayMode::syncSystemSounds"
+status = "compared"
 
 [[function]]
 address = 0x003e8fa0

@@ -84,7 +84,7 @@ objects whose behaviour comes from their `CfgObj` class and type, not from subcl
 | particle systems | 1,400 in play, 100 in the pause menu | fixed |
 | cars / glass panes / scenes / light tasks | 18 / 100 / 12 / 28 | fixed |
 | gangs / formations / paths | 32 / 41 / 32 | fixed ([AI: gangs](../research/ai-gangs.md#gang-record)) |
-| AI goals / actions, all brains together | 170 / 100 | fixed ([AI](../research/ai.md#goals)) |
+| AI goals / actions, all brains together | 170 / 100 | fixed ([AI](../research/ai/index.md#goals)) |
 | spawned characters | 3-70 in the scripts | `SetSpawnMax` |
 | handles | 2,816 | fixed |
 

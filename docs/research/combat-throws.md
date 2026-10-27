@@ -161,7 +161,7 @@ armed at `+0x3bd` (`Human_OnContact`, `0x00219d50`). The same frames carry a one
 (type `0xf`): the spine for 156 and 160, a foot (30) for 158, the right hand for 162. The 264 damage is the thrower's
 (clip 155's entry, index 29), applied on the grab move's first update, not the wall's. There is no separate
 head-slam clip or reaction beyond these four victim clips. `CfgPowerClass` flag 22 is not read here (it belongs to
-`Grabbing_PickMove`, [AI](ai.md#fight-reactions)).
+`Grabbing_PickMove`, [AI](ai/index.md#fight-reactions)).
 
 ### Where a throw goes {#throw-direction}
 
@@ -890,7 +890,7 @@ and AIs alike; confirmed (code)):
 1. The tackler is in the mount (state `0x400`, idle 210 / 207), the victim is still tackled, and the tackler holds
    none of held flags `0x5c7eee1`.
 2. The command is **R1 pressed** (command 3, the word at `0x0051098c`) or `0x31`, the command an AI's attack kind 41
-   writes ([AI](ai.md)). Both are tested by `PlayerCmd_IsCommand31` (`0x0027bf98`). L1 + R1 (`0x1f`) is not it.
+   writes ([AI](ai/index.md)). Both are tested by `PlayerCmd_IsCommand31` (`0x0027bf98`). L1 + R1 (`0x1f`) is not it.
 3. The tackler has a cuff (`Human_GetCuffCount` `0x00222908`):
     - a player: inventory item 5;
     - an AI of brain type 1 (police): always one;

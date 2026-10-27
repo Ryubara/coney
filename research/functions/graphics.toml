@@ -151,8 +151,8 @@ name = "Colour_LerpPacked"
 page = "graphics.md#code-misc"
 role = "blends two packed RGBA colours by `t` (VU0)"
 level = "confirmed-code"
-coney = "src/effects/screen_tint.cpp:mix"
-status = "legacy"
+coney = "src/gui/pause_menu/pause_menu.cpp:blend"
+status = "compared"
 
 [[function]]
 address = 0x0017a560

@@ -697,7 +697,7 @@ described:
 | effects | [Particles](particles.md), [The streamed world](world.md#fog) |
 | camera | [Camera](camera.md) |
 | ai: tactics (`Tactic*`) | [AI](ai-gangs.md#tactic-kinds) |
-| ai: brains and the rest (`Br*`, ...) | [AI](ai.md#brain) |
+| ai: brains and the rest (`Br*`, ...) | [AI](ai/index.md#brain) |
 | scene | [Scenes](scenes.md) |
 | script | this page |
 | util, debug, input | this page |
@@ -884,11 +884,11 @@ disassembly of the script (ids and counts only); the moves themselves are confir
 | 4 | light, then heavy combos | 12, 16, then 19 or 20; 12, 15; 11, 13; 12, 16, then 17 or 18 | chains | [Attacks](combat/index.md#attacks) |
 | 5 | strong attacks | 653 or 655; then **82 or 84** | cross + square; circle + cross | [Specials](combat/index.md#run-attacks), [Strong grapple](combat-grabs.md#strong-grapple) |
 | 6 | power moves | 57; then 59 | in a front grab, cross + square, then square or cross in its window | [Power strike](combat-grabs.md#grabbing) |
-| 7 | snaps (after the scene `l99_c7`; Rudy drinks at the fence, the second wave surrounds the player) | three hits of 25, 27 or 29 | square, standing, with the stick past 0.95 more than 45° off the facing, at a bum within 2 m there | [Attacks](combat/index.md#attacks), [the second wave](ai.md#level99-snaps) |
+| 7 | snaps (after the scene `l99_c7`; Rudy drinks at the fence, the second wave surrounds the player) | three hits of 25, 27 or 29 | square, standing, with the stick past 0.95 more than 45° off the facing, at a bum within 2 m there | [Attacks](combat/index.md#attacks), [the second wave](ai/index.md#level99-snaps) |
 | 8 | throws | two hits of 147, 149, 151 or 153; then zone 1 is enabled | circle with the stick in a grab | [Throws](combat-throws.md#throws) |
 | 9 | weapons (after the scene `l99_c8`, three bats on the ground) | the pick-up (message 0 on a bat, with a prompt); then 34; 36; then two more of 34 or 36 (four counted hits) | triangle at a bat; square, cross | [A bat in hand](combat-throws.md#bat), [the prompt](#message-handlers) |
 | 10 | rage (2 s after lesson 9) | the meter set to half and locked, then filled by hits; the full callback; L1 + R1 (every other command off); 3.5 s into rage, 645 or 647; 3.5 s later, 65 or 233 | rage, the rage special, the extended power move in rage (grab or mount) | [Rage](combat-rage.md#rage); 65 and 233 inferred |
-| 11 | finish the second wave | the gang's message 18 with none standing | any | [AI](ai.md#level99) |
+| 11 | finish the second wave | the gang's message 18 with none standing | any | [AI](ai/index.md#level99) |
 | 12 | the Warriors (after the scene `l99_c5`) | the 50-second stopwatch; a hint the first time the player holds a grab (anim callback on 82 / 84) | any | [Stopwatch](#stopwatch), [anim callbacks](characters.md#anim-callbacks) |
 
 Then the scene `l99_c6` and `P1.Cleanup` (checkpoint 2). Coney's disc test checks lessons 1-10, driven by mission
@@ -948,7 +948,7 @@ bums. Points an implementer needs:
   `_BACK_01` (25, 27, 29). Any of the three counts, in any order and on any bum; any other id (an `S1`, 12) is ignored.
   The first two update the text and give Rudy a line; the third calls `P1.SnapsDone`. Confirmed (runtime):
   snaps 27, 29 and 25 that landed on the bums each reached the callback once, with that id. Coney passes it with the
-  disc ([the second wave](ai.md#coney), [the snap](combat/index.md#coneys-implementation)).
+  disc ([the second wave](ai/index.md#in-coney), [the snap](combat/index.md#coneys-implementation)).
 - **2, 6, 8**: a plain grab scores nothing; strikes, throws and power moves are scored with their own ids when they
   start, since a grab move applies its damage on its first update.
 
@@ -1147,7 +1147,7 @@ Points an implementer needs:
   `P3.JumpPoizoDone` arms `vReachWindow` (corner 43.2, −4.3, 4.1, size 4 × 6 × 4, just past the panes at x 47.4)
   with `P3.ReachWindow`, which counts only players. With one player, his entering removes the handler and runs
   `P3.Player2Jumps`. With two, each player who enters is set brain-dead (`BrDead`, so he gives up the pad,
-  [AI](ai.md#handlers)) and counted; the second removes the handler and runs `P3.Player2Jumps` (player 2 arriving
+  [AI](ai/index.md#handlers)) and counted; the second removes the handler and runs `P3.Player2Jumps` (player 2 arriving
   first sets `bWindowWait`; if he then drops out, player 1 still has to enter). `P3.Player2Jumps` marks the
   objective done, flushes the Warriors' brains and sets the gang dead (the player is `Warriors.Rembrandt`, so he too
   gives up the pad), gives each player `GoalAddressPerson` towards Vermin, turns the follow camera off with
@@ -1472,14 +1472,14 @@ further script call:
 1. `Gang_MakeEnemies` (`0x0016acf0`) sets the enemy bit both ways through `Gang_SetEnemyBit` (`0x001690c8`), whose
    mask writers (`Gang_WriteEnemyMask` `0x00168f08`, `Gang_WriteFriendMask` `0x00168f30`) stamp the gang's change
    time `+0x34`. Each member's `Brain_MaybeScanEnemies` (`0x0028fa18`) then scans on its next update, because the
-   gang changed since its last scan ([The enemy scan](ai.md#enemy-scan)), five brains an update. Confirmed (code).
+   gang changed since its last scan ([The enemy scan](ai-fights.md#enemy-scan)), five brains an update. Confirmed (code).
 2. Each Destroyer lists Cochise and Swan (in range and in sight); Cochise and Swan list the twelve.
 3. With no tactic, a threat response and a non-empty list, `GangBrain_Think` step 3 (`0x00304608`) pushes the fight
    (`Brain_PushFightGoal(−1)`: FindEnemy, Melee) on every Destroyer, and the Warrior think's step 1 does the same
-   for Cochise and Swan, who have Warrior brains (type 3) ([Gang soldiers](ai.md#think-gang),
-   [The Warriors](ai.md#think-warrior)). Melee hands out the attack slots: the soldiers who get one fight (goal
-   Fight), the rest wait in Spectate round the two, and a soldier who strays out of `vTurfDestroyers` takes a
-   LeftTurf goal back. Confirmed (code) for the steps; their order confirmed (runtime) below.
+   for Cochise and Swan, who have Warrior brains (type 3) ([Gang soldiers](ai-brain-types.md#think-gang), [The
+   Warriors](ai-brain-types.md#think-warrior)). Melee hands out the attack slots: the soldiers who get one fight (goal
+   Fight), the rest wait in Spectate round the two, and a soldier who strays out of `vTurfDestroyers` takes a LeftTurf
+   goal back. Confirmed (code) for the steps; their order confirmed (runtime) below.
 
 **At runtime** (2026-10-12, PCSX2 2.9.94; confirmed (runtime)). The game was entered at checkpoint 4 from a
 pad-patched level80 state by setting the game state's level (record 2) and checkpoint and reloading. Cleon's
@@ -1557,17 +1557,17 @@ Answers to the four questions of the implementer of issues #406 and #73 (2026-10
 **`GoalFight(Destroyer, Cleon)`: Melee does not keep the target; the score decides.**
 
 - `GoalFight` is `Brain_StartFight` (`0x002b2b90`) → `Brain_Fight(Cleon, −1)`: Cleon is added to the list and made
-  the target, which releases the soldier's slot on Cochise or Swan ([Starting a fight](ai.md#targets)); the stack
+  the target, which releases the soldier's slot on Cochise or Swan ([Starting a fight](ai-fights.md#targets)); the stack
   becomes FindEnemy, Melee, Fight. The Fight goal ends on its first update, Cleon being 12-19 m away (beyond
-  1.1 × far, 5.5 m, [step 4](ai.md#fight-order)). Melee then picks again with `Brain_PickBestEnemy` (`0x0029f230`),
-  as on every run of it ([The Melee goal](ai.md#melee-goal), step 2); Cleon's only extra is the +3 for the previous
+  1.1 × far, 5.5 m, [step 4](ai-fights.md#fight-order)). Melee then picks again with `Brain_PickBestEnemy` (`0x0029f230`),
+  as on every run of it ([The Melee goal](ai-fights.md#melee-goal), step 2); Cleon's only extra is the +3 for the previous
   target. Confirmed (code).
 - With the sight range `R` = 30 m (brain `+0x130`, read 30.0 on all twelve), Cleon at 15-19 m scores about
   4 × (30 − d) + 20 (a player) + 3 = 67-83, and Cochise or Swan at 1-3 m about 108-116 ([the
-  score](ai.md#enemy-score)), unless `Brain_CanTakeSlotOn` (`0x0028dc80`) makes them −999. Its first argument is the
-  **enemy's** brain: it is false when the enemy's holders (`+0x1a4`) fill his maximum (`+0x1e4`, 4), the scorer is
-  not one of them and no holder is farther from the enemy than the scorer. Confirmed (code). So a `GoalFight`
-  soldier goes for Cleon only when Cochise and Swan both have four holders, all nearer to them than he is.
+  score](ai-fights.md#enemy-score)), unless `Brain_CanTakeSlotOn` (`0x0028dc80`) makes them −999. Its first argument is
+  the **enemy's** brain: it is false when the enemy's holders (`+0x1a4`) fill his maximum (`+0x1e4`, 4), the scorer is
+  not one of them and no holder is farther from the enemy than the scorer. Confirmed (code). So a `GoalFight` soldier
+  goes for Cleon only when Cochise and Swan both have four holders, all nearer to them than he is.
 - Run 3 (confirmed (runtime)): before the order Swan had four holders, one of them `Destroyers1.Destroyer1`, and
   Cochise four. `GoalFight` released Destroyer1's place on Swan (three holders at update 0); at update 1 he had taken
   it back and targeted Swan, so Cleon was his target for less than one update. `Destroyers1.Destroyer2` (in
@@ -1579,7 +1579,7 @@ Answers to the four questions of the implementer of issues #406 and #73 (2026-10
 
 - The gang-changed rescan runs at once: the order's `GangMakeEnemies` stamps both gangs, and all twelve Destroyers
   scanned within three updates (run 3: updates 2-3; run 2: the three updates before its first sample), five an
-  update ([The enemy scan](ai.md#enemy-scan)). Confirmed (runtime).
+  update ([The enemy scan](ai-fights.md#enemy-scan)). Confirmed (runtime).
 - What that scan lists is set by sight: beyond the near radius a member must be within half the field of view of the
   scanner's facing, and the soldiers have 110° (brain `+0x12c` read 1.92 rad on all twelve). The crew stood 13-22 m
   off, inside the 30 m range. A Destroyer facing them listed all seven (run 3: `Destroyers1.Destroyer3` and
@@ -1587,7 +1587,7 @@ Answers to the four questions of the implementer of issues #406 and #73 (2026-10
   them listed none (bearings 93-178°). Over 41 scans in runs 2 and 3, every Warrior a scan newly listed was within
   55° of the scanner's facing; in 7 of them a Warrior in view was still left out (not traced). The other entries came
   from `GoalFight` (Cleon) or were already on the list, which a scan keeps while in range and in line of sight
-  ([step 3](ai.md#enemy-scan)). Confirmed (runtime); the ground is open, so no line of sight was in question.
+  ([step 3](ai-fights.md#enemy-scan)). Confirmed (runtime); the ground is open, so no line of sight was in question.
 - The rest are listed later, two ways. A Warrior who attacks a Destroyer is added by the hit (run 2: Vermin on
   `Destroyers1.Destroyer4` at update 64, Snow on `Destroyers2.Destroyer6` at 76). And the next periodic scan: a
   fighting soldier waits 2000 ms × 4 = **8 s** (run 2: `Destroyers1`'s scans at 60.33 s, then at 68.34 s), others
@@ -1617,7 +1617,7 @@ the newcomer is nearer than the farthest holder or forced. So a `Brain_Fight(sid
 (`0x00291960`) that finds the side full leaves `+0x124` nil, pushes FindEnemy, Melee, Fight anyway, then HelpRespond
 on top (when none sits above the goal base). Nothing gives him a target or a Spectate goal until HelpRespond ends,
 except an event ([HelpRespond](ai-goals.md#goal-help-respond)). Then Fight ends at once (no slot, [step
-2](ai.md#fight-order)), Melee re-picks and, with every enemy at −999, pushes Spectate. Confirmed (code).
+2](ai-fights.md#fight-order)), Melee re-picks and, with every enemy at −999, pushes Spectate. Confirmed (code).
 
 **The fight starts within 7-9 updates.** The first Destroyer has FindEnemy and Melee at update 1 or 2, the last at
 update 7 or 9 (runs 1, 4, 5; the earlier run 1 above: all by update 8). Every Destroyer targets Cochise or Swan or has
@@ -1654,7 +1654,7 @@ targetless Fight, on a soldier already facing the fight.
   addresses. Free soldiers (Spectate or no slot) take a Warrior or Cleon through Melee's or Spectate's own pick.
 - **Cochise and Swan do not go out.** From 1,800 health they lost at most 164 by U+300 (lowest 1,636), were knocked
   down (state `0x80000`) 0-2 times each for 12-73 updates, and were never knocked out. A knock-down releases no slot:
-  slot claims prune only dead holders and the knock-out alone releases them ([ai.md](ai.md#targets)). Their holders
+  slot claims prune only dead holders and the knock-out alone releases them ([ai.md](ai-fights.md#targets)). Their holders
   fell from 6-7 at U to 1-6 at U+300, by the holders' own switches.
 
 **Coney.** Checked 2026-10-12 on the preview build (tip `b73ef09d`) with `--play-level level80 --checkpoint 4
@@ -1690,7 +1690,7 @@ branch:
    (`Brain_PushFightGoal(−1)`) on every think.
 3. Keep the placement: the flags are the original's. Do not scatter or delay the twelve.
 4. Melee's slots, with Spectate for the soldiers who get none, and LeftTurf inside `vTurfDestroyers`
-   ([The fight goal](ai.md#fight), [The Melee goal](ai.md#melee-goal)), so the block breaks into a ring.
+   ([The fight goal](ai-fights.md#fight), [The Melee goal](ai-fights.md#melee-goal)), so the block breaks into a ring.
 5. A test (`[disc][story]`, on the player's path): level80 from checkpoint 4, walked into `vCochiseSwanTrigger`, the
    scene skipped. Each Destroyer has pushed FindEnemy and Melee by update 10 of the scene's end; by update 12 all
    twelve at once target Cochise or Swan or have a Spectate goal, and from then to update 30 at most one fails it at
@@ -1706,7 +1706,7 @@ branch:
    current, and gives Cochise and Swan `FollowAndAttack`; `GangAddMember` empties a moved human's enemy list; the
    enemy scan applies the 110° field of view beyond the near radius ([After the order](#level80-after-order)).
 7. The fight's timing and the slots ([the timeline](#level80-fight-timeline)): the scan on the gang-changed trigger
-   and the think one step in five ([ai.md](ai.md#update)) put FindEnemy and Melee on every Destroyer within 7-9
+   and the think one step in five ([ai.md](ai/index.md#update)) put FindEnemy and Melee on every Destroyer within 7-9
    updates, before the first attack's help calls. `Brain_SetTarget` leaves the target nil when the slot claim fails.
    A standing soldier's turn of more than 15° is one turn clip of about 10 updates, whatever the angle. A crew
    Warrior's pick ignores whether a Destroyer holds a slot on someone else, and a holder leaves Cochise or Swan
@@ -2255,7 +2255,7 @@ spawners and link to their subject pages; the rest are this mission's.
    `SetSpawnMax`, so at checkpoint 3 the riot, wanted-gang and police spawners filled the human pool: in 1,500 updates
    of standing still, `HuCreate` was asked for 240 `RiotCivs1` humans and about 40 of each cop gang, and once the pool
    was full most of these calls failed (handle 0) on every update. **Done**: Coney keeps both caps and counts
-   ([Coney's implementation](ai.md#coney)); with `SetSpawnMax(n)` two gangs' spawners never have more than *n*
+   ([Coney's implementation](ai/index.md#in-coney)); with `SetSpawnMax(n)` two gangs' spawners never have more than *n*
    spawned humans alive, a removed human frees its place, and the police gangs keep to `SetCopSpawnMax` the same way
    (`tests/ai/spawners_test.cpp`). One gang's own spawners may pass the cap by the spawns of one update, as the
    original's do.
@@ -2267,7 +2267,7 @@ spawners and link to their subject pages; the rest are this mission's.
    is state 7, so this placement decides how hard checkpoints 3 and 4 are.
 3. **A suspended gang still spawns.** Confirmed (code): neither `Gangs_Update` nor `GangSpawner_Update` reads gang
    `+0xd4` (`GangSuspend`), so the original's `RiotCivs1` spawner keeps making humans during the intro scene. Those
-   humans only stand, because their brains skip their update ([One update](ai.md#update-goals)). Coney spawns them
+   humans only stand, because their brains skip their update ([One update](ai/index.md#update-goals)). Coney spawns them
    too, which matches the original; keep it.
 
 <!-- markdownlint-disable MD029 -->
@@ -2458,7 +2458,7 @@ spawners and link to their subject pages; the rest are this mission's.
     `repo:src/ai/crew.h`); keep it.
 
     Open: who queues the attack action a Warrior plays on his first hit while `FollowPlayer` is his only goal (the
-    hit event's handler, [The Warriors](ai.md#think-warrior), is the likely source; not traced), and the Warriors'
+    hit event's handler, [The Warriors](ai-brain-types.md#think-warrior), is the likely source; not traced), and the Warriors'
     far melee range (`+0x140`). A new action is queued only when the queue is empty, so the runs bound it only
     roughly: Snow's last turn was chosen about 5.5-5.7 m from his target and his back-off at 3.6-3.8 m, Ash's back-off
     at about 4.1-4.3 m, so between about 3.8 m and 5.5 m (inferred). Reading brain `+0x140` of a Warrior at runtime
@@ -2548,7 +2548,7 @@ from the disassembly of `level3.lua` and its five chapter scripts; bindings on
    eased over 0.5 s); Warrior commands 0-5 off, radar and command HUD off. Entered at checkpoint 4 the start
    callback is `ch4.HoldIntroPoizo`; continuing from checkpoint 3 it runs at once.
 2. **`ch4.HoldIntroPoizo`**: switches 3 off and 4 on; every non-player Warrior brain off, short sight, fast climber;
-   **`BrDead(player, true)`**: the player's brain is off, which also [takes his pad away](ai.md#handlers); fade in
+   **`BrDead(player, true)`**: the player's brain is off, which also [takes his pad away](ai/index.md#handlers); fade in
    over 2 s; schedules the mimes' door (0.1 s), `ch4.SetupPoizo` (3 s) and the pursuit (4 s).
 3. **`ch4.SetupPoizo`**: a path camera from the intro camera through three points (the second calls Snow's line);
    every other Warrior: brain flushed, normal mode, a friendly [devil run](ai-scripting.md#devil-run) on `roofpath2`
@@ -2787,7 +2787,7 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
   bindings of `src/scripting/level_bindings.h`: the flags, `GetPosition`, the saved script numbers,
   `SetStartGameCallback`, `GetRumbleModeData`, `GetRumbleModeGangName` and `CfgSetDatabaseSizes`,
   [World flags](flags.md#coneys-implementation), the AI and gang bindings, which hand their calls to the AI host,
-  [AI](ai.md#coney), the trigger bindings of `src/scripting/trigger_bindings.h`: `SetMsgHandler`,
+  [AI](ai/index.md#in-coney), the trigger bindings of `src/scripting/trigger_bindings.h`: `SetMsgHandler`,
   `SetMsgHandlerEx`, `AddVolumeBox` and `RotateVolumeBox`, below, the three animation callback bindings,
   [Characters](characters.md#anim-callbacks), and the scene bindings with the `GoalJoin*` goals, which play scenes,
   [Scenes](scenes.md#coneys-implementation); with no scene system the preload and play bindings fall back to Coney's
@@ -2806,7 +2806,7 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
   no longer resolves is skipped with no 4 and kept; **Coney stand-in**: a human the scripts made resolves for the whole
   level, `HuDelete`d or not (when the original's stops is not traced), so a deleted occupant leaves with 4 and
   `HuGetGang` still gives its gang. A human's events reach its own handlers through its brain, a flag arrival is
-  message 8 ([AI](ai.md#coney)). **Message 6** (`VolumeBoxes::sendDamage()`): a pane, door or car hit that the
+  message 8 ([AI](ai/index.md#in-coney)). **Message 6** (`VolumeBoxes::sendDamage()`): a pane, door or car hit that the
   object took sends `(human, box, object)` to every enabled kind-0 box the attacker (a thrown object's thrower)
   stands in. Coney does not send it for props, has no 30 m alert after it, and updates the boxes every frame
   instead of the original's every-fifth-frame round-robin. **`--script-trace`** (`ScriptSystem::traceCalls()`,

@@ -40,6 +40,24 @@ void registerGameTunables(TunableRegistry& registry) {
         .range(0, 4, 0.05)
         .describe("Lean asked for: the turn an update times this times the speed (jogging and faster)");
     registry.add("Movement", "Lean factor walking", &move.walkLeanFactor).range(0, 40, 0.5);
+    // The player's gait speeds come from the clips' root motion (docs/research/characters.md#speed-classes), so each
+    // is tuned as a scale on the clip's speed; the combat walk's speed is the Combat page's. Another human's speeds
+    // are the Entity editor's per-entity speed scale.
+    registry.add("Movement", "Sneak speed scale", &move.sneakSpeedScale)
+        .range(0, 10, 0.05)
+        .describe("Multiplies the player's sneak speed (the clip's, 1.585 m/s for Rembrandt)");
+    registry.add("Movement", "Walk speed scale", &move.walkSpeedScale)
+        .range(0, 10, 0.05)
+        .describe("Multiplies the player's walk speed (the clip's, 1.629 m/s for Rembrandt)");
+    registry.add("Movement", "Jog speed scale", &move.jogSpeedScale)
+        .range(0, 10, 0.05)
+        .describe("Multiplies the player's jog speed (the clip's, 4.857 m/s for Rembrandt)");
+    registry.add("Movement", "Run speed scale", &move.runSpeedScale)
+        .range(0, 10, 0.05)
+        .describe("Multiplies the player's run speed (the clip's, 7.801 m/s for Rembrandt)");
+    registry.add("Movement", "Sprint speed scale", &move.sprintSpeedScale)
+        .range(0, 10, 0.05)
+        .describe("Multiplies the player's sprint speed (the clip's, 10.245 m/s for Rembrandt)");
 
     // The walking body: its sphere and the 0.25 m rule that is all the step-up there is.
     human::BodyTuning& body = human::bodyTuning();
@@ -100,7 +118,7 @@ void registerGameTunables(TunableRegistry& registry) {
     registry.add("Follow camera", "Collision margin", &follow.collisionMargin).range(0, 2, 0.05).units("m");
     registry.add("Follow camera", "Closest after collision", &follow.minCollisionDistance).range(0, 5, 0.1).units("m");
     registry.add("Follow camera", "Auto-centre", &follow.autoCentre)
-        .describe("The original's auto-follow option: on, the auto-centre rule; off, the slower default rule");
+        .describe("Coney's switch over every camera's Auto Adjust option: off, the slower default rule for all");
     registry.add("Follow camera", "One player camera", &follow.onePlayerCamera)
         .describe("0x0050b19c = 1 (one player): a sprint pulls the camera in to the minimum distance");
     camera::FollowSettings& placed = camera::followDefaults();

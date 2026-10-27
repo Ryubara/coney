@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <span>
 #include <utility>
 #include <vector>
@@ -28,7 +29,8 @@ namespace coney::human {
 class Humans {
   public:
     /// What runs at the brains' place in the step (after the records, before the animation): it writes the AI humans'
-    /// records, as `Brains_Update` writes their commands (docs/research/ai.md#update); ai::Brains::hook() gives one.
+    /// records, as `Brains_Update` writes their commands (docs/research/ai/index.md#update); ai::Brains::hook() gives
+    /// one.
     using BrainsHook = std::function<void(std::span<Human* const> humans)>;
 
     /// Whether one human fights another: `opposed(attacker, victim)`. The gangs give it (ai::Gangs::friends(), whose
@@ -39,20 +41,25 @@ class Humans {
     /// writes its record before each step; otherwise its command and buttons are cleared at the step's start, as the
     /// original clears the command of a record no pad drives, and only a brain gives it one. A human added
     /// pad-controlled also fights the step's passive targets (the sandbox's dummies, which have no gang).
+    /// @coney-only Coney's slot list; the original's humans sit in fixed per-player slots
     void add(Human& human, bool padControlled);
     /// Takes the pad from `human` or gives it back (a player's brain set dead takes it, `BrDead`); nothing when it is
     /// not in the step.
+    /// @coney-only Coney's slot list's flag; the original reads the per-player record's pad
     void setPadControlled(const Human& human, bool padControlled);
     /// Holds `human` still, or lets it go (the Entity inspector's freeze, Coney's own debug tooling): a held human
     /// keeps its record, state and place, and the step skips its animation, state update and actions; its brain still
     /// runs and the others still see and hit it. Nothing when it is not in the step.
+    /// @coney-only debug tooling (the Entity inspector's freeze)
     void setHeld(const Human& human, bool held);
     /// Whether `human` is held (setHeld()); false for one not in the step.
+    /// @coney-only debug tooling (the Entity inspector's freeze)
     [[nodiscard]] bool held(const Human& human) const;
     /// Sets who fights whom. Without one (the default) the humans added pad-controlled and the others fight each other,
     /// as the player and the AI humans of a scene without gangs do.
     void setOpposition(Opposition opposition) { m_opposition = std::move(opposition); }
     /// Takes `human` out of the step (a spawned AI cleared away); nothing when it is not in it.
+    /// @coney-only Coney's slot list; the original's humans sit in fixed per-player slots
     void remove(const Human& human);
     /// Sets what runs at the brains' place.
     void setBrains(BrainsHook brains) { m_brains = std::move(brains); }
@@ -63,6 +70,11 @@ class Humans {
     void setObjectPush(Human::ObjectPush push) { m_objectPush = std::move(push); }
     /// Sets what a human's switched-on strike shapes meet beyond the humans (Human::testStrikes()); empty: nothing.
     void setStrikeContact(Human::StrikeContact contact) { m_strikeContact = std::move(contact); }
+
+    /// Sets whose face shows (FaceRules::shown); without a rule (the default) every face shows.
+    void setFaceShown(std::function<bool(const Human& human)> shown) { m_faceRules->shown = std::move(shown); }
+    /// Draws the face clips from the game's random table (GameRandom::kTableSize numbers), their own stream.
+    void setRandomTable(std::span<const std::uint32_t> table) { m_faceRules->random.setTable(table); }
 
     /// One characters' step, in the original's order (docs/research/tasks.md#humans-update): the records no pad
     /// drives lose their command; the brains write theirs; every human's animation; every human's state update (the
@@ -83,8 +95,10 @@ class Humans {
   private:
     // Who slot `slot` fights this step: the passive `targets` for a human added pad-controlled, and the humans it is
     // opposed to.
+    // @coney-only Coney's per-slot target list, the dispatcher's input
     void gatherTargets(std::size_t slot, std::span<Combatant* const> targets);
     // Whether slot `slot` fights slot `other`.
+    // @coney-only Coney's per-slot target list, the dispatcher's input
     [[nodiscard]] bool opposed(std::size_t slot, std::size_t other) const;
 
     std::vector<Human*> m_humans;      // not owned
@@ -100,6 +114,8 @@ class Humans {
     std::vector<Human*> m_victims;     // the strike test's list
     std::vector<Human*> m_contactList; // the humans the walking bodies meet this step (Human::setHumanContacts())
     std::uint64_t m_steps = 0;
+    // The rules every added human's face follows; on the heap, so a moved Humans keeps them where the humans point.
+    std::unique_ptr<FaceRules> m_faceRules = std::make_unique<FaceRules>();
 };
 
 } // namespace coney::human

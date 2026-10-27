@@ -15,11 +15,14 @@
 #include "graphics/render_device.h"
 #include "graphics/sprite_batch.h"
 #include "gui/base_widget.h"
+#include "gui/circled_text_header.h"
 #include "gui/global_strings.h"
 #include "gui/menu_input.h"
 #include "gui/option_grid.h"
 #include "gui/pause_menu/control_menu.h"
+#include "gui/pause_menu/option_menu.h"
 #include "gui/pause_menu/pause_items.h"
+#include "gui/pause_menu/pause_stats.h"
 #include "gui/pause_menu/yes_no_box.h"
 #include "gui/text_widget.h"
 #include "gui/usage_info.h"
@@ -43,6 +46,7 @@ enum class PauseOutcome : std::uint8_t {
 enum class PauseScreen : std::uint8_t {
     Grid,       ///< Only the grid (and the mission's title).
     Objectives, ///< `+0x1ba8`: the three objective lists.
+    Stats,      ///< `+0x3bb0`: the pausing player's Warrior.
     Options,    ///< `+0x3a78`.
     Controls,   ///< `+0x3a7c`.
     Restart,    ///< `+0x1bb8`: Restart Level / Restart Last Check Point.
@@ -61,33 +65,54 @@ struct PauseMenuSetup {
     /// pause mode leaves both unset (Coney has no video-mode setting yet), so the default 4:3 layout is used.
     bool widescreen = false;
     bool flag02 = false;
+    OptionValues options{}; ///< The values the Options screen starts from (the game state's, save.md#options).
+    /// The top header's title: the game state's mission title (`+0x134`), `<number>:<title>`. Stand-in: in a Rumble
+    /// level the original shows the mode's title (`RumbleMode_GetModeTitle`); the caller gives the record's.
+    std::string missionTitle{};
+    std::string levelName{}; ///< The current level record's name (`+0x49`), the header's subtitle.
+    int checkpoint = 1;      ///< The game state's checkpoint (`+0x33a`), the header's last circle.
+    /// The pausing player's human for the Stats screen (nothing: no human, so no Stats screen).
+    std::optional<WarriorStats> stats{};
+    int difficulty = 1; ///< The game state's difficulty (`+0x154`), which picks the Stats screen's table row.
     std::array<std::vector<std::string>, 3> objectives{}; ///< Current, bonus and overview lists (`HUDSetObjective`).
 };
 
+/// The colour of the pause header's circles in level number `level`: the first of four lists that holds it decides,
+/// green (37, 100, 60), blue (38, 61, 94), brown (76, 53, 44) or gold (186, 139, 53); any other level black.
+///
+/// Research: docs/research/pause.md#the-top-header
+/// @orig 0x001db928 PauseMenu_GetLevelColour (unknown)
+[[nodiscard]] graphics::Rgba pauseLevelColour(int level);
+
 /// The pause menu (the story one, `0x0062e790`): the menu mode 0xa opens over the paused game.
 ///
-/// - **Opening** (open()): the world is tinted to black over kTintMs (worldTint()); the background fades in over
-///   kBackgroundFadeMs while its colour cycles (150, 50, 50) → (50, 150, 50) → (50, 50, 150) → … over kCycleLegMs a
-///   leg; the top header shows the mission's title; the grid (pauseGrid()) is centred on x 0.5 from y 0.86 with the
-///   first item selected; the usage line is at (0.5, 0.97).
-/// - **Input** (update()): while closing nothing is taken. START closes from anywhere once kStartDelayMs have passed
-///   since opening. Every other command goes to the Yes/No box when it is open, else to the open screen (back
-///   returns to the grid; up and down move the screen's selection, cue 4 or 0xe at an end; accept acts), else to the
-///   grid: accept plays cue 8 and selects the item, back plays cue 0xf and resumes, moves are the grid's.
-/// - **Items**: Objectives opens the lists (selection 0, or 2 in a Rumble level); Stats opens nothing (see below);
-///   Options and Controls open their screens; Restart opens Restart Level / Restart Last Check Point (the second
-///   selected), whose accept asks 0x105 or 0x103, and in a Rumble level Replay asks 0x105 at once; Resume closes; Quit
-///   asks 0x102, after a choice of two destinations when the level offers the hangout or is a Rumble level. Yes to a
-///   question closes with that outcome; No and back close the box and forget the choice.
-/// - **Closing**: the menu's alpha falls from 255 to 0 over kFadeOutMs, and kHoldMs after it reaches 0 the menu is
-///   closed() and outcome() says what to do.
+/// - **Opening** (open()): the world is tinted to black over kTintMs (worldTint()); the background's colour cycles
+///   (150, 50, 50) → (50, 150, 50) → (50, 50, 150) → …, a leg moving on at the first update more than kCycleLegMs
+///   after it began, and is drawn at the menu's alpha; the top header shows the mission's title; the grid
+///   (pauseGrid()) is centred on x 0.5 from y 0.86 with the first item selected; the usage line (string 0x1a) is at
+///   (0.5, 0.97). Nothing is drawn until the first update.
+/// - **Input** (update()): while closing or closed nothing is taken. START closes from anywhere once more than
+///   kStartDelayMs have passed since opening. Every other command goes to the Yes/No box when it is open, else to the
+///   open screen (back returns to the grid; up and down move the screen's selection, cue 4 or 0xe at an end, and are
+///   refused in a Rumble level's objectives; left and right are refused; accept acts), else to the grid: accept plays
+///   cue 8 and selects the item, back plays cue 0xf and resumes, moves are the grid's.
+/// - **Top header** (CircledTextHeader): the mission's title after its circled number and checkpoint letter, the
+///   circles in pauseLevelColour() but the last, red; the level's name under it; its label (string 0xe7, or 0xe8 when
+///   the current objectives hold `<ROBJ_N>`) hidden on the grid. Drawn on every screen.
+/// - **Items**: Objectives opens the lists (selection 0, or 2 in a Rumble level); Stats opens the Stats screen
+///   (PauseStats) when the pausing player is one of the nine Warriors, else nothing; Options and Controls open their
+///   screens; Restart opens Restart Level / Restart Last Check Point (the second selected), whose accept asks 0x105 or
+///   0x103, and in a Rumble level Replay asks 0x105 at once; Resume closes; Quit asks 0x102, after a choice of two
+///   destinations when the level offers the hangout or is a Rumble level. Yes to a question closes with that outcome;
+///   No and back close the box and forget the choice.
+/// - **Closing**: the menu's alpha falls from 255 to 0 over kFadeOutMs (cut to whole steps), is set to 0 on the
+///   first update after, and more than kHoldMs after the last update inside the fade the menu is closed() and
+///   outcome() says what to do; a closed menu draws nothing.
 ///
-/// Coney's stand-ins (docs/research/pause.md#coneys-implementation): the Stats screen is never available (Coney has no
-/// character stats), so Stats opens nothing; the Options screen is a list of its entries' names that does nothing on
-/// accept (`OptionMenu.cpp` not yet implemented); the Controls screen is ControlMenu; the headers
-/// (`CircledTextHeader`), the objective lists and the Restart and Quit screens are centred texts at Coney's positions
-/// and colours; the menu waits for no sound before it closes; the co-op quit (Player 2 / All) is not offered (Coney has
-/// one player).
+/// Coney's stand-ins (docs/research/pause.md#coneys-implementation): the two lower headers (`IconTextHeader`s), the
+/// screens' names over Objectives, Options and Controls, the objective lists and the Restart and Quit screens are
+/// centred texts at Coney's positions and colours; the menu waits for no sound before it closes; the co-op quit (Player
+/// 2 / All) is not offered (Coney has one player).
 ///
 /// Research: docs/research/pause.md
 /// @orig 0x001db3c0 PauseMenu_Construct (unknown)
@@ -95,8 +120,6 @@ class PauseMenu : public Widget {
   public:
     /// The world's tint to black when the menu opens (`0x0050ee5c`, 1.4 s).
     static constexpr std::uint64_t kTintMs = 1400;
-    /// The background's fade-in.
-    static constexpr std::uint64_t kBackgroundFadeMs = 3000;
     /// One leg of the background's colour cycle (`0x0050ee88`).
     static constexpr std::uint64_t kCycleLegMs = 5000;
     /// The background's three colours (`0x00635380`, in index order: red, green, blue).
@@ -111,6 +134,8 @@ class PauseMenu : public Widget {
     static constexpr std::uint64_t kFadeOutMs = 1500;
     static constexpr std::uint64_t kHoldMs = 500;
     /// The background: sheet record 12 (Coney loads it by its name hash) rectangle 5, size 1.05, depth 7,000.
+    /// Stand-in: the original's 0.9 when the device's `+0x458` is set, and the size the update sets for each video
+    /// mode, are not modelled.
     static constexpr std::size_t kBackgroundRect = 5;
     static constexpr float kBackgroundSize = 1.05F;
     static constexpr float kBackgroundDepth = 7000.0F;
@@ -132,25 +157,39 @@ class PauseMenu : public Widget {
     /// Shows strings from `strings` (which must outlive the menu; null shows empty texts).
     void setStrings(const GlobalStrings* strings) { m_strings = strings; }
     /// Sends front-end sound cues to `playCue` (empty: none).
+    /// @coney-only platform glue: where the front end's cues go
     void setSoundSink(std::function<void(int cue)> playCue);
     /// Draws the background through `batch` (not owned; null: no background).
     void setBackgroundBatch(graphics::SpriteBatch* batch) { m_background.setBatch(batch); }
     /// Draws the Controls screen's pad picture into `batch` (ControlMenu::kPictureRecord's sheet); null draws none.
     void setControllerBatch(graphics::SpriteBatch* batch) { m_controls.setPictureBatch(batch); }
+    /// Draws the Options screen's bars and squares into `batch` (sheet 12's, the background's); null draws none.
+    void setOptionsBatch(graphics::SpriteBatch* batch) { m_options.setSpriteBatch(batch); }
+    /// What the Options screen asks of the game (its cues always go to the menu's sound sink).
+    void setOptionHooks(OptionMenu::Hooks hooks) { m_optionHooks = std::move(hooks); }
+    /// Draws the top header's circles and rule into `batch` (over `part_page0`; null draws none).
+    void setHeaderBatch(graphics::SpriteBatch* batch) { m_topHeader.setBatch(batch); }
+    /// Draws the Stats screen's pictures into these batches (PauseStats::setBatches()).
+    void setStatsBatches(graphics::SpriteBatch* name, graphics::SpriteBatch* face, graphics::SpriteBatch* bars) {
+        m_stats.setBatches(name, face, bars);
+    }
 
     /// Opens the menu at game time `nowMs` as `setup` says.
     /// @orig 0x001dbee0 PauseMenu_Open (unknown)
     void open(const PauseMenuSetup& setup, std::uint64_t nowMs);
 
-    /// One frame: the background, the closing fade, then the input from `frame`'s pad (the pausing player's).
+    /// One frame: the background, the closing fade, the widgets, then the input from `frame`'s pad (the pausing
+    /// player's).
     /// @orig 0x001ddcf8 PauseMenu_Update (unknown)
     void update(const GuiFrame& frame) override;
 
-    /// Draws the background, the headers, the open screen, the Yes/No box, the grid and the usage line.
+    /// Draws the background, the open screen, the headers, the usage line, the grid and the Yes/No box; nothing before
+    /// the first update or once closed.
     /// @orig 0x001df700 PauseMenu_Render (unknown)
     void render(const GuiCanvas& canvas) const override;
 
-    /// How far the world is tinted to black at `nowMs`, 0 to 1.
+    /// How far the world is tinted to black at `nowMs`, 0 to 1: the tint blend open() starts on both views.
+    /// @orig 0x001dbee0 PauseMenu_Open (unknown)
     [[nodiscard]] float worldTint(std::uint64_t nowMs) const;
 
     /// Whether the menu is fading out (`+0x1b80`).
@@ -176,46 +215,73 @@ class PauseMenu : public Widget {
     /// The menu's alpha (`+0x3b9c`), 255 open.
     [[nodiscard]] float alpha() const { return m_alpha; }
     /// The texts of the open screen's lines, as drawn (for tests and the log).
+    /// @coney-only a test and log aid
     [[nodiscard]] std::vector<std::string> screenLines() const;
 
     /// The Controls screen.
     [[nodiscard]] const ControlMenu& controls() const { return m_controls; }
-
-    /// The Options screen's entries (Coney's stand-in list, docs/research/pause.md#the-items-screens).
-    static constexpr std::array<std::string_view, 7> kOptionsEntries{
-        "Lighting", "Camera", "Audio", "Video", "Subtitles", "Vibration", "Restore Default"};
+    /// The Options screen.
+    [[nodiscard]] const OptionMenu& options() const { return m_options; }
+    /// The Stats screen.
+    [[nodiscard]] const PauseStats& stats() const { return m_stats; }
+    /// The top header (`CircledTextHeader`).
+    [[nodiscard]] const CircledTextHeader& topHeader() const { return m_topHeader; }
 
   private:
     // The quit destination the Quit screen offers at index i.
     enum class QuitChoice : std::uint8_t { Hangout, MainMenu, RumbleMode };
 
     // String `id`, or empty without strings.
+    // @coney-only a lookup helper over the strings Coney is given
     [[nodiscard]] std::string_view string(std::uint32_t id) const;
     // Plays `cue`, if there is a sink.
+    // @coney-only platform glue: the sound sink
     void playCue(int cue) const;
-    // Starts the fade out at `nowMs` (`+0x1b80` = 1).
-    void startClosing(std::uint64_t nowMs);
-    // The fade-in, colour cycle and closing fade at `nowMs`.
+    // The update's animation at `nowMs`: the closing fade (or the time it would start from), the background's colour
+    // cycle and the menu's alpha on every widget.
+    // @orig 0x001ddcf8 PauseMenu_Update (unknown)
     void animate(std::uint64_t nowMs);
-    // One command without a screen or box open.
+    // The closing fade at `nowMs`: the alpha falls, then after the hold the menu is closed.
+    // @orig 0x001ddbc0 PauseMenu_FadeOut (unknown)
+    void fadeOut(std::uint64_t nowMs);
+    // One command without a screen or box open (the grid's cases of the command handler).
+    // @orig 0x001dee00 PauseMenu_OnCommand (unknown)
     void onGridCommand(MenuCommand command, std::uint64_t nowMs);
-    // One command with a screen open.
+    // One command with a screen open (the screens' cases of the command handler).
+    // @orig 0x001dee00 PauseMenu_OnCommand (unknown)
     void onScreenCommand(MenuCommand command, std::uint64_t nowMs);
-    // One command to the Yes/No box.
+    // One command to the Yes/No box, and the menu's answer to the box's choice.
+    // @orig 0x001ded68 PauseMenu_OnYesNoCommand (unknown)
+    // @orig 0x001db278 PauseMenu_OnConfirm (unknown)
     void onBoxCommand(MenuCommand command, std::uint64_t nowMs);
     // Acts on grid item `code`.
+    // @orig 0x001de6c0 PauseMenu_SelectItem (unknown)
     void selectItem(PauseItem item, std::uint64_t nowMs);
+    // Opens the Options screen at `nowMs` (`OptionMenu_Open`, with the pausing player's input).
+    // @coney-only Coney's call into OptionMenu::open with the pause setup's values and layout; the original's
+    // PauseMenu_SelectItem and PauseMenu_ReturnToOptions open the menu through its slot +0xa8
+    void openOptions(std::uint64_t nowMs);
     // Opens `screen` with selection `selection`.
+    // @coney-only the stand-in screens above the grid (docs/research/pause.md#open-questions)
     void openScreen(PauseScreen screen, std::size_t selection);
     // Back to the grid.
+    // @orig 0x001de488 PauseMenu_CloseScreen (unknown)
     void closeScreen();
-    // Opens the Yes/No box asking string `question`.
+    // Opens the Yes/No box asking string `question`: the question's text and the box's opening, which the item and
+    // command handlers each do inline.
+    // @orig 0x001de6c0 PauseMenu_SelectItem (unknown)
     void ask(std::uint32_t question);
+    // Shows string `id` on the usage line.
+    // @coney-only a lookup helper over the strings Coney is given
+    void setUsage(std::uint32_t id);
     // How many entries the open screen's selection runs over.
+    // @coney-only the stand-in screens above the grid (docs/research/pause.md#open-questions)
     [[nodiscard]] std::size_t screenEntries() const;
     // Rebuilds the headers and screen lines for the open screen and selection.
+    // @coney-only the stand-in screens above the grid (docs/research/pause.md#open-questions)
     void refreshScreen();
     // Adds a screen line.
+    // @coney-only the stand-in screens above the grid (docs/research/pause.md#open-questions)
     void addLine(std::string_view text, float y, graphics::Rgba colour, int fontSlot, float scale);
 
     const GlobalStrings* m_strings = nullptr;
@@ -229,18 +295,26 @@ class PauseMenu : public Widget {
     UsageInfo m_usage;
     YesNoBox m_yesNo;
     ControlMenu m_controls;
+    OptionMenu m_options;
+    PauseStats m_stats;
+    CircledTextHeader m_topHeader;
+    OptionMenu::Hooks m_optionHooks;
     std::vector<QuitChoice> m_quitChoices;
 
     PauseScreen m_screen = PauseScreen::Grid;
     std::size_t m_selection = 0;
     PauseOutcome m_outcome = PauseOutcome::Resume;
     PauseOutcome m_pending = PauseOutcome::Resume; // the choice the open Yes/No box confirms
-    std::uint64_t m_openMs = 0;                    // `+0x3ba4`, `+0x3b90`, `+0x3ba8`
-    std::uint64_t m_fadeOutMs = 0;                 // `+0x3b98`
-    float m_alpha = 255.0F;
+    std::uint64_t m_openMs = 0;                    // `+0x3ba4`
+    std::uint64_t m_cycleMs = 0;                   // `+0x3ba8`: when the colour cycle's leg began
+    std::uint64_t m_fadeOutMs = 0;                 // `+0x3b98`: the last update before closing
+    std::uint64_t m_lastFadeMs = 0;                // `+0x3ba0`: the last update inside the fade
+    std::size_t m_cycleLeg = 0;                    // `+0x3bac`
+    float m_alpha = 255.0F;                        // `+0x3b9c`, a whole byte
     bool m_closing = false;
     bool m_closed = false;
     bool m_open = false;
+    bool m_ready = false; // `+0x10`
 };
 
 } // namespace coney::gui

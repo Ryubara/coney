@@ -6,16 +6,16 @@ Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038e
 ## Purpose
 
 How an AI human touches the world, seen from the Human side. It covers which world uses an AI reaches, through
-which of the player's own functions, and which it never reaches. [AI humans](ai.md) explains the brains, goals and
+which of the player's own functions, and which it never reaches. [AI humans](ai/index.md) explains the brains, goals and
 actions; this page fills the gaps between that page and the Human pages ([Characters](characters.md),
 [Combat](combat/index.md), [Combat moves](combat-moves.md)). Where another page already covers a topic, it is linked
 here, not repeated.
 
 | Topic | Where it is covered |
 | --- | --- |
-| Which goal fetches an object, the object search, letting go | [AI: Fetching an object](ai.md#get-item), [Objects in an AI's hands](ai.md#ai-objects) |
-| World flags (activities) | [AI: World flags](ai.md#ai-flags); reinforcements spawned on them: [below](#spawner-reinforcements) |
-| Hiding, cars and trains in brief | [AI: Cover, cars and trains](ai.md#ai-hazards) |
+| Which goal fetches an object, the object search, letting go | [AI: Fetching an object](ai/index.md#get-item), [Objects in an AI's hands](ai/index.md#ai-objects) |
+| World flags (activities) | [AI: World flags](ai/index.md#ai-flags); reinforcements spawned on them: [below](#spawner-reinforcements) |
+| Hiding, cars and trains in brief | [AI: Cover, cars and trains](ai/index.md#ai-hazards) |
 | Route links: climbs, jumps, doors, charges | [AI: Following a route](ai-moving.md#route-follow), [Jump legs](ai-moving.md#route-jump) |
 | How the scripts drive the AI | [AI: How the scripts drive the AI](ai-scripting.md#script-control) |
 | An AI's attacks and the held object's effect | [Combat: An AI's attacks](combat-targets.md#ai-attacks) |
@@ -54,9 +54,9 @@ Confirmed (code) unless marked:
   object mash, 5 the button game ([Crimes](crimes.md)). Before that, the held object is dropped.
 - **No car.** No function in the Human or AI range puts a human into a car or drives one, and cars run on their own
   paths ([Cars](cars.md)). An AI meets a car only by hitting it ([Smashing a car](#cars)), by investigating a
-  crime at one ([AI](ai.md#ai-hazards)) or by being hit by it. Inferred from the absence of any such caller.
+  crime at one ([AI](ai/index.md#ai-hazards)) or by being hit by it. Inferred from the absence of any such caller.
 - **No block.** An AI never starts a block, because the block reads the pad ([Combat: The dispatcher](combat/index.md#dispatch)).
-- **No cover.** No goal seeks cover or shadow on its own ([AI: Cover, cars and trains](ai.md#ai-hazards)).
+- **No cover.** No goal seeks cover or shadow on its own ([AI: Cover, cars and trains](ai/index.md#ai-hazards)).
 - **No closed door.** An AI never opens a closed door by itself ([Doors](#doors)).
 
 ### Picking up {#pick-up}
@@ -81,9 +81,9 @@ above. The object then gets message 0 and plays the player's clip by height (463
 464 above; [Combat: breakables](combat-targets.md#breakables)), and `Human_PickUpObject` runs at the clip's event. Confirmed
 (code) at `0x0024d810`, `0x002faf98`.
 
-Two goals look for a weapon themselves, besides those listed in [AI: Objects in an AI's hands](ai.md#ai-objects).
+Two goals look for a weapon themselves, besides those listed in [AI: Objects in an AI's hands](ai/index.md#ai-objects).
 Both push GetItem with gait 4 and use `Ai_FindObject` with a line of sight, a claim and a reach test
-([AI: The object search](ai.md#get-item)):
+([AI: The object search](crew-wreck.md#object-search)):
 
 | Goal | Helper | When | Radius | Filter mask | Extra test |
 | --- | --- | --- | --- | --- | --- |
@@ -91,7 +91,7 @@ Both push GetItem with gait 4 and use `Ai_FindObject` with a line of sight, a cl
 | DestroyCar | `DestroyCar_GetWeapon` (`0x002ddd48`) | actions not blocked, nothing held, no spot yet | 10 m | `0x10000` | `WorldObject_CanBePickedBy` (`0x00395148`) |
 
 The masks are the filter's (`0x0053f2d0`) type bits; `0x10000` is the throwable bit, inferred from Melee asking for
-both as `0x30000` ([AI](ai.md#ai-objects)).
+both as `0x30000` ([AI](ai/index.md#ai-objects)).
 
 **Hostile, when it does not fetch** (`HostileGoal_Process`, `0x002d58b8`, with no action queued):
 
@@ -259,7 +259,7 @@ An AI never opens a closed door on its own. Confirmed (code) at the addresses ci
 
 A spawner in state 7 ("reinforcements", [Spawner states](../references/spawner-states.md)) does not spawn at its own
 position: `Spawner_PlaceState7` (`0x001679e8`) puts each human on a **pedestrian flag** (the flag list of
-[AI: World flags](ai.md#ai-flags)), out of the camera's sight and away from the player. It is the placement of every
+[AI: World flags](ai/index.md#ai-flags)), out of the camera's sight and away from the player. It is the placement of every
 spawner `level34` runs ([Scripts: level34](scripting.md#level34-start)), and of states 7 in `level2`, `level3`,
 `level5`, `level9`, `level11` and `level14`. One try per spawner update; a failed try spawns nothing that update.
 Confirmed (code) at the addresses cited unless marked:
@@ -316,11 +316,11 @@ What an AI does about world things it does not use:
 
 - Dealers: [AI: GoalDealer](ai-scripting.md#dealer).
 - Breakables smashed by gangs: VandalizeItem, DestroyItem and Riot ([AI goals](ai-goals.md)).
-- A crime at a car: the Pursue tactic ([AI](ai.md#ai-hazards)).
-- Trains: RunFromTrain ([AI](ai.md#ai-hazards)).
+- A crime at a car: the Pursue tactic ([AI](ai/index.md#ai-hazards)).
+- Trains: RunFromTrain ([AI](ai/index.md#ai-hazards)).
 
 No goal reacts to a door opening or to an object breaking as such: those reach the AI only as noises and crime
-events ([AI](ai.md)). Inferred: no other caller of the door or breakable functions in the AI range.
+events ([AI](ai/index.md)). Inferred: no other caller of the door or breakable functions in the AI range.
 
 ## Open questions
 

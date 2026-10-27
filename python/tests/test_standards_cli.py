@@ -6,6 +6,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+import yaml
 from git_support import git
 from test_standards_check import BAD_SOURCE, BAD_TEST, GOOD_SOURCE, branch, build, write_legacy
 
@@ -61,12 +62,12 @@ def test_init_prune_and_mark_keep_the_files_in_step(
     assert "1 function marked legacy" in capsys.readouterr().out
 
 
-def enforce(root: Path) -> None:
-    """Switch the made-up checkout's standards to enforced, as the cutover does."""
+def enforce(root: Path, on: bool = True) -> None:
+    """Set `standards.enforce` in the made-up checkout's conventions (the real file enforces since the cutover)."""
     conventions = root / ".github/conventions.yml"
-    conventions.write_text(
-        conventions.read_text(encoding="utf-8").replace("enforce: false", "enforce: true"), encoding="utf-8"
-    )
+    data = yaml.safe_load(conventions.read_text(encoding="utf-8"))
+    data["standards"]["enforce"] = on
+    conventions.write_text(yaml.safe_dump(data), encoding="utf-8")
 
 
 def test_check_prints_the_problems_as_warnings_until_the_standard_is_enforced(
@@ -74,6 +75,7 @@ def test_check_prints_the_problems_as_warnings_until_the_standard_is_enforced(
 ) -> None:
     root = checkout(tmp_path, monkeypatch, {"src/ai/ok.cpp": GOOD_SOURCE})
     write_legacy(root, {"src/ai/ok.cpp": {"tag": 1}})
+    enforce(root, on=False)
     assert main(["standards", "check", "--base", "main"]) == 0
     out = capsys.readouterr().out
     assert "research/legacy-files.toml:1: warning: legacy: src/ai/ok.cpp now passes 'tag'" in out
@@ -92,6 +94,7 @@ def test_check_warns_about_a_touched_file_until_the_standard_is_enforced(
     root = checkout(tmp_path, monkeypatch, {"src/ai/brain.cpp": BAD_SOURCE})
     write_legacy(root, {"src/ai/brain.cpp": {"comment": 1, "tag": 1}})
     branch(root, {"src/ai/brain.cpp": BAD_SOURCE + "// x\n"})
+    enforce(root, on=False)
     assert main(["standards", "check", "--base", "main"]) == 0
     assert "src/ai/brain.cpp:9: warning: comment:" in capsys.readouterr().out
     enforce(root)
@@ -105,6 +108,7 @@ def test_docs_check_reports_the_marks_when_the_change_can_move_them(
     root = checkout(tmp_path, monkeypatch, {"src/ai/brain.cpp": BAD_SOURCE})
     write_legacy(root, {"src/ai/brain.cpp": {"comment": 1, "tag": 1}})
     branch(root, {"src/ai/brain.cpp": GOOD_SOURCE})
+    enforce(root, on=False)
     result = docs_check.check_changed(root, "main", docs_check.context_for(root))
     legacy = load_conventions(root).standards.legacy_file
     # the file now passes both rules it is listed for: the docs job asks for them to be removed, as a warning only
@@ -125,8 +129,27 @@ def test_the_local_docs_step_runs_the_standards_for_a_source_only_change(
     git(root, "add", "-A")
     git(root, "commit", "-q", "-m", "list")
     branch(root, {"src/ai/other.cpp": BAD_SOURCE + "// x\n"})
+    enforce(root, on=False)
     # nothing in the docs changed: the standards run (a warning here), the site build does not
     step = check_cli._step_docs(root, "main", ["src/ai/other.cpp"])
     assert step.ok and not step.skipped and "mkdocs build skipped" in step.detail
     assert any("warning: comment:" in line for line in step.output)
     assert check_cli._step_docs(root, "main", ["tools/other.txt"]).skipped
+
+
+def test_on_the_real_conventions_check_fails_a_touched_file_and_passes_it_once_fixed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # No `enforce()` here: the made-up checkout holds the real conventions, enforced since the cutover.
+    root = checkout(tmp_path, monkeypatch, {"src/ai/brain.cpp": BAD_SOURCE}, status='status = "compared"\n')
+    write_legacy(root, {"src/ai/brain.cpp": {"comment": 1, "tag": 1}})
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "list")
+    branch(root, {"src/ai/brain.cpp": BAD_SOURCE + "// x\n"})
+    assert main(["standards", "check", "--base", "main"]) == 1
+    out = capsys.readouterr().out
+    assert "src/ai/brain.cpp:9: comment:" in out and "standards check: 2 errors, 0 warnings" in out
+    (root / "src/ai/brain.cpp").write_text(GOOD_SOURCE, encoding="utf-8")
+    write_legacy(root, {})
+    assert main(["standards", "check", "--base", "main"]) == 0
+    assert "standards check: 0 errors, 0 warnings" in capsys.readouterr().out

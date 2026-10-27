@@ -12,10 +12,23 @@ fighters in front of the player on the level's first frame of play, as the debug
 [AI fighters page](debug-menu.md#pages) does (rows of five from 4 m ahead, each model drawn at random from a fixed
 seed, more than 50 placed as several clicks' worth one behind the other); `--bench-warmup N` leaves the first N frames
 of play unmeasured (60 by default) while the crowd settles. `--frames` counts from the first frame of play, as always,
-so the bench measures `frames - warmup` frames:
+so the bench measures `frames - warmup` frames. The rest of the bench's options:
+
+| Option | What it does |
+| --- | --- |
+| `--bench-allies N` | Also spawns N AI allies behind the player (the AI fighters page's Ally side), so the crowd fights itself |
+| `--bench-god` | Makes player 1 invincible when the fighters spawn (the Entity editor's Invincible) |
+| `--bench-spawn-step N` | Spawns the fighters once N fixed steps of play have run, so an input script can first take the player somewhere; the warm-up counts from there |
+| `--bench-measure N` | Ends the run once N frames are measured; `--frames` stays the longest the run may take |
+| `--bench-frames FILE` | Also writes every measured frame (its length, each zone, each counter) as CSV, to study the worst frames |
+| `--bench-real-time` | Paces the run by the real clock as a player's run is (30 steps a second, frames as fast as they go), not one step a frame |
+
+The first measure of a change is a lockstep bench: the same steps every time, so only the times differ. The worst
+frames a player sees are a real-time bench's: there most frames only render and one in several runs a step, so a
+step's cost shows as a spike over the frames around it.
 
 ```sh
-build/release/src/platform/coney --disc /path/to/warriors.iso --play-level level95 --skip-movies --frames 660 \
+build/playtest/src/platform/coney --disc /path/to/warriors.iso --play-level level95 --skip-movies --frames 660 \
     --bench ../../scratch/bench-100.json --bench-fighters 100 --vsync off --no-activate
 ```
 
@@ -28,7 +41,7 @@ display's refresh) to see the whole cost, or `--headless` (librw's NULL renderer
 the simulation's alone.
 
 `coney-tools perf bench` runs the bench once per fighter count (0, 10, 25, 50 and 100 by default) in the hub,
-`level95` (free play from the first frame: in `level99` the opening scene holds the crowd back), from the `release`
+`level95` (free play from the first frame: in `level99` the opening scene holds the crowd back), from the `playtest`
 build and prints a Markdown table of them, keeping each report and log in `--out`
 ([coney-tools perf](coney-tools-build.md#perf)):
 
@@ -38,8 +51,9 @@ uv run --project python coney-tools perf bench --out ../../scratch/perf --headle
 ```
 
 **Measure the right build.** The `dev` preset is a Debug build, several times slower than an optimised one and not
-what a player runs; measure the `release` preset (`RelWithDebInfo`: optimised, with debug information) and say so. The
-report's `build` field names it.
+what a player runs; measure the `playtest` preset (`RelWithDebInfo`: optimised, with debug information and the debug
+tools) and say so. The `release` preset is the player's build: it has no debug tools, so it refuses `--bench`
+([The debug tools and the game](building.md#debug-tools)). The report's `build` field names the build type.
 
 **Measure on a quiet machine.** The times are real time on a shared computer. Numbers taken while other builds run
 are noisy (on the agents' machine a dozen builds may be running): check `coney-tools build status` first, run each
@@ -48,8 +62,9 @@ count more than once, and record which numbers were taken quiet.
 ## The in-game view {#overlay}
 
 The debug menus' **Performance** page ([The debug menus](debug-menu.md#pages)) turns the profiler on and off
-(*Measure*) and shows the frame time (plotted in the developer overlay) and every zone's and counter's mean over the
-last 60 frames. It works in any run, at any frame rate; while *Measure* is off nothing is timed.
+(*Measure*) and shows the frame time (plotted in the developer overlay), the [scene counters](#counters) by kind, a
+line each (*Scenery*, *Humans*, *Objects*, *Effects*, *Other*), and every zone's and counter's mean over the last 60
+frames. It works in any run, at any frame rate; while *Measure* is off nothing is timed.
 
 ## Zones {#zones}
 
@@ -72,7 +87,7 @@ the clip recorder that the `no-real-clock` check allows to), and with measuring 
 | `play.ai_capture` | the AI fighters' pose snapshots for drawing |
 | `play.anim_overrides`, `play.scenes`, `play.world` | the scripts' clip overrides, the scenes, the scenery and world objects round the camera |
 | `render` | the frame's render, the present included |
-| `render.skin` | every human skinned on the CPU and written into its mesh |
+| `render.skin` | every human posed: its bone matrices (GPU skinning), or every vertex skinned and written (CPU) |
 | `render.scene` | the scenery's draw, with the humans, cars and objects among it |
 | `render.humans` | every human's atomics drawn (librw instancing and uploading the skinned vertices, then drawing) |
 | `render.shadows_rings` | the blob shadows and health rings |
@@ -91,7 +106,126 @@ A counter is a running total sampled at the end of each frame; the report gives 
 | `gl.uploads`, `gl.upload_bytes` | buffer uploads (`glBufferData` with data, `glBufferSubData`) and their bytes |
 | `gl.programs`, `gl.textures` | shader program switches and texture binds: state changes |
 | `alloc.count`, `alloc.bytes` | C++ heap allocations on every thread (a counting `operator new`) |
+| `scene.<kind>.draws`, `.triangles`, `.vertices` | the same draws split by what was drawn, `<kind>` one of `scenery` (the streamed world, the skyline), `humans` (their bodies), `objects` (world objects, doors, cars, glass, carried props), `effects` (water, particles, glints, blob shadows, health rings, the throw arc) and `other` (the 2D layers, menus, movies, debug lines); vertices are what the draws sent, an indexed draw's index count |
+
+The scene counters are kept by the same wrappers: the play mode's render marks each part of the frame with the kind
+it draws (`platform::DrawKindScope`, `src/platform/perf_probes.h`), and a draw counts as the innermost kind open, else
+`other`. The Performance page has a line for each kind that sums its draws a frame, `92.4k tris 160.2k verts 410
+draws` on *Scenery*, and a bench report has them as every counter. With a [mesh view](debug-menu.md#mesh-views) on, its
+passes are draws too and count with the model's kind.
 
 The OpenGL counters wrap the functions librw's loader fills in (`glad_glDrawElements` and the rest), so librw itself is
 unchanged. The allocation counter replaces the global `operator new` in the executable and the tests; librw's and SDL's
 own allocations use `malloc` and are not counted.
+
+## GPU skinning {#gpu-skinning}
+
+In play and in scenes every human is skinned in the vertex shader (`src/platform/character_skin.*`): a librw GL3
+object pipeline of Coney's own uploads a character's vertices once, with each vertex's four bone indices and weights,
+and per frame only its bone matrices change (at most 64, in the character's space). Its lighting, fog,
+texture levels and alpha test are those of Coney's default pipeline (`src/platform/texture_lod.*`), and the blended
+normal is normalised as the CPU skinning normalised it, so a human looks as it did. Before, every human's every vertex
+was blended on the CPU each frame, written into two librw geometries (the second for the blood layer) and uploaded
+again whole.
+
+The placement in the world (the lean, the heading, the feet and RenderWare's axes) is the atomic's frame on both
+paths, so it moves the blended vertex whole. Folded into each bone matrix instead, it would move a vertex by the sum
+of its weights, and the stored weights sum a hair below 1 (the decoder clears the bits that hold the bone,
+[Character geometry](../research/characters.md#character-geometry)): on the disc, 71,380 of the 150,509 distinct
+vertices fall short, by 1.9 × 10⁻⁵ on average and 9.2 × 10⁻⁵ at most, which would pull a human towards the world's
+origin by up to a centimetre a hundred metres out.
+
+The bounding sphere that chooses a human's lights and fades it out at a distance comes from the box round each skin
+node's vertices as the node's matrix moves it, and round the feet (`posedBox()`), which holds every vertex and is a
+little larger than the vertices' own box (**Coney's choice**: the original's choice of sphere is not traced). Where the
+pipeline cannot start (OpenGL 2.1 or ES 2, a model with more than 64 skin nodes), the mesh skins on the CPU, blending
+each vertex straight into librw's geometry. The character viewer and the reference images skin on the CPU.
+`--cpu-skinning` skins every human by that CPU path in any run, to compare the two paths' pictures and times in one
+build; it is not the per-vertex skinning that came before GPU skinning.
+`platform::characterSkinOn()` says which path new meshes take, and `CharacterMesh::gpuSkinned()` which one a mesh took.
+
+The two paths draw the same picture as the skinning that came before them. On 2026-10-25, `playtest` builds of the
+change and of the `main` it starts from took the same frames at 640 × 448: a close-up of the player in `level99` with
+the view pinned, and the hub with 25 fighters in motion at frame 200. GPU skinning and `--cpu-skinning` drew both
+frames identically, pixel for pixel. Against `main`'s build, the close-up was identical too, and the hub frame had 1
+of 286,720 pixels different, by one level of one channel.
+
+## Findings {#findings}
+
+Taken on 2026-10-25 with `coney-tools perf bench` in the hub from two `playtest` builds: the change that brought
+GPU skinning (with and without `--cpu-skinning`) and the `main` it starts from (`516482455`, CPU skinning). Windowed,
+vsync off, a Ryzen 7 9800X3D with an RTX 5080 (NVIDIA driver 610.88). The machine was **not quiet**: two to four
+other builds and test runs held build slots, and the processor's load read 93 to 100 %. The table gives the median
+frame of each run (the means carry the other builds' stalls), as the median of three repeats, the three builds
+interleaved. The zones are medians too.
+
+| Fighters | Frame, `main` (ms) | Frame, `--cpu-skinning` (ms) | Frame, GPU skinning (ms) | Frames a second, `main` / GPU | `render.skin`, `main` / GPU (ms) | Uploads a frame, `main` / GPU (KB) |
+| --- | --- | --- | --- | --- | --- | --- |
+| 0 | 6.00 | 5.91 | 2.93 | 167 / 341 | 3.20 / 0.34 | 535 / 19 |
+| 10 | 9.22 | 9.97 | 3.49 | 108 / 287 | 5.61 / 0.59 | 891 / 28 |
+| 25 | 12.36 | 11.69 | 4.09 | 81 / 244 | 8.71 / 0.97 | 1,329 / 31 |
+| 50 | 22.67 | 17.88 | 5.31 | 44 / 188 | 16.03 / 1.59 | 2,058 / 36 |
+| 100 | 37.43 | 37.56 | 7.79 | 27 / 128 | 28.30 / 2.87 | 3,480 / 46 |
+
+- **Skinning.** GPU skinning makes the hub with 100 fighters about 4.8 times faster than `main`. The change's own CPU
+  path (`--cpu-skinning`) is as fast as `main`'s within this machine's noise. What is left of `render.skin` is the work
+  each human's pose takes on the CPU (its bones' transforms, the skinning matrices and the palette), about 25 µs a
+  human.
+- **The empty hub.** At 0 fighters the hub still has its own 14 humans. Of the 2.93 ms, `step` is 1.86 ms, and nearly
+  all of that is `humans.brains` (1.54 ms). `render` is 0.99 ms (`render.scene` 0.64 ms, `render.skin` 0.34 ms), and
+  `present.swap` 0.34 ms. The floor is CPU time spent in the AI's brains, not the GPU, the 2D layers or waiting for
+  the swap.
+
+### Frame spikes with a crowd (#995) {#spikes-995}
+
+Taken on 2026-10-26 from two `playtest` builds of the fix's branch, one with the fix taken out, on the machine above,
+windowed, vsync off, with two to four other builds running for the lockstep runs and none for the real-time ones. The
+run is the one the user played: level95 checkpoint 2, the player walked out of the clubhouse door into the streets by
+an input script (the hub's exit flag and triangle), then 50 enemies and 50 allies spawned in front of and behind him at
+step 1100 with god mode:
+
+```sh
+coney --disc DISC --play-level level95 --checkpoint 2 --skip-movies --input-script leave-hub.txt \
+    --bench out.json --bench-frames out.csv --bench-fighters 50 --bench-allies 50 --bench-god \
+    --bench-spawn-step 1100 --bench-warmup 300 --bench-measure 4000 --frames 200000 --bench-real-time \
+    --vsync off --no-activate
+```
+
+where `leave-hub.txt` is `800 steer 50 -187,95.1`, `880 stick left 0 0`, `885 tap triangle`.
+
+The zones named `gameplay.*` below were added for the study around `GameplayMode::updateWorld`'s steps (the humans'
+sounds handed to the game's sound, the scripts' spawners) and are not kept.
+
+**The cause.** Every sound a human made (each footstep, swing and blow) asked the game's sound for its character
+type's traits (female voice, boss class), and `GameSound::traitsOf` found them by parsing every recorded `CfgChar`
+call, the last first, until one was of that type: each parse copied the type's damage and attack tables and its model
+and hat names. With a hundred fighters in a brawl a step made hundreds of sounds, so `gameplay.sounds` took a median
+4.9 ms of the step and up to 23 ms, with 35,000 allocations a step (up to 117,000). The steps that rendered took two to
+three times as long as the frames that only render, and in a real-time run they are the spikes. Nothing periodic in
+the AI lined up: the scan, think and path schedules are already spread (`humans.brains` stays near 0.4 ms in free
+roam). The debug tools take no part: the bench has the overlay closed, the run log and the debug draw as a player's
+run has them, and the cost is in the game's own sound path. Now `audio::typeTraits` passes another type's record by
+its first argument and parses only the records of the type asked for.
+
+| Real-time run (4,000 frames, two runs each) | Before | After |
+| --- | --- | --- |
+| Frame p99 (ms) | 23.5 / 22.3 | 11.4 / 11.5 |
+| Frames over 16.7 ms a minute | 388 / 411 | 14 / 12 |
+| Frames over 25 ms a minute | 58 / 31 | 9 / 6 |
+| A frame that runs a step, median / p90 (ms) | 13.6 / 20.2 | 8.9 / 10.8 |
+| `gameplay.sounds` per step, median / p99 / max (ms) | 4.9 / 16.8 / 22.9 | 0.13 / 0.38 / 1.1 |
+| Allocations per step, median / p99 | 35,236 / 106,051 | 1,515 / 2,025 |
+
+The frames that only render took 4.3 ms before and after. In lockstep (940 frames, a busy machine) the step's median
+went from 14.3 ms to 4.3 ms and its p99 from 54.9 ms to 11.8 ms. The game does the same: at the same seed the
+`--trace-humans` rows (92,268) and the event log (8,088 rows with 50 and 50, 8,652 with 100 enemies) of the run above
+in lockstep for 1,700 frames are identical before and after.
+
+**What is left.** The largest frame after the fix is a spawner's first human of a model not yet loaded: 28 to 41 ms
+in `gameplay.spawners`, about 296,000 allocations and 37 MB in that step, two or three times in 20 s of free roam; a
+later spawn of the same model costs nothing measurable. It is filed as its own issue. The rest of a step is the
+humans' own update (`humans.state` and `humans.actions` about 1.1 and 1.5 ms, `humans.brains` 0.4 ms), the average
+that #930 covers. A sweep of the per-human and per-event paths for the same pattern found nothing else that costs
+measurably: the other lookups in the recorded configuration (`CfgGang`, `CfgHat`, `CfgObj`, `CfgWarriorClass`, a
+speaker's voice set) compare the first argument without parsing and run per binding call or per spoken line, and the
+1,500 allocations left in a step (the sounds each human hands over, the step's lists) take well under a millisecond.

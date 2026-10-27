@@ -1928,7 +1928,12 @@ name = "VolumeBoxes_SendDamageMessage"
 page = "scripting.md#triggers"
 level = "confirmed-code"
 coney = "src/world_objects/object_services.h:ObjectServices::damageDone"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the 30 m alert after the damage message (AI_AlertNearby 0x00293768)"
+relation = "not-ported"
+issue = 1003
 
 [[function]]
 address = 0x00413198
@@ -2027,7 +2032,12 @@ name = "VolumeBox_Update"
 page = "scripting.md#triggers"
 level = "confirmed-code"
 coney = "src/world_objects/volume_boxes.h:VolumeBoxes::update"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the stay timer re-arms only when someone stayed, and a box a handler disabled still sends the rest of its messages"
+relation = "not-ported"
+issue = 690
 
 [[function]]
 address = 0x0041abe8
