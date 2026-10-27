@@ -173,7 +173,7 @@ status = "compared"
 [[function.gaps]]
 what = "icons 25 and 26's batch, the objective blips' height icons, fixed-point and type-12 blips, the enemy marks and the police hint 8"
 relation = "not-ported"
-issue = 85
+issue = 1018
 
 [[function.gaps]]
 what = "hint 22"

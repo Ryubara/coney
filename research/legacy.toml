@@ -84,13 +84,6 @@ skeleton = 9
 verified = 1
 evidence = 2
 
-["docs/research/armies.md"]
-front-matter = 1
-skeleton = 6
-verified = 1
-evidence = 2
-history = 2
-
 ["docs/research/boot.md"]
 front-matter = 1
 verified = 1

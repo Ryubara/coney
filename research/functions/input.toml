@@ -53,7 +53,7 @@ status = "compared"
 [[function.gaps]]
 what = "the left stick turned by the player's camera, with the follow camera's flags"
 relation = "not-ported"
-issue = 85
+issue = 1019
 
 [[function.gaps]]
 what = "the pad's vibration"

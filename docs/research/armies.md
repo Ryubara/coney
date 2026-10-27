@@ -410,7 +410,8 @@ script steps.
 ### When a leaf is placed {#q-leaf-place}
 
 The original places a sliding leaf on its own first update (`SubSlidingDoor_PlaceLeaf`, `0x003f4950`), after any
-command that came before it; Coney places it at the door's set-up. The two differ only for a two-leaf up-and-down door
+command that came before it, and again on its message `0x40` (`SubSlidingDoor_OnMessage`, `0x003f5c38`; confirmed
+(code)); Coney places it at the door's set-up. The two differ only for a two-leaf up-and-down door
 that gets a command before its leaves' first update. Whether any level does is not known: a search of the decompiled
 scripts for `OpenDoor` and `CloseDoor` on such a door in the frame its level loads, or a breakpoint on
 `SlidingDoor_StateCommand` (`0x003f5608`) before the first `SubSlidingDoor_Update` (`0x003f5a68`) of a level with one,

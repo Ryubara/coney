@@ -167,7 +167,7 @@ issue = 549
 [[function.gaps]]
 what = "an unresolved start camera: Coney makes no path"
 relation = "stand-in"
-issue = 85
+issue = 1017
 
 [[function]]
 address = 0x0011cb70
@@ -340,7 +340,7 @@ status = "compared"
 [[function.gaps]]
 what = "the stack's depth of two (a third push is dropped): Coney's stack has no limit"
 relation = "stand-in"
-issue = 85
+issue = 1017
 
 [[function]]
 address = 0x00120488
@@ -413,7 +413,7 @@ issue = 549
 [[function.gaps]]
 what = "the camera's registered-object list, the hide-and-seek flag 0x0050b1dc and the word 0x00510548 cleared"
 relation = "not-ported"
-issue = 85
+issue = 1017
 
 [[function]]
 address = 0x00123630
@@ -697,12 +697,12 @@ status = "compared"
 [[function.gaps]]
 what = "a falling human landed and its height eased 30%"
 relation = "not-ported"
-issue = 85
+issue = 1017
 
 [[function.gaps]]
 what = "the loop stops at a human it cannot find; Coney goes on"
 relation = "stand-in"
-issue = 85
+issue = 1017
 
 [[function]]
 address = 0x0013b2b8
@@ -748,7 +748,7 @@ issue = 549
 [[function.gaps]]
 what = "two targets: the mean of their feet, mode 0's look-at point P, and modes 1 and 2's pull of P toward the camera"
 relation = "not-ported"
-issue = 85
+issue = 1017
 
 [[function]]
 address = 0x0013bfe0
@@ -762,17 +762,17 @@ status = "compared"
 [[function.gaps]]
 what = "no damping while the target is in the falling states (0x1c00000000)"
 relation = "not-ported"
-issue = 85
+issue = 1017
 
 [[function.gaps]]
 what = "the 40% look-at catch-up while +0x3ec is 1"
 relation = "not-ported"
-issue = 85
+issue = 1017
 
 [[function.gaps]]
 what = "the segment's plan-length threshold (1e-5 squared; Coney: any length)"
 relation = "stand-in"
-issue = 85
+issue = 1017
 
 [[function]]
 address = 0x0013d010
@@ -800,22 +800,22 @@ status = "compared"
 [[function.gaps]]
 what = "the hand-over blend's growth (x1.05 an update), its end test (the unscaled plan step under 1 cm) and its last step (Coney adds 0.05, tests the scaled 3D step and keeps the blended point)"
 relation = "not-ported"
-issue = 85
+issue = 1017
 
 [[function.gaps]]
 what = "P put back when held, the world collision, and the +0x3ec step after a shake"
 relation = "not-ported"
-issue = 85
+issue = 1017
 
 [[function.gaps]]
 what = "a camera held at the start of placement is put back without placing; Coney places it again"
 relation = "stand-in"
-issue = 85
+issue = 1017
 
 [[function.gaps]]
 what = "a height setting of exactly 0 is off in the original; Coney's ceiling then sits at the feet"
 relation = "stand-in"
-issue = 85
+issue = 1017
 
 [[function]]
 address = 0x0013dcc8
@@ -838,17 +838,17 @@ status = "compared"
 [[function.gaps]]
 what = "the segment steps, the joint mean and the mirrored rail point: Coney walks the lead along the rail and clamps it to the ends"
 relation = "stand-in"
-issue = 85
+issue = 1017
 
 [[function.gaps]]
 what = "switch 7: the camera off the rail beside the target, the look-at point P, and the collision rays and sphere push (Coney reads switch 7 as leading the look-at point)"
 relation = "not-ported"
-issue = 85
+issue = 1017
 
 [[function.gaps]]
 what = "two or more targets: the farthest-ahead extra and CamRail_CollideTwoTargets; the +0x3ec step after a shake"
 relation = "not-ported"
-issue = 85
+issue = 1017
 
 [[function.gaps]]
 what = "the push out of nearby humans"
