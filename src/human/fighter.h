@@ -612,8 +612,8 @@ class Fighter {
     [[nodiscard]] float steerReach(std::uint32_t clipId, const Combatant& target, const FighterInput& input,
                                    float distance) const;
     // The block's clip: the shuffle with the stick pushed, the sustain otherwise. The clip half of
-    // Player_UpdateActions'
-    // block step: R1 held sets the state 0x8001, whose anim state picks the clip (docs/research/combat/index.md#block).
+    // Player_UpdateActions' block step: R1 held sets the state 0x8001, whose anim state picks the clip
+    // (docs/research/combat/index.md#block).
     // @orig 0x0027c120 Player_UpdateActions (unknown)
     static void playBlock(const FighterInput& input, HumanAnimator& animator);
     // Lands a hit of attack `animId` and `damage`, and gives the rage it earns.
@@ -746,8 +746,8 @@ class Fighter {
     void seatMount(const FighterInput& input, const HumanAnimator& animator, float heading);
     // The seat's slide is over: the victim is attached where it lies.
     void attachSeat(const FighterInput& input, float heading);
-    // Whether a victim escapes when the grab's power runs out (`Human_UpdateMeters` `0x002562d0`): it has flag 0x4000
-    // or 0x20000, or the grabber is hurt and it lacks 0x2000000000 (docs/research/combat-grabs.md#grabbed).
+    // Whether a victim escapes when the grab's power runs out (`Human_UpdateMeters` `0x002562d0`): it lacks
+    // 0x2000000000, and it has flag 0x4000 or 0x20000 or the grabber is hurt (docs/research/combat-grabs.md#grabbed).
     // @orig 0x002562d0 Human_UpdateMeters (unknown)
     [[nodiscard]] bool powerOutEscape(const Combatant& victim) const;
     // The grab broke at 0 power and the victim escapes (powerOutEscape()), or it won its escape roll

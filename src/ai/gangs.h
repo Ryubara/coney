@@ -121,21 +121,23 @@ class Gang {
   public:
     /// Its id (`+0x30`): its slot, and its bit in other gangs' masks.
     [[nodiscard]] int id() const { return m_id; }
-    /// Its kind (`+0x2c`, `GangCreate`'s type) and name.
+    /// Its kind (`+0x2c`, `GangCreate`'s type).
     [[nodiscard]] int kind() const { return m_kind; }
+    /// Its name, as `GangCreate` gave it.
     [[nodiscard]] const std::string& name() const { return m_name; }
     /// In use (`+0x18`).
     [[nodiscard]] bool inUse() const { return m_inUse; }
-    /// The enemy and friend masks (`+0x38`, `+0x3c`): a bit per gang id.
+    /// The enemy mask (`+0x38`): a bit per gang id.
     [[nodiscard]] std::uint32_t enemyMask() const { return m_enemies; }
+    /// The friend mask (`+0x3c`): a bit per gang id.
     [[nodiscard]] std::uint32_t friendMask() const { return m_friends; }
     /// Suspended (`+0xd4`): its members' brains skip their update.
     [[nodiscard]] bool suspended() const { return m_suspended; }
     /// Invincible (`+0xd8`, `GangInvincible`): its members, and those who join later, are gods (human flag `0x10`).
     [[nodiscard]] bool invincible() const { return m_invincible; }
     /// Always seen (`+0xdc`, `GangSetAlwaysSeen`): an enemy's scan notices its members anywhere in sight range, and its
-    /// own members' fight and spectate goals skip the line-of-sight test. **Coney stand-in**: Coney's brains have no
-    /// enemy scan yet, so it is only kept.
+    /// own members' fight and spectate goals skip the line-of-sight test. The scan reads it (ai::scanSees()).
+    /// **Coney stand-in**: the fight and spectate goals' skip is not built.
     [[nodiscard]] bool alwaysSeen() const { return m_alwaysSeen; }
     /// The members (`+0x48`), in the order they joined.
     [[nodiscard]] const std::vector<Brain*>& members() const { return m_members; }
@@ -221,6 +223,7 @@ class Gang {
     void setCanFlee(bool on) { m_canFlee = on; }
     /// The living count the attack tactic's start noted for its flight (`+0xe0`); −1 until then.
     [[nodiscard]] int fleeCount() const { return m_fleeCount; }
+    /// Notes the living count for the flight (fleeCount()).
     void setFleeCount(int count) { m_fleeCount = count; }
 
     /// `member`'s event, before its brain has it (`Gang_OnEvent`): while scripts run, the message handler for the
@@ -285,6 +288,7 @@ class Gangs {
 
     /// The script services the message handlers and tactics call through (null for none: no handler is called).
     void setScripts(ScriptServices* scripts) { m_scripts = scripts; }
+    /// The script services setScripts() gave; null for none.
     [[nodiscard]] ScriptServices* scripts() const { return m_scripts; }
     /// What the gangs read from the level's configuration.
     void setLookups(GangLookups lookups) { m_lookups = std::move(lookups); }

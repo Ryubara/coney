@@ -40,7 +40,10 @@ float grabTurnStep(const CombatTuning& tuning, float remaining, float previous) 
     if (size < 1e-6F) {
         return 0.0F;
     }
-    // The carried turn: kept at k, or pushed back when the turn reverses with little left.
+    // The carried turn: kept at k, or pushed back when the turn reverses with little left. **Coney stand-in** (#1011):
+    // the original carries the rate before its cut to the angle left (+0x5e0) and tests the reverse against the last
+    // angle left (+0x5e4); Coney carries the last step, cut and 0 once the heading is reached, so the turn starts
+    // slower again after the pair has reached the stick's direction.
     const bool reverses = previous != 0.0F && (previous > 0.0F) != (remaining > 0.0F) && size < kPi / 4.0F;
     const float carry = reverses ? tuning.grabTurnReverseCarry : tuning.grabTurnCarry;
     const float rate = std::min(tuning.grabTurnMax, (tuning.grabTurnMax * (1.0F - std::cos(size * kPi / 4.0F)) / 2.0F) +

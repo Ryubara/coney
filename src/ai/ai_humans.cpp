@@ -60,7 +60,11 @@ void AiHumans::switchPlayer(Brain& to, BrainType leftAs) {
     if (&to == m_playerBrain) {
         return;
     }
-    // The human left behind fights as `leftAs`, with the flags Human_ReleasePlayer gives that brain type.
+    // The human left behind fights as `leftAs`, with the flags Human_ReleasePlayer gives that brain type. **Coney
+    // stand-in** (#1011): the rest of Human_ReleasePlayer is not done here: the target drops outside co-op, the clear
+    // of his goals and actions (releaseToAi() does it), the class's rescale of health and power, the gear, the
+    // statistics and inventory, the pair break with another player, every brain's enemy counts, the HUD panel and
+    // tag, the body's scales and the class flags.
     m_playerBrain->setType(leftAs);
     human::Human& left = m_playerBrain->human();
     const std::uint64_t released = releasedFlags(left.flags(), leftAs);

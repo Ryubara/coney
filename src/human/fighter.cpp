@@ -1183,11 +1183,12 @@ void Fighter::strikeContact(Combatant& victim, int animId, anim::Vec3 position, 
 }
 
 bool Fighter::powerOutEscape(const Combatant& victim) const {
+    // No-escape is tested first: with it the grab is released whatever else holds.
     const std::uint64_t flags = victim.flags();
-    if ((flags & (flag::kDoubleDamage | flag::kAutoEscape)) != 0) {
-        return true;
+    if ((flags & flag::kNoEscape) != 0) {
+        return false;
     }
-    return hurt() && (flags & flag::kNoEscape) == 0;
+    return (flags & (flag::kDoubleDamage | flag::kAutoEscape)) != 0 || hurt();
 }
 
 void Fighter::applyHit(Combatant& victim, int animId, int damage, bool heldMove, anim::Vec3 attacker,
@@ -1352,12 +1353,14 @@ void Fighter::enterStanceForHold(const combat::CombatOutput& out) {
     // tandem. The strong grapple, which `Player_SpecialAttack` starts through `Grab_Start`, enters none
     // (docs/research/combat-targets.md#fight-stance). The rest of `Player_GrabOrTackle` is
     // PlayerCombat::grabOrTackle()'s (the refusals, the tandem first, the miss), combatInput()'s (the searches) and
-    // startHold()'s and startTandem()'s (the starts). **Coney stand-in**: of it these are not built: circle in a throw
-    // aim and the tackle with flag `0x100000000` (flag::kBlockTackle) are not refused; the search runs for a
+    // startHold()'s and startTandem()'s (the starts). **Coney stand-in** (#1011): of it these are not built: circle in
+    // a throw aim and the tackle with flag `0x100000000` (flag::kBlockTackle) are not refused; the search runs for a
     // brain-driven player too and a miss keeps the target instead of setting the none found; a downed human is not
     // mounted (the search skips him); a tackle at a human who is tackling does not pull him off; command 33's check
-    // before a grab is not made; and a grab or tackle does not warn its victim (`Human_WarnOfAttack`). The record's
-    // `+0xb8` count is zeroed where each power move starts, and a Coney target always has an anim stack (`+0xd8`).
+    // before a grab is not made; a circle tap with both grab-block flags still starts a tandem, which the original
+    // refuses before its tandem test; and a grab or tackle does not warn its victim (`Human_WarnOfAttack`). The
+    // record's `+0xb8` count is zeroed where each power move starts, and a Coney target always has an anim stack
+    // (`+0xd8`).
     const bool holdStarted = (out.grabStarted || out.tackleStarted) && out.grappleAnim == id::kNone;
     if (m_player && (holdStarted || out.grabMissed || out.tandemBase != id::kNone)) {
         enterStance();

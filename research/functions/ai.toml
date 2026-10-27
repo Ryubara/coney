@@ -728,6 +728,31 @@ relation = "not-ported"
 issue = 646
 
 [[function]]
+address = 0x002225d8
+name = "Human_MaySpectate"
+page = "ai-fights.md#enemy-scan"
+kind = "helper"
+role = "the enemy scan's height rule: a Warrior, a brain that may not start a fight (but class role 10), one with 3 investigations or a pad player passes; else the member must stand less than 1.9 m (times the vertical sight modifier) above"
+level = "confirmed-code"
+coney = "src/ai/enemy_scan.cpp:maySpectate"
+status = "compared"
+
+[[function.gaps]]
+what = "a scanner who may not start a fight (Brain_MayStartFight 0x002904e0) passes unless his class role is 10: not ported, as with it the disc's level3 rooftop chase loses Snow for AI seeds 0 and 5"
+relation = "stand-in"
+issue = 1011
+
+[[function.gaps]]
+what = "the investigation count (+0x2d0) is taken as 0: Coney builds no investigate goal to raise it"
+relation = "stand-in"
+issue = 1011
+
+[[function.gaps]]
+what = "the 1.9 m limit is not scaled by CfgVerticalSightModifier (0x00510ad4)"
+relation = "stand-in"
+issue = 1011
+
+[[function]]
 address = 0x002235f8
 name = "Human_CounterChance"
 page = "ai-fights.md#block"
@@ -1069,6 +1094,11 @@ status = "compared"
 
 [[function.gaps]]
 what = "the enemy scan does not mark the enemies on the HUD radar"
+relation = "not-ported"
+issue = 1011
+
+[[function.gaps]]
+what = "the hostile counts (Brain_CountHostile, Brain_UncountHostile) are not kept"
 relation = "not-ported"
 issue = 1011
 
@@ -1426,6 +1456,16 @@ role = "re-scans enemies (`Brain_ScanEnemies`, one of 5 tokens per update) when 
 level = "confirmed-code"
 coney = "src/ai/scan_schedule.h:ScanSchedule::maybeScan"
 status = "compared"
+
+[[function.gaps]]
+what = "the rescan when the gang changed is not built"
+relation = "stand-in"
+issue = 1011
+
+[[function.gaps]]
+what = "the detail level (+0x333) is not read: neither its x4 out of the stance nor its level 0 test"
+relation = "stand-in"
+issue = 1011
 
 [[function]]
 address = 0x0028fbb0
@@ -2098,6 +2138,21 @@ role = "the Warriors' scan filter: a cop within 10 m and a threat, no civilian, 
 level = "confirmed-code"
 coney = "src/ai/enemy_scan.cpp:warriorThreat"
 status = "compared"
+
+[[function.gaps]]
+what = "a cop at exactly 10 m passes (the original needs under 10 m)"
+relation = "stand-in"
+issue = 1011
+
+[[function.gaps]]
+what = "the civl_co_di kind (type 6) is refused as a civilian; the original filters it as any other"
+relation = "stand-in"
+issue = 1011
+
+[[function.gaps]]
+what = "a civilian passes only of ped type 3 (+0x26c) with +0x21c set and not grabbed from the rear: Coney refuses every civilian"
+relation = "stand-in"
+issue = 1011
 
 [[function]]
 address = 0x0029ce98

@@ -2234,6 +2234,21 @@ level = "confirmed-code"
 coney = "src/human/human.h:Human::tryContextAction"
 status = "compared"
 
+[[function.gaps]]
+what = "the state mask 0x7bf9e9f7ff0 and the record's +0x08 mask 0x2fefefff that refuse the press: Coney's caller tests the human airborne, climbing, in a dropped phase or busy, and a pick-up in progress"
+relation = "stand-in"
+issue = 1011
+
+[[function.gaps]]
+what = "the key path (a cuffed human by an empty-handed one, either with a key: the cue, the key spent, Uncuff_WithKey)"
+relation = "not-ported"
+issue = 664
+
+[[function.gaps]]
+what = "a tag in progress (the particle object at +0x36c) keeps the press"
+relation = "not-ported"
+issue = 664
+
 [[function]]
 address = 0x00281450
 name = "Climb_OnFirstClipEndRun"

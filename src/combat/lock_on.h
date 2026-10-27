@@ -31,7 +31,9 @@ inline constexpr int kCombatWalkFirst = 380;
 /// The grabbing player's turn this update, radians (at most the remaining angle `remaining`, signed): with `max`
 /// CombatTuning::grabTurnMax, `r = min(max, max × (1 − cos(|remaining| × π / 4)) / 2 + previous × k)`, `k`
 /// CombatTuning::grabTurnCarry, or CombatTuning::grabTurnReverseCarry when the turn reverses within 45°. `previous`
-/// is the last update's turn (signed). The grab's movement (Fighter::moveGrab()) applies it.
+/// is the last update's turn (signed). The grab's movement (Fighter::moveGrab()) applies it. **Coney stand-in**
+/// (#1011): the original's `previous` is the last rate before its cut to the angle left, and its reverse test reads
+/// the last angle left.
 [[nodiscard]] float grabTurnStep(const CombatTuning& tuning, float remaining, float previous);
 
 } // namespace coney::combat

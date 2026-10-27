@@ -1194,8 +1194,9 @@ weights; the grab target is held by standing at it, facing it, with no damage; t
 count is noted when `GangCanFlee` turns it on.
 
 **Gangs of a kind** (2026-10-06): `GangMakeEnemiesOfType` makes a gang and every gang in use of a kind enemies both
-ways (`Gangs::makeEnemiesOfType`). `GangSetAlwaysSeen` keeps the gang's byte (`Gang::alwaysSeen()`); **Coney
-stand-in**: Coney's brains have no enemy scan or line-of-sight test yet, so nothing reads it.
+ways (`Gangs::makeEnemiesOfType`). `GangSetAlwaysSeen` keeps the gang's byte (`Gang::alwaysSeen()`), which
+[the enemy scan](../ai-fights.md#enemy-scan) reads (`ai::scanSees`); **Coney stand-in**: the fight and spectate goals'
+skip of the line of sight for such a gang is not built.
 
 **The fifth and sixth missions' goals** (2026-10-06; `repo:src/ai/chase_goals.h`): `ActTurnToDir` queues the turn to
 a heading ([Turning](../ai-scripting.md#look-at)); `GoalGuardFlag` (43), `GoalLeadChase` (73), `GoalBigLedgeThrower` (138)

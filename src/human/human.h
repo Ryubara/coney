@@ -970,7 +970,8 @@ class Human final : public Holdable {
     /// @coney-only a read of the clip playing
     [[nodiscard]] bool reviveEndPlaying() const;
     /// The revived human's half: healed in full (wounding over, his health back, up from the ground, as `HuRevive`)
-    /// and up with 354 `gen_revive` paired to `reviver` holding `0x8000`, then 389 and his idle.
+    /// and up with 354 `gen_revive` paired to `reviver` holding `0x8000`, then 389 and his idle, or with `reviver` in
+    /// the fight stance straight into the fight idle.
     /// @orig 0x00274ee0 Revive_Finish (unknown)
     void playRevived(const Human& reviver);
     /// Turns to face `point` over `seconds` of updates, whatever plays (`Human_TurnToFacePoint`); the human stays where
@@ -1094,8 +1095,9 @@ class Human final : public Holdable {
     // 0.1, else stand. With the velocity `gated`, it only turns.
     // @orig 0x00243848 Human_UpdateControl (unknown)
     void aiCombatWalk(bool gated);
-    // Combat's update from the record: the stick turned into the facing frame, the game time, the targets.
-    // @coney-only glue: combat's input from the record, for Fighter::update()
+    // Combat's update from the record: the stick turned into the facing frame, the game time, the targets; and when the
+    // fighter entered the fight stance, the end of the hiding (Player_EnterStance's Human_ClearHiddenState half).
+    // @coney-only glue: combat's input from the record for Fighter::update(), and the stance entry's end of hiding
     void fight(std::span<Combatant* const> targets, const raycast::CollisionMesh* mesh,
                std::span<Combatant* const> calm);
     // The attacker's side of a warning: an event 0x24 or 0x26 of the clip playing that this step's animation passed
@@ -1157,8 +1159,8 @@ class Human final : public Holdable {
     // @orig 0x002217f0 Human_LaunchJump (unknown)
     [[nodiscard]] bool tryJump(const raycast::CollisionMesh* mesh, anim::Vec3 direction);
     // A climb's work as its clips change: the probe and move at the second clip, the end.
-    // @orig 0x00281450 Climb_RunningClipEnd (unknown)
-    // @orig 0x00281838 Climb_StandingClipEnd (unknown)
+    // @orig 0x00281450 Climb_OnFirstClipEndRun (unknown)
+    // @orig 0x00281838 Climb_OnFirstClipEndStand (unknown)
     void followClimb(const raycast::CollisionMesh* mesh);
     // Everything a human just made starts with, and what a settle drops (spawn(), settle()): no motion, traversal,
     // stance, attack or stun, the idle; with `keepMeters` the health and its maximum, stamina, power and rage stay.

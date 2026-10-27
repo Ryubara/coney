@@ -50,8 +50,8 @@ void Human::updateHiding() {
     }
     // A sprint (`Player_UpdateSprint`, 0x0027ce90) and the grace's end (`Human_UpdateActions`, 0x00254e78) end it.
     // The fight stance (`Player_EnterStance`, 0x00280068) would too, but hidden the target does not lock, so the
-    // human never enters it by itself.
-    const bool graceOver = m_hideGraceUntil && nowMs() >= *m_hideGraceUntil;
+    // human never enters it by itself. The grace is over once its end is below the time, not on its last millisecond.
+    const bool graceOver = m_hideGraceUntil && *m_hideGraceUntil < nowMs();
     if (m_sprinting || graceOver) {
         clearHiding();
     }

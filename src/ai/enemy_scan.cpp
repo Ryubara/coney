@@ -20,7 +20,7 @@ namespace {
 // other when he is a threat (isThreat()) and a valid enemy (validEnemy(), which scanSees() tests right after it). The
 // civilian who would pass (ped type 3 with `+0x21c` set, not held from the rear) is not modelled, the `civl_co_di`
 // kind (type 6), which the original filters as any other, is refused, and a cop at exactly 10 m passes (the original
-// needs under 10 m): each a **Coney stand-in**.
+// needs under 10 m): each a **Coney stand-in** (#1011).
 // @orig 0x0029bf98 Filter_IsThreatTo (unknown)
 bool warriorThreat(const Brain& scanner, const Brain& member) {
     if (member.type() == BrainType::Cop) {
@@ -40,11 +40,25 @@ float nearRadius(const Brain& scanner, const Brain& member) {
     return gait < human::Gait::Jog ? kScanNearWalking : kScanNearRadius;
 }
 
-// Whether `brain`'s human is down or out: its list is emptied.
+// Whether `brain`'s human is down or dead (`Human_IsDownOrDead`: dead, dying, knocked out or wounded): its list is
+// emptied. An arrested human is none of these and scans on.
 // @orig 0x0028b358 Brain_ScanEnemies (unknown)
-bool down(const Brain& brain) {
-    const human::Human& human = brain.human();
-    return !human.alive() || human.script().knockedOut || human.outOfWorld();
+bool down(const Brain& brain) { return brain.human().downOrDead(); }
+
+// Whether `scanner` may list `member` before the filter and sight (step 1.2): always for a Warrior; else only when he
+// is a pad player or `member` stands less than 1.9 m above him. **Coney stand-ins** (#1011): the original also lets
+// through a scanner who may not start a fight (`Brain_MayStartFight` `0x002904e0`: a Chase goal, the balcony boss's
+// top goal, a gang of kind 1 or a fight goal) unless his class role is 10, and one with 3 or more investigations
+// (`+0x2d0`); with that first branch ported the disc's level3 rooftop chase loses Snow for AI seeds 0 and 5, which
+// needs the pursuers' goals checked first. Coney builds no investigate goal, so the count would stay 0. The height
+// limit is not scaled by `CfgVerticalSightModifier` (`0x00510ad4`).
+// @orig 0x002225d8 Human_MaySpectate (unknown)
+bool maySpectate(const Brain& scanner, const Brain& member) {
+    if (scanner.type() == BrainType::Warrior) {
+        return true;
+    }
+    return scanner.type() == BrainType::Player ||
+           member.human().position().z < scanner.human().position().z + kScanHeightLimit;
 }
 
 // Whether `member` is in a gang `scanner`'s gang has as an enemy, both in use.
@@ -68,9 +82,9 @@ bool scanSees(const Brain& scanner, const Brain& member) {
     if (!shadowAllowsSight(eye, them)) {
         return false;
     }
-    // 2. An AI scanner (not a Warrior) lists only a member less than 1.9 m above him.
-    if (scanner.type() != BrainType::Player && scanner.type() != BrainType::Warrior &&
-        them.position().z - eye.position().z >= kScanHeightLimit) {
+    // 2. Unless his gang is always seen, the spectate test (the height limit).
+    const bool alwaysSeen = member.gang() != nullptr && member.gang()->alwaysSeen();
+    if (!alwaysSeen && !maySpectate(scanner, member)) {
         return false;
     }
     // 3. The filter.
@@ -80,7 +94,11 @@ bool scanSees(const Brain& scanner, const Brain& member) {
     if (!validEnemy(scanner, member)) {
         return false;
     }
-    // 4. Sight: the near radius all round, unless he hides off shadow ground (the grace); else the cone too.
+    // 4. Sight, unless his gang is always seen: the near radius all round, unless he hides off shadow ground (the
+    // grace); else the cone too; then the line of sight.
+    if (alwaysSeen) {
+        return true;
+    }
     const bool sneaking = them.hidden() && !them.onShadowGround();
     if (scanner.distanceTo(member) > nearRadius(scanner, member) || sneaking) {
         if (!inFieldOfView(scanner.fieldOfView(), eye, them.position())) {
