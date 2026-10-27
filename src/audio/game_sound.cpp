@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <format>
 #include <numbers>
 #include <optional>
@@ -20,6 +21,7 @@
 #include "characters/character_class.h"
 #include "characters/character_types.h"
 #include "core/name_hash.h"
+#include "gamemodes/system_music.h"
 #include "human/fighter.h"
 #include "scenes/scene_player.h"
 #include "scripting/ai_bindings.h"
@@ -42,6 +44,9 @@ constexpr double kDamWindowClosesMs = 15000.0;
 constexpr float kDefaultPitch = 1.0F;
 constexpr float kDefaultNiDuck = 0.2F;
 constexpr float kDefaultSceneDuck = 0.75F;
+// ... and the reverb's default (SoundSetEffect's type 1 at depth 0.1, no delay, no feedback).
+constexpr int kDefaultReverbType = 1;
+constexpr float kDefaultReverbDepth = 0.1F;
 
 // A game-axes vector as the engine's.
 // @coney-only glue between Coney's vector types
@@ -512,6 +517,9 @@ void GameSound::setListener(int listener) { m_listenerMode = listener; }
 
 // ---- Speech ----
 
+// HuSpeak and HuSpeakNI: the line, waiting or cutting in. **Not ported yet**: the speaker's head look at the call's
+// target for the line's length plus 0.5 s (Brain_LookAtTarget) is not made: Coney has no head look (#1009;
+// docs/research/sound.md#coneys-implementation).
 // @orig 0x00239370 Human_Speak (unknown)
 // @orig 0x002395a0 Human_SpeakInterrupt (unknown)
 bool GameSound::speak(const script::SpeechCall& call, std::string_view callback, std::optional<double> callbackArg) {
@@ -585,9 +593,23 @@ std::optional<double> GameSound::sayCommandAt(const script::CommandCall& call, s
 
 // ---- Gameplay ----
 
-// Mode 1's enter, step 1 (docs/research/level-loading.md#mode-1).
+// Mode 1's enter, step 1, its sound part (docs/research/level-loading.md#mode-1): the bank deferral, the reverb, the
+// pitch and ducks, and the moods' empty track lists. The load screen's virtual play is SoundEngine::startLoadScreen's.
 // @orig 0x001582e0 Gm_Level_Enter (unknown)
 void GameSound::gameplayEntered() {
+    // The reverb's default and the moods' tracks are the game state's (they outlast a level), kept with no engine too.
+    if (m_context != nullptr && m_context->state != nullptr) {
+        StoryState& story = m_context->state->story;
+        // **Coney stand-in**: the mixer has no reverb yet, so the default is only kept (StoryState::reverbType).
+        story.reverbType = kDefaultReverbType;
+        story.reverbDepth = kDefaultReverbDepth;
+        story.reverbDelay = 0;
+        story.reverbFeedback = 0;
+        // A level's system music plays only the tracks its own script gives (SoundSetMusicTrack).
+        for (std::size_t mood = 0; mood < kMusicMoods; ++mood) {
+            setMoodTracks(story, this, mood, {});
+        }
+    }
     SoundEngine* engine = m_sounds.engine();
     if (engine == nullptr) {
         return;
@@ -616,12 +638,15 @@ void GameSound::levelLoaded() {
     write(std::format("sound bank: {}\n", engine->bankName()));
     write(std::format("sound matrix {}: {} material pairs, {} animation sounds\n", m_matrix.name(),
                       m_matrix.materialEntries(), m_matrix.animEntries()));
-    // Coney's stand-in: loading has ended, so SndLoadBank loads at once again (the original clears +0x3fa58 once
-    // InitLevel returns, docs/research/sound.md#banks).
+    // Coney's stand-in: loading has ended, so SndLoadBank loads at once again. The original clears +0x3fa58 once
+    // InitLevel returns (docs/research/sound.md#banks); Coney ends it here, at step 11, because no script runs between
+    // the two in Coney (the start callback of step 13 runs in the level script's step, runLevelScript), so the same
+    // loads wait.
     engine->setDeferBankLoads(false);
 }
 
-// Mode 1's exit, its sound steps (docs/research/level-loading.md#unload): the emitters, every sound, the music.
+// Mode 1's exit, its sound steps (docs/research/level-loading.md#unload): the emitters, every sound, the system music
+// off, the music, the pitch back to 1.0.
 // @orig 0x00158488 Gm_Level_Exit (unknown)
 void GameSound::gameplayLeft() {
     SoundEngine* engine = m_sounds.engine();
@@ -642,7 +667,14 @@ void GameSound::gameplayLeft() {
     engine->stopSceneSound();
     engine->setCinematic(false); // a level left mid-scene leaves no duck behind
     engine->stopAll();
+    // The system music is the game state's and outlasts the level: off, so the next level plays it only when its own
+    // script turns it on.
+    if (m_context != nullptr && m_context->state != nullptr) {
+        setSystemMusic(m_context->state->story, this, false);
+    }
     engine->music().stop();
+    // The front end plays at the normal pitch, whatever the level's script set (SndSetPitchMod).
+    engine->setPitchFactor(kDefaultPitch);
 }
 
 // ---- The front end ----

@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
+#include <span>
+
 #include "core/game_random.h"
 #include "warriors/story_state.h"
 
@@ -22,5 +26,17 @@ namespace coney {
 /// the game's random index; the fades between tracks are the sound host's.
 /// @orig 0x0041a060 GameState_UpdateSystemMusic (unknown)
 void stepSystemMusic(StoryState& story, script::SoundHost* sound, GameRandom& random, int mood);
+
+/// Turns the system music on or off: the scripts' hold on the mood ends either way; a change also asks for a new pick
+/// (the original hands the mood back to the game and picks at once; Coney's next step picks) and, turning it off, stops
+/// the music on `sound` (null stops nothing).
+/// @orig 0x0041a008 GameState_SetSystemMusic (unknown)
+void setSystemMusic(StoryState& story, script::SoundHost* sound, bool on);
+
+/// Gives the mood `mood` (0-2) the tracks `tracks`, at most kMoodTracks (the rest are dropped). When it is the mood
+/// playing, a new pick is due and the system music is turned on (setSystemMusic()).
+/// @orig 0x0010e9e0 SystemMusic_SetTracks (unknown)
+void setMoodTracks(StoryState& story, script::SoundHost* sound, std::size_t mood,
+                   std::span<const std::uint32_t> tracks);
 
 } // namespace coney

@@ -327,8 +327,12 @@ to -x), which is the turn Coney's reference images use (`kObjectToPose`, Coney's
 Mode 8 pushes mode 1 once a level is chosen ([Front end](frontend.md#mode-flow); a new story game chooses `level99`,
 section 1, [Front end](frontend.md#story-start)). Mode 1's `Enter` (`0x001582e0`), confirmed (code), in order:
 
-1. Audio: the manager's fields `+0x3fa58` = 1, `+0x3fa5c` = 1.0, `+0x3faac` = 0.2, `+0x3fab0` = 0.75, volume 0.1
-   (`0x001110c8`); three channels cleared (`0x001104c8`).
+1. Audio: the bank deferral `+0x3fa58` = 1; the [reverb](sound.md#reverb) set to type 1 at depth 0.1, no delay and no
+   feedback (`Sound_SetEffect`, `0x001110c8`; the depth is the float argument, inferred from the register use); the
+   pitch factor `+0x3fa5c` = 1.0, the non-duckable duck `+0x3faac` = 0.2, the music's duck under scenes `+0x3fab0` =
+   0.75 and on (`+0x3fab4`); the load screen's virtual play `+0x24270` = 1; the three moods' track lists emptied
+   (`Sound_SetMusicTrack`, `0x001104c8`, with no tracks: `SystemMusic_SetTracks` turns the system music on when the
+   mood emptied is the one playing).
 2. The pending level change `0x0050c754` = 0.
 3. Take `GameTimer` (fields `+0x5c` = 1, `+0x60` = 0), call its own `Resume`, read the pads once (`Pads_Update`).
 4. **`InitLevel`** (`0x0015fe90`, [below](#initlevel)).
@@ -713,9 +717,10 @@ nearby scenery is still missing, so it fills those holes too (inferred).
 
 ### Leaving gameplay {#unload}
 
-Mode 1's `Exit` (`0x00158488`) stops the sounds and music and calls **`UnloadLevel`** (`0x001607b8`), then, when a
-level change is pending (`0x0050c754`), plays the outro movie if the record asks for it and unloads the level file
-too. `UnloadLevel(keep)`, confirmed (code) for the order:
+Mode 1's `Exit` (`0x00158488`) switches the ambient emitters off, stops every sound, turns the system music off
+(`GameState_SetSystemMusic(0)`), stops the music track, sets the pitch factor back to 1.0 and calls **`UnloadLevel`**
+(`0x001607b8`), then, when a level change is pending (`0x0050c754`), plays the outro movie if the record asks for it
+and unloads the level file too. `UnloadLevel(keep)`, confirmed (code) for the order:
 
 1. Service the file manager; put the camera far away (a position of 100,000,000 on all axes); background black.
 2. Release the level's dependency list (`0x00178bc8(rm, crc32(record + 0x24), 0)`).

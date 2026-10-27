@@ -19,6 +19,7 @@
 #include "effects/ground_fog.h"
 #include "effects/level_effects.h"
 #include "effects/particles.h"
+#include "gamemodes/system_music.h"
 #include "scripting/binding_args.h"
 #include "scripting/lua_value.h"
 #include "scripting/sound_bindings.h"
@@ -219,18 +220,7 @@ NativeFunction makeParticleSwitch(const BindingContext& context, bool on) {
 // @orig 0x00113ea8 Sound_EnableSystemMusic (unknown)
 NativeFunction makeSoundEnableSystemMusic(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
-        StoryState& story = context->state->story;
-        const bool on = boolArg(args, 0);
-        // Either way the scripts' hold on the mood ends.
-        story.musicHold = -1;
-        if (on == story.systemMusic) {
-            return binding::none();
-        }
-        story.systemMusic = on;
-        story.musicMood = -1;
-        if (!on && context->sound != nullptr) {
-            context->sound->stopMusic();
-        }
+        setSystemMusic(context->state->story, context->sound, boolArg(args, 0));
         return binding::none();
     };
 }

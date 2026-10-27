@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "gamemodes/system_music.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <span>
+#include <utility>
 #include <vector>
 
 #include "scripting/sound_bindings.h"
@@ -46,6 +49,29 @@ void stepSystemMusic(StoryState& story, script::SoundHost* sound, GameRandom& ra
         fadeBars = kFadeIntoCalm;
     }
     sound->playSystemMusic(tracks.at(pick), fadeBars);
+}
+
+void setSystemMusic(StoryState& story, script::SoundHost* sound, bool on) {
+    story.musicHold = -1;
+    if (on == story.systemMusic) {
+        return;
+    }
+    story.systemMusic = on;
+    story.musicMood = -1;
+    if (!on && sound != nullptr) {
+        sound->stopMusic();
+    }
+}
+
+void setMoodTracks(StoryState& story, script::SoundHost* sound, std::size_t mood,
+                   std::span<const std::uint32_t> tracks) {
+    std::vector<std::uint32_t>& kept = story.moodTracks.at(mood);
+    kept.assign(tracks.begin(), tracks.begin() + static_cast<std::ptrdiff_t>(std::min(tracks.size(), kMoodTracks)));
+    // The mood playing changes at the next step, and the system music is on for it.
+    if (std::cmp_equal(story.musicMood, mood)) {
+        story.musicMood = -1;
+        setSystemMusic(story, sound, true);
+    }
 }
 
 } // namespace coney

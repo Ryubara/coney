@@ -220,7 +220,7 @@ status = "legacy"
 [[function.gaps]]
 what = "the event stamp is not cleared 15 s after it, and the window opens at 2 s exactly, not after it"
 relation = "not-ported"
-issue = 1009
+issue = 650
 
 [[function]]
 address = 0x0010c100

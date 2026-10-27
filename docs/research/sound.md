@@ -6,7 +6,7 @@ owns:
   functions: [
     "0x00143f68", "0x0021e400", "0x0021e698", "0x002205e0", "0x00354d28", "0x003ac4d0",
     "0x003ac600", "0x003ac7e8", "0x003ad440", "0x00419030", "0x00419108", "0x00419150", "0x004193e8", "0x00419fc8",
-    "0x0041a060", "0x0041b4c0", "0x0041cc40", "0x0041d480", "0x0041d920", "0x0041d930",
+    "0x0041a008", "0x0041a060", "0x0041b4c0", "0x0041cc40", "0x0041d480", "0x0041d920", "0x0041d930",
   ]
 ---
 # Sound
@@ -399,6 +399,7 @@ inventory, statistics, flags, configuration workers) that belong to this page, b
 | `0x00419150` | `Breathing_Update` | each frame (from `0x0041a370`): while the camera frames combat (`Camera_IsCombatFraming`) the loop fades in over `+0x250` ms; once it does not, it fades out over `+0x254` ms and stops at 0 | confirmed (code) |
 | `0x004193e8` | `Breathing_Configure` | `CfgBreathingSound`'s worker: game state `+0x258` the sound hash, `+0x250` fade-in ms, `+0x254` fade-out ms | confirmed (code) |
 | `0x00419fc8` | `GameState_SetMusicMood` | the system music's mood `+0x40c`; mood 4 switches the system music off and stores 3 | confirmed (code) |
+| `0x0041a008` | `GameState_SetSystemMusic` | the system music on or off (`+0x3f8`); either way the scripts' hold `+0x3f4` is cleared; a change also hands the mood back to the game (`+0x40c` = 3), stops the music track when turning off and picks a mood at once (`SystemMusic_UpdateMood`). From `SoundEnableSystemMusic`, `SoundSetMusicTrack`, `SystemMusic_SetTracks` and mode 1's exit | confirmed (code) |
 | `0x0041a060` | `SystemMusic_UpdateMood` | every 30th update, and from `GameState_SetSystemMusic` and `Gang_SetAlertState`: with system music off (`+0x3f8` 0) mood 4; otherwise, unless locked (`+0x3f4`) outside mood 3, picks a mood from player 1's gang and the nearest other gang: 1 (combat) when one of that gang's members fights ours, or when it is farther than both radii + 30 m but at least `CfgGangSizeForCombatMusic` strong (`0x005148a8`) and in sight of a player; 2 when our gang is hunted (`Gang_IsBeingHunted`); else 0 | confirmed (code); the reading of each test inferred from the callees' names |
 | `0x0041b4c0` | `GameState_SetMusicStateCallback` | the name at `+0x384`; from the set-up and `Snd_SetMusicStateCallback` | confirmed (code) |
 | `0x0041d480` | `Cfg_SetBreathingSound` | `CfgBreathingSound(v, in, out, name)`: the sound's hash and fades to `Breathing_Configure`, `v` to `+0x24c` | confirmed (code) |
@@ -1337,12 +1338,16 @@ cutting, are not built); `HuSpeak`'s fifth argument is not read, and neither spe
 human's voice set is his type's own `CfgChar` voice (no alias rule, no `HuSetVoiceIndex`); the fixed list of blocked
 lines is not applied ([q-blocked](sound.md#q-blocked)); `SndSetListener` 0 is the camera and 1 the player
 ([q-listener](sound.md#q-listener)); the bank deferral of mode 1's enter ends with the load screen
-(`InitLevel` step 11), where the original ends it once `InitLevel` has returned.
+(`InitLevel` step 11), where the original ends it once `InitLevel` has returned (no script runs between the two in
+Coney: the start callback of step 13 runs in its level script's step, so the same loads wait).
 The system music (`repo:src/gamemodes/system_music.h`) keeps each mood's
 track hashes and, while on, loops a random track of the mood each frame's surroundings give when the mood changes; the
 mood is 1 while an AI human with health left targets player 1 with a fight or melee goal, else 0 (the hunted mood 2, its
 chase goals not built, never comes, [q-mood](sound.md#q-mood)), the pick draws from the game's random index, and the
-fades are the music player's own. `SoundSetEffect` and `SoundEnableEffects` are kept in the game state only. Not built:
+fades are the music player's own. Mode 1's enter empties the three moods' track lists and its exit turns the system
+music off and the pitch factor back to 1.0, as the original's do ([Level loading](level-loading.md#mode-1)).
+`SoundSetEffect` and `SoundEnableEffects` are kept in the game state only, as is the reverb's default (type 1, depth
+0.1) that mode 1's enter sets. Not built:
 reverb, the other ambient bindings (`AddAmbientSoundEmitter`, `SetAmbientEmitterVolumeMod`) and the game's own speech
 commands outside the animation sounds. The hub's sound bindings (`repo:src/scripting/hub_world_bindings.cpp`):
 `EnableAmbientEmitter` switches an emitter off (it stops its sound and plays nothing more) and on; `SoundPlay` plays a
