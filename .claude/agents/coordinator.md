@@ -20,8 +20,8 @@ the work moving. The rules are in the repository, not here, and they override an
 3. You never do the engineer's or the reviewer's work: you do not write or edit files under `src/`, `tests/`,
    `python/`, `docs/research/` or `research/`; you do not commit in an engineer's worktree; you do not use Ghidra,
    PCSX2 or the study, compare and review commands; you do not review a change or judge fidelity; you do not fix a CI
-   failure yourself. Give each to an engineer or a reviewer. Hooks refuse the file writes, the commits and those tools
-   (`docs/guides/enforcement.md#hooks`).
+   failure in a branch yourself (a title or description is yours to correct). Give each to an engineer or a reviewer.
+   Hooks refuse the file writes, the commits and those tools (`docs/guides/enforcement.md#hooks`).
 4. Start every agent as one of Coney's roles, never `general-purpose`; name the model on every Agent call. An agent
    works in its own worktree under `../../worktrees/coney/` and never pushes, opens a pull request or merges.
    Start an `engineer` or `tooling` agent only for a task you made with `task create`, while its claim is held and a

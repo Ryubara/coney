@@ -81,7 +81,7 @@ flowchart TB
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Triage | Coordinator | (labels) | The issue has its type, area and priority, `S-ready-to-start`, and fits one reviewable pull request; `P-critical` issues first | none | [Triage](issues.md#triage) |
 | 2 | Claim | Coordinator | `coney-tools task create <issue>... --terms ... --scope ...` | The claim Action assigned the issue and it settled; `TASK.md` holds the goal, Done, scope, leads and decision points | `assigned` (written by Start) | [Task files](issues.md#task-files) |
-| 3 | Start | Engineer | `coney-tools task start <task>` | Branch and worktree from `main`, the unit record; reports the free slots, and refuses a start over the limit from the cutover | `claimed` | [Starting a task](issues.md#starting) |
+| 3 | Start | Engineer | `coney-tools task start <task>` | Branch and worktree from `main`, the unit record; reports the free slots, and refuses a start over the limit | `claimed` | [Starting a task](issues.md#starting) |
 | 4 | Study | Engineer (and its helpers) | `coney-tools original study <addr>`; PCSX2 for what a player sees | Per function: the decompile, callers, callees and data reads saved and hashed, the lines numbered and cut into pieces; the expected values found (code or runtime); research claims written and graded | `studied` per address | [Study](stamps.md#study), [The engineer's steps](#engineer-steps) |
 | 5 | Port | Engineer | `coney-tools build --agent <id> --preset dev --test -R ...`; `coney-tools original fails-first` | The test is written first from the study's result, cites its expected values and fails; the port makes it pass; the copy check is clean | `fails-first` per test | [Fails first](stamps.md#fails-first), [Testing](testing.md) |
 | 6 | Compare | Engineer | `coney-tools original compare <addr>` | Every numbered line of each ported function is in a pair (`same`, `stand-in` with a reason, `not-ported` with an issue) | `compared` per function | [Pairs](stamps.md#pairs), [Compare](stamps.md#compare) |
@@ -219,9 +219,9 @@ and then by priority, whenever a slot frees.
   engineer takes it, and may take the next queued fix while its context is warm. A fix redoes only the stamps it made
   stale and goes out with `pr open` on the same pull request ([Starting a task](issues.md#starting)).
 - **Reviewers and helpers are outside the slots**, and so is work in other repositories. Until the cutover so are
-  units that build the workflow itself, as the count is only reported; from it a docs or tooling task counts like any
-  other ([Slots](issues.md#slots) holds the rule). Their claims are outside the open-claims limit too, by the
-  `workflow` label.
+  units that build the workflow itself (their issue carries the `workflow` label, read from the claim card); from it
+  they count like any other task ([Engineer slots](agents.md#slots) holds the rule). Their claims are outside the
+  open-claims limit too, by the same label.
 - **Two engineers never work in the same functions.** A claim carries its scope, and `task create` warns when another
   held claim's scope overlaps.
 
@@ -477,8 +477,8 @@ requests and tidies after merges. It works under these rules:
   claim:** its brief carries a line `Task id: <id>` from `task create`, and a hook refuses the start when the task file
   is missing, the claim is no longer held or the slot of its kind is full ([Engineer slots](agents.md#slots)).
 - **Never do a stage of the engineer's or the reviewer's.** It writes no engine code, tests or research, runs none of
-  the stage commands from Start to Review, judges no fidelity and fixes no CI failure in a branch's files; the role rules refuse them
-  ([Which role to start](agents.md#roles)).
+  the stage commands from Start to Review, judges no fidelity and fixes no CI failure in a branch's files; the role
+  rules refuse them ([Which role to start](agents.md#roles)).
 - **Tidy after every merge** (the After merge stage). Each pull request lists the open issues it affects in its Issues
   affected section; once it merges the coordinator edits each of them, and `pr.affected-unedited` reports the ones left
   ([After a merge](issues.md#after-a-merge)). The `/repo-hygiene` skill runs the audit and fixes each finding by its
@@ -537,7 +537,7 @@ and where the rules are read from):
 | Claude Code hooks (`.claude/hooks/`) | A raw `cmake --build`, `ctest` or `ninja`; a raw `gh` command that writes an issue; a push or GitHub write from a subagent; a wait loop with no bound; an agent started with `isolation: "worktree"` or with no Coney role; a tool call the session's role does not allow; a write to a stamp log; a `Co-Authored-By` trailer that names the wrong model | [The hooks](agents.md#hooks), [Enforcement map](enforcement.md#hooks) |
 | pre-commit (`.pre-commit-config.yaml`) | Unformatted C++ (clang-format) and Python (ruff); a Markdown line over 120 characters; trailing whitespace, broken YAML or TOML; any file over 512 KB, which is usually game data; a read of the real clock outside the frame pacer; a commit message with the wrong trailers | [Formatting and pre-commit](building.md#formatting-and-pre-commit) |
 | Claim Action and `task create` | A second claim on an issue; a claim on an issue that is not ready, is blocked by unfinished work, or over the claimant's limit (a `workflow` unit's claim is not counted); any other claim while a `P-critical` issue has none | [Claiming an issue](issues.md#claiming) |
-| Stage commands (`task start`, `original compare`, `task check`, `task review`) | A start without a held claim (and, from the cutover, over the slot limit); a compare with no current study, a line in no pair or a copied line; a Check whose gate fails; a Review whose compared or fails-first stamps are missing or stale, or one recorded by the change's author | [Stamps](stamps.md), [task check](coney-tools-repo.md#task-check), [Task review](review/task.md) |
+| Stage commands (`task start`, `original compare`, `task check`, `task review`) | A start without a held claim (and over the slot limit); a compare with no current study, a line in no pair or a copied line; a Check whose gate fails; a Review whose compared or fails-first stamps are missing or stale, or one recorded by the change's author | [Stamps](stamps.md), [task check](coney-tools-repo.md#task-check), [Task review](review/task.md) |
 | `pr open` | A unit whose stamps do not hold for the change, a generated title or description CI would refuse, a caller who is an engineer or reviewer. The stages are enforced here, locally, not in CI | [Opening the pull request](#release-queue), [pr open](pr.md#open) |
 | Conclave stop guard | A coordinator turn that ends while a pull request has a failed required check, a conflict, a stuck check or auto-merge off and nobody holds it | [Conclave](conclave.md#watchers) |
 | CI required checks | `title`, `docs`, `body`, `build-ok`, `python-ok`, `format`, `mkdocs`, `markdownlint`, `actionlint`, `clang-tidy`, `dependencies` | [What CI runs](building.md#what-ci-runs) |
@@ -621,7 +621,8 @@ At the cutover, in one change of [.github/conventions.yml](repo:.github/conventi
 1. `pull_requests.open_only` turns on: a pull request opens only through `pr open` ([The PR guard](enforcement.md#pr-guard)).
 2. `claims.adopt` and `claims.release` turn on: an issue assigned by hand gets a claim card, and an idle claim is warned
    at 48 hours and released at 72 ([Claiming an issue](issues.md#claiming)).
-3. `tasks.start.slots.enforce` turns on: a start over the slot limit is refused ([Slots](issues.md#slots)).
+3. `tasks.start.slots.exempt_workflow` turns off, in the same change as item 2: units of `workflow` issues then hold a
+   slot and count against the claim limit like the rest ([Engineer slots](agents.md#slots)).
 4. The [legacy release checks](#pr-review) and their commands (`repo review`, `repo check-review`, `repo review-stamp`,
    `orig review-stamp`, `orig check-review`, `orig record`) are removed, and the old names of renamed `coney-tools`
    commands stop working. The sweep of [legacy fidelity](#fidelity-audit) uses `orig review-stamp --folder` and `orig

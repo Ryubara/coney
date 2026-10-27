@@ -260,7 +260,7 @@ Checks being built; their rows change when they merge:
 
 - **Networking checklist**: review items for network code.
 - **The cutover switches** ([The cutover](how-we-work.md#cutover)): `pull_requests.open_only`, `claims.adopt`,
-  `claims.release` and `tasks.start.slots.enforce`.
+  `claims.release`, and `tasks.start.slots.exempt_workflow` turning off.
 
 ## What stays judgement {#judgement}
 
