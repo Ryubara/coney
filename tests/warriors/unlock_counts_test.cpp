@@ -70,6 +70,18 @@ TEST_CASE("the completion count takes every type but 0, 5 and 7-11 outside level
     CHECK_FALSE(counts.records.complete());
 }
 
+TEST_CASE("the completion percentage divides before it multiplies by 100: 53 of 100 is 52", "[unlocks]") {
+    // Expected: game-stats.md#summary-text, confirmed (code) at 0x00215290 (div.s, then mul.s by 100): in single
+    // precision 53 / 100 is just under 0.53, and 100 times it truncates to 52 (53 × 100 / 100 would give 53).
+    UnlockCounts counts;
+    counts.records = UnlockTally{.unlocked = 53, .total = 100};
+    CHECK(counts.percent() == 52);
+    counts.records = UnlockTally{.unlocked = 59, .total = 100};
+    CHECK(counts.percent() == 58);
+    counts.records = UnlockTally{.unlocked = 30, .total = 469};
+    CHECK(counts.percent() == 6);
+}
+
 TEST_CASE("a level's targets: the score, characters, arenas and distinct group-1 items; 60 and 101 cover ranges",
           "[unlocks]") {
     // Expected: game-stats.md#counts, confirmed (code)

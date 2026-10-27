@@ -4,6 +4,7 @@
 // Each new case here failed first on the unit's stubbed source (coney-tools original fails-first).
 #include "gui/pause_menu/pause_menu.h"
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -15,10 +16,14 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/pad.h"
+#include "graphics/font.h"
+#include "graphics/overlay_camera.h"
+#include "graphics/sprite_batch.h"
 #include "gui/global_strings.h"
 #include "gui/pause_menu/mission_failed_menu.h"
 #include "gui/pause_menu/pause_items.h"
 #include "gui/pause_menu/yes_no_box.h"
+#include "support/font_fixtures.h"
 #include "warriors/game_state.h"
 
 using Catch::Approx;
@@ -346,6 +351,42 @@ TEST_CASE("pause menu: Stats opens the Warrior's screen, and triangle closes it"
     CHECK(paused.menu.screen() == PauseScreen::Grid);
     CHECK(paused.cues.back() == PauseMenu::kBackCue);
     CHECK_FALSE(paused.menu.closing());
+}
+
+TEST_CASE("pause menu: the top header is drawn after the open Stats screen", "[pause_menu]") {
+    // Expected: pause.md#the-top-header, confirmed (code) at 0x001df700 (the screen, then the three headers)
+    PauseMenuSetup setup;
+    setup.missionTitle = "1:Coney";
+    setup.stats = coney::gui::WarriorStats{.characterType = 30,
+                                           .damageScale = 150,
+                                           .powerMax = 400,
+                                           .staminaMax = 200,
+                                           .rageMax = 78,
+                                           .powerClassByte40 = 35};
+    Paused paused(99, setup);
+    paused.selectItem(PauseItem::Stats);
+    paused.driver.tap(coney::pad::kCross);
+    REQUIRE(paused.menu.screen() == PauseScreen::Stats);
+    const coney::graphics::Font font = coney::test::testFont();
+    coney::graphics::SpriteBatch text(font.sheet(), 4096, 9000.0F);
+    paused.menu.render(coney::gui::GuiCanvas{.fonts = [&font](int /*slot*/) { return &font; },
+                                             .textBatch = [&text](int /*slot*/) { return &text; }});
+    // The header's title sits above GUI y 0.25, the Stats screen's texts below 0.35: the first text sprite drawn is
+    // the screen's, and a header sprite comes after it.
+    const float headerLine = coney::graphics::OverlayCamera::guiToOverlay(0.0F, 0.25F).y;
+    const float screenLine = coney::graphics::OverlayCamera::guiToOverlay(0.0F, 0.35F).y;
+    const bool down = screenLine < headerLine; // the overlay's y may run up
+    const auto inHeader = [&](const coney::graphics::Sprite& s) {
+        return down ? s.position.y > headerLine : s.position.y < headerLine;
+    };
+    const auto inScreen = [&](const coney::graphics::Sprite& s) {
+        return down ? s.position.y < screenLine : s.position.y > screenLine;
+    };
+    const std::vector<coney::graphics::Sprite>& sprites = text.sprites();
+    REQUIRE_FALSE(sprites.empty());
+    CHECK(inScreen(sprites.front()));
+    const auto firstScreen = std::ranges::find_if(sprites, inScreen);
+    CHECK(std::ranges::find_if(firstScreen, sprites.end(), inHeader) != sprites.end());
 }
 
 TEST_CASE("pause menu: Stats opens nothing without stats; Options opens its list, Controls its screen",
