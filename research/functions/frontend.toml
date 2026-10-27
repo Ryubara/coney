@@ -34,6 +34,11 @@ level = "confirmed-code"
 coney = "src/gamemodes/gameplay_mode.h:GameplayMode::enter"
 status = "legacy"
 
+[[function.gaps]]
+what = "the reverb default, the moods' track lists, the timer, the pads, the five globals, the players' sync and the level-end countdown"
+relation = "not-ported"
+issue = 1009
+
 [[function]]
 address = 0x00158488
 name = "Gm_Level_Exit"

@@ -890,6 +890,21 @@ level = "confirmed-code"
 coney = "src/audio/game_sound.h:GameSound::sayCommandAt"
 status = "legacy"
 
+[[function.gaps]]
+what = "the speaker does not look at the target while the line plays"
+relation = "not-ported"
+issue = 1009
+
+[[function.gaps]]
+what = "the line is stopped before the voice table is asked, so a command with no line left still cuts it"
+relation = "not-ported"
+issue = 1009
+
+[[function.gaps]]
+what = "the human's `+0x16c` and `Sound_MarkCommandSaid` are not kept"
+relation = "not-ported"
+issue = 1009
+
 [[function]]
 address = 0x00220ac8
 name = "Human_PlayImpactSound"
