@@ -52,9 +52,6 @@ struct HudFrame {
     /// Whether each player's camera ignores the right stick: a fixed, locked, transition or rail camera, or camera
     /// switch 0 off (the fixed-camera icon, docs/research/hud.md#hud-fixed-cam-icon).
     std::array<bool, kPlayers> cameraIgnoresStick{};
-    /// Whether each player's human is knocked out (`Human_IsKnockedOut`, state `0x40000`): an Armies panel then stops
-    /// being wanted (docs/research/armies.md#the-join-messages).
-    std::array<bool, kPlayers> knockedOut{};
     /// How many of gang `gang`'s members are standing (`Gang_CountLiving(gang, 1)`), which the gang-count
     /// indicators show; empty counts none.
     std::function<int(int gang)> gangLiving;

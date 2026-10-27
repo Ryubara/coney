@@ -23,8 +23,6 @@ CameraView followView(const FollowCamera& follow, float farClip) {
 } // namespace
 
 Cameras::Cameras() {
-    // Not ported: the players' view flags, the global one and the views laid out again (#549); the registered-object
-    // list, the hide-and-seek flag and the word 0x00510548 cleared, which Coney does not keep (#1017).
     m_switches.fill(true);
     for (const std::size_t off : kSwitchesOff) {
         m_switches.at(off) = false;

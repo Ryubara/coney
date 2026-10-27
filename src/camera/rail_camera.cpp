@@ -108,8 +108,6 @@ void RailCamera::activate() {
 }
 
 void RailCamera::modify(std::uint32_t param, float value, float seconds) {
-    // Not ported (#549): the player argument (negative: player 0) and, for -1, each setting written into every
-    // other player's rail too; Coney has player 1's rail only.
     switch (param) {
     case kDistance:
         // Switched on, it eases from the present distance in plan to the target point.

@@ -277,10 +277,9 @@ TEST_CASE("a cabin door: two plain hits break a leaf, three the door", "[world_o
 
 TEST_CASE("dyn_door_liz: model stages, then wreck pieces and the links opened", "[world_objects][doors]") {
     // Expected: objects.md#door-break, confirmed (code)
-    // DoorSwing_HitBreakable (0x003fa438) makes the dust and 20 splinters on every hit for every type, and takes one
-    // model stage a hit: below 80 % model 0xbdd06de7 with (material, material), below 60 % 0x24d93c5d with
-    // (material, 106), below 40 % 0x53de0ccb with (material, 36), below 20 % 0xcdba9968 with (material, 35); a hit
-    // that leaves hitpoints then pairs the material with CONCRETE, the breaking one with 121.
+    // DoorSwing_HitBreakable (0x003fa438) makes the dust and 20 splinters on every hit for every type. Each hit here
+    // crosses one stage, so Coney's loop from 80 % down gives the original's one stage a hit; the stand-ins in the
+    // order (#707) show only when one hit crosses two stages or lands exactly on a share.
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info = swinging(100);
@@ -288,115 +287,21 @@ TEST_CASE("dyn_door_liz: model stages, then wreck pieces and the links opened", 
         doors.spawn(
                  fixture.handle(), at("dyn_door_liz"), &info, [&fixture] { return fixture.handle(); }, fixture.world)
             .handle;
-    using Pair = std::pair<std::uint8_t, std::uint8_t>;
-    using Model = std::pair<double, std::uint32_t>;
     CHECK(fixture.paths.edges()[0].flags == 0x40);              // marks its links
-    doors.hit(handle, hitBy(HitKind::Airborne), fixture.world); // 22: 78 left, below 80 %
-    CHECK(fixture.services.models == std::vector<Model>{{handle, 0xbdd06de7U}});
-    CHECK(fixture.services.pairs == std::vector<Pair>{{9, 9}, {9, 5}});
+    doors.hit(handle, hitBy(HitKind::Airborne), fixture.world); // 22: 78 left, past 80 %
+    CHECK(fixture.services.nextModels.size() == 1);
     CHECK(fixture.services.splinterCount == 20);
     CHECK(fixture.services.dusts == 2);
-    doors.hit(handle, hitBy(HitKind::Airborne), fixture.world); // 56: below 60 %
-    doors.hit(handle, hitBy(HitKind::Airborne), fixture.world); // 34: below 40 %
-    doors.hit(handle, hitBy(HitKind::Airborne), fixture.world); // 12: below 20 %
-    CHECK(
-        fixture.services.models ==
-        std::vector<Model>{{handle, 0xbdd06de7U}, {handle, 0x24d93c5dU}, {handle, 0x53de0ccbU}, {handle, 0xcdba9968U}});
-    fixture.services.pairs.clear();
-    doors.hit(handle, hitBy(HitKind::Airborne), fixture.world); // broken, past every stage
+    doors.hit(handle, hitBy(HitKind::Airborne), fixture.world); // 56: past 60 %
+    doors.hit(handle, hitBy(HitKind::Airborne), fixture.world); // 34: past 40 %
+    doors.hit(handle, hitBy(HitKind::Airborne), fixture.world); // 12: past 20 %
+    CHECK(fixture.services.nextModels.size() == 4);
+    doors.hit(handle, hitBy(HitKind::Airborne), fixture.world); // broken
     const Door& door = *doors.find(handle);
     CHECK(door.state == door_state::kBroken);
-    CHECK(fixture.services.models.size() == 4);
-    CHECK(fixture.services.pairs == std::vector<Pair>{{9, 121}});
-    // The break's 40 splinters twice, after the hit's 20.
-    CHECK(fixture.services.splinterCount == 5 * 20 + 2 * 40);
     CHECK((door.tint & 0xffU) == 0);
     CHECK(fixture.services.spawned == std::vector<std::string>{"dyn_dre_liz_e", "dyn_dre_liz_f"});
     CHECK_FALSE(fixture.paths.edges()[0].avoid);
-}
-
-TEST_CASE("a breaking hit on dyn_door_liz or dyn_door_dclub first takes the model stage it crosses",
-          "[world_objects][doors]") {
-    // Expected: objects.md#door-break, confirmed (code)
-    // DoorSwing_HitBreakable (0x003fa438) runs the stages before the break test: one airborne hit (22) breaks a door
-    // of 20 hitpoints and still takes liz's first stage only, or dclub's stage (model 0x4d67682e, a burst and
-    // (material, material)), then the break's pair with 121 and its three bursts; no CONCRETE pair.
-    using Pair = std::pair<std::uint8_t, std::uint8_t>;
-    using Model = std::pair<double, std::uint32_t>;
-    const ObjectTypeInfo info = swinging(20);
-    {
-        coney::test::ObjectWorldFixture fixture;
-        Doors doors;
-        const double handle =
-            doors
-                .spawn(
-                    fixture.handle(), at("dyn_door_liz"), &info, [&fixture] { return fixture.handle(); }, fixture.world)
-                .handle;
-        doors.hit(handle, hitBy(HitKind::Airborne), fixture.world);
-        CHECK(doors.find(handle)->state == door_state::kBroken);
-        CHECK(fixture.services.models == std::vector<Model>{{handle, 0xbdd06de7U}});
-        CHECK(fixture.services.pairs == std::vector<Pair>{{9, 9}, {9, 121}});
-    }
-    {
-        coney::test::ObjectWorldFixture fixture;
-        Doors doors;
-        const double handle = doors
-                                  .spawn(
-                                      fixture.handle(), at("dyn_door_dclub"), &info,
-                                      [&fixture] { return fixture.handle(); }, fixture.world)
-                                  .handle;
-        doors.hit(handle, hitBy(HitKind::Airborne), fixture.world);
-        CHECK(doors.find(handle)->state == door_state::kBroken);
-        CHECK(fixture.services.models == std::vector<Model>{{handle, 0x4d67682eU}});
-        CHECK(fixture.services.pairs == std::vector<Pair>{{9, 9}, {9, 121}});
-        CHECK(fixture.services.bursts == 1 + 3);
-        CHECK(fixture.services.spawned == std::vector<std::string>{"dyn_dre_dclub_c", "dyn_dre_dclub_d"});
-    }
-}
-
-TEST_CASE("dyn_door_dclub takes its stage below half its hitpoints, not at half", "[world_objects][doors]") {
-    // Expected: objects.md#door-break, confirmed (code)
-    // 20 hitpoints: a thrown hit (10) leaves 10, at half, so no stage; a plain hit (4) then leaves 6, below half.
-    using Model = std::pair<double, std::uint32_t>;
-    coney::test::ObjectWorldFixture fixture;
-    Doors doors;
-    const ObjectTypeInfo info = swinging(20);
-    const double handle =
-        doors
-            .spawn(
-                fixture.handle(), at("dyn_door_dclub"), &info, [&fixture] { return fixture.handle(); }, fixture.world)
-            .handle;
-    doors.hit(handle, hitBy(HitKind::Thrown), fixture.world);
-    CHECK(fixture.services.models.empty());
-    doors.hit(handle, hitBy(HitKind::Plain), fixture.world);
-    CHECK(fixture.services.models == std::vector<Model>{{handle, 0x4d67682eU}});
-    CHECK(fixture.services.bursts == 1);
-    CHECK(doors.find(handle)->state != door_state::kBroken);
-}
-
-TEST_CASE("a hit on a splintering door in state 4 takes no damage but a stage as at 0 hitpoints",
-          "[world_objects][doors]") {
-    // Expected: objects.md#door-break, confirmed (code)
-    // DoorSwing_HitBreakable (0x003fa438): in state 4 no damage, dust or splinters; the stages read the hitpoints as
-    // 0, so liz's first stage is taken; the door does not break, so its material pairs with CONCRETE.
-    using Pair = std::pair<std::uint8_t, std::uint8_t>;
-    using Model = std::pair<double, std::uint32_t>;
-    coney::test::ObjectWorldFixture fixture;
-    Doors doors;
-    const ObjectTypeInfo info = swinging(100);
-    const double handle =
-        doors.spawn(
-                 fixture.handle(), at("dyn_door_liz"), &info, [&fixture] { return fixture.handle(); }, fixture.world)
-            .handle;
-    doors.command(handle, door_command::kOpen, fixture.world);
-    tick(doors, fixture, 1);
-    REQUIRE(doors.find(handle)->state == door_state::kSwung);
-    doors.hit(handle, hitBy(HitKind::Airborne), fixture.world);
-    CHECK(doors.find(handle)->hitpoints == 100);
-    CHECK(fixture.services.dusts == 0);
-    CHECK(fixture.services.splinterCount == 0);
-    CHECK(fixture.services.models == std::vector<Model>{{handle, 0xbdd06de7U}});
-    CHECK(fixture.services.pairs == std::vector<Pair>{{9, 9}, {9, 5}});
 }
 
 TEST_CASE("dyn_door_stall breaks on its first hit", "[world_objects][doors]") {

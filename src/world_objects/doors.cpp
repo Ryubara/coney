@@ -131,20 +131,12 @@ constexpr std::array<std::string_view, 2> kBoardlessBarriers{"dyn_door_wall_a", 
 // The boards a broken barrier throws.
 constexpr std::array<std::string_view, 3> kBoards{"dyn_wooddmg_a", "dyn_wooddmg_b", "dyn_wooddmg_a"};
 
-// dyn_door_liz's model stages in the order they are taken: each below its share of the full hitpoints, the model it
-// takes and the material its sound pairs the door's own with (0: the door's own again).
-constexpr std::array<float, 4> kLizShares{0.8F, 0.6F, 0.4F, 0.2F};
-constexpr std::array<std::uint32_t, 4> kLizModels{0xbdd06de7U, 0x24d93c5dU, 0x53de0ccbU, 0xcdba9968U};
-constexpr std::array<std::uint8_t, 4> kLizStageOthers{0, 106, 36, 35};
-// dyn_door_dclub's one stage: below half its hitpoints, model 0x4d67682e.
-constexpr float kDclubShare = 0.5F;
-constexpr std::uint32_t kDclubModel = 0x4d67682eU;
-// The material a liz or dclub break pairs the door's with.
-constexpr std::uint8_t kBreakOther = 121;
-// A break's splinters: 40 at the hit point 0.5 m up, twice; dclub's three bursts.
-constexpr int kBreakSplinters = 40;
-constexpr float kBreakRise = 0.5F;
-constexpr int kDclubBreakBursts = 3;
+// dyn_door_liz's model stages (percent of its hitpoints) and the material each stage's sound pairs with CONCRETE (the
+// fourth is the door's own, marked by 0); dyn_door_dclub's one stage.
+constexpr std::array<int, 4> kLizStages{80, 60, 40, 20};
+constexpr std::array<std::uint8_t, 4> kLizStageSounds{35, 36, 106, 0};
+constexpr int kDclubStage = 50;
+constexpr int kPercent = 100;
 
 // Hitpoints a door type no CfgObj named gets (Coney's stand-in): the disc's value for most types.
 constexpr int kStandInHitpoints = 100;
@@ -236,8 +228,6 @@ void stepSlidingLeaf(SlidingLeaf& leaf, float length, float step) {
             done = true;
         }
     }
-    // Not ported: the leaf's collision body flagged and moved with it (#707; the door's triangles stand for it), and
-    // at rest message 0x13 to the door, which unpins the leaves' spawn records (#710).
     if (done) {
         leaf.motion = slide_motion::kRest;
         leaf.countdown = kSlideRestTicks;
@@ -412,8 +402,6 @@ const Door& Doors::spawn(double handle, const DoorSpawn& spawn, const ObjectType
             pickableOn(door, world);
         }
     } else if (door.doorClass == DoorClass::Barrier) {
-        // Not ported (#707): the model by class (the four fence types), dyn_door_vargas' second object kept in data
-        // +0x08, and the hit mode set from it.
         markTriangles(world, door.triangles, raycast::kTriangleTwoSided | kTriangleBreakableBit | kTriangleDoorBit);
         if (info != nullptr && info->className != kUnmarkedBarrierClass) {
             links.setKindByNumber(door.number, link_kind::kBreakable);
@@ -438,9 +426,7 @@ void Doors::setUpSliding(Door& door, const ObjectTypeInfo* info, const HandleSou
         door.slideAxis = 0;
     }
     door.slideStep = info != nullptr ? info->property6 * 2.0F : 0.0F;
-    // The leaves by type name: the first at the door's place, a second 2w away. Not ported (#710): each leaf's spawn
-    // record pinned, and the door's +0x20 that keeps them pinned until they stop (streaming residency; Coney keeps
-    // every object resident).
+    // The leaves by type name: the first at the door's place, a second 2w away.
     const auto row = std::ranges::find(kSlidingRows, door.type, &SlidingRow::name);
     if (row != kSlidingRows.end()) {
         if (row->axisOneMore) {
@@ -496,7 +482,6 @@ void Doors::runSlidingCommand(Door& door, int command, ObjectWorld& world) {
             door.slidingLeaves[i].rotation = i == 0 ? door.rotation : turnAboutVertical(door.rotation, 180.0F);
         }
     }
-    // Not ported (#710): both leaves' spawn records pinned (streaming residency).
     // The leaves take the door's command at once: a slide starts on their next step. **Coney's stand-in**: the
     // original only shortens each leaf's update interval to 2 ticks, so a leaf at rest on its 60-tick cycle starts
     // sliding 1 to 60 ticks later (SlidingDoor_StateCommand, Task_SetUpdateInterval `0x003a1630`; not yet seen at
@@ -836,82 +821,53 @@ void Doors::hitCabin(Door& door, const ObjectHit& hit, ObjectWorld& world) {
     }
 }
 
-// dyn_door_liz's, dyn_door_dclub's and dyn_door_stall's hit: dust, splinters, the model stages, then the break or a
-// sound (docs/research/objects.md#door-break).
+// dyn_door_liz's, dyn_door_dclub's and dyn_door_stall's hit: dust, splinters, model stages, the wreck
+// (docs/research/objects.md#door-break).
 // @orig 0x003fa438 DoorSwing_HitBreakable (unknown)
 void Doors::hitSplinters(Door& door, const ObjectHit& hit, ObjectWorld& world) {
     // Not ported (#707): object flag 0x800000 set on every hit, and the hit mode set from the hitpoints.
-    // In state 4 the door takes no damage and makes no dust or splinters, and the model stages read its hitpoints as 0.
-    int stageHitpoints = 0;
-    if (door.state != door_state::kSwung) {
-        // Dust at the hit point (radii 2.75 and 3.75) and 20 splinters, for every type. Stand-in (#707): without the
-        // dust's random heights and the splinters' colours (dyn_door_dclub picks one of its two at random).
-        dustAndSplinters(world, hit.point);
-        door.hitpoints -= hitDamage(hit.kind);
-        stageHitpoints = door.hitpoints;
-    }
-    takeModelStage(door, stageHitpoints, hit.point, world);
-    // dyn_door_stall breaks on its first hit; the others at 0 or below. A hit that leaves the door pairs its material
-    // with CONCRETE (5) at the hit point.
-    if (door.hitpoints > 0 && door.type != kStall) {
-        playPair(world, door.material, material::kConcrete, hit.point);
+    // Stand-in (#707): in state 4 the original takes no damage and makes no dust or splinters, but still reads the
+    // door as at 0 hitpoints for the model stages below and plays its sounds; Coney takes that hit like any other.
+    // Every other hit makes dust at the hit point (radii 2.75 and 3.75) and 20 splinters, for every type. Not ported
+    // (#707): the dust's random heights and the splinters' colours (dyn_door_dclub picks one of its two at random).
+    dustAndSplinters(world, hit.point);
+    // A hit that does not break the door pairs its material with CONCRETE (5) at the hit point. Stand-in (#707): the
+    // original's breaking hit plays only the break's own pairs; Coney plays this one on it too.
+    playPair(world, door.material, material::kConcrete, hit.point);
+    door.hitpoints -= hitDamage(hit.kind);
+    // dyn_door_stall breaks on its first hit.
+    if (door.hitpoints <= 0 || door.type == kStall) {
+        NavLinks(world.paths).openByNumber(door.number);
+        door.tint &= ~kTintAlpha;
+        // Stand-in (#707): the original's break makes two more dust clouds (placed from the camera's view position)
+        // and 40 splinters twice at the hit point 0.5 m up, for every type (dyn_door_dclub's in its colours); Coney
+        // makes the dust and 20 splinters at the door.
+        dustAndSplinters(world, door.position);
+        wreck(door, world);
         return;
     }
-    NavLinks(world.paths).openByNumber(door.number);
-    door.tint &= ~kTintAlpha;
-    // The break's two dust clouds and 40 splinters twice at the hit point 0.5 m up.
-    const anim::Vec3 raised{hit.point.x, hit.point.y, hit.point.z + kBreakRise};
-    if (world.services != nullptr) {
-        // Stand-in (#707): the original places the dust at a tenth of the way from the hit point to the camera's view
-        // position (as an offset, not a point), which Coney does not reproduce: Coney's clouds are at the hit point.
-        for (const float radius : kDustRadii) {
-            world.services->dust(hit.point, radius);
+    // The model stages: dyn_door_liz at 80, 60, 40 and 20 %, dyn_door_dclub at 50 %. Stand-in (#707): the original
+    // takes liz's stages one a hit, checked from 20 % up, each below (not at) its share and needing the model of the
+    // one before, and pairs the door's material with itself at 80 % (which also removes both leaves and shows the
+    // door), then with 106, 36 and 35, at the hit point; dclub's stage also removes both leaves, takes model
+    // 0x4d67682e, bursts and pairs its material with itself. Coney loops from 80 % down, at or below each share,
+    // pairs 35, 36 and 106 with CONCRETE at the door and keeps the leaves.
+    const auto reached = [&door](int percent) { return door.hitpoints * kPercent <= percent * door.maxHitpoints; };
+    if (door.type == kLiz) {
+        while (door.modelStage < static_cast<int>(kLizStages.size()) &&
+               reached(kLizStages.at(static_cast<std::size_t>(door.modelStage)))) {
+            const std::uint8_t sound = kLizStageSounds.at(static_cast<std::size_t>(door.modelStage));
+            playPair(world, sound != 0 ? sound : door.material, material::kConcrete, door.position);
+            if (world.services != nullptr) {
+                world.services->nextModel(door.handle);
+            }
+            ++door.modelStage;
         }
-        // Stand-in (#707): without the splinters' colours (dyn_door_dclub's two) and their two speeds and spreads.
-        world.services->splinters(raised, kBreakSplinters);
-        world.services->splinters(raised, kBreakSplinters);
-    }
-    // The type's pair at the hit point: liz's and dclub's material with 121, stall's with itself. Not ported (#707):
-    // stall's leaves removed here. liz's three effect calls (Effects_ReturnZeroA, 0x003a6e48) return at once.
-    playPair(world, door.material, door.type == kStall ? door.material : kBreakOther, hit.point);
-    if (door.type == kDclub && world.services != nullptr) {
-        // Stand-in (#707): dclub's three bursts are at the door turned offsets and the hit point 0.5 m up in the
-        // original; Coney makes all three at the hit point 0.5 m up.
-        for (int burst = 0; burst < kDclubBreakBursts; ++burst) {
-            world.services->burst(raised);
-        }
-    }
-    wreck(door, world);
-}
-
-// The model stage a splintering door's hit crosses: dyn_door_liz's four and dyn_door_dclub's one, each taken below
-// (not at) its share of the full hitpoints, one a hit (docs/research/objects.md#door-break).
-// @orig 0x003fa438 DoorSwing_HitBreakable (unknown)
-void Doors::takeModelStage(Door& door, int hitpoints, anim::Vec3 at, ObjectWorld& world) {
-    const auto below = [&door, hitpoints](float share) {
-        return static_cast<float>(hitpoints) < static_cast<float>(door.maxHitpoints) * share;
-    };
-    // Coney's choice: modelStage counts the stages taken, where the original compares the door's model (+0xc4) with
-    // the one the stage before takes; they differ only if something else set the door's model.
-    if (door.type == kLiz && door.modelStage < static_cast<int>(kLizShares.size())) {
-        const auto stage = static_cast<std::size_t>(door.modelStage);
-        if (!below(kLizShares.at(stage))) {
-            return;
-        }
-        // Not ported (#707): the first stage also removes both leaves and shows the door (object flag 4 cleared).
+    } else if (door.type == kDclub && door.modelStage == 0 && reached(kDclubStage)) {
+        // Stand-in (#707), as above: dclub's stage only takes the next model here.
         if (world.services != nullptr) {
-            world.services->setModel(door.handle, kLizModels.at(stage));
+            world.services->nextModel(door.handle);
         }
-        const std::uint8_t other = kLizStageOthers.at(stage);
-        playPair(world, door.material, other != 0 ? other : door.material, at);
-        ++door.modelStage;
-    } else if (door.type == kDclub && door.modelStage == 0 && below(kDclubShare)) {
-        // Not ported (#707): the stage also removes both leaves and shows the door (object flag 4 cleared).
-        if (world.services != nullptr) {
-            world.services->setModel(door.handle, kDclubModel);
-            world.services->burst(at);
-        }
-        playPair(world, door.material, door.material, at);
         door.modelStage = 1;
     }
 }
@@ -923,8 +879,9 @@ void Doors::wreck(Door& door, ObjectWorld& world) {
     // Not ported (#707), from the original's break:
     // - a cabin's (DoorSwing_Hit): the door's collision body removed, the call 0x00219320 on the attacker, the two
     //   bursts 1 m up, the GLASS x GLASS pair at the door and both leaves' next models (message 0x19);
-    // - stall's (DoorSwing_HitBreakable): its leaves removed (liz and dclub did at a model stage); hitSplinters()
-    //   makes the splintering types' own pairs, dust, splinters and bursts.
+    // - liz's, stall's and dclub's (DoorSwing_HitBreakable): the type's pair at the hit point (liz's and dclub's
+    //   material with 121, stall's with itself), liz's effects and dclub's three bursts. Of these only stall removes
+    //   its leaves at the break (liz and dclub did at a model stage).
     // A cabin's leaves, removed at the break, and stall's go with the door here when it ends at its next update.
     setTrianglesEnabled(world, door.triangles, false);
     if (world.services != nullptr) {

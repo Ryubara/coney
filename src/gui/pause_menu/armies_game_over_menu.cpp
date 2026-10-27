@@ -137,8 +137,6 @@ void ArmiesGameOverMenu::update(const GuiFrame& frame) {
     }
     playCue(kCue);
     m_choice = static_cast<ArmiesGameOverChoice>(*code);
-    // Not ported (#704): on either choice the original also zeroes both players' Armies scores
-    // (Stats_ClearArmiesScores `0x004229c0` on the stats object); Coney keeps no Armies score yet.
 }
 
 void ArmiesGameOverMenu::render(const GuiCanvas& canvas) const {

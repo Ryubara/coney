@@ -128,31 +128,6 @@ TEST_CASE("a join message shows for a player who is not in, blinking every 500 m
     CHECK_FALSE(armies.joinShowing(1));
 }
 
-TEST_CASE("a knocked-out player's panel is no longer wanted, so his join message shows until the panel is enabled",
-          "[hud][armies]") {
-    // Expected: armies.md#the-join-messages, confirmed (code): ANHud_Draw (0x00211938) clears a shown panel's wanted
-    // flag (+0x40f8) when its human is knocked out (0x00227dd8) and draws the join text while the panel is not
-    // wanted and its flag (+0x4614) is on; ANHud_Enable (0x0020fd40) sets wanted again.
-    ArmiesHud armies;
-    armies.levelSetUp();
-    armies.panelAttached(0);
-    armies.setJoinMessage(0, true);
-    armies.update(0, 60, {true, false}, {false, false});
-    CHECK_FALSE(armies.joinShowing(0));
-    // The frame he is knocked out still draws his panel; the next one draws the join text.
-    armies.update(10, 60, {true, false}, {true, false});
-    CHECK_FALSE(armies.joinShowing(0));
-    armies.update(20, 60, {true, false}, {true, false});
-    CHECK(armies.joinShowing(0));
-    // Up again, the panel stays unwanted until it is enabled.
-    armies.update(30, 60, {true, false}, {false, false});
-    CHECK(armies.joinShowing(0));
-    armies.panelEnabled(0);
-    CHECK_FALSE(armies.joinShowing(0));
-    armies.update(40, 60, {true, false}, {false, false});
-    CHECK_FALSE(armies.joinShowing(0));
-}
-
 TEST_CASE("a join message is centred on its panel's place, as Font_Draw's flag 2 centres each run", "[hud][armies]") {
     // Expected: armies.md#the-join-messages, confirmed (code)
     // Expected: gui.md (Font_Draw 0x00179c30: flag 0x02 moves the start left by half the measured width);

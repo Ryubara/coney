@@ -98,10 +98,6 @@ int modelRecordType(int type, int playerIndex) {
 bool isArmiesLevel(int levelNumber) { return levelNumber >= kFirstArmiesLevel && levelNumber <= kLastArmiesLevel; }
 
 // Human_Init's model: the record's model name, its `_a` one in an Armies of the Night level (+0x112 or +0x114).
-// Not ported, from Human_Init (#1020): the voice folder and the level's anim variant, the idle lines counted, the
-// brain's +0x26c by category beyond category 4's roll, the task byte, +0x19e and the radar entries by brain type,
-// the class's switches copied into the human flags, the class's weapon in the hand, +0x3bc's name test and the
-// type's own scale; (#689) HuCreate's forced brain type 2 and the random body size.
 // @orig 0x00218008 Human_Init (unknown)
 std::optional<std::string> modelNameFor(int type, int playerIndex, int levelNumber, const CfgCharModel& modelOf) {
     if (!modelOf) {

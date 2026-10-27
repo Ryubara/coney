@@ -356,10 +356,8 @@ class Doors {
     static void hitStore(Door& door, const ObjectHit& hit, ObjectWorld& world);
     // A cabin door's hit: damage, then both leaves broken below 7.
     static void hitCabin(Door& door, const ObjectHit& hit, ObjectWorld& world);
-    // A splintering door's hit: damage, splinters, its model stages, then the break or a sound.
+    // A splintering door's hit: damage, splinters and its model stages.
     static void hitSplinters(Door& door, const ObjectHit& hit, ObjectWorld& world);
-    // The model stage a splintering door's hit crosses, read at `hitpoints`, its sound at `at`.
-    static void takeModelStage(Door& door, int hitpoints, anim::Vec3 at, ObjectWorld& world);
     // A barrier's hit: damage, and broken at no hitpoints.
     static void hitBarrier(Door& door, const ObjectHit& hit, ObjectWorld& world);
     // The ends of a splintering door and a cabin door: triangles off, wreck pieces, state 6.

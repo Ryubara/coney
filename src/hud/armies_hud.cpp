@@ -46,8 +46,6 @@ gui::TextStyle styleAt(float x, graphics::Rgba colour, bool centred) {
 } // namespace
 
 void ArmiesHud::levelSetUp(Language language) {
-    // Not ported: the GO sign's 16:9, PAL and progressive layouts, which the display flags pick (#890); each ANHud
-    // panel's player kept at +0x40f4, which Coney's panel index stands for (#662).
     m_credits = 0;
     // The sign moves left for the longer Spanish and Italian words.
     switch (language) {
@@ -69,8 +67,6 @@ void ArmiesHud::levelSetUp(Language language) {
     // **Coney's choice**: a join message starts on its lit half (the blink's first state is not traced).
     m_joinLit = {true, true};
     m_in = {};
-    m_dropped = {};
-    m_dropping = {};
 }
 
 void ArmiesHud::setJoinMessage(std::size_t player, bool on) {
@@ -79,55 +75,25 @@ void ArmiesHud::setJoinMessage(std::size_t player, bool on) {
     }
 }
 
-// ANHud_Init zeroes the join flag along with the rest of the panel; it runs once, on the panel's first attach. Not
-// ported (#662): the rest of ANHud_Init, which builds the panel's parts (the power and health bars, the score
-// counter, the target panel), lays them out by video mode and hides the panel until it is enabled.
-// Coney's reading: the attach also makes the panel wanted (ANHud_Init leaves +0x40f8 at 0, and what enables it after
-// the attach is not traced; a panel in play is drawn, so something does).
+// ANHud_Init zeroes the join flag along with the rest of the panel; it runs once, on the panel's first attach.
 void ArmiesHud::panelAttached(std::size_t player) {
     if (player < kPlayers) {
         m_join.at(player) = false;
-        m_dropped.at(player) = false;
-        m_dropping.at(player) = false;
     }
 }
 
-void ArmiesHud::panelEnabled(std::size_t player) {
-    if (player < kPlayers) {
-        m_dropped.at(player) = false;
-        m_dropping.at(player) = false;
-    }
-}
-
-bool ArmiesHud::panelWanted(std::size_t player) const {
-    return player < kPlayers && m_in.at(player) && !m_dropped.at(player);
-}
-
-// Not ported (#662): what ANHud_Draw draws for a wanted, shown and loaded panel (the score, the banner, the
-// flashing power bar, the health bar, the frame, the portrait and the target panels).
 bool ArmiesHud::joinShowing(std::size_t player) const {
-    // Stand-in (#662): the original also draws the join text for a panel that is not shown (+0x40fc), which Coney's
-    // unbuilt panels do not track: Coney reads only wanted.
-    return m_active && player < kPlayers && m_join.at(player) && !panelWanted(player) && m_joinLit.at(player);
+    return m_active && player < kPlayers && m_join.at(player) && !m_in.at(player) && m_joinLit.at(player);
 }
 
 void ArmiesHud::update(std::uint64_t nowMs, int level, std::array<bool, kPlayers> playersIn,
-                       std::array<bool, kPlayers> knockedOut) {
+                       std::array<bool, kPlayers> /*knockedOut*/) {
     m_active = isArmiesLevel(level);
     m_in = playersIn;
     if (!m_active) {
         return;
     }
-    // The knock-outs the last step saw drop their panels now: the original's draw clears wanted on the frame it
-    // still draws the panel, so its join text comes from the next frame.
-    for (std::size_t player = 0; player < kPlayers; ++player) {
-        if (m_dropping.at(player)) {
-            m_dropped.at(player) = true;
-            m_dropping.at(player) = false;
-        }
-    }
-    // The GO sign: its frame steps once the period has passed since the last step, wrapping by mode. Not ported
-    // (#890): mode 0's arrow size in the 16:9 and progressive modes.
+    // The GO sign: its frame steps once the period has passed since the last step, wrapping by mode.
     if (!m_goTimed) {
         m_goLastMs = nowMs;
         m_goTimed = true;
@@ -139,27 +105,19 @@ void ArmiesHud::update(std::uint64_t nowMs, int level, std::array<bool, kPlayers
         }
         m_goLastMs = nowMs;
     }
-    // The join messages of the panels that are not wanted: one shared timer, so the first panel due takes the
+    // The join messages of the panels whose player is not in: one shared timer, so the first panel due takes the
     // step (ANHud_Update on each panel in turn).
     if (!m_joinTimed) {
         m_joinLastMs = nowMs;
         m_joinTimed = true;
     }
     for (std::size_t player = 0; player < kPlayers; ++player) {
-        if (panelWanted(player) || !m_join.at(player)) {
+        if (m_in.at(player) || !m_join.at(player)) {
             continue;
         }
         if (m_joinLastMs + kJoinBlinkMs < nowMs) {
             m_joinLit.at(player) = !m_joinLit.at(player);
             m_joinLastMs = nowMs;
-        }
-    }
-    // A wanted panel whose player is knocked out drops at the next step (ANHud_Draw, Human_IsKnockedOut).
-    // Stand-in (#662): the original asks only while the panel is shown (+0x40fc) and loaded (+0x4110), which Coney's
-    // unbuilt panels do not track; Coney asks for every wanted panel.
-    for (std::size_t player = 0; player < kPlayers; ++player) {
-        if (panelWanted(player) && knockedOut.at(player)) {
-            m_dropping.at(player) = true;
         }
     }
 }
