@@ -186,6 +186,36 @@ class PushingGoal final : public coney::ai::Goal {
     std::vector<std::string>* m_log;
 };
 
+// A goal that records the brain's update count each time it is processed.
+class CountingGoal final : public coney::ai::Goal {
+  public:
+    CountingGoal() : Goal(coney::ai::GoalType::Fight) {}
+    coney::ai::GoalStatus process(Brain& brain) override {
+        seen.push_back(brain.updates());
+        return coney::ai::GoalStatus::Stop;
+    }
+    std::vector<std::uint64_t> seen;
+};
+
+TEST_CASE("a brain counts its update before its goals run and sets the face's mood on every fifth count", "[ai]") {
+    Scene scene;
+    Brain& brain = scene.add({45.0F, 40.0F, 0.0F}, 0.0F, BrainType::Gang);
+    auto goal = std::make_unique<CountingGoal>();
+    const CountingGoal& counting = *goal;
+    REQUIRE(brain.pushGoal(std::move(goal)));
+    // A new human's face is angry until its brain sets the mood; nothing makes this one more than neutral.
+    // Expected: face.md#mood, confirmed (code)
+    for (std::uint64_t step = 1; step <= 4; ++step) {
+        brain.update(stepMs(step));
+        CHECK(brain.human().faceState().value() == static_cast<int>(coney::human::FaceMood::Angry));
+    }
+    brain.update(stepMs(5));
+    CHECK(brain.human().faceState().value() == static_cast<int>(coney::human::FaceMood::Neutral));
+    // The goals read the count this update has already added to.
+    // Expected: ai.md#update, confirmed (code)
+    CHECK(counting.seen == std::vector<std::uint64_t>{1, 2, 3, 4, 5});
+}
+
 TEST_CASE("a goal pushed from a popped goal's End stays on the stack", "[ai]") {
     Scene scene;
     Brain& brain = scene.add({45.0F, 40.0F, 0.0F}, 0.0F, BrainType::Gang);
