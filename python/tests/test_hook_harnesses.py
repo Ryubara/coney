@@ -71,7 +71,7 @@ def antigravity(command: str) -> dict[str, Any]:
 
 
 def cursor(command: str) -> dict[str, Any]:
-    """Cursor's preToolUse for its Shell tool (cursor.com/docs/agent/hooks)."""
+    """Cursor's preToolUse for its Shell tool (cursor.com/docs/agent/hooks); it passes with `permission: allow`."""
     return {
         "conversation_id": "c1", "generation_id": "g1", "model": "auto", "hook_event_name": "preToolUse",
         "cursor_version": "3.3.0", "workspace_roots": [ROOT], "user_email": None, "transcript_path": None,
@@ -109,7 +109,7 @@ SHAPES: dict[str, tuple[Callable[[str], dict[str, Any]], Callable[[dict[str, Any
     "codex": (codex, lambda out: out["hookSpecificOutput"]["permissionDecision"] == "deny", ""),
     "gemini": (gemini, lambda out: out["decision"] == "deny", "{}"),
     "antigravity": (antigravity, lambda out: out["decision"] == "deny", '{"decision": "allow"}'),
-    "cursor": (cursor, lambda out: out["permission"] == "deny", "{}"),
+    "cursor": (cursor, lambda out: out["permission"] == "deny", '{"permission": "allow"}'),
     "copilot": (copilot, lambda out: out["permissionDecision"] == "deny", ""),
     "grok": (grok, lambda out: out["decision"] == "deny", ""),
 }
@@ -524,3 +524,86 @@ def test_an_unknown_harness_name_is_logged_and_read_by_the_payload(monkeypatch: 
     code, out, _ = DISPATCH.answer_any(json.dumps(grok(PUSH)), "windsurf")
     assert code == 0 and json.loads(out)["decision"] == "deny"
     assert lines == ["harness: unknown --harness 'windsurf', read as grok"]
+
+
+# --- argument shapes the lists do not name: judged, never let through as nothing ------------------------------------
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {**codex(""), "tool_name": "shell", "tool_input": {"command": ["bash", "-lc", PUSH]}},
+        {**codex(""), "tool_name": "Bash", "tool_input": {"command": ["git", "push", "origin", "HEAD"]}},
+        {**codex(""), "tool_name": "run_it", "tool_input": {"commands": ["git status", PUSH]}},
+    ],
+)  # fmt: skip
+def test_a_command_as_a_list_is_judged(payload: dict[str, Any]) -> None:
+    assert "git push" in refused("codex", payload)
+
+
+@pytest.mark.parametrize("key", ["script", "input", "cmd_line", "command_line", "Command", "code"])
+def test_a_shell_tool_s_command_under_another_key_is_judged(key: str) -> None:
+    # A listed shell tool with no known command argument has every string argument judged as a command.
+    payload = {**grok(""), "toolName": "Bash", "toolInput": {key: PUSH}}
+    assert "git push" in refused("grok", payload)
+
+
+@pytest.mark.parametrize("key", ["script", "input", "cmd_line"])
+def test_an_unlisted_tool_s_command_under_another_key_is_judged(key: str) -> None:
+    payload = {**copilot(""), "toolName": "terminal_run", "toolArgs": {key: PUSH}}
+    assert "git push" in refused("copilot", payload)
+
+
+def test_a_patch_under_any_argument_is_judged(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(harness.ROLE_VARIABLE, "coordinator")
+    listed = {**codex_patch(""), "tool_input": {"input": PATCH}}
+    assert "src/" in refused("codex", listed)
+    unlisted = {**gemini(""), "tool_name": "patcher", "tool_input": {"body": PATCH}}
+    assert "src/" in refused("gemini", unlisted)
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        {"filepath": f"{ROOT}/.claude/hooks/hooks.toml", "content": "x"},
+        {"file": f"{ROOT}/.claude/hooks/hooks.toml", "content": "x"},
+        {"uri": "file:///" + f"{ROOT}/.claude/hooks/hooks.toml".replace("\\", "/").lstrip("/"), "content": "x"},
+        {"where": f"{ROOT}/.codex/hooks.json", "content": "x"},
+    ],
+)  # fmt: skip
+def test_a_write_tool_s_path_under_another_key_is_judged(arguments: dict[str, Any]) -> None:
+    payload = {**gemini(""), "tool_name": "write_file", "tool_input": arguments}
+    assert "Ask your person" in refused("gemini", payload)
+
+
+@pytest.mark.parametrize("key", ["patch", "diff", "edits", "data", "body", "new_text", "newText", "replacement"])
+def test_an_unlisted_tool_with_a_path_and_an_edit_is_a_write(key: str) -> None:
+    payload = {**grok(""), "toolName": "apply", "toolInput": {"path": f"{ROOT}/.grok/hooks/coney.json", key: "x"}}
+    assert "Ask your person" in refused("grok", payload)
+
+
+@pytest.mark.parametrize("name", ["update_file", "modify", "overwrite", "change_file"])
+def test_more_names_say_a_tool_changes_a_file(name: str) -> None:
+    payload = {**grok(""), "toolName": name, "toolInput": {"target": f"{ROOT}/.cursor/hooks.json"}}
+    assert "Ask your person" in refused("grok", payload)
+
+
+def test_a_move_is_judged_at_both_ends() -> None:
+    payload = {**copilot(""), "toolName": "move_file",
+               "toolArgs": {"source": f"{ROOT}/docs/x.md", "destination": f"{ROOT}/.claude/hooks/x.py"}}  # fmt: skip
+    assert "Ask your person" in refused("copilot", payload)
+
+
+def test_an_edit_s_old_text_is_no_path() -> None:
+    edit = {"file_path": f"{ROOT}/docs/a.md", "old_string": ".claude/hooks/x", "new_string": "y"}
+    payload = {**grok(""), "toolName": "Edit", "toolInput": edit}
+    calls = harness.claude_calls("grok", payload, "contributor")
+    assert [call["tool_input"]["file_path"] for call in calls] == [f"{ROOT}/docs/a.md"]
+
+
+def test_cursor_s_pascal_case_event_is_judged() -> None:
+    # Cursor also runs `.claude/settings.json`'s hook, whose command names no harness.
+    payload = {**cursor(PUSH), "hook_event_name": "PreToolUse"}
+    for named in ("cursor", None):
+        code, out, _ = DISPATCH.answer_any(json.dumps(payload), named)
+        assert code == 0 and json.loads(out)["permission"] == "deny"

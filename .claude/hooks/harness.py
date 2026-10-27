@@ -13,9 +13,12 @@ Claude Code:
 * **`claude_calls`** turns one tool call of the harness into the Claude Code calls the guards read: its shell tool
   becomes `Bash` (`PowerShell` for Copilot's), a file write or edit becomes `Write` with `file_path` and `content`
   (Codex's `apply_patch` one per file it touches, a deletion with no content), a read becomes `Read`. A name in none
-  of the lists is read by its arguments (`by_shape`): a string `command` makes it a shell call, a file path with text
-  to write (or a name that says it changes a file) a `Write`; anything else (MCP tools, searches) keeps its name. The
-  working directory goes into `cwd`; the role into `agent_type` (`role`).
+  of the lists is read by its arguments (`by_shape`): a command argument (a string, or a list read as an argv and as
+  several commands) makes it a shell call, a patch under any argument one `Write` per file, a file path with text to
+  write (or a name that says it changes a file) a `Write`; anything else (MCP tools, searches) keeps its name. A listed
+  tool whose arguments the adapter cannot read is judged conservatively, never as nothing: a shell tool's every string
+  argument as a command, a write tool's every path-like argument as a `Write`. The working directory goes into `cwd`;
+  the role into `agent_type` (`role`).
 * **`answer`** gives the harness its refusal: Codex the Claude Code JSON, Gemini CLI and Antigravity a `decision`.
   Cursor, Copilot and Grok Build also run other tools' hook files (`.claude/settings.json`, `.cursor/hooks.json`) and
   may read the answer by that file's format, so they get every deny key at once (`UNION_HARNESSES`): a key the tool
@@ -36,6 +39,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shlex
 from pathlib import Path
 from typing import Any
 
@@ -50,7 +54,8 @@ PRE_EVENTS = {
     "codex": ("PreToolUse",),
     "gemini": ("BeforeTool",),
     "antigravity": ("PreToolUse",),
-    "cursor": ("preToolUse", "beforeShellExecution"),
+    # PascalCase too: Cursor also runs `.claude/settings.json`'s hook, and may send that file's event name.
+    "cursor": ("preToolUse", "beforeShellExecution", "PreToolUse"),
     "copilot": ("PreToolUse", "preToolUse"),
     "grok": ("PreToolUse", "preToolUse"),
 }
@@ -79,7 +84,19 @@ SHELL_TOOLS = (
     "unified_exec",
 )
 POWERSHELL_TOOLS = ("powershell",)
-COMMAND_KEYS = ("command", "CommandLine", "commandLine", "cmd")
+#: The arguments that hold a shell command: a string, or a list (an argv, or several commands).
+COMMAND_KEYS = (
+    "command",
+    "CommandLine",
+    "commandLine",
+    "Command",
+    "cmd",
+    "command_line",
+    "cmd_line",
+    "commands",
+    "script",
+    "input",
+)
 #: Tool names (lower case) that write, edit or delete a file.
 WRITE_TOOLS = (
     "write",
@@ -103,7 +120,27 @@ WRITE_TOOLS = (
 #: Tool names (lower case) that read a file.
 READ_TOOLS = ("read", "view", "view_file", "read_file", "read_many_files")
 #: The arguments that name a file, and those that hold the text written into it.
-PATH_KEYS = ("file_path", "path", "target_file", "TargetFile", "filePath", "notebook_path", "AbsolutePath")
+PATH_KEYS = (
+    "file_path",
+    "path",
+    "target_file",
+    "TargetFile",
+    "filePath",
+    "filepath",
+    "file",
+    "filename",
+    "file_name",
+    "uri",
+    "notebook_path",
+    "AbsolutePath",
+    "target",
+    "target_path",
+    "destination",
+    "destination_path",
+    "dest",
+    "new_path",
+    "newPath",
+)
 TEXT_KEYS = (
     "content",
     "contents",
@@ -116,12 +153,27 @@ TEXT_KEYS = (
     "code_edit",
     "code",
     "text",
+    "new_text",
+    "newText",
+    "replacement",
+    "diff",
+    "patch",
+    "edits",
+    "data",
+    "body",
 )
 #: Words in a tool name the adapter does not know that say the tool changes a file: such a call with a path and no text
 #: (a deletion, a move) is judged as a `Write` with no content.
 _WRITE_WORDS = re.compile(
-    r"write|edit|delete|remove|move|rename|create|patch|replace|insert|append|save", re.IGNORECASE
+    r"write|edit|delete|remove|move|rename|create|patch|replace|insert|append|save|update|modify|overwrite|change",
+    re.IGNORECASE,
 )
+#: The first line of a Codex patch, wherever it appears in an argument.
+PATCH_START = "*** Begin Patch"
+#: Arguments that hold text, not a path: the text an edit replaces, and words for the person.
+_NOT_PATHS = ("old_string", "old_str", "old_text", "oldText", "description", "explanation", "instruction")
+#: A string that may name a file: one line, not too long, with a slash or a file extension.
+_PATHISH = re.compile(r"^[^\n\r]{1,1024}$")
 #: The harnesses that get every deny key at once (see `answer`).
 UNION_HARNESSES = ("cursor", "copilot", "grok")
 #: The arguments that name the folder a command runs in.
@@ -254,52 +306,126 @@ def _cwd(harness: str, payload: dict[str, Any], arguments: dict[str, Any]) -> st
     return _first(payload, ("workspaceRoot",)) or ""
 
 
+def _strings(value: Any) -> list[str]:
+    """The readings of an argument as command text: a string as it is; a list of strings both as one argv
+    (`shlex.join`) and as several commands, one per line, since the adapter cannot tell which the tool meant."""
+    if isinstance(value, str):
+        return [value] if value else []
+    if isinstance(value, list) and value and all(isinstance(item, str) for item in value):
+        return list(dict.fromkeys([shlex.join(value), "\n".join(value)]))
+    return []
+
+
+def _commands(arguments: dict[str, Any], keys: tuple[str, ...] | None = None) -> list[str]:
+    """Every command text under the given argument names (every argument when None), each reading once."""
+    found: list[str] = []
+    values = arguments.values() if keys is None else [arguments.get(key) for key in keys]
+    for value in values:
+        found += [text for text in _strings(value) if text not in found]
+    return found
+
+
+def _patches(arguments: dict[str, Any]) -> list[str]:
+    """Every argument that holds a Codex patch, under any name."""
+    return [text for value in arguments.values() for text in _strings(value) if PATCH_START in text]
+
+
+def _as_path(value: str) -> str:
+    """A path from a path argument: a `file://` URI made a plain path (`file:///C:/x` is `C:/x`)."""
+    if value.startswith("file://"):
+        value = value[len("file://") :]
+        if re.match(r"^/[A-Za-z]:[\\/]", value):
+            value = value[1:]
+    return value
+
+
+def _paths(arguments: dict[str, Any]) -> list[str]:
+    """Every argument that may name a file, for a tool that changes files: the path arguments first, then any other
+    one-line string or list of strings with a slash or an extension (a move's two paths, a list of paths to delete)."""
+    found: list[str] = []
+    for key, value in [(key, arguments.get(key)) for key in PATH_KEYS] + list(arguments.items()):
+        if key in TEXT_KEYS or key in CWD_KEYS or key in _NOT_PATHS:
+            continue
+        items = [value] if isinstance(value, str) else value if isinstance(value, list) else []
+        for item in items:
+            if not isinstance(item, str) or not _PATHISH.match(item) or PATCH_START in item:
+                continue
+            listed = key in PATH_KEYS
+            if (listed or re.search(r"[\\/]|\.\w{1,8}$", item)) and _as_path(item) not in found:
+                found.append(_as_path(item))
+    return found
+
+
+def _has_text(arguments: dict[str, Any]) -> bool:
+    """Whether the call carries text to write, in any form (a string, a list of edits)."""
+    return any(arguments.get(key) not in (None, "", [], {}) for key in TEXT_KEYS)
+
+
+def _shell(name: str, command: str) -> dict[str, Any]:
+    """A shell call: `PowerShell` for a PowerShell tool, else `Bash`."""
+    shell = "PowerShell" if re.search(r"powershell|pwsh", name, re.IGNORECASE) else "Bash"
+    return {"tool_name": shell, "tool_input": {"command": command}}
+
+
+def _writes(arguments: dict[str, Any], cwd: str, paths: list[str]) -> list[dict[str, Any]]:
+    """One `Write` per path, each with the call's text."""
+    text = _text(arguments)
+    return [{"tool_name": "Write", "tool_input": {"file_path": _join(cwd, path), "content": text}} for path in paths]
+
+
+def _patch_calls(arguments: dict[str, Any], cwd: str) -> list[dict[str, Any]]:
+    """One `Write` per file of every patch the call carries."""
+    return [
+        {"tool_name": "Write", "tool_input": file} for patch in _patches(arguments) for file in patch_files(patch, cwd)
+    ]
+
+
 def by_shape(name: str, arguments: dict[str, Any], cwd: str) -> list[dict[str, Any]] | None:
     """The Claude Code calls an unlisted tool stands for, read by its arguments; None when they show neither a shell
     command nor a file write (the call then keeps its name).
 
-    Both shapes are judged when both are there (an editor tool whose `command` names the edit, `str_replace`, and
-    whose `path` and text are the write), so a call is refused when either reading of it is."""
-    calls: list[dict[str, Any]] = []
-    command = _first(arguments, COMMAND_KEYS)
-    if command is not None and command.lstrip().startswith("*** Begin Patch"):
-        calls += [{"tool_name": "Write", "tool_input": file} for file in patch_files(command, cwd)]
-    elif command is not None:
-        shell = "PowerShell" if re.search(r"powershell|pwsh", name, re.IGNORECASE) else "Bash"
-        calls.append({"tool_name": shell, "tool_input": {"command": command}})
+    Every shape found is judged, so a call is refused when any reading of it is: a patch under any argument, a command
+    under a command argument (a list both as an argv and as several commands), and a path with text to write, or a
+    path under a name that says it changes a file (then every path-like argument, a move's target too)."""
+    calls = _patch_calls(arguments, cwd)
+    calls += [_shell(name, command) for command in _commands(arguments, COMMAND_KEYS) if PATCH_START not in command]
     path = _first(arguments, PATH_KEYS)
-    text = _text(arguments)
-    if path and (text or _WRITE_WORDS.search(name)):
-        calls.append({"tool_name": "Write", "tool_input": {"file_path": _join(cwd, path), "content": text}})
+    if _WRITE_WORDS.search(name):
+        calls += _writes(arguments, cwd, _paths(arguments))
+    elif path and _has_text(arguments):
+        calls += _writes(arguments, cwd, [_as_path(path)])
     return calls or None
 
 
 def claude_calls(harness: str, payload: dict[str, Any], role: str) -> list[dict[str, Any]]:
-    """The Claude Code PreToolUse payloads that stand for this tool call (empty when it is no call to judge)."""
+    """The Claude Code PreToolUse payloads that stand for this tool call (empty when it is no call to judge).
+
+    A listed tool whose arguments are in no shape the adapter knows is judged conservatively, never let through as
+    nothing: a shell tool with no command argument has every string argument judged as a command, a patch or write tool
+    every path-like argument as a `Write`."""
     if not is_pre_tool(harness, payload):
         return []
     name, arguments = _tool(harness, payload)
     cwd = _cwd(harness, payload, arguments)
     base: dict[str, Any] = {"hook_event_name": "PreToolUse", "cwd": cwd, "agent_type": role, "harness": harness}
     key = name.casefold()
-    command = _first(arguments, COMMAND_KEYS)
+    calls: list[dict[str, Any]] | None
     if key == "apply_patch":
-        return [{**base, "tool_name": "Write", "tool_input": file} for file in patch_files(command or "", cwd)]
-    if key in SHELL_TOOLS or key in POWERSHELL_TOOLS:
-        tool = "PowerShell" if key in POWERSHELL_TOOLS else "Bash"
-        return [{**base, "tool_name": tool, "tool_input": {"command": command or ""}}]
-    path = _first(arguments, PATH_KEYS)
-    if key in WRITE_TOOLS and path:
-        return [
-            {**base, "tool_name": "Write", "tool_input": {"file_path": _join(cwd, path), "content": _text(arguments)}}
-        ]
-    if key in READ_TOOLS and path:
-        return [{**base, "tool_name": "Read", "tool_input": {"file_path": _join(cwd, path)}}]
-    known = key in WRITE_TOOLS or key in READ_TOOLS
-    shaped = None if known else by_shape(name, arguments, cwd)
-    if shaped is not None:
-        return [{**base, **call} for call in shaped]
-    return [{**base, "tool_name": name, "tool_input": arguments}]
+        calls = _patch_calls(arguments, cwd) or _writes(arguments, cwd, _paths(arguments))
+    elif key in SHELL_TOOLS or key in POWERSHELL_TOOLS:
+        commands = _commands(arguments, COMMAND_KEYS) or _commands(arguments) or [""]
+        calls = [_shell(name, command) for command in commands]
+    elif key in WRITE_TOOLS:
+        calls = _patch_calls(arguments, cwd) + _writes(arguments, cwd, _paths(arguments))
+    elif key in READ_TOOLS and (path := _first(arguments, PATH_KEYS)):
+        calls = [{"tool_name": "Read", "tool_input": {"file_path": _join(cwd, _as_path(path))}}]
+    elif key in READ_TOOLS:
+        calls = None
+    else:
+        calls = by_shape(name, arguments, cwd)
+    if not calls:
+        return [{**base, "tool_name": name, "tool_input": arguments}]
+    return [{**base, **call} for call in calls]
 
 
 def role(config: dict[str, Any], environment: dict[str, str] | None = None) -> str:
@@ -315,7 +441,12 @@ def role(config: dict[str, Any], environment: dict[str, str] | None = None) -> s
 def answer(harness: str, reason: str | None) -> tuple[int, str, str]:
     """What the hook tells the harness: its own refusal JSON with the reasons, or its "no objection"; exit code 0."""
     if reason is None:
-        allowed = {"gemini": "{}", "cursor": "{}", "antigravity": json.dumps({"decision": "allow"})}
+        # Cursor blocks on output that does not match its schema, whose one required key is `permission`.
+        allowed = {
+            "gemini": "{}",
+            "cursor": json.dumps({"permission": "allow"}),
+            "antigravity": json.dumps({"decision": "allow"}),
+        }
         return 0, allowed.get(harness, ""), ""
     claude: dict[str, Any] = {
         "hookSpecificOutput": {

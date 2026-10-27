@@ -148,11 +148,17 @@ ordinary commands pass, and what becomes of an unlisted tool name, the other eve
 `str_replace`, `search_replace`, `Delete`, `delete_file`, Codex's `apply_patch`, ...) and reads (`Read`, `view`,
 `view_file`, `read_file`, `read_many_files`); the lists are `SHELL_TOOLS`, `WRITE_TOOLS` and `READ_TOOLS` in
 `harness.py`. A name in none of them is read by its arguments (`harness.by_shape`), so a tool a vendor adds or renames
-is still judged: a string `command` (or `CommandLine`, `commandLine`, `cmd`) is judged as a shell command (a Codex
-patch when it starts with `*** Begin Patch`), and a file path with text to write, or a path alone under a name that
-says it changes a file (`write`, `edit`, `delete`, `remove`, `move`, `rename`, `create`, `patch`, `replace`, `insert`,
-`append`, `save`), as a `Write`; a call with both shapes is judged both ways. Anything else (searches, web fetches, MCP
-tools) keeps its name, and only the rules that read every tool's input apply to it (`protect.py`).
+is still judged: a command argument (`COMMAND_KEYS`: `command`, `CommandLine`, `commandLine`, `Command`, `cmd`,
+`command_line`, `cmd_line`, `commands`, `script`, `input`) is judged as a shell command, a list of strings both as one
+argv (`shlex.join`) and as several commands; any argument that holds `*** Begin Patch` is judged as a Codex patch; and
+a file path (`PATH_KEYS`, `file://` URIs included) with text to write (`TEXT_KEYS`, among them `diff`, `patch`,
+`edits`, `data`, `body`, `new_text`, `replacement`), or any path-like argument under a name that says it changes a file
+(`write`, `edit`, `delete`, `remove`, `move`, `rename`, `create`, `patch`, `replace`, `insert`, `append`, `save`,
+`update`, `modify`, `overwrite`, `change`), as a `Write`. Every shape found is judged, and the call is refused when any
+reading is. A listed tool whose arguments are in no shape the lists know fails closed: a shell tool with no command
+argument has every string argument judged as a command, and a write or patch tool has every path-like argument (one
+line with a slash or an extension, not the text an edit replaces) judged as a `Write`. Anything else (searches, web
+fetches, MCP tools) keeps its name, and only the rules that read every tool's input apply to it (`protect.py`).
 
 **Roles in other tools.** A session of another tool has no agent type, so its role is `CONEY_AGENT_ROLE` from the
 environment the tool was started with (an agent's command cannot change the hook's environment, and `identity.py`
@@ -210,8 +216,10 @@ What each vendor's own page says, read on 2026-10-27:
   empty string or `"*"` matches everything." The page's `preToolUse` output, quoted on 2026-10-27:
   `{"permission": "allow" | "deny", "user_message": "<message shown in client when denied>", "agent_message":
   "<message sent to agent when denied>", "updated_input": { "command": "npm ci" }}` (`ask` is accepted but not enforced
-  for `preToolUse`); `beforeShellExecution` answers the same three keys. On Windows the app runs hooks in
-  PowerShell. Cursor also runs the hooks of `.claude/settings.json` (on by default: "Include Third-Party Plugins,
+  for `preToolUse`); `beforeShellExecution` answers the same three keys. `permission` is the one output key the page
+  does not mark optional, so the adapter's pass is `{"permission": "allow"}`, never `{}`. The adapter also judges the
+  PascalCase `PreToolUse`, which Cursor may send to the hook of `.claude/settings.json`. On Windows the app runs hooks
+  in PowerShell. Cursor also runs the hooks of `.claude/settings.json` (on by default: "Include Third-Party Plugins,
   Skills, and Other Configs"), so in Cursor the dispatcher may run twice for one call: harmless, both judge the same.
 - **GitHub Copilot** ([Hooks reference](https://docs.github.com/en/copilot/reference/hooks-reference),
   [VS Code](https://code.visualstudio.com/docs/copilot/customization/hooks)). `.github/hooks/*.json` (the only place the
