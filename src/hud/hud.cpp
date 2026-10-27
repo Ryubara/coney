@@ -759,7 +759,7 @@ void Hud::renderPrompt(const HudCanvas& canvas) const {
     // holds both). The clubhouse puts the text near the top (HUDEnableClubActionText), a base that takes neither.
     const float base = m_clubActionText ? kClubPromptY : kPromptPlace.y;
     float y = base;
-    if (promptBaseRaised(base)) {
+    if (true) { // fails-first stub: the text takes the raise and the lift on every base, as before the port
         const gui::TextLayout measured = gui::layoutText(text, style, canvas.text.fonts);
         y += promptRaise(canvas.text.fonts);
         if (measured.lines > 1) {
