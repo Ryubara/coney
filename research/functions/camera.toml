@@ -138,7 +138,7 @@ status = "compared"
 
 [[function.gaps]]
 what = "the target's resolution test (the binding tests it for NilHandle)"
-relation = "not-ported"
+relation = "stand-in"
 issue = 692
 
 [[function]]
@@ -798,11 +798,6 @@ coney = "src/camera/rail_camera.h:RailCamera::placeLevel"
 status = "compared"
 
 [[function.gaps]]
-what = "the hand-over blend's growth (x1.05 an update), its end test (the unscaled plan step under 1 cm) and its last step (Coney adds 0.05, tests the scaled 3D step and keeps the blended point)"
-relation = "not-ported"
-issue = 1017
-
-[[function.gaps]]
 what = "P put back when held, the world collision, and the +0x3ec step after a shake"
 relation = "not-ported"
 issue = 1017
@@ -842,7 +837,7 @@ issue = 1017
 
 [[function.gaps]]
 what = "switch 7: the camera off the rail beside the target, the look-at point P, and the collision rays and sphere push (Coney reads switch 7 as leading the look-at point)"
-relation = "not-ported"
+relation = "stand-in"
 issue = 1017
 
 [[function.gaps]]

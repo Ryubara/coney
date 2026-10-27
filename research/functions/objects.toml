@@ -355,7 +355,7 @@ status = "compared"
 
 [[function.gaps]]
 what = "a file shorter than its count, or a line that does not read, keeps what it read; Coney refuses the whole file"
-relation = "not-ported"
+relation = "stand-in"
 issue = 711
 
 [[function.gaps]]
@@ -469,12 +469,12 @@ issue = 707
 
 [[function.gaps]]
 what = "the boards' random model and throw"
-relation = "not-ported"
+relation = "stand-in"
 issue = 707
 
 [[function.gaps]]
 what = "dyn_door_wall_a stays, not broken or removed"
-relation = "not-ported"
+relation = "stand-in"
 issue = 707
 
 [[function.gaps]]
@@ -675,7 +675,7 @@ status = "compared"
 
 [[function.gaps]]
 what = "dyn_door_chainlnk_pick's leaf (dyn_dr_chainlnk_a) and dyn_door_stlslot's first leaf (dyn_dr_steel_b)"
-relation = "not-ported"
+relation = "stand-in"
 issue = 707
 
 [[function]]
@@ -694,7 +694,7 @@ issue = 710
 
 [[function.gaps]]
 what = "the next-tick update on every swing, not only an opening one"
-relation = "not-ported"
+relation = "stand-in"
 issue = 707
 
 [[function]]
@@ -708,7 +708,7 @@ status = "compared"
 
 [[function.gaps]]
 what = "the leaves' next update starting from their previous target"
-relation = "not-ported"
+relation = "stand-in"
 issue = 707
 
 [[function]]
@@ -722,7 +722,7 @@ status = "compared"
 
 [[function.gaps]]
 what = "pickable on clears the kept angle"
-relation = "not-ported"
+relation = "stand-in"
 issue = 707
 
 [[function]]
@@ -745,7 +745,7 @@ status = "compared"
 
 [[function.gaps]]
 what = "the side test's sign and a kept angle's command 5 before it"
-relation = "not-ported"
+relation = "stand-in"
 issue = 707
 
 [[function]]
@@ -759,11 +759,16 @@ status = "compared"
 
 [[function.gaps]]
 what = "the hit sound on every store hit, and the leaf step on every hit under 7 and on the breaking hit"
-relation = "not-ported"
+relation = "stand-in"
 issue = 707
 
 [[function.gaps]]
-what = "the bursts 1 m up and the two bursts at the break"
+what = "the bursts 1 m up (Coney bursts at the hinge)"
+relation = "stand-in"
+issue = 707
+
+[[function.gaps]]
+what = "the two bursts at the break"
 relation = "not-ported"
 issue = 707
 
@@ -774,7 +779,7 @@ issue = 707
 
 [[function.gaps]]
 what = "the cabin pieces' throw"
-relation = "not-ported"
+relation = "stand-in"
 issue = 707
 
 [[function]]
@@ -787,13 +792,18 @@ coney = "src/world_objects/doors.h:Doors::hit"
 status = "compared"
 
 [[function.gaps]]
-what = "flag 0x800000 and no damage in state 4"
+what = "flag 0x800000 on every hit"
 relation = "not-ported"
 issue = 707
 
 [[function.gaps]]
+what = "no damage in state 4 (Coney counts every hit)"
+relation = "stand-in"
+issue = 707
+
+[[function.gaps]]
 what = "dyn_door_liz's and dyn_door_dclub's model stages: thresholds, order, sounds, leaves removed"
-relation = "not-ported"
+relation = "stand-in"
 issue = 707
 
 [[function.gaps]]
@@ -802,13 +812,18 @@ relation = "not-ported"
 issue = 707
 
 [[function.gaps]]
-what = "the break's sounds, effects and splinters, and the pieces' throws"
+what = "the break's sounds and effects, dclub's 40 splinters twice, and the pieces' throws"
 relation = "not-ported"
 issue = 707
 
 [[function.gaps]]
+what = "the 20 splinters on every hit, which only dyn_door_dclub's break throws"
+relation = "stand-in"
+issue = 707
+
+[[function.gaps]]
 what = "(material, CONCRETE) once at the break, not on every hit"
-relation = "not-ported"
+relation = "stand-in"
 issue = 707
 
 [[function]]

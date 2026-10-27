@@ -105,6 +105,11 @@ what = "the type's own scale"
 relation = "not-ported"
 issue = 1020
 
+[[function.gaps]]
+what = "the Warrior's power class for any human of category 14: Coney's powerClassOf takes it for a player only"
+relation = "stand-in"
+issue = 1020
+
 [[function]]
 address = 0x00219d50
 name = "Human_OnContact"

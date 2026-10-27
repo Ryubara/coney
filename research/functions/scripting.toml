@@ -1819,7 +1819,7 @@ status = "compared"
 
 [[function.gaps]]
 what = "the hitpoints of world objects other than doors and barriers"
-relation = "not-ported"
+relation = "stand-in"
 issue = 1021
 
 [[function]]

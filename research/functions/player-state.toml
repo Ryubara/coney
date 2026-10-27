@@ -57,7 +57,7 @@ status = "compared"
 
 [[function.gaps]]
 what = "the revive upgrade asked at every add (Coney: only before InvGiveItem and InvGiveRevive)"
-relation = "not-ported"
+relation = "stand-in"
 issue = 696
 
 [[function.gaps]]
@@ -67,7 +67,7 @@ issue = 696
 
 [[function.gaps]]
 what = "the counts kept within the item table's bounds (Coney bounds only the revives)"
-relation = "not-ported"
+relation = "stand-in"
 issue = 704
 
 [[function]]
