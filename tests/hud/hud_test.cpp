@@ -374,7 +374,7 @@ TEST_CASE("the action prompt sits at (0.5, 0.86) in grey, raised over the hint b
 TEST_CASE("no action prompt is drawn in an Armies of the Night level", "[hud]") {
     // Expected: armies.md#hud-in-play, confirmed (code): HUD_Render (0x001b1688) draws the prompts only outside an
     // Armies level (GameState_IsArmiesLevel).
-    const auto drawn = [](int level, std::string_view prompt) {
+    const auto drawn = [](int level, const char* prompt) {
         Hud hud = makeHud(nullptr);
         Canvas canvas;
         hud.setActionPrompt(0, prompt);
