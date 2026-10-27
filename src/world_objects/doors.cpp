@@ -864,6 +864,7 @@ void Doors::hitSplinters(Door& door, const ObjectHit& hit, ObjectWorld& world) {
             ++door.modelStage;
         }
     } else if (door.type == kDclub && door.modelStage == 0 && reached(kDclubStage)) {
+        // Stand-in (#707), as above: dclub's stage only takes the next model here.
         if (world.services != nullptr) {
             world.services->nextModel(door.handle);
         }
