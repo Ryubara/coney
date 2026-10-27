@@ -91,8 +91,10 @@ std::size_t PerfBench::spawnSide(debug::PlayControls& play, int amount, ai::Figh
         return 0;
     }
     // Neutrals stand ahead of the player as enemies do, so they start beyond the enemies' rows (1.2 m a row of five).
+    // Rows are whole: the enemies fill ceil(count / 5) of them, so the integer division is meant.
+    const int enemyRows = (m_fighters + 4) / 5;
     const float distance = side == ai::FighterSide::Neutral
-                               ? kFighterDistance + kRowSpacing * static_cast<float>((m_fighters + 4) / 5)
+                               ? kFighterDistance + kRowSpacing * static_cast<float>(enemyRows)
                                : kFighterDistance;
     const debug::SpawnedFighters spawned = debug::spawnFighters(play, kRandomModels, amount, distance, random, side);
     if (spawned.error) {
