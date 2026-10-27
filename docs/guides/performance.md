@@ -177,7 +177,10 @@ an input script (the hub's exit flag and triangle), then 50 enemies and 50 allie
 step 1100 with god mode:
 
 ```sh
-coney --disc DISC --play-level level95 --checkpoint 2 --skip-movies --input-script leave-hub.txt     --bench out.json --bench-frames out.csv --bench-fighters 50 --bench-allies 50 --bench-god     --bench-spawn-step 1100 --bench-warmup 300 --bench-measure 4000 --frames 200000 --bench-real-time     --vsync off --no-activate
+coney --disc DISC --play-level level95 --checkpoint 2 --skip-movies --input-script leave-hub.txt \
+    --bench out.json --bench-frames out.csv --bench-fighters 50 --bench-allies 50 --bench-god \
+    --bench-spawn-step 1100 --bench-warmup 300 --bench-measure 4000 --frames 200000 --bench-real-time \
+    --vsync off --no-activate
 ```
 
 where `leave-hub.txt` is `800 steer 50 -187,95.1`, `880 stick left 0 0`, `885 tap triangle`.

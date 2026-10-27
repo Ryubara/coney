@@ -664,17 +664,19 @@ void GameSound::gameplayLeft() {
     m_ambientEventMs.reset();
     m_humanSounds.stopHeldSounds();
     m_cinematicSeen = false;
-    if (engine == nullptr) {
-        return;
+    if (engine != nullptr) {
+        engine->stopAmbientTrack();
+        engine->stopSceneSound();
+        engine->setCinematic(false); // a level left mid-scene leaves no duck behind
+        engine->stopAll();
     }
-    engine->stopAmbientTrack();
-    engine->stopSceneSound();
-    engine->setCinematic(false); // a level left mid-scene leaves no duck behind
-    engine->stopAll();
     // The system music is the game state's and outlasts the level: off, so the next level plays it only when its own
-    // script turns it on.
+    // script turns it on. A game-state write, made with no engine too (--no-audio).
     if (m_context != nullptr && m_context->state != nullptr) {
         setSystemMusic(m_context->state->story, this, false);
+    }
+    if (engine == nullptr) {
+        return;
     }
     engine->music().stop();
     // The front end plays at the normal pitch, whatever the level's script set (SndSetPitchMod).
