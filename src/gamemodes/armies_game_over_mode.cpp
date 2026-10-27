@@ -138,10 +138,13 @@ ModeResult ArmiesGameOverMode::update(GameModeStack& stack, const FrameTime& fra
 
 void ArmiesGameOverMode::close(GameModeStack& stack, gui::ArmiesGameOverChoice choice) {
     stack.pop();
+    // Not ported (#669): the original also writes the game state's level-end request (`+0x14c`): 0 after a continue
+    // and 3 (leave) on Quit, nothing on Replay. Coney keeps no such field: its level flow below takes the choice.
     using gui::ArmiesGameOverChoice;
     switch (choice) {
     case ArmiesGameOverChoice::Continue:
-        // The continuing players are healed and stood up, their join messages off.
+        // The continuing players are healed and stood up, their ANHud panels enabled again (slot `+0x24`,
+        // ANHud_Enable `0x0020fd40`: wanted, so no longer dropped by the knock-out), their join messages off.
         for (std::size_t player = 0; player < m_continuing.size(); ++player) {
             if (!m_continuing.at(player)) {
                 continue;
@@ -149,9 +152,8 @@ void ArmiesGameOverMode::close(GameModeStack& stack, gui::ArmiesGameOverChoice c
             if (m_hooks.healPlayer) {
                 m_hooks.healPlayer(static_cast<int>(player));
             }
-            // The original also shows his ANHud panel again (slot `+0x24`, ANHud_Enable `0x0020fd40`); Coney's Armies
-            // panels are never hidden, so there is nothing to show.
             if (m_hud != nullptr) {
+                m_hud->armies().panelEnabled(player);
                 m_hud->armies().setJoinMessage(player, false);
             }
         }

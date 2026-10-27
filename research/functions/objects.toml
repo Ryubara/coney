@@ -812,12 +812,12 @@ relation = "not-ported"
 issue = 707
 
 [[function.gaps]]
-what = "a hit in state 4: no damage, dust or splinters, but a model stage as at 0 hitpoints and the sound (Coney takes it like any other)"
-relation = "stand-in"
+what = "the model stages' leaf removal and the door shown (liz's first stage, dclub's stage)"
+relation = "not-ported"
 issue = 707
 
 [[function.gaps]]
-what = "dyn_door_liz's and dyn_door_dclub's model stages: thresholds, order, sounds and where they play, leaves removed"
+what = "the stages gated by the stages taken, not by the door's current model"
 relation = "stand-in"
 issue = 707
 
@@ -827,8 +827,13 @@ relation = "not-ported"
 issue = 707
 
 [[function.gaps]]
-what = "the break's type pairs (material with 121, or stall's with itself), liz's effects, dclub's bursts, and the pieces' throws"
+what = "stall's leaves removed at the break"
 relation = "not-ported"
+issue = 707
+
+[[function.gaps]]
+what = "the two wreck pieces placed at the door's pose, not thrown"
+relation = "stand-in"
 issue = 707
 
 [[function.gaps]]
@@ -837,12 +842,7 @@ relation = "not-ported"
 issue = 707
 
 [[function.gaps]]
-what = "the break's dust and 40 splinters twice at the hit point for every type (Coney: dust and 20 at the door)"
-relation = "stand-in"
-issue = 707
-
-[[function.gaps]]
-what = "(material, CONCRETE) at the hit point on every hit but the breaking one (Coney plays it on that one too)"
+what = "the break's dust at the hit point, not at the original's camera-derived offset; dclub's three bursts at the hit point 0.5 m up"
 relation = "stand-in"
 issue = 707
 

@@ -172,6 +172,10 @@ two-digit **timer**, counting down a second at a time; top right **"PRESS THE ST
 ([The join messages](#the-join-messages)); at the right edge **"GO"** with an arrow pointing right
 ([The GO sign](#go-sign)); bottom right **"CREDITS: 07"** ([The credits line](#credits)).
 
+No action prompt shows in these stages: `HUD_Render` (`0x001b1688`) draws both players' prompts only while the HUD
+is shown, no scroll-in message hides them and the level is not an Armies level (`GameState_IsArmiesLevel`,
+`0x0041d110`). Confirmed (code).
+
 ### The join messages {#the-join-messages}
 
 Confirmed (code) at the cited addresses, and confirmed (runtime), run r-20261026-level60-join, for the calls and values
@@ -192,6 +196,13 @@ panels' own state at the set-up:
 - So player 1's flag is cleared when the level script makes Swan, and player 2's stays on: in play (the panel not
   shown, `+0x40fc` 0) `ANHud_Draw` draws the join text, blinking every 500 ms. Seen in play: panel 1 `+0x4614` 0,
   panel 2 `+0x4614` 1, `+0x40f4` 1, `+0x40f8` and `+0x40fc` 0.
+- A knocked-out player's panel drops out. `ANHud_Draw` (`0x00211938`) draws the panel's parts only while it is
+  shown (`+0x40fc`), wanted (`+0x40f8`) and loaded, and else the join text when the flag is on; on a frame it draws a
+  wanted panel whose human is knocked out (`Human_IsKnockedOut`, `0x00227dd8`) it clears wanted, so from the next
+  frame that player's join text shows while his flag is on, blinking as `ANHud_Update` (`0x00210e48`) steps it for a
+  panel that is not wanted. Only `ANHud_Enable` (`0x0020fd40`, interface slot `+0x20`: wanted 1 and
+  `PlayerHUD_Show`) sets wanted again; a continue calls it for each continuing player
+  ([The game-over screen](#game-over)).
 - The flag's own setter and getter are `ANHud_SetJoinMsg` (`0x002107d8`, which `HUD_ANEnableJoinMsg` `0x001b46a0`
   calls) and `ANHud_GetJoinMsg` (`0x002107e0`). A search for the operand `0x4614` finds them, `ANHud_Init`, `_Update`
   and `_Draw`, but not `ANHud_SetPlayer`, which Ghidra had left outside any function.
@@ -319,11 +330,15 @@ against 17 to 23), and the timer runs 6 ticks shorter (3031 steps of 33 ms count
 - **The join messages.** Both start on at the set-up and a panel's first attach clears its own (`ArmiesHud::levelSetUp`,
   `ArmiesHud::panelAttached`), so player 2's message shows in play as in the original, centred on the panel's place
   (`Font_Draw`'s flag `0x02`). Both lines span about 0.60 to 0.87 of the width in Coney's capture and 0.61 to 0.86
-  (confirmed (runtime), run r-20261026-level60-join) in the original's. The player panels are not built (issue #662).
+  (confirmed (runtime), run r-20261026-level60-join) in the original's. A knocked-out player's panel stops being
+  wanted, so his message shows, until a continue enables it again (`ArmiesHud::update`, `ArmiesHud::panelEnabled`);
+  Coney's stand-in asks it of every wanted panel, as its panels are not built (issue #662), and from the step after
+  the one that saw the knock-out, as the original's draw does. No action prompt is drawn in an Armies level.
 - **The game-over screen**, for one view, with these stand-ins, each marked in the code: it closes on the frame of the
   choice, because Coney's front-end audio cannot say when a cue has ended; the `level64` section 4 refusal is not
   built ([q-brain-9](#q-brain-9)); only the NTSC layout is laid out; the Armies score clear (`0x004229c0`, issue #704)
-  and the `+0x14c` writes (issue #669) are left to their issues.
+  and the `+0x14c` writes (issue #669) are left to their issues, and named at the code that would make them. A
+  continue enables each continuing player's panel again.
 - **The sliding doors**: all of [the garage door](#garage-door) but the streaming pins (issue #710), the leaves'
   collision bodies and messages 8, `0x15` and `0x3e` (issue #707), and the lock-pick glint. Stand-in: a command starts a
   leaf's slide on its next 2-tick step, not on its pending update ([q-slide-start](#q-slide-start)). Stand-in: Coney

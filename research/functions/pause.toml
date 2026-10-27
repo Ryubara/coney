@@ -20,7 +20,7 @@ coney = "src/gamemodes/armies_game_over_mode.h:ArmiesGameOverMode::launch"
 status = "compared"
 
 [[function.gaps]]
-what = "the level-end request in the game state on closing and on Quit"
+what = "the game state's level-end request (`+0x14c`): 0 after a continue, 3 on Quit"
 relation = "not-ported"
 issue = 669
 
@@ -81,7 +81,7 @@ coney = "src/gui/pause_menu/armies_game_over_menu.h:ArmiesGameOverMenu::update"
 status = "compared"
 
 [[function.gaps]]
-what = "the Armies scores cleared on Replay"
+what = "both players' Armies scores cleared on either choice (Stats_ClearArmiesScores)"
 relation = "not-ported"
 issue = 704
 

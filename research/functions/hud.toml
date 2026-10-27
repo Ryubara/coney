@@ -1267,6 +1267,20 @@ coney = "src/hud/player_panel.h:PlayerPanel::show"
 status = "legacy"
 
 [[function]]
+address = 0x0020fd40
+name = "ANHud_Enable"
+page = "hud-functions-panels.md#fn-anhud"
+role = "the Armies player panel enabled (interface slot `+0x20`): wanted again and shown"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::panelEnabled"
+status = "compared"
+
+[[function.gaps]]
+what = "PlayerHUD_Show: the panel's parts are not built"
+relation = "not-ported"
+issue = 662
+
+[[function]]
 address = 0x002107e8
 name = "ANHud_Init"
 page = "hud-functions-panels.md#fn-anhud"
@@ -1284,14 +1298,19 @@ issue = 662
 address = 0x00211938
 name = "ANHud_Draw"
 page = "hud-functions-panels.md#fn-anhud"
-role = "the Armies player panel's drawing, or its join text while the player is not in"
+role = "the Armies player panel's drawing, or its join text while the panel is not wanted; a knock-out drops wanted"
 level = "confirmed-code"
 coney = "src/hud/armies_hud.h:ArmiesHud::joinShowing"
 status = "compared"
 
 [[function.gaps]]
-what = "the panel's parts, and a knocked-out player's panel no longer wanted"
+what = "the panel's parts (score, banner, bars, frame, portrait, target panels)"
 relation = "not-ported"
+issue = 662
+
+[[function.gaps]]
+what = "the knock-out's drop asked of every wanted panel, not only a shown and loaded one, and in the HUD's next step"
+relation = "stand-in"
 issue = 662
 
 [[function]]
