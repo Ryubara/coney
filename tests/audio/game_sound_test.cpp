@@ -869,9 +869,9 @@ TEST_CASE("gameplay's load screen loads load_NN, defers SndLoadBank, then loads 
     CHECK(rig.engine().stats().started >= 1);
 }
 
-// docs/research/level-loading.md#unload (`Gm_Level_Exit` 0x00158488): the system music off and the pitch at 1.0, so
-// neither reaches the front end or the next level.
-// Expected: level-loading.md#unload, confirmed (code)
+// `Gm_Level_Exit` 0x00158488 (research/functions/frontend.toml): the system music off (`GameState_SetSystemMusic`) and
+// the pitch at 1.0, so neither reaches the front end or the next level.
+// Expected: sound.md#warriors-functions, confirmed (code)
 TEST_CASE("gameplay's exit turns the system music off and sets the pitch back to 1.0", "[audio][music]") {
     Rig rig;
     coney::StoryState& story = rig.state.story;
@@ -893,9 +893,9 @@ TEST_CASE("gameplay's exit turns the system music off and sets the pitch back to
     CHECK(story.musicHold == -1);
 }
 
-// docs/research/level-loading.md#mode-1 (`Gm_Level_Enter` 0x001582e0, step 1): the three moods' track lists emptied
+// `Gm_Level_Enter` 0x001582e0, step 1 (docs/research/level-loading.md#mode-1): the three moods' track lists emptied
 // (`SystemMusic_SetTracks` 0x0010e9e0 with no tracks) and the reverb's default kept (type 1, depth 0.1).
-// Expected: level-loading.md#mode-1, confirmed (code)
+// Expected: sound.md#reverb, sound.md#function-index, confirmed (code)
 TEST_CASE("gameplay's enter empties the moods' tracks and sets the reverb's default", "[audio][music]") {
     Rig rig;
     coney::StoryState& story = rig.state.story;

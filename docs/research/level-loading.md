@@ -327,12 +327,8 @@ to -x), which is the turn Coney's reference images use (`kObjectToPose`, Coney's
 Mode 8 pushes mode 1 once a level is chosen ([Front end](frontend.md#mode-flow); a new story game chooses `level99`,
 section 1, [Front end](frontend.md#story-start)). Mode 1's `Enter` (`0x001582e0`), confirmed (code), in order:
 
-1. Audio: the bank deferral `+0x3fa58` = 1; the [reverb](sound.md#reverb) set to type 1 at depth 0.1, no delay and no
-   feedback (`Sound_SetEffect`, `0x001110c8`; the depth is the float argument, inferred from the register use); the
-   pitch factor `+0x3fa5c` = 1.0, the non-duckable duck `+0x3faac` = 0.2, the music's duck under scenes `+0x3fab0` =
-   0.75 and on (`+0x3fab4`); the load screen's virtual play `+0x24270` = 1; the three moods' track lists emptied
-   (`Sound_SetMusicTrack`, `0x001104c8`, with no tracks: `SystemMusic_SetTracks` turns the system music on when the
-   mood emptied is the one playing).
+1. Audio: the manager's fields `+0x3fa58` = 1, `+0x3fa5c` = 1.0, `+0x3faac` = 0.2, `+0x3fab0` = 0.75, volume 0.1
+   (`0x001110c8`); three channels cleared (`0x001104c8`).
 2. The pending level change `0x0050c754` = 0.
 3. Take `GameTimer` (fields `+0x5c` = 1, `+0x60` = 0), call its own `Resume`, read the pads once (`Pads_Update`).
 4. **`InitLevel`** (`0x0015fe90`, [below](#initlevel)).
@@ -717,10 +713,9 @@ nearby scenery is still missing, so it fills those holes too (inferred).
 
 ### Leaving gameplay {#unload}
 
-Mode 1's `Exit` (`0x00158488`) switches the ambient emitters off, stops every sound, turns the system music off
-(`GameState_SetSystemMusic(0)`), stops the music track, sets the pitch factor back to 1.0 and calls **`UnloadLevel`**
-(`0x001607b8`), then, when a level change is pending (`0x0050c754`), plays the outro movie if the record asks for it
-and unloads the level file too. `UnloadLevel(keep)`, confirmed (code) for the order:
+Mode 1's `Exit` (`0x00158488`) stops the sounds and music and calls **`UnloadLevel`** (`0x001607b8`), then, when a
+level change is pending (`0x0050c754`), plays the outro movie if the record asks for it and unloads the level file
+too. `UnloadLevel(keep)`, confirmed (code) for the order:
 
 1. Service the file manager; put the camera far away (a position of 100,000,000 on all axes); background black.
 2. Release the level's dependency list (`0x00178bc8(rm, crc32(record + 0x24), 0)`).
@@ -905,7 +900,7 @@ and [Characters](characters.md#level-starts):
   loader by `main`. It snaps the start to the ground as `HuCreate` does (a 2.5 m ray from 1 m above).
 - **`--play-level NAME [--checkpoint N]`** enters the level through gameplay too, after the preloads, a fresh state,
   `SetCheckPoint(N)` and the level's index (`LevelScripts`), so its scripts and their humans run in play as in the
-  story ([AI](ai.md#coney), [Scripts](scripting.md#coneys-implementation)).
+  story ([AI](ai/index.md#in-coney), [Scripts](scripting.md#coneys-implementation)).
 - **Disc check (NTSC-U, 2026-10-05, positions only):** `coney_tests "[disc][story]"` finds player 1 at the
   [Level starts](../references/level-starts.md) values for `level99` checkpoints 1 and 2, `level2` 3, `level3` 4 and
   `level5` 2, with the name and type each lists; `level99` checkpoint 1 makes 2 humans with no script error.
@@ -1030,7 +1025,7 @@ that the counted records fit, walks every path's slab lists (16 `s16` starts at 
 lists and each list ended by a negative value, a path with a negative first start having none) and requires the chunk
 to be `align16(end of the furthest list + 4)` bytes ([Path data](#path-data)). The disc test (`[disc][level]`) counts
 77,678 bytes of edge lists and 770 bytes of tails over the 64 files. `world::PathMap` (`src/world/path_map.h`) decodes
-the records for the AI's route planner, with the inside and walkable-line tests ([AI](ai.md#coney)).
+the records for the AI's route planner, with the inside and walkable-line tests ([AI](ai/index.md#in-coney)).
 
 **The Object List** (2026-10-06): `world_objects::ObjectList` (`src/world_objects/object_list.h`) parses the chunk
 and finds a record by name ([The Object List](#the-object-list)); Coney's reference renderer

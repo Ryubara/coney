@@ -624,14 +624,14 @@ nothing in this build. Volumes reach the device as `int(v × 16383) & 0x7fff` pe
 
 #### Reverb {#reverb}
 
-`SoundSetEffect(type, depth, delay, feedback)` (`AudioManager_SetEffect`, `0x00113000`) sets
-the SPU2 effect on both cores: device slot `+0xa0` sends IOP command `0x13` (core, type, depth × 32,767 on the left
-and right, delay, feedback; a type of 10 or more is refused), then slot `+0xa8` command `0x15`, the effect's return
-volume, the depth on both sides (`0x00113118`). `SoundEnableEffects(on)` keeps the flag at `+0x1c4`; off also sends
-command `0x17` on both cores at once (`0x001130c8`). Mode 1's enter (`0x00158334`) sets the bank deferral
-`+0x3fa58` and calls `SoundSetEffect` with type 1
-([bindings](../references/bindings/sound.md#soundseteffect)). Confirmed (code); that the types are the SPU2 library's
-ten reverb presets (off, rooms, studios, hall, space, echo, delay, pipe) is inferred from the limit of 10.
+`SoundSetEffect(type, depth, delay, feedback)` (`AudioManager_SetEffect`, `0x00113000`) sets the SPU2 effect on both
+cores: device slot `+0xa0` sends IOP command `0x13` (core, type, depth × 32,767 on the left and right, delay, feedback;
+a type of 10 or more is refused), then slot `+0xa8` command `0x15`, the effect's return volume, the depth on both sides
+(`0x00113118`). `SoundEnableEffects(on)` keeps the flag at `+0x1c4`; off also sends command `0x17` on both cores at once
+(`0x001130c8`). Mode 1's enter (`0x00158334`) sets the bank deferral `+0x3fa58` and calls `SoundSetEffect` with type 1
+and depth 0.1 ([bindings](../references/bindings/sound.md#soundseteffect)). Confirmed (code); that the types are the
+SPU2 library's ten reverb presets (off, rooms, studios, hall, space, echo, delay, pipe) is inferred from the limit of
+10.
 
 **Pause** (`SoundPauseSound`, `0x0010fb20` / `0x0010fb68`): sets `+0x3fa24` and pauses or resumes every voice through
 the device (`0x0014c5e0` / `0x0014c600`). Confirmed (code).
@@ -1337,19 +1337,18 @@ line as a cut-able one (`CommandCall::cutting` false, [q-uncut](sound.md#q-uncut
 cutting, are not built); `HuSpeak`'s fifth argument is not read, and neither speaker turns to a look-at target; a
 human's voice set is his type's own `CfgChar` voice (no alias rule, no `HuSetVoiceIndex`); the fixed list of blocked
 lines is not applied ([q-blocked](sound.md#q-blocked)); `SndSetListener` 0 is the camera and 1 the player
-([q-listener](sound.md#q-listener)); the bank deferral of mode 1's enter ends with the load screen
-(`InitLevel` step 11), where the original ends it once `InitLevel` has returned (no script runs between the two in
-Coney: the start callback of step 13 runs in its level script's step, so the same loads wait).
-The system music (`repo:src/gamemodes/system_music.h`) keeps each mood's
-track hashes and, while on, loops a random track of the mood each frame's surroundings give when the mood changes; the
-mood is 1 while an AI human with health left targets player 1 with a fight or melee goal, else 0 (the hunted mood 2, its
-chase goals not built, never comes, [q-mood](sound.md#q-mood)), the pick draws from the game's random index, and the
-fades are the music player's own. Mode 1's enter empties the three moods' track lists and its exit turns the system
-music off and the pitch factor back to 1.0, as the original's do ([Level loading](level-loading.md#mode-1)).
-`SoundSetEffect` and `SoundEnableEffects` are kept in the game state only, as is the reverb's default (type 1, depth
-0.1) that mode 1's enter sets. Not built:
-reverb, the other ambient bindings (`AddAmbientSoundEmitter`, `SetAmbientEmitterVolumeMod`) and the game's own speech
-commands outside the animation sounds. The hub's sound bindings (`repo:src/scripting/hub_world_bindings.cpp`):
+([q-listener](sound.md#q-listener)); the bank deferral of mode 1's enter ends with the load screen (`InitLevel` step
+11), where the original ends it once `InitLevel` has returned (no script runs between the two in Coney: the start
+callback of step 13 runs in its level script's step, so the same loads wait). The system music
+(`repo:src/gamemodes/system_music.h`) keeps each mood's track hashes and, while on, loops a random track of the mood
+each frame's surroundings give when the mood changes; the mood is 1 while an AI human with health left targets player 1
+with a fight or melee goal, else 0 (the hunted mood 2, its chase goals not built, never comes,
+[q-mood](sound.md#q-mood)), the pick draws from the game's random index, and the fades are the music player's own. Mode
+1's enter empties the three moods' track lists and its exit turns the system music off and the pitch factor back to 1.0,
+as the original's do ([Level loading](level-loading.md#mode-1)). `SoundSetEffect` and `SoundEnableEffects` are kept in
+the game state only, as is the reverb's default (type 1, depth 0.1) that mode 1's enter sets. Not built: reverb, the
+other ambient bindings (`AddAmbientSoundEmitter`, `SetAmbientEmitterVolumeMod`) and the game's own speech commands
+outside the animation sounds. The hub's sound bindings (`repo:src/scripting/hub_world_bindings.cpp`):
 `EnableAmbientEmitter` switches an emitter off (it stops its sound and plays nothing more) and on; `SoundPlay` plays a
 sound once at a point; `SndLoadMatrix` empties the sound matrix and runs `<name>_preload.lua` when the name changes;
 `HuSay` speaks a line with no callback.
