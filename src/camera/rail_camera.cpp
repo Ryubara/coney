@@ -193,7 +193,7 @@ std::pair<float, float> RailCamera::project(std::size_t i, anim::Vec3 p) const {
     return {anim::dot(anim::subtract(p, a), ab) / length, length};
 }
 
-void RailCamera::makePoints(anim::Vec3 feet) {
+void RailCamera::makePoints(anim::Vec3 feet) { // stand-in: one target, so the mean is his feet
     const anim::Vec3 offset{m_setup.offset.x, m_setup.offset.y, m_lookHeight.current};
     if (m_mode != RailMode::Level) {
         // The leading modes: the offset added, the look-at point the target point.
@@ -217,7 +217,7 @@ void RailCamera::makePoints(anim::Vec3 feet) {
 }
 
 void RailCamera::damp(anim::Vec3 oldTarget, anim::Vec3 oldLook) {
-    // The rise tests need a segment with a length in plan.
+    // The rise tests need a segment with a length in plan (Coney's choice: any; the original's, 1e-5 squared).
     const bool riseTests =
         m_count >= 2 && flatLength(anim::subtract(m_points.at(m_segment + 1), m_points.at(m_segment))) > 0.0F;
     const auto dampOne = [riseTests](anim::Vec3 old, anim::Vec3 now) {
@@ -316,7 +316,7 @@ void RailCamera::placeLevel(anim::Vec3 feet) {
             m_blend = 0.0F;
         }
     }
-    // The height: a ceiling over the target's feet.
+    // The height: a ceiling over the target's feet. Stand-in: 0 is on here, off in the original (#85).
     if (m_height.current >= 0.0F) {
         q.z = std::min(q.z, feet.z + m_height.current);
     }
