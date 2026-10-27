@@ -133,8 +133,13 @@ name = "Camera_CreateFixed"
 page = "camera.md#fn-script"
 role = "[`CameraCreateFixed`](../references/bindings/camera.md#cameracreatefixed): factory type 0 at a position, target put on the shared target list (CameraTargets_Add), offset, lens; returns the handle."
 level = "confirmed-code"
-coney = "src/scripting/camera_bindings.cpp:makeCameraCreateFixed"
-status = "legacy"
+coney = "src/camera/cameras.h:Cameras::createFixed"
+status = "compared"
+
+[[function.gaps]]
+what = "the target's resolution test (the binding tests it for NilHandle)"
+relation = "not-ported"
+issue = 692
 
 [[function]]
 address = 0x0011c858
@@ -151,8 +156,18 @@ name = "Camera_SetupPoizo"
 page = "camera.md#fn-script"
 role = "[`CamSetupPoizo`](../references/bindings/camera.md#camsetuppoizo): starts the path camera from an existing camera's view, clearing its points; time to the first point, end callback, fov, far. [path cameras](camera.md#path-cameras)."
 level = "confirmed-code"
-coney = "src/camera/path_camera.h:PathCamera::setup"
-status = "legacy"
+coney = "src/camera/cameras.h:Cameras::setupPath"
+status = "compared"
+
+[[function.gaps]]
+what = "a start camera of another player's kind swapped for that player's own"
+relation = "not-ported"
+issue = 549
+
+[[function.gaps]]
+what = "an unresolved start camera: Coney makes no path"
+relation = "stand-in"
+issue = 85
 
 [[function]]
 address = 0x0011cb70
@@ -314,6 +329,29 @@ coney = "src/gamemodes/gameplay_mode.cpp:ScriptSpawnerWorld::seen"
 status = "legacy"
 
 [[function]]
+address = 0x00120450
+name = "CameraStack_Push"
+page = "camera.md#fn-manager"
+role = "Pushes a camera on the 2-deep camera stack `0x005d9190`: the camera a scene returns to."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::beginScene"
+status = "compared"
+
+[[function.gaps]]
+what = "the stack's depth of two (a third push is dropped): Coney's stack has no limit"
+relation = "stand-in"
+issue = 85
+
+[[function]]
+address = 0x00120488
+name = "CameraStack_Pop"
+page = "camera.md#fn-manager"
+role = "Pops the camera stack `0x005d9190` (null when empty)."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::endScene"
+status = "compared"
+
+[[function]]
 address = 0x001205e8
 name = "Cam3rdPerson_Update"
 page = "camera.md#fn-3rdperson"
@@ -357,6 +395,25 @@ role = "Is a point within range (capped at the camera's far clip) of a camera, i
 level = "confirmed-code"
 coney = "src/camera/camera_view.h:canSeePoint"
 status = "legacy"
+
+[[function]]
+address = 0x00122b80
+name = "Cameras_ResetLevel"
+page = "camera.md#fn-base"
+role = "Level camera reset: the target and object lists cleared, the switches to their defaults, split mode 0, the views laid out."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::Cameras"
+status = "compared"
+
+[[function.gaps]]
+what = "the per-player view flags and the views' layout"
+relation = "not-ported"
+issue = 549
+
+[[function.gaps]]
+what = "the camera's registered-object list, the hide-and-seek flag 0x0050b1dc and the word 0x00510548 cleared"
+relation = "not-ported"
+issue = 85
 
 [[function]]
 address = 0x00123630
@@ -634,8 +691,18 @@ name = "LockedCam_KeepHumansInView"
 page = "camera.md#fn-locked"
 role = "Runs the push for each human of the locked camera's list. [locked cameras](camera.md#locked-cameras)."
 level = "confirmed-code"
-coney = "src/camera/locked_camera.h:keepInView"
-status = "legacy"
+coney = "src/camera/cameras.h:Cameras::keepHumansInView"
+status = "compared"
+
+[[function.gaps]]
+what = "a falling human landed and its height eased 30%"
+relation = "not-ported"
+issue = 85
+
+[[function.gaps]]
+what = "the loop stops at a human it cannot find; Coney goes on"
+relation = "stand-in"
+issue = 85
 
 [[function]]
 address = 0x0013b2b8
@@ -665,6 +732,49 @@ coney = "src/camera/rail_camera.h:RailCamera::addPoint"
 status = "legacy"
 
 [[function]]
+address = 0x0013bad0
+name = "CamRail_UpdateTargetPoint"
+page = "camera.md#rail"
+role = "The rail camera's target point P (the targets' mean) and look-at point by mode and settings 3, 4 and 9."
+level = "confirmed-code"
+coney = "src/camera/rail_camera.h:RailCamera::makePoints"
+status = "compared"
+
+[[function.gaps]]
+what = "the split-screen halving of settings 3 and 4 and the offset's x and y"
+relation = "not-ported"
+issue = 549
+
+[[function.gaps]]
+what = "two targets: the mean of their feet, mode 0's look-at point P, and modes 1 and 2's pull of P toward the camera"
+relation = "not-ported"
+issue = 85
+
+[[function]]
+address = 0x0013bfe0
+name = "CamRail_DampTargetPoint"
+page = "camera.md#rail"
+role = "Damps P and the look-at point toward last update's (the rise and plan thresholds)."
+level = "confirmed-code"
+coney = "src/camera/rail_camera.h:RailCamera::damp"
+status = "compared"
+
+[[function.gaps]]
+what = "no damping while the target is in the falling states (0x1c00000000)"
+relation = "not-ported"
+issue = 85
+
+[[function.gaps]]
+what = "the 40% look-at catch-up while +0x3ec is 1"
+relation = "not-ported"
+issue = 85
+
+[[function.gaps]]
+what = "the segment's plan-length threshold (1e-5 squared; Coney: any length)"
+relation = "stand-in"
+issue = 85
+
+[[function]]
 address = 0x0013d010
 name = "CamRail_Update"
 page = "camera.md#fn-rail"
@@ -679,6 +789,35 @@ relation = "not-ported"
 issue = 549
 
 [[function]]
+address = 0x0013d6b0
+name = "CamRail_UpdatePosition"
+page = "camera.md#rail"
+role = "Mode 0 placement: segment choice, projection with setting 0, blend, height ceiling, look-at with setting 8, ends hold, collision."
+level = "confirmed-code"
+coney = "src/camera/rail_camera.h:RailCamera::placeLevel"
+status = "compared"
+
+[[function.gaps]]
+what = "the hand-over blend's growth (x1.05 an update), its end test (the unscaled plan step under 1 cm) and its last step (Coney adds 0.05, tests the scaled 3D step and keeps the blended point)"
+relation = "not-ported"
+issue = 85
+
+[[function.gaps]]
+what = "P put back when held, the world collision, and the +0x3ec step after a shake"
+relation = "not-ported"
+issue = 85
+
+[[function.gaps]]
+what = "a camera held at the start of placement is put back without placing; Coney places it again"
+relation = "stand-in"
+issue = 85
+
+[[function.gaps]]
+what = "a height setting of exactly 0 is off in the original; Coney's ceiling then sits at the feet"
+relation = "stand-in"
+issue = 85
+
+[[function]]
 address = 0x0013dcc8
 name = "CamRail_PlaceMode3"
 page = "camera.md#fn-rail"
@@ -688,6 +827,35 @@ coney = "src/camera/rail_camera.h:RailCamera::placeTrailing"
 status = "compared"
 
 [[function]]
+address = 0x0013e708
+name = "CamRail_PlaceLeading"
+page = "camera.md#rail-leading"
+role = "Modes 1 and 2: the camera stands the lead ahead of or behind the target's place on the rail, or with switch 7 on off the rail beside it, with a ray back toward the rail and a 0.5 m sphere push."
+level = "confirmed-code"
+coney = "src/camera/rail_camera.h:RailCamera::placeLeading"
+status = "compared"
+
+[[function.gaps]]
+what = "the segment steps, the joint mean and the mirrored rail point: Coney walks the lead along the rail and clamps it to the ends"
+relation = "stand-in"
+issue = 85
+
+[[function.gaps]]
+what = "switch 7: the camera off the rail beside the target, the look-at point P, and the collision rays and sphere push (Coney reads switch 7 as leading the look-at point)"
+relation = "not-ported"
+issue = 85
+
+[[function.gaps]]
+what = "two or more targets: the farthest-ahead extra and CamRail_CollideTwoTargets; the +0x3ec step after a shake"
+relation = "not-ported"
+issue = 85
+
+[[function.gaps]]
+what = "the push out of nearby humans"
+relation = "not-ported"
+issue = 165
+
+[[function]]
 address = 0x0013f930
 name = "CamRail_EaseValue"
 page = "camera.md#fn-rail"
@@ -695,6 +863,15 @@ role = "Moves one rail setting toward its target by (target - current) × dt / t
 level = "confirmed-code"
 coney = "src/camera/rail_camera.h:EasedValue::step"
 status = "legacy"
+
+[[function]]
+address = 0x0013f9b0
+name = "CamRail_PitchToPoint"
+page = "camera.md#rail"
+role = "Signed angle of a direction from the horizontal, used by the rail update's angle settings."
+level = "confirmed-code"
+coney = "src/camera/rail_camera.h:RailCamera::presentPitch"
+status = "compared"
 
 [[function]]
 address = 0x0013fac8
@@ -712,6 +889,15 @@ page = "camera.md#fn-rail"
 role = "the rail segment for the target point: the nearest point's, else the one before or after it projects inside"
 level = "confirmed-code"
 coney = "src/camera/rail_camera.h:RailCamera::chooseSegmentFor"
+status = "compared"
+
+[[function]]
+address = 0x00140308
+name = "CamRail_ProjectOnSegment"
+page = "camera.md#rail"
+role = "Projects P on the segment, clamped, and pulls it toward P by setting 0."
+level = "confirmed-code"
+coney = "src/camera/rail_camera.h:RailCamera::placeLevel"
 status = "compared"
 
 [[function]]
