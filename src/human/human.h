@@ -872,8 +872,8 @@ class Human final : public Holdable {
     /// @orig 0x0025e5a8 Human_PickUpMessage (unknown)
     bool startPickUp(double handle, anim::Vec3 point, std::uint32_t clip);
     /// Starts the stereo theft at the stereo at `point`: the human turns to it at once and the mini-game runs (mode 3)
-    /// with `stageTurns` turns of the stick a stage (combat::stereoStageTurns()). **Coney's reading**: the turn is not
-    /// spread over the intro.
+    /// with `stageTurns` turns of the stick a stage (combat::stereoStageTurns()). **Coney stand-in**: the turn is made
+    /// at once and he stays put, where the original's Human_AlignToObject turns and moves him over 0.1 s.
     void startStereoTheft(anim::Vec3 point, float stageTurns);
     /// Enters the step control for one step toward `heading` (radians) with the turn boost `boost`: the next state
     /// update that finds the human free plays the step's clip (stepClipFor(); the fight stance's while locked onto a
