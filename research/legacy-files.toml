@@ -378,9 +378,6 @@ tag = 1
 ["src/audio/sound_engine.cpp"]
 tag = 29
 
-["src/audio/sound_engine.h"]
-comment = 3
-
 ["src/audio/sound_matrix.cpp"]
 tag = 6
 
@@ -1529,9 +1526,6 @@ tag = 28
 comment = 2
 tag = 1
 
-["src/scripting/story_effects_bindings.cpp"]
-tag = 9
-
 ["src/scripting/trigger_bindings.cpp"]
 tag = 3
 
@@ -1907,9 +1901,6 @@ citation = 3
 
 ["tests/audio/disc_sound_test.cpp"]
 citation = 1
-
-["tests/audio/game_sound_test.cpp"]
-citation = 22
 
 ["tests/audio/human_sound_events_test.cpp"]
 citation = 13

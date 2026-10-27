@@ -972,7 +972,7 @@ at start-up (`DjLines_Init`, `0x00116848`); names are under `vags/character/voic
 
 In the per-checkpoint and per-level tables each entry's `NN` runs 1 to its count in turn, one step per failure.
 
-### Speech lines by name
+### Speech lines by name {#speech-lines}
 
 `HuSpeak` and `HuSpeakNI` take a sound name (`vags/speeches/l31/l31_t7_001`). The `global.lua` helper `SetVag(name)`
 builds one from a short name: `l11_t25_006` stands for `vags/speeches/l11/l11_t25_006`, the folder being the name's

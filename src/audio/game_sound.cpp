@@ -31,6 +31,10 @@
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
 
+// The file is kept whole past the size guide's 500 lines: GameSound is one class, the sound host the bindings, the
+// front end and the play mode talk to, and its parts (speech, emitters, breathing, music) are already their own
+// classes (Speech, AmbientEmitters, VoiceTable, MusicPlayer); what is left here is the glue between them.
+
 namespace coney::audio {
 
 namespace {

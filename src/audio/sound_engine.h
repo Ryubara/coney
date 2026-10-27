@@ -40,6 +40,7 @@ struct Listener {
 /// A sound the engine started, to change or stop it. It stays harmless once the sound has ended.
 struct SoundHandle {
     std::uint32_t id = 0;
+    /// Whether it names a sound (0 names none).
     [[nodiscard]] bool valid() const { return id != 0; }
     friend bool operator==(SoundHandle, SoundHandle) = default;
 };
@@ -240,6 +241,7 @@ class SoundEngine {
 
     /// The options' sound-effect volume, 0-1 (default 0.9).
     void setSoundVolume(float volume) { m_soundVolume = volume; }
+    /// The options' sound-effect volume setSoundVolume() set.
     [[nodiscard]] float soundVolume() const { return m_soundVolume; }
     /// The global pitch factor (SndSetPitchMod, 1).
     void setPitchFactor(float factor) { m_pitchFactor = factor; }
@@ -253,6 +255,7 @@ class SoundEngine {
     void pause();
     /// Resumes what pause() paused.
     void resume();
+    /// Whether pause() paused the voices and resume() has not yet resumed them.
     [[nodiscard]] bool paused() const { return m_paused; }
 
     /// Draws a whole number in [low, high] from the engine's random source (the emitters' and the voice table's draws).

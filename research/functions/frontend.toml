@@ -32,7 +32,7 @@ name = "Gm_Level_Enter"
 page = "frontend.md#original-structure"
 level = "confirmed-code"
 coney = "src/gamemodes/gameplay_mode.h:GameplayMode::enter"
-status = "legacy"
+status = "compared"
 
 [[function.gaps]]
 what = "the reverb's default is only kept in the game state: the mixer has no reverb yet"

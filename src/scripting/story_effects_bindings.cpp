@@ -45,22 +45,27 @@ constexpr std::int64_t kMoodMusicOff = 4;
 constexpr double kNilHandle = 0.0;
 
 // Argument `i` truncated to a whole number, as tolua reads an integer.
+// @coney-only argument glue: the original reads its arguments through tolua
 std::int64_t wholeArg(std::span<const Value> args, std::size_t i) {
     return static_cast<std::int64_t>(std::trunc(binding::number(args, i)));
 }
 
 // Argument `i` as a handle: truncated to an unsigned 32-bit integer.
+// @coney-only argument glue: the original reads its arguments through tolua
 double handleArg(std::span<const Value> args, std::size_t i) {
     return static_cast<double>(static_cast<std::uint32_t>(wholeArg(args, i)));
 }
 
 // Whether argument `i` is missing or nil, so its default applies.
+// @coney-only argument glue: the original reads its arguments through tolua
 bool absent(std::span<const Value> args, std::size_t i) { return i >= args.size() || args[i].isNil(); }
 
 // Argument `i` as a boolean as tolua reads one: nil and false are false, a number is its value's truth.
+// @coney-only argument glue: the original reads its arguments through tolua
 bool boolArg(std::span<const Value> args, std::size_t i) { return !absent(args, i) && binding::number(args, i) != 0.0; }
 
 // An M_Vector4 (x, y, z and w 1) as a table.
+// @coney-only result glue: the original pushes its vector type through tolua
 binding::Results vectorResult(anim::Vec3 p) {
     auto vector = std::make_shared<Table>();
     for (const auto& [field, value] :
@@ -120,6 +125,7 @@ NativeFunction makeCamSetFollowPos(const BindingContext& context) {
 }
 
 // Argument `i` as a function name: empty for nil or a missing argument.
+// @coney-only argument glue: the original reads its arguments through tolua
 std::string nameArg(std::span<const Value> args, std::size_t i) {
     return absent(args, i) ? std::string() : binding::string(args, i);
 }
@@ -304,6 +310,7 @@ NativeFunction makeSoundEnableEffects(const BindingContext& context) {
 
 // Argument `i` as a colour table `{r, g, b, a}` (t[1]..t[4], each truncated to a byte); zeros for a missing table or
 // entry.
+// @coney-only argument glue: the original reads its arguments through tolua
 std::array<std::uint8_t, 4> colourArg(std::span<const Value> args, std::size_t i) {
     std::array<std::uint8_t, 4> colour{};
     if (i >= args.size() || args[i].table() == nullptr) {
@@ -419,6 +426,7 @@ NativeFunction makeSetupRadio(const BindingContext& context) {
 
 // Whether `object` can be a tag spot: with the level's particles known, it must be one of their systems (a class-bit
 // 0x10 object); without them any handle is taken.
+// @coney-only lookup glue: the original checks the object's class bit itself
 bool tagObject(const BindingContext& context, double object) {
     return context.tagSpots != nullptr &&
            (context.effects == nullptr || context.effects->particles.find(object) != nullptr);
@@ -462,6 +470,8 @@ NativeFunction makeProcessTag(const BindingContext& context) {
 
 } // namespace
 
+// Registers the story effects' bindings in `vm`.
+// @coney-only registration glue; each binding carries its own @orig
 void addStoryEffectsBindings(LuaVm& vm, const BindingContext& context, std::function<double()> nextHandle) {
     vm.registerFunction("CamAddPoizoPoint", makeCamAddPoizoPoint(context));
     vm.registerFunction("CamAddPoizoPointCam", makeCamAddPoizoPointCam(context));
