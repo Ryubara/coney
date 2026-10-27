@@ -893,6 +893,21 @@ TEST_CASE("gameplay's exit turns the system music off and sets the pitch back to
     CHECK(story.musicHold == -1);
 }
 
+// The system music is the game state's: with no sound engine (--no-audio) the exit still turns it off.
+// Expected: sound.md#warriors-functions, confirmed (code)
+TEST_CASE("gameplay's exit turns the system music off with no sound engine", "[audio][music]") {
+    Rig rig;
+    coney::audio::Mixer mixer;
+    coney::audio::SoundPlayer silent{mixer};
+    GameSound quiet{silent};
+    quiet.connect(nullptr, &rig.context);
+    rig.state.story.systemMusic = true;
+    rig.state.story.musicHold = 1;
+    quiet.gameplayLeft();
+    CHECK_FALSE(rig.state.story.systemMusic);
+    CHECK(rig.state.story.musicHold == -1);
+}
+
 // `Gm_Level_Enter` 0x001582e0, step 1 (docs/research/level-loading.md#mode-1): the three moods' track lists emptied
 // (`SystemMusic_SetTracks` 0x0010e9e0 with no tracks) and the reverb's default kept (type 1, depth 0.1).
 // Expected: sound.md#reverb, sound.md#function-index, confirmed (code)
