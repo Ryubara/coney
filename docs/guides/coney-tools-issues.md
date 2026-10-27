@@ -137,12 +137,12 @@ be read.
 
 Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
 
-### `issue draft` {#issue-draft-usage}
+### `issue template` {#issue-template-usage}
 
 Print a blank issue body in the form's exact headings, with the rules of each section as comments.
 
 ```text
-coney-tools issue draft [FORM]
+coney-tools issue template [FORM]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -242,12 +242,12 @@ coney-tools issue impact [--base BASE] [--head HEAD] [--replaces PR_OR_BRANCH] [
 | `--refresh` | flag | off | read the open issues from GitHub even if the cache is fresh |
 | `--issues FILE` | text | none | read the open issues from this `gh issue list --json` file, not GitHub |
 
-### `issue link` {#issue-link-usage}
+### `issue set-parent` {#issue-set-parent-usage}
 
 Make issue N a sub-issue of issue --parent.
 
 ```text
-coney-tools issue link NUMBER --parent P [--dry-run]
+coney-tools issue set-parent NUMBER --parent P [--dry-run]
 ```
 
 | Parameter | Type | Default | Meaning |

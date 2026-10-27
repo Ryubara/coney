@@ -251,35 +251,6 @@ that is missing, changed or not listed (exit code 1). `render` rewrites the list
 
 Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
 
-### `pcsx2 prepare-state` {#pcsx2-prepare-state-usage}
-
-Copy a save state with patches applied to its EE memory.
-
-```text
-coney-tools pcsx2 prepare-state SOURCE OUT [--patch NAME [NAME ...]] [--pcsx2-dir PCSX2_DIR]
-```
-
-| Parameter | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `SOURCE` | text | required | a .p2s file, or slot:N for quick-save slot N (only read) |
-| `OUT` | path | required | the patched copy (outside the repository and sstates/) |
-| `--patch NAME [NAME ...]` | text | none | patches of research/traces/patches/ |
-| `--pcsx2-dir PCSX2_DIR` | path | none | the portable PCSX2 folder; default: pcsx2_dir |
-
-### `pcsx2 repack-state` {#pcsx2-repack-state-usage}
-
-Copy a save state with plain deflate in place of zstd.
-
-```text
-coney-tools pcsx2 repack-state SOURCE OUT [--pcsx2-dir PCSX2_DIR]
-```
-
-| Parameter | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `SOURCE` | text | required | a .p2s file, or slot:N for quick-save slot N (only read) |
-| `OUT` | path | required | the repacked copy (outside the repository and sstates/) |
-| `--pcsx2-dir PCSX2_DIR` | path | none | the portable PCSX2 folder; default: pcsx2_dir |
-
 ### `pcsx2 launch` {#pcsx2-launch-usage}
 
 Start PCSX2 (never taking the focus) on a state file and wait until its game runs.
@@ -292,52 +263,6 @@ coney-tools pcsx2 launch [STATE] [--agent AGENT] [--pcsx2-dir PCSX2_DIR] [--iso 
 | --- | --- | --- | --- |
 | `[STATE]` | path | none | a .p2s file (a patched copy); omitted: boot the disc and wait for PINE |
 | `--agent AGENT` | text | none | your id; PCSX2 starts under your claim (made if you hold none) |
-| `--pcsx2-dir PCSX2_DIR` | path | none | the portable PCSX2 folder; default: pcsx2_dir |
-| `--iso ISO` | path | none | the disc image (or a folder with one); default: game_dir |
-| `--scratch SCRATCH` | path | none | where state copies and the disc link go; default: scratch_dir |
-
-### `pcsx2 record` {#pcsx2-record-usage}
-
-Play a scenario on the original and write its per-update trace.
-
-```text
-coney-tools pcsx2 record SCENARIO --out OUT [--state STATE] [--attach] [--keep-open] [--agent AGENT]
-    [--recording RECORDING] [--let NAME=EXPR] [--run-record] [--library-state LIBRARY_STATE] [--run-name RUN_NAME]
-    [--pcsx2-dir PCSX2_DIR] [--iso ISO] [--scratch SCRATCH]
-```
-
-| Parameter | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `SCENARIO` | path | required | a scenario TOML (research/traces/scenarios/) |
-| `--out OUT` | path | required | the trace CSV (outside the repository) |
-| `--state STATE` | text | none | the state to copy instead of the scenario's slot: a .p2s file or slot:N |
-| `--attach` | flag | off | record a PCSX2 already running a patched state |
-| `--keep-open` | flag | off | leave PCSX2 running afterwards |
-| `--agent AGENT` | text | none | your id; runs under your claim (made, and released at the end, if none) |
-| `--recording RECORDING` | path | none | an input recording (.p2m2, its savestate beside it) to replay through the debug server as the pad |
-| `--let NAME=EXPR` | text | none | give or replace a name of the scenario's let (a random stream's offset per match); repeatable |
-| `--run-record` | flag | off | also write research/runs/\<id\>.toml (scenario, patches, counts, the CSV's hash) for a claim to cite |
-| `--library-state LIBRARY_STATE` | text | none | with --run-record: the state library id the run started from, or unknown |
-| `--run-name RUN_NAME` | text | none | with --run-record: the run's name in its id (default: the scenario's) |
-| `--pcsx2-dir PCSX2_DIR` | path | none | the portable PCSX2 folder; default: pcsx2_dir |
-| `--iso ISO` | path | none | the disc image (or a folder with one); default: game_dir |
-| `--scratch SCRATCH` | path | none | where state copies and the disc link go; default: scratch_dir |
-
-### `pcsx2 clip` {#pcsx2-clip-usage}
-
-Record a short clip of the original with PCSX2's own capture of its game output (never the screen).
-
-```text
-coney-tools pcsx2 clip STATE --out OUT [--seconds SECONDS] [--agent AGENT] [--pcsx2-dir PCSX2_DIR] [--iso ISO]
-    [--scratch SCRATCH]
-```
-
-| Parameter | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `STATE` | path | required | the .p2s state to start from (a copy outside sstates/) |
-| `--out OUT` | path | required | the clip: \<scratch\>/\<task\>/clips/\<name\>.mp4 |
-| `--seconds SECONDS` | integer | `10` | how long, 1 to the cap of 10 (default 10) |
-| `--agent AGENT` | text | none | your id; runs under your claim (made, and released at the end, if none) |
 | `--pcsx2-dir PCSX2_DIR` | path | none | the portable PCSX2 folder; default: pcsx2_dir |
 | `--iso ISO` | path | none | the disc image (or a folder with one); default: game_dir |
 | `--scratch SCRATCH` | path | none | where state copies and the disc link go; default: scratch_dir |
@@ -357,12 +282,12 @@ coney-tools pcsx2 claim --agent AGENT [--copy COPY] [--json] [--max-age-hours MA
 | `--json` | flag | off | print the claim as one JSON line |
 | `--max-age-hours MAX_AGE_HOURS` | number | none | a claim with no process is stale after this (default 4) |
 
-### `pcsx2 release` {#pcsx2-release-usage}
+### `pcsx2 unclaim` {#pcsx2-unclaim-usage}
 
 Close the copy's PCSX2 and drop the claim.
 
 ```text
-coney-tools pcsx2 release --agent AGENT [--copy COPY] [--force]
+coney-tools pcsx2 unclaim --agent AGENT [--copy COPY] [--force]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -384,12 +309,12 @@ coney-tools pcsx2 status [--json] [--max-age-hours MAX_AGE_HOURS]
 | `--json` | flag | off | print JSON instead of a table |
 | `--max-age-hours MAX_AGE_HOURS` | number | none | a claim with no process is stale after this (default 4) |
 
-### `pcsx2 check-ports` {#pcsx2-check-ports-usage}
+### `pcsx2 check-claim` {#pcsx2-check-claim-usage}
 
 Exit 2 unless the ports are those of a copy you hold (the check the pcsx2 MCP guard makes).
 
 ```text
-coney-tools pcsx2 check-ports --agent AGENT [--debug-port DEBUG_PORT] [--pine-port PINE_PORT]
+coney-tools pcsx2 check-claim --agent AGENT [--debug-port DEBUG_PORT] [--pine-port PINE_PORT]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -398,12 +323,12 @@ coney-tools pcsx2 check-ports --agent AGENT [--debug-port DEBUG_PORT] [--pine-po
 | `--debug-port DEBUG_PORT` | integer | none | the debug server port you are about to connect to |
 | `--pine-port PINE_PORT` | integer | none | the PINE port you are about to connect to |
 
-### `pcsx2 keys` {#pcsx2-keys-usage}
+### `pcsx2 send-keys` {#pcsx2-send-keys-usage}
 
 Post keys to a claimed copy's window by handle (never takes focus).
 
 ```text
-coney-tools pcsx2 keys KEY [KEY ...] --agent AGENT --copy COPY [--hold-ms HOLD_MS] [--gap-ms GAP_MS]
+coney-tools pcsx2 send-keys KEY [KEY ...] --agent AGENT --copy COPY [--hold-ms HOLD_MS] [--gap-ms GAP_MS]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -440,56 +365,83 @@ coney-tools pcsx2 setup-copies [--count COUNT] [--dry-run]
 | `--count COUNT` | integer | none | how many copies: pcsx2, pcsx2-b, ... (default: pcsx2_copies, 5) |
 | `--dry-run` | flag | off | print what would change, change nothing |
 
-### `pcsx2 recordings` {#pcsx2-recordings-usage}
+### `pcsx2 recordings make` {#pcsx2-recordings-make-usage}
 
-Make an input recording from an input script, or move one (.p2m2 and its savestate) between scratch and a claimed copy.
+Write a recording from an input script.
 
 ```text
-coney-tools pcsx2 recordings DIRECTION NAME [--agent AGENT] [--copy COPY] [--force] [--script SCRIPT] [--state STATE]
-    [--updates UPDATES] [--frames-per-update FRAMES_PER_UPDATE] [--author AUTHOR]
+coney-tools pcsx2 recordings make NAME --script SCRIPT [--state STATE] [--updates UPDATES]
+    [--frames-per-update FRAMES_PER_UPDATE] [--author AUTHOR] [--force]
 ```
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `DIRECTION` | choice | required | push: scratch to the copy's recordings/; pull: back; make: write one from an input script. One of `push`, `pull`, `make`. |
 | `NAME` | text | required | the recording below recordings/, such as fights/rumble-1.p2m2 |
-| `--agent AGENT` | text | none | push and pull: your id (must hold the claim) |
-| `--copy COPY` | text | none | push and pull: the copy |
+| `--script SCRIPT` | path | required | the input script (Coney's format) |
+| `--state STATE` | path | none | the savestate it starts from (none: from power-on) |
+| `--updates UPDATES` | integer | none | how many 1/30 s updates (default: the script and 1 s) |
+| `--frames-per-update FRAMES_PER_UPDATE` | integer | `2` | PCSX2 frames in one script frame (default 2) |
+| `--author AUTHOR` | text | none | the author written into the header |
 | `--force` | flag | off | replace a different file of that name |
-| `--script SCRIPT` | path | none | make: the input script (Coney's format) |
-| `--state STATE` | path | none | make: the savestate it starts from (none: from power-on) |
-| `--updates UPDATES` | integer | none | make: how many 1/30 s updates (default: the script and 1 s) |
-| `--frames-per-update FRAMES_PER_UPDATE` | integer | `2` | make: PCSX2 frames in one script frame (default 2) |
-| `--author AUTHOR` | text | none | make: the author written into the header |
 
-### `pcsx2 recipe list` {#pcsx2-recipe-list-usage}
+### `pcsx2 recordings push` {#pcsx2-recordings-push-usage}
+
+Copy one from scratch to the copy's recordings/.
+
+```text
+coney-tools pcsx2 recordings push NAME --agent AGENT --copy COPY [--force]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `NAME` | text | required | the recording below recordings/, such as fights/rumble-1.p2m2 |
+| `--agent AGENT` | text | required | your id (must hold the claim) |
+| `--copy COPY` | text | required | the copy |
+| `--force` | flag | off | replace a different file of that name |
+
+### `pcsx2 recordings pull` {#pcsx2-recordings-pull-usage}
+
+Copy one back.
+
+```text
+coney-tools pcsx2 recordings pull NAME --agent AGENT --copy COPY [--force]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `NAME` | text | required | the recording below recordings/, such as fights/rumble-1.p2m2 |
+| `--agent AGENT` | text | required | your id (must hold the claim) |
+| `--copy COPY` | text | required | the copy |
+| `--force` | flag | off | replace a different file of that name |
+
+### `pcsx2 recipes list` {#pcsx2-recipes-list-usage}
 
 List every recipe with its one-line summary.
 
 ```text
-coney-tools pcsx2 recipe list
+coney-tools pcsx2 recipes list
 ```
 
 Takes no parameters.
 
-### `pcsx2 recipe show` {#pcsx2-recipe-show-usage}
+### `pcsx2 recipes show` {#pcsx2-recipes-show-usage}
 
 Print one recipe: what it does, its parameters, preconditions and steps.
 
 ```text
-coney-tools pcsx2 recipe show NAME
+coney-tools pcsx2 recipes show NAME
 ```
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `NAME` | text | required | the recipe's name (pcsx2 recipe list shows them) |
 
-### `pcsx2 recipe run` {#pcsx2-recipe-run-usage}
+### `pcsx2 recipes run` {#pcsx2-recipes-run-usage}
 
 Run a recipe on a PCSX2 copy you hold a claim on.
 
 ```text
-coney-tools pcsx2 recipe run NAME --copy COPY --agent AGENT [--arg NAME=VALUE] [--json] [--record] [--state STATE]
+coney-tools pcsx2 recipes run NAME --copy COPY --agent AGENT [--arg NAME=VALUE] [--json] [--record] [--state STATE]
     [--name RUN_NAME]
 ```
 
@@ -504,12 +456,12 @@ coney-tools pcsx2 recipe run NAME --copy COPY --agent AGENT [--arg NAME=VALUE] [
 | `--state STATE` | text | none | with --record: the state library id the copy started from, or unknown |
 | `--name RUN_NAME` | text | none | with --record: the run's name in its id (default: the recipe's name) |
 
-### `pcsx2 recipe render` {#pcsx2-recipe-render-usage}
+### `pcsx2 recipes render` {#pcsx2-recipes-render-usage}
 
 Write the recipe pages (pcsx2-recipes.md and pcsx2-recipes/) from the recipe file.
 
 ```text
-coney-tools pcsx2 recipe render [--check]
+coney-tools pcsx2 recipes render [--check]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -592,12 +544,12 @@ coney-tools pcsx2 states add FILE --id ID --desc DESC [--level LEVEL] [--checkpo
 | `--no-read` | flag | off | read nothing from the state: give everything by flags |
 | `--pcsx2-dir PCSX2_DIR` | path | none | the portable PCSX2 folder for slot:N; default: pcsx2_dir |
 
-### `pcsx2 states use` {#pcsx2-states-use-usage}
+### `pcsx2 states hand-out` {#pcsx2-states-hand-out-usage}
 
 Hand out a copy of a state to a PCSX2 copy you hold a claim on.
 
 ```text
-coney-tools pcsx2 states use ID --copy COPY --agent AGENT [--patch NAME [NAME ...]] [--launch]
+coney-tools pcsx2 states hand-out ID --copy COPY --agent AGENT [--patch NAME [NAME ...]] [--launch]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -631,6 +583,35 @@ coney-tools pcsx2 states render [--out OUT]
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `--out OUT` | path | none | another page with the marked block (default: the guide) |
+
+### `pcsx2 states patch` {#pcsx2-states-patch-usage}
+
+Copy a save state with patches applied to its EE memory.
+
+```text
+coney-tools pcsx2 states patch SOURCE OUT [--patch NAME [NAME ...]] [--pcsx2-dir PCSX2_DIR]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `SOURCE` | text | required | a .p2s file, or slot:N for quick-save slot N (only read) |
+| `OUT` | path | required | the patched copy (outside the repository and sstates/) |
+| `--patch NAME [NAME ...]` | text | none | patches of research/traces/patches/ |
+| `--pcsx2-dir PCSX2_DIR` | path | none | the portable PCSX2 folder; default: pcsx2_dir |
+
+### `pcsx2 states repack` {#pcsx2-states-repack-usage}
+
+Copy a save state with plain deflate in place of zstd.
+
+```text
+coney-tools pcsx2 states repack SOURCE OUT [--pcsx2-dir PCSX2_DIR]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `SOURCE` | text | required | a .p2s file, or slot:N for quick-save slot N (only read) |
+| `OUT` | path | required | the repacked copy (outside the repository and sstates/) |
+| `--pcsx2-dir PCSX2_DIR` | path | none | the portable PCSX2 folder; default: pcsx2_dir |
 <!-- command-reference:end -->
 
 ## clips {#clips}
@@ -667,6 +648,25 @@ capture device or any input that is not a file.
 ## Parameters of `clips` {#clips-parameters}
 
 Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `clips record` {#clips-record-usage}
+
+Record a short clip of the original with PCSX2's own capture of its game output (never the screen).
+
+```text
+coney-tools clips record STATE --out OUT [--seconds SECONDS] [--agent AGENT] [--pcsx2-dir PCSX2_DIR] [--iso ISO]
+    [--scratch SCRATCH]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `STATE` | path | required | the .p2s state to start from (a copy outside sstates/) |
+| `--out OUT` | path | required | the clip: \<scratch\>/\<task\>/clips/\<name\>.mp4 |
+| `--seconds SECONDS` | integer | `10` | how long, 1 to the cap of 10 (default 10) |
+| `--agent AGENT` | text | none | your id; runs under your claim (made, and released at the end, if none) |
+| `--pcsx2-dir PCSX2_DIR` | path | none | the portable PCSX2 folder; default: pcsx2_dir |
+| `--iso ISO` | path | none | the disc image (or a folder with one); default: game_dir |
+| `--scratch SCRATCH` | path | none | where state copies and the disc link go; default: scratch_dir |
 
 ### `clips folder` {#clips-folder-usage}
 
@@ -713,14 +713,14 @@ coney-tools clips publish CLIP [CLIP ...] (--pr PR | --issue ISSUE) [--edit] [--
 
 ### `clips clean` {#clips-clean-usage}
 
-Delete clips left in the scratch clips folders past the age limit.
+Delete clips left in the scratch clips folders past the age limit (a dry run unless --apply).
 
 ```text
-coney-tools clips clean [--older-than HOURS] [--dry-run]
+coney-tools clips clean [--older-than HOURS] [--apply]
 ```
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `--older-than HOURS` | number | none | default: workspace.clips.keep_hours (24) |
-| `--dry-run` | flag | off | list what would go, delete nothing |
+| `--apply` | flag | off | delete; without it, only list what would go |
 <!-- command-reference:end -->

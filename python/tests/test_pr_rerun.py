@@ -363,7 +363,7 @@ def command(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, gh: Both, *flags: s
     monkeypatch.chdir(tmp_path)
     parser = argparse.ArgumentParser()
     pr_health.add_pr_health_parser(parser.add_subparsers(dest="command"))
-    return pr_health.run_pr_health(parser.parse_args(["pr-health", *flags]), gh, NOW)
+    return pr_health.run_pr_health(parser.parse_args(["list-stuck", *flags]), gh, NOW)
 
 
 def test_rerun_alone_is_a_dry_run_that_prints_what_it_would_rerun(

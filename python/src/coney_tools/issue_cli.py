@@ -49,7 +49,7 @@ def add_issue_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser]
     commands = group.add_subparsers(dest="command", required=True)
 
     draft = commands.add_parser(
-        "draft",
+        "template",
         help="print a blank issue body in the form's exact headings, with the rules of each section as comments",
     )
     draft.add_argument("form", nargs="?", help="the form (task or bug); default: the form the command line uses")
@@ -129,7 +129,7 @@ def add_issue_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser]
         "--issues", metavar="FILE", help="read the open issues from this `gh issue list --json` file, not GitHub"
     )
 
-    link = commands.add_parser("link", help="make issue N a sub-issue of issue --parent")
+    link = commands.add_parser("set-parent", help="make issue N a sub-issue of issue --parent")
     link.add_argument("number", type=int, help="the child issue")
     link.add_argument("--parent", type=int, required=True, metavar="P", help="the parent issue")
     link.add_argument("--dry-run", action="store_true", help="print what would run; write nothing")
@@ -491,7 +491,7 @@ def run_issue(args: argparse.Namespace) -> int:
         return run_impact(args)
     if args.command == "titles":
         return run_titles(args)
-    if args.command == "draft":
+    if args.command == "template":
         return run_draft(args.form)
     if args.command == "check":
         return run_check(args)

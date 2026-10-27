@@ -319,10 +319,10 @@ def format_text(health: Health, verbose: bool) -> Iterable[str]:
         yield from (f"{item.line()} (not stuck)" for item in health.notes)
 
 
-def add_pr_health_parser(repo_commands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
-    """Add `repo pr-health` and its options to the `repo` command group."""
-    parser = repo_commands.add_parser(
-        "pr-health",
+def add_pr_health_parser(pr_commands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
+    """Add `pr list-stuck` and its options to the `pr` command group."""
+    parser = pr_commands.add_parser(
+        "list-stuck",
         help="list the open pull requests that are stuck (failed required check, conflict, stuck CI, no auto-merge)",
         description=(
             "Lists the open pull requests that are stuck, one line each: #number branch cause detail -> who acts. "

@@ -294,55 +294,15 @@ when it ran, 2 when `gh` or the conventions cannot be read.
 
 Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
 
-### `repo check` {#repo-check-usage}
+### `repo check-conventions` {#repo-check-conventions-usage}
 
 Check .github/conventions.yml and the agent pointer files.
 
 ```text
-coney-tools repo check
+coney-tools repo check-conventions
 ```
 
 Takes no parameters.
-
-### `repo check-title` {#repo-check-title-usage}
-
-Check a commit or pull request title against the commit title rules.
-
-```text
-coney-tools repo check-title FILE
-```
-
-| Parameter | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `FILE` | text | required | a file whose first line (not blank, not #) is the title; - for stdin |
-
-### `repo check-docs` {#repo-check-docs-usage}
-
-Check that a pull request which changes code also changes the docs (changed paths on stdin).
-
-```text
-coney-tools repo check-docs [--body BODY]
-```
-
-| Parameter | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `--body BODY` | text | none | a file holding the pull request description (for `Docs: none`) |
-
-### `repo check-body` {#repo-check-body-usage}
-
-Check a pull request description against the template: sections, summary, AI use.
-
-```text
-coney-tools repo check-body [--body BODY] [--title TITLE] [--worktree WORKTREE] [--base BASE] [--local-images]
-```
-
-| Parameter | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `--body BODY` | text | none | a file holding the pull request description; - or omitted reads stdin |
-| `--title TITLE` | text | none | the pull request's title: a title area a player sees (gameplay, graphics, audio) then needs the Testing section's `Runtime:` line, as in CI; without it that rule is not checked |
-| `--worktree WORKTREE` | path | none | the branch's worktree: also require the Model line to name every model its commits credit in a Co-Authored-By trailer (what `repo check-review` does) |
-| `--base BASE` | text | `origin/main` | what the branch is compared with, with --worktree (default: origin/main) |
-| `--local-images` | flag | off | accept an image that points at a local file, which `gh pr create --attach` uploads |
 
 ### `repo render` {#repo-render-usage}
 
@@ -380,30 +340,68 @@ coney-tools repo audit [--files] [--github] [--local] [--json] [--only CHECK] [-
 | `--workspace WORKSPACE` | path | none | with --local: the workspace folder (default: found from the checkout) |
 | `--list` | flag | off | list the checks and exit |
 
-### `repo pr-health` {#repo-pr-health-usage}
+### `repo review-stamp` {#repo-review-stamp-usage}
 
-List the open pull requests that are stuck (failed required check, conflict, stuck CI, no auto-merge).
+Print, as JSON, the tip, description hash and image hashes a verdict must quote; refuses, with the title and body
+reasons, a description check-pr-review would refuse.
 
 ```text
-coney-tools repo pr-health [--json] [--pending-hours H] [--verbose] [--labels] [--rerun] [--apply]
+coney-tools repo review-stamp PR_FILE --worktree WORKTREE [--base BASE]
 ```
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `--json` | flag | off | print the report as JSON instead of text |
-| `--pending-hours H` | number | none | hours a required check may be pending (default: hygiene.thresholds.pr_pending_hours) |
-| `--verbose` | flag | off | also show drafts, stacked pull requests and unknown mergeability |
-| `--labels` | flag | off | also list the labels to add to or remove from the open pull requests (hygiene.pr_health.labels) |
-| `--rerun` | flag | off | also list the failed required checks that are stale (text fixed since, runner lost) and would be rerun |
-| `--apply` | flag | off | with --labels: make those label changes through gh; with --rerun: really rerun the checks (gh run rerun) |
+| `PR_FILE` | path | required | the description file: the title on line 1, then the body (PR.md in the scratch folder) |
+| `--worktree WORKTREE` | path | required | the branch's worktree (its HEAD is the tip the verdict must quote) |
+| `--base BASE` | text | `origin/main` | what the branch is compared with, for the diff and the commits' trailers (default: origin/main) |
 
-### `repo review` {#repo-review-usage}
+### `repo post-findings` {#repo-post-findings-usage}
 
-Run the reviewer agent headlessly on a description, then check its verdict.
+Write the audit's findings as comments on issues and pull requests (what the hygiene workflow runs).
+
+Exactly one of `--event`, `--sweep` is required.
 
 ```text
-coney-tools repo review PR_FILE --worktree WORKTREE [--base BASE] [--claude CLAUDE] [--model MODEL] [--effort EFFORT]
-    [--timeout-minutes TIMEOUT_MINUTES]
+coney-tools repo post-findings (--event N | --sweep) [--apply] [--snapshot FILE]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--event N` | integer | none | issue or pull request N changed: update its comment. Not with `--sweep`. |
+| `--sweep` | flag | off | the weekly run: update the report (and item comments if on). Not with `--event`. |
+| `--apply` | flag | off | write the comments (default: print the plan only) |
+| `--snapshot FILE` | path | none | read this saved audit snapshot, not GitHub |
+
+### `repo sync-labels` {#repo-sync-labels-usage}
+
+Print the gh commands for the issue labels of .github/conventions.yml, or sync them with --apply.
+
+```text
+coney-tools repo sync-labels [--apply] [--repo REPO]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--apply` | flag | off | create or update the labels through gh now |
+| `--repo REPO` | text | none | OWNER/NAME to sync; default: the repository gh finds from the checkout |
+<!-- command-reference:end -->
+
+## legacy {#legacy}
+
+The release checks of the old workflow, kept until `task review` and `pr open` replace them at the cutover.
+
+<!-- command-reference:begin legacy -->
+## Parameters of `legacy` {#legacy-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `legacy pr-review` {#legacy-pr-review-usage}
+
+Run the reviewer agent headlessly on a description, then check its verdict (replaced by `task review`).
+
+```text
+coney-tools legacy pr-review PR_FILE --worktree WORKTREE [--base BASE] [--claude CLAUDE] [--model MODEL]
+    [--effort EFFORT] [--timeout-minutes TIMEOUT_MINUTES]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -416,13 +414,13 @@ coney-tools repo review PR_FILE --worktree WORKTREE [--base BASE] [--claude CLAU
 | `--effort EFFORT` | choice | none | the effort level. One of `low`, `medium`, `high`, `xhigh`, `max`. |
 | `--timeout-minutes TIMEOUT_MINUTES` | number | `30` | stop the review after this long |
 
-### `repo check-review` {#repo-check-review-usage}
+### `legacy check-pr-review` {#legacy-check-pr-review-usage}
 
 Check the title and body as CI does, and that the reviewer's verdict passes and is current (tip, description and images
-unchanged).
+unchanged; replaced by `pr open`).
 
 ```text
-coney-tools repo check-review PR_FILE --worktree WORKTREE [--base BASE]
+coney-tools legacy check-pr-review PR_FILE --worktree WORKTREE [--base BASE]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -430,51 +428,6 @@ coney-tools repo check-review PR_FILE --worktree WORKTREE [--base BASE]
 | `PR_FILE` | path | required | the description file: the title on line 1, then the body (PR.md in the scratch folder) |
 | `--worktree WORKTREE` | path | required | the branch's worktree (its HEAD is the tip the verdict must quote) |
 | `--base BASE` | text | `origin/main` | what the branch is compared with, for the diff and the commits' trailers (default: origin/main) |
-
-### `repo review-stamp` {#repo-review-stamp-usage}
-
-Print, as JSON, the tip, description hash and image hashes a verdict must quote; refuses, with the title and body
-reasons, a description check-review would refuse.
-
-```text
-coney-tools repo review-stamp PR_FILE --worktree WORKTREE [--base BASE]
-```
-
-| Parameter | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `PR_FILE` | path | required | the description file: the title on line 1, then the body (PR.md in the scratch folder) |
-| `--worktree WORKTREE` | path | required | the branch's worktree (its HEAD is the tip the verdict must quote) |
-| `--base BASE` | text | `origin/main` | what the branch is compared with, for the diff and the commits' trailers (default: origin/main) |
-
-### `repo hygiene` {#repo-hygiene-usage}
-
-Write the audit's findings as comments on issues and pull requests (what the hygiene workflow runs).
-
-Exactly one of `--event`, `--sweep` is required.
-
-```text
-coney-tools repo hygiene (--event N | --sweep) [--apply] [--snapshot FILE]
-```
-
-| Parameter | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `--event N` | integer | none | issue or pull request N changed: update its comment. Not with `--sweep`. |
-| `--sweep` | flag | off | the weekly run: update the report (and item comments if on). Not with `--event`. |
-| `--apply` | flag | off | write the comments (default: print the plan only) |
-| `--snapshot FILE` | path | none | read this saved audit snapshot, not GitHub |
-
-### `repo labels` {#repo-labels-usage}
-
-Print the gh commands for the issue labels of .github/conventions.yml, or sync them with --apply.
-
-```text
-coney-tools repo labels [--apply] [--repo REPO]
-```
-
-| Parameter | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `--apply` | flag | off | create or update the labels through gh now |
-| `--repo REPO` | text | none | OWNER/NAME to sync; default: the repository gh finds from the checkout |
 <!-- command-reference:end -->
 
 ## task {#task}

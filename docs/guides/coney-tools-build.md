@@ -45,37 +45,6 @@ a setup problem (a program the step needs is missing), 75 from `check result` wh
 prints at most 40 lines of a failing step; run the step's tool by hand for the rest. What stays CI's: warnings only GCC
 emits, macOS, the sanitizers and clang-tidy (see [the local gate](testing.md#local-gate)).
 
-<!-- command-reference:begin check -->
-## Parameters of `check` {#check-parameters}
-
-Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
-
-### `check changed` {#check-changed-usage}
-
-Pre-commit, docs, Python and repo checks on what changed (clang-tidy runs in CI).
-
-```text
-coney-tools check changed [--base BASE] [--only ONLY] [--skip SKIP] [--detach]
-```
-
-| Parameter | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `--base BASE` | text | `origin/main` | the branch the change is measured from |
-| `--only ONLY` | choice | none | run only this step (repeatable). One of `repo`, `orig`, `pre-commit`, `docs`, `python`. |
-| `--skip SKIP` | choice | none | leave this step out (repeatable). One of `repo`, `orig`, `pre-commit`, `docs`, `python`. |
-| `--detach` | flag | off | run in the background, apart from this shell, and return at once; `check result` shows the outcome |
-
-### `check result` {#check-result-usage}
-
-The output and outcome of the worktree's last `check changed --detach`.
-
-```text
-coney-tools check result
-```
-
-Takes no parameters.
-<!-- command-reference:end -->
-
 ## docs {#docs}
 
 ```sh
@@ -431,7 +400,7 @@ Written by `coney-tools docs render` from the command line's own definitions; ne
 
 ### `build` {#build-usage}
 
-Configure, build and test under the build slots (at most two at once); status, release.
+Configure, build and test under the build slots (at most two at once); status, result, unclaim.
 
 ```text
 coney-tools build [--agent AGENT] [--preset PRESET] [--dir DIR] [--configure] [--configure-only] [--test]
@@ -454,7 +423,7 @@ coney-tools build [--agent AGENT] [--preset PRESET] [--dir DIR] [--configure] [-
 | `--env NAME=VALUE` | text | none | set an environment variable for the run, e.g. CC=clang-19 (repeatable); CMake reads CC and CXX at the first configure of a folder |
 | `--priority` | flag | off | go ahead of the normal queue (a build someone awaits) |
 | `--lane RUN_LANE` | choice | `auto` | auto (default): a small build or test run takes the fast lane; main: always a main slot, for a run you know is long. One of `auto`, `main`. |
-| `--max-wait, --slots-wait-timeout MIN` | number | none | minutes to wait for a slot, per phase, before exiting with code 75 (default and most 40; with --detach default 240, no limit) |
+| `--max-wait MIN` | number | none | minutes to wait for a slot, per phase, before exiting with code 75 (default and most 40; with --detach default 240, no limit) |
 | `--budget MIN` | number | none | minutes the whole call may take, waits and steps together: stop waiting (exit 75) once the wait plus what the step usually takes would pass it (default and most 45, inside an hour's prompt cache; with --detach default 0: no budget) |
 | `--detach` | flag | off | run in the background, apart from this shell, and return at once: the result goes to build-result.json in the worktree's scratch folder (`build result` shows it); for a wait or a run that would outlast your prompt cache |
 | `-j, --jobs JOBS` | integer | none | parallel jobs (default: the cores divided by the slots) |
@@ -485,12 +454,12 @@ coney-tools build result [--json] [--dir DIR]
 | `--json` | flag | off | print the record as JSON |
 | `--dir DIR` | path | none | the checkout the command is about (default: the current one) |
 
-### `build release` {#build-release-usage}
+### `build unclaim` {#build-unclaim-usage}
 
 Manual cleanup: free an agent's slots and drop its queue places.
 
 ```text
-coney-tools build release --agent RELEASE_AGENT [--force] [--slot SLOT] [--lane LANE] [--dir DIR]
+coney-tools build unclaim --agent RELEASE_AGENT [--force] [--slot SLOT] [--lane LANE] [--dir DIR]
 ```
 
 | Parameter | Type | Default | Meaning |

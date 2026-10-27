@@ -137,6 +137,33 @@ from your disc, kept in scratch). It exits with 0 when Coney has every compared 
 
 Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
 
+### `trace original` {#trace-original-usage}
+
+Play a scenario on the original and write its per-update trace.
+
+```text
+coney-tools trace original SCENARIO --out OUT [--state STATE] [--attach] [--keep-open] [--agent AGENT]
+    [--recording RECORDING] [--let NAME=EXPR] [--run-record] [--library-state LIBRARY_STATE] [--run-name RUN_NAME]
+    [--pcsx2-dir PCSX2_DIR] [--iso ISO] [--scratch SCRATCH]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `SCENARIO` | path | required | a scenario TOML (research/traces/scenarios/) |
+| `--out OUT` | path | required | the trace CSV (outside the repository) |
+| `--state STATE` | text | none | the state to copy instead of the scenario's slot: a .p2s file or slot:N |
+| `--attach` | flag | off | record a PCSX2 already running a patched state |
+| `--keep-open` | flag | off | leave PCSX2 running afterwards |
+| `--agent AGENT` | text | none | your id; runs under your claim (made, and released at the end, if none) |
+| `--recording RECORDING` | path | none | an input recording (.p2m2, its savestate beside it) to replay through the debug server as the pad |
+| `--let NAME=EXPR` | text | none | give or replace a name of the scenario's let (a random stream's offset per match); repeatable |
+| `--run-record` | flag | off | also write research/runs/\<id\>.toml (scenario, patches, counts, the CSV's hash) for a claim to cite |
+| `--library-state LIBRARY_STATE` | text | none | with --run-record: the state library id the run started from, or unknown |
+| `--run-name RUN_NAME` | text | none | with --run-record: the run's name in its id (default: the scenario's) |
+| `--pcsx2-dir PCSX2_DIR` | path | none | the portable PCSX2 folder; default: pcsx2_dir |
+| `--iso ISO` | path | none | the disc image (or a folder with one); default: game_dir |
+| `--scratch SCRATCH` | path | none | where state copies and the disc link go; default: scratch_dir |
+
 ### `trace coney` {#trace-coney-usage}
 
 Play a scenario on Coney headless and write its --trace.
@@ -164,7 +191,7 @@ coney-tools trace diff ORIGINAL CONEY [--scenario SCENARIO] [--columns COLUMN [C
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `ORIGINAL` | path | required | the original's trace (pcsx2 record) |
+| `ORIGINAL` | path | required | the original's trace (trace original) |
 | `CONEY` | path | required | Coney's trace (coney --trace, or trace coney) |
 | `--scenario SCENARIO` | path | none | take the columns, tolerances, start and frame from a scenario |
 | `--columns COLUMN [COLUMN ...]` | text | none | compare these (default: every shared one) |
@@ -199,12 +226,12 @@ coney-tools trace fight-report [TRACES ...] [--original TRACE [TRACE ...]] [--co
 | `--original-gangs ORIGINAL_GANGS` | text | none | the original's sides' gang ids in the order g0,g1,... |
 | `--coney-gangs CONEY_GANGS` | text | none | Coney's sides' gang ids in the order g0,g1,... |
 
-### `trace mission` {#trace-mission-usage}
+### `trace events` {#trace-events-usage}
 
 Play a mission scenario's course on one game; write its event log.
 
 ```text
-coney-tools trace mission SCENARIO --side SIDE --out OUT [--coney CONEY] [--disc DISC] [--state STATE] [--agent AGENT]
+coney-tools trace events SCENARIO --side SIDE --out OUT [--coney CONEY] [--disc DISC] [--state STATE] [--agent AGENT]
     [--updates UPDATES] [--follow FOLLOW] [--follow-from EVENT] [--pcsx2-dir PCSX2_DIR] [--iso ISO] [--scratch SCRATCH]
 ```
 
@@ -235,7 +262,7 @@ coney-tools trace events-diff ORIGINAL CONEY [--rules RULES] [--kinds KIND [KIND
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `ORIGINAL` | path | required | the original's event log (trace mission --side original) |
+| `ORIGINAL` | path | required | the original's event log (trace events --side original) |
 | `CONEY` | path | required | Coney's event log (coney --event-log, or trace mission) |
 | `--rules RULES` | path | none | the rules file; default: research/traces/events.toml |
 | `--kinds KIND [KIND ...]` | text | none | compare these kinds (default: the rules' list) |

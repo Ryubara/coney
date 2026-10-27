@@ -148,6 +148,46 @@ Exit codes: 0 the message passes, 1 it is refused, 2 the file cannot be read or 
 
 Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
 
+### `pr check-title` {#pr-check-title-usage}
+
+Check a commit or pull request title against the commit title rules.
+
+```text
+coney-tools pr check-title FILE
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `FILE` | text | required | a file whose first line (not blank, not #) is the title; - for stdin |
+
+### `pr check-docs` {#pr-check-docs-usage}
+
+Check that a pull request which changes code also changes the docs (changed paths on stdin).
+
+```text
+coney-tools pr check-docs [--body BODY]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--body BODY` | text | none | a file holding the pull request description (for `Docs: none`) |
+
+### `pr check-body` {#pr-check-body-usage}
+
+Check a pull request description against the template: sections, summary, AI use.
+
+```text
+coney-tools pr check-body [--body BODY] [--title TITLE] [--worktree WORKTREE] [--base BASE] [--local-images]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--body BODY` | text | none | a file holding the pull request description; - or omitted reads stdin |
+| `--title TITLE` | text | none | the pull request's title: a title area a player sees (gameplay, graphics, audio) then needs the Testing section's `Runtime:` line, as in CI; without it that rule is not checked |
+| `--worktree WORKTREE` | path | none | the branch's worktree: also require the Model line to name every model its commits credit in a Co-Authored-By trailer (what `legacy check-pr-review` does) |
+| `--base BASE` | text | `origin/main` | what the branch is compared with, with --worktree (default: origin/main) |
+| `--local-images` | flag | off | accept an image that points at a local file, which `gh pr create --attach` uploads |
+
 ### `pr verify` {#pr-verify-usage}
 
 Steps 1-4 of a release, read only: the stamp log, Check, the compared functions and Review hold for this change
@@ -237,4 +277,21 @@ coney-tools pr check-commit FILE [--model MODEL]
 | --- | --- | --- | --- |
 | `FILE` | text | required | the commit message file, as git passes it to the commit-msg hook |
 | `--model MODEL` | text | none | the id of the model the committing agent runs on (claude-sonnet-5-5): the Co-Authored-By trailer must name it (default: the model in the identity file the Claude Code hooks wrote for this command, if there is one; typed variables are not trusted) |
+
+### `pr list-stuck` {#pr-list-stuck-usage}
+
+List the open pull requests that are stuck (failed required check, conflict, stuck CI, no auto-merge).
+
+```text
+coney-tools pr list-stuck [--json] [--pending-hours H] [--verbose] [--labels] [--rerun] [--apply]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--json` | flag | off | print the report as JSON instead of text |
+| `--pending-hours H` | number | none | hours a required check may be pending (default: hygiene.thresholds.pr_pending_hours) |
+| `--verbose` | flag | off | also show drafts, stacked pull requests and unknown mergeability |
+| `--labels` | flag | off | also list the labels to add to or remove from the open pull requests (hygiene.pr_health.labels) |
+| `--rerun` | flag | off | also list the failed required checks that are stale (text fixed since, runner lost) and would be rerun |
+| `--apply` | flag | off | with --labels: make those label changes through gh; with --rerun: really rerun the checks (gh run rerun) |
 <!-- command-reference:end -->

@@ -15,7 +15,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-from coney_tools import ghidra_names, ghidra_setup, workspace_fetch
+from coney_tools import ghidra_names, ghidra_setup, progress_cli, workspace_fetch
 from coney_tools.build_cli import scratch_root
 from coney_tools.config import ConfigError, find_repo_root, load_config, local_config_file, workspace_folder
 from coney_tools.disc import NTSC_U_SHA1, Disc
@@ -29,7 +29,7 @@ SERVER_URL = "http://127.0.0.1:8090"
 
 
 def add_parser(groups: Any) -> None:
-    """Register `coney-tools ghidra setup` and `ghidra import-names`."""
+    """Register `coney-tools ghidra setup`, `ghidra import-names` and `ghidra export-names`."""
     group = groups.add_parser("ghidra", help="your own Ghidra project of SLUS_212.15 (docs/guides/ghidra.md)")
     commands = group.add_subparsers(dest="ghidra_command", required=True)
     setup = commands.add_parser(
@@ -45,6 +45,11 @@ def add_parser(groups: Any) -> None:
     )
     import_names.add_argument("--program", default=PROGRAM, help=f"the program in the project (default {PROGRAM})")
     import_names.add_argument("--listing", type=Path, help=f"the names listing (default {LISTING_FILE.as_posix()})")
+    export_names = commands.add_parser(
+        "export-names", help="re-export docs/progress/ghidra-functions.tsv from a running ghidra-mcp (read only)"
+    )
+    export_names.add_argument("--url", default=None, help="the ghidra-mcp server (default http://127.0.0.1:8090)")
+    export_names.add_argument("--check", action="store_true", help="change nothing; exit 1 when the listing is stale")
     for command in (setup, import_names):
         command.add_argument(
             "--project-dir", type=Path, help="the folder holding the project (default: ghidra_projects)"
@@ -102,7 +107,10 @@ def _listing(root: Path, given: Path | None) -> list[ListedFunction]:
 
 
 def run(args: argparse.Namespace) -> int:
-    """Dispatch `ghidra setup` or `ghidra import-names`."""
+    """Dispatch `ghidra setup`, `ghidra import-names` or `ghidra export-names`."""
+    if args.ghidra_command == "export-names":
+        # The other half of import-names: it reads a running ghidra-mcp, and needs no project or JDK of its own.
+        return progress_cli.run_ghidra(args.url, args.check)
     root = find_repo_root(Path.cwd())
     setup = _setup_paths(root, args)
     listing = _listing(root, getattr(args, "listing", None))

@@ -72,12 +72,27 @@ TEMPORARY_KEEP_SECONDS = 3600.0
 REPLACE_ATTEMPTS = 6
 
 _AGENT_ID = r"[A-Za-z0-9._-]{1,64}"
-#: The `coney-tools pcsx2` commands that run under the caller's own claim (making one when it holds none), so their
-#: `--agent` names the caller. `release`, `status`, `keys` and the rest can name anyone and bind nobody.
-CLAIMING_COMMANDS = ("claim", "launch", "record", "clip", "mission", "recipe")
-#: A `coney-tools pcsx2 <claiming command>` invocation, up to the end of the line or the next shell separator.
+#: The coney-tools commands that run under the caller's own claim (making one when it holds none), so their `--agent`
+#: names the caller. `unclaim`, `status`, `send-keys` and the rest can name anyone and bind nobody. The last four are
+#: the old names of `trace original`, `clips record`, `pcsx2 recipes` and `trace events` (coney_tools.renames),
+#: matched until the cutover.
+CLAIMING_COMMANDS = (
+    "pcsx2 claim",
+    "pcsx2 launch",
+    "pcsx2 recipes",
+    "trace original",
+    "trace events",
+    "clips record",
+    "pcsx2 record",
+    "pcsx2 clip",
+    "pcsx2 recipe",
+    "trace mission",
+)
+#: A `coney-tools <claiming command>` invocation, up to the end of the line or the next shell separator.
 _PCSX2_COMMAND = re.compile(
-    r"coney-tools(?:\.exe)?[\"']?\s+pcsx2\s+(?:" + "|".join(CLAIMING_COMMANDS) + r")(?=\s|$)(?P<rest>[^\n;&|]*)"
+    r"coney-tools(?:\.exe)?[\"']?\s+(?:"
+    + "|".join(r"\s+".join(command.split()) for command in CLAIMING_COMMANDS)
+    + r")(?=\s|$)(?P<rest>[^\n;&|]*)"
 )
 #: `--agent ID`, `--agent=ID`, with the id bare or in single or double quotes.
 _AGENT_FLAG = re.compile(rf"(?:^|\s)--agent(?:=|\s+)(?P<q>['\"]?)(?P<id>{_AGENT_ID})(?P=q)(?=\s|$)")

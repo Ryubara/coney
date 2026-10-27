@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""`coney-tools original ...`: study an original function, compare it with Coney's, record fails-first runs.
+"""`coney-tools orig study|compare|verify|fails-first`: study an original function, compare it with Coney's, record
+fails-first runs.
 
-The stage commands of docs/guides/stamps.md. Names are placeholders for the renaming pass: each is one parser entry here
+The stage commands of docs/guides/stamps.md, registered in the `orig` group (orig_cli): each is one parser entry here
 and one function in its module. Exit codes: 0 done, 1 refused (the output says what to fix), 2 it cannot start (a usage
 or configuration error), 3 no ghidra-mcp answers.
 """
@@ -17,14 +18,12 @@ from coney_tools.config import find_repo_root
 from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.progress_research import DEFAULT_GHIDRA_URL, http_fetch
 
+#: The commands this module registers in the `orig` group and runs.
+COMMANDS = ("study", "compare", "verify", "fails-first")
 
-def add_parser(groups: Any) -> None:
-    """Register `coney-tools original study|compare|verify|fails-first`."""
-    group = groups.add_parser(
-        "original", help="study an original function, compare it with Coney's, record fails-first"
-    )
-    commands = group.add_subparsers(dest="command", required=True)
 
+def add_commands(commands: Any) -> None:
+    """Register `coney-tools orig study|compare|verify|fails-first` in the `orig` group's `commands`."""
     study = commands.add_parser(
         "study",
         help="save an original function's decompile and neighbours from Ghidra, number its lines, cut its pieces",
@@ -112,12 +111,12 @@ def _conventions(root: Path) -> Conventions:
 
 
 def run(args: argparse.Namespace) -> int:
-    """Run an `original` command."""
+    """Run `orig study`, `compare`, `verify` or `fails-first`."""
     root = find_repo_root(Path.cwd())
     conventions = _conventions(root)
     task = unit.task_name(root, args.task)
     folder = unit.Unit.of(root, task)
-    who = stamps.who_from_env(f"coney-tools original {args.command}")
+    who = stamps.who_from_env(f"coney-tools orig {args.command}")
     if args.command == "fails-first":
         return _fails_first(args, root, conventions, folder, who)
     address = unit.address(args.address)
@@ -128,7 +127,7 @@ def run(args: argparse.Namespace) -> int:
             return _verify(args, folder, address)
         return _compare(args, root, conventions, folder, address, who)
     except orig_study.GhidraDown as error:
-        print(f"original {args.command}: {error}")
+        print(f"orig {args.command}: {error}")
         return 3
 
 

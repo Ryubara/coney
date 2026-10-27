@@ -149,4 +149,29 @@ coney-tools ci tidy-run --plan FILE --build-dir DIR [--clang-tidy PROGRAM] [--jo
 | `--sarif FILE` | text | none | write the findings as SARIF (also when there are none) |
 | `--summary FILE` | text | none | append a Markdown summary to this file |
 | `--annotate` | flag | off | also print ::error workflow commands (a fork's token cannot upload SARIF) |
+
+### `ci run` {#ci-run-usage}
+
+Pre-commit, docs, Python and repo checks on what changed (clang-tidy runs in CI).
+
+```text
+coney-tools ci run [--base BASE] [--only ONLY] [--skip SKIP] [--detach]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--base BASE` | text | `origin/main` | the branch the change is measured from |
+| `--only ONLY` | choice | none | run only this step (repeatable). One of `repo`, `orig`, `pre-commit`, `docs`, `python`. |
+| `--skip SKIP` | choice | none | leave this step out (repeatable). One of `repo`, `orig`, `pre-commit`, `docs`, `python`. |
+| `--detach` | flag | off | run in the background, apart from this shell, and return at once; `ci result` shows the outcome |
+
+### `ci result` {#ci-result-usage}
+
+The output and outcome of the worktree's last `ci run --detach`.
+
+```text
+coney-tools ci result
+```
+
+Takes no parameters.
 <!-- command-reference:end -->

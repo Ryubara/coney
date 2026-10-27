@@ -48,9 +48,9 @@ def _scanner(fetch: Fetch, only: int | None = None) -> Callable[[Snapshot, Conve
 
 
 def add_hygiene_parser(repo_commands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
-    """Add `repo hygiene` and its options to the `repo` command group."""
+    """Add `repo post-findings` and its options to the `repo` command group."""
     hygiene = repo_commands.add_parser(
-        "hygiene",
+        "post-findings",
         help="write the audit's findings as comments on issues and pull requests (what the hygiene workflow runs)",
         description=(
             "Audits GitHub and keeps one comment per item with findings, and one report comment on the report issue, "

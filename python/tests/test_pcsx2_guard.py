@@ -140,11 +140,11 @@ def test_check_ports_succeeds_for_a_held_copy_and_refuses_another_agents(
         pcsx2_claims_cli.run_check_ports("bob", 21513, None)
 
 
-def test_check_ports_is_a_command() -> None:
+def test_check_claim_is_a_command() -> None:
     from coney_tools.cli import _build_parser
 
-    args = _build_parser().parse_args(["pcsx2", "check-ports", "--agent", "a", "--debug-port", "21513"])
-    assert (args.command, args.agent, args.debug_port, args.pine_port) == ("check-ports", "a", 21513, None)
+    args = _build_parser().parse_args(["pcsx2", "check-claim", "--agent", "a", "--debug-port", "21513"])
+    assert (args.command, args.agent, args.debug_port, args.pine_port) == ("check-claim", "a", 21513, None)
 
 
 # -- DebugClient.claimed -------------------------------------------------------------------------------------------
@@ -238,6 +238,13 @@ def test_a_debug_client_of_a_copy_without_a_debug_server_says_so(tmp_path: Path,
         ("coney-tools pcsx2 release --agent other", []),
         ("coney-tools pcsx2 keys --agent other --copy pcsx2 space", []),
         ("coney-tools pcsx2 recipe --agent alice list", ["alice"]),
+        # The new names of the claiming commands outside the pcsx2 group, and of the recipes (coney_tools.renames).
+        ("coney-tools trace original s.toml --out o.csv --agent alice", ["alice"]),
+        ("coney-tools trace events --side original s.toml --out o --agent alice", ["alice"]),
+        ("coney-tools clips record x.p2s --out c.mp4 --agent alice", ["alice"]),
+        ("coney-tools pcsx2 recipes run find --copy pcsx2 --agent alice", ["alice"]),
+        ("coney-tools pcsx2 unclaim --agent other", []),
+        ("coney-tools trace coney s.toml --out o.csv --agent alice", []),
     ],
 )
 def test_the_agent_ids_of_a_pcsx2_command_are_read_from_its_agent_flags(command: str, names: list[str]) -> None:

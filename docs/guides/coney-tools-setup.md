@@ -279,6 +279,19 @@ coney-tools ghidra import-names [--program PROGRAM] [--listing LISTING] [--proje
 | `--project-name PROJECT_NAME` | text | `warriors` | the project's name (default warriors) |
 | `--overwrite` | flag | off | also replace names you gave by hand |
 | `--dry-run` | flag | off | print what would happen; save nothing |
+
+### `ghidra export-names` {#ghidra-export-names-usage}
+
+Re-export docs/progress/ghidra-functions.tsv from a running ghidra-mcp (read only).
+
+```text
+coney-tools ghidra export-names [--url URL] [--check]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--url URL` | text | none | the ghidra-mcp server (default `http://127.0.0.1:8090`) |
+| `--check` | flag | off | change nothing; exit 1 when the listing is stale |
 <!-- command-reference:end -->
 
 ## mcp {#mcp}
@@ -390,7 +403,7 @@ runs (a dry run unless --apply).
 
 ```text
 coney-tools workspace clean [--workspace WORKSPACE] [--apply] [--build-hours BUILD_HOURS] [--min-gb MIN_GB]
-    [--margin-gb MARGIN_GB] [--worktree-hours WORKTREE_HOURS] [--fetch] [--shell-hours SHELL_HOURS]
+    [--margin-gb MARGIN_GB] [--worktree-hours WORKTREE_HOURS] [--fetch] [--stale-wait-hours SHELL_HOURS]
     [--log-idle-hours LOG_IDLE_HOURS]
 ```
 
@@ -403,15 +416,15 @@ coney-tools workspace clean [--workspace WORKSPACE] [--apply] [--build-hours BUI
 | `--margin-gb MARGIN_GB` | number | none | ... until this much more than --min-gb is free (default: workspace.disk_margin_gb) |
 | `--worktree-hours WORKTREE_HOURS` | number | `1.0` | remove merged worktrees only when untouched this many hours (default: 1) |
 | `--fetch` | flag | off | git fetch origin main first, so merges are current |
-| `--shell-hours SHELL_HOURS` | number | `3.0` | a shell waiting in a loop is stale only when older than this many hours (default: 3) |
+| `--stale-wait-hours SHELL_HOURS` | number | `3.0` | a shell waiting in a loop is stale only when older than this many hours (default: 3) |
 | `--log-idle-hours LOG_IDLE_HOURS` | number | `1.0` | ... and every file its loop reads is unchanged this many hours (default: 1) |
 
-### `workspace disk` {#workspace-disk-usage}
+### `workspace check-space` {#workspace-check-space-usage}
 
 Print the free space of the workspace drive; exit 1 below --min-gb.
 
 ```text
-coney-tools workspace disk [--workspace WORKSPACE] [--min-gb MIN_GB]
+coney-tools workspace check-space [--workspace WORKSPACE] [--min-gb MIN_GB]
 ```
 
 | Parameter | Type | Default | Meaning |

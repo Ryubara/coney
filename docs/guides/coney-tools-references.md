@@ -153,12 +153,12 @@ Delete the old file afterwards. The command is to be removed once no branch carr
 
 Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
 
-### `progress show` {#progress-show-usage}
+### `progress summary` {#progress-summary-usage}
 
 Print how much is reimplemented and researched.
 
 ```text
-coney-tools progress show [--json]
+coney-tools progress summary [--json]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -191,12 +191,12 @@ coney-tools progress render OUT_DIR [--no-history]
 | `OUT_DIR` | path | required | a folder to write progress/ (the pages, badges and pictures) to |
 | `--no-history` | flag | off | skip rebuilding the daily history from git (only today's point) |
 
-### `progress sizes` {#progress-sizes-usage}
+### `progress check-sizes` {#progress-check-sizes-usage}
 
 Check the reimplemented functions' sizes against your own disc.
 
 ```text
-coney-tools progress sizes [DISC]
+coney-tools progress check-sizes [DISC]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -216,19 +216,6 @@ coney-tools progress import-functions [FILE] [--dry-run] [--all]
 | `[FILE]` | path | none | the old list (default docs/progress/functions.toml) |
 | `--dry-run` | flag | off | write nothing; print what would be done |
 | `--all` | flag | off | list every row of the report, not the first few |
-
-### `progress ghidra` {#progress-ghidra-usage}
-
-Re-export docs/progress/ghidra-functions.tsv from a running ghidra-mcp (read only).
-
-```text
-coney-tools progress ghidra [--url URL] [--check]
-```
-
-| Parameter | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `--url URL` | text | none | the ghidra-mcp server (default `http://127.0.0.1:8090`) |
-| `--check` | flag | off | change nothing; exit 1 when the listing is stale |
 
 ### `progress backlog` {#progress-backlog-usage}
 
@@ -315,82 +302,73 @@ uv run --project python coney-tools natives stats
 Prints the counts by category, evidence level, detail and Coney status, and how many bindings the game's scripts
 call.
 
-<!-- command-reference:begin natives -->
-## Parameters of `natives` {#natives-parameters}
+<!-- command-reference:begin bindings -->
+## Parameters of `bindings` {#bindings-parameters}
 
 Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
 
-### `natives render` {#natives-render-usage}
+### `bindings render` {#bindings-render-usage}
 
 Check the YAML and regenerate docs/references/bindings/.
 
 ```text
-coney-tools natives render [--check]
+coney-tools bindings render [--check]
 ```
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `--check` | flag | off | change nothing; exit 1 when a page is stale |
 
-### `natives coney` {#natives-coney-usage}
+### `bindings sync-coney` {#bindings-sync-coney-usage}
 
 Set each entry's coney status from src/scripting/script_bindings.cpp.
 
 ```text
-coney-tools natives coney [--check]
+coney-tools bindings sync-coney [--check]
 ```
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `--check` | flag | off | change nothing; exit 1 when a status is stale |
 
-### `natives cpp` {#natives-cpp-usage}
+### `bindings render-cpp` {#bindings-render-cpp-usage}
 
 Write the debug menus' C++ signature table, src/debug/native_signatures.cpp.
 
 ```text
-coney-tools natives cpp [--check]
+coney-tools bindings render-cpp [--check]
 ```
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `--check` | flag | off | change nothing; exit 1 when the table is stale |
 
-### `natives stats` {#natives-stats-usage}
+### `bindings stats` {#bindings-stats-usage}
 
 Print the counts by category, evidence level and usage.
 
 ```text
-coney-tools natives stats
+coney-tools bindings stats
 ```
 
 Takes no parameters.
 
-### `natives mission1` {#natives-mission1-usage}
+### `bindings scan-usage` {#bindings-scan-usage-usage}
 
-Set usage.mission1 from the first mission's scripts on your disc.
+Set the usage fields from the scripts on your disc.
+
+Exactly one of `--first-mission`, `--story` is required.
 
 ```text
-coney-tools natives mission1 [DISC] [--check]
+coney-tools bindings scan-usage [DISC] (--first-mission | --story) [--check]
 ```
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `[DISC]` | text | none | a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml |
-| `--check` | flag | off | change nothing; exit 1 when a marker is stale |
-
-### `natives missions` {#natives-missions-usage}
-
-Set usage.levels from the scripts of the story's later levels on your disc.
-
-```text
-coney-tools natives missions [DISC] [--check]
-```
-
-| Parameter | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `[DISC]` | text | none | a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml |
-| `--check` | flag | off | change nothing; exit 1 when a list is stale |
+| `--first-mission` | flag | off | set usage.mission1 from the first mission's scripts. Not with `--story`. |
+| `--story` | flag | off | set usage.levels from the story's later levels' scripts. Not with `--first-mission`. |
+| `--check` | flag | off | change nothing; exit 1 when a field is stale |
 <!-- command-reference:end -->
 
 ## refs {#refs}
@@ -447,12 +425,12 @@ coney-tools refs render [--check]
 | --- | --- | --- | --- |
 | `--check` | flag | off | change nothing; exit 1 when a page is stale |
 
-### `refs extract` {#refs-extract-usage}
+### `refs refresh` {#refs-refresh-usage}
 
 Refresh the lists from your own disc, keeping hand-written fields.
 
 ```text
-coney-tools refs extract [DISC] [--only LIST [LIST ...]] [--names NAMES]
+coney-tools refs refresh [DISC] [--only LIST [LIST ...]] [--names NAMES]
 ```
 
 | Parameter | Type | Default | Meaning |

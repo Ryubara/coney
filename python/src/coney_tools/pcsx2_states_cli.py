@@ -52,9 +52,12 @@ _TAG = re.compile(r"^[a-z0-9][a-z0-9-]{0,31}$")
 _DESCRIPTION_WIDTH = 78
 
 
-def add_commands(commands: Any) -> None:
-    """Register `pcsx2 states ...` under the pcsx2 group's subcommands."""
-    states = commands.add_parser("states", help="the shared library of PCSX2 save states: list, add, use, verify")
+def add_commands(commands: Any) -> Any:
+    """Register `pcsx2 states ...` under the pcsx2 group's subcommands; return the states' own subcommands, to which
+    the caller adds `patch` and `repack` (the state-file tools that need no library)."""
+    states = commands.add_parser(
+        "states", help="save states: the shared library (list, add, hand-out, verify) and patched or repacked copies"
+    )
     sub = states.add_subparsers(dest="states_command", required=True)
     list_ = sub.add_parser("list", help="list the states, filtered by level or tag")
     list_.add_argument("--level", help="only this level (level99)")
@@ -80,7 +83,7 @@ def add_commands(commands: Any) -> None:
     add.add_argument("--agent", help="your id (must hold the claim on --copy)")
     add.add_argument("--no-read", action="store_true", help="read nothing from the state: give everything by flags")
     add.add_argument("--pcsx2-dir", type=Path, help="the portable PCSX2 folder for slot:N; default: pcsx2_dir")
-    use = sub.add_parser("use", help="hand out a copy of a state to a PCSX2 copy you hold a claim on")
+    use = sub.add_parser("hand-out", help="hand out a copy of a state to a PCSX2 copy you hold a claim on")
     use.add_argument("id", help="the state's id (pcsx2 states list shows them)")
     use.add_argument("--copy", required=True, help="the claimed copy (pcsx2, pcsx2-b, ...)")
     use.add_argument("--agent", required=True, help="your id (must hold the claim)")
@@ -90,6 +93,7 @@ def add_commands(commands: Any) -> None:
     verify.add_argument("ids", nargs="*", metavar="ID", help="only these (default: every state)")
     render = sub.add_parser("render", help="write the library's list into docs/guides/pcsx2-states.md")
     render.add_argument("--out", type=Path, help="another page with the marked block (default: the guide)")
+    return sub
 
 
 def run_command(args: Any) -> int:
@@ -102,7 +106,7 @@ def run_command(args: Any) -> int:
         return run_show(library, args.id, args.json)
     if command == "add":
         return run_add(library, args)
-    if command == "use":
+    if command == "hand-out":
         return run_use(library, args.id, args.copy, args.agent, args.patch, args.launch)
     if command == "verify":
         return run_verify(library, args.ids)

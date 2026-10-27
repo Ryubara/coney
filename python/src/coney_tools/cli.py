@@ -35,7 +35,6 @@ from coney_tools import (
     movies_cli,
     natives_cli,
     orig_cli,
-    original_cli,
     pcsx2_claims_cli,
     pcsx2_cli,
     pcsx2_clip,
@@ -49,6 +48,7 @@ from coney_tools import (
     recipes_cli,
     recordings_make,
     refs_cli,
+    renames,
     research_cli,
     run_records_cli,
     stale_processes,
@@ -286,7 +286,8 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     clean.add_argument("--fetch", action="store_true", help="git fetch origin main first, so merges are current")
     clean.add_argument(
-        "--shell-hours",
+        "--stale-wait-hours",
+        dest="shell_hours",
         type=float,
         default=stale_processes.DEFAULT_SHELL_HOURS,
         help="a shell waiting in a loop is stale only when older than this many hours (default: %(default)g)",
@@ -298,7 +299,7 @@ def _build_parser() -> argparse.ArgumentParser:
         help="... and every file its loop reads is unchanged this many hours (default: %(default)g)",
     )
     disk = workspace_commands.add_parser(
-        "disk", help="print the free space of the workspace drive; exit 1 below --min-gb"
+        "check-space", help="print the free space of the workspace drive; exit 1 below --min-gb"
     )
     disk.add_argument("--workspace", type=Path, help="the workspace folder (default: found from the checkout)")
     disk.add_argument(
@@ -315,18 +316,22 @@ def _build_parser() -> argparse.ArgumentParser:
     serve.add_argument(
         "--copy", help="pcsx2 only: the PCSX2 copy (pcsx2, pcsx2-b, ...) whose ports pcsx2_connect defaults to"
     )
-    repo = groups.add_parser("repo", help="repository checks")
+    repo = groups.add_parser("repo", help="the repository's conventions: check, render, audit, labels and findings")
     repo_commands = repo.add_subparsers(dest="command", required=True)
-    repo_commands.add_parser("check", help="check .github/conventions.yml and the agent pointer files")
-    check_title_parser = repo_commands.add_parser(
+    repo_commands.add_parser("check-conventions", help="check .github/conventions.yml and the agent pointer files")
+    pr = groups.add_parser(
+        "pr", help="pull request and commit checks; verify, text and open a release; list the stuck pull requests"
+    )
+    pr_commands = pr.add_subparsers(dest="command", required=True)
+    check_title_parser = pr_commands.add_parser(
         "check-title", help="check a commit or pull request title against the commit title rules"
     )
     check_title_parser.add_argument("file", help="a file whose first line (not blank, not #) is the title; - for stdin")
-    check_docs_parser = repo_commands.add_parser(
+    check_docs_parser = pr_commands.add_parser(
         "check-docs", help="check that a pull request which changes code also changes the docs (changed paths on stdin)"
     )
     check_docs_parser.add_argument("--body", help="a file holding the pull request description (for `Docs: none`)")
-    check_body_parser = repo_commands.add_parser(
+    check_body_parser = pr_commands.add_parser(
         "check-body", help="check a pull request description against the template: sections, summary, AI use"
     )
     check_body_parser.add_argument(
@@ -341,7 +346,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--worktree",
         type=Path,
         help="the branch's worktree: also require the Model line to name every model its commits credit in a "
-        "Co-Authored-By trailer (what `repo check-review` does)",
+        "Co-Authored-By trailer (what `legacy check-pr-review` does)",
     )
     check_body_parser.add_argument(
         "--base", default=DEFAULT_BASE, help="what the branch is compared with, with --worktree (default: %(default)s)"
@@ -358,8 +363,6 @@ def _build_parser() -> argparse.ArgumentParser:
     render_parser.add_argument(
         "--check", action="store_true", help="change nothing; exit 1 when a block is out of date"
     )
-    pr = groups.add_parser("pr", help="pull request and commit checks; verify and text before a release")
-    pr_commands = pr.add_subparsers(dest="command", required=True)
     pr_cli.add_pr_commands(pr_commands)
     pr_open.add_parser(pr_commands)
     pr_hold.add_parser(pr_commands)
@@ -378,14 +381,16 @@ def _build_parser() -> argparse.ArgumentParser:
     issue_cli.add_issue_parser(groups)
     issue_claim_cli.add_claim_parser(groups)
     task_cli.add_task_parser(groups)
-    ci_cli.add_ci_parser(groups)
-    add_pr_health_parser(repo_commands)
-    add_review_parsers(repo_commands)
+    _add_gate_commands(ci_cli.add_ci_parser(groups))
+    add_pr_health_parser(pr_commands)
+    legacy = groups.add_parser(
+        "legacy", help="the release checks of the old workflow, until `task review` and `pr open` replace them"
+    )
+    add_review_parsers(repo_commands, legacy.add_subparsers(dest="command", required=True))
     add_hygiene_parser(repo_commands)
-    _add_check_commands(groups)
     _add_docs_commands(groups)
     labels_parser = repo_commands.add_parser(
-        "labels",
+        "sync-labels",
         help="print the gh commands for the issue labels of .github/conventions.yml, or sync them with --apply",
     )
     labels_parser.add_argument("--apply", action="store_true", help="create or update the labels through gh now")
@@ -397,10 +402,9 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_xbox_commands(groups)
     _add_progress_commands(groups)
     orig_cli.add_parser(groups)
-    original_cli.add_parser(groups)
     stamp_cli.add_parser(groups)
     lua_cli.add_parser(groups)
-    _add_natives_commands(groups)
+    _add_bindings_commands(groups)
     _add_refs_commands(groups)
     _add_missions_commands(groups)
     research_cli.add_parser(groups)
@@ -448,12 +452,10 @@ def _add_docs_commands(groups: Any) -> None:
     legacy.add_argument("--base", default="origin/main", help="with --check: the branch the file may not grow since")
 
 
-def _add_check_commands(groups: Any) -> None:
-    """Register `coney-tools check ...`."""
-    group = groups.add_parser("check", help="the local gate: what CI would fail on, for the files a change touched")
-    commands = group.add_subparsers(dest="command", required=True)
+def _add_gate_commands(commands: Any) -> None:
+    """Register the local gate in the `ci` group: `coney-tools ci run` and `ci result`."""
     changed = commands.add_parser(
-        "changed",
+        "run",
         help="pre-commit, docs, Python and repo checks on what changed (clang-tidy runs in CI)",
     )
     changed.add_argument("--base", default="origin/main", help="the branch the change is measured from")
@@ -462,11 +464,11 @@ def _add_check_commands(groups: Any) -> None:
     changed.add_argument(
         "--detach",
         action="store_true",
-        help="run in the background, apart from this shell, and return at once; `check result` shows the outcome",
+        help="run in the background, apart from this shell, and return at once; `ci result` shows the outcome",
     )
     # Internal: where a --detach run's child records its outcome.
     changed.add_argument("--result-file", type=Path, help=argparse.SUPPRESS)
-    commands.add_parser("result", help="the output and outcome of the worktree's last `check changed --detach`")
+    commands.add_parser("result", help="the output and outcome of the worktree's last `ci run --detach`")
 
 
 def _add_wad_commands(groups: Any) -> None:
@@ -485,9 +487,11 @@ def _add_wad_commands(groups: Any) -> None:
     extract.add_argument("paths", nargs="+", metavar="[DISC] OUT_DIR", help=f"[DISC] ({disc_help}) and OUT_DIR")
     extract.add_argument("--names", type=Path, help=names_help)
     extract.add_argument("--only", nargs="+", metavar="HASH_OR_NAME", help="extract just these entries")
-    names = commands.add_parser("names", help="recover names by hashing strings found on the disc")
+    names = commands.add_parser("recover-names", help="recover names by hashing strings found on the disc")
     names.add_argument("paths", nargs="+", metavar="[DISC] OUT_FILE", help=f"[DISC] ({disc_help}) and OUT_FILE")
-    scene_check = commands.add_parser("scenes", help="parse every scene record of scene_list.cnk; counts and hashes")
+    scene_check = commands.add_parser(
+        "scene-info", help="parse every scene record of scene_list.cnk; counts and hashes"
+    )
     scene_check.add_argument("disc", nargs="?", help=disc_help)
 
 
@@ -506,7 +510,8 @@ def _add_extract_command(groups: Any) -> None:
     extract.add_argument("--verify", action="store_true", help="compare the file counts with the expected ones")
     extract.add_argument("--jobs", type=int, metavar="N", help="worker processes for decoding audio (default: up to 4)")
     extract.add_argument(
-        "--xbox",
+        "--xbox-disc",
+        dest="xbox",
         type=Path,
         metavar="XBOX_DISC",
         help="your Xbox disc (image, XISO or folder): its larger textures and HD movies replace the PS2 ones",
@@ -515,7 +520,8 @@ def _add_extract_command(groups: Any) -> None:
         "--xbox-index",
         type=Path,
         metavar="FILE",
-        help="the Xbox resource index (`xbox index`): read when it fits the disc, else built and written there",
+        help="the Xbox resource index (`xbox write-resource-index`): read when it fits the disc, else built and "
+        "written there",
     )
     extract.add_argument(
         "--xbox-texture-map",
@@ -558,11 +564,11 @@ def _add_movies_commands(groups: Any) -> None:
 def _add_xbox_commands(groups: Any) -> None:
     """Register `coney-tools xbox ...`."""
     disc_help = "the Xbox disc: a full image, an XISO or an extracted folder"
-    names_help = "a names file, one name per line (made by `xbox names`, or a PS2 names file)"
+    names_help = "a names file, one name per line (made by `xbox match-names`, or a PS2 names file)"
     ps2_help = "also compare with the PS2 disc (a folder or .iso, as for the wad commands)"
     group = groups.add_parser("xbox", help="read the Xbox disc's XBoxWad.idx archive (an optional asset source)")
     commands = group.add_subparsers(dest="command", required=True)
-    files = commands.add_parser("files", help="every file on the disc with its size")
+    files = commands.add_parser("disc-files", help="every file on the disc with its size")
     files.add_argument("disc", help=disc_help)
     info = commands.add_parser("info", help="entries and bytes by volume and by kind")
     info.add_argument("disc", help=disc_help)
@@ -570,7 +576,7 @@ def _add_xbox_commands(groups: Any) -> None:
     listing = commands.add_parser("list", help="one line per entry: index, volume, offset, size, hash, name")
     listing.add_argument("disc", help=disc_help)
     listing.add_argument("--names", type=Path, help=names_help)
-    names = commands.add_parser("names", help="match candidate names against the index; write the matches")
+    names = commands.add_parser("match-names", help="match candidate names against the index; write the matches")
     names.add_argument("disc", help=disc_help)
     names.add_argument("out_file", type=Path, help="where to write the names (outside the repository)")
     names.add_argument("--candidates", type=Path, nargs="+", metavar="FILE", help="names files to try")
@@ -579,20 +585,22 @@ def _add_xbox_commands(groups: Any) -> None:
     extract.add_argument("out_dir", type=Path, help="the folder to write to")
     extract.add_argument("--names", type=Path, help=names_help)
     extract.add_argument("--only", nargs="+", metavar="HASH_OR_NAME", help="extract just these entries")
-    resources = commands.add_parser("resources", help="the resource index: counts and graphics-chunk kinds")
+    resources = commands.add_parser("resource-info", help="the resource index: counts and graphics-chunk kinds")
     resources.add_argument("disc", help=disc_help)
     resources.add_argument("--ps2", metavar="PS2_DISC", help=ps2_help)
-    index = commands.add_parser("index", help="write the resource index (xbox-resources.bin) to OUT_FILE")
+    index = commands.add_parser(
+        "write-resource-index", help="write the resource index (xbox-resources.bin) to OUT_FILE"
+    )
     index.add_argument("disc", help=disc_help)
     index.add_argument("out_file", type=Path, help="where to write it (outside the repository)")
     texture_map = commands.add_parser(
-        "texture-map", help="match every PS2 texture and write the texture map (xbox-textures.bin) to OUT_FILE"
+        "write-texture-map", help="match every PS2 texture and write the texture map (xbox-textures.bin) to OUT_FILE"
     )
     texture_map.add_argument("ps2_disc", metavar="PS2_DISC", help="the PS2 disc (a folder or .iso)")
     texture_map.add_argument("disc", help=disc_help)
     texture_map.add_argument("out_file", type=Path, help="where to write it (outside the repository)")
     texture_map.add_argument("--xbox-index", type=Path, metavar="FILE", help="the resource index, as for extract")
-    textures = commands.add_parser("textures", help="texture chunk counts by format, mip count and size")
+    textures = commands.add_parser("texture-info", help="texture chunk counts by format, mip count and size")
     textures.add_argument("disc", help=disc_help)
     textures.add_argument("--ps2", metavar="PS2_DISC", help=ps2_help)
 
@@ -601,7 +609,7 @@ def _add_progress_commands(groups: Any) -> None:
     """Register `coney-tools progress ...`."""
     tracker = groups.add_parser("progress", help="the progress tracker (docs/progress/, built into the docs site)")
     commands = tracker.add_subparsers(dest="command", required=True)
-    show = commands.add_parser("show", help="print how much is reimplemented and researched")
+    show = commands.add_parser("summary", help="print how much is reimplemented and researched")
     show.add_argument("--json", action="store_true", help="print everything as JSON")
     check = commands.add_parser(
         "check", help="check the tracker's inputs (the function database, @orig tags, ranges, roadmap)"
@@ -619,7 +627,7 @@ def _add_progress_commands(groups: Any) -> None:
     render.add_argument(
         "--no-history", action="store_true", help="skip rebuilding the daily history from git (only today's point)"
     )
-    sizes = commands.add_parser("sizes", help="check the reimplemented functions' sizes against your own disc")
+    sizes = commands.add_parser("check-sizes", help="check the reimplemented functions' sizes against your own disc")
     sizes.add_argument(
         "disc", nargs="?", help="a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml"
     )
@@ -632,38 +640,35 @@ def _add_progress_commands(groups: Any) -> None:
     )
     import_functions.add_argument("--dry-run", action="store_true", help="write nothing; print what would be done")
     import_functions.add_argument("--all", action="store_true", help="list every row of the report, not the first few")
-    ghidra = commands.add_parser(
-        "ghidra", help="re-export docs/progress/ghidra-functions.tsv from a running ghidra-mcp (read only)"
-    )
-    ghidra.add_argument("--url", default=None, help="the ghidra-mcp server (default http://127.0.0.1:8090)")
-    ghidra.add_argument("--check", action="store_true", help="change nothing; exit 1 when the listing is stale")
     backlog = commands.add_parser("backlog", help="write one Markdown file per subsystem of not-yet-understood code")
     backlog.add_argument("out_dir", type=Path, help="a folder outside the repository")
 
 
-def _add_natives_commands(groups: Any) -> None:
-    """Register `coney-tools natives ...`."""
-    group = groups.add_parser("natives", help="the script-binding masterlist (research/bindings/)")
+def _add_bindings_commands(groups: Any) -> None:
+    """Register `coney-tools bindings ...`."""
+    group = groups.add_parser("bindings", help="the script-binding masterlist (research/bindings/)")
     commands = group.add_subparsers(dest="command", required=True)
     render = commands.add_parser("render", help="check the YAML and regenerate docs/references/bindings/")
     render.add_argument("--check", action="store_true", help="change nothing; exit 1 when a page is stale")
-    coney = commands.add_parser("coney", help="set each entry's coney status from src/scripting/script_bindings.cpp")
+    coney = commands.add_parser(
+        "sync-coney", help="set each entry's coney status from src/scripting/script_bindings.cpp"
+    )
     coney.add_argument("--check", action="store_true", help="change nothing; exit 1 when a status is stale")
-    cpp = commands.add_parser("cpp", help="write the debug menus' C++ signature table, src/debug/native_signatures.cpp")
+    cpp = commands.add_parser(
+        "render-cpp", help="write the debug menus' C++ signature table, src/debug/native_signatures.cpp"
+    )
     cpp.add_argument("--check", action="store_true", help="change nothing; exit 1 when the table is stale")
     commands.add_parser("stats", help="print the counts by category, evidence level and usage")
-    mission = commands.add_parser("mission1", help="set usage.mission1 from the first mission's scripts on your disc")
-    mission.add_argument(
+    usage = commands.add_parser("scan-usage", help="set the usage fields from the scripts on your disc")
+    which = usage.add_mutually_exclusive_group(required=True)
+    which.add_argument(
+        "--first-mission", action="store_true", help="set usage.mission1 from the first mission's scripts"
+    )
+    which.add_argument("--story", action="store_true", help="set usage.levels from the story's later levels' scripts")
+    usage.add_argument(
         "disc", nargs="?", help="a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml"
     )
-    mission.add_argument("--check", action="store_true", help="change nothing; exit 1 when a marker is stale")
-    missions = commands.add_parser(
-        "missions", help="set usage.levels from the scripts of the story's later levels on your disc"
-    )
-    missions.add_argument(
-        "disc", nargs="?", help="a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml"
-    )
-    missions.add_argument("--check", action="store_true", help="change nothing; exit 1 when a list is stale")
+    usage.add_argument("--check", action="store_true", help="change nothing; exit 1 when a field is stale")
 
 
 def _add_refs_commands(groups: Any) -> None:
@@ -672,7 +677,7 @@ def _add_refs_commands(groups: Any) -> None:
     commands = group.add_subparsers(dest="command", required=True)
     render = commands.add_parser("render", help="check the lists and write the pages of docs/references/")
     render.add_argument("--check", action="store_true", help="change nothing; exit 1 when a page is stale")
-    extract = commands.add_parser("extract", help="refresh the lists from your own disc, keeping hand-written fields")
+    extract = commands.add_parser("refresh", help="refresh the lists from your own disc, keeping hand-written fields")
     extract.add_argument(
         "disc", nargs="?", help="a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml"
     )
@@ -698,13 +703,14 @@ def _add_pcsx2_flags(command: Any) -> None:
 
 
 def _add_claim_commands(commands: Any) -> None:
-    """Register the claim commands of `coney-tools pcsx2`: claim, release, status, keys, screenshot."""
+    """Register the claim commands of `coney-tools pcsx2`: claim, unclaim, status, check-claim, send-keys, screenshot,
+    setup-copies and recordings."""
     claim = commands.add_parser("claim", help="claim a free PCSX2 copy for an agent (every PCSX2 use starts here)")
     claim.add_argument("--agent", required=True, help="your id: letters, digits, '.', '_' and '-'")
     claim.add_argument("--copy", help="a copy by name (pcsx2, pcsx2-b, ...); default: the first free one")
     claim.add_argument("--json", action="store_true", help="print the claim as one JSON line")
     claim.add_argument("--max-age-hours", type=float, help="a claim with no process is stale after this (default 4)")
-    release = commands.add_parser("release", help="close the copy's PCSX2 and drop the claim")
+    release = commands.add_parser("unclaim", help="close the copy's PCSX2 and drop the claim")
     release.add_argument("--agent", required=True, help="your id")
     release.add_argument("--copy", help="one copy; default: all of the agent's")
     release.add_argument("--force", action="store_true", help="release another agent's claim")
@@ -712,12 +718,12 @@ def _add_claim_commands(commands: Any) -> None:
     status.add_argument("--json", action="store_true", help="print JSON instead of a table")
     status.add_argument("--max-age-hours", type=float, help="a claim with no process is stale after this (default 4)")
     check = commands.add_parser(
-        "check-ports", help="exit 2 unless the ports are those of a copy you hold (the check the pcsx2 MCP guard makes)"
+        "check-claim", help="exit 2 unless the ports are those of a copy you hold (the check the pcsx2 MCP guard makes)"
     )
     check.add_argument("--agent", required=True, help="your id (must hold the claim)")
     check.add_argument("--debug-port", type=int, help="the debug server port you are about to connect to")
     check.add_argument("--pine-port", type=int, help="the PINE port you are about to connect to")
-    keys = commands.add_parser("keys", help="post keys to a claimed copy's window by handle (never takes focus)")
+    keys = commands.add_parser("send-keys", help="post keys to a claimed copy's window by handle (never takes focus)")
     keys.add_argument("--agent", required=True, help="your id (must hold the claim)")
     keys.add_argument("--copy", required=True, help="the copy")
     keys.add_argument("keys", nargs="+", metavar="KEY", help="a key (space, return, up, f4, w, ...); W+K presses both")
@@ -735,38 +741,30 @@ def _add_claim_commands(commands: Any) -> None:
         "recordings",
         help="make an input recording from an input script, or move one (.p2m2 and its savestate) between scratch "
         "and a claimed copy",
-    )
-    recordings.add_argument(
-        "direction",
-        choices=("push", "pull", "make"),
-        help="push: scratch to the copy's recordings/; pull: back; make: write one from an input script",
-    )
-    recordings.add_argument("name", help="the recording below recordings/, such as fights/rumble-1.p2m2")
-    recordings.add_argument("--agent", help="push and pull: your id (must hold the claim)")
-    recordings.add_argument("--copy", help="push and pull: the copy")
-    recordings.add_argument("--force", action="store_true", help="replace a different file of that name")
-    recordings.add_argument("--script", type=Path, help="make: the input script (Coney's format)")
-    recordings.add_argument("--state", type=Path, help="make: the savestate it starts from (none: from power-on)")
-    recordings.add_argument("--updates", type=int, help="make: how many 1/30 s updates (default: the script and 1 s)")
-    recordings.add_argument(
-        "--frames-per-update", type=int, default=2, help="make: PCSX2 frames in one script frame (default 2)"
-    )
-    recordings.add_argument("--author", default="", help="make: the author written into the header")
+    ).add_subparsers(dest="direction", required=True)
+    name_help = "the recording below recordings/, such as fights/rumble-1.p2m2"
+    make = recordings.add_parser("make", help="write a recording from an input script")
+    make.add_argument("name", help=name_help)
+    make.add_argument("--script", type=Path, required=True, help="the input script (Coney's format)")
+    make.add_argument("--state", type=Path, help="the savestate it starts from (none: from power-on)")
+    make.add_argument("--updates", type=int, help="how many 1/30 s updates (default: the script and 1 s)")
+    make.add_argument("--frames-per-update", type=int, default=2, help="PCSX2 frames in one script frame (default 2)")
+    make.add_argument("--author", default="", help="the author written into the header")
+    make.add_argument("--force", action="store_true", help="replace a different file of that name")
+    for direction, what in (("push", "copy one from scratch to the copy's recordings/"), ("pull", "copy one back")):
+        move = recordings.add_parser(direction, help=what)
+        move.add_argument("name", help=name_help)
+        move.add_argument("--agent", required=True, help="your id (must hold the claim)")
+        move.add_argument("--copy", required=True, help="the copy")
+        move.add_argument("--force", action="store_true", help="replace a different file of that name")
 
 
 def _add_pcsx2_commands(groups: Any) -> None:
     """Register `coney-tools pcsx2 ...`."""
-    group = groups.add_parser("pcsx2", help="drive the original in PCSX2 over PINE: patched states, recording")
+    group = groups.add_parser(
+        "pcsx2", help="drive the original in PCSX2: claims, launching, recipes, save states and input recordings"
+    )
     commands = group.add_subparsers(dest="command", required=True)
-    prepare = commands.add_parser("prepare-state", help="copy a save state with patches applied to its EE memory")
-    prepare.add_argument("source", help="a .p2s file, or slot:N for quick-save slot N (only read)")
-    prepare.add_argument("out", type=Path, help="the patched copy (outside the repository and sstates/)")
-    prepare.add_argument("--patch", nargs="+", default=[], metavar="NAME", help="patches of research/traces/patches/")
-    prepare.add_argument("--pcsx2-dir", type=Path, help="the portable PCSX2 folder; default: pcsx2_dir")
-    repack = commands.add_parser("repack-state", help="copy a save state with plain deflate in place of zstd")
-    repack.add_argument("source", help="a .p2s file, or slot:N for quick-save slot N (only read)")
-    repack.add_argument("out", type=Path, help="the repacked copy (outside the repository and sstates/)")
-    repack.add_argument("--pcsx2-dir", type=Path, help="the portable PCSX2 folder; default: pcsx2_dir")
     launch = commands.add_parser(
         "launch", help="start PCSX2 (never taking the focus) on a state file and wait until its game runs"
     )
@@ -775,7 +773,24 @@ def _add_pcsx2_commands(groups: Any) -> None:
     )
     launch.add_argument("--agent", help="your id; PCSX2 starts under your claim (made if you hold none)")
     _add_pcsx2_flags(launch)
-    record = commands.add_parser("record", help="play a scenario on the original and write its per-update trace")
+    _add_claim_commands(commands)
+    recipes_cli.add_commands(commands)
+    run_records_cli.add_commands(commands)
+    states = pcsx2_states_cli.add_commands(commands)
+    prepare = states.add_parser("patch", help="copy a save state with patches applied to its EE memory")
+    prepare.add_argument("source", help="a .p2s file, or slot:N for quick-save slot N (only read)")
+    prepare.add_argument("out", type=Path, help="the patched copy (outside the repository and sstates/)")
+    prepare.add_argument("--patch", nargs="+", default=[], metavar="NAME", help="patches of research/traces/patches/")
+    prepare.add_argument("--pcsx2-dir", type=Path, help="the portable PCSX2 folder; default: pcsx2_dir")
+    repack = states.add_parser("repack", help="copy a save state with plain deflate in place of zstd")
+    repack.add_argument("source", help="a .p2s file, or slot:N for quick-save slot N (only read)")
+    repack.add_argument("out", type=Path, help="the repacked copy (outside the repository and sstates/)")
+    repack.add_argument("--pcsx2-dir", type=Path, help="the portable PCSX2 folder; default: pcsx2_dir")
+
+
+def _add_trace_original(commands: Any) -> None:
+    """Register `coney-tools trace original`: the original's side of `trace coney`, played in PCSX2."""
+    record = commands.add_parser("original", help="play a scenario on the original and write its per-update trace")
     record.add_argument("scenario", type=Path, help="a scenario TOML (research/traces/scenarios/)")
     record.add_argument("--out", type=Path, required=True, help="the trace CSV (outside the repository)")
     record.add_argument("--state", help="the state to copy instead of the scenario's slot: a .p2s file or slot:N")
@@ -803,8 +818,13 @@ def _add_pcsx2_commands(groups: Any) -> None:
         "--library-state", help="with --run-record: the state library id the run started from, or unknown"
     )
     record.add_argument("--run-name", help="with --run-record: the run's name in its id (default: the scenario's)")
+    _add_pcsx2_flags(record)
+
+
+def _add_clip_record(commands: Any) -> None:
+    """Register `coney-tools clips record`: a clip of the original, made with PCSX2's own capture."""
     clip = commands.add_parser(
-        "clip",
+        "record",
         help="record a short clip of the original with PCSX2's own capture of its game output (never the screen)",
     )
     clip.add_argument("state", type=Path, help="the .p2s state to start from (a copy outside sstates/)")
@@ -812,17 +832,15 @@ def _add_pcsx2_commands(groups: Any) -> None:
     clip.add_argument("--seconds", type=int, default=10, help="how long, 1 to the cap of 10 (default 10)")
     clip.add_argument("--agent", help="your id; runs under your claim (made, and released at the end, if none)")
     _add_pcsx2_flags(clip)
-    _add_claim_commands(commands)
-    recipes_cli.add_commands(commands)
-    run_records_cli.add_commands(commands)
-    pcsx2_states_cli.add_commands(commands)
-    _add_pcsx2_flags(record)
 
 
 def _add_clips_commands(groups: Any) -> None:
     """Register `coney-tools clips ...`."""
-    group = groups.add_parser("clips", help="in-game video clips for issues and pull requests: check, publish, clean")
+    group = groups.add_parser(
+        "clips", help="in-game video clips for issues and pull requests: record, check, publish, clean"
+    )
     commands = group.add_subparsers(dest="command", required=True)
+    _add_clip_record(commands)
     folder = commands.add_parser("folder", help="make and print a task's clips folder (<scratch>/<task>/clips)")
     folder.add_argument("task", help="the task's scratch folder name (your branch or track)")
     check = commands.add_parser("check", help="check clips as publish does (place, length, metadata), upload nothing")
@@ -838,9 +856,11 @@ def _add_clips_commands(groups: Any) -> None:
     text.add_argument("--body", help="the comment's (or description's) text")
     text.add_argument("--body-file", type=Path, help="a file with the text; ./clips/<name>.mp4 references are replaced")
     publish.add_argument("clips", nargs="+", type=Path, metavar="CLIP", help="the clip files to upload")
-    clean = commands.add_parser("clean", help="delete clips left in the scratch clips folders past the age limit")
+    clean = commands.add_parser(
+        "clean", help="delete clips left in the scratch clips folders past the age limit (a dry run unless --apply)"
+    )
     clean.add_argument("--older-than", type=float, metavar="HOURS", help="default: workspace.clips.keep_hours (24)")
-    clean.add_argument("--dry-run", action="store_true", help="list what would go, delete nothing")
+    clean.add_argument("--apply", action="store_true", help="delete; without it, only list what would go")
 
 
 def _run_clips(args: argparse.Namespace) -> int:
@@ -852,7 +872,11 @@ def _run_clips(args: argparse.Namespace) -> int:
     if args.command == "publish":
         target = clips.Target("pr" if args.pr is not None else "issue", args.pr or args.issue, args.edit)
         return clips.run_publish(target, args.body, args.body_file, args.clips)
-    return clips.run_clean(args.older_than, args.dry_run)
+    if args.command == "record":
+        return pcsx2_clip.run_clip(
+            args.state, args.seconds, args.out, (args.pcsx2_dir, args.iso, args.scratch), args.agent
+        )
+    return clips.run_clean(args.older_than, not args.apply)
 
 
 def _gang_list(text: str) -> list[int]:
@@ -865,15 +889,18 @@ def _gang_list(text: str) -> list[int]:
 
 def _add_trace_commands(groups: Any) -> None:
     """Register `coney-tools trace ...`."""
-    group = groups.add_parser("trace", help="per-update traces: run a scenario on Coney, compare with the original")
+    group = groups.add_parser(
+        "trace", help="per-update traces and event logs: play a scenario on the original or on Coney, compare them"
+    )
     commands = group.add_subparsers(dest="command", required=True)
+    _add_trace_original(commands)
     coney = commands.add_parser("coney", help="play a scenario on Coney headless and write its --trace")
     coney.add_argument("scenario", type=Path, help="a scenario TOML (research/traces/scenarios/)")
     coney.add_argument("--out", type=Path, required=True, help="the trace CSV (outside the repository)")
     coney.add_argument("--coney", type=Path, help="Coney's executable; default: build/dev/src/platform/coney")
     coney.add_argument("--disc", help="the disc for Coney; default: game_dir")
     diff = commands.add_parser("diff", help="compare the original's trace with Coney's; exit 1 outside tolerance")
-    diff.add_argument("original", type=Path, help="the original's trace (pcsx2 record)")
+    diff.add_argument("original", type=Path, help="the original's trace (trace original)")
     diff.add_argument("coney", type=Path, help="Coney's trace (coney --trace, or trace coney)")
     diff.add_argument("--scenario", type=Path, help="take the columns, tolerances, start and frame from a scenario")
     diff.add_argument("--columns", nargs="+", metavar="COLUMN", help="compare these (default: every shared one)")
@@ -917,7 +944,7 @@ def _add_trace_commands(groups: Any) -> None:
         "--original-gangs", type=_gang_list, help="the original's sides' gang ids in the order g0,g1,..."
     )
     fight.add_argument("--coney-gangs", type=_gang_list, help="Coney's sides' gang ids in the order g0,g1,...")
-    mission = commands.add_parser("mission", help="play a mission scenario's course on one game; write its event log")
+    mission = commands.add_parser("events", help="play a mission scenario's course on one game; write its event log")
     mission.add_argument("scenario", type=Path, help="a mission scenario TOML (research/traces/missions/)")
     mission.add_argument("--side", choices=("coney", "original"), required=True, help="the game to play it on")
     mission.add_argument("--out", type=Path, required=True, help="the event log CSV (outside the repository)")
@@ -938,7 +965,7 @@ def _add_trace_commands(groups: Any) -> None:
     )
     _add_pcsx2_flags(mission)
     events = commands.add_parser("events-diff", help="compare two event logs in order; exit 1 when Coney lacks some")
-    events.add_argument("original", type=Path, help="the original's event log (trace mission --side original)")
+    events.add_argument("original", type=Path, help="the original's event log (trace events --side original)")
     events.add_argument("coney", type=Path, help="Coney's event log (coney --event-log, or trace mission)")
     events.add_argument("--rules", type=Path, help="the rules file; default: research/traces/events.toml")
     events.add_argument("--kinds", nargs="+", metavar="KIND", help="compare these kinds (default: the rules' list)")
@@ -952,14 +979,12 @@ def _add_trace_commands(groups: Any) -> None:
 
 def _run_progress(args: argparse.Namespace) -> int:
     """Dispatch a `progress` command."""
-    if args.command == "show":
+    if args.command == "summary":
         return progress_cli.run_show(args.json)
     if args.command == "check":
         return progress_cli.run_check(args.base, args.require_base)
     if args.command == "render":
         return progress_cli.run_render(args.out_dir, history=not args.no_history)
-    if args.command == "ghidra":
-        return progress_cli.run_ghidra(args.url, args.check)
     if args.command == "backlog":
         return progress_cli.run_backlog(args.out_dir)
     if args.command == "import-functions":
@@ -975,28 +1000,28 @@ def _run_wad(args: argparse.Namespace) -> int:
         return wad_cli.run_list(args.disc, args.names)
     if args.command == "extract":
         return wad_cli.run_extract(args.paths, args.names, args.only)
-    if args.command == "scenes":
+    if args.command == "scene-info":
         return wad_cli.run_scenes(args.disc)
     return wad_cli.run_names(args.paths)
 
 
 def _run_xbox(args: argparse.Namespace) -> int:
     """Dispatch an `xbox` command."""
-    if args.command == "files":
+    if args.command == "disc-files":
         return xbox_cli.run_files(args.disc)
     if args.command == "info":
         return xbox_cli.run_info(args.disc, args.names)
     if args.command == "list":
         return xbox_cli.run_list(args.disc, args.names)
-    if args.command == "names":
+    if args.command == "match-names":
         return xbox_cli.run_names(args.disc, args.out_file, args.candidates)
     if args.command == "extract":
         return xbox_cli.run_extract(args.disc, args.out_dir, args.names, args.only)
-    if args.command == "resources":
+    if args.command == "resource-info":
         return xbox_cli.run_resources(args.disc, args.ps2)
-    if args.command == "index":
+    if args.command == "write-resource-index":
         return xbox_cli.run_index(args.disc, args.out_file)
-    if args.command == "texture-map":
+    if args.command == "write-texture-map":
         return xbox_cli.run_texture_map(args.ps2_disc, args.disc, args.out_file, args.xbox_index)
     return xbox_cli.run_textures(args.disc, args.ps2)
 
@@ -1015,21 +1040,17 @@ def _run_audio(args: argparse.Namespace) -> int:
 
 def _run_pcsx2(args: argparse.Namespace) -> int:
     """Dispatch a `pcsx2` command."""
-    if args.command == "prepare-state":
-        return pcsx2_cli.run_prepare_state(args.source, args.out, args.patch, args.pcsx2_dir)
-    if args.command == "repack-state":
-        return pcsx2_cli.run_repack_state(args.source, args.out, args.pcsx2_dir)
     if args.command == "launch":
         return pcsx2_cli.run_launch(args.state, args.pcsx2_dir, args.iso, args.scratch, args.agent)
     if args.command == "claim":
         return pcsx2_claims_cli.run_claim(args.agent, args.copy, args.json, args.max_age_hours)
-    if args.command == "release":
+    if args.command == "unclaim":
         return pcsx2_claims_cli.run_release(args.agent, args.copy, args.force)
     if args.command == "status":
         return pcsx2_claims_cli.run_status(args.json, args.max_age_hours)
-    if args.command == "check-ports":
+    if args.command == "check-claim":
         return pcsx2_claims_cli.run_check_ports(args.agent, args.debug_port, args.pine_port)
-    if args.command == "keys":
+    if args.command == "send-keys":
         return pcsx2_claims_cli.run_keys(args.agent, args.copy, args.keys, args.hold_ms, args.gap_ms)
     if args.command == "screenshot":
         return pcsx2_claims_cli.run_screenshot(args.copy, args.out)
@@ -1037,24 +1058,23 @@ def _run_pcsx2(args: argparse.Namespace) -> int:
         return pcsx2_copies.run_setup_copies(args.count, args.dry_run)
     if args.command == "recordings":
         if args.direction == "make":
-            if args.script is None:
-                raise ConfigError("recordings make needs --script")
             return recordings_make.run_make(
                 args.name, args.script, args.state, args.updates, args.frames_per_update, args.author, args.force
             )
-        if not args.agent or not args.copy:
-            raise ConfigError(f"recordings {args.direction} needs --agent and --copy")
         return pcsx2_copies.run_recordings(args.direction, args.agent, args.copy, args.name, args.force)
+    if args.command == "states" and args.states_command == "patch":
+        return pcsx2_cli.run_prepare_state(args.source, args.out, args.patch, args.pcsx2_dir)
+    if args.command == "states" and args.states_command == "repack":
+        return pcsx2_cli.run_repack_state(args.source, args.out, args.pcsx2_dir)
     if args.command == "states":
         return pcsx2_states_cli.run_command(args)
-    if args.command == "recipe":
+    if args.command == "recipes":
         return recipes_cli.run_command(args)
-    if args.command == "clip":
-        return pcsx2_clip.run_clip(
-            args.state, args.seconds, args.out, (args.pcsx2_dir, args.iso, args.scratch), args.agent
-        )
-    if args.command == "record-run":
-        return run_records_cli.run_command(args)
+    return run_records_cli.run_command(args)
+
+
+def _run_trace_original(args: argparse.Namespace) -> int:
+    """`trace original`: play a scenario on the original in PCSX2 and write its trace."""
     flags = (args.pcsx2_dir, args.iso, args.scratch)
     request = run_records_cli.trace_request(args.run_record, args.library_state, args.run_name)
     return pcsx2_cli.run_record(
@@ -1081,8 +1101,6 @@ def _run(args: argparse.Namespace) -> int:
                 "init" if args.init else "prune" if args.prune else "check" if args.check else "scan", args.base
             )
         return docs_cli.run_check(args.paths, args.base, args.summary, args.quiet)
-    if args.group == "check":
-        return check_cli.run_check(args)
     if args.group == "issue":
         return issue_cli.run_issue(args)
     if args.group == "claim":
@@ -1090,6 +1108,8 @@ def _run(args: argparse.Namespace) -> int:
     if args.group == "task":
         return task_cli.run_task(args)
     if args.group == "ci":
+        if args.command in ("run", "result"):
+            return check_cli.run_check(args)
         return ci_cli.run_ci(args)
     if args.group == "wad":
         return _run_wad(args)
@@ -1110,22 +1130,20 @@ def _run(args: argparse.Namespace) -> int:
         return _run_progress(args)
     if args.group == "orig":
         return orig_cli.run(args)
-    if args.group == "original":
-        return original_cli.run(args)
     if args.group == "stamp":
         return stamp_cli.run(args)
     if args.group == "lua":
         return lua_cli.run(args)
-    if args.group == "natives":
+    if args.group == "bindings":
         if args.command == "render":
             return natives_cli.run_render(args.check)
-        if args.command == "cpp":
+        if args.command == "render-cpp":
             return natives_cli.run_cpp(args.check)
-        if args.command == "mission1":
+        if args.command == "scan-usage" and args.first_mission:
             return natives_cli.run_mission1(args.disc, args.check)
-        if args.command == "missions":
+        if args.command == "scan-usage":
             return natives_cli.run_missions(args.disc, args.check)
-        return natives_cli.run_coney(args.check) if args.command == "coney" else natives_cli.run_stats()
+        return natives_cli.run_coney(args.check) if args.command == "sync-coney" else natives_cli.run_stats()
     if args.group == "refs":
         if args.command == "render":
             return refs_cli.run_render(args.check)
@@ -1166,7 +1184,9 @@ def _run(args: argparse.Namespace) -> int:
             return trace_cli.run_fight_report(
                 args.traces, args.original, args.coney, report_options, (args.original_gangs, args.coney_gangs)
             )
-        if args.command == "mission":
+        if args.command == "original":
+            return _run_trace_original(args)
+        if args.command == "events":
             if args.side == "coney":
                 return mission_cli.run_mission_coney(
                     args.scenario, args.out, args.coney, args.disc, args.updates, args.follow, args.follow_from
@@ -1196,41 +1216,53 @@ def _run(args: argparse.Namespace) -> int:
             shell_hours=args.shell_hours,
             idle_hours=args.log_idle_hours,
         )
-    if args.group == "workspace" and args.command == "disk":
+    if args.group == "workspace" and args.command == "check-space":
         return workspace_clean.run_disk(Path.cwd(), args.workspace, args.min_gb)
     if args.group == "workspace":
         return workspace.run_init(Path.cwd(), args.workspace, args.repo_url, args.fetch, args.dry_run)
     if args.group == "mcp":
         return mcp_serve.run_serve(args.name, args.copy)
+    if args.group == "legacy":
+        return run_review_command(args)
+    if args.group == "pr":
+        return _run_pr(args)
+    return _run_repo(args)
+
+
+def _run_repo(args: argparse.Namespace) -> int:
+    """Dispatch a `repo` command."""
     if args.command == "audit":
         return run_audit(args)
-    if args.command in ("review", "check-review", "review-stamp"):
+    if args.command == "review-stamp":
         return run_review_command(args)
-    if args.command == "pr-health":
-        return run_pr_health(args)
-    if args.command == "hygiene":
+    if args.command == "post-findings":
         return run_hygiene(args)
     if args.command == "render":
         return run_render(find_repo_root(Path.cwd()), args.check)
-    if args.command == "labels":
+    if args.command == "sync-labels":
         return _repo_labels(args.apply, args.repo)
-    if args.group == "pr":
-        if args.command == "verify":
-            return pr_cli.run_verify(args)
-        if args.command == "text":
-            return pr_cli.run_text(args)
-        if args.command == "open":
-            return pr_open.run(args)
-        if args.command == "hold":
-            return pr_hold.run(args)
-        return _pr_check_commit(args.file, args.model)
+    return _repo_check()
+
+
+def _run_pr(args: argparse.Namespace) -> int:
+    """Dispatch a `pr` command."""
+    if args.command == "verify":
+        return pr_cli.run_verify(args)
+    if args.command == "text":
+        return pr_cli.run_text(args)
+    if args.command == "open":
+        return pr_open.run(args)
+    if args.command == "hold":
+        return pr_hold.run(args)
+    if args.command == "list-stuck":
+        return run_pr_health(args)
     if args.command == "check-title":
         return _repo_check_title(args.file)
     if args.command == "check-docs":
         return _repo_check_docs(args.body)
     if args.command == "check-body":
         return _repo_check_body(args.body, args.worktree, args.base, args.title, args.local_images)
-    return _repo_check()
+    return _pr_check_commit(args.file, args.model)
 
 
 def use_utf8_output(streams: Sequence[object] | None = None) -> None:
@@ -1258,7 +1290,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     use_utf8_output()
     # A stage stamp keeps the claim alive: the stamp log posts `/progress` through this (coney_tools.claim_progress).
     stamps.observe("claim progress", claim_progress.observer())
-    args = _build_parser().parse_args(argv)
+    words, notices = renames.rewrite(sys.argv[1:] if argv is None else argv)
+    for notice in notices:
+        print(f"coney-tools: {notice}", file=sys.stderr)
+    args = _build_parser().parse_args(words)
     try:
         status = _run(args)
         # Flush here, inside the handler below: a closed pipe often only shows when buffered output is written.

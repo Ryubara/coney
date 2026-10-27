@@ -274,7 +274,7 @@ def command(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, gh: FakeGh, *flags:
     monkeypatch.chdir(tmp_path)
     parser = argparse.ArgumentParser()
     pr_health.add_pr_health_parser(parser.add_subparsers(dest="command"))
-    return pr_health.run_pr_health(parser.parse_args(["pr-health", *flags]), gh, NOW)
+    return pr_health.run_pr_health(parser.parse_args(["list-stuck", *flags]), gh, NOW)
 
 
 def test_the_command_exits_0_and_prints_nothing_when_nothing_is_stuck(
@@ -352,5 +352,5 @@ def test_the_default_branch_comes_from_the_conventions(tmp_path: Path, monkeypat
 
     parser = argparse.ArgumentParser()
     pr_health.add_pr_health_parser(parser.add_subparsers(dest="command"))
-    pr_health.run_pr_health(parser.parse_args(["pr-health"]), gh, NOW)
+    pr_health.run_pr_health(parser.parse_args(["list-stuck"]), gh, NOW)
     assert seen[1] == ["api", "repos/{owner}/{repo}/rules/branches/trunk"]

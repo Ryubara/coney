@@ -76,8 +76,9 @@ else:
 
 SHELLS = ("Bash", "PowerShell")
 LOG_FILE = "coney-hooks.log"
-#: The shell commands pcsx2_guard reads: `coney-tools ... pcsx2` (the old `if` filter `*coney-tools*pcsx2*`).
-_PCSX2_COMMAND = re.compile(r"coney-tools.*pcsx2", re.DOTALL)
+#: The shell commands pcsx2_guard reads: `coney-tools ... pcsx2` (the old `if` filter `*coney-tools*pcsx2*`), and the
+#: commands that drive PCSX2 from other groups, `trace original`, `trace events` and `clips record`.
+_PCSX2_COMMAND = re.compile(r"coney-tools.*(?:pcsx2|trace\s+(?:original|events)|clips\s+record)", re.DOTALL)
 _modules: dict[str, ModuleType] = {}
 
 

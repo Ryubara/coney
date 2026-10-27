@@ -571,3 +571,20 @@ def test_open_only_off_in_the_conventions_leaves_the_checks_of_a_hand_typed_comm
     folder = checkout_with_switch(tmp_path, "false")
     reason = denial(run_copy(folder, "gh pr create --fill"))
     assert reason is not None and "takes the description from somewhere" in reason and "opened only by" not in reason
+
+
+@pytest.mark.parametrize(
+    ("command", "read"),
+    [
+        ("uv run --project python coney-tools pcsx2 claim --agent a", True),
+        ("coney-tools trace original s.toml --out o.csv --agent a", True),
+        ("coney-tools trace events --side original s.toml --out o --agent a", True),
+        ("coney-tools clips record x.p2s --out c.mp4 --agent a", True),
+        ("coney-tools trace coney s.toml --out o.csv", False),
+        ("coney-tools clips publish --pr 1 c.mp4", False),
+    ],
+)
+def test_the_pcsx2_guard_reads_every_command_that_drives_pcsx2(command: str, read: bool) -> None:
+    """The commands that drive PCSX2 from other groups (`trace original`, `clips record`) reach the PCSX2 guard too."""
+    dispatch = load_hook_module("dispatch")
+    assert dispatch._pcsx2({"tool_name": "Bash", "tool_input": {"command": command}}) is read

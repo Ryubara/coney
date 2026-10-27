@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The `coney-tools build` command: configure, build and test a checkout under the build slots, `build status` and
-`build release` (the slots are in build_claims.py, the run in build_run.py; docs/guides/coney-tools-build.md#build)."""
+`build unclaim` (the slots are in build_claims.py, the run in build_run.py; docs/guides/coney-tools-build.md#build)."""
 
 from __future__ import annotations
 
@@ -78,10 +78,10 @@ _ENV_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 def add_parser(groups: Any) -> None:
-    """Register `coney-tools build [flags]`, `build status` and `build release`."""
+    """Register `coney-tools build [flags]`, `build status` and `build unclaim`."""
     group = groups.add_parser(
         "build",
-        help="configure, build and test under the build slots (at most two at once); status, release",
+        help="configure, build and test under the build slots (at most two at once); status, result, unclaim",
     )
     group.add_argument(
         "--agent",
@@ -139,7 +139,6 @@ def add_parser(groups: Any) -> None:
     )
     group.add_argument(
         "--max-wait",
-        "--slots-wait-timeout",
         type=float,
         metavar="MIN",
         help=f"minutes to wait for a slot, per phase, before exiting with code 75 (default and most "
@@ -171,7 +170,7 @@ def add_parser(groups: Any) -> None:
     result = commands.add_parser("result", help="the outcome of the worktree's last --detach run")
     result.add_argument("--json", action="store_true", help="print the record as JSON")
     _add_dir(result)
-    release = commands.add_parser("release", help="manual cleanup: free an agent's slots and drop its queue places")
+    release = commands.add_parser("unclaim", help="manual cleanup: free an agent's slots and drop its queue places")
     release.add_argument("--agent", dest="release_agent", required=True, help="the agent whose entries to remove")
     release.add_argument("--force", action="store_true", help="also another agent's, or a build that still runs")
     release.add_argument("--slot", type=int, help="one slot by number (with --lane for the fast lane)")
@@ -191,12 +190,12 @@ def _add_dir(parser: argparse.ArgumentParser) -> None:
 
 
 def run(args: argparse.Namespace) -> int:
-    """Dispatch `build`, `build status` or `build release`."""
+    """Dispatch `build`, `build status` or `build unclaim`."""
     if args.build_command == "status":
         return run_status(args.dir, args.json)
     if args.build_command == "result":
         return run_result(args.dir, args.json)
-    if args.build_command == "release":
+    if args.build_command == "unclaim":
         return run_release(args.dir, args.release_agent, args.force, args.slot, args.lane)
     return run_build(args)
 
@@ -886,7 +885,7 @@ def _epoch(iso: str) -> float:
 
 
 def run_release(directory: Path | None, agent: str, force: bool, slot: int | None, lane: str | None) -> int:
-    """`build release`: free an agent's slots and drop its queue places (manual cleanup after a crash)."""
+    """`build unclaim`: free an agent's slots and drop its queue places (manual cleanup after a crash)."""
     root = _root(directory)
     chosen: list[Slots] = [build_claims.default_slots(name, root) for name in ([lane] if lane else LANES)]
     if slot is not None:

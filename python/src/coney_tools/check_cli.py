@@ -303,7 +303,7 @@ def run_changed(base: str, only: list[str] | None, skip: list[str] | None) -> in
 
 
 def run_check(args: argparse.Namespace) -> int:
-    """`check changed` (in the foreground, as a --detach run's child, or starting one) and `check result`."""
+    """`ci run` (in the foreground, as a --detach run's child, or starting one) and `ci result`."""
     if args.command == "result":
         return run_result(Path.cwd())
     if args.result_file is not None:
@@ -321,7 +321,7 @@ def _scratch_folder(root: Path) -> Path:
 
 def _child_command(args: argparse.Namespace, result: Path) -> list[str]:
     """The command line of a --detach run's child: this run's flags and its result file."""
-    command = [sys.executable, "-m", "coney_tools.cli", "check", "changed", "--base", args.base]
+    command = [sys.executable, "-m", "coney_tools.cli", "ci", "run", "--base", args.base]
     for flag, values in (("--only", args.only), ("--skip", args.skip)):
         for value in values or []:
             command += [flag, value]

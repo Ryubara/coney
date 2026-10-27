@@ -405,17 +405,21 @@ def _report(problems: list[str], report: Path) -> int:
 # --- the command line -----------------------------------------------------------------------------------------------
 
 
-def add_review_parsers(repo_commands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
-    """Add `repo review`, `repo check-review` and `repo review-stamp` to the `repo` command group."""
+def add_review_parsers(
+    repo_commands: argparse._SubParsersAction[argparse.ArgumentParser],
+    legacy_commands: argparse._SubParsersAction[argparse.ArgumentParser],
+) -> None:
+    """Add `repo review-stamp` to the `repo` group, and `legacy pr-review` and `legacy check-pr-review` (the release
+    checks `task review` and `pr open` replace) to the `legacy` group."""
     wt_help = "the branch's worktree (its HEAD is the tip the verdict must quote)"
     pr_help = "the description file: the title on line 1, then the body (PR.md in the scratch folder)"
     base_help = "what the branch is compared with, for the diff and the commits' trailers (default: %(default)s)"
-    review = repo_commands.add_parser(
-        "review",
-        help="run the reviewer agent headlessly on a description, then check its verdict",
+    review = legacy_commands.add_parser(
+        "pr-review",
+        help="run the reviewer agent headlessly on a description, then check its verdict (replaced by `task review`)",
         description=(
             "Runs `claude -p` with the reviewer agent in the description's folder; the agent writes the verdict "
-            "and a report there. Then runs check-review. Exit 0 when the verdict releases the branch, 1 when not, "
+            "and a report there. Then runs check-pr-review. Exit 0 when the verdict releases the branch, 1 when not, "
             "2 when the review cannot run."
         ),
     )
@@ -428,11 +432,11 @@ def add_review_parsers(repo_commands: argparse._SubParsersAction[argparse.Argume
     review.add_argument(
         "--timeout-minutes", type=float, default=DEFAULT_TIMEOUT_MINUTES, help="stop the review after this long"
     )
-    check = repo_commands.add_parser(
-        "check-review",
+    check = legacy_commands.add_parser(
+        "check-pr-review",
         help=(
             "check the title and body as CI does, and that the reviewer's verdict passes and is current "
-            "(tip, description and images unchanged)"
+            "(tip, description and images unchanged; replaced by `pr open`)"
         ),
     )
     check.add_argument("pr_file", type=Path, help=pr_help)
@@ -442,7 +446,7 @@ def add_review_parsers(repo_commands: argparse._SubParsersAction[argparse.Argume
         "review-stamp",
         help=(
             "print, as JSON, the tip, description hash and image hashes a verdict must quote; refuses, with the "
-            "title and body reasons, a description check-review would refuse"
+            "title and body reasons, a description check-pr-review would refuse"
         ),
     )
     stamp.add_argument("pr_file", type=Path, help=pr_help)
@@ -451,7 +455,7 @@ def add_review_parsers(repo_commands: argparse._SubParsersAction[argparse.Argume
 
 
 def run_review_command(args: argparse.Namespace) -> int:
-    """Run `repo review`, `check-review` or `review-stamp`."""
+    """Run `legacy pr-review`, `legacy check-pr-review` or `repo review-stamp`."""
     if args.command == "review-stamp":
         # The agent runs this in the description's folder (the scratch folder), outside any checkout, so the rules
         # come from the checkout this tool is installed in (the one `review` started it from), never the current folder.
@@ -468,7 +472,7 @@ def run_review_command(args: argparse.Namespace) -> int:
     root = find_repo_root(Path.cwd())
     conventions = load_conventions(root)
     rules = conventions.pull_requests.review
-    if args.command == "check-review":
+    if args.command == "check-pr-review":
         problems = check_review(args.pr_file, args.worktree, conventions, base=args.base)
         return _report(problems, args.pr_file.parent / rules.report_file)
     return run_review(

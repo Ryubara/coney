@@ -26,8 +26,10 @@ from coney_tools.scenario import GOAL_TYPES_FILE, load_goal_types
 
 
 def add_commands(commands: Any) -> None:
-    """Register `pcsx2 recipe ...` under the pcsx2 group's subcommands."""
-    recipe = commands.add_parser("recipe", help="the shared PCSX2 recipes: find, move, edit, call (pcsx2-recipes.toml)")
+    """Register `pcsx2 recipes ...` under the pcsx2 group's subcommands."""
+    recipe = commands.add_parser(
+        "recipes", help="the shared PCSX2 recipes: find, move, edit, call (pcsx2-recipes.toml)"
+    )
     sub = recipe.add_subparsers(dest="recipe_command", required=True)
     sub.add_parser("list", help="list every recipe with its one-line summary")
     show = sub.add_parser("show", help="print one recipe: what it does, its parameters, preconditions and steps")
