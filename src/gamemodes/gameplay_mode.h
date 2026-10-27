@@ -72,6 +72,8 @@ struct PromptOffer {
     std::optional<std::uint32_t> dealer; ///< A dealer's offer in reach (kind 4): his type's prompt.
 };
 
+/// What the gameplay mode asks of the level's player 1 (the play mode implements it): the scripts' teleports, the
+/// tag spray's clips, the held object and the action prompt's offers.
 class ScriptedPlayer {
   public:
     virtual ~ScriptedPlayer() = default;
@@ -98,6 +100,7 @@ class ScriptedPlayer {
     /// weapon in it (GameplayMode::startTag()), an uncuff with a club or an overhead one (GameplayMode::startUncuff()).
     virtual void dropHeldObject() {}
     /// The type name of the object in player 1's hand (`dyn_pipe_a`); empty with nothing held.
+    /// @coney-only the interface's default for a level with no player
     [[nodiscard]] virtual std::string heldObjectType() const { return {}; }
     /// A pause of player 1's stick game began (a slip or a new charge): his spray clips restart
     /// (Human::restartTagSpray()).
@@ -105,6 +108,7 @@ class ScriptedPlayer {
     /// Player 1's spray is over: his spray clips end (Human::endTagSpray()).
     virtual void endTagSpray() {}
     /// What player 1 can act on this frame besides the scripts' action objects (kind 1), for the action prompt.
+    /// @coney-only the interface's default for a level with no player
     [[nodiscard]] virtual PromptOffer promptOffer() const { return {}; }
     /// Whether the camera frames player 1's fight now (`Camera_IsCombatFraming`, `0x00233c50`): his sounds' combat
     /// framing and the angry breathing (docs/research/sound-events.md#players).
@@ -256,6 +260,7 @@ class GameplayMode final : public GameMode {
     void setMoviePlayer(MoviePlayer* player) { m_moviePlayer = player; }
     /// Makes each level's scene system (over the disc's scene list); null or empty: no scenes.
     using SceneMaker = std::function<std::unique_ptr<scenes::SceneSystem>()>;
+    /// Gives the mode its scene maker.
     void setSceneMaker(SceneMaker maker) { m_sceneMaker = std::move(maker); }
     /// Plays the glass panes' and doors' sounds through `sounds` (the audio's ObjectSounds; null: none), which must
     /// outlive the mode or be replaced first.

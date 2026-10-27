@@ -342,6 +342,7 @@ class Doors {
     static void openAway(Door& door, anim::Vec3 humanAt, ObjectWorld& world);
     // Pickable on or off (commands 10 and 0 / 11).
     static void pickableOn(Door& door, ObjectWorld& world);
+    // Pickable off: no glint, and the humans targeting it let go.
     static void pickableOff(Door& door, ObjectWorld& world);
     // A swinging door's update.
     static void update(Door& door, ObjectWorld& world);
@@ -353,8 +354,11 @@ class Doors {
     static void runSlidingCommand(Door& door, int command, ObjectWorld& world);
     // The breakable swinging doors' and the barriers' hits.
     static void hitStore(Door& door, const ObjectHit& hit, ObjectWorld& world);
+    // A cabin door's hit: damage, then both leaves broken below 7.
     static void hitCabin(Door& door, const ObjectHit& hit, ObjectWorld& world);
+    // A splintering door's hit: damage, splinters and its model stages.
     static void hitSplinters(Door& door, const ObjectHit& hit, ObjectWorld& world);
+    // A barrier's hit: damage, and broken at no hitpoints.
     static void hitBarrier(Door& door, const ObjectHit& hit, ObjectWorld& world);
     // The ends of a splintering door and a cabin door: triangles off, wreck pieces, state 6.
     static void wreck(Door& door, ObjectWorld& world);

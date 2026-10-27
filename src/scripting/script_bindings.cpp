@@ -571,12 +571,15 @@ constexpr std::array<std::string_view, 5> kStringBindings{"CfgAnnounceMessage", 
 constexpr BindingInfo real(std::string_view name) {
     return BindingInfo{name, BindingKind::Real, StubResult::Nothing, false};
 }
+// A binding routed to the host (BindingKind::Routed).
 constexpr BindingInfo routed(std::string_view name) {
     return BindingInfo{name, BindingKind::Routed, StubResult::Nothing, false};
 }
+// A stub binding, returning `result`.
 constexpr BindingInfo stub(std::string_view name, StubResult result = StubResult::Nothing) {
     return BindingInfo{name, BindingKind::Stub, result, false};
 }
+// A stub binding whose calls are recorded.
 constexpr BindingInfo recording(std::string_view name) {
     return BindingInfo{name, BindingKind::Stub, StubResult::Nothing, true};
 }

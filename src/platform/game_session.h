@@ -87,6 +87,7 @@ class GameSession {
     /// What the first level loaded does before its first frame (`--start`, `--camera`, `--trace`, `--scene`): called
     /// once, on that level's play mode; an error fails that level's load.
     using LevelSetup = std::function<std::expected<void, Error>(PlayLevelMode&)>;
+    /// Gives the first level loaded its set-up.
     void setFirstLevelSetup(LevelSetup setup) { m_firstLevelSetup = std::move(setup); }
     /// The all-humans trace (`--trace-humans`) every level loaded writes its rows to, one file for the whole run; null:
     /// none.

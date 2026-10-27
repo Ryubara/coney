@@ -170,6 +170,7 @@ class DebugSession {
     /// Whether the noclip hotkey (kNoclipChord, R3 + d-pad left) toggles the player's noclip in play; on by default,
     /// and the Player page switches it off.
     [[nodiscard]] bool noclipHotkey() const { return m_noclipHotkey; }
+    /// Turns the noclip hotkey on or off (the Player page's switch).
     void setNoclipHotkey(bool on) { m_noclipHotkey = on; }
     /// Switches the player's noclip (PlayControls::setNoclip()) to `on` with a notice saying so; with no player, or
     /// one who cannot noclip, only prints why.

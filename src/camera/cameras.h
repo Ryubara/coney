@@ -224,6 +224,7 @@ class Cameras {
 
     /// The script functions the path camera reached since the last call (its points' and its end's), in order: the
     /// gameplay calls them after the step.
+    /// @coney-only Coney's hand-off of the path camera's script calls to the gameplay step
     [[nodiscard]] std::vector<std::string> takeFired() { return std::exchange(m_fired, {}); }
 
     /// `CameraMakeActive(camera, seconds)`: makes the camera with `handle` current, at once with 0 seconds or no
@@ -262,6 +263,7 @@ class Cameras {
     [[nodiscard]] float secondaryRange() const { return m_secondaryRange; }
     /// `CamSetFollowZoom(preset)` and `CamSetFollowAngle(degrees)` on the follow camera.
     void setFollowZoom(FollowZoom preset);
+    /// `CamSetFollowAngle(degrees)`: the follow camera's pitch.
     void setFollowAngle(float degrees);
     /// `CamSetSplitMode(mode)`: the two-player split-screen layout, 0 or 1 (any other value is ignored). **Coney
     /// stand-in**: Coney has one player and one view, so the layout is kept and not applied.

@@ -170,6 +170,9 @@ void QuietBindingHost::launchMissionFailed(std::string_view reason) {
     }
 }
 
+// The binding context over the members, then the preloads, the fresh Lua state and the checkpoint in the original's
+// order (the class comment).
+// @coney-only Coney's test way into a level without the menus
 LevelScripts::LevelScripts(const script::ScriptSource& source, std::string_view level, int checkpoint,
                            const std::function<void(std::string_view)>& log, const LevelScriptOptions& options)
     : m_context{&m_state, &m_strings,  &m_host,  &m_recorded,      &m_humans,      &m_flags,       &m_rumbleData,

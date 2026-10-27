@@ -152,6 +152,7 @@ class QuietBindingHost final : public script::BindingHost {
 /// Research: docs/research/level-loading.md#story-into-level99, docs/research/scripting.md#life-of-the-lua-state
 class LevelScripts {
   public:
+    /// Runs the preloads, the fresh state and the checkpoint for `level` at `checkpoint`, as described above.
     LevelScripts(const script::ScriptSource& source, std::string_view level, int checkpoint,
                  const std::function<void(std::string_view)>& log, const LevelScriptOptions& options = {});
     LevelScripts(const LevelScripts&) = delete;
@@ -160,13 +161,21 @@ class LevelScripts {
     LevelScripts& operator=(LevelScripts&&) = delete;
     ~LevelScripts() = default;
 
+    /// The script system the level runs in.
     [[nodiscard]] script::ScriptSystem& scripts() { return m_scripts; }
+    /// The bindings' context over the members below.
     [[nodiscard]] script::BindingContext& context() { return m_context; }
+    /// The game state the scripts work on.
     [[nodiscard]] GameState& state() { return m_state; }
+    /// The humans the scripts made.
     [[nodiscard]] CreatedHumans& humans() { return m_humans; }
+    /// The level's flags.
     [[nodiscard]] world_objects::WorldFlags& flags() { return m_flags; }
+    /// The object types the configuration scripts defined.
     [[nodiscard]] world_objects::ObjectTypes& objectTypes() { return m_objectTypes; }
+    /// The spawn records the configuration scripts defined.
     [[nodiscard]] world_objects::SpawnRecords& spawnRecords() { return m_spawnRecords; }
+    /// The calls of the recording bindings.
     [[nodiscard]] script::RecordedCalls& recorded() { return m_recorded; }
     /// The HUD the scripts' HUD bindings act on, for the play mode to draw (PlayLevelMode::useHud()).
     [[nodiscard]] hud::Hud& hud() { return m_hud; }

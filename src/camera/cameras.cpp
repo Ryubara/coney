@@ -544,6 +544,7 @@ void Cameras::setFollowZoom(FollowZoom preset) {
     }
 }
 
+// The follow camera's pitch, when there is one.
 void Cameras::setFollowAngle(float degrees) {
     if (m_follow != nullptr) {
         m_follow->setPitch(degrees);
