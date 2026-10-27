@@ -1325,7 +1325,12 @@ name = "Brain_ClaimAttackSlot"
 page = "ai.md#original-structure"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::claimSlot"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the spacing is raised again for a holder, the down spacing whatever the state, a Warrior's not set to 1; the farthest holder displaced gets no full Brain_SetTarget"
+relation = "not-ported"
+issue = 649
 
 [[function]]
 address = 0x0028e248

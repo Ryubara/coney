@@ -166,7 +166,12 @@ page = "crimes.md#original-structure"
 role = "the mash's outcome"
 level = "confirmed-code"
 coney = "src/gamemodes/gameplay_uncuff.cpp:GameplayMode::uncuffSucceeded"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "hint 19's count, the 0.01 s blend and held flags 0x2000000 and 0x10000 on the end clips, the push spheres, stop calls and records' +0x18 are not ported"
+relation = "not-ported"
+issue = 664
 
 [[function]]
 address = 0x00260a70
@@ -175,7 +180,12 @@ page = "crimes.md#original-structure"
 role = "the mash's outcome"
 level = "confirmed-code"
 coney = "src/gamemodes/gameplay_mode.h:GameplayMode::updateUncuff"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the freer's end blends with kCombatFade, not 0.01 s, and holds no 0x2000000; the push spheres, stop calls and records' +0x18 are not ported"
+relation = "not-ported"
+issue = 664
 
 [[function]]
 address = 0x00260ca8
@@ -184,7 +194,12 @@ page = "crimes.md#original-structure"
 role = "the uncuff mash's start ([Uncuffing](crimes.md#uncuffing))"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::startUncuff"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "action 0x15, the push spheres set to 0, the top tasks' stop calls and the records' +0x18 are not ported"
+relation = "not-ported"
+issue = 664
 
 [[function]]
 address = 0x00273a68
@@ -297,7 +312,12 @@ page = "crimes.md#code-crimes"
 role = "Unless the tag is gone: a 0.05 s fade into 336 (held `0x800000`), then the idle loop (anim state 0) or, in the fight stance, the fight idle + 1 transition (held `0x80000`) and the fight idle (state `0xb`); then `Tag_End` at once ([The end](crimes.md#tag-look))."
 level = "confirmed-code"
 coney = "src/human/human_animator.h:HumanAnimator::playTagEnd"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the top task's stop call and the push sphere set to 0 are not ported"
+relation = "not-ported"
+issue = 664
 
 [[function]]
 address = 0x002789d0
