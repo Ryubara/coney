@@ -161,6 +161,7 @@ nav:
           - Characters: research/characters.md
           - "Characters: placing a human (teleports)": research/teleports.md
           - "Animation system: code": research/animation.md
+          - "The face: talk states and face clips": research/face.md
           - Inventory, unlockables and statistics: research/player-state.md
           - "Workouts: the hangout gym": research/workouts.md
           - Profiles, options and saving: research/save.md

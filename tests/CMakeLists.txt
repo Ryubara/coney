@@ -311,6 +311,7 @@ target_sources(coney_tests PRIVATE
     human/human_revive_test.cpp
     human/human_uncuff_test.cpp
     human/debug_clip_test.cpp
+    human/face_test.cpp
     human/way_clear_test.cpp
     human/flight_test.cpp
     human/hiding_test.cpp
@@ -371,6 +372,7 @@ target_sources(coney_tests PRIVATE
     raycast/collision_builder_test.cpp)
 # The AI humans' brains (docs/research/ai/index.md).
 target_sources(coney_tests PRIVATE
+    ai/face_mood_test.cpp
     ai/attack_choice_test.cpp
     ai/attack_reach_test.cpp
     ai/fidget_action_test.cpp
@@ -475,6 +477,7 @@ if(CONEY_DEBUG_TOOLS)
         gamemodes/text_viewer_mode_test.cpp
         gui/debug_menu_view_test.cpp
         platform/disc_anim_player_test.cpp
+        platform/disc_face_test.cpp
         platform/disc_change_character_test.cpp
         platform/disc_debug_ai_sides_test.cpp
         platform/disc_debug_no_gang_test.cpp

@@ -220,6 +220,7 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
     if (auto table = io::readExecutableWords(wad.disc(), GameRandom::kExecutableName, GameRandom::kTableAddress,
                                              GameRandom::kTableSize)) {
         m_glints.setTable(*table);
+        m_player->humans().setRandomTable(*table);
     }
     // The brains plan their moves on the level's routes, when it has path data.
     if (const world::PathMap* paths = m_scenery->pathMap(); paths != nullptr) {
@@ -255,6 +256,21 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
     m_hud = HudLayer::create(wad, engine.drawsPixels(), m_print);
     m_hud->hud().attachPlayer(0, m_type);
     makeStage();
+    // Whose face clips show (Human_UsesQueuedPose, docs/research/face.md): nobody a scene holds; an AI
+    // Warrior always; anyone else within 17.5 m of the camera. The original measures to the nearest camera
+    // (Human_UpdateLod's +0x334); Coney has player 1's alone.
+    m_player->humans().setFaceShown([this](const human::Human& human) {
+        if (m_scenes != nullptr && m_stage != nullptr && m_stage->holds(handleOf(human))) {
+            return false;
+        }
+        if (m_ai) {
+            if (const ai::Brain* brain = m_ai->brains().find(human);
+                brain != nullptr && brain->type() == ai::BrainType::Warrior) {
+                return true;
+            }
+        }
+        return anim::distance(human.position(), m_player->camera().position()) < human::kFaceShownDistance;
+    });
     // A scene's camera is player 1's scene camera, pushed over the camera shown and popped back at its end.
     if (cast != nullptr) {
         m_stage->setCameras(cast->cameras);
