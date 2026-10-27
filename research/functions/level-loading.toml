@@ -16,7 +16,7 @@ relation = "stand-in"
 issue = 993
 
 [[function.gaps]]
-what = "the outro movie, the world unload on a level change and Device_SetFlipTimeLimit"
+what = "the outro movie with a level change pending and Device_SetFlipTimeLimit"
 relation = "not-ported"
 issue = 993
 
