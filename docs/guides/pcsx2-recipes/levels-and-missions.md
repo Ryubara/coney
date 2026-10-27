@@ -59,7 +59,7 @@ it with `states add`, so nobody has to load the level again.
 | Preconditions | patches: `call-brains`; emulation running |
 | Evidence | confirmed (runtime) |
 | Ghidra | `0x0041abc0 Script_SetCheckPoint`, `0x00160d78 LevelFlow_LoadLevelByName` |
-| Research | [research/level-loading.md#initlevel](../../research/level-loading.md#initlevel), [research/ai.md#level99-save](../../research/ai.md#level99-save) |
+| Research | [research/level-loading.md#initlevel](../../research/level-loading.md#initlevel), [research/ai-fights.md#level99-save](../../research/ai-fights.md#level99-save) |
 | Confirmed at runtime | 2026-10-21, copy `pcsx2-d`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6); level99 checkpoint 3 from checkpoint 2: the level reloaded and where read checkpoint 3 |
 
 ```sh

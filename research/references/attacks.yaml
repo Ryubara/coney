@@ -6,7 +6,7 @@ about: |
   The 45 **attack kinds** every attack, damage and range table is indexed by, and the tables themselves. An AI human
   picks its next attack kind by weight from its character type's attack table (`Att_*`, copied to its brain's
   `+0x298`; `BrSetAttackWeight` changes one weight), waits the kind's `CfgAttackDelay` times its power class's
-  factor, and presses the kind's command ([AI: attack kinds](../research/ai.md#attack-kinds)). The damage tables
+  factor, and presses the kind's command ([AI: attack kinds](../research/ai/index.md#attack-kinds)). The damage tables
   (`Damage*`) give each kind's damage, written over the anim ids listed here when a human is made
   ([Combat: damage](../research/combat/index.md#damage-table)); the range table gives far ranges. `CfgChar` names a type's
   three tables ([Characters](characters.md)). `config_preload2.lua` defines every table at boot; each difficulty

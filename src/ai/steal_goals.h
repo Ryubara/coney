@@ -17,7 +17,7 @@
 // to an object and picks it up. Taking an owned object is a theft the level reports (Item_TakeOwned, message 7 to the
 // volume boxes round it: gamemodes/level_items.h). Research: docs/research/ai-code.md#t2-warrior-steal,
 // docs/research/ai-gangs.md#warrior-steal, docs/research/crew-wreck.md,
-// docs/research/ai.md#get-item
+// docs/research/ai/index.md#get-item
 
 namespace coney::ai {
 
@@ -50,7 +50,7 @@ inline constexpr float kGetItemWalkRadius = 0.36F;
 inline constexpr float kGetItemJogWithin = 3.0F;
 /// With a pane between him and the object it steps to its point first when farther than this from it, metres; it
 /// swings (attack kind 0 on himself) after kGetItemSwingDelayMs; with no clear ray it turns to the object when more
-/// than kGetItemTurn off (radians, 15 degrees). Research: docs/research/ai.md#get-item
+/// than kGetItemTurn off (radians, 15 degrees). Research: docs/research/ai/index.md#get-item
 inline constexpr float kGetItemGlassStep = 0.4F;
 inline constexpr std::int16_t kGetItemSwingDelayMs = 0x21;
 inline constexpr float kGetItemTurn = 0.2617994F;

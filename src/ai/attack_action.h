@@ -11,7 +11,7 @@
 // The attack action: one press of an attack kind. It writes the kind's command into the human's per-player record
 // once, as it starts, and then waits until the human's record `+0x08` holds none of the attack's flags; the clip's held
 // flags decide when the AI is free again, exactly as they decide it for the player.
-// Research: docs/research/ai.md#attack-action, docs/research/tasks.md#held-flags
+// Research: docs/research/ai-fights.md#attack-action, docs/research/tasks.md#held-flags
 
 namespace coney::ai {
 

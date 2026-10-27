@@ -83,10 +83,15 @@ class GameSession {
     /// The lines every level's play mode draws into its scene (PlayLevelMode::setSceneLines(): the debug tools' Debug
     /// draw page); empty: none.
     void setSceneLines(SceneLines lines) { m_sceneLines = std::move(lines); }
+    /// The mesh views every level's play mode draws its models through (PlayLevelMode::setMeshViews(): the debug
+    /// tools' Debug draw page); null: none.
+    /// @coney-only the debug tools' mesh views; the original has none
+    void setMeshViews(std::shared_ptr<MeshViewHook> views) { m_meshViews = std::move(views); }
 
     /// What the first level loaded does before its first frame (`--start`, `--camera`, `--trace`, `--scene`): called
     /// once, on that level's play mode; an error fails that level's load.
     using LevelSetup = std::function<std::expected<void, Error>(PlayLevelMode&)>;
+    /// Sets what the first level loaded does before its first frame (LevelSetup).
     void setFirstLevelSetup(LevelSetup setup) { m_firstLevelSetup = std::move(setup); }
     /// The all-humans trace (`--trace-humans`) every level loaded writes its rows to, one file for the whole run; null:
     /// none.
@@ -140,7 +145,8 @@ class GameSession {
     world::SectorBudget& m_budget;
     audio::ObjectSounds& m_objectSounds;
     std::function<void(std::string_view)> m_log;
-    SceneLines m_sceneLines; // setSceneLines()
+    SceneLines m_sceneLines;                   // setSceneLines()
+    std::shared_ptr<MeshViewHook> m_meshViews; // setMeshViews()
     AudioOutput* m_audio = nullptr;
     LevelSetup m_firstLevelSetup;
     std::shared_ptr<HumansTrace> m_humansTrace;

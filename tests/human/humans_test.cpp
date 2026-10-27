@@ -21,7 +21,7 @@
 
 // The characters' step (docs/research/tasks.md#humans-update): every human driven through its per-player record, the
 // passes in the original's order, and a human no pad drives fighting from a command written at the brains' place, as an
-// AI's attack action writes it (docs/research/ai.md#attack-action). Synthetic clips only.
+// AI's attack action writes it (docs/research/ai-fights.md#attack-action). Synthetic clips only.
 
 using coney::human::Human;
 using coney::human::Humans;

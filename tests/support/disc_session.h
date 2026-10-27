@@ -38,6 +38,7 @@
 #include "platform/render_engine.h"
 #include "platform/sprite_sheets.h"
 #include "platform/texture_dictionary.h"
+#include "platform/window.h"
 #include "world/sector_budget.h"
 
 namespace coney::test {
@@ -48,14 +49,20 @@ class DiscSession {
   public:
     /// Everything set up over `wad` (which must outlive it); the pad script must parse. Movies are skipped unless
     /// `settings` says otherwise.
+    ///
+    /// `window` (null: the Null renderer, which draws nothing) opens a hidden OpenGL window of that description
+    /// instead, for a test of what is drawn; it must be a window the machine can open (the caller checks, and skips
+    /// when it cannot), and its title must outlive the run.
     DiscSession(const io::Wad& wad, std::string_view padScript,
-                const platform::GameSessionSettings& settings = defaultSettings())
-        : DiscSession(wad, parseScript(padScript), nullptr, settings) {}
+                const platform::GameSessionSettings& settings = defaultSettings(),
+                const platform::WindowDesc* window = nullptr)
+        : DiscSession(wad, parseScript(padScript), nullptr, settings, window) {}
     /// The same with player 1's pad from `driver` (which must outlive the run), an adaptive playthrough's pad that
     /// decides each frame's input from what the game shows (docs/guides/testing.md#playthrough-tests).
     DiscSession(const io::Wad& wad, InputSource& driver,
-                const platform::GameSessionSettings& settings = defaultSettings())
-        : DiscSession(wad, nullptr, &driver, settings) {}
+                const platform::GameSessionSettings& settings = defaultSettings(),
+                const platform::WindowDesc* window = nullptr)
+        : DiscSession(wad, nullptr, &driver, settings, window) {}
     DiscSession(const DiscSession&) = delete;
     DiscSession& operator=(const DiscSession&) = delete;
     DiscSession(DiscSession&&) = delete;
@@ -133,12 +140,13 @@ class DiscSession {
 
     // The set-up both constructors share: player 1's pad is `script` when given, else `driver`.
     DiscSession(const io::Wad& wad, std::unique_ptr<ScriptedInput> script, InputSource* driver,
-                const platform::GameSessionSettings& settings)
+                const platform::GameSessionSettings& settings, const platform::WindowDesc* window)
         : m_handlers(chunk::ChunkHandlerTable::withDefaults()), m_budget(world::kSectorPoolSize),
           m_script(std::move(script)) {
         platform::addTextureDictionaryHandlers(m_handlers);
         platform::addSpriteSheetHandlers(m_handlers);
-        auto engine = platform::RenderEngine::start(platform::RenderBackend::Null, {});
+        auto engine = window != nullptr ? platform::RenderEngine::start(platform::RenderBackend::OpenGl, *window)
+                                        : platform::RenderEngine::start(platform::RenderBackend::Null, {});
         REQUIRE(engine.has_value());
         m_engine = std::move(*engine);
         auto audio = platform::AudioOutput::start(platform::AudioSink::Offline);

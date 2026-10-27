@@ -10,7 +10,7 @@
 // tackle at it, and the dispatcher answers with the counter as a paired move: 76 `GRAB_FRONT_COUNTER` against a grab's
 // intro (69-71), 9 `TACKLE_FRONT_COUNTER` against a tackle's (2-4); the attacker plays the next clip (77, 10). These
 // are the pure tests; the fighters play the pair (human::Fighter).
-// Research: docs/research/ai.md#block, docs/research/combat-moves.md#counters
+// Research: docs/research/ai-fights.md#block, docs/research/combat-moves.md#counters
 
 namespace coney::combat {
 

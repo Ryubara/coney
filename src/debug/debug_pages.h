@@ -58,6 +58,9 @@ void addDebugDrawPage(DebugSession& session);
 /// The Debug draw page's collision-shape items (wall classes, shapes, strike shapes, contacts), appended to `page`
 /// over `draw` (src/debug/pages_entity.cpp).
 void addShapeDrawItems(MenuPage& page, DebugDrawOptions& draw);
+/// The Debug draw page's mesh-view items (the model wireframe, the mesh view and its scope, normals, bone axes),
+/// appended to `page` over `draw` (src/debug/pages_entity.cpp; docs/guides/debug-menu.md#mesh-views).
+void addMeshViewItems(MenuPage& page, DebugDrawOptions& draw);
 /// The Entity inspector page: select a human or object (nearest, next, previous, looked at, from a list), highlight
 /// it, and watch everything the mode knows of it in groups. Over PlayControls::inspect(); says so without one.
 void addEntityInspectorPage(DebugSession& session);

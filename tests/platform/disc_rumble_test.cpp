@@ -106,7 +106,7 @@ TEST_CASE("the disc's WAR PARTY hands the pad to a team-mate when the player goe
     CHECK(play->player().human().alive());
 
     // The pad drives the team-mate now. The other gangs' brains are suspended (BrSuspend) so that none grabs him while
-    // the stick is pushed: the AI grabs and tackles (docs/research/ai.md#coney), and this checks only the pad.
+    // the stick is pushed: the AI grabs and tackles (docs/research/ai/index.md#in-coney), and this checks only the pad.
     for (const coney::HumanCreation& human : humans) {
         if (human.gang != p11->gang) {
             const std::array<coney::script::Value, 2> suspend{coney::script::Value(human.handle),
@@ -244,7 +244,7 @@ TEST_CASE("the disc's Survival sends spawned enemies at the player until he fall
     game.chooseRumble(9, 134, 1);
     // Each enemy is measured from the spawner's origin as it spawns (the camera at the player's height): the enemies
     // grab, tackle and throw the player, so he and his camera do not stay where they started
-    // (docs/research/ai.md#coney).
+    // (docs/research/ai/index.md#in-coney).
     std::map<double, std::array<float, 3>> playerAtSpawn;
     const auto spawnOrigin = [&game]() -> std::optional<std::array<float, 3>> {
         const coney::HumanCreation* player = game.flow().humans().player(1);

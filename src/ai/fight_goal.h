@@ -11,7 +11,7 @@
 // The fight goal (type `0xf`): while it is on top, each update it checks its target, tries a tackle, tries to block an
 // attack announced on its human, waits for its actions, picks an attack kind, asks whether it may attack now
 // (Brain_CheckAttack), and then holds a ring round the target, walks into the kind's reach, or presses the attack.
-// Research: docs/research/ai.md#fight
+// Research: docs/research/ai-fights.md#fight
 
 namespace coney::ai {
 
@@ -68,7 +68,7 @@ class FightGoal final : public Goal {
     /// turned to him (the original's band-keeping move circles him facing him).
     /// @orig 0x002b3ab0 FightGoal_Process (unknown)
     [[nodiscard]] GoalStatus process(Brain& brain) override;
-    /// Gives up the active-attacker place (the goal's suspend, docs/research/ai.md#attack-places).
+    /// Gives up the active-attacker place (the goal's suspend, docs/research/ai-fights.md#attack-places).
     void suspend(Brain& brain) override;
     /// Gives up the active-attacker place.
     void end(Brain& brain) override;

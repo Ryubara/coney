@@ -10,7 +10,7 @@ results are in the body, marked confirmed (runtime).
 What the game calls a *task*, how tasks are scheduled and updated, in what order a frame of play runs them, and the
 one mechanism that decides when a human's move is over: the **flags an animation task holds on its human**. It is
 the page an implementer needs to replace Coney's per-symptom timing guards with the original's machinery, and the
-frame the [AI humans](ai.md) run in.
+frame the [AI humans](ai/index.md) run in.
 
 In one paragraph: the `TaskEngine` is the game's object scheduler. A singleton `TaskManager` owns two **timing
 wheels** of 256 buckets (one per phase: play and pause), a set of sub-managers (objects, particles, lights, glass,
@@ -207,7 +207,7 @@ Not on the wheel, with pools of their own:
 | spawn record (a placed object, live or not) | `ObjectTaskRec`, `ObjectTaskManager +0x14` | per level, `CfgSetDatabaseSizes` objects + 500, 0x28 each | serial 0 ([Handles](#handles)) |
 | camera | `Cam_ICamera` base `0x00120868`, vtable `0x00535510` ([Camera](camera.md)) | not traced | yes |
 | object zone | a bit mask in the `ObjectTaskManager`; zone 0 on, 1-254 off at start (`0x00398348` from `0x00397a48`); the zones scripts use: [Object zones](../references/zones.md) | 255 | the zone number |
-| brain, goal, action | [AI](ai.md#brain) | 60, 170, 100 | by human |
+| brain, goal, action | [AI](ai/index.md#brain) | 60, 170, 100 | by human |
 | gang | `0x005e6e30` ([AI](ai-gangs.md#gang-record)) | 32 × 0xb10 | the slot 0-31 |
 | formation | `0x006ceaf0` ([AI](ai-gangs.md#formations)) | 41 × 0x280 | |
 | path | `AddPath` | 32 | a userdata |
@@ -237,7 +237,7 @@ menus (mode `0xd`, `0x00155b30`). Confirmed (code).
   scratch at `0x006f1550 + depth × 0x410` (`DAT_00512c8c` is the nesting depth). There is no queue.
 - An **event** (a struct with its type at `+0x20` and its sender at `+0x24`) goes to vtable `+0x44`. For a human
   (`Human_OnEvent`, `0x0021d480`) the order is: the script handlers on human `+0xe8` (`0x00384c38`), then the gang's
-  (`0x00164c20`), then the brain's (`0x0028f928`, [AI](ai.md#events)).
+  (`0x00164c20`), then the brain's (`0x0028f928`, [AI](ai/index.md#events)).
 
 Event types seen: `0xb` a new enemy (to the gang's tactic), `0xd` the brain's goals ran out, `0x14` violence nearby;
 `0`, `1`, `7`, `0x10` and `0x17` reach the civilian brain (not identified).
@@ -331,10 +331,9 @@ before on [Characters](characters.md#update):
    cleared here (`0x00146000`).
 4. With `0x005e5358`, the **gangs** (`0x0016d170`: 32 records of 0xb10 at `0x005e6e30`, a fifth of them per step;
    the gang's tactic through `0x00306630`).
-5. With `0x005e535c`, the **brains** (`Brains_Update`, `0x00293b28`, [AI](ai.md#update)): each enabled brain thinks on
-   one step in five (brain *i* when *i* mod 5 = (`0x005104f4` >> 1) mod 5, confirmed (runtime)) and updates every
-   step. Brains write their human's **command** into its per-player record
-   `+0x20`, as a pad would.
+5. With `0x005e535c`, the **brains** (`Brains_Update`, `0x00293b28`, [AI](ai/index.md#update)): each enabled brain
+   thinks on one step in five (brain *i* when *i* mod 5 = (`0x005104f4` >> 1) mod 5, confirmed (runtime)) and updates
+   every step. Brains write their human's **command** into its per-player record `+0x20`, as a pad would.
 6. With `0x005e5360`, each human's animation step (`0x0023bd78`), then `0x00105570` (refresh the playing anim ids).
 7. Per human: an effect for flag `0x4000`, the player gang checks.
 8. With `0x005e5364`, each human's **state update**: vtable `+0x13c` (the locomotion for a pad-controlled human,
@@ -351,7 +350,7 @@ update; the player's pad command reaches the record in step 3. Confirmed (runtim
 the attack action's start (the call at `0x002fac98`) writes the command through `0x00147ef0`, the dispatcher
 (`Player_UpdateActions`, return addresses in `0x0027b5d0`-`0x0027c73c`) reads it through `0x00147ef8` in the same
 character step, and the next step's record update (`0x00146000`, the AI has no pad) has cleared it. The command is
-written once per attack, not again while the action waits ([AI](ai.md#attack-action)).
+written once per attack, not again while the action waits ([AI](ai-fights.md#attack-action)).
 
 ### Held flags: how a move ends {#held-flags}
 
@@ -391,7 +390,7 @@ climbs `0x80000`, landing `0x1000000`; seen at runtime, [Characters](characters.
 | square, cross | `0x00286cc8`, `0x00287a18` | any of `0x100101f` | confirmed (code) |
 | grab, tackle | `0x00284920` | any of `0xfc7eaf7` | confirmed (code) |
 | the stick ([below](#locomotion-gate)) | `0x00241a88`, `0x00241cd4`, `0x00223cb0` | any of `0x110c0880`, or (busy) any outside `0x51140800` | confirmed (code) |
-| the AI's attack action ([AI](ai.md#attack-action)) | `0x002fad70` | waits while any of `0x5c0221f` | confirmed (code) |
+| the AI's attack action ([AI](ai-fights.md#attack-action)) | `0x002fad70` | waits while any of `0x5c0221f` | confirmed (code) |
 
 ### The locomotion gate: when the stick comes back {#locomotion-gate}
 
@@ -1138,7 +1137,7 @@ workers) that belong to this page, by address.
   `WarMoveInstance`.
 - What makes a light task, and the pool sizes of `AnimTask`, `SoundTask`, `ScriptObject` and the cameras.
 - The anim events `0x3e`, `0x3f` and the one that sets `0x2000`; what state code 6 is.
-- The event types `0`, `1`, `7` and `0x17` (`0x10` is the attack warning, [AI](ai.md#block)).
+- The event types `0`, `1`, `7` and `0x17` (`0x10` is the attack warning, [AI](ai-fights.md#block)).
 - Does `TaskManager_TickGame` cap the pairs it runs in one frame, and do millisecond timers lag the steps below 25 fps
   as inferred in [The play tick](#tick)?
 - Resolved: the physics step `0x00340918` moves no human and decides no hit; it settles landed objects

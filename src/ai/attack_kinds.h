@@ -14,7 +14,7 @@
 // The 45 attack kinds an AI fighter chooses from: the command each one presses (the same ids a pad makes), the chains
 // a kind is pressed as, the delay between a chain's presses, the class attack tables (`Att_*`) that weight them, and
 // the weighted pick. Pure functions over a seeded generator, so a pick is the same on every run.
-// Research: docs/research/ai.md#attack-kinds, docs/research/ai.md#fight
+// Research: docs/research/ai/index.md#attack-kinds, docs/research/ai-fights.md#fight
 
 namespace coney::ai {
 
@@ -24,8 +24,8 @@ inline constexpr std::size_t kAttackKinds = 45;
 /// A class's attack weights, one per kind (brain `+0x298`, the class's `Att_*` table): 0 never, larger more often.
 using AttackWeights = std::array<std::uint8_t, kAttackKinds>;
 
-/// The command attack kind `kind` presses (`AttackKind_ToCommand`, docs/research/ai.md#attack-kinds); kinds 24 and 35
-/// press square or cross at random (a draw of `random`). Kind 18 and kinds outside 0-44 press nothing (0).
+/// The command attack kind `kind` presses (`AttackKind_ToCommand`, docs/research/ai/index.md#attack-kinds); kinds 24
+/// and 35 press square or cross at random (a draw of `random`). Kind 18 and kinds outside 0-44 press nothing (0).
 /// @orig 0x00231090 AttackKind_ToCommand (unknown)
 [[nodiscard]] combat::CommandId commandOf(int kind, combat::CombatRandom& random);
 
@@ -50,8 +50,8 @@ using AttackWeights = std::array<std::uint8_t, kAttackKinds>;
 /// kind that presses cross first, `S1` (12) for every other.
 [[nodiscard]] std::uint32_t firstAnimOf(int kind);
 
-/// `Att_Normal`, the sparring and fence Warriors' and the street civilian's table (docs/research/ai.md#level99), for
-/// when the disc's configuration is not read.
+/// `Att_Normal`, the sparring and fence Warriors' and the street civilian's table (docs/research/ai/index.md#level99),
+/// for when the disc's configuration is not read.
 [[nodiscard]] AttackWeights attNormal();
 /// `Att_Bum`: square chains only.
 [[nodiscard]] AttackWeights attBum();

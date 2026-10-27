@@ -6,7 +6,7 @@
 // How an AI chooses whom to fight among its enemies: which may be chosen at all (Brain_ValidateEnemy), whether one may
 // be chased and attacked now, the score of each (Brain_ScoreEnemy, its weights set by `CfgSetTargetingPoints` and
 // `CfgSetTargetingPointsEx`), and the pick of the best (Brain_PickBestEnemy). Research:
-// docs/research/ai.md#enemy-score, docs/research/ai.md#sight
+// docs/research/ai-fights.md#enemy-score, docs/research/ai-fights.md#sight
 
 namespace coney::ai {
 
@@ -99,7 +99,7 @@ inline constexpr float kPoliceSightRange = 30.0F;
 
 /// `scorer`'s score for `enemy` with the terms `flags` (`Brain_ScoreEnemy`): kRuledOut for one it may not take a slot
 /// on, or beyond its sight range when kDistance is asked; otherwise the sum of the asked terms and the four that
-/// always count (docs/research/ai.md#enemy-score), by the scorer's TargetingPoints.
+/// always count (docs/research/ai-fights.md#enemy-score), by the scorer's TargetingPoints.
 /// @orig 0x0029ce98 Brain_ScoreEnemy (unknown)
 [[nodiscard]] float scoreEnemy(const Brain& scorer, const Brain& enemy, std::uint32_t flags);
 

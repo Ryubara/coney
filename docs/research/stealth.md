@@ -9,9 +9,10 @@ values its tutorial passes.
 How the player hides and how guards find him: the shadow ground and the hidden state, sneaking, the HUD's cue,
 scouts and their sight, how being spotted fails a stealth section, the stealth kill and distractions. The Destroyers'
 hangout (level87, checkpoint 5) teaches all of it. Pieces documented elsewhere are linked, not repeated: the enemy
-scan and sight tests ([AI: the enemy scan](ai.md#enemy-scan), [Sight](ai.md#sight)), the Scout and PathScout goals'
-code rows ([AI goals](ai-goals.md#goal-scout)), the stealth kill's clip data ([Combat moves](combat-moves.md#stealth)),
-the radar's drawing ([GUI: the radar](gui.md#radar-icons)) and the wanted timers ([Crimes: wanted](crimes.md#wanted)).
+scan and sight tests ([AI: the enemy scan](ai-fights.md#enemy-scan), [Sight](ai-fights.md#sight)), the Scout and
+PathScout goals' code rows ([AI goals](ai-goals.md#goal-scout)), the stealth kill's clip data ([Combat
+moves](combat-moves.md#stealth)), the radar's drawing ([GUI: the radar](gui.md#radar-icons)) and the wanted timers
+([Crimes: wanted](crimes.md#wanted)).
 
 ## Original structure
 
@@ -68,10 +69,10 @@ of `p`'s gang, confirmed (code):
       grey.
 
 So **you cannot hide while anyone has you as an enemy**: get out of sight first, wait for the hunters' scans to drop
-you ([the enemy scan](ai.md#enemy-scan), step 3), then the shadow takes you. Other humans (not of a player's gang)
+you ([the enemy scan](ai-fights.md#enemy-scan), step 3), then the shadow takes you. Other humans (not of a player's gang)
 take the same rules without the radar and the hide order. Bit 5 (`0x0020`) of the same triangle sets human byte
 `+0x5b7` (`Human_SetCoverFlag5`, `0x002195e0`), which the police's break-and-enter check reads
-([AI: cops](ai.md#think-cop), step 6); it is not part of hiding.
+([AI: cops](ai-brain-types.md#think-cop), step 6); it is not part of hiding.
 
 ### The hidden state {#hidden}
 
@@ -97,10 +98,9 @@ goals for Warriors. While hidden the player does not enter the fight stance by h
 `Player_UpdateSprint` needs `0x200000` clear) and an L1 target is not locked on ([the stealth kill](#stealth-kill)).
 Confirmed (code) at the callers of `0x00230140`.
 
-**What hidden changes for the AI**: [the enemy scan](ai.md#enemy-scan) and the spot test skip him
-([Seen or not](#seen)); the follow camera raises its look-at point to 1.65 m ([Camera](camera.md#update));
-his footsteps play at half volume ([Characters](characters.md)); the AI's enemy picks drop him
-([AI: the score](ai.md#enemy-score)).
+**What hidden changes for the AI**: [the enemy scan](ai-fights.md#enemy-scan) and the spot test skip him ([Seen or
+not](#seen)); the follow camera raises its look-at point to 1.65 m ([Camera](camera.md#update)); his footsteps play at
+half volume ([Characters](characters.md)); the AI's enemy picks drop him ([AI: the score](ai-fights.md#enemy-score)).
 
 **The player's Warriors hide too** (`Player_UpdateHideOrder`, `0x0023e7e0`, while hidden on shadow ground, standing
 still: speed `+0x1ac` = 0, not busy, his gang able to help): after a delay (500 ms; with no command active, the time
@@ -178,7 +178,7 @@ anim `0x29c` the gang's scouting clip. The Scout goal, confirmed (code) at `0x00
 
 ### Seen or not {#seen}
 
-A scout notices the player only through his **enemy scan** ([AI: the enemy scan](ai.md#enemy-scan)), every 500 ms
+A scout notices the player only through his **enemy scan** ([AI: the enemy scan](ai-fights.md#enemy-scan)), every 500 ms
 under the Scout goal (× 4 when he is beyond 30 m from the camera, detail level above 0). For a guard `G` and the
 player `P`, confirmed (code) at `0x0028b358`:
 
@@ -190,7 +190,7 @@ player `P`, confirmed (code) at `0x0028b358`:
    off shadow ground (the [grace](#leaving): `Human_IsHiddenFromBrain`), when he must also be in the cone.
 4. Beyond it, `P` must be in the **view cone**: direction · `G`'s facing above cos(FOV / 2) (FOV brain `+0x12c`,
    `BrSetFOV`, full width; 110° when a brain is made), and in **line of sight** (`Human_HasLineOfSight`, 1.7 m and 1.0
-   m rays that pass fences and glass, [Sight](ai.md#sight)).
+   m rays that pass fences and glass, [Sight](ai-fights.md#sight)).
 
 There is **no light level and no crouch**: the only "dark" is the shadow-ground flag, and sneaking only matters by
 the gait (walking keeps the near radius at 1.5 m). A new enemy found by the scan is sent to `G` as event `0xb`
@@ -363,9 +363,9 @@ Chapter 5 of `level87` (`level87_chap5_club.lua`) is the stealth tutorial. What 
   start, 633 walk at its own speed), with 634 in and 394 out from the idle.
 - **The HUD cue** ([HUD](hud.md#coneys-implementation)): the radar turns blue while he is hidden and back to grey,
   blending over 500 ms.
-- **Seen or not** (`repo:src/ai/enemy_scan.h`, [AI: the enemy scan](ai.md#enemy-scan)): `Human_CanSeeHuman` and the scan
-  see a hidden human only within 2 m.
-- **Scouts and the call** (`repo:src/ai/tactic_scout.h`, [AI: Coney](ai.md#coney)): TacticScout's guards keep their
+- **Seen or not** (`repo:src/ai/enemy_scan.h`, [AI: the enemy scan](ai-fights.md#enemy-scan)): `Human_CanSeeHuman` and
+  the scan see a hidden human only within 2 m.
+- **Scouts and the call** (`repo:src/ai/tactic_scout.h`, [AI: Coney](ai/index.md#in-coney)): TacticScout's guards keep their
   posts and scan every 500 ms; one who spots, is hit by or is warned of an enemy fights him, and when the level allows
   it runs to the farthest phone flag in range and, 1.5 s later, starts the enemy gang's second wanted timer
   ([Crimes](crimes.md#coneys-implementation)), which `GangIsWanted(gang, false)` reads.

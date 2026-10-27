@@ -937,9 +937,9 @@ TEST_CASE("gameplay's enter empties the moods' tracks and sets the reverb's defa
     CHECK(story.musicMood == -1);
 }
 
-// docs/research/ai.md#fight-reposition (`Ambient_MayGesture` 0x00291ed0): two gesture slots per reaction kind, of
-// which a brain may take as many as its help level; a slot frees when its holder stops speaking.
-// Expected: ai.md#fight-reposition, confirmed (code)
+// docs/research/ai-fights.md#fight-reposition (`Ambient_MayGesture` 0x00291ed0): two gesture slots per reaction kind,
+// of which a brain may take as many as its help level; a slot frees when its holder stops speaking.
+// Expected: ai-fights.md#fight-reposition, confirmed (code)
 TEST_CASE("a gesture takes a free slot of the speaker's reaction kind, up to his help level", "[audio][speech]") {
     Rig rig;
     coney::camera::FollowCamera follow{coney::anim::Vec3{2.0F, 0.0F, 0.0F}, 0.0F};

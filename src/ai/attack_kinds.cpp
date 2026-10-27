@@ -14,7 +14,8 @@ namespace {
 // The clips' event frames are 1/30 s apart (docs/research/formats/animation.md).
 constexpr int kEventFramesPerSecond = 30;
 
-// The command of each kind (docs/research/ai.md#attack-kinds); kinds 24 and 35, square or cross at random, are -1.
+// The command of each kind (docs/research/ai/index.md#attack-kinds); kinds 24 and 35, square or cross at random, are
+// -1.
 constexpr std::array<int, kAttackKinds> kCommands{0x10, 0x0f, 0x12, 0x12, 0x11, 0x11, 0x12, 0x11, 0x14, 0x13, // 0-9
                                                   0x0f, 0x36, 0x37, 0x38, 0x0e, 0x24, 0x22, 0x23, 0,    0x20, // 10-19
                                                   0x21, 0x0e, 0x0d, 0x39, -1,   0x0d, 0x22, 0x11, 0x11, 0x0d, // 20-29
@@ -87,7 +88,7 @@ std::uint32_t firstAnimOf(int kind) {
 
 AttackWeights attNormal() {
     AttackWeights weights{};
-    // docs/research/ai.md#level99, by kind (the table's Lua index - 1).
+    // docs/research/ai/index.md#level99, by kind (the table's Lua index - 1).
     const auto set = [&weights](int first, int last, std::uint8_t weight) {
         for (int kind = first; kind <= last; ++kind) {
             weights[static_cast<std::size_t>(kind)] = weight;

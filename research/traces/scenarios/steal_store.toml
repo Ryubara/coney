@@ -4,7 +4,7 @@
 # hooks log each claim on a cluster, each GetItem swing at glass, each AI pick-up press and search, each
 # Human_PickUpObject, each Item_TakeOwned (message 7) and each Inventory_AddItem; the fields follow the crew, the
 # cluster count and player 1's money and loot. Research: docs/research/ai-code.md#t2-warrior-steal,
-# docs/research/crimes.md#owned-items, docs/research/ai.md#get-item. The state is a file of your own (not a slot).
+# docs/research/crimes.md#owned-items, docs/research/ai/index.md#get-item. The state is a file of your own (not a slot).
 description = "level80 pharmacy: the crew's steal (command 5) inside the store; claims, takes, messages, money"
 research = "docs/research/crimes.md#owned-items"
 input = "steal_store.txt"

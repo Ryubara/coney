@@ -1009,7 +1009,7 @@ void Human::aiCombatWalk(bool gated) {
 
 void Human::combatWalk(const Combatant& target, bool gated) {
     // A human no pad drives runs the AI's stance control: its brain's move, never the target, turns it
-    // (docs/research/ai.md#fight-facing).
+    // (docs/research/ai-fights.md#fight-facing).
     if (!m_record.padDriven) {
         aiCombatWalk(gated);
         return;
