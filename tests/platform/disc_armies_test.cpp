@@ -53,9 +53,9 @@ constexpr float kFlag02Y = 24.0F;
 constexpr float kArrivalRadius = 0.5F;
 // Frames allowed for the intro scene and the walk (the original's timer starts about 28 s in), for the 99 s timer, and
 // for the game over's countdown (10 steps of 1 s) with a margin.
-constexpr std::uint64_t kWalkLimit = 40 * 30;
-constexpr std::uint64_t kTimerLimit = 110 * 30;
-constexpr std::uint64_t kCountdownFrames = 11 * 30;
+constexpr std::uint64_t kWalkLimit = std::uint64_t{40} * 30;
+constexpr std::uint64_t kTimerLimit = std::uint64_t{110} * 30;
+constexpr std::uint64_t kCountdownFrames = std::uint64_t{11} * 30;
 
 } // namespace
 
@@ -142,7 +142,9 @@ TEST_CASE("the disc's level60 with the pad idle: the walk out, the Armies HUD, t
     const coney::camera::RailCamera* rail = cameras != nullptr ? cameras->rail() : nullptr;
     const coney::hud::ArmiesHud& armies = flow.hud().armies();
     const std::uint32_t creditsAtStart = armies.credits();
-    const float walkedTo = std::hypot(out->x - kFlag02X, out->y - kFlag02Y);
+    // The REQUIRE above is the check; value_or reads the position without an unchecked access.
+    const coney::anim::Vec3 feetAt = out.value_or(coney::anim::Vec3{});
+    const float walkedTo = std::hypot(feetAt.x - kFlag02X, feetAt.y - kFlag02Y);
     std::printf("  level60 idle: timer running %d after %llu frames, player at %.2f from Flag_02, rail mode %d, "
                 "credits %u, GO sign %u\n",
                 timerRuns ? 1 : 0, static_cast<unsigned long long>(run.frames()), static_cast<double>(walkedTo),
