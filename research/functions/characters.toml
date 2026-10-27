@@ -220,7 +220,12 @@ page = "characters.md#code-core"
 role = "Puts a clip into one of the seven override slots (`+0x3c8`) for an anim id, or releases the slot when the clip is 0; marks the state when the current anim is overridden."
 level = "confirmed-code"
 coney = "src/human/script_state.h:ScriptState::setAnimOverride"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "a name that does not load frees the slot; the anim playing now is restarted with the new clip (state flag 0x20000000) only for the idle; the result is 1 only for a loaded clip"
+relation = "not-ported"
+issue = 695
 
 [[function]]
 address = 0x00221c20
@@ -2176,7 +2181,12 @@ page = "characters.md#original-structure"
 role = "the two forward probes; fence, wall and their short forms"
 level = "confirmed-code"
 coney = "src/human/climb.h:probeClimb"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "held flags 0x84240 do not refuse the climb, and a face only the high ray meets is not climbed as a tall one"
+relation = "not-ported"
+issue = 664
 
 [[function]]
 address = 0x002829e8
@@ -2185,7 +2195,12 @@ page = "characters.md#original-structure"
 role = "the jump's checks; take-off gait and height"
 level = "confirmed-code"
 coney = "src/human/jump.h:jumpAllowed"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "no jump is refused for a held object of anim set 4 or 6 or in the fight stance"
+relation = "not-ported"
+issue = 664
 
 [[function]]
 address = 0x0029ade0
