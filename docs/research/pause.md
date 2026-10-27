@@ -12,7 +12,7 @@ owns:
     - "0x001dfe20-0x001e09e8"
     - "0x001e3458-0x001e5498"
     - "0x001e5498-0x001e6e98"
-  functions: ["0x00154f28", "0x0015dbb8", "0x0015dd38", "0x0015dd98", "0x0041d1b0"]
+  functions: ["0x00154f28", "0x001557f8", "0x0015dbb8", "0x0015dd38", "0x0015dd98", "0x0041d1b0"]
 ---
 # The pause menu and the mission-failed screen
 
