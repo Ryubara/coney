@@ -599,7 +599,7 @@ def add_standard(tmp_path: Path, state_file: Path, state_id: str = "street") -> 
     assert run("add", str(state_file), "--id", state_id, "--desc", "d", "--author", "me") == 0
 
 
-def test_use_hands_out_a_copy_and_leaves_the_library_file_alone(
+def test_hand_out_hands_out_a_copy_and_leaves_the_library_file_alone(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], state_file: Path
 ) -> None:
     make_checkout(tmp_path, monkeypatch)
@@ -611,7 +611,7 @@ def test_use_hands_out_a_copy_and_leaves_the_library_file_alone(
     monkeypatch.setattr(pcsx2_claims, "default_registry", lambda: StubRegistry(copy_folder))
     capsys.readouterr()
 
-    assert run("use", "street", "--copy", "pcsx2-x", "--agent", "me") == 0
+    assert run("hand-out", "street", "--copy", "pcsx2-x", "--agent", "me") == 0
     handed = copy_folder / "library-states" / "street.p2s"
     assert handed.read_bytes() == before[0]
     assert handed.stat().st_mode & stat.S_IWUSR
@@ -623,12 +623,12 @@ def test_use_hands_out_a_copy_and_leaves_the_library_file_alone(
 
     # Played on and used again: the file is replaced by a fresh copy, the library's still the same.
     handed.write_bytes(b"played on")
-    assert run("use", "street", "--copy", "pcsx2-x", "--agent", "me") == 0
+    assert run("hand-out", "street", "--copy", "pcsx2-x", "--agent", "me") == 0
     assert handed.read_bytes() == before[0]
     assert stored.read_bytes() == before[0]
 
 
-def test_use_needs_the_claim_a_known_id_and_an_intact_file(
+def test_hand_out_needs_the_claim_a_known_id_and_an_intact_file(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], state_file: Path
 ) -> None:
     make_checkout(tmp_path, monkeypatch)
@@ -636,9 +636,9 @@ def test_use_needs_the_claim_a_known_id_and_an_intact_file(
     copy_folder = tmp_path / "pcsx2-x"
     monkeypatch.setattr(pcsx2_claims, "default_registry", lambda: StubRegistry(copy_folder))
     capsys.readouterr()
-    assert run("use", "street", "--copy", "pcsx2-x", "--agent", "you") == 2
+    assert run("hand-out", "street", "--copy", "pcsx2-x", "--agent", "you") == 2
     assert "held by me" in capsys.readouterr().err
-    assert run("use", "nothing", "--copy", "pcsx2-x", "--agent", "me") == 2
+    assert run("hand-out", "nothing", "--copy", "pcsx2-x", "--agent", "me") == 2
     assert "no state 'nothing'" in capsys.readouterr().err
 
     stored = Library(tmp_path / "library").state_path("street")
@@ -646,12 +646,12 @@ def test_use_needs_the_claim_a_known_id_and_an_intact_file(
     data = bytearray(stored.read_bytes())
     data[50] ^= 1
     stored.write_bytes(bytes(data))
-    assert run("use", "street", "--copy", "pcsx2-x", "--agent", "me") == 2
+    assert run("hand-out", "street", "--copy", "pcsx2-x", "--agent", "me") == 2
     assert "does not match the catalog" in capsys.readouterr().err
     assert not (copy_folder / "library-states").exists()
 
 
-def test_use_applies_patches_to_the_copy_only(
+def test_hand_out_applies_patches_to_the_copy_only(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], state_file: Path
 ) -> None:
     root = make_checkout(tmp_path, monkeypatch)
@@ -666,7 +666,7 @@ def test_use_applies_patches_to_the_copy_only(
     stored = Library(tmp_path / "library").state_path("street")
     before = stored.read_bytes()
 
-    assert run("use", "street", "--copy", "pcsx2-x", "--agent", "me", "--patch", "demo") == 0
+    assert run("hand-out", "street", "--copy", "pcsx2-x", "--agent", "me", "--patch", "demo") == 0
     handed = copy_folder / "library-states" / "street.p2s"
     assert pcsx2_state.read_ee_memory(handed)[0x100:0x104] == bytes([1, 2, 3, 4])
     assert pcsx2_state.read_ee_memory(stored)[0x100:0x104] == bytes(4)
@@ -675,13 +675,13 @@ def test_use_applies_patches_to_the_copy_only(
 
     # A patch the state cannot take (its original words are not there) is refused, and nothing is left behind.
     patched = handed.read_bytes()
-    assert run("use", "street", "--copy", "pcsx2-x", "--agent", "me", "--patch", "scripted-pad") == 2
-    assert run("use", "street", "--copy", "pcsx2-x", "--agent", "me", "--patch", "nosuch") == 2
+    assert run("hand-out", "street", "--copy", "pcsx2-x", "--agent", "me", "--patch", "scripted-pad") == 2
+    assert run("hand-out", "street", "--copy", "pcsx2-x", "--agent", "me", "--patch", "nosuch") == 2
     assert handed.read_bytes() == patched
     assert sorted(p.name for p in handed.parent.iterdir()) == ["street.p2s"]
 
 
-def test_use_can_launch_the_copy(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, state_file: Path) -> None:
+def test_hand_out_can_launch_the_copy(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, state_file: Path) -> None:
     make_checkout(tmp_path, monkeypatch)
     add_standard(tmp_path, state_file)
     copy_folder = tmp_path / "pcsx2-x"
@@ -693,7 +693,7 @@ def test_use_can_launch_the_copy(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
         return 0
 
     monkeypatch.setattr(pcsx2_cli, "run_launch", record_launch)
-    assert run("use", "street", "--copy", "pcsx2-x", "--agent", "me", "--launch") == 0
+    assert run("hand-out", "street", "--copy", "pcsx2-x", "--agent", "me", "--launch") == 0
     assert launched == [(copy_folder / "library-states" / "street.p2s", copy_folder, None, None, "me")]
 
 
