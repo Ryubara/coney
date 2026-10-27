@@ -6,11 +6,15 @@ request descriptions, labels, issue forms, merge settings, hygiene limits, path 
 explains each key). Every check reads it through `load_conventions`, so a rule changes in one line. The loader is
 strict on purpose: an unknown key, a missing key, a value of the wrong type, a duplicate key or a reference to
 something that does not exist is a `ConventionsError` that names the key, so a typo or a bad merge fails loudly
-instead of leaving a rule silently off.
+instead of leaving a rule silently off. The one exception is `load_conventions_leniently`, for the release commands
+(`pr open`, `pr verify`, `pr text`) reading a branch's file with a tool older than it: an unknown key is skipped and
+reported, everything else (a missing key, a wrong value) is still an error. A misspelt key that is optional is
+skipped too, and its default applies; only a required key's typo is caught, because it leaves the real key missing.
 """
 
 from __future__ import annotations
 
+import contextvars
 import re
 import subprocess
 from collections.abc import Callable, Iterable, Mapping
@@ -930,8 +934,16 @@ class TaskSlots:
     task: int
     #: Fix units in work (a fix of a pull request that failed in CI).
     fix: int
-    #: Whether `task start` refuses a unit over the limit; false until the cutover, when it only reports.
+    #: Whether `task start` and the coordinator's Agent guard refuse a unit over the limit; false only reports it.
     enforce: bool
+    #: Whether a task whose issue carries `claims.exempt_label` (the units that build the new workflow, read from the
+    #: issue's held claim card) holds no slot; the cutover turns it off, and such a unit then counts like any other.
+    exempt_workflow: bool
+    #: The agent types that need a held claim and hold a slot when the coordinator starts one (`engineer`, `tooling`);
+    #: a reviewer and the read-only helpers need neither.
+    agent_types: tuple[str, ...]
+    #: How long the guard keeps the slot of an agent it let start, while the agent has not yet run `task start`.
+    reserve_minutes: int
 
 
 @dataclass(frozen=True)
@@ -1292,8 +1304,14 @@ def _fail(where: str, problem: str) -> ConventionsError:
     return ConventionsError(f"{CONVENTIONS_FILE}: {where + ': ' if where else ''}{problem}")
 
 
+#: Where a lenient read (`parse_conventions(..., ignored=)`) collects the unknown keys it skips; None is the strict
+#: read, which refuses them. A context variable, so the 70 table readers below need no extra parameter.
+_IGNORED: contextvars.ContextVar[list[str] | None] = contextvars.ContextVar("conventions_ignored", default=None)
+
+
 def _table(value: object, where: str, required: Iterable[str], optional: Iterable[str] = ()) -> dict[str, Any]:
-    """`value` as a mapping with exactly the `required` keys and perhaps some `optional` ones; no other key."""
+    """`value` as a mapping with exactly the `required` keys and perhaps some `optional` ones; no other key (a lenient
+    read skips an unknown key and records it instead)."""
     if not isinstance(value, dict) or not all(isinstance(key, str) for key in value):
         raise _fail(where, "expected a mapping")
     known = (*required, *optional)
@@ -1302,7 +1320,10 @@ def _table(value: object, where: str, required: Iterable[str], optional: Iterabl
             raise _fail(where, f"missing the key '{key}'")
     for key in value:
         if key not in known:
-            raise _fail(where, f"unknown key '{key}' (known: {', '.join(known)})")
+            skipped = _IGNORED.get()
+            if skipped is None:
+                raise _fail(where, f"unknown key '{key}' (known: {', '.join(known)})")
+            skipped.append(_at(where, key))
     return value
 
 
@@ -2012,7 +2033,11 @@ def _read_tasks(data: object, where: str) -> Tasks:
     if "/" in unit_file or "\\" in unit_file or unit_file == file:
         raise _fail(_at(start_where, "unit_file"), "a file name, not a path, and not the task file's")
     slots_where = _at(start_where, "slots")
-    slots = _table(start["slots"], slots_where, ("task", "fix", "enforce"))
+    slots = _table(
+        start["slots"],
+        slots_where,
+        ("task", "fix", "enforce", "exempt_workflow", "agent_types", "reserve_minutes"),
+    )
     return Tasks(
         kinds=_texts(table["kinds"], _at(where, "kinds")),
         file=file,
@@ -2023,6 +2048,9 @@ def _read_tasks(data: object, where: str) -> Tasks:
                 task=_count(slots["task"], _at(slots_where, "task")),
                 fix=_count(slots["fix"], _at(slots_where, "fix")),
                 enforce=_flag(slots["enforce"], _at(slots_where, "enforce")),
+                exempt_workflow=_flag(slots["exempt_workflow"], _at(slots_where, "exempt_workflow")),
+                agent_types=_texts(slots["agent_types"], _at(slots_where, "agent_types")),
+                reserve_minutes=_count(slots["reserve_minutes"], _at(slots_where, "reserve_minutes")),
             ),
         ),
         review=_read_task_review(table["review"], _at(where, "review")),
@@ -2732,8 +2760,21 @@ def _read_runs(data: object, where: str, folder: str) -> Runs:
     )
 
 
-def parse_conventions(data: object) -> Conventions:
-    """Validate the YAML value of the conventions file and build the typed values; ConventionsError names the key."""
+def parse_conventions(data: object, ignored: list[str] | None = None) -> Conventions:
+    """Validate the YAML value of the conventions file and build the typed values; ConventionsError names the key.
+
+    Strict by default: an unknown key is an error. With `ignored` (a list), an unknown key is skipped and its dotted
+    path appended to it instead, for a tool that reads a file newer than itself; a missing key or a wrong value is
+    still an error."""
+    token = _IGNORED.set(ignored)
+    try:
+        return _parse(data)
+    finally:
+        _IGNORED.reset(token)
+
+
+def _parse(data: object) -> Conventions:
+    """`parse_conventions` after it has chosen strict or lenient."""
     keys = (
         "repo",
         "paths",
@@ -2891,8 +2932,12 @@ def _keep(value: object, keys: Iterable[str]) -> object:
     return kept
 
 
-def load_conventions(root: Path) -> Conventions:
-    """Read and validate `root / .github/conventions.yml`; raises ConventionsError naming the first problem."""
+def load_conventions(root: Path, ignored: list[str] | None = None) -> Conventions:
+    """Read and validate `root / .github/conventions.yml`; raises ConventionsError naming the first problem.
+
+    `ignored` makes the read lenient about unknown keys, as `parse_conventions` says: the release commands read the
+    file of the branch they release with it, because the first release of a branch that adds a rule is read by the
+    tool main already has."""
     path = root / CONVENTIONS_FILE
     try:
         data = yaml.load(path.read_text(encoding="utf-8"), Loader=_Loader)
@@ -2900,4 +2945,21 @@ def load_conventions(root: Path) -> Conventions:
         raise ConventionsError(f"{CONVENTIONS_FILE}: cannot be read ({error.strerror or error})") from error
     except (UnicodeDecodeError, yaml.YAMLError) as error:
         raise ConventionsError(f"{CONVENTIONS_FILE}: not valid YAML ({error})") from error
-    return parse_conventions(data)
+    return parse_conventions(data, ignored)
+
+
+def load_conventions_leniently(root: Path, say: Callable[[str], None] | None = None) -> Conventions:
+    """`load_conventions` for the release commands (`pr open`, `pr verify` and `pr text`): a key this tool does not
+    know is skipped, and `say` (if given) is told which, one line each. The file is the branch under release's, and
+    the first release of a branch that adds a rule is read by the tool main already has. Only some sections come from
+    the default branch instead (`load_proof_rules_at`: `proof` and the three `paths` scope lists, for the proof in all
+    three commands; `load_release_rules_at`: `repo`, `pull_requests`, `merge`, `claims` and `stamps`, for the steps of
+    `pr open` itself); the others, `stamps` and `tasks.review` among them for `pr verify` and the proof inside `pr
+    open`, are still the branch's own (issue #1044). Skipping an unknown key adds no steering: a key the tool does not
+    know is never read."""
+    ignored: list[str] = []
+    conventions = load_conventions(root, ignored)
+    if say is not None:
+        for key in ignored:
+            say(f"note: {CONVENTIONS_FILE}: ignoring {key}, which this tool does not know yet")
+    return conventions

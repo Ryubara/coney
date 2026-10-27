@@ -245,7 +245,7 @@ worktree when its branch is merged: `coney-tools workspace clean` does it for yo
     free by deleting old `build/` folders; `coney-tools workspace disk` shows the free space.
 
 A build of the engine is about 6 GB per preset (`build/dev` measured 6.4 GB on 2026-10-20, with `/Z7` objects) and each
-track has a worktree, so unremoved worktrees fill a drive quickly: once about ninety of them left 3 GB free and broke
+task has a worktree, so unremoved worktrees fill a drive quickly: once about ninety of them left 3 GB free and broke
 builds. Two commands keep that from happening; run them from the main checkout or any worktree.
 
 Deleting a `build/` folder is cheap since the shared [compiler cache](building.md#compiler-cache): a fresh `dev`

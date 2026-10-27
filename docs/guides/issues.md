@@ -552,14 +552,13 @@ redone. A release posts `/progress pr-opened` on each issue once, which the clai
 
 ### Slots {#slots}
 
-A machine runs a limited number of task units and of fix units at a time (`tasks.start.slots` in
-[.github/conventions.yml](repo:.github/conventions.yml)). A unit holds its slot from
-`task start` until a passing `reviewed` stamp follows its `claimed` stamp (a fix: its own), a `finished` stamp, or until
-its worktree is gone; a unit whose log cannot be trusted keeps its slot. The limit is for code work under the finished
-workflow, so until the cutover `task start` only reports the count (`slots: N of L task slots in use`, with a note
-when N is over L) and design, documentation and tooling work runs in parallel; the cutover sets
-`tasks.start.slots.enforce`, and a start over the limit is then refused. Work in other repositories (Tether, Conclave's
-own plugin repository) has no unit here and is not counted.
+A machine runs at most `tasks.start.slots.task` task units and `tasks.start.slots.fix` fix units at a time, and
+`task start` refuses a start over the limit and names the busy units while `tasks.start.slots.enforce` is on. The
+rule, who counts, what frees a slot, the unit record it counts and the guard that checks the claim and the slot
+before an engineer is started are in [Engineer slots](agents.md#slots); `coney-tools task slots` shows who holds what.
+A task whose issue has the `workflow` label holds no slot until the cutover; the label is read from the issue's claim
+card each time, not copied into the task file. Work in other repositories (Tether, Conclave's own plugin repository)
+has no unit here and is not counted.
 
 ## Working from an issue {#agents}
 
@@ -577,11 +576,11 @@ A brief may be just "issue #N" ([Briefing](agents.md#briefs)); the issue holds t
   ([Testing](testing.md#done)). The pull request description has a `Fixes #N` line in its Summary.
 - **Agents write to GitHub only through `coney-tools issue`.** No comments, labels or pull requests, and an issue only
   with `issue create`, `edit` or `link` ([Filing an issue](#filing)), and only when the brief says to: the
-  coordinator does the rest, from the same release queue as pull requests ([How we work](how-we-work.md)). An agent
+  coordinator does the rest ([How we work](how-we-work.md#coordinator)). An agent
   reports what it would say (the finding, the question for the reporter, the status change) in its message to the
   coordinator. `.claude/hooks/push_guard.py` refuses a subagent's `gh` command that writes; `coney-tools issue` runs
   `gh` itself, so filing stays possible when the brief allows it.
-- **HANDOFF lists only issue numbers in flight.** The coordinator's state file names an issue by number and track,
+- **HANDOFF lists only issue numbers in flight.** The coordinator's state file names an issue by number and unit,
   for example "#31, bug-doors, in progress"; the title and details stay on the issue, so there is one place to read.
 
 ## Issues a pull request changes {#affected}

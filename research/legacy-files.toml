@@ -48,13 +48,6 @@ tag = 1
 ["src/ai/brain_events.cpp"]
 tag = 6
 
-["src/ai/brains.cpp"]
-tag = 11
-
-["src/ai/brains.h"]
-comment = 5
-tag = 1
-
 ["src/ai/chase_goals.cpp"]
 tag = 16
 
@@ -792,9 +785,6 @@ tag = 2
 
 ["src/gui/colour_table.h"]
 tag = 1
-
-["src/gui/debug_menu_view.cpp"]
-tag = 8
 
 ["src/gui/debug_text_painter.cpp"]
 tag = 8
@@ -2147,9 +2137,6 @@ citation = 11
 
 ["tests/gui/control_menu_test.cpp"]
 citation = 10
-
-["tests/gui/debug_menu_view_test.cpp"]
-citation = 7
 
 ["tests/gui/disc_text_test.cpp"]
 citation = 1

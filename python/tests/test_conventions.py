@@ -180,6 +180,51 @@ def test_a_checkout_with_the_file_loads(tmp_path: Path) -> None:
     assert isinstance(load_conventions(write_checkout(tmp_path)), Conventions)
 
 
+# --- the release reads a branch's file leniently ----------------------------------------------------------------------
+
+
+def test_a_lenient_read_skips_an_unknown_key_and_says_where_it_was() -> None:
+    """A tool older than the file it reads (the first release of a branch that adds a rule) still reads the rest."""
+    ignored: list[str] = []
+    data = changed(("claims.a_later_rule", 3), ("a_later_section", {"x": 1}))
+    assert parse_conventions(data, ignored=ignored) == parse_conventions(real_data())
+    assert ignored == ["a_later_section", "claims.a_later_rule"]
+    with pytest.raises(ConventionsError, match=r"claims: unknown key 'a_later_rule'"):
+        parse_conventions(changed(("claims.a_later_rule", 3)))
+
+
+def test_a_lenient_read_still_refuses_a_missing_key_or_a_wrong_value() -> None:
+    """Only an unknown key is let through: a key the file lacks, a typo of one and a wrong value are still errors."""
+    with pytest.raises(ConventionsError, match=r"missing the key 'warn_hours'"):
+        parse_conventions(changed(("claims.warn_hours", REMOVE)), ignored=[])
+    with pytest.raises(ConventionsError, match=r"missing the key 'warn_hours'"):
+        parse_conventions(changed(("claims.warn_hour", 48), ("claims.warn_hours", REMOVE)), ignored=[])
+    with pytest.raises(ConventionsError, match=r"merge\.auto_merge: expected true or false"):
+        parse_conventions(changed(("merge.auto_merge", "yes"), ("claims.a_later_rule", 3)), ignored=[])
+
+
+def test_a_lenient_read_skips_a_misspelt_optional_key_and_keeps_its_default() -> None:
+    """Documented limit: a typo of an optional key is an unknown key like a new one, so the default applies; the strict
+    commands (repo check, task check, the tests) still refuse it."""
+    ignored: list[str] = []
+    data = changed(("merge.manul_paths", ["AGENTS.md"]))
+    assert parse_conventions(data, ignored=ignored) == parse_conventions(real_data())
+    assert ignored == ["merge.manul_paths"]
+    with pytest.raises(ConventionsError, match=r"merge: unknown key 'manul_paths'"):
+        parse_conventions(data)
+
+
+def test_a_lenient_load_of_a_checkout_reports_the_ignored_keys(tmp_path: Path) -> None:
+    ignored: list[str] = []
+    root = write_checkout(tmp_path, changed(("claims.a_later_rule", 3)))
+    (tmp_path / "plain").mkdir()
+    plain = load_conventions(write_checkout(tmp_path / "plain"))
+    assert load_conventions(root, ignored=ignored) == plain
+    assert ignored == ["claims.a_later_rule"]
+    with pytest.raises(ConventionsError, match=r"unknown key 'a_later_rule'"):
+        load_conventions(root)
+
+
 # --- strictness: every kind of mistake names the key ---------------------------------------------------------------
 
 BAD: list[tuple[str, tuple[tuple[str, object], ...], str]] = [
@@ -594,8 +639,18 @@ def test_the_real_claim_rules() -> None:
 def test_the_real_task_start_rules() -> None:
     start = load_conventions(REPO).tasks.start
     assert start.unit_file == "unit.json"
-    # The limit is for code work under the finished workflow: reported, not enforced, until the cutover.
-    assert (start.slots.task, start.slots.fix, start.slots.enforce) == (3, 1, False)
+    # Enforced since 2026-10-27; workflow units hold no slot until the cutover.
+    assert (start.slots.task, start.slots.fix, start.slots.enforce) == (3, 1, True)
+    assert start.slots.agent_types == ("engineer", "tooling")
+    assert start.slots.reserve_minutes > 0
+
+
+def test_the_workflow_exemption_from_the_slots_ends_at_the_cutover() -> None:
+    # The cutover is the change that turns `claims.adopt` and `claims.release` on (docs/guides/issues.md#claiming); the
+    # same change must turn `tasks.start.slots.exempt_workflow` off, or this fails (docs/guides/agents.md#slots).
+    conventions = load_conventions(REPO)
+    cut_over = conventions.claims.adopt or conventions.claims.release
+    assert not (cut_over and conventions.tasks.start.slots.exempt_workflow)
 
 
 @pytest.mark.parametrize(
@@ -606,6 +661,9 @@ def test_the_real_task_start_rules() -> None:
         (("tasks.start.slots.task", 0), r"tasks\.start\.slots\.task: expected a whole number"),
         (("tasks.start.slots.enforce", "yes"), r"tasks\.start\.slots\.enforce"),
         (("tasks.start.slots.extra", 1), "unknown key 'extra'"),
+        (("tasks.start.slots.exempt_workflow", "yes"), r"tasks\.start\.slots\.exempt_workflow"),
+        (("tasks.start.slots.agent_types", []), r"tasks\.start\.slots\.agent_types: expected a non-empty list"),
+        (("tasks.start.slots.reserve_minutes", 0), r"tasks\.start\.slots\.reserve_minutes: expected a whole number"),
         (("tasks.start", REMOVE), "missing the key 'start'"),
     ],
 )

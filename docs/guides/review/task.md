@@ -186,7 +186,7 @@ defence, and it cannot see a stamp written by a session the reviewer started.
 
 ## A review outside `task review` {#report}
 
-A change is sometimes reviewed with no task of its own: a fix round, a conflict resolution, a stacked branch or a branch
+A change is sometimes reviewed with no task of its own: a fix round, a conflict resolution or a branch
 of the launcher stack. There is then no review folder, packet or stamp, and the `reviewer` has nowhere to write its
 report. It writes the report as `CODE-REVIEW.md`, or `CODE-REVIEW-<n>.md` for the n-th round, in the folder the brief
 names (usually the scratch folder of the branch), in the [finding format](index.md#finding-format) with the verdict on
@@ -197,7 +197,7 @@ every checkout (`write_outside_checkouts`): a report inside a worktree or the ma
 could commit by mistake. Such a report is not a verdict: it writes no `reviewed` stamp, and a task's own review still
 ends in `REVIEW.json` and `--record`.
 
-To find where a stacked or rebased branch starts, the reviewer may run `git merge-base` and `git merge-tree
+To find where a launcher-stack or rebased branch starts, the reviewer may run `git merge-base` and `git merge-tree
 --write-tree`: the first only reads, and the second adds objects to the object store and changes no index, tree or ref.
 `git merge` and the other `merge-*` verbs that write (`merge-file`, `merge-index`, `merge-one-file`) stay refused with
 the rest of the verbs that change a ref, the index, the tree or a worktree (the list is in
@@ -206,6 +206,7 @@ their listing forms (`git branch -a`, `git tag -l`, `git stash list`, `git workt
 
 ## Release checks that predate it {#legacy}
 
-`repo review` (the description) and `orig check-review` (a branch's `@orig` functions) still gate a release until
-`pr open` replaces them. They run the same `reviewer` agent and keep their own verdict files; the formats are in
-[Description review](text.md#legacy-verdict) and [Orig review](orig.md#verdict).
+`repo review` (the description) and `orig check-review` (a branch's `@orig` functions) gate the release of a branch
+started before the cutover outside a task, and are retired at the cutover
+([Legacy release checks](../how-we-work.md#pr-review)). They run the same `reviewer` agent and keep their own verdict
+files; the formats are in [Description review](text.md#legacy-verdict) and [Orig review](orig.md#verdict).

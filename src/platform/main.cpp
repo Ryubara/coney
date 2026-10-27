@@ -1037,6 +1037,10 @@ int main(int argc, char** argv) {
     std::optional<coney::platform::PerfBench> bench;
     if (options->benchFile) {
         bench.emplace(*options);
+        // `--bench-fps`: the Display page's FPS counter on from the start, so a capture of the run shows its rate.
+        if (options->benchFps) {
+            debugSession.display().fpsCounter = true;
+        }
     }
     // `--frames` (and so the screenshot of the last frame, which needs it: parseOptions makes sure of it). With
     // `--play-level` they count from the level's first frame of play, like the input script, so a run is as long
@@ -1079,6 +1083,10 @@ int main(int argc, char** argv) {
         // of the warm-up.
         if (bench && playOrigin && !done) {
             bench->playFrame(frame - *playOrigin, debugSession.play());
+            // `--bench-measure` ends the run after this frame: the screenshot is of it, the run's last.
+            if (screenshotPath && bench->measured()) {
+                renderer.requestCapture(frame, *screenshotPath);
+            }
         }
         return done;
     };

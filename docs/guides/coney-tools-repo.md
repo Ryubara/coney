@@ -52,7 +52,7 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   write. Whether the list is complete is the reviewer's judgement;
   [`issue impact`](coney-tools-issues.md#issue-impact) suggests it.
   `--local-images` accepts an image that points at a local file, as in a description that `gh pr create --attach`
-  is about to upload; the release guard hook passes it ([The release queue](how-we-work.md#release-queue)).
+  is about to upload; the PR guard hook passes it ([Opening the pull request](how-we-work.md#release-queue)).
 * `repo review`, `repo check-review` and `repo review-stamp` are the release gate on a description's content: see
   [review](#repo-review). All three refuse a description whose title or body fails the checks above.
 * `repo labels` prints the `gh label create` commands for `labels.list`; `--apply` runs them (the coordinator does).
@@ -85,28 +85,28 @@ the wrong model, and it cost three review rounds (pull requests #460, #466 and #
   is reported, not the trailers too.
 * **The base must be fresh and right.** `base..HEAD` is what the branch has that the base lacks. With a stale
   `origin/main`, a branch that has merged a newer `main` also counts the commits it merged in, and so their trailers
-  (other authors' models) must be named: run `git fetch` and the refusal goes away. A stacked branch
-  ([Dependent units are stacked](how-we-work.md#release-queue)) with the default base also counts the parent unit's
-  trailers: pass `--base <parent branch>`.
+  (other authors' models) must be named: run `git fetch` and the refusal goes away. A branch cut from another branch
+  rather than `main` (stacked work is refused for a task, [Working in parallel](how-we-work.md#working-in-parallel))
+  with the default base also counts the parent's trailers: pass `--base <parent branch>`.
 * **The message.** One reason per missing model, naming it:
   `AI use: 'Model:' does not name Claude Opus 5.5, which a Co-Authored-By trailer on the branch's commits credits`.
-* **Where it runs.** Locally, where the branch is at hand: `repo check-review`, `repo review` and `repo review-stamp` read
-  the commits of the worktree after `--base` (default `origin/main`) and refuse before the agent starts, and
-  `repo check-body --worktree WT` does the same for a description on its own. **CI does not run it:** the `body` job
-  gets the description from the event and has no commits (its checkout is shallow, and a full history for one string
-  comparison would slow a required check on every edit), so it passes no models and stays a description-only check, as
-  `Docs: none` is. The coordinator's release step is the gate
-  ([The description review](how-we-work.md#pr-review)). A branch git cannot list (an unknown `--base`, not a worktree)
-  exits 2 rather than passing as one without trailers.
+* **Where it runs.** Locally, where the branch is at hand: `repo check-review`, `repo review` and `repo review-stamp`
+  read the commits of the worktree after `--base` (default `origin/main`) and refuse before the agent starts, and `repo
+  check-body --worktree WT` does the same for a description on its own. **CI does not run it:** the `body` job gets the
+  description from the event and has no commits (its checkout is shallow, and a full history for one string comparison
+  would slow a required check on every edit), so it passes no models and stays a description-only check, as `Docs: none`
+  is. `pr open` is the gate ([The checks](pr.md#checks)); a legacy branch uses `repo check-review` ([Legacy release
+  checks](how-we-work.md#pr-review)). A branch git cannot list (an unknown `--base`, not a worktree) exits 2 rather than
+  passing as one without trailers.
 * **One source.** The trailer's key and addresses are `commits.trailers` and the rule's switch is
   `pull_requests.ai_use.model.names_trailer_models` in [.github/conventions.yml](repo:.github/conventions.yml); the check
   holds no copy, and the generated rules in [CONTRIBUTING.md](repo:CONTRIBUTING.md) state it.
 
 ### repo review {#repo-review}
 
-The gate a description passes before the coordinator pushes it ([The description review](how-we-work.md#pr-review)).
-`PR.md` is the description file as agents write it: the title on line 1, then the body; image paths in it are relative
-to its folder.
+The gate a description passes before the coordinator pushes it, for a legacy branch ([Legacy release
+checks](how-we-work.md#pr-review)). `PR.md` is the description file as agents write it: the title on line 1, then the
+body; image paths in it are relative to its folder.
 
 * `repo review` runs the `reviewer` agent once, headlessly: it reads `.claude/agents/reviewer.md` from the
   checkout the command runs in, hands it to `claude -p --agents FILE --agent reviewer --model M
@@ -137,7 +137,7 @@ to its folder.
   the scratch folder).
 
 The file names, the agent and the hash rule are `pull_requests.review` in `.github/conventions.yml`; the rules in full
-are the generated list in [The description review](how-we-work.md#pr-review).
+are the generated list in [Legacy release checks](how-we-work.md#pr-review).
 
 ### repo audit {#repo-audit}
 
@@ -484,6 +484,8 @@ uv run --project python coney-tools task create ISSUE [ISSUE ...] [--terms TERM 
     [--name ID] [--resume] [--dry-run]
 uv run --project python coney-tools task create --fix-of ISSUE [--terms TERM ...] [--name ID] [--dry-run]
 uv run --project python coney-tools task start [TASK] [--base REF] [--remote NAME] [--no-fetch] [--dry-run]
+uv run --project python coney-tools task slots [--json]
+uv run --project python coney-tools task slots --admit [--agent-type TYPE] [--task ID | --brief FILE|-] [--reserve]
 uv run --project python coney-tools task leads --terms TERM ... [--issue N] [--refresh]
 uv run --project python coney-tools task index [--no-gh]
 uv run --project python coney-tools task check [TASK] [--worktree DIR] [--base REF] [--agent ID] [--profile P]
@@ -509,12 +511,27 @@ The coordinator's triage step ([Task files](issues.md#task-files)); the rules ar
   the claim is still yours for this task, that you are within your limit of open claims and that the branch and folder
   are free and its stamp log is usable, then makes the branch (named like the task id) and its worktree, at the place
   the `workspace.worktrees` setting gives for that branch ([Worktrees](workspace.md#worktrees)), from the tip of the
-  default branch, writes the unit record `<scratch>/<task>/unit.json`, stamps `assigned` and `claimed`
-  in the task's log and posts `/progress claimed`. It prints the branch, worktree, the
-  stamps written and `slots: N of L task slots in use`; the limit (`tasks.start.slots`) is only reported until
-  `tasks.start.slots.enforce` is on. Nothing is made when a check fails (exit 1); a git or fetch failure stops it with
-  exit 2; running it again for a started task finishes what is missing and changes nothing else. A fix task opens its
-  parent's unit instead of making one. The coordinator's role may not run it (`.claude/hooks/hooks.toml`).
+  default branch, writes the unit record `<scratch>/<task>/unit.json`, stamps `assigned` and `claimed` in the task's
+  log and posts `/progress claimed`. It prints the branch, worktree, the stamps written and `slots: N of L task slots
+  in use`; a start over the limit (`tasks.start.slots`) is refused while `tasks.start.slots.enforce` is on, and a task
+  whose issue carries the `workflow` label now (read from its held claim card) holds no slot while
+  `tasks.start.slots.exempt_workflow` is on. Nothing is made when a check fails (exit 1); a git or fetch
+  failure stops it with exit 2; running it again for a started task finishes what is missing and changes nothing else.
+  A fix task opens its parent's unit instead of making one. The coordinator's role may not run it
+  (`.claude/hooks/hooks.toml`).
+* `slots` shows the [engineer slots](agents.md#slots): the units holding each of the task and fix slots (in work, with a
+  record that cannot be read, or reserved for an agent that has not run `task start` yet), the workflow units that hold
+  none (read from their issues' claim cards on GitHub; a unit whose cards cannot be read is counted and named), the fix
+  tasks waiting (oldest first) and the worktrees no unit record names, which no slot counts; `--json` prints the same as
+  data. `--admit` is the check the coordinator's Agent guard runs (`.claude/hooks/slot_guard.py`). For an `--agent-type`
+  that holds a slot (`engineer`, `tooling`) it needs the task from `--task` or from the `Task id: <id>` line of the
+  brief (`--brief FILE`, or `-` for standard input), the task file, a claim that is held now (one read of the claim
+  cards of each issue from GitHub, 20 seconds each, none started after 20 seconds, none after the first that fails) and
+  a free slot; it exits 0 when the agent may start, **3 with the reasons when it is refused**, and any other code (a
+  crash is 1, a bad option or a slot lock it cannot have 2) when it could not judge. A GitHub that cannot be read leaves
+  only the claim unchecked: the slot is counted as usual (no unit counts as a workflow unit then), and a start let
+  through prints a `warning:` line, which the guard logs. `--reserve` keeps the slot for the agent for
+  `tasks.start.slots.reserve_minutes` or until its `task start`. Other types pass without a line.
 * `leads` runs the leads search alone: one line per match with the source, the place and why it matched, then the terms
   that matched nothing. `--issue N` also matches the addresses, names, paths and references that issue writes.
 * `index` rebuilds the cached index (`<scratch>/leads/index.json`, also rebuilt when `HEAD` moved or after
@@ -627,6 +644,23 @@ coney-tools task start [TASK] [--base REF] [--remote REMOTE] [--no-fetch] [--dry
 | `--remote REMOTE` | text | `origin` | the git remote to fetch from (default: origin) |
 | `--no-fetch` | flag | off | start from the base as it is here, without fetching |
 | `--dry-run` | flag | off | check and print; make, stamp and post nothing |
+
+### `task slots` {#task-slots-usage}
+
+Show the engineer slots, or check that an agent may start (the coordinator's Agent guard).
+
+```text
+coney-tools task slots [--json] [--admit] [--agent-type AGENT_TYPE] [--task TASK] [--brief FILE] [--reserve]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--json` | flag | off | print the slots as JSON |
+| `--admit` | flag | off | check a start instead of listing: exit 0 when it may, 3 with the reasons when it is refused (any other code: it could not judge) |
+| `--agent-type AGENT_TYPE` | text | `engineer` | with --admit: the subagent type (default: engineer) |
+| `--task TASK` | text | none | with --admit: the task id (default: the `Task id:` line of the brief) |
+| `--brief FILE` | text | none | with --admit: the agent's brief, a file or - for standard input |
+| `--reserve` | flag | off | with --admit: keep the slot for the agent until its task start |
 
 ### `task leads` {#task-leads-usage}
 

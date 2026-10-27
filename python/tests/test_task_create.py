@@ -175,6 +175,15 @@ def test_the_default_kind_follows_the_labels(world: World) -> None:
     assert default_kind(view.__class__(**{**view.__dict__, "labels": ("A-tools",)})) == "tooling"
 
 
+def test_the_task_file_does_not_copy_the_workflow_label(world: World) -> None:
+    # The exemption from the engineer slots is read from the issue's claim card every time, never from the file, so a
+    # label removed later ends it and an edit of the file cannot grant it (docs/guides/agents.md#slots).
+    world.github.add_issue(10, labels=("task", "A-tools", "S-ready-to-start", CONVENTIONS.claims.exempt_label))
+    assert world.run() == 0
+    path = next(world.scratch.glob("*/TASK.md"))
+    assert "workflow" not in path.read_text(encoding="utf-8").split("\n---\n", 1)[0]
+
+
 # --- several issues, one task -----------------------------------------------------------------------------------------
 
 

@@ -10,10 +10,11 @@ SessionStart), and the checks run inside it:
   (`identity.py`);
   then the guards that were separate hooks, loaded as modules and run unchanged (`build_guard.py`, `issue_guard.py`,
   `bounded_waits.py`, `pr_guard.py`, `push_guard.py` for the shell tools; `pcsx2_guard.py` for the shell commands that
-  name PCSX2 and for the PCSX2 MCP tools; `agent_guard.py` for the Agent tool; `lua_guard.py` for Write, Edit,
-  MultiEdit and NotebookEdit). Every refusal is collected and sent
-  together, as the separate hooks' were. When nothing refuses, a `coney-tools` or `git commit` command gets the
-  caller's identity token put in front of it (`identity.py`, returned as `updatedInput`).
+  name PCSX2 and for the PCSX2 MCP tools; `agent_guard.py` and, last, `slot_guard.py` (the coordinator's engineer
+  slots) for the Agent tool; `lua_guard.py` for Write, Edit, MultiEdit and NotebookEdit). Every refusal is collected and
+  sent together, as the separate hooks' were; `slot_guard.py` runs only when nothing else refused, since it keeps a
+  slot. When nothing refuses, a `coney-tools` or `git commit` command gets the caller's identity token put in front of
+  it (`identity.py`, returned as `updatedInput`).
 * **PostToolUse**: `trailer_guard.py` after a `git commit`; the identity file of the command is removed, also when
   the command failed (PostToolUseFailure) or was denied (PermissionDenied).
 * **SessionStart**: a notice when the session has no role, or when `hooks.toml` could not be read.
@@ -169,8 +170,12 @@ PRE_GUARDS: list[tuple[str, Callable[[dict[str, Any]], bool]]] = [
     ("push_guard", _shell),
     ("pcsx2_guard", _pcsx2),
     ("agent_guard", _agent),
+    ("slot_guard", _agent),
     ("lua_guard", _writes),
 ]
+#: Guards that run only when nothing else refused the call: they have an effect (slot_guard keeps a slot for the agent
+#: it lets start), which a call that is refused anyway must not leave behind.
+LAST_GUARDS = ("slot_guard",)
 #: The guards of PostToolUse.
 POST_GUARDS: list[tuple[str, Callable[[dict[str, Any]], bool]]] = [("trailer_guard", _commit)]
 
@@ -230,7 +235,7 @@ def pre_tool_use(payload: dict[str, Any], raw: str, config: dict[str, Any]) -> t
         except Exception as error:
             record(f"{name}: {type(error).__name__}: {error}")
             runs = False
-        if runs:
+        if runs and not (name in LAST_GUARDS and reasons):
             reason = run_guard(name, raw, config)
             if reason:
                 reasons.append(reason)

@@ -11,9 +11,10 @@ leaves a unit record, and running the command again finishes what is missing ins
 task (`kind: fix`, made by `task create --fix-of`) makes no branch or worktree: it works in the unit of the task it
 fixes, so it gets a record that points there, and its `claimed` stamp joins that task's log.
 
-The engineer slots are counted and reported here (`units_in_work`); they are only refused once
-`tasks.start.slots.enforce` is on, which the cutover does. GitHub is read through `Remote` and the clock and the
-agent's identity are passed in, so the tests touch neither the network nor the hooks.
+The engineer slots (`task_slots`) are counted and reported here, and a start over the limit is refused while
+`tasks.start.slots.enforce` is on; a task whose issue carries the `workflow` label now (`claims.exempt_label`, read
+from its held claim card) holds no slot while `tasks.start.slots.exempt_workflow` is on. GitHub is read through
+`Remote` and the clock and the agent's identity are passed in, so the tests touch neither the network nor the hooks.
 """
 
 from __future__ import annotations
@@ -25,7 +26,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from coney_tools import stamps
+from coney_tools import stamps, task_slots
 from coney_tools.config import ConfigError, main_checkout
 from coney_tools.conventions import Conventions
 from coney_tools.issue_claim_engine import Engine
@@ -34,7 +35,7 @@ from coney_tools.issue_claim_remote import Remote
 from coney_tools.issue_claim_rules import limit_for, open_task_keys
 from coney_tools.task_file import TaskFile, parse_task_file
 from coney_tools.unit import head_commit
-from coney_tools.unit_record import UnitRecord, UnitRecordError, read_record, write_record
+from coney_tools.unit_record import UnitRecord, read_record, write_record
 
 
 @dataclass(frozen=True)
@@ -66,17 +67,9 @@ class StartEnv:
     out: Callable[[str], None] = print
 
 
-@dataclass(frozen=True)
-class InWork:
-    """The tasks whose units hold an engineer slot on this machine."""
-
-    task: list[str]
-    fix: list[str]
-
-
 def front_sha256(task: TaskFile) -> str:
     """The SHA-256 of what the tools read from a task file (its YAML block), not of the prose the coordinator prunes."""
-    front = {
+    front: dict[str, Any] = {
         "task": task.task,
         "issues": list(task.issues),
         "kind": task.kind,
@@ -92,56 +85,35 @@ def front_sha256(task: TaskFile) -> str:
 # --- slots ----------------------------------------------------------------------------------------------------------
 
 
-def _over(record: UnitRecord, report: stamps.Report) -> bool:
-    """Whether a unit no longer holds a slot: it is finished, or a Review passed after it was claimed (a fix: after
-    its own `claimed` stamp). A unit whose claimed stamp is not found keeps its slot."""
-    if report.latest("finished") is not None:
-        return True
-    claimed = [
-        stamp
-        for stamp in report.stamps
-        if stamp.step == "claimed" and stamp.detail.get("fix", "") == (record.task if record.parent else "")
-    ]
-    reviewed = report.latest("reviewed", result="pass")
-    return bool(claimed) and reviewed is not None and reviewed.seq > claimed[-1].seq
-
-
-def units_in_work(scratch: Path, conventions: Conventions) -> InWork:
-    """The started units on this machine that hold a slot, by task id: a record in the scratch folder, a worktree
-    that is still there, and no passing Review (or `finished`) since the claim. A log that cannot be trusted keeps its
-    unit counted."""
-    task: list[str] = []
-    fix: list[str] = []
-    if not scratch.is_dir():
-        return InWork(task, fix)
-    for folder in sorted(scratch.iterdir()):
-        path = folder / conventions.tasks.start.unit_file
-        if not path.is_file():
-            continue
-        try:
-            record = read_record(path)
-        except UnitRecordError:
-            continue
-        if not record.worktree.is_dir():
-            continue
-        report = stamps.verify(scratch / record.log_task / "stamps", conventions.stamps)
-        if report.ok and _over(record, report):
-            continue
-        (fix if record.kind == "fix" else task).append(record.task)
-    return InWork(task, fix)
-
-
-def _slot_line(in_work: InWork, kind: str, conventions: Conventions, task: str) -> tuple[str, bool]:
-    """The report line about the slots with this task counted, and whether the kind is over its limit."""
+def _slot_check(task: TaskFile, env: StartEnv, engine: Engine) -> tuple[str, str | None]:
+    """(the slot line for the report, the refusal when the limit is enforced and exceeded). Whether a unit is a
+    workflow unit comes from the held claim cards `engine` read (their `exempt`), not from any file here."""
+    conventions = env.conventions
     slots = conventions.tasks.start.slots
-    others = [name for name in (in_work.fix if kind == "fix" else in_work.task) if name != task]
-    limit = slots.fix if kind == "fix" else slots.task
+    held_cards = engine.held_cards()
+    cards = task_slots.Cards(held_cards.get)
+    if task_slots.exempt_issues(task.issues, cards, conventions):
+        return "slots: a workflow task (its issue has the workflow label) holds no slot until the cutover", None
+
+    def exemption(record: UnitRecord) -> bool | None:
+        """Another unit's exemption, from the same cards."""
+        return task_slots.exempt_issues(record.issues, cards, conventions)
+
+    kind = task_slots.slot_of(task.kind)
+    held = task_slots.scan(env.scratch, conventions, env.now(), exemption=exemption).held(kind)
+    others = [holder for holder in held if holder.task != task.task]
+    maximum = task_slots.limit(conventions, kind)
     count = len(others) + 1
-    line = f"slots: {count} of {limit} {kind} slots in use"
-    over = count > limit
-    if over and not slots.enforce:
-        line += " (over the limit, which is not enforced before the cutover: tasks.start.slots.enforce)"
-    return line, over
+    line = f"slots: {count} of {maximum} {kind} slots in use"
+    if count <= maximum:
+        return line, None
+    if not slots.enforce:
+        return line + " (over the limit, which is not enforced: tasks.start.slots.enforce)", None
+    return line, (
+        f"{len(others)} {kind} units are in work on this machine and {maximum} is the limit "
+        f"(tasks.start.slots in .github/conventions.yml): {', '.join(h.line() for h in others)}. "
+        "Finish one (it passes Review) before starting another"
+    )
 
 
 # --- the checks -----------------------------------------------------------------------------------------------------
@@ -365,21 +337,6 @@ def _resume(record: UnitRecord, record_path: Path, task: TaskFile, env: StartEnv
     return 0
 
 
-def _slot_check(task: TaskFile, env: StartEnv) -> tuple[str, str | None]:
-    """(the slot line for the report, the refusal when the limit is enforced and exceeded)."""
-    kind = "fix" if task.kind == "fix" else "task"
-    in_work = units_in_work(env.scratch, env.conventions)
-    line, over = _slot_line(in_work, kind, env.conventions, task.task)
-    if over and env.conventions.tasks.start.slots.enforce:
-        others = [name for name in (in_work.fix if kind == "fix" else in_work.task) if name != task.task]
-        limit = env.conventions.tasks.start.slots.fix if kind == "fix" else env.conventions.tasks.start.slots.task
-        return line, (
-            f"{len(others)} {kind} units are in work on this machine and {limit} is the limit "
-            f"(tasks.start.slots in .github/conventions.yml): finish one (it passes Review) before starting another"
-        )
-    return line, None
-
-
 def start_task(request: StartRequest, env: StartEnv) -> int:
     """Start a claimed task; 0 when it is started (or was), 1 when it was refused. ConfigError when it cannot run."""
     out = env.out
@@ -409,7 +366,7 @@ def start_task(request: StartRequest, env: StartEnv) -> int:
         out(f"refused: {problem}")
         return 1
     record_path = env.scratch / request.task / conventions.tasks.start.unit_file
-    slot_line, slot_problem = _slot_check(task, env)
+    slot_line, slot_problem = _slot_check(task, env, engine)
     if record_path.is_file():
         return _resume(read_record(record_path), record_path, task, env, slot_line, request.dry_run)
     if not task.parent:

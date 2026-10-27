@@ -3239,7 +3239,9 @@ by `src/human/player.*` and drawn by `--play-level` ([Running Coney](../guides/r
   at a run and 144°/s at a 35 % walk, against the original's 191°/s and 143°/s (disc test `[disc][player][sandbox]`);
 - the **sprint zoom** ([Sprint zoom](#sprint-zoom)) with the page's fields: the first update at the sprint gait arms
   and latches it (`+0x467`, `+0x466`) when the player has no enemies or the nearest is within 12 m (the brain's query
-  is a hook, `Player::setNearestEnemy()`, with no enemies until Coney has brains; out of range the arm waits); the
+  is `ai::Brains::nearestEnemy()`, given to the player through `Player::setNearestEnemy()`; out of range the arm
+  waits; a stand-in counts only enemies with health left and measures across the ground, where the original takes
+  each of the brain's 16 enemy handles that resolves and its squared 3D distance, `0x004db5b0`); the
   zoom function (`0x00128cf0`) saves the band, the zoom distance and the
   target pitch, starts the 0.5 s timer, sets the wanted near edge to the minimum distance and steps the zoom to the
   default (upper pitch limit 30°); the band's ease (`0x0012aae0`, early in the next updates) moves the near edge by

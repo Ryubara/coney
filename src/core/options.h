@@ -298,6 +298,14 @@ struct Options {
     /// bench, whose frames before the spawn are many and vary, measures as many as asked; `--frames` stays the
     /// longest the run may take. Unset: measure until `--frames`. Requires benchFile.
     std::optional<int> benchMeasure;
+    /// `--bench-place X,Y,Z,HEADING`: put player 1 there (the debug menus' teleport, dropped onto the ground below)
+    /// just before the fighters spawn, so the crowd fights at a chosen spot of a level whose script makes the player
+    /// (where `--start` is overridden). Unset: where he stands. Requires benchFile.
+    std::optional<StartPlace> benchPlace;
+    /// `--bench-neutrals N`: also spawn N neutral AI fighters (the AI fighters page's Neutral side: nobody's friend or
+    /// enemy until one is hit) in front of the player, beyond the enemies (0 to kMaxBenchFighters). Requires
+    /// benchFile.
+    std::optional<int> benchNeutrals;
     /// `--dev-overlay`: show the debug menus' developer overlay for this many frames from the start, then hide it; a
     /// test aid for checking that the overlay leaves the frame as it found it (docs/guides/debug-menu.md). Ignored
     /// without a window.
@@ -318,6 +326,10 @@ struct Options {
     /// run a step and those that only render both show. The run still ends after `--frames` frames. Requires
     /// benchFile.
     bool benchRealTime = false;
+    /// `--bench-fps`: turn the debug menus' FPS counter (the Display page's) on from the start, so a screenshot of the
+    /// run shows its frame rate; it reads the real clock, so it shows rates in a `--bench-real-time` run. Requires
+    /// benchFile.
+    bool benchFps = false;
     /// `--help` was given: print usageText() and exit 0.
     bool showHelp = false;
     /// `--verify`: with installFrom, re-read every file already installed and copy again any that changed.

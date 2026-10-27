@@ -15,12 +15,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
 from coney_tools import pr_proof, pr_text
 from coney_tools.config import ConfigError, find_repo_root
-from coney_tools.conventions import load_conventions
+from coney_tools.conventions import load_conventions_leniently
 from coney_tools.pr_proof import ProofResult, Refusal, Subject
 from coney_tools.repo_checks import branch_trailer_models
 from coney_tools.task_file import TaskFile, TaskFileError, parse_task_file
@@ -63,12 +64,18 @@ def add_pr_commands(commands: Any) -> None:
             sub.add_argument("--text", type=Path, metavar="FILE", help="the file Review covered (default: PR.md)")
 
 
+def _note(line: str) -> None:
+    """A note about the conventions file, on stderr so `--json` output on stdout stays one object."""
+    print(line, file=sys.stderr)
+
+
 def _load(args: argparse.Namespace) -> tuple[Subject, TaskFile, dict[str, Any], Path]:
     """The subject, the task file, its optional keys and the engineer's file for the unit the arguments name."""
     root = find_repo_root(args.worktree if args.worktree is not None else Path.cwd())
     task = task_name(root, args.task)
     own = Unit.of(root, task)
-    conventions = load_conventions(root)
+    # Read quietly here: load_subject reads the same file again and says which unknown keys it skipped, once.
+    conventions = load_conventions_leniently(root)
     path = own.dir / conventions.tasks.file
     try:
         raw = path.read_text(encoding="utf-8")
@@ -84,7 +91,7 @@ def _load(args: argparse.Namespace) -> tuple[Subject, TaskFile, dict[str, Any], 
     # A fix task continues its parent's unit: the log, the branch and the text are the parent's (D6).
     owner = task_file.parent or task
     unit = Unit.of(root, owner)
-    subject = pr_proof.load_subject(root, unit, owner, task_file.kind, remote=args.remote)
+    subject = pr_proof.load_subject(root, unit, owner, task_file.kind, remote=args.remote, say=_note)
     return subject, task_file, keys, args.text if args.text is not None else unit.dir / TEXT_FILE
 
 

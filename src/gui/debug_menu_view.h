@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// @coney-only the pad debug menu's renderer; the original has no debug menu (docs/research/debug.md#not-present)
 #pragma once
 
 #include <cstddef>
