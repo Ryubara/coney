@@ -221,7 +221,7 @@ def test_only_a_paused_label_starts_a_run_and_the_list_is_the_conventions() -> N
     job = jobs["claim"]
     for text in (job["if"], job["concurrency"]["group"]):
         found = re.search(r"fromJSON\('(\[.*?\])'\)", text)
-        assert found is not None and tuple(json.loads(found.group(1))) == RULES.paused_labels
+        assert found is not None and tuple(json.loads(found.group(1))) == (*RULES.paused_labels, RULES.exempt_label)
         assert "github.event.label.name" in text
 
 

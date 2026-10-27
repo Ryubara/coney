@@ -164,7 +164,7 @@ def test_labels_table_names_each_family_once_in_the_order_of_the_file() -> None:
     rows = [line for line in render_block("labels", CONVENTIONS) if "`" in line]
     families = [row.split("|")[1].strip() for row in rows]
     named = [name for name in families if name]
-    assert named == ["Type", "Area", "Priority", "Status", "GitHub's own"]
+    assert named == ["Type", "Area", "Priority", "Status", "Other"]
 
 
 def test_pr_rules_name_the_sections_the_filled_ones_and_the_special_lines() -> None:

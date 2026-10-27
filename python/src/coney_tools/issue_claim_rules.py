@@ -51,8 +51,13 @@ def active_cards(cards: Iterable[Card]) -> list[Card]:
 
 
 def open_task_keys(cards: Iterable[Card], claimant: str, except_issue: int) -> set[str]:
-    """The tasks `claimant` holds open (issues of one task count once), not counting issue `except_issue`."""
-    return {card.task_key for card in cards if card.active and card.claimant == claimant and card.issue != except_issue}
+    """The tasks `claimant` holds open that count toward the limit (issues of one task count once; an exempt claim
+    does not count), not counting issue `except_issue`."""
+    return {
+        card.task_key
+        for card in cards
+        if card.active and not card.exempt and card.claimant == claimant and card.issue != except_issue
+    }
 
 
 def issues_in_task(cards: Iterable[Card], claimant: str, task: str, except_issue: int) -> int:
@@ -115,6 +120,8 @@ def check_claim(
                 f"the task `{command.task}` already holds {in_task} of your issues "
                 f"({rules.limits.issues_per_task} at most): a task id is not a way round the limit of open claims"
             )
+    if rules.exempt_label in issue.labels:
+        return None  # a workflow unit: outside the open-claims limit
     others = open_task_keys(held, claimant, issue.number)
     limit = limit_for(maintainer, rules)
     if own not in others and len(others) >= limit:
@@ -145,9 +152,12 @@ def overrun(card: Card, held: Iterable[Card], maintainer: bool, rules: Claims) -
 
     The claimant's tasks are ordered by the time of their first claim; those past the limit are over, and so are the
     issues of a task past `issues_per_task`. Every parallel run applies the same order, so each releases its own claim
-    if (and only if) it is among the late ones. Adopted claims (assigned by hand) are not counted.
+    if (and only if) it is among the late ones. Adopted claims (assigned by hand) are not counted, nor are exempt ones
+    (`claims.exempt_label`), and an exempt claim is never over.
     """
-    mine = [c for c in held if c.active and c.claimant == card.claimant and not c.adopted]
+    if card.exempt:
+        return None
+    mine = [c for c in held if c.active and c.claimant == card.claimant and not c.adopted and not c.exempt]
     if card not in mine and card.issue not in {c.issue for c in mine}:
         mine.append(card)
     first: dict[str, tuple[datetime, int]] = {}

@@ -217,10 +217,11 @@ time. A closed issue carries none ([What a closed issue keeps](#closed)).
 | | `S-on-hold` | Status: paused by decision; a branch may exist; not in progress |
 | | `S-conflict` | Status: a pull request conflicts with main (set by CI) |
 | | `S-failing` | Status: a pull request fails a required check (set by CI) |
-| GitHub's own | `good first issue` | Good for newcomers |
+| Other | `good first issue` | Good for newcomers |
 | | `help wanted` | Extra attention is needed |
 | | `duplicate` | This issue already exists |
 | | `wontfix` | This will not be worked on |
+| | `workflow` | Builds the new workflow; its claim is outside the open-claims limit |
 <!-- conventions:end -->
 
 `S-on-hold` is for work that was started and then paused on purpose, such as a held branch that becomes a task
@@ -309,6 +310,8 @@ mandatory until the new workflow starts ([How we work](how-we-work.md)); two swi
   (`S-pending-review` while its pull request is open); a release or `/unclaim` sets `S-ready-to-start`.
 - A maintainer (someone with `admin` or `write` permission on the repository) holds 3 open claims at most, a contributor
   2. Issues whose cards share a `task:` id count as one claim, and a task holds 3 issues at most.
+- The claim of an issue labelled `workflow` (a unit that builds the new workflow) neither counts toward that limit nor
+  is refused by it; the cap of a task still holds. Only a maintainer can set the label.
 - While an open `P-critical` issue that can be claimed has no claim, only a `P-critical` issue can be claimed.
 - A claimed issue that carries `S-blocked`, `S-needs-info`, `S-on-hold` keeps that label; the claim stays and its
   release clock waits, as it does while the claimant's pull request is open.
@@ -360,6 +363,15 @@ mentions the claimant (its title), and so does the 48-hour warning.
    fix task reuses its claim. A maintainer is whoever the repository gives write permission or more (asked of GitHub by
    login); only if GitHub will not say does the comment's own association decide, and then only the repository's OWNER
    counts.
+
+**Workflow units are outside the limit.** An issue labelled `workflow` (`claims.exempt_label`) builds the new workflow
+for the cutover, and its claim neither counts toward the open-claims limit nor is refused by it, as those units are
+not counted in the engineer [slots](#slots) either (a maintainer decision, 2026-10-27). The label is the mark because
+only a maintainer can set it: a task id chosen by whoever claims could be named anything. The card says `Limit: not
+counted`, and its hidden JSON carries `exempt`, which every pass sets again from the label, so a label taken off makes
+the claim count from the next pass (and the sweep then releases whichever claim is over, by the order of the first
+claims). The cap of a task (3 issues) still holds. Label events for `workflow` start a claim run, so the card follows
+within a minute or two.
 
 After it assigns, the Action recounts the claimant's claims and the `P-critical` issues on fresh data, a backstop for a
 run started outside the one-at-a-time queue (below). A claim that turns out to be over the limit (the newest of its

@@ -199,6 +199,7 @@ edited on the GitHub website; and a person at their own terminal, which runs no 
 | Form headings, required sections, Screenshots, `From:` line, links that exist on `main`, truthful status | [Issues](issues.md#writing) (`issues`) | `issue check`; `repo audit` `issue.*` | enforced (filing), partly (edits on the website) |
 | Labels: one type, an area, a priority after triage, one status; a closed issue keeps no status | [Issues](issues.md#labels) | `repo audit` `issue.labels`, `issue.closed-status`; `issue-status.yml` | partly (after the fact) |
 | Labels are edited only in `.github/conventions.yml` | [Issues](issues.md#labels) | `repo audit` `gh.labels`; `repo labels --apply` | enforced (audit) |
+| A claim passes its checks in order (open issue, nobody holds it, `S-ready-to-start`, `P-critical` first, Blocked by done, the open-claims limit); a `workflow` issue is outside the limit | [Issues](issues.md#claiming) (`claims`) | `claim.yml` (`coney-tools claim run`); `task create` runs the same checks before it posts | enforced |
 
 ## Repository conventions and generated files {#generated}
 

@@ -374,6 +374,10 @@ claims:
   # Open claims per account: a maintainer 3, a contributor 2. Issues of one task count once, but a task holds at most
   # `issues_per_task` issues, so a task id is no way round the limit. A fix task reuses its claim.
   limits: {maintainer: 3, contributor: 2, issues_per_task: 3}
+  # The claim of an issue that carries this label neither counts toward the open-claims limit nor is refused by it
+  # (maintainer decision 2026-10-27): the units that build the new workflow for the cutover, which the engineer slots
+  # do not count either. Only someone who may label issues (a maintainer) can set it; the cap of a task still holds.
+  exempt_label: workflow
   scope_max_characters: 400                       # the text after `scope:` in /claim
   closing_per_event: 10                           # `Fixes #N` lines of one pull request event that are acted on
   # A claimed issue with one of these status labels keeps it (the claim stays) and its release clock waits.
@@ -441,7 +445,7 @@ tasks:
 labels:
   description_max: 100                           # GitHub's limit
   # A label belongs to the family named by its prefix; `type` has no prefix and lists its names. The rest are GitHub's
-  # own labels, kept so the sync leaves them as we want them.
+  # own labels (and `workflow`, the claims exemption), kept so the sync leaves them as we want them.
   families:
     type: {prefix: "", names: [bug, parity, task, docs, enhancement]}
     area: {prefix: "A-"}
@@ -482,6 +486,7 @@ labels:
     - {name: help wanted, color: "008672", description: "Extra attention is needed"}
     - {name: duplicate, color: cfd3d7, description: "This issue already exists"}
     - {name: wontfix, color: ffffff, description: "This will not be worked on"}
+    - {name: workflow, color: d4c5f9, description: "Builds the new workflow; its claim is outside the open-claims limit"}
 
 hygiene:
   # The one issue the weekly sweep reports on: one comment on it, edited in place; the workflow creates the issue if it
