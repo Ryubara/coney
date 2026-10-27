@@ -153,23 +153,25 @@ def overrun(card: Card, held: Iterable[Card], maintainer: bool, rules: Claims) -
     The claimant's tasks are ordered by the time of their first claim; those past the limit are over, and so are the
     issues of a task past `issues_per_task`. Every parallel run applies the same order, so each releases its own claim
     if (and only if) it is among the late ones. Adopted claims (assigned by hand) are not counted, nor are exempt ones
-    (`claims.exempt_label`), and an exempt claim is never over.
+    (`claims.exempt_label`): an exempt claim is never over the limit, but the cap of a task holds for it too, as
+    `check_claim`'s `issues_in_task` counts it at claim time.
     """
-    if card.exempt:
-        return None
-    mine = [c for c in held if c.active and c.claimant == card.claimant and not c.adopted and not c.exempt]
+    mine = [c for c in held if c.active and c.claimant == card.claimant and not c.adopted]
     if card not in mine and card.issue not in {c.issue for c in mine}:
         mine.append(card)
-    first: dict[str, tuple[datetime, int]] = {}
-    for c in mine:
-        key = c.task_key
-        mark = (c.claimed_at, c.issue)
-        if key not in first or mark < first[key]:
-            first[key] = mark
-    ordered = sorted(first, key=lambda key: first[key])
-    limit = limit_for(maintainer, rules)
-    if card.task_key not in ordered[:limit]:
-        return f"{card.claimant} would hold more than {limit} open claims"
+    if not card.exempt:
+        first: dict[str, tuple[datetime, int]] = {}
+        for c in mine:
+            if c.exempt:
+                continue
+            key = c.task_key
+            mark = (c.claimed_at, c.issue)
+            if key not in first or mark < first[key]:
+                first[key] = mark
+        ordered = sorted(first, key=lambda key: first[key])
+        limit = limit_for(maintainer, rules)
+        if card.task_key not in ordered[:limit]:
+            return f"{card.claimant} would hold more than {limit} open claims"
     if card.task is not None:
         same = sorted((c.claimed_at, c.issue) for c in mine if c.task == card.task)
         if (card.claimed_at, card.issue) not in same[: rules.limits.issues_per_task]:

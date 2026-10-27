@@ -5,8 +5,9 @@ Nobody writes a command comment by hand: `task create` posts `/claim`, the stage
 post `/unclaim` (give a claim back) and `/claim renew` (start its idle clock again) the same way, through
 `Remote.post_command`, so the Action handles them like anyone's (docs/guides/issues.md#claiming). Each checks first what
 the Action would refuse, with the Action's words, and posts nothing then; after posting it waits, at most
-`claims.create_wait_seconds`, until the card lists the command as handled or a reply answers it. Waiting goes through
-an injected clock and sleep, so the tests never wait.
+`claims.create_wait_seconds` per issue, until the card lists the command as handled or a reply answers it; after a
+wait that runs out it stops, since the Action runs one job at a time and the next issue would wait as long, and names
+the issues it did not try. Waiting goes through an injected clock and sleep, so the tests never wait.
 """
 
 from __future__ import annotations
@@ -81,7 +82,7 @@ def post_claim_command(verb: str, numbers: list[int], env: PostEnv, wait: bool =
     user = env.remote.current_user()
     engine = Engine(env.remote, env.conventions, env.now)
     failed = 0
-    for number in numbers:
+    for index, number in enumerate(numbers):
         problem = _refusal(env, engine, verb, number, user)
         if problem is not None:
             env.out(f"refused: {problem}; nothing posted")
@@ -99,6 +100,10 @@ def post_claim_command(verb: str, numbers: list[int], env: PostEnv, wait: bool =
                 f"#{number}: posted {text}, and no answer came within {env.conventions.claims.create_wait_seconds} s; "
                 "the next claim run or sweep acts on it (`claim list` shows the claims)"
             )
+            rest = numbers[index + 1 :]
+            if rest:
+                env.out(f"not tried (the Action is slow): {', '.join(f'#{n}' for n in rest)}; run the command again")
+                return 1
             failed += 1
         else:
             env.out(f"#{number}: refused by the claim Action: {answer}")

@@ -197,6 +197,7 @@ def _list(remote: Remote, conventions: Conventions, as_json: bool) -> int:
                 "waiting": card.waiting,
                 "warned": card.warned_at is not None,
                 "adopted": card.adopted,
+                "exempt": card.exempt,
             }
             for card in cards
         ]

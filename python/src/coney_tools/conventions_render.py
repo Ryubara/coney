@@ -310,7 +310,8 @@ def _claim_rules(conventions: Conventions) -> list[str]:
     )
     lines += _bullet(
         f"The claim of an issue labelled `{claims.exempt_label}` (a unit that builds the new workflow) neither counts "
-        "toward that limit nor is refused by it; the cap of a task still holds. Only a maintainer can set the label."
+        "toward that limit nor is refused by it; the cap of a task still holds. Only someone who may label issues "
+        "(triage access or more) can set the label."
     )
     lines += _bullet(
         f"While an open `{claims.critical_label}` issue that can be claimed has no claim, only a "

@@ -293,8 +293,10 @@ All the logic is in `python/src/coney_tools/issue_claim_*.py` and the rules are 
   `/claim renew`) on every issue named, as the signed-in account, the way `task create` posts `/claim`, and the claim
   Action acts on it like anyone's. It first checks what the Action would refuse (no claim on the issue; a claim of
   someone else, which only a maintainer may give back and only the claimant may renew) and then posts nothing, with
-  the Action's words. After posting it waits, at most `claims.create_wait_seconds`, until the card lists the command
-  as handled (`done`) or a reply refuses it. A hook refuses both to the engineer, tooling and reviewer roles.
+  the Action's words. After posting it waits, at most `claims.create_wait_seconds` per issue, until the card lists the
+  command as handled (`done`) or a reply refuses it. A wait that runs out stops the command: the Action runs one job at
+  a time, so the next issue would wait as long; it names the issues it did not try, and the command it posted stays
+  for the next run or the sweep. A hook refuses both to the engineer, tooling and reviewer roles.
 
 Every argument and option:
 
@@ -303,7 +305,7 @@ Every argument and option:
 | `run` | `--event NAME` | required | The GitHub event's name: `issue_comment`, `issues`, `pull_request_target` (also `pull_request`), `schedule` or `workflow_dispatch`; any other name is an error (exit 2) |
 | `run` | `--payload FILE` | required | The event's JSON file (`$GITHUB_EVENT_PATH`); it must hold a JSON object. Only the issue or pull request number, a pull request's `Fixes #N` lines (at most `claims.closing_per_event`), its action and its author are taken from it |
 | `sweep` | none | | Reconciles every issue that may need it, enforces the limits, lists the orphans and deletes old replies |
-| `list` | `--json` | off | Prints the held claims as JSON (issue, claimant, status, task, scope, stage, pull request, `claimed_at`, `last_activity`, `deadline` (null while the clock waits), `waiting` (what it waits for), `warned`, `adopted`) instead of one line each |
+| `list` | `--json` | off | Prints the held claims as JSON (issue, claimant, status, task, scope, stage, pull request, `claimed_at`, `last_activity`, `deadline` (null while the clock waits), `waiting` (what it waits for), `warned`, `adopted`, `exempt` (outside the limit: `claims.exempt_label`)) instead of one line each |
 | `unclaim`, `renew` | `ISSUE ...` | required | The issues whose claims to give back or renew, handled in turn |
 | `unclaim`, `renew` | `--no-wait` | off | Posts and returns without waiting for the Action's answer |
 

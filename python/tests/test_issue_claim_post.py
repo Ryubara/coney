@@ -115,6 +115,16 @@ def test_several_issues_are_handled_in_turn_and_one_failure_is_exit_one() -> Non
     assert world.github.view(10).assignees == () and world.github.view(12).assignees == ()
 
 
+def test_a_wait_that_runs_out_stops_and_names_the_issues_not_tried() -> None:
+    world = World()
+    for number in (10, 11, 12):
+        world.claim(number, "Ryubara")
+    world.stalled = True
+    assert post_claim_command("unclaim", [10, 11, 12], world.env()) == 1
+    assert world.lines[-1].startswith("not tried (the Action is slow): #11, #12")
+    assert not any(c.body == "/unclaim" for n in (11, 12) for c in world.github.comments(n))
+
+
 def test_no_answer_in_time_says_so_and_the_command_stays_for_the_sweep() -> None:
     world = World()
     world.claim(10, "Ryubara")

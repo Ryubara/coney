@@ -153,3 +153,39 @@ def test_an_old_card_without_the_field_reads_as_counted() -> None:
     assert '"exempt"' not in old
     parsed = model.parse_card(old, RULES)
     assert parsed is not None and not parsed.exempt
+
+
+def test_the_cap_of_a_task_holds_for_an_exempt_claim_in_the_recount() -> None:
+    def card(issue: int, minute: int) -> model.Card:
+        return model.Card(
+            issue=issue, claimant="Ryubara", claimed_at=START.replace(minute=minute), task="big", exempt=True
+        )
+
+    held = [card(n, n) for n in range(1, 5)]
+    assert [overrun(c, held, True, RULES) is None for c in held] == [True, True, True, False]
+
+
+def test_claim_list_json_says_whether_a_claim_is_exempt(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import json
+
+    from conventions_support import REPO
+
+    from coney_tools import issue_claim_cli as cli
+
+    monkeypatch.chdir(REPO)
+    item = {
+        "id": 9,
+        "issue_url": "https://api.invalid/repos/o/r/issues/7",
+        "user": {"login": RULES.bot_login, "type": "Bot"},
+        "body": model.render_card(model.Card(issue=7, claimant="a", claimed_at=START, exempt=True), RULES),
+        "created_at": "2026-10-22T12:00:00Z",
+    }
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    cli.add_claim_parser(parser.add_subparsers(dest="group"))
+    args = parser.parse_args(["claim", "list", "--json"])
+    assert cli.run_claim(args, lambda arguments: json.dumps(item)) == 0
+    assert json.loads(capsys.readouterr().out)[0]["exempt"] is True

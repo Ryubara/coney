@@ -376,7 +376,8 @@ claims:
   limits: {maintainer: 3, contributor: 2, issues_per_task: 3}
   # The claim of an issue that carries this label neither counts toward the open-claims limit nor is refused by it
   # (maintainer decision 2026-10-27): the units that build the new workflow for the cutover, which the engineer slots
-  # do not count either. Only someone who may label issues (a maintainer) can set it; the cap of a task still holds.
+  # do not count either. Only someone who may label issues (triage access or more) can set it; the cap of a task
+  # still holds.
   exempt_label: workflow
   scope_max_characters: 400                       # the text after `scope:` in /claim
   closing_per_event: 10                           # `Fixes #N` lines of one pull request event that are acted on
