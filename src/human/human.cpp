@@ -1464,7 +1464,7 @@ bool Human::launchJump(anim::Vec3 velocity) {
 
 void Human::tryActions(const raycast::CollisionMesh* mesh, bool sprintHeld) {
     // Nothing in the air or while climbing; nothing while the record's +0x08 drops the dispatcher's commands (a
-    // recovery, a landing) or makes the human busy (an attack's phases, the run stop). **Coney choice**: triangle's
+    // recovery, a landing) or makes the human busy (an attack's phases, the run stop). **Coney's choice**: triangle's
     // actions take the dispatcher's mask and the stick step's, as they take the stick's direction.
     if (m_airborne || m_climbRun || (m_animator.flags() & combat::kDispatchDroppingPhases) != 0 ||
         stickBusy(gateInput())) {
