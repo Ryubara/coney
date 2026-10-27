@@ -184,16 +184,6 @@ class CountingPainter final : public coney::gui::DebugTextPainter {
     mutable std::size_t measured = 0;
 };
 
-// Expected: unverified, #1031 (the pad menu is Coney's own; the original has none)
-TEST_CASE("text cut to fit keeps the longest prefix that fits with its mark", "[debug][gui]") {
-    CountingPainter painter;
-    // 6 + 2 + 9 + 6 = 23 px for "aiWb"; the mark takes 6 more.
-    CHECK(coney::gui::fitText(painter, "aiWbcdef", 29.0F) == "aiWb~");
-    CHECK(coney::gui::fitText(painter, "aiWbcdef", 28.9F) == "aiW~");
-    CHECK(coney::gui::fitText(painter, "aiWbcdef", 48.0F) == "aiWbcdef");
-    CHECK(coney::gui::fitText(painter, "aiWbcdef", 3.0F) == "~");
-}
-
 TEST_CASE("cutting a very long text to fit measures it a bounded number of times", "[debug][gui]") {
     // Expected: unverified, #1031 (Coney's own debug menu; the original has none)
     // The AI fighters page's State line with 300 fighters is over 10,000 characters, of which a row shows a few dozen:

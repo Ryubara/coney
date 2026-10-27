@@ -1222,29 +1222,6 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return std::unexpected(std::move(measure.error()));
             }
             options.benchMeasure = *measure;
-        } else if (arg == "--bench-place") {
-            if (auto value = takeValue(args, i, benchPlaceArg, "--bench-place", "X,Y,Z,HEADING"); !value) {
-                return std::unexpected(std::move(value.error()));
-            }
-            // As --start's spot, without its camera.
-            auto place = parseStart(benchPlaceArg.value_or(std::string{}));
-            if (!place || place->cameraDistance.has_value()) {
-                return invalidArgument(std::format("--bench-place needs X,Y,Z,HEADING (decimal numbers), got \"{}\"",
-                                                   benchPlaceArg.value_or(std::string{})));
-            }
-            options.benchPlace = *place;
-        } else if (arg == "--bench-fps") {
-            options.benchFps = true;
-        } else if (arg == "--bench-neutrals") {
-            if (auto value = takeValue(args, i, benchNeutralsArg, "--bench-neutrals", "a number of neutrals"); !value) {
-                return std::unexpected(std::move(value.error()));
-            }
-            auto neutrals =
-                parseRange("--bench-neutrals", benchNeutralsArg.value_or(std::string{}), 0, kMaxBenchFighters);
-            if (!neutrals) {
-                return std::unexpected(std::move(neutrals.error()));
-            }
-            options.benchNeutrals = *neutrals;
         } else if (arg == "--bench-real-time") {
             options.benchRealTime = true;
         } else if (arg == "--bench-frames") {
