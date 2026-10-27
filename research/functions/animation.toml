@@ -53,7 +53,7 @@ page = "animation.md#clip-queries"
 role = "the events a cursor passes ([Paired tasks](formats/animation.md#paired-tasks))"
 level = "confirmed-code"
 coney = "src/animation/anim_task.h:AnimTaskStack::keepEvents"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001041f8

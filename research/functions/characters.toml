@@ -68,7 +68,22 @@ role = "the body's contact handler: landings, fences while climbing, objects"
 level = "confirmed-code"
 note = "confirmed (code) for the parts cited"
 coney = "src/gamemodes/level_pickups.h:LevelPickups::walkOver"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "kinds 29 (moving vehicle) and 34 (train) and an airborne human's contacts with humans (the strike and the scaled code 4) are not ported"
+relation = "not-ported"
+issue = 1008
+
+[[function.gaps]]
+what = "charge and jump targets, the pass-through after a strike and an object's flag 0x200 answer are not ported"
+relation = "not-ported"
+issue = 712
+
+[[function.gaps]]
+what = "the thrown victim's armed wall sound (+0x3bd) is not ported"
+relation = "not-ported"
+issue = 684
 
 [[function]]
 address = 0x0021a490
@@ -77,7 +92,12 @@ page = "characters.md#original-structure"
 role = "the push-out sphere (or a bone segment) while airborne and in some states"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::pushOutInAir"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "only the airborne sphere is ported: the grab skips, an AI's 0.35 radius, the grounded push at bone 2 and the bone 6 to bone 3 segment collide are not"
+relation = "not-ported"
+issue = 1008
 
 [[function]]
 address = 0x0021cda8
@@ -1737,7 +1757,22 @@ page = "characters.md#original-structure"
 role = "1.5 m ray down from 1 m above the feet"
 level = "confirmed-code"
 coney = "src/ai/hiding.h:updateHiding"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the hide rule runs for the player only: his gang's members, the other humans, the hide order (Player_UpdateHideOrder) and an AI's molotov drop are not ported; held flag 0x800 does not stop the fall; the last ground position is the snapped feet, not the feet before the snap"
+relation = "not-ported"
+issue = 1008
+
+[[function.gaps]]
+what = "the split view's radar tint (two players in one view) is not ported"
+relation = "not-ported"
+issue = 549
+
+[[function.gaps]]
+what = "a riding human's snap (no move, material 5 on a miss) is not ported"
+relation = "not-ported"
+issue = 684
 
 [[function]]
 address = 0x0023f158
@@ -1773,7 +1808,17 @@ page = "characters.md#original-structure"
 role = "stick → velocity and heading"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::updateState"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the walk-speed state (0x00227d98), the skid's camera-mode test and the +0x3bb rotation lock are not ported"
+relation = "not-ported"
+issue = 1008
+
+[[function.gaps]]
+what = "an AI's control override restore is not ported"
+relation = "not-ported"
+issue = 1003
 
 [[function]]
 address = 0x002427e8
