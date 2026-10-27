@@ -2,6 +2,8 @@
 #include "ai/enemy_scan.h"
 
 #include <algorithm>
+#include <optional>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
@@ -175,5 +177,39 @@ TEST_CASE("a wounded scanner's list goes, an arrested one's stays", "[ai][scan]"
         }
         scanEnemies(scene.brains.gangs(), guard);
         CHECK(lists(guard, scene.player()) != wounded);
+    }
+}
+
+TEST_CASE("a scanner whose gang is fighting lists an enemy more than 1.9 m above him, unless his class role is 10",
+          "[ai][scan]") {
+    // Expected: ai-fights.md#enemy-scan, confirmed (code). Human_MaySpectate 0x002225d8 passes a scanner that may not
+    // start a fight (Brain_MayStartFight 0x002904e0 is 0: here his gang's alert state +0x32 is 1, fighting, as
+    // Gang_SetAlertState 0x00164a28 sets it) unless his class role (+0x11b) is 10; else the 1.9 m height limit
+    // applies. A role Coney does not know is not counted as a pass: the limit applies (a Coney stand-in, #1011).
+    struct Case {
+        int alert;
+        std::optional<int> role;
+        bool listed;
+    };
+    for (const Case c :
+         {Case{coney::ai::kGangCalm, 3, false}, Case{coney::ai::kGangFighting, 3, true},
+          Case{coney::ai::kGangFighting, 10, false}, Case{coney::ai::kGangFighting, std::nullopt, false}}) {
+        INFO("alert " << c.alert << ", role " << c.role.value_or(-1));
+        coney::test::AiScene scene;
+        scene.brains.setCollision(scene.mesh.get());
+        Brain& guard = scene.add(Vec3{40.0F, 50.0F, 0.0F}, 180.0F);
+        makeSides(scene, {&guard});
+        auto& gangs = scene.brains.gangs();
+        coney::ai::GangLookups lookups;
+        lookups.role = [&guard, role = c.role](const Brain& brain) {
+            return &brain == &guard ? role : std::optional<int>{};
+        };
+        gangs.setLookups(std::move(lookups));
+        scene.run(1);
+        REQUIRE(guard.gang() != nullptr);
+        guard.gang()->setAlertState(c.alert);
+        // Up on something 2.5 m high, 10 m ahead of the guard and in his sight.
+        scene.player().human().place(Vec3{40.0F, 40.0F, 2.5F}, 0.0F);
+        CHECK(scanSees(guard, scene.player()) == c.listed);
     }
 }
