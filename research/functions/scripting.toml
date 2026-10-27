@@ -1820,7 +1820,7 @@ status = "compared"
 [[function.gaps]]
 what = "the hitpoints of world objects other than doors and barriers"
 relation = "not-ported"
-issue = 85
+issue = 1021
 
 [[function]]
 address = 0x00385950

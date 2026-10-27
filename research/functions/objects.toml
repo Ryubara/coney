@@ -844,7 +844,7 @@ issue = 710
 [[function.gaps]]
 what = "message `0x20`'s leaf removal"
 relation = "not-ported"
-issue = 85
+issue = 1021
 
 [[function.gaps]]
 what = "message `0x3e`, the angle answered"
