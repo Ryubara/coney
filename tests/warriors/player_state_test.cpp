@@ -284,7 +284,7 @@ TEST_CASE("crime reports: off, police offenders, one-way types, break-ins and cu
 
 TEST_CASE("the stopwatch counts whole milliseconds an update and drops the rest: 99.999 s takes 3031 steps of 1/30 s",
           "[stopwatch]") {
-    // Expected: armies.md#level60-start, confirmed (code): StopWatch_Update (0x004233f8) adds GameTimer_MsSince
+    // Expected: armies.md#timer, confirmed (code): StopWatch_Update (0x004233f8) adds GameTimer_MsSince
     // (0x004dca60: the ticks since its last reading divided by 294912, truncated) and keeps the whole reading, so each
     // 33.33 ms step counts 33 ms; confirmed (runtime), run r-20261026-level60-clock: level60's 99999 ms took 6068
     // ticks of 60 Hz from F1.Time to F1.TimerOut.

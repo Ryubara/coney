@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "warriors/stop_watch.h"
 
+#include <cmath>
 #include <utility>
 
 #include "core/game_timer.h"
@@ -38,16 +39,12 @@ void StopWatch::setWarning(std::int32_t warnMs) {
 
 StopWatch::Step StopWatch::step(std::uint64_t nowTicks) {
     Step result;
-    // The whole milliseconds since the last reading (GameTimer_MsSince truncates), and nothing until one has passed;
-    // the reading is kept whole, so each update drops its fraction of a millisecond (33 of a step's 33.33).
-    if (!m_running || nowTicks <= m_lastTicks) {
+    const std::uint64_t nowMs = nowTicks / kTicksPerMs;
+    const std::uint64_t lastMs = m_lastTicks / kTicksPerMs;
+    if (!m_running || nowMs <= lastMs) {
         return result;
     }
-    const std::uint64_t passedMs = (nowTicks - m_lastTicks) / kTicksPerMs;
-    if (passedMs == 0) {
-        return result;
-    }
-    const auto passed = static_cast<std::int64_t>(static_cast<float>(passedMs) * m_rate);
+    const auto passed = static_cast<std::int64_t>(std::lround(static_cast<double>(nowMs - lastMs) * m_rate));
     m_lastTicks = nowTicks;
     const bool down = m_target < m_time;
     const std::int64_t next =
