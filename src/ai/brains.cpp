@@ -49,9 +49,8 @@ void Brains::remove(const human::Human& human) {
 }
 
 Brain* Brains::find(const human::Human& human) {
-    // Stub for the fails-first test commit: finds nothing (the table is put back in the next commit).
-    static_cast<void>(human);
-    return nullptr;
+    const auto found = m_byHuman.find(&human);
+    return found == m_byHuman.end() ? nullptr : found->second;
 }
 
 void Brains::setPlanner(RoutePlanner* planner) {
