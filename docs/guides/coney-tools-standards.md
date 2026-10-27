@@ -64,7 +64,8 @@ that stayed. As for a page, when the old page is gone the new anchor is not comp
 exist, so a comment redirected to another section of the new page is no touch either. A reference counts only in a
 comment, as a scan of the file's lines reads it (`comment_spans.py`): after a `//` that is not inside a string or a
 character literal, or inside a `/* ... */`, which a line of a block comment is read from the lines above it. Code on
-the same line, a `"// ..."` string and a raw string are not comment, so a link move there is a touch. The rest of the
+the same line, a `"// ..."` string (also one a trailing backslash continues over lines, and next to an `L'"'` or
+`u8'"'` character literal) and a raw string are not comment, so a link move there is a touch. The rest of the
 hunk must be unchanged, line by line (the indent included), or, when every line on both sides is nothing but a comment
 of the same kind and none is empty, as one paragraph that clang-format reflowed because the longer path pushed a line
 past the width (the words are equal). So any other edit in the hunk, a reference to a page that stayed or that

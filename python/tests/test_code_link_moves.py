@@ -169,6 +169,10 @@ def test_a_link_move_in_a_string_that_looks_like_a_comment_is_a_touch() -> None:
         '/* c */ g("docs/research/ai.md#brain");',
         '* p = "docs/research/ai.md#brain";',
         'char c = \'"\'; auto s = "docs/research/ai.md#brain";',
+        'auto c = L\'"\'; auto s = "// docs/research/ai.md#brain";',
+        'auto c = u8\'"\'; auto s = "// docs/research/ai.md#brain";',
+        'auto c = u\'"\'; auto s = "// docs/research/ai.md#brain";',
+        'auto c = U\'"\'; auto s = "// docs/research/ai.md#brain";',
         'auto s = R"(// docs/research/ai.md#brain)";',
         'auto s = R"x(" // docs/research/ai.md#brain)x";',
     ]
@@ -242,3 +246,15 @@ def test_a_diff_of_link_moves_alone_touches_nothing() -> None:
 
 def test_a_diff_with_no_hunk_is_not_a_link_move() -> None:
     assert not touched_code_lines("", GONE, resolves, held).link_moves_only
+
+
+def test_a_link_move_in_a_string_continued_over_a_backslash_is_a_touch() -> None:
+    old = ['auto s = "one \\', '// docs/research/ai.md#brain";']
+    new = ['auto s = "one \\', '// docs/research/ai/index.md#brain";']
+    diff = '@@ -2 +2 @@\n-// docs/research/ai.md#brain";\n+// docs/research/ai/index.md#brain";\n'
+    assert not touched_code_lines(diff, GONE, resolves, held, old, new).link_moves_only
+    # the same line after a string that ended is a comment
+    shut = ['auto s = "one";', "// docs/research/ai.md#brain"]
+    shut_new = ['auto s = "one";', "// docs/research/ai/index.md#brain"]
+    diff = "@@ -2 +2 @@\n-// docs/research/ai.md#brain\n+// docs/research/ai/index.md#brain\n"
+    assert touched_code_lines(diff, GONE, resolves, held, shut, shut_new).link_moves_only

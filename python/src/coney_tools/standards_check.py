@@ -292,8 +292,18 @@ def _code_diff(
     if before is None:
         return None
     diff = local_gate.run_command(["git", "-C", str(root), "diff", "-U0", since, "--", name], root)[1]
-    after = (root / name).read_text(encoding="utf-8", errors="replace")
-    return touched_code_lines(diff, gone, resolves, held, before.splitlines(), after.splitlines())
+    after = (root / name).read_bytes().decode("utf-8", errors="replace")
+    return touched_code_lines(diff, gone, resolves, held, _git_lines(before), _git_lines(after))
+
+
+def _git_lines(text: str) -> list[str]:
+    """The lines of `text` as git counts them: broken at a newline only (`str.splitlines` also breaks at a form feed,
+    U+0085, U+2028 and others, which would shift the diff's line numbers onto the wrong lines), without a trailing
+    carriage return."""
+    lines = text.split("\n")
+    if lines[-1] == "":
+        lines.pop()
+    return [line.removesuffix("\r") for line in lines]
 
 
 def _ported(root: Path, conventions: Conventions) -> dict[int, Entry]:

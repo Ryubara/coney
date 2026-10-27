@@ -24,6 +24,19 @@ def test_a_comment_marker_inside_a_string_or_character_literal_is_no_comment() -
     assert text_of("int n = 1'000; // comment") == "// comment"
 
 
+def test_a_prefixed_character_literal_holding_a_quote_does_not_open_a_string() -> None:
+    for prefix in ("L", "u", "U", "u8"):
+        assert text_of(f"auto c = {prefix}'\"'; // comment") == "// comment", prefix
+    # a digit separator after a hexadecimal letter is still a separator
+    assert text_of("int n = 0xAB'CD; // comment") == "// comment"
+
+
+def test_a_string_ended_by_a_backslash_continues_on_the_next_line() -> None:
+    lines = ['auto s = "one \\', '// two"; // after']
+    found = [[line[a:b] for a, b in spans] for line, spans in zip(lines, comment_spans(lines), strict=True)]
+    assert found == [[], ["// after"]]
+
+
 def test_a_raw_string_is_skipped_over_lines() -> None:
     lines = ['auto s = R"x(', "// inside", ')x"; // after']
     assert [[line[a:b] for a, b in spans] for line, spans in zip(lines, comment_spans(lines), strict=True)] == [

@@ -647,3 +647,13 @@ def test_a_link_move_inside_a_string_that_looks_like_a_comment_touches_the_file(
     root = build(tmp_path, {"docs/research/ai.md": PAGE, "src/ai/brain.cpp": code.replace("REF", OLD_REF)})
     move_page_and_edit(root, {"src/ai/brain.cpp": code.replace("REF", NEW_REF)})
     assert {r.rule for r in linked(root)} == {"compared"}
+
+
+def test_a_form_feed_in_the_file_does_not_shift_the_lines_of_a_link_move_in_a_string(tmp_path: Path) -> None:
+    # git counts newlines only: a line split at the form feed would put the string under the comment line above it
+    pad = "    // " + "padding " * 8 + "\n"
+    code = GOOD_SOURCE.replace("// Adds one.", "// Adds one.\f// and more.")
+    code = code.replace("    int a = 1;", pad + '    auto s = "REF";')
+    root = build(tmp_path, {"docs/research/ai.md": PAGE, "src/ai/brain.cpp": code.replace("REF", OLD_REF)})
+    move_page_and_edit(root, {"src/ai/brain.cpp": code.replace("REF", NEW_REF)})
+    assert {r.rule for r in linked(root)} == {"compared"}
