@@ -902,7 +902,7 @@ status = "legacy"
 [[function.gaps]]
 what = "the speaker does not look at the target while the line plays"
 relation = "not-ported"
-issue = 1009
+issue = 652
 
 [[function.gaps]]
 what = "the line is stopped before the voice table is asked, so a command with no line left still cuts it"
@@ -910,7 +910,12 @@ relation = "not-ported"
 issue = 652
 
 [[function.gaps]]
-what = "the human's `+0x16c` and `Sound_MarkCommandSaid` are not kept"
+what = "`Sound_MarkCommandSaid` is not called"
+relation = "not-ported"
+issue = 652
+
+[[function.gaps]]
+what = "the human's `+0x16c` is not kept"
 relation = "not-ported"
 issue = 1009
 
