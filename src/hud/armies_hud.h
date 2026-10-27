@@ -81,6 +81,8 @@ class ArmiesHud {
     /// Panel `player`'s first attach to a player (`HUD_AttachPlayer` -> `ANHud_Init`): its join message off.
     /// @orig 0x002107e8 ANHud_Init (unknown)
     void panelAttached(std::size_t player);
+    /// Panel `player` enabled (stub).
+    void panelEnabled(std::size_t /*player*/) {}
     /// Whether panel `player`'s join message is on.
     [[nodiscard]] bool joinMessage(std::size_t player) const { return m_join.at(player); }
     /// Whether panel `player`'s join message shows now: on, the player not in, and on the blink's lit half.
@@ -93,7 +95,8 @@ class ArmiesHud {
     /// the original reads its real-time clock, so a test run blinks the same every time.
     /// @orig 0x0019e660 GoSign_StepBlink (unknown)
     /// @orig 0x0019e758 GoSign_Update (unknown)
-    void update(std::uint64_t nowMs, int level, std::array<bool, kPlayers> playersIn);
+    void update(std::uint64_t nowMs, int level, std::array<bool, kPlayers> playersIn,
+                std::array<bool, kPlayers> knockedOut = {});
 
     /// Adds the credits line, the GO sign and the join messages, with the global strings `strings` gives.
     /// @orig 0x0019ed28 GoSign_Render (unknown)

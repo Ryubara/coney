@@ -86,7 +86,8 @@ bool ArmiesHud::joinShowing(std::size_t player) const {
     return m_active && player < kPlayers && m_join.at(player) && !m_in.at(player) && m_joinLit.at(player);
 }
 
-void ArmiesHud::update(std::uint64_t nowMs, int level, std::array<bool, kPlayers> playersIn) {
+void ArmiesHud::update(std::uint64_t nowMs, int level, std::array<bool, kPlayers> playersIn,
+                       std::array<bool, kPlayers> /*knockedOut*/) {
     m_active = isArmiesLevel(level);
     m_in = playersIn;
     if (!m_active) {
