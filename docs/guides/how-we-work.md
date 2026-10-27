@@ -59,9 +59,9 @@ flowchart TB
   end
   subgraph eng ["Engineer, in a slot, in its own worktree"]
     start["3 task start"]
-    study["4 original study"]
-    port["5 Test first, port:<br/>original fails-first"]
-    compare["6 original compare"]
+    study["4 orig study"]
+    port["5 Test first, port:<br/>orig fails-first"]
+    compare["6 orig compare"]
     check["7 task check"]
   end
   review["8 task review:<br/>reviewer, never edits"]
@@ -330,7 +330,7 @@ coordinator then opens the pull request.
   ([Slots](#slots), [When a pull request fails checks](agents.md#ci-failures)). Stale failures restart themselves:
   `coney-tools pr list-stuck --rerun --apply` reruns a required check that failed because the runner or GitHub did,
   at most twice per workflow and commit, and never a real lint, build or test failure
-  ([pr-health](coney-tools-repo.md#repo-pr-health)).
+  ([pr list-stuck](coney-tools-pr.md#pr-list-stuck)).
 - **A description is public:** the rules of a research page apply (addresses and short findings, no game data and
   no pasted function listings).
 
@@ -341,20 +341,20 @@ maintainer reviews it.
 ## Legacy release checks {#pr-review}
 
 A branch started before [the cutover](#cutover), outside a task, is released with the checks that predate `task review`
-and `pr open`, and they are retired at the cutover: the description review `coney-tools legacy pr-review <PR.md> --worktree
-<worktree>` with its gate `legacy check-pr-review` ([repo review](coney-tools-repo.md#repo-review), the
-[Description](review/text.md) checklist), and for a branch that changes `@orig` functions the `reviewer` in pr mode with
-its gate `orig check-review` ([Orig review](review/orig.md)). Any later commit, or an edit to the description or its
-pictures, makes such a verdict stale. Every new task is reviewed by `task review` instead, which covers the description
-and the `@orig` functions in one verdict. The legacy gate's rules, generated from `pull_requests.review` in
+and `pr open`, and they are retired at the cutover: the description review `coney-tools legacy pr-review <PR.md>
+--worktree <worktree>` with its gate `legacy check-pr-review` ([legacy pr-review](coney-tools-repo.md#legacy-pr-review),
+the [Description](review/text.md) checklist), and for a branch that changes `@orig` functions the `reviewer` in pr mode
+with its gate `orig check-review` ([Orig review](review/orig.md)). Any later commit, or an edit to the description or
+its pictures, makes such a verdict stale. Every new task is reviewed by `task review` instead, which covers the
+description and the `@orig` functions in one verdict. The legacy gate's rules, generated from `pull_requests.review` in
 [.github/conventions.yml](repo:.github/conventions.yml):
 
 <!-- conventions:begin pr-review -->
 - The `reviewer` agent (`.claude/agents/reviewer.md`) writes `REVIEW.json` and `REVIEW.md` next to the description file:
   `REVIEW.json` holds `tip`, `body_sha256`, `verdict` (`pass` or `fail`), `images` (each local image's `path` and
   `sha256`) and `findings` (each with `severity` `blocker` or `note`, `where` and `text`).
-- `legacy check-pr-review` passes only when the description's title (line 1) and body (the rest) pass `pr check-title` and
-  `pr check-body` (a local image is allowed, as `gh --attach` uploads it), the verdict is `pass` with no `blocker`
+- `legacy check-pr-review` passes only when the description's title (line 1) and body (the rest) pass `pr check-title`
+  and `pr check-body` (a local image is allowed, as `gh --attach` uploads it), the verdict is `pass` with no `blocker`
   finding, `tip` is the worktree's HEAD, `body_sha256` is the description file's hash now and every local image the
   description shows is listed with its hash now; any new commit, edit or replaced picture makes the verdict stale.
 - The description's hash is the SHA-256 of the whole file (title line included) as UTF-8, with a leading BOM dropped and
@@ -396,7 +396,8 @@ something:
   worktree for a stretch where files must not change and deletes it when it finishes, and deletes its own `build/`
   folder when its task passes Review. The coordinator runs `coney-tools workspace clean --apply` after every merge (it
   removes merged worktrees and old build folders, and never touches busy or unmerged work) and
-  `coney-tools workspace check-space` before starting builds: below 30 GB free it cleans first ([Cleanup](workspace.md#cleanup)).
+  `coney-tools workspace check-space` before starting builds: below 30 GB free it cleans first
+  ([Cleanup](workspace.md#cleanup)).
 - **Heavy builds take a slot, from a tool.** A full engine build uses every core, so only two run at once and the
   rest queue: every build and test run goes through `coney-tools build`, which claims a build slot like a PCSX2 copy (a
   fast lane for small jobs, a fair queue, priority for builds someone waits on; [`build`](coney-tools-build.md#build)),
@@ -426,10 +427,11 @@ coordinator triages them and is the only one who writes to GitHub; an agent read
 process: [Issues](issues.md).
 
 **Issue rules are enforced, not remembered.** An issue is drafted, checked and filed only with `coney-tools issue
-template`, `check` and `create` (or `edit` and `link`); the repository's Claude Code hook (`.claude/hooks/issue_guard.py`)
-refuses a raw `gh issue create`, a `gh issue edit` that sets the body and a `gh api` call that writes an issue; and
-the `issue-check` workflow checks every issue opened or edited on the website or through the API and keeps one
-comment listing the problems. The audit flags what slips past all three ([Filing an issue](issues.md#filing)).
+template`, `check` and `create` (or `edit` and `set-parent`); the repository's Claude Code hook
+(`.claude/hooks/issue_guard.py`) refuses a raw `gh issue create`, a `gh issue edit` that sets the body and a `gh api`
+call that writes an issue; and the `issue-check` workflow checks every issue opened or edited on the website or through
+the API and keeps one comment listing the problems. The audit flags what slips past all three ([Filing an
+issue](issues.md#filing)).
 
 **Claiming is one comment.** Whoever takes an issue (a person, an agent, the coordinator) claims it with `/claim`, and a
 GitHub Action assigns it, sets the status label and keeps a claim card with the deadline; from the cutover
@@ -517,7 +519,7 @@ config:
 ---
 flowchart LR
   hooks["Claude Code hooks<br/>refuse the wrong<br/>command or role"] --> pre["pre-commit<br/>format, lint,<br/>512 KB limit"]
-  pre --> stamps["original compare and<br/>task review check<br/>earlier stamps"]
+  pre --> stamps["orig compare and<br/>task review check<br/>earlier stamps"]
   stamps --> push["pr open<br/>verifies the stamps,<br/>only the coordinator"]
   push --> ci["CI required<br/>checks"]
   ci --> rules["Branch protection<br/>on main:<br/>squash merge only"]
@@ -623,10 +625,10 @@ At the cutover, in one change of [.github/conventions.yml](repo:.github/conventi
    at 48 hours and released at 72 ([Claiming an issue](issues.md#claiming)).
 3. `tasks.start.slots.exempt_workflow` turns off, in the same change as item 2: units of `workflow` issues then hold a
    slot and count against the claim limit like the rest ([Engineer slots](agents.md#slots)).
-4. The [legacy release checks](#pr-review) and their commands (`legacy pr-review`, `legacy check-pr-review`, `repo review-stamp`,
-   `orig review-stamp`, `orig check-review`, `orig record-findings`) are removed, and the old names of renamed `coney-tools`
-   commands stop working. The sweep of [legacy fidelity](#fidelity-audit) uses `orig review-stamp --folder` and `orig
-   record-findings`, so it must be filed before this step.
+4. The [legacy release checks](#pr-review) and their commands (`legacy pr-review`, `legacy check-pr-review`, `repo
+   review-stamp`, `orig review-stamp`, `orig check-review`, `orig record-findings`) are removed, and the old names of
+   renamed `coney-tools` commands stop working. The sweep of [legacy fidelity](#fidelity-audit) uses `orig review-stamp
+   --folder` and `orig record-findings`, so it must be filed before this step.
 5. The heads-up in the README that asks contributors to wait is removed.
 6. Tether keeps only the session's health; its Coney pollers and pull request guard are removed, as Conclave holds them.
 7. Branches started before the cutover become tasks when they are picked up, their work and review findings the

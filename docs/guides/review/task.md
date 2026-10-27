@@ -176,8 +176,8 @@ The reviewer starts no agents, and the hooks enforce it twice in `[roles.reviewe
 `allow_agent_types = []` refuses every Agent call (the agent file gives it no Agent tool either). Its `deny_commands`
 refuse a session started from the shell: `claude` or `coney-agent` where a command starts, in any letter case (also
 after `&&`, `;`, `|`, `$(`, `then`, launchers such as `uv run`, `uvx`, `npx -y`, `cmd /c` or `Start-Process`, or a
-folder such as `.venv/Scripts/`), the session launcher by module or file, `task review --run` and `legacy pr-review` (which
-always starts one). Even a read-only helper has Bash and no role rules, and a session started from the shell is a
+folder such as `.venv/Scripts/`), the session launcher by module or file, `task review --run` and `legacy pr-review`
+(which always starts one). Even a read-only helper has Bash and no role rules, and a session started from the shell is a
 main session the hooks vouch for under a session of its own, so either could write a `compared` stamp for the
 reviewer, and the reviewer would grade its own comparison.
 

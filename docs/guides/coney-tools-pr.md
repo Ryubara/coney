@@ -175,7 +175,7 @@ The checks CI's `title`, `docs` and `body` jobs run on a pull request, against t
   write. Whether the list is complete is the reviewer's judgement;
   [`issue impact`](coney-tools-issues.md#issue-impact) suggests it.
   `--local-images` accepts an image that points at a local file, as in a description that `gh pr create --attach`
-  is about to upload; the release guard hook passes it ([The release queue](how-we-work.md#release-queue)).
+  is about to upload; the PR guard hook passes it ([Opening the pull request](how-we-work.md#release-queue)).
 
 ### The Model line and the branch's trailers {#pr-model-line}
 
@@ -194,9 +194,9 @@ the wrong model, and it cost three review rounds (pull requests #460, #466 and #
   that is reported, not the trailers too.
 * **The base must be fresh and right.** `base..HEAD` is what the branch has that the base lacks. With a stale
   `origin/main`, a branch that has merged a newer `main` also counts the commits it merged in, and so their trailers
-  (other authors' models) must be named: run `git fetch` and the refusal goes away. A stacked branch
-  ([Dependent units are stacked](how-we-work.md#release-queue)) with the default base also counts the parent unit's
-  trailers: pass `--base <parent branch>`.
+  (other authors' models) must be named: run `git fetch` and the refusal goes away. A branch cut from another branch
+  rather than `main` (stacked work is refused for a task, [Working in parallel](how-we-work.md#working-in-parallel))
+  with the default base also counts the parent's trailers: pass `--base <parent branch>`.
 * **The message.** One reason per missing model, naming it:
   `AI use: 'Model:' does not name Claude Opus 5.5, which a Co-Authored-By trailer on the branch's commits credits`.
 * **Where it runs.** Locally, where the branch is at hand: `legacy check-pr-review`, `legacy pr-review` and `repo
@@ -204,9 +204,9 @@ the wrong model, and it cost three review rounds (pull requests #460, #466 and #
   starts, and `pr check-body --worktree WT` does the same for a description on its own. **CI does not run it:** the
   `body` job gets the description from the event and has no commits (its checkout is shallow, and a full history for one
   string comparison would slow a required check on every edit), so it passes no models and stays a description-only
-  check, as `Docs: none` is. The coordinator's release step is the gate
-  ([The description review](how-we-work.md#pr-review)). A branch git cannot list (an unknown `--base`, not a worktree)
-  exits 2 rather than passing as one without trailers.
+  check, as `Docs: none` is. `pr open` is the gate ([The checks](pr.md#checks)); a legacy branch uses `legacy
+  check-pr-review` ([Legacy release checks](how-we-work.md#pr-review)). A branch git cannot list (an unknown `--base`,
+  not a worktree) exits 2 rather than passing as one without trailers.
 * **One source.** The trailer's key and addresses are `commits.trailers` and the rule's switch is
   `pull_requests.ai_use.model.names_trailer_models` in [.github/conventions.yml](repo:.github/conventions.yml); the
   check holds no copy, and the generated rules in [CONTRIBUTING.md](repo:CONTRIBUTING.md) state it.

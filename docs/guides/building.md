@@ -627,10 +627,10 @@ moving a file out of `src/` is an engine change. Why each class runs what it run
 - **Python runs on every OS only when the tools changed** (or a file no class names): ruff, mypy, pytest and
   `ci run` (its `repo` and `pre-commit` steps) are run on each OS because the tools behave differently
   there (paths, command-line length, programs, line endings). An engine-only change does not change those tools.
-- **In the python job, the OS-independent repository checks run once, on Linux:** `repo check-conventions`, `repo render --check`,
-  `repo audit --files`, `progress check` and the generators' `--check` (`bindings`, `refs`, `missions`). `repo check-conventions`
-  and `repo render --check` are part of `repo audit --files`, which the `repo` step of `ci run` still runs on
-  every OS.
+- **In the python job, the OS-independent repository checks run once, on Linux:** `repo check-conventions`, `repo render
+  --check`, `repo audit --files`, `progress check` and the generators' `--check` (`bindings`, `refs`, `missions`). `repo
+  check-conventions` and `repo render --check` are part of `repo audit --files`, which the `repo` step of `ci run` still
+  runs on every OS.
 - **The `format` job and the `pre-commit` step of `ci run` both run pre-commit,** on purpose: `format` runs every
   hook on every file on Linux, `ci run` runs it (with its own grouping of the changed files and its program
   lookup) on each OS the python job tests. Dropping either would lose a check the other does not make.

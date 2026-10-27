@@ -101,8 +101,8 @@ after an `@orig` review therefore comes before the review of the description, wh
 A branch started before the cutover, outside a task, is released with the [legacy release
 checks](how-we-work.md#pr-review), which run the same agent and are retired at the cutover:
 
-- **The description**, with `coney-tools legacy pr-review` ([repo review](coney-tools-repo.md#repo-review)); the verdict is
-  `REVIEW.json` next to `PR.md` ([Description](review/text.md#legacy-verdict)).
+- **The description**, with `coney-tools legacy pr-review` ([legacy pr-review](coney-tools-repo.md#legacy-pr-review));
+  the verdict is `REVIEW.json` next to `PR.md` ([Description](review/text.md#legacy-verdict)).
 - **An `@orig` branch, in pr mode** (`orig check-review`): give it the branch (or its worktree), the base and the
   scratch folder that holds `PR.md`; it writes `ORIG-REVIEW.json` and `ORIG-REVIEW.md` there. When `orig review-stamp
   --branch` lists no function, no run is needed. A rebase that leaves the functions as they were keeps the verdict.
@@ -110,10 +110,10 @@ checks](how-we-work.md#pr-review), which run the same agent and are retired at t
 **Sweep mode** reviews existing code for [legacy fidelity](how-we-work.md#fidelity-audit), until the sweep is filed
 (it ends at the [cutover](how-we-work.md#cutover)). Give it a `src/` folder or
 a list of addresses and a group folder under `scratch/orig-sweep/`. It reviews what `orig review-stamp --folder` lists
-as unreviewed or stale, writes `FINDINGS.tsv` and `PROGRESS.md`, records the findings with `coney-tools orig record-findings`,
-and returns a summary that the launcher saves as `SUMMARY.md`. Run one agent per folder, and leave out the folders that
-a held claim's scope covers. The coordinator files each finding that is not `clean` or `diff-deliberate-ok` as an
-issue, which becomes an ordinary task.
+as unreviewed or stale, writes `FINDINGS.tsv` and `PROGRESS.md`, records the findings with `coney-tools orig
+record-findings`, and returns a summary that the launcher saves as `SUMMARY.md`. Run one agent per folder, and leave out
+the folders that a held claim's scope covers. The coordinator files each finding that is not `clean` or
+`diff-deliberate-ok` as an issue, which becomes an ordinary task.
 
 ## What a run costs {#cost}
 
@@ -646,7 +646,7 @@ wakes up and writes its whole context again, which on 2026-10-12 cost about 1.1 
   `coney-tools build result --dir <worktree>`: exit 75 while it runs, then the run's summary, log path and exit code
   ([`build result`](coney-tools-build.md#build)).
 - `coney-tools ci run --detach` runs the CI-style checks of the changed files in the background; whoever
-  continues runs `coney-tools ci result` in the worktree ([`check`](coney-tools-build.md#check)).
+  continues runs `coney-tools ci result` in the worktree ([`ci result`](coney-tools-ci.md#ci-run)).
 
 ## The PCSX2 MCP guard {#pcsx2-guard}
 

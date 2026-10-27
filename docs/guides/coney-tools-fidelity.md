@@ -1,11 +1,11 @@
 # The coney-tools fidelity and research commands
 
-The commands behind legacy fidelity and the research pages: [`orig`](#orig) indexes the `@orig` tags,
-[`original`](#original) studies an original function and compares it with Coney's, [`stamp`](#stamp) verifies a unit's
-stamp log, [`research`](#research) keeps the function database and reports the claims a branch changed on the
-research pages, and [`lua`](#lua) decompiles the game's compiled scripts, a research aid. The other groups are listed in
-[the command line overview](coney-tools.md#groups); `standards`, which marks what is below today's standards and
-holds a touched file to them, has [its own page](coney-tools-standards.md).
+The commands behind legacy fidelity and the research pages: [`orig`](#orig) studies an original function and
+compares it with Coney's ([the stage commands](#orig-stages)) and indexes and checks the `@orig` tags, [`stamp`](#stamp)
+verifies a unit's stamp log, [`research`](#research) keeps the function database and reports the claims a branch changed
+on the research pages, and [`lua`](#lua) decompiles the game's compiled scripts, a research aid. The other groups are
+listed in [the command line overview](coney-tools.md#groups); `standards`, which marks what is below today's standards
+and holds a touched file to them, has [its own page](coney-tools-standards.md).
 
 ## orig {#orig}
 
@@ -50,9 +50,9 @@ punctuation, so `DVDWadIndex::Find` matches `DVDWadIndex_Find`, and a binding's 
 full live run asks the server about each of the 2,400 tagged functions twice (the function, its callees), one request
 at a time; on the development machine it took about 11 seconds.
 
-`orig legacy-queue` writes the same files and the sweep's queue, `queue.md` (a table per `src/` directory, then the first
-`--show` entries) and `queue.tsv` (every entry). An entry is an original function with each Coney place that tags it,
-or an untagged function; its score adds up its reasons (`orig_queue.WEIGHTS`):
+`orig legacy-queue` writes the same files and the sweep's queue, `queue.md` (a table per `src/` directory, then the
+first `--show` entries) and `queue.tsv` (every entry). An entry is an original function with each Coney place that tags
+it, or an untagged function; its score adds up its reasons (`orig_queue.WEIGHTS`):
 
 * an open issue with `--label` (default `bug`) that names it (its address, its original or Coney name), its file or
   a research section it links, weighted by the issue's priority label; the area labels of the issues add at most
@@ -134,9 +134,9 @@ the working tree.
     * The exit code is 0 for a pass (which is recorded in the ledger), 1 for a refusal with the reasons, and 2 when
       the branch cannot be found.
     * The release step calls `orig_review.gate` (or `check_verdict_file`, which writes nothing).
-* `record-findings` adds the rows of sweep `FINDINGS.tsv` files ([Sweep findings](review/orig.md#findings)) to the ledger.
-  Each row is matched by address and Coney name to the units at `--ref`, the commit the sweep read; rows that match
-  nothing are printed. It then prints how many units at HEAD are unreviewed, stale, or in each class.
+* `record-findings` adds the rows of sweep `FINDINGS.tsv` files ([Sweep findings](review/orig.md#findings)) to the
+  ledger. Each row is matched by address and Coney name to the units at `--ref`, the commit the sweep read; rows that
+  match nothing are printed. It then prints how many units at HEAD are unreviewed, stale, or in each class.
 
 The ledger is `pull_requests.orig_review.ledger` under the workspace's scratch folder (`orig-review/ledger.jsonl`).
 It is one JSON object per review and is never committed. `orig legacy-queue` reads it:
@@ -174,6 +174,53 @@ rehashing, not migrated, so none is invalidated when the hash changes and no sta
   edit it is stale, as before, and the function is reviewed again.
 * An `ORIG-REVIEW.json` verdict is not rehashed: it lives as long as its branch, and one written before this change is
   refused as "reviewed at another body"; the reviewer writes it again from `review-stamp`.
+
+### orig study, compare, verify and fails-first {#orig-stages}
+
+The commands of the study-and-compare stage ([Stamps, studies and pairs](stamps.md)). Each writes into the task's
+folder in the scratch folder (the task is `--task`, else `CONEY_TASK`, else the branch) and appends a stamp when its
+step ends. Exit codes: 0 done, 1 refused (the output says what to fix), 2 it cannot start, 3 no ghidra-mcp answers.
+
+```sh
+uv run --project python coney-tools orig study ADDR [--task T] [--url URL] [--recut] [--print]
+uv run --project python coney-tools orig verify ADDR [--task T] [--url URL]
+uv run --project python coney-tools orig compare ADDR [--task T] [--base REF] [--coney-function KEY] [--carry] [--show]
+uv run --project python coney-tools orig fails-first --test NAME [--test NAME ...] --test-commit SHA [--fix-commit SHA] [--preset P] --agent ID
+uv run --project python coney-tools orig fails-first --none REASON
+```
+
+* `study` reads the function at ADDR from the running ghidra-mcp (reading endpoints only), saves the decompile, callers,
+  callees and globals in scratch (never committed), numbers the statements, cuts the pieces and appends `studied`. It
+  writes nothing when Ghidra is down. It ends with the lines of `research where` for the address (the owning page, the
+  function database entry, the pages that cite it), or one line saying the lookup is not available.
+  [Details](stamps.md#study), [the lookup](research-where.md#study)
+* `verify` re-reads the function and says whether the saved study is `fresh`, `renamed` (a one-to-one rename only) or
+  `stale`; it exits 1 when stale.
+* `compare` writes `mapping/<addr>.toml` with a blank pair per piece on its first run; later runs show the decompile beside
+  the Coney function, check the pairs, the committed Coney file and `orig check-copy`, and append `compared` when all of
+  it holds. A refusal writes no stamp. [Details](stamps.md#compare)
+* `fails-first` runs the named tests through `build --test -R` on the test commit (they must fail) and the fix commit (they
+  must pass) and appends a `fails-first` stamp per test. [Details](stamps.md#fails-first)
+
+Every option:
+
+| Command | Option | What it does |
+| --- | --- | --- |
+| all four | `--task T` | The task whose scratch folder and stamp log are used (default: `CONEY_TASK`, else the branch) |
+| `study`, `verify`, `compare` | `ADDR` | The original function's entry point, such as `0x00230d00` (another address is refused, naming the start) |
+| `study`, `verify` | `--url URL` | The ghidra-mcp server (default `http://127.0.0.1:8090`) |
+| `study` | `--recut` | Cut the saved decompile again without Ghidra; refused unless the saved files and the function's name, program and signature match the newest `studied` stamp |
+| `study` | `--print` | Also print the numbered decompile |
+| `compare` | `--base REF` | What the copy check measures the Coney change from (default `origin/main`) |
+| `compare` | `--coney-function KEY` | Which Coney function to compare, when several carry `@orig ADDR` |
+| `compare` | `--carry` | Bring the pairs forward onto a changed or renamed study |
+| `compare` | `--show` | Print the side-by-side view |
+| `fails-first` | `--test NAME` | A whole test name as ctest lists it, found as `TEST_CASE("NAME"` in the test commit's files (adjacent literals are joined, comments between them dropped, escapes unescaped; a `SECTION` name or any other quoted string is refused; repeatable) |
+| `fails-first` | `--test-commit SHA` | The commit that adds the test, and only the stubs it needs to compile |
+| `fails-first` | `--fix-commit SHA` | The commit that makes it pass (default `HEAD`) |
+| `fails-first` | `--preset P` | The CMake preset the tests are built with (default `dev`) |
+| `fails-first` | `--agent ID` | Your id for the build slots, as `build --agent` |
+| `fails-first` | `--none REASON` | Run nothing and stamp that the task has no such test (one line, at most 200 characters, not with `--test`) |
 
 <!-- command-reference:begin orig -->
 ## Parameters of `orig` {#orig-parameters}

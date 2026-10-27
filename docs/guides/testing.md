@@ -272,8 +272,8 @@ description that leaves either empty (`coney-tools pr check-body`). All of what 
 - AI use: after `Commits written by:` one of `a person`, `an AI`, `an AI, edited by a person`, `a person, with AI help`;
   unless it is `a person`, `Model:` names the model (`n/a` is not enough).
 - `Model:` also names every model that a `Co-Authored-By` trailer on the branch's commits names (any case, anywhere on
-  the line), whoever wrote them. It is checked where the branch is at hand: `legacy check-pr-review`, and `pr check-body`
-  given `--worktree`; CI's `body` job sees only the description.
+  the line), whoever wrote them. It is checked where the branch is at hand: `legacy check-pr-review`, and
+  `pr check-body` given `--worktree`; CI's `body` job sees only the description.
 - The text names no path on your machine (`scratch/`, `../../`, `C:\`) outside an image reference.
 <!-- conventions:end -->
 
@@ -399,8 +399,8 @@ uv run --project python coney-tools clips record STATE --out "$CLIPS/original.mp
 An agent that cannot publish (agents do not post to GitHub: the coordinator does) names its clips in its report and
 leaves them in the clips folder; the coordinator publishes them after it opens the pull request, and
 `clips clean --apply` removes any left behind. Never attach a clip with `gh` directly, never commit one, and never
-reference one in `PR.md` (`pr check-body` refuses the local path): the clip goes in as a comment of its own. The commands:
-[coney-tools clips](coney-tools-pcsx2.md#clips), [Recording a clip](running-options.md#record).
+reference one in `PR.md` (`pr check-body` refuses the local path): the clip goes in as a comment of its own. The
+commands: [coney-tools clips](coney-tools-pcsx2.md#clips), [Recording a clip](running-options.md#record).
 
 ## Where the checks run {#where}
 
@@ -423,9 +423,9 @@ uv run --project python coney-tools ci run
 ```
 
 It runs pre-commit on the changed files, the page standards on the changed pages and `mkdocs build --strict` when docs
-changed, ruff, pytest and mypy when `python/` or `.claude/` changed, `orig check-tags` when `src/` changed (a new gameplay
-function carries `@orig` or `@coney-only`), and `repo check-conventions`. [The command's page](coney-tools-build.md#check) has the
-options.
+changed, ruff, pytest and mypy when `python/` or `.claude/` changed, `orig check-tags` when `src/` changed (a new
+gameplay function carries `@orig` or `@coney-only`), and `repo check-conventions`. [The command's
+page](coney-tools-ci.md#ci-run) has the options.
 
 **clang-tidy is CI's alone.** It is not run locally (on Windows there are no local WSL builds or clang-tidy runs):
 every pull request that changes engine files gets a required `clang-tidy` check on the lines it changes, and the whole
@@ -451,10 +451,10 @@ The whole gate, which `task check` runs:
 - **Python:** `ruff check` and `ruff format --check` on `python/` and `.claude/hooks/`, `mypy` and `pytest` on
   `python/`; a Python test is not stamped `fails-first` (that stamp is for the `TEST_CASE`s of an `@orig` change): a
   tooling task's tests-first rule rests on the reviewer and on pytest in its `checked` stamp ([pr
-  verify](pr.md#verify)); `coney-tools repo check-conventions`; `coney-tools progress check` (the progress inputs; its tables
-  are built into the docs, not committed); and every generator's `--check` (`bindings render`, `bindings sync-coney`,
-  `bindings render-cpp`, `refs render`, `missions render`, `research render`, `pcsx2 recipes render`). Rerun a generator
-  without `--check` when you change what it reads.
+  verify](pr.md#verify)); `coney-tools repo check-conventions`; `coney-tools progress check` (the progress inputs; its
+  tables are built into the docs, not committed); and every generator's `--check` (`bindings render`, `bindings
+  sync-coney`, `bindings render-cpp`, `refs render`, `missions render`, `research render`, `pcsx2 recipes render`).
+  Rerun a generator without `--check` when you change what it reads.
 - **Everything:** `uvx pre-commit run --all-files` leaves the tree unchanged, markdownlint passes,
   `mkdocs build --strict` passes, and `coney-tools docs check` passes on the pages you touched.
 

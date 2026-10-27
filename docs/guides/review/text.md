@@ -64,11 +64,11 @@ grep); it changes no worktree, commits nothing and does not touch GitHub.
 
 One of the [legacy release checks](../how-we-work.md#pr-review), for a branch started before the cutover outside a task;
 it is retired at the cutover, and a task's description is judged in `task review` instead.
-`coney-tools legacy pr-review PR.md --worktree <worktree>` runs the reviewer on one description and then `legacy check-pr-review`.
-The reviewer starts from `repo review-stamp PR.md --worktree <worktree>`, which prints the `tip`, the description's
-`body_sha256` and each local image's `sha256`, and refuses (title and body reasons, no stamp) a description that CI
-would refuse: then the reviewer writes no verdict and the author fixes the description first. It copies the stamp,
-never computes a hash, and writes `REVIEW.json` and `REVIEW.md` next to `PR.md`:
+`coney-tools legacy pr-review PR.md --worktree <worktree>` runs the reviewer on one description and then `legacy
+check-pr-review`. The reviewer starts from `repo review-stamp PR.md --worktree <worktree>`, which prints the `tip`, the
+description's `body_sha256` and each local image's `sha256`, and refuses (title and body reasons, no stamp) a
+description that CI would refuse: then the reviewer writes no verdict and the author fixes the description first. It
+copies the stamp, never computes a hash, and writes `REVIEW.json` and `REVIEW.md` next to `PR.md`:
 
 ```json
 {

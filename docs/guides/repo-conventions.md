@@ -35,7 +35,7 @@ and `labels.yml`) are gone, and so are the constants that repeated their values 
 | `claims` | Claiming an issue: the exact shape of each command, the stages, the labels it sets, the limits of open claims, the 48 h and 72 h deadlines, the waits of `task create` and the sweep's schedule | `claim run` and `claim sweep` (`.github/workflows/claim.yml`), `task create`; `repo render` (the `claim-rules` block) |
 | `tasks` | The task kinds, the task file's name, the leads search's limits, what `task start` keeps (the unit record's file name and the engineer slots, task and fix, with the switch that enforces them) and the review (`review`: the reviewer agent, the files of a review, which changes need which checklist, the model reverse-engineering review needs) | `task create`, `task leads`, `task start`, `task review` |
 | `labels` | The label families and every label with its colour and description | `repo sync-labels`; `repo render` (the `labels` block); `repo audit` (the labels on GitHub) |
-| `hygiene` | The limits after which an item counts as stale or stuck (`thresholds`, including `pr_pending_hours`), which required checks are lint (`pr_health.lint_checks`), the labels for stuck pull requests (`pr_health.labels`), when `pr-health --rerun` may restart a check (`pr_health.rerun`: the cap per commit, the conclusions and log patterns of a runner failure), the weekly report issue, how the workflow comments (`comments`), what the scan of attached logs downloads and looks for (`attachments`: the link, the endings, the size and time limits, the patterns) and `checks`, the registry of the audit's checks | `repo audit`, `pr list-stuck`, `repo post-findings` |
+| `hygiene` | The limits after which an item counts as stale or stuck (`thresholds`, including `pr_pending_hours`), which required checks are lint (`pr_health.lint_checks`), the labels for stuck pull requests (`pr_health.labels`), when `pr list-stuck --rerun` may restart a check (`pr_health.rerun`: the cap per commit, the conclusions and log patterns of a runner failure), the weekly report issue, how the workflow comments (`comments`), what the scan of attached logs downloads and looks for (`attachments`: the link, the endings, the size and time limits, the patterns) and `checks`, the registry of the audit's checks | `repo audit`, `pr list-stuck`, `repo post-findings` |
 | `workspace` | The worktree and scratch layout, the free-space minimum and the busy marker | `workspace clean` and `workspace check-space`, `repo audit --local`; hosted checks ignore it |
 | `conclave` | The Claude Code mod's numbers: the Claude Code version it is tested on, the hook settings file its agent list is read from, how often it reads the snapshot, the pane's two widths and the band's, when the band is stale, how long a merged unit stays, when a claim's countdown turns red and the watchers' settings: who is woken, how often, how long a hold lasts ([Conclave](conclave.md)) | `conclave snapshot` |
 | `stamps` | The proof log of a unit of work: the segment size, every step and the results (stamps are not signed), whether `pr verify` requires the hook identity (`require_hook_source`); the pairs' kinds, relations and the words that mark a stand-in at the code ([Stamps](stamps.md)) | `stamp verify`, `orig study`, `orig compare`, `orig fails-first` |
@@ -186,9 +186,9 @@ missing; a misspelt **optional** key (`except`, `manual_paths`, `jobs` and the l
 its default applies, because a new key next to an old one cannot be told from a typo of it, and refusing it would bring
 the bug back. `repo check-conventions`, `task check`, the tests and the Action stay strict and catch every typo.
 
-`coney-tools repo check-conventions` loads the file, so a mistake in it fails the `python` workflow and `coney-tools ci run`
-before anything else runs. Every command that needs a rule exits with code 2 and one line when the file is missing or
-unusable, and never with a traceback.
+`coney-tools repo check-conventions` loads the file, so a mistake in it fails the `python` workflow and `coney-tools ci
+run` before anything else runs. Every command that needs a rule exits with code 2 and one line when the file is missing
+or unusable, and never with a traceback.
 
 ## Changing a rule
 
@@ -217,9 +217,9 @@ does not.
 
 A second exception, approved on the same day: `hygiene.yml` also edits labels, and only two. On every push to `main`
 (and in the weekly sweep) it runs `coney-tools pr list-stuck --labels --apply`
-([`pr-health`](coney-tools-repo.md#repo-pr-health)), which puts `S-conflict` on each open pull request that conflicts with
-`main` and `S-failing` on each that fails a required check, and removes the label when the cause is gone, so the pull
-request list shows what is stuck without anyone running a command. A push to `main` is when GitHub's answer about
+([`pr list-stuck`](coney-tools-pr.md#pr-list-stuck)), which puts `S-conflict` on each open pull request that conflicts
+with `main` and `S-failing` on each that fails a required check, and removes the label when the cause is gone, so the
+pull request list shows what is stuck without anyone running a command. A push to `main` is when GitHub's answer about
 conflicts changes. The labels and the rereads while GitHub is still working out a conflict are `hygiene.pr_health` in
 `.github/conventions.yml`; no other label is touched. The job additionally gets read access to checks and statuses,
 which `gh pr list` needs for the checks, and write access to pull requests: the label and comment endpoints are issue
@@ -230,10 +230,10 @@ push or sweep, or by running the command by hand.
 
 `hygiene.yml` is the one that comments, and it needed no approval for that: it writes the audit's findings back as
 one comment per issue or pull request, edited in place and never deleted, and a weekly report comment ([`repo
-post-findings`](coney-tools-repo.md#repo-hygiene)). Its token has `contents: read`, `issues: write`, `pull-requests: write` (a
-comment on a pull request needs it) and read access to checks and statuses, nothing more. It runs on
-`pull_request_target` so that a pull request from a fork gets its comment, which is safe only because it checks out the
-default branch and never the pull request's code, and because what a title or body says reaches a script through
+post-findings`](coney-tools-repo.md#repo-post-findings)). Its token has `contents: read`, `issues: write`,
+`pull-requests: write` (a comment on a pull request needs it) and read access to checks and statuses, nothing more. It
+runs on `pull_request_target` so that a pull request from a fork gets its comment, which is safe only because it checks
+out the default branch and never the pull request's code, and because what a title or body says reaches a script through
 an environment variable and a comment only after it is made harmless (no mention, link, image or HTML). It also
 downloads the `.txt` and `.log` files attached to an issue and scans them for game data and personal information
 ([Attached logs](issues.md#attachments)); that content is only read in memory, within a size cap and a timeout, never
