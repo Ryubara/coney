@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": "uv run --no-project --python \">=3.12\" python .claude/hooks/dispatch.py --harness cursor; exit 0",
+        "matcher": "*",
+        "timeout": 200
+      }
+    ]
+  }
+}

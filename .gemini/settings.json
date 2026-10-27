@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "BeforeTool": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "name": "coney-guards",
+            "type": "command",
+            "command": "uv run --no-project --python \">=3.12\" python \"$(git rev-parse --show-toplevel)/.claude/hooks/dispatch.py\" --harness gemini; exit 0",
+            "description": "Coney's guards (docs/guides/enforcement.md#harnesses)",
+            "timeout": 200000
+          }
+        ]
+      }
+    ]
+  }
+}

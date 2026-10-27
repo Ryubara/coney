@@ -19,10 +19,10 @@ where?" When you write a rule into a guide, add its row here in the same commit;
 
 | Point | Sees | Runs | Examples |
 | --- | --- | --- | --- |
-| Claude Code hook (`.claude/hooks/`, one dispatcher) | A command or tool call before it runs | Every agent's call, in milliseconds; spelling only, so never a security boundary ([The hooks](#hooks)) | `build_guard.py`, `issue_guard.py`, `roles.py` |
+| Agent hook (`.claude/hooks/`, one dispatcher for Claude Code and every [agent tool with hooks](#harnesses)) | A command or tool call before it runs | Every agent's call, in milliseconds; spelling only, so never a security boundary ([The hooks](#hooks)) | `build_guard.py`, `issue_guard.py`, `roles.py` |
 | pre-commit (`.pre-commit-config.yaml`) | The files of a commit, and (at the `commit-msg` stage) its message | On commit when installed, in `ci run` and in CI's `format` job (all files; not the message check) | clang-format, the 512 KB guard, `no-real-clock`, `commit-message` |
 | Stage commands (`task check`, `task review`) and `pr open` | The committed change, its stamps, the description and its pictures | At Check, Review and before the push ([The pipeline](how-we-work.md#the-pipeline)) | the whole gate for the change's kind, the reviewer's verdict, the stamps `pr open` proves |
-| `coney-tools ci pr` | The files a branch changed and the pull request's title and description | Before a pull request is opened, by an agent tool without the Claude Code hooks ([Agent tools other than Claude Code](agents.md#other-tools)) | `title`, `body` and `docs` as CI runs them, `ci run`, the engine build and tests |
+| `coney-tools ci pr` | The files a branch changed and the pull request's title and description | Before a pull request is opened, by whoever opens it; the backstop of the hooks in tools other than Claude Code ([Agent tools other than Claude Code](agents.md#other-tools)) | `title`, `body` and `docs` as CI runs them, `ci run`, the engine build and tests |
 | CI required check | The pushed branch and the pull request's text | After the push; a failure costs a CI round | `title`, `body`, `docs`, `build-ok` |
 | Audit and hygiene (`repo audit`, `hygiene.yml`, Tether) | GitHub and the workspace as they are | After the fact, as findings | `issue.labels`, `ws.scratch` |
 | Review (the `reviewer`) | Meaning: whether a test proves the fix, a claim is backed | Per change, by an agent | [Reviewing](review/index.md) |
@@ -33,7 +33,8 @@ costs a CI round and a fresh agent ([When a pull request fails checks](agents.md
 ## The Claude Code hooks {#hooks}
 
 Every Claude Code hook runs through one dispatcher, `.claude/hooks/dispatch.py` (one Python start per call; what it
-runs: [The hooks](agents.md#hooks)). Its settings are `.claude/hooks/hooks.toml`:
+runs: [The hooks](agents.md#hooks)), and so does every other agent tool's hook file ([Agent tools](#harnesses)). Its
+settings are `.claude/hooks/hooks.toml`:
 
 | Setting | Committed value | What it does | To change it |
 | --- | --- | --- | --- |
@@ -43,6 +44,7 @@ runs: [The hooks](agents.md#hooks)). Its settings are `.claude/hooks/hooks.toml`
 | `[identity] powershell_modes` | `["bypassPermissions"]` | The permission modes in which a PowerShell command gets a token too | The tool refuses the assignment in the others |
 | (built into `protect.py`) | not a setting | What no session may touch: `~/.coney`, private keys, stamp logs and build records, other processes' command lines. A settings file that cannot be read does not take it away | Edit `protect.py` |
 | `[roles.*]` | see the file | What each role may not do ([Which role to start](agents.md#roles)) | Edit the table; `test_agent_definitions.py` holds it to the files in `.claude/agents/` |
+| `[harnesses] default_role` | `"contributor"` | The role of a session of another agent tool when `CONEY_AGENT_ROLE` names none ([Agent tools](#harnesses)); `[roles.contributor]` is its rules, the one role with no file in `.claude/agents/` | Edit the table |
 
 **The permission rule for the identity token.** The token goes in front of the command as `export
 CONEY_AGENT_TOKEN=<token>; <the command>` ([Who runs a command](agents.md#identity)), and `.claude/settings.json` allows
@@ -122,6 +124,116 @@ environment a shell profile sets, `include.path` in the checkout's own config); 
 a renamed owner or repository, which GitHub redirects but the hook calls another repository; a pull request opened or
 edited on the GitHub website; and a person at their own terminal, which runs no hook.
 
+## Agent tools and their hooks {#harnesses}
+
+Coney never relies on instructions alone, in any agent tool (a maintainer decision, 2026-10-27): an agent may skip a
+paragraph of `AGENTS.md`, a hook does not. Every major agent tool now runs hooks before a tool call, so the repository
+ships a hook file for each one that reads hooks from a project, and every file runs the one dispatcher,
+`.claude/hooks/dispatch.py`, with `--harness <name>`. A thin adapter per tool (`.claude/hooks/harness.py`) turns the
+tool's call into the Claude Code call the guards read (its shell tool into `Bash`, a file write or edit into `Write`
+with `file_path` and `content`, a Codex patch into one `Write` per file it touches, the folder into `cwd`) and the
+refusal back into the tool's own format; the guards and rules above run unchanged and do not know which tool called.
+Claude Code's own path is unchanged. The dispatcher finds the project from its own location, never from
+`$CLAUDE_PROJECT_DIR`, and each hook file finds the dispatcher with `git rev-parse --show-toplevel` or from the project
+root the tool runs it in. Tests: `python/tests/test_hook_harnesses.py` feeds each tool's documented payload to the
+adapter and checks that a raw `cmake --build`, a hand-typed `gh pr create` and a `contributor`'s `git push` are refused
+in that tool's format, and that ordinary commands pass.
+
+**Roles in other tools.** A session of another tool has no agent type, so its role is `CONEY_AGENT_ROLE` from the
+environment the tool was started with (an agent's command cannot change the hook's environment, and `identity.py`
+refuses a command that sets `CONEY_AGENT_*` anyway), else `[harnesses] default_role` in `hooks.toml`: `contributor`.
+`[roles.contributor]` refuses `pr open`, `pr hold` and every GitHub write (`push_guard.py`'s list: `git push`,
+`gh pr create`, comments, `gh api` writes): the person pushes and opens the pull request from their own terminal after
+`coney-tools ci pr`. A name that is no role leaves the session read-only, as `require_role` does in Claude Code.
+
+| Tool | Project hook file (committed) | Event we use | How it denies (what the adapter sends) | Tools the hook sees | Trust before a project hook runs |
+| --- | --- | --- | --- | --- | --- |
+| Claude Code | `.claude/settings.json` | `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `PermissionDenied`, `SessionStart` | `hookSpecificOutput.permissionDecision: "deny"` | every tool | none (the project's settings load) |
+| OpenAI Codex | `.codex/hooks.json` | `PreToolUse` | `hookSpecificOutput.permissionDecision: "deny"` | shell (`Bash`, also unified exec), `apply_patch`, MCP tools, other local function tools; not hosted tools such as web search | the project's `.codex/` layer must be trusted and each hook reviewed with `/hooks`; trust is by hash, so a changed hook is skipped until reviewed again |
+| Gemini CLI | `.gemini/settings.json` (`hooks`) | `BeforeTool` | `{"decision": "deny", "reason": ...}` | every tool (`run_shell_command`, `write_file`, `replace`, MCP) | project hooks are fingerprinted; a new or changed one warns before it runs |
+| Google Antigravity (app, IDE, CLI) | `.agents/hooks.json` | `PreToolUse` | `{"decision": "deny", "reason": ...}` (and `{"decision": "allow"}` when it passes) | every tool (`run_command`, `write_to_file`, `replace_file_content`, ...) | not on the page; the IDE and app list hooks under Customizations |
+| Cursor (editor and `cursor-agent`) | `.cursor/hooks.json` | `preToolUse` | `{"permission": "deny", "user_message": ..., "agent_message": ...}` | `Shell`, `Read`, `Write`, `Grep`, `Delete`, `Task`, MCP | the workspace must be trusted |
+| GitHub Copilot (CLI, cloud agent, VS Code) | `.github/hooks/coney.json` | `preToolUse` | `{"permissionDecision": "deny", "permissionDecisionReason": ...}` | `bash`, `powershell`, `view`, `create`, `edit`, `glob`, `grep`, `task`, `web_fetch`, MCP | workspace admission in the CLI; VS Code needs a trusted workspace and `chat.useHooks` (Preview); the cloud agent runs `.github/hooks/*.json` itself |
+| xAI Grok Build | `.grok/hooks/coney.json` | `PreToolUse` | `{"decision": "deny", "reason": ...}` | its built-in tools (matchers take Claude Code names: `Bash`, `Read`, `Edit`) and MCP | `/hooks-trust` or `--trust` once per repository, kept in `~/.grok/trusted_folders.toml` |
+
+Every tool in the table reads hooks from the project; none of the tools named in the decision lacks them. What each
+vendor's own page says, read on 2026-10-27:
+
+- **Codex** ([Hooks](https://learn.chatgpt.com/docs/hooks)). `hooks.json` or `[hooks]` in `config.toml`, at
+  `~/.codex/` and `<repo>/.codex/`; events `PreToolUse`, `PermissionRequest`, `PostToolUse`, `PreCompact`,
+  `PostCompact`, `UserPromptSubmit`, `SubagentStart`, `SubagentStop`, `Stop`, `SessionStart`, `SessionEnd`,
+  `Interrupt`. Stdin has `session_id`, `transcript_path`, `cwd`, `hook_event_name`, `model`, `turn_id`,
+  `permission_mode`, `tool_name`, `tool_use_id`, `tool_input`; `Bash` and `apply_patch` both carry `tool_input.command`
+  (for `apply_patch`, the patch). Deny with the JSON above or exit code 2 and stderr; `ask` is unsupported. Commands run
+  in the session's folder (no project-directory variable: the page says to use `git rev-parse --show-toplevel`), with
+  an optional `commandWindows`; timeout in seconds, default 600. PreToolUse names no agent id or type, so a Codex
+  subagent is not told apart. OpenAI: "Treat tool hooks as a useful guardrail, not a complete enforcement boundary."
+- **Gemini CLI** ([Hooks](https://geminicli.com/docs/hooks/), [reference](https://geminicli.com/docs/hooks/reference),
+  [tools](https://geminicli.com/docs/reference/tools/)). Project `.gemini/settings.json`, user `~/.gemini/settings.json`;
+  events `SessionStart`, `SessionEnd`, `BeforeAgent`, `AfterAgent`, `BeforeModel`, `AfterModel`,
+  `BeforeToolSelection`, `BeforeTool`, `AfterTool`, `PreCompress`, `Notification`. Stdin has `session_id`,
+  `transcript_path`, `cwd`, `hook_event_name`, `timestamp`, `tool_name`, `tool_input`. Deny by `decision: "deny"`
+  (`"block"` is an alias) with a `reason`, or exit code 2; stdout must hold only the JSON. Timeout in milliseconds,
+  default 60000. It sets `GEMINI_PROJECT_DIR` and `CLAUDE_PROJECT_DIR`. The page says Gemini CLI "was replaced by
+  Antigravity CLI on June 18th, 2026"; the file stays for those still on it.
+- **Antigravity** ([Hooks](https://antigravity.google/docs/hooks?tab=cli)). Workspace `.agents/hooks.json`, global
+  `~/.gemini/config/hooks.json` (hooks in `~/.gemini/antigravity-cli/settings.json` are not loaded); a file maps named
+  hooks to the events `SessionStart`, `PreToolUse`, `PostToolUse`, `PreInvocation`, `PostInvocation`, `Stop`. Stdin is
+  `toolCall.name` and `toolCall.args`, `stepIdx`, `conversationId`, `workspacePaths`, `transcriptPath`,
+  `artifactDirectoryPath`, `modelName`; no `cwd` (a command's folder is `run_command`'s `Cwd`). The answer needs a
+  `decision`: `allow`, `auto_approve`, `deny`, `ask`, `force_ask` or `deny_unless_prior_grant`. Timeout in seconds,
+  default 30. Exit codes, the environment and trust are not on the page.
+- **Cursor** ([Hooks](https://cursor.com/docs/agent/hooks),
+  [Third-party hooks](https://cursor.com/docs/reference/third-party-hooks)). Project `.cursor/hooks.json`, run from the
+  project root; user `~/.cursor/hooks.json`. `preToolUse` gets `tool_name` (`Shell`, `Read`, `Write`, `Grep`, `Delete`,
+  `Task`, `MCP:<tool>`), `tool_input` (`command` and `working_directory` for `Shell`), `cwd`, `workspace_roots` and
+  `cursor_version`; exit code 2 denies too; another failure passes unless `failClosed`. On Windows the app runs hooks in
+  PowerShell. Cursor also runs the hooks of `.claude/settings.json` (on by default: "Include Third-Party Plugins,
+  Skills, and Other Configs"), so in Cursor the dispatcher may run twice for one call: harmless, both judge the same.
+- **GitHub Copilot** ([Hooks reference](https://docs.github.com/en/copilot/reference/hooks-reference),
+  [VS Code](https://code.visualstudio.com/docs/copilot/customization/hooks)). `.github/hooks/*.json` (the only place the
+  cloud agent reads); the CLI also reads `.github/copilot/settings.json` and `.claude/settings.json`. `preToolUse`
+  stdin is `sessionId`, `timestamp`, `cwd`, `toolName`, `toolArgs`; a PascalCase `PreToolUse` switches to Claude Code's
+  field and tool names. A handler has `bash` and `powershell` commands, `cwd` and `timeoutSec` (default 30). For
+  `preToolUse`, exit code 2 and any other failure deny ("fail-closed") and a timeout passes; the cloud agent runs only
+  `bash` and treats `ask` as deny.
+- **Grok Build** ([Hooks](https://docs.x.ai/build/features/hooks)). Project `.grok/hooks/*.json`, personal
+  `~/.grok/hooks/*.json`; it also reads `.claude/settings.json` and `.cursor/hooks.json`, so one call can reach the
+  dispatcher three times (the adapter goes by the payload, not by the file's `--harness`). Events `SessionStart`,
+  `SessionEnd`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `PermissionDenied`, `Stop` and
+  others; stdin is camelCase (`hookEventName`, `sessionId`, `cwd`, `workspaceRoot`, `toolName`, `toolInput`). Deny with
+  exit code 2 or `{"decision": "deny", "reason": ...}`; a timeout, crash or bad output passes. Timeout in seconds,
+  default 5 (ours is 200, which the PR guard's checks need). The page names no native tool names, so the adapter reads
+  a call by its arguments when it does not know the name.
+
+**How the files are written.** Each command is `uv run --no-project --python ">=3.12" python <dispatcher> --harness
+<name>; exit 0`: the interpreter is pinned as for Claude Code, and the exit code is always 0, because a launcher that
+cannot start (no Python 3.12, no `uv`) must not lock the tools (Copilot denies every call whose hook fails), and the
+refusal is the JSON. `; exit 0` works in sh, bash, zsh and PowerShell alike; `$(git rev-parse --show-toplevel)` inside
+double quotes works in sh and PowerShell, not in `cmd.exe` (Codex on Windows is untested). The timeouts are at least
+twice the PR guard's check time, as Claude Code's are. These files are `merge.manual_paths`: the maintainer merges a
+change to them.
+
+**What stays Claude Code's.** Parts of the guards have no counterpart in the other tools, and pass there:
+
+- `agent_guard.py` and `allow_agent_types`: the `Agent` tool's `subagent_type` and `isolation: "worktree"`. Codex's
+  `spawn_agent`, Cursor's `Task`, Copilot's `task` and Antigravity's `invoke_subagent` keep their own names and are not
+  judged, and their subagents get no role of their own.
+- The identity token (`identity.py`): it rides on Claude Code's `updatedInput`, needs the transcript for the model, and
+  is released by `PostToolUse`. The other tools' `coney-tools` commands are recorded as `unverified`.
+- `trailer_guard.py` after a commit (it reads Claude Code's transcript): the git `commit-msg` hook covers the trailers
+  in every tool.
+- `push_guard.py`'s own rule, which tells a subagent from the main session by `agent_id`; in the other tools the same
+  list applies by role (`no_github_writes`).
+- `require_role` and `coney-agent`: another tool's session is `contributor` by default instead of read-only.
+- `powershell_modes` and `permission_mode`, and the `PostToolUse`, `PostToolUseFailure`, `PermissionDenied` and
+  `SessionStart` events.
+
+**Limits.** All of it reads spelling, as in Claude Code, and a person can turn hooks off in every tool (decline the
+trust, disable them in `/hooks`, Codex's `[features] hooks = false`, Copilot's `disableAllHooks`). Nothing in the
+repository can stop that, so `ci pr` and CI stay the backstop: CI's `title`, `body` and `docs` jobs and the build
+run on every pull request, whatever made it.
+
 ## No game data {#legal}
 
 | Rule | Written in | Enforced by | Status |
@@ -143,7 +255,7 @@ edited on the GitHub website; and a person at their own terminal, which runs no 
 | --- | --- | --- | --- |
 | Build and test only through `coney-tools build` | [AGENTS.md](repo:AGENTS.md), [Running agents](agents.md#builds) | `.claude/hooks/build_guard.py` | enforced |
 | Every wait has a bound | [Running agents](agents.md#bounded-waits) | `.claude/hooks/bounded_waits.py` | enforced |
-| No agent pushes, opens, edits, comments on or merges a pull request; no agent writes to GitHub except `coney-tools issue` when briefed and the `/progress` comment that a passing stage command of its own unit posts on the unit's issues ([claiming](issues.md#claiming)) | [AGENTS.md](repo:AGENTS.md), [How we work](how-we-work.md#release-queue), [Issues](issues.md#agents) | `.claude/hooks/push_guard.py` refuses `git push` and every writing `gh` command inside a subagent; `issue_guard.py` refuses raw issue writes for everyone | partly: not a separate `claude -p` session or a command run from a script file |
+| No agent pushes, opens, edits, comments on or merges a pull request; no agent writes to GitHub except `coney-tools issue` when briefed and the `/progress` comment that a passing stage command of its own unit posts on the unit's issues ([claiming](issues.md#claiming)) | [AGENTS.md](repo:AGENTS.md), [How we work](how-we-work.md#release-queue), [Issues](issues.md#agents) | `.claude/hooks/push_guard.py` refuses `git push` and every writing `gh` command inside a subagent, and `no_github_writes` for the roles that have it, `contributor` (every other agent tool, [Agent tools](#harnesses)) among them; `issue_guard.py` refuses raw issue writes for everyone | partly: not a separate `claude -p` session or a command run from a script file |
 | An agent works in `worktrees/coney/<branch>/`, never with `isolation: "worktree"` | [Running agents](agents.md#worktrees) | `.claude/hooks/agent_guard.py` | enforced |
 | Every agent starts as a Coney role (`engineer`, `tooling`, a reviewer), never general-purpose or without a type | [Running agents](agents.md#roles) | `.claude/hooks/agent_guard.py` reads the roles from `.claude/agents/` | enforced |
 | Engineer work runs in three tracks within the machine's places (its build slots times `per_build_slot`): reimplementation (one place kept while no game, `feature`, unit runs), fix (at most 1, one place kept) and Coney Studio (the rest); no engineer or tooling agent starts without a held claim: its brief carries `Task id: <id>`, its task file exists, its claim is held now, its track has room and a Studio unit names one of the allowed model and effort pairs; a unit frees its place when it passes Review; units of `workflow` issues hold no place until the cutover | [Engineer tracks](agents.md#slots) | `.claude/hooks/slot_guard.py` refuses the coordinator's start of an `engineer` or `tooling` agent that fails any of these (`coney-tools task slots --admit`, the rules in `tasks.start.slots`, the build slots in `coney.local.toml`, claim cards and the `workflow` and `studio` labels read from GitHub); `task start` repeats the count and checks the claim | enforced for the coordinator's Agent calls; the holes: a tool that cannot judge (a crash, no `uv`, a slot lock it cannot have) passes the call and logs it; GitHub down skips the claim and label checks (the place is still counted, as reimplementation unless a fix) and logs it; whether a Studio unit is research or development; a `Task id:` of a live unit used for other work; work of the old workflow that has no unit record; a session a person starts; an agent of a type that needs no claim |
@@ -177,7 +289,7 @@ edited on the GitHub website; and a person at their own terminal, which runs no 
 | Gameplay, graphics and audio titles carry a `Runtime:` line with numbers, and it is true | [Testing](testing.md#runtime-line) | `pr check-body --title` (shape); `reviewer` (truth) | enforced (shape), judgement (truth) |
 | A change to `src/` or `python/src/` changes `docs/` or `research/`, or says `Docs: none` | [AGENTS.md](repo:AGENTS.md) | CI `docs` (required, `pr check-docs`) | enforced at CI |
 | An outside contributor's pull request is checked for its title, description and docs rule without waiting for a maintainer | [The pr workflow](repo-conventions.md#pr-workflow) | `pr.yml` runs on `pull_request_target` from the base branch only; `test_pr_workflow.py` holds the four rules that make that safe | enforced at CI |
-| An agent tool other than Claude Code runs the checks by hand: setup once, `ci pr` before a pull request | [CONTRIBUTING.md](repo:CONTRIBUTING.md#agents-other-than-claude-code) | `uvx pre-commit install` hooks on commit; CI's `pr` workflow on the pull request; `ci pr` | partly: nothing makes a tool run it before the pull request |
+| An agent tool other than Claude Code is held to the same guards, works as `contributor` (no push, no pull request) and runs `ci pr` before a pull request | [CONTRIBUTING.md](repo:CONTRIBUTING.md#agents-other-than-claude-code), [Agent tools](#harnesses) | The tool's hook file runs `dispatch.py --harness <name>` ([Agent tools](#harnesses)); `uvx pre-commit install` hooks on commit; `ci pr`; CI's `pr` workflow on the pull request | partly: the hooks run only once the person trusts them, the Claude Code-only guards pass there ([Agent tools](#harnesses)), and CI is the backstop |
 | A pull request opens only through `coney-tools pr open` | [How we work](how-we-work.md#release-queue) | [The PR guard](#pr-guard) refuses the hand-typed routes behind `pull_requests.open_only` in `.github/conventions.yml` | partly: `pr open` exists and gates the release; the switch is off until one real pull request has gone through it, so a hand-typed `gh pr create` is only checked |
 | A task's review is recorded only by a reviewer who did not work on it, with every checklist, `@orig` function, research page and picture answered, bound to the change | [Task review](review/task.md) | `task review --record` (`review_verdict.problems`; the identity rules of `tasks.review`) writes the `reviewed` stamp; nothing else does | enforced when the hooks vouch for the caller; `source: unverified` otherwise |
 | Every description is reviewed by the `reviewer` before it is pushed | [Task review](review/task.md) | `task review` judges the description with the change; `pr open` requires the `reviewed` stamp over this text; a branch outside a task uses the [legacy release checks](how-we-work.md#pr-review) (`legacy check-pr-review`, run by hand) | enforced through `pr open`; partly for legacy branches |

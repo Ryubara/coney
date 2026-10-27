@@ -307,10 +307,15 @@ work with an agent of your own, you need none of that: your pull request follows
 
 ### Agents other than Claude Code
 
-The project's own agents run in Claude Code, whose hooks (`.claude/`) refuse a raw `cmake --build`, a title that breaks
-the format or an unfilled description before the command runs. Codex, Cursor, Gemini CLI, Copilot and other tools run
-none of them, so you run the same checks by hand, and CI repeats them on your pull request. The rules are the same ones
-as everyone's: [AGENTS.md](AGENTS.md), and this file for the process. A tool reads `AGENTS.md` by itself but does not
+The project's own agents run in Claude Code, but no rule relies on an agent reading it: hooks refuse a raw
+`cmake --build`, a push or a hand-typed `gh pr create` before the command runs. The repository ships the same hooks for
+Codex (`.codex/hooks.json`), Gemini CLI (`.gemini/settings.json`), Antigravity (`.agents/hooks.json`), Cursor
+(`.cursor/hooks.json`), GitHub Copilot (`.github/hooks/`) and Grok Build (`.grok/hooks/`), all running the one
+dispatcher in `.claude/hooks/`. Each tool runs a project's hooks only once you trust them, so do that first (below).
+Your agent works as a `contributor`: it builds through `coney-tools build`, commits on your branch, and leaves the push
+and the pull request to you, after `coney-tools ci pr`; CI repeats the checks on the pull request. Which tool has
+hooks and what they cover: [Agent tools](docs/guides/enforcement.md#harnesses). The rules are the same ones as
+everyone's: [AGENTS.md](AGENTS.md), and this file for the process. A tool reads `AGENTS.md` by itself but does not
 open what it links to, so tell it in its first message to follow "Your first hour", "Setting up", "Commits" and
 "Pull requests" in this file. What each tool reads, and how to set up Codex (its cloud environment's setup script,
 what it can reach, its sandbox): [Agent tools other than Claude Code](docs/guides/agents.md#other-tools).
@@ -321,6 +326,11 @@ In each clone or environment, once:
 uv run --project python coney-tools doctor    # checks the machine and says how to fix what is missing
 uvx pre-commit install                        # git hooks: file checks on commit, and the commit message rules
 ```
+
+Then trust the project's hooks in your tool: Codex `/hooks` (it skips a project hook until you have reviewed it, and
+again after it changes), Gemini CLI and Antigravity `/hooks`, Grok Build `/hooks-trust` (or `--trust`), Cursor and
+VS Code by trusting the workspace; the Copilot cloud agent runs `.github/hooks/` by itself. The hooks need `uv` on the
+path, like everything else here.
 
 Before you open or update a pull request, write the description to a file from
 [the template](.github/pull_request_template.md) (every section, the Checklist ticked, `Screenshots: none (<reason>)`

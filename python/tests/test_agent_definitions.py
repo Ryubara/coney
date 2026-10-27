@@ -56,6 +56,8 @@ def test_every_role_the_hooks_name_has_an_agent_definition() -> None:
     config = tomllib.loads((REPO / ".claude" / "hooks" / "hooks.toml").read_text(encoding="utf-8"))
     defined = {path.stem for path in _definitions()}
     named = set(config["roles"]) | {alias for rules in config["roles"].values() for alias in rules.get("aliases", [])}
+    # The role of another agent tool's sessions (`[harnesses] default_role`) is no Claude Code agent.
+    named -= {config["harnesses"]["default_role"]}
     assert named <= defined, f"hooks.toml names roles with no .claude/agents file: {sorted(named - defined)}"
     # And the other way: a defined role has rules, so a new role file is not forgotten by the hooks.
     assert defined <= named | set(config["helpers"]), f"roles the hooks do not know: {sorted(defined - named)}"

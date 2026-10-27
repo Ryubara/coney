@@ -1,5 +1,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The one entry point of Coney's Claude Code hooks: `.claude/settings.json` runs this file for every event.
+"""The one entry point of Coney's hooks: `.claude/settings.json` runs this file for every event, and the hook file of
+every other agent tool that has project hooks runs it with `--harness <name>` before each tool call (Codex, Gemini CLI,
+Antigravity, Cursor, GitHub Copilot, Grok Build; docs/guides/enforcement.md#harnesses). `harness.py` turns their calls
+into Claude Code's and the answer back into theirs (`answer_any`, `other_harness`), so the guards below run unchanged
+for all of them; what follows is Claude Code's path, which a payload of another tool never takes.
 
 Claude Code starts one process per hook entry, and each entry here cost a Python start-up (a `uv run` each) on every
 shell command. Now it starts this file once per event (PreToolUse for every tool, PostToolUse for the shell tools,
@@ -73,6 +77,12 @@ else:
         import roles
     except Exception as _error:
         RULES_ERROR = f"{type(_error).__name__}: {_error}"
+#: Why the adapters of the other harnesses could not be imported, else None (Claude Code's path does not need them).
+HARNESS_ERROR: str | None = None
+try:
+    import harness
+except Exception as _error:
+    HARNESS_ERROR = f"{type(_error).__name__}: {_error}"
 
 SHELLS = ("Bash", "PowerShell")
 LOG_FILE = "coney-hooks.log"
@@ -347,11 +357,70 @@ def answer(raw: str, config: dict[str, Any] | None = None) -> tuple[int, str, st
     return 0, json.dumps(decision), ""
 
 
-def main() -> int:
-    """Read the hook input from stdin and answer Claude Code: stdout JSON, stderr reasons, exit code."""
+def other_harness(name: str, payload: dict[str, Any], config: dict[str, Any] | None = None) -> tuple[int, str, str]:
+    """Judge a tool call of another harness (`harness.py` adapts it) by the same rules and guards: (exit code, stdout,
+    stderr) in that harness's own format.
+
+    The call's role is `harness.role` (default `contributor`), the identity token is left out (it is Claude Code's), and
+    a call that stands for several (a Codex patch of several files) is refused when any of them is.
+    """
+    if config is None:
+        config, problem = load_settings()
+        if problem is not None:
+            record(f"settings: {problem}")
+    settings = dict(config)
+    settings["identity"] = {"enabled": False}
+    reasons: list[str] = []
+    for call in harness.claude_calls(name, payload, harness.role(config)):
+        code, _, err = pre_tool_use(call, json.dumps(call), settings)
+        if code == 2 and err not in reasons:
+            reasons.append(err)
+    return harness.answer(name, "".join(reasons) if reasons else None)
+
+
+def harness_option(argv: list[str]) -> str | None:
+    """The harness named by `--harness <name>` (or `--harness=<name>`), else None."""
+    for index, word in enumerate(argv):
+        if word == "--harness" and index + 1 < len(argv):
+            return argv[index + 1]
+        if word.startswith("--harness="):
+            return word.split("=", 1)[1]
+    return None
+
+
+def answer_any(raw: str, named: str | None, config: dict[str, Any] | None = None) -> tuple[int, str, str]:
+    """Answer one hook input from any harness: Claude Code's unchanged path (`answer`), or the adapter of the harness
+    `--harness` names, or that the payload shows when the command named none (Cursor, Copilot and Grok Build also run
+    `.claude/settings.json`'s command)."""
+    payload: Any = None
+    if named != "claude":
+        try:
+            payload = json.loads(raw or "{}")
+        except ValueError:
+            payload = None
+    if named == "claude" or not isinstance(payload, dict) or HARNESS_ERROR is not None:
+        if HARNESS_ERROR is not None and named not in (None, "claude"):
+            record(f"harness: {HARNESS_ERROR}")
+            return 0, "", ""
+        return answer(raw, config)
+    # What the payload shows wins: Grok Build also runs `.cursor/hooks.json`, whose command names Cursor. The name given
+    # decides only a payload that looks like Claude Code's.
+    detected = harness.detect(payload)
+    name = detected if detected != "claude" else (named if named in harness.HARNESSES else "claude")
+    if named is not None and named not in harness.HARNESSES:
+        record(f"harness: unknown --harness {named!r}, read as {name}")
+    if name == "claude":
+        return answer(raw, config)
+    return other_harness(name, payload, config)
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Read the hook input from stdin and answer the harness that ran this file: stdout JSON, stderr reasons, exit
+    code. `--harness <name>` names it (`.claude/settings.json` names none: Claude Code, or a harness that borrows
+    it)."""
     raw = sys.stdin.buffer.read().decode("utf-8", errors="replace")
     try:
-        code, out, err = answer(raw)
+        code, out, err = answer_any(raw, harness_option(sys.argv[1:] if argv is None else argv))
     except Exception as error:  # last resort: the dispatcher itself broke. Say so, and let the call through
         record(f"dispatch: {type(error).__name__}: {error}")
         return 0

@@ -447,10 +447,10 @@ changed, ruff, pytest and mypy when `python/` or `.claude/` changed, `orig check
 gameplay function carries `@orig` or `@coney-only`), and `repo check-conventions`. [The command's
 page](coney-tools-ci.md#ci-run) has the options.
 
-**Without the Claude Code hooks.** An agent tool that is not Claude Code (Codex, Cursor, Gemini, Copilot) runs none of
-the hooks that refuse a bad title or an unfilled description, so before it opens a pull request it runs `coney-tools
-ci pr --title "<title>" --body <file>`: the same steps, preceded by the title, the description and the docs rule and
-followed by the engine's build and tests ([`ci pr`](coney-tools-ci.md#ci-pr),
+**In other agent tools.** An agent tool that is not Claude Code (Codex, Gemini CLI, Antigravity, Cursor, Copilot, Grok
+Build) runs the same hooks once the person trusts them ([Agent tools](enforcement.md#harnesses)), but its agent opens no
+pull request, so before the person opens one they run `coney-tools ci pr --title "<title>" --body <file>`: the same
+steps, preceded by the title, the description and the docs rule and followed by the engine's build and tests ([`ci pr`](coney-tools-ci.md#ci-pr),
 [Agent tools other than Claude Code](agents.md#other-tools)). A tool that cannot reach the disc, Ghidra or PCSX2 names
 that in the Testing section instead of claiming a check it could not run.
 

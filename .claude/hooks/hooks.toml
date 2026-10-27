@@ -22,6 +22,13 @@ ttl_seconds = 600
 # there it is injected only under these modes (docs/guides/agents.md#identity).
 powershell_modes = ["bypassPermissions"]
 
+[harnesses]
+# Agent tools other than Claude Code run the same dispatcher through an adapter (`dispatch.py --harness <name>`,
+# `harness.py`; docs/guides/enforcement.md#harnesses). Their sessions have no agent type: the role is
+# `CONEY_AGENT_ROLE` from the environment the tool was started with, else this one. It is no Claude Code agent, so it
+# has no file in .claude/agents/ (test_agent_definitions.py knows).
+default_role = "contributor"
+
 # The PR guard's switch is not here: it is `pull_requests.open_only` in .github/conventions.yml (off until one pull request
 # has gone through `coney-tools pr open`), which pr_guard.py reads itself.
 
@@ -109,3 +116,10 @@ deny_commands = [
 ]
 no_github_writes = true
 hint = "A reviewer reports: write your files only in your scratch folder, outside any checkout; git only reads."
+
+[roles.contributor]
+# A session of another agent tool (Codex, Gemini CLI, Antigravity, Cursor, Copilot, Grok Build) that names no role:
+# it works on its branch and commits; the person pushes and opens the pull request after `coney-tools ci pr`.
+deny_coney_tools = ["pr open", "pr hold"]
+no_github_writes = true
+hint = "Push and open the pull request yourself, from your own terminal, after `coney-tools ci pr` (CONTRIBUTING.md, Agents other than Claude Code)."

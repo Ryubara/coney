@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "uv run --no-project --python \">=3.12\" python .claude/hooks/dispatch.py --harness copilot; exit 0",
+        "powershell": "uv run --no-project --python \">=3.12\" python .claude/hooks/dispatch.py --harness copilot; exit 0",
+        "cwd": ".",
+        "timeoutSec": 200
+      }
+    ]
+  }
+}

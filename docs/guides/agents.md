@@ -77,12 +77,18 @@ that runs anything else with a window puts it on the same display.
 
 ### Agent tools other than Claude Code {#other-tools}
 
-Everything in the table above except `AGENTS.md` and `.mcp.json` is Claude Code's: the hooks that refuse a raw
-`cmake --build`, a title or description CI would refuse and a `git push` from a subagent run only there
-([Enforcement](enforcement.md#hooks)). Another tool (Codex, Cursor, Gemini CLI, Copilot) reads the rules from
-`AGENTS.md`, can take the two MCP servers as its own entries (the same `uv run --isolated --frozen --project python
-coney-tools mcp serve <name>` command, run from the checkout), and runs the same checks by hand through three commands
-that need no Claude Code, because every program that decides a rule is a `coney-tools` command or a git hook:
+Coney never relies on instructions alone, in any tool: the repository ships a hook file for every agent tool that
+reads hooks from a project (Codex `.codex/hooks.json`, Gemini CLI `.gemini/settings.json`, Antigravity
+`.agents/hooks.json`, Cursor `.cursor/hooks.json`, GitHub Copilot `.github/hooks/coney.json`, Grok Build
+`.grok/hooks/coney.json`), and each runs the dispatcher of [The hooks](#hooks) through an adapter, so the same guards
+refuse a raw `cmake --build`, a hand-typed `gh pr create` or a push before the command runs. Such a session works as
+`contributor` unless `CONEY_AGENT_ROLE` names another role, and the person trusts the hooks once in the tool. The
+table of tools, their events, deny formats and trust rules, and what stays Claude Code's only (the `Agent` tool's
+rules, the identity token, the trailer guard): [Agent tools and their hooks](enforcement.md#harnesses). Another tool
+reads the rules from `AGENTS.md`, can take the two MCP servers as its own entries (the same `uv run --isolated --frozen
+--project python coney-tools mcp serve <name>` command, run from the checkout), and runs the checks that come after the
+hooks through three commands that need no Claude Code, because every program that decides a rule is a `coney-tools`
+command or a git hook:
 
 | When | Command | What it does |
 | --- | --- | --- |
@@ -91,9 +97,8 @@ that need no Claude Code, because every program that decides a rule is a `coney-
 | Before opening or updating a pull request | `uv run --project python coney-tools ci pr --title "<title>" --body <file>` | CI's `title`, `body` and `docs` jobs on your text, then [`ci run`](coney-tools-ci.md#ci-run), then the engine build and tests when the change touches them ([`ci pr`](coney-tools-ci.md#ci-pr)) |
 
 The contributor's version of this, with what to write in the description, is in
-[CONTRIBUTING.md](repo:CONTRIBUTING.md#agents-other-than-claude-code). What another tool lacks is the guard that stops a
-mistake before the command runs: nothing refuses a raw `cmake --build` or a hand-typed `gh pr create`, so the
-pre-commit hooks, `ci pr` and CI are its only gates.
+[CONTRIBUTING.md](repo:CONTRIBUTING.md#agents-other-than-claude-code). The hooks are the first gate; `ci pr`, the
+pre-commit hooks and CI are the backstop, for a person who has not trusted the hooks or turned them off.
 
 **Codex.** What follows is from OpenAI's own pages (read 2026-10-26; they moved from developers.openai.com to
 learn.chatgpt.com), and says where a page is silent.
@@ -109,8 +114,9 @@ learn.chatgpt.com), and says where a page is silent.
 - **Settings in the repository.** A project's `.codex/config.toml` and `.codex/hooks.json` are read only when the
   project is trusted, and a hook is skipped until a person has reviewed it with `/hooks` (Codex records trust against
   the hook's hash). A `PreToolUse` hook can deny a shell command or an edit, which is what `.claude/hooks/` does for
-  Claude Code, but OpenAI calls hooks "a useful guardrail, not a complete enforcement boundary", and the repository
-  ships none for Codex: the git hooks and `ci pr` are the gates that work in any tool. Source:
+  Claude Code, and the repository ships `.codex/hooks.json`, which runs the same dispatcher
+  ([Agent tools](enforcement.md#harnesses)); OpenAI calls hooks "a useful guardrail, not a complete enforcement
+  boundary", so the git hooks, `ci pr` and CI stay behind them. Source:
   [Hooks](https://learn.chatgpt.com/docs/hooks).
 - **MCP.** `codex mcp add <name> -- <command>` (or a `[mcp_servers.<name>]` table in `~/.codex/config.toml`, or in a
   trusted project's `.codex/config.toml`) registers a stdio server. The page names no project-level `.mcp.json` (it
@@ -135,7 +141,7 @@ learn.chatgpt.com), and says where a page is silent.
   need: uv, the Python project, the pre-commit hook environments and, for the engine, the pinned dependencies through
   the first configure (`coney-tools build --configure-only`; `build` also wants `--agent <id>` whenever it is not typed
   in a terminal), and the branch the change is measured from: a cloud checkout may hold only the task's branch, and
-  `check pr` measures from `origin/main` (`--base`). A minimal setup script:
+  `ci pr` measures from `origin/main` (`--base`). A minimal setup script:
 
     ```sh
     curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -150,11 +156,11 @@ learn.chatgpt.com), and says where a page is silent.
   claiming the tests passed. Sources: [Cloud environments](https://learn.chatgpt.com/docs/environments/cloud-environment)
   (titled "Codex Cloud (Legacy)"), [Internet access](https://learn.chatgpt.com/docs/cloud/internet-access).
 
-**The others, briefly** (from third-party guides, not the vendors' pages; check the vendor before relying on a line):
-Gemini CLI reads `GEMINI.md`, which here imports `AGENTS.md` with `@AGENTS.md`, and can be pointed at `AGENTS.md` with
-`context.fileName`; Cursor reads `AGENTS.md` at the project root (and `.cursor/rules/`); Copilot's coding agent reads
-`AGENTS.md`, `.github/copilot-instructions.md`, `CLAUDE.md` and `GEMINI.md`, and treats them as context, not as
-enforcement. None runs `.claude/`, so the table above applies unchanged.
+**The others, briefly.** Which instruction files they read is from third-party guides (check the vendor before relying
+on a line): Gemini CLI reads `GEMINI.md`, which here imports `AGENTS.md` with `@AGENTS.md`, and can be pointed at
+`AGENTS.md` with `context.fileName`; Cursor reads `AGENTS.md` at the project root (and `.cursor/rules/`); Copilot's
+coding agent reads `AGENTS.md`, `.github/copilot-instructions.md`, `CLAUDE.md` and `GEMINI.md`, as context. Their hooks
+are from the vendors' own pages and are what enforces the rules there: [Agent tools](enforcement.md#harnesses).
 
 ## The reviewer {#reviewer}
 
@@ -503,7 +509,8 @@ roles ([Which role to start](#roles)).
 
 ## The hooks {#hooks}
 
-`.claude/settings.json` registers **one** hook script, `.claude/hooks/dispatch.py`, for five events: before every tool
+`.claude/settings.json` registers **one** hook script, `.claude/hooks/dispatch.py` (which the other agent tools' hook
+files run too, through `harness.py`: [Agent tools](enforcement.md#harnesses)), for five events: before every tool
 call (`PreToolUse`), after a shell command (`PostToolUse`), when a shell command fails (`PostToolUseFailure`) or is
 denied (`PermissionDenied`), and when a session starts (`SessionStart`). Claude Code starts a process per registered
 hook, and each cost a Python start-up on every shell command; now there is one, and the checks run inside it:

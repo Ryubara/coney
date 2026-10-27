@@ -80,6 +80,12 @@ paths:
     - "bootstrap.sh"
     - "coney.local.example.toml"
     - ".mcp.json"
+    - ".codex/"
+    - ".gemini/"
+    - ".agents/"
+    - ".cursor/"
+    - ".grok/"
+    - ".github/hooks/"
     - ".pre-commit-config.yaml"
     - ".github/ISSUE_TEMPLATE/"
     - ".github/workflows/python.yml"
@@ -273,7 +279,9 @@ merge:
   who: [maintainer, coordinator]                 # never the agent that wrote the work
   # A change to one of these paths (a file, or a folder ending in /) is the maintainer's to merge: `pr open`
   # leaves auto-merge off for it and says why.
-  manual_paths: [.github/conventions.yml, AGENTS.md, .claude/settings.json, .claude/hooks/]
+  # The hook files of the other agent tools run the same dispatcher (docs/guides/enforcement.md#harnesses).
+  manual_paths: [.github/conventions.yml, AGENTS.md, .claude/settings.json, .claude/hooks/, .codex/, .gemini/settings.json,
+                 .agents/hooks.json, .cursor/hooks.json, .github/hooks/, .grok/hooks/]
 
 issues:
   blank_issues: false

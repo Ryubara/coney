@@ -2,9 +2,10 @@
 """The `coney-tools ci pr` command: everything CI checks on a pull request, run before the pull request is opened.
 
 `ci run` (check_cli) is the gate for the files a change touched. A pull request is also its title, its
-description and the engine's build and tests, and a contributor whose agent has none of the project's Claude Code hooks
-(an outside contributor's Codex, Cursor or Gemini) had nothing that put these together: CI's `title`, `docs` and `body`
-jobs, and the `build` workflow's build and tests, were the first anyone heard of a refusal. This command runs the
+description and the engine's build and tests. The hooks (Claude Code's, and the same dispatcher in every other agent
+tool, docs/guides/enforcement.md#harnesses) judge one command at a time, and nothing put the whole change together
+before CI's `title`, `docs` and `body` jobs and the `build` workflow: this is that backstop, run before the pull request
+is opened, whichever tool made the change. This command runs the
 `title`, `body` and `docs-rule` checks on the text it is given, then the steps of `ci run`, then the engine's
 build and tests when the change touches what the engine jobs read (docs/guides/testing.md#local-gate). The rules are the
 ones in `.github/conventions.yml`, run by the same functions as `pr check-title`, `pr check-body` and `pr
@@ -125,7 +126,7 @@ def engine_agent(root: Path, agent: str | None) -> str:
     """The id the engine step's `build` runs under. `build` takes its id from the user name only when it is typed in a
     terminal, and the step runs it with its output captured, so it would refuse a run without one: the id is resolved
     here, in the process that may be one: the given id, else a person's (`build`'s own default), else the worktree's
-    (`CONEY_AGENT`, else its folder name), the one a detached `check changed` names itself by."""
+    (`CONEY_AGENT`, else its folder name), the one a detached `ci run` names itself by."""
     return agent or build_cli.default_agent_id() or check_cli.default_agent(root, os.environ)
 
 

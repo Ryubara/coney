@@ -124,8 +124,9 @@ uv run --project python coney-tools ci pr --title TITLE --body FILE [--base orig
 ```
 
 Everything CI checks on a pull request, run before it is opened: [`ci run`](#ci-run) plus the pull request's
-text and the engine. It is the one command for a contributor whose agent has none of the Claude Code hooks
-([Agent tools other than Claude Code](agents.md#other-tools)), and it is what a person runs before `gh pr create`.
+text and the engine. It is what a person runs before `gh pr create`, whatever agent tool made the change: the hooks
+of every tool refuse a bad command before it runs ([Agent tools](enforcement.md#harnesses)), and this is the backstop
+that sees the whole change ([Agent tools other than Claude Code](agents.md#other-tools)).
 `--title` is the title and `--body` a file holding the description written from the
 [template](repo:.github/pull_request_template.md). The steps run in this order and print one line each; the five
 between the text steps and `engine` are the steps of `ci run`, with the same rules:
