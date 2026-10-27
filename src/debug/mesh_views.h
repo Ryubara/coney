@@ -148,16 +148,11 @@ struct MeshViewSpec {
 /// The kinds the scene counters split the frame's draws into, in the order they are shown.
 inline constexpr std::array<std::string_view, 5> kSceneCounterKinds{"scenery", "humans", "objects", "effects", "other"};
 
-/// One counter's value by name, for sceneCounterLine().
+/// One counter's value by name, for sceneKindLine().
 struct NamedCount {
     std::string name;
     double value = 0.0;
 };
-
-/// The Performance page's Scene line from the profiler's counters: for each kind of kSceneCounterKinds, its
-/// `scene.<kind>.triangles`, `.vertices` and `.draws` a frame, "scenery 12.3k tris 20.1k verts 310 draws; humans ...";
-/// "-" when no counter of them is there.
-[[nodiscard]] std::string sceneCounterLine(std::span<const NamedCount> counters);
 
 /// The Performance page's line for one kind: its `scene.<kind>.triangles`, `.vertices` and `.draws` a frame, "12.3k
 /// tris 20.1k verts 310 draws"; "-" when none of its counters is there.

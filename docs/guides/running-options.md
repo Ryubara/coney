@@ -181,5 +181,5 @@ build/dev/src/platform/coney --tunables ../../scratch/tunables.ini
 build/dev/src/platform/coney --headless --frames 30 --input-script tests/support/debug_menu.txt
 build/dev/src/platform/coney --frames 60 --dev-overlay 30 --screenshot ../../scratch/overlay-hidden.png
 build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 --skip-movies --frames 90 \
-    --mesh-view wire=selection,select=nearest --screenshot ../../scratch/wire.png
+    --mesh-view wire=selection,select=player --screenshot ../../scratch/wire.png
 ```

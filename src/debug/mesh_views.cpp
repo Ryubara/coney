@@ -238,7 +238,7 @@ std::expected<MeshViewSpec, Error> parseMeshViewSpec(std::string_view text) {
     return spec;
 }
 
-std::string sceneCounterLine(std::span<const NamedCount> counters) {
+std::string sceneKindLine(std::span<const NamedCount> counters, std::string_view kind) {
     // The value of counter `name`, when there is one.
     const auto find = [counters](const std::string& name) -> std::optional<double> {
         for (const NamedCount& counter : counters) {
@@ -248,23 +248,15 @@ std::string sceneCounterLine(std::span<const NamedCount> counters) {
         }
         return std::nullopt;
     };
-    std::string line;
-    for (const std::string_view kind : kSceneCounterKinds) {
-        const std::string base = std::format("scene.{}.", kind);
-        const std::optional<double> triangles = find(base + "triangles");
-        const std::optional<double> vertices = find(base + "vertices");
-        const std::optional<double> draws = find(base + "draws");
-        if (!triangles && !vertices && !draws) {
-            continue;
-        }
-        line += std::format("{}{} {} tris {} verts {} draws", line.empty() ? "" : "; ", kind,
-                            countText(triangles.value_or(0.0)), countText(vertices.value_or(0.0)),
-                            countText(draws.value_or(0.0)));
+    const std::string base = std::format("scene.{}.", kind);
+    const std::optional<double> triangles = find(base + "triangles");
+    const std::optional<double> vertices = find(base + "vertices");
+    const std::optional<double> draws = find(base + "draws");
+    if (!triangles && !vertices && !draws) {
+        return "-";
     }
-    return line.empty() ? std::string("-") : line;
+    return std::format("{} tris {} verts {} draws", countText(triangles.value_or(0.0)),
+                       countText(vertices.value_or(0.0)), countText(draws.value_or(0.0)));
 }
-
-// A stand-in until the implementation: no line.
-std::string sceneKindLine(std::span<const NamedCount> /*counters*/, std::string_view /*kind*/) { return {}; }
 
 } // namespace coney::debug

@@ -143,7 +143,7 @@ The Display page's *Debug UI scale* overrides the choice: *Auto* (the rule above
 | Animation player | every clip the player's anim sets can play, by set and category with its length, played on him once or looping at a speed, then his own animation back ([below](#animation-player)) |
 | HUD | the [in-game HUD](../research/hud.md)'s parts on and off, player 1's rage, score, money and items set (-1 gives the value back), an objective, a hint and an announcement fired |
 | Debug draw | lines in the scene: collision near the player (plain or by wall class), the player's heading and velocity, the camera, places, every human's collision shapes, strike shapes and contacts; the [mesh views](#mesh-views): the models' own wireframe, a wireframe-only view, flat views by material, draw call or LOD, the selection's normals and bone axes |
-| Entity inspector | pick a human or object (nearest, next, looked at, from a list), mark it in the scene and watch everything Coney knows of it, its [mesh](#mesh-group) included |
+| Entity inspector | pick a human or object (nearest, next, looked at, from a list), mark it in the scene and watch everything Coney knows of it, a human's [mesh](#mesh-group) included |
 | Entity editor | change the inspector's selection: move, turn, drop, meters, scale, speed, animation rate, freeze, kill, delete; each edit queued, applied between steps and written to the run log ([below](#entity-editor)) |
 | Display | the frame-stats line, the FPS counter, the frame cap and vsync (live), the player's coordinates, the GUI safe area, the logical screen, the [overlay's size](#ui-scale) |
 | Audio | the output device, the master and bus volumes, a looping test tone, the voices playing (plotted) |
@@ -404,7 +404,9 @@ towards the camera so the lines sit on the fill. A human's blood layer, and an o
 with the shaded draw. The normals and bone axes are Debug draw lines, from the selection's pose skinned on the CPU for
 it alone. *Everything* means every model drawn through the scene's lighting rig: a level's sectors and skyline, the
 humans, world objects, doors and cars. A sandbox's own blocks are drawn by its renderer and get no wireframe; there is
-no wire under OpenGL ES, which has no line mode.
+no wire under OpenGL ES, which has no line mode. The *selection* choices (the wireframe's, the mesh view's) and the
+normals and bone axes are for a selected human: an object selected has no model to draw them for, though *everything*
+draws it like any other.
 
 The level of detail: the original draws every sector, human, car part and object as one model, whole or not at all
 ([Distance: fades and level of detail](../research/graphics.md#lod)), and so does Coney, so *by LOD* tells only the
@@ -479,7 +481,7 @@ the way the play mode draws it (`src/debug/mesh_stats.h`; a human's mesh is `pla
 | LOD in use | always level 0 of 1 (no model has another, [Distance](../research/graphics.md#lod)), and the distance fade it was drawn at |
 | Skinned on | where the vertices are skinned: *GPU* (the vertex shader, when the skin pipeline runs and the model fits it) or *CPU* |
 
-An object shows no Mesh group yet: its model's counts need its atomic, which the inspector does not reach.
+An object shows no Mesh group: its model's counts need its atomic, which the inspector does not reach.
 
 The inspector only reads, but for *Freeze selection* (a selection is changed in the [Entity editor](#entity-editor)):
 choosing, highlighting and watching change nothing in the game, and the selection is a number in the Debug draw

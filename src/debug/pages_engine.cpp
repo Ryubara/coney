@@ -195,18 +195,25 @@ void addPerformancePage(DebugSession& session) {
                          },
                          "Performance/Frame ms"))
                 .withHelp("The mean real time a frame took over the last 60 frames: steps, render and present.");
-            page.add(watchItem("Scene",
-                               [] {
-                                   const perf::RecentMeans means = perf::recentMeans();
-                                   const std::vector<std::string> names = perf::counterNames();
-                                   std::vector<NamedCount> counters;
-                                   for (std::size_t i = 0; i < names.size() && i < means.counters.size(); ++i) {
-                                       counters.push_back(NamedCount{.name = names[i], .value = means.counters[i]});
-                                   }
-                                   return sceneCounterLine(counters);
-                               }))
-                .withHelp("Triangles, vertices and draw calls a frame by what was drawn: scenery, humans, objects, "
-                          "effects and the rest (docs/guides/performance.md#counters).");
+            // One line for each kind the scene counters split the draws into, so the menu's width shows every kind
+            // (one line for all of them was cut after the first).
+            for (const std::string_view kind : kSceneCounterKinds) {
+                std::string label(kind);
+                label[0] = static_cast<char>(std::toupper(static_cast<unsigned char>(label[0])));
+                page.add(watchItem(label,
+                                   [kind] {
+                                       const perf::RecentMeans means = perf::recentMeans();
+                                       const std::vector<std::string> names = perf::counterNames();
+                                       std::vector<NamedCount> counters;
+                                       for (std::size_t i = 0; i < names.size() && i < means.counters.size(); ++i) {
+                                           counters.push_back(NamedCount{.name = names[i], .value = means.counters[i]});
+                                       }
+                                       return sceneKindLine(counters, kind);
+                                   }))
+                    .withHelp(std::format("Triangles, vertices and draw calls a frame that drew {} (docs/guides/"
+                                          "performance.md#counters).",
+                                          kind));
+            }
             // The zones and counters known when the page is made (a zone appears once its code first ran: Refresh
             // shows the new ones).
             const std::vector<std::string> zones = perf::zoneNames();
