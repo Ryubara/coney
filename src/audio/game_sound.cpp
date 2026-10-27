@@ -801,6 +801,7 @@ bool GameSound::damageWindowOpen() const {
     return since >= kDamWindowOpensMs && since <= kDamWindowClosesMs;
 }
 
+// Coney's stand-in: the fight timer is the fight mood itself; the original keeps it on 5 s after the mood ends.
 // @orig 0x0010be78 AmbientManager_UpdateTimers (unknown)
 void GameSound::updateEmitters(SoundEngine& engine) {
     const int mood = m_context != nullptr && m_context->state != nullptr ? m_context->state->story.musicMood : -1;
@@ -810,7 +811,6 @@ void GameSound::updateEmitters(SoundEngine& engine) {
     const std::array<SoundVec, 1> listeners{m_listener.position};
     const std::array<bool, 1> covered{m_playerCovered};
     const bool hasPlayer = playerHandle().has_value();
-    // Coney's stand-in: the fight timer is the fight mood itself; the original keeps it on 5 s after the mood ends.
     m_emitters.update(
         engine, AmbientWorld{.listeners = listeners,
                              .playersCovered = hasPlayer ? std::span<const bool>(covered) : std::span<const bool>(),
