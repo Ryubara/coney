@@ -323,7 +323,7 @@ void dustAndSplinters(ObjectWorld& world, anim::Vec3 at) {
     for (const float radius : kDustRadii) {
         world.services->dust(at, radius);
     }
-    world.services->splinters({at.x, at.y, at.z + kBreakRise}, kSplinters);
+    world.services->splinters(at, kSplinters);
 }
 
 } // namespace
