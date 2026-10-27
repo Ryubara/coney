@@ -131,7 +131,6 @@ int warriorPowerClassOf(int type) {
 
 // Human_Init's power class byte +0x1b9: a type of the Warriors' category takes his Warrior's, any other the record's
 // (the `player` gate is a stand-in, as the header says).
-
 // @orig 0x00218008 Human_Init (unknown)
 int powerClassOf(int type, int category, int ownClass, bool player) {
     return player && category == kWarriorsCategory ? warriorPowerClassOf(type) : ownClass;

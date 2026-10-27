@@ -287,7 +287,6 @@ void Cameras::createFixed(double handle, double target, const FixedCamera& camer
     // Stand-in (#692): the original resolves the target first and makes no camera for a handle that names nothing;
     // Coney's binding (makeCameraCreateFixed) tests only for NilHandle, so a stale handle still makes one.
     m_fixed.insert_or_assign(handle, camera);
-
     if (std::ranges::find(m_targets, target) == m_targets.end()) {
         (void)this->target(0, target);
     }
@@ -461,7 +460,6 @@ void Cameras::makeActive(double handle, float seconds) {
         return;
     }
     if (ref->kind == CameraKind::Win) {
-
         startWin();
     }
     if (ref->kind == CameraKind::Path && m_path) {

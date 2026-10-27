@@ -86,7 +86,6 @@ void syncReviveLimit(GameState& state) {
     // within its bounds from the table at 0x0058b300; Coney's Inventory bounds the revives only. Not ported (#696): a
     // positive add of spray paint raising the game state's hint bits.
     state.player.inventory.setReviveUpgrade(
-
         state.player.unlocks.isDataUnlocked(state.saved, kUpgradeType, kExtraReviveUpgrade));
 }
 

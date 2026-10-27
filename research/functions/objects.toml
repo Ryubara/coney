@@ -478,6 +478,11 @@ relation = "stand-in"
 issue = 707
 
 [[function.gaps]]
+what = "the break's material pair, which the original skips while bit 4 of game state word 3 is set"
+relation = "stand-in"
+issue = 707
+
+[[function.gaps]]
 what = "the hit mode"
 relation = "not-ported"
 issue = 707
@@ -778,6 +783,16 @@ relation = "not-ported"
 issue = 707
 
 [[function.gaps]]
+what = "the cabins' GLASS x GLASS pair at the break (Coney plays it for dyn_door_store only)"
+relation = "not-ported"
+issue = 707
+
+[[function.gaps]]
+what = "the store's whole break run again on every hit after it (Coney's broken store takes no more hits)"
+relation = "stand-in"
+issue = 707
+
+[[function.gaps]]
 what = "the cabin pieces' throw"
 relation = "stand-in"
 issue = 707
@@ -797,12 +812,12 @@ relation = "not-ported"
 issue = 707
 
 [[function.gaps]]
-what = "no damage in state 4 (Coney counts every hit)"
+what = "a hit in state 4: no damage, dust or splinters, but a model stage as at 0 hitpoints and the sound (Coney takes it like any other)"
 relation = "stand-in"
 issue = 707
 
 [[function.gaps]]
-what = "dyn_door_liz's and dyn_door_dclub's model stages: thresholds, order, sounds, leaves removed"
+what = "dyn_door_liz's and dyn_door_dclub's model stages: thresholds, order, sounds and where they play, leaves removed"
 relation = "stand-in"
 issue = 707
 
@@ -812,17 +827,22 @@ relation = "not-ported"
 issue = 707
 
 [[function.gaps]]
-what = "the break's sounds and effects, dclub's 40 splinters twice, and the pieces' throws"
+what = "the break's type pairs (material with 121, or stall's with itself), liz's effects, dclub's bursts, and the pieces' throws"
 relation = "not-ported"
 issue = 707
 
 [[function.gaps]]
-what = "the 20 splinters on every hit, which only dyn_door_dclub's break throws"
+what = "the dust's random heights and the splinters' colours on every hit (dyn_door_dclub picks one of its two)"
+relation = "not-ported"
+issue = 707
+
+[[function.gaps]]
+what = "the break's dust and 40 splinters twice at the hit point for every type (Coney: dust and 20 at the door)"
 relation = "stand-in"
 issue = 707
 
 [[function.gaps]]
-what = "(material, CONCRETE) once at the break, not on every hit"
+what = "(material, CONCRETE) at the hit point on every hit but the breaking one (Coney plays it on that one too)"
 relation = "stand-in"
 issue = 707
 

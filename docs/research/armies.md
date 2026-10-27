@@ -333,7 +333,6 @@ against 17 to 23), and the timer runs 6 ticks shorter (3031 steps of 33 ms count
 - `characters::isArmiesLevel` takes levels 60-69, as the original's test does
   (`repo:src/characters/character_class.cpp`); the `_a` models follow `Human_Init`'s own test of levels 60-64
   (`characters::modelNameFor`).
-
 - **The black screen (item 19)**, reproduced in a disc test: the debug menu's Levels page listed every record of the
   level table, `101 armies` among them. Chosen from a level in play, the level flow loaded a record with no
   `armies.lua`, no objects and no streamed world, so nothing played and the screen stayed black. Since the fix the

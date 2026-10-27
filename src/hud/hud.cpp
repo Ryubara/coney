@@ -171,7 +171,6 @@ void Hud::setObjective(int slot, std::string_view text, int mode, bool silent, s
     // Not ported (#662): a text that starts with a tag other than <AUTOINDENT takes Objective_GetIconPrefix's prefix
     // instead of the standard header, and the first-objective hint also needs Tutorial_IsHintUnlocked(0x15).
     switch (mode) {
-
     case kObjectiveSet:
         line = ChecklistLine{std::string(text), false};
         if (!silent && slot < 2) {
@@ -196,7 +195,6 @@ void Hud::setObjective(int slot, std::string_view text, int mode, bool silent, s
         // 0 or 1 and flushes it and the bare text from the scroll-in queue, and for slot 1 shows the Bonus complete
         // announcement once per player.
         m_scrollIn.queue(ScrollInMessage{objectiveHeader(slot), kObjectiveMessagePlace, ms, kCueObjective});
-
         m_scrollIn.queue(ScrollInMessage{std::string(text), kObjectiveMessagePlace, ms, std::nullopt});
         break;
     case kObjectiveSetMarked:
@@ -546,7 +544,6 @@ void Hud::renderBlips(const HudCanvas& canvas, graphics::OverlayPoint centre) co
         // Stand-in (#1018): every shown blip draws while the radar is on; the original shows the dots inside and
         // beyond the zoom by the radar's shown, hidden and `+0x18` flags, enemy and police dots only while marked.
         if (!at || !radarBlipShown(blip, m_radar.updates) || blip.icon < 0 ||
-
             static_cast<std::size_t>(blip.icon) >= sheet.page.rects.size()) {
             continue;
         }
@@ -621,9 +618,9 @@ void Hud::renderScores(const HudCanvas& canvas) const {
         if (!row.active) {
             continue;
         }
-        // **Coney's choice**: the label and the score are two texts of the text font at Coney's places, where the
-        // original composes one `<SIZE 0.8>label: score` markup text: its places and font are not on the research
-        // page yet (hud_layout.h, kScoreRowsPlace).
+        // **Coney's choice** (#1018): the label and the score are two texts of the text font at Coney's places, where
+        // the original composes one `<SIZE 0.8>label: score` markup text: its places and font are not on the
+        // research page yet (hud_layout.h, kScoreRowsPlace).
         const float y = kScoreRowsPlace.y + (static_cast<float>(i) * kScoreRowStep);
         drawPlainText(canvas, gui::kTextFontSlot, row.label, kScoreRowsPlace.x, y, metrics, row.colour);
         drawPlainText(canvas, gui::kTextFontSlot, std::to_string(row.score), kScoreRowsPlace.x + kScoreValueOffset, y,

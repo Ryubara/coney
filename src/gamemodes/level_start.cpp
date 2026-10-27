@@ -52,7 +52,6 @@ void loadPlacedObjects(script::ScriptSystem& scripts, world_objects::SpawnRecord
     // ported (#711): the start and end of the file's records in the object list, which the saved removed-records bits
     // count from.
     const auto objects = world_objects::parsePlacedObjects(text);
-
     if (!objects) {
         scripts.log(std::format("level: {}: {}", name, objects.error().message));
         return;

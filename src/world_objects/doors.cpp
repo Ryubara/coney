@@ -647,7 +647,6 @@ void Doors::openBy(double handle, anim::Vec3 humanAt, ObjectWorld& world) {
         // handler: message 8's detach from the parent, 0x15's own destroy and 0x3e's data (#707), 0x10 and 0x13's
         // pinning of the leaves for streaming (#710).
         if (door->doorClass == DoorClass::Sliding) {
-
             runSlidingCommand(*door, door_command::kOpen, world);
             return;
         }
@@ -663,7 +662,6 @@ void Doors::openAway(Door& door, anim::Vec3 humanAt, ObjectWorld& world) {
     // Stand-in (#707): the closed and not-pickable test is message 0x0b's; DoorSwing_OpenBy itself has none, so the
     // store door's break (DoorSwing_Hit) opens it however it stands in the original.
     if (door.doorClass != DoorClass::Swinging || door.ended || door.pickable || door.state != door_state::kClosed) {
-
         return;
     }
     resetLeaves(door);
@@ -726,7 +724,6 @@ void Doors::resetLeaves(Door& door) {
     // Stand-in (#707): the original's message 0x35 to the left leaf also makes its next update start from its
     // previous target; Coney's reset drops it, so OpenDoor on a door already open swings its leaves from closed.
     for (DoorLeaf& leaf : door.leaves) {
-
         leaf.target = leaf.base;
         leaf.from = leaf.base;
         leaf.to = leaf.base;
@@ -778,6 +775,9 @@ bool Doors::hit(double handle, const ObjectHit& hit, ObjectWorld& world) {
 // @orig 0x003f9ad0 DoorSwing_Hit (unknown)
 void Doors::hitStore(Door& door, const ObjectHit& hit, ObjectWorld& world) {
     // Only the hit that takes its last hitpoint: the sounds, its triangles off, and it swings open away from them.
+    // Stand-in (#707): in the original the hitpoints keep falling, and every later hit runs the whole break again
+    // (the sounds, the bursts, the leaves' message 0x19 and message 0x0b to itself); Coney's broken store door takes
+    // no more hits.
     if (door.hitpoints <= 0) {
         return;
     }
@@ -788,6 +788,8 @@ void Doors::hitStore(Door& door, const ObjectHit& hit, ObjectWorld& world) {
     // Stand-in (#707): the original plays the hit sound at the door on every hit; Coney only on the breaking one.
     playSound(door, kDoorHitSound, world);
     playPair(world, material::kGlass, material::kGlass, door.position);
+    // Not ported (#707), from the original's break: the door's collision body removed, the call 0x00219320 on the
+    // attacker, the two bursts 1 m up, and both leaves' next models (message 0x19). The store never reaches wreck().
     setTrianglesEnabled(world, door.triangles, false);
     openAway(door, hit.attackerAt, world);
 }
@@ -824,18 +826,22 @@ void Doors::hitCabin(Door& door, const ObjectHit& hit, ObjectWorld& world) {
 // @orig 0x003fa438 DoorSwing_HitBreakable (unknown)
 void Doors::hitSplinters(Door& door, const ObjectHit& hit, ObjectWorld& world) {
     // Not ported (#707): object flag 0x800000 set on every hit, and the hit mode set from the hitpoints.
-    // Stand-in (#707): a door in state 4 takes nothing from a hit in the original; Coney's always counts.
-    // Stand-in (#707): every hit makes dust at the door (radii 2.75 and 3.75); the 20 splinters are dyn_door_dclub's
-    // only, 40 twice in its colours. Coney adds 20 splinters for every type.
+    // Stand-in (#707): in state 4 the original takes no damage and makes no dust or splinters, but still reads the
+    // door as at 0 hitpoints for the model stages below and plays its sounds; Coney takes that hit like any other.
+    // Every other hit makes dust at the hit point (radii 2.75 and 3.75) and 20 splinters, for every type. Not ported
+    // (#707): the dust's random heights and the splinters' colours (dyn_door_dclub picks one of its two at random).
     dustAndSplinters(world, hit.point);
-    // Stand-in (#707): the original plays (material, CONCRETE 5) at the door once, at the break; Coney at the hit
-    // point on every hit.
+    // A hit that does not break the door pairs its material with CONCRETE (5) at the hit point. Stand-in (#707): the
+    // original's breaking hit plays only the break's own pairs; Coney plays this one on it too.
     playPair(world, door.material, material::kConcrete, hit.point);
     door.hitpoints -= hitDamage(hit.kind);
     // dyn_door_stall breaks on its first hit.
     if (door.hitpoints <= 0 || door.type == kStall) {
         NavLinks(world.paths).openByNumber(door.number);
         door.tint &= ~kTintAlpha;
+        // Stand-in (#707): the original's break makes two more dust clouds (placed from the camera's view position)
+        // and 40 splinters twice at the hit point 0.5 m up, for every type (dyn_door_dclub's in its colours); Coney
+        // makes the dust and 20 splinters at the door.
         dustAndSplinters(world, door.position);
         wreck(door, world);
         return;
@@ -843,8 +849,9 @@ void Doors::hitSplinters(Door& door, const ObjectHit& hit, ObjectWorld& world) {
     // The model stages: dyn_door_liz at 80, 60, 40 and 20 %, dyn_door_dclub at 50 %. Stand-in (#707): the original
     // takes liz's stages one a hit, checked from 20 % up, each below (not at) its share and needing the model of the
     // one before, and pairs the door's material with itself at 80 % (which also removes both leaves and shows the
-    // door), then with 106, 36 and 35; dclub's stage also removes both leaves, takes model 0x4d67682e and bursts.
-    // Coney loops from 80 % down, at or below each share, pairs 35, 36 and 106 with CONCRETE and keeps the leaves.
+    // door), then with 106, 36 and 35, at the hit point; dclub's stage also removes both leaves, takes model
+    // 0x4d67682e, bursts and pairs its material with itself. Coney loops from 80 % down, at or below each share,
+    // pairs 35, 36 and 106 with CONCRETE at the door and keeps the leaves.
     const auto reached = [&door](int percent) { return door.hitpoints * kPercent <= percent * door.maxHitpoints; };
     if (door.type == kLiz) {
         while (door.modelStage < static_cast<int>(kLizStages.size()) &&
@@ -868,9 +875,13 @@ void Doors::hitSplinters(Door& door, const ObjectHit& hit, ObjectWorld& world) {
 // @orig 0x003f9ad0 DoorSwing_Hit (unknown)
 // @orig 0x003fa438 DoorSwing_HitBreakable (unknown)
 void Doors::wreck(Door& door, ObjectWorld& world) {
-    // Not ported (#707): at the break the original removes the door's collision body, gives both leaves their next
-    // models (the cabins), makes its bursts, calls 0x00219320 on the attacker and, for liz, stall and dclub, plays
-    // their pairs and removes the leaves.
+    // Not ported (#707), from the original's break:
+    // - a cabin's (DoorSwing_Hit): the door's collision body removed, the call 0x00219320 on the attacker, the two
+    //   bursts 1 m up, the GLASS x GLASS pair at the door and both leaves' next models (message 0x19);
+    // - liz's, stall's and dclub's (DoorSwing_HitBreakable): the type's pair at the hit point (liz's and dclub's
+    //   material with 121, stall's with itself), liz's effects and dclub's three bursts. Of these only stall removes
+    //   its leaves at the break (liz and dclub did at a model stage).
+    // A cabin's leaves, removed at the break, and stall's go with the door here when it ends at its next update.
     setTrianglesEnabled(world, door.triangles, false);
     if (world.services != nullptr) {
         for (const std::string_view piece : door.setup.wreck) {
@@ -905,6 +916,8 @@ void Doors::hitBarrier(Door& door, const ObjectHit& hit, ObjectWorld& world) {
     }
     NavLinks(world.paths).openByNumber(door.number);
     if (world.services != nullptr) {
+        // Not ported (#707): dyn_door_wall_a's burst here, and dyn_door_wall_b's bursts about the barrier (all that
+        // wall_b does at its break besides the links and its pair).
         if (door.type == kWallA) {
             world.services->setModel(door.handle, kBarrierDamagedModel);
             world.services->setBody(door.handle, false);
@@ -913,8 +926,7 @@ void Doors::hitBarrier(Door& door, const ObjectHit& hit, ObjectWorld& world) {
             // would stand in the gap as the broken fence for as long as the barrier waits for its removal.
             // Stand-in (#707): the original makes each board dyn_wooddmg_a or _b at random and throws it, unless
             // bit 2 of game state word 3; Coney places dyn_wooddmg_a, _b, _a at the barrier's pose. Not ported
-            // (#707): the dust and bursts at the barrier (unless bit 2 of game state word 0), and dyn_door_wall_b's
-            // and dyn_door_wall_a's bursts.
+            // (#707): the dust and bursts at the barrier first (unless bit 2 of game state word 0).
             for (const std::string_view board : kBoards) {
                 const double handle = world.services->spawnObject(board, door.position, door.rotation);
                 if (handle != kNoObject) {
@@ -923,11 +935,12 @@ void Doors::hitBarrier(Door& door, const ObjectHit& hit, ObjectWorld& world) {
             }
         }
     }
+    // Every barrier's break pairs its material with itself at the hit point. Stand-in (#707): the original skips the
+    // pair while bit 4 of game state word 3 is set; Coney does not read that flag and always plays it.
     playPair(world, door.material, door.material, hit.point);
     // dyn_door_vargas destroys its second object and takes its broken model; the others are marked broken and hide,
     // to be removed at their next update. Stand-in (#707): the original never marks dyn_door_wall_a broken
     // (0x003b2180): it stays, with its damaged model, and is never removed; Coney hides and removes it too.
-
     if (door.type == kVargas) {
         if (world.services != nullptr) {
             world.services->destroyObject(door.secondObject);
@@ -944,7 +957,6 @@ void Doors::hitBarrier(Door& door, const ObjectHit& hit, ObjectWorld& world) {
 void Doors::destroy(double handle) {
     // Not ported, from the same message handler: 0x10's pinning of the leaves for streaming (#710), 0x20's removal of
     // the leaves (#1021) and 0x3e's answer of the angle (#707).
-
     Door* door = findMutable(handle);
     if (door == nullptr || door->doorClass != DoorClass::Swinging || door->ended) {
         return;

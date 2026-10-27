@@ -64,7 +64,6 @@ inline constexpr int kOtherWarriorClass = 9;
 /// the record's byte; docs/research/characters.md#power-classes). **Coney's stand-in**: the `player` gate is Coney's;
 /// the original gives the Warrior's class to any human of that category. Its one caller (CharacterTypes::
 /// playerTraitsOf) passes true, so nothing differs in play.
-
 [[nodiscard]] int powerClassOf(int type, int category, int ownClass, bool player);
 
 /// The index of `CfgChar`'s model-name argument (0-based): the tenth argument, after the type, four bytes, the health,

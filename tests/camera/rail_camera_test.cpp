@@ -84,7 +84,6 @@ TEST_CASE("the rail camera leads its target ahead or behind along the rail, clam
     // Expected: camera.md#rail, confirmed (code), but for the look-at point: unverified, #1017
     // The look-at point's lead pins Coney's switch 7 (a stand-in): the original's switch 7 puts the camera off the rail
     // and looks at the target point (camera.md#rail step 5).
-
     RailCamera rail = straightRail();
     rail.setLead(3.0F, 0.0F, true);
     rail.update(Vec3{12.0F, 4.0F, 0.0F}, true, kStep);

@@ -3372,8 +3372,7 @@ The world viewer keeps its own free camera with the player camera's lens
   choices and stand-ins** (the side-by-side comparisons of `0x0013bad0`, `0x0013bfe0`, `0x0013d6b0` and `0x0013e708`
   for [#85](issue:85) list each one, and each is marked at its line in the code, most citing
   [#1017](issue:1017)): a held camera is placed again instead of put back, and `P` is not put back; a height
-  setting of exactly 0 counts as on;
- the damping skips no target state and has no 40% catch-up; the leading modes
+  setting of exactly 0 counts as on; the damping skips no target state and has no 40% catch-up; the leading modes
   walk the lead along the rail (no segment steps, joint mean or mirrored rail point) and read switch 7 as leading the
   look-at point, where the original's switch 7 puts the camera off the rail beside the target (step 5 above), with
   its collision rays; the end hold lasts only while its condition does (what clears it is not traced); the tie

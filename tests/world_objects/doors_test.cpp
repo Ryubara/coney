@@ -276,10 +276,10 @@ TEST_CASE("a cabin door: two plain hits break a leaf, three the door", "[world_o
 }
 
 TEST_CASE("dyn_door_liz: model stages, then wreck pieces and the links opened", "[world_objects][doors]") {
-    // Expected: unverified, #707
-    // The splinters on every hit and the four stages from 80 % down pin Coney's stand-ins: DoorSwing_HitBreakable
-    // (0x003fa438) throws splinters only for dyn_door_dclub and takes liz's stages one a hit from 20 % up, and #707
-    // corrects objects.md#door-break with it. The wreck pieces and the links follow the page.
+    // Expected: objects.md#door-break, confirmed (code)
+    // DoorSwing_HitBreakable (0x003fa438) makes the dust and 20 splinters on every hit for every type. Each hit here
+    // crosses one stage, so Coney's loop from 80 % down gives the original's one stage a hit; the stand-ins in the
+    // order (#707) show only when one hit crosses two stages or lands exactly on a share.
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info = swinging(100);
@@ -390,7 +390,6 @@ TEST_CASE("walls throw no boards; message 10 stops a barrier being hit", "[world
     // Expected: objects.md#barriers, confirmed (code), but for dyn_door_wall_a hidden: unverified, #707
     // dyn_door_wall_a hidden pins Coney's stand-in: DoorFence_OnHit (0x003b2180) never marks it broken, so it stays
     // with its damaged model, and #707 corrects objects.md#barriers with it.
-
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info{.className = "dyn_door_fence", .hitpoints = 3};

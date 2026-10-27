@@ -178,7 +178,7 @@ inline constexpr float kPromptTextHeight = 0.06F;
 /// The prompt text's y in the clubhouse (`HUDEnableClubActionText(true)`, `0x00607d74`), near the top.
 inline constexpr float kClubPromptY = 0.125F;
 
-/// The text scoreboard (`HUDEnableTextProgress`). **Coney stand-ins**: the original's places (the floats at
+/// The text scoreboard (`HUDEnableTextProgress`). **Coney stand-ins** (#1018): the original's places (the floats at
 /// `0x0050d56c`, `0x0050d574`, `0x0050d57c`) and its text layout (`0x001ccf10`) are not on the page, so the rows stand
 /// down the left side in the text font.
 inline constexpr GuiPoint kScoreRowsPlace{0.06F, 0.22F};

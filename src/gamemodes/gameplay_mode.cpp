@@ -325,7 +325,6 @@ void GameplayMode::endLevel() {
 void GameplayMode::enter() {
     // Not ported (#548): entering an Armies of the Night level from another level keeps whether player 2 is in.
     // The level's brains and gangs (InitLevel's AI reset), which its script's bindings drive. The calls on the humans
-
     // the script creates wait until the level has loaded its characters and made them.
     endLevel();
     // Mode 1's audio set-up (docs/research/level-loading.md#mode-1, step 1).

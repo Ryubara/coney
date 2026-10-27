@@ -414,7 +414,6 @@ void RailCamera::update(std::optional<anim::Vec3> feet, bool leadLook, float sec
     placeFor(feet, leadLook, seconds, velocity);
     // Not ported (#549): the split-screen extras (CamRail_UpdateSplitScreen) and the co-op flash's fade.
     // An update with time ends the activation's start and its undamped step, in any mode.
-
     if (seconds > 0.0F) {
         m_starting = false;
         m_undamped = false;

@@ -1152,6 +1152,11 @@ level = "confirmed-code"
 coney = "src/hud/hud.cpp:Hud::renderScores"
 status = "compared"
 
+[[function.gaps]]
+what = "the one `<SIZE 0.8>label: score` markup text (Coney draws the label and the score as two plain texts at its own places)"
+relation = "stand-in"
+issue = 1018
+
 [[function]]
 address = 0x001cd5e8
 name = "StopWatchHud_UpdateMinutes"
