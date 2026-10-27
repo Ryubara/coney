@@ -79,7 +79,8 @@ class ArmiesHud {
     /// `HUDANEnableJoinMsg(player, on)`: panel `player`'s join message on or off (`+0x4614`).
     /// @orig 0x001b46a0 HUD_ANEnableJoinMsg (unknown)
     void setJoinMessage(std::size_t player, bool on);
-    /// Panel `player`'s first attach to a player (`HUD_AttachPlayer` -> `ANHud_Init`): its join message off.
+    /// Panel `player`'s first attach to a player (`HUD_AttachPlayer` -> `ANHud_Init`): its join message off, and the
+    /// panel wanted (`ANHud_Enable`, which the attach calls after the init).
     /// @orig 0x002107e8 ANHud_Init (unknown)
     void panelAttached(std::size_t player);
     /// Panel `player` enabled (interface slot `+0x20`, `ANHud_Enable`): wanted again, as a continue makes it.
