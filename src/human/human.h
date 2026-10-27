@@ -486,7 +486,7 @@ class Human final : public Holdable {
     /// player, flag `0x4`, out through `Human_KnockOut` 0x00230328) or a script's `HuSetConscious(false)`
     /// (docs/research/combat-reactions.md#knocked-out-bit).
     /// @orig 0x00227dd8 Human_IsKnockedOut (unknown)
-    [[nodiscard]] bool knockedOut() const { return m_script.knockedOut; }
+    [[nodiscard]] bool knockedOut() const { return m_fighter.health().depleted() || m_script.knockedOut; }
     /// Whether `Player_UseItemCommand` refuses the flash's press outright: down or dead, cuffed, airborne
     /// (`0x1c00000000`) or climbing over. A knockdown, a stun, a hit reaction or a climb's first or last clip is none
     /// of these: there the flash is used at once (docs/research/combat-rage.md#flash-mid-move).

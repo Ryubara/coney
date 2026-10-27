@@ -82,8 +82,8 @@ void ArmiesHud::setJoinMessage(std::size_t player, bool on) {
 // ANHud_Init zeroes the join flag along with the rest of the panel; it runs once, on the panel's first attach. Not
 // ported (#662): the rest of ANHud_Init, which builds the panel's parts (the power and health bars, the score
 // counter, the target panel), lays them out by video mode and hides the panel until it is enabled.
-// Coney's reading: the attach also makes the panel wanted (ANHud_Init leaves +0x40f8 at 0, and what enables it after
-// the attach is not traced; a panel in play is drawn, so something does).
+// The attach also makes the panel wanted: HUD_AttachPlayer (0x001b2200) calls interface slot +0x20, ANHud_Enable
+// (0x0020fd40, the ANHud table at 0x0053ecc0), right after the init, on every attach of a panel not yet wanted.
 void ArmiesHud::panelAttached(std::size_t player) {
     if (player < kPlayers) {
         m_join.at(player) = false;

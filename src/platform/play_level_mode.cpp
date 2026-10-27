@@ -687,7 +687,8 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     hudFrame.players.at(0).rage = rage.value();
     hudFrame.players.at(0).rageMax = rage.maximum();
     hudFrame.players.at(0).raging = rage.raging();
-    hudFrame.knockedOut.at(0) = m_player->human().script().knockedOut;
+    // Knocked out by his health running out or by a script (`Human_IsKnockedOut`), which drops his Armies panel.
+    hudFrame.knockedOut.at(0) = m_player->human().knockedOut();
     // Player 1's radar: his feet, facing and speed, and the camera's facing in the humans' convention (0 faces +y,
     // positive to the left); RenderWare's (x, y, z) is the game's (x, -z, y).
     hudFrame.radar.known = true;

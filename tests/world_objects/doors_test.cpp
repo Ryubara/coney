@@ -276,7 +276,7 @@ TEST_CASE("a cabin door: two plain hits break a leaf, three the door", "[world_o
 }
 
 TEST_CASE("dyn_door_liz: model stages, then wreck pieces and the links opened", "[world_objects][doors]") {
-    // Expected: objects.md#door-break, confirmed (code)
+    // Expected: unverified, #707 (objects.md#door-break is out of date; the values are read at 0x003fa438)
     // DoorSwing_HitBreakable (0x003fa438) makes the dust and 20 splinters on every hit for every type, and takes one
     // model stage a hit: below 80 % model 0xbdd06de7 with (material, material), below 60 % 0x24d93c5d with
     // (material, 106), below 40 % 0x53de0ccb with (material, 36), below 20 % 0xcdba9968 with (material, 35); a hit
@@ -316,7 +316,7 @@ TEST_CASE("dyn_door_liz: model stages, then wreck pieces and the links opened", 
 }
 
 TEST_CASE("a splintering door's hit makes its 20 splinters 0.5 m above the hit point", "[world_objects][doors]") {
-    // Expected: objects.md#door-break, confirmed (code)
+    // Expected: unverified, #707 (objects.md#door-break is out of date; the values are read at 0x003fa438)
     // DoorSwing_HitBreakable (0x003fa438) makes the dust at the hit point (raised at random) and the hit's 20
     // splinters at the hit point plus 0.5 m up.
     coney::test::ObjectWorldFixture fixture;
@@ -335,7 +335,7 @@ TEST_CASE("a splintering door's hit makes its 20 splinters 0.5 m above the hit p
 
 TEST_CASE("a breaking hit on dyn_door_liz or dyn_door_dclub first takes the model stage it crosses",
           "[world_objects][doors]") {
-    // Expected: objects.md#door-break, confirmed (code)
+    // Expected: unverified, #707 (objects.md#door-break is out of date; the values are read at 0x003fa438)
     // DoorSwing_HitBreakable (0x003fa438) runs the stages before the break test: one airborne hit (22) breaks a door
     // of 20 hitpoints and still takes liz's first stage only, or dclub's stage (model 0x4d67682e, a burst and
     // (material, material)), then the break's pair with 121 and its three bursts; no CONCRETE pair.
@@ -373,7 +373,7 @@ TEST_CASE("a breaking hit on dyn_door_liz or dyn_door_dclub first takes the mode
 }
 
 TEST_CASE("dyn_door_dclub takes its stage below half its hitpoints, not at half", "[world_objects][doors]") {
-    // Expected: objects.md#door-break, confirmed (code)
+    // Expected: unverified, #707 (objects.md#door-break is out of date; the values are read at 0x003fa438)
     // 20 hitpoints: a thrown hit (10) leaves 10, at half, so no stage; a plain hit (4) then leaves 6, below half.
     using Model = std::pair<double, std::uint32_t>;
     coney::test::ObjectWorldFixture fixture;
@@ -394,7 +394,7 @@ TEST_CASE("dyn_door_dclub takes its stage below half its hitpoints, not at half"
 
 TEST_CASE("a hit on a splintering door in state 4 takes no damage but a stage as at 0 hitpoints",
           "[world_objects][doors]") {
-    // Expected: objects.md#door-break, confirmed (code)
+    // Expected: unverified, #707 (objects.md#door-break is out of date; the values are read at 0x003fa438)
     // DoorSwing_HitBreakable (0x003fa438): in state 4 no damage, dust or splinters; the stages read the hitpoints as
     // 0, so liz's first stage is taken; the door does not break, so its material pairs with CONCRETE.
     using Pair = std::pair<std::uint8_t, std::uint8_t>;
@@ -418,7 +418,7 @@ TEST_CASE("a hit on a splintering door in state 4 takes no damage but a stage as
 }
 
 TEST_CASE("dyn_door_stall breaks on its first hit", "[world_objects][doors]") {
-    // Expected: objects.md#door-break, confirmed (code)
+    // Expected: unverified, #707 (objects.md#door-break is out of date; the values are read at 0x003fa438)
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info = swinging(10);

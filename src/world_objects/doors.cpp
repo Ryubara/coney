@@ -141,7 +141,8 @@ constexpr float kDclubShare = 0.5F;
 constexpr std::uint32_t kDclubModel = 0x4d67682eU;
 // The material a liz or dclub break pairs the door's with.
 constexpr std::uint8_t kBreakOther = 121;
-// A break's splinters: 40 at the hit point 0.5 m up, twice; dclub's three bursts.
+// A break's splinters: 40 at the hit point 0.5 m up, twice; dclub's three bursts. Each hit's 20 splinters start
+// 0.5 m up too.
 constexpr int kBreakSplinters = 40;
 constexpr float kBreakRise = 0.5F;
 constexpr int kDclubBreakBursts = 3;
@@ -311,8 +312,8 @@ void playPair(ObjectWorld& world, std::uint8_t a, std::uint8_t b, anim::Vec3 at)
 }
 
 // The dust and the splinters of a splintering door's or a barrier's hit.
-// The dust (two radii) and the 20 splinters both hits make (docs/research/objects.md#door-break,
-// docs/research/objects.md#barriers).
+// The dust (two radii) and the 20 splinters both hits make, the splinters 0.5 m above the hit point
+// (docs/research/objects.md#door-break, docs/research/objects.md#barriers).
 // @orig 0x003fa438 DoorSwing_HitBreakable (unknown)
 // @orig 0x003b2180 DoorFence_OnHit (unknown)
 void dustAndSplinters(ObjectWorld& world, anim::Vec3 at) {
@@ -322,7 +323,7 @@ void dustAndSplinters(ObjectWorld& world, anim::Vec3 at) {
     for (const float radius : kDustRadii) {
         world.services->dust(at, radius);
     }
-    world.services->splinters(at, kSplinters);
+    world.services->splinters({at.x, at.y, at.z + kBreakRise}, kSplinters);
 }
 
 } // namespace
@@ -837,15 +838,18 @@ void Doors::hitCabin(Door& door, const ObjectHit& hit, ObjectWorld& world) {
 }
 
 // dyn_door_liz's, dyn_door_dclub's and dyn_door_stall's hit: dust, splinters, the model stages, then the break or a
-// sound (docs/research/objects.md#door-break).
+// sound, as read in DoorSwing_HitBreakable (0x003fa438): docs/research/objects.md#door-break is out of date here
+// (#707).
 // @orig 0x003fa438 DoorSwing_HitBreakable (unknown)
 void Doors::hitSplinters(Door& door, const ObjectHit& hit, ObjectWorld& world) {
     // Not ported (#707): object flag 0x800000 set on every hit, and the hit mode set from the hitpoints.
     // In state 4 the door takes no damage and makes no dust or splinters, and the model stages read its hitpoints as 0.
     int stageHitpoints = 0;
     if (door.state != door_state::kSwung) {
-        // Dust at the hit point (radii 2.75 and 3.75) and 20 splinters, for every type. Stand-in (#707): without the
-        // dust's random heights and the splinters' colours (dyn_door_dclub picks one of its two at random).
+        // Dust at the hit point (radii 2.75 and 3.75) and 20 splinters 0.5 m above it, for every type. Stand-in
+        // (#707): without the dust's random heights (0 to 0.5 m and 0.25 to 0.75 m up), the splinters' throw along
+        // the hit's direction x 0.6 (Coney's splinters() takes no velocity) and their colours (dyn_door_dclub picks
+        // one of its two at random).
         dustAndSplinters(world, hit.point);
         door.hitpoints -= hitDamage(hit.kind);
         stageHitpoints = door.hitpoints;
@@ -885,7 +889,8 @@ void Doors::hitSplinters(Door& door, const ObjectHit& hit, ObjectWorld& world) {
 }
 
 // The model stage a splintering door's hit crosses: dyn_door_liz's four and dyn_door_dclub's one, each taken below
-// (not at) its share of the full hitpoints, one a hit (docs/research/objects.md#door-break).
+// (not at) its share of the full hitpoints, one a hit, as read in 0x003fa438 (objects.md#door-break is out of date
+// here, #707).
 // @orig 0x003fa438 DoorSwing_HitBreakable (unknown)
 void Doors::takeModelStage(Door& door, int hitpoints, anim::Vec3 at, ObjectWorld& world) {
     const auto below = [&door, hitpoints](float share) {
