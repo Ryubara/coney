@@ -157,7 +157,12 @@ name = "Spawner_PlaceOutOfView"
 page = "ai-gangs.md#spawner-placement"
 level = "confirmed-code"
 coney = "src/ai/spawners.h:outOfSightNode"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the two-player camera choice and the other player's view test are not ported"
+relation = "not-ported"
+issue = 549
 
 [[function]]
 address = 0x001681a0
@@ -649,6 +654,20 @@ page = "ai-gangs.md#spawners"
 level = "confirmed-code"
 coney = "src/ai/spawners.h:Spawners::pickType"
 status = "legacy"
+
+[[function]]
+address = 0x0016d860
+name = "Spawner_MakeHuman"
+page = "ai-gangs.md#spawners"
+role = "a gang spawner's human: a free human, its name, Human_Init with the type, gang and position, the spawner's heading, its slot on the brain, the item in hand, then the spawner's callback with (human, gang, spawner name)"
+level = "confirmed-code"
+coney = "src/gamemodes/gameplay_mode.cpp:ScriptSpawnerWorld::spawn"
+status = "compared"
+
+[[function.gaps]]
+what = "with no free human the knocked-out humans are not polled (Humans_PollKnockedOut), and the spawner's item (`+0x1c`, SpawnerCall::anim) is not put in the human's hand"
+relation = "not-ported"
+issue = 645
 
 [[function]]
 address = 0x0021c0a8

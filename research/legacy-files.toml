@@ -667,9 +667,6 @@ tag = 1
 ["src/gamemodes/game_mode_stack.cpp"]
 tag = 7
 
-["src/gamemodes/gameplay_mode.cpp"]
-tag = 30
-
 ["src/gamemodes/gameplay_revive.cpp"]
 tag = 3
 

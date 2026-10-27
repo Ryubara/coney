@@ -1644,7 +1644,22 @@ page = "characters.md#original-structure"
 role = "1.5 m ray down from 1 m above the feet"
 level = "confirmed-code"
 coney = "src/ai/hiding.h:updateHiding"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the hide rule runs for the player only: his gang's members, the other humans, the hide order (Player_UpdateHideOrder) and an AI's molotov drop are not ported; held flag 0x800 does not stop the fall; the last ground position is the snapped feet, not the feet before the snap"
+relation = "not-ported"
+issue = 1008
+
+[[function.gaps]]
+what = "the split view's radar tint (two players in one view) is not ported"
+relation = "not-ported"
+issue = 549
+
+[[function.gaps]]
+what = "a riding human's snap (no move, material 5 on a miss) is not ported"
+relation = "not-ported"
+issue = 684
 
 [[function]]
 address = 0x0023f158

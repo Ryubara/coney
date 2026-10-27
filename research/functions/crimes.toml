@@ -335,7 +335,12 @@ page = "crimes.md#original-structure"
 role = "taking an owned item: witnesses, the shoplifting score"
 level = "confirmed-code"
 coney = "src/world_objects/volume_boxes.h:VolumeBoxes::sendTheft"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "only the boxes' message 7: the 30 m alert, statistic 4-8 for a player taker (or every player for a player-led Warrior) and the AI taker's stealitem line are not ported"
+relation = "not-ported"
+issue = 1003
 
 [[function]]
 address = 0x00417af0
