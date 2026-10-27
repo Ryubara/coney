@@ -11,7 +11,7 @@ tag = 1
 tag = 7
 
 ["src/ai/ai_humans.cpp"]
-tag = 16
+tag = 13
 
 ["src/ai/ai_humans.h"]
 comment = 5
@@ -44,12 +44,8 @@ tag = 14
 ["src/ai/boss_goals.h"]
 comment = 4
 
-["src/ai/brain.cpp"]
-comment = 2
-tag = 29
-
 ["src/ai/brain.h"]
-comment = 40
+comment = 38
 tag = 1
 
 ["src/ai/brain_events.cpp"]
@@ -330,12 +326,6 @@ tag = 15
 ["src/audio/audio_format.h"]
 tag = 1
 
-["src/audio/game_sound.cpp"]
-tag = 63
-
-["src/audio/game_sound.h"]
-comment = 1
-
 ["src/audio/human_sound_events.cpp"]
 tag = 9
 
@@ -380,9 +370,6 @@ tag = 1
 
 ["src/audio/sound_engine.cpp"]
 tag = 29
-
-["src/audio/sound_engine.h"]
-comment = 3
 
 ["src/audio/sound_matrix.cpp"]
 tag = 6
@@ -600,9 +587,6 @@ comment = 1
 ["src/debug/net_controls.h"]
 comment = 3
 
-["src/debug/play_controls.h"]
-comment = 1
-
 ["src/debug/tunables.cpp"]
 comment = 1
 
@@ -666,9 +650,6 @@ tag = 1
 
 ["src/gamemodes/game_mode_stack.cpp"]
 tag = 7
-
-["src/gamemodes/gameplay_mode.cpp"]
-tag = 30
 
 ["src/gamemodes/gameplay_mode.h"]
 comment = 1
@@ -748,9 +729,6 @@ tag = 4
 ["src/gamemodes/movie_player.cpp"]
 tag = 5
 
-["src/gamemodes/pause_mode.cpp"]
-tag = 8
-
 ["src/gamemodes/player_frame.cpp"]
 tag = 2
 
@@ -774,9 +752,6 @@ comment = 1
 
 ["src/gamemodes/sheet_viewer_mode.cpp"]
 tag = 4
-
-["src/gamemodes/start_up_flow.cpp"]
-tag = 21
 
 ["src/gamemodes/text_viewer_mode.cpp"]
 tag = 3
@@ -848,9 +823,6 @@ tag = 2
 ["src/graphics/throw_arc.cpp"]
 tag = 2
 
-["src/gui/bar.cpp"]
-tag = 1
-
 ["src/gui/base_widget.cpp"]
 tag = 2
 
@@ -883,9 +855,6 @@ tag = 6
 
 ["src/gui/pause_menu/mission_failed_menu.cpp"]
 tag = 5
-
-["src/gui/pause_menu/pause_menu.cpp"]
-tag = 18
 
 ["src/gui/pause_menu/yes_no_box.cpp"]
 tag = 7
@@ -1121,14 +1090,6 @@ tag = 12
 comment = 1
 tag = 1
 
-["src/human/human.cpp"]
-comment = 2
-tag = 52
-
-["src/human/human.h"]
-comment = 11
-tag = 3
-
 ["src/human/human_animator.cpp"]
 tag = 38
 
@@ -1151,9 +1112,6 @@ tag = 2
 ["src/human/human_sounds.h"]
 comment = 1
 
-["src/human/humans.cpp"]
-tag = 7
-
 ["src/human/jump.cpp"]
 tag = 1
 
@@ -1167,7 +1125,7 @@ tag = 1
 tag = 5
 
 ["src/human/player.cpp"]
-tag = 21
+tag = 20
 
 ["src/human/player.h"]
 comment = 6
@@ -1272,9 +1230,6 @@ tag = 8
 ["src/platform/character_lights.cpp"]
 comment = 1
 
-["src/platform/character_mesh.cpp"]
-comment = 1
-
 ["src/platform/character_viewer_mode.cpp"]
 comment = 1
 
@@ -1288,9 +1243,6 @@ comment = 1
 comment = 1
 
 ["src/platform/front_end_scene.cpp"]
-comment = 1
-
-["src/platform/game_session.h"]
 comment = 1
 
 ["src/platform/hud_layer.cpp"]
@@ -1317,26 +1269,11 @@ comment = 3
 ["src/platform/parked_cars.cpp"]
 comment = 1
 
-["src/platform/perf_probes.cpp"]
-comment = 6
-
 ["src/platform/placed_objects.cpp"]
 comment = 2
 
 ["src/platform/placed_objects.h"]
 comment = 1
-
-["src/platform/play_level_controls.h"]
-comment = 1
-
-["src/platform/play_level_inspect.cpp"]
-comment = 1
-
-["src/platform/play_level_mode.cpp"]
-comment = 1
-
-["src/platform/play_level_mode.h"]
-comment = 2
 
 ["src/platform/play_scenery.h"]
 comment = 1
@@ -1352,15 +1289,6 @@ comment = 1
 
 ["src/platform/sandbox_viewer_mode.h"]
 comment = 2
-
-["src/platform/scene_lighting.cpp"]
-comment = 1
-
-["src/platform/scene_stage.cpp"]
-comment = 2
-
-["src/platform/scene_stage.h"]
-comment = 3
 
 ["src/platform/texture_dictionary.cpp"]
 comment = 1
@@ -1532,9 +1460,6 @@ tag = 15
 ["src/scripting/sound_bindings.cpp"]
 tag = 19
 
-["src/scripting/sound_bindings.h"]
-tag = 1
-
 ["src/scripting/spawn_bindings.cpp"]
 tag = 3
 
@@ -1544,9 +1469,6 @@ tag = 28
 ["src/scripting/story_bindings.h"]
 comment = 2
 tag = 1
-
-["src/scripting/story_effects_bindings.cpp"]
-tag = 9
 
 ["src/scripting/trigger_bindings.cpp"]
 tag = 3
@@ -1617,9 +1539,6 @@ tag = 5
 
 ["src/warriors/tag_session.h"]
 comment = 2
-
-["src/warriors/unlock_records.cpp"]
-tag = 4
 
 ["src/warriors/unlockables.cpp"]
 tag = 1
@@ -1789,9 +1708,6 @@ citation = 4
 ["tests/ai/brain_events_test.cpp"]
 citation = 6
 
-["tests/ai/brain_test.cpp"]
-citation = 24
-
 ["tests/ai/crew_test.cpp"]
 citation = 17
 
@@ -1833,9 +1749,6 @@ citation = 29
 
 ["tests/ai/perception_test.cpp"]
 citation = 4
-
-["tests/ai/riot_goals_test.cpp"]
-citation = 8
 
 ["tests/ai/route_planner_test.cpp"]
 citation = 15
@@ -1926,9 +1839,6 @@ citation = 3
 
 ["tests/audio/disc_sound_test.cpp"]
 citation = 1
-
-["tests/audio/game_sound_test.cpp"]
-citation = 22
 
 ["tests/audio/human_sound_events_test.cpp"]
 citation = 13
@@ -2161,9 +2071,6 @@ citation = 3
 ["tests/debug/pad_menu_input_test.cpp"]
 citation = 4
 
-["tests/debug/play_pages_test.cpp"]
-citation = 15
-
 ["tests/debug/story_missions_test.cpp"]
 citation = 3
 
@@ -2263,9 +2170,6 @@ citation = 13
 ["tests/gamemodes/movie_player_test.cpp"]
 citation = 5
 
-["tests/gamemodes/pause_mode_test.cpp"]
-citation = 7
-
 ["tests/gamemodes/rumble_start_test.cpp"]
 citation = 3
 
@@ -2346,9 +2250,6 @@ citation = 5
 
 ["tests/gui/menu_input_test.cpp"]
 citation = 8
-
-["tests/gui/pause_menu_test.cpp"]
-citation = 16
 
 ["tests/gui/profile_management_gui/pm_controller_test.cpp"]
 citation = 19
@@ -2560,9 +2461,6 @@ citation = 16
 ["tests/physics/sphere_triangle_test.cpp"]
 citation = 8
 
-["tests/platform/character_mesh_test.cpp"]
-citation = 1
-
 ["tests/platform/clip_recorder_test.cpp"]
 citation = 4
 
@@ -2585,9 +2483,6 @@ citation = 1
 citation = 2
 
 ["tests/platform/disc_debug_movies_test.cpp"]
-citation = 1
-
-["tests/platform/disc_fall_camera_test.cpp"]
 citation = 1
 
 ["tests/platform/disc_fighter_models_test.cpp"]

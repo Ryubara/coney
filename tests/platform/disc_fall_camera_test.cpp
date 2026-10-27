@@ -57,6 +57,7 @@ bool runUntilFollow(coney::test::DiscSession& run, const coney::camera::Cameras&
 
 TEST_CASE("the disc's level99: in a 40 m fall the follow camera's aim point stays under 5 m above the player's head",
           "[disc][story][camera]") {
+    // Expected: camera.md#long-fall, confirmed (runtime)
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -80,6 +81,10 @@ TEST_CASE("the disc's level99: in a 40 m fall the follow camera's aim point stay
     play->teleport(
         coney::debug::Place{.name = "street end", .feet = {kStartX, kStartY, ground}, .headingDegrees = kStartHeading});
     REQUIRE(runUntilFollow(run, *cameras, 60));
+    run.run(kFollowSettle);
+    // The trace ran with the street's 4.8-5.3 m band (CamSetFollowZoom(1)); the checkpoint's CfgFollowCamera leaves it
+    // at 3.0-3.5 m, which the debug teleport's camera reset keeps.
+    cameras->setFollowZoom(coney::camera::FollowZoom::Default);
     run.run(kFollowSettle);
     REQUIRE(cameras->current().kind == coney::camera::CameraKind::Follow);
     const coney::anim::Vec3 feet = play->playerFeet();

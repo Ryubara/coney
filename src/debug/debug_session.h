@@ -13,6 +13,7 @@
 
 #include "core/frame_rate_meter.h"
 #include "debug/audio_controls.h"
+#include "debug/entity_edit.h"
 #include "debug/input_gate.h"
 #include "debug/lua_console.h"
 #include "debug/menu_model.h"
@@ -104,7 +105,8 @@ struct DebugServices {
 /// its InputGate to the mode stack, and gives the model to the front ends, which only render it.
 ///
 /// The pages (src/debug/debug_pages.h): Favourites, Time, Tunables, Natives, Lua console, Cheats, Levels, Missions,
-/// Movies, Player, Camera, Spawner, AI fighters, HUD, Debug draw, Display, Audio, Network, Input. Adding a feature is
+/// Movies, Player, Camera, Spawner, AI fighters, HUD, Debug draw, Entity inspector, Entity editor, Display, Audio,
+/// Network, Input. Adding a feature is
 /// adding a page or items here, once (docs/guides/debug-menu.md#adding-a-feature).
 class DebugSession {
   public:
@@ -128,6 +130,9 @@ class DebugSession {
     [[nodiscard]] TimeControl& time() { return m_time; }
     /// The tunables.
     [[nodiscard]] TunableRegistry& tunables() { return m_tunables; }
+    /// The Entity editor's queue: the page queues edits in it and the input gate applies them between two steps.
+    [[nodiscard]] EntityEditor& entityEditor() { return m_entityEditor; }
+    [[nodiscard]] const EntityEditor& entityEditor() const { return m_entityEditor; }
     /// The overlays to draw.
     [[nodiscard]] DisplayOptions& display() { return m_display; }
     /// What the Debug draw page switches, for the play mode to draw.
@@ -182,6 +187,7 @@ class DebugSession {
     DisplayOptions m_display;
     DebugDrawOptions m_debugDraw;
     DebugLog m_log;
+    EntityEditor m_entityEditor;
     LuaConsole m_console;
     std::unique_ptr<SandboxScripts> m_sandbox;
     bool m_noclipHotkey = true;

@@ -1,16 +1,17 @@
 # AI gangs, tactics and formations {#gangs}
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). Static reading in Ghidra;
-every claim is confirmed (code) at the cited address unless it says otherwise, as on [AI humans](ai.md), which this page
-was split from because that page had grown too large. The brain a gang member runs is on [AI humans](ai.md#brain); the
-tactic and goal classes are indexed on [AI code index](ai-code.md) and [AI goals](ai-goals.md).
+every claim is confirmed (code) at the cited address unless it says otherwise, as on [AI humans](ai/index.md), which
+this page was split from because that page had grown too large. The brain a gang member runs is on [AI
+humans](ai/index.md#brain); the tactic and goal classes are indexed on [AI code index](ai-code.md) and [AI
+goals](ai-goals.md).
 
 ## Purpose
 
 A gang is the group a human fights with: the Warriors around the player, each enemy gang of a level, the police
 and a riot's crowd. The gang decides who its members fight and how (its tactic and formation), makes new members
 through its spawners while the level allows it, answers the scripts' gang messages, and for the Warriors carries the
-player's commands and the follow that keeps the crew beside him. The AI brains ([AI humans](ai.md#brain)), the
+player's commands and the follow that keeps the crew beside him. The AI brains ([AI humans](ai/index.md#brain)), the
 crimes and police ([Crimes](crimes.md)) and every mission's encounters depend on it.
 
 ## Original structure
@@ -46,7 +47,7 @@ How a gang shares out a big fight, team-ups and Rumble's CPU sides: [Gang fights
 | `+0x40` | ptr | the current **tactic**, 0 for none |
 | `+0x44` | handle | the **leader** ([tactics](#tactic-kinds)) |
 | `+0x48` | handle[16] | **members** |
-| `+0xd4` | u8 | suspended: its members' brains skip their update ([One update](ai.md#update-goals)) |
+| `+0xd4` | u8 | suspended: its members' brains skip their update ([One update](ai/index.md#update-goals)) |
 | `+0xe4` | u32[] | the **Lua handler** per event id (interned name) |
 | `+0x1b0` | table | gang-wide anim substitutions (`0x00164178`, `0x001642f0`) |
 
@@ -68,7 +69,7 @@ original function where its logic lives.
 
 `Human_OnEvent` (`0x0021d4e8`) offers an event, until one consumes it, to the human's own script handlers
 (`0x00384c38`), then **`Gang_OnEvent`** (`0x00164c20`, the brain's gang `+0x20c`), then `Brain_OnEvent`
-([Events](ai.md#events)). Confirmed (code).
+([Events](ai/index.md#events)). Confirmed (code).
 
 - `GangSetMsgHandler(gang, msg, name)` (`0x0016ab38` → `0x00164bb8`) stores the interned name at `+0xe4 + msg × 4`.
 - `Gang_OnEvent` calls that handler only while scripting runs (`0x00512b28` = 1), through script-system `+0x8c` with
@@ -176,7 +177,7 @@ two readers: Start puts the gang on alert when it is 1, and `Brain_AddEnemy` sen
 - **Fights under a tactic**: `Brain_PushFightGoal` (`0x0028d190`) returns at once when the gang has a tactic, so
   `GoalFight` picks the target but **pushes no fight goal**; the tactic fights. It also does nothing for a knocked-down
   or dead human, or a type-3 brain already holding goal 9; otherwise it pops goals 8 and `0x41`, pushes FindEnemy
-  (`0x41`), Melee (8) and then the fight goal (`0xf`) ([Starting a fight](ai.md#targets)).
+  (`0x41`), Melee (8) and then the fight goal (`0xf`) ([Starting a fight](ai-fights.md#targets)).
 - **`Brain_AddEnemy`** (`0x0028d538`) adds the enemy to `+0x164` (16), makes the enemy's brain add this human back
   (`0x0028ef20`, unless both are players), and, when the tactic's `+0x3c` answers 0, sends it event `0xb` with the
   enemy.
@@ -313,16 +314,16 @@ cited; the `level87` facts are from its scripts on the disc.
    the camera, every 8 s in the fight stance or farther than 30 m from it, at most 5 scans in one update. It lists
    the members of enemy gangs within the sight range (brain `+0x130`, 30 m when made; `HuSetLOSRange`), in front
    (field of view `+0x12c`, 110° when made; `BrSetFOV`) unless within the near radius, and in line of sight
-   ([The enemy scan](ai.md#enemy-scan), [Sight](ai.md#sight)). The gangs must be enemies first: `GangMakeEnemies`, or a
-   script form's `Enemies`.
+   ([The enemy scan](ai-fights.md#enemy-scan), [Sight](ai-fights.md#sight)). The gangs must be enemies first:
+   `GangMakeEnemies`, or a script form's `Enemies`.
 2. **A new enemy** goes to the scanner's own event handler as event `0xb` (11): his script handlers, then
    `Gang_OnEvent`, which hands it to the gang's tactic, then his brain ([Events and
    GangSetMsgHandler](#gang-events)). `Brain_AddEnemy` sends the same event when the tactic's `+0x3c` flag is 0
    (types `0x12` and up).
-3. **A gang with no tactic**: the gang soldier's think (`GangBrain_Think` step 3, [Gang soldiers](ai.md#think-gang)) pushes
-   the fight (`Brain_PushFightGoal(−1)`) as soon as his threat response (`+0x21c`) is not 0 and his enemy list is
-   not empty. That is the plain "attack on sight". The shared handler's event `0xb` also sends a 20 m help call
-   flagged "new enemy" ([The shared event handler](ai.md#shared-events)).
+3. **A gang with no tactic**: the gang soldier's think (`GangBrain_Think` step 3, [Gang
+   soldiers](ai-brain-types.md#think-gang)) pushes the fight (`Brain_PushFightGoal(−1)`) as soon as his threat response
+   (`+0x21c`) is not 0 and his enemy list is not empty. That is the plain "attack on sight". The shared handler's event
+   `0xb` also sends a 20 m help call flagged "new enemy" ([The shared event handler](ai-brain-types.md#shared-events)).
 4. **A gang with a tactic**: `Brain_PushFightGoal` returns at once, so the think starts no fight
    ([Tactics](#tactics)). The tactic turns the event into a callback code instead: HanginOut, Idle, Wander,
    TravelPath, MoveToFlag, Vandalize and Steal turn event 11 from one of their own members into code **3
@@ -393,8 +394,8 @@ Fix, in order:
 
 1. Call the scan (`ScanSchedule::maybeScan`) for every AI brain in the brain update, as `Brain_UpdateGoals` does,
    with the 5-per-update budget and the 2 s / 8 s interval (detail level and fight stance), not only for scouts.
-2. Add `GangBrain_Think` step 3 (and the cop's and Warriors' equivalents, [Brain types](ai.md#brain-type-handlers)): with
-   threat response, no fight goal and a non-empty enemy list, `pushFightGoals`.
+2. Add `GangBrain_Think` step 3 (and the cop's and Warriors' equivalents, [Brain types](ai-brain-types.md)): with threat
+   response, no fight goal and a non-empty enemy list, `pushFightGoals`.
 3. HanginOut's awareness (× 0.75, − 20° unless `fullAware`) at its Start, undone at its End.
 4. Then `Brain_MaybeSpotPlayers` (event 10, code 4) for completeness.
 
@@ -891,7 +892,7 @@ and the game itself go through one dispatcher, `0x0041c4e0(state, chief, command
 3. Otherwise the gang's tactic is cleared and the command's started: 0 `0x00310e00` (given 9.0), 1 `0x00320530`
    (unforced, the chief also plays clip 0x2a4 or 0x2a8, and the gang's target is set from his), 2 `Tactic_Defend`
    around the chief (clip 0x2a3 or 0x2a7), 3 `0x00313400` (the standing tactic of type 3, [the first
-   mission](ai.md#level99)) or `0x003128a0` for a gang whose brain `+0x2d5` is set, 4 `0x00319570` (given 75.0), 5
+   mission](ai/index.md#level99)) or `0x003128a0` for a gang whose brain `+0x2d5` is set, 4 `0x00319570` (given 75.0), 5
    `0x00320b60`; 6 starts nothing.
 4. The chief says the command's line (`WarChief_SayCommand`, `0x0041cc40`, [below](#warrior-command-lines)): 0
    `follow` (`follow_hide` while hidden in shadow, `Human_IsHiddenInShadow` `0x00228168`), 1 `attack`, 2 `defend`,
@@ -908,7 +909,7 @@ Confirmed (code) at `0x0041c338` unless marked:
 - **Who checks.** The dispatcher (`0x0041c4e0`, calls at `0x0041c600` and `0x0041c738`), as step 2 above, and the
   player's own update, `PlayerBrain_Update` (`0x003035d8`, call at `0x003037c4`): every 40 updates (brain `+0x34`
   modulo 40) it calls the check with `quiet` and `forced` both 1, so **no line is spoken** and the byte simply follows
-  the crew ([The player](ai.md#think-player), step 4).
+  the crew ([The player](ai-brain-types.md#think-player), step 4).
 - **What it writes.** Only for a war chief (human `+0x3ac` = 1): the gang's nearest other member
   (`Gang_FindNearestOtherMember`) within 50 m (squared distance 2500 or less) clears the byte and the check returns 0;
   farther, it sets the byte to 1, says 18 `range` or 92 `range2` unless `quiet` or `forced` is set, and returns 1. A
@@ -1139,11 +1140,11 @@ brain `+0x124`; only a follower whose brain is of type 3, a Warrior, can be in i
 4. **On** when a member of its gang has attackers (`Gang_AnyMemberHasAttackers` `0x00169658`) and its own brain
    `+0x152` is not 0, else off. `+0x152` counts the brains that have put this one in their enemy lists:
    `Brain_CountHostile` (`0x0028ef20`) raises it, called by `Brain_AddEnemy` (`0x0028d538`, unless a player adds a
-   player) and by [the enemy scan](ai.md#enemy-scan) (`Brain_ScanEnemies` `0x0028b358`, its call at `0x0028b9e8`);
+   player) and by [the enemy scan](ai-fights.md#enemy-scan) (`Brain_ScanEnemies` `0x0028b358`, its call at `0x0028b9e8`);
    `Brain_UncountHostile` (`0x0028ef30`) lowers it, called by the enemy scan (its call at `0x0028b7d0`),
    `Brain_UncountEnemy` (`0x0028d6a0`) and
    `Brain_UncountAllEnemies` (`0x0028ef48`). A player's `+0x152` is raised and lowered the same way and also
-   recounted every 300 updates, which overwrites it ([The player](ai.md#think-player)).
+   recounted every 300 updates, which overwrites it ([The player](ai-brain-types.md#think-player)).
 
 So the leader's target alone turns it on (test 1): an AI follower is in fight mode whenever his player chief has
 locked on to anyone but a Warrior, whether or not anyone attacks.
@@ -1438,7 +1439,7 @@ The gang and its update are `repo:src/ai/gangs.h`, the spawners `repo:src/ai/spa
 `repo:src/ai/tactic.h` and its `tactic_*.h` files with the scripted ones in `repo:src/ai/story_tactics.h`, the
 formations `repo:src/ai/formations.h`, the Warrior commands `repo:src/ai/set_command_action.h` and the boss goals
 `repo:src/ai/boss_goals.h`. What Coney does differently and what it leaves out is on
-[AI humans: Coney's implementation](ai.md#coney); the sections above say where Coney differs on their subject (the
+[AI humans: Coney's implementation](ai/index.md#in-coney); the sections above say where Coney differs on their subject (the
 attack on sight, the follow).
 
 ## Open questions

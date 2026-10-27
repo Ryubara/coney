@@ -915,6 +915,46 @@ TEST_CASE("a remove event naming another type leaves the carried prop; a cinemat
     CHECK_FALSE(human.carriedProp().has_value());
 }
 
+// Switching a human's sounds on again (the scripts' HuChangePlayerGang binding the player's brain a second time,
+// ai::ScriptedBrains::changePlayerGang()) wiped the clip sounds he held, while the hit sounds, kept elsewhere,
+// survived.
+TEST_CASE("switching a human's sounds on a second time keeps the clip sounds it holds", "[human]") {
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 40.0F, 0.0F});
+    human.reportSounds(true);
+    human.step(stick(0.0F, 0.0F), mesh.get());
+    static_cast<void>(human.takeSounds());
+    // A clip whose frame 2 asks for animation sound 7.
+    coney::anim::AnimClip clip;
+    clip.duration = 20.0F / 30.0F;
+    clip.events.push_back(coney::anim::ClipEvent{.frame = 2,
+                                                 .type = coney::human::kEventAnimSound,
+                                                 .value = 0,
+                                                 .argument = 7,
+                                                 .word = 0,
+                                                 .position = {},
+                                                 .rotation = {},
+                                                 .text = {}});
+    human.playScripted(clip, 59, 1.0F, 0.0F, coney::human::HeldFlags{.held = 0x2000});
+    for (int update = 0; update < 6; ++update) {
+        human.step(stick(0.0F, 0.0F), mesh.get());
+    }
+    human.reportSounds(true);
+    int animSounds = 0;
+    for (const coney::human::HumanSound& sound : human.takeSounds()) {
+        animSounds += sound.kind == coney::human::HumanSound::Kind::Anim && sound.animSound == 7 ? 1 : 0;
+    }
+    CHECK(animSounds == 1);
+    // Switched off, it keeps none.
+    human.playScripted(clip, 59, 1.0F, 0.0F, coney::human::HeldFlags{.held = 0x2000});
+    human.reportSounds(false);
+    for (int update = 0; update < 6; ++update) {
+        human.step(stick(0.0F, 0.0F), mesh.get());
+    }
+    CHECK(human.takeSounds().empty());
+}
+
 TEST_CASE("clip event 0x45 reaches the sounds as a stop of the held sound, once", "[human]") {
     const TestCharacter character;
     const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));

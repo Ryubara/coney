@@ -2,11 +2,11 @@
 # Warriors' attack table) is given the gang soldiers' brain (type 2) and its scripted "dead" brain is woken, then the
 # fight starts as level99_combat.lua starts one: BrFlush's goal flush, GangMakeEnemies, a threat response of 2 and
 # GoalFight (Brain_StartFight). From then on its brain alone decides what it does. The player stands still for 150
-# updates, then circles it with the stick at 60 % to the left. Research: docs/research/ai.md#fight,
+# updates, then circles it with the stick at 60 % to the left. Research: docs/research/ai-fights.md#fight,
 # docs/research/tasks.md#humans-update. The hooks log every command written to and read from a per-player record and
 # every think.
 description = "slot 6: PoizoCiv as a type-2 fighter against a still, then circling player; brain, commands, thinks"
-research = "docs/research/ai.md#fight"
+research = "docs/research/ai-fights.md#fight"
 input = "civ_fight.txt"
 updates = 330
 fields = ["player", "enemy"]

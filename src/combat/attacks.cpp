@@ -189,7 +189,7 @@ ChainButton chainButton(CommandId command, Stick stick) {
         return ChainButton::Cross;
     }
     // **Coney's choice:** an AI's chain square (0x11) chains as square does; the research has the AI write it for a
-    // chain's later steps (docs/research/ai.md) but not where the dispatcher maps it.
+    // chain's later steps (docs/research/ai/index.md) but not where the dispatcher maps it.
     if (command != command::kSquarePressed && command != command::kSquareChain) {
         return ChainButton::None;
     }

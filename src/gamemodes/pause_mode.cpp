@@ -17,6 +17,7 @@ namespace coney {
 namespace {
 
 // Loads font `name` through `loadSheet`; logs and returns nothing when it fails.
+// @coney-only Coney's font loading
 std::optional<graphics::Font> loadFont(const PauseSheetLoader& loadSheet, std::string_view name,
                                        const std::function<void(std::string_view)>& log, std::string_view who) {
     if (!loadSheet) {
@@ -33,6 +34,7 @@ std::optional<graphics::Font> loadFont(const PauseSheetLoader& loadSheet, std::s
 }
 
 // The game time of `frame` in milliseconds.
+// @coney-only Coney's frame time in the menu's milliseconds
 std::uint64_t millisecondsOf(const FrameTime& frame) { return frame.gameTicks / (GameTimer::kTicksPerSecond / 1000); }
 
 } // namespace
@@ -71,9 +73,31 @@ void MenuLayer::loadSecond(const PauseRecordLoader& loadRecord, std::uint32_t re
     }
 }
 
+graphics::SpriteBatch* MenuLayer::loadExtra(const PauseSheetLoader& loadSheet, const PauseRecordLoader& loadRecord,
+                                            std::string_view name, std::uint32_t record, std::size_t capacity,
+                                            float depth, const std::function<void(std::string_view)>& log,
+                                            std::string_view who) {
+    std::expected<graphics::SpriteSheet, Error> sheet = std::unexpected(Error{ErrorCode::NotFound, "no loader"});
+    if (!name.empty() && loadSheet) {
+        sheet = loadSheet(name);
+    } else if (name.empty() && loadRecord) {
+        sheet = loadRecord(record);
+    } else {
+        return nullptr;
+    }
+    if (!sheet) {
+        log(name.empty() ? std::format("{}: sheet record {}: {}\n", who, record, sheet.error().message)
+                         : std::format("{}: {}: {}\n", who, name, sheet.error().message));
+        return nullptr;
+    }
+    m_extras.push_back(std::make_unique<graphics::SpriteBatch>(std::move(*sheet), capacity, depth));
+    return m_extras.back().get();
+}
+
 void MenuLayer::release() {
     // The queue points at the batches released below.
     m_pass.empty();
+    m_extras.clear();
     m_sprites.reset();
     m_second.reset();
     m_textBatch.reset();
@@ -87,6 +111,9 @@ void MenuLayer::queue() {
         if (*batch) {
             m_pass.queue(**batch);
         }
+    }
+    for (const std::unique_ptr<graphics::SpriteBatch>& batch : m_extras) {
+        m_pass.queue(*batch);
     }
 }
 
@@ -130,6 +157,38 @@ void applyPauseOutcome(gui::PauseOutcome outcome, GameModeStack& stack, GameStat
     }
 }
 
+gui::OptionValues optionValuesOf(const GameState& state) {
+    gui::OptionValues values;
+    values.brightness = state.brightness;
+    values.musicVolume = state.saved.musicVolume;
+    values.soundFxVolume = state.saved.soundFxVolume;
+    for (std::size_t pad = 0; pad < 2; ++pad) {
+        values.invertCamera.at(pad) = state.saved.pads.at(pad).invertCamera;
+        values.autoAdjustCamera.at(pad) = state.saved.pads.at(pad).autoAdjustCamera;
+        values.vibration.at(pad) = state.saved.pads.at(pad).vibration;
+    }
+    values.splitScreenMerge = state.saved.splitScreenMerge;
+    values.subtitles = state.subtitles;
+    values.proLogic = state.saved.proLogic2;
+    values.wideVideo = state.saved.wideVideo;
+    return values;
+}
+
+void storeOptionValues(const gui::OptionValues& values, GameState& state) {
+    state.brightness = values.brightness;
+    state.saved.musicVolume = values.musicVolume;
+    state.saved.soundFxVolume = values.soundFxVolume;
+    for (std::size_t pad = 0; pad < 2; ++pad) {
+        state.saved.pads.at(pad).invertCamera = values.invertCamera.at(pad);
+        state.saved.pads.at(pad).autoAdjustCamera = values.autoAdjustCamera.at(pad);
+        state.saved.pads.at(pad).vibration = values.vibration.at(pad);
+    }
+    state.saved.splitScreenMerge = values.splitScreenMerge;
+    state.subtitles = values.subtitles;
+    state.saved.proLogic2 = values.proLogic;
+    state.saved.wideVideo = values.wideVideo;
+}
+
 PauseMode::PauseMode(graphics::RenderDevice& device, PauseSheetLoader loadSheet, PauseRecordLoader loadRecord,
                      const gui::GlobalStrings& strings, FrontEndServices& services, GameState& state,
                      LevelFlowMode& levelFlow, std::function<void(std::string_view)> log)
@@ -137,6 +196,28 @@ PauseMode::PauseMode(graphics::RenderDevice& device, PauseSheetLoader loadSheet,
       m_services(services), m_state(state), m_levelFlow(levelFlow), m_log(std::move(log)) {
     m_menu.setStrings(&m_strings);
     m_menu.setSoundSink([this](int cue) { m_services.playCue(cue); });
+    // The Options screen's changes go into the game state at once, then to the game.
+    gui::OptionMenu::Hooks options;
+    options.apply = [this](const gui::OptionValues& values) {
+        storeOptionValues(values, m_state);
+        if (m_hooks.applyOptions) {
+            m_hooks.applyOptions(values);
+        }
+    };
+    // The Audio page's music loop (its volume is the Music volume applyOptions sets). Coney's choice: the track that
+    // played before starts again when the page closes, since Coney's music has one track at a time.
+    options.previewMusic = [this](bool on, float /*volume*/) {
+        if (on && !m_services.musicPlaying(kPreviewMusic)) {
+            m_musicBeforePreview = m_services.music();
+            m_services.playMusic(kPreviewMusic);
+        } else if (!on && m_services.musicPlaying(kPreviewMusic)) {
+            m_services.stopMusic();
+            if (!m_musicBeforePreview.empty()) {
+                m_services.playMusic(m_musicBeforePreview);
+            }
+        }
+    };
+    m_menu.setOptionHooks(std::move(options));
 }
 
 void PauseMode::playFrame(GameModeStack& stack, const Pads& pads) {
@@ -172,19 +253,44 @@ bool PauseMode::toggle(GameModeStack& stack, int player) {
 }
 
 void PauseMode::enter() {
-    // The game's updates stop with gameplay below this mode; the sound pauses and the pause bank comes in.
+    // Stand-in: the Armies of the Night levels' own pause menu (`0x0050ec34`) is not ported; every level gets the
+    // story menu.
+    // The game's updates stop with gameplay below this mode (the original's task-manager phase 1), and the sound
+    // pauses. Stand-in: Coney has no pad vibration, so there is none to clear in the pad records.
     if (m_hooks.pauseSound) {
         m_hooks.pauseSound(true);
     }
+    // Stand-in: after the sound pause the original sets the game state's byte `+0x56e0` to 1 (which
+    // `GameState_IsVibrationActive` `0x0041a3e0` reads, and `GameMode_DoResume` `0x00156078` clears); Coney has no such
+    // flag yet, so the step is left out (#669, pause.md#original-structure).
+    // The sound state (Coney's: the bank) is remembered and the pause bank comes in. The original flushes the render
+    // device's queue before the load; Coney's renderer drains its own queue (a platform substitution).
     m_previousBank = m_services.bank();
     m_services.loadBank(kSoundBank);
     m_layer.load(m_loadSheet, m_loadRecord, kBackgroundRecord, kBackgroundCapacity, gui::PauseMenu::kBackgroundDepth,
                  m_log, "pause");
     m_menu.setBackgroundBatch(m_layer.sprites());
+    m_menu.setOptionsBatch(m_layer.sprites());
     // The Controls screen's pad picture (`ControllerPage_Init`'s sprite word `0x18f0000`).
     m_layer.loadSecond(m_loadRecord, gui::ControlMenu::kPictureRecord, 1, gui::ControlMenu::kPictureDepth, m_log,
                        "pause");
     m_menu.setControllerBatch(m_layer.second());
+    // The top header's circles and rule and the Stats screen's bars (`part_page0`), and the Stats screen's pictures
+    // for the pausing player's Warrior: his name and his face.
+    graphics::SpriteBatch* parts = m_layer.loadExtra(m_loadSheet, m_loadRecord, gui::kTextFontSheet, 0, kHeaderCapacity,
+                                                     gui::CircledTextHeader::kCircleDepth, m_log, "pause");
+    m_menu.setHeaderBatch(parts);
+    m_stats = m_hooks.warriorStats ? m_hooks.warriorStats(m_player) : std::nullopt;
+    graphics::SpriteBatch* name = nullptr;
+    graphics::SpriteBatch* face = nullptr;
+    if (const std::optional<gui::StatsPortrait> kind =
+            m_stats ? gui::PauseStats::portraitOf(m_stats->characterType) : std::nullopt) {
+        name = m_layer.loadExtra(m_loadSheet, m_loadRecord, {}, kind->nameRecord, kStatsCapacity,
+                                 gui::PauseStats::kPortraitDepth, m_log, "pause");
+        face = m_layer.loadExtra(m_loadSheet, m_loadRecord, {}, kind->faceRecord, 1, gui::PauseStats::kBannerDepth,
+                                 m_log, "pause");
+    }
+    m_menu.setStatsBatches(name, face, parts);
     if (m_hooks.radarsOff) {
         m_hooks.radarsOff();
     }
@@ -194,29 +300,40 @@ void PauseMode::enter() {
 
 ModeResult PauseMode::update(GameModeStack& stack, const FrameTime& frame) {
     const std::uint64_t nowMs = millisecondsOf(frame);
-    // The menu opens on the first frame, which knows the time; the world is drawn as the game left it.
+    // Stand-in: the original opens the menu in Enter and stamps the start time from its real-time clock; Coney opens
+    // it on the first frame, which knows the game time. The world is drawn as the game left it.
     if (m_openPending) {
         m_openPending = false;
         m_frozen = RenderTime{.alpha = 1.0F, .gameTicks = frame.gameTicks - frame.stepTicks, .index = 0};
         gui::PauseMenuSetup setup;
         setup.language = m_state.language;
+        setup.options = optionValuesOf(m_state);
         if (const LevelRecord* record = m_state.levels.at(m_state.currentLevel)) {
             setup.level = static_cast<int>(record->number);
+            setup.missionTitle = record->secondName;
+            setup.levelName = record->fourthName;
         }
+        setup.checkpoint = static_cast<int>(m_state.checkPoint);
+        setup.difficulty = static_cast<int>(m_state.difficulty);
+        setup.stats = m_stats;
         if (m_hooks.objectives) {
             setup.objectives = m_hooks.objectives();
         }
         m_menu.open(setup, nowMs);
     }
 
+    // Stand-in: the mode's world frame (the tick, the task manager's phase 1, the cameras, the managers, streaming,
+    // the world update, the audio listener, the HUD's paused update) is not run: gameplay below is drawn as the game
+    // left it, and the device's present and the file service are the platform's.
     m_tint.commit();
+    // The menu's render comes before its update, as in the original: a frame shows the state the last update left.
     m_layer.begin();
-    m_menu.update(gui::GuiFrame{nowMs, &stack.pads().port(static_cast<std::size_t>(m_player))});
     m_menu.render(m_layer.canvas());
     m_layer.queue();
+    m_menu.update(gui::GuiFrame{nowMs, &stack.pads().port(static_cast<std::size_t>(m_player))});
     m_tint.current() = m_menu.worldTint(nowMs);
 
-    // The menu has faded out: pop and act on its outcome.
+    // The menu has faded out: pop and act on its outcome (the original's menu pops the mode from its update).
     if (m_menu.closed()) {
         (void)toggle(stack, m_player);
     }
@@ -239,6 +356,15 @@ void PauseMode::render(const RenderTime& time) {
 }
 
 void PauseMode::exit() {
+    // The menu's close. Stand-in: of `PauseMenu_Close` only what Coney models is done here (the Options screen's
+    // music loop ends, the batches are let go below; the tint ends with the mode); the war commands it issues are not.
+    // A close from the Options screen's Audio page (START) ends its music loop too.
+    if (m_services.musicPlaying(kPreviewMusic)) {
+        m_services.stopMusic();
+        if (!m_musicBeforePreview.empty()) {
+            m_services.playMusic(m_musicBeforePreview);
+        }
+    }
     // The sound state as it was: the bank, then the paused sounds.
     if (!m_previousBank.empty() && m_previousBank != kSoundBank) {
         m_services.loadBank(m_previousBank);
@@ -251,6 +377,9 @@ void PauseMode::exit() {
     }
     m_menu.setBackgroundBatch(nullptr);
     m_menu.setControllerBatch(nullptr);
+    m_menu.setOptionsBatch(nullptr);
+    m_menu.setHeaderBatch(nullptr);
+    m_menu.setStatsBatches(nullptr, nullptr, nullptr);
     m_layer.release();
 }
 

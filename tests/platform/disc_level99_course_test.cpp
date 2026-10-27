@@ -11,8 +11,9 @@
 //
 // **Known gap**: lessons 9-12 (the bats, the rage moves, the second wave) and checkpoint 2 are not checked. The pad
 // script is frame-locked: its bat swings and the second wave land only when every bum stands where an earlier Coney AI
-// left it, and the AI now takes turns at its target and turns at the AI's own rates (docs/research/ai.md#coney). The
-// later lessons' checks return with an adaptive driver (walk to the nearest standing bum, then attack).
+// left it, and the AI now takes turns at its target and turns at the AI's own rates
+// (docs/research/ai/index.md#in-coney). The later lessons' checks return with an adaptive driver (walk to the nearest
+// standing bum, then attack).
 
 #include <algorithm>
 #include <array>

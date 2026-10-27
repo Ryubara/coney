@@ -14,6 +14,7 @@
 #include <rw.h>
 
 #include "characters/character_data.h"
+#include "combat/power_class.h"
 
 namespace coney::platform {
 
@@ -77,12 +78,28 @@ std::string PlayLevelMode::characterState() const {
     return state;
 }
 
+gui::WarriorStats PlayLevelMode::warriorStats() const {
+    const combat::PlayerCombat& fight = m_player->human().fighter().combat();
+    gui::WarriorStats stats{.characterType = m_type,
+                            .damageScale = 0,
+                            .powerMax = fight.power().maximum(),
+                            .staminaMax = m_player->human().stamina().maximum(),
+                            .rageMax = fight.rage().maximum(),
+                            .powerClassByte40 = combat::kPlayerPowerClass.ringByte};
+    if (const std::optional<characters::PlayerTraits> traits = m_types.playerTraitsOf(m_type)) {
+        stats.damageScale = traits->damagePercent;
+        if (traits->powerClass) {
+            stats.powerClassByte40 = traits->powerClass->ringByte;
+        }
+    }
+    return stats;
+}
+
 void PlayLevelMode::swapPlayerModel(LoadedCharacter loaded, const std::string& model) {
     // He keeps animating with the character he has (every character has the same 34 bones); only the model drawn
     // changes. The old mesh goes before the dictionaries whose texture it holds.
-    m_mesh = std::make_unique<CharacterMesh>(loaded.character->assets().model, textureOf(loaded.dictionaries));
-    m_positions.assign(loaded.character->assets().model.vertices.size(), anim::Vec3{});
-    m_normals.assign(m_positions.size(), anim::Vec3{});
+    m_mesh = std::make_unique<CharacterMesh>(loaded.character->assets().model, textureOf(loaded.dictionaries),
+                                             Skinning::Gpu);
     if (m_playerCharacter) {
         m_retired.push_back(std::move(m_playerCharacter));
     }
@@ -139,9 +156,10 @@ std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
     const human::PlayerStart start = m_player->start();
     std::vector<human::PlayerStart> fighters;
     // The model each fighter was spawned as (the meshes are in the fighters' order), so it keeps its look, and whether
-    // the debug menus spawned it, so Clear fighters still finds it.
+    // the debug menus spawned it, so Clear fighters still finds it, and its side.
     std::vector<std::string> fighterModels;
     std::vector<bool> fighterDebug;
+    std::vector<ai::FighterSide> fighterSides;
     fighters.reserve(m_ai->humans().size());
     for (std::size_t i = 0; i < m_ai->humans().size(); ++i) {
         const ai::AiHuman& fighter = m_ai->humans()[i];
@@ -153,6 +171,7 @@ std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
                                               .headingDegrees = degreesOf(fighter.human->heading())});
         fighterModels.push_back(i < m_fighterMeshes.size() ? m_fighterMeshes[i].model : std::string{});
         fighterDebug.push_back(fighter.debugSpawned);
+        fighterSides.push_back(fighter.side);
     }
     const ai::AiConfig aiConfig = m_ai->config();
     const bool engaging = m_ai->engaging();
@@ -164,12 +183,13 @@ std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
     }
 
     // The new player through the same creation as the mode's start, keeping where a fall out of the world puts him
-    // back, then moved to where the old one stood with the camera behind him.
+    // back, then moved to where the old one stood with the camera behind him (a debug tool's jump: his camera was made
+    // at the start).
     m_player = std::make_unique<human::Player>(*loaded->character, mesh, start, human::playerClassOf(m_types, type));
     m_player->teleport(mesh, here);
-    m_mesh = std::make_unique<CharacterMesh>(loaded->character->assets().model, textureOf(loaded->dictionaries));
-    m_positions.assign(loaded->character->assets().model.vertices.size(), anim::Vec3{});
-    m_normals.assign(m_positions.size(), anim::Vec3{});
+    m_player->resetCamera();
+    m_mesh = std::make_unique<CharacterMesh>(loaded->character->assets().model, textureOf(loaded->dictionaries),
+                                             Skinning::Gpu);
     if (m_playerCharacter) {
         m_retired.push_back(std::move(m_playerCharacter));
     }
@@ -185,7 +205,8 @@ std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
     }
     m_ai->brains().setCollision(&m_scenery->collision());
     for (std::size_t i = 0; i < fighters.size(); ++i) {
-        addFighter(fighters[i].position, fighters[i].headingDegrees, fighterModels[i], fighterDebug[i]);
+        addFighter(fighters[i].position, fighters[i].headingDegrees, fighterModels[i], fighterDebug[i],
+                   fighterSides[i]);
     }
     m_type = type;
     m_model = *model;

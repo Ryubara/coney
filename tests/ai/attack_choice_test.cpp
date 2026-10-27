@@ -14,7 +14,8 @@
 #include "ai/fight_checks.h"
 
 // The AI's attack choice, its spacing and its two waits, as pure decisions.
-// Research: docs/research/ai.md#pick-attack, docs/research/ai.md#attack-places, docs/research/ai.md#check-attack
+// Research: docs/research/ai-fights.md#pick-attack, docs/research/ai-fights.md#attack-places,
+// docs/research/ai-fights.md#check-attack
 
 using coney::ai::AttackerView;
 using coney::ai::AttackWeights;

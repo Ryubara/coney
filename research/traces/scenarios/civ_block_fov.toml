@@ -1,9 +1,9 @@
 # The AI's block: the fighter of civ_fight (PoizoCiv given the type-2 brain, the fight started as GoalFight starts it)
 # attacked by the player with square every 20 updates, so each S1 warns it (brain +0x200) and it may push the block
-# goal (0x1b). Research: docs/research/ai.md#block. The set-command hook logs the block goal's commands (4 held, 3
+# goal (0x1b). Research: docs/research/ai-fights.md#block. The set-command hook logs the block goal's commands (4 held, 3
 # the counter's press) with their caller.
 description = "slot 6: PoizoCiv as a type-2 fighter with the Warriors' field of view (pi), the player pressing square every 20 updates"
-research = "docs/research/ai.md#block"
+research = "docs/research/ai-fights.md#block"
 input = "civ_block.txt"
 updates = 330
 fields = ["player", "enemy"]

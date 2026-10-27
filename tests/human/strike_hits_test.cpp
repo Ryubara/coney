@@ -137,6 +137,30 @@ TEST_CASE("the led steer aims at the head, posed into the world", "[human][strik
     CHECK(strike.victim.ledPoint().y == Catch::Approx(41.5F).margin(1e-3));
 }
 
+TEST_CASE("a scaled human's strike shapes stand on its scaled bones, as its led point does", "[human][strike]") {
+    // Expected: combat/index.md#moving-strikes, confirmed (code): the bone positions the shapes are posed from carry
+    // the body scale (Human_GetBoneTransform 0x0023bde8), as do the offsets (PhysicsBody_ApplyHumanScale).
+    // Rembrandt's 0.97; the head bone 1.7 m up and 0.2 m forward, the head sphere's offset (0.05, 0, 0.03).
+    constexpr float kScale = 0.97F;
+    Strike strike(1.5F, 0.5F);
+    strike.skeleton.offsets.at(6) = coney::anim::Vec3{0.0F, 0.2F, 1.7F};
+    strike.victim.setScale(kScale);
+    strike.humans.update(strike.mesh.get());
+    const std::vector<coney::human::PosedShape> shapes = strike.victim.posedStrikeShapes(true);
+    const coney::human::PosedShape* head = nullptr;
+    for (const coney::human::PosedShape& shape : shapes) {
+        head = shape.bone == 6 ? &shape : head;
+    }
+    REQUIRE(head != nullptr);
+    const coney::anim::Vec3 feet = strike.victim.position();
+    CHECK(head->a.z - feet.z == Catch::Approx(kScale * 1.73F).margin(1e-4));
+    CHECK(std::hypot(head->a.x - feet.x, head->a.y - feet.y) ==
+          Catch::Approx(kScale * std::hypot(0.05F, 0.2F)).margin(1e-4));
+    // The led point is the same scaled head bone, without the sphere's offset.
+    const coney::anim::Vec3 led = strike.victim.ledPoint();
+    CHECK(head->a.z - led.z == Catch::Approx(kScale * 0.03F).margin(1e-4));
+}
+
 TEST_CASE("a free attack hits on the update its strike shapes first touch the victim, not at a fixed update",
           "[human][combat][strike]") {
     Strike strike(1.0F, 0.85F);

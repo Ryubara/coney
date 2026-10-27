@@ -26,7 +26,7 @@
 
 // The fight reaction goals: the grabber's, mounter's, held man's and downed man's moves. Synthetic clips only; game
 // time is the steps run (1/30 s each).
-// Research: docs/research/ai.md#fight-reactions
+// Research: docs/research/ai/index.md#fight-reactions
 
 using Catch::Approx;
 using coney::ai::Brain;

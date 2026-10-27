@@ -34,7 +34,27 @@ page = "combat-reactions.md#mission-failing"
 role = "the mission failing and the hand-off to its screen"
 level = "confirmed-code"
 coney = "src/camera/cameras.h:Cameras::startFailed"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the flip time limit, the call at 0x0048d420, the frame-rate statistics, a cuffed or knocked-out player's ear, the debug heal, the file manager service, the cheat sequence and the error check are not ported"
+relation = "not-ported"
+issue = 1008
+
+[[function.gaps]]
+what = "the death camera's start, fades and restore and the +0x152 bit 2 cut are not ported"
+relation = "not-ported"
+issue = 703
+
+[[function.gaps]]
+what = "the mission-complete launch from state 2 is not ported here"
+relation = "not-ported"
+issue = 670
+
+[[function.gaps]]
+what = "a second player joining is not ported"
+relation = "not-ported"
+issue = 549
 
 [[function]]
 address = 0x0021b290
@@ -480,7 +500,12 @@ name = "Human_PlayPickupClip"
 page = "combat-throws.md#bat"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::startPickUp"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the movement style pushed and popped, the fight idle after a pick-up in the stance, action and record +0x18, the push sphere and stop call, and held flag 0x4000 (Coney holds 0x10) are not ported"
+relation = "not-ported"
+issue = 664
 
 [[function]]
 address = 0x002600f0

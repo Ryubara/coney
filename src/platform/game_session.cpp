@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "ai/ai_config.h"
+#include "audio/audio_format.h"
 #include "audio/game_sound.h"
 #include "audio/object_sounds.h"
 #include "audio/sound_engine.h"
@@ -207,6 +208,26 @@ GameSession::GameSession(RenderEngine& renderer, GameModeStack& stack, const io:
                 m_flow->hud().radar().on = {false, false};
             },
         .radarsBack = [this, radarsBeforePause] { m_flow->hud().radar().on = *radarsBeforePause; },
+        // The Options screen's volumes as the music and effects buses' volumes (docs/research/save.md#options). The
+        // pads' camera options need nothing here: the game state keeps them and each level's player camera reads
+        // its own pad's every update. Stand-in (#957): the volumes are applied only when Options changes them, not
+        // when a profile loads, which the original's Profile_Read (0x00421ad0) does for each option.
+        .applyOptions =
+            [this](const gui::OptionValues& values) {
+                if (m_audio != nullptr) {
+                    // The output's volume index 0 is the master volume; each bus's index is one past its number.
+                    m_audio->setVolume(1 + static_cast<std::size_t>(audio::Bus::Music), values.musicVolume);
+                    m_audio->setVolume(1 + static_cast<std::size_t>(audio::Bus::Sfx), values.soundFxVolume);
+                }
+            },
+        // The Stats screen's reading of the pausing player: Coney has player 1 only.
+        .warriorStats = [this](int player) -> std::optional<gui::WarriorStats> {
+            PlayLevelMode* level = play();
+            if (level == nullptr || player != 0) {
+                return std::nullopt;
+            }
+            return level->warriorStats();
+        },
     });
 }
 
@@ -316,6 +337,7 @@ std::expected<std::unique_ptr<GameMode>, Error> GameSession::loadLevel(const Lev
         return std::unexpected(std::move(mode.error()));
     }
     (*mode)->setSceneLines(m_sceneLines);
+    (*mode)->setMeshViews(m_meshViews);
     (*mode)->setSounds(m_audio != nullptr ? &m_audio->sounds() : nullptr);
     // The game's HUD, which the scripts' bindings act on.
     (*mode)->useHud(m_flow->hud());

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The play mode's cast: the humans a level's scripts create (`HuCreate`), made AI humans in the scene once the level
 // has loaded, each drawn as the model its type names and fighting as its class, its brain bound to the handle the
-// scripts name it by (docs/research/ai.md#coney, docs/research/characters.md#creation).
+// scripts name it by (docs/research/ai/index.md#in-coney, docs/research/characters.md#creation).
 #include <array>
 #include <expected>
 #include <format>
@@ -12,8 +12,11 @@
 #include <utility>
 
 #include "ai/ai_config.h"
+#include "ai/ai_humans.h"
 #include "ai/brain.h"
+#include "ai/brains.h"
 #include "ai/scripted_brains.h"
+#include "characters/character_choice.h"
 #include "characters/character_types.h"
 #include "human/human.h"
 #include "human/player.h"
@@ -109,9 +112,7 @@ ai::Brain* PlayLevelMode::castHuman(const HumanCreation& human) {
     }
     FighterMesh mesh;
     mesh.character = look.character;
-    mesh.mesh = std::make_unique<CharacterMesh>(look.character->assets().model, look.texture);
-    mesh.positions.resize(look.character->assets().model.vertices.size());
-    mesh.normals.resize(mesh.positions.size());
+    mesh.mesh = std::make_unique<CharacterMesh>(look.character->assets().model, look.texture, Skinning::Gpu);
     m_fighterMeshes.push_back(std::move(mesh));
     return &brain;
 }
@@ -120,10 +121,11 @@ void PlayLevelMode::takePlace(const ai::Brain& to) {
     // **Coney's stand-in** for HuChangePlayerGang's hand-over (docs/research/characters.md#level99-handover): the
     // original makes the chosen AI human player 1 and leaves the old one in the world as an AI until its gang is
     // deleted. Coney has one player human, so he takes the chosen human's place instead: put where it stands (placed
-    // there, the camera behind him), standing afresh as the chosen human does (nothing of the old body's fight carried
-    // over) with its meters as Human_MakePlayer leaves them (its own health scaled by its Warrior class, full power and
-    // stamina, human::makePlayerOf()), drawn as its model, named by its handle; the chosen human leaves the world, and
-    // the brains name the player by its handle (ai::ScriptedBrains::changePlayerGang()).
+    // there, the camera following him there by its own rules), standing afresh as the chosen human does (nothing of the
+    // old body's fight carried over) with its meters as Human_MakePlayer leaves them (its own health scaled by its
+    // Warrior class, full power and stamina, human::makePlayerOf()), drawn as its model, named by its handle; the
+    // chosen human leaves the world, and the brains name the player by its handle
+    // (ai::ScriptedBrains::changePlayerGang()).
     const human::Human& chosen = to.human();
     const human::PlayerStart start{.position = chosen.position(),
                                    .headingDegrees = chosen.heading() * 180.0F / std::numbers::pi_v<float>};
@@ -198,6 +200,50 @@ PlayLevelMode::CastLook PlayLevelMode::castCharacter(const std::string& model) {
         return CastLook{.character = m_character.get(), .texture = m_texture};
     }
     return CastLook{.character = entry.character.get(), .texture = textureOf(entry.dictionaries)};
+}
+
+void PlayLevelMode::bindDebugFighter(human::Human& made, const CastLook& look, const std::string& model) {
+    ai::Brain* brain = m_ai->brains().find(made);
+    if (brain == nullptr) {
+        return;
+    }
+    // The type it is drawn as: the player's for the scene's own character (a model that did not load falls back to
+    // it), else the first configured type a player of which is drawn as `model`. Its voice set follows from it.
+    int type = m_type;
+    if (look.character != m_character.get()) {
+        for (const characters::CharacterChoice& choice : characterChoices()) {
+            if (choice.model == model) {
+                type = choice.type;
+                break;
+            }
+        }
+    }
+    brain->setCharacterClass(type);
+    // In a level with scripts, a handle from the counter `HuCreate` takes its own from, bound as `HuCreate`'s humans
+    // are (in no gang): gameplay hands the bound humans' sounds to the game's sound (Human_OnAnimSoundEvent,
+    // 0x0021f700, plays every human's clip sounds, whoever made him), and the lines find their speaker by it.
+    if (m_cast.scripted != nullptr && m_cast.objectHandles) {
+        const double handle = m_cast.objectHandles();
+        if (handle != 0.0) {
+            m_cast.scripted->bind(handle, *brain);
+        }
+    }
+}
+
+void PlayLevelMode::unbindDebugFighters() {
+    if (m_cast.scripted == nullptr) {
+        return;
+    }
+    // The ones removeDebugSpawned() takes: marked, still in the world, not the human the pad drives.
+    const human::Human* driven = &m_ai->playerBrain().human();
+    for (const ai::AiHuman& entry : m_ai->humans()) {
+        if (!entry.debugSpawned || entry.removed || entry.human.get() == driven) {
+            continue;
+        }
+        if (const ai::Brain* brain = m_ai->brains().find(*entry.human); brain != nullptr && brain->handle() != 0.0) {
+            m_cast.scripted->unbind(brain->handle());
+        }
+    }
 }
 
 } // namespace coney::platform

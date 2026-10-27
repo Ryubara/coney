@@ -9,8 +9,11 @@ Four things need the coordinator and are found here, each as an event with an id
   `handled` while a hold (`pr hold`) covers the cause on that head, with the hold in `handled_by`; a hold that runs
   out, or that was made on an earlier head, leaves the event open, which is why handled problems are listed.
 * `merged`: a pull request merged within `conclave.watch.merged_minutes`.
-* `unit-ready`: a release-queue file (`PR.md`) of a unit whose branch has no pull request since the file changed. The id
-  carries the file's time, so a rewritten file is a new event; a unit that was released leaves the list.
+* `unit-ready`: a release-queue file (`PR.md`) of a unit whose branch has no pull request since the file changed and
+  whose proof `pr open` would pass (`pr_ready.readiness`: a passing Check and Review that cover its change, the compared
+  functions, the tests that failed first and the description), unless a `HOLD` file lies in its scratch folder. The id
+  carries the change the stamps cover, not the file's time, so an edit to the description that the review still covers,
+  or a rebase, is the same event; a unit that was released leaves the list.
 * `question`: `QUESTION.md` (or `QUESTION-<n>.md`) in the scratch folder of a task unit or of any branch with a worktree
   (most tracks are plain branches, as for `unit-ready`) with no newer `ANSWER` of the same number.
 
@@ -31,11 +34,14 @@ from coney_tools.conclave_sources import Sources, iso_utc
 from coney_tools.config import ConfigError
 from coney_tools.conventions import ConclaveWatch
 from coney_tools.pr_hold import Hold, HoldsRead, holds_folder, read_active
+from coney_tools.unit import Unit
 
 #: Every kind of event, in the order `unread` lists them.
 KINDS = ("check-failed", "pr-stuck", "merged", "unit-ready", "question")
 #: The kinds that read the open and merged pull requests, the release queue and the unit folders.
 PR_KINDS = ("check-failed", "pr-stuck", "merged")
+#: How many digits of the change hash an event's id keeps.
+CHANGE_DIGITS = 12
 #: The longest first line of a question that is sent (an event is one line in a wake).
 QUESTION_CHARACTERS = 200
 
@@ -127,17 +133,36 @@ def _merges(prs: dict[str, Any], rules: ConclaveWatch, now: datetime) -> list[di
     return found
 
 
-def _ready_units(release: dict[str, Any]) -> list[dict[str, Any]]:
-    """An event for each release-queue file whose branch has no pull request since the file changed."""
+def _ready_units(src: Sources, release: dict[str, Any], unread: set[str]) -> list[dict[str, Any]]:
+    """An event for each release-queue file whose unit `pr open` would pass the proof for, and that nobody holds.
+
+    A file in the queue (a unit with a worktree and no pull request since the file changed) is only a candidate: the
+    unit is ready when its stamps cover its change, as `pr_ready.readiness` weighs it, the same test `pr open` makes.
+    A unit with a `HOLD` file in its scratch folder is left out for as long as the file is there. The id names the
+    change, not the file's time, so editing the description (or rebasing the branch) is the same event. A unit whose
+    proof could not be read at all names the kind in `unread`: the unit may be ready, and saying nothing of it is not
+    the same as saying it is not."""
+    rules = src.conventions.conclave.watch
+    now = src.coord.now()
     found: list[dict[str, Any]] = []
     for unit in release.get("units", []):
-        if not unit.get("queued"):
+        if not unit.get("queued") or not unit.get("worktree"):
             continue
         branch, name, changed = str(unit["branch"]), str(unit["file"]), str(unit["changed"])
+        folder = src.coord.scratch / branch
+        if (folder / rules.unit_hold_file).is_file():
+            continue
+        ready = src.ready(
+            Path(str(unit["worktree"])), Unit(branch, folder), Path(str(unit["path"])), src.conventions, now
+        )
+        if ready.unknown:
+            unread.add("unit-ready")
+        if not ready.ready:
+            continue
         extra = "" if name == "PR.md" else f" --text {unit['path']}"
         found.append(
             _event(
-                f"unit:{branch}:{name}:{changed}",
+                f"unit:{branch}:{name}:{ready.change[:CHANGE_DIGITS]}",
                 "unit-ready",
                 f"{branch}: {name} is ready for pr open",
                 f"coney-tools pr open {branch}{extra}",
@@ -230,7 +255,7 @@ def collect_events(src: Sources, report: dict[str, Any], release: dict[str, Any]
     if release is None or release.get("error"):
         unread.add("unit-ready")
     else:
-        found += _ready_units(release)
+        found += _ready_units(src, release, unread)
     folders = _question_folders(src, report, unread)
     found += _questions(scratch, folders, rules)
     found.sort(key=lambda event: (event["since"] or "", event["id"]))

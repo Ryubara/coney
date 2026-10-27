@@ -19,8 +19,11 @@ add_executable(coney_tests
     core/ps2_float_test.cpp
     core/sha1_test.cpp
     core/sha256_test.cpp
+    core/mesh_view_option_test.cpp
     core/options_test.cpp
     core/perf_test.cpp
+    core/perf_bench_options_test.cpp
+    core/perf_frames_test.cpp
     core/pad_test.cpp
     core/player_options_test.cpp
     core/window_display_test.cpp
@@ -53,6 +56,7 @@ add_executable(coney_tests
     gamemodes/game_mode_stack_test.cpp
     gamemodes/idle_mode_test.cpp
     gamemodes/legal_screen_mode_test.cpp
+    gamemodes/level_items_test.cpp
     gamemodes/level_pickups_test.cpp
     gamemodes/loading_screen_test.cpp
     gamemodes/pause_mode_test.cpp
@@ -83,14 +87,20 @@ add_executable(coney_tests
     gui/disc_text_test.cpp
     gui/markup_test.cpp
     gui/menu_input_test.cpp
+    gui/message_paging_test.cpp
+    gui/circled_text_header_test.cpp
+    gui/game_stats_test.cpp
     gui/control_menu_test.cpp
+    gui/option_menu_test.cpp
     gui/pause_menu_test.cpp
+    gui/pause_stats_test.cpp
     gui/profile_management_gui/pm_controller_test.cpp
     gui/rumble_mode_gui/rumble_menu_test.cpp
     gui/rumble_mode_gui/rumble_match_screens_test.cpp
     gui/screen_flow_controller_test.cpp
     gui/text_layout_test.cpp
     gui/widgets_test.cpp
+    gui/bar_test.cpp
     hud/credits_test.cpp
     hud/health_rings_test.cpp
     hud/hud_test.cpp
@@ -120,6 +130,7 @@ add_executable(coney_tests
     platform/disc_flash_test.cpp
     platform/disc_crew_commands_test.cpp
     platform/disc_given_weapon_test.cpp
+    platform/disc_level80_wreck_test.cpp
     platform/disc_revive_test.cpp
     platform/disc_level80_story_test.cpp
     platform/disc_level5_boss_camera_test.cpp
@@ -142,6 +153,9 @@ add_executable(coney_tests
     platform/disc_spawner_money_test.cpp
     platform/disc_credits_test.cpp
     platform/disc_pause_controls_test.cpp
+    platform/disc_pause_options_test.cpp
+    platform/disc_pause_stats_test.cpp
+    platform/disc_game_stats_test.cpp
     platform/disc_level99_player2_test.cpp
     platform/disc_hub_workout_test.cpp
     platform/disc_level99_street_test.cpp
@@ -222,6 +236,7 @@ add_executable(coney_tests
     warriors/player_state_test.cpp
     warriors/profile_record_test.cpp
     warriors/tag_game_test.cpp
+    warriors/unlock_counts_test.cpp
     world/debug_camera_test.cpp
     world/level_object_test.cpp
     world/path_map_test.cpp
@@ -274,6 +289,7 @@ target_sources(coney_tests PRIVATE
     characters/dynamic_clips_test.cpp
     characters/orbit_camera_test.cpp
     platform/character_mesh_test.cpp
+    platform/character_mesh_skin_test.cpp
     platform/log_output_test.cpp)
 # The player: animation tasks, locomotion, the human, the follow camera, and level99 driven by scripted pads.
 target_sources(coney_tests PRIVATE
@@ -284,15 +300,20 @@ target_sources(coney_tests PRIVATE
     camera/rail_camera_test.cpp
     camera/win_camera_test.cpp
     camera/failed_camera_test.cpp
+    camera/follow_camera_option_test.cpp
     camera/follow_camera_test.cpp
     camera/follow_collision_test.cpp
+    camera/follow_placement_test.cpp
     camera/follow_script_test.cpp
+    human/disc_player_placement_test.cpp
     human/disc_player_test.cpp
+    human/human_edit_test.cpp
     human/human_test.cpp
     human/workout_test.cpp
     human/human_revive_test.cpp
     human/human_uncuff_test.cpp
     human/debug_clip_test.cpp
+    human/face_test.cpp
     human/way_clear_test.cpp
     human/flight_test.cpp
     human/noclip_idle_test.cpp
@@ -352,11 +373,13 @@ target_sources(coney_tests PRIVATE
 # The collision writer the sandbox and the Spawner use (the sandbox's own tests are the debug tools', below).
 target_sources(coney_tests PRIVATE
     raycast/collision_builder_test.cpp)
-# The AI humans' brains (docs/research/ai.md).
+# The AI humans' brains (docs/research/ai/index.md).
 target_sources(coney_tests PRIVATE
+    ai/face_mood_test.cpp
     ai/attack_choice_test.cpp
     ai/attack_reach_test.cpp
     ai/fidget_action_test.cpp
+    ai/fighter_sides_test.cpp
     ai/fight_goal_test.cpp
     ai/fight_trace_test.cpp
     ai/fight_reactions_test.cpp
@@ -364,6 +387,7 @@ target_sources(coney_tests PRIVATE
     ai/brain_events_test.cpp
     ai/brain_test.cpp
     ai/crew_test.cpp
+    ai/smash_goals_test.cpp
     ai/steal_goals_test.cpp
     ai/disc_ai_config_test.cpp
     ai/disc_route_test.cpp
@@ -398,7 +422,8 @@ target_sources(coney_tests PRIVATE
 target_sources(coney_tests PRIVATE audio/adpcm_test.cpp audio/disc_sound_test.cpp audio/game_sound_test.cpp
                                    audio/mixer_test.cpp audio/music_player_test.cpp audio/object_sounds_test.cpp
                                    audio/sound_data_test.cpp audio/sound_engine_test.cpp audio/sound_matrix_test.cpp scripting/sound_bindings_test.cpp
-                                   audio/human_sound_events_test.cpp animation/clip_sound_events_test.cpp)
+                                   audio/human_sound_events_test.cpp animation/clip_sound_events_test.cpp
+                                   audio/type_traits_test.cpp)
 # Network play: the bit stream, the transports, the protocol and the sessions over the loopback, and ENet on 127.0.0.1
 # (docs/guides/multiplayer.md).
 target_sources(coney_tests PRIVATE net/bit_stream_test.cpp net/input_buffer_test.cpp net/link_conditioner_test.cpp
@@ -434,11 +459,14 @@ if(CONEY_DEBUG_TOOLS)
         debug/audio_page_test.cpp
         debug/combat_tunables_test.cpp
         debug/debug_session_test.cpp
+        debug/entity_edit_test.cpp
+        debug/entity_editor_page_test.cpp
         debug/entity_inspector_test.cpp
         debug/fighter_spawn_test.cpp
         debug/human_shapes_test.cpp
         debug/input_gate_test.cpp
         debug/menu_navigator_test.cpp
+        debug/mesh_views_test.cpp
         debug/movies_page_test.cpp
         debug/net_page_test.cpp
         debug/native_caller_test.cpp
@@ -452,11 +480,16 @@ if(CONEY_DEBUG_TOOLS)
         gamemodes/text_viewer_mode_test.cpp
         gui/debug_menu_view_test.cpp
         platform/disc_anim_player_test.cpp
+        platform/disc_face_test.cpp
         platform/disc_change_character_test.cpp
+        platform/disc_debug_ai_sides_test.cpp
+        platform/disc_debug_no_gang_test.cpp
         platform/disc_debug_clear_fighters_test.cpp
+        platform/disc_debug_fighter_sounds_test.cpp
         platform/disc_debug_movies_test.cpp
         platform/disc_fall_camera_test.cpp
         platform/disc_fighter_models_test.cpp
+        platform/disc_entity_editor_test.cpp
         platform/disc_game_session_test.cpp
         platform/disc_hub_doors_test.cpp
         platform/disc_inspector_freeze_test.cpp
@@ -471,12 +504,15 @@ if(CONEY_DEBUG_TOOLS)
         platform/disc_level99_store_glass_test.cpp
         platform/disc_level99_store_register_test.cpp
         platform/disc_level99_street_props_test.cpp
+        platform/disc_mesh_views_draw_test.cpp
+        platform/disc_mesh_views_test.cpp
         platform/disc_rise_counter_test.cpp
         platform/disc_sprint_attacks_test.cpp
         platform/disc_strike_contact_test.cpp
         platform/disc_tandem_test.cpp
         platform/imgui_model_view_test.cpp
         platform/imgui_ui_scale_test.cpp
+        platform/mesh_views_test.cpp
         raycast/collision_extras_test.cpp
         sandbox/disc_sandbox_combat_test.cpp
         sandbox/disc_sandbox_player_test.cpp

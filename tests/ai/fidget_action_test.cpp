@@ -19,7 +19,7 @@
 
 // The fidget action and the fight goal's reposition taunt that queues it: the line, the clip from the gang's combat
 // fidgets or the character's own, who never fidgets, and which waiting attacker taunts.
-// Research: docs/research/ai-reimpl.md#fidget-action, docs/research/ai.md#fight-reposition
+// Research: docs/research/ai-reimpl.md#fidget-action, docs/research/ai-fights.md#fight-reposition
 
 using coney::ai::ActionStatus;
 using coney::ai::Brain;

@@ -494,5 +494,5 @@ it.
 
 Not built: the rage of the attacks beyond the chain, the moving attacks and the throws (their events are not mapped),
 and the hurt multipliers `+0x10` / `+0x14`. The AI's attacks on the player, its attack warnings, the class damage tables
-and a boss's class 13 are on [AI](../research/ai.md); weapons on [A bat in hand](../research/combat-throws.md#bat);
+and a boss's class 13 are on [AI](../research/ai/index.md); weapons on [A bat in hand](../research/combat-throws.md#bat);
 breakables and car windows on [Breakables](../research/combat-targets.md#breakables).

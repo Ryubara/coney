@@ -9,7 +9,7 @@
 // The attack choice's views filled from two of Coney's humans, and the pick an AI fighter makes with them. Coney's
 // humans have no state word: each view's flag is read from what Coney keeps (the fighter's mode and holds, its
 // victim's ground and stun, the animator's held flags), and the flags with no Coney counterpart are false.
-// Research: docs/research/ai.md#pick-attack
+// Research: docs/research/ai-fights.md#pick-attack
 
 namespace coney::ai {
 

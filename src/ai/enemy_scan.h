@@ -11,7 +11,7 @@
 // How an AI finds enemies on its own: a periodic scan of the enemy gangs' members it can see, which rebuilds its
 // enemy list and tells it of each new one (event 0xb, a script's "seen the player"). The scan is a free function over
 // the gangs, so whatever runs the brains (or a tactic, for its own members) can call it.
-// Research: docs/research/ai.md#enemy-scan, docs/research/stealth.md#seen
+// Research: docs/research/ai-fights.md#enemy-scan, docs/research/stealth.md#seen
 
 namespace coney::ai {
 

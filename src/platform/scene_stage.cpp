@@ -103,6 +103,7 @@ std::optional<scenes::RoleFrame> SceneStage::frameOf(double human, float alpha) 
     return blend(frame->previous(), frame->current(), alpha);
 }
 
+// Each bound puppet posed at its scene frame, blended between the last two steps.
 void SceneStage::skinPuppets(float alpha, const Skin& skin) {
     for (auto& [human, puppet] : m_puppets) {
         const auto bound = m_bound.find(human);
@@ -114,11 +115,11 @@ void SceneStage::skinPuppets(float alpha, const Skin& skin) {
             continue;
         }
         const scenes::RoleFrame frame = blend(frames->previous(), frames->current(), alpha);
-        skin(*puppet.loaded.character, frame.pose, frame.feet, frame.heading, puppet.positions, puppet.normals);
-        puppet.mesh->update(puppet.positions, puppet.normals);
+        skin(*puppet.loaded.character, frame.pose, frame.feet, frame.heading, *puppet.mesh);
     }
 }
 
+// Each puppet the scene has posed, through the caller's lit draw.
 void SceneStage::drawPuppets(const DrawPuppet& draw) {
     for (auto& [human, puppet] : m_puppets) {
         const auto bound = m_bound.find(human);
@@ -192,9 +193,7 @@ bool SceneStage::humanReady(double human) {
     }
     Puppet puppet;
     const characters::CharacterModel& model = loaded->character->assets().model;
-    puppet.mesh = std::make_unique<CharacterMesh>(model, textureOf(loaded->dictionaries));
-    puppet.positions.resize(model.vertices.size());
-    puppet.normals.resize(model.vertices.size());
+    puppet.mesh = std::make_unique<CharacterMesh>(model, textureOf(loaded->dictionaries), Skinning::Gpu);
     puppet.loaded = std::move(*loaded);
     m_puppets.emplace(human, std::move(puppet));
     return true;

@@ -271,7 +271,7 @@ intro pushes no game mode and sets no freeze flag. What it does set each update 
 (`0x0050eddc` record `+0x20ac` = 1, [Pause](pause.md)), so START cannot pause the game while it shows; once the prompt
 is up it also takes the HUD pad's buttons `0xf000`. Confirmed (code). So humans, brains and gangs update throughout.
 What keeps a fighter still is only what the scripts did to him: `BrDead` alone does not, because a dead brain still runs
-the goals on its stack, including those its gang's tactic gives it ([AI: handlers](ai.md#handlers)). **At runtime**
+the goals on its stack, including those its gang's tactic gives it ([AI: handlers](ai/index.md#handlers)). **At runtime**
 (PCSX2, QUICK RUMBLE 1 ON 1 with the defaults, the Fight Pen `level102`, read over PINE every second), confirmed
 (runtime): while RM_Intro was open the game clock ran on (about 1,000 ms a second), every brain's time fields
 (`+0x30`-`+0x38`) changed each sample, the fighters' bones animated, and the twelve onlookers each held a goal. Both
@@ -681,7 +681,7 @@ lengths; the result lines' look and the grids' rows; the melee and confront goal
 test; the switch's choice and the brain left behind; a dynamic clip's rate; a locked human's movement (neither stick nor
 brain moves it); the number indicator, kept but not drawn; `PrecacheWorld`, which only empties the queue; the
 scoreboard's and the stopwatch's places; the hold-flag goal's type ids, taunt and fight; a knock-out without its clips
-or its wake-up after 14 s; spawner state 7's placement ([AI: Coney](ai.md#coney)); the engage goal's range; the
+or its wake-up after 14 s; spawner state 7's placement ([AI: Coney](ai/index.md#in-coney)); the engage goal's range; the
 wheelchair's clips and the give-way action.
 
 ## Open questions {#open-questions}

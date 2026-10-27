@@ -10,7 +10,7 @@
 // is down. Each runs as the brain's reaction goal while its state lasts and ends, its actions cleared, when the state
 // clears. They pick with `Human_CanStartAttack` and queue with the kind's chain delay unless said, so an AI's moves in
 // a hold go through the same press and dispatcher as the player's.
-// Research: docs/research/ai.md#fight-reactions
+// Research: docs/research/ai/index.md#fight-reactions
 
 namespace coney::ai {
 

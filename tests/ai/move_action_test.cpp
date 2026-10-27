@@ -505,10 +505,10 @@ TEST_CASE("a player under script control turns on the spot to the flag's heading
 }
 
 TEST_CASE("locked on a foe, a pad's human faces it; a player under script control follows his brain", "[ai][turn]") {
-    // Human_FightStanceMove and Human_UpdateControl (docs/research/ai.md#fight-facing, characters.md#ai-locomotion):
-    // the pad's player faces his lock target each update; a player whose pad a script took runs the AI's stance
-    // control, so he turns by the brain's heading: 24 degrees an update asked to move, the standing step (12) stopped
-    // more than 15 degrees off, nothing within 15 degrees or with no move asked.
+    // Human_FightStanceMove and Human_UpdateControl (docs/research/ai-fights.md#fight-facing,
+    // characters.md#ai-locomotion): the pad's player faces his lock target each update; a player whose pad a script
+    // took runs the AI's stance control, so he turns by the brain's heading: 24 degrees an update asked to move, the
+    // standing step (12) stopped more than 15 degrees off, nothing within 15 degrees or with no move asked.
     MoveScene scene;
     Brain& player = scene.addPlayer({41.0F, 41.0F, 0.0F}, -90.0F);
     // The foe only punches (a grab or a tackle would hold the player and turn him), so a punch locks him on.
@@ -581,7 +581,7 @@ TEST_CASE("GoalMoveToFlag aims at an offset from the flag, ends when its flag go
     const auto* goal = dynamic_cast<const coney::ai::MoveToFlagGoal*>(brain.topGoal());
     REQUIRE(goal != nullptr);
     CHECK(planDistance(goal->target(), {44.0F, 41.0F, 0.0F}) < 1e-4F);
-    // A negative distance is not special: -1 m at -1 degrees, as level99's Vermin is sent (docs/research/ai.md).
+    // A negative distance is not special: -1 m at -1 degrees, as level99's Vermin is sent (docs/research/ai/index.md).
     Brain& other = scene.add({41.0F, 45.0F, 0.0F}, 0.0F);
     coney::ai::goalMoveToFlag(other, flagOrder(flag, 0.5F, -1.0F, -1.0F), scripted);
     scene.run(1);
@@ -981,7 +981,7 @@ TEST_CASE("locked onto a target, a move turns away from it and walks to its poin
 }
 
 TEST_CASE("locked onto a target with no move, an AI keeps its facing while the target walks round him", "[ai][move]") {
-    // Nothing turns a fighter to his target but a move or an attack (docs/research/ai.md#fight-facing).
+    // Nothing turns a fighter to his target but a move or an attack (docs/research/ai-fights.md#fight-facing).
     MoveScene scene;
     Brain& brain = scene.add({45.0F, 41.0F, 0.0F}, -90.0F);
     Brain& other = scene.add({45.9F, 41.0F, 0.0F}, 90.0F, coney::ai::BrainType::Warrior);

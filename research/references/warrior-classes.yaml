@@ -28,6 +28,11 @@ about: |
   | `+0x0c` | Mugging | `0x00284ca0` | the [mugging](../research/combat-throws.md#mugging) game's times, for the mugging player: 2, 3 or any other |
   | `+0x0d` | `+0x0d` | none | stored, never read |
 
+  **`+0x05` in play**, confirmed (runtime), run r-20261027-warrior-health-scale: in `level99` checkpoint 2 on normal,
+  the player Rembrandt (class 6, `+0x05` = 50) has a health maximum of 900 while the AI Warriors Ash (also class 6)
+  and Vermin have 1800, so the player's 900 is 1800 × 50 %. The scaling when a human becomes a player
+  (`0x00229c40`) and the divide back when he stops being one (`0x0022a2a8`) are confirmed (code).
+
   The lock-pick difficulty on normal: 0 for Cowboy, Fox and Rembrandt, 1 for Cleon, Cochise and Snow, 2 for Ajax,
   Vermin and Swan; every difficulty turns the pins at the same speeds, only their directions and the target bands
   change ([Crimes: lock picking](../research/crimes.md#lockpick)). `+0x0d` has no reader: the table is addressed

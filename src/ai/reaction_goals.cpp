@@ -56,7 +56,7 @@ std::unique_ptr<Goal> reactionGoalFor(const human::Human& human) {
         if (!reactionHolds(type, human)) {
             continue;
         }
-        // The fight reactions (docs/research/ai.md#fight-reactions); the stun only holds the stack off.
+        // The fight reactions (docs/research/ai/index.md#fight-reactions); the stun only holds the stack off.
         switch (type) {
         case GoalType::ReactGrabbing:
             return std::make_unique<GrabbingGoal>();

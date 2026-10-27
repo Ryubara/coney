@@ -2,19 +2,26 @@
 #include "ai/steal_goals.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <cstdint>
 #include <limits>
 #include <memory>
 #include <vector>
 
+#include "ai/attack_action.h"
 #include "ai/brain.h"
 #include "ai/crew.h"
+#include "ai/fidget_action.h"
 #include "ai/formations.h"
 #include "ai/gangs.h"
 #include "ai/move_action.h"
+#include "ai/perception.h"
 #include "ai/route_planner.h"
 #include "ai/script_services.h"
+#include "ai/smash_goals.h"
 #include "ai/turn_action.h"
+#include "human/human.h"
 #include "human/locomotion.h"
 
 namespace coney::ai {
@@ -35,6 +42,27 @@ float planDistance(anim::Vec3 a, anim::Vec3 b) { return std::hypot(a.x - b.x, a.
 bool canAct(const Brain& brain) {
     return brain.type() != BrainType::Player && Brain::fightable(brain) &&
            brain.human().state() != human::TargetState::Grounded;
+}
+
+// The held flag of a swing of what he holds, and the flags a throw clip holds.
+constexpr std::uint32_t kSwingHeldFlag = 0x800000;
+constexpr std::uint32_t kThrowHeldFlags = 0x1000010;
+// The object throw clips: one-handed (467, 471, 472), the knife (491), the bat (502), two-handed (505-507) and the
+// ghetto set (551-553).
+constexpr std::array<std::uint32_t, 11> kThrowClips{467, 471, 472, 491, 502, 505, 506, 507, 551, 552, 553};
+
+// Whether `human` is winding up a throw of what he holds: the swing flag, or a throw clip holding its flags with an
+// object in his hand (docs/research/characters.md, Human_IsSwingingHeld). **Coney's reading**: "an object in his
+// hand" is any held object, where the original asks that the held object's anim set be other than 0.
+// @orig 0x002286a0 Human_IsSwingingHeld (unknown)
+bool swingingHeld(const human::Human& human) {
+    const std::uint32_t flags = human.heldFlags();
+    if ((flags & kSwingHeldFlag) != 0) {
+        return true;
+    }
+    // Coney's choice: any held object stands for the original's test that its anim set is not 0.
+    return (flags & kThrowHeldFlags) != 0 && human.script().heldObject != 0.0 &&
+           std::ranges::contains(kThrowClips, human.animator().animId());
 }
 
 } // namespace
@@ -138,16 +166,20 @@ GoalStatus GetItemGoal::process(Brain& brain) {
     if (!object) {
         return GoalStatus::Done;
     }
-    // 2. His pick-up under way: wait for its take.
+    // 2. In flight (thrown or falling, its flag 0x4000000): wait for it to land.
+    if (m_items->inFlight(m_object)) {
+        return GoalStatus::Stop;
+    }
+    // 3. His pick-up under way: wait for its take.
     if (brain.human().pickingUp()) {
         m_picked = true;
         return GoalStatus::Stop;
     }
-    // 3. Someone holds it (he himself among them): done.
+    // 4. Someone holds it (he himself among them): done.
     if (m_items->holder(m_object)) {
         return GoalStatus::Done;
     }
-    // 4. Nobody holds it: done once picked; wait for queued actions; give up without a point, after a failed walk or
+    // 5. Nobody holds it: done once picked; wait for queued actions; give up without a point, after a failed walk or
     // too many tries.
     if (m_picked) {
         return GoalStatus::Done;
@@ -161,16 +193,40 @@ GoalStatus GetItemGoal::process(Brain& brain) {
         return GoalStatus::Done;
     }
     const anim::Vec3 at = brain.human().position();
-    // 5. Within reach: the pick-up, a try.
-    if (planDistance(at, *object) <= kGetItemReach) {
-        ++m_tries;
-        if (m_items->startPickUp(brain, m_object)) {
-            m_picked = true;
+    // The distance to his standing point (3D), which every test below reads.
+    const float pointDistance = anim::distance(at, *m_point);
+    // 6. Within reach of the point: with a clear ray, the pick-up (a try); a clear ray through an intact pane, the
+    // swing at the pane from the point (no try), so nothing is taken through glass; no clear ray, a turn to it, or,
+    // facing it, a try and the walk to the point below.
+    if (pointDistance < kGetItemReach) {
+        const ClearRay ray = clearRayTo(brain.collision(), at, *object, 0);
+        if (ray.clear && !ray.throughGlass) {
+            ++m_tries;
+            if (m_items->startPickUp(brain, m_object)) {
+                m_picked = true;
+            }
+            return GoalStatus::Stop;
         }
-        return GoalStatus::Stop;
+        if (ray.clear) {
+            if (pointDistance > kGetItemGlassStep) {
+                brain.queueAction(std::make_unique<MoveAction>(
+                    MoveRequest{.point = *m_point, .radius = kGetItemWalkRadius, .gait = kJogGait}));
+            }
+            brain.queueAction(TurnAction::toPoint(*object));
+            brain.queueAction(AttackAction::onSelf(0, kGetItemSwingDelayMs));
+            return GoalStatus::Stop;
+        }
+        const anim::Vec3 to = anim::subtract(*object, at);
+        if (std::fabs(human::wrapAngle(human::headingOf(to) - brain.human().heading())) > kGetItemTurn) {
+            brain.queueAction(TurnAction::toPoint(*object));
+            return GoalStatus::Stop;
+        }
+        ++m_tries;
     }
-    // 6. The walk to the point beside it.
-    const int gait = planDistance(at, *m_point) <= kGetItemJogWithin ? kJogGait : m_gait;
+    // 7. The walk to the point beside it.
+    // differs: the original leaves the fight stance here (Human_LeaveFightStance); Coney's AI has no stance state to
+    // leave (Coney stand-in, issue #959).
+    const int gait = pointDistance < kGetItemJogWithin ? kJogGait : m_gait;
     brain.queueAction(
         std::make_unique<MoveAction>(MoveRequest{.point = *m_point, .radius = kGetItemWalkRadius, .gait = gait}));
     return GoalStatus::Stop;
@@ -194,6 +250,11 @@ void WarriorVandalStealGoal::resume(Brain& brain) {
         }
         m_claimed.reset();
     }
+    // The smash target or pane he went to strike (+0x10): its claim drops once DestroyItem is over.
+    if (m_struck) {
+        m_items->unclaim(*m_struck);
+        m_struck.reset();
+    }
 }
 
 void WarriorVandalStealGoal::end(Brain& brain) {
@@ -209,14 +270,17 @@ WarriorStealTactic* WarriorVandalStealGoal::stealTactic(const Brain& brain) {
 }
 
 GoalStatus WarriorVandalStealGoal::process(Brain& brain) {
+    // 1. No leader: nothing this update, and the goal stays. **Coney's choice**: a leader out of the world counts as
+    //    none (the original's Gang_GetLeader picks another member then).
     Brain* leader = m_services->brain(m_leader);
     if (leader == nullptr || leader->human().outOfWorld()) {
-        return GoalStatus::Done;
-    }
-    if (brain.actionCount() > 0) {
         return GoalStatus::Stop;
     }
-    // The fetch: empty-handed under the gang's steal tactic, the object it hands him.
+    // 2. The updates counted while his last move stands failed (a byte, as the original's).
+    if (brain.moveFailure() != MoveFailure::None) {
+        ++m_failedMoves;
+    }
+    // 3. The fetch: empty-handed under the gang's steal tactic, the object it hands him.
     WarriorStealTactic* tactic = stealTactic(brain);
     if (tactic != nullptr && m_items != nullptr && brain.human().script().heldObject == 0.0 &&
         brain.gang() != nullptr) {
@@ -230,33 +294,144 @@ GoalStatus WarriorVandalStealGoal::process(Brain& brain) {
             m_claimed.reset();
         }
     }
-    // Too far from the leader for a while: back to his slot.
+    // 4. Queued actions hold him, unless a fidget plays (held flag 0x100).
+    if (brain.actionCount() > 0 && (brain.human().heldFlags() & kFidgetHeldFlag) == 0) {
+        return GoalStatus::Stop;
+    }
+    // 5. The wreck: a swing, a smash target or a pane; it clears the follow deadline. A goal it pushed starts in the
+    //    same update; with only actions queued, or busy winding up a throw, he stops for this one.
+    if (m_items != nullptr && tryVandalise(brain, *leader)) {
+        m_followAtMs = 0;
+        return brain.topGoal() == this ? GoalStatus::Stop : GoalStatus::Again;
+    }
+    // 6. The follow deadline, armed whenever it is clear (near the leader too), so it stays passed until a wreck.
+    const std::uint64_t now = brain.nowMs();
+    if (m_followAtMs == 0) {
+        m_followAtMs = now + kVandalStealFollowDelayMs;
+    }
+    // 7. Beyond his reach of the leader (3D), or the leader running: back to his slot once the deadline has passed,
+    //    but not while a failed move is being waited out (kVandalStealFailedMoveWait updates).
     const bool attacked = brain.gang() != nullptr && std::ranges::any_of(brain.gang()->members(), [](const Brain* m) {
                               return !m->attackSlots().empty();
                           });
     const float reach = attacked ? kVandalStealAttackedReach : kVandalStealLeaderReach;
-    if (brain.distanceTo(*leader) > reach) {
-        if (!m_awayMs) {
-            m_awayMs = brain.nowMs();
+    const anim::Vec3 at = brain.human().position();
+    const bool away =
+        anim::distance(at, leader->human().position()) > reach || leader->human().gait() > human::Gait::Jog;
+    if (away && m_followAtMs < now) {
+        if (m_failedMoves >= kVandalStealFailedMoveWait) {
+            brain.setMoveFailure(MoveFailure::None);
+            m_failedMoves = 0;
         }
-        if (brain.nowMs() - *m_awayMs >= kVandalStealFollowDelayMs) {
-            m_awayMs.reset();
-            if (brain.pushGoal(std::make_unique<FollowFormationGoal>(kVandalStealSlotReach))) {
-                return GoalStatus::Again;
-            }
+        if (m_failedMoves == 0 && brain.pushGoal(std::make_unique<FollowFormationGoal>(kVandalStealSlotReach))) {
+            return GoalStatus::Again;
         }
+    }
+    // 8. Near him, or not following yet: actions queued hold him.
+    if (brain.actionCount() > 0) {
         return GoalStatus::Stop;
     }
-    m_awayMs.reset();
-    // Near him: his heading every 4 s.
-    if (brain.nowMs() >= m_nextTurnMs) {
-        m_nextTurnMs = brain.nowMs() + kVandalStealTurnMs;
-        const float heading = leader->human().heading();
-        if (std::fabs(human::wrapAngle(heading - brain.human().heading())) > kCrewHeadingTurn) {
-            brain.queueAction(TurnAction::toHeading(heading));
+    // 9. His gang attacked: he looks all round.
+    if (attacked) {
+        brain.setSight(brain.sightRange(), kVandalStealAttackedView);
+        // differs: the original also enters the fight stance, keeps a valid target or takes the nearest enemy, and
+        // turns to him from beyond the far melee range or closes on him within it; Coney's AI has no stance state
+        // (Coney stand-in, issue #959).
+        return GoalStatus::Stop;
+    }
+    // 10. Not attacked: no target, the usual field of view, a look along the leader's facing every 4 s and now and
+    //     then a fidget.
+    {
+        // Human_DropTarget from Process.
+        const TargetCauseScope cause(brain, TargetCause::Order);
+        brain.setTarget(nullptr);
+    }
+    brain.setSight(brain.sightRange(), kDefaultFieldOfView);
+    // differs: in the fight stance with no enemy the original turns to the leader instead; Coney's AI has no stance
+    // state, so he is always out of it (Coney stand-in, issue #959).
+    if (m_nextTurnMs < now) {
+        m_nextTurnMs = now + kVandalStealTurnMs;
+        brain.queueAction(TurnAction::toPoint(anim::add(at, human::facing(leader->human().heading()))));
+    }
+    if (m_nextFidgetMs < now) {
+        m_nextFidgetMs = now + kVandalStealFidgetMs;
+        if (brain.rand100() < kVandalStealFidgetChance) {
+            brain.queueAction(std::make_unique<FidgetAction>(0, true, 0));
         }
     }
     return GoalStatus::Stop;
+}
+
+bool WarriorVandalStealGoal::tryVandalise(Brain& brain, Brain& leader) {
+    // 1. Winding up a throw of what he holds: busy, nothing new.
+    if (swingingHeld(brain.human())) {
+        return true;
+    }
+    if (stealTactic(brain) == nullptr || brain.gang() == nullptr) {
+        return false;
+    }
+    // 2. Something in hand: one he swings (a throwable, kind 4 or 6) or a breaking one (flag 0x10000); anything else
+    //    stops the wreck here. With one he swings he lets go of his target and, unless a clip holds any flag, turns
+    //    once to the nearest whole pane, then swings. **Coney stand-in**: the turn to the crowd ahead
+    //    (`Gang_CountAhead`) and the lines are not built.
+    const double held = brain.human().script().heldObject;
+    const HeldUse use = held != 0.0 ? m_items->heldUse(held) : HeldUse::None;
+    if (use == HeldUse::Swings) {
+        {
+            // Human_DropTarget from TryVandalise.
+            const TargetCauseScope cause(brain, TargetCause::Order);
+            brain.setTarget(nullptr);
+        }
+        if (brain.human().heldFlags() != 0) {
+            return false;
+        }
+        if (!m_turnedToGlass) {
+            const std::vector<PaneView> near = m_items->panes(brain.human().position(), kVandalReach);
+            if (!near.empty()) {
+                brain.queueAction(TurnAction::toPoint(near.front().centre));
+                m_turnedToGlass = true;
+                return true;
+            }
+        }
+        brain.queueAction(AttackAction::onSelf(0, kVandalSwingDelayMs));
+        m_turnedToGlass = false;
+        return true;
+    }
+    if (use == HeldUse::Other) {
+        return false;
+    }
+    // 3. Only on even updates from here.
+    if ((brain.updates() & 1U) != 0) {
+        return false;
+    }
+    // **Coney stand-in**: the original first sends him at a car within 15 m of the leader with a free spot
+    // (`DestroyCarGoal_Push`, 0x002ddb40); Coney has no DestroyCar goal yet (issue #716).
+    // 4. A smash target near him and the leader: one that is carried is fetched (unless what he holds breaks it
+    //    where it stands), any other is struck where it stands, from the smaller of its sizes away.
+    if (const std::optional<SmashTarget> target =
+            findSmashTarget(brain, leader, *m_items, *m_services, kVandalReach, kVandalReach)) {
+        const bool strikeHeld = use == HeldUse::Breaks && target->heldBreaks;
+        if (!strikeHeld && (target->animSet == 4 || target->animSet == 5)) {
+            // **Coney stand-in**: the original drops what he holds first (`Human_DropHeld`); ItemServices has no
+            // drop, and the only object that can be in his hand here is a breaking one (HeldUse::Breaks), which
+            // LevelItems::heldUse() never reports yet.
+            return brain.pushGoal(std::make_unique<GetItemGoal>(target->handle, kFetchGait, *m_items));
+        }
+        m_struck = target->handle;
+        return brain.pushGoal(std::make_unique<DestroyItemGoal>(target->handle, false, *m_items));
+    }
+    // 5. Now and then a pane near the leader.
+    if (brain.nowMs() <= m_nextPaneMs) {
+        return false;
+    }
+    m_nextPaneMs =
+        brain.nowMs() + static_cast<std::uint64_t>(rollRange(brain.random(), static_cast<int>(kVandalPaneMinMs),
+                                                             static_cast<int>(kVandalPaneMaxMs)));
+    if (const std::optional<PaneView> pane = claimPane(leader, *m_items, kVandalReach)) {
+        m_struck = pane->handle;
+        return brain.pushGoal(std::make_unique<DestroyItemGoal>(pane->handle, true, *m_items));
+    }
+    return false;
 }
 
 // ---- WarriorStealTactic ----

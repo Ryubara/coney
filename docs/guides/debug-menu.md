@@ -139,11 +139,12 @@ The Display page's *Debug UI scale* overrides the choice: *Auto* (the rule above
 | Player | where the player is and how it moves (plotted), his character type and a change of it, freezing him, the [noclip](#noclip) and its hotkey, teleports |
 | Camera | the follow camera's eye, target and distance (plotted), a reset behind the player, the free camera, its values |
 | Spawner | objects put in front of the player in a sandbox or a level: a crate, a fence, a wall, a ramp, stairs, a pillar, a ball |
-| AI fighters | AI humans that fight the player: a model picker (every human model, or Random) and an amount, spawn them in front of him, the engaging toggle, their state, clear them |
+| AI fighters | AI humans on a side of the player's: a side (enemy, ally or neutral), a model picker (every human model, or Random) and an amount, spawn them in front of him (allies behind him), the engaging toggle, their state, clear them |
 | Animation player | every clip the player's anim sets can play, by set and category with its length, played on him once or looping at a speed, then his own animation back ([below](#animation-player)) |
 | HUD | the [in-game HUD](../research/hud.md)'s parts on and off, player 1's rage, score, money and items set (-1 gives the value back), an objective, a hint and an announcement fired |
-| Debug draw | lines in the scene: collision near the player (plain or by wall class), the player's heading and velocity, the camera, places, every human's collision shapes, strike shapes and contacts |
-| Entity inspector | pick a human or object (nearest, next, looked at, from a list), mark it in the scene and watch everything Coney knows of it |
+| Debug draw | lines in the scene: collision near the player (plain or by wall class), the player's heading and velocity, the camera, places, every human's collision shapes, strike shapes and contacts; the [mesh views](#mesh-views): the models' own wireframe, a wireframe-only view, flat views by material, draw call or LOD, the selection's normals and bone axes |
+| Entity inspector | pick a human or object (nearest, next, looked at, from a list), mark it in the scene and watch everything Coney knows of it, a human's [mesh](#mesh-group) included |
+| Entity editor | change the inspector's selection: move, turn, drop, meters, scale, speed, animation rate, freeze, kill, delete; each edit queued, applied between steps and written to the run log ([below](#entity-editor)) |
 | Display | the frame-stats line, the FPS counter, the frame cap and vsync (live), the player's coordinates, the GUI safe area, the logical screen, the [overlay's size](#ui-scale) |
 | Audio | the output device, the master and bus volumes, a looping test tone, the voices playing (plotted) |
 | Network | [network play](multiplayer.md): status, player name, port, address, Host, Join, Disconnect, the ping (plotted), loss, bytes and packets, the players, a Simulate network submenu (latency, jitter, loss, duplicates, reordering), the log |
@@ -246,24 +247,63 @@ Levels), through `debug::PlayControls` (`src/debug/play_controls.h`), which `pla
 (`src/platform/play_level_controls.h`, in the debug tools) implements over the play mode's own capabilities; elsewhere
 they say there is no player. A teleport drops the player onto the ground below the spot, stands him idle as a walk there
 would leave him (his health and meters kept) and places the camera behind him again. Frozen, the player ignores the
-pad. *Reset behind player* places the follow camera again with the Follow camera tunables, so the leash, pitch and
-look-at height apply at once. The free camera flies with pad 1 as the world viewer's
+pad. *Reset behind player* puts the follow camera behind the player as the scripts' `CameraReset` does, keeping what
+the scripts set on it; the Follow camera tunables for the leash, pitch and look-at height apply to the next follow
+camera made (a level start). The free camera flies with pad 1 as the world viewer's
 does, while the player stands still and the scenery streams round the free camera. *AI fighters* spawns fighters
-([Sandbox](sandbox.md#ai-fighters)) the chosen distance in front of the player, facing him, in a sandbox or a level;
-*Engaging* off keeps idle fighters from taking him on.
+([Sandbox](sandbox.md#ai-fighters)) the chosen distance in front of the player, facing him, in a sandbox or a level
+(allies behind him, as *Side* says below); *Engaging* off keeps idle enemy fighters from taking him on.
 
 *Spawn fighters* makes *Amount* of them (1 to 50) in one click, in rows of five centred in front of the player, each
 row 1.2 m further out. *Model* picks what they look and move as: any human model the scene's character types name (the
 list *Change character* below draws on, sorted, with its distinct models) or *Random*, which draws a model for each
 fighter from the whole list (a generator of the menu's own with a fixed seed, so it never moves the game's random
-numbers and a run with the same clicks spawns the same models). A model is loaded from the disc the first time it is
-used and kept, so a first click with many models stalls briefly. Without a list (a sandbox without a disc) only
-*Random* is offered and every fighter is the scene's own character. A fighter keeps its model when *Change character*
-makes the fighters again.
+numbers and a run with the same clicks spawns the same models). Each fighter is given the character type it is drawn as
+(the player's for the scene's own character, else the first type drawn as its model), which picks its voice set; in a
+level with scripts it also takes a handle from the counter the scripts' `HuCreate` uses and is held by it as their
+humans are, so its footsteps, swooshes, grunts and the hit sounds of the strikes it takes reach the game's sound
+(`repo:tests/platform/disc_debug_fighter_sounds_test.cpp`). Held so, it is also a subject of the level's volume boxes
+and trigger spheres, as any human is in the original: a fighter spawned in a mission trigger fires the level script's
+handlers for it. Each spawn takes a handle from that one counter, so the handles of everything the scripts create
+afterwards (and the run log's `human N` names) differ from a run without the spawn. A model is loaded from the disc the
+first time it is used and kept, so a first click with many models stalls briefly. Without a list (a sandbox without a
+disc) only *Random* is offered and every fighter is the scene's own character. A fighter keeps its model when *Change
+character* makes the fighters again.
+
+*Side*, set before *Spawn fighters*, picks whose fighters the click makes; each fighter keeps the side it was made on
+(also through *Change character*). The side is the fighter's **gang**, made through the game's own gang calls, so the
+AI, the enemy scans and the strike tests treat it as they treat any gang member: friends are the same gang or kind
+(`Gang_AreFriends` `0x00168f58`), enemies are the bits of the enemy mask (`Gang_IsEnemyOf` `0x00168fe0`), and a human
+with no gang is no one's friend ([Gangs](../research/ai-gangs.md#gang-record),
+[friend and enemy](../research/ai-reimpl.md#gang-is-enemy-of)).
+
+| Side | Its gang | Behaviour |
+| --- | --- | --- |
+| **Enemy** (the default) | `Fighters`, kind 19 (the sandbox's combat gangs' kind), an enemy of the player's gang and of every ally gang | What the page always made: it attacks him, his crew and his allies on sight (the gang soldier's think pushes the fight once its scan lists an enemy), and with *Engaging* on takes him on when he is in its melee range |
+| **Ally** | `Allies`, of the kind of the player's gang (the Warriors' kind 0 in the levels), a friend of his gang, with his gang's enemies and friends copied at every spawn | His friend: the player's hits, his lock-on and his strike tests skip it (the step's opposition test is `Gang_AreFriends`), and his crew's hits skip it too; it lists and fights every gang he has as an enemy, the enemy fighters among them, and the enemy fighters fight it. With the default *Distance ahead* it stands 4 m behind him, facing the way he does, and *Engaging* never sends it at him. It holds its place and fights what comes into its sight: it does not follow him |
+| **Neutral** | `Neutrals`, kind 3 (rumble's first side), with no enemy or friend bit | Nobody's friend and nobody's enemy: no scan lists it and it lists no one, so it stands and takes hits. Hit, it answers as any gang soldier hit by a stranger: the two gangs become enemies (`Brain_MakeGangsEnemies`) and it fights back, and from the next spawn the allies fight it too, since they copy the player's enemies |
+
+An ally is in a gang of its own that is the player's camp, not in his gang itself: a gang holds at most 10 brains and
+Coney's `Gangs::addMember()` drops the first of a full gang (a Coney choice; the original adds the member anyway,
+[Coney choices](../research/ai/index.md#in-coney)), so allies added to his own would push his crew out, and his
+crew's follow tactic would give them goals; a gang of his gang's kind is his friend by the original's own kind rule
+and takes his gang's enemy and friend masks. A side's gang that is full (10 members) is left for a new one of the same side
+(`Allies2`, `Allies3`), and at each spawn every live gang of the side, the full ones too, is brought in line with the
+player's gang again. A fighter that is cleared leaves its gang, and the room is used again; the gangs themselves stay
+until the level ends, so a session of hundreds of fighters takes gang slots (32 in all) that a level script's
+`GangCreate` may then lack. With every slot taken a fighter is made with no gang, which makes it nobody's friend, and a
+line in the log says so. Following the player, as his crew does under the Warrior follow tactic
+([The default command: follow](../research/ai-gangs.md#warrior-follow)), is not built for allies: they hold their place
+and fight, until the crew's follow goals are right (issue #677). The *State* line names each fighter's gang. The
+sides are Coney's own debug tool (`@coney-only`); the gangs and their tests are the original's. A disc test
+(`tests/platform/disc_debug_ai_sides_test.cpp`) spawns four allies and four enemies through the page in `level80`,
+checkpoint 2, and watches twenty seconds: they fight each other, and no ally or enemy takes its own side, the player or
+his crew. Another changes the player's character with a fighter of each side and checks that each keeps its side.
 
 *Clear fighters* removes only the fighters *Spawn fighters* made, through the game's own removal of a human (a level
 script's `HuDelete`): never the player, the human the pad drives after a hand-over, his crew, a level script's human or
-a sandbox layout's fighter. The page's *Fighters* count is the AI humans still in the world.
+a sandbox layout's fighter. Their handles leave the scripts' hold first. The page's *Fighters* count is the AI humans
+still in the world.
 
 **Spawner.** The page adds sandbox primitives (Coney's own sizes) the chosen distance in front of the player, facing his
 way, in a sandbox or a level; *Clear spawned* removes them all. The crate and the wall carry flag bit 7 (climbable by
@@ -340,6 +380,55 @@ attack's hit update and its reach (a **Coney stand-in**, [Combat](../research/co
 timing and a distance, not a shape that could be drawn. The Entity inspector's highlight and its watch lines are how a
 target is looked at.
 
+### Mesh views {#mesh-views}
+
+The Debug draw page's last items show what the models themselves are made of, as a 3D package's viewport does: their
+triangles over the shaded scene, the scene as edges alone, or flat colours that tell the materials, the draw calls or
+the level of detail apart. They are Coney's own debug tooling, not a mechanic of the game, and they change nothing
+while off: the scene then draws every model exactly as without them (below).
+
+| Item | Does |
+| --- | --- |
+| Model wireframe | *off*, or each model's own triangles as lines over the shaded scene: the *selection* only (the Entity inspector's, white), *all humans* (green, and the selection) or *everything* drawn (objects orange, scenery grey) |
+| Mesh view | *shaded* (the game's own draw), *wireframe only* (the edges, no fill), or flat and unlit: *by material* (one colour per material, the same for two models sharing a texture), *by draw call* (one colour per draw call of the frame, in the order drawn) or *by LOD* (green at full detail, yellow while a human fades out with distance) |
+| Mesh view on | the models the mesh view applies to: the *selection*, *all humans* or *everything* (the default); the others stay shaded |
+| Normals | the selection's vertex normals, a 5 cm blue line from each posed vertex (at most 20,000) |
+| Bone axes | the selection's bones: each one's axes, 8 cm long (x red, y green, z blue), and a line to its parent |
+
+The wireframe and the flat views follow the animation because they are **draws of the model's own librw atomic**, the
+one the shaded pass just drew, through its own pipeline: whatever skinned the shaded pass (the vertices written on the
+CPU, or the vertex shader that skins a human on the GPU) skins these passes the same way. A flat pass swaps
+the atomic's material colours for the view's and its textures for none, lights it with one white ambient light and no
+fog, draws it and puts everything back; the wire pass does the same in OpenGL's line polygon mode, pulled a little
+towards the camera so the lines sit on the fill. A human's blood layer, and an object's second layer, are drawn only
+with the shaded draw. The normals and bone axes are Debug draw lines, from the selection's pose skinned on the CPU for
+it alone. *Everything* means every model drawn through the scene's lighting rig: a level's sectors and skyline, the
+humans, world objects, doors and cars. A sandbox's own blocks are drawn by its renderer and get no wireframe; there is
+no wire under OpenGL ES, which has no line mode. The *selection* choices (the wireframe's, the mesh view's) and the
+normals and bone axes are for a selected human: an object selected has no model to draw them for, though *everything*
+draws it like any other.
+
+The level of detail: the original draws every sector, human, car part and object as one model, whole or not at all
+([Distance: fades and level of detail](../research/graphics.md#lod)), and so does Coney, so *by LOD* tells only the
+humans' distance fade apart.
+
+**Off means untouched.** The play mode hands its models to the views only while one of the wireframe or the mesh
+view is on (`MeshViewHook`, `src/platform/mesh_view_hook.h`, which the game offers and the debug tools implement in
+`src/platform/mesh_views.h`); with both off the lighting rig draws each atomic as it always has and never calls them.
+The hook sits in the rig's last step, under the ported draw functions, which stay as the original has them: each
+model's kind is the one the play mode's scene-counter scope names around its draw
+([counters](performance.md#counters)), and the play mode marks a human's blood layer, and counts the passes the Mesh
+group shows, around each human's draw.
+The rules (which model gets which passes and colours) are `src/debug/mesh_views.h`, tested without a window in
+`tests/debug/mesh_views_test.cpp`, and `tests/platform/mesh_views_test.cpp` checks on librw's NULL device that a model
+gets the game's draw alone while the views are off and its materials back after a pass. On a disc,
+`tests/platform/disc_mesh_views_test.cpp` plays a level and the sandbox's fight yard with a hook of its own and checks
+what the play mode hands the hook; `tests/platform/disc_mesh_views_draw_test.cpp` checks that the passes the game draws
+are the same with the views off, with a hook that is off and with a flat view on, and, on a hidden OpenGL window where
+there is one, that every frame is the same pixel for pixel with the views off, and again after `--mesh-view`'s frames.
+By hand, `--mesh-view wire=all,view=material,frames=30 --frames 90 --screenshot a.png` gives the same last frame, byte
+for byte, as the same run without `--mesh-view` ([options](running-options.md#the-debug-menus)).
+
 ### Entity inspector {#entity-inspector}
 
 The **Entity inspector** page picks one entity of the scene and shows everything Coney knows about it, live. It needs
@@ -360,7 +449,7 @@ out), the doors and barriers, the glass panes and the world objects whose object
 | Freeze selection | holds the selected human still: an AI human or a sandbox target is not animated, moved or acted for, its brain still runs and the others still hit it (it does not react until let go); for the player it is the Player page's *Frozen* (he ignores the pad). An object cannot be frozen, and says so in the log. The Locomotion page's *Frozen* line shows it |
 | Teleport player to it | puts the player 1.5 m from it on his side, facing it |
 | Log everything | prints every value of the selection to the log, `Group / name: value` a line |
-| Identity ... Object | one page per group, a live watch per value |
+| Identity ... Mesh | one page per group, a live watch per value |
 
 A human's groups (`src/debug/human_watch.h`): **Identity** (role, model, character type, what drives it, brain
 handle, class and gang), **Transform** (feet, heading, velocity, speed, scale, lean), **Locomotion** (gait, ground or
@@ -372,10 +461,105 @@ thinks), **Physics** (the walking sphere, capsule and air sphere sizes, the cont
 climb) and **Combat** (mode, the attack playing, blocking, the pair, holding or grabbed, hits). A sandbox target shows
 Identity, Transform, Animation, Meters and Combat. An object (`src/debug/object_watch.h`) shows Identity, Transform
 and **Object**: a door's class, state, angle, hitpoints and triangles; a pane's size, broken and alarm; a world
-object's spawn-record state, flags, zone, tint and money.
+object's spawn-record state, flags, zone, tint and money. Every human, the player, an AI human and a sandbox target
+alike, also shows **Mesh** (below).
 
-The inspector only reads, but for *Freeze selection*: choosing, highlighting and watching change nothing in the game,
-and the selection is a number in the Debug draw options, so a test-mode run plays the same with it on.
+#### The Mesh group {#mesh-group}
+
+What the selection's model is made of and what the renderer spent on it last frame, counted from the decoded model
+the way the play mode draws it (`src/debug/mesh_stats.h`; a human's mesh is `platform::CharacterMesh`):
+
+| Line | What it is |
+| --- | --- |
+| Atomics, Geometries | librw atomics drawn for one pass and the geometries they hold: 1 and 1 for a human |
+| Triangles, Vertices | the model's triangles and its distinct vertices (the strips' shared vertices merged) |
+| Materials | how many; then one line per material: its triangles, its colour (RGBA) and its texture with its size |
+| Textures | the distinct textures among the materials (a human's materials share his one texture) |
+| Bones | the HAnim hierarchy's nodes, the bones the skin gives matrices for and the bones some vertex is weighted to |
+| Weights per vertex | the most weights any vertex carries (and the skin's limit), the mean, and the vertices by count |
+| Draw calls last frame | the materials times the passes drawn: 1 with his texture, 2 with the blood layer, 0 when too far to draw. librw makes a mesh for every material, an empty one too, and draws each |
+| LOD in use | always level 0 of 1 (no model has another, [Distance](../research/graphics.md#lod)), and the distance fade it was drawn at |
+| Skinned on | where the vertices are skinned: *GPU* (the vertex shader, when the skin pipeline runs and the model fits it) or *CPU* |
+
+An object shows no Mesh group: its model's counts need its atomic, which the inspector does not reach.
+
+The inspector only reads, but for *Freeze selection* (a selection is changed in the [Entity editor](#entity-editor)):
+choosing, highlighting and watching change nothing in the game, and the selection is a number in the Debug draw
+options, so a test-mode run plays the same with it on.
+
+### Entity editor {#entity-editor}
+
+The **Entity editor** page changes what the [Entity inspector](#entity-inspector) has selected: pick a human or object
+there, then edit it here. It needs the same play mode and says so without one. It is Coney's own debug tooling (the
+original has nothing like it): it changes nothing until an edit is made.
+
+**Edits are queued, never written mid-step.** As the [tunables](#tunables) are, an edit is a command (`EntityCommand`,
+`src/debug/entity_edit.h`) that the page puts in a queue (`EntityEditor`); the input gate applies the queue between two
+simulation steps, so a step sees the same state from start to end, and a paused game takes the edit at the next frame.
+The item shows the queued value at once. **Each edit is a line of the [run log](run-log.md)**, stamped with its step:
+
+```text
+[step 4518 | 02:30.6 | info cp2] engine: entity edit: applied 131075 health 40
+[step 4518 | 02:30.6 | info cp2] engine: entity edit: refused 1 delete: player 1 cannot be deleted yet: ...
+```
+
+The line is `<entity id> <op> <numbers>`, the numbers as the shortest text that reads back exactly, so a bug report replays
+what was done: `appliedEdits()` reads the `applied` lines of a log back into commands (a unit test replays a recorded
+run into a fresh world and gets the same state). A refused edit says why and changes nothing. In a **network session
+only the host applies edits**; a client's are refused with a line. Edits are never saved: they live in the running game
+(nothing here writes a save, the overrides file or `coney.local.toml`).
+
+| Group | Items (the op each queues) |
+| --- | --- |
+| Transform | X, Y, Z (a `teleport` with that axis changed; the ground below is found when it lands), Heading (`heading`, degrees), Drop to ground (`drop-to-ground`), Move to camera (a `teleport` to the point the camera looks at) |
+| Meters | Health (1 to 100 %), Stamina, Power, Rage (0 to 100 % of each maximum), Invincible (human flag god, `0x10`), Kill (`kill`: the health to 0, which the human's own update turns into a death) |
+| Stats | Scale (`scale`: the body, its collision unless the switch below is off, and the drawn mesh), Scale collision with mesh (`scale-collision`, on at first), Animation rate (`anim-rate`: how fast every clip plays; 0 holds them), Speed scale (`speed-scale`: a multiplier on every gait speed of this human; the combat walk is the Combat page's) |
+| Control | Frozen (`frozen`: the inspector's *Freeze selection*) |
+| Lifecycle | Delete (`delete`) |
+
+Beside the groups: *Selected*, *Queued* (the edits waiting), *Reset selection* and the last lines of the log. **Every
+number has a reset** (the front ends' reset button returns a number to its default) **to the value the entity was
+configured with**, not to a global one: a human made at scale 0.97 resets to 0.97, health and stamina to 100 %, rage to
+0, the speed scale and animation rate to 1. A reset is an ordinary queued edit, so it is in the log and replays.
+*Reset selection* queues every field that has such a value. A position, a heading, a kill and a delete have none.
+
+**Who can be edited.** Player 1 and the AI humans (a level's cast, fighters the AI fighters page spawned, a sandbox
+layout's fighters) take every edit. A sandbox target takes *Frozen* only, and an object nothing yet: the log says so.
+(`src/platform/play_level_edit.cpp`.)
+
+**Scale.** *Scale* sets the human's body scale (`Human::setScale()`) and draws the mesh that much bigger than it was
+made (about the feet; the hat, the held weapon and a carried prop are posed unscaled). By default the collision follows:
+the walking and air spheres, the upright capsule and the strike shapes are sized by `Human::collisionScale()`,
+which is the body scale, so a giant collides and fights at its drawn size. With *Scale collision with mesh* off the
+collision keeps the scale the human was made with (`Human::configuredScale()`) whatever the body scale is. The capsule
+other humans' strikes test (`Human::struckCapsule()`, a port of `PhysicsCapsule_Pose`) follows the body scale either
+way until it is compared with the original again; that is still open on #723.
+Extreme scales are allowed and may misbehave (a human the size of the map falls through or jams in
+things); a test steps humans from 0.05 to 60 times with the collision either way and checks that nothing goes
+non-finite and that a bystander does not move.
+
+**Delete.** A level script's human is taken out the way the script's own `HuDelete` takes it: its handle is unbound, its
+gang and formation let go, then the world removes it at the end of the next step, so the scripts that hold its handle
+find nothing and do not crash (the failure #718 showed for a raw removal). A debug fighter or a layout's fighter goes
+through the world's removal alone. **Player 1 is refused with a reason**, as is the human the pad drives, until the
+game's "player gone" path (camera, HUD, the scripts' `HuIsAPlayer`) exists. `tests/platform/disc_entity_editor_test.cpp`
+deletes a script human in `level80`, then plays on over the humans the scripts still hold.
+
+#### Movement speeds {#entity-editor-speeds}
+
+The player's walk, jog, run and sprint speeds come from the clips' root
+motion ([Speed classes](../research/characters.md#speed-classes)), not from a table, so the tunables are a **scale on
+each gait** (Tunables page, Movement: *Sneak*, *Walk*, *Jog*, *Run*, *Sprint speed scale*, 1 as made). The combat
+walk's speed is already the Combat page's tunable. A scale lands between steps like any tunable, and the gait the
+human is judged to be in, the jump's launch and the animation's gait blend all follow the scaled speeds
+(`HumanAnimator::setSpeedFactors()`); a scale of 2 on the run makes the player cover twice the ground at the same
+animation, so the feet slide. Another human's speeds are the *Speed scale* above, per entity, on top of the player's
+own tunables when it is the player.
+
+**Not here yet** (still #723): knock down, giving and taking a weapon, team and gang, a target, cuffing, AI on and off,
+taking the pad, changing the model, playing any clip, duplicate and respawn, objects (break, open, move, reset), and the
+rest of the stats inventory of [Characters: Stats](../research/characters.md#stats) (power class, faction, damage
+percentage and the others).
 
 ### Noclip {#noclip}
 
@@ -458,7 +642,7 @@ The first tunables are the player's and the camera's researched values (`src/deb
 
 | Category | Tunables (default) |
 | --- | --- |
-| Movement | stick dead zone (0.12), run threshold (0.95), acceleration (24 m/s², 0.8 m/s an update), turn limit walking, jogging, running and sprinting (20°, 18°, 18°, 16° an update), in a stance (24°), turn ease (2.0 rad) and carry (0.8), lean factor and lean factor walking (0.4, 8) |
+| Movement | stick dead zone (0.12), run threshold (0.95), acceleration (24 m/s², 0.8 m/s an update), turn limit walking, jogging, running and sprinting (20°, 18°, 18°, 16° an update), in a stance (24°), turn ease (2.0 rad) and carry (0.8), lean factor and lean factor walking (0.4, 8), and a scale on each of the player's gait speeds: sneak, walk, jog, run and sprint (1 each, up to 10; [below](#entity-editor-speeds)) |
 | Body | radius (0.35 × scale), player factor (1.4286: the player's sphere is 0.35 × scale × this × scale, 0.4704 m), foot gap (0.05 m), step height (0.25 m: lower wall faces do not stop a walk), air radius (0.5 × scale) |
 | Sprint | drain (20/s); the stamina maximum and refill are each human's power class's ([Stats](../research/characters.md#stats)) |
 | Jump | minimum speed (3.3 m/s), up speed (5.5 m/s), climbable check (5.5 m), air turn (4° an update, Coney's choice) |

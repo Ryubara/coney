@@ -8,6 +8,8 @@
 #include "ai/ai_config.h"
 #include "ai/brain.h"
 #include "ai/brains.h"
+#include "ai/fighter_side.h"
+#include "ai/fighter_sides.h"
 #include "animation/anim_math.h"
 #include "human/human.h"
 #include "human/player.h"
@@ -18,7 +20,7 @@
 // characters' step (on the enemy side) with the brains at their place in it, and the player's own brain (type 0) that
 // keeps his books (his enemies, which the camera's sprint zoom asks about). Front-end neutral: the play mode draws the
 // humans from their snapshots, and the sandbox, the debug menus and the tests spawn them here.
-// Research: docs/research/ai.md, docs/research/tasks.md#humans-update
+// Research: docs/research/ai/index.md, docs/research/tasks.md#humans-update
 
 namespace coney::ai {
 
@@ -31,11 +33,9 @@ struct AiHuman {
     /// Made by the debug menus' AI fighters page (AiHumans::markDebugSpawned()), not by a level's scripts or its
     /// layout: the one kind AiHumans::removeDebugSpawned() takes out.
     bool debugSpawned = false;
+    /// The side it was spawned on (AiHumans::spawnFighter()); Enemy for the humans spawn() made and the layout's.
+    FighterSide side = FighterSide::Enemy;
 };
-
-/// The kind of the sandbox fighters' gang: the level scripts' combat gangs' kind (`GangCreate(19, ...)` in
-/// `level99_combat.lua`, docs/research/ai.md#level99).
-inline constexpr int kFighterGangKind = 19;
 
 /// The AI humans of a scene.
 class AiHumans {
@@ -43,8 +43,9 @@ class AiHumans {
     /// AI humans in `player`'s characters' step (both must outlive this), playing `character`'s clips (**Coney
     /// choice**: Coney loads one character, so a fighter looks and moves as the player's character does), fighting by
     /// `config`. Installs the brains in the player's step and gives the player a type-0 brain in a gang of the
-    /// Warriors' kind; the fighters join a gang of kind kFighterGangKind, its enemy. Who fights whom in the step
-    /// follows the gangs: humans whose gangs are not friends (ai::Gangs::friends()).
+    /// Warriors' kind; the fighters join a gang of kind kFighterGangKind, its enemy (or, when spawned on another side,
+    /// one of that side's gangs: FighterSides). Who fights whom in the step follows the gangs: humans whose gangs are
+    /// not friends (ai::Gangs::friends()).
     AiHumans(human::Player& player, const human::PlayerCharacter& character, AiConfig config);
     AiHumans(const AiHumans&) = delete;
     AiHumans& operator=(const AiHumans&) = delete;
@@ -59,13 +60,14 @@ class AiHumans {
     ~AiHumans();
 
     /// Spawns a fighter (AiConfig::fighter, of the power class AiConfig::powerClass) with its feet at `feet` on `mesh`
-    /// (may be null) facing `headingDegrees`; with engaging() on it fights the player once he comes within its far
-    /// melee range. Returns its human.
-    human::Human& spawnFighter(const raycast::CollisionMesh* mesh, anim::Vec3 feet, float headingDegrees);
+    /// (may be null) facing `headingDegrees`, on `side` (FighterSides::join() says which gang that is); with engaging()
+    /// on, an enemy fights the player once he comes within its far melee range. Returns its human.
+    human::Human& spawnFighter(const raycast::CollisionMesh* mesh, anim::Vec3 feet, float headingDegrees,
+                               FighterSide side = FighterSide::Enemy);
     /// As above, as `character` (which must outlive it): its model's files, animation set and moves; the fighters'
-    /// class and power class stay AiConfig's. Joins the same gang.
+    /// class and power class stay AiConfig's. Joins the side's gang.
     human::Human& spawnFighter(const human::PlayerCharacter& character, const raycast::CollisionMesh* mesh,
-                               anim::Vec3 feet, float headingDegrees);
+                               anim::Vec3 feet, float headingDegrees, FighterSide side = FighterSide::Enemy);
     /// Spawns an AI human playing `character` (which must outlive it), of the class and power class `config` gives,
     /// fighting by its settings, with its feet at `feet` on `mesh` (may be null: no snap) facing `headingDegrees`, in
     /// no gang. Returns its brain.
@@ -112,8 +114,9 @@ class AiHumans {
     [[nodiscard]] bool playerReleased() const { return m_playerReleased; }
 
     /// Whether an idle fighter starts a fight with the player when he is within its far melee range: Coney's stand-in
-    /// for the level scripts' `GoalFight` calls (`level99_combat.lua`, docs/research/ai.md#level99), which a scene
-    /// without its script needs. On by default.
+    /// for the level scripts' `GoalFight` calls (`level99_combat.lua`, docs/research/ai/index.md#level99), which a
+    /// scene without its script needs. On by default. Only a fighter whose gang is an enemy of the player's takes part:
+    /// an ally or a neutral waits to be attacked or to see an enemy of its own.
     [[nodiscard]] bool engaging() const { return m_engaging; }
     void setEngaging(bool on) { m_engaging = on; }
 
@@ -137,9 +140,8 @@ class AiHumans {
     /// The same, for a reader (a test following the humans).
     [[nodiscard]] const Brain* brainOf(const human::Human& human) const { return m_brains->find(human); }
     [[nodiscard]] const AiConfig& config() const { return m_config; }
-    /// The player's gang and the fighters' (ids in brains().gangs()); -1 until a level's scripts make them.
-    [[nodiscard]] int playerGang() const { return m_playerGang; }
-    [[nodiscard]] int fighterGang() const { return m_fighterGang; }
+    /// The gangs of the fighters spawnFighter() made, by side.
+    [[nodiscard]] const FighterSides& sides() const { return m_sides; }
 
   private:
     // The player's brain in the brains, and the hooks into his step: what both constructors share.
@@ -148,8 +150,9 @@ class AiHumans {
     void givePad(Brain& brain);
     // Takes the humans remove() asked for out of the step and the brains.
     void takeOutRemoved();
-    // The fighters' gang, made the first time a fighter is spawned in a scripted level (the enemy of the player's).
-    int fighterGang();
+    // Whether `brain`'s gang is an enemy of the player's, which is what the engaging stand-in needs to start a fight; a
+    // fighter or a player with no gang counts as one.
+    [[nodiscard]] bool hostileToPlayer(const Brain& brain) const;
     // The brains' place in the step: the engaging stand-in, the brains, then the player's nearest enemy.
     void step();
     // The snapshot of `human` now.
@@ -165,8 +168,7 @@ class AiHumans {
     std::vector<const human::Human*> m_removing; // deleted, to leave at the next step
     bool m_engaging = true;
     bool m_playerReleased = false; // releasePlayer() ran
-    int m_playerGang = -1;
-    int m_fighterGang = -1;
+    FighterSides m_sides;
 };
 
 } // namespace coney::ai

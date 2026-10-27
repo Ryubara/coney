@@ -13,7 +13,7 @@
 // (TargetHuman) and other humans (Human, an AI's or a second player's) through this one view, and so does an AI human,
 // so a strike, its warning and its reaction work the same whoever gives or takes them.
 // Research: docs/research/combat/index.md#block, docs/research/combat-reactions.md#damage,
-// docs/research/ai.md#attack-action
+// docs/research/ai-fights.md#attack-action
 
 namespace coney::human {
 
@@ -62,7 +62,8 @@ class Combatant {
     /// The attacker's clip announces its hit (message `0xa4` or `0xa6`), acted on at its next update.
     virtual void warn(const AttackNotice& notice) = 0;
     /// A human standing at `attacker` started an attack (event `0x10`, sent by `Attack_Start` and the square path,
-    /// docs/research/ai.md#block); a brain counts the ones its range and field of view take in. Nothing by default.
+    /// docs/research/ai-fights.md#block); a brain counts the ones its range and field of view take in. Nothing by
+    /// default.
     virtual void announceAttack(anim::Vec3 /*attacker*/) {}
     /// Whether an attacker's target search may pick it (`0x00279410`): not for a human with flag `0x100000000000`
     /// (`HuSetNoTarget`) or whose gang was made untargetable (brain `+0x120`, `GangSetTargetable`). True by default.

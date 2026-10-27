@@ -18,6 +18,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include "ai/fighter_side.h"
 #include "core/pad.h"
 #include "core/pads.h"
 #include "debug/debug_session.h"
@@ -86,18 +87,18 @@ class FakePlay final : public coney::debug::PlayControls {
         return {};
     }
 
-    // AI fighters: spawned ones are recorded with the model each was asked for ("" for the scene's own).
+    // AI fighters: spawned ones are recorded with the model and side each was asked for ("" for the scene's own).
     [[nodiscard]] bool canSpawnFighter() const override { return true; }
     std::expected<void, coney::Error> spawnFighter(coney::anim::Vec3 at, float facing) override {
-        return spawnFighterAs(at, facing, {});
+        return spawnFighterAs(at, facing, {}, coney::ai::FighterSide::Enemy);
     }
     [[nodiscard]] std::vector<std::string> fighterModels() const override { return models; }
-    std::expected<void, coney::Error> spawnFighterAs(coney::anim::Vec3 at, float facing,
-                                                     std::string_view model) override {
+    std::expected<void, coney::Error> spawnFighterAs(coney::anim::Vec3 at, float facing, std::string_view model,
+                                                     coney::ai::FighterSide side) override {
         if (fighterLimit && fighters.size() >= *fighterLimit) {
             return std::unexpected(coney::Error{coney::ErrorCode::InvalidArgument, "no room"});
         }
-        fighters.push_back(SpawnedFighter{at, facing, std::string(model)});
+        fighters.push_back(SpawnedFighter{at, facing, std::string(model), side});
         return {};
     }
     [[nodiscard]] std::size_t fighterCount() const override { return fighters.size(); }
@@ -125,6 +126,7 @@ class FakePlay final : public coney::debug::PlayControls {
         coney::anim::Vec3 feet;
         float heading;
         std::string model;
+        coney::ai::FighterSide side = coney::ai::FighterSide::Enemy;
     };
     std::vector<SpawnedFighter> fighters;
     std::vector<std::string> models;
@@ -149,6 +151,7 @@ const MenuItem& itemOn(const MenuPage& page, std::string_view label) {
 } // namespace
 
 TEST_CASE("the play pages say so when no player plays", "[debug]") {
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     DebugSession session(tunables, servicesOver(nullptr), nullptr);
     for (const std::string_view title : {"Player", "Camera", "Spawner", "AI fighters", "Animation player"}) {
@@ -176,15 +179,17 @@ TEST_CASE("the play pages say so when no player plays", "[debug]") {
                                              "HUD",
                                              "Debug draw",
                                              "Entity inspector",
+                                             "Entity editor",
                                              "Display",
                                              "Audio",
                                              "Network",
                                              "Input",
                                              "Performance"});
-    CHECK(session.model().openPage("Debug draw")->items().size() == 11);
+    CHECK(session.model().openPage("Debug draw")->items().size() == 16);
 }
 
 TEST_CASE("the HUD page switches the HUD's parts, sets the panel's values and fires messages", "[debug][hud]") {
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     FakePlay play;
     DebugSession session(tunables, servicesOver(&play), nullptr);
@@ -223,6 +228,7 @@ TEST_CASE("the HUD page switches the HUD's parts, sets the panel's values and fi
 }
 
 TEST_CASE("the Player page shows the player, freezes it and teleports it", "[debug]") {
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     FakePlay play;
     play.feet = {3.0F, 4.0F, 0.5F};
@@ -264,6 +270,7 @@ TEST_CASE("the Player page shows the player, freezes it and teleports it", "[deb
 }
 
 TEST_CASE("the Camera page resets the camera, switches the free camera and shows the follow values", "[debug]") {
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     float lag = 0.22F;
     tunables.add("Follow camera", "Position lag", &lag).range(0, 1, 0.01);
@@ -282,6 +289,7 @@ TEST_CASE("the Camera page resets the camera, switches the free camera and shows
 }
 
 TEST_CASE("the Spawner page puts objects in front of the player and clears them", "[debug]") {
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     FakePlay play;
     play.feet = {0.0F, 0.0F, 1.0F};
@@ -312,6 +320,7 @@ TEST_CASE("the Spawner page puts objects in front of the player and clears them"
 }
 
 TEST_CASE("every spawnable object is a primitive a sandbox can build", "[debug][sandbox]") {
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     for (const coney::debug::Spawnable& spawnable : coney::debug::spawnables()) {
         INFO(spawnable.name);
         const coney::sandbox::Primitive& p = spawnable.primitive;
@@ -340,6 +349,7 @@ TEST_CASE("every spawnable object is a primitive a sandbox can build", "[debug][
 }
 
 TEST_CASE("the Debug draw page switches the session's debug lines", "[debug]") {
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     DebugSession session(tunables, DebugServices{}, nullptr);
     const auto page = session.model().openPage("Debug draw");
@@ -354,6 +364,7 @@ TEST_CASE("the Debug draw page switches the session's debug lines", "[debug]") {
 }
 
 TEST_CASE("the Levels page lists the sandbox layouts and asks for the one chosen", "[debug][sandbox]") {
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     DebugServices services;
     services.sandboxFolder = coney::test::assetsDir() / "sandbox";
@@ -375,6 +386,7 @@ TEST_CASE("the Levels page lists the sandbox layouts and asks for the one chosen
 }
 
 TEST_CASE("the Levels page lists the play mode's levels and asks for the one chosen", "[debug]") {
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     DebugServices services;
     services.playableLevels = [] { return std::vector<std::string>{"level2", "level99"}; };
@@ -392,6 +404,7 @@ TEST_CASE("the Levels page lists the play mode's levels and asks for the one cho
 }
 
 TEST_CASE("the Player page changes the player's character type through a choice and an action", "[debug]") {
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     FakePlay play;
     DebugSession session(tunables, servicesOver(&play), nullptr);
@@ -424,6 +437,7 @@ TEST_CASE("the Player page changes the player's character type through a choice 
 }
 
 TEST_CASE("the Coordinates toggle shows player 1's feet and heading, and says so with no player", "[debug]") {
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     FakePlay play;
     play.feet = {1.5F, -2.25F, 3.0F};
@@ -457,6 +471,7 @@ class FakeInput final : public coney::InputSource {
 
 TEST_CASE("the Player page switches the noclip with a notice, and its hotkey (on by default) until switched off",
           "[debug][noclip]") {
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     FakePlay play;
     FakeInput input;
@@ -516,6 +531,7 @@ TEST_CASE("the Player page switches the noclip with a notice, and its hotkey (on
 }
 
 TEST_CASE("the AI fighters page spawns the amount asked for, as the model picked", "[debug][fighters]") {
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     FakePlay play;
     play.models = {"model_a", "model_b", "model_c"};
@@ -559,6 +575,7 @@ TEST_CASE("the AI fighters page spawns the amount asked for, as the model picked
 }
 
 TEST_CASE("the AI fighters page stops at the first fighter that cannot be spawned and says so", "[debug][fighters]") {
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     FakePlay play;
     play.fighterLimit = 2;
@@ -575,6 +592,7 @@ TEST_CASE("the AI fighters page stops at the first fighter that cannot be spawne
 }
 
 TEST_CASE("spawning more fighters than one click places each batch beyond the last", "[debug][fighters]") {
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     FakePlay play;
     play.models = {"model_a", "model_b"};
     coney::debug::SpawnRandom random(1);
@@ -592,4 +610,72 @@ TEST_CASE("spawning more fighters than one click places each batch beyond the la
     CHECK(spots.size() == 120);
     CHECK(play.fighters[50].feet.y == Catch::Approx(4.0F + (10.0F * 1.2F)));
     CHECK(play.fighters.back().feet.y == Catch::Approx(4.0F + (23.0F * 1.2F)));
+}
+
+TEST_CASE("the AI fighters page spawns on the side picked, Enemy by default, allies behind the player",
+          "[debug][fighters]") {
+    // Expected: unverified, #924 (the page is Coney's own)
+    TunableRegistry tunables;
+    FakePlay play;
+    DebugSession session(tunables, servicesOver(&play), nullptr);
+    const auto page = session.model().openPage("AI fighters");
+    REQUIRE(page != nullptr);
+
+    // The picker lists the three sides, the player's enemies first and chosen.
+    const MenuItem& side = itemOn(*page, "Side");
+    REQUIRE(side.choices.size() == 3);
+    CHECK(side.choices[0] == "Enemy");
+    CHECK(side.choices[1] == "Ally");
+    CHECK(side.choices[2] == "Neutral");
+    CHECK(side.getChoice() == 0);
+    itemOn(*page, "Amount").setNumber(2.0);
+    itemOn(*page, "Spawn fighters").run();
+    REQUIRE(play.fighters.size() == 2);
+    for (const auto& fighter : play.fighters) {
+        CHECK(fighter.side == coney::ai::FighterSide::Enemy);
+        // Ahead of the player (heading 0 faces +y), facing him.
+        CHECK(fighter.feet.y == Catch::Approx(4.0F));
+        CHECK(fighter.heading == 180.0F);
+    }
+
+    // Set before Spawn fighters, each fighter takes the side chosen when it was made: allies stand 4 m behind him,
+    // facing the way he does, and a neutral stands ahead as an enemy does.
+    play.fighters.clear();
+    side.setChoice(1);
+    itemOn(*page, "Spawn fighters").run();
+    side.setChoice(2);
+    itemOn(*page, "Spawn fighters").run();
+    REQUIRE(play.fighters.size() == 4);
+    CHECK(play.fighters[0].side == coney::ai::FighterSide::Ally);
+    CHECK(play.fighters[1].side == coney::ai::FighterSide::Ally);
+    CHECK(play.fighters[0].feet.y == Catch::Approx(-4.0F));
+    CHECK(play.fighters[0].heading == 0.0F);
+    CHECK(play.fighters[2].side == coney::ai::FighterSide::Neutral);
+    CHECK(play.fighters[2].feet.y == Catch::Approx(4.0F));
+    CHECK(play.fighters[2].heading == 180.0F);
+
+    // Clear fighters still removes every one of them.
+    itemOn(*page, "Clear fighters").run();
+    CHECK(play.fighters.empty());
+}
+
+TEST_CASE("allies spawned beyond one click's worth stand behind the rows before, each on one spot",
+          "[debug][fighters]") {
+    // Expected: unverified, #924 (Coney's own placement)
+    FakePlay play;
+    coney::debug::SpawnRandom random(1);
+    const coney::debug::SpawnedFighters spawned =
+        coney::debug::spawnFighters(play, 0, 60, 4.0F, random, coney::ai::FighterSide::Ally);
+    CHECK(spawned.made == 60);
+    REQUIRE(play.fighters.size() == 60);
+    std::set<std::pair<float, float>> spots;
+    for (const auto& fighter : play.fighters) {
+        spots.emplace(fighter.feet.x, fighter.feet.y);
+        CHECK(fighter.side == coney::ai::FighterSide::Ally);
+        CHECK(fighter.heading == 0.0F);
+        CHECK(fighter.feet.y < 0.0F);
+    }
+    CHECK(spots.size() == 60);
+    // The second click's first row is beyond the ten of the first: 4 m, then ten rows of 1.2 m, behind him.
+    CHECK(play.fighters[50].feet.y == Catch::Approx(-(4.0F + (10.0F * 1.2F))));
 }

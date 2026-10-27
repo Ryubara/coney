@@ -105,7 +105,8 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     using Spawner = std::function<Brain*(const HumanCreation& human)>;
     /// Holds every call but the gangs' creation and counts until release(). **Coney choice**: the original's
     /// `HuCreate` makes the human at once, but Coney runs a level's script before it loads the level's characters, so
-    /// the humans the script creates, and what it gives them, wait for the characters (docs/research/ai.md#coney).
+    /// the humans the script creates, and what it gives them, wait for the characters
+    /// (docs/research/ai/index.md#in-coney).
     void hold() { m_holding = true; }
     /// From now on a created human is made with `spawner` and bound to its handle (and gang); when holding, the calls
     /// held are then replayed in their order, the creations among them, and the hold ends.

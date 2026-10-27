@@ -575,7 +575,7 @@
   depth: thorough
   notes: >-
     The engage-enemy goal also sets and clears the same bit for itself (it remembers whether it was already set,
-    [AI](../../research/ai.md)), so a fight can clear a flag a script did not set but keeps one the script set first.
+    [AI](../../research/ai/index.md)), so a fight can clear a flag a script did not set but keeps one the script set first.
   usage: {chunks: 10, calls: 13, boot: false, mission1: false, result_used: false, levels: [3, 5, 31, 55, 84, 20, 11]}
   coney: implemented
 
@@ -1635,7 +1635,7 @@
   description: >-
     Tells whether the human is hidden in a shadow: brain byte `+0x2d4`, set by Brain_SetHiddenInShadow (0x0028ee88)
     when the human enters or leaves a hiding spot (0x0023e6e8, 0x0023eab8) and cleared when the brain resets. While
-    it is set, enemies only notice the human's attacks within 2 m ([AI](../../research/ai.md)) and the camera holds
+    it is set, enemies only notice the human's attacks within 2 m ([AI](../../research/ai/index.md)) and the camera holds
     a fixed look-at height ([Camera](../../research/camera.md#update)).
   evidence: confirmed-code
   depth: thorough
@@ -2049,7 +2049,7 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Readers: [AI](../../research/ai.md), [Combat](../../research/combat/index.md) and the follow camera
+    Readers: [AI](../../research/ai/index.md), [Combat](../../research/combat/index.md) and the follow camera
     (camera.md), which only acts for a pad-controlled player. Armies of the Night uses it for players that have not
     joined.
   usage: {chunks: 7, calls: 30, boot: false, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
@@ -2070,7 +2070,7 @@
     gang whose `+0x32` is 1; 0x0028bf00);
     closer than 3 m it is seen all round, farther it must be inside the field of view (brain `+0x12c`, BrSetFOV);
     then a line of sight is cast. A human target whose brain byte `+0x2d4` is set (hidden or sneaking, inferred) is
-    seen only within 2 m. It is the test the attack warnings use ([AI](../../research/ai.md)); objects use the same
+    seen only within 2 m. It is the test the attack warnings use ([AI](../../research/ai/index.md)); objects use the same
     rule against their position. Scripts use it to check whether a guard notices the player.
   evidence: confirmed-code
   depth: thorough
