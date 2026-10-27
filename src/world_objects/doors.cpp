@@ -846,10 +846,9 @@ void Doors::hitSplinters(Door& door, const ObjectHit& hit, ObjectWorld& world) {
     // In state 4 the door takes no damage and makes no dust or splinters, and the model stages read its hitpoints as 0.
     int stageHitpoints = 0;
     if (door.state != door_state::kSwung) {
-        // Dust at the hit point (radii 2.75 and 3.75) and 20 splinters 0.5 m above it, for every type. Stand-in
-        // (#707): without the dust's random heights (0 to 0.5 m and 0.25 to 0.75 m up), the splinters' throw along
-        // the hit's direction x 0.6 (Coney's splinters() takes no velocity) and their colours (dyn_door_dclub picks
-        // one of its two at random).
+        // Dust at the hit point (radii 2.75 and 3.75) and 20 splinters 0.5 m above it, for every type.
+        // Stand-in (#707): no random dust heights (0 to 0.5 m, 0.25 to 0.75 m up), no throw along the hit's
+        // direction x 0.6 (splinters() takes no velocity) and no colours (dyn_door_dclub picks one of its two).
         dustAndSplinters(world, hit.point);
         door.hitpoints -= hitDamage(hit.kind);
         stageHitpoints = door.hitpoints;
