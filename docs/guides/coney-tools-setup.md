@@ -31,7 +31,7 @@ Without `--github` it reads only the machine, in a few seconds, and never touche
 
 * the open issues: number, status, priority and area labels, the other labels and age, but no titles;
 * the open pull requests: branch, draft, mergeability, auto-merge, the required checks in one word, and the causes
-  the [`repo pr-health`](coney-tools-repo.md#repo-pr-health) judge finds, whose report is included whole;
+  the [`pr list-stuck`](coney-tools-pr.md#pr-list-stuck) judge finds, whose report is included whole;
 * the CI queue's counts (`gh run list --status queued` and `--status in_progress`);
 * for each unit file, the pull request that released it: an open one for its branch, or one merged or closed after
   the file last changed. A unit with neither is queued.
@@ -45,7 +45,7 @@ at all (outside a checkout). `action` lists the ids of what waits, sorted:
 | Id | When |
 | --- | --- |
 | `issue:<n>:S-needs-triage` | an open issue carries `S-needs-triage` |
-| `pr:<n>:<cause>` | `repo pr-health` calls the pull request stuck for that cause |
+| `pr:<n>:<cause>` | `pr list-stuck` calls the pull request stuck for that cause |
 | `unit:<branch>:<file>` | a unit file is queued |
 | `build:done:<worktree>` | the worktree's detached build ended within the last hour |
 
@@ -109,7 +109,7 @@ pollers of Tether's own, such as `agents`, which stay). What each poller wakes f
   it again.
 * **`builds`** wakes for each `build:done:` id, a detached build that ended within the hour, read every 15 seconds.
 
-What used to be two more pollers is Conclave's, from the same `coord status` ids and `repo pr-health` causes (the
+What used to be two more pollers is Conclave's, from the same `coord status` ids and `pr list-stuck` causes (the
 [snapshot](conclave.md#snapshot) reads the same sources): the **release queue** (a `unit:` id, a [release
 queue](how-we-work.md#release-queue) file with no pull request yet) and the **pull requests** (a `pr:` id, with the
 owner and waiver records now `pr hold` and the stop guard now Conclave's). `coord status --ids` still prints those ids
@@ -163,7 +163,7 @@ uv run --project python coney-tools conclave snapshot --json --github --unit fix
 ```
 
 Without `--github` it reads only the machine, in about a second. `--github` adds the claim cards, the open and recently
-merged pull requests (with the [`repo pr-health`](coney-tools-repo.md#repo-pr-health) causes), the open issues the
+merged pull requests (with the [`pr list-stuck`](coney-tools-pr.md#pr-list-stuck) causes), the open issues the
 claims, the units and `P-critical` name and the [events](conclave.md#watchers) (a failed check, a merge, a unit ready
 for `pr open`, a question, each with an id and a state), through `gh`, in about 6.6 seconds. `--unit TASK` keeps one
 unit's row (exit 2 when there is none). The sections, each with an `error` that is `null` when it was read, and the rest
@@ -355,8 +355,8 @@ step does and the pinned versions: [Bootstrap](workspace.md#bootstrap).
 
 ```sh
 uv run --project python coney-tools workspace clean [--apply] [--build-hours N] [--worktree-hours N] [--fetch]
-    [--min-gb N] [--margin-gb N] [--shell-hours N] [--log-idle-hours N]
-uv run --project python coney-tools workspace disk [--min-gb N]
+    [--min-gb N] [--margin-gb N] [--stale-wait-hours N] [--log-idle-hours N]
+uv run --project python coney-tools workspace check-space [--min-gb N]
 ```
 
 `clean` removes the worktrees whose pull request merged (with their local branches) when they have no uncommitted
@@ -370,10 +370,10 @@ earlier listing. It never touches the main checkout. When the drive is still und
 worktree's sources, until `--margin-gb` (default `workspace.disk_margin_gb`, 10) above the floor is free, skipping
 worktrees that are busy or hold or wait for a build slot (disk pressure). It is a dry run without `--apply`, and
 reports each deletion, the bytes reclaimed and the free space before and after. It also lists, and with `--apply`
-stops, the **stale processes**: shells older than `--shell-hours` (default 3) waiting in a sleep loop on files
+stops, the **stale processes**: shells older than `--stale-wait-hours` (default 3) waiting in a sleep loop on files
 unchanged for `--log-idle-hours` (default 1), and orphaned `ctest` or `coney_tests` runs whose parent is gone.
-`disk` prints the workspace drive's free space and exits 1 below `--min-gb` (default: `workspace.disk_min_free_gb` of
-[.github/conventions.yml](repo:.github/conventions.yml), 30). Rules and the busy file:
+`check-space` prints the workspace drive's free space and exits 1 below `--min-gb` (default:
+`workspace.disk_min_free_gb` of [.github/conventions.yml](repo:.github/conventions.yml), 30). Rules and the busy file:
 [Cleanup](workspace.md#cleanup).
 
 <!-- command-reference:begin workspace -->

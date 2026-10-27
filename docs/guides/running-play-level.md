@@ -216,7 +216,7 @@ is a test aid:
 build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 --scene l99_c5 --frames 560 --screenshot ../../scratch/l99_c5.png
 ```
 
-The original's trace, recorded in PCSX2 by `coney-tools pcsx2 record`, uses the same names and units for the columns
+The original's trace, recorded in PCSX2 by `coney-tools trace original`, uses the same names and units for the columns
 both have, and `coney-tools trace coney` runs a scenario's script on Coney with `--trace`; `coney-tools trace diff`
 compares the two, column by column ([Comparing with Coney](research-traces.md#comparing-with-coney)).
 
@@ -272,7 +272,7 @@ first observation is of the level's first update of play: until then the session
 the pad rests. With `--event-log` each event is also written as `@ev <csv line>`; other lines on standard output are
 Coney's own messages. At the end of standard input the pad is released. It is test mode (one step per update) and
 cannot be combined with `--input-script`.
-`coney-tools trace mission` drives it.
+`coney-tools trace events` drives it.
 
 #### The pad line {#pad-line}
 

@@ -10,42 +10,42 @@ overview](coney-tools.md#groups).
 ## repo {#repo}
 
 ```sh
-uv run --project python coney-tools repo check
-uv run --project python coney-tools repo check-title FILE|-
-uv run --project python coney-tools repo check-docs [--body FILE]      # changed paths on stdin
-uv run --project python coney-tools repo check-body [--body FILE|-] [--title TITLE] [--worktree WT [--base REF]]
+uv run --project python coney-tools repo check-conventions
+uv run --project python coney-tools pr check-title FILE|-
+uv run --project python coney-tools pr check-docs [--body FILE]      # changed paths on stdin
+uv run --project python coney-tools pr check-body [--body FILE|-] [--title TITLE] [--worktree WT [--base REF]]
     [--local-images]
-uv run --project python coney-tools repo review PR.md --worktree WT [--base REF] [--model M] [--effort E]
+uv run --project python coney-tools legacy pr-review PR.md --worktree WT [--base REF] [--model M] [--effort E]
     [--claude EXE] [--timeout-minutes N]
-uv run --project python coney-tools repo check-review PR.md --worktree WT [--base REF]
+uv run --project python coney-tools legacy check-pr-review PR.md --worktree WT [--base REF]
 uv run --project python coney-tools repo review-stamp PR.md --worktree WT [--base REF]
-uv run --project python coney-tools repo labels [--apply] [--repo OWNER/NAME]
+uv run --project python coney-tools repo sync-labels [--apply] [--repo OWNER/NAME]
 uv run --project python coney-tools repo render [--check]
 uv run --project python coney-tools repo audit [--files] [--github] [--local] [--json] [--only CHECK ...] [--strict]
     [--show N] [--snapshot FILE] [--save-snapshot FILE] [--attachments] [--workspace DIR] [--list]
-uv run --project python coney-tools repo pr-health [--json] [--pending-hours H] [--verbose] [--labels] [--rerun] [--apply]
-uv run --project python coney-tools repo hygiene (--event N | --sweep) [--apply] [--snapshot FILE]
+uv run --project python coney-tools pr list-stuck [--json] [--pending-hours H] [--verbose] [--labels] [--rerun] [--apply]
+uv run --project python coney-tools repo post-findings (--event N | --sweep) [--apply] [--snapshot FILE]
 ```
 
 The checks of the repository's own rules, which CI runs on every pull request. Every value they apply (the commit
 areas and verbs, the description's sections, the path classes, the labels) is a key of `.github/conventions.yml`
 ([Repository conventions](repo-conventions.md)); a missing or malformed file is a one-line error and exit code 2.
 
-* `repo check` loads and validates `.github/conventions.yml` and checks that each agent entry file (`CLAUDE.md`,
+* `repo check-conventions` loads and validates `.github/conventions.yml` and checks that each agent entry file (`CLAUDE.md`,
   `GEMINI.md`) holds the `@AGENTS.md` import line and nothing more. Exit 1 when a pointer file is wrong.
-* `repo check-title` checks the first line of a commit message or a title (`-` reads stdin) against `commits.title`:
+* `pr check-title` checks the first line of a commit message or a title (`-` reads stdin) against `commits.title`:
   `area: Verb the rest`, a known area and verb, the length limit, no trailing period, the breaking suffix last. The
   `title` job of the `pr` workflow runs it on the pull request title.
-* `repo check-docs` reads the changed paths on stdin and refuses a change under `paths.code` that has no change under
+* `pr check-docs` reads the changed paths on stdin and refuses a change under `paths.code` that has no change under
   `paths.docs` and no `Docs: none` line in the body.
-* `repo check-body` checks a pull request description against the template ([What a pull request
+* `pr check-body` checks a pull request description against the template ([What a pull request
   shows](testing.md#pr-evidence)). Given `--worktree`, it also reads the branch's commits (`--base`, default
   `origin/main`, to `HEAD`) and requires the AI use `Model:` line to name every model a `Co-Authored-By` trailer on them
   credits: see [the Model line](#repo-model-line). Given `--title` (the `body` job passes the pull request's title), a
   title area a player sees (`pull_requests.runtime.areas`: `gameplay`, `graphics`, `audio`) must have a line starting
   `Runtime:` in the Testing section: the evidence of a comparison with the original running, with numbers, or `Runtime:
   none (<reason>)` ([the Runtime line](testing.md#runtime-line)). Without `--title` that rule is not checked and the
-  output says so; `repo check-review` always has the title (line 1 of `PR.md`).
+  output says so; `legacy check-pr-review` always has the title (line 1 of `PR.md`).
   The **Issues affected** section must hold one `- #N: how it is affected` item for each open issue the change affects,
   or the single line `None (<reason>)` with any short reason (`None (one-line fix)`); an empty section, a `None` with
   no reason, an item with no line on how, a number listed twice and prose are refused, and the message says what to
@@ -53,9 +53,9 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   [`issue impact`](coney-tools-issues.md#issue-impact) suggests it.
   `--local-images` accepts an image that points at a local file, as in a description that `gh pr create --attach`
   is about to upload; the PR guard hook passes it ([Opening the pull request](how-we-work.md#release-queue)).
-* `repo review`, `repo check-review` and `repo review-stamp` are the release gate on a description's content: see
+* `legacy pr-review`, `legacy check-pr-review` and `repo review-stamp` are the release gate on a description's content: see
   [review](#repo-review). All three refuse a description whose title or body fails the checks above.
-* `repo labels` prints the `gh label create` commands for `labels.list`; `--apply` runs them (the coordinator does).
+* `repo sync-labels` prints the `gh label create` commands for `labels.list`; `--apply` runs them (the coordinator does).
 * `repo render` rewrites the generated blocks of `AGENTS.md`, `CONTRIBUTING.md` and every guide under `docs/guides/`
   from the conventions: the text between a `<!-- conventions:begin NAME -->` line and the next
   `<!-- conventions:end -->` line (the commit areas and verbs, the label table, the rules for a pull request
@@ -64,9 +64,9 @@ areas and verbs, the description's sections, the path classes, the labels) is a 
   a wrong marker (an unknown block name, an end without a begin, a block never closed) is a one-line error with the
   file and line, exit code 2. [Generated blocks](repo-conventions.md#generated-blocks) lists the blocks.
 * `repo audit` reports where the repository departs from the conventions and changes nothing: see [audit](#repo-audit).
-* `repo pr-health` lists the open pull requests that are stuck, and with `--rerun` restarts the checks that failed for a
+* `pr list-stuck` lists the open pull requests that are stuck, and with `--rerun` restarts the checks that failed for a
   reason that no longer holds: see [pr-health](#repo-pr-health).
-* `repo hygiene` writes the audit's findings back as comments: see [hygiene](#repo-hygiene).
+* `repo post-findings` writes the audit's findings back as comments: see [hygiene](#repo-hygiene).
 
 ### The Model line and the branch's trailers {#repo-model-line}
 
@@ -90,12 +90,12 @@ the wrong model, and it cost three review rounds (pull requests #460, #466 and #
   with the default base also counts the parent's trailers: pass `--base <parent branch>`.
 * **The message.** One reason per missing model, naming it:
   `AI use: 'Model:' does not name Claude Opus 5.5, which a Co-Authored-By trailer on the branch's commits credits`.
-* **Where it runs.** Locally, where the branch is at hand: `repo check-review`, `repo review` and `repo review-stamp`
-  read the commits of the worktree after `--base` (default `origin/main`) and refuse before the agent starts, and `repo
+* **Where it runs.** Locally, where the branch is at hand: `legacy check-pr-review`, `legacy pr-review` and `repo review-stamp`
+  read the commits of the worktree after `--base` (default `origin/main`) and refuse before the agent starts, and `pr
   check-body --worktree WT` does the same for a description on its own. **CI does not run it:** the `body` job gets the
   description from the event and has no commits (its checkout is shallow, and a full history for one string comparison
   would slow a required check on every edit), so it passes no models and stays a description-only check, as `Docs: none`
-  is. `pr open` is the gate ([The checks](pr.md#checks)); a legacy branch uses `repo check-review` ([Legacy release
+  is. `pr open` is the gate ([The checks](pr.md#checks)); a legacy branch uses `legacy check-pr-review` ([Legacy release
   checks](how-we-work.md#pr-review)). A branch git cannot list (an unknown `--base`, not a worktree) exits 2 rather than
   passing as one without trailers.
 * **One source.** The trailer's key and addresses are `commits.trailers` and the rule's switch is
@@ -108,7 +108,7 @@ The gate a description passes before the coordinator pushes it, for a legacy bra
 checks](how-we-work.md#pr-review)). `PR.md` is the description file as agents write it: the title on line 1, then the
 body; image paths in it are relative to its folder.
 
-* `repo review` runs the `reviewer` agent once, headlessly: it reads `.claude/agents/reviewer.md` from the
+* `legacy pr-review` runs the `reviewer` agent once, headlessly: it reads `.claude/agents/reviewer.md` from the
   checkout the command runs in, hands it to `claude -p --agents FILE --agent reviewer --model M
   --dangerously-skip-permissions` (a throwaway run, in `PR.md`'s folder) with a task naming `PR.md`, the worktree and
   `--base` (default `origin/main`), and then runs `check-review`. Its task has the agent stamp with the same `--base`.
@@ -116,12 +116,12 @@ body; image paths in it are relative to its folder.
   behind. `--model` overrides the agent file's model, `--effort` sets the effort level, `--claude` names the
   executable and `--timeout-minutes` (default 30) stops a run that hangs. Exit 0 when the verdict releases the branch,
   1 when it does not or `claude` failed, 2 when the review cannot run (no description, no agent file, not a worktree).
-* `repo check-review` first runs the checks CI runs on the description: `check-title` on `PR.md`'s line 1 and
+* `legacy check-pr-review` first runs the checks CI runs on the description: `check-title` on `PR.md`'s line 1 and
   `check-body` on the rest (`PR.md`'s convention: title on line 1, body after it), except that a local image counts as an
   upload, since `gh --attach` uploads it when the pull request is opened. Each reason is printed with a `title:` or
   `body:` prefix, together with the verdict's, so a missing template section is caught before the push. It also holds
   the `Model:` line to the `Co-Authored-By` trailers of the commits after `--base` (default `origin/main`), which CI
-  cannot see ([the Model line](#repo-model-line)). `repo review` runs the same checks before it starts the agent and
+  cannot see ([the Model line](#repo-model-line)). `legacy pr-review` runs the same checks before it starts the agent and
   stops at once when they fail. It then reads `REVIEW.json` next to
   `PR.md` and passes only when the verdict is `pass` with no blocker, its `tip` is the worktree's HEAD, its
   `body_sha256` is `PR.md`'s hash now, and every local image `PR.md` shows is listed with its hash now and differs from
@@ -145,7 +145,7 @@ are the generated list in [Legacy release checks](how-we-work.md#pr-review).
 ([the checks](repo-conventions.md#audit-checks)):
 
 * `--files` reads the checkout and needs no network (the default when no scope is given). The `python` workflow runs
-  it on every pull request, and `check changed` runs it as its `repo` step. It checks the pointer files, that every
+  it on every pull request, and `ci run` runs it as its `repo` step. It checks the pointer files, that every
   file the conventions name exists, that the repository's address is only in the README, that the issue forms, the
   pull request template, `.github/scripts/ci-scope.sh` and pre-commit's size limit still agree with the file, and that
   the generated blocks are current.
@@ -181,7 +181,7 @@ edits an issue, a pull request or a label; fixing the findings is the coordinato
 
 ### repo pr-health {#repo-pr-health}
 
-`repo pr-health` answers "which open pull requests need someone to act?" with one read of the open pull requests and
+`pr list-stuck` answers "which open pull requests need someone to act?" with one read of the open pull requests and
 their checks (`gh pr list --json`) and one of the branch ruleset (`gh api repos/{owner}/{repo}/rules/branches/main`,
 which names the required checks, so nothing is hard-coded). It prints one line per cause, sorted by pull request
 number, and changes nothing (except `--rerun --apply`, below):
@@ -219,7 +219,7 @@ label (a draft is never stuck, so it carries neither), and no other label is eve
 changes through `gh api` on the issue labels endpoints and needs a token that may write issues; the exit code is still
 the findings' (the `hygiene` workflow accepts 1). While GitHub answers `UNKNOWN` for a pull request's mergeability the
 command rereads up to `hygiene.pr_health.unknown_retries` times, `unknown_wait_seconds` apart, and a pull request still
-unknown keeps its conflict label as it is. The labels must exist in the repository with their colours: `repo labels
+unknown keeps its conflict label as it is. The labels must exist in the repository with their colours: `repo sync-labels
 --apply` creates them from `labels.list`.
 
 **`--rerun`** restarts CI that failed for a reason that no longer holds, so a stuck pull request does not wait for a
@@ -233,7 +233,7 @@ restarted:
 
 | Stale because | How it is known | What happens |
 | --- | --- | --- |
-| the text was fixed | the `title` or `body` check failed and the pull request's **current** title or description passes `repo check-title` or `check-body` | status `new-event`: the report says to edit the title or description; no rerun is made |
+| the text was fixed | the `title` or `body` check failed and the pull request's **current** title or description passes `pr check-title` or `check-body` | status `new-event`: the report says to edit the title or description; no rerun is made |
 | the runner or GitHub failed | the check concluded `CANCELLED`, `STARTUP_FAILURE` or `TIMED_OUT`, or it failed and its log matches a pattern of `hygiene.pr_health.rerun.log_patterns` (the runner was lost or shut down, an action could not be downloaded) | `would rerun` / `reran` |
 
 Each `rerun` entry is one run, with these fields (stable; scripts such as the PR guard read them):
@@ -264,7 +264,7 @@ and `gh api repos/{owner}/{repo}/actions/jobs/<id>/logs`; only `--apply` writes.
 
 ### repo hygiene {#repo-hygiene}
 
-`repo hygiene` is what the `hygiene` workflow runs ([Workflows](repo-conventions.md#workflows)); you can run it too.
+`repo post-findings` is what the `hygiene` workflow runs ([Workflows](repo-conventions.md#workflows)); you can run it too.
 It audits GitHub (`repo audit --github`, plus `--files` for a sweep) and writes the result back as comments, with the
 settings in `hygiene.comments` of `.github/conventions.yml`:
 
@@ -539,7 +539,7 @@ cannot be read ends the run with exit 2.
 `actionlint` runs only when a changed path is under `.github/workflows/` or `.github/actions/` (`proof.only_when`).
 The build checks run `coney-tools build --preset ci --test` once, with the whole suite and the disc, and read the build
 record it leaves ([The build record](stamps.md#build-record)): one answers whether it built (MSVC with /WX), the other
-whether the suite ran whole with no disc test skipped. The ruff and mypy commands are the ones of `check changed`; there
+whether the suite ran whole with no disc test skipped. The ruff and mypy commands are the ones of `ci run`; there
 is no clang-tidy here: clang-tidy is CI's alone, on the changed lines of every pull request and on the whole
 codebase nightly ([building](clang-tidy.md)).
 

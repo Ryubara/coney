@@ -16,7 +16,7 @@ open issues through `gh`.
 
 ```sh
 uv run --project python coney-tools orig index --out <folder> [--ghidra auto|live|listing|off] [--url URL]
-uv run --project python coney-tools orig queue --out <folder> [--issues FILE] [--label bug] [--show N] [--ghidra ...]
+uv run --project python coney-tools orig legacy-queue --out <folder> [--issues FILE] [--label bug] [--show N] [--ghidra ...]
 ```
 
 `orig index` reads every `@orig` tag in `src/` and writes to `<folder>` (use your scratch folder):
@@ -42,7 +42,7 @@ uv run --project python coney-tools orig queue --out <folder> [--issues FILE] [-
 
 The Ghidra check (`--ghidra`, default `auto`) uses a running ghidra-mcp ([Ghidra + ghidra-mcp](ghidra.md)) when one
 answers on `--url`, else the committed listing `docs/progress/ghidra-functions.tsv`, which is as current as its last
-`progress ghidra` export and gives no callees. Each tag gets one of: `no-function` (Ghidra has no function there),
+`ghidra export-names` export and gives no callees. Each tag gets one of: `no-function` (Ghidra has no function there),
 `not-a-start` (the address is inside another function), `names-differ` (they share fewer than half the shorter
 name's words: the tag may name the wrong function), `renamed` (half or more, usually a rename in Ghidra since the tag was
 written) or `unnamed` (Ghidra still has its default `FUN_` name). Names agree when they are equal without case and
@@ -50,7 +50,7 @@ punctuation, so `DVDWadIndex::Find` matches `DVDWadIndex_Find`, and a binding's 
 full live run asks the server about each of the 2,400 tagged functions twice (the function, its callees), one request
 at a time; on the development machine it took about 11 seconds.
 
-`orig queue` writes the same files and the sweep's queue, `queue.md` (a table per `src/` directory, then the first
+`orig legacy-queue` writes the same files and the sweep's queue, `queue.md` (a table per `src/` directory, then the first
 `--show` entries) and `queue.tsv` (every entry). An entry is an original function with each Coney place that tags it,
 or an untagged function; its score adds up its reasons (`orig_queue.WEIGHTS`):
 
@@ -68,7 +68,7 @@ issue numbers, never the original's code; they change with every pull request th
 regenerated when needed and never committed.
 
 ```sh
-uv run --project python coney-tools orig check [--base origin/main]
+uv run --project python coney-tools orig check-tags [--base origin/main]
 ```
 
 Refuses a function that a change adds to a gameplay folder with neither `@orig` nor `@coney-only <reason>`, and a
@@ -83,10 +83,10 @@ exempt accessor into more than one statement fails.
 The older wording ("Coney's own", "(no @orig)") marks only functions that had it at `--base`; a new function needs
 `@coney-only <reason>`. The functions that said neither before the check existed are the sweep's backlog in
 `untagged.tsv`. Each finding names the file, line and function and what to add; exit code 1 when there is one.
-`check changed` runs it as its `orig` step and CI's `python` job runs it with `--base HEAD^1`.
+`ci run` runs it as its `orig` step and CI's `python` job runs it with `--base HEAD^1`.
 
 ```sh
-uv run --project python coney-tools orig copy-check [--base origin/main] [--all]
+uv run --project python coney-tools orig check-copy [--base origin/main] [--all]
 ```
 
 This check refuses decompiler fingerprints in the C++ lines a change adds under `src/`, since HEAD left `--base`,
@@ -102,7 +102,7 @@ It finds these fingerprints:
 * `goto`.
 
 A line with `// copy-check: allow <reason>` passes. Each finding names the file, the line, the text and what to do,
-and the exit code is 1 when there is one. `check changed` runs it in its `orig` step, and CI's `python` job runs it
+and the exit code is 1 when there is one. `ci run` runs it in its `orig` step, and CI's `python` job runs it
 with `--base HEAD^1`. On 2026-10-21 `--all` found none in `src/`. The check cannot see a transcription's shape; the
 reviewer agent judges that.
 
@@ -110,7 +110,7 @@ reviewer agent judges that.
 uv run --project python coney-tools orig review-stamp (--branch B | --worktree WT) [--base origin/main] [--ledger F]
 uv run --project python coney-tools orig review-stamp (--folder src/x/ | --address 0x...)... [--ref HEAD] [--every]
 uv run --project python coney-tools orig check-review --body PR.md [--head B] [--base B] [--cwd DIR] [--ledger F]
-uv run --project python coney-tools orig record [FINDINGS.tsv ...] [--ref COMMIT] [--ledger F]
+uv run --project python coney-tools orig record-findings [FINDINGS.tsv ...] [--ref COMMIT] [--ledger F]
 ```
 
 These commands feed the orig review, which compares `@orig` functions with the original
@@ -139,7 +139,7 @@ the working tree.
   nothing are printed. It then prints how many units at HEAD are unreviewed, stale, or in each class.
 
 The ledger is `pull_requests.orig_review.ledger` under the workspace's scratch folder (`orig-review/ledger.jsonl`).
-It is one JSON object per review and is never committed. `orig queue` reads it:
+It is one JSON object per review and is never committed. `orig legacy-queue` reads it:
 
 * an address whose units were all reviewed `clean` or `diff-deliberate-ok` at their current bodies leaves the queue;
 * an unreviewed one gains 3 points, and a stale one 5;
@@ -154,7 +154,7 @@ all read this one hash, `orig_review.code_text` and `_body_hash`).
 * **Left out:** every comment (`//` to the end of the line, also over a trailing backslash, and `/* ... */` across any
   number of lines) and all white space: indentation, trailing blanks, line breaks, the spacing around an operator.
   Repointing a research link in a comment, rewording one, or re-wrapping a line is not a change of the function, and
-  neither `task review` nor `pr verify` asks for a new `original compare` for it.
+  neither `task review` nor `pr verify` asks for a new `orig compare` for it.
 * **Kept:** every token. A string, a raw string and a character literal are read whole before any comment is looked
   for, so a `//` or `/*` inside one is code and editing it changes the hash; so does a space inside a literal. A
   single space stays where its absence would join two tokens (`return x`, `a + +b` against `a ++b`), because there
@@ -167,9 +167,9 @@ rehashing, not migrated, so none is invalidated when the hash changes and no sta
 * A `compared` stamp whose `coney_body_sha256` is not the hash now is checked against the function's code at the
   stamp's own `commit`: it stands when that hash is the old-style hash of the function at that commit and the new-style
   hash of the function there equals the one now. So an unchanged function keeps its stamp, a comment edit after the
-  stamp keeps it too, and any edit of the code refuses it ("no current `compared` stamp") until `original compare` is
+  stamp keeps it too, and any edit of the code refuses it ("no current `compared` stamp") until `orig compare` is
   run again. A stamp whose commit is gone from the repository (a garbage-collected branch) cannot be rehashed and is
-  refused the same way; run `original compare` again.
+  refused the same way; run `orig compare` again.
 * A ledger entry made under the old hash counts while the function's lines are exactly as they were then. After any
   edit it is stale, as before, and the function is reviewed again.
 * An `ORIG-REVIEW.json` verdict is not rehashed: it lives as long as its branch, and one written before this change is
@@ -364,11 +364,11 @@ folder in the scratch folder (the task is `--task`, else `CONEY_TASK`, else the 
 step ends. Exit codes: 0 done, 1 refused (the output says what to fix), 2 it cannot start, 3 no ghidra-mcp answers.
 
 ```sh
-uv run --project python coney-tools original study ADDR [--task T] [--url URL] [--recut] [--print]
-uv run --project python coney-tools original verify ADDR [--task T] [--url URL]
-uv run --project python coney-tools original compare ADDR [--task T] [--base REF] [--coney-function KEY] [--carry] [--show]
-uv run --project python coney-tools original fails-first --test NAME [--test NAME ...] --test-commit SHA [--fix-commit SHA] [--preset P] --agent ID
-uv run --project python coney-tools original fails-first --none REASON
+uv run --project python coney-tools orig study ADDR [--task T] [--url URL] [--recut] [--print]
+uv run --project python coney-tools orig verify ADDR [--task T] [--url URL]
+uv run --project python coney-tools orig compare ADDR [--task T] [--base REF] [--coney-function KEY] [--carry] [--show]
+uv run --project python coney-tools orig fails-first --test NAME [--test NAME ...] --test-commit SHA [--fix-commit SHA] [--preset P] --agent ID
+uv run --project python coney-tools orig fails-first --none REASON
 ```
 
 * `study` reads the function at ADDR from the running ghidra-mcp (reading endpoints only), saves the decompile, callers,
@@ -379,7 +379,7 @@ uv run --project python coney-tools original fails-first --none REASON
 * `verify` re-reads the function and says whether the saved study is `fresh`, `renamed` (a one-to-one rename only) or
   `stale`; it exits 1 when stale.
 * `compare` writes `mapping/<addr>.toml` with a blank pair per piece on its first run; later runs show the decompile beside
-  the Coney function, check the pairs, the committed Coney file and `orig copy-check`, and append `compared` when all of
+  the Coney function, check the pairs, the committed Coney file and `orig check-copy`, and append `compared` when all of
   it holds. A refusal writes no stamp. [Details](stamps.md#compare)
 * `fails-first` runs the named tests through `build --test -R` on the test commit (they must fail) and the fix commit (they
   must pass) and appends a `fails-first` stamp per test. [Details](stamps.md#fails-first)

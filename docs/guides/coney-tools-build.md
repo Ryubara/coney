@@ -1,49 +1,9 @@
-# The coney-tools check, build and benchmark commands
+# The coney-tools docs, build and benchmark commands
 
-The commands that check a change, build it and measure it: [`check`](#check) runs what CI would fail on for the files
-a change touched, [`docs`](#docs) checks pages against the documentation standards, [`build`](#build) configures,
-builds and tests the engine under the machine's build slots, and [`perf`](#perf) benchmarks it with `coney --bench`.
-The other groups are listed in [the command line overview](coney-tools.md#groups).
-
-## check {#check}
-
-```sh
-uv run --project python coney-tools check changed [--base origin/main] [--only STEP ...] [--skip STEP ...]
-    [--detach]
-uv run --project python coney-tools check result
-```
-
-The local gate for the files a change touched ([Testing](testing.md#local-gate)): run it in your worktree before you
-hand a unit over. The changed files are everything added or modified since your branch left `--base` (the merge
-base), committed or not, with untracked files. Each step runs only when the change touches what it checks, prints one
-line, and any failure makes the command exit 1:
-
-| Step | Runs when | What it does |
-| --- | --- | --- |
-| `repo` | always | `repo audit --files`: `.github/conventions.yml` loads, and the agent pointer files, the generated blocks, the issue forms, the pull request template, the CI scope script and pre-commit's size limit agree with it |
-| `orig` | a file under `src/` changed | [`orig check`](coney-tools-fidelity.md#orig): a new function in a gameplay folder carries `@orig` or `@coney-only`, and every folder of `src/` is listed as gameplay or Coney-only |
-| `pre-commit` | a file changed | `pre-commit run --files` on the changed files: clang-format, ruff, whitespace, the 512 KB guard, the real-clock rule |
-| `docs` | a file matching `paths.docs_only` of `.github/conventions.yml` changed (`docs/`, `research/`, top-level Markdown, `mkdocs.yml`, the MkDocs hooks and theme overrides, the shared artwork, `requirements-docs.txt`, ...), or the python the build imports (`python/src/coney_tools/progress*.py`, `research*.py`, `config.py`) | [`docs check`](#docs) on the changed pages, then `mkdocs build --strict` into a throwaway folder; both run, so one run shows every problem |
-| `python` | `python/` or `.claude/` changed (the tests also run the hooks) | `ruff check` and `ruff format --check` over `python` and `.claude/hooks`, `pytest python/tests` and `mypy --config-file python/pyproject.toml python/src python/tests` |
-
-**clang-tidy is not a step.** It is not run locally, on Windows least of all (no local WSL builds or clang-tidy
-runs): CI tidies every pull request on the lines it changes, in its own required check, and the whole codebase
-nightly ([building](clang-tidy.md)). A finding comes back as an annotation on the pull request and is fixed
-forward on the branch. Every program the command starts runs below normal priority, like a build's (Windows:
-below-normal priority class; elsewhere `nice -n 5`).
-
-`--detach` runs the whole gate in the background, apart from the shell, and returns at once; `check result` prints its
-output and exits with its code (75 while it runs, as `build result` does, and 1 when its process is gone; "still
-running" is judged as for `build result`, by the pid and when that process started). The detached run is recorded
-under the worktree's name (`CONEY_AGENT`, else the folder's name).
-
-CI runs the `repo` and `pre-commit` steps on Windows, Linux and macOS in its `python` workflow, so the command's
-handling of paths, programs and long command lines is tested on all three.
-
-`--only` and `--skip` take step names, for a rerun of the one that failed. Exit codes: 0 all passed, 1 a step failed, 2
-a setup problem (a program the step needs is missing), 75 from `check result` while a detached run goes on. The command
-prints at most 40 lines of a failing step; run the step's tool by hand for the rest. What stays CI's: warnings only GCC
-emits, macOS, the sanitizers and clang-tidy (see [the local gate](testing.md#local-gate)).
+The commands that check pages, build the engine and measure it: [`docs`](#docs) checks pages against the documentation
+standards, [`build`](#build) configures, builds and tests the engine under the machine's build slots, and
+[`perf`](#perf) benchmarks it with `coney --bench`. The other groups are listed in [the command line
+overview](coney-tools.md#groups).
 
 ## docs {#docs}
 
@@ -59,10 +19,10 @@ and the length of a research page, the dates, issue numbers, addresses and landi
 ([`docs/engine/`](writing-docs.md#engine-pages)), and the Style rules every page keeps. Writing-docs owns the rules and
 the heuristics, and `research` in [.github/conventions.yml](repo:.github/conventions.yml) the kinds, sections and limits;
 this entry is the command. Without `PATHS` it checks the pages changed since
-`--base` (committed or not, untracked included), as [`check changed`](#check) does in its `docs` step and the `docs`
-workflow does on a pull request. With `PATHS` it checks those files, or every page under a folder, whether or not they
-changed. It prints `path:line: rule: message` for each finding (`--quiet` prints only the counts), a warning (a long
-page) never fails, and `--summary` adds how many pages of each kind pass and how many pages break each rule: run it
+`--base` (committed or not, untracked included), as [`ci run`](coney-tools-ci.md#ci-run) does in its `docs` step and the
+`docs` workflow does on a pull request. With `PATHS` it checks those files, or every page under a folder, whether or not
+they changed. It prints `path:line: rule: message` for each finding (`--quiet` prints only the counts), a warning (a
+long page) never fails, and `--summary` adds how many pages of each kind pass and how many pages break each rule: run it
 on `docs` for the standing of the whole tree, with the number of legacy pages. Exit 0 when no page has an error, 1 when
 one has, 2 when the command is not run inside a checkout, the conventions cannot be read, `--base` is unknown, or a
 named path is missing, outside the checkout or not a page the check covers (`README.md`, a generated page).
@@ -73,7 +33,7 @@ reference](coney-tools.md#parameter-reference)). The guides are the `guides` fol
 [.github/conventions.yml](repo:.github/conventions.yml) names. `--check` changes nothing and exits 1 with one line for
 each stale block, naming its group and its page; either way it exits 1, naming the group, for a group with no block or
 two, a marker that names no group, and a command or parameter that has no `help=` text, which no rendering fixes. It is
-the audit check `files.command-reference` too, so `check changed` and the `python` workflow run it on every change: a
+the audit check `files.command-reference` too, so `ci run` and the `python` workflow run it on every change: a
 command or a parameter that is missing from the guides, or a block that is stale, does not merge. Exit 2 when the
 command is not run inside a checkout.
 
@@ -152,7 +112,7 @@ uv run --project python coney-tools build [--agent ID] [--preset dev|playtest|re
     [--lane auto|main] [--max-wait MIN] [--budget MIN] [--detach] [-j N] [--dir CHECKOUT]
 uv run --project python coney-tools build status [--json] [--dir CHECKOUT]
 uv run --project python coney-tools build result [--json] [--dir CHECKOUT]
-uv run --project python coney-tools build release --agent ID [--force] [--slot N] [--lane main|fast]
+uv run --project python coney-tools build unclaim --agent ID [--force] [--slot N] [--lane main|fast]
     [--dir CHECKOUT]
 ```
 
@@ -182,7 +142,7 @@ stays required whenever the output is not a terminal, as under every agent tool,
 2. *The build folder's lock*, held to the very end (see "One run per build folder" below).
 3. *Configure and build*, one claim: `cmake --preset P` when the build folder has no `CMakeCache.txt` or with
    `--configure`, then `cmake --build --preset P -j N`, through the [compiler cache](building.md#compiler-cache).
-   `--configure-only` stops after the configure (the compile database `check changed` reads). `--target NAME`
+   `--configure-only` stops after the configure (the compile database `ci run` reads). `--target NAME`
    (repeatable) builds only those targets and what they need: `--target coney` is a play build, the executable
    without the roughly thousand test files of `coney_tests`. It is refused with `--test` (the tests would run an
    old `coney_tests` or `coney`) and with `--configure-only`.
@@ -239,7 +199,7 @@ by one only lets it start the next, so nothing the command starts may outlive it
   agent tool restarted, the background shell was killed), the command stops its child, starts nothing more and
   leaves as on an interrupt, releasing its claims (by force 15 seconds later if a wait does not notice); exit `130`.
 * *An older run died without these guards.* When a claim or a folder lock whose process is gone is taken over or
-  released with `build release`, the build programs that run started (`cmake`, `ctest`, `ninja`, `coney_tests`: its
+  released with `build unclaim`, the build programs that run started (`cmake`, `ctest`, `ninja`, `coney_tests`: its
   direct children by parent pid, started after the claim was made, as Windows reuses pids) are stopped with everything
   under them, and the run that took over says `stopped N process trees <agent>'s run left running`. A claim that is
   stale only by age (its pid lives) is taken over without stopping anything, as the pid may be somebody else's by now.
@@ -272,7 +232,7 @@ the queue may claim, so waiters cannot overtake one another; `--priority` ticket
 coordinator, or a build somebody is waiting on). A ticket whose process is gone is dropped. While it waits, the
 command prints its place, a rough wait (from the holders' recorded step and how long they have run it) and the
 holders, every minute. **It does not wait for ever:** after `--max-wait` minutes (default and most 40, per claim;
-also spelled `--slots-wait-timeout`), so that an agent never outlives its one-hour prompt cache, it leaves the queue and
+also spelled `--max-wait`), so that an agent never outlives its one-hour prompt cache, it leaves the queue and
 exits `75` with `still queued, position N of M, try again later` and the way on: do other work and run the same
 command again, or start it with `--detach`, write `STATUS.md` and stop ([Build waits](agents.md#build-waits)).
 
@@ -388,7 +348,7 @@ instead of `build/<preset>`, with the preset's settings (`cmake --preset P -B FO
 
 `build status` prints every lane (main and fast): each slot's holder, worktree, preset, step and minutes, the queue in
 order (place, agent, priority, minutes waiting) and the stale entries; `--json` prints the same as one object. `build
-release --agent ID [--lane main|fast]` is manual cleanup: it frees the slots a crashed or stuck run of that agent left,
+unclaim --agent ID [--lane main|fast]` is manual cleanup: it frees the slots a crashed or stuck run of that agent left,
 stops what a crashed run left running, and drops its tickets. A slot whose process still runs, or another agent's, needs
 `--force`, which frees the slot but does not stop the process. How agents use it, and what exit `75` asks of them:
 [Builds and tests](agents.md#builds).

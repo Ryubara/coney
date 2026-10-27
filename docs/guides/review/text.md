@@ -1,7 +1,7 @@
 # Description review checklist
 
 For a reviewer of one pull request description, the engineer's `PR.md` (the title on line 1, then the body), the way
-a careful maintainer would read it on GitHub. `coney-tools repo check-body` and the [tool part of `task
+a careful maintainer would read it on GitHub. `coney-tools pr check-body` and the [tool part of `task
 review`](task.md#tool-part) have already checked its structure; the reviewer checks that it is **true**: every
 picture shows what the text says, and every claim is backed by the diff or a log. Report findings in the
 [format on the index page](index.md#finding-format) and never edit. The rules are in [What a pull request
@@ -64,7 +64,7 @@ grep); it changes no worktree, commits nothing and does not touch GitHub.
 
 One of the [legacy release checks](../how-we-work.md#pr-review), for a branch started before the cutover outside a task;
 it is retired at the cutover, and a task's description is judged in `task review` instead.
-`coney-tools repo review PR.md --worktree <worktree>` runs the reviewer on one description and then `repo check-review`.
+`coney-tools legacy pr-review PR.md --worktree <worktree>` runs the reviewer on one description and then `legacy check-pr-review`.
 The reviewer starts from `repo review-stamp PR.md --worktree <worktree>`, which prints the `tip`, the description's
 `body_sha256` and each local image's `sha256`, and refuses (title and body reasons, no stamp) a description that CI
 would refuse: then the reviewer writes no verdict and the author fixes the description first. It copies the stamp,
@@ -87,5 +87,5 @@ never computes a hash, and writes `REVIEW.json` and `REVIEW.md` next to `PR.md`:
   and what would fix it, in one or two sentences.
 
 `REVIEW.md` is the same verdict for a person: the verdict on the first line, one line per picture (what it shows), the
-findings, and which claims were checked against what. The gate that reads the file is [`repo
-check-review`](../how-we-work.md#pr-review).
+findings, and which claims were checked against what. The gate that reads the file is [`legacy
+check-pr-review`](../how-we-work.md#pr-review).

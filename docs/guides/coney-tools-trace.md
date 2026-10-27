@@ -1,10 +1,40 @@
 # The coney-tools trace commands
 
-The commands that compare the original's per-update traces, recorded with [`pcsx2`](coney-tools-pcsx2.md#pcsx2), with
-Coney's: [`trace`](#trace) plays a scenario on Coney headless, compares two traces step by step, reports a gang
-fight and compares two event logs. The other groups are listed in [the command line overview](coney-tools.md#groups).
+The commands that record per-update traces and event logs and compare the original's with Coney's: [`trace`](#trace)
+plays a scenario on the original in PCSX2 (`trace original`, under a [`pcsx2`](coney-tools-pcsx2.md#pcsx2) claim) or on
+Coney headless (`trace coney`), compares two traces step by step, reports a gang fight, and records and compares event
+logs (`trace events`, `trace events-diff`). The other groups are listed in [the command line
+overview](coney-tools.md#groups).
 
 ## trace {#trace}
+
+```sh
+uv run --project python coney-tools trace original SCENARIO --out CSV --agent ID [--state SOURCE] [--attach] [--keep-open]
+                                     [--recording P2M2] [--run-record --library-state ID|unknown [--run-name NAME]]
+```
+
+Makes the scenario's patched state copy, starts PCSX2 on it, plays the scenario's input script and writes one CSV row
+per character update, then closes PCSX2. It prints the updates recorded, the reads per poll, the time per poll and the
+updates missed. The scenario names a quick-save slot (`slot`) or a state file under the scratch folder (`state`);
+`--state` copies another state, `--attach` records a PCSX2 already running a patched state, and `--keep-open` leaves
+PCSX2 running; the claim is released at the end when `trace original` made it. The CSV is a measurement of the game: it
+is refused inside the repository. With
+hooks among the scenario's patches it also writes each hook's call log to `<CSV stem>.<hook>.csv` beside it, and
+makes the scenario's `calls` ([Hooks](research-traces.md#hooks)).
+
+`--recording P2M2` takes the pad from a PCSX2 input recording instead of the scenario's input script, so a runtime
+trace can be repeated exactly: the recording (and its start savestate `<P2M2>_SaveState.p2s`, patched as the
+scenario says) is copied into the copy's `recordings/coney-record/`, PCSX2 starts on that savestate, and through the
+debug server `trace original` pauses emulation, plays the recording (which loads its savestate again), samples step 0
+and resumes. The trace's steps then count from the recording's first frame. A recording that ends before the scenario's
+`updates` stops with PCSX2 paused at its last frame and an error saying so; a power-on recording (no savestate) takes
+no patches. It cannot be combined with `--attach` or `--state`, and needs the copy's debug server.
+
+`--run-record` also writes the trace's [run record](research-evidence.md#run-records) beside the work, in
+`research/runs/`: the scenario's name, its patches, the `--let` names, the counts (updates, missed updates, columns)
+and the SHA-256 of the CSV, which stays in scratch. `--library-state` says which state of the library the run started
+from (`unknown` is allowed); `--run-name` names the record (default: the scenario's). The record is written after the
+CSV; a PCSX2 that no longer answers when its version is read gives `unknown` and a warning rather than losing the trace.
 
 ```sh
 uv run --project python coney-tools trace coney SCENARIO --out CSV [--coney EXE] [--disc DISC]
@@ -32,7 +62,7 @@ uv run --project python coney-tools trace fight-report --original TRACE... [--or
 ```
 
 Behaviour statistics of a gang fight, from the all-humans trace of either game (Coney's `--trace-humans`, the
-original's `pcsx2 record` of the all-humans field set; [Tracing](running-play-level.md#tracing)), by the rules of
+original's `trace original` of the all-humans field set; [Tracing](running-play-level.md#tracing)), by the rules of
 [Rumble: what the comparison computes](../research/rumble.md#gang-battle-metrics). The two games draw different
 random numbers, so a fight is compared by rates, shares and distributions, not update by update. A trace needs the
 columns `step`, `human` and `gang`; a metric whose columns are missing is left out.
@@ -95,14 +125,14 @@ exit code is 1 when a metric is outside the spread, 0 when none is, 2 when a tra
 original the spread is a point, so record several ([Comparing with Coney](research-traces.md#comparing-with-coney)).
 
 ```sh
-uv run --project python coney-tools trace mission SCENARIO --side coney|original --out CSV [--coney EXE] [--disc DISC]
+uv run --project python coney-tools trace events SCENARIO --side coney|original --out CSV [--coney EXE] [--disc DISC]
     [--state STATE] [--agent ID] [--updates N] [--follow ROUTE [--follow-from EVENT]]
 ```
 
 Plays a mission scenario (`research/traces/missions/*.toml`) on one game with its course, an adaptive pad that plays
 by what is on screen, and writes the game's event log to `CSV` (keep it outside the repository: it holds the game's
 text). `--side coney` runs Coney headless with `--pad-pipe` and `--event-log` (`--coney`, `--disc` as for `trace
-coney`); `--side original` starts PCSX2 on the scenario's state with its patches and event hooks, as `pcsx2 record`
+coney`); `--side original` starts PCSX2 on the scenario's state with its patches and event hooks, as `trace original`
 does, under your claim (`--agent`), and reads the events from the hooks' ring. `--state` starts from another state
 file or `slot:N` (a copy, never the slot itself); `--updates` caps the run. It prints its progress every 1000 updates
 and ends when the scenario's `until` event comes, or at its `updates`. Beside the log it writes the run's route,

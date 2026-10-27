@@ -56,7 +56,7 @@ whether to open that section. Pseudocode, decompiler output and game data never 
 - a file that breaks the schema above: an unknown key, a wrong type, a level, relation or status not in its list,
   an entry with no `level` and no `note`, `status` without `coney`, a gap with no issue and no question, addresses
   out of order or twice;
-- decompiler output in `role`, `kind`, `note` or a gap's `what`: the marks `orig copy-check` refuses in C++ (Ghidra's
+- decompiler output in `role`, `kind`, `note` or a gap's `what`: the marks `orig check-copy` refuses in C++ (Ghidra's
   made-up names such as `iVar1`, `param_2`, `DAT_003a1f20` or `FUN_00123456`, its `undefined4` types, a raw read at
   a byte offset), as on a research page: cite an unnamed function by its address;
 - an address in two systems;
@@ -144,10 +144,10 @@ reimplemented bytes are measured in the same unit as the Understood measure. A f
 yet (the port is tagged at an address in a gap between the functions the shared Ghidra project defines) counts with no
 size and is a warning of `research render --check`: define the function in Ghidra and refresh the listing. An address
 inside a listed function is an error, a wrong tag address. Without the listing file the sizes are missing for want of
-it, which `progress show` says.
+it, which `progress summary` says.
 
 The name is Ghidra's. A tag that spells it differently fails `progress check` when the branch adds the tag, and is a
-warning with a count when it was already there when the branch left `origin/main` (the way `orig check` holds only
+warning with a count when it was already there when the branch left `origin/main` (the way `orig check-tags` holds only
 what the branch changed; CI names the base and insists on it, `progress check --base HEAD^1 --require-base`). Write
 new tags with the name the entry has.
 

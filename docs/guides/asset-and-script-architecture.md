@@ -12,8 +12,8 @@ render backend are on [Enhancements plan](enhancements.md#foundations) (F4, F5);
 
 ## Where Coney stands {#where-coney-stands}
 
-Counted on `main` at `7300c566` (2026-10-07). A planned `repo check` rule ([N4](#now)) is to keep the first four
-rows current.
+Counted on `main` at `7300c566` (2026-10-07). A planned `repo check-conventions` rule ([N4](#now)) is to keep the first
+four rows current.
 
 | What | Count | Where |
 | --- | --- | --- |
@@ -286,8 +286,8 @@ not in `research/bindings/`, not in [Script bindings](../references/bindings/ind
 
 **Why a table here and not a `research/bindings/coney.yaml`.** The masterlist's schema is built around facts about
 the original (the wrapper's address, the functions it calls, an evidence level, usage counts in the shipped
-scripts), and `natives render`, `natives cpp` and the Natives page all read it as the original's table. A Coney file
-would need every one of those fields faked or made optional, and a second origin threaded through three generators,
+scripts), and `bindings render`, `bindings render-cpp` and the Natives page all read it as the original's table. A Coney
+file would need every one of those fields faked or made optional, and a second origin threaded through three generators,
 for natives of which Coney has none. A table here costs no machinery. When the first one is exposed, the move is the
 `Native` struct above (its `origin` field already says `Coney`), and the generated pages can then grow a "Coney"
 section from that data; this table is its seed.
@@ -398,7 +398,7 @@ engineers are working in `src/platform/` now.
 | N1 | `src/assets/`: `FileId`, `DiscFileId`, `ResourceId`, `AssetSource`, `AssetStore`, `DiscSource` (over `Disc` + `Wad`), `MemorySource`; Catch2 tests with synthetic WADs; `main.cpp` builds the store after opening `--disc` and passes nothing new yet | new `src/assets/*`, `platform/main.cpp`, `tests/assets/*` | S |
 | N2 | Store-based factories for the 5 seams (`ScriptSource`, `SceneRecordSource`, `CaptionSource`, `SoundFiles`, `MovieOpener`), used at their 9 construction sites; the random table read as `DiscFileId{"SLUS_212.15"}` | `scripting/config_strings`, `scenes/scene_disc`, `movies/disc_captions`, `audio/sound_stream`, `platform/ffmpeg_movie_decoder`, `platform/main.cpp`, `audio_output.cpp`, `play_level_scene.cpp` | S |
 | N3 | Core loaders from `const io::Wad&` to `const assets::AssetStore&`, one directory per commit: `characters` + `human/player` (6), `audio` (2), `scenes`, `world_objects`, `gamemodes/load_entry_mode` (4) | 15 headers in core directories, their tests | 3 x S |
-| N4 | `coney-tools repo check` rule: outside `src/fileio/`, `src/assets/` and a shrinking allowlist, no `#include` of `fileio/disc.h`, `wad.h`, `wad_index.h` or `executable.h` (`reader.h` and `stream.h` stay free). The allowlist starts with today's files and only ever shrinks, so the 1:1 work adds no new direct use | `python/src/coney_tools/repo_checks.py`, its test | S |
+| N4 | `coney-tools repo check-conventions` rule: outside `src/fileio/`, `src/assets/` and a shrinking allowlist, no `#include` of `fileio/disc.h`, `wad.h`, `wad_index.h` or `executable.h` (`reader.h` and `stream.h` stay free). The allowlist starts with today's files and only ever shrinks, so the 1:1 work adds no new direct use | `python/src/coney_tools/repo_checks.py`, its test | S |
 | N5 | One function for every texture load (Enhancements choice 5), called by `texture_dictionary`, `sprite_sheets` and `object_models`; F4 attaches there later | `src/platform/` texture files | S |
 | N6 | Platform loaders and modes to the store, after N3 and when the platform's maintainers agree: 17 headers, about 30 signatures (`world_set`, `level_file`, `play_level_*`, viewers, `hud_layer`, `particle_renderer`, ...) | `src/platform/` | 2 x M |
 | N7 | Done: `--data <install>` opening `<install>/game/ps2/` through the same `Disc` + `Wad` (a folder copy already works), and the default lookup next to the executable; `docs/guides/building.md` updated | `core/options`, `platform/main.cpp` | S |

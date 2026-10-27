@@ -1,7 +1,7 @@
 # The coney-tools reference commands
 
 The commands that keep Coney's generated reference material current: [`progress`](#progress), the progress
-tables of the README and the docs; [`natives`](#natives), the script-binding masterlist; [`refs`](#refs), the game
+tables of the README and the docs; [`bindings`](#bindings), the script-binding masterlist; [`refs`](#refs), the game
 reference lists; and [`missions`](#missions), the mission status pages. Run them from inside the checkout, as
 [the overview](coney-tools.md#running) says; the groups that read the disc take it as
 [the disc commands](coney-tools-disc.md#naming-the-disc) do.
@@ -16,7 +16,7 @@ are `research/source-files.toml`), the Ghidra listing `docs/progress/ghidra-func
 [roadmap](../roadmap.md). The page says what the numbers mean; this section says how to run the commands.
 
 ```sh
-uv run --project python coney-tools progress show [--json]
+uv run --project python coney-tools progress summary [--json]
 ```
 
 Prints the reimplemented and researched shares, the compared share (a `compared:` line: how much of the reimplemented
@@ -113,7 +113,7 @@ deploy learns the site's address), so its History page shows today alone; locall
 `CONEY_PROGRESS_HISTORY_CACHE` at a downloaded `history.json` to see the days.
 
 ```sh
-uv run --project python coney-tools progress sizes [DISC]
+uv run --project python coney-tools progress check-sizes [DISC]
 ```
 
 Checks the size of every reimplemented function against the executable `SLUS_212.15` on your own disc (`DISC` works
@@ -230,13 +230,13 @@ coney-tools progress backlog OUT_DIR
 | `OUT_DIR` | path | required | a folder outside the repository |
 <!-- command-reference:end -->
 
-## natives {#natives}
+## bindings {#bindings}
 
 The script-binding reference (`docs/references/bindings/`, under Game references) is generated from
 `research/bindings/<category>.yaml` (schema: [The research data](research-data.md#bindings)).
 
 ```sh
-uv run --project python coney-tools natives render [--check]
+uv run --project python coney-tools bindings render [--check]
 ```
 
 Checks the YAML and writes `docs/references/bindings/`: `index.md`, one page per category, each binding under an anchor
@@ -249,18 +249,18 @@ argument name used twice, usage counts that contradict each other, a `levels` li
 twice.
 
 ```sh
-uv run --project python coney-tools natives coney [--check]
+uv run --project python coney-tools bindings sync-coney [--check]
 ```
 
 Sets the `coney` key of every entry from Coney's binding table, `kBindings` in `src/scripting/script_bindings.cpp`:
 `real` is *implemented*, `routed` (handed to a stand-in for a subsystem Coney lacks) is *partial*, `stub` and
 `recording` are *not implemented*, and so is a binding the table does not list; the default is written as no key. Run
-it, then `natives render`, after changing the table. It fails when a line of the table is not one `kind("Name", ...)`
+it, then `bindings render`, after changing the table. It fails when a line of the table is not one `kind("Name", ...)`
 entry, or names a binding the masterlist lacks. With `--check` it writes nothing and exits with 1 when a status is
 stale; CI runs it that way.
 
 ```sh
-uv run --project python coney-tools natives cpp [--check]
+uv run --project python coney-tools bindings render-cpp [--check]
 ```
 
 Writes `src/debug/native_signatures.cpp`, the C++ table the [debug menus](debug-menu.md#natives) build their argument
@@ -271,20 +271,20 @@ description. Run it after editing the YAML and commit the file with the change; 
 exits with 1 when the file is stale, as CI runs it.
 
 ```sh
-uv run --project python coney-tools natives mission1 [DISC] [--check]
+uv run --project python coney-tools bindings scan-usage --first-mission [DISC] [--check]
 ```
 
 Reads the first mission's compiled scripts (`level99.lua` and its three chapter scripts) and `global.lua` from your
 disc (the `game_dir` of `coney.local.toml` when no disc is given), and sets every entry's `usage.mission1`: true when
 those scripts name the binding, or a `global.lua` helper they reach does (followed by name, as a `Table.field` or as a
 callback string), or one of the two helpers the engine calls when a mission ends (`UnlockAndLoad`, `runNextMission`).
-It prints the coverage (bindings, traced, Coney status), which `natives render` also publishes as
+It prints the coverage (bindings, traced, Coney status), which `bindings render` also publishes as
 [Mission 1 coverage](../references/bindings/mission1.md). Only names are read; nothing from the disc is written. Run
-`natives render` after it. With `--check` it writes nothing and exits with 1 when a marker is stale; it needs the disc,
+`bindings render` after it. With `--check` it writes nothing and exits with 1 when a marker is stale; it needs the disc,
 so CI does not run it.
 
 ```sh
-uv run --project python coney-tools natives missions [DISC] [--check]
+uv run --project python coney-tools bindings scan-usage --story [DISC] [--check]
 ```
 
 The same for the rest of the story: for each later level of `STORY_LEVELS` (`coney_tools/natives.py`: missions 2-18
@@ -292,11 +292,11 @@ and the hub in story order, then the flashbacks and the Armies of the Night leve
 (`levelNN.lua` and its `levelNN_*.lua` chapters, found by name in the WAD names list, without the language files and
 the scene tests) with the same reach rule, and sets every entry's `usage.levels` to the numbers of the levels that can
 call it (no key when none). It prints each level's bindings and how many are new (called by no earlier level, the
-first mission included) and traced; `natives render` publishes them as
-[Story coverage](../references/bindings/story.md). Run `natives render` after it; `--check` as for `mission1`.
+first mission included) and traced; `bindings render` publishes them as
+[Story coverage](../references/bindings/story.md). Run `bindings render` after it; `--check` as for `--first-mission`.
 
 ```sh
-uv run --project python coney-tools natives stats
+uv run --project python coney-tools bindings stats
 ```
 
 Prints the counts by category, evidence level, detail and Coney status, and how many bindings the game's scripts
@@ -377,7 +377,7 @@ The [Game references](../references/index.md) are generated from the lists in `r
 ([The research data](research-data.md#reference-lists) has their schema and rules).
 
 ```sh
-uv run --project python coney-tools refs extract [DISC] [--only LIST ...] [--names FILE]
+uv run --project python coney-tools refs refresh [DISC] [--only LIST ...] [--names FILE]
 ```
 
 Reads your own disc (`DISC` works as for the `wad` commands) and refreshes every list, or only the ones named
@@ -385,8 +385,8 @@ Reads your own disc (`DISC` works as for the `wad` commands) and refreshes every
 `warriors.glr`, every animation clip, three tables of the executable, the scene list `scene_list.cnk`, the
 movies in the disc's `PSS` folder (when `DISC` is a folder) and the WAD's entry names. It keeps every
 hand-written field and every entry it did not produce, then renders the pages. `--names` adds WAD names found
-another way (a file with one name per line, or the last word of each line, as `wad names` writes), each kept only
-when it hashes to an entry; the names already in `wad-names.yaml` are always used. A full run takes about half a
+another way (a file with one name per line, or the last word of each line, as `wad recover-names` writes), each kept
+only when it hashes to an entry; the names already in `wad-names.yaml` are always used. A full run takes about half a
 minute and keeps only names, ids and numbers.
 
 ```sh
@@ -406,7 +406,7 @@ Rewrites every PNG below `docs/references/images/` (or `FOLDER`) in place as a 2
 transparency. `coney --render-references` writes full-colour images of about 26 KB each; with a palette they take
 under a quarter of that and look the same at 256 pixels. The quantizer is deterministic, so a re-render gives the same
 files. A file the palette would not make smaller (most radar icons) is left as it is. Run it after rendering and before
-`refs extract` links the images.
+`refs refresh` links the images.
 
 <!-- command-reference:begin refs -->
 ## Parameters of `refs` {#refs-parameters}
@@ -465,7 +465,7 @@ Checks the list (every story level present, each mission's checkpoint count equa
 levels list, each status consistent with its checkpoints) and writes `docs/missions/index.md` and one page per level,
 with the script-binding numbers of [Story coverage](../references/bindings/story.md) read from
 `research/bindings/`. With `--check` it writes nothing and exits with 1 when a page is out of date; CI runs it that
-way. Run `natives render` first when bindings changed.
+way. Run `bindings render` first when bindings changed.
 
 <!-- command-reference:begin missions -->
 ## Parameters of `missions` {#missions-parameters}

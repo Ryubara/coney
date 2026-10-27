@@ -27,22 +27,22 @@ and `labels.yml`) are gone, and so are the constants that repeated their values 
 | Section | What it says | Read by |
 | --- | --- | --- |
 | `repo` | The default branch, the wording (the "user" is whoever tested, was affected or created the issue or pull request; the "maintainers" are whoever decides; never "owner" for a person), the decisions only a maintainer takes (`maintainer_decisions`) and the tool configuration files | `repo audit` (`files.exist` and the wording checks); agents ([AGENTS.md](repo:AGENTS.md)) |
-| `paths` | Which paths are code and documentation; the CI scope classes (`docs_only`, `tools_only`, `engine`); generated paths; the agent pointer files; the one file that may hold the repository's address; the large-file limit; the gameplay and Coney-only folders of `src/` (`gameplay`, `coney_only`) | `repo check`, `repo check-docs`, `check changed`; `orig check` (the two folder lists); `repo render` (the `docs-only-paths`, `tools-only-paths` and `engine-paths` blocks); `ci-scope.sh` reads the three scope lists itself, and `repo audit` holds it and pre-commit to the file |
-| `commits` | The title form, its limit and suffix, the areas and verbs, the body wrap and the `Co-Authored-By` trailer | `repo check-title`, which the `title` job and `repo check-review` run; `repo render` (the `commit-rules` and `commit-areas` blocks) |
-| `pull_requests` | The description's sections and which must hold text, the `Docs: none` line, `Fixes #N`, the Issues affected rule (`issues_affected`: the section, the `None (<reason>)` line and its example, when the after-merge audit began), the Checklist (every item ticked), the Screenshots rule, the `runtime` rule (the title areas a player sees need a `Runtime:` line in Testing), the AI use choices, the review gate (`review`: the reviewer agent, its verdict and report files, the description hash), stacked pull requests, the generated description's pictures (`images`) and block markers (`markers`), `open_only` (whether only `pr open` may open a pull request; off for now) | `repo check-body`, `repo check-docs`, `repo review` and `repo check-review`; `pr text`; `repo render` (the `pr-rules` and `pr-review` blocks); `repo audit` checks the template and the stacked-pull-request rules; the PR guard hook reads `open_only` ([The PR guard](enforcement.md#pr-guard)) |
+| `paths` | Which paths are code and documentation; the CI scope classes (`docs_only`, `tools_only`, `engine`); generated paths; the agent pointer files; the one file that may hold the repository's address; the large-file limit; the gameplay and Coney-only folders of `src/` (`gameplay`, `coney_only`) | `repo check-conventions`, `pr check-docs`, `ci run`; `orig check-tags` (the two folder lists); `repo render` (the `docs-only-paths`, `tools-only-paths` and `engine-paths` blocks); `ci-scope.sh` reads the three scope lists itself, and `repo audit` holds it and pre-commit to the file |
+| `commits` | The title form, its limit and suffix, the areas and verbs, the body wrap and the `Co-Authored-By` trailer | `pr check-title`, which the `title` job and `legacy check-pr-review` run; `repo render` (the `commit-rules` and `commit-areas` blocks) |
+| `pull_requests` | The description's sections and which must hold text, the `Docs: none` line, `Fixes #N`, the Issues affected rule (`issues_affected`: the section, the `None (<reason>)` line and its example, when the after-merge audit began), the Checklist (every item ticked), the Screenshots rule, the `runtime` rule (the title areas a player sees need a `Runtime:` line in Testing), the AI use choices, the review gate (`review`: the reviewer agent, its verdict and report files, the description hash), stacked pull requests, the generated description's pictures (`images`) and block markers (`markers`), `open_only` (whether only `pr open` may open a pull request; off for now) | `pr check-body`, `pr check-docs`, `legacy pr-review` and `legacy check-pr-review`; `pr text`; `repo render` (the `pr-rules` and `pr-review` blocks); `repo audit` checks the template and the stacked-pull-request rules; the PR guard hook reads `open_only` ([The PR guard](enforcement.md#pr-guard)) |
 | `merge` | The merge methods, the squash commit's wording, auto-merge, the required checks, who merges and `manual_paths` (the files whose change only a maintainer merges: `pr open` leaves auto-merge off for it): a copy of the GitHub ruleset and settings | `repo render` (the `required-checks` block); `repo audit --github` compares it with the GitHub ruleset and settings |
 | `issues` | The structure of each issue form (field ids, headings, which are required, default labels), the Screenshots line, the `From:` line, links, how many labels of each family an issue carries and which title area an old title gets from a label (`title_area_by_label`; the title rule itself is `commits.title`) | `repo audit` (the forms, and every issue's sections, placeholders, Screenshots, labels, links and `From:` line); `issue check`; `issue titles` |
 | `claims` | Claiming an issue: the exact shape of each command, the stages, the labels it sets, the limits of open claims, the 48 h and 72 h deadlines, the waits of `task create` and the sweep's schedule | `claim run` and `claim sweep` (`.github/workflows/claim.yml`), `task create`; `repo render` (the `claim-rules` block) |
 | `tasks` | The task kinds, the task file's name, the leads search's limits, what `task start` keeps (the unit record's file name and the engineer slots, task and fix, with the switch that enforces them) and the review (`review`: the reviewer agent, the files of a review, which changes need which checklist, the model reverse-engineering review needs) | `task create`, `task leads`, `task start`, `task review` |
-| `labels` | The label families and every label with its colour and description | `repo labels`; `repo render` (the `labels` block); `repo audit` (the labels on GitHub) |
-| `hygiene` | The limits after which an item counts as stale or stuck (`thresholds`, including `pr_pending_hours`), which required checks are lint (`pr_health.lint_checks`), the labels for stuck pull requests (`pr_health.labels`), when `pr-health --rerun` may restart a check (`pr_health.rerun`: the cap per commit, the conclusions and log patterns of a runner failure), the weekly report issue, how the workflow comments (`comments`), what the scan of attached logs downloads and looks for (`attachments`: the link, the endings, the size and time limits, the patterns) and `checks`, the registry of the audit's checks | `repo audit`, `repo pr-health`, `repo hygiene` |
-| `workspace` | The worktree and scratch layout, the free-space minimum and the busy marker | `workspace clean` and `workspace disk`, `repo audit --local`; hosted checks ignore it |
+| `labels` | The label families and every label with its colour and description | `repo sync-labels`; `repo render` (the `labels` block); `repo audit` (the labels on GitHub) |
+| `hygiene` | The limits after which an item counts as stale or stuck (`thresholds`, including `pr_pending_hours`), which required checks are lint (`pr_health.lint_checks`), the labels for stuck pull requests (`pr_health.labels`), when `pr-health --rerun` may restart a check (`pr_health.rerun`: the cap per commit, the conclusions and log patterns of a runner failure), the weekly report issue, how the workflow comments (`comments`), what the scan of attached logs downloads and looks for (`attachments`: the link, the endings, the size and time limits, the patterns) and `checks`, the registry of the audit's checks | `repo audit`, `pr list-stuck`, `repo post-findings` |
+| `workspace` | The worktree and scratch layout, the free-space minimum and the busy marker | `workspace clean` and `workspace check-space`, `repo audit --local`; hosted checks ignore it |
 | `conclave` | The Claude Code mod's numbers: the Claude Code version it is tested on, the hook settings file its agent list is read from, how often it reads the snapshot, the pane's two widths and the band's, when the band is stale, how long a merged unit stays, when a claim's countdown turns red and the watchers' settings: who is woken, how often, how long a hold lasts ([Conclave](conclave.md)) | `conclave snapshot` |
-| `stamps` | The proof log of a unit of work: the segment size, every step and the results (stamps are not signed), whether `pr verify` requires the hook identity (`require_hook_source`); the pairs' kinds, relations and the words that mark a stand-in at the code ([Stamps](stamps.md)) | `stamp verify`, `original study`, `original compare`, `original fails-first` |
+| `stamps` | The proof log of a unit of work: the segment size, every step and the results (stamps are not signed), whether `pr verify` requires the hook identity (`require_hook_source`); the pairs' kinds, relations and the words that mark a stand-in at the code ([Stamps](stamps.md)) | `stamp verify`, `orig study`, `orig compare`, `orig fails-first` |
 | `proof` | What a change must pass on this machine before it is opened as a pull request: the profiles (`docs`, `tooling`, `full`), the CI scope classes each covers and the checks each runs, the checks that apply only to some paths, and the preset of the build checks ([task check](coney-tools-repo.md#task-check)) | `task check`, `pr verify` (read from the remote's default branch) |
 | `research` | The kinds of research page, the sections each keeps, their length limits, the old section names, the data files an address is checked against and the legacy file ([Research pages](writing-docs.md#research-pages)) | `docs check` and `docs legacy`; `repo render` (the `research-pages` block) |
 | `standards` | What a touched file is held to: the legacy file of source and test files, whether a touched file below the standard fails (`enforce`, true since the cutover), the cutover day (2026-10-25; from it nothing new is marked legacy), the folders and endings of the code and the tests, the test macros and the form of an `// Expected:` citation ([the standards](coney-tools-standards.md#standards)) | `standards scan`, `init`, `prune`, `mark` and `check`; `docs check` |
-| `runs` | Run records: the id's shape (their folder is `research.files.runs`), the largest record, the most values and the kinds of run ([Run records](research-evidence.md#run-records)) | `pcsx2 record-run`, `pcsx2 recipe run --record`, `pcsx2 record --run-record`, `research claims` |
+| `runs` | Run records: the id's shape (their folder is `research.files.runs`), the largest record, the most values and the kinds of run ([Run records](research-evidence.md#run-records)) | `pcsx2 record-run`, `pcsx2 recipes run --record`, `trace original --run-record`, `research claims` |
 | `ci` | The settings of the CI jobs that read them (`dependencies`: the workflow whose runs are restarted; `tidy`: the folders and extensions the per-pull-request clang-tidy checks, and the build-setup files whose change sends it through every file; `failure`: the workflows watched, the events, the labels and the size of the report of a failed run on `main`) and `places`: where each check runs, local or in CI, with its jobs | `ci dependencies`, `ci rerun-dependencies`, `ci tidy-plan`, `ci tidy-run`, `ci report-failure`; `repo render` (the `check-places` block); `repo audit --files` (`files.ci-places`) |
 
 The commented file is the reference for each key: open `.github/conventions.yml` and read the comment above it.
@@ -79,7 +79,7 @@ Markers inside a fenced code block, like the one above, are examples and are lef
 | `check-places` | The table of where each check runs: local, or CI on pull requests, pushes to main or a release branch, nightly, manual runs or issue events | `ci.places` | [Building and testing](building.md#what-ci-runs) |
 
 After a change to a key, run `uv run --project python coney-tools repo render` and commit the rewritten files with the
-change. `repo render --check` fails when a block is stale; the `python` workflow and `coney-tools check changed` run
+change. `repo render --check` fails when a block is stale; the `python` workflow and `coney-tools ci run` run
 it, so a block can only drift if someone edits it by hand, and the check says which file. A conflict in a block while
 merging is resolved by taking either side and running `repo render` again. To add a block, write its function in
 `python/src/coney_tools/conventions_render.py` (a function from the conventions to lines, registered in `BLOCKS`), its
@@ -97,7 +97,7 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
 - **Severity.** `error` makes the audit exit 1; `warn` is reported and does not. An error is a rule a person can fix
   in a minute (a missing section, a missing label); a warning is a judgement or a delay (a stale status, a pull request
   idle for a month). Promoting a warning to an error is one line in the file.
-- **Fix class.** `auto`: a coney-tools command fixes it (`repo render`, `repo labels --apply`, `workspace clean`).
+- **Fix class.** `auto`: a coney-tools command fixes it (`repo render`, `repo sync-labels --apply`, `workspace clean`).
   `skill`: it takes judgement, so the author or the coordinator fixes it (the [`/repo-hygiene` skill](#hygiene-skill)
   acts on a finding by this class). `maintainer`: a maintainer decides (the ruleset and the settings of the repository).
 - **Items.** Only open issues and open pull requests are checked for their sections, labels, wording and links. History
@@ -148,7 +148,7 @@ says where the check runs, how bad a finding is and who fixes it, and the table 
 | `pr.stacked-automerge` | github | error | skill | auto-merge is enabled on a pull request whose base is not main |
 | `pr.base-merged` | github | warn | skill | an open pull request's base branch was merged: rebase it onto main and retarget it |
 | `pr.merged-into-base` | github | error | skill | a pull request was merged into a branch other than main, so the issues it fixes stay open |
-| `gh.labels` | github | error | auto | the labels on GitHub differ from the conventions (coney-tools repo labels --apply) |
+| `gh.labels` | github | error | auto | the labels on GitHub differ from the conventions (coney-tools repo sync-labels --apply) |
 | `gh.ruleset` | github | error | maintainer | the GitHub ruleset or repository settings differ from the merge section |
 | `ws.disk` | local | error | auto | the workspace drive has less free space than the minimum (coney-tools workspace clean) |
 | `ws.worktrees` | local | warn | auto | a worktree of merged work is still there, or a stray file sits among the worktrees |
@@ -184,9 +184,9 @@ uses. A missing key or a wrong value stays an error, in the branch's file and in
 (the latter names `origin/<default branch>`). So does a misspelt **required** key, which leaves the real key
 missing; a misspelt **optional** key (`except`, `manual_paths`, `jobs` and the like) is skipped like any unknown key and
 its default applies, because a new key next to an old one cannot be told from a typo of it, and refusing it would bring
-the bug back. `repo check`, `task check`, the tests and the Action stay strict and catch every typo.
+the bug back. `repo check-conventions`, `task check`, the tests and the Action stay strict and catch every typo.
 
-`coney-tools repo check` loads the file, so a mistake in it fails the `python` workflow and `coney-tools check changed`
+`coney-tools repo check-conventions` loads the file, so a mistake in it fails the `python` workflow and `coney-tools ci run`
 before anything else runs. Every command that needs a rule exits with code 2 and one line when the file is missing or
 unusable, and never with a traceback.
 
@@ -216,7 +216,7 @@ fails. Another workflow that writes to GitHub needs the same maintainer approval
 does not.
 
 A second exception, approved on the same day: `hygiene.yml` also edits labels, and only two. On every push to `main`
-(and in the weekly sweep) it runs `coney-tools repo pr-health --labels --apply`
+(and in the weekly sweep) it runs `coney-tools pr list-stuck --labels --apply`
 ([`pr-health`](coney-tools-repo.md#repo-pr-health)), which puts `S-conflict` on each open pull request that conflicts with
 `main` and `S-failing` on each that fails a required check, and removes the label when the cause is gone, so the pull
 request list shows what is stuck without anyone running a command. A push to `main` is when GitHub's answer about
@@ -230,7 +230,7 @@ push or sweep, or by running the command by hand.
 
 `hygiene.yml` is the one that comments, and it needed no approval for that: it writes the audit's findings back as
 one comment per issue or pull request, edited in place and never deleted, and a weekly report comment ([`repo
-hygiene`](coney-tools-repo.md#repo-hygiene)). Its token has `contents: read`, `issues: write`, `pull-requests: write` (a
+post-findings`](coney-tools-repo.md#repo-hygiene)). Its token has `contents: read`, `issues: write`, `pull-requests: write` (a
 comment on a pull request needs it) and read access to checks and statuses, nothing more. It runs on
 `pull_request_target` so that a pull request from a fork gets its comment, which is safe only because it checks out the
 default branch and never the pull request's code, and because what a title or body says reaches a script through
@@ -287,7 +287,7 @@ there the job prints workflow commands instead of uploading. It writes nothing e
 
 The coordinator tidies the repository with the `/repo-hygiene` skill
 ([.claude/skills/repo-hygiene/SKILL.md](repo:.claude/skills/repo-hygiene/SKILL.md)), after every merge round and once a
-week. It runs `repo audit` (files, GitHub and local scopes) and `repo pr-health`, then works through the findings by
+week. It runs `repo audit` (files, GitHub and local scopes) and `pr list-stuck`, then works through the findings by
 their fix class: an `auto` finding is fixed by running its command, a `skill` finding is fixed with judgement by the
 recipe the skill gives for that check, and an `owner` finding stops the skill, which reports it to the maintainer
 instead. Afterwards it fixes the issues that merged pull requests list under Issues affected and the issues that cite them

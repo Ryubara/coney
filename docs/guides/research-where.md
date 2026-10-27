@@ -2,7 +2,7 @@
 
 Before you study a function, find out whether a page already describes it. `coney-tools research where` answers for an
 address, a Ghidra function name, a source file or a word a player uses, from the same data the checks read, so the
-answer is never older than the checkout. `original study` prints the same lines under its own summary, so a study
+answer is never older than the checkout. `orig study` prints the same lines under its own summary, so a study
 starts from the page that owns the function.
 
 ```sh
@@ -89,7 +89,7 @@ evidence is. `coney-tools research where WORD` and the words page read it; so do
 
 ## In a study {#study}
 
-`original study ADDR` ends with the lookup of the function's address:
+`orig study ADDR` ends with the lookup of the function's address:
 
 ```text
 research (coney-tools research where):

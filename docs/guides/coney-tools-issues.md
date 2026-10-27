@@ -7,12 +7,12 @@ listed in [the command line overview](coney-tools.md#groups).
 ## issue {#issue}
 
 ```sh
-uv run --project python coney-tools issue draft [task|bug]
+uv run --project python coney-tools issue template [task|bug]
 uv run --project python coney-tools issue check --title T --body FILE [--form F] [--leftover] [--online] [--attach F]
 uv run --project python coney-tools issue create --title T --body FILE [--label L ...] [--parent N] [--leftover]
     [--attach F] [--offline] [--dry-run]
 uv run --project python coney-tools issue edit N --body FILE [--title T] [--offline] [--dry-run]
-uv run --project python coney-tools issue link N --parent P [--dry-run]
+uv run --project python coney-tools issue set-parent N --parent P [--dry-run]
 uv run --project python coney-tools issue titles [--json] [--apply [--include-review]] [--limit N]
 uv run --project python coney-tools issue impact [--base REF] [--head REF] [--replaces PR_OR_BRANCH ...]
     [--description FILE] [--json] [--refresh] [--issues FILE]
@@ -37,7 +37,8 @@ copied into the code.
 * `create` runs `check` (the states online unless `--offline`), then `gh issue create` with the form's labels and
   the Area's `A-` label. `--label` adds a label (checked against `labels.list`; a type or status label replaces the
   form's). `--parent N` links the new issue as a sub-issue of N through the sub-issues API, and tells you the
-  `issue link` command to run if only that step fails. `--dry-run` checks and prints the `gh` commands, running none.
+  `issue set-parent` command to run if only that step fails. `--dry-run` checks and prints the `gh` commands, running
+  none.
 * `edit` runs the same check on the new body (with `--title`, or the issue's current title read with `gh`) before
   `gh issue edit`. `link` makes an existing issue a sub-issue of another.
 * `titles` lists the open issues whose title breaks the title rule, each with a proposed title, how sure the proposal is
@@ -65,7 +66,7 @@ Every pull request lists, in its **Issues affected** section, the open issues it
 or makes out of date ([Issues a pull request changes](issues.md#affected)). `issue impact` suggests that list from the
 diff, so the author reads a handful of issues instead of searching three hundred. It is a helper for whoever has the
 tools: a pull request made by hand writes `None (one-line fix)` or its own list, and the check
-([`repo check-body`](coney-tools-repo.md#repo)) accepts either. The suggestion is never the section itself: the author
+([`pr check-body`](coney-tools-repo.md#repo)) accepts either. The suggestion is never the section itself: the author
 reads each issue and lists the ones the change really affects, with a line on how. [`pr text`](coney-tools-pr.md#pr-text)
 runs it (`--json`, for the unit's base and tip) when the engineer's `PR.md` has no Issues affected section, and writes
 the candidates, less the issues the task finishes, into a `TODO:` that the checks refuse until the engineer replaces it

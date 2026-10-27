@@ -75,7 +75,7 @@ the repository on the way ([LEGAL.md](repo:LEGAL.md#no-game-data)): a page holds
 pseudocode or a short snippet where it explains a point (see [Writing up a finding](#writing-up-a-finding)).
 
 Start with the lookup: `coney-tools research where` says which page already describes an address, a function name, a
-source file or a word a player uses, and `original study` prints the same lines under its own summary
+source file or a word a player uses, and `orig study` prints the same lines under its own summary
 ([Finding where a behaviour lives](research-where.md)). Read the page it names before the decompile. The tools for the
 rest are on [Research tools](research-tools.md#tools).
 
@@ -204,8 +204,8 @@ A finding is done when someone else can use it without asking you. For each one:
 8. **Ship the docs with the code.** CI refuses a pull request that changes `src/` or `python/src/` without changing
    anything under `docs/` or `research/`. A change that needs no documentation (a refactor, a rename) says so with a
    line `Docs: none` in the pull request description; editing the description re-runs the check. Check it yourself with
-   `git diff --name-only main... | uv run --project python coney-tools repo check-docs`. (The description itself is
-   checked against the pull request template by `coney-tools repo check-body`.) Counts quoted in a page by
+   `git diff --name-only main... | uv run --project python coney-tools pr check-docs`. (The description itself is
+   checked against the pull request template by `coney-tools pr check-body`.) Counts quoted in a page by
    hand are held to the data by tests and by `{count}` in the [reference lists](research-data.md#reference-lists).
 
 ## The Understood measure {#understood}
@@ -225,7 +225,7 @@ citations are read from the pages and the function database on every docs build.
 Ghidra, refresh both (ghidra-mcp on `:8090` must be running; the export only reads):
 
 ```sh
-uv run --project python coney-tools progress ghidra    # re-export the listing (--check: exit 1 when stale)
+uv run --project python coney-tools ghidra export-names    # re-export the listing (--check: exit 1 when stale)
 uv run --project python coney-tools progress check     # the inputs agree; the docs build writes the bars
 uv run --project python coney-tools progress backlog "<scratch>/research-backlog"   # per-subsystem to-do lists
 ```

@@ -18,7 +18,7 @@ the names and our own descriptions below are in the repository, no state data.
 uv run --project python coney-tools pcsx2 states list [--level LEVEL] [--tag TAG]
 uv run --project python coney-tools pcsx2 states show ID
 uv run --project python coney-tools pcsx2 claim --agent ME
-uv run --project python coney-tools pcsx2 states use ID --copy COPY --agent ME [--patch NAME ...] [--launch]
+uv run --project python coney-tools pcsx2 states hand-out ID --copy COPY --agent ME [--patch NAME ...] [--launch]
 ```
 
 `use` writes a **copy** of the state into the claimed copy's `library-states/` folder (the library's file is checked

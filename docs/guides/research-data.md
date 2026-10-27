@@ -51,9 +51,9 @@ The files `research/bindings/<category>.yaml` list every function the game regis
 name: the masterlist of the game's script bindings (what FiveM calls natives), which is also the reference for script
 mods. There is one file per category, named by the category's id (the ids are in `coney_tools/natives.py`), so an entry
 has no `category` key; moving a binding to another category means moving its entry to that file.
-`coney-tools natives render` checks the files and generates the reference pages in `docs/references/bindings/` from
-them; the pages are never edited by hand, and CI runs `natives render --check`
-([coney-tools](coney-tools-references.md#natives)). An entry of `level.yaml`:
+`coney-tools bindings render` checks the files and generates the reference pages in `docs/references/bindings/` from
+them; the pages are never edited by hand, and CI runs `bindings render --check`
+([coney-tools](coney-tools-references.md#bindings)). An entry of `level.yaml`:
 
 ```yaml
 - name: GetLevelId                 # the Lua global's name
@@ -83,13 +83,13 @@ them; the pages are never edited by hand, and CI runs `natives render --check`
   `string` or `usertype` (with `type`).
 - `usage` is counted from the disc's compiled Lua chunks: how many chunks reference the binding's global name and
   how many references there are (`calls`), whether the boot-to-menu scripts or the first mission's scripts
-  reference it (`mission1` also counts the `global.lua` helpers those scripts reach; `coney-tools natives mission1`
-  sets it from the disc), and whether a traced call keeps its result (a lower bound). It holds counts only. The
-  optional `levels: [80, 87, ...]` lists the story's later levels whose scripts can call it, in story order
-  (`coney-tools natives missions` sets it from the disc).
-- `coney` is never edited by hand: `coney-tools natives coney` sets it from Coney's binding table
+  reference it (`mission1` also counts the `global.lua` helpers those scripts reach; `coney-tools bindings scan-usage
+  --first-mission` sets it from the disc), and whether a traced call keeps its result (a lower bound). It holds counts
+  only. The optional `levels: [80, 87, ...]` lists the story's later levels whose scripts can call it, in story order
+  (`coney-tools bindings scan-usage --story` sets it from the disc).
+- `coney` is never edited by hand: `coney-tools bindings sync-coney` sets it from Coney's binding table
   (`src/scripting/script_bindings.cpp`), writing the key only when it is not the default
-  ([coney-tools](coney-tools-references.md#natives)).
+  ([coney-tools](coney-tools-references.md#bindings)).
 - `depth: mechanical` (signature only, no description) is accepted so a new entry can land before it is described;
   the masterlist has none.
 
@@ -130,13 +130,13 @@ entries:
 - Each entry has a stable **anchor**, `<list page>#<prefix>-<key>` (`characters.md#char-32`,
   `levels.md#level-29`), for links from research pages, issues and mods. A key never changes once published.
 - Fields are either **read from the disc** or **hand-written** (each page's field table says which).
-  `coney-tools refs extract` rewrites the first kind and keeps the second, and keeps entries it did not produce,
+  `coney-tools refs refresh` rewrites the first kind and keeps the second, and keeps entries it did not produce,
   so a hand-added entry or a name found another way survives a refresh.
 
 Commands ([coney-tools](coney-tools-references.md#refs)):
 
 ```sh
-uv run --project python coney-tools refs extract [DISC] [--only LIST ...] [--names FILE]   # refresh from your disc
+uv run --project python coney-tools refs refresh [DISC] [--only LIST ...] [--names FILE]   # refresh from your disc
 uv run --project python coney-tools refs render [--check]                                 # write or check the pages
 ```
 
@@ -155,9 +155,9 @@ that gets its own list leaves that file. [Entities](../references/entities.md), 
 refer to, is written by hand; the index links it.
 
 To add a field or a list, add it in `refs_topics.py` (and its reader in `refs_extract.py` when it comes from the
-disc), then run `refs extract`. **Thumbnails** go in `docs/references/images/` (`characters/<model>.png`,
+disc), then run `refs refresh`. **Thumbnails** go in `docs/references/images/` (`characters/<model>.png`,
 `objects/<name>.png`, `cars/<type>.png`; 256 × 256, transparent, rendered by `coney --render-references` from the
-player's disc, then shrunk with `coney-tools refs compress-images`); `refs extract` links each one that exists. The
+player's disc, then shrunk with `coney-tools refs compress-images`); `refs refresh` links each one that exists. The
 character images are rendered with `--names` given every model name in `character-models.yaml`, so only the models
 with no recovered name are named by hash. 2D icons (`radar/icon-<n>.png`, `particles/<name>.png`) are one sheet
 rectangle each, at most 64 × 64 (`LEGAL.md`); no renderer makes them yet.
@@ -171,7 +171,7 @@ own words (never game text) with its `summary_source` (research, disc, web or mi
 under `sources` and are replaced by our own walkthrough), a `status`, its `checkpoints` (`count`, which must equal the
 levels list's Sections column, a `default` status and per-checkpoint `each` overrides with a note), `research` links,
 `issues`, `questions` and the disc `test`. A mission's title is not kept in `missions.yaml`: it is the level's `title`
-in the levels list (`GSTRING.MISSIONNAME` of the English string file, filled by `coney-tools refs extract`), shown in
+in the levels list (`GSTRING.MISSIONNAME` of the English string file, filled by `coney-tools refs refresh`), shown in
 the page heading and the overview. The five statuses are Not Started, In Progress, Pending Gameplay Approval, Needs
 Fixes and Approved, for missions and checkpoints alike.
 

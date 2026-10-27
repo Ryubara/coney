@@ -20,7 +20,7 @@ uv run --project python coney-tools wad --help
 These read **your own disc**; [naming the disc](coney-tools-disc.md#naming-the-disc) says how they find it.
 
 * [`wad`](coney-tools-disc.md#wad): the game's archive.
-* [`wad scenes`](coney-tools-disc.md#scenes): the scene records.
+* [`wad scene-info`](coney-tools-disc.md#scenes): the scene records.
   {#scenes}
 * [`extract`](coney-tools-disc.md#extract): every asset, in open formats.
   {#extract}
@@ -102,12 +102,12 @@ so they go, with these ids, once those pages are touched and cite the disc page.
 
 ## Renamed commands {#renamed}
 
-Many commands were renamed in October 2026 so that each name says what the command does, no two names clash (`check
-changed` sat beside `task check`) and the halves of a pair share a group (`trace original` beside `trace coney`). Until
+Many commands were renamed in October 2026 so that each name says what the command does, no two names clash (`ci
+run` sat beside `task check`) and the halves of a pair share a group (`trace original` beside `trace coney`). Until
 the workflow cutover an old name still works: `coney-tools` rewrites it to the new one before it runs and says so in one
-line on stderr, such as ``coney-tools: `check changed` is renamed to `ci run`; the old name stops working at the
-cutover``. The old names, and the four renamed options (`workspace clean --shell-hours`, `extract --xbox`, `build
---slots-wait-timeout`, `clips clean --dry-run`, which is the default now), live in one table,
+line on stderr, such as ``coney-tools: `ci run` is renamed to `ci run`; the old name stops working at the
+cutover``. The old names, and the four renamed options (`workspace clean --stale-wait-hours`, `extract --xbox`, `build
+--max-wait`, `clips clean --dry-run`, which is the default now), live in one table,
 [renames.py](repo:python/src/coney_tools/renames.py); no page, parser or generated block knows them. Write the new
 names; the guards that match a command by name (`.claude/hooks/hooks.toml`, the PCSX2 guard) match both until the
 cutover deletes the old ones. The two review commands that moved to [`legacy`](coney-tools-repo.md#legacy) keep their
@@ -141,7 +141,7 @@ the table is the one to fix.
   [.github/conventions.yml](repo:.github/conventions.yml) (`docs/guides`), read from that key and not from a path of
   the tool's own.
 * **The gate.** `coney-tools docs render --check` changes nothing and exits 1 for any of those; it runs as the audit
-  check `files.command-reference` (`repo audit --files`), which `check changed` and the `python` workflow run, so a
+  check `files.command-reference` (`repo audit --files`), which `ci run` and the `python` workflow run, so a
   pull request that adds or changes a command without rendering its page is refused.
 
 Which group's page holds which block is where the block sits; the list above says where each group is documented. The

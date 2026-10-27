@@ -323,7 +323,7 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --render-references ..
 To refresh the docs' thumbnails, render with a names file holding the `name` of every entry of
 `research/references/character-models.yaml` and `objects.yaml`, copy the named images (and the characters' hash-named
 ones, which the character models list uses) and the `cars`, `radar` and `particles` folders into
-`docs/references/images/`, run `coney-tools refs compress-images` and then `coney-tools refs extract`
+`docs/references/images/`, run `coney-tools refs compress-images` and then `coney-tools refs refresh`
 ([coney-tools](coney-tools-references.md#refs)), which links every image that exists, in the hats and inventory lists too.
 
 The images are deterministic: no clock or randomness, a fixed camera and 4x4 supersampling averaged with integer

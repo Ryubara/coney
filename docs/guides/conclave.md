@@ -23,7 +23,7 @@ request problems nobody holds. What comes next is under [Planned](#planned).
 | Item | Says | Colour |
 | --- | --- | --- |
 | `2 units`, `✖1 failed` | Units with a task file that are not merged: their count, and how many failed a step, have a pull request whose checks failed or have a task file that cannot be read | red when any failed |
-| `PRs 4 (✖1 #812)` | Open pull requests, and the first one with a failed check or a cause from [`repo pr-health`](coney-tools-repo.md#repo-pr-health) | red when any failed |
+| `PRs 4 (✖1 #812)` | Open pull requests, and the first one with a failed check or a cause from [`pr list-stuck`](coney-tools-pr.md#pr-list-stuck) | red when any failed |
 | `claims 3` | Held claims of every contributor | amber from the warning hours, red in the last `claim_red_hours` of any claim, once expiry is enforced |
 | `builds 2 (+3 queued)` | Build slots in use and builds waiting, over every lane | none |
 | `⚠ P-critical #790` | The first open issue labelled `P-critical`, and how many more | amber |
@@ -83,7 +83,7 @@ with nothing new is left alone, and the idle wake stays Tether's ([boundary](#bo
 
 | Kind | Raised when | Id (one occurrence) | Handled when | The wake says |
 | --- | --- | --- | --- | --- |
-| `check-failed` | An open pull request has a failed required check ([`repo pr-health`](coney-tools-repo.md#repo-pr-health), cause `checks-failed`) | `pr:812:checks-failed:<head>:<checks>`: the first seven characters of the head commit and a short hash of the failing checks, so a new push or another failing check is a new event | A running hold covers the cause on that head ([`pr hold`](pr.md#hold)); a hold that runs out, or a new push, opens it again | Fix it or start an agent, then `pr hold <n> --who <agent>` |
+| `check-failed` | An open pull request has a failed required check ([`pr list-stuck`](coney-tools-pr.md#pr-list-stuck), cause `checks-failed`) | `pr:812:checks-failed:<head>:<checks>`: the first seven characters of the head commit and a short hash of the failing checks, so a new push or another failing check is a new event | A running hold covers the cause on that head ([`pr hold`](pr.md#hold)); a hold that runs out, or a new push, opens it again | Fix it or start an agent, then `pr hold <n> --who <agent>` |
 | `pr-stuck` | Any other `pr-health` cause: a conflict, a CI run that never ends, auto-merge off | `pr:812:conflict:<head>` | The same | The same |
 | `merged` | A pull request merged within `merged_minutes` (30) | `merged:<n>` | Never: it leaves the list when the window ends | Bring the issues it affected up to date ([After a merge](issues.md#after-a-merge)) |
 | `unit-ready` | A release-queue file (`PR.md`, `PR-<n>.md`) in the scratch folder of a unit with a worktree, its branch has no pull request since the file changed, no `HOLD.md` lies beside it and [`pr open` would pass its proof](#ready) | `unit:<branch>:<file>:<change>`: the first twelve digits of the [change](stamps.md#change) the stamps cover, so editing the file or rebasing the branch is the same event and a new commit is a new one | The branch gets a pull request: it leaves the list. The proof stops holding, or a hold is made: it leaves the list too, and is told again if it holds again | `coney-tools pr open <task>` |
@@ -346,8 +346,8 @@ read keeps the pull requests, claim overlaps and events of the last GitHub read.
 | `config` | The roles and helpers of the hook settings, the intervals and limits | `.claude/hooks/hooks.toml`, the `conclave` keys |
 | `units` | Each unit: task file, stage from the stamp log, build, worktree, overlaps, pull request | `scratch/<task>/TASK.md`, the stamp log, `coord status` |
 | `builds`, `machine` | Build slots and queues; free disk with its two limits | `build status`, the workspace drive |
-| `claims`, `prs`, `issues` | Held claims with deadlines and titles; open and merged pull requests; the issues the pane names (`--github` only) | the claim cards, `repo pr-health`, `gh` |
-| `events` | The [watchers' events](#watchers), each with an id and a state, the kinds that could not be read (`unread`) and any hold file that could not (`holds_problems`) (`--github` only) | `repo pr-health`, the release queue with the proof of [each unit in it](#ready), the holds (`pr hold`, `HOLD.md`), the question files of the unit folders |
+| `claims`, `prs`, `issues` | Held claims with deadlines and titles; open and merged pull requests; the issues the pane names (`--github` only) | the claim cards, `pr list-stuck`, `gh` |
+| `events` | The [watchers' events](#watchers), each with an id and a state, the kinds that could not be read (`unread`) and any hold file that could not (`holds_problems`) (`--github` only) | `pr list-stuck`, the release queue with the proof of [each unit in it](#ready), the holds (`pr hold`, `HOLD.md`), the question files of the unit folders |
 
 A section that cannot be read holds only its `error`, and the others stand. The object carries `schema` (2 since the
 events); the mod refuses a higher number than it was built for. A unit's **stage** is the step after the highest one

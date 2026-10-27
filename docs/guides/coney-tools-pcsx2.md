@@ -1,8 +1,9 @@
 # The coney-tools PCSX2 and clip commands
 
-The commands that record the original's behaviour in PCSX2: [`pcsx2`](#pcsx2) drives the emulator and records
-per-update traces ([`trace`](coney-tools-trace.md#trace) compares them with Coney's), and [`clips`](#clips) checks,
-publishes and cleans up in-game video clips, whether made in PCSX2 or by `coney --record`. The other groups are listed
+The commands that drive the original in PCSX2: [`pcsx2`](#pcsx2) claims a copy, starts it, runs recipes, keeps the
+save-state library and moves input recordings ([`trace original`](coney-tools-trace.md#trace) records a per-update
+trace with it), and [`clips`](#clips) records clips of the original and checks, publishes and cleans up in-game video
+clips, whether made in PCSX2 or by `coney --record`. The other groups are listed
 in [the command line overview](coney-tools.md#groups).
 
 ## pcsx2 {#pcsx2}
@@ -40,7 +41,7 @@ older than `--max-age-hours`, default 4, with no process) saying so. A claim who
 stale, whatever its age or owner: a PCSX2 running from the copy's folder, a live recorded PCSX2 or holder pid, or a
 listening PINE or debug server port; that includes a claim whose owner file is unreadable (shown as holder `?`), which
 is stale only after a few seconds and only with nothing running in the copy. A copy running PCSX2 without a claim is
-never handed out. `release` closes the PCSX2 it recorded (only while that process is still a PCSX2) and drops the
+never handed out. `unclaim` closes the PCSX2 it recorded (only while that process is still a PCSX2) and drops the
 claim; another agent's claim needs `--force`. `status` lists every copy with its holder, the time, the PINE and debug
 ports, whether PCSX2 runs (by pid or by either port) and stale claims; it warns about copies whose ini has
 `[InputSources] SDL = true`. The copies are the `pcsx2*` folders with an `inis/PCSX2.ini` under `pcsx2_root` (default:
@@ -49,7 +50,7 @@ ports, whether PCSX2 runs (by pid or by either port) and stale claims; it warns 
 whatever a worktree's `scratch_dir` says, so every worktree sees the same claims).
 
 **A port is only a number, and every copy's ports are readable** (`status`, the ini), so nothing may act on ports it
-did not get from its own claim. `check-ports` succeeds (and prints `ok: ID holds NAME`) only when the ports given are
+did not get from its own claim. `check-claim` succeeds (and prints `ok: ID holds NAME`) only when the ports given are
 the debug server and PINE ports of one copy whose live claim ID holds, and exits 2 naming the holder otherwise
 (`Registry.require_ports`, the check everything else below calls). From a script, `DebugClient.claimed("ID")`
 (`coney_tools.debug_server`) connects to the debug port of the claim ID holds and to no other. For the shared `pcsx2`
@@ -60,7 +61,7 @@ uv run --project python coney-tools pcsx2 send-keys --agent ID --copy NAME KEY [
 uv run --project python coney-tools pcsx2 screenshot --copy NAME --out PNG
 ```
 
-Both are Windows-only and never focus a window. `keys` posts key down and up messages (`WM_KEYDOWN`) to the copy's
+Both are Windows-only and never focus a window. `send-keys` posts key down and up messages (`WM_KEYDOWN`) to the copy's
 window by handle, one key after another (`W+K` presses two together; names: letters, digits, `space`, `return`,
 arrows, `f1`..`f12`), each held `--hold-ms` (default 300). `screenshot` writes the game widget's picture, read by
 handle, so it works while other windows cover it (not while it is minimised); it is refused inside the repository.
@@ -81,7 +82,7 @@ uv run --project python coney-tools pcsx2 states repack SOURCE OUT
 Copies a save state (a `.p2s` file or `slot:N`, only read) to `OUT` with every compressed entry rewritten with plain
 deflate, the same contents byte for byte. Ghidra's zip reader, which the EE extension's `PCSX2SaveStateImporter.java`
 script uses, cannot read PCSX2's zstd, and Python cannot write PCSX2's other choice, Deflate64; plain deflate is read
-by all three, so PCSX2's own compression setting stays as it is. The same refusals as `prepare-state` apply. Why we
+by all three, so PCSX2's own compression setting stays as it is. The same refusals as `states patch` apply. Why we
 do not usually load states into Ghidra: [Tools](research-tools.md#tools).
 
 ```sh
@@ -99,34 +100,6 @@ start when something already serves PINE or the copy's debug server port. It run
 kept, if you hold none) and records
 PCSX2's pid in it;
 `--pcsx2-dir` must be that claim's copy.
-
-```sh
-uv run --project python coney-tools trace original SCENARIO --out CSV --agent ID [--state SOURCE] [--attach] [--keep-open]
-                                     [--recording P2M2] [--run-record --library-state ID|unknown [--run-name NAME]]
-```
-
-Makes the scenario's patched state copy, starts PCSX2 on it, plays the scenario's input script and writes one CSV row
-per character update, then closes PCSX2. It prints the updates recorded, the reads per poll, the time per poll and the
-updates missed. The scenario names a quick-save slot (`slot`) or a state file under the scratch folder (`state`);
-`--state` copies another state, `--attach` records a PCSX2 already running a patched state, and `--keep-open` leaves
-PCSX2 running; the claim is released at the end when `record` made it. The CSV is a measurement of the game: it is
-refused inside the repository. With
-hooks among the scenario's patches it also writes each hook's call log to `<CSV stem>.<hook>.csv` beside it, and
-makes the scenario's `calls` ([Hooks](research-traces.md#hooks)).
-
-`--recording P2M2` takes the pad from a PCSX2 input recording instead of the scenario's input script, so a runtime
-trace can be repeated exactly: the recording (and its start savestate `<P2M2>_SaveState.p2s`, patched as the
-scenario says) is copied into the copy's `recordings/coney-record/`, PCSX2 starts on that savestate, and through the
-debug server `record` pauses emulation, plays the recording (which loads its savestate again), samples step 0 and
-resumes. The trace's steps then count from the recording's first frame. A recording that ends before the scenario's
-`updates` stops with PCSX2 paused at its last frame and an error saying so; a power-on recording (no savestate) takes
-no patches. It cannot be combined with `--attach` or `--state`, and needs the copy's debug server.
-
-`--run-record` also writes the trace's [run record](research-evidence.md#run-records) beside the work, in
-`research/runs/`: the scenario's name, its patches, the `--let` names, the counts (updates, missed updates, columns)
-and the SHA-256 of the CSV, which stays in scratch. `--library-state` says which state of the library the run started
-from (`unknown` is allowed); `--run-name` names the record (default: the scenario's). The record is written after the
-CSV; a PCSX2 that no longer answers when its version is read gives `unknown` and a warning rather than losing the trace.
 
 ```sh
 uv run --project python coney-tools pcsx2 recordings make NAME --script SCRIPT [--state STATE.p2s] [--updates N]
@@ -153,25 +126,6 @@ back), checking each copy's SHA-256. A different file already there needs `--for
 in the copy with the MCP server's `pcsx2_input_recording` ([Input recordings](research-tools.md#input-recordings)).
 
 ```sh
-uv run --project python coney-tools clips record STATE --out CLIP --agent ID [--seconds N] [--iso DISC] [--scratch DIR]
-```
-
-Records a short clip of the original (`--seconds`, 1 to 10, default 10) with **PCSX2's own video capture of its GS
-output**: nothing on the desktop is read. For the run, the claimed copy's ini switches the capture on (with sound),
-points PCSX2's videos folder at a staging folder beside the clip, turns every on-screen display element off (FPS,
-messages, the recording indicator) and binds "Toggle Video Capture" to F12, which is posted to PCSX2's window by handle
-to start and stop it; the ini is put back when PCSX2 closes. The capture is then re-encoded into `CLIP` as Coney's
-clips are (960 x 720, H.264 and AAC, no metadata, cut at the length) through `clips.run_ffmpeg`, and the staging
-folder deleted. PCSX2 2.9.94 tears the first ~1.15 s of its capture (a black band along the bottom), so the capture
-runs 1.5 s longer (`CAPTURE_START_TRIM`) and the clip starts after that, still lasting `--seconds`.
-`--out` is a path under the scratch folder, `<workspace>/scratch/<task>/clips/NAME.mp4`; give it absolute (the
-folder `clips folder TASK` prints), because a relative `../../scratch/...` is wrong from a worktree, which sits three
-levels below the workspace. The game comes from `game_dir` in `coney.local.toml`; without it pass `--iso DISC`,
-and likewise `--scratch DIR` (an absolute path) without `scratch_dir`.
-`CLIP` follows the [clips](#clips) rules. It needs FFmpeg as `clips` finds it, and Windows (keys by
-handle). PCSX2 starts on `STATE` under `--agent`'s claim, released at the end when `clip` made it.
-
-```sh
 uv run --project python coney-tools pcsx2 recipes list
 uv run --project python coney-tools pcsx2 recipes show NAME
 uv run --project python coney-tools pcsx2 recipes run NAME --copy COPY --agent ID [--arg NAME=VALUE ...] [--json]
@@ -193,7 +147,7 @@ when any page is out of date, as CI runs it. Cite a recipe by its group page, `p
 index lists every recipe with an anchor of its name too, so `pcsx2-recipes.md#<name>` also lands on it, one link from
 the section. Every recipe must have an evidence level, a Ghidra address and a `confirmed_runtime` date, copy and state,
 or the file is refused. A recipe may name a library state it starts from (`state = "ID"`, shown among its preconditions;
-`recipe show` prints it).
+`recipes show` prints it).
 
 `--record` makes a good run write its [run record](research-evidence.md#run-records), `research/runs/r-<date>-<name>.toml`
 in the checkout: the numbers the `show` steps showed (texts stay out: a record holds numbers only), the arguments as
@@ -241,7 +195,7 @@ state's own memory, or over a claimed copy's PINE port with `--copy`; flags win 
 the level and checkpoint. The PCSX2 version and the date come from the file, and the patches it holds from comparing
 its memory with `research/traces/patches/`. Catalog writes hold a lock file, so two agents adding at once both
 land. `use` writes a copy of a state into the claimed copy's `library-states/` folder (after checking the library file
-against the catalog), with any `--patch` applied as `prepare-state` does, and prints the path; `--launch` starts PCSX2
+against the catalog), with any `--patch` applied as `states patch` does, and prints the path; `--launch` starts PCSX2
 on it. The library file is never played on or changed. `verify` hashes the files against the catalog and lists any
 that is missing, changed or not listed (exit code 1). `render` rewrites the list between the markers of
 [the page](pcsx2-states.md#the-states) from the catalog.
@@ -617,10 +571,29 @@ coney-tools pcsx2 states repack SOURCE OUT [--pcsx2-dir PCSX2_DIR]
 ## clips {#clips}
 
 ```sh
+uv run --project python coney-tools clips record STATE --out CLIP --agent ID [--seconds N] [--iso DISC] [--scratch DIR]
+```
+
+Records a short clip of the original (`--seconds`, 1 to 10, default 10) with **PCSX2's own video capture of its GS
+output**: nothing on the desktop is read. For the run, the claimed copy's ini switches the capture on (with sound),
+points PCSX2's videos folder at a staging folder beside the clip, turns every on-screen display element off (FPS,
+messages, the recording indicator) and binds "Toggle Video Capture" to F12, which is posted to PCSX2's window by handle
+to start and stop it; the ini is put back when PCSX2 closes. The capture is then re-encoded into `CLIP` as Coney's
+clips are (960 x 720, H.264 and AAC, no metadata, cut at the length) through `clips.run_ffmpeg`, and the staging
+folder deleted. PCSX2 2.9.94 tears the first ~1.15 s of its capture (a black band along the bottom), so the capture
+runs 1.5 s longer (`CAPTURE_START_TRIM`) and the clip starts after that, still lasting `--seconds`.
+`--out` is a path under the scratch folder, `<workspace>/scratch/<task>/clips/NAME.mp4`; give it absolute (the
+folder `clips folder TASK` prints), because a relative `../../scratch/...` is wrong from a worktree, which sits three
+levels below the workspace. The game comes from `game_dir` in `coney.local.toml`; without it pass `--iso DISC`,
+and likewise `--scratch DIR` (an absolute path) without `scratch_dir`.
+`CLIP` follows the clips rules below. It needs FFmpeg as `clips` finds it, and Windows (keys by
+handle). PCSX2 starts on `STATE` under `--agent`'s claim, released at the end when `clips record` made it.
+
+```sh
 uv run --project python coney-tools clips folder TASK
 uv run --project python coney-tools clips check CLIP [CLIP...]
 uv run --project python coney-tools clips publish (--pr N | --issue N) [--edit] (--body TEXT | --body-file FILE) CLIP [CLIP...]
-uv run --project python coney-tools clips clean [--older-than HOURS] [--dry-run]
+uv run --project python coney-tools clips clean [--older-than HOURS] [--apply]
 ```
 
 In-game video clips for issues and pull requests, made by `coney --record` ([Recording a
@@ -637,8 +610,9 @@ are `workspace.clips` in `.github/conventions.yml`.
   `--edit`, into the description) with one `--attach` per clip, and **deletes the clips once gh succeeds**. When gh
   fails, it keeps them and says so (exit 1). A body may place a clip with a `./clips/<name>.mp4` reference, which gh
   replaces with the upload when the clip is named the same way. It is the only way clips are uploaded.
-* `clean` deletes every file in the task clips folders older than `keep_hours` (24; `--older-than` overrides it),
-  including what a failed recording left (part files, a `clips record` staging folder); `--dry-run` only counts.
+* `clean` lists every file in the task clips folders older than `keep_hours` (24; `--older-than` overrides it),
+  including what a failed recording left (part files, a `clips record` staging folder), and deletes them with `--apply`
+  (a dry run without it, as `workspace clean` is; its old `--dry-run` is accepted with a notice until the cutover).
 
 FFmpeg and ffprobe are found in `ffmpeg_dir` of `coney.local.toml`, else beside `CONEY_FFMPEG` (the variable Coney's
 `--record` reads), else on `PATH`. Every FFmpeg command the tools run goes through `clips.run_ffmpeg`, which refuses a

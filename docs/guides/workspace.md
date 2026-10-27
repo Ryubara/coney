@@ -242,7 +242,7 @@ worktree when its branch is merged: `coney-tools workspace clean` does it for yo
 !!! note "For the project's agents"
 
     This section is about a machine holding many agents' worktrees and builds. A person with one checkout keeps space
-    free by deleting old `build/` folders; `coney-tools workspace disk` shows the free space.
+    free by deleting old `build/` folders; `coney-tools workspace check-space` shows the free space.
 
 A build of the engine is about 6 GB per preset (`build/dev` measured 6.4 GB on 2026-10-20, with `/Z7` objects) and each
 task has a worktree, so unremoved worktrees fill a drive quickly: once about ninety of them left 3 GB free and broke
@@ -256,8 +256,8 @@ below still delete idle folders and agents still delete their own when they fini
 
 ```sh
 uv run --project python coney-tools workspace clean [--apply] [--build-hours N] [--worktree-hours N] [--fetch]
-    [--min-gb N] [--margin-gb N] [--shell-hours N] [--log-idle-hours N]
-uv run --project python coney-tools workspace disk [--min-gb N]
+    [--min-gb N] [--margin-gb N] [--stale-wait-hours N] [--log-idle-hours N]
+uv run --project python coney-tools workspace check-space [--min-gb N]
 ```
 
 **`workspace clean`** is a dry run until `--apply` is given. It lists every worktree under `worktrees/coney/` and
@@ -295,9 +295,9 @@ free space before and after.
 * Read-only files (git's packs, some tools' output) are cleared before deleting, and long Windows paths work.
 * **Stops stale processes** (the tree under each, by process id, never by name;
   [`stale_processes.py`](repo:python/src/coney_tools/stale_processes.py)):
-    * *a stale wait*: a shell (bash, sh, zsh, pwsh, PowerShell) older than `--shell-hours` (default 3) whose command
-      sleeps in an `until` or `while` loop, when every file the loop reads (named in it, or held in a variable it
-      reads: `f=/c/x/build.log; while ...; grep "$f"`) has not changed for `--log-idle-hours` (default 1) or does not
+    * *a stale wait*: a shell (bash, sh, zsh, pwsh, PowerShell) older than `--stale-wait-hours` (default 3) whose
+      command sleeps in an `until` or `while` loop, when every file the loop reads (named in it, or held in a variable
+      it reads: `f=/c/x/build.log; while ...; grep "$f"`) has not changed for `--log-idle-hours` (default 1) or does not
       exist. The run it waits for has died, so it would wait for ever and keep its finished agent listed as running.
       A loop that names no file it can check is never judged;
     * *an orphaned test run*: a `ctest` or `coney_tests` whose parent process is gone (or whose parent's pid now
@@ -323,10 +323,10 @@ protects its worktree for good; delete it once you know the work is over. An **e
 `--build-hours` (24 by default) is taken for a dead agent's and ignored, so a marker made with a bare `touch` still
 protects for a day. The file's name is `workspace.busy_marker` of the conventions file.
 
-**`workspace disk`** prints the free space of the workspace's drive and exits 1 below `--min-gb` (default: 30, the
-`workspace.disk_min_free_gb` key of [.github/conventions.yml](repo:.github/conventions.yml)), for hooks and scripts
-(`coney-tools workspace disk || coney-tools workspace clean --apply`); a hook that runs `clean --apply` every half
-hour keeps the drive above the floor on its own. The coordinator runs
+**`workspace check-space`** prints the free space of the workspace's drive and exits 1 below `--min-gb` (default: 30,
+the `workspace.disk_min_free_gb` key of [.github/conventions.yml](repo:.github/conventions.yml)), for hooks and scripts
+(`coney-tools workspace check-space || coney-tools workspace clean --apply`); a hook that runs `clean --apply` every
+half hour keeps the drive above the floor on its own. The coordinator runs
 `clean --apply` after every merge round (`coney-tools repo audit --local` lists what it would remove and the scratch
 folders of finished work that still hold files taken from the original), and agents delete their own `build/` when they
 finish a unit ([Briefing](agents.md#briefs)). `scratch/` is not cleaned automatically: prune built docs sites, logs and
