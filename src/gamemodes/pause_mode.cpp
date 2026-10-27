@@ -260,6 +260,9 @@ void PauseMode::enter() {
     if (m_hooks.pauseSound) {
         m_hooks.pauseSound(true);
     }
+    // Stand-in: after the sound pause the original sets the game state's byte `+0x56e0` to 1 (which
+    // `GameState_IsVibrationActive` `0x0041a3e0` reads, and `GameMode_DoResume` `0x00156078` clears); Coney has no such
+    // flag yet, so the step is left out (#669, pause.md#original-structure).
     // The sound state (Coney's: the bank) is remembered and the pause bank comes in. The original flushes the render
     // device's queue before the load; Coney's renderer drains its own queue (a platform substitution).
     m_previousBank = m_services.bank();

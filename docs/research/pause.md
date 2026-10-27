@@ -504,9 +504,10 @@ mode are on [Circled texts: the pause header](circled-text.md#pause-header). Wha
 
 - **Text:** the game state's mission title (`+0x134`), or the Rumble mode's title in a Rumble level; the subtitle is
   the level's name.
-- **Drawing:** on the grid only the top header is drawn, through `RenderColoured` in grey `0x005fd320` (80, 80, 80)
-  with the menu's fade alpha (`PauseMenu_Render`, `0x001df700`); that colour reaches only the hidden label, so the
-  circles keep their colours and the title and subtitle stay grey 178.
+- **Drawing:** after the open screen (Options, then Controls or Stats) come the three headers, the top one first; on the
+  grid only the top header is drawn, through `RenderColoured` in grey `0x005fd320` (80, 80, 80) with the menu's fade
+  alpha (`PauseMenu_Render`, `0x001df700`); that colour reaches only the hidden label, so the circles keep their colours
+  and the title and subtitle stay grey 178.
 - **Circle colour:** all three circles take the colour `PauseMenu_GetLevelColour` (`0x001db928`) gives the current
   level's number (the level record's `+0x04`), from the table below, tested in order, the first list that holds the
   level deciding. The header then turns its last circle red. With gold the menu also asks for black letters, which the
@@ -546,8 +547,7 @@ Confirmed (code) at the addresses cited unless a line says otherwise.
 - **Objectives** (0): the three headers stacked, the selected one expanded to its list; up and down choose the header
   (selection 0-2, starting at 0, or 2 in a Rumble level). An empty list shows "None" (`0x109`, `0x001dd0b8`). The
   lists are the checklists `HUDSetObjective` fills ([HUD: objectives](hud-messages.md#objectives-hudsetobjective)).
-  Usage line
-  `0x19` (up/down select, triangle back). Selected header gold (current) or purple (bonus), the others grey.
+  Usage line `0x19` (up/down select, triangle back). Selected header gold (current) or purple (bonus), the others grey.
 - **Stats** (1): only when the Stats screen is available (`+0x3bb8`): the Warrior's name and face, four
   bars (Strength `0xf3`, Stamina `0xf4`, Health `0xf5`, Rage `0xf6`) and a description paragraph
   ([The Stats screen](#stats-screen)). Otherwise nothing opens.
@@ -936,15 +936,16 @@ grids, the Yes/No box and the leaving actions follow this page; tests in `repo:t
 
 Coney stand-ins, each an open question below:
 
-- The top header is the `CircledTextHeader` ([Circled texts](circled-text.md#pause-header), [The top header](#the-top-header)):
-  the mission's title is the current level record's `+0x24` text (Coney's reading of the game state's `+0x134`, which
-  `InitLevel` copies from the level's names; on the disc `level99`'s gives the circled `1`, the checkpoint letter and
-  "Coney", as the runtime screenshot shows), the subtitle its `+0x49` name, the circles in the level's colour
-  (`pauseLevelColour`, the last red), drawn on every screen at the menu's fade. Its label (string `0xe7`, or `0xe8`
-  with `<ROBJ_N>`) is set but always hidden: where it shows on the other screens is an open question, so the two
-  lower headers, the names over Objectives, Options and Controls, the objective lists and the Restart and Quit
-  screens stay centred texts at Coney's positions and colours. Tests: `repo:tests/gui/pause_menu_test.cpp` and
-  `repo:tests/platform/disc_pause_stats_test.cpp` (two circles, a title and a subtitle in `level99`).
+- The top header is the `CircledTextHeader` ([Circled texts](circled-text.md#pause-header), [The top
+  header](#the-top-header)): the mission's title is the current level record's `+0x24` text (Coney's reading of the game
+  state's `+0x134`, which `InitLevel` copies from the level's names; on the disc `level99`'s gives the circled `1`, the
+  checkpoint letter and "Coney", as the runtime screenshot shows), the subtitle its `+0x49` name, the circles in the
+  level's colour (`pauseLevelColour`, the last red), drawn on every screen at the menu's fade, after the open screen as
+  the first of the original's three headers. Its label (string `0xe7`, or `0xe8` with `<ROBJ_N>`) is set but always
+  hidden: where it shows on the other screens is an open question, so the two lower headers, the names over Objectives,
+  Options and Controls, the objective lists and the Restart and Quit screens stay centred texts at Coney's positions and
+  colours. Tests: `repo:tests/gui/pause_menu_test.cpp` and `repo:tests/platform/disc_pause_stats_test.cpp` (two circles,
+  a title and a subtitle in `level99`).
 - The Options screen (`repo:src/gui/pause_menu/option_menu.h`, `OptionMenu`, written from
   [The Options screen](#options) and [`GUI/OptionMenu.cpp`](#fn-optionmenu)) follows this page: the seven titles, each
   page's items, places (`OptionLayout::forMode`, by language and video mode; Coney's pause mode opens the 4:3 one),
@@ -994,7 +995,18 @@ Coney stand-ins, each an open question below:
   which up and down move one line within the text (cue 4, or `0xe` at either end); left and right refuse, back closes;
   every part at the menu's alpha, the shadows opaque. Coney's choices: the down move's limit is the line count the last
   draw measured (the original's draw counts it too); the screen is placed at once (Coney loads the pictures when the
-  pause starts); the `0x08` and `0x02` layouts are not modelled. Tests: `repo:tests/gui/pause_stats_test.cpp` (the caps,
+  pause starts); the `0x08` and `0x02` layouts are not modelled. A known difference: Rembrandt's description is five
+  lines on both, but Coney breaks them at other words (the original's first line ends "skills when", Coney's
+  "skills"). The wrap is not the cause: `MessageHUD_WordWrap` measures each line with `Font_Measure` in the metrics of
+  `Font_Size(1.0)` times the base size 1.0 (`MessageHUD_GetScaledMetrics` `0x001b94e0`, `MessageHUD_Setup`
+  `0x001b9090` called with font size 1.0 by `PauseStats_Setup` `0x001e5618`), proportional (`MessageHUD_Construct`
+  `0x001b8f98` sets `+0x180` = 1), as Coney does; the view aspect enters only the line height. The cause is Coney's
+  glyph width (`repo:src/graphics/font.cpp`, `roundTexels`), which truncates each rectangle's texel size after adding
+  0.5, where `Font_Measure` (`0x00179958`) and `Font_Draw` (`0x00179c30`) keep the sum unrounded ([Text](gui.md#text)):
+  confirmed (code) at those addresses. With the unrounded width, Coney's wrap of the disc's description gives the
+  original's five lines word for word (a local disc test, the characters per line 34, 35, 37, 34, 20 against 29, 26,
+  33, 37, 35 rounded). The fix touches every proportional text, so it is left to its own change
+  ([q-glyph-width](#q-glyph-width)). Tests: `repo:tests/gui/pause_stats_test.cpp` (the caps,
   the labels' places, the window's moves), `repo:tests/gui/pause_menu_test.cpp` and
   `repo:tests/platform/disc_pause_stats_test.cpp` (START, the left stick at 70 % to Stats, cross in `level99`: five
   texts, four bars in (0, 1], every picture loaded).
@@ -1014,6 +1026,12 @@ Coney stand-ins, each an open question below:
   bars' sprites, the labels' offset and the description's wrap width, line window and paging, with a runtime check;
   the flag `+0x3bb8` is taken to be what `PauseStats_Setup`'s slot `+0x44` call sets, inferred). Still open: the
   unused floats t6-t9 of the difficulty table and the `0x08` and `0x02` layouts.
+- <span id="q-glyph-width"></span>The Stats description's line breaks: Coney's `Font::glyphWidth` truncates
+  `texels + 0.5` where `Font_Measure` (`0x00179958`) keeps it unrounded, so Coney breaks the description at other
+  words ([Coney's implementation](#coneys-implementation)). Answered for the cause; open until the font's width
+  follows the original, which changes every proportional text and wants its own runtime comparison of a few screens.
+  Why the truncation loses a texel on some glyphs is inferred from the rectangles' quarter-texel inset
+  ([GUI](gui.md)): their sizes in texels sit just under or over a whole number.
 - The header widget ([answered](circled-text.md#pause-header): one to three circles, the level's colour and a
   red checkpoint circle). Still open: a screenshot of the 16:9 pause menu (the layout's title factor is 0 there) and
   whether the menu's mission titles always have the `<number>:<title>` form.
