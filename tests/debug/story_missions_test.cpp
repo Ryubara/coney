@@ -69,7 +69,7 @@ TEST_CASE("the Missions page says so when the run cannot start a mission", "[deb
     CHECK(session.log().last(1).front() == "missions: cannot start a mission in this run");
 }
 
-// Owner item 19 (issue #85): Armies of the Night had no way in from the debug menus but a level-table record that
+// User item 19 (issue #85): Armies of the Night had no way in from the debug menus but a level-table record that
 // cannot load (docs/research/armies.md#coney-fixes).
 TEST_CASE("the Missions page lists the flashbacks and Armies of the Night after the story and starts a stage",
           "[debug]") {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // Checks against the player's own disc that the debug menus lead to Armies of the Night's first stage and not to a
-// black screen (owner item 19, issue #85; docs/research/armies.md#coney-fixes). The level table's record `armies` has
+// black screen (user item 19, issue #85; docs/research/armies.md#coney-fixes). The level table's record `armies` has
 // no level file, so the Levels page leaves it out and a jump to it is refused; `level60` checkpoint 1, which the
 // Missions page now lists, is jumped to from a level in play and plays its intro scene to the end with the picture
 // clear. The session runs as `coney` runs it (support/disc_session.h), the pad idle. It runs only when the environment

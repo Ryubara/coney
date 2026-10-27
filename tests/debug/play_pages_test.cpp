@@ -404,7 +404,7 @@ TEST_CASE("the Levels page lists the play mode's levels and asks for the one cho
     CHECK(asked == std::vector<std::string>{"level99"});
 }
 
-// Owner item 19 (issue #85): the level table's test record `armies` has no level file, so choosing it left a black
+// User item 19 (issue #85): the level table's test record `armies` has no level file, so choosing it left a black
 // screen (docs/research/armies.md#coney-fixes).
 TEST_CASE("the Levels page leaves out the level-table records that cannot load and names them", "[debug]") {
     // Expected: unverified, #85 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)

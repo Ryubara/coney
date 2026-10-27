@@ -81,7 +81,10 @@ TEST_CASE("the rail camera in mode 0 frames a chase as level3's main framing doe
 }
 
 TEST_CASE("the rail camera leads its target ahead or behind along the rail, clamped to the rail's ends", "[camera]") {
-    // Expected: camera.md#rail, confirmed (code)
+    // Expected: camera.md#rail, confirmed (code), but for the look-at point: unverified, #1017
+    // The look-at point's lead pins Coney's switch 7 (a stand-in): the original's switch 7 puts the camera off the rail
+    // and looks at the target point (camera.md#rail step 5).
+
     RailCamera rail = straightRail();
     rail.setLead(3.0F, 0.0F, true);
     rail.update(Vec3{12.0F, 4.0F, 0.0F}, true, kStep);
@@ -93,6 +96,60 @@ TEST_CASE("the rail camera leads its target ahead or behind along the rail, clam
     CHECK(rail.position().x == Approx(0.0F));
     rail.update(Vec3{25.0F, 4.0F, 0.0F}, false, kStep);
     CHECK(rail.position().x == Approx(17.0F));
+}
+
+TEST_CASE("the rail camera's hand-over between segments grows by 1.05 an update and lands on the rail's foot once "
+          "the step is under 1 cm in plan",
+          "[camera]") {
+    // Expected: camera.md#rail, confirmed (code): CamRail_UpdatePosition (0x0013d6b0) step 3.
+    // An L-shaped rail: along +x to (10, 0), then along +y. The target starts on the first segment and steps round
+    // the corner onto the second, which starts a hand-over of 0.1.
+    RailCamera rail;
+    RailSetup setup;
+    setup.fieldOfView = 60.0F;
+    rail.setup(setup);
+    rail.addPoint(Vec3{0.0F, 0.0F, 2.0F});
+    rail.addPoint(Vec3{10.0F, 0.0F, 2.0F});
+    rail.addPoint(Vec3{10.0F, 10.0F, 2.0F});
+    rail.update(Vec3{9.7F, -0.2F, 0.0F}, false, kStep);
+    REQUIRE(rail.position().x == Approx(9.7F));
+    REQUIRE(rail.position().y == Approx(0.0F).margin(1e-6F));
+    // The foot on the second segment, the camera's goal while the target stands there (0.39 m away: no damping).
+    const Vec3 target{9.95F, 0.1F, 0.0F};
+    const float footX = 10.0F;
+    const float footY = 0.1F;
+    // Each update moves the camera the blend's share of the way and multiplies the blend by 1.05; the update whose
+    // unblended step is under 1 cm in plan (or whose grown blend reaches 1) ends it on the foot itself.
+    float x = rail.position().x;
+    float y = rail.position().y;
+    float blend = 0.1F;
+    bool blending = true;
+    int updates = 0;
+    while (blending && updates < 200) {
+        rail.update(target, false, kStep);
+        ++updates;
+        const float dx = footX - x;
+        const float dy = footY - y;
+        const float grown = blend * 1.05F;
+        if ((dx * dx) + (dy * dy) < 1e-4F || grown >= 1.0F) {
+            x = footX;
+            y = footY;
+            blending = false;
+        } else {
+            x += dx * blend;
+            y += dy * blend;
+            blend = grown;
+        }
+        CHECK(rail.position().x == Approx(x).margin(1e-5F));
+        CHECK(rail.position().y == Approx(y).margin(1e-5F));
+    }
+    CHECK_FALSE(blending);
+    // The second update moves 0.105 of the way, not 0.15.
+    CHECK(updates > 2);
+    // Ended: the camera stays on the foot.
+    rail.update(target, false, kStep);
+    CHECK(rail.position().x == Approx(footX));
+    CHECK(rail.position().y == Approx(footY));
 }
 
 TEST_CASE("the rail camera holds at the rail's end; its settings ease linearly; the pitch fixes the look-at point",

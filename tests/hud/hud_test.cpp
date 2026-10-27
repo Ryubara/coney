@@ -14,6 +14,7 @@
 #include "graphics/font.h"
 #include "gui/text_layout.h"
 #include "hud/hud.h"
+#include "hud/messages.h"
 #include "support/font_fixtures.h"
 #include "support/hud_fixtures.h"
 #include "support/optional_value.h"
@@ -697,6 +698,77 @@ TEST_CASE("the action cycle hides the prompt's text and draws its button at the 
     hud.render(canvas.canvas);
     CHECK_FALSE(canvas.text.sprites().empty());
     CHECK(parts.sprites().empty());
+}
+
+TEST_CASE("on the clubhouse's base the action prompt takes no raise: only the bases 0.86, 0.78, 1.0 and 0.8 do",
+          "[hud]") {
+    // Expected: hud-messages.md#action-prompts, confirmed (code): ActionPrompt_Update (0x0019f528) adds the raise to
+    // the icon's and the text's y only when the base is one of those four.
+    Hud hud = makeHud(nullptr);
+    Canvas canvas;
+    coney::graphics::SpriteSheet sheet;
+    sheet.texture = std::make_shared<coney::test::FakeTexture>(512, 256);
+    for (int i = 0; i < 100; ++i) {
+        sheet.page.rects.push_back(coney::graphics::UvRect{0.0F, 0.0F, 34.0F / 512.0F, 34.0F / 256.0F});
+    }
+    coney::graphics::SpriteBatch parts(sheet, 16, 10000.0F);
+    canvas.canvas.parts = &parts;
+    hud.setClubActionText(true);
+    hud.setActionPrompt(0, "Lift");
+    hud.startActionCycle(
+        0, coney::hud::ActionCycle{.on = true, .framesPerIcon = 4, .blinkFrames = 0, .iconA = 79, .iconB = 79});
+    step(hud, 0);
+    REQUIRE(hud.promptRaise(canvas.canvas.text.fonts) != Approx(0.0F));
+    hud.render(canvas.canvas);
+    REQUIRE(parts.sprites().size() == 1);
+    // The icon's centre at the clubhouse's base itself, 0.125.
+    CHECK(parts.sprites()[0].position.y ==
+          Approx(coney::graphics::OverlayCamera::guiToOverlay(0.5F, coney::hud::kClubPromptY).y));
+    // At the normal base, 0.86, the raise is added.
+    parts.clear();
+    hud.setClubActionText(false);
+    hud.render(canvas.canvas);
+    REQUIRE(parts.sprites().size() == 1);
+    CHECK(parts.sprites()[0].position.y ==
+          Approx(coney::graphics::OverlayCamera::guiToOverlay(0.5F, coney::hud::kPromptPlace.y +
+                                                                        hud.promptRaise(canvas.canvas.text.fonts))
+                     .y));
+}
+
+TEST_CASE("the stopwatch's minutes form is its label and %2u:%02u, right-aligned at (1.0, 0.24)", "[hud]") {
+    // Expected: hud-functions-panels.md#fn-after-textentrypad, confirmed (code): StopWatchHud_UpdateMinutes
+    // (0x001cd5e8) and StopWatchHud_ApplyVideoMode (0x001cd400), the default mode's place.
+    std::int32_t ms = 65999;
+    coney::hud::HudServices services;
+    services.stopWatchTime = [&ms] { return ms; };
+    Hud hud(std::move(services));
+    hud.showStopWatch(true, "TIME ");
+    step(hud, 0);
+    // What the original's message widget draws: the minutes padded to two places, the block's right edge at x 1.0.
+    const auto expected = [](std::string_view text) {
+        Canvas drawn;
+        coney::gui::TextStyle style = coney::hud::messageStyle(1.0F);
+        style.alignment = coney::gui::TextAlignment::Right;
+        coney::hud::drawMessage(drawn.canvas, text, style, 0.24F);
+        return drawn.text.sprites();
+    };
+    const auto shown = [&hud] {
+        Canvas canvas;
+        hud.render(canvas.canvas);
+        return canvas.text.sprites();
+    };
+    const auto check = [](const auto& got, const auto& want) {
+        REQUIRE_FALSE(want.empty());
+        REQUIRE(got.size() == want.size());
+        for (std::size_t i = 0; i < got.size(); ++i) {
+            CHECK(got[i].position.x == Approx(want[i].position.x));
+            CHECK(got[i].position.y == Approx(want[i].position.y));
+            CHECK(got[i].uv == want[i].uv);
+        }
+    };
+    check(shown(), expected("TIME  1:05"));
+    ms = 605000;
+    check(shown(), expected("TIME 10:05"));
 }
 
 TEST_CASE("the level's shut-down clears every hint, objective and panel the level left, and keeps the game's",

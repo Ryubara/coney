@@ -157,7 +157,9 @@ TEST_CASE("OpenDoor swings, and collision goes 29 ticks later; CloseDoor brings 
 }
 
 TEST_CASE("DoorOpen swings away from the human, only from closed", "[world_objects][doors]") {
-    // Expected: objects.md#opening, confirmed (code)
+    // Expected: objects.md#opening, confirmed (code), but for the side's sign: unverified, #707
+    // The angles' signs pin Coney's side test (a stand-in): DoorSwing_OpenBy (0x003f9910) dots the door's axis with
+    // (human - door), the opposite of Coney's, and #707 corrects objects.md#opening with it.
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info = swinging(100);
@@ -228,7 +230,8 @@ TEST_CASE("SetDoorPickable(false) stops the pickers; the third abandoned pick co
 }
 
 TEST_CASE("the store door: one hit swings it open away from the attacker", "[world_objects][doors]") {
-    // Expected: objects.md#door-break, confirmed (code)
+    // Expected: objects.md#door-break, confirmed (code), but for the side's sign: unverified, #707
+    // The -170 pins Coney's side test (a stand-in, as in "DoorOpen swings away from the human").
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info = swinging(1, coney::world_objects::object_type::kBreakAndEnterDoor);
@@ -273,7 +276,10 @@ TEST_CASE("a cabin door: two plain hits break a leaf, three the door", "[world_o
 }
 
 TEST_CASE("dyn_door_liz: model stages, then wreck pieces and the links opened", "[world_objects][doors]") {
-    // Expected: objects.md#door-break, confirmed (code)
+    // Expected: unverified, #707
+    // The splinters on every hit and the four stages from 80 % down pin Coney's stand-ins: DoorSwing_HitBreakable
+    // (0x003fa438) throws splinters only for dyn_door_dclub and takes liz's stages one a hit from 20 % up, and #707
+    // corrects objects.md#door-break with it. The wreck pieces and the links follow the page.
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info = swinging(100);
@@ -381,7 +387,10 @@ TEST_CASE("a barrier: links charged through, boards, hidden, then removed with i
 }
 
 TEST_CASE("walls throw no boards; message 10 stops a barrier being hit", "[world_objects][doors]") {
-    // Expected: objects.md#barriers, confirmed (code)
+    // Expected: objects.md#barriers, confirmed (code), but for dyn_door_wall_a hidden: unverified, #707
+    // dyn_door_wall_a hidden pins Coney's stand-in: DoorFence_OnHit (0x003b2180) never marks it broken, so it stays
+    // with its damaged model, and #707 corrects objects.md#barriers with it.
+
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info{.className = "dyn_door_fence", .hitpoints = 3};

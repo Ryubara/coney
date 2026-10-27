@@ -91,7 +91,9 @@ TEST_CASE("a Warriors type plays with his Warrior's class; anyone else with his 
     CHECK(warriorPowerClassOf(32) == 64);
     CHECK(warriorPowerClassOf(10) == 66);
     CHECK(warriorPowerClassOf(41) == 7);
-    // Only a player of category 14 takes it; an AI human, or another category, keeps the type's own class.
+    // A player of category 14 takes it; another category keeps the type's own class. The AI human's 40 pins Coney's
+    // `player` gate, a stand-in: the original gives any human of category 14 the Warrior's class (unverified, #1020).
+
     CHECK(powerClassOf(32, coney::characters::kWarriorsCategory, 40, true) == 64);
     CHECK(powerClassOf(32, coney::characters::kWarriorsCategory, 40, false) == 40);
     CHECK(powerClassOf(417, 3, 2, true) == 2);
