@@ -35,7 +35,7 @@ from typing import Any
 
 from coney_tools import identity, pr_open_publish, pr_open_unit, pr_proof, pr_publish, pr_ready, pr_text, stamps
 from coney_tools.config import ConfigError, find_repo_root
-from coney_tools.conventions import Claims, load_conventions
+from coney_tools.conventions import Claims, load_conventions_leniently
 from coney_tools.issue_claim_remote import GhRemote
 from coney_tools.pr_open_run import (
     EXIT_CONFLICT,
@@ -74,7 +74,7 @@ def _claims_remote(rules: Claims) -> GhRemote:
 def default_env() -> Env:
     """The real machine: `gh`, git, the claim cards through `gh`, the clock and the identity the hook vouched for."""
     root = find_repo_root(Path.cwd())
-    rules = load_conventions(root).claims
+    rules = load_conventions_leniently(root).claims
     return Env(
         gh=pr_publish.real_gh,
         git=pr_publish.real_git,

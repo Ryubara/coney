@@ -172,6 +172,19 @@ issues and pull requests in the shape `gh` returns (`python/tests/audit_support.
   of the `sections`, `no_ai` that is not one of the choices) is an error;
 - a colour made only of digits must be quoted (`"000000"`), because YAML reads an unquoted one as a number.
 
+The release commands (`pr open`, `pr verify` and `pr text`) read the file of the branch under release
+leniently: an **unknown** key is skipped and named in a `note:` line (on stderr for `verify` and `text`), because the
+first release of a branch that adds a rule is read by the tool `main` already has, which cannot know the key. Skipping
+adds no steering, since a key the tool does not know is never read. What the file does steer is only partly the
+base's: `proof` and the `paths` scope lists `docs_only`, `tools_only` and `engine` always come from
+`origin/<default branch>`, and `pr open` takes `repo`, `pull_requests`, `merge`, `claims` and `stamps` from there for
+its own steps; the other sections, among them `stamps` and `tasks.review` for the proof, `tasks`, `pull_requests`,
+`commits` and `paths.gameplay`, are the branch's own ([#1044](issue:1044)). A missing key or a wrong value stays an
+error. So does a misspelt **required** key, which leaves the real key missing; a misspelt **optional** key (`except`,
+`manual_paths`, `jobs` and the like) is skipped like any unknown key and its default applies, because a new key next to
+an old one cannot be told from a typo of it, and refusing it would bring the bug back. `repo check`, `task check`,
+the tests and the Action stay strict and catch every typo.
+
 `coney-tools repo check` loads the file, so a mistake in it fails the `python` workflow and `coney-tools check changed`
 before anything else runs. Every command that needs a rule exits with code 2 and one line when the file is missing or
 unusable, and never with a traceback.

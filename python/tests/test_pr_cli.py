@@ -9,6 +9,7 @@ from git_support import git
 from pr_support import PARAGRAPH, Built, make
 
 from coney_tools.cli import main
+from coney_tools.conventions import CONVENTIONS_FILE
 
 
 @pytest.fixture
@@ -31,6 +32,40 @@ def test_verify_says_ok_for_a_complete_unit(
     out = capsys.readouterr().out
     assert f"pr verify work: change {built.diff[:12]} since origin/main" in out and "profile full" in out
     assert "ok: the log, Check, the compared functions and Review all hold for this change" in out
+
+
+def add_unknown_key(built: Built) -> None:
+    """A conventions file with a section the tool in these tests does not know (a branch that adds a rule)."""
+    path = built.root / CONVENTIONS_FILE
+    extra = "a_later_section: {x: 1}"
+    path.write_text(path.read_text(encoding="utf-8") + "\n" + extra + "\n", encoding="utf-8")
+
+
+def test_verify_reads_a_conventions_file_with_a_key_this_tool_does_not_know(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], at: None
+) -> None:
+    """The first release of a branch that adds a rule is read by the tool main already has: the file's new key is
+    skipped and named once on stderr (stdout stays the result), and the run goes on to its own checks."""
+    built = make(tmp_path)
+    add_unknown_key(built)
+    assert run(built, monkeypatch, "verify") == 1
+    captured = capsys.readouterr()
+    assert "unknown key" not in captured.out + captured.err and "refused: 1 problem" in captured.out
+    assert "worktree: uncommitted changes: .github/conventions.yml" in captured.out
+    assert captured.err.count("ignoring a_later_section") == 1 and "note: " in captured.err
+    assert "ignoring" not in captured.out
+
+
+def test_text_reads_a_conventions_file_with_a_key_this_tool_does_not_know(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], at: None
+) -> None:
+    """`pr text` skips the key the same way and names it once, whatever it then says about the description."""
+    built = make(tmp_path)
+    add_unknown_key(built)
+    run(built, monkeypatch, "text", "--dry-run")
+    captured = capsys.readouterr()
+    assert "unknown key" not in captured.out + captured.err
+    assert captured.err.count("ignoring a_later_section") == 1 and "ignoring" not in captured.out
 
 
 def test_verify_lists_every_refusal_with_what_to_redo_and_exits_1(
