@@ -300,7 +300,7 @@ class Fighter {
     /// A strike shape of this human's attack `animId` met `victim` in the strike test (Human::testStrikes(),
     /// human/strike_shapes.h): the hit lands as a free hit does, with the clip's Anim Range List damage, from
     /// `position` at game time `nowMs`, earning its rage; strikes() reports it after the update's actions. `animator`
-    /// is the attacker's, for the hit's sound.
+    /// is the attacker's, for the hit's sound. A stand-in: objects take hits on the object attack's path instead.
     /// @orig 0x0021b290 Strike_Contact (unknown)
     void strikeContact(Combatant& victim, int animId, anim::Vec3 position, std::uint64_t nowMs,
                        const HumanAnimator& animator);
