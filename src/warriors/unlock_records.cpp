@@ -95,7 +95,9 @@ unsigned UnlockCounts::percent() const {
         return 0;
     }
     // Divided first, then times 100, in single precision as the original does: the order changes some results (53 of
-    // 100 is 52).
+    // 100 is 52). The PS2's FPU rounds each step toward zero where Coney rounds to nearest, so for some totals the
+    // original shows one percent less (1 of 100: 0 % there, 1 % here); with the disc's total of 469 every count gives
+    // the same result, so a change to the total must check this again.
     return static_cast<unsigned>(static_cast<float>(records.unlocked) / static_cast<float>(records.total) * 100.0F);
 }
 

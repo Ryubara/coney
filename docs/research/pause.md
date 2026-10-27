@@ -1029,7 +1029,8 @@ Coney stand-ins, each an open question below:
 - <span id="q-glyph-width"></span>The Stats description's line breaks: Coney's `Font::glyphWidth` truncates
   `texels + 0.5` where `Font_Measure` (`0x00179958`) keeps it unrounded, so Coney breaks the description at other
   words ([Coney's implementation](#coneys-implementation)). Answered for the cause; open until the font's width
-  follows the original, which changes every proportional text and wants its own runtime comparison of a few screens.
+  follows the original, which changes every proportional text and wants its own runtime comparison of a few screens
+  (tracked in [#1012](issue:1012)).
   Why the truncation loses a texel on some glyphs is inferred from the rectangles' quarter-texel inset
   ([GUI](gui.md)): their sizes in texels sit just under or over a whole number.
 - The header widget ([answered](circled-text.md#pause-header): one to three circles, the level's colour and a
