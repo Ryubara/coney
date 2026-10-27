@@ -63,6 +63,9 @@ constexpr int kOtherWarriorPowerClass = 7;
 // (docs/research/armies.md#what-it-is).
 constexpr int kFirstArmiesLevel = 60;
 constexpr int kLastArmiesLevel = 69;
+// The last level whose humans Human_Init draws with the `_a` model: its own test takes 60-64
+// (docs/research/characters.md#type-to-model).
+constexpr int kLastArmiesModelLevel = 64;
 
 } // namespace
 
@@ -101,9 +104,8 @@ std::optional<std::string> modelNameFor(int type, int playerIndex, int levelNumb
         return std::nullopt;
     }
     std::optional<std::string> model = modelOf(modelRecordType(type, playerIndex));
-    // Coney's choice: the Armies test of GameState_IsArmiesLevel (60-69); Human_Init's own test is 60-64, which are the
-    // same levels on the disc.
-    if (model && isArmiesLevel(levelNumber)) {
+    // Human_Init's own test, 60-64, not GameState_IsArmiesLevel's 60-69.
+    if (model && levelNumber >= kFirstArmiesLevel && levelNumber <= kLastArmiesModelLevel) {
         *model += "_a";
     }
     return model;
