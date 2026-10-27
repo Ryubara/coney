@@ -46,17 +46,17 @@ float nearRadius(const Brain& scanner, const Brain& member) {
 bool down(const Brain& brain) { return brain.human().downOrDead(); }
 
 // Whether `scanner` may list `member` before the filter and sight (step 1.2): always for a Warrior; else only when he
-// is a pad player or `member` stands less than 1.9 m above him. **Coney stand-ins** (#1011): the original also lets
-// through a scanner who may not start a fight (`Brain_MayStartFight` `0x002904e0`: a Chase goal, the balcony boss's
-// top goal, a gang of kind 1 or a fight goal) unless his class role is 10, and one with 3 or more investigations
-// (`+0x2d0`); with that first branch ported the disc's level3 rooftop chase loses Snow for AI seeds 0 and 5, which
-// needs the pursuers' goals checked first. Coney builds no investigate goal, so the count would stay 0. The height
-// limit is not scaled by `CfgVerticalSightModifier` (`0x00510ad4`).
+// is a pad player or `member` stands less than 1.9 m above him.
 // @orig 0x002225d8 Human_MaySpectate (unknown)
 bool maySpectate(const Brain& scanner, const Brain& member) {
+    // The original also passes a scanner who may not start a fight (`Brain_MayStartFight` `0x002904e0`: a Chase goal,
+    // the balcony boss's top goal, a gang of kind 1 or a fight goal) unless his class role is 10; with that ported the
+    // disc's level3 rooftop chase loses Snow for AI seeds 0 and 5, so it waits as a **Coney stand-in** (#1011).
     if (scanner.type() == BrainType::Warrior) {
         return true;
     }
+    // **Coney stand-in** (#1011): 3 or more investigations (`+0x2d0`) also pass, but Coney builds no investigate goal,
+    // so the count is taken as 0; and the limit is not scaled by `CfgVerticalSightModifier` (`0x00510ad4`).
     return scanner.type() == BrainType::Player ||
            member.human().position().z < scanner.human().position().z + kScanHeightLimit;
 }
