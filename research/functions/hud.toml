@@ -129,6 +129,34 @@ coney = "src/hud/hud.h:Hud::promptRaise"
 status = "legacy"
 
 [[function]]
+address = 0x0019f528
+name = "ActionPrompt_Update"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "slot `+0x30`: places the prompt and its cycle icon ([Action prompts](hud-messages.md#action-prompts))"
+level = "confirmed-code"
+coney = "src/hud/hud.cpp:Hud::renderPrompt"
+status = "compared"
+
+[[function.gaps]]
+what = "the two-player places"
+relation = "not-ported"
+issue = 549
+
+[[function.gaps]]
+what = "the cycle icon size in the 16:9 and progressive modes"
+relation = "not-ported"
+issue = 890
+
+[[function]]
+address = 0x0019f850
+name = "ActionPrompt_Render"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "slot `+0x38`: in a two-player game or for player 0, the cycle icon (when on) and the text"
+level = "confirmed-code"
+coney = "src/hud/hud.cpp:Hud::renderPrompt"
+status = "compared"
+
+[[function]]
 address = 0x001a1138
 name = "HudBar_Draw"
 page = "hud-bar.md#draw"
@@ -546,7 +574,7 @@ page = "hud-functions-lua.md#fn-hudlua-start"
 role = "`+0x177ac` (`0x00617fec`) = 1 or 0, then one player's radar, or both for 2 ([The radars across a scene](hud.md#radars-across-a-scene))"
 level = "confirmed-code"
 coney = "src/hud/hud.h:Hud::radarOn"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001b43a8
@@ -555,7 +583,7 @@ page = "hud-functions-lua.md#fn-hudlua-start"
 role = "`+0x177ac` (`0x00617fec`) = 1 or 0, then one player's radar, or both for 2 ([The radars across a scene](hud.md#radars-across-a-scene))"
 level = "confirmed-code"
 coney = "src/hud/hud.h:Hud::radarOff"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001b4438
@@ -864,6 +892,15 @@ coney = "src/hud/num_indicator.h:NumIndicator::render"
 status = "legacy"
 
 [[function]]
+address = 0x001b7330
+name = "InstArrow_Update"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "slot `+0x30`: the instruction arrow's bob ([The instruction arrow](hud-messages.md#the-instruction-arrow-hudenableinstarrow))"
+level = "confirmed-code"
+coney = "src/hud/hud.cpp:InstructionArrow::offset"
+status = "compared"
+
+[[function]]
 address = 0x001b7a18
 name = "LockPickDial_SetDifficulty"
 page = "hud-functions-lua.md#fn-hudlua"
@@ -1105,6 +1142,43 @@ role = "below the table"
 level = "confirmed-code"
 coney = "src/hud/tag_hud.h:TagHud::render"
 status = "legacy"
+
+[[function]]
+address = 0x001ccf10
+name = "TextProgressHud_Compose"
+page = "hud-functions-panels.md#fn-after-textentrypad"
+role = "the shown text: `<SIZE 0.8>`, the label, `\": \"` and the value in decimal"
+level = "confirmed-code"
+coney = "src/hud/hud.cpp:Hud::renderScores"
+status = "compared"
+
+[[function]]
+address = 0x001cd5e8
+name = "StopWatchHud_UpdateMinutes"
+page = "hud-functions-panels.md#fn-after-textentrypad"
+role = "while the stopwatch shows: its label then `%2u:%02u` of its time, right-aligned"
+level = "confirmed-code"
+coney = "src/hud/hud.cpp:Hud::renderScores"
+status = "compared"
+
+[[function.gaps]]
+what = "the places per video mode"
+relation = "not-ported"
+issue = 890
+
+[[function]]
+address = 0x001cd748
+name = "StopWatchHud_UpdateSeconds"
+page = "hud-functions-panels.md#fn-after-textentrypad"
+role = "while the stopwatch shows: its label then `%02u` seconds, centred"
+level = "confirmed-code"
+coney = "src/hud/hud.cpp:Hud::renderScores"
+status = "compared"
+
+[[function.gaps]]
+what = "the places per video mode"
+relation = "not-ported"
+issue = 890
 
 [[function]]
 address = 0x001cdc80

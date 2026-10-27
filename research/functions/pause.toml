@@ -397,6 +397,15 @@ relation = "not-ported"
 issue = 662
 
 [[function]]
+address = 0x001db248
+name = "HUD_RemoveAllGoalText"
+page = "pause.md#fn-pausemenu"
+role = "clears the current-objectives checklist (`HUDRemoveAllGoalText`)"
+level = "confirmed-code"
+coney = "src/hud/hud.cpp:Hud::removeGoalText"
+status = "compared"
+
+[[function]]
 address = 0x001db278
 name = "PauseMenu_OnConfirm"
 page = "pause.md#fn-pausemenu"
