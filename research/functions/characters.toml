@@ -135,6 +135,16 @@ level = "confirmed-code"
 coney = "src/audio/speech.h:Speech::update"
 status = "legacy"
 
+[[function.gaps]]
+what = "no talk pose, no prepared start, no queued voice (`+0x184`) and no two-speaker stop"
+relation = "not-ported"
+issue = 1009
+
+[[function.gaps]]
+what = "the human's `+0x16c` is not cleared when the line ends"
+relation = "not-ported"
+issue = 1009
+
 [[function]]
 address = 0x0021ec38
 name = "Human_StopSpeech"
@@ -1415,6 +1425,11 @@ level = "confirmed-code"
 coney = "src/scripting/sound_bindings.cpp:makeHuSpeak"
 status = "legacy"
 
+[[function.gaps]]
+what = "the speaker does not look at the call's target while the line plays"
+relation = "not-ported"
+issue = 1009
+
 [[function]]
 address = 0x00239558
 name = "Human_ShutUp"
@@ -1432,6 +1447,11 @@ role = "`HuSpeakNI`: the variant of `HuSpeak` that Human_ActionDialog and AI dia
 level = "confirmed-code"
 coney = "src/scripting/sound_bindings.cpp:makeHuSpeak"
 status = "legacy"
+
+[[function.gaps]]
+what = "the speaker does not look at the call's target while the line plays"
+relation = "not-ported"
+issue = 1009
 
 [[function]]
 address = 0x00239788

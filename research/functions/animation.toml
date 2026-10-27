@@ -249,6 +249,11 @@ level = "confirmed-code"
 coney = "src/audio/game_sound.cpp:GameSound::damageWindowOpen"
 status = "legacy"
 
+[[function.gaps]]
+what = "the event stamp is not cleared 15 s after it, and the window opens at 2 s exactly, not after it"
+relation = "not-ported"
+issue = 650
+
 [[function]]
 address = 0x0010c100
 name = "AmbientManager_UpdateEmitters"

@@ -116,7 +116,8 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --view-character --fps
 
 `--bench FILE` measures a `--play-level ... --frames N` run with Coney's profiler and writes the frame times, the
 zones' times and the counters (draw calls, uploads, allocations) as JSON; `--bench-fighters N` spawns N AI fighters
-in front of the player first. How to benchmark and what the numbers say: [Performance](performance.md#bench).
+in front of the player first, and the other `--bench-*` options set up the crowd and how the run is measured. How to
+benchmark and what the numbers say: [Performance](performance.md#bench).
 `--cpu-skinning` skins the humans on the CPU instead of the GPU, to compare the two
 ([GPU skinning](performance.md#gpu-skinning)).
 

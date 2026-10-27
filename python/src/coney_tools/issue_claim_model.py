@@ -190,6 +190,8 @@ class Card:
     open_claims: tuple[int, ...] = ()
     #: Why the idle clock waits (`S-blocked`, `PR #12 open`), or None while it runs; it starts again when this ends.
     waiting: str | None = None
+    #: The issue carries `claims.exempt_label`: the claim is outside the open-claims limit (recomputed every pass).
+    exempt: bool = False
 
     def __post_init__(self) -> None:
         """A card with no last activity has had none since the claim."""
@@ -276,6 +278,7 @@ def _data(card: Card) -> dict[str, Any]:
         "handled": list(card.handled),
         "open_claims": list(card.open_claims),
         "waiting": card.waiting,
+        "exempt": card.exempt,
     }
 
 
@@ -331,6 +334,8 @@ def render_card(card: Card, rules: Claims) -> str:
     elif card.released_at is not None:
         lines.append(f"- **Ended:** {show_time(card.released_at)}")
     lines.append(f"- **Last activity:** {show_time(card.activity)} ({card.last_activity_why})")
+    if card.active and card.exempt:
+        lines.append(f"- **Limit:** not counted toward the open-claims limit (`{rules.exempt_label}`)")
     if card.open_claims:
         lines.append(f"- **Open claims of {card.claimant}:** " + ", ".join(f"#{number}" for number in card.open_claims))
     lines += ["", f"<!-- {rules.card_marker}-data {_hidden_json(_data(card))} -->"]
@@ -385,6 +390,7 @@ def parse_card(body: str, rules: Claims) -> Card | None:
             handled=tuple(int(item) for item in data.get("handled", ())),
             open_claims=tuple(int(item) for item in data.get("open_claims", ())),
             waiting=str(data["waiting"]) if data.get("waiting") else None,
+            exempt=bool(data.get("exempt", False)),
         )
     except (ValueError, KeyError, TypeError):
         return None

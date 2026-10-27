@@ -847,6 +847,8 @@ class Claims:
     #: The `author_association` values that decide only when GitHub will not say the permission.
     maintainer_associations: tuple[str, ...]
     limits: ClaimLimits
+    #: A claim of an issue with this label is outside the open-claims limit (the units that build the workflow).
+    exempt_label: str
     critical_label: str
     #: The one status an issue can be claimed in.
     claimable_status: str
@@ -1859,7 +1861,7 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
         "create_wait_seconds",
         "settle_seconds",
     )
-    labels = ("critical_label", "claimable_status", "working_label", "review_label", "released_label")
+    labels = ("critical_label", "claimable_status", "working_label", "review_label", "released_label", "exempt_label")
     table = _table(
         data,
         where,
@@ -1929,6 +1931,7 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
             contributor=_count(limits["contributor"], _at(limits_where, "contributor")),
             issues_per_task=_count(limits["issues_per_task"], _at(limits_where, "issues_per_task")),
         ),
+        exempt_label=names["exempt_label"],
         critical_label=names["critical_label"],
         claimable_status=names["claimable_status"],
         working_label=names["working_label"],

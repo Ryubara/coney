@@ -32,7 +32,17 @@ name = "Gm_Level_Enter"
 page = "frontend.md#original-structure"
 level = "confirmed-code"
 coney = "src/gamemodes/gameplay_mode.h:GameplayMode::enter"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the reverb's default is only kept in the game state: the mixer has no reverb yet"
+relation = "stand-in"
+issue = 1009
+
+[[function.gaps]]
+what = "the pending level change, the timer, the pads, the five globals, the players' sync and the level-end countdown"
+relation = "not-ported"
+issue = 1009
 
 [[function]]
 address = 0x00159a58

@@ -738,9 +738,11 @@ int main(int argc, char** argv) {
         return cap == kStepsPerSecond ? coney::FramePacing::Lockstep : coney::FramePacing::Interpolated;
     };
     const auto fpsCap = static_cast<std::uint32_t>(options->fpsCap.value_or(0));
-    coney::FrameClock clock(testMode ? coney::FramePacing::Lockstep : pacingFor(fpsCap));
+    // `--bench-real-time` paces a bench as a player's run, though `--frames` makes it test mode otherwise.
+    const bool lockstep = testMode && !options->benchRealTime;
+    coney::FrameClock clock(lockstep ? coney::FramePacing::Lockstep : pacingFor(fpsCap));
     std::optional<coney::platform::FramePacer> pacer;
-    if (!testMode) {
+    if (!lockstep) {
         pacer.emplace(fpsCap, options->showFps ? std::function<void(std::string_view)>(logText)
                                                : std::function<void(std::string_view)>());
     }
@@ -1050,6 +1052,10 @@ int main(int argc, char** argv) {
     // How long a `--play-level` run may wait for its level to play before it gives up: 10 minutes of frames, longer
     // than any loading screen and intro movie.
     constexpr std::uint64_t kPlayStartFrames = 18000;
+    // A real-time bench draws its loading screen as fast as it goes, far more than 30 frames a second, so it waits
+    // for more of them.
+    constexpr std::uint64_t kRealTimeStartFrames = kPlayStartFrames * 100;
+    const std::uint64_t playStartFrames = lockstep ? kPlayStartFrames : kRealTimeStartFrames;
     std::uint64_t frameIndex = 0;
     std::optional<std::uint64_t> playOrigin;
     const auto playFramesDone = [&]() {
@@ -1063,12 +1069,14 @@ int main(int argc, char** argv) {
                 renderer.requestCapture(frame + *playFrameLimit - 1, *screenshotPath);
             }
         }
-        if (!playOrigin && frame >= kPlayStartFrames) {
+        if (!playOrigin && frame >= playStartFrames) {
             logError(std::format("{} never started playing", *commandLineLevel));
             return true;
         }
-        const bool done = playOrigin && frame - *playOrigin >= *playFrameLimit;
-        // `--bench`: the fighters on the first frame of play, the recording from the end of the warm-up.
+        // `--bench-measure` ends the run once its frames are measured, before `--frames` when they come first.
+        const bool done = playOrigin && (frame - *playOrigin >= *playFrameLimit || (bench && bench->measured()));
+        // `--bench`: the fighters on the first frame of play (or at `--bench-spawn-step`), the recording from the end
+        // of the warm-up.
         if (bench && playOrigin && !done) {
             bench->playFrame(frame - *playOrigin, debugSession.play());
         }
@@ -1158,6 +1166,17 @@ int main(int argc, char** argv) {
     }
     // Network play receives before each step and sends after it.
     coney::platform::addNetPlayHooks(hooks, netPlay, pacer.has_value());
+    // `--bench-spawn-step` counts the steps of play.
+    if (bench) {
+        hooks.afterStep = [inner = std::move(hooks.afterStep), &bench, &playOrigin] {
+            if (inner) {
+                inner();
+            }
+            if (playOrigin) {
+                bench->noteStep();
+            }
+        };
+    }
     // `--record`: a clip of the frames as the game draws them (read back before the menus above are drawn) and of
     // the steps' sound (docs/guides/testing.md#clips). It starts at once, or with `--play-level` at the level's first
     // frame of play, as `--frames` counts; without `--frames` the run ends when the clip is done.

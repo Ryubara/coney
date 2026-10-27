@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <format>
 #include <numbers>
 #include <optional>
@@ -14,11 +15,13 @@
 
 #include "animation/anim_math.h"
 #include "audio/music_player.h"
+#include "audio/type_traits.h"
 #include "camera/camera_view.h"
 #include "camera/cameras.h"
 #include "characters/character_class.h"
 #include "characters/character_types.h"
 #include "core/name_hash.h"
+#include "gamemodes/system_music.h"
 #include "human/fighter.h"
 #include "scenes/scene_player.h"
 #include "scripting/ai_bindings.h"
@@ -27,6 +30,10 @@
 #include "scripting/script_system.h"
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
+
+// The file is kept whole past the size guide's 500 lines: GameSound is one class, the sound host the bindings, the
+// front end and the play mode talk to, and its parts (speech, emitters, breathing, music) are already their own
+// classes (Speech, AmbientEmitters, VoiceTable, MusicPlayer); what is left here is the glue between them.
 
 namespace coney::audio {
 
@@ -41,11 +48,16 @@ constexpr double kDamWindowClosesMs = 15000.0;
 constexpr float kDefaultPitch = 1.0F;
 constexpr float kDefaultNiDuck = 0.2F;
 constexpr float kDefaultSceneDuck = 0.75F;
+// ... and the reverb's default (SoundSetEffect's type 1 at depth 0.1, no delay, no feedback).
+constexpr int kDefaultReverbType = 1;
+constexpr float kDefaultReverbDepth = 0.1F;
 
 // A game-axes vector as the engine's.
+// @coney-only glue between Coney's vector types
 SoundVec soundVec(anim::Vec3 v) { return SoundVec{v.x, v.y, v.z}; }
 
 // The way a human with `headingDegrees` faces (0 faces +y, turning anticlockwise seen from above).
+// @coney-only glue: the original reads the facing from the human's matrix
 SoundVec facingOf(float headingDegrees) {
     const float radians = headingDegrees * std::numbers::pi_v<float> / 180.0F;
     return SoundVec{-std::sin(radians), std::cos(radians), 0.0F};
@@ -60,17 +72,20 @@ GameSound::GameSound(SoundPlayer& sounds, std::function<void(std::string_view)> 
           return engine != nullptr ? engine->random(low, high) : low;
       }) {}
 
+// @coney-only glue: the matrix players' sink over the engine
 SoundHandle GameSound::EngineSink::play(std::uint32_t hash, const SoundPlay& how) {
     SoundEngine* engine = m_sounds.engine();
     return engine != nullptr ? engine->play(hash, how) : SoundHandle{};
 }
 
+// @coney-only glue: the matrix players' sink over the engine
 void GameSound::EngineSink::stop(SoundHandle sound) {
     if (SoundEngine* engine = m_sounds.engine(); engine != nullptr) {
         engine->stop(sound);
     }
 }
 
+// @coney-only wiring to Coney's binding context; the original reads globals
 void GameSound::connect(script::ScriptSystem* scripts, const script::BindingContext* context) {
     m_scripts = scripts;
     m_context = context;
@@ -101,18 +116,21 @@ void GameSound::update() {
 
 // ---- Configuration ----
 
+// @coney-only glue between the bindings and the engine (SoundHost); Snd_CfgMusicInfo is tagged on its binding
 void GameSound::configureMusicTrack(std::uint32_t track, float barMs, float volume) {
     if (SoundEngine* engine = m_sounds.engine(); engine != nullptr) {
         engine->music().configure(track, barMs, volume);
     }
 }
 
+// @coney-only glue between the bindings and the engine (SoundHost); Snd_CfgInterfaceSound is tagged on its binding
 void GameSound::setInterfaceSound(int cue, std::uint32_t sound) {
     if (SoundEngine* engine = m_sounds.engine(); engine != nullptr && cue >= 0) {
         engine->setInterfaceSound(static_cast<std::size_t>(cue), sound);
     }
 }
 
+// @coney-only glue between the bindings and the engine (SoundHost); the work is VoiceTable::build's
 void GameSound::allocateCharacterVoices(int count) {
     SoundEngine* engine = m_sounds.engine();
     if (engine == nullptr) {
@@ -122,19 +140,23 @@ void GameSound::allocateCharacterVoices(int count) {
     m_voices.build(count, [&tables](std::uint32_t hash) { return tables.find(hash) != nullptr; });
 }
 
+// @coney-only glue between the bindings and the engine (SoundHost); the work is VoiceTable::setPercent's
 void GameSound::setCommandSoundPercent(int voiceSet, std::uint32_t command, std::uint32_t percent) {
     // The chance is kept as a byte.
     m_voices.setPercent(voiceSet, command, static_cast<std::uint8_t>(percent));
 }
 
+// @coney-only glue between the bindings and the engine (SoundHost); Sound_LoadBank is tagged on its binding
 void GameSound::loadSoundBank(std::string_view name) { loadBank(name); }
 
+// @coney-only glue between the bindings and the engine (SoundHost); Audio_SetNIDuck is tagged on its binding
 void GameSound::setNonDuckableDuck(float factor) {
     if (SoundEngine* engine = m_sounds.engine(); engine != nullptr) {
         engine->setNonDuckableDuck(factor);
     }
 }
 
+// @coney-only glue between the bindings and the engine (SoundHost); Audio_SetPitchMod is tagged on its binding
 void GameSound::setPitchFactor(float factor) {
     if (SoundEngine* engine = m_sounds.engine(); engine != nullptr) {
         engine->setPitchFactor(factor);
@@ -143,6 +165,7 @@ void GameSound::setPitchFactor(float factor) {
 
 // ---- The humans' sounds ----
 
+// @coney-only a run's log line; the original keeps no such counts
 std::string GameSound::summary() const {
     std::string line =
         std::format("game sound: {} animation sounds and {} hit sounds asked for, {} matrix sounds started; {} "
@@ -158,6 +181,7 @@ std::string GameSound::summary() const {
     return line + "\n";
 }
 
+// @coney-only glue between the humans and their sounds, with Coney's counts; the work is HumanSoundEvents'
 void GameSound::humanSound(const script::HumanSoundCall& call) {
     if (call.sound.kind != human::HumanSound::Kind::StopHeld) {
         ++(call.sound.kind == human::HumanSound::Kind::Anim ? m_animSounds : m_impactSounds);
@@ -171,30 +195,14 @@ void GameSound::humanSound(const script::HumanSoundCall& call) {
     m_humanSounds.play(call, traitsOf(call.characterType, call.human));
 }
 
+// @coney-only lookup glue; the original reads the type's flags and `+0x199` from the human itself
 HumanTraits GameSound::traitsOf(int type, double human) const {
     HumanTraits traits;
     if (m_context == nullptr) {
         return traits;
     }
     if (m_context->recorded != nullptr) {
-        const script::RecordedCalls& recorded = *m_context->recorded;
-        // The type's last CfgChar record: its women's voices and its class.
-        const std::span<const std::vector<script::Value>> chars = recorded.calls("CfgChar");
-        for (auto call = chars.rbegin(); call != chars.rend(); ++call) {
-            const std::optional<characters::CharacterType> parsed = characters::parseCfgChar(*call);
-            if (parsed && parsed->type == type) {
-                traits.female = parsed->female.value_or(0) == 1;
-                traits.bossClass = parsed->category.value_or(0) == human::kBossCategory;
-                break;
-            }
-        }
-        // CfgBreathingSound's first argument is the combat factor (game state +0x24c).
-        if (const std::span<const std::vector<script::Value>> breathing = recorded.calls("CfgBreathingSound");
-            !breathing.empty() && !breathing.back().empty()) {
-            if (const std::optional<double> factor = breathing.back().front().number(); factor) {
-                traits.combatFactor = static_cast<float>(*factor);
-            }
-        }
+        traits = typeTraits(*m_context->recorded, type);
     }
     // HuEnableSoundCommands(false) silences him.
     if (m_context->ai != nullptr) {
@@ -206,16 +214,19 @@ HumanTraits GameSound::traitsOf(int type, double human) const {
     return traits;
 }
 
+// @coney-only lookup glue; the original reads the human's voice set (`+0x3b0`)
 int GameSound::voiceSetOf(int type) const {
     return m_context != nullptr && m_context->recorded != nullptr ? script::voiceSetOfType(*m_context->recorded, type)
                                                                   : -1;
 }
 
+// @coney-only glue (HumanVoices); the original reads the human's `+0x178`
 bool GameSound::Voices::speaking(double human) const {
     const SoundEngine* engine = m_owner.m_sounds.engine();
     return engine != nullptr && m_owner.m_speech.speaking(*engine, human);
 }
 
+// @coney-only glue (HumanVoices); the original calls Human_StopSpeech itself
 void GameSound::Voices::stopLine(double human) {
     // The vocal ids stop without force: a line that may not be cut (HuSpeakNI's) is left alone.
     if (SoundEngine* engine = m_owner.m_sounds.engine(); engine != nullptr) {
@@ -223,6 +234,7 @@ void GameSound::Voices::stopLine(double human) {
     }
 }
 
+// @coney-only glue (HumanVoices); the caller (Human_SayAnimLine) picks the start
 bool GameSound::Voices::sayLine(const script::HumanSoundCall& who, std::uint32_t hash, float volume, bool cut) {
     SoundEngine* engine = m_owner.m_sounds.engine();
     if (engine == nullptr || scenePlaying()) {
@@ -237,6 +249,8 @@ bool GameSound::Voices::sayLine(const script::HumanSoundCall& who, std::uint32_t
         .valid();
 }
 
+// The speaker's sound commands must be on (HuEnableSoundCommands, `+0x199`).
+// @orig 0x002205e0 Human_SayCommand (unknown)
 bool GameSound::Voices::sayCommand(const script::HumanSoundCall& who, std::uint32_t command, float volume,
                                    bool interrupt, bool duckable) {
     if (!m_owner.traitsOf(who.characterType, who.human).canSpeak) {
@@ -278,11 +292,13 @@ bool GameSound::Voices::mayGesture(const script::HumanSoundCall& who) {
     return false;
 }
 
+// @coney-only glue (HumanVoices); the original reads game state `+0x410`
 bool GameSound::Voices::scenePlaying() const {
     const script::BindingContext* context = m_owner.m_context;
     return context != nullptr && context->scenes != nullptr && context->scenes->cinematicActive();
 }
 
+// @coney-only glue; the original reads game state `+0x410` itself
 bool GameSound::cinematicPlaying() const {
     if (m_context != nullptr && m_context->scenes != nullptr && m_context->scenes->cinematicActive()) {
         return true;
@@ -293,6 +309,8 @@ bool GameSound::cinematicPlaying() const {
 
 // ---- The sound matrix ----
 
+// @coney-only glue between the bindings and the engine (SoundHost), with a log line;
+// Snd_LoadMatrix is tagged on its binding
 bool GameSound::loadSoundMatrix(std::string_view name) {
     const bool changed = m_matrix.load(name);
     if (changed) {
@@ -301,27 +319,33 @@ bool GameSound::loadSoundMatrix(std::string_view name) {
     return changed;
 }
 
+// @coney-only glue between the bindings and the engine (SoundHost); the work is SoundMatrix's
 void GameSound::newMaterialSlots(std::uint32_t m1, std::uint32_t m2, std::uint32_t count, std::uint32_t columns,
                                  const std::array<float, 3>& volumes) {
     m_matrix.newMaterialSlots(m1, m2, count, columns, volumes);
 }
 
+// @coney-only glue between the bindings and the engine (SoundHost); the work is SoundMatrix's
 void GameSound::newMaterialSound(std::uint32_t index, std::uint32_t m1, std::uint32_t m2,
                                  const std::array<std::optional<std::uint32_t>, 3>& sounds) {
     m_matrix.newMaterialSound(index, m1, m2, sounds);
 }
 
+// @coney-only glue between the bindings and the engine (SoundHost); the work is SoundMatrix's
 void GameSound::setMaterialSlotCount(std::uint32_t m1, std::uint32_t m2, std::uint32_t count) {
     m_matrix.setMaterialSlotCount(m1, m2, count);
 }
 
+// @coney-only glue between the bindings and the engine (SoundHost); the work is SoundMatrix's
 void GameSound::duplicateSoundMaterials(std::uint32_t a, std::uint32_t b) { m_matrix.duplicateMaterials(a, b); }
 
+// @coney-only glue between the bindings and the engine (SoundHost); the work is SoundMatrix's
 void GameSound::newAnimSlots(std::uint32_t event, std::uint32_t count, std::uint32_t columns,
                              const std::array<float, 3>& volumes) {
     m_matrix.newAnimSlots(event, count, columns, volumes);
 }
 
+// @coney-only glue between the bindings and the engine (SoundHost); the work is SoundMatrix's
 void GameSound::newAnimSound(std::uint32_t index, std::uint32_t event,
                              const std::array<std::optional<std::uint32_t>, 3>& sounds) {
     m_matrix.newAnimSound(index, event, sounds);
@@ -329,8 +353,12 @@ void GameSound::newAnimSound(std::uint32_t index, std::uint32_t event,
 
 // ---- Ambience ----
 
+// @coney-only glue between the bindings and the engine (SoundHost); the work is AmbientEmitters::setSound's
 void GameSound::addAmbientSound(int index, std::uint32_t sound) { m_emitters.setSound(index, sound); }
 
+// The emitter's sound: the name's hash, none for an empty name.
+// @orig 0x00113920 Snd_AddAmbientSoundEmitter2 (unknown)
+// @orig 0x00113840 Sound_AddAmbientEmitter (unknown)
 double GameSound::addAmbientEmitter(const script::AmbientEmitterCall& call) {
     SoundEngine* engine = m_sounds.engine();
     if (engine == nullptr) {
@@ -353,6 +381,7 @@ double GameSound::addAmbientEmitter(const script::AmbientEmitterCall& call) {
     return static_cast<double>(m_emitters.add(setup, *engine));
 }
 
+// @coney-only glue between the bindings and the engine (SoundHost); the work is AmbientEmitters::setPositions'
 void GameSound::setAmbientEmitterPositions(std::string_view name, std::span<const std::array<float, 3>> positions) {
     std::vector<SoundVec> points;
     points.reserve(positions.size());
@@ -362,12 +391,14 @@ void GameSound::setAmbientEmitterPositions(std::string_view name, std::span<cons
     m_emitters.setPositions(name, points);
 }
 
+// @coney-only glue between the bindings and the engine (SoundHost); Snd_PlayAmbientTrack is tagged on its binding
 void GameSound::playAmbientTrack(std::uint32_t sound) {
     if (SoundEngine* engine = m_sounds.engine(); engine != nullptr) {
         engine->playAmbientTrack(sound);
     }
 }
 
+// @coney-only glue between the bindings and the engine (SoundHost); Snd_Play2D is tagged on its binding
 double GameSound::play2D(std::uint32_t sound) {
     SoundEngine* engine = m_sounds.engine();
     return engine != nullptr ? static_cast<double>(engine->play(sound).id) : 0.0;
@@ -383,17 +414,20 @@ double GameSound::play3D(std::uint32_t sound, const std::array<float, 3>& positi
     return static_cast<double>(engine->play(sound, how).id);
 }
 
+// @coney-only glue for Coney's sound handles; the original resolves its handles itself
 bool GameSound::soundPlaying(double handle) const {
     const SoundEngine* engine = m_sounds.engine();
     return engine != nullptr && handle != 0.0 && engine->isPlaying(SoundHandle{static_cast<std::uint32_t>(handle)});
 }
 
+// @coney-only glue for Coney's sound handles; the original resolves its handles itself
 void GameSound::stopSound(double handle) {
     if (SoundEngine* engine = m_sounds.engine(); engine != nullptr && handle != 0.0) {
         engine->stop(SoundHandle{static_cast<std::uint32_t>(handle)});
     }
 }
 
+// @coney-only glue for Coney's sound handles; the original resolves its handles itself
 void GameSound::moveSound(double handle, const std::array<float, 3>& position, float volume) {
     if (SoundEngine* engine = m_sounds.engine(); engine != nullptr && handle != 0.0) {
         const SoundHandle sound{static_cast<std::uint32_t>(handle)};
@@ -402,14 +436,17 @@ void GameSound::moveSound(double handle, const std::array<float, 3>& position, f
     }
 }
 
+// @coney-only glue between the bindings and the engine (SoundHost); the work is AmbientEmitters::setEnabled's
 void GameSound::enableAmbientEmitter(int emitter, bool on) { m_emitters.setEnabled(emitter, on); }
 
+// @coney-only glue between the bindings and the engine (SoundHost); the work is AmbientEmitters::setVolume's
 void GameSound::setAmbientEmitterVolume(int emitter, float volume) {
     if (SoundEngine* engine = m_sounds.engine(); engine != nullptr) {
         m_emitters.setVolume(emitter, volume, *engine);
     }
 }
 
+// @orig 0x00114088 Audio_PauseSound (unknown)
 void GameSound::pauseSound(bool on) {
     if (on) {
         m_sounds.pauseAll();
@@ -418,12 +455,14 @@ void GameSound::pauseSound(bool on) {
     }
 }
 
+// @coney-only glue between the bindings and the engine (SoundHost); Snd_StopAmbientTrack is tagged on its binding
 void GameSound::stopAmbientTrack() {
     if (SoundEngine* engine = m_sounds.engine(); engine != nullptr) {
         engine->stopAmbientTrack();
     }
 }
 
+// @coney-only glue between the bindings and the engine (SoundHost); Snd_SetAmbientTrackVolume is tagged on its binding
 void GameSound::setAmbientTrackVolume(float volume) {
     if (SoundEngine* engine = m_sounds.engine(); engine != nullptr) {
         engine->setAmbientTrackVolume(volume);
@@ -432,6 +471,8 @@ void GameSound::setAmbientTrackVolume(float volume) {
 
 // ---- Music and the listener ----
 
+// @coney-only glue between the bindings and the engine (SoundHost), with a log line and the end callback's call
+// into Lua; Snd_PlayMusicTrack and Snd_LoopMusicTrack are tagged on their binding, the work is MusicPlayer's
 void GameSound::playMusic(std::uint32_t track, bool loop, std::string_view callback) {
     SoundEngine* engine = m_sounds.engine();
     if (engine == nullptr) {
@@ -449,6 +490,7 @@ void GameSound::playMusic(std::uint32_t track, bool loop, std::string_view callb
     engine->music().play(track, loop, std::string(callback));
 }
 
+// @coney-only glue; SystemMusic_Update is tagged at its caller
 void GameSound::playSystemMusic(std::uint32_t track, int fadeBars) {
     SoundEngine* engine = m_sounds.engine();
     if (engine == nullptr) {
@@ -460,22 +502,30 @@ void GameSound::playSystemMusic(std::uint32_t track, int fadeBars) {
     engine->music().play(track, true, {}, fadeBars);
 }
 
+// @coney-only glue between the bindings and the engine (SoundHost); Snd_StopMusicTrack is tagged on its binding
 void GameSound::stopMusic() {
     if (SoundEngine* engine = m_sounds.engine(); engine != nullptr) {
         engine->music().stop();
     }
 }
 
+// @coney-only glue between the bindings and the engine (SoundHost); Snd_SetMusicVolume is tagged on its binding
 void GameSound::setMusicVolume(float volume) {
     if (SoundEngine* engine = m_sounds.engine(); engine != nullptr) {
         engine->music().setVolume(volume);
     }
 }
 
+// @coney-only glue between the bindings and the engine (SoundHost); Snd_SetListener is tagged on its binding
 void GameSound::setListener(int listener) { m_listenerMode = listener; }
 
 // ---- Speech ----
 
+// HuSpeak and HuSpeakNI: the line, waiting or cutting in. **Not ported yet**: the speaker's head look at the call's
+// target for the line's length plus 0.5 s (Brain_LookAtTarget) is not made: Coney has no head look (#1009;
+// docs/research/sound.md#coneys-implementation).
+// @orig 0x00239370 Human_Speak (unknown)
+// @orig 0x002395a0 Human_SpeakInterrupt (unknown)
 bool GameSound::speak(const script::SpeechCall& call, std::string_view callback, std::optional<double> callbackArg) {
     SoundEngine* engine = m_sounds.engine();
     if (engine == nullptr) {
@@ -493,12 +543,15 @@ bool GameSound::speak(const script::SpeechCall& call, std::string_view callback,
         .valid();
 }
 
+// @coney-only glue between the bindings and the engine (SoundHost); Human_ShutUp is tagged on its binding,
+// the work is Speech's
 void GameSound::shutUp(double human, bool force) {
     if (SoundEngine* engine = m_sounds.engine(); engine != nullptr) {
         m_speech.shutUp(*engine, human, force);
     }
 }
 
+// @coney-only a forwarder to sayCommandAt() at full volume
 std::optional<double> GameSound::sayCommand(const script::CommandCall& call, std::string_view callback) {
     return sayCommandAt(call, callback, 1.0F, true);
 }
@@ -544,7 +597,23 @@ std::optional<double> GameSound::sayCommandAt(const script::CommandCall& call, s
 
 // ---- Gameplay ----
 
+// Mode 1's enter, step 1, its sound part (docs/research/level-loading.md#mode-1): the bank deferral, the reverb, the
+// pitch and ducks, and the moods' empty track lists. The load screen's virtual play is SoundEngine::startLoadScreen's.
+// @orig 0x001582e0 Gm_Level_Enter (unknown)
 void GameSound::gameplayEntered() {
+    // The reverb's default and the moods' tracks are the game state's (they outlast a level), kept with no engine too.
+    if (m_context != nullptr && m_context->state != nullptr) {
+        StoryState& story = m_context->state->story;
+        // **Coney stand-in**: the mixer has no reverb yet, so the default is only kept (StoryState::reverbType).
+        story.reverbType = kDefaultReverbType;
+        story.reverbDepth = kDefaultReverbDepth;
+        story.reverbDelay = 0;
+        story.reverbFeedback = 0;
+        // A level's system music plays only the tracks its own script gives (SoundSetMusicTrack).
+        for (std::size_t mood = 0; mood < kMusicMoods; ++mood) {
+            setMoodTracks(story, this, mood, {});
+        }
+    }
     SoundEngine* engine = m_sounds.engine();
     if (engine == nullptr) {
         return;
@@ -556,12 +625,14 @@ void GameSound::gameplayEntered() {
     engine->music().setSceneDuck(true, kDefaultSceneDuck);
 }
 
+// @coney-only glue: InitLevel step 3 is the play mode's; the work is SoundEngine::startLoadScreen's
 void GameSound::levelLoadStarted(int levelNumber) {
     if (SoundEngine* engine = m_sounds.engine(); engine != nullptr) {
         engine->startLoadScreen(characters::isArmiesLevel(levelNumber));
     }
 }
 
+// @coney-only glue: InitLevel step 11 is the play mode's; the work is SoundEngine::endLoadScreen's
 void GameSound::levelLoaded() {
     SoundEngine* engine = m_sounds.engine();
     if (engine == nullptr) {
@@ -571,10 +642,16 @@ void GameSound::levelLoaded() {
     write(std::format("sound bank: {}\n", engine->bankName()));
     write(std::format("sound matrix {}: {} material pairs, {} animation sounds\n", m_matrix.name(),
                       m_matrix.materialEntries(), m_matrix.animEntries()));
-    // Coney's stand-in: loading has ended, so SndLoadBank loads at once again (who clears +0x3fa58 is not traced).
+    // Loading has ended, so SndLoadBank loads at once again. The original clears +0x3fa58 once InitLevel returns
+    // (docs/research/sound.md#banks); no script runs between the two in Coney (the start callback of step 13 runs in
+    // the level script's step, runLevelScript), so the same loads wait. Coney's stand-in: it ends here, at step 11,
+    // where the load screen ends.
     engine->setDeferBankLoads(false);
 }
 
+// Mode 1's exit, its sound steps (docs/research/level-loading.md#unload): the emitters, every sound, the system music
+// off, the music, the pitch back to 1.0.
+// @orig 0x00158488 Gm_Level_Exit (unknown)
 void GameSound::gameplayLeft() {
     SoundEngine* engine = m_sounds.engine();
     m_speech.clear(engine);
@@ -587,18 +664,28 @@ void GameSound::gameplayLeft() {
     m_ambientEventMs.reset();
     m_humanSounds.stopHeldSounds();
     m_cinematicSeen = false;
+    if (engine != nullptr) {
+        engine->stopAmbientTrack();
+        engine->stopSceneSound();
+        engine->setCinematic(false); // a level left mid-scene leaves no duck behind
+        engine->stopAll();
+    }
+    // The system music is the game state's and outlasts the level: off, so the next level plays it only when its own
+    // script turns it on. A game-state write, made with no engine too (--no-audio).
+    if (m_context != nullptr && m_context->state != nullptr) {
+        setSystemMusic(m_context->state->story, this, false);
+    }
     if (engine == nullptr) {
         return;
     }
-    engine->stopAmbientTrack();
-    engine->stopSceneSound();
-    engine->setCinematic(false); // a level left mid-scene leaves no duck behind
-    engine->stopAll();
     engine->music().stop();
+    // The front end plays at the normal pitch, whatever the level's script set (SndSetPitchMod).
+    engine->setPitchFactor(kDefaultPitch);
 }
 
 // ---- The front end ----
 
+// @coney-only glue between the front end and the engine (FrontEndAudio)
 void GameSound::loadBank(std::string_view bank) {
     SoundEngine* engine = m_sounds.engine();
     if (engine == nullptr) {
@@ -609,13 +696,16 @@ void GameSound::loadBank(std::string_view bank) {
     }
 }
 
+// @coney-only glue between the front end and the engine (FrontEndAudio)
 std::string GameSound::loadedBank() const {
     const SoundEngine* engine = std::as_const(m_sounds).engine();
     return engine != nullptr ? engine->bankName() : std::string();
 }
 
+// @coney-only glue between the front end and the engine (FrontEndAudio)
 void GameSound::playMusic(std::string_view track) { playMusic(crc32(track), true, {}); }
 
+// @coney-only glue between the front end and the engine (FrontEndAudio)
 void GameSound::playCue(int cue) {
     if (SoundEngine* engine = m_sounds.engine(); engine != nullptr && cue >= 0) {
         engine->playInterfaceSound(static_cast<std::size_t>(cue));
@@ -624,6 +714,7 @@ void GameSound::playCue(int cue) {
 
 // ---- Helpers ----
 
+// @coney-only lookup glue; the original reads the speaker's place from the human itself
 std::optional<SpeakerPlace> GameSound::locate(double handle) const {
     if (m_context == nullptr) {
         return std::nullopt;
@@ -642,6 +733,7 @@ std::optional<SpeakerPlace> GameSound::locate(double handle) const {
     return SpeakerPlace{.position = SoundVec{p[0], p[1], p[2]}, .facing = facingOf(placement->headingDegrees)};
 }
 
+// @coney-only lookup glue; the original reads player 1 itself
 std::optional<double> GameSound::playerHandle() const {
     if (m_context == nullptr || m_context->humans == nullptr) {
         return std::nullopt;
@@ -747,6 +839,8 @@ bool GameSound::damageWindowOpen() const {
     return since >= kDamWindowOpensMs && since <= kDamWindowClosesMs;
 }
 
+// Coney's stand-in: the fight timer is the fight mood itself; the original keeps it on 5 s after the mood ends.
+// @orig 0x0010be78 AmbientManager_UpdateTimers (unknown)
 void GameSound::updateEmitters(SoundEngine& engine) {
     const int mood = m_context != nullptr && m_context->state != nullptr ? m_context->state->story.musicMood : -1;
     const MusicPlayer& music = engine.music();
@@ -764,6 +858,8 @@ void GameSound::updateEmitters(SoundEngine& engine) {
                              .fightTimer = mood == 1});
 }
 
+// The end callbacks of the lines Speech::update() ended.
+// @orig 0x0021e940 Human_UpdateSpeech (unknown)
 void GameSound::runCallbacks(std::span<const Speech::Ended> ended) {
     if (m_scripts == nullptr || !m_scripts->exists()) {
         return;
@@ -781,6 +877,7 @@ void GameSound::runCallbacks(std::span<const Speech::Ended> ended) {
     }
 }
 
+// @coney-only Coney's log
 void GameSound::write(std::string_view line) const {
     if (m_log) {
         m_log(line);

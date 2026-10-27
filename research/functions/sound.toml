@@ -38,6 +38,15 @@ coney = "src/audio/music_player.cpp:MusicPlayer::updateSystemMusic"
 status = "legacy"
 
 [[function]]
+address = 0x0010e9e0
+name = "SystemMusic_SetTracks"
+page = "sound.md#function-index"
+role = "a mood's track hashes (up to three) and their count; for the mood playing, a forced change and the system music on (`GameState_SetSystemMusic`)"
+level = "confirmed-code"
+coney = "src/gamemodes/system_music.h:setMoodTracks"
+status = "compared"
+
+[[function]]
 address = 0x0010f3a0
 name = "SoundClasses_LoadChunk"
 page = "sound.md#function-index"
@@ -583,7 +592,7 @@ page = "sound.md#function-index"
 role = "`SoundEnableSystemMusic` → `GameState_SetSystemMusic`"
 level = "confirmed-code"
 coney = "src/scripting/story_effects_bindings.cpp:makeSoundEnableSystemMusic"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00113ed0
@@ -890,6 +899,26 @@ level = "confirmed-code"
 coney = "src/audio/game_sound.h:GameSound::sayCommandAt"
 status = "legacy"
 
+[[function.gaps]]
+what = "the speaker does not look at the target while the line plays"
+relation = "not-ported"
+issue = 652
+
+[[function.gaps]]
+what = "the line is stopped before the voice table is asked, so a command with no line left still cuts it"
+relation = "not-ported"
+issue = 652
+
+[[function.gaps]]
+what = "`Sound_MarkCommandSaid` is not called"
+relation = "not-ported"
+issue = 652
+
+[[function.gaps]]
+what = "the human's `+0x16c` is not kept"
+relation = "not-ported"
+issue = 1009
+
 [[function]]
 address = 0x00220ac8
 name = "Human_PlayImpactSound"
@@ -1094,6 +1123,15 @@ role = "the system music's mood `+0x40c`; mood 4 switches the system music off a
 level = "confirmed-code"
 coney = "src/scripting/story_effects_bindings.cpp:makeSoundSetSystemMusicState"
 status = "legacy"
+
+[[function]]
+address = 0x0041a008
+name = "GameState_SetSystemMusic"
+page = "sound.md#warriors-functions"
+role = "the system music on or off; the scripts' hold on the mood cleared either way; a change hands the mood back to the game, stops the music when turning off and picks a mood"
+level = "confirmed-code"
+coney = "src/gamemodes/system_music.h:setSystemMusic"
+status = "compared"
 
 [[function]]
 address = 0x0041a060

@@ -385,6 +385,15 @@ def test_a_claimant_over_the_limit_of_open_claims_cannot_start(world: World) -> 
     assert untouched(world)
 
 
+def test_a_workflow_claim_whose_card_is_stale_does_not_refuse_the_start(world: World) -> None:
+    """A burst of label events leaves cards with `exempt: false` until the sweep: the start reads the labels itself."""
+    for number, task in ((20, "a"), (21, "b"), (22, "c"), (23, "d")):
+        world.github.add_issue(number, labels=("task", "A-tools", "P-high", "S-ready-to-start", "workflow"))
+        world.claim(number, task)  # planted cards, without the flag: as stale as they come
+    world.ready()
+    assert world.run() == 0
+
+
 def test_a_claimant_at_the_limit_can_start(world: World) -> None:
     world.claim(20, "a")
     world.claim(21, "b")

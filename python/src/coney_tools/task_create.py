@@ -400,7 +400,9 @@ def create_task(request: CreateRequest, env: CreateEnv) -> int:
 def _unclaim_hint(env: CreateEnv, numbers: list[int]) -> None:
     """Say how to give back the claims that were made before the task stopped."""
     if numbers:
-        env.out(f"claimed: {', '.join(f'#{n}' for n in numbers)} (write `/unclaim` on each to give them back)")
+        listed = ", ".join(f"#{n}" for n in numbers)
+        back = " ".join(str(n) for n in numbers)
+        env.out(f"claimed: {listed} (`coney-tools claim unclaim {back}` gives them back)")
 
 
 def _fix_task(request: CreateRequest, env: CreateEnv, user: str, issue: IssueView, card: Card | None) -> int:
