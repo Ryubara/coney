@@ -32,4 +32,11 @@ std::size_t Pads::connectedCount() const {
     return count;
 }
 
+// Filter a copy, so suppressing debug-owned input never changes the live pad's edge history.
+Pads Pads::withoutPort(std::size_t port) const {
+    Pads filtered = *this;
+    filtered.m_records.at(recordOfPort(port)) = Pad{};
+    return filtered;
+}
+
 } // namespace coney

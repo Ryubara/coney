@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 add_executable(coney_tests
     camera/camera_lens_test.cpp
+    camera/noclip_camera_test.cpp
     core/chunk_system_test.cpp
     core/clip_recording_test.cpp
     core/deferred_input_test.cpp
@@ -213,6 +214,7 @@ add_executable(coney_tests
     scripting/level_bindings_test.cpp
     scripting/lighting_bindings_test.cpp
     scripting/player_bindings_test.cpp
+    scripting/noclip_pad_handlers_test.cpp
     scripting/lua_chunk_test.cpp
     scripting/lua_libraries_test.cpp
     scripting/lua_vm_test.cpp
@@ -314,6 +316,7 @@ target_sources(coney_tests PRIVATE
     human/face_test.cpp
     human/way_clear_test.cpp
     human/flight_test.cpp
+    human/noclip_idle_test.cpp
     human/hiding_test.cpp
     human/body_test.cpp
     human/climb_test.cpp
@@ -495,6 +498,7 @@ if(CONEY_DEBUG_TOOLS)
         platform/disc_level99_handover_test.cpp
         platform/disc_level99_money_sound_test.cpp
         platform/disc_level99_noclip_test.cpp
+        platform/disc_noclip_camera_test.cpp
         platform/disc_level99_powerups_test.cpp
         platform/disc_level99_spawner_test.cpp
         platform/disc_level99_store_glass_test.cpp

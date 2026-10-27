@@ -221,6 +221,7 @@ class Cameras {
 
     /// The script functions the path camera reached since the last call (its points' and its end's), in order: the
     /// gameplay calls them after the step.
+    /// @coney-only Deferred callback delivery between Coney's camera manager and gameplay.
     [[nodiscard]] std::vector<std::string> takeFired() { return std::exchange(m_fired, {}); }
 
     /// `CameraMakeActive(camera, seconds)`: makes the camera with `handle` current, at once with 0 seconds or no
@@ -259,6 +260,7 @@ class Cameras {
     [[nodiscard]] float secondaryRange() const { return m_secondaryRange; }
     /// `CamSetFollowZoom(preset)` and `CamSetFollowAngle(degrees)` on the follow camera.
     void setFollowZoom(FollowZoom preset);
+    /// Sets the follow camera's pitch through `CamSetFollowAngle(degrees)`.
     void setFollowAngle(float degrees);
     /// `CamSetSplitMode(mode)`: the two-player split-screen layout, 0 or 1 (any other value is ignored). **Coney
     /// stand-in**: Coney has one player and one view, so the layout is kept and not applied.
@@ -310,6 +312,9 @@ class Cameras {
     [[nodiscard]] bool blending() const { return m_blend.has_value(); }
     /// What the current camera shows, after the last update (with the shake's offset while switch 6 is on).
     [[nodiscard]] const CameraView& view() const { return m_view; }
+    /// Supplies this frame's debug view without changing the selected camera or its blend; normal update resumes it.
+    /// @coney-only Noclip view override, docs/guides/debug-menu.md#noclip.
+    void setDebugView(const CameraView& view) { m_view = view; }
     /// How many cuts (a switch with no blend) there have been: a renderer drawing between two steps must not sweep the
     /// view across one, as the original draws only whole steps.
     [[nodiscard]] std::uint32_t cuts() const { return m_cuts; }

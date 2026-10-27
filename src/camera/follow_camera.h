@@ -132,6 +132,8 @@ struct FollowTarget {
     bool counts = true;
     /// A fall that began limp (state flag `0x1000000000`): the aim point moves 60% of the way an update.
     bool longFall = false;
+    /// Coney's noclip camera follows without lag or world collision (docs/guides/debug-menu.md#noclip).
+    bool debugFlight = false;
 };
 
 /// Where the target stands now: its feet and its facing (radians, 0 facing +y).
@@ -259,6 +261,13 @@ class FollowCamera {
     /// @orig 0x0012ae58 Cam_Follow_Update (Cam_Follow.cpp)
     void update(const FollowTarget& target, std::uint8_t rawRightX, std::uint8_t rawRightY,
                 const raycast::CollisionMesh* mesh, float seconds);
+    /// Routes player updates through the debug flight camera when requested; ordinary play uses update().
+    /// @coney-only Noclip camera routing, docs/guides/debug-menu.md#noclip.
+    void updateForPlayer(const FollowTarget& target, std::uint8_t rawRightX, std::uint8_t rawRightY,
+                         const raycast::CollisionMesh* mesh, float seconds);
+    /// Starts the next debug flight behind its new target, rather than retaining a previous flight's orbit.
+    /// @coney-only Noclip camera reset, docs/guides/debug-menu.md#noclip.
+    void resetDebugFlight() { m_debugYaw.reset(); }
 
     /// `CamEnable(5, on)`: switches the sprint zoom on or off (`+0x468`, on when made). Turning it off cancels a zoom
     /// in progress, leaving the band and the target pitch where they are.
@@ -374,6 +383,7 @@ class FollowCamera {
     [[nodiscard]] float inputHold() const { return m_inputHold; }
     /// The leash band now, metres (`+0x32c` / `+0x330`).
     [[nodiscard]] float bandNear() const { return m_bandNear; }
+    /// The far edge of the leash band, metres.
     [[nodiscard]] float bandFar() const { return m_bandNear + m_bandWidth; }
     /// Whether the sprint zoom is under way (`+0x448` not 0): zoomed in, or waiting or easing to go back.
     [[nodiscard]] bool sprintZoomActive() const { return m_zoomActive; }
@@ -395,6 +405,7 @@ class FollowCamera {
     [[nodiscard]] const FollowSettings& settings() const { return m_settings; }
     /// The field of view now, degrees, and the near plane.
     [[nodiscard]] float fieldOfView() const { return m_fov; }
+    /// The near plane used to draw the follow view.
     [[nodiscard]] float nearClip() const { return m_settings.nearClip; }
     /// Whether the combat camera is on (`+0x46f`).
     [[nodiscard]] bool combatOn() const { return m_combatOn; }
@@ -404,6 +415,9 @@ class FollowCamera {
     }
 
   private:
+    // Places the debug camera behind its flying target, with only explicit right-stick orbit and pitch.
+    // @coney-only Noclip camera, docs/guides/debug-menu.md#noclip.
+    void updateDebugFlight(const FollowTarget& target, std::uint8_t rawRightX, std::uint8_t rawRightY, float seconds);
     // The hard band's near edge before the first update: beyond any band, so the first update sets it at once.
     static constexpr float kNoHardBand = 1e9F;
 
@@ -533,7 +547,8 @@ class FollowCamera {
     anim::Vec3 m_blockPoint;
     anim::Vec3 m_targetFeet; // the target's latest feet and facing
     float m_targetHeading = 0.0F;
-    FollowTargetSource m_source; // where the target stands now; empty for none
+    FollowTargetSource m_source;     // where the target stands now; empty for none
+    std::optional<float> m_debugYaw; // debug view heading; only the right stick turns it during flight
 };
 
 } // namespace coney::camera

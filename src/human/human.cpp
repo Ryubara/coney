@@ -1557,7 +1557,8 @@ void Human::animate(const raycast::CollisionMesh* mesh) {
     if (!m_reportSounds) {
         static_cast<void>(m_fighter.takeSounds());
     }
-    if (m_outOfWorld) {
+    // Debug flight holds the idle pose; clip events and animation-driven turns must stay frozen with it.
+    if (m_outOfWorld || m_flight.has_value()) {
         return;
     }
     // The animation's step (a climb follows its clips). A climb's first clip runs during the move to the start point,
@@ -2027,9 +2028,9 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
 
 // @orig 0x00254e78 Human_UpdateActions (unknown)
 void Human::updateActions(std::span<Combatant* const> targets, const raycast::CollisionMesh* mesh) {
-    // The original returns for a human with no instance or no record (`+0xd8`, `+0xd4`); every Coney human has both.
-    // Nothing acts out of the world, where the original fails the mission.
-    if (m_outOfWorld) {
+    // Every Coney human has an instance and record; nothing acts after falling out of the world.
+    // Debug flight owns movement and holds its idle pose, so neither commands nor gait selection run.
+    if (m_outOfWorld || m_flight.has_value()) {
         return;
     }
     // Human_ReportBarsToHUD's health and power reach a HUD function that returns at once (docs/research/hud.md).

@@ -412,12 +412,7 @@ tag = 1
 tag = 5
 
 ["src/camera/cameras.cpp"]
-comment = 1
 tag = 28
-
-["src/camera/cameras.h"]
-comment = 1
-tag = 1
 
 ["src/camera/failed_camera.cpp"]
 tag = 1
@@ -430,9 +425,6 @@ tag = 2
 
 ["src/camera/follow_camera.cpp"]
 tag = 23
-
-["src/camera/follow_camera.h"]
-comment = 2
 
 ["src/camera/follow_collision.cpp"]
 comment = 1
@@ -1100,12 +1092,6 @@ tag = 1
 
 ["src/human/human_animator.cpp"]
 tag = 38
-
-["src/human/human_animator.h"]
-comment = 3
-
-["src/human/human_flight.cpp"]
-tag = 2
 
 ["src/human/human_held.cpp"]
 tag = 3

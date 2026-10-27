@@ -855,7 +855,11 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
     updateTagging(stack.pads(), frame.seconds);
     updateTagPanel();
     updateActionPrompt();
-    runPlayerFrame(m_state, m_scripts, stack.pads(), nowMs, &m_objectServices.crimeServices());
+    // The debug flight's R1 is acceleration, so its pad must not also trigger a script's camera handler.
+    const ai::Brain* inputPlayer = m_scripted ? m_scripted->player() : nullptr;
+    const Pads scriptPads =
+        inputPlayer != nullptr && inputPlayer->human().flying() ? stack.pads().withoutPort(0) : stack.pads();
+    runPlayerFrame(m_state, m_scripts, scriptPads, nowMs, &m_objectServices.crimeServices());
     // The hint box's one step, where the original's HUD update stands in its frame: after this step's callbacks and
     // before the scheduled calls (a text set on a free box has already shown, in the call that set it).
     if (m_context.hud != nullptr) {

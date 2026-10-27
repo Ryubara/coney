@@ -842,6 +842,33 @@ void FollowCamera::stepAim(const FollowTarget& target, anim::Vec3 cameraBefore, 
     }
 }
 
+// Flight has no collision or animation sway: the camera follows the same displacement on every axis.
+// @coney-only Noclip camera, docs/guides/debug-menu.md#noclip.
+void FollowCamera::updateDebugFlight(const FollowTarget& target, std::uint8_t rawRightX, std::uint8_t rawRightY,
+                                     float seconds) {
+    observe(target);
+    m_lastAutoTurn = 0.0F;
+    m_lastFrameTurn = 0.0F;
+    // Start behind the human; keep deliberate right-stick orbit while the tool remains on.
+    const float yawRate = m_stickOn && m_padStickOn ? rightStickYawRate(rawRightX) : 0.0F;
+    const float pitchRate = m_stickOn && m_padStickOn ? rightStickPitchRate(rawRightY) : 0.0F;
+    m_debugYaw = m_debugYaw.value_or(target.heading) + yawRate * seconds;
+    m_targetPitch = std::clamp(m_targetPitch + pitchRate * seconds, m_lowerPitch, std::max(m_lowerPitch, upperPitch()));
+    place(target.feet, m_bandNear, *m_debugYaw);
+}
+
+// Keep debug routing outside the original follow update so its behaviour stays independent of the tool.
+// @coney-only Noclip camera routing, docs/guides/debug-menu.md#noclip.
+void FollowCamera::updateForPlayer(const FollowTarget& target, std::uint8_t rawRightX, std::uint8_t rawRightY,
+                                   const raycast::CollisionMesh* mesh, float seconds) {
+    if (target.debugFlight) {
+        updateDebugFlight(target, rawRightX, rawRightY, seconds);
+        return;
+    }
+    m_debugYaw.reset();
+    update(target, rawRightX, rawRightY, mesh, seconds);
+}
+
 void FollowCamera::update(const FollowTarget& target, std::uint8_t rawRightX, std::uint8_t rawRightY,
                           const raycast::CollisionMesh* mesh, float seconds) {
     // **Coney stand-ins** for the parts of Cam_Follow_Update not built (docs/research/camera.md#update): the look-at

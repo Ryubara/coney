@@ -50,6 +50,9 @@ class Pads {
     [[nodiscard]] const Pad& record(std::size_t index) const;
     /// The record of `port` (0 for port 1, 1 for port 2).
     [[nodiscard]] const Pad& port(std::size_t port) const { return record(recordOfPort(port)); }
+    /// A snapshot with `port` disconnected, for debug input that must not reach script button handlers. The live
+    /// pads and every other port keep their exact held, pressed and released state.
+    [[nodiscard]] Pads withoutPort(std::size_t port) const;
     /// How many records are connected: the main menu counts the eight records' connected words (`+0x4c`) to decide
     /// whether story asks for the number of players (docs/research/frontend.md#profile-manager).
     [[nodiscard]] std::size_t connectedCount() const;
