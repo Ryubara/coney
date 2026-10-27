@@ -43,7 +43,8 @@ enum class DrawKind : std::uint8_t {
     Humans,  ///< The humans' bodies.
     Objects, ///< World objects, doors, cars, glass, carried props.
     Effects, ///< Water, particles, glints, blob shadows, health rings, the throw arc.
-    Other,   ///< Everything else: the 2D layers (HUD, menus, movies), the debug lines and overlays.
+    Other,   ///< Everything else: the 2D layers (HUD, menus, movies) and the scene debug lines. The debug menu and the
+             ///< developer overlay are drawn outside the counted wrappers and are not counted at all.
 };
 /// How many kinds there are, and their names in the counters, by DrawKind (`scene.<name>.draws`).
 inline constexpr std::size_t kDrawKinds = 5;

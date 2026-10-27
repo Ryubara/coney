@@ -44,7 +44,8 @@ class MeshViews final : public MeshViewHook {
     bool beginFrame(const PlayLevelMode& mode) override;
     void draw(rw::Atomic* atomic, DrawKind kind, bool layer, const std::function<void()>& shaded) override;
 
-    /// The draw calls the flat and wire passes made so far this frame (for the log of a run, and the tests).
+    /// The materials the flat (filled) passes have drawn so far this frame: each is a draw, and the wire passes add
+    /// none (for the log of a run, and the tests).
     [[nodiscard]] std::size_t passDraws() const { return m_drawIndex; }
 
   private:

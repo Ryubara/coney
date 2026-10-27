@@ -4,12 +4,14 @@
 #include "debug/debug_pages.h"
 
 #include <array>
+#include <cctype>
 #include <cstddef>
 #include <cstdint>
 #include <format>
 #include <functional>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
