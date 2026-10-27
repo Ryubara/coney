@@ -18,7 +18,7 @@ template <std::size_t N> auto parse(const std::array<std::string_view, N>& args)
 } // namespace
 
 TEST_CASE("the mesh view option takes its list once", "[options]") {
-    // Expected: unverified, #902 (docs/guides/running-options.md)
+    // Expected: unverified, #210 (docs/guides/running-options.md)
     auto given = parse(std::array<std::string_view, 2>{"--mesh-view", "wire=all,frames=5"});
     REQUIRE(given.has_value());
     CHECK(given->meshView == "wire=all,frames=5");

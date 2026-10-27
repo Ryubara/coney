@@ -264,4 +264,7 @@ std::string sceneCounterLine(std::span<const NamedCount> counters) {
     return line.empty() ? std::string("-") : line;
 }
 
+// A stand-in until the implementation: no line.
+std::string sceneKindLine(std::span<const NamedCount> /*counters*/, std::string_view /*kind*/) { return {}; }
+
 } // namespace coney::debug

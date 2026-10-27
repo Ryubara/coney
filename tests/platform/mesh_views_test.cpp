@@ -70,7 +70,7 @@ std::vector<MaterialLook> looksOf(const rw::Atomic* atomic) {
 } // namespace
 
 TEST_CASE("the Mesh group counts a synthetic clump as librw builds the geometry the play mode draws", "[mesh]") {
-    // Expected: unverified, #902 (Coney's own renderer: the counts must equal librw's geometry)
+    // Expected: unverified, #210 (Coney's own renderer: the counts must equal librw's geometry)
     auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
     REQUIRE(engine.has_value());
     const coney::characters::CharacterModel model = fixtureModel();
@@ -95,7 +95,7 @@ TEST_CASE("the Mesh group counts a synthetic clump as librw builds the geometry 
 }
 
 TEST_CASE("the mesh views draw a model as the game does while off and put its materials back after a pass", "[mesh]") {
-    // Expected: unverified, #902 (faithful first: with every view off the game's draw alone)
+    // Expected: unverified, #210 (faithful first: with every view off the game's draw alone)
     auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
     REQUIRE(engine.has_value());
     const coney::characters::CharacterModel model = fixtureModel();
@@ -127,7 +127,7 @@ TEST_CASE("the mesh views draw a model as the game does while off and put its ma
 }
 
 TEST_CASE("the scene counters count each draw as the kind its scope names", "[mesh][perf]") {
-    // Expected: unverified, #902 (docs/guides/performance.md#counters)
+    // Expected: unverified, #210 (docs/guides/performance.md#counters)
     using coney::platform::DrawKind;
     const coney::platform::DrawTotals humans = coney::platform::drawTotals(DrawKind::Humans);
     const coney::platform::DrawTotals scenery = coney::platform::drawTotals(DrawKind::Scenery);
@@ -207,7 +207,7 @@ class ListingPlay final : public coney::debug::PlayControls {
 } // namespace
 
 TEST_CASE("a --mesh-view run waits for a play mode that lists its entities before it applies its spec", "[mesh]") {
-    // Expected: unverified, #902 (docs/guides/running-options.md: --mesh-view applies from the first frame of play)
+    // Expected: unverified, #210 (docs/guides/running-options.md: --mesh-view applies from the first frame of play)
     ListingPlay play; // the front end, a loading screen: no inspector yet
     coney::debug::DebugServices services;
     services.play = [&play]() -> coney::debug::PlayControls* { return &play; };
@@ -256,7 +256,7 @@ class NotingHook final : public coney::platform::MeshViewHook {
 } // namespace
 
 TEST_CASE("the lighting rig hands each atomic to the mesh views' hook as the kind in scope", "[mesh]") {
-    // Expected: unverified, #902 (the hook sits in the rig's last step; the kind is the caller's DrawKindScope)
+    // Expected: unverified, #210 (the hook sits in the rig's last step; the kind is the caller's DrawKindScope)
     using coney::platform::DrawKind;
     auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
     REQUIRE(engine.has_value());

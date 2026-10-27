@@ -256,7 +256,7 @@ bool playLevel(coney::test::DiscSession& run, std::string_view level) {
 
 TEST_CASE("a level played through the session asks the mesh views' hook at every frame it renders",
           "[disc][story][mesh]") {
-    // Expected: unverified, #902 (the hook is Coney's own debug tooling: the session passes it to the play mode)
+    // Expected: unverified, #210 (the hook is Coney's own debug tooling: the session passes it to the play mode)
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -286,7 +286,7 @@ TEST_CASE("a level played through the session asks the mesh views' hook at every
 TEST_CASE(
     "a level drawn in a window hands the mesh views' hook its scenery, humans and objects, and each human's passes",
     "[disc][story][mesh][gl]") {
-    // Expected: unverified, #902 (the models are the play mode's own draws; the passes are the rig's atomics)
+    // Expected: unverified, #210 (the models are the play mode's own draws; the passes are the rig's atomics)
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -353,7 +353,7 @@ TEST_CASE(
 }
 
 TEST_CASE("the Mesh group counts a drawn human's model, and what is not a drawn human has none", "[disc][mesh]") {
-    // Expected: unverified, #902 (the counts are librw's geometry of the model the play mode draws the human with)
+    // Expected: unverified, #210 (the counts are librw's geometry of the model the play mode draws the human with)
     Yard yard;
     // Drawn in a window where there is one, so that the passes are counted; else the structure alone.
     Opened opened = windowAvailable() ? openYard(yard, true) : Opened::NoWindow;
@@ -433,7 +433,7 @@ TEST_CASE("the Mesh group counts a drawn human's model, and what is not a drawn 
 
 TEST_CASE("with every mesh view off the game draws as without the hook: the same passes and no call to it",
           "[disc][mesh][gl]") {
-    // Expected: unverified, #902 (faithful first: the views change nothing while off)
+    // Expected: unverified, #210 (faithful first: the views change nothing while off)
     constexpr int kFrames = 20;
     enum class Hook : std::uint8_t { None, ViewsOff, RecordingOff, ViewsOn };
     // What one run of the yard came to: the passes every human was drawn in each frame, how often the hook was asked
@@ -516,7 +516,7 @@ TEST_CASE("with every mesh view off the game draws as without the hook: the same
 }
 
 TEST_CASE("the flat view draws the selection alone, or every human, and the models in scope", "[disc][mesh][gl]") {
-    // Expected: unverified, #902 (docs/guides/debug-menu.md#mesh-views: the scope of a view)
+    // Expected: unverified, #210 (docs/guides/debug-menu.md#mesh-views: the scope of a view)
     if (!windowAvailable()) {
         SKIP("no OpenGL window: the Null renderer draws no model");
     }
@@ -567,7 +567,7 @@ TEST_CASE("the flat view draws the selection alone, or every human, and the mode
 }
 
 TEST_CASE("the selection's normals and bone axes are lines on a human and on nothing else", "[disc][mesh]") {
-    // Expected: unverified, #902 (the lines are the posed model's, placed as the play mode draws it)
+    // Expected: unverified, #210 (the lines are the posed model's, placed as the play mode draws it)
     Yard yard;
     if (openYard(yard, false) == Opened::NoDisc) {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -616,7 +616,7 @@ TEST_CASE("the selection's normals and bone axes are lines on a human and on not
 
 TEST_CASE("a --mesh-view run applies its spec to a real inspector and switches the views off after its frames",
           "[disc][mesh]") {
-    // Expected: unverified, #902 (docs/guides/running-options.md: --mesh-view, frames=N)
+    // Expected: unverified, #210 (docs/guides/running-options.md: --mesh-view, frames=N)
     Yard yard;
     if (openYard(yard, false) == Opened::NoDisc) {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -670,7 +670,7 @@ TEST_CASE("a --mesh-view run applies its spec to a real inspector and switches t
 TEST_CASE("with every mesh view off a real frame is the same pixel for pixel as without the hook, and after "
           "--mesh-view's frames too",
           "[disc][mesh][gl]") {
-    // Expected: unverified, #902 (faithful first: the views change no pixel while off)
+    // Expected: unverified, #210 (faithful first: the views change no pixel while off)
     constexpr int kFrames = 24;
     constexpr int kOnFrames = 6;
     // The hash of every frame of a run of the yard on a hidden OpenGL window: with `views` as the hook (none: no hook);

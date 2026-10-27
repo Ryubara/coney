@@ -159,4 +159,8 @@ struct NamedCount {
 /// "-" when no counter of them is there.
 [[nodiscard]] std::string sceneCounterLine(std::span<const NamedCount> counters);
 
+/// The Performance page's line for one kind: its `scene.<kind>.triangles`, `.vertices` and `.draws` a frame, "12.3k
+/// tris 20.1k verts 310 draws"; "-" when none of its counters is there.
+[[nodiscard]] std::string sceneKindLine(std::span<const NamedCount> counters, std::string_view kind);
+
 } // namespace coney::debug

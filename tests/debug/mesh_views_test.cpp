@@ -80,7 +80,7 @@ bool near(Vec3 a, Vec3 b) { return coney::anim::distance(a, b) < 1e-3F; }
 } // namespace
 
 TEST_CASE("the mesh statistics count a synthetic model as the play mode draws it", "[debug][mesh]") {
-    // Expected: unverified, #902 (Coney's own renderer: one librw atomic, one mesh and draw per material)
+    // Expected: unverified, #210 (Coney's own renderer: one librw atomic, one mesh and draw per material)
     const MeshStats stats =
         coney::debug::characterMeshStats(syntheticModel(), {.name = "skin", .width = 128, .height = 64});
     CHECK(stats.atomics == 1);
@@ -107,7 +107,7 @@ TEST_CASE("the mesh statistics count a synthetic model as the play mode draws it
 }
 
 TEST_CASE("an untextured model counts no texture", "[debug][mesh]") {
-    // Expected: unverified, #902
+    // Expected: unverified, #210
     const MeshStats stats = coney::debug::characterMeshStats(syntheticModel(), {});
     CHECK(stats.textures == 0);
     CHECK(stats.materials[0].texture.empty());
@@ -115,7 +115,7 @@ TEST_CASE("an untextured model counts no texture", "[debug][mesh]") {
 }
 
 TEST_CASE("a model's draw calls are its materials times the passes drawn", "[debug][mesh]") {
-    // Expected: unverified, #902 (the texture pass, then the blood layer: research/rendering.md#characters)
+    // Expected: unverified, #210 (the texture pass, then the blood layer: research/rendering.md#characters)
     const MeshStats stats =
         coney::debug::characterMeshStats(syntheticModel(), {.name = "skin", .width = 0, .height = 0});
     CHECK(coney::debug::drawCallsOf(stats, MeshDrawn{.passes = 1, .fade = 1.0F, .skinning = "CPU"}) == 3);
@@ -124,7 +124,7 @@ TEST_CASE("a model's draw calls are its materials times the passes drawn", "[deb
 }
 
 TEST_CASE("the Mesh group shows every number of the model", "[debug][mesh]") {
-    // Expected: unverified, #902
+    // Expected: unverified, #210
     const MeshStats stats =
         coney::debug::characterMeshStats(syntheticModel(), {.name = "skin", .width = 128, .height = 64});
     const coney::debug::WatchGroup group =
@@ -146,7 +146,7 @@ TEST_CASE("the Mesh group shows every number of the model", "[debug][mesh]") {
 }
 
 TEST_CASE("the Draw calls line reads in the singular after a count of one", "[debug][mesh]") {
-    // Expected: unverified, #902 (a "1 materials" reads wrongly)
+    // Expected: unverified, #210 (a "1 materials" reads wrongly)
     MeshStats stats;
     stats.drawsPerPass = 1;
     CHECK(meshValue(coney::debug::describeMesh(stats, MeshDrawn{.passes = 1, .fade = 1.0F, .skinning = "CPU"}),
@@ -161,7 +161,7 @@ TEST_CASE("the Draw calls line reads in the singular after a count of one", "[de
 }
 
 TEST_CASE("with every mesh view off each model gets the game's own draw alone", "[debug][mesh]") {
-    // Expected: unverified, #902 (faithful first: the views change nothing while off)
+    // Expected: unverified, #210 (faithful first: the views change nothing while off)
     const coney::debug::DebugDrawOptions defaults;
     CHECK_FALSE(coney::debug::meshViewsOn(defaults.mesh));
     for (const MeshKind kind : {MeshKind::Scenery, MeshKind::Human, MeshKind::Object}) {
@@ -183,7 +183,7 @@ TEST_CASE("with every mesh view off each model gets the game's own draw alone", 
 }
 
 TEST_CASE("the wireframe switch picks the selection, every human or everything", "[debug][mesh]") {
-    // Expected: unverified, #902
+    // Expected: unverified, #210
     MeshViewOptions options;
     options.wireframe = MeshScope::Selection;
     CHECK(coney::debug::meshViewsOn(options));
@@ -205,7 +205,7 @@ TEST_CASE("the wireframe switch picks the selection, every human or everything",
 }
 
 TEST_CASE("the wireframe-only and flat views replace the shaded draw of the models in their scope", "[debug][mesh]") {
-    // Expected: unverified, #902
+    // Expected: unverified, #210
     MeshViewOptions options;
     options.view = MeshShading::Wireframe;
     const MeshDrawPlan wireOnly = coney::debug::meshPlanFor(options, MeshKind::Object, false);
@@ -229,7 +229,7 @@ TEST_CASE("the wireframe-only and flat views replace the shaded draw of the mode
 }
 
 TEST_CASE("the flat views' colours are fixed by their key", "[debug][mesh]") {
-    // Expected: unverified, #902 (Coney's own palette)
+    // Expected: unverified, #210 (Coney's own palette)
     std::set<std::uint32_t> colours;
     for (std::uint32_t key = 0; key < 12; ++key) {
         const coney::graphics::Rgba colour = coney::debug::meshPaletteColour(key);
@@ -246,7 +246,7 @@ TEST_CASE("the flat views' colours are fixed by their key", "[debug][mesh]") {
 }
 
 TEST_CASE("a character's placement leans, turns and moves it as the play mode draws it", "[debug][mesh]") {
-    // Expected: unverified, #902 (the play mode's own placement, heading 0 faces +y)
+    // Expected: unverified, #210 (the play mode's own placement, heading 0 faces +y)
     const Vec3 feet{10.0F, 20.0F, 1.0F};
     const Mat34 straight = coney::debug::characterPlacement(feet, 0.0F, 0.0F);
     CHECK(near(coney::anim::transformPoint(straight, Vec3{0.0F, 1.0F, 0.0F}), Vec3{10.0F, 21.0F, 1.0F}));
@@ -260,7 +260,7 @@ TEST_CASE("a character's placement leans, turns and moves it as the play mode dr
 }
 
 TEST_CASE("the normals and bone axes are lines from the posed model", "[debug][mesh]") {
-    // Expected: unverified, #902
+    // Expected: unverified, #210
     coney::debug::DebugLines lines;
     const std::vector<Vec3> positions{{0.0F, 0.0F, 0.0F}, {1.0F, 0.0F, 0.0F}};
     const std::vector<Vec3> normals{{0.0F, 0.0F, 1.0F}, {1.0F, 0.0F, 0.0F}};
@@ -285,7 +285,7 @@ TEST_CASE("the normals and bone axes are lines from the posed model", "[debug][m
 }
 
 TEST_CASE("the mesh view option's value names the views, the selection and how long they stay on", "[debug][mesh]") {
-    // Expected: unverified, #902 (docs/guides/running-options.md)
+    // Expected: unverified, #210 (docs/guides/running-options.md)
     const auto spec =
         coney::debug::parseMeshViewSpec("wire=all,view=material,scope=humans,normals,bones,select=nearest,"
                                         "frames=40");
@@ -309,8 +309,8 @@ TEST_CASE("the mesh view option's value names the views, the selection and how l
     CHECK_FALSE(coney::debug::parseMeshViewSpec("").has_value());
 }
 
-TEST_CASE("the Scene line sums the scene counters by kind", "[debug][mesh][perf]") {
-    // Expected: unverified, #902 (docs/guides/performance.md#counters)
+TEST_CASE("the Scene lines sum the scene counters of each kind", "[debug][mesh][perf]") {
+    // Expected: unverified, #210 (docs/guides/performance.md#counters)
     const std::vector<coney::debug::NamedCount> counters{{.name = "gl.draws", .value = 999.0},
                                                          {.name = "scene.scenery.triangles", .value = 12345.0},
                                                          {.name = "scene.scenery.vertices", .value = 20100.0},
@@ -318,13 +318,15 @@ TEST_CASE("the Scene line sums the scene counters by kind", "[debug][mesh][perf]
                                                          {.name = "scene.humans.triangles", .value = 800.0},
                                                          {.name = "scene.humans.vertices", .value = 2400.0},
                                                          {.name = "scene.humans.draws", .value = 6.0}};
-    CHECK(coney::debug::sceneCounterLine(counters) ==
-          "scenery 12.3k tris 20.1k verts 310 draws; humans 800 tris 2.4k verts 6 draws");
-    CHECK(coney::debug::sceneCounterLine({}) == "-");
+    CHECK(coney::debug::sceneKindLine(counters, "scenery") == "12.3k tris 20.1k verts 310 draws");
+    CHECK(coney::debug::sceneKindLine(counters, "humans") == "800 tris 2.4k verts 6 draws");
+    // A kind with no counter shows a dash, and so does every kind with no counters at all.
+    CHECK(coney::debug::sceneKindLine(counters, "effects") == "-");
+    CHECK(coney::debug::sceneKindLine({}, "scenery") == "-");
 }
 
 TEST_CASE("the Debug draw page switches the mesh views", "[debug][mesh]") {
-    // Expected: unverified, #902 (docs/guides/debug-menu.md#mesh-views)
+    // Expected: unverified, #210 (docs/guides/debug-menu.md#mesh-views)
     coney::debug::TunableRegistry tunables;
     coney::debug::DebugSession session(tunables, coney::debug::DebugServices{}, nullptr);
     const auto page = session.model().openPage("Debug draw");
