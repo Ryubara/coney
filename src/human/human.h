@@ -489,11 +489,25 @@ class Human final : public Holdable {
     [[nodiscard]] bool refusesFlash() const {
         return downOrDead() || m_script.arrested || airborne() || climbingOver();
     }
-    /// The body's scale (`+0x65c`).
+    /// The body's scale (`+0x65c`): the mesh's, and the collision's too unless collisionFollowsMesh() is off.
     [[nodiscard]] float scale() const { return m_scale; }
     [[nodiscard]] float bodyScale() const override { return m_scale; }
+    /// The scale the collision is sized by: scale(), or the configured one while collisionFollowsMesh() is off.
+    [[nodiscard]] float collisionScale() const { return m_collisionFixed.value_or(m_scale); }
+    /// The scale the human was made with (a script's `HuSetScale` is an edit of it, not its configuration).
+    /// @coney-only debug tooling: the Entity editor's reset and its *Scale collision with mesh*
+    [[nodiscard]] float configuredScale() const { return m_configuredScale; }
+    /// Whether the collision (the walking and air spheres, the upright capsule and the strike shapes) scales with the
+    /// mesh: on at first, so a giant collides at its drawn size. The struck capsule (struckCapsule(), a port) keeps
+    /// following scale() either way.
+    [[nodiscard]] bool collisionFollowsMesh() const { return !m_collisionFixed.has_value(); }
+    /// Makes the collision follow the mesh scale (`follow`), or stay at the configured scale whatever setScale() says.
+    /// @coney-only debug tooling: the Entity editor's *Scale collision with mesh*
+    void setCollisionFollowsMesh(bool follow) {
+        m_collisionFixed = follow ? std::nullopt : std::optional<float>(m_configuredScale);
+    }
     /// The radius of its collision capsule (the shape's `+0x40`, 0.35 m, × its scale): human::walkingRadius().
-    [[nodiscard]] float capsuleRadius() const { return walkingRadius(m_scale); }
+    [[nodiscard]] float capsuleRadius() const { return walkingRadius(collisionScale()); }
     /// The walking sphere the wall sweep moves (docs/research/characters.md#walls, step 1): a player's
     /// playerWalkingRadius(), an AI human's aiWalkingRadius(), of its scale now.
     [[nodiscard]] float walkingSphereRadius() const;
@@ -515,6 +529,40 @@ class Human final : public Holdable {
     /// motion) is sized from the scale at each use, so the body follows at once.
     /// @orig 0x0023b0e0 Human_SetScale (unknown)
     void setScale(float scale) { m_scale = scale; }
+
+    // Coney's debug tooling: what the Entity editor changes on a human (docs/guides/debug-menu.md#entity-editor).
+
+    /// How much bigger the mesh is drawn than configured, 1 as made: only the Entity editor's scale changes it. The
+    /// drawn body only: the physics and the collision are scale() and collisionScale().
+    /// @coney-only debug tooling: the Entity editor's scale
+    void setMeshScale(float scale) { m_meshScale = scale; }
+    [[nodiscard]] float meshScale() const { return m_meshScale; }
+    /// A multiplier on every gait speed of this human, on top of the player's own Movement tunables; 1 is as
+    /// configured. It lands at once and reads through speeds().
+    /// @coney-only debug tooling: the Entity editor's speed scale
+    void setSpeedScale(float scale);
+    [[nodiscard]] float speedScale() const { return m_speedScale; }
+    /// A multiplier on how fast every clip plays (and so how far its root motion carries); 1 is as configured, 0 holds
+    /// the clips.
+    /// @coney-only debug tooling: the Entity editor's animation rate
+    void setAnimRate(float rate) { m_animRate = rate < 0.0F ? 0.0F : rate; }
+    [[nodiscard]] float animRate() const { return m_animRate; }
+    /// The health set to `percent` of its maximum (rounded; at least 1 point, so a kill is its own edit; above 100 the
+    /// maximum).
+    /// @coney-only debug tooling: the Entity editor
+    void setHealthShare(float percent);
+    /// The stamina set to `percent` of its maximum (rounded).
+    /// @coney-only debug tooling: the Entity editor
+    void setStaminaShare(float percent);
+    /// The power meter set to `percent` of its maximum (rounded).
+    /// @coney-only debug tooling: the Entity editor
+    void setPowerShare(float percent);
+    /// The rage meter set to `percent` of its maximum (truncated, as `HuSetRageFrac` does).
+    /// @coney-only debug tooling: the Entity editor
+    void setRageShare(float percent);
+    /// Empties the health; the human's own update turns that into a death, as damage that takes the last point does.
+    /// @coney-only debug tooling: the Entity editor's Kill
+    void kill() { m_fighter.health().set(0); }
     /// The fighting: combat's state, meters and what it last did.
     [[nodiscard]] const Fighter& fighter() const { return m_fighter; }
     [[nodiscard]] Fighter& fighter() { return m_fighter; }
@@ -925,6 +973,8 @@ class Human final : public Holdable {
 
     // The locomotion: target speed, skid, turn, acceleration; sets the horizontal velocity, none while `gated`.
     void locomote(bool gated);
+    // Gives the animator the gait-speed factors now: the player's Movement tunables and this human's speed scale.
+    void refreshSpeedFactors();
     // A brain-driven human's locomotion (no pad): the brain's speed approached at the AI's rates, the facing turned to
     // the brain's heading by a constant step, no skid. Sets the horizontal velocity, none while `gated`.
     // @orig 0x00243848 Human_UpdateControl (unknown)
@@ -1077,6 +1127,11 @@ class Human final : public Holdable {
     bool m_speaking = false;          // a line of its is alive (setSpeaking()), as +0x170
     FaceRules* m_faceRules = nullptr; // setFaceRules(), not owned
     float m_scale = 1.0F;
+    float m_configuredScale = 1.0F;        // the scale the human was made with
+    float m_meshScale = 1.0F;              // setMeshScale()
+    std::optional<float> m_collisionFixed; // the scale the collision keeps while it does not follow the mesh
+    float m_speedScale = 1.0F;             // setSpeedScale()
+    float m_animRate = 1.0F;               // setAnimRate()
     anim::Vec3 m_position;
     float m_heading = 0.0F;
     anim::Vec3 m_velocity; // z is the vertical speed (+0x3a0)

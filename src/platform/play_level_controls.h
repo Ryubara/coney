@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -12,6 +14,7 @@
 #include "core/error.h"
 #include "debug/anim_catalog.h"
 #include "debug/debug_lines.h"
+#include "debug/entity_edit.h"
 #include "debug/entity_inspect.h"
 #include "debug/play_controls.h"
 #include "platform/play_level_mode.h"
@@ -26,7 +29,7 @@ namespace coney::platform {
 ///
 /// It acts on one mode at a time, set with setMode(); a mode the game replaces (a new level) is set again by whoever
 /// asks for the controls, so they never outlive the mode they act on in use.
-class PlayLevelControls final : public debug::PlayControls {
+class PlayLevelControls final : public debug::PlayControls, public debug::EntityEditTarget {
   public:
     /// Controls of `mode` (none: setMode() before use).
     explicit PlayLevelControls(PlayLevelMode* mode = nullptr) : m_mode(mode) {}
@@ -119,6 +122,14 @@ class PlayLevelControls final : public debug::PlayControls {
     [[nodiscard]] bool canFreezeEntity(debug::EntityId id) const override;
     [[nodiscard]] bool entityFrozen(debug::EntityId id) const override;
     void setEntityFrozen(debug::EntityId id, bool frozen) override;
+    /// The Entity editor's target: these controls (play_level_edit.cpp).
+    [[nodiscard]] debug::EntityEditTarget* entityEdits() override { return m_mode != nullptr ? this : nullptr; }
+    /// Applies `command` to the human or object it names, between two steps (play_level_edit.cpp); fails, changing
+    /// nothing, with the reason when the entity is gone or the edit does not apply to it.
+    std::expected<void, Error> applyEdit(const debug::EntityCommand& command) override;
+    [[nodiscard]] std::optional<std::array<double, 3>> configuredValues(debug::EntityId entity,
+                                                                        debug::EditOp op) const override;
+    [[nodiscard]] std::optional<double> currentValue(debug::EntityId entity, debug::EditOp op) const override;
 
   private:
     // The Entity inspector's view of the controls' mode: read-only (freezing is the controls').
@@ -131,6 +142,13 @@ class PlayLevelControls final : public debug::PlayControls {
       private:
         const PlayLevelControls& m_controls;
     };
+
+    // The human (player 1 or an AI human, not a sandbox target) entity `id` names; null for another kind or one gone.
+    [[nodiscard]] human::Human* humanOf(debug::EntityId id) const;
+    // The index in the AI humans of the live human entity `id` names; nothing for another kind or one removed.
+    [[nodiscard]] std::optional<std::size_t> aiIndexOf(debug::EntityId id) const;
+    // Takes the AI human at `index` out of the world the way a script's HuDelete does (play_level_edit.cpp).
+    std::expected<void, Error> deleteAiHuman(std::size_t index);
 
     // The entities of `mode` (Inspector::entities()) and what is known of one (Inspector::describe()).
     [[nodiscard]] static std::vector<debug::EntityRef> entitiesOf(const PlayLevelMode& mode);
