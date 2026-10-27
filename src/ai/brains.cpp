@@ -18,6 +18,8 @@ Brain& Brains::add(human::Human& human, BrainType type, const FightSettings& set
     m_brains.back()->setPlanner(m_planner);
     m_brains.back()->setCollision(m_collision);
     m_brains.back()->setPeers(&m_brains);
+    // The first brain a human was given is the one find() gives, as the scan in slot order did.
+    m_byHuman.try_emplace(&human, m_brains.back().get());
     return *m_brains.back();
 }
 
@@ -34,15 +36,21 @@ void Brains::remove(const human::Human& human) {
         other->forget(**found);
     }
     m_brains.erase(found);
+    // The human's next brain in slot order, if it had two, is found from now on.
+    m_byHuman.erase(&human);
+    if (const auto next =
+            std::ranges::find_if(m_brains, [&human](const std::unique_ptr<Brain>& b) { return &b->human() == &human; });
+        next != m_brains.end()) {
+        m_byHuman.emplace(&human, next->get());
+    }
     for (std::size_t slot = 0; slot < m_brains.size(); ++slot) {
         m_brains[slot]->setSlot(slot);
     }
 }
 
 Brain* Brains::find(const human::Human& human) {
-    const auto found =
-        std::ranges::find_if(m_brains, [&human](const std::unique_ptr<Brain>& b) { return &b->human() == &human; });
-    return found == m_brains.end() ? nullptr : found->get();
+    const auto found = m_byHuman.find(&human);
+    return found == m_byHuman.end() ? nullptr : found->second;
 }
 
 void Brains::setPlanner(RoutePlanner* planner) {

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+// @coney-only the pad debug menu's renderer; the original has no debug menu (docs/research/debug.md#not-present)
 #include "gui/debug_menu_view.h"
 
 #include <algorithm>
@@ -24,9 +25,28 @@ std::string fitText(const DebugTextPainter& painter, std::string text, float wid
     if (painter.measure(text) <= width) {
         return text;
     }
-    while (!text.empty() && painter.measure(text + "~") > width) {
-        text.pop_back();
+    // The longest prefix that fits with the mark after it. A longer prefix is never narrower, so a binary search over
+    // its length finds it with a few measures; cutting one character at a time measured the rest again each time,
+    // which with a watch of thousands of characters (the AI fighters page's State) took seconds a frame
+    // (docs/guides/performance.md#ai-page-1031).
+    std::string candidate;
+    candidate.reserve(text.size() + 1);
+    const auto fits = [&](std::size_t length) {
+        candidate.assign(text, 0, length);
+        candidate += '~';
+        return painter.measure(candidate) <= width;
+    };
+    std::size_t low = 0;            // the longest length known to fit (0 always counts: the mark alone is the floor)
+    std::size_t high = text.size(); // a length known not to fit (the whole text does not)
+    while (high - low > 1) {
+        const std::size_t middle = low + (high - low) / 2;
+        if (fits(middle)) {
+            low = middle;
+        } else {
+            high = middle;
+        }
     }
+    text.resize(low);
     return text + "~";
 }
 
