@@ -473,9 +473,6 @@ tag = 3
 ["src/characters/character_assets.cpp"]
 tag = 3
 
-["src/characters/character_class.cpp"]
-tag = 3
-
 ["src/characters/character_data.cpp"]
 tag = 3
 
