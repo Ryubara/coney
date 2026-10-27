@@ -258,6 +258,29 @@ TEST_CASE("Armies game over: player 2's Start counts only when he is in the game
     CHECK(run.flow->hud().armies().credits() == 2);
 }
 
+TEST_CASE("Armies game over: a continue enables each continuing player's panel again", "[pause][armies]") {
+    // Expected: armies.md#game-over, confirmed (code): ANGameOver_Toggle (0x001557f8) calls each continuing player's
+    // panel slot +0x24, ANHud_Enable (0x0020fd40), which makes the panel wanted again, so a join message turned on
+    // later no longer shows for him.
+    Run run("12 tap start\n");
+    run.frames(2);
+    coney::hud::ArmiesHud& armies = run.flow->hud().armies();
+    armies.setCredits(3);
+    // Player 1's panel, attached, then dropped by his knock-out.
+    armies.panelAttached(0);
+    armies.setJoinMessage(0, true);
+    armies.update(0, 60, {true, false}, {true, false});
+    armies.update(10, 60, {true, false}, {true, false});
+    REQUIRE(armies.joinShowing(0));
+    run.flow->launchArmiesGameOver();
+    run.frames(14);
+    REQUIRE(run.stack.topId() == GameplayMode::kId);
+    CHECK(armies.credits() == 2);
+    armies.setJoinMessage(0, true);
+    armies.update(20, 60, {true, false}, {false, false});
+    CHECK_FALSE(armies.joinShowing(0));
+}
+
 TEST_CASE("Armies game over: HUDLaunchANGameOver with the screen up closes it", "[pause][armies]") {
     // Expected: pause.md#an-game-over, confirmed (code): ANGameOver_Toggle pops mode 0xd when it is on top.
     Run run("");
