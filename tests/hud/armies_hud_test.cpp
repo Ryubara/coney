@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The Armies of the Night HUD parts (docs/research/armies.md, docs/research/hud-functions-parts.md#fn-pre-basewidget):
-// the levels that have them, the credits, the GO sign's frames by mode and the join messages' blink.
+// the levels that have them, the credits, the GO sign's frames by mode, the join messages' blink and a knocked-out
+// player's panel, with a synthetic fighter beaten to 0 health.
 #include "hud/armies_hud.h"
 
 #include <algorithm>
@@ -14,6 +15,11 @@
 #include "graphics/overlay_camera.h"
 #include "graphics/sprite_batch.h"
 #include "hud/hud_canvas.h"
+#include "human/fighter.h"
+#include "human/human.h"
+#include "human/human_flags.h"
+#include "human/victim.h"
+#include "support/fight_fixtures.h"
 #include "support/font_fixtures.h"
 
 using coney::hud::ArmiesHud;
@@ -151,6 +157,31 @@ TEST_CASE("a knocked-out player's panel is no longer wanted, so his join message
     CHECK_FALSE(armies.joinShowing(0));
     armies.update(40, 60, {true, false}, {false, false});
     CHECK_FALSE(armies.joinShowing(0));
+}
+
+TEST_CASE("a player beaten to 0 health is knocked out, so his Armies panel drops and his join message shows",
+          "[hud][armies]") {
+    // Expected: armies.md#the-join-messages, confirmed (code): Human_IsKnockedOut (0x00227dd8) reads state 0x40000,
+    // which Human_KnockOut (0x00230328) sets when a player's health runs out (Human_OnHealthOut 0x002674c0) as for
+    // HuSetConscious(false); ANHud_Draw (0x00211938) then clears his panel's wanted flag.
+    const coney::test::FightCharacter character;
+    coney::test::Fight fight(character, 30.0F);
+    fight.human().setFlag(coney::human::flag::kDemiGod, false);
+    REQUIRE_FALSE(fight.human().knockedOut());
+    ArmiesHud armies;
+    armies.levelSetUp();
+    armies.panelAttached(0);
+    armies.setJoinMessage(0, true);
+    armies.update(0, 60, {true, false}, {fight.human().knockedOut(), false});
+    REQUIRE_FALSE(armies.joinShowing(0));
+    fight.human().takeHit(coney::human::IncomingHit{
+        .damage = 900, .attackAnim = 12, .code = 0x0a, .flags = 0x800, .attacker = {40.0F, 41.0F, 0.0F}});
+    fight.run("", 5);
+    REQUIRE(fight.human().fighter().health().depleted());
+    CHECK(fight.human().knockedOut());
+    armies.update(10, 60, {true, false}, {fight.human().knockedOut(), false});
+    armies.update(20, 60, {true, false}, {fight.human().knockedOut(), false});
+    CHECK(armies.joinShowing(0));
 }
 
 TEST_CASE("a join message is centred on its panel's place, as Font_Draw's flag 2 centres each run", "[hud][armies]") {
