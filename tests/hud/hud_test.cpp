@@ -371,6 +371,24 @@ TEST_CASE("the action prompt sits at (0.5, 0.86) in grey, raised over the hint b
     CHECK(canvas.text.sprites().size() == withAnnouncement);
 }
 
+TEST_CASE("no action prompt is drawn in an Armies of the Night level", "[hud]") {
+    // Expected: armies.md#hud-in-play, confirmed (code): HUD_Render (0x001b1688) draws the prompts only outside an
+    // Armies level (GameState_IsArmiesLevel).
+    const auto drawn = [](int level, std::string_view prompt) {
+        Hud hud = makeHud(nullptr);
+        Canvas canvas;
+        hud.setActionPrompt(0, prompt);
+        HudFrame frame;
+        frame.levelNumber = level;
+        hud.update(frame);
+        hud.render(canvas.canvas);
+        return canvas.text.sprites().size();
+    };
+    CHECK(drawn(99, "Pick up") > drawn(99, ""));
+    CHECK(drawn(60, "Pick up") == drawn(60, ""));
+    CHECK(drawn(69, "Pick up") == drawn(69, ""));
+}
+
 TEST_CASE("nothing is drawn and the radars go off while the letterbox is in", "[hud]") {
     // Expected: hud.md#showing-and-hiding, confirmed (code)
     Hud hud = makeHud(nullptr);
