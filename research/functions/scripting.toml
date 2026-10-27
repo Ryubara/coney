@@ -2027,7 +2027,12 @@ name = "VolumeBox_Update"
 page = "scripting.md#triggers"
 level = "confirmed-code"
 coney = "src/world_objects/volume_boxes.h:VolumeBoxes::update"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the stay timer re-arms only when someone stayed, and a box a handler disabled still sends the rest of its messages"
+relation = "not-ported"
+issue = 690
 
 [[function]]
 address = 0x0041abe8

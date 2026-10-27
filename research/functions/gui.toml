@@ -123,7 +123,7 @@ page = "gui.md#fn-radarhud"
 role = "from `HUD_InitLevel`: the radar's sprite batches and map texture ([The radar](gui.md#radar-icons)); the first function after the stub `0x001c3dc0`, so the start of `RadarHUD.cpp` (inferred)"
 level = "confirmed-code"
 coney = "src/hud/hud.h:Hud::setRadarMap"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001c5210
