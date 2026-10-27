@@ -219,7 +219,7 @@ Combatant* nearestFightable(const FighterInput& input, float along, float reach,
     return best;
 }
 
-// The search's last resort: the current target, when it is still fightable within `range`.
+// The last resort: the current target, fightable within `range` (a stand-in for the original's object query).
 // @orig 0x0027a6c0 Player_PickTarget (unknown)
 // @orig 0x0027a4b0 Player_FindAttackTarget (unknown)
 Combatant* keptTarget(const FighterInput& input, const Combatant* current, float range) {
@@ -246,7 +246,7 @@ float aimHeading(const FighterInput& input, float offset) {
 Combatant* Fighter::pickTarget(const FighterInput& input, float range, const Combatant* current) {
     const float along = aimHeading(input, 0.0F);
     // The passes in order; the first that finds anyone ends the search. (The objects' passes between them are
-    // pickObjectTarget()'s.)
+    // pickObjectTarget()'s, a stand-in: square tries the objects only when no human is found.)
     if (Combatant* found = nearestFightable(input, along, range * kPickConeScale, kPickConeDegrees); found != nullptr) {
         return found;
     }

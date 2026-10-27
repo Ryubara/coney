@@ -255,9 +255,9 @@ class Fighter {
                                                const Combatant* current = nullptr);
     // Square's object target, with no human in front: of `input.objects` within the object attack's far range, the
     // nearest within 54° of the stick's heading (the facing at rest), else within 135°. Null for none.
-    // **Coney choices**: the range is the object attack's far range (the original approaches from farther, not built);
+    // **Coney's choices**: range is the object attack's far range (the original approaches from farther, not built);
     // the 135° pass keeps the whole range (the original's × 0.8 is not applied).
-    // @orig 0x0027a4b0 Player_FindAttackTarget (unknown)
+    // @orig 0x0027a6c0 Player_PickTarget (unknown)
     [[nodiscard]] const ObjectTarget* pickObjectTarget(const FighterInput& input) const;
     // Circle + cross's search (combat::nearestInCone() along the stick, combat::strongGrappleRange()): makes the human
     // found the target and returns it when it may be grabbed, else null.
