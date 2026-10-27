@@ -616,7 +616,8 @@ void GameSound::levelLoaded() {
     write(std::format("sound bank: {}\n", engine->bankName()));
     write(std::format("sound matrix {}: {} material pairs, {} animation sounds\n", m_matrix.name(),
                       m_matrix.materialEntries(), m_matrix.animEntries()));
-    // Coney's stand-in: loading has ended, so SndLoadBank loads at once again (who clears +0x3fa58 is not traced).
+    // Coney's stand-in: loading has ended, so SndLoadBank loads at once again (the original clears +0x3fa58 once
+    // InitLevel returns, docs/research/sound.md#banks).
     engine->setDeferBankLoads(false);
 }
 
@@ -809,6 +810,7 @@ void GameSound::updateEmitters(SoundEngine& engine) {
     const std::array<SoundVec, 1> listeners{m_listener.position};
     const std::array<bool, 1> covered{m_playerCovered};
     const bool hasPlayer = playerHandle().has_value();
+    // Coney's stand-in: the fight timer is the fight mood itself; the original keeps it on 5 s after the mood ends.
     m_emitters.update(
         engine, AmbientWorld{.listeners = listeners,
                              .playersCovered = hasPlayer ? std::span<const bool>(covered) : std::span<const bool>(),

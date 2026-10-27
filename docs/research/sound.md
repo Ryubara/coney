@@ -428,7 +428,7 @@ Fields used here (offsets from `*(0x0050aa84)`); defaults from `0x0010f618` and 
 | `+0x3fa28` | the next load-screen number, 0-6 (random at start-up, `0x0010f768`) |
 | `+0x3fa34` | low-priority sounds started this update (reset each update) |
 | `+0x3fa38` | the current bank's name (16 chars); `+0x3fa48` the bank to load after loading (`none`) |
-| `+0x3fa58` | defer `SndLoadBank` to the end of loading (set by mode 1's enter, `0x00158334`) |
+| `+0x3fa58` | defer `SndLoadBank` to the end of loading (set by mode 1's enter, `0x00158334`, and cleared by it as soon as `InitLevel` returns; confirmed (code) at `0x001582e0`) |
 | `+0x3fa5c` | global pitch factor (`SndSetPitchMod`, 1.0) |
 | `+0x3faa8` | pan mode: 0 two-ear pan (default; forced when there are two players), else an angle table (`0x005d8600`) |
 | `+0x3faac` | duck factor for directional sounds under a non-duckable one (`SndSetNIDuck`, 0.2) |
@@ -1337,7 +1337,8 @@ cutting, are not built); `HuSpeak`'s fifth argument is not read, and neither spe
 human's voice set is his type's own `CfgChar` voice (no alias rule, no `HuSetVoiceIndex`); the fixed list of blocked
 lines is not applied ([q-blocked](sound.md#q-blocked)); `SndSetListener` 0 is the camera and 1 the player
 ([q-listener](sound.md#q-listener)); the bank deferral of mode 1's enter ends with the load screen
-([q-bank-deferral](sound.md#q-bank-deferral)). The system music (`repo:src/gamemodes/system_music.h`) keeps each mood's
+(`InitLevel` step 11), where the original ends it once `InitLevel` has returned.
+The system music (`repo:src/gamemodes/system_music.h`) keeps each mood's
 track hashes and, while on, loops a random track of the mood each frame's surroundings give when the mood changes; the
 mood is 1 while an AI human with health left targets player 1 with a fight or melee goal, else 0 (the hunted mood 2, its
 chase goals not built, never comes, [q-mood](sound.md#q-mood)), the pick draws from the game's random index, and the
@@ -1426,7 +1427,6 @@ Each says what is unknown, what depends on it and how to find out.
   loaded well before it plays would show it.
 - **The soundtrack's mix**{#q-soundtrack-mix}: whether a scene soundtrack holds the dialogue alone or a full mix, and
   what the 20 unused stereo sounds are. Listen to a decoded soundtrack against its scene.
-- **The bank deferral**{#q-bank-deferral}: who ends `+0x3fa58`. Coney ends it with the load screen.
 - **The blocked lines**{#q-blocked}: `0x00114c98` holds a hand-written list for levels 11, 20, 31, 34, 82, 83, 84, 92
   and 95 (some by checkpoint, game state `+0x33a`), each naming voice sets, commands and 1-based lines, which is not
   tabulated. Coney does not apply it until it is.
