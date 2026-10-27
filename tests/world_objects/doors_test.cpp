@@ -315,6 +315,24 @@ TEST_CASE("dyn_door_liz: model stages, then wreck pieces and the links opened", 
     CHECK_FALSE(fixture.paths.edges()[0].avoid);
 }
 
+TEST_CASE("a splintering door's hit makes its 20 splinters 0.5 m above the hit point", "[world_objects][doors]") {
+    // Expected: unverified, #707 (objects.md#door-break is out of date; the values are read at 0x003fa438)
+    // DoorSwing_HitBreakable (0x003fa438) makes the dust at the hit point (raised at random) and the hit's 20
+    // splinters at the hit point plus 0.5 m up.
+    coney::test::ObjectWorldFixture fixture;
+    Doors doors;
+    const ObjectTypeInfo info = swinging(100);
+    const double handle =
+        doors.spawn(
+                 fixture.handle(), at("dyn_door_liz"), &info, [&fixture] { return fixture.handle(); }, fixture.world)
+            .handle;
+    doors.hit(handle, hitBy(HitKind::Plain), fixture.world);
+    REQUIRE(fixture.services.splintersAt.size() == 1);
+    CHECK(fixture.services.splintersAt.front().x == 4.0F);
+    CHECK(fixture.services.splintersAt.front().y == 2.0F);
+    CHECK(fixture.services.splintersAt.front().z == 1.5F);
+}
+
 TEST_CASE("a breaking hit on dyn_door_liz or dyn_door_dclub first takes the model stage it crosses",
           "[world_objects][doors]") {
     // Expected: unverified, #707 (objects.md#door-break is out of date; the values are read at 0x003fa438)
