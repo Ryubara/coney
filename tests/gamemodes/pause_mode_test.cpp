@@ -262,8 +262,7 @@ TEST_CASE("Armies game over: a continue enables each continuing player's panel a
     // Expected: armies.md#game-over, confirmed (code): ANGameOver_Toggle (0x001557f8) calls each continuing player's
     // panel slot +0x24, ANHud_Enable (0x0020fd40), which makes the panel wanted again, so a join message turned on
     // later no longer shows for him.
-    Run run("12 tap start
-");
+    Run run("12 tap start\n");
     run.frames(2);
     coney::hud::ArmiesHud& armies = run.flow->hud().armies();
     armies.setCredits(3);
