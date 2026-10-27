@@ -187,6 +187,24 @@ TEST_CASE("HuRevive brings a human out of health back up with full health; HuSet
     CHECK_FALSE(fight.human().fighter().victim().stunned());
 }
 
+// Human_IsKnockedOut (0x00227dd8) reads state 0x40000, which Human_KnockOut sets both when the health runs out
+// (Human_OnHealthOut 0x002674c0, a player with flag 0x4) and for HuSetConscious(false):
+// docs/research/combat-reactions.md#knocked-out-bit, confirmed (code).
+TEST_CASE("a human beaten to 0 health is knocked out, as one a script knocks out is", "[human][script]") {
+    const FightCharacter character;
+    Fight fight(character, 30.0F);
+    fight.human().setFlag(flag::kDemiGod, false);
+    REQUIRE_FALSE(fight.human().knockedOut());
+    fight.human().takeHit(hitOf(12, 900, 0x0a, 0x800));
+    fight.run("", 5);
+    REQUIRE(fight.human().fighter().health().depleted());
+    CHECK(fight.human().knockedOut());
+    fight.human().revive();
+    CHECK_FALSE(fight.human().knockedOut());
+    fight.human().script().knockedOut = true;
+    CHECK(fight.human().knockedOut());
+}
+
 TEST_CASE("a scene bind's reset ends a stun, a wound, rage and a throw's aim, and brings a human out of health up",
           "[human][script][scenes]") {
     const FightCharacter character;
