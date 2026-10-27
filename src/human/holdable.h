@@ -21,7 +21,7 @@
 namespace coney::human {
 
 /// An AI's counter press (command 3) as its grabber or tackler takes it: what each counter does to the attacker, from
-/// the counterer's Anim Range List (docs/research/ai.md#block).
+/// the counterer's Anim Range List (docs/research/ai-fights.md#block).
 struct CounterPress {
     int grabDamage = 0;   ///< 76 `GRAB_FRONT_COUNTER`'s damage.
     int tackleDamage = 0; ///< 9 `TACKLE_FRONT_COUNTER`'s damage.

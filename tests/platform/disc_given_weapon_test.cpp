@@ -4,7 +4,7 @@
 // fought with (issue #78, docs/research/objects.md#given-weapon): `level80` checkpoint 3 (the crew free of the cuffs)
 // played in the game session as `coney --play-level level80 --checkpoint 3` plays it (support/disc_session.h), its
 // opening scene skipped with the pad. Player 1 is given a bat; stood 1 m in front of a Warrior of his crew, he hands
-// it over with triangle, the "Give Weapon" swap (docs/research/ai.md#warrior-swap). The Warrior then holds
+// it over with triangle, the "Give Weapon" swap (docs/research/ai-brain-types.md#warrior-swap). The Warrior then holds
 // it, it hangs from his right hand (bone 25, the pick-up clip's take event), it is among the objects drawn in a hand,
 // his square and cross choose the bat's swings, and it stays in his hand once he moves on. It runs only when the
 // environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only (LEGAL.md).

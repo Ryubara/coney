@@ -41,7 +41,7 @@ missions:
     research:
       - {title: "The first mission's script", path: "research/scripting.md#level99"}
       - {title: "The combat tutorial's lessons", path: "research/scripting.md#level99-lessons"}
-      - {title: "The first mission's cast", path: "research/ai.md#level99"}
+      - {title: "The first mission's cast", path: "research/ai/index.md#level99"}
       - {title: "Combat", path: "research/combat/index.md"}
     test: "coney_tests \"[disc][story]\""
     notes: "The goal for this mission: STORY from the main menu through the profile screens and loading, to the mission playing from start to end."
@@ -134,7 +134,7 @@ missions:
     research:
       - {title: "The mission's scripts, checkpoint by checkpoint", path: "research/scripting.md#level34"}
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
-      - {title: "The fourth mission's brain and human calls", path: "research/ai.md#coney"}
+      - {title: "The fourth mission's brain and human calls", path: "research/ai/index.md#in-coney"}
       - {title: "Spawners", path: "research/ai-gangs.md#spawners"}
       - {title: "The riot's crowd, and what Coney lacks", path: "research/scripting.md#level34-start"}
       - {title: "Cars", path: "research/cars.md"}

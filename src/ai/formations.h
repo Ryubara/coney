@@ -185,7 +185,7 @@ class Formations {
     void setDefaults(int set, std::span<const std::pair<float, float>> slots);
     /// Keeps set `set`'s default slots, (x, y) m each, for the formations made later only: those in use keep theirs.
     /// The configuration bindings other than `CfgSetDefaultFollowSlotSet` hand the rules back through this, so the
-    /// slots a script set with `BrSetFollowSlot` survive them (docs/research/ai.md#level99-snaps).
+    /// slots a script set with `BrSetFollowSlot` survive them (docs/research/ai/index.md#level99-snaps).
     void keepDefaults(int set, std::span<const std::pair<float, float>> slots);
     /// `brain` is going away: it leaves the formation it follows, and its own formation goes.
     void forget(Brain& brain);

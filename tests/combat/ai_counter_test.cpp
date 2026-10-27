@@ -6,7 +6,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 // The AI's counter (command 3): which intro it answers and when the human pressing it may counter.
-// Research: docs/research/ai.md#block
+// Research: docs/research/ai-fights.md#block
 
 using coney::combat::AiCounterSide;
 

@@ -282,6 +282,7 @@ target_sources(coney_core PRIVATE
     human/human_hiding.cpp
     human/human_debug.cpp
     human/human_script.cpp
+    human/face.cpp
     human/humans.cpp
     human/locomotion_gate.cpp
     human/jump.cpp
@@ -302,11 +303,12 @@ target_sources(coney_core PRIVATE
     human/target_human.cpp
     human/turn_and_slide.cpp
     human/victim.cpp)
-# The AI: brains, goals and actions, and the AI humans of a scene (docs/research/ai.md).
+# The AI: brains, goals and actions, and the AI humans of a scene (docs/research/ai/index.md).
 target_sources(coney_core PRIVATE
     ai/address_person_goal.cpp
     ai/ai_config.cpp
     ai/ai_humans.cpp
+    ai/face_mood.cpp
     ai/attack_action.cpp
     ai/attack_choice.cpp
     ai/attack_kinds.cpp
@@ -491,6 +493,8 @@ if(CONEY_DEBUG_TOOLS)
         debug/lua_console.cpp
         debug/menu_model.cpp
         debug/menu_navigator.cpp
+        debug/mesh_stats.cpp
+        debug/mesh_views.cpp
         debug/native_caller.cpp
         debug/native_signatures.cpp
         debug/object_watch.cpp

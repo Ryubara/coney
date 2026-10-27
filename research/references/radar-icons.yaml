@@ -8,7 +8,7 @@ about: |
 complete: |
   Every icon a script or the code uses and every blip type the code adds are listed. The numbers are
   read from the code and the scripts; what each icon marks is inferred from who uses it. Classes are the
-  character class byte `CfgChar` sets (`+0x11a`, [AI](../research/ai.md#types)).
+  character class byte `CfgChar` sets (`+0x11a`, [AI](../research/ai/index.md#types)).
 defaults: {source: "SLUS_212.15, radar code; the scripts, HUDSetRadarItemTexture", evidence: confirmed-code}
 entries:
   - id: icon-22

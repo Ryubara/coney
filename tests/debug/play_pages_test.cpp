@@ -152,7 +152,7 @@ const MenuItem& itemOn(const MenuPage& page, std::string_view label) {
 } // namespace
 
 TEST_CASE("the play pages say so when no player plays", "[debug]") {
-    // Expected: unverified, #85 (Coney's own debug menus)
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     DebugSession session(tunables, servicesOver(nullptr), nullptr);
     for (const std::string_view title : {"Player", "Camera", "Spawner", "AI fighters", "Animation player"}) {
@@ -186,11 +186,11 @@ TEST_CASE("the play pages say so when no player plays", "[debug]") {
                                              "Network",
                                              "Input",
                                              "Performance"});
-    CHECK(session.model().openPage("Debug draw")->items().size() == 11);
+    CHECK(session.model().openPage("Debug draw")->items().size() == 16);
 }
 
 TEST_CASE("the HUD page switches the HUD's parts, sets the panel's values and fires messages", "[debug][hud]") {
-    // Expected: unverified, #85 (Coney's own debug menus)
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     FakePlay play;
     DebugSession session(tunables, servicesOver(&play), nullptr);
@@ -229,7 +229,7 @@ TEST_CASE("the HUD page switches the HUD's parts, sets the panel's values and fi
 }
 
 TEST_CASE("the Player page shows the player, freezes it and teleports it", "[debug]") {
-    // Expected: unverified, #85 (Coney's own debug menus)
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     FakePlay play;
     play.feet = {3.0F, 4.0F, 0.5F};
@@ -271,7 +271,7 @@ TEST_CASE("the Player page shows the player, freezes it and teleports it", "[deb
 }
 
 TEST_CASE("the Camera page resets the camera, switches the free camera and shows the follow values", "[debug]") {
-    // Expected: unverified, #85 (Coney's own debug menus)
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     float lag = 0.22F;
     tunables.add("Follow camera", "Position lag", &lag).range(0, 1, 0.01);
@@ -290,7 +290,7 @@ TEST_CASE("the Camera page resets the camera, switches the free camera and shows
 }
 
 TEST_CASE("the Spawner page puts objects in front of the player and clears them", "[debug]") {
-    // Expected: unverified, #85 (Coney's own debug menus)
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     FakePlay play;
     play.feet = {0.0F, 0.0F, 1.0F};
@@ -321,7 +321,7 @@ TEST_CASE("the Spawner page puts objects in front of the player and clears them"
 }
 
 TEST_CASE("every spawnable object is a primitive a sandbox can build", "[debug][sandbox]") {
-    // Expected: unverified, #85 (Coney's own debug menus)
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     for (const coney::debug::Spawnable& spawnable : coney::debug::spawnables()) {
         INFO(spawnable.name);
         const coney::sandbox::Primitive& p = spawnable.primitive;
@@ -350,7 +350,7 @@ TEST_CASE("every spawnable object is a primitive a sandbox can build", "[debug][
 }
 
 TEST_CASE("the Debug draw page switches the session's debug lines", "[debug]") {
-    // Expected: unverified, #85 (Coney's own debug menus)
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     DebugSession session(tunables, DebugServices{}, nullptr);
     const auto page = session.model().openPage("Debug draw");
@@ -365,7 +365,7 @@ TEST_CASE("the Debug draw page switches the session's debug lines", "[debug]") {
 }
 
 TEST_CASE("the Levels page lists the sandbox layouts and asks for the one chosen", "[debug][sandbox]") {
-    // Expected: unverified, #85 (Coney's own debug menus)
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     DebugServices services;
     services.sandboxFolder = coney::test::assetsDir() / "sandbox";
@@ -387,7 +387,7 @@ TEST_CASE("the Levels page lists the sandbox layouts and asks for the one chosen
 }
 
 TEST_CASE("the Levels page lists the play mode's levels and asks for the one chosen", "[debug]") {
-    // Expected: unverified, #85 (Coney's own debug menus)
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     DebugServices services;
     services.playableLevels = [] { return std::vector<std::string>{"level2", "level99"}; };
@@ -407,7 +407,7 @@ TEST_CASE("the Levels page lists the play mode's levels and asks for the one cho
 // Owner item 19 (issue #85): the level table's test record `armies` has no level file, so choosing it left a black
 // screen (docs/research/armies.md#coney-fixes).
 TEST_CASE("the Levels page leaves out the level-table records that cannot load and names them", "[debug]") {
-    // Expected: unverified, #85 (Coney's own debug menus)
+    // Expected: unverified, #85 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     coney::GameState state;
     for (const auto& [id, name] : {std::pair{24, "level60"}, std::pair{101, "armies"}}) {
@@ -428,7 +428,7 @@ TEST_CASE("the Levels page leaves out the level-table records that cannot load a
 }
 
 TEST_CASE("the Player page changes the player's character type through a choice and an action", "[debug]") {
-    // Expected: unverified, #85 (Coney's own debug menus)
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     FakePlay play;
     DebugSession session(tunables, servicesOver(&play), nullptr);
@@ -461,7 +461,7 @@ TEST_CASE("the Player page changes the player's character type through a choice 
 }
 
 TEST_CASE("the Coordinates toggle shows player 1's feet and heading, and says so with no player", "[debug]") {
-    // Expected: unverified, #85 (Coney's own debug menus)
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     FakePlay play;
     play.feet = {1.5F, -2.25F, 3.0F};
@@ -495,7 +495,7 @@ class FakeInput final : public coney::InputSource {
 
 TEST_CASE("the Player page switches the noclip with a notice, and its hotkey (on by default) until switched off",
           "[debug][noclip]") {
-    // Expected: unverified, #85 (Coney's own debug menus)
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     FakePlay play;
     FakeInput input;
@@ -555,7 +555,7 @@ TEST_CASE("the Player page switches the noclip with a notice, and its hotkey (on
 }
 
 TEST_CASE("the AI fighters page spawns the amount asked for, as the model picked", "[debug][fighters]") {
-    // Expected: unverified, #85 (Coney's own debug menus)
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     FakePlay play;
     play.models = {"model_a", "model_b", "model_c"};
@@ -599,7 +599,7 @@ TEST_CASE("the AI fighters page spawns the amount asked for, as the model picked
 }
 
 TEST_CASE("the AI fighters page stops at the first fighter that cannot be spawned and says so", "[debug][fighters]") {
-    // Expected: unverified, #85 (Coney's own debug menus)
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     TunableRegistry tunables;
     FakePlay play;
     play.fighterLimit = 2;
@@ -616,7 +616,7 @@ TEST_CASE("the AI fighters page stops at the first fighter that cannot be spawne
 }
 
 TEST_CASE("spawning more fighters than one click places each batch beyond the last", "[debug][fighters]") {
-    // Expected: unverified, #85 (Coney's own debug menus)
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     FakePlay play;
     play.models = {"model_a", "model_b"};
     coney::debug::SpawnRandom random(1);

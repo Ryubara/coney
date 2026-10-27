@@ -8,6 +8,7 @@
 #include <format>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "debug/human_shapes.h"
@@ -19,16 +20,13 @@ namespace coney::platform {
 
 namespace {
 
-// The inspector's ids: player 1 is 1; the others are a kind's base plus their index in the mode's lists (an AI human
-// keeps its index once removed, so its id lasts as long as it does) or, for a world object, its handle.
-constexpr debug::EntityId kPlayerId = 1;
-constexpr debug::EntityId kTargetBase = 0x10000;
-constexpr debug::EntityId kAiBase = 0x20000;
-constexpr debug::EntityId kDoorBase = 0x30000;
-constexpr debug::EntityId kPaneBase = 0x40000;
-constexpr debug::EntityId kRecordBase = 0x100000000ULL;
-// The size of each indexed kind's range.
-constexpr debug::EntityId kRange = 0x10000;
+// The inspector's ids (PlayLevelControls::kInspectPlayerId and the bases after it).
+constexpr debug::EntityId kPlayerId = PlayLevelControls::kInspectPlayerId;
+constexpr debug::EntityId kTargetBase = PlayLevelControls::kInspectTargetBase;
+constexpr debug::EntityId kAiBase = PlayLevelControls::kInspectAiBase;
+constexpr debug::EntityId kDoorBase = PlayLevelControls::kInspectDoorBase;
+constexpr debug::EntityId kPaneBase = PlayLevelControls::kInspectPaneBase;
+constexpr debug::EntityId kRecordBase = PlayLevelControls::kInspectRecordBase;
 
 // The most collision triangles the classified wireframe draws in one frame: the plain wireframe's budget.
 constexpr std::size_t kMaxClassifiedTriangles = 6000;
@@ -39,10 +37,15 @@ constexpr graphics::Rgba kSelectedTriangle{255, 255, 255, 255};
 
 // The index `id` names in the kind starting at `base`; nothing when it is another kind's.
 std::optional<std::size_t> indexIn(debug::EntityId id, debug::EntityId base) {
-    if (id < base || id >= base + kRange) {
-        return std::nullopt;
+    return PlayLevelControls::inspectIndexIn(id, base);
+}
+
+// `groups` with the Mesh group after them, when there is one.
+std::vector<debug::WatchGroup> withMesh(std::vector<debug::WatchGroup> groups, std::optional<debug::WatchGroup> mesh) {
+    if (mesh) {
+        groups.push_back(std::move(*mesh));
     }
-    return static_cast<std::size_t>(id - base);
+    return groups;
 }
 
 // A world object's id from its handle (a whole number in the world objects' handle space).
@@ -145,7 +148,7 @@ std::vector<debug::WatchGroup> PlayLevelControls::describeIn(const PlayLevelMode
                                       .type = mode.m_type,
                                       .brain = mode.m_ai ? &mode.m_ai->playerBrain() : nullptr,
                                       .frozen = mode.m_frozen};
-        return debug::describeHuman(mode.m_player->human(), facts);
+        return withMesh(debug::describeHuman(mode.m_player->human(), facts), meshGroupOf(mode, id));
     }
     if (const auto index = indexIn(id, kTargetBase); index && *index < mode.m_targets.size()) {
         const debug::HumanFacts facts{.id = id,
@@ -154,7 +157,7 @@ std::vector<debug::WatchGroup> PlayLevelControls::describeIn(const PlayLevelMode
                                       .type = std::nullopt,
                                       .brain = nullptr,
                                       .frozen = mode.m_targets[*index].frozen};
-        return debug::describeTarget(*mode.m_targets[*index].human, facts);
+        return withMesh(debug::describeTarget(*mode.m_targets[*index].human, facts), meshGroupOf(mode, id));
     }
     if (const auto index = indexIn(id, kAiBase); index && mode.m_ai && *index < mode.m_ai->humans().size()) {
         const ai::AiHuman& entry = mode.m_ai->humans()[*index];
@@ -176,7 +179,7 @@ std::vector<debug::WatchGroup> PlayLevelControls::describeIn(const PlayLevelMode
                                       .type = std::nullopt,
                                       .brain = mode.m_ai->brainOf(*entry.human),
                                       .frozen = mode.m_player->humans().held(*entry.human)};
-        return debug::describeHuman(*entry.human, facts);
+        return withMesh(debug::describeHuman(*entry.human, facts), meshGroupOf(mode, id));
     }
     if (mode.m_objects != nullptr) {
         const auto doors = mode.m_objects->doors.doors();
@@ -311,6 +314,8 @@ void PlayLevelControls::addInspectorLines(const PlayLevelMode& mode, const debug
             }
         }
     }
+    // The selection's normals and bone axes (play_level_mesh.cpp).
+    addMeshLines(mode, options, lines, snapshot, alpha);
     // The selection: a marker over it, and an object's own collision triangles.
     if (options.highlight && options.inspected != debug::kNoEntity) {
         const std::vector<debug::EntityRef> list = entitiesOf(mode);

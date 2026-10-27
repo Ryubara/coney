@@ -979,8 +979,8 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   offer (4: his type's prompt, 6 for the flash, while his goal registers it, from the greeting on, within 1.75 m).
   A prompt naming the dealers' goods wakes the player panel.
   Last, a [talkable](hud-messages.md#talk-prompt) Warrior or co-op partner within 1.5 m (`GameplayMode::talkPrompt()`)
-  gives the swap string his brain's think set ([AI](ai.md#coney): `GSTRING.HUD` 0xc-0xe while one of the two holds
-  an object), else his own text (`ScriptState::talkText`), else HUD string 9; triangle swaps ([AI](ai.md#coney)).
+  gives the swap string his brain's think set ([AI](ai/index.md#in-coney): `GSTRING.HUD` 0xc-0xe while one of the two holds
+  an object), else his own text (`ScriptState::talkText`), else HUD string 9; triangle swaps ([AI](ai/index.md#in-coney)).
   The action object's
   second text
   (`SetMsgHandlerEx`'s `prompt2`)

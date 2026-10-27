@@ -8,7 +8,7 @@
 // The Melee goal (type 8): the middle of a fight's three goals (FindEnemy, Melee, the fight goal), which takes over
 // whenever the fight goal ends. It picks the enemy to fight, sends the human in after him with an EngageEnemy goal
 // while he is beyond the fight goal's range, and pushes a fresh fight goal once he is within it.
-// Research: docs/research/ai.md#melee-goal, docs/research/ai.md#fight-durations
+// Research: docs/research/ai-fights.md#melee-goal, docs/research/ai-fights.md#fight-durations
 
 namespace coney::ai {
 
@@ -21,17 +21,17 @@ class MeleeGoal final : public Goal {
 
     /// Starts the time limit's clock: the goal first runs once the fight goal above it has ended.
     void start(Brain& brain) override;
-    /// One update (docs/research/ai.md#melee-goal): past its time limit it is done without running; while actions are
-    /// queued it waits; it chooses the target (with a threat response, the best valid enemy; without, only the current
-    /// target while it holds an attack slot on him; ai::pickBestEnemy() with score_term::kMelee); with none it is done.
-    /// Then, `R` being the far melee range × 1.1: armed, or unarmed and allowed to approach (Brain::mayApproach())
-    /// within `R`, it walks over in the fight stance when he is beyond 1 m and the straight line to him is not walkable
-    /// (a move at gait 2, radius 1 m), else pushes a fight goal of kMeleeFightMs and processes it at once; unarmed and
-    /// allowed beyond `R`, it pushes an EngageEnemy goal. **Coney stand-ins**: the line of sight always holds here; the
-    /// chase is always allowed (Coney keeps no gang wanted timers); with no target and enemies listed it spectates
-    /// (SpectateArgs::melee()) without the shadow and may-spectate tests; and a human not allowed to approach (its last
-    /// move failed) runs straight at the target (a move-to-human action, 2 s) and may approach again, the original's
-    /// weapon pick-up, throw and positioning moves not being traced.
+    /// One update (docs/research/ai-fights.md#melee-goal): past its time limit it is done without running; while
+    /// actions are queued it waits; it chooses the target (with a threat response, the best valid enemy; without, only
+    /// the current target while it holds an attack slot on him; ai::pickBestEnemy() with score_term::kMelee); with none
+    /// it is done. Then, `R` being the far melee range × 1.1: armed, or unarmed and allowed to approach
+    /// (Brain::mayApproach()) within `R`, it walks over in the fight stance when he is beyond 1 m and the straight line
+    /// to him is not walkable (a move at gait 2, radius 1 m), else pushes a fight goal of kMeleeFightMs and processes
+    /// it at once; unarmed and allowed beyond `R`, it pushes an EngageEnemy goal. **Coney stand-ins**: the line of
+    /// sight always holds here; the chase is always allowed (Coney keeps no gang wanted timers); with no target and
+    /// enemies listed it spectates (SpectateArgs::melee()) without the shadow and may-spectate tests; and a human not
+    /// allowed to approach (its last move failed) runs straight at the target (a move-to-human action, 2 s) and may
+    /// approach again, the original's weapon pick-up, throw and positioning moves not being traced.
     /// @orig 0x002aebf8 MeleeGoal_Process (unknown)
     /// @orig 0x002ae2e8 MeleeGoal_WithTarget (unknown)
     [[nodiscard]] GoalStatus process(Brain& brain) override;

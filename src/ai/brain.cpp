@@ -8,6 +8,7 @@
 
 #include "ai/attack_views.h"
 #include "ai/brain_events.h"
+#include "ai/face_mood.h"
 #include "ai/fight_goal.h"
 #include "ai/gangs.h"
 #include "ai/melee_goal.h"
@@ -34,6 +35,7 @@ constexpr int kRandomDelayMaxMs = 500;
 
 } // namespace
 
+// @coney-only trace naming; the original keeps no such count
 const char* targetCauseName(TargetCause cause) {
     switch (cause) {
     case TargetCause::Pick:
@@ -58,6 +60,7 @@ const char* targetCauseName(TargetCause cause) {
     return "other";
 }
 
+// @coney-only the class byte as Coney's enum; Human_Init (0x00218008) stores the byte as the type unchanged
 BrainType brainTypeOf(int behaviour) {
     if (behaviour < 0 || behaviour > static_cast<int>(BrainType::CivilianDi)) {
         return BrainType::Gang;
@@ -110,6 +113,7 @@ Brain::~Brain() = default;
 // The brain whose human stands at `position` (the announced attacker); null when none does. **Coney reading**: the
 // announcement carries the attacker's position, so the attacker is the peer standing there (the boss counters answer
 // him, docs/research/ai-gangs.md#boss-diego-vargas).
+// @coney-only the announcement carries a position, so the attacker is found by where he stands
 Brain* Brain::announcer(anim::Vec3 position) const {
     if (m_peers == nullptr) {
         return nullptr;
@@ -123,8 +127,14 @@ Brain* Brain::announcer(anim::Vec3 position) const {
     return nullptr;
 }
 
+// Brain_Update's count and handler call, with Brain_UpdateGoals as an AI brain's handler (the declaration says the
+// rest; Brain_StopMove's tag stands at its call below).
+// @orig 0x0028f8b8 Brain_Update (unknown)
+// @orig 0x0028fbb0 Brain_UpdateGoals (unknown)
 void Brain::update(std::uint64_t nowMs) {
     m_nowMs = nowMs;
+    // Brain_Update counts first (+0x34): the mood and the goals read this update's number (docs/research/face.md#mood).
+    ++m_updates;
     // The attacks announced since the last update that this brain's range and field of view take in: events 0x10,
     // which count the warnings (+0x200) unless the gang's tactic takes them or the brain is dead.
     m_attackWarnings = 0;
@@ -149,6 +159,13 @@ void Brain::update(std::uint64_t nowMs) {
     if (runsGoals) {
         stopMove();
     }
+    // Every fifth update the face shows the mood of what the brain is doing: the player's brain first thing, an AI's
+    // after its move is stopped, whether or not its goals run (Brain_UpdateAlertness, docs/research/face.md#mood).
+    if (m_updates % kFaceMoodUpdates == 0) {
+        m_human->setFaceMood(faceMoodOf(faceMoodFacts(*this)));
+    }
+    // Coney's choice: a human out of health skips the goals too, and a suspended brain skips them in a scene as well
+    // (the original goes on there); #635 lists both.
     if (runsGoals && !held && !m_knockedOut && !m_human->airborne() && !m_human->fighter().health().depleted()) {
         // The enemy scan on this brain's own schedule, before the goals that pick from the list
         // (docs/research/ai-reimpl.md#unit-1). **Coney's reading**: a brain with no gang has no enemy gang to find and
@@ -164,7 +181,6 @@ void Brain::update(std::uint64_t nowMs) {
     }
     m_attackWarnings = 0;
     m_lastUpdateMs = nowMs;
-    ++m_updates;
     m_retired.clear();
 }
 
@@ -219,11 +235,15 @@ Brain* Brain::knockOut() {
     return foe;
 }
 
+// @orig 0x0028ceb8 Brain_StoreType (unknown)
 void Brain::setType(BrainType type) {
+    // Coney's choice: the same type again changes nothing, where the original installs the handlers again.
     if (type == m_type) {
         return;
     }
+    // Coney's choice: no handlers to install, as the update, think and event calls pick by m_type each time.
     m_type = type;
+    // Coney's choice: the fighter keeps its own Warrior mark, which the original reads off the brain type.
     m_human->fighter().setWarriorBrain(type == BrainType::Warrior);
     // An AI brain has no pad to hand back while dead (the scripts flush the goals of a new player themselves).
     if (type != BrainType::Player) {
@@ -279,6 +299,9 @@ void Brain::clearGoals() {
     }
 }
 
+// Brain_FindGoal's search down from the top, stopped at the goal base as its callers test the index against `+0x2d`
+// (docs/research/ai-reimpl.md, the help response).
+// @orig 0x0028d960 Brain_FindGoal (unknown)
 Goal* Brain::findGoalAboveBase(GoalType type) {
     for (auto k = static_cast<int>(m_goals.size()) - 1; k > m_goalBase; --k) {
         if (m_goals.at(static_cast<std::size_t>(k))->type() == type) {
@@ -288,6 +311,7 @@ Goal* Brain::findGoalAboveBase(GoalType type) {
     return nullptr;
 }
 
+// @orig 0x00419ee0 GameState_FindNearestPlayer (unknown)
 Brain* Brain::nearestPlayer() const {
     Brain* best = nullptr;
     float bestDistance = 0.0F;
@@ -295,9 +319,12 @@ Brain* Brain::nearestPlayer() const {
         return nullptr;
     }
     for (const std::unique_ptr<Brain>& peer : *m_peers) {
+        // Coney's choice: the players are the scene's player brains but this one, where the original walks the game
+        // state's player list (`+0x224`, `+0x228`) from a point.
         if (peer.get() == this || peer->type() != BrainType::Player) {
             continue;
         }
+        // Coney's choice: the horizontal distance, where the original compares squared distances in 3D (Vec_DistSq).
         const float d = distanceTo(*peer);
         if (best == nullptr || d < bestDistance) {
             best = peer.get();
@@ -320,6 +347,9 @@ void Brain::popToGoalBase() {
     m_goalBase = -1;
 }
 
+// What a tactic's GiveGoals does before each push (docs/research/ai-gangs.md#tactics).
+// @orig 0x0028d8c0 Brain_PopToGoalBase (unknown)
+// @orig 0x0028d8a0 Brain_MarkGoalBase (unknown)
 bool Brain::pushTacticGoal(std::unique_ptr<Goal> goal) {
     popToGoalBase();
     markGoalBase();
@@ -387,8 +417,10 @@ bool Brain::clearActions() {
     return true;
 }
 
+// @coney-only a reader of Coney's queue; the original reads its head in place
 Action* Brain::frontAction() { return m_actionCount == 0 ? nullptr : m_actions[m_actionFront].get(); }
 
+// @coney-only a reader of Coney's queue; the original reads its head in place
 const Action* Brain::frontAction() const { return m_actionCount == 0 ? nullptr : m_actions[m_actionFront].get(); }
 
 void Brain::flush() {
@@ -396,6 +428,8 @@ void Brain::flush() {
     clearActions();
 }
 
+// Coney's choice: the passes are bounded (twice the stack's size) where the original loops until a goal stops
+// (#635).
 void Brain::processGoals() {
     for (int pass = 0; pass < kMaxGoalPasses; ++pass) {
         Goal* top = topGoal();
@@ -519,6 +553,7 @@ void Brain::pushFightGoals(int durationMs) {
     pushGoal(std::make_unique<FightGoal>(durationMs));
 }
 
+// @orig 0x0028d538 Brain_AddEnemy (unknown)
 bool Brain::listEnemy(Brain& enemy) {
     if (&enemy == this || m_enemies.size() >= kMaxEnemies || std::ranges::find(m_enemies, &enemy) != m_enemies.end()) {
         return false;
@@ -565,6 +600,7 @@ bool Brain::hasAttackSlot() const {
     return m_target != nullptr && std::ranges::find(m_target->m_slots, this) != m_target->m_slots.end();
 }
 
+// @coney-only an early stand-in for the fight goal's re-target (0x002b3c30, now FightGoal's); nothing calls it
 void Brain::retarget() {
     Brain* nearest = nullptr;
     float best = std::numeric_limits<float>::max();
@@ -607,6 +643,7 @@ bool Brain::claimSlot(Brain& attacker, bool force) {
     return true;
 }
 
+// @orig 0x0028cfe0 Brain_SetTarget (unknown)
 void Brain::releaseSlot(const Brain& attacker) {
     std::erase(m_slots, &attacker);
     m_fight.places.release(&attacker);
@@ -616,11 +653,14 @@ void Brain::releaseSlot(const Brain& attacker) {
     }
 }
 
+// @orig 0x0028df30 Brain_ClaimAttackSlot (unknown)
 void Brain::raiseSpacing(const Brain& attacker) {
     const GangFightValues values = attacker.gangFight();
     m_fight.spacing.raise(values.standingSpacing, values.downSpacing, m_type == BrainType::Warrior);
 }
 
+// @coney-only one lookup of the gang kind's CfgGang values, which the original reads byte by byte through its getters
+// (GangConfig_GetField6C to GangConfig_GetField71, 0x00164498-0x00164588)
 GangFightValues Brain::gangFight() const {
     if (m_gang == nullptr || m_gang->kind() < 0 || m_gang->kind() >= static_cast<int>(kGangKinds)) {
         return {};
@@ -628,24 +668,34 @@ GangFightValues Brain::gangFight() const {
     return m_settings.gangFight[static_cast<std::size_t>(m_gang->kind())];
 }
 
+// Sets how many attackers may hold a slot (`+0x1e4`, at most kMaxAttackSlots); the holders past it lose theirs.
+// @orig 0x0028db88 Brain_SetAttackSlotCountRaw (unknown)
 void Brain::setAttackSlotCount(std::size_t count) {
+    // Coney's choice: the count is kept to the list's size, where the original stores it as given.
     m_slotCount = std::min(count, kMaxAttackSlots);
     if (m_slots.size() > m_slotCount) {
+        // Coney stand-in: the first holders stay, where the original sorts them by distance and keeps the nearest.
         m_slots.resize(m_slotCount);
     }
 }
 
+// @orig 0x00292938 Brain_SetMeleeRange (unknown)
 void Brain::setMeleeRange(float nearRange, float farRange) {
+    // Coney's choice: a member of the brain, so the handle the original's worker resolves to a human is its caller's
+    // (no script calls BrSetMeleeRange, and Coney registers no binding for it).
     m_meleeNear = nearRange;
     m_meleeFar = farRange;
 }
 
+// @coney-only a setter of the sight range and field of view (`+0x130`, `+0x12c`), which the original writes in place
 void Brain::setSight(float range, float fieldOfView) {
     m_sightRange = range;
     m_fieldOfView = fieldOfView;
 }
 
+// @orig 0x002911e8 Brain_StoreAttackWeight (unknown)
 void Brain::setAttackWeight(int kind, std::uint8_t weight) {
+    // Coney's choice: a kind outside the table is ignored, where the original writes past it unchecked.
     if (kind >= 0 && kind < static_cast<int>(kAttackKinds)) {
         m_settings.attackWeights[static_cast<std::size_t>(kind)] = weight;
     }
@@ -671,6 +721,8 @@ float Brain::counterChance() const { return m_human->fighterProfile().powerClass
 
 void Brain::press(combat::CommandId command) { m_human->record().command = command; }
 
+// The speed as Brain_SetMoveSpeed stores it (`+0x114`), with the heading (`+0x110`) its callers write in place.
+// @orig 0x0028ab28 Brain_SetMoveSpeed (unknown)
 void Brain::setMove(anim::Vec3 way, float speed) {
     const float length = std::hypot(way.x, way.y);
     const float heading = length > 1e-4F ? human::headingOf(way) : m_human->heading();
@@ -678,6 +730,8 @@ void Brain::setMove(anim::Vec3 way, float speed) {
         human::BrainMove{.heading = heading, .speed = speed, .turnBoost = m_turnBoost, .aim = m_moveAim};
 }
 
+// The same as setMove() with the heading given.
+// @orig 0x0028ab28 Brain_SetMoveSpeed (unknown)
 void Brain::setMoveHeading(float heading, float speed) {
     m_human->record().move = human::BrainMove{
         .heading = human::wrapAngle(heading), .speed = speed, .turnBoost = m_turnBoost, .aim = m_moveAim};
@@ -690,6 +744,8 @@ void Brain::setTurnBoost(int boost) {
     }
 }
 
+// Sets the point a move aims at and its radius (moveAim(), moveAimRadius()).
+// @coney-only a setter of `+0x90` and `+0x118`, which the original's move actions write in place
 void Brain::setMoveAim(anim::Vec3 point, float radius) {
     m_moveAim = point;
     m_moveAimRadius = radius;
@@ -701,8 +757,13 @@ void Brain::setMoveAim(anim::Vec3 point, float radius) {
 
 void Brain::stopMove() { m_human->record().move.reset(); }
 
+// Coney's choice: a route leg's climb is handed to the human, who tries it in its update (the original, at once).
+// @orig 0x0029b848 Route_ClimbLeg (unknown)
+// @orig 0x0029b9b0 Route_TryClimbNear (unknown)
 void Brain::requestClimb(anim::Vec3 direction) { m_human->record().climbToward = direction; }
 
+// The stick AttackAction_Start writes for an attack's snap.
+// @orig 0x002fa9a8 AttackAction_Start (unknown)
 void Brain::writeStick(anim::Vec3 way, float magnitude) {
     const float length = std::hypot(way.x, way.y);
     human::PlayerRecord& record = m_human->record();
@@ -711,24 +772,31 @@ void Brain::writeStick(anim::Vec3 way, float magnitude) {
     record.stickY = length > 1e-4F ? way.y / length * magnitude : 0.0F;
 }
 
+// Lets go the stick writeStick() wrote, when Coney's attack action ends.
+// @coney-only the original's AttackAction_Update (0x002fad70) and AttackAction_Abort (0x002fad30) write no stick;
+// it zeroes the stick's magnitude when the next attack starts (AttackAction_Start 0x002fa9a8)
 void Brain::releaseStick() {
     m_human->record().stickX = 0.0F;
     m_human->record().stickY = 0.0F;
 }
 
+// @coney-only a distance helper; the original measures each distance in place (Vec_DistSq and the like)
 float Brain::distanceTo(const Brain& other) const {
     const anim::Vec3 to = anim::subtract(other.human().position(), m_human->position());
     return std::hypot(to.x, to.y);
 }
 
+// @orig 0x002223e8 Human_CanSeeHuman (unknown)
 bool Brain::canSee(const Brain& other, float range) const {
     return canSeeHuman(m_collision, *m_human, other.human(), range);
 }
 
+// @orig 0x00222288 Human_HasLineOfSight (unknown)
 bool Brain::hasLineOfSight(const Brain& other) const {
     return lineOfSight(m_collision, m_human->position(), other.human().position()).clear;
 }
 
+// @coney-only a shorthand for Coney's health-left test, which the original makes in place
 bool Brain::fightable(const Brain& other) { return !other.human().fighter().health().depleted(); }
 
 bool deliverEvent(Brain& brain, const BrainEvent& event) {
@@ -741,6 +809,7 @@ bool deliverEvent(Brain& brain, const BrainEvent& event) {
     return brain.onEvent(event);
 }
 
+// @coney-only Coney's brains hold pointers; the original's handles stop resolving on their own
 void Brain::forget(const Brain& other) {
     if (m_target == &other) {
         m_target = nullptr;

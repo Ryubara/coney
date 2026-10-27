@@ -19,7 +19,7 @@
 namespace coney::ai {
 
 /// The kind of the sandbox fighters' gang: the level scripts' combat gangs' kind (`GangCreate(19, ...)` in
-/// `level99_combat.lua`, docs/research/ai.md#level99).
+/// `level99_combat.lua`, docs/research/ai/index.md#level99).
 inline constexpr int kFighterGangKind = 19;
 /// The kind of the neutral fighters' gangs: rumble's first side (`GangCreate(3, "Gang1")`, docs/research/rumble.md), a
 /// fighting kind that is neither the Warriors', the police's nor the enemy fighters', so by kind it is nobody's friend

@@ -34,8 +34,48 @@ name = "Human_UpdateActions"
 page = "tasks.md#original-structure"
 role = "per human: the command dispatcher and the anim state choice"
 level = "confirmed-code"
-coney = "src/human/fighter.h:Fighter::riseCounter"
-status = "legacy"
+coney = "src/human/human.cpp:Human::updateActions"
+status = "compared"
+
+[[function.gaps]]
+what = "state 0x4000 (down) runs Human_UpdateDown 0x00256f28 (the wound's bleed, the cuffed health floor, the fire, the stance); only its demi-god rule is ported"
+relation = "not-ported"
+issue = 685
+
+[[function.gaps]]
+what = "with no health left the original returns before the hiding, the meters, the mini-games, the refill, the dispatcher and the anim choice; Coney goes on to them"
+relation = "not-ported"
+issue = 685
+
+[[function.gaps]]
+what = "the counter's target is the foe within 1.25 x 617's far range (Coney: its reach, and no foe is kept), and the reaction clip and the stun end only in a reaction clip without state 0x8000000"
+relation = "not-ported"
+issue = 683
+
+[[function.gaps]]
+what = "the duck's state 0x8000 (set with the dodge, cleared when R1 is let go), and the return after the dodge or the early block (Coney's fighter goes on to the pending hit and the dispatcher that update)"
+relation = "not-ported"
+issue = 683
+
+[[function.gaps]]
+what = "the move-style check (Human_CheckMoveStyles) each update"
+relation = "not-ported"
+issue = 990
+
+[[function.gaps]]
+what = "the d-pad objective recall (current and bonus objective)"
+relation = "not-ported"
+issue = 990
+
+[[function.gaps]]
+what = "the special idle (Human_UpdateSpecialIdle)"
+relation = "not-ported"
+issue = 990
+
+[[function.gaps]]
+what = "the pick-up swap flag (+0x5b8) cleared while triangle is not held"
+relation = "not-ported"
+issue = 990
 
 [[function]]
 address = 0x00387ad8

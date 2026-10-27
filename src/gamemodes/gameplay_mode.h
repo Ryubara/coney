@@ -122,7 +122,7 @@ class ScriptedPlayer {
 /// and gangs they give goals to, and player 1's cameras. The scripts' hold on the brains holds their calls until the
 /// level makes the humans (ai::ScriptedBrains::release()). Everything is gameplay's, valid until the level is unloaded.
 ///
-/// Research: docs/research/ai.md#coney, docs/research/characters.md#creation
+/// Research: docs/research/ai/index.md#in-coney, docs/research/characters.md#creation
 struct ScriptedCast {
     CreatedHumans* humans = nullptr;                 ///< The scripts' humans, in the order of their `HuCreate` calls.
     const script::RecordedCalls* recorded = nullptr; ///< The configuration the scripts recorded (the classes).

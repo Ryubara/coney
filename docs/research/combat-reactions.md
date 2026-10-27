@@ -18,10 +18,10 @@ flinch, a stun, a knockdown), a hit on a human busy with something else and the 
 back up and the counter from the ground, being knocked out and revived with a flash, the mission failing when the crew
 can no longer help, and the blood a hit draws. A player sees a punch land, a man stagger or fall and get up, a man left
 on the ground, a flash bring a downed crewman back to his feet, and the "mission failed" screen. The AI's fight goals
-([AI](ai.md#fight-reactions)), the grab and the mount ([Combat: grabs](combat-grabs.md)) and the HUD's health meter read
-the states set here. A bat's hit, which deals the bat's damage rather than the clip's, is on [Combat: throws, weapons in
-hand](combat-throws.md#bat-knockdown). The commands, the state bits and the tables every combat topic reads are on
-[Combat](combat/index.md#data).
+([AI](ai/index.md#fight-reactions)), the grab and the mount ([Combat: grabs](combat-grabs.md)) and the HUD's health
+meter read the states set here. A bat's hit, which deals the bat's damage rather than the clip's, is on [Combat: throws,
+weapons in hand](combat-throws.md#bat-knockdown). The commands, the state bits and the tables every combat topic reads
+are on [Combat](combat/index.md#data).
 
 ## Map
 
@@ -124,9 +124,9 @@ grabbed `0x10` (front) / `0x20` (rear), a mini-game `0x4000000` (the stereo is m
 (`0x0022dd98`) set only those state bits and no held flag; what their clips hold was not checked. All confirmed (code)
 at the cited addresses.
 
-**The checks on an AI's way in**, in the order a fight meets them ([AI](ai.md#check-attack)):
+**The checks on an AI's way in**, in the order a fight meets them ([AI](ai-fights.md#check-attack)):
 
-1. **EngageEnemy's run-in** (`EngageEnemyGoal_Process`, `0x002afa48`, [AI](ai.md#engage-enemy); confirmed (code)):
+1. **EngageEnemy's run-in** (`EngageEnemyGoal_Process`, `0x002afa48`, [AI](ai-fights.md#engage-enemy); confirmed (code)):
    within 0.75 × far (3.75 m) of a target whose state has any of the busy mask `0x7bf9e9f7ff0`
    (`HumanRecord_AreActionsBlocked`, `0x00228228`), the runner stops and turns to him instead of charging. All three
    activities are in the mask. The fight goal then attacks from there.
@@ -149,7 +149,7 @@ at the cited addresses.
 | 22 (grab: T free of `0x7bfdc8f7fd0`) | front no; rear only from in front of him (the start test) | no | **yes** |
 | 12-14 (grounded) | unchanged: T must be down (or high) | the same | the same |
 
-The pick also weighs a rear-grabbed target held by a gang mate +200 toward the grab ([AI](ai.md#pick-attack)).
+The pick also weighs a rear-grabbed target held by a gang mate +200 toward the grab ([AI](ai-fights.md#pick-attack)).
 
 **A player's moves.** Square and cross strike whatever their shapes meet. The player's grab and tackle search uses
 `Human_CanBeGrabbed` (`0x002256a0`, confirmed (code)). It refuses the state bits `0x7bfdc8f7ff0` (grabbed, mini-game,
@@ -208,9 +208,9 @@ places.
 **1. No AI starts an attack on him.** `Human_CanStartAttack` (`0x00224778`, [An AI's
 attacks](combat-targets.md#ai-attacks), test 1) refuses every kind against a target holding any of **`0xc08200`**
 (`0x800000`, `0x400000`, `0x8000`, `0x200`), except for the target's own partner (target state `0x2000` and attacker
-state `0x1000`). The fight goal then picks again and waits ([AI](ai.md#fight-order)), and the attack action's start asks
-the same test, so a queued attack does not start either. So a diver, a power move's or finisher's victim and the three
-humans of a tandem are left alone; a charger (`0x1000000` is not in the mask) is not.
+state `0x1000`). The fight goal then picks again and waits ([AI](ai-fights.md#fight-order)), and the attack action's
+start asks the same test, so a queued attack does not start either. So a diver, a power move's or finisher's victim and
+the three humans of a tandem are left alone; a charger (`0x1000000` is not in the mask) is not.
 
 **2. No grab or tackle by a player.** `Human_CanBeGrabbed` (`0x002256a0`) refuses held `0x8fc57a60`, which has
 `0x1000000`, `0x800000` and `0x400000`.
@@ -501,7 +501,7 @@ Confirmed (code). A mounted human is state `0x800` instead, and the dispatcher s
   cleared only by 199's end callback (`Human_EndDownState` `0x0025e26c` → `Human_GetUp`), so the goal lasts through the
   whole of 199. Confirmed (code); not seen at runtime.
 - **The AI.** An AI's Grounded goal (`0x17`, `0x002b4aa8`) queues kind 42 on itself about 1.9 s after going down while
-  it is attacked ([AI](ai.md#fight-reactions)). `AttackKind_ToCommand` (`0x00231090`, table `0x0055c170`) makes kind
+  it is attacked ([AI](ai/index.md#fight-reactions)). `AttackKind_ToCommand` (`0x00231090`, table `0x0055c170`) makes kind
   42 the command `0xf` (square), so it is the AI's mash: one command, which cuts its ground time like a press
   (inferred from the code; not seen at runtime): no attack clip starts from it.
 

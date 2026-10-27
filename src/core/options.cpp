@@ -54,7 +54,7 @@ constexpr std::string_view kUsage =
     "             [--ai-player] [--ai-seed N]\n"
     "             [--bench FILE [--bench-fighters N] [--bench-warmup N]]\n"
     "             [--log-file FILE] [--log-verbose CATEGORIES]\n"
-    "             [--dev-overlay N]\n"
+    "             [--dev-overlay N] [--mesh-view SPEC]\n"
     "             [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]\n"
     "             [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
     "             [--no-activate] [--window-display DISPLAY]\n"
@@ -190,6 +190,9 @@ constexpr std::string_view kUsage =
     "  --profiles DIR     the folder of saved player profiles (default: profiles in your data folder;\n"
     "                     none in test mode, where profiles last the run)\n"
     "  --dev-overlay N    show the developer overlay (F1) for the first N frames, then hide it; a test aid\n"
+    "  --mesh-view SPEC   the Debug draw page's mesh views from the first frame of play: items separated by\n"
+    "                     commas, wire=selection|humans|all, view=wire|material|draw|lod,\n"
+    "                     scope=selection|humans|all, normals, bones, select=nearest|player, frames=N\n"
     "  --headless        run with no window and no GPU (nothing is drawn)\n"
     "  --help             show this text and exit\n";
 
@@ -997,6 +1000,10 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
         } else if (arg == "--tunables") {
             if (auto value = takeValue(args, i, options.tunablesFile, "--tunables", "the path of a tunables file");
                 !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--mesh-view") {
+            if (auto value = takeValue(args, i, options.meshView, "--mesh-view", "a list of views"); !value) {
                 return std::unexpected(std::move(value.error()));
             }
         } else if (arg == "--profiles") {

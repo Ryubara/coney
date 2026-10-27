@@ -18,6 +18,7 @@ add_executable(coney_tests
     core/ps2_float_test.cpp
     core/sha1_test.cpp
     core/sha256_test.cpp
+    core/mesh_view_option_test.cpp
     core/options_test.cpp
     core/perf_test.cpp
     core/pad_test.cpp
@@ -309,6 +310,7 @@ target_sources(coney_tests PRIVATE
     human/human_revive_test.cpp
     human/human_uncuff_test.cpp
     human/debug_clip_test.cpp
+    human/face_test.cpp
     human/way_clear_test.cpp
     human/flight_test.cpp
     human/hiding_test.cpp
@@ -367,8 +369,9 @@ target_sources(coney_tests PRIVATE
 # The collision writer the sandbox and the Spawner use (the sandbox's own tests are the debug tools', below).
 target_sources(coney_tests PRIVATE
     raycast/collision_builder_test.cpp)
-# The AI humans' brains (docs/research/ai.md).
+# The AI humans' brains (docs/research/ai/index.md).
 target_sources(coney_tests PRIVATE
+    ai/face_mood_test.cpp
     ai/attack_choice_test.cpp
     ai/attack_reach_test.cpp
     ai/fidget_action_test.cpp
@@ -458,6 +461,7 @@ if(CONEY_DEBUG_TOOLS)
         debug/human_shapes_test.cpp
         debug/input_gate_test.cpp
         debug/menu_navigator_test.cpp
+        debug/mesh_views_test.cpp
         debug/movies_page_test.cpp
         debug/net_page_test.cpp
         debug/native_caller_test.cpp
@@ -472,6 +476,7 @@ if(CONEY_DEBUG_TOOLS)
         gui/debug_menu_view_test.cpp
         platform/disc_anim_player_test.cpp
         platform/disc_armies_test.cpp
+        platform/disc_face_test.cpp
         platform/disc_change_character_test.cpp
         platform/disc_debug_ai_sides_test.cpp
         platform/disc_debug_no_gang_test.cpp
@@ -494,12 +499,15 @@ if(CONEY_DEBUG_TOOLS)
         platform/disc_level99_store_glass_test.cpp
         platform/disc_level99_store_register_test.cpp
         platform/disc_level99_street_props_test.cpp
+        platform/disc_mesh_views_draw_test.cpp
+        platform/disc_mesh_views_test.cpp
         platform/disc_rise_counter_test.cpp
         platform/disc_sprint_attacks_test.cpp
         platform/disc_strike_contact_test.cpp
         platform/disc_tandem_test.cpp
         platform/imgui_model_view_test.cpp
         platform/imgui_ui_scale_test.cpp
+        platform/mesh_views_test.cpp
         raycast/collision_extras_test.cpp
         sandbox/disc_sandbox_combat_test.cpp
         sandbox/disc_sandbox_player_test.cpp

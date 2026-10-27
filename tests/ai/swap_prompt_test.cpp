@@ -164,8 +164,8 @@ TEST_CASE("a Warrior whose brain is off clears his swap prompt on his next think
 }
 
 TEST_CASE("a knocked-out player is offered no swap either", "[ai][swap]") {
-    // Step 7 also needs the player free to act (docs/research/ai.md#think-warrior, "the nearest player ..., not
-    // blocked").
+    // Step 7 also needs the player free to act (docs/research/ai-brain-types.md#think-warrior, "the nearest player ...,
+    // not blocked").
     SwapScene s;
     coney::human::Human& player = s.scene.player().human();
     player.script().heldObject = 7.0;

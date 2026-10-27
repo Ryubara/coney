@@ -44,12 +44,8 @@ tag = 14
 ["src/ai/boss_goals.h"]
 comment = 4
 
-["src/ai/brain.cpp"]
-comment = 2
-tag = 29
-
 ["src/ai/brain.h"]
-comment = 40
+comment = 38
 tag = 1
 
 ["src/ai/brain_events.cpp"]
@@ -333,9 +329,6 @@ tag = 1
 ["src/audio/game_sound.cpp"]
 tag = 63
 
-["src/audio/game_sound.h"]
-comment = 1
-
 ["src/audio/human_sound_events.cpp"]
 tag = 9
 
@@ -590,9 +583,6 @@ comment = 2
 
 ["src/debug/net_controls.h"]
 comment = 3
-
-["src/debug/play_controls.h"]
-comment = 1
 
 ["src/debug/tunables.cpp"]
 comment = 1
@@ -1075,14 +1065,6 @@ tag = 12
 comment = 1
 tag = 1
 
-["src/human/human.cpp"]
-comment = 2
-tag = 51
-
-["src/human/human.h"]
-comment = 11
-tag = 3
-
 ["src/human/human_animator.cpp"]
 tag = 38
 
@@ -1110,9 +1092,6 @@ tag = 2
 
 ["src/human/human_sounds.h"]
 comment = 1
-
-["src/human/humans.cpp"]
-tag = 7
 
 ["src/human/jump.cpp"]
 tag = 1
@@ -1271,19 +1250,10 @@ comment = 3
 ["src/platform/parked_cars.cpp"]
 comment = 1
 
-["src/platform/perf_probes.cpp"]
-comment = 6
-
 ["src/platform/placed_objects.cpp"]
 comment = 2
 
 ["src/platform/placed_objects.h"]
-comment = 1
-
-["src/platform/play_level_controls.h"]
-comment = 1
-
-["src/platform/play_level_inspect.cpp"]
 comment = 1
 
 ["src/platform/play_scenery.h"]
@@ -1300,9 +1270,6 @@ comment = 1
 
 ["src/platform/sandbox_viewer_mode.h"]
 comment = 2
-
-["src/platform/scene_lighting.cpp"]
-comment = 1
 
 ["src/platform/texture_dictionary.cpp"]
 comment = 1
@@ -1461,9 +1428,6 @@ tag = 15
 
 ["src/scripting/sound_bindings.cpp"]
 tag = 19
-
-["src/scripting/sound_bindings.h"]
-tag = 1
 
 ["src/scripting/spawn_bindings.cpp"]
 tag = 3
@@ -1703,9 +1667,6 @@ citation = 4
 ["tests/ai/brain_events_test.cpp"]
 citation = 6
 
-["tests/ai/brain_test.cpp"]
-citation = 24
-
 ["tests/ai/crew_test.cpp"]
 citation = 17
 
@@ -1747,9 +1708,6 @@ citation = 29
 
 ["tests/ai/perception_test.cpp"]
 citation = 4
-
-["tests/ai/riot_goals_test.cpp"]
-citation = 8
 
 ["tests/ai/route_planner_test.cpp"]
 citation = 15

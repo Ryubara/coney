@@ -4,8 +4,9 @@
 # (-229, 234) beyond the 15 m the car goal needs, and the steal / wreck command (5) is given through
 # WarriorCommand_Dispatch (0x0041c4e0, forced), as a player gives it there. The hooks log each smash goal and car goal
 # pushed, each queued attack, each GetItem swing at glass, each pane broken, each AI pick-up and each owned object
-# taken, for 150 s. Research: docs/research/ai-goals.md#goal-warrior-vandal-steal, docs/research/ai.md#get-item. The
-# state is a file of your own (not a slot); Coney's side is tests/platform/disc_level80_wreck_test.cpp.
+# taken, for 150 s. Research: docs/research/ai-goals.md#goal-warrior-vandal-steal,
+# docs/research/ai/index.md#get-item. The state is a file of your own (not a slot); Coney's side is
+# tests/platform/disc_level80_wreck_test.cpp.
 description = "level80 pharmacy from the street: the crew's wreck / steal (command 5); smash goals, swings, panes broken"
 research = "docs/research/ai-goals.md#goal-warrior-vandal-steal"
 input = "wreck_store.txt"

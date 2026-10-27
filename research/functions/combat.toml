@@ -500,7 +500,12 @@ name = "Human_PlayPickupClip"
 page = "combat-throws.md#bat"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::startPickUp"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the movement style pushed and popped, the fight idle after a pick-up in the stance, action and record +0x18, the push sphere and stop call, and held flag 0x4000 (Coney holds 0x10) are not ported"
+relation = "not-ported"
+issue = 664
 
 [[function]]
 address = 0x002600f0

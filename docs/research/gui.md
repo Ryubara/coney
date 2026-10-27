@@ -643,7 +643,7 @@ sent message `0x2a`, which sets flag `0x04` of the dot (`+0x54`; hidden, inferre
 `0x001b2990` adds nothing for type 5, and for type 6 adds two layers with icons 352 and 359.
 
 **Humans.** `HUD_RadarAddHuman` (`0x001b4168`) picks the blip from the character class byte (`CfgChar` `+0x11a`,
-[AI](ai.md#types)): class 1 (police) type 8 with icon 356 on both layers; class 0 or 3 type 9 (icon 362, grey
+[AI](ai/index.md#types)): class 1 (police) type 8 with icon 356 on both layers; class 0 or 3 type 9 (icon 362, grey
 `0x787878ff`) for the player (brain type 0) and type 7 (icon 365) for any other; class 4 none; any other type 6. A
 human with byte `+0x19d` set counts as class 2 unless a Warrior. `Human_Init` adds type 5 (nothing) for everyone. The
 AI re-marks humans that turn on the player as type 6 (`0x002b0608`, `0x002c2e80`, `0x002d6e10`, `0x002d79a8`), and a

@@ -13,7 +13,7 @@
 // smash, the glass panes, where an object is, who holds it and whether it is broken, the gangs' claims on objects, and
 // the start of a pick-up. The play's level objects implement it (gamemodes/level_items.h); the steal command's tactic
 // and goals use it (ai/steal_goals.h, ai/smash_goals.h). Research: docs/research/ai-code.md#t2-warrior-steal,
-// docs/research/ai.md#get-item, docs/research/crew-wreck.md, docs/research/objects.md#pane,
+// docs/research/ai/index.md#get-item, docs/research/crew-wreck.md, docs/research/objects.md#pane,
 // docs/research/crimes.md#owned-items, docs/research/flags.md#activities
 
 namespace coney::ai {
