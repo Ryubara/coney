@@ -411,11 +411,21 @@ tasks:
   kinds: [feature, fix, docs, tooling, ci-fix]
   file: TASK.md
   # `task start` (docs/guides/issues.md#starting): the unit record it writes beside the task file, and the engineer
-  # slots it counts. The slot limit is for code work under the finished workflow; until the cutover it is only
-  # reported (`enforce: false`), so design, docs and tooling work runs in parallel without a limit.
+  # slots (docs/guides/issues.md#slots; the rule: docs/guides/agents.md#slots). A machine runs `task` units of work and
+  # `fix` units at a time: a unit holds its slot from `task start` (or from the moment the coordinator's Agent call for
+  # it was let through, `reserve_minutes`) until a passing Review. `task start` and the Agent guard
+  # (.claude/hooks/slot_guard.py, which runs `coney-tools task slots --admit`) refuse a start over the limit while
+  # `enforce` is true (maintainer, 2026-10-27). `exempt_kinds` hold no slot: the tooling units that build the new
+  # workflow's cutover; the cutover empties it. `agent_types` are the subagent types that hold a slot.
   start:
     unit_file: unit.json                          # the unit record, in the task's scratch folder
-    slots: {task: 3, fix: 1, enforce: false}      # task units in work per machine, fix units, and whether a start over them is refused
+    slots:
+      task: 3                                     # task units in work per machine (every kind but fix and the exempt kinds)
+      fix: 1                                      # fix units in work: a failed CI check, one at a time, the oldest first
+      enforce: true
+      exempt_kinds: [tooling]
+      agent_types: [engineer, tooling]
+      reserve_minutes: 45                         # an agent let start keeps its slot this long before its `task start`
   leads:
     rare_max_entries: 12                          # a name part in at most this many index entries is rare: ranked first
     common_min_entries: 200                       # in at least this many it is common: not a match on its own

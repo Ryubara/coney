@@ -237,6 +237,9 @@ A brief is part of the context the agent carries on every request, so it is shor
 instead of repeating it:
 
 - the role (engineer or support), the model, the worktree and the scratch folder;
+- the unit, as a line of its own `Task id: <id>` (the id `task create` printed; the engineer runs `task start <id>`),
+  or `Slot: none <reason>` for work that has no unit (another repository, a read-only survey, a measurement): the
+  coordinator's start of the agent is refused without one ([Engineer slots](#slots));
 - the task and the scope it owns, the files it must not touch, and what "done" means for it
   ([Testing](testing.md#done)), and that it reports it in the pull request's Testing and Screenshots sections, with
   its captures saved in `scratch/<branch>/shots/` and referenced in `PR.md` as `![alt](./shots/file.png)`
@@ -275,6 +278,47 @@ A brief may be just "issue #N": the issue holds the steps, the screenshots and t
 reads it as [Issues](issues.md#agents) describes. Naming the number is cheaper than pasting the issue, and the
 issue stays the one place to read it.
 
+## Engineer slots {#slots}
+
+A machine runs **3 task units and 1 fix unit** of engineer work at a time (maintainer's decision, 2026-10-27; the
+numbers are `tasks.start.slots` in [.github/conventions.yml](repo:.github/conventions.yml)). There are no teams:
+the coordinator keeps the slots full from the open issues, `P-critical` first.
+
+| Is | What | Takes a slot? |
+| --- | --- | --- |
+| **Task unit** | An engineer or tooling agent on a task of kind `feature`, `docs` or `ci-fix` (the kinds in `tasks.kinds` but `fix` and the exempt ones) | One of the 3 task slots |
+| **Fix unit** | An agent on a `kind: fix` task, made by `task create --fix-of` after a CI check failed on the pull request of a task that passed Review | The fix slot |
+| **Tooling unit for the cutover** | A task of kind `tooling`, which builds the new workflow | None, until the cutover: `exempt_kinds` in the conventions lists it, and the cutover pull request empties the list |
+| **Reviewer** | A `reviewer` (every review, [Task review](review/task.md)) | None |
+| **Helper** | An `Explore`, `Plan` or `claude-code-guide` agent, a `fork`, and any agent an engineer starts for its own task (no cap) | None |
+| **Other work** | A brief with `Slot: none <reason>`: another repository (Tether, Conclave's plugin), a survey that writes nothing | None, and no unit |
+
+**The slot belongs to the unit, not to the agent's life.** A unit takes its slot at `task start` (an agent the
+coordinator has just started holds it from the Agent call, for at most `reserve_minutes`, so that four calls made
+together are counted one after the other) and frees it at the first of: a passing `reviewed` stamp for it (a fix: its
+own), `finished`, or its worktree gone. **An engineer's job ends when its unit passes Review**: it reports, and the
+coordinator starts the next task in the slot while CI runs; the engineer is not kept for CI. A unit whose stamp log
+cannot be verified keeps its slot.
+
+**A CI failure is a fix task.** When a required check fails on a pull request, the coordinator makes a `kind: fix`
+task for it (`task create --fix-of <issue>`) and starts an agent on it when the fix slot is free: one at a time,
+**the oldest failure first** (`task slots` lists the waiting fix tasks oldest first, and the refusal names them). If
+the engineer of the original task is still running, the fix goes to it directly. The fix is held to the failing check;
+only the stamps it made stale are redone ([When a pull request fails checks](#ci-failures)).
+
+**How it is enforced.** `.claude/hooks/slot_guard.py` runs for every Agent call of the coordinator (last, only when no
+other guard refused it) and asks `coney-tools task slots --admit` with the brief on standard input. The tool knows
+the unit from the task records, not from the agent: the kind from `<scratch>/<task>/TASK.md`, the liveness from
+`unit.json`, its worktree and the stamp log (`task_start` counts the same way), and the numbers from the conventions,
+so the hook copies none of it. Without a `Task id:` or `Slot: none` line in the brief, for an `engineer` or
+`tooling` agent, the call is refused; with one whose slot is full, it is refused with the busy units, each with its
+kind and since when, and what frees one. A start that is let through keeps the slot for the agent (`slot.json`)
+until its `task start` makes the unit. `task start` repeats the count for the engineer that was started some other way.
+The hook passes the call when `coney-tools` cannot run (a line in `coney-hooks.log`), as the other guards do. An
+engineer's own helpers are not checked: only the coordinator is held to it. `coney-tools task slots` shows the slots
+at any time ([task](coney-tools-repo.md#task)); [Conclave](conclave.md) and Tether keep their own state (the band's
+units, the live agents) and are not asked to count slots.
+
 ## Where an agent works {#worktrees}
 
 Every agent works in a worktree at `../../worktrees/coney/<branch>/` on a branch its brief names, and creates it
@@ -298,13 +342,14 @@ hook, and each cost a Python start-up on every shell command; now there is one, 
 
 | Event | What runs |
 | --- | --- |
-| `PreToolUse` | What no session may touch (`protect.py`, first); the role rules (`roles.py`); a refusal of a command that sets `CONEY_AGENT_*`; the guards `build_guard.py`, `issue_guard.py`, `bounded_waits.py`, `pr_guard.py` and `push_guard.py` for the shell tools, `pcsx2_guard.py` for the shell commands that name PCSX2 and the PCSX2 MCP tools, `agent_guard.py` for the Agent tool, `lua_guard.py` (no decompiled game Lua, [`lua`](coney-tools-fidelity.md#lua)) for Write, Edit, MultiEdit and NotebookEdit; then the identity token |
+| `PreToolUse` | What no session may touch (`protect.py`, first); the role rules (`roles.py`); a refusal of a command that sets `CONEY_AGENT_*`; the guards `build_guard.py`, `issue_guard.py`, `bounded_waits.py`, `pr_guard.py` and `push_guard.py` for the shell tools, `pcsx2_guard.py` for the shell commands that name PCSX2 and the PCSX2 MCP tools, `agent_guard.py` and `slot_guard.py` (the coordinator's [engineer slots](#slots)) for the Agent tool, `lua_guard.py` (no decompiled game Lua, [`lua`](coney-tools-fidelity.md#lua)) for Write, Edit, MultiEdit and NotebookEdit; then the identity token |
 | `PostToolUse` | `trailer_guard.py` after a `git commit`; the command's identity file is removed |
 | `PostToolUseFailure`, `PermissionDenied` | The command's identity file is removed (a failing build or a denied command would leave it for its ten minutes) |
 | `SessionStart` | The notice about a session with no role, or about settings that could not be read |
 
-Of the nine guard scripts, `lua_guard.py` was written for the dispatcher (its file mode is the pre-commit hook
-`no-decompiled-lua`), and five run exactly as they did as separate hooks (`build_guard.py`, `issue_guard.py`,
+Of the ten guard scripts, `slot_guard.py` and `lua_guard.py` were written for the dispatcher (`lua_guard.py`'s file
+mode is the pre-commit hook `no-decompiled-lua`; `slot_guard.py` asks `coney-tools`, so it copies nothing from the
+conventions), and five run exactly as they did as separate hooks (`build_guard.py`, `issue_guard.py`,
 `bounded_waits.py`, `push_guard.py`, `pcsx2_guard.py`); `trailer_guard.py` is unchanged but the dispatcher starts it
 only for a real `git commit`; `pr_guard.py` (once `release_guard.py`) and `agent_guard.py` run as before and have a
 rule more each (the `pull_requests.open_only` switch, the role check). The dispatcher gives a guard's `main()` the hook
@@ -615,11 +660,13 @@ clean`, which stops shells older than three hours waiting on files unchanged for
 
 ## When a pull request fails checks {#ci-failures}
 
-A failing check is a small, well-defined task, so it goes to a **fresh agent with a tight brief**, not back to the
-agent that wrote the pull request. That agent has moved on or ended: it handed the unit to the release queue
-without waiting for CI, because an agent idle past its cache lifetime re-writes its whole context when it resumes.
-Messaging it re-writes that context (rule 2 in [What a run costs](#cost)), often hundreds of thousands of tokens, for
-a fix of a few lines. The coordinator is the one that watches CI.
+A failing check is a small, well-defined task: a **fix task** (`task create --fix-of`, kind `fix`) that runs in the
+fix slot, one at a time and the oldest failure first ([Engineer slots](#slots)). It goes to a **fresh agent with a
+tight brief** (carrying the `Task id:` of the fix task), not back to the agent that wrote the pull request: that
+agent's job ended when its unit passed Review, and an agent idle past its cache lifetime re-writes its whole context
+when it resumes. Messaging it re-writes that context (rule 2 in [What a run costs](#cost)), often hundreds of
+thousands of tokens, for a fix of a few lines. The one exception is an engineer that is still running when its check
+fails: the fix goes to it directly. The coordinator is the one that watches CI.
 
 1. The coordinator reads only the failure: `gh pr checks <n>` for which checks failed, then the end of the failing
    job's log (`gh run view <id> --log-failed`, last lines). It does not read the whole log.
@@ -629,8 +676,8 @@ a fix of a few lines. The coordinator is the one that watches CI.
    committed; the coordinator pushes it). The model follows [Which model](#models): Haiku or Sonnet for a lint,
    format, title or docs failure with a clear message; Opus when the cause is unknown or the failure is a test or
    build in code that needs judgement.
-4. Several failures with the same cause go to one agent; unrelated failures that are each quick go to separate small
-   agents that can run side by side.
+4. Several failures with the same cause go to one agent. Unrelated failures wait for the fix slot in turn, the oldest
+   first; a fix a few tool calls long is the coordinator's own (step 2) and takes no slot.
 5. If the same check fails a second time, escalate a model, as above, instead of repeating the same fix.
 
 ## CI capacity {#ci-capacity}

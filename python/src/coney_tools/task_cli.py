@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The `coney-tools task ...` commands: create a task from issues, start it, search the leads, refresh the index,
-check it and review it.
+check it and review it, and show the engineer slots.
 
 `task create` is the coordinator's triage step (docs/guides/issues.md#task-files): it claims the issues through the
 claim Action, waits until the claim is certain and then writes `<scratch>/<task>/TASK.md`. `task start` is the
@@ -14,14 +14,16 @@ wait.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
+import sys
 import time
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
-from coney_tools import stamps, task_check
+from coney_tools import stamps, task_check, task_slots
 from coney_tools.audit_github import Runner, run_gh
 from coney_tools.config import ConfigError, find_repo_root, load_config, workspace_folder
 from coney_tools.conventions import Conventions, load_conventions
@@ -61,6 +63,23 @@ def add_task_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser])
     start.add_argument("--remote", default="origin", help="the git remote to fetch from (default: origin)")
     start.add_argument("--no-fetch", action="store_true", help="start from the base as it is here, without fetching")
     start.add_argument("--dry-run", action="store_true", help="check and print; make, stamp and post nothing")
+    slots = commands.add_parser(
+        "slots", help="show the engineer slots, or check that an agent may start (the coordinator's Agent guard)"
+    )
+    slots.add_argument("--json", action="store_true", help="print the slots as JSON")
+    slots.add_argument(
+        "--admit",
+        action="store_true",
+        help="check a start instead of listing: exit 0 when it may, 1 with the busy units when a slot is full",
+    )
+    slots.add_argument("--agent-type", default="engineer", help="with --admit: the subagent type (default: engineer)")
+    slots.add_argument("--task", help="with --admit: the task id (default: the `Task id:` line of the brief)")
+    slots.add_argument(
+        "--brief", metavar="FILE", help="with --admit: the agent's brief, a file or - for standard input"
+    )
+    slots.add_argument(
+        "--reserve", action="store_true", help="with --admit: keep the slot for the agent until its task start"
+    )
     leads = commands.add_parser("leads", help="search the indexes for the terms (no claim, nothing written)")
     leads.add_argument("--terms", nargs="+", required=True, metavar="TERM", help="names to search for")
     leads.add_argument("--issue", type=int, metavar="N", help="also match the identifiers this issue writes")
@@ -97,6 +116,26 @@ def _index(root: Path, conventions: Conventions, run: Runner | None, refresh: bo
     return prepare_index(root, conventions, cache, _head(root), now, run, refresh)
 
 
+def _run_slots(args: argparse.Namespace, root: Path, conventions: Conventions, now: Callable[[], datetime]) -> int:
+    """`task slots`: the report, or with `--admit` the verdict on one start (0 may start, 1 refused)."""
+    scratch = scratch_folder(root)
+    if not args.admit:
+        current = task_slots.scan(scratch, conventions, now())
+        if args.json:
+            print(json.dumps(task_slots.as_json(current, conventions), indent=2))
+        else:
+            print("\n".join(task_slots.report(current, conventions)))
+        return 0
+    brief = ""
+    if args.brief == "-":
+        brief = sys.stdin.buffer.read().decode("utf-8", errors="replace")
+    elif args.brief:
+        brief = Path(args.brief).read_text(encoding="utf-8")
+    verdict = task_slots.admit(scratch, conventions, args.agent_type, brief, now(), args.task, args.reserve)
+    print(verdict.message.rstrip("\n"))
+    return 0 if verdict.allowed else 1
+
+
 def run_task(
     args: argparse.Namespace,
     run: Runner = run_gh,
@@ -112,6 +151,8 @@ def run_task(
     root = find_repo_root(Path.cwd())
     conventions = load_conventions(root)
     rules = conventions.claims
+    if args.command == "slots":
+        return _run_slots(args, root, conventions, now)
     if args.command == "index":
         index = _index(root, conventions, None if args.no_gh else run, True, now())
         print(f"index: {len(index.entries)} entries at {index.head[:10]}")

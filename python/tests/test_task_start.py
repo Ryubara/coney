@@ -19,7 +19,7 @@ from claim_support import Clock, FakeGitHub, plant_claim
 from conventions_support import REPO
 from git_support import git
 
-from coney_tools import stamps, task_cli, task_start, unit
+from coney_tools import stamps, task_cli, task_slots, task_start, unit
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
 from coney_tools.issue_claim_model import Card, parse_time, render_card
@@ -656,7 +656,14 @@ def test_the_slots_in_use_are_reported(world: World) -> None:
     assert "slots: 3 of 3 task slots in use" in world.said()
 
 
-def test_over_the_slot_limit_is_only_reported_before_the_cutover(world: World) -> None:
+def with_enforce(world: World, enforce: bool) -> None:
+    """Set `tasks.start.slots.enforce` for the world."""
+    start = replace(world.conventions.tasks.start, slots=replace(world.conventions.tasks.start.slots, enforce=enforce))
+    world.conventions = replace(world.conventions, tasks=replace(world.conventions.tasks, start=start))
+
+
+def test_over_the_slot_limit_is_only_reported_when_it_is_not_enforced(world: World) -> None:
+    with_enforce(world, False)
     for number in range(30, 33):
         plant_unit(world, f"{number}-x")
     world.ready()
@@ -664,14 +671,30 @@ def test_over_the_slot_limit_is_only_reported_before_the_cutover(world: World) -
     assert "slots: 4 of 3 task slots in use" in world.said() and "not enforced" in world.said()
 
 
-def test_over_the_slot_limit_is_refused_once_it_is_enforced(world: World) -> None:
-    start = replace(world.conventions.tasks.start, slots=replace(world.conventions.tasks.start.slots, enforce=True))
-    world.conventions = replace(world.conventions, tasks=replace(world.conventions.tasks, start=start))
+def test_over_the_slot_limit_is_refused_while_it_is_enforced(world: World) -> None:
     for number in range(30, 33):
         plant_unit(world, f"{number}-x")
     world.ready()
     assert world.run() == 1
     assert "3 task units are in work" in world.said() and "tasks.start.slots" in world.said() and untouched(world)
+    assert "30-x" in world.said()
+
+
+def test_a_tooling_task_holds_no_slot_and_is_never_refused(world: World) -> None:
+    for number in range(30, 33):
+        plant_unit(world, f"{number}-x")
+    world.ready(kind="tooling")
+    assert world.run() == 0
+    assert "holds no slot" in world.said()
+
+
+def test_a_unit_of_an_exempt_kind_is_not_counted(world: World) -> None:
+    plant_unit(world, "30-a")
+    plant_unit(world, "31-b")
+    plant_unit(world, "32-tools", kind="tooling")
+    world.ready()
+    assert world.run() == 0
+    assert "slots: 3 of 3 task slots in use" in world.said()
 
 
 def test_a_unit_that_passed_review_finished_or_lost_its_worktree_holds_no_slot(world: World) -> None:
@@ -803,6 +826,7 @@ def test_a_fix_reuses_the_claim_so_the_limit_does_not_apply(world: World) -> Non
 
 
 def test_fix_slots_are_counted_apart_from_task_slots(world: World) -> None:
+    with_enforce(world, False)
     plant_unit(world, "40-fix", kind="fix")
     started_parent(world)
     fix_file(world)
@@ -815,7 +839,8 @@ def test_a_fix_is_over_when_a_review_passes_after_it_started(world: World) -> No
     started_parent(world)
     fix_file(world)
     assert world.run(FIX) == 0
-    assert task_start.units_in_work(world.scratch, world.conventions).fix == [FIX]
+    held = task_slots.scan(world.scratch, world.conventions, world.clock.now())
+    assert [holder.task for holder in held.held("fix")] == [FIX]
     stamps.append(
         world.scratch / TASK / "stamps",
         rules=RULES,
@@ -829,9 +854,9 @@ def test_a_fix_is_over_when_a_review_passes_after_it_started(world: World) -> No
         who=WHO,
         clock=world.clock.now,
     )
-    in_work = task_start.units_in_work(world.scratch, world.conventions)
+    held = task_slots.scan(world.scratch, world.conventions, world.clock.now())
     # The parent has passed review too, so neither unit holds a slot.
-    assert in_work.fix == [] and in_work.task == []
+    assert held.holders == ()
 
 
 # --- the command line -----------------------------------------------------------------------------------------------

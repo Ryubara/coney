@@ -552,14 +552,17 @@ redone. A release posts `/progress pr-opened` on each issue once, which the clai
 
 ### Slots {#slots}
 
-A machine runs a limited number of task units and of fix units at a time (`tasks.start.slots` in
-[.github/conventions.yml](repo:.github/conventions.yml)). A unit holds its slot from
-`task start` until a passing `reviewed` stamp follows its `claimed` stamp (a fix: its own), a `finished` stamp, or until
-its worktree is gone; a unit whose log cannot be trusted keeps its slot. The limit is for code work under the finished
-workflow, so until the cutover `task start` only reports the count (`slots: N of L task slots in use`, with a note
-when N is over L) and design, documentation and tooling work runs in parallel; the cutover sets
-`tasks.start.slots.enforce`, and a start over the limit is then refused. Work in other repositories (Tether, Conclave's
-own plugin repository) has no unit here and is not counted.
+A machine runs at most `tasks.start.slots.task` task units and `tasks.start.slots.fix` fix units at a time
+([.github/conventions.yml](repo:.github/conventions.yml); the rule and who enforces it: [Engineer
+slots](agents.md#slots)). A `kind: fix` unit takes the fix slot, every other kind a task slot, except the kinds in
+`exempt_kinds` (the tooling units that build the new workflow, until its cutover), which hold none. A unit holds its
+slot from `task start` (or, for the agent the coordinator has just started, from the Agent call, as a short
+reservation `slot.json` beside the task file that lapses after `reserve_minutes`) until a passing `reviewed` stamp
+follows its `claimed` stamp (a fix: its own), a `finished` stamp, or until its worktree is gone; a unit whose log
+cannot be trusted keeps its slot. A unit waiting in CI holds none. With `enforce` on (since 2026-10-27) `task start`
+refuses a start over the limit and names the busy units, and the coordinator's Agent guard refuses it earlier.
+`coney-tools task slots` shows who holds what. Work in other repositories (Tether, Conclave's own plugin repository)
+has no unit here and is not counted.
 
 ## Working from an issue {#agents}
 

@@ -484,6 +484,8 @@ uv run --project python coney-tools task create ISSUE [ISSUE ...] [--terms TERM 
     [--name ID] [--resume] [--dry-run]
 uv run --project python coney-tools task create --fix-of ISSUE [--terms TERM ...] [--name ID] [--dry-run]
 uv run --project python coney-tools task start [TASK] [--base REF] [--remote NAME] [--no-fetch] [--dry-run]
+uv run --project python coney-tools task slots [--json]
+uv run --project python coney-tools task slots --admit [--agent-type TYPE] [--task ID | --brief FILE|-] [--reserve]
 uv run --project python coney-tools task leads --terms TERM ... [--issue N] [--refresh]
 uv run --project python coney-tools task index [--no-gh]
 uv run --project python coney-tools task check [TASK] [--worktree DIR] [--base REF] [--agent ID] [--profile P]
@@ -509,12 +511,21 @@ The coordinator's triage step ([Task files](issues.md#task-files)); the rules ar
   the claim is still yours for this task, that you are within your limit of open claims and that the branch and folder
   are free and its stamp log is usable, then makes the branch (named like the task id) and its worktree, at the place
   the `workspace.worktrees` setting gives for that branch ([Worktrees](workspace.md#worktrees)), from the tip of the
-  default branch, writes the unit record `<scratch>/<task>/unit.json`, stamps `assigned` and `claimed`
-  in the task's log and posts `/progress claimed`. It prints the branch, worktree, the
-  stamps written and `slots: N of L task slots in use`; the limit (`tasks.start.slots`) is only reported until
-  `tasks.start.slots.enforce` is on. Nothing is made when a check fails (exit 1); a git or fetch failure stops it with
-  exit 2; running it again for a started task finishes what is missing and changes nothing else. A fix task opens its
-  parent's unit instead of making one. The coordinator's role may not run it (`.claude/hooks/hooks.toml`).
+  default branch, writes the unit record `<scratch>/<task>/unit.json`, stamps `assigned` and `claimed` in the task's
+  log and posts `/progress claimed`. It prints the branch, worktree, the stamps written and `slots: N of L task slots
+  in use`; a start over the limit (`tasks.start.slots`) is refused while `tasks.start.slots.enforce` is on, and a task
+  of an exempt kind (`exempt_kinds`) holds no slot. Nothing is made when a check fails (exit 1); a git or fetch
+  failure stops it with exit 2; running it again for a started task finishes what is missing and changes nothing else.
+  A fix task opens its parent's unit instead of making one. The coordinator's role may not run it
+  (`.claude/hooks/hooks.toml`).
+* `slots` shows the [engineer slots](agents.md#slots): the units holding each of the task and fix slots (in work, or
+  reserved for an agent that has not run `task start` yet), the units of an exempt kind and the fix tasks waiting,
+  oldest first; `--json` prints the same as data. `--admit` is the check the coordinator's Agent guard runs
+  (`.claude/hooks/slot_guard.py`): it reads the agent's brief (`--brief FILE`, or `-` for standard input) for its
+  `Task id: <id>` line, or takes `--task`, and exits 0 when an agent of `--agent-type` may start and 1 with the busy
+  units when the slot of the task's kind is full; `--reserve` keeps the slot for the agent for
+  `tasks.start.slots.reserve_minutes` or until its `task start`. It reads only the scratch folder and the
+  conventions: no GitHub, no network.
 * `leads` runs the leads search alone: one line per match with the source, the place and why it matched, then the terms
   that matched nothing. `--issue N` also matches the addresses, names, paths and references that issue writes.
 * `index` rebuilds the cached index (`<scratch>/leads/index.json`, also rebuilt when `HEAD` moved or after
@@ -627,6 +638,23 @@ coney-tools task start [TASK] [--base REF] [--remote REMOTE] [--no-fetch] [--dry
 | `--remote REMOTE` | text | `origin` | the git remote to fetch from (default: origin) |
 | `--no-fetch` | flag | off | start from the base as it is here, without fetching |
 | `--dry-run` | flag | off | check and print; make, stamp and post nothing |
+
+### `task slots` {#task-slots-usage}
+
+Show the engineer slots, or check that an agent may start (the coordinator's Agent guard).
+
+```text
+coney-tools task slots [--json] [--admit] [--agent-type AGENT_TYPE] [--task TASK] [--brief FILE] [--reserve]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--json` | flag | off | print the slots as JSON |
+| `--admit` | flag | off | check a start instead of listing: exit 0 when it may, 1 with the busy units when a slot is full |
+| `--agent-type AGENT_TYPE` | text | `engineer` | with --admit: the subagent type (default: engineer) |
+| `--task TASK` | text | none | with --admit: the task id (default: the `Task id:` line of the brief) |
+| `--brief FILE` | text | none | with --admit: the agent's brief, a file or - for standard input |
+| `--reserve` | flag | off | with --admit: keep the slot for the agent until its task start |
 
 ### `task leads` {#task-leads-usage}
 
