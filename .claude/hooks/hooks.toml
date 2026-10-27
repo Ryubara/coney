@@ -121,10 +121,13 @@ hint = "A reviewer reports: write your files only in your scratch folder, outsid
 [roles.contributor]
 # A session of another agent tool (Codex, Gemini CLI, Antigravity, Cursor, Copilot, Grok Build) that names no role:
 # it works on its branch and commits; the person pushes and opens the pull request after `coney-tools ci pr`. It may
-# not edit the hook files that judge it (a shell command still can: docs/guides/enforcement.md#harnesses, Limits).
+# not edit the hook files that judge it (a shell command still can: docs/guides/enforcement.md#harnesses, Limits),
+# nor the settings files another tool reads hooks or `disableAllHooks` from (Cursor and Copilot read
+# `.claude/settings.local.json`; Copilot also `.github/copilot/settings*.json`).
 deny_coney_tools = ["pr open", "pr hold"]
 deny_write_dirs = [
-  ".claude/hooks", ".claude/settings.json", ".codex", ".gemini", ".agents", ".cursor", ".github/hooks", ".grok",
+  ".claude/hooks", ".claude/settings.json", ".claude/settings.local.json", ".codex", ".gemini", ".agents", ".cursor",
+  ".github/hooks", ".github/copilot", ".grok",
 ]
 no_github_writes = true
 push_hint = "Your person pushes and opens the pull request from their own terminal, after `coney-tools ci pr` (CONTRIBUTING.md, Agents other than Claude Code)."

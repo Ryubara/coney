@@ -141,24 +141,34 @@ file finds the dispatcher with `git rev-parse --show-toplevel` or from the proje
 `cmake --build`, a hand-typed `gh pr create` and a `contributor`'s `git push` are refused in that tool's format, that
 ordinary commands pass, and what becomes of an unlisted tool name, the other event forms and a broken adapter.
 
-**Tool names: by name, then by shape.** The adapter maps the names each vendor documents: shell tools (`Bash`,
-`Shell`, `run_shell_command`, `run_command`, `exec_command`, `run_terminal_cmd`, `terminal`, `local_shell`,
-`unified_exec`; `powershell` to `PowerShell`), file writes, edits and deletions (`Write`, `Edit`, `create`, `edit`,
-`write_file`, `replace`, `write_to_file`, `replace_file_content`, `multi_replace_file_content`, `edit_file`,
-`str_replace`, `search_replace`, `Delete`, `delete_file`, Codex's `apply_patch`, ...) and reads (`Read`, `view`,
-`view_file`, `read_file`, `read_many_files`); the lists are `SHELL_TOOLS`, `WRITE_TOOLS` and `READ_TOOLS` in
-`harness.py`. A name in none of them is read by its arguments (`harness.by_shape`), so a tool a vendor adds or renames
-is still judged: a command argument (`COMMAND_KEYS`: `command`, `CommandLine`, `commandLine`, `Command`, `cmd`,
-`command_line`, `cmd_line`, `commands`, `script`, `input`) is judged as a shell command, a list of strings both as one
-argv (`shlex.join`) and as several commands; any argument that holds `*** Begin Patch` is judged as a Codex patch; and
-a file path (`PATH_KEYS`, `file://` URIs included) with text to write (`TEXT_KEYS`, among them `diff`, `patch`,
-`edits`, `data`, `body`, `new_text`, `replacement`), or any path-like argument under a name that says it changes a file
-(`write`, `edit`, `delete`, `remove`, `move`, `rename`, `create`, `patch`, `replace`, `insert`, `append`, `save`,
-`update`, `modify`, `overwrite`, `change`), as a `Write`. Every shape found is judged, and the call is refused when any
-reading is. A listed tool whose arguments are in no shape the lists know fails closed: a shell tool with no command
-argument has every string argument judged as a command, and a write or patch tool has every path-like argument (one
-line with a slash or an extension, not the text an edit replaces) judged as a `Write`. Anything else (searches, web
-fetches, MCP tools) keeps its name, and only the rules that read every tool's input apply to it (`protect.py`).
+**Tool names: by name, then by shape.** The adapter maps the names each vendor documents: shell tools (`Bash`, `Shell`,
+`run_shell_command`, `run_command`, `exec_command`, `run_terminal_cmd`, `terminal`, `local_shell`, `unified_exec`;
+`powershell` to `PowerShell`), file writes, edits and deletions (`Write`, `Edit`, `create`, `edit`, `write_file`,
+`replace`, `write_to_file`, `replace_file_content`, `multi_replace_file_content`, `edit_file`, `str_replace`,
+`search_replace`, `Delete`, `delete_file`, Codex's `apply_patch`, ...) and reads (`Read`, `view`, `view_file`,
+`read_file`, `read_many_files`); the lists are `SHELL_TOOLS`, `WRITE_TOOLS` and `READ_TOOLS` in `harness.py`. A name in
+none of them is read by its arguments (`harness.by_shape`), so a tool a vendor adds or renames is still judged. The
+adapter reads the arguments at any depth (the values of an object, the items of a list, eight levels down), and
+arguments that are no object (a list, a bare string, Copilot's `toolArgs` as JSON text of either) are kept under `input`
+and read the same way. Everything inside a command argument (`COMMAND_KEYS`: `command`, `CommandLine`, `commandLine`,
+`Command`, `cmd`, `command_line`, `cmd_line`, `commands`, `script`, `input`), wherever it sits, is judged as a shell
+command: a string as it is, a list of strings and numbers both as one argv (`shlex.join`) and as several commands; a
+program given apart from its arguments (`command`, `program`, `executable` or `cmd` beside `args`, `arguments` or
+`argv`) is also judged joined, as `git push`. Any string that holds `*** Begin Patch` is judged as a Codex patch. A file
+path (`PATH_KEYS`, `file://` URIs included, also those of the objects in a list of files) with text to write
+(`TEXT_KEYS`, among them `diff`, `patch`, `edits`, `data`, `body`, `new_text`, `replacement`), or any path-like string
+under a name that says it changes a file (`write`, `edit`, `delete`, `remove`, `move`, `rename`, `create`, `patch`,
+`replace`, `insert`, `append`, `save`, `update`, `modify`, `overwrite`, `change`), is judged as a `Write`. Every shape
+found is judged, and the call is refused when any reading is. A listed tool whose arguments are in no shape the lists
+know fails closed: a shell tool with no command argument has every string and list of strings inside its arguments
+judged as a command, and a write or patch tool has every path-like string inside them (one line with a slash or an
+extension, not the text an edit replaces) judged as a `Write`. Anything else (searches, web fetches, MCP tools) keeps
+its name, and only the rules that read every tool's input apply to it (`protect.py`). The cost of reading this widely is
+a few refusals by mistake: a text that starts like a guarded command under a command argument (an MCP tool's
+`{"input": "git push is blocked here"}`), or a path-like string inside a hook folder in a write tool's call or a tool
+whose name reads as a write (`remove_duplicates`), is refused; a mention that does not start the text
+(`explain how to run git push`, `echo git push`), a search's `query`, a todo list or a plan passes. The refusal names
+what it read, and the way out is to word the argument differently or to ask the person.
 
 **Roles in other tools.** A session of another tool has no agent type, so its role is `CONEY_AGENT_ROLE` from the
 environment the tool was started with (an agent's command cannot change the hook's environment, and `identity.py`
@@ -167,8 +177,11 @@ refuses a command that sets `CONEY_AGENT_*` anyway), else `[harnesses] default_r
 `gh pr create`, comments, `gh api` writes), with its own `push_hint` instead of `push_guard.py`'s text about a
 coordinator: the person pushes and opens the pull request from their own terminal after `coney-tools ci pr`. Its
 `deny_write_dirs` keep its edits out of the hook files that judge it (`.claude/hooks/`, `.claude/settings.json`,
-`.codex/`, `.gemini/`, `.agents/`, `.cursor/`, `.github/hooks/`, `.grok/`). A name that is no role leaves the session
-read-only, as `require_role` does in Claude Code, and the refusal names `CONEY_AGENT_ROLE` (not `coney-agent`).
+`.codex/`, `.gemini/`, `.agents/`, `.cursor/`, `.github/hooks/`, `.grok/`) and out of the settings other tools read
+hooks or `disableAllHooks` from: `.claude/settings.local.json` (Cursor's third-party hooks page and Copilot's hooks
+reference both list it, read 2026-10-27) and `.github/copilot/` (Copilot's `settings.json` and `settings.local.json`). A
+name that is no role leaves the session read-only, as `require_role` does in Claude Code, and the refusal names
+`CONEY_AGENT_ROLE` (not `coney-agent`).
 
 | Tool | Project hook file (committed) | Event we use | How it denies (what the adapter sends) | Tools the hook sees | Trust before a project hook runs |
 | --- | --- | --- | --- | --- | --- |
@@ -287,12 +300,14 @@ command string Cursor and Codex run.
 **Limits.** All of it reads spelling, as in Claude Code, and a person can turn hooks off in every tool (decline the
 trust, disable them in `/hooks`, Codex's `[features] hooks = false`, Copilot's `disableAllHooks`). The guards are off,
 with no refusal, when the launcher cannot start (no `uv`, no Python 3.12: every command ends in `; exit 0`) or when
-`harness.py` does not import (a broken checkout): the dispatcher then answers every other tool's call with no
-objection, as a broken guard does in Claude Code, and leaves a `harness:` line in `coney-hooks.log` in the system temp
-folder, which is where to look when a tool seems unguarded. A `contributor` may not edit the hook files with a file
-tool, but a shell command can still change them (`sed`, `git checkout`); Codex then skips the changed hook until a
-person reviews it again, and the other tools run whatever the file now says. Nothing in the
-repository can stop that, so `ci pr` and CI stay the backstop: CI's `title`, `body` and `docs` jobs and the build
+`harness.py` does not import (a broken checkout): the dispatcher then answers every other tool's call with no objection,
+as a broken guard does in Claude Code, and leaves a `harness:` line in `coney-hooks.log` in the system temp folder,
+which is where to look when a tool seems unguarded. A `contributor` may not edit the hook files with a file tool, but a
+shell command can still change them (`sed`, `git checkout`); Codex then skips the changed hook until a person reviews it
+again, and the other tools run whatever the file now says. Text typed into a terminal session that is already running (a
+tool that writes to a process's stdin, such as Codex's `write_stdin` with `chars`, or an interactive `bash` an earlier
+call started) is no command the adapter reads: only the call that starts the process is judged. Nothing in the
+repository can stop these, so `ci pr` and CI stay the backstop: CI's `title`, `body` and `docs` jobs and the build
 run on every pull request, whatever made it.
 
 ## No game data {#legal}

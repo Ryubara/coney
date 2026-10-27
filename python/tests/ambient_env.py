@@ -13,7 +13,7 @@ and fail in another. A test that needs one sets it with `monkeypatch.setenv`.
 CLEARED: dict[str, str] = {
     # Which task and which agent a command is about.
     "CONEY_TASK": "the task a command is about (`unit.task_name`, `task start`), ahead of the branch",
-    "CONEY_AGENT": "the id `check changed` names its builds with",
+    "CONEY_AGENT": "the id `ci run` names its builds with",
     "CONEY_AGENT_TOKEN": "the hook's token, which names the verified identity (`identity.load`)",
     # Never read by a tool (the id, type and model come from the token only); cleared so the tests that prove it hold.
     "CONEY_AGENT_ID": "an agent's word about itself, which no tool trusts",

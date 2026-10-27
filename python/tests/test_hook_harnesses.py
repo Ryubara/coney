@@ -607,3 +607,61 @@ def test_cursor_s_pascal_case_event_is_judged() -> None:
     for named in ("cursor", None):
         code, out, _ = DISPATCH.answer_any(json.dumps(payload), named)
         assert code == 0 and json.loads(out)["permission"] == "deny"
+
+
+# --- nested and non-object arguments: walked at any depth ----------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "tool_input",
+    [
+        {"params": {"command": PUSH}},
+        {"command": {"program": "git", "args": ["push", "origin", "HEAD"]}},
+        {"command": ["git", "push", 1]},
+        {"command": [["git", "push"], ["git", "status"]]},
+        {"command": "git", "args": ["push", "origin", "HEAD"]},
+    ],
+)  # fmt: skip
+def test_a_shell_tool_s_nested_or_split_command_is_judged(tool_input: dict[str, Any]) -> None:
+    payload = {**codex(""), "tool_name": "shell", "tool_input": tool_input}
+    assert "git push" in refused("codex", payload)
+
+
+@pytest.mark.parametrize(
+    ("name", "payload"),
+    [
+        ("codex", {**codex(""), "tool_input": [PUSH]}),
+        ("antigravity", {**antigravity(""), "toolCall": {"name": "run_command", "args": [PUSH]}}),
+        ("copilot", {**copilot(""), "toolArgs": json.dumps(PUSH)}),
+        ("copilot", {**copilot(""), "toolArgs": json.dumps(["git", "push"])}),
+        ("copilot", {**copilot(""), "toolName": "terminal_run", "toolArgs": json.dumps([PUSH])}),
+    ],
+)  # fmt: skip
+def test_arguments_that_are_no_object_are_judged(name: str, payload: dict[str, Any]) -> None:
+    assert "git push" in refused(name, payload)
+
+
+@pytest.mark.parametrize("key", ["files", "entries"])
+def test_a_write_tool_s_list_of_files_is_judged(key: str) -> None:
+    files = [
+        {"path": f"{ROOT}/docs/a.md", "content": "x"},
+        {"file_path": f"{ROOT}/.claude/hooks/hooks.toml", "content": "x"},
+    ]
+    payload = {**gemini(""), "tool_name": "write_file", "tool_input": {key: files}}
+    assert "Ask your person" in refused("gemini", payload)
+
+
+def test_an_unlisted_tool_s_nested_command_is_judged() -> None:
+    payload = {**grok(""), "toolName": "runner", "toolInput": {"args": {"command": PUSH}}}
+    assert "git push" in refused("grok", payload)
+
+
+def test_a_contributor_may_not_edit_the_local_settings_other_tools_read() -> None:
+    # Cursor and Copilot read hooks from `.claude/settings.local.json`; Copilot's own settings hold `disableAllHooks`.
+    for path in (".claude/settings.local.json", ".github/copilot/settings.json"):
+        payload = {
+            **gemini(""),
+            "tool_name": "write_file",
+            "tool_input": {"file_path": f"{ROOT}/{path}", "content": "{}"},
+        }
+        assert "Ask your person" in refused("gemini", payload)

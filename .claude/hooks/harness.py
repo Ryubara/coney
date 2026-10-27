@@ -13,12 +13,13 @@ Claude Code:
 * **`claude_calls`** turns one tool call of the harness into the Claude Code calls the guards read: its shell tool
   becomes `Bash` (`PowerShell` for Copilot's), a file write or edit becomes `Write` with `file_path` and `content`
   (Codex's `apply_patch` one per file it touches, a deletion with no content), a read becomes `Read`. A name in none
-  of the lists is read by its arguments (`by_shape`): a command argument (a string, or a list read as an argv and as
-  several commands) makes it a shell call, a patch under any argument one `Write` per file, a file path with text to
-  write (or a name that says it changes a file) a `Write`; anything else (MCP tools, searches) keeps its name. A listed
-  tool whose arguments the adapter cannot read is judged conservatively, never as nothing: a shell tool's every string
-  argument as a command, a write tool's every path-like argument as a `Write`. The working directory goes into `cwd`;
-  the role into `agent_type` (`role`).
+  of the lists is read by its arguments at any depth (`by_shape`; arguments that are no object kept under `input`):
+  a command argument (a string, a list read as an argv and as several commands, a program beside its `args`) makes
+  it a shell call, a patch anywhere one `Write` per file, a file path with text to write (or a name that says it
+  changes a file) a `Write`; anything else (MCP tools, searches) keeps its name. A listed tool whose arguments the
+  adapter cannot read is judged conservatively, never as nothing: a shell tool's every string inside its arguments as
+  a command, a write tool's every path-like string as a `Write`. The working directory goes into `cwd`; the role into
+  `agent_type` (`role`).
 * **`answer`** gives the harness its refusal: Codex the Claude Code JSON, Gemini CLI and Antigravity a `decision`.
   Cursor, Copilot and Grok Build also run other tools' hook files (`.claude/settings.json`, `.cursor/hooks.json`) and
   may read the answer by that file's format, so they get every deny key at once (`UNION_HARNESSES`): a key the tool
@@ -168,6 +169,11 @@ _WRITE_WORDS = re.compile(
     r"write|edit|delete|remove|move|rename|create|patch|replace|insert|append|save|update|modify|overwrite|change",
     re.IGNORECASE,
 )
+#: How deep the adapter reads into nested arguments.
+_DEPTH = 8
+#: The arguments of a program given apart from it (`{"command": "git", "args": ["push"]}`), and the program's names.
+ARGS_KEYS = ("args", "arguments", "argv")
+PROGRAM_KEYS = ("command", "program", "executable", "cmd")
 #: The first line of a Codex patch, wherever it appears in an argument.
 PATCH_START = "*** Begin Patch"
 #: Arguments that hold text, not a path: the text an edit replaces, and words for the person.
@@ -245,6 +251,10 @@ def _tool(harness: str, payload: dict[str, Any]) -> tuple[str, dict[str, Any]]:
             arguments = json.loads(arguments)
         except ValueError:
             arguments = {"command": arguments}
+    # Arguments that are no object (a list, a bare string, JSON text of either) are kept under `input`, a command
+    # argument, so they are judged like any other instead of being read as none.
+    if arguments is not None and not isinstance(arguments, dict):
+        arguments = {"input": arguments}
     return (name if isinstance(name, str) else ""), (arguments if isinstance(arguments, dict) else {})
 
 
@@ -258,18 +268,9 @@ def _first(arguments: dict[str, Any], keys: tuple[str, ...]) -> str | None:
 
 
 def _text(arguments: dict[str, Any]) -> str:
-    """Every text the call writes, joined: the text fields, and those of a list of edits or chunks."""
-    parts = [value for key in TEXT_KEYS if isinstance(value := arguments.get(key), str)]
-    for value in arguments.values():
-        if isinstance(value, list):
-            parts += [
-                text
-                for item in value
-                if isinstance(item, dict)
-                for key in TEXT_KEYS
-                if isinstance(text := item.get(key), str)
-            ]
-    return "\n".join(parts)
+    """Every text the call writes, joined: the strings under a text argument at any depth (a list of edits or of files
+    included)."""
+    return "\n".join(value for key, value in _nodes(arguments) if key in TEXT_KEYS and isinstance(value, str))
 
 
 def _join(cwd: str, path: str) -> str:
@@ -306,28 +307,69 @@ def _cwd(harness: str, payload: dict[str, Any], arguments: dict[str, Any]) -> st
     return _first(payload, ("workspaceRoot",)) or ""
 
 
+def _nodes(value: Any, key: str | None = None, depth: int = 0) -> list[tuple[str | None, Any]]:
+    """Every value inside the arguments with the name it was given, at any depth up to `_DEPTH`: the value itself, the
+    values of an object by their names, and the items of a list by the list's name."""
+    found: list[tuple[str | None, Any]] = [(key, value)]
+    if depth >= _DEPTH:
+        return found
+    if isinstance(value, dict):
+        for name, item in value.items():
+            found += _nodes(item, str(name), depth + 1)
+    elif isinstance(value, list):
+        for item in value:
+            found += _nodes(item, key, depth + 1)
+    return found
+
+
 def _strings(value: Any) -> list[str]:
-    """The readings of an argument as command text: a string as it is; a list of strings both as one argv
+    """The readings of one value as command text: a string as it is; a list of strings and numbers both as one argv
     (`shlex.join`) and as several commands, one per line, since the adapter cannot tell which the tool meant."""
     if isinstance(value, str):
         return [value] if value else []
-    if isinstance(value, list) and value and all(isinstance(item, str) for item in value):
-        return list(dict.fromkeys([shlex.join(value), "\n".join(value)]))
+    if isinstance(value, list) and value and all(isinstance(item, (str, int, float)) for item in value):
+        words = [str(item) for item in value]
+        return list(dict.fromkeys([shlex.join(words), "\n".join(words)]))
     return []
 
 
+def _split(value: Any) -> list[str]:
+    """A program and its arguments given apart (`{"command": "git", "args": ["push"]}`), as one command line."""
+    if not isinstance(value, dict):
+        return []
+    args = next((value[key] for key in ARGS_KEYS if isinstance(value.get(key), list)), None)
+    program = next((value[key] for key in PROGRAM_KEYS if isinstance(value.get(key), str)), None)
+    if program is None or args is None:
+        return []
+    return [shlex.join([program, *(str(item) for item in args if isinstance(item, (str, int, float)))])]
+
+
 def _commands(arguments: dict[str, Any], keys: tuple[str, ...] | None = None) -> list[str]:
-    """Every command text under the given argument names (every argument when None), each reading once."""
+    """Every command text under the given argument names at any depth (every value when None), each reading once:
+    everything inside a command argument (strings, lists, an object with a program and its arguments), and a program
+    given apart from its arguments anywhere."""
     found: list[str] = []
-    values = arguments.values() if keys is None else [arguments.get(key) for key in keys]
-    for value in values:
-        found += [text for text in _strings(value) if text not in found]
+    for key, value in _nodes(arguments):
+        inside = _nodes(value) if keys is None or key in keys else []
+        for _, item in inside:
+            found += [text for text in _strings(item) if text not in found]
+        found += [text for text in _split(value) if text not in found]
     return found
 
 
 def _patches(arguments: dict[str, Any]) -> list[str]:
-    """Every argument that holds a Codex patch, under any name."""
-    return [text for value in arguments.values() for text in _strings(value) if PATCH_START in text]
+    """Every argument that holds a Codex patch, under any name and at any depth."""
+    return [value for _, value in _nodes(arguments) if isinstance(value, str) and PATCH_START in value]
+
+
+def _first_path(arguments: dict[str, Any]) -> str | None:
+    """The first path argument at any depth (the top level first)."""
+    top = _first(arguments, PATH_KEYS)
+    if top is not None:
+        return top
+    return next(
+        (value for key, value in _nodes(arguments) if key in PATH_KEYS and isinstance(value, str) and value), None
+    )
 
 
 def _as_path(value: str) -> str:
@@ -340,25 +382,26 @@ def _as_path(value: str) -> str:
 
 
 def _paths(arguments: dict[str, Any]) -> list[str]:
-    """Every argument that may name a file, for a tool that changes files: the path arguments first, then any other
-    one-line string or list of strings with a slash or an extension (a move's two paths, a list of paths to delete)."""
-    found: list[str] = []
-    for key, value in [(key, arguments.get(key)) for key in PATH_KEYS] + list(arguments.items()):
+    """Every argument that may name a file, for a tool that changes files, at any depth: the path arguments first (also
+    those of the objects in a list of files), then any other one-line string with a slash or an extension (a move's two
+    paths, a list of paths to delete)."""
+    listed: list[str] = []
+    other: list[str] = []
+    for key, value in _nodes(arguments):
         if key in TEXT_KEYS or key in CWD_KEYS or key in _NOT_PATHS:
             continue
-        items = [value] if isinstance(value, str) else value if isinstance(value, list) else []
-        for item in items:
-            if not isinstance(item, str) or not _PATHISH.match(item) or PATCH_START in item:
-                continue
-            listed = key in PATH_KEYS
-            if (listed or re.search(r"[\\/]|\.\w{1,8}$", item)) and _as_path(item) not in found:
-                found.append(_as_path(item))
-    return found
+        if not isinstance(value, str) or not _PATHISH.match(value) or PATCH_START in value:
+            continue
+        if key in PATH_KEYS:
+            listed.append(_as_path(value))
+        elif re.search(r"[\\/]|\.\w{1,8}$", value):
+            other.append(_as_path(value))
+    return list(dict.fromkeys(listed + other))
 
 
 def _has_text(arguments: dict[str, Any]) -> bool:
-    """Whether the call carries text to write, in any form (a string, a list of edits)."""
-    return any(arguments.get(key) not in (None, "", [], {}) for key in TEXT_KEYS)
+    """Whether the call carries text to write, in any form and at any depth (a string, a list of edits)."""
+    return any(key in TEXT_KEYS and value not in (None, "", [], {}) for key, value in _nodes(arguments))
 
 
 def _shell(name: str, command: str) -> dict[str, Any]:
@@ -389,7 +432,7 @@ def by_shape(name: str, arguments: dict[str, Any], cwd: str) -> list[dict[str, A
     path under a name that says it changes a file (then every path-like argument, a move's target too)."""
     calls = _patch_calls(arguments, cwd)
     calls += [_shell(name, command) for command in _commands(arguments, COMMAND_KEYS) if PATCH_START not in command]
-    path = _first(arguments, PATH_KEYS)
+    path = _first_path(arguments)
     if _WRITE_WORDS.search(name):
         calls += _writes(arguments, cwd, _paths(arguments))
     elif path and _has_text(arguments):
@@ -401,8 +444,8 @@ def claude_calls(harness: str, payload: dict[str, Any], role: str) -> list[dict[
     """The Claude Code PreToolUse payloads that stand for this tool call (empty when it is no call to judge).
 
     A listed tool whose arguments are in no shape the adapter knows is judged conservatively, never let through as
-    nothing: a shell tool with no command argument has every string argument judged as a command, a patch or write tool
-    every path-like argument as a `Write`."""
+    nothing: a shell tool with no command argument has every string and list of strings inside its arguments, at any
+    depth, judged as a command, a patch or write tool every path-like string inside them as a `Write`."""
     if not is_pre_tool(harness, payload):
         return []
     name, arguments = _tool(harness, payload)
@@ -417,7 +460,7 @@ def claude_calls(harness: str, payload: dict[str, Any], role: str) -> list[dict[
         calls = [_shell(name, command) for command in commands]
     elif key in WRITE_TOOLS:
         calls = _patch_calls(arguments, cwd) + _writes(arguments, cwd, _paths(arguments))
-    elif key in READ_TOOLS and (path := _first(arguments, PATH_KEYS)):
+    elif key in READ_TOOLS and (path := _first_path(arguments)):
         calls = [{"tool_name": "Read", "tool_input": {"file_path": _join(cwd, _as_path(path))}}]
     elif key in READ_TOOLS:
         calls = None
