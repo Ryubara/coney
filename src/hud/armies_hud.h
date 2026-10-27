@@ -13,8 +13,9 @@
 #include "hud/hud_layout.h"
 
 // The Armies of the Night parts of the HUD (levels 60-69, `GameState_IsArmiesLevel`): the credits line, the GO sign and
-// the players' join messages, which the HUD sets up and steps only in those levels. The two `ANHud` player panels
-// (health and power bars, portrait, boss picture) are not built: Coney's story panel stands in for them.
+// the players' join messages, which the HUD sets up and steps only in those levels. Of the two `ANHud` player panels
+// only whether each is wanted is kept, which decides its join message; their parts (health and power bars, portrait,
+// boss picture) are not built (#662): Coney's story panel stands in for them.
 // Research: docs/research/armies.md#credits, docs/research/armies.md#go-sign,
 // docs/research/armies.md#the-join-messages, docs/research/hud-functions-parts.md#fn-pre-basewidget,
 // docs/research/hud-functions-panels.md#fn-anhud
@@ -81,18 +82,24 @@ class ArmiesHud {
     /// Panel `player`'s first attach to a player (`HUD_AttachPlayer` -> `ANHud_Init`): its join message off.
     /// @orig 0x002107e8 ANHud_Init (unknown)
     void panelAttached(std::size_t player);
-    /// Panel `player` enabled (stub).
-    void panelEnabled(std::size_t /*player*/) {}
+    /// Panel `player` enabled (interface slot `+0x20`, `ANHud_Enable`): wanted again, as a continue makes it.
+    /// @orig 0x0020fd40 ANHud_Enable (unknown)
+    void panelEnabled(std::size_t player);
     /// Whether panel `player`'s join message is on.
     [[nodiscard]] bool joinMessage(std::size_t player) const { return m_join.at(player); }
-    /// Whether panel `player`'s join message shows now: on, the player not in, and on the blink's lit half.
+    /// Whether panel `player`'s join message shows now: on, the panel not wanted (its player not in, or knocked out
+    /// since the panel was last enabled), and on the blink's lit half.
     /// @orig 0x00211938 ANHud_Draw (unknown)
     [[nodiscard]] bool joinShowing(std::size_t player) const;
+    /// Whether panel `player` is wanted (`+0x40f8`): its player in and not knocked out since the panel was enabled.
+    /// @coney-only a query for the join message and the tests; the original reads `+0x40f8` in place
+    [[nodiscard]] bool panelWanted(std::size_t player) const;
 
     /// One HUD step at game time `nowMs` in level number `level`, with which players are in the game (their panel
-    /// wanted); nothing outside an Armies level. The GO sign's blink
+    /// attached) and which are knocked out (`Human_IsKnockedOut`); nothing outside an Armies level. The GO sign's blink
     /// and the join messages' blink, which share one timer. **Coney's choice**: both are timed by the game time, where
-    /// the original reads its real-time clock, so a test run blinks the same every time.
+    /// the original reads its real-time clock, so a test run blinks the same every time. A knocked-out player's panel
+    /// stops being wanted from the next step, as `ANHud_Draw` drops it on the frame it draws.
     /// @orig 0x0019e660 GoSign_StepBlink (unknown)
     /// @orig 0x0019e758 GoSign_Update (unknown)
     void update(std::uint64_t nowMs, int level, std::array<bool, kPlayers> playersIn,
@@ -113,6 +120,9 @@ class ArmiesHud {
     std::array<bool, kPlayers> m_join{};
     std::array<bool, kPlayers> m_joinLit{};
     std::array<bool, kPlayers> m_in{};
+    // A panel dropped by its player's knock-out (`+0x40f8` cleared), and one that drops at the next step.
+    std::array<bool, kPlayers> m_dropped{};
+    std::array<bool, kPlayers> m_dropping{};
     bool m_joinTimed = false; // `0x0063f1f4`
     std::uint64_t m_joinLastMs = 0;
 };

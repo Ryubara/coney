@@ -86,6 +86,9 @@ int Hud::attachPlayer(int slot, int type) {
 }
 
 void Hud::levelSetUp() {
+    // Not ported, from HUD_InitLevel: the mission item icons, the status column, the HudLabel widget, the six menus'
+    // level hook and the virtual pads (#662); the crew status list (#515); the split-screen dividers (#549); in an
+    // Armies level the ANHud panels' parts (#662) and the boss picture (#570).
     m_radar.scriptOn = true;
     // The Armies of the Night parts: no credits, the GO sign off and placed for the language, both join messages on
     // until their panel's first attach (docs/research/armies.md#the-join-messages).
@@ -377,6 +380,8 @@ void Hud::setTextProgress(std::string_view label, std::uint32_t value, graphics:
 }
 
 void Hud::update(const HudFrame& frame) {
+    // Not ported, from HUD_Update: two menus' countdown (+0x20ac, #682), the crew status list below level 100
+    // (#515) and the Rumble intro screen (#661).
     m_nowMs = frame.nowMs;
     m_levelNumber = frame.levelNumber;
     // The credits scroll in the overlay pass, whatever the HUD's visibility and the letterbox.
@@ -406,8 +411,10 @@ void Hud::update(const HudFrame& frame) {
         return;
     }
     updateRadar(frame);
-    // The Armies of the Night parts (GoSign_Update, the ANHud join messages), in those levels only; player 1 is in.
-    m_armies.update(frame.nowMs, frame.levelNumber, {m_panels.at(0).attached(), m_panels.at(1).attached()});
+    // The Armies of the Night parts (GoSign_Update, the ANHud join messages and the knock-outs that drop a panel), in
+    // those levels only.
+    m_armies.update(frame.nowMs, frame.levelNumber, {m_panels.at(0).attached(), m_panels.at(1).attached()},
+                    frame.knockedOut);
     // 1. The player panels, with their values and pads.
     for (std::size_t i = 0; i < kPlayers; ++i) {
         PanelValues values = frame.players.at(i);
@@ -662,6 +669,9 @@ void Hud::renderWarCommands(const HudCanvas& canvas) const {
 }
 
 void Hud::render(const HudCanvas& canvas) const {
+    // Not ported, from HUD_Render: the split-screen dividers (#549); the HudLabel and the caption pager drawn even
+    // while hidden, the +0x1911c and +0xe050 widgets, the mission item icons, the status column and, under the
+    // letterbox, the pending Warrior commands issued (#662); the crew status list (#515).
     m_credits->render(canvas.text);
     if (!m_visible || m_letterbox) {
         return;
@@ -721,7 +731,8 @@ void Hud::render(const HudCanvas& canvas) const {
     if (!hintsHidden()) {
         m_hints.render(canvas);
     }
-    if (!scrollInHidden()) {
+    // The prompts: not while a scroll-in hides them, and never in an Armies level.
+    if (!scrollInHidden() && !isArmiesLevel(m_levelNumber)) {
         renderPrompt(canvas);
     }
 }
