@@ -490,6 +490,8 @@ if(CONEY_DEBUG_TOOLS)
         debug/lua_console.cpp
         debug/menu_model.cpp
         debug/menu_navigator.cpp
+        debug/mesh_stats.cpp
+        debug/mesh_views.cpp
         debug/native_caller.cpp
         debug/native_signatures.cpp
         debug/object_watch.cpp

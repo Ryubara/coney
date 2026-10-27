@@ -142,8 +142,8 @@ The Display page's *Debug UI scale* overrides the choice: *Auto* (the rule above
 | AI fighters | AI humans on a side of the player's: a side (enemy, ally or neutral), a model picker (every human model, or Random) and an amount, spawn them in front of him (allies behind him), the engaging toggle, their state, clear them |
 | Animation player | every clip the player's anim sets can play, by set and category with its length, played on him once or looping at a speed, then his own animation back ([below](#animation-player)) |
 | HUD | the [in-game HUD](../research/hud.md)'s parts on and off, player 1's rage, score, money and items set (-1 gives the value back), an objective, a hint and an announcement fired |
-| Debug draw | lines in the scene: collision near the player (plain or by wall class), the player's heading and velocity, the camera, places, every human's collision shapes, strike shapes and contacts |
-| Entity inspector | pick a human or object (nearest, next, looked at, from a list), mark it in the scene and watch everything Coney knows of it |
+| Debug draw | lines in the scene: collision near the player (plain or by wall class), the player's heading and velocity, the camera, places, every human's collision shapes, strike shapes and contacts; the [mesh views](#mesh-views): the models' own wireframe, a wireframe-only view, flat views by material, draw call or LOD, the selection's normals and bone axes |
+| Entity inspector | pick a human or object (nearest, next, looked at, from a list), mark it in the scene and watch everything Coney knows of it, a human's [mesh](#mesh-group) included |
 | Entity editor | change the inspector's selection: move, turn, drop, meters, scale, speed, animation rate, freeze, kill, delete; each edit queued, applied between steps and written to the run log ([below](#entity-editor)) |
 | Display | the frame-stats line, the FPS counter, the frame cap and vsync (live), the player's coordinates, the GUI safe area, the logical screen, the [overlay's size](#ui-scale) |
 | Audio | the output device, the master and bus volumes, a looping test tone, the voices playing (plotted) |
@@ -380,6 +380,55 @@ attack's hit update and its reach (a **Coney stand-in**, [Combat](../research/co
 timing and a distance, not a shape that could be drawn. The Entity inspector's highlight and its watch lines are how a
 target is looked at.
 
+### Mesh views {#mesh-views}
+
+The Debug draw page's last items show what the models themselves are made of, as a 3D package's viewport does: their
+triangles over the shaded scene, the scene as edges alone, or flat colours that tell the materials, the draw calls or
+the level of detail apart. They are Coney's own debug tooling, not a mechanic of the game, and they change nothing
+while off: the scene then draws every model exactly as without them (below).
+
+| Item | Does |
+| --- | --- |
+| Model wireframe | *off*, or each model's own triangles as lines over the shaded scene: the *selection* only (the Entity inspector's, white), *all humans* (green, and the selection) or *everything* drawn (objects orange, scenery grey) |
+| Mesh view | *shaded* (the game's own draw), *wireframe only* (the edges, no fill), or flat and unlit: *by material* (one colour per material, the same for two models sharing a texture), *by draw call* (one colour per draw call of the frame, in the order drawn) or *by LOD* (green at full detail, yellow while a human fades out with distance) |
+| Mesh view on | the models the mesh view applies to: the *selection*, *all humans* or *everything* (the default); the others stay shaded |
+| Normals | the selection's vertex normals, a 5 cm blue line from each posed vertex (at most 20,000) |
+| Bone axes | the selection's bones: each one's axes, 8 cm long (x red, y green, z blue), and a line to its parent |
+
+The wireframe and the flat views follow the animation because they are **draws of the model's own librw atomic**, the
+one the shaded pass just drew, through its own pipeline: whatever skinned the shaded pass (the vertices written on the
+CPU, or the vertex shader that skins a human on the GPU) skins these passes the same way. A flat pass swaps
+the atomic's material colours for the view's and its textures for none, lights it with one white ambient light and no
+fog, draws it and puts everything back; the wire pass does the same in OpenGL's line polygon mode, pulled a little
+towards the camera so the lines sit on the fill. A human's blood layer, and an object's second layer, are drawn only
+with the shaded draw. The normals and bone axes are Debug draw lines, from the selection's pose skinned on the CPU for
+it alone. *Everything* means every model drawn through the scene's lighting rig: a level's sectors and skyline, the
+humans, world objects, doors and cars. A sandbox's own blocks are drawn by its renderer and get no wireframe; there is
+no wire under OpenGL ES, which has no line mode. The *selection* choices (the wireframe's, the mesh view's) and the
+normals and bone axes are for a selected human: an object selected has no model to draw them for, though *everything*
+draws it like any other.
+
+The level of detail: the original draws every sector, human, car part and object as one model, whole or not at all
+([Distance: fades and level of detail](../research/graphics.md#lod)), and so does Coney, so *by LOD* tells only the
+humans' distance fade apart.
+
+**Off means untouched.** The play mode hands its models to the views only while one of the wireframe or the mesh
+view is on (`MeshViewHook`, `src/platform/mesh_view_hook.h`, which the game offers and the debug tools implement in
+`src/platform/mesh_views.h`); with both off the lighting rig draws each atomic as it always has and never calls them.
+The hook sits in the rig's last step, under the ported draw functions, which stay as the original has them: each
+model's kind is the one the play mode's scene-counter scope names around its draw
+([counters](performance.md#counters)), and the play mode marks a human's blood layer, and counts the passes the Mesh
+group shows, around each human's draw.
+The rules (which model gets which passes and colours) are `src/debug/mesh_views.h`, tested without a window in
+`tests/debug/mesh_views_test.cpp`, and `tests/platform/mesh_views_test.cpp` checks on librw's NULL device that a model
+gets the game's draw alone while the views are off and its materials back after a pass. On a disc,
+`tests/platform/disc_mesh_views_test.cpp` plays a level and the sandbox's fight yard with a hook of its own and checks
+what the play mode hands the hook; `tests/platform/disc_mesh_views_draw_test.cpp` checks that the passes the game draws
+are the same with the views off, with a hook that is off and with a flat view on, and, on a hidden OpenGL window where
+there is one, that every frame is the same pixel for pixel with the views off, and again after `--mesh-view`'s frames.
+By hand, `--mesh-view wire=all,view=material,frames=30 --frames 90 --screenshot a.png` gives the same last frame, byte
+for byte, as the same run without `--mesh-view` ([options](running-options.md#the-debug-menus)).
+
 ### Entity inspector {#entity-inspector}
 
 The **Entity inspector** page picks one entity of the scene and shows everything Coney knows about it, live. It needs
@@ -400,7 +449,7 @@ out), the doors and barriers, the glass panes and the world objects whose object
 | Freeze selection | holds the selected human still: an AI human or a sandbox target is not animated, moved or acted for, its brain still runs and the others still hit it (it does not react until let go); for the player it is the Player page's *Frozen* (he ignores the pad). An object cannot be frozen, and says so in the log. The Locomotion page's *Frozen* line shows it |
 | Teleport player to it | puts the player 1.5 m from it on his side, facing it |
 | Log everything | prints every value of the selection to the log, `Group / name: value` a line |
-| Identity ... Object | one page per group, a live watch per value |
+| Identity ... Mesh | one page per group, a live watch per value |
 
 A human's groups (`src/debug/human_watch.h`): **Identity** (role, model, character type, what drives it, brain
 handle, class and gang), **Transform** (feet, heading, velocity, speed, scale, lean), **Locomotion** (gait, ground or
@@ -412,7 +461,27 @@ thinks), **Physics** (the walking sphere, capsule and air sphere sizes, the cont
 climb) and **Combat** (mode, the attack playing, blocking, the pair, holding or grabbed, hits). A sandbox target shows
 Identity, Transform, Animation, Meters and Combat. An object (`src/debug/object_watch.h`) shows Identity, Transform
 and **Object**: a door's class, state, angle, hitpoints and triangles; a pane's size, broken and alarm; a world
-object's spawn-record state, flags, zone, tint and money.
+object's spawn-record state, flags, zone, tint and money. Every human, the player, an AI human and a sandbox target
+alike, also shows **Mesh** (below).
+
+#### The Mesh group {#mesh-group}
+
+What the selection's model is made of and what the renderer spent on it last frame, counted from the decoded model
+the way the play mode draws it (`src/debug/mesh_stats.h`; a human's mesh is `platform::CharacterMesh`):
+
+| Line | What it is |
+| --- | --- |
+| Atomics, Geometries | librw atomics drawn for one pass and the geometries they hold: 1 and 1 for a human |
+| Triangles, Vertices | the model's triangles and its distinct vertices (the strips' shared vertices merged) |
+| Materials | how many; then one line per material: its triangles, its colour (RGBA) and its texture with its size |
+| Textures | the distinct textures among the materials (a human's materials share his one texture) |
+| Bones | the HAnim hierarchy's nodes, the bones the skin gives matrices for and the bones some vertex is weighted to |
+| Weights per vertex | the most weights any vertex carries (and the skin's limit), the mean, and the vertices by count |
+| Draw calls last frame | the materials times the passes drawn: 1 with his texture, 2 with the blood layer, 0 when too far to draw. librw makes a mesh for every material, an empty one too, and draws each |
+| LOD in use | always level 0 of 1 (no model has another, [Distance](../research/graphics.md#lod)), and the distance fade it was drawn at |
+| Skinned on | where the vertices are skinned: *GPU* (the vertex shader, when the skin pipeline runs and the model fits it) or *CPU* |
+
+An object shows no Mesh group: its model's counts need its atomic, which the inspector does not reach.
 
 The inspector only reads, but for *Freeze selection* (a selection is changed in the [Entity editor](#entity-editor)):
 choosing, highlighting and watching change nothing in the game, and the selection is a number in the Debug draw

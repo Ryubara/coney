@@ -46,6 +46,7 @@
 #include "platform/character_mesh.h"
 #include "platform/hud_layer.h"
 #include "platform/humans_trace.h"
+#include "platform/mesh_view_hook.h"
 #include "platform/placed_objects.h"
 #include "platform/play_lighting.h"
 #include "platform/play_scenery.h"
@@ -247,6 +248,11 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     /// Sets the lines render() draws into the scene each frame, through the camera and tested against depth (the debug
     /// tools' Debug draw page, PlayLevelControls::sceneLines()); empty draws none.
     void setSceneLines(SceneLines lines) { m_sceneLines = std::move(lines); }
+    /// Sets the debug tools' mesh views (docs/guides/debug-menu.md#mesh-views), which render() asks at each frame's
+    /// start and, while they are on, hands every model the scene draws (MeshViewHook); null: none, and every model is
+    /// drawn as the game draws it.
+    /// @coney-only the debug tools' mesh views; the original has none
+    void setMeshViews(std::shared_ptr<MeshViewHook> views) { m_meshViews = std::move(views); }
 
     // Coney's own capabilities and views of the play: the debug menus' Player, Camera, Spawner and AI fighters pages
     // reach them through PlayLevelControls, and the disc tests call them.
@@ -785,6 +791,9 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
 
     // Draws the humans: their lights, the render states, each mesh in its two passes.
     void drawCharacter() const;
+    // Draws one human's passes (PlayLighting::drawHumanPasses), with his blood layer marked for the mesh views and the
+    // passes drawn recorded on his mesh for the Mesh group; the game's draw itself is untouched.
+    void drawHumanPasses(CharacterMesh& mesh, bool player, rw::Texture* blood) const;
     // The blood texture of the second pass of a human with `health`, or null when it shows none.
     [[nodiscard]] rw::Texture* bloodTextureFor(const combat::Health& health) const;
     // The view from a camera pose (RenderWare's axes) through the player camera's lens, with `drawDistance`.
@@ -838,7 +847,8 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     Interpolated<float> m_drawDistance;     // at the last two steps
     PlayStats m_stats;
     std::uint32_t m_lastAnimId = 0;
-    SceneLines m_sceneLines; // setSceneLines()
+    SceneLines m_sceneLines;                   // setSceneLines()
+    std::shared_ptr<MeshViewHook> m_meshViews; // setMeshViews()
     bool m_frozen = false;
     std::optional<CameraPin> m_pinnedCamera;                      // `--camera`
     bool m_freezeWorld = false;                                   // `--freeze-world`

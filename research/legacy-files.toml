@@ -601,9 +601,6 @@ comment = 1
 ["src/debug/net_controls.h"]
 comment = 3
 
-["src/debug/play_controls.h"]
-comment = 1
-
 ["src/debug/tunables.cpp"]
 comment = 1
 
@@ -1268,9 +1265,6 @@ comment = 1
 ["src/platform/front_end_scene.cpp"]
 comment = 1
 
-["src/platform/game_session.h"]
-comment = 1
-
 ["src/platform/hud_layer.cpp"]
 comment = 2
 
@@ -1295,19 +1289,10 @@ comment = 3
 ["src/platform/parked_cars.cpp"]
 comment = 1
 
-["src/platform/perf_probes.cpp"]
-comment = 6
-
 ["src/platform/placed_objects.cpp"]
 comment = 2
 
 ["src/platform/placed_objects.h"]
-comment = 1
-
-["src/platform/play_level_controls.h"]
-comment = 1
-
-["src/platform/play_level_inspect.cpp"]
 comment = 1
 
 ["src/platform/play_scenery.h"]
@@ -1324,9 +1309,6 @@ comment = 1
 
 ["src/platform/sandbox_viewer_mode.h"]
 comment = 2
-
-["src/platform/scene_lighting.cpp"]
-comment = 1
 
 ["src/platform/texture_dictionary.cpp"]
 comment = 1
@@ -2114,9 +2096,6 @@ citation = 3
 
 ["tests/debug/pad_menu_input_test.cpp"]
 citation = 4
-
-["tests/debug/play_pages_test.cpp"]
-citation = 15
 
 ["tests/debug/story_missions_test.cpp"]
 citation = 3

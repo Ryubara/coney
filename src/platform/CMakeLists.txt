@@ -76,11 +76,13 @@ if(CONEY_DEBUG_TOOLS)
         imgui_model_view.cpp
         imgui_overlay.cpp
         imgui_ui_scale.cpp
+        mesh_views.cpp
         perf_bench.cpp
         play_level_anim.cpp
         play_level_controls.cpp
         play_level_edit.cpp
         play_level_inspect.cpp
+        play_level_mesh.cpp
         reference_renderer.cpp
         sandbox_play_scenery.cpp
         sandbox_renderer.cpp
