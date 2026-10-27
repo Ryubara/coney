@@ -209,7 +209,8 @@ Human::Human(const characters::AnimSet& anims, const AnimSlots& slots,
              const combat::AnimRangeList* ranges, std::span<const std::int16_t> classDamage, int damagePercent)
     : m_animator(anims, slots), m_ownRanges(classRanges(ranges, classDamage, damagePercent)),
       m_classDamage(classDamage.begin(), classDamage.end()), m_damagePercent(damagePercent),
-      m_ranges(m_ownRanges != nullptr ? m_ownRanges.get() : ranges), m_fighter(m_ranges), m_scale(scale) {
+      m_ranges(m_ownRanges != nullptr ? m_ownRanges.get() : ranges), m_fighter(m_ranges), m_scale(scale),
+      m_configuredScale(scale) {
     std::ranges::copy(bindRotations, m_bindRotations.begin());
 }
 
@@ -713,16 +714,17 @@ Human::Swept Human::sweep(const raycast::CollisionMesh& mesh, anim::Vec3 velocit
 }
 
 float Human::walkingSphereRadius() const {
-    return m_profile.player ? playerWalkingRadius(m_scale) : aiWalkingRadius(m_scale);
+    return m_profile.player ? playerWalkingRadius(collisionScale()) : aiWalkingRadius(collisionScale());
 }
 
 float Human::walkingSphereCentreHeight() const { return walkingSphereRadius() + bodyTuning().footGap; }
 
-float Human::airSphereRadius() const { return bodyTuning().airRadius * m_scale; }
+float Human::airSphereRadius() const { return bodyTuning().airRadius * collisionScale(); }
 
 UprightCapsule Human::uprightCapsule() const {
     // **Coney's choice**: the 2 m upright capsule the strikes take too, not posed from the head bone each time.
-    return UprightCapsule{.feet = m_position, .top = kStrikeCapsuleHeight * m_scale, .radius = capsuleRadius()};
+    return UprightCapsule{
+        .feet = m_position, .top = kStrikeCapsuleHeight * collisionScale(), .radius = capsuleRadius()};
 }
 
 bool Human::blocksHumans() const {
@@ -1460,6 +1462,9 @@ void Human::step(const HumanInput& input, const raycast::CollisionMesh* mesh) {
 }
 
 void Human::animate(const raycast::CollisionMesh* mesh) {
+    // The speed factors first: the Movement tunables change only between steps, and this is a step's first pass, before
+    // any locomotion reads the speeds.
+    refreshSpeedFactors();
     // The gait the last update's velocity left, before this update moves the body: the dispatcher's gait tests read it
     // (fight()). It is taken here, in the first pass, so that step() and human::Humans, which runs the passes itself,
     // both keep it.
@@ -1477,7 +1482,7 @@ void Human::animate(const raycast::CollisionMesh* mesh) {
     const anim::AnimTask* before = m_animator.tasks().top();
     const std::uint32_t beforeId = before != nullptr ? before->animId() : 0;
     const float beforeTime = before != nullptr ? before->time() : 0.0F;
-    m_animator.advance(m_stepSeconds);
+    m_animator.advance(m_stepSeconds * m_animRate);
     followClimb(mesh);
     followPickUp();
     // A clip's turn to a point (the spray's intro, the uncuffing's), a step each update while the clip plays.
@@ -1635,7 +1640,8 @@ void Human::noteStrikeEvents(const anim::AnimTask* before, std::uint32_t beforeI
 }
 
 BodyPlacement Human::placement() const {
-    return BodyPlacement{.feet = m_position, .heading = m_heading, .lean = m_lean, .scale = m_scale};
+    // The strike shapes are collision: sized by the collision scale, which is the mesh's unless an edit keeps it.
+    return BodyPlacement{.feet = m_position, .heading = m_heading, .lean = m_lean, .scale = collisionScale()};
 }
 
 std::vector<PosedShape> Human::posedStrikeShapes(bool targets) const {
@@ -1648,12 +1654,21 @@ std::vector<PosedShape> Human::posedStrikeShapes(bool targets) const {
     } else {
         defs = m_strikes.active();
     }
-    const auto bones = anim::boneTransforms(*m_skeleton, pose());
+    // The shapes stand on the bones as the original's bone lookup hands them over: each position times the body
+    // scale, the rotation as posed (the offsets, lengths and radii are scaled in poseStrikeShapes()).
+    auto bones = anim::boneTransforms(*m_skeleton, pose());
+    // Coney's choice: the scale as set. Human_GetScale returns 1.0 for a human in a scene state whose scale is under
+    // 1.1, but Coney tracks the scene state only for player 1, so it is not modelled; the offsets, radii, lengths
+    // (poseStrikeShapes()), ledPoint() and bodyPoint() use the same unadjusted scale, so whoever ports the scene state
+    // changes them together.
+    for (anim::Mat34& bone : bones) {
+        bone.t = anim::scale(bone.t, m_scale);
+    }
     std::vector<PosedShape> posed = poseStrikeShapes(defs, bones, placement());
     // The capsule, while its strike flag is on: upright, its radius round the 2 m from the feet up.
     if (!targets && m_strikes.capsuleOn()) {
-        const float radius = kStrikeCapsuleRadius * m_scale;
-        const float top = kStrikeCapsuleHeight * m_scale;
+        const float radius = kStrikeCapsuleRadius * collisionScale();
+        const float top = kStrikeCapsuleHeight * collisionScale();
         posed.push_back(PosedShape{.a = anim::add(m_position, anim::Vec3{0.0F, 0.0F, radius}),
                                    .b = anim::add(m_position, anim::Vec3{0.0F, 0.0F, top - radius}),
                                    .radius = radius,

@@ -61,6 +61,7 @@ add_library(coney_core STATIC
     gamemodes/profile_manager_mode.cpp
     gamemodes/rumble_intro_layer.cpp
     gamemodes/rumble_menu_mode.cpp
+    gamemodes/game_stats_mode.cpp
     gamemodes/rumble_result_mode.cpp
     gamemodes/start_up_flow.cpp
     graphics/font.cpp
@@ -91,8 +92,12 @@ add_library(coney_core STATIC
     physics/sphere_triangle.cpp
     gui/bar.cpp
     gui/base_widget.cpp
+    gui/circled_text.cpp
+    gui/circled_text_header.cpp
+    gui/game_stats.cpp
     gui/global_strings.cpp
     gui/markup.cpp
+    gui/message_paging.cpp
     gui/menu_input.cpp
     gui/message_box.cpp
     gui/option_grid.cpp
@@ -101,6 +106,10 @@ add_library(coney_core STATIC
     gui/pause_menu/pause_items.cpp
     gui/pause_menu/pause_menu.cpp
     gui/pause_menu/control_menu.cpp
+    gui/pause_menu/option_bar.cpp
+    gui/pause_menu/option_layout.cpp
+    gui/pause_menu/option_menu.cpp
+    gui/pause_menu/pause_stats.cpp
     gui/pause_menu/yes_no_box.cpp
     gui/profile_management_gui/pm_controller.cpp
     gui/profile_management_gui/pm_extras.cpp
@@ -271,6 +280,7 @@ target_sources(coney_core PRIVATE
     human/way_clear.cpp
     human/human_flight.cpp
     human/human_hiding.cpp
+    human/human_debug.cpp
     human/human_script.cpp
     human/humans.cpp
     human/locomotion_gate.cpp
@@ -310,12 +320,14 @@ target_sources(coney_core PRIVATE
     ai/brains.cpp
     ai/chase_goals.cpp
     ai/crew.cpp
+    ai/smash_goals.cpp
     ai/steal_goals.cpp
     ai/dealer_goal.cpp
     ai/engage_goals.cpp
     ai/melee_goal.cpp
     ai/pedestrian_goal.cpp
     ai/perception.cpp
+    ai/fighter_sides.cpp
     ai/fight_book.cpp
     ai/fight_checks.cpp
     ai/hiding.cpp
@@ -469,6 +481,7 @@ if(CONEY_DEBUG_TOOLS)
         debug/combat_tunables.cpp
         debug/debug_lines.cpp
         debug/debug_session.cpp
+        debug/entity_edit.cpp
         debug/entity_inspect.cpp
         debug/fighter_spawn.cpp
         debug/game_tunables.cpp
@@ -485,6 +498,7 @@ if(CONEY_DEBUG_TOOLS)
         debug/pages_anim.cpp
         debug/pages_engine.cpp
         debug/pages_entity.cpp
+        debug/pages_entity_edit.cpp
         debug/pages_hud.cpp
         debug/pages_movies.cpp
         debug/pages_net.cpp

@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <format>
 #include <numbers>
 #include <set>
@@ -48,6 +49,11 @@ constexpr float kTeleportDrop = 2.0F;
 constexpr float kFreeCameraSpeed = 8.0F;
 // How far debug lines are lifted off what they lie on, in metres.
 constexpr float kLineLift = 0.02F;
+// The player slot this mode's player plays in: player 1, the only player a level has in Coney yet. Stand-in for the
+// player's own slot (networking checklist item 3): the mode holds one player and nothing in it carries a slot yet,
+// so its pad, camera and options all mean player 1; giving the mode a player per slot is wider than the Options
+// screen and comes with the second player.
+constexpr std::size_t kPlayerSlot = 0;
 
 // A coloured line list for librw's 3D immediate mode, in RenderWare's axes.
 class LineList {
@@ -224,6 +230,7 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
         bindPickups(cast->pickups);
         m_sound = cast->sound;
         m_gameOver = cast->gameOver;
+        m_padOptions = cast->padOptions;
         m_missionFailed = cast->missionFailed;
         makeWorldObjects(*cast);
     }
@@ -311,7 +318,8 @@ void PlayLevelMode::makeTargets(rw::Texture* texture) {
     }
 }
 
-void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees, const std::string& model, bool debugSpawned) {
+void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees, const std::string& model, bool debugSpawned,
+                               ai::FighterSide side) {
     // Dropped onto the ground below its spot, as a teleport is.
     raycast::Vec3 feet{spot.x, spot.y, spot.z + kTeleportDrop};
     if (!raycast::dropToGround(m_scenery->collision(), kTeleportDrop * 2.0F, feet)) {
@@ -322,10 +330,14 @@ void PlayLevelMode::addFighter(anim::Vec3 spot, float headingDegrees, const std:
     const CastLook look =
         model.empty() ? CastLook{.character = m_character.get(), .texture = m_texture} : castCharacter(model);
     human::Human& made = m_ai->spawnFighter(*look.character, &m_scenery->collision(),
-                                            anim::Vec3{feet.x, feet.y, feet.z}, headingDegrees);
+                                            anim::Vec3{feet.x, feet.y, feet.z}, headingDegrees, side);
     if (debugSpawned) {
         m_ai->markDebugSpawned(made);
         bindDebugFighter(made, look, model);
+    }
+    // With every gang slot in use the fighter has no gang, so it is nobody's friend or enemy: say so.
+    if (const ai::Brain* brain = m_ai->brainOf(made); brain != nullptr && brain->gang() == nullptr) {
+        m_print("fighters: no free gang slot, so a fighter was made with no gang\n");
     }
     FighterMesh mesh;
     mesh.character = look.character;
@@ -348,9 +360,9 @@ std::vector<std::string> PlayLevelMode::fighterModels() const {
     return {models.begin(), models.end()};
 }
 
-std::expected<void, Error> PlayLevelMode::spawnFighterAs(anim::Vec3 feet, float headingDegrees,
-                                                         std::string_view model) {
-    addFighter(feet, headingDegrees, std::string(model), true);
+std::expected<void, Error> PlayLevelMode::spawnFighterAs(anim::Vec3 feet, float headingDegrees, std::string_view model,
+                                                         ai::FighterSide side) {
+    addFighter(feet, headingDegrees, std::string(model), true, side);
     return {};
 }
 
@@ -363,7 +375,7 @@ void PlayLevelMode::clearFighters() {
 }
 
 std::string PlayLevelMode::fightersState() const {
-    // The player's health, then each fighter's health, top goal and queued actions.
+    // The player's health, then each fighter's gang, health, top goal and queued actions.
     std::string line = std::format("player health {}", m_player->human().health().value());
     const ai::Brains& brains = m_ai->brains();
     for (std::size_t i = 0; i < brains.size(); ++i) {
@@ -372,8 +384,10 @@ std::string PlayLevelMode::fightersState() const {
             continue;
         }
         const ai::Goal* top = brain.reactionGoal() != nullptr ? brain.reactionGoal() : brain.topGoal();
-        line += std::format("; health {} goal {:#x} actions {}", brain.human().health().value(),
-                            top != nullptr ? static_cast<int>(top->type()) : 0, brain.actionCount());
+        line += std::format("; {} health {} goal {:#x} actions {}",
+                            brain.gang() != nullptr ? brain.gang()->name() : std::string("no gang"),
+                            brain.human().health().value(), top != nullptr ? static_cast<int>(top->type()) : 0,
+                            brain.actionCount());
     }
     return line;
 }
@@ -477,12 +491,22 @@ std::expected<void, Error> PlayLevelMode::traceTo(const std::string& path) {
 void PlayLevelMode::enter() { m_scenery->preload(toRenderWare(m_player->camera().position())); }
 
 void PlayLevelMode::skin(const human::PlayerCharacter& character, const anim::Pose& pose, anim::Vec3 feet,
-                         float heading, float lean, CharacterMesh& mesh) {
+                         float heading, float lean, CharacterMesh& mesh, float scale) {
     // The pose's skinning matrices in the character's space (game axes, the feet at the origin, facing +y), then
     // leaned, turned, moved to the feet and into RenderWare's axes by the placement.
     const characters::CharacterModel& model = character.assets().model;
     const auto bones = anim::boneTransforms(character.skeleton(), pose);
-    const std::vector<anim::Mat34> matrices = characters::skinningMatrices(model, bones);
+    std::vector<anim::Mat34> matrices = characters::skinningMatrices(model, bones);
+    // A scaled body (the Entity editor's) grows about the feet, in the character's space: before the placement, so the
+    // feet stay where they are, and the shader's normalised normal keeps the lighting.
+    if (scale != 1.0F) {
+        for (anim::Mat34& matrix : matrices) {
+            matrix = anim::Mat34{.x = anim::scale(matrix.x, scale),
+                                 .y = anim::scale(matrix.y, scale),
+                                 .z = anim::scale(matrix.z, scale),
+                                 .t = anim::scale(matrix.t, scale)};
+        }
+    }
     mesh.pose(matrices, characterPlacement(feet, heading, lean));
 }
 
@@ -547,6 +571,11 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
         applyAnimOverrides();
     }
     const anim::Vec3 before = m_player->human().position();
+    // The player's camera follows by its own pad's Auto Adjust option, which the Options screen may have changed
+    // (Cam_Follow_AutoFollow reads the byte of the camera's pad each update, docs/research/pause.md#options).
+    if (m_padOptions != nullptr) {
+        m_player->camera().setAutoAdjust(m_padOptions->at(kPlayerSlot).autoAdjustCamera);
+    }
     giveObjectTargets();
     stepObjectBodies();
     {
@@ -727,7 +756,8 @@ void PlayLevelMode::render(const RenderTime& time) {
         m_stage->skinPuppets(alpha, [](const human::PlayerCharacter& character, const anim::Pose& pose, anim::Vec3 feet,
                                        float heading,
                                        CharacterMesh& mesh) { skin(character, pose, feet, heading, 0.0F, mesh); });
-        skin(playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading, snapshot.lean, *m_mesh);
+        skin(playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading, snapshot.lean, *m_mesh,
+             m_player->human().meshScale());
         m_attachedDraws.clear();
         poseHat(m_player->human(), playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading);
         poseHeldObject(m_player->human(), playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading);
@@ -760,7 +790,7 @@ void PlayLevelMode::render(const RenderTime& time) {
                 }
             }
             FighterMesh& mesh = m_fighterMeshes[i];
-            skin(*mesh.character, pose.pose, pose.feet, pose.heading, 0.0F, *mesh.mesh);
+            skin(*mesh.character, pose.pose, pose.feet, pose.heading, 0.0F, *mesh.mesh, fighters[i].human->meshScale());
             poseHat(*fighters[i].human, *mesh.character, pose.pose, pose.feet, pose.heading);
             // What he holds, posed by his own hand as player 1's is (docs/research/objects.md#given-weapon).
             poseHeldObject(*fighters[i].human, *mesh.character, pose.pose, pose.feet, pose.heading);

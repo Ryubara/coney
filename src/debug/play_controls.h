@@ -8,10 +8,12 @@
 #include <string_view>
 #include <vector>
 
+#include "ai/fighter_side.h"
 #include "animation/anim_math.h"
 #include "characters/character_choice.h"
 #include "core/error.h"
 #include "debug/anim_catalog.h"
+#include "debug/entity_edit.h"
 #include "debug/entity_inspect.h"
 #include "human/place.h"
 #include "sandbox/sandbox_layout.h"
@@ -151,10 +153,11 @@ class PlayControls {
     /// scene's own character.
     [[nodiscard]] virtual std::vector<std::string> fighterModels() const { return {}; }
     /// As spawnFighter(), as the character `model` (one of fighterModels()): its model, animation set and moves. An
-    /// empty `model` is the scene's own character. Fails with ErrorCode::InvalidArgument where none can be spawned.
-    /// The default ignores the model.
-    virtual std::expected<void, Error> spawnFighterAs(anim::Vec3 feet, float headingDegrees,
-                                                      std::string_view /*model*/) {
+    /// empty `model` is the scene's own character. `side` is the player's enemy, ally or neither (ai::FighterSide): the
+    /// gangs the fighter joins. Fails with ErrorCode::InvalidArgument where none can be spawned. The default ignores
+    /// the model and the side.
+    virtual std::expected<void, Error> spawnFighterAs(anim::Vec3 feet, float headingDegrees, std::string_view /*model*/,
+                                                      ai::FighterSide /*side*/) {
         return spawnFighter(feet, headingDegrees);
     }
     /// AI fighters in the scene.
@@ -164,7 +167,7 @@ class PlayControls {
     /// Whether an idle fighter takes the player on when he comes within its melee range (ai::AiHumans::engaging()).
     [[nodiscard]] virtual bool fightersEngage() const { return false; }
     virtual void setFightersEngage(bool /*on*/) {}
-    /// One line on the fighters: each one's health, top goal and front action, and the player's health.
+    /// One line on the fighters: each one's gang, health, top goal and front action, and the player's health.
     [[nodiscard]] virtual std::string fightersState() const { return "-"; }
 
     // The player's character type (the Player page's Change character). A mode without the configuration's types
@@ -223,6 +226,9 @@ class PlayControls {
     [[nodiscard]] virtual bool entityFrozen(EntityId /*id*/) const { return false; }
     /// Freezes entity `id`, or lets it go; nothing for an entity that cannot be frozen.
     virtual void setEntityFrozen(EntityId /*id*/, bool /*frozen*/) {}
+    /// What the Entity editor edits (docs/guides/debug-menu.md#entity-editor): the mode's humans and objects, called
+    /// between simulation steps by the debug session's input gate. Null by default: the mode cannot be edited.
+    [[nodiscard]] virtual EntityEditTarget* entityEdits() { return nullptr; }
 };
 
 /// The spot `distance` metres in front of feet `feet` facing `headingDegrees` (0 faces +y, counter-clockwise from

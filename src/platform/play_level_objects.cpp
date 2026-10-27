@@ -220,6 +220,11 @@ void PlayLevelMode::bindPickups(LevelPickups* pickups) {
     }
     // A weapon pile that ran out is no longer pickable.
     m_pickups->setSpent([this](double object) { return m_objects != nullptr && m_objects->props.pileSpent(object); });
+    // An object falling or thrown is in flight (its flag 0x4000000): the wreck's smash search skips it.
+    m_pickups->setAirborne([this](double object) {
+        const world_objects::LooseObject* loose = m_looseObjects.find(object);
+        return loose != nullptr && loose->airborne;
+    });
     // The classes' own message 0 from triangle: a cash register gives up its drawer and asks to be lifted.
     m_pickups->setNativeMessage([this](double object, double /*human*/) {
         const world_objects::SpawnRecord* record = m_records != nullptr ? m_records->find(object) : nullptr;

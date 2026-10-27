@@ -1,0 +1,39 @@
+version = 1
+id = "r-20261026-pause-stats-screen"
+date = "2026-10-26"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "88508588c485baaf7d5308489fc75a091ebba36fc2c6becc9691333a961a7ecf"
+
+[who]
+agent = "a426daf8c9d286bb5"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "street-end-run"
+patches = []
+
+[run]
+name = ""
+method = "From the street-end-run state (Rembrandt, normal difficulty): START, right, cross through the debug server's pad, 120 frames, then read the Stats screen's description widget (pause menu 0x0062e790 + 0x3bb0 + 0x1b70) and took a 640x480 screenshot; the bars' fill fractions were measured on the screenshot (fill end less bar start over bar width)."
+
+[values]
+desc_first_line = 0
+desc_last_line = 5
+desc_line_breaks = 4
+desc_word_wrap = 1
+desc_wrap_width = 0.55
+fill_strength = 0.34
+fill_stamina = 0.57
+fill_health = 0.35
+fill_rage = 0.52
+
+[addresses]
+pause_menu = 0x0062e790
+stats_description = 0x00633eb0

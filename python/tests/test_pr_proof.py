@@ -32,7 +32,7 @@ from pr_support import (
 from test_orig_compare import SOURCE, TWO_FUNCTIONS
 from test_orig_study import ADDRESS
 
-from coney_tools import build_record, orig_copy, orig_pairs, pr_diff, pr_proof, stamps
+from coney_tools import build_record, orig_copy, orig_pairs, orig_review, pr_diff, pr_proof, stamps
 from coney_tools import conventions as conventions_module
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions, parse_conventions
@@ -67,6 +67,48 @@ def test_a_docs_or_tooling_unit_passes_with_a_none_fails_first_and_no_build_reco
     assert texts(built.verify()) == []
     assert not (built.unit.dir / "build-runs").exists()
     assert built.subject().profile == shape
+
+
+def test_a_change_that_touches_no_source_file_reads_no_source(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Reading every `src/` file at two commits takes seconds; a guide or a tool cannot add an `@orig` function."""
+    built = make(tmp_path, shape="tooling")
+
+    def scan(*args: object) -> None:
+        raise AssertionError("the source was scanned")
+
+    monkeypatch.setattr(orig_review, "units_at", scan)
+    subject = built.subject()
+    assert subject.changed == () and subject.removed == () and texts(built.verify()) == []
+
+
+def test_a_change_to_a_header_or_a_deleted_source_file_is_scanned(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    assert [u.coney for u in built.subject().changed] == ["Widget::update"]
+    assert pr_proof.changed_functions(built.root, built.base, built.tip, ["src/ai/widget.h"])[0] != ()
+    assert pr_proof.changed_functions(built.root, built.base, built.tip, ["docs/guides/widget.md", "src/a.txt"]) == (
+        (),
+        (),
+        {},
+    )
+
+
+def test_the_stamp_log_alone_refuses_a_missing_or_failed_check_and_review(tmp_path: Path) -> None:
+    """`pr_proof.unsettled` is what Conclave asks before it reads git; it says what `verify` says."""
+    built = make(tmp_path, shape="tooling", skip=frozenset({"checked", "reviewed"}))
+    assert [r.text for r in pr_proof.unsettled(built.subject().report)] == [
+        "checked: no passing Check; run task check",
+        "reviewed: not reviewed",
+    ]
+    assert {r.text for r in pr_proof.unsettled(built.subject().report)} <= set(texts(built.verify()))
+    built.check("tooling", checks=[])
+    built.review(verdict="fail", blockers=1)
+    assert [r.text for r in pr_proof.unsettled(built.subject().report)] == [
+        "reviewed: Review failed (1 blocking finding, see the verdict)"
+    ]
+
+
+def test_a_unit_whose_stamps_all_pass_is_not_unsettled(tmp_path: Path) -> None:
+    assert pr_proof.unsettled(make(tmp_path, shape="tooling").subject().report) == []
 
 
 # --- step 1: the log ------------------------------------------------------------------------------------------------
@@ -372,6 +414,15 @@ def test_two_functions_of_one_address_are_accepted_when_each_was_compared(tmp_pa
     cite_twice(built)
     built.compare(key="Widget::reset()")  # the stamp for Widget::update came with the unit; this one is the second's
     assert texts(built.verify(), "compared") == []
+
+
+def test_a_subject_lists_every_function_citing_an_address_and_a_scan_adds_it(tmp_path: Path) -> None:
+    """`citing` tells a `compared` stamp's function from its sibling; `scan=False` leaves it out, like `changed`."""
+    built = make(tmp_path)
+    cite_twice(built)
+    assert built.subject().citing == {ADDRESS: ("Widget::update(int)", "Widget::reset()")}
+    unscanned = built.subject(scan=False)
+    assert unscanned.citing == {} and pr_proof.scanned(unscanned).citing == built.subject().citing
 
 
 def test_the_second_function_of_one_address_is_refused_until_it_is_compared_itself(tmp_path: Path) -> None:

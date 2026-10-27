@@ -198,6 +198,30 @@ std::vector<debug::WatchGroup> PlayLevelControls::describeIn(const PlayLevelMode
     return {};
 }
 
+human::Human* PlayLevelControls::humanOf(debug::EntityId id) const {
+    if (m_mode == nullptr) {
+        return nullptr;
+    }
+    if (id == kPlayerId) {
+        return &m_mode->m_player->human();
+    }
+    if (const auto index = aiIndexOf(id)) {
+        return m_mode->m_ai->humans()[*index].human.get();
+    }
+    return nullptr;
+}
+
+std::optional<std::size_t> PlayLevelControls::aiIndexOf(debug::EntityId id) const {
+    if (m_mode == nullptr || !m_mode->m_ai) {
+        return std::nullopt;
+    }
+    const auto index = indexIn(id, kAiBase);
+    if (!index || *index >= m_mode->m_ai->humans().size() || m_mode->m_ai->humans()[*index].removed) {
+        return std::nullopt;
+    }
+    return index;
+}
+
 bool PlayLevelControls::canFreezeEntity(debug::EntityId id) const {
     const PlayLevelMode& mode = *m_mode;
     if (id == kPlayerId) {

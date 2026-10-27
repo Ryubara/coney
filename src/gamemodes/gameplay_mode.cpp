@@ -657,6 +657,7 @@ void GameplayMode::loadLevel() {
             [this](double taker, double object, anim::Vec3 at) { sendTheftMessage(taker, object, at); });
         // The steal command's tactic fetches from the same objects, at the store fronts among the flags.
         m_items.emplace(m_flags, *m_pickups, *m_context.spawnRecords, *m_context.objectTypes);
+        m_items->setObjects(m_context.objects);
         if (m_scripted) {
             m_scripted->setItems(&*m_items);
         }
@@ -687,6 +688,7 @@ void GameplayMode::loadLevel() {
                                              .sound = m_context.sound,
                                              .objectHandles = [this] { return m_scripts.nextObjectHandle(); },
                                              .gameOver = &m_state.gameOver,
+                                             .padOptions = &m_state.saved.pads,
                                              .missionFailed =
                                                  [this](std::string_view title) {
                                                      if (m_context.host != nullptr) {

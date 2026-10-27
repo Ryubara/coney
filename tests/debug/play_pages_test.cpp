@@ -18,6 +18,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include "ai/fighter_side.h"
 #include "core/pad.h"
 #include "core/pads.h"
 #include "debug/debug_session.h"
@@ -87,18 +88,18 @@ class FakePlay final : public coney::debug::PlayControls {
         return {};
     }
 
-    // AI fighters: spawned ones are recorded with the model each was asked for ("" for the scene's own).
+    // AI fighters: spawned ones are recorded with the model and side each was asked for ("" for the scene's own).
     [[nodiscard]] bool canSpawnFighter() const override { return true; }
     std::expected<void, coney::Error> spawnFighter(coney::anim::Vec3 at, float facing) override {
-        return spawnFighterAs(at, facing, {});
+        return spawnFighterAs(at, facing, {}, coney::ai::FighterSide::Enemy);
     }
     [[nodiscard]] std::vector<std::string> fighterModels() const override { return models; }
-    std::expected<void, coney::Error> spawnFighterAs(coney::anim::Vec3 at, float facing,
-                                                     std::string_view model) override {
+    std::expected<void, coney::Error> spawnFighterAs(coney::anim::Vec3 at, float facing, std::string_view model,
+                                                     coney::ai::FighterSide side) override {
         if (fighterLimit && fighters.size() >= *fighterLimit) {
             return std::unexpected(coney::Error{coney::ErrorCode::InvalidArgument, "no room"});
         }
-        fighters.push_back(SpawnedFighter{at, facing, std::string(model)});
+        fighters.push_back(SpawnedFighter{at, facing, std::string(model), side});
         return {};
     }
     [[nodiscard]] std::size_t fighterCount() const override { return fighters.size(); }
@@ -126,6 +127,7 @@ class FakePlay final : public coney::debug::PlayControls {
         coney::anim::Vec3 feet;
         float heading;
         std::string model;
+        coney::ai::FighterSide side = coney::ai::FighterSide::Enemy;
     };
     std::vector<SpawnedFighter> fighters;
     std::vector<std::string> models;
@@ -177,6 +179,7 @@ TEST_CASE("the play pages say so when no player plays", "[debug]") {
                                              "HUD",
                                              "Debug draw",
                                              "Entity inspector",
+                                             "Entity editor",
                                              "Display",
                                              "Audio",
                                              "Network",
@@ -615,4 +618,72 @@ TEST_CASE("spawning more fighters than one click places each batch beyond the la
     CHECK(spots.size() == 120);
     CHECK(play.fighters[50].feet.y == Catch::Approx(4.0F + (10.0F * 1.2F)));
     CHECK(play.fighters.back().feet.y == Catch::Approx(4.0F + (23.0F * 1.2F)));
+}
+
+TEST_CASE("the AI fighters page spawns on the side picked, Enemy by default, allies behind the player",
+          "[debug][fighters]") {
+    // Expected: unverified, #924 (the page is Coney's own)
+    TunableRegistry tunables;
+    FakePlay play;
+    DebugSession session(tunables, servicesOver(&play), nullptr);
+    const auto page = session.model().openPage("AI fighters");
+    REQUIRE(page != nullptr);
+
+    // The picker lists the three sides, the player's enemies first and chosen.
+    const MenuItem& side = itemOn(*page, "Side");
+    REQUIRE(side.choices.size() == 3);
+    CHECK(side.choices[0] == "Enemy");
+    CHECK(side.choices[1] == "Ally");
+    CHECK(side.choices[2] == "Neutral");
+    CHECK(side.getChoice() == 0);
+    itemOn(*page, "Amount").setNumber(2.0);
+    itemOn(*page, "Spawn fighters").run();
+    REQUIRE(play.fighters.size() == 2);
+    for (const auto& fighter : play.fighters) {
+        CHECK(fighter.side == coney::ai::FighterSide::Enemy);
+        // Ahead of the player (heading 0 faces +y), facing him.
+        CHECK(fighter.feet.y == Catch::Approx(4.0F));
+        CHECK(fighter.heading == 180.0F);
+    }
+
+    // Set before Spawn fighters, each fighter takes the side chosen when it was made: allies stand 4 m behind him,
+    // facing the way he does, and a neutral stands ahead as an enemy does.
+    play.fighters.clear();
+    side.setChoice(1);
+    itemOn(*page, "Spawn fighters").run();
+    side.setChoice(2);
+    itemOn(*page, "Spawn fighters").run();
+    REQUIRE(play.fighters.size() == 4);
+    CHECK(play.fighters[0].side == coney::ai::FighterSide::Ally);
+    CHECK(play.fighters[1].side == coney::ai::FighterSide::Ally);
+    CHECK(play.fighters[0].feet.y == Catch::Approx(-4.0F));
+    CHECK(play.fighters[0].heading == 0.0F);
+    CHECK(play.fighters[2].side == coney::ai::FighterSide::Neutral);
+    CHECK(play.fighters[2].feet.y == Catch::Approx(4.0F));
+    CHECK(play.fighters[2].heading == 180.0F);
+
+    // Clear fighters still removes every one of them.
+    itemOn(*page, "Clear fighters").run();
+    CHECK(play.fighters.empty());
+}
+
+TEST_CASE("allies spawned beyond one click's worth stand behind the rows before, each on one spot",
+          "[debug][fighters]") {
+    // Expected: unverified, #924 (Coney's own placement)
+    FakePlay play;
+    coney::debug::SpawnRandom random(1);
+    const coney::debug::SpawnedFighters spawned =
+        coney::debug::spawnFighters(play, 0, 60, 4.0F, random, coney::ai::FighterSide::Ally);
+    CHECK(spawned.made == 60);
+    REQUIRE(play.fighters.size() == 60);
+    std::set<std::pair<float, float>> spots;
+    for (const auto& fighter : play.fighters) {
+        spots.emplace(fighter.feet.x, fighter.feet.y);
+        CHECK(fighter.side == coney::ai::FighterSide::Ally);
+        CHECK(fighter.heading == 0.0F);
+        CHECK(fighter.feet.y < 0.0F);
+    }
+    CHECK(spots.size() == 60);
+    // The second click's first row is beyond the ten of the first: 4 m, then ten rows of 1.2 m, behind him.
+    CHECK(play.fighters[50].feet.y == Catch::Approx(-(4.0F + (10.0F * 1.2F))));
 }

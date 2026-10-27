@@ -4,7 +4,7 @@
 [[function]]
 address = 0x0014caf8
 name = "AudioDevice_Start"
-page = "formats/audio.md#original-structure"
+page = "sound-device.md#per-voice"
 level = "confirmed-code"
 coney = "src/audio/sound_engine.cpp:SoundEngine::startVoice"
 status = "legacy"

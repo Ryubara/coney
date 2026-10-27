@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The pause menu, its Yes/No box, the mission-failed menu and the Armies game-over screen (docs/research/pause.md),
 // driven frame by frame with a synthetic pad and synthetic strings.
+// Each new case here failed first on the unit's stubbed source (coney-tools original fails-first).
 #include "gui/pause_menu/pause_menu.h"
 
+#include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <format>
@@ -13,11 +16,15 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/pad.h"
+#include "graphics/font.h"
+#include "graphics/overlay_camera.h"
+#include "graphics/sprite_batch.h"
 #include "gui/global_strings.h"
 #include "gui/pause_menu/armies_game_over_menu.h"
 #include "gui/pause_menu/mission_failed_menu.h"
 #include "gui/pause_menu/pause_items.h"
 #include "gui/pause_menu/yes_no_box.h"
+#include "support/font_fixtures.h"
 #include "warriors/game_state.h"
 
 using Catch::Approx;
@@ -116,6 +123,7 @@ struct Paused {
 
 TEST_CASE("pause items: the story grid is Objectives : Stats : Options / Controls : Restart : Resume : Quit",
           "[pause_menu]") {
+    // Expected: pause.md#the-items, confirmed (code)
     const coney::gui::PauseGridLayout story = coney::gui::pauseGrid(99);
     REQUIRE(story.items.size() == 7);
     CHECK(story.rows == std::vector<std::size_t>{3, 4});
@@ -140,6 +148,7 @@ TEST_CASE("pause items: the story grid is Objectives : Stats : Options / Control
 }
 
 TEST_CASE("pause items: the hangout is offered in the 15 listed story levels only", "[pause_menu]") {
+    // Expected: pause.md#the-items, confirmed (code)
     CHECK(coney::gui::offersHangout(34));
     CHECK(coney::gui::offersHangout(11));
     CHECK_FALSE(coney::gui::offersHangout(99));
@@ -149,37 +158,91 @@ TEST_CASE("pause items: the hangout is offered in the 15 listed story levels onl
     CHECK(coney::gui::isRumbleLevel(100));
 }
 
-TEST_CASE("pause menu: opening tints the world over 1.4 s and fades the cycling background in over 3 s",
+TEST_CASE("pause menu: opening tints the world over 1.4 s; the background is drawn at the menu's alpha",
           "[pause_menu]") {
+    // Expected: pause.md#opening-the-menu, confirmed (code)
     GlobalStrings strings = syntheticStrings();
     PauseMenu menu;
     menu.setStrings(&strings);
-    menu.open(PauseMenuSetup{.level = 99}, 1000);
+    menu.open(PauseMenuSetup{.level = 99, .missionTitle = "1:Coney", .levelName = "New Blood", .checkpoint = 2}, 1000);
     CHECK(menu.worldTint(1000) == Approx(0.0F));
     CHECK(menu.worldTint(1700) == Approx(0.5F));
     CHECK(menu.worldTint(3000) == Approx(1.0F));
 
-    // The first item selected, the title on the top header, the usage line.
+    // The first item selected, the mission's title on the top header, its label 0xe7 hidden.
     CHECK(menu.grid().selected() == 0);
     CHECK(menu.grid().items() == 7);
-    CHECK(menu.headers()[0].text() == "#e7");
+    CHECK(menu.topHeader().title().text() == "Coney");
+    CHECK(menu.topHeader().subtitle().text() == "New Blood");
+    CHECK(menu.topHeader().circles() == 2);
+    CHECK(menu.topHeader().letter(1).text() == "B");
+    CHECK(menu.topHeader().label().text() == "#e7");
+    CHECK_FALSE(menu.topHeader().label().visible());
+    CHECK_FALSE(menu.headers()[0].visible());
     CHECK(menu.alpha() == Approx(255.0F));
+    CHECK(menu.usage().text() == "#1a");
 
+    // The 3 s fade-in the update computes is replaced by the menu's alpha before every draw, so it never shows.
     menu.update(GuiFrame{1000 + 1500, nullptr});
-    CHECK(menu.background().colour().a == 127);
-    // The cycle runs red, green, blue in index order: at 5 s it has reached green, at 10 s blue.
-    menu.update(GuiFrame{1000 + 5000, nullptr});
-    CHECK(menu.background().colour().r == 50);
-    CHECK(menu.background().colour().g == 150);
-    CHECK(menu.background().colour().b == 50);
     CHECK(menu.background().colour().a == 255);
-    menu.update(GuiFrame{1000 + 10000, nullptr});
-    CHECK(menu.background().colour().r == 50);
-    CHECK(menu.background().colour().g == 50);
-    CHECK(menu.background().colour().b == 150);
+}
+
+TEST_CASE("pause menu: the background's colour steps on the first update past 5 s, each leg starting from 0",
+          "[pause_menu]") {
+    // Expected: pause.md#opening-the-menu, confirmed (code)
+    PauseMenu menu;
+    menu.open(PauseMenuSetup{.level = 99}, 1000);
+    const auto colour = [&menu](std::uint64_t now) {
+        menu.update(GuiFrame{now, nullptr});
+        const coney::graphics::Rgba c = menu.background().colour();
+        return std::array<int, 3>{c.r, c.g, c.b};
+    };
+    // Red to green over the first leg: at 5 s exactly it is still the first leg, at its end.
+    CHECK(colour(1000 + 2500) == std::array<int, 3>{100, 100, 50});
+    CHECK(colour(1000 + 5000) == std::array<int, 3>{50, 150, 50});
+    // The first update past 5 s moves on to green and restarts the leg's clock there.
+    CHECK(colour(1000 + 5001) == std::array<int, 3>{50, 150, 50});
+    CHECK(colour(1000 + 7501) == std::array<int, 3>{50, 100, 100});
+    CHECK(colour(1000 + 10001) == std::array<int, 3>{50, 50, 150});
+    // Without updates between, a late update steps only once, and its leg starts at 0.
+    CHECK(colour(1000 + 30000) == std::array<int, 3>{50, 50, 150});
+    CHECK(colour(1000 + 32500) == std::array<int, 3>{100, 50, 100});
+}
+
+TEST_CASE("pause menu: the fade out truncates the alpha, zeroes it a frame late, and holds from the last fading frame",
+          "[pause_menu]") {
+    // Expected: pause.md#leaving, confirmed (code)
+    PauseMenu menu;
+    menu.open(PauseMenuSetup{.level = 99}, 1000);
+    Pad pad;
+    const auto frame = [&](std::uint64_t now, std::uint16_t buttons = 0) {
+        pad.update(sample(buttons));
+        menu.update(GuiFrame{now, &pad});
+    };
+    // START at exactly 1.5 s after opening is too early; a millisecond later it closes.
+    frame(2500, coney::pad::kStart);
+    CHECK_FALSE(menu.closing());
+    frame(2501);
+    frame(2502, coney::pad::kStart);
+    REQUIRE(menu.closing());
+    frame(2502 + 750);
+    CHECK(menu.alpha() == 127.0F);
+    // The last frame inside the fade still has some alpha; the next one only zeroes it.
+    frame(2502 + 1350);
+    CHECK(menu.alpha() == 25.0F);
+    frame(2502 + 1600);
+    CHECK(menu.alpha() == 0.0F);
+    CHECK_FALSE(menu.closed());
+    // The hold counts from the last frame inside the fade, and must be passed.
+    frame(2502 + 1350 + 500);
+    CHECK_FALSE(menu.closed());
+    frame(2502 + 1350 + 501);
+    CHECK(menu.closed());
+    CHECK_FALSE(menu.closing());
 }
 
 TEST_CASE("pause menu: triangle resumes with a 1.5 s fade and a 0.5 s hold", "[pause_menu]") {
+    // Expected: pause.md#leaving, confirmed (code)
     Paused paused(99);
     paused.driver.tap(coney::pad::kTriangle);
     CHECK(paused.menu.closing());
@@ -196,6 +259,7 @@ TEST_CASE("pause menu: triangle resumes with a 1.5 s fade and a 0.5 s hold", "[p
 }
 
 TEST_CASE("pause menu: START closes only once 1.5 s have passed since opening", "[pause_menu]") {
+    // Expected: pause.md#leaving, confirmed (code)
     Paused paused(99);
     paused.driver.tap(coney::pad::kStart);
     CHECK_FALSE(paused.menu.closing());
@@ -205,6 +269,7 @@ TEST_CASE("pause menu: START closes only once 1.5 s have passed since opening", 
 }
 
 TEST_CASE("pause menu: Resume closes, and the grid moves left and right through the rows", "[pause_menu]") {
+    // Expected: pause.md#input, confirmed (code)
     Paused paused(99);
     paused.selectItem(PauseItem::Resume);
     paused.driver.tap(coney::pad::kCross);
@@ -213,6 +278,7 @@ TEST_CASE("pause menu: Resume closes, and the grid moves left and right through 
 }
 
 TEST_CASE("pause menu: Objectives shows the lists, None for an empty one, and up and down choose", "[pause_menu]") {
+    // Expected: pause.md#the-items-screens, confirmed (code)
     PauseMenuSetup setup;
     setup.objectives[0] = {"Reach the park", "Find Cleon"};
     Paused paused(99, setup);
@@ -224,26 +290,122 @@ TEST_CASE("pause menu: Objectives shows the lists, None for an empty one, and up
     paused.driver.tap(coney::pad::kDown);
     CHECK(paused.menu.selection() == 1);
     CHECK(paused.menu.screenLines() == std::vector<std::string>{"#109"});
-    // Up from the first refuses; triangle goes back to the grid.
+    // The overview gets no None: only the current and bonus lists are given one.
+    paused.driver.tap(coney::pad::kDown);
+    CHECK(paused.menu.selection() == 2);
+    CHECK(paused.menu.screenLines().empty());
+    paused.driver.tap(coney::pad::kDown);
+    CHECK(paused.menu.selection() == 2);
+    CHECK(paused.cues.back() == PauseMenu::kRefusedCue);
+    // Left and right are refused while a screen is open.
+    paused.cues.clear();
+    paused.driver.tap(coney::pad::kLeft);
+    CHECK(paused.cues == std::vector<int>{PauseMenu::kRefusedCue});
+    // Up from the first refuses; triangle goes back to the grid and its usage line.
+    paused.driver.tap(coney::pad::kUp);
     paused.driver.tap(coney::pad::kUp);
     paused.driver.tap(coney::pad::kUp);
     CHECK(paused.cues.back() == PauseMenu::kRefusedCue);
     paused.driver.tap(coney::pad::kTriangle);
     CHECK(paused.menu.screen() == PauseScreen::Grid);
+    CHECK(paused.menu.usage().text() == "#1a");
     CHECK_FALSE(paused.menu.closing());
+}
+
+TEST_CASE("pause menu: the header's circles take the level's colour, the last one red", "[pause_menu]") {
+    // Expected: pause.md#the-top-header, confirmed (code)
+    CHECK(coney::gui::pauseLevelColour(99) == coney::graphics::Rgba{186, 139, 53, 255});
+    CHECK(coney::gui::pauseLevelColour(92) == coney::graphics::Rgba{37, 100, 60, 255});
+    CHECK(coney::gui::pauseLevelColour(3) == coney::graphics::Rgba{38, 61, 94, 255});
+    // 80 and 83 are in the gold list too, but the brown one is tested first.
+    CHECK(coney::gui::pauseLevelColour(80) == coney::graphics::Rgba{76, 53, 44, 255});
+    CHECK(coney::gui::pauseLevelColour(95) == coney::graphics::kBlack);
+    // The lists are as long as their levels: nothing pads them.
+    CHECK(coney::gui::pauseLevelColour(-1) == coney::graphics::kBlack);
+    CHECK(coney::gui::pauseLevelColour(0) == coney::graphics::kBlack);
+
+    PauseMenuSetup setup;
+    setup.missionTitle = "1:Coney";
+    Paused paused(99, setup);
+    // The circles are coloured when the header is drawn.
+    paused.menu.render(coney::gui::GuiCanvas{});
+    CHECK(paused.menu.topHeader().circle(0).colour().r == 186);
+    CHECK(paused.menu.topHeader().circle(1).colour().r == 170);
+}
+
+TEST_CASE("pause menu: Stats opens the Warrior's screen, and triangle closes it", "[pause_menu]") {
+    // Expected: pause.md#stats-screen, confirmed (code)
+    PauseMenuSetup setup;
+    setup.stats = coney::gui::WarriorStats{.characterType = 30,
+                                           .damageScale = 150,
+                                           .powerMax = 400,
+                                           .staminaMax = 200,
+                                           .rageMax = 78,
+                                           .powerClassByte40 = 35};
+    Paused paused(99, setup);
+    paused.selectItem(PauseItem::Stats);
+    paused.driver.tap(coney::pad::kCross);
+    REQUIRE(paused.menu.screen() == PauseScreen::Stats);
+    CHECK(paused.menu.usage().text() == "#19");
+    CHECK(paused.menu.screenLines() == std::vector<std::string>{"#f3", "#f4", "#f5", "#f6", "#f0"});
+    paused.driver.tap(coney::pad::kDown);
+    CHECK(paused.cues.back() == PauseMenu::kRefusedCue);
+    paused.driver.tap(coney::pad::kTriangle);
+    CHECK(paused.menu.screen() == PauseScreen::Grid);
+    CHECK(paused.cues.back() == PauseMenu::kBackCue);
+    CHECK_FALSE(paused.menu.closing());
+}
+
+TEST_CASE("pause menu: the top header is drawn after the open Stats screen", "[pause_menu]") {
+    // Expected: pause.md#the-top-header, confirmed (code) at 0x001df700 (the screen, then the three headers)
+    PauseMenuSetup setup;
+    setup.missionTitle = "1:Coney";
+    setup.stats = coney::gui::WarriorStats{.characterType = 30,
+                                           .damageScale = 150,
+                                           .powerMax = 400,
+                                           .staminaMax = 200,
+                                           .rageMax = 78,
+                                           .powerClassByte40 = 35};
+    Paused paused(99, setup);
+    paused.selectItem(PauseItem::Stats);
+    paused.driver.tap(coney::pad::kCross);
+    REQUIRE(paused.menu.screen() == PauseScreen::Stats);
+    const coney::graphics::Font font = coney::test::testFont();
+    coney::graphics::SpriteBatch text(font.sheet(), 4096, 9000.0F);
+    paused.menu.render(coney::gui::GuiCanvas{.fonts = [&font](int /*slot*/) { return &font; },
+                                             .textBatch = [&text](int /*slot*/) { return &text; }});
+    // The header's title sits above GUI y 0.25, the Stats screen's texts below 0.35: the first text sprite drawn is
+    // the screen's, and a header sprite comes after it.
+    const float headerLine = coney::graphics::OverlayCamera::guiToOverlay(0.0F, 0.25F).y;
+    const float screenLine = coney::graphics::OverlayCamera::guiToOverlay(0.0F, 0.35F).y;
+    const bool down = screenLine < headerLine; // the overlay's y may run up
+    const auto inHeader = [&](const coney::graphics::Sprite& s) {
+        return down ? s.position.y > headerLine : s.position.y < headerLine;
+    };
+    const auto inScreen = [&](const coney::graphics::Sprite& s) {
+        return down ? s.position.y < screenLine : s.position.y > screenLine;
+    };
+    const std::vector<coney::graphics::Sprite>& sprites = text.sprites();
+    REQUIRE_FALSE(sprites.empty());
+    CHECK(inScreen(sprites.front()));
+    const auto firstScreen = std::ranges::find_if(sprites, inScreen);
+    CHECK(std::ranges::find_if(firstScreen, sprites.end(), inHeader) != sprites.end());
 }
 
 TEST_CASE("pause menu: Stats opens nothing without stats; Options opens its list, Controls its screen",
           "[pause_menu]") {
+    // Expected: pause.md#the-items-screens, confirmed (code)
     Paused paused(99);
     paused.selectItem(PauseItem::Stats);
     paused.driver.tap(coney::pad::kCross);
     CHECK(paused.menu.screen() == PauseScreen::Grid);
+    // The usage line is still set to the Stats screen's, and the grid keeps the commands.
+    CHECK(paused.menu.usage().text() == "#19");
     paused.selectItem(PauseItem::Options);
     paused.driver.tap(coney::pad::kCross);
     CHECK(paused.menu.screen() == PauseScreen::Options);
     CHECK(paused.menu.headers()[0].text() == "#116");
-    CHECK(paused.menu.screenLines().size() == PauseMenu::kOptionsEntries.size());
+    CHECK(paused.menu.screenLines().size() == coney::gui::kOptionPages);
     paused.driver.tap(coney::pad::kTriangle);
     paused.selectItem(PauseItem::Controls);
     paused.driver.tap(coney::pad::kCross);
@@ -258,16 +420,24 @@ TEST_CASE("pause menu: Stats opens nothing without stats; Options opens its list
 TEST_CASE("pause menu: Controls takes the d-pad and cross: down to Tutorial, cross opens it, triangle twice resumes "
           "the grid",
           "[pause_menu][controls]") {
+    // Expected: pause.md#controls-layout, confirmed (code)
     Paused paused(99);
     paused.selectItem(PauseItem::Controls);
     paused.driver.tap(coney::pad::kCross);
     REQUIRE(paused.menu.screen() == PauseScreen::Controls);
+    CHECK(paused.menu.usage().text() == "#1a");
+    paused.driver.tap(coney::pad::kCross);
+    REQUIRE(paused.menu.controls().page() == coney::gui::ControlPage::Controller);
+    CHECK(paused.menu.usage().text() == "#1e");
+    paused.driver.tap(coney::pad::kTriangle);
     paused.driver.tap(coney::pad::kDown);
     CHECK(paused.menu.controls().selected() == 1);
     paused.driver.tap(coney::pad::kCross);
     CHECK(paused.menu.controls().page() == coney::gui::ControlPage::Tutorial);
+    CHECK(paused.menu.usage().text() == "#19");
     paused.driver.tap(coney::pad::kTriangle);
     CHECK(paused.menu.controls().page() == coney::gui::ControlPage::None);
+    CHECK(paused.menu.usage().text() == "#1a");
     CHECK(paused.menu.screen() == PauseScreen::Controls);
     paused.driver.tap(coney::pad::kTriangle);
     CHECK(paused.menu.screen() == PauseScreen::Grid);
@@ -275,6 +445,7 @@ TEST_CASE("pause menu: Controls takes the d-pad and cross: down to Tutorial, cro
 }
 
 TEST_CASE("pause menu: Restart Last Check Point is selected first and asks 0x103, No selected", "[pause_menu]") {
+    // Expected: pause.md#the-items-screens, confirmed (code)
     Paused paused(99);
     paused.selectItem(PauseItem::Restart);
     paused.driver.tap(coney::pad::kCross);
@@ -302,6 +473,7 @@ TEST_CASE("pause menu: Restart Last Check Point is selected first and asks 0x103
 }
 
 TEST_CASE("pause menu: Quit asks at once in level99 and offers the hangout first where it is open", "[pause_menu]") {
+    // Expected: pause.md#the-items-screens, confirmed (code)
     Paused story(99);
     story.selectItem(PauseItem::Quit);
     story.driver.tap(coney::pad::kCross);
@@ -324,10 +496,15 @@ TEST_CASE("pause menu: Quit asks at once in level99 and offers the hangout first
 
 TEST_CASE("pause menu: in a Rumble level Replay asks 0x105 at once and Objectives starts on the overview",
           "[pause_menu]") {
+    // Expected: pause.md#the-items-screens, confirmed (code)
     Paused rumble(102);
     rumble.driver.tap(coney::pad::kCross);
     CHECK(rumble.menu.screen() == PauseScreen::Objectives);
     CHECK(rumble.menu.selection() == 2);
+    // A Rumble level's objectives stay on the overview: up and down are refused.
+    rumble.driver.tap(coney::pad::kUp);
+    CHECK(rumble.menu.selection() == 2);
+    CHECK(rumble.cues.back() == PauseMenu::kRefusedCue);
     rumble.driver.tap(coney::pad::kTriangle);
     rumble.selectItem(PauseItem::Restart);
     rumble.driver.tap(coney::pad::kCross);
@@ -336,6 +513,7 @@ TEST_CASE("pause menu: in a Rumble level Replay asks 0x105 at once and Objective
 }
 
 TEST_CASE("yes/no box: up and down are refused, left and right swap, back answers Back", "[pause_menu]") {
+    // Expected: pause.md#the-items-screens, confirmed (code)
     YesNoBox box;
     std::vector<int> cues;
     box.setSoundSink([&cues](int cue) { cues.push_back(cue); });
@@ -350,6 +528,7 @@ TEST_CASE("yes/no box: up and down are refused, left and right swap, back answer
 }
 
 TEST_CASE("mission failed: the reason, rows of 1 and 2, and the title by language", "[pause_menu]") {
+    // Expected: pause.md#the-mission-failed-screen, confirmed (code)
     GlobalStrings strings = syntheticStrings();
     MissionFailedMenu menu;
     menu.setStrings(&strings);
@@ -377,6 +556,7 @@ TEST_CASE("mission failed: the reason, rows of 1 and 2, and the title by languag
 }
 
 TEST_CASE("mission failed: Last checkpoint ends at once; Quit asks first", "[pause_menu]") {
+    // Expected: pause.md#the-mission-failed-screen, confirmed (code)
     GlobalStrings strings = syntheticStrings();
     MissionFailedMenu menu;
     menu.setStrings(&strings);
@@ -404,6 +584,7 @@ TEST_CASE("mission failed: Last checkpoint ends at once; Quit asks first", "[pau
 
 TEST_CASE("pause menu: the Controls screen takes its layout from the language and video mode the menu opens with",
           "[pause_menu][controls]") {
+    // Expected: pause.md#controls-layout, confirmed (code)
     PauseMenuSetup setup;
     setup.language = coney::Language::French;
     setup.widescreen = true;
@@ -483,4 +664,34 @@ TEST_CASE("Armies game over: the end phase takes input only once faded in", "[pa
     driver.tap(coney::pad::kRight);
     driver.tap(coney::pad::kCross);
     CHECK(menu.choice() == ArmiesGameOverChoice::Quit);
+}
+
+TEST_CASE("pause menu: Options takes the pad: cross opens Camera, left turns Invert P1 on and the game is told, "
+          "triangle twice returns to the grid",
+          "[pause_menu][options]") {
+    // Expected: pause.md#options, confirmed (code)
+    PauseMenuSetup setup;
+    setup.options.invertCamera = {false, false};
+    std::vector<coney::gui::OptionValues> applied;
+    Paused paused(99, setup);
+    coney::gui::OptionMenu::Hooks hooks;
+    hooks.apply = [&applied](const coney::gui::OptionValues& values) { applied.push_back(values); };
+    paused.menu.setOptionHooks(hooks);
+    paused.selectItem(PauseItem::Options);
+    paused.driver.tap(coney::pad::kCross);
+    REQUIRE(paused.menu.screen() == PauseScreen::Options);
+    paused.driver.tap(coney::pad::kDown);
+    CHECK(paused.menu.options().selectedTitle() == 1);
+    paused.driver.tap(coney::pad::kCross);
+    REQUIRE(paused.menu.options().pageOpen());
+    paused.driver.tap(coney::pad::kLeft);
+    REQUIRE(applied.size() == 1);
+    CHECK(applied.back().invertCamera[0]);
+    // Cross keeps it and closes the page; triangle leaves Options for the grid.
+    paused.driver.tap(coney::pad::kCross);
+    CHECK_FALSE(paused.menu.options().pageOpen());
+    CHECK(paused.menu.options().values().invertCamera[0]);
+    paused.driver.tap(coney::pad::kTriangle);
+    CHECK(paused.menu.screen() == PauseScreen::Grid);
+    CHECK_FALSE(paused.menu.closing());
 }

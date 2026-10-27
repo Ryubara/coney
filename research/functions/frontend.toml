@@ -1026,6 +1026,159 @@ coney = "src/gui/profile_management_gui/pm_new_game_screens.h:PmSubtitles::accep
 status = "legacy"
 
 [[function]]
+address = 0x00214f58
+name = "GameStats_FormatTime"
+page = "game-stats.md#time-format"
+role = "minutes, hours and minutes, or days, hours and minutes, with the singular or plural word (strings `0x67`-`0x6c`); without days the days count as hours"
+level = "confirmed-code"
+coney = "src/gui/game_stats.h:formatPlayTime"
+status = "compared"
+
+[[function]]
+address = 0x00215150
+name = "GameStats_BuildSummary"
+page = "game-stats.md#summary-text"
+role = "the summary text (`+0x90`)"
+level = "confirmed-code"
+coney = "src/gui/game_stats.h:gameStatsSummary"
+status = "compared"
+
+[[function]]
+address = 0x00215490
+name = "GameStats_PickThumbBatch"
+page = "game-stats.md#block"
+role = "the batch of a level's picture: `+0x74` for levels 95, 60 and 101, `+0x70` for 2, 3, 5, 9, 11, 20, 31, 34, 51, 52, 54 and 55, `+0x6c` for the rest"
+level = "confirmed-code"
+coney = "src/gui/game_stats.h:thumbBatchOf"
+status = "compared"
+
+[[function]]
+address = 0x002155a8
+name = "GameStats_BuildMissionList"
+page = "game-stats.md#list"
+role = "the `ScrollingMenu` (`+0x88`) of headers and sub-items"
+level = "confirmed-code"
+coney = "src/gui/game_stats.h:GameStatsScreen::open"
+status = "compared"
+
+[[function]]
+address = 0x00215ca0
+name = "GameStats_IsLevelListed"
+page = "game-stats.md#list"
+role = "the level records to list (byte `+0x0c` set, level not 61-65 and not 102-137), appended to the vector `+0x60` and sorted (`0x004ed068`, `0x004ed388`)"
+level = "confirmed-code"
+coney = "src/gui/game_stats.h:isGameStatsListed"
+status = "compared"
+
+[[function]]
+address = 0x00215ce8
+name = "GameStats_AddLevel"
+page = "game-stats.md#list"
+role = "the level records to list (byte `+0x0c` set, level not 61-65 and not 102-137), appended to the vector `+0x60` and sorted (`0x004ed068`, `0x004ed388`)"
+level = "confirmed-code"
+coney = "src/gui/game_stats.h:gatherGameStats"
+status = "compared"
+
+[[function]]
+address = 0x00215da0
+name = "GameStats_CollectLevels"
+page = "game-stats.md#list"
+role = "the level records to list (byte `+0x0c` set, level not 61-65 and not 102-137), appended to the vector `+0x60` and sorted (`0x004ed068`, `0x004ed388`)"
+level = "confirmed-code"
+coney = "src/gui/game_stats.h:gatherGameStats"
+status = "compared"
+
+[[function]]
+address = 0x00215e78
+name = "GameStats_Init"
+page = "game-stats.md#parts"
+role = "from mode `0x13`'s `Enter` (`0x00159538`, code Ghidra has not made a function): everything below"
+level = "confirmed-code"
+coney = "src/gui/game_stats.h:GameStatsScreen::open"
+status = "compared"
+
+[[function]]
+address = 0x002166d0
+name = "GameStats_Shutdown"
+page = "game-stats.md#parts"
+role = "slot `+0x68`: frees every part and the five batches; slot `+0x88`: created, batches `+0x64`, `+0x6c`, `+0x70`, `+0x74` resident and the menu ready"
+level = "confirmed-code"
+coney = "src/gui/game_stats.h:GameStatsScreen::close"
+status = "compared"
+
+[[function]]
+address = 0x002169a8
+name = "GameStats_OnCommand"
+page = "game-stats.md#mode"
+role = "back (5) closes the screen (`0x00159520(1)`); accept (4) is taken and does nothing"
+level = "confirmed-code"
+coney = "src/gui/game_stats.h:GameStatsScreen::handle"
+status = "compared"
+
+[[function]]
+address = 0x002169e0
+name = "GameStats_UpdateMenu"
+page = "game-stats.md#list"
+role = "the menu updated and placed; slot `+0x30`: the background's colour, then every part; slot `+0x38`: background, summary, menu, usage text"
+level = "confirmed-code"
+coney = "src/gui/game_stats.h:GameStatsScreen::update"
+status = "compared"
+
+[[function]]
+address = 0x00216a60
+name = "GameStats_Update"
+page = "game-stats.md#background"
+role = "the menu updated and placed; slot `+0x30`: the background's colour, then every part; slot `+0x38`: background, summary, menu, usage text"
+level = "confirmed-code"
+coney = "src/gui/game_stats.h:GameStatsScreen::update"
+status = "compared"
+
+[[function]]
+address = 0x00216d48
+name = "GameStats_Render"
+page = "game-stats.md#parts"
+role = "the menu updated and placed; slot `+0x30`: the background's colour, then every part; slot `+0x38`: background, summary, menu, usage text"
+level = "confirmed-code"
+coney = "src/gui/game_stats.h:GameStatsScreen::render"
+status = "compared"
+
+[[function]]
+address = 0x00216eb0
+name = "GameStatsSubItem_BuildText"
+page = "game-stats.md#block"
+role = "the block's text (`+0x70`) ([A mission's block](game-stats.md#block))"
+level = "confirmed-code"
+coney = "src/gui/game_stats.h:gameStatsSubItemText"
+status = "compared"
+
+[[function]]
+address = 0x00217350
+name = "GameStatsSubItem_Setup"
+page = "game-stats.md#block"
+role = "the level (`+0x74`), the text, the picture (`+0x68`, sprite `word` in `batch`) and a `ScrollingTextWidget` (`+0x6c`) at (0.05, 0.1) adjusted to the screen; its x moved by `width`"
+level = "confirmed-code"
+coney = "src/gui/game_stats.h:GameStatsSubItem::setup"
+status = "compared"
+
+[[function]]
+address = 0x00217730
+name = "GameStatsSubItem_GetScaledRect"
+page = "game-stats.md#block"
+role = "slot `+0x70`: the block's rectangle (`+0x30`: the text's width + the column width `+0x60`) with its height × the reveal"
+level = "confirmed-code"
+coney = "src/gui/game_stats.h:GameStatsSubItem::height"
+status = "compared"
+
+[[function]]
+address = 0x00217788
+name = "GameStatsSubItem_Layout"
+page = "game-stats.md#block"
+role = "slot `+0x30`: y moved to the shown block's middle; the picture centred on the block's position (the column `+0x60` wide, the shown height, texture cut by the reveal), the text at the block's left edge + `+0x60` + 0.02, half a size-1.0 line below its top, with the same reveal"
+level = "confirmed-code"
+coney = "src/gui/game_stats.h:GameStatsSubItem::moveTo"
+status = "compared"
+
+[[function]]
 address = 0x0041b0f0
 name = "Script_SetMultiplayerCallback"
 page = "frontend.md#warriors-functions"
@@ -1095,3 +1248,21 @@ page = "frontend.md#the-level-table"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/warriors/level_table.h:LevelTable::set"
 status = "legacy"
+
+[[function]]
+address = 0x0041f298
+name = "LevelRecord_GetAreaColour"
+page = "game-stats.md#list"
+role = "the circles' colour for the record's area byte `+0x7c`, alpha 255: 1 (132, 78, 37), 2 (62, 98, 41), 3 (42, 71, 141), 4 (74, 49, 29); any other byte leaves the colour unwritten; used by the mission-select screen and the statistics list"
+level = "confirmed-code"
+coney = "src/gui/game_stats.h:areaColour"
+status = "compared"
+
+[[function]]
+address = 0x00424298
+name = "Unlockables_GetLevelTargets"
+page = "game-stats.md#counts"
+role = "counts a level's targets for the mission screens: the highest item of its group-0 records × 1000 (the score target), type-4 and type-2 records (total and unlocked) and group-1 distinct items (total and unlocked); level 60 stands for all Armies levels 60-64 and 101 for 101-137"
+level = "confirmed-code"
+coney = "src/warriors/unlock_records.h:UnlockRecords::levelTargets"
+status = "compared"

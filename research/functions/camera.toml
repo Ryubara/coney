@@ -485,7 +485,7 @@ page = "camera.md#fn-follow"
 role = "Auto-follow gate: picks the default (`0x0012a400`) or auto-centre (`0x00129f88`) rule. [heading](camera.md#heading)."
 level = "confirmed-code"
 coney = "src/camera/follow_camera.h:FollowCamera::autoFollow"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00129f88

@@ -61,6 +61,11 @@ void addShapeDrawItems(MenuPage& page, DebugDrawOptions& draw);
 /// The Entity inspector page: select a human or object (nearest, next, previous, looked at, from a list), highlight
 /// it, and watch everything the mode knows of it in groups. Over PlayControls::inspect(); says so without one.
 void addEntityInspectorPage(DebugSession& session);
+/// The Entity editor page (src/debug/pages_entity_edit.cpp): edits the Entity inspector's selection, a human or an
+/// object, in groups (Transform, Meters, Stats, Control, Lifecycle), each edit queued and applied between two steps and
+/// written to the run log, each number with a reset to its configured value. Over PlayControls::entityEdits(); says so
+/// without one.
+void addEntityEditorPage(DebugSession& session);
 /// The corner line naming the Entity inspector's selection while it is highlighted ("Inspecting: ..."); empty when
 /// there is none.
 [[nodiscard]] std::string inspectedCornerLine(const DebugSession& session);

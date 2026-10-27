@@ -84,6 +84,13 @@ skeleton = 9
 verified = 1
 evidence = 2
 
+["docs/research/armies.md"]
+front-matter = 1
+skeleton = 6
+verified = 1
+evidence = 2
+history = 2
+
 ["docs/research/boot.md"]
 front-matter = 1
 verified = 1
@@ -290,7 +297,7 @@ front-matter = 1
 skeleton = 3
 verified = 1
 evidence = 15
-address-resolve = 2
+address-resolve = 3
 copied = 1
 history = 7
 
@@ -407,13 +414,6 @@ evidence = 16
 decompile = 1
 history = 2
 
-["docs/research/pause.md"]
-front-matter = 1
-skeleton = 1
-verified = 1
-evidence = 55
-history = 3
-
 ["docs/research/physics-bodies.md"]
 front-matter = 1
 skeleton = 14
@@ -483,14 +483,6 @@ evidence = 22
 address-form = 1
 history = 5
 
-["docs/research/save.md"]
-front-matter = 1
-skeleton = 2
-verified = 1
-evidence = 15
-history = 1
-stale-wording = 2
-
 ["docs/research/scenes.md"]
 front-matter = 1
 skeleton = 1
@@ -504,7 +496,7 @@ skeleton = 7
 verified = 1
 evidence = 310
 address-form = 1
-address-resolve = 2
+address-resolve = 145
 history = 1
 length = 836
 
@@ -523,16 +515,6 @@ skeleton = 11
 verified = 1
 evidence = 30
 history = 4
-
-["docs/research/sound.md"]
-front-matter = 1
-skeleton = 1
-verified = 1
-evidence = 55
-address-resolve = 1
-history = 4
-length = 146
-stale-wording = 2
 
 ["docs/research/stealth.md"]
 front-matter = 1

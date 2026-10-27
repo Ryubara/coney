@@ -139,11 +139,12 @@ The Display page's *Debug UI scale* overrides the choice: *Auto* (the rule above
 | Player | where the player is and how it moves (plotted), his character type and a change of it, freezing him, the [noclip](#noclip) and its hotkey, teleports |
 | Camera | the follow camera's eye, target and distance (plotted), a reset behind the player, the free camera, its values |
 | Spawner | objects put in front of the player in a sandbox or a level: a crate, a fence, a wall, a ramp, stairs, a pillar, a ball |
-| AI fighters | AI humans that fight the player: a model picker (every human model, or Random) and an amount, spawn them in front of him, the engaging toggle, their state, clear them |
+| AI fighters | AI humans on a side of the player's: a side (enemy, ally or neutral), a model picker (every human model, or Random) and an amount, spawn them in front of him (allies behind him), the engaging toggle, their state, clear them |
 | Animation player | every clip the player's anim sets can play, by set and category with its length, played on him once or looping at a speed, then his own animation back ([below](#animation-player)) |
 | HUD | the [in-game HUD](../research/hud.md)'s parts on and off, player 1's rage, score, money and items set (-1 gives the value back), an objective, a hint and an announcement fired |
 | Debug draw | lines in the scene: collision near the player (plain or by wall class), the player's heading and velocity, the camera, places, every human's collision shapes, strike shapes and contacts |
 | Entity inspector | pick a human or object (nearest, next, looked at, from a list), mark it in the scene and watch everything Coney knows of it |
+| Entity editor | change the inspector's selection: move, turn, drop, meters, scale, speed, animation rate, freeze, kill, delete; each edit queued, applied between steps and written to the run log ([below](#entity-editor)) |
 | Display | the frame-stats line, the FPS counter, the frame cap and vsync (live), the player's coordinates, the GUI safe area, the logical screen, the [overlay's size](#ui-scale) |
 | Audio | the output device, the master and bus volumes, a looping test tone, the voices playing (plotted) |
 | Network | [network play](multiplayer.md): status, player name, port, address, Host, Join, Disconnect, the ping (plotted), loss, bytes and packets, the players, a Simulate network submenu (latency, jitter, loss, duplicates, reordering), the log |
@@ -257,8 +258,8 @@ pad. *Reset behind player* puts the follow camera behind the player as the scrip
 the scripts set on it; the Follow camera tunables for the leash, pitch and look-at height apply to the next follow
 camera made (a level start). The free camera flies with pad 1 as the world viewer's
 does, while the player stands still and the scenery streams round the free camera. *AI fighters* spawns fighters
-([Sandbox](sandbox.md#ai-fighters)) the chosen distance in front of the player, facing him, in a sandbox or a level;
-*Engaging* off keeps idle fighters from taking him on.
+([Sandbox](sandbox.md#ai-fighters)) the chosen distance in front of the player, facing him, in a sandbox or a level
+(allies behind him, as *Side* says below); *Engaging* off keeps idle enemy fighters from taking him on.
 
 *Spawn fighters* makes *Amount* of them (1 to 50) in one click, in rows of five centred in front of the player, each
 row 1.2 m further out. *Model* picks what they look and move as: any human model the scene's character types name (the
@@ -275,6 +276,36 @@ afterwards (and the run log's `human N` names) differ from a run without the spa
 first time it is used and kept, so a first click with many models stalls briefly. Without a list (a sandbox without a
 disc) only *Random* is offered and every fighter is the scene's own character. A fighter keeps its model when *Change
 character* makes the fighters again.
+
+*Side*, set before *Spawn fighters*, picks whose fighters the click makes; each fighter keeps the side it was made on
+(also through *Change character*). The side is the fighter's **gang**, made through the game's own gang calls, so the
+AI, the enemy scans and the strike tests treat it as they treat any gang member: friends are the same gang or kind
+(`Gang_AreFriends` `0x00168f58`), enemies are the bits of the enemy mask (`Gang_IsEnemyOf` `0x00168fe0`), and a human
+with no gang is no one's friend ([Gangs](../research/ai-gangs.md#gang-record),
+[friend and enemy](../research/ai-reimpl.md#gang-is-enemy-of)).
+
+| Side | Its gang | Behaviour |
+| --- | --- | --- |
+| **Enemy** (the default) | `Fighters`, kind 19 (the sandbox's combat gangs' kind), an enemy of the player's gang and of every ally gang | What the page always made: it attacks him, his crew and his allies on sight (the gang soldier's think pushes the fight once its scan lists an enemy), and with *Engaging* on takes him on when he is in its melee range |
+| **Ally** | `Allies`, of the kind of the player's gang (the Warriors' kind 0 in the levels), a friend of his gang, with his gang's enemies and friends copied at every spawn | His friend: the player's hits, his lock-on and his strike tests skip it (the step's opposition test is `Gang_AreFriends`), and his crew's hits skip it too; it lists and fights every gang he has as an enemy, the enemy fighters among them, and the enemy fighters fight it. With the default *Distance ahead* it stands 4 m behind him, facing the way he does, and *Engaging* never sends it at him. It holds its place and fights what comes into its sight: it does not follow him |
+| **Neutral** | `Neutrals`, kind 3 (rumble's first side), with no enemy or friend bit | Nobody's friend and nobody's enemy: no scan lists it and it lists no one, so it stands and takes hits. Hit, it answers as any gang soldier hit by a stranger: the two gangs become enemies (`Brain_MakeGangsEnemies`) and it fights back, and from the next spawn the allies fight it too, since they copy the player's enemies |
+
+An ally is in a gang of its own that is the player's camp, not in his gang itself: a gang holds at most 10 brains and
+Coney's `Gangs::addMember()` drops the first of a full gang (a Coney choice; the original adds the member anyway,
+[Coney choices](../research/ai.md#coney)), so allies added to his own would push his crew out, and his crew's follow
+tactic would give them goals; a gang of his gang's kind is his friend by the original's own kind rule and takes his
+gang's enemy and friend masks. A side's gang that is full (10 members) is left for a new one of the same side
+(`Allies2`, `Allies3`), and at each spawn every live gang of the side, the full ones too, is brought in line with the
+player's gang again. A fighter that is cleared leaves its gang, and the room is used again; the gangs themselves stay
+until the level ends, so a session of hundreds of fighters takes gang slots (32 in all) that a level script's
+`GangCreate` may then lack. With every slot taken a fighter is made with no gang, which makes it nobody's friend, and a
+line in the log says so. Following the player, as his crew does under the Warrior follow tactic
+([The default command: follow](../research/ai-gangs.md#warrior-follow)), is not built for allies: they hold their place
+and fight, until the crew's follow goals are right (issue #677). The *State* line names each fighter's gang. The
+sides are Coney's own debug tool (`@coney-only`); the gangs and their tests are the original's. A disc test
+(`tests/platform/disc_debug_ai_sides_test.cpp`) spawns four allies and four enemies through the page in `level80`,
+checkpoint 2, and watches twenty seconds: they fight each other, and no ally or enemy takes its own side, the player or
+his crew. Another changes the player's character with a fighter of each side and checks that each keeps its side.
 
 *Clear fighters* removes only the fighters *Spawn fighters* made, through the game's own removal of a human (a level
 script's `HuDelete`): never the player, the human the pad drives after a hand-over, his crew, a level script's human or
@@ -390,8 +421,83 @@ Identity, Transform, Animation, Meters and Combat. An object (`src/debug/object_
 and **Object**: a door's class, state, angle, hitpoints and triangles; a pane's size, broken and alarm; a world
 object's spawn-record state, flags, zone, tint and money.
 
-The inspector only reads, but for *Freeze selection*: choosing, highlighting and watching change nothing in the game,
-and the selection is a number in the Debug draw options, so a test-mode run plays the same with it on.
+The inspector only reads, but for *Freeze selection* (a selection is changed in the [Entity editor](#entity-editor)):
+choosing, highlighting and watching change nothing in the game, and the selection is a number in the Debug draw
+options, so a test-mode run plays the same with it on.
+
+### Entity editor {#entity-editor}
+
+The **Entity editor** page changes what the [Entity inspector](#entity-inspector) has selected: pick a human or object
+there, then edit it here. It needs the same play mode and says so without one. It is Coney's own debug tooling (the
+original has nothing like it): it changes nothing until an edit is made.
+
+**Edits are queued, never written mid-step.** As the [tunables](#tunables) are, an edit is a command (`EntityCommand`,
+`src/debug/entity_edit.h`) that the page puts in a queue (`EntityEditor`); the input gate applies the queue between two
+simulation steps, so a step sees the same state from start to end, and a paused game takes the edit at the next frame.
+The item shows the queued value at once. **Each edit is a line of the [run log](run-log.md)**, stamped with its step:
+
+```text
+[step 4518 | 02:30.6 | info cp2] engine: entity edit: applied 131075 health 40
+[step 4518 | 02:30.6 | info cp2] engine: entity edit: refused 1 delete: player 1 cannot be deleted yet: ...
+```
+
+The line is `<entity id> <op> <numbers>`, the numbers as the shortest text that reads back exactly, so a bug report replays
+what was done: `appliedEdits()` reads the `applied` lines of a log back into commands (a unit test replays a recorded
+run into a fresh world and gets the same state). A refused edit says why and changes nothing. In a **network session
+only the host applies edits**; a client's are refused with a line. Edits are never saved: they live in the running game
+(nothing here writes a save, the overrides file or `coney.local.toml`).
+
+| Group | Items (the op each queues) |
+| --- | --- |
+| Transform | X, Y, Z (a `teleport` with that axis changed; the ground below is found when it lands), Heading (`heading`, degrees), Drop to ground (`drop-to-ground`), Move to camera (a `teleport` to the point the camera looks at) |
+| Meters | Health (1 to 100 %), Stamina, Power, Rage (0 to 100 % of each maximum), Invincible (human flag god, `0x10`), Kill (`kill`: the health to 0, which the human's own update turns into a death) |
+| Stats | Scale (`scale`: the body, its collision unless the switch below is off, and the drawn mesh), Scale collision with mesh (`scale-collision`, on at first), Animation rate (`anim-rate`: how fast every clip plays; 0 holds them), Speed scale (`speed-scale`: a multiplier on every gait speed of this human; the combat walk is the Combat page's) |
+| Control | Frozen (`frozen`: the inspector's *Freeze selection*) |
+| Lifecycle | Delete (`delete`) |
+
+Beside the groups: *Selected*, *Queued* (the edits waiting), *Reset selection* and the last lines of the log. **Every
+number has a reset** (the front ends' reset button returns a number to its default) **to the value the entity was
+configured with**, not to a global one: a human made at scale 0.97 resets to 0.97, health and stamina to 100 %, rage to
+0, the speed scale and animation rate to 1. A reset is an ordinary queued edit, so it is in the log and replays.
+*Reset selection* queues every field that has such a value. A position, a heading, a kill and a delete have none.
+
+**Who can be edited.** Player 1 and the AI humans (a level's cast, fighters the AI fighters page spawned, a sandbox
+layout's fighters) take every edit. A sandbox target takes *Frozen* only, and an object nothing yet: the log says so.
+(`src/platform/play_level_edit.cpp`.)
+
+**Scale.** *Scale* sets the human's body scale (`Human::setScale()`) and draws the mesh that much bigger than it was
+made (about the feet; the hat, the held weapon and a carried prop are posed unscaled). By default the collision follows:
+the walking and air spheres, the upright capsule and the strike shapes are sized by `Human::collisionScale()`,
+which is the body scale, so a giant collides and fights at its drawn size. With *Scale collision with mesh* off the
+collision keeps the scale the human was made with (`Human::configuredScale()`) whatever the body scale is. The capsule
+other humans' strikes test (`Human::struckCapsule()`, a port of `PhysicsCapsule_Pose`) follows the body scale either
+way until it is compared with the original again; that is still open on #723.
+Extreme scales are allowed and may misbehave (a human the size of the map falls through or jams in
+things); a test steps humans from 0.05 to 60 times with the collision either way and checks that nothing goes
+non-finite and that a bystander does not move.
+
+**Delete.** A level script's human is taken out the way the script's own `HuDelete` takes it: its handle is unbound, its
+gang and formation let go, then the world removes it at the end of the next step, so the scripts that hold its handle
+find nothing and do not crash (the failure #718 showed for a raw removal). A debug fighter or a layout's fighter goes
+through the world's removal alone. **Player 1 is refused with a reason**, as is the human the pad drives, until the
+game's "player gone" path (camera, HUD, the scripts' `HuIsAPlayer`) exists. `tests/platform/disc_entity_editor_test.cpp`
+deletes a script human in `level80`, then plays on over the humans the scripts still hold.
+
+#### Movement speeds {#entity-editor-speeds}
+
+The player's walk, jog, run and sprint speeds come from the clips' root
+motion ([Speed classes](../research/characters.md#speed-classes)), not from a table, so the tunables are a **scale on
+each gait** (Tunables page, Movement: *Sneak*, *Walk*, *Jog*, *Run*, *Sprint speed scale*, 1 as made). The combat
+walk's speed is already the Combat page's tunable. A scale lands between steps like any tunable, and the gait the
+human is judged to be in, the jump's launch and the animation's gait blend all follow the scaled speeds
+(`HumanAnimator::setSpeedFactors()`); a scale of 2 on the run makes the player cover twice the ground at the same
+animation, so the feet slide. Another human's speeds are the *Speed scale* above, per entity, on top of the player's
+own tunables when it is the player.
+
+**Not here yet** (still #723): knock down, giving and taking a weapon, team and gang, a target, cuffing, AI on and off,
+taking the pad, changing the model, playing any clip, duplicate and respawn, objects (break, open, move, reset), and the
+rest of the stats inventory of [Characters: Stats](../research/characters.md#stats) (power class, faction, damage
+percentage and the others).
 
 ### Noclip {#noclip}
 
@@ -470,7 +576,7 @@ The first tunables are the player's and the camera's researched values (`src/deb
 
 | Category | Tunables (default) |
 | --- | --- |
-| Movement | stick dead zone (0.12), run threshold (0.95), acceleration (24 m/s², 0.8 m/s an update), turn limit walking, jogging, running and sprinting (20°, 18°, 18°, 16° an update), in a stance (24°), turn ease (2.0 rad) and carry (0.8), lean factor and lean factor walking (0.4, 8) |
+| Movement | stick dead zone (0.12), run threshold (0.95), acceleration (24 m/s², 0.8 m/s an update), turn limit walking, jogging, running and sprinting (20°, 18°, 18°, 16° an update), in a stance (24°), turn ease (2.0 rad) and carry (0.8), lean factor and lean factor walking (0.4, 8), and a scale on each of the player's gait speeds: sneak, walk, jog, run and sprint (1 each, up to 10; [below](#entity-editor-speeds)) |
 | Body | radius (0.35 × scale), player factor (1.4286: the player's sphere is 0.35 × scale × this × scale, 0.4704 m), foot gap (0.05 m), step height (0.25 m: lower wall faces do not stop a walk), air radius (0.5 × scale) |
 | Sprint | drain (20/s); the stamina maximum and refill are each human's power class's ([Stats](../research/characters.md#stats)) |
 | Jump | minimum speed (3.3 m/s), up speed (5.5 m/s), climbable check (5.5 m), air turn (4° an update, Coney's choice) |

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The pages over a mode the player plays in: Player, Camera, Spawner, and Debug draw (docs/guides/debug-menu.md).
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <format>
@@ -11,6 +12,7 @@
 #include <utility>
 #include <vector>
 
+#include "ai/fighter_side.h"
 #include "debug/debug_pages.h"
 #include "debug/debug_session.h"
 #include "debug/fighter_spawn.h"
@@ -24,9 +26,11 @@ namespace {
 // What a page shows in place of its items when no player plays.
 constexpr std::string_view kNoPlayer = "no player: --play-level, or a sandbox from the Levels page";
 
-// What the AI fighters page remembers between clicks: the model picked (0 is Random), how many to spawn, and the random
-// numbers Random draws (a fixed seed, so a run with the same clicks spawns the same models).
+// What the AI fighters page remembers between clicks: the side (an index into ai::kFighterSides), the model picked (0
+// is Random), how many to spawn, and the random numbers Random draws (a fixed seed, so a run with the same clicks
+// spawns the same models).
 struct FighterSpawnState {
+    std::size_t side = 0;
     std::size_t model = 0;
     double amount = 1.0;
     SpawnRandom random{0x5eed5eedU};
@@ -340,7 +344,22 @@ void addFightersPage(DebugSession& session) {
                 0.5, false);
             ahead.units = "m";
             ahead.defaultValue = 4.0;
+            ahead.help =
+                "How far from the player the first row stands: ahead of him for enemies and neutrals, behind him "
+                "for allies.";
             page.add(std::move(ahead));
+            // The side the fighters take: Enemy (the default), Ally or Neutral.
+            std::vector<std::string> sideChoices;
+            sideChoices.reserve(ai::kFighterSides.size());
+            for (const ai::FighterSide side : ai::kFighterSides) {
+                sideChoices.emplace_back(ai::sideName(side));
+            }
+            page.add(choiceItem(
+                         "Side", std::move(sideChoices), [spawn] { return spawn->side; },
+                         [spawn](std::size_t choice) { spawn->side = std::min(choice, ai::kFighterSides.size() - 1); }))
+                .withHelp("Whose side the fighters spawn on, set before Spawn fighters. Enemy: the player's enemies. "
+                          "Ally: in his camp, they fight his enemies and he cannot hit them. Neutral: nobody's friend "
+                          "or enemy until one is hit.");
             // The model picker: Random (each fighter its own), then every human model the scene can load. With no
             // list (a mode that does not know the configuration's types) only Random is there, and it means the
             // scene's own character.
@@ -360,17 +379,18 @@ void addFightersPage(DebugSession& session) {
             page.add(std::move(amount));
             page.add(playAction(session, "Spawn fighters",
                                 [&session, distance, spawn](PlayControls& p) {
-                                    const SpawnedFighters spawned =
-                                        spawnFighters(p, spawn->model, static_cast<int>(spawn->amount),
-                                                      static_cast<float>(*distance), spawn->random);
+                                    const SpawnedFighters spawned = spawnFighters(
+                                        p, spawn->model, static_cast<int>(spawn->amount), static_cast<float>(*distance),
+                                        spawn->random, ai::kFighterSides[spawn->side]);
                                     if (spawned.error) {
                                         session.print("fighters: " + spawned.error->message);
                                     }
                                     session.print(
                                         std::format("fighters: {} spawned of {}", spawned.made, spawned.asked));
                                 }))
-                .withHelp("AI humans with a sparring Warrior's brain, facing the player, as the model and amount "
-                          "above; they fight him when he is in their melee range and engaging is on.");
+                .withHelp("AI humans with a sparring Warrior's brain, on the side, as the model and amount above: "
+                          "enemies face the player and fight him when he is in their melee range and engaging is "
+                          "on; allies stand behind him and fight his enemies.");
             page.add(playToggle(
                          session, "Engaging", [](const PlayControls& p) { return p.fightersEngage(); },
                          [](PlayControls& p, bool on) { p.setFightersEngage(on); }))

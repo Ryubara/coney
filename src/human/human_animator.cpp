@@ -110,6 +110,29 @@ void HumanAnimator::changeAnims(const characters::AnimSet& anims) {
     m_state = AnimState::Idle;
 }
 
+// Sets the factors the gait speeds are scaled by. The speeds the original's lines leave in m_speeds (a new anim set, a
+// style change) are the clips' own, so a change in them or in the factors rebuilds the scaled ones from the clips;
+// otherwise there is nothing to do, which is every step of a human nobody edits.
+// @coney-only debug tooling: the Entity editor's speed scale and the Movement tunables
+void HumanAnimator::setSpeedFactors(const Speeds& factors) {
+    const auto same = [](const Speeds& a, const Speeds& b) {
+        return a.base == b.base && a.sneak == b.sneak && a.walk == b.walk && a.jog == b.jog && a.run == b.run &&
+               a.sprint == b.sprint;
+    };
+    if (same(m_speeds, m_applied) && same(factors, m_factors)) {
+        return;
+    }
+    m_factors = factors;
+    const Speeds clips = speedsOf(*m_anims, m_slots);
+    m_speeds = Speeds{.base = clips.base * factors.base,
+                      .sneak = clips.sneak * factors.sneak,
+                      .walk = clips.walk * factors.walk,
+                      .jog = clips.jog * factors.jog,
+                      .run = clips.run * factors.run,
+                      .sprint = clips.sprint * factors.sprint};
+    m_applied = m_speeds;
+}
+
 anim::GaitClip HumanAnimator::slotClip(std::size_t slot) const {
     const std::uint32_t id = m_slots.ids[slot];
     return anim::GaitClip{.clip = clip(id), .animId = id};

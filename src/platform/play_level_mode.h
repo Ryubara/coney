@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <expected>
 #include <fstream>
@@ -35,6 +36,7 @@
 #include "gamemodes/gameplay_mode.h"
 #include "graphics/render_device.h"
 #include "graphics/throw_arc.h"
+#include "gui/pause_menu/pause_stats.h"
 #include "hud/health_rings.h"
 #include "human/place.h"
 #include "human/player.h"
@@ -302,8 +304,9 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     std::expected<void, Error> spawnFighter(anim::Vec3 feet, float headingDegrees);
     /// The models a fighter can be drawn as: the distinct models of characterChoices(), sorted.
     [[nodiscard]] std::vector<std::string> fighterModels() const;
-    /// Makes an AI fighter drawn as `model`.
-    std::expected<void, Error> spawnFighterAs(anim::Vec3 feet, float headingDegrees, std::string_view model);
+    /// Makes an AI fighter drawn as `model`, on `side` (ai::FighterSides::join() says which gang that puts it in).
+    std::expected<void, Error> spawnFighterAs(anim::Vec3 feet, float headingDegrees, std::string_view model,
+                                              ai::FighterSide side = ai::FighterSide::Enemy);
     /// How many AI humans there are in the world.
     [[nodiscard]] std::size_t fighterCount() const { return m_ai->liveCount(); }
     /// Removes the AI fighters the debug menus spawned (spawnFighter(), spawnFighterAs()), through the game's removal;
@@ -322,6 +325,10 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     [[nodiscard]] int playerType() const { return m_type; }
     /// One line of the player's character and classes.
     [[nodiscard]] std::string characterState() const;
+    /// What the pause menu's Stats screen reads of player 1 (docs/research/pause.md#stats-screen): his type, his
+    /// Warrior class's damage scale, his power class's byte `+0x40` and his power, stamina and rage maxima. **Coney's
+    /// choice**: a type with no recorded Warrior class or power class gives the player's defaults, as he plays with.
+    [[nodiscard]] gui::WarriorStats warriorStats() const;
     /// Rebuilds the player as `type` (the debug menus' Change character): the model a player of the type is drawn
     /// as and its files (the anim set, the moves' Anim Range List, the speeds its clips give), loaded as the mode's
     /// start loads them, and his class as the start's player takes it (human::playerClassOf(): the class's damage
@@ -350,9 +357,10 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     [[nodiscard]] std::optional<double> carriedPropOf(const human::Human& human) const;
 
     /// Poses `mesh` as `character` in `pose`, leaned by `lean` and turned to `heading` at `feet`, in the world
-    /// (RenderWare's axes) for drawing (CharacterMesh::pose()).
+    /// (RenderWare's axes) for drawing (CharacterMesh::pose()), the body `scale` times its size (1 unless the Entity
+    /// editor scaled it: Human::meshScale()).
     static void skin(const human::PlayerCharacter& character, const anim::Pose& pose, anim::Vec3 feet, float heading,
-                     float lean, CharacterMesh& mesh);
+                     float lean, CharacterMesh& mesh, float scale = 1.0F);
 
     /// ScriptedPlayer: a script's teleport of player 1 during play: placed (dropped onto the ground at most 0.5 m
     /// below, unless a scene holds him) with his health, meters and clip kept, his brain's front move popped, and for
@@ -482,7 +490,8 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     void makeTargets(rw::Texture* texture);
     // Spawns a fighter dropped onto the ground below `spot`, with its mesh, as the character of `model` (empty: the
     // scene's own).
-    void addFighter(anim::Vec3 spot, float headingDegrees, const std::string& model = {}, bool debugSpawned = false);
+    void addFighter(anim::Vec3 spot, float headingDegrees, const std::string& model = {}, bool debugSpawned = false,
+                    ai::FighterSide side = ai::FighterSide::Enemy);
     // The level's scripts' humans as AI humans: the AI on the scripts' brains, then the scripts' hold released with
     // castHuman() as its spawner, which makes the humans created so far and replays the calls on them.
     void makeCast(const ScriptedCast& cast, const ai::AiConfig& fighters);
@@ -886,6 +895,7 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     std::optional<ObjectAttack> m_objectAttack;
     std::vector<world_objects::CarHitEffect> m_carHitEffects; // the cars' hit effects of the newest step
     GameOverCheck* m_gameOver = nullptr;                      // the game-over check (GameState::gameOver); not owned
+    const std::array<PadOptions, 2>* m_padOptions = nullptr;  // the pads' options (GameState::saved.pads); not owned
     std::function<void(std::string_view)> m_missionFailed;    // opens the mission-failed mode with a title
     bool m_failShown = false;                                 // the failure's first hand-off update ran
     bool m_wasMugging = false;                                // player 1 was mugging at the last step
