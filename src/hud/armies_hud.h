@@ -102,6 +102,7 @@ class ArmiesHud {
     /// stops being wanted from the next step, as `ANHud_Draw` drops it on the frame it draws.
     /// @orig 0x0019e660 GoSign_StepBlink (unknown)
     /// @orig 0x0019e758 GoSign_Update (unknown)
+    /// @orig 0x00211938 ANHud_Draw (unknown)
     void update(std::uint64_t nowMs, int level, std::array<bool, kPlayers> playersIn,
                 std::array<bool, kPlayers> knockedOut = {});
 
