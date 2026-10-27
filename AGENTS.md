@@ -52,9 +52,9 @@ contributing starts at CONTRIBUTING.md, section Your first hour; the rest of thi
   change the installer or launcher; change these conventions.
 <!-- conventions:end -->
 - Whoever pushes a pull-request branch may `git push --force-with-lease` it.
-- **Local first; no agent pushes or waits on CI.** An engineer takes one claimed task through the
-  [pipeline](docs/guides/how-we-work.md#the-pipeline) to a passing `task review`; the coordinator opens the pull
-  request with [`coney-tools pr open`](docs/guides/pr.md#open).
+- **Local first; no agent pushes or waits on CI.** An engineer takes a claimed task through the pipeline to a passing
+  `task check` and `task review`, runs every applicable local check and writes the pull request's title and description
+  to its scratch folder; the coordinator runs [`coney-tools pr open`](docs/guides/pr.md#open).
 
 ## Code
 

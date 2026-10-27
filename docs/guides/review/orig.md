@@ -180,7 +180,8 @@ opens callees as far as the comparison needs, gives each function exactly one [c
    class, note), then what was sampled and why. The final message is the verdict and the blockers, in a few lines.
 
 **Sweep mode** works on a group folder under the workspace's `scratch/orig-sweep/` and a scope of `src/` folders or
-addresses ([Sweep findings](#findings)):
+addresses ([Sweep findings](#findings)). It is a mode for the legacy-fidelity sweep and ends when that sweep is filed,
+at the [cutover](../how-we-work.md#cutover):
 
 1. Run `uv run --project python coney-tools orig review-stamp --folder <src/folder/>` (or `--address 0x...`,
    repeatable) from the main checkout. It lists the functions in scope that the ledger has not reviewed at their

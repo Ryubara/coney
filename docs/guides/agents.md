@@ -107,7 +107,8 @@ checks](how-we-work.md#pr-review), which run the same agent and are retired at t
   scratch folder that holds `PR.md`; it writes `ORIG-REVIEW.json` and `ORIG-REVIEW.md` there. When `orig review-stamp
   --branch` lists no function, no run is needed. A rebase that leaves the functions as they were keeps the verdict.
 
-**Sweep mode** reviews existing code for [legacy fidelity](how-we-work.md#fidelity-audit). Give it a `src/` folder or
+**Sweep mode** reviews existing code for [legacy fidelity](how-we-work.md#fidelity-audit), until the sweep is filed
+(it ends at the [cutover](how-we-work.md#cutover)). Give it a `src/` folder or
 a list of addresses and a group folder under `scratch/orig-sweep/`. It reviews what `orig review-stamp --folder` lists
 as unreviewed or stale, writes `FINDINGS.tsv` and `PROGRESS.md`, records the findings with `coney-tools orig record`,
 and returns a summary that the launcher saves as `SUMMARY.md`. Run one agent per folder, and leave out the folders that
@@ -752,7 +753,7 @@ nothing in the branch changes, so it takes no slot.
 ## CI capacity {#ci-capacity}
 
 GitHub Actions on this repository runs about 20 jobs at once (5 of them on macOS), shared by every pull request, and a
-full code pull request queues 4 builds plus sanitizers (about 30 minutes). CI never holds an agent back:
+full code pull request queues 4 builds plus sanitizers (about 20 minutes). CI never holds an agent back:
 
 1. **Agents work local-first.** The engineer's stages end at Review, on this machine, and the full suite with the disc
    runs in `task check`, which CI cannot run. CI finds only what the local platform cannot see.

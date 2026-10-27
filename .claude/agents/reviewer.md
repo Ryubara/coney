@@ -42,7 +42,7 @@ override any brief:
    `task review --run` and `repo review`. A helper could write for you, and a review is by someone who did not do the
    work. Read, trace and grade everything yourself. `git merge-base` only reads and `git merge-tree --write-tree`
    adds objects to the object store but changes no index, tree or ref, so both are allowed (to find the base of a
-   stacked or rebased branch); `git merge` is not, nor any verb that changes a ref (`git branch x`, `git tag`,
+   rebased branch); `git merge` is not, nor any verb that changes a ref (`git branch x`, `git tag`,
    `git fetch`, `git stash`). Write your files in the scratch folder, never inside a checkout.
 6. Review of research and of `@orig` functions is reverse-engineering work and runs on Opus 5.5; who may record a review
    is in `docs/guides/review/task.md#who`.
@@ -73,7 +73,7 @@ A branch started before the cutover outside a task is released with these legacy
 
 Report in the finding format of `docs/guides/review/index.md`, ending with the verdict.
 
-**A review with no task** (a fix round, a conflict resolution, a stacked branch): there is no review folder, so write
-the report as `CODE-REVIEW.md` (`CODE-REVIEW-<n>.md` for the n-th round) in the folder your brief names, the finding
-format with the verdict on the first line, and make your final message the verdict and the blockers
+**A review with no task** (a fix round, a conflict resolution, a branch of the launcher stack): there is no review
+folder, so write the report as `CODE-REVIEW.md` (`CODE-REVIEW-<n>.md` for the n-th round) in the folder your brief
+names, the finding format with the verdict on the first line, and make your final message the verdict and the blockers
 (`docs/guides/review/task.md#report`). It records no stamp.

@@ -580,7 +580,7 @@ A brief may be just "issue #N" ([Briefing](agents.md#briefs)); the issue holds t
   reports what it would say (the finding, the question for the reporter, the status change) in its message to the
   coordinator. `.claude/hooks/push_guard.py` refuses a subagent's `gh` command that writes; `coney-tools issue` runs
   `gh` itself, so filing stays possible when the brief allows it.
-- **HANDOFF lists only issue numbers in flight.** The coordinator's state file names an issue by number and track,
+- **HANDOFF lists only issue numbers in flight.** The coordinator's state file names an issue by number and unit,
   for example "#31, bug-doors, in progress"; the title and details stay on the issue, so there is one place to read.
 
 ## Issues a pull request changes {#affected}

@@ -4,11 +4,10 @@ This page is the map of Coney's workflow: the road from an issue to a commit on 
 command ends it and what it must prove, and how many engineers work at once without stepping on each other. It is the
 same for the project's agents and maintainers; a person contributing from a fork follows
 [CONTRIBUTING.md](repo:CONTRIBUTING.md) and needs no stamps. It stays high level and links to the guide that holds the
-detail. Start
-with [Who is who](#who-is-who), the roles in one table, then [The pipeline](#the-pipeline), the stages in order.
-[How the work is run](#how-it-runs) shows how the roles fit together and how many work at once, and
-[How the rules are enforced](#enforcement) shows which check stops what. The diagrams on this page illustrate; the text
-beside each is the rule.
+detail. Start with [Who is who](#who-is-who), the roles in one table, then [The pipeline](#the-pipeline), the stages in
+order. [How the work is run](#how-it-runs) shows how the roles fit together and how many work at once, and [How the
+rules are enforced](#enforcement) shows which check stops what. The diagrams on this page illustrate; the text beside
+each is the rule.
 
 Four principles hold the workflow together. **Results, not rituals:** each stage has a required result, and how an
 engineer reaches it is its own choice. **Tools prove, people judge:** each stage from Start to Open ends with a command
@@ -306,6 +305,8 @@ Several tasks run at once, each owning the scope its claim names:
 - **Each task's state is on disk**: its task file, unit record and stamp log, and `STATUS.md` in its scratch folder
   ([Unit status](#status)), not in anyone's head.
 
+<!-- The anchor keeps its old name, release-queue: .claude/hooks/pr_guard.py and push_guard.py link it and their tests
+     check for it. Rename it together with them in the cutover cleanup. -->
 ## Opening the pull request {#release-queue}
 
 Agents work locally and never wait on CI. An engineer commits on its task's branch, runs Check, writes the one paragraph
@@ -512,7 +513,7 @@ config:
 ---
 flowchart LR
   hooks["Claude Code hooks<br/>refuse the wrong<br/>command or role"] --> pre["pre-commit<br/>format, lint,<br/>512 KB limit"]
-  pre --> stamps["Stage commands<br/>check earlier<br/>stamps"]
+  pre --> stamps["original compare and<br/>task review check<br/>earlier stamps"]
   stamps --> push["pr open<br/>verifies the stamps,<br/>only the coordinator"]
   push --> ci["CI required<br/>checks"]
   ci --> rules["Branch protection<br/>on main:<br/>squash merge only"]
@@ -618,9 +619,9 @@ At the cutover, in one change of [.github/conventions.yml](repo:.github/conventi
    at 48 hours and released at 72 ([Claiming an issue](issues.md#claiming)).
 3. `tasks.start.slots.enforce` turns on: a start over the slot limit is refused ([Slots](issues.md#slots)).
 4. The [legacy release checks](#pr-review) and their commands (`repo review`, `repo check-review`, `repo review-stamp`,
-   `orig review-stamp`, `orig check-review`) are removed, and the old names of renamed `coney-tools` commands stop
-   working. `orig record` goes once the sweep of [legacy fidelity](#fidelity-audit) is filed, and that sweep uses `orig
-   review-stamp --folder` too, so it is filed before this step.
+   `orig review-stamp`, `orig check-review`, `orig record`) are removed, and the old names of renamed `coney-tools`
+   commands stop working. The sweep of [legacy fidelity](#fidelity-audit) uses `orig review-stamp --folder` and `orig
+   record`, so it must be filed before this step.
 5. The heads-up in the README that asks contributors to wait is removed.
 6. Tether keeps only the session's health; its Coney pollers and pull request guard are removed, as Conclave holds them.
 7. Branches started before the cutover become tasks when they are picked up, their work and review findings the

@@ -65,7 +65,7 @@ do not invent it.
 | `issue.attachment-data` | Open the log only to judge it (never copy it anywhere). If it holds game files or game text, a maintainer removes the link from the body and asks the author to attach a log without it ([LEGAL.md](../../../LEGAL.md)); if it is a long ordinary Coney log, leave it. |
 | `issue.triage-age` | Triage it now ([Triage](../../../docs/guides/issues.md#triage)). |
 | `issue.info-age` | Ask once more in a comment, or close as not planned with the reason. |
-| `issue.progress-idle` | Ask the track for its state; return the issue to `S-ready-to-start` when nobody works on it. |
+| `issue.progress-idle` | Ask the engineer for its state; return the issue to `S-ready-to-start` when nobody works on it. |
 | `issue.claim-orphan` | The issue says it is being worked on but nobody is assigned: claim it with `task create` if someone is on it, else set it back to `S-ready-to-start`. |
 | `issue.review-without-pr` | Find the pull request (`gh pr list --search "#N"`) and link it, or set the status back to `S-in-progress`. |
 | `pr.title`, `pr.body` | The author fixes the text in the pull request's description file in their scratch folder; if you fix it yourself, `gh pr edit N --title ...` or `--body-file`, and rerun `repo check-body`. |
@@ -77,7 +77,7 @@ do not invent it.
 | `pr.stacked-automerge` | `gh pr merge N --disable-auto`; auto-merge waits until the base merges. |
 | `pr.base-merged` | The author rebases onto `main` (`git rebase --onto origin/main <old base> <branch>`); then `gh pr edit N --base main`. |
 | `pr.merged-into-base` | Close by hand the issues the pull request fixes, with a comment naming it, and move the work onto `main`. |
-| `ws.scratch` | Look at the paths the finding lists (a generic `.bin` can be a tool file), then delete the finished work's captures from its scratch folder (generated media may be deleted), or ask the track. |
+| `ws.scratch` | Look at the paths the finding lists (a generic `.bin` can be a tool file), then delete the finished work's captures from its scratch folder (generated media may be deleted), or ask the engineer. |
 | `files.pointer`, `files.exist`, `files.address`, `files.forms`, `files.template`, `files.ci-scope`, `files.ci-places`, `files.large-file-limit`, `files.game-files`, `files.markdown-hook` | A change to the repository: make it on a branch in a worktree as one task, with the check's rule from the conventions, and take it through the pipeline ([the pipeline](../../../docs/guides/how-we-work.md#the-pipeline)). |
 
 ### `maintainer`: stop

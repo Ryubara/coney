@@ -56,7 +56,7 @@ Check what already exists before starting a question, in the merged pages and in
 1. Search `docs/research/` (`git grep -i <term> -- docs/research research`) for a page that already covers it.
 2. List the open pull requests (`gh pr list`) and search their branches: `git fetch`, then
    `git log --oneline origin/<branch> -- docs/research` and `git grep -i <term> origin/<branch> -- docs/research`.
-   Another track may have the finding written up, or be part-way through it.
+   Another engineer may have the finding written up, or be part-way through it.
 3. If something covers the question, extend that page or branch (or wait for it to merge) instead of writing a second
    account of the same thing; if it disagrees with what you find, say so on the page with both evidence levels.
 
