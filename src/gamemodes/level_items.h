@@ -13,8 +13,8 @@
 
 // The level's loose objects and store fronts as the AI fetches them (ai::ItemServices): the store-front flags, a
 // zone's owned objects, where an object is and who holds it, an AI human's pick-up and, after the characters' step,
-// the takes their pick-ups reached. Research: docs/research/ai-code.md#t2-warrior-steal, docs/research/ai.md#get-item,
-// docs/research/crimes.md#owned-items
+// the takes their pick-ups reached. Research: docs/research/ai-code.md#t2-warrior-steal,
+// docs/research/ai/index.md#get-item, docs/research/crimes.md#owned-items
 
 namespace coney {
 

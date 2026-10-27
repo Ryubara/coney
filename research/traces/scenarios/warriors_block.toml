@@ -2,9 +2,9 @@
 # the fight's start, auto lock-on choosing the target. Each attack warns the Warrior it aims at (brain +0x200), whose
 # fight goal may push the block goal (0x1b); the hooks log the warnings, the block tries and starts, and every command
 # written, and the fields the warriors' state words and human +0xe0 (the block goal's flag 0x800). Research:
-# docs/research/ai.md#level99-fight.
+# docs/research/ai-fights.md#level99-fight.
 description = "level99 sparring fight: the player presses square every 15 updates; do the type-2 Warriors block and counter?"
-research = "docs/research/ai.md#level99-fight"
+research = "docs/research/ai-fights.md#level99-fight"
 input = "warriors_block.txt"
 updates = 1700
 fields = ["player", "enemy"]

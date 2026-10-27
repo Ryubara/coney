@@ -20,8 +20,9 @@
 #include "support/fight_fixtures.h"
 #include "support/human_fixtures.h"
 
-// The enemy score and the pick of the best enemy (docs/research/ai.md#enemy-score): the terms, the ruled-out cases,
-// the previous target's bonus, and the weights from the configuration script's calls. Synthetic humans on a floor.
+// The enemy score and the pick of the best enemy (docs/research/ai-fights.md#enemy-score): the terms, the ruled-out
+// cases, the previous target's bonus, and the weights from the configuration script's calls. Synthetic humans on a
+// floor.
 
 using coney::ai::Brain;
 using coney::ai::BrainType;

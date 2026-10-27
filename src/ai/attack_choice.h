@@ -12,7 +12,7 @@
 // and may start now (the same plus the guard and the reach), and the weighted draw with its adjustments for a crowd,
 // a busy target, a weapon in hand, a rear-grabbed target and the player's attack pattern. Pure decisions over what the
 // two humans are; ai::Brain's fight goals fill the views from their humans.
-// Research: docs/research/ai.md#pick-attack
+// Research: docs/research/ai-fights.md#pick-attack
 
 namespace coney::ai {
 

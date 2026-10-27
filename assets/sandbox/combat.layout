@@ -1,6 +1,6 @@
 # Coney sandbox: the fight yard (docs/guides/sandbox.md). Passive targets to fight: Coney's own test humans, which
 # take hits, react, get stunned, knocked down and thrown as the research's victim does, and never fight back
-# (docs/research/combat/index.md); and an AI fighter that does fight back (docs/research/ai.md). Game axes and units:
+# (docs/research/combat/index.md); and an AI fighter that does fight back (docs/research/ai/index.md). Game axes and units:
 # metres, z up; the spawn faces +y ("north").
 
 title Fight yard
@@ -29,7 +29,7 @@ target wall at=-10,1.5,0 heading=180 health=1200
 # original's civilian walked towards the player, so its X1 steered onto it as onto one standing here.
 target cross at=10,-6.95,0 heading=180
 
-# An AI fighter (docs/research/ai.md) 3 m beyond the brawl spawn, facing it, far from the other spawns: it takes the
+# An AI fighter (docs/research/ai/index.md) 3 m beyond the brawl spawn, facing it, far from the other spawns: it takes the
 # player on once he comes within its far melee range (5 m), and attacks and reacts.
 fighter brawler at=0,-15,0 heading=0
 

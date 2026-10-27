@@ -9,7 +9,7 @@ The icon ids `HUDSetRadarItemTexture` takes and the code sets, and the radar's b
 
     Every icon a script or the code uses and every blip type the code adds are listed. The numbers are
     read from the code and the scripts; what each icon marks is inferred from who uses it. Classes are the
-    character class byte `CfgChar` sets (`+0x11a`, [AI](../research/ai.md#types)).
+    character class byte `CfgChar` sets (`+0x11a`, [AI](../research/ai/index.md#types)).
 
 31 entries. Data: `research/references/radar-icons.yaml`.
 

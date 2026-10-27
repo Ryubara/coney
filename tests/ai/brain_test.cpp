@@ -36,7 +36,8 @@
 #include "support/human_fixtures.h"
 
 // The brain shell, its goal stack and action queue, the think stagger, the attack action's pacing and press, the block
-// goal and the reaction goals (docs/research/ai.md). Synthetic clips only; game time is the steps run (1/30 s each).
+// goal and the reaction goals (docs/research/ai/index.md). Synthetic clips only; game time is the steps run (1/30 s
+// each).
 
 using coney::ai::Brain;
 using coney::ai::BrainType;
@@ -722,8 +723,8 @@ TEST_CASE("a player released to the AI takes his class's brain, loses his goals,
     CHECK(std::ranges::find(log, std::string("h start")) != log.end());
 }
 
-// docs/research/ai.md#fight-reposition: the gesture slots' kind (`Brain_GetReactionKind` 0x00291d48) and how many a
-// brain may take (`Brain_GetHelpLevel` 0x00291db8).
+// docs/research/ai-fights.md#fight-reposition: the gesture slots' kind (`Brain_GetReactionKind` 0x00291d48) and how
+// many a brain may take (`Brain_GetHelpLevel` 0x00291db8).
 TEST_CASE("a brain's reaction kind is its type, the player's a Warrior's; cops and Warriors take one gesture slot",
           "[ai]") {
     coney::test::AiScene scene;

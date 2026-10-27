@@ -15,10 +15,11 @@ Given the steal / wreck command (Wreck'em, command 5) at a store, the player's W
 goods, then wreck what is near the chief: they break the display cases' glass, swing what they hold, smash objects
 and push over what can be carried. A Warrior never takes an object through an intact pane; he breaks the pane first.
 Each Warrior runs the WarriorVandalSteal goal: its class and the rest of its functions are on [AI goals:
-WarriorVandalSteal](ai-goals.md#goal-warrior-vandal-steal), GetItem (the fetch) is on [AI humans:
-GetItem](ai.md#get-item), DestroyItem (the strike) on [AI goals: DestroyItem](ai-goals.md#goal-destroy-item), the
-car goal the wreck can also give on [AI goals: DestroyCar](ai-goals.md#goal-destroy-car), and the panes themselves on
-[World objects: panes](objects.md#pane).
+WarriorVandalSteal](ai-goals.md#goal-warrior-vandal-steal), GetItem (the fetch) is on [AI:
+GetItem](ai/index.md#get-item), DestroyItem (the strike) on [AI goals: DestroyItem](ai-goals.md#goal-destroy-item),
+the car goal the wreck can also give on [AI goals: DestroyCar](ai-goals.md#goal-destroy-car), and the panes
+themselves on [World objects: panes](objects.md#pane). The object search that every AI pick-up and smash starts
+from is described [below](#object-search).
 
 ## Rules
 
@@ -35,7 +36,8 @@ car goal the wreck can also give on [AI goals: DestroyCar](ai-goals.md#goal-dest
 | --- | --- | --- |
 | The wreck step of each update: the throw wait, the held swing, the car, the smash target, the pane | `0x002bf118` `WarriorVandalStealGoal_TryVandalise` | [The wreck step](#try-vandalise) |
 | What may be smashed | `0x0029d558` `ObjFilter_VandalisableInRange`, `0x00394f30` `Object_IsVandalisable` | [The smash target](#smash-target) |
-| Where he stands to find and to strike it | `0x0029d5f0` `Ai_FindObject`, `0x002dd210` `DestroyItemGoal_Process` | [The stand point](#stand-point) |
+| The object search behind every AI pick-up and smash | `0x0029d5f0` `Ai_FindObject` | [The object search](#object-search) |
+| Where he stands to find and to strike it | `0x002dd210` `DestroyItemGoal_Process` | [The stand point](#stand-point) |
 | The fetch after the stock | `0x002bee78` `WarriorVandalStealGoal_TryFetch` | [After the stock](#after-stock) |
 | The goal's update round the fetch and the wreck: the follow, the look, the fidget | `0x002bf748` `WarriorVandalStealGoal_Process` | [The goal's update](#process) |
 | The panes and goods at level80's store, run on the original | `0x002dc9f8` `GetItemGoal_Process` | [The store runs](#store-runs) |
@@ -86,6 +88,34 @@ zone fails (the zone id at `0x005148bc`, `0xffff` for none until `CfgExcludedVan
 sets it in `Main`); then the object passes
 when its record (vtable `+0xf4`) has `+0x40` & `0x30`, or when its type's anim set (byte `+0x87`) is 4 or 5.
 
+### The object search {#object-search}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
+
+`Ai_FindObject(A, needRay, filter, claim, needReach, centre, allowLow)` (`0x0029d5f0`) is the general search behind
+every AI pick-up and smash, the wreck's among them (21 callers: Spectate, Melee, the Warriors' think, Riot, Destroy,
+Steal and others). Each caller's own use is on its page; GetItem, which most of them push on the result, is on [AI:
+GetItem](ai/index.md#get-item).
+
+1. List the world objects round `centre` (A's position by default; `ObjectManager_FindObjects` on the object list
+   `+0x840`, at most 384), nearest first.
+2. Take the first object that passes all of these:
+    1. It is not attached to a task (not held or carried).
+    2. Its flags (vtable `+0x54`) lack bit 26.
+    3. It is not claimed by A's own gang: object `+0xec` is the gang and `+0xf0` the claim's end.
+    4. The caller's `filter` object accepts it. This is where each caller's radius and kind test live, for example
+       15 m and pickable for Spectate, 20 m and breakable for Riot, and the leader's 15 m for the wreck
+       ([The smash target](#smash-target)).
+    5. For an AI A, no player stands within 1 m of it, in 3D (squared distance under 1.0), over every player.
+    6. With `needRay`, a clear ray from A to it (`Human_HasClearRayTo`, mask 8). Unless `allowLow`, the ray must
+       not end in result 2: the ray crossed a `GLASS` triangle (material 2, an intact pane), which the ray's
+       exclusion list lets through while still recording its material, the same result that makes GetItem swing at
+       the glass. Confirmed (code) at `0x0024df40`, `0x00350778`.
+    7. With `needReach`, a point on the navigation ground under it that A can reach (`Nav_CanReach`). The search passes
+       `Nav_FindPolygonUnder` (`0x00252410`) the larger of the type's sizes `+0x78` and `+0x7c`, whole, as a stand-off,
+       but that function overwrites the argument before reading it ([The stand point](#stand-point)).
+3. With `claim`, the object is claimed for A's gang for **5000 ms**, so gang mates do not run for the same object.
+
 ### The stand point {#stand-point}
 
 Confirmed (code) at the cited addresses.
@@ -98,8 +128,7 @@ never reads either: it overwrites f12 with its 10 m drop at `0x00252454` before 
 is the object's own spot, 0.05 m up, dropped onto marked navigation ground, else the nearest point on a nearby
 navigation edge. So every search and every strike stands at the object's spot whatever its size. DestroyItem swings
 once he is within 1 m of that point in 3D (squared distance at most 1.0), after a turn to the object when more than
-15° off; farther, he walks there at a run from 2 m (3D), at most three times. The object search skips an object a
-player is nearer than 1 m to, in 3D (squared distance under 1.0), over every player.
+15° off; farther, he walks there at a run from 2 m (3D), at most three times.
 
 ### After the stock {#after-stock}
 
@@ -141,7 +170,7 @@ Confirmed (code) at the cited addresses.
 
 ### The store runs {#store-runs}
 
-GetItem's swing at glass is on [AI humans: GetItem](ai.md#get-item) (`GetItemGoal_Process` `0x002dc9f8`). At level80's
+GetItem's swing at glass is on [AI: GetItem](ai/index.md#get-item) (`GetItemGoal_Process` `0x002dc9f8`). At level80's
 pharmacy, with the crew put between the display cases and the order given, the two Warriors broke 8 panes (the first
 at update 247), swung at glass 7 times, took the 20 objects the clusters gave them by update 655, picked up 2 objects
 no stock hook saw and from update 675 pushed DestroyItem 6 times, with no car goal in 4500 updates: confirmed

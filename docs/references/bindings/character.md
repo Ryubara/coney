@@ -859,8 +859,8 @@ Runs the AI's own sight test from the viewer: the target must be within the view
 by default and never below 30 m in a gang whose `+0x32` is 1; 0x0028bf00); closer than 3 m it is seen all round, farther
 it must be inside the field of view (brain `+0x12c`, BrSetFOV); then a line of sight is cast. A human target whose brain
 byte `+0x2d4` is set (hidden or sneaking, inferred) is seen only within 2 m. It is the test the attack warnings use
-([AI](../../research/ai.md)); objects use the same rule against their position. Scripts use it to check whether a guard
-notices the player.
+([AI](../../research/ai/index.md)); objects use the same rule against their position. Scripts use it to check whether a
+guard notices the player.
 
 **Notes.** The 3 m and 2 m come from the squared constants 9.0 and 4.0 the binding passes. Line of sight: 0x00222288
 (human) and 0x00222370 (point).
@@ -1069,7 +1069,7 @@ Switches a player's human between pad control and AI control by setting its per-
 `0x00660f50 + i × 0x2c`, via `Human_GetPlayerRecord`). With 0 the brain drives it (its goals and actions run, AI grab
 counters apply); with 1 the pad's commands drive it again.
 
-**Notes.** Readers: [AI](../../research/ai.md), [Combat](../../research/combat/index.md) and the follow camera
+**Notes.** Readers: [AI](../../research/ai/index.md), [Combat](../../research/combat/index.md) and the follow camera
 (camera.md), which only acts for a pad-controlled player. Armies of the Night uses it for players that have not joined.
 
 - **Evidence:** confirmed (code) at `0x002384f8`; detail: traced
@@ -1840,8 +1840,8 @@ handle that is not a human.
 
 Tells whether the human is hidden in a shadow: brain byte `+0x2d4`, set by Brain_SetHiddenInShadow (0x0028ee88) when the
 human enters or leaves a hiding spot (0x0023e6e8, 0x0023eab8) and cleared when the brain resets. While it is set,
-enemies only notice the human's attacks within 2 m ([AI](../../research/ai.md)) and the camera holds a fixed look-at
-height ([Camera](../../research/camera.md#update)).
+enemies only notice the human's attacks within 2 m ([AI](../../research/ai/index.md)) and the camera holds a fixed
+look-at height ([Camera](../../research/camera.md#update)).
 
 **Notes.** What makes a spot a hiding spot (the callers at 0x0023e6e8 and 0x0023eab8) was not traced.
 
@@ -3561,7 +3561,7 @@ Sets or clears bit `0x800` of the human's flag word (human `+0xe0`): while it is
 hit reaction (`Human_ApplyPendingDamage`, 0x00265f70), so blows do not stagger or interrupt it.
 
 **Notes.** The engage-enemy goal also sets and clears the same bit for itself (it remembers whether it was already set,
-[AI](../../research/ai.md)), so a fight can clear a flag a script did not set but keeps one the script set first.
+[AI](../../research/ai/index.md)), so a fight can clear a flag a script did not set but keeps one the script set first.
 
 - **Evidence:** confirmed (code) at `0x00235198`; detail: traced
 - **Wrapper** `0x00359320` (registered by `RegisterBindings`); **calls** `0x00235198` `Human_SetNoReact`

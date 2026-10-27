@@ -16,7 +16,7 @@ class Human;
 
 // What an AI human sees: the line of sight between two humans (two rays through the level's collision, which pass
 // through fences, railings and glass), the field of view, and "can see" (a range, then the line). The brains' attack
-// warnings, the enemy scores and the run-in ask these. Research: docs/research/ai.md#sight
+// warnings, the enemy scores and the run-in ask these. Research: docs/research/ai-fights.md#sight
 
 namespace coney::ai {
 
@@ -60,7 +60,7 @@ struct ClearRay {
 /// while nothing solid is hit), so result 2 means an intact pane lies on the way. **Coney's reading**: result 2 when
 /// any enabled `GLASS` triangle lies on the clear ray (or within kGlassEndSlack past its end), whatever else
 /// see-through it crosses; the page says the last one written wins without the cells' order. With no mesh the ray is
-/// clear and crosses nothing. Research: docs/research/ai.md#get-item
+/// clear and crosses nothing. Research: docs/research/ai/index.md#get-item
 /// @orig 0x00222370 Human_HasClearRayTo (unknown)
 [[nodiscard]] ClearRay clearRayTo(const raycast::CollisionMesh* mesh, anim::Vec3 feet, anim::Vec3 point,
                                   std::uint32_t mask);

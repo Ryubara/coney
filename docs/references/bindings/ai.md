@@ -469,7 +469,7 @@ and leaves its goals in place, so the current goal plans again on its next updat
 runs no goal callback.
 
 **Notes.** Clearing stops at an action that refuses to abort (an attack in progress), so that one and those behind it
-stay ([AI: actions](../../research/ai.md)).
+stay ([AI: actions](../../research/ai/index.md)).
 
 - **Evidence:** confirmed (code) at `0x00292590`; detail: traced
 - **Wrapper** `0x0035ee18` (registered by `RegisterBindings`); **calls** `0x00292590` `Brain_FlushActions`
@@ -492,7 +492,7 @@ BrFlushGoals(human)
 Pops every goal off the human's goal stack (top index brain `+0x2c` down to -1, then `+0x2d` = -1), ending each one, so
 each goal's script callback fires with "completed" 0. Unlike BrFlush it leaves the queued actions to finish.
 
-**Notes.** With no goal left the brain falls back to its idle behaviour ([AI](../../research/ai.md)).
+**Notes.** With no goal left the brain falls back to its idle behaviour ([AI](../../research/ai/index.md)).
 
 - **Evidence:** confirmed (code) at `0x00292618`, `0x0028d910`; detail: traced
 - **Wrapper** `0x0035eea0` (registered by `RegisterBindings`); **calls** `0x00292618` `Brain_FlushGoals`, `0x0028d910`
@@ -536,7 +536,7 @@ BrHasAttackers(human) -> boolean
 
 Tells whether anyone is currently attacking the human: attackers claim one of the target's attack slots before they
 close in (Brain_ClaimAttackSlot, 0x0028df30; at most `+0x1e4`, set by BrSetNumAttackSlots), and this tests whether the
-slot list is non-empty ([AI](../../research/ai.md)). One script calls it.
+slot list is non-empty ([AI](../../research/ai/index.md)). One script calls it.
 
 - **Evidence:** confirmed (code) at `0x00292ca8`; detail: traced
 - **Wrapper** `0x0035f0a0` (registered by `RegisterBindings`); **calls** `0x00292ca8` `Brain_HasAttackers`
@@ -626,7 +626,7 @@ BrProcessGoal(human)
 Runs one update of the goal on top of the human's goal stack (brain `+0x40` + top index `+0x2c` × 4) at once instead of
 waiting for the next brain update, so a goal just given takes effect in the same frame: Goal_Process starts or resumes
 it if needed and then calls its Process, unless its time limit has passed or the human has no model ([AI: goal
-stack](../../research/ai.md)).
+stack](../../research/ai/index.md)).
 
 **Notes.** The result is discarded: a goal that reports done (2) stays on the stack until the brain's own update pops
 it. With an empty stack a null goal is passed and not checked (crash).
@@ -900,7 +900,7 @@ with reaction 0xaf toward that player.
 
 **Notes.** Only the civilian think reads `+0x228`; other brain kinds ignore it. Skipped when the human's character flag
 `+0x11b` is 6 or the player's brain `+0x2d5` is set. What reaction 0xaf looks like is not traced
-([AI](../../research/ai.md)).
+([AI](../../research/ai/index.md)).
 
 - **Evidence:** confirmed (code) at `0x002927f8`, `0x002fef40`; detail: traced
 - **Wrapper** `0x0035f468` (registered by `RegisterBindings`); **calls** `0x002927f8` `Brain_SetPlayerResponse`,
@@ -1626,7 +1626,7 @@ the special idle clip (anim 671, ANIM_SPECIAL_IDLE) as its cowering pose. The go
 while the human is down or busy.
 
 **Notes.** Threat choice 0x002d4f40 and the flee-point test 0x002d4fc0 are not traced. Byte `+0x333` is the same one
-route following uses (ai.md); why the despawn needs it is open.
+route following uses (ai/index.md); why the despawn needs it is open.
 
 - **Evidence:** confirmed (code) at `0x002d4c38`, `0x002d4cb8`, `0x002d4fe8`; detail: traced
 - **Wrapper** `0x003644a0` (registered by `RegisterBindings`); **calls** `0x002d4c38` `Goal_Cower`, `0x002d4cb8`
@@ -1721,7 +1721,7 @@ with the usual fight sub-goal until the enemy is out of range or gone, or a newe
 of GangEngageEnemy.
 
 **Notes.** Constructor 0x002af5b0 (vtable 0x00540330, Process 0x002afa48); a flag at goal `+0x34` is set only when the
-human's `+0x1a8` is below 3 and 0x00223e20 is false, not traced. Fight behaviour: [AI](../../research/ai.md).
+human's `+0x1a8` is below 3 and 0x00223e20 is false, not traced. Fight behaviour: [AI](../../research/ai/index.md).
 
 - **Evidence:** confirmed (code) at `0x002af528`, `0x002af5b0`; detail: traced
 - **Wrapper** `0x00360550` (registered by `RegisterBindings`); **calls** `0x002af528` `Goal_EngageEnemy`, `0x002af5b0`

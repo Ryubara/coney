@@ -144,7 +144,7 @@ void PlayerCombat::startHolding() {
 
 bool PlayerCombat::updateBlock(const CombatInput& input, CombatOutput& out) {
     // A block starts only on R1 held on a pad (the record's buttons): an AI's command 4 alone never starts one
-    // (docs/research/ai.md#block).
+    // (docs/research/ai-fights.md#block).
     // `Human_CanFight` (`0x00224f28`) lets it through only with no held bit outside 0x20081404: so a block cuts an
     // attack's end phase (0x4) but waits through its wind-up, window and recovery
     // (docs/research/combat-moves.md#input).

@@ -32,7 +32,7 @@ inline constexpr float kSwapReach = 1.5F;
 /// held-flag test, the sparring byte (`+0x2e5`) and `+0x121` are not modelled, so they pass or fail as if clear; the
 /// two-player swap (`PlayerBrain_Think`) is not built.
 ///
-/// Research: docs/research/ai.md#think-warrior, docs/research/hud-messages.md#talk-prompt
+/// Research: docs/research/ai-brain-types.md#think-warrior, docs/research/hud-messages.md#talk-prompt
 /// @orig 0x003052f0 WarriorBrain_Think (unknown)
 void thinkSwapPrompt(Brain& brain);
 
@@ -56,7 +56,7 @@ struct SwapOutcome {
 /// The swap (`Human_SwapHeldObjects(receiver, presser)`): each side's held object is dropped and placed straight in
 /// the other's hand, at once and with no clip; one held alone simply passes across. An object whose type
 /// `placeable(typeName)` says has no hand placement (pick-up animation 5 or 6) stays dropped. Nothing else changes
-/// hands. Research: docs/research/ai.md#warrior-swap
+/// hands. Research: docs/research/ai-brain-types.md#warrior-swap
 /// @orig 0x00233b08 Human_SwapHeldObjects (unknown)
 SwapOutcome swapHeldObjects(human::ScriptState& receiver, human::ScriptState& presser,
                             const std::function<bool(std::string_view typeName)>& placeable);

@@ -14,7 +14,8 @@ class RecordedCalls;
 // What a brain keeps for its fights beyond its target and slots: the active-attacker places and spacing bytes it
 // gives those who attack it, and its tackle meter; and the per-gang fight values `CfgGang` sets, which its attackers'
 // gangs bring.
-// Research: docs/research/ai.md#attack-places, docs/research/ai.md#try-tackle, docs/research/ai.md#fight-reactions
+// Research: docs/research/ai-fights.md#attack-places, docs/research/ai-fights.md#try-tackle,
+// docs/research/ai/index.md#fight-reactions
 
 namespace coney::ai {
 

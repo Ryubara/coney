@@ -10,7 +10,7 @@
 // How a target limits who swings at him: the active-attacker places (four, of which only the spacing byte's first
 // are used), the spacing bytes a gang's `CfgGang` values raise, and the gap after each attack (one swing's length
 // shared among those allowed to swing). Pure books; the fight goals keep them per brain.
-// Research: docs/research/ai.md#attack-places
+// Research: docs/research/ai-fights.md#attack-places
 
 namespace coney::ai {
 

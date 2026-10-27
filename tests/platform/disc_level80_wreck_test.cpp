@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // Checks against the player's own disc that the crew's Wreck'em order at the level80 store does what the original's
-// does (issue #241; docs/research/crew-wreck.md, docs/research/ai.md#get-item): level80 played
+// does (issue #241; docs/research/crew-wreck.md, docs/research/ai/index.md#get-item): level80 played
 // in the game session at checkpoint 3 as `coney --play-level level80 --checkpoint 3` plays it
 // (support/disc_session.h), player 1 and two of his crew put where the original's runs put them
 // (research/traces/scenarios/wreck_store*.toml), the order given from the R2 menu with the right stick down-left as a

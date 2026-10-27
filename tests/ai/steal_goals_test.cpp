@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The Warriors' steal command (docs/research/ai-code.md#t2-warrior-steal, docs/research/ai-gangs.md#warrior-steal): the
 // tactic's store front and clusters, the claims that keep two Warriors off one object, the WarriorVandalSteal goal's
-// fetches and GetItem's walk and pick-up (docs/research/ai.md#get-item), and the wreck half of WarriorVandalSteal
+// fetches and GetItem's walk and pick-up (docs/research/ai/index.md#get-item), and the wreck half of WarriorVandalSteal
 // (docs/research/crew-wreck.md: panes and smash targets). Synthetic humans on a flat floor and
 // a store of stand-in objects; the level's side (ItemServices) is a fake that takes an object at once when a pick-up
 // starts.
@@ -260,7 +260,7 @@ TEST_CASE("under the wreck command a carried smash target is fetched and any oth
 TEST_CASE("GetItem never takes an object through an intact pane; with the pane gone it takes it",
           "[ai][steal][wreck]") {
     // A shelf object 1 m behind a glass wall (y 43), a lone gang member 0.4 m in front of the glass and so within
-    // GetItem's reach of it; the question of issue #241 (docs/research/ai.md#get-item): the clear ray through the
+    // GetItem's reach of it; the question of issue #241 (docs/research/ai/index.md#get-item): the clear ray through the
     // pane makes him swing at it, never take.
     const auto takes = [](bool glass) {
         AiScene scene;
