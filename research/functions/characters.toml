@@ -169,7 +169,7 @@ page = "characters.md#original-structure"
 role = "the jump's velocity, then airborne"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::launchJump"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00221a00
@@ -196,7 +196,7 @@ page = "characters.md#code-core"
 role = "Heading from the human to a point (Math_Atan2), then Human_TurnToOver over the given time."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::turnToFace"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00222370
@@ -354,7 +354,12 @@ page = "characters.md#original-structure"
 role = "the reverse: frees the pad and panel, leaves the player list, AI again"
 level = "confirmed-code"
 coney = "src/ai/ai_humans.h:AiHumans::releasePlayer"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "releasing a player leaves out the pair break, the other brains' enemy counts, the gear, the stats and inventory (second argument), the target drops, the HUD panel and tag, the class's rescale of health and power, the body's scales, the class flags and the type 2 for +0x19d; switchPlayer() does not clear the left human's goals and actions"
+relation = "not-ported"
+issue = 1011
 
 [[function]]
 address = 0x0022a770
@@ -1899,7 +1904,7 @@ page = "characters.md#original-structure"
 role = "stamina drain while sprinting, the rage drain, and the power meter's drain and empty-meter let-go only while grabbing or tackling ([The power move holds no one](slow-motion.md#power-move))"
 level = "confirmed-code"
 coney = "src/combat/meters.h:RageMeter::update"
-status = "legacy"
+status = "compared"
 
 [[function.gaps]]
 what = "the power meter's drain while blocking or ducking, and its stop in state 0x4000000"
@@ -1923,7 +1928,7 @@ page = "characters.md#original-structure"
 role = "stamina refill (and the second meter)"
 level = "confirmed-code"
 coney = "src/human/stamina.h:Stamina::refill"
-status = "legacy"
+status = "compared"
 
 [[function.gaps]]
 what = "state 0x4000000 fills stamina and power"

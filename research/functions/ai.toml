@@ -1026,7 +1026,12 @@ kind = "helper"
 role = "the periodic enemy scan: lists nearby humans and keeps the enemy list and sight flags up to date"
 level = "confirmed-code"
 coney = "src/ai/enemy_scan.h:scanEnemies"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the enemy scan does not mark the enemies on the HUD radar"
+relation = "not-ported"
+issue = 1011
 
 [[function]]
 address = 0x0028bf00
