@@ -857,7 +857,7 @@ void Doors::hitBarrier(Door& door, const ObjectHit& hit, ObjectWorld& world) {
     // dyn_door_wall_b nothing more, the others three boards. **Coney's reading**: the barrier's collision body, which
     // the break leaves until its removal and which stops a charge dead (docs/research/combat/index.md#moving-strikes),
     // is its triangles in Coney's level mesh, so they go off only at the removal, unless the body goes now (wall_a) or
-    // the barrier is never removed (dyn_door_vargas).
+    // the barrier is never removed (dyn_door_vargas). That timing is Coney's choice.
     if (door.type == kWallA || door.type == kVargas) {
         setTrianglesEnabled(world, door.triangles, false);
     }
