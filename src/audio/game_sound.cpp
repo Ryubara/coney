@@ -638,10 +638,10 @@ void GameSound::levelLoaded() {
     write(std::format("sound bank: {}\n", engine->bankName()));
     write(std::format("sound matrix {}: {} material pairs, {} animation sounds\n", m_matrix.name(),
                       m_matrix.materialEntries(), m_matrix.animEntries()));
-    // Coney's stand-in: loading has ended, so SndLoadBank loads at once again. The original clears +0x3fa58 once
-    // InitLevel returns (docs/research/sound.md#banks); Coney ends it here, at step 11, because no script runs between
-    // the two in Coney (the start callback of step 13 runs in the level script's step, runLevelScript), so the same
-    // loads wait.
+    // Loading has ended, so SndLoadBank loads at once again. The original clears +0x3fa58 once InitLevel returns
+    // (docs/research/sound.md#banks); no script runs between the two in Coney (the start callback of step 13 runs in
+    // the level script's step, runLevelScript), so the same loads wait. Coney's stand-in: it ends here, at step 11,
+    // where the load screen ends.
     engine->setDeferBankLoads(false);
 }
 
