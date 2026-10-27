@@ -13,7 +13,7 @@ from pathlib import Path
 
 from coney_tools import pr_proof, pr_publish, pr_text
 from coney_tools.config import ConfigError, find_repo_root
-from coney_tools.conventions import Conventions, ConventionsError, load_conventions, load_release_rules_at
+from coney_tools.conventions import Conventions, ConventionsError, load_conventions_leniently, load_release_rules_at
 from coney_tools.issue_claim_engine import Engine
 from coney_tools.pr_open_run import EXIT_UNABLE, Run, Stop
 from coney_tools.pr_proof import Refusal
@@ -91,7 +91,7 @@ def find_unit(run: Run) -> None:
     """Find the unit: the task, its record and worktree, the task files and the engineer's file."""
     request = run.request
     root0 = find_repo_root(request.worktree if request.worktree is not None else Path.cwd())
-    conventions0 = load_conventions(root0)
+    conventions0 = load_conventions_leniently(root0)
     run.task = task_name(root0, request.task)
     own_dir = Unit.of(root0, run.task).dir
     try:
@@ -102,7 +102,7 @@ def find_unit(run: Run) -> None:
     if not worktree.is_dir():
         raise Stop(EXIT_UNABLE, f"{run.task}: no unit worktree (run task start): {worktree} does not exist")
     run.root = find_repo_root(worktree)
-    run.conventions = load_conventions(run.root)
+    run.conventions = load_conventions_leniently(run.root, run.say)
     run.owner = run.record.log_task
     # The default branch is the one origin's HEAD names, as pr verify takes it; a unit that was started from any
     # other base (a stacked task) is refused, so no unmerged branch is ever where the release rules come from.

@@ -42,7 +42,12 @@ from coney_tools import (
     stamps,
 )
 from coney_tools.config import ConfigError
-from coney_tools.conventions import Conventions, ConventionsError, load_conventions, load_proof_rules_at
+from coney_tools.conventions import (
+    Conventions,
+    ConventionsError,
+    load_conventions_leniently,
+    load_proof_rules_at,
+)
 from coney_tools.orig_index import SOURCE_DIR, SOURCE_SUFFIXES
 from coney_tools.orig_review import Unit as OrigUnit
 from coney_tools.unit import Unit, tracked_files
@@ -225,6 +230,7 @@ def load_subject(
     now: datetime | None = None,
     conventions: Conventions | None = None,
     scan: bool = True,
+    say: Callable[[str], None] | None = None,
 ) -> Subject:
     """Read the unit at `root` (its worktree): the branch tip, where it left `<remote>/<default branch>`, the rules of
     `origin/<default branch>` (`conventions` replaces them, for the tests), the stamp log and the `@orig` functions it
@@ -237,6 +243,7 @@ def load_subject(
 
     `scan=False` leaves out the `@orig` functions (`changed` and `removed` are empty), which are the slow part on a
     change under `src/`; `scanned` adds them. `refusals_before_scan` is what such a subject can already refuse.
+    The branch's own conventions file is read leniently (an unknown key is skipped); `say`, if given, is told which.
     """
     default = default_branch(root)
     remote_ref = f"{remote}/{default}"
@@ -250,7 +257,7 @@ def load_subject(
         rules, rules_from = conventions, "given"
     else:
         try:
-            rules, rules_from = load_proof_rules_at(root, rules_ref, load_conventions(root))
+            rules, rules_from = load_proof_rules_at(root, rules_ref, load_conventions_leniently(root, say))
         except ConventionsError as error:
             raise ConfigError(str(error)) from error
     tip = _git(root, "rev-parse", "--verify", "HEAD").strip()

@@ -9,9 +9,11 @@ options and exit codes are in [the pull request commands](coney-tools-pr.md#pr);
 each refusal asks you to do.
 
 The proof is the unit's [stamp log](stamps.md#log), kept in the task's scratch folder. The commands trust nothing they
-can recompute: every hash a stamp covers is computed again from the files and the git tree, and the rules (which
-checks a change needs, who may review) are read from the remote's default branch, never from the branch being released.
-A stage that fails is reported together with all the others, each with the command to run again.
+can recompute: every hash a stamp covers is computed again from the files and the git tree, and the rules that
+say which checks a change needs are read from the remote's default branch, never from the branch being released. Some
+others, such as who may review, are still the branch's own until [#1044](issue:1044) moves them
+([`pr open`](#open) says which). A stage that fails is reported together with all the others, each with the command
+to run again.
 
 ## The stages {#stages}
 
@@ -201,6 +203,14 @@ commit: what is pushed is exactly what Check and Review saw. Its options and exi
    a release (`repo`, `pull_requests`, `merge`, `claims`, `stamps`, and so the claims client's bot login and markers)
    are read from `origin/<default branch>` whatever `--remote` is, never from the branch under release. A unit
    that `task start` cut from any other base (a stacked task) is refused: the rules never come from an unmerged branch.
+   The branch's own `.github/conventions.yml` is read leniently by `pr open`, `pr verify` and `pr text`: a key the tool
+   does not know is skipped with a `note: ... ignoring <key>` line (the first release of a branch that adds a rule is
+   read by the tool `main` already has), while a missing key, a wrong value and a misspelt required key are still
+   errors ([How it is read](repo-conventions.md#how-it-is-read)). Not everything of that file is the base's: the proof
+   (`proof` and the `paths` scope lists `docs_only`, `tools_only` and `engine`) is always read from
+   `origin/<default branch>`, and `pr open` reads the sections above from there for its own steps, but the rest that
+   `pr verify` and the proof inside `pr open` use, among them `stamps` and `tasks.review`, is still the branch's own
+   ([#1044](issue:1044)).
 2. **The claim (exit 1).** Each issue of the task is claimed by the person running the command (the card is present and
    not released); otherwise the message names the claimant.
 3. **The pull request (exit 1).** The branch's pull request is looked up (`gh pr list --head`). Merged: refused.

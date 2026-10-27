@@ -539,6 +539,22 @@ def test_uncommitted_changes_stop_the_run_before_the_checks(tmp_path: Path) -> N
     )
 
 
+def test_a_key_the_branch_adds_to_the_conventions_does_not_stop_an_older_tool(tmp_path: Path) -> None:
+    """The first release of a branch that adds a rule is read by the tool main already has, which does not know the
+    key: it is skipped and said once, and the run goes on past the unit lookup into the proof, which refuses the
+    Check and Review made before the file changed (the commit that adds the key), not the key."""
+    opened = docs_unit(tmp_path)
+    path = opened.built.root / conventions.CONVENTIONS_FILE
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    data["claims"]["a_later_rule"] = 3
+    opened.built.edit(conventions.CONVENTIONS_FILE, yaml.safe_dump(data), "add a rule")
+    assert opened.run() == 1
+    text = opened.text()
+    assert "unknown key" not in text
+    assert text.count("ignoring claims.a_later_rule") == 1
+    assert "uncommitted changes" not in text and "stale" in text, text
+
+
 def test_a_detached_head_is_not_a_unit_worktree(tmp_path: Path) -> None:
     opened = docs_unit(tmp_path)
     git(opened.built.root, "checkout", "-q", "--detach")
