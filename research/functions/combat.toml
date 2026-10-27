@@ -128,6 +128,15 @@ coney = "src/combat/throw_aim.h:ThrowAimState::leave"
 status = "legacy"
 
 [[function]]
+address = 0x00227dd8
+name = "Human_IsKnockedOut"
+page = "combat-reactions.md#knocked-out-bit"
+role = "state `0x40000`, or no record: knocked out by the health running out or by a script"
+level = "confirmed-code"
+coney = "src/human/human.h:Human::knockedOut"
+status = "compared"
+
+[[function]]
 address = 0x00229b60
 name = "AttackKind_IsCharge"
 page = "combat/index.md#code-grabs"

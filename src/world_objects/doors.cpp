@@ -948,7 +948,8 @@ void Doors::wreck(Door& door, ObjectWorld& world) {
 // @orig 0x003b2180 DoorFence_OnHit (unknown)
 void Doors::hitBarrier(Door& door, const ObjectHit& hit, ObjectWorld& world) {
     // Every hit: its damage, dust and splinters; one that leaves hitpoints does nothing more. Not ported (#707): the
-    // hit mode set from the hitpoints.
+    // hit mode set from the hitpoints. Stand-in (#707): the dust without its random heights (0 to 0.5 m and 0.25 to
+    // 0.75 m up), and the splinters (0.5 m up) without their throw along the hit's direction x 0.6 and their colour.
     door.hitpoints -= hitDamage(hit.kind);
     dustAndSplinters(world, hit.point);
     if (door.hitpoints > 0) {
