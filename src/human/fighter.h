@@ -196,7 +196,7 @@ class Fighter {
     /// Whether combat's states move the body this update rather than the stick: blocking, holding someone or held,
     /// mugging, a theft, or reacting to a hit (stunned, down, getting up). These stand for the state word's part of
     /// the original's busy test (`0x00223cb0`); a move's clip holds the stick through the record's `+0x08` and the
-    /// locomotion gate (human/locomotion_gate.h).
+    /// locomotion gate (human/locomotion_gate.h). The states are a stand-in for those bits.
     /// @orig 0x00223cb0 Human_IsBusy (unknown)
     [[nodiscard]] bool holdsMovement(const HumanAnimator& animator) const;
     /// Whether the block is up (combat::PlayerCombat::blocking()).
