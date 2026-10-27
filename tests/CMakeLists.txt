@@ -20,6 +20,8 @@ add_executable(coney_tests
     core/sha256_test.cpp
     core/options_test.cpp
     core/perf_test.cpp
+    core/perf_bench_options_test.cpp
+    core/perf_frames_test.cpp
     core/pad_test.cpp
     core/player_options_test.cpp
     core/window_display_test.cpp
@@ -406,7 +408,8 @@ target_sources(coney_tests PRIVATE
 target_sources(coney_tests PRIVATE audio/adpcm_test.cpp audio/disc_sound_test.cpp audio/game_sound_test.cpp
                                    audio/mixer_test.cpp audio/music_player_test.cpp audio/object_sounds_test.cpp
                                    audio/sound_data_test.cpp audio/sound_engine_test.cpp audio/sound_matrix_test.cpp scripting/sound_bindings_test.cpp
-                                   audio/human_sound_events_test.cpp animation/clip_sound_events_test.cpp)
+                                   audio/human_sound_events_test.cpp animation/clip_sound_events_test.cpp
+                                   audio/type_traits_test.cpp)
 # Network play: the bit stream, the transports, the protocol and the sessions over the loopback, and ENet on 127.0.0.1
 # (docs/guides/multiplayer.md).
 target_sources(coney_tests PRIVATE net/bit_stream_test.cpp net/input_buffer_test.cpp net/link_conditioner_test.cpp

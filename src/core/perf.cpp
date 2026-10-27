@@ -308,6 +308,9 @@ std::string toJson(const Summary& summary, const std::vector<std::pair<std::stri
     return out;
 }
 
+// Stub for the fails-first commit: no rows.
+std::string framesCsv(const std::vector<FrameRecord>& /*records*/) { return {}; }
+
 void resetForTests() {
     State& s = state();
     s.enabled = false;
