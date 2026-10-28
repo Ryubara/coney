@@ -6,9 +6,10 @@ what Studio needs from the engine for each, so that the Studio roadmap can say w
 the four Studio designs under [#1054](issue:1054); the panels, the project folder and the import flow are the editor
 experience design's ([#1055](issue:1055)), the program and its libraries the technology design's
 ([#1056](issue:1056)), and the scripting terms, the mods runtime and the natives' names the Lua SDK design's
-([#1057](issue:1057)). This page uses their terms (`project:/`, `game:/`, the `.studio/` cache, the Level view where
-other editors have a Scene view, the Game view) and does not repeat them; what other editors call a scene, Studio
-calls a level.
+([#1057](issue:1057)). It uses their terms (the `.studio/` cache, the Level view where other editors have a Scene view,
+the Game view; what other editors call a scene, Studio calls a level) and does not repeat them. The path scheme
+(`project:/`, `game:/` and `#` for a part of a file) is named on the editor experience page and used by the Lua SDK
+page; this page owns its detail: which names `game:/` holds and how a path resolves ([Paths](#paths)).
 
 ## Contents {#contents}
 
@@ -18,7 +19,7 @@ calls a level.
   [What stays editable after import](#editable) is its last part.
 - [Readers](#readers): glTF, FBX and Blender, and the choice of FBX reader.
 - [Content by kind](#kinds): per kind, what Studio shows, edits, imports and exports.
-- [Project formats](#formats): the files a project saves.
+- [Project formats](#formats): the files a project saves, the level's entity tree and prefabs.
 - [Export](#export): what leaves Studio, and where to.
 - [What Studio needs from Coney](#engine-needs): one table, for the roadmap.
 - [Maintainer decisions](#decisions), [Open questions](#open-questions) and the
@@ -568,6 +569,7 @@ my-project/
   coney-project.toml        the manifest (#1055, #1057), plus: the disc it was made against
   overrides.layout          texture and sound overrides of disc assets
   levels/<name>.layout      levels
+  prefabs/<name>.prefab     prefabs: groups of entities placed many times
   missions/<name>.mission   missions
   characters/<name>.character   custom characters
   models/                   imported glTF and FBX files, each with its .import sidecar
@@ -580,7 +582,7 @@ my-project/
 
 ### One statement format {#statement-format}
 
-Levels, missions, characters, overrides and sidecars share **one text format**: the sandbox layout's, one statement
+Levels, prefabs, missions, characters, overrides and sidecars share **one text format**: the sandbox layout's, one statement
 per line, a keyword then `key=value` arguments, `#` comments ([The layout format](../sandbox.md#the-layout-format)).
 Coney parses it today, a person can write it by hand, git diffs and merges it line by line, and Studio writes it back
 keeping comments and the order of lines, so an edit and its undo give the same file byte for byte ([#1055](issue:1055)).
@@ -595,8 +597,11 @@ units and axes: metres and degrees, the game's axes, z up.
 
 | Addition | Arguments | Does |
 | --- | --- | --- |
-| On every placed statement | `id=` (stable, written by Studio), `parent=ID` | An id scripts and other entities refer to; transforms relative to the parent |
-| Transform | `at=x,y,z`, `rot=x,y,z,w` (a quaternion) or `yaw= pitch= roll=`, `scale=x,y,z` | Full transforms; `heading=` and `yaw=` keep their meaning, so version 1 layouts read unchanged |
+| On every entity | `id=` (stable, written by Studio), `parent=ID`, `name=` | Its place in the level's tree ([The entity tree](#entity-tree)); an id scripts and other entities refer to |
+| Transform | `at=x,y,z`, `rot=x,y,z,w` (a quaternion) or `yaw= pitch= roll=`, `scale=x,y,z` | Every entity's full transform, relative to its parent; `heading=` and `yaw=` keep their meaning, so version 1 layouts read unchanged |
+| `group` | an entity with a transform and nothing else | Unity's empty object: a parent to arrange and move children by |
+| `instance` | `prefab=project:/prefabs/<name>.prefab`, the entity keys | A placed prefab ([Prefabs](#prefabs)) |
+| `set`, `drop` | `INSTANCE/ID key=value ...`; `INSTANCE/ID` | A per-instance override of a prefab's entity, or its removal from this instance |
 | `base PATH` | `game:/levels/<level>` | Plays the project level on top of a disc level ([How a level starts](#level-start)) |
 | `edit TARGET` | `objs:<line>`, `call:<function>:<n>` or `nav:<area>`, then `move at= rot=` or `remove` | An override of a disc level's thing ([How a level starts](#level-start)) |
 | `map PATH` | `project:/maps/<file>` | A whole map imported from Blender, its markers written as statements beside it |
@@ -608,7 +613,7 @@ units and axes: metres and degrees, the game's axes, z up.
 | `navlink` | `from= to= kind=walk\|jump\|climb\|door` | A link between areas |
 | Entities | `flag`, `path`, `flaglink`, `volume`, `object`, `emitter`, `door`, `glass`, `car`, `light`, `character`, `spawner`, `trigger` with their natives' arguments by name | The entities of [Level objects](#entities) |
 | `spawn NAME` | `character=` a type number or `project:/characters/...` | The spawn point's character |
-| `script PATH` | | A script run at the level's entry, after its entities ([#1057](issue:1057)) |
+| `script PATH` | the entity keys | A script entity, run at the level's entry after the entities; its parent is the entity it belongs to ([#1057](issue:1057)) |
 
 An example, in version 2:
 
@@ -624,11 +629,60 @@ mesh id=m1 model=project:/models/bench.glb at=14,6,0 yaw=30 collide=hull
 collider id=c1 shape=box at=10,10,0 size=4,0.2,1.1 material=LOW_FENCE climb=anyone
 box id=b1 at=20,0,0 size=6,6,0.1 rot=0,0.1305,0,0.9914 sneak=yes texture=floor
 
-flag fYardGate id=f1 at=16,12,0 heading=0
-object id=o1 type=dyn_trashcan at=15,11,0 zone=0
+group id=g1 name=Gate at=16,12,0
+flag fYardGate id=f1 parent=g1 at=0,0,0 heading=0
+object id=o1 parent=g1 type=dyn_trashcan at=-1,-1,0 zone=0
 character Rival id=h1 type=32 gang=2 at=18,12,0 heading=180
-script project:/scripts/yard.lua
+script project:/scripts/yard.lua id=sc1 parent=h1
+
+instance id=p1 prefab=project:/prefabs/ambush.prefab at=30,5,0 yaw=90
+instance id=p2 prefab=project:/prefabs/ambush.prefab at=40,-8,0
+set p2/h3 at=0,2,0 type=33
+drop p2/c2
 ```
+
+#### The entity tree {#entity-tree}
+
+A level is a tree of **entities**, as Unity's Hierarchy is (the maintainer's choice; [#1055](issue:1055) draws it):
+any entity may be the parent of any other, a child's transform is relative to its parent's and follows it, and the
+tree has no folders by kind. Every statement that places something is an entity: primitives, colliders, meshes,
+walkable areas, every entity kind of [Level objects](#entities), groups, prefab instances and scripts.
+
+- **Full transforms on every entity**: position, rotation and scale, kept relative to the parent; the file stores
+  them as the user set them, and Studio composes them down the tree.
+- **At Play, the tree is flattened**: Coney composes each entity's world transform from its parents, then builds
+  geometry and calls natives with the world values. A kind whose native takes no rotation or no scale uses the
+  world position and, where it takes a heading, the world rotation's turn about z ([Level objects](#entities)); a
+  scaled parent scales its children's positions and the geometry, never a human or an object of the game, which have
+  no scale. Studio shows such a child's scale as unused rather than refusing the parent.
+- **Order** is the file's: a child's line comes after its parent's, and Coney makes entities in file order, so a
+  parent exists before its children and a script runs after the entities above it.
+- **The base level beside the tree.** A loaded game level ([How a level starts](#level-start)) is a read-only branch at
+  the top of the tree: its entities are shown, selected and inspected, never stored in the file. The project's
+  entities sit beside it, and may be parented to one of its entities (they then follow it, as a crate on a disc
+  car). Changing one of its entities writes an `edit` override.
+
+#### Prefabs {#prefabs}
+
+A **prefab** is a file of entities placed many times: any mix (five fighters, a spawn point, crates, colliders and a
+script for an ambush), with its own tree.
+
+- **The prefab file** is a level file's entity statements under `format prefab 1`, with ids local to the prefab and one
+  root entity whose transform is the instance's origin. It holds no `base`, no `map` and no level settings (sky, fog,
+  title).
+- **An instance** is one `instance` line: the prefab's path and the instance's own id, parent and transform. Its
+  entities' ids are `INSTANCE/LOCAL` (`p2/f3`), which scripts and the Hierarchy use.
+- **Per-instance overrides** are `set INSTANCE/LOCAL key=value ...`, only the keys that differ from the prefab, and
+  `drop INSTANCE/LOCAL` for an entity this instance leaves out; entities added to one instance are ordinary entities
+  parented to one of its entities. Editing the prefab file changes every instance at once, except the keys an instance
+  overrides.
+- **Nesting.** A prefab may hold instances of other prefabs; an override path names each level (`p1/inner/h2`). Studio
+  refuses a prefab that contains itself, directly or through another.
+- **A stale override**, one whose entity the prefab no longer has, is listed when the level opens and skipped at Play,
+  as an `edit` of a disc level is.
+- **At Play** instances are expanded into plain entities, the overrides applied, then the tree is flattened as above.
+  Names that must be unique in the game (a flag's name for `FindFlag`, a path's) get the instance id as a suffix unless
+  the prefab marks them shared, and Studio warns where the 15 characters a flag keeps make two equal.
 
 ### The other files {#other-files}
 
@@ -665,7 +719,7 @@ One row per engine change, the Studio kinds that wait on it and its state today.
 | --- | --- | --- |
 | The asset store with the disc source (N1, N3 of [Now](../asset-and-script-architecture.md#now)) | Every `game:/` view | Designed, not built |
 | A project source in the store, by `project:/` path, reading engine forms | Every project asset | Designed here |
-| A level from a level file: collision and path map built, entities made through their natives, scripts run | Project levels, entities, missions | Sandbox layouts play; entities and scripts from a file do not |
+| A level from a level file: the entity tree flattened and prefabs expanded, collision and path map built, entities made through their natives, scripts run | Project levels, entities, missions | Sandbox layouts play; entities and scripts from a file do not |
 | Primitives with full rotation and scale; colliders of every shape; collision names | Colliders and primitives | Yaw only; flags and material raw |
 | A `PathMap` from areas and links, and the route graph builder | Walkable areas | The decoder reads the disc's chunk |
 | Door and pane triangles built with the level's collision | Doors, glass | The natives take a disc level's triangles |
@@ -719,48 +773,54 @@ In the order they should come, after the editor experience design's shell, File 
    import table to engine forms and `game:/` paths to the original's ids, with the redirects of renamed files. Tests:
    synthetic WADs and a synthetic project resolve every path kind of [Paths](#paths); a missing path fails with its
    name; disc checks print counts only.
-2. **core: Add level files of version 2 with full transforms and colliders.** The layout parser reads `format`, ids,
-   parents, `rot=` and `scale=` on every shape, `collider` statements, and collision names (`material=GRASS`,
-   `climb=`, `sneak=`), and builds them into the collision mesh; version 1 layouts read unchanged and play the same.
-   Tests: every shipped layout parses to the same primitives; a rotated, scaled box's triangles; a sneak collider sets
-   bit 4 under a human.
+2. **core: Add level files of version 2 with the entity tree and colliders.** The layout parser reads `format`, ids,
+   names, parents and groups ([The entity tree](#entity-tree)), `rot=` and `scale=` on every entity, `collider`
+   statements and collision names (`material=GRASS`, `climb=`, `sneak=`); the tree is flattened into world transforms
+   and the solid geometry built into the collision mesh; version 1 layouts read unchanged and play the same. Tests:
+   every shipped layout parses to the same primitives; a box under a rotated, scaled group lands where the composed
+   transform puts it; a sneak collider sets bit 4 under a human.
 3. **gameplay: Add level entities made from a level file at entry.** The entity statements of
    [Level objects](#entities), each made through its native in file order with its handle kept by id, the heading
    converted per native, door and pane triangles built into the mesh and passed by index, pool limits checked. Tests:
    a synthetic level's flags, paths, objects, doors, characters and spawners match the same natives called by a
    script, call for call on the trace.
-4. **gameplay: Add path maps built from walkable areas and links.** A `PathMap` from `navarea` and `navlink`
+4. **core: Add prefabs and prefab instances to level files.** `format prefab 1` files, `instance` lines, `set` and
+   `drop` overrides, nested instances with `INSTANCE/LOCAL` ids, cycles refused, stale overrides listed, and instances
+   expanded before the tree is flattened, with unique game names suffixed ([Prefabs](#prefabs)). Tests: two instances
+   of one prefab, one with an override and a dropped entity, expand to the expected entities; a change to the prefab
+   reaches both except the overridden key; a prefab that contains itself is refused.
+5. **gameplay: Add path maps built from walkable areas and links.** A `PathMap` from `navarea` and `navlink`
    statements, with Coney's own route graph builder, marked as Coney's choice; the AI's route planner and follower
    unchanged. Tests: an AI fighter walks round a hole, jumps a jump link and opens a door link on a built map; the
    built map passes the same queries as its polygons.
-5. **tools: Add the Coney Studio import step with PNG and WAV.** The `.import` sidecar, stable ids, the import table,
+6. **tools: Add the Coney Studio import step with PNG and WAV.** The `.import` sidecar, stable ids, the import table,
    engine forms in `.studio/imported/`, deterministic output, provenance; PNG to textures and WAV to sounds, with a WAV
    reader into `PcmSound` in Coney and `override` statements for textures and sounds. Tests: the same source gives the
    same bytes; a rename keeps a redirect; a WAV plays through the offline mixer.
-6. **tools: Add glTF and FBX import of static meshes and maps.** cgltf and ufbx (after the maintainer's approval) in
+7. **tools: Add glTF and FBX import of static meshes and maps.** cgltf and ufbx (after the maintainer's approval) in
    the import step, the `.cmesh` form and its core parser, Coney drawing an imported mesh, and whole maps by the naming
    convention and custom properties of [How a level starts](#level-start): meshes, collision, materials, spawns,
    flags, paths, walkable areas, objects and lights. Tests: a synthetic glTF and FBX cube import to the same `.cmesh`;
    a synthetic map's spawn, path and walkable area become statements; its collider stops the player.
-7. **tools: Add Coney Studio's disc level view.** Opening a `game:/` level shows its world, collision (by flag and
+8. **tools: Add Coney Studio's disc level view.** Opening a `game:/` level shows its world, collision (by flag and
    material), path map (areas, holes, route graph), occluders, placed objects, and the entities its script makes from
    a recorded trace kept in `.studio/`, each with the function that made it; loading it into a project as `base`,
    with `edit` and `faces` overrides applied at Play and stale ones listed. Tests: a synthetic level's trace lists its
    entities; an override moves one object and removes another, and the disc file is unchanged; a disc check prints
    the counts per kind.
-8. **gameplay: Add custom characters with imported skinned models.** Skinned glTF and FBX import (bone map, rest pose
+9. **gameplay: Add custom characters with imported skinned models.** Skinned glTF and FBX import (bone map, rest pose
    onto the base skeleton, weights, textures) to `.cmodel`; the `.character` file; Coney making a human of a custom
    character through `HuCreate`, a spawn point and `Coney.ChangeCharacter`, with the base type's every number; a
    per-human texture; several materials on a human. Tests: a synthetic skinned model plays the generic walk with every
    vertex within a centimetre of the expected pose; the custom character fights with its base type's damage.
-9. **gameplay: Add imported clips and anim set overrides.** Clip import to `.cclip`, clips played by path, anim set
+10. **gameplay: Add imported clips and anim set overrides.** Clip import to `.cclip`, clips played by path, anim set
    slots a custom character overrides, events authored on the timeline, the Anim Range List record of the replaced
    slot. Tests: an imported clip's sampled pose equals its source's at each key; an overridden walk plays and the
    character's speed is unchanged.
-10. **tools: Add export of disc and project assets.** glTF, PNG, WAV and JSON exports with the extract tool's names, to
+11. **tools: Add export of disc and project assets.** glTF, PNG, WAV and JSON exports with the extract tool's names, to
     `<install>/open/` for disc assets and to a picked folder for a project's own; the record that marks a later import
     as derived. Tests: an exported synthetic model reimports to the same `.cmodel`; a disc export never lands inside
     the project folder.
-11. **tools: Add project missions with checkpoints.** The `.mission` file, starting a project mission at a checkpoint,
+12. **tools: Add project missions with checkpoints.** The `.mission` file, starting a project mission at a checkpoint,
     objectives shown; after the mods runtime ([#1057](issue:1057)). Tests: a synthetic mission starts at checkpoint 2
     with the player at its spawn and its setup function called once.
