@@ -74,7 +74,7 @@ std::expected<std::optional<io::Wad>, Error> openGameDisc(const Options& options
     }
     printText(std::format("{}: WARRIORS.DIR lists {} entries\n", *discPath, opened->index().entries().size()));
     // A game played from an install (`--data`) reads its overrides/files in place of the entries they name: Coney's
-    // way to load an edited script or other WAD file (docs/guides/asset-and-script-architecture.md#install-folder).
+    // way to load an edited script or other WAD file (docs/guides/asset-and-script-architecture.md#file-overrides).
     // A disc given with `--disc` is the game as it is.
     if (const std::optional<std::string> dataPath = options.dataPath; dataPath) {
         const std::filesystem::path folder = std::filesystem::path(*dataPath) / install::kFileOverridesFolder;

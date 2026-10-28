@@ -147,11 +147,9 @@ folder: run from a finished install (the `coney` that `--install` copied there),
 just starts `coney`. A `--disc` on the command line always wins.
 
 **Replacing a WAD file: `overrides/files/`.** A game played from an install reads each file in `DIR/overrides/files/`
-in place of the WAD entry it is named after, whole and at the file's own size. The name is one `--load` takes: the
-entry's file name in any letter case (`level99.lua`), or `0x` and its name hash (`0x7e23a6f2`). Names are taken in
-sorted order, so when two files name one entry the first is used. A file that names no entry, and the second name of
-an entry, are ignored with a warning. When any entry is replaced, Coney logs `overrides/files: N WAD entries replaced:
-a modded session`. The same files given with `--disc` are the game as it is: overrides belong to an install.
+in place of the WAD entry it is named after (`level99.lua`, or `0x` and the name hash), and logs `overrides/files: N
+WAD entries replaced: a modded session`; `--disc` ignores the folder. The naming rules and warnings:
+[Replacing a WAD entry](asset-and-script-architecture.md#file-overrides).
 
 This is how an edited mission script is played. Decompile the chunk into a scratch folder (`coney-tools lua decompile
 level99.lua DIR`, [`lua decompile`](coney-tools-fidelity.md#lua)), edit it, and compile it with a **32-bit** Lua 4.0.1

@@ -117,7 +117,7 @@ TEST_CASE("only a finished install is one to play from", "[install]") {
 TEST_CASE("a game played from an install reads its overrides/files in place of the WAD's entries", "[install][wad]") {
     // Expected: docs/guides/asset-and-script-architecture.md#file-overrides, Coney's own behaviour
     // An install's game/ps2 holds the disc's files; overrides/files/<wad name> replaces one entry whole
-    // (docs/guides/asset-and-script-architecture.md#install-folder).
+    // (docs/guides/asset-and-script-architecture.md#file-overrides).
     TempDir dir;
     dir.write("Coney/game/ps2/WARRIORS.DIR", coney::test::twoEntryDir().span());
     coney::test::Bytes wadData;
