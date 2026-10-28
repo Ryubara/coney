@@ -154,7 +154,7 @@ is preferred for assets, and the PS2 disc fills the gaps and is always the behav
     audio/sounds/<name>.wav     audio/music/<track>.wav
     movies/<name>.bik
     files/<wad name>            power users: a whole WAD entry replaced (simulation kinds mark the session modded;
-                                a script chunk only as Lua 4.0 source)
+                                never a script chunk)
   open/                         optional modding kit: `coney-tools extract` output (PNG, WAV, Lua chunks, index)
   index/
     install.json                sources, disc SHA-1s, Coney version, per-type counts and digests
@@ -167,7 +167,7 @@ is preferred for assets, and the PS2 disc fills the gaps and is always the behav
 ```
 
 The `mods/`, `cache/`, `modded/` and `mod-data/` entries, and why scripts never load from `overrides/`, are
-[Coney Studio: script security](studio/mods.md#install-layout)'s.
+[Coney Studio: mods, packages and loading](studio/mods.md#install-layout)'s.
 
 - **The installer** is a front end over one library call per step: copy the disc's files and check them against
   the known SHA-1s, write `index/install.json`, and optionally build the Xbox index and the modding kit. The PS2 step

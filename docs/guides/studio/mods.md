@@ -182,11 +182,11 @@ comes after the mods already running. That order is the order of main chunks, `s
 ## Console commands {#console}
 
 The Coney console itself (the F8 terminal, its command catalog, access levels, the menu bar, profilers and log viewer,
-the code boundary and mod-registered commands) is [#1064](issue:1064)'s console design (`console.md` in this folder),
-which links here for what its commands do to mods. They are FiveM's resource commands, plus `enable`, `disable`, `play`
-and the listing commands. All of them act on the **running session only** (a maintainer decision): none writes
-`enabled.toml`, so the next start loads exactly what the file says, as FiveM's `start` and `stop` leave `server.cfg`
-alone.
+the code boundary and mod-registered commands) is the console design planned on [#1064](issue:1064) (`console.md` in
+this folder once it merges), which links here for what its commands do to mods. They are FiveM's resource commands, plus
+`enable`, `disable`, `play` and the listing commands. All of them act on the **running session only** (a maintainer
+decision): none writes `enabled.toml`, so the next start loads exactly what the file says, as FiveM's `start` and `stop`
+leave `server.cfg` alone.
 
 | Command | Does, in this session |
 | --- | --- |
@@ -214,7 +214,7 @@ alone.
 
 A maintainer decision: the release build **includes a player console**, limited in what it can reach, with its code
 kept cleanly apart from the developer debug tools, which stay out of the release build. The console design
-(`console.md`, section Release) owns how: the console's model, UI-free, in `src/console/` in the game library; its
+(its section Release) owns how: the console's model, UI-free, in `src/console/` in the game library; its
 screen a Dear ImGui front end in a release target of its own, `coney_console_ui`, so that only that target and
 `coney_devtools` link Dear ImGui; the separation kept by target and model, not by library. That changes the release
 checks' marker list (the `imgui.ini` marker goes, since Dear ImGui's default file name is then in the release game, and
