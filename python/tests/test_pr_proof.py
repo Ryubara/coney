@@ -586,6 +586,19 @@ def test_a_review_of_an_xbox_only_function_is_held_to_its_xbox_address(tmp_path:
     assert texts(built.verify(), "reviewed") == ["reviewed: Review did not cover xbox 0x000bd3c0"]
 
 
+def test_a_review_that_writes_the_xbox_address_as_a_research_page_does_still_covers_it(tmp_path: Path) -> None:
+    # The verdict check compares addresses in lower case, so a reviewer may copy `Xbox 0x000BD3C0` from a page; the
+    # lookup in `pr verify` must read that spelling back as the function's `xbox 0x000bd3c0`.
+    built = make(tmp_path, skip=frozenset({"reviewed"}))
+    shadow = (
+        "namespace coney::render {\n/// Draws the shadows the Xbox port adds.\n"
+        "/// @orig xbox 0x000bd3c0 Shadow_Draw (Shadow.cpp)\nvoid draw() {}\n} // namespace coney::render\n"
+    )
+    built.edit("src/render/shadow.cpp", shadow)
+    built.review(functions={ADDRESS: "clean", "Xbox 0x000BD3C0": "clean"})
+    assert texts(built.verify(), "reviewed") == []
+
+
 def test_a_reviewer_who_also_worked_on_the_task_is_refused(tmp_path: Path) -> None:
     built = make(tmp_path, skip=frozenset({"reviewed"}))
     built.review(reviewer=ENGINEER["agent"])

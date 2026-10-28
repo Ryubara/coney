@@ -129,7 +129,7 @@ type.
 | `verdict` | `pass` or `fail` |
 | `applied` | The kinds applied; every kind of the packet must be there |
 | `functions` | One `{key, body_sha256, addresses, class, evidence, note}` per `@orig` function of the packet. `class` is one of the [orig classes](orig.md#classes), `evidence` is `confirmed (code)` or `inferred`, `addresses` are the ones compared and also in `reviewed`; a function that follows the Xbox port (`@orig xbox`) lists its Xbox addresses as `xbox 0x000bd3c0`, its PS2 ones as plain addresses |
-| `reviewed` | Every `@orig` address compared, an Xbox one as `xbox 0x000bd3c0` |
+| `reviewed` | Every `@orig` address compared, an Xbox one as `xbox 0x000bd3c0` (upper case letters and `Xbox` are read as lower case, as the research pages write them) |
 | `pages` | One `{path, checked, unchecked}` per touched research page: the addresses the reviewer checked in Ghidra (`tasks.review.pages_min_addresses` of them, or all of a shorter page, each on the page), or `unchecked` with the reason, which needs a critical or important finding at the page |
 | `images` | One `{path, sha256, shows}` per picture of the packet, the hash it has now and what the reviewer saw |
 | `findings` | `{severity, where, text}` with `severity` `critical`, `important` or `minor` ([Severity](index.md#severity)) and `where` a `file:line` (or a section of the description) |
