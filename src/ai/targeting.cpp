@@ -37,6 +37,7 @@ bool down(const Brain& brain) { return brain.human().state() == human::TargetSta
 // not put in the hand) counts too.
 // @orig 0x00224060 Human_IsHoldingObject (unknown)
 bool armed(const Brain& brain) {
+    // Coney stand-in: any object in hand (not its kind), or a weapon's anim set.
     return brain.human().script().heldObject != kNoHeldObject || brain.human().fighter().animSet() != 0;
 }
 
