@@ -500,11 +500,11 @@ answered within a minute or two, by its own job or the next one. One that no job
 by the next sweep that runs; a sweep waiting in the queue can be cancelled too, which delays that by an hour. Only
 commands are caught up: a cancelled issue or pull request event is read back by the next pass of that issue (its pull
 requests, assignees and labels), at the latest by the sweep. A comment that is no command, and a label event for any
-label but a paused one, `workflow` or `claim-trial`, starts no job. Something outside the queue can still write (a
-person editing a card, `claim run` or `claim sweep` started by hand), so the Action keeps a backstop: before its first
-change of each step and before every card write it reads the issue's cards again and starts the pass over when one
-changed, and two cards of one claimant are merged into the first (its handled commands, stage, scope and latest
-activity). `task create` adds a 60-second settle before it trusts a claim ([Task files](#task-files)).
+label but a paused one, `workflow`, `studio` or `claim-trial`, starts no job. Something outside the queue can still
+write (a person editing a card, `claim run` or `claim sweep` started by hand), so the Action keeps a backstop: before
+its first change of each step and before every card write it reads the issue's cards again and starts the pass over
+when one changed, and two cards of one claimant are merged into the first (its handled commands, stage, scope and
+latest activity). `task create` adds a 60-second settle before it trusts a claim ([Task files](#task-files)).
 
 **If the Action cannot delete a comment** (its token may not), the card and the labels are still right and the command's
 id is on the card, so it is not acted on again; a maintainer deletes the comment by hand.
