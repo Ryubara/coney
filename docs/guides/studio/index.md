@@ -6,8 +6,8 @@ Coney's behaviour (combat, AI, pathing, missions) working. It is to Coney what R
 one game's content, not a general engine like Unity. The parent issue is [#1054](issue:1054).
 
 **Status: design.** Nothing in this folder is built. These pages are designs in the sense of [Page
-kinds](../writing-docs.md#page-kinds): each one says what Studio should do and why, and lists the questions only a
-maintainer can answer. What gets built moves into a guide.
+kinds](../writing-docs.md#page-kinds): each one says what Studio should do and why, and names the questions only a
+maintainer can answer. The maintainer's decisions so far are [below](#decisions). What gets built moves into a guide.
 
 ## What Studio is {#principles}
 
@@ -54,8 +54,8 @@ because *The Warriors* is made of levels and calls its in-engine cutscenes scene
 
 ## Maintainer decisions {#decisions}
 
-- **Studio's content and faithful first.** Studio's tooling (the editor, its viewers, its panels) is debug tooling,
-  which the rules allow now. Custom levels, Coney natives and Studio's own lights are enhancements, which the rules hold
-  until the game is complete. Proposal: Studio and its projects run in a mode of their own, the story stays faithful and
-  unchanged, and the faithful-first rule gets this exception. A change to that rule is a maintainer decision
-  ([AGENTS.md](repo:AGENTS.md)).
+- **Studio and faithful first: decided, no exception needed.** Studio is a reflection of Coney's progress: it offers
+  only what Coney has, an enhancement or a native appears in Studio once Coney has it, and nothing in Studio changes how
+  the story plays. So Studio never runs ahead of the faithful-first rule ([AGENTS.md](repo:AGENTS.md)): whatever Coney is
+  allowed to have, Studio realizes, and nothing more.
+- **Level, not scene: decided.** Studio says *level* wherever other editors say *scene* ([Terms](#terms)).
