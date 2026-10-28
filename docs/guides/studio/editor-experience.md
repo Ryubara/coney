@@ -18,11 +18,17 @@ what Coney Studio copies and what it skips, and why. Two rules decide every choi
    needs something Coney lacks is listed with what it waits on, and is not in Studio until Coney has it
    ([What Studio is](index.md#principles)).
 
+**Studio builds levels; it does not make models or animations.** What Blender and the other modelling tools do
+(modelling, sculpting, rigging, animating, painting textures) Studio leaves to them. Studio imports what they make and
+is where the user builds maps: placing, arranging, sizing and turning things, setting their collision, applying
+textures and laying out spawn points and paths. What can be edited in Studio depends on the kind of asset and how it came
+in ([Importing](#import)); the model, animation and texture viewers only look.
+
 ## Contents {#contents}
 
 - [The panels](#panels), [the default layout](#default-layout) and [layouts](#layouts)
 - [The project](#project): the folder, its layout and the game's files
-- [Play mode](#play-mode)
+- [Play mode](#play-mode) and [live edits while playing](#live-edits)
 - [The Scene view](#scene-view): the fly camera, [the keymap](#keymap), [gizmos](#gizmos), [selection](#selection)
   and [undo](#undo)
 - [Composing a level](#composing): primitives, textures, colliders and path points
@@ -67,7 +73,7 @@ has what it names.
 | **File system** | The project folder as a tree, and the game's files read-only; drag-and-drop and the Import button land here | Coney's asset loading and the [install folder](../asset-and-script-architecture.md#install-folder) | ready |
 | **Console** | The run log's lines, filtered by level and system, and a Lua line to run | The [run log](../run-log.md) and the [Lua console](../debug-menu.md#lua-console) (expressions and assignments; full Lua waits on a compiler) | ready |
 | **Natives** | Every native with its status, signature and an argument editor to call it | The debug menu's [Natives](../debug-menu.md#natives) page and the [masterlist](../../references/bindings/index.md) | ready |
-| **Model viewer** | One model on its own: shaded, wireframe, by material, normals and bone axes, its counts | The [character viewer](../running-viewers.md#the-character-viewer), the [mesh views](../debug-menu.md#mesh-views) and the [Mesh group](../debug-menu.md#mesh-group) | ready |
+| **Model viewer** | One model on its own, to look at (never to edit): shaded, wireframe, by material, normals and bone axes, its counts | The [character viewer](../running-viewers.md#the-character-viewer), the [mesh views](../debug-menu.md#mesh-views) and the [Mesh group](../debug-menu.md#mesh-group) | ready |
 | **Animation viewer** | Any clip on a model: play, loop, speed, in place, by set and category | The [Animation player](../debug-menu.md#animation-player) | ready; a scrubbing timeline waits on a seek in the animation player |
 | **Texture viewer** | A texture dictionary or sprite sheet, image by image | The texture and sprite sheet viewers ([viewers](../running-viewers.md#viewing-texture-dictionaries)) | ready |
 | **Debug panels** | Every other page of the debug menu (Tunables, Player, Camera, Spawner, AI fighters, HUD, Display, Audio, Network), as a panel | The debug menu's model, which any front end renders ([One model](../debug-menu.md#one-model)) | ready |
@@ -93,30 +99,33 @@ lower left under the Scene tree, and Roblox Studio puts Explorer and Properties 
 
 Coney Studio takes **Godot's arrangement**, which is what the brief asks for: the **Inspector on one side and the
 File system on the other**, so the two panels used most while building a level are both always in view, and the
-Hierarchy sits over the File system, as Godot's Scene dock sits over its FileSystem dock. The Scene and Game views
-share the middle as tabs, as in Unity, and the Console and Natives share the bottom.
+Hierarchy sits over the File system, as Godot's Scene dock sits over its FileSystem dock. The middle holds **two
+views side by side**, as Unity's *2 by 3* layout has them: the **Scene view** (fly round, select and move things with
+the gizmos) and the **Game view** (the game running), so an edit made in the Scene view while playing is seen at once in
+the Game view ([Live edits](#live-edits)). The Console and Natives share the bottom.
 
 ```text
-+------------------------------------------------------------------------------------------+
-| File  Edit  Create  View  Play  Window  Help                                             |
-| [Q][W][E][R][Y]  Pivot | Global   Snap           [ Play ][ Pause ][ Step ]   Layout: Default v |
-+------------------+------------------------------------------------+----------------------+
-| Hierarchy        |  Scene | Game                                  | Inspector            |
-|  Player          |                                                |  Identity            |
-|  Spawns          |                                                |  Transform           |
-|  Shapes          |            the level, seen by the              |  Meters              |
-|  AI humans       |            fly camera                          |  ...                 |
-+------------------+                                                |                      |
-| File system      |                                                |                      |
-|  project:/       |                                                |                      |
-|   levels/        +------------------------------------------------+                      |
-|   textures/      | Console | Natives                              |                      |
-|  game:/ (read)   |  [info] level loaded ...                       |                      |
-+------------------+------------------------------------------------+----------------------+
++-----------------------------------------------------------------------------------------------+
+| File  Edit  Create  View  Play  Window  Help                                                  |
+| [Q][W][E][R][Y]  Pivot | Global  Snap           [ Play ][ Pause ][ Step ]     Layout: Default v |
++----------------+------------------------------+------------------------------+----------------+
+| Hierarchy      | Scene                        | Game                         | Inspector      |
+|  Player        |                              |                              |  Identity      |
+|  Spawns        |  the level, seen by the      |  the game running, seen by   |  Transform     |
+|  Shapes        |  fly camera, with gizmos     |  the game's own camera       |  Collision     |
+|  AI humans     |                              |                              |  ...           |
++----------------+                              |                              |                |
+| File system    |                              |                              |                |
+|  project:/     +------------------------------+------------------------------+                |
+|   levels/      | Console | Natives                                             |                |
+|   textures/    |  [info] level loaded ...                                    |                |
+|  game:/ (read) |                                                             |                |
++----------------+-------------------------------------------------------------+----------------+
 ```
 
-*Figure: the default layout. The Model, Animation and Texture viewers open as tabs beside Scene and Game; the
-debug panels and Lighting open where the user last docked them, or floating.*
+*Figure: the default layout. Outside Play the Game view shows the level from its first spawn point, as Unity's Game
+view shows the scene's camera. The Model, Animation and Texture viewers open as tabs over the Scene view; the debug
+panels and Lighting open where the user last docked them, or floating.*
 
 The toolbar holds the tools (Q to Y, [the keymap](#keymap)), the gizmo's pivot and space toggles, snapping, the Play
 controls in the middle, as in Unity, and the layout menu on the right, as in Unity's toolbar.
@@ -149,7 +158,8 @@ Copied from Godot and Unity together:
 - A layout saves which panels are open, where, their sizes and floating windows' places, at the
   [UI scale](../debug-menu.md#ui-scale) it was saved at, so it opens right on a display of another size, as the
   overlay's windows do.
-- Two factory layouts besides *Default*: **Wide** (the Hierarchy and File system as tabs on the left, for a laptop) and
+- Two factory layouts besides *Default*: **Wide** (the Scene and Game views as tabs in the middle and the Hierarchy and
+  File system as tabs on the left, for a laptop's screen) and
   **Viewers** (the Model and Animation viewers in the middle, the File system on the left, the Inspector on the right,
   for looking through the disc's models and clips). Unity's other factory layouts add nothing Coney Studio needs.
 
@@ -223,11 +233,13 @@ with the player at a chosen spawn (`--play-level sandbox:NAME --spawn NAME`).
 | Where it runs | the Game view, in the editor's process | a separate game process; the editor shows its live tree (the Remote tree) | in the editor, or a standalone process | the same viewport |
 | Pause, step | Pause (Ctrl+Shift+P), Step (Ctrl+Alt+P) | Pause (F7) | Pause, Frame Skip | none in the toolbar |
 | Leave the player's view | the Scene view stays live beside the Game view | none | Eject (F8): the editor camera, the game still running | Client/Server toggle |
-| Edits made while playing | lost on Stop; the editor is tinted to warn | lost (they were made in another process) | lost, unless kept with *Keep Simulation Changes* in Simulate | lost: Stop resets every object |
+| Edits made while playing | made in the Scene view to the running game, seen at once in the Game view, and lost on Stop; the editor is tinted to warn; *Copy Component* in Play and *Paste Component Values* after keeps one | two kinds: an edit to the running game through the Remote tree is lost; an edit to the edited scene is kept, and with *Debug > Synchronize Scene Changes* it is replicated in the running game at once | lost, unless kept with *Keep Simulation Changes* (K) in Simulate | lost: Stop resets every object; an instance copied in the playtest can be pasted after Stop |
 | Several players | none built in | several instances | several clients | Server and up to eight clients (F7) |
 
-All four agree on the one rule that matters: **Play never changes the edited scene**, and Stop puts everything back as
-it was.
+Unity, Unreal and Roblox Studio make Play a **sandbox**: whatever is done in it, the running game is thrown away on Stop
+and the edited scene is as it was. Godot alone separates the two things an edit can touch: the **running game** (lost on
+Stop) and the **edited scene** (kept, and sent live to the running game). Its users get the best of both, and pay with a
+second tree to tell apart from the first.
 
 ### Coney Studio's Play mode {#play-coney}
 
@@ -242,24 +254,55 @@ it was.
   fighters and climb what it holds. Nothing in Play is Studio's code.
 - **Pause** (Ctrl+Shift+P) and **Step** (Ctrl+Alt+P) are Unity's keys for the Time page's pause and one fixed step; the
   time scale is on the toolbar while playing.
-- **Stop** (Ctrl+P again, or the Stop button) ends Play and puts the edited level back exactly as it was before Play.
-  Edits made while playing are lost, as in all four editors; while playing, the whole editor is **tinted** (Unity's
-  Play mode tint) so nobody edits for nothing.
-- **While playing**, the Hierarchy and Inspector show the running game, live, as the Entity inspector does, and the
-  Inspector's edits go through the Entity editor's queue, between two steps and into the run log
-  ([Entity editor](../debug-menu.md#entity-editor)). The debug panels work as in the game.
+- **Stop** (Ctrl+P again, or the Stop button) ends Play and throws the running game away. The level keeps the edits
+  made to it while playing ([Live edits](#live-edits)); while playing, the editor is **tinted** (Unity's Play mode
+  tint), so it is always plain which state the screen shows.
+- **While playing**, the Hierarchy has two tabs, as Godot's Scene dock has *Local* and *Remote*: **Level** (what is saved)
+  and **Running** (the running game's entities, live, as the Entity inspector shows them). The Inspector edits whichever
+  is selected; an edit of a running entity goes through the Entity editor's queue, between two steps and into the run
+  log ([Entity editor](../debug-menu.md#entity-editor)), and is lost on Stop. The debug panels work as in the game.
 - **Eject** (F8, Unreal) leaves the player where he stands and flies the Scene view's camera through the running game,
   and F8 again takes the player back. It realizes the play mode's free camera (the Camera page's, which flies while the
   player stands still).
 - **The mouse and keyboard** go to the game while the Game view has focus, and Escape gives them back to the editor
   (Unity's rule), so Escape is never the game's pause in Studio; the gamepads always go to the game, as they do with the
   overlay open.
-- Play reads the project's files **as saved**, so what plays is what a player of the project would get; Play saves
-  first when there are unsaved edits, and says so.
+- Play starts from the level **as edited**, saved or not; what a player of the project gets is what is saved, and the
+  title bar marks unsaved edits as it does outside Play.
 
 How the engine runs for Play (in Studio's process, as Unity, or as a child process, as Godot) is the technology page's
-choice ([#1056](issue:1056)). This page asks only that Stop restores the edit state exactly and that the Game view's
-frames are Coney's.
+choice ([#1056](issue:1056)). This page asks that Stop leaves the level as edited and nothing of the running game, that
+the Game view's frames are Coney's, and that the running game can take a level edit between two steps.
+
+### Live edits while playing {#live-edits}
+
+The maintainer asks that an edit made in the Scene view shows in the running Game view at once, where it can be done,
+and accepts that it is rough at first. Studio follows **Godot's model**, the only one of the four that does this:
+
+- **An edit in the Scene view during Play edits the level**, as it would outside Play: it is a command on the undo
+  stack, it is saved with the level, and it is **kept after Stop**. Losing work done while playing is the best known
+  trap of Unity's Play mode, and Studio's users build levels, so the level is what they edit.
+- **The same edit is sent to the running game**, as Godot's *Synchronize Scene Changes* does: a command applied between
+  two steps, as the Entity editor's are, so a step never sees half an edit. What each edit does to the running game:
+
+  | Edit to the level | In the running game |
+  | --- | --- |
+  | A primitive moved, turned, sized, added or deleted; its collision changed | Its drawn mesh and its collision are rebuilt in place; a human standing on it falls or lands as physics decides |
+  | A texture, tiling or tint | Drawn with the new one at the next frame |
+  | Sky, sun, ambient light, fog, occlusion, shadows | Applied at the next frame |
+  | A target or AI fighter moved or turned | Teleported there through the Entity editor's *Teleport* and *Heading* |
+  | A target or AI fighter added or deleted | Spawned, or deleted as the Entity editor deletes |
+  | A spawn point or camera view | Nothing until the next Play: they matter only at a start |
+
+- **An edit Coney cannot apply live is kept in the level and said so** on the Game view (*applies on the next Play*),
+  never silently dropped, and *Restart* (Ctrl+Shift+R) plays the level again from its start with every edit.
+- **Edits of the running game itself** (a human's health, a fighter's state, the Running tab) are the Entity editor's
+  and are lost on Stop, as in all four editors.
+- **Rough at first is accepted:** the first version may rebuild all of a level's primitives for a change to one;
+  correctness (the running game matching the saved level after a Restart) comes before speed.
+
+Unity's *Copy Component* and Unreal's *Keep Simulation Changes* are not needed: the level's edits are already kept, and
+the running game's are deliberately not.
 
 ## The Scene view {#scene-view}
 
@@ -320,6 +363,8 @@ to document and test.
 | Ctrl+S | save the open level | Save | Save scene | Save | publish or save |
 | Ctrl+P, Ctrl+Shift+P, Ctrl+Alt+P | Play and Stop, Pause, Step | same | F5, F7 | Alt+P | F5, Shift+F5 |
 | F8 | Eject in Play | none | none | Eject | Run |
+| Ctrl+Shift+Alt+P | Play here, from the Scene view's camera | none | none | none | Play Here (no key) |
+| Ctrl+Shift+R | Restart Play from the level's start | none | none | none | none |
 
 T is left free: Unity's Rect tool edits 2D and interface layouts, which Coney Studio does not make. On macOS, Ctrl reads
 Cmd, as in all four.
@@ -435,7 +480,8 @@ What all four do, and Studio with them:
   ([Entity editor](../debug-menu.md#entity-editor)); Studio's edit-time commands add the inverse.
 - **Edit > Undo History** lists the stack, and choosing a line goes back to it (Unity's Undo History).
 - Saving does not clear the stack; closing the level does.
-- **Play has no undo**: an edit made while playing is lost on Stop anyway, and Stop is the undo.
+- **In Play**, a level edit is undone like any other and the undo is sent to the running game too; an edit of the
+  running game has no undo, since Stop throws it away.
 - **File operations are not undone** (none of the four undoes them); a delete asks first and goes to the recycle bin.
 
 ## Composing a level {#composing}
@@ -529,13 +575,13 @@ Ctrl+D duplicates one.
 
 What can be imported is what Coney can load (rule 2), so the list grows with Coney:
 
-| Kind | Becomes | State |
-| --- | --- | --- |
-| `.png` | A texture a level's shapes use | ready: a sandbox layout's `texture` statement ([Statements](../sandbox.md#statements)) |
-| `.layout` | A level | ready: Coney's sandbox layout format |
-| `.lua` | A script | waits on the mods runtime ([Script mods](../../roadmap.md#script-mods)) |
-| `.gltf`, `.glb` | A map or a model | waits on custom content ([Custom content](../../roadmap.md#custom-content)) |
-| `.wav` | A sound | waits on Coney loading sounds from outside the disc |
+| Kind | Becomes | What Studio edits | State |
+| --- | --- | --- | --- |
+| `.png` | A texture a level's shapes use | Where it is applied, its tiling and tint; never its pixels | ready: a sandbox layout's `texture` statement ([Statements](../sandbox.md#statements)) |
+| `.layout` | A level | Everything in it: shapes, collision, spawns, targets, fighters, views, lighting | ready: Coney's sandbox layout format |
+| `.lua` | A script | Its text, in the Script editor | waits on the mods runtime ([Script mods](../../roadmap.md#script-mods)) |
+| `.gltf`, `.glb` | A map or a model | Its placement, its collision and which textures its materials use; never its mesh, bones or clips, which are remade in Blender and imported again | waits on custom content ([Custom content](../../roadmap.md#custom-content)) |
+| `.wav` | A sound | Where it plays; never its samples | waits on Coney loading sounds from outside the disc |
 
 The content page ([#1058](issue:1058)) owns the formats themselves and their export.
 
@@ -549,7 +595,8 @@ The content page ([#1058](issue:1058)) owns the formats themselves and their exp
 | Terrain and foliage tools | Unity, Unreal, Roblox | Coney's worlds are sector meshes with no terrain system |
 | The Rect tool and an interface designer | Unity, Roblox | Coney has no interface a project can make |
 | Prefabs and packages of placed things | Unity, Godot, Roblox | Waits on Coney's own level format, which decides whether it has them ([#1058](issue:1058)) |
-| Keeping edits made in Play | Unreal (*Keep Simulation Changes*) | Stop restoring everything is the rule all four share and the simplest to trust; the Entity editor's log could replay them later if users ask |
+| Copying edits out of Play one by one | Unity (*Copy Component*), Unreal (*Keep Simulation Changes*), Roblox (copy and paste) | Level edits made in Play are kept anyway ([Live edits](#live-edits)), and the running game's are deliberately thrown away |
+| Modelling, sculpting, rigging, animating, texture painting | Unity (ProBuilder), Unreal (modelling mode), Roblox (solid modelling) | Blender and the other tools do it; Studio imports their work and builds levels from it |
 | Running without a player | Roblox (Run), Unreal (Simulate) | The game's scripts and play mode expect a player; Eject gives the same view of a running level |
 | Testing with several players | Roblox, Unreal, Godot | Waits on Coney's co-op ([Network architecture](../network-architecture.md#phases)) |
 | Team Create, cloud places | Roblox | No server; a project is a folder, shared with git or any other way |
@@ -590,21 +637,26 @@ library and the program.
    drag or in the Inspector with tiling and tint; each primitive's collider in the Inspector's Collision group and the
    Collision view mode; delete; saving the level as a sandbox layout. Tests: a level composed by script saves a layout
    that Coney loads and plays; a saved level reopens unchanged, byte for byte.
-7. **tools: Add Play mode to Coney Studio.** Play, Play here, Pause, Step and Stop with Unity's keys; the level plays in
-   the Game view with the player at its spawn or the camera's spot, the editor tinted; Stop puts the edited level back
-   exactly; the Hierarchy and Inspector follow the running game and edit it through the Entity editor's queue; Eject
-   flies the free camera. Tests: the level after Stop equals the level before Play; a scripted Play reaches the spawn
-   point and a fight with a layout's fighter.
-8. **tools: Add drag-and-drop import and the Import button.** Drops land only in the File system panel (into the folder
+7. **tools: Add Play mode to Coney Studio.** Play, Play here, Pause, Step, Restart and Stop with Unity's keys; the level
+   plays in the Game view beside the Scene view with the player at its spawn or the camera's spot, the editor tinted;
+   the Hierarchy's Level and Running tabs, the running game edited through the Entity editor's queue; Eject flies the
+   free camera; Stop throws the running game away. Tests: a scripted Play reaches the spawn point and a fight with a
+   layout's fighter; the level after Stop is the level as edited.
+8. **tools: Add live level edits during Play.** A level edit made in the Scene view while playing is kept in the level
+   and applied to the running game between two steps: primitives and their collision rebuilt, textures and lighting
+   redrawn, targets and fighters teleported, spawned or deleted; an edit that cannot apply live says *applies on the
+   next Play*. Tests: a box moved during a scripted Play blocks the player at its new place in the same run; after
+   Stop and Restart the running game matches the saved level.
+9. **tools: Add drag-and-drop import and the Import button.** Drops land only in the File system panel (into the folder
    under the cursor or the selected one) and nowhere else; the Import button and *File > Import...* do the same through
    a file picker; PNG and `.layout` import by kind with their settings in the Inspector and Reimport; name clashes ask;
    other kinds are refused with the list. Tests: a drop outside the panel imports nothing; a PNG dropped on a folder is
    there and a shape can use it.
-9. **tools: Add the debug menu as Coney Studio panels.** Studio as the third front end of the debug model: every page
+10. **tools: Add the debug menu as Coney Studio panels.** Studio as the third front end of the debug model: every page
    (Console with the run log and Lua line, Natives, Tunables, Player, Camera, Spawner, AI fighters, HUD, Display, Audio,
    Network) as a panel, with no Studio code per page. Tests: every page of the session draws as a panel, as the overlay
    test checks for the overlay.
-10. **tools: Add the model, animation and texture viewers to Coney Studio.** A `game:/` model opens in the Model viewer
+11. **tools: Add the model, animation and texture viewers to Coney Studio.** A `game:/` model opens in the Model viewer
    (shaded, wireframe, by material, normals, bone axes, its Mesh group counts), a clip in the Animation viewer (the
    Animation player's sets, loop, speed, in place) and a texture dictionary in the Texture viewer; the *Viewers* layout
    arranges them. Tests: each viewer opens a synthetic fixture with no disc; a disc check prints counts only.
@@ -619,7 +671,9 @@ The editors' own documentation, read for this page:
 - Godot: [Introduction to 3D](https://docs.godotengine.org/en/stable/tutorials/3d/introduction_to_3d.html) (freelook and
   the tool keys), [File system](https://docs.godotengine.org/en/stable/tutorials/scripting/filesystem.html) (`res://`,
   moving files), [Customizing the interface](https://docs.godotengine.org/en/stable/tutorials/editor/customizing_editor.html)
-  (docks and editor layouts).
+  (docks and editor layouts),
+  [Overview of debugging tools](https://docs.godotengine.org/en/stable/tutorials/scripting/debug/overview_of_debugging_tools.html)
+  (*Synchronize Scene Changes* and the Remote tree).
 - Unreal: [Viewport controls](https://dev.epicgames.com/documentation/en-us/unreal-engine/viewport-controls-in-unreal-engine).
 - Roblox Studio: [Studio interface](https://create.roblox.com/docs/studio/ui-overview),
   [Testing modes](https://create.roblox.com/docs/studio/testing-modes).

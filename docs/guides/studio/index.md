@@ -30,7 +30,7 @@ and its line to the `nav:` of `mkdocs.yml`, under *Coney Studio design*.
 
 | Page | What it decides | Issue |
 | --- | --- | --- |
-| [Editor experience](editor-experience.md) | The panels and the default layout, saved layouts, the project folder, Play mode, scene navigation and the keymap, gizmos, selection and undo, the import flow | [#1055](issue:1055) |
+| [Editor experience](editor-experience.md) | The panels and the default layout, saved layouts, the project folder, the Scene and Game views, Play mode and live edits while playing, scene navigation and the keymap, Unity's transform gizmo, selection and undo, composing levels, the import flow | [#1055](issue:1055) |
 | Technology (planned) | The GUI library, one program or an editor mode of `coney`, how Play runs the engine, the code editor and language server, hot reload | [#1056](issue:1056) |
 | Lua SDK and natives (planned) | The natives and their names, the mods runtime and loader, resources, the sandbox, typed stubs for completions | [#1057](issue:1057) |
 | Content and formats (planned) | What Studio shows and edits from the disc's files, a project's own formats, import and export | [#1058](issue:1058) |
