@@ -1,0 +1,334 @@
+# Coney Studio: technology
+
+This page is a **design**: nothing on it is built. It decides what Coney Studio is made with: the GUI library, whether
+Studio is a program of its own, how Play runs the engine and how edits reach it, the code editor and its language
+tooling, the script debugger, hot reload and the libraries that import assets. Each question lists the alternatives
+weighed and the choice, and the page ends with the [build issues](#build-issues) it proposes, in order. Two small
+proofs settled what reading could not ([Proofs](#proofs)).
+
+What Studio is, its panels, Play's controls and the keymap are the [editor experience](editor-experience.md) design;
+what a script can call, the language version for mods and how Play loads a project are the Lua SDK and runtime design;
+what Studio can read and write from the game's files is the content and formats design. This page links to them and
+does not repeat them.
+
+## The choices at a glance {#summary}
+
+| Question | Choice | Main reason |
+| --- | --- | --- |
+| [GUI library](#gui) | Dear ImGui, its docking release, with a designed theme | Coney's overlay and launcher already use it; the engine's frame shows in a panel with one call; MIT; one stack on three platforms |
+| [The program](#program) | A separate `coney-studio` executable that links the same engine libraries as `coney` | The game a player runs carries no editor code; Studio is its own entity that realizes the engine's functions |
+| [Play](#play) | In the Studio process: a play session on its own simulation thread, drawn into the Game view | The Scene view and the Game view share one world, so live edits are a queue of edit commands; a breakpoint stops only the simulation |
+| [Live edits](#live-edits) | Edit commands applied to the running session between steps | Serializable, so the same commands can later go to a child process or a networked peer |
+| [Code editor](#code-editor) | goossens' ImGuiColorTextEdit, pinned, wrapped by Studio | Completions, squiggles, hover, multiple cursors, VS Code-like keys, inside the same ImGui frame |
+| [Language tooling](#language-tooling) | lua-language-server as a child process, fed stubs generated from the natives masterlist; Coney's own compiler for syntax errors | Completions, hover, type and argument checks for free; MIT; about 4.5 MB to download per platform |
+| [Script debugger](#debugger) | A Debug Adapter Protocol server in Coney's script runtime; Studio is a client of it | One protocol for Studio and for VS Code; pausing blocks the simulation thread, not the editor |
+| [Hot reload](#hot-reload) | Studio polls the project folder; scripts reload between steps; presentation assets swap live, simulation assets ask for a restart of Play | Follows the asset layers' split of presentation and simulation kinds |
+| [Importers](#importers) | cgltf (glTF), ufbx (FBX), stb_image (images), dr_libs and stb_vorbis (audio) | Small, permissive, single-file C libraries; no SDK and no new build system |
+
+## What Studio starts from {#starting-point}
+
+| Piece | Where | What it gives Studio |
+| --- | --- | --- |
+| Dear ImGui v1.92.9b, MIT | `cmake/deps.cmake`, built with the debug tools only | The developer overlay's windows over SDL3 and OpenGL 3 ([The developer overlay](../debug-menu.md#the-developer-overlay)); the pin is the plain release, without docking |
+| The launcher's design | [The launcher](../launcher.md#decided) | A second Coney program on SDL3 and Dear ImGui over SDL's GPU API: a precedent for a separate executable |
+| The renderer design | [#883](issue:883), in work | SDL3's GPU API behind a backend-neutral seam, Dear ImGui through its `sdlgpu3` backend, and the simulation and drawing on two threads |
+| Coney's Lua 4.0 VM and 956 original natives | `src/scripting/`, [Script bindings](../../references/bindings/index.md) | The runtime and the masterlist the editor's completions come from |
+| The asset layers and the script split | [Asset and script architecture](../asset-and-script-architecture.md) | Presentation and simulation kinds, the `Native` list, the planned Lua 4.0 compiler |
+| A JSON reader | `src/core/json.cpp` | Half of what a Language Server Protocol and Debug Adapter Protocol client needs |
+
+## The GUI library {#gui}
+
+### The alternatives {#gui-alternatives}
+
+| | Dear ImGui (docking) | Qt 6 (Widgets) | Slint | A web UI (Electron, Tauri, or a web view) |
+| --- | --- | --- | --- | --- |
+| Looks | As good as its theme: flat panels, one accent, real fonts ([Proofs](#proof-shell)). No native look | Native look, mature styling | Modern, declarative styling | Anything CSS can do |
+| Docking | Built in (docking release): tabs, splits, saved layouts, `DockBuilder` for a default layout | Through Qt-Advanced-Docking-System (LGPL-2.1) or KDDockWidgets (GPL or commercial) | None built in | A library in JavaScript (golden-layout, dockview) |
+| Text editing | ImGuiColorTextEdit forks ([Code editor](#code-editor)) | QScintilla (GPL or commercial) or KSyntaxHighlighting | A plain text box | Monaco, the VS Code editor |
+| Showing the engine's frame | `ImGui::Image` of the frame's texture, same device | A `QRhiWidget` or a window container round an SDL window; two event loops | A texture import per backend | Not in-process: frames copied across, or a native window stacked over the page |
+| Licence (Coney is GPL-3.0-or-later) | MIT | LGPL-3.0 or GPL or commercial | GPL-3.0, royalty-free or commercial | MIT (Electron, Monaco), MIT or Apache-2.0 (Tauri) |
+| Size | A few hundred KB in the executable | 20 to 40 MB of Qt libraries to ship | A few MB, plus a Rust toolchain to build from source | Electron about 100 MB (Chromium); a system web view small, but WebKitGTK on Linux |
+| Fit with Coney's build | Already fetched and built by `cmake/deps.cmake` | A prebuilt Qt per platform in CI: a new kind of dependency | Rust in the build | A second language and toolchain |
+| Accessibility | Poor: no screen reader support | Good | Good | Good |
+| Effort for Studio | Most widgets written by us (gizmos, property grids, trees), as every ImGui editor does | Widgets given; the engine view and the input routing are the hard part | Docking and the editor written by us | Two worlds: the UI in JavaScript, the engine in C++, a bridge between |
+
+### Choice: Dear ImGui with docking {#gui-choice}
+
+Dear ImGui, on its docking release (`v1.92.9b-docking`, the same version Coney pins today, so the overlay keeps
+working unchanged). The reasons, in the order they weigh:
+
+- **The engine's frame is one call away.** The Scene view and the Game view are the engine drawing into a texture
+  that a panel shows. With Dear ImGui the panel and the engine share one graphics device, OpenGL now and SDL's GPU API
+  after the renderer change; with every other library the frame crosses a toolkit boundary or a process.
+- **One stack.** The overlay, the launcher and Studio share one library, one theme and one set of widgets; a panel
+  written for one (the Inspector grows from the merged entity panel) runs in the others.
+- **The licence and size** are no question, and the build already knows how to make it.
+- **What it lacks we accept:** native look (Studio is themed instead), accessibility (an open question for a maintainer,
+  [below](#questions)), and widgets we write ourselves.
+
+Multi-viewport (panels torn out into their own windows) stays off at first: it is the part of the docking release
+that varies most by platform, and a docked layout covers the brief.
+
+**The theme.** One file of design tokens (colours, rounding, spacing, the accent), shared by the launcher and Studio,
+applied at the [UI scale](../debug-menu.md#ui-scale) the overlay already computes. Fonts are shipped, never taken
+from the system: Inter for the interface and JetBrains Mono for code (both SIL OFL-1.1), and an icon font such as
+Lucide (ISC). The proof's theme took about 50 lines ([Proofs](#proof-shell)).
+
+## The program {#program}
+
+| | A separate `coney-studio` | An editor mode of `coney` (`coney --studio`) |
+| --- | --- | --- |
+| What a player's `coney` holds | No editor code, no Dear ImGui in the release build (as today) | The editor in every build, or a second build of `coney` |
+| Studio's own dependencies (text editor, importers, the language server's client) | Linked into Studio only | Linked into the game |
+| Shared code | The same engine libraries (`src/` minus `src/platform/main.cpp`), linked by both | The same, in one executable |
+| Release and launcher | One more program file in the release manifest | None |
+| Debug tools | Studio is a debug-tools build of its own target | Tied to `CONEY_DEBUG_TOOLS` |
+
+**Choice: a separate executable, `coney-studio`,** beside `coney` in the install folder and in the release manifest.
+Its code lives in `src/studio/` (the panels, the project, the editor; Coney-only, no `@orig`) and its entry point in
+`src/platform/`. It links the same engine libraries as `coney`, so it is never a copy of the engine: a Coney feature
+reaches Studio by being in those libraries. This keeps the brief's line between the two: Studio realizes the engine's
+functions in editor form, and the game a player runs stays the game.
+
+## Play {#play}
+
+### In the process or a child process {#play-process}
+
+| | In the Studio process | A child process (`coney` started by Studio) |
+| --- | --- | --- |
+| The Game view | The session draws into a texture the panel shows | A separate window, or a window embedded by platform tricks (Godot's approach: Windows and X11; macOS needed another approach) |
+| Live edits from the Scene view | Commands applied to the shared world between steps | Commands sent over a pipe, and the child's world streamed back for the Scene view to show it |
+| Inspecting the running world | Read directly, between steps | A snapshot protocol |
+| A crash in the engine | Takes Studio down: an autosave before Play keeps the work | Studio survives |
+| Start time | A new session; assets already loaded stay | A process start and a full load |
+| Process-wide state | Must become per session (below) | Fresh every time |
+
+**Choice: in the process.** The brief asks for a Scene view and a Game view side by side, with edits reaching the
+running game in real time; in one process both views look at the same world, and the edit is a command queued for the
+next step. In a child process the same thing needs the child's whole world mirrored back into Studio. The cost of the
+choice is crash isolation, which an autosave before Play and the recovery file pay for, and a few prerequisites:
+
+1. **Per-session state.** The eight tuning singletons and the tunable registry are process-wide today
+   ([Where Coney stands](../asset-and-script-architecture.md#where-coney-stands)); a session must own them, so
+   that Stop and Play again start from the same values.
+2. **The simulation out of `src/platform/`** (step 6 of
+   [Deferred, in order](../asset-and-script-architecture.md#later)): Studio drives the session's update itself,
+   without the game's main loop.
+3. **Drawing into a target**, which the renderer design's seam gives: a frame drawn into a texture is what both views
+   show.
+
+### How Play runs and comes back {#play-session}
+
+```mermaid
+---
+config:
+  layout: elk
+---
+flowchart TB
+  doc["Edit document<br/>(the project's level)"]
+  ui["Studio UI thread<br/>panels, Scene view, editor"]
+  sim["Play session<br/>simulation thread, fixed 1/30 s steps"]
+  q["Edit commands"]
+  ls["lua-language-server<br/>child process"]
+  doc -- "Play: build a session" --> sim
+  ui -- "Scene view edits" --> q --> sim
+  sim -- "frames, entity reads<br/>between steps" --> ui
+  ui -- "LSP over stdio" --> ls
+  ui -- "DAP" --> sim
+```
+
+*Figure: one Studio process; the session is created from the document on Play and thrown away on Stop.*
+
+- **Play** ([Play mode](editor-experience.md#play-coney) has its keys and what the player sees) saves the project (and
+  a recovery copy), builds a play session from the saved document, and starts it on its own simulation thread at the
+  fixed 1/30 s step, with the game's seeded randomness. How the session loads the project's scripts, the map and the
+  player (its game mode and load order) is the runtime design's; Studio only hosts it: it creates the
+  session, feeds it input from the Game view while that has focus, steps it and shows its frames.
+- **Pause and Step** stop the step clock or run one step, as the debug menu's time control does.
+- **Stop** destroys the session. The edit document was never changed by playing, so Studio is back where it was;
+  presentation assets loaded for the session stay cached.
+- **A breakpoint** blocks the simulation thread only: the UI keeps drawing, the Game view shows the last frame, and
+  the debugger reads the paused state ([Script debugger](#debugger)).
+- **Run in Coney** (a later command) starts `coney` as a child process on the saved project, for a full-window test and
+  for testing co-op with two clients over ENet. It is the child-process path kept for what it is good at.
+
+### Live edits during Play {#live-edits}
+
+While a session runs, the Scene view shows the session's world beside the Game view, and a gizmo drag, an Inspector
+change or a placed object becomes an **edit command**: an id, the entity's id and the new value, never a pointer. The UI
+thread queues it and the simulation thread applies the queue at the start of the next step, so a step never sees half
+an edit; it is the Entity editor's queue ([Entity editor](../debug-menu.md#entity-editor)) grown to every editable
+thing. Edits made while playing apply to the session only and are lost on Stop, as the editor experience design's
+[Play mode](editor-experience.md#play-coney) asks.
+
+Sharing one world in one process is what makes this cheap: the Scene view reads the session between steps and draws it
+with the same renderer, and an edit is one queued command. With a child process, the same edit would be a message over
+a pipe, and the Scene view would need the child's whole world streamed back to draw it, a snapshot protocol Coney does
+not need for anything else. Edit commands are plain, serializable data all the same, as
+[the network checklist](../network-architecture.md#checklist) asks of simulated effects, so they can later go to a child
+process (Run in Coney) or to a co-op peer without a second design. What an edit may not do live (replace collision, a
+level's streaming data) follows the asset kinds ([Hot reload](#hot-reload)): it asks for Play again. Early bugs here
+are accepted; the queue keeps each one inside a step.
+
+## The code editor {#code-editor}
+
+| | Our own, from scratch | goossens/ImGuiColorTextEdit | Zep | Monaco in a web view |
+| --- | --- | --- | --- | --- |
+| What it has | What we write | Syntax colouring (Lua included), undo, find and replace, multiple cursors, folding, word wrap, minimap, bracket matching, an autocomplete framework, squiggles with tooltips, line markers, hover callbacks | Vim and standard modes, syntax colouring, splits | Everything VS Code's editor has |
+| Licence, state | Ours | MIT; maintained, works with Dear ImGui 1.92.9b; C++17; one `.cpp` and one `.h` | MIT; little activity | MIT; needs a web view: WebView2 on Windows, WKWebView on macOS, WebKitGTK on Linux |
+| Fit | Months of work before it matches the others | Renders inside the ImGui frame, docks like any panel | Renders inside ImGui | A native child window over an ImGui dock: popups go under it, focus and keys cross two toolkits, and on Linux it needs GTK beside SDL |
+
+**Choice: goossens' ImGuiColorTextEdit**, pinned to a commit in `cmake/deps.cmake` and built with Studio only, wrapped
+by a `ScriptEditor` of Studio's own that owns the tabs, the files, the keymap and the connection to the language server.
+The widget asks the application for completions and draws them, and takes squiggles and hover text from it, so the
+language server stays outside the widget ([Proofs](#proof-shell)).
+
+**VS Code keys.** The widget's own keys follow VS Code (Ctrl+D next match, Alt+Up and Down move lines, Ctrl+/ comment,
+Ctrl+Space completions, Ctrl+F find, Ctrl+Shift+K delete line). Studio adds the rest: Ctrl+P open a project file,
+Ctrl+Shift+P the command palette, F12 go to definition, Shift+F12 references, F2 rename, Ctrl+Shift+M Problems, and
+the debugger's F5, Shift+F5, F9, F10 and F11. The full keymap is the editor experience design's.
+
+## Language tooling {#language-tooling}
+
+| | lua-language-server (LuaLS) | Our own analysis |
+| --- | --- | --- |
+| Gives | Completions, hover, signature help, go to definition, references, rename, type and argument checks, undefined globals, from `---@meta` stub files | What we write; syntax errors with lines from the planned Lua 4.0 compiler |
+| Lua versions | 5.1 to 5.4 and LuaJIT; no Lua 4.0 mode | Any |
+| Licence, size | MIT; 4.5 MB download, 27 MB unpacked (Windows x64) | Ours |
+| How Studio runs it | A child process speaking the Language Server Protocol over stdio | In process |
+
+**Choice: LuaLS, with Coney's compiler beside it.** Studio starts LuaLS per project and talks to it with a small LSP
+client of its own (on Coney's JSON reader, plus a writer); the widget's experimental LSP bridge covers only completion
+and hover and brings another framework. The natives come in as a stub file that a `coney-tools` command generates from
+the masterlist (`research/bindings/`, with each native's arguments, results and our own description) and from the
+Coney natives' list, written into the project's SDK folder with the LuaLS settings (`.luarc.json`) Studio manages.
+
+The language version decides how far LuaLS reaches. The proof ([Proofs](#proof-lsp)) shows it reads Lua 5.x mods fully
+but reports Lua 4.0's upvalue syntax (`%name`) as a syntax error and does not know 4.0's library (`getn`); the library
+can be stubbed, the syntax cannot. If mods are written in Lua 4.0, Studio filters those diagnostics and takes syntax
+errors from Coney's own compiler only; if mods get Lua 5.4, LuaLS covers them as they are. Which language mods use is
+the Lua SDK design's decision; this page works with either.
+
+## The script debugger {#debugger}
+
+**Choice: the Debug Adapter Protocol (DAP).** Coney's script runtime gets a debug hook (on a new line, a call, a
+return) and a DAP server: breakpoints by file and line, conditional breakpoints, step in, over and out, the call stack,
+locals and upvalues, and watches evaluated by the console's evaluator (the compiler, once built). Studio's editor is a
+DAP client: it sets breakpoints from the gutter, shows the current line with the widget's line markers and the stack,
+locals and watches in a Debug panel. Because DAP is the standard, VS Code can attach the same way to a `coney` built
+with the debug tools.
+
+- **Pausing.** The hook blocks the simulation thread at the line; the UI thread goes on ([Play](#play-session)). Test
+  mode and network play never load the hook.
+- **Lines.** Breakpoints need line information: Coney's compiler keeps it for scripts it compiles (mods and Coney's
+  level scripts). The game's own compiled chunks carry none, so in them the debugger stops by function only.
+- **Two runtimes.** If mods run on Lua 5.4 ([Language tooling](#language-tooling)), the same DAP server sits on 5.4's
+  debug hook; the protocol and Studio's client do not change.
+
+## Hot reload {#hot-reload}
+
+- **Watching.** Studio owns the project folder, so it watches it: a background thread compares the files' sizes and
+  times once a second. That works on every platform with no dependency; if large projects make it slow, efsw (MIT) or
+  dmon (BSD-2-Clause) replaces the poll behind the same interface.
+- **Scripts.** A changed script is compiled; on an error nothing changes and the Problems panel shows it. Otherwise
+  the session reloads it between two steps, through the scheduler, the one way into the runtime. Whether a reload keeps
+  the script's state or restarts its resource is the Lua SDK design's question.
+- **Assets.** The [asset layers](../asset-and-script-architecture.md#asset-layers) already split the kinds:
+  presentation kinds (textures, sounds, models' looks) are swapped in the running session; simulation kinds
+  (collision, levels, animation clips, character data) mark the session stale and the Play bar asks for Play again.
+
+## Importers {#importers}
+
+Studio imports what Blender and audio tools export, into the project's own formats (which the content and formats
+design defines). Studio does not model or animate.
+
+| What | Choice | Licence | Alternatives weighed |
+| --- | --- | --- | --- |
+| glTF 2.0 (`.gltf`, `.glb`): meshes, materials, skins, animations | cgltf | MIT; one C header | tinygltf (MIT; pulls in a JSON library and stb_image), fastgltf (MIT; fastest, needs simdjson) |
+| FBX (binary and ASCII): meshes, skins, animations, blend shapes | ufbx | MIT or public domain; one C file | Autodesk FBX SDK: a proprietary licence that cannot be combined with GPL-3.0 code we ship |
+| Images (PNG, JPEG, TGA) | stb_image | Public domain or MIT | librw's PNG reader, which is a renderer detail the asset layers keep out of loaders |
+| Audio (WAV, FLAC, MP3, Ogg Vorbis) | dr_wav, dr_flac, dr_mp3 and stb_vorbis | Public domain or MIT-0 / MIT | Widening Coney's FFmpeg, trimmed to Bink on purpose (`cmake/ffmpeg/`) |
+
+A Blender user exports glTF or FBX, as Blender does natively; `.blend` files are not read. All four are fetched and
+built with Studio only, never with the game.
+
+## Proofs {#proofs}
+
+Two proofs, kept in the unit's scratch folder and not in `src/`: they answered their questions and Studio's real code
+starts from the issues below.
+
+### A docked shell with an editor {#proof-shell}
+
+A program of about 300 lines on SDL3, OpenGL 3 and Dear ImGui `v1.92.9b-docking`: a menu bar with Play, Pause and Step,
+a default layout made with `DockBuilder` (Hierarchy and File system on the left, Scene, Game and a script tab in the
+middle, Inspector on the right, Console and Problems below), a Game view showing a texture drawn by a stand-in for the
+engine, the designed theme, and goossens' editor (commit `12a5a01d`) with Lua colouring. Typing `HuSetAcc` opened the
+completion popup with `HuSetAccurate`, from the natives stub; LuaLS's diagnostics for the file showed as squiggles with
+tooltips and as lines in Problems. It built through `coney-tools build` with the editor's one source file and Dear
+ImGui's. What it settled: the docking release, the widget's completion and squiggle APIs
+and a texture in a docked panel work together as this page assumes. The pull request shows its screenshot.
+
+### lua-language-server with the natives {#proof-lsp}
+
+LuaLS 3.19.2 on Windows x64, a stub of all 956 natives generated from the masterlist (543 KB), a mod in Lua 4.0 style
+and one in Lua 5.x style, read once with `--check` and once over LSP by a small client:
+
+| Measured | Result |
+| --- | --- |
+| Start and initialize | under 0.25 s |
+| First diagnostics for an opened file | 0.87 s |
+| Completion of `HuSetAcc` | 20 ms, `HuSetAccurate(human, accurate)` among 18 fuzzy matches |
+| Hover on `HuGetPosition` | 1 ms, the signature and the masterlist's description |
+| A string passed for a handle, a second argument too many, an unknown native | each reported, in both styles |
+| Lua 4.0's `%count` and `getn` | a syntax error and an undefined global |
+| The stub as a workspace file | ignored until `workspace.preloadFileSize` was raised past its 500 KB default; the generator writes that setting |
+
+## Build issues {#build-issues}
+
+In the order they should come. Each assumes the ones above it; the runtime issues of the Lua SDK design come between
+the third and the fourth.
+
+1. **`build: Update Dear ImGui to its docking release`.** Move the pin in `cmake/deps.cmake` from `v1.92.9b` to
+   `v1.92.9b-docking` (the same version with docking), with docking turned on in the developer overlay so its windows
+   dock. Nothing else in the overlay changes; its tests and the `--dev-overlay` screenshot check prove it.
+2. **`tools: Add the coney-studio program with a docked shell`.** A new executable from `src/studio/` and an entry point
+   in `src/platform/`, linking the engine libraries: open or create a project folder, the theme tokens and fonts (Inter,
+   JetBrains Mono, an icon font), the default layout from the editor experience design, layouts saved per user, and the
+   File system panel rooted at the project. Tests run the shell over a bare Dear ImGui context, as the overlay's do.
+3. **`core: Rework the tuning state to belong to a session`.** The eight tuning singletons and the tunable registry move
+   into a session object that the game mode owns, so two sessions in one process never share values. No behaviour
+   changes; the existing tests and a new two-session test prove it.
+4. **`tools: Add Play to Coney Studio`.** A play session built from the saved project on its own simulation thread,
+   drawn into the Game view, with Play, Pause, Step and Stop, input from the Game view, an autosave and recovery file
+   before Play, and the edit document untouched by playing. Needs the simulation out of `src/platform/` and the runtime
+   design's game mode. A scripted test plays, stops and plays again and compares the two sessions' traces.
+5. **`tools: Add live edits from the Scene view during Play`.** Edit commands (ids and values) queued by the UI and
+   applied between steps, the Entity editor's queue grown to every editable thing, lost on Stop. Tests apply commands
+   to a headless session.
+6. **`tools: Add the natives stub generator for lua-language-server`.** A `coney-tools` command that writes a `---@meta`
+   stub of the original natives from `research/bindings/` and of Coney's natives from their list, with the
+   `.luarc.json` settings Studio needs. Python tests on a synthetic masterlist.
+7. **`tools: Add the script editor to Coney Studio`.** goossens' ImGuiColorTextEdit pinned, tabs over project files,
+   the VS Code keymap, LuaLS started per project with Studio's LSP client (diagnostics, completion, hover, signature
+   help, definition, references, rename), the Problems panel, and LuaLS shipped per platform. Tests drive the client
+   against a recorded server conversation.
+8. **`core: Add a debug hook and a DAP server to the script runtime`.** Line, call and return hooks in the VM;
+   breakpoints, stepping, stack, locals and watches over the Debug Adapter Protocol; off in test mode and network play.
+   Tests run a compiled chunk under scripted DAP requests.
+9. **`tools: Add the debugger to the Coney Studio script editor`.** The DAP client: gutter breakpoints, the current
+   line, the Debug panel and the F5 to F11 keys; pausing keeps the UI running.
+10. **`tools: Add hot reload of scripts and assets to Coney Studio`.** The project poller, scripts reloaded between
+    steps through the scheduler, presentation assets swapped live, and simulation assets marking Play stale.
+11. **`tools: Add glTF, FBX, image and audio import to Coney Studio`.** cgltf, ufbx, stb_image, dr_libs and stb_vorbis
+    pinned and built with Studio only, behind drag and drop into the File system panel and the Import button, writing
+    the content design's formats. Tests import synthetic files made by the tests themselves.
+12. **`tools: Add Run in Coney to Coney Studio`.** Starts `coney` as a child process on the saved project, and a second
+    client for a co-op test over ENet.
+
+## Questions for a maintainer {#questions}
+
+- **Shipping Studio.** `coney-studio`, Dear ImGui, the importers and LuaLS (27 MB unpacked) in every release, or as an
+  optional download the launcher fetches? This page assumes the release manifest lists them all.
+- **Accessibility.** Dear ImGui has no screen reader support. Is that acceptable for Studio?
+- **The language for mods.** Lua 4.0 or 5.4 decides how much of LuaLS a modder gets ([Language
+  tooling](#language-tooling)); the Lua SDK design asks it.
