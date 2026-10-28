@@ -265,9 +265,10 @@ Natives are the only door to the world, so every native, game or Coney, follows 
 `research/bindings/coney.yaml` is reviewed against them before it becomes available
 ([How a native reaches the SDK](lua-sdk.md#availability)).
 
-1. **No file system path.** A native that loads something takes a `project:/` or `game:/` path and goes through the
-   asset store's sources ([Assets by path](lua-sdk.md#assets)), never the operating system's file functions. `game:/`
-   is read-only; `project:/` is read-only to scripts too. The only writes are the project's store ([Limits](#limits)).
+1. **No file system path.** A native that loads something takes a `project:/`, `mod:/` or `game:/` path and goes through
+   the asset store's sources ([Assets by path](lua-sdk.md#assets)), never the operating system's file functions.
+   `game:/` and `mod:/` are read-only; `project:/` is read-only to scripts too. The only writes are the project's store
+   ([Limits](#limits)).
 2. **No network, no process, no other program.** No native opens a socket, sends a request, starts a program, opens a
    web page or reads the clipboard. Web requests exist only for ConeyMP server scripts that the operator allows
    ([Declared permissions](#declared)).
@@ -482,8 +483,8 @@ player can check without a service:
 
 ### What the player sees {#player-view}
 
-The details of each mod, which the mods UI shows ([#1063](issue:1063)) and the console's `mod <name>` prints, before it
-first starts and at any time after:
+The details of each mod, which the Mods screen shows ([UI and menus](ui.md#mods-screen)) and the console's `mod <name>`
+prints, before it first starts and at any time after:
 
 - name, title, version, author and **signed by** (fingerprint) or **unsigned**, and the package hash's short form;
 - whether it starts with every session or when its level is played (`autostart`), the SDK level and the other mods it

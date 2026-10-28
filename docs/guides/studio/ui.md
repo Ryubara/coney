@@ -239,8 +239,8 @@ Several mods add to the same point without stepping on each other or on the game
    the game's indices, defaults and cursor start stay as in the original (Choose Gangs still starts on BASEBALL FURIES
    against ORPHANS on a fresh boot).
 2. **By load order, then by registration order.** The projects' additions follow the load order of `enabled.toml`
-   ([#1062](issue:1062)); inside one project, the order its scripts or manifest added them. The same mods in the same
-   order give the same menus every run.
+   ([Load order](mods.md#load-order)); inside one project, the order its scripts or manifest added them. The same mods
+   in the same order give the same menus every run.
 3. **Names are the project's.** Every addition is `<project>/<id>` (`yard-brawl/rounds`), so two projects never name the
    same thing, and a project adding an id twice replaces its own addition, never another's. A Rumble gang's id is given
    by Coney from a range for mods ([Data events](#data-events)), so two projects' gangs never share one.
@@ -259,11 +259,12 @@ the **Mods screen**, a trusted screen of Coney's, drawn with the profile manager
 list, the usage line):
 
 1. **Installed mods**, in load order, each on or off, with its load mode; accept opens its **details**, the panel the
-   security design defines (name, version, author, signer, what it changes, its permissions and limits,
-   [#1062](issue:1062)), to which this page adds **what it adds where** (its additions at each point) and its option
-   rows. On and off here or at the console; a permission only here, never by a console command ([#1062](issue:1062)).
+   security design defines (name, version, author, signer, what it changes, its permissions and limits, [What the player
+   sees](security.md#player-view)), to which this page adds **what it adds where** (its additions at each point) and its
+   option rows. On and off here or at the console; a permission only here, never by a console command
+   ([Permissions](security.md#declared)).
 2. **Mod content**: the `mods` point, every enabled project's entries grouped under its title, and each content mod that
-   starts by hand (its level, [#1062](issue:1062)).
+   starts by hand (its level, [Starting and stopping](mods.md#starting)).
 
 The Mods screen is Coney's: a project adds to it only through entries, which Coney draws, and can never change, hide or
 cover it ([Safety](#no-spoofing)). MODS is the one item Coney adds to the main menu, and only on a modded install: a mod
@@ -360,9 +361,9 @@ local rounds = Coney.GetOption("rounds")
 
 - **Kinds** are the game's rows: `toggle` and `choice` as the Camera and Video pages' choices, `bar` (0 to 100 in steps
   of 5) as the Audio page's bars, and `screen`, a row that opens a sub-screen of the project's.
-- **Values** are kept per project in the project's own store ([#1062](issue:1062)), never in the game's options or the
-  profile, so switching a mod off leaves the player's options exactly as they were. Restore Default restores the game's
-  values only, as in the original; each project's page ends with its own *Restore Default*.
+- **Values** are kept per project in the project's own store ([Limits](security.md#limits)), never in the game's options
+  or the profile, so switching a mod off leaves the player's options exactly as they were. Restore Default restores the
+  game's values only, as in the original; each project's page ends with its own *Restore Default*.
 - **A change** runs the project's `Coney.On("option:" .. id, fn)` handlers at the next step boundary.
 - **The manifest form** is `[[menu.option]]` with the same fields, which Studio writes ([Studio](#studio-frontend)).
 - **The same page opens from the Mods screen**, from the project's details, so a mod's settings can be changed on the
@@ -446,7 +447,7 @@ column says whether Coney has it today, and every one waits on the project runti
 | `Coney.ModGangId(name)` | A stable gang id from Coney's range for mods | Waits on the [data events](#data-events) |
 
 Every native follows the security design's rules for natives (checked arguments, bounded work, ids;
-[#1062](issue:1062)).
+[What natives may do](security.md#natives)).
 
 ### Screens and widgets {#widgets}
 
@@ -609,14 +610,14 @@ Game view.
 
 ## Safety {#safety}
 
-The sandbox and the permissions are the security design's ([#1062](issue:1062)); this section adds what UI needs.
+The sandbox and the permissions are the [security design](security.md)'s; this section adds what UI needs.
 
 ### What stays out
 
 - **No web views, no HTML, no browser.** The lesson of FiveM's NUI and Garry's Mod's DHTML: a browser brings a network
   stack, its own scripting and a page that can look like anything.
 - **No network, no files, no clipboard, no system dialogs** from any UI native: the sandbox's rules for natives
-  ([#1062](issue:1062)).
+  ([What natives may do](security.md#natives)).
 - **No free text field.** The one way to ask for text is `Coney.AskText`, the game's pad keyboard, framed with the
   project's title, at most 32 characters; nothing typed reaches anything but the project's own handler, and Coney asks
   for no password anywhere, so a "log in" box from a mod cannot be mistaken for Coney's.
@@ -699,7 +700,7 @@ When this design is accepted, these lines change on the pages that own them:
   [asset override packs](project-formats.md#override-packs) stay the way to change how the game's own screens look.
 - The editor experience ([#1055](issue:1055)): the Screen view joins the panels, and *Play from the main menu* joins
   Play's targets.
-- The security design ([#1062](issue:1062)): the trusted layer and the frame label are the UI half of its rule that no
+- The [security design](security.md): the trusted layer and the frame label are the UI half of its rule that no
   text field pretends to be Coney's; the Mods screen is where its details and approvals are shown, and its details
   gain a mod's additions and option rows; a project's option values live in the project's store.
 

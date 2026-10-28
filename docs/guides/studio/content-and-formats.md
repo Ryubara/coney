@@ -57,6 +57,7 @@ script use, as Godot's `res://` paths and Unity's `Resources` paths are.
 | --- | --- | --- | --- |
 | `project:/` | A file in the project folder, by its path from the root | `project:/models/cj.glb` | The import table ([The import step](#import)) |
 | `project:/...#name` | One part of a file that holds several: a clip of a glTF or FBX, a mesh of a map file | `project:/anims/dance.glb#Spin` | The same, then the part by name |
+| `mod:/` | A file of another mod the project depends on, by the mod's name and the file's path in it ([Dependencies and exports](mods.md#dependencies)) | `mod:/crate-pack/models/crate.glb` | That mod's import table, read-only |
 | `game:/` | An asset on the player's disc, by the names `coney-tools extract` writes ([extract](../coney-tools-disc.md#extract)) | `game:/textures/warr_re_cv/warr_re_cv` | The asset store, by the original's id |
 
 **The `game:/` names** are the extract tool's, so a modder sees one set of names in Studio, in the `open/` modding kit

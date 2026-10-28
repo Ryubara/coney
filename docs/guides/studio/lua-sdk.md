@@ -191,7 +191,7 @@ the sandbox exists.
 ```toml
 # coney-project.toml
 [project]
-name = "yard-brawl"            # lower case, digits and '-'; unique among installed mods; the events' prefix
+name = "yard-brawl"            # lower case, digits and '-'; one enabled mod per name; the events' prefix
 title = "Yard Brawl"           # what menus show
 version = "0.3.0"              # the project's own version, major.minor.patch
 sdk = 4                        # the lowest SDK level it needs; Coney refuses a project above its own level
@@ -372,9 +372,9 @@ call its functions. Whether it may read a game-state global through a Coney nati
 ## Assets by path {#assets}
 
 A project's script loads, plays or spawns an asset by its path, as engines do (`Resources.Load` in Unity, `load()` in
-Godot). The paths are the editor page's two roots ([The project](editor-experience.md#project-coney)); the formats
-behind them and how an import becomes a project file are the [content page](content-and-formats.md#paths)'s, and the two
-pages use the same scheme:
+Godot). The paths are the editor page's two roots ([The project](editor-experience.md#project-coney)) and the mods
+page's third; the formats behind them and how an import becomes a project file are the [content
+page](content-and-formats.md#paths)'s, which lists all three, and the pages use the same scheme:
 
 | Root | Means | Example |
 | --- | --- | --- |

@@ -91,8 +91,8 @@ file not listed is not read.
 `mods/enabled.toml` plays the part of a FiveM server's `server.cfg` and its `ensure` lines: it lists the mods that start
 with every session, in the order they start, and records for each its name, version, package hash, the permissions the
 player approved and the signer. Coney adds each new package to it once (below); **after that only two things change
-it**: the player editing the file, and the mods menu, which writes it (proposed here; its screens are the mods UI
-unit's, [#1063](issue:1063)). The console never does ([Console commands](#console)): every start loads exactly what the
+it**: the player editing the file, and the mods menu, which writes it (proposed here; its screens are [UI and
+menus](ui.md#mods-screen)'s). The console never does ([Console commands](#console)): every start loads exactly what the
 file says, as a FiveM server loads `server.cfg`.
 
 1. **Installing** is putting a `.cmod` in `mods/`. At the next start Coney finds it, checks it
