@@ -52,7 +52,8 @@ def read_folder(folder: Path) -> list[Script]:
 
 @dataclass
 class Comparison:
-    """How two folders of decompiles compare. Each list holds (name in A, name in B) pairs, or one name."""
+    """How two folders of decompiles compare: the scripts read from each, then the lists of results, each shaped as
+    its comment says."""
 
     first: list[Script]
     second: list[Script]

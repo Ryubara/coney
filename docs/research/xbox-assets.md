@@ -19,15 +19,17 @@ measured on [Xbox executable](xbox-executable.md).
 The decision (a maintainer's): **Coney installs from the player's discs, and the Xbox disc is the preferred
 source of assets, the PS2 disc filling the gaps.** At install `coney-tools extract` converts the assets to open
 formats outside the repository; given the Xbox disc as well, it takes each asset from whichever disc has the better
-version. The PS2 version stays the only reference for behaviour, and level scripts, data tables and game text are
-not taken from either disc. This page says what is on the Xbox disc, how its archive, names and graphics formats
-work, how each kind of asset corresponds to the PS2's, and the rule that picks a disc per asset.
+version. The PS2 disc stays the only reference for behaviour and the only source of gameplay data ([Disc
+policy](#disc-decision)), and `extract` converts no level scripts, data tables or game text from either disc. This page
+says what is on the Xbox disc, how its archive, names and graphics formats work, how each kind of asset corresponds to
+the PS2's, and the rule that picks a disc per asset.
 
 The short answer, kind by kind ([Asset kinds](#asset-kinds)): **textures and movies gain; nothing else does.** 23,210 of
 the PS2's 26,308 textures have a matching Xbox texture that is larger, nearly all twice the width and height. The 16
 movies have 1280 × 720 versions, 15 of them as long as the PS2's. Models, animations, collision and the rest are the
-same data (the models re-encoded as float triangle lists), and the sound is the same recordings at the same or a lower
-sample rate, so those stay the PS2 disc's.
+same data or no better (the models re-encoded as float triangle lists; the animations' events, one clip's keys and the
+collision header differ in places, [Either disc](#either-disc)), and the sound is the same recordings at the same or a
+lower sample rate, so those stay the PS2 disc's.
 
 Whether the Xbox disc **alone** could give the same game, which the maintainer asked so that a player might supply
 either disc, is measured under [Either disc](#either-disc): the mission scripts, scene records, object lists, paths,
@@ -329,7 +331,7 @@ the `0x0E` ones have no partly transparent texels to measure.
 | Textures (resources) | DXT1/3/5 images, no names | resource hash, then position, checked by content | 578 of 2,343 larger | 2× width and height | **Xbox when larger** |
 | Textures (streamed world) | DXT images in `.xlev` / `.xsec` | level name, then content | 22,632 of 23,965 larger | 2× (33 more) | **Xbox when larger** |
 | Models | float triangle lists | resource hash | 1,541 of 1,541 | none: same meshes | PS2 |
-| Animations | the PS2's chunks | resource hash | 616 of 617 | none: same keys, other events | PS2 (behaviour) |
+| Animations | the PS2's chunks | resource hash | 616 of 617 | none: the same keys but one clip's, other events ([Animations on both discs](#either-animations)) | PS2 (behaviour) |
 | Levels, collision, paths | the PS2's chunks | resource hash, level name | 64 of 64 | none | PS2 (behaviour) |
 | World geometry | Xbox vertex and index buffers | level name | every PS2 level | none known | PS2 |
 | Sound effects and speech | XACT, Xbox ADPCM | name hash in the sound list | 23,147 of 25,395 | none: same rates | PS2 |
@@ -464,7 +466,7 @@ timed against the PS2's. Over the NTSC-U pair 15 of the 16 are replaced (14 at 1
 
 ### Either disc: the two discs compared {#either-disc}
 
-The maintainer asked whether a player could supply either disc, the PS2's or the Xbox's; what he decided is
+The maintainer asked whether a player could supply either disc, the PS2's or the Xbox's; what was decided is
 under [Disc policy](#disc-decision). Coney is its own engine, so a
 disc gives it only data: assets, which the rest of this page maps, and the data its simulation reads (scripts, scenes,
 collision, levels, object lists, paths, tables, animations and text). This section compares the second kind, every

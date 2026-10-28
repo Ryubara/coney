@@ -715,7 +715,7 @@ with the reason: `--all` goes on with the rest, still writes the fingerprints an
 and exits 1; one chunk by name is a one-line error.
 
 `--xbox-disc XBOX_DISC` reads the scripts of your Xbox disc instead (a full image, an XISO or an extracted folder, as
-for the [`xbox`](coney-tools-disc.md#xbox) commands): its 503 chunks, from `XBoxWad.idx` and its volumes, each named
+for the [`xbox`](coney-tools-disc.md#xbox) commands): every chunk, from `XBoxWad.idx` and its volumes, each named
 from the WAD names list and the file and level names the chunks and `default.xbe` mention, else by its entry's hash in
 hex (which is not the PS2 entry's hash, as the Xbox hashes names under `ee_files\`). It takes no `DISC` and goes with
 `--all` or `NAME OUT_DIR` alike. `--all --xbox-disc` needs its own `--out` folder and is refused without one: the
