@@ -42,8 +42,8 @@ float planDistance(const Brain& a, const Brain& b) { return a.distanceTo(b); }
 } // namespace
 
 float sightRangeOf(const Brain& brain) {
-    // At least kFightingSightRange while the gang is fighting (alert state `+0x32` is 1, Gang::setAlertState()). The
-    // original always has a gang; a brain with none counts as calm, as Brain_MayStartFight's port reads it.
+    // At least kFightingSightRange while the gang is fighting (alert state `+0x32` is 1, Gang::setAlertState()).
+    // **Coney's choice**: the original always has a gang; one with none counts as calm, as mayStartFight() reads it.
     const Gang* gang = brain.gang();
     if (gang != nullptr && gang->alertState() == kGangFighting) {
         return std::max(brain.sightRange(), kFightingSightRange);
