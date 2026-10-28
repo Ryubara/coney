@@ -4,7 +4,10 @@
 `claim run` is the whole workflow step: it takes the event's name and its payload file (never text from the event on a
 command line), picks the issue or issues the event concerns and reconciles each; `schedule` and `workflow_dispatch`
 run the sweep. `claim sweep` runs the sweep by hand, `claim list` prints the held claims (`--json` for the mod), and
-`claim unclaim` and `claim renew` post those commands for the signed-in account (`issue_claim_post.py`).
+`claim unclaim` and `claim renew` post those commands for the signed-in account (`issue_claim_post.py`). `claim
+check-pr` is the pull request workflow's check that a pull request closes only issues its author claimed
+(`issue_claim_pr.py`), and `claim is-command` says whether a text is exactly one claim command (for the user-level
+no-comment-as-user hook, which lets only those through).
 (docs/guides/issues.md#claiming) `gh` is run through an injected runner, so the tests never touch the network.
 """
 
@@ -22,11 +25,13 @@ from typing import Any
 
 from coney_tools.audit_github import Runner, run_gh
 from coney_tools.config import ConfigError, find_repo_root
-from coney_tools.conventions import Conventions, load_conventions
-from coney_tools.issue_claim_engine import Activity, Engine
-from coney_tools.issue_claim_model import Card, iso_time, show_time
+from coney_tools.conventions import Claims, Conventions, load_conventions
+from coney_tools.issue_claim_engine import Engine
+from coney_tools.issue_claim_model import Card, Command, iso_time, parse_command, show_time
+from coney_tools.issue_claim_pass import Activity
 from coney_tools.issue_claim_post import PostEnv, post_claim_command
 from coney_tools.issue_claim_remote import GhRemote, Remote
+from coney_tools.issue_claim_rules import trial_rules
 
 
 def add_claim_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
@@ -50,6 +55,12 @@ def add_claim_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser]
         post = commands.add_parser(verb, help=what)
         post.add_argument("issues", metavar="ISSUE", type=int, nargs="+", help="the issue numbers")
         post.add_argument("--no-wait", action="store_true", help="post and return without waiting for the answer")
+    check = commands.add_parser(
+        "check-pr", help="check that the issues a pull request closes are claimed by its author (the pr workflow)"
+    )
+    check.add_argument("--payload", required=True, type=Path, help="the pull_request event's JSON file")
+    shape = commands.add_parser("is-command", help="exit 0 when the text is exactly one claim command, else 1")
+    shape.add_argument("text", help="the comment's whole text; - reads it from stdin")
 
 
 def _remote(conventions: Conventions, run: Runner) -> GhRemote:
@@ -147,6 +158,12 @@ def run_claim(
     remote = _remote(conventions, run)
     if args.command == "list":
         return _list(remote, conventions, args.json)
+    if args.command == "is-command":
+        return _is_command(sys.stdin.read() if args.text == "-" else args.text, conventions)
+    if args.command == "check-pr":
+        from coney_tools.issue_claim_pr import check_pull_request, report
+
+        return report(check_pull_request(_payload(args.payload), remote, conventions), conventions)
     if args.command in ("unclaim", "renew"):
         env = PostEnv(remote, conventions, now, sleep)
         return post_claim_command(args.command, list(args.issues), env, wait=not args.no_wait)
@@ -155,13 +172,7 @@ def run_claim(
         result = engine.sweep()
         lines, errors = result.lines, result.errors
     else:
-        try:
-            payload = json.loads(args.payload.read_text(encoding="utf-8"))
-        except (OSError, ValueError) as error:
-            raise ConfigError(f"--payload {args.payload}: cannot be read as JSON ({error})") from error
-        if not isinstance(payload, dict):
-            raise ConfigError(f"--payload {args.payload}: expected a JSON object")
-        lines, errors = run_event(engine, args.event, payload, conventions, now)
+        lines, errors = run_event(engine, args.event, _payload(args.payload), conventions, now)
     for line in lines:
         print(line)
     for problem in errors:
@@ -169,6 +180,27 @@ def run_claim(
     if not lines and not errors:
         print("claim: nothing to do")
     return 1 if errors else 0
+
+
+def _payload(path: Path) -> dict[str, Any]:
+    """An event's JSON file, which must hold an object; ConfigError otherwise."""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        raise ConfigError(f"--payload {path}: cannot be read as JSON ({error})") from error
+    if not isinstance(payload, dict):
+        raise ConfigError(f"--payload {path}: expected a JSON object")
+    return payload
+
+
+def _is_command(text: str, conventions: Conventions) -> int:
+    """Print the kind and return 0 when `text` (trimmed, one line) is exactly one claim command, else 1."""
+    found = parse_command(text, conventions.claims)
+    if isinstance(found, Command):
+        print(found.kind)
+        return 0
+    print("not a claim command" if found is None else f"not a claim command: {found.reason}")
+    return 1
 
 
 def held_cards(remote: Remote, conventions: Conventions) -> list[Card]:
@@ -181,6 +213,12 @@ def _list(remote: Remote, conventions: Conventions, as_json: bool) -> int:
     """Print the held claims."""
     cards = held_cards(remote, conventions)
     rules = conventions.claims
+    # An issue with the trial label runs on the trial's hours, so its deadline is computed with those.
+    trial = set(remote.open_with_label(rules.trial.label)) if cards else set()
+
+    def rules_of(card: Card) -> Claims:
+        return trial_rules(rules) if card.issue in trial else rules
+
     if as_json:
         rows = [
             {
@@ -193,11 +231,12 @@ def _list(remote: Remote, conventions: Conventions, as_json: bool) -> int:
                 "pr": card.pr,
                 "claimed_at": iso_time(card.claimed_at),
                 "last_activity": iso_time(card.activity),
-                "deadline": None if card.waiting else iso_time(card.deadline(rules)),
+                "deadline": None if card.waiting else iso_time(card.deadline(rules_of(card))),
                 "waiting": card.waiting,
                 "warned": card.warned_at is not None,
                 "adopted": card.adopted,
                 "exempt": card.exempt,
+                "counted": card.counted and not card.exempt,
             }
             for card in cards
         ]
@@ -208,6 +247,6 @@ def _list(remote: Remote, conventions: Conventions, as_json: bool) -> int:
     for card in cards:
         scope = ", ".join(card.scope) or "scope not stated"
         task = f" task {card.task}" if card.task else ""
-        when = f"waits while {card.waiting}" if card.waiting else f"expires {show_time(card.deadline(rules))}"
+        when = f"waits while {card.waiting}" if card.waiting else f"expires {show_time(card.deadline(rules_of(card)))}"
         print(f"#{card.issue} {card.claimant} {card.status}{task}: {scope}; {when}")
     return 0

@@ -192,6 +192,28 @@ class Card:
     waiting: str | None = None
     #: The issue carries `claims.exempt_label`: the claim is outside the open-claims limit (recomputed every pass).
     exempt: bool = False
+    #: Whether the claim counts toward the limit now: false once `freed` is set or while the claim has a pull request
+    #: that is open and not a draft (the unit's slot is free), recomputed every pass.
+    counted: bool = True
+    #: A maintainer recorded a stage of `claims.limit_ends_at` (their tools do, when the review passes): the slot
+    #: stays free from then on. Only a maintainer's stage counts; anyone else's comment is free to write.
+    freed: bool = False
+    #: The claim counted again after it had stopped (its ready pull request was closed unmerged or made a draft). The
+    #: claimant may then hold more claims than the limit allows; the sweep warns the newest ones past the limit and
+    #: releases them after the notice, instead of at once (work in progress), and no new claim is taken meanwhile.
+    regained: bool = False
+    #: When the claimant was told this claim is over the limit and will be released (only for a claimant with a
+    #: `regained` claim), and the id of that warning comment so it can be deleted.
+    over_warned_at: datetime | None = None
+    over_warning_comment: int | None = None
+    #: When the first warning of this over-the-limit episode was given; a fresh notice (after the claimant's count
+    #: changed meanwhile) never reaches past twice the notice after it. None before a warning.
+    over_first_at: datetime | None = None
+    #: The claimant's `flips` (all their held claims) when the warning was given: a different total at the next sweep
+    #: means a claim stopped or started counting in between, even if the claimant is over the limit again by now.
+    over_flips: int = 0
+    #: How many times this claim's `counted` has changed, for the check above.
+    flips: int = 0
 
     def __post_init__(self) -> None:
         """A card with no last activity has had none since the claim."""
@@ -214,8 +236,36 @@ class Card:
         return max(self.claimed_at, self.last_activity or self.claimed_at)
 
     def deadline(self, rules: Claims) -> datetime:
-        """When the claim is released if nothing happens: `claims.deadline_hours` after the last activity."""
-        return self.activity + timedelta(hours=rules.deadline_hours)
+        """When the claim is released if nothing happens: `claims.deadline_hours` after the last activity, but never
+        sooner than the warning's notice (`deadline_hours - warn_hours`) after the warning was given.
+
+        So a claim is never released unwarned: one already idle past the deadline when the release is switched on,
+        or when the sweep ran late, is warned first and keeps the full notice.
+        """
+        idle = self.activity + timedelta(hours=rules.deadline_hours)
+        if self.warned_at is None:
+            return idle
+        return max(idle, self.warned_at + timedelta(hours=rules.deadline_hours - rules.warn_hours))
+
+    def over_notice(self, rules: Claims) -> timedelta:
+        """The notice before a release for being over the limit: the one an idle claim gets (`deadline_hours` less
+        `warn_hours`)."""
+        return timedelta(hours=rules.deadline_hours - rules.warn_hours)
+
+    def over_cap(self, rules: Claims) -> datetime | None:
+        """The latest moment a release for being over the limit can be put off by fresh notices: twice the notice
+        after the first warning of the episode. None while it has no warning."""
+        if self.over_warned_at is None:
+            return None
+        return (self.over_first_at or self.over_warned_at) + 2 * self.over_notice(rules)
+
+    def over_deadline(self, rules: Claims) -> datetime | None:
+        """When the claim is released for being over the open-claims limit: the notice after the warning, but never
+        past `over_cap`; None while it has no warning."""
+        cap = self.over_cap(rules)
+        if self.over_warned_at is None or cap is None:
+            return None
+        return min(self.over_warned_at + self.over_notice(rules), cap)
 
     def warn_at(self, rules: Claims) -> datetime:
         """When the claimant is warned: `claims.warn_hours` after the last activity."""
@@ -279,6 +329,14 @@ def _data(card: Card) -> dict[str, Any]:
         "open_claims": list(card.open_claims),
         "waiting": card.waiting,
         "exempt": card.exempt,
+        "counted": card.counted,
+        "freed": card.freed,
+        "regained": card.regained,
+        "over_warned_at": when(card.over_warned_at),
+        "over_warning_comment": card.over_warning_comment,
+        "over_first_at": when(card.over_first_at),
+        "over_flips": card.over_flips,
+        "flips": card.flips,
     }
 
 
@@ -336,6 +394,17 @@ def render_card(card: Card, rules: Claims) -> str:
     lines.append(f"- **Last activity:** {show_time(card.activity)} ({card.last_activity_why})")
     if card.active and card.exempt:
         lines.append(f"- **Limit:** not counted toward the open-claims limit (`{rules.exempt_label}`)")
+    elif card.active and not card.counted:
+        lines.append(
+            "- **Limit:** no longer counted toward the open-claims limit (its review passed, or its pull request is "
+            "open and ready)"
+        )
+    over = card.over_deadline(rules)
+    if card.active and over is not None:
+        lines.append(
+            f"- **Over the limit:** the claimant holds more open claims than the limit allows; this one is released "
+            f"at {show_time(over)} unless another is finished or given up first"
+        )
     if card.open_claims:
         lines.append(f"- **Open claims of {card.claimant}:** " + ", ".join(f"#{number}" for number in card.open_claims))
     lines += ["", f"<!-- {rules.card_marker}-data {_hidden_json(_data(card))} -->"]
@@ -391,6 +460,14 @@ def parse_card(body: str, rules: Claims) -> Card | None:
             open_claims=tuple(int(item) for item in data.get("open_claims", ())),
             waiting=str(data["waiting"]) if data.get("waiting") else None,
             exempt=bool(data.get("exempt", False)),
+            counted=bool(data.get("counted", True)),
+            freed=bool(data.get("freed", False)),
+            regained=bool(data.get("regained", False)),
+            over_warned_at=_moment(data.get("over_warned_at")),
+            over_warning_comment=int(over) if (over := data.get("over_warning_comment")) is not None else None,
+            over_first_at=_moment(data.get("over_first_at")),
+            over_flips=int(data.get("over_flips", 0)),
+            flips=int(data.get("flips", 0)),
         )
     except (ValueError, KeyError, TypeError):
         return None

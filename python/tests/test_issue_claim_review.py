@@ -7,13 +7,14 @@ from datetime import timedelta
 
 import pytest
 from audit_support import CONVENTIONS
-from claim_support import RULES, START, Clock, FakeGitHub, make_engine, plant_claim
+from claim_support import RULES, START, Clock, FakeGitHub, idle_past_deadline, make_engine, plant_claim
 
 from coney_tools import issue_claim_cli as cli
 from coney_tools import issue_claim_model as model
 from coney_tools.config import ConfigError
-from coney_tools.issue_claim_engine import Activity, Engine
+from coney_tools.issue_claim_engine import Engine
 from coney_tools.issue_claim_model import Command, Rejected
+from coney_tools.issue_claim_pass import Activity
 from coney_tools.issue_claim_rules import check_claim, is_maintainer, overrun
 
 
@@ -301,7 +302,9 @@ def test_a_blocked_claim_keeps_its_label_and_its_clock_waits(engine: Engine, git
     github.remove_label(10, "S-blocked")
     engine.reconcile(10)  # the `unlabeled` event: the clock starts again now
     assert card_of(github, 10).last_activity_why == "S-blocked ended"
-    clock.advance(hours=71)
+    clock.advance(hours=49)
+    engine.reconcile(10)  # the warning
+    clock.advance(hours=22)
     engine.reconcile(10)
     assert github.view(10).assignees == ("alice",)
     clock.advance(hours=2)
@@ -486,7 +489,7 @@ def inject_on_read(github: FakeGitHub, number: int, nth: int, action: object) ->
 def test_a_renew_that_arrives_while_releasing_wins(engine: Engine, github: FakeGitHub, clock: Clock) -> None:
     say(github, 10)
     engine.reconcile(10)
-    clock.advance(hours=73)
+    idle_past_deadline(github, clock, 10)
     inject_on_read(github, 10, 2, lambda: say(github, 10, "alice", "/claim renew"))
     log = engine.reconcile(10)
     assert github.view(10).assignees == ("alice",)
@@ -498,7 +501,7 @@ def test_a_renew_that_arrives_while_releasing_wins(engine: Engine, github: FakeG
 def test_a_card_edited_while_releasing_is_left_alone(engine: Engine, github: FakeGitHub, clock: Clock) -> None:
     say(github, 10)
     engine.reconcile(10)
-    clock.advance(hours=73)
+    idle_past_deadline(github, clock, 10)
     card = card_of(github, 10)
     newer = card.changed(last_activity=clock.now(), last_activity_why="progress")
     comment_id = github.cards(10)[-1].id

@@ -265,6 +265,8 @@ uv run --project python coney-tools claim sweep
 uv run --project python coney-tools claim list [--json]
 uv run --project python coney-tools claim unclaim ISSUE [ISSUE ...] [--no-wait]
 uv run --project python coney-tools claim renew ISSUE [ISSUE ...] [--no-wait]
+uv run --project python coney-tools claim check-pr --payload FILE
+uv run --project python coney-tools claim is-command TEXT
 ```
 
 The claim Action's commands ([Claiming an issue](issues.md#claiming)); `.github/workflows/claim.yml` only starts them.
@@ -297,6 +299,15 @@ All the logic is in `python/src/coney_tools/issue_claim_*.py` and the rules are 
   command as handled (`done`) or a reply refuses it. A wait that runs out stops the command: the Action runs one job at
   a time, so the next issue would wait as long; it names the issues it did not try, and the command it posted stays
   for the next run or the sweep. A hook refuses both to the engineer, tooling and reviewer roles.
+* `check-pr` is the `claim` job of `.github/workflows/pr.yml`: every issue the pull request in the event file closes
+  (`Fixes #N`) must hold a claim of its author, or the author is a maintainer ([Work starts with a
+  claim](issues.md#claiming)). A bot's pull request is not checked. With `claims.require_on_pr` false each problem is
+  a `::warning::` annotation and the exit is 0; true makes them `::error::` and exit 1.
+* `is-command` exits 0 and prints the kind when the text is exactly one claim command of `claims.commands` (a stage
+  `/progress` knows), and 1 with the reason otherwise; `-` reads the text from stdin. It is for the user-level
+  no-comment-as-user hook, which is outside the repository: once the maintainer installs the updated hook it asks this
+  command before it lets a `gh issue comment` through, so the command shapes are read from the conventions, not copied
+  into the hook (the installed one still copies them).
 
 Every argument and option:
 
@@ -305,9 +316,11 @@ Every argument and option:
 | `run` | `--event NAME` | required | The GitHub event's name: `issue_comment`, `issues`, `pull_request_target` (also `pull_request`), `schedule` or `workflow_dispatch`; any other name is an error (exit 2) |
 | `run` | `--payload FILE` | required | The event's JSON file (`$GITHUB_EVENT_PATH`); it must hold a JSON object. Only the issue or pull request number, a pull request's `Fixes #N` lines (at most `claims.closing_per_event`), its action and its author are taken from it |
 | `sweep` | none | | Reconciles every issue that may need it, enforces the limits, lists the orphans and deletes old replies |
-| `list` | `--json` | off | Prints the held claims as JSON (issue, claimant, status, task, scope, stage, pull request, `claimed_at`, `last_activity`, `deadline` (null while the clock waits), `waiting` (what it waits for), `warned`, `adopted`, `exempt` (outside the limit: `claims.exempt_label`)) instead of one line each |
+| `list` | `--json` | off | Prints the held claims as JSON (issue, claimant, status, task, scope, stage, pull request, `claimed_at`, `last_activity`, `deadline` (null while the clock waits; an issue with the trial label uses the trial's hours), `waiting` (what it waits for), `warned`, `adopted`, `exempt` (outside the limit: `claims.exempt_label`), `counted` (whether the claim counts toward the open-claims limit: false when exempt, when a maintainer's stage freed its slot or while the claimant's own ready pull request frees it)) instead of one line each |
 | `unclaim`, `renew` | `ISSUE ...` | required | The issues whose claims to give back or renew, handled in turn |
 | `unclaim`, `renew` | `--no-wait` | off | Posts and returns without waiting for the Action's answer |
+| `check-pr` | `--payload FILE` | required | The `pull_request` event's JSON file (`$GITHUB_EVENT_PATH`): the author, the author's association and the description are read from it, the claim cards from GitHub |
+| `is-command` | `TEXT` | required | The comment's whole text, or `-` for stdin |
 
 It needs `gh` signed in (the Action passes `GH_TOKEN`). Exit 1 when an issue could not be finished (for `unclaim` and
 `renew`: refused, or no answer in time), 2 when the payload or the conventions cannot be read.
@@ -377,4 +390,28 @@ coney-tools claim renew ISSUE [ISSUE ...] [--no-wait]
 | --- | --- | --- | --- |
 | `ISSUE [ISSUE ...]` | integer | required | the issue numbers |
 | `--no-wait` | flag | off | post and return without waiting for the answer |
+
+### `claim check-pr` {#claim-check-pr-usage}
+
+Check that the issues a pull request closes are claimed by its author (the pr workflow).
+
+```text
+coney-tools claim check-pr --payload PAYLOAD
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--payload PAYLOAD` | path | required | the pull_request event's JSON file |
+
+### `claim is-command` {#claim-is-command-usage}
+
+Exit 0 when the text is exactly one claim command, else 1.
+
+```text
+coney-tools claim is-command TEXT
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `TEXT` | text | required | the comment's whole text; - reads it from stdin |
 <!-- command-reference:end -->

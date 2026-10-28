@@ -16,7 +16,9 @@ this page is the command, the file the reviewer writes and the stamp.
    (`REVIEW.json`) and its report (`REVIEW.md`) in the review folder, copying the packet's hashes into the verdict.
 3. **Record**, `task review <task> --record`: the packet is built again from the repository as it is now, the verdict
    must answer it, the caller must be [a reviewer who may record it](#who), and one `reviewed` stamp is appended,
-   `pass` or `fail`. A verdict with a problem writes no stamp.
+   `pass` or `fail`. A verdict with a problem writes no stamp. A passing record, like every passing stage stamp, then
+   posts `/progress reviewed` on the unit's issues as the signed-in account ([stamps](../stamps.md#log)): the one
+   GitHub write a reviewer's command makes, a claim command and never free text.
 
 The reviewer runs steps 1 and 3 itself, so the stamp's `who` is its own identity ([Who runs a
 command](../agents.md#identity)). A coordinator starts the reviewer as a subagent. A person without the hooks, or an

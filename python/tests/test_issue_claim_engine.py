@@ -4,10 +4,11 @@
 from datetime import timedelta
 
 import pytest
-from claim_support import BOT, RULES, START, Clock, FakeGitHub, make_engine
+from claim_support import BOT, RULES, START, Clock, FakeGitHub, idle_past_deadline, make_engine
 
 from coney_tools import issue_claim_model as model
-from coney_tools.issue_claim_engine import Activity, Engine
+from coney_tools.issue_claim_engine import Engine
+from coney_tools.issue_claim_pass import Activity
 from coney_tools.issue_claim_remote import Blocker
 
 
@@ -398,7 +399,7 @@ def test_a_hand_assignment_is_adopted_and_gets_the_deadline(engine: Engine, gith
     assert (card.claimant, card.adopted, card.status) == ("carol", True, "claimed")
     assert "S-in-progress" in github.view(11).labels and "S-needs-triage" not in github.view(11).labels
     assert "assigned by hand" in github.cards(11)[-1].body
-    clock.advance(hours=73)
+    idle_past_deadline(github, clock, 11)
     engine.reconcile(11)
     assert github.view(11).assignees == () and card_of(github, 11).status == "released"
 
@@ -455,7 +456,7 @@ def test_the_sweep_warns_and_releases_every_claim_in_its_turn(engine: Engine, gi
     clock.advance(hours=20)  # alice 50 h idle, bob 20 h
     engine.sweep()
     assert len(github.others(10)) == 1 and github.others(11) == []
-    clock.advance(hours=23)  # alice 73 h, bob 43 h
+    clock.advance(hours=24)  # alice 74 h, warned at 50 h with 24 h of notice; bob 44 h
     engine.sweep()
     assert github.view(10).assignees == () and github.view(11).assignees == ("bob",)
 

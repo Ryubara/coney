@@ -13,7 +13,7 @@ fresh data. A refusal names another person without an `@`: only the person who w
 from __future__ import annotations
 
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 
 from coney_tools.conventions import Claims
@@ -37,6 +37,18 @@ def is_maintainer(permission: str | None, association: str, rules: Claims) -> bo
     return association in rules.maintainer_associations
 
 
+def trial_rules(rules: Claims) -> Claims:
+    """The rules of an issue that carries the trial label (`claims.trial`): adoption and the idle release switched on,
+    with the trial's hours, so they can be tried on one issue before the cutover."""
+    return replace(
+        rules,
+        adopt=True,
+        release=True,
+        warn_hours=rules.trial.warn_hours,
+        deadline_hours=rules.trial.deadline_hours,
+    )
+
+
 def limit_for(maintainer: bool, rules: Claims) -> int:
     """How many open claims one account may hold: 3 for a maintainer, 2 for a contributor."""
     return rules.limits.maintainer if maintainer else rules.limits.contributor
@@ -51,12 +63,12 @@ def active_cards(cards: Iterable[Card]) -> list[Card]:
 
 
 def open_task_keys(cards: Iterable[Card], claimant: str, except_issue: int) -> set[str]:
-    """The tasks `claimant` holds open that count toward the limit (issues of one task count once; an exempt claim
-    does not count), not counting issue `except_issue`."""
+    """The tasks `claimant` holds open that count toward the limit (issues of one task count once; an exempt claim,
+    and one whose slot is free (`Card.counted`), does not count), not counting issue `except_issue`."""
     return {
         card.task_key
         for card in cards
-        if card.active and not card.exempt and card.claimant == claimant and card.issue != except_issue
+        if card.active and card.counted and not card.exempt and card.claimant == claimant and card.issue != except_issue
     }
 
 
@@ -154,15 +166,18 @@ def overrun(card: Card, held: Iterable[Card], maintainer: bool, rules: Claims) -
     issues of a task past `issues_per_task`. Every parallel run applies the same order, so each releases its own claim
     if (and only if) it is among the late ones. Adopted claims (assigned by hand) are not counted, nor are exempt ones
     (`claims.exempt_label`): an exempt claim is never over the limit, but the cap of a task holds for it too, as
-    `check_claim`'s `issues_in_task` counts it at claim time.
+    `check_claim`'s `issues_in_task` counts it at claim time. A claim whose slot is free (a maintainer's stage of
+    `claims.limit_ends_at`, or a ready pull request) is not counted either. A claim whose count came back (`regained`,
+    a pull request closed unmerged) counts like any other, so the newest claims past the limit are the over ones; the
+    engine releases them after a warning, not at once, when the claimant has one.
     """
     mine = [c for c in held if c.active and c.claimant == card.claimant and not c.adopted]
     if card not in mine and card.issue not in {c.issue for c in mine}:
         mine.append(card)
-    if not card.exempt:
+    if not card.exempt and card.counted:
         first: dict[str, tuple[datetime, int]] = {}
         for c in mine:
-            if c.exempt:
+            if c.exempt or not c.counted:
                 continue
             key = c.task_key
             mark = (c.claimed_at, c.issue)

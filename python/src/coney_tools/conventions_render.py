@@ -313,6 +313,15 @@ def _claim_rules(conventions: Conventions) -> list[str]:
         "toward that limit nor is refused by it; the cap of a task still holds. Only someone who may label issues "
         "(triage access or more) can set the label."
     )
+    ends = _join_or([f"`{stage}`" for stage in claims.limit_ends_at])
+    lines += _bullet(
+        "A claim stops counting toward the limit when the engineer's slot frees, as the unit passes review: once a "
+        f"maintainer records {ends} (their tools do, after the review), or, for anyone, while the claimant's own pull "
+        "request that closes it is open and not a draft, which frees one task's slot (the oldest it closes), however "
+        "many issues it names; a pull request closed unmerged gives the count back, and the newest claims then over "
+        "the limit are warned and, once release is on, released after the notice (never a maintainer's). It stays "
+        "held until it ends."
+    )
     lines += _bullet(
         f"While an open `{claims.critical_label}` issue that can be claimed has no claim, only a "
         f"`{claims.critical_label}` issue can be claimed."
@@ -330,7 +339,21 @@ def _claim_rules(conventions: Conventions) -> list[str]:
     lines += _bullet(
         f"Release is {state}: a claim is released after {claims.deadline_hours} hours without activity (`/progress`, a "
         f"pull request opened, reopened, made ready or pushed to by the claimant, `/claim renew`); the claimant is "
-        f"mentioned at {claims.warn_hours} hours. The stages `/progress` accepts: {_codes(claims.stages)}."
+        f"mentioned at {claims.warn_hours} hours, and a claim is never released sooner than "
+        f"{claims.deadline_hours - claims.warn_hours} hours after that warning. The stages `/progress` accepts: "
+        f"{_codes(claims.stages)}; a passing stage stamp posts it, the same stage again after "
+        f"{claims.progress_refresh_hours} hours. The same switch gates the release of claims over the limit "
+        "(below); until it is on, a sweep only says what it would do."
+    )
+    lines += _bullet(
+        f"An issue labelled `{claims.trial.label}` (a throwaway test issue) has adoption and release on whatever the "
+        f"switches say, with a warning at {claims.trial.warn_hours} and a release at "
+        f"{claims.trial.deadline_hours} hours."
+    )
+    pr_check = "fails" if claims.require_on_pr else "only warns until the cutover"
+    lines += _bullet(
+        "The `claim` check of a pull request wants every issue it closes (`Fixes #N`) held by a claim of its author "
+        f"(a maintainer's: by any claim); a problem {pr_check}."
     )
     adopt = "on" if claims.adopt else "off until the cutover"
     lines += _bullet(

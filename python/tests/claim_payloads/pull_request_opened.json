@@ -1,0 +1,18 @@
+{
+  "action": "opened",
+  "number": 77,
+  "pull_request": {
+    "url": "https://api.github.invalid/repos/octo/coney/pulls/77",
+    "number": 77,
+    "state": "open",
+    "draft": false,
+    "title": "tools: Fix the claim trial",
+    "user": {"login": "carol", "id": 7, "type": "User"},
+    "author_association": "CONTRIBUTOR",
+    "body": "## Summary\n\nA fix.\r\n\r\nFixes #41\r\nFixes #42\r\n\r\n## Testing\n\n- pytest",
+    "head": {"ref": "fix-trial", "sha": "0123456789abcdef0123456789abcdef01234567"},
+    "base": {"ref": "main"}
+  },
+  "repository": {"full_name": "octo/coney", "default_branch": "main"},
+  "sender": {"login": "carol", "type": "User"}
+}

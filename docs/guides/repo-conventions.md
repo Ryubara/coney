@@ -255,8 +255,10 @@ is not paused, is skipped in a group of its own so that it cannot replace the pe
 handles every unhandled command of its issue and the commands other issues received in the last 30 minutes, so the
 command of a job GitHub cancels is usually answered by the next job, and otherwise by the next sweep that runs. A
 `workflow_dispatch` started on another branch is skipped, but only while that branch carries `claim.yml` unchanged (a
-branch runs its own copy of the file). Two switches in `claims`, `adopt` and `release`, keep the parts that change
-existing issues (giving a card to a hand assignment, the 48 and 72 hour deadlines) off until the cutover.
+branch runs its own copy of the file). Three switches in `claims`, `adopt`, `release` and `require_on_pr`, keep the
+parts that change existing issues (giving a card to a hand assignment, the 48 and 72 hour deadlines) and the failing
+`claim` check of pull requests off until the cutover, which sets all three; `claims.trial` is no switch (it tries
+adoption and the release on one labelled test issue).
 Whether the Actions token may delete another person's comment, and whether it may read a collaborator's permission, are
 checked on the real repository; the design works without both (the card remembers which commands it acted on, and the
 comment's own association decides for the repository's owner).

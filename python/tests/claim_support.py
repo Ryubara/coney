@@ -272,3 +272,11 @@ def plant_claim(
     github.items[number].view = replace(view, assignees=(login,), labels=(*kept, *extra, RULES.working_label))
     card = Card(issue=number, claimant=login, claimed_at=at or github.clock.now(), task=task, exempt=exempt)
     github.create_comment(number, render_card(card, RULES))
+
+
+def idle_past_deadline(github: FakeGitHub, clock: Clock, number: int) -> None:
+    """Let a claim go idle past its deadline the way the hourly sweep sees it: a pass at 49 h gives the warning (a
+    claim is never released unwarned), and 24 h later the claim is due."""
+    clock.advance(hours=49)
+    make_engine(github, clock).reconcile(number)
+    clock.advance(hours=24)

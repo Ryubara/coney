@@ -11,7 +11,7 @@ from datetime import timedelta
 import pytest
 import yaml
 from audit_support import CONVENTIONS
-from claim_support import RULES, Clock, FakeGitHub, make_engine, plant_claim
+from claim_support import RULES, Clock, FakeGitHub, idle_past_deadline, make_engine, plant_claim
 from conventions_support import REPO
 
 from coney_tools import issue_claim_cli as cli
@@ -89,7 +89,7 @@ def test_a_stale_unclaim_does_not_release_the_claim_made_after_it(github: FakeGi
 def test_a_progress_after_the_checks_but_before_the_unassign_keeps_the_claim(github: FakeGitHub, clock: Clock) -> None:
     github.say(10, "alice", "/claim")
     make_engine(github, clock).reconcile(10)
-    clock.advance(hours=73)
+    idle_past_deadline(github, clock, 10)
     stale = make_engine(github, clock)
 
     def meanwhile() -> None:
@@ -131,10 +131,10 @@ def test_retries_that_run_out_report_what_each_attempt_did(
     engine: Engine, github: FakeGitHub, clock: Clock, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     github.say(10, "alice", "/claim")
-    from coney_tools import issue_claim_engine
+    from coney_tools import issue_claim_engine, issue_claim_pass
 
     def always_stale(work: object) -> None:
-        raise issue_claim_engine._Stale("#10: the claim changed meanwhile")
+        raise issue_claim_pass.Stale("#10: the claim changed meanwhile")
 
     monkeypatch.setattr(engine, "_still_current", always_stale)
     lines, errors = cli.run_event(engine, "issue_comment", comment_event(10), CONVENTIONS, clock.now)
@@ -221,7 +221,11 @@ def test_only_a_paused_label_starts_a_run_and_the_list_is_the_conventions() -> N
     job = jobs["claim"]
     for text in (job["if"], job["concurrency"]["group"]):
         found = re.search(r"fromJSON\('(\[.*?\])'\)", text)
-        assert found is not None and tuple(json.loads(found.group(1))) == (*RULES.paused_labels, RULES.exempt_label)
+        assert found is not None and tuple(json.loads(found.group(1))) == (
+            *RULES.paused_labels,
+            RULES.exempt_label,
+            RULES.trial.label,
+        )
         assert "github.event.label.name" in text
 
 
@@ -251,7 +255,7 @@ def test_two_releases_of_one_claim_do_not_bring_it_back(github: FakeGitHub, cloc
 
     github.say(10, "alice", "/claim")
     engine_with_adopt().reconcile(10)
-    clock.advance(hours=73)
+    idle_past_deadline(github, clock, 10)
     stale = engine_with_adopt()
 
     # A run outside the queue (`claim run` by hand) releases the idle claim just before this one unassigns.
@@ -265,7 +269,7 @@ def test_two_releases_of_one_claim_do_not_bring_it_back(github: FakeGitHub, cloc
 def test_a_release_in_flight_does_not_strand_a_reclaim_made_at_the_unassign(github: FakeGitHub, clock: Clock) -> None:
     github.say(10, "alice", "/claim")
     make_engine(github, clock).reconcile(10)
-    clock.advance(hours=73)
+    idle_past_deadline(github, clock, 10)
     stale = make_engine(github, clock)
 
     def meanwhile() -> None:

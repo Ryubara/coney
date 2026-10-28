@@ -1,0 +1,14 @@
+{
+  "action": "opened",
+  "number": 78,
+  "pull_request": {
+    "number": 78,
+    "state": "open",
+    "draft": false,
+    "title": "build: Update a pinned action",
+    "user": {"login": "dependabot[bot]", "id": 49699333, "type": "Bot"},
+    "author_association": "NONE",
+    "body": "Bumps an action.\n\nFixes #41"
+  },
+  "sender": {"login": "dependabot[bot]", "type": "Bot"}
+}

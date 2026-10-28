@@ -21,8 +21,9 @@ from pathlib import Path
 
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
-from coney_tools.issue_claim_engine import Engine, latest_held, stored_cards
+from coney_tools.issue_claim_engine import Engine
 from coney_tools.issue_claim_model import Card, Command, parse_command, reply_target, scopes_overlap
+from coney_tools.issue_claim_pass import latest_held, stored_cards
 from coney_tools.issue_claim_remote import IssueView, Remote
 from coney_tools.issue_claim_rules import check_claim
 from coney_tools.issue_form import section_heading, section_text

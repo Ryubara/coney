@@ -44,8 +44,8 @@ import yaml
 from coney_tools import stamps
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
-from coney_tools.issue_claim_engine import latest_held, stored_cards
 from coney_tools.issue_claim_model import Card, iso_time, parse_time
+from coney_tools.issue_claim_pass import latest_held, stored_cards
 from coney_tools.issue_claim_remote import Remote
 from coney_tools.task_file import TASK_ID, TaskFile, TaskFileError, parse_task_file
 from coney_tools.unit_record import UnitRecord, UnitRecordError, read_record

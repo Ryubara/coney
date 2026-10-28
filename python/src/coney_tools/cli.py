@@ -17,6 +17,7 @@ from coney_tools import (
     build_cli,
     check_cli,
     ci_cli,
+    claim_progress,
     clips,
     commit_message,
     conclave_cli,
@@ -52,6 +53,7 @@ from coney_tools import (
     run_records_cli,
     stale_processes,
     stamp_cli,
+    stamps,
     standards_cli,
     task_cli,
     trace_cli,
@@ -1254,6 +1256,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     # First, before anything slow: the hook's identity file lives only minutes (coney_tools.identity).
     identity.current()
     use_utf8_output()
+    # A stage stamp keeps the claim alive: the stamp log posts `/progress` through this (coney_tools.claim_progress).
+    stamps.observe("claim progress", claim_progress.observer())
     args = _build_parser().parse_args(argv)
     try:
         status = _run(args)

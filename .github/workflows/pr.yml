@@ -74,4 +74,25 @@ jobs:
         run: |
           printf '%s\n' "$PR_BODY" > "$RUNNER_TEMP/pr-body.md"
           uv run --project python coney-tools repo check-body --body "$RUNNER_TEMP/pr-body.md" --title "$PR_TITLE"
+
+  # Work starts with a claim (docs/guides/issues.md#claiming): every issue the description closes (`Fixes #N`) must be
+  # held by a claim of the pull request's author, or the author is a maintainer. Until the cutover
+  # (`claims.require_on_pr` false) a problem is a warning annotation and the job passes. A claim made after the pull
+  # request opened is seen when the description is edited or a commit is pushed. The token only reads: the claim cards
+  # (issue comments) and the author's permission.
+  claim:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      # The description reaches the checker only inside the event file, never expanded into the script's text.
+      - name: Check that the issues it closes are claimed by its author
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: uv run --project python coney-tools claim check-pr --payload "$GITHUB_EVENT_PATH"
 # Re-registered after the repository was restored.

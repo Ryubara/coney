@@ -17,8 +17,9 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from coney_tools.conventions import Conventions
-from coney_tools.issue_claim_engine import Engine, latest_held, stored_cards
+from coney_tools.issue_claim_engine import Engine
 from coney_tools.issue_claim_model import reply_target
+from coney_tools.issue_claim_pass import latest_held, stored_cards
 from coney_tools.issue_claim_remote import Remote
 
 #: The command each verb posts.

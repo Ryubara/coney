@@ -422,3 +422,52 @@ def test_the_workflow_is_a_docs_only_scope_class_like_the_other_linux_workflows(
 
 def test_the_clock_used_when_none_is_given_is_utc() -> None:
     assert cli._utc_now().tzinfo is UTC and isinstance(cli._utc_now(), datetime)
+
+
+def test_claim_list_says_whether_a_claim_counts_and_uses_the_trial_hours_for_a_trial_issue(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """`counted` is what the limit sees (a freed slot or a workflow unit does not count), and an issue with the trial
+    label is released on the trial's hours, so its deadline is too."""
+    monkeypatch.chdir(REPO)
+    cards = [
+        model.Card(issue=7, claimant="alice", claimed_at=START),
+        model.Card(issue=8, claimant="alice", claimed_at=START, counted=False, freed=True),
+        model.Card(issue=9, claimant="alice", claimed_at=START, exempt=True),
+    ]
+    items = [
+        {
+            "id": 10 + card.issue,
+            "issue_url": f"https://api.invalid/repos/o/r/issues/{card.issue}",
+            "user": {"login": BOT, "type": "Bot"},
+            "body": model.render_card(card, RULES),
+            "created_at": "2026-10-22T12:00:00Z",
+        }
+        for card in cards
+    ]
+    gh = Gh({"issues/comments": "\n".join(json.dumps(item) for item in items), f"labels={RULES.trial.label}": "7\n"})
+    assert cli.run_claim(parse("list", "--json"), gh) == 0
+    rows = {row["issue"]: row for row in json.loads(capsys.readouterr().out)}
+    assert [rows[n]["counted"] for n in (7, 8, 9)] == [True, False, False]
+    assert rows[7]["deadline"] == "2026-10-22T14:00:00Z"  # the trial's 2 hours
+    assert rows[8]["deadline"] == "2026-10-25T12:00:00Z"  # the repository's 72 hours
+    assert cli.run_claim(parse("list"), gh) == 0
+    assert "#7 alice claimed: scope not stated; expires 2026-10-22 14:00 UTC" in capsys.readouterr().out
+
+
+def test_a_pull_request_of_another_repository_is_not_a_linked_pull_request() -> None:
+    """GitHub may list a pull request of another repository that names the issue; its number means nothing here and
+    it must never free a slot, so only the pull requests whose base is this repository are kept."""
+
+    def node(number: int, base: str | None) -> dict[str, Any]:
+        found: dict[str, Any] = {"number": number, "state": "OPEN", "merged": False, "commits": {"nodes": []}}
+        found["author"] = {"login": "alice"}
+        found["baseRepository"] = {"nameWithOwner": base} if base else None
+        return found
+
+    nodes = [node(3, "Owner/Repo"), node(4, "alice/fork"), node(5, None)]
+    data = {
+        "repository": {"nameWithOwner": "owner/repo", "issue": {"closedByPullRequestsReferences": {"nodes": nodes}}}
+    }
+    found = remote(Gh({"graphql": json.dumps({"data": data})})).linked_prs(5)
+    assert [(pr.number, pr.repository) for pr in found] == [(3, "Owner/Repo")]

@@ -1,0 +1,26 @@
+{
+  "action": "created",
+  "issue": {
+    "url": "https://api.github.invalid/repos/octo/coney/issues/41",
+    "number": 41,
+    "title": "tools: Fix the claim trial",
+    "user": {"login": "Ryubara", "id": 1, "type": "User"},
+    "labels": [{"name": "task"}, {"name": "A-tools"}, {"name": "P-low"}, {"name": "S-ready-to-start"}, {"name": "claim-trial"}],
+    "state": "open",
+    "assignees": [],
+    "comments": 0,
+    "author_association": "OWNER",
+    "body": "### Summary\n\nFrom: the live test\n\nA throwaway issue."
+  },
+  "comment": {
+    "url": "https://api.github.invalid/repos/octo/coney/issues/comments/9001",
+    "id": 9001,
+    "user": {"login": "Ryubara", "id": 1, "type": "User"},
+    "created_at": "2026-10-27T12:00:00Z",
+    "updated_at": "2026-10-27T12:00:00Z",
+    "author_association": "OWNER",
+    "body": "/claim scope: python/ task: 41-claim-trial"
+  },
+  "repository": {"full_name": "octo/coney", "default_branch": "main"},
+  "sender": {"login": "Ryubara", "type": "User"}
+}
