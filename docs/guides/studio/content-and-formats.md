@@ -407,7 +407,7 @@ of its native. Studio's Inspector shows the arguments by name and kind from the 
 | Flag | `AddFlag(name, pos, heading, a, b)` | A flag keeps 15 characters of its name, so `FindFlag` never matches a longer one ([Flags](../../research/flags.md#findflag)); Studio warns |
 | Path | `AddPath(name, {flags})` | At most eight flags, 32 paths a level |
 | Flag link | `FlagNetAddLink(flag, ...)` | Up to four links a flag |
-| Volume box | `AddVolumeBox(name, kind, corner, size, ...)` | Axis-aligned: Studio's gizmo offers no rotation ([Volume boxes](../../references/boxes.md)) |
+| Volume box | `AddVolumeBox(name, kind, corner, size, ...)`, then `RotateVolumeBox` | Turned about z only: Studio's gizmo offers the vertical ring alone ([Volume boxes](../../references/boxes.md)) |
 | Turf | `GangAddTurfBox` on a volume box | |
 | Object | `ObjSpawn(type, pos, rot, -1, zone, flags, tint, flag)` | Any Object List type; streamed in within 70 m as the original's ([Streaming](../../research/objects.md#streaming)) |
 | Emitter | `SpawnParticle(type, pos, rot)` | The `part_*` types ([Particles](../../references/particles.md)) |

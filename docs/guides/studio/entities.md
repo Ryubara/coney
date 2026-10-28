@@ -6,8 +6,8 @@ every front end, how the Inspector shows everything about an entity without bloa
 **attributes**, the named values a project gives any entity for its scripts. The full list of a **Human**'s properties
 is its own page, [A Human's properties](human-properties.md). What Studio is, and the
 other design pages, are on the Studio index of the editor experience design ([#1055](issue:1055)); the Hierarchy and
-the Inspector panel are that design's, the level file and its entity tree are the project formats page of
-[#1058](issue:1058), and the natives are the [Lua SDK](lua-sdk.md)'s.
+the Inspector panel are that design's, the level file and its entity tree are [Project formats](project-formats.md)'s,
+and the natives are the [Lua SDK](lua-sdk.md)'s.
 
 The question this page answers, a maintainer's: the Hierarchy holds *entities*, and scripts are never attached to them
 (a maintainer decision), so how does the Inspector know what to show? Selecting a Human must let a user set
@@ -74,11 +74,11 @@ runtime values and the multiple-selection editing with mixed values shown as a d
 level, and its properties are what Coney can set on it, each through a native or a Coney edit that exists. That is
 the Studio principle of reflecting Coney ([What Studio is](issue:1055)), applied to the Inspector. The game's own
 families of run-time things are listed on [Entities](../../references/entities.md); each Studio kind below names the
-family it makes and the level-file statement that stores it (project formats, [#1058](issue:1058)).
+family it makes and the level-file statement that stores it ([The level file](project-formats.md#level-file)).
 
 | Kind | Level-file statement | What it makes in Coney | Its groups (beyond [Entity](human-properties.md#human-entity)) | State |
 | --- | --- | --- | --- | --- |
-| **Level** (the tree's root) | `title`, `texture`, `sky`, `sun`, `ambient`, `fog`, `occlusion`, `shadows`, `tessellate`; `base` (proposed by [#1058](issue:1058)) | The level's settings ([Statements](../sandbox.md#statements)) | Level, Lighting, Base level | ready for sandbox layouts, but for `base`, which waits on a project level on a disc level |
+| **Level** (the tree's root) | `title`, `texture`, `sky`, `sun`, `ambient`, `fog`, `occlusion`, `shadows`, `tessellate`; `base` ([How a level starts](content-and-formats.md#level-start)) | The level's settings ([Statements](../sandbox.md#statements)) | Level, Lighting, Base level | ready for sandbox layouts, but for `base`, which waits on a project level on a disc level |
 | **Group** | `group` | Nothing of its own: a parent its children follow | Transform | waits on level files of version 2 |
 | **Prefab instance** | `instance` | Its prefab's entities, expanded at Play | Transform, Prefab (its file, its overrides) | waits on level files of version 2 |
 | **Primitive** | `box`, `ramp`, `stairs`, `cylinder`, `capsule`, `sphere` | A solid textured shape ([Shapes](../sandbox.md#shapes)) | Transform, Shape (the shape and its sizes), Surface (texture, tiling, tint), Collision, Repeat | ready |
@@ -103,9 +103,9 @@ family it makes and the level-file statement that stores it (project formats, [#
 | **Spawner** | `spawner` | A gang's spawner, `GangAddSpawner` | Transform, Spawner (gang, types, model, total, delay, at once, off screen) | waits on level files of version 2 |
 
 *State* is what Studio can do with the kind; "waits on level files of version 2" means the kind's natives are
-implemented and what is missing is Coney making the entity from a level file, which the project formats page's build
-issues add ([#1058](issue:1058)). The disc level's own entities, shown read-only under a base level, have the same kinds
-and schemas, every property read-only.
+implemented and what is missing is Coney making the entity from a level file, which the content design's build
+issues add ([Proposed build issues](content-and-formats.md#build-issues)). The disc level's own entities, shown
+read-only under a base level, have the same kinds and schemas, every property read-only.
 
 A trigger sphere is the Inspector's *Trigger* group (armed, radius, how a human inside is accepted, repeat period) on
 an Object, a Flag or a Human, not a kind of its own, because the game ties it to one of them (`TriggerSphereCfg` takes
@@ -460,7 +460,8 @@ has at most one `attr` line per entity, the names in the order the user added th
 ### The natives {#attribute-natives}
 
 Beside the natives that find entities, which the project formats page proposes (`Coney.FindEntity`,
-`Coney.FindEntities`, `Coney.GetEntityMembers`, `Coney.GetEntityInfo`, [#1058](issue:1058)), in the same style:
+`Coney.FindEntities`, `Coney.GetEntityMembers`, `Coney.GetEntityInfo`, [Names and
+tags](project-formats.md#names-tags)), in the same style:
 
 | Proposed native | Does |
 | --- | --- |
@@ -486,7 +487,7 @@ human's health), or a lookup key (scripts find entities by name and tag; an attr
 
 ## What the level file stores {#level-file}
 
-What this page needs of the level file, to agree with the project formats page of [#1058](issue:1058):
+What this page needs of the level file, whose statements [The level file](project-formats.md#level-file) lists:
 
 - **A kind is a statement**, as that page has it: `character`, `box`, `spawn`. The schema names each kind's statement,
   and a statement no kind has is refused with its line.
@@ -499,8 +500,7 @@ What this page needs of the level file, to agree with the project formats page o
   one; inside a prefab, a reference to a member of the same prefab is its local id.
 - **Attributes are `attr` statements** ([above](#attributes)).
 - **A gang is a `gang` statement**, `gang Rivals id=g2 type=3 enemies=g1`, and a human's `gang=` names its id; a gang
-  of the base level is named `gang=base:<its name>`. This differs from the project formats page's `gang=2` and is to
-  be agreed with it.
+  of the base level is named `gang=base:<its name>`.
 - **An event field is a key** whose value is the function's name: `volume id=v1 name=Gate kind=players
   at=16,12,0 size=4,2,3 on-enter=OnGateEnter on-exit=OnGateExit`; an unset event writes nothing.
 - **A stealth zone is a `stealth` statement**, `stealth id=z1 at=4,6,0 yaw=30 size=8,3,2`, and a surface's
@@ -548,16 +548,13 @@ every check runs headless where it can.
 
 ## Open questions {#open-questions}
 
-- **The gang and stealth statements** ([What the level file stores](#level-file)): the `gang` statement changes the
-  project formats page's `gang=2`, and `stealth` is a statement that page does not list; the two designs settle them
-  together ([#1058](issue:1058)). That page also keeps a volume box axis-aligned, where this page turns it about z as
-  `RotateVolumeBox` does.
 - **Calling a project's function from a message.** The original's handler slot holds a name for the game's Lua 4.0
   state; a project's functions live in its Lua 5.4 state, so the delivery must find the name there. The Lua SDK's value
   bridge passes callbacks by name ([The value bridge](lua-sdk.md#bridge)); how a message handler set by Coney for a
   level entity reaches it is that design's to settle.
 - **Attributes on a base level's entities.** Whether a project may put attributes on a disc level's entity (an `attr`
-  naming its trace id), which depends on how that page settles overrides of a base level's entities.
+  naming its trace id), which depends on how a base level's entities are overridden ([How a level
+  starts](content-and-formats.md#level-start)).
 - **Per-human stats.** Whether the engine should keep the [Stats](human-properties.md#human-stats) per human, so the
   Inspector can set them, or a new stat set stays a new character type; part of the stats inventory on
   [#723](issue:723).
@@ -568,7 +565,8 @@ every check runs headless where it can.
 ## Proposed build issues {#build-issues}
 
 In the order they should come. Issues 1 to 3 need nothing of Studio and improve the debug menu at once; 4 to 6 build on
-the project formats page's level files of version 2 and level entities made at entry ([#1058](issue:1058)), 5 and 6
+the content design's level files of version 2 and level entities made at entry
+([Proposed build issues](content-and-formats.md#build-issues)), 5 and 6
 also on the Lua SDK's mods runtime ([Proposed build issues](lua-sdk.md#build-issues)); 7 and 8 build on the editor
 experience design's Hierarchy and Inspector issue ([#1055](issue:1055)), with which issue 7 is filed as one.
 

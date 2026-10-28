@@ -10,9 +10,9 @@ and the Inspector](entities.md); this page is its list for the kind with the mos
 masterlist gives as inferred, from a native's name, keep that in their help), or *creation* (an argument of
 `HuCreate`), or *Coney edit* (an edit of the Entity inspector, Coney's own). **Live** is the schema's field ([Level
 and Running](entities.md#running)). **Coney** is *ready* when the native or edit exists, or what the property waits
-on; every *ready* property set from a level file also waits, with all of its kind, on Coney making
-entities from level files ([#1058](issue:1058)). *(A)* marks an Advanced property; a *Debug* group is shown only for a
-running human.
+on; every *ready* property set from a level file also waits, with all of its kind, on Coney making entities from
+level files ([Proposed build issues](content-and-formats.md#build-issues)). *(A)* marks an Advanced property; a
+*Debug* group is shown only for a running human.
 
 ## Entity {#human-entity}
 
@@ -22,7 +22,7 @@ Every kind has this group.
 | --- | --- | --- | --- |
 | Id `id` | Studio writes it; never edited | read-only | ready |
 | Name `name` | creation (`HuCreate`'s name); `HuSetName` while playing. The game keeps 15 characters, and Studio warns at the 16th | live | ready |
-| Tags `tags` | the level's lookup table ([#1058](issue:1058)) | next-play | ready |
+| Tags `tags` | the level's lookup table ([Names and tags](project-formats.md#names-tags)) | next-play | ready |
 | Parent, place in the tree | the Hierarchy | next-play | waits on level files of version 2 |
 | Attributes | [Attributes](entities.md#attributes) | live | waits on the attribute natives |
 
@@ -217,8 +217,8 @@ so while playing its health is a watch until the play mode handles one.
 
 A human's relations are his gang's: two gangs are enemies or friends, and a human fights whoever his gang treats as an
 enemy. So *gang and relations* are a kind of their own, an entity with no transform (Roblox's teams are instances in
-the same way), and a Human's *Gang* points at one. The project formats page stores a human's gang as a number
-(`gang=2`); this page proposes a `gang` statement and a reference to it by id ([What the level file
+the same way), and a Human's *Gang* points at one. The level file stores a gang as a `gang` statement and a
+human's gang as a reference to it by id ([What the level file
 stores](entities.md#level-file)).
 
 | Property | Set by | Live | Coney |
@@ -235,4 +235,4 @@ stores](entities.md#level-file)).
 | Starting tactic: one of the available `Tactic*` natives with its arguments and its callback as the *On Tactic* event | the tactic's native, once | next-play | ready |
 
 A gang made by a base level's own scripts is shown read-only under the base level, from its set-up trace
-([#1058](issue:1058)), and a project's human may join it by that gang's name.
+([Levels and worlds](content-and-formats.md#levels)), and a project's human may join it by that gang's name.

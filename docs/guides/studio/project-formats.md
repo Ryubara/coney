@@ -64,6 +64,11 @@ units and axes: metres and degrees, the game's axes, z up.
 | `navlink` | `from= to= kind=walk\|jump\|climb\|door` | A link between areas |
 | Entities | `flag`, `path`, `flaglink`, `volume`, `object`, `emitter`, `door`, `glass`, `car`, `light`, `character`, `spawner`, `trigger` with their natives' arguments by name | The entities of [Level objects](content-and-formats.md#entities) |
 | `spawn NAME` | `character=` a type number or `project:/characters/...` | The spawn point's character |
+| A kind's properties | every key of the kind's property schema, written only when it differs from its default | What the Inspector sets ([What the level file stores](entities.md#level-file)) |
+| Event fields | `on-enter=NAME`, `on-exit=NAME` and the kind's other events | A function of the project's scripts, connected at Play ([Events](entities.md#events)) |
+| `gang NAME` | `type=`, `enemies=ID,...`, `friends=ID,...`, the gang's other properties | A gang and its relations; a `character`'s `gang=` names its id ([A Gang](human-properties.md#gang)) |
+| `stealth` | `at= yaw= size=` | A stealth zone: the floor triangles inside the box are shadow ground at Play ([Stealth zones](entities.md#stealth-zone)) |
+| `attr ID` | `name:type=value ...`, `name=nil` | An entity's attributes, or an instance's override of them ([Attributes](entities.md#attributes)) |
 
 An example, in version 2:
 
@@ -82,7 +87,9 @@ box id=b1 at=20,0,0 size=6,6,0.1 rot=0,0.1305,0,0.9914 sneak=yes texture=floor
 group id=g1 name=Gate at=16,12,0
 flag fYardGate id=f1 parent=g1 at=0,0,0 heading=0
 object id=o1 parent=g1 type=dyn_trashcan at=-1,-1,0 zone=0
-character Rival id=h1 tags=rivals type=32 gang=2 at=18,12,0 heading=180
+gang Rivals id=g2 type=2
+character Rival id=h1 tags=rivals type=32 gang=g2 at=18,12,0 heading=180
+attr h1 boss:boolean=true loot:number=250
 
 instance id=p1 name=AmbushNorth tags=ambush prefab=project:/prefabs/ambush.prefab at=30,5,0 yaw=90
 instance id=p2 name=AmbushSouth tags=ambush prefab=project:/prefabs/ambush.prefab at=40,-8,0
