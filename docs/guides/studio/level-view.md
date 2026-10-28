@@ -156,7 +156,7 @@ engine can hold, and an axis the selection cannot take is drawn grey and does no
 
 So the full gizmo (three rings, the free sphere, scale on any axis of anything) needs a level format that keeps a full
 position, rotation and scale for every placed thing. The sandbox layout keeps a position, a yaw and sizes; Coney's own
-level format is the content page's ([#1058](issue:1058)), and this page asks it to keep all three, so that every handle
+level file keeps all three ([The level file](project-formats.md#level-file)), so that every handle
 of the Unity gizmo works on every placed thing. A human keeps one ring for good: Coney's humans have a heading, not a
 free orientation. Coordinates and units are the game's: metres, degrees, z up ([The layout
 format](../sandbox.md#the-layout-format)).
@@ -218,7 +218,7 @@ the Entity editor's *Move to camera* and *Drop to ground*), is selected, and the
 | **AI fighter** | An AI human that fights back | A layout's `fighter` ([AI fighters](../sandbox.md#ai-fighters)) | ready |
 | **Camera view** | A viewpoint, chosen from the Level view's view menu | A layout's `view` | ready |
 | **Stealth zone** | Ground that puts the player in stealth when he walks onto it: a flat solid shape whose collision carries the shadow-ground flag, shown in the Level view as a tinted area | The game's shadow ground, collision triangles with flag `0x10` ([Stealth: shadow ground](../../research/stealth.md#shadow-ground)), which Coney implements, and a layout shape's `flags=0x10` ([Shapes](../sandbox.md#shapes)) | ready |
-| **Path point** | A point of the level's path network, linked to others | Coney's AI pathing ([AI moving](../../research/ai-moving.md)) | waits on Coney's path overlays and a project path format ([#1058](issue:1058)) |
+| **Path point** | A point of the level's path network, linked to others | Coney's AI pathing ([AI moving](../../research/ai-moving.md)) | waits on Coney's path overlays; a project's paths are the content page's ([Paths](content-and-formats.md#paths-kind)) |
 | **Character** of any type | A human of one of the game's character types, on a side | The AI fighters page's model picker and *Change character* ([pages](../debug-menu.md#pages)) | waits on a level format that places one (a layout's fighter is one fixed type) |
 
 Primitives repeat as the layout's `repeat=` and `step=` do: the Inspector's *Repeat* field makes a row of copies, and
@@ -235,7 +235,8 @@ Ctrl+D duplicates one.
   the triangle flags (`flags=`) and the area byte (`area=`), all of them Coney's collision fields
   ([Collision](../../research/collision.md#triangles)). The Level view's *Collision* view mode draws them, from the
   Debug draw's collision lines. Two kinds wait: a collider with nothing drawn (an invisible wall, Unity's lone collider)
-  needs a layout option or Coney's level format ([#1058](issue:1058)), and a collider for an imported model waits on
+  needs the project's level file, whose `collider` statements hold it
+  ([Colliders and primitives](content-and-formats.md#collision)), and a collider for an imported model waits on
   custom content ([Custom content](../../roadmap.md#custom-content)).
 - **Path points.** Studio's design for them, for when Coney can draw and read a project's paths: a *Paths* mode of the
   Level view shows the points and their links as lines on the ground; Create adds a point linked to the selected one,

@@ -113,7 +113,7 @@ has what it names.
 | --- | --- | --- | --- |
 | **Level view** | The level being edited, seen through the fly camera; selection, gizmos, and the debug views as view modes | The [world viewer](../running-viewers.md#the-world-viewer), the [sandbox](../sandbox.md)'s free camera, [Debug draw](../debug-menu.md#debug-draw) and the [mesh views](../debug-menu.md#mesh-views) | ready |
 | **Game view** | The game running in Play mode, with Play, Pause, Step and Stop | The play mode (`--play-level`, a sandbox with `sandbox:NAME`) and the debug menu's Time page (pause, step, time scale) ([pages](../debug-menu.md#pages)) | ready |
-| **Hierarchy** | The level's entities as a free tree in the user's order, with parenting, prefabs and a kind filter; choosing one selects it everywhere ([The Hierarchy's tree](#hierarchy-tree)) | The [Entity inspector](../debug-menu.md#entity-inspector)'s entity list (player, targets, AI humans, doors, panes, objects) and a sandbox layout's statements | ready as a flat list; parenting, groups and prefabs wait on Coney's own level format ([#1058](issue:1058)) |
+| **Hierarchy** | The level's entities as a free tree in the user's order, with parenting, prefabs and a kind filter; choosing one selects it everywhere ([The Hierarchy's tree](#hierarchy-tree)) | The [Entity inspector](../debug-menu.md#entity-inspector)'s entity list (player, targets, AI humans, doors, panes, objects) and a sandbox layout's statements | ready as a flat list; parenting, groups and prefabs wait on Coney loading the project's level file ([The level file](project-formats.md#level-file)) |
 | **Inspector** | The selection's name and tags, its values, live, and the edits it takes; for a file, its details and import settings | The merged Entity inspector and Entity editor ([#1053](issue:1053)) | ready once [#1053](issue:1053) merges |
 | **File system** | The project folder as a tree, and the game's files read-only; drag-and-drop and the Import button land here | Coney's asset loading and the [install folder](../asset-and-script-architecture.md#install-folder) | ready |
 | **Console** | The run log's lines, filtered by level and system, and a Lua line to run | The [run log](../run-log.md) and the [Lua console](../debug-menu.md#lua-console) (expressions and assignments; full Lua waits on [the Lua 4.0 compiler](lua-sdk.md#compiler)) | ready |
@@ -124,7 +124,7 @@ has what it names.
 | **Debug panels** | Every page of the debug menu that is not a panel above, each as a panel: among them Tunables, Player, Camera, Spawner, AI fighters, Levels, Missions, Movies, Cheats, HUD, Display, Audio and Network ([pages](../debug-menu.md#pages)) | The debug menu's model, which any front end renders ([One model](../debug-menu.md#one-model)) | ready |
 | **Level settings** (in the Inspector, with the level selected) | The level's sky, sun, ambient light, fog, occlusion and shadows ([The Hierarchy's tree](#hierarchy-tree)) | A sandbox layout's `sky`, `sun`, `ambient`, `fog`, `occlusion` and `shadows` statements ([Statements](../sandbox.md#statements)) | ready for sandbox layouts; a game level's lights and a sun casting real shadows wait on the [realtime lighting](../realtime-lighting.md) enhancement; the shadows are visual only, and stealth stays zone-based ([Stealth zones](level-view.md#create-menu)) |
 | **Script editor** | A project's Lua scripts, with VS Code's keys, completions from the masterlist and live errors | The mods runtime ([Script mods](../../roadmap.md#script-mods)) | waits on the mods runtime; the editor is the [technology](technology.md#code-editor) page's |
-| **Paths** | A level's path network, drawn and edited | Path overlays from the level's path data ([Still to come](../debug-menu.md#still-to-come)) | waits on Coney's path overlays and a project path format ([#1058](issue:1058)) |
+| **Paths** | A level's path network, drawn and edited | Path overlays from the level's path data ([Still to come](../debug-menu.md#still-to-come)) | waits on Coney's path overlays; a project's paths are the content page's ([Paths](content-and-formats.md#paths-kind)) |
 | **Mission editor** | A mission's checkpoints and objectives | Coney's level scripts ([Scripts](../asset-and-script-architecture.md#scripts)) | waits on the mods runtime and a mission format of Coney's own |
 
 The **Debug panels** row is the cheapest and the most important: the debug menu is already one model drawn by two front
@@ -185,8 +185,9 @@ mode](#play-coney)).*
   world objects and spawners ([Objects](../../references/objects.md), [Spawner
   states](../../references/spawner-states.md)), the [zones](../../references/zones.md) and [volume
   boxes](../../references/boxes.md), the [lights](../../references/lights.md) and the [level
-  starts](../../references/level-starts.md). Which of these Studio can list without playing is the content page's to
-  settle ([#1058](issue:1058)); building on a game level waits on Coney's own level format and the mods runtime.
+  starts](../../references/level-starts.md). Which of these Studio can list without playing is the content page's
+  ([Levels and worlds](content-and-formats.md#levels)); building on a game level waits on Coney's own level format and
+  the mods runtime.
 
 #### What the level format must store {#level-format-needs}
 
@@ -195,9 +196,11 @@ pointers, [Network architecture](../network-architecture.md#checklist)), its nam
 **parent** and its place among its siblings, and a **full local position, rotation and scale**; for every prefab
 instance, the prefab file it comes from and its **overrides**; for the level, its settings and the game level it builds
 on, if any. The sandbox layout keeps none of the parenting, prefabs or full rotation: it is a flat list of statements
-with a position and a yaw. So until Coney's own level format exists ([#1058](issue:1058), told the same), a sandbox
-layout opens in the Hierarchy as a flat list, one entity per statement and its settings on the level; parenting, groups
-and prefabs are offered once the format holds them, and the layout's `repeat=` is its one way to make copies.
+with a position and a yaw. The project's level file keeps all of it ([The level file](project-formats.md#level-file),
+[The entity tree](project-formats.md#entity-tree), [Prefabs](project-formats.md#prefabs)); until Coney loads that file,
+a sandbox layout opens in the Hierarchy as a flat list, one entity per statement and its settings on the level;
+parenting, groups and prefabs are offered once the format holds them, and the layout's `repeat=` is its one way to make
+copies.
 
 ## The default layout {#default-layout}
 
@@ -391,13 +394,13 @@ under version control and read without Studio, which Roblox's one-file place is 
   read-only `Packages` beside `Assets`. A project refers to a game asset by its `game:/` name and never copies it, so a
   project carries no game data and can be shared ([LEGAL.md](repo:LEGAL.md#no-game-data)). Opening a `game:/` entry
   opens it in its viewer; what can be edited, and how a game asset becomes a project's own (an export to glTF on the
-  player's machine, say), is the content page's ([#1058](issue:1058)).
+  player's machine, say), is the content page's ([What stays editable after import](content-and-formats.md#editable)).
 - **Export** (*File > Export project...*) packs the finished project into one `.cmod` file (a working name) for Coney's
   mods folder: the manifest, the levels, the scripts and the project's own assets, never `.studio/` and never a `game:/`
   file, which a player's own disc supplies. Export saves first, checks that the manifest's level and scripts exist, and
-  says what it left out and why. The package's layout is the content page's ([#1058](issue:1058)). The Lua SDK page
-  installs a project as a folder in `mods/` ([The mods folder](lua-sdk.md#mods-folder)); whether the loader reads a
-  `.cmod` as it is or a player's install unpacks it into that folder is for that page to settle, and Export waits on it.
+  says what it left out and why. What goes into the package, and Coney reading it from
+  the mods folder in place of an unpacked project folder, are the project formats page's
+  ([The `.cmod` package](project-formats.md#cmod)).
 - **Moves, renames and deletes happen in the File system panel**, Godot's rule, so Studio can fix the project's
   references to the file; a delete lists the files that refer to it and asks first, and goes to the system's recycle
   bin. A change made outside Studio (an editor saving a script, a texture repainted) is seen and the file is imported
@@ -418,11 +421,12 @@ my-project/
 ```
 
 The manifest's name and its fields are the Lua SDK page's ([Projects and the manifest](lua-sdk.md#manifest)), which
-decides how far a project follows FiveM's resource folder; the formats of `levels/` are the content page's
-([#1058](issue:1058)). The folders are where Studio puts what it creates and imports; a user may add others. A project's
-first level format is the **sandbox layout** Coney loads today ([The layout format](../sandbox.md#the-layout-format)):
-it already has shapes, textures, spawn points, targets, AI fighters, camera views and a sun, and Coney already plays one
-with the player at a chosen spawn (`--play-level sandbox:NAME --spawn NAME`).
+decides how far a project follows FiveM's resource folder; the files a project saves are the [project
+formats](project-formats.md#formats) page's. The folders are where Studio puts what it creates and imports; a user may
+add others. A project's first level format is the **sandbox layout** Coney loads today ([The layout
+format](../sandbox.md#the-layout-format)): it already has shapes, textures, spawn points, targets, AI fighters, camera
+views and a sun, and Coney already plays one with the player at a chosen spawn (`--play-level sandbox:NAME --spawn
+NAME`).
 
 ## A new level {#new-level}
 
@@ -455,8 +459,8 @@ is a blank slate**, and the user goes on from it in one of three ways, each of w
   on it.
 - **A map from Blender** is a map, not an editable mesh: Studio places it, sets its collision and assigns its textures,
   and the map is changed in Blender and imported again, since Studio makes no models. Which of its parts collide follows
-  a naming rule in the Blender file, as Godot's `-col` and Unreal's `UCX_` do; the rule is the content page's to fix
-  ([#1058](issue:1058)), with Godot's as this page's proposal, since it needs no second mesh.
+  a naming rule in the Blender file, as Godot's `-col` and Unreal's `UCX_` do; the rule is the content page's
+  ([Colliders and primitives](content-and-formats.md#collision)).
 - **A user's own template** is any level of the project, duplicated in the File system (Ctrl+D): Unity's saved scene
   templates add nothing a duplicate does not do.
 
@@ -589,7 +593,7 @@ What can be imported is what Coney can load (rule 2), so the list grows with Con
 | `.gltf`, `.glb` | A map or a model | Its placement, its collision and which textures its materials use; never its mesh, bones or clips, which are remade in Blender and imported again | waits on custom content ([Custom content](../../roadmap.md#custom-content)) |
 | `.wav` | A sound | Where it plays; never its samples | waits on Coney loading sounds from outside the disc |
 
-The content page ([#1058](issue:1058)) owns the formats themselves and their export.
+The [content page](content-and-formats.md#import) owns the import step, the formats and their export.
 
 ## Previews {#previews}
 
@@ -671,8 +675,9 @@ can load what it makes ([Importing](#import-coney)), PNG and `.layout` first.
    settings in the Inspector, a sandbox layout opened as one entity per statement, the search and the kind filter
    (`t:spawn`), one selection shared by every panel (click, Shift and Ctrl, box), the merged inspector of
    [#1053](issue:1053), values shared by a multiple selection, and the pre-selection highlight; parenting, groups and
-   prefab instances with overrides once Coney's own level format stores them ([#1058](issue:1058)). Tests: a selection
-   made in one panel shows in the others; a multiple selection edits all; the filter shows only the kind asked for.
+   prefab instances with overrides once Coney loads the project's level file ([The level
+   file](project-formats.md#level-file)). Tests: a selection made in one panel shows in the others; a multiple selection
+   edits all; the filter shows only the kind asked for.
 5. **tools: Add Unity's transform gizmo and undo to the Level view.** The Move, Rotate, Scale and Transform tools (W, E,
    R, Y) with every handle of Unity's gizmo, its colours, yellow highlight, constant screen size and handle-first
    picking; the Pivot / Center (Z) and Global / Local (X) toggles; increment, grid, vertex and surface snapping with the
@@ -680,7 +685,8 @@ can load what it makes ([Importing](#import-coney)), PNG and `.layout` first.
    an undo stack with its history. Tests: a scripted drag of each handle gives the expected value, snapped and not;
    every edit undoes to the same state.
 6. **tools: Add composing levels to Coney Studio.** *New Level* with the Empty, Basic and sandbox layout templates;
-   opening a game level read-only; the Create menu's primitives, spawn points, targets, AI fighters and camera views,
+   opening a game level read-only; the Create menu's primitives, spawn points, targets, AI fighters,
+   camera views and stealth zones,
    placed where the camera looks and dropped to the ground; repeat and duplicate; textures applied by drag or in the
    Inspector with tiling and tint; each primitive's collider in the Inspector's Collision group and the Collision view
    mode; delete; saving the level as a sandbox layout. Tests: a level composed by script saves a layout that Coney loads
@@ -714,8 +720,8 @@ can load what it makes ([Importing](#import-coney)), PNG and `.layout` first.
     levels, scripts and the project's own assets into one `.cmod` file for the mods folder, leaving out `.studio/` and
     every `game:/` file, after saving and checking that the manifest's level and scripts exist. Tests: an exported
     package of a fixture project unpacks to the same files; a project that refers to a `game:/` asset exports with no
-    game data in it. It waits on the Lua SDK page settling how the mods folder takes a `.cmod` ([The mods
-    folder](lua-sdk.md#mods-folder)).
+    game data in it. It is filed with the content page's issue 13, which packs the package and has Coney read it
+    ([Proposed build issues](content-and-formats.md#build-issues)): this issue is the menu and its checks.
 
 ## Sources {#sources}
 

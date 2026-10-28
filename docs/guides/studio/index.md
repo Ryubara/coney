@@ -25,20 +25,17 @@ maintainer can answer. The maintainer's decisions so far are [below](#decisions)
 
 ## The design pages {#pages}
 
-One page per research unit, each a sub-issue of [#1054](issue:1054). A unit that merges its page adds its row here and
-its line to the `nav:` of `mkdocs.yml`, under *Coney Studio design*.
+One page per research unit, each a sub-issue of [#1054](issue:1054). The table lists the merged pages; a unit that
+merges its page adds its row here and its line to the `nav:` of `mkdocs.yml`, under *Coney Studio design*.
 
 | Page | What it decides | Issue |
 | --- | --- | --- |
 | [Editor experience](editor-experience.md) | The words (level, Level view, prefab), the panels, the Hierarchy's tree and the default layout, saved layouts, the project folder, a new level and its templates, Play mode and live edits while playing, the import flow, previews; the build issues of both pages | [#1055](issue:1055) |
 | [The Level view, gizmos and composing](level-view.md) | The fly camera and the keymap, Unity's transform gizmo, selection and undo, composing a level from primitives, textures, colliders and path points | [#1055](issue:1055) |
 | [Technology](technology.md) | The GUI library, the `coney-studio` program, how Play and live edits run, the code editor and language server, the debugger, hot reload, the importers | [#1056](issue:1056) |
-| Script security and sandbox (planned) | How Studio and Coney keep a project's scripts from harming the player's machine | [#1062](issue:1062) |
-| UI and menus for mods (planned) | The interface a project's scripts can show | [#1063](issue:1063) |
-| The Coney console (planned) | The F8 terminal, profilers and logs | [#1064](issue:1064) |
-| Entity kinds and the Inspector (planned) | Each kind of entity a level holds and what the Inspector shows for it | [#1072](issue:1072) |
 | [Lua SDK and natives](lua-sdk.md) | The natives and their names, the Lua 5.4 runtime for projects and its loader, the manifest, the sandbox, typed stubs for completions, hot reload | [#1057](issue:1057) |
-| Content and formats (planned) | What Studio shows and edits from the disc's files, a project's own formats, import and export | [#1058](issue:1058) |
+| [Content and formats](content-and-formats.md) | What Studio shows and edits from the disc's files, the import step, readers, content by kind, export | [#1058](issue:1058) |
+| [Project formats](project-formats.md) | The files a project saves: the level file with its entity tree, names, tags and prefabs, and the `.cmod` package | [#1058](issue:1058) |
 
 ## Terms {#terms}
 
