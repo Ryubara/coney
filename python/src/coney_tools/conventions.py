@@ -989,8 +989,7 @@ class TrackModel:
 class Track:
     """One track of engineer work (docs/guides/agents.md#slots)."""
 
-    #: Places kept for the track while it runs fewer units: no other track may take them. The slot-fill check also
-    #: reports a track that runs fewer than this while it has work.
+    #: Places kept for the track while it runs fewer units: no other track may take them.
     min: int
     #: The most units of the track in work at once; None: only the machine limit caps it.
     max: int | None
@@ -2215,8 +2214,16 @@ def _read_tasks(data: object, where: str) -> Tasks:
     )
     per_build_slot = _count(slots["per_build_slot"], _at(slots_where, "per_build_slot"))
     tracks = _read_tracks(slots["tracks"], _at(slots_where, "tracks"), per_build_slot)
+    kinds = _texts(table["kinds"], _at(where, "kinds"))
+    for name in ("reimplementation", "fix", "studio"):
+        unknown = [kind for kind in tracks.of(name).min_kinds if kind not in kinds]
+        if unknown:
+            raise _fail(
+                _at(_at(_at(slots_where, "tracks"), name), "min_kinds"),
+                f"{', '.join(unknown)} is not one of the task kinds ({', '.join(kinds)})",
+            )
     return Tasks(
-        kinds=_texts(table["kinds"], _at(where, "kinds")),
+        kinds=kinds,
         file=file,
         leads=LeadsRules(**numbers),
         start=TaskStart(

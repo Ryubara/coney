@@ -715,6 +715,8 @@ def test_the_workflow_exemption_from_the_slots_ends_at_the_cutover() -> None:
         (("tasks.start.slots.tracks.fix.min", -1), r"tracks\.fix\.min: expected a whole number of 0 or more"),
         (("tasks.start.slots.tracks.fix.max", 0), r"tracks\.fix\.max: expected a whole number of 1 or more"),
         (("tasks.start.slots.tracks.fix.min", 2), r"tracks\.fix\.min: must be at most max \(1\)"),
+        (("tasks.start.slots.tracks.reimplementation.min_kinds", ["featur"]), r"min_kinds: featur is not one of"),
+        (("tasks.start.slots.tracks.reimplementation.min_kinds", []), r"min_kinds: expected a non-empty list"),
         (("tasks.start.slots.tracks.studio.min", 1), r"the tracks keep 3 places, more than one build slot holds"),
         (("tasks.start.slots.tracks.studio.models", "opus"), r"tracks\.studio\.models: expected a list"),
         (

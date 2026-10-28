@@ -224,6 +224,7 @@ def test_only_a_paused_label_starts_a_run_and_the_list_is_the_conventions() -> N
         assert found is not None and tuple(json.loads(found.group(1))) == (
             *RULES.paused_labels,
             RULES.exempt_label,
+            RULES.studio_label,
             RULES.trial.label,
         )
         assert "github.event.label.name" in text
