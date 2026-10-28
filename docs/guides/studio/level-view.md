@@ -205,10 +205,10 @@ and models. This section says what each is in the four editors and what it is in
 
 ### Coney Studio's Create menu {#create-menu}
 
-*Create* (the menu, and a right-click in the Hierarchy or the Level view) offers exactly the kinds a Coney level can
-hold today, as Roblox's *Insert Object* offers Roblox's classes. A new thing appears where the camera looks, dropped on
-the ground below (Roblox's rule, made of the Entity editor's *Move to camera* and *Drop to ground*), is selected, and
-the Move tool is chosen.
+*Create* (the menu, and a right-click in the Hierarchy or the Level view; on an entity, the new one becomes its child)
+offers exactly the kinds a Coney level can hold today, as Roblox's *Insert Object* offers Roblox's classes. A new thing
+appears where the camera looks, dropped on the ground below (Roblox's rule, made of the Entity editor's *Move to camera*
+and *Drop to ground*), is selected, and the Move tool is chosen.
 
 | Create | What it makes | Realizes in Coney | State |
 | --- | --- | --- | --- |

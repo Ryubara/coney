@@ -48,7 +48,8 @@ because *The Warriors* is made of levels and calls its in-engine cutscenes scene
 | Panel | One dockable window of Studio: the Level view, the Inspector, the File system and the others ([Panels](editor-experience.md#panels)) |
 | Level | What a user builds and plays, where other editors say "scene" ([Words](editor-experience.md#words-coney)) |
 | Level view, Game view | The view that edits a level (Unity's Scene view) and the view of the game running |
-| Prefab | A reusable group of placed things, saved as one file ([Words](editor-experience.md#words-coney)) |
+| Entity | A thing in a level's tree: a primitive, a spawn point, a fighter, a camera view, a script; Coney's word, as in the Entity inspector ([Words](editor-experience.md#words-coney)) |
+| Prefab | A reusable group of any mix of entities, saved as one file and placed many times ([Words](editor-experience.md#words-coney)) |
 | Layout | Where the panels sit, saved per user, never in a project ([Layouts](editor-experience.md#layouts)) |
 | Natives | The script bindings a project's scripts call: the game's own and Coney's ([Script bindings](../../references/bindings/index.md)); the Lua SDK page decides the rest of the scripting terms |
 
@@ -58,4 +59,7 @@ because *The Warriors* is made of levels and calls its in-engine cutscenes scene
   only what Coney has, an enhancement or a native appears in Studio once Coney has it, and nothing in Studio changes how
   the story plays. So Studio never runs ahead of the faithful-first rule ([AGENTS.md](repo:AGENTS.md)): whatever Coney is
   allowed to have, Studio realizes, and nothing more.
+- **The Hierarchy is the level, as in Unity: decided.** A free list of entities with free parenting, prefabs of any
+  mix of entities, the level's settings on the level and sorting by kind as a filter
+  ([The Hierarchy's tree](editor-experience.md#hierarchy-tree)).
 - **Level, not scene: decided.** Studio says *level* wherever other editors say *scene* ([Terms](#terms)).

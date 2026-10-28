@@ -51,7 +51,8 @@ and laying out spawn points and paths. What can be edited in Studio depends on t
 | What a user builds and plays | a **scene** (`.unity`) | a **scene** (`.tscn`), which is also any reusable tree: a character, a door, a whole level | a **level**, also called a map (`.umap`) | a **place** (`.rbxl`), whose world is the **Workspace** tree |
 | The view that edits it | Scene view | 3D viewport | Level viewport | viewport |
 | A reusable group of things | a **prefab**, with overrides per instance and variants | a scene **instanced** inside another (nested scenes) | a Blueprint actor, a Level Instance | a **model**, shared between places as a **package** |
-| A group for order only | an empty GameObject | a plain Node3D | a folder in the Outliner | a **folder** |
+| A thing in the tree | a GameObject | a node | an actor | an instance |
+| A group with no content of its own | an empty GameObject: its children follow its transform | a plain Node3D | a folder in the Outliner (no transform) | a model or a folder |
 
 ### Coney Studio's words {#words-coney}
 
@@ -68,13 +69,15 @@ Warriors*' own conventions:
 
 The other words:
 
-- **Folder** for a group that only keeps the Hierarchy tidy (Roblox's word): it has no position of its own and moving it
-  in the tree changes nothing in the level.
-- **Prefab** for a reusable group (Unity's word, the best known of the four): a set of placed things saved as one file
-  of the project, placed in a level as many times as wanted, each copy following the file, with the values a copy
-  changes kept as its overrides. A prefab, and a folder saved in the level, need Coney's own level format
-  ([#1058](issue:1058)): the sandbox layout has neither, so until then the Hierarchy groups a layout by kind ([The
-  Hierarchy's tree](#hierarchy-tree)) and the layout's `repeat=` is its one way to make copies.
+- **Entity** for a thing in the level's tree: Coney's existing word, as in the [Entity
+  inspector](../debug-menu.md#entity-inspector) and the merged entity panel of [#1053](issue:1053). A primitive, a spawn
+  point, a fighter, a camera view, a path point and a script are all entities.
+- **Group** for an empty entity that only holds others (Unity's empty GameObject): it has a position, rotation and
+  scale, and its children follow it.
+- **Prefab** for a reusable group (Unity's word, the best known of the four): any mix of entities saved as one file of
+  the project, say an ambush of five fighters, a spawn point, crates and the script that springs it, placed in a level
+  as many times as wanted. Each placed copy (an *instance*) follows the file, and the values a copy changes are kept as
+  its overrides.
 
 ## The panels {#panels}
 
@@ -116,7 +119,7 @@ has what it names.
 | **Animation viewer** | Any clip on a model: play, loop, speed, in place, by set and category | The [Animation player](../debug-menu.md#animation-player) | ready; a scrubbing timeline waits on a seek in the animation player |
 | **Texture viewer** | A texture dictionary or sprite sheet, image by image | The texture and sprite sheet viewers ([viewers](../running-viewers.md#viewing-texture-dictionaries)) | ready |
 | **Debug panels** | Every page of the debug menu that is not a panel above, each as a panel: among them Tunables, Player, Camera, Spawner, AI fighters, Levels, Missions, Movies, Cheats, HUD, Display, Audio and Network ([pages](../debug-menu.md#pages)) | The debug menu's model, which any front end renders ([One model](../debug-menu.md#one-model)) | ready |
-| **Lighting** | The level's sky, sun, ambient light, fog, occlusion and shadows | A sandbox layout's `sky`, `sun`, `ambient`, `fog`, `occlusion` and `shadows` statements ([Statements](../sandbox.md#statements)) | ready for sandbox layouts; a game level's lights and a sun that changes sneaking wait on the [realtime lighting](../realtime-lighting.md) enhancement |
+| **Level settings** (in the Inspector, with the level selected) | The level's sky, sun, ambient light, fog, occlusion and shadows ([The Hierarchy's tree](#hierarchy-tree)) | A sandbox layout's `sky`, `sun`, `ambient`, `fog`, `occlusion` and `shadows` statements ([Statements](../sandbox.md#statements)) | ready for sandbox layouts; a game level's lights and a sun that changes sneaking wait on the [realtime lighting](../realtime-lighting.md) enhancement |
 | **Script editor** | A project's Lua scripts, with VS Code's keys, completions from the masterlist and live errors | The mods runtime ([Script mods](../../roadmap.md#script-mods)) | waits on the mods runtime and the technology page's editor choice |
 | **Paths** | A level's path network, drawn and edited | Path overlays from the level's path data ([Still to come](../debug-menu.md#still-to-come)) | waits on Coney's path overlays and a project path format ([#1058](issue:1058)) |
 | **Mission editor** | A mission's checkpoints and objectives | Coney's level scripts ([Scripts](../asset-and-script-architecture.md#scripts)) | waits on the mods runtime and a mission format of Coney's own |
@@ -128,26 +131,27 @@ for everything the debug menu shows.
 
 ### The Hierarchy's tree {#hierarchy-tree}
 
-Roblox Studio's Explorer starts from fixed roots (Workspace, Lighting, the script services) that every place has, which
-suits an editor for one game: a user never wonders where a thing goes. Unity's and Godot's trees start from nothing.
-Studio takes **Roblox's fixed roots**, named for what a Coney level holds, and lets the user make folders inside each:
+A maintainer decision: **the Hierarchy is the level, and works like Unity's.** At its top is a free list of entities, in
+the order the user gives them; any entity can be dragged onto any other to become its child, and a child follows its
+parent's position, rotation and scale (a fighter under a moving group moves with it). No folder is fixed and none
+refuses a kind: an ambush group may hold fighters, a spawn point, crates and a script together.
 
 ```text
-yard                          the level (its file in project:/levels/); selecting it shows its settings
-  Environment                 sky, sun, ambient light, fog, occlusion, shadows (the Lighting panel's)
-  Geometry                    primitives and, later, imported models; folders of them
-    Fences/                   a folder
-      box "fence 1.2 m"
-  Collision                   colliders with nothing drawn (waits on a level format that has them)
-  Spawn points                where the player can start; the first is Play's
-  Characters                  targets and AI fighters; later a human of any character type
-  Paths                       path points and their links (waits on paths)
-  Cameras                     camera views
-  Scripts                     the level's scripts (waits on the mods runtime)
-  Game level: level80         a game level this one builds on, read-only (waits on Coney's own level format)
-    World                     the two streamed worlds' parts
-    Level file                its collision, paths, sky and occluders
-    Objects                   the Object List: doors, glass, world objects, spawners
+yard                              the level; selected, the Inspector shows the level's settings
+  Ground                          a box
+  Alley                           a group
+    Fence 1.2 m                   a box, a child: it follows the group
+    Fence 1.6 m
+    Crate                         an object
+  start                           a spawn point
+  Ambush (prefab)                 a prefab instance: five fighters, a spawn point, crates, a script
+    Fighter 1 ... Fighter 5
+  Ambush (prefab)                 the same prefab placed again, its position overridden
+  Rooftop view                    a camera view
+  Game level: level80             a game level this one builds on, read-only (waits on Coney's own level format)
+    World                         the two streamed worlds' parts
+    Level file                    its collision, paths, sky and occluders
+    Objects                       the Object List: doors, glass, world objects, spawners
     Zones and volume boxes
     Lights
     Level starts
@@ -156,27 +160,40 @@ yard                          the level (its file in project:/levels/); selectin
 *Figure: a level in the Hierarchy. While playing, the Running tab shows the running game's entities beside it ([Play
 mode](#play-coney)).*
 
-- **The roots are fixed.** They cannot be renamed, moved or deleted, and each holds only its kind: a primitive dragged
-  onto *Spawn points* is refused. Create from a root's right-click makes a thing of that root's kind. An empty root that
-  Coney cannot fill yet (Collision, Paths, Scripts) is shown greyed with what it waits on, so the user sees what Studio
-  will have.
-- **Inside a root**, the user orders things by dragging and groups them in folders; a prefab shows as one row that opens
-  to its contents. Each row shows its kind's icon, its name and, for a thing with an override, a mark.
-- **A sandbox layout** opens with its statements sorted into the roots: `sky`, `sun`, `ambient`, `fog`, `occlusion`,
-  `shadows` and `tessellate` in Environment, the shapes in Geometry, `spawn` in Spawn points, `target` and `fighter` in
-  Characters, `view` in Cameras. A layout keeps its statements' order and comments when saved.
-- **The game's own levels** open read-only from `game:/`, to fly through in the Level view as the [world
-  viewer](../running-viewers.md#the-world-viewer) does and to examine. Their contents sit under the rows the original's
-  level is made of: the streamed **World** ([The streamed world](../../research/world.md)), the **Level file** with its
-  collision, path data, sky and occluders ([The level file](../../research/level-loading.md#the-level-file)), the
-  **Objects** of the Object List, with the doors, glass, world objects and spawners
-  ([Objects](../../references/objects.md), [Spawner states](../../references/spawner-states.md)), the
-  [zones](../../references/zones.md) and [volume boxes](../../references/boxes.md), the
-  [lights](../../references/lights.md) and the [level starts](../../references/level-starts.md). Which of these Studio
-  can list without playing, and which it can show only from the running game's entities, is the content page's to settle
-  ([#1058](issue:1058)). A project level that builds on a game level (adding to `level80` rather than starting empty)
-  waits on Coney's own level format and the mods runtime; its additions then sit in the project's roots and the game's
-  in the read-only row.
+- **The level's own settings are on the level, in the Inspector.** Selecting the level's row (the tree's top) shows its
+  sky, sun, ambient light, fog, occlusion and shadows in the Inspector, as Roblox shows its Lighting service in the
+  Properties panel. Studio keeps no Lighting window apart (Unity has one): the Inspector is where every value is edited,
+  so a user looks in one place, and the settings belong to the level, so they are saved with it.
+- **Sorting by kind is a filter.** The Hierarchy's search box takes a name or a kind (`t:spawn` shows only spawn points,
+  `t:fighter` only fighters, as Unity's `t:` search does), and its filter menu has one entry per kind; the tree shows
+  the matches with their parents greyed for context.
+- **Create** from an entity's right-click makes the new entity its child; from empty space, a top-level entity ([The
+  Create menu](level-view.md#create-menu)). Ctrl+G groups the selection under a new group (Unity's and Godot's
+  shortcut), and Shift+Ctrl+G ungroups it.
+- **A prefab instance** is one row that opens to its entities, marked as a prefab; a value an instance changes is marked
+  in the Inspector as an override, with *Revert* and *Apply to prefab* (Unity's). Double-clicking the row's prefab icon
+  opens the prefab on its own to edit, and every instance follows.
+- **A game level** loaded as the base of a project level is a read-only branch at the bottom of the tree: to fly through
+  in the Level view as the [world viewer](../running-viewers.md#the-world-viewer) does and to examine, never to change.
+  Its rows are the parts the original's level is made of: the streamed **World** ([The streamed
+  world](../../research/world.md)), the **Level file** with its collision, path data, sky and occluders ([The level
+  file](../../research/level-loading.md#the-level-file)), the **Objects** of the Object List with the doors, glass,
+  world objects and spawners ([Objects](../../references/objects.md), [Spawner
+  states](../../references/spawner-states.md)), the [zones](../../references/zones.md) and [volume
+  boxes](../../references/boxes.md), the [lights](../../references/lights.md) and the [level
+  starts](../../references/level-starts.md). Which of these Studio can list without playing is the content page's to
+  settle ([#1058](issue:1058)); building on a game level waits on Coney's own level format and the mods runtime.
+
+#### What the level format must store {#level-format-needs}
+
+This Hierarchy needs a level format that keeps, for every entity: a stable id (the network checklist's ids, not
+pointers, [Network architecture](../network-architecture.md#checklist)), its name, its kind and that kind's values, its
+**parent** and its place among its siblings, and a **full local position, rotation and scale**; for every prefab
+instance, the prefab file it comes from and its **overrides**; for the level, its settings and the game level it builds
+on, if any. The sandbox layout keeps none of the parenting, prefabs or full rotation: it is a flat list of statements
+with a position and a yaw. So until Coney's own level format exists ([#1058](issue:1058), told the same), a sandbox
+layout opens in the Hierarchy as a flat list, one entity per statement and its settings on the level; parenting, groups
+and prefabs are offered once the format holds them, and the layout's `repeat=` is its one way to make copies.
 
 ## The default layout {#default-layout}
 
@@ -201,10 +218,10 @@ while playing is seen at once in the Game view ([Live edits](#live-edits)). The 
 | [Q][W][E][R][Y]  Pivot | Global  Snap           [ Play ][ Pause ][ Step ]     Layout: Default v |
 +----------------+------------------------------+------------------------------+----------------+
 | Hierarchy      | Level                        | Game                         | Inspector      |
-|  Environment   |                              |                              |  Identity      |
-|  Geometry      |  the level, seen by the      |  the game running, seen by   |  Transform     |
-|  Spawn points  |  fly camera, with gizmos     |  the game's own camera       |  Collision     |
-|  Characters    |                              |                              |  ...           |
+|  yard          |                              |                              |  Identity      |
+|    Ground      |  the level, seen by the      |  the game running, seen by   |  Transform     |
+|    Alley       |  fly camera, with gizmos     |  the game's own camera       |  Collision     |
+|    start       |                              |                              |  ...           |
 +----------------+                              |                              |                |
 | File system    |                              |                              |                |
 |  project:/     +------------------------------+------------------------------+                |
@@ -216,7 +233,7 @@ while playing is seen at once in the Game view ([Live edits](#live-edits)). The 
 
 *Figure: the default layout. Outside Play the Game view shows the level from its first spawn point, as Unity's Game view
 shows its scene's camera. The Model, Animation and Texture viewers open as tabs over the Level view; the debug panels
-and Lighting open where the user last docked them, or floating.*
+open where the user last docked them, or floating.*
 
 The toolbar holds the tools (Q to Y, [the keymap](level-view.md#keymap)), the gizmo's pivot and space toggles, snapping,
 the Play controls in the middle, as in Unity, and the layout menu on the right, as in Unity's toolbar.
@@ -332,11 +349,11 @@ is a blank slate**, and the user goes on from it in one of three ways, each of w
 
 | Template | What the level starts with | In the Hierarchy | State |
 | --- | --- | --- | --- |
-| **Empty** (the default) | Nothing: the blank slate | The fixed roots, all empty ([The Hierarchy's tree](#hierarchy-tree)) | ready |
-| **Basic** | A 60 m ground, a sky and sun, a spawn point at its middle and a camera view behind it, so Play works at once (Unreal's *Basic*, Roblox's *Baseplate*) | Environment: sky, sun; Geometry: Ground; Spawn points: start; Cameras: start | ready: a sandbox layout's statements |
-| **A Coney sandbox layout** | A copy of one of Coney's own courses (`default`, `combat`, `parkour`), to change ([The shipped layouts](../sandbox.md#the-shipped-layouts)) | Its statements sorted into the roots | ready: they are Coney's own assets, never game data |
-| **A level from the game** | One of the game's levels to work on, by its name ([Levels](../../references/levels.md)) | The read-only *Game level* row with the original's contents, and the project's roots empty, for what the user adds | ready to open, fly through and play unchanged (the world viewer, `--play-level`); additions that play with it wait on Coney's own level format and the mods runtime |
-| **A map from Blender** | A `.gltf` or `.glb` imported into `project:/models/` and placed whole at the origin | Geometry: the map as one row, its parts beneath it (read-only meshes, each with its collision switch); Collision: the parts marked as collision | waits on custom content ([Custom content](../../roadmap.md#custom-content)) |
+| **Empty** (the default) | Nothing: the blank slate | The level's row alone ([The Hierarchy's tree](#hierarchy-tree)) | ready |
+| **Basic** | A 60 m ground, a sky and sun, a spawn point at its middle and a camera view behind it, so Play works at once (Unreal's *Basic*, Roblox's *Baseplate*) | Ground, start (a spawn point) and a camera view; the sky and sun on the level's settings | ready: a sandbox layout's statements |
+| **A Coney sandbox layout** | A copy of one of Coney's own courses (`default`, `combat`, `parkour`), to change ([The shipped layouts](../sandbox.md#the-shipped-layouts)) | One entity per statement, in the layout's order; its sky, sun and fog on the level's settings | ready: they are Coney's own assets, never game data |
+| **A level from the game** | One of the game's levels to work on, by its name ([Levels](../../references/levels.md)) | The read-only *Game level* branch with the original's contents, and above it nothing yet, for what the user adds | ready to open, fly through and play unchanged (the world viewer, `--play-level`); additions that play with it wait on Coney's own level format and the mods runtime |
+| **A map from Blender** | A `.gltf` or `.glb` imported into `project:/models/` and placed whole at the origin | The map as one entity, its parts as its children (read-only meshes, each with its collision switch); the parts marked as collision shown as colliders | waits on custom content ([Custom content](../../roadmap.md#custom-content)) |
 
 - **Building from scratch** is *Empty* or *Basic*, then the Create menu's primitives and the project's imported assets
   ([Composing a level](level-view.md#composing)).
@@ -523,7 +540,7 @@ realizes:
 | Components added freely to any object | Unity, Godot | Coney's entities are the kinds the game has (humans, objects, doors, panes) and the layout's statements; Studio's *Create* menu offers those, as Roblox's *Insert Object* offers Roblox's classes |
 | Terrain and foliage tools | Unity, Unreal, Roblox | Coney's worlds are sector meshes with no terrain system |
 | The Rect tool and an interface designer | Unity, Roblox | Coney has no interface a project can make |
-| Prefabs and folders saved in a level, for now | Unity, Godot, Roblox | Studio's words for them are decided ([Words](#words-coney)); saving them waits on Coney's own level format ([#1058](issue:1058)) |
+| Prefabs, groups and parenting in a sandbox layout | Unity, Godot, Roblox | Studio has them ([The Hierarchy's tree](#hierarchy-tree)); a level keeps them once Coney's own level format does ([#1058](issue:1058)) |
 | Copying edits out of Play one by one | Unity (*Copy Component*), Unreal (*Keep Simulation Changes*), Roblox (copy and paste) | Level edits made in Play are kept anyway ([Live edits](#live-edits)), and the running game's are deliberately thrown away |
 | Modelling, sculpting, rigging, animating, texture painting | Unity (ProBuilder), Unreal (modelling mode), Roblox (solid modelling) | Blender and the other tools do it; Studio imports their work and builds levels from it |
 | Running without a player | Roblox (Run), Unreal (Simulate) | The game's scripts and play mode expect a player; Eject gives the same view of a running level |
@@ -551,11 +568,12 @@ library and the program.
    speed, orbit, pan, zoom, F and Shift+F; pad 1 flies it too. The keymap is data, rebindable and saved per user. The
    Debug draw and mesh views are its view modes. Tests: a scripted input flies the same path every run; every key of the
    table is bound by default.
-4. **tools: Add the Hierarchy and Inspector with one selection.** The level's fixed roots (Environment, Geometry, Spawn
-   points, Characters, Cameras, and greyed the roots that wait), a sandbox layout sorted into them, one selection shared
-   by every panel (click, Shift and Ctrl, box), the merged inspector of [#1053](issue:1053), values shared by a multiple
-   selection, and the pre-selection highlight. Tests: a selection made in one panel shows in the others; a multiple
-   selection edits all.
+4. **tools: Add the Hierarchy and Inspector with one selection.** The level as a free list of entities with the level's
+   settings in the Inspector, a sandbox layout opened as one entity per statement, the search and the kind filter
+   (`t:spawn`), one selection shared by every panel (click, Shift and Ctrl, box), the merged inspector of
+   [#1053](issue:1053), values shared by a multiple selection, and the pre-selection highlight; parenting, groups and
+   prefab instances with overrides once Coney's own level format stores them ([#1058](issue:1058)). Tests: a selection
+   made in one panel shows in the others; a multiple selection edits all; the filter shows only the kind asked for.
 5. **tools: Add Unity's transform gizmo and undo to the Level view.** The Move, Rotate, Scale and Transform tools (W, E,
    R, Y) with every handle of Unity's gizmo, its colours, yellow highlight, constant screen size and handle-first
    picking; the Pivot / Center (Z) and Global / Local (X) toggles; increment, grid, vertex and surface snapping with the
