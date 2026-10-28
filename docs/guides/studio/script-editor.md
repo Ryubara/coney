@@ -12,10 +12,10 @@ It builds on two pages and does not repeat them: the [technology](technology.md)
 editor](technology.md#code-editor)), lua-language-server ([Language tooling](technology.md#language-tooling)) and the
 debugger's protocol ([The script debugger](technology.md#debugger)); the [Lua SDK](lua-sdk.md) page owns the natives,
 the stubs the language server reads ([Typed stubs](lua-sdk.md#stubs)) and the `project:/` and `game:/` paths ([Assets by
-path](lua-sdk.md#assets)). It meets three more: the [editor experience](editor-experience.md) (the panels, Play mode,
-previews), [the Level view](level-view.md) (its keymap) and [content and formats](content-and-formats.md) (the kinds of
-content). Two pages still open are named in plain text: the entity kinds design ([#1072](issue:1072): entities' names,
-tags, attributes and events) and the script security design ([#1062](issue:1062): the language server's settings).
+path](lua-sdk.md#assets)). It meets four more: the [editor experience](editor-experience.md) (the panels, Play mode,
+previews), [the Level view](level-view.md) (its keymap), [content and formats](content-and-formats.md) (the kinds of
+content) and [entities and the Inspector](entities.md) (entities' names, tags, attributes and events). One page still
+open is named in plain text: the script security design ([#1062](issue:1062): the language server's settings).
 
 ## Contents {#contents}
 
@@ -646,8 +646,9 @@ When this design is accepted:
   string parameters with them, from the masterlist's `names:` key.
 - [The research data: bindings](../research-data.md#bindings): the `names:` key on string arguments (what the string
   names) and the mark on arguments that declare a name.
-- The entity kinds design: its Events section leaves the Connect dialog, the completion of names and the markers to
-  this page, and this page reads that design's table of events and arguments for the stubs and the fitting check.
+- [Entities: Events](entities.md#events): its Events section leaves the Connect dialog, the completion of names and the
+  markers to this page, and this page reads that design's table of events and arguments for the stubs and the fitting
+  check.
 - [The Level view: The keymap](level-view.md#keymap): its keymap becomes the Level view's context of this page's keymap,
   and its keymap file this page's `keymap.toml`.
 - The script security design: its issue that makes Studio pass the language server's settings itself comes with issue 4

@@ -123,7 +123,8 @@ human reads its flags; a player on such a triangle hides unless someone already 
 `0x0023eab8`). The disc's levels hold 1,052 such triangles, and no script native adds, moves or tests one (inferred,
 from the bindings, on the same page). A zone has no settings of its own: the rules (hunted, the molotov, the 4 s
 grace, a hidden player seen only within 2 m) are the engine's and the same everywhere, and Coney implements them
-([Stealth: Coney's implementation](../../research/stealth.md#coneys-implementation)).
+([Stealth: Coney's implementation](../../research/stealth.md#coneys-implementation)) except the molotov test, a
+stand-in until Coney's held objects can tell a molotov (`GameplayMode::updateHiding()`).
 
 So Studio offers stealth two ways, both writing the same collision bit:
 
@@ -381,12 +382,13 @@ once the mission is won, failed or left.
 
 **In Studio**, an event field (a property of type `event`, in the kind's *Events* group) stores a function name. At
 Play, Coney makes the entity with its natives, then calls `SetMsgHandler(handle, message, name)` for each event field
-that is set, exactly what a level script would do, so the function is called with the original's arguments. The
-Connect dialog (the prefilled name `On<Entity><Event>`, the script a new function goes in, the stub it appends with the
+that is set, exactly what a level script would do, so the function is called with the original's arguments. The Connect
+dialog (the prefilled name `On<Entity><Event>`, the script a new function goes in, the stub it appends with the
 arguments), the completion of existing names and the markers that show which entities use a function are the script
-editor design's ([#1073](issue:1073)). Names are global, since a project has one script state: two functions with one
-name are an error. A name no script defines is listed when the level opens, and at Play the event does nothing and
-the run log says so once. Making triggers in code stays possible: a script calls the same natives itself.
+editor design's ([Event fields and the Connect dialog](script-editor.md#events)). Names are global, since a project has
+one script state: two functions with one name are an error. A name no script defines is listed when the level opens, and
+at Play the event does nothing and the run log says so once. Making triggers in code stays possible: a script calls the
+same natives itself.
 
 | Kind | Event | Message | The function gets | Evidence |
 | --- | --- | --- | --- | --- |
@@ -544,8 +546,8 @@ What this page needs of the level file, whose statements [The level file](projec
 - **An entity reference is an id** (`gang=g2`, `look-at=h3`, `home:entity=f1`), never a name, so a rename never breaks
   one; inside a prefab, a reference to a member of the same prefab is its local id.
 - **Attributes are `attr` statements** ([above](#attributes)).
-- **A gang is a `gang` statement**, `gang Rivals id=g2 type=3 enemies=g1`, and a human's `gang=` names its id; a gang
-  of the base level is named `gang=base:<its name>`.
+- **A gang is a `gang` statement**, `gang Rivals id=g2 type=2 enemies=g3`, where `g3` is another gang, and a human's
+  `gang=` names its id; a gang of the base level is named `gang=base:<its name>`.
 - **An event field is a key** whose value is the function's name: `volume id=v1 name=Gate kind=players
   at=16,12,0 size=4,2,3 on-enter=OnGateEnter on-exit=OnGateExit`; an unset event writes nothing.
 - **A stealth zone is a `stealth` statement**, `stealth id=z1 at=4,6,0 yaw=30 size=8,3,2`, and a surface's
@@ -667,12 +669,13 @@ issues](lua-sdk.md#build-issues)); 8 and 9 build on the editor experience design
    instance handle and the members by name returned; `#N` ids; despawning through each kind's removal native.
    Needs prefabs in level files and the mods runtime. Tests: the *Spawning a prefab* cases of [Tests](#tests).
 8. **tools: Add the schema-drawn Inspector to Coney Studio.** The Inspector of [The Inspector](#inspector): the header
-   with name and tags, the generic widgets per type, groups with remembered state, Advanced parts, the Debug groups
-   for running entities, search (`@`, `native:`), *Modified*, pins per kind, conditions, prefab overrides, multiple
+   with name and tags, the generic widgets per type, groups with remembered state, Advanced parts, the Debug groups for
+   running entities, search (`@`, `native:`), *Modified*, pins per kind, conditions, prefab overrides, multiple
    selection with mixed values, the Level and Running rules of the `live` field, presets for the Create menu, and the
-   Events group's fields, which open the script editor's Connect dialog ([#1073](issue:1073)). Tests: the fixture kind
-   drawn with no kind code; search, filters, remembered state, multiple selection and the Level and Running cases of
-   [Tests](#tests) under the Test Engine; an event field set through the dialog is saved as the function's name.
+   Events group's fields, which open the script editor's Connect dialog
+   ([The Connect dialog](script-editor.md#connect-dialog)). Tests: the fixture kind drawn with no kind code; search,
+   filters, remembered state, multiple selection and the Level and Running cases of [Tests](#tests) under the Test
+   Engine; an event field set through the dialog is saved as the function's name.
 9. **tools: Add attributes to the Coney Studio Inspector.** The Attributes section: add, rename, change type, delete,
    edit by type, `@` search, *Modified*, shared attributes in a multiple selection, prefab overrides, and the Running
    tab's live values. Tests: an attribute added in the Inspector is in the saved file and read by a test project's
