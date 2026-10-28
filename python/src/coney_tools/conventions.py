@@ -10,7 +10,9 @@ instead of leaving a rule silently off. The one exception is `load_conventions_l
 (`pr open`, `pr verify`, `pr text`, `task review`) reading a branch's file with a tool of a different age: an unknown
 key (the branch is ahead of the tool) is skipped and reported, and a missing key (the branch was cut before main added
 it) takes the value this tool's own checkout has and is reported; a wrong value is still an error. A misspelt key is
-therefore an unknown key plus a missing one: reported, never silent.
+therefore an unknown key plus a missing one: reported, never silent. A reference between sections (a label, an area)
+is checked against one file's list: a section that took a key from the tool's file may name what either has
+(`_known`), and the sections read from the default branch use that file's own labels (`load_release_rules_at`).
 """
 
 from __future__ import annotations
@@ -1424,6 +1426,34 @@ def _default_at(path: str) -> tuple[bool, Any]:
     return True, node
 
 
+def _mixed(*sections: str) -> bool:
+    """Whether a lenient read took a key of any of the top-level `sections` from the defaults. Such a section is main's
+    in part and the branch's in part, so a rule that ties it to another section (a label it names, an area, a check)
+    is not one file's rule: it is read against both files, never against the branch's alone."""
+    held = _DEFAULTS.get()
+    return held is not None and any(path.split(".", 1)[0] in sections for path in held[1])
+
+
+def _known(
+    own: Iterable[str], defaults_at: Callable[[Mapping[str, Any]], Iterable[str]], *sections: str
+) -> tuple[str, ...]:
+    """The names a reference may point at: `own`, the file's, and, when `_mixed(*sections)`, those the defaults hold
+    too (`defaults_at` reads them from the defaults' data). A name in neither is still a wrong value."""
+    held = _DEFAULTS.get()
+    if held is None or not _mixed(*sections):
+        return tuple(own)
+    try:
+        extra = tuple(defaults_at(held[0]))
+    except (KeyError, TypeError, AttributeError):
+        extra = ()
+    return (*own, *(name for name in extra if name not in own))
+
+
+def _default_labels(data: Mapping[str, Any]) -> list[str]:
+    """The label names of a file's data (the defaults'): the `name` of each `labels.list` entry."""
+    return [str(item["name"]) for item in data["labels"]["list"]]
+
+
 def _table(value: object, where: str, required: Iterable[str], optional: Iterable[str] = ()) -> dict[str, Any]:
     """`value` as a mapping with exactly the `required` keys and perhaps some `optional` ones; no other key (a lenient
     read skips an unknown key and records it instead)."""
@@ -1991,7 +2021,7 @@ def _read_issues(data: object, where: str) -> Issues:
 _COMMAND_GROUPS = {"claim": ("scope", "task"), "renew": (), "unclaim": (), "progress": ("stage",)}
 
 
-def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Claims:
+def _read_claims(data: object, where: str, label_names: Callable[[], tuple[str, ...]]) -> Claims:
     """The `claims` section: commands that compile with their groups, labels that exist, deadlines in order."""
     counts = (
         "deadline_hours",
@@ -2062,9 +2092,9 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
     limits = _table(table["limits"], limits_where, ("maintainer", "contributor", "issues_per_task"))
     names = {key: _text(table[key], _at(where, key)) for key in labels}
     studio = _text(table["studio_label"], _at(where, "studio_label")) if "studio_label" in table else None
-    _names_in([*names.values(), *([studio] if studio else [])], label_names, where, "in labels.list")
+    _names_in([*names.values(), *([studio] if studio else [])], label_names(), where, "in labels.list")
     paused = _texts(table["paused_labels"], _at(where, "paused_labels"))
-    _names_in(paused, label_names, _at(where, "paused_labels"), "in labels.list")
+    _names_in(paused, label_names(), _at(where, "paused_labels"), "in labels.list")
     hold = _texts(table["hold_labels"], _at(where, "hold_labels"))
     _names_in(hold, paused, _at(where, "hold_labels"), "in claims.paused_labels")
     numbers = {key: _count(table[key], _at(where, key)) for key in counts}
@@ -2083,7 +2113,7 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
         warn_hours=_count(trial_table["warn_hours"], _at(trial_where, "warn_hours")),
         deadline_hours=_count(trial_table["deadline_hours"], _at(trial_where, "deadline_hours")),
     )
-    _names_in((trial.label,), label_names, _at(trial_where, "label"), "in labels.list")
+    _names_in((trial.label,), label_names(), _at(trial_where, "label"), "in labels.list")
     if trial.warn_hours >= trial.deadline_hours:
         raise _fail(_at(trial_where, "warn_hours"), "must be less than deadline_hours")
     return Claims(
@@ -2444,7 +2474,9 @@ def _read_ci_place(item: object, where: str) -> CiPlace:
     )
 
 
-def _read_ci(data: object, where: str, labels: Labels, required_checks: tuple[str, ...]) -> Ci:
+def _read_ci(
+    data: object, where: str, label_names: Callable[[], tuple[str, ...]], required_checks: Callable[[], tuple[str, ...]]
+) -> Ci:
     """The `ci` section: the CI jobs' settings and the places of the checks; every required check has a place."""
     table = _table(data, where, ("dependencies", "tidy", "failure", "places"))
     dep_where = _at(where, "dependencies")
@@ -2480,7 +2512,7 @@ def _read_ci(data: object, where: str, labels: Labels, required_checks: tuple[st
         ("workflows", "events", "labels", "area", "marker", "files_listed", "commits_per_file", "log_lines"),
     )
     failure_labels = _texts(failure["labels"], _at(failure_where, "labels"))
-    _names_in(failure_labels, labels.names(), _at(failure_where, "labels"), "in labels.list")
+    _names_in(failure_labels, label_names(), _at(failure_where, "labels"), "in labels.list")
     area = _text(failure["area"], _at(failure_where, "area"))
     _names_in((area,), failure_labels, _at(failure_where, "area"), "one of the labels")
     marker = _text(failure["marker"], _at(failure_where, "marker"))
@@ -2494,7 +2526,7 @@ def _read_ci(data: object, where: str, labels: Labels, required_checks: tuple[st
     if len(set(jobs)) != len(jobs):
         raise _fail(_at(where, "places"), "a job is named in two places: one place per check")
     named = {job.split("/", 1)[1] for job in jobs}
-    for check in required_checks:
+    for check in required_checks():
         if check not in named:
             raise _fail(
                 _at(where, "places"), f"the required check '{check}' (merge.required_checks) is in no place's jobs"
@@ -3030,19 +3062,31 @@ def _parse(data: object) -> Conventions:
                 raise _fail(f"hygiene.checks.{spec.id}.keys", f"'{key}' is not a key of this file")
     commits = _read_commits(table["commits"], "commits")
     pull_requests = _read_pull_requests(table["pull_requests"], "pull_requests")
+    # Areas the runtime line names are title areas. A section filled from the defaults may name an area the branch's own
+    # `commits.title.areas` lacks yet, so then both files' areas count.
     _names_in(
-        pull_requests.runtime.areas, commits.title.areas, "pull_requests.runtime.areas", "a key of commits.title.areas"
+        pull_requests.runtime.areas,
+        _known(commits.title.areas, lambda data: data["commits"]["title"]["areas"], "commits", "pull_requests"),
+        "pull_requests.runtime.areas",
+        "a key of commits.title.areas",
     )
     runtime_line = pull_requests.runtime.line
     if not pull_requests.runtime.none.startswith(runtime_line):
         raise _fail("pull_requests.runtime.none", f"must start with the line '{runtime_line}'")
-    names = labels.names()
-    claims = _read_claims(table["claims"], "claims", names)
-    _names_in(issues.title_area_by_label, names, "issues.title_area_by_label", "in labels.list")
+
+    # A section that names labels is checked against the file's own list, unless it took a key from the defaults (or the
+    # list did; the claims and CI readers ask when they check, after they have read their keys): then it is partly
+    # main's and a label may be one the branch has not added yet (`_known`).
+    def names_for(section: str) -> tuple[str, ...]:
+        """The label names a reference in `section` may point at."""
+        return _known(labels.names(), _default_labels, "labels", section)
+
+    claims = _read_claims(table["claims"], "claims", lambda: names_for("claims"))
+    _names_in(issues.title_area_by_label, names_for("issues"), "issues.title_area_by_label", "in labels.list")
     for form in issues.forms.values():
-        _names_in(form.labels, names, f"issues.forms.{form.name}.labels", "in labels.list")
-    _names_in(hygiene.report_issue.labels, names, "hygiene.report_issue.labels", "in labels.list")
-    _names_in(hygiene.pr_health.labels.values(), names, "hygiene.pr_health.labels", "in labels.list")
+        _names_in(form.labels, names_for("issues"), f"issues.forms.{form.name}.labels", "in labels.list")
+    _names_in(hygiene.report_issue.labels, names_for("hygiene"), "hygiene.report_issue.labels", "in labels.list")
+    _names_in(hygiene.pr_health.labels.values(), names_for("hygiene"), "hygiene.pr_health.labels", "in labels.list")
     research = _read_research(table["research"], "research")
     merge = _read_merge(table["merge"], "merge")
     return Conventions(
@@ -3064,7 +3108,13 @@ def _parse(data: object) -> Conventions:
         runs=_read_runs(table["runs"], "runs", research.files.runs),
         conclave=_read_conclave(table["conclave"], "conclave"),
         standards=_read_standards(table["standards"], "standards"),
-        ci=_read_ci(table["ci"], "ci", labels, merge.required_checks),
+        ci=_read_ci(
+            table["ci"],
+            "ci",
+            lambda: names_for("ci"),
+            # The required checks must be jobs of the places; with either section partly main's they are not one file's.
+            lambda: () if _mixed("ci", "merge") else merge.required_checks,
+        ),
     )
 
 
@@ -3130,7 +3180,9 @@ def load_release_rules_at(root: Path, ref: str, own: Conventions) -> tuple[Conve
     data = _data_at(root, ref)
     token = _IGNORED.set([])
     try:
-        names = own.labels.names()
+        # The labels the claims name are looked for in the list of the file they are read from: `own` is the branch's
+        # file, which main's claims may name a label (`studio`) it has not added yet.
+        names = _read_labels(data.get("labels"), "labels").names()
         tasks = _mapping(data.get("tasks"), "tasks")
         rules = replace(
             own,
@@ -3138,7 +3190,7 @@ def load_release_rules_at(root: Path, ref: str, own: Conventions) -> tuple[Conve
             commits=_read_commits(data.get("commits"), "commits"),
             pull_requests=_read_pull_requests(data.get("pull_requests"), "pull_requests"),
             merge=_read_merge(data.get("merge"), "merge"),
-            claims=_read_claims(data.get("claims"), "claims", names),
+            claims=_read_claims(data.get("claims"), "claims", lambda: names),
             stamps=_read_stamps(data.get("stamps"), "stamps"),
             tasks=replace(own.tasks, review=_read_task_review(tasks.get("review"), "tasks.review")),
         )

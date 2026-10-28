@@ -9,6 +9,7 @@ from typing import Any
 
 import pytest
 from conventions_support import CI_CLASSES, REMOVE, REPO, changed, conventions_with, real_data, write_checkout
+from git_support import git
 
 from coney_tools.conventions import (
     CONVENTIONS_FILE,
@@ -16,6 +17,7 @@ from coney_tools.conventions import (
     ConventionsError,
     load_conventions,
     load_conventions_leniently,
+    load_release_rules_at,
     parse_conventions,
 )
 
@@ -1152,3 +1154,90 @@ def test_the_release_load_still_refuses_a_malformed_value(tmp_path: Path) -> Non
     root = write_checkout(tmp_path, changed(("tasks.start.slots.tracks", REMOVE), ("merge.auto_merge", "yes")))
     with pytest.raises(ConventionsError, match=r"merge\.auto_merge: expected true or false"):
         load_conventions_leniently(root)
+
+
+# --- the release read is consistent: no section is checked against another file's labels (#1103) ----------------------
+
+
+def without_labels(data: dict[str, Any], *names: str) -> dict[str, Any]:
+    """`data` with the labels called `names` dropped from `labels.list`, as a file from before they were added."""
+    data["labels"]["list"] = [label for label in data["labels"]["list"] if label["name"] not in names]
+    return data
+
+
+def before_the_tracks() -> dict[str, Any]:
+    """The file of a branch cut before #1091: no tracks, no `studio` label, and no claim naming it."""
+    data = changed(("tasks.start.slots.tracks", REMOVE), ("tasks.start.slots.per_build_slot", REMOVE))
+    data = changed(("claims.studio_label", REMOVE), data=data)
+    return without_labels(data, "studio")
+
+
+def committed_base(root: Path, data: dict[str, Any]) -> str:
+    """A repository under `root` whose `origin/main` holds `data` as its conventions file; returns that ref."""
+    root.mkdir(exist_ok=True)
+    git(root, "init", "-q", "-b", "main")
+    write_checkout(root, data)
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "base")
+    git(root, "update-ref", "refs/remotes/origin/main", "HEAD")
+    return "origin/main"
+
+
+def test_the_rules_of_main_are_read_with_main_s_labels_not_the_older_branch_s(tmp_path: Path) -> None:
+    """The real case: main's `claims.studio_label` names `studio`, which the older branch's `labels.list` lacks."""
+    (tmp_path / "branch").mkdir()
+    branch = write_checkout(tmp_path / "branch", before_the_tracks())
+    ref = committed_base(tmp_path / "base", real_data())
+    lines: list[str] = []
+    own = load_conventions_leniently(branch, lines.append)
+    assert "studio" not in own.labels.names() and own.claims.studio_label is None
+    assert any("tasks.start.slots.tracks" in line for line in lines)
+    rules, from_where = load_release_rules_at(tmp_path / "base", ref, own)
+    assert rules.claims.studio_label == "studio" and from_where == "base"
+    assert rules.claims == load_conventions(REPO).claims
+
+
+@pytest.mark.parametrize("key", ["claims.studio_label", "claims.exempt_label", "claims.trial.label"])
+def test_a_wrong_label_in_main_s_claims_is_still_refused_against_main_s_labels(tmp_path: Path, key: str) -> None:
+    """The labels that count are those of the file the claims come from: not the branch's, and not no one's."""
+    (tmp_path / "branch").mkdir()
+    own = load_conventions_leniently(write_checkout(tmp_path / "branch", before_the_tracks()))
+    ref = committed_base(tmp_path / "base", changed((key, "no-such-label")))
+    with pytest.raises(ConventionsError, match=r"origin/main:.*claims.*: 'no-such-label' is not in labels\.list"):
+        load_release_rules_at(tmp_path / "base", ref, own)
+
+
+def test_the_labels_a_missing_key_is_filled_with_may_be_main_s_when_the_branch_lacks_them() -> None:
+    """A branch with no `claims.exempt_label` key and no `workflow` label gets main's value for the key, which names the
+    label: the two come from different files, so the label is looked for in both lists."""
+    old = without_labels(changed(("claims.exempt_label", REMOVE)), "workflow")
+    filled: list[str] = []
+    got = parse_conventions(old, ignored=[], defaults=real_data(), filled=filled)
+    assert filled == ["claims.exempt_label"] and got.claims.exempt_label == "workflow"
+    assert "workflow" not in got.labels.names()
+
+
+def test_a_label_in_neither_file_is_still_refused_in_a_section_filled_from_main() -> None:
+    """A wrong value in the branch is an error whether or not the section also took a key from main."""
+    old = changed(("claims.exempt_label", REMOVE), ("claims.critical_label", "no-such-label"))
+    with pytest.raises(ConventionsError, match=r"claims: .*in labels\.list"):
+        parse_conventions(old, ignored=[], defaults=real_data(), filled=[])
+
+
+def test_a_label_the_branch_lacks_is_refused_where_nothing_was_filled() -> None:
+    """With no key filled in a section it is checked against the branch's own labels, as ever."""
+    old = without_labels(real_data(), "workflow")
+    with pytest.raises(ConventionsError, match=r"claims: .*'workflow' is not in labels\.list"):
+        parse_conventions(old, ignored=[], defaults=real_data(), filled=[])
+
+
+def test_the_runtime_areas_filled_from_main_are_read_against_both_files_title_areas() -> None:
+    """`pull_requests.runtime.areas` names title areas: a branch that lacks the key takes main's, and its own
+    `commits.title.areas` may not have one of them yet."""
+    old = changed(("pull_requests.runtime.areas", REMOVE))
+    del old["commits"]["title"]["areas"]["audio"]
+    filled: list[str] = []
+    got = parse_conventions(old, ignored=[], defaults=real_data(), filled=filled)
+    assert filled == ["pull_requests.runtime.areas"] and "audio" in got.pull_requests.runtime.areas
+    with pytest.raises(ConventionsError, match=r"pull_requests\.runtime: missing the key 'areas'"):
+        parse_conventions(old)
