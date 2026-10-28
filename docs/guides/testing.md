@@ -101,11 +101,11 @@ reach their tests.
 
 `test_test_environment.py` keeps the list from falling behind. It scans `python/src`, `.claude` and `mkdocs_hooks.py`
 and fails when the code reads a variable that is in none of the module's tables: a name read through `getenv`,
-`env_get`, `env.get`, `environ[...]` or `"X" in env`, or spelled with one of our prefixes (`CONEY_`, `PCSX2_`, `GHIDRA_`,
-`CLAUDE_`, `GITHUB_`, `CMAKE_`). It cannot see a name held in a variable and read from there, so a tool that does that
-adds the name to `ambient_env.py` by hand. It also runs one test of each kind that failed under `CONEY_TASK` in a shell
-with `CONEY_TASK`, `VIRTUAL_ENV` and `CLAUDECODE` set. A tool that starts reading a new variable adds it to
-`ambient_env.py` in the same commit.
+`env_get`, `env.get`, `environ[...]`, `"X" in env` or `"X" not in env`, or spelled with one of our prefixes (`CONEY_`,
+`PCSX2_`, `GHIDRA_`, `CLAUDE_`, `GITHUB_`, `CMAKE_`). It cannot see a name held in a variable and read from there, so a
+tool that does that adds the name to `ambient_env.py` by hand. It also runs one test of each kind that failed under
+`CONEY_TASK` in a shell with `CONEY_TASK`, `VIRTUAL_ENV` and `CLAUDECODE` set. A tool that starts reading a new variable
+adds it to `ambient_env.py` in the same commit.
 
 ### Test through the player's path {#test-through-the-players-path}
 

@@ -53,6 +53,7 @@ CLEARED: dict[str, str] = {
 KEPT: dict[str, str] = {
     "PATH": "where programs are found (`build_run`, `ghidra_headless`)",
     "ProgramFiles(x86)": "where Windows keeps the Visual Studio installer (`build_run`, `workspace_checks`)",
+    "PYTEST_CURRENT_TEST": "pytest sets it for each test; `claim_progress` posts nothing to GitHub while it is there",
 }
 
 #: Names the code spells that are not variables the caller sets: a tool sets them for a child process, so what the

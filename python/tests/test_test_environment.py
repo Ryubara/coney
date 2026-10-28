@@ -89,7 +89,7 @@ def _string(node: ast.expr) -> str | None:
 def _names_in(path: Path) -> set[str]:
     """The variables a Python file names: a literal that is exactly one of our prefixed names (however it is read), and
     the first literal argument of a read of the environment (`getenv`, `env_get`, `env.get`, `environ["X"]`,
-    `"X" in env`). A name held in a variable and read from there is not seen."""
+    `"X" in env`, `"X" not in env`). A name held in a variable and read from there is not seen."""
     names: set[str] = set()
     for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
         read: str | None = None
@@ -103,7 +103,7 @@ def _names_in(path: Path) -> set[str]:
                 read = next((text for arg in node.args if (text := _string(arg)) is not None), None)
         elif isinstance(node, ast.Subscript) and _is_mapping(node.value):
             read = _string(node.slice)
-        elif isinstance(node, ast.Compare) and any(isinstance(op, ast.In) for op in node.ops):
+        elif isinstance(node, ast.Compare) and any(isinstance(op, (ast.In, ast.NotIn)) for op in node.ops):
             read = _string(node.left) if any(_is_mapping(other) for other in node.comparators) else None
         if read is not None and READ_NAME.fullmatch(read):
             names.add(read)
@@ -135,6 +135,7 @@ def test_the_scan_sees_the_ways_a_variable_is_read(tmp_path: Path) -> None:
         "c = env_get(env, 'FROM_ENV_GET')",
         "d = env.get('FROM_PARAMETER')",
         "e = 'FROM_IN' in base",
+        "i = 'FROM_NOT_IN' not in base",
         "f = os.getenv('FROM_GETENV')",
         "g = 'CMAKE_FROM_PREFIX'",
         "h = config.get('lowercase_key')",
@@ -146,6 +147,7 @@ def test_the_scan_sees_the_ways_a_variable_is_read(tmp_path: Path) -> None:
         "FROM_ENV_GET",
         "FROM_PARAMETER",
         "FROM_IN",
+        "FROM_NOT_IN",
         "FROM_GETENV",
         "CMAKE_FROM_PREFIX",
     }
