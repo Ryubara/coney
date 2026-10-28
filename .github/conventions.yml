@@ -468,8 +468,9 @@ tasks:
     packet_file: PACKET.json
     verdict_file: REVIEW.json
     report_file: REVIEW.md
-    # Which checklists a change needs (docs/guides/review/index.md): a change under these paths is research work, other
-    # Markdown is documentation, anything else is code; a changed `@orig` function adds the orig review, and the
+    # Which checklists a change needs (docs/guides/review/index.md): a change under these paths is research work (only
+    # a documentation file there, docs_suffixes, is a research page the review grades), other Markdown is documentation,
+    # anything else is code; a changed `@orig` function adds the orig review, and the
     # description and the commits are always reviewed.
     research_paths: [docs/research/, research/]
     docs_suffixes: [.md]

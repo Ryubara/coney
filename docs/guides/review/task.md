@@ -109,7 +109,7 @@ exist ([test citations](../testing.md#done), the standards of touched files).
 | --- | --- | --- |
 | `code` | A changed file that is neither documentation nor research | [Code](code.md) |
 | `docs` | Changed Markdown outside the research paths | [Docs](docs.md) |
-| `research` | A change under the research paths (`tasks.review.research_paths`) | [Research](research.md) |
+| `research` | A change under the research paths (`tasks.review.research_paths`); only a `.md` file there is a graded [page](../pr.md#research-page) | [Research](research.md) |
 | `orig` | A changed function carries `@orig` | [Orig review](orig.md) |
 | `text` | Always | [Description](text.md) |
 | `commits` | Always, except for `--text` | [Commits](commits.md) |

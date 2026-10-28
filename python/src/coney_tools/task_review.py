@@ -181,7 +181,7 @@ def _pages(files: list[str], env: ReviewEnv, tip: str) -> list[dict[str, Any]]:
     rules = env.conventions.tasks.review
     pages: list[dict[str, Any]] = []
     for name in files:
-        if not (name.startswith(tuple(rules.research_paths)) and name.endswith(tuple(rules.docs_suffixes))):
+        if not rules.is_research_page(name):
             continue
         text = _show(env.worktree, tip, name)
         if text is not None:
