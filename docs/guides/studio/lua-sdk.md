@@ -41,7 +41,7 @@ internals:** a script reaches the game only through natives, the same boundary t
 
 | Term | Meaning |
 | --- | --- |
-| **Native** | A function a script calls to make the game do something. Coney keeps the word: the Natives page, the `Native` struct and the masterlist already use it, and it is the word modders know from FiveM |
+| **Native** | A function a script calls to make the game do something. Coney keeps the word: the Natives page and the masterlist already use it, as does the planned `Native` struct, and it is the word modders know from FiveM |
 | **Game native** | One of the original's 956 script bindings, registered as a Lua global by the game and documented in the [masterlist](../../references/bindings/index.md). A script calls it by the game's own name, with the game's arguments, as the game's scripts do: `HuCreate(name, type, pos, heading, nil, 1, gang)` |
 | **Coney native** | A function Coney adds for scripts, reaching a capability of Coney's engine the original lacks (teleport, time scale, loading an imported model). It lives in the `Coney` table (`Coney.TeleportPlayer(...)`), never as a bare global, so it can never clash with a game native |
 | **SDK function** | A function of the `Coney` table that belongs to the script runtime, not to the engine: registering handlers, threads and waits, logging, the SDK level. It is always there, whatever Coney's progress |
@@ -101,7 +101,7 @@ native that needs a different signature becomes a new native, and the old one st
 (FiveM keeps old names as aliases for the same reason).
 
 **How a script finds a native:** it calls the global or the `Coney` field. A name that is not available is not there:
-calling it fails with an error that says why ("`HuSetCrouch` is a game native Coney does not implement in SDK level 4";
+calling it fails with an error that says why ("`HuSetOnFire` is a game native Coney does not implement in SDK level 4";
 "`Coney.Foo` is no Coney native"), raised by the project environment's lookup ([The sandbox](#sandbox)). The editor
 says the same before the script runs, because the stubs list only what is available ([Typed stubs](#stubs)).
 
@@ -343,14 +343,15 @@ becomes a project file are the content page's ([#1058](issue:1058)), and the two
 | `project:/` | The project folder; nothing above it | `project:/models/crate.glb` |
 | `game:/` | The player's installed game files, read-only, by the extract tool's names, so a project refers to a game asset and never carries it ([LEGAL.md](repo:LEGAL.md#no-game-data)) | `game:/sounds/...` |
 
-A sub-asset (one clip of a file that holds several, one mesh of a scene) follows a `#`: `project:/anims/dance.glb#Spin`.
-The calls are Coney natives, available once Coney can load that kind from outside the disc:
+A sub-asset (one clip of a file that holds several, one mesh of a model file) follows a `#`:
+`project:/anims/dance.glb#Spin`. The calls are Coney natives, available once Coney can load that kind from outside
+the disc:
 
 | Proposed native | Does | Waits on |
 | --- | --- | --- |
 | `Coney.LoadAsset(path)` | Starts loading an asset and returns its asset id at once; the load completes at a step boundary | Coney loading assets from a project ([Custom content](../../roadmap.md#custom-content)) |
 | `Coney.IsAssetLoaded(id)` | Whether it has arrived; a thread waits on it with `Coney.Wait` | the same |
-| `Coney.SpawnModel(path, pos, heading)` | Places an imported model as a world object and returns its handle; game natives (`ObjSetPos`, `ObjDelete`) then work on it | glTF models in Coney |
+| `Coney.SpawnModel(path, pos, heading)` | Places an imported model as a world object and returns its handle; game natives (`GetPosition`, `ObjShow`, `ObjDestroy`) then work on it | glTF models in Coney |
 | `Coney.SetHumanModel(human, path)` | Changes a human's model in place, keeping everything else about him ([#1053](issue:1053) does this for disc models) | imported character models |
 | `Coney.PlayClip(human, path, loop, speed)` | Plays an imported or disc clip on a human, as the Animation player does | imported animations |
 | `Coney.PlaySound(path, pos, volume)` | Plays a sound at a place, as a sound event | sounds from outside the disc |
@@ -507,7 +508,7 @@ natives only:
 ---@param player? integer 1 makes the human player 1 when no player 1 exists; 0 makes an AI human.
 ---@param gang? GangHandle The gang the human belongs to.
 ---@param flag? boolean Meaning not traced.
----@return HumanHandle? human The new human, or nil when no slot is free (60 humans at most).
+---@return HumanHandle human The new human, or NilHandle (0) when no slot is free (60 humans at most).
 function HuCreate(name, type, pos, heading, unused, player, gang, flag) end
 ```
 
@@ -597,7 +598,7 @@ lives in the engine, beside the runtimes; how Studio's process reaches it is the
 | Pause, continue, step in, step over, step out | The line and call/return hooks, with a target depth for over and out |
 | The call stack | `lua_getstack` and `lua_getinfo`: each frame's file, line and function; a native in the middle shows as a native frame |
 | Scopes and variables | Locals (`lua_getlocal`), upvalues, the project's globals; tables expand lazily |
-| Watches and the debug console | An expression compiled and run in the paused frame with a small budget, read-only: a watch may not call a `server` native, so looking at a value never changes the game |
+| Watches and the debug console | An expression compiled and run in the paused frame with a small budget, read-only: a watch may call only natives the masterlist marks `reads: true` (getters such as `GetPosition`, `HuGetHealthPercent`), and any other native is refused, so looking at a value never changes the game |
 | Exceptions | Break on any error, or only on errors no handler catches |
 | Threads | Each `Coney.CreateThread` coroutine is a DAP thread, so a modder sees which thread stopped |
 
@@ -624,7 +625,12 @@ When this design is accepted, these lines change on the pages that own them:
   to `research/bindings/coney.yaml` with `origin: coney`.
 - [Network architecture](../network-architecture.md#resources): a resource is a project, with `coney-project.toml` as
   its manifest; the second runtime of its maintainer decision 3 is this page's.
-- [The research data](../research-data.md#bindings): the `apiset`, `mods`, `handle` and `since` keys.
+- [The research data](../research-data.md#bindings): the `apiset`, `mods`, `handle`, `reads` and `since` keys.
+- [Network architecture: Scripts](../network-architecture.md#sub-scripts): handles come from one counter per session,
+  not one per Lua state ([The two states](#two-states)).
+- [Asset and script architecture: Deferred, in order](../asset-and-script-architecture.md#later): the native list, the
+  scheduler, the compiler and the `Coney` table move ahead of the whole game, as Studio's first build work
+  ([Proposed build issues](#build-issues)), under the faithful-first exception of [Maintainer decisions](#decisions).
 - [Roadmap: Script mods](../../roadmap.md#script-mods): the loader's points are this page's entry points.
 
 ## Maintainer decisions {#decisions}
@@ -685,10 +691,11 @@ Lua 4.0 instead, issue 7 moves to second place and becomes their runtime.
    makes a human with `HuCreate` at a flag and moves the camera; a thread's waits land on the expected steps; with the
    folder empty the game's scripted runs are unchanged (the roadmap's Done line).
 4. **core: Add the first Coney natives.** `research/bindings/coney.yaml` with `origin: coney` and the schema keys
-   `apiset`, `mods`, `handle`, `since`; `natives coney` and `natives render` reading it; the first natives from the
-   candidates table that have a C++ entry point today (`Coney.TeleportPlayer`, `Coney.SetPlayerFrozen`,
-   `Coney.ChangeCharacter`, `Coney.ResetCamera`, `Coney.SpawnFighter`, `Coney.SetTimeScale`, `Coney.GetGameTime`,
-   `Coney.GetPlayer`, `Coney.Log`, `Coney.StartLevel`), each calling the entry point the debug menus call. Tests: each
+   `apiset`, `mods`, `handle`, `reads`, `since`; `natives coney` and `natives render` reading it; the first natives from
+   the candidates table that have a C++ entry point today (`Coney.TeleportPlayer`, `Coney.SetPlayerFrozen`,
+   `Coney.ChangeCharacter`, `Coney.ResetCamera`, `Coney.SpawnFighter`, `Coney.SetTimeScale`, `Coney.Log`,
+   `Coney.StartLevel`), each calling the entry point the debug menus call, and the two this page adds,
+   `Coney.GetGameTime` and `Coney.GetPlayer`. Tests: each
    native through the bridge does what its debug-menu page does; CI fails when `coney.yaml` and the Coney native list
    disagree.
 5. **tools: Add the SDK stubs, the SDK level and the scripting reference.** `coney-tools natives stubs` writes the
