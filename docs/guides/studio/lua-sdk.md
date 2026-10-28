@@ -273,7 +273,7 @@ the order they were registered, projects in load order. The events, at the point
 
 A project may also add console commands with `Coney.RegisterCommand(name, handler, spec)`, an SDK function whose handler
 is an entry point like these, run in the project's state at a step boundary (the console design planned on
-[#1064](issue:1064), `console.md` in this folder; [Script security](security.md#console)).
+[#1064](issue:1064), `console.md` in this folder once it merges; [Script security](security.md#console)).
 
 Everything else a script reacts to comes through the game natives' own callbacks, as for the game's scripts: message
 handlers on objects (`SetMsgHandler`), trigger boxes, animation callbacks, pad handlers, scheduled calls. Network

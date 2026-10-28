@@ -662,7 +662,7 @@ Open:
 The build issues of this page and of [Mods, packages and loading](mods.md), in order, interleaved with the SDK's [build
 issues](lua-sdk.md#build-issues): 1 and 2 come with its runtime (SDK issue 2), 3 to 11 with its loader (SDK issue 3; 7
 and 8 also with the console of [#1064](issue:1064)), 12 with its compiler (SDK issue 7) and Mission mods' issue 5, 13
-and 14 when Studio's Export and code editor are built, 15 and 16 with ConeyMP's resources ([#566](issue:566)), and 17
+and 14 when Studio's Export and script editor are built, 15 and 16 with ConeyMP's resources ([#566](issue:566)), and 17
 when a native needs it.
 
 1. **core: Add the project file layer.** The one way a name becomes a project file, over a folder root: relative names
@@ -690,12 +690,13 @@ when a native needs it.
    <folder>`. Tests: a synthetic package mounts and its project runs; every refusal of the escape suite's `.cmod` item;
    mounting writes nothing to disk; a package edited after its check is checked again.
 5. **core: Add starting, stopping, dependencies and the load order.** `mods/enabled.toml` as the start list (a new
-   package added on at start, written by nothing else but the mods menu and the player); `[load] autostart`; starting
-   dependencies first and stopping dependants first; `[dependencies]` with semantic-version ranges, missing, disabled
-   and cyclic ones refused with their messages; the load order from the graph and the file; clash detection from
-   manifests (same name, same replaced asset, `conflicts`); the `mod:/` asset root. Tests: two mods run their handlers
-   in the file's order with a dependency first; a cycle and a version outside the range are refused while the other mods
-   start; a content mod runs only when its level is played (patches of one game script merge by Mission mods' issue 4).
+   package added on at start, except a new version of an enabled mod, which waits for the player; written by nothing
+   else but the mods menu and the player); `[load] autostart`; starting dependencies first and stopping dependants
+   first; `[dependencies]` with semantic-version ranges, missing, disabled and cyclic ones refused with their messages;
+   the load order from the graph and the file; clash detection from manifests (same name, same replaced asset,
+   `conflicts`); the `mod:/` asset root. Tests: two mods run their handlers in the file's order with a dependency first;
+   a cycle and a version outside the range are refused while the other mods start; a content mod runs only when its
+   level is played (patches of one game script merge by Mission mods' issue 4).
 6. **core: Add exports between mods.** `Coney.Export`, `Coney.CallExport` and `Coney.GetExport`: the call in the
    library's state and budget and charged to the caller's step, values copied deep within limits without metatables,
    functions as callbacks to the state they came from, declared dependencies only, a depth limit, same side only. Tests:
@@ -740,8 +741,8 @@ when a native needs it.
 14. **tools: Add safe opening of shared projects to Studio.** Studio's language-server settings passed by Studio,
     `runtime.plugin` and settings naming programs never taken from a project, a notice when a project carries them; the
     debugger's loopback-only port with a token; the signing key kept out of projects; importers' fuzz targets. Comes
-    with Studio's code editor issue. Tests: a fixture project with a plugin setting runs no plugin; the debugger refuses
-    a client without the token.
+    with the [script editor](script-editor.md#build-issues)'s issue 4. Tests: a fixture project with a plugin setting
+    runs no plugin; the debugger refuses a client without the token.
 15. **core: Add hosts' and servers' client packages and their cache.** The load-order announcement (names, versions,
     package hashes, packaged manifests), the guest's own `.cmod` used when its package hash matches, the fetch of the
     rest on the rate-capped stream with hash and size checks, client limits the server cannot raise, the cache per

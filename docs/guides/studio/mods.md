@@ -98,10 +98,11 @@ file says, as a FiveM server loads `server.cfg`.
 
 1. **Installing** is putting a `.cmod` in `mods/`. At the next start Coney finds it, checks it
    ([The `.cmod` package](#cmod)) and adds it to the end of `enabled.toml`, **on**, the one write Coney makes itself: a
-   mod changes the game through natives, and scripts are on by default (a maintainer decision). Two cases wait instead:
-   a mod that declares a permission is held until the player approves it ([Declared permissions](security.md#declared)),
-   and a mod whose manifest says `autostart = false` is listed but starts only when asked ([Starting and
-   stopping](#starting)).
+   mod changes the game through natives, and scripts are on by default (a maintainer decision). Three cases wait
+   instead: a mod that declares a permission is held until the player approves it ([Declared
+   permissions](security.md#declared)), a mod whose manifest says `autostart = false` is listed but starts only when
+   asked ([Starting and stopping](#starting)), and a new version of a mod already enabled is listed, not added, until
+   the player switches to it ([Load order](#load-order)).
 2. **Every session** starts the enabled mods in the [load order](#load-order). The loader
    ([The loader](lua-sdk.md#entry-points)) reads each manifest, checks its SDK level, its dependencies, its clashes and
    its permissions against what was approved (a mod whose permissions grew or whose signer changed is held, as Chrome
