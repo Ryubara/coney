@@ -345,6 +345,7 @@ nav:
           - "The Level view, gizmos and composing": guides/studio/level-view.md
           - Lua SDK and natives: guides/studio/lua-sdk.md
           - Technology: guides/studio/technology.md
+          - Icons: guides/studio/icons.md
           - Content and formats: guides/studio/content-and-formats.md
           - Project formats: guides/studio/project-formats.md
           - UI and menus: guides/studio/ui.md
