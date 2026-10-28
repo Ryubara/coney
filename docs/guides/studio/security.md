@@ -450,8 +450,8 @@ memory = 128                   # MiB, up to Coney's ceiling; shown, never asked
 | `http` (P4) | Web requests from a ConeyMP **server** script to the hosts listed | The server's operator, per project, in the server's configuration (Bedrock's `permissions.json`) | Network access is how remote code and stolen data travel ([FiveM](#fivem)); never on a client and never for a local mod |
 | `secrets` (P4) | Named values from the server's configuration, usable only as an `http` header's value, never readable as text | The operator, per project | A token a script can print can be leaked |
 
-`[limits]` and the project's file replacements (the content page's, [#1058](issue:1058)) are disclosures, shown in the
-details and never asked. The rules for approval, as Android and Chrome do it:
+`[limits]` and the project's asset replacements ([Override packs](project-formats.md#override-packs)) are disclosures,
+shown in the details and never asked. The rules for approval, as Android and Chrome do it:
 
 - **Asked once, at the moment of use**: before the mod first starts, in its details; the mod waits, held, until then,
   while the other mods start. A console command never approves.
@@ -489,7 +489,7 @@ first starts and at any time after:
 - whether it starts with every session or when its level is played (`autostart`), the SDK level and the other mods it
   needs, and whether they are here;
 - the clashes with other enabled mods ([Load order](mods.md#load-order)) and which one wins;
-- **what it changes**: its levels, the game files and assets it replaces, and, under `game-scripts`, the game scripts
+- **what it changes**: its levels, the assets it replaces, and, under `game-scripts`, the game scripts
   it patches;
 - **its limits** if it asks for more than the default;
 - its size and file count;
@@ -652,8 +652,6 @@ Open:
   patch to `lstrlib.c`), decided by the fuzzer's findings.
 - **Hard links**: whether refusing files with more than one link troubles real projects (some tools make them).
 - **A client's own projects on servers**: whether a server may allow them, and how a player sees that it does.
-- **Stable entity names and tags** in Coney's level format, which scripts find entities by: the content page's
-  ([#1058](issue:1058)); this page needs only that a level is data and holds no code.
 - **The package's name**: `.cmod` is a working name.
 
 ## Proposed build issues {#build-issues}
@@ -682,19 +680,19 @@ native needs it.
    per step; the watchdog with its "not responding" notice and Stop, off in test mode. Tests: a project that spawns past
    its cap gets the none value and the game's own spawns still succeed; a flooding `print` is cut with one notice line;
    the watchdog never fires in test mode.
-4. **core: Add `.cmod` packages, mounted read-only.** The strict zip reader, the packaged manifest's `[files]`, the
-   package hash, the check of every file against the manifest with its result kept in `cache/mods/`, the file layer over
-   a package root; `mods/` holding packages only (a folder there reported, not loaded) and `coney --project <folder>`;
-   `coney-tools mod pack` writing a `.cmod` from a project folder. Tests: a synthetic package mounts and its project
-   runs; every refusal of the escape suite's `.cmod` item; mounting writes nothing to disk; a package edited after its
-   check is checked again.
+4. **core: Add the strict reading of `.cmod` packages.** The rules for Coney reading a `.cmod`, which [Content and
+   formats](content-and-formats.md#build-issues) build issue 13 adds with the export: the strict zip reader, the package
+   hash, the check of every file against the manifest's list with its result kept in `cache/mods/`, the file layer over
+   a package root; `mods/` holding packages only (a folder there reported, not loaded) and `coney --project <folder>`.
+   Tests: a synthetic package mounts and its project runs; every refusal of the escape suite's `.cmod` item; mounting
+   writes nothing to disk; a package edited after its check is checked again.
 5. **core: Add starting, stopping, dependencies and the load order.** `mods/enabled.toml` as the start list (a new
    package added on at start, written by nothing else but the mods menu and the player); `[load] autostart`; starting
    dependencies first and stopping dependants first; `[dependencies]` with semantic-version ranges, missing, disabled
    and cyclic ones refused with their messages; the load order from the graph and the file; clash detection from
-   manifests (same name, same game file, same game script, `conflicts`); the `mod:/` asset root. Tests: two mods run
-   their handlers in the file's order with a dependency first; a cycle and a version outside the range are refused while
-   the other mods start; a content mod runs only when its level is played; two mods patching the same game script
+   manifests (same name, same replaced asset, same game script, `conflicts`); the `mod:/` asset root. Tests: two mods
+   run their handlers in the file's order with a dependency first; a cycle and a version outside the range are refused
+   while the other mods start; a content mod runs only when its level is played; two mods patching the same game script
    cannot both run.
 6. **core: Add exports between mods.** `Coney.Export`, `Coney.CallExport` and `Coney.GetExport`: the call in the
    library's state and budget and charged to the caller's step, values copied deep within limits without metatables,

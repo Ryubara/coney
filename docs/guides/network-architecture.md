@@ -526,13 +526,11 @@ flowchart LR
 
 Both sides run code they did not write: a server runs its operator's resources, a client runs what a server sends it.
 Every resource state opens only Coney's allowed libraries (no `io`, `os`, `debug`, `package`, no loading of bytecode, no
-`dofile` or `require` outside the resource), has its own environment over a read-only API table, an instruction budget
-per call (a count hook that aborts the call) and a memory cap (an allocator that refuses growth past it). A client
-script can never open a file, a socket or another resource's state. The game's Lua 4.0 state runs the disc's scripts
-with Coney's instruction budget and no file or system library; a mod changes a game script only by a patch of
-differences that each player's Coney applies to its own disc script and compiles (text, never bytecode, no game script
-shipped), by a permission the player approves. The full rules, what a server sends a client and how it is cached, are
-[Coney Studio: script security](studio/security.md).
+`dofile` or `loadfile`, no `require` outside the resource), has its own environment over a read-only API table, an
+instruction budget per call (a count hook that aborts the call) and a memory cap (an allocator that refuses growth past
+it). A client script can never open a file, a socket or another resource's state. The game's Lua 4.0 state runs the
+disc's scripts with Coney's instruction budget; a mod changes one only by a patch, as text, that the player approves and
+Coney applies to the player's own copy. The full rules: [Coney Studio: script security](studio/security.md).
 
 ## Security {#security}
 

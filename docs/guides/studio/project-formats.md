@@ -202,8 +202,8 @@ project on the player's machine and is left out of a package.
 A finished project is exported as one file, a **`.cmod`** (the working name): a zip of the project folder with its
 manifest at the root. This page owns what goes into one; how Coney loads it, by hand or at start as its manifest says,
 and how mods depend on each other, are the Lua SDK design's ([The mods folder](lua-sdk.md#mods-folder)), whose loader
-reads a project as a folder: Coney reading a `.cmod` there in place of its unpacked folder is build issue 13 of
-[Content and formats](content-and-formats.md#build-issues). What goes in, from the formats on this page:
+reads a project as a folder: Coney reading a `.cmod` there where it lies, never unpacked, is build issue 13 of [Content
+and formats](content-and-formats.md#build-issues). What goes in, from the formats on this page:
 
 | In the project | In the `.cmod` |
 | --- | --- |

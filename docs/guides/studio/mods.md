@@ -30,7 +30,7 @@ data. What mods add to it:
   mods/                         the one mods folder: one .cmod file per mod, read where it lies
     yard-brawl-0.3.0.cmod       a package: the project folder zipped, its manifest listing every file
     enabled.toml                which mods are on, their order, and what the player approved for each
-  overrides/                    asset replacements (texture packs, sounds, game files): data, never scripts
+  overrides/                    the architecture page's loose replacements (texture packs): data, never scripts
   cache/servers/<server key>/   files a server or co-op host sent, one folder per server, by content hash
   cache/mods/                   what Coney remembers about each package it verified (hashes checked, by size and time)
 <per-user save location>/       save data only
@@ -55,11 +55,11 @@ data. What mods add to it:
 
 ## The `.cmod` package {#cmod}
 
-A finished project is exported as one file, a **`.cmod`** (working name), by Studio's **Export** or
-`coney-tools mod pack`. It is a zip of the project folder whose packaged manifest, `coney-project.toml` at its root, is
-the project's own manifest ([Projects and the manifest](lua-sdk.md#manifest)) with one section the export adds,
-`[files]`: every file's path, size and SHA-256. A mod may be scripts only, a level only, or anything between; whatever
-it holds, the manifest lists it, and a file not listed is not read.
+A finished project is exported as one file, a **`.cmod`** (working name), by Studio's **Export**. What goes into one,
+and that nothing from the disc does, is [Project formats: The `.cmod` package](project-formats.md#cmod)'s; this page
+adds how Coney trusts and reads it. The export writes the file list into the packaged manifest, `coney-project.toml` at
+the root, as one section, `[files]`: every file's path, size and SHA-256. Whatever a mod holds, the list names it, and a
+file not listed is not read.
 
 - **Its identity** is the SHA-256 of the packaged manifest, the **package hash**. Because the manifest holds every
   file's hash, the package hash names every byte the mod can load: the mods menu, approvals, saves, replays and co-op
@@ -77,9 +77,9 @@ it holds, the manifest lists it, and a file not listed is not read.
   from the manifest fails the check and the mod does not load; each read is bounded by the size the manifest declares.
 - **The `.cpak` layout ([#798](issue:798))** puts the installed game in Coney's own archives, and its step 5 planned
   mods as `mods/enabled.txt` and `mods/<mod>/mod.toml` folders of patch archives that mirror `game/`. The later decision
-  of one universal mods folder of `.cmod` packages takes that step's place: a mod's replacements of game entries (data
-  only: a game script changes only by a `game-scripts` patch) travel inside its `.cmod` as patch entries named as in the
-  catalogue, in the same lookup order (enabled mods, then texture packs, then `game/`), and the load list is
+  of one universal mods folder of `.cmod` packages takes that step's place: a mod's replacements of the game's assets
+  are the lines of its override pack, presentation kinds only and applied in the load order ([Override
+  packs](project-formats.md#override-packs)); a game script changes only by a `game-scripts` patch; the load list is
   `enabled.toml`. Whether the `.cmod` uses the `.cpak` container (an index at the front, entries readable in place, a
   hash per entry) instead of zip, once that format exists, is for a maintainer to confirm ([Script security: Maintainer
   decisions](security.md#decisions)).
@@ -186,7 +186,7 @@ comes after the mods already running. That order is the order of main chunks, `s
 | Clash | Found | What happens |
 | --- | --- | --- |
 | Two mods with the same name | At install and at `refresh` | Only one can be enabled; the other is listed as a second version |
-| Two mods replace the same game file or asset | From their manifests, before anything starts | Allowed; the later mod in the load order wins, as in Minecraft's data packs, and the clash is listed with the winner |
+| Two mods replace the same asset | From their override packs, before anything starts | Allowed; the later mod in the load order wins, as in Minecraft's data packs, and the clash is listed with the winner ([Override packs](project-formats.md#override-packs)) |
 | Two mods' `game-scripts` patch the same game script | From their manifests | Refused until [#1074](issue:1074) decides whether two patches to one script can apply together: only one can be enabled at a time, and the message names both |
 | A mod names another under `[load] conflicts` | From the manifest | The two cannot run together; the later one is not started |
 | Two mods' scripts disagree at run time (both set the time scale) | Not detectable | Handlers run in load order and a one-slot native keeps the last value set ([The value bridge](lua-sdk.md#bridge)); authors declare `conflicts` once they know |
