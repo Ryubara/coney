@@ -172,19 +172,29 @@ issues and pull requests in the shape `gh` returns (`python/tests/audit_support.
   of the `sections`, `no_ai` that is not one of the choices) is an error;
 - a colour made only of digits must be quoted (`"000000"`), because YAML reads an unquoted one as a number.
 
-The release commands (`pr open`, `pr verify` and `pr text`) read the file of the branch under release
-leniently: an **unknown** key is skipped and named in a `note:` line (on stderr for `verify` and `text`), because the
-first release of a branch that adds a rule is read by the tool `main` already has, which cannot know the key. Skipping
-adds no steering, since a key the tool does not know is never read, and the file steers nothing that decides a
-release: `stamps`, `tasks.review` (who may review, on which model), `proof`, `paths`, `pull_requests`, `commits`,
-`repo`, `merge` and `claims` are always read from `origin/<default branch>`, which a branch cannot have edited, and
-replace the branch's (`load_release_rules_at`; the table is [Where the rules come from](pr.md#rules)). The branch's
-file is read for the rest of `tasks` (the task file's name and kinds, `task start`) and nothing else a release
-uses. A missing key or a wrong value stays an error, in the branch's file and in the default branch's sections alike
-(the latter names `origin/<default branch>`). So does a misspelt **required** key, which leaves the real key
-missing; a misspelt **optional** key (`except`, `manual_paths`, `jobs` and the like) is skipped like any unknown key and
-its default applies, because a new key next to an old one cannot be told from a typo of it, and refusing it would bring
-the bug back. `repo check-conventions`, `task check`, the tests and the Action stay strict and catch every typo.
+The release commands (`pr open`, `pr verify`, `pr text` and `task review`) read the file of the branch under release
+leniently, because a branch is cut at one version of the file and read by the tool of another. It differs from the
+tool's own in two ways, and each is handled and named in a `note:` line (on stderr for `verify`, `text` and `review`):
+
+- **A key the tool does not know** (the branch adds a rule; the first release of such a branch is read by the tool
+  `main` already has) is skipped. Skipping adds no steering, since a key the tool does not know is never read.
+- **A required key the branch lacks** (`main` added it after the branch was cut, as `tasks.start.slots.tracks` was)
+  takes the value in the conventions file of the checkout the tool runs from, which is `main`'s when the coordinator
+  runs the main checkout's tool. So a required key needs no default written anywhere else: its value in the file is
+  its default, and an open branch works until its next rebase. No default applies inside a list (`labels.list`
+  items have no stable place across branches), and a tool that is not run from a checkout has none, so there the key
+  stays missing and an error.
+
+A wrong value is an error in every case: a key the branch wrote itself is never replaced by a default. The file steers
+nothing that decides a release: `stamps`, `tasks.review` (who may review, on which model), `proof`, `paths`,
+`pull_requests`, `commits`, `repo`, `merge` and `claims` are always read from `origin/<default branch>`, which a branch
+cannot have edited, and replace the branch's (`load_release_rules_at`; the table is [Where the rules come
+from](pr.md#rules)). The branch's file is read for the rest of `tasks` (the task file's name and kinds, `task start`)
+and nothing else a release uses. In the default branch's own sections a missing key or a wrong value stays an error
+(it names `origin/<default branch>`). A misspelt key reads as an unknown key plus a missing one, so it is named twice
+and its value comes from `main`: a typo of an optional key (`except`, `manual_paths`, `jobs` and the like) is skipped
+like any unknown key and its default applies, because a new key next to an old one cannot be told from a typo of it.
+`repo check-conventions`, `task check`, the tests and the Action stay strict and catch every typo.
 
 `coney-tools repo check-conventions` loads the file, so a mistake in it fails the `python` workflow and `coney-tools ci
 run` before anything else runs. Every command that needs a rule exits with code 2 and one line when the file is missing

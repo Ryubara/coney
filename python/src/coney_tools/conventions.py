@@ -7,14 +7,16 @@ explains each key). Every check reads it through `load_conventions`, so a rule c
 strict on purpose: an unknown key, a missing key, a value of the wrong type, a duplicate key or a reference to
 something that does not exist is a `ConventionsError` that names the key, so a typo or a bad merge fails loudly
 instead of leaving a rule silently off. The one exception is `load_conventions_leniently`, for the release commands
-(`pr open`, `pr verify`, `pr text`) reading a branch's file with a tool older than it: an unknown key is skipped and
-reported, everything else (a missing key, a wrong value) is still an error. A misspelt key that is optional is
-skipped too, and its default applies; only a required key's typo is caught, because it leaves the real key missing.
+(`pr open`, `pr verify`, `pr text`, `task review`) reading a branch's file with a tool of a different age: an unknown
+key (the branch is ahead of the tool) is skipped and reported, and a missing key (the branch was cut before main added
+it) takes the value this tool's own checkout has and is reported; a wrong value is still an error. A misspelt key is
+therefore an unknown key plus a missing one: reported, never silent.
 """
 
 from __future__ import annotations
 
 import contextvars
+import copy
 import re
 import subprocess
 from collections.abc import Callable, Iterable, Mapping
@@ -1401,6 +1403,26 @@ def _fail(where: str, problem: str) -> ConventionsError:
 #: read, which refuses them. A context variable, so the 70 table readers below need no extra parameter.
 _IGNORED: contextvars.ContextVar[list[str] | None] = contextvars.ContextVar("conventions_ignored", default=None)
 
+#: What a lenient read takes a missing required key from, and where it collects the dotted paths it filled: the YAML
+#: data of the tool's own checkout (main's values) and the list. None is the strict read, which refuses a missing key.
+_DEFAULTS: contextvars.ContextVar[tuple[Mapping[str, Any], list[str]] | None] = contextvars.ContextVar(
+    "conventions_defaults", default=None
+)
+
+
+def _default_at(path: str) -> tuple[bool, Any]:
+    """Whether the lenient read's defaults hold a value at the dotted `path`, and it. Only a mapping chain has one: a
+    path through a list item (`labels.list[3].color`) has no stable place across branches, so it has no default."""
+    held = _DEFAULTS.get()
+    if held is None or "[" in path:
+        return False, None
+    node: Any = held[0]
+    for part in path.split("."):
+        if not isinstance(node, dict) or part not in node:
+            return False, None
+        node = node[part]
+    return True, node
+
 
 def _table(value: object, where: str, required: Iterable[str], optional: Iterable[str] = ()) -> dict[str, Any]:
     """`value` as a mapping with exactly the `required` keys and perhaps some `optional` ones; no other key (a lenient
@@ -1410,7 +1432,13 @@ def _table(value: object, where: str, required: Iterable[str], optional: Iterabl
     known = (*required, *optional)
     for key in required:
         if key not in value:
-            raise _fail(where, f"missing the key '{key}'")
+            found, default = _default_at(_at(where, key))
+            held = _DEFAULTS.get()
+            if not found or held is None:
+                raise _fail(where, f"missing the key '{key}'")
+            # A branch cut before main added the key: main's value stands in until the branch is next rebased.
+            value = {**value, key: copy.deepcopy(default)}
+            held[1].append(_at(where, key))
     for key in value:
         if key not in known:
             skipped = _IGNORED.get()
@@ -2944,16 +2972,25 @@ def _read_runs(data: object, where: str, folder: str) -> Runs:
     )
 
 
-def parse_conventions(data: object, ignored: list[str] | None = None) -> Conventions:
+def parse_conventions(
+    data: object,
+    ignored: list[str] | None = None,
+    defaults: Mapping[str, Any] | None = None,
+    filled: list[str] | None = None,
+) -> Conventions:
     """Validate the YAML value of the conventions file and build the typed values; ConventionsError names the key.
 
-    Strict by default: an unknown key is an error. With `ignored` (a list), an unknown key is skipped and its dotted
-    path appended to it instead, for a tool that reads a file newer than itself; a missing key or a wrong value is
-    still an error."""
+    Strict by default: an unknown key and a missing key are errors. With `ignored` (a list), an unknown key is skipped
+    and its dotted path appended to it instead, for a tool that reads a file newer than itself. With `defaults` (the
+    YAML data of a complete file, main's) and `filled` (a list), a required key the file lacks takes the value at the
+    same place in `defaults` and its dotted path is appended to `filled`, for a tool that reads a file older than
+    itself; a key with no value there (also any key inside a list) is still an error. A wrong value is always one."""
     token = _IGNORED.set(ignored)
+    held = _DEFAULTS.set(None if defaults is None else (defaults, filled if filled is not None else []))
     try:
         return _parse(data)
     finally:
+        _DEFAULTS.reset(held)
         _IGNORED.reset(token)
 
 
@@ -2988,7 +3025,8 @@ def _parse(data: object) -> Conventions:
     hygiene = _read_hygiene(table["hygiene"], "hygiene")
     for spec in hygiene.checks.values():
         for key in spec.keys:
-            if not _has_key(data, key):
+            # A key a lenient read filled from the defaults is in the file as far as the check is concerned.
+            if not _has_key(data, key) and not _default_at(key)[0]:
                 raise _fail(f"hygiene.checks.{spec.id}.keys", f"'{key}' is not a key of this file")
     commits = _read_commits(table["commits"], "commits")
     pull_requests = _read_pull_requests(table["pull_requests"], "pull_requests")
@@ -3127,32 +3165,56 @@ def _keep(value: object, keys: Iterable[str]) -> object:
     return kept
 
 
-def load_conventions(root: Path, ignored: list[str] | None = None) -> Conventions:
-    """Read and validate `root / .github/conventions.yml`; raises ConventionsError naming the first problem.
-
-    `ignored` makes the read lenient about unknown keys, as `parse_conventions` says: the release commands read the
-    file of the branch they release with it, because the first release of a branch that adds a rule is read by the
-    tool main already has."""
+def _file_data(root: Path) -> object:
+    """The YAML value of `root / .github/conventions.yml`; ConventionsError when it cannot be read or is not YAML."""
     path = root / CONVENTIONS_FILE
     try:
-        data = yaml.load(path.read_text(encoding="utf-8"), Loader=_Loader)
+        return yaml.load(path.read_text(encoding="utf-8"), Loader=_Loader)
     except OSError as error:
         raise ConventionsError(f"{CONVENTIONS_FILE}: cannot be read ({error.strerror or error})") from error
     except (UnicodeDecodeError, yaml.YAMLError) as error:
         raise ConventionsError(f"{CONVENTIONS_FILE}: not valid YAML ({error})") from error
-    return parse_conventions(data, ignored)
+
+
+def load_conventions(
+    root: Path,
+    ignored: list[str] | None = None,
+    defaults: Mapping[str, Any] | None = None,
+    filled: list[str] | None = None,
+) -> Conventions:
+    """Read and validate `root / .github/conventions.yml`; raises ConventionsError naming the first problem.
+
+    `ignored`, `defaults` and `filled` make the read lenient, as `parse_conventions` says: the release commands read
+    the file of the branch they release with them, because the branch was cut before or after the tool they run."""
+    return parse_conventions(_file_data(root), ignored, defaults, filled)
+
+
+def _own_defaults() -> Mapping[str, Any] | None:
+    """The YAML data of the conventions file in the checkout this tool runs from (main's values when it is the main
+    checkout's tool, which is how the coordinator runs the release commands); None when this is not a checkout (an
+    installed copy) or its file is unusable, and then a missing key stays an error."""
+    try:
+        data = _file_data(Path(__file__).resolve().parents[3])
+    except ConventionsError:
+        return None
+    return data if isinstance(data, dict) else None
 
 
 def load_conventions_leniently(root: Path, say: Callable[[str], None] | None = None) -> Conventions:
-    """`load_conventions` for the release commands (`pr open`, `pr verify` and `pr text`): a key this tool does not
-    know is skipped, and `say` (if given) is told which, one line each. The file is the branch under release's, and
-    the first release of a branch that adds a rule is read by the tool main already has. It is read for what no
-    release rule decides (the task file's name, the claims client's setup); every section that decides whether a
-    release is allowed is read from the default branch instead and replaces the branch's (`load_release_rules_at`).
-    Skipping an unknown key adds no steering: a key the tool does not know is never read."""
+    """`load_conventions` for the release commands (`pr open`, `pr verify`, `pr text` and `task review`): a key this
+    tool does not know is skipped, and a required key the file lacks takes the value of this tool's own checkout
+    (`_own_defaults`); `say` (if given) is told which, one line each. The file is the branch under release's, which
+    main's tool reads before the branch is rebased onto a change to the file, whichever way it differs. It is read
+    for what no release rule decides (the task file's name, the claims client's setup); every section that decides
+    whether a release is allowed is read from the default branch instead and replaces the branch's
+    (`load_release_rules_at`). Neither adds steering: a key the tool does not know is never read, and main's value
+    is the rule main holds. A wrong value stays an error."""
     ignored: list[str] = []
-    conventions = load_conventions(root, ignored)
+    filled: list[str] = []
+    conventions = load_conventions(root, ignored, _own_defaults(), filled)
     if say is not None:
         for key in ignored:
             say(f"note: {CONVENTIONS_FILE}: ignoring {key}, which this tool does not know yet")
+        for key in filled:
+            say(f"note: {CONVENTIONS_FILE}: missing {key}, taking main's value until the branch is rebased")
     return conventions
