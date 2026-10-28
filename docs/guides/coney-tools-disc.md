@@ -1,9 +1,10 @@
 # The coney-tools disc commands
 
 The commands that read **your own disc**: [`wad`](#info) (`info`, `list`, `recover-names`, `extract`, `scene-info`),
-[`extract`](#extract), [`audio`](#audio), [`movies`](#movies) and [`xbox`](#xbox). `wad` reads the game's archive,
-`WARRIORS.DIR` and `WARRIORS.WAD`; `extract` turns every asset into open formats; `audio` reads the sound data,
-`movies` the movies' headers and `xbox` the Xbox disc's archive. Everything is read in place and streamed, so the
+[`extract`](#extract), [`audio`](#audio), [`movies`](#movies) and [`xbox`](#xbox), and [`cpak`](#cpak), which reads
+the archives Coney makes from it. `wad` reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`; `extract` turns
+every asset into open formats; `audio` reads the sound data, `movies` the movies' headers, `xbox` the Xbox disc's
+archive and `cpak` a Coney Pack. Everything is read in place and streamed, so the
 1.4 GB WAD is never loaded into memory. The format is described in
 [WARRIORS.DIR / .WAD](../research/formats/wad-dir.md). The other groups are listed in
 [the command line overview](coney-tools.md#groups).
@@ -500,4 +501,67 @@ coney-tools xbox compare PS2_DISC DISC
 | --- | --- | --- | --- |
 | `PS2_DISC` | text | required | the PS2 disc (a folder or .iso) |
 | `DISC` | text | required | the Xbox disc: a full image, an XISO or an extracted folder |
+<!-- command-reference:end -->
+
+## cpak {#cpak}
+
+The `cpak` commands read a Coney Pack (`.cpak`), Coney's own archive of the game's data, with a reader of their own
+written from [The .cpak archive format](cpak-format.md), and print names, sizes and hashes. They take an archive's
+path, not the disc.
+
+```sh
+uv run --project python coney-tools cpak list game/textures/hud.cpak
+uv run --project python coney-tools cpak show game/textures/hud.cpak textures/hud/hud_main
+uv run --project python coney-tools cpak verify game/textures/*.cpak
+```
+
+* `list` prints one line per entry (offset, stored size, size, compression, the first 16 digits of its SHA-256, name)
+  and a count.
+* `show` prints the header's values, or with a name that entry's whole record.
+* `verify` checks each archive's index and every entry's SHA-256 ([What a reader checks](cpak-format.md#reading)),
+  prints each failure and a count, and exits 1 when anything failed.
+
+`list` and `show` exit 2 on a file that is not a well-formed archive, and `show` on a name the archive does not hold.
+
+<!-- command-reference:begin cpak -->
+## Parameters of `cpak` {#cpak-parameters}
+
+Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `cpak list` {#cpak-list-usage}
+
+One line per entry: offset, sizes, compression, hash and name.
+
+```text
+coney-tools cpak list ARCHIVE
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `ARCHIVE` | path | required | a Coney Pack (.cpak) archive |
+
+### `cpak show` {#cpak-show-usage}
+
+The header's values, or one entry's whole record.
+
+```text
+coney-tools cpak show ARCHIVE [NAME]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `ARCHIVE` | path | required | a Coney Pack (.cpak) archive |
+| `[NAME]` | text | none | an entry's name; without it, the header |
+
+### `cpak verify` {#cpak-verify-usage}
+
+Check each archive's index and every entry's SHA-256.
+
+```text
+coney-tools cpak verify ARCHIVE [ARCHIVE ...]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `ARCHIVE [ARCHIVE ...]` | path | required | one or more archives |
 <!-- command-reference:end -->

@@ -338,6 +338,7 @@ nav:
       - Enhancements plan: guides/enhancements.md
       - Realtime lighting design: guides/realtime-lighting.md
       - Asset and script architecture: guides/asset-and-script-architecture.md
+      - The .cpak archive format: guides/cpak-format.md
       - Network multiplayer: guides/multiplayer.md
       - Network architecture design: guides/network-architecture.md
       - Coney Studio design:
