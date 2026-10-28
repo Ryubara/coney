@@ -8,7 +8,7 @@ proposes, in order. Three small proofs settled what reading could not ([Proofs](
 
 What Studio is, its panels, Play's controls and the keymap are the editor experience design;
 what a script can call, the language version for mods and how Play loads a project are the Lua SDK and runtime design;
-what Studio can read and write from the game's files is the content and formats design. This page links to them and
+what Studio can read and write from the game's files is the content and formats design. This page names them and
 does not repeat them.
 
 ## The choices at a glance {#summary}
@@ -330,21 +330,22 @@ and a texture in a docked panel work together as this page assumes. The pull req
 The same shell, built with the Test Engine (commit `044a7799`) and a hidden window, ran five tests: select Vermin in the
 Hierarchy, type 42 into the Inspector's Health, drop a file `hero.glb` onto the window (an `SDL_EVENT_DROP_FILE` pushed
 by the test) and find it in the File system panel, dock the Inspector into the Hierarchy, and type `HuSetAcc` in the
-editor and accept the completion with Tab. All five passed in 3.5 s, with a PNG of the File system window, a PNG of the
-whole frame, a 3 s video piped to FFmpeg and a JUnit XML file. Three runs gave byte-identical PNGs. One finding: the
+editor and accept the completion with Tab. In each of three runs all five passed in about 6 s (the JUnit file's 5.9 to
+6.5 s, most of it encoding the video), writing a PNG of the File system window, a PNG of the whole frame, a 3 s video of
+91 frames piped to FFmpeg and a JUnit XML file. The three runs gave byte-identical PNGs and MP4s. One finding: the
 editor's completion popup waits 200 ms of real time, so a test sets that delay to 0.
 
 ### lua-language-server with the natives {#proof-lsp}
 
 LuaLS 3.19.2 on Windows x64, a stub of all 956 natives generated from the masterlist (543 KB), a mod in Lua 4.0 style
-and one in Lua 5.x style, read once with `--check` and once over LSP by a small client:
+and one in Lua 5.x style, read once with `--check` and three times over LSP by a small client (the first run cold):
 
 | Measured | Result |
 | --- | --- |
-| Start and initialize | under 0.25 s |
-| First diagnostics for an opened file | 0.87 s |
-| Completion of `HuSetAcc` | 20 ms, `HuSetAccurate(human, accurate)` among 18 fuzzy matches |
-| Hover on `HuGetPosition` | 1 ms, the signature and the masterlist's description |
+| Start and initialize | 0.11 to 0.81 s |
+| First diagnostics for an opened file | 0.96 to 1.41 s |
+| Completion of `HuSetAcc` | 25 to 228 ms, `HuSetAccurate(human, accurate)` among 18 fuzzy matches |
+| Hover on `HuGetPosition` | 2 to 17 ms, the signature and the masterlist's description |
 | A string passed for a handle, a second argument too many, an unknown native | each reported, in both styles |
 | Lua 4.0's `%count` and `getn` | a syntax error and an undefined global |
 | The stub as a workspace file | ignored until `workspace.preloadFileSize` was raised past its 500 KB default; the generator writes that setting |
