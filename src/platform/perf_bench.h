@@ -53,7 +53,7 @@ class PerfBench {
     void spawn(debug::PlayControls* play);
     /// Spawns `amount` fighters of `side`, their models drawn from `random`; returns how many, keeping a failure.
     std::size_t spawnSide(debug::PlayControls& play, int amount, ai::FighterSide side, debug::SpawnRandom& random);
-    /// `--bench-god`: the Entity editor's Invincible on player 1; a failure is kept for the report.
+    /// `--bench-god`: the Entity inspector's Invincible on player 1; a failure is kept for the report.
     void makePlayerInvincible(debug::PlayControls* play);
 
     std::string m_file;

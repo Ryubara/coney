@@ -263,6 +263,19 @@ void MenuModel::addPage(std::string title, std::function<void(MenuPage&)> build,
     m_pages.push_back(PageEntry{std::move(title), std::move(help), std::move(build)});
 }
 
+void MenuModel::addFormerTitle(std::string former, std::string title) {
+    m_formerTitles.insert_or_assign(std::move(former), std::move(title));
+}
+
+std::string MenuModel::currentTitle(std::string_view title) const {
+    const auto found = m_formerTitles.find(title);
+    return found != m_formerTitles.end() ? found->second : std::string(title);
+}
+
+bool MenuModel::hasFormerTitles(std::string_view title) const {
+    return std::ranges::any_of(m_formerTitles, [title](const auto& entry) { return entry.second == title; });
+}
+
 std::shared_ptr<MenuPage> MenuModel::root() const {
     auto page = std::make_shared<MenuPage>(std::string(kRootTitle));
     page->add(submenuItem(std::string(kFavouritesTitle), [this] { return favourites(); }))

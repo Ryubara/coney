@@ -143,8 +143,7 @@ The Display page's *Debug UI scale* overrides the choice: *Auto* (the rule above
 | Animation player | every clip the player's anim sets can play, by set and category with its length, played on him once or looping at a speed, then his own animation back ([below](#animation-player)) |
 | HUD | the [in-game HUD](../research/hud.md)'s parts on and off, player 1's rage, score, money and items set (-1 gives the value back), an objective, a hint and an announcement fired |
 | Debug draw | lines in the scene: collision near the player (plain or by wall class), the player's heading and velocity, the camera, places, every human's collision shapes, strike shapes and contacts; the [mesh views](#mesh-views): the models' own wireframe, a wireframe-only view, flat views by material, draw call or LOD, the selection's normals and bone axes |
-| Entity inspector | pick a human or object (nearest, next, looked at, from a list), mark it in the scene and watch everything Coney knows of it, a human's [mesh](#mesh-group) included |
-| Entity editor | change the inspector's selection: move, turn, drop, meters, scale, speed, animation rate, freeze, kill, delete; each edit queued, applied between steps and written to the run log ([below](#entity-editor)) |
+| Entity inspector | the one entity panel: pick a human or object once (nearest, next, looked at, from a list), mark it in the scene, watch everything Coney knows of it in groups, a human's [mesh](#mesh-group) included, and edit it in the same groups: move, turn, drop, meters, scale, speed, animation rate, freeze, kill, delete and [another model](#model-swap); each edit queued, applied between steps and written to the run log ([below](#entity-inspector)) |
 | Display | the frame-stats line, the FPS counter, the frame cap and vsync (live), the player's coordinates, the GUI safe area, the logical screen, the [overlay's size](#ui-scale) |
 | Audio | the output device, the master and bus volumes, a looping test tone, the voices playing (plotted) |
 | Network | [network play](multiplayer.md): status, player name, port, address, Host, Join, Disconnect, the ping (plotted), loss, bytes and packets, the players, a Simulate network submenu (latency, jitter, loss, duplicates, reordering), the log |
@@ -438,10 +437,16 @@ for byte, as the same run without `--mesh-view` ([options](running-options.md#th
 
 ### Entity inspector {#entity-inspector}
 
-The **Entity inspector** page picks one entity of the scene and shows everything Coney knows about it, live. It needs
-the play mode (`--play-level`, the story, or a sandbox from Levels); elsewhere it says there are no entities. The
-entities are player 1, the sandbox targets, the AI humans (fighters and the scripts' cast; deleted ones are left
-out), the doors and barriers, the glass panes and the world objects whose object exists now.
+The **Entity inspector** is the one entity panel: pick an entity of the scene once, at the top, and see everything
+Coney knows about it and edit it in the groups below, its live values and editable values side by side: the base of a
+future Coney Studio's Inspector. Choosing, highlighting and watching change nothing in the game, so a test-mode run
+plays the same with a selection. It needs the play mode (`--play-level`, the story, or a sandbox from Levels);
+elsewhere it says there are no entities. The entities are player 1, the sandbox targets, the AI humans (fighters and
+the scripts' cast; deleted ones are left out), the doors and barriers, the glass panes and the world objects whose
+object exists now. Until #1053 the editing was a second page, the *Entity editor*; a saved [overlay
+layout](#the-developer-overlay) that has that window open opens this one instead (`MenuModel::addFormerTitle()`).
+
+The page, top to bottom:
 
 | Item | Does |
 | --- | --- |
@@ -453,23 +458,30 @@ out), the doors and barriers, the glass panes and the world objects whose object
 | Choose | the whole list; choosing one selects it |
 | Clear | drops the selection |
 | Highlight | marks the selection in the scene (a white post and diamond over it and a ring at its feet; a door's or a pane's own collision triangles in white) and names it under the corner lines, `Inspecting: AI 2 gang (3.4 m)` |
-| Freeze selection | holds the selected human still: an AI human or a sandbox target is not animated, moved or acted for, its brain still runs and the others still hit it (it does not react until let go); for the player it is the Player page's *Frozen* (he ignores the pad). An object cannot be frozen, and says so in the log. The Locomotion page's *Frozen* line shows it |
+| Freeze selection | holds the selected human still: an AI human or a sandbox target is not animated, moved or acted for, its brain still runs and the others still hit it (it does not react until let go); for the player it is the Player page's *Frozen* (he ignores the pad). An object cannot be frozen, and says so in the log. The Locomotion group's *Frozen* line shows it. Where the mode edits, it is the queued `frozen` edit ([below](#entity-editor)) |
 | Teleport player to it | puts the player 1.5 m from it on his side, facing it |
 | Log everything | prints every value of the selection to the log, `Group / name: value` a line |
-| Identity ... Mesh | one page per group, a live watch per value |
+| Queued | the edits waiting for the next step boundary ([Editing](#entity-editor)) |
+| Reset selection | queues every field that has a configured value back to it |
+| Identity ... Lifecycle | one page per group (a tree node in the overlay): the selection's edits for the group, then a live watch per value |
+| Log, Edit log | the last lines of the session log, and the last edits applied or refused |
 
-A human's groups (`src/debug/human_watch.h`): **Identity** (role, model, character type, what drives it, brain
-handle, class and gang), **Transform** (feet, heading, velocity, speed, scale, lean), **Locomotion** (gait, ground or
-air, traversal, the stick and command the pad or brain wrote, the brain's move, the ground's normal and material,
-landings), **Animation** (clip, animation state, the task's time, the held flags, the idle clip), **State flags** (the
-human flag word decoded by name, the scripts' switches, the target state), **Meters** (health, stamina, power, rage),
-**AI** (with a brain: type, goal stack top first, reaction goal, actions, target, enemies, attack slots, melee range,
-thinks), **Physics** (the walking sphere, capsule and air sphere sizes, the contacts, blocked and airborne updates, the
-climb) and **Combat** (mode, the attack playing, blocking, the pair, holding or grabbed, hits). A sandbox target shows
-Identity, Transform, Animation, Meters and Combat. An object (`src/debug/object_watch.h`) shows Identity, Transform
-and **Object**: a door's class, state, angle, hitpoints and triangles; a pane's size, broken and alarm; a world
-object's spawn-record state, flags, zone, tint and money. Every human, the player, an AI human and a sandbox target
-alike, also shows **Mesh** (below).
+The edits (*Queued*, *Reset selection*, *Stats*, *Lifecycle*, the edits in the groups, *Edit log*) appear only in a
+mode that can edit (the play mode can), and none for an object. A live value named like an edit in its group stays
+beside it as *<name> now* (*Health* the edit in percent, *Health now* the value and maximum).
+
+A human's groups (`src/debug/human_watch.h`; their edits are in [Editing](#entity-editor)): **Identity** (role, model,
+character type, what drives it, brain handle, class and gang), **Transform** (feet, heading, velocity, speed, scale,
+lean), **Locomotion** (gait, ground or air, traversal, the stick and command the pad or brain wrote, the brain's move,
+the ground's normal and material, landings), **Animation** (clip, animation state, the task's time, the held flags, the
+idle clip), **State flags** (the human flag word decoded by name, the scripts' switches, the target state), **Meters**
+(health, stamina, power, rage), **Stats** (edits only), **AI** (with a brain: type, goal stack top first, reaction goal,
+actions, target, enemies, attack slots, melee range, thinks), **Physics** (the walking sphere, capsule and air sphere
+sizes, the contacts, blocked and airborne updates, the climb), **Combat** (mode, the attack playing, blocking, the
+pair, holding or grabbed, hits) and **Lifecycle** (edits only). A sandbox target shows Identity, Transform, Animation,
+Meters and Combat. An object (`src/debug/object_watch.h`) shows Identity, Transform and **Object**: a door's class,
+state, angle, hitpoints and triangles; a pane's size, broken and alarm; a world object's spawn-record state, flags,
+zone, tint and money. Every human also shows **Mesh** (below).
 
 #### The Mesh group {#mesh-group}
 
@@ -490,15 +502,9 @@ the way the play mode draws it (`src/debug/mesh_stats.h`; a human's mesh is `pla
 
 An object shows no Mesh group: its model's counts need its atomic, which the inspector does not reach.
 
-The inspector only reads, but for *Freeze selection* (a selection is changed in the [Entity editor](#entity-editor)):
-choosing, highlighting and watching change nothing in the game, and the selection is a number in the Debug draw
-options, so a test-mode run plays the same with it on.
+#### Editing the selection {#entity-editor}
 
-### Entity editor {#entity-editor}
-
-The **Entity editor** page changes what the [Entity inspector](#entity-inspector) has selected: pick a human or object
-there, then edit it here. It needs the same play mode and says so without one. It is Coney's own debug tooling (the
-original has nothing like it): it changes nothing until an edit is made.
+The edits are Coney's own debug tooling (the original has nothing like them): nothing changes until an edit is made.
 
 **Edits are queued, never written mid-step.** As the [tunables](#tunables) are, an edit is a command (`EntityCommand`,
 `src/debug/entity_edit.h`) that the page puts in a queue (`EntityEditor`); the input gate applies the queue between two
@@ -518,21 +524,20 @@ only the host applies edits**; a client's are refused with a line. Edits are nev
 
 | Group | Items (the op each queues) |
 | --- | --- |
+| Identity | Model (`model`, the model's id: [below](#model-swap)) |
 | Transform | X, Y, Z (a `teleport` with that axis changed; the ground below is found when it lands), Heading (`heading`, degrees), Drop to ground (`drop-to-ground`), Move to camera (a `teleport` to the point the camera looks at) |
 | Meters | Health (1 to 100 %), Stamina, Power, Rage (0 to 100 % of each maximum), Invincible (human flag god, `0x10`), Kill (`kill`: the health to 0, which the human's own update turns into a death) |
 | Stats | Scale (`scale`: the body, its collision unless the switch below is off, and the drawn mesh), Scale collision with mesh (`scale-collision`, on at first), Animation rate (`anim-rate`: how fast every clip plays; 0 holds them), Speed scale (`speed-scale`: a multiplier on every gait speed of this human; the combat walk is the Combat page's) |
-| Control | Frozen (`frozen`: the inspector's *Freeze selection*) |
 | Lifecycle | Delete (`delete`) |
 
-Beside the groups: *Selected*, *Queued* (the edits waiting), *Reset selection* and the last lines of the log. **Every
-number has a reset** (the front ends' reset button returns a number to its default) **to the value the entity was
-configured with**, not to a global one: a human made at scale 0.97 resets to 0.97, health and stamina to 100 %, rage to
-0, the speed scale and animation rate to 1. A reset is an ordinary queued edit, so it is in the log and replays.
-*Reset selection* queues every field that has such a value. A position, a heading, a kill and a delete have none.
+*Freeze selection* queues the `frozen` op like any edit (logged, refused on a network client). **Every number resets
+to the value the entity was configured with** (a human made at scale 0.97 to 0.97, health and stamina to 100 %, rage
+to 0, speed scale and animation rate to 1), as an ordinary queued edit that is logged and replays; *Reset selection*
+queues every such field (a frozen human is let go). A position, a heading, a kill, a delete and a model have none.
 
 **Who can be edited.** Player 1 and the AI humans (a level's cast, fighters the AI fighters page spawned, a sandbox
-layout's fighters) take every edit. A sandbox target takes *Frozen* only, and an object nothing yet: the log says so.
-(`src/platform/play_level_edit.cpp`.)
+layout's fighters) take every edit. A sandbox target takes *Frozen* and *Model* only, and an object nothing yet: the
+log says so. (`src/platform/play_level_edit.cpp`.)
 
 **Scale.** *Scale* sets the human's body scale (`Human::setScale()`) and draws the mesh that much bigger than it was
 made (about the feet; the hat, the held weapon and a carried prop are posed unscaled). By default the collision follows:
@@ -552,6 +557,23 @@ through the world's removal alone. **Player 1 is refused with a reason**, as is 
 game's "player gone" path (camera, HUD, the scripts' `HuIsAPlayer`) exists. `tests/platform/disc_entity_editor_test.cpp`
 deletes a script human in `level80`, then plays on over the humans the scripts still hold.
 
+#### The model swap {#model-swap}
+
+Identity's **Model** draws the selected human, player 1, an AI human or a sandbox target, as another model where it
+stands, in the pad menu (a choice stepped left and right) and the overlay (a combo) alike. The list is the models the
+AI fighters page offers: every distinct model the configuration's character types name. Its first entry, `-`, stands
+for a model the list does not hold and asks for nothing. The edit names the model by the CRC-32 of its lower-case name,
+as the Character List keys its models, so `entity edit: applied 131074 model 1478183430` (`warr_cl`) names the same
+model in every run (`modelId()`).
+
+Only what is drawn changes: the mesh, its texture and its skeleton (every character has the same 34 bones, so the
+clip playing carries on). Its script handle, gang, brain and goals, sides, enemies, meters, place, heading, scale,
+character type and its own clips and moves stay; a script's human's record names the new model, so a later hand-over
+to it draws player 1 as it is seen. A model that does not load is refused. The original never changes a living
+human's model ([A human's model never changes](../research/human-model-change.md)), so the swap is Coney's own
+(`PlayLevelControls::swapModel()`, `src/platform/play_level_model.cpp`); `tests/platform/disc_model_swap_test.cpp`
+and `disc_entity_editor_test.cpp` check it on every kind of human.
+
 #### Movement speeds {#entity-editor-speeds}
 
 The player's walk, jog, run and sprint speeds come from the clips' root
@@ -564,9 +586,9 @@ animation, so the feet slide. Another human's speeds are the *Speed scale* above
 own tunables when it is the player.
 
 **Not here yet** (still #723): knock down, giving and taking a weapon, team and gang, a target, cuffing, AI on and off,
-taking the pad, changing the model, playing any clip, duplicate and respawn, objects (break, open, move, reset), and the
-rest of the stats inventory of [Characters: Stats](../research/characters.md#stats) (power class, faction, damage
-percentage and the others).
+taking the pad, playing any clip, duplicate and respawn, objects (break, open, move, reset), and the rest of the stats
+inventory of [Characters: Stats](../research/characters.md#stats) (power class, faction, damage percentage and the
+others).
 
 ### Noclip {#noclip}
 

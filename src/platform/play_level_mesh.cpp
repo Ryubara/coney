@@ -73,7 +73,7 @@ std::optional<PlayLevelControls::HumanDraw> PlayLevelControls::humanDrawOf(const
         const human::TargetSnapshot drawn =
             human::interpolate(target.human->previous(), target.human->current(), alpha);
         return HumanDraw{.mesh = target.mesh.get(),
-                         .character = mode.m_character.get(),
+                         .character = target.character != nullptr ? target.character : mode.m_character.get(),
                          .pose = drawn.pose,
                          .feet = drawn.feet,
                          .heading = drawn.heading,

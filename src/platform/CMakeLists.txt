@@ -83,6 +83,7 @@ if(CONEY_DEBUG_TOOLS)
         play_level_edit.cpp
         play_level_inspect.cpp
         play_level_mesh.cpp
+        play_level_model.cpp
         reference_renderer.cpp
         sandbox_play_scenery.cpp
         sandbox_renderer.cpp

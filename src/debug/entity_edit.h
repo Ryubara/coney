@@ -15,7 +15,7 @@
 #include "core/error.h"
 #include "debug/entity_inspect.h"
 
-// The Entity editor's edits as data (docs/guides/debug-menu.md#entity-editor): what an edit can do to a human or
+// The Entity inspector's edits as data (docs/guides/debug-menu.md#entity-inspector): what an edit can do to a human or
 // object, the queue the page puts edits in, the target the play mode implements and the run-log line each applied edit
 // leaves. An edit is never written when the page asks: like TunableRegistry (src/debug/tunables.h) the page queues it
 // and the game applies the queue between two simulation steps (the input gate does, src/debug/input_gate.h), so a step
@@ -44,10 +44,11 @@ enum class EditOp : std::uint8_t {
     SpeedScale,     ///< A multiplier on the human's gait speeds, 1 is as configured.
     Frozen,         ///< 1 or 0: the Entity inspector's freeze.
     Delete,         ///< Nothing: the game's own removal (the way HuDelete takes a human out).
+    Model,          ///< modelId(): another model drawn in place; everything else about the human stays.
 };
 
 /// How many EditOp values there are; EditOp values are 0 to kEditOpCount - 1.
-inline constexpr std::size_t kEditOpCount = 15;
+inline constexpr std::size_t kEditOpCount = 16;
 
 /// The name of `op` as the run log writes it (`health`, `scale-collision`).
 [[nodiscard]] std::string_view editOpName(EditOp op);
@@ -64,6 +65,13 @@ struct EntityCommand {
     friend bool operator==(const EntityCommand&, const EntityCommand&) = default;
 };
 
+/// The number a Model edit names model `model` by: the CRC-32 of its lower-case name, as the Character List keys its
+/// models (docs/research/characters.md#files), so a run log names the same model in every run and on every disc
+/// layout. Exact in a double, as every 32-bit number is.
+[[nodiscard]] std::uint32_t modelId(std::string_view model);
+/// The model of `models` whose modelId() is `id`; nothing when none is, or `id` is no 32-bit whole number.
+[[nodiscard]] std::optional<std::string> modelWithId(std::span<const std::string> models, double id);
+
 /// The command as the run log writes it after `applied` or `refused`: `<entity> <op> <numbers>`, each number as its
 /// shortest text that reads back exactly (`131073 teleport -12.5 0.1 1`); no numbers for an op that takes none.
 [[nodiscard]] std::string commandText(const EntityCommand& command);
@@ -75,8 +83,8 @@ struct EntityCommand {
 /// the line, so a stamped log line works), the command. Refused edits and other lines are skipped.
 [[nodiscard]] std::vector<EntityCommand> appliedEdits(std::span<const std::string> lines);
 
-/// What the Entity editor edits: the play mode implements it over its humans and objects (PlayControls::entityEdits()).
-/// Called between simulation steps only.
+/// What the Entity inspector edits: the play mode implements it over its humans and objects
+/// (PlayControls::entityEdits()). Called between simulation steps only, apart from the reads.
 class EntityEditTarget {
   public:
     virtual ~EntityEditTarget() = default;
@@ -87,8 +95,11 @@ class EntityEditTarget {
     /// The numbers a reset of `op` writes for `entity`: the value it was configured with. Nothing when the entity is
     /// gone or `op` has no configured value (a teleport or a kill).
     [[nodiscard]] virtual std::optional<std::array<double, 3>> configuredValues(EntityId entity, EditOp op) const = 0;
-    /// The first number of `op` on `entity` now (its health in percent, its scale); nothing when it is not known.
+    /// The first number of `op` on `entity` now (its health in percent, its scale, its model's modelId()); nothing
+    /// when it is not known.
     [[nodiscard]] virtual std::optional<double> currentValue(EntityId entity, EditOp op) const = 0;
+    /// The models a Model edit can give a human here, sorted; empty (the default) where it cannot.
+    [[nodiscard]] virtual std::vector<std::string> models() const { return {}; }
 };
 
 /// The queue of edits waiting for the next step boundary, with the run log line of each applied edit and the rule that

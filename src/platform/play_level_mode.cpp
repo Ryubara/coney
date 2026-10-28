@@ -203,6 +203,7 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
                                                m_scenery->start(), human::playerClassOf(setup.types, setup.type))),
       m_print(std::move(print)), m_drawDistance(m_scenery->drawDistance()), m_model(std::move(model)) {
     m_texture = textureOf(m_dictionaries);
+    m_sceneModel = m_model;
     // The blood of every human's second pass; without it humans are drawn in one pass.
     if (auto blood = BloodTextures::load(engine, wad); blood) {
         m_blood = std::move(*blood);
@@ -515,8 +516,8 @@ void PlayLevelMode::skin(const human::PlayerCharacter& character, const anim::Po
     const characters::CharacterModel& model = character.assets().model;
     const auto bones = anim::boneTransforms(character.skeleton(), pose);
     std::vector<anim::Mat34> matrices = characters::skinningMatrices(model, bones);
-    // A scaled body (the Entity editor's) grows about the feet, in the character's space: before the placement, so the
-    // feet stay where they are, and the shader's normalised normal keeps the lighting.
+    // A scaled body (the Entity inspector's) grows about the feet, in the character's space: before the placement, so
+    // the feet stay where they are, and the shader's normalised normal keeps the lighting.
     if (scale != 1.0F) {
         for (anim::Mat34& matrix : matrices) {
             matrix = anim::Mat34{.x = anim::scale(matrix.x, scale),
@@ -800,7 +801,9 @@ void PlayLevelMode::render(const RenderTime& time) {
         for (Target& target : m_targets) {
             const human::TargetSnapshot pose =
                 human::interpolate(target.human->previous(), target.human->current(), alpha);
-            skin(*m_character, pose.pose, pose.feet, pose.heading, 0.0F, *target.mesh);
+            // As the scene's character, or the one the Entity inspector's Model edit gave it.
+            skin(target.character != nullptr ? *target.character : *m_character, pose.pose, pose.feet, pose.heading,
+                 0.0F, *target.mesh);
             m_lights->addShadow(ground, pose.feet);
             ringFeet[ringKey(target.human.get())] = pose.feet;
         }

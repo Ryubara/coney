@@ -508,6 +508,7 @@ if(CONEY_DEBUG_TOOLS)
         platform/disc_level99_street_props_test.cpp
         platform/disc_mesh_views_draw_test.cpp
         platform/disc_mesh_views_test.cpp
+        platform/disc_model_swap_test.cpp
         platform/disc_rise_counter_test.cpp
         platform/disc_sprint_attacks_test.cpp
         platform/disc_strike_contact_test.cpp

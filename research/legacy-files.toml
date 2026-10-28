@@ -1190,12 +1190,6 @@ comment = 2
 ["src/platform/hud_layer.h"]
 comment = 1
 
-["src/platform/imgui_model_view.cpp"]
-comment = 2
-
-["src/platform/imgui_model_view.h"]
-comment = 2
-
 ["src/platform/imgui_overlay.cpp"]
 comment = 1
 
@@ -1370,7 +1364,6 @@ tag = 10
 
 ["src/scripting/mission7_bindings.cpp"]
 tag = 7
-
 
 ["src/scripting/rumble_bindings.cpp"]
 tag = 5
@@ -1942,9 +1935,6 @@ citation = 2
 
 ["tests/debug/audio_page_test.cpp"]
 citation = 2
-
-["tests/debug/debug_session_test.cpp"]
-citation = 12
 
 ["tests/debug/entity_inspector_test.cpp"]
 citation = 9
@@ -2560,9 +2550,6 @@ citation = 1
 
 ["tests/platform/front_end_scene_test.cpp"]
 citation = 2
-
-["tests/platform/imgui_model_view_test.cpp"]
-citation = 4
 
 ["tests/platform/imgui_ui_scale_test.cpp"]
 citation = 8

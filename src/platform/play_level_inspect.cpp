@@ -153,7 +153,7 @@ std::vector<debug::WatchGroup> PlayLevelControls::describeIn(const PlayLevelMode
     if (const auto index = indexIn(id, kTargetBase); index && *index < mode.m_targets.size()) {
         const debug::HumanFacts facts{.id = id,
                                       .role = "target",
-                                      .model = mode.m_model,
+                                      .model = modelOf(mode, id),
                                       .type = std::nullopt,
                                       .brain = nullptr,
                                       .frozen = mode.m_targets[*index].frozen};
@@ -164,18 +164,9 @@ std::vector<debug::WatchGroup> PlayLevelControls::describeIn(const PlayLevelMode
         if (entry.removed) {
             return {};
         }
-        // The model its mesh is skinned as, when the scripts' cast named one.
-        std::string model;
-        if (*index < mode.m_fighterMeshes.size()) {
-            for (const auto& [name, loaded] : mode.m_castCharacters) {
-                if (loaded.character.get() == mode.m_fighterMeshes[*index].character) {
-                    model = name;
-                }
-            }
-        }
         const debug::HumanFacts facts{.id = id,
                                       .role = "AI human",
-                                      .model = model.empty() && mode.m_levelNumber == 0 ? mode.m_model : model,
+                                      .model = modelOf(mode, id),
                                       .type = std::nullopt,
                                       .brain = mode.m_ai->brainOf(*entry.human),
                                       .frozen = mode.m_player->humans().held(*entry.human)};

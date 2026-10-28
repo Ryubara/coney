@@ -67,6 +67,7 @@ void checkWellFormed(const MenuItem& item) {
 } // namespace
 
 TEST_CASE("every page of a session opens and every item on it is well formed", "[debug]") {
+    // Expected: docs/guides/debug-menu.md#pages
     TunableRegistry tunables;
     float speed = 3.0F;
     tunables.add("Movement", "Run speed", &speed).range(0, 10, 0.5);
@@ -88,7 +89,6 @@ TEST_CASE("every page of a session opens and every item on it is well formed", "
                                                                    "HUD",
                                                                    "Debug draw",
                                                                    "Entity inspector",
-                                                                   "Entity editor",
                                                                    "Display",
                                                                    "Audio",
                                                                    "Network",
@@ -106,6 +106,7 @@ TEST_CASE("every page of a session opens and every item on it is well formed", "
 }
 
 TEST_CASE("a binding is called from its Natives page through the sandbox state", "[debug]") {
+    // Expected: docs/guides/debug-menu.md#natives
     TunableRegistry tunables;
     std::vector<std::string> printed;
     DebugSession session(tunables, DebugServices{}, nullptr,
@@ -128,6 +129,7 @@ TEST_CASE("a binding is called from its Natives page through the sandbox state",
 }
 
 TEST_CASE("the console page runs a line and the cheats page reports a missing callback", "[debug]") {
+    // Expected: docs/guides/debug-menu.md#lua-console
     TunableRegistry tunables;
     DebugSession session(tunables, DebugServices{}, nullptr);
     const auto console = session.model().openPage("Lua console");
@@ -143,6 +145,7 @@ TEST_CASE("the console page runs a line and the cheats page reports a missing ca
 }
 
 TEST_CASE("tunables appear by category and change between steps", "[debug]") {
+    // Expected: docs/guides/debug-menu.md#tunables
     TunableRegistry tunables;
     int zone = 10;
     tunables.add("Input", "Dead zone", &zone).range(0, 64, 1);
@@ -163,6 +166,7 @@ TEST_CASE("tunables appear by category and change between steps", "[debug]") {
 }
 
 TEST_CASE("the time page pauses and steps once; the levels page asks the loader", "[debug]") {
+    // Expected: docs/guides/debug-menu.md#pages
     TunableRegistry tunables;
     DebugServices services;
     std::vector<std::string> asked;
@@ -185,6 +189,7 @@ TEST_CASE("the time page pauses and steps once; the levels page asks the loader"
 }
 
 TEST_CASE("an Input page watch has a channel that fills once per frame", "[debug]") {
+    // Expected: docs/guides/debug-menu.md#pages
     TunableRegistry tunables;
     DebugSession session(tunables, DebugServices{}, nullptr);
     const auto input = session.model().openPage("Input");
@@ -200,6 +205,7 @@ TEST_CASE("an Input page watch has a channel that fills once per frame", "[debug
 }
 
 TEST_CASE("the Time page shows and samples the frame time only when the platform measures it", "[debug]") {
+    // Expected: docs/guides/debug-menu.md#pages
     TunableRegistry tunables;
     DebugSession bare(tunables, DebugServices{}, nullptr);
     CHECK(bare.model().openPage("Time")->find("Frame time") == nullptr);
@@ -220,6 +226,7 @@ TEST_CASE("the Time page shows and samples the frame time only when the platform
 }
 
 TEST_CASE("the FPS counter shows the platform's rates, and says when there is no real clock", "[debug]") {
+    // Expected: docs/guides/debug-menu.md#pages
     TunableRegistry tunables;
     DebugSession bare(tunables, DebugServices{}, nullptr);
     CHECK(bare.cornerLines().empty());
@@ -241,6 +248,7 @@ TEST_CASE("the FPS counter shows the platform's rates, and says when there is no
 }
 
 TEST_CASE("the Display page changes the frame cap and vsync live where the platform paces frames", "[debug]") {
+    // Expected: docs/guides/debug-menu.md#pages
     TunableRegistry tunables;
     DebugSession bare(tunables, DebugServices{}, nullptr);
     const auto lockstep = bare.model().openPage("Display");
@@ -272,6 +280,7 @@ TEST_CASE("the Display page changes the frame cap and vsync live where the platf
 }
 
 TEST_CASE("the Display page's Debug UI scale choice sets the overlay's scale override", "[debug][ui-scale]") {
+    // Expected: docs/guides/debug-menu.md#ui-scale
     TunableRegistry tunables;
     DebugSession session(tunables, DebugServices{}, nullptr);
     const auto page = session.model().openPage("Display");
@@ -294,6 +303,7 @@ TEST_CASE("the Display page's Debug UI scale choice sets the overlay's scale ove
 }
 
 TEST_CASE("the Performance page turns the profiler on and shows its zones", "[debug]") {
+    // Expected: docs/guides/debug-menu.md#pages
     coney::perf::resetForTests();
     TunableRegistry tunables;
     DebugSession session(tunables, DebugServices{}, nullptr);
@@ -321,6 +331,7 @@ TEST_CASE("the Performance page turns the profiler on and shows its zones", "[de
 
 TEST_CASE("the Time page writes a bug report: the run log's ring through the service, or the logger's own dump",
           "[debug]") {
+    // Expected: docs/guides/debug-menu.md#pages
     TunableRegistry tunables;
     DebugServices services;
     int asked = 0;

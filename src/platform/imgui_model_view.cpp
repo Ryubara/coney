@@ -88,6 +88,7 @@ void* ImGuiModelView::openSettings(ImGuiContext* /*context*/, ImGuiSettingsHandl
     return std::string_view(name) == "Open" ? handler->UserData : nullptr;
 }
 
+// Reads one `Page=0|1` line of the `[ConeyPages][Open]` entry into the open pages.
 void ImGuiModelView::readSettingsLine(ImGuiContext* /*context*/, ImGuiSettingsHandler* /*handler*/, void* entry,
                                       const char* line) {
     const std::string_view text(line);
@@ -95,9 +96,16 @@ void ImGuiModelView::readSettingsLine(ImGuiContext* /*context*/, ImGuiSettingsHa
     if (equals == std::string_view::npos) {
         return;
     }
-    static_cast<ImGuiModelView*>(entry)->m_open[std::string(text.substr(0, equals))] = text.substr(equals + 1) == "1";
+    auto* view = static_cast<ImGuiModelView*>(entry);
+    const bool open = text.substr(equals + 1) == "1";
+    // A layout saved before two pages became one names the old window: it opens the page it is part of now, which is
+    // open when any of the windows it replaces was.
+    const std::string title = view->m_model.currentTitle(text.substr(0, equals));
+    bool& slot = view->m_open[title];
+    slot = view->m_model.hasFormerTitles(title) ? slot || open : open;
 }
 
+// Writes the `[ConeyPages][Open]` entry: every page and whether its window is open.
 void ImGuiModelView::writeSettings(ImGuiContext* /*context*/, ImGuiSettingsHandler* handler, ImGuiTextBuffer* out) {
     const auto* view = static_cast<const ImGuiModelView*>(handler->UserData);
     out->append("[ConeyPages][Open]\n");

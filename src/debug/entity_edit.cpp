@@ -3,9 +3,11 @@
 
 #include <algorithm>
 #include <charconv>
+#include <cmath>
 #include <format>
 #include <utility>
 
+#include "core/name_hash.h"
 #include "core/parse_number.h"
 
 namespace coney::debug {
@@ -33,6 +35,7 @@ constexpr std::array<OpInfo, kEditOpCount> kOps{{
     {"speed-scale", 1},
     {"frozen", 1},
     {"delete", 0},
+    {"model", 1},
 }};
 
 // The prefix every line of the editor carries, which appliedEdits() looks for.
@@ -65,6 +68,19 @@ std::optional<EditOp> editOpFromName(std::string_view name) {
 }
 
 std::size_t editOpArity(EditOp op) { return kOps.at(static_cast<std::size_t>(op)).arity; }
+
+std::uint32_t modelId(std::string_view model) { return nameHash(model); }
+
+std::optional<std::string> modelWithId(std::span<const std::string> models, double id) {
+    // Only a whole number in the 32-bit range can be an id; anything else names no model.
+    if (!(id >= 0.0) || id > 4294967295.0 || id != std::floor(id)) {
+        return std::nullopt;
+    }
+    const auto wanted = static_cast<std::uint32_t>(id);
+    const auto found =
+        std::ranges::find_if(models, [wanted](const std::string& model) { return modelId(model) == wanted; });
+    return found != models.end() ? std::optional<std::string>(*found) : std::nullopt;
+}
 
 std::string commandText(const EntityCommand& command) {
     std::string text = std::format("{} {}", command.entity, editOpName(command.op));

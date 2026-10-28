@@ -69,6 +69,7 @@ std::vector<MenuItem> oneOfEachKind() {
 } // namespace
 
 TEST_CASE("every item kind has a renderer in the developer overlay", "[debug][platform]") {
+    // Expected: docs/guides/debug-menu.md#adding-a-feature
     TunableRegistry tunables;
     DebugSession session(tunables, DebugServices{}, nullptr);
     ImGuiModelView view(session.model());
@@ -95,6 +96,7 @@ TEST_CASE("every item kind has a renderer in the developer overlay", "[debug][pl
 }
 
 TEST_CASE("the developer overlay draws every item of the session's pages", "[debug][platform]") {
+    // Expected: docs/guides/debug-menu.md#adding-a-feature
     TunableRegistry tunables;
     DebugSession session(tunables, DebugServices{}, nullptr);
     ImGuiModelView view(session.model());
@@ -125,6 +127,7 @@ TEST_CASE("the developer overlay draws every item of the session's pages", "[deb
 }
 
 TEST_CASE("the developer overlay keeps its open page windows in the settings file", "[debug][platform]") {
+    // Expected: docs/guides/debug-menu.md#the-developer-overlay
     TunableRegistry tunables;
     DebugSession session(tunables, DebugServices{}, nullptr);
     std::string saved;
@@ -146,6 +149,7 @@ TEST_CASE("the developer overlay keeps its open page windows in the settings fil
 }
 
 TEST_CASE("the developer overlay opens page windows from its menu bar", "[debug][platform]") {
+    // Expected: docs/guides/debug-menu.md#the-developer-overlay
     TunableRegistry tunables;
     DebugSession session(tunables, DebugServices{}, nullptr);
     ImGuiModelView view(session.model());
@@ -157,4 +161,29 @@ TEST_CASE("the developer overlay opens page windows from its menu bar", "[debug]
     CHECK_FALSE(view.pageOpen("Natives"));
     CHECK(ImGui::FindWindowByName("Time") != nullptr);
     CHECK(ImGui::FindWindowByName("Favourites") != nullptr);
+}
+
+TEST_CASE("a saved layout that names the old Entity editor window opens the one Entity inspector",
+          "[debug][platform]") {
+    // Expected: docs/guides/debug-menu.md#entity-inspector (old coney-imgui.ini files must still open cleanly)
+    TunableRegistry tunables;
+    DebugSession session(tunables, DebugServices{}, nullptr);
+    // A layout saved before the merge: both windows placed, the editor open and the inspector closed.
+    const std::string saved = "[Window][Entity editor]\nPos=10,10\nSize=300,400\nCollapsed=0\n\n"
+                              "[Window][Entity inspector]\nPos=400,10\nSize=440,520\nCollapsed=0\n\n"
+                              "[ConeyPages][Open]\nEntity editor=1\nEntity inspector=0\nTime=1\n\n";
+    ImGuiModelView view(session.model());
+    const BareFrame frame;
+    view.keepOpenPagesInSettings();
+    ImGui::LoadIniSettingsFromMemory(saved.c_str(), saved.size());
+    CHECK(view.pageOpen("Entity inspector"));
+    CHECK_FALSE(view.pageOpen("Entity editor"));
+    CHECK(view.pageOpen("Time"));
+    view.draw("F1 hides");
+    CHECK(ImGui::FindWindowByName("Entity inspector") != nullptr);
+    CHECK(ImGui::FindWindowByName("Entity editor") == nullptr);
+    // The old title is not written back as a page of its own.
+    const std::string rewritten = ImGui::SaveIniSettingsToMemory();
+    CHECK(rewritten.find("Entity editor=") == std::string::npos);
+    CHECK(rewritten.find("Entity inspector=1") != std::string::npos);
 }

@@ -17,7 +17,7 @@ so the bench measures `frames - warmup` frames. The rest of the bench's options:
 | Option | What it does |
 | --- | --- |
 | `--bench-allies N` | Also spawns N AI allies behind the player (the AI fighters page's Ally side), so the crowd fights itself |
-| `--bench-god` | Makes player 1 invincible when the fighters spawn (the Entity editor's Invincible) |
+| `--bench-god` | Makes player 1 invincible when the fighters spawn (the Entity inspector's Invincible) |
 | `--bench-spawn-step N` | Spawns the fighters once N fixed steps of play have run, so an input script can first take the player somewhere; the warm-up counts from there |
 | `--bench-measure N` | Ends the run once N frames are measured; `--frames` stays the longest the run may take, and `--screenshot` saves the last measured frame |
 | `--bench-frames FILE` | Also writes every measured frame (its length, each zone, each counter) as CSV, to study the worst frames |

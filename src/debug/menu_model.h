@@ -195,6 +195,13 @@ class MenuModel {
     [[nodiscard]] std::vector<std::string> pageTitles() const;
     /// A fresh copy of the top-level page `title`, or null.
     [[nodiscard]] std::shared_ptr<MenuPage> openPage(std::string_view title) const;
+    /// Records that the top-level page once called `former` is now part of the page `title`, so a front end that saved
+    /// `former` (an ImGui layout's open windows) opens `title` instead.
+    void addFormerTitle(std::string former, std::string title);
+    /// The title of the page `title` names now: the page it became part of (addFormerTitle()), else `title` itself.
+    [[nodiscard]] std::string currentTitle(std::string_view title) const;
+    /// Whether some former page is now part of `title`.
+    [[nodiscard]] bool hasFormerTitles(std::string_view title) const;
 
     /// Pins or unpins the item at `path`: page titles from below the root, then the item's label, joined by `/`
     /// (`Time/Paused`). Returns whether it is pinned afterwards.
@@ -231,6 +238,7 @@ class MenuModel {
     };
 
     std::vector<PageEntry> m_pages;
+    std::map<std::string, std::string, std::less<>> m_formerTitles; // former title -> the page it is part of now
     std::set<std::string> m_pins;
     std::map<std::string, Channel, std::less<>> m_channels;
 };

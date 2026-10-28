@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The Entity editor over a play mode (docs/guides/debug-menu.md#entity-editor): the edits the debug session's input
-// gate applies between two steps to player 1, the AI humans (a level's cast included) and the sandbox targets. Coney's
+// The Entity inspector's edits over a play mode (docs/guides/debug-menu.md#entity-inspector): the edits the debug
+// session's input gate applies between two steps to player 1, the AI humans (a level's cast included) and the sandbox
+// targets. Coney's
 // own debug tooling, in the debug tools' target (docs/guides/building.md#debug-tools): nothing here runs until an edit
 // is made.
 #include <cmath>
@@ -84,6 +85,14 @@ std::expected<void, Error> PlayLevelControls::applyEdit(const debug::EntityComma
         return fail(ErrorCode::NotFound, "that entity is gone");
     }
     const std::string_view opName = debug::editOpName(command.op);
+    // A model swap reaches every human, the sandbox targets too (play_level_model.cpp).
+    if (command.op == debug::EditOp::Model) {
+        const std::optional<std::string> model = debug::modelWithId(models(), command.values[0]);
+        if (!model) {
+            return fail(ErrorCode::NotFound, "no model here has that id");
+        }
+        return swapModel(command.entity, *model);
+    }
     human::Human* human = humanOf(command.entity);
     if (human == nullptr) {
         // A sandbox target takes the freeze (the inspector's); an object nothing yet.
@@ -166,6 +175,9 @@ std::expected<void, Error> PlayLevelControls::applyEdit(const debug::EntityComma
     case debug::EditOp::Frozen:
         setEntityFrozen(command.entity, value != 0.0);
         return {};
+    case debug::EditOp::Model:
+        // Taken above, before the human is looked up.
+        break;
     case debug::EditOp::Delete: {
         if (player) {
             return fail(ErrorCode::InvalidArgument,
@@ -208,6 +220,11 @@ std::optional<std::array<double, 3>> PlayLevelControls::configuredValues(debug::
 }
 
 std::optional<double> PlayLevelControls::currentValue(debug::EntityId entity, debug::EditOp op) const {
+    // The model is known for a sandbox target too, which has no human::Human.
+    if (op == debug::EditOp::Model) {
+        const std::string model = m_mode != nullptr ? modelOf(*m_mode, entity) : std::string{};
+        return model.empty() ? std::nullopt : std::optional<double>(debug::modelId(model));
+    }
     const human::Human* human = humanOf(entity);
     if (human == nullptr) {
         return std::nullopt;
