@@ -229,7 +229,7 @@ class PlayControls {
     [[nodiscard]] virtual bool entityFrozen(EntityId /*id*/) const { return false; }
     /// Freezes entity `id`, or lets it go; nothing for an entity that cannot be frozen.
     virtual void setEntityFrozen(EntityId /*id*/, bool /*frozen*/) {}
-    /// What the Entity editor edits (docs/guides/debug-menu.md#entity-editor): the mode's humans and objects, called
+    /// What the Entity inspector edits (docs/guides/debug-menu.md#entity-editor): the mode's humans and objects, called
     /// between simulation steps by the debug session's input gate. Null by default: the mode cannot be edited.
     [[nodiscard]] virtual EntityEditTarget* entityEdits() { return nullptr; }
 };

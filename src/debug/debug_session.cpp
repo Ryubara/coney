@@ -15,7 +15,7 @@ namespace coney::debug {
 DebugSession::DebugSession(TunableRegistry& tunables, DebugServices services, InputSource* inner,
                            std::function<void(std::string_view)> log)
     : m_tunables(tunables), m_services(std::move(services)), m_logCallback(std::move(log)), m_gate(inner, m_navigator) {
-    // The Entity editor's edits go to the run log, and in a network session only the host applies them.
+    // The Entity inspector's edits go to the run log, and in a network session only the host applies them.
     m_entityEditor.setLog([](std::string_view line) { logging::info(logging::Category::Engine, line); });
     m_entityEditor.setAuthority([this] {
         const NetControls* net = m_services.net ? m_services.net() : nullptr;
@@ -55,7 +55,6 @@ DebugSession::DebugSession(TunableRegistry& tunables, DebugServices services, In
     addHudPage(*this);
     addDebugDrawPage(*this);
     addEntityInspectorPage(*this);
-    addEntityEditorPage(*this);
     addDisplayPage(*this);
     addAudioPage(*this);
     addNetworkPage(*this);

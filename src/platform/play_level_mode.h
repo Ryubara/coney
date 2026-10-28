@@ -862,7 +862,9 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     struct Target {
         std::unique_ptr<human::TargetHuman> human;
         std::unique_ptr<CharacterMesh> mesh;
-        bool frozen = false; // the Entity inspector's freeze: its step is skipped
+        bool frozen = false;                               // the Entity inspector's freeze: its step is skipped
+        const human::PlayerCharacter* character = nullptr; // the character it is skinned as; null: the scene's
+        std::string model;                                 // the model it is drawn as; empty: the scene's
     };
     std::vector<Target> m_targets;
     std::vector<human::TargetHuman*> m_targetPointers;
@@ -884,6 +886,7 @@ class PlayLevelMode final : public GameMode, public ScriptedPlayer, public Overl
     std::vector<FighterMesh> m_fighterMeshes;
     rw::Texture* m_texture = nullptr; // the character's texture, for new meshes
     std::string m_model;              // the Character List model the player is
+    std::string m_sceneModel;         // the model of the scene's character (m_character), as the mode started
     // The scenes: the stage drawn and stepped with them, the system attached (or the test aid's own) and player 1's
     // handle in them.
     std::unique_ptr<SceneStage> m_stage;

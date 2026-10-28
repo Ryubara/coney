@@ -9,6 +9,7 @@ namespace coney::debug {
 
 class DebugSession;
 class MenuPage;
+struct MenuItem;
 struct DebugDrawOptions;
 class TunableRegistry;
 
@@ -61,14 +62,23 @@ void addShapeDrawItems(MenuPage& page, DebugDrawOptions& draw);
 /// The Debug draw page's mesh-view items (the model wireframe, the mesh view and its scope, normals, bone axes),
 /// appended to `page` over `draw` (src/debug/pages_entity.cpp; docs/guides/debug-menu.md#mesh-views).
 void addMeshViewItems(MenuPage& page, DebugDrawOptions& draw);
-/// The Entity inspector page: select a human or object (nearest, next, previous, looked at, from a list), highlight
-/// it, and watch everything the mode knows of it in groups. Over PlayControls::inspect(); says so without one.
+/// The Entity inspector page, the one entity panel (docs/guides/debug-menu.md#entity-inspector): select a human or
+/// object at the top (nearest, next, previous, looked at, from a list), highlight, freeze or teleport to it, then
+/// watch everything the mode knows of it in groups, with the values the mode can edit inline in the same groups
+/// (transform, meters, stats, model, delete), each edit queued, applied between two steps and written to the run log.
+/// Over PlayControls::inspect() and PlayControls::entityEdits(); says so without the first, shows no edits without the
+/// second. Saved layouts that name the former Entity editor open it (MenuModel::addFormerTitle()).
 void addEntityInspectorPage(DebugSession& session);
-/// The Entity editor page (src/debug/pages_entity_edit.cpp): edits the Entity inspector's selection, a human or an
-/// object, in groups (Transform, Meters, Stats, Control, Lifecycle), each edit queued and applied between two steps and
-/// written to the run log, each number with a reset to its configured value. Over PlayControls::entityEdits(); says so
-/// without one.
-void addEntityEditorPage(DebugSession& session);
+/// Whether the play mode can edit its entities (PlayControls::entityEdits()), so the Entity inspector shows its edits.
+[[nodiscard]] bool canEditEntities(const DebugSession& session);
+/// Appends to `page` the Entity inspector's editable values of group `group` for the selection
+/// (src/debug/pages_entity_edit.cpp): Identity's Model, Transform's coordinates and heading, the Meters, the Stats,
+/// Lifecycle's Delete; nothing for another group, an object, or a mode that cannot edit.
+void addEntityEdits(MenuPage& page, DebugSession& session, std::string_view group);
+/// Appends the Entity inspector's edit header: the Queued count and Reset selection.
+void addEntityEditHeader(MenuPage& page, DebugSession& session);
+/// The Entity inspector's Edit log: the last edits applied or refused.
+[[nodiscard]] MenuItem entityEditLogItem(DebugSession& session);
 /// The corner line naming the Entity inspector's selection while it is highlighted ("Inspecting: ..."); empty when
 /// there is none.
 [[nodiscard]] std::string inspectedCornerLine(const DebugSession& session);

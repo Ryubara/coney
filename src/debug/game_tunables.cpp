@@ -42,7 +42,7 @@ void registerGameTunables(TunableRegistry& registry) {
     registry.add("Movement", "Lean factor walking", &move.walkLeanFactor).range(0, 40, 0.5);
     // The player's gait speeds come from the clips' root motion (docs/research/characters.md#speed-classes), so each
     // is tuned as a scale on the clip's speed; the combat walk's speed is the Combat page's. Another human's speeds
-    // are the Entity editor's per-entity speed scale.
+    // are the Entity inspector's per-entity speed scale.
     registry.add("Movement", "Sneak speed scale", &move.sneakSpeedScale)
         .range(0, 10, 0.05)
         .describe("Multiplies the player's sneak speed (the clip's, 1.585 m/s for Rembrandt)");

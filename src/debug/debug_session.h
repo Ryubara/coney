@@ -108,9 +108,8 @@ struct DebugServices {
 /// its InputGate to the mode stack, and gives the model to the front ends, which only render it.
 ///
 /// The pages (src/debug/debug_pages.h): Favourites, Time, Tunables, Natives, Lua console, Cheats, Levels, Missions,
-/// Movies, Player, Camera, Spawner, AI fighters, HUD, Debug draw, Entity inspector, Entity editor, Display, Audio,
-/// Network, Input. Adding a feature is
-/// adding a page or items here, once (docs/guides/debug-menu.md#adding-a-feature).
+/// Movies, Player, Camera, Spawner, AI fighters, HUD, Debug draw, Entity inspector, Display, Audio, Network, Input.
+/// Adding a feature is adding a page or items here, once (docs/guides/debug-menu.md#adding-a-feature).
 class DebugSession {
   public:
     /// A session over `tunables` (which must outlive it) and `services`; `inner` is the input source the gate wraps
@@ -133,7 +132,8 @@ class DebugSession {
     [[nodiscard]] TimeControl& time() { return m_time; }
     /// The tunables.
     [[nodiscard]] TunableRegistry& tunables() { return m_tunables; }
-    /// The Entity editor's queue: the page queues edits in it and the input gate applies them between two steps.
+    /// The Entity inspector's edit queue: the page queues edits in it and the input gate applies them between two
+    /// steps.
     [[nodiscard]] EntityEditor& entityEditor() { return m_entityEditor; }
     [[nodiscard]] const EntityEditor& entityEditor() const { return m_entityEditor; }
     /// The overlays to draw.

@@ -318,7 +318,7 @@ struct Options {
     /// the menu chose. Requires discPath; cannot be combined with `--load`, the viewers, `--play-level` or `--sandbox`.
     std::optional<RumbleLaunch> rumble;
     // 1-byte-aligned: enums and flags.
-    /// `--bench-god`: make player 1 invincible when the fighters spawn (the Entity editor's Invincible), so a long
+    /// `--bench-god`: make player 1 invincible when the fighters spawn (the Entity inspector's Invincible), so a long
     /// bench among enemies does not end in his death. Requires benchFile.
     bool benchGod = false;
     /// `--bench-real-time`: pace the bench by the real clock as a player's run is (fixed steps at 30 a second, frames

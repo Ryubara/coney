@@ -145,7 +145,7 @@ class PlayLevelControls final : public debug::PlayControls, public debug::Entity
     [[nodiscard]] bool canFreezeEntity(debug::EntityId id) const override;
     [[nodiscard]] bool entityFrozen(debug::EntityId id) const override;
     void setEntityFrozen(debug::EntityId id, bool frozen) override;
-    /// The Entity editor's target: these controls (play_level_edit.cpp).
+    /// The Entity inspector's edit target: these controls (play_level_edit.cpp).
     [[nodiscard]] debug::EntityEditTarget* entityEdits() override { return m_mode != nullptr ? this : nullptr; }
     /// Applies `command` to the human or object it names, between two steps (play_level_edit.cpp); fails, changing
     /// nothing, with the reason when the entity is gone or the edit does not apply to it.
@@ -153,6 +153,8 @@ class PlayLevelControls final : public debug::PlayControls, public debug::Entity
     [[nodiscard]] std::optional<std::array<double, 3>> configuredValues(debug::EntityId entity,
                                                                         debug::EditOp op) const override;
     [[nodiscard]] std::optional<double> currentValue(debug::EntityId entity, debug::EditOp op) const override;
+    /// The models a Model edit can give a human: those the AI fighters page offers (PlayLevelMode::fighterModels()).
+    [[nodiscard]] std::vector<std::string> models() const override;
 
   private:
     // The Entity inspector's view of the controls' mode: read-only (freezing is the controls').
@@ -172,6 +174,12 @@ class PlayLevelControls final : public debug::PlayControls, public debug::Entity
     [[nodiscard]] std::optional<std::size_t> aiIndexOf(debug::EntityId id) const;
     // Takes the AI human at `index` out of the world the way a script's HuDelete does (play_level_edit.cpp).
     std::expected<void, Error> deleteAiHuman(std::size_t index);
+    // Draws the human entity `id` names (player 1, an AI human, a sandbox target) as `model` where it stands: its mesh,
+    // texture and skeleton change, and nothing else (play_level_model.cpp). Fails, changing nothing, for another kind,
+    // a human gone, or a model that does not load.
+    std::expected<void, Error> swapModel(debug::EntityId id, const std::string& model);
+    // The model entity `id` of `mode` is drawn as now; empty when not known (play_level_model.cpp).
+    [[nodiscard]] static std::string modelOf(const PlayLevelMode& mode, debug::EntityId id);
 
     // The entities of `mode` (Inspector::entities()).
     [[nodiscard]] static std::vector<debug::EntityRef> entitiesOf(const PlayLevelMode& mode);

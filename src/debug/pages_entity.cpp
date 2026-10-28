@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The Entity inspector page and the Debug draw page's collision-shape items (docs/guides/debug-menu.md
-// #entity-inspector). Coney's own debug tooling: nothing here changes how the game plays.
+// The Entity inspector page, the one entity panel, and the Debug draw page's collision-shape items
+// (docs/guides/debug-menu.md#entity-inspector): the selection at the top, then the groups, each with the selection's
+// live values and, where the mode can edit it, its editable values inline (src/debug/pages_entity_edit.cpp). Coney's
+// own debug tooling: nothing here changes how the game plays until an edit is made.
 #include <array>
 #include <cmath>
 #include <format>
@@ -13,6 +15,7 @@
 
 #include "debug/debug_pages.h"
 #include "debug/debug_session.h"
+#include "debug/entity_edit.h"
 #include "debug/entity_inspect.h"
 #include "debug/play_controls.h"
 
@@ -22,10 +25,27 @@ namespace {
 
 // What the page shows when no mode lists entities.
 constexpr std::string_view kNoEntities = "no entities: --play-level, or a sandbox from the Levels page";
-// The groups the inspector shows, in order; an entity has the ones that apply to it.
-constexpr std::array<std::string_view, 11> kGroups{"Identity",    "Transform", "Locomotion", "Animation",
-                                                   "State flags", "Meters",    "AI",         "Physics",
-                                                   "Combat",      "Object",    "Mesh"};
+// One group of the page: its name, and whether it holds edits alone (shown only where the mode can edit).
+struct GroupInfo {
+    std::string_view name;
+    bool editsOnly;
+};
+// The groups the page shows, in order; an entity has the ones that apply to it.
+constexpr std::array<GroupInfo, 13> kGroups{{{"Identity", false},
+                                             {"Transform", false},
+                                             {"Locomotion", false},
+                                             {"Animation", false},
+                                             {"State flags", false},
+                                             {"Meters", false},
+                                             {"Stats", true},
+                                             {"AI", false},
+                                             {"Physics", false},
+                                             {"Combat", false},
+                                             {"Object", false},
+                                             {"Mesh", false},
+                                             {"Lifecycle", true}}};
+// What a live value is called beside an edit of the same name ("Health" the edit, "Health now" the value).
+constexpr std::string_view kNowSuffix = " now";
 // How far off the camera's view an entity may be for Looked at to pick it, in degrees.
 constexpr float kLookDegrees = 12.0F;
 // How far from the entity Teleport player to it puts the player, in metres.
@@ -73,8 +93,10 @@ std::string selectedValue(const DebugSession& session, std::string_view group, s
     return watchValue(groups, group, name).value_or("-");
 }
 
-// A group's page: one live watch per line the selection has in `group` when the page opens.
+// A group's page: the selection's edits in `group` where the mode can edit it, then one live watch per line the
+// selection has in `group` when the page opens; a line named like an edit is the value now beside it.
 void fillGroup(MenuPage& page, DebugSession& session, std::string_view group) {
+    addEntityEdits(page, session, group);
     const EntityInspect* inspect = inspectorOf(session);
     const std::vector<WatchGroup> groups =
         inspect != nullptr ? inspect->describe(session.debugDraw().inspected) : std::vector<WatchGroup>{};
@@ -83,7 +105,8 @@ void fillGroup(MenuPage& page, DebugSession& session, std::string_view group) {
             continue;
         }
         for (const WatchLine& line : candidate.lines) {
-            page.add(watchItem(line.name, [&session, group = std::string(group), name = line.name] {
+            std::string label = page.find(line.name) != nullptr ? line.name + std::string(kNowSuffix) : line.name;
+            page.add(watchItem(std::move(label), [&session, group = std::string(group), name = line.name] {
                 return selectedValue(session, group, name);
             }));
         }
@@ -123,7 +146,19 @@ void teleportToSelected(DebugSession& session) {
     play->teleport(Place{entity->label, spot, heading});
 }
 
-// Freezes the selection or lets it go; says so in the log when nothing is selected or it cannot be frozen.
+// Whether the selection is frozen, or will be: a queued freeze shows at once, as every queued edit does.
+bool selectionFrozen(const DebugSession& session) {
+    const PlayControls* play = session.play();
+    const EntityId id = session.debugDraw().inspected;
+    if (const auto queued = session.entityEditor().queuedValue(id, EditOp::Frozen)) {
+        return *queued != 0.0;
+    }
+    return play != nullptr && play->entityFrozen(id);
+}
+
+// Freezes the selection or lets it go; says so in the log when nothing is selected or it cannot be frozen. Where the
+// mode edits its entities the freeze is the editor's frozen edit, queued like the others: it lands between two steps,
+// leaves its run-log line and is refused on a network client. A mode that only inspects freezes at once.
 void freezeSelected(DebugSession& session, bool on) {
     PlayControls* play = session.play();
     const EntityId id = session.debugDraw().inspected;
@@ -131,6 +166,8 @@ void freezeSelected(DebugSession& session, bool on) {
         session.print("inspector: nothing selected");
     } else if (!play->canFreezeEntity(id)) {
         session.print("inspector: an object cannot be frozen, only a human");
+    } else if (canEditEntities(session)) {
+        session.entityEditor().queue(EntityCommand{.entity = id, .op = EditOp::Frozen, .values = {on ? 1.0 : 0.0}});
     } else {
         play->setEntityFrozen(id, on);
         session.print(std::format("inspector: entity {} {}", id, on ? "frozen" : "let go"));
@@ -141,7 +178,7 @@ void freezeSelected(DebugSession& session, bool on) {
 // ends the program either way.
 // NOLINTBEGIN(bugprone-exception-escape)
 
-// The Entity inspector page's items.
+// The Entity inspector page's items: the selection and what acts on it, the edit queue, the groups, the logs.
 void fillInspector(MenuPage& page, DebugSession& session) {
     if (inspectorOf(session) == nullptr) {
         page.add(watchItem("No entities", [] { return std::string(kNoEntities); }));
@@ -189,11 +226,7 @@ void fillInspector(MenuPage& page, DebugSession& session) {
                  "Highlight", [&draw] { return draw.highlight; }, [&draw](bool on) { draw.highlight = on; }))
         .withHelp("Marks the selection in the scene, and names it under the corner lines.");
     page.add(toggleItem(
-                 "Freeze selection",
-                 [&session] {
-                     const PlayControls* play = session.play();
-                     return play != nullptr && play->entityFrozen(session.debugDraw().inspected);
-                 },
+                 "Freeze selection", [&session] { return selectionFrozen(session); },
                  [&session](bool on) { freezeSelected(session, on); }))
         .withHelp("Holds the selected human still: it does not move, animate or act, and the others still hit it. "
                   "The player ignores the pad, as on the Player page.");
@@ -208,15 +241,25 @@ void fillInspector(MenuPage& page, DebugSession& session) {
                      session.print(line);
                  }
              }).withHelp("Prints every value of the selection to the log."));
+    const bool edits = canEditEntities(session);
+    if (edits) {
+        addEntityEditHeader(page, session);
+    }
     // One submenu per group, filled from the selection when opened.
-    for (const std::string_view group : kGroups) {
-        page.add(submenuItem(std::string(group), [&session, group] {
-            auto sub = std::make_shared<MenuPage>(std::string(group));
-            sub->setRebuild([&session, group](MenuPage& p) { fillGroup(p, session, group); });
+    for (const GroupInfo& group : kGroups) {
+        if (group.editsOnly && !edits) {
+            continue;
+        }
+        page.add(submenuItem(std::string(group.name), [&session, name = group.name] {
+            auto sub = std::make_shared<MenuPage>(std::string(name));
+            sub->setRebuild([&session, name](MenuPage& p) { fillGroup(p, session, name); });
             return sub;
         }));
     }
     page.add(logItem("Log", [&session] { return session.log().last(3); }));
+    if (edits) {
+        page.add(entityEditLogItem(session));
+    }
 }
 
 } // namespace
@@ -224,7 +267,10 @@ void fillInspector(MenuPage& page, DebugSession& session) {
 void addEntityInspectorPage(DebugSession& session) {
     session.model().addPage(
         "Entity inspector", [&session](MenuPage& page) { fillInspector(page, session); },
-        "Select a human or object and watch everything Coney knows about it.");
+        "Select a human or object, watch everything Coney knows about it and edit it: transform, meters, stats, "
+        "model, delete. Edits land between steps.");
+    // The Entity editor was a page of its own until it became part of this one (#1053).
+    session.model().addFormerTitle("Entity editor", "Entity inspector");
 }
 
 void addShapeDrawItems(MenuPage& page, DebugDrawOptions& draw) {
