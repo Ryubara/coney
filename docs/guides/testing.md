@@ -330,7 +330,8 @@ PCSX2 captures or reads compared with Coney's), or `Runtime: none (<reason>)`:
 with the pull request's title, and `legacy check-pr-review` runs it with line 1 of `PR.md`, so the message is the same
 locally and in CI. The check refuses a missing, empty or numberless line (and `none` without a reason); the reviewer
 refuses one with nothing behind it in the scratch folder ([Task review](review/task.md)). Any
-other title area leaves the line out.
+other title area does not need the line: leave it out, or keep it when the original running says something about the
+change (`pr text` takes it from any area).
 
 ### Capturing and attaching {#pr-media}
 

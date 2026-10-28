@@ -169,9 +169,8 @@ Docs: none
 ```
 
 Line 1 is the title (`area: Verb the rest`). The Summary is one paragraph and, if the change needs no documentation,
-a `Docs: none` line. Testing holds only the `Runtime:` line, and the facts are generated: the line is required for the
-title areas a player sees, and for any other area (a `tools` change, say) it is optional, kept when the original running
-says something about the change and left out otherwise (the pull request template says the same). Issues affected holds
+a `Docs: none` line. Testing holds only the `Runtime:` line, and the facts are generated; which title areas need the
+line is in [the `Runtime:` line](testing.md#runtime-line). Issues affected holds
 one `- #N: how it is affected` line per open issue the change affects, or
 `None (<reason>)` (`pull_requests.issues_affected`; [Issues a pull request changes](issues.md#affected)). Screenshots
 holds image references under `./shots/`, or `Screenshots: none (<reason>)`. Anything else is refused: `Fixes` lines,
