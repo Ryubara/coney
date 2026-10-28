@@ -135,9 +135,10 @@ Study, Port and Compare in detail, for every feature:
    ([the runtime comparison](testing.md#runtime-comparison)). The engineer writes Coney's own code for it and tags it
    with `@orig` and the page link ([Conventions](conventions.md#comments-and-orig)); the test now passes, and
    `orig fails-first` records both runs. Where Coney already has the behaviour, the engineer adjusts it until it
-   matches the original and the recording; where it does not, adds it. Code with no original counterpart
-   (networking, the launcher, debug tooling, enhancements) is the exception: it carries no `@orig` tag and is
-   checked by its own tests.
+   matches the original and the recording; where it does not, adds it. Presentation taken from the Xbox port is
+   ported the same way from the Xbox executable (`@orig xbox`). Code with no original counterpart (networking, the
+   launcher, debug tooling, enhancements) is the exception: it carries no `@orig` tag and is checked by its own
+   tests.
 5. **Compare.** `orig compare` shows the saved decompile beside the Coney function and refuses to stamp while a
    numbered line is in no pair. Work a player sees is also checked against the original running, not only against
    our reading of its code: the same scenario runs on both games, or the same moment is taken from a PCSX2 save state
@@ -260,9 +261,13 @@ to the merged result, is in [From research to code](research-to-code.md).
 - **Ghidra, shared.** One Ghidra project of the PS2 executable (with the Emotion Engine extension), kept open by a
   headless ghidra-mcp server on port 8090. Every engineer works in that one project at once, so a name given by one
   is seen by all; never undo another engineer's names. Setup: [Ghidra + ghidra-mcp](ghidra.md).
-- **The Xbox build as a reading aid.** The same function in the Xbox executable can read faster (inline strings,
-  named library calls). It is only read; evidence is always cited at PS2 addresses
-  ([Xbox executable](../research/xbox-executable.md)).
+- **The Xbox build: a reading aid, and a source for presentation.** The same function in the Xbox executable can
+  read faster (inline strings, named library calls), and behaviour is still cited at PS2 addresses. Where the Xbox
+  port draws the game differently (anything either build does natively is faithful, e.g. lighting, shadows,
+  textures, movies), Coney may follow it as an option ([Faithful first](repo:AGENTS.md)); that work cites
+  `Xbox 0x...` addresses on its research page and `@orig xbox` in code
+  ([Xbox addresses](research-evidence.md#xbox-addresses), [Xbox tags](conventions.md#xbox-tags),
+  [Xbox executable](../research/xbox-executable.md)).
 - **PCSX2, several copies with claims.** Portable PCSX2 copies (`pcsx2`, `pcsx2-b`, ...) run the maintainer's
   PCSX2-MCP fork build (`coney-tools pcsx2 setup-copies`) and each have their own settings, states, PINE port and
   debug server port, so several engineers can run the game at once. A copy is used only inside a claim:

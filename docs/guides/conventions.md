@@ -204,8 +204,33 @@ One tag per original function. A Coney function that does the work of two origin
 helper that does part of an original function's work (a step the original inlined) carries that function's tag. A
 function with no original counterpart carries `@coney-only <reason>` instead ([Coney-only code](#coney-only)).
 
-**Every tag is counted.** In the same commit as the code, record the port on the function's entry in the function
-database and run `progress check`: [Recording a port](research-function-database.md#ported).
+**Every PS2 tag is counted** (an [Xbox tag](#xbox-tags) is not). In the same commit as the code, record the port on
+the function's entry in the function database and run `progress check`
+([Recording a port](research-function-database.md#ported)).
+
+### Xbox tags {#xbox-tags}
+
+Presentation may follow Rockstar's Xbox port where it differs from the PS2 build (anything either build does
+natively is faithful, e.g. lighting, shadows, textures, movies; [Faithful first](repo:AGENTS.md)). Code ported from
+the Xbox executable cites it the same way, with the word `xbox` before the address:
+
+```text
+@orig xbox 0x<address> <OriginalName> (<File>.cpp)
+```
+
+- **Address:** the function's entry in the NTSC-U Xbox `default.xbe` (base `0x00010000`), eight hex digits, as
+  Ghidra's XBE loader shows it ([Xbox executable](../research/xbox-executable.md)).
+- **OriginalName** and **File:** the PS2 twin's name when the function is paired with one, else the name its
+  research page gives it; the source file the function's path string names, else `(unknown)`.
+- A function that ports PS2 logic and adds the Xbox port's part carries both tags, the PS2 one first. Gameplay never
+  carries an Xbox tag: gameplay follows the PS2.
+- `orig check-tags` counts an Xbox tag as a tag. The PS2 tools leave it out: `orig index` and the function database list
+  PS2 addresses only, `orig study` and `orig compare` read `SLUS_212.15` only, so no stamp covers an Xbox
+  address and the reviewer reads it against the Xbox executable by hand ([Orig review](review/orig.md)).
+- Code beyond both builds (a renderer option such as anti-aliasing, a frame rate above 30) carries
+  `@coney-only enhancement: <option>`, naming the option as [Graphics and
+  performance](../roadmap.md#graphics-and-performance) and its design page do. It is an option, off in test mode,
+  and never changes what the simulation computes.
 
 ### A complete example
 
@@ -333,7 +358,7 @@ Two checks hold the rule:
 Every function in a gameplay folder (`paths.gameplay` in [.github/conventions.yml](repo:.github/conventions.yml):
 `src/ai/`, `src/human/`, ...) says where it comes from: `@orig` for a reimplementation of the original function at
 that address in Ghidra, or `@coney-only <reason>` for code with no counterpart in the original (a test aid, a debug
-tool, platform glue, an enhancement), in its doc comment:
+tool, platform glue, an enhancement, which the reason names: [Xbox tags](#xbox-tags)), in its doc comment:
 
 ```cpp
 /// Counts how often the target changed, for the all-humans trace (ai::FightTracer).

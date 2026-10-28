@@ -217,7 +217,7 @@ def changed_functions(
     changed = tuple(
         u
         for u in after.values()
-        if u.key not in before or before[u.key].body_sha256 != u.body_sha256 or before[u.key].addresses != u.addresses
+        if u.key not in before or before[u.key].body_sha256 != u.body_sha256 or before[u.key].cited != u.cited
     )
     removed = tuple(u for key, u in before.items() if key not in after)
     return changed, removed, orig_review.citing(after.values())
@@ -766,7 +766,7 @@ def _review_functions(subject: Subject, stamp: stamps.Stamp) -> Mapping[str, Any
     `review_sha256`."""
     inline = stamp.detail.get("functions")
     if isinstance(inline, dict):
-        return inline
+        return _lower_keys(inline)
     wanted = stamp.covers.get("review_sha256")
     for name in (review_verdict.RECORDED, review_verdict.RECORDED_BEFORE):
         try:
@@ -775,8 +775,15 @@ def _review_functions(subject: Subject, stamp: stamps.Stamp) -> Mapping[str, Any
         except (OSError, ValueError):
             continue
         if wanted and hashlib.sha256(raw).hexdigest() == wanted and isinstance(data, dict):
-            return _listed_functions(data)
+            listed = _listed_functions(data)
+            return None if listed is None else _lower_keys(listed)
     return None
+
+
+def _lower_keys(functions: Mapping[str, Any]) -> Mapping[str, Any]:
+    """`functions` with its addresses in lower case, as `review_addresses` writes them and the verdict check compares
+    them: a reviewer may copy `Xbox 0x000BD3C0` from a research page, and it covers `xbox 0x000bd3c0`."""
+    return {str(address).lower(): judged for address, judged in functions.items()}
 
 
 def _listed_functions(data: Mapping[str, Any]) -> Mapping[str, Any] | None:
@@ -869,7 +876,7 @@ def check_reviewed(subject: Subject, text: TextHashes | None) -> list[Refusal]:
     found: list[Refusal] = []
     functions = _review_functions(subject, stamp)
     for unit in subject.changed:
-        for address in _addresses(unit):
+        for address in unit.review_addresses:
             judged = None if functions is None else _class_name(functions.get(address))
             if judged is None:
                 found.append(refuse(f"Review did not cover {address}"))

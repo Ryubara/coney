@@ -39,7 +39,7 @@ from coney_tools import stamps
 from coney_tools.config import ConfigError, workspace_folder
 from coney_tools.conventions import load_conventions
 from coney_tools.orig_index import SOURCE_DIR, SOURCE_SUFFIXES
-from coney_tools.orig_scan import Function, Tag, read_source
+from coney_tools.orig_scan import PS2, XBOX, Function, Tag, read_source
 
 #: The classes a reviewed function gets, as docs/guides/review/orig.md defines them.
 CLASSES = (
@@ -81,20 +81,32 @@ class Unit:
     path: str
     line: int  # the definition's first line
     coney: str  # "Brain::think"
-    addresses: tuple[int, ...]
+    addresses: tuple[int, ...]  # in `SLUS_212.15`: what `orig study` and `orig compare` read
     names: tuple[str, ...]  # the original's names, as the tags give them
     body_sha256: str
     #: The hash the body had before comments and white space were left out of it: to read what was recorded then.
     legacy_sha256: str = field(default="", compare=False, repr=False)
+    #: Addresses in the Xbox port's `default.xbe` (`@orig xbox`): the reviewer reads them by hand, no stamp covers them.
+    xbox: tuple[int, ...] = ()
 
     @property
     def where(self) -> str:
         """`path:line`."""
         return f"{self.path}:{self.line}"
 
+    @property
+    def cited(self) -> tuple[tuple[int, ...], tuple[int, ...]]:
+        """The PS2 and the Xbox addresses: a change of either is a change of the unit."""
+        return (self.addresses, self.xbox)
+
+    @property
+    def review_addresses(self) -> list[str]:
+        """What a review covers: the PS2 addresses as `0x00100010`, the Xbox ones as `xbox 0x000bd3c0`."""
+        return [f"0x{a:08x}" for a in self.addresses] + [f"xbox 0x{a:08x}" for a in self.xbox]
+
     def to_json(self) -> dict[str, Any]:
-        """The unit as a stamp lists it."""
-        return {
+        """The unit as a stamp lists it; `xbox` only when it has Xbox addresses, so older stamps read the same."""
+        found: dict[str, Any] = {
             "key": self.key,
             "where": self.where,
             "coney": self.coney,
@@ -102,6 +114,9 @@ class Unit:
             "names": list(self.names),
             "body_sha256": self.body_sha256,
         }
+        if self.xbox:
+            found["xbox"] = [f"0x{a:08x}" for a in self.xbox]
+        return found
 
 
 # --- reading the source at a commit -------------------------------------------------------------------------------
@@ -233,10 +248,11 @@ def units_from(texts: dict[str, str]) -> list[Unit]:
                     path,
                     function.line,
                     function.qualified,
-                    tuple(dict.fromkeys(t.address for t in tags)),
+                    tuple(dict.fromkeys(t.address for t in tags if t.build == PS2)),
                     tuple(dict.fromkeys(t.name for t in tags)),
                     _body_hash(lines, function),
                     _legacy_body_hash(lines, function),
+                    tuple(dict.fromkeys(t.address for t in tags if t.build == XBOX)),
                 )
             )
     # Two definitions with one key (a platform variant of a free function) are told apart by their file.
@@ -293,7 +309,7 @@ def pr_stamp(root: Path, tip_ref: str, base_ref: str) -> dict[str, Any]:
     changed = [
         u
         for u in units_at(root, tip)
-        if u.key not in before or before[u.key].body_sha256 != u.body_sha256 or before[u.key].addresses != u.addresses
+        if u.key not in before or before[u.key].body_sha256 != u.body_sha256 or before[u.key].cited != u.cited
     ]
     return {"mode": "pr", "tip": tip, "base": base, "functions": [u.to_json() for u in changed]}
 
@@ -385,6 +401,12 @@ def current_compared(
 # --- the verdict --------------------------------------------------------------------------------------------------
 
 
+def function_addresses(function: Mapping[str, Any]) -> list[str]:
+    """The addresses a stamped `function` can be reviewed at: its PS2 ones as `0x00100010`, then the Xbox port's as
+    `xbox 0x000bd3c0`, so the two builds' equal numbers stay apart (docs/guides/review/task.md#verdict)."""
+    return [*function["addresses"], *(f"xbox {a}" for a in function.get("xbox", ()))]
+
+
 def verdict_problems(verdict: Any, stamp: dict[str, Any], rubric_version: int, strict_tip: bool = False) -> list[str]:
     """Why a verdict does not let the branch the stamp describes through (empty: it does).
 
@@ -435,7 +457,7 @@ def verdict_problems(verdict: Any, stamp: dict[str, Any], rubric_version: int, s
         # A function that carries many tags (a binding table's lambdas) is compared where the change touches it, so
         # one of its addresses is enough; `addresses` says which.
         compared = item.get("addresses")
-        own = {a.lower() for a in function["addresses"]}
+        own = {a.lower() for a in function_addresses(function)}
         if not isinstance(compared, list) or not compared:
             problems.append(f"{function['coney']}: no compared `addresses`")
         elif any(not isinstance(a, str) or a.lower() not in own or a.lower() not in listed for a in compared):
@@ -569,10 +591,10 @@ def default_ledger(root: Path) -> Ledger:
 
 
 def entry(unit: Unit, commit: str, cls: str, mode: str, source: str, note: str, evidence: str = "") -> dict[str, Any]:
-    """A ledger entry for one reviewed unit."""
+    """A ledger entry for one reviewed unit; `xbox` lists its Xbox addresses when it has any, as its stamp does."""
     if cls not in CLASSES:
         raise ConfigError(f"class {cls!r} is not one of {', '.join(CLASSES)}")
-    return {
+    found: dict[str, Any] = {
         "key": unit.key,
         "coney": unit.coney,
         "where": unit.where,
@@ -586,6 +608,9 @@ def entry(unit: Unit, commit: str, cls: str, mode: str, source: str, note: str, 
         "note": note,
         "date": datetime.date.today().isoformat(),
     }
+    if unit.xbox:
+        found["xbox"] = [f"0x{a:08x}" for a in unit.xbox]
+    return found
 
 
 def status_of(ledger: Ledger, units: list[Unit]) -> dict[str, str]:
@@ -619,12 +644,14 @@ _ATTENTION = (
 )
 
 
-def address_status(ledger: Ledger, units: list[Unit]) -> dict[int, str]:
-    """Each tagged address -> the status of the unit carrying it that most needs attention."""
+def address_status(ledger: Ledger, units: list[Unit], build: str = PS2) -> dict[int, str]:
+    """Each address tagged in `build` (the PS2's `SLUS_212.15`, or `xbox` for `default.xbe`) -> the status of the unit
+    carrying it that most needs attention. The two builds' addresses are separate maps, as the same number names
+    different code in each."""
     status = status_of(ledger, units)
     result: dict[int, str] = {}
     for unit in units:
-        for address in unit.addresses:
+        for address in unit.xbox if build == XBOX else unit.addresses:
             old = result.get(address)
             if old is None or _ATTENTION.index(status[unit.key]) > _ATTENTION.index(old):
                 result[address] = status[unit.key]
@@ -665,6 +692,7 @@ def units_from_stamp(stamp: dict[str, Any]) -> list[Unit]:
                 tuple(int(a, 16) for a in f["addresses"]),
                 tuple(f.get("names", ())),
                 f["body_sha256"],
+                xbox=tuple(int(a, 16) for a in f.get("xbox", ())),
             )
         )
     return found

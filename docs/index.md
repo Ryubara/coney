@@ -4,8 +4,8 @@ template: home.html
 hero:
   heading: Coney
   tagline: >-
-    An open-source reimplementation of The Warriors (Rockstar Toronto, PS2, 2005) that runs natively on Windows,
-    Linux and macOS.
+    An open-source reimplementation of The Warriors (Rockstar Toronto, 2005) that runs natively on Windows, Linux
+    and macOS, built mainly on reverse engineering the PS2 version.
   image: assets/art/hero # without the extension: hero.webp, with hero.jpg as the fallback
   position: 50% 30% # which part of the art stays in view when the screen crops it
   credit: "Artwork: David Jarvis, 1979 film poster"
@@ -20,8 +20,9 @@ hero:
 ## What Coney is
 
 Coney aims to run the whole of *The Warriors* natively, from a disc you own. It is a functional reimplementation: new
-C++ code that behaves like the original. Contributors study the original game,
-write down what they learn on the [research pages](research/overview.md) and implement it in Coney's own code,
+C++ code that behaves like the original. It is built mainly on reverse engineering the PS2 version, the reference for
+how the game plays, with the Xbox port as a second source for rendering and assets. Contributors study the original
+game, write down what they learn on the [research pages](research/overview.md) and implement it in Coney's own code,
 and the [progress page](progress/index.md) measures how far that has come.
 
 <!-- progress:home -->

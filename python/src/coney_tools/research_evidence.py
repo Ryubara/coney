@@ -14,7 +14,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 
 from coney_tools.docs_page import Block, Finding, address_line, section_text, split_cells
-from coney_tools.research_subject import ADDRESS, LOCATOR, VERIFIED_LINE, Subject
+from coney_tools.research_subject import ADDRESS, LOCATOR, VERIFIED_LINE, XBOX_ADDRESS, Subject
 
 # --- the levels -------------------------------------------------------------------------------------------------------
 
@@ -73,8 +73,8 @@ def levels_in(text: str) -> Levels:
 
 
 def cites(text: str) -> re.Match[str] | None:
-    """The first address or script locator `text` cites."""
-    return ADDRESS.search(text) or LOCATOR.search(text)
+    """The first address (the PS2's, else the Xbox port's) or script locator `text` cites."""
+    return ADDRESS.search(text) or XBOX_ADDRESS.search(text) or LOCATOR.search(text)
 
 
 # --- the evidence -----------------------------------------------------------------------------------------------------
@@ -160,10 +160,11 @@ def check_evidence(subject: Subject) -> Iterable[Finding]:
                 address = None
             else:
                 where = "its Evidence cell" if block.kind == "row" and column is not None else "its block"
+                cited = address.group(0).replace("`", "")  # `Xbox `0x...` reads as Xbox 0x...
                 yield Finding(
                     "evidence",
                     line,
-                    f"{address.group(0)} is cited with no evidence level in {where}: write confirmed (code), "
+                    f"{cited} is cited with no evidence level in {where}: write confirmed (code), "
                     "confirmed (runtime), run <id>, inferred from <basis> or speculative ([q-...](#q-...)); "
                     "or put a lead line under an ### heading (writing-docs.md#evidence-levels)",
                     by_section=True,

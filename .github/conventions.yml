@@ -494,7 +494,7 @@ labels:
     - {name: parity, color: b60205, description: "Coney differs from the original game"}
     - {name: task, color: 0e8a16, description: "A piece of work for a maintainer or an agent"}
     - {name: docs, color: 0075ca, description: "Documentation or research pages"}
-    - {name: enhancement, color: a2eeef, description: "Beyond the original; waits until the game is complete"}
+    - {name: enhancement, color: a2eeef, description: "Beyond the original: graphics and performance options now; gameplay waits for the whole game"}
     - {name: A-combat, color: c5def5, description: "Area: fighting, grabs, weapons, damage"}
     - {name: A-ai, color: c5def5, description: "Area: AI humans, pathing, goals, cars driven by AI"}
     - {name: A-missions, color: c5def5, description: "Area: mission scripts, checkpoints, objectives"}

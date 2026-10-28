@@ -459,3 +459,15 @@ def test_fetch_issues_asks_gh_for_the_open_issues_with_the_label(monkeypatch: py
     monkeypatch.setattr("subprocess.run", fail)
     with pytest.raises(ConfigError, match="--issues FILE"):
         orig_queue.fetch_issues()
+
+
+def test_an_xbox_tag_covers_its_function_but_is_no_ps2_row(checkout: Path) -> None:
+    path = checkout / "src/ai/brain.cpp"
+    text = path.read_text(encoding="utf-8")
+    path.write_text(
+        text.replace("/// Not tagged and not marked.", "/// @orig xbox 0x000bd3c0 Brain_Forget (Brain.cpp)"),
+        encoding="utf-8",
+    )
+    index = orig_index.build_index(checkout, GAMEPLAY)
+    assert "Brain::forget" not in {u.coney for u in index.untagged}
+    assert [f"0x{r.address:08x}" for r in index.rows] == ["0x00100010", "0x00100020"]

@@ -29,10 +29,11 @@ from pr_support import (
     sha,
     write,
 )
+from review_support import make_packet, make_verdict
 from test_orig_compare import SOURCE, TWO_FUNCTIONS
 from test_orig_study import ADDRESS
 
-from coney_tools import build_record, orig_copy, orig_pairs, orig_review, pr_diff, pr_proof, stamps
+from coney_tools import build_record, orig_copy, orig_pairs, orig_review, pr_diff, pr_proof, review_verdict, stamps
 from coney_tools import conventions as conventions_module
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions, parse_conventions
@@ -561,6 +562,40 @@ def test_a_review_that_judged_a_function_bad_or_skipped_it_is_refused(tmp_path: 
     assert texts(built.verify(), "reviewed") == ["reviewed: Review did not cover 0x00501000"]
     built = make(tmp_path / "c", skip=frozenset({"reviewed"}))
     built.review(functions={ADDRESS: "diff-deliberate-ok"})
+    assert texts(built.verify(), "reviewed") == []
+
+
+def test_a_review_of_an_xbox_only_function_is_held_to_its_xbox_address(tmp_path: Path) -> None:
+    built = make(tmp_path, skip=frozenset({"reviewed"}))
+    shadow = (
+        "namespace coney::render {\n/// Draws the shadows the Xbox port adds.\n"
+        "/// @orig xbox 0x000bd3c0 Shadow_Draw (Shadow.cpp)\nvoid draw() {}\n} // namespace coney::render\n"
+    )
+    built.edit("src/render/shadow.cpp", shadow)
+    units = built.subject().changed
+    xbox = next(u for u in units if u.xbox)
+    assert xbox.review_addresses == ["xbox 0x000bd3c0"]
+    # The packet lists the changed functions as `to_json` writes them; the verdict and the stamp name each by
+    # `review_addresses`, so the spelling the reviewer writes is the one `check_reviewed` reads back.
+    packet = make_packet(functions=[u.to_json() for u in units])
+    detail = review_verdict.stamp_detail(make_verdict(packet))
+    assert {*detail["functions"]} == {a for u in units for a in u.review_addresses}
+    built.review(functions=detail["functions"])
+    assert texts(built.verify(), "reviewed") == []
+    built.review(functions={ADDRESS: "clean"})
+    assert texts(built.verify(), "reviewed") == ["reviewed: Review did not cover xbox 0x000bd3c0"]
+
+
+def test_a_review_that_writes_the_xbox_address_as_a_research_page_does_still_covers_it(tmp_path: Path) -> None:
+    # The verdict check compares addresses in lower case, so a reviewer may copy `Xbox 0x000BD3C0` from a page; the
+    # lookup in `pr verify` must read that spelling back as the function's `xbox 0x000bd3c0`.
+    built = make(tmp_path, skip=frozenset({"reviewed"}))
+    shadow = (
+        "namespace coney::render {\n/// Draws the shadows the Xbox port adds.\n"
+        "/// @orig xbox 0x000bd3c0 Shadow_Draw (Shadow.cpp)\nvoid draw() {}\n} // namespace coney::render\n"
+    )
+    built.edit("src/render/shadow.cpp", shadow)
+    built.review(functions={ADDRESS: "clean", "Xbox 0x000BD3C0": "clean"})
     assert texts(built.verify(), "reviewed") == []
 
 

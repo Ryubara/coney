@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 
 from coney_tools.conventions import Research
 from coney_tools.docs_page import Finding, Page, heading_name
+from coney_tools.orig_scan import Ps2Pattern
 from coney_tools.research_catalog import Catalog
 from coney_tools.research_functions import Entry
 from coney_tools.research_legacy import Legacy
@@ -23,7 +24,13 @@ from coney_tools.source_files import FileRange
 #: An address in the executable, written as the conventions say: `0x` and eight hex digits (`0x00149160`), within the
 #: EE's 32 MB of main memory where the executable and its data live (`0x00100000`-`0x01ffffff`). A field offset, a mask
 #: or a flag value is written shorter; a name hash, a disc offset or a full-width mask (`0x80000000`) falls outside.
-ADDRESS = re.compile(r"(?<![\w])0x0(?:0[1-9a-fA-F]|1[0-9a-fA-F])[0-9a-fA-F]{5}\b")
+#: An address after the word Xbox is the Xbox port's (XBOX_ADDRESS), never this one (Ps2Pattern).
+ADDRESS = Ps2Pattern(r"(?<![\w])0x0(?:0[1-9a-fA-F]|1[0-9a-fA-F])[0-9a-fA-F]{5}\b")
+#: An address in the Xbox port's `default.xbe` (base `0x00010000`), written `Xbox 0x000bd3c0` or ``Xbox `0x000bd3c0` ``
+#: (docs/guides/research-evidence.md#xbox-addresses): graded like ADDRESS, never looked up in `SLUS_212.15`. The two
+#: older Xbox pages write `XBE 0x...`, which reads the same, and any case does. The first address only: `xbox_addresses`
+#: lists the ones that follow it in a range or a list.
+XBOX_ADDRESS = re.compile(r"(?<![A-Za-z])(?i:xbox|xbe)[ \t]+`?(?P<address>0x[0-9a-fA-F]{8})\b")
 #: A script locator (`level99.lua:f31`: function prototype 31 of the chunk), which mission pages cite instead of an
 #: address.
 LOCATOR = re.compile(r"\b[\w-]+\.lua:f\d+\b")

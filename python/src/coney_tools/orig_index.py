@@ -23,13 +23,23 @@ from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 from typing import NamedTuple
 
-from coney_tools.orig_scan import CONEY_ONLY_TAG, LEGACY_CONEY_ONLY, RESEARCH_LINK, Function, SourceFile, read_source
+from coney_tools.orig_scan import (
+    CONEY_ONLY_TAG,
+    LEGACY_CONEY_ONLY,
+    PS2,
+    RESEARCH_LINK,
+    Function,
+    Ps2Pattern,
+    SourceFile,
+    Tag,
+    read_source,
+)
 from coney_tools.progress_research import claim_blocks
 
 SOURCE_DIR = Path("src")
 RESEARCH_DIR = Path("docs/research")
 SOURCE_SUFFIXES = frozenset({".h", ".hpp", ".cpp", ".cc", ".inl"})
-_ADDRESS = re.compile(r"\b0x([0-9a-fA-F]{8})\b")
+_ADDRESS = Ps2Pattern(r"\b0x([0-9a-fA-F]{8})\b")  # an Xbox address is not the PS2's
 #: A research link cut after a hyphen of its anchor at a line's end, and the next line's comment opener.
 _WRAPPED_LINK = re.compile(r"(docs/research/[A-Za-z0-9_./-]+?\.md#[A-Za-z0-9_-]*-)[ \t]*\r?\n[ \t]*(?://+!?|\*)?[ \t]*")
 _EVIDENCE_WORDS = re.compile(r"\b(confirmed|inferred|speculative)\b", re.IGNORECASE)
@@ -180,7 +190,8 @@ class _ResearchLinks:
 
 
 def build_rows(sources: list[SourceFile]) -> list[IndexRow]:
-    """One row per `@orig` tag, in file and line order."""
+    """One row per `@orig` tag of the PS2 build, in file and line order. An `@orig xbox` tag covers its function
+    (TagCoverage) but makes no row: the index is checked against `SLUS_212.15` and its research database."""
     rows: list[IndexRow] = []
     research = _ResearchLinks(sources)
     for source in sources:
@@ -188,17 +199,17 @@ def build_rows(sources: list[SourceFile]) -> list[IndexRow]:
         found: list[tuple[int, IndexRow]] = []
         for function in source.functions:
             links = research.of(source, function)
-            for tag in function.tags:
+            for tag in _ps2(function.tags):
                 row = IndexRow(
                     tag.address, tag.name, tag.file, f"{source.path}:{tag.line}", function.qualified, "comment", links
                 )
                 found.append((tag.line, row))
-            for tag in function.body_tags:
+            for tag in _ps2(function.body_tags):
                 row = IndexRow(
                     tag.address, tag.name, tag.file, f"{source.path}:{tag.line}", function.qualified, "body", links
                 )
                 found.append((tag.line, row))
-        for tag in source.loose_tags:
+        for tag in _ps2(source.loose_tags):
             owner = source.tag_owner.get(tag.line, "(file)")
             found.append(
                 (
@@ -208,6 +219,11 @@ def build_rows(sources: list[SourceFile]) -> list[IndexRow]:
             )
         rows.extend(row for _, row in sorted(found, key=lambda item: item[0]))
     return rows
+
+
+def _ps2(tags: list[Tag]) -> list[Tag]:
+    """The tags that cite `SLUS_212.15`."""
+    return [tag for tag in tags if tag.build == PS2]
 
 
 def _stem(path: str) -> tuple[str, str]:

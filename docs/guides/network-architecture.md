@@ -89,7 +89,7 @@ flowchart LR
 | **P4 Scripted servers** (ConeyMP) | a server runs its own resources: server scripts that drive the game, client scripts that add screens and effects, events between them | no: Coney's own, a modded session | P3, the script split ([Asset and script architecture](asset-and-script-architecture.md#scripts)) |
 | **P5 Large sessions** (ConeyMP) | dozens of players, several worlds on one server | no | P4 |
 
-**Faithful first.** The original's game is complete before anything beyond it ([AGENTS.md](repo:AGENTS.md), Rules).
+**Faithful first.** The original's game is complete before any gameplay beyond it ([AGENTS.md](repo:AGENTS.md), Rules).
 P1 needs no exception: the second player is the original's. P2 adds nothing to the simulation. From P3 on, everything
 beyond two players or the original's levels runs only in a session marked with **Coney's rule set**, which a test
 mode and a single-player game never turn on. The rule set is the one switch for every limit raised beyond the

@@ -48,6 +48,11 @@ def make_packet(**changes: Any) -> dict[str, Any]:
     return packet
 
 
+def compared(function: dict[str, Any]) -> list[str]:
+    """The addresses a reviewer compares for a packet function: its PS2 ones, then its Xbox ones as `xbox 0x...`."""
+    return [*function["addresses"], *(f"xbox {a}" for a in function.get("xbox", []))]
+
+
 def make_verdict(packet: dict[str, Any], **changes: Any) -> dict[str, Any]:
     """A passing verdict that answers `packet` completely."""
     text = packet["text"]
@@ -69,14 +74,14 @@ def make_verdict(packet: dict[str, Any], **changes: Any) -> dict[str, Any]:
             {
                 "key": f["key"],
                 "body_sha256": f["body_sha256"],
-                "addresses": list(f["addresses"]),
+                "addresses": compared(f),
                 "class": "clean",
                 "evidence": "confirmed (code)",
                 "note": "same condition and order",
             }
             for f in packet["functions"]
         ],
-        "reviewed": sorted({a for f in packet["functions"] for a in f["addresses"]}),
+        "reviewed": sorted({a for f in packet["functions"] for a in compared(f)}),
         "pages": [{"path": p["path"], "checked": p["addresses"][:2], "unchecked": ""} for p in packet["pages"]],
         "images": [{**image, "shows": "gameplay at the rooftop"} for image in text["images"]],
         "findings": [],

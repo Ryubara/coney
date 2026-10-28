@@ -340,6 +340,36 @@ def test_two_functions_of_one_address_are_counted_by_their_own_compared_stamps(t
     assert "- Compared 2 of 2 functions" in short()
 
 
+def test_a_check_with_no_test_run_names_its_checks_and_never_reads_as_an_empty_run(tmp_path: Path) -> None:
+    built = make(tmp_path, shape="tooling", skip=frozenset({"checked"}))
+    built.check("tooling", preset=None, tests=None)
+    facts = pr_text.facts_block(built.subject())
+    stamp = built.subject().report.latest("checked")
+    assert stamp is not None
+    names = ("docs-check", "mkdocs", "pre-commit", "ruff", "mypy", "pytest", "actionlint")
+    expected = ", ".join(f"`{name}`" for name in names)
+    assert f"- Check: profile `tooling`, no build; checks {expected} (stamp `{stamp.hash[:12]}`)" in facts
+    assert "0 passed" not in facts and "preset ``" not in facts and "no build or test run" not in facts
+
+
+def test_a_tooling_check_gives_the_pytest_counts_it_ran(tmp_path: Path) -> None:
+    built = make(tmp_path, shape="tooling", skip=frozenset({"checked"}))
+    built.check("tooling", preset=None, tests=None, pytest={"passed": 7276, "skipped": 11, "deselected": 1})
+    facts = pr_text.facts_block(built.subject())
+    stamp = built.subject().report.latest("checked")
+    assert stamp is not None
+    assert (
+        "- Check: profile `tooling`, no build; pytest 7276 passed, 0 failed, 11 skipped; checks `docs-check`, " in facts
+    )
+
+
+def test_a_docs_check_says_no_build_or_test_ran(tmp_path: Path) -> None:
+    built = make(tmp_path, shape="tooling", skip=frozenset({"checked"}))
+    built.check("docs", preset=None, tests=None)
+    facts = pr_text.facts_block(built.subject())
+    assert "- Check: profile `docs`, no build or test run; checks `docs-check`, `mkdocs`" in facts
+
+
 def test_a_stage_that_has_not_run_is_said_so_in_the_facts(tmp_path: Path) -> None:
     built = make(tmp_path, skip=frozenset({"checked", "reviewed"}))
     facts = pr_text.facts_block(built.subject())

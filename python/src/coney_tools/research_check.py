@@ -38,6 +38,7 @@ from collections.abc import Iterable
 
 from coney_tools.docs_page import Finding, Line, Page, section_text
 from coney_tools.orig_copy import FINGERPRINTS
+from coney_tools.orig_scan import Ps2Pattern
 from coney_tools.research_evidence import check_evidence
 from coney_tools.research_owners import check_function_entries, check_owned_files
 from coney_tools.research_pages import key_line, owner_conflicts, paragraph_key, read_front_matter
@@ -71,7 +72,7 @@ RULES: tuple[str, ...] = (
 )
 
 #: Six or seven digits after `0x`: the short form of an address, or a mask or an offset.
-_SHORT = re.compile(r"(?<![\w+])0x(?P<digits>[0-9a-fA-F]{6,7})\b")
+_SHORT = Ps2Pattern(r"(?<![\w+])0x(?P<digits>[0-9a-fA-F]{6,7})\b")
 #: The sections that hold the executable's globals. A short number that lands in one is the short form of a global's
 #: address (`0x6fe998`); the number of a mask, a flag or a colour lies elsewhere, almost always.
 _GLOBAL_SECTIONS = frozenset({".data", ".sdata", ".sbss", ".bss"})
@@ -79,10 +80,10 @@ _GLOBAL_SECTIONS = frozenset({".data", ".sdata", ".sbss", ".bss"})
 _RANGE_END = re.compile(r"0x[0-9a-fA-F]{8}[`\s]*(?:-|\u2013|\u2014|\bto\b)[`\s]*$")
 
 #: A name written beside an address: `` `0x00149160` `Name` `` or `` `Name` (`0x00149160`) ``.
-_NAME_AFTER = re.compile(
+_NAME_AFTER = Ps2Pattern(
     r"`(?P<addr>0x[0-9a-fA-F]{8})`\s*[:\u2013\u2014-]?\s*`(?P<name>~?[A-Za-z_][\w:~<>]*)(?:\(\))?`"
 )
-_NAME_BEFORE = re.compile(
+_NAME_BEFORE = Ps2Pattern(
     r"`(?P<name>~?[A-Za-z_][\w:~<>]*)(?:\(\))?`\s*(?:\(\s*|at\s+|@\s*)?`(?P<addr>0x[0-9a-fA-F]{8})`"
 )
 

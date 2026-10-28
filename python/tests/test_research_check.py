@@ -836,3 +836,33 @@ def test_the_modules_of_the_check_stay_near_the_size_of_a_file() -> None:
     for name in ("research_check", "research_evidence", "research_subject", "docs_check", "docs_style"):
         lines = len((folder / f"{name}.py").read_text(encoding="utf-8").splitlines())
         assert lines <= 520, f"{name}.py is {lines} lines: split it (docs/guides/conventions.md#file-size)"
+
+
+# --- Xbox addresses ---------------------------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "cited",
+    [
+        f"Xbox `{NOWHERE}`",
+        "xbox 0x000bd3c0",
+        "Xbox `0x000bd3c0`",
+        f"XBE `{NOWHERE}`",
+        f"XBOX `{NOWHERE}`",
+        f"xbe {NOWHERE}",
+        f"Xbox `0x000bd3c0`-`{NOWHERE}`",
+        f"Xbox 0x000bd3c0, {NOWHERE}",
+        f"Xbox 0x000bd3c0 and {NOWHERE}",
+        f"XBE 0x000bd3c0 to {NOWHERE}, 0x000bd3c8 and {NOWHERE}",
+    ],
+)
+def test_an_xbox_address_is_graded_and_never_read_as_the_ps2s(cited: str) -> None:
+    # NOWHERE is in the PS2 range but in no section of the made-up SLUS_212.15: as an Xbox address it is not refused.
+    assert rules_of(findings(RESEARCH_PATH, page(f"The shadow pass at {cited} draws.\n"))) == ["evidence"]
+    assert errors(page(f"The shadow pass at {cited} draws, confirmed (code).\n")) == []
+
+
+def test_an_xbox_address_beside_a_name_is_not_checked_against_the_ps2_listing() -> None:
+    # 0x00123400 is Widget_Spin's entry in the made-up SLUS_212.15.
+    text = page("Xbox `0x00123400` `Shadow_Draw` draws the shadows, confirmed (code).\n")
+    assert findings(RESEARCH_PATH, text) == []

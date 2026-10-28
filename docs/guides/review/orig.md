@@ -8,6 +8,13 @@ kind of its packet), to a legacy branch's before release (pr mode, one of the
 (sweep mode, whose findings become issues: [Legacy fidelity](../how-we-work.md#fidelity-audit)). The rule it checks
 is [Porting, not transcribing](../conventions.md#porting).
 
+A function that follows the Xbox port carries `@orig xbox 0x<address>` ([Xbox tags](../conventions.md#xbox-tags)).
+The same two counts apply, read against that address in the Xbox `default.xbe` in a Ghidra project of the XBE. No
+study or compare stamp covers an Xbox address, so the reviewer reads it by hand and says so in the verdict's note. The
+verdict names it `xbox 0x<address>` in the function's `addresses` and in `reviewed` ([the verdict](task.md#verdict)),
+and `pr verify` wants a passing class for it as for a PS2 address. The legacy `orig check-review` reads the same
+spelling.
+
 **Rubric version: 1.** The version is `pull_requests.orig_review.rubric_version` in
 [.github/conventions.yml](repo:.github/conventions.yml). Raise both together when a class or a count changes
 meaning; a verdict made under another version is refused.
@@ -255,10 +262,12 @@ at the commit the sweep read, and prints what is still unreviewed.
 Every review is recorded in one ledger: `pull_requests.orig_review.ledger` under the workspace's scratch folder
 (local, never committed). An entry holds:
 
-- the function's key, its addresses and its body hash;
+- the function's key, its body hash, its `SLUS_212.15` addresses (`addresses`) and, for an `@orig xbox` tag, its
+  `default.xbe` addresses (`xbox`), so an Xbox-only function keeps its address;
 - the commit, the class and the mode (`pr` or `sweep`);
 - the source file of the review.
 
 A function with no entry is unreviewed. One whose body changed since its last review is stale and is reviewed
 again. `orig review-stamp --folder` lists only these, and `orig legacy-queue` ranks them, so every `@orig` function is
-reviewed once and again after each change.
+reviewed once and again after each change. The status by address keeps the two builds apart, as one number names
+different code in each: `orig legacy-queue` reads the PS2's, as it ranks the PS2 function index.

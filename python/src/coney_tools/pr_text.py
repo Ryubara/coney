@@ -429,14 +429,24 @@ def _stage_lines(subject: pr_proof.Subject, short: bool) -> list[str]:
         lines.append("- Check: not run")
     else:
         d = checked.detail
-        tests = d.get("tests") if isinstance(d.get("tests"), dict) else {}
+        tests = d.get("tests") if isinstance(d.get("tests"), dict) else None
         record = checked.covers.get("build_record_sha256")
         extra = f", build record `{record[:12]}`" if record else ""
+        names = [str(name) for name in d.get("checks", ())] if isinstance(d.get("checks"), list) else []
+        pytest = d.get("pytest") if isinstance(d.get("pytest"), dict) else None
+        ran_pytest = f"; pytest {_counted(pytest)}" if pytest else ""
+        if tests is None:
+            # A profile with no build (`tooling`, `docs`) has no build counts: say which checks ran and pytest's own
+            # counts, as "0 passed, 0 failed" would read as an empty run and "no test run" is false once pytest ran.
+            ran = ", ".join(code(name) for name in names)
+            outcome = "no build" if "pytest" in names else "no build or test run"
+            outcome += ran_pytest + (f"; checks {ran}" if ran else "")
+        else:
+            preset = f"preset {code(d.get('preset', ''))}, "
+            outcome = f"{preset}{_counted(tests)}{ran_pytest}"
         lines.append(
             f"- Check: {_stale(subject, checked)}profile {code(d.get('profile', ''))}, "
-            f"preset {code(d.get('preset', ''))}, "
-            f"{tests.get('passed', 0)} passed, "
-            f"{tests.get('failed', 0)} failed, {tests.get('skipped', 0)} skipped (stamp `{_h(checked)}`{extra})"
+            f"{outcome} (stamp `{_h(checked)}`{extra})"
         )
     reviewed = _newest_pass(subject, "reviewed")
     if reviewed is None:
@@ -459,6 +469,11 @@ def _stage_lines(subject: pr_proof.Subject, short: bool) -> list[str]:
         verdict = _stale(subject, reviewed) or "pass, "
         lines.append(f"- Review: {verdict}{model}, {counted} (stamp `{_h(reviewed)}`)")
     return lines
+
+
+def _counted(counts: dict[str, Any]) -> str:
+    """`412 passed, 0 failed, 3 skipped` from a stamp's counts."""
+    return f"{counts.get('passed', 0)} passed, {counts.get('failed', 0)} failed, {counts.get('skipped', 0)} skipped"
 
 
 def _stale(subject: pr_proof.Subject, stamp: stamps.Stamp) -> str:

@@ -49,6 +49,7 @@ class World:
         self.build_filters: list[str] = []
         self.no_disc: str | None = None
         self.on_step: dict[str, Callable[[], None]] = {}
+        self.counts: dict[str, dict[str, int]] = {}
         self.clock = Clock()
         self.said: list[str] = []
 
@@ -61,7 +62,7 @@ class World:
                 self.on_step[name]()
             if name in self.failing:
                 return StepResult(name, False, "failed", output=tuple(self.failing[name]))
-            return StepResult(name, True, "fine")
+            return StepResult(name, True, "fine", counts=tuple(self.counts.get(name, {}).items()))
 
         return run
 
@@ -171,6 +172,15 @@ def test_a_tooling_change_runs_the_tooling_profile_without_the_build(world: Worl
     assert world.check() == 0
     assert world.calls == ["docs-check", "mkdocs", "pre-commit", "ruff", "mypy", "pytest"]
     assert world.stamp.detail["profile"] == "tooling" and world.builds == []
+    assert "tests" not in world.stamp.detail and "pytest" not in world.stamp.detail
+
+
+def test_the_stamp_records_the_pytest_counts_so_the_facts_can_show_them(world: World) -> None:
+    world.counts["pytest"] = {"passed": 7276, "skipped": 11, "deselected": 1}
+    world.edit("python/src/coney_tools/widget.py", "x = 1\n")
+    assert world.check() == 0
+    assert world.stamp.detail["pytest"] == {"passed": 7276, "skipped": 11, "deselected": 1}
+    assert "tests" not in world.stamp.detail
 
 
 def test_a_workflow_change_also_runs_actionlint(world: World) -> None:

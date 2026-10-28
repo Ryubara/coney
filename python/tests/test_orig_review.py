@@ -79,6 +79,52 @@ def test_units_take_their_address_from_the_declaration(repo: Path) -> None:
     ]
 
 
+def test_an_xbox_tag_makes_a_unit_whose_xbox_address_is_kept_apart() -> None:
+    text = (
+        "namespace coney::render {\n"
+        "/// Draws the shadows the Xbox port adds.\n"
+        "/// @orig xbox 0x000bd3c0 Shadow_Draw (Shadow.cpp)\n"
+        "void draw() {}\n"
+        "/// Both builds.\n"
+        "/// @orig 0x00100010 Light_Set (Light.cpp)\n"
+        "/// @orig xbox 0x000bd4e0 Light_Set (Light.cpp)\n"
+        "void light() {}\n"
+        "} // namespace coney::render\n"
+    )
+    units = orig_review.units_from({"src/render/shadow.cpp": text})
+    assert [(u.coney, u.addresses, u.xbox) for u in units] == [
+        ("draw", (), (0x000BD3C0,)),
+        ("light", (0x00100010,), (0x000BD4E0,)),
+    ]
+    assert units[0].to_json()["xbox"] == ["0x000bd3c0"]
+    assert "xbox" not in orig_review.units_from({"src/ai/brain.cpp": BRAIN_CPP, "src/ai/brain.h": BRAIN_H})[0].to_json()
+
+
+def test_the_ledger_and_the_address_status_keep_an_xbox_only_functions_xbox_address(tmp_path: Path) -> None:
+    text = (
+        "namespace coney::render {\n"
+        "/// Draws the shadows the Xbox port adds.\n"
+        "/// @orig xbox 0x000bd3c0 Shadow_Draw (Shadow.cpp)\n"
+        "void draw() {}\n"
+        "} // namespace coney::render\n"
+    )
+    [unit] = orig_review.units_from({"src/render/shadow.cpp": text})
+    recorded = orig_review.entry(unit, "HEAD", "diff-bug", "sweep", "x", "")
+    assert recorded["addresses"] == [] and recorded["xbox"] == ["0x000bd3c0"]
+    assert "xbox" not in orig_review.entry(
+        orig_review.units_from({"src/ai/brain.cpp": BRAIN_CPP, "src/ai/brain.h": BRAIN_H})[0],
+        "HEAD",
+        "clean",
+        "sweep",
+        "x",
+        "",
+    )
+    ledger = orig_review.Ledger(tmp_path / "ledger.jsonl")
+    ledger.add([recorded])
+    assert orig_review.address_status(ledger, [unit]) == {}
+    assert orig_review.address_status(ledger, [unit], build="xbox") == {0x000BD3C0: "diff-bug"}
+
+
 def test_a_branch_lists_only_the_tagged_functions_it_changes(repo: Path) -> None:
     tip = change_think(repo)
     stamp = orig_review.pr_stamp(repo, tip, "main")
@@ -120,6 +166,33 @@ def verdict(stamp: dict[str, Any], cls: str = "clean", **extra: Any) -> dict[str
     }
     data.update(extra)
     return data
+
+
+def xbox_stamp(repo: Path) -> dict[str, Any]:
+    """The stamp of a branch that changes one function that follows the Xbox port only."""
+    git(repo, "checkout", "-q", "-b", "xbox")
+    path = repo / "src/render/shadow.cpp"
+    path.parent.mkdir(parents=True)
+    path.write_text(
+        "namespace coney::render {\n/// Draws the shadows the Xbox port adds.\n"
+        "/// @orig xbox 0x000bd3c0 Shadow_Draw (Shadow.cpp)\nvoid draw() {}\n} // namespace coney::render\n",
+        encoding="utf-8",
+    )
+    return orig_review.pr_stamp(repo, commit_all(repo, "shadow"), "main")
+
+
+def test_the_release_gate_takes_an_xbox_only_function_by_its_xbox_address(repo: Path) -> None:
+    stamp = xbox_stamp(repo)
+    assert [f["xbox"] for f in stamp["functions"]] == [["0x000bd3c0"]]
+    data = verdict(stamp)
+    for item in data["functions"]:
+        item["addresses"] = ["xbox 0x000bd3c0"]
+    data["reviewed"] = ["xbox 0x000bd3c0"]
+    assert orig_review.verdict_problems(data, stamp, 1) == []
+    # The bare number is the PS2's, so it does not stand for the Xbox function.
+    data["functions"][0]["addresses"] = ["0x000bd3c0"]
+    data["reviewed"] = ["0x000bd3c0"]
+    assert any("`addresses` must be its own" in p for p in orig_review.verdict_problems(data, stamp, 1))
 
 
 def test_a_passing_verdict_for_the_tip_passes(repo: Path) -> None:

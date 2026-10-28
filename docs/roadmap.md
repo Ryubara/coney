@@ -18,7 +18,7 @@ This page is kept current: a milestone's status changes in the same commit as th
 | [Gameplay](#gameplay) | in progress |
 | [Debug menu and test levels](#debug-menu-and-test-levels) | in progress |
 | [Sound and video](#sound-and-video) | in progress |
-| [Enhancements](#enhancements) | not started |
+| [Graphics and performance](#graphics-and-performance) | in progress |
 | [Script mods](#script-mods) | not started |
 | [Xbox assets (optional)](#xbox-assets-optional) | in progress |
 | [The whole game](#the-whole-game) | not started |
@@ -27,8 +27,9 @@ This page is kept current: a milestone's status changes in the same commit as th
 ## Current priorities {#priorities}
 
 Research until every function of the original is understood and every asset can be read from the disc; beside it,
-all in on graphics (the original's exact look, no glitches) and combat (every move exact). Enhancements are designed
-now and built only once the graphics match the original ([Enhancements](#enhancements)).
+all in on graphics (the original's exact look, no glitches) and combat (every move exact). Graphics and performance
+options, the Xbox port's lighting and shadows among them, are built now beside the faithful look, each an option
+with the PS2 look still selectable ([Graphics and performance](#graphics-and-performance)).
 
 ## Foundations
 
@@ -189,18 +190,34 @@ Sound banks, streamed music, speech and the Bink movies.
   ([Sound](research/sound.md#coneys-implementation)). Not yet: speech commands, ambient emitters, and the modes calling
   it.
 
-## Enhancements
+## Graphics and performance
 
-What the PC can do beyond the PS2, without changing how the game plays: any resolution and aspect ratio (widescreen),
-anti-aliasing, and rendering interpolated between simulation steps so that motion is smooth above the game's fixed
-30 Hz simulation. PS2-specific effects (the VU microcode's particles, glows and screen filters) are rewritten for the
-PC renderer from their research pages. Texture-replacement packs, made by players and keyed by texture name, load
-from a mods folder; Coney ships only the loader, never a pack.
-Each option's feasibility, approach, dependencies, cost and order, and the local AI-upscaling tool, are on
-[Enhancements plan](guides/enhancements.md).
+How the game looks and how fast it runs, beyond the PS2 and without changing how it plays (maintainer decision,
+2026-10-25): the Xbox port's rendering where it differs, and what neither console could do. Any resolution and
+aspect ratio (widescreen), anti-aliasing, realtime shadows and lighting, and high and uncapped frame rates, drawn
+between simulation steps so that motion is smooth above the game's fixed 30 Hz simulation. PS2-specific effects (the
+VU microcode's particles, glows and screen filters) are rewritten for the PC renderer from their research pages.
+Texture-replacement packs, made by players and keyed by texture name, load from a mods folder; Coney ships only the
+loader, never a pack. These may be built now: each is an option, forced off in test mode, so the PS2 look stays
+selectable and the fidelity tests against PCSX2 keep holding ([Faithful first](repo:AGENTS.md)). Each option's
+feasibility, approach, dependencies, cost and order, and the local AI-upscaling tool, are on
+[Enhancements plan](guides/enhancements.md); shadows, per-pixel lighting and reflections on
+[Realtime lighting](guides/realtime-lighting.md).
 
-**Done when** the first mission plays at a widescreen resolution with anti-aliasing and interpolated rendering, and a
-test pack replaces a named texture.
+### Xbox lighting and shadows {#xbox-lighting-and-shadows}
+
+Rockstar's Xbox port draws the game with its own Direct3D 8 renderer, and its shadows have a source file of their own,
+`GraphicsShadowXBox.cpp` ([Xbox assets](research/xbox-assets.md#original-structure)); what else the port changes is on
+[Xbox port](research/xbox-port.md#differences). What its lighting, shadows, fog and final image do differently from the
+PS2's is written up, citing `Xbox 0x...` addresses ([Xbox addresses](guides/research-evidence.md#xbox-addresses)), in
+[Xbox lighting and shadows](research/xbox-lighting.md), with how it maps onto Coney's presets
+([In Coney](research/xbox-lighting.md#in-coney)). Coney ports it as a renderer option tagged `@orig xbox`
+([Xbox tags](guides/conventions.md#xbox-tags)). It is presentation only: the
+stealth "hidden in shadow" rule and everything else the simulation reads stay the PS2's.
+
+**Done when** the first mission plays at a widescreen resolution with anti-aliasing and interpolated rendering above
+30 frames a second, a test pack replaces a named texture, and a level can be drawn with the Xbox port's lighting and
+shadows or the PS2's, chosen in the display settings.
 
 ## Script mods
 
@@ -225,7 +242,7 @@ character models brought from other games the player owns, given an existing cha
 CJ from *GTA: San Andreas* with Cleon's moves). Coney's own bindings (see [Script mods](#script-mods)) expose what
 the original never had, such as loading this content, graphics settings and input rebinding. Content from other
 games is the player's own game data: it is converted on the player's machine and never enters the repository, its
-fixtures or CI. Like every enhancement, this waits until the game plays faithfully; designs may be written now.
+fixtures or CI. This waits until the game plays faithfully; designs may be written now.
 
 **Done when** a Blender-made map loads as a level the player can walk, and an imported character plays with an
 existing moveset.
@@ -235,7 +252,9 @@ existing moveset.
 A player who also owns the Xbox version gives the installer that disc too: `coney-tools extract --xbox` takes its
 larger textures and 720p movies in place of the PS2 ones wherever the two correspond, and the PS2 disc's assets
 everywhere else ([guide](guides/coney-tools-disc.md#extract)); done for the extraction. The PS2 version stays the only
-reference for behaviour. Formats, the per-kind map and the rules: [Xbox assets](research/xbox-assets.md).
+reference for behaviour; the Xbox port is a source for presentation, as [Faithful first](repo:AGENTS.md) says, and
+its lighting and shadows are on [Graphics and performance](#xbox-lighting-and-shadows). Formats, the per-kind map and
+the rules: [Xbox assets](research/xbox-assets.md).
 
 **Done when** a level renders with the Xbox disc's textures and a movie plays from its HD version, and the game
 runs the same with or without the Xbox disc.

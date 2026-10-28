@@ -657,3 +657,12 @@ def test_a_form_feed_in_the_file_does_not_shift_the_lines_of_a_link_move_in_a_st
     root = build(tmp_path, {"docs/research/ai.md": PAGE, "src/ai/brain.cpp": code.replace("REF", OLD_REF)})
     move_page_and_edit(root, {"src/ai/brain.cpp": code.replace("REF", NEW_REF)})
     assert {r.rule for r in linked(root)} == {"compared"}
+
+
+def test_an_xbox_tag_owes_no_ps2_comparison(tmp_path: Path) -> None:
+    # The research database holds PS2 addresses; an Xbox address that happens to equal one is not that function.
+    xbox = GOOD_SOURCE.replace("@orig 0x00123456", "@orig xbox 0x00123456")
+    root = build(tmp_path, {"src/ai/brain.cpp": xbox})
+    branch(root, {"src/ai/brain.cpp": xbox.replace("a += 1;", "a += 2;")})
+    result, conv = scan(root)
+    assert [r for r in sc.touched(root, conv, result, "main") if r.rule == "compared"] == []

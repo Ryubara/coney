@@ -1,6 +1,8 @@
 # Coney
 
-An open-source reimplementation of *The Warriors* (PS2, 2005) for Windows, Linux and macOS.
+An open-source reimplementation of *The Warriors* for Windows, Linux and macOS, built mainly on reverse engineering
+the 2005 PS2 version, the reference for how the game plays, with the Xbox port as a second source for rendering and
+assets.
 
 Status: in development, not yet a complete game. With your disc Coney plays the start-up movies and the front end and
 runs levels as far as the [missions](docs/missions/index.md) page records.
@@ -31,8 +33,9 @@ read the original.
 What this gives us:
 
 - **A native game, not an emulated one**, on Windows, Linux and macOS.
-- **Room to grow:** co-op over a network, higher frame rates and widescreen need code that was designed for them,
-  which a translated or matched binary is not.
+- **Room to grow:** co-op over a network, higher frame rates, widescreen and modern lighting and shadows need code
+  that was designed for them, which a translated or matched binary is not
+  ([graphics and performance](docs/roadmap.md#graphics-and-performance)).
 - **Room for other assets and for mods:** the game's assets come from your own copy: the PS2 disc today, and the
   Xbox version as an optional extra ([in progress](docs/roadmap.md#xbox-assets-optional)). Assets people make
   themselves can be loaded too ([custom content](docs/roadmap.md#custom-content)), and the engine has room for mod
@@ -44,6 +47,27 @@ What it costs:
 - **Faithfulness has to be checked, not assumed.** Each ported function cites the original's address, every change
   to one is compared side by side with the original, and tests check Coney against the running game.
 - **It takes longer:** every system has to be understood, not just matched or translated.
+
+### The PS2 and Xbox versions
+
+Coney reimplements *The Warriors* as a whole, not one console's version of it
+([research](docs/research/xbox-port.md)):
+
+- **One codebase.** Rockstar Toronto built the PS2 and Xbox versions from one codebase. Their final builds were
+  compiled on the same day, from changelist numbers five apart, and both were released in North America on
+  17 October 2005.
+- **Built around the PS2.** The engine and its data were made for the PS2: the Xbox version still reads the PS2's
+  data formats and names its files after the PS2's processor and sound format. So the PS2 version is Coney's main
+  source for how the game plays. It is also the one we can check at runtime, in PCSX2's debugger, which Coney's tools
+  are built around; the Xbox executable serves as a reading aid beside it.
+- **What the Xbox port adds:** textures twice the width and height, HD and widescreen movies, and its own Direct3D 8
+  renderer, whose lighting and shadows are written up in
+  [Xbox lighting and shadows](docs/research/xbox-lighting.md). **What it does worse:** its music is at a lower sample
+  rate.
+
+Coney takes the Xbox version's gains as faithful and builds on them: they, and what neither console could do (higher
+frame rates, anti-aliasing, modern lighting), are [graphics and performance](docs/roadmap.md#graphics-and-performance)
+options. Gameplay stays the PS2's, and the PS2 look is always there to choose.
 
 The rules we work under are in [LEGAL.md](LEGAL.md).
 

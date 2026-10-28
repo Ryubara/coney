@@ -645,3 +645,13 @@ def test_the_command_takes_a_stamp_folder_and_require_study(
     log = study(root, "0x0026c548")
     assert main(["research", "claims", "--base", "main", "--stamps", str(log), "--require-study"]) == 0
     assert "studied" in capsys.readouterr().out
+
+
+def test_an_xbox_address_is_a_target_the_reviewer_reads_by_hand(tmp_path: Path) -> None:
+    root = make_repo(tmp_path, GRABS.replace("(`0x0026c548`) plays", "(`0x0026c548`, Xbox `0x0026c1d8`) plays"))
+    claim = by_line(claims_of(root, stamp_folder=study(root, "0x0026c548")), "plays anim 71")
+    assert (claim.targets, claim.backing) == (("0x0026c548", "xbox 0x0026c1d8"), "studied; Xbox by hand")
+    only = make_repo(tmp_path / "xbox", GRABS.replace("(`0x0026c548`) plays", "(Xbox `0x000bd3c0`) plays"))
+    report = claims_of(only, require_study=True)
+    assert by_line(report, "plays anim 71").backing == "Xbox by hand"
+    assert not [e for e in report.errors if "plays anim 71" in e or "0x000bd3c0" in e]

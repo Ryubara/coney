@@ -13,14 +13,65 @@ report, never a wrong answer from a check that passes.
 from __future__ import annotations
 
 import re
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 
 #: `@orig 0x<address> <OriginalName> (<File>.cpp)`, anywhere on a line (a `/** ... */` comment, text after it); the
-#: file part may be missing on a malformed tag.
-ORIG_TAG = re.compile(r"@orig\s+0x(?P<address>[0-9a-fA-F]{8})\b\s+(?P<name>[^\s()*]+)(?:\s*\((?P<file>[^()\n]*)\))?")
-#: The whole form, which every tag must have; `@orig 0x` without it is reported as malformed.
-_ORIG_FORM = re.compile(r"@orig 0x[0-9a-fA-F]{8} [^\s()*]+ \([^()\n]+\)")
-_ORIG_MENTION = re.compile(r"@orig\s+0x")
+#: file part may be missing on a malformed tag. `@orig xbox 0x<address> ...` cites the Xbox port's `default.xbe`
+#: instead of `SLUS_212.15`, for presentation that follows the Xbox build (docs/guides/conventions.md#xbox-tags).
+ORIG_TAG = re.compile(
+    r"@orig\s+(?:(?P<build>xbox)\s+)?0x(?P<address>[0-9a-fA-F]{8})\b\s+(?P<name>[^\s()*]+)"
+    r"(?:\s*\((?P<file>[^()\n]*)\))?"
+)
+#: The whole form, which every tag must have; `@orig 0x` (or `@orig xbox 0x`) without it is reported as malformed.
+_ORIG_FORM = re.compile(r"@orig (?:xbox )?0x[0-9a-fA-F]{8} [^\s()*]+ \([^()\n]+\)")
+_ORIG_MENTION = re.compile(r"@orig\s+(?:(?i:xbox)\s+)?0x")
+#: The build a tag without a build word cites (`SLUS_212.15`), and the Xbox port's (`default.xbe`).
+PS2 = "ps2"
+XBOX = "xbox"
+#: An address of the Xbox port's `default.xbe` is written after the word Xbox (or XBE, the older pages' spelling), in
+#: any case: `Xbox 0x000bd3c0`, ``XBOX `0x000bd3c0` ``. A range or a list after one word is Xbox's throughout: the
+#: word goes before the first address only (`Xbox 0x000bd3c0-0x000bd400`, `Xbox 0x1..., 0x2... and 0x3...`;
+#: docs/guides/research-evidence.md#xbox-addresses).
+_XBOX_ADDRESS = r"0x[0-9a-fA-F]{8}\b"
+_XBOX_RUN = re.compile(
+    r"(?<![A-Za-z])(?i:xbox|xbe)[ \t]+`?"
+    + _XBOX_ADDRESS
+    + r"(?:`?\s*(?:[-,;/\u2013\u2014]|\.\.|\b(?:and|or|to)\b)\s*`?"
+    + _XBOX_ADDRESS
+    + r")*"
+)
+_ANY_ADDRESS = re.compile(_XBOX_ADDRESS)
+
+
+def xbox_addresses(text: str) -> list[str]:
+    """Each address `text` cites as the Xbox port's, in order, as written: the one after the word Xbox and every one
+    that follows it in a range or a list."""
+    return [a.group(0) for run in _XBOX_RUN.finditer(text) for a in _ANY_ADDRESS.finditer(run.group(0))]
+
+
+def mask_xbox(text: str) -> str:
+    """`text` with each Xbox run (the word and its addresses) replaced by `x`, line breaks and length kept, so a
+    pattern for a PS2 address cannot read an Xbox one and its matches keep their positions."""
+    return _XBOX_RUN.sub(lambda run: re.sub(r"[^\n]", "x", run.group(0)), text)
+
+
+class Ps2Pattern:
+    """A pattern for the PS2's addresses in a page or comment: `search` and `finditer` as a compiled pattern has them,
+    on the text with the Xbox port's addresses masked out (`mask_xbox`)."""
+
+    def __init__(self, pattern: str) -> None:
+        self._pattern = re.compile(pattern)
+
+    def search(self, text: str) -> re.Match[str] | None:
+        """The first match outside an Xbox run."""
+        return self._pattern.search(mask_xbox(text))
+
+    def finditer(self, text: str) -> Iterator[re.Match[str]]:
+        """Every match outside an Xbox run."""
+        return self._pattern.finditer(mask_xbox(text))
+
+
 #: The marker a Coney-only function or file carries (docs/guides/conventions.md#coney-only): `@coney-only <reason>`.
 CONEY_ONLY_TAG = re.compile(r"@coney-only\b")
 #: Wording the conventions asked for before the marker existed: "Coney's own ...", "(no @orig)". It marks only
@@ -66,6 +117,7 @@ class Tag:
     name: str
     file: str  # the original's source file, "" when the tag has none
     line: int
+    build: str = PS2  # the executable the address is in: PS2 (`SLUS_212.15`) or XBOX (`default.xbe`)
 
 
 @dataclass
@@ -131,7 +183,8 @@ def parse_tags(comment: str, first_line: int) -> list[Tag]:
     for offset, text in enumerate(comment.splitlines()):
         for match in ORIG_TAG.finditer(text):
             name = match["name"].strip()
-            tags.append(Tag(int(match["address"], 16), name, (match["file"] or "").strip(), first_line + offset))
+            file = (match["file"] or "").strip()
+            tags.append(Tag(int(match["address"], 16), name, file, first_line + offset, match["build"] or PS2))
     return tags
 
 
