@@ -13,12 +13,12 @@ SessionStart), and the checks run inside it:
   role while `require_role` is on, then the refusals of the caller's role); a command that sets `CONEY_AGENT_*`
   (`identity.py`);
   then the guards that were separate hooks, loaded as modules and run unchanged (`build_guard.py`, `issue_guard.py`,
-  `bounded_waits.py`, `pr_guard.py`, `push_guard.py` for the shell tools; `pcsx2_guard.py` for the shell commands that
-  name PCSX2 and for the PCSX2 MCP tools; `agent_guard.py` and, last, `slot_guard.py` (the coordinator's engineer
-  slots) for the Agent tool; `lua_guard.py` for Write, Edit, MultiEdit and NotebookEdit). Every refusal is collected and
-  sent together, as the separate hooks' were; `slot_guard.py` runs only when nothing else refused, since it keeps a
-  slot. When nothing refuses, a `coney-tools` or `git commit` command gets the caller's identity token put in front of
-  it (`identity.py`, returned as `updatedInput`).
+  `comment_guard.py`, `bounded_waits.py`, `pr_guard.py`, `push_guard.py` for the shell tools; `pcsx2_guard.py` for the
+  shell commands that name PCSX2 and for the PCSX2 MCP tools; `agent_guard.py` and, last, `slot_guard.py` (the
+  coordinator's engineer slots) for the Agent tool; `lua_guard.py` for Write, Edit, MultiEdit and NotebookEdit). Every
+  refusal is collected and sent together, as the separate hooks' were; `slot_guard.py` runs only when nothing else
+  refused, since it keeps a slot. When nothing refuses, a `coney-tools` or `git commit` command gets the caller's
+  identity token put in front of it (`identity.py`, returned as `updatedInput`).
 * **PostToolUse**: `trailer_guard.py` after a `git commit`; the identity file of the command is removed, also when
   the command failed (PostToolUseFailure) or was denied (PermissionDenied).
 * **SessionStart**: a notice when the session has no role, or when `hooks.toml` could not be read.
@@ -178,6 +178,7 @@ def _commit(payload: dict[str, Any]) -> bool:
 PRE_GUARDS: list[tuple[str, Callable[[dict[str, Any]], bool]]] = [
     ("build_guard", _shell),
     ("issue_guard", _shell),
+    ("comment_guard", _shell),
     ("bounded_waits", _shell),
     ("pr_guard", _shell),
     ("push_guard", _shell),

@@ -19,7 +19,7 @@ where?" When you write a rule into a guide, add its row here in the same commit;
 
 | Point | Sees | Runs | Examples |
 | --- | --- | --- | --- |
-| Agent hook (`.claude/hooks/`, one dispatcher for Claude Code and every [agent tool with hooks](#harnesses)) | A command or tool call before it runs | Every agent's call, in milliseconds; spelling only, so never a security boundary ([The hooks](#hooks)) | `build_guard.py`, `issue_guard.py`, `roles.py` |
+| Agent hook (`.claude/hooks/`, one dispatcher for Claude Code and every [agent tool with hooks](#harnesses)) | A command or tool call before it runs | Every agent's call, in milliseconds; spelling only, so never a security boundary ([The hooks](#hooks)) | `build_guard.py`, `issue_guard.py`, `comment_guard.py`, `roles.py` |
 | pre-commit (`.pre-commit-config.yaml`) | The files of a commit, and (at the `commit-msg` stage) its message | On commit when installed, in `ci run` and in CI's `format` job (all files; not the message check) | clang-format, the 512 KB guard, `no-real-clock`, `commit-message` |
 | Stage commands (`task check`, `task review`) and `pr open` | The committed change, its stamps, the description and its pictures | At Check, Review and before the push ([The pipeline](how-we-work.md#the-pipeline)) | the whole gate for the change's kind, the reviewer's verdict, the stamps `pr open` proves |
 | `coney-tools ci pr` | The files a branch changed and the pull request's title and description | Before a pull request is opened, by whoever opens it; the backstop of the hooks in tools other than Claude Code ([Agent tools other than Claude Code](agents-other-tools.md)) | `title`, `body` and `docs` as CI runs them, `ci run`, the engine build and tests |
@@ -123,6 +123,36 @@ command, which the hook reads as the end of the `cd`'s subshell; a quoted argume
 environment a shell profile sets, `include.path` in the checkout's own config); a git alias (`git -c alias.p=push p`);
 a renamed owner or repository, which GitHub redirects but the hook calls another repository; a pull request opened or
 edited on the GitHub website; and a person at their own terminal, which runs no hook.
+
+### The comment guard {#comment-guard}
+
+No command an agent runs posts a comment or a review under the maintainer's GitHub account (maintainer decision,
+2026-10-12; [Issues](issues.md#agents)). The user-level no-comment-as-user hook (outside the repository) knows `gh issue
+comment`, `gh pr comment`, `gh pr review` and `gh api`; on 2026-10-28 a closing comment went onto #772 through `gh issue
+close --comment` because a close was not a comment to it. `.claude/hooks/comment_guard.py` closes that hole inside the
+repository, for every session (the coordinator's included, which `push_guard.py` leaves alone) and for both shell
+tools. It refuses, wherever `gh` starts a command:
+
+| Command | Refused when it carries | Passes |
+| --- | --- | --- |
+| `gh issue close`, `gh pr close`, `gh issue reopen`, `gh pr reopen` | `--comment`, `-c` | `gh issue close 5`, `--reason`, `--duplicate-of`, `--delete-branch` |
+| `gh pr merge` | `--body`, `-b`, `--body-file`, `-F` | `gh pr merge 5 --squash --auto`, `--subject`, `--delete-branch`, `--admin` |
+| `gh pr review` | `--body`, `-b`, `--body-file`, `-F`, `--comment`, `-c` | `gh pr review 5 --approve` (and `-a`) with no text |
+| `gh api` | a `POST`, `PATCH` or `PUT` to a path with a `comments` or `reviews` segment (`issues/N/comments`, `pulls/N/comments`, `pulls/N/reviews`, `pulls/N/reviews/ID/events`, `issues/comments/ID`, `commits/SHA/comments`), the method given by `-X`, `--method` or implied by `-f`, `-F`, `--field`, `--raw-field` or `--input`; and a GraphQL mutation `addComment`, `addCommitComment`, `addDiscussionComment`, `addPullRequestReview`, `addPullRequestReviewComment`, `addPullRequestReviewThreadReply` or `submitPullRequestReview` | a `GET` of the same paths (also `-X GET` with `-f` query fields), a `DELETE` of a comment, labels, assignees, `closeIssue` |
+
+Every spelling gh reads is read the same way: `--comment x`, `--comment=x`, `-c x`, `-c=x`, `-cx`, a cluster (`-dc x`,
+`-sb x`), a quoted value or option name, a line continuation, `bash -c "..."`, `pwsh -Command "..."`, `$(...)`, `-R
+owner/name` and `--hostname` before the group, and `gh.exe` or a path to it. The value of an option that takes one
+(`--reason 'a comment'`, `--subject '-c'`) is never read as an option. Text that merely mentions a command passes: an
+`echo`, a commit message, a `grep`, the body of a here-document or here-string. The refusal tells the agent to run the
+command without the comment and to leave the text in its scratch folder for the maintainer to post.
+
+**Not covered:** `gh issue comment` and `gh pr comment` (the user-level hook keeps them, with its exception for one claim
+command); a command started through `xargs`, `eval`, a script file or an alias; a GraphQL mutation read from a file, a
+variable, `--input` or a here-document; an endpoint built from a variable; a comment posted from the GitHub website or a
+person's own terminal; and a session that does not run these hooks. `coney-tools` runs `gh` as a subprocess (the
+`/progress` comment of a passing stage command, `claim renew`), which is no tool call, so it is never seen.
+`test_comment_guard.py` has a case for each form above, refused and allowed.
 
 ## Agent tools and their hooks {#harnesses}
 
@@ -337,6 +367,7 @@ run on every pull request, whatever made it.
 | Build and test only through `coney-tools build` | [AGENTS.md](repo:AGENTS.md), [Running agents](agents.md#builds) | `.claude/hooks/build_guard.py` | enforced |
 | Every wait has a bound | [Running agents](agents.md#bounded-waits) | `.claude/hooks/bounded_waits.py` | enforced |
 | No agent pushes, opens, edits, comments on or merges a pull request; no agent writes to GitHub except `coney-tools issue` when briefed and the `/progress` comment that a passing stage command of its own unit posts on the unit's issues ([claiming](issues.md#claiming)) | [AGENTS.md](repo:AGENTS.md), [How we work](how-we-work.md#release-queue), [Issues](issues.md#agents) | `.claude/hooks/push_guard.py` refuses `git push` and every writing `gh` command inside a subagent, and `no_github_writes` for the roles that have it, `contributor` (every other agent tool, [Agent tools](#harnesses)) among them; `issue_guard.py` refuses raw issue writes for everyone | partly: not a separate `claude -p` session or a command run from a script file |
+| No `gh` command posts a comment or a review under the maintainer's account: not `gh issue comment` or `gh pr comment`, and not a close, reopen, merge or review that carries text, nor a `gh api` call to a comments endpoint | [Issues](issues.md#agents), [The comment guard](#comment-guard) | the user-level no-comment-as-user hook (outside the repository) for `gh issue comment`, `gh pr comment`, `gh pr review` and `gh api`; `.claude/hooks/comment_guard.py` for `gh issue close --comment` (and `gh pr close`, `reopen`), `gh pr merge --body`, `gh pr review --body` and a `gh api` write to a comments or reviews path, for every session | enforced for the spelled forms; not a script file, `xargs`, `eval`, a GraphQL mutation read from a file, a person's own terminal or the website |
 | An agent works in `worktrees/coney/<branch>/`, never with `isolation: "worktree"` | [Running agents](agents.md#worktrees) | `.claude/hooks/agent_guard.py` | enforced |
 | Every agent starts as a Coney role (`engineer`, `tooling`, a reviewer), never general-purpose or without a type | [Running agents](agents.md#roles) | `.claude/hooks/agent_guard.py` reads the roles from `.claude/agents/` | enforced |
 | Engineer work runs in four tracks within the machine's places (its build slots times `per_build_slot`): reimplementation (one place kept while no game, `feature`, unit runs), fix (at most 1, one place kept), networking (at most 1, one place kept) and Coney Studio (the rest); no engineer or tooling agent starts without a held claim: its brief carries `Task id: <id>`, its task file exists, its claim is held now, its track has room and a Studio unit names one of the allowed model and effort pairs; a unit frees its place when it passes Review; units of `workflow` issues hold no place until the cutover | [Engineer tracks](agents.md#slots) | `.claude/hooks/slot_guard.py` refuses the coordinator's start of an `engineer` or `tooling` agent that fails any of these (`coney-tools task slots --admit`, the rules in `tasks.start.slots`, the build slots in `coney.local.toml`, claim cards and the `workflow`, `studio` and `networking` labels read from GitHub); `task start` repeats the count and checks the claim | enforced for the coordinator's Agent calls; the holes: a tool that cannot judge (a crash, no `uv`, a slot lock it cannot have) passes the call and logs it; GitHub down skips the claim and label checks (the place is still counted, as reimplementation unless a fix) and logs it; whether a Studio unit is research or development; a `Task id:` of a live unit used for other work; work of the old workflow that has no unit record; a session a person starts; an agent of a type that needs no claim |
