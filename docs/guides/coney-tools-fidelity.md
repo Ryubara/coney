@@ -690,6 +690,8 @@ in our own words ([The game's scripts](research-workflow.md#scripts)).
 uv run --project python coney-tools lua decompile [DISC] --all [--out DIR] [--roundtrip] [--chunks DIR] [--luac PATH]
     [--hashes FILE] [--update-hashes | --new-form]
 uv run --project python coney-tools lua decompile [DISC] NAME OUT_DIR [--roundtrip] [--chunks DIR] [--luac PATH]
+uv run --project python coney-tools lua decompile --all --xbox-disc XBOX_DISC --out DIR
+uv run --project python coney-tools lua compare DIR_A DIR_B [--list]
 ```
 
 `--all` decompiles every chunk of your disc (`DISC` works as for the `wad` commands) into the **shared folder**,
@@ -711,6 +713,19 @@ the disc. The output prints counts only: chunks, functions, the functions that c
 problem (a pc and an opcode, never a constant). A chunk the loader refuses (another Lua version, cut short) is named
 with the reason: `--all` goes on with the rest, still writes the fingerprints and the index for every script it wrote,
 and exits 1; one chunk by name is a one-line error.
+
+`--xbox-disc XBOX_DISC` reads the scripts of your Xbox disc instead (a full image, an XISO or an extracted folder, as for
+the [`xbox`](coney-tools-disc.md#xbox) commands): its 503 chunks, from `XBoxWad.idx` and its volumes, each named from
+the WAD names list and the file and level names the chunks and `default.xbe` mention, else by its entry's hash in hex
+(which is not the PS2 entry's hash, as the Xbox hashes names under `ee_files\`). It takes no `DISC` and goes with
+`--all` or `NAME OUT_DIR` alike. Give `--all --xbox` its own `--out` folder: the shared folder is the PS2 disc's.
+
+`lua compare DIR_A DIR_B` compares two `--all` folders, made to check that the Xbox disc holds the PS2 disc's mission
+code ([Xbox assets: the scripts](../research/xbox-assets.md#scripts)). It reads the marker line at the end of each
+file, which carries a hash of the chunk and its name, pairs the scripts by chunk, then the rest by name, and prints
+the counts: the chunks in both (with how many decompile to the same text and how many have the same names), the names
+whose chunks differ, and the chunks in one folder only, by name and hash. `--list` adds one line per chunk. It never
+prints a line of a script, and exits 1 when a script of `DIR_A` has no identical chunk in `DIR_B`.
 
 `--roundtrip` compiles each output with a stock Lua 4.0.1 `luac` and compares the result with the original chunk,
 function by function: instructions, constants, parameters, vararg flag, stack size and nested functions. It prints how
@@ -792,8 +807,8 @@ Written by `coney-tools docs render` from the command line's own definitions; ne
 Decompile one chunk (NAME OUT_DIR) or every chunk (--all) to readable Lua, outside the repository.
 
 ```text
-coney-tools lua decompile [[DISC] NAME OUT_DIR ...] [--all] [--out DIR] [--chunks DIR] [--luac PATH] [--hashes FILE]
-    [--update-hashes] [--new-form] [--roundtrip]
+coney-tools lua decompile [[DISC] NAME OUT_DIR ...] [--all] [--out DIR] [--chunks DIR] [--xbox-disc XBOX_DISC]
+    [--luac PATH] [--hashes FILE] [--update-hashes] [--new-form] [--roundtrip]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -802,9 +817,24 @@ coney-tools lua decompile [[DISC] NAME OUT_DIR ...] [--all] [--out DIR] [--chunk
 | `--all` | flag | off | every chunk, into the shared folder (lua_dir) |
 | `--out DIR` | path | none | with --all: write here instead of lua_dir |
 | `--chunks DIR` | path | none | read chunks from this folder (`wad extract` output), not a disc |
+| `--xbox-disc XBOX_DISC` | path | none | read the scripts of your Xbox disc (image, XISO or folder) instead of the PS2 disc |
 | `--luac PATH` | path | none | the compiler for --roundtrip: a stock Lua 4.0 luac (default: luac_program) or Coney's coney_luac |
 | `--hashes FILE` | path | none | with --all: the list of decompile hashes to check (default: research/lua-decompile-hashes.toml) |
 | `--update-hashes` | flag | off | with --all: add the scripts the list lacks (another disc's); refuses to change a listed hash |
 | `--new-form` | flag | off | with --all: on purpose, rewrite the list from this run as the next form (the output changed) |
 | `--roundtrip` | flag | off | compile each output with luac and compare its code and the natives it calls with the chunk's; prints counts and hashes only; exit 1 when the code differs |
+
+### `lua compare` {#lua-compare-usage}
+
+Compare two `decompile --all` folders script by script (the PS2 and Xbox discs'); counts and names only.
+
+```text
+coney-tools lua compare DIR_A DIR_B [--list]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `DIR_A` | path | required | the first decompile folder (the PS2 disc's) |
+| `DIR_B` | path | required | the second decompile folder (the Xbox disc's) |
+| `--list` | flag | off | also one line per script: result, chunk hash, its name in each folder |
 <!-- command-reference:end -->

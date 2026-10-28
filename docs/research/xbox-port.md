@@ -95,7 +95,7 @@ something it should not copy; **neutral** is a difference with no better side. L
 | Audio | 23,147 of the PS2's 25,395 sound names are on the Xbox; 376 Xbox names are not on the PS2 | neutral | inferred from the shared name hashes |
 | Audio | The executable links Microsoft's WMA decoder and Dolby sections: custom soundtracks and Dolby Digital output ([The executable](xbox-assets.md#the-executable)) | gain | speculative ([q-audio](#q-audio)) |
 | Content | One movie, `l51_in`, is 8 s longer on the Xbox: a different cut; `plogo` has a sound track, silent on the PS2 | neutral | inferred from the Bink headers |
-| Content | 290 of the 616 shared animations differ in their event records, which drive effects and paired moves ([Animations](xbox-assets.md#animations)) | unknown ([q-anim](#q-anim)) | inferred from a byte comparison |
+| Content | 324 events in the shared clips differ, 174 of them in values the Xbox does not leave zero; one clip's keys differ; one `level14` clip is replaced ([Animations on both discs](xbox-assets.md#either-animations)) | unknown ([q-anim](#q-anim)) | inferred from a byte comparison |
 | Content | The Xbox build has four Lua bindings the PS2 lacks, two for vertex shaders ([Numbers](xbox-executable.md#numbers)) | neutral | inferred from the binding registration |
 | Behaviour | Both run the shared save-screen mode over their own save layer: the PS2's `W_PS2SaveSystem.cpp` over the memory card, the Xbox's own (no PS2 save unit in the XBE) | neutral | inferred from the source paths (see [Which build came first](#which-first)) |
 | Behaviour | The Xbox build is five changelists older than the PS2's; what they changed is not known | unknown ([q-changelists](#q-changelists)) | inferred from the two banners |
@@ -132,8 +132,10 @@ The WMA and Dolby sections are linked, but no code that uses them was read. Find
 
 ### Animation events {#q-anim}
 
-Whether the 290 differing animations change timing or effects in play. Decode the events of a few pairs against
-[Animation data](formats/animation.md).
+Whether the 324 differing events change timing or effects in play: which bytes `Anim_FireFrameEvents` (`0x00101dd8`)
+reads for each event type, against the differences sorted under [Animations on both
+discs](xbox-assets.md#either-animations). It also decides whether an Xbox-only install could play the same game
+([Proposal: either disc](xbox-assets.md#either-disc-proposal)).
 
 ### The five changelists {#q-changelists}
 

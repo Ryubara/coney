@@ -1,8 +1,13 @@
+---
+kind: format
+---
 # Xbox assets (optional)
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`) and the PS2 disc's
-`WARRIORS.DIR` / `.WAD`, compared with the NTSC-U Xbox disc: a full (Redump-style) image of 7,825,162,240 bytes whose
-`default.xbe` has SHA1 `fe246a74501cd10d2ce89ca5dbda5080d2b2edcc`. No runtime claims. Survey date 2026-10-04.
+Verified against: `SLUS_212.15` and `WARRIORS.WAD` (NTSC-U PS2), the NTSC-U Xbox disc's archive and `default.xbe`.
+
+The Xbox disc is a full (Redump-style) image of 7,825,162,240 bytes whose `default.xbe` has SHA1
+`fe246a74501cd10d2ce89ca5dbda5080d2b2edcc`; the PS2 executable's SHA1 is `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`.
+The page makes no runtime claims; how the counts were taken is under [How this was checked](#how-this-was-checked).
 
 Addresses written **XBE `0x...`** are virtual addresses in that `default.xbe` (base `0x00010000`), not in
 `SLUS_212.15`. The executable was only read as far as the archive and its name hash needed (strings, headers and
@@ -11,7 +16,7 @@ measured on [Xbox executable](xbox-executable.md).
 
 ## Purpose
 
-The decision (a maintainer, 2026-10-07): **Coney installs from the player's discs, and the Xbox disc is the preferred
+The decision (a maintainer's): **Coney installs from the player's discs, and the Xbox disc is the preferred
 source of assets, the PS2 disc filling the gaps.** At install `coney-tools extract` converts the assets to open
 formats outside the repository; given the Xbox disc as well, it takes each asset from whichever disc has the better
 version. The PS2 version stays the only reference for behaviour, and level scripts, data tables and game text are
@@ -23,6 +28,12 @@ the PS2's 26,308 textures have a matching Xbox texture that is larger, nearly al
 movies have 1280 × 720 versions, 15 of them as long as the PS2's. Models, animations, collision and the rest are the
 same data (the models re-encoded as float triangle lists), and the sound is the same recordings at the same or a lower
 sample rate, so those stay the PS2 disc's.
+
+Whether the Xbox disc **alone** could give the same game, which the maintainer has asked so that a player may supply
+either disc, is answered under [Either disc](#either-disc): the mission scripts, scene records, object lists, paths,
+subtitles and character data are the same bytes, the collision converts exactly but for one vertex, and the
+animations differ in their events. The proposal for the install policy that follows from it is under
+[Proposal: either disc](#either-disc-proposal).
 
 ## Original structure
 
@@ -51,7 +62,7 @@ The PS2 disc, for comparison, has one archive (`WARRIORS.WAD`, 1.5 GB), its soun
 | Field | Value |
 | --- | --- |
 | Title, title ID | *The Warriors*, `0x5454009B`; region 1 (North America); certificate version 3 |
-| Build | header time stamp 2005-09-25 21:34:01 UTC, certificate 2005-09-28 |
+| Build | header time stamp 25 September 2005, 21:34:01 UTC; certificate three days later |
 | Debug paths | `d:\Warriors\Build\rundata_XBox\WarriorsDVD.exe`, `d:\Warriors\Source\XBox\Final DVD no deploy\XBox.pdb` |
 | Sections | `.text` (`0x34befc` bytes), `.rdata`, `.data`, and library sections `D3D`, `D3DX`, `XGRPH`, `DSOUND`, `XACTENG`, `BINK*`, `WMADEC`, `XPP`, `DOLBY` |
 | Libraries | XDK **1.0.5849** for all nine: `XAPILIB`, `D3D8`, `D3DX8`, `XGRAPHC`, `DSOUND`, `XACTENG`, `XBOXKRNL`, `LIBCPMT`, `LIBCMT` |
@@ -60,7 +71,7 @@ The PS2 disc, for comparison, has one archive (`WARRIORS.WAD`, 1.5 GB), its soun
 **There is no RenderWare in the Xbox build.** None of the PS2's RenderWare strings (`Renderware`, `Renderware Calloc`,
 the `DevRWGeneric.cpp` and `DevRWDebug.cpp` paths) occur in the XBE, and no file in the Xbox archive contains a
 RenderWare stream (below). The graphics device is the port's own Direct3D 8 code: `GraphicsDeviceXBox`,
-`GraphicsTextureXBox`, `GraphicsResourceXBox`. **Evidence:** inferred, from the strings and the data.
+`GraphicsTextureXBox`, `GraphicsResourceXBox`. Inferred from the strings and the data.
 
 **Source paths.** The XBE embeds 149 `.cpp` and `.inl` paths (plus 5 headers) of the form
 `\Warriors\Source\<Subsystem>\<File>.cpp`, against the PS2's 153 ([Source map](source-map.md)); 135 are shared.
@@ -76,7 +87,7 @@ The same string scan finds 152 of the PS2's 153.
   `lua-4.0.1/src/lmem.cpp`.
 
 So everything above the platform layer (game modes, AI, scenes, scripting, the chunk system) is the same code; the
-file system, renderer, world streaming and sound are platform-specific. **Evidence:** inferred.
+file system, renderer, world streaming and sound are platform-specific. Inferred from the source paths.
 
 How the executable compares with `SLUS_212.15` for reverse engineering (function counts, anchors, decompiler
 output, library signatures, mapping functions between the builds) is on [Xbox executable](xbox-executable.md).
@@ -154,7 +165,7 @@ The five packs not found belong to levels 60, 64 and 100. Adding the Xbox-only s
 and levels gives 4,038 names, which cover 4,041 of the 10,587 entries: three hashes occur twice in the index
 (`paks\global.pak` in both `System.wad0` and `Paks.wad0`, `scene_list.cnk` in both `System.wad0` and `Main.wad0`,
 and one scene record stored twice at two different sizes). As on the PS2, the named entries from index 210 on are
-in name order. **Evidence:** inferred (hash matches; with these three fixed prefixes chance matches are negligible).
+in name order. Inferred from the hash matches (with these three fixed prefixes chance matches are negligible).
 
 **By resource.** The standalone models and textures are unnamed on both discs, but the [chunk
 container](formats/wad-contents.md#chunk-container)'s resource hashes are the same on both (they hash the resource's
@@ -173,7 +184,7 @@ characters have an Xbox resource with the same hash. **This, not the WAD name, i
 | Resource: levels (`.lev`) | 64 | 95 | 44,488,240 | no |
 | Resource: global, scene list | 3 | 4 | 1,525,008 | no |
 | Scene records (`.scn`) | 2,765 | 2,814 | 200,615,808 | **all 2,765 PS2 records identical**; 49 more on the Xbox |
-| Lua 4.0 bytecode | 467 | 503 | 10,931,421 | **all 467 PS2 scripts identical**; 36 more on the Xbox |
+| Lua 4.0 bytecode | 467 | 503 | 10,931,421 | **all 467 PS2 scripts identical** (465 distinct); 36 more on the Xbox |
 | Object lists and other text | 63 | 81 | 1,154,288 | 74 identical; includes the font metrics (`METRICS1`) |
 | Streamed world | 2,229 | 2,048 | 516,969,472 | no: a different split (below) |
 | Sound banks (`.msb`, `.msd`) | 42 | 0 | | moved to XACT |
@@ -182,8 +193,8 @@ characters have an Xbox resource with the same hash. **This, not the WAD name, i
 | Font metrics, memory card icon, older RenderWare streams | 7 | 0 | | font metrics counted as text above |
 | **Total** | **10,701** | **10,587** | **1,726,598,311** | |
 
-**Evidence:** inferred: every entry is assigned by the same structural tests as on the PS2 (the container parse,
-the Lua header, the scene-record name, magic numbers), and "identical" means equal SHA1 against some PS2 entry.
+Inferred from the structural tests: every entry is assigned by the same tests as on the PS2 (the container parse, the
+Lua header, the scene-record name, magic numbers), and "identical" means equal SHA1 against some PS2 entry.
 (The bitmap was counted among the PS2's sound banks on [WAD contents](formats/wad-contents.md#kinds-of-entry); it
 is one 256 × 128 24-bit `BM` image.)
 
@@ -194,7 +205,7 @@ unchanged ([WAD contents](formats/wad-contents.md#chunk-container)); all 884 pac
 parse to their exact size (43,104 resources, 108,836 chunks). The XBE's chunk-type table (XBE `0x00458360`, 84
 records of 12 bytes and a terminator, found through its `Renderware Texture Dic` name) has **the same 84 names in
 the same order** as the PS2's at `0x0050b2e0`, and the same types have `onLoaded` and `readFromStream` handlers.
-The 29 types the WAD uses are the same on both. **Evidence:** inferred (table read from the XBE's data, as on
+The 29 types the WAD uses are the same on both. Inferred from the table, read from the XBE's data as on
 [Chunk system](chunk-system.md#chunk-type-table)).
 
 **Graphics chunks: Xbox-only formats, no RenderWare.** On the PS2, types `0x15` (world), `0x2a` (texture dictionary)
@@ -211,7 +222,7 @@ and `0x47` (model) hold RenderWare streams. On the Xbox they hold the port's own
 | Streamed world entries | `4`, `0x6f` / `5`, `0x6a` | 1,969 / 79 |
 
 Bytes `0x20`-`0x7f` of a texture chunk, and similar stretches elsewhere, are uninitialised memory of the build tool
-(stack and heap addresses), so these are memory images written by the tools. **Evidence:** inferred.
+(stack and heap addresses), so these are memory images written by the tools. Inferred from the bytes' values.
 
 **Textures (`0x2a`).** One texture per chunk, laid out as: a 32-byte header `{0, 0x6f, 1, dataSize, 0x20, 0x10,
 pointer, 0}`, 96 bytes of tool garbage, `dataSize` bytes of pixel data (every mip level), then a 64-byte
@@ -219,20 +230,22 @@ descriptor: an Xbox Direct3D texture header (`Common = 0x00040001`, `Data = 0`, 
 `0xee` filler, and `u16 width, u16 height` at `+0x28`; then `0xee` filler to the chunk's end. The `Format` word's
 bits 8-15 are the D3D format, 16-19 the mip count, 20-23 and 24-27 log2 of width and height; in all 18,245 chunks
 they agree with the stored width and height. Every texture is block-compressed: `0x0C` DXT1, `0x0E` DXT2/3, `0x0F`
-DXT4/5, which are not swizzled on the Xbox. **Evidence:** inferred (all 18,245 parse; the format numbers are the
+DXT4/5, which are not swizzled on the Xbox. Inferred from the parse (all 18,245 parse; the format numbers are the
 XDK's).
 
 **Models (`0x47`) and worlds (`0x15`).** Decoded far enough to compare: [Models](#models), [Levels and the
 streamed world](#worlds).
 
-**Animations, characters, collision, paths.** Non-graphics chunks are the same data, often byte for byte: character
-data (`0x08`, 53 of 53), anim ranges (`0x45`, 53 of 53), bone offsets (`0x28`, 153 of 153), particle pages (`0x4c`,
-537 of 541), path data (`0x40`), subtitles (`0x51`), occluders (`0x53`) and most collision chunks are identical in
-the 30 levels compared. Keyframes (`0x00`) have the same sizes but different bytes in 551 of 616; the level header
-(`0x17`) grows from 48 to 128 bytes. **Evidence:** inferred (SHA1 per chunk, matched by resource hash).
+**Animations, characters, collision, paths.** Non-graphics chunks are mostly the same data, byte for byte: character
+data (`0x08`), anim ranges (`0x45`), bone offsets (`0x28`), path data (`0x40`), subtitles (`0x51`) and occluders
+(`0x53`) in every resource, and the collision of 63 of the 64 levels once its header is shifted. Keyframes (`0x00`)
+have the same sizes but other bytes in 1,894 of 2,257 clips, and the level header (`0x17`) grows from 48 to 128 bytes.
+Chunk by chunk, with what each difference is: [Either disc](#either-disc). Inferred from the SHA-1 of every chunk,
+matched by resource hash and chunk type.
 
 **Lua.** All 503 scripts carry the PS2's header `1B 4C 75 61 40 01 04 04 04 20 06 09 08` ([WAD
-contents](formats/wad-contents.md#lua)), and the 467 PS2 scripts are byte-identical on the Xbox.
+contents](formats/wad-contents.md#lua)), and the 467 PS2 scripts are byte-identical on the Xbox; decompiled, they
+are identical too ([The scripts](#scripts)).
 
 **Scene records.** Same layout; all 2,765 PS2 records identical. The 49 extra records are cutscenes of
 two levels.
@@ -242,12 +255,12 @@ the PS2 does not ship: 2 front-end or arena levels, 14 test levels (named `test.
 streamed world is
 split differently: 1,969 + 79 entries on the Xbox, 1,911 sector-atomics files + 159 world streams + 159 manifests on
 the PS2 ([Level files](formats/wad-contents.md#level-files)), with no manifests on the Xbox. A level's world can
-only be taken whole from one disc; its names are under [Levels and the streamed world](#worlds). **Evidence:**
-inferred.
+only be taken whole from one disc; its names are under [Levels and the streamed world](#worlds). Inferred
+from the entry counts.
 
 **Sound.** XACT replaces the PS2's sound banks and IOP files: 369 wave banks (`WBND` version 3; 368 streaming)
 hold 23,523 waves, all Xbox ADPCM except 2 PCM, plus one sound bank (`SDBK`, also stored in the archive). How they
-map to the PS2's sounds: [Sound, speech and music](#sound). **Evidence:** inferred (header fields per the XDK's XACT
+map to the PS2's sounds: [Sound, speech and music](#sound). Inferred from the header fields (per the XDK's XACT
 bank layout).
 
 **Movies.** The PS2's 16 movies exist on the Xbox in three versions each: [Movies](#movies). The XBE's `%s_hd`,
@@ -271,13 +284,13 @@ textures on both (65 differ: 35 have two more on the Xbox, 30 one fewer).
 | Mipmaps | | full chains (1 to 10 levels) |
 | Bytes of `0x2a` chunks, every instance | 330,158,928 | 501,984,640 |
 
-`coney-tools xbox textures --ps2` reproduces the 2,092 shared resources, the 2,027 with equal counts and the 35 / 30
+`coney-tools xbox texture-info --ps2` reproduces the 2,092 shared resources, the 2,027 with equal counts and the 35 / 30
 that differ. Over the first instance of each of the 2,092 it counts 2,222 Xbox textures (DXT1 1,403, DXT2/3 375,
 DXT4/5 444) and 2,182 PS2 ones, so the pixel-format row's totals (2,312 and 2,205) were taken over a set the tool does
 not reproduce; the format shares are close either way.
 
 So about 30% of the textures double in resolution; the rest are the PS2 images re-encoded from 4- and 8-bit palettes
-to DXT, which trades palette banding for block artefacts rather than adding detail. **Evidence:** inferred.
+to DXT, which trades palette banding for block artefacts rather than adding detail. Inferred from the table.
 
 ### Resource images {#resource-images}
 
@@ -306,8 +319,8 @@ fit in every graphics chunk and world file.
 A texture's `Format` word holds the D3D format (bits 8-15), the mip count (16-19) and log2 of the width (20-23) and
 height (24-27). Every texture on the disc is block-compressed and unswizzled: `0x0C` DXT1, `0x0E` DXT2/3, `0x0F`
 DXT4/5. The `0x0F` ones are **DXT5, straight alpha**: in 141 of 142 same-size matched textures with partly
-transparent texels the colours equal the PS2's, not the PS2's multiplied by alpha (inferred); the `0x0E` ones have
-no partly transparent texels to measure.
+transparent texels the colours equal the PS2's, not the PS2's multiplied by alpha (inferred from that comparison);
+the `0x0E` ones have no partly transparent texels to measure.
 
 ### Asset kinds, Xbox against PS2 {#asset-kinds}
 
@@ -316,7 +329,7 @@ no partly transparent texels to measure.
 | Textures (resources) | DXT1/3/5 images, no names | resource hash, then position, checked by content | 578 of 2,343 larger | 2× width and height | **Xbox when larger** |
 | Textures (streamed world) | DXT images in `.xlev` / `.xsec` | level name, then content | 22,632 of 23,965 larger | 2× (33 more) | **Xbox when larger** |
 | Models | float triangle lists | resource hash | 1,541 of 1,541 | none: same meshes | PS2 |
-| Animations | the PS2's chunks | resource hash | 616 of 617 | none: same keys | PS2 (behaviour) |
+| Animations | the PS2's chunks | resource hash | 616 of 617 | none: same keys, other events | PS2 (behaviour) |
 | Levels, collision, paths | the PS2's chunks | resource hash, level name | 64 of 64 | none | PS2 (behaviour) |
 | World geometry | Xbox vertex and index buffers | level name | every PS2 level | none known | PS2 |
 | Sound effects and speech | XACT, Xbox ADPCM | name hash in the sound list | 23,147 of 25,395 | none: same rates | PS2 |
@@ -344,7 +357,7 @@ re-encoded from a palette to DXT blocks and stays PS2. One more than twice as wi
 flat PS2 texture is never replaced by one): without that test, 183 world textures took an Xbox texture 4 to 32 times as
 wide, and by eye most were another picture of the same colour (a wooden box for a gravel ground); with it 33 remain, a
 fire-truck texture (128 to 512) and one concrete texture at 4 × 4 in 31 world files. Over the NTSC-U pair (`coney-tools
-extract --xbox`, 2026-10-07):
+extract --xbox`):
 
 | | Resource dictionaries | Streamed world | All |
 | --- | ---: | ---: | ---: |
@@ -358,7 +371,7 @@ extract --xbox`, 2026-10-07):
 | Kept: no candidate matches | | | 1,354 |
 | Kept: no Xbox candidates (resource not on the Xbox) | | | 33 |
 
-**Evidence:** inferred (measured by the tool; samples scoring 10-36 were compared by eye: right pairs up to about
+Inferred from the tool's measurement (samples scoring 10-36 were compared by eye: right pairs up to about
 18, wrong ones from about 25; the structure limits from 300 random 2× matches, 299 right and kept, and the 183 wider
 ones, compared by eye).
 
@@ -374,7 +387,7 @@ header:
 | `+0x09` | u8 | vertex stride: 36, 44, 28 for the FVFs above | confirmed (code) at XBE `0x000bd3c0` |
 | `+0x0a` | u16 | 0 (814) or 1 (599); no reader found | inferred |
 | `+0x0c` | u16 | triangles (indices = 3 ×) | confirmed (code) at XBE `0x000bd3c0` |
-| `+0x10` | f32 | bounding radius | speculative |
+| `+0x10` | f32 | bounding radius | speculative ([q-model-radius](#q-model-radius)) |
 | `+0x18`, `+0x1c` | ptr | the vertex and index buffer headers (rebased on load) | confirmed (code) at XBE `0x000bd4e0` |
 
 Vertices are float positions, float normals, a D3DCOLOR and float UVs. The texture is not in the model: the draw
@@ -396,21 +409,21 @@ none; `+0x60`, `+0x64`: vertex and index buffer), rebased by XBE `0x000b83a0` (c
 triangle count, 104 more on the Xbox and 78 fewer, most of these an 82-triangle mesh standing in for many different
 PS2 models; of 153 skinned pairs, 145 are the same. In all, 321,262 Xbox triangles against 308,036 (kind 2) and
 183,893 against 184,029 (kind 1). The Xbox meshes are the PS2's at float precision as triangle lists: no gain, so
-models stay PS2. **Evidence:** inferred (counted against the PS2 clumps of the same resource hash).
+models stay PS2. Inferred from counting against the PS2 clumps of the same resource hash.
 
 #### Animations {#animations}
 
-Keyframe chunks (`0x00`) match by resource hash (616 of 617) and have the same sizes. 71 are identical; in 326 only
-byte `+1` of the 8-byte keys differs, which the sampler does not read ([Animation data](formats/animation.md));
-in the other 290 the differences also reach the 24-byte events at the end, mostly their bytes `+0x0c`-`+0x17` (a
-transform's rotation and fields not traced). Animations are behaviour (events drive effects and paired moves), so the
-PS2's stay. **Evidence:** inferred (byte comparison).
+Keyframe chunks (`0x00`) match by resource hash (616 of 617) and have the same sizes. Most differ only in byte `+1`
+of the 8-byte keys, which the sampler does not read ([Animation data](formats/animation.md)); one clip's keys and 324
+of the 24-byte events at the ends differ in other bytes, counted and sorted under [Animations on both
+discs](#either-animations). Animations are behaviour (events drive effects, sounds and paired moves), so the PS2's
+stay. Inferred from the byte comparison.
 
 #### Levels and the streamed world {#worlds}
 
 The streamed world is named `ee_files\sectors\<level>.xlev` (79 entries, kind 5) and
 `ee_files\sectors\<level>_<n>.xsec` (1,969, kind 4): all 2,048 world entries take these names, and one more `.xsec`
-name hashes to a texture dictionary resource. **Evidence:** confirmed (name hash); the names were read from
+name hashes to a texture dictionary resource. Inferred from the name hashes, which all match; the names were read from
 build-tool log text left in the images (`Writing sector: rundata_XBox/ee_files/sectors/level1_0.xsec`, `Saving BSP:
 .../sectors/level1.xlev`). A `.xlev` holds the level's textures and an object of sector records; a `.xsec` holds a
 sector's vertex and index buffers (stride 28: float position, packed normal, colour, float UV; inferred) and its own
@@ -422,12 +435,14 @@ textures are taken.
 
 The Xbox **sound list** (chunk `0x29` of the global resource) has 23,523 records of 12 bytes `{u32 hash, u32 sound
 index, u16 wave bank, u8 volume, u8 class}`, sorted by hash. The hash is the PS2's (CRC-32 of the name), so a PS2
-sound finds its Xbox sound by name: 23,147 of the PS2's 25,395 hashes are on the Xbox, and 376 Xbox hashes are not on
-the PS2. The records per bank equal each bank's wave count (bank 0: 542, 1: 1,014, 2: 19,276 speech and voices,
+sound finds its Xbox sound by name: of the PS2's 25,395 records (23,185 distinct hashes) 23,147 hashes are on the
+Xbox, and 376 Xbox hashes are not on the PS2. The 38 the Xbox lacks are nearly all the left and right halves (`_l`,
+`_r`) of the PS2's stereo streams (whether the Xbox holds each pair as one stereo wave is not checked). The records per
+bank equal each bank's wave count (bank 0: 542, 1: 1,014, 2: 19,276 speech and voices,
 3: 2,228, 4: 99, then one each for 5-368). The sound index is global (it runs past a bank's wave count) and the sound
 bank `xbox000.xsb` (XACT `SDBK` version 11, 23,523 entries) maps it to a wave; that table is not decoded. A debug copy
 of the list, in another instance of the global resource, has the last 16 characters of each name in front of each
-record (28 bytes; the PS2's has the same, 32 bytes). **Evidence:** inferred (the counts and the shared hashes).
+record (28 bytes; the PS2's has the same, 32 bytes). Inferred from the counts and the shared hashes.
 
 The waves are Xbox ADPCM (4 bits a sample, like the PS2's ADPCM), mono at the PS2's rates (22,050 and 22,500 Hz for
 most effects and speech). The **music** is 364 one-wave banks, stereo at 26,500 Hz (two at 30,000), named
@@ -441,11 +456,142 @@ Each of the 16 PS2 movies (640 × 448, Bink `i`, 48,000 Hz stereo) has three Xbo
 for `trailer`). The 16:9 versions are rendered wider, not cropped: at the same frame the `_hd` picture shows more of
 the scene at both sides than the PS2's (compared by eye on `l9_in`; inferred). Most Xbox movies have 44,100 Hz audio;
 `plogo`, silent on the PS2, has a track. The frame counts and rates match the PS2's to 0.1 s except `l51_in` (609.7 s
-on the PS2, 617.7 s on the Xbox), a different cut. **Evidence:** inferred (Bink headers; frames by eye).
+on the PS2, 617.7 s on the Xbox), a different cut. Inferred from the Bink headers and the frames, compared by eye.
 
 The rule: **`_hd` replaces the PS2 movie when it has more pixels and lasts as long (to 0.5 s)**, since the subtitles are
 timed against the PS2's. Over the NTSC-U pair 15 of the 16 are replaced (14 at 1280 × 720, `trailer` at 640 × 480);
 `l51_in` stays the PS2's. A 16:9 movie needs the player to keep the file's aspect ratio ([Movies](movies.md)).
+
+### Either disc: the two discs compared {#either-disc}
+
+The maintainer wants a player to be able to supply either disc, the PS2's or the Xbox's. Coney is its own engine, so a
+disc gives it only data: assets, which the rest of this page maps, and the data its simulation reads (scripts, scenes,
+collision, levels, object lists, paths, tables, animations and text). This section compares the second kind, every
+chunk and every entry of the PS2 archive looked up on the Xbox, and says for each whether the Xbox holds the same
+bytes, data that converts exactly, or different data. The three commands that measure it are under [How this was
+checked](#how-this-was-checked); each prints counts only.
+
+#### The scripts {#scripts}
+
+Every script on both discs was decompiled into a folder of its own and the two folders compared script by script, by
+the hash of the chunk each came from and by its decompiled text. Disc check:
+
+| | PS2 | Xbox |
+| --- | ---: | ---: |
+| Scripts (archive entries) | 467 | 503 |
+| Distinct chunks (two scripts are stored twice on both discs) | 465 | 501 |
+| Functions decompiled, none unreadable | 11,448 | 12,232 |
+| Scripts named (from the WAD names list and the names the chunks and executables mention) | 356 | 388 |
+| PS2 chunks on the Xbox with the same SHA-256 | 465 of 465 | |
+| ... with the same decompiled text | 465 of 465 | |
+| A name on both discs whose chunk differs | 0 | |
+| Chunks on one disc only | 0 | 36 |
+
+**The mission code is the same on both discs**: every PS2 script is on the Xbox byte for byte, and no script of the
+same name holds other code. Inferred from the SHA-256 of every chunk and the identical decompiles. Of the 465 shared
+chunks, 355 carry the same name on both discs; the other 110 have no known name on either, and so show as each disc's
+own entry hash (the two discs hash a name under different folders, so the hashes never agree).
+
+**The 36 Xbox-only scripts are development and test levels.** 34 were named by matching entry hashes against the
+names a level list and the scripts themselves use (the decompiler's own naming finds 31, PS2 naming patterns such as
+`<level>_brawl_init.lua` the rest):
+
+- 15 level scripts and 3 helpers of levels the PS2 disc does not ship: `level70`-`level74` and `level90`, `level91`,
+  `level94`, `level96`-`level98`, which set up a fixed camera, a few characters and a scene and play it (cutscene
+  stages: `level70`, for one, is a subway train set); and the Rumble arenas `level106`, `level117`, `level125` and
+  `level135`, with `level106_strings.lua`, `level117_brawl_init.lua` and `LEVEL125_brawl_init.lua`.
+- 14 test levels named `test_*` or `test*` (combat variants, a car, sound, a jump, a climb, rumble, a variable test)
+  and the two arenas `combatselect` and `objarena`.
+- Two not named: one is an older copy of `level70`'s subway script, the other a two-player test of the police
+  handcuffs (`dyn_powercuffs`) that respawns them.
+
+**No PS2 level reaches them.** The only script that names them is the level table of `config_preload3.lua`, the same
+bytes on both discs: it lists every level of the build, with the cutscene stages as one-chapter levels outside the
+story order, the four arenas among the Rumble levels, and the test levels at ids 403-428. The Rumble arena list
+(`rumble_arena.lua`, identical) leaves out arenas 106, 117, 125 and 135, and no story chapter starts any of them, so
+on the Xbox too they are reached only through a level list that names them. Inferred from the decompiled
+`config_preload3.lua` (its level table) and `rumble_arena.lua` (its arena numbers); the executables were searched for
+the names, and neither holds them.
+
+#### Everything else the simulation reads {#either-data}
+
+Each PS2 chunk was looked up on the Xbox by its resource hash and type and compared by SHA-1; each entry that is no
+container, whole. The level, global and character resources hold everything below except the scripts, scene records
+and object lists. Disc check, the PS2's distinct chunks or entries:
+
+| Data | PS2 | Same bytes on the Xbox | The difference | Verdict | Evidence |
+| --- | ---: | ---: | --- | --- | --- |
+| Scene records (`.scn`) | 2,765 | 2,765 | | same | inferred |
+| Scene list (`0x43`, `scene_list.cnk`) | 2,765 records | every record's name and size | the Xbox inserts 49 records (cutscenes of the extra levels) at position 1,358, so the ids after it are 49 higher | converts exactly: a script finds a scene by name, and all 344 script strings that name a record find the same one on both lists | inferred |
+| Object lists (`_objs.txt`) | 39 | 39 | | same | inferred |
+| Path data (`0x40`) | 64 | 64 | | same | inferred |
+| Subtitles (`0x51`) | 64 | 64 | | same | inferred |
+| Occluders (`0x53`) | 64 | 64 | | same | inferred |
+| Collision vertices, triangles, grid (`0x07`, `0x04`, `0x05`) | 64 each | 63 each | `level118`: only bytes after the data (padding); `level11`: one vertex | same, but for one vertex of `level11` | inferred |
+| Collision index lists (`0x06`) | 64 | 13 | bytes no grid cell reaches; every cell's list is the same | same in use | inferred |
+| Collision checked bits (`0x52`) | 64 | 42 | scratch bits, which the `0x03` handler clears at load (`0x00350580`) | nothing to take | confirmed (code) |
+| Collision header (`0x03`) | 64 | 0 | 144 bytes on the Xbox: the same values 12 bytes earlier (no padding after the pointer slot), no last zero word; `level118` also differs in a padding half-word | converts exactly | inferred |
+| Level header (`0x17`) | 64 | 0 | 48 bytes on the PS2, 128 on the Xbox; the PS2's level object is built over it and its constructor sets every word (`0x0040cf40`) | nothing to take | confirmed (code) |
+| Character data (`0x08`), anim ranges (`0x45`), bone offsets (`0x28`) | 53, 53, 153 | all | | same | inferred |
+| Character List (`0x44`), Object List (`0x46`) | 543 and 1,406 records | every record's hashes | only the resource sizes (`+0x14` to `+0x20`), which are the sizes of each disc's own model and texture resources | converts exactly | inferred |
+| Anim List (`0x4e`) | 564 records | 561 | one `level14` clip (`l14_leanBack`) replaced by another, and the sizes of the two after it swapped | different: one clip | inferred |
+| Animations (`0x02`, `0x00`) | 2,257 clips | 0 descriptors, 363 keyframe chunks | [below](#either-animations) | different | inferred |
+| Dependency List (`0x4f`) | 9,223 records | | 9,171 records: what the resource manager loads with what, over each disc's own resources | different, platform data | inferred |
+| Particle pages (`0x4c`), their header (`0x4d`) | 576, 1 | 572, 0 | the header's offsets into each disc's own images | platform data | inferred |
+| Sound list (`0x29`), music list (`0x31`) | 23,185 hashes, 345 tracks | 23,147 hashes, 345 tracks | [Sound](#sound); the music list's file paths are the Xbox's | converts, but for 38 sounds | inferred |
+| Sound classes (`0x48`), stereo table (`0x49`) | 1,232 bytes, 248 records | | 1,120 bytes; the stereo table is empty, the PS2's streams being its own | different, platform data | inferred |
+| The random table (1,024 words at `0x005117e0`, which Coney reads from the executable) | 1 | 1 | the same words at XBE `0x0045e068` | same | inferred |
+| Game text | | | the strings scripts and subtitles above; neither archive holds a string-table chunk (`0x0f`-`0x13`) | same | inferred |
+
+Inferred from the comparison as the table says: a row's basis is the SHA-1 match, and for the scene list, the
+collision and the lists the field-by-field reading in its difference cell. The confirmed rows are read at the handler
+addresses given. The streamed world (2,277 PS2 entries) is graphics only and has no counterpart byte for byte. Only on
+the PS2 are 25 resources: 23 standalone texture dictionaries that no pack, Object List or Character List names (who
+loads them is open, [q-orphan-dictionaries](#q-orphan-dictionaries)), the clip `l14_leanBack` and the PS2's scene list,
+which the Xbox stores under another resource hash. Only on the Xbox are 32.
+
+The `level11` vertex is number 1,282 of 4,703, used by four triangles; each coordinate differs by less than 0.0001
+units. Inferred from the vertex buffers.
+
+#### Animations on both discs {#either-animations}
+
+The 2,257 clip descriptors (`0x02`) all differ, in three places only: the keyframe pointer slot, which the load
+overwrites (`0x001045e0`, confirmed (code)); the debug name, to which the Xbox adds an `anims/` folder; and the eight
+bytes after the flags (`+0x48`-`+0x4f`), zero on the Xbox, whose reader is not traced. The flags, sizes, counts and
+displacements are the same. Inferred from the byte comparison.
+
+The keyframe chunks (`0x00`): 363 identical; 1,742 differ only in byte `+1` of their keys, which the sampler does not
+read; the keys of one clip, `fidget_turnR`, hold other values; and 324 events in other clips differ. Sorted by what
+differs:
+
+| Events that differ | Count | Event types |
+| --- | ---: | --- |
+| Bytes on the PS2, zeros on the Xbox (stray bytes the PS2's tool left, as in the descriptors) | 133 | many |
+| The same values, 4 bytes earlier on the Xbox | 17 | 7, 15, 16, 20, 61 |
+| Other values where the Xbox's are not zero | 174 | 11 (bytes `+4`-`+7`), 16, 34 and 55 (bytes `+0x14`-`+0x17`), and 20 more types |
+
+Which of these bytes the game reads is known for few types ([Animation data](formats/animation.md)): type 11 passes
+the word at `+8`, and the arguments at `+4` and `+6` are passed for types 15, 16 and 19 only, so the 45 type-11
+differences at `+4`-`+7` look harmless; types 8, 9 and 10 read a position and a rotation, and 9 type-10 events differ
+there. Inferred from the byte comparison; the reads of the other types are open
+([q-xbox-events](#q-xbox-events)).
+
+#### What an Xbox-only install would play {#either-verdict}
+
+**The same missions, levels and world, with a few different animation details.** Inferred from the comparisons above:
+
+- **The same:** every script (so every mission, objective, spawn, hint and checkpoint, and the game text in the
+  strings scripts), every scene record, object list, path, subtitle, occluder, character and the random table.
+- **Converts exactly:** the collision (a 12-byte shift of the header) but for one `level11` vertex, the scene list (by
+  name), the Character and Object Lists (the sizes are the Xbox resources' own).
+- **Different:** the animations (one clip's keys, the events above, one `level14` clip that the Xbox lacks and replaces
+  with another), and the sound tables (38 PS2 sounds the Xbox's list lacks, other class and stereo tables), which only
+  matter for what is heard.
+- **Missing:** 23 PS2 texture dictionaries that nothing found names, and the PS2-only clip.
+
+So mission patches (`.cmod`) apply alike on both discs: a package names a script by its `game:/` path
+([The `.cmod` package](../guides/studio/project-formats.md#cmod)), and each name resolves to the same bytes on either
+disc. Inferred from the script comparison.
 
 ## Behaviour
 
@@ -471,7 +617,7 @@ the player like the PS2 one, and only ever replaces *assets*, at install: never 
 animations or anything the simulation reads. Its extra content (31 levels, 49 scene records, 36 scripts; most of the
 levels are test levels) is ignored.
 
-**Extraction (done).** `coney-tools extract [DISC] OUT_DIR --xbox XBOX_DISC`
+**Extraction (done).** `coney-tools extract [DISC] OUT_DIR --xbox-disc XBOX_DISC`
 ([guide](../guides/coney-tools.md#extract)) reads the Xbox disc straight from the image (XDVDFS, then `XBoxWad.idx`
 and its volumes) and resolves per asset as [Asset kinds](#asset-kinds) says: the PS2 stages write everything, then
 each Xbox texture that matches and is larger is written over the PS2 file at the same path, and each `_hd` movie that
@@ -488,6 +634,52 @@ texture it needs: the XDVDFS reader and `XBoxWad.idx`, the [texture
 map](#texture-map) to know which PS2 texture to swap, the [resource image](#resource-images) reader and DXT1/3/5
 textures (a DXT raster or a CPU decode). A 16:9 movie needs the movie player to keep the file's aspect ratio rather
 than 4:3.
+
+**Comparing the discs (done).** `coney-tools lua decompile --all --xbox-disc XBOX_DISC` decompiles the Xbox disc's scripts
+as `--all` does the PS2's, `coney-tools lua compare DIR_A DIR_B` compares two such folders script by script
+([lua](../guides/coney-tools-fidelity.md#lua)), and `coney-tools xbox compare PS2_DISC XBOX_DISC` looks every PS2
+chunk and entry up on the Xbox ([xbox](../guides/coney-tools-disc.md#xbox)). Code:
+[repo:python/src/coney_tools/lua_compare.py](repo:python/src/coney_tools/lua_compare.py) and
+[repo:python/src/coney_tools/xbox_compare.py](repo:python/src/coney_tools/xbox_compare.py). Their counts are the
+ones under [Either disc](#either-disc).
+
+### Proposal: either disc {#either-disc-proposal}
+
+The Policy above is a maintainer decision, and so is any change to the installer, so this is a proposal for the
+maintainer, written on 2026-10-28 for #1077. Three ways to go, from [What an Xbox-only install would
+play](#either-verdict):
+
+1. **The PS2 disc stays required.** Exact by construction; a player with only the Xbox disc cannot play.
+2. **Either disc, the Xbox's data as it is.** An Xbox-only install plays the same missions: the scripts, scenes,
+   paths, object lists, text, characters and random table are the same bytes, and the collision converts exactly but
+   for one `level11` vertex (under 0.0001 units). It plays the Xbox's animation events and sound tables, whose
+   differences lie mostly in bytes the game does not read but are not all proven harmless.
+3. **Either disc, after one more study (proposed).** As 2, once the reads of every animation event type are traced
+   in `Anim_FireFrameEvents` (`0x00101dd8`, [q-xbox-events](#q-xbox-events)). If the 324 differing events differ only
+   in bytes no type reads or by the 4-byte shift, the animations convert exactly too, and an Xbox-only install plays
+   the same game but for one clip's keys (`fidget_turnR`), the `level14` clip the Xbox replaces, the `level11` vertex
+   and what is heard.
+
+In every option the PS2 disc stays the reference for research, tests and runtime comparisons; given both discs, the
+install takes the simulation data from the PS2 and the assets as [Asset kinds](#asset-kinds) says, as today; and the
+launcher says which disc an install's simulation data came from. Mission patches work on either install, since every
+`game:/` script path resolves to the same bytes.
+
+**The work an Xbox-only install needs**, one task each:
+
+1. Read the Xbox archive in the engine: XDVDFS, `XBoxWad.idx` and the `ee_files\` name hash with its subfolders
+   ([The archive](#the-archive), [Name hash](#name-hash)); the Python readers are the reference.
+2. Take the simulation data from it: the collision header 12 bytes earlier, the scene list by name, the Character
+   and Object Lists' sizes from the Xbox resources, and the random table from `default.xbe` at XBE `0x0045e068`
+   (`GameRandom` reads `SLUS_212.15` at `0x005117e0` today).
+3. Draw from it: the models, textures and streamed world from the [resource images](#resource-images), in place of
+   the PS2's RenderWare data (the world sectors' records are not decoded yet).
+4. Play from it: the XACT wave banks (Xbox ADPCM), the sound-index-to-wave table in `xbox000.xsb` ([q-sound-index](#q-sound-index)),
+   the sound classes and the music; the movies are Bink on both discs.
+5. Install from it: recognise the Xbox disc alone (`src/install/known_discs.cpp` lists the PS2 disc's files today),
+   a change to the installer that the maintainer decides.
+6. Trace the animation events' reads ([q-xbox-events](#q-xbox-events)) and who loads the 23 dictionaries the Xbox
+   lacks ([q-orphan-dictionaries](#q-orphan-dictionaries)).
 
 ### Resource index {#resource-index}
 
@@ -554,15 +746,71 @@ one per replaced texture, none left out. Code:
 
 ## Open questions
 
-1. **DXT2/3.** Whether the `0x0E` textures are premultiplied (DXT2) or not (DXT3): none of the matched ones has
-   partly transparent texels to tell (the `0x0F` ones are straight DXT5).
-2. **The index header's third word** (`0x00100000`) and the volumes' trailing `0xffffffff`: unused by the lookup;
-   probably a volume size limit and a flag.
-3. **Unnamed Xbox entries.** 4,498 of 10,587 (models, textures, characters, 652 packs, 227 scripts, 18 text
-   entries) once the 2,048 world files are named; the subfolder scheme (`paks\`, `anims\`, `sectors\`) suggests the
-   rest also live in subfolders.
-4. **Sound index to wave.** The table in `xbox000.xsb` that maps the sound list's index to a wave bank entry; only
-   needed if an Xbox sound is ever wanted.
-5. **Model fields.** The kind-2 model's `+0x0a` (0 or 1) and the skinned vertex's second float pair.
-6. **Unmatched PS2 textures.** 1,354 PS2 textures with Xbox candidates find no match: art the Xbox port
-   changed, or candidates in another level's files.
+### DXT2/3 {#q-dxt23}
+
+Whether the `0x0E` textures are premultiplied (DXT2) or not (DXT3): none of the matched ones has partly transparent
+texels to tell (the `0x0F` ones are straight DXT5).
+
+### The index header's third word {#q-index-word}
+
+The header's third word (1,048,576, a power of two) and the volumes' trailing all-ones word are unused by the lookup;
+perhaps a volume size limit and a flag.
+
+### Unnamed Xbox entries {#q-unnamed}
+
+4,498 of 10,587 (models, textures, characters, 652 packs, 227 scripts, 18 text entries) once the 2,048 world files are
+named; `lua decompile --xbox` now names 388 of the 503 scripts. The subfolder scheme (`paks\`, `anims\`, `sectors\`)
+suggests the rest also live in subfolders.
+
+### Sound index to wave {#q-sound-index}
+
+The table in `xbox000.xsb` that maps the sound list's index to a wave bank entry; needed for any Xbox sound, and so for
+an Xbox-only install.
+
+### Model fields {#q-model-fields}
+
+The kind-2 model's `+0x0a` (0 or 1) and the skinned vertex's second float pair.
+
+### The bounding radius {#q-model-radius}
+
+The kind-2 model's `+0x10`, read as a bounding radius: compare it with the vertices' extent in a sample of models.
+
+### Unmatched PS2 textures {#q-unmatched}
+
+1,354 PS2 textures with Xbox candidates find no match: art the Xbox port changed, or candidates in another level's
+files.
+
+### The animation events' reads {#q-xbox-events}
+
+Which bytes `Anim_FireFrameEvents` (`0x00101dd8`) reads for each event type beyond the few known ([Animation
+data](formats/animation.md)); the same question as [Xbox port: animation events](xbox-port.md#q-anim). It decides
+whether the Xbox's 324 differing events (174 with other values) play the same, and so whether the animations convert
+exactly ([Proposal: either disc](#either-disc-proposal)). Trace each type's handler in that function.
+
+### The 23 PS2 dictionaries the Xbox lacks {#q-orphan-dictionaries}
+
+Standalone texture dictionaries that no pack, Object List or Character List names: whether the code loads them by name
+(as the legal screen's are) and on which screen. Search the executable for their resource hashes.
+
+### The descriptors' last eight bytes {#q-descriptor-tail}
+
+A clip descriptor's `+0x48`-`+0x4f` hold other bytes on the PS2 and zeros on the Xbox; no reader is traced.
+
+## How this was checked
+
+The survey of the archive, names, kinds and asset formats was made on 2026-10-04 and the texture and movie rules on
+2026-10-07, with the `coney-tools xbox` commands and `extract --xbox`. The comparison under [Either disc](#either-disc)
+was made on 2026-10-28 for #1077, with the PS2 disc mounted and the Xbox disc as its full image:
+
+- `coney-tools lua decompile H:/ --all --out <A>` and `coney-tools lua decompile --all --xbox-disc <image> --out <B>`, each
+  into its own folder outside the repository, then `coney-tools lua compare <A> <B> --list`: the script counts and
+  the 36 Xbox-only scripts. Their names beyond the decompiler's own came from hashing PS2 naming patterns
+  (`level<N>_<suffix>.lua`) under `ee_files\`; what each does was read from its decompile and its natives in the
+  index.
+- `coney-tools xbox compare H:/ <image>`: every row of the table under [Everything else the simulation
+  reads](#either-data). The fields that differ (collision headers and lists, the global lists, the scene list, the
+  animation descriptors and events) were then compared field by field with short scripts kept in the task's scratch
+  folder, printing counts only.
+- The random table: the 4,096 bytes at `0x005117e0` of `SLUS_212.15` were searched for in `default.xbe` and found
+  once, in a data section at XBE `0x0045e068`.
+- The handlers named in the table (`0x00350580`, `0x0040cf40`, `0x001045e0`) were read in Ghidra.

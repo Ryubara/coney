@@ -2,8 +2,9 @@
 """`coney-tools lua decompile`: the game's compiled Lua 4.0 scripts back to readable Lua, outside the repository.
 
 The decompiler itself is the self-contained `lua4` package (python/src/lua4/); this module is Coney's side of it:
-where the chunks come from (the player's disc, or a folder of chunks `wad extract` wrote), where the output goes,
-the guard's marks on it, the per-script index (`lua_index.py`) and the round trip through a stock `luac`.
+where the chunks come from (the player's PS2 disc, the player's Xbox disc, or a folder of chunks `wad extract` wrote),
+where the output goes, the guard's marks on it, the per-script index (`lua_index.py`) and the round trip through a
+stock `luac`.
 
 * **Output stays outside the repository.** Like Ghidra's, a decompile is a research aid: the game's script text never
   enters the repository, an issue or CI (LEGAL.md#no-game-data). Every file written ends with the guard's marker line
@@ -11,6 +12,9 @@ the guard's marks on it, the per-script index (`lua_index.py`) and the round tri
   refuses a copied file or a pasted block. That script is the one definition of both marks; it is loaded from here.
 * **One shared folder.** `--all` writes into `lua_dir` (coney.local.toml; default `<workspace>/scratch/lua`), so every
   worktree and agent reads the same copy.
+* **The Xbox disc** (`--xbox-disc`) holds its scripts in `XBoxWad.idx`'s volumes, hashed under `ee_files\\`; a script is
+  named from the checkout's WAD names list and the file names its own chunks and the executable mention, so the PS2
+  and Xbox decompiles of one script share a file name (docs/research/xbox-assets.md#scripts).
 * **The round trip** compiles each written file with `luac_program` (default: the one `workspace init --fetch lua`
   builds from Lua 4.0.1's source; `--luac` may name Coney's own compiler, `coney_luac`) and compares the chunk with
   the original, function by function, and the natives each function calls. It prints counts, the kind of each first
@@ -54,6 +58,8 @@ DEFAULT_DIR = "scratch/lua"
 #: Where `workspace init --fetch lua` puts the programs, inside the tool's folder.
 BIN = "bin"
 _HASH_NAME = re.compile(r"^(?:0x)?([0-9a-fA-F]{8})(?:\.lua)?$")
+#: An identifier in a chunk or the executable, tried as a script's name (`<word>.lua`).
+_WORD = re.compile(rb"[A-Za-z_][A-Za-z0-9_]{2,63}")
 
 
 @cache
@@ -195,8 +201,66 @@ def chunks_from_disc(root: Path, disc: str | None) -> list[tuple[str, bytes]]:
     return sorted(found)
 
 
-def one_chunk(root: Path, name: str, disc: str | None, folder: Path | None) -> bytes:
-    """The chunk `name` from `folder`, else from the disc (by file name, or by the entry's hash in hex)."""
+def _xbox_script_names(root: Path, hashes: set[int], texts: Iterable[bytes]) -> dict[int, str]:
+    """Names of the Xbox scripts whose entry hashes are `hashes`: each candidate (the checkout's WAD names list, then
+    every file name in `texts`, the scripts and the executable) whose `ee_files\\` hash is one of them and that ends
+    in `.lua`. A name is the path below `ee_files\\` with `/` separators."""
+    from coney_tools import refs_cli, xbox  # loaded only when an Xbox disc is used
+
+    candidates = list(refs_cli.known_names(root, None))
+    for data in texts:
+        candidates += sorted(xbox.harvest(data))
+        # A level list names its levels without an extension, and a level's script is `<level>.lua`.
+        candidates += sorted({word.decode("ascii") + ".lua" for word in _WORD.findall(data)})
+    names: dict[int, str] = {}
+    for hashed, path in xbox.hash_names(candidates).items():
+        if hashed in hashes and path.lower().endswith(".lua"):
+            names[hashed] = path.replace("\\", "/")
+    return names
+
+
+def chunks_from_xbox(root: Path, disc_path: Path) -> list[tuple[str, bytes]]:
+    """Every compiled chunk in the Xbox disc's archive (`XBoxWad.idx` and its volumes; an image, an XISO or a
+    folder), by its file name (the entry's hash in hex when the name is not known), in name order. Each entry's first
+    bytes are read to find the chunks; only those are read whole."""
+    from coney_tools import xbox  # loaded only when an Xbox disc is used
+    from coney_tools.xdvdfs import XboxDisc
+
+    disc = XboxDisc(disc_path)
+    index = xbox.load_index(disc)
+    found: list[tuple[int, bytes]] = []
+    for entry, handle in xbox.iter_entries(disc, index):
+        if entry.size > len(SIGNATURE) and handle.read(len(SIGNATURE)) == SIGNATURE:
+            found.append((entry.hash, SIGNATURE + handle.read(entry.size - len(SIGNATURE))))
+    texts = [data for _, data in found]
+    if disc.has(xbox.XBE_FILE):
+        with disc.open(xbox.XBE_FILE) as xbe:
+            texts.append(xbe.read())
+    names = _xbox_script_names(root, {hashed for hashed, _ in found}, texts)
+    return sorted((names.get(hashed, f"{hashed:08x}"), data) for hashed, data in found)
+
+
+def _source_chunks(root: Path, disc: str | None, options: Options) -> list[tuple[str, bytes]]:
+    """The chunks the options name: `--chunks DIR`, else `--xbox-disc XBOX_DISC`, else the PS2 disc."""
+    if options.chunks is not None:
+        return chunks_from_folder(options.chunks)
+    if options.xbox is not None:
+        return chunks_from_xbox(root, options.xbox)
+    return chunks_from_disc(root, disc)
+
+
+def one_chunk(root: Path, name: str, disc: str | None, folder: Path | None, xbox_disc: Path | None = None) -> bytes:
+    """The chunk `name` from `folder`, else from the Xbox disc `xbox_disc`, else from the PS2 disc (by file name, or
+    by the entry's hash in hex)."""
+    if xbox_disc is not None:
+        match = _HASH_NAME.match(name)
+        wanted = {name.lower(), name.lower() + ".lua"}
+        for found, data in chunks_from_xbox(root, xbox_disc):
+            if found.lower() in wanted or (match is not None and found == match.group(1).lower()):
+                return data
+        raise ConfigError(
+            f"no chunk named {name!r} on the Xbox disc (a file name such as level1.lua, or a hash in hex)"
+        )
     if folder is not None:
         wanted = {name, name + ".lua"}
         for found, data in chunks_from_folder(folder):
@@ -311,11 +375,13 @@ def print_round_trip(result: RoundTrip) -> None:
 
 @dataclass(frozen=True)
 class Options:
-    """The command's options: `--chunks DIR` (a folder of chunks instead of the disc), `--out DIR` (for `--all`;
-    default `lua_dir`), `--luac PATH` and `--roundtrip`; for `--all` also `--hashes FILE` (the list of decompile hashes
-    to check; default the checkout's), `--update-hashes` and `--new-form` (lua_hashes.py)."""
+    """The command's options: `--chunks DIR` (a folder of chunks instead of the disc), `--xbox-disc XBOX_DISC` (the Xbox
+    disc instead of the PS2 one), `--out DIR` (for `--all`; default `lua_dir`), `--luac PATH` and `--roundtrip`; for
+    `--all` also `--hashes FILE` (the list of decompile hashes to check; default the checkout's),
+    `--update-hashes` and `--new-form` (lua_hashes.py)."""
 
     chunks: Path | None = None
+    xbox: Path | None = None
     out: Path | None = None
     luac: Path | None = None
     roundtrip: bool = False
@@ -338,7 +404,7 @@ def run_one(root: Path, disc: str | None, name: str, out_dir: Path, options: Opt
     1 when a function could not be read or the round trip fails."""
     wad.refuse_inside_repo(out_dir)
     compile_text = _compiler(root, options) if options.roundtrip else None
-    data = one_chunk(root, name, disc, options.chunks)
+    data = one_chunk(root, name, disc, options.chunks, options.xbox)
     try:
         result = decompile_chunk(name, data)
     except lua4.ChunkError as error:  # its reason names sizes and offsets only, never a constant
@@ -378,7 +444,7 @@ def run_all(root: Path, disc: str | None, options: Options, known_natives: froze
     listed = None if options.new_form else _listed_hashes(root, options)
     form = _form_of_run(root, options, listed)
     compile_text = _compiler(root, options) if options.roundtrip else None
-    chunks = chunks_from_folder(options.chunks) if options.chunks is not None else chunks_from_disc(root, disc)
+    chunks = _source_chunks(root, disc, options)
     if not chunks:
         raise ConfigError("no compiled Lua chunks found")
     known = known_natives if known_natives is not None else _binding_names(root)
