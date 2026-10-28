@@ -34,6 +34,7 @@ void ImGuiOverlay::configureIo(ImGuiIO& io) {
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     // Windows dock into each other (tabs and splits) inside the viewport. Multi-viewport stays off: it is the part of
     // the docking release that varies most by platform (docs/guides/studio/technology.md#gui-choice).
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 }
 
 ImGuiOverlay::ImGuiOverlay(debug::DebugSession& session, std::string iniPath)
