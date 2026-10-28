@@ -134,8 +134,8 @@ The WMA and Dolby sections are linked, but no code that uses them was read. Find
 
 Whether the 324 differing events change timing or effects in play: which bytes `Anim_FireFrameEvents` (`0x00101dd8`)
 reads for each event type, against the differences sorted under [Animations on both
-discs](xbox-assets.md#either-animations). It also decides whether an Xbox-only install could play the same game
-([Proposal: either disc](xbox-assets.md#either-disc-proposal)).
+discs](xbox-assets.md#either-animations). It no longer decides an install: play takes the PS2's animations
+whether or not the Xbox disc is there ([Disc policy](xbox-assets.md#disc-decision)).
 
 ### The five changelists {#q-changelists}
 

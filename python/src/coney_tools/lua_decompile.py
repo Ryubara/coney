@@ -434,16 +434,12 @@ def run_all(root: Path, disc: str | None, options: Options, known_natives: froze
     """`lua decompile [DISC] --all`: every chunk into the shared folder (or `--out`), with the guard's fingerprints and
     the index; with `--roundtrip`, check every one. Prints counts only. A chunk the loader refuses is named on stderr
     with the reason, and the rest still go through, so the shared folder's fingerprints and index cover every script
-<<<<<<< HEAD
     that was written. Writes the decompile hashes beside them and checks them against the committed list (or writes
     the list: `--update-hashes`, `--new-form`; lua_hashes.py). 1 when a chunk could not be loaded, a script's text
-    changed from the list, a list write was refused or the round trip fails."""
-=======
-    that was written. 1 when a chunk could not be loaded or the round trip fails. `--xbox` needs its own `--out`: the
+    changed from the list, a list write was refused or the round trip fails. `--xbox-disc` needs its own `--out`: the
     shared folder is the PS2 disc's, and its index and fingerprints are what every worktree reads."""
     if options.xbox is not None and options.out is None:
-        raise ConfigError("--all --xbox needs --out DIR: the shared folder holds the PS2 disc's scripts")
->>>>>>> 2d3ed352e (research: Trace the scene-list lookups on both discs)
+        raise ConfigError("--all --xbox-disc needs --out DIR: the shared folder holds the PS2 disc's scripts")
     out_dir = options.out or lua_dir(root)
     wad.refuse_inside_repo(out_dir)
     if options.update_hashes and options.new_form:

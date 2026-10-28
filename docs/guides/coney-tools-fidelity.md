@@ -714,12 +714,13 @@ problem (a pc and an opcode, never a constant). A chunk the loader refuses (anot
 with the reason: `--all` goes on with the rest, still writes the fingerprints and the index for every script it wrote,
 and exits 1; one chunk by name is a one-line error.
 
-`--xbox-disc XBOX_DISC` reads the scripts of your Xbox disc instead (a full image, an XISO or an extracted folder, as for
-the [`xbox`](coney-tools-disc.md#xbox) commands): its 503 chunks, from `XBoxWad.idx` and its volumes, each named from
-the WAD names list and the file and level names the chunks and `default.xbe` mention, else by its entry's hash in hex
-(which is not the PS2 entry's hash, as the Xbox hashes names under `ee_files\`). It takes no `DISC` and goes with
-`--all` or `NAME OUT_DIR` alike. `--all --xbox` needs its own `--out` folder and is refused without one: the shared
-folder is the PS2 disc's.
+`--xbox-disc XBOX_DISC` reads the scripts of your Xbox disc instead (a full image, an XISO or an extracted folder, as
+for the [`xbox`](coney-tools-disc.md#xbox) commands): its 503 chunks, from `XBoxWad.idx` and its volumes, each named
+from the WAD names list and the file and level names the chunks and `default.xbe` mention, else by its entry's hash in
+hex (which is not the PS2 entry's hash, as the Xbox hashes names under `ee_files\`). It takes no `DISC` and goes with
+`--all` or `NAME OUT_DIR` alike. `--all --xbox-disc` needs its own `--out` folder and is refused without one: the
+shared folder is the PS2 disc's. It is for reading those scripts, as Coney Studio will: play takes every script from
+the PS2 disc ([Disc policy](../research/xbox-assets.md#disc-decision)).
 
 `lua compare DIR_A DIR_B` compares two `--all` folders, made to check that the Xbox disc holds the PS2 disc's mission
 code ([Xbox assets: the scripts](../research/xbox-assets.md#scripts)). It reads the marker line at the end of each

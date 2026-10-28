@@ -29,11 +29,11 @@ movies have 1280 × 720 versions, 15 of them as long as the PS2's. Models, anima
 same data (the models re-encoded as float triangle lists), and the sound is the same recordings at the same or a lower
 sample rate, so those stay the PS2 disc's.
 
-Whether the Xbox disc **alone** could give the same game, which the maintainer has asked so that a player may supply
-either disc, is answered under [Either disc](#either-disc): the mission scripts, scene records, object lists, paths,
+Whether the Xbox disc **alone** could give the same game, which the maintainer asked so that a player might supply
+either disc, is measured under [Either disc](#either-disc): the mission scripts, scene records, object lists, paths,
 subtitles and character data are the same bytes, the collision converts exactly but for one vertex, and the
-animations differ in their events. The proposal for the install policy that follows from it is under
-[Proposal: either disc](#either-disc-proposal).
+animations differ in their events. The maintainer then decided that the PS2 disc stays required and the only source
+of gameplay data, the Xbox disc an optional addition ([Disc policy](#disc-decision)).
 
 ## Original structure
 
@@ -357,7 +357,7 @@ re-encoded from a palette to DXT blocks and stays PS2. One more than twice as wi
 flat PS2 texture is never replaced by one): without that test, 183 world textures took an Xbox texture 4 to 32 times as
 wide, and by eye most were another picture of the same colour (a wooden box for a gravel ground); with it 33 remain, a
 fire-truck texture (128 to 512) and one concrete texture at 4 × 4 in 31 world files. Over the NTSC-U pair (`coney-tools
-extract --xbox`):
+extract --xbox-disc`):
 
 | | Resource dictionaries | Streamed world | All |
 | --- | ---: | ---: | ---: |
@@ -464,7 +464,8 @@ timed against the PS2's. Over the NTSC-U pair 15 of the 16 are replaced (14 at 1
 
 ### Either disc: the two discs compared {#either-disc}
 
-The maintainer wants a player to be able to supply either disc, the PS2's or the Xbox's. Coney is its own engine, so a
+The maintainer asked (#1077) whether a player could supply either disc, the PS2's or the Xbox's; what he decided is
+under [Disc policy](#disc-decision). Coney is its own engine, so a
 disc gives it only data: assets, which the rest of this page maps, and the data its simulation reads (scripts, scenes,
 collision, levels, object lists, paths, tables, animations and text). This section compares the second kind, every
 chunk and every entry of the PS2 archive looked up on the Xbox, and says for each whether the Xbox holds the same
@@ -652,7 +653,7 @@ resources; and 4,038 names (3,957 from the PS2's names). The rest of this sectio
 **Policy.** The PS2 disc is required and stays the reference for behaviour. The Xbox disc is optional, supplied by
 the player like the PS2 one, and only ever replaces *assets*, at install: never scripts, scenes, levels, collision,
 animations or anything the simulation reads. Its extra content (31 levels, 49 scene records, 36 scripts; most of the
-levels are test levels) is ignored.
+levels are test levels) is never played; Coney Studio reads it ([Disc policy](#disc-decision)).
 
 **Extraction (done).** `coney-tools extract [DISC] OUT_DIR --xbox-disc XBOX_DISC`
 ([guide](../guides/coney-tools.md#extract)) reads the Xbox disc straight from the image (XDVDFS, then `XBoxWad.idx`
@@ -672,51 +673,50 @@ map](#texture-map) to know which PS2 texture to swap, the [resource image](#reso
 textures (a DXT raster or a CPU decode). A 16:9 movie needs the movie player to keep the file's aspect ratio rather
 than 4:3.
 
-**Comparing the discs (done).** `coney-tools lua decompile --all --xbox-disc XBOX_DISC` decompiles the Xbox disc's scripts
-as `--all` does the PS2's, `coney-tools lua compare DIR_A DIR_B` compares two such folders script by script
+**Comparing the discs (done).** `coney-tools lua decompile --all --xbox-disc XBOX_DISC` decompiles the Xbox disc's
+scripts as `--all` does the PS2's, `coney-tools lua compare DIR_A DIR_B` compares two such folders script by script
 ([lua](../guides/coney-tools-fidelity.md#lua)), and `coney-tools xbox compare PS2_DISC XBOX_DISC` looks every PS2
 chunk and entry up on the Xbox ([xbox](../guides/coney-tools-disc.md#xbox)). Code:
 [repo:python/src/coney_tools/lua_compare.py](repo:python/src/coney_tools/lua_compare.py) and
 [repo:python/src/coney_tools/xbox_compare.py](repo:python/src/coney_tools/xbox_compare.py). Their counts are the
 ones under [Either disc](#either-disc).
 
-### Proposal: either disc {#either-disc-proposal}
+### Disc policy: PS2 required, Xbox optional {#disc-decision}
 
-The Policy above is a maintainer decision, and so is any change to the installer, so this is a proposal for the
-maintainer, written on 2026-10-28 for #1077. Three ways to go, from [What an Xbox-only install would
-play](#either-verdict):
+**The decision** (a maintainer decision, 2026-10-28, on #1077 after the comparison under [Either disc](#either-disc)):
+the PS2 disc is required and is **the only source of gameplay data**: the scripts, the animations and their events,
+the sound tables, the collision and the characters. Every player, and every peer of a networked session, simulates the
+same bytes. The Xbox disc stays optional and is imported beside the PS2 disc, as Extraction above does: in play it
+gives the HD textures, the movies and other presentation only, and its extra content (the 36 development and test
+level scripts under [The scripts](#scripts), with their levels and scene records) is readable in Coney Studio.
+**There is no Xbox-only install.** Where the Xbox's gameplay data differs ([What an Xbox-only install would
+play](#either-verdict): one clip's keys, 324 animation events, one `level14` clip, the sound tables), the PS2's is used
+in play and the Xbox's never replaces it. The reason is multiplayer: peers whose animation clips differ would not play
+the same game.
 
-1. **The PS2 disc stays required.** Exact by construction; a player with only the Xbox disc cannot play.
-2. **Either disc, the Xbox's data as it is.** An Xbox-only install plays the same missions: the scripts, scenes,
-   paths, object lists, text, characters and random table are the same bytes, and the collision converts exactly but
-   for one `level11` vertex (under 0.0001 units). It plays the Xbox's animation events and sound tables, whose
-   differences lie mostly in bytes the game does not read but are not all proven harmless.
-3. **Either disc, after one more study (proposed).** As 2, once the reads of every animation event type are traced
-   in `Anim_FireFrameEvents` (`0x00101dd8`, [q-xbox-events](#q-xbox-events)). If the 324 differing events differ only
-   in bytes no type reads or by the 4-byte shift, the animations convert exactly too, and an Xbox-only install plays
-   the same game but for one clip's keys (`fidget_turnR`), the `level14` clip the Xbox replaces, the `level11` vertex
-   and what is heard.
+So the Policy above stands, with one change: the Xbox's extra content is no longer ignored but read in Studio.
 
-In every option the PS2 disc stays the reference for research, tests and runtime comparisons; given both discs, the
-install takes the simulation data from the PS2 and the assets as [Asset kinds](#asset-kinds) says, as today; and the
-launcher says which disc an install's simulation data came from. Mission patches work on either install, since every
-`game:/` script path resolves to the same bytes.
+**What the decision leaves**, one task each:
 
-**The work an Xbox-only install needs**, one task each:
-
-1. Read the Xbox archive in the engine: XDVDFS, `XBoxWad.idx` and the `ee_files\` name hash with its subfolders
-   ([The archive](#the-archive), [Name hash](#name-hash)); the Python readers are the reference.
-2. Take the simulation data from it: the collision header 12 bytes earlier, the scene list by name, the Character
-   and Object Lists' sizes from the Xbox resources, and the random table from `default.xbe` at XBE `0x0045e068`
-   (`GameRandom` reads `SLUS_212.15` at `0x005117e0` today).
-3. Draw from it: the models, textures and streamed world from the [resource images](#resource-images), in place of
-   the PS2's RenderWare data (the world sectors' records are not decoded yet).
-4. Play from it: the XACT wave banks (Xbox ADPCM), the sound-index-to-wave table in `xbox000.xsb` ([q-sound-index](#q-sound-index)),
-   the sound classes and the music; the movies are Bink on both discs.
-5. Install from it: recognise the Xbox disc alone (`src/install/known_discs.cpp` lists the PS2 disc's files today),
-   a change to the installer that the maintainer decides.
-6. Trace the animation events' reads ([q-xbox-events](#q-xbox-events)) and who loads the 23 dictionaries the Xbox
-   lacks ([q-orphan-dictionaries](#q-orphan-dictionaries)).
+1. **Gameplay data comes from the PS2.** The asset store serves every simulation kind from the PS2 source alone
+   ([Asset and script architecture](../guides/asset-and-script-architecture.md#asset-layers)), and the Xbox source
+   answers presentation kinds only, an Xbox texture standing in for a PS2 one through the [texture map](#texture-map).
+   The sound tables (which sound plays, its class, its channels) are gameplay data and stay the PS2's, and so do the
+   recordings, as [Sound, speech and music](#sound) says. Whether a peer has the Xbox disc then changes nothing its
+   simulation reads, and the store's simulation digest, which a session compares, stays the same.
+2. **The engine reads the Xbox archive**: XDVDFS, `XBoxWad.idx` and the `ee_files\` name hash with its subfolders
+   ([The archive](#the-archive), [Name hash](#name-hash)), and the [resource images](#resource-images). Play needs it
+   for the HD textures and Studio for the extra content; the Python readers are the reference.
+3. **Studio reads the Xbox-only levels**, from the Xbox disc and for reading: their scripts (by the names under
+   [The scripts](#scripts) and the level table of `config_preload3.lua`; `coney-tools lua decompile --all
+   --xbox-disc` reads them today), their scene records, and where a level has them its streamed world (the `.xlev`
+   and `.xsec` entries under [Levels and the streamed world](#worlds), whose sector records are not decoded yet) and
+   its collision (the PS2 layout with the header 12 bytes earlier, [Everything else the simulation
+   reads](#either-data)). Which of the Xbox-only levels have a world, collision or scene records of their own is not
+   counted yet. Playing one, which would put Xbox gameplay data in play, is outside this decision.
+4. **The Xbox's other differences stay research.** The animation events' reads ([q-xbox-events](#q-xbox-events)) and
+   who loads the 23 dictionaries the Xbox lacks ([q-orphan-dictionaries](#q-orphan-dictionaries)) are questions about
+   the port now, not conditions for an install.
 
 ### Resource index {#resource-index}
 
@@ -796,13 +796,13 @@ perhaps a volume size limit and a flag.
 ### Unnamed Xbox entries {#q-unnamed}
 
 4,498 of 10,587 (models, textures, characters, 652 packs, 227 scripts, 18 text entries) once the 2,048 world files are
-named; `lua decompile --xbox` now names 388 of the 503 scripts. The subfolder scheme (`paks\`, `anims\`, `sectors\`)
-suggests the rest also live in subfolders.
+named; `lua decompile --xbox-disc` now names 388 of the 503 scripts. The subfolder scheme (`paks\`, `anims\`,
+`sectors\`) suggests the rest also live in subfolders.
 
 ### Sound index to wave {#q-sound-index}
 
-The table in `xbox000.xsb` that maps the sound list's index to a wave bank entry; needed for any Xbox sound, and so for
-an Xbox-only install.
+The table in `xbox000.xsb` that maps the sound list's index to a wave bank entry; needed to read any Xbox sound (in
+Studio, say), since play uses the PS2's sound ([Disc policy](#disc-decision)).
 
 ### Model fields {#q-model-fields}
 
@@ -820,9 +820,9 @@ files.
 ### The animation events' reads {#q-xbox-events}
 
 Which bytes `Anim_FireFrameEvents` (`0x00101dd8`) reads for each event type beyond the few known ([Animation
-data](formats/animation.md)); the same question as [Xbox port: animation events](xbox-port.md#q-anim). It decides
-whether the Xbox's 324 differing events (174 with other values) play the same, and so whether the animations convert
-exactly ([Proposal: either disc](#either-disc-proposal)). Trace each type's handler in that function.
+data](formats/animation.md)); the same question as [Xbox port: animation events](xbox-port.md#q-anim). It says
+whether the Xbox's 324 differing events (174 with other values) play the same; play uses the PS2's events either way
+([Disc policy](#disc-decision)). Trace each type's handler in that function.
 
 ### The 23 PS2 dictionaries the Xbox lacks {#q-orphan-dictionaries}
 
@@ -839,9 +839,9 @@ The survey of the archive, names, kinds and asset formats was made on 2026-10-04
 2026-10-07, with the `coney-tools xbox` commands and `extract --xbox`. The comparison under [Either disc](#either-disc)
 was made on 2026-10-28 for #1077, with the PS2 disc mounted and the Xbox disc as its full image:
 
-- `coney-tools lua decompile H:/ --all --out <A>` and `coney-tools lua decompile --all --xbox-disc <image> --out <B>`, each
-  into its own folder outside the repository, then `coney-tools lua compare <A> <B> --list`: the script counts and
-  the 36 Xbox-only scripts. Their names beyond the decompiler's own came from hashing PS2 naming patterns
+- `coney-tools lua decompile H:/ --all --out <A>` and `coney-tools lua decompile --all --xbox-disc <image> --out <B>`,
+  each into its own folder outside the repository, then `coney-tools lua compare <A> <B> --list`: the script counts
+  and the 36 Xbox-only scripts. Their names beyond the decompiler's own came from hashing PS2 naming patterns
   (`level<N>_<suffix>.lua`) under `ee_files\`; what each does was read from its decompile and its natives in the
   index.
 - `coney-tools xbox compare H:/ <image>`: every row of the table under [Everything else the simulation
