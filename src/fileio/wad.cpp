@@ -57,3 +57,12 @@ std::expected<FileStream, Error> Wad::openEntry(const WadEntry& entry) const {
 }
 
 } // namespace coney::io
+
+namespace coney::io {
+
+// A stub for the tests' first run: it replaces nothing.
+std::expected<WadOverrideReport, Error> Wad::useOverrides(const std::filesystem::path& /*folder*/) {
+    return WadOverrideReport{};
+}
+
+} // namespace coney::io

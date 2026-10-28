@@ -9,6 +9,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "core/options.h"
+#include "platform/game_run.h"
 #include "support/fixtures.h"
 #include "support/install_fixtures.h"
 
@@ -107,4 +109,38 @@ TEST_CASE("only a finished install is one to play from", "[install]") {
     options.dataPath = root.string();
     REQUIRE(run(options, release).first == 0);
     CHECK(coney::platform::checkInstallFolder(root).has_value());
+}
+
+TEST_CASE("a game played from an install reads its overrides/files in place of the WAD's entries", "[install][wad]") {
+    // An install's game/ps2 holds the disc's files; overrides/files/<wad name> replaces one entry whole
+    // (docs/guides/asset-and-script-architecture.md#install-folder).
+    TempDir dir;
+    dir.write("Coney/game/ps2/WARRIORS.DIR", coney::test::twoEntryDir().span());
+    coney::test::Bytes wadData;
+    wadData.text("hello").padTo(2048).u32(1).u32(2).u32(3);
+    dir.write("Coney/game/ps2/WARRIORS.WAD", wadData.span());
+    coney::test::Bytes edited;
+    edited.text("edited script");
+    dir.write("Coney/overrides/files/global.lua", edited.span());
+    coney::Options options;
+    options.dataPath = (dir.path() / "Coney").string();
+    options.discPath = coney::installGameFolder(*options.dataPath);
+
+    auto wad = coney::platform::openGameDisc(options);
+    REQUIRE(wad.has_value());
+    REQUIRE(wad->has_value());
+    CHECK((*wad)->modded());
+    auto global = (*wad)->lookup("global.lua");
+    REQUIRE(global.has_value());
+    auto stream = (*wad)->openEntry(**global);
+    REQUIRE(stream.has_value());
+    CHECK(stream->size() == 13);
+
+    // The same files given as a disc (`--disc`) are the unmodded game: overrides belong to an install.
+    coney::Options disc;
+    disc.discPath = options.discPath;
+    auto plain = coney::platform::openGameDisc(disc);
+    REQUIRE(plain.has_value());
+    REQUIRE(plain->has_value());
+    CHECK_FALSE((*plain)->modded());
 }

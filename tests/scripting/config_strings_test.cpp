@@ -6,13 +6,17 @@
 #include <map>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/error.h"
 #include "core/language.h"
+#include "fileio/disc.h"
+#include "fileio/wad.h"
 #include "gui/global_strings.h"
+#include "support/fixtures.h"
 #include "support/lua_fixtures.h"
 
 using coney::Error;
@@ -136,4 +140,28 @@ TEST_CASE("the string bindings refuse a bad id or a non-string text", "[config_s
     CHECK(vm.call(vm.global("CfgCrimeMessage"), std::vector<Value>{Value(0.0), Value(std::string("c"))}).has_value());
     CHECK(strings.get(StringTable::Crime, 0) == "c");
     CHECK(strings.get(0).empty()); // the crime table is not the HUD table
+}
+
+TEST_CASE("wadScriptSource reads a replaced script at the replacement's own size", "[scripting][wad]") {
+    // A recompiled script is rarely the size of the one on the disc: the source must read the file, not the entry's
+    // size in WARRIORS.DIR (docs/guides/asset-and-script-architecture.md#install-folder).
+    coney::test::TempDir disc;
+    disc.write("WARRIORS.DIR", coney::test::twoEntryDir().span());
+    coney::test::Bytes wadData;
+    wadData.text("hello").padTo(2048).u32(1).u32(2).u32(3);
+    disc.write("WARRIORS.WAD", wadData.span());
+    coney::test::TempDir overrides;
+    coney::test::Bytes edited;
+    edited.text("edited script");
+    overrides.write("global.lua", edited.span());
+    auto opened = coney::io::Disc::open(disc.path());
+    REQUIRE(opened.has_value());
+    auto wad = coney::io::Wad::open(std::move(*opened));
+    REQUIRE(wad.has_value());
+    REQUIRE(wad->useOverrides(overrides.path()).has_value());
+
+    auto bytes = coney::script::wadScriptSource(*wad)("global.lua");
+    REQUIRE(bytes.has_value());
+    CHECK(bytes->size() == 13);
+    CHECK(static_cast<char>(bytes->back()) == 't');
 }
