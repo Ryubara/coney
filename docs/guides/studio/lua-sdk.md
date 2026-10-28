@@ -232,7 +232,8 @@ memory = 64                    # MiB, up to Coney's ceiling; shown, never asked
   path, size and SHA-256. Its hash is the mod's **package hash**, which approvals, saves, replays and co-op checks name
   ([The `.cmod` package](mods.md#cmod)). A file the packaged manifest does not list is not read.
 - **Projects find entities by name or tag.** No script is attached to an entity: a project's scripts find what they need
-  when a level starts and handle what is missing, so a level file holds no code.
+  when a level starts and handle what is missing, so a level file holds no code ([Principles](security.md#principles),
+  [Names and tags](project-formats.md#names-tags)).
 - The fields beyond these (client files to download, declared events) are the network page's when P4 comes
   ([Coney resources](../network-architecture.md#resources)).
 
@@ -247,13 +248,13 @@ name, version, package hash, approved permissions and signer ([Installed mods](m
 added on, since scripts are on by default, and only the mods menu or the player editing the file changes it afterwards.
 An enabled mod starts with every session, and a content mod with `autostart = false` starts when its level is played
 ([Starting and stopping](mods.md#starting)). Console commands start and stop mods for the running session only ([Console
-commands](mods.md#console)). Studio's Play runs exactly one project, the open folder, without packaging it, and
-`coney --project <folder>` does the same outside Studio. With no mod enabled, Coney runs exactly as it does without the
-SDK: no project state is made, no entry point runs, and the game is the faithful one ([Roadmap: Script
-mods](../../roadmap.md#script-mods), whose Done line this keeps). A session with any project loaded is a **modded
-session**, said in the run log and in every replay and save it writes, with each mod's package hash; its saves are kept
-apart from the faithful profile ([Modded saves and replays](mods.md#saves-replays), [Asset
-layers](../asset-and-script-architecture.md#asset-layers)).
+commands](mods.md#console)). Studio's Play runs the open folder, without packaging it, as a started content mod with the
+enabled mods beside it ([Starting and stopping](mods.md#starting)), and `coney --project <folder>` does the same outside
+Studio. With no mod enabled, Coney runs exactly as it does without the SDK: no project state is made, no entry point
+runs, and the game is the faithful one ([Roadmap: Script mods](../../roadmap.md#script-mods), whose Done line this
+keeps). A session with any project loaded is a **modded session**, said in the run log and in every replay and save it
+writes, with each mod's package hash; its saves are kept apart from the faithful profile ([Modded saves and
+replays](mods.md#saves-replays), [Asset layers](../asset-and-script-architecture.md#asset-layers)).
 
 ### Entry points {#events}
 

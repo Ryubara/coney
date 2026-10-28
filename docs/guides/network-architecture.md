@@ -529,8 +529,8 @@ Every resource state opens only Coney's allowed libraries (no `io`, `os`, `debug
 `dofile` or `loadfile`, no `require` outside the resource), has its own environment over a read-only API table, an
 instruction budget per call (a count hook that aborts the call) and a memory cap (an allocator that refuses growth past
 it). A client script can never open a file, a socket or another resource's state. The game's Lua 4.0 state runs the
-disc's scripts with Coney's instruction budget; a mod changes one only by a patch, as text, that the player approves and
-Coney applies to the player's own copy. The full rules: [Coney Studio: script security](studio/security.md).
+disc's scripts with Coney's instruction budget; a mod changes one only by a text patch the player approves. The full
+rules: [Coney Studio: script security](studio/security.md).
 
 ## Security {#security}
 

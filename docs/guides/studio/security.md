@@ -380,9 +380,9 @@ path a script gives.
 
 ## A shared Studio project {#studio-project}
 
-Studio's Play runs the open project exactly as the loader runs a mod: one project, sandboxed, no approval asked (it is
-the user's own work; a `game-scripts` permission in a project Studio opened from elsewhere is shown before the first
-Play). Opening a project someone else made is safe because nothing in it runs on open:
+Studio's Play runs the open project exactly as the loader runs a mod: sandboxed, no approval asked for it (it is the
+user's own work; a `game-scripts` permission in a project Studio opened from elsewhere is shown before the first Play).
+Opening a project someone else made is safe because nothing in it runs on open:
 
 - **No script runs until Play**, and Play runs the sandbox, so Studio needs no trust prompt for scripts, unlike VS
   Code's Restricted Mode, whose tasks and debuggers run programs.
@@ -680,12 +680,12 @@ native needs it.
    per step; the watchdog with its "not responding" notice and Stop, off in test mode. Tests: a project that spawns past
    its cap gets the none value and the game's own spawns still succeed; a flooding `print` is cut with one notice line;
    the watchdog never fires in test mode.
-4. **core: Add the strict reading of `.cmod` packages.** The rules for Coney reading a `.cmod`, which [Content and
-   formats](content-and-formats.md#build-issues) build issue 13 adds with the export: the strict zip reader, the package
-   hash, the check of every file against the manifest's list with its result kept in `cache/mods/`, the file layer over
-   a package root; `mods/` holding packages only (a folder there reported, not loaded) and `coney --project <folder>`.
-   Tests: a synthetic package mounts and its project runs; every refusal of the escape suite's `.cmod` item; mounting
-   writes nothing to disk; a package edited after its check is checked again.
+4. **core: Add the strict reading of `.cmod` packages.** The one reader of `.cmod` packages, built here; [Content and
+   formats](content-and-formats.md#build-issues) build issue 13 adds the export that writes them: the strict zip reader,
+   the package hash, the check of every file against the manifest's list with its result kept in `cache/mods/`, the file
+   layer over a package root; `mods/` holding packages only (a folder there reported, not loaded) and `coney --project
+   <folder>`. Tests: a synthetic package mounts and its project runs; every refusal of the escape suite's `.cmod` item;
+   mounting writes nothing to disk; a package edited after its check is checked again.
 5. **core: Add starting, stopping, dependencies and the load order.** `mods/enabled.toml` as the start list (a new
    package added on at start, written by nothing else but the mods menu and the player); `[load] autostart`; starting
    dependencies first and stopping dependants first; `[dependencies]` with semantic-version ranges, missing, disabled
