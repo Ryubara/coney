@@ -184,8 +184,8 @@ What Coney takes:
 | --- | --- | --- |
 | The unmodded game's menus | Unchanged, item for item; nothing below exists while no mod is installed | [Faithful](#faithful) |
 | How mods change the menus | They **add** at **extension points**, sections built to take additions; they never rewrite, hide or reorder the game's screens. Visual changes to the game's own art are asset override packs ([#1058](issue:1058)) | [Extension points](#points) |
-| Which points | The Mods screen (behind a **MODS** item on the main menu of a modded install), EXTRAS, the Rumble Game Mode, Choose Gangs and Choose Area lists, the mission select, and the pause menu's Options (as a MOD OPTIONS page) | [Extension points](#points) |
-| Several mods at one point | Additions follow the game's items, grouped by project in load order, each named `<project>/<id>`; a full point sends the rest to the Mods screen | [Order and clashes](#order) |
+| Which points | The Mods screen (behind a **MODS** item on the main menu of a modded install), the Rumble Game Mode, Choose Gangs and Choose Area lists, the mission select, and the pause menu's Options (as a MOD OPTIONS page) | [Extension points](#points) |
+| Several mods at one point | Additions follow the game's items, grouped by project in load order, each named `<project>/<id>` | [Order and clashes](#order) |
 | Adding entries | `Coney.AddMenuEntry(point, def)` from a script, or `[[menu.entry]]` in the manifest (what Studio writes): title, description, action | [Entries](#entries) |
 | New Rumble teams, modes, arenas | **Menu data events**: when the game builds the list, a project's handler calls the game's own `CfgRumbleGang` and its siblings | [Data events](#data-events) |
 | Mod settings | `Coney.AddOption(def)`: a toggle, a choice, a bar or a sub-screen row on the project's page under MOD OPTIONS | [Option rows](#options) |
@@ -218,7 +218,6 @@ additions are drawn. A point's name is what `Coney.AddMenuEntry` and the manifes
 | Point | Where | Takes | Drawn | Coney today |
 | --- | --- | --- | --- | --- |
 | `mods` | The Mods screen's *Mod content* ([MODS](#mods-screen)) | Entries: play the project's level, open a sub-screen, send a request | Under the project's title, in load order | The screen is Coney's to build (build issue 3) |
-| `extras` | EXTRAS (`PM_Extras`, one item, TRAILER, [the screens](../../research/frontend.md#pm-screens)) | Entries | One item a row under TRAILER, up to the profile manager's four rows | The screen is built; with the device flag `0x02` the original hides EXTRAS, and the additions go to `mods` |
 | `rumble.modes` | The Rumble Game Mode list ([Per screen](../../research/frontend.md#rumble-screens)) | A game mode record (`CfgRumbleGame` in [`rumbleModes`](#data-events)), or an entry that opens the project's own fight set-up | After the game's modes, title over description as theirs | The screen and the native are built; a new mode needs its rules in the game state (script overrides, [the compiler](lua-sdk.md#compiler)) |
 | `rumble.gangs` | Choose Gangs | A team: `CfgRumbleGang` in [`rumbleGangs`](#data-events) | After the custom gangs and the disc's | **Ready**: a team of the game's character types plays |
 | `rumble.arenas` | Choose Area | An arena: `CfgRumbleArena` in [`rumbleArenas`](#data-events) | After the disc's | Waits on project levels that are arenas ([#1058](issue:1058)) |
@@ -226,10 +225,11 @@ additions are drawn. A point's name is what `Coney.AddMenuEntry` and the manifes
 | `options` | The pause menu's Options title list ([The Options screen](../../research/pause.md#options)) | Option rows: a toggle, a choice, a bar, or a row that opens a sub-screen ([Option rows](#options)) | One title, MOD OPTIONS (Coney's text), after the game's seven, opening one page per project | The Options screen is built; the page is Coney's to add (build issue 7) |
 | `hud` | During play | HUD elements ([HUD elements](#hud)) | After the game's HUD parts | Waits on the widget model (build issue 2) |
 
-Sections that are **not** points: the main menu's own items (MODS is Coney's, [below](#mods-screen)), the pause menu's
-grid, the profile, save and card screens, the statistics screen and the game's result screens. Their layouts are fixed
-in code by the original and leave no room; a project reaches the player from the points above. A new point is added by a
-Coney change, with its test, when a project needs one.
+Sections that are **not** points: the main menu's own items (MODS is Coney's, [below](#mods-screen)), EXTRAS (its one
+item, TRAILER, stays alone: a maintainer decision), the pause menu's grid, the profile, save and card screens, the
+statistics screen and the game's result screens. Their layouts are fixed in code by the original and leave no room; a
+project reaches the player from the points above. A new point is added by a Coney change, with its test, when a project
+needs one.
 
 ### Order and clashes {#order}
 
@@ -247,10 +247,7 @@ Several mods add to the same point without stepping on each other or on the game
 4. **Grouped and labelled.** Where the point has room (the Mods screen, MOD OPTIONS), a project's additions sit under
    its title; in the game's own lists (gangs, modes) each addition keeps its own text, and the Mods screen lists what
    each project added where.
-5. **A full point overflows to the Mods screen.** A point with a fixed capacity (EXTRAS' four rows) takes additions in
-   order until full; the rest are drawn on the Mods screen under their project, and the Console says so. Nothing is
-   dropped and nothing is squeezed into the game's layout.
-6. **Nothing removes.** No native or manifest field hides, renames, moves or replaces a game item or another project's
+5. **Nothing removes.** No native or manifest field hides, renames, moves or replaces a game item or another project's
    addition. Switching a mod off removes its additions the next time the screen opens.
 
 ### The MODS entry and the Mods screen {#mods-screen}
@@ -265,22 +262,22 @@ list, the usage line):
    security design defines (name, version, author, signer, what it changes, its permissions and limits,
    [#1062](issue:1062)), to which this page adds **what it adds where** (its additions at each point) and its option
    rows. On and off here or at the console; a permission only here, never by a console command ([#1062](issue:1062)).
-2. **Mod content**: the `mods` point, every enabled project's entries grouped under its title, the overflow of full
-   points, and each content mod that starts by hand (its level, [#1062](issue:1062)).
+2. **Mod content**: the `mods` point, every enabled project's entries grouped under its title, and each content mod that
+   starts by hand (its level, [#1062](issue:1062)).
 
 The Mods screen is Coney's: a project adds to it only through entries, which Coney draws, and can never change, hide or
 cover it ([Safety](#no-spoofing)). MODS is the one item Coney adds to the main menu, and only on a modded install: a mod
 is something the player chose to install, and the way to switch it off must be one step from where the game starts.
-The choice changes the main menu of a modded install, so it is listed under [Maintainer decisions](#decisions).
+A maintainer decided it ([Maintainer decisions](#decisions)).
 
 ### Entries {#entries}
 
-An entry is an item with a title, a description and an action, added at the `mods`, `extras`, `rumble.modes` or
-`missions` point. A script adds it with `Coney.AddMenuEntry` in its `start` handler, and it lasts for the session:
+An entry is an item with a title, a description and an action, added at the `mods`, `rumble.modes` or `missions`
+point. A script adds it with `Coney.AddMenuEntry` in its `start` handler, and it lasts for the session:
 
 ```lua
 Coney.On("start", function()
-  Coney.AddMenuEntry("extras", {
+  Coney.AddMenuEntry("mods", {
     id = "rounds",                               -- yard-brawl/rounds
     title = "YARD BRAWL",                        -- the project's own text
     description = "Five rounds in the yard.",    -- shown where the point shows descriptions
@@ -293,7 +290,7 @@ The manifest holds the same as data, which is what Studio writes and what needs 
 
 ```toml
 [[menu.entry]]
-point = "extras"
+point = "mods"
 id = "rounds"
 title = "YARD BRAWL"
 description = "Five rounds in the yard."
@@ -379,7 +376,7 @@ The maintainer's example, by two routes:
   project adds its missions there with `Coney.AddMenuEntry("missions", {...})`: its level or mission file, its
   checkpoints and an area of its own. The game's areas and their completed missions come first, as the original lists
   them (`MissionSelect_IsMissionListed` `0x001bc100`, completed missions of levels 2 to 99, confirmed (code)).
-- **As a project's own screen**: an entry at `mods` or `extras` whose action opens a [mod screen](#widgets) with a list
+- **As a project's own screen**: an entry at `mods` whose action opens a [mod screen](#widgets) with a list
   of the levels a script chooses, `accept` starting one at a checkpoint. It needs a list widget, the level table
   (`Coney.GetLevels`, a read of the records the game's `CfgLevelName` calls made) and `Coney.StartLevel`
   ([First Coney natives](lua-sdk.md#build-issues)); all three have their C++ today. The [example](#example) below is
@@ -486,8 +483,8 @@ Every native follows the security design's rules for natives (checked arguments,
 - **Back always closes.** On a mod screen with no screen under it in its flow, back closes it: the `back` handler runs,
   but cannot keep the screen open. A project cannot trap the player ([Safety](#no-spoofing)).
 - **One screen per player.** Each player slot has at most one mod screen open; player 2's screen reads port 2.
-- **No mouse.** The game has no pointer and neither do mod screens, as in the original; Studio's editing is the place
-  for the mouse.
+- **Pad and keyboard only, for now** (a maintainer decision): the game has no pointer, and neither do mod screens.
+  Mouse support in the menus is planned for later ([Later](#later)).
 
 ### HUD elements {#hud}
 
@@ -594,7 +591,7 @@ items, holding the project's additions as players will see them, and those are w
 
 **Play from the main menu.** Beside Play (which starts the project's level, [Play, step by step](lua-sdk.md#play)), a
 second target starts the play session at the front end, with the project enabled as a mod, so the user walks the real
-main menu, MODS, EXTRAS and the Rumble lists with the project's entries and gangs in place, by pad or keyboard in the
+main menu, MODS, the Rumble lists and MOD OPTIONS with the project's additions in place, by pad or keyboard in the
 Game view.
 
 ### Previewing and testing in Studio {#preview}
@@ -672,7 +669,7 @@ Nobody plays a mod's menu to check it ([Testing](../testing.md)). The tests, wri
   keep a screen open past back, and cannot pass a refused tag or more widgets than its limit.
 - **Extension points.** Two fixture projects add at the same point: their additions follow the game's items, in load
   order and then in each project's order; swapping the load order swaps them; the game's items keep their places,
-  texts and default selection; a full EXTRAS sends the rest to the Mods screen; an id added twice by one project
+  texts and default selection; an id added twice by one project
   replaces its own; no call can name a game item or another project's addition; switching a mod off removes its
   additions.
 - **Data events.** A fixture gang added in `rumbleGangs` appears after the disc's, keeps the defaults, and plays a 1 ON
@@ -684,7 +681,7 @@ Nobody plays a mod's menu to check it ([Testing](../testing.md)). The tests, wri
   the same file (the same code draws both), for the pull request's Screenshots.
 - **Studio** ([Testing Studio](technology.md#testing)): the Test Engine opens a screen file, drags a widget, edits a
   property, checks the file's statements, runs Preview with an input script, and opens the front end, adds an entry
-  at the EXTRAS slot and checks the manifest's `[[menu.entry]]`.
+  at the Mods screen's slot and checks the manifest's `[[menu.entry]]`.
 
 ## What changes on other pages {#other-pages}
 
@@ -705,29 +702,27 @@ When this design is accepted, these lines change on the pages that own them:
 
 ## Maintainer decisions {#decisions}
 
-1. **MODS on the main menu of a modded install** ([The MODS entry](#mods-screen)): with any mod installed, the main
-   menu shows a fourth item that the original does not have. Without mods nothing changes. The alternative is MODS
-   under EXTRAS, which keeps the main menu's three items but puts the off switch two screens deep.
-2. **The extension points and what Coney adds for them** ([Extension points](#points)): a maintainer set the model
-   (mods add at sections built to take additions, and never rewrite the game's screens). This page proposes the
-   points, and two of them change a modded install's screens beyond the lists the game already has: additions under
-   TRAILER on EXTRAS, and a MOD OPTIONS title after the seven Options pages. Without mods neither appears.
-3. **No pointer in the game's menus** ([Focus](#focus)): mod screens are driven by pad and keyboard only, as the
-   original's are; a mouse would make mods' screens unlike the game's.
+1. **Mods add, never rewrite**: they add at extension points and never rewrite, hide or reorder the game's screens; the
+   game's own look is the asset override packs' ([#1058](issue:1058), [Extending the menus](#extending)).
+2. **MODS on the main menu, only when a mod is installed** ([The MODS entry](#mods-screen)): with any mod installed the
+   main menu shows MODS after QUICK RUMBLE; with none it is the original's three items.
+3. **MOD OPTIONS is the one new place in the game's screens**: besides MODS, Coney adds only a MOD OPTIONS title to the
+   pause menu's Options ([Option rows](#options)); the other points are lists the game already has. EXTRAS takes no mod
+   items.
+4. **Pad and keyboard only, for now** ([Focus](#focus)): mod screens and the menus are driven by the pad and the
+   keyboard, as the original's are. Mouse support in the menus is planned for later ([Later](#later)).
 
 ## Open questions {#open-questions}
 
-- **Which characters the fonts hold**: `part_page0` and `big_font` are byte-indexed sheets; which bytes
-  beyond ASCII have rectangles, and so which accented letters a project's text can use, is not listed. A disc check
-  can count them.
-- **Mod gangs' packs**: a gang's id names a character pack that the arena script precaches; for an id no
-  disc pack has, loading the roster's types one by one is the stand-in. Which file a pack id names, and whether the
-  arena's precache needs the pack, are to be traced from `ConfigRumble`'s calls.
-- **Pausing in co-op offline**: two players on one machine with one opening a screen; does `pause = true` pause both,
-  as the game's pause menu does, or does it fall back to taking one pad?
-- **More points**: whether the pause grid (a project's own pause page) or the statistics screen should take
-  additions; this page leaves them out because their layouts are fixed and full, and adds a point only when a project
-  needs one.
+- **Which characters the fonts hold**: `part_page0` and `big_font` are byte-indexed sheets; which bytes beyond ASCII
+  have rectangles, and so which accented letters a project's text can use, is not listed. A disc check can count them.
+- **Mod gangs' packs**: a gang's id names a character pack that the arena script precaches; for an id no disc pack has,
+  loading the roster's types one by one is the stand-in. Which file a pack id names, and whether the arena's precache
+  needs the pack, are to be traced from `ConfigRumble`'s calls.
+- **Pausing in co-op offline**: two players on one machine with one opening a screen; does `pause = true` pause both, as
+  the game's pause menu does, or does it fall back to taking one pad?
+- **More points**: whether the pause grid (a project's own pause page) or the statistics screen should take additions;
+  this page leaves them out because their layouts are fixed and full, and adds a point only when a project needs one.
 - **The limits' sizes** ([Limits](#limits)): measured on real projects before the first release.
 
 ## Proposed build issues {#build-issues}
@@ -757,8 +752,8 @@ runtime, the loader and the first Coney natives, [Proposed build issues](lua-sdk
    level through a request; a server script calling a UI native is refused; a refused tag is an error.
 5. **core: Add screen files, menu entries and the extension points.** The `ui/<name>.screen` reader in the statement
    format and `Coney.LoadScreen`; the extension point registry with the order and clash rules (game items first, load
-   order then registration order, `<project>/<id>` names, overflow to the Mods screen, nothing removable);
-   `Coney.AddMenuEntry` and `[[menu.entry]]` with the three actions at the `mods`, `extras` and `rumble.modes` points;
+   order then registration order, `<project>/<id>` names, nothing removable); `Coney.AddMenuEntry` and
+   `[[menu.entry]]` with the three actions at the `mods` and `rumble.modes` points;
    the entries' languages; the additions in each mod's details. The `missions` point follows once the mission select
    is ported. Tests: a screen file round-trips; the extension-point tests of [Tests](#tests); a `play` entry starts the
    project's level.
@@ -780,8 +775,13 @@ runtime, the loader and the first Coney natives, [Proposed build issues](lua-sdk
    in the Screen view with the screen picker, the game's screens read-only, each extension point's slot with the
    project's additions (and optionally the other enabled mods'), *Add here* writing `[[menu.entry]]` and
    `[[menu.option]]`, script additions shown after a Preview, and the Play target that starts at the front end with the
-   project enabled. Tests (Test Engine): an entry added at the EXTRAS slot appears in the manifest and, after Play from
-   the main menu, on EXTRAS in the Game view.
+   project enabled. Tests (Test Engine): an entry added at the Mods screen's slot appears in the manifest and, after
+   Play from the main menu, on the Mods screen in the Game view.
+
+### Later {#later}
+
+Mouse support in the menus, planned by a maintainer decision: pointing and clicking in the game's menus and mod
+screens beside the pad and the keyboard, filed as a build issue when it is taken up.
 
 ## Sources {#sources}
 
