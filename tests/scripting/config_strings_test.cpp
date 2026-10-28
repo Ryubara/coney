@@ -99,6 +99,7 @@ ScriptSource sources(std::map<std::string, std::vector<std::byte>> files) {
 } // namespace
 
 TEST_CASE("the string load runs the language's strings file and fills the HUD table", "[config_strings]") {
+    // Expected: gui.md#strings, confirmed (code)
     const ScriptSource source = sources({
         {"enum_preload.lua", luaChunk(enumScript())},
         {"config_preload2.lua", luaChunk(configScript())},
@@ -127,6 +128,7 @@ TEST_CASE("the string load runs the language's strings file and fills the HUD ta
 }
 
 TEST_CASE("the string bindings refuse a bad id or a non-string text", "[config_strings]") {
+    // Expected: gui.md#strings, Coney's own argument check
     coney::script::LuaVm vm;
     GlobalStrings strings;
     coney::script::addStringBindings(vm, strings);
@@ -143,6 +145,7 @@ TEST_CASE("the string bindings refuse a bad id or a non-string text", "[config_s
 }
 
 TEST_CASE("wadScriptSource reads a replaced script at the replacement's own size", "[scripting][wad]") {
+    // Expected: formats/wad-dir.md#install-overrides, Coney's own behaviour (no counterpart in the original)
     // A recompiled script is rarely the size of the one on the disc: the source must read the file, not the entry's
     // size in WARRIORS.DIR (docs/guides/asset-and-script-architecture.md#install-folder).
     coney::test::TempDir disc;

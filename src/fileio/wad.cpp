@@ -55,6 +55,8 @@ std::expected<const WadEntry*, Error> Wad::lookup(std::string_view nameOrHash) c
     return fail(ErrorCode::NotFound, std::format("no WAD entry is called \"{}\"", nameOrHash));
 }
 
+// Coney's choice: a FileStream is a value, so any number of entries are open at once. The original's stream file
+// system hands out streams from a pool and opens one at a time (docs/research/file-io.md#original-structure).
 std::expected<FileStream, Error> Wad::openEntry(const WadEntry& entry) const {
     // An install's override replaces the entry whole, whatever its size; Coney's own step before the original's read.
     if (const auto found = m_overrides.find(entry.nameHash); found != m_overrides.end()) {

@@ -24,6 +24,7 @@ constexpr double kMaxStringId = 4294967295.0;
 using BindingResult = std::expected<std::vector<Value>, Error>;
 
 // A binding `name(id, text)` that stores the text as string `id` of `table`.
+// @orig 0x0035e5d0 CfgHUDMessage (unknown)
 NativeFunction stringSetter(std::string_view name, gui::StringTable table, gui::GlobalStrings& strings) {
     return [name = std::string(name), table, &strings](std::span<const Value> args) -> BindingResult {
         const std::optional<double> id = args.empty() ? std::nullopt : args[0].number();
@@ -40,6 +41,7 @@ NativeFunction stringSetter(std::string_view name, gui::StringTable table, gui::
 }
 
 // Reads `name` through `source` and runs it in `vm`; errors name the script.
+// @coney-only the string load's own runner over a ScriptSource; the original's doFile reads its stream file system
 std::expected<void, Error> runScript(LuaVm& vm, const ScriptSource& source, std::string_view name) {
     auto bytes = source(name);
     if (!bytes) {

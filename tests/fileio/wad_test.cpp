@@ -19,6 +19,7 @@ using coney::test::TempDir;
 using coney::test::twoEntryDir;
 
 TEST_CASE("Wad opens a disc folder, looks entries up and reads them", "[wad]") {
+    // Expected: formats/wad-dir.md#name-lookup, confirmed (code)
     TempDir folder;
     folder.write("WARRIORS.DIR", twoEntryDir().span());
     // The archive the index describes: global.lua's 5 bytes at 0, level1.lev's 12 at 2048.
@@ -48,6 +49,7 @@ TEST_CASE("Wad opens a disc folder, looks entries up and reads them", "[wad]") {
 }
 
 TEST_CASE("Wad refuses a disc without the archive", "[wad]") {
+    // Expected: formats/wad-dir.md#coneys-implementation, Coney's own check
     TempDir folder;
     folder.write("WARRIORS.DIR", twoEntryDir().span());
     auto disc = Disc::open(folder.path());
@@ -70,6 +72,7 @@ void writeTwoEntryDisc(const TempDir& folder) {
 } // namespace
 
 TEST_CASE("Wad reads an entry from an overrides folder in place of the archive's", "[wad]") {
+    // Expected: formats/wad-dir.md#install-overrides, Coney's own behaviour (no counterpart in the original)
     TempDir disc;
     writeTwoEntryDisc(disc);
     TempDir overrides;
@@ -106,6 +109,7 @@ TEST_CASE("Wad reads an entry from an overrides folder in place of the archive's
 }
 
 TEST_CASE("Wad treats a missing overrides folder as no overrides", "[wad]") {
+    // Expected: formats/wad-dir.md#install-overrides, Coney's own behaviour (no counterpart in the original)
     TempDir disc;
     writeTwoEntryDisc(disc);
     auto opened = Disc::open(disc.path());
@@ -136,6 +140,7 @@ TEST_CASE("Wad treats a missing overrides folder as no overrides", "[wad]") {
 }
 
 TEST_CASE("Wad takes the first name in order when two override files name one entry", "[wad]") {
+    // Expected: formats/wad-dir.md#install-overrides, Coney's own behaviour (no counterpart in the original)
     TempDir disc;
     writeTwoEntryDisc(disc);
     TempDir overrides;

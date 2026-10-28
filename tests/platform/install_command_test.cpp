@@ -54,6 +54,7 @@ FixtureRelease smallRelease() {
 } // namespace
 
 TEST_CASE("coney --install copies the disc into the folder and prints counts and the digest", "[install]") {
+    // Expected: discs.md#digests, Coney's own install record
     TempDir dir;
     const FixtureRelease release = smallRelease();
     for (const auto& [name, data] : release.contents()) {
@@ -82,6 +83,7 @@ TEST_CASE("coney --install copies the disc into the folder and prints counts and
 }
 
 TEST_CASE("coney --install refuses a folder that is not the game's disc", "[install]") {
+    // Expected: discs.md#ps2-ntsc-u, Coney's own check of the known releases
     TempDir dir;
     const FixtureRelease release = smallRelease();
     dir.write("other/SLES_000.00", std::vector<std::byte>(5));
@@ -95,6 +97,7 @@ TEST_CASE("coney --install refuses a folder that is not the game's disc", "[inst
 }
 
 TEST_CASE("only a finished install is one to play from", "[install]") {
+    // Expected: discs.md#digests, Coney's own install record (written last)
     TempDir dir;
     const FixtureRelease release = smallRelease();
     for (const auto& [name, data] : release.contents()) {
@@ -112,6 +115,7 @@ TEST_CASE("only a finished install is one to play from", "[install]") {
 }
 
 TEST_CASE("a game played from an install reads its overrides/files in place of the WAD's entries", "[install][wad]") {
+    // Expected: formats/wad-dir.md#install-overrides, Coney's own behaviour (no counterpart in the original)
     // An install's game/ps2 holds the disc's files; overrides/files/<wad name> replaces one entry whole
     // (docs/guides/asset-and-script-architecture.md#install-folder).
     TempDir dir;

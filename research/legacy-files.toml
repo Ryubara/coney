@@ -1200,9 +1200,6 @@ tag = 7
 ["src/scenes/scene_cache.h"]
 comment = 1
 
-["src/scenes/scene_disc.cpp"]
-tag = 2
-
 ["src/scenes/scene_list.cpp"]
 tag = 1
 
@@ -1241,9 +1238,6 @@ tag = 3
 
 ["src/scripting/character_bindings.cpp"]
 tag = 8
-
-["src/scripting/config_strings.cpp"]
-tag = 4
 
 ["src/scripting/effects_bindings.cpp"]
 tag = 6
@@ -1907,9 +1901,6 @@ citation = 2
 ["tests/fileio/wad_index_test.cpp"]
 citation = 5
 
-["tests/fileio/wad_test.cpp"]
-citation = 2
-
 ["tests/gamemodes/disc_front_end_test.cpp"]
 citation = 1
 
@@ -2530,9 +2521,6 @@ citation = 6
 
 ["tests/scripting/car_bindings_test.cpp"]
 citation = 3
-
-["tests/scripting/config_strings_test.cpp"]
-citation = 2
 
 ["tests/scripting/disc_script_system_test.cpp"]
 citation = 1
