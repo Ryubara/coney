@@ -390,9 +390,8 @@ did the same thing to the game. That is the parity test the architecture page se
 - **The gate.** Studio offers a level's 5.4 form only when its differential runs agree on every function and, where
   Coney plays the mission, every playthrough test's traces are equal. Shared scripts (`global.lua`, the preloads, the
   language files) run in every level, so their 5.4 forms are offered last, once every level that runs them passes.
-  Studio thus reflects Coney: a level gains its 5.4 form when Coney proves it. Today no level is proved, and the
-  playthrough runs reach as far as Coney plays: 2 of the 29 missions are at Pending Gameplay Approval and 7 in progress
-  ([Missions](../../missions/index.md)).
+  Studio thus reflects Coney: a level gains its 5.4 form when Coney proves it, and the playthrough runs reach only as
+  far as Coney plays each mission ([Missions](../../missions/index.md) has their status).
 
 What the traces **prove**: on the runs made, the translated scripts behave exactly as the 4.0 scripts do in Coney.
 What they **do not prove**: paths no run reached (the differential runs' coverage says how much is left); anything about
