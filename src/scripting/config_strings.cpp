@@ -30,7 +30,8 @@ NativeFunction stringSetter(std::string_view name, gui::StringTable table, gui::
     return [name = std::string(name), table, &strings](std::span<const Value> args) -> BindingResult {
         // The original reads both arguments with Lua's optional readers: a missing or nil id is 0, a numeric string
         // id converts, a number given as the text becomes its text and a missing text is stored as none.
-        // Coney's choice: the id must be given as a number and the text as a string, or the script stops.
+        // Coney's choice: the id must be given as a number and the text as a string, or the script stops, so a slip
+        // in an edited script is reported rather than stored as string 0 or no text (the disc's scripts pass none).
         const std::optional<double> id = args.empty() ? std::nullopt : args[0].number();
         const std::optional<std::string_view> text = args.size() < 2 ? std::nullopt : args[1].string();
         // Coney's choice: an id that is not a whole number in range stops the script too; the original cuts any

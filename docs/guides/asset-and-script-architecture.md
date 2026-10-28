@@ -67,7 +67,8 @@ Rules that keep the layers apart:
   executable tables. This extends the Xbox policy (assets only, never behaviour) to every source. The store
   reports a **simulation digest** over the simulation kinds it served, which test mode and multiplayer compare.
 - **Test mode uses the PS2 data only.** `--headless`, `--input-script` and the disc tests build a store with the PS2
-  source alone, so reference comparisons never see an override or an Xbox texture.
+  source alone, so reference comparisons never see an override or an Xbox texture. Until the store exists, the one
+  override built ([`overrides/files/`](#file-overrides)) is read by every `--data` run, test mode included.
 - **librw stays a renderer detail.** Presentation loaders return CPU data (an image with its palette and mip
   levels, a mesh). `src/platform/` uploads that data. Today librw both parses and uploads RenderWare streams; the
   boundary moves in two steps ([Benefits](#benefits)).
@@ -215,6 +216,11 @@ place of the entry's range of `WARRIORS.WAD`:
   reads the archive. Every kind read through the WAD sees it, scripts and scenes included, and those readers size
   their buffer from the stream, not the index, because a replacement is rarely the entry's size.
 - Any replacement makes the session modded (`Wad::modded()`, logged at start-up). `--disc` never reads overrides.
+- Test mode does not yet keep them out: a `--headless` or `--input-script` run with `--data` reads them too (that is
+  how an edited script's checkpoint restart is tested), and only the "modded session" line tells. The disc tests
+  read the disc folder (`CONEY_DISC`), never an install's overrides. A reference or replay run is made with `--disc`,
+  or from an install whose `overrides/files/` is empty, until the store builds test mode from the PS2 source alone
+  ([the rule](#asset-layers)).
 
 How to play an edited script: [Running Coney](running.md#install).
 
