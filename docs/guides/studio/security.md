@@ -256,8 +256,8 @@ A project state runs stock Lua 5.4 ([How Lua 5.4 is built](lua-sdk.md#lua-build)
 | `debug` | no | Breaks isolation and memory safety (`setupvalue`, `setlocal`, `sethook`, `getregistry`, `setmetatable` on any type) | Errors carry file, line and a traceback; the [script debugger](lua-sdk.md#debugger) works from outside the state |
 
 The rows that say "no" are absent, not stubbed: the name is nil in the project's environment, the language server's
-stubs disable it ([Typed stubs](lua-sdk.md#stubs)), and the environment's lookup turns a call into an error naming the
-replacement.
+stubs disable it ([Typed stubs](lua-sdk.md#stubs)), and the error a script gets from using one (Lua's own "attempt to
+index a nil value") gains a line naming the replacement.
 
 ### What natives may do {#natives}
 
