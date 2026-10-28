@@ -34,6 +34,8 @@ its line to the `nav:` of `mkdocs.yml`, under *Coney Studio design*.
 | [The Level view, gizmos and composing](level-view.md) | The fly camera and the keymap, Unity's transform gizmo, selection and undo, composing a level from primitives, textures, colliders and path points | [#1055](issue:1055) |
 | [Technology](technology.md) | The GUI library, the `coney-studio` program, how Play and live edits run, the code editor and language server, the debugger, hot reload, the importers | [#1056](issue:1056) |
 | Script security and sandbox (planned) | How Studio and Coney keep a project's scripts from harming the player's machine | [#1062](issue:1062) |
+| UI and menus for mods (planned) | The interface a project's scripts can show | [#1063](issue:1063) |
+| The Coney console (planned) | The F8 terminal, profilers and logs | [#1064](issue:1064) |
 | [Lua SDK and natives](lua-sdk.md) | The natives and their names, the Lua 5.4 runtime for projects and its loader, the manifest, the sandbox, typed stubs for completions, hot reload | [#1057](issue:1057) |
 | Content and formats (planned) | What Studio shows and edits from the disc's files, a project's own formats, import and export | [#1058](issue:1058) |
 
@@ -65,3 +67,9 @@ because *The Warriors* is made of levels and calls its in-engine cutscenes scene
   of entities, the level's settings on the level and sorting by kind as a filter ([The Hierarchy's
   tree](editor-experience.md#hierarchy-tree)).
 - **Level, not scene: decided.** Studio says *level* wherever other editors say *scene* ([Terms](#terms)).
+
+## Questions for a maintainer {#questions}
+
+- **Shipping the theme's fonts.** Studio's theme uses Inter and JetBrains Mono, both under the SIL Open Font License
+  1.1 ([Look and theme](editor-experience.md#theme)); Coney ships no font under that licence today, and a licence
+  question is a maintainer's ([AGENTS.md](repo:AGENTS.md)).

@@ -109,7 +109,7 @@ handles it through the one path a real one takes. Drag-and-drop import into the 
 **The licence.** The Test Engine is not MIT: its licence (v1.04) is free for a natural person, a not-for-profit, for
 education, for software "released publicly and under an Open Source license" (an OSI one), or for a company under 2
 million USD of turnover, and paid otherwise; copies keep its notice. Coney, public under GPL-3.0-or-later, falls in the
-free terms, but the licence is not GPL-compatible. A maintainer decided (2026-10-28) how Coney uses it: **in test
+free terms, but the licence is not GPL-compatible. A maintainer decided how Coney uses it: **in test
 builds only**. `cmake/deps.cmake` fetches it from upstream at a pinned commit for those builds; it is never vendored
 into the repository, and never built into a release or a play-test build.
 

@@ -303,9 +303,11 @@ Godot 4.6's editor theme, read from its source (`editor/settings/editor_settings
 | Code font | **JetBrains Mono**, 14 px (range 8 to 48) | SIL Open Font License 1.1 |
 | Follow the system | off; also *use the system's accent colour* | Picks the light or dark preset, and the accent, from the operating system |
 
-Both fonts are under the SIL Open Font License 1.1, which lets Studio ship them in its release with their licence
-text, as Godot does in `thirdparty/fonts` ([LEGAL.md](repo:LEGAL.md#licences) lists every third-party licence Coney
-ships).
+The technology page already chose the same two fonts for Studio
+([Choice: Dear ImGui with docking](technology.md#gui-choice)). Both are under the SIL Open Font License 1.1, which Godot
+ships with their licence text in `thirdparty/fonts`; Coney ships no font under it today
+([LEGAL.md](repo:LEGAL.md#licences)), so shipping them is a question for a maintainer
+([Questions for a maintainer](index.md#questions)).
 
 ### Coney Studio's defaults {#theme-defaults}
 
@@ -500,7 +502,8 @@ second tree to tell apart from the first.
   game.
 - **Eject** (F8, Unreal) leaves the player where he stands and flies the Level view's camera through the running game,
   and F8 again takes the player back. It realizes the play mode's free camera (the Camera page's, which flies while the
-  player stands still).
+  player stands still). Studio's own keys (the Play keys, F8) are caught by Studio before the game, even while the Game
+  view has the keyboard; the Coney console's F8 in the game ([#1064](issue:1064)) is that unit's to place in Studio.
 - **The mouse and keyboard** go to the game while the Game view has focus, and Escape gives them back to the editor
   (Unity's rule), so Escape is never the game's pause in Studio; the gamepads always go to the game, as they do with the
   overlay open.

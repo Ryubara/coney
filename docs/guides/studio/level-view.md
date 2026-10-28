@@ -64,7 +64,7 @@ to document and test.
 | Ctrl+A | select all in the focused panel | same | same | same | same |
 | Ctrl+S | save the open level | Save | Save scene | Save | publish or save |
 | Ctrl+P, Ctrl+Shift+P, Ctrl+Alt+P | Play and Stop, Pause, Step | same | F5, F7 | Alt+P | F5, Shift+F5 |
-| F8 | Eject in Play | none | none | Eject | Run |
+| F8 | Eject in Play (Studio catches it before the game; the Coney console's F8 is [#1064](issue:1064)'s to place) | none | none | Eject | Run |
 | Ctrl+Shift+Alt+P | Play here, from the Level view's camera | none | none | none | Play Here (no key) |
 | Ctrl+Shift+R | Restart Play from the level's start | none | none | none | none |
 

@@ -110,8 +110,7 @@ says the same before the script runs, because the stubs list only what is availa
 ### Lua 5.4 for projects, Lua 4.0 for the game {#runtime-choice}
 
 The architecture page advises one runtime until mods need what Lua 4.0 lacks
-([Three parts](../asset-and-script-architecture.md#script-parts)). The SDK is that need. A maintainer decided
-(2026-10-28):
+([Three parts](../asset-and-script-architecture.md#script-parts)). The SDK is that need. A maintainer decided:
 
 - **Lua 4.0 stays the runtime of the game**: the disc's scripts, Coney's own rewrites of the level scripts (compared
   call for call with the originals), script overrides that replace a disc script, and the debug console in the game
@@ -639,8 +638,8 @@ When this design is accepted, these lines change on the pages that own them:
 
 ## Maintainer decisions {#decisions}
 
-1. **A second Lua runtime: Lua 5.4 for projects** ([The runtime](#runtime-choice)). Decided by a maintainer
-   (2026-10-28), with its new dependency, stock Lua 5.4 (MIT licence). The network page lists the same choice for
+1. **A second Lua runtime: Lua 5.4 for projects** ([The runtime](#runtime-choice)). Decided by a maintainer, with its new
+   dependency, stock Lua 5.4 (MIT licence). The network page lists the same choice for
    resources.
 2. **Projects and faithful first: decided, no exception needed** ([Studio's decisions](index.md#decisions)). Running a
    project is still a modded session.
