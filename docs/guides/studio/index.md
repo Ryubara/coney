@@ -32,7 +32,8 @@ its line to the `nav:` of `mkdocs.yml`, under *Coney Studio design*.
 | --- | --- | --- |
 | [Editor experience](editor-experience.md) | The words (level, Level view, prefab), the panels, the Hierarchy's tree and the default layout, saved layouts, the project folder, a new level and its templates, Play mode and live edits while playing, the import flow, previews; the build issues of both pages | [#1055](issue:1055) |
 | [The Level view, gizmos and composing](level-view.md) | The fly camera and the keymap, Unity's transform gizmo, selection and undo, composing a level from primitives, textures, colliders and path points | [#1055](issue:1055) |
-| Technology (planned) | The GUI library, one program or an editor mode of `coney`, how Play runs the engine, the code editor and language server, hot reload | [#1056](issue:1056) |
+| [Technology](technology.md) | The GUI library, the `coney-studio` program, how Play and live edits run, the code editor and language server, the debugger, hot reload, the importers | [#1056](issue:1056) |
+| Script security and sandbox (planned) | How Studio and Coney keep a project's scripts from harming the player's machine | [#1062](issue:1062) |
 | [Lua SDK and natives](lua-sdk.md) | The natives and their names, the Lua 5.4 runtime for projects and its loader, the manifest, the sandbox, typed stubs for completions, hot reload | [#1057](issue:1057) |
 | Content and formats (planned) | What Studio shows and edits from the disc's files, a project's own formats, import and export | [#1058](issue:1058) |
 

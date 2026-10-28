@@ -4,8 +4,8 @@ The design of how Coney Studio looks and feels to the person using it: its words
 the layouts a user saves, the project folder, a new level, Play mode, importing files and previews. Moving round a level
 and building it (the fly camera, the keymap, the gizmo, selection, undo and composing) are on [The Level view, gizmos
 and composing](level-view.md). **Status: design; nothing here is built.** What Studio is, and the other design pages,
-are on [Coney Studio](index.md); the GUI library and how Play runs the engine are the technology page's
-([#1056](issue:1056)), so this page holds for whichever library that page picks.
+are on [Coney Studio](index.md); the GUI library, the program and how Play and live edits run inside it are the
+[technology](technology.md) page's.
 
 The design comes from four editors people already know: Unity, Godot, Unreal and above all **Roblox Studio**, the
 closest model, because it too is an editor for one game's content rather than a general engine. FiveM is the model for
@@ -123,7 +123,7 @@ has what it names.
 | **Texture viewer** | A texture dictionary or sprite sheet, image by image | The texture and sprite sheet viewers ([viewers](../running-viewers.md#viewing-texture-dictionaries)) | ready |
 | **Debug panels** | Every page of the debug menu that is not a panel above, each as a panel: among them Tunables, Player, Camera, Spawner, AI fighters, Levels, Missions, Movies, Cheats, HUD, Display, Audio and Network ([pages](../debug-menu.md#pages)) | The debug menu's model, which any front end renders ([One model](../debug-menu.md#one-model)) | ready |
 | **Level settings** (in the Inspector, with the level selected) | The level's sky, sun, ambient light, fog, occlusion and shadows ([The Hierarchy's tree](#hierarchy-tree)) | A sandbox layout's `sky`, `sun`, `ambient`, `fog`, `occlusion` and `shadows` statements ([Statements](../sandbox.md#statements)) | ready for sandbox layouts; a game level's lights and a sun that changes sneaking wait on the [realtime lighting](../realtime-lighting.md) enhancement |
-| **Script editor** | A project's Lua scripts, with VS Code's keys, completions from the masterlist and live errors | The mods runtime ([Script mods](../../roadmap.md#script-mods)) | waits on the mods runtime and the technology page's editor choice |
+| **Script editor** | A project's Lua scripts, with VS Code's keys, completions from the masterlist and live errors | The mods runtime ([Script mods](../../roadmap.md#script-mods)) | waits on the mods runtime; the editor is the [technology](technology.md#code-editor) page's |
 | **Paths** | A level's path network, drawn and edited | Path overlays from the level's path data ([Still to come](../debug-menu.md#still-to-come)) | waits on Coney's path overlays and a project path format ([#1058](issue:1058)) |
 | **Mission editor** | A mission's checkpoints and objectives | Coney's level scripts ([Scripts](../asset-and-script-architecture.md#scripts)) | waits on the mods runtime and a mission format of Coney's own |
 
@@ -170,9 +170,10 @@ mode](#play-coney)).*
 - **Sorting by kind is a filter.** The Hierarchy's search box takes a name or a kind (`t:spawn` shows only spawn points,
   `t:fighter` only fighters, as Unity's `t:` search does), and its filter menu has one entry per kind; the tree shows
   the matches with their parents greyed for context.
-- **Create** from an entity's right-click makes the new entity its child; from empty space, a top-level entity ([The
-  Create menu](level-view.md#create-menu)). Ctrl+Shift+G puts the selection under a new group (Unity's *Create Empty
-  Parent*), and *Ungroup* in the right-click menu moves a group's children up and deletes it.
+- **Create** from an entity's right-click makes the new entity its child (once the level format keeps parents; in a
+  sandbox layout it is a top-level entity); from empty space, a top-level entity ([The Create
+  menu](level-view.md#create-menu)). Ctrl+Shift+G puts the selection under a new group (Unity's *Create Empty Parent*),
+  and *Ungroup* in the right-click menu moves a group's children up and deletes it.
 - **A prefab instance** is one row that opens to its entities, marked as a prefab; a value an instance changes is marked
   in the Inspector as an override, with *Revert* and *Apply to prefab* (Unity's). Double-clicking the row's prefab icon
   opens the prefab on its own to edit, and every instance follows.
@@ -310,10 +311,11 @@ under version control and read without Studio, which Roblox's one-file place is 
   opens it in its viewer; what can be edited, and how a game asset becomes a project's own (an export to glTF on the
   player's machine, say), is the content page's ([#1058](issue:1058)).
 - **Export** (*File > Export project...*) packs the finished project into one `.cmod` file (a working name) for Coney's
-  mods folder, which the Lua SDK page designs ([The mods folder](lua-sdk.md#mods-folder)): the manifest, the levels, the
-  scripts and the project's own assets, never `.studio/` and never a `game:/` file, which a player's own disc supplies.
-  Export saves first, checks that the manifest's level and scripts exist, and says what it left out and why. The
-  package's layout is the content page's ([#1058](issue:1058)).
+  mods folder: the manifest, the levels, the scripts and the project's own assets, never `.studio/` and never a `game:/`
+  file, which a player's own disc supplies. Export saves first, checks that the manifest's level and scripts exist, and
+  says what it left out and why. The package's layout is the content page's ([#1058](issue:1058)). The Lua SDK page
+  installs a project as a folder in `mods/` ([The mods folder](lua-sdk.md#mods-folder)); whether the loader reads a
+  `.cmod` as it is or a player's install unpacks it into that folder is for that page to settle, and Export waits on it.
 - **Moves, renames and deletes happen in the File system panel**, Godot's rule, so Studio can fix the project's
   references to the file; a delete lists the files that refer to it and asks first, and goes to the system's recycle
   bin. A change made outside Studio (an editor saving a script, a texture repainted) is seen and the file is imported
@@ -421,12 +423,12 @@ second tree to tell apart from the first.
 - **The mouse and keyboard** go to the game while the Game view has focus, and Escape gives them back to the editor
   (Unity's rule), so Escape is never the game's pause in Studio; the gamepads always go to the game, as they do with the
   overlay open.
-- Play starts from the level **as edited**, saved or not; what a player of the project gets is what is saved, and the
-  title bar marks unsaved edits as it does outside Play.
+- **Play saves first** (and a recovery copy, [How Play runs](technology.md#play-session)), so what plays is what a
+  player of the project would get.
 
-How the engine runs for Play (in Studio's process, as Unity, or as a child process, as Godot) is the technology page's
-choice ([#1056](issue:1056)). This page asks that Stop leaves the level as edited and nothing of the running game, that
-the Game view's frames are Coney's, and that the running game can take a level edit between two steps.
+Play runs in Studio's own process, a play session on its own simulation thread drawn into the Game view ([In the process
+or a child process](technology.md#play-process)); how the session is built and thrown away is the
+[technology](technology.md#play-session) page's, and how it loads a project is the [Lua SDK](lua-sdk.md#play) page's.
 
 ### Live edits while playing {#live-edits}
 
@@ -436,12 +438,13 @@ and accepts that it is rough at first. Studio follows **Godot's model**, the onl
 - **An edit in the Level view during Play edits the level**, as it would outside Play: it is a command on the undo
   stack, it is saved with the level, and it is **kept after Stop**. Losing work done while playing is the best known
   trap of Unity's Play mode, and Studio's users build levels, so the level is what they edit.
-- **The same edit is sent to the running game**, as Godot's *Synchronize Scene Changes* does: a command applied between
-  two steps, as the Entity editor's are, so a step never sees half an edit. What each edit does to the running game:
+- **The same edit is sent to the running game**, as Godot's *Synchronize Scene Changes* does: an edit command applied
+  between two steps ([Live edits during Play](technology.md#live-edits) has the queue), so a step never sees half an
+  edit. What each edit does to the running game:
 
   | Edit to the level | In the running game |
   | --- | --- |
-  | A primitive moved, turned, sized, added or deleted; its collision changed | Its drawn mesh and its collision are rebuilt in place; a human standing on it falls or lands as physics decides |
+  | A primitive moved, turned, sized, added or deleted; its collision changed | Its drawn mesh is rebuilt in place, and its collision too where the asset kinds allow it ([Hot reload](technology.md#hot-reload)); otherwise it applies on the next Play |
   | A texture, tiling or tint | Drawn with the new one at the next frame |
   | Sky, sun, ambient light, fog, occlusion, shadows | Applied at the next frame |
   | An AI fighter moved or turned | Teleported there through the Entity editor's *Teleport* and *Heading*, which an AI human takes |
@@ -490,7 +493,7 @@ the running game's are deliberately not.
 - **A name already taken** asks: replace the file, or keep both under a new name. A file of a kind Studio cannot use is
   refused with the list of the kinds it can; nothing is copied in "for later".
 - **Changes on disk are imported again**: a file of the project saved by another program is seen and reimported, as in
-  Unity and Godot; for a script that is where hot reload begins ([#1056](issue:1056)).
+  Unity and Godot; for a script that is where hot reload begins ([Hot reload](technology.md#hot-reload)).
 
 What can be imported is what Coney can load (rule 2), so the list grows with Coney:
 
@@ -559,8 +562,10 @@ realizes:
 
 In the order they should come. Each realizes a feature Coney has today; the issues for what waits on Coney (the script
 editor, paths, a mission editor, lighting for game levels, several players) are written when Coney gains it, from the
-roadmap the parent issue asks for. The technology page ([#1056](issue:1056)) comes before the first, since it picks the
-library and the program.
+roadmap the parent issue asks for. They are the editor's side of the work, and four of them meet the [technology page's
+build issues](technology.md#build-issues), which build the program, the play session, the edit command queue and the
+importers: when filed, issue 1 here goes with its issue 2, issue 7 with its 5, issue 8 with its 6 and issue 9 with its
+10, as one issue each.
 
 1. **tools: Add the Coney Studio shell with projects and layouts.** Studio starts, makes a new project folder with its
    manifest and the folders above, or opens one, and remembers the recent ones. Its panels dock, tab, float and resize;
@@ -621,7 +626,8 @@ library and the program.
     levels, scripts and the project's own assets into one `.cmod` file for the mods folder, leaving out `.studio/` and
     every `game:/` file, after saving and checking that the manifest's level and scripts exist. Tests: an exported
     package of a fixture project unpacks to the same files; a project that refers to a `game:/` asset exports with no
-    game data in it. It comes after the mods loader the Lua SDK page proposes, which reads the package.
+    game data in it. It waits on the Lua SDK page settling how the mods folder takes a `.cmod` ([The mods
+    folder](lua-sdk.md#mods-folder)).
 
 ## Sources {#sources}
 
