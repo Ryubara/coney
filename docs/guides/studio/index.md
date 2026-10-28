@@ -69,12 +69,13 @@ because *The Warriors* is made of levels and calls its in-engine cutscenes scene
   tree](editor-experience.md#hierarchy-tree)).
 - **Shipping the theme's fonts: decided.** Inter and JetBrains Mono, both under the SIL Open Font License 1.1, ship
   with Coney Studio with their licence files alongside ([Look and theme](editor-experience.md#theme)).
+- **Stealth stays zone-based: decided.** Stealth works the way *The Warriors* does it: zones that put the player in
+  stealth when he walks onto them, never real shadows, and Studio lets a user place those zones
+  ([The Create menu](level-view.md#create-menu)). A sun's real shadows, once the lighting enhancement has them, are
+  visual only.
 - **Level, not scene: decided.** Studio says *level* wherever other editors say *scene* ([Terms](#terms)).
 
-## Questions for a maintainer {#questions}
+## Later {#later}
 
-- **Shadows and sneaking.** The brief asks for a sun whose shadows the sneak zones follow (a player in shadow hides or
-  sneak-attacks). The [realtime lighting design](../realtime-lighting.md) makes changing the gameplay-visible lighting
-  a non-goal and says real shadows must never feed the stealth flag, so the AI stays the original's. Studio offers a sun
-  with real shadows once that enhancement exists, with stealth unchanged, unless a maintainer decides that shadows may
-  change sneaking in a project's own levels.
+- **Shadow-based stealth**: a sun's real shadows deciding where the player can hide. Not for now (a level would hold too
+  many shadows), and left open as a possible future item.

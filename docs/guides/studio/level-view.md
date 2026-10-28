@@ -217,6 +217,7 @@ the Entity editor's *Move to camera* and *Drop to ground*), is selected, and the
 | **Target** | A passive human to fight | A layout's `target` | ready |
 | **AI fighter** | An AI human that fights back | A layout's `fighter` ([AI fighters](../sandbox.md#ai-fighters)) | ready |
 | **Camera view** | A viewpoint, chosen from the Level view's view menu | A layout's `view` | ready |
+| **Stealth zone** | Ground that puts the player in stealth when he walks onto it: a flat solid shape whose collision carries the shadow-ground flag, shown in the Level view as a tinted area | The game's shadow ground, collision triangles with flag `0x10` ([Stealth: shadow ground](../../research/stealth.md#shadow-ground)), which Coney implements, and a layout shape's `flags=0x10` ([Shapes](../sandbox.md#shapes)) | ready |
 | **Path point** | A point of the level's path network, linked to others | Coney's AI pathing ([AI moving](../../research/ai-moving.md)) | waits on Coney's path overlays and a project path format ([#1058](issue:1058)) |
 | **Character** of any type | A human of one of the game's character types, on a side | The AI fighters page's model picker and *Change character* ([pages](../debug-menu.md#pages)) | waits on a level format that places one (a layout's fighter is one fixed type) |
 

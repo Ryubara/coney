@@ -48,7 +48,7 @@ internals:** a script reaches the game only through natives, the same boundary t
 | **Lua SDK** | What Coney ships for script writers: the available natives and SDK functions, the runtime that runs them, their typed stubs for the editor, the generated reference and the debugger |
 | **Available** | A native is available when Coney implements it and the SDK allows it ([How a native reaches the SDK](#availability)). Only available natives exist for a project's scripts, its stubs and its reference |
 | **SDK level** | A whole number that grows each time a Coney release makes natives available; a project names the level it needs ([The SDK level](#sdk-level)) |
-| **Project** | A folder with a `coney-project.toml` manifest: levels, assets and scripts. Studio creates and edits projects ([#1055](issue:1055)); a player installs one into the mods folder; a ConeyMP server runs several. A project is what [Network architecture](../network-architecture.md#resources) calls a *resource* and FiveM calls a resource: one folder, one manifest |
+| **Project** | A folder with a `coney-project.toml` manifest: levels, assets and scripts. Studio creates and edits projects ([The project](editor-experience.md#project-coney)); a player installs one into the mods folder; a ConeyMP server runs several. A project is what [Network architecture](../network-architecture.md#resources) calls a *resource* and FiveM calls a resource: one folder, one manifest |
 | **Mod** | A project installed in the mods folder and switched on. Studio's Play runs the open project the same way |
 | **The game state** | The one Lua 4.0 state per level in which the disc's scripts run, as today ([Scripts](../../research/scripting.md#life-of-the-lua-state)) |
 | **A project state** | The Lua 5.4 state of one project, its own environment and globals, which the [sandbox](#sandbox) holds in |
@@ -182,9 +182,10 @@ keeps the last one set, from whichever state, as the original's one slot does.
 
 ## Projects and the manifest {#manifest}
 
-A project folder is the one Studio creates ([#1055](issue:1055) owns its layout: `levels/`, `textures/`, `scripts/`
-and the `.studio/` cache). This page owns the manifest's name and its script fields, and proposes TOML (as
-`coney.local.toml`), not FiveM's Lua manifest: a manifest that is code would have to run before the sandbox exists.
+A project folder is the one Studio creates ([The project](editor-experience.md#project-coney) owns its layout:
+`levels/`, `textures/`, `scripts/` and the `.studio/` cache). This page owns the manifest's name and its script fields,
+and proposes TOML (as `coney.local.toml`), not FiveM's Lua manifest: a manifest that is code would have to run before
+the sandbox exists.
 
 ```toml
 # coney-project.toml
@@ -314,8 +315,9 @@ flowchart TB
    ([The sandbox](#sandbox)). Rendering reads the result and calls no script.
 8. **Stop.** At the next step boundary: the `levelEnd` handlers (reason `stop`), then `stop`; the project state is
    closed; the game state is destroyed as a level unload destroys it; the session ends. Every handle either state
-   held dies with the session, so nothing a project made outlives Play. Studio then shows the edit state it kept,
-   unchanged ([#1055](issue:1055): Play never changes the edited level).
+   held dies with the session, so nothing a project made outlives Play. Studio then shows the edited level with the
+   level edits made while playing and nothing of the running game
+   ([Live edits while playing](editor-experience.md#live-edits)).
 
 A level change during Play (a project calling `Coney.StartLevel`, or a `game:/` level's own `runNextMission`) runs
 `levelEnd` (reason `change`), unloads and remakes the game state as the game does (without the preloads, as the
@@ -336,8 +338,9 @@ call its functions. Whether it may read a game-state global through a Coney nati
 ## Assets by path {#assets}
 
 A project's script loads, plays or spawns an asset by its path, as engines do (`Resources.Load` in Unity, `load()` in
-Godot). The paths are the editor page's two roots ([#1055](issue:1055)); the formats behind them and how an import
-becomes a project file are the [content page](content-and-formats.md#paths)'s, and the two pages use the same scheme:
+Godot). The paths are the editor page's two roots ([The project](editor-experience.md#project-coney)); the formats
+behind them and how an import becomes a project file are the [content page](content-and-formats.md#paths)'s, and the two
+pages use the same scheme:
 
 | Root | Means | Example |
 | --- | --- | --- |
