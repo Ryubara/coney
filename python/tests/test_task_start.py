@@ -59,6 +59,8 @@ class World:
         self.github = FakeGitHub(self.clock)
         self.github.add_issue(10, title="gameplay: Fix the fight goal")
         self.conventions: Conventions = CONVENTIONS
+        #: The machine's build slots: 4 places with two units per build slot.
+        self.build_slots = 2
         self.output: list[str] = []
         self.posted: list[tuple[int, str]] = []
         original = self.github.post_command
@@ -71,11 +73,14 @@ class World:
 
     # -- the scene
 
-    def claim(self, issue: int = 10, task: str = TASK, login: str = USER, exempt: bool = False) -> None:
-        """A held claim, as `task create` leaves it; `exempt` when the issue carries the `workflow` label."""
+    def claim(
+        self, issue: int = 10, task: str = TASK, login: str = USER, exempt: bool = False, studio: bool = False
+    ) -> None:
+        """A held claim, as `task create` leaves it; `exempt` when the issue carries the `workflow` label, `studio` the
+        Studio label."""
         if issue not in self.github.items:
             self.github.add_issue(issue)
-        plant_claim(self.github, issue, login, task=task, exempt=exempt)
+        plant_claim(self.github, issue, login, task=task, exempt=exempt, studio=studio)
 
     def task_file(self, task: str = TASK, **changes: object) -> Path:
         """Write the task file of `task` the way `task create` does; returns its path."""
@@ -95,11 +100,16 @@ class World:
         return path
 
     def ready(
-        self, task: str = TASK, issues: tuple[int, ...] = (10,), workflow: bool = False, **changes: object
+        self,
+        task: str = TASK,
+        issues: tuple[int, ...] = (10,),
+        workflow: bool = False,
+        studio: bool = False,
+        **changes: object,
     ) -> None:
-        """A claimed task with its task file: what `task start` needs; `workflow` labels its issues."""
+        """A claimed task with its task file: what `task start` needs; `workflow` or `studio` labels its issues."""
         for number in issues:
-            self.claim(number, task, exempt=workflow)
+            self.claim(number, task, exempt=workflow, studio=studio)
         self.task_file(task, issues=issues, **changes)
 
     def push_to_origin(self, name: str = "later.txt") -> str:
@@ -125,6 +135,7 @@ class World:
             now=self.clock.now,
             who=lambda: dict(WHO),
             out=self.output.append,
+            build_slots=self.build_slots,
         )
 
     def run(self, task: str = TASK, **request: object) -> int:
@@ -624,14 +635,20 @@ def test_a_claim_made_without_a_task_id_says_so(world: World) -> None:
 
 
 def plant_unit(
-    world: World, task: str, kind: str = "feature", end: str | None = None, tree: bool = True, workflow: bool = False
+    world: World,
+    task: str,
+    kind: str = "feature",
+    end: str | None = None,
+    tree: bool = True,
+    workflow: bool = False,
+    studio: bool = False,
 ) -> None:
     """Another unit of this machine on the issue its name starts with: a record, a worktree folder and a log that ends
-    at `end` (reviewed, finished); with `workflow`, its issue carries the `workflow` label (on its claim card)."""
+    at `end` (reviewed, finished); with `workflow` (or `studio`), its issue carries that label (on its claim card)."""
     folder = world.scratch / task
     issue = int(task.split("-", 1)[0])
-    if workflow:
-        world.claim(issue, task, exempt=True)
+    if workflow or studio:
+        world.claim(issue, task, exempt=workflow, studio=studio)
     tree_path = world.worktree(task)
     if tree:
         tree_path.mkdir(parents=True)
@@ -661,7 +678,7 @@ def test_the_slots_in_use_are_reported(world: World) -> None:
     plant_unit(world, "31-b")
     world.ready()
     assert world.run() == 0
-    assert "slots: 3 of 3 task slots in use" in world.said()
+    assert "slots: 3 of 4 places on this machine in use" in world.said()
 
 
 def with_enforce(world: World, enforce: bool) -> None:
@@ -676,7 +693,7 @@ def test_over_the_slot_limit_is_only_reported_when_it_is_not_enforced(world: Wor
         plant_unit(world, f"{number}-x")
     world.ready()
     assert world.run() == 0
-    assert "slots: 4 of 3 task slots in use" in world.said() and "not enforced" in world.said()
+    assert "slots: 4 of 4 places on this machine in use" in world.said() and "not enforced" in world.said()
 
 
 def test_over_the_slot_limit_is_refused_while_it_is_enforced(world: World) -> None:
@@ -684,7 +701,9 @@ def test_over_the_slot_limit_is_refused_while_it_is_enforced(world: World) -> No
         plant_unit(world, f"{number}-x")
     world.ready()
     assert world.run() == 1
-    assert "3 task units are in work" in world.said() and "tasks.start.slots" in world.said() and untouched(world)
+    said = world.said()
+    assert "no place for a reimplementation unit (3 of 4 in use, 1 kept for fix)" in said
+    assert "tasks.start.slots" in said and untouched(world)
     assert "30-x" in world.said()
 
 
@@ -693,7 +712,7 @@ def test_a_workflow_task_holds_no_slot_and_is_never_refused(world: World) -> Non
         plant_unit(world, f"{number}-x")
     world.ready(kind="tooling", workflow=True)
     assert world.run() == 0
-    assert "holds no slot" in world.said()
+    assert "holds no place" in world.said()
 
 
 def test_tooling_that_is_not_the_workflow_is_counted_and_refused_like_any_task(world: World) -> None:
@@ -701,7 +720,7 @@ def test_tooling_that_is_not_the_workflow_is_counted_and_refused_like_any_task(w
         plant_unit(world, f"{number}-x")
     world.ready(kind="tooling")
     assert world.run() == 1
-    assert "3 task units are in work" in world.said()
+    assert "no place for a reimplementation unit (3 of 4 in use, 1 kept for fix)" in world.said()
 
 
 def test_a_unit_of_a_workflow_task_is_not_counted(world: World) -> None:
@@ -710,7 +729,7 @@ def test_a_unit_of_a_workflow_task_is_not_counted(world: World) -> None:
     plant_unit(world, "32-flow", kind="tooling", workflow=True)
     world.ready()
     assert world.run() == 0
-    assert "slots: 3 of 3 task slots in use" in world.said()
+    assert "slots: 3 of 4 places on this machine in use" in world.said()
 
 
 def test_a_workflow_label_added_after_task_create_exempts_the_start(world: World) -> None:
@@ -719,7 +738,7 @@ def test_a_workflow_label_added_after_task_create_exempts_the_start(world: World
     world.ready(kind="tooling")
     assert world.run() == 1
     world.claim(10, TASK, exempt=True)  # the label was added; the claim Action's next pass updates the card
-    assert world.run() == 0 and "holds no slot" in world.said()
+    assert world.run() == 0 and "holds no place" in world.said()
 
 
 def test_a_workflow_label_removed_after_task_create_ends_the_exemption(world: World) -> None:
@@ -727,7 +746,7 @@ def test_a_workflow_label_removed_after_task_create_ends_the_exemption(world: Wo
         plant_unit(world, f"{number}-x")
     world.ready(kind="tooling", workflow=True)
     world.claim(10, TASK, exempt=False)  # the label was removed
-    assert world.run() == 1 and "3 task units are in work" in world.said()
+    assert world.run() == 1 and "no place for a reimplementation unit (3 of 4 in use, 1 kept for fix)" in world.said()
 
 
 def test_a_task_file_that_says_workflow_does_not_exempt_the_start(world: World) -> None:
@@ -741,6 +760,33 @@ def test_a_task_file_that_says_workflow_does_not_exempt_the_start(world: World) 
     assert world.run() == 1
 
 
+def test_a_studio_start_is_admitted_past_three_reimplementation_units(world: World) -> None:
+    world.build_slots = 5  # 10 places
+    for number in range(30, 33):
+        plant_unit(world, f"{number}-x")
+    world.ready(kind="tooling", studio=True)
+    assert world.run() == 0
+    assert "slots: 4 of 10 places on this machine in use with 10-fix-the-fight-goal (studio track)" in world.said()
+
+
+def test_studio_may_not_take_the_place_kept_for_reimplementation(world: World) -> None:
+    plant_unit(world, "30-s", kind="tooling", studio=True)
+    plant_unit(world, "31-s", kind="tooling", studio=True)
+    world.ready(kind="tooling", studio=True)
+    assert world.run() == 1
+    said = world.said()
+    assert "no place for a studio unit (2 of 4 in use, 1 kept for reimplementation, 1 kept for fix)" in said
+    assert "30-s" in said and "[studio]" in said and untouched(world)
+
+
+def test_a_second_fix_unit_is_refused_by_task_start(world: World) -> None:
+    world.build_slots = 5
+    plant_unit(world, "40-fix", kind="fix")
+    started_parent(world)
+    fix_file(world)
+    assert world.run(FIX) == 1 and "the fix track is full (1 of 1)" in world.said()
+
+
 def test_a_unit_that_passed_review_finished_or_lost_its_worktree_holds_no_slot(world: World) -> None:
     plant_unit(world, "30-reviewed", end="reviewed")
     plant_unit(world, "31-finished", end="finished")
@@ -748,7 +794,7 @@ def test_a_unit_that_passed_review_finished_or_lost_its_worktree_holds_no_slot(w
     plant_unit(world, "33-working")
     world.ready()
     assert world.run() == 0
-    assert "slots: 2 of 3 task slots in use" in world.said()
+    assert "slots: 2 of 4 places on this machine in use" in world.said()
 
 
 def test_a_unit_with_a_damaged_log_keeps_its_slot(world: World) -> None:
@@ -756,21 +802,21 @@ def test_a_unit_with_a_damaged_log_keeps_its_slot(world: World) -> None:
     segment = world.scratch / "30-odd" / "stamps" / "0001.jsonl"
     segment.write_text(segment.read_text(encoding="utf-8").replace('"seq":1', '"seq":9'), encoding="utf-8")
     world.ready()
-    assert world.run() == 0 and "slots: 2 of 3 task slots in use" in world.said()
+    assert world.run() == 0 and "slots: 2 of 4 places on this machine in use" in world.said()
 
 
 def test_a_folder_that_is_not_a_unit_is_ignored(world: World) -> None:
     (world.scratch / "pcsx2").mkdir(parents=True)
     (world.scratch / "30-odd").mkdir()
     world.ready()
-    assert world.run() == 0 and "slots: 1 of 3 task slots in use" in world.said()
+    assert world.run() == 0 and "slots: 1 of 4 places on this machine in use" in world.said()
 
 
 def test_a_unit_record_that_cannot_be_read_keeps_its_slot(world: World) -> None:
     (world.scratch / "30-odd").mkdir(parents=True)
     (world.scratch / "30-odd" / "unit.json").write_text("{", encoding="utf-8")
     world.ready()
-    assert world.run() == 0 and "slots: 2 of 3 task slots in use" in world.said()
+    assert world.run() == 0 and "slots: 2 of 4 places on this machine in use" in world.said()
 
 
 # --- a fix task -----------------------------------------------------------------------------------------------------
@@ -881,8 +927,8 @@ def test_fix_slots_are_counted_apart_from_task_slots(world: World) -> None:
     started_parent(world)
     fix_file(world)
     assert world.run(FIX) == 0
-    assert "slots: 2 of 1 fix slots in use" in world.said() and "not enforced" in world.said()
-    assert "task slots" not in world.said()
+    assert "(fix track, 2 of 1)" in world.said() and "not enforced" in world.said()
+    assert "reimplementation track" not in world.said()
 
 
 def test_a_fix_is_over_when_a_review_passes_after_it_started(world: World) -> None:

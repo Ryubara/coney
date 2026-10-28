@@ -865,6 +865,9 @@ class Claims:
     limits: ClaimLimits
     #: A claim of an issue with this label is outside the open-claims limit (the units that build the workflow).
     exempt_label: str
+    #: A claim of an issue with this label is outside the open-claims limit too, for good: Coney Studio work, which
+    #: has its own track (docs/guides/agents.md#slots). None in a file from before the key (no issue is Studio work).
+    studio_label: str | None
     #: The stages at which a claim stops counting toward the limit (its slot is free); an open pull request does too.
     limit_ends_at: tuple[str, ...]
     critical_label: str
@@ -905,6 +908,19 @@ class Claims:
     settle_seconds: int
     #: The cron schedule of the hourly sweep.
     sweep: str
+
+    def outside_limit(self, labels: Iterable[str]) -> bool:
+        """Whether a claim of an issue with these labels is outside the open-claims limit (`exempt_label` or
+        `studio_label`)."""
+        return self.is_workflow(labels) or self.is_studio(labels)
+
+    def is_workflow(self, labels: Iterable[str]) -> bool:
+        """Whether an issue with these labels is a unit that builds the new workflow (`exempt_label`)."""
+        return self.exempt_label in set(labels)
+
+    def is_studio(self, labels: Iterable[str]) -> bool:
+        """Whether an issue with these labels is Coney Studio work (`studio_label`; never without one)."""
+        return self.studio_label is not None and self.studio_label in set(labels)
 
 
 @dataclass(frozen=True)
@@ -958,13 +974,59 @@ class TaskReview:
 
 
 @dataclass(frozen=True)
-class TaskSlots:
-    """How many units of work one machine runs at once (docs/guides/issues.md#starting)."""
+class TrackModel:
+    """One model and effort an agent of a track may be started on, and what it is for."""
 
-    #: Task units in work (from `task start` until they pass Review).
-    task: int
-    #: Fix units in work (a fix of a pull request that failed in CI).
-    fix: int
+    #: The Agent call's `model` (`opus`, `sonnet`, ...), lower case.
+    model: str
+    #: The Agent call's `effort` (`medium`, `high`, ...), lower case.
+    effort: str
+    #: What the pair is for, in a word or two (`research`, `development`): shown in a refusal.
+    use: str
+
+
+@dataclass(frozen=True)
+class Track:
+    """One track of engineer work (docs/guides/agents.md#slots)."""
+
+    #: Places kept for the track while it runs fewer units: no other track may take them.
+    min: int
+    #: The most units of the track in work at once; None: only the machine limit caps it.
+    max: int | None
+    #: The model and effort pairs an agent of the track must be started on; empty: any.
+    models: tuple[TrackModel, ...] = ()
+    #: The task kinds whose units fill the track's `min` (a tooling or docs unit sits in the reimplementation track but
+    #: is not game work, so it must not be the "at least one" it keeps); empty: every kind fills it.
+    min_kinds: tuple[str, ...] = ()
+
+    def fills_min(self, kind: str) -> bool:
+        """Whether a unit of this task kind counts toward the track's `min`."""
+        return not self.min_kinds or kind in self.min_kinds
+
+
+@dataclass(frozen=True)
+class Tracks:
+    """The three tracks: reimplementation (game work outside Studio), fix (a pull request's problems) and Coney
+    Studio (an issue labelled `claims.studio_label`)."""
+
+    reimplementation: Track
+    fix: Track
+    studio: Track
+
+    def of(self, name: str) -> Track:
+        """The track called `name` (`reimplementation`, `fix` or `studio`)."""
+        found: Track = getattr(self, name)
+        return found
+
+
+@dataclass(frozen=True)
+class TaskSlots:
+    """How many units of work one machine runs at once, by track (docs/guides/agents.md#slots)."""
+
+    tracks: Tracks
+    #: Units in work per build slot of the machine (`build_slots` in coney.local.toml): the machine limit is their
+    #: product, every track together.
+    per_build_slot: int
     #: Whether `task start` and the coordinator's Agent guard refuse a unit over the limit; false only reports it.
     enforce: bool
     #: Whether a task whose issue carries `claims.exempt_label` (the units that build the new workflow, read from the
@@ -1915,7 +1977,14 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
         "create_wait_seconds",
         "settle_seconds",
     )
-    labels = ("critical_label", "claimable_status", "working_label", "review_label", "released_label", "exempt_label")
+    labels = (
+        "critical_label",
+        "claimable_status",
+        "working_label",
+        "review_label",
+        "released_label",
+        "exempt_label",
+    )
     table = _table(
         data,
         where,
@@ -1941,6 +2010,9 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
             *labels,
             *counts,
         ),
+        # Optional: the file of a default branch from before the Studio track has none, and the release commands read
+        # its claims (`load_release_rules_at`); without it no issue is Studio work, the stricter reading.
+        ("studio_label",),
     )
     commands_where = _at(where, "commands")
     commands = _table(table["commands"], commands_where, tuple(_COMMAND_GROUPS))
@@ -1961,7 +2033,8 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
     limits_where = _at(where, "limits")
     limits = _table(table["limits"], limits_where, ("maintainer", "contributor", "issues_per_task"))
     names = {key: _text(table[key], _at(where, key)) for key in labels}
-    _names_in(names.values(), label_names, where, "in labels.list")
+    studio = _text(table["studio_label"], _at(where, "studio_label")) if "studio_label" in table else None
+    _names_in([*names.values(), *([studio] if studio else [])], label_names, where, "in labels.list")
     paused = _texts(table["paused_labels"], _at(where, "paused_labels"))
     _names_in(paused, label_names, _at(where, "paused_labels"), "in labels.list")
     hold = _texts(table["hold_labels"], _at(where, "hold_labels"))
@@ -2008,6 +2081,7 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
             issues_per_task=_count(limits["issues_per_task"], _at(limits_where, "issues_per_task")),
         ),
         exempt_label=names["exempt_label"],
+        studio_label=studio,
         critical_label=names["critical_label"],
         claimable_status=names["claimable_status"],
         working_label=names["working_label"],
@@ -2070,6 +2144,51 @@ def _read_task_review(data: object, where: str) -> TaskReview:
     )
 
 
+#: The values the Agent tool takes for `model` and `effort`: a track's model pairs must use these.
+AGENT_MODELS = ("opus", "sonnet", "haiku", "fable")
+AGENT_EFFORTS = ("low", "medium", "high", "xhigh", "max")
+
+
+def _read_track(data: object, where: str) -> Track:
+    """One track: `min`, perhaps `max` (absent: only the machine caps it), `min_kinds` and `models`."""
+    table = _table(data, where, ("min",), ("max", "models", "min_kinds"))
+    least = _count(table["min"], _at(where, "min"), minimum=0)
+    most = _count(table["max"], _at(where, "max")) if "max" in table else None
+    if most is not None and least > most:
+        raise _fail(_at(where, "min"), f"must be at most max ({most})")
+    models: list[TrackModel] = []
+    models_where = _at(where, "models")
+    if "models" in table and not isinstance(table["models"], list):
+        raise _fail(models_where, "expected a list")
+    for index, entry in enumerate(table.get("models") or ()):
+        entry_where = f"{models_where}[{index}]"
+        pair = _table(entry, entry_where, ("model", "effort", "use"))
+        models.append(
+            TrackModel(
+                model=_choice(pair["model"], _at(entry_where, "model"), AGENT_MODELS),
+                effort=_choice(pair["effort"], _at(entry_where, "effort"), AGENT_EFFORTS),
+                use=_text(pair["use"], _at(entry_where, "use")),
+            )
+        )
+    min_kinds = _texts(table["min_kinds"], _at(where, "min_kinds")) if "min_kinds" in table else ()
+    return Track(min=least, max=most, models=tuple(models), min_kinds=min_kinds)
+
+
+def _read_tracks(data: object, where: str, per_build_slot: int) -> Tracks:
+    """The `tracks` of `tasks.start.slots`: reimplementation, fix and studio, each with its rule. The places the tracks
+    keep must fit on a machine of one build slot, or no machine could hold them."""
+    table = _table(data, where, ("reimplementation", "fix", "studio"))
+    tracks = Tracks(
+        reimplementation=_read_track(table["reimplementation"], _at(where, "reimplementation")),
+        fix=_read_track(table["fix"], _at(where, "fix")),
+        studio=_read_track(table["studio"], _at(where, "studio")),
+    )
+    kept = tracks.reimplementation.min + tracks.fix.min + tracks.studio.min
+    if kept > per_build_slot:
+        raise _fail(where, f"the tracks keep {kept} places, more than one build slot holds (per_build_slot)")
+    return tracks
+
+
 def _read_tasks(data: object, where: str) -> Tasks:
     """The `tasks` section: the task kinds, the task file's name, the leads limits, `task start` and the review."""
     table = _table(data, where, ("kinds", "file", "leads", "start", "review"))
@@ -2091,17 +2210,27 @@ def _read_tasks(data: object, where: str) -> Tasks:
     slots = _table(
         start["slots"],
         slots_where,
-        ("task", "fix", "enforce", "exempt_workflow", "agent_types", "reserve_minutes"),
+        ("tracks", "per_build_slot", "enforce", "exempt_workflow", "agent_types", "reserve_minutes"),
     )
+    per_build_slot = _count(slots["per_build_slot"], _at(slots_where, "per_build_slot"))
+    tracks = _read_tracks(slots["tracks"], _at(slots_where, "tracks"), per_build_slot)
+    kinds = _texts(table["kinds"], _at(where, "kinds"))
+    for name in ("reimplementation", "fix", "studio"):
+        unknown = [kind for kind in tracks.of(name).min_kinds if kind not in kinds]
+        if unknown:
+            raise _fail(
+                _at(_at(_at(slots_where, "tracks"), name), "min_kinds"),
+                f"{', '.join(unknown)} is not one of the task kinds ({', '.join(kinds)})",
+            )
     return Tasks(
-        kinds=_texts(table["kinds"], _at(where, "kinds")),
+        kinds=kinds,
         file=file,
         leads=LeadsRules(**numbers),
         start=TaskStart(
             unit_file=unit_file,
             slots=TaskSlots(
-                task=_count(slots["task"], _at(slots_where, "task")),
-                fix=_count(slots["fix"], _at(slots_where, "fix")),
+                tracks=tracks,
+                per_build_slot=per_build_slot,
                 enforce=_flag(slots["enforce"], _at(slots_where, "enforce")),
                 exempt_workflow=_flag(slots["exempt_workflow"], _at(slots_where, "exempt_workflow")),
                 agent_types=_texts(slots["agent_types"], _at(slots_where, "agent_types")),

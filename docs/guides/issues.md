@@ -223,6 +223,7 @@ issue keeps](#closed)).
 | | `duplicate` | This issue already exists |
 | | `wontfix` | This will not be worked on |
 | | `workflow` | Builds the new workflow; its claim is outside the open-claims limit |
+| | `studio` | Coney Studio work: its own track, outside the open-claims limit |
 | | `claim-trial` | A throwaway issue for testing the claim Action; never real work |
 <!-- conventions:end -->
 
@@ -313,9 +314,9 @@ hold back. `claims.trial` is no switch: it only lets one test issue try adoption
   (`S-pending-review` while its pull request is open); a release or `/unclaim` sets `S-ready-to-start`.
 - A maintainer (someone with `admin` or `write` permission on the repository) holds 3 open claims at most, a contributor
   2. Issues whose cards share a `task:` id count as one claim, and a task holds 3 issues at most.
-- The claim of an issue labelled `workflow` (a unit that builds the new workflow) neither counts toward that limit nor
-  is refused by it; the cap of a task still holds. Only someone who may label issues (triage access or more) can set the
-  label.
+- The claim of an issue labelled `workflow` (a unit that builds the new workflow) or `studio` (Coney Studio work, which
+  has its own engineer track) neither counts toward that limit nor is refused by it; the cap of a task still holds. Only
+  someone who may label issues (triage access or more) can set the labels.
 - A claim stops counting toward the limit when the engineer's slot frees, as the unit passes review: once a maintainer
   records `reviewed`, `pr-opened`, `fix` or `finished` (their tools do, after the review), or, for anyone, while the
   claimant's own pull request that closes it is open and not a draft, which frees one task's slot (the oldest it
@@ -386,11 +387,18 @@ mentions the claimant (its title), and so does the 48-hour warning.
 
 **Workflow units are outside the limit.** An issue labelled `workflow` (`claims.exempt_label`) builds the new workflow
 for the cutover, and its claim neither counts toward the open-claims limit nor is refused by it, as those units are
-not counted in the engineer [slots](#slots) either (a maintainer decision, 2026-10-27). The label is the mark because
+not counted in the engineer [tracks](#slots) either (a maintainer decision, 2026-10-27). The label is the mark because
 only someone who may label issues can set it (triage access or more; nothing checks who set it, so the repository
 gives triage only to people the maintainer trusts with it), while a task id chosen by whoever claims could be named
 anything. The card says `Limit: not counted`, and its hidden JSON carries `exempt`, which every pass sets again from the
 label. The cap of a task (3 issues) holds for an exempt claim too.
+
+**Coney Studio claims are outside the limit too, for good.** An issue labelled `studio` (`claims.studio_label`) is Coney
+Studio research or development, which has a track of its own with no cap but the machine's ([Engineer
+tracks](agents.md#slots); a maintainer decision, 2026-10-28). Its claim is outside the open-claims limit the same way:
+the card says "Limit: not counted toward the open-claims limit" with the label, and its hidden JSON carries `exempt` and
+`studio` (and `workflow` for the workflow label), all set again from the labels on every pass, so the coordinator
+can label an issue after its claim and the next pass moves it. Unlike `workflow`, the cutover leaves it as it is.
 
 A label event for `workflow` starts a claim run, so the card usually follows within a minute or two, and at the latest
 by the sweep: the jobs run one at a time and GitHub cancels a pending one when another arrives, so labelling several
@@ -492,11 +500,11 @@ answered within a minute or two, by its own job or the next one. One that no job
 by the next sweep that runs; a sweep waiting in the queue can be cancelled too, which delays that by an hour. Only
 commands are caught up: a cancelled issue or pull request event is read back by the next pass of that issue (its pull
 requests, assignees and labels), at the latest by the sweep. A comment that is no command, and a label event for any
-label but a paused one, `workflow` or `claim-trial`, starts no job. Something outside the queue can still write (a
-person editing a card, `claim run` or `claim sweep` started by hand), so the Action keeps a backstop: before its first
-change of each step and before every card write it reads the issue's cards again and starts the pass over when one
-changed, and two cards of one claimant are merged into the first (its handled commands, stage, scope and latest
-activity). `task create` adds a 60-second settle before it trusts a claim ([Task files](#task-files)).
+label but a paused one, `workflow`, `studio` or `claim-trial`, starts no job. Something outside the queue can still
+write (a person editing a card, `claim run` or `claim sweep` started by hand), so the Action keeps a backstop: before
+its first change of each step and before every card write it reads the issue's cards again and starts the pass over
+when one changed, and two cards of one claimant are merged into the first (its handled commands, stage, scope and
+latest activity). `task create` adds a 60-second settle before it trusts a claim ([Task files](#task-files)).
 
 **If the Action cannot delete a comment** (its token may not), the card and the labels are still right and the command's
 id is on the card, so it is not acted on again; a maintainer deletes the comment by hand.
@@ -567,7 +575,7 @@ scratch folder and proof log) and makes everything the later stages look for, so
    released, or one made for another task, is refused, and the coordinator claims again.
 3. The account does not hold more open claims than [the limit](#claiming): the Action enforces it when it assigns,
    and this is the backstop. A fix task reuses its claim and is not counted.
-4. The engineer slots ([below](#slots)).
+4. The engineer tracks ([below](#slots)).
 5. The task's stamp log (a fix task's: its parent's) can be written to: it is intact and is this task's own. A damaged
    log is refused here, before anything is made, rather than after the branch exists.
 6. The branch and the folder are free, and the base is a commit: `<remote>/<default branch>` after
@@ -605,19 +613,22 @@ open](pr.md#open)): the parent's log, text and branch, a push that updates the o
 missing one is refused), and the stamps the fix did not touch still match their hashes, so only the stale ones are
 redone. A release posts `/progress pr-opened` on each issue once, which the claim card shows as `PR #N open`.
 
-### Slots {#slots}
+### Tracks {#slots}
 
-A machine runs at most `tasks.start.slots.task` task units and `tasks.start.slots.fix` fix units at a time, and
-`task start` refuses a start over the limit and names the busy units while `tasks.start.slots.enforce` is on. The
-rule, who counts, what frees a slot, the unit record it counts and the guard that checks the claim and the slot
-before an engineer is started are in [Engineer slots](agents.md#slots); `coney-tools task slots` shows who holds what.
-A task whose issue has the `workflow` label holds no slot until the cutover; the label is read from the issue's claim
-card each time, not copied into the task file. Work in other repositories (Tether, Conclave's own plugin repository)
-has no unit here and is not counted.
+Engineer work runs in three tracks (`tasks.start.slots.tracks`): reimplementation, fix and Coney Studio, all within
+the machine's places (its build slots times `tasks.start.slots.per_build_slot`). `task start` refuses a start over
+its track's cap or the machine's places, and names the busy units, while `tasks.start.slots.enforce` is on. The rule,
+who counts, what frees a place, the unit record it counts and the guard that checks the claim, the place and a Studio
+unit's model before an engineer is started are in [Engineer tracks](agents.md#slots); `coney-tools task slots` shows
+who holds what. A task whose issue has the `workflow` label holds no place until the cutover, and one whose issue has
+the `studio` label is in the Studio track; the labels are read from the issue's claim card each time, not copied into
+the task file. Work in other repositories (Tether, Conclave's own plugin repository) has no unit here and is not
+counted.
 
-The open-claims limit follows the slots: the maintainer's limit of 3 stands for the 3 task slots, so a claim stops
-counting toward it when the unit's slot frees. The Action sees only GitHub, where a comment costs nothing, so it
-trusts two signs of a freed slot and no more:
+The open-claims limit follows the units in work: the maintainer's limit of 3 stands for the reimplementation work the
+old 3 task slots held (Studio and workflow claims are outside it), so a claim stops counting toward it when the unit's
+place frees. The Action sees only GitHub, where a comment costs nothing, so it trusts two signs of a freed place and
+no more:
 
 - **A maintainer's stage.** The passing `reviewed` stamp posts `/progress reviewed` as the signed-in account, and a
   maintainer's `/progress` with a stage of `claims.limit_ends_at` (`reviewed`, `pr-opened`, `fix`, `finished`) frees the

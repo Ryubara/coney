@@ -296,6 +296,7 @@ uv run --project python coney-tools task create --fix-of ISSUE [--terms TERM ...
 uv run --project python coney-tools task start [TASK] [--base REF] [--remote NAME] [--no-fetch] [--dry-run]
 uv run --project python coney-tools task slots [--json]
 uv run --project python coney-tools task slots --admit [--agent-type TYPE] [--task ID | --brief FILE|-] [--reserve]
+    [--model M] [--effort E]
 uv run --project python coney-tools task leads --terms TERM ... [--issue N] [--refresh]
 uv run --project python coney-tools task index [--no-gh]
 uv run --project python coney-tools task check [TASK] [--worktree DIR] [--base REF] [--agent ID] [--profile P]
@@ -322,25 +323,32 @@ The coordinator's triage step ([Task files](issues.md#task-files)); the rules ar
   are free and its stamp log is usable, then makes the branch (named like the task id) and its worktree, at the place
   the `workspace.worktrees` setting gives for that branch ([Worktrees](workspace.md#worktrees)), from the tip of the
   default branch, writes the unit record `<scratch>/<task>/unit.json`, stamps `assigned` and `claimed` in the task's
-  log and posts `/progress claimed`. It prints the branch, worktree, the stamps written and `slots: N of L task slots
-  in use`; a start over the limit (`tasks.start.slots`) is refused while `tasks.start.slots.enforce` is on, and a task
-  whose issue carries the `workflow` label now (read from its held claim card) holds no slot while
-  `tasks.start.slots.exempt_workflow` is on. Nothing is made when a check fails (exit 1); a git or fetch
-  failure stops it with exit 2; running it again for a started task finishes what is missing and changes nothing else.
+  log and posts `/progress claimed`. It prints the branch, worktree, the stamps written and `slots: N of L places on
+  this machine in use with <task> (<track> track)`; a start over its track's cap or the machine's places
+  (`tasks.start.slots`, with the build slots of `coney.local.toml`) is refused while `tasks.start.slots.enforce` is on,
+  a task whose issue carries the `workflow` label now (read from its held claim card) holds no place while
+  `tasks.start.slots.exempt_workflow` is on, and one with the `studio` label is in the Studio track. Nothing is made
+  when a check fails (exit 1); a git or fetch failure stops it with exit 2; running it again for a started task
+  finishes what is missing and changes nothing else.
   A fix task opens its parent's unit instead of making one. The coordinator's role may not run it
   (`.claude/hooks/hooks.toml`).
-* `slots` shows the [engineer slots](agents.md#slots): the units holding each of the task and fix slots (in work, with a
-  record that cannot be read, or reserved for an agent that has not run `task start` yet), the workflow units that hold
-  none (read from their issues' claim cards on GitHub; a unit whose cards cannot be read is counted and named), the fix
-  tasks waiting (oldest first) and the worktrees no unit record names, which no slot counts; `--json` prints the same as
-  data. `--admit` is the check the coordinator's Agent guard runs (`.claude/hooks/slot_guard.py`). For an `--agent-type`
-  that holds a slot (`engineer`, `tooling`) it needs the task from `--task` or from the `Task id: <id>` line of the
-  brief (`--brief FILE`, or `-` for standard input), the task file, a claim that is held now (one read of the claim
-  cards of each issue from GitHub, 20 seconds each, none started after 20 seconds, none after the first that fails) and
-  a free slot; it exits 0 when the agent may start, **3 with the reasons when it is refused**, and any other code (a
-  crash is 1, a bad option or a slot lock it cannot have 2) when it could not judge. A GitHub that cannot be read leaves
-  only the claim unchecked: the slot is counted as usual (no unit counts as a workflow unit then), and a start let
-  through prints a `warning:` line, which the guard logs. `--reserve` keeps the slot for the agent for
+* `slots` shows the [engineer tracks](agents.md#slots): the machine's places in use (its build slots times
+  `tasks.start.slots.per_build_slot`), then for each track (reimplementation, fix, studio) its rule and the units in it
+  (in work, with a record that cannot be read, or reserved for an agent that has not run `task start` yet), a line when
+  no reimplementation unit is in work, the workflow units that hold no place (the labels are read from their issues'
+  claim cards on GitHub; a unit whose cards cannot be read is counted, as reimplementation unless a fix, and named),
+  the fix tasks waiting (oldest first) and the worktrees no unit record names, which no place counts; `--json` prints
+  the same as data (`machine`, `tracks` with each one's `min`, `max` and holders). `--admit` is the check the
+  coordinator's Agent guard runs (`.claude/hooks/slot_guard.py`). For an `--agent-type` that holds a place
+  (`engineer`, `tooling`) it needs the task from `--task` or from the `Task id: <id>` line of the brief (`--brief
+  FILE`, or `-` for standard input), the task file, a claim that is held now (one read of the claim cards of each issue
+  from GitHub, 20 seconds each, none started after 20 seconds, none after the first that fails), for a Studio task a
+  `--model` and `--effort` that are one of `tasks.start.slots.tracks.studio.models`, and room in its track (its cap,
+  and the machine's places with the places other tracks keep set aside); it exits 0 when the agent may start, **3 with
+  the reasons when it is refused**, and any other code (a crash is 1, a bad option or a slot lock it cannot have 2)
+  when it could not judge. A GitHub that cannot be read leaves the claim and the labels unchecked: the place is counted
+  as usual (no unit counts as a workflow or Studio unit then, and no model is checked), and a start let through prints
+  a `warning:` line, which the guard logs. `--reserve` keeps the place for the agent for
   `tasks.start.slots.reserve_minutes` or until its `task start`. Other types pass without a line.
 * `leads` runs the leads search alone: one line per match with the source, the place and why it matched, then the terms
   that matched nothing. `--issue N` also matches the addresses, names, paths and references that issue writes.
@@ -460,20 +468,24 @@ coney-tools task start [TASK] [--base REF] [--remote REMOTE] [--no-fetch] [--dry
 
 ### `task slots` {#task-slots-usage}
 
-Show the engineer slots, or check that an agent may start (the coordinator's Agent guard).
+Show the engineer tracks (reimplementation, fix, Studio) and the machine's places, or check that an agent may start (the
+coordinator's Agent guard).
 
 ```text
 coney-tools task slots [--json] [--admit] [--agent-type AGENT_TYPE] [--task TASK] [--brief FILE] [--reserve]
+    [--model MODEL] [--effort EFFORT]
 ```
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `--json` | flag | off | print the slots as JSON |
+| `--json` | flag | off | print the tracks as JSON |
 | `--admit` | flag | off | check a start instead of listing: exit 0 when it may, 3 with the reasons when it is refused (any other code: it could not judge) |
 | `--agent-type AGENT_TYPE` | text | `engineer` | with --admit: the subagent type (default: engineer) |
 | `--task TASK` | text | none | with --admit: the task id (default: the `Task id:` line of the brief) |
 | `--brief FILE` | text | none | with --admit: the agent's brief, a file or - for standard input |
-| `--reserve` | flag | off | with --admit: keep the slot for the agent until its task start |
+| `--reserve` | flag | off | with --admit: keep the place for the agent until its task start |
+| `--model MODEL` | text | none | with --admit: the Agent call's model (a Studio unit must name an allowed one) |
+| `--effort EFFORT` | text | none | with --admit: the Agent call's effort (a Studio unit must name an allowed one) |
 
 ### `task leads` {#task-leads-usage}
 

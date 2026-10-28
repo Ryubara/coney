@@ -450,7 +450,7 @@ page](coney-tools-ci.md#ci-run) has the options.
 every pull request that changes engine files gets a required `clang-tidy` check on the lines it changes, and the whole
 codebase is tidied nightly ([clang-tidy](clang-tidy.md)). It catches what MSVC lets through, such as an unchecked
 `std::optional` access (`bugprone-unchecked-optional-access`) or a use after a move. A finding is an annotation on the
-pull request; it is fixed as a fix task on the branch ([Slots](how-we-work.md#slots)). A designated initializer that
+pull request; it is fixed as a fix task on the branch ([Tracks](how-we-work.md#slots)). A designated initializer that
 skips a field (`-Wmissing-designated-field-initializers`) is caught by the GCC and Clang builds instead, whose `-Wall -Wextra`
 warnings are errors in the `ci`, `ci-release` and `asan` presets (`CONEY_WARNINGS_AS_ERRORS`); clang-tidy's `-*` turns
 off its compiler diagnostics.

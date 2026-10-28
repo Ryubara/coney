@@ -379,12 +379,16 @@ claims:
   # do not count either. Only someone who may label issues (triage access or more) can set it; the cap of a task
   # still holds.
   exempt_label: workflow
+  # The claim of an issue that carries this label is outside the open-claims limit too, and for good (maintainer
+  # decision 2026-10-28): Coney Studio work, which has its own track in `tasks.start.slots.tracks` with no cap but the
+  # machine's. The coordinator sets it on Studio issues (#1054's sub-issues and Studio build issues).
+  studio_label: studio
   # A claim stops counting toward the limit when a maintainer records one of these stages (the tools post them; a
   # contributor's comment frees nothing, being free to write), or while a pull request of its claimant that closes the
   # issue is open and not a draft (one such pull request frees one task's slot: the oldest it closes and the issues of
-  # that task it names, however many issues it names): the limit stands for the engineers' task slots, and a slot
-  # frees when the unit passes review and takes the next task while CI runs (docs/guides/issues.md#slots). A stage
-  # frees the slot for good; a pull request closed unmerged gives the count back, and the newest claims then over the
+  # that task it names, however many issues it names): the limit stands for the claimant's units in work (Studio
+  # claims are outside it), and a claim frees when its unit passes review and takes the next task while CI runs
+  # (docs/guides/issues.md#slots). A stage frees it for good; a pull request closed unmerged gives the count back, and the newest claims then over the
   # limit are warned and, once `release` is on (or the trial label is), released after the notice (deadline_hours less
   # warn_hours), never a maintainer's. The claim itself stays held either way.
   limit_ends_at: [reviewed, pr-opened, fix, finished]
@@ -434,17 +438,38 @@ tasks:
   kinds: [feature, fix, docs, tooling, ci-fix]
   file: TASK.md
   # `task start` (docs/guides/issues.md#starting): the unit record it writes beside the task file, and the engineer
-  # slots (the rule: docs/guides/agents.md#slots). A machine runs `task` units of work and `fix` units at a time: a unit
-  # holds its slot from `task start` (or from the moment the coordinator's Agent call for it was let through,
-  # `reserve_minutes`) until a passing Review. `task start` and the Agent guard (.claude/hooks/slot_guard.py, which
-  # runs `coney-tools task slots --admit`) refuse a start over the limit while `enforce` is true (maintainer,
-  # 2026-10-27). Only units with a unit record are counted. `agent_types` are the subagent types the coordinator may
-  # start only for a task with a held claim (`Task id:` in the brief), and that hold a slot.
+  # tracks (the rule: docs/guides/agents.md#slots). A unit holds a place from `task start` (or from the moment the
+  # coordinator's Agent call for it was let through, `reserve_minutes`) until a passing Review. `task start` and the
+  # Agent guard (.claude/hooks/slot_guard.py, which runs `coney-tools task slots --admit`) refuse a start over the limit
+  # while `enforce` is true (maintainer, 2026-10-27). Only units with a unit record are counted. `agent_types` are the
+  # subagent types the coordinator may start only for a task with a held claim (`Task id:` in the brief), and that
+  # hold a place.
   start:
     unit_file: unit.json                          # the unit record, in the task's scratch folder
     slots:
-      task: 3                                     # task units in work per machine (every kind but fix)
-      fix: 1                                      # fix units in work: a failed CI check, one at a time, the oldest first
+      # The tracks (maintainer decision 2026-10-28, replacing 3 task and 1 fix slots): a `kind: fix` task is in `fix`,
+      # a task whose issue carries `claims.studio_label` in `studio`, every other in `reimplementation`. A track's
+      # `min` places are kept from the other tracks while it runs fewer; `min_kinds`, when given, names the task kinds
+      # that fill the `min` (a tooling or docs unit shares the reimplementation track but is not the game work it keeps
+      # going, and cannot take its place); `max`, when given, caps the track; `models` are the Agent call's model and
+      # effort pairs a unit of the track must start on (any when absent).
+      tracks:
+        reimplementation: {min: 1, min_kinds: [feature]}   # outside Studio: only game work (`feature`) fills the minimum
+        fix: {min: 1, max: 1}                    # a pull request's problems (a failed check, a conflict), oldest first
+        studio:
+          min: 0                                 # Coney Studio research and development: as many as the machine holds
+          # Research on Opus at high effort; development on Opus at medium effort when it needs reasoning, or Sonnet at
+          # high effort for simple implementation. The coordinator decides per task; the guard refuses any other pair.
+          models:
+            - {model: opus, effort: high, use: research}
+            - {model: opus, effort: medium, use: development}
+            - {model: sonnet, effort: high, use: simple development}
+      # The machine limit, every track together: `build_slots` (coney.local.toml, the build slots `coney-tools build`
+      # keeps) times this. Measured 2026-10-28 (docs/guides/agents.md#slots): a feature unit holds a build slot for
+      # about a tenth of its life and a tooling unit for a fiftieth, so two units per build slot keep the builds' own
+      # load near a fifth of the slots; above that the bottleneck is the unslotted checks (pytest in `task check` took
+      # 80 minutes instead of 48 with about 8 checks at once), not the build queue.
+      per_build_slot: 2
       enforce: true
       # A task whose issue carries `claims.exempt_label` now (the units that build the new workflow; read from its held
       # claim card) holds no slot. The cutover sets this false in the change that turns claims.adopt/release on (a
@@ -483,7 +508,7 @@ tasks:
 labels:
   description_max: 100                           # GitHub's limit
   # A label belongs to the family named by its prefix; `type` has no prefix and lists its names. The rest are GitHub's
-  # own labels (and `workflow`, the claims exemption), kept so the sync leaves them as we want them.
+  # own labels (and `workflow` and `studio`, the claims exemptions), kept so the sync leaves them as we want them.
   families:
     type: {prefix: "", names: [bug, parity, task, docs, enhancement]}
     area: {prefix: "A-"}
@@ -525,6 +550,7 @@ labels:
     - {name: duplicate, color: cfd3d7, description: "This issue already exists"}
     - {name: wontfix, color: ffffff, description: "This will not be worked on"}
     - {name: workflow, color: d4c5f9, description: "Builds the new workflow; its claim is outside the open-claims limit"}
+    - {name: studio, color: 5319e7, description: "Coney Studio work: its own track, outside the open-claims limit"}
     - {name: claim-trial, color: fef2c0, description: "A throwaway issue for testing the claim Action; never real work"}
 
 hygiene:
