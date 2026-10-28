@@ -389,10 +389,10 @@ The maintainer's example, by two routes:
 
 ### The game's own UI natives {#game-natives}
 
-Every game native in the HUD and menus category is exposed to projects **as it is**, under the game's name with the
-game's arguments ([Names and namespaces](lua-sdk.md#names)), once it is implemented and allowed
-([How a native reaches the SDK](lua-sdk.md#availability)). The groups, with Coney's status today (from
-`research/bindings/`):
+Every game native a UI needs is exposed to projects **as it is**, under the game's name and arguments
+([Names](lua-sdk.md#names)), once implemented and allowed ([Availability](lua-sdk.md#availability)). Most are in the
+[HUD and menus](../../references/bindings/hud.md) category; the menu data, the fades and the pads are in other
+categories of the [masterlist](../../references/bindings/index.md). Coney today:
 
 | Group | Natives | Implemented | Not implemented |
 | --- | --- | --- | --- |
