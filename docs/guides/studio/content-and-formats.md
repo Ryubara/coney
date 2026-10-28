@@ -252,25 +252,72 @@ texture or sound override swaps the asset; a changed walkable area rebuilds the 
 route on it. A change that only level entry can make (a new spawner, a `base` level, a door's triangles) waits for the
 next Play, and Studio says so.
 
-**Edit: a project level on top of a disc level.** A level file may start with `base game:/levels/level99`: Coney loads
-that level as it is (its world, collision, paths, script and objects) and then adds the project level's geometry,
-colliders, paths and entities. Additions only: the first version removes nothing the disc level makes, since that
-means changing what the original script does. Such a level is a modded session in the store's terms (simulation kinds
-from outside the disc, [Layers](../asset-and-script-architecture.md#asset-layers)).
+#### How a level starts {#level-start}
 
-**Import: maps from Blender.** A glTF or FBX scene imports as a map: each mesh node becomes a `.cmesh` drawn in the
-level; a node whose name ends `_col`, or whose sidecar entry says so, becomes collision only; a node may be both (the
-default for a map). The node's material names map to collision materials in the sidecar (a material named `GRASS`
-gets `MATERIAL_GRASS`, [Materials](../../research/collision.md#materials)), and empties with a name prefix become
-level statements (`spawn_start` a spawn point, `flag_<name>` a flag), so a whole blockout comes from Blender in one
-import. Coney draws an imported map as one static mesh, not as streamed sectors.
+A new level is a **blank slate**: an empty level file with one spawn point at the origin, a ground plane and the
+sandbox's default light, which plays at once. From there the user takes one of three roads, and may mix them later
+(a Blender map placed in a level built from primitives, primitives added to a game level):
+
+| Road | What the level file holds | What Coney loads at Play |
+| --- | --- | --- |
+| **(a) Load a game level** | `base game:/levels/<level>` and the project's edits to it, as overrides | The disc level as it is, then the edits and the project's additions |
+| **(b) Build from scratch** | Primitives, colliders, placed imported meshes, walkable areas and entities | Only what the file holds |
+| **(c) Import a whole map from Blender** | One `map` statement naming the imported file, the statements its markers became, and the edits made since | The map's meshes and collision, then the rest of the file |
+
+**(a) Loading a game level** puts a reference to it in the project, never a copy. The level file says
+`base game:/levels/level99`; the world, collision, path map, placed objects and script stay on the player's disc and
+are read through the asset store each time ([Paths](#paths)). Everything the user changes is saved as an **override**
+in the level file: a statement that names the disc thing it changes and says what changes, so the project holds only
+the edit. Such a level is a modded session in the store's terms (simulation kinds from outside the disc,
+[Layers](../asset-and-script-architecture.md#asset-layers)).
+
+| What is changed | Override | How Coney applies it |
+| --- | --- | --- |
+| A placed object of `<level>_objs.txt` | `edit objs:<line> move at= rot=`, `edit objs:<line> remove` | Coney reads the object list itself ([Objects](../../research/objects.md#objs-file)), so it moves or skips that line before `ObjSpawn`-ing it |
+| An entity the level script makes | `edit call:<function>:<n> move at= heading=`, `edit call:<function>:<n> remove` (the *n*-th entity native the function calls) | After the script's set-up, through the handle the call returned: `Teleport` to move, `ObjDestroy` or the kind's own removal to remove; a change that only the call itself could make (a door's type) is refused with the reason |
+| A collision triangle | `faces mesh=game faces=LIST ...` or `remove`, as for an imported mesh ([What stays editable](#editable)) | The disc mesh's triangles by index, changed before the level's first step; the disc file is untouched |
+| A walkable area of the path map | `edit nav:<area> remove`, or a new `navarea` | The path map rebuilt with the change at entry |
+| A texture or a sound | `override GAME_PATH PROJECT_PATH` in the project's overrides ([Models and textures](#models)) | The override source |
+| Anything added | Ordinary statements: primitives, colliders, meshes, entities, scripts | After the disc level's own set-up |
+
+An override that no longer matches (another disc, a line or call that is not there) is listed when the level opens
+and skipped at Play, never applied to the wrong thing. The disc's own entities show in the Hierarchy greyed until
+edited (from the trace above); editing one writes its override.
+
+**(b) Building from scratch** is the sandbox layout grown: primitives, colliders, imported props from the File system,
+walkable areas and entities from the *Create* menu, each with full transforms. Nothing in such a level comes from the
+disc but what its entities name (a character type, an object type, a texture).
+
+**(c) Importing a whole map from Blender** turns one glTF or FBX scene into a level's geometry, collision, materials and
+markers. The source file stays in the project and the level holds `map project:/maps/yard.glb`; the importer reads the
+scene's **naming convention** and, where present, its **custom properties** (Blender writes an object's custom
+properties into glTF as `extras` and into FBX as user properties; a property beats a name):
+
+| In Blender | Name convention | Custom property | Becomes |
+| --- | --- | --- | --- |
+| A mesh | any name | `coney=mesh` | Drawn geometry and its collision (every triangle, or `coney_collide=hull\|none`) |
+| A mesh for collision only | ends `_col` | `coney=collider` | Collision triangles, not drawn |
+| A mesh drawn only | ends `_vis` | `coney_collide=none` | Drawn, no collision |
+| A material | `MAT_<NAME>` (`MAT_GRASS`) | `coney_material=GRASS`, `coney_climb=player`, `coney_sneak=1`, `coney_area=` | Its triangles' collision material, flags and area ([Colliders](#collision)); its base colour texture imported as PNG |
+| An empty | `spawn_<name>` | `coney=spawn`, `coney_character=` | A spawn point (its +Y the heading) |
+| An empty | `flag_<name>` | `coney=flag` | A flag |
+| Empties in order | `path_<name>_<n>` | `coney=path`, `coney_order=` | Flags and a script path through them (at most eight) |
+| A flat mesh | `nav_<name>` | `coney=navarea`, `coney_area=` | Walkable areas: each face loop's outline, inner loops as holes ([Paths](#paths-kind)) |
+| An empty | `obj_<type>` | `coney=object`, `coney_type=` | An object of that Object List type |
+| A light | `light_<name>` | `coney=light` | A light, its colour and range from Blender's |
+
+The markers become ordinary statements in the level file, written once at import and then edited in Studio like any
+other; the geometry, collision triangles and materials stay tied to the source and come again on reimport, with the
+collision edits of [What stays editable](#editable) kept against them. Coney draws an imported map as static meshes,
+not as streamed sectors. An object with an unknown `coney=` value, or a name prefix Studio does not know, is imported as
+plain geometry and listed, so a typo never silently drops a spawn.
 
 **Export.** A disc level's world as glTF (the world as `extract` assembles it) and its collision as glTF, to the export
 folder ([Export](#export)). A project level exports its own geometry the same way.
 
 **Needs from Coney:** the asset store, so Studio reads a level through it; a game mode that plays a level from a level
 file of Coney's own (collision built, path map built, entities made through natives, scripts run); drawing an imported
-static mesh; the overlay of a project level on a disc level.
+static mesh; the overlay of a project level on a disc level, with its overrides applied.
 
 ### Colliders and primitives {#collision}
 
@@ -545,7 +592,9 @@ units and axes: metres and degrees, the game's axes, z up.
 | --- | --- | --- |
 | On every placed statement | `id=` (stable, written by Studio), `parent=ID` | An id scripts and other entities refer to; transforms relative to the parent |
 | Transform | `at=x,y,z`, `rot=x,y,z,w` (a quaternion) or `yaw= pitch= roll=`, `scale=x,y,z` | Full transforms; `heading=` and `yaw=` keep their meaning, so version 1 layouts read unchanged |
-| `base PATH` | `game:/levels/<level>` | Plays the project level on top of a disc level ([Levels](#levels)) |
+| `base PATH` | `game:/levels/<level>` | Plays the project level on top of a disc level ([How a level starts](#level-start)) |
+| `edit TARGET` | `objs:<line>`, `call:<function>:<n>` or `nav:<area>`, then `move at= rot=` or `remove` | An override of a disc level's thing ([How a level starts](#level-start)) |
+| `map PATH` | `project:/maps/<file>` | A whole map imported from Blender, its markers written as statements beside it |
 | `mesh` | `model=project:/...`, `collide=none\|mesh\|hull`, collision settings | An imported static mesh |
 | `faces` | `mesh=ID faces=LIST` and `material= climb= sneak= twosided= area=`, or `remove` | Hand edits to an imported mesh's collision, by triangle index ([What stays editable](#editable)) |
 | `collider` | `shape=box\|sphere\|capsule\|hull\|mesh`, its sizes or `model=`, `material= climb= sneak= twosided= area=` | Collision only ([Colliders](#collision)) |
@@ -649,8 +698,10 @@ natives are implemented), and the export of every kind the extract tool writes.
   kinds with the reference's wording until it is traced.
 - **Weights per vertex** a custom model may carry, and whether Coney's renderer takes a human of several materials as
   the original's single-texture draw does not ([Drawing a human](../../research/graphics.md#human-draw)).
-- **Removing what a disc level makes**, in a project level on top of it: needs a way to stop one native call of the
-  original script, which is the Lua SDK design's to weigh ([#1057](issue:1057)).
+- **Removing what a disc level's script makes.** An override removes such an entity after the script made it and may
+  still hold its handle; a later call of the script on that handle then meets nothing. Which kinds can be removed
+  safely, and whether stopping the call itself is better, is to be tried per kind with the Lua SDK design
+  ([#1057](issue:1057)).
 
 ## Proposed build issues {#build-issues}
 
@@ -681,13 +732,16 @@ In the order they should come, after the editor experience design's shell, File 
    reader into `PcmSound` in Coney and `override` statements for textures and sounds. Tests: the same source gives the
    same bytes; a rename keeps a redirect; a WAV plays through the offline mixer.
 6. **tools: Add glTF and FBX import of static meshes and maps.** cgltf and ufbx (after the maintainer's approval) in
-   the import step, the `.cmesh` form and its core parser, Coney drawing an imported mesh, and maps: nodes to meshes,
-   `_col` nodes to collision, material names to collision materials, prefixed empties to statements. Tests: a
-   synthetic glTF and FBX cube import to the same `.cmesh`; a map's collider stops the player.
+   the import step, the `.cmesh` form and its core parser, Coney drawing an imported mesh, and whole maps by the naming
+   convention and custom properties of [How a level starts](#level-start): meshes, collision, materials, spawns,
+   flags, paths, walkable areas, objects and lights. Tests: a synthetic glTF and FBX cube import to the same `.cmesh`;
+   a synthetic map's spawn, path and walkable area become statements; its collider stops the player.
 7. **tools: Add Coney Studio's disc level view.** Opening a `game:/` level shows its world, collision (by flag and
    material), path map (areas, holes, route graph), occluders, placed objects, and the entities its script makes from
-   a recorded trace kept in `.studio/`, each read-only with the function that made it; and a project level with
-   `base` on top of it. Tests: a synthetic level's trace lists its entities; a disc check prints the counts per kind.
+   a recorded trace kept in `.studio/`, each with the function that made it; loading it into a project as `base`,
+   with `edit` and `faces` overrides applied at Play and stale ones listed. Tests: a synthetic level's trace lists its
+   entities; an override moves one object and removes another, and the disc file is unchanged; a disc check prints
+   the counts per kind.
 8. **gameplay: Add custom characters with imported skinned models.** Skinned glTF and FBX import (bone map, rest pose
    onto the base skeleton, weights, textures) to `.cmodel`; the `.character` file; Coney making a human of a custom
    character through `HuCreate`, a spawn point and `Coney.ChangeCharacter`, with the base type's every number; a
