@@ -909,7 +909,8 @@ product on the same stack ([Transport](#transport)). Open:
 
 1. **Coney's rule set** (P3): more than two players, which humans they take, how the AI and cameras treat them.
 2. **A guest's co-op record** in Coney's own store ([Saves](#saves)).
-3. **A second Lua runtime** (5.4) for resources (P4).
+3. **A second Lua runtime** (5.4) for resources (P4); the Lua SDK design proposes it for Coney Studio's projects
+   too, where a project is what this page calls a resource ([Coney Studio: the Lua SDK](studio/lua-sdk.md#runtime-choice)).
 4. **A server list for ConeyMP** (later, a separate decision): Coney runs no service until it is decided.
 
 ## Prior art and sources {#sources}

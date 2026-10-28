@@ -212,7 +212,8 @@ in the style of FiveM's natives reference ([Script bindings](references/bindings
 arguments, result and effect, and whether Coney implements it yet. Later, Coney may add bindings of its own for
 mods (marked as Coney's, never confused with the original's)
 and a native plugin interface. Coney ships only the loader and the documentation, never a mod; the game's behaviour
-without mods is unchanged.
+without mods is unchanged. The loader, its entry points, the sandbox and the SDK that grows with Coney are designed on
+[Coney Studio: the Lua SDK](guides/studio/lua-sdk.md).
 
 **Done when** a test mod from the mods folder runs at a level start, calls documented bindings (spawning a character
 and moving the camera, say) and the game runs the same with the mods folder empty.
