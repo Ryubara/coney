@@ -25,6 +25,7 @@ my-project/
   anims/                    clip files (glTF, FBX), with sidecars
   textures/                 PNG, with sidecars
   sounds/                   WAV, with sidecars
+  movies/                   Bink movies that override the game's (override packs only), with sidecars
   scripts/                  Lua
   .studio/                  cache: imported engine forms, the import table, traces; never shared
 ```
@@ -91,11 +92,12 @@ drop p2/c2
 
 ### The entity tree {#entity-tree}
 
-A level is a tree of **entities**, as Unity's Hierarchy is (the maintainer's choice; [#1055](issue:1055) draws it): any
-entity may be the parent of any other, a child's transform is relative to its parent's and follows it, and the tree has
-no folders by kind. Every statement that places something is an entity: primitives, colliders, meshes, walkable areas,
-every entity kind of [Level objects](content-and-formats.md#entities), groups and prefab instances. Scripts are not
-entities and are never attached to one: they belong to the project ([Names and tags](#names-tags)).
+A level is a tree of **entities**, as Unity's Hierarchy is (a [maintainer decision](content-and-formats.md#decisions);
+[#1055](issue:1055) draws it): any entity may be the parent of any other, a child's transform is relative to its
+parent's and follows it, and the tree has no folders by kind. Every statement that places something is an entity:
+primitives, colliders, meshes, walkable areas, every entity kind of [Level objects](content-and-formats.md#entities),
+groups and prefab instances. Scripts are not entities and are never attached to one: they belong to the project ([Names
+and tags](#names-tags)).
 
 - **Full transforms on every entity**: position, rotation and scale, kept relative to the parent; the file stores
   them as the user set them, and Studio composes them down the tree.
@@ -119,11 +121,12 @@ entities and are never attached to one: they belong to the project ([Names and t
 
 ### Names and tags {#names-tags}
 
-Studio attaches no script to an entity (the maintainer's choice: Studio is not a general engine). A project's code is
-the manifest's `[scripts]`, and a level has no script of its own ([Projects and the manifest](lua-sdk.md#manifest),
-[Play, step by step](lua-sdk.md#play)). A script finds the entities it needs when a level starts, in its `levelStart`
-handler, as the original's level scripts find flags by name ([Flags](../../research/flags.md#findflag)), and handles one
-that is missing. So every entity carries what a script can look it up by:
+Studio attaches no script to an entity (a [maintainer decision](content-and-formats.md#decisions): Studio is not a
+general engine). A project's code is the manifest's `[scripts]`, and a level has no script of its own ([Projects and the
+manifest](lua-sdk.md#manifest), [Play, step by step](lua-sdk.md#play)). A script finds the entities it needs when a
+level starts, in its `levelStart` handler, as the original's level scripts find flags by name
+([Flags](../../research/flags.md#findflag)), and handles one that is missing. So every entity carries what a script can
+look it up by:
 
 - **An id**, `id=`, written by Studio, unique in the level and never changed by a rename or a move; inside a prefab
   instance it is `INSTANCE/LOCAL` (`p2/h3`), nested as deep as the instances are.
@@ -189,7 +192,7 @@ reads a project as a folder: Coney reading a `.cmod` there in place of its unpac
 | `coney-project.toml` | At the root, with a list of every file the package holds and its SHA-256, written by the export |
 | `levels/`, `prefabs/`, `missions/`, `characters/`, `overrides.layout` | As they are: text files of the statement format, holding `project:/` and `game:/` paths only |
 | `scripts/` | As they are |
-| `models/`, `anims/`, `textures/`, `sounds/` with their sidecars | The engine forms the import made (`imported/`, from `.studio/imported/`, with the import table), which is what Coney loads; the sources and sidecars too unless the export is told to leave them out, so another user can open the project in Studio |
+| `models/`, `anims/`, `textures/`, `sounds/`, `movies/` with their sidecars | The engine forms the import made (`imported/`, from `.studio/imported/`, with the import table), which is what Coney loads; the sources and sidecars too unless the export is told to leave them out, so another user can open the project in Studio |
 | `.studio/` (cache, traces, the user's layouts) | Nothing but the engine forms above |
 | A derived file (an edited export of a disc asset, [Provenance](content-and-formats.md#import)) | Never: the export leaves it out and lists it |
 
@@ -216,7 +219,7 @@ and matches on that, never on a file name alone:
 | Kind | Key the replacement matches | Replacement (engine form) |
 | --- | --- | --- |
 | Texture | The original texture's hash in its dictionary, as texture packs are keyed ([Texture packs](../enhancements.md#packs)) | PNG |
-| Movie | The `PSS/` file name, as the Xbox `_hd` movies are matched ([Xbox assets: movies](../../research/xbox-assets.md#movies)) | Bink 1 (`.bik`) |
+| Movie | The `PSS/` file name, as the Xbox `_hd` movies are matched ([Xbox assets: movies](../../research/xbox-assets.md#movies)) | Bink 1 (`.bik`) from the project's `movies/`, copied as it is by the import |
 | Sound, music | The sound's name hash, the music track | WAV |
 | Character look | The model resource the Character List names ([Files of a character](../../research/characters.md#files)) | `.cmodel` |
 

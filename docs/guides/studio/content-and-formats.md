@@ -131,6 +131,7 @@ flowchart LR
 | `.gltf`, `.glb`, `.fbx` | Clip | `.cclip`: the clip format's sections in Coney's own layout: root velocity, root translation, one rotation channel per pose bone, events, flags | A new core parser to the struct `parseAnimClip` returns today |
 | `.gltf`, `.glb`, `.fbx` | Map | Several `.cmesh`, a collision mesh's triangles and the level statements its nodes asked for ([Levels](#levels)) | The two above and the collision builder |
 | `.wav` (PCM 8, 16, 24 bit or float, any rate) | Sound | WAV, signed 16-bit PCM, mono or stereo, at most `kMaxSourceRate` | A WAV reader to `PcmSound`, which the mixer plays at any rate ([`pcm_sound.h`](repo:src/audio/pcm_sound.h)) |
+| `.bik` | Movie (an override of a game movie only) | The Bink 1 file as it is, checked (version, length, frame rate) | Coney's movie decoder, which plays the disc's Bink movies today |
 | `.lua` | Script | The source as it is | The Lua 5.4 mods runtime ([Lua SDK: the runtime](lua-sdk.md#runtime)) |
 
 - **Every engine form starts with a magic, a format version and the Studio version that wrote it**, and a parser
@@ -180,7 +181,9 @@ the edits that no longer apply. Moving a collision vertex is modelling, and goes
 
 ## Readers: glTF, FBX and Blender {#readers}
 
-Studio is Blender-compatible through the two formats Blender exports with its own add-ons: glTF 2.0 and FBX.
+Studio is Blender-compatible through the two formats Blender exports with its own add-ons: glTF 2.0 and FBX. The
+libraries, and the image and audio readers beside them, are chosen on the technology design
+([Importers](technology.md#importers)); this section says what Studio reads with them.
 
 | Format | What Studio reads | Reader | Licence |
 | --- | --- | --- | --- |
@@ -206,7 +209,7 @@ Studio is Blender-compatible through the two formats Blender exports with its ow
 - **Other audio formats** (Ogg Vorbis, FLAC, MP3) are a later importer each, decoding to the same WAV engine form; the
   first importer takes WAV.
 - **These readers live in Studio's import step**, not in the game (principle 4): `coney` itself reads `.cmesh`,
-  `.cmodel`, `.cclip`, PNG and WAV only.
+  `.cmodel`, `.cclip`, PNG, WAV and Bink movies only.
 
 ## Content by kind {#kinds}
 
@@ -621,13 +624,21 @@ natives are implemented), and the export of every kind the extract tool writes.
 
 ## Maintainer decisions {#decisions}
 
-1. **Two Studio dependencies**: cgltf (MIT) to read glTF and ufbx (MIT, or the Unlicense) to read FBX, in Studio's
-   import step only, fetched at pinned commits like the others in `cmake/deps.cmake` and listed in
-   [LEGAL.md](repo:LEGAL.md#licences). A new dependency's licence is a maintainer decision. The Autodesk FBX SDK is not
-   proposed ([Readers](#readers)).
+1. **Studio's import dependencies**: cgltf (MIT) to read glTF and ufbx (MIT, or the Unlicense) to read FBX, with the
+   image and audio readers the [technology design](technology.md#importers) lists, in Studio's import step only, fetched
+   at pinned commits like the others in `cmake/deps.cmake` and listed in [LEGAL.md](repo:LEGAL.md#licences). A new
+   dependency's licence is a maintainer decision. The Autodesk FBX SDK is not proposed ([Readers](#readers)).
 2. **Derived files in projects**: this page lets a project hold a file the user made from a disc export on their own
    machine, marked and left out of packages ([The import step](#import)), rather than refusing it. Whether Studio should
    refuse instead is a legal question.
+
+Decided for the Studio brief of [#1054](issue:1054), and applied here:
+
+- **The level is a tree of entities**, as Unity's Hierarchy is, with prefabs placed many times and per-instance
+  overrides ([The entity tree](project-formats.md#entity-tree), [Prefabs](project-formats.md#prefabs)).
+- **No script is attached to an entity**: Studio is not a general engine; a project's scripts find entities by name or
+  tag ([Names and tags](project-formats.md#names-tags)).
+- **What other editors call a scene, Studio calls a level** (the Level view, the Game view).
 
 ## Open questions {#open-questions}
 
