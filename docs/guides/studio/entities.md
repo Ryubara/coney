@@ -88,7 +88,7 @@ family it makes and the level-file statement that stores it ([The level file](pr
 | **Spawn point** | `spawn` | A world flag and, at Play, the player made at it | Transform, Spawn (character, player slot) | ready |
 | **Human** | `character`; a sandbox layout's `fighter` | A human, `HuCreate` ([Human](../../references/entities.md#human)) | [A Human's properties](human-properties.md) | ready as the layout's fighter; any type waits on level files of version 2 |
 | **Target** | `target` | Coney's passive sandbox human (`human::TargetHuman`) | [A Target](human-properties.md#target) | ready |
-| **Gang** | `gang` (proposed in [A Gang](human-properties.md#gang)) | A gang and its relations, `GangCreate` ([Gang](../../references/entities.md#gang)) | [A Gang](human-properties.md#gang) | waits on level files of version 2 |
+| **Gang** | `gang` ([What the level file stores](#level-file)) | A gang and its relations, `GangCreate` ([Gang](../../references/entities.md#gang)) | [A Gang](human-properties.md#gang) | waits on level files of version 2 |
 | **Camera view** | `view` | A viewpoint | Transform (yaw and pitch), View | ready |
 | **Flag** | `flag` | A world flag, `AddFlag` ([World flag](../../references/entities.md#flag)) | Transform (heading), Flag, Trigger, Events | waits on level files of version 2 |
 | **Path** | `path` | A path of flags, `AddPath` | Path (its flags, at most eight) | waits on level files of version 2 |

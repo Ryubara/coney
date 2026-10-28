@@ -151,7 +151,7 @@ each returns the handles the game natives take, so `GetPosition`, `TeleportToFla
 | `Coney.FindEntity(idOrName)` | The handle of the entity with that id (`"p2/h3"`), else the first with that name in file order; `nil` when none |
 | `Coney.FindEntities(tag)` | A list of the handles of every entity with that tag, in file order (an instance counts once, as its root's handle); empty when none |
 | `Coney.GetEntityMembers(handle)` | A list of the handles of an instance's or a group's entities, in file order |
-| `Coney.GetEntityInfo(handle)` | A table of the entity's `id`, `name`, `tags` and kind, or `nil` for a handle no level entity has |
+| `Coney.GetEntityInfo(handle)` | A table of the entity's `id`, `name`, `tags` and kind, or `nil` for a handle that is neither a level entity nor a member of a prefab a script spawned ([Spawning a prefab from a script](entities.md#spawn-prefab)) |
 
 "Every entity tagged ambush" is one call, and a script that finds none gets an empty list, never an error. The table is
 read only between the level's entry and its end; a call before `levelStart` returns nothing. Build issue 3 of
