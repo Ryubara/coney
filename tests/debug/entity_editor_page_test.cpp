@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The Entity editor page (docs/guides/debug-menu.md#entity-editor) driven through the menu model over a fake play mode,
-// as a front end drives it: an item queues an edit, the input gate applies the queue between two steps and writes the
-// run-log line, a reset returns a value to the configured one, the page refuses without a selection, and a network
-// client's edits are refused. No game, no disc.
+// The Entity inspector page's edits (docs/guides/debug-menu.md#entity-inspector) driven through the menu model over a
+// fake play mode, as a front end drives it: the page lays out the selection first and the groups below with their
+// editable values inline, an item queues an edit, the input gate applies the queue between two steps and writes the
+// run-log line, a reset returns a value to the configured one, the Model item gives a human another model, the page
+// refuses without a selection, and a network client's edits are refused. No game, no disc.
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <format>
 #include <map>
 #include <memory>
 #include <optional>
@@ -56,6 +58,7 @@ struct FakeState {
     bool frozen = false;
     bool killed = false;
     bool deleted = false;
+    std::string model = "warr_cl";
 };
 
 // The scene's three entities (player 1, a human, an object) and the target the editor edits them through.
@@ -84,11 +87,15 @@ class FakeWorld final : public coney::debug::EntityInspect, public coney::debug:
     }
     [[nodiscard]] std::vector<WatchGroup> describe(EntityId id) const override {
         const EntityRef* entity = coney::debug::findEntity(list, id);
-        return entity == nullptr
-                   ? std::vector<WatchGroup>{}
-                   : std::vector<WatchGroup>{WatchGroup{.name = "Identity", .lines = {{"Label", entity->label}}}};
+        if (entity == nullptr) {
+            return {};
+        }
+        WatchGroup identity{.name = "Identity", .lines = {{"Label", entity->label}}};
+        identity.lines.insert(identity.lines.end(), extraIdentity.begin(), extraIdentity.end());
+        return {identity};
     }
 
+    [[nodiscard]] std::vector<std::string> models() const override { return modelList; }
     std::expected<void, coney::Error> applyEdit(const EntityCommand& command) override {
         const auto found = states.find(command.entity);
         if (found == states.end() || found->second.deleted) {
@@ -146,6 +153,14 @@ class FakeWorld final : public coney::debug::EntityInspect, public coney::debug:
             }
             state.deleted = true;
             break;
+        case EditOp::Model: {
+            const std::optional<std::string> model = coney::debug::modelWithId(modelList, value);
+            if (!model) {
+                return coney::fail(coney::ErrorCode::NotFound, "no such model");
+            }
+            state.model = *model;
+            break;
+        }
         }
         return {};
     }
@@ -202,11 +217,15 @@ class FakeWorld final : public coney::debug::EntityInspect, public coney::debug:
             return state.speedScale;
         case EditOp::Frozen:
             return state.frozen ? 1.0 : 0.0;
+        case EditOp::Model:
+            return static_cast<double>(coney::debug::modelId(state.model));
         default:
             return std::nullopt;
         }
     }
 
+    std::vector<std::string> modelList{"warr_cl", "warr_re_cv"};
+    std::vector<coney::debug::WatchLine> extraIdentity; // more Identity lines for every entity
     std::vector<EntityRef> list;
     std::map<EntityId, FakeState> states;
 };
@@ -234,6 +253,12 @@ class FakePlay final : public coney::debug::PlayControls {
     std::expected<void, coney::Error> clearSpawned() override { return {}; }
     [[nodiscard]] const coney::debug::EntityInspect* inspect() const override { return &world; }
     [[nodiscard]] coney::debug::EntityEditTarget* entityEdits() override { return withEdits ? &world : nullptr; }
+    // The humans freeze (player 1 and the AI human), the object does not.
+    [[nodiscard]] bool canFreezeEntity(EntityId id) const override { return id == 1 || id == 7; }
+    [[nodiscard]] bool entityFrozen(EntityId id) const override {
+        const auto found = world.states.find(id);
+        return found != world.states.end() && found->second.frozen;
+    }
 
     FakeWorld world;
     bool withEdits = true;
@@ -275,9 +300,9 @@ struct Rig {
     }
     // The gate's between-steps work, as the game runs it once per frame.
     void step() { (void)session->gate().sample(frame++); }
-    // The page `title` of the editor, opened as a front end opens it; submenus by their labels.
+    // The Entity inspector page, opened as a front end opens it, then the submenus `path` names by their labels.
     std::shared_ptr<MenuPage> open(std::initializer_list<std::string_view> path) {
-        std::shared_ptr<MenuPage> page = session->model().openPage("Entity editor");
+        std::shared_ptr<MenuPage> page = session->model().openPage("Entity inspector");
         REQUIRE(page != nullptr);
         for (const std::string_view label : path) {
             const MenuItem* item = page->find(label);
@@ -305,21 +330,149 @@ const MenuItem& itemOn(const MenuPage& page, std::string_view label) {
 
 } // namespace
 
-TEST_CASE("the Entity editor page says so without a play mode that lists and edits entities",
+TEST_CASE("the Entity inspector page says so without a play mode, and edits nothing in a mode it cannot edit",
           "[debug][entity-editor]") {
-    // Expected: unverified, #723
+    // Expected: docs/guides/debug-menu.md#entity-inspector
     Rig none(nullptr);
-    const auto noPlay = none.session->model().openPage("Entity editor");
+    const auto noPlay = none.session->model().openPage("Entity inspector");
     REQUIRE(noPlay != nullptr);
     REQUIRE(noPlay->items().size() == 1);
     CHECK(noPlay->items().front().label == "No entities");
 
+    // A mode that lists its entities but cannot edit them: the inspector's items, none of the edits.
     FakePlay play;
     play.withEdits = false;
     Rig readOnly(&play);
-    const auto page = readOnly.session->model().openPage("Entity editor");
-    REQUIRE(page != nullptr);
-    CHECK(page->items().front().label == "No entities");
+    readOnly.session->debugDraw().inspected = 7;
+    const auto page = readOnly.open({});
+    CHECK(page->find("Selected") != nullptr);
+    CHECK(page->find("Queued") == nullptr);
+    CHECK(page->find("Reset selection") == nullptr);
+    CHECK(page->find("Stats") == nullptr);
+    CHECK(readOnly.open({"Meters"})->find("Health") == nullptr);
+    // The same mode able to edit shows them on the same page.
+    play.withEdits = true;
+    CHECK(readOnly.open({})->find("Queued") != nullptr);
+    CHECK(readOnly.open({"Meters"})->find("Health") != nullptr);
+}
+
+TEST_CASE("the page is one inspector: the selection first, then the groups with their edits inline",
+          "[debug][entity-editor]") {
+    // Expected: docs/guides/debug-menu.md#entity-inspector (the selection at the top, the groups below)
+    FakePlay play;
+    Rig rig(&play);
+    const auto page = rig.open({});
+    std::vector<std::string> labels;
+    for (const MenuItem& item : page->items()) {
+        labels.push_back(item.label);
+    }
+    const std::vector<std::string> expected{"Selected",
+                                            "Entities",
+                                            "Nearest to player",
+                                            "Next",
+                                            "Previous",
+                                            "Looked at",
+                                            "Choose",
+                                            "Clear",
+                                            "Highlight",
+                                            "Freeze selection",
+                                            "Teleport player to it",
+                                            "Log everything",
+                                            "Queued",
+                                            "Reset selection",
+                                            "Identity",
+                                            "Transform",
+                                            "Locomotion",
+                                            "Animation",
+                                            "State flags",
+                                            "Meters",
+                                            "Stats",
+                                            "AI",
+                                            "Physics",
+                                            "Combat",
+                                            "Object",
+                                            "Mesh",
+                                            "Lifecycle",
+                                            "Log",
+                                            "Edit log"};
+    CHECK(labels == expected);
+
+    // Picked once at the top, the selection is what every group watches and edits.
+    itemOn(*page, "Nearest to player").run();
+    REQUIRE(rig.session->debugDraw().inspected == 7);
+    const auto identity = rig.open({"Identity"});
+    CHECK(itemOn(*identity, "Label").watch() == "AI 1 gang");
+    CHECK(itemOn(*identity, "Model").kind == coney::debug::ItemKind::Choice);
+    itemOn(*rig.open({"Meters"}), "Health").setNumber(55.0);
+    rig.step();
+    CHECK(play.world.states[7].health == 55.0);
+}
+
+TEST_CASE("a watch line that shares a name with an edit stays, as the value now", "[debug][entity-editor]") {
+    // Expected: docs/guides/debug-menu.md#entity-inspector (nothing the inspector showed is lost)
+    FakePlay play;
+    Rig rig(&play);
+    rig.session->debugDraw().inspected = 7;
+    // The fake describes Identity with a Label line only; give it a Model line too, as the play mode's has.
+    play.world.extraIdentity = {{"Model", "warr_cl (as drawn)"}};
+    const auto identity = rig.open({"Identity"});
+    CHECK(itemOn(*identity, "Model").kind == coney::debug::ItemKind::Choice);
+    CHECK(itemOn(*identity, "Model now").watch() == "warr_cl (as drawn)");
+}
+
+TEST_CASE("the Model item gives the selected human another model, between steps, and nothing else changes",
+          "[debug][entity-editor]") {
+    // Expected: docs/guides/debug-menu.md#model-swap
+    FakePlay play;
+    Rig rig(&play);
+    rig.session->debugDraw().inspected = 7;
+    const auto identity = rig.open({"Identity"});
+    const MenuItem& model = itemOn(*identity, "Model");
+    REQUIRE(model.getChoice);
+    REQUIRE(model.setChoice);
+    // The models the target offers, after a first entry that stands for a model not in the list.
+    CHECK(model.choices == std::vector<std::string>{"-", "warr_cl", "warr_re_cv"});
+    CHECK(model.getChoice() == 1);
+
+    const FakeState before = play.world.states[7];
+    model.setChoice(2);
+    // Queued: the item shows the choice at once; the human has not changed.
+    CHECK(model.getChoice() == 2);
+    CHECK(play.world.states[7].model == "warr_cl");
+    CHECK(rig.session->entityEditor().pending() == 1);
+
+    rig.step();
+    const FakeState& after = play.world.states[7];
+    CHECK(after.model == "warr_re_cv");
+    CHECK(model.getChoice() == 2);
+    REQUIRE(rig.lines.size() == 1);
+    CHECK(rig.lines[0] == std::format("entity edit: applied 7 model {}", coney::debug::modelId("warr_re_cv")));
+    CHECK(after.health == before.health);
+    CHECK(after.scale == before.scale);
+    CHECK(after.feet.y == before.feet.y);
+    // The first entry asks for nothing.
+    model.setChoice(0);
+    CHECK(rig.session->entityEditor().pending() == 0);
+    // Player 1 takes a model the same way.
+    rig.session->debugDraw().inspected = 1;
+    itemOn(*rig.open({"Identity"}), "Model").setChoice(2);
+    rig.step();
+    CHECK(play.world.states[1].model == "warr_re_cv");
+}
+
+TEST_CASE("an object has no edits in its groups", "[debug][entity-editor]") {
+    // Expected: docs/guides/debug-menu.md#entity-inspector
+    FakePlay play;
+    Rig rig(&play);
+    // A human's groups hold its edits...
+    rig.session->debugDraw().inspected = 7;
+    CHECK(rig.open({"Identity"})->find("Model") != nullptr);
+    CHECK(rig.open({"Meters"})->find("Health") != nullptr);
+    // ...an object's do not.
+    rig.session->debugDraw().inspected = 9;
+    CHECK(rig.open({"Identity"})->find("Model") == nullptr);
+    CHECK(rig.open({"Meters"})->find("Health") == nullptr);
+    CHECK(rig.open({"Transform"})->find("X") == nullptr);
 }
 
 TEST_CASE("an item queues the edit, which lands when the gate runs the between-steps work, and the run log says so",
@@ -349,7 +502,7 @@ TEST_CASE("an item queues the edit, which lands when the gate runs the between-s
     CHECK(play.world.states[1].health == 100.0);
 }
 
-TEST_CASE("each group edits the selection: meters, stats, control and the transform", "[debug][entity-editor]") {
+TEST_CASE("each group edits the selection: meters, stats and the transform", "[debug][entity-editor]") {
     // Expected: unverified, #723
     FakePlay play;
     Rig rig(&play);
@@ -368,9 +521,6 @@ TEST_CASE("each group edits the selection: meters, stats, control and the transf
     itemOn(*stats, "Animation rate").setNumber(0.5);
     itemOn(*stats, "Speed scale").setNumber(2.0);
 
-    const auto control = rig.open({"Control"});
-    itemOn(*control, "Frozen").setBool(true);
-
     const auto transform = rig.open({"Transform"});
     itemOn(*transform, "Heading").setNumber(90.0);
     itemOn(*transform, "X").setNumber(4.0);
@@ -381,7 +531,7 @@ TEST_CASE("each group edits the selection: meters, stats, control and the transf
     CHECK(state.stamina == 100.0);
     CHECK_FALSE(state.killed);
     CHECK(state.scale == 1.25);
-    CHECK(rig.session->entityEditor().pending() == 13);
+    CHECK(rig.session->entityEditor().pending() == 12);
 
     rig.step();
     CHECK(state.stamina == 25.0);
@@ -393,12 +543,11 @@ TEST_CASE("each group edits the selection: meters, stats, control and the transf
     CHECK_FALSE(state.collisionFollows);
     CHECK(state.animRate == 0.5);
     CHECK(state.speedScale == 2.0);
-    CHECK(state.frozen);
     CHECK(state.heading == 90.0);
     // The X edit kept the other two coordinates.
     CHECK(state.feet.x == Approx(4.0F));
     CHECK(state.feet.y == Approx(2.0F));
-    CHECK(rig.lines.size() == 13);
+    CHECK(rig.lines.size() == 12);
 }
 
 TEST_CASE("a number item resets to the value the entity is configured with", "[debug][entity-editor]") {
@@ -523,7 +672,8 @@ TEST_CASE("a network client's edits are refused, the host's land", "[debug][enti
     CHECK(play.world.states[7].health == 20.0);
 }
 
-TEST_CASE("the page's Log shows the last edits and the Queued line counts the waiting ones", "[debug][entity-editor]") {
+TEST_CASE("the page's Edit log shows the last edits and the Queued line counts the waiting ones",
+          "[debug][entity-editor]") {
     // Expected: unverified, #723
     FakePlay play;
     Rig rig(&play);
@@ -534,8 +684,46 @@ TEST_CASE("the page's Log shows the last edits and the Queued line counts the wa
     CHECK(itemOn(*page, "Queued").watch() == "1 waiting");
     rig.step();
     CHECK(itemOn(*page, "Queued").watch() == "0 waiting");
-    const MenuItem& log = itemOn(*page, "Log");
+    const MenuItem& log = itemOn(*page, "Edit log");
     REQUIRE(log.lines);
     REQUIRE(log.lines().size() == 1);
     CHECK(log.lines()[0] == "entity edit: applied 7 health 10");
+}
+
+TEST_CASE("Freeze selection is a queued edit: it lands between steps, leaves a run-log line and only the host's lands",
+          "[debug][entity-editor]") {
+    // Expected: docs/guides/debug-menu.md#entity-inspector (the freeze is the editor's frozen edit, #1053)
+    FakePlay play;
+    FakeNet net;
+    Rig rig(&play, &net);
+    rig.session->debugDraw().inspected = 7;
+    const auto page = rig.open({});
+    const MenuItem& freeze = itemOn(*page, "Freeze selection");
+    REQUIRE(freeze.setBool);
+
+    // Queued: the item shows it at once, the human is not frozen until the step.
+    freeze.setBool(true);
+    CHECK(freeze.getBool());
+    CHECK_FALSE(play.world.states[7].frozen);
+    CHECK(rig.session->entityEditor().pending() == 1);
+    rig.step();
+    CHECK(play.world.states[7].frozen);
+    REQUIRE(rig.lines.size() == 1);
+    CHECK(rig.lines[0] == "entity edit: applied 7 frozen 1");
+    CHECK(coney::debug::appliedEdits(rig.lines).size() == 1);
+
+    // A network client's freeze is refused like any other edit.
+    net.role = coney::debug::NetRole::Client;
+    freeze.setBool(false);
+    rig.step();
+    CHECK(play.world.states[7].frozen);
+    REQUIRE(rig.lines.size() == 2);
+    CHECK(rig.lines[1] == "entity edit: refused 7 frozen 0: only the host edits in a network session");
+
+    // An object is not frozen, and the log says why.
+    net.role = coney::debug::NetRole::Host;
+    rig.session->debugDraw().inspected = 9;
+    freeze.setBool(true);
+    CHECK(rig.session->entityEditor().pending() == 0);
+    CHECK(rig.session->log().last(1).back().find("cannot be frozen") != std::string::npos);
 }

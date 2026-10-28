@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Checks against the player's own disc that the Entity editor (docs/guides/debug-menu.md#entity-editor) edits a level
-// as it is played: in `level80` played in the game session as `coney --play-level level80 --checkpoint 2` plays it
-// (support/disc_session.h), a human the level's scripts hold by handle is deleted through the editor and the level goes
-// on with no handle left dangling, player 1 is refused with a reason and plays on, and an edited human (scaled, hurt,
-// sped up, moved) takes its edits between steps. It runs only when the environment variable CONEY_DISC names the disc
-// and skips otherwise; it prints counts only (LEGAL.md).
+// Checks against the player's own disc that the Entity inspector's edits (docs/guides/debug-menu.md#entity-inspector)
+// edit a level as it is played: in `level80` played in the game session as `coney --play-level level80 --checkpoint 2`
+// plays it (support/disc_session.h), a human the level's scripts hold by handle is deleted through the editor and the
+// level goes on with no handle left dangling, player 1 is refused with a reason and plays on, an edited human (scaled,
+// hurt, sped up, moved) takes its edits between steps, and a script's human takes another model keeping its handle,
+// then the scene's own model, which the inspector still names. It runs only when the environment variable CONEY_DISC
+// names the disc and skips otherwise; it prints counts only (LEGAL.md).
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -251,4 +253,88 @@ TEST_CASE("edits to a human in a level land between steps and play goes on", "[d
     level.run(300);
     CHECK(level.play->player().padControlled());
     CHECK(level.play->player().human().alive());
+}
+
+TEST_CASE("a human the level's scripts hold takes another model through the Entity inspector and keeps its handle",
+          "[disc][story][debug][entity-editor]") {
+    // Expected: human-model-change.md#keeps, confirmed (code) (what the late fill-in leaves; the swap is Coney's own)
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    Level80 level(*wad);
+    coney::ai::AiHumans& fighters = level.play->fighters();
+    // A human the scripts made: one with a handle of its own, not the human the pad drives.
+    std::optional<std::size_t> pick;
+    for (std::size_t i = 0; i < fighters.humans().size() && !pick; ++i) {
+        const coney::ai::AiHuman& entry = fighters.humans()[i];
+        const coney::ai::Brain* brain = fighters.brains().find(*entry.human);
+        if (!entry.removed && !entry.debugSpawned && brain != nullptr && brain->handle() != 0.0 &&
+            entry.human.get() != &fighters.playerBrain().human()) {
+            pick = i;
+        }
+    }
+    REQUIRE(pick.has_value());
+    if (!pick) {
+        return;
+    }
+    const EntityId id = kFirstAiId + *pick;
+    const coney::human::Human* human = fighters.humans()[*pick].human.get();
+    const coney::ai::Brain* brain = fighters.brains().find(*human);
+    REQUIRE(brain != nullptr);
+    const double handle = brain->handle();
+    const coney::ai::Gang* gang = brain->gang();
+    const std::vector<coney::ai::Brain*> enemies = brain->enemies();
+    const int health = human->health().value();
+    const coney::anim::Vec3 feet = human->position();
+    // The controls act on the mode once asked for it, as the input gate asks.
+    REQUIRE(level.controls.controlsOf(level.play) != nullptr);
+
+    // A model the configuration names that the human is not drawn as.
+    const std::string current =
+        coney::debug::watchValue(level.controls.inspect()->describe(id), "Identity", "Model").value_or("");
+    std::string model;
+    for (const std::string& candidate : level.controls.models()) {
+        if (candidate != current) {
+            model = candidate;
+            break;
+        }
+    }
+    REQUIRE_FALSE(model.empty());
+
+    // Through the page's queue, as the Model item queues it, applied between steps.
+    REQUIRE(level.debug->entityEditor().queue(EntityCommand{
+        .entity = id, .op = EditOp::Model, .values = {static_cast<double>(coney::debug::modelId(model)), 0.0, 0.0}}));
+    CHECK(level.applyEdits() == 1);
+    CHECK(coney::debug::watchValue(level.controls.inspect()->describe(id), "Identity", "Model") ==
+          std::optional<std::string>(model));
+    CHECK(fighters.humans()[*pick].human.get() == human);
+    CHECK(fighters.brains().find(*human) == brain);
+    CHECK(brain->handle() == handle);
+    CHECK(brain->gang() == gang);
+    CHECK(brain->enemies() == enemies);
+    CHECK(human->health().value() == health);
+    CHECK(human->position().x == feet.x);
+    CHECK(human->position().y == feet.y);
+    std::printf("entity editor: script human %zu (handle %.0f) took another model; brain, gang and handle kept\n",
+                *pick, handle);
+
+    // Back to the model of the scene's own character, which a level draws its cast with when theirs did not load: the
+    // inspector still names it (the mesh says which model it was given).
+    const std::string sceneModel = level.play->model();
+    const std::vector<std::string> models = level.controls.models();
+    REQUIRE(std::ranges::find(models, sceneModel) != models.end());
+    REQUIRE(level.debug->entityEditor().queue(
+        EntityCommand{.entity = id,
+                      .op = EditOp::Model,
+                      .values = {static_cast<double>(coney::debug::modelId(sceneModel)), 0.0, 0.0}}));
+    CHECK(level.applyEdits() == 1);
+    CHECK(coney::debug::watchValue(level.controls.inspect()->describe(id), "Identity", "Model") ==
+          std::optional<std::string>(sceneModel));
+    CHECK(level.controls.currentValue(id, EditOp::Model) == static_cast<double>(coney::debug::modelId(sceneModel)));
+
+    // The level's scripts run on over the human they hold by that handle.
+    level.run(300);
+    CHECK(level.play->player().padControlled());
+    CHECK(fighters.brains().find(*human) == brain);
 }

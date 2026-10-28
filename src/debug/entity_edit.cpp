@@ -33,6 +33,7 @@ constexpr std::array<OpInfo, kEditOpCount> kOps{{
     {"speed-scale", 1},
     {"frozen", 1},
     {"delete", 0},
+    {"stub", 0},
 }};
 
 // The prefix every line of the editor carries, which appliedEdits() looks for.
@@ -65,6 +66,12 @@ std::optional<EditOp> editOpFromName(std::string_view name) {
 }
 
 std::size_t editOpArity(EditOp op) { return kOps.at(static_cast<std::size_t>(op)).arity; }
+
+// Stub until the model swap exists.
+std::uint32_t modelId(std::string_view /*model*/) { return 0; }
+
+// Stub until the model swap exists.
+std::optional<std::string> modelWithId(std::span<const std::string> /*models*/, double /*id*/) { return std::nullopt; }
 
 std::string commandText(const EntityCommand& command) {
     std::string text = std::format("{} {}", command.entity, editOpName(command.op));

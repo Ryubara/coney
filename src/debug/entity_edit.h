@@ -44,10 +44,11 @@ enum class EditOp : std::uint8_t {
     SpeedScale,     ///< A multiplier on the human's gait speeds, 1 is as configured.
     Frozen,         ///< 1 or 0: the Entity inspector's freeze.
     Delete,         ///< Nothing: the game's own removal (the way HuDelete takes a human out).
+    Model,          ///< Stub: another model (not implemented yet).
 };
 
 /// How many EditOp values there are; EditOp values are 0 to kEditOpCount - 1.
-inline constexpr std::size_t kEditOpCount = 15;
+inline constexpr std::size_t kEditOpCount = 16;
 
 /// The name of `op` as the run log writes it (`health`, `scale-collision`).
 [[nodiscard]] std::string_view editOpName(EditOp op);
@@ -63,6 +64,11 @@ struct EntityCommand {
     std::array<double, 3> values{};
     friend bool operator==(const EntityCommand&, const EntityCommand&) = default;
 };
+
+/// Stub: the number a Model edit names a model by (not implemented yet: 0).
+[[nodiscard]] std::uint32_t modelId(std::string_view model);
+/// Stub: the model of `models` with id `id` (not implemented yet: nothing).
+[[nodiscard]] std::optional<std::string> modelWithId(std::span<const std::string> models, double id);
 
 /// The command as the run log writes it after `applied` or `refused`: `<entity> <op> <numbers>`, each number as its
 /// shortest text that reads back exactly (`131073 teleport -12.5 0.1 1`); no numbers for an op that takes none.
@@ -89,6 +95,8 @@ class EntityEditTarget {
     [[nodiscard]] virtual std::optional<std::array<double, 3>> configuredValues(EntityId entity, EditOp op) const = 0;
     /// The first number of `op` on `entity` now (its health in percent, its scale); nothing when it is not known.
     [[nodiscard]] virtual std::optional<double> currentValue(EntityId entity, EditOp op) const = 0;
+    /// Stub: the models a Model edit can give a human (not implemented yet: none).
+    [[nodiscard]] virtual std::vector<std::string> models() const { return {}; }
 };
 
 /// The queue of edits waiting for the next step boundary, with the run log line of each applied edit and the rule that

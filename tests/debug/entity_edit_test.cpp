@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The Entity editor's queue (docs/guides/debug-menu.md#entity-editor): an edit is queued and lands only when the game
-// applies the queue between two steps, every applied edit is written to the run log, a recorded log replays to the
-// same state, only the host applies edits in a network session, and a reset queues the configured value. A fake target
-// stands in for the play mode; no game, no disc.
+// The Entity editor's queue (docs/guides/debug-menu.md#entity-inspector): an edit is queued and lands only when the
+// game applies the queue between two steps, every applied edit is written to the run log, a recorded log replays to the
+// same state, only the host applies edits in a network session, a reset queues the configured value and a model edit
+// names its model by the hash of its name. A fake target stands in for the play mode; no game, no disc.
 #include "debug/entity_edit.h"
 
 #include <array>
@@ -17,6 +17,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/log.h"
+#include "core/name_hash.h"
 
 using coney::debug::EditOp;
 using coney::debug::EntityCommand;
@@ -311,4 +312,26 @@ TEST_CASE("every op has a name that parses back and a number of values", "[debug
     CHECK(coney::debug::editOpArity(EditOp::Teleport) == 3);
     CHECK(coney::debug::editOpArity(EditOp::Kill) == 0);
     CHECK_FALSE(coney::debug::editOpFromName("nope").has_value());
+}
+
+TEST_CASE("a model edit names the model by the hash of its name, which reads back to the name",
+          "[debug][entity-editor]") {
+    // Expected: docs/guides/debug-menu.md#model-swap (the id is the Character List's name hash)
+    const std::vector<std::string> models{"warr_cl", "warr_re_cv", "civ_ma_a"};
+    // The id is the lower-case name's CRC-32, so a log line names the same model in every run.
+    CHECK(coney::debug::modelId("warr_cl") == coney::nameHash("warr_cl"));
+    CHECK(coney::debug::modelId("WARR_CL") == coney::debug::modelId("warr_cl"));
+    CHECK(coney::debug::modelWithId(models, coney::debug::modelId("warr_re_cv")) ==
+          std::optional<std::string>("warr_re_cv"));
+    CHECK_FALSE(coney::debug::modelWithId(models, coney::debug::modelId("nobody")).has_value());
+    CHECK_FALSE(coney::debug::modelWithId(models, 0.5).has_value());
+
+    // The command takes the id as its one number and round-trips through its text exactly.
+    const EntityCommand command{
+        .entity = 7, .op = EditOp::Model, .values = {static_cast<double>(coney::debug::modelId("warr_cl")), 0.0, 0.0}};
+    CHECK(coney::debug::editOpName(EditOp::Model) == "model");
+    CHECK(coney::debug::editOpArity(EditOp::Model) == 1);
+    const auto parsed = coney::debug::parseCommand(coney::debug::commandText(command));
+    REQUIRE(parsed.has_value());
+    CHECK(*parsed == command);
 }

@@ -166,6 +166,9 @@ std::expected<void, Error> PlayLevelControls::applyEdit(const debug::EntityComma
     case debug::EditOp::Frozen:
         setEntityFrozen(command.entity, value != 0.0);
         return {};
+    case debug::EditOp::Model:
+        // Stub until the model swap exists.
+        return fail(ErrorCode::InvalidArgument, "not implemented yet");
     case debug::EditOp::Delete: {
         if (player) {
             return fail(ErrorCode::InvalidArgument,

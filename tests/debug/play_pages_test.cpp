@@ -180,7 +180,6 @@ TEST_CASE("the play pages say so when no player plays", "[debug]") {
                                              "HUD",
                                              "Debug draw",
                                              "Entity inspector",
-                                             "Entity editor",
                                              "Display",
                                              "Audio",
                                              "Network",
