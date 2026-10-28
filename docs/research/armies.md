@@ -203,11 +203,12 @@ panels' own state at the set-up:
   steps it for a panel that is not wanted. The state is set by `Human_KnockOut` (`0x00230328`) both when the
   player's health runs out (`Human_OnHealthOut`, `0x002674c0`, which knocks out a human with flag `0x4`) and for
   `HuSetConscious(h, false)` ([Who sets the bit](combat-reactions.md#knocked-out-bit)), so a player beaten to 0
-  health loses his panel too. Only `ANHud_Enable` (`0x0020fd40`, interface slot `+0x20`: wanted 1 and
-  `PlayerHUD_Show`) sets wanted again. `HUD_AttachPlayer` (`0x001b2200`) calls it right after the init on every
-  attach of a panel not yet wanted (the `ANHud` table at `0x0053ecc0` holds `ANHud_Init` in slot `+0x10`,
-  `ANHud_Enable` in `+0x20` and `ANHud_Draw` in `+0x38`), and a continue calls it for each continuing player
-  ([The game-over screen](#game-over)).
+  health loses his panel too, from the update his dying reaction's last clip ends rather than at the hit
+  ([When the knock-out comes](combat-reactions.md#knockout-timing)). Only `ANHud_Enable` (`0x0020fd40`, interface
+  slot `+0x20`: wanted 1 and `PlayerHUD_Show`) sets wanted again. `HUD_AttachPlayer` (`0x001b2200`) calls it right
+  after the init on every attach of a panel not yet wanted (the `ANHud` table at `0x0053ecc0` holds `ANHud_Init` in
+  slot `+0x10`, `ANHud_Enable` in `+0x20` and `ANHud_Draw` in `+0x38`), and a continue calls it for each continuing
+  player ([The game-over screen](#game-over)).
 - The flag's own setter and getter are `ANHud_SetJoinMsg` (`0x002107d8`, which `HUD_ANEnableJoinMsg` `0x001b46a0`
   calls) and `ANHud_GetJoinMsg` (`0x002107e0`). A search for the operand `0x4614` finds them, `ANHud_Init`, `_Update`
   and `_Draw`, but not `ANHud_SetPlayer`, which Ghidra had left outside any function.

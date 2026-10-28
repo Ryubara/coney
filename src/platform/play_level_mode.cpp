@@ -28,6 +28,7 @@
 #include "core/perf.h"
 #include "fileio/executable.h"
 #include "gamemodes/game_mode_stack.h"
+#include "gamemodes/hud_feed.h"
 #include "graphics/human_blood.h"
 #include "human/human_animator.h"
 #include "human/player_trace.h"
@@ -684,12 +685,8 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     }
     // A scene's letterbox in or moving hides the HUD.
     hudFrame.letterbox = m_stage->barHeight(hudFrame.nowMs) > 0.0F;
-    const combat::RageMeter& rage = m_player->human().fighter().combat().rage();
-    hudFrame.players.at(0).rage = rage.value();
-    hudFrame.players.at(0).rageMax = rage.maximum();
-    hudFrame.players.at(0).raging = rage.raging();
-    // Knocked out by his health running out or by a script (`Human_IsKnockedOut`), which drops his Armies panel.
-    hudFrame.knockedOut.at(0) = m_player->human().knockedOut();
+    // Player 1's rage meter and whether he is knocked out (`Human_IsKnockedOut`), which drops his Armies panel.
+    feedHumanToHud(hudFrame, 0, m_player->human());
     // Player 1's radar: his feet, facing and speed, and the camera's facing in the humans' convention (0 faces +y,
     // positive to the left); RenderWare's (x, y, z) is the game's (x, -z, y).
     hudFrame.radar.known = true;

@@ -507,14 +507,16 @@ class Human final : public Holdable {
     [[nodiscard]] bool downOrDead() const {
         return m_fighter.health().depleted() || m_script.knockedOut || m_script.wounded;
     }
-    /// Knocked out, state `0x40000`: its health run out (`Human_OnHealthOut` 0x002674c0 knocks a player, flag `0x4`,
-    /// out through `Human_KnockOut` 0x00230328) or a script's `HuSetConscious(false)`
-    /// (docs/research/combat-reactions.md#knocked-out-bit).
+    /// Knocked out, state `0x40000`: its health run out and its dying reaction over (`Human_OnHealthOut` 0x002674c0,
+    /// the end callback of the death chain's last clip, knocks a player, flag `0x4`, out through `Human_KnockOut`
+    /// 0x00230328; Fighter::healthOut()) or a script's `HuSetConscious(false)`
+    /// (docs/research/combat-reactions.md#knocked-out-bit, docs/research/combat-reactions.md#knockout-timing). The
+    /// timing matches the original's: from the update the dying clip ends, not the hit's.
     /// @orig 0x00227dd8 Human_IsKnockedOut (unknown)
-    /// Stand-in: Coney keeps no state word, so health run out counts as knocked out for every human; in the original
+    /// Stand-in: Coney keeps no state word, so a health run out counts as knocked out for every human; in the original
     /// one without flag `0x4` may be wounded (flag `0x8`) or made dead by a kind-29 hit instead, without the bit, and a
     /// human with no record (`+0xd4`) counts as knocked out (every Coney human has one).
-    [[nodiscard]] bool knockedOut() const { return m_fighter.health().depleted() || m_script.knockedOut; }
+    [[nodiscard]] bool knockedOut() const { return m_fighter.healthOut() || m_script.knockedOut; }
     /// Whether `Player_UseItemCommand` refuses the flash's press outright: down or dead, cuffed, airborne
     /// (`0x1c00000000`) or climbing over. A knockdown, a stun, a hit reaction or a climb's first or last clip is none
     /// of these: there the flash is used at once (docs/research/combat-rage.md#flash-mid-move).

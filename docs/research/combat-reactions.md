@@ -4,12 +4,12 @@ system: combat
 owns:
   functions: [
     "0x00158728", "0x00227dd8", "0x0022f100", "0x0022f658", "0x0022f8d8", "0x00230328", "0x00264bd8", "0x00265f70",
-    "0x002674c0", "0x0026a6d0", "0x0026b0a0", "0x00286ba8",
+    "0x002674c0", "0x00267a00", "0x0026a6d0", "0x0026b0a0", "0x00286ba8",
   ]
 ---
 # Combat: damage, reactions and defeat
 
-Verified against: `SLUS_212.15` (NTSC-U); runtime claims name PCSX2 2.9.94 and their method in How this was checked.
+Verified against: `SLUS_212.15` (NTSC-U); runtime claims in PCSX2 2.9.94 and 2.9.129.
 
 ## Summary
 
@@ -42,6 +42,7 @@ address.
 | `0x0022f8d8` | `Human_EndStun` | the stun's end: 357, then idle ([Reactions](#reactions)) | confirmed (code) |
 | `0x00256a60` / `0x0025e2d8` | `Human_UpdateDown` / `Human_PlayRise` | the get-up time and the rise 199 | confirmed (code) |
 | `0x00267e48` | `Human_PlayLethalReaction` | the death reaction of a dying human, held back by a paired clip ([Moves a hit cannot stop](#protected-moves)) | confirmed (code) |
+| `0x002678c8` / `0x00267a00` | `Human_PlayGangDeathReaction` / `Human_PlayDeathReaction` | the death chain, whose last clip before the loop ends in `Human_OnHealthOut` ([When the knock-out comes](#knockout-timing)) | confirmed (code) |
 | `0x002674c0` / `0x00230328` / `0x00230598` | `Human_OnHealthOut` / `Human_KnockOut` / `Human_WakeUp` | health out, knocked out, woken ([Defeat](#defeat)) | confirmed (code) |
 | `0x00286ba8` / `0x002752a0` / `0x00274ee0` | `Player_TryRevive` / `Revive_Start` / `Revive_Finish` | the revive, d-pad left beside a downed Warrior ([Reviving](#revive)) | confirmed (code) |
 | `0x004197a8` / `0x00158728` | `GameState_CheckGameOver` / `Gm_Level_Update` | the mission failing and the hand-off to its screen ([The mission failing](#mission-failing)) | confirmed (code) |
@@ -542,7 +543,8 @@ pair](combat-grabs.md#pair-break)): the victim plays 245 then 199. The escapes h
 Read in Ghidra: confirmed (code) where no other level is given; each runtime block says confirmed (runtime).
 
 **When health runs out** (inferred from what it does), `Human_OnHealthOut` (`0x002674c0`; from `0x00267a00`,
-`0x00267e48` and `Human_HandleMessage`) runs, unless state `0x1c00000000` is set, in this order:
+`0x00267e48` and `Human_HandleMessage`) runs, unless state `0x1c00000000` is set, in this order; after a lethal hit it
+runs when the dying reaction's last clip ends, not at the hit ([When the knock-out comes](#knockout-timing)):
 
 1. It clears the state bits `0x208000800f` (stance, grabs, block), the action and the pending damage, and sets
    record `+0xf0` = now + 500 ms.
@@ -575,6 +577,47 @@ Read in Ghidra: confirmed (code) where no other level is given; each runtime blo
 - clears the block bit `0x8000`.
 
 The flash clip 665 keeps a player alive ([Damage](#damage), step 4).
+
+#### When the knock-out comes {#knockout-timing}
+
+**Not at the lethal hit, but when the dying reaction ends** (confirmed (code) at the addresses below; confirmed
+(runtime), run r-20261028-knockout-timing). A human beaten to 0 health is dying (state `0x80000000`) first, and
+`Human_OnHealthOut` (`0x002674c0`), which knocks him out through `Human_KnockOut`, runs only as the **end callback of
+the death chain's last clip** before its loop:
+
+- `Human_PlayLethalReaction` (`0x00267e48`) plays `Human_PlayGangDeathReaction` (`0x002678c8`) for a human that is not
+  cuffed with flag `0x4` (and plays nothing when his clip is already 349); `Human_PlayGangDeathReaction` blends out
+  the clip playing and builds the chain with `Human_PlayDeathReaction` (`0x00267a00`, held flag `0x2000`).
+  `Human_PlayGangDeathReaction` itself never calls `Human_OnHealthOut` (confirmed (code)).
+- `Human_PlayDeathReaction` chains, in play order: the dying reaction (a paired task, its clip picked by state: 322
+  cuffed, 264 in a pair, 204 wounded, the grab and tackle clips, 195 knocked down, 348 or 319, else
+  `Hit_PickDyingReaction`), then a fall 308 or 198 when the reaction's knockdown value asks for one, then 205 for a
+  human with flag `0x8` not yet wounded, then the loop: 200 after 205, 323 for a cuffed human, else 349. It passes
+  `Human_OnHealthOut` (and the held flag) to the **first of these it builds from the loop backwards**, so the callback
+  sits on 205 when there is one, else on the fall, else on the dying reaction: always the clip that hands over to the
+  loop (confirmed (code)).
+- The cuffed branch of `Human_PlayLethalReaction` (a cuffed human with flag `0x4`) does the same by hand: fall 322
+  with `Human_OnHealthOut` at its end (`AnimTaskChained_Construct` at `0x00268370`), then the loop 323 (confirmed
+  (code)).
+
+So a player beaten to 0 health is knocked out, and his Armies panel stops being wanted (`Human_IsKnockedOut`,
+[Armies](armies.md#the-join-messages)), the update his last dying clip ends and the loop begins, about one clip after
+the hit (inferred for a player: the chain is the same for every human, and only `Human_OnHealthOut`'s branch reads
+flag `0x4`).
+
+At runtime (confirmed (runtime), run r-20261028-knockout-timing, PCSX2 v2.9.129, scenario
+[`knockout_timing`](repo:research/traces/scenarios/knockout_timing.toml): a copy of slot 6, `PoizoCiv` a puppet at 1
+health 1.0 m ahead of the player, square tapped at update 10, stick centred; hooks `anim-dispatch` and
+`strike-contact`; two runs alike):
+
+| Update | `PoizoCiv` |
+| --- | --- |
+| 13 | the punch lands (`Strike_Contact`); the loop 349 and the dying reaction 292 are dispatched; state `0x80000001`, held `0x2000` |
+| 14-57 | 292 plays: state `0x80000001`, **no `0x40000`** |
+| 58 | 349, state **`0x40000`** (`0x80000000` gone), held `0` |
+
+His health read 1 throughout, as the civilian's of [the lethal run](#lethal-runtime) did. The Rumble brawls below show
+the same order for 51 fighters: dying from the lethal hit, knocked out from the first update of 349.
 
 #### Who sets and clears the knocked-out bit {#knocked-out-bit}
 
@@ -955,6 +998,25 @@ Read 2026-10-11, the rise counter 2026-10-13 (`src/combat`, `src/human`, `src/ai
   struggle, the break, the reversal, the escape when the mounter's power runs out). Kind 14 has a reach but no move,
   and kind 42 on an AI himself is called "the get-up attack" where it should be one command that cuts his ground time.
 
+### The knock-out {#knockout-coney}
+
+`Human::knockedOut()` (`repo:src/human/human.h`) is a human whose health ran out and whose dying reaction has ended
+(`Fighter::healthOut()`), or one a script knocked out (`HuSetConscious(false)`), as [When the knock-out
+comes](#knockout-timing) reads the original: `Fighter::update` marks the health out on the first update the dying
+clip no longer plays (a lethal hit held back plays its paired clip first), the update the ground's loop takes over, and
+a heal clears it. Coney's chain is the dying reaction and the loop 196, so its clip end stands for the end of the
+original's last clip (the fall 308 or 198 and the 205 of a woundable human are not played). The play mode gives it to
+the HUD frame through `feedHumanToHud()` (`repo:src/gamemodes/hud_feed.h`), which the tests
+`repo:tests/gamemodes/hud_feed_test.cpp` hold: a player beaten to 0 health drops his Armies panel with no script mark.
+Tests: `repo:tests/human/knockout_test.cpp` (not knocked out through the whole dying clip, knocked out the update it
+ends) and `repo:tests/hud/armies_hud_test.cpp` (the panel stays while the clip plays).
+
+**Stand-ins:** every human out of health is knocked out (the original's wounded humans with flag `0x8` and the dead of
+a kind-29 object's hit are not; [Open questions](#open-questions), when a player is dead). Still counted **from the
+hit**, where the original waits for the same clip end: the brain's knock-out and the player's slow motion going off
+(`ai::Brains::reportDowns`), `BLOCKHUMANS` lost (`Human::updateState`) and the mission-failing check's knocked-out
+players and helpers (`PlayLevelMode::stepGameOver`).
+
 ### The revive {#revive-coney}
 
 Coney builds it for player 1 (`repo:src/gamemodes/gameplay_revive.cpp`, `repo:src/human/human_revive.cpp`, the tests as
@@ -998,7 +1060,8 @@ Readings and stand-ins:
 mission failing](#mission-failing), on at each level's start and switched by `EnableGameOverCheck`; a failure hides the
 HUD and, 180 updates later (10 once cross is newly pressed), opens the mission-failed mode with `GSTRING.HUD` 20 or 21
 as its title. Stand-ins ([Open questions](#open-questions): when a player is dead, and a tackled victim's wounded bit):
-a player at 0 health counts as knocked out and none as dead, no player frees himself from cuffs, the wait's `+0x414`
+a player at 0 health counts as knocked out from the hit (the original waits for his dying clip's end, [When the
+knock-out comes](#knockout-timing)) and none as dead, no player frees himself from cuffs, the wait's `+0x414`
 never blocks it, a held member is one attached to his holder, and the route check is a route request (Coney has no
 blocked links, and a level without path data always finds a route); the failed camera, the tint, the blur, the music's
 fade and the `dyn_cross` icon are not built.
@@ -1036,7 +1099,7 @@ fade and the `dyn_cross` icon are not built.
 
 The code claims were read in Ghidra on `SLUS_212.15` (NTSC-U); the clip events and the Anim Range List values were read
 from the disc's character data (numbers only). The runtime claims were read with PCSX2 2.9.94 over PINE, before run
-records existed, so none of them has one:
+records existed, so none of them has one, except the knock-out's timing (2.9.129, with its record):
 
 - **Damage**, **Reactions** and **Being hit** (below): a copy of slot 6 with the puppet civilian `PoizoCiv`, driven
   with the scripted pad.
@@ -1050,6 +1113,8 @@ records existed, so none of them has one:
   `repo:research/traces/scenarios/revive_crew.toml`; the setup is beside the runs ([at runtime](#revive-runtime)).
 - **Knocked out in a Rumble brawl**: the hook recordings of [Rumble](rumble.md#gang-battle-results).
 - **Hit blood**: scenario `blood_knife_grab`, the knife grab kill with call hooks on the functions named.
+- **When the knock-out comes**: 2026-10-28, PCSX2 v2.9.129, scenario
+  `repo:research/traces/scenarios/knockout_timing.toml`, with its run record `r-20261028-knockout-timing`.
 
 ### Being hit, at runtime {#being-hit-runtime}
 
