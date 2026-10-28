@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Claude Code PreToolUse hook: refuse a raw `gh` command that writes an issue, and point to `coney-tools issue`.
 
-Issues are filed and their bodies changed only through `coney-tools issue create`, `edit` and `link`, which check the
-body against the issue form first (docs/guides/issues.md#filing). This hook, registered in `.claude/settings.json` for
-the Bash and PowerShell tools, refuses what bypasses that check:
+Issues are filed and their bodies changed only through `coney-tools issue create`, `edit` and `set-parent`, which check
+the body against the issue form first (docs/guides/issues.md#filing). This hook, registered in
+`.claude/settings.json` for the Bash and PowerShell tools, refuses what bypasses that check:
 
 * `gh issue create`;
 * `gh issue edit` with `--body`, `--body-file`, `-b` or `-F`;
@@ -69,10 +69,10 @@ _REMOTE = re.compile(r"[/:](?P<repo>[\w.-]+/[\w.-]+?)(?:\.git)?/?$")
 
 MESSAGE = (
     "Blocked: issues are filed and edited only through coney-tools, which checks the body against the issue form "
-    "first (docs/guides/issues.md, 'Filing an issue'). Draft: `uv run --project python coney-tools issue draft task "
+    "first (docs/guides/issues.md, 'Filing an issue'). Draft: `uv run --project python coney-tools issue template task "
     "> <file>`, fill it in, check it with `coney-tools issue check --title ... --body <file>`, then "
     "`coney-tools issue create --title ... --body <file>` (or `coney-tools issue edit N --body <file>`, or "
-    "`coney-tools issue link N --parent P`). Labels, titles, comments and closing stay with `gh`.\n"
+    "`coney-tools issue set-parent N --parent P`). Labels, titles, comments and closing stay with `gh`.\n"
 )
 
 

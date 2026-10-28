@@ -88,16 +88,16 @@ paraphrased away on the page and a reviewer can read the numbers the claim rests
 
 Three commands write one ([`pcsx2` in coney-tools](coney-tools-pcsx2.md#pcsx2)):
 
-- `coney-tools pcsx2 recipe run NAME --record --state ID ...` after a good [recipe](pcsx2-recipes.md) run: the numbers
+- `coney-tools pcsx2 recipes run NAME --record --state ID ...` after a good [recipe](pcsx2-recipes.md) run: the numbers
   the recipe showed and its arguments.
-- `coney-tools pcsx2 record SCENARIO --run-record --library-state ID ...` with a
+- `coney-tools trace original SCENARIO --run-record --library-state ID ...` with a
   [trace](research-traces.md#recording-a-trace): the scenario, patches, the counts of updates and missed updates, and
   the CSV's hash.
 - `coney-tools pcsx2 record-run --method "..." --value NAME=NUMBER ...` for an observation made by hand through the
   `pcsx2` MCP server (a watch, a read, a frame count): the method in words, and the numbers and addresses read.
 
 `recipe run --record` and `record-run` refuse a copy you do not hold a claim on or whose PCSX2 is not running;
-`pcsx2 record` takes its claim and starts PCSX2 itself. Each fills in the date, who, version and copy itself, checks
+`trace original` takes its claim and starts PCSX2 itself. Each fills in the date, who, version and copy itself, checks
 every rule of the record it will write before the run (only what the run measures is filled in afterwards), and writes
 a record only for a run that went well. A record holds names, numbers and addresses as printable ASCII, within the
 limits of `runs` in [.github/conventions.yml](repo:.github/conventions.yml), and a key the schema does not know is

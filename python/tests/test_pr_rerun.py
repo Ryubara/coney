@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for `coney-tools repo pr-health --rerun`: made-up pull requests, runs and logs in the shape `gh` gives."""
+"""Tests for `coney-tools pr list-stuck --rerun`: made-up pull requests, runs and logs in the shape `gh` gives."""
 
 import argparse
 import json
@@ -358,12 +358,12 @@ class Both(RerunGh):
 
 
 def command(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, gh: Both, *flags: str) -> int:
-    """Run `repo pr-health` with `flags` in a checkout of the real conventions against the fake gh."""
+    """Run `pr list-stuck` with `flags` in a checkout of the real conventions against the fake gh."""
     write_checkout(tmp_path)
     monkeypatch.chdir(tmp_path)
     parser = argparse.ArgumentParser()
     pr_health.add_pr_health_parser(parser.add_subparsers(dest="command"))
-    return pr_health.run_pr_health(parser.parse_args(["pr-health", *flags]), gh, NOW)
+    return pr_health.run_pr_health(parser.parse_args(["list-stuck", *flags]), gh, NOW)
 
 
 def test_rerun_alone_is_a_dry_run_that_prints_what_it_would_rerun(

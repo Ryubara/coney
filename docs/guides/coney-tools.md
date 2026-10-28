@@ -20,7 +20,7 @@ uv run --project python coney-tools wad --help
 These read **your own disc**; [naming the disc](coney-tools-disc.md#naming-the-disc) says how they find it.
 
 * [`wad`](coney-tools-disc.md#wad): the game's archive.
-* [`wad scenes`](coney-tools-disc.md#scenes): the scene records.
+* [`wad scene-info`](coney-tools-disc.md#scenes): the scene records.
   {#scenes}
 * [`extract`](coney-tools-disc.md#extract): every asset, in open formats.
   {#extract}
@@ -38,14 +38,14 @@ so they go, with these ids, once those pages are touched and cite the disc page.
 ### [The reference commands](coney-tools-references.md)
 
 * [`progress`](coney-tools-references.md#progress): the progress tables.
-* [`natives`](coney-tools-references.md#natives): the script-binding masterlist.
+* [`bindings`](coney-tools-references.md#bindings): the script-binding masterlist.
 * [`refs`](coney-tools-references.md#refs): the game reference lists.
 * [`missions`](coney-tools-references.md#missions): the mission status pages.
 
 ### [The fidelity and research commands](coney-tools-fidelity.md)
 
-* [`orig`](coney-tools-fidelity.md#orig): the `@orig` index and audit.
-* [`original`](coney-tools-fidelity.md#original): study and compare an original function.
+* [`orig`](coney-tools-fidelity.md#orig): study and compare an original function; the `@orig` index, checks and
+  audit.
 * [`stamp`](coney-tools-fidelity.md#stamp): a unit's stamp log.
 * [`research`](coney-tools-fidelity.md#research): the function database and the claims report.
 * [`lua`](coney-tools-fidelity.md#lua): the game's scripts, decompiled.
@@ -56,22 +56,24 @@ so they go, with these ids, once those pages are touched and cite the disc page.
 
 ### [The PCSX2 and clip commands](coney-tools-pcsx2.md)
 
-* [`pcsx2`](coney-tools-pcsx2.md#pcsx2): drive PCSX2 and record the original.
-* [`clips`](coney-tools-pcsx2.md#clips): in-game video clips.
+* [`pcsx2`](coney-tools-pcsx2.md#pcsx2): drive PCSX2: claims, recipes, save states, input recordings.
+* [`clips`](coney-tools-pcsx2.md#clips): in-game video clips, the original's recorded with `clips record`.
 
 ### [The trace commands](coney-tools-trace.md)
 
-* [`trace`](coney-tools-trace.md#trace): the original's traces and event logs, compared with Coney's.
+* [`trace`](coney-tools-trace.md#trace): traces and event logs of the original (`trace original`) and of Coney,
+  compared.
 
 ### [The repository commands](coney-tools-repo.md)
 
-* [`repo`](coney-tools-repo.md#repo): titles, descriptions, labels.
+* [`repo`](coney-tools-repo.md#repo): the conventions file, its generated blocks, the audit, labels and findings.
+* [`legacy`](coney-tools-repo.md#legacy): the old workflow's release checks, until the cutover replaces them.
 * [`task`](coney-tools-repo.md#task): claiming issues and writing a task file.
 
 ### [The pull request commands](coney-tools-pr.md)
 
-* [`pr`](coney-tools-pr.md#pr): whether a unit is ready to become a pull request, the text it carries, its release
-  and commit messages ([Releasing a pull request](pr.md)).
+* [`pr`](coney-tools-pr.md#pr): whether a unit is ready to become a pull request, the text it carries, its release,
+  the title, description and commit message checks, and the stuck pull requests ([Releasing a pull request](pr.md)).
 
 ### [The issue commands](coney-tools-issues.md)
 
@@ -80,11 +82,11 @@ so they go, with these ids, once those pages are touched and cite the disc page.
 
 ### [The CI commands](coney-tools-ci.md)
 
-* [`ci`](coney-tools-ci.md#ci): the commands the CI workflows run.
+* [`ci`](coney-tools-ci.md#ci): what CI would fail on, checked locally (`ci run`), and the commands the CI workflows
+  run.
 
-### [The check, build and benchmark commands](coney-tools-build.md)
+### [The docs, build and benchmark commands](coney-tools-build.md)
 
-* [`check`](coney-tools-build.md#check): what CI would fail on.
 * [`docs`](coney-tools-build.md#docs): the documentation standards.
 * [`build`](coney-tools-build.md#build): configure, build and test under the build slots.
 * [`perf`](coney-tools-build.md#perf): the engine benchmark.
@@ -97,6 +99,23 @@ so they go, with these ids, once those pages are touched and cite the disc page.
   [`workspace`](coney-tools-setup.md#workspace) and [`config`](coney-tools-setup.md#config): the debugging servers,
   your Ghidra project, the machine check, the local workspace and its configured paths.
 * [`coney-agent`](coney-tools-setup.md#coney-agent): the session launcher.
+
+## Renamed commands {#renamed}
+
+Many commands were renamed in October 2026 so that each name says what the command does, no two names clash (`ci
+run` sat beside `task check`) and the halves of a pair share a group (`trace original` beside `trace coney`). Until
+the workflow cutover an old name still works: `coney-tools` rewrites it to the new one before it runs and says so in one
+line on stderr, such as ``coney-tools: `check changed` is renamed to `ci run`; the old name stops working at the
+cutover``. The old names, and the four options that changed (`workspace clean --shell-hours` is now
+`--stale-wait-hours`, `extract --xbox` is `--xbox-disc`, `build --slots-wait-timeout` is `--max-wait`, and `clips
+clean --dry-run` is gone because a dry run is the default now), live in one table,
+[renames.py](repo:python/src/coney_tools/renames.py); no parser or generated block knows them. Write the new names.
+To find the new name of an old one you meet in a page, run the old command with `--help`: the notice names the new
+one and nothing else happens. The pages that still carry an old name are the 13 legacy research pages (a name-only
+edit would count as touching them, [Legacy pages](writing-docs.md#legacy-pages)) and the history sentences in a few
+others ("recorded with `pcsx2 record`"). The guards that match a command by name (`.claude/hooks/hooks.toml`, the
+PCSX2 guard) match both names until the cutover deletes the old ones. The two review commands that moved to
+[`legacy`](coney-tools-repo.md#legacy) stay, under their new names, until `task review` and `pr open` replace them.
 
 ## The parameter reference {#parameter-reference}
 
@@ -126,7 +145,7 @@ the table is the one to fix.
   [.github/conventions.yml](repo:.github/conventions.yml) (`docs/guides`), read from that key and not from a path of
   the tool's own.
 * **The gate.** `coney-tools docs render --check` changes nothing and exits 1 for any of those; it runs as the audit
-  check `files.command-reference` (`repo audit --files`), which `check changed` and the `python` workflow run, so a
+  check `files.command-reference` (`repo audit --files`), which `ci run` and the `python` workflow run, so a
   pull request that adds or changes a command without rendering its page is refused.
 
 Which group's page holds which block is where the block sits; the list above says where each group is documented. The

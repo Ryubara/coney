@@ -2,7 +2,7 @@
 """Tests for the name rule of `progress check`: the `@orig` tag spells the database's (Ghidra's) name.
 
 Tags that already differ when the branch leaves its base are a warning with a count; a tag the branch adds or renames
-that differs fails the check, the way `orig check` holds only what the branch changes.
+that differs fails the check, the way `orig check-tags` holds only what the branch changes.
 """
 
 from __future__ import annotations

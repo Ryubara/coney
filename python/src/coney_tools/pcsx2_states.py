@@ -18,7 +18,7 @@ player's position, heading, level and checkpoint, which the `where` and `positio
 memory (`read_scene`).
 
 A state is never changed: `Library.add` copies a file in and makes it read-only, `Library.verify` hashes the files
-again, and `states use` hands out a copy (`pcsx2_states_cli`). The catalog is rewritten through a lock file and a
+again, and `states hand-out` hands out a copy (`pcsx2_states_cli`). The catalog is rewritten through a lock file and a
 temporary file, so two agents adding at once cannot lose each other's entry.
 
 Research: docs/guides/pcsx2-states.md

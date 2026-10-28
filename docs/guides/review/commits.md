@@ -3,7 +3,7 @@
 For a reviewer of a pull request's title and commits before it is squash-merged. Only the title, the description and
 the branch's final state reach `main`: the commits inside the branch are dropped by the squash, so they may be work in
 progress and are not held to the rules below. The title rules are `commits.title` in
-[`.github/conventions.yml`](repo:.github/conventions.yml), which `coney-tools repo check-title` and CI read (the same
+[`.github/conventions.yml`](repo:.github/conventions.yml), which `coney-tools pr check-title` and CI read (the same
 rules are shown in [AGENTS.md](repo:AGENTS.md)); the areas and verbs are:
 
 <!-- conventions:begin commit-areas -->
@@ -37,7 +37,7 @@ Get the messages with `git log --format=%B <base>..<tip>`.
 - [ ] **It is one feature:** the pull request can be titled with one sentence (one verb, no "and"), and without it
   everything else still builds and passes the checks.
 - [ ] **The title follows the rules:** the form, a known area and verb, the length and the tense that
-  `commits.title` sets. `git log -1 --format=%s | uv run --project python coney-tools repo check-title -` checks it
+  `commits.title` sets. `git log -1 --format=%s | uv run --project python coney-tools pr check-title -` checks it
   (for the pull request, its title). A title that `check-title` refuses is Important.
 - [ ] **The title says what changes for someone using or building the project**, not how it was made: no tool or
   agent name.

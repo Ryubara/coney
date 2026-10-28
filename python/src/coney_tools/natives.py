@@ -58,7 +58,8 @@ USAGE_KEYS = ("chunks", "calls", "boot", "mission1", "result_used")
 #: The story's levels after the first, in the order a player meets them, each with a short label: the missions as
 #: `global.lua`'s `runNextMission` and the hub's `fRunMission` chain them, then the hub's flashbacks and the Armies of
 #: the Night bonus game (docs/research/scripting.md#run-next-mission). A binding's optional `usage.levels` lists the
-#: numbers of those whose scripts can call it, in this order (`coney-tools natives missions` sets it from the disc).
+#: numbers of those whose scripts can call it, in this order (`coney-tools bindings scan-usage --story` sets it from
+#: the disc).
 STORY_LEVELS: tuple[tuple[int, str], ...] = (
     (80, "mission 2"),
     (87, "mission 3"),

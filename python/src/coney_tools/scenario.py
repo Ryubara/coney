@@ -144,7 +144,7 @@ class Scenario:
     rows: str = "updates"
     #: Goal vtables to type ids, for goal_type() and goal_at() (research/references/goal-types.yaml).
     goal_types: dict[int, int] = field(default_factory=dict)
-    #: PCSX2's emulation speed while `pcsx2 record` runs it (its NominalScalar; 1.0 full speed). Below 1 a sample
+    #: PCSX2's emulation speed while `trace original` runs it (its NominalScalar; 1.0 full speed). Below 1 a sample
     #: that takes longer than the 16 ms between two ticks still fits in one update; the game's own time is the same.
     speed: float = 1.0
 
@@ -371,7 +371,7 @@ def load_scenario(path: Path, root: Path) -> Scenario:
 
 
 def with_let(scenario: Scenario, overrides: list[str]) -> Scenario:
-    """`scenario` with `let` names given or replaced by `NAME=EXPRESSION` texts (`pcsx2 record --let`), so one
+    """`scenario` with `let` names given or replaced by `NAME=EXPRESSION` texts (`trace original --let`), so one
     scenario can be recorded with different values (a random stream's offset per match). Raises ScenarioError for a
     text that is not NAME=EXPRESSION."""
     let = dict(scenario.let)

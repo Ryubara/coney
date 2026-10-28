@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for coney_tools.workspace_clean: `workspace clean` and `workspace disk` on made-up git repositories."""
+"""Tests for coney_tools.workspace_clean: `workspace clean` and `workspace check-space` on made-up git repositories."""
 
 import json
 import os
@@ -396,8 +396,8 @@ def test_cli_commands(space: Space, monkeypatch: pytest.MonkeyPatch, capsys: pyt
     assert "dry run" in capsys.readouterr().out
     assert main(["workspace", "clean", "--apply", "--build-hours", "1", "--worktree-hours", "0.5"]) == 0
     assert not path.exists()
-    assert main(["workspace", "disk", "--min-gb", "0"]) == 0
-    assert main(["workspace", "disk", "--min-gb", "100000000"]) == 1
+    assert main(["workspace", "check-space", "--min-gb", "0"]) == 0
+    assert main(["workspace", "check-space", "--min-gb", "100000000"]) == 1
 
 
 def test_disk_minimum_defaults_to_the_conventions(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -570,5 +570,5 @@ def test_the_process_limits_reach_clean(space: Space, monkeypatch: pytest.Monkey
 
     monkeypatch.setattr(stale_processes, "run", run)
     monkeypatch.chdir(space.checkout)
-    assert main(["workspace", "clean", "--shell-hours", "5", "--log-idle-hours", "2"]) == 0
+    assert main(["workspace", "clean", "--stale-wait-hours", "5", "--log-idle-hours", "2"]) == 0
     assert seen == [(False, 5.0, 2.0)]

@@ -30,7 +30,7 @@ jobs:
       - name: Check the title against the commit conventions
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
-        run: printf '%s\n' "$PR_TITLE" | uv run --project python coney-tools repo check-title -
+        run: printf '%s\n' "$PR_TITLE" | uv run --project python coney-tools pr check-title -
 
   # A pull request that changes the engine (src/) or the tools (python/src/) must change the docs too (docs/ or
   # research/), or say `Docs: none` on a line of its description: the living docs are updated in the same pull request,
@@ -52,7 +52,7 @@ jobs:
         run: |
           printf '%s\n' "$PR_BODY" > "$RUNNER_TEMP/pr-body.md"
           git diff --name-only HEAD^1...HEAD^2 |
-            uv run --project python coney-tools repo check-docs --body "$RUNNER_TEMP/pr-body.md"
+            uv run --project python coney-tools pr check-docs --body "$RUNNER_TEMP/pr-body.md"
 
   # The description must follow the template (.github/pull_request_template.md): its sections, a Summary and a
   # Testing section with text, who wrote the commits (one of the template's choices) and, when an AI took part, the
@@ -73,7 +73,7 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           printf '%s\n' "$PR_BODY" > "$RUNNER_TEMP/pr-body.md"
-          uv run --project python coney-tools repo check-body --body "$RUNNER_TEMP/pr-body.md" --title "$PR_TITLE"
+          uv run --project python coney-tools pr check-body --body "$RUNNER_TEMP/pr-body.md" --title "$PR_TITLE"
 
   # Work starts with a claim (docs/guides/issues.md#claiming): every issue the description closes (`Fixes #N`) must be
   # held by a claim of the pull request's author, or the author is a maintainer. Until the cutover

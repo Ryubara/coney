@@ -24,7 +24,7 @@ _ORIG_MENTION = re.compile(r"@orig\s+0x")
 #: The marker a Coney-only function or file carries (docs/guides/conventions.md#coney-only): `@coney-only <reason>`.
 CONEY_ONLY_TAG = re.compile(r"@coney-only\b")
 #: Wording the conventions asked for before the marker existed: "Coney's own ...", "(no @orig)". It marks only
-#: functions written before `orig check` existed; a new function needs the marker.
+#: functions written before `orig check-tags` existed; a new function needs the marker.
 LEGACY_CONEY_ONLY = re.compile(r"Coney's own|Coney-only|\(no @orig\)|no @orig\b|the original has (?:nothing|no such)")
 RESEARCH_LINK = re.compile(r"docs/research/[A-Za-z0-9_./-]+?\.md(?:#[A-Za-z0-9_-]+)?")
 

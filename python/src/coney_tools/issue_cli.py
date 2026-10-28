@@ -2,9 +2,9 @@
 """The `coney-tools issue ...` commands: draft an issue, check it, and file, edit or link it only after the check.
 
 An issue filed with a bare `gh issue create --body` skips the issue form, so nothing guarded its sections, its
-labels or its links. These commands put the guard before the write: `draft` prints what to fill in, `check` says what
-is wrong, and `create`, `edit` and `link` are the only way agents and the coordinator write an issue to GitHub
-(docs/guides/issues.md#filing). The rules come from `.github/conventions.yml` and the form files through
+labels or its links. These commands put the guard before the write: `template` prints what to fill in, `check` says
+what is wrong, and `create`, `edit` and `set-parent` are the only way agents and the coordinator write an issue to
+GitHub (docs/guides/issues.md#filing). The rules come from `.github/conventions.yml` and the form files through
 `coney_tools.issue_form`. `gh` is run as a subprocess through an injected runner, so the tests never touch the network;
 `--dry-run` prints the commands without running any that writes.
 """
@@ -42,14 +42,14 @@ _CREATED = re.compile(r"/issues/(?P<number>\d+)\s*$")
 
 
 def add_issue_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
-    """Add the `issue` group: `draft`, `check`, `create`, `edit`, `link`, `titles` and `impact`."""
+    """Add the `issue` group: `template`, `check`, `create`, `edit`, `set-parent`, `titles` and `impact`."""
     group = groups.add_parser(
         "issue", help="draft, check and file issues in their form's shape (docs/guides/issues.md)"
     )
     commands = group.add_subparsers(dest="command", required=True)
 
     draft = commands.add_parser(
-        "draft",
+        "template",
         help="print a blank issue body in the form's exact headings, with the rules of each section as comments",
     )
     draft.add_argument("form", nargs="?", help="the form (task or bug); default: the form the command line uses")
@@ -129,7 +129,7 @@ def add_issue_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser]
         "--issues", metavar="FILE", help="read the open issues from this `gh issue list --json` file, not GitHub"
     )
 
-    link = commands.add_parser("link", help="make issue N a sub-issue of issue --parent")
+    link = commands.add_parser("set-parent", help="make issue N a sub-issue of issue --parent")
     link.add_argument("number", type=int, help="the child issue")
     link.add_argument("--parent", type=int, required=True, metavar="P", help="the parent issue")
     link.add_argument("--dry-run", action="store_true", help="print what would run; write nothing")
@@ -207,7 +207,7 @@ def _print_result(result: issue_form.CheckResult) -> None:
 
 
 def run_draft(form: str | None) -> int:
-    """`issue draft`: print the blank body of a form."""
+    """`issue template`: print the blank body of a form."""
     root = find_repo_root(Path.cwd())
     conventions = load_conventions(root)
     spec = issue_form.load_form(root, conventions, form or conventions.issues.cli_uses_form)
@@ -237,7 +237,7 @@ def markdown_comment(result: issue_form.CheckResult) -> str:
     lines += [f"- **{problem.kind}**: {problem.message}" for problem in result.problems]
     lines += [
         "",
-        f"`coney-tools issue draft {result.form}` prints the form's exact shape, and "
+        f"`coney-tools issue template {result.form}` prints the form's exact shape, and "
         "[Filing an issue](../blob/main/docs/guides/issues.md#filing) explains the rules. Edit the issue; this "
         "comment is updated when you do, and removed once the issue passes.",
     ]
@@ -323,7 +323,7 @@ def run_create(args: argparse.Namespace, run: Runner = audit_github.run_gh) -> i
     if args.parent is not None:
         if found is None:
             print(
-                f"coney-tools: could not read the new issue's number from {created!r}; link it with `issue link`",
+                f"coney-tools: could not read the new issue's number from {created!r}; link it with `issue set-parent`",
                 file=sys.stderr,
             )
             return 1
@@ -332,7 +332,7 @@ def run_create(args: argparse.Namespace, run: Runner = audit_github.run_gh) -> i
         except OSError as error:
             print(
                 f"coney-tools: the issue exists ({created}) but linking it to #{args.parent} failed: {error}\n"
-                f"  link it with: coney-tools issue link {found.group('number')} --parent {args.parent}",
+                f"  link it with: coney-tools issue set-parent {found.group('number')} --parent {args.parent}",
                 file=sys.stderr,
             )
             return 1
@@ -373,7 +373,7 @@ def run_edit(args: argparse.Namespace, run: Runner = audit_github.run_gh) -> int
 
 
 def run_link(args: argparse.Namespace, run: Runner = audit_github.run_gh) -> int:
-    """`issue link`: make an existing issue a sub-issue of another."""
+    """`issue set-parent`: make an existing issue a sub-issue of another."""
     try:
         link_sub_issue(args.number, args.parent, run, args.dry_run)
     except OSError as error:
@@ -491,7 +491,7 @@ def run_issue(args: argparse.Namespace) -> int:
         return run_impact(args)
     if args.command == "titles":
         return run_titles(args)
-    if args.command == "draft":
+    if args.command == "template":
         return run_draft(args.form)
     if args.command == "check":
         return run_check(args)

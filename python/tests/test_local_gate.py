@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for `coney-tools check changed`: the changed-file selection and the step logic, on synthetic git repositories.
+"""Tests for `coney-tools ci run`: the changed-file selection and the step logic, on synthetic git repositories.
 No game data."""
 
 import os
@@ -170,13 +170,13 @@ def test_mypy_command_reads_the_projects_strict_config() -> None:
 
 
 def test_ci_and_docs_run_the_same_mypy_command_as_the_gate() -> None:
-    """CI's python job and the guides that name the command agree with `check changed`, so no place checks less."""
+    """CI's python job and the guides that name the command agree with `ci run`, so no place checks less."""
     wanted = " ".join(check_cli.MYPY_COMMAND)
     workflow = (REPO / ".github" / "workflows" / "python.yml").read_text(encoding="utf-8")
     assert f"- run: {wanted}\n" in workflow.replace("\r\n", "\n")
-    # building.md shows the whole command; coney-tools-build.md's table shows it after `uv run --project python`.
+    # building.md shows the whole command; coney-tools-ci.md's table shows it after `uv run --project python`.
     short = " ".join(check_cli.MYPY_COMMAND[4:])
-    for guide, words in (("building.md", wanted), ("coney-tools-build.md", f"`{short}`")):
+    for guide, words in (("building.md", wanted), ("coney-tools-ci.md", f"`{short}`")):
         text = (REPO / "docs" / "guides" / guide).read_text(encoding="utf-8")
         assert words in text, guide
     # conventions.md only names the flag, but it must be the one the command uses.
@@ -197,7 +197,7 @@ def test_ruff_covers_the_hook_scripts() -> None:
 
 
 def test_ci_and_the_gate_run_ruff_over_the_same_paths() -> None:
-    """CI's python job runs the commands of `check changed` word for word, so the two cannot lint different folders."""
+    """CI's python job runs the commands of `ci run` word for word, so the two cannot lint different folders."""
     workflow = (REPO / ".github" / "workflows" / "python.yml").read_text(encoding="utf-8").replace("\r\n", "\n")
     assert len(check_cli.RUFF_COMMANDS) == 2  # check and format --check
     for command in check_cli.RUFF_COMMANDS:
@@ -330,7 +330,7 @@ def test_run_changed_exits_1_when_a_step_fails_and_0_when_all_pass(
 
 
 def test_the_python_workflow_runs_the_local_gate_on_every_os_it_tests() -> None:
-    """Nobody runs `check changed` on Linux or macOS by hand, so CI's python job does, on its whole OS matrix."""
+    """Nobody runs `ci run` on Linux or macOS by hand, so CI's python job does, on its whole OS matrix."""
     workflow = yaml.safe_load((REPO / ".github" / "workflows" / "python.yml").read_text(encoding="utf-8"))
     job = workflow["jobs"]["python"]
     assert job["strategy"]["matrix"]["os"]  # the OSes come from the scope script: all three, or Linux for docs only
@@ -338,7 +338,7 @@ def test_the_python_workflow_runs_the_local_gate_on_every_os_it_tests() -> None:
     checkout = next(step for step in steps if str(step.get("uses", "")).startswith("actions/checkout"))
     # `--base HEAD^1` is the branch a pull request's merge commit joins, so the checkout needs a second commit.
     assert int(checkout.get("with", {}).get("fetch-depth", 1)) >= 2
-    gate = [step["run"] for step in steps if "coney-tools check changed" in step.get("run", "")]
+    gate = [step["run"] for step in steps if "coney-tools ci run" in step.get("run", "")]
     assert len(gate) == 1 and "--base HEAD^1" in gate[0]
     assert "--only pre-commit" in gate[0] and "--only repo" in gate[0]
 

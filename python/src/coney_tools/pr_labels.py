@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""`coney-tools repo pr-health --labels`: keep a label on each open pull request that conflicts or fails a check.
+"""`coney-tools pr list-stuck --labels`: keep a label on each open pull request that conflicts or fails a check.
 
-`repo pr-health` finds the stuck pull requests; this module turns the findings into labels so that the pull request
+`pr list-stuck` finds the stuck pull requests; this module turns the findings into labels so that the pull request
 list shows them without running anything (`hygiene.pr_health.labels` in `.github/conventions.yml` maps each cause to
 its label, `S-conflict` and `S-failing`). A pull request with a cause gets that cause's label, one without it loses
 the label, and no other label is ever added or removed. Without `--apply` the changes are only printed.

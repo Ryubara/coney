@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for the commands that write run records: `pcsx2 record-run`, `pcsx2 recipe run --record` and
-`pcsx2 record --run-record`, over a fake PINE server (no test starts PCSX2) and a made-up checkout."""
+"""Tests for the commands that write run records: `pcsx2 record-run`, `pcsx2 recipes run --record` and
+`trace original --run-record`, over a fake PINE server (no test starts PCSX2) and a made-up checkout."""
 
 from __future__ import annotations
 
@@ -283,7 +283,7 @@ def test_numbers_and_addresses_are_read_as_written() -> None:
     assert run_records_cli.parse_addresses(["a=0x00271f40", "b=0x1000"]) == {"a": 0x271F40, "b": 0x1000}
 
 
-# --- pcsx2 recipe run --record ----------------------------------------------------------------------------------------
+# --- pcsx2 recipes run --record ---------------------------------------------------------------------------------------
 
 
 def one_recipe(**changes: Any) -> recipes.RecipeBook:
@@ -325,7 +325,7 @@ def test_a_recipe_run_with_record_writes_what_it_showed(
         hold_copy(tmp_path, monkeypatch, port)
         assert run_recipe(checkout, port, record=True, state="pedestrian-grab") == 0
     record = run_records.load(checkout, "r-20261023-count")
-    assert (record.kind, record.name, record.tool) == ("recipe", "count", "pcsx2 recipe run")
+    assert (record.kind, record.name, record.tool) == ("recipe", "count", "pcsx2 recipes run")
     assert record.args == {"n": "6"} and record.values == {"twice": 12, "quarter": 1.5}
     assert record.state == "pedestrian-grab" and record.patches == ("scripted-pad",)
     assert (record.pcsx2_version, record.copy, record.agent) == ("v2.9.94", "pcsx2-z", "tooling-1")
@@ -362,13 +362,13 @@ def test_a_recipe_that_fails_writes_no_record(checkout: Path, tmp_path: Path, mo
 
 
 def test_record_needs_the_state_and_state_needs_record(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    main(["pcsx2", "recipe", "run", "where", "--copy", "pcsx2-z", "--agent", "tooling-1", "--record"])
+    main(["pcsx2", "recipes", "run", "where", "--copy", "pcsx2-z", "--agent", "tooling-1", "--record"])
     assert "--record needs --state" in capsys.readouterr().err
-    main(["pcsx2", "recipe", "run", "where", "--copy", "pcsx2-z", "--agent", "tooling-1", "--state", "unknown"])
+    main(["pcsx2", "recipes", "run", "where", "--copy", "pcsx2-z", "--agent", "tooling-1", "--state", "unknown"])
     assert "--state and --name belong to --record" in capsys.readouterr().err
 
 
-# --- pcsx2 record --run-record ----------------------------------------------------------------------------------------
+# --- trace original --run-record --------------------------------------------------------------------------------------
 
 
 def fake_recording() -> Recording:
@@ -405,7 +405,7 @@ def test_a_traced_run_writes_its_record_beside_the_trace(
         )
     assert status == 0 and out.is_file()
     record = run_records.load(checkout, "r-20261023-bat-cross")
-    assert (record.kind, record.name, record.tool) == ("trace", "bat_cross_held", "pcsx2 record")
+    assert (record.kind, record.name, record.tool) == ("trace", "bat_cross_held", "trace original")
     assert record.args == {"x": "1"} and record.values["updates"] == 600 and record.values["missed_updates"] == 2
     assert record.hashes == {"trace_csv": hashlib.sha256(out.read_bytes()).hexdigest()}
     assert record.patches == ("call-brains", "right-stick", "scripted-pad") and record.pcsx2_version == "v2.9.94"

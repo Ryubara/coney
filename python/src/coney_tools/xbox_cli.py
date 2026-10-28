@@ -20,8 +20,8 @@ from coney_tools.wad import refuse_inside_repo
 from coney_tools.wad_cli import OutputClosedError
 from coney_tools.xdvdfs import XboxDisc
 
-_TOP_SIZES = 12  # texture sizes `xbox textures` lists before summing up the rest
-#: Chunk types whose resources `xbox resources --ps2` compares, with the names the survey uses.
+_TOP_SIZES = 12  # texture sizes `xbox texture-info` lists before summing up the rest
+#: Chunk types whose resources `xbox resource-info --ps2` compares, with the names the survey uses.
 _COMPARED_TYPES = {0x2A: "texture dictionaries", 0x47: "models", 0x00: "animations", 0x08: "characters"}
 
 

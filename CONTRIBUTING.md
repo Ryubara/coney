@@ -78,12 +78,12 @@ included, and prints how to fix each problem ([Check your setup](docs/guides/bui
    sanitizers):
 
     ```sh
-    uv run --project python coney-tools check changed
+    uv run --project python coney-tools ci run
     ```
 
     Commit with a title of the form `area: Verb the rest` ([Commits](#commits)), push the branch to your fork and
     open the pull request. Start its description from the [template](.github/pull_request_template.md), answer every
-    section (a docs-only change says `Screenshots: none (no visible change)`), and check it with `coney-tools repo
+    section (a docs-only change says `Screenshots: none (no visible change)`), and check it with `coney-tools pr
     check-body` ([Setting up](#setting-up)). A maintainer approves CI for a first pull request and reviews it; you
     do not merge it yourself.
 
@@ -120,21 +120,21 @@ maintainer reviews.
 
 ## Setting up
 
-The checks below are what CI runs on every pull request; `coney-tools check changed` runs them for you.
+The checks below are what CI runs on every pull request; `coney-tools ci run` runs them for you.
 
 CI checks every pull request's title against the rules under [Commits](#commits), because the squash merge makes it the
 title of the one commit on `main`; the titles of the commits on the branch are not checked. To check a title yourself,
 with [uv](https://docs.astral.sh/uv/) installed:
 
 ```sh
-echo "docs: Add a page" | uv run --project python coney-tools repo check-title -
+echo "docs: Add a page" | uv run --project python coney-tools pr check-title -
 ```
 
 CI also refuses a pull request that changes `src/` or `python/src/` without changing `docs/` or `research/`; put a
 line `Docs: none` in the description when the change needs no documentation. To check it yourself:
 
 ```sh
-git diff --name-only main... | uv run --project python coney-tools repo check-docs
+git diff --name-only main... | uv run --project python coney-tools pr check-docs
 ```
 
 CI also checks the pull request description against [the template](.github/pull_request_template.md), including one
@@ -158,12 +158,12 @@ created with `gh pr create --body-file`, and reruns when you edit it. These rule
 - Testing: when the title's area is one a player sees (`gameplay`, `graphics`, `audio`), a line starting `Runtime:` with
   the evidence from the original running (a trace diff, an event diff, or named PCSX2 captures or reads compared with
   Coney's, with numbers) or `Runtime: none (<reason>)`. It is checked given the title (CI's `body` job and
-  `repo check-review` give it).
+  `legacy check-pr-review` give it).
 - AI use: after `Commits written by:` one of `a person`, `an AI`, `an AI, edited by a person`, `a person, with AI help`;
   unless it is `a person`, `Model:` names the model (`n/a` is not enough).
 - `Model:` also names every model that a `Co-Authored-By` trailer on the branch's commits names (any case, anywhere on
-  the line), whoever wrote them. It is checked where the branch is at hand: `repo check-review`, and `repo check-body`
-  given `--worktree`; CI's `body` job sees only the description.
+  the line), whoever wrote them. It is checked where the branch is at hand: `legacy check-pr-review`, and
+  `pr check-body` given `--worktree`; CI's `body` job sees only the description.
 - The text names no path on your machine (`scratch/`, `../../`, `C:\`) outside an image reference.
 <!-- conventions:end -->
 
@@ -171,7 +171,7 @@ A pull request lists only the work it finishes; file an issue for anything else 
 ([Issues](docs/guides/issues.md#follow-up-work)). To check a description yourself:
 
 ```sh
-uv run --project python coney-tools repo check-body --body description.md --title "gameplay: Fix the thing"
+uv run --project python coney-tools pr check-body --body description.md --title "gameplay: Fix the thing"
 ```
 
 The documentation must build with `.venv/Scripts/python -m mkdocs build --strict`, which rejects broken links and

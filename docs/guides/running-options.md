@@ -78,7 +78,7 @@ display, no OpenGL) comes back as an error. It checks nothing else of the render
 units, the framebuffer cache, fog and its colour, the 2D shader override and the rule that every raster is destroyed
 before the stop). What librw leaves behind, and what Coney does about each piece, is on [Restarting the
 renderer](../research/graphics-restart.md). The same variable places the
-windows of PCSX2 copies that `coney-tools pcsx2 launch` and `pcsx2 record` start
+windows of PCSX2 copies that `coney-tools pcsx2 launch` and `trace original` start
 ([Driving PCSX2](research-tools.md#driving-pcsx2)).
 
 ## Frame rate {#frame-rate}

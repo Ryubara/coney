@@ -203,7 +203,7 @@ names.
 Of the masterlist's 956 natives, 312 arguments are strings, and most name something: 83 are named `callback` (a Lua
 function's name, called later), and the others name flags, spawners, cameras, sounds, music tracks, animations and
 object types (a count over `research/bindings/`). Each such argument gets a **`names:`** key in the masterlist saying
-what it names, beside the `handle:` key the SDK page adds for handles. `coney-tools natives stubs` turns each kind into
+what it names, beside the `handle:` key the SDK page adds for handles. `coney-tools bindings stubs` turns each kind into
 a class derived from `string` and types the parameter with it:
 
 ```lua
@@ -440,7 +440,7 @@ the Inspector are checked alike.
 | A string of a kind | The entity, file or function it names ([Hover, go to and checks](#string-features)) |
 
 Alt+Left and Alt+Right go back and forward through the places visited, across files and panels. The Natives panel's
-page links to the online reference, the same pages `natives render` writes ([The reference](lua-sdk.md#sdk-reference)).
+page links to the online reference, the same pages `bindings render` writes ([The reference](lua-sdk.md#sdk-reference)).
 
 The maintainer asked for Ctrl+Enter; the defaults are VS Code's, F12 and Ctrl+Click, for the reasons in
 [Ctrl+Enter](#ctrl-enter).
@@ -698,7 +698,7 @@ issue 5) and the Lua SDK's stubs ([its issue 5](lua-sdk.md#build-issues)), befor
    opens its page.
 6. **tools: Add name kinds to the masterlist and the SDK stubs.** The `names:` key on string arguments and the
    declaring mark, in the schema of `research/bindings/` with a closed list of kinds, filled for the natives above;
-   `natives stubs` writes each kind as `---@class <Kind>: string` and types the parameters; `natives render` shows an
+   `bindings stubs` writes each kind as `---@class <Kind>: string` and types the parameters; `bindings render` shows an
    argument's kind on the reference pages. Tests (pytest): the stubs hold the classes and the typed parameters; an
    unknown kind fails the schema check; a declaring mark on a non-string argument fails.
 7. **tools: Add Studio-aware strings to the script editor.** The project index (the levels' entities, names, tags and

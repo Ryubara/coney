@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Tests for the `coney-tools build` command line (coney_tools.build_cli): its flags, the precheck, the printed summary
-and exit codes, `build status` and `build release`. The toolchain is a fake; the claims are real folders in a
+and exit codes, `build status` and `build unclaim`. The toolchain is a fake; the claims are real folders in a
 temporary directory."""
 
 import getpass
@@ -140,17 +140,15 @@ def test_the_flags_of_a_build_are_parsed() -> None:
     assert (defaults.preset, defaults.max_wait, defaults.test, defaults.priority) == ("dev", None, False, False)
     assert (defaults.detach, defaults.log_file, defaults.result_file) == (False, None, None)
     assert (defaults.label, defaults.build_dir, defaults.env) == (None, None, [])
-    alias = _build_parser().parse_args(["build", "--agent", "a", "--slots-wait-timeout", "7"])
-    assert alias.max_wait == 7.0
     assert (args.budget, defaults.budget) == (30.0, None)  # None: the caps (build_cli.limits)
 
 
-def test_status_and_release_are_subcommands() -> None:
+def test_status_and_unclaim_are_subcommands() -> None:
     parser = _build_parser()
     assert parser.parse_args(["build", "status", "--json"]).build_command == "status"
-    release = parser.parse_args(["build", "release", "--agent", "a", "--force", "--slot", "2", "--lane", "fast"])
+    release = parser.parse_args(["build", "unclaim", "--agent", "a", "--force", "--slot", "2", "--lane", "fast"])
     assert (release.build_command, release.release_agent, release.force, release.slot, release.lane) == (
-        "release",
+        "unclaim",
         "a",
         True,
         2,
@@ -164,7 +162,7 @@ def test_dir_is_accepted_after_the_subcommand_and_before_it() -> None:
         after = parser.parse_args(["build", name, "--dir", "/some/worktree"])
         before = parser.parse_args(["build", "--dir", "/some/worktree", name])
         assert after.dir == before.dir == Path("/some/worktree")
-    release = parser.parse_args(["build", "release", "--agent", "a", "--dir", "/some/worktree"])
+    release = parser.parse_args(["build", "unclaim", "--agent", "a", "--dir", "/some/worktree"])
     assert release.dir == Path("/some/worktree")
     # Not given after the subcommand: the value given before it is kept, not reset to None.
     assert parser.parse_args(["build", "--dir", "/w", "result", "--json"]).dir == Path("/w")
@@ -326,18 +324,18 @@ def test_release_frees_the_agents_stale_claim_and_ticket(
     assert slots.try_claim(ticket) is not None
     slots.join("alice", "wt", "dev", False, 6002)
     monkeypatch.setattr(pcsx2_proc, "pid_alive", lambda pid: False)
-    assert main(["build", "release", "--agent", "alice"]) == 0
+    assert main(["build", "unclaim", "--agent", "alice"]) == 0
     out = capsys.readouterr().out
     assert "released main slot 1" in out and "left the main queue" in out
-    assert main(["build", "release", "--agent", "alice"]) == 2
+    assert main(["build", "unclaim", "--agent", "alice"]) == 2
 
 
 def test_release_of_a_running_build_needs_force(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
     slots = default_slots(MAIN_LANE, checkout)
     assert slots.try_claim(slots.join("alice", "wt", "dev", False, os.getpid())) is not None
-    assert main(["build", "release", "--agent", "alice"]) == 2
+    assert main(["build", "unclaim", "--agent", "alice"]) == 2
     assert "still runs" in capsys.readouterr().err
-    assert main(["build", "release", "--agent", "alice", "--force"]) == 0
+    assert main(["build", "unclaim", "--agent", "alice", "--force"]) == 0
 
 
 def log_of(out: str) -> Path:

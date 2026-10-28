@@ -1,6 +1,6 @@
 # The Warriors' script bindings, category `input`: one entry per Lua global the game registers.
 # Schema: docs/guides/research-data.md#bindings. docs/references/bindings/ is generated from these
-# files by `coney-tools natives render`; edit them here, then render.
+# files by `coney-tools bindings render`; edit them here, then render.
 
 - name: PadSetHandler
   wrapper: 0x0036d878

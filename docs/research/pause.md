@@ -954,7 +954,7 @@ Coney stand-ins, each an open question below:
   back except on Restore Default (Vibration stopping its preview first), and the bars as `StatBarItem_RenderColoured`
   draws them after their first update (`repo:src/gui/pause_menu/option_bar.h`: no frame, the dark back and the fill
   in the label's colour, into the batch of font slot 3, part_page0's). Each ported function was compared side by side
-  with Ghidra (`original compare`; the bars' and answers' again on 2026-10-26 after the review). Every change goes at
+  with Ghidra (`orig compare`; the bars' and answers' again on 2026-10-26 after the review). Every change goes at
   once into the game state where [save.md](save.md#options) puts it (`storeOptionValues`), so the next autosave keeps
   it; the game then applies the volumes as the music and effects buses' volumes, and each level's player camera takes
   its own pad's Auto Adjust from the game state every update (`FollowCamera::setAutoAdjust`, as
@@ -1068,7 +1068,7 @@ seen here:
 - the Controls screen's Tutorial page: the first tip starts where the "Tutorial" title does, at 0.286 of the frame
   with the font's own left margin, and the memory at `0x0050eef0` reads 0.41, 0.35, 0.53.
 
-On 2026-10-26 the Options screen's functions were compared side by side with Ghidra (`original compare`); that
+On 2026-10-26 the Options screen's functions were compared side by side with Ghidra (`orig compare`); that
 corrected this page, which had said Vibration keeps its values on back. The same day, in PCSX2 2.9.94 from the
 library state `street-end-run` (`level99`, checkpoint 2), the pad stepped frame by frame over the debug server:
 the Camera page, left on its third item and opened again, came back on that item (Auto Adjust P1 Cam), and Restore

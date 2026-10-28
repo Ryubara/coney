@@ -38,10 +38,10 @@ powershell_modes = ["bypassPermissions"]
 
 [roles.coordinator]
 deny_tool_prefixes = ["mcp__ghidra-mcp__", "mcp__pcsx2__"]
-# `original` is the group the stamp unit shipped; the renaming pass moves study and compare to `orig`.
+# `original` is the old name of the `orig` stage commands (coney_tools/renames.py), refused until the cutover.
 deny_coney_tools = [
+  "orig study", "orig compare", "orig fails-first", "task start", "task check", "task review",
   "original study", "original compare", "original fails-first",
-  "orig study", "orig compare", "task start", "task check", "task review",
 ]
 deny_write_dirs = ["src", "tests", "python", "docs/research", "research"]
 deny_commit_under = ["/worktrees/coney/"]
@@ -102,9 +102,10 @@ deny_commands = [
   # ...nor the session launcher run as a module or by its file (`python python/src/coney_tools/session_launcher.py`)...
   '(?i)\bconey_tools[./\\]session_launcher\b',
   # ...nor a review command that starts one: `task review --run` (or argparse's abbreviation `--ru`), and
-  # `repo review`, which always starts one (its sibling `repo review-stamp` only writes a template).
+  # `legacy pr-review`, which always starts one, and its old name `repo review` until the cutover (the neighbouring
+  # `repo review-stamp` only writes a template).
   '(?i)\bconey(?:-tools(?:\.exe)?|_tools[./\\]cli(?:\.py)?)\s+(?:-\S+\s+)*task\s+review(?=\s)[^;&|\n]*\s--run?(?=\s|$|[;&|)>])',
-  '(?i)\bconey(?:-tools(?:\.exe)?|_tools[./\\]cli(?:\.py)?)\s+(?:-\S+\s+)*repo\s+review(?=\s|$|[;&|)>])',
+  '(?i)\bconey(?:-tools(?:\.exe)?|_tools[./\\]cli(?:\.py)?)\s+(?:-\S+\s+)*(?:repo\s+review|legacy\s+pr-review)(?=\s|$|[;&|)>])',
 ]
 no_github_writes = true
 hint = "A reviewer reports: write your files only in your scratch folder, outside any checkout; git only reads."

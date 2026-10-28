@@ -18,7 +18,7 @@ state = "states/gang_battle_swap_intro.p2s"
 # sent (gang-fights.md#trace); recordings made before 2026-10-13 had none.
 patches = ["scripted-pad", "call-brains", "set-target", "help-call", "send-helper"]
 # The matches differ by an offset of the brains' random stream (its 10-bit index, maths.md#random), written
-# before the first update: `pcsx2 record --let seed=341`.
+# before the first update: `trace original --let seed=341`.
 let = { seed = "0" }
 setup = [ { address = "0x006eb880", type = "u32", value = "(u32(0x006eb880) + seed) & 0x3ff", frame = 0, until = 0 } ]
 # The countdown ends and the brains go on at step 151 to 172 (the fighters' brain +0x09 turns 0; the intro does not

@@ -1,5 +1,5 @@
 # WAD entry names: a Coney game reference list. The page docs/references/wad-names.md is generated
-# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# from this file by `coney-tools refs render`; `coney-tools refs refresh` refreshes the fields read from the
 # disc and keeps the hand-written ones. Schema and rules: docs/guides/research-data.md#reference-lists.
 title: "WAD entry names"
 about: |
@@ -8,7 +8,7 @@ about: |
   string hashes to an entry. Each name here was checked against its hash.
 complete: |
   {count} of 10,701 names are known; the streamed world and most early entries are still unnamed.
-defaults: {source: "name recovery (coney-tools wad names and the WAD survey)", evidence: confirmed-code}
+defaults: {source: "name recovery (coney-tools wad recover-names and the WAD survey)", evidence: confirmed-code}
 entries:
   - {crc: 0x10ce8a36, name: accoustic.anm, kind: anm, index: 3615}
   - {crc: 0x55586e1a, name: bass_heavy.anm, kind: anm, index: 3645}

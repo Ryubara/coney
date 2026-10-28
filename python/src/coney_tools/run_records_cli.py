@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The commands that write run records (docs/guides/research-evidence.md#run-records): `pcsx2 record-run` for an
-observation made by hand (through the pcsx2 MCP server), and the `--record` of `pcsx2 recipe run` and `--run-record` of
-`pcsx2 record`, which write the record of the run they made. The record itself is coney_tools.run_records.
+observation made by hand (through the pcsx2 MCP server), and the `--record` of `pcsx2 recipes run` and `--run-record` of
+`trace original`, which write the record of the run they made. The record itself is coney_tools.run_records.
 
 Every record is written by a tool that ran under a claim on a PCSX2 copy that is running now, and fills in what the
 tool knows itself: the date, who ran it, the PCSX2 version, the copy, the recipe or scenario, the patches and the
@@ -41,7 +41,7 @@ class RecordRequest:
 
 
 def trace_request(run_record: bool, state: str | None, name: str | None) -> RecordRequest | None:
-    """The `--run-record` of a `pcsx2 record`: what to record, or None without the flag. ConfigError for the other two
+    """The `--run-record` of a `trace original`: what to record, or None without the flag. ConfigError for the other two
     flags without it, or for `--run-record` without `--library-state`."""
     if not run_record:
         if state is not None or name is not None:

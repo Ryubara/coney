@@ -564,7 +564,7 @@ class Options:
     preset: str
     checkout: Path
     configure: bool = False
-    #: Configure and stop (no build, no tests): what `check changed` needs for its compile database.
+    #: Configure and stop (no build, no tests): what `ci run` needs for its compile database.
     configure_only: bool = False
     test: bool = False
     regex: str | None = None

@@ -1,8 +1,9 @@
 # The coney-tools CI commands
 
-The commands the CI workflows run: [`ci`](#ci) (the `dependencies` check and its reruns, the changed-lines clang-tidy,
-the issue for a failure on `main`). The repository's own rules are checked by [`repo`](coney-tools-repo.md#repo); the
-other groups are listed in [the command line overview](coney-tools.md#groups).
+What CI checks: [`ci`](#ci), the local gate that runs CI's checks on the files a change touched
+([`ci run`](#ci-run)), and the commands the CI workflows run (the `dependencies` check and its reruns, the
+changed-lines clang-tidy, the issue for a failure on `main`). The repository's own rules are checked by
+[`repo`](coney-tools-repo.md#repo); the other groups are listed in [the command line overview](coney-tools.md#groups).
 
 ## ci {#ci}
 
@@ -74,6 +75,46 @@ Every argument and option:
 | `tidy-run` | `--annotate` | off | Also print the findings as `::error` workflow commands |
 | `report-failure` | `--run ID` | required | The workflow run's id |
 | `report-failure` | `--apply` | off | Create the issue or the comment; without it the text is printed |
+
+### ci run and ci result {#ci-run}
+
+```sh
+uv run --project python coney-tools ci run [--base origin/main] [--only STEP ...] [--skip STEP ...]
+    [--detach]
+uv run --project python coney-tools ci result
+```
+
+The local gate for the files a change touched ([Testing](testing.md#local-gate)): run it in your worktree before you
+hand a unit over. The changed files are everything added or modified since your branch left `--base` (the merge
+base), committed or not, with untracked files. Each step runs only when the change touches what it checks, prints one
+line, and any failure makes the command exit 1:
+
+| Step | Runs when | What it does |
+| --- | --- | --- |
+| `repo` | always | `repo audit --files`: `.github/conventions.yml` loads, and the agent pointer files, the generated blocks, the issue forms, the pull request template, the CI scope script and pre-commit's size limit agree with it |
+| `orig` | a file under `src/` changed | [`orig check-tags`](coney-tools-fidelity.md#orig): a new function in a gameplay folder carries `@orig` or `@coney-only`, and every folder of `src/` is listed as gameplay or Coney-only |
+| `pre-commit` | a file changed | `pre-commit run --files` on the changed files: clang-format, ruff, whitespace, the 512 KB guard, the real-clock rule |
+| `docs` | a file matching `paths.docs_only` of `.github/conventions.yml` changed (`docs/`, `research/`, top-level Markdown, `mkdocs.yml`, the MkDocs hooks and theme overrides, the shared artwork, `requirements-docs.txt`, ...), or the python the build imports (`python/src/coney_tools/progress*.py`, `research*.py`, `config.py`) | [`docs check`](coney-tools-build.md#docs) on the changed pages, then `mkdocs build --strict` into a throwaway folder; both run, so one run shows every problem |
+| `python` | `python/` or `.claude/` changed (the tests also run the hooks) | `ruff check` and `ruff format --check` over `python` and `.claude/hooks`, `pytest python/tests` and `mypy --config-file python/pyproject.toml python/src python/tests` |
+
+**clang-tidy is not a step.** It is not run locally, on Windows least of all (no local WSL builds or clang-tidy
+runs): CI tidies every pull request on the lines it changes, in its own required check, and the whole codebase
+nightly ([building](clang-tidy.md)). A finding comes back as an annotation on the pull request and is fixed
+forward on the branch. Every program the command starts runs below normal priority, like a build's (Windows:
+below-normal priority class; elsewhere `nice -n 5`).
+
+`--detach` runs the whole gate in the background, apart from the shell, and returns at once; `ci result` prints its
+output and exits with its code (75 while it runs, as `build result` does, and 1 when its process is gone; "still
+running" is judged as for `build result`, by the pid and when that process started). The detached run is recorded
+under the worktree's name (`CONEY_AGENT`, else the folder's name).
+
+CI runs the `repo` and `pre-commit` steps on Windows, Linux and macOS in its `python` workflow, so the command's
+handling of paths, programs and long command lines is tested on all three.
+
+`--only` and `--skip` take step names, for a rerun of the one that failed. Exit codes: 0 all passed, 1 a step failed, 2
+a setup problem (a program the step needs is missing), 75 from `ci result` while a detached run goes on. The command
+prints at most 40 lines of a failing step; run the step's tool by hand for the rest. What stays CI's: warnings only GCC
+emits, macOS, the sanitizers and clang-tidy (see [the local gate](testing.md#local-gate)).
 
 <!-- command-reference:begin ci -->
 ## Parameters of `ci` {#ci-parameters}
@@ -149,4 +190,29 @@ coney-tools ci tidy-run --plan FILE --build-dir DIR [--clang-tidy PROGRAM] [--jo
 | `--sarif FILE` | text | none | write the findings as SARIF (also when there are none) |
 | `--summary FILE` | text | none | append a Markdown summary to this file |
 | `--annotate` | flag | off | also print ::error workflow commands (a fork's token cannot upload SARIF) |
+
+### `ci run` {#ci-run-usage}
+
+Pre-commit, docs, Python and repo checks on what changed (clang-tidy runs in CI).
+
+```text
+coney-tools ci run [--base BASE] [--only ONLY] [--skip SKIP] [--detach]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--base BASE` | text | `origin/main` | the branch the change is measured from |
+| `--only ONLY` | choice | none | run only this step (repeatable). One of `repo`, `orig`, `pre-commit`, `docs`, `python`. |
+| `--skip SKIP` | choice | none | leave this step out (repeatable). One of `repo`, `orig`, `pre-commit`, `docs`, `python`. |
+| `--detach` | flag | off | run in the background, apart from this shell, and return at once; `ci result` shows the outcome |
+
+### `ci result` {#ci-result-usage}
+
+The output and outcome of the worktree's last `ci run --detach`.
+
+```text
+coney-tools ci result
+```
+
+Takes no parameters.
 <!-- command-reference:end -->

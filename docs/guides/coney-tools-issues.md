@@ -7,12 +7,12 @@ listed in [the command line overview](coney-tools.md#groups).
 ## issue {#issue}
 
 ```sh
-uv run --project python coney-tools issue draft [task|bug]
+uv run --project python coney-tools issue template [task|bug]
 uv run --project python coney-tools issue check --title T --body FILE [--form F] [--leftover] [--online] [--attach F]
 uv run --project python coney-tools issue create --title T --body FILE [--label L ...] [--parent N] [--leftover]
     [--attach F] [--offline] [--dry-run]
 uv run --project python coney-tools issue edit N --body FILE [--title T] [--offline] [--dry-run]
-uv run --project python coney-tools issue link N --parent P [--dry-run]
+uv run --project python coney-tools issue set-parent N --parent P [--dry-run]
 uv run --project python coney-tools issue titles [--json] [--apply [--include-review]] [--limit N]
 uv run --project python coney-tools issue impact [--base REF] [--head REF] [--replaces PR_OR_BRANCH ...]
     [--description FILE] [--json] [--refresh] [--issues FILE]
@@ -22,7 +22,7 @@ Drafts, checks and files issues in their form's exact shape ([Filing an issue](i
 read from `issues` in `.github/conventions.yml` and from the form files in `.github/ISSUE_TEMPLATE/`; nothing is
 copied into the code.
 
-* `draft` prints a blank body: the form's `###` headings in order, each preceded by an HTML comment with the form's
+* `template` prints a blank body: the form's `###` headings in order, each preceded by an HTML comment with the form's
   description, required or optional, and the allowed values (the Area's `A-` labels, a bug's dropdown choices), then
   the `From:` line. The form is `task` unless you name `bug`.
 * `check` validates a title and a body file (`-` reads stdin) and prints one line per problem, tagged with its kind
@@ -37,9 +37,10 @@ copied into the code.
 * `create` runs `check` (the states online unless `--offline`), then `gh issue create` with the form's labels and
   the Area's `A-` label. `--label` adds a label (checked against `labels.list`; a type or status label replaces the
   form's). `--parent N` links the new issue as a sub-issue of N through the sub-issues API, and tells you the
-  `issue link` command to run if only that step fails. `--dry-run` checks and prints the `gh` commands, running none.
+  `issue set-parent` command to run if only that step fails. `--dry-run` checks and prints the `gh` commands, running
+  none.
 * `edit` runs the same check on the new body (with `--title`, or the issue's current title read with `gh`) before
-  `gh issue edit`. `link` makes an existing issue a sub-issue of another.
+  `gh issue edit`. `set-parent` makes an existing issue a sub-issue of another.
 * `titles` lists the open issues whose title breaks the title rule, each with a proposed title, how sure the proposal is
   (`auto`, or `review` when a verb or an area was guessed or the title was cut) and the `gh issue edit` command that
   applies it; it changes nothing. `--apply` runs the `auto` renames, `--include-review` the others too (the
@@ -65,7 +66,7 @@ Every pull request lists, in its **Issues affected** section, the open issues it
 or makes out of date ([Issues a pull request changes](issues.md#affected)). `issue impact` suggests that list from the
 diff, so the author reads a handful of issues instead of searching three hundred. It is a helper for whoever has the
 tools: a pull request made by hand writes `None (one-line fix)` or its own list, and the check
-([`repo check-body`](coney-tools-repo.md#repo)) accepts either. The suggestion is never the section itself: the author
+([`pr check-body`](coney-tools-repo.md#repo)) accepts either. The suggestion is never the section itself: the author
 reads each issue and lists the ones the change really affects, with a line on how. [`pr text`](coney-tools-pr.md#pr-text)
 runs it (`--json`, for the unit's base and tip) when the engineer's `PR.md` has no Issues affected section, and writes
 the candidates, less the issues the task finishes, into a `TODO:` that the checks refuse until the engineer replaces it
@@ -137,12 +138,12 @@ be read.
 
 Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
 
-### `issue draft` {#issue-draft-usage}
+### `issue template` {#issue-template-usage}
 
 Print a blank issue body in the form's exact headings, with the rules of each section as comments.
 
 ```text
-coney-tools issue draft [FORM]
+coney-tools issue template [FORM]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -242,12 +243,12 @@ coney-tools issue impact [--base BASE] [--head HEAD] [--replaces PR_OR_BRANCH] [
 | `--refresh` | flag | off | read the open issues from GitHub even if the cache is fresh |
 | `--issues FILE` | text | none | read the open issues from this `gh issue list --json` file, not GitHub |
 
-### `issue link` {#issue-link-usage}
+### `issue set-parent` {#issue-set-parent-usage}
 
 Make issue N a sub-issue of issue --parent.
 
 ```text
-coney-tools issue link NUMBER --parent P [--dry-run]
+coney-tools issue set-parent NUMBER --parent P [--dry-run]
 ```
 
 | Parameter | Type | Default | Meaning |

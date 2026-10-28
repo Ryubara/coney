@@ -2,7 +2,7 @@
 """The stamp log: an append-only, hash-chained record of the proof a unit of work carries (docs/guides/stamps.md).
 
 A stamp says that a step ended, with what result, on which commit, covering which hashes, run by whom, when, and what
-the stamp before it hashed to. The stage commands (`original study`, `original compare` and `original fails-first`
+the stamp before it hashed to. The stage commands (`orig study`, `orig compare` and `orig fails-first`
 today; `task check`, `task review` and `pr open` as they land) are the only writers: they call `append`, which takes
 the log's lock, checks that the chain is intact and writes one line. `verify` re-reads the log and reports every
 problem.

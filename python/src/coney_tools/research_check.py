@@ -320,7 +320,7 @@ def _same_name(listed: str, written: str) -> bool:
 # --- copies, history, length ------------------------------------------------------------------------------------------
 
 
-#: Ghidra's automatic names, the fingerprints of a pasted decompile, as `orig copy-check` finds them in C++.
+#: Ghidra's automatic names, the fingerprints of a pasted decompile, as `orig check-copy` finds them in C++.
 _GHIDRA_NAME = next(pattern for kind, pattern in FINGERPRINTS if kind == "ghidra-name")
 
 

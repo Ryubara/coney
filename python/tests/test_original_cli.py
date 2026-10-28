@@ -39,11 +39,11 @@ def log(root: Path) -> Path:
 def test_study_prints_the_summary_and_a_second_run_is_unchanged(
     checkout: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    assert main(["original", "study", "0x501000"]) == 0
+    assert main(["orig", "study", "0x501000"]) == 0
     out = capsys.readouterr().out
     assert "0x00501000 Widget_Update: 9 lines, 5 pieces" in out and "stamped studied" in out
     assert (checkout.parent.parent / "scratch" / "main" / "study" / ADDRESS / "numbered.txt").is_file()
-    assert main(["original", "study", ADDRESS, "--print"]) == 0
+    assert main(["orig", "study", ADDRESS, "--print"]) == 0
     again = capsys.readouterr().out
     assert "unchanged" in again and "iVar1" in again
     assert len(stamps.verify(log(checkout), load_conventions(checkout).stamps).stamps) == 1
@@ -51,7 +51,7 @@ def test_study_prints_the_summary_and_a_second_run_is_unchanged(
 
 def test_study_prints_where_the_function_is_described(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """The lookup lines follow the summary; a checkout without research data gets the no-owner line, not a failure."""
-    assert main(["original", "study", ADDRESS]) == 0
+    assert main(["orig", "study", ADDRESS]) == 0
     out = capsys.readouterr().out
     assert out.index("research (coney-tools research where):") > out.index("stamped studied")
     assert "  owning page: none (no page owns this address yet)" in out
@@ -61,7 +61,7 @@ def test_study_says_when_the_research_lookup_cannot_run(checkout: Path, capsys: 
     """A malformed glossary does not fail the study: the lookup says it is unavailable in one line."""
     (checkout / "research").mkdir(exist_ok=True)
     (checkout / "research" / "glossary.yaml").write_text("term: grab\n", encoding="utf-8")
-    assert main(["original", "study", ADDRESS]) == 0
+    assert main(["orig", "study", ADDRESS]) == 0
     assert "research lookup: not available" in capsys.readouterr().out
 
 
@@ -72,22 +72,22 @@ def test_study_with_ghidra_down_exits_3_and_writes_nothing(
         raise ProgressError("ghidra-mcp at http://x: refused (is the server running?)")
 
     monkeypatch.setattr(original_cli, "http_fetch", lambda url: down)
-    assert main(["original", "study", ADDRESS]) == 3
+    assert main(["orig", "study", ADDRESS]) == 3
     assert "start it (docs/guides/ghidra.md" in capsys.readouterr().out
     assert not Unit.of(checkout, "main").dir.exists()
 
 
 def test_a_bad_address_is_a_usage_error(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    assert main(["original", "study", "nope"]) == 2
+    assert main(["orig", "study", "nope"]) == 2
     assert "not an address" in capsys.readouterr().err
 
 
 def test_compare_flow_from_blank_pairs_to_a_stamp(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    assert main(["original", "study", ADDRESS]) == 0
-    assert main(["original", "compare", ADDRESS, "--base", "main"]) == 1
+    assert main(["orig", "study", ADDRESS]) == 0
+    assert main(["orig", "compare", ADDRESS, "--base", "main"]) == 1
     assert "wrote 5 blank pairs" in capsys.readouterr().out
     path = Unit.of(checkout, "main").mapping(ADDRESS)
-    assert main(["original", "compare", ADDRESS, "--base", "main"]) == 1
+    assert main(["orig", "compare", ADDRESS, "--base", "main"]) == 1
     refused = capsys.readouterr().out
     assert "relation not set" in refused and "refused, 5 problem(s); nothing stamped" in refused
     file = orig_pairs.load(path)
@@ -104,7 +104,7 @@ def test_compare_flow_from_blank_pairs_to_a_stamp(checkout: Path, capsys: pytest
         for p in file.pairs
     ]
     orig_pairs.write(path, file)
-    assert main(["original", "compare", ADDRESS, "--base", "main"]) == 0
+    assert main(["orig", "compare", ADDRESS, "--base", "main"]) == 0
     assert "5 pairs over 5 pieces (4 same, 1 stand-in, 0 not-ported); stamp #2" in capsys.readouterr().out
     assert main(["stamp", "verify"]) == 0
     assert "stamp verify: ok: 2 stamp(s)" in capsys.readouterr().out
@@ -114,8 +114,8 @@ def test_compare_flow_from_blank_pairs_to_a_stamp(checkout: Path, capsys: pytest
 
 
 def test_stamp_verify_fails_on_an_edited_log(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    assert main(["original", "study", ADDRESS]) == 0
-    assert main(["original", "fails-first", "--none", "docs only"]) == 0
+    assert main(["orig", "study", ADDRESS]) == 0
+    assert main(["orig", "fails-first", "--none", "docs only"]) == 0
     capsys.readouterr()
     segment = log(checkout) / "0001.jsonl"
     segment.write_bytes(segment.read_bytes().replace(b'"result":"pass"', b'"result":"fail"', 1))
@@ -124,7 +124,7 @@ def test_stamp_verify_fails_on_an_edited_log(checkout: Path, capsys: pytest.Capt
 
 
 def test_a_missing_log_is_an_error_only_when_it_is_required(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    assert main(["original", "study", ADDRESS]) == 0
+    assert main(["orig", "study", ADDRESS]) == 0
     capsys.readouterr()
     nowhere = str(checkout / "nowhere")
     assert main(["stamp", "verify", "--require-log"]) == 0
@@ -134,7 +134,7 @@ def test_a_missing_log_is_an_error_only_when_it_is_required(checkout: Path, caps
 
 
 def test_stamp_task_and_dir_are_independent_options(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    assert main(["original", "study", ADDRESS]) == 0
+    assert main(["orig", "study", ADDRESS]) == 0
     capsys.readouterr()
     folder = str(log(checkout))
     assert main(["stamp", "verify", "--dir", folder]) == 0  # --dir alone: the log's task is not checked
@@ -148,9 +148,9 @@ def test_stamp_task_and_dir_are_independent_options(checkout: Path, capsys: pyte
 def test_an_unchanged_study_under_an_old_stamp_says_a_stamp_was_written(
     checkout: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    assert main(["original", "study", ADDRESS]) == 0
+    assert main(["orig", "study", ADDRESS]) == 0
     capsys.readouterr()
-    assert main(["original", "study", ADDRESS]) == 0
+    assert main(["orig", "study", ADDRESS]) == 0
     assert "unchanged since the last study" in capsys.readouterr().out
     folder = log(checkout)
     [first] = stamps.verify(folder, load_conventions(checkout).stamps).stamps
@@ -168,7 +168,7 @@ def test_an_unchanged_study_under_an_old_stamp_says_a_stamp_was_written(
         detail=dict(first.detail),
         who={"kind": "tool", "tool": "test"},
     )
-    assert main(["original", "study", ADDRESS]) == 0
+    assert main(["orig", "study", ADDRESS]) == 0
     assert "unchanged; stamp written" in capsys.readouterr().out
 
 
@@ -176,25 +176,25 @@ def test_an_unchanged_study_with_no_studied_stamp_says_the_same(
     checkout: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     # The saved study is as fetched but the log has no `studied` stamp at all: the wording must not claim an update.
-    assert main(["original", "study", ADDRESS]) == 0
+    assert main(["orig", "study", ADDRESS]) == 0
     capsys.readouterr()
     for segment in log(checkout).iterdir():
         segment.unlink()
-    assert main(["original", "study", ADDRESS]) == 0
+    assert main(["orig", "study", ADDRESS]) == 0
     out = capsys.readouterr().out
     assert "unchanged; stamp written" in out
     assert "updated" not in out
 
 
 def test_fails_first_needs_arguments_or_none(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    assert main(["original", "fails-first"]) == 2
-    assert main(["original", "fails-first", "--none", "docs only"]) == 0
+    assert main(["orig", "fails-first"]) == 2
+    assert main(["orig", "fails-first", "--none", "docs only"]) == 0
     assert "none (docs only); stamp #1" in capsys.readouterr().out
-    assert main(["original", "fails-first", "--test", "x", "--test-commit", "HEAD"]) == 2
+    assert main(["orig", "fails-first", "--test", "x", "--test-commit", "HEAD"]) == 2
 
 
 def test_the_task_option_picks_the_unit(checkout: Path) -> None:
-    assert main(["original", "fails-first", "--none", "tooling", "--task", "other"]) == 0
+    assert main(["orig", "fails-first", "--none", "tooling", "--task", "other"]) == 0
     assert (Unit.of(checkout, "other").stamps / "0001.jsonl").is_file()
 
 
@@ -203,7 +203,7 @@ def test_a_required_log_is_not_empty_and_belongs_to_the_task(
 ) -> None:
     assert main(["stamp", "verify", "--require-log"]) == 1
     assert "no stamps" in capsys.readouterr().out
-    assert main(["original", "fails-first", "--none", "docs only", "--task", "elsewhere"]) == 0
+    assert main(["orig", "fails-first", "--none", "docs only", "--task", "elsewhere"]) == 0
     other = Unit.of(checkout, "elsewhere").stamps
     assert main(["stamp", "verify", "--dir", str(other)]) == 0  # a folder named without a task: any
     assert main(["stamp", "verify", "--dir", str(other), "--task", "main"]) == 1
@@ -211,8 +211,8 @@ def test_a_required_log_is_not_empty_and_belongs_to_the_task(
 
 
 def test_show_lists_the_stamps_and_fails_on_a_broken_log(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    assert main(["original", "study", ADDRESS]) == 0
-    assert main(["original", "fails-first", "--none", "docs only"]) == 0
+    assert main(["orig", "study", ADDRESS]) == 0
+    assert main(["orig", "fails-first", "--none", "docs only"]) == 0
     capsys.readouterr()
     assert main(["stamp", "show"]) == 0
     shown = capsys.readouterr().out
@@ -224,8 +224,8 @@ def test_show_lists_the_stamps_and_fails_on_a_broken_log(checkout: Path, capsys:
 
 
 def test_none_is_not_combined_with_tests(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    assert main(["original", "fails-first", "--none", "docs", "--test", "x"]) == 2
-    assert main(["original", "fails-first", "--none", "two\nlines"]) == 2
+    assert main(["orig", "fails-first", "--none", "docs", "--test", "x"]) == 2
+    assert main(["orig", "fails-first", "--none", "two\nlines"]) == 2
 
 
 def test_the_signing_options_are_gone(checkout: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -240,12 +240,12 @@ def test_a_rename_also_says_to_carry_the_pairs(
     checkout: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     # The pairs header binds the decompile's hash, so a rename-only restudy needs `--carry` as much as a change does.
-    assert main(["original", "study", ADDRESS]) == 0
-    assert main(["original", "compare", ADDRESS, "--base", "main"]) == 1
+    assert main(["orig", "study", ADDRESS]) == 0
+    assert main(["orig", "compare", ADDRESS, "--base", "main"]) == 1
     capsys.readouterr()
     renamed = FakeGhidra()
     renamed.text = renamed.text.replace("iVar1", "health")
     monkeypatch.setattr(original_cli, "http_fetch", lambda url: renamed)
-    assert main(["original", "study", ADDRESS]) == 0
+    assert main(["orig", "study", ADDRESS]) == 0
     out = capsys.readouterr().out
     assert "renamed" in out and "--carry" in out

@@ -3,7 +3,7 @@
 
 ```
 <scratch>/<task>/stamps/   the stamp log (written only by the stage commands)
-              study/<addr>/   the saved decompile and what `original study` made of it (never committed)
+              study/<addr>/   the saved decompile and what `orig study` made of it (never committed)
               mapping/<addr>.toml   the pairs of one function
               compare/<addr>.txt    the side-by-side view
 ```

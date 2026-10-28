@@ -23,7 +23,7 @@ rest of the research workflow is listed in [its overview](research-workflow.md#p
   [Xbox executable](../research/xbox-executable.md).
 - **Save states in Ghidra (evaluated 2026-10-05, not used).** The EE extension's `PCSX2SaveStateImporter.java`
   script pours a state's RAM into a program's writable blocks and the heap above `.bss` (a `.other` block); run on a
-  scratch copy of our project with `pcsx2 repack-state` first, it took 10 s, and a script labelling level99's 19 live
+  scratch copy of our project with `pcsx2 states repack` first, it took 10 s, and a script labelling level99's 19 live
   brains, their goals and the 7 gangs ran in 2 s. The same walk over PINE gave the same facts in 0.03 s after a
   19 s PCSX2 launch, with names from the static project either way, and reading `eeMemory.bin` straight from the state
   file gives the same frozen moment without either. Ghidra adds nothing PINE lacks but a frozen, searchable heap; it
@@ -66,16 +66,16 @@ server built in, beside PINE. Both are reached through `coney-tools pcsx2` and t
 
 **Recipes first.** The basic things (find the player or a human, teleport, change health or rage, spawn a human, give
 money, send an event, run a Lua chunk or call one of the game's functions, load a checkpoint, pause and step) are
-[PCSX2 recipes](pcsx2-recipes.md), each confirmed in PCSX2 and run with `coney-tools pcsx2 recipe run`. Use them
+[PCSX2 recipes](pcsx2-recipes.md), each confirmed in PCSX2 and run with `coney-tools pcsx2 recipes run`. Use them
 rather than working an address out again, and add a recipe when you find a new technique: an entry in
-`research/pcsx2-recipes.toml`, run in PCSX2 and its `confirmed_runtime` filled in, then `coney-tools pcsx2 recipe
+`research/pcsx2-recipes.toml`, run in PCSX2 and its `confirmed_runtime` filled in, then `coney-tools pcsx2 recipes
 render`.
 
 **States first.** Do not drive the original to a place someone has already been: the [state
 library](pcsx2-states.md) keeps shared save states (a pedestrian to grab, a fence to jump, a store door, a window to
 break), each with its level, checkpoint, the player's position and what it is set up for. **Check it first** with
-`coney-tools pcsx2 states list`, start a claimed copy on one with `states use ID --copy COPY --agent ID --launch` (it
-hands out a copy, so the library file is never changed), and **add any state you make that others could use** with
+`coney-tools pcsx2 states list`, start a claimed copy on one with `states hand-out ID --copy COPY --agent ID --launch`
+(it hands out a copy, so the library file is never changed), and **add any state you make that others could use** with
 `states add`, saying in `--made-by` how you got there. It is also the fast way back to a level or checkpoint, in place
 of the `load-checkpoint` recipe's slow reload.
 
@@ -85,7 +85,7 @@ of the `load-checkpoint` recipe's slow reload.
   ([PCSX2 copies](workspace.md#pcsx2-copies)). PCSX2 2.9.94 failed to open an ISO whose path holds commas and
   parentheses ("Requested filename ... does not exist"), so the launcher boots an NTFS hard link with a plain name in
   the scratch folder (it copies nothing).
-- **PCSX2 is started only by `coney-tools pcsx2 launch` or `pcsx2 record`, never by hand** (no `pcsx2-qt.exe` from
+- **PCSX2 is started only by `coney-tools pcsx2 launch` or `trace original`, never by hand** (no `pcsx2-qt.exe` from
   a shell, a script or `Start-Process`). The launcher is what keeps PCSX2 from taking the keyboard focus, which
   interrupts whoever is typing. `pcsx2 launch --agent <id> [<state.p2s>]` starts it on a state file, or with no
   state boots the disc and returns once PINE answers; it runs under your claim and leaves PCSX2 running.
@@ -94,7 +94,7 @@ of the `load-checkpoint` recipe's slow reload.
   ignores it for its first window, and Windows lets a process activate its window when the foreground process
   started it, which every agent's process tree (under the user's terminal) is. So the launcher has WMI start PCSX2
   (`Win32_Process.Create`): its parent is WMI's provider host, outside that tree, with no foreground rights to hand
-  down. As a backstop, while `pcsx2 record` runs a guard polls every 50 ms and, if a PCSX2 window is in the
+  down. As a backstop, while `trace original` runs a guard polls every 50 ms and, if a PCSX2 window is in the
   foreground, hands it back to the window that had it (no input sent, PCSX2 never minimised, so screenshots keep
   working). Checked 2026-10-07: the foreground owner logged every 50 ms over a state launch and over a cold boot
   (about 900 polls each) was never PCSX2.
@@ -114,13 +114,13 @@ of the `load-checkpoint` recipe's slow reload.
   second PCSX2 on a port in use logs `[DebugServer] Failed to bind on port N` rather than sharing it (stock
   PCSX2-MCP let every instance listen on 21512 and connections landed in any of them). Every PCSX2 use starts with
   `coney-tools pcsx2 claim --agent <your id>` (it prints the copy's folder and both ports; `--json` for scripts) and
-  ends with `pcsx2 release --agent <your id>`, which also closes your PCSX2. `pcsx2 status` shows who holds what, built
+  ends with `pcsx2 unclaim --agent <your id>`, which also closes your PCSX2. `pcsx2 status` shows who holds what, built
   from the live claims and processes; a claim whose process is gone is stale and the next `claim` takes it over.
-  `pcsx2 launch` and `pcsx2 record` take `--agent` and run under your claim (making one if you hold none), and wait for
-  both ports. Input to the game is over PINE (scripted pad input, the stick table below) or through the debug server
+  `pcsx2 launch` and `trace original` take `--agent` and run under your claim (making one if you hold none), and wait
+  for both ports. Input to the game is over PINE (scripted pad input, the stick table below) or through the debug server
   (the pad, frame by frame, and input recordings: below); no tool takes the keyboard focus. When a hotkey is
-  unavoidable (Space to pause), `pcsx2 keys --agent <id> --copy <name> space` posts the key to that copy's window by
-  handle, and `pcsx2 screenshot --copy <name> --out <png>` reads the window by handle (not F8); both are Windows-only
+  unavoidable (Space to pause), `pcsx2 send-keys --agent <id> --copy <name> space` posts the key to that copy's window
+  by handle, and `pcsx2 screenshot --copy <name> --out <png>` reads the window by handle (not F8); both are Windows-only
   and leave the focus alone. PCSX2 never takes the focus (the launcher, above), and every copy has `[InputSources] SDL =
   false` so the user's gamepad cannot drive it; a maintainer turns SDL on in a copy only to test by hand, and `claim`
   and `status` warn when it is on. Claims live in `pcsx2-claims/` of the main checkout's shared scratch folder
@@ -129,8 +129,8 @@ of the `load-checkpoint` recipe's slow reload.
   of every copy are readable, but a client may use only the ports of the claim it holds ([The PCSX2 MCP
   guard](agents.md#pcsx2-guard) says what is enforced and what to check yourself).
 - **What PINE gives.** Memory reads and writes, game info, the emulator's status and save/load state slots; no
-  breakpoints, registers, pause or frame capture. PCSX2 serves **one PINE client at a time**: a second client (`pcsx2
-  record`, a script of your own) blocks while another is connected, so the MCP server connects in `mode: "debug"`,
+  breakpoints, registers, pause or frame capture. PCSX2 serves **one PINE client at a time**: a second client (`trace
+  original`, a script of your own) blocks while another is connected, so the MCP server connects in `mode: "debug"`,
   which leaves PINE free.
 - **What the debug server gives** (the fork's, newline-delimited JSON over TCP on the copy's `DebugServerPort`; it
   starts with a game and serves several clients at once). Everything the `pcsx2` MCP server's tools do: memory reads,
@@ -141,7 +141,7 @@ of the `load-checkpoint` recipe's slow reload.
   `pcsx2_capture` (PCSX2's video capture), `pcsx2_gs_dump` (a GS dump of N frames), save and load state, and
   `pcsx2_input_recording` (below). The MCP server connects to nothing at start: `pcsx2_connect` with your claim's
   `debug_port` and `pine_port` picks the copy, and **every `pcsx2_*` call carries `agent: "<your id>"`** (the id you
-  claimed with; it names your connection, [Agents](agents.md#setup)). `coney-tools pcsx2 record --recording`
+  claimed with; it names your connection, [Agents](agents.md#setup)). `coney-tools trace original --recording`
   speaks the same protocol itself (`repo:python/src/coney_tools/debug_server.py`).
 - <span id="input-recordings"></span>**Input recordings.** PCSX2's own `.p2m2` files hold every frame's pad state from
   a start savestate (`<file>.p2m2_SaveState.p2s` beside it) or from power-on, so a run's input repeats exactly.
@@ -149,7 +149,7 @@ of the `load-checkpoint` recipe's slow reload.
   `savestate` or `power_on`, `path`) records from now on, `play` loads the start and replays, `stop` closes the file,
   `status` reports the mode and frames. At a replay's last frame PCSX2 pauses and the fork stops the replay there, so
   playing never adds to the file. A `play` sent while emulation is paused (`pcsx2_emulation`) loads the start at once
-  and stays paused until resumed, which is how `pcsx2 record --recording` makes its step 0 the recording's first frame
+  and stays paused until resumed, which is how `trace original --recording` makes its step 0 the recording's first frame
   (checked 2026-10-20 on copy `pcsx2`: a 181-frame recording made in the front end, played while paused, put PCSX2's
   frame counter back to the recording's start at recording frame 0, ran on resume, and ended paused with
   `replay_ended`). Paths are relative to the copy's folder and must stay inside it, so recordings live
@@ -157,14 +157,14 @@ of the `load-checkpoint` recipe's slow reload.
   that drives Coney, so both games get the same pad; checked 2026-10-21 on PCSX2 2.9.129: a recording of `stick left 0
   60` for 2 s made the player walk at 1.629 m/s, gait 2, as the `pad` recipe's 60 % does, and stop when it ended), and
   `recordings push | pull` moves them (with the savestate,
-  SHA-256 checked) to and from the shared scratch folder's `recordings/`, where they are kept like any capture. `pcsx2
-  record --recording <p2m2>` replays one while it traces memory, so a runtime trace can be made again on the same input
-  ([`pcsx2`](coney-tools-pcsx2.md#pcsx2)). A recording is game data: never committed.
+  SHA-256 checked) to and from the shared scratch folder's `recordings/`, where they are kept like any capture. `trace
+  original --recording <p2m2>` replays one while it traces memory, so a runtime trace can be made again on the same
+  input ([`pcsx2`](coney-tools-pcsx2.md#pcsx2)). A recording is game data: never committed.
 - **States across versions.** The copies keep the states their stock PCSX2 2.9.94 saved in `sstates/`, but PCSX2
   2.9.129 may refuse them (a state is tied to the version that saved it). The maintainer's slots 1 to 10 are in the
   [state library](pcsx2-states.md), saved by 2.9.94, and the 2.9.129 fork loaded the two tried (2026-10-21); a state
   that is refused is made again on the fork build from its catalog entry's steps and added under a new id.
-- **Input and hotkeys.** Keyboard messages posted to the PCSX2 window by handle (`pcsx2 keys`, `WM_KEYDOWN`) reach
+- **Input and hotkeys.** Keyboard messages posted to the PCSX2 window by handle (`pcsx2 send-keys`, `WM_KEYDOWN`) reach
   the hotkeys in `[Hotkeys]` (verified: a posted Space paused and resumed the game with the window unfocused) and the
   pad bindings in `[Pad1]` (Return = Start, K = Cross, arrows = D-pad, WASD = left stick; unchecked with posted
   keys). The hotkeys: **Space pauses**, F8 saves a screenshot to `snaps/` (aspect-corrected, 1240 × 930 for the
@@ -190,9 +190,9 @@ of the `load-checkpoint` recipe's slow reload.
 - **Scripted pad input** (2026-10-05, the traversal pass). For a **closed-loop driver**, one that decides each input
   from what the game shows, the `scripted-pad` patch (`research/traces/patches/state-patches.toml`) makes the pad code
   read player 1's buttons and left stick from spare bytes that a PINE write sets; the patch must be in the state copy
-  before the code is compiled (`coney-tools pcsx2 prepare-state`, then `pcsx2 launch`). The addresses, the byte order
-  and how to hold a pad state: the [`pad`](pcsx2-recipes/input.md#pad) recipe. `coney-tools pcsx2 prepare-state` and
-  `pcsx2 record` make the copy and restart PCSX2 for you. For input that does not depend on the game's state, use an
+  before the code is compiled (`coney-tools pcsx2 states patch`, then `pcsx2 launch`). The addresses, the byte order
+  and how to hold a pad state: the [`pad`](pcsx2-recipes/input.md#pad) recipe. `coney-tools pcsx2 states patch` and
+  `trace original` make the copy and restart PCSX2 for you. For input that does not depend on the game's state, use an
   [input recording](#input-recordings) instead: it is the default for runtime evidence (a maintainer decision,
   2026-10-21), because PCSX2 replays it frame by frame, the same every time.
 - **The right stick, too** (2026-10-05, the feel pass). The `right-stick` patch puts the right stick's x and y in the
@@ -221,7 +221,7 @@ of the `load-checkpoint` recipe's slow reload.
 - **One sample per update.** Batch every read of a sample into one PINE message and keep a sample only when a character
   update has run since the last one: the game counts its 60 Hz ticks at `0x005104f4` and steps the characters on each
   tick that makes the count even ([Tasks](../research/tasks.md#tick)), so the count halved numbers the updates. Apply
-  the scripted input as each update is seen. `coney-tools pcsx2 record` does exactly this
+  the scripted input as each update is seen. `coney-tools trace original` does exactly this
   ([Recording a trace](research-traces.md#recording-a-trace)). (The first recorder counted updates by the game time in
   milliseconds, `*(0x0050b734) + 0x48`; its rounding skipped and repeated steps after the frame that catches a tick up,
   about every 33 s.)
@@ -233,7 +233,7 @@ of the `load-checkpoint` recipe's slow reload.
   the ring every poll and writes one CSV per hook ([Hooks](research-traces.md#hooks)). A **call hook** makes the game
   call one of its own functions on its own thread, as a script binding would: that is how a fight is started on a
   pedestrian (`GoalFight`'s `0x002b2b90`) for the AI checks.
-- **Absolute paths from a worktree.** Give `pcsx2 launch` and `pcsx2 record` absolute `--iso`, `--scratch` and
+- **Absolute paths from a worktree.** Give `pcsx2 launch` and `trace original` absolute `--iso`, `--scratch` and
   `--state` paths when you run them from a worktree: PCSX2 opens the disc link relative to its own folder, so a
   relative path fails ("Requested filename ... does not exist" in its `logs/emulog.txt`) and the tool only reports
   that the state did not run within 60 s. A state that already holds a patch (`scripted-pad` in most saved states)

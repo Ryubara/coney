@@ -2,7 +2,7 @@
 """The `coney-tools refs ...` commands: render the game reference pages, and refresh their lists from the disc.
 
 `refs render` reads `research/references/*.yaml`, checks each against its schema and writes `docs/references/`;
-with `--check` it changes nothing and fails when a page is out of date (CI runs it). `refs extract` reads the
+with `--check` it changes nothing and fails when a page is out of date (CI runs it). `refs refresh` reads the
 player's disc, merges what it finds into the YAML (keeping every hand-written field) and renders.
 `refs compress-images` turns the rendered thumbnails into small palette PNGs before they are committed.
 
@@ -43,7 +43,7 @@ def load_all(root: Path) -> list[refs.RefList]:
     for item in TOPICS:
         path = _yaml_path(root, item)
         if not path.is_file():
-            problems.append(f"{path.relative_to(root)}: missing (run `coney-tools refs extract`)")
+            problems.append(f"{path.relative_to(root)}: missing (run `coney-tools refs refresh`)")
             continue
         try:
             lists.append(refs.load(path, item))
@@ -493,7 +493,7 @@ STARTERS: dict[str, dict[str, Any]] = {
     },
     "wad-names": {
         "title": "WAD entry names",
-        "source": "name recovery (coney-tools wad names and the WAD survey)",
+        "source": "name recovery (coney-tools wad recover-names and the WAD survey)",
         "evidence": "confirmed-code",
         "about": "The file names recovered for `WARRIORS.WAD`'s entries. The archive stores only a CRC-32 of\n"
         "`./ee_files/<name>` ([WARRIORS.DIR](../research/formats/wad-dir.md)), so a name is known once a candidate\n"

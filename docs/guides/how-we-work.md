@@ -39,7 +39,7 @@ A piece of work travels from an issue to `main` through the stages below. The co
 the engineer takes it from Start to Check in its own worktree, a reviewer judges it, and the coordinator opens the pull
 request and tidies after the merge. Each stage from Start to Open ends with a command that writes a
 [stamp](stamps.md#log) into the task's log (Triage, CI, the merge and After merge write none). Three commands refuse
-while an earlier result is missing or stale: `original compare` (the study), `task review` (every changed `@orig`
+while an earlier result is missing or stale: `orig compare` (the study), `task review` (every changed `@orig`
 function compared, every added test failed first, `docs check`) and `pr open` (the whole chain, `checked` and
 `reviewed` included). `task check` reads no earlier stamp, so a skipped stage meets the next of these three, never
 earlier.
@@ -59,9 +59,9 @@ flowchart TB
   end
   subgraph eng ["Engineer, in a slot, in its own worktree"]
     start["3 task start"]
-    study["4 original study"]
-    port["5 Test first, port:<br/>original fails-first"]
-    compare["6 original compare"]
+    study["4 orig study"]
+    port["5 Test first, port:<br/>orig fails-first"]
+    compare["6 orig compare"]
     check["7 task check"]
   end
   review["8 task review:<br/>reviewer, never edits"]
@@ -82,9 +82,9 @@ flowchart TB
 | 1 | Triage | Coordinator | (labels) | The issue has its type, area and priority, `S-ready-to-start`, and fits one reviewable pull request; `P-critical` issues first | none | [Triage](issues.md#triage) |
 | 2 | Claim | Coordinator | `coney-tools task create <issue>... --terms ... --scope ...` | The claim Action assigned the issue and it settled; `TASK.md` holds the goal, Done, scope, leads and decision points | `assigned` (written by Start) | [Task files](issues.md#task-files) |
 | 3 | Start | Engineer | `coney-tools task start <task>` | Branch and worktree from `main`, the unit record; reports the free slots, and refuses a start over the limit | `claimed` | [Starting a task](issues.md#starting) |
-| 4 | Study | Engineer (and its helpers) | `coney-tools original study <addr>`; PCSX2 for what a player sees | Per function: the decompile, callers, callees and data reads saved and hashed, the lines numbered and cut into pieces; the expected values found (code or runtime); research claims written and graded | `studied` per address | [Study](stamps.md#study), [The engineer's steps](#engineer-steps) |
-| 5 | Port | Engineer | `coney-tools build --agent <id> --preset dev --test -R ...`; `coney-tools original fails-first` | The test is written first from the study's result, cites its expected values and fails; the port makes it pass; the copy check is clean | `fails-first` per test | [Fails first](stamps.md#fails-first), [Testing](testing.md) |
-| 6 | Compare | Engineer | `coney-tools original compare <addr>` | Every numbered line of each ported function is in a pair (`same`, `stand-in` with a reason, `not-ported` with an issue) | `compared` per function | [Pairs](stamps.md#pairs), [Compare](stamps.md#compare) |
+| 4 | Study | Engineer (and its helpers) | `coney-tools orig study <addr>`; PCSX2 for what a player sees | Per function: the decompile, callers, callees and data reads saved and hashed, the lines numbered and cut into pieces; the expected values found (code or runtime); research claims written and graded | `studied` per address | [Study](stamps.md#study), [The engineer's steps](#engineer-steps) |
+| 5 | Port | Engineer | `coney-tools build --agent <id> --preset dev --test -R ...`; `coney-tools orig fails-first` | The test is written first from the study's result, cites its expected values and fails; the port makes it pass; the copy check is clean | `fails-first` per test | [Fails first](stamps.md#fails-first), [Testing](testing.md) |
+| 6 | Compare | Engineer | `coney-tools orig compare <addr>` | Every numbered line of each ported function is in a pair (`same`, `stand-in` with a reason, `not-ported` with an issue) | `compared` per function | [Pairs](stamps.md#pairs), [Compare](stamps.md#compare) |
 | 7 | Check | Engineer | Commit, then `coney-tools task check` | The whole gate for the change's kind on the committed tip: for engine changes the MSVC `ci` build and the full suite with the disc | `checked` | [task check](coney-tools-repo.md#task-check), [The local gate](testing.md#local-gate) |
 | 8 | Review | Reviewer | `coney-tools task review <task>`, then `--record` | The tool part passes; every checklist, `@orig` function, research page and picture is judged, the description included | `reviewed` | [Task review](review/task.md) |
 | 9 | Open the pull request | Coordinator | `coney-tools pr open <task>` | The stamps hold for this change; the generated text passes CI's checks; pushed, opened, auto-merge on | `pr-opened` | [pr open](pr.md#open), [Opening the pull request](#release-queue) |
@@ -95,11 +95,11 @@ flowchart TB
 - **Study, Port and Compare repeat per function**; Check, Review and Open once per tip. Review may run while Check
   runs, on the same tip; the task moves on when both pass. A commit after either makes it stale.
 - **A docs or tooling task** (kinds `docs`, `tooling`) has no Study and no pairs, and records `fails-first` as none with
-  `original fails-first --none <reason>`; a task that changes a research page still grades its claims. A tooling task's
+  `orig fails-first --none <reason>`; a task that changes a research page still grades its claims. A tooling task's
   Python tests come first all the same, and the reviewer checks that they did.
 - **A finding sends the work back.** A finding in Review goes to the engineer, who fixes it in a new commit and runs
   Check and Review again; a red CI check becomes a fix task ([Slots](#slots)).
-- **A refusal names the stage to redo.** `pr open`, `task review` and `original compare` list every missing or stale
+- **A refusal names the stage to redo.** `pr open`, `task review` and `orig compare` list every missing or stale
   result with the command that makes it, and the work goes back to the engineer, never to the coordinator's hands.
 
 ### Decision points {#decision-points}
@@ -116,7 +116,7 @@ Study, Port and Compare in detail, for every feature:
 
 1. **Read the code.** Before starting, an engineer reads the task file's leads, `docs/research/` and the open pull
    requests for existing or in-flight coverage and extends it ([Before you research](research-workflow.md#upstream)).
-   Then the engineer studies the original executable `SLUS_212.15` in Ghidra with `original study`: names the
+   Then the engineer studies the original executable `SLUS_212.15` in Ghidra with `orig study`: names the
    functions, writes plate comments and works out what each one does.
 2. **Watch it run.** For behaviour a player sees, always, not only when the code is unclear: the engineer makes the
    behaviour happen in the original running in PCSX2 and records it (a per-update trace, memory reads, reference
@@ -134,11 +134,11 @@ Study, Port and Compare in detail, for every feature:
    itself, and any disagreement with the page's cited addresses is recorded on the page
    ([the runtime comparison](testing.md#runtime-comparison)). The engineer writes Coney's own code for it and tags it
    with `@orig` and the page link ([Conventions](conventions.md#comments-and-orig)); the test now passes, and
-   `original fails-first` records both runs. Where Coney already has the behaviour, the engineer adjusts it until it
+   `orig fails-first` records both runs. Where Coney already has the behaviour, the engineer adjusts it until it
    matches the original and the recording; where it does not, adds it. Code with no original counterpart
    (networking, the launcher, debug tooling, enhancements) is the exception: it carries no `@orig` tag and is
    checked by its own tests.
-5. **Compare.** `original compare` shows the saved decompile beside the Coney function and refuses to stamp while a
+5. **Compare.** `orig compare` shows the saved decompile beside the Coney function and refuses to stamp while a
    numbered line is in no pair. Work a player sees is also checked against the original running, not only against
    our reading of its code: the same scenario runs on both games, or the same moment is taken from a PCSX2 save state
    and from Coney, and traces, values or frames are compared
@@ -150,7 +150,7 @@ Study, Port and Compare in detail, for every feature:
 
 Recipes are the shared ways of making things happen in the running original: finding, moving and spawning humans,
 editing their attributes and the player's stats, giving the crew orders, raising events, going to a level, mission or
-checkpoint, and driving the pad. Each is confirmed at runtime and run with `coney-tools pcsx2 recipe` on a PCSX2 copy
+checkpoint, and driving the pad. Each is confirmed at runtime and run with `coney-tools pcsx2 recipes` on a PCSX2 copy
 you hold a claim on; the list, with the address and evidence behind each recipe, is [PCSX2 recipes](pcsx2-recipes.md).
 A new way of triggering something becomes a recipe there ([Driving PCSX2](research-tools.md#driving-pcsx2) explains
 the techniques underneath).
@@ -266,7 +266,7 @@ to the merged result, is in [From research to code](research-to-code.md).
 - **PCSX2, several copies with claims.** Portable PCSX2 copies (`pcsx2`, `pcsx2-b`, ...) run the maintainer's
   PCSX2-MCP fork build (`coney-tools pcsx2 setup-copies`) and each have their own settings, states, PINE port and
   debug server port, so several engineers can run the game at once. A copy is used only inside a claim:
-  `coney-tools pcsx2 claim --agent <id>` hands out a free copy and its two ports, `pcsx2 release` frees it, `pcsx2
+  `coney-tools pcsx2 claim --agent <id>` hands out a free copy and its two ports, `pcsx2 unclaim` frees it, `pcsx2
   status` shows who holds what, and a claim whose process died is taken over; an agent connects the `pcsx2` MCP server
   to its own copy's ports only, which a hook checks at the connect ([Driving PCSX2](research-tools.md#driving-pcsx2),
   [Agents](agents.md#setup), [the PCSX2 MCP guard](agents.md#pcsx2-guard)).
@@ -275,7 +275,7 @@ to the merged result, is in [From research to code](research-to-code.md).
   debug server's pad and PCSX2's own input recordings, which replay a run exactly. No tool brings PCSX2 to
   the front or types into it, so the machine stays usable; a maintainer's quick-save slots are read-only,
   and engineers save states to files.
-- **Traces and frames.** `coney-tools pcsx2 record` and `coney-tools trace` record the same scripted scenario on the
+- **Traces and frames.** `coney-tools trace original` and `coney-tools trace` record the same scripted scenario on the
   original and on Coney and diff them; Coney's `--camera`, `--freeze-world` and `--screenshot` flags reproduce a
   reference frame ([coney-tools](coney-tools-trace.md#trace)).
 - **Extraction.** `coney-tools extract` turns the player's disc into open formats (PNG, glTF, WAV) in a folder
@@ -328,9 +328,9 @@ coordinator then opens the pull request.
   ([The PR guard](enforcement.md#pr-guard)).
 - **A failure CI finds** (another platform, a check that cannot run locally) becomes a fix task in the fix slot
   ([Slots](#slots), [When a pull request fails checks](agents.md#ci-failures)). Stale failures restart themselves:
-  `coney-tools repo pr-health --rerun --apply` reruns a required check that failed because the runner or GitHub did,
+  `coney-tools pr list-stuck --rerun --apply` reruns a required check that failed because the runner or GitHub did,
   at most twice per workflow and commit, and never a real lint, build or test failure
-  ([pr-health](coney-tools-repo.md#repo-pr-health)).
+  ([pr list-stuck](coney-tools-pr.md#pr-list-stuck)).
 - **A description is public:** the rules of a research page apply (addresses and short findings, no game data and
   no pasted function listings).
 
@@ -341,20 +341,20 @@ maintainer reviews it.
 ## Legacy release checks {#pr-review}
 
 A branch started before [the cutover](#cutover), outside a task, is released with the checks that predate `task review`
-and `pr open`, and they are retired at the cutover: the description review `coney-tools repo review <PR.md> --worktree
-<worktree>` with its gate `repo check-review` ([repo review](coney-tools-repo.md#repo-review), the
-[Description](review/text.md) checklist), and for a branch that changes `@orig` functions the `reviewer` in pr mode with
-its gate `orig check-review` ([Orig review](review/orig.md)). Any later commit, or an edit to the description or its
-pictures, makes such a verdict stale. Every new task is reviewed by `task review` instead, which covers the description
-and the `@orig` functions in one verdict. The legacy gate's rules, generated from `pull_requests.review` in
+and `pr open`, and they are retired at the cutover: the description review `coney-tools legacy pr-review <PR.md>
+--worktree <worktree>` with its gate `legacy check-pr-review` ([legacy pr-review](coney-tools-repo.md#legacy-pr-review),
+the [Description](review/text.md) checklist), and for a branch that changes `@orig` functions the `reviewer` in pr mode
+with its gate `orig check-review` ([Orig review](review/orig.md)). Any later commit, or an edit to the description or
+its pictures, makes such a verdict stale. Every new task is reviewed by `task review` instead, which covers the
+description and the `@orig` functions in one verdict. The legacy gate's rules, generated from `pull_requests.review` in
 [.github/conventions.yml](repo:.github/conventions.yml):
 
 <!-- conventions:begin pr-review -->
 - The `reviewer` agent (`.claude/agents/reviewer.md`) writes `REVIEW.json` and `REVIEW.md` next to the description file:
   `REVIEW.json` holds `tip`, `body_sha256`, `verdict` (`pass` or `fail`), `images` (each local image's `path` and
   `sha256`) and `findings` (each with `severity` `blocker` or `note`, `where` and `text`).
-- `repo check-review` passes only when the description's title (line 1) and body (the rest) pass `repo check-title` and
-  `repo check-body` (a local image is allowed, as `gh --attach` uploads it), the verdict is `pass` with no `blocker`
+- `legacy check-pr-review` passes only when the description's title (line 1) and body (the rest) pass `pr check-title`
+  and `pr check-body` (a local image is allowed, as `gh --attach` uploads it), the verdict is `pass` with no `blocker`
   finding, `tip` is the worktree's HEAD, `body_sha256` is the description file's hash now and every local image the
   description shows is listed with its hash now; any new commit, edit or replaced picture makes the verdict stale.
 - The description's hash is the SHA-256 of the whole file (title line included) as UTF-8, with a leading BOM dropped and
@@ -396,7 +396,8 @@ something:
   worktree for a stretch where files must not change and deletes it when it finishes, and deletes its own `build/`
   folder when its task passes Review. The coordinator runs `coney-tools workspace clean --apply` after every merge (it
   removes merged worktrees and old build folders, and never touches busy or unmerged work) and
-  `coney-tools workspace disk` before starting builds: below 30 GB free it cleans first ([Cleanup](workspace.md#cleanup)).
+  `coney-tools workspace check-space` before starting builds: below 30 GB free it cleans first
+  ([Cleanup](workspace.md#cleanup)).
 - **Heavy builds take a slot, from a tool.** A full engine build uses every core, so only two run at once and the
   rest queue: every build and test run goes through `coney-tools build`, which claims a build slot like a PCSX2 copy (a
   fast lane for small jobs, a fair queue, priority for builds someone waits on; [`build`](coney-tools-build.md#build)),
@@ -426,10 +427,11 @@ coordinator triages them and is the only one who writes to GitHub; an agent read
 process: [Issues](issues.md).
 
 **Issue rules are enforced, not remembered.** An issue is drafted, checked and filed only with `coney-tools issue
-draft`, `check` and `create` (or `edit` and `link`); the repository's Claude Code hook (`.claude/hooks/issue_guard.py`)
-refuses a raw `gh issue create`, a `gh issue edit` that sets the body and a `gh api` call that writes an issue; and
-the `issue-check` workflow checks every issue opened or edited on the website or through the API and keeps one
-comment listing the problems. The audit flags what slips past all three ([Filing an issue](issues.md#filing)).
+template`, `check` and `create` (or `edit` and `set-parent`); the repository's Claude Code hook
+(`.claude/hooks/issue_guard.py`) refuses a raw `gh issue create`, a `gh issue edit` that sets the body and a `gh api`
+call that writes an issue; and the `issue-check` workflow checks every issue opened or edited on the website or through
+the API and keeps one comment listing the problems. The audit flags what slips past all three ([Filing an
+issue](issues.md#filing)).
 
 **Claiming is one comment.** Whoever takes an issue (a person, an agent, the coordinator) claims it with `/claim`, and a
 GitHub Action assigns it, sets the status label and keeps a claim card with the deadline; from the cutover
@@ -517,7 +519,7 @@ config:
 ---
 flowchart LR
   hooks["Claude Code hooks<br/>refuse the wrong<br/>command or role"] --> pre["pre-commit<br/>format, lint,<br/>512 KB limit"]
-  pre --> stamps["original compare and<br/>task review check<br/>earlier stamps"]
+  pre --> stamps["orig compare and<br/>task review check<br/>earlier stamps"]
   stamps --> push["pr open<br/>verifies the stamps,<br/>only the coordinator"]
   push --> ci["CI required<br/>checks"]
   ci --> rules["Branch protection<br/>on main:<br/>squash merge only"]
@@ -537,13 +539,13 @@ and where the rules are read from):
 | Claude Code hooks (`.claude/hooks/`) | A raw `cmake --build`, `ctest` or `ninja`; a raw `gh` command that writes an issue; a push or GitHub write from a subagent; a wait loop with no bound; an agent started with `isolation: "worktree"` or with no Coney role; a tool call the session's role does not allow; a write to a stamp log; a `Co-Authored-By` trailer that names the wrong model | [The hooks](agents.md#hooks), [Enforcement map](enforcement.md#hooks) |
 | pre-commit (`.pre-commit-config.yaml`) | Unformatted C++ (clang-format) and Python (ruff); a Markdown line over 120 characters; trailing whitespace, broken YAML or TOML; any file over 512 KB, which is usually game data; a read of the real clock outside the frame pacer; a commit message with the wrong trailers | [Formatting and pre-commit](building.md#formatting-and-pre-commit) |
 | Claim Action and `task create` | A second claim on an issue; a claim on an issue that is not ready, is blocked by unfinished work, or over the claimant's limit (a `workflow` unit's claim is not counted); any other claim while a `P-critical` issue has none | [Claiming an issue](issues.md#claiming) |
-| Stage commands (`task start`, `original compare`, `task check`, `task review`) | A start without a held claim (and over the slot limit); a compare with no current study, a line in no pair or a copied line; a Check whose gate fails; a Review whose compared or fails-first stamps are missing or stale, or one recorded by the change's author | [Stamps](stamps.md), [task check](coney-tools-repo.md#task-check), [Task review](review/task.md) |
+| Stage commands (`task start`, `orig compare`, `task check`, `task review`) | A start without a held claim (and over the slot limit); a compare with no current study, a line in no pair or a copied line; a Check whose gate fails; a Review whose compared or fails-first stamps are missing or stale, or one recorded by the change's author | [Stamps](stamps.md), [task check](coney-tools-repo.md#task-check), [Task review](review/task.md) |
 | `pr open` | A unit whose stamps do not hold for the change, a generated title or description CI would refuse, a caller who is an engineer or reviewer. The stages are enforced here, locally, not in CI | [Opening the pull request](#release-queue), [pr open](pr.md#open) |
 | Conclave stop guard | A coordinator turn that ends while a pull request has a failed required check, a conflict, a stuck check or auto-merge off and nobody holds it | [Conclave](conclave.md#watchers) |
 | CI required checks | `title`, `docs`, `body`, `build-ok`, `python-ok`, `format`, `mkdocs`, `markdownlint`, `actionlint`, `clang-tidy`, `dependencies` | [What CI runs](building.md#what-ci-runs) |
 | Branch protection (GitHub ruleset on `main`) | A direct push; a merge before every required check passes; a merge that is not a squash | [Merging safely](#merging) |
 
-`coney-tools check changed` runs what CI would fail on for the files a change touched; it is an aid while working, and
+`coney-tools ci run` runs what CI would fail on for the files a change touched; it is an aid while working, and
 `task check` is the gate ([The local gate](testing.md#local-gate)). Issues are guarded the same way: the `issue_guard`
 hook, `coney-tools issue check` and the `issue-check` workflow ([Issues](#issues)).
 
@@ -623,10 +625,10 @@ At the cutover, in one change of [.github/conventions.yml](repo:.github/conventi
    at 48 hours and released at 72 ([Claiming an issue](issues.md#claiming)).
 3. `tasks.start.slots.exempt_workflow` turns off, in the same change as item 2: units of `workflow` issues then hold a
    slot and count against the claim limit like the rest ([Engineer slots](agents.md#slots)).
-4. The [legacy release checks](#pr-review) and their commands (`repo review`, `repo check-review`, `repo review-stamp`,
-   `orig review-stamp`, `orig check-review`, `orig record`) are removed, and the old names of renamed `coney-tools`
-   commands stop working. The sweep of [legacy fidelity](#fidelity-audit) uses `orig review-stamp --folder` and `orig
-   record`, so it must be filed before this step.
+4. The [legacy release checks](#pr-review) and their commands (`legacy pr-review`, `legacy check-pr-review`, `repo
+   review-stamp`, `orig review-stamp`, `orig check-review`, `orig record-findings`) are removed, and the old names of
+   renamed `coney-tools` commands stop working. The sweep of [legacy fidelity](#fidelity-audit) uses `orig review-stamp
+   --folder` and `orig record-findings`, so it must be filed before this step.
 5. The heads-up in the README that asks contributors to wait is removed.
 6. Tether keeps only the session's health; its Coney pollers and pull request guard are removed, as Conclave holds them.
 7. Branches started before the cutover become tasks when they are picked up, their work and review findings the

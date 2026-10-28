@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""`coney-tools orig check`: a new function in a gameplay folder says where it comes from.
+"""`coney-tools orig check-tags`: a new function in a gameplay folder says where it comes from.
 
 Every function defined in a folder of `paths.gameplay` (.github/conventions.yml) carries `@orig` for the original
 function it reimplements, or `@coney-only <reason>` (docs/guides/conventions.md#coney-only), unless it is exempt
@@ -96,7 +96,7 @@ def run(base: str) -> int:
     for problem in problems:
         print(problem)
     if problems:
-        print(f"orig check: {len(problems)} problem(s) since {base}")
+        print(f"orig check-tags: {len(problems)} problem(s) since {base}")
         return 1
-    print(f"orig check: ok (every new gameplay function since {base} carries @orig or @coney-only)")
+    print(f"orig check-tags: ok (every new gameplay function since {base} carries @orig or @coney-only)")
     return 0

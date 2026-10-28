@@ -45,7 +45,7 @@ class Hold:
     pr: int
     #: The agent working on the problem, or `WAIVED`.
     who: str
-    #: The one cause covered (a `repo pr-health` cause); None covers every cause of the pull request.
+    #: The one cause covered (a `pr list-stuck` cause); None covers every cause of the pull request.
     cause: str | None
     until: datetime
     note: str

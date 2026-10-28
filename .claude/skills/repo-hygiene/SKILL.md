@@ -21,7 +21,7 @@ Run these from a worktree of your own, never by editing the main checkout
 git fetch origin
 uv run --project python coney-tools repo audit --files --github --json > <scratch>/audit.json
 uv run --project python coney-tools repo audit --local --json > <scratch>/audit-local.json
-uv run --project python coney-tools repo pr-health
+uv run --project python coney-tools pr list-stuck
 ```
 
 Read `notices` first: a notice names what the audit could not look at (no `origin/main`, settings not readable), and a
@@ -39,7 +39,7 @@ Each finding has `check`, `item`, `message`, `severity` and `fix`. Take them in 
 | --- | --- |
 | `files.generated-blocks` | `coney-tools repo render`, then commit the result on a branch (a unit like any other) |
 | `files.command-reference` | `coney-tools docs render`, then commit the result on a branch (a unit like any other) |
-| `gh.labels` | `coney-tools repo labels --apply` |
+| `gh.labels` | `coney-tools repo sync-labels --apply` |
 | `ws.disk`, `ws.worktrees` | `coney-tools workspace clean --apply` (it never touches busy or unmerged work) |
 
 ### `skill`: you fix it with judgement
@@ -68,8 +68,8 @@ do not invent it.
 | `issue.progress-idle` | Ask the engineer for its state; return the issue to `S-ready-to-start` when nobody works on it. |
 | `issue.claim-orphan` | The issue says it is being worked on but nobody is assigned: claim it with `task create` if someone is on it, else set it back to `S-ready-to-start`. |
 | `issue.review-without-pr` | Find the pull request (`gh pr list --search "#N"`) and link it, or set the status back to `S-in-progress`. |
-| `pr.title`, `pr.body` | The author fixes the text in the pull request's description file in their scratch folder; if you fix it yourself, `gh pr edit N --title ...` or `--body-file`, and rerun `repo check-body`. |
-| `pr.unfinished-items` | The author finishes each unticked item in the pull request, or takes it out: work the pull request does not finish lives in its own issue. Then they update the description file and rerun `repo check-body`. |
+| `pr.title`, `pr.body` | The author fixes the text in the pull request's description file in their scratch folder; if you fix it yourself, `gh pr edit N --title ...` or `--body-file`, and rerun `pr check-body`. |
+| `pr.unfinished-items` | The author finishes each unticked item in the pull request, or takes it out: work the pull request does not finish lives in its own issue. Then they update the description file and rerun `pr check-body`. |
 | `pr.remaining-uncited` | File an issue for each unchecked Remaining item and write its number into the merged pull request's description. |
 | `pr.affected-unedited` | Edit each open issue the merged pull request lists under Issues affected, as [After a merge](../../../docs/guides/issues.md#after-a-merge) says: change what the pull request made out of date, tick what it finished, relabel or close the issue, with `coney-tools issue edit N --body FILE`. An issue the line no longer concerns: see step 2 there. |
 | `pr.idle` | Ask the author; close the pull request with a comment when the work is abandoned. |

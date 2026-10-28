@@ -5,7 +5,7 @@ A review has three steps, and the reviewer takes all of them:
 
 1. **Prepare** (`task review T`): the tool part. Everything a program can check is checked first, so that the reviewer
    spends its time on judgement: the stamp log is intact, every changed `@orig` function has a current `compared`
-   stamp, `orig copy-check` is clean, every added test has a passing `fails-first` stamp, `docs check` passes on the
+   stamp, `orig check-copy` is clean, every added test has a passing `fails-first` stamp, `docs check` passes on the
    changed pages, the description has a title and a summary and its pictures exist. Any problem is listed (all of
    them) and no reviewer is started. Otherwise a **packet** is written to `<scratch>/<task>/review/PACKET.json`: the
    tip, the base, the hash of the change, which checklists apply, the `@orig` functions with their body hashes, the
@@ -68,7 +68,7 @@ Launcher = Callable[[list[str], Path], int]
 #: The hash of the change a branch makes (base, tip): stamps are bound to it, not to a commit, so a clean rebase keeps
 #: them (docs/guides/stamps.md).
 ChangeHash = Callable[[Path, str, str], str]
-#: Finds problems in a checkout against a base: `docs check` on the changed pages, `orig copy-check` on the added lines.
+#: Finds problems in a checkout against a base: `docs check` on the changed pages, `orig check-copy` on the added lines.
 Checker = Callable[[Path, str], list[str]]
 
 _ADDRESS = re.compile(r"0x[0-9a-fA-F]{8}")
@@ -144,7 +144,7 @@ def default_docs_problems(worktree: Path, base: str) -> list[str]:
 
 
 def default_copy_problems(worktree: Path, base: str) -> list[str]:
-    """`orig copy-check` on the lines the branch added."""
+    """`orig check-copy` on the lines the branch added."""
     return [str(finding) for finding in orig_copy.check(worktree, base)]
 
 
@@ -211,7 +211,7 @@ def _function_problems(
     for function in functions:
         for address in function["addresses"]:
             name = f"{function['coney']} ({address})"
-            redo = f"original compare {address}"
+            redo = f"orig compare {address}"
             if len(citing.get(address, ())) > 1:  # then `compare` must be told which function
                 redo += f" --coney-function '{function['key']}'"
             pairs = env.unit.mapping(address)
@@ -297,7 +297,7 @@ def build_packet(env: ReviewEnv, mode: str) -> tuple[dict[str, Any], list[str]]:
             tests.append({"name": name, "stamp": latest.result if latest else "missing"})
             if latest is None or latest.result != "pass":
                 problems.append(
-                    f'fails-first: "{name}" was added and has no passing fails-first stamp (run `original fails-first`)'
+                    f'fails-first: "{name}" was added and has no passing fails-first stamp (run `orig fails-first`)'
                 )
     else:
         problems += _full_pass_problem(report, diff, pairs_set)

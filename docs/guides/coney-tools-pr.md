@@ -1,16 +1,17 @@
 # The coney-tools pull request commands
 
 The `pr` commands: whether a unit is ready to become a pull request, the text it carries, its release, a hold on its
-problems and the trailers of a commit. [`repo`](coney-tools-repo.md#repo) and [`task`](coney-tools-repo.md#task) are on
-the repository commands page; the other groups are listed in [the command line overview](coney-tools.md#groups).
+problems, the checks on its title, description and commits, and the list of stuck pull requests.
+[`repo`](coney-tools-repo.md#repo) and [`task`](coney-tools-repo.md#task) are on the repository commands page; the other
+groups are listed in [the command line overview](coney-tools.md#groups).
 
 ## pr {#pr}
 
 The checks on a pull request and its commits: whether a unit is ready to become a pull request (`pr verify`), the text
 it will carry (`pr text`), the release itself (`pr open`), a hold on a pull request's problems (`pr hold`) and the
-trailers of a commit (`pr check-commit`). The pull-request checks of [repo](coney-tools-repo.md#repo) (`check-title`,
-`check-body`, `check-docs`) are planned to move here when the command groups are renamed ([Stamps](stamps.md) says the
-command names are placeholders for that pass). What the first three check and do, and what each refusal asks you to do,
+trailers of a commit (`pr check-commit`); the checks CI runs on a title, a description and the docs rule
+([`pr check-title`, `check-docs` and `check-body`](#pr-checks)), and the open pull requests that are stuck
+([`pr list-stuck`](#pr-list-stuck)). What the first three check and do, and what each refusal asks you to do,
 is [Releasing a pull request](pr.md).
 
 ### pr verify {#pr-verify}
@@ -143,10 +144,199 @@ people's commits; and the messages git writes about an earlier commit (`Revert "
 
 Exit codes: 0 the message passes, 1 it is refused, 2 the file cannot be read or the conventions are unusable.
 
+### pr check-title, check-docs and check-body {#pr-checks}
+
+```sh
+uv run --project python coney-tools pr check-title FILE|-
+uv run --project python coney-tools pr check-docs [--body FILE]      # changed paths on stdin
+uv run --project python coney-tools pr check-body [--body FILE|-] [--title TITLE] [--worktree WT [--base REF]]
+    [--local-images]
+```
+
+The checks CI's `title`, `docs` and `body` jobs run on a pull request, against the rules of `.github/conventions.yml`
+([Repository conventions](repo-conventions.md)); a missing or malformed file is a one-line error and exit code 2.
+
+* `pr check-title` checks the first line of a commit message or a title (`-` reads stdin) against `commits.title`:
+  `area: Verb the rest`, a known area and verb, the length limit, no trailing period, the breaking suffix last. The
+  `title` job of the `pr` workflow runs it on the pull request title.
+* `pr check-docs` reads the changed paths on stdin and refuses a change under `paths.code` that has no change under
+  `paths.docs` and no `Docs: none` line in the body.
+* `pr check-body` checks a pull request description against the template ([What a pull request
+  shows](testing.md#pr-evidence)). Given `--worktree`, it also reads the branch's commits (`--base`, default
+  `origin/main`, to `HEAD`) and requires the AI use `Model:` line to name every model a `Co-Authored-By` trailer on them
+  credits: see [the Model line](#pr-model-line). Given `--title` (the `body` job passes the pull request's title), a
+  title area a player sees (`pull_requests.runtime.areas`: `gameplay`, `graphics`, `audio`) must have a line starting
+  `Runtime:` in the Testing section: the evidence of a comparison with the original running, with numbers, or `Runtime:
+  none (<reason>)` ([the Runtime line](testing.md#runtime-line)). Without `--title` that rule is not checked and the
+  output says so; `legacy check-pr-review` always has the title (line 1 of `PR.md`).
+  The **Issues affected** section must hold one `- #N: how it is affected` item for each open issue the change affects,
+  or the single line `None (<reason>)` with any short reason (`None (one-line fix)`); an empty section, a `None` with
+  no reason, an item with no line on how, a number listed twice and prose are refused, and the message says what to
+  write. Whether the list is complete is the reviewer's judgement;
+  [`issue impact`](coney-tools-issues.md#issue-impact) suggests it.
+  `--local-images` accepts an image that points at a local file, as in a description that `gh pr create --attach`
+  is about to upload; the PR guard hook passes it ([Opening the pull request](how-we-work.md#release-queue)).
+
+### The Model line and the branch's trailers {#pr-model-line}
+
+A branch whose commits carry a `Co-Authored-By: <model name> <noreply address>` trailer was written with that model, so
+the description's `Model:` line must say so. Without this check only the `reviewer` agent caught a line that named
+the wrong model, and it cost three review rounds (pull requests #460, #466 and #467).
+
+* **What counts.** A trailer on a commit of `base..HEAD` whose key is `commits.trailers.ai_co_author.key` (any case) and
+  whose address is one of `commits.trailers.ai_co_author.noreply`; a person credited as a co-author is not a model. Each
+  model counts once (compared without regard to case or runs of spaces).
+* **The match.** The model name must appear on the `Model:` line, in any case and anywhere on it (`Claude Opus 5.5` is
+  found in `Claude Sonnet 5.5 and claude opus 5.5 (review)`), not as the start of a longer version (`Claude Opus 5.55`).
+  A branch with no such trailer needs nothing; a `Model:` line of `n/a` for a human-written change passes as before.
+  Whoever the description says wrote the commits, a trailer on them has to be named: `a person` with an AI trailer is
+  refused. When the AI use lines are themselves unusable (a missing or empty `Model:` for an AI-written branch) only
+  that is reported, not the trailers too.
+* **The base must be fresh and right.** `base..HEAD` is what the branch has that the base lacks. With a stale
+  `origin/main`, a branch that has merged a newer `main` also counts the commits it merged in, and so their trailers
+  (other authors' models) must be named: run `git fetch` and the refusal goes away. A branch cut from another branch
+  rather than `main` (stacked work is refused for a task, [Working in parallel](how-we-work.md#working-in-parallel))
+  with the default base also counts the parent's trailers: pass `--base <parent branch>`.
+* **The message.** One reason per missing model, naming it:
+  `AI use: 'Model:' does not name Claude Opus 5.5, which a Co-Authored-By trailer on the branch's commits credits`.
+* **Where it runs.** Locally, where the branch is at hand: `legacy check-pr-review`, `legacy pr-review` and `repo
+  review-stamp` read the commits of the worktree after `--base` (default `origin/main`) and refuse before the agent
+  starts, and `pr check-body --worktree WT` does the same for a description on its own. **CI does not run it:** the
+  `body` job gets the description from the event and has no commits (its checkout is shallow, and a full history for one
+  string comparison would slow a required check on every edit), so it passes no models and stays a description-only
+  check, as `Docs: none` is. `pr open` is the gate ([The checks](pr.md#checks)); a legacy branch uses `legacy
+  check-pr-review` ([Legacy release checks](how-we-work.md#pr-review)). A branch git cannot list (an unknown `--base`,
+  not a worktree) exits 2 rather than passing as one without trailers.
+* **One source.** The trailer's key and addresses are `commits.trailers` and the rule's switch is
+  `pull_requests.ai_use.model.names_trailer_models` in [.github/conventions.yml](repo:.github/conventions.yml); the
+  check holds no copy, and the generated rules in [CONTRIBUTING.md](repo:CONTRIBUTING.md) state it.
+
+### pr list-stuck {#pr-list-stuck}
+
+`pr list-stuck` answers "which open pull requests need someone to act?" with one read of the open pull requests and
+their checks (`gh pr list --json`) and one of the branch ruleset (`gh api repos/{owner}/{repo}/rules/branches/main`,
+which names the required checks, so nothing is hard-coded). It prints one line per cause, sorted by pull request
+number, and changes nothing (except `--rerun --apply`, below):
+
+```text
+#7 fix-bat-cross checks-failed lint: body, markdownlint -> author
+#9 research-x checks-failed code: python-ok; lint: markdownlint -> author
+#12 throw-arc conflict with main -> author
+#15 char-stats ci-stuck build-ok 4.2 h (limit 3.0 h) -> coordinator
+#18 workouts-2 auto-merge-off into main -> coordinator
+```
+
+| Cause | When | Acts |
+| --- | --- | --- |
+| `checks-failed` | a **required** check failed (failure, timeout, cancelled). Its class is `lint` for the checks in `hygiene.pr_health.lint_checks` (title, body, docs, format, mkdocs, markdownlint, actionlint) and `code` for the others (`build-ok`, `python-ok`); a mix lists both | author |
+| `conflict` | GitHub says the pull request conflicts with its base | author |
+| `ci-stuck` | a required check has been queued or running longer than `hygiene.thresholds.pr_pending_hours` (default 3; `--pending-hours H` overrides it for one run) | coordinator |
+| `auto-merge-off` | the pull request is not a draft, targets `main` and has auto-merge off | coordinator |
+
+A failing check that is not required is ignored. A draft is never stuck. A stacked pull request (base other than
+`main`) is reported as `stacked` and never as lacking auto-merge; its failures and conflicts count. GitHub answers
+`UNKNOWN` for mergeability while it computes it, which means "not known yet": it is not a finding and shows only with
+`--verbose`, together with the drafts and stacked pull requests, so a rerun a minute later settles it.
+`--json` prints `checked`, `stuck` (each with `number`, `branch`, `cause`, `kind`, `detail`, `who`, `checks`, `url`),
+`other` (the `--verbose` lines), `notices` and `labels` (see below). Exit code 0 when nothing is stuck, 1 when something
+is, 2 when `gh` or the conventions cannot be read. Run it from the coordinator's loop to find the pull requests to
+unstick or to push.
+
+`--labels` also compares the labels on every open pull request with its causes and prints what would change, after the
+findings: `add S-conflict to #12 (conflict with main)`, `remove S-failing from #7 (cleared)` (`would add ...` until
+`--labels --apply`). `hygiene.pr_health.labels` in `.github/conventions.yml` maps the causes to labels (`conflict` to
+`S-conflict`, `checks-failed` to `S-failing`); a pull request with the cause gets the label, one without it loses the
+label (a draft is never stuck, so it carries neither), and no other label is ever added or removed.
+`--labels --apply` makes the changes through `gh api` on the issue labels endpoints and needs a token that may write
+issues; the exit code is still the findings' (the `hygiene` workflow accepts 1). While GitHub answers `UNKNOWN` for a
+pull request's mergeability the command rereads up to `hygiene.pr_health.unknown_retries` times,
+`unknown_wait_seconds` apart, and a pull request still unknown keeps its conflict label as it is. The labels must
+exist in the repository with their colours: `repo sync-labels --apply` creates them from `labels.list`.
+
+**`--rerun`** restarts CI that failed for a reason that no longer holds, so a stuck pull request does not wait for a
+person to notice. It adds a line per run, `#<n> <branch> rerun <checks> (run <id>): <why> -> <outcome>`, and in
+`--json` a `rerun` list (an empty list when there is nothing to rerun; the `stuck` list and the exit code are the same
+with or without `--rerun`, so exit code 1 still means a pull request is stuck). Without `--apply` it is a dry run that
+prints `would rerun` and changes nothing; `--apply` calls `gh run rerun <run> --failed`. It reads the
+head commit and description of each pull request and, for a failed required check, the runs of the head commit and
+sometimes its job log. A required check is judged stale in two ways, and a real lint, build or test failure is never
+restarted:
+
+| Stale because | How it is known | What happens |
+| --- | --- | --- |
+| the text was fixed | the `title` or `body` check failed and the pull request's **current** title or description passes `pr check-title` or `check-body` | status `new-event`: the report says to edit the title or description; no rerun is made |
+| the runner or GitHub failed | the check concluded `CANCELLED`, `STARTUP_FAILURE` or `TIMED_OUT`, or it failed and its log matches a pattern of `hygiene.pr_health.rerun.log_patterns` (the runner was lost or shut down, an action could not be downloaded) | `would rerun` / `reran` |
+
+Each `rerun` entry is one run, with these fields (stable; scripts such as the PR guard read them):
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `number` | integer | The pull request's number |
+| `branch` | string | Its head branch |
+| `run` | integer | The workflow run (an id of `gh run list`) holding the stale checks |
+| `checks` | list of strings | The stale required checks of that run, sorted |
+| `reasons` | list of strings | Why each is stale, in the order of `checks` |
+| `status` | string | `would-rerun` (dry run), `reran`, `refused` (GitHub would not), `capped` (already rerun `max_per_sha` times) or `new-event` (a fixed title or description) |
+| `detail` | string | Empty for `would-rerun` and `reran`; otherwise what happened and the new event the pull request needs |
+
+A rerun reuses the event the run started from, with the title and description of that time, so it cannot make `title`
+or `body` see a fix (observed: a rerun made after a description was fixed failed on the old text). A fixed text needs a
+new event instead (an edit of the title or description, or closing and reopening the pull request), which the report
+names; it is not done automatically because reopening changes the pull request's state.
+
+The limits are in `hygiene.pr_health.rerun` of the conventions file: `max_per_sha` (a workflow is rerun at most that
+many times on one head commit, counted from the attempts GitHub keeps for its runs, so restarting the tool loses
+nothing; at the cap the status is `capped` and the line says to push a commit), the names of the title and
+description checks, the conclusions and the log patterns. A run is restarted with `--failed` only when all its failed
+jobs are stale; when it also holds a real failure, only the stale jobs are restarted (`--job`). When GitHub refuses
+(`gh run rerun` fails, for example "cannot be retried"), the status is `refused` and the line carries GitHub's message
+and the new event the pull request needs: push a commit for a runner failure. The reads are `gh run list --commit`
+and `gh api repos/{owner}/{repo}/actions/jobs/<id>/logs`; only `--apply` writes.
+
 <!-- command-reference:begin pr -->
 ## Parameters of `pr` {#pr-parameters}
 
 Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
+
+### `pr check-title` {#pr-check-title-usage}
+
+Check a commit or pull request title against the commit title rules.
+
+```text
+coney-tools pr check-title FILE
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `FILE` | text | required | a file whose first line (not blank, not #) is the title; - for stdin |
+
+### `pr check-docs` {#pr-check-docs-usage}
+
+Check that a pull request which changes code also changes the docs (changed paths on stdin).
+
+```text
+coney-tools pr check-docs [--body BODY]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--body BODY` | text | none | a file holding the pull request description (for `Docs: none`) |
+
+### `pr check-body` {#pr-check-body-usage}
+
+Check a pull request description against the template: sections, summary, AI use.
+
+```text
+coney-tools pr check-body [--body BODY] [--title TITLE] [--worktree WORKTREE] [--base BASE] [--local-images]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--body BODY` | text | none | a file holding the pull request description; - or omitted reads stdin |
+| `--title TITLE` | text | none | the pull request's title: a title area a player sees (gameplay, graphics, audio) then needs the Testing section's `Runtime:` line, as in CI; without it that rule is not checked |
+| `--worktree WORKTREE` | path | none | the branch's worktree: also require the Model line to name every model its commits credit in a Co-Authored-By trailer (what `legacy check-pr-review` does) |
+| `--base BASE` | text | `origin/main` | what the branch is compared with, with --worktree (default: origin/main) |
+| `--local-images` | flag | off | accept an image that points at a local file, which `gh pr create --attach` uploads |
 
 ### `pr verify` {#pr-verify-usage}
 
@@ -237,4 +427,21 @@ coney-tools pr check-commit FILE [--model MODEL]
 | --- | --- | --- | --- |
 | `FILE` | text | required | the commit message file, as git passes it to the commit-msg hook |
 | `--model MODEL` | text | none | the id of the model the committing agent runs on (claude-sonnet-5-5): the Co-Authored-By trailer must name it (default: the model in the identity file the Claude Code hooks wrote for this command, if there is one; typed variables are not trusted) |
+
+### `pr list-stuck` {#pr-list-stuck-usage}
+
+List the open pull requests that are stuck (failed required check, conflict, stuck CI, no auto-merge).
+
+```text
+coney-tools pr list-stuck [--json] [--pending-hours H] [--verbose] [--labels] [--rerun] [--apply]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--json` | flag | off | print the report as JSON instead of text |
+| `--pending-hours H` | number | none | hours a required check may be pending (default: hygiene.thresholds.pr_pending_hours) |
+| `--verbose` | flag | off | also show drafts, stacked pull requests and unknown mergeability |
+| `--labels` | flag | off | also list the labels to add to or remove from the open pull requests (hygiene.pr_health.labels) |
+| `--rerun` | flag | off | also list the failed required checks that are stale (text fixed since, runner lost) and would be rerun |
+| `--apply` | flag | off | with --labels: make those label changes through gh; with --rerun: really rerun the checks (gh run rerun) |
 <!-- command-reference:end -->

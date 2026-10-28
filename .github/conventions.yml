@@ -1,10 +1,10 @@
 # The rules for running the repository: commits, pull requests, issues, labels, merging and hygiene. This file is the
-# one source of truth for every rule a program can check. coney-tools (repo check, check-title, check-docs,
-# check-body, labels, check changed) reads it through coney_tools/conventions.py, which refuses an unknown key, a
-# wrong type and a duplicate key, so a typo or a bad merge fails loudly instead of being ignored. The issue forms, the
-# pull request template and the GitHub ruleset are not read from here: they stay in their own files and a test checks
-# them against this one. Prose (the why, the judgement) lives in the guides: docs/guides/repo-conventions.md says
-# what each key means and where its reasons are.
+# one source of truth for every rule a program can check. coney-tools (repo check-conventions, pr check-title,
+# check-docs and check-body, repo sync-labels, ci run) reads it through coney_tools/conventions.py, which refuses an
+# unknown key, a wrong type and a duplicate key, so a typo or a bad merge fails loudly instead of being ignored. The
+# issue forms, the pull request template and the GitHub ruleset are not read from here: they stay in their own files
+# and a test checks them against this one. Prose (the why, the judgement) lives in the guides:
+# docs/guides/repo-conventions.md says what each key means and where its reasons are.
 #
 # Change a rule here, run `coney-tools repo render` (it rewrites the blocks that show the lists in AGENTS.md,
 # CONTRIBUTING.md and the guides) and commit the result in the same commit as the guide that explains the rule. YAML
@@ -50,7 +50,7 @@ paths:
   #
   # Read by neither the engine build nor the python package on any one OS in particular: the engine jobs are skipped
   # and python runs on Linux only (its repository checks compare these files). A change to them is also what
-  # `coney-tools check changed` builds the docs for. The workflows here run on every pull request themselves (docs,
+  # `coney-tools ci run` builds the docs for. The workflows here run on every pull request themselves (docs,
   # pr) or only on Linux (hygiene, issue-status), and actionlint checks them all.
   docs_only:
     - "docs/"
@@ -100,11 +100,11 @@ paths:
     - ".github/workflows/build.yml"
   # Written by a generator, never by hand; on a merge conflict take either side and rerun it.
   generated:
-    - {path: "docs/references/bindings/", by: "coney-tools natives render"}
+    - {path: "docs/references/bindings/", by: "coney-tools bindings render"}
     - {path: "docs/references/", by: "coney-tools refs render", except: ["docs/references/entities.md"]}
     - {path: "docs/missions/", by: "coney-tools missions render"}
-    - {path: "docs/guides/pcsx2-recipes.md", by: "coney-tools pcsx2 recipe render"}
-    - {path: "docs/guides/pcsx2-recipes/", by: "coney-tools pcsx2 recipe render"}
+    - {path: "docs/guides/pcsx2-recipes.md", by: "coney-tools pcsx2 recipes render"}
+    - {path: "docs/guides/pcsx2-recipes/", by: "coney-tools pcsx2 recipes render"}
   # The agent entry files hold one line that imports AGENTS.md and nothing of their own, so the rules cannot drift.
   pointer_files: {files: ["CLAUDE.md", "GEMINI.md"], line: "@AGENTS.md", max_bytes: 400}
   # Only these files may hold the repository's or the docs site's address.
@@ -113,7 +113,7 @@ paths:
   large_file_kb: 512
   # The folders of src/ whose every function says where it comes from: `@orig` for a reimplementation of the
   # original function at that address, or `@coney-only <reason>` (docs/guides/conventions.md#coney-only). Every folder
-  # of src/ is in exactly one of the two lists; `coney-tools orig check` refuses a new folder in neither and a new
+  # of src/ is in exactly one of the two lists; `coney-tools orig check-tags` refuses a new folder in neither and a new
   # gameplay function that says neither.
   gameplay:
     - "src/ai/"
@@ -204,7 +204,7 @@ pull_requests:
   # decision, 2026-10-20). A pull request whose title area is one of `areas` (the areas a player sees; each must be a
   # key of commits.title.areas) holds, inside `section`, a line starting `line` that gives the evidence (a trace diff,
   # an event diff, or named PCSX2 captures or reads compared with Coney's, with numbers) or the `none` line with a
-  # reason in parentheses. The check is `coney-tools repo check-body --title ...`, the same locally and in CI.
+  # reason in parentheses. The check is `coney-tools pr check-body --title ...`, the same locally and in CI.
   runtime:
     areas: [gameplay, graphics, audio]
     section: Testing
@@ -219,9 +219,9 @@ pull_requests:
       no_ai: "a person"
     # The Model line must also name each model that a `Co-Authored-By` trailer (commits.trailers) of the branch's
     # commits names, matched case-insensitively anywhere on the line; checked where the branch is at hand
-    # (docs/guides/coney-tools-repo.md, repo check-body).
+    # (docs/guides/coney-tools-pr.md, pr check-body).
     model: {label: "Model:", none: "n/a", names_trailer_models: true}
-  # The release gate on the reviewer agent's description verdict (`coney-tools repo review`, `repo check-review`). The agent
+  # The release gate on the reviewer agent's description verdict (`coney-tools legacy pr-review`, `legacy check-pr-review`). The agent
   # (.claude/agents/<agent>.md) writes both files next to the description file. The verdict binds to what it
   # reviewed: the branch tip, the description's hash and each local image's hash, so a new commit, an edit or a
   # replaced picture makes it stale and the review runs again. `sha256-lf`: SHA-256 of the description file's UTF-8
@@ -236,7 +236,7 @@ pull_requests:
   # runs): a branch that adds or changes a function carrying `@orig` needs a passing verdict that covers those
   # functions' bodies, next to the description file. The rubric is docs/guides/review/orig.md. The
   # ledger records every review (pull request and sweep) under the workspace's scratch folder, never committed;
-  # `orig queue` orders the functions it has not seen at their current body.
+  # `orig legacy-queue` orders the functions it has not seen at their current body.
   orig_review:
     agent: reviewer
     verdict_file: ORIG-REVIEW.json
@@ -533,7 +533,7 @@ hygiene:
     title: "tools: Update the repo hygiene report"
     labels: [task, A-tools, P-low, S-in-progress]
   sweep: "0 6 * * 1"                             # weekly, Monday 06:00 UTC
-  # What `coney-tools repo hygiene` and .github/workflows/hygiene.yml do (docs/guides/repo-conventions.md, "Workflows").
+  # What `coney-tools repo post-findings` and .github/workflows/hygiene.yml do (docs/guides/repo-conventions.md, "Workflows").
   # The workflow keeps ONE comment per item that has findings, edited in place (never deleted; "all fixed" when the
   # findings are gone), and one comment on the report issue for the sweep. It starts at warn level: on_sweep false means
   # the weekly sweep only updates the report and item comments come from events alone.
@@ -550,9 +550,9 @@ hygiene:
     in_progress_idle_days: 30
     pull_request_idle_days: 30
     pr_pending_hours: 3                          # a required check queued or running this long: stuck in CI
-  # `coney-tools repo pr-health` calls a failing required check "lint" when it is one of these (the author fixes the
+  # `coney-tools pr list-stuck` calls a failing required check "lint" when it is one of these (the author fixes the
   # text) and "code" otherwise (build-ok, python-ok and the jobs under them).
-  # `repo pr-health --labels` (run by hygiene.yml on every push to main) keeps these labels on the open pull requests:
+  # `pr list-stuck --labels` (run by hygiene.yml on every push to main) keeps these labels on the open pull requests:
   # the label of each cause a pull request has, and none of the others. Only these labels are ever added or removed.
   # GitHub computes whether a pull request conflicts only on request, so a read right after a push often says UNKNOWN:
   # the command rereads up to unknown_retries times, unknown_wait_seconds apart, before it leaves those pull requests
@@ -562,9 +562,9 @@ hygiene:
     labels: {conflict: S-conflict, checks-failed: S-failing}
     unknown_retries: 4
     unknown_wait_seconds: 15
-    # `coney-tools repo pr-health --rerun` restarts a failed required check only when the failure is stale, never when
+    # `coney-tools pr list-stuck --rerun` restarts a failed required check only when the failure is stale, never when
     # the code is at fault: (1) title_check / body_check failed but the pull request's current title / description passes
-    # `repo check-title` / `check-body` (it was fixed after the run); (2) the check's conclusion is one of `conclusions`,
+    # `pr check-title` / `check-body` (it was fixed after the run); (2) the check's conclusion is one of `conclusions`,
     # or its log matches one of `log_patterns`, so the runner or GitHub failed, not the code.
     rerun:
       max_per_sha: 2                             # reruns on one head commit, per workflow; a flaky job cannot loop
@@ -876,7 +876,7 @@ hygiene:
       severity: error
       fix: auto
       keys: [labels.list]
-      summary: "the labels on GitHub differ from the conventions (coney-tools repo labels --apply)"
+      summary: "the labels on GitHub differ from the conventions (coney-tools repo sync-labels --apply)"
     gh.ruleset:
       scope: github
       severity: error
@@ -1052,14 +1052,14 @@ research:
 
 runs:
   # Run records (docs/guides/research-evidence.md#run-records): what a research page's `confirmed (runtime)` claim cites.
-  # A record is written only by the tools that drive PCSX2 (`pcsx2 recipe run --record`, `pcsx2 record --run-record`,
+  # A record is written only by the tools that drive PCSX2 (`pcsx2 recipes run --record`, `trace original --run-record`,
   # `pcsx2 record-run`) into research.files.runs and holds names, numbers and addresses, never memory or game text (LEGAL.md). The limits cap
   # how much a record holds; they cannot tell game text from ours, so the reviewer reads the method, args and names.
   id_pattern: '^r-[0-9]{8}-[a-z0-9][a-z0-9-]{0,47}$'   # r-<date>-<name>; the file is <id>.toml
   max_bytes: 8192                                # the writer checks it too; the repository's file check is 512 KB
   max_values: 64                                 # values, addresses and run args together
   max_text: 600                                  # characters of the method, and of any other text field
-  kinds: [recipe, trace, method]                 # recipe: pcsx2 recipe run; trace: pcsx2 record; method: pcsx2 record-run
+  kinds: [recipe, trace, method]    # recipe: pcsx2 recipes run; trace: trace original; method: pcsx2 record-run
 
 conclave:
   # Conclave, the Claude Code mod in tools/claude-mod (docs/guides/conclave.md). The mod only draws what
@@ -1160,7 +1160,7 @@ ci:
     commits_per_file: 3
     log_lines: 40                                # the lines of the failed steps' log quoted in the issue
   # One place per check: where each check of the project runs. `local` is `task check` (which writes the `checked`
-  # stamp, running the checks of `proof.profiles`), a stamp command (`original study`, `compare`, `fails-first`) or a
+  # stamp, running the checks of `proof.profiles`), a stamp command (`orig study`, `compare`, `fails-first`) or a
   # git hook; the CI words are `ci` (every pull request), `main` (a push to main), `release` (a push to a `release/`
   # branch), `nightly` (the scheduled run on main), `manual` (a run started by hand; the failure issue follows one on
   # main) and `issues` (issue and pull request events, and the sweeps that follow them up). A place that runs in CI

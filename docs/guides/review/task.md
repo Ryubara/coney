@@ -74,9 +74,9 @@ problem is printed with its prefix and what to redo; all problems are listed, no
 | --- | --- | --- |
 | `nothing to review`, `uncommitted changes` | The branch has a commit beyond the base; the worktree is clean | The engineer commits |
 | `stamp log:` | The log is intact ([Verifying a log](../stamps.md#verify)) | Report to the coordinator: the unit is unusable |
-| `compared:` | Each changed `@orig` function has a pairs file and a current `compared` stamp for its body and for that file (two functions that cite one address each need their own: [Stamps](../stamps.md#shared-address)) | `original compare <addr>` (`--coney-function KEY` when several cite it) |
-| `copy-check:` | [`orig copy-check`](../coney-tools-fidelity.md#orig) finds no fingerprint on the lines added | The engineer, then `original compare` |
-| `fails-first:` | Each added C++ `TEST_CASE` has a passing `fails-first` stamp (Python tests are not stamped) | `original fails-first` |
+| `compared:` | Each changed `@orig` function has a pairs file and a current `compared` stamp for its body and for that file (two functions that cite one address each need their own: [Stamps](../stamps.md#shared-address)) | `orig compare <addr>` (`--coney-function KEY` when several cite it) |
+| `copy-check:` | [`orig check-copy`](../coney-tools-fidelity.md#orig) finds no fingerprint on the lines added | The engineer, then `orig compare` |
+| `fails-first:` | Each added C++ `TEST_CASE` has a passing `fails-first` stamp (Python tests are not stamped) | `orig fails-first` |
 | `docs check:` | `docs check` passes on the changed pages, research pages included | The engineer |
 | `title:`, `docs:`, a missing picture | The description's title follows the rules, the [docs rule](../coney-tools-repo.md#repo) holds (`Docs: none` is read from the description), every local picture exists | The engineer edits the description |
 | `text:` | For `--text`: a passing full review still covers the change and the pairs | `task review`, without `--text` |
@@ -176,8 +176,8 @@ The reviewer starts no agents, and the hooks enforce it twice in `[roles.reviewe
 `allow_agent_types = []` refuses every Agent call (the agent file gives it no Agent tool either). Its `deny_commands`
 refuse a session started from the shell: `claude` or `coney-agent` where a command starts, in any letter case (also
 after `&&`, `;`, `|`, `$(`, `then`, launchers such as `uv run`, `uvx`, `npx -y`, `cmd /c` or `Start-Process`, or a
-folder such as `.venv/Scripts/`), the session launcher by module or file, `task review --run` and `repo review` (which
-always starts one). Even a read-only helper has Bash and no role rules, and a session started from the shell is a
+folder such as `.venv/Scripts/`), the session launcher by module or file, `task review --run` and `legacy pr-review`
+(which always starts one). Even a read-only helper has Bash and no role rules, and a session started from the shell is a
 main session the hooks vouch for under a session of its own, so either could write a `compared` stamp for the
 reviewer, and the reviewer would grade its own comparison.
 
@@ -208,7 +208,7 @@ their listing forms (`git branch -a`, `git tag -l`, `git stash list`, `git workt
 
 ## Release checks that predate it {#legacy}
 
-`repo review` (the description) and `orig check-review` (a branch's `@orig` functions) gate the release of a branch
+`legacy pr-review` (the description) and `orig check-review` (a branch's `@orig` functions) gate the release of a branch
 started before the cutover outside a task, and are retired at the cutover
 ([Legacy release checks](../how-we-work.md#pr-review)). They run the same `reviewer` agent and keep their own verdict
 files; the formats are in [Description review](text.md#legacy-verdict) and [Orig review](orig.md#verdict).

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""`coney-tools repo pr-health`: list the open pull requests that are stuck, with the cause and who should act.
+"""`coney-tools pr list-stuck`: list the open pull requests that are stuck, with the cause and who should act.
 
 One `gh pr list --json` read of the open pull requests (with each one's check rollup) and one read of the branch
 ruleset, which says which checks are required. A pull request is stuck when a required check failed, when it conflicts
@@ -319,10 +319,10 @@ def format_text(health: Health, verbose: bool) -> Iterable[str]:
         yield from (f"{item.line()} (not stuck)" for item in health.notes)
 
 
-def add_pr_health_parser(repo_commands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
-    """Add `repo pr-health` and its options to the `repo` command group."""
-    parser = repo_commands.add_parser(
-        "pr-health",
+def add_pr_health_parser(pr_commands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
+    """Add `pr list-stuck` and its options to the `pr` command group."""
+    parser = pr_commands.add_parser(
+        "list-stuck",
         help="list the open pull requests that are stuck (failed required check, conflict, stuck CI, no auto-merge)",
         description=(
             "Lists the open pull requests that are stuck, one line each: #number branch cause detail -> who acts. "
@@ -363,7 +363,7 @@ def run_pr_health(
     now: datetime | None = None,
     sleep: Callable[[float], None] = time.sleep,
 ) -> int:
-    """Run `coney-tools repo pr-health`; 0 when nothing is stuck, 1 when something is.
+    """Run `coney-tools pr list-stuck`; 0 when nothing is stuck, 1 when something is.
 
     With `--labels`, GitHub is reread (after `sleep`) while it still answers `UNKNOWN` for a pull request's
     mergeability, up to `hygiene.pr_health.unknown_retries` times, before the label changes are printed or applied.

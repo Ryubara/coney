@@ -237,7 +237,7 @@ def _mission(
     if source in ("web", "mixed") and not sources:
         problems.append(f"{where}: a {source} summary must list its `sources` (URLs)")
     if titles and group != "hub" and entry["level"] not in titles:
-        problems.append(f"{where}: no title in the levels list (run `coney-tools refs extract`)")
+        problems.append(f"{where}: no title in the levels list (run `coney-tools refs refresh`)")
     research = []
     for link in entry.get("research") or []:
         if isinstance(link, dict) and isinstance(link.get("title"), str) and isinstance(link.get("path"), str):

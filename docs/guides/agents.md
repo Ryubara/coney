@@ -42,7 +42,7 @@ their own copies at once, so connect it to the copy you claimed and to no other.
 `pcsx2_connect` with `debug_port` and `pine_port` set to those, `mode: "debug"` and `agent: "<your id>"` (the id you
 claimed with). **Pass `agent: "<your id>"` on every `pcsx2_*` call**, not only the connect: it names your connection
 in the server, and the hook refuses a connect without it. Debug mode is the default to use: the debug server serves
-several clients, but PCSX2's PINE serves one, and an MCP server holding it blocks `pcsx2 record` and every other PINE
+several clients, but PCSX2's PINE serves one, and an MCP server holding it blocks `trace original` and every other PINE
 client of that copy. Use `mode: "auto"` or `"pine"` only when you need PINE's own calls and nothing else uses the
 copy, and never leave the ports out: the defaults (21512, 28011) are copy `pcsx2`'s, someone else's game. An agent
 tool that starts one server per agent can run `coney-tools mcp serve pcsx2 --copy <name>`, which hands the copy's
@@ -71,7 +71,7 @@ memory has to carry it: `CONEY_WINDOW_DISPLAY` (`portrait`, a display number or 
 [Which display](running-options.md#window-display)) in the environment the tool gives its agents, for Claude Code the `env`
 block of your user settings (`~/.claude/settings.json`, `"env": {"CONEY_WINDOW_DISPLAY": "portrait"}`). Coney opens
 its window centred on that display without taking the keyboard focus, and `coney-tools pcsx2 launch` and
-`pcsx2 record` move each PCSX2 window there as it appears ([Driving PCSX2](research-tools.md#driving-pcsx2)). It
+`trace original` move each PCSX2 window there as it appears ([Driving PCSX2](research-tools.md#driving-pcsx2)). It
 is each machine's own setting and stays out of the repository; a machine with one display leaves it unset. An agent
 that runs anything else with a window puts it on the same display.
 
@@ -89,7 +89,7 @@ agent file only says which to apply. Its tools are Read, Glob, Grep, Bash (read-
 checks), Write (its verdict and report files only, which the role rules enforce), the ghidra-mcp read tools
 (`decompile_function`, `disassemble_function` and the like) and the PCSX2 MCP tools that only read. It has no Edit
 tool, no Agent tool, no Ghidra tool that writes and no PCSX2 tool that changes state. It starts no agents: the role
-rules refuse the Agent call and, in the shell, `claude`, `coney-agent`, `task review --run` and `repo review`.
+rules refuse the Agent call and, in the shell, `claude`, `coney-agent`, `task review --run` and `legacy pr-review`.
 
 Start it for a task with the model the change needs: Opus for research pages and `@orig` functions, which `task review
 --record` insists on, a smaller one for docs and tooling. Its brief names the task; it runs `coney-tools task review
@@ -101,8 +101,8 @@ after an `@orig` review therefore comes before the review of the description, wh
 A branch started before the cutover, outside a task, is released with the [legacy release
 checks](how-we-work.md#pr-review), which run the same agent and are retired at the cutover:
 
-- **The description**, with `coney-tools repo review` ([repo review](coney-tools-repo.md#repo-review)); the verdict is
-  `REVIEW.json` next to `PR.md` ([Description](review/text.md#legacy-verdict)).
+- **The description**, with `coney-tools legacy pr-review` ([legacy pr-review](coney-tools-repo.md#legacy-pr-review));
+  the verdict is `REVIEW.json` next to `PR.md` ([Description](review/text.md#legacy-verdict)).
 - **An `@orig` branch, in pr mode** (`orig check-review`): give it the branch (or its worktree), the base and the
   scratch folder that holds `PR.md`; it writes `ORIG-REVIEW.json` and `ORIG-REVIEW.md` there. When `orig review-stamp
   --branch` lists no function, no run is needed. A rebase that leaves the functions as they were keeps the verdict.
@@ -110,10 +110,10 @@ checks](how-we-work.md#pr-review), which run the same agent and are retired at t
 **Sweep mode** reviews existing code for [legacy fidelity](how-we-work.md#fidelity-audit), until the sweep is filed
 (it ends at the [cutover](how-we-work.md#cutover)). Give it a `src/` folder or
 a list of addresses and a group folder under `scratch/orig-sweep/`. It reviews what `orig review-stamp --folder` lists
-as unreviewed or stale, writes `FINDINGS.tsv` and `PROGRESS.md`, records the findings with `coney-tools orig record`,
-and returns a summary that the launcher saves as `SUMMARY.md`. Run one agent per folder, and leave out the folders that
-a held claim's scope covers. The coordinator files each finding that is not `clean` or `diff-deliberate-ok` as an
-issue, which becomes an ordinary task.
+as unreviewed or stale, writes `FINDINGS.tsv` and `PROGRESS.md`, records the findings with `coney-tools orig
+record-findings`, and returns a summary that the launcher saves as `SUMMARY.md`. Run one agent per folder, and leave out
+the folders that a held claim's scope covers. The coordinator files each finding that is not `clean` or
+`diff-deliberate-ok` as an issue, which becomes an ordinary task.
 
 ## What a run costs {#cost}
 
@@ -169,7 +169,7 @@ the role from the hook input's `agent_type` (a subagent's type; for the main ses
 | `coordinator` | The main session: triage, briefs, answers, pushes and opens pull requests, merges, the maintainer's contact | Write under `src/`, `tests/`, `python/`, `docs/research/`, `research/`; `git commit` in a unit's worktree; the Ghidra and PCSX2 tools; the study, compare, check and review commands of the [pipeline](how-we-work.md#the-pipeline) |
 | `engineer` | A subagent: one task, any method | `git push` and every GitHub write, `coney-tools pr open`, `pr hold`, `claim unclaim` and `claim renew` |
 | `tooling` | A subagent for the project's own tools and process | The same as the engineer; it may edit `src/` (warning fixes) |
-| `reviewer` | A subagent that reports | `coney-tools pr open`, `pr hold`, `claim unclaim` and `claim renew`; writing any file but its verdict and notes (`REVIEW.json`, `REVIEW.md`, `ORIG-REVIEW.*`, `FINDINGS.tsv`, `PROGRESS.md`, `HANDOVER.md`, `SUMMARY.md`, and `CODE-REVIEW*.md` for the report of a [review outside `task review`](review/task.md#report)) or any of those inside a checkout or with a colon in its name, a git command that changes a ref, the index, the tree or the worktrees (`commit`, `add`, `stage`, `rm`, `mv`, `reset`, `restore`, `checkout`, `checkout-index`, `switch`, `merge`, `mergetool`, `rebase`, `cherry-pick`, `revert`, `apply`, `am`, `clean`, `pull`, `fetch`, `bisect`, `stash`, `read-tree`, `update-ref`, `update-index`, `sparse-checkout`, `replace`, `pack-refs`, `gc`, `prune`, `repack`, `maintenance run`, `filter-branch`, `symbolic-ref` with two names or `-d`, `worktree add`/`move`/`remove`/`prune`, `notes add` and the other note writes, `reflog expire`/`delete`, `remote add`/`remove`/`rename`/`set-url`/`set-head`/`set-branches`/`update`/`prune`, `submodule update` and the other submodule writes, and `branch` or `tag` with anything but listing options, also after global options such as `--no-pager` or `-C dir`; `merge-base` and `merge-tree` pass, and so do `stash list`, `worktree list`, `remote -v`, `remote show`, `symbolic-ref HEAD`, `branch -a`, `tag -l`), GitHub writes (but a passing `task review --record` posts the claim command `/progress reviewed` itself, as every passing stage stamp does: [Stamps](stamps.md#api)), any Agent call (`allow_agent_types = []`: a helper has Bash and could write for it), starting a session from the shell (`claude`, `coney-agent`, `task review --run`, `repo review`) |
+| `reviewer` | A subagent that reports | `coney-tools pr open`, `pr hold`, `claim unclaim` and `claim renew`; writing any file but its verdict and notes (`REVIEW.json`, `REVIEW.md`, `ORIG-REVIEW.*`, `FINDINGS.tsv`, `PROGRESS.md`, `HANDOVER.md`, `SUMMARY.md`, and `CODE-REVIEW*.md` for the report of a [review outside `task review`](review/task.md#report)) or any of those inside a checkout or with a colon in its name, a git command that changes a ref, the index, the tree or the worktrees (`commit`, `add`, `stage`, `rm`, `mv`, `reset`, `restore`, `checkout`, `checkout-index`, `switch`, `merge`, `mergetool`, `rebase`, `cherry-pick`, `revert`, `apply`, `am`, `clean`, `pull`, `fetch`, `bisect`, `stash`, `read-tree`, `update-ref`, `update-index`, `sparse-checkout`, `replace`, `pack-refs`, `gc`, `prune`, `repack`, `maintenance run`, `filter-branch`, `symbolic-ref` with two names or `-d`, `worktree add`/`move`/`remove`/`prune`, `notes add` and the other note writes, `reflog expire`/`delete`, `remote add`/`remove`/`rename`/`set-url`/`set-head`/`set-branches`/`update`/`prune`, `submodule update` and the other submodule writes, and `branch` or `tag` with anything but listing options, also after global options such as `--no-pager` or `-C dir`; `merge-base` and `merge-tree` pass, and so do `stash list`, `worktree list`, `remote -v`, `remote show`, `symbolic-ref HEAD`, `branch -a`, `tag -l`), GitHub writes (but a passing `task review --record` posts the claim command `/progress reviewed` itself, as every passing stage stamp does: [Stamps](stamps.md#api)), any Agent call (`allow_agent_types = []`: a helper has Bash and could write for it), starting a session from the shell (`claude`, `coney-agent`, `task review --run`, `legacy pr-review`) |
 | every role, and a session with none | | Naming `~/.coney` ([Who runs a command](#identity)); naming a file in `~/.ssh/` other than a `.pub`, `config` or `known_hosts`; reading another process's command line or environment; deleting keys from the SSH agent (`ssh-add -d`, `-D`, also bundled with other flags such as `-qD`; listing with `-l` is fine); Edit or Write under a `stamps/` or `build-runs/` folder and a shell write into one (a stamp log or build record is written by the stage commands only, [Stamps](stamps.md)) |
 
 The role rules are the `[roles.*]` tables of `.claude/hooks/hooks.toml`, read on every call; the rules for every
@@ -246,12 +246,12 @@ instead of repeating it:
   ([Testing](testing.md#done)), and that it reports it in the pull request's Testing and Screenshots sections, with
   its captures saved in `scratch/<branch>/shots/` and referenced in `PR.md` as `![alt](./shots/file.png)`
   ([Capturing and attaching](testing.md#pr-media)); video clips are recorded only with `coney --record` or
-  `coney-tools pcsx2 clip` into `scratch/<branch>/clips/` and uploaded only with `coney-tools clips publish`, which
+  `coney-tools clips record` into `scratch/<branch>/clips/` and uploaded only with `coney-tools clips publish`, which
   deletes them ([Clips](testing.md#clips));
 - for gameplay work (anything a player sees: the title areas `gameplay`, `graphics` and `audio`), the brief names the
   [runtime comparison](testing.md#runtime-comparison) with the original as part of "done", and the `Runtime:` line of
   the pull request's Testing section that reports it ([the Runtime line](testing.md#runtime-line)); it points at
-  `coney-tools pcsx2 recipe` for the PCSX2 recipes that capture and read the original (a save state's values and
+  `coney-tools pcsx2 recipes` for the PCSX2 recipes that capture and read the original (a save state's values and
   picture, a trace; being added, with its own guide page), and the agent works in a PCSX2 claim
   ([Driving PCSX2](research-tools.md#driving-pcsx2)). An agent that is not told compares nothing with the running
   original, and the pull request is then refused;
@@ -268,7 +268,7 @@ instead of repeating it:
 - builds: "build and test only with `coney-tools build --agent <id> ...`, in the background" ([Builds and
   tests](#builds)); the brief does not paste the flags;
 - the stages, as part of "done": `coney-tools task check` on the committed tip, then `task review` by a reviewer
-  ([The pipeline](how-we-work.md#the-pipeline), [The local gate](testing.md#local-gate)); `coney-tools check changed`
+  ([The pipeline](how-we-work.md#the-pipeline), [The local gate](testing.md#local-gate)); `coney-tools ci run`
   is an aid while working, not the gate;
 - only the facts the agent cannot find in the repository (a log path, a question to answer, the state file).
 
@@ -511,7 +511,7 @@ launcher of the game. Every parameter, and what Windows PowerShell 5.1 needs fir
 An agent's commits end with `Co-Authored-By: <the model it runs on> <noreply@anthropic.com>`
 ([AGENTS.md](repo:AGENTS.md)). The coordinator's session gets a system reminder naming the coordinator's own model for
 that line, and subagents see it too and copy it: on 2026-10-13 a Sonnet agent twice credited Opus, the pull request's
-Model line followed the wrong trailer, and `coney-tools repo check-body` passed because body and trailers agreed with
+Model line followed the wrong trailer, and `coney-tools pr check-body` passed because body and trailers agreed with
 each other. **Two checks stand against it.** A git `commit-msg` hook, installed by `uvx pre-commit install` (the
 `commit-message` hook of `.pre-commit-config.yaml`, which runs [`coney-tools pr
 check-commit`](coney-tools-pr.md#pr-check-commit)), refuses the message before the commit exists, for everyone, with or
@@ -593,7 +593,7 @@ uv run --project python coney-tools build --agent <id> --preset dev --test [-R <
 - **`--priority`** goes ahead of the queue. The coordinator uses it for a build somebody is waiting on; an agent does
   not set it on its own.
 - **`build status`** shows who holds the slots and who waits. A crashed run is taken over by the next claimer, which
-  also stops the `ctest` or `cmake` it left running; `build release --agent <id>` cleans up by hand.
+  also stops the `ctest` or `cmake` it left running; `build unclaim --agent <id>` cleans up by hand.
 - **A build never outlives its agent.** Its children end with the command, and the command stops when the shell that
   started it is gone (a restart of the agent tool, a killed background shell), so a run never needs killing by hand
   ([Process lifetimes](coney-tools-build.md#build)). Never stop `ctest` or a test executable yourself: stop the
@@ -645,8 +645,8 @@ wakes up and writes its whole context again, which on 2026-10-12 cost about 1.1 
   no budget). Write `STATUS.md` naming the worktree and the command, and end your turn. Whoever continues runs
   `coney-tools build result --dir <worktree>`: exit 75 while it runs, then the run's summary, log path and exit code
   ([`build result`](coney-tools-build.md#build)).
-- `coney-tools check changed --detach` runs the CI-style checks of the changed files in the background; whoever
-  continues runs `coney-tools check result` in the worktree ([`check`](coney-tools-build.md#check)).
+- `coney-tools ci run --detach` runs the CI-style checks of the changed files in the background; whoever
+  continues runs `coney-tools ci result` in the worktree ([`ci result`](coney-tools-ci.md#ci-run)).
 
 ## The PCSX2 MCP guard {#pcsx2-guard}
 
@@ -673,7 +673,7 @@ hook checks the one call that picks the copy (`.claude/hooks/pcsx2_guard.py`, th
   runs** (a local-scope `pcsx2` entry or an older checkout may not require it itself, and two agents that leave it out
   share the server's `default` connection), and checks it wherever it is given: it must be an id of your claiming
   commands and, on `pcsx2_connect`, the id the copy is claimed as, so nobody acts in another agent's name by mistake.
-  It does not check on a later call that the claim is still live (after a `release` or a takeover the old id still
+  It does not check on a later call that the claim is still live (after a `pcsx2 unclaim` or a takeover the old id still
   passes; the server frees an idle name within 30 minutes). Your tool list shows whether the installed server has
   the `agent` argument (it is among `pcsx2_connect`'s arguments). A command that gets no reply in time closes its
   connection (a late reply could answer your next command), and closing one fails the command waiting on it at once
@@ -696,9 +696,9 @@ hook checks the one call that picks the copy (`.claude/hooks/pcsx2_guard.py`, th
 to a copy you did not claim, but another agent's `pcsx2_connect` to its *own* claim moves yours (your next write then
 lands in its game), and `mode: "debug"` leaves the PINE half of the previous connection. There, **call `pcsx2_status`
 before the first write of a task and after any pause** to see which copy you are connected to, and prefer what needs no
-shared server: `coney-tools pcsx2 ...` (`record`, `recipe`, `clip`) and, from a script, `DebugClient.claimed("<your
+shared server: `coney-tools pcsx2 ...`, `trace original`, `clips record` and, from a script, `DebugClient.claimed("<your
 id>")` (`coney_tools.debug_server`), which connects to the debug server of the claim you hold and refuses any other.
-`coney-tools pcsx2 check-ports --agent <id> --debug-port N --pine-port M` makes the claim check on a pair of ports.
+`coney-tools pcsx2 check-claim --agent <id> --debug-port N --pine-port M` makes the claim check on a pair of ports.
 
 ## Bounded waits {#bounded-waits}
 

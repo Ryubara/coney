@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for `coney-tools orig check`: new gameplay functions must carry `@orig` or `@coney-only`, on a made-up git
+"""Tests for `coney-tools orig check-tags`: new gameplay functions must carry `@orig` or `@coney-only`, on a made-up git
 checkout whose base commit already holds some untagged code."""
 
 from pathlib import Path
@@ -110,9 +110,9 @@ def test_a_folder_in_neither_list_is_refused(repo: Path) -> None:
 
 def test_the_command_exits_1_on_a_finding(repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(repo)
-    assert main(["orig", "check", "--base", "HEAD"]) == 0
+    assert main(["orig", "check-tags", "--base", "HEAD"]) == 0
     add_to_brain(repo, "void freshWork() {}")
-    assert main(["orig", "check", "--base", "HEAD"]) == 1
+    assert main(["orig", "check-tags", "--base", "HEAD"]) == 1
 
 
 def test_the_local_gate_runs_it_when_src_changed(repo: Path) -> None:

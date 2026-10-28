@@ -333,7 +333,7 @@ def test_who_is_hook_sourced_only_for_a_token_the_hook_issued(tmp_path: Path) ->
         ),
         encoding="utf-8",
     )
-    hooked = stamps.who_from_env("coney-tools original study", {"CONEY_AGENT_TOKEN": token}, folder=tmp_path)
+    hooked = stamps.who_from_env("coney-tools orig study", {"CONEY_AGENT_TOKEN": token}, folder=tmp_path)
     assert hooked["source"] == "hook"
     assert hooked["agent"] == {"id": "a1", "type": "engineer", "model": "claude-opus-5-5"}
     # The three variables and the old marker are typed text: they prove nothing.

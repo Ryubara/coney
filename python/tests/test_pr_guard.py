@@ -19,6 +19,7 @@ import pytest
 from conventions_support import REPO, real_data, write_checkout
 from hooks_support import guards_run
 
+from coney_tools.cli import _build_parser
 from coney_tools.conventions import CONVENTIONS_FILE, load_conventions
 
 SCRIPT = REPO / ".claude" / "hooks" / "pr_guard.py"
@@ -45,6 +46,8 @@ class FakeRunner:
 
     def __call__(self, args: list[str], stdin: str) -> tuple[int, str]:
         self.calls.append((args, stdin))
+        # An unknown command fails the test; the real tool's argparse error (exit 2) would let the hook fail open.
+        assert args[0] == "pr" and args[1] in self.codes, f"coney-tools has no command {' '.join(args[:2])}"
         code = self.codes[args[1]]
         return code, f"{args[1]} refused: made up" if code == 1 else "ok"
 
@@ -57,12 +60,25 @@ def body(tmp_path: Path) -> Path:
     return path
 
 
+def test_the_commands_it_runs_exist_in_coney_tools(body: Path) -> None:
+    """The two checks are commands the real parser knows by their new names: an unknown one is an argparse error
+    (exit 2), which the hook reads as "cannot run" and lets the call through, so a rename that missed it would turn
+    the local title and description checks off without a sound."""
+    runner = FakeRunner()
+    GUARD.check(f"gh pr create --title 'tools: Add a check' --body-file {body.name}", str(body.parent), runner=runner)
+    assert [args[:2] for args, _ in runner.calls] == [["pr", "check-title"], ["pr", "check-body"]]
+    parser = _build_parser()
+    for args, _ in runner.calls:
+        # parse_args exits (SystemExit 2) on an unknown command or option.
+        parser.parse_args(args)
+
+
 def test_create_with_title_and_body_file_runs_both_checks(body: Path) -> None:
     runner = FakeRunner()
     command = f'gh pr create --title "tools: Add a check" --body-file {body.name} --head b'
     assert GUARD.check(command, str(body.parent), runner=runner) is None
-    assert runner.calls[0] == (["repo", "check-title", "-"], "tools: Add a check\n")
-    assert runner.calls[1][0] == ["repo", "check-body", "--body", str(body), "--title", "tools: Add a check"]
+    assert runner.calls[0] == (["pr", "check-title", "-"], "tools: Add a check\n")
+    assert runner.calls[1][0] == ["pr", "check-body", "--body", str(body), "--title", "tools: Add a check"]
 
 
 def test_a_refused_body_blocks_with_the_checks_reason(body: Path) -> None:
@@ -108,10 +124,10 @@ def test_shapes_the_checks_cannot_see_are_refused(command: str, words: str) -> N
 def test_edit_checks_only_what_it_changes(body: Path) -> None:
     runner = FakeRunner()
     assert GUARD.check(f'gh pr edit 12 --body-file "{body}"', "", runner=runner) is None
-    assert runner.calls == [(["repo", "check-body", "--body", str(body)], "")]
+    assert runner.calls == [(["pr", "check-body", "--body", str(body)], "")]
     runner = FakeRunner()
     assert GUARD.check("gh pr edit 12 --title 'tools: Fix y'", "", runner=runner) is None
-    assert runner.calls == [(["repo", "check-title", "-"], "tools: Fix y\n")]
+    assert runner.calls == [(["pr", "check-title", "-"], "tools: Fix y\n")]
 
 
 @pytest.mark.parametrize(
@@ -290,7 +306,7 @@ def test_a_title_the_shell_fills_in_is_not_checked(tmp_path: Path, command: str,
     (tmp_path / "PR.md").write_text("## Summary\n", encoding="utf-8")
     runner = FakeRunner(title_code=1)
     assert GUARD.check(command, str(tmp_path), powershell=powershell, runner=runner) is None
-    assert [args for args, _ in runner.calls] == [["repo", "check-body", "--body", str(tmp_path / "PR.md")]]
+    assert [args for args, _ in runner.calls] == [["pr", "check-body", "--body", str(tmp_path / "PR.md")]]
 
 
 def test_powershell_quote_escapes_are_undone(body: Path) -> None:
@@ -1046,8 +1062,8 @@ def test_an_attached_value_after_equals_is_the_value(body: Path) -> None:
     runner = FakeRunner()
     command = f"gh pr create -t='tools: Add x' -F={body.name}"
     assert GUARD.check(command, str(body.parent), runner=runner, open_only=False, repository=here) is None
-    assert runner.calls[0] == (["repo", "check-title", "-"], "tools: Add x\n")
-    assert runner.calls[1][0][:4] == ["repo", "check-body", "--body", str(body)]
+    assert runner.calls[0] == (["pr", "check-title", "-"], "tools: Add x\n")
+    assert runner.calls[1][0][:4] == ["pr", "check-body", "--body", str(body)]
 
 
 @pytest.mark.parametrize(
@@ -1168,7 +1184,7 @@ def test_a_hash_inside_a_title_is_text_while_the_switch_is_off(body: Path, writt
     runner = FakeRunner()
     command = f"gh pr create --title {written} --body-file {body.name}"
     assert GUARD.check(command, str(body.parent), runner=runner, open_only=False, repository=here) is None
-    assert runner.calls[0] == (["repo", "check-title", "-"], title + "\n")
+    assert runner.calls[0] == (["pr", "check-title", "-"], title + "\n")
 
 
 def test_a_hash_inside_a_word_does_not_hide_the_rest_with_the_switch_on() -> None:

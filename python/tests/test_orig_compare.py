@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for `original compare`: a made-up checkout with one tagged Coney function, a study of an invented original."""
+"""Tests for `orig compare`: a made-up checkout with one tagged Coney function, a study of an invented original."""
 
 import json
 from datetime import UTC, datetime, timedelta
@@ -207,7 +207,7 @@ def test_compare_wants_a_stamp_that_covers_the_name_program_and_signature(setup:
 
 def test_compare_refuses_a_stamp_that_predates_the_identity(setup: Setup) -> None:
     predate_the_identity(setup.unit.dir)
-    with pytest.raises(CompareError, match="original study"):
+    with pytest.raises(CompareError, match="orig study"):
         setup.run()
 
 

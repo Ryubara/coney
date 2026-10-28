@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for `coney-tools orig copy-check`: decompiler fingerprints in changed C++ lines, on invented code only."""
+"""Tests for `coney-tools orig check-copy`: decompiler fingerprints in changed C++ lines, on invented code only."""
 
 from pathlib import Path
 
@@ -115,6 +115,6 @@ def test_the_command_exits_1_on_a_finding(tmp_path: Path, monkeypatch: pytest.Mo
     git(tmp_path, "add", "-A")
     git(tmp_path, "commit", "-q", "-m", "base")
     monkeypatch.chdir(tmp_path)
-    assert main(["orig", "copy-check", "--base", "HEAD"]) == 0
+    assert main(["orig", "check-copy", "--base", "HEAD"]) == 0
     (tmp_path / "src/ai/brain.cpp").write_text(CLEAN.replace("hunger >", "iVar1 >"), encoding="utf-8")
-    assert main(["orig", "copy-check", "--base", "HEAD"]) == 1
+    assert main(["orig", "check-copy", "--base", "HEAD"]) == 1

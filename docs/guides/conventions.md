@@ -323,7 +323,7 @@ void Lantern::tick() {
 
 Two checks hold the rule:
 
-- `coney-tools orig copy-check` refuses the mechanical signs in changed lines (`check changed` and CI run it,
+- `coney-tools orig check-copy` refuses the mechanical signs in changed lines (`ci run` and CI run it,
   [orig](coney-tools-fidelity.md#orig)). A deliberate case carries `// copy-check: allow <reason>`.
 - The reviewer agent compares each changed `@orig` function with the original on both counts, fidelity and own
   expression, before release ([Orig review](review/orig.md)).
@@ -349,8 +349,8 @@ members: each carries its own. Exempt are only a member defined in its class who
 branch or lambda (an accessor, a setter, a forwarder) and a constructor or destructor with an empty body. The
 folders of `paths.coney_only` (`src/platform/`, `src/core/`, `src/fileio/`, `src/debug/`, `src/net/`, `src/sandbox/`)
 are Coney's own by nature and need no marker; every folder of `src/` is in one of the two lists.
-`coney-tools orig check` ([orig](coney-tools-fidelity.md#orig)), run by `check changed` and CI, refuses a new function that
-says neither, and a new folder in neither list. The functions written before the rule are
+`coney-tools orig check-tags` ([orig](coney-tools-fidelity.md#orig)), run by `ci run` and CI, refuses a new function
+that says neither, and a new folder in neither list. The functions written before the rule are
 [legacy](how-we-work.md#fidelity-audit) (`orig index`); the older wording ("Coney's own", "(no @orig)") is still
 read as a marker on them until they are converted, never on a new function. [The
 standards](coney-tools-standards.md#standards) do not count it at

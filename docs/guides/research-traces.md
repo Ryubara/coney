@@ -14,16 +14,16 @@ record, and the fields to read. Scenarios, patches, field sets and input scripts
 are measurements of the game and stay in your scratch folder.
 
 ```sh
-uv run --project python coney-tools pcsx2 record research/traces/scenarios/walk60.toml --out ../../scratch/walk60-original.csv
+uv run --project python coney-tools trace original research/traces/scenarios/walk60.toml --out ../../scratch/walk60-original.csv
 ```
 
-`record` copies the scenario's quick-save slot (read only), or the state file it names under `scratch_dir`, to
+`trace original` copies the scenario's quick-save slot (read only), or the state file it names under `scratch_dir`, to
 `<scratch_dir>/pcsx2/<scenario>.p2s` with the patches applied, starts PCSX2 on the copy with `-fastboot -statefile`
 (through a hard link to the disc when its path has commas or parentheses), waits until the patched state runs, plays the
 script and samples every update, then closes PCSX2 and warns if a file appeared in its `sstates/` folder. The folders
 come from `coney.local.toml` (`pcsx2_dir`, `game_dir`, `scratch_dir`) or from `--pcsx2-dir`, `--iso` and `--scratch`;
 PINE must be on in PCSX2's ini. `--state` records from another state file (or `slot:N`), `--attach` records a PCSX2 you
-started yourself on a patched copy (`coney-tools pcsx2 prepare-state`, then `pcsx2 launch`), and `--keep-open` leaves it
+started yourself on a patched copy (`coney-tools pcsx2 states patch`, then `pcsx2 launch`), and `--keep-open` leaves it
 running. It prints the number of updates, how many reads each poll made, the time per poll and the updates it missed.
 
 **Timing.** Step 0 is the first sample, before any input. After the sample of step N the recorder writes the pad for
@@ -128,7 +128,7 @@ of updates (the Rumble intro ended after 151 to 172, [Rumble](../research/rumble
 scenario's calls with a margin. A frame that runs two updates (about one in 1,000) still tears its sample; the trace's
 `.quality.txt` lists every missed and torn step.
 
-`pcsx2 record --let NAME=EXPR` gives or replaces a name of the scenario's `let`, so one scenario is recorded with
+`trace original --let NAME=EXPR` gives or replaces a name of the scenario's `let`, so one scenario is recorded with
 different values: the gang battle's matches differ by an offset of the brains' random stream (`--let seed=341`).
 
 ### Hooks {#hooks}
@@ -139,7 +139,7 @@ be a jump with its delay slot, as in a two-instruction setter) and up to seven v
 `sp`), a float register (`"f28"` logs an `f32`; in a table without `type`, the raw word, to compare floats exactly),
 `count` (the EE's cycle counter, 4,915,200 a 60 Hz tick) or a load such as `[a0 + 0x14]`, `[[a0 + 0x0] + 0x200]` or
 `[0x005104f4]`, a word unless a table gives `type`. The hook's address must not be a delay slot or a branch target, and
-a load must only follow pointers the hooked code itself uses: a bad load crashes the game. `pcsx2 record` writes each
+a load must only follow pointers the hooked code itself uses: a bad load crashes the game. `trace original` writes each
 hook's calls to `<trace>.<hook>.csv` (the ring's sequence number, the step, the values). The step is the update the call
 was made in, the same numbering as the trace's rows, so a call logged at step N shows its effect in the sample of step
 N. It comes from the tick count read in the same message: while the count is 2Q or 2Q + 1 the game is in the update a
@@ -259,8 +259,8 @@ A scenario (`research/traces/missions/*.toml`) names the course, the event that 
 original's save state and hooks, and Coney's level and checkpoint:
 
 ```sh
-uv run --project python coney-tools trace mission research/traces/missions/level99_cp1.toml --side original --agent YOU --out ../../scratch/cp1-original.csv
-uv run --project python coney-tools trace mission research/traces/missions/level99_cp1.toml --side coney --out ../../scratch/cp1-coney.csv
+uv run --project python coney-tools trace events research/traces/missions/level99_cp1.toml --side original --agent YOU --out ../../scratch/cp1-original.csv
+uv run --project python coney-tools trace events research/traces/missions/level99_cp1.toml --side coney --out ../../scratch/cp1-coney.csv
 uv run --project python coney-tools trace events-diff ../../scratch/cp1-original.csv ../../scratch/cp1-coney.csv
 ```
 

@@ -81,7 +81,7 @@ The repository's `.mcp.json` registers the bridge for Claude Code as `ghidra-mcp
 not pick up groups loaded later). Start the server **before** the Claude Code session. Tools:
 `ToolSearch select:mcp__ghidra-mcp__<name>`.
 
-The coney-tools commands do not use the bridge: `coney-tools original study` and `original verify` talk HTTP to the
+The coney-tools commands do not use the bridge: `coney-tools orig study` and `orig verify` talk HTTP to the
 server on port 8090 directly (reading endpoints only, the same ones `orig index` uses), so they work from a script, a hook
 or a person's terminal. With no server answering they exit with 3 and write nothing
 ([Study](stamps.md#study)).

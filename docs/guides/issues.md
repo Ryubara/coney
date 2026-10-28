@@ -111,7 +111,7 @@ links an issue with a raw `gh` command: `coney-tools issue` is the only way, and
 changes the command with it ([Repository conventions](repo-conventions.md)). The commands are in
 [coney-tools](coney-tools-issues.md#issue).
 
-1. **Draft.** `coney-tools issue draft task` (or `bug`) prints a blank body with the form's `###` headings in its
+1. **Draft.** `coney-tools issue template task` (or `bug`) prints a blank body with the form's `###` headings in its
    order. A comment before each section carries the form's own description, whether the section is required, and
    the values it allows (the Area is one of the `A-` labels; a bug's dropdowns list theirs). The `From:` line and the
    `Screenshots: none (<reason>)` convention are there too. Fill it in; the comments may stay, they are not shown and
@@ -134,7 +134,7 @@ changes the command with it ([Repository conventions](repo-conventions.md)). The
    is where a leftover goes (the issue its source pull request fixes). `--dry-run` checks and prints the commands
    and writes nothing.
 4. **Change.** `coney-tools issue edit N --body FILE [--title T]` checks the new body the same way before
-   `gh issue edit`, and `coney-tools issue link N --parent P` makes an existing issue a sub-issue.
+   `gh issue edit`, and `coney-tools issue set-parent N --parent P` makes an existing issue a sub-issue.
 
 The coordinator, and an agent whose brief says to file, use these commands; any other agent hands the checked body
 file to the coordinator.
@@ -153,7 +153,7 @@ them.
 
 **How the rules are enforced.** Four layers, each for a way an issue could skip the form:
 
-- `coney-tools issue draft`, `check` and `create` (above) put the check before the write.
+- `coney-tools issue template`, `check` and `create` (above) put the check before the write.
 - A Claude Code hook in the repository, `.claude/hooks/issue_guard.py` (registered in `.claude/settings.json`, so every
   contributor and agent session has it), refuses a raw `gh issue create`, a `gh issue edit` with `--body`,
   `--body-file`, `-b` or `-F`, and a `gh api` call that creates an issue, changes its body or title, or links a
@@ -161,7 +161,7 @@ them.
   commit message, the body of a here-document) passes; labels, titles, comments and closing stay with `gh`, and so
   does a command that names only another repository (`-R owner/name`, `GH_REPO=`, a `repos/owner/name` path), which
   the hook tells from this one by the working directory's `origin` remote. The
-  refusal names `coney-tools issue draft`, `create` and `edit`. `coney-tools` itself runs `gh` as a subprocess,
+  refusal names `coney-tools issue template`, `create` and `edit`. `coney-tools` itself runs `gh` as a subprocess,
   which the hook never sees.
 - The `issue-check` workflow (`.github/workflows/issue-check.yml`) runs `coney-tools issue check --online` on every
   issue opened or edited, so an issue filed on the website or through the API is covered too. When the check
@@ -176,7 +176,7 @@ them.
 The label scheme follows rust-lang/rust's prefixes (`A-` for the area, `P-` for the priority, `S-` for the status),
 so contributors who know that project recognise it. The labels live under `labels` in `.github/conventions.yml`
 ([Repository conventions](repo-conventions.md)), the one source of truth: edit that file, never the labels on
-GitHub. The coordinator makes GitHub match it with `coney-tools repo labels --apply`; without `--apply` the command
+GitHub. The coordinator makes GitHub match it with `coney-tools repo sync-labels --apply`; without `--apply` the command
 prints the `gh label create ... --force` commands instead of running them.
 
 The table is generated from `labels.list` (`coney-tools repo render`). `parity` is a difference from the original and
@@ -679,7 +679,7 @@ A brief may be just "issue #N" ([Briefing](agents.md#briefs)); the issue holds t
 - **Work the usual way:** the research first when the status says so, then a failing test, then the fix
   ([Testing](testing.md#done)). The pull request description has a `Fixes #N` line in its Summary.
 - **Agents write to GitHub only through `coney-tools issue`.** No comments, labels or pull requests, and an issue only
-  with `issue create`, `edit` or `link` ([Filing an issue](#filing)), and only when the brief says to: the
+  with `issue create`, `edit` or `set-parent` ([Filing an issue](#filing)), and only when the brief says to: the
   coordinator does the rest ([How we work](how-we-work.md#coordinator)). An agent
   reports what it would say (the finding, the question for the reporter, the status change) in its message to the
   coordinator. `.claude/hooks/push_guard.py` refuses a subagent's `gh` command that writes; `coney-tools issue` runs
@@ -699,7 +699,7 @@ request lists them, and the list is checked.
   affected` for each open issue the change partly fixes, changes the behaviour of or makes out of date, for example
   `- #12: step 2 of its fix list is done`. When there is none, the single line `None (<reason>)` with any short reason,
   for example `None (one-line fix)`. An issue the change finishes is `Fixes #N` in Summary and is not listed here.
-  `repo check-body` (CI's `body` job, and the release step) refuses a description without the section, an empty one, a
+  `pr check-body` (CI's `body` job, and the release step) refuses a description without the section, an empty one, a
   `None` with no reason and an item with no line on how, and its message says what to write
   ([What CI checks](testing.md#pr-evidence)). Nothing needs Claude Code or `coney-tools` to meet it: a person who
   edits one line on a fork writes `None (one-line fix)`.
@@ -734,7 +734,7 @@ that cite it ([Merging safely](how-we-work.md#merging)):
 
 A pull request merges only when every task in it is finished. Its Checklist lists what it finishes, each item ticked,
 and CI's `body` check refuses a description with an unticked `- [ ]` item, the template's `...` placeholder included
-(`coney-tools repo check-body`, rules in `pull_requests.checklist` of `.github/conventions.yml`). There is no
+(`coney-tools pr check-body`, rules in `pull_requests.checklist` of `.github/conventions.yml`). There is no
 "Remaining" list: work the pull request does not finish is not part of it and is not named in it, and a pull request
 that finishes an issue says `Fixes #N` in its Summary. Pull requests merged before the rule's own pull request did
 (2026-10-12 at 10:39 UTC) keep the Remaining lists they were written with; their items are open issues and go
@@ -745,8 +745,8 @@ issue as `#N`).
   open question) is written up as the issue it would be: title, area, research page and "done" test, in the shape of
   the [task form](#report), in the message it sends the coordinator. It follows
   [Writing an issue a newcomer can read](#writing): the problem first, not "the pull request leaves ..."; pages as
-  relative links; each checklist item a verifiable step. It starts from `coney-tools issue draft`, saves the body to a
-  file in its scratch folder and runs `coney-tools issue check --leftover` on it until it passes
+  relative links; each checklist item a verifiable step. It starts from `coney-tools issue template`, saves the body to
+  a file in its scratch folder and runs `coney-tools issue check --leftover` on it until it passes
   ([Filing an issue](#filing)); it does not write to GitHub ([Working from an issue](#agents)), and the pull request
   neither lists nor links that work.
 - **Work a player can see comes with a picture.** For a visible bug, gap or stand-in, the author saves a capture of

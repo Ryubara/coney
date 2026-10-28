@@ -19,9 +19,14 @@ from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import load_conventions
 
 
-def add_ci_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
-    """Add the `ci` group and its commands to the top-level parser."""
-    ci = groups.add_parser("ci", help="the commands the CI workflows run")
+def add_ci_parser(
+    groups: argparse._SubParsersAction[argparse.ArgumentParser],
+) -> argparse._SubParsersAction[argparse.ArgumentParser]:
+    """Add the `ci` group and its workflow commands to the top-level parser; return its commands, to which the local
+    gate (`ci run`, `ci result`) is added by the caller."""
+    ci = groups.add_parser(
+        "ci", help="CI's checks: run locally on what a change touched (run, result), and the commands the workflows run"
+    )
     commands = ci.add_subparsers(dest="command", required=True)
     dependencies = commands.add_parser(
         "dependencies",
@@ -97,6 +102,7 @@ def add_ci_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser]) -
         action="store_true",
         help="also print ::error workflow commands (a fork's token cannot upload SARIF)",
     )
+    return commands
 
 
 def _dependencies(args: argparse.Namespace, run: Runner) -> int:

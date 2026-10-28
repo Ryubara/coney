@@ -2,7 +2,7 @@
 """Behaviour statistics of a gang fight, from an all-humans trace of either game.
 
 The two games draw different random numbers, so a fight cannot be compared update by update. This module reads one
-row per human per update (Coney's `--trace-humans`, `coney-tools pcsx2 record` of the all-humans field set, with
+row per human per update (Coney's `--trace-humans`, `coney-tools trace original` of the all-humans field set, with
 coney_tools.fight_trace) and computes what a fight is judged by, by the rules of
 docs/research/rumble.md#gang-battle-metrics: the fight's window (the brains going on to `RumbleOver`), who is out of
 it, the winner, attacks, blocks, reactions, knock-downs and health losses per standing minute, the target changes by

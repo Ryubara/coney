@@ -67,7 +67,7 @@ Signs of a transcription:
 - dead code or compiler artifacts carried over (redundant reloads, sign-extension casts that mean nothing in C++, a
   flag tested twice because two inlined callees each tested it).
 
-`coney-tools orig copy-check` finds the mechanical signs ([orig](../coney-tools-fidelity.md#orig)); the reviewer judges
+`coney-tools orig check-copy` finds the mechanical signs ([orig](../coney-tools-fidelity.md#orig)); the reviewer judges
 the shape, which no tool can. For a function with a pairs file, the reviewer's input is that file: each pair names a
 piece of the original (by line numbers of the saved study, [Pairs](../stamps.md#pairs)), the Coney code that does it and
 whether they are the same, a stand-in or not ported; the tool has already checked that every line is in a pair. The
@@ -188,11 +188,11 @@ at the [cutover](../how-we-work.md#cutover):
    current body, with the `commit` it read. When `PROGRESS.md` already exists in the group folder, continue from it.
 2. Compare each function as above and append its row to `FINDINGS.tsv` at once. After each file, update `PROGRESS.md`
    with the files done and the commit.
-3. Record with `uv run --project python coney-tools orig record <group>/FINDINGS.tsv --ref <commit>`, so the ledger and
-   `orig queue` know what is done.
+3. Record with `uv run --project python coney-tools orig record-findings <group>/FINDINGS.tsv --ref <commit>`, so the
+   ledger and `orig legacy-queue` know what is done.
 4. Summarise in the final message, which the launcher saves as `SUMMARY.md` (the reviewer does not write it): the
    counts per class, the ten worst findings with their Coney function, `file:line` and address, anything systemic, and
-   the unmatched rows `orig record` printed.
+   the unmatched rows `orig record-findings` printed.
 
 At 500k context, write `PROGRESS.md` and a handover note in the group folder and stop.
 
@@ -247,8 +247,8 @@ addresses):
   message, which the launcher saves as `SUMMARY.md` beside the findings. Claude Code refuses a subagent's own
   writes of a summary file.
 
-`coney-tools orig record <FINDINGS.tsv>... --ref <commit>` records the rows in the ledger against the functions at
-the commit the sweep read, and prints what is still unreviewed.
+`coney-tools orig record-findings <FINDINGS.tsv>... --ref <commit>` records the rows in the ledger against the functions
+at the commit the sweep read, and prints what is still unreviewed.
 
 ## The ledger {#ledger}
 
@@ -260,5 +260,5 @@ Every review is recorded in one ledger: `pull_requests.orig_review.ledger` under
 - the source file of the review.
 
 A function with no entry is unreviewed. One whose body changed since its last review is stale and is reviewed
-again. `orig review-stamp --folder` lists only these, and `orig queue` ranks them, so every `@orig` function is
+again. `orig review-stamp --folder` lists only these, and `orig legacy-queue` ranks them, so every `@orig` function is
 reviewed once and again after each change.

@@ -232,7 +232,7 @@ class Built:
         )
 
     def fails_first(self, name: str = TEST_NAME, **detail: Any) -> stamps.Stamp:
-        """Stamp that the test failed before the fix and passes after, as `original fails-first` writes it."""
+        """Stamp that the test failed before the fix and passes after, as `orig fails-first` writes it."""
         return self.stamp(
             "fails-first",
             subject=name,

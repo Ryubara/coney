@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for the scene record reader and `wad scenes`, on made-up records built here byte by byte."""
+"""Tests for the scene record reader and `wad scene-info`, on made-up records built here byte by byte."""
 
 import struct
 import zlib
@@ -162,7 +162,7 @@ def test_scene_list_round_trip() -> None:
 
 
 def test_wad_scenes_command(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """`wad scenes` finds records by name, and a cut name by content, then prints counts only."""
+    """`wad scene-info` finds records by name, and a cut name by content, then prints counts only."""
     records = made_up_scene()
     long_name = "sixteen_chars_ab"  # the list holds 16 characters; the file's real name is longer
     records[long_name] = header_record(long_name.encode(), b"", 30, 1.0)
@@ -177,7 +177,7 @@ def test_wad_scenes_command(tmp_path: Path, capsys: pytest.CaptureFixture[str]) 
     disc.mkdir()
     (disc / "WARRIORS.DIR").write_bytes(struct.pack("<I12x", len(files)) + directory)
     (disc / "WARRIORS.WAD").write_bytes(wad_bytes)
-    assert main(["wad", "scenes", str(disc)]) == 0
+    assert main(["wad", "scene-info", str(disc)]) == 0
     out = capsys.readouterr().out
     assert "3 records" in out and "parsed: 2 headers, 1 segments, 0 failed" in out
     assert "track event types: 26:2, 28:2" in out

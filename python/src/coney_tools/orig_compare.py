@@ -1,11 +1,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""`coney-tools original compare <addr>`: the side-by-side check of one ported function (docs/guides/stamps.md#compare).
+"""`coney-tools orig compare <addr>`: the side-by-side check of one ported function (docs/guides/stamps.md#compare).
 
-After `original study` has numbered and cut the original function, the engineer pairs each piece with the Coney code
+After `orig study` has numbered and cut the original function, the engineer pairs each piece with the Coney code
 that does it (orig_pairs). This command shows the saved decompile beside the Coney function, pre-fills the pairs file
 the first time, and, once the pairs are filled in, checks them: every numbered line in a pair, merges with a reason,
 every relation complete, every Coney location real and every stand-in marked at the code, the Coney file committed, and
-`orig copy-check` clean on it. Only then does it append the `compared` stamp. A run that finds something wrong prints
+`orig check-copy` clean on it. Only then does it append the `compared` stamp. A run that finds something wrong prints
 it and writes no stamp: compare is an edit-and-rerun loop, and the log records verdicts, not drafts.
 
 The side-by-side view is written to the unit's scratch folder only: it holds the decompile.
@@ -174,7 +174,7 @@ def compare(
         raise CompareError(f"{unit.stamps}: the stamp log is not intact, so nothing is compared: {report.problems[0]}")
     wanted = {k: study.covers[k] for k in ("identity_sha256", "decompile_sha256", "ghidra_function_hash", "cut_sha256")}
     if report.current("studied", address, wanted) is None:
-        raise CompareError(f"{address}: no current `studied` stamp for the saved study; run `original study {address}`")
+        raise CompareError(f"{address}: no current `studied` stamp for the saved study; run `orig study {address}`")
     coney = find_unit(root, address, key)
     # Two Coney functions can port parts of one original function: each keeps its own `compared` stamp.
     cited_by = [u.key for u in units_citing(root, address)]

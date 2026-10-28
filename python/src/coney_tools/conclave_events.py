@@ -3,7 +3,7 @@
 
 Four things need the coordinator and are found here, each as an event with an id that names the occurrence and a state:
 
-* `check-failed` and `pr-stuck`: an open pull request that `repo pr-health` calls stuck (a failed required check, or a
+* `check-failed` and `pr-stuck`: an open pull request that `pr list-stuck` calls stuck (a failed required check, or a
   conflict, a CI run that never ends, auto-merge off). The id is the pull request, the cause and the head commit (and
   the failing checks), so a new push is a new event and the same failure read again is the same one. The state is
   `handled` while a hold (`pr hold`) covers the cause on that head, with the hold in `handled_by`; a hold that runs
@@ -76,7 +76,7 @@ def _hold_text(hold: Hold) -> str:
 
 
 def _pull_problems(prs: dict[str, Any], holds: HoldsRead, now: datetime) -> list[dict[str, Any]]:
-    """An event for each problem `repo pr-health` found, handled when a running hold covers its cause."""
+    """An event for each problem `pr list-stuck` found, handled when a running hold covers its cause."""
     heads = {int(row["number"]): row for row in prs.get("prs", [])}
     found: list[dict[str, Any]] = []
     for item in (prs.get("health") or {}).get("stuck", []):

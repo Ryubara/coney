@@ -188,7 +188,7 @@ def code_length(elf: Elf, address: int, length: int) -> int:
 class SizeCheck:
     """What the executable says about one function's size."""
 
-    span: int  # the upper bound from `span`, padding included: the upper bound `progress sizes` holds a size to
+    span: int  # the upper bound from `span`, padding included: the upper bound `progress check-sizes` holds a size to
     code: int  # the span without its trailing padding: the least a size can be
     errors: tuple[str, ...]
     warnings: tuple[str, ...]

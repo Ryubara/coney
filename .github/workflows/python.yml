@@ -55,7 +55,7 @@ jobs:
           fetch-depth: 2
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       - run: uv sync --project python
-      # The same ruff commands as `check changed` (check_cli.RUFF_COMMANDS): the package and the hook scripts.
+      # The same ruff commands as `ci run` (check_cli.RUFF_COMMANDS): the package and the hook scripts.
       - run: uv run --project python ruff check python .claude/hooks
       - run: uv run --project python ruff format --check python .claude/hooks
       - run: uv run --project python mypy --config-file python/pyproject.toml python/src python/tests
@@ -63,14 +63,14 @@ jobs:
       # The local gate (docs/guides/testing.md#local-gate) is run by hand on one machine at a time, so this runs it on
       # every OS the job tests: the steps that depend on the OS (pre-commit in command-line-sized groups, the program
       # lookup) fail here the way they would for a contributor. Its repo step is `repo audit --files`, which holds
-      # `repo check`, `repo render --check` and `docs render --check` too, so those still run on every OS. clang-tidy
+      # `repo check-conventions`, `repo render --check` and `docs render --check` too, so those still run on every OS. clang-tidy
       # and the docs build have their own jobs; pre-commit over every file is the format job (build.yml).
-      - run: uv run --project python coney-tools check changed --base HEAD^1 --only repo --only pre-commit
+      - run: uv run --project python coney-tools ci run --base HEAD^1 --only repo --only pre-commit
         shell: bash
       # The repository checks below compare the checkout's own files and do not depend on the OS (each comparison turns
       # CRLF into LF or reads text with universal newlines), so they run once, on Linux, which every run includes.
       - if: runner.os == 'Linux'
-        run: uv run --project python coney-tools repo check
+        run: uv run --project python coney-tools repo check-conventions
       # The generated blocks of AGENTS.md, CONTRIBUTING.md and the guides must match .github/conventions.yml.
       - if: runner.os == 'Linux'
         run: uv run --project python coney-tools repo render --check
@@ -80,27 +80,27 @@ jobs:
         run: uv run --project python coney-tools repo audit --files
       # The progress inputs (docs/progress/, the @orig tags, the roadmap) must agree. The tables and the README's badge
       # data are not committed: the docs build writes them (mkdocs_hooks.py). The name rule compares the tags with
-      # HEAD^1, as `orig check` does below, and --require-base fails when that commit cannot be read.
+      # HEAD^1, as `orig check-tags` does below, and --require-base fails when that commit cannot be read.
       - if: runner.os == 'Linux'
         run: uv run --project python coney-tools progress check --base HEAD^1 --require-base
       # A function a pull request adds to a gameplay folder carries @orig or @coney-only, and every folder of src/ is
       # listed as gameplay or Coney-only (docs/guides/conventions.md#coney-only). HEAD^1 is the branch the pull
       # request's merge commit joins, so only what the pull request adds is checked.
       - if: runner.os == 'Linux'
-        run: uv run --project python coney-tools orig check --base HEAD^1
+        run: uv run --project python coney-tools orig check-tags --base HEAD^1
       # No line the pull request adds to a C++ file of src/ carries a decompiler fingerprint (Ghidra's names, its
       # undefined types, a raw read at a byte offset, goto): docs/guides/conventions.md#porting.
       - if: runner.os == 'Linux'
-        run: uv run --project python coney-tools orig copy-check --base HEAD^1
+        run: uv run --project python coney-tools orig check-copy --base HEAD^1
       # The script-binding pages (docs/references/bindings/) must match research/bindings/, which must be valid.
       - if: runner.os == 'Linux'
-        run: uv run --project python coney-tools natives render --check
+        run: uv run --project python coney-tools bindings render --check
       # Their Coney status must match Coney's binding table (src/scripting/script_bindings.cpp).
       - if: runner.os == 'Linux'
-        run: uv run --project python coney-tools natives coney --check
+        run: uv run --project python coney-tools bindings sync-coney --check
       # The debug menus' C++ signature table (src/debug/native_signatures.cpp) must match research/bindings/.
       - if: runner.os == 'Linux'
-        run: uv run --project python coney-tools natives cpp --check
+        run: uv run --project python coney-tools bindings render-cpp --check
       # The game reference pages must match their lists (research/references/).
       - if: runner.os == 'Linux'
         run: uv run --project python coney-tools refs render --check
@@ -113,7 +113,7 @@ jobs:
         run: uv run --project python coney-tools research render --check
       # The PCSX2 recipes pages (docs/guides/pcsx2-recipes.md and its folder) must match research/pcsx2-recipes.toml, which must be valid.
       - if: runner.os == 'Linux'
-        run: uv run --project python coney-tools pcsx2 recipe render --check
+        run: uv run --project python coney-tools pcsx2 recipes render --check
 
   # The one required check for python: the matrix's OSes vary by change and a skipped matrix job reports its name
   # unexpanded, so "python (macos-15)" cannot be required. Passes when python passed or was skipped on purpose, fails

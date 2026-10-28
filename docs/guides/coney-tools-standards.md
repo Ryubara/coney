@@ -51,7 +51,7 @@ And the touch-it rule ([Touch a page, fix the page](writing-docs.md#touch-it), f
 * a ported function whose lines the change touches (a new file touches all of its functions) and whose status is not
   `compared` is reported with the address it ports: study it, pair it and have it reviewed, then set `compared`. Its
   tags count wherever they are written: above it, inside its body, or on its declaration in the header, matched
-  overload by overload as [`orig check`](coney-tools-fidelity.md#orig) matches them, so touching one overload owes
+  overload by overload as [`orig check-tags`](coney-tools-fidelity.md#orig) matches them, so touching one overload owes
   only its own address.
 
 **A comment's research link that follows a page move is no touch.** A hunk of a source or test file's diff that only
@@ -82,7 +82,7 @@ CI. The marks that are out of step say what to run (`coney-tools standards prune
 for a ported function with no status, record it `compared` after its comparison, since `standards mark` writes
 `legacy`, which the cutover refuses for anything new). The same check runs inside `docs check` whenever the change
 touches a source or test file, the function database, the legacy file, the conventions or these checks, so the `mkdocs`
-job of CI and the docs step of [`check changed`](coney-tools-build.md#check) hold it without a step of their own.
+job of CI and the docs step of [`ci run`](coney-tools-ci.md#ci-run) hold it without a step of their own.
 The group is `standards`, not `legacy`: that name is reserved for the retired review commands.
 
 `standards` is `standards_scan.py` (the scanners), `standards_file.py` (the legacy file), `standards_check.py`

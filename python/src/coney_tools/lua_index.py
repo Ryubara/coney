@@ -99,7 +99,7 @@ def _prototypes(proto: lua4.Proto, path: str) -> list[tuple[str, lua4.Proto]]:
 
 
 def index_script(name: str, data: bytes, natives: frozenset[str]) -> Script:
-    """The index of the chunk `data` named `name`, with `natives` the binding names."""
+    """The index of the chunk `data` named `name`, with `bindings` the binding names."""
     main = lua4.parse_chunk(data)
     facts = lua4.walk_chunk(main)
     names = _names(facts)

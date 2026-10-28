@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for `original fails-first`: a test red on the test commit and green on the fix commit, with a fake build."""
+"""Tests for `orig fails-first`: a test red on the test commit and green on the fix commit, with a fake build."""
 
 import ast
 import subprocess

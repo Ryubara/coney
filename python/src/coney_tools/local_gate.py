@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The pieces of `coney-tools check changed`: which files a change touched, and how the gate runs a program.
+"""The pieces of `coney-tools ci run`: which files a change touched, and how the gate runs a program.
 
 Everything here is a function of the repository and its arguments; `check_cli` runs the steps and prints them. There is
 no clang-tidy here: CI's per-pull-request job tidies the lines a pull request changes (`ci_tidy`).

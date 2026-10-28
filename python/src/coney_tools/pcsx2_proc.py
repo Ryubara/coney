@@ -716,7 +716,7 @@ def _key_lparam(vk: int, up: bool) -> int:
 def post_keys(hwnds: list[int], chords: list[list[int]], hold_ms: int, gap_ms: int) -> None:
     """Post key-down and key-up messages to windows by their handles: each chord goes down together, stays `hold_ms`
     (a 30 Hz game needs about 300), goes up, and `gap_ms` passes before the next. No window gains focus."""
-    _need_windows("pcsx2 keys")
+    _need_windows("pcsx2 send-keys")
     user = _user32()
     for chord in chords:
         for hwnd in hwnds:

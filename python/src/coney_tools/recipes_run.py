@@ -91,7 +91,7 @@ def bind_args(recipe: Recipe, args: Mapping[str, str]) -> dict[str, Any]:
 
 def check_patches(memory: Memory, names: Sequence[str], patches: Mapping[str, Patch], hooks: Mapping[str, Any]) -> None:
     """RecipeError unless the running game holds each named patch (its replacement words) and hook (a jump into the
-    hook caves). A patch goes into a state copy before PCSX2 starts (`pcsx2 prepare-state`), so a missing one means
+    hook caves). A patch goes into a state copy before PCSX2 starts (`pcsx2 states patch`), so a missing one means
     PCSX2 runs the wrong state."""
     for name in names:
         if name in patches:
@@ -103,7 +103,7 @@ def check_patches(memory: Memory, names: Sequence[str], patches: Mapping[str, Pa
                 if held != words:
                     raise RecipeError(
                         f"the running state lacks patch {name} at {edit.address:#010x}; make the state with "
-                        f"`coney-tools pcsx2 prepare-state SOURCE OUT --patch {name}` and launch that"
+                        f"`coney-tools pcsx2 states patch SOURCE OUT --patch {name}` and launch that"
                     )
         else:
             hook = hooks[name]
@@ -113,7 +113,7 @@ def check_patches(memory: Memory, names: Sequence[str], patches: Mapping[str, Pa
             if word >> 26 != 2 or not hook_tools.CAVE_BASE <= target < end:
                 raise RecipeError(
                     f"the running state lacks hook {name} at {hook.address:#010x}; make the state with "
-                    f"`coney-tools pcsx2 prepare-state SOURCE OUT --patch {name}` and launch that"
+                    f"`coney-tools pcsx2 states patch SOURCE OUT --patch {name}` and launch that"
                 )
 
 

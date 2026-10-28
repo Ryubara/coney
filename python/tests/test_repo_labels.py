@@ -38,12 +38,12 @@ def test_apply_runs_each_and_reports_failures() -> None:
 
 
 def test_repo_labels_command_prints_and_never_applies(capsys: pytest.CaptureFixture[str]) -> None:
-    assert main(["repo", "labels"]) == 0
+    assert main(["repo", "sync-labels"]) == 0
     lines = capsys.readouterr().out.splitlines()
     assert lines and all(line.startswith("gh label create ") and line.endswith("--force") for line in lines)
 
 
 def test_repo_labels_command_prints_every_label_of_the_conventions(capsys: pytest.CaptureFixture[str]) -> None:
-    assert main(["repo", "labels"]) == 0
+    assert main(["repo", "sync-labels"]) == 0
     printed = [shlex.split(line)[3] for line in capsys.readouterr().out.splitlines()]
     assert printed == [label.name for label in load_conventions(REPO).labels.list]

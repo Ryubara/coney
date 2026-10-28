@@ -1,5 +1,5 @@
 # Lights: a part of research/references/lights.yaml, which holds the list's prose and
-# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+# defaults. Written by `coney-tools refs refresh`, which keeps the hand-written fields.
 entries:
   - {id: "level105:1", level: level105, type: point, pos: [-5.82, -7.85, 1.65], dir: [0, 0, 0], rgba: [0.843, 0.945, 1, 1], swatch: D7F1FFFF, radius: 8, cone: 0, flicker: 0, flicker_params: [-0.4, 0.1, 1], group: 1, state: 1, script: level105}
   - {id: "level105:2", level: level105, type: point, pos: [12.29, -5.43, 1.8], dir: [0, 0, 0], rgba: [1, 0.843, 0.843, 1], swatch: FFD7D7FF, radius: 10, cone: 0, flicker: 0, flicker_params: [0, 0.5, 2.2], group: 1, state: 1, script: level105}

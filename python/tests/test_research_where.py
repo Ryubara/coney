@@ -264,7 +264,7 @@ def test_the_json_has_the_same_facts(index: research_where.Index) -> None:
 
 
 def test_the_study_lines_say_where_to_write(tmp_path: Path) -> None:
-    """What `original study` prints: a heading and the report indented."""
+    """What `orig study` prints: a heading and the report indented."""
     lines = research_where.study_lines(checkout(tmp_path), 0x100200)
     assert lines[0] == "research (coney-tools research where):"
     assert any(line.startswith("  owning page: docs/research/combat/grabs.md") for line in lines)

@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Numbers the statements of one original function's decompile and cuts them into pieces, the same way every time.
 
-This is the pure half of `coney-tools original study` (docs/guides/stamps.md#study): text in, numbered statements and
+This is the pure half of `coney-tools orig study` (docs/guides/stamps.md#study): text in, numbered statements and
 pieces out, no I/O. A *line* is a logical statement of the function body (a condition, an assignment, a call, a
 return, a label), numbered 1..N in text order; a *piece* is one anchor statement (a branch, loop, call, field write,
-constant or return) with the statements that only feed it, and a pair of `original compare` maps one piece to the
+constant or return) with the statements that only feed it, and a pair of `orig compare` maps one piece to the
 Coney code that does it.
 
 Numbering skips what carries no behaviour: the comments and signature before the body's opening brace, the block of

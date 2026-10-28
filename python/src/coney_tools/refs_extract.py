@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Read the facts of the game reference lists from the player's own disc (`coney-tools refs extract`).
+"""Read the facts of the game reference lists from the player's own disc (`coney-tools refs refresh`).
 
 Everything here reads the disc and keeps only names, ids and numbers: the configuration calls of the compiled
 scripts (`CfgChar`, `CfgGang`, `CfgObj` ...), the Character List of `warriors.glr`, the animation descriptors, two

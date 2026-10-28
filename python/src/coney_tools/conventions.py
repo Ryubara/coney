@@ -117,7 +117,7 @@ class Paths:
     #: The only files that may hold the repository's or the docs site's address.
     address_allowed_in: tuple[str, ...]
     large_file_kb: int
-    #: The folders of `src/` (`src/ai/`) whose functions carry `@orig` or `@coney-only` (`coney-tools orig check`).
+    #: The folders of `src/` (`src/ai/`) whose functions carry `@orig` or `@coney-only` (`coney-tools orig check-tags`).
     gameplay: tuple[str, ...]
     #: The folders of `src/` that are Coney's own by nature, whose functions need neither.
     coney_only: tuple[str, ...]
@@ -313,11 +313,12 @@ class AiUse:
 
 @dataclass(frozen=True)
 class Review:
-    """The release gate on the reviewer agent's description verdict (`coney-tools repo review`, `repo check-review`)."""
+    """The release gate on the reviewer agent's description verdict (`coney-tools legacy pr-review`, `legacy
+    check-pr-review`)."""
 
     #: The agent's name; its definition is `.claude/agents/<agent>.md`.
     agent: str
-    #: The verdict (JSON) the agent writes next to the description file; `repo check-review` reads it.
+    #: The verdict (JSON) the agent writes next to the description file; `legacy check-pr-review` reads it.
     verdict_file: str
     #: The readable report the agent writes beside the verdict.
     report_file: str
@@ -377,7 +378,7 @@ class Markers:
 
 @dataclass(frozen=True)
 class PullRequests:
-    """The rules for a pull request's description (`coney-tools repo check-body`) and its life."""
+    """The rules for a pull request's description (`coney-tools pr check-body`) and its life."""
 
     template: str
     #: The `##` headings the description must have, in the template's order.
@@ -556,7 +557,7 @@ class ReportIssue:
 
 @dataclass(frozen=True)
 class Comments:
-    """How the hygiene workflow comments on issues and pull requests (`coney-tools repo hygiene`)."""
+    """How the hygiene workflow comments on issues and pull requests (`coney-tools repo post-findings`)."""
 
     #: The word the workflow's comments start with, inside an HTML comment, so it finds its own comments again.
     marker: str
@@ -581,11 +582,11 @@ class Thresholds:
     needs_info_days: int
     in_progress_idle_days: int
     pull_request_idle_days: int
-    #: Hours a required check may stay queued or running before `repo pr-health` calls the pull request stuck in CI.
+    #: Hours a required check may stay queued or running before `pr list-stuck` calls the pull request stuck in CI.
     pr_pending_hours: int
 
 
-#: The causes `coney-tools repo pr-health` reports, in the order one pull request lists them.
+#: The causes `coney-tools pr list-stuck` reports, in the order one pull request lists them.
 PR_HEALTH_CAUSES = ("checks-failed", "conflict", "ci-stuck", "auto-merge-off")
 
 
@@ -630,13 +631,13 @@ class Attachments:
 
 @dataclass(frozen=True)
 class RerunRules:
-    """When `coney-tools repo pr-health --rerun` restarts a failed required check: only for a failure that is stale."""
+    """When `coney-tools pr list-stuck --rerun` restarts a failed required check: only for a failure that is stale."""
 
     #: Reruns of the checks of one workflow on one head commit, at most, so a flaky job cannot loop.
     max_per_sha: int
-    #: The required check that runs `repo check-title` on the pull request's title.
+    #: The required check that runs `pr check-title` on the pull request's title.
     title_check: str
-    #: The required check that runs `repo check-body` on the pull request's description.
+    #: The required check that runs `pr check-body` on the pull request's description.
     body_check: str
     #: Check conclusions that are never the code's fault (upper case, as GitHub writes them).
     conclusions: tuple[str, ...]
@@ -646,11 +647,11 @@ class RerunRules:
 
 @dataclass(frozen=True)
 class PrHealth:
-    """How `coney-tools repo pr-health` sorts failing checks, labels stuck pull requests and reruns stale checks."""
+    """How `coney-tools pr list-stuck` sorts failing checks, labels stuck pull requests and reruns stale checks."""
 
     #: Required checks whose failure is a lint failure (the author fixes the text); any other required check is code.
     lint_checks: tuple[str, ...]
-    #: Cause to the label `repo pr-health --labels` puts on an open pull request with that cause and takes off when it
+    #: Cause to the label `pr list-stuck --labels` puts on an open pull request with that cause and takes off when it
     #: is gone (`conflict` to `S-conflict`); a label of the list, and no other label is ever touched.
     labels: Mapping[str, str]
     #: How many times `--labels` rereads GitHub while it still answers `UNKNOWN` for a pull request's mergeability
@@ -698,7 +699,7 @@ class Hygiene:
 
 @dataclass(frozen=True)
 class Clips:
-    """The in-game video clips' rules (`coney-tools clips`, `pcsx2 clip`)."""
+    """The in-game video clips' rules (`coney-tools clips`, `clips record`)."""
 
     #: The folder name the clips of a task live in: `<scratch>/<task>/<folder>/`.
     folder: str
@@ -706,7 +707,7 @@ class Clips:
     max_seconds: int
     #: A clip bigger than this many megabytes is reported.
     warn_mb: int
-    #: `clips clean` deletes clips older than this many hours.
+    #: `clips clean --apply` deletes clips older than this many hours (without `--apply` it lists them).
     keep_hours: int
 
 
@@ -739,7 +740,7 @@ class Workspace:
 class PairRules:
     """What a pairs file (`mapping/<addr>.toml`) may hold (docs/guides/stamps.md#pairs)."""
 
-    #: The kinds of a pair: the kinds of the anchor statements `original study` cuts pieces from.
+    #: The kinds of a pair: the kinds of the anchor statements `orig study` cuts pieces from.
     kinds: tuple[str, ...]
     #: How a piece of the original relates to Coney's code.
     relations: tuple[str, ...]
@@ -2538,7 +2539,7 @@ def _read_hygiene(data: object, where: str) -> Hygiene:
     labels_where = _at(health_where, "labels")
     cause_labels = _mapping(health["labels"], labels_where)
     for cause, label in cause_labels.items():
-        _names_in([cause], PR_HEALTH_CAUSES, labels_where, "a cause of repo pr-health")
+        _names_in([cause], PR_HEALTH_CAUSES, labels_where, "a cause of pr list-stuck")
         _text(label, _at(labels_where, cause))
     if len(set(cause_labels.values())) != len(cause_labels):
         raise _fail(labels_where, "a label is used for two causes")

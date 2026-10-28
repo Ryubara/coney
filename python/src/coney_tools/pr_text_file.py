@@ -9,7 +9,7 @@ stale and it is done again. They are of normalised text (a leading BOM dropped, 
 cut), so an editor or a checkout that changes line endings does not.
 
 This module only reads: the rules about what the file may hold are `pull_requests` in `.github/conventions.yml`, run by
-`repo check-title` and `repo check-body`.
+`pr check-title` and `pr check-body`.
 """
 
 from __future__ import annotations

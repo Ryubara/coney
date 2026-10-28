@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""`coney-tools orig`: the `@orig` index and the fidelity audit's queue (docs/guides/coney-tools-fidelity.md#orig)."""
+"""`coney-tools orig`: the `@orig` index and checks, the fidelity audit's queue, and the stage commands that study and
+compare an original function (registered by original_cli; docs/guides/coney-tools-fidelity.md#orig)."""
 
 from __future__ import annotations
 
@@ -16,6 +17,7 @@ from coney_tools import (
     orig_queue,
     orig_report,
     orig_review,
+    original_cli,
     progress,
     progress_research,
 )
@@ -27,8 +29,10 @@ INDEX_FILES = ("index.tsv", "untagged.tsv", "report.md", "research-gaps.md")
 
 
 def add_parser(groups: Any) -> None:
-    """Register `coney-tools orig index`, `orig queue` and `orig check`."""
-    group = groups.add_parser("orig", help="the @orig index of src/ and the fidelity audit's queue")
+    """Register `coney-tools orig ...`: the index, checks and queue here, the stage commands from original_cli."""
+    group = groups.add_parser(
+        "orig", help="study and compare original functions; the @orig index, checks and the fidelity audit's queue"
+    )
     commands = group.add_subparsers(dest="command", required=True)
     index = commands.add_parser(
         "index",
@@ -43,8 +47,8 @@ def add_parser(groups: Any) -> None:
     )
     _common(index)
     check = commands.add_parser(
-        "check",
-        help="refuse a new gameplay function with neither @orig nor @coney-only (check changed and CI run it)",
+        "check-tags",
+        help="refuse a new gameplay function with neither @orig nor @coney-only (ci run and CI run it)",
         description=(
             "Fails when a function defined in a paths.gameplay folder of .github/conventions.yml since HEAD left "
             "BASE has no @orig tag and no @coney-only marker and is not exempt (a one-statement member defined in "
@@ -54,7 +58,7 @@ def add_parser(groups: Any) -> None:
     )
     check.add_argument("--base", default="origin/main", help="what the change is measured from (default: %(default)s)")
     copy = commands.add_parser(
-        "copy-check",
+        "check-copy",
         help="refuse decompiler fingerprints (iVar1, param_1, undefined4, *(T *)(x + 0x10), goto) in changed C++ lines",
         description=(
             "Fails when a line of a C++ file under src/ added since HEAD left BASE carries what Ghidra's output looks "
@@ -66,7 +70,7 @@ def add_parser(groups: Any) -> None:
     copy.add_argument("--base", default="origin/main", help="what the change is measured from (default: %(default)s)")
     copy.add_argument("--all", action="store_true", help="check every line of src/, not only the changed ones")
     queue = commands.add_parser(
-        "queue",
+        "legacy-queue",
         help="rank the functions to audit first: open bug issues, Ghidra problems, weak research, untagged code",
         description=(
             "Everything `orig index` writes, plus queue.md and queue.tsv: the original functions Coney tags and the "
@@ -114,7 +118,7 @@ def add_parser(groups: Any) -> None:
     gate.add_argument("--cwd", help="the folder the release runs in")
     _ledger_option(gate)
     record = commands.add_parser(
-        "record",
+        "record-findings",
         help="record a sweep's FINDINGS.tsv files in the review ledger and print the ledger's counts",
         description=(
             "Reads each FINDINGS.tsv (addr, orig_name, coney_function, file:line, class, evidence, note; "
@@ -125,6 +129,7 @@ def add_parser(groups: Any) -> None:
     record.add_argument("findings", type=Path, nargs="*", help="FINDINGS.tsv files")
     record.add_argument("--ref", default="HEAD", help="the commit the findings were made at (default: %(default)s)")
     _ledger_option(record)
+    original_cli.add_commands(commands)
 
 
 def _ledger_option(parser: argparse.ArgumentParser) -> None:
@@ -219,7 +224,7 @@ def _ledger(root: Path, args: argparse.Namespace) -> orig_review.Ledger:
 
 
 def _review_command(args: argparse.Namespace) -> int:
-    """Run `orig review-stamp`, `orig check-review` or `orig record`."""
+    """Run `orig review-stamp`, `orig check-review` or `orig record-findings`."""
     root = find_repo_root(Path.cwd())
     if args.command == "check-review":
         try:
@@ -243,20 +248,22 @@ def _review_command(args: argparse.Namespace) -> int:
         return 0
     added, unmatched = orig_review.import_findings(root, ledger, args.findings, args.ref) if args.findings else (0, [])
     for line in unmatched:
-        print(f"orig record: no @orig function matches {line}")
+        print(f"orig record-findings: no @orig function matches {line}")
     counts = orig_review.summary(ledger, orig_review.units_at(root, "HEAD"))
-    print(f"orig record: {added} new entries in {ledger.path}")
-    print("orig record: at HEAD " + ", ".join(f"{name} {count}" for name, count in counts.items()))
+    print(f"orig record-findings: {added} new entries in {ledger.path}")
+    print("orig record-findings: at HEAD " + ", ".join(f"{name} {count}" for name, count in counts.items()))
     return 0
 
 
 def run(args: argparse.Namespace, fetch: orig_ghidra.Fetch | None = None) -> int:
-    """Run `orig index`, `orig queue` or `orig check`."""
-    if args.command == "check":
+    """Run an `orig` command."""
+    if args.command in original_cli.COMMANDS:
+        return original_cli.run(args)
+    if args.command == "check-tags":
         return orig_check.run(args.base)
-    if args.command == "copy-check":
+    if args.command == "check-copy":
         return orig_copy.run(args.base, args.all)
-    if args.command in ("review-stamp", "check-review", "record"):
+    if args.command in ("review-stamp", "check-review", "record-findings"):
         return _review_command(args)
     root = find_repo_root(Path.cwd())
     result = collect(root, args.ghidra, args.url, fetch)
@@ -264,7 +271,7 @@ def run(args: argparse.Namespace, fetch: orig_ghidra.Fetch | None = None) -> int
     for line in orig_report.summary_lines(result):
         print(f"orig: {line}")
     written = [*INDEX_FILES, *(["callees.tsv"] if result.callees else [])]
-    if args.command == "queue":
+    if args.command == "legacy-queue":
         issues = orig_queue.load_issues_file(args.issues) if args.issues else orig_queue.fetch_issues(args.label)
         ledger = _ledger(root, args)
         reviews = orig_review.address_status(ledger, orig_review.units_now(root))

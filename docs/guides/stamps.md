@@ -10,9 +10,9 @@ ended with a result on a commit, covering exact hashes. Stamps are not signed, a
 folder, never committed. For a function ported from the original the proof is a **study** (the original function
 saved, its lines numbered and cut into pieces) and a **pairs file** (each piece joined to the Coney code that does
 it). This page defines the formats and what each command checks. The commands are in
-[the coney-tools reference](coney-tools-fidelity.md#original); the verdict a reviewer gives on the pairs is
-[Orig review](review/orig.md). The names of the commands are placeholders for a renaming pass: a name changes in one
-parser entry and in this page.
+[the coney-tools reference](coney-tools-fidelity.md#orig-stages); the verdict a reviewer gives on the pairs is
+[Orig review](review/orig.md). The stage commands are `orig study`, `orig compare` and `orig fails-first`; their
+first names (`original ...`) still work until the cutover ([Renamed commands](coney-tools.md#renamed)).
 
 ## The stamp log {#log}
 
@@ -22,7 +22,7 @@ One stamp is one line of canonical JSON (UTF-8, sorted keys, no spaces, no float
 {"commit":"<40 hex>","covers":{"cut_sha256":"..","decompile_sha256":".."},"detail":{"statements":9},
  "prev":"<64 hex>","result":"pass","seq":4,"step":"studied","subject":"0x00501000","task":"fight-resume",
  "time":"2026-10-22T14:03:11Z","v":1,"who":{"agent":{"id":"..","model":"..","type":"engineer"},
- "kind":"tool","source":"hook","tool":"coney-tools original study"}}
+ "kind":"tool","source":"hook","tool":"coney-tools orig study"}}
 ```
 
 | Field | Meaning |
@@ -173,7 +173,7 @@ with the stamps.
 
 ## Study {#study}
 
-`coney-tools original study <addr>` reads one original function and saves what the comparison needs.
+`coney-tools orig study <addr>` reads one original function and saves what the comparison needs.
 
 * **How it reaches Ghidra.** It talks HTTP to the ghidra-mcp server (`127.0.0.1:8090`, `--url` to change it) with the
   same client `orig index` uses, reading endpoints only: the program (it must be `SLUS_212.15`), the function (its
@@ -185,8 +185,8 @@ with the stamps.
   the saved callers, callees and globals, and the function's name, program and signature, against the newest `studied`
   stamp of the address in the verified log, not against `study.json` (which sits beside them and could be edited with
   them), and refuses when there is no such stamp or any hash differs (a stamp made before `identity_sha256` was added
-  is refused as predating the identity check, and is made again with `original study`): an edited text is fetched
-  from Ghidra again with `original study`, never stamped.
+  is refused as predating the identity check, and is made again with `orig study`): an edited text is fetched
+  from Ghidra again with `orig study`, never stamped.
 * **What is saved**, in `study/<addr>/` of the scratch folder: `decompile.c` (newlines normalised; its hash is the
   stamp's), `numbered.txt` (a reading copy: each statement's number and its piece), `callers.json`, `callees.json`,
   `globals.json` and `study.json` (hashes and the cut). The decompile is text from the game: it stays in scratch and is
@@ -202,8 +202,8 @@ with the stamps.
   globals are unchanged and the text's *skeleton* is the same: comments and strings blanked and each name replaced by
   the number of its first appearance. A rename in Ghidra is one-to-one, so it keeps the skeleton (*renamed*); swapped
   operands, another variable, global or callee in a place, an operator, a number or the structure do not (*stale*).
-  `original verify <addr>` says which. Any restudy that is not *unchanged*, a rename included, makes the pairs file
-  stale, since its header binds the decompile's hash: `original compare --carry` brings it forward, and the study
+  `orig verify <addr>` says which. Any restudy that is not *unchanged*, a rename included, makes the pairs file
+  stale, since its header binds the decompile's hash: `orig compare --carry` brings it forward, and the study
   says so. A study refuses to run on a log that is not intact,
   before it saves anything.
 
@@ -302,7 +302,7 @@ merge_reason = ""          # needed when lines cover more than one piece
 
 ## Compare {#compare}
 
-`coney-tools original compare <addr>` is run again and again while the pairs are filled in:
+`coney-tools orig compare <addr>` is run again and again while the pairs are filled in:
 
 1. The first run needs a current `studied` stamp (one that covers the saved study's name, program and signature too,
    so a study from before `identity_sha256` is studied again) and a Coney function carrying `@orig <addr>` (several:
@@ -313,7 +313,7 @@ merge_reason = ""          # needed when lines cover more than one piece
       line); several pieces in one pair are adjacent and have a `merge_reason`;
     * **each pair complete** by its relation, as in the table above, with real Coney locations;
     * **the Coney file is committed** (the stamp is bound to the commit), and
-    * **`orig copy-check` is clean** on that file ([orig](coney-tools-fidelity.md#orig)): automatic names, `undefined`
+    * **`orig check-copy` is clean** on that file ([orig](coney-tools-fidelity.md#orig)): automatic names, `undefined`
       types, raw byte-offset reads and `goto` are refused.
 3. When all of it holds it appends the `compared` stamp, covering the decompile, Ghidra's function hash, the cut, the
    pairs file's hash (line endings normalised) and the Coney function's body hash ([its code without comments or white
@@ -351,14 +351,14 @@ pieces is kept; with another shape the line numbers mean other statements, so no
 are listed.
 
 The reviewer ([Orig review](review/orig.md)) answers each pair: condition, value, effect and order the same, or the
-stand-in true. The tool part of that check is that the decompile still matches Ghidra (`original verify`), the cut and
+stand-in true. The tool part of that check is that the decompile still matches Ghidra (`orig verify`), the cut and
 the pairs file hash agree with the stamp, and the Coney body is unchanged. A comment or white space edit is not a
 change of the body; a stamp made when the hash still covered them is read by rehashing the function at the stamp's
 commit, so it keeps covering an unchanged function ([The body hash](coney-tools-fidelity.md#body-hash)).
 
 ## Fails first {#fails-first}
 
-`coney-tools original fails-first --test NAME --test-commit SHA [--fix-commit SHA] --agent ID` proves a test detects the
+`coney-tools orig fails-first --test NAME --test-commit SHA [--fix-commit SHA] --agent ID` proves a test detects the
 problem. The test is written from the study and committed first; it must fail; the fix is committed; it must pass. The
 command checks out the test commit in the unit's worktree and runs `coney-tools build --test -R <names>` (the only way
 C++ tests run), does the same on the fix commit (default HEAD), then puts the branch back.

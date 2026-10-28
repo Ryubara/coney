@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""`coney-tools repo pr-health --rerun`: restart the required checks that failed for a reason that no longer holds.
+"""`coney-tools pr list-stuck --rerun`: restart the required checks that failed for a reason that no longer holds.
 
 A required check of an open pull request is rerun only when its failure is stale, never when the code is at fault:
 
-1. the `title` or `body` check failed but the pull request's current title or description passes `repo check-title` or
-   `repo check-body` (the text was fixed after the run);
+1. the `title` or `body` check failed but the pull request's current title or description passes `pr check-title` or
+   `pr check-body` (the text was fixed after the run);
 2. the check concluded `cancelled`, `startup_failure` or `timed_out`, or its log shows the runner or GitHub failed
    (a pattern of `hygiene.pr_health.rerun.log_patterns`).
 

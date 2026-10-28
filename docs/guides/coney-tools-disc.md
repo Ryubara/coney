@@ -1,6 +1,6 @@
 # The coney-tools disc commands
 
-The commands that read **your own disc**: [`wad`](#info) (`info`, `list`, `names`, `extract`, `scenes`),
+The commands that read **your own disc**: [`wad`](#info) (`info`, `list`, `recover-names`, `extract`, `scene-info`),
 [`extract`](#extract), [`audio`](#audio), [`movies`](#movies) and [`xbox`](#xbox). `wad` reads the game's archive,
 `WARRIORS.DIR` and `WARRIORS.WAD`; `extract` turns every asset into open formats; `audio` reads the sound data,
 `movies` the movies' headers and `xbox` the Xbox disc's archive. Everything is read in place and streamed, so the
@@ -13,7 +13,7 @@ The commands that read **your own disc**: [`wad`](#info) (`info`, `list`, `names
 Every `wad` command takes the disc as an optional first argument, `DISC`:
 
 * a **folder**: a mounted disc (`H:\` on Windows, `/mnt/disc` on Linux) or any folder that holds `WARRIORS.DIR`,
-  `WARRIORS.WAD` and, for `names`, `SLUS_212.15`;
+  `WARRIORS.WAD` and, for `recover-names`, `SLUS_212.15`;
 * an **`.iso` image** (ISO 9660, 2048-byte sectors). Coney reads it with its own small reader.
 
 Without `DISC`, the tools use `game_dir` from your `coney.local.toml` (see
@@ -21,8 +21,8 @@ Without `DISC`, the tools use `game_dir` from your `coney.local.toml` (see
 
 ## wad {#wad}
 
-The `wad` group reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`: `wad info`, `wad list`, `wad names`,
-[`wad extract`](#wad-extract) and [`wad scenes`](#scenes) follow, each taking the disc as
+The `wad` group reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`: `wad info`, `wad list`, `wad
+recover-names`, [`wad extract`](#wad-extract) and [`wad scene-info`](#scenes) follow, each taking the disc as
 [named above](#naming-the-disc).
 
 ## info
@@ -42,10 +42,10 @@ uv run --project python coney-tools wad list /path/to/WARRIORS.iso --names ../..
 
 One line per entry: index, offset, size, the hash as 8 hex digits and the name when the names file knows it.
 
-## names
+## recover-names
 
 ```sh
-uv run --project python coney-tools wad names [DISC] ../../scratch/names.txt
+uv run --project python coney-tools wad recover-names [DISC] ../../scratch/names.txt
 ```
 
 Recovers names: it takes file-name-like strings from `SLUS_212.15` and from every WAD entry, hashes each as
@@ -64,14 +64,14 @@ Writes entries into the output folder. A file is named by its recovered name, ot
 takes entry hashes (8 hex digits) or names (`global.lua`), and without it every entry is written, about 1.4 GB.
 
 !!! warning "Game data stays out of the checkout"
-    `extract` and `names` refuse an output path inside the repository, because extracted files are game data and
+    `extract` and `recover-names` refuse an output path inside the repository, because extracted files are game data and
     must never be committed ([LEGAL.md](repo:LEGAL.md#no-game-data)). Use a
     folder beside the checkout, such as `../../scratch/`.
 
-## scenes {#scenes}
+## scene-info {#scenes}
 
 ```sh
-uv run --project python coney-tools wad scenes [DISC]
+uv run --project python coney-tools wad scene-info [DISC]
 ```
 
 Parses every record `scene_list.cnk` lists (scene headers and the segments of long scenes) with the layout on
@@ -96,7 +96,7 @@ coney-tools wad info [DISC] [--names NAMES]
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `[DISC]` | text | none | a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml |
-| `--names NAMES` | path | none | a names file, one name per line (made by `wad names`) |
+| `--names NAMES` | path | none | a names file, one name per line (made by `wad recover-names`) |
 
 ### `wad list` {#wad-list-usage}
 
@@ -109,7 +109,7 @@ coney-tools wad list [DISC] [--names NAMES]
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `[DISC]` | text | none | a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml |
-| `--names NAMES` | path | none | a names file, one name per line (made by `wad names`) |
+| `--names NAMES` | path | none | a names file, one name per line (made by `wad recover-names`) |
 
 ### `wad extract` {#wad-extract-usage}
 
@@ -122,27 +122,27 @@ coney-tools wad extract [DISC] OUT_DIR [[DISC] OUT_DIR ...] [--names NAMES] [--o
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `[DISC] OUT_DIR [[DISC] OUT_DIR ...]` | text | required | [DISC] (a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml) and OUT_DIR |
-| `--names NAMES` | path | none | a names file, one name per line (made by `wad names`) |
+| `--names NAMES` | path | none | a names file, one name per line (made by `wad recover-names`) |
 | `--only HASH_OR_NAME [HASH_OR_NAME ...]` | text | none | extract just these entries |
 
-### `wad names` {#wad-names-usage}
+### `wad recover-names` {#wad-recover-names-usage}
 
 Recover names by hashing strings found on the disc.
 
 ```text
-coney-tools wad names [DISC] OUT_FILE [[DISC] OUT_FILE ...]
+coney-tools wad recover-names [DISC] OUT_FILE [[DISC] OUT_FILE ...]
 ```
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `[DISC] OUT_FILE [[DISC] OUT_FILE ...]` | text | required | [DISC] (a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml) and OUT_FILE |
 
-### `wad scenes` {#wad-scenes-usage}
+### `wad scene-info` {#wad-scene-info-usage}
 
 Parse every scene record of scene_list.cnk; counts and hashes.
 
 ```text
-coney-tools wad scenes [DISC]
+coney-tools wad scene-info [DISC]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -153,7 +153,7 @@ coney-tools wad scenes [DISC]
 ## extract: every asset in open formats {#extract}
 
 ```sh
-uv run --project python coney-tools extract [DISC] OUT_DIR [--only TYPE ...] [--verify] [--jobs N] [--xbox XBOX_DISC [--xbox-index FILE] [--xbox-texture-map FILE]]
+uv run --project python coney-tools extract [DISC] OUT_DIR [--only TYPE ...] [--verify] [--jobs N] [--xbox-disc XBOX_DISC [--xbox-index FILE] [--xbox-texture-map FILE]]
 ```
 
 Reads your disc once and writes every asset into `OUT_DIR` (outside the repository, like `wad extract`): the
@@ -185,16 +185,16 @@ about 15 minutes and writes about 11 GB, most of it WAV and scene JSON. Models, 
 any viewer opens, textured from `textures/`; coordinates keep the axes the game stores. Which formats are decoded
 and which are still raw: [Asset inventory](../research/formats/inventory.md).
 
-`--xbox XBOX_DISC` adds your Xbox disc (a full image, an XISO or an extracted folder) as the preferred source: the PS2
-disc is still read whole, then each texture and movie the Xbox has a better version of is replaced in place, at the same
-path, and its `index.json` record says `"source": "xbox"` (with the PS2 size kept). A texture is replaced when its Xbox
-match (same picture by colour and structure) is larger; a movie by its 1280 × 720 `_hd` version when that is as long.
-Everything else stays the PS2 disc's. The rules and the numbers: [Xbox assets](../research/xbox-assets.md#asset-kinds).
-The Xbox disc adds about half an hour (matching the world textures) and its `default.xbe` SHA-1 goes into
-`manifest.json`. Finding the Xbox resources takes a pass over its 1.7 GB archive; `--xbox-index FILE` keeps the result
-(the file `xbox index` writes): it is read when it was made from this disc and otherwise made and written there.
-`--xbox-texture-map FILE` also writes which Xbox texture replaced which PS2 one, for a reader of the disc formats
-([layout](../research/xbox-assets.md#texture-map)).
+`--xbox-disc XBOX_DISC` adds your Xbox disc (a full image, an XISO or an extracted folder) as the preferred source: the
+PS2 disc is still read whole, then each texture and movie the Xbox has a better version of is replaced in place, at the
+same path, and its `index.json` record says `"source": "xbox"` (with the PS2 size kept). A texture is replaced when its
+Xbox match (same picture by colour and structure) is larger; a movie by its 1280 × 720 `_hd` version when that is as
+long. Everything else stays the PS2 disc's. The rules and the numbers: [Xbox
+assets](../research/xbox-assets.md#asset-kinds). The Xbox disc adds about half an hour (matching the world textures) and
+its `default.xbe` SHA-1 goes into `manifest.json`. Finding the Xbox resources takes a pass over its 1.7 GB archive;
+`--xbox-index FILE` keeps the result (the file `xbox write-resource-index` writes): it is read when it was made from
+this disc and otherwise made and written there. `--xbox-texture-map FILE` also writes which Xbox texture replaced which
+PS2 one, for a reader of the disc formats ([layout](../research/xbox-assets.md#texture-map)).
 
 <!-- command-reference:begin extract -->
 ## Parameters of `extract` {#extract-parameters}
@@ -205,7 +205,7 @@ Extract every asset of your disc to open formats in OUT_DIR (outside the reposit
 
 ```text
 coney-tools extract [DISC] OUT_DIR [[DISC] OUT_DIR ...] [--only TYPE [TYPE ...]] [--verify] [--jobs N]
-    [--xbox XBOX_DISC] [--xbox-index FILE] [--xbox-texture-map FILE]
+    [--xbox-disc XBOX_DISC] [--xbox-index FILE] [--xbox-texture-map FILE]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -214,8 +214,8 @@ coney-tools extract [DISC] OUT_DIR [[DISC] OUT_DIR ...] [--only TYPE [TYPE ...]]
 | `--only TYPE [TYPE ...]` | choice | none | just these types: disc, movies, audio, scripts, textures, models, animations, levels, worlds, scenes, data, index, raw. One of `disc`, `movies`, `audio`, `scripts`, `textures`, `models`, `animations`, `levels`, `worlds`, `scenes`, `data`, `index`, `raw`. |
 | `--verify` | flag | off | compare the file counts with the expected ones |
 | `--jobs N` | integer | none | worker processes for decoding audio (default: up to 4) |
-| `--xbox XBOX_DISC` | path | none | your Xbox disc (image, XISO or folder): its larger textures and HD movies replace the PS2 ones |
-| `--xbox-index FILE` | path | none | the Xbox resource index (`xbox index`): read when it fits the disc, else built and written there |
+| `--xbox-disc XBOX_DISC` | path | none | your Xbox disc (image, XISO or folder): its larger textures and HD movies replace the PS2 ones |
+| `--xbox-index FILE` | path | none | the Xbox resource index (`xbox write-resource-index`): read when it fits the disc, else built and written there |
 | `--xbox-texture-map FILE` | path | none | also write the Xbox texture map there: which Xbox texture replaced which PS2 one (needs textures) |
 <!-- command-reference:end -->
 
@@ -322,56 +322,56 @@ so the survey on that page can be repeated. `DISC` is required and is one of:
 * a **full disc image** (Redump style, 7.8 GB): the game partition is found by its `MICROSOFT*XBOX*MEDIA` volume
   descriptor at byte `0x18300000` (XGD1) or `0x1FB20000` (XGD2);
 * an **XISO**, an image of just the game partition;
-* an **extracted folder** holding `XBoxWad.idx`, the `*.wad<N>` volumes and, for `names`, `default.xbe`.
+* an **extracted folder** holding `XBoxWad.idx`, the `*.wad<N>` volumes and, for `match-names`, `default.xbe`.
 
 The file system (XDVDFS) is read with Coney's own small reader and every file is streamed. Problems print one line
 and exit with code 2, as for `wad`.
 
 | Command | What it prints |
 | --- | --- |
-| `xbox files DISC` | Every file with its size, then the file, folder and byte totals |
+| `xbox disc-files DISC` | Every file with its size, then the file, folder and byte totals |
 | `xbox info DISC [--names FILE]` | The entry count, entries and bytes per volume, entries and bytes per kind (pack, texture dictionary, model, scene record, streamed world, ...) and how many entries a names file resolves |
 | `xbox list DISC [--names FILE]` | One line per entry: index, volume, offset, size, hash, and the name when known |
-| `xbox names DISC OUT_FILE [--candidates FILE ...]` | Matches names against the index and writes them, one path below `ee_files\` per line; prints how many entries stay unnamed, by kind |
+| `xbox match-names DISC OUT_FILE [--candidates FILE ...]` | Matches names against the index and writes them, one path below `ee_files\` per line; prints how many entries stay unnamed, by kind |
 | `xbox extract DISC OUT_DIR [--names FILE] [--only HASH_OR_NAME ...]` | Writes entries as files: a named one under its path (`paks/global.pak`), the rest as `<hash>.bin` |
-| `xbox resources DISC [--ps2 PS2_DISC]` | The resource index: packs, resources, chunks, distinct `(resource hash, chunk type)` keys, and the graphics chunks by their first two words; with `--ps2`, how many of the PS2's texture, model, animation and character resource hashes the Xbox has |
-| `xbox index DISC OUT_FILE` | Writes the resource index, `xbox-resources.bin` (where each resource's chunks lie in the volumes; [layout](../research/xbox-assets.md#resource-index)); prints its record count, size and SHA-256 |
-| `xbox texture-map PS2_DISC DISC OUT_FILE [--xbox-index FILE]` | Matches every PS2 texture as `extract --xbox` does (into a temporary folder, deleted after) and writes the texture map, `xbox-textures.bin`; prints its record count and SHA-256. About 25 minutes |
-| `xbox textures DISC [--ps2 PS2_DISC]` | Texture chunks by format (DXT1, DXT2/3, DXT4/5), mip count and size; with `--ps2`, the texture resources both discs share and how many hold the same number of textures |
+| `xbox resource-info DISC [--ps2 PS2_DISC]` | The resource index: packs, resources, chunks, distinct `(resource hash, chunk type)` keys, and the graphics chunks by their first two words; with `--ps2`, how many of the PS2's texture, model, animation and character resource hashes the Xbox has |
+| `xbox write-resource-index DISC OUT_FILE` | Writes the resource index, `xbox-resources.bin` (where each resource's chunks lie in the volumes; [layout](../research/xbox-assets.md#resource-index)); prints its record count, size and SHA-256 |
+| `xbox write-texture-map PS2_DISC DISC OUT_FILE [--xbox-index FILE]` | Matches every PS2 texture as `extract --xbox` does (into a temporary folder, deleted after) and writes the texture map, `xbox-textures.bin`; prints its record count and SHA-256. About 25 minutes |
+| `xbox texture-info DISC [--ps2 PS2_DISC]` | Texture chunks by format (DXT1, DXT2/3, DXT4/5), mip count and size; with `--ps2`, the texture resources both discs share and how many hold the same number of textures |
 
-A names file has one name per line and the tools take the **last word** of each line, so the output of `wad names`,
-`xbox names`, `wad list` and `xbox list` all work. A bare name (`global.pak`, as from the PS2) is tried in each of the
-Xbox folders `ee_files\`, `ee_files\paks\` and `ee_files\anims\`; a name with a folder as given.
+A names file has one name per line and the tools take the **last word** of each line, so the output of `wad
+recover-names`, `xbox match-names`, `wad list` and `xbox list` all work. A bare name (`global.pak`, as from the PS2) is
+tried in each of the Xbox folders `ee_files\`, `ee_files\paks\` and `ee_files\anims\`; a name with a folder as given.
 
-`names` keeps every name from `--candidates` and every scene record's own name (plus `.scn`) that matches. It also
+`match-names` keeps every name from `--candidates` and every scene record's own name (plus `.scn`) that matches. It also
 guesses: `level<N>.lev`, every file-name-like string in `default.xbe` and in the Lua and text entries, and every
 identifier there plus `.lev`. A guess is kept only when its extension fits the kind of the entry it matches (`.lev`
 on a level, `.pak` on a pack, ...), which rejects chance matches. With the PS2 names as candidates it gives the
 4,038 names on the research page:
 
 ```sh
-uv run --project python coney-tools wad names PS2_DISC ../../scratch/names.txt
-uv run --project python coney-tools xbox names XBOX_DISC ../../scratch/xbox-names.txt --candidates ../../scratch/names.txt
+uv run --project python coney-tools wad recover-names PS2_DISC ../../scratch/names.txt
+uv run --project python coney-tools xbox match-names XBOX_DISC ../../scratch/xbox-names.txt --candidates ../../scratch/names.txt
 ```
 
-`--ps2` takes the PS2 disc as the `wad` commands do and reads its `WARRIORS.WAD`. `resources`, `index` and
-`textures` read the whole Xbox archive (1.7 GB) and, with `--ps2`, the whole PS2 one.
+`--ps2` takes the PS2 disc as the `wad` commands do and reads its `WARRIORS.WAD`. `resource-info`,
+`write-resource-index` and `texture-info` read the whole Xbox archive (1.7 GB) and, with `--ps2`, the whole PS2 one.
 
 !!! warning "Game data stays out of the checkout"
-    `xbox extract`, `xbox names`, `xbox index` and `xbox texture-map` refuse an output path inside the repository, as
-    `wad extract` and `wad names` do.
+    `xbox extract`, `xbox match-names`, `xbox write-resource-index` and `xbox write-texture-map` refuse an output path
+    inside the repository, as `wad extract` and `wad recover-names` do.
 
 <!-- command-reference:begin xbox -->
 ## Parameters of `xbox` {#xbox-parameters}
 
 Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
 
-### `xbox files` {#xbox-files-usage}
+### `xbox disc-files` {#xbox-disc-files-usage}
 
 Every file on the disc with its size.
 
 ```text
-coney-tools xbox files DISC
+coney-tools xbox disc-files DISC
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -389,7 +389,7 @@ coney-tools xbox info DISC [--names NAMES]
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `DISC` | text | required | the Xbox disc: a full image, an XISO or an extracted folder |
-| `--names NAMES` | path | none | a names file, one name per line (made by `xbox names`, or a PS2 names file) |
+| `--names NAMES` | path | none | a names file, one name per line (made by `xbox match-names`, or a PS2 names file) |
 
 ### `xbox list` {#xbox-list-usage}
 
@@ -402,14 +402,14 @@ coney-tools xbox list DISC [--names NAMES]
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `DISC` | text | required | the Xbox disc: a full image, an XISO or an extracted folder |
-| `--names NAMES` | path | none | a names file, one name per line (made by `xbox names`, or a PS2 names file) |
+| `--names NAMES` | path | none | a names file, one name per line (made by `xbox match-names`, or a PS2 names file) |
 
-### `xbox names` {#xbox-names-usage}
+### `xbox match-names` {#xbox-match-names-usage}
 
 Match candidate names against the index; write the matches.
 
 ```text
-coney-tools xbox names DISC OUT_FILE [--candidates FILE [FILE ...]]
+coney-tools xbox match-names DISC OUT_FILE [--candidates FILE [FILE ...]]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -430,15 +430,15 @@ coney-tools xbox extract DISC OUT_DIR [--names NAMES] [--only HASH_OR_NAME [HASH
 | --- | --- | --- | --- |
 | `DISC` | text | required | the Xbox disc: a full image, an XISO or an extracted folder |
 | `OUT_DIR` | path | required | the folder to write to |
-| `--names NAMES` | path | none | a names file, one name per line (made by `xbox names`, or a PS2 names file) |
+| `--names NAMES` | path | none | a names file, one name per line (made by `xbox match-names`, or a PS2 names file) |
 | `--only HASH_OR_NAME [HASH_OR_NAME ...]` | text | none | extract just these entries |
 
-### `xbox resources` {#xbox-resources-usage}
+### `xbox resource-info` {#xbox-resource-info-usage}
 
 The resource index: counts and graphics-chunk kinds.
 
 ```text
-coney-tools xbox resources DISC [--ps2 PS2_DISC]
+coney-tools xbox resource-info DISC [--ps2 PS2_DISC]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -446,12 +446,12 @@ coney-tools xbox resources DISC [--ps2 PS2_DISC]
 | `DISC` | text | required | the Xbox disc: a full image, an XISO or an extracted folder |
 | `--ps2 PS2_DISC` | text | none | also compare with the PS2 disc (a folder or .iso, as for the wad commands) |
 
-### `xbox index` {#xbox-index-usage}
+### `xbox write-resource-index` {#xbox-write-resource-index-usage}
 
 Write the resource index (xbox-resources.bin) to OUT_FILE.
 
 ```text
-coney-tools xbox index DISC OUT_FILE
+coney-tools xbox write-resource-index DISC OUT_FILE
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -459,12 +459,12 @@ coney-tools xbox index DISC OUT_FILE
 | `DISC` | text | required | the Xbox disc: a full image, an XISO or an extracted folder |
 | `OUT_FILE` | path | required | where to write it (outside the repository) |
 
-### `xbox texture-map` {#xbox-texture-map-usage}
+### `xbox write-texture-map` {#xbox-write-texture-map-usage}
 
 Match every PS2 texture and write the texture map (xbox-textures.bin) to OUT_FILE.
 
 ```text
-coney-tools xbox texture-map PS2_DISC DISC OUT_FILE [--xbox-index FILE]
+coney-tools xbox write-texture-map PS2_DISC DISC OUT_FILE [--xbox-index FILE]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -474,12 +474,12 @@ coney-tools xbox texture-map PS2_DISC DISC OUT_FILE [--xbox-index FILE]
 | `OUT_FILE` | path | required | where to write it (outside the repository) |
 | `--xbox-index FILE` | path | none | the resource index, as for extract |
 
-### `xbox textures` {#xbox-textures-usage}
+### `xbox texture-info` {#xbox-texture-info-usage}
 
 Texture chunk counts by format, mip count and size.
 
 ```text
-coney-tools xbox textures DISC [--ps2 PS2_DISC]
+coney-tools xbox texture-info DISC [--ps2 PS2_DISC]
 ```
 
 | Parameter | Type | Default | Meaning |

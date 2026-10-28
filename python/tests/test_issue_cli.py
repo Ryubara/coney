@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for coney_tools.issue_cli (`issue draft`, `check`, `create`, `edit`, `link`) and the `issue.form` audit rule.
+"""Tests for coney_tools.issue_cli (`issue template`, `check`, `create`, `edit`, `set-parent`) and the `issue.form`
+audit rule.
 
 `gh` is a recording fake, so nothing reaches the network; the files on main are a made-up tree.
 """
@@ -76,14 +77,14 @@ def write(tmp_path: Path, text: str) -> str:
 
 
 def test_draft_prints_the_task_form_by_default_and_the_bug_form_on_request(capsys: CaptureFixture[str]) -> None:
-    assert cli.main(["issue", "draft"]) == 0
+    assert cli.main(["issue", "template"]) == 0
     assert "### Fix list or steps" in capsys.readouterr().out
-    assert cli.main(["issue", "draft", "bug"]) == 0
+    assert cli.main(["issue", "template", "bug"]) == 0
     assert "### Steps to reproduce" in capsys.readouterr().out
 
 
 def test_draft_of_an_unknown_form_is_a_usage_error(capsys: CaptureFixture[str]) -> None:
-    assert cli.main(["issue", "draft", "epic"]) == 2
+    assert cli.main(["issue", "template", "epic"]) == 2
     assert "no form 'epic'" in capsys.readouterr().err
 
 
@@ -219,7 +220,7 @@ def test_create_reports_a_gh_failure_and_a_failed_link(tmp_path: Path, capsys: C
     linked = parse("create", "--title", TITLE, "--body", write(tmp_path, GOOD), "--offline", "--parent", "334")
     assert issue_cli.run_create(linked, FakeGh(fail_on="api repos/{owner}/{repo}/issues/401")) == 1
     err = capsys.readouterr().err
-    assert "the issue exists" in err and "coney-tools issue link 401 --parent 334" in err
+    assert "the issue exists" in err and "coney-tools issue set-parent 401 --parent 334" in err
 
 
 def test_create_with_attachments_accepts_a_local_screenshot(tmp_path: Path) -> None:
@@ -282,18 +283,18 @@ def test_edit_without_a_title_and_without_gh_asks_for_one(tmp_path: Path) -> Non
         issue_cli.run_edit(parse("edit", "340", "--body", write(tmp_path, GOOD), "--offline"), broken)
 
 
-def test_link_makes_one_issue_a_sub_issue_of_another(capsys: CaptureFixture[str]) -> None:
+def test_set_parent_makes_one_issue_a_sub_issue_of_another(capsys: CaptureFixture[str]) -> None:
     gh = FakeGh()
-    assert issue_cli.run_link(parse("link", "401", "--parent", "334"), gh) == 0
+    assert issue_cli.run_link(parse("set-parent", "401", "--parent", "334"), gh) == 0
     assert gh.calls[-1][-2:] == ["-F", "sub_issue_id=9001"]
     dry = FakeGh()
-    assert issue_cli.run_link(parse("link", "401", "--parent", "334", "--dry-run"), dry) == 0
+    assert issue_cli.run_link(parse("set-parent", "401", "--parent", "334", "--dry-run"), dry) == 0
     assert dry.calls == [] and "dry run" in capsys.readouterr().out
     with pytest.raises(ConfigError, match="its own parent"):
-        issue_cli.run_link(parse("link", "5", "--parent", "5"), gh)
+        issue_cli.run_link(parse("set-parent", "5", "--parent", "5"), gh)
     assert (
         issue_cli.run_link(
-            parse("link", "401", "--parent", "334"), FakeGh(fail_on="api repos/{owner}/{repo}/issues/401")
+            parse("set-parent", "401", "--parent", "334"), FakeGh(fail_on="api repos/{owner}/{repo}/issues/401")
         )
         == 1
     )

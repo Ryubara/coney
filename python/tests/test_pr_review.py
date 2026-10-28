@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for coney_tools.pr_review: the description hash, the review stamp, `repo check-review` and `repo review`.
+"""Tests for coney_tools.pr_review: the description hash, the review stamp, `legacy check-pr-review` and
+`legacy pr-review`.
 
 Synthetic fixtures only: a made-up description file, made-up image bytes, a fake branch tip and a fake `claude`
 launcher, all under pytest's temporary folder.
@@ -283,17 +284,17 @@ def test_check_review_exits_0_when_current_and_1_when_stale(
     write_verdict(pr)
     monkeypatch.chdir(REPO)
     monkeypatch.setattr(pr_review, "git_head", head)
-    assert main(["repo", "check-review", str(pr), "--worktree", str(tmp_path)]) == 0
+    assert main(["legacy", "check-pr-review", str(pr), "--worktree", str(tmp_path)]) == 0
     assert "review: ok" in capsys.readouterr().out
     pr.write_text(BODY + "\nmore\n", encoding="utf-8")
-    assert main(["repo", "check-review", str(pr), "--worktree", str(tmp_path)]) == 1
+    assert main(["legacy", "check-pr-review", str(pr), "--worktree", str(tmp_path)]) == 1
     assert "review refused" in capsys.readouterr().out
 
 
 def test_check_review_exits_2_for_a_missing_description(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(REPO)
     monkeypatch.setattr(pr_review, "git_head", head)
-    assert main(["repo", "check-review", str(tmp_path / "PR.md"), "--worktree", str(tmp_path)]) == 2
+    assert main(["legacy", "check-pr-review", str(tmp_path / "PR.md"), "--worktree", str(tmp_path)]) == 2
 
 
 # --- the title and body checks check-review also runs -----------------------------------------------------------------
@@ -362,7 +363,7 @@ def test_check_review_exits_1_for_a_description_missing_a_section(
     write_verdict(pr)
     monkeypatch.chdir(REPO)
     monkeypatch.setattr(pr_review, "git_head", head)
-    assert main(["repo", "check-review", str(pr), "--worktree", str(tmp_path)]) == 1
+    assert main(["legacy", "check-pr-review", str(pr), "--worktree", str(tmp_path)]) == 1
     assert "body:" in capsys.readouterr().out
 
 
@@ -424,7 +425,7 @@ def test_review_stamp_gives_the_same_reasons_as_check_review(
     monkeypatch.chdir(REPO)
     assert main(stamp_argv(pr, tmp_path)) == 1
     stamp_lines = {line.strip() for line in capsys.readouterr().err.splitlines()}
-    assert main(["repo", "check-review", str(pr), "--worktree", str(tmp_path)]) == 1
+    assert main(["legacy", "check-pr-review", str(pr), "--worktree", str(tmp_path)]) == 1
     review_lines = {line.strip() for line in capsys.readouterr().out.splitlines()}
     reasons = {line for line in review_lines if line.startswith(("title:", "body:"))}
     assert reasons and reasons <= stamp_lines
@@ -551,7 +552,7 @@ def test_review_command_line_uses_the_injected_launcher(tmp_path: Path, monkeypa
     monkeypatch.chdir(REPO)
     monkeypatch.setattr(pr_review, "launch_claude", claude)
     monkeypatch.setattr(pr_review, "git_head", head)
-    assert main(["repo", "review", str(pr), "--worktree", str(tmp_path), "--model", "opus"]) == 0
+    assert main(["legacy", "pr-review", str(pr), "--worktree", str(tmp_path), "--model", "opus"]) == 0
     command, _cwd = claude.calls[0]
     assert command[command.index("--model") + 1] == "opus"
 
@@ -628,7 +629,7 @@ def test_check_review_on_the_command_line_reads_the_trailers_of_a_real_branch(
     monkeypatch.chdir(REPO)
     monkeypatch.setattr(pr_review, "git_head", head)
     monkeypatch.setattr(pr_review, "branch_trailer_models", REAL_BRANCH_MODELS)
-    argv = ["repo", "check-review", str(pr), "--worktree", str(repo), "--base", "main~1"]
+    argv = ["legacy", "check-pr-review", str(pr), "--worktree", str(repo), "--base", "main~1"]
     assert main(argv) == 1
     assert "Claude Opus 5.5" in capsys.readouterr().out
     pr.write_text(BODY.replace("Claude Sonnet 5.5", "Claude Opus 5.5"), encoding="utf-8")
@@ -649,5 +650,5 @@ def test_check_review_exits_2_when_the_base_cannot_be_found(
     monkeypatch.chdir(REPO)
     monkeypatch.setattr(pr_review, "git_head", head)
     monkeypatch.setattr(pr_review, "branch_trailer_models", REAL_BRANCH_MODELS)
-    assert main(["repo", "check-review", str(pr), "--worktree", str(repo)]) == 2
+    assert main(["legacy", "check-pr-review", str(pr), "--worktree", str(repo)]) == 2
     assert "origin/main" in capsys.readouterr().err

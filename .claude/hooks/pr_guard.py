@@ -37,8 +37,8 @@ from pr_guard_shell import PrCall, is_absolute, native, parse, pr_calls  # noqa:
 CHECK_TIMEOUT = 90
 HOW = (
     'Open a pull request with `gh pr create --title "<title>" --body-file <file>` from a description that passes '
-    "`uv run --project python coney-tools repo check-title` and `repo check-body --title ... --body <file>` (or "
-    "`repo check-review`), the checks CI's required `title` and `body` jobs run "
+    "`uv run --project python coney-tools pr check-title` and `pr check-body --title ... --body <file>` (or "
+    "`legacy check-pr-review`), the checks CI's required `title` and `body` jobs run "
     "(docs/guides/how-we-work.md#release-queue)."
 )
 #: What a refusal says while the switch is on; the reasons follow. It points at the `pr open` section of the release
@@ -127,7 +127,7 @@ def problems(call: PrCall, runner: Runner) -> list[str]:
     found: list[str] = []
     title = call.title if call.title is not None and "$" not in call.title else None
     if title is not None:
-        code, out = runner(["repo", "check-title", "-"], title + "\n")
+        code, out = runner(["pr", "check-title", "-"], title + "\n")
         if _refused(code, out):
             found.append(out)
     if call.body_file is None or "$" in call.body_file or "%" in call.body_file:
@@ -138,7 +138,7 @@ def problems(call: PrCall, runner: Runner) -> list[str]:
             return found
         path = Path(call.cwd) / path
     if path.is_file():
-        args = ["repo", "check-body", "--body", str(path)]
+        args = ["pr", "check-body", "--body", str(path)]
         if title is not None:
             args += ["--title", title]
         if call.attach:

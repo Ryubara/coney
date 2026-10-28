@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for `coney-tools repo pr-health --labels`: made-up pull requests and a fake `gh`, no network."""
+"""Tests for `coney-tools pr list-stuck --labels`: made-up pull requests and a fake `gh`, no network."""
 
 import argparse
 import json
@@ -191,7 +191,7 @@ def command(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, gh: FakeGh, *flags:
     parser = argparse.ArgumentParser()
     pr_health.add_pr_health_parser(parser.add_subparsers(dest="command"))
     slept: list[float] = []
-    code = pr_health.run_pr_health(parser.parse_args(["pr-health", *flags]), gh, NOW, slept.append)
+    code = pr_health.run_pr_health(parser.parse_args(["list-stuck", *flags]), gh, NOW, slept.append)
     return code, slept
 
 
@@ -225,7 +225,7 @@ def test_apply_writes_the_changes_and_says_so(
 def test_without_labels_the_command_reads_only() -> None:
     parser = argparse.ArgumentParser()
     pr_health.add_pr_health_parser(parser.add_subparsers(dest="command"))
-    args = parser.parse_args(["pr-health"])
+    args = parser.parse_args(["list-stuck"])
     assert args.labels is False and args.apply is False
 
 

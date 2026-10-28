@@ -2,14 +2,14 @@
 """In-game video clips for issues and pull requests: where they may live, what they may hold, and their upload.
 
 A clip shows the game's own picture only: Coney's frames, read back from its own frame buffer (`coney --record`), or
-the original's, from PCSX2's own capture of its GS output (`coney-tools pcsx2 clip`). Nothing in the tools grabs the
+the original's, from PCSX2's own capture of its GS output (`coney-tools clips record`). Nothing in the tools grabs the
 screen or a window: `run_ffmpeg`, the one way the tools start FFmpeg, refuses any capture device as an input
 (`refuse_screen_capture`). The rules (docs/guides/testing.md#clips), each enforced here:
 
 * a clip lives only in `<scratch>/<task>/clips/` and never inside a git checkout (`check_clip_path`);
 * it is at most `workspace.clips.max_seconds` long and carries no metadata (`clip_problems`, from ffprobe);
-* it is uploaded only by `clips publish`, which deletes it once gh reports the upload done, and `clips clean` deletes
-  what is left after `workspace.clips.keep_hours`.
+* it is uploaded only by `clips publish`, which deletes it once gh reports the upload done, and `clips clean --apply`
+  deletes what is left after `workspace.clips.keep_hours` (without `--apply` it only lists it).
 
 The limits are keys of `.github/conventions.yml` (`workspace.clips`), never constants here.
 """
@@ -425,8 +425,8 @@ def stale_clips(scratch: Path, rules: Clips, older_than_hours: float, now: float
 
 
 def run_clean(older_than_hours: float | None, dry_run: bool, cwd: Path | None = None, now: float | None = None) -> int:
-    """`clips clean`: delete the clips (and leftovers of a recording) older than `older_than_hours` (default
-    `workspace.clips.keep_hours`) from every task's clips folder in the scratch area."""
+    """`clips clean`: list the clips (and leftovers of a recording) older than `older_than_hours` (default
+    `workspace.clips.keep_hours`) in every task's clips folder in the scratch area, and delete them unless `dry_run`."""
     rules = clip_rules(cwd)
     hours = rules.keep_hours if older_than_hours is None else older_than_hours
     scratch = scratch_root(cwd)

@@ -9,8 +9,8 @@
 # size cap and a timeout), carries no token, stays in memory and is never stored, run or quoted in a comment.
 #
 # The comments never edit an issue's title, body, labels or state, and delete nothing. The one write beyond comments
-# (the maintainer approved it on 2026-10-12): on every push to the default branch, and in the sweep, `coney-tools repo
-# pr-health --labels --apply` puts `S-conflict` on each open pull request that conflicts with the default branch and
+# (the maintainer approved it on 2026-10-12): on every push to the default branch, and in the sweep, `coney-tools pr
+# list-stuck --labels --apply` puts `S-conflict` on each open pull request that conflicts with the default branch and
 # `S-failing` on each that fails a required check, and takes the label off when that is fixed (`hygiene.pr_health` of
 # the conventions; those two labels only, never another). GitHub works out whether a pull request conflicts only when
 # asked, so a push to main is the moment the answer changes. It is not a required check (it is not in
@@ -79,14 +79,14 @@ jobs:
           case "$EVENT_NAME" in
             issues | pull_request_target)
               [[ "$NUMBER" =~ ^[0-9]+$ ]] || { echo "unexpected item number" >&2; exit 1; }
-              uv run --project python coney-tools repo hygiene --event "$NUMBER" --apply
+              uv run --project python coney-tools repo post-findings --event "$NUMBER" --apply
               ;;
             push)
               # Exit code 1 means "a pull request is stuck", which is the report, not a failure of this run.
-              uv run --project python coney-tools repo pr-health --labels --apply || [ "$?" -eq 1 ]
+              uv run --project python coney-tools pr list-stuck --labels --apply || [ "$?" -eq 1 ]
               ;;
             *)
-              uv run --project python coney-tools repo hygiene --sweep --apply
-              uv run --project python coney-tools repo pr-health --labels --apply || [ "$?" -eq 1 ]
+              uv run --project python coney-tools repo post-findings --sweep --apply
+              uv run --project python coney-tools pr list-stuck --labels --apply || [ "$?" -eq 1 ]
               ;;
           esac

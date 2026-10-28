@@ -1,11 +1,11 @@
 # The coney-tools fidelity and research commands
 
-The commands behind legacy fidelity and the research pages: [`orig`](#orig) indexes the `@orig` tags,
-[`original`](#original) studies an original function and compares it with Coney's, [`stamp`](#stamp) verifies a unit's
-stamp log, [`research`](#research) keeps the function database and reports the claims a branch changed on the
-research pages, and [`lua`](#lua) decompiles the game's compiled scripts, a research aid. The other groups are listed in
-[the command line overview](coney-tools.md#groups); `standards`, which marks what is below today's standards and
-holds a touched file to them, has [its own page](coney-tools-standards.md).
+The commands behind legacy fidelity and the research pages: [`orig`](#orig) studies an original function and
+compares it with Coney's ([the stage commands](#orig-stages)) and indexes and checks the `@orig` tags, [`stamp`](#stamp)
+verifies a unit's stamp log, [`research`](#research) keeps the function database and reports the claims a branch changed
+on the research pages, and [`lua`](#lua) decompiles the game's compiled scripts, a research aid. The other groups are
+listed in [the command line overview](coney-tools.md#groups); `standards`, which marks what is below today's standards
+and holds a touched file to them, has [its own page](coney-tools-standards.md).
 
 ## orig {#orig}
 
@@ -16,7 +16,7 @@ open issues through `gh`.
 
 ```sh
 uv run --project python coney-tools orig index --out <folder> [--ghidra auto|live|listing|off] [--url URL]
-uv run --project python coney-tools orig queue --out <folder> [--issues FILE] [--label bug] [--show N] [--ghidra ...]
+uv run --project python coney-tools orig legacy-queue --out <folder> [--issues FILE] [--label bug] [--show N] [--ghidra ...]
 ```
 
 `orig index` reads every `@orig` tag in `src/` and writes to `<folder>` (use your scratch folder):
@@ -42,7 +42,7 @@ uv run --project python coney-tools orig queue --out <folder> [--issues FILE] [-
 
 The Ghidra check (`--ghidra`, default `auto`) uses a running ghidra-mcp ([Ghidra + ghidra-mcp](ghidra.md)) when one
 answers on `--url`, else the committed listing `docs/progress/ghidra-functions.tsv`, which is as current as its last
-`progress ghidra` export and gives no callees. Each tag gets one of: `no-function` (Ghidra has no function there),
+`ghidra export-names` export and gives no callees. Each tag gets one of: `no-function` (Ghidra has no function there),
 `not-a-start` (the address is inside another function), `names-differ` (they share fewer than half the shorter
 name's words: the tag may name the wrong function), `renamed` (half or more, usually a rename in Ghidra since the tag was
 written) or `unnamed` (Ghidra still has its default `FUN_` name). Names agree when they are equal without case and
@@ -50,9 +50,9 @@ punctuation, so `DVDWadIndex::Find` matches `DVDWadIndex_Find`, and a binding's 
 full live run asks the server about each of the 2,400 tagged functions twice (the function, its callees), one request
 at a time; on the development machine it took about 11 seconds.
 
-`orig queue` writes the same files and the sweep's queue, `queue.md` (a table per `src/` directory, then the first
-`--show` entries) and `queue.tsv` (every entry). An entry is an original function with each Coney place that tags it,
-or an untagged function; its score adds up its reasons (`orig_queue.WEIGHTS`):
+`orig legacy-queue` writes the same files and the sweep's queue, `queue.md` (a table per `src/` directory, then the
+first `--show` entries) and `queue.tsv` (every entry). An entry is an original function with each Coney place that tags
+it, or an untagged function; its score adds up its reasons (`orig_queue.WEIGHTS`):
 
 * an open issue with `--label` (default `bug`) that names it (its address, its original or Coney name), its file or
   a research section it links, weighted by the issue's priority label; the area labels of the issues add at most
@@ -68,7 +68,7 @@ issue numbers, never the original's code; they change with every pull request th
 regenerated when needed and never committed.
 
 ```sh
-uv run --project python coney-tools orig check [--base origin/main]
+uv run --project python coney-tools orig check-tags [--base origin/main]
 ```
 
 Refuses a function that a change adds to a gameplay folder with neither `@orig` nor `@coney-only <reason>`, and a
@@ -83,10 +83,10 @@ exempt accessor into more than one statement fails.
 The older wording ("Coney's own", "(no @orig)") marks only functions that had it at `--base`; a new function needs
 `@coney-only <reason>`. The functions that said neither before the check existed are the sweep's backlog in
 `untagged.tsv`. Each finding names the file, line and function and what to add; exit code 1 when there is one.
-`check changed` runs it as its `orig` step and CI's `python` job runs it with `--base HEAD^1`.
+`ci run` runs it as its `orig` step and CI's `python` job runs it with `--base HEAD^1`.
 
 ```sh
-uv run --project python coney-tools orig copy-check [--base origin/main] [--all]
+uv run --project python coney-tools orig check-copy [--base origin/main] [--all]
 ```
 
 This check refuses decompiler fingerprints in the C++ lines a change adds under `src/`, since HEAD left `--base`,
@@ -102,7 +102,7 @@ It finds these fingerprints:
 * `goto`.
 
 A line with `// copy-check: allow <reason>` passes. Each finding names the file, the line, the text and what to do,
-and the exit code is 1 when there is one. `check changed` runs it in its `orig` step, and CI's `python` job runs it
+and the exit code is 1 when there is one. `ci run` runs it in its `orig` step, and CI's `python` job runs it
 with `--base HEAD^1`. On 2026-10-21 `--all` found none in `src/`. The check cannot see a transcription's shape; the
 reviewer agent judges that.
 
@@ -110,7 +110,7 @@ reviewer agent judges that.
 uv run --project python coney-tools orig review-stamp (--branch B | --worktree WT) [--base origin/main] [--ledger F]
 uv run --project python coney-tools orig review-stamp (--folder src/x/ | --address 0x...)... [--ref HEAD] [--every]
 uv run --project python coney-tools orig check-review --body PR.md [--head B] [--base B] [--cwd DIR] [--ledger F]
-uv run --project python coney-tools orig record [FINDINGS.tsv ...] [--ref COMMIT] [--ledger F]
+uv run --project python coney-tools orig record-findings [FINDINGS.tsv ...] [--ref COMMIT] [--ledger F]
 ```
 
 These commands feed the orig review, which compares `@orig` functions with the original
@@ -134,12 +134,12 @@ the working tree.
     * The exit code is 0 for a pass (which is recorded in the ledger), 1 for a refusal with the reasons, and 2 when
       the branch cannot be found.
     * The release step calls `orig_review.gate` (or `check_verdict_file`, which writes nothing).
-* `record` adds the rows of sweep `FINDINGS.tsv` files ([Sweep findings](review/orig.md#findings)) to the ledger.
-  Each row is matched by address and Coney name to the units at `--ref`, the commit the sweep read; rows that match
-  nothing are printed. It then prints how many units at HEAD are unreviewed, stale, or in each class.
+* `record-findings` adds the rows of sweep `FINDINGS.tsv` files ([Sweep findings](review/orig.md#findings)) to the
+  ledger. Each row is matched by address and Coney name to the units at `--ref`, the commit the sweep read; rows that
+  match nothing are printed. It then prints how many units at HEAD are unreviewed, stale, or in each class.
 
 The ledger is `pull_requests.orig_review.ledger` under the workspace's scratch folder (`orig-review/ledger.jsonl`).
-It is one JSON object per review and is never committed. `orig queue` reads it:
+It is one JSON object per review and is never committed. `orig legacy-queue` reads it:
 
 * an address whose units were all reviewed `clean` or `diff-deliberate-ok` at their current bodies leaves the queue;
 * an unreviewed one gains 3 points, and a stale one 5;
@@ -154,7 +154,7 @@ all read this one hash, `orig_review.code_text` and `_body_hash`).
 * **Left out:** every comment (`//` to the end of the line, also over a trailing backslash, and `/* ... */` across any
   number of lines) and all white space: indentation, trailing blanks, line breaks, the spacing around an operator.
   Repointing a research link in a comment, rewording one, or re-wrapping a line is not a change of the function, and
-  neither `task review` nor `pr verify` asks for a new `original compare` for it.
+  neither `task review` nor `pr verify` asks for a new `orig compare` for it.
 * **Kept:** every token. A string, a raw string and a character literal are read whole before any comment is looked
   for, so a `//` or `/*` inside one is code and editing it changes the hash; so does a space inside a literal. A
   single space stays where its absence would join two tokens (`return x`, `a + +b` against `a ++b`), because there
@@ -167,13 +167,60 @@ rehashing, not migrated, so none is invalidated when the hash changes and no sta
 * A `compared` stamp whose `coney_body_sha256` is not the hash now is checked against the function's code at the
   stamp's own `commit`: it stands when that hash is the old-style hash of the function at that commit and the new-style
   hash of the function there equals the one now. So an unchanged function keeps its stamp, a comment edit after the
-  stamp keeps it too, and any edit of the code refuses it ("no current `compared` stamp") until `original compare` is
+  stamp keeps it too, and any edit of the code refuses it ("no current `compared` stamp") until `orig compare` is
   run again. A stamp whose commit is gone from the repository (a garbage-collected branch) cannot be rehashed and is
-  refused the same way; run `original compare` again.
+  refused the same way; run `orig compare` again.
 * A ledger entry made under the old hash counts while the function's lines are exactly as they were then. After any
   edit it is stale, as before, and the function is reviewed again.
 * An `ORIG-REVIEW.json` verdict is not rehashed: it lives as long as its branch, and one written before this change is
   refused as "reviewed at another body"; the reviewer writes it again from `review-stamp`.
+
+### orig study, compare, verify and fails-first {#orig-stages}
+
+The commands of the study-and-compare stage ([Stamps, studies and pairs](stamps.md)). Each writes into the task's
+folder in the scratch folder (the task is `--task`, else `CONEY_TASK`, else the branch) and appends a stamp when its
+step ends. Exit codes: 0 done, 1 refused (the output says what to fix), 2 it cannot start, 3 no ghidra-mcp answers.
+
+```sh
+uv run --project python coney-tools orig study ADDR [--task T] [--url URL] [--recut] [--print]
+uv run --project python coney-tools orig verify ADDR [--task T] [--url URL]
+uv run --project python coney-tools orig compare ADDR [--task T] [--base REF] [--coney-function KEY] [--carry] [--show]
+uv run --project python coney-tools orig fails-first --test NAME [--test NAME ...] --test-commit SHA [--fix-commit SHA] [--preset P] --agent ID
+uv run --project python coney-tools orig fails-first --none REASON
+```
+
+* `study` reads the function at ADDR from the running ghidra-mcp (reading endpoints only), saves the decompile, callers,
+  callees and globals in scratch (never committed), numbers the statements, cuts the pieces and appends `studied`. It
+  writes nothing when Ghidra is down. It ends with the lines of `research where` for the address (the owning page, the
+  function database entry, the pages that cite it), or one line saying the lookup is not available.
+  [Details](stamps.md#study), [the lookup](research-where.md#study)
+* `verify` re-reads the function and says whether the saved study is `fresh`, `renamed` (a one-to-one rename only) or
+  `stale`; it exits 1 when stale.
+* `compare` writes `mapping/<addr>.toml` with a blank pair per piece on its first run; later runs show the decompile beside
+  the Coney function, check the pairs, the committed Coney file and `orig check-copy`, and append `compared` when all of
+  it holds. A refusal writes no stamp. [Details](stamps.md#compare)
+* `fails-first` runs the named tests through `build --test -R` on the test commit (they must fail) and the fix commit (they
+  must pass) and appends a `fails-first` stamp per test. [Details](stamps.md#fails-first)
+
+Every option:
+
+| Command | Option | What it does |
+| --- | --- | --- |
+| all four | `--task T` | The task whose scratch folder and stamp log are used (default: `CONEY_TASK`, else the branch) |
+| `study`, `verify`, `compare` | `ADDR` | The original function's entry point, such as `0x00230d00` (another address is refused, naming the start) |
+| `study`, `verify` | `--url URL` | The ghidra-mcp server (default `http://127.0.0.1:8090`) |
+| `study` | `--recut` | Cut the saved decompile again without Ghidra; refused unless the saved files and the function's name, program and signature match the newest `studied` stamp |
+| `study` | `--print` | Also print the numbered decompile |
+| `compare` | `--base REF` | What the copy check measures the Coney change from (default `origin/main`) |
+| `compare` | `--coney-function KEY` | Which Coney function to compare, when several carry `@orig ADDR` |
+| `compare` | `--carry` | Bring the pairs forward onto a changed or renamed study |
+| `compare` | `--show` | Print the side-by-side view |
+| `fails-first` | `--test NAME` | A whole test name as ctest lists it, found as `TEST_CASE("NAME"` in the test commit's files (adjacent literals are joined, comments between them dropped, escapes unescaped; a `SECTION` name or any other quoted string is refused; repeatable) |
+| `fails-first` | `--test-commit SHA` | The commit that adds the test, and only the stubs it needs to compile |
+| `fails-first` | `--fix-commit SHA` | The commit that makes it pass (default `HEAD`) |
+| `fails-first` | `--preset P` | The CMake preset the tests are built with (default `dev`) |
+| `fails-first` | `--agent ID` | Your id for the build slots, as `build --agent` |
+| `fails-first` | `--none REASON` | Run nothing and stamp that the task has no such test (one line, at most 200 characters, not with `--test`) |
 
 <!-- command-reference:begin orig -->
 ## Parameters of `orig` {#orig-parameters}
@@ -194,24 +241,24 @@ coney-tools orig index --out OUT [--ghidra GHIDRA] [--url URL]
 | `--ghidra GHIDRA` | choice | `auto` | check the tags against a running ghidra-mcp (live), the committed listing docs/progress/ghidra-functions.tsv (listing), the first that is there (auto, the default), or not at all. One of `auto`, `live`, `listing`, `off`. |
 | `--url URL` | text | `http://127.0.0.1:8090` | the ghidra-mcp server (default: `http://127.0.0.1:8090`) |
 
-### `orig check` {#orig-check-usage}
+### `orig check-tags` {#orig-check-tags-usage}
 
-Refuse a new gameplay function with neither @orig nor @coney-only (check changed and CI run it).
+Refuse a new gameplay function with neither @orig nor @coney-only (ci run and CI run it).
 
 ```text
-coney-tools orig check [--base BASE]
+coney-tools orig check-tags [--base BASE]
 ```
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `--base BASE` | text | `origin/main` | what the change is measured from (default: origin/main) |
 
-### `orig copy-check` {#orig-copy-check-usage}
+### `orig check-copy` {#orig-check-copy-usage}
 
 Refuse decompiler fingerprints (iVar1, param_1, undefined4, \*(T \*)(x + 0x10), goto) in changed C++ lines.
 
 ```text
-coney-tools orig copy-check [--base BASE] [--all]
+coney-tools orig check-copy [--base BASE] [--all]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -219,12 +266,12 @@ coney-tools orig copy-check [--base BASE] [--all]
 | `--base BASE` | text | `origin/main` | what the change is measured from (default: origin/main) |
 | `--all` | flag | off | check every line of src/, not only the changed ones |
 
-### `orig queue` {#orig-queue-usage}
+### `orig legacy-queue` {#orig-legacy-queue-usage}
 
 Rank the functions to audit first: open bug issues, Ghidra problems, weak research, untagged code.
 
 ```text
-coney-tools orig queue --out OUT [--ghidra GHIDRA] [--url URL] [--issues ISSUES] [--label LABEL] [--show SHOW]
+coney-tools orig legacy-queue --out OUT [--ghidra GHIDRA] [--url URL] [--issues ISSUES] [--label LABEL] [--show SHOW]
     [--ledger LEDGER]
 ```
 
@@ -276,12 +323,12 @@ coney-tools orig check-review --body BODY [--head HEAD] [--base BASE] [--cwd CWD
 | `--cwd CWD` | text | none | the folder the release runs in |
 | `--ledger LEDGER` | path | none | the review ledger (default: pull_requests.orig_review.ledger in the scratch folder) |
 
-### `orig record` {#orig-record-usage}
+### `orig record-findings` {#orig-record-findings-usage}
 
 Record a sweep's FINDINGS.tsv files in the review ledger and print the ledger's counts.
 
 ```text
-coney-tools orig record [FINDINGS ...] [--ref REF] [--ledger LEDGER]
+coney-tools orig record-findings [FINDINGS ...] [--ref REF] [--ledger LEDGER]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -289,6 +336,72 @@ coney-tools orig record [FINDINGS ...] [--ref REF] [--ledger LEDGER]
 | `[FINDINGS ...]` | path | none | FINDINGS.tsv files |
 | `--ref REF` | text | `HEAD` | the commit the findings were made at (default: HEAD) |
 | `--ledger LEDGER` | path | none | the review ledger (default: pull_requests.orig_review.ledger in the scratch folder) |
+
+### `orig study` {#orig-study-usage}
+
+Save an original function's decompile and neighbours from Ghidra, number its lines, cut its pieces.
+
+```text
+coney-tools orig study ADDRESS [--task TASK] [--url URL] [--recut] [--print]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `ADDRESS` | text | required | the function's address, such as 0x00230d00 |
+| `--task TASK` | text | none | the task (default: CONEY_TASK, else the branch) |
+| `--url URL` | text | `http://127.0.0.1:8090` | the ghidra-mcp server (default: `http://127.0.0.1:8090`) |
+| `--recut` | flag | off | re-cut the saved decompile without Ghidra (the files, name, program and signature must match the newest studied stamp) |
+| `--print` | flag | off | also print the numbered decompile |
+
+### `orig compare` {#orig-compare-usage}
+
+Show the decompile beside the Coney function, check its pairs and stamp `compared`.
+
+```text
+coney-tools orig compare ADDRESS [--task TASK] [--base BASE] [--coney-function CONEY_FUNCTION] [--carry] [--show]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `ADDRESS` | text | required | the function's address, such as 0x00230d00 |
+| `--task TASK` | text | none | the task (default: CONEY_TASK, else the branch) |
+| `--base BASE` | text | `origin/main` | what the copy check measures from (default: origin/main) |
+| `--coney-function CONEY_FUNCTION` | text | none | the unit key, when several Coney functions carry the address |
+| `--carry` | flag | off | bring the pairs forward onto a changed or renamed study |
+| `--show` | flag | off | print the side-by-side view |
+
+### `orig verify` {#orig-verify-usage}
+
+Whether a saved study still matches Ghidra: fresh, renamed or stale.
+
+```text
+coney-tools orig verify ADDRESS [--task TASK] [--url URL]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `ADDRESS` | text | required | the function's address, such as 0x00230d00 |
+| `--task TASK` | text | none | the task (default: CONEY_TASK, else the branch) |
+| `--url URL` | text | `http://127.0.0.1:8090` | the ghidra-mcp server (default: `http://127.0.0.1:8090`) |
+
+### `orig fails-first` {#orig-fails-first-usage}
+
+Run named tests on the test commit and on the fix commit and stamp `fails-first`.
+
+```text
+coney-tools orig fails-first [--test TEST] [--test-commit TEST_COMMIT] [--fix-commit FIX_COMMIT] [--preset PRESET]
+    [--agent AGENT] [--none REASON] [--task TASK]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--test TEST` | text | none | a whole test name, found as TEST_CASE("NAME" in the test commit (repeatable) |
+| `--test-commit TEST_COMMIT` | text | none | the commit that adds the test (and only the stubs it needs to compile) |
+| `--fix-commit FIX_COMMIT` | text | none | the commit that makes it pass (default: HEAD) |
+| `--preset PRESET` | text | `dev` | the CMake preset (default: dev) |
+| `--agent AGENT` | text | none | your id for the build slots (as `build --agent`) |
+| `--none REASON` | text | none | stamp that there is no fails-first test, with the reason |
+| `--task TASK` | text | none | the task (default: CONEY_TASK, else the branch) |
 <!-- command-reference:end -->
 
 ## original {#original}
@@ -298,11 +411,11 @@ folder in the scratch folder (the task is `--task`, else `CONEY_TASK`, else the 
 step ends. Exit codes: 0 done, 1 refused (the output says what to fix), 2 it cannot start, 3 no ghidra-mcp answers.
 
 ```sh
-uv run --project python coney-tools original study ADDR [--task T] [--url URL] [--recut] [--print]
-uv run --project python coney-tools original verify ADDR [--task T] [--url URL]
-uv run --project python coney-tools original compare ADDR [--task T] [--base REF] [--coney-function KEY] [--carry] [--show]
-uv run --project python coney-tools original fails-first --test NAME [--test NAME ...] --test-commit SHA [--fix-commit SHA] [--preset P] --agent ID
-uv run --project python coney-tools original fails-first --none REASON
+uv run --project python coney-tools orig study ADDR [--task T] [--url URL] [--recut] [--print]
+uv run --project python coney-tools orig verify ADDR [--task T] [--url URL]
+uv run --project python coney-tools orig compare ADDR [--task T] [--base REF] [--coney-function KEY] [--carry] [--show]
+uv run --project python coney-tools orig fails-first --test NAME [--test NAME ...] --test-commit SHA [--fix-commit SHA] [--preset P] --agent ID
+uv run --project python coney-tools orig fails-first --none REASON
 ```
 
 * `study` reads the function at ADDR from the running ghidra-mcp (reading endpoints only), saves the decompile, callers,
@@ -313,7 +426,7 @@ uv run --project python coney-tools original fails-first --none REASON
 * `verify` re-reads the function and says whether the saved study is `fresh`, `renamed` (a one-to-one rename only) or
   `stale`; it exits 1 when stale.
 * `compare` writes `mapping/<addr>.toml` with a blank pair per piece on its first run; later runs show the decompile beside
-  the Coney function, check the pairs, the committed Coney file and `orig copy-check`, and append `compared` when all of
+  the Coney function, check the pairs, the committed Coney file and `orig check-copy`, and append `compared` when all of
   it holds. A refusal writes no stamp. [Details](stamps.md#compare)
 * `fails-first` runs the named tests through `build --test -R` on the test commit (they must fail) and the fix commit (they
   must pass) and appends a `fails-first` stamp per test. [Details](stamps.md#fails-first)
@@ -337,78 +450,6 @@ Every option:
 | `fails-first` | `--preset P` | The CMake preset the tests are built with (default `dev`) |
 | `fails-first` | `--agent ID` | Your id for the build slots, as `build --agent` |
 | `fails-first` | `--none REASON` | Run nothing and stamp that the task has no such test (one line, at most 200 characters, not with `--test`) |
-
-<!-- command-reference:begin original -->
-## Parameters of `original` {#original-parameters}
-
-Written by `coney-tools docs render` from the command line's own definitions; never edited by hand.
-
-### `original study` {#original-study-usage}
-
-Save an original function's decompile and neighbours from Ghidra, number its lines, cut its pieces.
-
-```text
-coney-tools original study ADDRESS [--task TASK] [--url URL] [--recut] [--print]
-```
-
-| Parameter | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `ADDRESS` | text | required | the function's address, such as 0x00230d00 |
-| `--task TASK` | text | none | the task (default: CONEY_TASK, else the branch) |
-| `--url URL` | text | `http://127.0.0.1:8090` | the ghidra-mcp server (default: `http://127.0.0.1:8090`) |
-| `--recut` | flag | off | re-cut the saved decompile without Ghidra (the files, name, program and signature must match the newest studied stamp) |
-| `--print` | flag | off | also print the numbered decompile |
-
-### `original compare` {#original-compare-usage}
-
-Show the decompile beside the Coney function, check its pairs and stamp `compared`.
-
-```text
-coney-tools original compare ADDRESS [--task TASK] [--base BASE] [--coney-function CONEY_FUNCTION] [--carry] [--show]
-```
-
-| Parameter | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `ADDRESS` | text | required | the function's address, such as 0x00230d00 |
-| `--task TASK` | text | none | the task (default: CONEY_TASK, else the branch) |
-| `--base BASE` | text | `origin/main` | what the copy check measures from (default: origin/main) |
-| `--coney-function CONEY_FUNCTION` | text | none | the unit key, when several Coney functions carry the address |
-| `--carry` | flag | off | bring the pairs forward onto a changed or renamed study |
-| `--show` | flag | off | print the side-by-side view |
-
-### `original verify` {#original-verify-usage}
-
-Whether a saved study still matches Ghidra: fresh, renamed or stale.
-
-```text
-coney-tools original verify ADDRESS [--task TASK] [--url URL]
-```
-
-| Parameter | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `ADDRESS` | text | required | the function's address, such as 0x00230d00 |
-| `--task TASK` | text | none | the task (default: CONEY_TASK, else the branch) |
-| `--url URL` | text | `http://127.0.0.1:8090` | the ghidra-mcp server (default: `http://127.0.0.1:8090`) |
-
-### `original fails-first` {#original-fails-first-usage}
-
-Run named tests on the test commit and on the fix commit and stamp `fails-first`.
-
-```text
-coney-tools original fails-first [--test TEST] [--test-commit TEST_COMMIT] [--fix-commit FIX_COMMIT] [--preset PRESET]
-    [--agent AGENT] [--none REASON] [--task TASK]
-```
-
-| Parameter | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `--test TEST` | text | none | a whole test name, found as TEST_CASE("NAME" in the test commit (repeatable) |
-| `--test-commit TEST_COMMIT` | text | none | the commit that adds the test (and only the stubs it needs to compile) |
-| `--fix-commit FIX_COMMIT` | text | none | the commit that makes it pass (default: HEAD) |
-| `--preset PRESET` | text | `dev` | the CMake preset (default: dev) |
-| `--agent AGENT` | text | none | your id for the build slots (as `build --agent`) |
-| `--none REASON` | text | none | stamp that there is no fails-first test, with the reason |
-| `--task TASK` | text | none | the task (default: CONEY_TASK, else the branch) |
-<!-- command-reference:end -->
 
 ## stamp {#stamp}
 

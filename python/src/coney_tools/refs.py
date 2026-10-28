@@ -17,7 +17,7 @@ entries:
 
 The fields an entry may have are defined per topic in `refs_topics.py`; every entry ends up with a `source` and an
 `evidence` level, given or from `defaults`. Fields marked *curated* are hand-written and never touched by
-`coney-tools refs extract`; the others are what the extractor reads from the player's disc.
+`coney-tools refs refresh`; the others are what the extractor reads from the player's disc.
 
 Legal: only names, ids, numbers and our own short descriptions go into these files (LEGAL.md, "Reference lists").
 Research: docs/guides/research-data.md#reference-lists
@@ -346,7 +346,7 @@ def dump(reflist: RefList) -> str:
     topic = reflist.topic
     lines = [
         f"# {reflist.title}: a Coney game reference list. The page docs/references/{topic.key}.md is generated",
-        "# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the",
+        "# from this file by `coney-tools refs render`; `coney-tools refs refresh` refreshes the fields read from the",
         "# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-data.md#reference-lists.",
         f"title: {_scalar(reflist.title)}",
         f"about: {_block(reflist.about)}",
@@ -370,7 +370,7 @@ def dump_parts(reflist: RefList) -> dict[str, str]:
         groups.setdefault(part_name(entry.get(topic.group_by or "")), []).append(entry)
     header = [
         f"# {reflist.title}: a part of research/references/{topic.key}.yaml, which holds the list's prose and",
-        "# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.",
+        "# defaults. Written by `coney-tools refs refresh`, which keeps the hand-written fields.",
         "entries:",
     ]
     return {name: "\n".join([*header, *_entry_lines(topic, entries)]) + "\n" for name, entries in groups.items()}
