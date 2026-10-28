@@ -6,10 +6,10 @@ tooling, the script debugger, hot reload, the libraries that import assets and t
 question lists the alternatives weighed and the choice, and the page ends with the [build issues](#build-issues) it
 proposes, in order. Three small proofs settled what reading could not ([Proofs](#proofs)).
 
-What Studio is, its panels, Play's controls and the keymap are the editor experience design;
-what a script can call, the language version for mods and how Play loads a project are the Lua SDK and runtime design;
-what Studio can read and write from the game's files is the content and formats design. This page names them and
-does not repeat them.
+What Studio is, its panels, Play's controls and the keymap are the editor experience design; what a script can call,
+the runtime projects run on (Lua 5.4), how Play loads a project, the stubs, hot reload of a project and the debugger's
+server are the [Lua SDK and natives](lua-sdk.md) design; what Studio can read and write from the game's files is the
+content and formats design. This page links or names them and does not repeat them.
 
 ## The choices at a glance {#summary}
 
@@ -21,9 +21,9 @@ does not repeat them.
 | [Play](#play) | In the Studio process: a play session on its own simulation thread, drawn into the Game view | The Level view and the Game view share one world, so live edits are a queue of edit commands; a breakpoint stops only the simulation |
 | [Live edits](#live-edits) | Edit commands applied to the running session between steps | Serializable, so the same commands can later go to a child process or a networked peer |
 | [Code editor](#code-editor) | goossens' ImGuiColorTextEdit, pinned, wrapped by Studio | Completions, squiggles, hover, multiple cursors, VS Code-like keys, inside the same ImGui frame |
-| [Language tooling](#language-tooling) | lua-language-server as a child process, fed stubs generated from the natives masterlist; Coney's own compiler for syntax errors | Completions, hover, type and argument checks for free; MIT; about 4.5 MB to download per platform |
-| [Script debugger](#debugger) | A Debug Adapter Protocol server in Coney's script runtime; Studio is a client of it | One protocol for Studio and for VS Code; pausing blocks the simulation thread, not the editor |
-| [Hot reload](#hot-reload) | Studio polls the project folder; scripts reload between steps; presentation assets swap live, simulation assets ask for a restart of Play | Follows the asset layers' split of presentation and simulation kinds |
+| [Language tooling](#language-tooling) | lua-language-server as a child process, reading the SDK's generated stubs | Completions, hover, type and argument checks for the projects' Lua 5.4 as it is; MIT; about 4.5 MB to download per platform |
+| [Script debugger](#debugger) | Studio is a Debug Adapter Protocol client of the engine's server | One protocol for Studio and for VS Code; pausing blocks the simulation thread, not the editor |
+| [Hot reload](#hot-reload) | Studio polls the project folder and asks the session to reload; presentation assets swap live, simulation assets ask for Play again | Follows the asset layers' split of presentation and simulation kinds |
 | [Importers](#importers) | cgltf (glTF), ufbx (FBX), stb_image (images), dr_libs and stb_vorbis (audio) | Small, permissive, single-file C libraries; no SDK and no new build system |
 
 ## What Studio starts from {#starting-point}
@@ -109,11 +109,9 @@ handles it through the one path a real one takes. Drag-and-drop import into the 
 **The licence.** The Test Engine is not MIT: its licence (v1.04) is free for a natural person, a not-for-profit, for
 education, for software "released publicly and under an Open Source license" (an OSI one), or for a company under 2
 million USD of turnover, and paid otherwise; copies keep its notice. Coney, public under GPL-3.0-or-later, falls in the
-free terms. The licence is not GPL-compatible, so the Test Engine is built only into Studio's test builds and never
-into a release or a play-test build. Whether that use is acceptable is a licence question for a maintainer
-([Questions](#questions)). If it is not, the fallback is a driver of Coney's own on the item hooks that Dear ImGui's MIT
-core already carries for the Test Engine (`IMGUI_ENABLE_TEST_ENGINE`) and on its input queue: the same model, weeks of
-work instead of a pin.
+free terms, but the licence is not GPL-compatible. A maintainer decided (2026-10-28) how Coney uses it: **in test
+builds only**. `cmake/deps.cmake` fetches it from upstream at a pinned commit for those builds; it is never vendored
+into the repository, and never built into a release or a play-test build.
 
 ### How it fits Coney's testing rules {#testing-rules}
 
@@ -199,8 +197,9 @@ flowchart TB
 - **Play** (the editor experience design's Play mode has its keys and what the player sees) saves the project (and
   a recovery copy), builds a play session from the saved document, and starts it on its own simulation thread at the
   fixed 1/30 s step, with the game's seeded randomness. How the session loads the project's scripts, the map and the
-  player (its game mode and load order) is the runtime design's; Studio only hosts it: it creates the
-  session, feeds it input from the Game view while that has focus, steps it and shows its frames.
+  player (its game mode and load order) is the Lua SDK design's ([Play, step by step](lua-sdk.md#play)); Studio only
+  hosts it: it creates the session, feeds it input from the Game view while that has focus, steps it and shows its
+  frames.
 - **Pause and Step** stop the step clock or run one step, as the debug menu's time control does.
 - **Stop** destroys the session. The edit document was never changed by playing, so Studio is back where it was;
   presentation assets loaded for the session stay cached.
@@ -254,42 +253,40 @@ the debugger's F5, Shift+F5, F9, F10 and F11. The full keymap is the editor expe
 | Licence, size | MIT; 4.5 MB download, 27 MB unpacked (Windows x64) | Ours |
 | How Studio runs it | A child process speaking the Language Server Protocol over stdio | In process |
 
-**Choice: LuaLS, with Coney's compiler beside it.** Studio starts LuaLS per project and talks to it with a small LSP
-client of its own (on Coney's JSON reader, plus a writer); the widget's experimental LSP bridge covers only completion
-and hover and brings another framework. The natives come in as a stub file that a `coney-tools` command generates from
-the masterlist (`research/bindings/`, with each native's arguments, results and our own description) and from the
-Coney natives' list, written into the project's SDK folder with the LuaLS settings (`.luarc.json`) Studio manages.
+**Choice: LuaLS.** Studio starts LuaLS per project and talks to it with a small LSP client of its own (on Coney's JSON
+reader, plus a writer); the widget's experimental LSP bridge covers only completion and hover and brings another
+framework. What LuaLS reads (the stubs `coney-tools natives stubs` generates from the masterlist and the project's
+`.luarc.json`) is the Lua SDK design's ([Typed stubs for the language server](lua-sdk.md#stubs)); Studio writes the
+`.luarc.json` of a new project and ships the stubs with itself.
 
-The language version decides how far LuaLS reaches. The proof ([Proofs](#proof-lsp)) shows it reads Lua 5.x mods fully
-but reports Lua 4.0's upvalue syntax (`%name`) as a syntax error and does not know 4.0's library (`getn`); the library
-can be stubbed, the syntax cannot. If mods are written in Lua 4.0, Studio filters those diagnostics and takes syntax
-errors from Coney's own compiler only; if mods get Lua 5.4, LuaLS covers them as they are. Which language mods use is
-the Lua SDK design's decision; this page works with either.
+Projects run on Lua 5.4, a maintainer's decision ([Lua 5.4 for projects](lua-sdk.md#runtime-choice)), and LuaLS reads
+5.4 as it is. The proof ([Proofs](#proof-lsp)) shows why that matters: LuaLS has no Lua 4.0 mode and reports 4.0's
+upvalue syntax (`%name`) as a syntax error. So Lua 4.0 sources in the game state (Coney's level rewrites, script
+overrides) get their syntax errors from Coney's Lua 4.0 compiler ([The Lua 4.0 compiler](lua-sdk.md#compiler)), not
+from LuaLS.
 
 ## The script debugger {#debugger}
 
-**Choice: the Debug Adapter Protocol (DAP).** Coney's script runtime gets a debug hook (on a new line, a call, a
-return) and a DAP server: breakpoints by file and line, conditional breakpoints, step in, over and out, the call stack,
-locals and upvalues, and watches evaluated by the console's evaluator (the compiler, once built). Studio's editor is a
-DAP client: it sets breakpoints from the gutter, shows the current line with the widget's line markers and the stack,
-locals and watches in a Debug panel. Because DAP is the standard, VS Code can attach the same way to a `coney` built
-with the debug tools.
+**Choice: the Debug Adapter Protocol (DAP).** The server lives in the engine beside the runtimes, with the features
+the Lua SDK design lists ([The script debugger](lua-sdk.md#debugger)). Studio's script editor is a DAP client: it sets
+breakpoints from the gutter, shows the current line with the widget's line markers, and the call stack, variables and
+watches in a Debug panel. Because DAP is the standard, VS Code can attach the same way to a `coney` built with the debug
+tools.
 
-- **Pausing.** The hook blocks the simulation thread at the line; the UI thread goes on ([Play](#play-session)). Test
-  mode and network play never load the hook.
-- **Lines.** Breakpoints need line information: Coney's compiler keeps it for scripts it compiles (mods and Coney's
-  level scripts). The game's own compiled chunks carry none, so in them the debugger stops by function only.
-- **Two runtimes.** If mods run on Lua 5.4 ([Language tooling](#language-tooling)), the same DAP server sits on 5.4's
-  debug hook; the protocol and Studio's client do not change.
+- **How Studio reaches it.** The server runs in Studio's process with the play session, so Studio's client talks to it
+  in process; the loopback socket the SDK design names is for an editor outside Studio.
+- **Pausing.** A breakpoint blocks the simulation thread inside the step; Studio's UI thread goes on drawing, the Game
+  view shows the last frame and the panels stay live ([Play](#play-session)). This answers the SDK design's open
+  question on the pause: with Play in Studio's process on its own thread, the Game view keeps drawing.
 
 ## Hot reload {#hot-reload}
 
 - **Watching.** Studio owns the project folder, so it watches it: a background thread compares the files' sizes and
   times once a second. That works on every platform with no dependency; if large projects make it slow, efsw (MIT) or
   dmon (BSD-2-Clause) replaces the poll behind the same interface.
-- **Scripts.** A changed script is compiled; on an error nothing changes and the Problems panel shows it. Otherwise
-  the session reloads it between two steps, through the scheduler, the one way into the runtime. Whether a reload keeps
-  the script's state or restarts its resource is the Lua SDK design's question.
+- **Scripts.** A changed script is a reload request to the running session; the project restarts at the next step
+  boundary, and a file that fails to compile leaves the running state alone, as the Lua SDK design's
+  [Hot reload](lua-sdk.md#hot-reload) says. Studio shows the compile error in the Problems panel.
 - **Assets.** The [asset layers](../asset-and-script-architecture.md#asset-layers) already split the kinds:
   presentation kinds (textures, sounds, models' looks) are swapped in the running session; simulation kinds
   (collision, levels, animation clips, character data) mark the session stale and the Play bar asks for Play again.
@@ -348,12 +345,14 @@ and one in Lua 5.x style, read once with `--check` and three times over LSP by a
 | Hover on `HuGetPosition` | 2 to 17 ms, the signature and the masterlist's description |
 | A string passed for a handle, a second argument too many, an unknown native | each reported, in both styles |
 | Lua 4.0's `%count` and `getn` | a syntax error and an undefined global |
-| The stub as a workspace file | ignored until `workspace.preloadFileSize` was raised past its 500 KB default; the generator writes that setting |
+| The stub as one 543 KB file | ignored until `workspace.preloadFileSize` was raised past its 500 KB default; the SDK's one file per category keeps each under it |
 
 ## Build issues {#build-issues}
 
-In the order they should come. Each assumes the ones above it; the runtime issues of the Lua SDK design come between
-the fourth and the fifth.
+In the order they should come. Each assumes the ones above it. The [Lua SDK design's issues](lua-sdk.md#build-issues)
+interleave with them: its runtime and loader (its issues 1 to 3) come before Play (5 here), its stubs (its 5) before
+the script editor (7 here), its DAP server (its 8) before the debugger (8 here), and its hot reload (its 6) before hot
+reload here (9).
 
 1. **`build: Update Dear ImGui to its docking release`.** Move the pin in `cmake/deps.cmake` from `v1.92.9b` to
    `v1.92.9b-docking` (the same version with docking), with docking turned on in the developer overlay so its windows
@@ -365,44 +364,33 @@ the fourth and the fifth.
 3. **`tests: Add the Dear ImGui Test Engine harness for Coney Studio`.** The Test Engine pinned and built into Studio's
    test builds only, `coney-studio --test`, the `studio` ctest label, captures and video from Studio's own frame
    through the clip rules, an interface over file dialogs, and the first tests: the default layout, a docked panel
-   moved, a file dropped into the File system panel. Waits on a maintainer's answer on the Test Engine's licence.
+   moved, a file dropped into the File system panel.
 4. **`core: Rework the tuning state to belong to a session`.** The eight tuning singletons and the tunable registry move
    into a session object that the game mode owns, so two sessions in one process never share values. No behaviour
    changes; the existing tests and a new two-session test prove it.
 5. **`tools: Add Play to Coney Studio`.** A play session built from the saved project on its own simulation thread,
    drawn into the Game view, with Play, Pause, Step and Stop, input from the Game view, an autosave and recovery file
-   before Play, and the edit document untouched by playing. Needs the simulation out of `src/platform/` and the runtime
+   before Play, and the edit document untouched by playing. Needs the simulation out of `src/platform/` and the Lua SDK
    design's game mode. A scripted test plays, stops and plays again and compares the two sessions' traces.
 6. **`tools: Add live edits from the Level view during Play`.** Edit commands (ids and values) queued by the UI and
    applied between steps, the Entity editor's queue grown to every editable thing, lost on Stop. Tests apply commands
    to a headless session.
-7. **`tools: Add the natives stub generator for lua-language-server`.** A `coney-tools` command that writes a `---@meta`
-   stub of the original natives from `research/bindings/` and of Coney's natives from their list, with the
-   `.luarc.json` settings Studio needs. Python tests on a synthetic masterlist.
-8. **`tools: Add the script editor to Coney Studio`.** goossens' ImGuiColorTextEdit pinned, tabs over project files,
+7. **`tools: Add the script editor to Coney Studio`.** goossens' ImGuiColorTextEdit pinned, tabs over project files,
    the VS Code keymap, LuaLS started per project with Studio's LSP client (diagnostics, completion, hover, signature
-   help, definition, references, rename), the Problems panel, and LuaLS shipped per platform. Tests drive the client
-   against a recorded server conversation.
-9. **`core: Add a debug hook and a DAP server to the script runtime`.** Line, call and return hooks in the VM;
-   breakpoints, stepping, stack, locals and watches over the Debug Adapter Protocol; off in test mode and network play.
-   Tests run a compiled chunk under scripted DAP requests.
-10. **`tools: Add the debugger to the Coney Studio script editor`.** The DAP client: gutter breakpoints, the current
-    line, the Debug panel and the F5 to F11 keys; pausing keeps the UI running.
-11. **`tools: Add hot reload of scripts and assets to Coney Studio`.** The project poller, scripts reloaded between
-    steps through the scheduler, presentation assets swapped live, and simulation assets marking Play stale.
-12. **`tools: Add glTF, FBX, image and audio import to Coney Studio`.** cgltf, ufbx, stb_image, dr_libs and stb_vorbis
+   help, definition, references, rename), the Problems panel, LuaLS shipped per platform, and a new project's
+   `.luarc.json`. Tests drive the client against a recorded server conversation.
+8. **`tools: Add the debugger to the Coney Studio script editor`.** The DAP client: gutter breakpoints, the current
+   line, the Debug panel and the F5 to F11 keys; pausing keeps the UI running.
+9. **`tools: Add hot reload of scripts and assets to Coney Studio`.** The project poller, reload requests for changed
+   scripts sent to the session, presentation assets swapped live, and simulation assets marking Play stale.
+10. **`tools: Add glTF, FBX, image and audio import to Coney Studio`.** cgltf, ufbx, stb_image, dr_libs and stb_vorbis
     pinned and built with Studio only, behind drag and drop into the File system panel and the Import button, writing
     the content design's formats. Tests import synthetic files made by the tests themselves.
-13. **`tools: Add Run in Coney to Coney Studio`.** Starts `coney` as a child process on the saved project, and a second
+11. **`tools: Add Run in Coney to Coney Studio`.** Starts `coney` as a child process on the saved project, and a second
     client for a co-op test over ENet.
 
 ## Questions for a maintainer {#questions}
 
 - **Shipping Studio.** `coney-studio`, Dear ImGui, the importers and LuaLS (27 MB unpacked) in every release, or as an
   optional download the launcher fetches? This page assumes the release manifest lists them all.
-- **The Test Engine's licence.** Its licence is free for Coney as a public open-source project but is not
-  GPL-compatible; this page builds it into test builds only, never into anything a user downloads. Is that use
-  acceptable ([The harness](#test-engine))? If not, Studio's tests use a driver of Coney's own.
 - **Accessibility.** Dear ImGui has no screen reader support. Is that acceptable for Studio?
-- **The language for mods.** Lua 4.0 or 5.4 decides how much of LuaLS a modder gets ([Language
-  tooling](#language-tooling)); the Lua SDK design asks it.
