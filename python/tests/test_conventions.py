@@ -1241,3 +1241,33 @@ def test_the_runtime_areas_filled_from_main_are_read_against_both_files_title_ar
     assert filled == ["pull_requests.runtime.areas"] and "audio" in got.pull_requests.runtime.areas
     with pytest.raises(ConventionsError, match=r"pull_requests\.runtime: missing the key 'areas'"):
         parse_conventions(old)
+
+
+def test_the_report_issue_labels_filled_from_main_may_be_labels_only_main_has() -> None:
+    """The weekly report's labels are a list of label names: with the key filled, `P-low` is main's."""
+    old = without_labels(changed(("hygiene.report_issue.labels", REMOVE)), "P-low")
+    filled: list[str] = []
+    got = parse_conventions(old, ignored=[], defaults=real_data(), filled=filled)
+    assert filled == ["hygiene.report_issue.labels"] and "P-low" in got.hygiene.report_issue.labels
+    assert "P-low" not in got.labels.names()
+    # In neither file's list, it is a wrong value; so is a label the branch's list lacks, with nothing filled.
+    wrong = changed(("hygiene.report_issue.title", REMOVE), ("hygiene.report_issue.labels", ["ghost"]))
+    with pytest.raises(ConventionsError, match=r"hygiene\.report_issue\.labels: 'ghost' is not in labels\.list"):
+        parse_conventions(wrong, ignored=[], defaults=real_data(), filled=[])
+    with pytest.raises(ConventionsError, match=r"hygiene\.report_issue\.labels: 'P-low' is not in labels\.list"):
+        parse_conventions(without_labels(real_data(), "P-low"), ignored=[], defaults=real_data(), filled=[])
+
+
+def test_the_required_checks_are_looked_for_in_both_files_places_when_ci_took_a_key_from_main() -> None:
+    """`merge.required_checks` names jobs of `ci.places`: with `ci` part main's, a job may be one of main's places."""
+    old = real_data()
+    old["ci"]["places"] = [place for place in old["ci"]["places"] if place["id"] != "dependencies"]
+    with pytest.raises(ConventionsError, match=r"the required check 'dependencies' \(merge\.required_checks\)"):
+        parse_conventions(old, ignored=[], defaults=real_data(), filled=[])
+    filled: list[str] = []
+    del old["ci"]["dependencies"]["rerun_limit"]
+    got = parse_conventions(old, ignored=[], defaults=real_data(), filled=filled)
+    assert filled == ["ci.dependencies.rerun_limit"] and "dependencies" in got.merge.required_checks
+    old["merge"]["required_checks"].append("a-job-nobody-has")
+    with pytest.raises(ConventionsError, match=r"the required check 'a-job-nobody-has'"):
+        parse_conventions(old, ignored=[], defaults=real_data(), filled=[])

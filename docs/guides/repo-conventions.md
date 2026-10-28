@@ -185,15 +185,15 @@ tool's own in two ways, and each is handled and named in a `note:` line (on stde
   items have no stable place across branches), and a tool that is not run from a checkout has none, so there the key
   stays missing and an error.
 
-A rule that ties two sections together (a label a section names, a title area the runtime line names, a required check
-that is a job of a place) is read against one file at a time, never a mix of two:
+A rule that ties two sections together (a label a section names, a title area the runtime line names, a required
+check that is a job of a place) is never checked against a mix of two files that no file says:
 
 - **The sections of `origin/<default branch>`** are checked against that file's own `labels`, not the branch's. A branch
   cut before the `studio` label was added has no such label in its `labels.list`, while `main`'s `claims` names it.
-- **In the branch's file**, a section that took a key from the tool's file (and `labels`, when it did) is part `main`'s,
-  so a label or area it names may be one only the other file has: the reference is looked for in both files' lists. The
-  required checks are not held to the places when `ci` or `merge` is part `main`'s. A name in neither file is a wrong
-  value and an error; a section that took nothing is checked against the branch's own list, as ever.
+- **In the branch's file**, a section that took a key from the tool's file (and `labels`, `commits`, `ci` and `merge`,
+  for the rules that tie them to it) is part `main`'s, so a label, title area or job it names may be one only the other
+  file has: the reference is looked for in both files' lists. A name in neither file is a wrong value and an error; a
+  section that took nothing is checked against the branch's own list, as ever.
 
 A wrong value is an error in every case: a key the branch wrote itself is never replaced by a default. The file steers
 nothing that decides a release: for `pr open`, `pr verify` and `pr text`, `stamps`, `tasks.review` (who may review, on

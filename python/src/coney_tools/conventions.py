@@ -1449,6 +1449,11 @@ def _known(
     return (*own, *(name for name in extra if name not in own))
 
 
+def _default_job_ids(data: Mapping[str, Any]) -> list[str]:
+    """The job ids (without the workflow) of the places of a file's data (the defaults'), as `ci.places` names them."""
+    return [job.split("/", 1)[1] for place in data["ci"]["places"] for job in place.get("jobs", [])]
+
+
 def _default_labels(data: Mapping[str, Any]) -> list[str]:
     """The label names of a file's data (the defaults'): the `name` of each `labels.list` entry."""
     return [str(item["name"]) for item in data["labels"]["list"]]
@@ -2475,7 +2480,11 @@ def _read_ci_place(item: object, where: str) -> CiPlace:
 
 
 def _read_ci(
-    data: object, where: str, label_names: Callable[[], tuple[str, ...]], required_checks: Callable[[], tuple[str, ...]]
+    data: object,
+    where: str,
+    label_names: Callable[[], tuple[str, ...]],
+    required_checks: tuple[str, ...],
+    job_ids: Callable[[Iterable[str]], tuple[str, ...]],
 ) -> Ci:
     """The `ci` section: the CI jobs' settings and the places of the checks; every required check has a place."""
     table = _table(data, where, ("dependencies", "tidy", "failure", "places"))
@@ -2525,8 +2534,8 @@ def _read_ci(
     jobs = [job for place in places for job in place.jobs]
     if len(set(jobs)) != len(jobs):
         raise _fail(_at(where, "places"), "a job is named in two places: one place per check")
-    named = {job.split("/", 1)[1] for job in jobs}
-    for check in required_checks():
+    named = job_ids(job.split("/", 1)[1] for job in jobs)
+    for check in required_checks:
         if check not in named:
             raise _fail(
                 _at(where, "places"), f"the required check '{check}' (merge.required_checks) is in no place's jobs"
@@ -3112,8 +3121,9 @@ def _parse(data: object) -> Conventions:
             table["ci"],
             "ci",
             lambda: names_for("ci"),
-            # The required checks must be jobs of the places; with either section partly main's they are not one file's.
-            lambda: () if _mixed("ci", "merge") else merge.required_checks,
+            merge.required_checks,
+            # With `ci` or `merge` part main's, a required check may be a job of a place of either file.
+            lambda own: _known(own, _default_job_ids, "ci", "merge"),
         ),
     )
 
