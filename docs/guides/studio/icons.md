@@ -131,7 +131,7 @@ something Coney does not have yet. One concept each; the glyph is chosen from th
 | Play | Play, Play here, Pause, Step, Stop, Run in Coney (open outside), time scale | record an input run, a stop-at-breakpoint marker |
 | Panels | Level view, Game view, Hierarchy, Inspector, File system, Console, Natives, Model viewer, Animation viewer, Texture viewer, Debug panels, Level settings, layout menu | Script editor, Paths, Mission editor |
 | Entity kinds, ready | Level, Primitive (and its shapes: box, ramp, stairs, cylinder, capsule, sphere), Spawn point, Human, Target, Camera view | |
-| Entity kinds, waiting | Group, Prefab instance, Mesh, Collider, Gang, Flag, Path, Flag link, Walkable area, Nav link, Volume box, Stealth zone, Object, Emitter, Door, Glass pane, Car, Light, Spawner | the same kinds, once Coney makes them from a level file |
+| Entity kinds, waiting | | Group, Prefab instance, Mesh, Collider, Gang, Flag, Path, Flag link, Walkable area, Nav link, Volume box, Stealth zone, Object, Emitter, Door, Glass pane, Car, Light, Spawner, once Coney makes them from a level file |
 | File types | Folder, generic file, level, texture, sound, model, animation clip, movie, Lua script, text or JSON, the manifest | prefab, mission, character, `.cmod` package, import sidecar, an override pack |
 | Row and field actions | Visible and hidden (eye), locked and unlocked, add, remove, delete, duplicate, rename, search, filter, clear, revert to default, more (three dots), drag handle, fold arrows (right and down), check, link, tag, pin or favourite, copy, paste, refresh, back and forward, close, settings | an Apply to prefab mark, a modified dot |
 | Console levels | Information, warning, error, detail; clear, copy, collapse | success, a profiler mark |
@@ -205,7 +205,7 @@ Dear ImGui 1.92, the version `cmake/deps.cmake` pins, merges one font into anoth
 string (`ICON_FOLDER_OPEN " Open"`), and needs no list of glyph ranges since 1.92
 ([Fonts](https://github.com/ocornut/imgui/blob/v1.92.9b/docs/FONTS.md)). The steps, in Coney's own words:
 
-1. Add Inter Regular (and, separately, Inter Bold) as now.
+1. Add Inter Regular (and, separately, Inter Bold), the interface font of the theme.
 2. Add the icon font straight after each, as a merge: `MergeMode = true` puts its glyphs into the font just added;
    `GlyphMinAdvanceX` set to the icon size makes every icon the same width, so labels line up; `GlyphOffset.y` moves the
    icon to the text's middle (Lucide's glyphs sit on the baseline with the whole em above it: ascent 1000, descent 0);
@@ -235,10 +235,9 @@ issue, so it is not a base to build on.
 
 ### Pinning {#loading-pin}
 
-Studio's fonts are pinned in `cmake/deps.cmake` as a release archive with its SHA-256, no CMake build of its own
-(`SOURCE_SUBDIR` names a folder it does not have), and copied beside `coney-studio` with their licences
-([Fonts](editor-experience.md#theme-defaults); the prototype, [#1090](issue:1090), does it). An icon set takes the same
-pattern:
+The Studio prototype ([#1090](issue:1090)) pins its fonts in `cmake/deps.cmake` as a release archive with its SHA-256,
+no CMake build of its own (`SOURCE_SUBDIR` names a folder it does not have), and copies them beside `coney-studio` with
+their licences ([Fonts](editor-experience.md#theme-defaults)). An icon set takes the same pattern:
 
 - **Lucide**: `FetchContent_Declare(lucide_font URL .../releases/download/1.63.0/lucide-font-1.63.0.zip URL_HASH
   SHA256=540488d26fcd50734879a3ca076d25b75e0c4f36267b5602d69617e12e4dd59b ...)`, then `lucide-font/lucide.ttf` and
@@ -256,11 +255,11 @@ pattern:
 ## The recommendation {#recommendation}
 
 **Use Lucide, as its own font, merged into Inter.** Every concept on the list exists in it; its ISC licence is one short
-permissive licence that the FSF counts compatible with the GPL; its release ships a ready TTF that pins with a hash
-exactly as Inter and JetBrains Mono do; the font merges into Dear ImGui in the way the library documents, and the
-library's community already has Lucide name headers; and a font is one colour, so the *Light* preset, the accent and the
-state colours cost nothing. Its rounded 2 unit outline and soft corners sit comfortably next to Godot's 4 pixel corner
-radius and Inter.
+permissive licence that the FSF counts compatible with the GPL; its release ships a ready TTF that pins with a hash the
+way the prototype pins Inter and JetBrains Mono; the font merges into Dear ImGui in the way the library documents, and
+the library's community already has Lucide name headers; and a font is one colour, so the *Light* preset, the accent and
+the state colours cost nothing. Its rounded 2 unit outline and soft corners sit comfortably next to Godot's 4 pixel
+corner radius and Inter.
 
 What it gives up, honestly: its line is 1.33 pixels at 16, softer than Godot's pixel-snapped 2 pixel line, and it has no
 filled variant for an active state. Studio meets both: the 24 pixel size is exact (Inspector header, empty states
