@@ -2,15 +2,16 @@
 
 **Status: design.** Nothing on this page is built. How Coney Studio knows what an entity is and what the Inspector shows
 for it: the **kinds** of entity a level holds, the **property schema** each kind has, written once as data and drawn by
-every front end, how the Inspector shows everything about an entity without bloat, the full list of a **Human**'s
-properties, and **attributes**, the named values a project gives any entity for its scripts. What Studio is, and the
+every front end, how the Inspector shows everything about an entity without bloat, each kind's **events**, and
+**attributes**, the named values a project gives any entity for its scripts. The full list of a **Human**'s properties
+is its own page, [A Human's properties](human-properties.md). What Studio is, and the
 other design pages, are on the Studio index of the editor experience design ([#1055](issue:1055)); the Hierarchy and
 the Inspector panel are that design's, the level file and its entity tree are the project formats page of
 [#1058](issue:1058), and the natives are the [Lua SDK](lua-sdk.md)'s.
 
 The question this page answers, a maintainer's: the Hierarchy holds *entities*, and scripts are never attached to them
 (a maintainer decision), so how does the Inspector know what to show? Selecting a Human must let a user set
-absolutely everything about him, without bloat. The answer in four lines:
+absolutely everything about him, without bloat. The answer in five lines:
 
 1. **An entity has one kind, and the kinds are Coney's.** A Human, a Primitive, a Spawn point, a Door: one kind per
    thing Coney's engine can make, as Roblox Studio's classes are Roblox's ([Entity kinds](#kinds)).
@@ -23,6 +24,9 @@ absolutely everything about him, without bloat. The answer in four lines:
 4. **A project adds its own values with attributes**, Roblox's: typed, named values on any entity, saved with the level,
    which the project's scripts read and write through natives. They are how a mod gives an entity its own settings
    without a script component ([Attributes](#attributes)).
+5. **Each kind comes with its own events**, as Godot's signals come with node types: a trigger's *On Enter* and *On
+   Exit* name a function of the project's scripts, the callback by name the original's natives take, so the Inspector
+   holds the connection and never the logic ([Events](#events)).
 
 ## Contents {#contents}
 
@@ -32,7 +36,9 @@ absolutely everything about him, without bloat. The answer in four lines:
 - [The property schema](#schema): [what a property says](#property-fields), [where it lives](#schema-source),
   [one schema, every reader](#schema-readers), [one edit command](#edit-command)
 - [The Inspector](#inspector): [its layout](#inspector-layout), [no bloat](#no-bloat), [Level and Running](#running)
-- [Everything about a Human](#human), [a Target](#target) and [a Gang](#gang)
+- [Events](#events): each kind's events, connected by function name
+- [A Human's properties](human-properties.md), with [a Target](human-properties.md#target) and
+  [a Gang](human-properties.md#gang)
 - [Attributes](#attributes)
 - [What the level file stores](#level-file)
 - [Tests](#tests), [open questions](#open-questions), [proposed build issues](#build-issues), [sources](#sources)
@@ -70,7 +76,7 @@ the Studio principle of reflecting Coney ([What Studio is](issue:1055)), applied
 families of run-time things are listed on [Entities](../../references/entities.md); each Studio kind below names the
 family it makes and the level-file statement that stores it (project formats, [#1058](issue:1058)).
 
-| Kind | Level-file statement | What it makes in Coney | Its groups (beyond [Entity](#human-entity)) | State |
+| Kind | Level-file statement | What it makes in Coney | Its groups (beyond [Entity](human-properties.md#human-entity)) | State |
 | --- | --- | --- | --- | --- |
 | **Level** (the tree's root) | `title`, `texture`, `sky`, `sun`, `ambient`, `fog`, `occlusion`, `shadows`, `tessellate`; `base` (proposed by [#1058](issue:1058)) | The level's settings ([Statements](../sandbox.md#statements)) | Level, Lighting, Base level | ready for sandbox layouts, but for `base`, which waits on a project level on a disc level |
 | **Group** | `group` | Nothing of its own: a parent its children follow | Transform | waits on level files of version 2 |
@@ -79,17 +85,17 @@ family it makes and the level-file statement that stores it (project formats, [#
 | **Mesh** | `mesh` | An imported static mesh | Transform, Model, Collision | waits on the import step |
 | **Collider** | `collider` | Collision with nothing drawn | Transform, Shape, Collision | waits on level files of version 2 |
 | **Spawn point** | `spawn` | A world flag and, at Play, the player made at it | Transform, Spawn (character, player slot) | ready |
-| **Human** | `character`; a sandbox layout's `fighter` | A human, `HuCreate` ([Human](../../references/entities.md#human)) | [below](#human) | ready as the layout's fighter; any type waits on level files of version 2 |
-| **Target** | `target` | Coney's passive sandbox human (`human::TargetHuman`) | [below](#target) | ready |
-| **Gang** | `gang` (proposed in [A Gang](#gang)) | A gang and its relations, `GangCreate` ([Gang](../../references/entities.md#gang)) | [below](#gang) | waits on level files of version 2 |
+| **Human** | `character`; a sandbox layout's `fighter` | A human, `HuCreate` ([Human](../../references/entities.md#human)) | [A Human's properties](human-properties.md) | ready as the layout's fighter; any type waits on level files of version 2 |
+| **Target** | `target` | Coney's passive sandbox human (`human::TargetHuman`) | [A Target](human-properties.md#target) | ready |
+| **Gang** | `gang` (proposed in [A Gang](human-properties.md#gang)) | A gang and its relations, `GangCreate` ([Gang](../../references/entities.md#gang)) | [A Gang](human-properties.md#gang) | waits on level files of version 2 |
 | **Camera view** | `view` | A viewpoint | Transform (yaw and pitch), View | ready |
-| **Flag** | `flag` | A world flag, `AddFlag` ([World flag](../../references/entities.md#flag)) | Transform (heading), Flag | waits on level files of version 2 |
+| **Flag** | `flag` | A world flag, `AddFlag` ([World flag](../../references/entities.md#flag)) | Transform (heading), Flag, Trigger, Events | waits on level files of version 2 |
 | **Path** | `path` | A path of flags, `AddPath` | Path (its flags, at most eight) | waits on level files of version 2 |
 | **Flag link** | `flaglink` | A flag network link, `FlagNetAddLink` | Link | waits on level files of version 2 |
 | **Walkable area**, **Nav link** | `navarea`, `navlink` | The path map's areas and links | Area, Link | waits on Coney's path map builder |
-| **Volume box** | `volume` | A trigger box, `AddVolumeBox`; a gang's turf | Transform (no rotation), Box, Turf | waits on level files of version 2 |
+| **Volume box** | `volume` | A trigger box, `AddVolumeBox`, turned about z by `RotateVolumeBox`; a gang's turf | Transform (a turn about z only), Box (who sets it off, enabled, size, repeat period, collision off inside), Turf, Events | waits on level files of version 2 |
 | **Stealth zone** | `stealth` (proposed in [Stealth zones](#stealth-zone)) | Shadow ground: the floor inside it hides the player, as the original's flagged collision does | Transform (a turn about z only), Zone (its size) | waits on level files of version 2 |
-| **Object** | `object`; a `trigger` on it | A world object, `ObjSpawn`; its trigger sphere, `TriggerSphereCfg` | Transform, Object (type, zone, flags, tint), Trigger | waits on level files of version 2 |
+| **Object** | `object`; a `trigger` on it | A world object, `ObjSpawn`; its trigger sphere, `TriggerSphereCfg` | Transform, Object (type, zone, flags, tint), Trigger, Events | waits on level files of version 2 |
 | **Emitter** | `emitter` | A particle system, `SpawnParticle` | Transform, Emitter | waits on level files of version 2 |
 | **Door**, **Glass pane** | `door`, `glass` | `SpawnDoor`, `SpawnBreakableGlass` | Transform, Door or Pane | waits on doors and panes built with the level's collision |
 | **Car** | `car` | A parked car, `CarSpawn` | Transform, Car | waits on level files of version 2 |
@@ -101,10 +107,10 @@ implemented and what is missing is Coney making the entity from a level file, wh
 issues add ([#1058](issue:1058)). The disc level's own entities, shown read-only under a base level, have the same kinds
 and schemas, every property read-only.
 
-A trigger sphere is the Inspector's *Trigger* group on its object, not a kind of its own, because the game ties it to
-one object (`TriggerSphereCfg` takes the object's handle); the level file keeps the project formats page's `trigger`
-statement for it. A **player** is not a kind either: he is a Human whose *Player slot* is set, or the human a spawn
-point makes at Play.
+A trigger sphere is the Inspector's *Trigger* group (armed, radius, how a human inside is accepted, repeat period) on
+an Object, a Flag or a Human, not a kind of its own, because the game ties it to one of them (`TriggerSphereCfg` takes
+the handle of a flag, a human or a prop); the level file keeps the project formats page's `trigger` statement for it.
+A **player** is not a kind either: he is a Human whose *Player slot* is set, or the human a spawn point makes at Play.
 
 ### Stealth zones {#stealth-zone}
 
@@ -122,15 +128,17 @@ So Studio offers stealth two ways, both writing the same collision bit:
 
 - **The *Stealth* switch of a surface.** The Collision group of a Primitive, a Mesh, a Collider and a `faces` edit
   has *Stealth* (`sneak=yes`, one of the project formats page's collision names), the original's own form: the
-  surface's floor triangles are shadow ground. It is ready today for a sandbox primitive through its raw `flags=16`;
-  the named switch waits on level files of version 2.
+  surface's floor triangles are shadow ground. A sandbox primitive's raw `flags=16` already marks them, but Coney runs
+  the hiding rules only in a scripted level (`GameplayMode::updateHiding()`, which needs the level's brains), so in a
+  sandbox layout the player does not hide on it; the switch waits on level files of version 2 and on Play running
+  the hiding rules for a project level.
 - **The Stealth zone kind**, for marking a stretch of an existing floor (a base level's alley, an imported map)
   without editing its triangles one by one: an upright box, drawn translucent blue in the Level view, whose
   properties are its position, its turn about z (`yaw`) and its size. When Coney builds the level's collision at
   Play, every floor triangle whose centre lies inside the box gets bit 4, as if each had been marked by a `faces`
   edit; the source files, the disc's included, are never changed. The Collision view mode colours shadow ground
-  either way, so a user sees exactly where the player can hide. It waits on level files of version 2 and on the
-  collision build applying it.
+  either way, so a user sees exactly where the player can hide. It waits on level files of version 2, on the
+  collision build applying it and on the hiding rules running at Play, as the switch does.
 
 A **Volume box** is not a stealth zone: level87's stealth tutorial uses volume boxes only to start its hints
 ([Stealth: the hangout tutorial](../../research/stealth.md#level87)). **Stealth from a sun's real shadows** is not
@@ -138,9 +146,9 @@ designed here: a maintainer leaves it open as a possible future item, not for no
 
 ### Inheritance and composition {#inheritance}
 
-- **One base, no deep inheritance.** Every kind has the [Entity](#human-entity) group (id, name, tags, its place in
-  the tree, its attributes). Beyond it, Coney's engine has no class tree to mirror: a human, an object and a flag share
-  nothing a user would edit. Godot's chain of classes would add headings and no meaning.
+- **One base, no deep inheritance.** Every kind has the [Entity](human-properties.md#human-entity) group (id, name,
+  tags, its place in the tree, its attributes). Beyond it, Coney's engine has no class tree to mirror: a human, an
+  object and a flag share nothing a user would edit. Godot's chain of classes would add headings and no meaning.
 - **Shared groups, defined once.** A group several kinds have is written once and named by each: *Transform* (every
   placed kind, with the axes the kind takes), *Collision* (Primitive, Mesh, Collider), *Surface*, *Shape*. A change to
   the group reaches every kind that names it.
@@ -168,7 +176,7 @@ values), so a new preset needs no code, and choosing one is the same as creating
 | `key` | Stable name: the level file's key, the run log's op, the search's match; lower case, words joined by `-`; never changed once released | `max-health` |
 | `label`, `help` | What the Inspector shows, and one line of help (the tooltip; searched too) | *Maximum health*; "Its full health; setting it refills the health" |
 | `group`, `order` | The group it is drawn in and its place there | Meters, 2 |
-| `type` | `bool`, `int`, `float`, `angle`, `vec3`, `text`, `choice` (from a reference list), `flags`, `entity` (a reference to another entity, of given kinds), `asset` (a `project:/` or `game:/` path of a given kind), `colour`, `list` of one of these | `int` |
+| `type` | `bool`, `int`, `float`, `angle`, `vec3`, `text`, `choice` (from a reference list), `flags`, `entity` (a reference to another entity, of given kinds), `asset` (a `project:/` or `game:/` path of a given kind), `colour`, `event` (a function name, [Events](#events)), `list` of one of these | `int` |
 | `range`, `step`, `units` | The limits a value is clamped to, the slider's step, the units shown | 1 to 32767, 10, HP |
 | `default` | A constant, **`from-type`** (the value the engine gives this entity when it is made, read from its character type, object type and so on), or none | `from-type`: the type's health |
 | `advanced` | Drawn in the group's Advanced part ([No bloat](#no-bloat)) | no |
@@ -186,11 +194,11 @@ the level file and the reference with no other step, and before that day the pro
 native, and drawn nowhere. A property set by a Coney edit is available when the edit is. So the Inspector reflects
 Coney by construction, the same way the SDK does.
 
-**No property names a script function.** Several natives take a callback (`HuSetMugCallback`, `HuSetInterrogation`'s
-last argument, `GangSetMsgHandler`, a goal's callback). The Inspector never offers them: a callback is the project's
-scripts finding the entity by name or tag and calling the native, which keeps the decision that scripts are never
-attached to entities. Where a native takes a callback among other values, the Inspector sets the other values and
-passes no callback.
+**Only event fields name a script function.** A property of type `event` holds the name of a function of the
+project's scripts, the way the original's natives take a callback by name; it is the one kind of property that
+connects an entity to code, and it holds no logic itself ([Events](#events)). Every native argument that names a
+callback (`SetMsgHandler`'s, `HuSetMugCallback`'s, `HuSetInterrogation`'s last argument, a goal's or a tactic's) is an
+event field of the kind it belongs to, never a text field.
 
 ### Where the schema lives {#schema-source}
 
@@ -202,7 +210,7 @@ into (`research/bindings/`), checked by the same tools:
 kind: human
 statement: character
 groups: [Entity, Identity, Transform, Meters, Carrying, Combat, Being hit, Condition, Movement, AI, Behaviour,
-         Speech, Interaction, Animation, Stats, State flags, Physics, Mesh]
+         Speech, Interaction, Animation, Trigger, Events, Stats, State flags, Physics, Mesh]
 properties:
   - key: max-health
     label: Maximum health
@@ -315,8 +323,8 @@ kind ([One model](../debug-menu.md#one-model)); no Inspector code names a kind o
 
 ### No bloat {#no-bloat}
 
-A Human has well over a hundred properties ([below](#human)); the Inspector keeps them in reach without a wall of
-fields:
+A Human has well over a hundred properties ([A Human's properties](human-properties.md)); the Inspector keeps them in
+reach without a wall of fields:
 
 - **Groups, collapsed but for the first few.** Each kind's schema says which groups start open (for a Human:
   Identity, Transform, Meters). A group's open state is **remembered per kind and per user** (Roblox and Unity carry it
@@ -355,232 +363,52 @@ same schema for both, with the `live` field deciding what each allows:
 This is the editor experience design's table of live edits ([Live edits while playing](issue:1055)), made a column of
 the schema instead of a list kept by hand.
 
-## Everything about a Human {#human}
+## Events {#events}
 
-Every property of a Human Coney can set or show, grouped as the Inspector groups them. **Set by** names the game native
-Coney calls at level entry and on a live edit (its [masterlist](../../references/bindings/index.md) entry holds what
-it does and the evidence for it; meanings the masterlist gives as inferred, from a native's name, keep that in their
-help), or *creation* (an argument of `HuCreate`), or *Coney edit* (an edit of the Entity inspector, Coney's own).
-**Live** is the schema's field ([above](#running)). **Coney** is *ready* when the native or edit exists, or what the
-property waits on; every *ready* property set from a level file also waits, with all of its kind, on Coney making
-entities from level files ([#1058](issue:1058)). *(A)* marks an Advanced property; a *Debug* group is shown only for a
-running human.
+A maintainer decision, Godot-like: **each kind comes with its own events**, as Godot's signals come with node types, and
+an event connects an entity to a function of the project's scripts by name. The level holds the data (a trigger's
+place, size and who sets it off), the script holds the behaviour, and the Inspector holds only the connecting name.
 
-### Entity {#human-entity}
+**The original works this way.** A level script makes its triggers with natives (`AddVolumeBox`, `TriggerSphereCfg`)
+and connects each to a function with `SetMsgHandler(object, message, "Name")`; the name is interned and looked up when
+the message fires, so dotted names (`"F.CivFlagNet"`) work and the function may be defined later. Message 3, a human
+entering a box or sphere, is the most used: 567 handlers in the disc's scripts ([Script
+events](../../references/script-events.md)). Confirmed (code) at `SetMsgHandler` `0x00386298` and the delivery
+`0x00384c38` ([Scripts: message handlers](../../research/scripting.md#message-handlers)); a handler stops being called
+once the mission is won, failed or left.
 
-Every kind has this group.
+**In Studio**, an event field (a property of type `event`, in the kind's *Events* group) stores a function name. At
+Play, Coney makes the entity with its natives, then calls `SetMsgHandler(handle, message, name)` for each event field
+that is set, exactly what a level script would do, so the function is called with the original's arguments. The
+Connect dialog (the prefilled name `On<Entity><Event>`, the script a new function goes in, the stub it appends with the
+arguments), the completion of existing names and the markers that show which entities use a function are the script
+editor design's ([#1073](issue:1073)). Names are global, since a project has one script state: two functions with one
+name are an error. A name no script defines is listed when the level opens, and at Play the event does nothing and
+the run log says so once. Making triggers in code stays possible: a script calls the same natives itself.
 
-| Property | Set by | Live | Coney |
-| --- | --- | --- | --- |
-| Id `id` | Studio writes it; never edited | read-only | ready |
-| Name `name` | creation (`HuCreate`'s name); `HuSetName` while playing. The game keeps 15 characters, and Studio warns at the 16th | live | ready |
-| Tags `tags` | the level's lookup table ([#1058](issue:1058)) | next-play | ready |
-| Parent, place in the tree | the Hierarchy | next-play | waits on level files of version 2 |
-| Attributes | [Attributes](#attributes) | live | waits on the attribute natives |
+| Kind | Event | Message | The function gets | Evidence |
+| --- | --- | --- | --- | --- |
+| Volume box | *On Enter* | 3 | `(box, human)` when a human comes inside | confirmed (code), `0x00415378` |
+| Volume box | *On Exit* | 4 | `(box, human)` when an occupant leaves or dies | confirmed (code), `0x00415378` |
+| Volume box | *While Inside* | 5 | `(box, human)` for each occupant, at most once per the box's repeat period | confirmed (code), `0x00415378` |
+| Volume box | *On Damage Inside* | 6 | `(human, box, object)` when a human inside damages something; `object` is `NilHandle` when nothing was hit | confirmed (code), `0x00413018` |
+| Object, Flag, Human (its Trigger group) | *On Enter*, *On Exit*, *While Inside* | 3, 4, 5 | `(self, human)`, as for a box, from the trigger sphere | confirmed (code), `0x004146e0` |
+| Flag | *On Arrive* | 8 | `(flag, human)` when a human sent there by `GoalMoveToFlag` arrives | confirmed (code), `0x00416038` |
+| Object, Human | *On Interact* and its prompt texts | 0 | `(self, human)` when the player presses to interact; returning true consumes the press | confirmed (code), `SetMsgHandlerEx` |
+| Human | *On Damaged* (1), *On Finished* (2), *On Saw Player* (10), *On Spotted* (11), *On Attacked* (16), *On Arrested* (17), *On Died* (18), *On Revived* (19) | as listed | `(self, ...)`, by message ([the arguments](../../research/scripting.md#message-handlers)) | inferred from the callbacks' names ([Script events](../../references/script-events.md)) |
+| Human | *On Mugged*, *On Interrogated* | (natives) | `HuSetMugCallback`'s `(mugger, success)`; `HuSetInterrogation`'s when it succeeds | confirmed (code), their masterlist entries |
+| Human, Gang | the starting goal's or tactic's callback (for a path, `TacticTravelPath`'s `(gang, code)`) | (natives) | what that native passes | its masterlist entry |
+| Gang | the Human events of any member (1, 2, 17, 18 and the others) | as listed | as for a human | `GangSetMsgHandler` |
 
-### Identity
+**A Path has no events of its own**, and neither has a Stealth zone: the original's paths are lists of flags that
+raise nothing, and its shadow ground sends no message. What walks a path reports through the goal or tactic that walks
+it, whose callback is the walker's event field.
 
-| Property | Set by | Live | Coney |
-| --- | --- | --- | --- |
-| Character type `type` ([Characters](../../references/characters.md)) | creation | next-play | ready |
-| Model `model` (default: the type's) | Coney edit `model` | live | ready with [#1053](issue:1053) |
-| Custom character `character` (a project `.character`) | creation | next-play | waits on custom characters |
-| Player slot `player` (none, or player 1) | creation (`HuCreate`'s `player`) | next-play | ready; more slots wait on co-op in levels |
-| Gang `gang` (a [Gang](#gang) entity) | creation; `GangAddMember` while playing | live | ready |
-| Gang leader `leader` | `GangSetLeader` | live | ready |
-| War chief `war-chief` | `HuSetWarChief` | live | waits on the native |
-| Role, controlled by, player profile, brain handle | Coney accessors | watch | ready |
-
-### Transform
-
-| Property | Set by | Live | Coney |
-| --- | --- | --- | --- |
-| Position `at` | creation; Coney edit `teleport` | live | ready |
-| Heading `heading` (a human turns about z only) | creation; Coney edit `heading` | live | ready |
-| Scale `scale` | `HuSetScale`; Coney edit `scale` | live | ready |
-| Scale collision with mesh `scale-collision` (A) | Coney edit | live | ready |
-| Velocity, speed, lean | Coney accessors | watch | ready |
-
-### Meters
-
-| Property | Set by | Live | Coney |
-| --- | --- | --- | --- |
-| Health `health` (percent of the maximum) | `HuSetHealthPercent`; Coney edit `health` | live | ready |
-| Maximum health `max-health` (default: the type's) | `HuSetMaxHealth` | live | ready |
-| Stamina `stamina`, Power `power` (percent) | Coney edits | live | ready |
-| Rage `rage` (percent) | `HuSetRageFrac`; Coney edit `rage` | live | ready |
-| Rage locked `rage-locked` | `HuSetLockedRage` | live | ready |
-| Rage allowed `rage-allowed` | `HuSetPreventRage` (its argument inverted) | live | ready |
-| Raging `rage-mode` | `HuSetRageMode` | live | ready |
-| Invincible `god` | `HuSetGodMode`; Coney edit `invincible` | live | ready |
-| Demi-god `demi-god` and its share (A) | `HuSetDemiGodMode` | live | ready |
-| Health now and maximum, hurt | Coney accessors | watch | ready |
-
-### Carrying
-
-| Property | Set by | Live | Coney |
-| --- | --- | --- | --- |
-| Money `money` (0 to 999; default: rolled from the type) | `HuSetMoney` | live | ready |
-| Carried item `carry` (an object type) | `HuSetCarriedItem` | live | ready |
-| Handcuffs `cuffs` (a player) | `HuGiveCuffs` | live | ready |
-| Fighting gear `gear` (a player) | `HuAttachGear` | live | ready |
-| Keeps hat `keep-hat`, keeps weapon `keep-weapon` | `HuSetKeepHat`, `HuSetKeepWeapon` | live | ready |
-| Never throws weapon `no-throw-weapon` | `HuSetNoThrowWeapon` | live | ready |
-| Weapon `weapon` | `HuGiveWeapon` | live | waits on the native |
-
-### Combat
-
-| Property | Set by | Live | Coney |
-| --- | --- | --- | --- |
-| Fight stance `combat-mode` | `HuSetCombatMode` | live | ready |
-| Auto combat `auto-combat` | `HuSetAutoCombat` | live | ready |
-| Double damage `double-damage`, killer `killer` | `HuSetDoubleDamage`, `HuSetKillerMode` | live | ready |
-| Damage factor `damage-factor` (A) | `HuApplyDamageModifier` | live | ready |
-| Accurate, strong, blocks knock-downs | `HuSetAccurate`, `HuSetStrong`, `HuSetCanBlockKD` | live | wait on the natives |
-| Mode, attack, blocking, pair, holding, grabbed, target, strike shapes, hits | Coney accessors | watch | ready |
-
-### Being hit
-
-| Property | Set by | Live | Coney |
-| --- | --- | --- | --- |
-| Ungrabbable, ungroundable, unstunnable | `HuSetUngrabbable`, `HuSetUngroundable`, `HuSetUnstunnable` | live | ready |
-| No reaction, reduced reaction, increased reaction | `HuSetNoReact`, `HuSetReducedReact`, `HuSetIncreasedReact` | live | ready |
-| Blocks grabs, blocks rear grabs, blocks tackles | `HuBlockGrab`, `HuBlockRearGrab`, `HuBlockTackle` | live | ready |
-| Escapes grabs `auto-escape` | `HuSetAutoEscape` | live | ready |
-| Pushable `pushable` | `HuSetPushable` | live | ready |
-| Blocks front grabs, cannot escape, manual stun, hard to stun, no reaction from blocks | `HuBlockFrontGrab`, `HuSetNoEscape`, `HuSetManualStun`, `HuSetHardToStun`, `HuSetBlockFromReact` | live | wait on the natives |
-| Heavy, fire-proof, on fire | `HuSetMass`, `HuSetFireProof`, `HuSetOnFire` | live | wait on the natives |
-
-### Condition
-
-| Property | Set by | Live | Coney |
-| --- | --- | --- | --- |
-| Woundable, wounded, revivable | `HuSetWoundable`, `HuSetWounded`, `HuSetRevivable` | live | ready |
-| Conscious, arrested | `HuSetConscious`, `HuSetArrested` | live | ready |
-| The player can un-arrest him `unarrestable` (the native's name says the opposite of what it does) | `HuSetUnarrestable` | live | ready |
-| Stunned, knocked down, beaten up | `HuSetStunned`, `HuMakeGrounded`, `HuMakeBeatUp` | live | wait on the natives |
-| *Normal state* (an action: ends grabs, fire, wounds) | `HuSetNormalMode` | running-only | ready |
-
-### Movement
-
-| Property | Set by | Live | Coney |
-| --- | --- | --- | --- |
-| Speed scale `speed-scale` (A) | Coney edit | live | ready |
-| Tireless, fast climber | `HuSetTireless`, `HuSetFastClimber` | live | ready |
-| Blocks jumping, blocks looking round | `HuBlockJump`, `HuBlockLook` | live | ready |
-| Commands enabled `commands` ([Commands](../../references/commands.md)) | `EnableCommand`, `EnableCommands` | live | ready |
-| Wheelchair control (a player) | `HuSetWheelchairControl` | live | ready |
-| Frozen `frozen` | Coney edit | running-only | ready |
-| Blocks climbing, pad control, button-tap control | `HuBlockClimb`, `HuEnableController`, `HuSetButtonTapControl` | live | wait on the natives |
-| Gait, support, traversal, stick, intent, command, buttons, brain move, ground, landings | Coney accessors | watch | ready |
-
-### AI
-
-Shown for a human with a brain. Defaults come from the type's behaviour and attack table ([Stats](#human-stats)).
-
-| Property | Set by | Live | Coney |
-| --- | --- | --- | --- |
-| Brain type `brain` ([AI types](../../research/ai/index.md#types)) | `BrSetType` | live | ready |
-| Brain on `brain-on`, suspended `suspended` | `BrDead` (inverted), `BrSuspend` | live | ready |
-| Pedestrian type, pedestrian reaction | `BrSetPedType`, `HuSetPedReaction` | live | ready |
-| Threat, damage and investigate responses | `BrSetThreatResponse`, `BrSetDamageResponse`, `BrSetInvestigateResponse` | live | ready |
-| Reacts to violence, picks up weapons | `BrSetReactToViolence`, `BrSetThugWantsWeapon` | live | ready |
-| Uses world flags, and how likely (A) | `BrCanUseWorldFlags` | live | ready |
-| Sight range, field of view, hearing range, help hearing range (A) | `HuSetLOSRange`, `BrSetFOV`, `HuSetHearRange`, `HuSetHelpHearRange` | live | ready |
-| Attack weights (A; one per attack kind, [Attacks](../../references/attacks.md)) | `BrSetAttackWeight` | live | ready |
-| Picks up hats, answers the player, melee range, attack slots | `BrSetThugWantsHat`, `BrSetPlayerResponse`, `BrSetMeleeRange`, `BrSetNumAttackSlots` | live | wait on the natives |
-| Goals (top first), reaction goal, actions, target, enemies, attack slots, melee range, thinks | Coney accessors | watch | ready |
-
-### Behaviour
-
-| Property | Set by | Live | Coney |
-| --- | --- | --- | --- |
-| Starting goal `goal`: one of the available `Goal*` natives ([AI natives](../../references/bindings/ai.md)), such as guard a flag, travel a path or walk an area, with its arguments by name from the native's signature (the debug menu's argument editors, [Natives](../debug-menu.md#natives)) and no callback | the goal's native, once, after the human is made | next-play | ready |
-
-The starting goal is the one behaviour a level gives a human without a script: what a level script does right after
-`HuCreate`. Anything that reacts to events is the project's scripts' work. A gang's tactic is on the [Gang](#gang).
-
-### Speech
-
-| Property | Set by | Live | Coney |
-| --- | --- | --- | --- |
-| Says commands, comments on tags, cheers tags | `HuEnableSoundCommands`, `HuEnableTagDone`, `HuEnableTagCheer` | live | ready |
-| Voice, state-response voice ([Speech](../../references/speech.md)) | `HuSetVoiceIndex`, `HuSetStateRespVoiceIndex` | live | wait on the natives |
-| Speaks at all, the on-fire line, idle chatter lines | `HuEnableSpeaking`, `HuEnableOnFire`, `HuSetIdleDialogMaxIter` | live | wait on the natives |
-
-### Interaction
-
-| Property | Set by | Live | Coney |
-| --- | --- | --- | --- |
-| Muggable `muggable` | `HuSetMug` | live | ready |
-| Interrogation: four lines and the icon | `HuSetInterrogation` (no callback: the scripts set it) | live | ready |
-| Spinning icon `icon` (an object type) | `HuAttachSpinningIcon` | live | ready |
-| Not targetable `no-target`, skipped by auto lock `no-auto-lock` | `HuSetNoTarget`, `HuSetNoAutoLock` | live | ready |
-| Icon colour, tint | `HuSetSpinningIconColor`, `HuColor` | live | wait on the natives |
-
-### Animation
-
-| Property | Set by | Live | Coney |
-| --- | --- | --- | --- |
-| Animation rate `anim-rate` (A) | Coney edit | live | ready |
-| Looks at `look-at` (an entity), for how long and how strongly (A) | `HuSetLookTarget` | live | ready |
-| Idle clip | `HuSetIdleAnim` | live | waits on the native |
-| A clip to play | `Coney.PlayClip` ([Assets by path](lua-sdk.md#assets)) | running-only | waits on the native |
-| Clip, state, time, task, held flags, gait value, idle clip, action event | Coney accessors | watch | ready |
-
-### Stats {#human-stats}
-
-What the character type gives the human when he is made, from the four configuration tables
-([Characters: Stats](../../research/characters.md#stats)), shown read-only so a user sees where the other groups'
-defaults come from: category, behaviour, speed class, power class, Warrior class, health, the stamina and power maxima
-and refills, the hurt threshold, the stun and knockdown times, the damage and attack tables, the hat, the voice, the
-drop group and chance. Setting one per human waits on the engine keeping per-human stats (the rest of the stats
-inventory on [#723](issue:723)); until then a different set of stats is a different character type.
-
-### Debug groups
-
-Shown for a running human only, closed at first: **State flags** (the flag word decoded by name, the scripts'
-switches, the disabled commands, the target state), **Physics** (the walking sphere, the capsule, the air sphere, the
-contacts, blocked and airborne updates, the climb) and **Mesh** (the model's counts and draw calls,
-[The Mesh group](../debug-menu.md#mesh-group)). Each named flag the scripts can set already has its property above, so
-the raw word stays a watch.
-
-**Actions** on a running human, in the toolbar: *Drop to ground*, *Move to camera*, *Teleport player to it*, *Kill*
-(`HuKill`, or the Coney edit), *Delete* (`HuDelete`, or the Coney edit), *Reset* (every property back to its
-configured value) and *Log everything*.
-
-### A Target {#target}
-
-Coney's passive sandbox human has no brain and no body in the physics, so its schema is short: Entity, Identity (its
-model, Rembrandt's, which the model swap of [#1053](issue:1053) changes while playing), Transform (position and
-heading), Meters (*Health* `health`, 600 by default), each saved and `next-play` as a layout's `target` statement keeps
-them ([Statements](../sandbox.md#statements)), *Frozen* (`running-only`), and the watches of Identity, Transform,
-Animation, Meters and Combat that the Entity inspector shows for it. The Entity editor takes no other edit of a target,
-so while playing its health is a watch until the play mode handles one.
-
-### A Gang {#gang}
-
-A human's relations are his gang's: two gangs are enemies or friends, and a human fights whoever his gang treats as an
-enemy. So *gang and relations* are a kind of their own, an entity with no transform (Roblox's teams are instances in
-the same way), and a Human's *Gang* points at one. The project formats page stores a human's gang as a number
-(`gang=2`); this page proposes a `gang` statement and a reference to it by id ([What the level file
-stores](#level-file)).
-
-| Property | Set by | Live | Coney |
-| --- | --- | --- | --- |
-| Name, gang type ([Gangs](../../references/gangs.md)) | `GangCreate` | next-play | ready |
-| Enemies, friends (both ways) | `GangMakeEnemies`, `GangMakeFriends` | live | ready |
-| Enemies and neutral by gang type | `GangMakeEnemiesOfType`, `GangMakeNeutralOfType` | live | ready |
-| One-way enemy, friend, neutral | `GangSetEnemy`, `GangSetFriend`, `GangSetNeutral` | live | wait on the natives |
-| Leader (a Human) | `GangSetLeader` | live | ready |
-| Turf (volume boxes) | `GangAddTurfBox` | live | ready |
-| Threat, damage and investigate responses; respond percentage | `GangSetThreatResponse`, `GangSetDamageResponse`, `GangSetInvestigateResponse`, `GangSetRespondPercentage` | live | ready |
-| Targetable, attackable, always seen, hearing range | `GangSetTargetable`, `GangSetAttackable`, `GangSetAlwaysSeen`, `GangSetHearRange` | live | ready |
-| Sight range, money, reacts to violence, spotting line | `GangSetLOS`, `GangSetMoney`, `GangSetReactToViolence`, `GangSetCustomSpotDialog` | live | wait on the natives |
-| Starting tactic: one of the available `Tactic*` natives with its arguments, no callback | the tactic's native, once | next-play | ready |
-
-A gang made by a base level's own scripts is shown read-only under the base level, from its set-up trace
-([#1058](issue:1058)), and a project's human may join it by that gang's name.
+**Queries are natives, never Inspector logic.** *Is inside* is `IsInsideBox(box, object)`, implemented, and *is
+outside* its negation; whether a human is hidden in a stealth zone is `HuIsHidden(human)`, implemented. The masterlist
+has no native that tests a point against a trigger sphere or a given stealth zone, so this page proposes one Coney
+native for every area kind, beside the attribute natives ([below](#attribute-natives)):
+`Coney.IsInsideEntity(area, object)`, true when `object` is inside the box, sphere or stealth zone `area`.
 
 ## Attributes {#attributes}
 
@@ -673,6 +501,8 @@ What this page needs of the level file, to agree with the project formats page o
 - **A gang is a `gang` statement**, `gang Rivals id=g2 type=3 enemies=g1`, and a human's `gang=` names its id; a gang
   of the base level is named `gang=base:<its name>`. This differs from the project formats page's `gang=2` and is to
   be agreed with it.
+- **An event field is a key** whose value is the function's name: `volume id=v1 name=Gate kind=players
+  at=16,12,0 size=4,2,3 on-enter=OnGateEnter on-exit=OnGateExit`; an unset event writes nothing.
 - **A stealth zone is a `stealth` statement**, `stealth id=z1 at=4,6,0 yaw=30 size=8,3,2`, and a surface's
   *Stealth* switch is the project formats page's `sneak=yes` ([Stealth zones](#stealth-zone)).
 - **Live values are never stored.** Nothing marked `watch` or `running-only` is in a file.
@@ -705,9 +535,13 @@ every check runs headless where it can.
   step and is in the saved level; a `next-play` edit marks the session stale; a Running-tab edit is gone after Stop.
 - **The file.** A level with every kind, property type and attribute type round-trips byte for byte; a default is not
   written; an unknown key is kept and listed; an attribute that breaks a limit fails with its line.
-- **Stealth zones.** A scripted player walks into a stealth zone laid over a floor with no flag and hides (the hidden
+- **Stealth zones.** In a level played from a file with no level script, a scripted player walks into a stealth zone
+  laid over a floor with no flag, and onto a primitive whose *Stealth* is on, and hides each time (the hidden
   state and the blue radar of Coney's hiding), and is no longer hidden after walking out; the floor triangles outside
   the box keep their flags, and the source file is unchanged.
+- **Events.** A test project's volume box and a flag's trigger sphere call the named functions with `(self, human)`
+  once on entry and once on exit as a scripted player walks through, and *While Inside* at the repeat period; a name
+  no script defines is listed and does nothing; nothing is called after the mission ends.
 - **Attributes from scripts.** A test project reads and writes each type, removes one with `nil`, is refused a wrong
   type and a bad name, gets `attributeChanged` events in order, and finds the level's values unchanged after Stop; a
   network client's `SetEntityAttribute` is refused.
@@ -716,58 +550,76 @@ every check runs headless where it can.
 
 - **The gang and stealth statements** ([What the level file stores](#level-file)): the `gang` statement changes the
   project formats page's `gang=2`, and `stealth` is a statement that page does not list; the two designs settle them
-  together ([#1058](issue:1058)).
+  together ([#1058](issue:1058)). That page also keeps a volume box axis-aligned, where this page turns it about z as
+  `RotateVolumeBox` does.
+- **Calling a project's function from a message.** The original's handler slot holds a name for the game's Lua 4.0
+  state; a project's functions live in its Lua 5.4 state, so the delivery must find the name there. The Lua SDK's value
+  bridge passes callbacks by name ([The value bridge](lua-sdk.md#bridge)); how a message handler set by Coney for a
+  level entity reaches it is that design's to settle.
 - **Attributes on a base level's entities.** Whether a project may put attributes on a disc level's entity (an `attr`
   naming its trace id), which depends on how that page settles overrides of a base level's entities.
-- **Per-human stats.** Whether the engine should keep the [Stats](#human-stats) per human, so the Inspector can set
-  them, or a new stat set stays a new character type; part of the stats inventory on [#723](issue:723).
+- **Per-human stats.** Whether the engine should keep the [Stats](human-properties.md#human-stats) per human, so the
+  Inspector can set them, or a new stat set stays a new character type; part of the stats inventory on
+  [#723](issue:723).
 - **Coney edits that are not natives** (stamina, power, speed scale, animation rate, the model): each is a candidate
   Coney native, so that a script can do what the Inspector does; the Lua SDK's candidates list decides
   ([Names and namespaces](lua-sdk.md#names)).
 
 ## Proposed build issues {#build-issues}
 
-In the order they should come. Issues 1 to 3 need nothing of Studio and improve the debug menu at once; 4 and 5 build on
-the project formats page's level files of version 2 and level entities made at entry ([#1058](issue:1058)); 6 and 7
-build on the editor experience design's Hierarchy and Inspector issue ([#1055](issue:1055)), with which issue 6 is
-filed as one.
+In the order they should come. Issues 1 to 3 need nothing of Studio and improve the debug menu at once; 4 to 6 build on
+the project formats page's level files of version 2 and level entities made at entry ([#1058](issue:1058)), 5 and 6
+also on the Lua SDK's mods runtime ([Proposed build issues](lua-sdk.md#build-issues)); 7 and 8 build on the editor
+experience design's Hierarchy and Inspector issue ([#1055](issue:1055)), with which issue 7 is filed as one.
 
 1. **tools: Add the entity property schema and its generators.** `research/entities/<kind>.yaml` with the fields of
    [What a property says](#property-fields), its schema in the research data guide; `coney-tools entities cpp` writing
    the engine's schema table (available properties only, from the natives' status) and `entities render` writing a
    reference page per kind, both with `--check` in the local gate and CI; the first schemas are what the Entity
-   inspector and editor show, for the Human, the Target and the three object kinds. Tests: Python tests of both generators
-   over fixtures (a property appears, a waiting one is left out and listed, a bad native or duplicate key fails); the
-   table matches the YAML.
+   inspector and editor show, for the Human, the Target and the three object kinds. Tests: Python tests of both
+   generators over fixtures (a property appears, a waiting one is left out and listed, a bad native or duplicate key
+   fails); the table matches the YAML.
 2. **tools: Rework the Entity inspector to draw from the schema.** The debug menu's entity groups, watch lines and edit
    items built from the schema table instead of `human_watch.cpp`, `object_watch.cpp` and the edit groups; the
    `EntityCommand` of an id, a property key and a value, the old op names kept as keys; nothing the panel shows today
    lost. Tests: the panel's lines and items before and after are the same list; a run log recorded before the rework
    replays to the same state; the pad menu and the overlay draw the same items.
 3. **gameplay: Add the Human's native-backed properties to the Entity inspector.** Every *ready* property of
-   [Everything about a Human](#human) and [A Gang](#gang) in the schemas, each with its play-mode handler calling the
-   entry point its native calls, so the debug panel sets them while playing. Tests: per property, an edit through the
-   queue and the native called by a script leave the same state; the handler check passes.
+   [A Human's properties](human-properties.md) and [A Gang](human-properties.md#gang) in the schemas, each with its
+   play-mode handler calling the entry point its native calls, so the debug panel sets them while playing. Tests:
+   per property, an edit through the queue and the native called by a script leave the same state; the handler check
+   passes.
 4. **core: Add schema properties, gangs, stealth zones and attributes to level files.** The level reader and writer
    take each kind's keys, types and defaults from the schema: only non-default values written, `from-type` defaults
-   never frozen, unknown keys kept and listed, entity references by id; the `gang` statement and `gang=` by id; the
-   `stealth` statement, whose box sets the shadow-ground bit on the floor triangles inside it when the collision is
-   built; the `attr` statement with its types, limits and `nil`. Tests: a level with every kind, type and attribute
-   type round-trips byte for byte; a default is not written; a broken limit fails with its line; a version 1 layout
-   reads unchanged; a player walking into a stealth zone hides.
-5. **core: Add entity attributes and their natives.** The session's attribute table loaded at Play, the run-time
+   never frozen, unknown keys kept and listed, entity references by id, event fields as function names; the `gang`
+   statement and `gang=` by id; the `stealth` statement, whose box sets the shadow-ground bit on the floor triangles
+   inside it when the collision is built, with the hiding rules run for a level played from a file as they run for a
+   scripted level today (with no level script, the brains of the level's humans); the `attr` statement with its
+   types, limits and `nil`. Tests: a level with every kind, type and attribute type round-trips byte for byte; a
+   default is not written; a broken limit fails with its line; a version 1 layout reads unchanged; a player walking
+   into a stealth zone hides.
+5. **core: Add entity events connected at Play.** Each event field of a level's entities connected after the entity is
+   made, through `SetMsgHandler` (or the native that takes the callback) with the function name, the function found in
+   the project's script state when the message fires; a name no script defines listed at load and logged once at Play;
+   no message delivered after the mission ends, as in the original; `Coney.IsInsideEntity` for boxes, spheres and
+   stealth zones. Tests: a test project's level with a volume box and a flag's trigger sphere calls the project's
+   functions once on entry and once on exit with `(self, human)` as a scripted player walks through, and *While
+   Inside* at the repeat period; nothing is called after the mission ends; `Coney.IsInsideEntity` agrees with
+   `IsInsideBox` on a box.
+6. **core: Add entity attributes and their natives.** The session's attribute table loaded at Play, the run-time
    attributes of handles made while playing, `Coney.GetEntityAttribute`, `Coney.SetEntityAttribute`,
    `Coney.GetEntityAttributes` and the `attributeChanged` entry point in `research/bindings/coney.yaml`, with their
    `apiset`; the host's changes sent as state in a network session. Tests: a test project reads and writes each type,
    removes one, is refused a wrong type and a bad name, gets its events in order; the level is unchanged after Stop; a
    client's set is refused.
-6. **tools: Add the schema-drawn Inspector to Coney Studio.** The Inspector of [The Inspector](#inspector): the header
+7. **tools: Add the schema-drawn Inspector to Coney Studio.** The Inspector of [The Inspector](#inspector): the header
    with name and tags, the generic widgets per type, groups with remembered state, Advanced parts, the Debug groups
    for running entities, search (`@`, `native:`), *Modified*, pins per kind, conditions, prefab overrides, multiple
-   selection with mixed values, the Level and Running rules of the `live` field and presets for the Create menu.
-   Tests: the fixture kind drawn with no kind code; search, filters, remembered state, multiple selection and the
-   Level and Running cases of [Tests](#tests) under the Test Engine.
-7. **tools: Add attributes to the Coney Studio Inspector.** The Attributes section: add, rename, change type, delete,
+   selection with mixed values, the Level and Running rules of the `live` field, presets for the Create menu, and the
+   Events group's fields, which open the script editor's Connect dialog ([#1073](issue:1073)). Tests: the fixture kind
+   drawn with no kind code; search, filters, remembered state, multiple selection and the Level and Running cases of
+   [Tests](#tests) under the Test Engine; an event field set through the dialog is saved as the function's name.
+8. **tools: Add attributes to the Coney Studio Inspector.** The Attributes section: add, rename, change type, delete,
    edit by type, `@` search, *Modified*, shared attributes in a multiple selection, prefab overrides, and the Running
    tab's live values. Tests: an attribute added in the Inspector is in the saved file and read by a test project's
    script at Play; a change made by the script shows in the Running tab and is gone after Stop.

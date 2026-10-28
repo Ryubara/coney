@@ -350,6 +350,7 @@ nav:
           - Script editor: guides/studio/script-editor.md
           - Mission mods: guides/studio/mission-mods.md
           - Entities and the Inspector: guides/studio/entities.md
+          - A Human's properties: guides/studio/human-properties.md
       - Conventions: guides/conventions.md
       - Repository conventions: guides/repo-conventions.md
       - Enforcement map: guides/enforcement.md
