@@ -57,6 +57,7 @@ struct Scene {
 
 TEST_CASE("the distance term pays 4 points a metre inside the sight range, and rules out one beyond it",
           "[ai][targeting]") {
+    // Expected: ai-fights.md#enemy-score, confirmed (code)
     Scene scene;
     Brain& scorer = scene.add(40.0F, 40.0F, 0.0F, BrainType::Gang);
     Brain& near = scene.add(40.0F, 50.0F, 0.0F, BrainType::Gang);
@@ -70,6 +71,7 @@ TEST_CASE("the distance term pays 4 points a metre inside the sight range, and r
 }
 
 TEST_CASE("an enemy out of view, a player, or one targeting the scorer changes the score", "[ai][targeting]") {
+    // Expected: ai-fights.md#enemy-score, confirmed (code)
     Scene scene;
     Brain& scorer = scene.add(40.0F, 40.0F, 0.0F, BrainType::Gang);
     Brain& behind = scene.add(40.0F, 35.0F, 0.0F, BrainType::Gang);
@@ -81,6 +83,7 @@ TEST_CASE("an enemy out of view, a player, or one targeting the scorer changes t
 }
 
 TEST_CASE("the always-counting terms: not attackable, and the gang's chosen target", "[ai][targeting]") {
+    // Expected: ai-fights.md#enemy-score, confirmed (code)
     Scene scene;
     Brain& scorer = scene.add(40.0F, 40.0F, 0.0F, BrainType::Gang);
     Brain& enemy = scene.add(40.0F, 45.0F, 0.0F, BrainType::Gang);
@@ -99,6 +102,7 @@ TEST_CASE("the always-counting terms: not attackable, and the gang's chosen targ
 }
 
 TEST_CASE("an enemy whose attack slots are full to nearer attackers is ruled out", "[ai][targeting]") {
+    // Expected: ai-fights.md#enemy-score, confirmed (code)
     Scene scene;
     Brain& target = scene.add(40.0F, 40.0F, 0.0F, BrainType::Player);
     target.setAttackSlotCount(1);
@@ -115,6 +119,7 @@ TEST_CASE("an enemy whose attack slots are full to nearer attackers is ruled out
 
 TEST_CASE("the pick takes the best score above 0, keeps the previous target on a near tie and skips the invalid",
           "[ai][targeting]") {
+    // Expected: ai-fights.md#enemy-score, confirmed (code)
     Scene scene;
     Brain& brain = scene.add(40.0F, 40.0F, 0.0F, BrainType::Gang);
     Brain& a = scene.add(40.0F, 50.0F, 0.0F, BrainType::Gang); // 10 m: 80
@@ -135,7 +140,35 @@ TEST_CASE("the pick takes the best score above 0, keeps the previous target on a
     CHECK(brain.target() == nullptr);
 }
 
+TEST_CASE("the sight range is at least 30 m while the brain's gang is fighting, whatever its kind", "[ai][targeting]") {
+    // Expected: ai-fights.md#enemy-scan, confirmed (code): Brain_GetSightRange reads the gang's alert state (+0x32)
+    Scene scene;
+    Brain& fighter = scene.add(40.0F, 40.0F, 0.0F, BrainType::Gang);
+    Brain& cop = scene.add(10.0F, 40.0F, 0.0F, BrainType::Cop);
+    Brain& enemy = scene.add(40.0F, 65.0F, 180.0F, BrainType::Gang);
+    Brain& suspect = scene.add(10.0F, 65.0F, 180.0F, BrainType::Gang);
+    fighter.setSight(20.0F, fighter.fieldOfView());
+    cop.setSight(20.0F, cop.fieldOfView());
+    coney::ai::Gangs& gangs = scene.brains.gangs();
+    const int brawlers = gangs.create(19, "Brawlers");
+    const int police = gangs.create(coney::ai::kPoliceKind, "Police");
+    gangs.addMember(brawlers, fighter);
+    gangs.addMember(police, cop);
+    gangs.find(brawlers)->setAlertState(coney::ai::kGangFighting);
+    // A fighting gang of any kind: 30 m, so an enemy 25 m away scores 4 × (30 - 25).
+    CHECK(coney::ai::sightRangeOf(fighter) == Catch::Approx(30.0F));
+    CHECK(scoreEnemy(fighter, enemy, term::kDistance) == Catch::Approx(20.0F));
+    // A calm police gang keeps its own 20 m: the same 25 m is beyond it.
+    CHECK(coney::ai::sightRangeOf(cop) == Catch::Approx(20.0F));
+    CHECK(scoreEnemy(cop, suspect, term::kDistance) == kRuledOut);
+    // Calm again, the fighter's own range is back.
+    gangs.find(brawlers)->setAlertState(coney::ai::kGangCalm);
+    CHECK(coney::ai::sightRangeOf(fighter) == Catch::Approx(20.0F));
+}
+
 TEST_CASE("the score weights come from the configuration script's CfgSetTargetingPoints calls", "[ai][targeting]") {
+    // Expected: ../references/bindings/config.md#cfgsettargetingpoints, confirmed (code); also
+    // ../references/bindings/config.md#cfgsettargetingpointsex
     coney::script::RecordedCalls recorded;
     using coney::script::Value;
     const std::vector<Value> plain{2.5, 7.0, -6.0, 2.0, 3.0, 99.0, 5.0, 8.0, 4.0};
