@@ -180,8 +180,8 @@ output is frozen in numbered forms:
 A patch is pinned to the **chunk hash**, the content of the script, never to a disc.
 
 - **PS2 and Xbox.** All 467 scripts of the PS2 disc are byte-identical on the Xbox disc, by SHA-1
-  ([Xbox assets](../../research/xbox-assets.md#asset-kinds)). So a patch made from either disc applies to the other,
-  unchanged: the chunk hash, the base text and the result are the same.
+  ([Xbox assets: Kinds of entry](../../research/xbox-assets.md#kinds-of-entry)). So a patch made from either disc
+  applies to the other, unchanged: the chunk hash, the base text and the result are the same.
 - **The Xbox's 36 scripts of its own.** A patch of one of them fits only an install that has it. On a PS2 install that
   script does not exist and nothing runs it, so the patch is **skipped** with a notice in the mod's details ("patch for
   an Xbox script; not used with this disc"), and the rest of the mod starts.
@@ -214,7 +214,7 @@ overlap. All patches of one script share one base text (a 4.0 patch meeting a 5.
   touch but share no line also merge, since exact line numbers leave no doubt where each goes. An identical change made
   by both is applied once.
 - **A real overlap: the player chooses.** Two changes to the same base line, or two different insertions at the same
-  place, are a conflict. The mods menu ([#1063](issue:1063)) shows the two mods and the script, and the player keeps one
+  place, are a conflict. The [Mods screen](ui.md#mods-screen) shows the two mods and the script, and the player keeps one
   mod's change for that place or disables one mod. The choice is recorded in `mods/enabled.toml` with both package
   hashes, so it is asked once, and again only when either mod changes.
 - **Three or more** merge one at a time, in load order.
@@ -285,7 +285,7 @@ The translator reads the 4.0 base text with Coney's Lua 4.0 parser (the compiler
 | `for i = a, b, c do` whose body assigns `i` | a `while` loop on the same line (4.0's loop steps the variable the body changed; 5.4's control variable is a copy) |
 | `%name` upvalue, `...` and `arg` | not on the disc; translated to a local captured by the closure and to `...` with `local arg = table.pack(...)` for scripts users write |
 | `strsub`, `strlen`, `strfind`, `type`, `max`, `min`, `abs`, `tonumber` | `string.sub`, `string.len`, `string.find`, `type`, `math.max`, `math.min`, `math.abs`, `tonumber` (the same results for the arguments the disc passes) |
-| `getn`, `tinsert`, `tremove`, `mod` | `lua40.getn`, `lua40.tinsert`, `lua40.tremove`, `lua40.mod`: a small helper table of the game state that keeps 4.0's rules (as Lua 4.0.1's `lbaselib.c` defines them: `getn` reads a table's `n` field first; `tinsert` and `tremove` keep `n` up to date; `mod` is C's `fmod`, NaN for a zero divisor where 5.4's `math.fmod` raises an error on integers) |
+| `getn`, `tinsert`, `tremove`, `mod` | `lua40.getn`, `lua40.tinsert`, `lua40.tremove`, `lua40.mod`: a small helper table of the game state that keeps 4.0's rules (as Lua 4.0.1's `lbaselib.c` defines the first three: `getn` reads a table's `n` field first; `tinsert` and `tremove` keep `n` up to date; and its `lmathlib.c` the last: `mod` is C's `fmod`, NaN for a zero divisor where 5.4's `math.fmod` raises an error on integers) |
 | `true`, `false` (globals) | `1`, `nil` ([Booleans](#booleans)) |
 | a field named by a 5.4 reserved word | `t["goto"]` |
 
@@ -447,8 +447,9 @@ it is a dialect: `true` would be 1, `//` and integers would not exist, and a use
 
 ## Studio's flow {#studio-flow}
 
-Studio's panels and editor are the editor and technology pages' ([#1055](issue:1055), [Technology](technology.md)), and
-the project folder and the `.cmod` are [Project formats](project-formats.md)'; this is what they do with game scripts.
+Studio's panels and editor are the [editor experience](editor-experience.md#panel-list) and [technology](technology.md)
+pages', and the project folder and the `.cmod` are [Project formats](project-formats.md)'; this is what they do with
+game scripts.
 
 1. **Open.** The File system panel shows the install's game scripts under `game:/scripts/`
    ([Paths](content-and-formats.md#paths)), by name (the 111 unnamed by hash), with the mission each belongs to. The
@@ -497,6 +498,10 @@ When this design is accepted:
   player chooses only on a real overlap ([Two mods](#two-mods)), instead of being refused.
 - The open security page of [#1062](issue:1062) (`security.md`): its build issue for game-script overrides as Lua 4.0
   source becomes this page's issue 5; the `.cpatch` parser joins the parsers it fuzzes.
+- [UI and menus: the Mods screen](ui.md#mods-screen): the choice the player makes on a real overlap between two
+  mods' patches of one script, recorded with both package hashes ([Two mods](#two-mods)).
+- [Editor experience: the panels](editor-experience.md#panel-list): the File system panel lists the install's game
+  scripts under `game:/scripts/`, with each script's round-trip result, for editing ([Studio's flow](#studio-flow)).
 - [Project formats](project-formats.md#formats): the project folder gains `patches/` (the `.cpatch` files), which the
   [`.cmod`](project-formats.md#cmod) holds as they are.
 - [Content and formats: Paths](content-and-formats.md#paths): a project names the disc it was made against, but its
@@ -512,8 +517,9 @@ When this design is accepted:
    not the disc, merge two mods' patches and ask only on a real overlap, 5.4 preferred, 4.0 first.
 2. **To decide after [the probe](#probe): Lua 5.4 for missions or Lua 4.0**, from [the verdict](#verdict) and the
    probe's counts.
-3. **Faithful first.** A patched script changes the game, as any mod does; this page assumes the exception for Studio
-   and its projects that the [Lua SDK](lua-sdk.md#decisions) assumes.
+3. **Faithful first: decided, no exception needed** ([Studio's decisions](index.md#decisions)). Studio offers a script
+   for editing, and a level's 5.4 form, only once Coney has what it needs (the round trip, the compiler, the proof), and
+   a patched script makes a modded session; the story without mods plays as the original.
 
 ## Open questions {#open-questions}
 

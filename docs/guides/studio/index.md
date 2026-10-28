@@ -36,6 +36,7 @@ merges its page adds its row here and its line to the `nav:` of `mkdocs.yml`, un
 | [Lua SDK and natives](lua-sdk.md) | The natives and their names, the Lua 5.4 runtime for projects and its loader, the manifest, the sandbox, typed stubs for completions, hot reload | [#1057](issue:1057) |
 | [Content and formats](content-and-formats.md) | What Studio shows and edits from the disc's files, the import step, readers, content by kind, export | [#1058](issue:1058) |
 | [Project formats](project-formats.md) | The files a project saves: the level file with its entity tree, names, tags and prefabs, and the `.cmod` package | [#1058](issue:1058) |
+| [Mission mods](mission-mods.md) | Changing a game script: decompiling on the user's machine, patches of differences pinned to the script's hash, merging two mods' patches, compiling and running in the script's place, and the verdict on a Lua 4.0 to 5.4 translator with its proof by traces | [#1074](issue:1074) |
 
 ## Terms {#terms}
 
