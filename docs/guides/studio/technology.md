@@ -237,13 +237,14 @@ are accepted; the queue keeps each one inside a step.
 
 **Choice: goossens' ImGuiColorTextEdit**, pinned to a commit in `cmake/deps.cmake` and built with Studio only, wrapped
 by a `ScriptEditor` of Studio's own that owns the tabs, the files, the keymap and the connection to the language server.
-The widget asks the application for completions and draws them, and takes squiggles and hover text from it, so the
-language server stays outside the widget ([Proofs](#proof-shell)).
+The widget takes squiggles and hover text from the application, so the language server stays outside the widget
+([Proofs](#proof-shell)). The proof used the widget's own completion popup; the script editor design has Studio draw
+its own instead, with kinds, documentation and fixed time ([Language features](script-editor.md#language)).
 
-**VS Code keys.** The widget's own keys follow VS Code (Ctrl+D next match, Alt+Up and Down move lines, Ctrl+/ comment,
-Ctrl+Space completions, Ctrl+F find, Ctrl+Shift+K delete line). Studio adds the rest: Ctrl+P open a project file,
-Ctrl+Shift+P the command palette, F12 go to definition, Shift+F12 references, F2 rename, Ctrl+Shift+M Problems, and
-the debugger's F5, Shift+F5, F9, F10 and F11. The full keymap is the editor experience design's.
+**VS Code keys.** Many of the widget's own keys are VS Code's (Alt+Up and Down move lines, Ctrl+/ comment, Ctrl+F find,
+Ctrl+Shift+K delete line), but not all: Ctrl+X on an empty selection copies the line without cutting it, and Ctrl+D,
+Ctrl+L and Ctrl+G do other things. So Studio's keymap takes every key over; the keymap, its defaults and each key where
+the widget differs are the [script editor](script-editor.md#keymap) design's.
 
 ## Language tooling {#language-tooling}
 
@@ -376,10 +377,10 @@ reload here (9).
 6. **`tools: Add live edits from the Level view during Play`.** Edit commands (ids and values) queued by the UI and
    applied between steps, the Entity editor's queue grown to every editable thing; level edits kept after Stop, as the
    editor experience design asks. Tests apply commands to a headless session.
-7. **`tools: Add the script editor to Coney Studio`.** goossens' ImGuiColorTextEdit pinned, tabs over project files,
-   the VS Code keymap, LuaLS started per project with Studio's LSP client (diagnostics, completion, hover, signature
-   help, definition, references, rename), the Problems panel, LuaLS shipped per platform, and a new project's
-   `.luarc.json`. Tests drive the client against a recorded server conversation.
+7. **The script editor: replaced** by the [script editor design's build issues](script-editor.md#build-issues), which
+   split this one (the widget, the editor panel, the language server, go to definition and the rest) and add the
+   keymap with contexts, the Studio-aware strings and the event fields. They come here in the order, after Play and
+   before the debugger.
 8. **`tools: Add the debugger to the Coney Studio script editor`.** The DAP client: gutter breakpoints, the current
    line, the Debug panel and the F5 to F11 keys; pausing keeps the UI running.
 9. **`tools: Add hot reload of scripts and assets to Coney Studio`.** The project poller, reload requests for changed
