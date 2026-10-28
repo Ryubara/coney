@@ -191,12 +191,9 @@ libraries, and the image and audio readers beside them, are chosen on the techno
 | FBX (binary and ASCII) | The same, from FBX's meshes, skin deformers and animation stacks (Blender's actions, or one take each) | **ufbx** (single-file C) | MIT, or public domain (the Unlicense) |
 | `.blend` | Not read | | |
 
-- **FBX: ufbx, not the Autodesk FBX SDK.** Autodesk's SDK is closed source under Autodesk's own licence, shipped as
-  prebuilt libraries per compiler and platform; it cannot be built from source by `cmake/deps.cmake`, its licence
-  terms are not compatible with distributing it inside a GPL-3.0-or-later program, and it would be the one dependency a
-  contributor could not build or read. ufbx is an open reader written from the format's public descriptions, fetched
-  and built like the other dependencies, licensed MIT, and reads FBX as Blender, Maya and Mixamo write it, skinning
-  and animation included. Adding either reader is a dependency to approve ([Maintainer decisions](#decisions)).
+- **FBX through ufbx, not the Autodesk FBX SDK**, whose licence cannot be combined with GPL-3.0 code Coney ships;
+  the technology design weighs the two ([Importers](technology.md#importers)), and a maintainer approved cgltf and
+  ufbx ([Maintainer decisions](#decisions)).
 - **No `.blend` reader.** Blender's own file format is an internal one that changes between versions; Blender's glTF
   and FBX exporters are the supported way out of it, as in Unity and Godot (Unity reads a `.blend` only by starting
   Blender to export FBX behind the scenes). The import guide will say how to export from Blender (glTF Binary, +Z up
@@ -206,8 +203,8 @@ libraries, and the image and audio readers beside them, are chosen on the techno
   ([Collision](../../research/collision.md), [The layout format](../sandbox.md#the-layout-format)), and skinned data
   into the pose's axes ([Character geometry](../../research/characters.md#character-geometry)); the sidecar can add a
   scale.
-- **Other audio formats** (Ogg Vorbis, FLAC, MP3) are a later importer each, decoding to the same WAV engine form; the
-  first importer takes WAV.
+- **Audio**: WAV, FLAC, MP3 and Ogg Vorbis, through the technology design's readers, all decode to the same WAV engine
+  form.
 - **These readers live in Studio's import step**, not in the game (principle 4): `coney` itself reads `.cmesh`,
   `.cmodel`, `.cclip`, PNG, WAV and Bink movies only.
 
@@ -443,7 +440,7 @@ indices; nothing else, since the natives above are implemented.
 material, normals, bone axes, [Mesh views](../debug-menu.md#mesh-views)) and its counts (vertices, triangles,
 materials, bones); a texture dictionary in the Texture viewer (each texture, its size, depth, palette, mipmaps and
 addressing, as `--view-txd` shows them, [the 2D viewers](../running-viewers.md#viewing-texture-dictionaries)). The
-viewers are the editor experience design's ([#1055](issue:1055), build issue 9).
+viewers are the editor experience design's ([#1055](issue:1055), its viewers build issue).
 
 **Edit: texture overrides on existing models.** (A `.cmod` made only of such replacements is an **override pack**,
 [Override packs](project-formats.md#override-packs).) A project replaces a disc texture with a PNG of its own: `override
@@ -454,7 +451,7 @@ folder](../asset-and-script-architecture.md#install-folder), scoped to a project
 texture, as the extract tool names them), the same rule (an entry matching no texture on the disc is ignored and
 listed), and textures are a presentation kind, so an override changes no gameplay
 ([Layers](../asset-and-script-architecture.md#asset-layers)). The PNG keeps its own size: a texture twice as large is
-drawn with the same coordinates, as a texture pack's is ([Texture packs](../enhancements.md#packs)). A character entity
+drawn with the same texture coordinates, since they run from 0 to 1 whatever the size. A character entity
 may also take a texture of its own, for that one human: the game binds a character's one texture to its material at each
 draw ([Character geometry](../../research/characters.md#character-geometry), [Drawing a
 human](../../research/graphics.md#human-draw)), so one human can wear another texture without touching the rest.
@@ -624,16 +621,14 @@ natives are implemented), and the export of every kind the extract tool writes.
 
 ## Maintainer decisions {#decisions}
 
-1. **Studio's import dependencies**: cgltf (MIT) to read glTF and ufbx (MIT, or the Unlicense) to read FBX, with the
-   image and audio readers the [technology design](technology.md#importers) lists, in Studio's import step only, fetched
-   at pinned commits like the others in `cmake/deps.cmake` and listed in [LEGAL.md](repo:LEGAL.md#licences). A new
-   dependency's licence is a maintainer decision. The Autodesk FBX SDK is not proposed ([Readers](#readers)).
-2. **Derived files in projects**: this page lets a project hold a file the user made from a disc export on their own
+1. **Derived files in projects**: this page lets a project hold a file the user made from a disc export on their own
    machine, marked and left out of packages ([The import step](#import)), rather than refusing it. Whether Studio should
    refuse instead is a legal question.
 
 Decided for the Studio brief of [#1054](issue:1054), and applied here:
 
+- **cgltf and ufbx are approved** as Studio's glTF and FBX readers (MIT), with the image and audio readers the
+  [technology design](technology.md#importers) lists, built with Studio only, never with the game.
 - **The level is a tree of entities**, as Unity's Hierarchy is, with prefabs placed many times and per-instance
   overrides ([The entity tree](project-formats.md#entity-tree), [Prefabs](project-formats.md#prefabs)).
 - **No script is attached to an entity**: Studio is not a general engine; a project's scripts find entities by name or
@@ -686,12 +681,15 @@ In the order they should come, after the editor experience design's shell, File 
    statements, with Coney's own route graph builder, marked as Coney's choice; the AI's route planner and follower
    unchanged. Tests: an AI fighter walks round a hole, jumps a jump link and opens a door link on a built map; the
    built map passes the same queries as its polygons.
-6. **tools: Add the Coney Studio import step with PNG and WAV.** The `.import` sidecar, stable ids, the import table,
-   engine forms in `.studio/imported/`, deterministic output, provenance; PNG to textures and WAV to sounds, with a WAV
-   reader into `PcmSound` in Coney and `override` statements for textures and sounds. Tests: the same source gives the
-   same bytes; a rename keeps a redirect; a WAV plays through the offline mixer.
-7. **tools: Add glTF and FBX import of static meshes and maps.** cgltf and ufbx (after the maintainer's approval) in
-   the import step, the `.cmesh` form and its core parser, Coney drawing an imported mesh, and whole maps by the naming
+6. **tools: Add the Coney Studio import step's sidecars, table and engine forms.** What the import does with what the
+   readers read; the readers themselves (cgltf, ufbx, stb_image, dr_libs, stb_vorbis) and drag and drop are the
+   technology design's build issue 10 ([Importers](technology.md#importers)), which comes first. This issue adds the
+   `.import` sidecar, stable ids, the import table, engine forms in `.studio/imported/`, deterministic output and
+   provenance; images to PNG textures and every audio format to the WAV form, with a WAV reader into `PcmSound` in
+   Coney and `override` statements for textures and sounds. Tests: the same source gives the same bytes; a rename keeps
+   a redirect; an imported sound plays through the offline mixer.
+7. **tools: Add static meshes and whole maps to the import step.** On the technology design's glTF and FBX readers:
+   the `.cmesh` form and its core parser, Coney drawing an imported mesh, and whole maps by the naming
    convention and custom properties of [How a level starts](#level-start): meshes, collision, materials, spawns,
    flags, paths, walkable areas, objects and lights. Tests: a synthetic glTF and FBX cube import to the same `.cmesh`;
    a synthetic map's spawn, path and walkable area become statements; its collider stops the player.
