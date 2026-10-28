@@ -257,7 +257,7 @@ the widget differs are the [script editor](script-editor.md#keymap) design's.
 
 **Choice: LuaLS.** Studio starts LuaLS per project and talks to it with a small LSP client of its own (on Coney's JSON
 reader, plus a writer); the widget's experimental LSP bridge covers only completion and hover and brings another
-framework. What LuaLS reads (the stubs `coney-tools natives stubs` generates from the masterlist and the project's
+framework. What LuaLS reads (the stubs `coney-tools bindings stubs` generates from the masterlist and the project's
 `.luarc.json`) is the Lua SDK design's ([Typed stubs for the language server](lua-sdk.md#stubs)); Studio writes the
 `.luarc.json` of a new project and ships the stubs with itself.
 

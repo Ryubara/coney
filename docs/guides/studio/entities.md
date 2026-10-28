@@ -237,9 +237,10 @@ properties:
 ```
 
 - **`coney-tools entities cpp`** writes the C++ table every reader uses (keys, types, ranges, defaults, groups,
-  flags and which native or edit each names), leaving out the properties that are not available, as `natives cpp`
-  writes the debug menu's signature table ([`natives cpp`](../coney-tools-references.md#natives-cpp-usage)); `--check`
-  fails when the table is stale, in the local gate and in CI.
+  flags and which native or edit each names), leaving out the properties that are not available, as
+  `bindings render-cpp` writes the debug menu's signature table
+  ([`bindings render-cpp`](../coney-tools-references.md#bindings-render-cpp-usage)); `--check` fails when the table
+  is stale, in the local gate and in CI.
 - **`coney-tools entities render`** writes a reference page per kind, every property with its state and, for the
   waiting ones, what they wait on: the "what Studio can set" list a modder reads, and the roadmap's per-kind list of
   what is missing.
