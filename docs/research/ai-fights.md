@@ -704,10 +704,10 @@ is empty; and for a scorer whose `+0x14d` is set and whose gang has a turf (gang
 
 **`Brain_ScoreEnemy(scorer, enemy, flags)`** (`0x0029ce98`) returns −999 for none, an enemy near a train this update
 (`Brain_IsNearTrain` `0x0028ab30`: brain `+0x2e0` equals the game time) or one the scorer may not take
-(`Brain_CanTakeSlotOn` `0x0028dc80`: the enemy's attack slots are full, the scorer holds none, and no current
-attacker is farther from the enemy than the scorer). Otherwise the sum of these terms, `w` being the weights that
-`CfgSetTargetingPoints` / `CfgSetTargetingPointsEx` set (values from `config_preload2.lua`; the executable's
-defaults in brackets where they differ):
+(`Brain_CanTakeSlotOn` `0x0028dc80`: the enemy's live attack slots (`+0x1a4`) equal his maximum (`+0x1e4`), and
+either the scorer holds one of them or no holder is farther from the enemy than the scorer, by squared 3D distances).
+Otherwise the sum of these terms, `w` being the weights that `CfgSetTargetingPoints` / `CfgSetTargetingPointsEx` set
+(values from `config_preload2.lua`; the executable's defaults in brackets where they differ):
 
 | Term (flag) | When | Points |
 | --- | --- | --- |

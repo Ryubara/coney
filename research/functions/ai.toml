@@ -1346,10 +1346,10 @@ address = 0x0028dc80
 name = "Brain_CanTakeSlotOn"
 page = "ai-code.md#attack-slots"
 kind = "helper"
-role = "whether the brain may take an attack slot on an enemy"
+role = "whether the brain may take an attack slot on an enemy: yes while his holders are not his maximum; when full, no for a holder, else only when a holder is farther from him"
 level = "confirmed-code"
 coney = "src/ai/targeting.h:canTakeSlotOn"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0028de48

@@ -11,6 +11,7 @@
 #include "ai/goal.h"
 #include "ai/perception.h"
 #include "ai/route_planner.h"
+#include "animation/anim_math.h"
 #include "human/human.h"
 
 namespace coney::ai {
@@ -33,11 +34,6 @@ bool down(const Brain& brain) { return brain.human().state() == human::TargetSta
 // human's held object only by the anim set it gives him, so an object with none does not count.
 // @orig 0x00224060 Human_IsHoldingObject (unknown)
 bool armed(const Brain& brain) { return brain.human().fighter().animSet() != 0; }
-
-// The distance between two brains' humans, which Brain_CanTakeSlotOn compares (as squares) for the scorer and each
-// slot holder.
-// @orig 0x0028dc80 Brain_CanTakeSlotOn (unknown)
-float planDistance(const Brain& a, const Brain& b) { return a.distanceTo(b); }
 
 } // namespace
 
@@ -89,12 +85,23 @@ bool attackableBy(const Brain& target, const Brain* attacker) {
 }
 
 bool canTakeSlotOn(const Brain& scorer, const Brain& enemy) {
+    // Any count of holders but the maximum leaves room (the original subtracts and tests for 0).
     const std::vector<Brain*>& slots = enemy.attackSlots();
-    if (slots.size() < enemy.attackSlotCount() || std::ranges::find(slots, &scorer) != slots.end()) {
+    if (slots.size() != enemy.attackSlotCount()) {
         return true;
     }
-    const float mine = planDistance(scorer, enemy);
-    return std::ranges::any_of(slots, [&](const Brain* holder) { return planDistance(*holder, enemy) > mine; });
+    // Full: a scorer who already holds one may not take another.
+    if (std::ranges::find(slots, &scorer) != slots.end()) {
+        return false;
+    }
+    // Else only when a holder stands farther from the enemy than the scorer, by squared distances in 3D.
+    const anim::Vec3 at = enemy.human().position();
+    const auto squared = [&](const Brain& brain) {
+        const anim::Vec3 to = anim::subtract(at, brain.human().position());
+        return anim::dot(to, to);
+    };
+    const float mine = squared(scorer);
+    return std::ranges::any_of(slots, [&](const Brain* holder) { return mine < squared(*holder); });
 }
 
 float scoreEnemy(const Brain& scorer, const Brain& enemy, std::uint32_t flags) {
