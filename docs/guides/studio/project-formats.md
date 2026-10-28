@@ -64,6 +64,11 @@ units and axes: metres and degrees, the game's axes, z up.
 | `navlink` | `from= to= kind=walk\|jump\|climb\|door` | A link between areas |
 | Entities | `flag`, `path`, `flaglink`, `volume`, `object`, `emitter`, `door`, `glass`, `car`, `light`, `character`, `spawner`, `trigger` with their natives' arguments by name | The entities of [Level objects](content-and-formats.md#entities) |
 | `spawn NAME` | `character=` a type number or `project:/characters/...` | The spawn point's character |
+| A kind's properties | every key of the kind's property schema, written only when it differs from its default | What the Inspector sets ([What the level file stores](entities.md#level-file)) |
+| Event fields | `on-enter=NAME`, `on-exit=NAME` and the kind's other events | A function of the project's scripts, connected at Play ([Events](entities.md#events)) |
+| `gang NAME` | `type=`, `enemies=ID,...`, `friends=ID,...`, the gang's other properties | A gang and its relations; a `character`'s `gang=` names its id ([A Gang](human-properties.md#gang)) |
+| `stealth` | `at= yaw= size=` | A stealth zone: the floor triangles inside the box are shadow ground at Play ([Stealth zones](entities.md#stealth-zone)) |
+| `attr ID` | `name:type=value ...`, `name=nil` | An entity's attributes, or an instance's override of them ([Attributes](entities.md#attributes)) |
 
 An example, in version 2:
 
@@ -82,7 +87,9 @@ box id=b1 at=20,0,0 size=6,6,0.1 rot=0,0.1305,0,0.9914 sneak=yes texture=floor
 group id=g1 name=Gate at=16,12,0
 flag fYardGate id=f1 parent=g1 at=0,0,0 heading=0
 object id=o1 parent=g1 type=dyn_trashcan at=-1,-1,0 zone=0
-character Rival id=h1 tags=rivals type=32 gang=2 at=18,12,0 heading=180
+gang Rivals id=g2 type=2
+character Rival id=h1 tags=rivals type=32 gang=g2 at=18,12,0 heading=180
+attr h1 boss:boolean=true loot:number=250
 
 instance id=p1 name=AmbushNorth tags=ambush prefab=project:/prefabs/ambush.prefab at=30,5,0 yaw=90
 instance id=p2 name=AmbushSouth tags=ambush prefab=project:/prefabs/ambush.prefab at=40,-8,0
@@ -144,7 +151,7 @@ each returns the handles the game natives take, so `GetPosition`, `TeleportToFla
 | `Coney.FindEntity(idOrName)` | The handle of the entity with that id (`"p2/h3"`), else the first with that name in file order; `nil` when none |
 | `Coney.FindEntities(tag)` | A list of the handles of every entity with that tag, in file order (an instance counts once, as its root's handle); empty when none |
 | `Coney.GetEntityMembers(handle)` | A list of the handles of an instance's or a group's entities, in file order |
-| `Coney.GetEntityInfo(handle)` | A table of the entity's `id`, `name`, `tags` and kind, or `nil` for a handle no level entity has |
+| `Coney.GetEntityInfo(handle)` | A table of the entity's `id`, `name`, `tags` and kind, or `nil` for a handle that is neither a level entity nor a member of a prefab a script spawned ([Spawning a prefab from a script](entities.md#spawn-prefab)) |
 
 "Every entity tagged ambush" is one call, and a script that finds none gets an empty list, never an error. The table is
 read only between the level's entry and its end; a call before `levelStart` returns nothing. Build issue 3 of
@@ -157,8 +164,9 @@ ambush), with its own tree. A prefab holds no script: the project's scripts find
 ([Names and tags](#names-tags)).
 
 - **The prefab file** is a level file's entity statements under `format prefab 1`, with ids local to the prefab and one
-  root entity whose transform is the instance's origin. It holds no `base`, no `map` and no level settings (sky, fog,
-  title).
+  root entity whose transform is the instance's origin: the prefab's pivot, which a script's spawn places and turns
+  ([Spawning a prefab from a script](entities.md#spawn-prefab)). It holds no `base`, no `map` and no level settings
+  (sky, fog, title).
 - **An instance** is one `instance` line: the prefab's path and the instance's own id, parent and transform. Its
   entities' ids are `INSTANCE/LOCAL` (`p2/f3`), which scripts and the Hierarchy use.
 - **Per-instance overrides** are `set INSTANCE/LOCAL key=value ...`, only the keys that differ from the prefab, and
