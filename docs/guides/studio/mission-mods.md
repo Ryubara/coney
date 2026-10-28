@@ -49,7 +49,7 @@ A maintainer decided the frame:
 | **Chunk hash** | The SHA-256 of a game script's bytes as the WAD stores them. It names the script's content, whichever disc it came from |
 | **Base text** | The text a patch applies to: the decompile of a chunk in a fixed **form** (for 4.0), or that decompile translated to 5.4 in a fixed form (for 5.4). It is made on the user's machine and never leaves it |
 | **Form** | A numbered version of the decompiler's output (or of the translator's). The same chunk in the same form always gives the same text, byte for byte ([Forms](#forms)) |
-| **Edited copy** | The user's edited base text, kept in Studio's local cache, never in the project's shared files and never in a package |
+| **Edited copy** | The user's edited base text, kept in Studio's local cache (`.studio/`), never in the project's shared files and never in a package ([What is never in a project](project-formats.md#never)) |
 | **Patch** | A `.cpatch` file (working name): the differences between a base text and an edited copy, holding only the author's own text and references to the base ([The format](#format)) |
 | **Game state** | The Lua 4.0 state in which a level's game scripts run ([The two states](lua-sdk.md#two-states)) |
 | **Trace** | The native calls a level's scripts make, step by step, with their arguments and results, and the engine's calls into the scripts by name ([Proof by trace equality](#proof)) |
@@ -410,7 +410,9 @@ interpreter (built from the same pinned source as the `luac` of `workspace init 
 each with the same fake natives written in Lua. It prints counts only: scripts that translate and parse, functions
 whose traces agree, loops whose order differs between 4.0's hash order, first-set order and 5.4's order. For string
 and number keys the stock 4.0 interpreter's order is the original's (the game links the same table code, and those
-keys hash by value), so the probe also shows how often Coney's first-set order departs from the original's.
+keys hash by value), so the probe also shows how often Coney's first-set order departs from the original's. That holds
+only for an interpreter built with a 32-bit `long`, as the PS2's is: Lua 4.0 hashes strings in an `unsigned long`,
+which a 64-bit Linux or macOS build widens, sending long string keys to other slots.
 
 ### The verdict {#verdict}
 
@@ -445,17 +447,20 @@ it is a dialect: `true` would be 1, `//` and integers would not exist, and a use
 
 ## Studio's flow {#studio-flow}
 
-Studio's panels and editor are the editor and technology pages' ([#1055](issue:1055), [Technology](technology.md));
-this is what they do with game scripts.
+Studio's panels and editor are the editor and technology pages' ([#1055](issue:1055), [Technology](technology.md)), and
+the project folder and the `.cmod` are [Project formats](project-formats.md)'; this is what they do with game scripts.
 
-1. **Open.** The File system panel shows the install's game scripts under `game:/scripts/`, by name (the 111 unnamed
-   by hash), with the mission each belongs to. The first time a script is opened, Studio checks it on this machine:
-   decompile in the current form, compile with Coney's compiler, compare with the chunk. A script that does not round-trip
-   is shown greyed with the reason and cannot be edited. The result is kept by chunk hash in Studio's local cache.
-2. **Edit.** Opening a script for editing makes the edited copy in the project's local cache (`.studio/`, never
-   exported, and listed in the `.gitignore` Studio writes, so a project shared through git carries no game text) and
-   opens it in the script editor: in 4.0, or in 5.4 when the level's 5.4 form is offered and the user chose it. A
-   *Compare with original* view shows the edited copy beside the base text.
+1. **Open.** The File system panel shows the install's game scripts under `game:/scripts/`
+   ([Paths](content-and-formats.md#paths)), by name (the 111 unnamed by hash), with the mission each belongs to. The
+   first time a script is opened, Studio checks it on this machine: decompile in the current form, compile with Coney's
+   compiler, compare with the chunk. A script that does not round-trip is shown greyed with the reason and cannot be
+   edited. The result is kept by chunk hash in Studio's local cache. This is the edit that [Missions and
+   scripts](content-and-formats.md#missions) leaves to this page: there a disc script is shown as its functions and the
+   natives they call; here it opens as source.
+2. **Edit.** Opening a script for editing makes the edited copy in the project's local cache (`.studio/`, [The project
+   folder](project-formats.md#formats): never exported, and listed in the `.gitignore` Studio writes, so a project
+   shared through git carries no game text) and opens it in the script editor: in 4.0, or in 5.4 when the level's 5.4
+   form is offered and the user chose it. A *Compare with original* view shows the edited copy beside the base text.
 3. **Save.** Studio writes the edited copy, compiles it (errors in the Problems panel with their lines) and writes the
    patch into the project's shared files (`patches/<name>.cpatch`), adding the script to the manifest's `game-scripts`
    permission. Only the patch is the project's; a project opened on another machine rebuilds the edited copy from that
@@ -464,7 +469,8 @@ this is what they do with game scripts.
    author tests is what players get. Play with other mods enabled shows any merge conflict as the mods menu would.
 5. **Convert to Lua 5.4.** For a level whose 5.4 form is offered: the patch is lifted ([Translation is
    deterministic](#deterministic)) and the edited copy reopens in 5.4.
-6. **Export.** The `.cmod` holds the patches and the manifest; Export refuses a package that holds a decompiled script,
+6. **Export.** The `.cmod` ([The `.cmod` package](project-formats.md#cmod)) holds the patches and the manifest, as
+   it holds the project's other files; Export refuses a package that holds a decompiled script,
    the guard's marker or three of five fingerprinted lines in any file ([The format](#format)).
 
 ## The order of the work {#order}
@@ -491,6 +497,12 @@ When this design is accepted:
   player chooses only on a real overlap ([Two mods](#two-mods)), instead of being refused.
 - The open security page of [#1062](issue:1062) (`security.md`): its build issue for game-script overrides as Lua 4.0
   source becomes this page's issue 5; the `.cpatch` parser joins the parsers it fuzzes.
+- [Project formats](project-formats.md#formats): the project folder gains `patches/` (the `.cpatch` files), which the
+  [`.cmod`](project-formats.md#cmod) holds as they are.
+- [Content and formats: Paths](content-and-formats.md#paths): a project names the disc it was made against, but its
+  patches are pinned to each script's chunk hash, so a patch fits any install whose script matches
+  ([Which scripts a patch fits](#which-scripts)). [Missions and scripts](content-and-formats.md#missions): a disc script
+  can also be opened as source for a patch ([Studio's flow](#studio-flow)).
 - [Lua 4.0 bytecode](../../research/formats/lua-bytecode.md#round-trip) and [`lua`](../coney-tools-fidelity.md#lua):
   the form hash list and the C++ decompiler, once built.
 
@@ -552,7 +564,8 @@ In order. Issues 1 to 6 are 4.0 patching; issue 7 is the probe; issues 8 to 11 f
    writes a patch with none of the base's lines, Play runs the edit, Export refuses a package holding the base text.
 7. **tools: Add the Lua 5.4 translation probe.** The `lua4` syntax tree written out as 5.4 with the mapping of
    [Syntax](#syntax), checked by a stock `luac` 5.4; differential runs of every script under stock Lua 4.0.1 and 5.4 with
-   the same fake natives in Lua; counts only: translated, parsed, functions with equal traces, loops whose order differs
+   the same fake natives in Lua (the 4.0 interpreter built with a 32-bit `long`, as on the PS2, so its string hash and
+   order are the original's); counts only: translated, parsed, functions with equal traces, loops whose order differs
    (4.0 hash, first set, 5.4), concatenations needing `lua40.str`. Its report goes to the maintainer for the decision.
    Tests: synthetic sources covering each mapping row translate and give equal traces; an order-dependent loop in a
    fixture is reported.
@@ -564,10 +577,10 @@ In order. Issues 1 to 6 are 4.0 patching; issue 7 is the probe; issues 8 to 11 f
    build settings, the game-state bridge (4.0's conventions) and the `lua40` helpers, reached by the scheduler's entries;
    every other level stays on 4.0. Tests: a synthetic level runs the same in both states; a 5.4 patch and a 4.0 patch
    of the same level run together; levels without a 5.4 patch never make a 5.4 state.
-10. **tests: Add trace equality between the 4.0 and 5.4 game states.** The call tracer (a full-value trace at the
-    native list), its diff, the fake host's differential runs over every script with coverage, and every playthrough
-    test run in both states; the list of proved levels that Studio reads. Tests: a deliberately wrong translation (a concatenation
-    without `lua40.str`) fails with the first unequal step; the differential runs report coverage.
+10. **tests: Add trace equality between the 4.0 and 5.4 game states.** The call tracer (a full-value trace at the native
+    list), its diff, the fake host's differential runs over every script with coverage, and every playthrough test run
+    in both states; the list of proved levels that Studio reads. Tests: a deliberately wrong translation (a
+    concatenation without `lua40.str`) fails with the first unequal step; the differential runs report coverage.
 11. **tools: Offer each proved level's Lua 5.4 form in Studio.** *Convert to Lua 5.4* for proved levels, shared scripts
     last, and 5.4 editing with the language server and debugger of projects. Tests with the Test Engine: an unproved
     level offers no conversion; a converted patch applies and plays.
