@@ -11,8 +11,8 @@ it. This hook, registered in `.claude/hooks/dispatch.py` for the Bash and PowerS
 * `gh pr merge` with `--body`, `-b`, `--body-file` or `-F`;
 * `gh pr review` with `--body`, `-b`, `--body-file`, `-F`, or `--comment` / `-c` (the review type that is a comment);
 * `gh api` calls that POST, PATCH or PUT to a comments or reviews endpoint (`.../issues/N/comments`,
-  `.../pulls/N/comments`, `.../pulls/N/reviews`, `.../issues/comments/ID`, ...), and GraphQL mutations that add a
-  comment or a review (`addComment`, `addPullRequestReview...`, `addDiscussionComment`, ...).
+  `.../pulls/N/comments`, `.../pulls/N/reviews`, `.../issues/comments/ID`, ...), and GraphQL mutations that add,
+  edit or submit a comment or a review (`addComment`, `addPullRequestReview...`, `updateIssueComment`, ...).
 
 Every spelling the options have is read as gh reads it: `--comment x`, `--comment=x`, `-c x`, `-c=x`, `-cx`,
 clusters (`-dc x`), quoted values and quoted option names. The same commands without text pass (`gh issue close 5`,
@@ -23,9 +23,9 @@ A command counts only where `gh` starts one (the helpers of `pr_guard_shell.py`:
 backtick, an assignment, `then`, `do`, `env` and the like, inside `bash -c "..."`), so text that merely mentions one
 passes: an `echo`, a commit message, a `grep`, and the body of a here-document or here-string. `coney-tools`' own `gh`
 calls are subprocesses, not tool calls, so they are never seen here. Not covered: a command started through another
-program (`xargs` with a placeholder, a script file), a GraphQL query read from a file, a variable or a here-document,
-and a session that is not run through these hooks. Exit code 2 blocks the call and shows stderr to the agent; every
-other outcome (also input it cannot read) exits 0. Standard library only.
+program (`xargs`, `eval`, `cmd /c`, `uv run`, `npx`, `Start-Process`, a script file), a GraphQL query read from a
+file, a variable or a here-document, and a session that is not run through these hooks. Exit code 2 blocks the call and
+shows stderr to the agent; every other outcome (also input it cannot read) exits 0. Standard library only.
 """
 
 import json
@@ -75,9 +75,10 @@ _API_FIELD_LONG = frozenset({"--field", "--raw-field", "--input"})
 _WRITES = frozenset({"POST", "PATCH", "PUT"})
 #: The path segments of a comments or reviews endpoint (`issues/N/comments`, `pulls/N/reviews/ID/events`, ...).
 _COMMENT_SEGMENTS = frozenset({"comments", "reviews"})
-#: The GraphQL mutations that add a comment or a review.
+#: The GraphQL mutations that add, edit or submit a comment or a review.
 _MUTATION = re.compile(
-    r"\badd(?:Comment|CommitComment|DiscussionComment|PullRequestReview\w*)\b|\bsubmitPullRequestReview\b"
+    r"\b(?:addComment|addCommitComment|addDiscussionComment|addPullRequestReview\w*|submitPullRequestReview"
+    r"|updateIssueComment|updateDiscussionComment|updatePullRequestReview\w*)\b"
 )
 
 MESSAGE = (
@@ -116,9 +117,9 @@ def _text_option(words: list[str], key: tuple[str, str]) -> str | None:
     return None
 
 
-def _api_posts_comment(words: list[str]) -> bool:
-    """Whether the arguments of a `gh api` call (after `api`) write to a comments or reviews endpoint, or send a
-    GraphQL mutation that adds a comment or a review."""
+def _api_options(words: list[str]) -> tuple[str | None, bool, list[str]]:
+    """The method a `gh api` call names (None when it names none), whether it has fields or input (which make gh send
+    a POST), and its endpoints, from its arguments after `api`."""
     method: str | None = None
     fields = False
     endpoints: list[str] = []
@@ -152,11 +153,21 @@ def _api_posts_comment(words: list[str]) -> bool:
                 index += 1
         else:
             endpoints.append(word)
+    return method, fields, endpoints
+
+
+def _api_posts_comment(words: list[str]) -> bool:
+    """Whether the arguments of a `gh api` call (after `api`) write to a comments or reviews endpoint, or send a
+    GraphQL mutation that adds, edits or submits a comment or a review."""
+    # A mutation is a comment however the call is spelled.
     if any(_MUTATION.search(word) for word in words):
         return True
+    # Only a write is a comment: gh sends a POST for fields or input unless the method says otherwise.
+    method, fields, endpoints = _api_options(words)
     verb = method.upper() if method else ("POST" if fields else "GET")
     if verb not in _WRITES:
         return False
+    # The endpoint is a comments or reviews path when one of its segments says so.
     for endpoint in endpoints:
         path = re.split(r"[?#]", endpoint, maxsplit=1)[0]
         if _COMMENT_SEGMENTS & set(path.split("/")):

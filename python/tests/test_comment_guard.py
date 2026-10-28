@@ -119,6 +119,11 @@ API_FORMS = [
     "gh api graphql -f query='mutation { addPullRequestReviewComment(input: {}) { clientMutationId } }'",
     "gh api graphql -f query='mutation { addPullRequestReviewThreadReply(input: {}) { clientMutationId } }'",
     "gh api graphql -f query='mutation { addDiscussionComment(input: {}) { clientMutationId } }'",
+    "gh api graphql -f query='mutation { updateIssueComment(input: {}) { clientMutationId } }'",
+    "gh api graphql -f query='mutation { updatePullRequestReview(input: {}) { clientMutationId } }'",
+    "gh api graphql -f query='mutation { updatePullRequestReviewComment(input: {}) { clientMutationId } }'",
+    "gh api graphql -f query='mutation { updateDiscussionComment(input: {}) { clientMutationId } }'",
+    "gh api graphql -f query='mutation { submitPullRequestReview(input: {}) { clientMutationId } }'",
 ]
 # Where a command starts: the places the other guards find one.
 WRAPPED_FORMS = [

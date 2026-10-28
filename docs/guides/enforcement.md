@@ -138,7 +138,7 @@ tools. It refuses, wherever `gh` starts a command:
 | `gh issue close`, `gh pr close`, `gh issue reopen`, `gh pr reopen` | `--comment`, `-c` | `gh issue close 5`, `--reason`, `--duplicate-of`, `--delete-branch` |
 | `gh pr merge` | `--body`, `-b`, `--body-file`, `-F` | `gh pr merge 5 --squash --auto`, `--subject`, `--delete-branch`, `--admin` |
 | `gh pr review` | `--body`, `-b`, `--body-file`, `-F`, `--comment`, `-c` | `gh pr review 5 --approve` (and `-a`) with no text |
-| `gh api` | a `POST`, `PATCH` or `PUT` to a path with a `comments` or `reviews` segment (`issues/N/comments`, `pulls/N/comments`, `pulls/N/reviews`, `pulls/N/reviews/ID/events`, `issues/comments/ID`, `commits/SHA/comments`), the method given by `-X`, `--method` or implied by `-f`, `-F`, `--field`, `--raw-field` or `--input`; and a GraphQL mutation `addComment`, `addCommitComment`, `addDiscussionComment`, `addPullRequestReview`, `addPullRequestReviewComment`, `addPullRequestReviewThreadReply` or `submitPullRequestReview` | a `GET` of the same paths (also `-X GET` with `-f` query fields), a `DELETE` of a comment, labels, assignees, `closeIssue` |
+| `gh api` | a `POST`, `PATCH` or `PUT` to a path with a `comments` or `reviews` segment (`issues/N/comments`, `pulls/N/comments`, `pulls/N/reviews`, `pulls/N/reviews/ID/events`, `issues/comments/ID`, `commits/SHA/comments`), the method given by `-X`, `--method` or implied by `-f`, `-F`, `--field`, `--raw-field` or `--input`; and a GraphQL mutation that adds, edits or submits one (`addComment`, `addCommitComment`, `addDiscussionComment`, `addPullRequestReview` and its comment and reply forms, `submitPullRequestReview`, `updateIssueComment`, `updateDiscussionComment`, `updatePullRequestReview` and its comment form) | a `GET` of the same paths (also `-X GET` with `-f` query fields), a `DELETE` of a comment, labels, assignees, `closeIssue` |
 
 Every spelling gh reads is read the same way: `--comment x`, `--comment=x`, `-c x`, `-c=x`, `-cx`, a cluster (`-dc x`,
 `-sb x`), a quoted value or option name, a line continuation, `bash -c "..."`, `pwsh -Command "..."`, `$(...)`, `-R
@@ -148,10 +148,11 @@ owner/name` and `--hostname` before the group, and `gh.exe` or a path to it. The
 command without the comment and to leave the text in its scratch folder for the maintainer to post.
 
 **Not covered:** `gh issue comment` and `gh pr comment` (the user-level hook keeps them, with its exception for one claim
-command); a command started through `xargs`, `eval`, a script file or an alias; a GraphQL mutation read from a file, a
-variable, `--input` or a here-document; an endpoint built from a variable; a comment posted from the GitHub website or a
-person's own terminal; and a session that does not run these hooks. `coney-tools` runs `gh` as a subprocess (the
-`/progress` comment of a passing stage command, `claim renew`), which is no tool call, so it is never seen.
+command); a command started through `xargs`, `eval`, `cmd /c`, `uv run`, `npx`, `Start-Process`, a script file or an
+alias; a GraphQL mutation read from a file, a variable, `--input` or a here-document; an endpoint built from a
+variable; a comment posted from the GitHub website or a person's own terminal; and a session that does not run these
+hooks. `coney-tools` runs `gh` as a subprocess (the `/progress` comment of a passing stage command, `claim renew`),
+which is no tool call, so it is never seen.
 `test_comment_guard.py` has a case for each form above, refused and allowed.
 
 ## Agent tools and their hooks {#harnesses}
