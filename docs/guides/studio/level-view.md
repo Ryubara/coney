@@ -60,7 +60,7 @@ to document and test.
 | Ctrl+Z, Ctrl+Y (Ctrl+Shift+Z) | undo, redo | same | same | same | same |
 | Ctrl+D | duplicate | Duplicate | Duplicate | Duplicate | Duplicate |
 | Delete | delete the selection | same | same | same | same |
-| F2 | rename | same | same | same | none |
+| F2 | rename | same | same | same | same |
 | Ctrl+A | select all in the focused panel | same | same | same | same |
 | Ctrl+S | save the open level | Save | Save scene | Save | publish or save |
 | Ctrl+P, Ctrl+Shift+P, Ctrl+Alt+P | Play and Stop, Pause, Step | same | F5, F7 | Alt+P | F5, Shift+F5 |
@@ -147,7 +147,7 @@ engine can hold, and an axis the selection cannot take is drawn grey and does no
 
 | Selected | Move | Rotate | Scale |
 | --- | --- | --- | --- |
-| A sandbox shape | its `at=` | its `yaw=`: the vertical ring alone, the only turn the layout format has | its size arguments (`size=`, `radius=`, `height=`, `width=`); a sphere evenly only |
+| A sandbox shape | its `at=` | its `yaw=`: the vertical ring alone, the only turn the layout format has | its size arguments: a box's `size=` on each axis; a cylinder's or capsule's `radius=` across and `height=` up; a sphere's `radius=`, evenly only; a ramp's `width=` across, `length=` along and `height=` up (its angle follows); stairs' `width=` across, `run=` along and `rise=` up, the `steps=` count unchanged |
 | A spawn point, a target, a fighter | its `at=` | its `heading=`: the vertical ring alone | none |
 | A camera view | its `at=` | its `yaw=` and `pitch=` | none |
 | The player or an AI human, while playing | *Teleport* | *Heading*: the vertical ring alone | *Scale*, evenly ([Entity editor](../debug-menu.md#entity-editor)) |

@@ -261,9 +261,10 @@ The game state needs no threads: the original's scripts wait only through the sc
 
 ## Play, step by step {#play}
 
-What Coney does when Studio's Play is pressed or a mod starts a level. Studio's side (saving first, restoring the edit
-state on Stop, the Game view) is the editor page's ([#1055](issue:1055)); how the engine runs beside the editor is the
-[technology](technology.md#play) page's. The engine's side is the same whichever program hosts it.
+What Coney does when Studio's Play is pressed or a mod starts a level. Studio's side (the Game view, live edits, what
+Stop keeps and throws away) is the editor page's ([Play mode](editor-experience.md#play-mode)); how the engine runs
+beside the editor is the [technology](technology.md#play) page's. The engine's side is the same whichever program hosts
+it.
 
 ```mermaid
 ---
@@ -633,7 +634,8 @@ When this design is accepted, these lines change on the pages that own them:
   not one per Lua state ([The two states](#two-states)).
 - [Asset and script architecture: Deferred, in order](../asset-and-script-architecture.md#later): the native list, the
   scheduler, the compiler and the `Coney` table move ahead of the whole game, as Studio's first build work
-  ([Proposed build issues](#build-issues)), under the faithful-first exception of [Maintainer decisions](#decisions).
+  ([Proposed build issues](#build-issues)), as the maintainer's decision on Studio and faithful first allows
+  ([Maintainer decisions](#decisions)).
 - [Roadmap: Script mods](../../roadmap.md#script-mods): the loader's points are this page's entry points.
 
 ## Maintainer decisions {#decisions}
@@ -641,9 +643,9 @@ When this design is accepted, these lines change on the pages that own them:
 1. **A second Lua runtime: Lua 5.4 for projects** ([The runtime](#runtime-choice)). Decided by a maintainer
    (2026-10-28), with its new dependency, stock Lua 5.4 (MIT licence). The network page lists the same choice for
    resources.
-2. **Projects and faithful first.** Running a project is a modded session, and Coney natives reach capabilities the
-   original lacks; the Studio index proposes that Studio and its projects run in a mode of their own under an
-   exception to faithful first ([#1055](issue:1055)). The SDK assumes that exception.
+2. **Projects and faithful first: decided, no exception needed.** Studio is a reflection of Coney's progress: it offers
+   only what Coney has, an enhancement or native appears in Studio once Coney has it, and nothing in Studio changes how
+   the story plays ([Studio's decisions](index.md#decisions)). Running a project is still a modded session.
 3. **The SDK's names are a public promise** ([Names and namespaces](#names)): once a release makes a Coney native
    available, its name and signature never change. Who approves a Coney native's name before its first release (a
    maintainer, or the review alone) is to decide.

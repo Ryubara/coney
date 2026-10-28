@@ -9,8 +9,8 @@ are on [Coney Studio](index.md); the GUI library and how Play runs the engine ar
 
 The design comes from four editors people already know: Unity, Godot, Unreal and above all **Roblox Studio**, the
 closest model, because it too is an editor for one game's content rather than a general engine. FiveM is the model for
-resources and scripts, which the Lua SDK page ([#1057](issue:1057)) owns. Each section says what the four do, then what
-Coney Studio copies and what it skips, and why. Two rules decide every choice:
+resources and scripts, which the [Lua SDK page](lua-sdk.md) owns. Each section says what the four do, then what Coney
+Studio copies and what it skips, and why. Two rules decide every choice:
 
 1. **Familiar first.** Where the editors agree, Studio does the same, so a Unity, Godot or Unreal user is at home in a
    minute. Where they differ, Studio takes **Unity's** keys and words (the maintainer's choice) and Roblox Studio's
@@ -110,10 +110,10 @@ has what it names.
 | --- | --- | --- | --- |
 | **Level view** | The level being edited, seen through the fly camera; selection, gizmos, and the debug views as view modes | The [world viewer](../running-viewers.md#the-world-viewer), the [sandbox](../sandbox.md)'s free camera, [Debug draw](../debug-menu.md#debug-draw) and the [mesh views](../debug-menu.md#mesh-views) | ready |
 | **Game view** | The game running in Play mode, with Play, Pause, Step and Stop | The play mode (`--play-level`, a sandbox with `sandbox:NAME`) and the debug menu's Time page (pause, step, time scale) ([pages](../debug-menu.md#pages)) | ready |
-| **Hierarchy** | Every entity of the level, by kind; choosing one selects it everywhere | The [Entity inspector](../debug-menu.md#entity-inspector)'s entity list (player, targets, AI humans, doors, panes, objects) and a sandbox layout's statements | ready |
+| **Hierarchy** | The level's entities as a free tree in the user's order, with parenting, prefabs and a kind filter; choosing one selects it everywhere ([The Hierarchy's tree](#hierarchy-tree)) | The [Entity inspector](../debug-menu.md#entity-inspector)'s entity list (player, targets, AI humans, doors, panes, objects) and a sandbox layout's statements | ready |
 | **Inspector** | The selection's values, live, and the edits it takes; for a file, its details and import settings | The merged Entity inspector and Entity editor ([#1053](issue:1053)) | ready once [#1053](issue:1053) merges |
 | **File system** | The project folder as a tree, and the game's files read-only; drag-and-drop and the Import button land here | Coney's asset loading and the [install folder](../asset-and-script-architecture.md#install-folder) | ready |
-| **Console** | The run log's lines, filtered by level and system, and a Lua line to run | The [run log](../run-log.md) and the [Lua console](../debug-menu.md#lua-console) (expressions and assignments; full Lua waits on a compiler) | ready |
+| **Console** | The run log's lines, filtered by level and system, and a Lua line to run | The [run log](../run-log.md) and the [Lua console](../debug-menu.md#lua-console) (expressions and assignments; full Lua waits on [the Lua 4.0 compiler](lua-sdk.md#compiler)) | ready |
 | **Natives** | Every native with its status, signature and an argument editor to call it | The debug menu's [Natives](../debug-menu.md#natives) page and the [masterlist](../../references/bindings/index.md) | ready |
 | **Model viewer** | One model on its own, to look at (never to edit): shaded, wireframe, by material, normals and bone axes, its counts | The [character viewer](../running-viewers.md#the-character-viewer), the [mesh views](../debug-menu.md#mesh-views) and the [Mesh group](../debug-menu.md#mesh-group) | ready |
 | **Animation viewer** | Any clip on a model: play, loop, speed, in place, by set and category | The [Animation player](../debug-menu.md#animation-player) | ready; a scrubbing timeline waits on a seek in the animation player |
@@ -168,8 +168,8 @@ mode](#play-coney)).*
   `t:fighter` only fighters, as Unity's `t:` search does), and its filter menu has one entry per kind; the tree shows
   the matches with their parents greyed for context.
 - **Create** from an entity's right-click makes the new entity its child; from empty space, a top-level entity ([The
-  Create menu](level-view.md#create-menu)). Ctrl+G groups the selection under a new group (Unity's and Godot's
-  shortcut), and Shift+Ctrl+G ungroups it.
+  Create menu](level-view.md#create-menu)). Ctrl+G groups the selection under a new group and Shift+G ungroups it
+  (Unreal's keys; Unity has no default key for it).
 - **A prefab instance** is one row that opens to its entities, marked as a prefab; a value an instance changes is marked
   in the Inspector as an override, with *Revert* and *Apply to prefab* (Unity's). Double-clicking the row's prefab icon
   opens the prefab on its own to edit, and every instance follows.
@@ -205,12 +205,12 @@ left under the Scene tree, and Roblox Studio puts Explorer and Properties togeth
 
 ### Coney Studio's default {#layout-default}
 
-Coney Studio takes **Godot's arrangement**, which is what [#1055](issue:1055) asks for: the **Inspector on one side and
-the File system on the other**, so the two panels used most while building a level are both always in view, and the
-Hierarchy sits over the File system, as Godot's Scene dock sits over its FileSystem dock. The middle holds **two views
-side by side** (Unity's *2 by 3* layout has both in view too, one above the other): the **Level view** (fly round,
-select and move things with the gizmos) and the **Game view** (the game running), so an edit made in the Level view
-while playing is seen at once in the Game view ([Live edits](#live-edits)). The Console and Natives share the bottom.
+Coney Studio takes **Godot's arrangement**, as the maintainer asked for Studio: the **Inspector on one side and the File
+system on the other**, so the two panels used most while building a level are both always in view, and the Hierarchy
+sits over the File system, as Godot's Scene dock sits over its FileSystem dock. The middle holds **two views side by
+side** (Unity's *2 by 3* layout has both in view too, one above the other): the **Level view** (fly round, select and
+move things with the gizmos) and the **Game view** (the game running), so an edit made in the Level view while playing
+is seen at once in the Game view ([Live edits](#live-edits)). The Console and Natives share the bottom.
 
 ```text
 +-----------------------------------------------------------------------------------------------+
@@ -318,19 +318,19 @@ The folder Studio makes for a new project:
 
 ```text
 my-project/
-  coney-project.toml     the manifest: name, version, the Coney version it was made with, the level Play starts in
+  coney-project.toml     the manifest: the project's name, version, SDK level, the level Play starts in, its scripts
   levels/                the project's levels (sandbox layouts today, Coney's own level format later)
   textures/              PNG images the levels use
   scripts/               the project's Lua scripts (once the mods runtime exists)
   .studio/               Studio's cache: never shared, rebuilt at will
 ```
 
-The manifest's name and its script and resource fields are the Lua SDK page's ([#1057](issue:1057)), which decides how
-far a project follows FiveM's resource folder; the formats of `levels/` are the content page's ([#1058](issue:1058)).
-The folders are where Studio puts what it creates and imports; a user may add others. A project's first level format is
-the **sandbox layout** Coney loads today ([The layout format](../sandbox.md#the-layout-format)): it already has shapes,
-textures, spawn points, targets, AI fighters, camera views and a sun, and Coney already plays one with the player at a
-chosen spawn (`--play-level sandbox:NAME --spawn NAME`).
+The manifest's name and its fields are the Lua SDK page's ([Projects and the manifest](lua-sdk.md#manifest)), which
+decides how far a project follows FiveM's resource folder; the formats of `levels/` are the content page's
+([#1058](issue:1058)). The folders are where Studio puts what it creates and imports; a user may add others. A project's
+first level format is the **sandbox layout** Coney loads today ([The layout format](../sandbox.md#the-layout-format)):
+it already has shapes, textures, spawn points, targets, AI fighters, camera views and a sun, and Coney already plays one
+with the player at a chosen spawn (`--play-level sandbox:NAME --spawn NAME`).
 
 ## A new level {#new-level}
 
@@ -536,11 +536,10 @@ realizes:
 | Feature | In | Why Coney Studio skips it |
 | --- | --- | --- |
 | An asset store or toolbox of other people's content | Unity, Unreal, Roblox | No server and no hosting; a store could carry game data, which no Coney service may ([LEGAL.md](repo:LEGAL.md#no-game-data)) |
-| Visual scripting (Blueprints) | Unreal | The game's logic is Lua calling natives; scripting is the Lua SDK ([#1057](issue:1057)) |
+| Visual scripting (Blueprints) | Unreal | The game's logic is Lua calling natives; scripting is the [Lua SDK](lua-sdk.md) |
 | Components added freely to any object | Unity, Godot | Coney's entities are the kinds the game has (humans, objects, doors, panes) and the layout's statements; Studio's *Create* menu offers those, as Roblox's *Insert Object* offers Roblox's classes |
 | Terrain and foliage tools | Unity, Unreal, Roblox | Coney's worlds are sector meshes with no terrain system |
 | The Rect tool and an interface designer | Unity, Roblox | Coney has no interface a project can make |
-| Prefabs, groups and parenting in a sandbox layout | Unity, Godot, Roblox | Studio has them ([The Hierarchy's tree](#hierarchy-tree)); a level keeps them once Coney's own level format does ([#1058](issue:1058)) |
 | Copying edits out of Play one by one | Unity (*Copy Component*), Unreal (*Keep Simulation Changes*), Roblox (copy and paste) | Level edits made in Play are kept anyway ([Live edits](#live-edits)), and the running game's are deliberately thrown away |
 | Modelling, sculpting, rigging, animating, texture painting | Unity (ProBuilder), Unreal (modelling mode), Roblox (solid modelling) | Blender and the other tools do it; Studio imports their work and builds levels from it |
 | Running without a player | Roblox (Run), Unreal (Simulate) | The game's scripts and play mode expect a player; Eject gives the same view of a running level |

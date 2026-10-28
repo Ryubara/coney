@@ -33,7 +33,7 @@ its line to the `nav:` of `mkdocs.yml`, under *Coney Studio design*.
 | [Editor experience](editor-experience.md) | The words (level, Level view, prefab), the panels, the Hierarchy's tree and the default layout, saved layouts, the project folder, a new level and its templates, Play mode and live edits while playing, the import flow, previews; the build issues of both pages | [#1055](issue:1055) |
 | [The Level view, gizmos and composing](level-view.md) | The fly camera and the keymap, Unity's transform gizmo, selection and undo, composing a level from primitives, textures, colliders and path points | [#1055](issue:1055) |
 | Technology (planned) | The GUI library, one program or an editor mode of `coney`, how Play runs the engine, the code editor and language server, hot reload | [#1056](issue:1056) |
-| Lua SDK and natives (planned) | The natives and their names, the mods runtime and loader, resources, the sandbox, typed stubs for completions | [#1057](issue:1057) |
+| [Lua SDK and natives](lua-sdk.md) | The natives and their names, the Lua 5.4 runtime for projects and its loader, the manifest, the sandbox, typed stubs for completions, hot reload | [#1057](issue:1057) |
 | Content and formats (planned) | What Studio shows and edits from the disc's files, a project's own formats, import and export | [#1058](issue:1058) |
 
 ## Terms {#terms}
@@ -51,15 +51,15 @@ because *The Warriors* is made of levels and calls its in-engine cutscenes scene
 | Entity | A thing in a level's tree: a primitive, a spawn point, a fighter, a camera view, a script; Coney's word, as in the Entity inspector ([Words](editor-experience.md#words-coney)) |
 | Prefab | A reusable group of any mix of entities, saved as one file and placed many times ([Words](editor-experience.md#words-coney)) |
 | Layout | Where the panels sit, saved per user, never in a project ([Layouts](editor-experience.md#layouts)) |
-| Natives | The script bindings a project's scripts call: the game's own and Coney's ([Script bindings](../../references/bindings/index.md)); the Lua SDK page decides the rest of the scripting terms |
+| Natives | The script bindings a project's scripts call: the game's own and Coney's ([Script bindings](../../references/bindings/index.md)); the [Lua SDK](lua-sdk.md#terms) has the scripting terms |
 
 ## Maintainer decisions {#decisions}
 
 - **Studio and faithful first: decided, no exception needed.** Studio is a reflection of Coney's progress: it offers
   only what Coney has, an enhancement or a native appears in Studio once Coney has it, and nothing in Studio changes how
-  the story plays. So Studio never runs ahead of the faithful-first rule ([AGENTS.md](repo:AGENTS.md)): whatever Coney is
-  allowed to have, Studio realizes, and nothing more.
-- **The Hierarchy is the level, as in Unity: decided.** A free list of entities with free parenting, prefabs of any
-  mix of entities, the level's settings on the level and sorting by kind as a filter
-  ([The Hierarchy's tree](editor-experience.md#hierarchy-tree)).
+  the story plays. So Studio never runs ahead of the faithful-first rule ([AGENTS.md](repo:AGENTS.md)): whatever Coney
+  is allowed to have, Studio realizes, and nothing more.
+- **The Hierarchy is the level, as in Unity: decided.** A free list of entities with free parenting, prefabs of any mix
+  of entities, the level's settings on the level and sorting by kind as a filter ([The Hierarchy's
+  tree](editor-experience.md#hierarchy-tree)).
 - **Level, not scene: decided.** Studio says *level* wherever other editors say *scene* ([Terms](#terms)).
