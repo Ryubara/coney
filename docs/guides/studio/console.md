@@ -446,7 +446,7 @@ to a bug report.
   (`src/console/`), which catches only its chord and holds port 1 while the console is open; the debug tools' gate
   keeps its own chords. No control of the original holds SELECT and R3 together: the player's held combinations with
   SELECT are SELECT with a d-pad direction and SELECT with L3 ([Commands](../../research/combat/index.md#commands),
-  confirmed (code) there), and the cheat codes press single buttons one after another
+  confirmed (runtime) there), and the cheat codes press single buttons one after another
   ([Cheat codes](../../research/debug.md#cheats)). While the console is open, the game sees port 1 with nothing
   pressed, and the buttons still held when it closes stay hidden until let go, as with the debug menus
   ([Opening it and the controls](../debug-menu.md#controls)); port 2 always reaches the game.
@@ -471,11 +471,11 @@ to a bug report.
 
 | Part | Folder | Target | In the release build | May include |
 | --- | --- | --- | --- | --- |
-| The console's core: command specifications, the registry, the tokenizer and argument checks, completion, the terminal (history, output), the step-boundary queue, the host interfaces | `src/console/` | `coney_core` | yes | `console/`, `core/` |
+| The console's core: command specifications, the registry, the tokenizer and argument checks, completion, the terminal (history, output), the step-boundary queue, the pad chord's gate, the host interfaces | `src/console/` | `coney_core` | yes | `console/`, `core/` |
 | The player commands' handlers and their generated table | `src/console/`, from `commands.toml` | `coney_core` | yes | `console/`, `core/` |
 | The panels' models: resource rows, performance readings, the log view and its filters, network figures, captures | `src/console/panels/` | `coney_core` | yes | `console/`, `core/` |
 | The host implementations: the game session's (quit, where, missions, settings, levels), the mods loader's, network play's | beside what they implement, set up in `platform/game_run.h` | `coney_platform` and the libraries they belong to | yes | anything of the game |
-| The front end: the bar, the terminal's widgets, the picker, the panels, F8 and the pad chord | `src/platform/console_*` | `coney_console_ui` (new) | yes | `console/`, the platform's window and input, Dear ImGui |
+| The front end: the bar, the terminal's widgets, the picker, the panels, reading F8 and the pad from the window (the chord itself is caught by the console's gate in `src/console/`) | `src/platform/console_*` | `coney_console_ui` (new) | yes | `console/`, the platform's window and input, Dear ImGui |
 | The developer commands and their generated table; the bar's Debug menu | `src/debug/`, from `console_commands.toml`; `src/platform/` | `coney_debug`, `coney_devtools` | no | anything of the game and the console |
 | Studio's Console panel and the panels docked | `src/studio/` | `coney-studio` | no (a program of its own) | the console and the debug tools |
 
