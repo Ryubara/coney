@@ -393,8 +393,9 @@ header:
 | `+0x18`, `+0x1c` | ptr | the vertex and index buffer headers (rebased on load) | confirmed (code) at XBE `0x000bd4e0` |
 
 Vertices are float positions, float normals, a D3DCOLOR and float UVs. The texture is not in the model: the draw
-binds the one its caller passes (XBE `0x000bd3c0`), as the PS2 takes the first texture of the dictionary the Object
-or Character List gives the model.
+binds the one its caller passes (confirmed (code): XBE `0x000bd3c0` sets its argument's `+0x04` on stage 0 through
+the cached texture setter XBE `0x000b8f50`), as the PS2 takes the first texture of the dictionary the Object or
+Character List gives the model.
 
 Kind 1 (153 skinned characters) has a 0x820-byte object: 32 matrices of 64 bytes at `+0x04`, the triangle count
 (u16) at `+0x804` and the headers of two vertex streams and an index buffer at `+0x808`, `+0x80c`, `+0x810`
