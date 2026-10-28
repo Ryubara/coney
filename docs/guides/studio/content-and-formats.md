@@ -245,13 +245,13 @@ the sandbox layout: Coney plays one today with the player at a spawn (`--play-le
 level entry Coney builds the collision mesh from the level's solid geometry and colliders, the path map from its
 walkable areas, then makes each entity through its native, in the order of the file, then runs the level's scripts.
 
-**Live edits during Play.** The brief asks that a change made in the Level view show in the running game where it
-can; how Play and the Game view run is [#1055](issue:1055)'s and [#1056](issue:1056)'s. What a level's data allows:
-a moved entity is moved in the running level through the native that places it (`Teleport` for a human or an object,
-a flag's position for a flag); a changed primitive, collider or face rebuilds the collision mesh between two steps; a
-texture or sound override swaps the asset; a changed walkable area rebuilds the path map, and the AI plans its next
-route on it. A change that only level entry can make (a new spawner, a `base` level, a door's triangles) waits for the
-next Play, and Studio says so.
+**Live edits during Play.** The Studio brief ([#1054](issue:1054)) asks that a change made in the Level view show in the
+running game where it can; how Play and the Game view run is [#1055](issue:1055)'s and [#1056](issue:1056)'s. What a
+level's data allows: a moved entity is moved in the running level through the native that places it (`Teleport` for a
+human or an object, a flag's position for a flag); a changed primitive, collider or face rebuilds the collision mesh
+between two steps; a texture or sound override swaps the asset; a changed walkable area rebuilds the path map, and the
+AI plans its next route on it. A change that only level entry can make (a new spawner, a `base` level, a door's
+triangles) waits for the next Play, and Studio says so.
 
 #### How a level starts {#level-start}
 
@@ -346,8 +346,9 @@ which is how the sandbox's primitives collide. A project's collision is written 
 | Area | 0 to 124 | `+0x09`, the area byte; a path area is matched against it ([Path data](../../research/level-loading.md#path-data)) |
 | Solid | yes or no | Left out of the mesh when no (a marker) |
 
-The flag bits whose meaning is not traced (3, 5, 6, 8-10) are not offered by name; an *Advanced* field takes the raw
-word, as the layout's `flags=` does today. **Sneak zones are collision.** The brief asks that a sun's shadows decide
+The flag bits whose meaning is not known (3, 5, 6, 8-10; bit 5's one traced use sets a byte of the human standing on
+it, whose effect is open) are not offered by name; an *Advanced* field takes the raw
+word, as the layout's `flags=` does today. **Sneak zones are collision.** The Studio brief asks that a sun's shadows decide
 where the player hides; in Coney today, as in the original, hiding is decided by the shadow-ground bit of the triangle
 under the human, so a project marks its sneak zones on its colliders. A sun that computes them waits on the
 enhancements' lighting ([Realtime lighting](../realtime-lighting.md)), and when it exists it writes the same bit.
@@ -469,11 +470,12 @@ names. **Export** writes a clip or a whole set as glTF animations on the charact
 
 #### Custom player models {#custom-player}
 
-The brief's first test, a model brought from elsewhere playing an existing character's moves (the roadmap's CJ with
-Cleon's moves, [Custom content](../../roadmap.md#custom-content)), is a **custom character**: a project file naming a
-**base type** (whose class, moveset, anim set, power class and every other number are kept) and a **model** that
-replaces only what is drawn. Coney's debug menus already swap a human's model while keeping everything else about the
-character ([#1053](issue:1053)); a custom character is that swap with a model from the project.
+The Studio brief's first test ([#1054](issue:1054)), a model brought from elsewhere playing an existing character's
+moves (the roadmap's CJ with Cleon's moves, [Custom content](../../roadmap.md#custom-content)), is a **custom
+character**: a project file naming a **base type** (whose class, moveset, anim set, power class and every other number
+are kept) and a **model** that replaces only what is drawn. A debug menu change in work swaps a human's model while
+keeping everything else about the character ([#1053](issue:1053)); a custom character is that swap with a model from the
+project.
 
 Importing a skinned glTF or FBX as a character:
 
@@ -695,7 +697,7 @@ natives are implemented), and the export of every kind the extract tool writes.
 
 - **Route nodes.** How the original's tool placed the path map's route nodes, and what an A record's `+0x08` means
   ([Path data](../../research/level-loading.md#path-data)); Coney's builder is its own until then.
-- **Untraced collision bits** 3, 5, 6 and 8-10, and the meaning of the area byte
+- **Collision bits of unknown meaning** 3, 5, 6 and 8-10, and the meaning of the area byte
   ([Triangles](../../research/collision.md#triangles)): named in Studio once researched.
 - **A player box's behaviour** against a volume box ([Volume boxes](../../references/boxes.md)): Studio offers both
   kinds with the reference's wording until it is traced.
