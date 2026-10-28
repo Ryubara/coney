@@ -351,6 +351,8 @@ nav:
           - Mission mods: guides/studio/mission-mods.md
           - Entities and the Inspector: guides/studio/entities.md
           - A Human's properties: guides/studio/human-properties.md
+          - Script security and the sandbox: guides/studio/security.md
+          - Mods, packages and loading: guides/studio/mods.md
       - Conventions: guides/conventions.md
       - Repository conventions: guides/repo-conventions.md
       - Enforcement map: guides/enforcement.md

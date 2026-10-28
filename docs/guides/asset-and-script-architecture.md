@@ -147,19 +147,27 @@ is preferred for assets, and the PS2 disc fills the gaps and is always the behav
   coney(.exe), licences
   game/ps2/                     the PS2 disc's files as they are (WARRIORS.DIR, WARRIORS.WAD, IOP/, PSS/, SLUS_212.15)
   game/xbox/                    optional: the Xbox disc's archive and movies as they are
-  overrides/                    mods and texture packs
+  mods/                         script and content mods: one .cmod package each, read in place, and enabled.toml
+  overrides/                    texture packs and asset replacements: data, never scripts
     packs/<pack>/               a texture pack as `coney-tools` exports it: manifest + images, keyed by texture hash
     textures/<dictionary>/<texture>.png   loose files: the same names as `coney-tools extract` writes
     audio/sounds/<name>.wav     audio/music/<track>.wav
     movies/<name>.bik
-    files/<wad name>            power users: a whole WAD entry replaced (simulation kinds mark the session modded)
+    files/<wad name>            power users: a whole WAD entry replaced (simulation kinds mark the session modded;
+                                a script chunk only as Lua 4.0 source)
   open/                         optional modding kit: `coney-tools extract` output (PNG, WAV, Lua chunks, index)
   index/
     install.json                sources, disc SHA-1s, Coney version, per-type counts and digests
     xbox-resources.bin          cache of the Xbox resource index (resource hash, chunk type -> location)
   config/                       proposed: tunables, overlay layout (see Maintainer decisions)
-<SDL pref path>/profiles/       save data only
+  cache/                        mods' check results, and files servers and co-op hosts sent (per server)
+<SDL pref path>/                save data only
+  profiles/                     the faithful story
+  modded/, mod-data/<project>/  saves of modded sessions, and each mod's own store
 ```
+
+The `mods/`, `cache/`, `modded/` and `mod-data/` entries, and why scripts never load from `overrides/`, are
+[Coney Studio: script security](studio/mods.md#install-layout)'s.
 
 - **The installer** is a front end over one library call per step: copy the disc's files and check them against
   the known SHA-1s, write `index/install.json`, and optionally build the Xbox index and the modding kit. The PS2 step

@@ -528,8 +528,10 @@ Both sides run code they did not write: a server runs its operator's resources, 
 it. Every resource state opens only Coney's allowed libraries (no `io`, `os`, `debug`, `package`, no loading of
 bytecode, no `dofile` or `require` outside the resource), has its own environment over a read-only API table, an
 instruction budget per call (a count hook that aborts the call) and a memory cap (an allocator that refuses growth
-past it). A client script can never open a file, a socket or another resource's state. The original's Lua 4.0 state
-has none of these limits and needs none: it runs only the disc's scripts.
+past it). A client script can never open a file, a socket or another resource's state. The game's Lua 4.0 state runs
+the disc's scripts with Coney's instruction budget and no file or system library; a user's replacement of a game
+script reaches it only as source, by a permission the player approves. The full rules, what a server sends a client
+and how it is cached, are [Coney Studio: script security](studio/security.md).
 
 ## Security {#security}
 
