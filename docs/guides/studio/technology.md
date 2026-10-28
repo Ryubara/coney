@@ -109,7 +109,7 @@ handles it through the one path a real one takes. Drag-and-drop import into the 
 **The licence.** The Test Engine is not MIT: its licence (v1.04) is free for a natural person, a not-for-profit, for
 education, for software "released publicly and under an Open Source license" (an OSI one), or for a company under 2
 million USD of turnover, and paid otherwise; copies keep its notice. Coney, public under GPL-3.0-or-later, falls in the
-free terms, but the licence is not GPL-compatible. A maintainer decided (2026-10-28) how Coney uses it: **in test
+free terms, but the licence is not GPL-compatible. A maintainer decided how Coney uses it: **in test
 builds only**. `cmake/deps.cmake` fetches it from upstream at a pinned commit for those builds; it is never vendored
 into the repository, and never built into a release or a play-test build.
 
@@ -201,8 +201,9 @@ flowchart TB
   hosts it: it creates the session, feeds it input from the Game view while that has focus, steps it and shows its
   frames.
 - **Pause and Step** stop the step clock or run one step, as the debug menu's time control does.
-- **Stop** destroys the session. The edit document was never changed by playing, so Studio is back where it was;
-  presentation assets loaded for the session stay cached.
+- **Stop** destroys the session. The edit document holds the level edits made while playing and nothing of the running
+  game ([Live edits while playing](editor-experience.md#live-edits)); presentation assets loaded for the session stay
+  cached.
 - **A breakpoint** blocks the simulation thread only: the UI keeps drawing, the Game view shows the last frame, and
   the debugger reads the paused state ([Script debugger](#debugger)).
 - **Run in Coney** (a later command) starts `coney` as a child process on the saved project, for a full-window test and
@@ -214,8 +215,8 @@ While a session runs, the Level view shows the session's world beside the Game v
 change or a placed object becomes an **edit command**: an id, the entity's id and the new value, never a pointer. The UI
 thread queues it and the simulation thread applies the queue at the start of the next step, so a step never sees half
 an edit; it is the Entity editor's queue ([Entity editor](../debug-menu.md#entity-editor)) grown to every editable
-thing. Edits made while playing apply to the session only and are lost on Stop, as the editor experience design's
-Play mode asks.
+thing. A level edit made while playing is also kept in the edit document, and an edit of the running game alone is
+lost on Stop ([Live edits while playing](editor-experience.md#live-edits)).
 
 Sharing one world in one process is what makes this cheap: the Level view reads the session between steps and draws it
 with the same renderer, and an edit is one queued command. With a child process, the same edit would be a message over
@@ -370,11 +371,11 @@ reload here (9).
    changes; the existing tests and a new two-session test prove it.
 5. **`tools: Add Play to Coney Studio`.** A play session built from the saved project on its own simulation thread,
    drawn into the Game view, with Play, Pause, Step and Stop, input from the Game view, an autosave and recovery file
-   before Play, and the edit document untouched by playing. Needs the simulation out of `src/platform/` and the Lua SDK
-   design's game mode. A scripted test plays, stops and plays again and compares the two sessions' traces.
+   before Play, and the edit document untouched by the running game. Needs the simulation out of `src/platform/` and
+   the Lua SDK design's game mode. A scripted test plays, stops and plays again and compares the two sessions' traces.
 6. **`tools: Add live edits from the Level view during Play`.** Edit commands (ids and values) queued by the UI and
-   applied between steps, the Entity editor's queue grown to every editable thing, lost on Stop. Tests apply commands
-   to a headless session.
+   applied between steps, the Entity editor's queue grown to every editable thing; level edits kept after Stop, as the
+   editor experience design asks. Tests apply commands to a headless session.
 7. **`tools: Add the script editor to Coney Studio`.** goossens' ImGuiColorTextEdit pinned, tabs over project files,
    the VS Code keymap, LuaLS started per project with Studio's LSP client (diagnostics, completion, hover, signature
    help, definition, references, rename), the Problems panel, LuaLS shipped per platform, and a new project's

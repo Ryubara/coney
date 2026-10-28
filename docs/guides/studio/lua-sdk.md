@@ -48,7 +48,7 @@ internals:** a script reaches the game only through natives, the same boundary t
 | **Lua SDK** | What Coney ships for script writers: the available natives and SDK functions, the runtime that runs them, their typed stubs for the editor, the generated reference and the debugger |
 | **Available** | A native is available when Coney implements it and the SDK allows it ([How a native reaches the SDK](#availability)). Only available natives exist for a project's scripts, its stubs and its reference |
 | **SDK level** | A whole number that grows each time a Coney release makes natives available; a project names the level it needs ([The SDK level](#sdk-level)) |
-| **Project** | A folder with a `coney-project.toml` manifest: levels, assets and scripts. Studio creates and edits projects ([#1055](issue:1055)); a player installs one into the mods folder; a ConeyMP server runs several. A project is what [Network architecture](../network-architecture.md#resources) calls a *resource* and FiveM calls a resource: one folder, one manifest |
+| **Project** | A folder with a `coney-project.toml` manifest: levels, assets and scripts. Studio creates and edits projects ([The project](editor-experience.md#project-coney)); a player installs one into the mods folder; a ConeyMP server runs several. A project is what [Network architecture](../network-architecture.md#resources) calls a *resource* and FiveM calls a resource: one folder, one manifest |
 | **Mod** | A project installed in the mods folder and switched on. Studio's Play runs the open project the same way |
 | **The game state** | The one Lua 4.0 state per level in which the disc's scripts run, as today ([Scripts](../../research/scripting.md#life-of-the-lua-state)) |
 | **A project state** | The Lua 5.4 state of one project, its own environment and globals, which the [sandbox](#sandbox) holds in |
@@ -110,8 +110,7 @@ says the same before the script runs, because the stubs list only what is availa
 ### Lua 5.4 for projects, Lua 4.0 for the game {#runtime-choice}
 
 The architecture page advises one runtime until mods need what Lua 4.0 lacks
-([Three parts](../asset-and-script-architecture.md#script-parts)). The SDK is that need. A maintainer decided
-(2026-10-28):
+([Three parts](../asset-and-script-architecture.md#script-parts)). The SDK is that need. A maintainer decided:
 
 - **Lua 4.0 stays the runtime of the game**: the disc's scripts, Coney's own rewrites of the level scripts (compared
   call for call with the originals), script overrides that replace a disc script, and the debug console in the game
@@ -183,9 +182,10 @@ keeps the last one set, from whichever state, as the original's one slot does.
 
 ## Projects and the manifest {#manifest}
 
-A project folder is the one Studio creates ([#1055](issue:1055) owns its layout: `levels/`, `textures/`, `scripts/`
-and the `.studio/` cache). This page owns the manifest's name and its script fields, and proposes TOML (as
-`coney.local.toml`), not FiveM's Lua manifest: a manifest that is code would have to run before the sandbox exists.
+A project folder is the one Studio creates ([The project](editor-experience.md#project-coney) owns its layout:
+`levels/`, `textures/`, `scripts/` and the `.studio/` cache). This page owns the manifest's name and its script fields,
+and proposes TOML (as `coney.local.toml`), not FiveM's Lua manifest: a manifest that is code would have to run before
+the sandbox exists.
 
 ```toml
 # coney-project.toml
@@ -261,9 +261,10 @@ The game state needs no threads: the original's scripts wait only through the sc
 
 ## Play, step by step {#play}
 
-What Coney does when Studio's Play is pressed or a mod starts a level. Studio's side (saving first, restoring the edit
-state on Stop, the Game view) is the editor page's ([#1055](issue:1055)); how the engine runs beside the editor is the
-[technology](technology.md#play) page's. The engine's side is the same whichever program hosts it.
+What Coney does when Studio's Play is pressed or a mod starts a level. Studio's side (the Game view, live edits, what
+Stop keeps and throws away) is the editor page's ([Play mode](editor-experience.md#play-mode)); how the engine runs
+beside the editor is the [technology](technology.md#play) page's. The engine's side is the same whichever program hosts
+it.
 
 ```mermaid
 ---
@@ -314,8 +315,9 @@ flowchart TB
    ([The sandbox](#sandbox)). Rendering reads the result and calls no script.
 8. **Stop.** At the next step boundary: the `levelEnd` handlers (reason `stop`), then `stop`; the project state is
    closed; the game state is destroyed as a level unload destroys it; the session ends. Every handle either state
-   held dies with the session, so nothing a project made outlives Play. Studio then shows the edit state it kept,
-   unchanged ([#1055](issue:1055): Play never changes the edited level).
+   held dies with the session, so nothing a project made outlives Play. Studio then shows the edited level with the
+   level edits made while playing and nothing of the running game
+   ([Live edits while playing](editor-experience.md#live-edits)).
 
 A level change during Play (a project calling `Coney.StartLevel`, or a `game:/` level's own `runNextMission`) runs
 `levelEnd` (reason `change`), unloads and remakes the game state as the game does (without the preloads, as the
@@ -336,8 +338,9 @@ call its functions. Whether it may read a game-state global through a Coney nati
 ## Assets by path {#assets}
 
 A project's script loads, plays or spawns an asset by its path, as engines do (`Resources.Load` in Unity, `load()` in
-Godot). The paths are the editor page's two roots ([#1055](issue:1055)); the formats behind them and how an import
-becomes a project file are the [content page](content-and-formats.md#paths)'s, and the two pages use the same scheme:
+Godot). The paths are the editor page's two roots ([The project](editor-experience.md#project-coney)); the formats
+behind them and how an import becomes a project file are the [content page](content-and-formats.md#paths)'s, and the two
+pages use the same scheme:
 
 | Root | Means | Example |
 | --- | --- | --- |
@@ -633,17 +636,16 @@ When this design is accepted, these lines change on the pages that own them:
   not one per Lua state ([The two states](#two-states)).
 - [Asset and script architecture: Deferred, in order](../asset-and-script-architecture.md#later): the native list, the
   scheduler, the compiler and the `Coney` table move ahead of the whole game, as Studio's first build work
-  ([Proposed build issues](#build-issues)), under the faithful-first exception of [Maintainer decisions](#decisions).
+  ([Proposed build issues](#build-issues)), in the order the parent issue gives ([#1054](issue:1054)).
 - [Roadmap: Script mods](../../roadmap.md#script-mods): the loader's points are this page's entry points.
 
 ## Maintainer decisions {#decisions}
 
-1. **A second Lua runtime: Lua 5.4 for projects** ([The runtime](#runtime-choice)). Decided by a maintainer
-   (2026-10-28), with its new dependency, stock Lua 5.4 (MIT licence). The network page lists the same choice for
+1. **A second Lua runtime: Lua 5.4 for projects** ([The runtime](#runtime-choice)). Decided by a maintainer, with its new
+   dependency, stock Lua 5.4 (MIT licence). The network page lists the same choice for
    resources.
-2. **Projects and faithful first.** Running a project is a modded session, and Coney natives reach capabilities the
-   original lacks; the Studio index proposes that Studio and its projects run in a mode of their own under an
-   exception to faithful first ([#1055](issue:1055)). The SDK assumes that exception.
+2. **Projects and faithful first: decided, no exception needed** ([Studio's decisions](index.md#decisions)). Running a
+   project is still a modded session.
 3. **The SDK's names are a public promise** ([Names and namespaces](#names)): once a release makes a Coney native
    available, its name and signature never change. Who approves a Coney native's name before its first release (a
    maintainer, or the review alone) is to decide.

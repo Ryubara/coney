@@ -339,6 +339,9 @@ nav:
       - Network multiplayer: guides/multiplayer.md
       - Network architecture design: guides/network-architecture.md
       - Coney Studio design:
+          - guides/studio/index.md
+          - Editor experience: guides/studio/editor-experience.md
+          - "The Level view, gizmos and composing": guides/studio/level-view.md
           - Lua SDK and natives: guides/studio/lua-sdk.md
           - Technology: guides/studio/technology.md
           - Content and formats: guides/studio/content-and-formats.md
