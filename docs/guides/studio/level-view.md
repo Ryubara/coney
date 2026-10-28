@@ -167,7 +167,7 @@ What all four do, and Studio with them:
 
 - A click in the Level view selects what is under the cursor; a click on empty space clears the selection.
 - **Shift+click** adds to the selection and **Ctrl+click** toggles one in or out (Unity); a **drag on empty space**
-  draws a box that selects what it encloses (Godot, Unreal, Unity).
+  draws a box that selects what it encloses (Unity and Godot; Unreal's perspective view needs Ctrl+Alt with the drag).
 - **One selection** shared by every panel: choosing in the Hierarchy selects in the Level view and fills the Inspector,
   and the reverse. In Play it is the Entity inspector's selection, so the Debug draw's highlight follows it.
 - The Inspector shows the values a multiple selection shares and edits them all together; a value they differ in shows

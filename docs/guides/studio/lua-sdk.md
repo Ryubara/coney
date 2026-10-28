@@ -643,9 +643,8 @@ When this design is accepted, these lines change on the pages that own them:
 1. **A second Lua runtime: Lua 5.4 for projects** ([The runtime](#runtime-choice)). Decided by a maintainer
    (2026-10-28), with its new dependency, stock Lua 5.4 (MIT licence). The network page lists the same choice for
    resources.
-2. **Projects and faithful first: decided, no exception needed.** Studio is a reflection of Coney's progress: it offers
-   only what Coney has, an enhancement or native appears in Studio once Coney has it, and nothing in Studio changes how
-   the story plays ([Studio's decisions](index.md#decisions)). Running a project is still a modded session.
+2. **Projects and faithful first: decided, no exception needed** ([Studio's decisions](index.md#decisions)). Running a
+   project is still a modded session.
 3. **The SDK's names are a public promise** ([Names and namespaces](#names)): once a release makes a Coney native
    available, its name and signature never change. Who approves a Coney native's name before its first release (a
    maintainer, or the review alone) is to decide.

@@ -168,8 +168,8 @@ mode](#play-coney)).*
   `t:fighter` only fighters, as Unity's `t:` search does), and its filter menu has one entry per kind; the tree shows
   the matches with their parents greyed for context.
 - **Create** from an entity's right-click makes the new entity its child; from empty space, a top-level entity ([The
-  Create menu](level-view.md#create-menu)). Ctrl+G groups the selection under a new group and Shift+G ungroups it
-  (Unreal's keys; Unity has no default key for it).
+  Create menu](level-view.md#create-menu)). Ctrl+Shift+G puts the selection under a new group (Unity's *Create Empty
+  Parent*), and *Ungroup* in the right-click menu moves a group's children up and deletes it.
 - **A prefab instance** is one row that opens to its entities, marked as a prefab; a value an instance changes is marked
   in the Inspector as an override, with *Revert* and *Apply to prefab* (Unity's). Double-clicking the row's prefab icon
   opens the prefab on its own to edit, and every instance follows.
