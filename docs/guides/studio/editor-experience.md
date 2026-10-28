@@ -718,24 +718,33 @@ importers: when filed, issue 1 here goes with its issue 2, issue 7 with its 5, i
 
 ## Sources {#sources}
 
-The editors' own documentation, read for this page:
+The editors' own documentation and source, read for this page:
 
-- Unity: [Scene view
-  navigation](https://docs.unity.com/en-us/engine/current/manual/unity-editor/editor-windows-views-reference/using-the-scene-view/scene-view-navigation),
-  [Positioning
-  GameObjects](https://docs.unity.com/en-us/engine/current/manual/working-with-scenes/scenes-manage-gameobjects/positioning-game-objects)
-  (the tool keys and snapping).
+- Unity: [Scene view navigation](https://docs.unity.com/en-us/engine/current/manual/unity-editor/editor-windows-views-reference/using-the-scene-view/scene-view-navigation),
+  [Positioning GameObjects](https://docs.unity.com/en-us/engine/current/manual/working-with-scenes/scenes-manage-gameobjects/positioning-game-objects)
+  (the tool keys and snapping), [Customizing your workspace](https://docs.unity3d.com/Manual/CustomizingYourWorkspace.html)
+  (layouts), [The Game view](https://docs.unity3d.com/Manual/GameView.html) (Play mode),
+  [Preferences](https://docs.unity3d.com/Manual/Preferences.html) (the Play mode tint),
+  [Prefabs](https://docs.unity3d.com/Manual/Prefabs.html) (instances and overrides).
 - Godot: [Introduction to 3D](https://docs.godotengine.org/en/stable/tutorials/3d/introduction_to_3d.html) (freelook and
   the tool keys), [File system](https://docs.godotengine.org/en/stable/tutorials/scripting/filesystem.html) (`res://`,
-  moving files), [Customizing the
-  interface](https://docs.godotengine.org/en/stable/tutorials/editor/customizing_editor.html) (docks and editor
-  layouts), [Overview of debugging
-  tools](https://docs.godotengine.org/en/stable/tutorials/scripting/debug/overview_of_debugging_tools.html)
-  (*Synchronize Scene Changes* and the Remote tree).
-- Unreal: [Viewport
-  controls](https://dev.epicgames.com/documentation/en-us/unreal-engine/viewport-controls-in-unreal-engine).
-- Roblox Studio: [Studio interface](https://create.roblox.com/docs/studio/ui-overview), [Testing
-  modes](https://create.roblox.com/docs/studio/testing-modes).
-- FiveM: [Creating your first
-  script](https://docs.fivem.net/docs/scripting-manual/introduction/creating-your-first-script/) (the resource folder,
-  its manifest, `refresh` and `restart`).
+  moving files), [Customizing the interface](https://docs.godotengine.org/en/stable/tutorials/editor/customizing_editor.html)
+  (docks and editor layouts, `editor_layouts.cfg`),
+  [Overview of debugging tools](https://docs.godotengine.org/en/stable/tutorials/scripting/debug/overview_of_debugging_tools.html)
+  (*Synchronize Scene Changes* and the Remote tree); the 4.6 editor theme from its source at `4.6-stable`:
+  [editor_settings.cpp](https://github.com/godotengine/godot/blob/4.6-stable/editor/settings/editor_settings.cpp)
+  (the settings' defaults and ranges),
+  [editor_theme_manager.cpp](https://github.com/godotengine/godot/blob/4.6-stable/editor/themes/editor_theme_manager.cpp)
+  (the presets and spacing) and [thirdparty/fonts](https://github.com/godotengine/godot/tree/4.6-stable/thirdparty/fonts)
+  (the fonts and their licences).
+- Unreal: [Viewport controls](https://dev.epicgames.com/documentation/en-us/unreal-engine/viewport-controls-in-unreal-engine),
+  [Play and Simulate](https://dev.epicgames.com/documentation/en-us/unreal-engine/in-editor-testing-play-and-simulate-in-unreal-engine)
+  (Play In Editor, Eject, *Keep Simulation Changes*).
+- Roblox Studio: [Studio interface](https://create.roblox.com/docs/studio/ui-overview),
+  [Testing modes](https://create.roblox.com/docs/studio/testing-modes).
+- FiveM: [Creating your first script](https://docs.fivem.net/docs/scripting-manual/introduction/creating-your-first-script/)
+  (the resource folder, its manifest, `refresh` and `restart`).
+
+A few small facts come from the editors as they are used rather than a page: Unity's *Undo History* window and
+*Create Empty Parent* key, Roblox Studio's Ctrl+1 to Ctrl+4 tool keys and Shift for a slower camera (the last from
+Roblox's developer forum).
