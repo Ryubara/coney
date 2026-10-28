@@ -2,9 +2,9 @@
 
 This page is a **design**: nothing on it is built. It decides what Coney Studio is made with: the GUI library, whether
 Studio is a program of its own, how Play runs the engine and how edits reach it, the code editor and its language
-tooling, the script debugger, hot reload and the libraries that import assets. Each question lists the alternatives
-weighed and the choice, and the page ends with the [build issues](#build-issues) it proposes, in order. Two small
-proofs settled what reading could not ([Proofs](#proofs)).
+tooling, the script debugger, hot reload, the libraries that import assets and the harness that tests Studio. Each
+question lists the alternatives weighed and the choice, and the page ends with the [build issues](#build-issues) it
+proposes, in order. Three small proofs settled what reading could not ([Proofs](#proofs)).
 
 What Studio is, its panels, Play's controls and the keymap are the [editor experience](editor-experience.md) design;
 what a script can call, the language version for mods and how Play loads a project are the Lua SDK and runtime design;
@@ -16,8 +16,9 @@ does not repeat them.
 | Question | Choice | Main reason |
 | --- | --- | --- |
 | [GUI library](#gui) | Dear ImGui, its docking release, with a designed theme | Coney's overlay and launcher already use it; the engine's frame shows in a panel with one call; MIT; one stack on three platforms |
+| [Testing Studio](#testing) | The Dear ImGui Test Engine drives the real Studio: clicks, keys, drags, drops, docking, captures and video | One harness for every panel, the Level view and the Game view included; fixed frame time, byte-identical captures |
 | [The program](#program) | A separate `coney-studio` executable that links the same engine libraries as `coney` | The game a player runs carries no editor code; Studio is its own entity that realizes the engine's functions |
-| [Play](#play) | In the Studio process: a play session on its own simulation thread, drawn into the Game view | The Scene view and the Game view share one world, so live edits are a queue of edit commands; a breakpoint stops only the simulation |
+| [Play](#play) | In the Studio process: a play session on its own simulation thread, drawn into the Game view | The Level view and the Game view share one world, so live edits are a queue of edit commands; a breakpoint stops only the simulation |
 | [Live edits](#live-edits) | Edit commands applied to the running session between steps | Serializable, so the same commands can later go to a child process or a networked peer |
 | [Code editor](#code-editor) | goossens' ImGuiColorTextEdit, pinned, wrapped by Studio | Completions, squiggles, hover, multiple cursors, VS Code-like keys, inside the same ImGui frame |
 | [Language tooling](#language-tooling) | lua-language-server as a child process, fed stubs generated from the natives masterlist; Coney's own compiler for syntax errors | Completions, hover, type and argument checks for free; MIT; about 4.5 MB to download per platform |
@@ -49,6 +50,7 @@ does not repeat them.
 | Licence (Coney is GPL-3.0-or-later) | MIT | LGPL-3.0 or GPL or commercial | GPL-3.0, royalty-free or commercial | MIT (Electron, Monaco), MIT or Apache-2.0 (Tauri) |
 | Size | A few hundred KB in the executable | 20 to 40 MB of Qt libraries to ship | A few MB, plus a Rust toolchain to build from source | Electron about 100 MB (Chromium); a system web view small, but WebKitGTK on Linux |
 | Fit with Coney's build | Already fetched and built by `cmake/deps.cmake` | A prebuilt Qt per platform in CI: a new kind of dependency | Rust in the build | A second language and toolchain |
+| Driving it in tests | The Dear ImGui Test Engine: items found by path, simulated mouse and keys, captures, video, fixed frame time ([Testing Studio](#testing)) | Qt Test (`QTest` clicks and keys, the `offscreen` platform, `QWidget::grab`); Squish (commercial) | A testing backend that finds elements by their accessible properties, mainly from Rust | Playwright (Apache-2.0) drives the page; the engine's views inside it stay opaque |
 | Accessibility | Poor: no screen reader support | Good | Good | Good |
 | Effort for Studio | Most widgets written by us (gizmos, property grids, trees), as every ImGui editor does | Widgets given; the engine view and the input routing are the hard part | Docking and the editor written by us | Two worlds: the UI in JavaScript, the engine in C++, a bridge between |
 
@@ -57,11 +59,14 @@ does not repeat them.
 Dear ImGui, on its docking release (`v1.92.9b-docking`, the same version Coney pins today, so the overlay keeps
 working unchanged). The reasons, in the order they weigh:
 
-- **The engine's frame is one call away.** The Scene view and the Game view are the engine drawing into a texture
+- **The engine's frame is one call away.** The Level view and the Game view are the engine drawing into a texture
   that a panel shows. With Dear ImGui the panel and the engine share one graphics device, OpenGL now and SDL's GPU API
   after the renderer change; with every other library the frame crosses a toolkit boundary or a process.
 - **One stack.** The overlay, the launcher and Studio share one library, one theme and one set of widgets; a panel
   written for one (the Inspector grows from the merged entity panel) runs in the others.
+- **One harness tests everything.** With the Test Engine every panel, the Level view and the Game view are items one
+  test can find and drive ([Testing Studio](#testing)); the other options test their widgets well but reach the
+  engine's views through a second mechanism, and Monaco in a web view would need a second harness.
 - **The licence and size** are no question, and the build already knows how to make it.
 - **What it lacks we accept:** native look (Studio is themed instead), accessibility (an open question for a maintainer,
   [below](#questions)), and widgets we write ourselves.
@@ -73,6 +78,58 @@ that varies most by platform, and a docked layout covers the brief.
 applied at the [UI scale](../debug-menu.md#ui-scale) the overlay already computes. Fonts are shipped, never taken
 from the system: Inter for the interface and JetBrains Mono for code (both SIL OFL-1.1), and an icon font such as
 Lucide (ISC). The proof's theme took about 50 lines ([Proofs](#proof-shell)).
+
+## Testing Studio {#testing}
+
+Nobody plays Studio to check it, as nobody plays the game ([Testing](../testing.md)): agents write tests that do
+what a user does, through the same Studio a user runs, and see the same pictures. The harness is part of the GUI
+choice.
+
+### The harness: the Dear ImGui Test Engine {#test-engine}
+
+The Test Engine is Dear ImGui's own automation library, by the same author. It runs a test as a coroutine beside the
+application's frames and drives the real UI through Dear ImGui's input queue, so a test goes through the code a click
+goes through:
+
+- **Finding things.** An item by its path (`"Hierarchy/**/Vermin"`, `"Inspector/Health"`), a window by its name; the
+  item's rectangle, state and label are queried, never guessed from pixels.
+- **Doing things.** Mouse moves, clicks, double clicks and drags; keys, chords and typed text; values typed into a
+  field; drag and drop between items; docking one window into another; menus and popups opened by their path.
+- **Checking things.** `IM_CHECK` on any state Studio exposes, with the failing test's log.
+- **Capturing.** A window, a region or the whole frame as a PNG, and a video, both read back from Studio's own frame,
+  never from the screen.
+- **Running.** In *fast* mode, frames as fast as the machine allows, each with a fixed frame time
+  (`ConfigFixedDeltaTime`), with results exported as JUnit XML.
+
+What the operating system sends (a file dropped from the desktop, a window resized or moved to another display, focus
+lost) is not a Dear ImGui event, so a test pushes the matching SDL event (`SDL_EVENT_DROP_FILE` and the rest) and Studio
+handles it through the one path a real one takes. Drag-and-drop import into the File system panel is tested that way
+([Proofs](#proof-test-engine)).
+
+**The licence.** The Test Engine is not MIT: its licence (v1.04) is free for a natural person, a not-for-profit, for
+education, for software "released publicly and under an Open Source license" (an OSI one), or for a company under 2
+million USD of turnover, and paid otherwise; copies keep its notice. Coney, public under GPL-3.0-or-later, falls in the
+free terms. The licence is not GPL-compatible, so the Test Engine is built only into Studio's test builds and never
+into a release or a play-test build. Whether that use is acceptable is a licence question for a maintainer
+([Questions](#questions)). If it is not, the fallback is a driver of Coney's own on the item hooks that Dear ImGui's MIT
+core already carries for the Test Engine (`IMGUI_ENABLE_TEST_ENGINE`) and on its input queue: the same model, weeks of
+work instead of a pin.
+
+### How it fits Coney's testing rules {#testing-rules}
+
+| Rule ([Testing](../testing.md)) | In Studio |
+| --- | --- |
+| Fixed time, no real clock | Every UI frame has the same fixed frame time; a play session in a test runs in test mode, one 1/30 s step per frame, with seeded randomness. A third-party widget that reads the real clock is set not to in tests (the code editor's completion delay is 0 ms there) |
+| Scripted input | Mouse and keyboard through the Test Engine; the gamepad in the Game view through the same input scripts `coney --input-script` reads |
+| [No run waits for a click](../testing.md#no-dialogs) | Studio opens no operating-system dialog in a test: file pickers and message boxes go through one interface the tests replace |
+| [Test through the player's path](../testing.md#test-through-the-players-path) | Tests drive the real panels, never test-only widgets; Play in a test is the same play session a user's Play starts |
+| No display in CI | Tests that need no picture run over a bare Dear ImGui context with no renderer, as the overlay's tests do, on all three platforms. Tests that capture need a graphics device: a hidden window drawing into an offscreen framebuffer, as the proof does, on the agents' machine, and on CI runners once they have a software renderer |
+| Captures of Coney only | A capture is read from Studio's own framebuffer, never a screen or window grab; video frames go to FFmpeg's standard input as `coney --record` sends them, under [the clip rules](../testing.md#clips) |
+
+**How agents write and run them.** A Studio test is C++ in `tests/studio/`, registered with the Test Engine and run by
+`coney-studio --test <filter>` with a hidden window; `ctest` runs them under the label `studio`, and `coney-tools build
+--test -L studio` picks them. Each run writes its captures and results to the agent's scratch folder, for the pull
+request's Screenshots section.
 
 ## The program {#program}
 
@@ -97,13 +154,13 @@ functions in editor form, and the game a player runs stays the game.
 | | In the Studio process | A child process (`coney` started by Studio) |
 | --- | --- | --- |
 | The Game view | The session draws into a texture the panel shows | A separate window, or a window embedded by platform tricks (Godot's approach: Windows and X11; macOS needed another approach) |
-| Live edits from the Scene view | Commands applied to the shared world between steps | Commands sent over a pipe, and the child's world streamed back for the Scene view to show it |
+| Live edits from the Level view | Commands applied to the shared world between steps | Commands sent over a pipe, and the child's world streamed back for the Level view to show it |
 | Inspecting the running world | Read directly, between steps | A snapshot protocol |
 | A crash in the engine | Takes Studio down: an autosave before Play keeps the work | Studio survives |
 | Start time | A new session; assets already loaded stay | A process start and a full load |
 | Process-wide state | Must become per session (below) | Fresh every time |
 
-**Choice: in the process.** The brief asks for a Scene view and a Game view side by side, with edits reaching the
+**Choice: in the process.** The brief asks for a Level view and a Game view side by side, with edits reaching the
 running game in real time; in one process both views look at the same world, and the edit is a command queued for the
 next step. In a child process the same thing needs the child's whole world mirrored back into Studio. The cost of the
 choice is crash isolation, which an autosave before Play and the recovery file pay for, and a few prerequisites:
@@ -126,12 +183,12 @@ config:
 ---
 flowchart TB
   doc["Edit document<br/>(the project's level)"]
-  ui["Studio UI thread<br/>panels, Scene view, editor"]
+  ui["Studio UI thread<br/>panels, Level view, editor"]
   sim["Play session<br/>simulation thread, fixed 1/30 s steps"]
   q["Edit commands"]
   ls["lua-language-server<br/>child process"]
   doc -- "Play: build a session" --> sim
-  ui -- "Scene view edits" --> q --> sim
+  ui -- "Level view edits" --> q --> sim
   sim -- "frames, entity reads<br/>between steps" --> ui
   ui -- "LSP over stdio" --> ls
   ui -- "DAP" --> sim
@@ -154,16 +211,16 @@ flowchart TB
 
 ### Live edits during Play {#live-edits}
 
-While a session runs, the Scene view shows the session's world beside the Game view, and a gizmo drag, an Inspector
+While a session runs, the Level view shows the session's world beside the Game view, and a gizmo drag, an Inspector
 change or a placed object becomes an **edit command**: an id, the entity's id and the new value, never a pointer. The UI
 thread queues it and the simulation thread applies the queue at the start of the next step, so a step never sees half
 an edit; it is the Entity editor's queue ([Entity editor](../debug-menu.md#entity-editor)) grown to every editable
 thing. Edits made while playing apply to the session only and are lost on Stop, as the editor experience design's
 [Play mode](editor-experience.md#play-coney) asks.
 
-Sharing one world in one process is what makes this cheap: the Scene view reads the session between steps and draws it
+Sharing one world in one process is what makes this cheap: the Level view reads the session between steps and draws it
 with the same renderer, and an edit is one queued command. With a child process, the same edit would be a message over
-a pipe, and the Scene view would need the child's whole world streamed back to draw it, a snapshot protocol Coney does
+a pipe, and the Level view would need the child's whole world streamed back to draw it, a snapshot protocol Coney does
 not need for anything else. Edit commands are plain, serializable data all the same, as
 [the network checklist](../network-architecture.md#checklist) asks of simulated effects, so they can later go to a child
 process (Run in Coney) or to a co-op peer without a second design. What an edit may not do live (replace collision, a
@@ -254,19 +311,28 @@ built with Studio only, never with the game.
 
 ## Proofs {#proofs}
 
-Two proofs, kept in the unit's scratch folder and not in `src/`: they answered their questions and Studio's real code
+Three proofs, kept in the unit's scratch folder and not in `src/`: they answered their questions and Studio's real code
 starts from the issues below.
 
 ### A docked shell with an editor {#proof-shell}
 
 A program of about 300 lines on SDL3, OpenGL 3 and Dear ImGui `v1.92.9b-docking`: a menu bar with Play, Pause and Step,
-a default layout made with `DockBuilder` (Hierarchy and File system on the left, Scene, Game and a script tab in the
+a default layout made with `DockBuilder` (Hierarchy and File system on the left, Level, Game and a script tab in the
 middle, Inspector on the right, Console and Problems below), a Game view showing a texture drawn by a stand-in for the
 engine, the designed theme, and goossens' editor (commit `12a5a01d`) with Lua colouring. Typing `HuSetAcc` opened the
 completion popup with `HuSetAccurate`, from the natives stub; LuaLS's diagnostics for the file showed as squiggles with
 tooltips and as lines in Problems. It built through `coney-tools build` with the editor's one source file and Dear
 ImGui's. What it settled: the docking release, the widget's completion and squiggle APIs
 and a texture in a docked panel work together as this page assumes. The pull request shows its screenshot.
+
+### The Test Engine driving the shell {#proof-test-engine}
+
+The same shell, built with the Test Engine (commit `044a7799`) and a hidden window, ran five tests: select Vermin in the
+Hierarchy, type 42 into the Inspector's Health, drop a file `hero.glb` onto the window (an `SDL_EVENT_DROP_FILE` pushed
+by the test) and find it in the File system panel, dock the Inspector into the Hierarchy, and type `HuSetAcc` in the
+editor and accept the completion with Tab. All five passed in 3.5 s, with a PNG of the File system window, a PNG of the
+whole frame, a 3 s video piped to FFmpeg and a JUnit XML file. Three runs gave byte-identical PNGs. One finding: the
+editor's completion popup waits 200 ms of real time, so a test sets that delay to 0.
 
 ### lua-language-server with the natives {#proof-lsp}
 
@@ -286,7 +352,7 @@ and one in Lua 5.x style, read once with `--check` and once over LSP by a small 
 ## Build issues {#build-issues}
 
 In the order they should come. Each assumes the ones above it; the runtime issues of the Lua SDK design come between
-the third and the fourth.
+the fourth and the fifth.
 
 1. **`build: Update Dear ImGui to its docking release`.** Move the pin in `cmake/deps.cmake` from `v1.92.9b` to
    `v1.92.9b-docking` (the same version with docking), with docking turned on in the developer overlay so its windows
@@ -295,40 +361,47 @@ the third and the fourth.
    in `src/platform/`, linking the engine libraries: open or create a project folder, the theme tokens and fonts (Inter,
    JetBrains Mono, an icon font), the default layout from the editor experience design, layouts saved per user, and the
    File system panel rooted at the project. Tests run the shell over a bare Dear ImGui context, as the overlay's do.
-3. **`core: Rework the tuning state to belong to a session`.** The eight tuning singletons and the tunable registry move
+3. **`tests: Add the Dear ImGui Test Engine harness for Coney Studio`.** The Test Engine pinned and built into Studio's
+   test builds only, `coney-studio --test`, the `studio` ctest label, captures and video from Studio's own frame
+   through the clip rules, an interface over file dialogs, and the first tests: the default layout, a docked panel
+   moved, a file dropped into the File system panel. Waits on a maintainer's answer on the Test Engine's licence.
+4. **`core: Rework the tuning state to belong to a session`.** The eight tuning singletons and the tunable registry move
    into a session object that the game mode owns, so two sessions in one process never share values. No behaviour
    changes; the existing tests and a new two-session test prove it.
-4. **`tools: Add Play to Coney Studio`.** A play session built from the saved project on its own simulation thread,
+5. **`tools: Add Play to Coney Studio`.** A play session built from the saved project on its own simulation thread,
    drawn into the Game view, with Play, Pause, Step and Stop, input from the Game view, an autosave and recovery file
    before Play, and the edit document untouched by playing. Needs the simulation out of `src/platform/` and the runtime
    design's game mode. A scripted test plays, stops and plays again and compares the two sessions' traces.
-5. **`tools: Add live edits from the Scene view during Play`.** Edit commands (ids and values) queued by the UI and
+6. **`tools: Add live edits from the Level view during Play`.** Edit commands (ids and values) queued by the UI and
    applied between steps, the Entity editor's queue grown to every editable thing, lost on Stop. Tests apply commands
    to a headless session.
-6. **`tools: Add the natives stub generator for lua-language-server`.** A `coney-tools` command that writes a `---@meta`
+7. **`tools: Add the natives stub generator for lua-language-server`.** A `coney-tools` command that writes a `---@meta`
    stub of the original natives from `research/bindings/` and of Coney's natives from their list, with the
    `.luarc.json` settings Studio needs. Python tests on a synthetic masterlist.
-7. **`tools: Add the script editor to Coney Studio`.** goossens' ImGuiColorTextEdit pinned, tabs over project files,
+8. **`tools: Add the script editor to Coney Studio`.** goossens' ImGuiColorTextEdit pinned, tabs over project files,
    the VS Code keymap, LuaLS started per project with Studio's LSP client (diagnostics, completion, hover, signature
    help, definition, references, rename), the Problems panel, and LuaLS shipped per platform. Tests drive the client
    against a recorded server conversation.
-8. **`core: Add a debug hook and a DAP server to the script runtime`.** Line, call and return hooks in the VM;
+9. **`core: Add a debug hook and a DAP server to the script runtime`.** Line, call and return hooks in the VM;
    breakpoints, stepping, stack, locals and watches over the Debug Adapter Protocol; off in test mode and network play.
    Tests run a compiled chunk under scripted DAP requests.
-9. **`tools: Add the debugger to the Coney Studio script editor`.** The DAP client: gutter breakpoints, the current
-   line, the Debug panel and the F5 to F11 keys; pausing keeps the UI running.
-10. **`tools: Add hot reload of scripts and assets to Coney Studio`.** The project poller, scripts reloaded between
+10. **`tools: Add the debugger to the Coney Studio script editor`.** The DAP client: gutter breakpoints, the current
+    line, the Debug panel and the F5 to F11 keys; pausing keeps the UI running.
+11. **`tools: Add hot reload of scripts and assets to Coney Studio`.** The project poller, scripts reloaded between
     steps through the scheduler, presentation assets swapped live, and simulation assets marking Play stale.
-11. **`tools: Add glTF, FBX, image and audio import to Coney Studio`.** cgltf, ufbx, stb_image, dr_libs and stb_vorbis
+12. **`tools: Add glTF, FBX, image and audio import to Coney Studio`.** cgltf, ufbx, stb_image, dr_libs and stb_vorbis
     pinned and built with Studio only, behind drag and drop into the File system panel and the Import button, writing
     the content design's formats. Tests import synthetic files made by the tests themselves.
-12. **`tools: Add Run in Coney to Coney Studio`.** Starts `coney` as a child process on the saved project, and a second
+13. **`tools: Add Run in Coney to Coney Studio`.** Starts `coney` as a child process on the saved project, and a second
     client for a co-op test over ENet.
 
 ## Questions for a maintainer {#questions}
 
 - **Shipping Studio.** `coney-studio`, Dear ImGui, the importers and LuaLS (27 MB unpacked) in every release, or as an
   optional download the launcher fetches? This page assumes the release manifest lists them all.
+- **The Test Engine's licence.** Its licence is free for Coney as a public open-source project but is not
+  GPL-compatible; this page builds it into test builds only, never into anything a user downloads. Is that use
+  acceptable ([The harness](#test-engine))? If not, Studio's tests use a driver of Coney's own.
 - **Accessibility.** Dear ImGui has no screen reader support. Is that acceptable for Studio?
 - **The language for mods.** Lua 4.0 or 5.4 decides how much of LuaLS a modder gets ([Language
   tooling](#language-tooling)); the Lua SDK design asks it.
