@@ -244,7 +244,7 @@ class Engine(LimitEnforcement):
         # Who counts as what, in the log: the live test reads it to see the permission GitHub gave the Action.
         role = "a maintainer" if maintainer else "a contributor"
         permission = self._permissions.get(comment.login) or f"unknown, association {comment.association}"
-        label = self.rules.studio_label if card.studio else self.rules.exempt_label
+        label = self.rules.studio_label if card.studio and self.rules.studio_label else self.rules.exempt_label
         exempt = f", outside the limit (`{label}`)" if card.exempt else ""
         work.log.append(f"#{number}: {comment.login} claimed it{half} as {role} (permission {permission}){exempt}")
         self._audit_new_claim(work, comment, fresh, maintainer)

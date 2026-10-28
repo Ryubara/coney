@@ -193,7 +193,9 @@ def test_claim_list_json_says_whether_a_claim_is_exempt(
 
 # --- the Studio label (`claims.studio_label`, maintainer decision 2026-10-28) -----------------------------------------
 
-STUDIO = (*READY, RULES.studio_label)
+assert RULES.studio_label is not None
+STUDIO_LABEL: str = RULES.studio_label
+STUDIO = (*READY, STUDIO_LABEL)
 
 
 def test_the_studio_label_is_in_the_conventions_and_the_label_list() -> None:
@@ -229,7 +231,7 @@ def test_the_studio_flag_follows_the_label(engine: Engine, github: FakeGitHub, c
     github.add_issue(4, labels=READY)
     take(engine, github, 4)
     assert not card_of(github, 4).studio
-    github.items[4].view = replace(github.view(4), labels=(*github.view(4).labels, RULES.studio_label))
+    github.items[4].view = replace(github.view(4), labels=(*github.view(4).labels, STUDIO_LABEL))
     clock.advance(minutes=5)
     make_engine(github, clock).reconcile(4)
     assert card_of(github, 4).studio and card_of(github, 4).exempt
@@ -251,3 +253,14 @@ def test_the_rules_name_both_labels_outside_the_limit() -> None:
     assert RULES.outside_limit(("task", "workflow")) and RULES.outside_limit(("studio",))
     assert not RULES.outside_limit(("task", "P-high"))
     assert RULES.is_studio(("studio",)) and not RULES.is_studio(("workflow",))
+
+
+def test_a_file_without_the_studio_label_has_no_studio_work() -> None:
+    # A default branch from before the Studio track has no `claims.studio_label`; the release commands read its claims
+    # (`load_release_rules_at`), so the key is optional and its absence means no issue is Studio work.
+    from conventions_support import REMOVE, conventions_with
+
+    claims = conventions_with(("claims.studio_label", REMOVE)).claims
+    assert claims.studio_label is None
+    assert not claims.is_studio(("studio",)) and not claims.outside_limit(("studio",))
+    assert claims.outside_limit(("workflow",))

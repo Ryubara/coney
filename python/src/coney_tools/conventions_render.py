@@ -308,11 +308,15 @@ def _claim_rules(conventions: Conventions) -> list[str]:
         f"Issues whose cards share a `task:` id count as one claim, and a task holds {limits.issues_per_task} issues "
         "at most."
     )
+    studio = (
+        f" or `{claims.studio_label}` (Coney Studio work, which has its own engineer track)"
+        if claims.studio_label
+        else ""
+    )
     lines += _bullet(
-        f"The claim of an issue labelled `{claims.exempt_label}` (a unit that builds the new workflow) or "
-        f"`{claims.studio_label}` (Coney Studio work, which has its own engineer track) neither counts toward that "
-        "limit nor is refused by it; the cap of a task still holds. Only someone who may label issues (triage access "
-        "or more) can set the labels."
+        f"The claim of an issue labelled `{claims.exempt_label}` (a unit that builds the new workflow){studio} neither "
+        "counts toward that limit nor is refused by it; the cap of a task still holds. Only someone who may label "
+        "issues (triage access or more) can set the labels."
     )
     ends = _join_or([f"`{stage}`" for stage in claims.limit_ends_at])
     lines += _bullet(

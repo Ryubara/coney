@@ -397,7 +397,7 @@ def render_card(card: Card, rules: Claims) -> str:
         lines.append(f"- **Ended:** {show_time(card.released_at)}")
     lines.append(f"- **Last activity:** {show_time(card.activity)} ({card.last_activity_why})")
     if card.active and card.exempt:
-        label = rules.studio_label if card.studio else rules.exempt_label
+        label = rules.studio_label if card.studio and rules.studio_label else rules.exempt_label
         lines.append(f"- **Limit:** not counted toward the open-claims limit (`{label}`)")
     elif card.active and not card.counted:
         lines.append(

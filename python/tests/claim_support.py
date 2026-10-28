@@ -271,7 +271,8 @@ def plant_claim(
     view = github.items[number].view
     kept = tuple(label for label in view.labels if not label.startswith("S-"))
     extra: tuple[str, ...] = (RULES.exempt_label,) if exempt and RULES.exempt_label not in kept else ()
-    extra += (RULES.studio_label,) if studio and RULES.studio_label not in kept else ()
+    if studio and RULES.studio_label is not None and RULES.studio_label not in kept:
+        extra += (RULES.studio_label,)
     github.items[number].view = replace(view, assignees=(login,), labels=(*kept, *extra, RULES.working_label))
     claimed_at = at or github.clock.now()
     card = Card(issue=number, claimant=login, claimed_at=claimed_at, task=task, exempt=exempt or studio, studio=studio)

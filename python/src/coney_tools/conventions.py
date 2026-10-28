@@ -866,8 +866,8 @@ class Claims:
     #: A claim of an issue with this label is outside the open-claims limit (the units that build the workflow).
     exempt_label: str
     #: A claim of an issue with this label is outside the open-claims limit too, for good: Coney Studio work, which
-    #: has its own track (docs/guides/agents.md#slots).
-    studio_label: str
+    #: has its own track (docs/guides/agents.md#slots). None in a file from before the key (no issue is Studio work).
+    studio_label: str | None
     #: The stages at which a claim stops counting toward the limit (its slot is free); an open pull request does too.
     limit_ends_at: tuple[str, ...]
     critical_label: str
@@ -912,12 +912,11 @@ class Claims:
     def outside_limit(self, labels: Iterable[str]) -> bool:
         """Whether a claim of an issue with these labels is outside the open-claims limit (`exempt_label` or
         `studio_label`)."""
-        found = set(labels)
-        return self.exempt_label in found or self.studio_label in found
+        return self.exempt_label in set(labels) or self.is_studio(labels)
 
     def is_studio(self, labels: Iterable[str]) -> bool:
-        """Whether an issue with these labels is Coney Studio work (`studio_label`)."""
-        return self.studio_label in set(labels)
+        """Whether an issue with these labels is Coney Studio work (`studio_label`; never without one)."""
+        return self.studio_label is not None and self.studio_label in set(labels)
 
 
 @dataclass(frozen=True)
@@ -1975,7 +1974,6 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
         "review_label",
         "released_label",
         "exempt_label",
-        "studio_label",
     )
     table = _table(
         data,
@@ -2002,6 +2000,9 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
             *labels,
             *counts,
         ),
+        # Optional: the file of a default branch from before the Studio track has none, and the release commands read
+        # its claims (`load_release_rules_at`); without it no issue is Studio work, the stricter reading.
+        ("studio_label",),
     )
     commands_where = _at(where, "commands")
     commands = _table(table["commands"], commands_where, tuple(_COMMAND_GROUPS))
@@ -2022,7 +2023,8 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
     limits_where = _at(where, "limits")
     limits = _table(table["limits"], limits_where, ("maintainer", "contributor", "issues_per_task"))
     names = {key: _text(table[key], _at(where, key)) for key in labels}
-    _names_in(names.values(), label_names, where, "in labels.list")
+    studio = _text(table["studio_label"], _at(where, "studio_label")) if "studio_label" in table else None
+    _names_in([*names.values(), *([studio] if studio else [])], label_names, where, "in labels.list")
     paused = _texts(table["paused_labels"], _at(where, "paused_labels"))
     _names_in(paused, label_names, _at(where, "paused_labels"), "in labels.list")
     hold = _texts(table["hold_labels"], _at(where, "hold_labels"))
@@ -2069,7 +2071,7 @@ def _read_claims(data: object, where: str, label_names: tuple[str, ...]) -> Clai
             issues_per_task=_count(limits["issues_per_task"], _at(limits_where, "issues_per_task")),
         ),
         exempt_label=names["exempt_label"],
-        studio_label=names["studio_label"],
+        studio_label=studio,
         critical_label=names["critical_label"],
         claimable_status=names["claimable_status"],
         working_label=names["working_label"],
