@@ -450,10 +450,12 @@ tasks:
       # The tracks (maintainer decision 2026-10-28, replacing 3 task and 1 fix slots): a `kind: fix` task is in `fix`,
       # a task whose issue carries `claims.studio_label` in `studio`, every other in `reimplementation`. A track's
       # `min` places are kept from the other tracks while it runs fewer (and the slot-fill check reports a track below
-      # it that has work); `max`, when given, caps the track; `models` are the Agent call's model and effort pairs a
-      # unit of the track must start on (any when absent).
+      # it that has work); `min_kinds`, when given, names the task kinds that fill the `min` (a tooling or docs unit
+      # shares the reimplementation track but is not the game work it keeps going, and cannot take its place);
+      # `max`, when given, caps the track; `models` are the Agent call's model and effort pairs a unit of the track
+      # must start on (any when absent).
       tracks:
-        reimplementation: {min: 1}               # game work outside Studio: at least one always, no cap but the machine's
+        reimplementation: {min: 1, min_kinds: [feature]}   # outside Studio: only game work (`feature`) fills the minimum
         fix: {min: 1, max: 1}                    # a pull request's problems (a failed check, a conflict), oldest first
         studio:
           min: 0                                 # Coney Studio research and development: as many as the machine holds

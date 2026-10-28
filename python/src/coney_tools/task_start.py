@@ -108,7 +108,7 @@ def _slot_check(task: TaskFile, env: StartEnv, engine: Engine) -> tuple[str, str
 
     track = task_slots.track_of(task.kind, told.studio if told is not None else False)
     current = task_slots.scan(env.scratch, conventions, env.now(), labels=labels)
-    fit = task_slots.room(current, track, task.task, conventions, env.build_slots)
+    fit = task_slots.room(current, track, task.task, conventions, env.build_slots, task.kind)
     line = f"slots: {fit.note(task.task)}"
     if fit.fits:
         return line, None

@@ -996,6 +996,13 @@ class Track:
     max: int | None
     #: The model and effort pairs an agent of the track must be started on; empty: any.
     models: tuple[TrackModel, ...] = ()
+    #: The task kinds whose units fill the track's `min` (a tooling or docs unit sits in the reimplementation track but
+    #: is not game work, so it must not be the "at least one" it keeps); empty: every kind fills it.
+    min_kinds: tuple[str, ...] = ()
+
+    def fills_min(self, kind: str) -> bool:
+        """Whether a unit of this task kind counts toward the track's `min`."""
+        return not self.min_kinds or kind in self.min_kinds
 
 
 @dataclass(frozen=True)
@@ -2144,8 +2151,8 @@ AGENT_EFFORTS = ("low", "medium", "high", "xhigh", "max")
 
 
 def _read_track(data: object, where: str) -> Track:
-    """One track: `min`, perhaps `max` (absent: only the machine caps it) and perhaps `models`."""
-    table = _table(data, where, ("min",), ("max", "models"))
+    """One track: `min`, perhaps `max` (absent: only the machine caps it), `min_kinds` and `models`."""
+    table = _table(data, where, ("min",), ("max", "models", "min_kinds"))
     least = _count(table["min"], _at(where, "min"), minimum=0)
     most = _count(table["max"], _at(where, "max")) if "max" in table else None
     if most is not None and least > most:
@@ -2164,7 +2171,8 @@ def _read_track(data: object, where: str) -> Track:
                 use=_text(pair["use"], _at(entry_where, "use")),
             )
         )
-    return Track(min=least, max=most, models=tuple(models))
+    min_kinds = _texts(table["min_kinds"], _at(where, "min_kinds")) if "min_kinds" in table else ()
+    return Track(min=least, max=most, models=tuple(models), min_kinds=min_kinds)
 
 
 def _read_tracks(data: object, where: str, per_build_slot: int) -> Tracks:

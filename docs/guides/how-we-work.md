@@ -210,7 +210,8 @@ What each role is, reads and writes is in [Who is who](#who-is-who); what is lef
 
 Engineer work runs in three tracks (a maintainer decision of 2026-10-28, which put Coney Studio first):
 
-- **Reimplementation:** game issues and pull requests outside Coney Studio. At least one engineer always works on it.
+- **Reimplementation:** game issues and pull requests outside Coney Studio. At least one engineer always works on game
+  work (a `feature` task; a tooling or docs unit shares the track but does not count as that one).
 - **Fix:** one engineer resolves pull request problems (a failed check, a conflict, a rebase) after a unit's pull
   request is opened.
 - **Coney Studio:** an issue labelled `studio`. As many engineers as the machine holds work on Studio research and
@@ -218,7 +219,7 @@ Engineer work runs in three tracks (a maintainer decision of 2026-10-28, which p
 
 A machine holds a fixed number of units of all tracks together for each of its build slots, the ones `coney-tools
 build` keeps ([Engineer tracks](agents.md#slots) has the number and the evidence for it). One place is kept for
-reimplementation while none runs and one for a fix, so Studio never takes either (`tasks.start.slots` in
+game work while no `feature` unit runs and one for a fix, so Studio never takes either (`tasks.start.slots` in
 [.github/conventions.yml](repo:.github/conventions.yml)); `task start` refuses a start over the limit and the
 coordinator's Agent guard refuses the engineer before it starts ([Engineer tracks](agents.md#slots) has the rule in
 full). There are no standing teams: the coordinator assigns the next task from the triaged issues, `P-critical` first

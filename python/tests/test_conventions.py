@@ -688,6 +688,9 @@ def test_the_real_task_start_rules() -> None:
     tracks = start.slots.tracks
     assert (tracks.reimplementation.min, tracks.fix.min, tracks.fix.max, start.slots.enforce) == (1, 1, 1, True)
     assert tracks.studio.max is None and start.slots.per_build_slot == 2
+    # Only game work fills the reimplementation minimum, and the kinds it names exist.
+    assert tracks.reimplementation.min_kinds == ("feature",) and tracks.fix.min_kinds == ()
+    assert set(tracks.reimplementation.min_kinds) <= set(load_conventions(REPO).tasks.kinds)
     assert start.slots.agent_types == ("engineer", "tooling")
     assert start.slots.reserve_minutes > 0
 

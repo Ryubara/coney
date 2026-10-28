@@ -396,7 +396,7 @@ label. The cap of a task (3 issues) holds for an exempt claim too.
 **Coney Studio claims are outside the limit too, for good.** An issue labelled `studio` (`claims.studio_label`) is Coney
 Studio research or development, which has a track of its own with no cap but the machine's ([Engineer
 tracks](agents.md#slots); a maintainer decision, 2026-10-28). Its claim is outside the open-claims limit the same way:
-the card says `Limit: not counted toward the open-claims limit (`studio`)`, and its hidden JSON carries `exempt` and
+the card says "Limit: not counted toward the open-claims limit" with the label, and its hidden JSON carries `exempt` and
 `studio` (and `workflow` for the workflow label), all set again from the labels on every pass, so the coordinator
 can label an issue after its claim and the next pass moves it. Unlike `workflow`, the cutover leaves it as it is.
 

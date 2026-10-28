@@ -447,18 +447,28 @@ class Room:
         return text
 
 
-def room(current: Scan, track: str, task: str, conventions: Conventions, build_slots: int) -> Room:
-    """Whether a unit of `track` (the task `task`, which is left out of the count) fits beside what `current` holds.
+def filling_count(holders: Iterable[Holder], track: str, conventions: Conventions) -> int:
+    """How many of the holders fill the `min` of `track`: its units of a kind that counts toward it."""
+    rule = conventions.tasks.start.slots.tracks.of(track)
+    return sum(1 for holder in holders if holder.track == track and rule.fills_min(holder.kind))
+
+
+def room(current: Scan, track: str, task: str, conventions: Conventions, build_slots: int, kind: str = "") -> Room:
+    """Whether a unit of `track` (the task `task` of this `kind`, which is left out of the count) fits beside what
+    `current` holds.
 
     It fits while its track is under its own `max` and the machine (`machine_limit`) has a place once the `min`
-    places of every other track that runs fewer than its `min` are set aside (`tasks.start.slots.tracks`)."""
+    places of every track that runs fewer than its `min` are set aside (`tasks.start.slots.tracks`). A track's own
+    place is set aside from a unit that would not fill it (a tooling unit in the reimplementation track), so such
+    units cannot take the last place game work keeps."""
     tracks = conventions.tasks.start.slots.tracks
     others = [holder for holder in current.holders if holder.task != task]
     counts = {name: sum(1 for holder in others if holder.track == name) for name in TRACKS}
+    filling = {name: filling_count(others, name, conventions) for name in TRACKS}
     kept = {
-        name: tracks.of(name).min - counts[name]
+        name: tracks.of(name).min - filling[name]
         for name in TRACKS
-        if name != track and counts[name] < tracks.of(name).min
+        if filling[name] < tracks.of(name).min and (name != track or not tracks.of(name).fills_min(kind))
     }
     return Room(
         track=track,
@@ -614,7 +624,7 @@ def admit(
                 f"denied), wait {slots.reserve_minutes} minutes or delete {scratch / named / RESERVATION_FILE} "
                 "(docs/guides/agents.md#slots).\n",
             )
-        fit = room(current, track, named, conventions, build_slots)
+        fit = room(current, track, named, conventions, build_slots, found.kind)
         if not fit.fits and slots.enforce:
             return Verdict(False, _full(current, fit, found, build_slots, conventions))
         note = fit.note(named)
@@ -751,7 +761,7 @@ def report(current: Scan, conventions: Conventions, build_slots: int) -> list[st
         held = current.held(track)
         lines.append(f"{track}: {len(held)} in work ({_track_words(conventions, track)})")
         lines += [f"  {holder.line()}" for holder in held]
-    if not current.held("reimplementation"):
+    if not filling_count(current.holders, "reimplementation", conventions):
         lines.append("no reimplementation unit is in work: the track keeps at least one going")
     if current.exempt:
         lines.append(f"no place (workflow units until the cutover): {', '.join(current.exempt)}")

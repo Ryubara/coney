@@ -295,7 +295,7 @@ coordinator keeps the places full from the open issues, `P-critical` first.
 
 | Is | What | Its rule (each of the first three needs a held claim, a fix its parent's, and a place) |
 | --- | --- | --- |
-| **Reimplementation** | An `engineer` or `tooling` agent on a task whose issues are not labelled `studio`: game issues and pull requests outside Coney Studio | At least one always (`min: 1`): while none runs, one place of the machine is kept for it, which Studio may not take. No cap but the machine's |
+| **Reimplementation** | An `engineer` or `tooling` agent on a task whose issues are not labelled `studio`: game issues and pull requests outside Coney Studio | At least one game (`feature`) unit always (`min: 1`, `min_kinds`): while none runs, one place is kept for it, which Studio and tooling or docs units may not take. No cap but the machine's |
 | **Fix** | An agent on a `kind: fix` task, made by `task create --fix-of` after a CI check failed on the pull request of a task that passed Review | One at a time (`max: 1`), oldest failure first; one place is kept for it (`min: 1`), so a full machine still takes a fix |
 | **Studio** | A task whose issue carries the `studio` label (`claims.studio_label`): Coney Studio research and development, the sub-issues of #1054 and the Studio build issues | As many as the machine holds once the kept places are set aside, on one of the models of [Which model](#models) |
 | **Workflow unit** | A task whose issue carries the `workflow` label (`claims.exempt_label`) now: a unit that builds the new workflow | A held claim, no place, while `tasks.start.slots.exempt_workflow` is on; **the cutover turns it off** (a test fails if `claims.adopt` or `claims.release` is on while it is still on) and such units count like the rest |
@@ -314,7 +314,7 @@ are set aside for it: with 10 places, no reimplementation unit and no fix in wor
 reimplementation units and no fix, Studio may take 6. The number 2 was measured on 2026-10-28 from the build records
 (`<scratch>/<task>/build-runs/`) and the unit records: from `task start` to a passing Review, a `feature` unit held a
 build slot for 10% of its life (5 units, 52 hours, 5.3 of them building) and a `tooling` unit for 2% (19 units); over
-618 build runs from 2026-10-24 to 2026-10-28, five or more builds ran at once for 1.7 of the 52.7 hours any ran. Two
+about 600 build runs from 2026-10-24 to 2026-10-28, five or more builds ran at once for 1.7 of the 52.7 hours any ran. Two
 units per build slot put the builds' expected demand at about a fifth of the slots, so a build rarely waits; past
 that, the limit is the checks that take no build slot (with about 8 checks at once, the Python tests of `task check`
 took 80 minutes instead of 48). A machine's limit changes with its `build_slots`; `per_build_slot` changes only after

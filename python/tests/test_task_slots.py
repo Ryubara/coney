@@ -624,10 +624,42 @@ def test_a_start_whose_labels_cannot_be_read_is_judged_as_reimplementation_witho
 ) -> None:
     for name in ("s-one", "s-two"):
         scene.unit(name, kind="tooling", studio=True)
-    scene.task("s-three", kind="tooling", studio=True)
+    scene.task("s-three", kind="feature", studio=True)
     scene.down = True
     verdict = admit_studio(scene, "s-three", "haiku", "low")
     assert verdict.allowed and "(reimplementation track)" in verdict.message and "not checked" in verdict.warning
+
+
+def test_a_tooling_unit_does_not_fill_the_place_kept_for_game_work(scene: Scene) -> None:
+    # 4 places, one kept for a fix, one for game work: two tooling units fill the rest and a third is refused, but a
+    # feature unit still fits in the place kept for it (the review's blocker: tooling must not be "at least one").
+    scene.unit("t-one", kind="tooling")
+    scene.unit("t-two", kind="docs")
+    scene.task("t-three", kind="tooling")
+    verdict = scene.admit(brief("t-three"))
+    assert not verdict.allowed and "1 kept for reimplementation" in verdict.message
+    scene.task("r-one")
+    assert scene.admit(brief("r-one")).allowed
+
+
+def test_studio_may_not_take_the_place_kept_for_game_work_while_only_tooling_runs(scene: Scene) -> None:
+    scene.unit("t-one", kind="tooling")
+    scene.unit("s-one", kind="tooling", studio=True)
+    scene.task("s-two", kind="tooling", studio=True)
+    verdict = admit_studio(scene, "s-two")
+    assert not verdict.allowed and "1 kept for reimplementation" in verdict.message
+
+
+def test_the_report_says_when_only_tooling_runs_in_the_reimplementation_track(scene: Scene) -> None:
+    warning = "no reimplementation unit is in work"
+    scene.unit("t-one", kind="tooling")
+    assert any(
+        line.startswith(warning) for line in task_slots.report(scene.scan(), scene.conventions, scene.build_slots)
+    )
+    scene.unit("r-one")
+    assert not any(
+        line.startswith(warning) for line in task_slots.report(scene.scan(), scene.conventions, scene.build_slots)
+    )
 
 
 def test_the_report_says_when_no_reimplementation_unit_runs(scene: Scene) -> None:
