@@ -24,21 +24,29 @@ constexpr int kStreetGangKind = 0x17;
 // After every this many enemies the walk stops once it has a winner.
 constexpr std::size_t kPickBatch = 5;
 
-// Whether `brain`'s human is knocked down (on the ground).
+// Whether `brain`'s human is knocked down (state `0x80000`, read only when the human has a record `+0xd4`).
+// **Coney stand-in**: Coney keeps no such flag; a human knocked down is the one whose target state is Grounded.
+// @orig 0x00223b98 Human_IsKnockedDown (unknown)
 bool down(const Brain& brain) { return brain.human().state() == human::TargetState::Grounded; }
 
-// Whether `brain`'s human holds a weapon (an anim set from what it holds).
+// Whether `brain`'s human holds an object (the held object's kind is not 0). **Coney stand-in**: Coney tracks an AI
+// human's held object only by the anim set it gives him, so an object with none does not count.
+// @orig 0x00224060 Human_IsHoldingObject (unknown)
 bool armed(const Brain& brain) { return brain.human().fighter().animSet() != 0; }
 
-// The plan distance between two brains' humans.
+// The distance between two brains' humans, which Brain_CanTakeSlotOn compares (as squares) for the scorer and each
+// slot holder.
+// @orig 0x0028dc80 Brain_CanTakeSlotOn (unknown)
 float planDistance(const Brain& a, const Brain& b) { return a.distanceTo(b); }
 
 } // namespace
 
 float sightRangeOf(const Brain& brain) {
+    // At least kFightingSightRange while the gang is fighting (alert state `+0x32` is 1, Gang::setAlertState()). The
+    // original always has a gang; a brain with none counts as calm, as Brain_MayStartFight's port reads it.
     const Gang* gang = brain.gang();
-    if (gang != nullptr && gang->kind() == kPoliceGangKind) {
-        return std::max(brain.sightRange(), kPoliceSightRange);
+    if (gang != nullptr && gang->alertState() == kGangFighting) {
+        return std::max(brain.sightRange(), kFightingSightRange);
     }
     return brain.sightRange();
 }

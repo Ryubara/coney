@@ -64,12 +64,12 @@ inline constexpr std::uint32_t kMelee = 0xfffffffdU;
 
 /// The score of an enemy that may not be taken.
 inline constexpr float kRuledOut = -999.0F;
-/// A gang of this kind (the police) sees at least kPoliceSightRange.
-inline constexpr int kPoliceGangKind = 1;
-inline constexpr float kPoliceSightRange = 30.0F;
+/// The least sight range of a brain whose gang is fighting (`0x0028bf00`).
+inline constexpr float kFightingSightRange = 30.0F;
 
-/// The sight range a brain scores and spots by (`Brain_GetSightRange`): its own (`+0x130`), at least 30 m in a police
-/// gang.
+/// The sight range a brain scores and spots by (`Brain_GetSightRange`): its own (`+0x130`), at least
+/// kFightingSightRange while his gang is fighting (alert state `+0x32` is kGangFighting), whatever the gang's kind.
+/// Research: docs/research/ai-fights.md#enemy-scan
 /// @orig 0x0028bf00 Brain_GetSightRange (unknown)
 [[nodiscard]] float sightRangeOf(const Brain& brain);
 

@@ -1121,10 +1121,10 @@ address = 0x0028bf00
 name = "Brain_GetSightRange"
 page = "ai-code.md#perception"
 kind = "helper"
-role = "the sight range `+0x130`; at least 30 m for a gang of kind 1"
+role = "the sight range `+0x130`; at least 30 m while his gang is fighting (gang `+0x32` is 1)"
 level = "confirmed-code"
 coney = "src/ai/targeting.h:sightRangeOf"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0028c1a8

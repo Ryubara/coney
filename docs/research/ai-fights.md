@@ -1038,7 +1038,11 @@ chance, `+0x37` the pattern-reading threshold ([Power classes](characters.md#pow
   `CfgSetTargetingPoints` / `CfgSetTargetingPointsEx` (read from the scripts' calls), and `Brain_PickBestEnemy` with
   the goals' adjustment (the previous target's 3 points). **Stand-ins**: Coney has no trains, fires,
   muggings, interrogations, tagging or turf-only rule, so those tests pass and those terms give nothing; only the
-  level's static collision blocks a sight ray; a gang's chosen target (`+0x10`) is kept but nothing sets it yet.
+  level's static collision blocks a sight ray; a gang's chosen target (`+0x10`) is kept but nothing sets it yet; the
+  down term's `Human_IsKnockedDown` reads the Grounded target state, Coney having no state flag `0x80000`
+  ([q-score-down-flag](#q-score-down-flag)), and the armed term's `Human_IsHoldingObject` reads the anim set of what
+  he holds ([q-score-held-object](#q-score-held-object)). The sight range is at least 30 m while the gang is fighting,
+  whatever its kind (`sightRangeOf`, #1043).
 - **The enemy scan** (`repo:src/ai/enemy_scan.h`, [The enemy scan](#enemy-scan)): `scanEnemies` lists the members of the
   enemy gangs in use that it sees (sight range, the shadow's 2 m rule, the spectate test's 1.9 m height limit, the
   Warriors' threat filter, the near radius of 1.5, 3 or 5.2 m all round and the view cone beyond it, then the line of
@@ -1092,6 +1096,19 @@ and a held AI's presses reach no handler (its holder drives it). A block ends wh
   close-in test, which reads the player's own target. The gesture slots are ruled out: Coney keeps them as the original
   does, per reaction kind and help level ([Gestures](sound-events.md#command-ids)), and the sparring Warriors (type 2)
   have two, as everyone had before.
+
+### Coney's knocked-down test {#q-score-down-flag}
+
+The score's down term (`0x20`) asks `Human_IsKnockedDown` (`0x00223b98`: state `0x80000`, with a record), and Coney has
+no such flag; its port reads the Grounded target state instead. Whether the two agree from the knockdown's first frame
+to the end of 199 (the flag is cleared by 199's end callback, [Getting up](combat-reactions.md#ground-escape)) is not
+checked: compare both through a knockdown in PCSX2 and Coney.
+
+### What an AI holds, for the armed term {#q-score-held-object}
+
+`Human_IsHoldingObject` (`0x00224060`) counts any held world object, whatever its anim set; Coney knows an AI human's
+held object only by the anim set it gives him. Whether an object with no anim set can be in an AI's hand during a fight
+decides whether the two ever differ: list the objects the scripts and the weapon piles hand to AI humans.
 
 ## How this was checked
 
