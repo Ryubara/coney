@@ -464,7 +464,7 @@ timed against the PS2's. Over the NTSC-U pair 15 of the 16 are replaced (14 at 1
 
 ### Either disc: the two discs compared {#either-disc}
 
-The maintainer asked (#1077) whether a player could supply either disc, the PS2's or the Xbox's; what he decided is
+The maintainer asked whether a player could supply either disc, the PS2's or the Xbox's; what he decided is
 under [Disc policy](#disc-decision). Coney is its own engine, so a
 disc gives it only data: assets, which the rest of this page maps, and the data its simulation reads (scripts, scenes,
 collision, levels, object lists, paths, tables, animations and text). This section compares the second kind, every
