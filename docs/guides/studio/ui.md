@@ -264,7 +264,7 @@ list, the usage line):
 1. **Installed mods**, in load order, each on or off, with its load mode; accept opens its **details**, the panel the
    security design defines (name, version, author, signer, what it changes, its permissions and limits,
    [#1062](issue:1062)), to which this page adds **what it adds where** (its additions at each point) and its option
-   rows. Switching a mod on, off or approving a permission happens only here or at the console.
+   rows. On and off here or at the console; a permission only here, never by a console command ([#1062](issue:1062)).
 2. **Mod content**: the `mods` point, every enabled project's entries grouped under its title, the overflow of full
    points, and each content mod that starts by hand (its level, [#1062](issue:1062)).
 
