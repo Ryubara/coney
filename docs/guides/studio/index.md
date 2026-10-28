@@ -48,7 +48,8 @@ because *The Warriors* is made of levels and calls its in-engine cutscenes scene
 | Panel | One dockable window of Studio: the Level view, the Inspector, the File system and the others ([Panels](editor-experience.md#panels)) |
 | Level | What a user builds and plays, where other editors say "scene" ([Words](editor-experience.md#words-coney)) |
 | Level view, Game view | The view that edits a level (Unity's Scene view) and the view of the game running |
-| Entity | A thing in a level's tree: a primitive, a spawn point, a fighter, a camera view, a script; Coney's word, as in the Entity inspector ([Words](editor-experience.md#words-coney)) |
+| Entity | A thing in a level's tree: a primitive, a spawn point, a fighter, a camera view; it has a name and tags that scripts find it by; Coney's word, as in the Entity inspector ([Words](editor-experience.md#words-coney)) |
+| `.cmod` | A finished project packed by Studio's Export for the mods folder (a working name) ([The project](editor-experience.md#project-coney)) |
 | Prefab | A reusable group of any mix of entities, saved as one file and placed many times ([Words](editor-experience.md#words-coney)) |
 | Layout | Where the panels sit, saved per user, never in a project ([Layouts](editor-experience.md#layouts)) |
 | Natives | The script bindings a project's scripts call: the game's own and Coney's ([Script bindings](../../references/bindings/index.md)); the [Lua SDK](lua-sdk.md#terms) has the scripting terms |

@@ -71,13 +71,16 @@ The other words:
 
 - **Entity** for a thing in the level's tree: Coney's existing word, as in the [Entity
   inspector](../debug-menu.md#entity-inspector) and the merged entity panel of [#1053](issue:1053). A primitive, a spawn
-  point, a fighter, a camera view, a path point and a script are all entities.
+  point, a fighter, a camera view and a path point are all entities. Every entity has a **name** and **tags** in the
+  Inspector, which is how scripts find it. A script is never an entity and is never attached to one: scripts are files
+  in the project's `scripts/` folder, which the project's manifest runs ([Projects and the
+  manifest](lua-sdk.md#manifest)).
 - **Group** for an empty entity that only holds others (Unity's empty GameObject): it has a position, rotation and
   scale, and its children follow it.
 - **Prefab** for a reusable group (Unity's word, the best known of the four): any mix of entities saved as one file of
-  the project, say an ambush of five fighters, a spawn point, crates and the script that springs it, placed in a level
-  as many times as wanted. Each placed copy (an *instance*) follows the file, and the values a copy changes are kept as
-  its overrides.
+  the project, say an ambush of five fighters, a spawn point and crates, tagged `ambush` so the project's script can
+  spring it, placed in a level as many times as wanted. Each placed copy (an *instance*) follows the file, and the
+  values a copy changes are kept as its overrides.
 
 ## The panels {#panels}
 
@@ -111,7 +114,7 @@ has what it names.
 | **Level view** | The level being edited, seen through the fly camera; selection, gizmos, and the debug views as view modes | The [world viewer](../running-viewers.md#the-world-viewer), the [sandbox](../sandbox.md)'s free camera, [Debug draw](../debug-menu.md#debug-draw) and the [mesh views](../debug-menu.md#mesh-views) | ready |
 | **Game view** | The game running in Play mode, with Play, Pause, Step and Stop | The play mode (`--play-level`, a sandbox with `sandbox:NAME`) and the debug menu's Time page (pause, step, time scale) ([pages](../debug-menu.md#pages)) | ready |
 | **Hierarchy** | The level's entities as a free tree in the user's order, with parenting, prefabs and a kind filter; choosing one selects it everywhere ([The Hierarchy's tree](#hierarchy-tree)) | The [Entity inspector](../debug-menu.md#entity-inspector)'s entity list (player, targets, AI humans, doors, panes, objects) and a sandbox layout's statements | ready |
-| **Inspector** | The selection's values, live, and the edits it takes; for a file, its details and import settings | The merged Entity inspector and Entity editor ([#1053](issue:1053)) | ready once [#1053](issue:1053) merges |
+| **Inspector** | The selection's name and tags, its values, live, and the edits it takes; for a file, its details and import settings | The merged Entity inspector and Entity editor ([#1053](issue:1053)) | ready once [#1053](issue:1053) merges |
 | **File system** | The project folder as a tree, and the game's files read-only; drag-and-drop and the Import button land here | Coney's asset loading and the [install folder](../asset-and-script-architecture.md#install-folder) | ready |
 | **Console** | The run log's lines, filtered by level and system, and a Lua line to run | The [run log](../run-log.md) and the [Lua console](../debug-menu.md#lua-console) (expressions and assignments; full Lua waits on [the Lua 4.0 compiler](lua-sdk.md#compiler)) | ready |
 | **Natives** | Every native with its status, signature and an argument editor to call it | The debug menu's [Natives](../debug-menu.md#natives) page and the [masterlist](../../references/bindings/index.md) | ready |
@@ -134,7 +137,7 @@ for everything the debug menu shows.
 A maintainer decision: **the Hierarchy is the level, and works like Unity's.** At its top is a free list of entities, in
 the order the user gives them; any entity can be dragged onto any other to become its child, and a child follows its
 parent's position, rotation and scale (a fighter under a moving group moves with it). No folder is fixed and none
-refuses a kind: an ambush group may hold fighters, a spawn point, crates and a script together.
+refuses a kind: an ambush group may hold fighters, a spawn point and crates together.
 
 ```text
 yard                              the level; selected, the Inspector shows the level's settings
@@ -144,7 +147,7 @@ yard                              the level; selected, the Inspector shows the l
     Fence 1.6 m
     Crate                         an object
   start                           a spawn point
-  Ambush (prefab)                 a prefab instance: five fighters, a spawn point, crates, a script
+  Ambush (prefab)                 a prefab instance: five fighters, a spawn point, crates; tag ambush
     Fighter 1 ... Fighter 5
   Ambush (prefab)                 the same prefab placed again, its position overridden
   Rooftop view                    a camera view
@@ -306,6 +309,11 @@ under version control and read without Studio, which Roblox's one-file place is 
   project carries no game data and can be shared ([LEGAL.md](repo:LEGAL.md#no-game-data)). Opening a `game:/` entry
   opens it in its viewer; what can be edited, and how a game asset becomes a project's own (an export to glTF on the
   player's machine, say), is the content page's ([#1058](issue:1058)).
+- **Export** (*File > Export project...*) packs the finished project into one `.cmod` file (a working name) for the mods
+  folder every Coney install has ([The mods folder](lua-sdk.md#mods-folder)): the manifest, the levels, the scripts and
+  the project's own assets, never `.studio/` and never a `game:/` file, which a player's own disc supplies. Export saves
+  first, checks that the manifest's level and scripts exist, and says what it left out and why. The package's layout is
+  the content page's ([#1058](issue:1058)).
 - **Moves, renames and deletes happen in the File system panel**, Godot's rule, so Studio can fix the project's
   references to the file; a delete lists the files that refer to it and asks first, and goes to the system's recycle
   bin. A change made outside Studio (an editor saving a script, a texture repainted) is seen and the file is imported
@@ -609,6 +617,11 @@ library and the program.
     viewer (shaded, wireframe, by material, normals, bone axes, its Mesh group counts), a clip in the Animation viewer
     (the Animation player's sets, loop, speed, in place) and a texture dictionary in the Texture viewer; the *Viewers*
     layout arranges them. Tests: each viewer opens a synthetic fixture with no disc; a disc check prints counts only.
+12. **tools: Add exporting a Coney Studio project as a .cmod package.** *File > Export project...* packs the manifest,
+    levels, scripts and the project's own assets into one `.cmod` file for the mods folder, leaving out `.studio/` and
+    every `game:/` file, after saving and checking that the manifest's level and scripts exist. Tests: an exported
+    package of a fixture project unpacks to the same files; a project that refers to a `game:/` asset exports with no
+    game data in it.
 
 ## Sources {#sources}
 
