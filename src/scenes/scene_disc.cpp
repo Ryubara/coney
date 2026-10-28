@@ -22,7 +22,8 @@ std::expected<std::vector<std::byte>, Error> readEntry(const io::Wad& wad, std::
     if (!stream) {
         return std::unexpected(std::move(stream.error()));
     }
-    std::vector<std::byte> bytes((*entry)->size);
+    // The stream's size, not the index's: an install's override may be longer or shorter than the entry.
+    std::vector<std::byte> bytes(static_cast<std::size_t>(stream->size()));
     if (auto read = stream->read(bytes); !read) {
         return std::unexpected(std::move(read.error()));
     }

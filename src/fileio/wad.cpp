@@ -3,9 +3,12 @@
 
 #include <algorithm>
 #include <charconv>
+#include <filesystem>
 #include <format>
+#include <string>
 #include <system_error>
 #include <utility>
+#include <vector>
 
 namespace coney::io {
 
@@ -53,16 +56,48 @@ std::expected<const WadEntry*, Error> Wad::lookup(std::string_view nameOrHash) c
 }
 
 std::expected<FileStream, Error> Wad::openEntry(const WadEntry& entry) const {
+    // An install's override replaces the entry whole, whatever its size; Coney's own step before the original's read.
+    if (const auto found = m_overrides.find(entry.nameHash); found != m_overrides.end()) {
+        std::error_code ec;
+        const std::uintmax_t size = std::filesystem::file_size(found->second, ec);
+        if (ec) {
+            return fail(ErrorCode::NotFound, std::format("{}: {}", found->second.string(), ec.message()));
+        }
+        return FileStream::open(found->second, 0, size);
+    }
     return m_disc.openFileRange(kWadFile, entry.wadOffset, entry.size);
 }
 
-} // namespace coney::io
-
-namespace coney::io {
-
-// A stub for the tests' first run: it replaces nothing.
-std::expected<WadOverrideReport, Error> Wad::useOverrides(const std::filesystem::path& /*folder*/) {
-    return WadOverrideReport{};
+std::expected<WadOverrideReport, Error> Wad::useOverrides(const std::filesystem::path& folder) {
+    WadOverrideReport report;
+    std::error_code ec;
+    if (!std::filesystem::is_directory(folder, ec)) {
+        return report; // no overrides folder: the game as it is on the disc
+    }
+    // The files' names, sorted, so which of two names for one entry wins does not depend on the file system's order.
+    std::vector<std::pair<std::string, std::filesystem::path>> files;
+    for (std::filesystem::directory_iterator it(folder, ec), end; !ec && it != end; it.increment(ec)) {
+        if (it->is_regular_file(ec)) {
+            const std::u8string name = it->path().filename().u8string();
+            files.emplace_back(std::string(name.begin(), name.end()), it->path());
+        }
+    }
+    if (ec) {
+        return fail(ErrorCode::NotFound,
+                    std::format("{}: cannot list the overrides: {}", folder.string(), ec.message()));
+    }
+    std::ranges::sort(files);
+    for (auto& [name, path] : files) {
+        auto entry = lookup(name);
+        if (!entry) {
+            report.unmatched.push_back(name);
+        } else if (!m_overrides.try_emplace((*entry)->nameHash, std::move(path)).second) {
+            report.duplicates.push_back(name);
+        } else {
+            ++report.replaced;
+        }
+    }
+    return report;
 }
 
 } // namespace coney::io

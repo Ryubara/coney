@@ -15,6 +15,7 @@
 #include "core/log_filter.h"
 #include "fileio/disc.h"
 #include "gamemodes/memory_card_mode.h"
+#include "install/installer.h"
 #include "movies/movie_mode.h"
 #include "platform/frame_pacer.h"
 #include "platform/profile_folder.h"
@@ -72,6 +73,27 @@ std::expected<std::optional<io::Wad>, Error> openGameDisc(const Options& options
         return fail(opened.error().code, std::format("{}: {}", *discPath, opened.error().message));
     }
     printText(std::format("{}: WARRIORS.DIR lists {} entries\n", *discPath, opened->index().entries().size()));
+    // A game played from an install (`--data`) reads its overrides/files in place of the entries they name: Coney's
+    // way to load an edited script or other WAD file (docs/guides/asset-and-script-architecture.md#install-folder).
+    // A disc given with `--disc` is the game as it is.
+    if (const std::optional<std::string> dataPath = options.dataPath; dataPath) {
+        const std::filesystem::path folder = std::filesystem::path(*dataPath) / install::kFileOverridesFolder;
+        auto overrides = opened->useOverrides(folder);
+        if (!overrides) {
+            return std::unexpected(std::move(overrides.error()));
+        }
+        for (const std::string& name : overrides->unmatched) {
+            logWarning(std::format("{}: {} names no WAD entry; ignored", install::kFileOverridesFolder, name));
+        }
+        for (const std::string& name : overrides->duplicates) {
+            logWarning(std::format("{}: {} names an entry another file already replaces; ignored",
+                                   install::kFileOverridesFolder, name));
+        }
+        if (opened->modded()) {
+            logText(std::format("{}: {} WAD entries replaced: a modded session\n", install::kFileOverridesFolder,
+                                overrides->replaced));
+        }
+    }
     return std::optional<io::Wad>(std::move(*opened));
 }
 
