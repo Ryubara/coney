@@ -130,7 +130,7 @@ flowchart LR
 | `.gltf`, `.glb`, `.fbx` | Skinned model (a character) | `.cmodel`: a `CharacterModel` (vertices with up to the format's bone weights on the 32 skin bones, triangles, bind matrices) and its textures | A new core parser to the struct `decodeCharacterModel` returns today |
 | `.gltf`, `.glb`, `.fbx` | Clip | `.cclip`: the clip format's sections in Coney's own layout: root velocity, root translation, one rotation channel per pose bone, events, flags | A new core parser to the struct `parseAnimClip` returns today |
 | `.gltf`, `.glb`, `.fbx` | Map | Several `.cmesh`, a collision mesh's triangles and the level statements its nodes asked for ([Levels](#levels)) | The two above and the collision builder |
-| `.wav` (PCM 8, 16, 24 bit or float, any rate) | Sound | WAV, signed 16-bit PCM, mono or stereo, at most `kMaxSourceRate` | A WAV reader to `PcmSound`, which the mixer plays at any rate ([`pcm_sound.h`](repo:src/audio/pcm_sound.h)) |
+| `.wav` (PCM 8, 16, 24 bit or float, any rate), `.flac`, `.mp3`, `.ogg` | Sound | WAV, signed 16-bit PCM, mono or stereo, at most `kMaxSourceRate` | A WAV reader to `PcmSound`, which the mixer plays at any rate ([`pcm_sound.h`](repo:src/audio/pcm_sound.h)) |
 | `.bik` | Movie (an override of a game movie only) | The Bink 1 file as it is, checked (version, length, frame rate) | Coney's movie decoder, which plays the disc's Bink movies today |
 | `.lua` | Script | The source as it is | The Lua 5.4 mods runtime ([Lua SDK: the runtime](lua-sdk.md#runtime)) |
 
@@ -194,10 +194,11 @@ libraries, and the image and audio readers beside them, are chosen on the techno
 - **FBX through ufbx, not the Autodesk FBX SDK**, whose licence cannot be combined with GPL-3.0 code Coney ships;
   the technology design weighs the two ([Importers](technology.md#importers)), and a maintainer approved cgltf and
   ufbx ([Maintainer decisions](#decisions)).
-- **No `.blend` reader.** Blender's own file format is an internal one that changes between versions; Blender's glTF
-  and FBX exporters are the supported way out of it, as in Unity and Godot (Unity reads a `.blend` only by starting
-  Blender to export FBX behind the scenes). The import guide will say how to export from Blender (glTF Binary, +Z up
-  left as exported, apply transforms).
+- **No `.blend` reader.** Blender's own file format is an internal one that changes between versions; Blender's glTF and
+  FBX exporters are the supported way out of it, as in Unity and Godot (Unity reads a `.blend` only by starting Blender
+  to export FBX behind the scenes). The import guide will say how to export from Blender: glTF Binary with the
+  exporter's +Y Up option left on (its default; the importer turns +Y up into the game's z up), modifiers applied and
+  custom properties included.
 - **Axes and units.** glTF is metres with +Y up; FBX states its units and up axis in its header. The importer turns
   every source into the game's axes and units, metres with z up, the axes of every level, layout and native
   ([Collision](../../research/collision.md), [The layout format](../sandbox.md#the-layout-format)), and skinned data
@@ -357,12 +358,12 @@ which is how the sandbox's primitives collide. A project's collision is written 
 | Area | 0 to 124 | `+0x09`, the area byte; a path area is matched against it ([Path data](../../research/level-loading.md#path-data)) |
 | Solid | yes or no | Left out of the mesh when no (a marker) |
 
-The flag bits whose meaning is not known (3, 5, 6, 8-10; bit 5's one traced use sets a byte of the human standing on it,
-whose effect is open) are not offered by name; an *Advanced* field takes the raw word, as the layout's `flags=` does
-today. **Sneak zones are collision.** The Studio brief asks that a sun's shadows decide where the player hides; in Coney
-today, as in the original, hiding is decided by the shadow-ground bit of the triangle under the human, so a project
-marks its sneak zones on its colliders. A sun that computes them waits on the enhancements' lighting ([Realtime
-lighting](../realtime-lighting.md)), and when it exists it writes the same bit.
+The flag bits whose meaning is not known (3, 5, 6, 8-10 and the value in bits 12-15; bit 5's one traced use sets a byte
+of the human standing on it, whose effect is open) are not offered by name; an *Advanced* field takes the raw word, as
+the layout's `flags=` does today. **Sneak zones are collision.** The Studio brief asks that a sun's shadows decide where
+the player hides; in Coney today, as in the original, hiding is decided by the shadow-ground bit of the triangle under
+the human, so a project marks its sneak zones on its colliders. A sun that computes them waits on the enhancements'
+lighting ([Realtime lighting](../realtime-lighting.md)), and when it exists it writes the same bit.
 
 **Needs from Coney:** primitives with a full rotation and a scale; colliders of every shape built into the same mesh;
 collision triangles from an imported mesh.
@@ -639,7 +640,7 @@ Decided for the Studio brief of [#1054](issue:1054), and applied here:
 
 - **Route nodes.** How the original's tool placed the path map's route nodes, and what an A record's `+0x08` means
   ([Path data](../../research/level-loading.md#path-data)); Coney's builder is its own until then.
-- **Collision bits of unknown meaning** 3, 5, 6 and 8-10, and the meaning of the area byte
+- **Collision bits of unknown meaning** 3, 5, 6, 8-10 and the value in bits 12-15, and the meaning of the area byte
   ([Triangles](../../research/collision.md#triangles)): named in Studio once researched.
 - **A player box's behaviour** against a volume box ([Volume boxes](../../references/boxes.md)): Studio offers both
   kinds with the reference's wording until it is traced.
@@ -669,9 +670,11 @@ In the order they should come, after the editor experience design's shell, File 
    read ([Names and tags](project-formats.md#names-tags)).
 3. **gameplay: Add level entities made from a level file at entry.** The entity statements of
    [Level objects](#entities), each made through its native in file order with its handle kept by id, the heading
-   converted per native, door and pane triangles built into the mesh and passed by index, pool limits checked. Tests:
-   a synthetic level's flags, paths, objects, doors, characters and spawners match the same natives called by a
-   script, call for call on the trace.
+   converted per native, door and pane triangles built into the mesh and passed by index, pool limits checked; the
+   table of ids, names and tags and the natives that read it (`Coney.FindEntity`, `Coney.FindEntities`,
+   `Coney.GetEntityMembers`, `Coney.GetEntityInfo`, [Names and tags](project-formats.md#names-tags)). Tests: a
+   synthetic level's flags, paths, objects, doors, characters and spawners match the same natives called by a script,
+   call for call on the trace; a script finds every entity tagged `ambush`, and an empty list for a tag nobody has.
 4. **core: Add prefabs and prefab instances to level files.** `format prefab 1` files, `instance` lines, `set` and
    `drop` overrides, nested instances with `INSTANCE/LOCAL` ids, cycles refused, stale overrides listed, and instances
    expanded before the tree is flattened, with unique game names suffixed ([Prefabs](project-formats.md#prefabs)).

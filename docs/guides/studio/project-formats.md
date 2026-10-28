@@ -135,10 +135,20 @@ look it up by:
 - **Tags**, `tags=ambush,guards`, any number of short words. An instance's tags belong to the instance; the entities
   inside it keep the prefab's tags, and `set p2/h3 tags=...` overrides one instance's.
 
-At Play, Coney keeps a table from each id, name and tag to the handles its natives returned, and the Lua SDK's natives
-read it: one entity by id or name, every entity with a tag (an instance's members found from it), each answer the
-handles the game natives take ([Assets by path](lua-sdk.md#assets) for the native family; the names are that page's).
-"Every entity tagged ambush" is one call, and a script that finds none gets an empty list, never an error.
+At Play, Coney keeps a table from each id, name and tag to the handles its natives returned. This page proposes the
+Coney natives that read it, in the `Coney` table the Lua SDK design names ([Names and namespaces](lua-sdk.md#names));
+each returns the handles the game natives take, so `GetPosition`, `TeleportToFlag` or `ObjDestroy` work on the answer:
+
+| Proposed native | Returns |
+| --- | --- |
+| `Coney.FindEntity(idOrName)` | The handle of the entity with that id (`"p2/h3"`), else the first with that name in file order; `nil` when none |
+| `Coney.FindEntities(tag)` | A list of the handles of every entity with that tag, in file order (an instance counts once, as its root's handle); empty when none |
+| `Coney.GetEntityMembers(handle)` | A list of the handles of an instance's or a group's entities, in file order |
+| `Coney.GetEntityInfo(handle)` | A table of the entity's `id`, `name`, `tags` and kind, or `nil` for a handle no level entity has |
+
+"Every entity tagged ambush" is one call, and a script that finds none gets an empty list, never an error. The table is
+read only between the level's entry and its end; a call before `levelStart` returns nothing. Build issue 3 of
+[Content and formats](content-and-formats.md#build-issues) adds them.
 
 ### Prefabs {#prefabs}
 
