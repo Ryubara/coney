@@ -87,7 +87,7 @@ sentence before the word or in another sentence.
   `docs check` reports an Xbox address with no level as it does a PS2 one.
 - `docs check` never looks an Xbox address up in the PS2 listing or sections, and the progress pages never count it
   as a PS2 function.
-- `research claims` lists it as a target (`xbox 0x000bd3c0`) whose backing is `Xbox by hand`: `original study`
+- `research claims` lists it as a target (`xbox 0x000bd3c0`) whose backing is `Xbox by hand`: `orig study`
   reads `SLUS_212.15` only, so the reviewer reads an Xbox claim in a Ghidra project of the XBE.
 - A page that cites Xbox addresses names `default.xbe` and its SHA1 on its Verified line, and a page that a
   feature follows says which build it follows: the PS2 for every behaviour, the Xbox port where its presentation

@@ -308,7 +308,7 @@ def _back(report: Report, backing: _Backing, site: _Site) -> str:
         return _back_runtime(report, backing, site)
     if CODE in site.levels:
         addresses = [t for t in site.targets if t.startswith("0x")]
-        # `original study` reads SLUS_212.15 only, so no stamp backs an Xbox address: the reviewer reads it by hand.
+        # `orig study` reads SLUS_212.15 only, so no stamp backs an Xbox address: the reviewer reads it by hand.
         xbox = "Xbox by hand" if any(t.startswith(XBOX) for t in site.targets) else ""
         if not addresses:
             return xbox or "-"

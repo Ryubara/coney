@@ -224,8 +224,8 @@ the Xbox executable cites it the same way, with the word `xbox` before the addre
   research page gives it; the source file the function's path string names, else `(unknown)`.
 - A function that ports PS2 logic and adds the Xbox port's part carries both tags, the PS2 one first. Gameplay never
   carries an Xbox tag: gameplay follows the PS2.
-- `orig check` counts an Xbox tag as a tag. The PS2 tools leave it out: `orig index` and the function database list
-  PS2 addresses only, `original study` and `orig compare` read `SLUS_212.15` only, so no stamp covers an Xbox
+- `orig check-tags` counts an Xbox tag as a tag. The PS2 tools leave it out: `orig index` and the function database list
+  PS2 addresses only, `orig study` and `orig compare` read `SLUS_212.15` only, so no stamp covers an Xbox
   address and the reviewer reads it against the Xbox executable by hand ([Orig review](review/orig.md)).
 - Code beyond both builds (a renderer option such as anti-aliasing, a frame rate above 30) carries
   `@coney-only enhancement: <option>`, naming the option as [Graphics and

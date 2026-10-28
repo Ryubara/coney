@@ -81,7 +81,7 @@ class Unit:
     path: str
     line: int  # the definition's first line
     coney: str  # "Brain::think"
-    addresses: tuple[int, ...]  # in `SLUS_212.15`: what `original study` and `orig compare` read
+    addresses: tuple[int, ...]  # in `SLUS_212.15`: what `orig study` and `orig compare` read
     names: tuple[str, ...]  # the original's names, as the tags give them
     body_sha256: str
     #: The hash the body had before comments and white space were left out of it: to read what was recorded then.
