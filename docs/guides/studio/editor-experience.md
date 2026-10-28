@@ -309,11 +309,11 @@ under version control and read without Studio, which Roblox's one-file place is 
   project carries no game data and can be shared ([LEGAL.md](repo:LEGAL.md#no-game-data)). Opening a `game:/` entry
   opens it in its viewer; what can be edited, and how a game asset becomes a project's own (an export to glTF on the
   player's machine, say), is the content page's ([#1058](issue:1058)).
-- **Export** (*File > Export project...*) packs the finished project into one `.cmod` file (a working name) for the mods
-  folder every Coney install has ([The mods folder](lua-sdk.md#mods-folder)): the manifest, the levels, the scripts and
-  the project's own assets, never `.studio/` and never a `game:/` file, which a player's own disc supplies. Export saves
-  first, checks that the manifest's level and scripts exist, and says what it left out and why. The package's layout is
-  the content page's ([#1058](issue:1058)).
+- **Export** (*File > Export project...*) packs the finished project into one `.cmod` file (a working name) for Coney's
+  mods folder, which the Lua SDK page designs ([The mods folder](lua-sdk.md#mods-folder)): the manifest, the levels, the
+  scripts and the project's own assets, never `.studio/` and never a `game:/` file, which a player's own disc supplies.
+  Export saves first, checks that the manifest's level and scripts exist, and says what it left out and why. The
+  package's layout is the content page's ([#1058](issue:1058)).
 - **Moves, renames and deletes happen in the File system panel**, Godot's rule, so Studio can fix the project's
   references to the file; a delete lists the files that refer to it and asks first, and goes to the system's recycle
   bin. A change made outside Studio (an editor saving a script, a texture repainted) is seen and the file is imported
@@ -621,7 +621,7 @@ library and the program.
     levels, scripts and the project's own assets into one `.cmod` file for the mods folder, leaving out `.studio/` and
     every `game:/` file, after saving and checking that the manifest's level and scripts exist. Tests: an exported
     package of a fixture project unpacks to the same files; a project that refers to a `game:/` asset exports with no
-    game data in it.
+    game data in it. It comes after the mods loader the Lua SDK page proposes, which reads the package.
 
 ## Sources {#sources}
 
