@@ -110,7 +110,8 @@ says the same before the script runs, because the stubs list only what is availa
 ### Lua 5.4 for projects, Lua 4.0 for the game {#runtime-choice}
 
 The architecture page advises one runtime until mods need what Lua 4.0 lacks
-([Three parts](../asset-and-script-architecture.md#script-parts)). The SDK is that need. This page proposes:
+([Three parts](../asset-and-script-architecture.md#script-parts)). The SDK is that need. A maintainer decided
+(2026-10-28):
 
 - **Lua 4.0 stays the runtime of the game**: the disc's scripts, Coney's own rewrites of the level scripts (compared
   call for call with the originals), script overrides that replace a disc script, and the debug console in the game
@@ -138,9 +139,8 @@ model need anyway. A user who wants to change a level script itself writes a scr
 [compiler](#compiler) builds and the script catalog runs in place of the disc's chunk
 ([Three parts](../asset-and-script-architecture.md#script-parts)).
 
-The choice of a second runtime is a [maintainer decision](#decisions), already open on the network page. If the
-answer is 4.0 for projects too, the [compiler](#compiler) becomes the projects' runtime, the SDK keeps everything else
-on this page, and the editor needs a 4.0 language server of Coney's own.
+That decision is recorded under [Maintainer decisions](#decisions); the network page lists the same choice for
+resources.
 
 ### How Lua 5.4 is built {#lua-build}
 
@@ -263,7 +263,7 @@ The game state needs no threads: the original's scripts wait only through the sc
 
 What Coney does when Studio's Play is pressed or a mod starts a level. Studio's side (saving first, restoring the edit
 state on Stop, the Game view) is the editor page's ([#1055](issue:1055)); how the engine runs beside the editor is the
-technology page's ([#1056](issue:1056)). The engine's side is the same whichever program hosts it.
+[technology](technology.md#play) page's. The engine's side is the same whichever program hosts it.
 
 ```mermaid
 ---
@@ -484,11 +484,11 @@ native with its status, as a tool for engineers.
 
 ## Typed stubs for the language server {#stubs}
 
-Studio's script editor gets completions, signatures, hover text and errors from lua-language-server; the technology
-page decides how the editor hosts it ([#1056](issue:1056)). The language server learns the SDK from **stubs**:
-Lua files of declarations with LuaCATS annotations, the format lua-language-server reads (`---@meta`, `---@param`,
-`---@return`, `---@class`, `---@alias`). `coney-tools natives stubs` generates them from the masterlist, available
-natives only:
+Studio's script editor gets completions, signatures, hover text and errors from lua-language-server; the technology page
+decides how the editor hosts it ([Language tooling](technology.md#language-tooling)). The language server learns the SDK
+from **stubs**: Lua files of declarations with LuaCATS annotations, the format lua-language-server reads (`---@meta`,
+`---@param`, `---@return`, `---@class`, `---@alias`). `coney-tools natives stubs` generates them from the masterlist,
+available natives only:
 
 ```lua
 ---@meta
@@ -590,7 +590,7 @@ Breakpoints, stepping, watches and the call stack, for project scripts first and
 editors speak: JSON messages over a local socket (a loopback port the run log names) or a pipe. Studio's script editor
 is a DAP client; because the protocol is standard, a modder can also attach VS Code to a running Coney. The server
 lives in the engine, beside the runtimes; how Studio's process reaches it is the technology page's
-([#1056](issue:1056)).
+([The script debugger](technology.md#debugger)).
 
 | DAP feature | How |
 | --- | --- |
@@ -606,7 +606,9 @@ lives in the engine, beside the runtimes; how Studio's process reaches it is the
 script call, no further step runs, and the window keeps showing the last frame and stays responsive (the debugger
 waits on the simulation thread; the presentation side keeps drawing). Continue finishes the step. Because time is
 steps, a pause changes nothing in the run: the next step is the one that would have come. Setting a variable from the
-debugger does change it, and marks the run ([Determinism](#determinism)).
+debugger does change it, and marks the run ([Determinism](#determinism)). In Studio, Play runs in Studio's process
+on its own simulation thread, so the Game view and the panels keep drawing while a breakpoint holds
+([The script debugger](technology.md#debugger)).
 
 **The game state.** Coney's own Lua 4.0 VM gets the same hooks (a line hook for chunks with line information, an
 instruction hook for those without), so Coney's level rewrites and script overrides debug by line, and a disc chunk by
@@ -635,9 +637,9 @@ When this design is accepted, these lines change on the pages that own them:
 
 ## Maintainer decisions {#decisions}
 
-1. **A second Lua runtime: Lua 5.4 for projects** ([The runtime](#runtime-choice)). This page recommends it; the
-   network page lists the same decision for resources. With it comes a new dependency, stock Lua 5.4 (MIT licence),
-   and a licence question is a maintainer's ([AGENTS.md](repo:AGENTS.md)).
+1. **A second Lua runtime: Lua 5.4 for projects** ([The runtime](#runtime-choice)). Decided by a maintainer
+   (2026-10-28), with its new dependency, stock Lua 5.4 (MIT licence). The network page lists the same choice for
+   resources.
 2. **Projects and faithful first.** Running a project is a modded session, and Coney natives reach capabilities the
    original lacks; the Studio index proposes that Studio and its projects run in a mode of their own under an
    exception to faithful first ([#1055](issue:1055)). The SDK assumes that exception.
@@ -658,14 +660,11 @@ When this design is accepted, these lines change on the pages that own them:
   resource's server entities, or leave them to the project (this page's choice)?
 - **The budgets' sizes**: the instruction budget per call and the memory cap per project, measured on real projects
   before the first release.
-- **Studio's process and the debugger's pause**: whether the Game view keeps drawing during a breakpoint depends on
-  where the engine runs ([#1056](issue:1056)).
 
 ## Proposed build issues {#build-issues}
 
 In the order they should come. The script runtime for mods comes first of all Studio's build work, because Play means
-running a project's scripts. Issues 2 to 6 assume the [maintainer decision](#decisions) on Lua 5.4; if projects get
-Lua 4.0 instead, issue 7 moves to second place and becomes their runtime.
+running a project's scripts. Issues 2 to 6 build on the [decision](#decisions) for Lua 5.4.
 
 1. **core: Add the native list and the script scheduler.** The two seams of the architecture page, built now:
    `buildNatives` turns `kBindings` and the binding registrations into a list of `Native` records (name, origin,
