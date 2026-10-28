@@ -118,7 +118,7 @@ has what it names.
 | **Model viewer** | One model on its own, to look at (never to edit): shaded, wireframe, by material, normals and bone axes, its counts | The [character viewer](../running-viewers.md#the-character-viewer), the [mesh views](../debug-menu.md#mesh-views) and the [Mesh group](../debug-menu.md#mesh-group) | ready |
 | **Animation viewer** | Any clip on a model: play, loop, speed, in place, by set and category | The [Animation player](../debug-menu.md#animation-player) | ready; a scrubbing timeline waits on a seek in the animation player |
 | **Texture viewer** | A texture dictionary or sprite sheet, image by image | The texture and sprite sheet viewers ([viewers](../running-viewers.md#viewing-texture-dictionaries)) | ready |
-| **Debug panels** | Every other page of the debug menu (Tunables, Player, Camera, Spawner, AI fighters, HUD, Display, Audio, Network), as a panel | The debug menu's model, which any front end renders ([One model](../debug-menu.md#one-model)) | ready |
+| **Debug panels** | Every page of the debug menu that is not a panel above, each as a panel: among them Tunables, Player, Camera, Spawner, AI fighters, Levels, Missions, Movies, Cheats, HUD, Display, Audio and Network ([pages](../debug-menu.md#pages)) | The debug menu's model, which any front end renders ([One model](../debug-menu.md#one-model)) | ready |
 | **Lighting** | The level's sky, sun, ambient light, fog, occlusion and shadows | A sandbox layout's `sky`, `sun`, `ambient`, `fog`, `occlusion` and `shadows` statements ([Statements](../sandbox.md#statements)) | ready for sandbox layouts; a game level's lights and a sun that changes sneaking wait on the [realtime lighting](../realtime-lighting.md) enhancement |
 | **Script editor** | A project's Lua scripts, with VS Code's keys, completions from the masterlist and live errors | The mods runtime ([Script mods](../../roadmap.md#script-mods)) | waits on the mods runtime and the technology page's editor choice |
 | **Paths** | A level's path network, drawn and edited | Path overlays from the level's path data ([Still to come](../debug-menu.md#still-to-come)) | waits on Coney's path overlays and a project path format ([#1058](issue:1058)) |
@@ -192,10 +192,12 @@ lower left under the Scene tree, and Roblox Studio puts Explorer and Properties 
 
 ### Coney Studio's default {#layout-default}
 
-Coney Studio takes **Godot's arrangement**, which is what the brief asks for: the **Inspector on one side and the
+Coney Studio takes **Godot's arrangement**, which is what [#1055](issue:1055) asks for: the **Inspector on one side and
+the
 File system on the other**, so the two panels used most while building a level are both always in view, and the
 Hierarchy sits over the File system, as Godot's Scene dock sits over its FileSystem dock. The middle holds **two
-views side by side**, as Unity's *2 by 3* layout has them: the **Level view** (fly round, select and move things with
+views side by side** (Unity's *2 by 3* layout has both in view too, one above the other): the **Level view** (fly round,
+select and move things with
 the gizmos) and the **Game view** (the game running), so an edit made in the Level view while playing is seen at once in
 the Game view ([Live edits](#live-edits)). The Console and Natives share the bottom.
 
@@ -424,8 +426,9 @@ and accepts that it is rough at first. Studio follows **Godot's model**, the onl
   | A primitive moved, turned, sized, added or deleted; its collision changed | Its drawn mesh and its collision are rebuilt in place; a human standing on it falls or lands as physics decides |
   | A texture, tiling or tint | Drawn with the new one at the next frame |
   | Sky, sun, ambient light, fog, occlusion, shadows | Applied at the next frame |
-  | A target or AI fighter moved or turned | Teleported there through the Entity editor's *Teleport* and *Heading* |
-  | A target or AI fighter added or deleted | Spawned, or deleted as the Entity editor deletes |
+  | An AI fighter moved or turned | Teleported there through the Entity editor's *Teleport* and *Heading*, which an AI human takes |
+  | An AI fighter added or deleted | Spawned as the AI fighters page spawns one and teleported to its place, or deleted as the Entity editor deletes |
+  | A target moved, turned, added or deleted | Nothing until the next Play: the Entity editor takes only *Frozen* for a target ([Entity editor](../debug-menu.md#entity-editor)) |
   | A spawn point or camera view | Nothing until the next Play: they matter only at a start |
 
 - **An edit Coney cannot apply live is kept in the level and said so** on the Game view (*applies on the next Play*),
@@ -580,7 +583,7 @@ library and the program.
    layout's fighter; the level after Stop is the level as edited.
 8. **tools: Add live level edits during Play.** A level edit made in the Level view while playing is kept in the level
    and applied to the running game between two steps: primitives and their collision rebuilt, textures and lighting
-   redrawn, targets and fighters teleported, spawned or deleted; an edit that cannot apply live says *applies on the
+   redrawn, AI fighters teleported, spawned or deleted; an edit that cannot apply live (a target's) says *applies on the
    next Play*. Tests: a box moved during a scripted Play blocks the player at its new place in the same run; after
    Stop and Restart the running game matches the saved level.
 9. **tools: Add drag-and-drop import and the Import button.** Drops land only in the File system panel (into the folder
@@ -589,8 +592,10 @@ library and the program.
    other kinds are refused with the list. Tests: a drop outside the panel imports nothing; a PNG dropped on a folder is
    there and a shape can use it.
 10. **tools: Add the debug menu as Coney Studio panels.** Studio as the third front end of the debug model: every page
-   (Console with the run log and Lua line, Natives, Tunables, Player, Camera, Spawner, AI fighters, HUD, Display, Audio,
-   Network) as a panel, with no Studio code per page. Tests: every page of the session draws as a panel, as the overlay
+    of
+   the session that is not a panel of its own (the Console's run log and Lua line, Tunables, Player, Camera, Spawner,
+   AI fighters, Levels, Missions and the rest) as a panel, with no Studio code per page. Tests: every page of the
+   session draws as a panel, as the overlay
    test checks for the overlay.
 11. **tools: Add previews and the model, animation and texture viewers.** Thumbnails in the File system, cached in
    `.studio/`; the quick preview at the foot of the Inspector; and on double-click a `game:/` model opens in the Model

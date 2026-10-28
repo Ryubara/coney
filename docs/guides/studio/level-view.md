@@ -119,14 +119,14 @@ Both toggles are on the toolbar beside the tools, as in Unity, and Studio rememb
 
 | Snap | How | Step |
 | --- | --- | --- |
-| **Increment** | **Ctrl** held while dragging (Unity) | Move 0.25 m along each axis, Rotate 15°, Scale 0.1 of the size; each step set on the toolbar's snap menu, Move per axis or linked, as in Unity's snap increment menu |
-| **Grid** | The toolbar's grid snap toggle | Moves land on the Level view's grid (1 m, with 0.25 m lines up close) along the dragged axis, as Unity's grid snapping does |
+| **Increment** | **Ctrl** held while dragging (Unity) | Move 0.1 m along each axis, Rotate 15°, Scale 0.1 of the size; each step set on the toolbar's snap menu, Move per axis or linked, as in Unity's snap increment menu |
+| **Grid** | The toolbar's grid snap toggle | Moves land on the Level view's grid (1 m, with 0.1 m lines up close) along the dragged axis, as Unity's grid snapping does |
 | **Vertex** | **V** held | Drag a vertex of the selection onto a vertex of another model (Unity's vertex snapping); Shift+V keeps it on |
 | **Surface** | **Ctrl+Shift** while dragging the move centre | The selection lands on the collision surface under the cursor (Unity's surface snapping); End drops it straight down ([the keymap](#keymap)) |
 
-The steps are Coney's: a quarter metre is fine enough for the sandbox's courses, whose sizes are in tenths and quarters
-of a metre ([The shipped layouts](../sandbox.md#the-shipped-layouts)), and 15° is the rotation step all of Unity,
-Godot and Roblox Studio users meet.
+The steps are Coney's: a tenth of a metre lands on most sizes of the sandbox's courses (a 10 cm ledge, a 0.6 m
+fence; [The shipped layouts](../sandbox.md#the-shipped-layouts)), the Inspector takes any exact value (a 1.65 m wall),
+and 15° is the rotation step all of Unity, Godot and Roblox Studio users meet.
 
 #### How Godot and Roblox Studio differ {#gizmo-differences}
 
@@ -151,7 +151,8 @@ engine can hold, and an axis the selection cannot take is drawn grey and does no
 | A sandbox shape | its `at=` | its `yaw=`: the vertical ring alone, the only turn the layout format has | its size arguments (`size=`, `radius=`, `height=`, `width=`); a sphere evenly only |
 | A spawn point, a target, a fighter | its `at=` | its `heading=`: the vertical ring alone | none |
 | A camera view | its `at=` | its `yaw=` and `pitch=` | none |
-| A human, while playing | *Teleport* | *Heading*: the vertical ring alone | *Scale*, evenly ([Entity editor](../debug-menu.md#entity-editor)) |
+| The player or an AI human, while playing | *Teleport* | *Heading*: the vertical ring alone | *Scale*, evenly ([Entity editor](../debug-menu.md#entity-editor)) |
+| A target, while playing | none: the Entity editor takes only *Frozen* for a target | none | none |
 | An object, while playing | none: the Entity editor takes no object edit today | none | none |
 
 So the full gizmo (three rings, the free sphere, scale on any axis of anything) needs a level format that keeps a full
