@@ -183,7 +183,7 @@ What Coney takes:
 | Question | Decision | Section |
 | --- | --- | --- |
 | The unmodded game's menus | Unchanged, item for item; nothing below exists while no mod is installed | [Faithful](#faithful) |
-| How mods change the menus | They **add** at **extension points**, sections built to take additions; they never rewrite, hide or reorder the game's screens. Visual changes to the game's own art are asset override packs ([#1058](issue:1058)) | [Extension points](#points) |
+| How mods change the menus | They **add** at **extension points**, sections built to take additions; they never rewrite, hide or reorder the game's screens. Visual changes to the game's own art are [asset override packs](project-formats.md#override-packs) ([#1058](issue:1058)) | [Extension points](#points) |
 | Which points | The Mods screen (behind a **MODS** item on the main menu of a modded install), the Rumble Game Mode, Choose Gangs and Choose Area lists, the mission select, and the pause menu's Options (as a MOD OPTIONS page) | [Extension points](#points) |
 | Several mods at one point | Additions follow the game's items, grouped by project in load order, each named `<project>/<id>` | [Order and clashes](#order) |
 | Adding entries | `Coney.AddMenuEntry(point, def)` from a script, or `[[menu.entry]]` in the manifest (what Studio writes): title, description, action | [Entries](#entries) |
@@ -199,8 +199,8 @@ What Coney takes:
 The model, a maintainer's: **the Lua SDK's natives extend the menus by adding to sections built to be added to** (the
 Options settings, the Rumble menu's teams, a mission selector), and never rewrite the game's screens. A mod adds; it
 does not hide, rename, move or replace what the game shows. Changing how the game's own screens look (higher
-resolution art, other textures) is a different layer, the asset override packs of the content design
-([#1058](issue:1058)), and not this page's.
+resolution art, other textures) is a different layer, the [asset override packs](project-formats.md#override-packs) of the
+[content and formats design](content-and-formats.md) ([#1058](issue:1058)), and not this page's.
 
 ### The faithful menus stay as they are {#faithful}
 
@@ -221,7 +221,7 @@ additions are drawn. A point's name is what `Coney.AddMenuEntry` and the manifes
 | `rumble.modes` | The Rumble Game Mode list ([Per screen](../../research/frontend.md#rumble-screens)) | A game mode record (`CfgRumbleGame` in [`rumbleModes`](#data-events)), or an entry that opens the project's own fight set-up | After the game's modes, title over description as theirs | The screen and the native are built; a new mode needs its rules in the game state (script overrides, [the compiler](lua-sdk.md#compiler)) |
 | `rumble.gangs` | Choose Gangs | A team: `CfgRumbleGang` in [`rumbleGangs`](#data-events) | After the custom gangs and the disc's | **Ready**: a team of the game's character types plays |
 | `rumble.arenas` | Choose Area | An arena: `CfgRumbleArena` in [`rumbleArenas`](#data-events) | After the disc's | Waits on project levels that are arenas ([#1058](issue:1058)) |
-| `missions` | The mission select (mode 0x10, [`MissionSelectHUD.cpp`](../../research/frontend.md#fn-missionselecthud)) | A mission: the project's level or mission file, its checkpoints, an area of the project's with its own map marker | After the game's areas | Waits on a port of the mission select screen, which Coney lacks ([How UI works in Coney today](#coney)) |
+| `missions` | The mission select (mode 0x10, [`MissionSelectHUD.cpp`](../../research/frontend.md#fn-missionselecthud)) | A mission: the project's level or mission file, its checkpoints, an area of the project's with its own map marker | After the game's areas | Waits on a port of the mission select screen, which Coney lacks ([#1071](issue:1071), [How UI works in Coney today](#coney)) |
 | `options` | The pause menu's Options title list ([The Options screen](../../research/pause.md#options)) | Option rows: a toggle, a choice, a bar, or a row that opens a sub-screen ([Option rows](#options)) | One title, MOD OPTIONS (Coney's text), after the game's seven, opening one page per project | The Options screen is built; the page is Coney's to add (build issue 7) |
 | `hud` | During play | HUD elements ([HUD elements](#hud)) | After the game's HUD parts | Waits on the widget model (build issue 2) |
 
@@ -372,10 +372,11 @@ local rounds = Coney.GetOption("rounds")
 
 The maintainer's example, by two routes:
 
-- **At the `missions` point.** Once Coney has ported the game's mission select (mode 0x10, `HUDShowMissionSelect`), a
-  project adds its missions there with `Coney.AddMenuEntry("missions", {...})`: its level or mission file, its
-  checkpoints and an area of its own. The game's areas and their completed missions come first, as the original lists
-  them (`MissionSelect_IsMissionListed` `0x001bc100`: completed levels 2 to 99 but 95 and 60 to 65, confirmed (code)).
+- **At the `missions` point.** Once Coney has ported the game's mission select (mode 0x10, `HUDShowMissionSelect`,
+  [#1071](issue:1071)), a project adds its missions there with `Coney.AddMenuEntry("missions", {...})`: its level or
+  mission file, its checkpoints and an area of its own. The game's areas and their completed missions come first, as
+  the original lists them (`MissionSelect_IsMissionListed` `0x001bc100`: completed levels 2 to 99 but 95 and 60 to 65,
+  confirmed (code)).
 - **As a project's own screen**: an entry at `mods` whose action opens a [mod screen](#widgets) with a list
   of the levels a script chooses, `accept` starting one at a checkpoint. It needs a list widget, the level table
   (`Coney.GetLevels`, a read of the records the game's `CfgLevelName` calls made) and `Coney.StartLevel`
@@ -541,9 +542,10 @@ client script only fills the list and handles `accept`.
 ### Screens as an asset kind {#screen-files}
 
 Of the two shapes the issue offered, a UI view beside the Level view or screens as their own asset kind, this page
-takes **screens as their own asset kind**: `ui/<name>.screen` files in the project, one per screen, in the project
-formats' statement format ([#1058](issue:1058)), opened in a Screen view as a level file opens in the Level view. A
-screen is not part of a level: the same screen opens in any level, on the front end, or from a menu entry.
+takes **screens as their own asset kind**: `ui/<name>.screen` files in the project, one per screen, in the
+[project formats' statement format](project-formats.md#statement-format)
+([#1058](issue:1058)), opened in a Screen view as a level file opens in the Level view.
+A screen is not part of a level: the same screen opens in any level, on the front end, or from a menu entry.
 
 ```text
 format screen 1
@@ -692,8 +694,9 @@ When this design is accepted, these lines change on the pages that own them:
   `[[menu.entry]]` and `[[menu.option]]` join the [manifest](lua-sdk.md#manifest); `ShowProfileManager`,
   `CfgHUDMessage`, `CfgTutorialMessage`, `CfgCrimeMessage`, `CfgAnnounceMessage` and `CfgWarriorCommand` join the
   [`mods: false` list](lua-sdk.md#availability).
-- The project formats ([#1058](issue:1058)): `ui/<name>.screen` joins the project folder and the statement format's
-  file kinds; the asset override packs stay the way to change how the game's own screens look.
+- The [project formats](project-formats.md) ([#1058](issue:1058)): `ui/<name>.screen` joins the [project
+  folder](project-formats.md#formats) and the statement format's file kinds; the
+  [asset override packs](project-formats.md#override-packs) stay the way to change how the game's own screens look.
 - The editor experience ([#1055](issue:1055)): the Screen view joins the panels, and *Play from the main menu* joins
   Play's targets.
 - The security design ([#1062](issue:1062)): the trusted layer and the frame label are the UI half of its rule that no
@@ -703,7 +706,8 @@ When this design is accepted, these lines change on the pages that own them:
 ## Maintainer decisions {#decisions}
 
 1. **Mods add, never rewrite**: they add at extension points and never rewrite, hide or reorder the game's screens; the
-   game's own look is the asset override packs' ([#1058](issue:1058), [Extending the menus](#extending)).
+   game's own look is the [asset override packs'](project-formats.md#override-packs) ([#1058](issue:1058),
+   [Extending the menus](#extending)).
 2. **MODS on the main menu, only when a mod is installed** ([The MODS entry](#mods-screen)): with any mod installed the
    main menu shows MODS after QUICK RUMBLE; with none it is the original's three items.
 3. **MOD OPTIONS is the one new place in the game's screens**: besides MODS, Coney adds only a MOD OPTIONS title to the
@@ -755,8 +759,8 @@ runtime, the loader and the first Coney natives, [Proposed build issues](lua-sdk
    order then registration order, `<project>/<id>` names, nothing removable); `Coney.AddMenuEntry` and
    `[[menu.entry]]` with the three actions at the `mods` and `rumble.modes` points;
    the entries' languages; the additions in each mod's details. The `missions` point follows once the mission select
-   is ported. Tests: a screen file round-trips; the extension-point tests of [Tests](#tests); a `play` entry starts the
-   project's level.
+   is ported ([#1071](issue:1071)). Tests: a screen file round-trips; the extension-point tests of [Tests](#tests); a
+   `play` entry starts the project's level.
 6. **core: Add the menu data events for the Rumble lists.** `rumbleModes`, `rumbleGangs` and `rumbleArenas` fired after
    the disc's chunk, records appended in load order, `Coney.ModGangId` and its range, mod gangs always unlocked, the
    fighters loaded by type when no pack has the id. Tests: a fixture gang appears after the disc's with the defaults
