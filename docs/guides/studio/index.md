@@ -40,6 +40,9 @@ merges its page adds its row here and its line to the `nav:` of `mkdocs.yml`, un
 | [Mission mods](mission-mods.md) | Changing a game script: decompiling on the user's machine, patches of differences pinned to the script's hash, merging two mods' patches, compiling and running in the script's place, and the verdict on a Lua 4.0 to 5.4 translator with its proof by traces | [#1074](issue:1074) |
 | [Entities and the Inspector](entities.md) | The entity kinds, the property schema each kind has as data, the Inspector and its tools against bloat, each kind's events connected by function name, stealth zones, attributes, spawning prefabs from scripts | [#1072](issue:1072) |
 | [A Human's properties](human-properties.md) | Every property of a Human, a Target and a Gang, grouped, with what Coney sets today and what waits | [#1072](issue:1072) |
+| [UI and menus](ui.md) | How mods extend the menus at points built for it (the MODS entry and Mods screen, option rows, mission selectors), the UI natives, Studio's Screen view, and why a mod's UI can never pass for Coney's | [#1063](issue:1063) |
+| [Script security and the sandbox](security.md) | What a project's Lua keeps and loses and why, the threat model, the project file layer, permissions, signatures and trust, the attack surface, the escape suite and fuzzing; the build issues of both pages | [#1062](issue:1062) |
+| [Mods, packages and loading](mods.md) | The mods folder and `enabled.toml`, how Coney trusts and reads a `.cmod`, starting and stopping, dependencies and exports, load order and clashes, console commands, modded saves, offline and online loading | [#1062](issue:1062) |
 
 ## Terms {#terms}
 

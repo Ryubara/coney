@@ -48,8 +48,8 @@ internals:** a script reaches the game only through natives, the same boundary t
 | **Lua SDK** | What Coney ships for script writers: the available natives and SDK functions, the runtime that runs them, their typed stubs for the editor, the generated reference and the debugger |
 | **Available** | A native is available when Coney implements it and the SDK allows it ([How a native reaches the SDK](#availability)). Only available natives exist for a project's scripts, its stubs and its reference |
 | **SDK level** | A whole number that grows each time a Coney release makes natives available; a project names the level it needs ([The SDK level](#sdk-level)) |
-| **Project** | A folder with a `coney-project.toml` manifest: levels, assets and scripts. Studio creates and edits projects ([The project](editor-experience.md#project-coney)); a player installs one into the mods folder; a ConeyMP server runs several. A project is what [Network architecture](../network-architecture.md#resources) calls a *resource* and FiveM calls a resource: one folder, one manifest |
-| **Mod** | A project installed in the mods folder and switched on. Studio's Play runs the open project the same way |
+| **Project** | A folder with a `coney-project.toml` manifest: levels, assets and scripts. Studio creates and edits projects ([The project](editor-experience.md#project-coney)) and exports a finished one as a `.cmod` package that a player puts in the mods folder; a ConeyMP server runs several. A project is what [Network architecture](../network-architecture.md#resources) calls a *resource* and FiveM calls a resource: one folder, one manifest |
+| **Mod** | A project exported as one `.cmod` package (working name), installed in the mods folder, where it is on by default ([Mods, packages and loading](mods.md#cmod)). A mod may be scripts only, a level only, or anything between. Studio's Play runs the open project folder the same way, with no packaging step |
 | **The game state** | The one Lua 4.0 state per level in which the disc's scripts run, as today ([Scripts](../../research/scripting.md#life-of-the-lua-state)) |
 | **A project state** | The Lua 5.4 state of one project, its own environment and globals, which the [sandbox](#sandbox) holds in |
 | **Server, client, shared** | Where a script runs, in FiveM's words and the network page's: *server* scripts run where the simulation runs (the host, or the one machine offline), *client* scripts on each player's machine for presentation only, *shared* on both. Offline, every project script is a server script |
@@ -77,8 +77,8 @@ It is the model the maintainer named for the SDK. Only its public documentation 
 
 What Coney does **not** copy: hashes (the original has none), CfxLua's language changes (they would break every stock
 Lua tool, which is the reason to choose 5.4 at all), a C# or JavaScript runtime (one language is enough, and it is the
-game's), exports between resources (later, with several projects in one session, if users ask), and client-writable
-state (the network page already refuses it).
+game's) and client-writable state (the network page already refuses it). Exports between resources are copied, inside
+the sandbox ([Dependencies and exports](mods.md#dependencies)).
 
 ## Names and namespaces {#names}
 
@@ -113,8 +113,8 @@ The architecture page advises one runtime until mods need what Lua 4.0 lacks
 ([Three parts](../asset-and-script-architecture.md#script-parts)). The SDK is that need. A maintainer decided:
 
 - **Lua 4.0 stays the runtime of the game**: the disc's scripts, Coney's own rewrites of the level scripts (compared
-  call for call with the originals), script overrides that replace a disc script, and the debug console in the game
-  state. Nothing about it changes.
+  call for call with the originals), disc scripts a mod patches, and the debug console in the game state. Nothing about
+  it changes.
 - **Lua 5.4 is the runtime of projects**: every script a user writes runs in a project state of stock Lua 5.4, behind
   the same Native API as the game state.
 
@@ -132,19 +132,20 @@ reasons:
 | Cost | No second runtime | A second runtime: stock Lua 5.4 as a pinned dependency (MIT licence), a value bridge, deterministic build settings ([below](#lua-build)) |
 | Sharing the game's state | A project could run in the game state, hook its functions and set its globals | A project state is separate; it shares the world, not the game state's globals ([The two states](#two-states)) |
 
-The last row is the only one in 4.0's favour, and it is also a reason against: a script that patches the game state
-can break the faithful scripts in ways nobody can debug, and a separate state is what the sandbox and the network
-model need anyway. A user who wants to change a level script itself writes a script override in Lua 4.0, which the
-[compiler](#compiler) builds and the script catalog runs in place of the disc's chunk
-([Three parts](../asset-and-script-architecture.md#script-parts)).
+The last row is the only one in 4.0's favour, and it is also a reason against: a script that patches the game state can
+break the faithful scripts in ways nobody can debug, and a separate state is what the sandbox and the network model need
+anyway. A user who wants to change a level script itself ships a patch (only the differences, applied to the player's
+own copy; [Mission mods](mission-mods.md)), which the [compiler](#compiler) builds and the script catalog runs in place
+of the disc's chunk ([Three parts](../asset-and-script-architecture.md#script-parts)).
 
 That decision is recorded under [Maintainer decisions](#decisions); the network page lists the same choice for
 resources.
 
 ### How Lua 5.4 is built {#lua-build}
 
-Stock Lua 5.4, pinned in `cmake/deps.cmake` like the other dependencies, compiled as C into its own library, with the
-settings that make it deterministic ([Deterministic and network-safe calls](#determinism) says why each matters):
+Stock Lua 5.4 (5.4.9, the last 5.4 release; [Keeping the runtime current](security.md#runtime-updates)), pinned in
+`cmake/deps.cmake` like the other dependencies, compiled as C into its own library, with the settings that make it
+deterministic ([Deterministic and network-safe calls](#determinism) says why each matters):
 
 - **A fixed string-hash seed** (`luai_makeseed` defined as a constant): stock 5.4 seeds the hash of strings from an
   address and the time, so the order `pairs` visits a table's string keys would change from run to run.
@@ -190,13 +191,17 @@ the sandbox exists.
 ```toml
 # coney-project.toml
 [project]
-name = "yard-brawl"            # lower case, digits and '-'; unique among installed mods; the events' prefix
+name = "yard-brawl"            # lower case, digits and '-'; one enabled mod per name; the events' prefix
 title = "Yard Brawl"           # what menus show
-version = "0.3.0"              # the project's own version
+version = "0.3.0"              # the project's own version, major.minor.patch
 sdk = 4                        # the lowest SDK level it needs; Coney refuses a project above its own level
 
+[load]
+autostart = false              # true (the default): starts with every session; false: when its level is played
+conflicts = []                 # mods that cannot run with this one
+
 [play]
-level = "project:/levels/yard.layout"   # where Play and the mods menu start it; a game:/ level is allowed
+level = "project:/levels/yard.layout"   # where Play and `play <mod>` start it; a game:/ level is allowed
 spawn = "start"                          # the default player's spawn point when no script makes player 1
 
 [scripts]
@@ -204,8 +209,14 @@ server = ["scripts/main.lua", "scripts/fighters/*.lua"]   # run where the simula
 client = []                                               # presentation only (ConeyMP, P4)
 shared = ["scripts/util.lua"]                             # loaded first, on both sides
 
-[dependencies]
-projects = []                  # other projects that must be loaded first (later: several projects per session)
+[dependencies]                 # other mods, by name, with a version range; each loaded first
+"crate-pack" = ">=1.2, <2"
+
+[permissions]                  # what reaches beyond the sandbox, approved by the player (Script security)
+game-scripts = []
+
+[limits]
+memory = 64                    # MiB, up to Coney's ceiling; shown, never asked
 ```
 
 - **Paths in the manifest** are relative to the project folder; inside scripts and levels they are written
@@ -214,19 +225,36 @@ projects = []                  # other projects that must be loaded first (later
   by path in byte order, so the order never depends on the file system.
 - **A project with no `[scripts]`** is a level and its assets; it plays with no script, the default player at the spawn
   point.
-- The fields beyond these (version ranges for dependencies, client files to download, declared events) are the network
-  page's when P4 comes ([Coney resources](../network-architecture.md#resources)).
+- **`[load]`, dependencies, permissions and limits** are designed on [Mods, packages and loading](mods.md#starting)
+  and [Script security](security.md#declared): when a mod starts, version ranges, exports, load order and clashes,
+  and what the player approves.
+- **The packaged manifest.** Export writes the manifest into the `.cmod` with one more section, `[files]`: every file's
+  path, size and SHA-256. Its hash is the mod's **package hash**, which approvals, saves, replays and co-op checks name
+  ([The `.cmod` package](mods.md#cmod)). A file the packaged manifest does not list is not read.
+- **Projects find entities by name or tag.** No script is attached to an entity: a project's scripts find what they need
+  when a level starts and handle what is missing, so a level file holds no code ([Principles](security.md#principles),
+  [Names and tags](project-formats.md#names-tags)).
+- The fields beyond these (client files to download, declared events) are the network page's when P4 comes
+  ([Coney resources](../network-architecture.md#resources)).
 
 ## The loader and its entry points {#entry-points}
 
 ### The mods folder {#mods-folder}
 
-A player installs a project by putting its folder in `<install>/mods/`. `mods/enabled.toml` lists the projects switched
-on and their order; the mods menu (and Studio's Play, which runs exactly one project, the open one) writes it. With the
-file empty or the folder absent, Coney runs exactly as it does without the SDK: no project state is made, no entry
-point runs, and the game is the faithful one ([Roadmap: Script mods](../../roadmap.md#script-mods), whose Done line
-this keeps). A session with any project loaded is a **modded session**, said in the run log and in every replay and
-save it writes ([Asset layers](../asset-and-script-architecture.md#asset-layers)).
+`<install>/mods/` is the one mods folder. A player installs a mod by putting its `.cmod` there; Coney reads it where it
+lies, read-only, without extracting it, and checks every file against its packaged manifest ([The `.cmod`
+package](mods.md#cmod)). `mods/enabled.toml` lists the mods that start with every session, in order, with each one's
+name, version, package hash, approved permissions and signer ([Installed mods](mods.md#installed)); a new package is
+added on, since scripts are on by default, and only the mods menu or the player editing the file changes it afterwards.
+An enabled mod starts with every session, and a content mod with `autostart = false` starts when its level is played
+([Starting and stopping](mods.md#starting)). Console commands start and stop mods for the running session only ([Console
+commands](mods.md#console)). Studio's Play runs the open folder, without packaging it, as a started content mod with the
+enabled mods beside it ([Starting and stopping](mods.md#starting)), and `coney --project <folder>` does the same outside
+Studio. With no mod enabled, Coney runs exactly as it does without the SDK: no project state is made, no entry point
+runs, and the game is the faithful one ([Roadmap: Script mods](../../roadmap.md#script-mods), whose Done line this
+keeps). A session with any project loaded is a **modded session**, said in the run log and in every replay and save it
+writes, with each mod's package hash; its saves are kept apart from the faithful profile ([Modded saves and
+replays](mods.md#saves-replays), [Asset layers](../asset-and-script-architecture.md#asset-layers)).
 
 ### Entry points {#events}
 
@@ -243,6 +271,10 @@ the order they were registered, projects in load order. The events, at the point
 | `levelEnd` | Before a level unloads (a level change, a restart, the end of Play) | level name, reason (`change`, `restart`, `stop`) | Cleaning up what the project made |
 | `stop` | When the project stops: the session ends, Play stops, or a hot reload replaces it | reason (`quit`, `stop`, `reload`) | Saving the project's own data |
 
+A project may also add console commands with `Coney.RegisterCommand(name, handler, spec)`, an SDK function whose handler
+is an entry point like these, run in the project's state at a step boundary (the console design planned on
+[#1064](issue:1064), `console.md` in this folder once it merges; [Script security](security.md#console)).
+
 Everything else a script reacts to comes through the game natives' own callbacks, as for the game's scripts: message
 handlers on objects (`SetMsgHandler`), trigger boxes, animation callbacks, pad handlers, scheduled calls. Network
 events between projects and machines are the network page's (P4).
@@ -257,7 +289,9 @@ lasts the same number of steps at any frame rate and in a replay. `ScheduleFunc`
 project's own schedule, beside its threads, with the game's rules (due calls in the order scheduled).
 
 The game state needs no threads: the original's scripts wait only through the schedule and callbacks
-([Three parts](../asset-and-script-architecture.md#script-parts)).
+([Three parts](../asset-and-script-architecture.md#script-parts)). Threads are coroutines on the simulation thread,
+never parallel, as FiveM's are; why, and the engine-side jobs that may later take heavy work off that thread, is
+[One thread, cooperative](security.md#one-thread).
 
 ## Play, step by step {#play}
 
@@ -338,14 +372,15 @@ call its functions. Whether it may read a game-state global through a Coney nati
 ## Assets by path {#assets}
 
 A project's script loads, plays or spawns an asset by its path, as engines do (`Resources.Load` in Unity, `load()` in
-Godot). The paths are the editor page's two roots ([The project](editor-experience.md#project-coney)); the formats
-behind them and how an import becomes a project file are the [content page](content-and-formats.md#paths)'s, and the two
-pages use the same scheme:
+Godot). The paths are the editor page's two roots ([The project](editor-experience.md#project-coney)) and the mods
+page's third; the formats behind them and how an import becomes a project file are the [content
+page](content-and-formats.md#paths)'s, which lists all three, and the pages use the same scheme:
 
 | Root | Means | Example |
 | --- | --- | --- |
 | `project:/` | The project folder; nothing above it | `project:/models/crate.glb` |
 | `game:/` | The player's installed game files, read-only, by the extract tool's names, so a project refers to a game asset and never carries it ([LEGAL.md](repo:LEGAL.md#no-game-data)) | `game:/sounds/...` |
+| `mod:/` | Another mod this project depends on, read-only, by its name ([Dependencies and exports](mods.md#dependencies)) | `mod:/crate-pack/models/crate.glb` |
 
 A sub-asset (one clip of a file that holds several, one mesh of a model file) follows a `#`:
 `project:/anims/dance.glb#Spin`. The calls are Coney natives, available once Coney can load that kind from outside
@@ -368,25 +403,30 @@ found through the asset store's sources, never by a native opening a file
 
 ## The sandbox {#sandbox}
 
-A project state follows the network page's [sandbox](../network-architecture.md#sandbox), and adds what keeps a
-script inside its project:
+What a project's scripts may and may not do, item by item with the reason for each, is
+[Coney Studio: script security](security.md#line), which owns it; this section is its summary. A project state follows
+the network page's [sandbox](../network-architecture.md#sandbox) and adds what keeps a script inside its project:
 
-- **Libraries:** base (without `dofile`, `loadfile`, `collectgarbage`, and with `load` taking text only, never
-  bytecode), `string`, `table`, `math`, `utf8` and `coroutine`. No `io`, `os`, `package` or `debug`. `math.random` and
-  `math.randomseed` draw from the project's own stream ([Determinism](#determinism)). `print` writes to the run log
-  and Studio's Console, tagged with the project.
+- **Libraries:** base (without `dofile` and `loadfile`, with `load` taking text only, never bytecode, `collectgarbage`
+  answering `"count"` only, and `setmetatable` refusing a metatable with `__gc`), `string` (without `dump`), `table`,
+  `math`, `utf8` and `coroutine`. No `io`, `os`, `package` or `debug`. `math.random` and `math.randomseed` draw from the
+  project's own stream ([Determinism](#determinism)). `print` writes to the run log and Studio's Console, tagged with
+  the project, within a limit per step.
 - **`require` inside the project only:** `require("fighters.waves")` finds `scripts/fighters/waves.lua` in the
-  project folder. The name is a module path, never a file path: `..`, absolute paths and drive letters are refused,
-  and the resolved file must lie inside the folder after links are followed. Text only.
-- **Files:** a script reads no file directly. Its data comes through natives that take a `project:/` path
-  ([Assets by path](#assets)); a later `Coney.ReadData(path)` may read a project's JSON or TOML data file, inside the
-  folder only.
+  project. The name is a module path, never a file path: `..`, absolute paths and drive letters are refused, and the
+  file is found through the project file layer, which refuses links ([Files and paths](security.md#paths)). Text only.
+- **Files:** a script reads no file directly and writes none. Its data comes through natives that take a `project:/`
+  path ([Assets by path](#assets)) and `Coney.ReadData(path)`, which reads a project's JSON or TOML data file; what it
+  keeps between sessions goes in its own store (`Coney.SaveData`, `Coney.LoadData`), with a quota.
 - **One environment per project** over a read-only table of the natives: a script can set its own globals, never a
-  native's name (`HuCreate = nil` raises an error), and never another project's state.
-- **An instruction budget per call into the state** (an entry, a handler, a callback, one resume of a thread), by
-  `lua_sethook`'s count hook; a call past it stops with an error and the project goes on. A thread that loops without
-  waiting is stopped the same way.
+  native's name (`HuCreate = nil` raises an error; `rawset` can only shadow it in its own environment), and never
+  another project's state.
+- **Budgets:** an instruction budget per call into the state (an entry, a handler, a callback, one resume of a thread)
+  and per step, by `lua_sethook`'s count hook inherited by every coroutine; once spent it raises at every check, so
+  `pcall` cannot catch it and loop on. Library calls whose work grows with their input are charged to it.
 - **A memory cap per project**, by the allocator; past it the allocation fails as an out-of-memory error in the call.
+- **Caps on what a project makes** (its share of the game's pools, Coney's own kinds) and a watchdog for a call that
+  never returns ([Limits](security.md#limits)).
 - **No engine internals:** the state holds natives and SDK functions only. There is no `Coney.Engine`, no access to
   C++ objects, no pointer in any value.
 - **Errors** are Lua errors with the file and line; they stop the call that raised them, never the game. Studio shows
@@ -552,7 +592,7 @@ Changing a script while the game runs, as FiveM's `restart`:
 What a project made in the world (humans, objects) stays across a reload; a project that wants a clean world deletes
 its cast in `stop`. Hot reload is for Studio and a mod writer's machine: it is off in test mode, and in a networked
 session only the host reloads its own server scripts. A run with a reload is marked in the run log
-([Determinism](#determinism)). Reloading a script of the game state (a Coney rewrite, a script override) is the
+([Determinism](#determinism)). Reloading a script of the game state (a Coney rewrite, a patched disc script) is the
 console's *Reload* of the architecture page ([Debug console needs](../asset-and-script-architecture.md#console-needs)),
 not the SDK's.
 
@@ -567,7 +607,8 @@ four uses for source text:
   ([Debug console needs](../asset-and-script-architecture.md#console-needs)).
 - **Coney's level rewrites**, written as Lua 4.0 source and compared call for call with the disc's chunks
   ([Three parts](../asset-and-script-architecture.md#script-parts)).
-- **Script overrides**, a user's replacement of a disc script, which must run in the game state.
+- **Patched disc scripts**, a mod's differences applied to the player's own copy of a disc script ([Mission
+  mods](mission-mods.md)), which must run in the game state.
 - **The debugger's** watch expressions while paused in the game state ([The script debugger](#debugger)).
 
 The original carries the same ability: its Lua 4.0 library includes the source parser. The chunk loader
@@ -615,7 +656,7 @@ on its own simulation thread, so the Game view and the panels keep drawing while
 ([The script debugger](technology.md#debugger)).
 
 **The game state.** Coney's own Lua 4.0 VM gets the same hooks (a line hook for chunks with line information, an
-instruction hook for those without), so Coney's level rewrites and script overrides debug by line, and a disc chunk by
+instruction hook for those without), so Coney's level rewrites and patched scripts debug by line, and a disc chunk by
 function prototype and instruction (the locator form of a mission page, `level99.lua:f31`), for engineers comparing a
 rewrite with the original. A watch in the game state needs the [compiler](#compiler).
 
@@ -658,7 +699,6 @@ When this design is accepted, these lines change on the pages that own them:
 - **The game native `random`** shares the game's table and its index with the game's code: should a project's call of
   it draw from the project's stream instead, so that a mod cannot shift the game's draws? Faithful for the game state
   either way.
-- **Exports between projects** (FiveM's `exports`): wanted once several projects run in one session, or never?
 - **What a reload leaves**: should Coney delete the humans and objects a project made when it stops, as FiveM deletes a
   resource's server entities, or leave them to the project (this page's choice)?
 - **The budgets' sizes**: the instruction budget per call and the memory cap per project, measured on real projects
@@ -679,19 +719,22 @@ running a project's scripts. Issues 2 to 6 build on the [decision](#decisions) f
    in another of the same session.
 2. **core: Add the Lua 5.4 project runtime and its sandbox.** Stock Lua 5.4 pinned in `cmake/deps.cmake` with the
    deterministic build settings; a project state with its environment, the allowed libraries, `require` inside the
-   project, the instruction budget, the memory cap and the project's random stream; the value bridge to the native
-   list (numbers, booleans, strings, tables written back, callbacks by name or function, as callback ids); only
+   project, the instruction budget, the memory cap and the project's random stream, exactly as [Script
+   security](security.md#line) draws the line (its build issues 1 and 2 come with this one); the value bridge to the
+   native list (numbers, booleans, strings, tables written back, callbacks by name or function, as callback ids); only
    available natives installed, with the error that names a missing one. Tests: a script cannot open a file, load
    bytecode, require outside its folder or set a native's name; a runaway loop and a memory bomb stop with an error;
    `pairs` and `table.sort` give the same order in two runs; a native called from 5.4 and from 4.0 gets the same
    arguments.
-3. **core: Add the mods loader with projects and entry points.** `coney-project.toml` read and checked (name, SDK
-   level, script lists, globs in byte order); the mods folder and `mods/enabled.toml`; `Coney.On` and `Coney.Off` with
-   `start`, `levelStart`, `update`, `levelEnd` and `stop`; `Coney.CreateThread` and `Coney.Wait` in steps; the
-   project's frame after the game state's; a project level's spawn points as world flags; the default player; Stop
-   at a step boundary; the modded-session mark. Tests: a test project from a fixture folder runs at a level start,
-   makes a human with `HuCreate` at a flag and moves the camera; a thread's waits land on the expected steps; with the
-   folder empty the game's scripted runs are unchanged (the roadmap's Done line).
+3. **core: Add the mods loader with projects and entry points.** `coney-project.toml` read and checked (name, SDK level,
+   script lists, globs in byte order); the mods folder of `.cmod` packages and `mods/enabled.toml`, with [Script
+   security](security.md#build-issues)'s limits, packages, starting and dependencies, exports, the mods' console
+   commands, permissions, store and modded saves (its build issues 3 to 11); `Coney.On` and `Coney.Off` with `start`,
+   `levelStart`, `update`, `levelEnd` and `stop`; `Coney.CreateThread` and `Coney.Wait` in steps; the project's frame
+   after the game state's; a project level's spawn points as world flags; the default player; Stop at a step boundary;
+   the modded-session mark. Tests: a test project from a fixture folder runs at a level start, makes a human with
+   `HuCreate` at a flag and moves the camera; a thread's waits land on the expected steps; with the folder empty the
+   game's scripted runs are unchanged (the roadmap's Done line).
 4. **core: Add the first Coney natives.** `research/bindings/coney.yaml` with `origin: coney` and the schema keys
    `apiset`, `mods`, `handle`, `reads`, `since`; `natives coney` and `natives render` reading it; the first natives from
    the candidates table that have a C++ entry point today (`Coney.TeleportPlayer`, `Coney.SetPlayerFrozen`,
@@ -714,7 +757,7 @@ running a project's scripts. Issues 2 to 6 build on the [decision](#decisions) f
    old state fires after the reload.
 7. **core: Add the Lua 4.0 source compiler and the full console.** A lexer and parser written from the Lua 4.0 manual,
    emitting Coney's `LuaProto` with line information; the console on it (statements, `local`, loops, functions, errors
-   with lines); `dostring` compiling text; script overrides through the script catalog. Tests: synthetic programs
+   with lines); `dostring` compiling text; patched disc scripts through the script catalog. Tests: synthetic programs
    compile and give their expected results, every instruction kind covered; the console runs a loop; a disc check
    compares the natives called by the disc's bytecode and by the recompiled decompiles, counts and hashes only.
 8. **core: Add the script debugger over the Debug Adapter Protocol.** A DAP server in the engine over a loopback socket:

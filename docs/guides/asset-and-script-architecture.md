@@ -147,19 +147,27 @@ is preferred for assets, and the PS2 disc fills the gaps and is always the behav
   coney(.exe), licences
   game/ps2/                     the PS2 disc's files as they are (WARRIORS.DIR, WARRIORS.WAD, IOP/, PSS/, SLUS_212.15)
   game/xbox/                    optional: the Xbox disc's archive and movies as they are
-  overrides/                    mods and texture packs
+  mods/                         script and content mods: one .cmod package each, read in place, and enabled.toml
+  overrides/                    texture packs and asset replacements: data, never scripts
     packs/<pack>/               a texture pack as `coney-tools` exports it: manifest + images, keyed by texture hash
     textures/<dictionary>/<texture>.png   loose files: the same names as `coney-tools extract` writes
     audio/sounds/<name>.wav     audio/music/<track>.wav
     movies/<name>.bik
-    files/<wad name>            power users: a whole WAD entry replaced (simulation kinds mark the session modded)
+    files/<wad name>            power users: a whole WAD entry replaced (simulation kinds mark the session modded;
+                                never a script chunk)
   open/                         optional modding kit: `coney-tools extract` output (PNG, WAV, Lua chunks, index)
   index/
     install.json                sources, disc SHA-1s, Coney version, per-type counts and digests
     xbox-resources.bin          cache of the Xbox resource index (resource hash, chunk type -> location)
   config/                       proposed: tunables, overlay layout (see Maintainer decisions)
-<SDL pref path>/profiles/       save data only
+  cache/                        mods' check results, and files servers and co-op hosts sent (per server)
+<SDL pref path>/                save data only
+  profiles/                     the faithful story
+  modded/, mod-data/<project>/  saves of modded sessions, and each mod's own store
 ```
+
+The `mods/`, `cache/`, `modded/` and `mod-data/` entries, and why scripts never load from `overrides/`, are
+[Coney Studio: mods, packages and loading](studio/mods.md#install-layout)'s.
 
 - **The installer** is a front end over one library call per step: copy the disc's files and check them against
   the known SHA-1s, write `index/install.json`, and optionally build the Xbox index and the modding kit. The PS2 step
@@ -176,7 +184,7 @@ is preferred for assets, and the PS2 disc fills the gaps and is always the behav
 | Movies | overrides, Xbox `_hd`, PS2 | |
 | Sounds, music | overrides, PS2 | Xbox mapping is open ([Xbox assets](../research/xbox-assets.md#coneys-implementation)) |
 | Fonts, HUD and particle sheets | overrides, PS2 | presentation |
-| Scripts, levels, object lists, worlds, collision, animations, scenes, characters, executable tables, game text | PS2 (overrides only in a modded session) | simulation kinds |
+| Scripts, levels, object lists, worlds, collision, animations, scenes, characters, executable tables, game text | PS2 (overrides only in a modded session) | simulation kinds; a script is never replaced from `overrides/`, only patched by a mod ([Mods](studio/mods.md#install-layout)) |
 
 - **Command line.** `--data <install>` opens the install folder, and `--disc` stays for development and CI. With
   neither, Coney looks for `game/ps2/` next to its executable. All three build the same store. Built (N7): until
@@ -233,7 +241,8 @@ Scheduler       when scripts run: level entry, update function, schedule, messag
   [Scripting](../research/scripting.md#level99). Recommended form: **Lua 4.0 source text** that Coney compiles with
   its own compiler into the same `LuaProto` the VM runs. Then there is one runtime, one binding table and one
   scheduler, and a rewrite can be compared call for call with the original chunk;
-- *mod*: a file from `overrides/scripts/` (this marks the session modded).
+- *mod*: the player's own disc script with a mod's `game-scripts` patch applied, compiled by Coney; never a file in
+  `overrides/` ([Mods, packages and loading](studio/mods.md#install-layout); this marks the session modded).
 
 The level flow asks the catalog, never the store, so a level can switch from the original chunk to Coney's rewrite
 with a one-line change in the catalog. That switch is allowed only when the parity test passes: same input script,

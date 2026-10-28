@@ -8,12 +8,12 @@ compiler, the translator from Lua 4.0 to Lua 5.4 with an evidence-based verdict 
 Studio's flow and the order of the work. It ends with the build issues it proposes, in order. The parent issue is
 [#1054](issue:1054); this page is [#1074](issue:1074).
 
-**Status: design.** Nothing on this page is built. It is a design in the sense of
-[Page kinds](../writing-docs.md#page-kinds): what is built moves into a guide. It builds on
-[Coney Studio: the Lua SDK](lua-sdk.md) (the two runtimes, the [compiler](lua-sdk.md#compiler)), on
-[Lua 4.0 bytecode](../../research/formats/lua-bytecode.md) (the decompiler) and on the script security and mods
-design of [#1062](issue:1062) (the open pages `security.md` and `mods.md` in this folder), whose `game-scripts`
-override this page turns into patches.
+**Status: design.** Nothing on this page is built. It is a design in the sense of [Page
+kinds](../writing-docs.md#page-kinds): what is built moves into a guide. It builds on [Coney Studio: the Lua
+SDK](lua-sdk.md) (the two runtimes, the [compiler](lua-sdk.md#compiler)), on [Lua 4.0
+bytecode](../../research/formats/lua-bytecode.md) (the decompiler) and on the script security and mods design of
+[#1062](issue:1062) ([Script security](security.md) and [Mods, packages and loading](mods.md)), whose `game-scripts`
+permission this page's patches run under.
 
 A maintainer decided the frame:
 
@@ -223,7 +223,7 @@ overlap. All patches of one script share one base text (a 4.0 patch meeting a 5.
   both. Two changes that compile together but disagree in what they do cannot be detected, as for any two mods'
   scripts.
 
-This replaces the open mods page's rule that two mods overriding one game script cannot both be enabled
+This replaces the mods page's earlier rule that two mods overriding one game script cannot both be enabled
 ([What changes on other pages](#other-pages)).
 
 ## Compiling and running a patched script {#compiling}
@@ -244,12 +244,12 @@ This replaces the open mods page's rule that two mods overriding one game script
 - **Prepared once, when the mods start**: every patch applied, merged and compiled before the first level, so a broken
   patch is reported at start, never in the middle of a mission. The compiled programs are kept for the session.
 - **A modded session.** A session with any patched script is modded: saves go to the modded folder and the run log
-  says so, as for any mod (the open mods page's Modded saves and replays). Patching game scripts is the `game-scripts`
-  permission of the open security page, which the player approves; Studio writes it into the manifest from the
-  patches the project holds.
+  says so, as for any mod ([Modded saves and replays](mods.md#saves-replays)). Patching game scripts is the
+  `game-scripts` permission of [Script security](security.md#declared), which the player approves; Studio writes it into
+  the manifest from the patches the project holds.
 - **No bytecode from a mod.** A patch is applied to the player's own chunk and compiled from source by Coney; no mod
-  ever supplies bytecode, which keeps the open security page's rule that the game state runs only the player's own
-  chunks and Coney's compiler's output.
+  ever supplies bytecode, which keeps [Script security](security.md#surface)'s rule that the game state runs only the
+  player's own chunks and Coney's compiler's output.
 
 ## Lua 5.4: the translator {#translator}
 
@@ -494,10 +494,10 @@ When this design is accepted:
   a level a mod translated, if the maintainer chooses 5.4.
 - [Asset and script architecture: Three parts](../asset-and-script-architecture.md#script-parts): the *mod* provider of
   the script catalog is a patched script (and, with 5.4, a translated one), not a file from `overrides/scripts/`.
-- The open mods page of [#1062](issue:1062) (`mods.md`), Load order: two mods' patches of one script merge, and the
+- [Mods: Load order](mods.md#load-order) (done there): two mods' patches of one script merge, and the
   player chooses only on a real overlap ([Two mods](#two-mods)), instead of being refused.
-- The open security page of [#1062](issue:1062) (`security.md`): its build issue for game-script overrides as Lua 4.0
-  source becomes this page's issue 5; the `.cpatch` parser joins the parsers it fuzzes.
+- [Script security](security.md#build-issues) (done there): its build issue 12 keeps only the safety rules around this
+  page's issue 5; the `.cpatch` parser joins the parsers it fuzzes.
 - [UI and menus: the Mods screen](ui.md#mods-screen): the choice the player makes on a real overlap between two
   mods' patches of one script, recorded with both package hashes ([Two mods](#two-mods)).
 - [Editor experience: the panels](editor-experience.md#panel-list): the File system panel lists the install's game
@@ -557,8 +557,8 @@ In order. Issues 1 to 6 are 4.0 patching; issue 7 is the probe; issues 8 to 11 f
    command line for modders who use another editor. Tests on synthetic text: apply gives the result hash; a wrong base,
    a damaged range and a damaged result are refused with their messages; a made patch holds no line of the base; two
    disjoint patches merge; two overlapping ones report one conflict; touching ranges merge.
-5. **core: Run patched game scripts in the game state.** Reworks the open security page's issue for game-script
-   overrides: the catalog's patched provider, patches applied, merged and compiled when the mods start; the refusals of
+5. **core: Run patched game scripts in the game state.** Beside [Script security](security.md#build-issues)' issue 12:
+   the catalog's patched provider, patches applied, merged and compiled when the mods start; the refusals of
    [Refusals](#refusals), the Xbox-only skip, the player's recorded merge choices, the `game-scripts` permission, the
    modded session. Tests with a synthetic chunk: a patched script runs in the original's place at the level entry, by
    `doFile` and by `preLoadFile`; a mismatching chunk stops only that mod; a missing script skips the patch; a merge

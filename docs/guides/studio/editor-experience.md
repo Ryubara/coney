@@ -398,9 +398,8 @@ under version control and read without Studio, which Roblox's one-file place is 
 - **Export** (*File > Export project...*) packs the finished project into one `.cmod` file (a working name) for Coney's
   mods folder: the manifest, the levels, the scripts and the project's own assets, never `.studio/` and never a `game:/`
   file, which a player's own disc supplies. Export saves first, checks that the manifest's level and scripts exist, and
-  says what it left out and why. What goes into the package, and Coney reading it from
-  the mods folder in place of an unpacked project folder, are the project formats page's
-  ([The `.cmod` package](project-formats.md#cmod)).
+  says what it left out and why. What goes into the package is the project formats page's ([The `.cmod`
+  package](project-formats.md#cmod)), and Coney reading it where it lies the mods page's ([Mods](mods.md#cmod)).
 - **Moves, renames and deletes happen in the File system panel**, Godot's rule, so Studio can fix the project's
   references to the file; a delete lists the files that refer to it and asks first, and goes to the system's recycle
   bin. A change made outside Studio (an editor saving a script, a texture repainted) is seen and the file is imported

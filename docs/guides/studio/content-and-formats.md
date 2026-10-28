@@ -57,6 +57,7 @@ script use, as Godot's `res://` paths and Unity's `Resources` paths are.
 | --- | --- | --- | --- |
 | `project:/` | A file in the project folder, by its path from the root | `project:/models/cj.glb` | The import table ([The import step](#import)) |
 | `project:/...#name` | One part of a file that holds several: a clip of a glTF or FBX, a mesh of a map file | `project:/anims/dance.glb#Spin` | The same, then the part by name |
+| `mod:/` | A file of another mod the project depends on, by the mod's name and the file's path in it ([Dependencies and exports](mods.md#dependencies)) | `mod:/crate-pack/models/crate.glb` | That mod's import table, read-only |
 | `game:/` | An asset on the player's disc, by the names `coney-tools extract` writes ([extract](../coney-tools-disc.md#extract)) | `game:/textures/warr_re_cv/warr_re_cv` | The asset store, by the original's id |
 
 **The `game:/` names** are the extract tool's, so a modder sees one set of names in Studio, in the `open/` modding kit
@@ -119,9 +120,10 @@ flowchart LR
   maps each `project:/` path, and each redirect, to its engine form.
 - **Coney loads engine forms only**, by `project:/` path, through a project source in the asset store beside the disc
   sources ([Sources](../asset-and-script-architecture.md#sources)). A finished project reaches players who do not run
-  Studio as a `.cmod` holding its engine forms ([The `.cmod` package](project-formats.md#cmod)); Coney reads one from
-  the mods folder in place of its unpacked folder (build issue 13), and the Lua SDK design's loader takes it from there
-  ([The mods folder](lua-sdk.md#mods-folder)).
+  Studio as a `.cmod` holding its engine forms ([The `.cmod` package](project-formats.md#cmod)); Coney reads one in the
+  mods folder where it lies, never unpacked ([Script security](security.md#build-issues) build issue 4, under the rules
+  of [Mods](mods.md#cmod)), and the Lua SDK design's loader takes it from there ([The mods
+  folder](lua-sdk.md#mods-folder)).
 
 | Source | Kind | Engine form | Read in Coney by |
 | --- | --- | --- | --- |
@@ -718,12 +720,12 @@ In the order they should come, after the editor experience design's shell, File 
 12. **tools: Add project missions with checkpoints.** The `.mission` file, starting a project mission at a checkpoint,
     objectives shown; after the mods runtime ([Lua SDK](lua-sdk.md#build-issues)). Tests: a synthetic mission starts at
     checkpoint 2 with the player at its spawn and its setup function called once.
-13. **tools: Add the `.cmod` export and Coney reading a `.cmod`.** A project exported as one zip with its manifest,
-    the file list and hashes, the engine forms and optionally the sources, and none of the disc: derived files, files
-    matching a disc asset's hash and disc traces refused and listed ([The `.cmod` package](project-formats.md#cmod));
-    and Coney reading a `.cmod` in the mods folder in place of its unpacked folder, checking the hashes, for the Lua
-    SDK's loader. Tests: a synthetic project exports to the expected entries byte for byte; a file equal to a synthetic
-    disc asset is refused; a scripts-only and a level-only project both export, and both load from the `.cmod`.
+13. **tools: Add the `.cmod` export.** A project exported as one zip with its manifest, the file list and hashes, the
+    engine forms and optionally the sources, and none of the disc: derived files, files matching a disc asset's hash and
+    disc traces refused and listed ([The `.cmod` package](project-formats.md#cmod)); Coney reads it with the reader of
+    [Script security](security.md#build-issues) build issue 4, which comes first. Tests: a synthetic project exports to
+    the expected entries byte for byte; a file equal to a synthetic disc asset is refused; a scripts-only and a
+    level-only project both export, and both load from the `.cmod`.
 14. **graphics: Add override packs.** The override source over every enabled `.cmod`'s `overrides.layout`, in load
     order, for textures first (the roadmap's test pack that replaces a named texture), then movies, sounds and
     character looks, with the format checks and the per-asset winner in the run log
