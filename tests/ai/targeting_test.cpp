@@ -117,6 +117,21 @@ TEST_CASE("an enemy whose attack slots are full to nearer attackers is ruled out
     CHECK(coney::ai::canTakeSlotOn(nearer, target));
 }
 
+TEST_CASE("a scorer that holds a slot on an enemy whose slots are full may not take one", "[ai][targeting]") {
+    // Expected: ai-fights.md#enemy-score, confirmed (code): Brain_CanTakeSlotOn returns 0 for a holder
+    Scene scene;
+    Brain& target = scene.add(40.0F, 40.0F, 0.0F, BrainType::Player);
+    target.setAttackSlotCount(1);
+    Brain& holder = scene.add(40.0F, 42.0F, 180.0F, BrainType::Gang);
+    holder.setTarget(&target);
+    REQUIRE(holder.hasAttackSlot());
+    CHECK_FALSE(coney::ai::canTakeSlotOn(holder, target));
+    CHECK(scoreEnemy(holder, target, term::kDistance) == kRuledOut);
+    // With a free slot he may.
+    target.setAttackSlotCount(2);
+    CHECK(coney::ai::canTakeSlotOn(holder, target));
+}
+
 TEST_CASE("the pick takes the best score above 0, keeps the previous target on a near tie and skips the invalid",
           "[ai][targeting]") {
     // Expected: ai-fights.md#enemy-score, confirmed (code)
