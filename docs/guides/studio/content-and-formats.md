@@ -118,9 +118,9 @@ flowchart LR
   time ([#1055](issue:1055) leaves `.studio/` out of a shared project). The import table (`.studio/imported/table`)
   maps each `project:/` path, and each redirect, to its engine form.
 - **Coney loads engine forms only**, by `project:/` path, through a project source in the asset store beside the disc
-  sources ([Sources](../asset-and-script-architecture.md#sources)). How a project is packaged for players who do not
-  run Studio (sources and engine forms, or engine forms alone) is the Lua SDK design's, with resources
-  ([Lua SDK: the mods folder](lua-sdk.md#mods-folder)).
+  sources ([Sources](../asset-and-script-architecture.md#sources)). A finished project reaches players who do not
+  run Studio as a `.cmod` holding its engine forms ([The `.cmod` package](project-formats.md#cmod)); how Coney loads
+  one is the Lua SDK design's ([The mods folder](lua-sdk.md#mods-folder)).
 
 | Source | Kind | Engine form | Read in Coney by |
 | --- | --- | --- | --- |
@@ -271,11 +271,14 @@ sandbox's default light, which plays at once. From there the user takes one of t
 | **(b) Build from scratch** | Primitives, colliders, placed imported meshes, walkable areas and entities | Only what the file holds |
 | **(c) Import a whole map from Blender** | One `map` statement naming the imported file, the statements its markers became, and the edits made since | The map's meshes and collision, then the rest of the file |
 
-**(a) Loading a game level** puts a reference to it in the project, never a copy. The level file says
-`base game:/levels/level99`; the world, collision, path map, placed objects and script stay on the player's disc and
-are read through the asset store each time ([Paths](#paths)). Everything the user changes is saved as an **override**
-in the level file: a statement that names the disc thing it changes and says what changes, so the project holds only
-the edit. Such a level is a modded session in the store's terms (simulation kinds from outside the disc,
+**(a) Loading a game level** puts a reference to it in the project, never a copy. The level file says `base
+game:/levels/level99`; the world, collision, path map, placed objects and script stay on the player's disc and are read
+through the asset store each time ([Paths](#paths)). Everything the user changes is saved as an **override** in the
+level file: a statement that names the disc thing it changes and says what changes, so the project holds only the edit.
+At Play such a level is the `game:/` level of the Lua SDK's Play order: the game state runs `global.lua` and the level's
+own script as the game does ([Play, step by step](lua-sdk.md#play), step 4), then Coney applies the overrides and makes
+the project's additions, before the `levelStart` handlers; a level file with no `base` runs no level script, as that
+step says. Such a level is a modded session in the store's terms (simulation kinds from outside the disc,
 [Layers](../asset-and-script-architecture.md#asset-layers)).
 
 | What is changed | Override | How Coney applies it |
@@ -547,13 +550,13 @@ copied out ([LEGAL.md](repo:LEGAL.md#no-game-data)). A level's checkpoints and w
 pages ([Missions](../../missions/index.md)).
 
 **Edit: a project mission** is a mission file ([Project formats](project-formats.md#formats)) naming the level it plays
-in, its scripts, and its **checkpoints**: for each, the spawn point the player restarts at, the function of the
-mission's script that sets it up and the objective text shown (`SetCheckPoint`, `HUDSetObjective`, both implemented).
-The mission's logic is Lua calling natives, written in the script editor; the runtime that loads a project's scripts,
-the entry points, hot reload and the sandbox are the [Lua SDK design](lua-sdk.md)'s ([entry
-points](lua-sdk.md#entry-points), [Play](lua-sdk.md#play)). This page fixes only that a mission is a level plus scripts
-plus checkpoints, all as `project:/` paths, and that its objective strings are the project's own (the game's text is
-never copied in).
+in and its **checkpoints**: for each, the spawn point the player restarts at, the function of the project's scripts
+(loaded from the manifest like every project script) that sets it up and the objective text shown (`SetCheckPoint`,
+`HUDSetObjective`, both implemented). The mission's logic is Lua calling natives, written in the script editor; the
+runtime that loads a project's scripts, the entry points, hot reload and the sandbox are the [Lua SDK
+design](lua-sdk.md)'s ([entry points](lua-sdk.md#entry-points), [Play](lua-sdk.md#play)). This page fixes only that a
+mission is a level plus checkpoints that name spawn points and functions of the project's scripts, and that its
+objective strings are the project's own (the game's text is never copied in).
 
 **Needs from Coney:** the mods runtime ([Script mods](../../roadmap.md#script-mods)); starting a project mission at a
 checkpoint, as `Coney.StartLevel` does for the story.

@@ -139,8 +139,9 @@ handles the game natives take ([Assets by path](lua-sdk.md#assets) for the nativ
 
 ### Prefabs {#prefabs}
 
-A **prefab** is a file of entities placed many times: any mix (five fighters, a spawn point, crates, colliders and a
-script for an ambush), with its own tree.
+A **prefab** is a file of entities placed many times: any mix (five fighters, a spawn point, crates and colliders for an
+ambush), with its own tree. A prefab holds no script: the project's scripts find its instances by name or tag
+([Names and tags](#names-tags)).
 
 - **The prefab file** is a level file's entity statements under `format prefab 1`, with ids local to the prefab and one
   root entity whose transform is the instance's origin. It holds no `base`, no `map` and no level settings (sky, fog,
@@ -164,7 +165,7 @@ script for an ambush), with its own tree.
 | File | Statements | Example |
 | --- | --- | --- |
 | `.character` | `base TYPE`, `model PATH`, `texture PATH`, `slot ANIM_ID PATH#CLIP` (an anim set override), `scale=` | `base 30` then `model project:/models/cj.glb` |
-| `.mission` | `level PATH`, `script PATH`, `checkpoint N spawn=ID setup=FUNCTION objective="..."` | `checkpoint 1 spawn=s1 setup=Start objective="Reach the gate"` |
+| `.mission` | `level PATH`, `checkpoint N spawn=ID setup=FUNCTION objective="..."` (a function of the manifest's scripts) | `checkpoint 1 spawn=s1 setup=Start objective="Reach the gate"` |
 | `overrides.layout` | `override GAME_PATH PROJECT_PATH` | `override game:/textures/warr_re_cv/warr_re_cv project:/textures/re.png` |
 | `.import` sidecar | `importer`, `id`, `scale`, `bone SOURCE POSE_BONE`, `clip NAME keep=`, `node NAME collide=`, `loop START END`, `derived GAME_PATH` | `bone mixamorig:Hips 1` |
 
@@ -178,9 +179,10 @@ project on the player's machine and is left out of a package.
 ## The `.cmod` package {#cmod}
 
 A finished project is exported as one file, a **`.cmod`** (the working name): a zip of the project folder with its
-manifest at the root, which the player puts in the one mods folder ([The mods folder](lua-sdk.md#mods-folder)). How
-Coney loads it, by hand or at start as its manifest says, and how mods depend on each other, are the Lua SDK design's.
-What goes in, from the formats on this page:
+manifest at the root. This page owns what goes into one; how Coney loads it, by hand or at start as its manifest says,
+and how mods depend on each other, are the Lua SDK design's ([The mods folder](lua-sdk.md#mods-folder)), whose loader
+reads a project as a folder today: reading a `.cmod` there in place of its unpacked folder is the change that page
+takes in. What goes in, from the formats on this page:
 
 | In the project | In the `.cmod` |
 | --- | --- |
