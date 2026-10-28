@@ -343,6 +343,7 @@ nav:
           - Technology: guides/studio/technology.md
           - Content and formats: guides/studio/content-and-formats.md
           - Project formats: guides/studio/project-formats.md
+          - UI and menus: guides/studio/ui.md
       - Conventions: guides/conventions.md
       - Repository conventions: guides/repo-conventions.md
       - Enforcement map: guides/enforcement.md
