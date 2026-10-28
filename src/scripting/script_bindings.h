@@ -105,6 +105,9 @@ class BindingHost {
     /// `HUDLaunchMissionFailed(reason)`: show the mission-failed mode (0xc) with `reason`. Does nothing by default, for
     /// a host without game modes.
     virtual void launchMissionFailed(std::string_view /*reason*/) {}
+    /// `HUDLaunchANGameOver(on)`: show the Armies of the Night game-over mode (0xd). Does nothing by default, for a
+    /// host without game modes.
+    virtual void launchArmiesGameOver() {}
     /// `ShowRumbleModeIntro(onDone, names)`: the Rumble intro and countdown over play, then Lua `onDone()`. Does
     /// nothing by default, for a host without play.
     virtual void showRumbleModeIntro(std::string_view /*onDone*/, std::span<const std::string> /*names*/) {}

@@ -15,7 +15,7 @@ constexpr std::uint8_t kStickRest = 128;
 // The switches a level's camera reset turns off; the rest are on (0x00122b80).
 constexpr std::array<std::size_t, 2> kSwitchesOff{1, 13};
 
-// The follow camera's view: at its position facing its aim point, through its lens and `farClip`.
+// The follow camera's view: at its position facing its aim point, through its lens and `farClip`. @coney-only glue
 CameraView followView(const FollowCamera& follow, float farClip) {
     return viewLookingAt(follow.position(), follow.aimPoint(), follow.fieldOfView(), follow.nearClip(), farClip);
 }
@@ -23,6 +23,8 @@ CameraView followView(const FollowCamera& follow, float farClip) {
 } // namespace
 
 Cameras::Cameras() {
+    // Not ported: the players' view flags, the global one and the views laid out again (#549); the registered-object
+    // list, the hide-and-seek flag and the word 0x00510548 cleared, which Coney does not keep (#1017).
     m_switches.fill(true);
     for (const std::size_t off : kSwitchesOff) {
         m_switches.at(off) = false;
@@ -138,7 +140,7 @@ void Cameras::keepHumansInView(const raycast::CollisionMesh* mesh) {
     for (const double human : found->second.keptInView) {
         const std::optional<anim::Vec3> feet = m_locate(human);
         if (!feet) {
-            continue;
+            continue; // stand-in (#1017): the original's loop stops at the first human it cannot find
         }
         const auto before = m_keptBefore.find(human);
         const anim::Vec3 from = before != m_keptBefore.end() ? before->second : *feet;
@@ -150,6 +152,8 @@ void Cameras::keepHumansInView(const raycast::CollisionMesh* mesh) {
                 m_move(human, now);
             }
         }
+        // Not ported (#1017): a human in the falling states is landed here and his new height eased 30% of the way
+        // from the old.
         m_keptBefore.insert_or_assign(human, now);
     }
 }
@@ -204,8 +208,9 @@ std::optional<double> Cameras::setupPath(double handle, double start, float seco
                                          float fieldOfView, float farClip) {
     const std::optional<CameraRef> from = find(start);
     if (!from) {
-        return std::nullopt;
+        return std::nullopt; // Coney's choice: no start camera, no path (the original's case is not traced)
     }
+    // Not ported (#549): a start camera of another player's kind (rail, follow, hood) swapped for this player's own.
     const CameraView view = viewOf(*from);
     if (m_pathHandle == 0.0) {
         m_pathHandle = handle;
@@ -281,6 +286,8 @@ void Cameras::modifyRail(std::uint32_t param, float value, float seconds) {
 }
 
 void Cameras::createFixed(double handle, double target, const FixedCamera& camera) {
+    // Stand-in (#692): the original resolves the target first and makes no camera for a handle that names nothing;
+    // Coney's binding (makeCameraCreateFixed) tests only for NilHandle, so a stale handle still makes one.
     m_fixed.insert_or_assign(handle, camera);
     if (std::ranges::find(m_targets, target) == m_targets.end()) {
         (void)this->target(0, target);
@@ -306,8 +313,9 @@ void Cameras::stepTracking(CameraRef ref, float seconds) {
     case CameraKind::Rail:
         if (m_rail && m_place) {
             const auto placed = m_place(m_railTarget);
+            const std::optional<anim::Vec3> velocity = m_velocity ? m_velocity(m_railTarget) : std::nullopt;
             m_rail->update(placed ? std::optional<anim::Vec3>(placed->first) : std::nullopt, enabled(kSwitchRailLead),
-                           seconds);
+                           seconds, velocity.value_or(anim::Vec3{}));
         }
         break;
     case CameraKind::Fixed:
@@ -446,6 +454,9 @@ void Cameras::makeActive(double handle, float seconds) {
     if (m_missionFailed && m_current.kind == CameraKind::Failed) {
         return;
     }
+    // Not ported: the player argument, other players' cameras and the split-screen views and hand-overs (#549); the
+    // third argument's script function, stored and called when the camera is made current, and the previous base
+    // camera's deactivation (#951).
     const std::optional<CameraRef> ref = find(handle);
     if (!ref) {
         return;
@@ -456,8 +467,17 @@ void Cameras::makeActive(double handle, float seconds) {
     if (ref->kind == CameraKind::Path && m_path) {
         m_path->activate();
     }
+    // The rail snaps its settings and starts over (CamRail_Activate); with two points or more its reset runs one
+    // short update at once (CamRail_Reset), which does mode 3's start.
+    float placeSeconds = 0.0F;
+    if (ref->kind == CameraKind::Rail && m_rail) {
+        m_rail->activate();
+        if (m_rail->pointCount() >= 2) {
+            placeSeconds = RailCamera::kActivationSeconds;
+        }
+    }
     // A tracking camera is placed on its target before it is first shown.
-    stepTracking(*ref, 0.0F);
+    stepTracking(*ref, placeSeconds);
     // A scene camera keeps the screen: the script changes what the scene returns to.
     if (m_current.kind == CameraKind::Scene) {
         if (!m_stack.empty()) {
@@ -534,6 +554,7 @@ void Cameras::setFollowZoom(FollowZoom preset) {
     }
 }
 
+// The follow camera's pitch, when there is one.
 void Cameras::setFollowAngle(float degrees) {
     if (m_follow != nullptr) {
         m_follow->setPitch(degrees);
@@ -541,7 +562,8 @@ void Cameras::setFollowAngle(float degrees) {
 }
 
 void Cameras::beginScene(const CameraView& view) {
-    // The camera underneath a blend is its destination.
+    // The camera underneath a blend is its destination. Stand-in (#1017): no depth limit, where the original's stack
+    // holds two; scenes do not nest in play, so it never fills.
     if (m_current.kind != CameraKind::None && m_current.kind != CameraKind::Scene) {
         m_stack.push_back(m_current);
     }

@@ -178,14 +178,16 @@ inline constexpr float kPromptTextHeight = 0.06F;
 /// The prompt text's y in the clubhouse (`HUDEnableClubActionText(true)`, `0x00607d74`), near the top.
 inline constexpr float kClubPromptY = 0.125F;
 
-/// The text scoreboard (`HUDEnableTextProgress`) and the stopwatch. **Coney stand-ins**: the original's places (the
-/// floats at `0x0050d56c`, `0x0050d574`, `0x0050d57c`) and its text layout (`0x001ccf10`) are not on the page, so the
-/// rows stand down the left side and the stopwatch top centre, in the text font.
+/// The text scoreboard (`HUDEnableTextProgress`). **Coney stand-ins** (#1018): the original's places (the floats at
+/// `0x0050d56c`, `0x0050d574`, `0x0050d57c`) and its text layout (`0x001ccf10`) are not on the page, so the rows stand
+/// down the left side in the text font.
 inline constexpr GuiPoint kScoreRowsPlace{0.06F, 0.22F};
 inline constexpr float kScoreRowStep = 0.05F;
 inline constexpr float kScoreValueOffset = 0.3F;
 inline constexpr float kScoreRowHeight = 0.04F;
-inline constexpr GuiPoint kStopWatchPlace{0.44F, 0.08F};
+/// The stopwatch's minutes form, right-aligned there (`0x0050eb2c`, `0x0050eb30`: StopWatchHud_ApplyVideoMode's
+/// default mode, docs/research/hud-functions-panels.md#fn-after-textentrypad).
+inline constexpr GuiPoint kStopWatchPlace{1.0F, 0.24F};
 inline constexpr graphics::Rgba kPromptColour{128, 128, 128, 255};
 /// The raise over a showing hint box (less the box's height), else over a scroll-in message (less its height).
 inline constexpr float kPromptRaiseOverHint = 0.05F;

@@ -57,7 +57,12 @@ struct ObjectTypeInfo {
     anim::Vec3 size{};         ///< Argument 8: the object's box, metres.
     std::uint8_t material = 0; ///< Argument 13: the material its triangles take.
     float leafWidth = 0.0F;    ///< Argument 15 (`f15`, type `+0x68`, property 5): a door leaf's width, metres.
-    int objectType = 0;        ///< Argument 19: `TYPE_*` (object_type).
+    /// Arguments 16-18 (`f16`-`f18`, type `+0x6c`-`+0x74`, properties 6-8): a sliding door's speed and its two slide
+    /// lengths (docs/research/script-types.md#sliding-doors).
+    float property6 = 0.0F;
+    float property7 = 0.0F;
+    float property8 = 0.0F;
+    int objectType = 0; ///< Argument 19: `TYPE_*` (object_type).
 };
 
 /// Finds an object type's configuration by name; nothing when no `CfgObj` named it.
@@ -230,6 +235,10 @@ void markTriangles(ObjectWorld& world, std::span<const std::uint32_t> triangles,
 /// `rotation` turned by `degrees` about the vertical axis (applied after it, in the object's own frame): the half-angle
 /// quaternion the doors' swing builds (docs/research/objects.md#door-states).
 [[nodiscard]] anim::Quat turnAboutVertical(anim::Quat rotation, float degrees);
+/// `rotation` turned by `degrees` about the unit `axis` of its own frame (applied after it): the vertical sliding
+/// door's second leaf turns about its y axis (docs/research/script-types.md#sliding-doors).
+/// @orig 0x003f4950 SubSlidingDoor_PlaceLeaf (unknown)
+[[nodiscard]] anim::Quat turnAboutOwnAxis(anim::Quat rotation, anim::Vec3 axis, float degrees);
 
 /// `v` rotated by `rotation`.
 [[nodiscard]] anim::Vec3 rotate(anim::Quat rotation, anim::Vec3 v);

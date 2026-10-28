@@ -29,4 +29,21 @@ const std::array<StoryMission, 18>& storyMissions() {
     return kMissions;
 }
 
+const std::array<BonusMission, 10>& bonusMissions() {
+    // Kept in step with research/missions.yaml's flashback and armies groups by python/tests/test_story_missions.py.
+    static constexpr std::array<BonusMission, 10> kMissions{{
+        {"Flashback 1", "level82", 4},
+        {"Flashback 2", "level92", 3},
+        {"Flashback 3", "level83", 6},
+        {"Flashback 4", "level20", 6},
+        {"Flashback 5", "level11", 6},
+        {"Armies of the Night 1", "level60", 3},
+        {"Armies of the Night 2", "level61", 3},
+        {"Armies of the Night 3", "level62", 3},
+        {"Armies of the Night 4", "level63", 3},
+        {"Armies of the Night 5", "level64", 4},
+    }};
+    return kMissions;
+}
+
 } // namespace coney::debug

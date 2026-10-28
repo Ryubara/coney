@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The pause menu, its Yes/No box and the mission-failed menu (docs/research/pause.md), driven frame by frame with a
-// synthetic pad and synthetic strings.
+// The pause menu, its Yes/No box, the mission-failed menu and the Armies game-over screen (docs/research/pause.md),
+// driven frame by frame with a synthetic pad and synthetic strings.
 // Each new case here failed first on the unit's stubbed source (coney-tools original fails-first).
 #include "gui/pause_menu/pause_menu.h"
 
@@ -20,6 +20,7 @@
 #include "graphics/overlay_camera.h"
 #include "graphics/sprite_batch.h"
 #include "gui/global_strings.h"
+#include "gui/pause_menu/armies_game_over_menu.h"
 #include "gui/pause_menu/mission_failed_menu.h"
 #include "gui/pause_menu/pause_items.h"
 #include "gui/pause_menu/yes_no_box.h"
@@ -29,6 +30,8 @@
 using Catch::Approx;
 using coney::Pad;
 using coney::PadSample;
+using coney::gui::ArmiesGameOverChoice;
+using coney::gui::ArmiesGameOverMenu;
 using coney::gui::FailedItem;
 using coney::gui::GlobalStrings;
 using coney::gui::GuiFrame;
@@ -591,6 +594,79 @@ TEST_CASE("pause menu: the Controls screen takes its layout from the language an
     REQUIRE(paused.menu.screen() == PauseScreen::Controls);
     CHECK(paused.menu.controls().label(1).style().x == Catch::Approx(0.16F));
     CHECK(paused.menu.controls().tips().visibleCount() == 10);
+}
+
+TEST_CASE("Armies game over: the countdown from 9, one step a second, then the end phase", "[pause_menu]") {
+    // Expected: pause.md#an-game-over, confirmed (code)
+    GlobalStrings strings = syntheticStrings();
+    ArmiesGameOverMenu menu;
+    menu.setStrings(&strings);
+    menu.open(10'000);
+    CHECK(menu.title().text() == "#ce");
+    CHECK(menu.digit().text() == "9");
+    // The digit changes only once more than a second has passed.
+    menu.update(GuiFrame{11'000, nullptr});
+    CHECK(menu.count() == 9);
+    menu.update(GuiFrame{11'001, nullptr});
+    CHECK(menu.count() == 8);
+    CHECK(menu.digit().text() == "8");
+    std::uint64_t now = 11'001;
+    for (int i = 0; i < 8; ++i) {
+        now += 1001;
+        menu.update(GuiFrame{now, nullptr});
+    }
+    CHECK(menu.count() == 0);
+    CHECK_FALSE(menu.ending());
+    // 0 shows for a step too.
+    now += 1001;
+    menu.update(GuiFrame{now, nullptr});
+    CHECK(menu.ending());
+    CHECK(menu.title().text() == "#cf");
+    REQUIRE(menu.grid().items() == 2);
+    CHECK(menu.grid().code(0) == static_cast<int>(ArmiesGameOverChoice::Replay));
+    CHECK(menu.grid().code(1) == static_cast<int>(ArmiesGameOverChoice::Quit));
+    CHECK_FALSE(menu.choice().has_value());
+}
+
+TEST_CASE("Armies game over: Start with a credit continues, without one ends the countdown", "[pause_menu]") {
+    // Expected: pause.md#an-game-over, confirmed (code)
+    GlobalStrings strings = syntheticStrings();
+    std::vector<int> cues;
+    ArmiesGameOverMenu credit;
+    credit.setStrings(&strings);
+    credit.setSoundSink([&cues](int cue) { cues.push_back(cue); });
+    credit.open(1000);
+    credit.pressStart(true, 1500);
+    CHECK(credit.choice() == ArmiesGameOverChoice::Continue);
+    CHECK(cues == std::vector<int>{ArmiesGameOverMenu::kCue});
+
+    ArmiesGameOverMenu none;
+    none.setStrings(&strings);
+    none.open(1000);
+    none.pressStart(false, 1500);
+    CHECK_FALSE(none.choice().has_value());
+    CHECK(none.ending());
+    CHECK(none.endStartMs() == 1500);
+}
+
+TEST_CASE("Armies game over: the end phase takes input only once faded in", "[pause_menu]") {
+    // Expected: pause.md#an-game-over, confirmed (code)
+    GlobalStrings strings = syntheticStrings();
+    ArmiesGameOverMenu menu;
+    menu.setStrings(&strings);
+    Driver<ArmiesGameOverMenu> driver{menu};
+    menu.open(driver.nowMs);
+    menu.pressStart(false, driver.nowMs);
+    // Cross during the fade-in does nothing.
+    driver.tap(coney::pad::kCross);
+    CHECK_FALSE(menu.choice().has_value());
+    // After 2 s: right selects Quit, cross takes it.
+    for (int i = 0; i < 70; ++i) {
+        driver.step();
+    }
+    driver.tap(coney::pad::kRight);
+    driver.tap(coney::pad::kCross);
+    CHECK(menu.choice() == ArmiesGameOverChoice::Quit);
 }
 
 TEST_CASE("pause menu: Options takes the pad: cross opens Camera, left turns Invert P1 on and the game is told, "

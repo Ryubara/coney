@@ -14,10 +14,14 @@ namespace coney::script {
 /// The HUD bindings Coney implements: every HUD binding the first mission calls, the few beside them that share their
 /// state, and the end credits' (`PreloadCredits`, `ShowCredits`, `CfgCredits`). All real; installBindings() registers
 /// them.
-inline constexpr std::array<std::string_view, 41> kHudBindings{"CfgCredits",
+inline constexpr std::array<std::string_view, 45> kHudBindings{"CfgCredits",
                                                                "FlashRageBar",
                                                                "HUDSetChaseHUDState_DESTROY",
                                                                "ForceShowPlayerHud",
+                                                               "HUDANEnableJoinMsg",
+                                                               "HUDANGetCredit",
+                                                               "HUDANSetCredit",
+                                                               "HUDANSetGOSignMode",
                                                                "HUDAddRadarHuman",
                                                                "HUDAddRadarMissionObjective",
                                                                "HUDAddSecondaryRadarMissionObjective",

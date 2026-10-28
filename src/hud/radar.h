@@ -153,7 +153,7 @@ void addRadarDisc(graphics::SpriteBatch& batch, graphics::OverlayPoint centre, f
                   const RadarState& radar, graphics::Rgba colour);
 
 /// Whether a blip of this kind shows now: never type 5 (no blip); types 6 and 8 (enemies, police) only when marked by
-/// the scanner (**Coney stand-in**: no marks yet, so never); a new objective blinks for its first 100 updates; a
+/// the scanner (**Coney stand-in**, #1018: no marks yet, so never); a new objective blinks for its first 100 updates; a
 /// flashing blip blinks the same way.
 [[nodiscard]] bool radarBlipShown(const RadarBlip& blip, std::uint64_t updates);
 

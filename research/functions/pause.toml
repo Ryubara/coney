@@ -11,6 +11,20 @@ coney = "src/gamemodes/pause_mode.h:PauseMode::toggle"
 status = "legacy"
 
 [[function]]
+address = 0x001557f8
+name = "ANGameOver_Toggle"
+page = "pause.md#an-game-over"
+role = "pushes or pops the Armies game-over mode (0xd)"
+level = "confirmed-code"
+coney = "src/gamemodes/armies_game_over_mode.h:ArmiesGameOverMode::launch"
+status = "compared"
+
+[[function.gaps]]
+what = "the game state's level-end request (`+0x14c`): 0 after a continue, 3 on Quit"
+relation = "not-ported"
+issue = 669
+
+[[function]]
 address = 0x0015dbb8
 name = "PauseMode_Enter"
 page = "pause.md#original-structure"
@@ -37,6 +51,56 @@ name = "PauseMode_Update"
 page = "pause.md#original-structure"
 level = "confirmed-code"
 coney = "src/gamemodes/pause_mode.h:PauseMode::update"
+status = "compared"
+
+[[function]]
+address = 0x001cede8
+name = "HUD_LaunchANGameOver"
+page = "pause.md#an-game-over"
+role = "opens or closes the Armies game-over screen"
+level = "confirmed-code"
+coney = "src/gamemodes/armies_game_over_mode.h:ArmiesGameOverMode::launch"
+status = "compared"
+
+[[function]]
+address = 0x001cef10
+name = "ANGameOver_Open"
+page = "pause.md#an-game-over"
+role = "the game-over screen's opening: CONTINUE? and the countdown from 9"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/armies_game_over_menu.h:ArmiesGameOverMenu::open"
+status = "compared"
+
+[[function]]
+address = 0x001cf3a8
+name = "ANGameOver_OnCommand"
+page = "pause.md#an-game-over"
+role = "the end phase's Replay and Quit"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/armies_game_over_menu.h:ArmiesGameOverMenu::update"
+status = "compared"
+
+[[function.gaps]]
+what = "both players' Armies scores cleared on either choice (Stats_ClearArmiesScores)"
+relation = "not-ported"
+issue = 704
+
+[[function]]
+address = 0x001cf468
+name = "ANGameOver_Update"
+page = "pause.md#an-game-over"
+role = "the countdown, Start to spend a credit, then GAME OVER"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/armies_game_over_menu.h:ArmiesGameOverMenu::update"
+status = "compared"
+
+[[function]]
+address = 0x001cfc78
+name = "ANGameOver_Render"
+page = "pause.md#an-game-over"
+role = "draws the game-over screen"
+level = "confirmed-code"
+coney = "src/gui/pause_menu/armies_game_over_menu.h:ArmiesGameOverMenu::render"
 status = "compared"
 
 [[function]]
@@ -325,7 +389,21 @@ page = "pause.md#fn-pausemenu"
 role = "adds, removes or ticks an objective in the pause menu's checklists (`HUDSetObjective`)"
 level = "confirmed-code"
 coney = "src/hud/hud.h:Hud::setObjective"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "Objective_GetIconPrefix's prefixes, mode 2's header rebuild and Bonus complete announcement, and the hint's unlock test"
+relation = "not-ported"
+issue = 662
+
+[[function]]
+address = 0x001db248
+name = "HUD_RemoveAllGoalText"
+page = "pause.md#fn-pausemenu"
+role = "clears the current-objectives checklist (`HUDRemoveAllGoalText`)"
+level = "confirmed-code"
+coney = "src/hud/hud.cpp:Hud::removeGoalText"
+status = "compared"
 
 [[function]]
 address = 0x001db278

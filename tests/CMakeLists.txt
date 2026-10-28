@@ -100,6 +100,7 @@ add_executable(coney_tests
     gui/text_layout_test.cpp
     gui/widgets_test.cpp
     gui/bar_test.cpp
+    hud/armies_hud_test.cpp
     hud/credits_test.cpp
     hud/health_rings_test.cpp
     hud/hud_test.cpp
@@ -481,6 +482,7 @@ if(CONEY_DEBUG_TOOLS)
         gamemodes/text_viewer_mode_test.cpp
         gui/debug_menu_view_test.cpp
         platform/disc_anim_player_test.cpp
+        platform/disc_armies_test.cpp
         platform/disc_face_test.cpp
         platform/disc_change_character_test.cpp
         platform/disc_debug_ai_sides_test.cpp

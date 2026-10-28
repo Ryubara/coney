@@ -2,6 +2,7 @@
 #include "hud/hud.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <format>
 #include <numbers>
@@ -21,15 +22,26 @@ constexpr int kObjectiveMark = 2;
 constexpr int kObjectiveSetMarked = 3;
 // The announcement kind that shows the script's own text.
 constexpr int kAnnounceCustom = 5;
-// The Armies of the Night levels, where the first-objective hint is not given.
-constexpr int kArmiesFirstLevel = 60;
-constexpr int kArmiesLastLevel = 64;
+// The stopwatch's seconds form, in the Armies of the Night levels (`0x0050eb34`, `0x0050eb38`).
+constexpr GuiPoint kArmiesStopWatchPlace{0.49F, 0.10F};
 // The player's arrow: the widget colour (`0x005fd310`, (178, 178, 178, 255) at run time), 0.03 overlay units wide
 // (`0x001c5210`).
 constexpr graphics::Rgba kPlayerBlipColour{178, 178, 178, 255};
 constexpr float kPlayerBlipSize = 0.03F;
 
-// The radars a player argument names: 0 or 1 one, anything else (2, the default) both.
+// Whether the action prompt's base y `base` takes the raise: ActionPrompt_Update adds it only to the bases 0.86, 0.78,
+// 1.0 and 0.8 (docs/research/hud-messages.md#action-prompts); the clubhouse's 0.125 takes none.
+// @orig 0x0019f528 ActionPrompt_Update (unknown)
+bool promptBaseRaised(float base) {
+    constexpr std::array<float, 4> kRaisedBases{0.86F, 0.78F, 1.0F, 0.8F};
+    return std::ranges::find(kRaisedBases, base) != kRaisedBases.end();
+}
+
+// The radars a player argument names: 0 or 1 one, anything else (2, the default) both: the two functions' choice of
+// radar. **Coney's choice**: a value other than 0, 1 or 2 means both, where the original hands it on unchecked as an
+// index into its two radars, a read past them that Coney does not reproduce.
+// @orig 0x001b4328 HUD_RadarOn (unknown)
+// @orig 0x001b43a8 HUD_RadarOff (unknown)
 std::array<bool, kPlayers> radarsOf(int player) {
     if (player == 0) {
         return {true, false};
@@ -42,12 +54,17 @@ std::array<bool, kPlayers> radarsOf(int player) {
 
 } // namespace
 
+// The arrow's place step: the direction (sin angle, -cos angle) / 20 / frames times the bob's counter, added to its
+// base (the counter's stepping is Hud::update's). **Coney's stand-in** (#1018): the frames are fixed at the default
+// 10; `HUDSetInstArrowAnimSpeed`'s value is kept but not used.
+// @orig 0x001b7330 InstArrow_Update (unknown)
 GuiPoint InstructionArrow::offset() const {
     return GuiPoint{step * std::sin(angle) / kArrowBobDivisor, -step * std::cos(angle) / kArrowBobDivisor};
 }
 
 Hud::Hud(HudServices services) : m_services(std::move(services)), m_hints(m_services.sound) {}
 
+// @coney-only the lookup through the HUD's string services, which may be absent in a test
 std::string Hud::read(const std::function<std::string(std::uint32_t)>& service, std::uint32_t id) {
     return service ? service(id) : std::string{};
 }
@@ -60,6 +77,8 @@ int Hud::attachPlayer(int slot, int type) {
     if (!target.attach(type)) {
         return -1;
     }
+    // The first attach inits the panel (interface `+0x14`), which in an Armies level turns its join message off.
+    m_armies.panelAttached(static_cast<std::size_t>(slot));
     if (!m_visible) {
         target.hide();
     }
@@ -67,7 +86,13 @@ int Hud::attachPlayer(int slot, int type) {
 }
 
 void Hud::levelSetUp() {
+    // Not ported, from HUD_InitLevel: the mission item icons, the status column, the HudLabel widget, the six menus'
+    // level hook and the virtual pads (#662); the crew status list (#515); the split-screen dividers (#549); in an
+    // Armies level the ANHud panels' parts (#662) and the boss picture (#570).
     m_radar.scriptOn = true;
+    // The Armies of the Night parts: no credits, the GO sign off and placed for the language, both join messages on
+    // until their panel's first attach (docs/research/armies.md#the-join-messages).
+    m_armies.levelSetUp(m_services.language ? m_services.language() : Language::English);
     // **Coney's stand-in** for HUD_Render's fade branch, which hides the spinner the memory-card screen left on at
     // the level's first fully faded frame (docs/research/hud.md#hud-spinner): a level's set-up hides it.
     m_spinner.set(false);
@@ -124,6 +149,8 @@ void Hud::showPlayers() {
     }
 }
 
+// HUD_SetObjective's header step: the slot's icon, the HUD colour and the heading string.
+// @orig 0x001dad88 HUD_SetObjective (unknown)
 std::string Hud::objectiveHeader(int slot) const {
     // The objective icon (yellow for slot 0 at 0.8, blue for slot 1), the HUD colour, the heading string. The icon
     // tags are rectangles of the money font (<YOBJ> 28, <BOBJ> 22), so each sits inside <MONEYFONT>; outside it the tag
@@ -144,6 +171,8 @@ void Hud::setObjective(int slot, std::string_view text, int mode, bool silent, s
         return;
     }
     std::optional<ChecklistLine>& line = m_checklist.slots.at(static_cast<std::size_t>(slot));
+    // Not ported (#662): a text that starts with a tag other than <AUTOINDENT takes Objective_GetIconPrefix's prefix
+    // instead of the standard header, and the first-objective hint also needs Tutorial_IsHintUnlocked(0x15).
     switch (mode) {
     case kObjectiveSet:
         line = ChecklistLine{std::string(text), false};
@@ -152,8 +181,7 @@ void Hud::setObjective(int slot, std::string_view text, int mode, bool silent, s
                                              ms, kCueObjective});
         }
         // The first slot-1 objective with the game's hints on queues one hint, once.
-        if (slot == 1 && m_gameTutorialText && !m_firstObjectiveHintGiven &&
-            (m_levelNumber < kArmiesFirstLevel || m_levelNumber > kArmiesLastLevel)) {
+        if (slot == 1 && m_gameTutorialText && !m_firstObjectiveHintGiven && !isArmiesLevel(m_levelNumber)) {
             m_firstObjectiveHintGiven = true;
             m_hints.queue(read(m_services.tutorialString, kFirstObjectiveHint), kGameHintPriority);
         }
@@ -166,7 +194,9 @@ void Hud::setObjective(int slot, std::string_view text, int mode, bool silent, s
             line = ChecklistLine{std::string(text), false};
         }
         line->marked = true;
-        // Two messages: the heading, then the text.
+        // Two messages: the heading, then the text. Stand-in (#662): the original rebuilds the mode-0 header for slot
+        // 0 or 1 and flushes it and the bare text from the scroll-in queue, and for slot 1 shows the Bonus complete
+        // announcement once per player.
         m_scrollIn.queue(ScrollInMessage{objectiveHeader(slot), kObjectiveMessagePlace, ms, kCueObjective});
         m_scrollIn.queue(ScrollInMessage{std::string(text), kObjectiveMessagePlace, ms, std::nullopt});
         break;
@@ -178,6 +208,8 @@ void Hud::setObjective(int slot, std::string_view text, int mode, bool silent, s
     }
 }
 
+// Clears the current objectives: Coney's checklist slot 0.
+// @orig 0x001db248 HUD_RemoveAllGoalText (unknown)
 void Hud::removeGoalText() { m_checklist.slots.at(0).reset(); }
 
 void Hud::setAnnouncement(int kind, std::string_view text, bool flag) {
@@ -267,6 +299,8 @@ void Hud::radarOff(int player) {
     m_radar.scriptOn = false;
 }
 
+// Radar_Render's colour table (`0x0050e9e8`) read by the disc's state.
+// @orig 0x001c60b0 Radar_Render (RadarHUD.cpp)
 graphics::Rgba radarTintColour(RadarTint tint) { return tint == RadarTint::Blue ? kRadarBlueColour : kRadarDiscColour; }
 
 void Hud::setRadarTint(std::size_t player, RadarTint tint) {
@@ -279,6 +313,8 @@ void Hud::setRadarTint(std::size_t player, RadarTint tint) {
     m_radar.tintChangedMs.at(player) = m_nowMs;
 }
 
+// Radar_Render's disc colour: within 500 ms of a change of state, the blend from the previous state's colour.
+// @orig 0x001c60b0 Radar_Render (RadarHUD.cpp)
 graphics::Rgba Hud::radarColour(std::size_t player) const {
     const graphics::Rgba from = radarTintColour(m_radar.previousTint.at(player));
     const graphics::Rgba to = radarTintColour(m_radar.tint.at(player));
@@ -344,6 +380,8 @@ void Hud::setTextProgress(std::string_view label, std::uint32_t value, graphics:
 }
 
 void Hud::update(const HudFrame& frame) {
+    // Not ported, from HUD_Update: two menus' countdown (+0x20ac, #682), the crew status list below level 100
+    // (#515) and the Rumble intro screen (#661).
     m_nowMs = frame.nowMs;
     m_levelNumber = frame.levelNumber;
     // The credits scroll in the overlay pass, whatever the HUD's visibility and the letterbox.
@@ -373,6 +411,10 @@ void Hud::update(const HudFrame& frame) {
         return;
     }
     updateRadar(frame);
+    // The Armies of the Night parts (GoSign_Update, the ANHud join messages and the knock-outs that drop a panel), in
+    // those levels only.
+    m_armies.update(frame.nowMs, frame.levelNumber, {m_panels.at(0).attached(), m_panels.at(1).attached()},
+                    frame.knockedOut);
     // 1. The player panels, with their values and pads.
     for (std::size_t i = 0; i < kPlayers; ++i) {
         PanelValues values = frame.players.at(i);
@@ -417,7 +459,8 @@ void Hud::update(const HudFrame& frame) {
             announcement->reset();
         }
     }
-    // 3. The arrow's bob: up by 2 a frame to the top, back down by 0.5.
+    // 3. The arrow's bob: up by 2 a frame to the top, back down by 0.5. **Coney's stand-in** (#1018): the step moves
+    // before the draw, so the arrow runs one frame ahead of the original's, which places it and then steps.
     if (m_arrow.on) {
         if (m_arrow.rising) {
             m_arrow.step += kArrowStepUp;
@@ -441,6 +484,10 @@ void Hud::setRadarRange(float near, float far) {
     m_radar.zoom = near;
 }
 
+// The radar's step: Radar_Update's copy of the player's place and the camera, and the objective blips' flash count;
+// Radar_Render's easing of the zoom, which Coney steps here with the rest of the update.
+// @orig 0x001c5210 Radar_Update (RadarHUD.cpp)
+// @orig 0x001c60b0 Radar_Render (RadarHUD.cpp)
 void Hud::updateRadar(const HudFrame& frame) {
     // The view and the zoom's easing by the game time since the last step.
     const std::uint64_t elapsed =
@@ -459,12 +506,16 @@ void Hud::updateRadar(const HudFrame& frame) {
     }
 }
 
+// Radar_Render's gate and place: the disc only while the radar is on and the map is there, at the disc's centre.
+// @orig 0x001c60b0 Radar_Render (RadarHUD.cpp)
 void Hud::renderRadar(const HudCanvas& canvas) const {
     if (!m_radar.on.at(0) || !m_radar.view.known) {
         return;
     }
     // The disc's centre in overlay-camera space at depth 1.0; R = 0.9 × 0.19 × w / 2 of the overlay view's width,
-    // stretched by the default video mode.
+    // stretched by the default video mode. **Coney's choice** (#890): w is the default mode's measured 1.33
+    // (kRadarViewWidth), not read from the active camera, and only the default video mode's stretch is laid out (the
+    // 16:9 and progressive modes' factors are not ported).
     const graphics::OverlayPoint centre{kRadarX, kRadarY, kRadarDepth};
     if (canvas.radarMap != nullptr && m_radar.map.usable()) {
         addRadarDisc(*canvas.radarMap, centre, kRadarRadius * kRadarStretchX, kRadarRadius * kRadarStretchY, m_radar,
@@ -474,6 +525,7 @@ void Hud::renderRadar(const HudCanvas& canvas) const {
     renderPlayerArrow(canvas, centre);
 }
 
+// @coney-only drawing glue: hands the crime panel's own render the disc's centre and Coney's shape batch
 void Hud::renderCrimePanel(const HudCanvas& canvas) const {
     // The arcs share the disc's centre, untextured, among the 2D shapes.
     if (canvas.shapes != nullptr) {
@@ -481,15 +533,23 @@ void Hud::renderCrimePanel(const HudCanvas& canvas) const {
     }
 }
 
+// Radar_Update's blips: each blip follows its object, is placed on the disc and shows or not by its kind; Coney
+// draws the dots here, where the original moves its dot widgets for the sprite pass.
+// @orig 0x001c5210 Radar_Update (RadarHUD.cpp)
 void Hud::renderBlips(const HudCanvas& canvas, graphics::OverlayPoint centre) const {
     if (canvas.parts == nullptr || !m_locate) {
         return;
     }
     const graphics::SpriteSheet& sheet = canvas.parts->sheet();
+    // Not ported (#1018): an objective blip within 20 m but over 1 m above or below the player re-colours and re-sizes
+    // icons 27, 28 and 22; fixed-point blips; type-12 blips re-coloured; icons 25 and 26 moved to their own batch; an
+    // enemy dot's mark timer. Hint 22 for such a blip (#332) and the two players' arrow icons (#549) neither.
     for (const auto& [handle, blip] : m_radar.blips) {
-        // **Coney choice**: a blip whose object cannot be found is skipped, not freed (the original frees the slot
-        // of a dead handle; Coney cannot yet locate every kind of object).
+        // **Coney's choice** (#1018): a blip whose object cannot be found is skipped, not freed (the original frees the
+        // slot of a dead handle; Coney cannot yet locate every kind of object).
         const std::optional<anim::Vec3> at = m_locate(handle);
+        // Stand-in (#1018): every shown blip draws while the radar is on; the original shows the dots inside and
+        // beyond the zoom by the radar's shown, hidden and `+0x18` flags, enemy and police dots only while marked.
         if (!at || !radarBlipShown(blip, m_radar.updates) || blip.icon < 0 ||
             static_cast<std::size_t>(blip.icon) >= sheet.page.rects.size()) {
             continue;
@@ -505,6 +565,9 @@ void Hud::renderBlips(const HudCanvas& canvas, graphics::OverlayPoint centre) co
     }
 }
 
+// Radar_Update's player arrow (the type-9 blip): at the disc's centre, 0.03 wide, turned by the player's heading
+// minus the camera's.
+// @orig 0x001c5210 Radar_Update (RadarHUD.cpp)
 void Hud::renderPlayerArrow(const HudCanvas& canvas, graphics::OverlayPoint centre) const {
     if (canvas.parts == nullptr || kRadarPlayerIcon >= canvas.parts->sheet().page.rects.size()) {
         return;
@@ -537,6 +600,7 @@ void Hud::renderPlayerArrow(const HudCanvas& canvas, graphics::OverlayPoint cent
     canvas.parts->addTriangle(topLeft, bottomRight, bottomLeft);
 }
 
+// @coney-only drawing glue: the instruction arrow widget's sprite, which the original's sprite pass draws
 void Hud::renderArrow(const HudCanvas& canvas) const {
     if (!m_arrow.on || canvas.minigames == nullptr || kArrowRect >= canvas.minigames->sheet().page.rects.size()) {
         return;
@@ -550,6 +614,10 @@ void Hud::renderArrow(const HudCanvas& canvas) const {
         m_arrow.angle);
 }
 
+// The scoreboard rows' text and the stopwatch's two forms (minutes:seconds, or the Armies of the Night seconds).
+// @orig 0x001ccf10 TextProgressHud_Compose (unknown)
+// @orig 0x001cd5e8 StopWatchHud_UpdateMinutes (unknown)
+// @orig 0x001cd748 StopWatchHud_UpdateSeconds (unknown)
 void Hud::renderScores(const HudCanvas& canvas) const {
     const graphics::FontMetrics metrics = metricsOfHeight(kScoreRowHeight);
     for (std::size_t i = 0; i < kTextProgressRows; ++i) {
@@ -557,21 +625,35 @@ void Hud::renderScores(const HudCanvas& canvas) const {
         if (!row.active) {
             continue;
         }
+        // **Coney's choice** (#1018): the label and the score are two texts of the text font at Coney's places, where
+        // the original composes one `<SIZE 0.8>label: score` markup text: its places and font are not on the
+        // research page yet (hud_layout.h, kScoreRowsPlace).
         const float y = kScoreRowsPlace.y + (static_cast<float>(i) * kScoreRowStep);
         drawPlainText(canvas, gui::kTextFontSlot, row.label, kScoreRowsPlace.x, y, metrics, row.colour);
         drawPlainText(canvas, gui::kTextFontSlot, std::to_string(row.score), kScoreRowsPlace.x + kScoreValueOffset, y,
                       metrics, row.colour);
     }
-    if (m_stopWatch.shown) {
-        // Minutes:seconds, the seconds truncated.
+    if (m_stopWatch.shown && m_armies.active()) {
+        // An Armies of the Night level: the label (markup) and the whole seconds in two digits, centred at
+        // (0.49, 0.10) (StopWatchHud_UpdateSeconds, HUD +0x225d5).
+        const std::int32_t ms = m_services.stopWatchTime ? std::max(0, m_services.stopWatchTime()) : 0;
+        gui::TextStyle style = messageStyle(kArmiesStopWatchPlace.x);
+        style.alignment = gui::TextAlignment::Centre;
+        drawMessage(canvas, std::format("{}{:02}", m_stopWatch.label, ms / 1000), style, kArmiesStopWatchPlace.y);
+    } else if (m_stopWatch.shown) {
+        // Elsewhere: the label (markup) and `%2u:%02u`, the minutes padded to two places and the seconds truncated,
+        // right-aligned at (1.0, 0.24) (StopWatchHud_UpdateMinutes, StopWatchHud_ApplyVideoMode's default mode; the
+        // other video modes' places are not ported, #890).
         const std::int32_t ms = m_services.stopWatchTime ? std::max(0, m_services.stopWatchTime()) : 0;
         const std::int32_t seconds = ms / 1000;
-        const std::string text = std::format("{}{}:{:02}", m_stopWatch.label, seconds / 60, seconds % 60);
-        drawPlainText(canvas, gui::kTextFontSlot, text, kStopWatchPlace.x, kStopWatchPlace.y, metrics,
-                      graphics::kWhite);
+        gui::TextStyle style = messageStyle(kStopWatchPlace.x);
+        style.alignment = gui::TextAlignment::Right;
+        drawMessage(canvas, std::format("{}{:2}:{:02}", m_stopWatch.label, seconds / 60, seconds % 60), style,
+                    kStopWatchPlace.y);
     }
 }
 
+// @coney-only glue: each menu's command names, enabled commands and lock from the HUD's services
 void Hud::renderWarCommands(const HudCanvas& canvas) const {
     for (std::size_t player = 0; player < kPlayers; ++player) {
         WarCommandDisplay::Look look;
@@ -587,6 +669,9 @@ void Hud::renderWarCommands(const HudCanvas& canvas) const {
 }
 
 void Hud::render(const HudCanvas& canvas) const {
+    // Not ported, from HUD_Render: the split-screen dividers (#549); the HudLabel and the caption pager drawn even
+    // while hidden, the +0x1911c and +0xe050 widgets, the mission item icons, the status column and, under the
+    // letterbox, the pending Warrior commands issued (#662); the crew status list (#515).
     m_credits->render(canvas.text);
     if (!m_visible || m_letterbox) {
         return;
@@ -596,6 +681,7 @@ void Hud::render(const HudCanvas& canvas) const {
     renderArrow(canvas);
     m_spinner.render(canvas);
     renderScores(canvas);
+    m_armies.render(canvas, m_services.hudString);
     m_counters.render(canvas);
     // The bars go below the visible counter panels, and lower again while the stopwatch shows.
     const auto panels = static_cast<float>(std::ranges::count_if(
@@ -645,19 +731,26 @@ void Hud::render(const HudCanvas& canvas) const {
     if (!hintsHidden()) {
         m_hints.render(canvas);
     }
-    if (!scrollInHidden()) {
+    // The prompts: not while a scroll-in hides them, and never in an Armies level.
+    if (!scrollInHidden() && !isArmiesLevel(m_levelNumber)) {
         renderPrompt(canvas);
     }
 }
 
+// ActionPrompt_Render's draw of player 0's prompt (the cycle's icon while on, then the text) and ActionPrompt_Update's
+// placing of both, which Coney works out at the draw.
+// @orig 0x0019f850 ActionPrompt_Render (unknown)
+// @orig 0x0019f528 ActionPrompt_Update (unknown)
 void Hud::renderPrompt(const HudCanvas& canvas) const {
+    // Not ported: the two players' places and prompts (#549); the icon's size in the 16:9 and progressive modes (#890).
     // The cycle's icon, under the text: a `part_page0` button centred on the prompt's anchor (the base y plus the
     // raise, without the multi-line lift), 0.1 high, during the blink's on half.
     const ActionCycle& cycle = m_cycles.at(0);
     if (cycle.on && cycle.iconOn && canvas.parts != nullptr && cycle.icon() < canvas.parts->sheet().page.rects.size() &&
         canvas.text.fonts) {
         const graphics::UvRect uv = canvas.parts->sheet().page.rect(cycle.icon());
-        const float y = (m_clubActionText ? kClubPromptY : kPromptPlace.y) + promptRaise(canvas.text.fonts);
+        const float base = m_clubActionText ? kClubPromptY : kPromptPlace.y;
+        const float y = base + (promptBaseRaised(base) ? promptRaise(canvas.text.fonts) : 0.0F);
         canvas.parts->addSprite(guiSprite(kPromptPlace.x, y,
                                           squareTexelWidth(canvas.parts->sheet(), uv, kCycleIconSize), kCycleIconSize,
                                           uv, kPromptColour));
@@ -673,12 +766,16 @@ void Hud::renderPrompt(const HudCanvas& canvas) const {
     style.alignment = gui::TextAlignment::Centre;
     // Its time since the text was set, which steps the stick tags (the revive prompt's stick picture).
     style.timeMs = static_cast<std::uint32_t>(m_nowMs - std::min(m_promptSinceMs.at(0), m_nowMs));
-    // The base y plus the raise; a prompt of several lines moves up a further step per line.
-    const gui::TextLayout measured = gui::layoutText(text, style, canvas.text.fonts);
-    // The clubhouse puts the text near the top (HUDEnableClubActionText).
-    float y = (m_clubActionText ? kClubPromptY : kPromptPlace.y) + promptRaise(canvas.text.fonts);
-    if (measured.lines > 1) {
-        y -= kPromptLineRaise * static_cast<float>(measured.lines);
+    // The base y plus the raise, where a prompt of several lines moves up a further step per line (the raise `+0x46c`
+    // holds both). The clubhouse puts the text near the top (HUDEnableClubActionText), a base that takes neither.
+    const float base = m_clubActionText ? kClubPromptY : kPromptPlace.y;
+    float y = base;
+    if (promptBaseRaised(base)) {
+        const gui::TextLayout measured = gui::layoutText(text, style, canvas.text.fonts);
+        y += promptRaise(canvas.text.fonts);
+        if (measured.lines > 1) {
+            y -= kPromptLineRaise * static_cast<float>(measured.lines);
+        }
     }
     style.y = y;
     gui::addTextSprites(gui::layoutText(text, style, canvas.text.fonts), canvas.text.textBatch);

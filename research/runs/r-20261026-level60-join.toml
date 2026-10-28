@@ -1,0 +1,46 @@
+version = 1
+id = "r-20261026-level60-join"
+date = "2026-10-26"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "0dd1920237198ede5ab2ce199dc47a12a9d44d9522f9852505be0c3bf604dbea"
+
+[who]
+agent = "a0706515f6d1f8ca7"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "street-end-run"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "level60 checkpoint 1 loaded with the load-checkpoint recipe from the state, pad idle. Before the load, execution breakpoints on ANHud_SetPlayer's entry and on ANHud_Init's store of 0 to +0x4614; at each stop a0, a1, ra (or s1) and the backtrace were read. In play the two panels' +0x4614 and panel 2's +0x40f4, +0x40f8 and +0x40fc were read over PINE four times a second until the game-over screen; the join text's span was measured on a window capture at tick 1917 as a fraction of the game picture's width"
+
+[values]
+setplayer_stops = 2
+setplayer_first_player = 0
+setplayer_second_player = 1
+init_clear_stops = 1
+panel1_join_in_play = 0
+panel2_join_in_play = 1
+panel2_player = 1
+panel2_40f8 = 0
+panel2_40fc = 0
+join_text_left_permille = 608
+join_text_right_permille = 859
+
+[addresses]
+anhud_setplayer = 0x004ec650
+setplayer_caller_ra = 0x001ae260
+init_clear_store = 0x00210b40
+hud_attachplayer = 0x001b2200
+human_makeplayer = 0x00229c40
+anhud_init = 0x002107e8
+hud_initlevel = 0x001ad588

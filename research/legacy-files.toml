@@ -395,14 +395,6 @@ tag = 1
 ["src/camera/camera_view.cpp"]
 tag = 5
 
-["src/camera/cameras.cpp"]
-comment = 1
-tag = 28
-
-["src/camera/cameras.h"]
-comment = 1
-tag = 1
-
 ["src/camera/failed_camera.cpp"]
 tag = 1
 
@@ -428,9 +420,6 @@ tag = 2
 ["src/camera/path_camera.cpp"]
 tag = 4
 
-["src/camera/rail_camera.cpp"]
-tag = 11
-
 ["src/camera/slow_motion.h"]
 comment = 1
 
@@ -448,9 +437,6 @@ tag = 3
 
 ["src/characters/character_assets.cpp"]
 tag = 3
-
-["src/characters/character_class.cpp"]
-tag = 4
 
 ["src/characters/character_data.cpp"]
 tag = 3
@@ -570,9 +556,6 @@ comment = 2
 ["src/debug/debug_lines.h"]
 comment = 2
 
-["src/debug/debug_session.h"]
-comment = 1
-
 ["src/debug/net_controls.h"]
 comment = 3
 
@@ -640,11 +623,6 @@ tag = 1
 ["src/gamemodes/game_mode_stack.cpp"]
 tag = 7
 
-["src/gamemodes/gameplay_mode.h"]
-comment = 1
-type-doc = 1
-tag = 2
-
 ["src/gamemodes/gameplay_revive.cpp"]
 tag = 3
 
@@ -690,13 +668,6 @@ tag = 19
 ["src/gamemodes/level_pickups.h"]
 comment = 2
 
-["src/gamemodes/level_start.cpp"]
-comment = 1
-tag = 9
-
-["src/gamemodes/level_start.h"]
-comment = 8
-
 ["src/gamemodes/load_entry_mode.cpp"]
 tag = 4
 
@@ -717,9 +688,6 @@ tag = 4
 
 ["src/gamemodes/movie_player.cpp"]
 tag = 5
-
-["src/gamemodes/player_frame.cpp"]
-tag = 2
 
 ["src/gamemodes/profile_manager_mode.cpp"]
 tag = 5
@@ -958,13 +926,6 @@ comment = 1
 
 ["src/hud/hint_box.cpp"]
 tag = 10
-
-["src/hud/hud.cpp"]
-tag = 16
-
-["src/hud/hud.h"]
-comment = 11
-tag = 2
 
 ["src/hud/hud_audio.h"]
 tag = 1
@@ -1373,9 +1334,6 @@ tag = 1
 ["src/scripting/hub_world_bindings.cpp"]
 tag = 8
 
-["src/scripting/hud_bindings.cpp"]
-tag = 14
-
 ["src/scripting/human_bindings.cpp"]
 tag = 18
 
@@ -1413,11 +1371,6 @@ tag = 10
 ["src/scripting/mission7_bindings.cpp"]
 tag = 7
 
-["src/scripting/object_bindings.cpp"]
-tag = 21
-
-["src/scripting/player_bindings.cpp"]
-tag = 9
 
 ["src/scripting/rumble_bindings.cpp"]
 tag = 5
@@ -1427,10 +1380,6 @@ tag = 5
 
 ["src/scripting/scene_bindings.cpp"]
 tag = 8
-
-["src/scripting/script_bindings.cpp"]
-comment = 3
-tag = 19
 
 ["src/scripting/script_system.cpp"]
 tag = 15
@@ -1500,9 +1449,6 @@ tag = 1
 ["src/warriors/profile_store.cpp"]
 tag = 7
 
-["src/warriors/stop_watch.cpp"]
-tag = 1
-
 ["src/warriors/story_state.h"]
 tag = 1
 
@@ -1566,13 +1512,6 @@ tag = 10
 ["src/world_objects/cars.h"]
 tag = 3
 
-["src/world_objects/doors.cpp"]
-comment = 4
-tag = 34
-
-["src/world_objects/doors.h"]
-comment = 4
-
 ["src/world_objects/drawn_poses.cpp"]
 tag = 1
 
@@ -1620,9 +1559,6 @@ tag = 1
 
 ["src/world_objects/object_list.cpp"]
 tag = 2
-
-["src/world_objects/object_services.cpp"]
-tag = 9
 
 ["src/world_objects/object_tasks.cpp"]
 tag = 9
@@ -1857,14 +1793,8 @@ citation = 11
 ["tests/camera/path_camera_test.cpp"]
 citation = 5
 
-["tests/camera/rail_camera_test.cpp"]
-citation = 5
-
 ["tests/camera/win_camera_test.cpp"]
 citation = 5
-
-["tests/characters/character_class_test.cpp"]
-citation = 4
 
 ["tests/characters/character_data_test.cpp"]
 citation = 2
@@ -2042,9 +1972,6 @@ citation = 3
 
 ["tests/debug/pad_menu_input_test.cpp"]
 citation = 4
-
-["tests/debug/story_missions_test.cpp"]
-citation = 3
 
 ["tests/debug/time_scale_test.cpp"]
 citation = 6
@@ -2249,9 +2176,6 @@ citation = 3
 
 ["tests/hud/health_rings_test.cpp"]
 citation = 12
-
-["tests/hud/hud_test.cpp"]
-citation = 28
 
 ["tests/hud/lock_pick_hud_test.cpp"]
 citation = 13
@@ -2790,9 +2714,6 @@ citation = 11
 ["tests/scripting/object_bindings_test.cpp"]
 citation = 8
 
-["tests/scripting/player_bindings_test.cpp"]
-citation = 13
-
 ["tests/scripting/rumble_match_bindings_test.cpp"]
 citation = 8
 
@@ -2831,9 +2752,6 @@ citation = 5
 
 ["tests/warriors/level_table_test.cpp"]
 citation = 2
-
-["tests/warriors/player_state_test.cpp"]
-citation = 13
 
 ["tests/warriors/profile_record_test.cpp"]
 citation = 4
@@ -2879,9 +2797,6 @@ citation = 1
 
 ["tests/world_objects/door_blocking_test.cpp"]
 citation = 7
-
-["tests/world_objects/doors_test.cpp"]
-citation = 16
 
 ["tests/world_objects/drawn_poses_test.cpp"]
 citation = 5

@@ -72,6 +72,8 @@ struct PromptOffer {
     std::optional<std::uint32_t> dealer; ///< A dealer's offer in reach (kind 4): his type's prompt.
 };
 
+/// What the gameplay mode asks of the level's player 1 (the play mode implements it): the scripts' teleports, the
+/// tag spray's clips, the held object and the action prompt's offers.
 class ScriptedPlayer {
   public:
     virtual ~ScriptedPlayer() = default;
@@ -98,6 +100,7 @@ class ScriptedPlayer {
     /// weapon in it (GameplayMode::startTag()), an uncuff with a club or an overhead one (GameplayMode::startUncuff()).
     virtual void dropHeldObject() {}
     /// The type name of the object in player 1's hand (`dyn_pipe_a`); empty with nothing held.
+    /// @coney-only the interface's default for a level with no player
     [[nodiscard]] virtual std::string heldObjectType() const { return {}; }
     /// A pause of player 1's stick game began (a slip or a new charge): his spray clips restart
     /// (Human::restartTagSpray()).
@@ -105,6 +108,7 @@ class ScriptedPlayer {
     /// Player 1's spray is over: his spray clips end (Human::endTagSpray()).
     virtual void endTagSpray() {}
     /// What player 1 can act on this frame besides the scripts' action objects (kind 1), for the action prompt.
+    /// @coney-only the interface's default for a level with no player
     [[nodiscard]] virtual PromptOffer promptOffer() const { return {}; }
     /// Whether the camera frames player 1's fight now (`Camera_IsCombatFraming`, `0x00233c50`): his sounds' combat
     /// framing and the angry breathing (docs/research/sound-events.md#players).
@@ -167,6 +171,10 @@ class OverlaidLevel {
     /// included) before the present.
     virtual void renderWithOverlay(const RenderTime& time,
                                    const std::function<void(graphics::RenderDevice&)>& overlay) = 0;
+    /// Draws the level's world for `time` without its HUD, with `overlay` over it before the present: the Armies game
+    /// over (mode 0xd) shows only the world's viewport under its menu (docs/research/armies.md#game-over).
+    virtual void renderWorldWithOverlay(const RenderTime& time,
+                                        const std::function<void(graphics::RenderDevice&)>& overlay) = 0;
 };
 
 class PauseMode;
@@ -182,7 +190,7 @@ class PauseMode;
 ///
 /// Coney's stand-ins (docs/research/level-loading.md#coneys-implementation):
 /// - The sound (`context`'s sound host) is told of mode 1's enter, the load screen's start (InitLevel step 3), its end
-///   (step 11) and the exit. The rest of `InitLevel` (the object list, the dependency list) and of mode 1's enter (the
+///   (step 11) and the exit. The rest of `InitLevel` (the dependency list) and of mode 1's enter (the
 ///   level-end countdown) is not there yet: the player has control on the first frame. The start callback runs before
 ///   the level loads (runLevelScript()). The intro movie (`L99_IN`) goes to the movie player after the level loaded
 ///   (setMoviePlayer(): the movie player pushes itself over gameplay, which waits beneath it until it ends).
@@ -252,6 +260,7 @@ class GameplayMode final : public GameMode {
     void setMoviePlayer(MoviePlayer* player) { m_moviePlayer = player; }
     /// Makes each level's scene system (over the disc's scene list); null or empty: no scenes.
     using SceneMaker = std::function<std::unique_ptr<scenes::SceneSystem>()>;
+    /// Gives the mode its scene maker.
     void setSceneMaker(SceneMaker maker) { m_sceneMaker = std::move(maker); }
     /// Plays the glass panes' and doors' sounds through `sounds` (the audio's ObjectSounds; null: none), which must
     /// outlive the mode or be replaced first.
@@ -297,6 +306,10 @@ class GameplayMode final : public GameMode {
     /// through the level when it is an OverlaidLevel; otherwise the level's frame without the overlay, or black with
     /// it while no level is loaded.
     void renderWithOverlay(const RenderTime& time, const std::function<void(graphics::RenderDevice&)>& overlay);
+    /// renderWithOverlay() without the level's HUD (OverlaidLevel::renderWorldWithOverlay()); a level that cannot
+    /// leave it out draws its frame, and black with the overlay while none is loaded.
+    /// @coney-only glue to the play mode's render; the original's mode 0xd calls GameMode_RenderViewportAlt itself
+    void renderWorldWithOverlay(const RenderTime& time, const std::function<void(graphics::RenderDevice&)>& overlay);
 
     /// Lets START pause the game through `pause` (not owned; null: no pause): each frame of play ends with
     /// PauseMode::playFrame().
@@ -336,6 +349,16 @@ class GameplayMode final : public GameMode {
     /// Player 1 handed to the AI in the loaded level (ScriptedPlayer::releasePlayerToAi()); false with no level, or
     /// none to hand.
     bool releasePlayerToAi();
+    /// Whether player `player` (0 or 1) is in the level and not knocked out (the Armies game over's continue).
+    /// @orig 0x001cf468 ANGameOver_Update (unknown)
+    [[nodiscard]] bool playerStanding(int player) const;
+    /// Whether player `player` (0 or 1) is in the level (the game state's `+0x228` / `+0x22c` human).
+    /// @orig 0x001cf468 ANGameOver_Update (unknown)
+    [[nodiscard]] bool playerIn(int player) const;
+    /// Player `player` (0 or 1) healed in full and stood up (`Human_Heal(human, 1)`, through `HuRevive`'s revive): an
+    /// Armies continue.
+    /// @orig 0x001557f8 ANGameOver_Toggle (unknown)
+    void healPlayer(int player);
     /// Player 1's cameras for the level; null while no level is entered.
     [[nodiscard]] camera::Cameras* cameras() const { return m_cameras.get(); }
     /// The level's glass panes and doors (empty while no level is entered).

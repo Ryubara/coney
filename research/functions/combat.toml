@@ -151,6 +151,15 @@ coney = "src/human/fighter.h:Fighter::updateL1"
 status = "compared"
 
 [[function]]
+address = 0x00227dd8
+name = "Human_IsKnockedOut"
+page = "combat-reactions.md#knocked-out-bit"
+role = "state `0x40000`, or no record: knocked out by the health running out or by a script"
+level = "confirmed-code"
+coney = "src/human/human.h:Human::knockedOut"
+status = "compared"
+
+[[function]]
 address = 0x00228340
 name = "Human_IsInFightStance"
 page = "combat-targets.md#fight-stance"

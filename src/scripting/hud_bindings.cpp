@@ -24,29 +24,35 @@ namespace {
 constexpr int kStopWatchWarnMs = 10000;
 
 // Argument `i` truncated to a whole number, as tolua reads an integer.
+// @coney-only tolua's argument reading, which the original's generated wrappers do
 std::int64_t wholeArg(std::span<const Value> args, std::size_t i) {
     return static_cast<std::int64_t>(std::trunc(binding::number(args, i)));
 }
 
 // Whether argument `i` is missing or nil, so a default applies.
+// @coney-only tolua's argument reading, which the original's generated wrappers do
 bool absent(std::span<const Value> args, std::size_t i) { return i >= args.size() || args[i].isNil(); }
 
 // Argument `i` as an integer, `fallback` when omitted.
+// @coney-only tolua's argument reading, which the original's generated wrappers do
 int intArg(std::span<const Value> args, std::size_t i, int fallback = 0) {
     return absent(args, i) ? fallback : static_cast<int>(wholeArg(args, i));
 }
 
 // Argument `i` as tolua reads an unsigned integer (kept to 32 bits), `fallback` when omitted.
+// @coney-only tolua's argument reading, which the original's generated wrappers do
 std::uint32_t unsignedArg(std::span<const Value> args, std::size_t i, std::uint32_t fallback = 0) {
     return absent(args, i) ? fallback : static_cast<std::uint32_t>(wholeArg(args, i));
 }
 
 // Argument `i` as a float, `fallback` when omitted.
+// @coney-only tolua's argument reading, which the original's generated wrappers do
 float floatArg(std::span<const Value> args, std::size_t i, float fallback = 0.0F) {
     return absent(args, i) ? fallback : static_cast<float>(binding::number(args, i));
 }
 
 // Argument `i` as a boolean: nil and 0 are false.
+// @coney-only tolua's argument reading, which the original's generated wrappers do
 bool boolArg(std::span<const Value> args, std::size_t i) {
     if (absent(args, i)) {
         return false;
@@ -55,15 +61,18 @@ bool boolArg(std::span<const Value> args, std::size_t i) {
 }
 
 // A handle argument: truncated to an unsigned integer.
+// @coney-only tolua's argument reading, which the original's generated wrappers do
 double handleArg(std::span<const Value> args, std::size_t i) { return static_cast<double>(unsignedArg(args, i)); }
 
 // A player argument (0 or 1) as an index, or nothing for any other value.
+// @coney-only tolua's argument reading, which the original's generated wrappers do
 std::optional<std::size_t> playerArg(std::span<const Value> args, std::size_t i) {
     const std::uint32_t player = unsignedArg(args, i);
     return player < hud::kPlayers ? std::optional<std::size_t>(player) : std::nullopt;
 }
 
 // A binding that hands its arguments to the HUD when there is one and returns nothing.
+// @coney-only binding glue: the call reaches the HUD only when the context has one
 template <typename Body> NativeFunction hudCall(const BindingContext& context, Body body) {
     return [hud = context.hud, body](std::span<const Value> args) {
         if (hud != nullptr) {
@@ -82,6 +91,7 @@ constexpr int kDealerIconFirst = 29;
 constexpr int kDealerIconLast = 31;
 
 // The radar blip of `object`, made with `type` when it has none yet.
+// @coney-only Coney's blip map, looked up by handle
 hud::RadarBlip& blipOf(hud::Hud& hud, double object, int type) {
     auto [found, made] = hud.radar().blips.try_emplace(object);
     if (made) {
@@ -91,6 +101,7 @@ hud::RadarBlip& blipOf(hud::Hud& hud, double object, int type) {
 }
 
 // The string bindings' HUD strings and the CfgHUDColor recordings as the HUD's services.
+// @coney-only Coney's reading of the recorded CfgHUDColor calls
 std::string recordedHudColour(const RecordedCalls* recorded, int slot) {
     if (recorded == nullptr) {
         return {};
@@ -106,6 +117,7 @@ std::string recordedHudColour(const RecordedCalls* recorded, int slot) {
 }
 
 // The sound `SoundCfgInterfaceSound(cue, name)` last set for `cue`, or none (docs/research/sound.md#interface-sounds).
+// @coney-only Coney's reading of the recorded SoundCfgInterfaceSound calls
 std::string recordedInterfaceSound(const RecordedCalls* recorded, int cue) {
     if (recorded == nullptr) {
         return {};
@@ -241,6 +253,34 @@ void addPanelAndArrowBindings(LuaVm& vm, const BindingContext& context) {
                         }));
 }
 
+// The Armies of the Night credits, GO sign and join messages (docs/research/hud-functions-panels.md#fn-anhud).
+void addArmiesBindings(LuaVm& vm, const BindingContext& context) {
+    // `HUDANSetCredit(credits)`: the credits left, kept as an unsigned integer.
+    // @orig 0x00370258 lua_HUDANSetCredit (unknown)
+    vm.registerFunction("HUDANSetCredit", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
+                            hud.armies().setCredits(unsignedArg(args, 0));
+                        }));
+    // `HUDANGetCredit()`: the credits left.
+    // @orig 0x00370290 lua_HUDANGetCredit (unknown)
+    vm.registerFunction("HUDANGetCredit", [hud = context.hud](std::span<const Value> /*args*/) {
+        return binding::number(hud != nullptr ? static_cast<double>(hud->armies().credits()) : 0.0);
+    });
+    // `HUDANSetGOSignMode(mode)`: the byte the GO sign's update reads.
+    // @orig 0x00370c00 lua_HUDANSetGOSignMode (unknown)
+    vm.registerFunction("HUDANSetGOSignMode", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
+                            hud.armies().setGoSignMode(static_cast<std::uint8_t>(unsignedArg(args, 0)));
+                        }));
+    // `HUDANEnableJoinMsg(player, on)`: panel `player`'s join message. **Coney's guard**: a player other than 0 or 1
+    // is ignored (the original indexes its panel table unchecked).
+    // @orig 0x003701c8 lua_HUDANEnableJoinMsg (unknown)
+    vm.registerFunction("HUDANEnableJoinMsg", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
+                            const int player = intArg(args, 0);
+                            if (player >= 0 && player < static_cast<int>(hud::kPlayers)) {
+                                hud.armies().setJoinMessage(static_cast<std::size_t>(player), boolArg(args, 1));
+                            }
+                        }));
+}
+
 // The radars.
 void addRadarBindings(LuaVm& vm, const BindingContext& context) {
     // @orig 0x003700c8 HUDTurnOnRadar (unknown)
@@ -326,6 +366,7 @@ void addRadarBindings(LuaVm& vm, const BindingContext& context) {
 } // namespace
 
 // The colour table {r, g, b} at argument `i` (each 0-255), opaque; white when it is not a table.
+// @coney-only tolua's argument reading, which the original's generated wrappers do
 graphics::Rgba colourArg(std::span<const Value> args, std::size_t i) {
     if (i >= args.size() || args[i].table() == nullptr) {
         return graphics::kWhite;
@@ -406,6 +447,7 @@ void addCreditBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& c
 
 } // namespace
 
+// @coney-only Coney's registration of the HUD bindings
 void addHudBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& context) {
     addCreditBindings(scripts, vm, context);
     addScoreBindings(vm, context);
@@ -413,8 +455,10 @@ void addHudBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& cont
     addMessageBindings(vm, context);
     addPanelAndArrowBindings(vm, context);
     addRadarBindings(vm, context);
+    addArmiesBindings(vm, context);
 }
 
+// @coney-only Coney's wiring of the HUD's services to the strings and the game state
 hud::HudServices hudServicesOf(const BindingContext& context) {
     hud::HudServices services;
     if (const gui::GlobalStrings* strings = context.strings; strings != nullptr) {

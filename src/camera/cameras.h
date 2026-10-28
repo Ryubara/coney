@@ -76,12 +76,15 @@ class Cameras {
     using Locator = std::function<std::optional<anim::Vec3>(double handle)>;
 
     /// The cameras with the switches as a level's camera reset leaves them.
+    /// Its part of the original: the switches' defaults.
+    /// @orig 0x00122b80 Cameras_ResetLevel (unknown)
     Cameras();
 
     /// Hands the manager player 1's follow camera (which must outlive it, or be detached with nullptr) and makes it
     /// current when nothing else is: the player's camera from the start, as `CameraMakeActive(MainCam, 0)` makes it.
     /// The level script runs before the player exists, so a `CfgFollowCamera` and `CamSetupFollow` made before are
     /// applied to it here (the configuration, then the reset).
+    /// @coney-only Coney's wiring: the follow camera is made after the level script has run
     void attachFollow(FollowCamera* follow);
     /// The follow camera, or null.
     [[nodiscard]] FollowCamera* follow() const { return m_follow; }
@@ -94,6 +97,9 @@ class Cameras {
     void setPlacer(Placer placer) { m_place = std::move(placer); }
     /// Sets how the manager finds an object (not a human) by handle, for CamCanSee.
     void setObjectLocator(Locator locator) { m_locateObject = std::move(locator); }
+    /// Sets how the manager finds a human's locomotion velocity (m/s) by handle, which the rail's mode 3 reads
+    /// (`Task_GetVelocity`, docs/research/camera.md#rail-mode3).
+    void setVelocityLocator(Locator locator) { m_velocity = std::move(locator); }
 
     /// `CamCanSee(object, range)`: whether the current camera sees the point just above the human (1 m up) or object
     /// (0.3 m up) `handle` names: within `range` of the camera (at most its far clip; 0 or less: the far clip), inside
@@ -111,11 +117,14 @@ class Cameras {
     /// The follow camera's handle, once `CamSetupFollow` gave it one.
     [[nodiscard]] std::optional<double> followHandle() const { return m_followHandle; }
     /// `CfgFollowCamera`: the follow camera's configuration (FollowCamera::configure()) and slow motion's factor.
+    /// @coney-only hands the call to FollowCamera::configure() (0x0011c0b8) and slow motion, or keeps it for later
     void configureFollow(const FollowSettings& settings, float slowMotion);
 
     /// `CameraCreateLocked`: keeps a locked camera under `handle`.
+    /// @coney-only Coney's store of the locked cameras by handle; the binding builds the camera
     void createLocked(double handle, const LockedCamera& camera);
     /// The locked camera with `handle`, or null.
+    /// @coney-only a lookup by handle
     [[nodiscard]] const LockedCamera* locked(double handle) const;
     /// `CamLockLocked(camera, human, on)`: `on` adds the human to the locked camera's kept-in-view list (once), off
     /// removes it. Nothing for a handle that names no locked camera.
@@ -158,11 +167,14 @@ class Cameras {
     /// @orig 0x0011b920 Camera_GetPositionByHandle (unknown)
     [[nodiscard]] std::optional<anim::Vec3> positionOf(double handle) const;
     /// `CamSetFollowPos`: the follow camera put at `position` at once (FollowCamera::placeAt()); nothing without one.
+    /// @coney-only a forwarder to FollowCamera::placeAt(), which ports 0x0011c638
     void setFollowPosition(anim::Vec3 position);
 
     /// `CamSetupPoizo`: the one path camera started over from the view of the camera `start` names
     /// (PathCamera::setup()) and its handle, `handle` the first time and the same one after; nothing when `start` names
     /// no camera.
+    /// Its part of the original: the start camera's lookup and the handle.
+    /// @orig 0x0011c9e0 Camera_SetupPoizo (unknown)
     [[nodiscard]] std::optional<double> setupPath(double handle, double start, float seconds, std::string onEnd,
                                                   float fieldOfView, float farClip);
     /// `CamAddPoizoPoint`: a point appended to the path; false without a path camera.
@@ -203,24 +215,32 @@ class Cameras {
     /// @orig 0x0011d098 Camera_AddRailPoint (unknown)
     bool addRailPoint(anim::Vec3 point);
     /// `CamLeadRail`: the rail camera led ahead of or behind its target (RailCamera::setLead()); nothing without one.
+    /// @coney-only a forwarder to RailCamera::setLead(), which ports 0x0011cf70
     void leadRail(float lead, float seconds, bool ahead);
     /// `CamModifyRail`: one of the rail camera's settings eased (RailCamera::modify()); nothing without one.
+    /// @coney-only a forwarder to RailCamera::modify(), which ports 0x0011d228
     void modifyRail(std::uint32_t param, float value, float seconds);
     /// The rail camera, once made.
     [[nodiscard]] const RailCamera* rail() const { return m_rail ? &*m_rail : nullptr; }
 
     /// `CameraCreateFixed`: keeps `camera` under `handle` and puts the human `target` on the shared target list when it
     /// is not there and the list has room.
+    /// Its part of the original: the camera kept and its target put on the list.
+    /// @orig 0x0011c6b8 Camera_CreateFixed (unknown)
     void createFixed(double handle, double target, const FixedCamera& camera);
     /// The fixed camera with `handle`, or null.
+    /// @coney-only a lookup by handle
     [[nodiscard]] const FixedCamera* fixed(double handle) const;
     /// `CameraCreateThird`: keeps a third-person camera on the human `target` under `handle`.
+    /// @coney-only Coney's store of the third-person cameras by handle; the binding builds the settings
     void createThird(double handle, double target, const ThirdCameraSettings& settings);
     /// The third-person camera with `handle`, or null.
+    /// @coney-only a lookup by handle
     [[nodiscard]] const ThirdCamera* third(double handle) const;
 
     /// The script functions the path camera reached since the last call (its points' and its end's), in order: the
     /// gameplay calls them after the step.
+    /// @coney-only Coney's hand-off of the path camera's script calls to the gameplay step
     [[nodiscard]] std::vector<std::string> takeFired() { return std::exchange(m_fired, {}); }
 
     /// `CameraMakeActive(camera, seconds)`: makes the camera with `handle` current, at once with 0 seconds or no
@@ -254,11 +274,15 @@ class Cameras {
     /// @orig 0x0011dcf0 Camera_SetFollowSecondary (unknown)
     void setSecondary(double human, float range);
     /// Where the human kept in view is, through the locator; nothing when there is none.
+    /// @coney-only a lookup through the locator
     [[nodiscard]] std::optional<anim::Vec3> secondaryPoint() const;
     /// Its range (0 for none).
     [[nodiscard]] float secondaryRange() const { return m_secondaryRange; }
     /// `CamSetFollowZoom(preset)` and `CamSetFollowAngle(degrees)` on the follow camera.
+    /// @coney-only a forwarder to FollowCamera::setZoom(), which ports 0x0011c470
     void setFollowZoom(FollowZoom preset);
+    /// `CamSetFollowAngle(degrees)`: the follow camera's pitch.
+    /// @coney-only a forwarder to FollowCamera::setPitch(), which ports 0x0011c3b8
     void setFollowAngle(float degrees);
     /// `CamSetSplitMode(mode)`: the two-player split-screen layout, 0 or 1 (any other value is ignored). **Coney
     /// stand-in**: Coney has one player and one view, so the layout is kept and not applied.
@@ -279,16 +303,22 @@ class Cameras {
 
     /// A scene with a camera starts: the current camera (a blend's destination) is pushed on the stack and the scene
     /// camera, showing `view`, made current at once.
+    /// Its part of the original: the push; SceneTask_Start's port calls this.
+    /// @orig 0x00120450 CameraStack_Push (unknown)
     void beginScene(const CameraView& view);
     /// The scene camera's view this update.
+    /// @coney-only Coney's hand-off of the scene player's camera view
     void setSceneView(const CameraView& view);
     /// The scene ends: the camera on the stack is popped, reset and made current over `blendSeconds` (0 or below: a
     /// cut), the scene camera released, and the cameras updated once with kSceneSettleSeconds.
+    /// Its part of the original: the pop; SceneTask_End's port calls this.
+    /// @orig 0x00120488 CameraStack_Pop (unknown)
     void endScene(float blendSeconds);
     /// The cameras the scenes will return to, oldest first.
     [[nodiscard]] const std::vector<CameraRef>& stack() const { return m_stack; }
 
     /// Starts a shake of `level` (1-3, 0 stops) on the current camera, weaker while the combat camera is on.
+    /// @coney-only a forwarder to CameraShake::start() (0x001210f8) with the combat camera's state
     void shake(int level);
     /// The shake and its pad rumble.
     [[nodiscard]] const CameraShake& shaking() const { return m_shake; }
@@ -316,18 +346,28 @@ class Cameras {
 
   private:
     // The view of the camera `ref` names now, without the shake.
+    /// @coney-only a lookup of the camera's view by kind
     [[nodiscard]] CameraView viewOf(CameraRef ref) const;
     // The camera a handle names, or none.
+    /// @coney-only a lookup by handle
     [[nodiscard]] std::optional<CameraRef> find(double handle) const;
     // Starts the win camera on its target where it stands now; nothing when the target is not found.
+    /// @coney-only finds the target's placement for WinCamera's start (0x001439d8)
     void startWin();
     // Makes `ref` current at once, running the follow camera's activation.
+    /// Its part of the original: the switch at once and the camera's activation.
+    /// @orig 0x0011ee08 Camera_MakeActive (Cam_ICamera.cpp)
     void setCurrent(CameraRef ref);
     // Starts a blend from the view shown now to `ref`, or cuts when there is nothing to blend from.
+    /// Its part of the original: the blend or the cut.
+    /// @orig 0x0011ee08 Camera_MakeActive (Cam_ICamera.cpp)
     void switchTo(CameraRef ref, float seconds);
     // The current locked camera's update of its listed humans (keepInView()), with the level's `mesh`.
+    /// Its part of the original: the loop over the list.
+    /// @orig 0x00135ca8 LockedCam_KeepHumansInView (unknown)
     void keepHumansInView(const raycast::CollisionMesh* mesh);
     // One update of the rail, fixed or third-person camera `ref` names, from where its target is now.
+    /// @coney-only hands each tracking camera its target's place; their own updates are the ports
     void stepTracking(CameraRef ref, float seconds);
 
     FollowCamera* m_follow = nullptr;
@@ -365,6 +405,7 @@ class Cameras {
     std::uint32_t m_reverseButton = 0;
     Locator m_locate;
     Locator m_locateObject;
+    Locator m_velocity;
     Mover m_move;
     std::map<double, anim::Vec3> m_keptBefore; // each kept-in-view human's feet at the last update
     CameraShake m_shake;

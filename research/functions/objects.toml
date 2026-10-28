@@ -266,6 +266,33 @@ coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
 status = "legacy"
 
 [[function]]
+address = 0x00396e28
+name = "Door_OpenToAngle"
+page = "tasks.md#code-objects-opening"
+role = "message `0x42` with the angle to the door"
+level = "confirmed-code"
+coney = "src/scripting/object_bindings.cpp:makeDoorOpenDegree"
+status = "compared"
+
+[[function]]
+address = 0x00396ea0
+name = "Door_Open"
+page = "tasks.md#code-objects-opening"
+role = "state command 2 (open) to the door"
+level = "confirmed-code"
+coney = "src/scripting/object_bindings.cpp:makeDoorCommand"
+status = "compared"
+
+[[function]]
+address = 0x00397010
+name = "Door_Close"
+page = "tasks.md#code-objects-opening"
+role = "state command 3 (close) to the door"
+level = "confirmed-code"
+coney = "src/scripting/object_bindings.cpp:makeDoorCommand"
+status = "compared"
+
+[[function]]
 address = 0x00397078
 name = "Door_SetPickable"
 page = "objects.md#lock-pick"
@@ -280,15 +307,61 @@ page = "objects.md#original-structure"
 role = "pushes the door's arguments, creates it by type name"
 level = "confirmed-code"
 coney = "src/scripting/object_bindings.cpp:makeSpawnDoor"
-status = "legacy"
+status = "compared"
+
+[[function]]
+address = 0x00397338
+name = "Door_DisableCollision"
+page = "tasks.md#code-objects-doors"
+role = "state command 5 (collision off) to the door"
+level = "confirmed-code"
+coney = "src/scripting/object_bindings.cpp:makeDoorCommand"
+status = "compared"
+
+[[function]]
+address = 0x00397400
+name = "Door_GetLeftLeaf"
+page = "tasks.md#code-objects-leaves"
+role = "message `0x10`, then the left leaf's handle"
+level = "confirmed-code"
+coney = "src/scripting/object_bindings.cpp:makeLeafHandle"
+status = "compared"
+
+[[function]]
+address = 0x00397478
+name = "Door_GetRightLeaf"
+page = "tasks.md#code-objects-leaves"
+role = "message `0x10`, then the right leaf's handle or NilHandle"
+level = "confirmed-code"
+coney = "src/scripting/object_bindings.cpp:makeLeafHandle"
+status = "compared"
+
+[[function]]
+address = 0x00397508
+name = "Door_IsOpen"
+page = "tasks.md#code-objects-door-states"
+role = "message `0x0c`: whether the door is open"
+level = "confirmed-code"
+coney = "src/scripting/object_bindings.cpp:makeIsDoorOpen"
+status = "compared"
 
 [[function]]
 address = 0x00398598
 name = "ObjectList_LoadObjsFile"
 page = "objects.md#objs-file"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
-coney = "src/world_objects/placed_objects_file.h:parsePlacedObjects"
-status = "legacy"
+coney = "src/gamemodes/level_start.cpp:loadPlacedObjects"
+status = "compared"
+
+[[function.gaps]]
+what = "a file shorter than its count, or a line that does not read, keeps what it read; Coney refuses the whole file"
+relation = "stand-in"
+issue = 711
+
+[[function.gaps]]
+what = "the range of the file's records in the object list (+0x1c, +0x1e)"
+relation = "not-ported"
+issue = 711
 
 [[function]]
 address = 0x00398940
@@ -346,12 +419,30 @@ coney = "src/platform/play_level_world.cpp:PlayLevelMode::heldDrawOf"
 status = "legacy"
 
 [[function]]
+address = 0x003a46c8
+name = "CollisionTri_ClearFlag1"
+page = "tasks.md#code-objects-nav-links"
+role = "turns a level triangle off (bit 0 cleared)"
+level = "confirmed-code"
+coney = "src/world_objects/object_services.cpp:setTrianglesEnabled"
+status = "compared"
+
+[[function]]
+address = 0x003a4710
+name = "CollisionTri_SetFlag1"
+page = "tasks.md#code-objects-nav-links"
+role = "turns a level triangle on (bit 0 set)"
+level = "confirmed-code"
+coney = "src/world_objects/object_services.cpp:setTrianglesEnabled"
+status = "compared"
+
+[[function]]
 address = 0x003a4768
 name = "Collision_SetTriangleTwoSided"
 page = "objects.md#door-blocking"
 level = "confirmed-code"
 coney = "src/world_objects/object_services.h:markTriangles"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x003a5530
@@ -369,7 +460,32 @@ name = "DoorFence_OnHit"
 page = "objects.md#original-structure"
 level = "confirmed-code"
 coney = "src/world_objects/doors.h:Doors::hit"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the extra dust and bursts at the break, dyn_door_wall_a's and dyn_door_wall_b's bursts"
+relation = "not-ported"
+issue = 707
+
+[[function.gaps]]
+what = "the boards' random model and throw"
+relation = "stand-in"
+issue = 707
+
+[[function.gaps]]
+what = "dyn_door_wall_a stays, not broken or removed"
+relation = "stand-in"
+issue = 707
+
+[[function.gaps]]
+what = "the break's material pair, which the original skips while bit 4 of game state word 3 is set"
+relation = "stand-in"
+issue = 707
+
+[[function.gaps]]
+what = "the hit mode"
+relation = "not-ported"
+issue = 707
 
 [[function]]
 address = 0x003b2f40
@@ -377,7 +493,26 @@ name = "DoorFence_Init"
 page = "objects.md#original-structure"
 level = "confirmed-code"
 coney = "src/world_objects/doors.h:Doors::spawn"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the model by fence class, dyn_door_vargas' child object and the hit mode"
+relation = "not-ported"
+issue = 707
+
+[[function]]
+address = 0x003b3158
+name = "DoorFence_OnMessage"
+page = "objects.md#barriers"
+role = "a barrier's messages: the hit, whether it can be hit, its hitpoints"
+level = "confirmed-code"
+coney = "src/world_objects/doors.cpp:Doors::setHittable"
+status = "compared"
+
+[[function.gaps]]
+what = "the hit mode set with the hitpoints"
+relation = "not-ported"
+issue = 707
 
 [[function]]
 address = 0x003b3220
@@ -385,7 +520,7 @@ name = "DoorFence_Update"
 page = "objects.md#original-structure"
 level = "confirmed-code"
 coney = "src/world_objects/doors.h:Doors::tick"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x003e29e8
@@ -437,13 +572,163 @@ coney = "src/world_objects/object_tasks.h:ObjectiveMarker"
 status = "legacy"
 
 [[function]]
+address = 0x003f4950
+name = "SubSlidingDoor_PlaceLeaf"
+page = "script-types.md#sliding-doors"
+role = "places a sliding door's leaf along its slide"
+level = "confirmed-code"
+coney = "src/world_objects/doors.cpp:slideDirection"
+status = "compared"
+
+[[function]]
+address = 0x003f4c80
+name = "SlidingDoor_SpawnLeaves"
+page = "script-types.md#sliding-doors"
+role = "spawns a sliding door's leaves by its type"
+level = "confirmed-code"
+coney = "src/world_objects/doors.h:Doors::spawn"
+status = "compared"
+
+[[function.gaps]]
+what = "the leaves' spawn records pinned for streaming"
+relation = "not-ported"
+issue = 710
+
+[[function]]
+address = 0x003f5608
+name = "SlidingDoor_StateCommand"
+page = "script-types.md#sliding-doors"
+role = "a sliding door's open and close commands, with its triangles and links"
+level = "confirmed-code"
+coney = "src/world_objects/doors.h:Doors::command"
+status = "compared"
+
+[[function.gaps]]
+what = "the leaves' spawn records pinned for streaming"
+relation = "not-ported"
+issue = 710
+
+[[function]]
+address = 0x003f5a68
+name = "SubSlidingDoor_Update"
+page = "script-types.md#sliding-doors"
+role = "moves a sliding door's leaf along its slide and stops it at the end"
+level = "confirmed-code"
+coney = "src/world_objects/doors.cpp:stepSlidingLeaf"
+status = "compared"
+
+[[function.gaps]]
+what = "the leaves unpinned at the stop"
+relation = "not-ported"
+issue = 710
+
+[[function.gaps]]
+what = "the leaf's collision body moved with it"
+relation = "not-ported"
+issue = 707
+
+[[function]]
+address = 0x003f5d10
+name = "DynDoorSliding_Init"
+page = "script-types.md#sliding-doors"
+role = "a sliding door's set-up from its type"
+level = "confirmed-code"
+coney = "src/world_objects/doors.h:Doors::spawn"
+status = "compared"
+
+[[function.gaps]]
+what = "the leaves kept pinned until stopped"
+relation = "not-ported"
+issue = 710
+
+[[function]]
+address = 0x003f5ef0
+name = "DynDoorSliding_OnMessage"
+page = "script-types.md#sliding-doors"
+role = "a sliding door's messages: open by a human, start, stop, destroy"
+level = "confirmed-code"
+coney = "src/world_objects/doors.h:Doors::openBy"
+status = "compared"
+
+[[function.gaps]]
+what = "the destroy, detach and data messages"
+relation = "not-ported"
+issue = 707
+
+[[function.gaps]]
+what = "the start and stop messages' streaming pins"
+relation = "not-ported"
+issue = 710
+
+[[function]]
+address = 0x003f8048
+name = "DoorSwing_CountLockPick"
+page = "script-types.md#door-helpers"
+role = "counts a swinging door's finished picks; true on the third"
+level = "confirmed-code"
+coney = "src/world_objects/doors.cpp:Doors::lockPickAbandoned"
+status = "compared"
+
+[[function]]
 address = 0x003f80f0
 name = "DoorSwing_SetUpType"
 page = "objects.md#original-structure"
 role = "per type name: leaf models, sounds, flags"
 level = "confirmed-code"
 coney = "src/world_objects/doors.h:swingingDoorSetup"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "dyn_door_chainlnk_pick's leaf (dyn_dr_chainlnk_a) and dyn_door_stlslot's first leaf (dyn_dr_steel_b)"
+relation = "stand-in"
+issue = 707
+
+[[function]]
+address = 0x003f8fd0
+name = "DoorSwing_SwingTo"
+page = "objects.md#door-states"
+role = "each leaf's target rotation by the angle (message `0x35`), and the door's next update next tick"
+level = "confirmed-code"
+coney = "src/world_objects/doors.cpp:Doors::swingTo"
+status = "compared"
+
+[[function.gaps]]
+what = "the leaves' streaming pins"
+relation = "not-ported"
+issue = 710
+
+[[function.gaps]]
+what = "the next-tick update on every swing, not only an opening one"
+relation = "stand-in"
+issue = 707
+
+[[function]]
+address = 0x003f9368
+name = "DoorSwing_ResetLeaves"
+page = "objects.md#leaves"
+role = "the leaves back at their closed poses, the angle 0"
+level = "confirmed-code"
+coney = "src/world_objects/doors.cpp:Doors::resetLeaves"
+status = "compared"
+
+[[function.gaps]]
+what = "the leaves' next update starting from their previous target"
+relation = "stand-in"
+issue = 707
+
+[[function]]
+address = 0x003f9588
+name = "DoorSwing_SetPickable"
+page = "objects.md#lock-pick"
+role = "the lock-pick glint and the collision body, on or off"
+level = "confirmed-code"
+coney = "src/world_objects/doors.cpp:Doors::pickableOn"
+status = "compared"
+
+[[function.gaps]]
+what = "pickable on clears the kept angle"
+relation = "stand-in"
+issue = 707
 
 [[function]]
 address = 0x003f9770
@@ -452,7 +737,7 @@ page = "objects.md#original-structure"
 role = "message `0x22`: open, close, collision, pickable"
 level = "confirmed-code"
 coney = "src/world_objects/doors.h:Doors::command"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x003f9910
@@ -461,7 +746,12 @@ page = "objects.md#original-structure"
 role = "message `0x0b`: a human opens it, away from them"
 level = "confirmed-code"
 coney = "src/scripting/object_bindings.cpp:makeDoorOpen"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the side test's sign and a kept angle's command 5 before it"
+relation = "stand-in"
+issue = 707
 
 [[function]]
 address = 0x003f9ad0
@@ -470,7 +760,42 @@ page = "objects.md#original-structure"
 role = "message 1"
 level = "confirmed-code"
 coney = "src/world_objects/doors.h:Doors::hit"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the hit sound on every store hit, and the leaf step on every hit under 7 and on the breaking hit"
+relation = "stand-in"
+issue = 707
+
+[[function.gaps]]
+what = "the bursts 1 m up (Coney bursts at the hinge)"
+relation = "stand-in"
+issue = 707
+
+[[function.gaps]]
+what = "the two bursts at the break"
+relation = "not-ported"
+issue = 707
+
+[[function.gaps]]
+what = "the body removal, the call on the attacker and the leaves' next models at the break"
+relation = "not-ported"
+issue = 707
+
+[[function.gaps]]
+what = "the cabins' GLASS x GLASS pair at the break (Coney plays it for dyn_door_store only)"
+relation = "not-ported"
+issue = 707
+
+[[function.gaps]]
+what = "the store's whole break run again on every hit after it (Coney's broken store takes no more hits)"
+relation = "stand-in"
+issue = 707
+
+[[function.gaps]]
+what = "the cabin pieces' throw"
+relation = "stand-in"
+issue = 707
 
 [[function]]
 address = 0x003fa438
@@ -479,7 +804,47 @@ page = "objects.md#original-structure"
 role = "message 1"
 level = "confirmed-code"
 coney = "src/world_objects/doors.h:Doors::hit"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "flag 0x800000 on every hit"
+relation = "not-ported"
+issue = 707
+
+[[function.gaps]]
+what = "the model stages' leaf removal and the door shown (liz's first stage, dclub's stage)"
+relation = "not-ported"
+issue = 707
+
+[[function.gaps]]
+what = "the stages gated by the stages taken, not by the door's current model"
+relation = "stand-in"
+issue = 707
+
+[[function.gaps]]
+what = "the hit mode"
+relation = "not-ported"
+issue = 707
+
+[[function.gaps]]
+what = "stall's leaves removed at the break"
+relation = "not-ported"
+issue = 707
+
+[[function.gaps]]
+what = "the two wreck pieces placed at the door's pose, not thrown"
+relation = "stand-in"
+issue = 707
+
+[[function.gaps]]
+what = "the dust's random heights and the splinters' colours on every hit (dyn_door_dclub picks one of its two)"
+relation = "not-ported"
+issue = 707
+
+[[function.gaps]]
+what = "the break's dust at the hit point, not at the original's camera-derived offset; dclub's three bursts at the hit point 0.5 m up"
+relation = "stand-in"
+issue = 707
 
 [[function]]
 address = 0x003fb5a0
@@ -487,7 +852,7 @@ name = "SubSwingingDoor_Update"
 page = "objects.md#original-structure"
 level = "confirmed-code"
 coney = "src/world_objects/doors.cpp:stepLeaf"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x003fb5f8
@@ -495,7 +860,31 @@ name = "DoorSwinging_Init"
 page = "objects.md#original-structure"
 level = "confirmed-code"
 coney = "src/world_objects/doors.h:Doors::spawn"
-status = "legacy"
+status = "compared"
+
+[[function]]
+address = 0x003fb8d0
+name = "DynDoorSwinging_OnMessage"
+page = "objects.md#door-states"
+role = "a swinging door's messages: use, hit, open, is-open, destroy, hitpoints, state commands, angle"
+level = "confirmed-code"
+coney = "src/world_objects/doors.cpp:Doors::openToDegree"
+status = "compared"
+
+[[function.gaps]]
+what = "message `0x10`'s leaf pins"
+relation = "not-ported"
+issue = 710
+
+[[function.gaps]]
+what = "message `0x20`'s leaf removal"
+relation = "not-ported"
+issue = 1021
+
+[[function.gaps]]
+what = "message `0x3e`, the angle answered"
+relation = "not-ported"
+issue = 707
 
 [[function]]
 address = 0x003fbba0
@@ -503,7 +892,7 @@ name = "DynDoorSwinging_Update"
 page = "objects.md#original-structure"
 level = "confirmed-code"
 coney = "src/world_objects/doors.h:Doors::tick"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x003fe490

@@ -61,6 +61,9 @@ struct DebugServices {
     /// The levels the play mode can play (`level2`), listed on the Levels page in place of the game state's level
     /// table; empty: the table is listed.
     std::function<std::vector<std::string>()> playableLevels;
+    /// Whether the level-table record `name` can load: its level file (`<name>.lev`) is on the disc. The Levels page
+    /// leaves out a record that cannot (the test record `armies`); empty: every record is listed.
+    std::function<bool(std::string_view name)> levelLoads;
     /// Where the Tunables page saves and loads overrides (`coney-tunables.ini` in the user's config folder, or the
     /// `--tunables` file); empty: no saving.
     std::string tunablesFile;
@@ -167,6 +170,7 @@ class DebugSession {
     /// Whether the noclip hotkey (kNoclipChord, R3 + d-pad left) toggles the player's noclip in play; on by default,
     /// and the Player page switches it off.
     [[nodiscard]] bool noclipHotkey() const { return m_noclipHotkey; }
+    /// Turns the noclip hotkey on or off (the Player page's switch).
     void setNoclipHotkey(bool on) { m_noclipHotkey = on; }
     /// Switches the player's noclip (PlayControls::setNoclip()) to `on` with a notice saying so; with no player, or
     /// one who cannot noclip, only prints why.

@@ -20,3 +20,16 @@ def test_the_debug_menus_story_missions_match_the_mission_list() -> None:
     story = [m for m in missions.load(ROOT).missions if m.group == "story"]
     expected = [(i + 1, m.title, m.name, len(m.checkpoints)) for i, m in enumerate(story)]
     assert _table() == expected
+
+
+def _bonus_table() -> list[tuple[str, int]]:
+    """The rows of the C++ bonus table: level, checkpoints."""
+    text = (ROOT / "src/debug/story_missions.cpp").read_text(encoding="utf-8")
+    rows = re.findall(r'\{"[^"]*", "(level\d+)", (\d+)\}', text)
+    return [(level, int(cp)) for level, cp in rows]
+
+
+def test_the_debug_menus_bonus_missions_match_the_flashbacks_and_armies() -> None:
+    listed = missions.load(ROOT).missions
+    expected = [(m.name, len(m.checkpoints)) for group in ("flashback", "armies") for m in listed if m.group == group]
+    assert _bonus_table() == expected

@@ -20,4 +20,17 @@ struct StoryMission {
 /// The story missions in play order.
 [[nodiscard]] const std::array<StoryMission, 18>& storyMissions();
 
+/// One of the bonus missions outside the story, as the Missions page lists them after the story's: the five
+/// flashbacks and the five stages of Armies of the Night, which the hub's clubhouse trophies start
+/// (docs/research/armies.md#what-it-is). Its label is Coney's own; its level and checkpoint count come from
+/// research/missions.yaml (the `flashback` and `armies` groups, in their order), which a Python test checks.
+struct BonusMission {
+    std::string_view label; ///< Coney's label: `Flashback 1`, `Armies of the Night 1`.
+    std::string_view level; ///< The level it plays in (`level60`).
+    int checkpoints;        ///< The level's sections: checkpoints 1 to this are valid.
+};
+
+/// The flashbacks in their trophies' order, then the Armies of the Night stages in play order.
+[[nodiscard]] const std::array<BonusMission, 10>& bonusMissions();
+
 } // namespace coney::debug

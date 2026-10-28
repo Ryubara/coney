@@ -305,6 +305,31 @@ void fillSandboxLayouts(MenuPage& page, DebugSession& session) {
     }
 }
 
+// A mission's page: its level, then one item per checkpoint that starts the level there through the session's
+// loadLevelAt service, and the log.
+std::shared_ptr<MenuPage> missionPage(DebugSession& session, std::string title, std::string_view level,
+                                      int checkpoints) {
+    auto sub = std::make_shared<MenuPage>(std::move(title));
+    sub->add(watchItem("Level", [level] { return std::string(level); }));
+    for (int checkpoint = 1; checkpoint <= checkpoints; ++checkpoint) {
+        sub->add(actionItem(std::format("Checkpoint {}", checkpoint),
+                            [&session, level, checkpoint] {
+                                const auto& loader = session.services().loadLevelAt;
+                                if (!loader) {
+                                    session.print("missions: cannot start a mission in this run");
+                                    return;
+                                }
+                                session.print(
+                                    loader(level, checkpoint)
+                                        ? std::format("missions: starting {} at checkpoint {}", level, checkpoint)
+                                        : std::format("missions: {} could not be started", level));
+                            }))
+            .withHelp("Starts the mission's level from this checkpoint, with the player as the script makes him.");
+    }
+    sub->add(logItem("Log", [&session] { return session.log().last(3); }));
+    return sub;
+}
+
 // NOLINTEND(bugprone-exception-escape)
 
 } // namespace
@@ -345,11 +370,26 @@ void addLevelsPage(DebugSession& session) {
                 page.add(watchItem("Level table", [] { return std::string("empty: run with --disc"); }))
                     .withHelp("The table is filled by the game's config scripts (CfgLevelName).");
             } else {
+                // A record whose level file is not on the disc cannot load, in the original as here (its LoadLevel
+                // reads `<name>.lev`), and choosing it left a black screen: such records are named once, not offered.
+                const auto& loads = session.services().levelLoads;
+                std::string leftOut;
                 for (std::size_t i = 0; i < LevelTable::kCapacity; ++i) {
-                    if (const LevelRecord* record = state->levels.at(i); record != nullptr) {
-                        page.add(actionItem(std::format("{:03} {}", i, record->name),
-                                            [load, name = record->name] { load(name); }));
+                    const LevelRecord* record = state->levels.at(i);
+                    if (record == nullptr) {
+                        continue;
                     }
+                    if (loads && !loads(record->name)) {
+                        leftOut += std::format("{}{:03} {}", leftOut.empty() ? "" : ", ", i, record->name);
+                        continue;
+                    }
+                    page.add(actionItem(std::format("{:03} {}", i, record->name),
+                                        [load, name = record->name] { load(name); }));
+                }
+                if (!leftOut.empty()) {
+                    page.add(watchItem("No level file", [leftOut] { return leftOut; }))
+                        .withHelp("Level-table records with no .lev on the disc: they cannot load, so they are not "
+                                  "offered.");
                 }
             }
             page.add(submenuItem("Sandbox layouts", [&session] {
@@ -369,34 +409,23 @@ void addMissionsPage(DebugSession& session) {
             for (const StoryMission& mission : storyMissions()) {
                 // The label is the mission's place in the story and its title; the tag the level and its checkpoints.
                 MenuItem item = submenuItem(std::format("{}. {}", mission.number, mission.title), [&session, mission] {
-                    auto sub = std::make_shared<MenuPage>(std::format("Mission {}", mission.number));
-                    sub->add(watchItem("Level", [mission] { return std::string(mission.level); }));
-                    for (int checkpoint = 1; checkpoint <= mission.checkpoints; ++checkpoint) {
-                        sub->add(actionItem(std::format("Checkpoint {}", checkpoint),
-                                            [&session, mission, checkpoint] {
-                                                const auto& loader = session.services().loadLevelAt;
-                                                if (!loader) {
-                                                    session.print("missions: cannot start a mission in this run");
-                                                    return;
-                                                }
-                                                session.print(
-                                                    loader(mission.level, checkpoint)
-                                                        ? std::format("missions: starting {} at checkpoint {}",
-                                                                      mission.level, checkpoint)
-                                                        : std::format("missions: {} could not be started",
-                                                                      mission.level));
-                                            }))
-                            .withHelp("Starts the mission's level from this checkpoint, with the player as the script "
-                                      "makes him.");
-                    }
-                    sub->add(logItem("Log", [&session] { return session.log().last(3); }));
-                    return sub;
+                    return missionPage(session, std::format("Mission {}", mission.number), mission.level,
+                                       mission.checkpoints);
+                });
+                item.detail = std::format("{}, {} cp", mission.level, mission.checkpoints);
+                page.add(std::move(item));
+            }
+            // Then the bonus missions the hub's trophies start: the flashbacks and Armies of the Night.
+            for (const BonusMission& mission : bonusMissions()) {
+                MenuItem item = submenuItem(std::string(mission.label), [&session, mission] {
+                    return missionPage(session, std::string(mission.label), mission.level, mission.checkpoints);
                 });
                 item.detail = std::format("{}, {} cp", mission.level, mission.checkpoints);
                 page.add(std::move(item));
             }
         },
-        "The story's 18 missions in order; jump to any mission or checkpoint.");
+        "The story's 18 missions in order, then the five flashbacks and the five Armies of the Night stages; jump to "
+        "any mission or checkpoint.");
 }
 
 } // namespace coney::debug

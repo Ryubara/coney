@@ -279,8 +279,17 @@ void GameSession::startAtLevel(std::string_view level, int checkpoint, std::func
     m_flow->startAtLevel(level, checkpoint, std::move(ready));
 }
 
+bool GameSession::levelLoads(std::string_view level) const {
+    return m_wad.lookup(std::format("{}.lev", level)).has_value();
+}
+
 bool GameSession::jumpToLevel(std::string_view level, int checkpoint) {
     if (!m_flow->state().levels.find(level)) {
+        return false;
+    }
+    // A record with no level file (the test record `armies`) would leave the level flow with nothing to show.
+    if (!levelLoads(level)) {
+        m_log(std::format("level flow: jump to {}: no {}.lev on the disc, so it cannot load; ignored\n", level, level));
         return false;
     }
     m_pendingLevel = std::string(level);

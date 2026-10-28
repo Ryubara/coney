@@ -9,7 +9,9 @@ namespace coney {
 /// The mission stopwatch (`W_StopWatch`, the object at `*0x0051504c`): one countdown or count-up timer for the whole
 /// game. `W_SetStopWatch` sets its time, target and callback; `W_StartStopWatch` runs or stops it; each frame of play
 /// the time moves toward the target by the game time that passed, and on reaching it the watch stops and its callback
-/// is due. Times are in milliseconds of the game timer, so a fixed-step test drives it exactly.
+/// is due. Its time is in milliseconds; the game timer's readings it takes are in GameTimer ticks, so a fixed-step test
+/// drives it exactly. An update adds only the whole milliseconds since the last reading, so the watch runs slow by the
+/// fractions it drops: 99.999 s takes 3031 steps of 1/30 s (docs/research/armies.md#timer).
 ///
 /// **Coney's stand-ins:** the rate (`+0x10`), whose writer is not traced, is 1. The warning beep (sound `0x0058b9f0`,
 /// at most once a second inside the warning window while counting down) is reported by step() for the caller to play;
@@ -29,17 +31,17 @@ class StopWatch {
     /// window back to 0 and the last beep to 1000.
     /// @orig 0x004235f0 W_SetStopWatch (unknown)
     void set(std::int32_t timeMs, std::int32_t targetMs, std::string callback);
-    /// `W_StartStopWatch(run)`: runs or stops the watch, taking the game timer's reading `nowMs` so a resumed watch
-    /// does not count the time it was stopped.
+    /// `W_StartStopWatch(run)`: runs or stops the watch, taking the game timer's reading `nowTicks` (GameTimer ticks)
+    /// so a resumed watch does not count the time it was stopped.
     /// @orig 0x004233a8 StopWatch_Start (unknown)
-    void start(bool run, std::uint64_t nowMs);
+    void start(bool run, std::uint64_t nowTicks);
     /// `W_ShowStopWatch`'s part of the watch: the warning window `warnMs` (the beep's start is kept a second above it).
     void setWarning(std::int32_t warnMs);
 
-    /// A frame of play at game time `nowMs`: while running, moves the time toward the target by the time passed since
-    /// the last step, clamps it there on reaching or passing it and stops.
+    /// A frame of play at game time `nowTicks` (GameTimer ticks): while running, moves the time toward the target by
+    /// the time passed since the last step, clamps it there on reaching or passing it and stops.
     /// @orig 0x004233f8 StopWatch_Update (unknown)
-    Step step(std::uint64_t nowMs);
+    Step step(std::uint64_t nowTicks);
 
     /// `W_GetStopWatchTime()`: the current time.
     [[nodiscard]] std::int32_t time() const { return m_time; }
@@ -51,14 +53,14 @@ class StopWatch {
     [[nodiscard]] const std::string& callback() const { return m_callback; }
 
   private:
-    std::uint64_t m_lastMs = 0;  // `+0x00`: the game timer at the last step
-    std::int32_t m_time = 0;     // `+0x08`
-    std::int32_t m_target = 0;   // `+0x0c`
-    float m_rate = 1.0F;         // `+0x10`
-    bool m_running = false;      // `+0x14`
-    std::string m_callback;      // `+0x20`
-    std::int32_t m_warning = 0;  // `+0x40`
-    std::int32_t m_lastBeep = 0; // `+0x48`
+    std::uint64_t m_lastTicks = 0; // `+0x00`: the game timer at the last step, GameTimer ticks
+    std::int32_t m_time = 0;       // `+0x08`
+    std::int32_t m_target = 0;     // `+0x0c`
+    float m_rate = 1.0F;           // `+0x10`
+    bool m_running = false;        // `+0x14`
+    std::string m_callback;        // `+0x20`
+    std::int32_t m_warning = 0;    // `+0x40`
+    std::int32_t m_lastBeep = 0;   // `+0x48`
 };
 
 } // namespace coney

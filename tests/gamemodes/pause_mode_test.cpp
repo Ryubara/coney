@@ -6,10 +6,12 @@
 #include <array>
 #include <cstdint>
 #include <expected>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
@@ -17,6 +19,7 @@
 #include "core/error.h"
 #include "core/game_timer.h"
 #include "core/input_script.h"
+#include "gamemodes/armies_game_over_mode.h"
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/gameplay_mode.h"
 #include "gamemodes/level_flow_mode.h"
@@ -24,6 +27,7 @@
 #include "gamemodes/start_up_flow.h"
 #include "gui/global_strings.h"
 #include "gui/pause_menu/pause_menu.h"
+#include "hud/hud.h"
 #include "support/font_fixtures.h"
 #include "support/recording_device.h"
 #include "warriors/level_table.h"
@@ -36,6 +40,28 @@ using coney::PauseMode;
 using coney::StartUpFlow;
 
 namespace {
+
+// A loaded level that records how each frame was asked for: "frame", "with HUD" or "world only".
+class RecordingLevel final : public coney::GameMode, public coney::OverlaidLevel {
+  public:
+    explicit RecordingLevel(std::vector<std::string>& renders) : m_renders(renders) {}
+    [[nodiscard]] std::uint32_t id() const override { return 0x100; }
+    coney::ModeResult update(GameModeStack& /*stack*/, const coney::FrameTime& /*frame*/) override {
+        return coney::ModeResult::Stay;
+    }
+    void render(const coney::RenderTime& /*time*/) override { m_renders.emplace_back("frame"); }
+    void renderWithOverlay(const coney::RenderTime& /*time*/,
+                           const std::function<void(coney::graphics::RenderDevice&)>& /*overlay*/) override {
+        m_renders.emplace_back("with HUD");
+    }
+    void renderWorldWithOverlay(const coney::RenderTime& /*time*/,
+                                const std::function<void(coney::graphics::RenderDevice&)>& /*overlay*/) override {
+        m_renders.emplace_back("world only");
+    }
+
+  private:
+    std::vector<std::string>& m_renders;
+};
 
 // The start-up flow's modes with gameplay pushed alone in `level99` (checkpoint 3), an input script on port 1, and
 // the pause hooks recorded.
@@ -51,7 +77,7 @@ struct Run {
     std::unique_ptr<coney::ScriptedInput> input;
     GameTimer timer;
 
-    explicit Run(std::string_view script) {
+    explicit Run(std::string_view script, GameplayMode::LevelLoader loader = {}) {
         input = std::make_unique<coney::ScriptedInput>(coney::parseInputScript(script).value());
         stack.setInput(input.get());
         timer.setFixedStep(true);
@@ -60,8 +86,8 @@ struct Run {
         };
         flow = std::make_unique<StartUpFlow>(
             device, stack, sheets, strings, coney::LegalScreenSettings{},
-            [this](std::string_view line) { log.emplace_back(line); }, coney::script::ScriptSource{},
-            GameplayMode::LevelLoader{}, std::nullopt, 0);
+            [this](std::string_view line) { log.emplace_back(line); }, coney::script::ScriptSource{}, std::move(loader),
+            std::nullopt, 0);
         flow->setSheetRecordLoader(
             [](std::uint32_t /*record*/) -> std::expected<coney::graphics::SpriteSheet, coney::Error> {
                 return coney::test::testFontSheet();
@@ -212,6 +238,76 @@ TEST_CASE("mission failed: the launch pushes mode 0xc, and Restart level reloads
     CHECK(run.flow->state().checkPoint == 1);
     CHECK(run.flow->levelFlow().chosenLevel() == 1);
     CHECK(run.soundPauses == std::vector<bool>{true, false});
+}
+
+TEST_CASE("Armies game over: player 2's Start counts only when he is in the game", "[pause][armies]") {
+    // Expected: pause.md#an-game-over, confirmed (code): ANGameOver_Update reads player 2's Start only when the game
+    // state's +0x22c human has a pad record.
+    Run run("1 p2 connect\n6 p2 tap start\n12 tap start\n");
+    // The level's set-up clears the credits: give them after it, as the stage's script does.
+    run.frames(2);
+    run.flow->hud().armies().setCredits(3);
+    run.flow->launchArmiesGameOver();
+    run.frames(8);
+    // Level99 here has no player 2: his Start spends nothing and the countdown goes on.
+    CHECK(run.flow->hud().armies().credits() == 3);
+    REQUIRE(run.stack.topId() == coney::ArmiesGameOverMode::kId);
+    CHECK_FALSE(run.flow->armiesGameOver().menu().choice());
+    // Player 1's Start spends a credit.
+    run.frames(4);
+    CHECK(run.flow->hud().armies().credits() == 2);
+}
+
+TEST_CASE("Armies game over: a continue enables each continuing player's panel again", "[pause][armies]") {
+    // Expected: armies.md#game-over, confirmed (code): ANGameOver_Toggle (0x001557f8) calls each continuing player's
+    // panel slot +0x24, ANHud_Enable (0x0020fd40), which makes the panel wanted again, so a join message turned on
+    // later no longer shows for him.
+    Run run("12 tap start\n");
+    run.frames(2);
+    coney::hud::ArmiesHud& armies = run.flow->hud().armies();
+    armies.setCredits(3);
+    // Player 1's panel, attached, then dropped by his knock-out.
+    armies.panelAttached(0);
+    armies.setJoinMessage(0, true);
+    armies.update(0, 60, {true, false}, {true, false});
+    armies.update(10, 60, {true, false}, {true, false});
+    REQUIRE(armies.joinShowing(0));
+    run.flow->launchArmiesGameOver();
+    run.frames(14);
+    REQUIRE(run.stack.topId() == GameplayMode::kId);
+    CHECK(armies.credits() == 2);
+    armies.setJoinMessage(0, true);
+    armies.update(20, 60, {true, false}, {false, false});
+    CHECK_FALSE(armies.joinShowing(0));
+}
+
+TEST_CASE("Armies game over: HUDLaunchANGameOver with the screen up closes it", "[pause][armies]") {
+    // Expected: pause.md#an-game-over, confirmed (code): ANGameOver_Toggle pops mode 0xd when it is on top.
+    Run run("");
+    run.frames(2);
+    run.flow->launchArmiesGameOver();
+    run.frames(2);
+    REQUIRE(run.stack.topId() == coney::ArmiesGameOverMode::kId);
+    run.flow->launchArmiesGameOver();
+    run.frames(1);
+    CHECK(run.stack.topId() == GameplayMode::kId);
+}
+
+TEST_CASE("Armies game over: the screen shows the level's world under its menu, without the HUD", "[pause][armies]") {
+    // Expected: armies.md#game-over, confirmed (code): mode 0xd's update (Gm_ANGameOver_Update, 0x00155c78) renders
+    // only the world's viewport (GameMode_RenderViewportAlt, 0x00156540) and the menu, no HUD.
+    std::vector<std::string> renders;
+    Run run("",
+            [&renders](const coney::LevelStart& /*start*/, const coney::ScriptedCast& /*cast*/)
+                -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
+                return std::make_unique<RecordingLevel>(renders);
+            });
+    run.frames(2);
+    run.flow->launchArmiesGameOver();
+    run.frames(2);
+    REQUIRE(run.stack.topId() == coney::ArmiesGameOverMode::kId);
+    REQUIRE_FALSE(renders.empty());
+    CHECK(renders.back() == "world only");
 }
 
 TEST_CASE("pause: the Options screen's values read from and write to the game state where save.md puts them",

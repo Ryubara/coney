@@ -1136,6 +1136,14 @@ coney = "src/scripting/rumble_match_bindings.cpp:makeHudLaunchRumbleWin"
 status = "legacy"
 
 [[function]]
+address = 0x0036f1b8
+name = "lua_HUDLaunchANGameOver"
+page = "../references/bindings/hud.md#hudlaunchangameover"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.cpp:makeHudLaunchArmiesGameOver"
+status = "compared"
+
+[[function]]
 address = 0x0036f218
 name = "lua_HUDLaunchMissionComplete"
 page = "../references/bindings/hud.md#hudlaunchmissioncomplete"
@@ -1256,6 +1264,30 @@ coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
 status = "legacy"
 
 [[function]]
+address = 0x003701c8
+name = "lua_HUDANEnableJoinMsg"
+page = "../references/bindings/hud.md#hudanenablejoinmsg"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addArmiesBindings"
+status = "compared"
+
+[[function]]
+address = 0x00370258
+name = "lua_HUDANSetCredit"
+page = "../references/bindings/hud.md#hudansetcredit"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addArmiesBindings"
+status = "compared"
+
+[[function]]
+address = 0x00370290
+name = "lua_HUDANGetCredit"
+page = "../references/bindings/hud.md#hudangetcredit"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addArmiesBindings"
+status = "compared"
+
+[[function]]
 address = 0x00370690
 name = "lua_HUDSetRadarObjectFlash"
 page = "../references/bindings/hud.md#hudsetradarobjectflash"
@@ -1326,6 +1358,14 @@ page = "../references/bindings/hud.md#hudaddradarhuman"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addRadarBindings"
 status = "legacy"
+
+[[function]]
+address = 0x00370c00
+name = "lua_HUDANSetGOSignMode"
+page = "../references/bindings/hud.md#hudansetgosignmode"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addArmiesBindings"
+status = "compared"
 
 [[function]]
 address = 0x00370c68
@@ -1769,6 +1809,20 @@ coney = "src/scripting/hub_bindings.cpp:makeGangClearHandlers"
 status = "legacy"
 
 [[function]]
+address = 0x00385918
+name = "Object_GetHitpoints"
+page = "scripting.md#bindings"
+role = "`GetHitpoints`: a world object's `+0x128`, 0 for none"
+level = "confirmed-code"
+coney = "src/scripting/object_bindings.cpp:makeGetHitpoints"
+status = "compared"
+
+[[function.gaps]]
+what = "the hitpoints of world objects other than doors and barriers"
+relation = "stand-in"
+issue = 1021
+
+[[function]]
 address = 0x00385950
 name = "Object_GetTypeBits"
 page = "scripting.md#bindings"
@@ -2106,7 +2160,7 @@ name = "StopWatch_Start"
 page = "scripting.md#stopwatch"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/warriors/stop_watch.h:StopWatch::start"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x004233f8
@@ -2114,7 +2168,7 @@ name = "StopWatch_Update"
 page = "scripting.md#stopwatch"
 level = "confirmed-code"
 coney = "src/warriors/stop_watch.h:StopWatch::step"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x004235e0
@@ -2140,7 +2194,7 @@ page = "scripting.md#warriors-functions"
 role = "the stopwatch's current time (`+0x08`, ms)"
 level = "confirmed-code"
 coney = "src/scripting/player_bindings.cpp:addWorldBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00423670
@@ -2149,4 +2203,4 @@ page = "scripting.md#warriors-functions"
 role = "`W_ShowStopWatch(show, label, warn)`: shown sets the warning window `+0x40` to warn and the next beep `+0x48` to warn + 1000; hidden resets them to 0 and 1000; then `StopWatch_SetDisplay`"
 level = "confirmed-code"
 coney = "src/scripting/hud_bindings.cpp:addScoreBindings"
-status = "legacy"
+status = "compared"

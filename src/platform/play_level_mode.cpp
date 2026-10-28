@@ -687,6 +687,8 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     hudFrame.players.at(0).rage = rage.value();
     hudFrame.players.at(0).rageMax = rage.maximum();
     hudFrame.players.at(0).raging = rage.raging();
+    // Knocked out by his health running out or by a script (`Human_IsKnockedOut`), which drops his Armies panel.
+    hudFrame.knockedOut.at(0) = m_player->human().knockedOut();
     // Player 1's radar: his feet, facing and speed, and the camera's facing in the humans' convention (0 faces +y,
     // positive to the left); RenderWare's (x, y, z) is the game's (x, -z, y).
     hudFrame.radar.known = true;
@@ -844,7 +846,9 @@ void PlayLevelMode::render(const RenderTime& time) {
     if (effectsFirst) {
         m_engine.addFrameOverlay([this](RenderEngine& engine) { m_levelEffects->drawScreenEffects(engine); });
     }
-    m_engine.addFrameOverlay([this](RenderEngine& engine) { m_hud->draw(engine); });
+    if (!m_hudHidden) {
+        m_engine.addFrameOverlay([this](RenderEngine& engine) { m_hud->draw(engine); });
+    }
     if (m_levelEffects && !effectsFirst) {
         m_engine.addFrameOverlay([this](RenderEngine& engine) { m_levelEffects->drawScreenEffects(engine); });
     }
@@ -914,6 +918,13 @@ void PlayLevelMode::renderWithOverlay(const RenderTime& time,
     m_overlay = &overlay;
     render(time);
     m_overlay = nullptr;
+}
+
+void PlayLevelMode::renderWorldWithOverlay(const RenderTime& time,
+                                           const std::function<void(graphics::RenderDevice&)>& overlay) {
+    m_hudHidden = true;
+    renderWithOverlay(time, overlay);
+    m_hudHidden = false;
 }
 
 world::DebugCamera PlayLevelMode::blendedFreeCamera(const Interpolated<world::DebugCamera>& camera, float alpha) {

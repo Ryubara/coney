@@ -399,6 +399,15 @@ coney = "src/effects/particles.h:ParticleSystems::setEmitting"
 status = "legacy"
 
 [[function]]
+address = 0x003976c8
+name = "Obj_ChangeState"
+page = "tasks.md#code-objects-dynamic-objects"
+role = "message `0x22` with a state to an object"
+level = "confirmed-code"
+coney = "src/scripting/object_bindings.cpp:makeObjectChangeState"
+status = "compared"
+
+[[function]]
 address = 0x00397730
 name = "Particle_Kill"
 page = "tasks.md#code-particles-spawning"

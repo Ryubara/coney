@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "warriors/stop_watch.h"
 
-#include <cmath>
 #include <utility>
+
+#include "core/game_timer.h"
 
 namespace coney {
 
@@ -10,6 +11,8 @@ namespace {
 
 // The gap between warning beeps, ms.
 constexpr std::int32_t kBeepGapMs = 1000;
+// GameTimer ticks in a millisecond.
+constexpr std::uint64_t kTicksPerMs = GameTimer::kTicksPerSecond / 1000;
 
 } // namespace
 
@@ -21,23 +24,33 @@ void StopWatch::set(std::int32_t timeMs, std::int32_t targetMs, std::string call
     m_lastBeep = kBeepGapMs;
 }
 
-void StopWatch::start(bool run, std::uint64_t nowMs) {
+void StopWatch::start(bool run, std::uint64_t nowTicks) {
+    // **Coney's stand-in**: the original also clears the beep's sound handle (`+0x44`); Coney's beep plays no sound,
+    // so it keeps none.
     m_running = run;
-    m_lastMs = nowMs;
+    m_lastTicks = nowTicks;
 }
 
+// StopWatch_Show's warning-window step (the display step is Hud::showStopWatch's).
+// @orig 0x00423670 StopWatch_Show (unknown)
 void StopWatch::setWarning(std::int32_t warnMs) {
     m_warning = warnMs;
     m_lastBeep = warnMs + kBeepGapMs;
 }
 
-StopWatch::Step StopWatch::step(std::uint64_t nowMs) {
+StopWatch::Step StopWatch::step(std::uint64_t nowTicks) {
     Step result;
-    if (!m_running || nowMs <= m_lastMs) {
+    // The whole milliseconds since the last reading (GameTimer_MsSince truncates), and nothing until one has passed;
+    // the reading is kept whole, so each update drops its fraction of a millisecond (33 of a step's 33.33).
+    if (!m_running || nowTicks <= m_lastTicks) {
         return result;
     }
-    const auto passed = static_cast<std::int64_t>(std::lround(static_cast<double>(nowMs - m_lastMs) * m_rate));
-    m_lastMs = nowMs;
+    const std::uint64_t passedMs = (nowTicks - m_lastTicks) / kTicksPerMs;
+    if (passedMs == 0) {
+        return result;
+    }
+    const auto passed = static_cast<std::int64_t>(static_cast<float>(passedMs) * m_rate);
+    m_lastTicks = nowTicks;
     const bool down = m_target < m_time;
     const std::int64_t next =
         down ? static_cast<std::int64_t>(m_time) - passed : static_cast<std::int64_t>(m_time) + passed;
@@ -49,7 +62,9 @@ StopWatch::Step StopWatch::step(std::uint64_t nowMs) {
         return result;
     }
     m_time = static_cast<std::int32_t>(next);
-    // Counting down inside the warning window: a beep at most once a second.
+    // Counting down inside the warning window: a beep at most once a second. **Coney's stand-in**: the window is
+    // measured from 0, not from the target as the original's is, and the beep is reported for the caller instead of
+    // played (its sound handle `+0x44` not kept).
     if (down && m_time <= m_warning && m_time <= m_lastBeep - kBeepGapMs) {
         m_lastBeep = m_time;
         result.beep = true;

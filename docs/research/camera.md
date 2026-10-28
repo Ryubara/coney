@@ -2165,8 +2165,11 @@ height set negative eases back to the present height before it switches off. Set
 2. **Project** `P` on the segment (`CamRail_ProjectOnSegment`, `0x00140308`): `Q` = the foot of the perpendicular,
    clamped to the segment's ends. With setting 0 on, when `Q` is farther than it from `P` in plan, `Q` moves toward
    `P` (in plan) until it is exactly that far: the camera leaves the rail to stay within reach. Confirmed (code).
-3. While the blend is on, `Q` = camera + (`Q` − camera) × blend and the blend grows by 5% a frame until it reaches
-   1 or the step is under 1 cm: a soft hand-over between segments. `Q` += the vector at `+0x330`, which is always zero:
+3. While the blend is on, `Q` = camera + (`Q` − camera) × blend and the blend is multiplied by 1.05 a frame
+   (`0x0013d7c4`); it ends (0) when the unblended step `Q` − camera is under 1 cm in plan (its square under 1e-4,
+   `0x0013d7ec`) or the grown blend reaches 1, and on that last frame `Q` stays unblended (the blended point is
+   kept only at `0x0013d814`, while the blend goes on): a soft hand-over between segments. Confirmed (code).
+   `Q` += the vector at `+0x330`, which is always zero:
    only the constructor (zero, `0x0013b25c`) and `CamRail_CopySettings` (`0x0013b3d0`) write it (mode 3 also
    subtracts it, `0x0013e4a8`). Confirmed (code).
 4. **Height**: with setting 1 on, `Q.z` is lowered to the first target's feet + setting 1 when it is higher (a
@@ -2286,6 +2289,11 @@ it, each with `CamSetupRail("rail", player, 22, {0, −0.25, 1.25}, 0.5, 90)`, t
   2 m from `Q` toward `P` in plan, at the pitch; the goal `+0x310` = the look-at point. `+0x3ea` = 1 when the first
   target stands to the left of the segment's direction (z of the cross product > 0). Switching setting 5 on later
   does not restart: the next start is the next activation. Confirmed (code).
+- **The pitch's start.** While setting 5 is off its current value is the lowest float; switched on, the update first
+  sets it to the camera's present pitch (`CamRail_PitchToPoint`, `0x0013f9b0`) and then eases it to the angle over
+  the time given (0 s in the Armies levels). An activation (`0x0013b508`) sets it, the field of view and the lead,
+  height, distance, shifts and fixed pitch at their targets at once and zeroes their times (not the look-at height
+  or setting 7). Confirmed (code).
 - **Projection in mode 3** (`0x00140308`): along the segment **in plan** (the plan distance divided by the plan
   length of the segment's unit vector, so the height follows the rail), and clamped only before the rail's first
   point and past its last; on an inner segment the point may run past the segment's end. Setting 0's reach is
@@ -3361,12 +3369,21 @@ The world viewer keeps its own free camera with the player camera's lens
 - **The rail, fixed and third-person cameras** (`src/camera/rail_camera.*`, `fixed_camera.*`, `third_camera.*`):
   the rail camera follows [Rail cameras](#rail) for player 1 (one target, the set-up's): the settings and their
   easing, the target and look-at points, the damping, mode 0's segment choice, foot, reach, hand-over, ceiling, fixed
-  pitch and end hold, and the leading modes. **Coney choices and stand-ins**: the end hold lasts only while its
-  condition does (what clears it is not traced); the tie between two nearest rail points, the 40% look-at catch-up
-  (`+0x3ec`), the `+0x330` vector, the split-screen halving and extras, mode 3 (settings 5, 6, 7) and the push out of
-  world collision are not built; a rail with no points stands 3 m behind and 1 m above the look-at point. The fixed
-  camera always looks at the average (the original's single-entry case is not traced). `CamDelete` forgets a fixed
-  camera as it does a locked one and keeps third-person cameras.
+  pitch and end hold, the leading modes and mode 3's start and trailing move. An activation (`CameraMakeActive`)
+  snaps the settings and runs one undamped 1/60 s update, as `CamRail_Activate` and `CamRail_Reset` do. **Coney
+  choices and stand-ins** (the side-by-side comparisons of `0x0013bad0`, `0x0013bfe0`, `0x0013d6b0` and `0x0013e708`
+  for [#85](issue:85) list each one, and each is marked at its line in the code, most citing
+  [#1017](issue:1017)): a held camera is placed again instead of put back, and `P` is not put back; a height
+  setting of exactly 0 counts as on; the damping skips no target state and has no 40% catch-up; the leading modes
+  walk the lead along the rail (no segment steps, joint mean or mirrored rail point) and read switch 7 as leading the
+  look-at point, where the original's switch 7 puts the camera off the rail beside the target (step 5 above), with
+  its collision rays; the end hold lasts only while its condition does (what clears it is not traced); the tie
+  between two nearest rail points (with the segment choice's other differences, [#956](issue:956)), the 40% look-at
+  catch-up (`+0x3ec`), the `+0x330` vector, the split-screen halving and extras, mode 3's keep-in-frame step
+  (setting 7 is kept, `0x00140d68` not built) and the push out of world collision are not built; a rail with no
+  points stands 3 m behind and 1 m above the look-at point. The fixed camera always looks at the average (the
+  original's single-entry case is not traced). `CamDelete` forgets a fixed camera as it does a locked one and keeps
+  third-person cameras.
 
 ### Notes for implementers {#notes}
 

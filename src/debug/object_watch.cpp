@@ -19,6 +19,8 @@ std::string_view doorClassName(world_objects::DoorClass doorClass) {
     switch (doorClass) {
     case world_objects::DoorClass::Swinging:
         return "swinging";
+    case world_objects::DoorClass::Sliding:
+        return "sliding";
     case world_objects::DoorClass::Barrier:
         return "barrier";
     case world_objects::DoorClass::Other:

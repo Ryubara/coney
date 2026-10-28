@@ -109,6 +109,7 @@ Value str(const char* text) { return Value(std::string(text)); }
 } // namespace
 
 TEST_CASE("every player binding is real in the table", "[player_bindings]") {
+    // Expected: unverified, #85 (Coney's binding table)
     for (const std::string_view name : coney::script::kPlayerBindings) {
         const auto table = coney::script::bindingTable();
         const auto found = std::ranges::find(table, name, &coney::script::BindingInfo::name);
@@ -118,6 +119,7 @@ TEST_CASE("every player binding is real in the table", "[player_bindings]") {
 }
 
 TEST_CASE("money: give, take, set and get by player, 1 by default", "[player_bindings]") {
+    // Expected: player-state.md#warriors-functions, confirmed (code)
     Harness h;
     h.first("GiveMoney", {Value(15.0)});
     h.first("GiveMoney", {Value(7.9), Value(2.0)});
@@ -132,6 +134,7 @@ TEST_CASE("money: give, take, set and get by player, 1 by default", "[player_bin
 }
 
 TEST_CASE("GiveMoney runs the money callback with the 0-based player and the amount", "[player_bindings]") {
+    // Expected: player-state.md#pickup-callback, confirmed (code)
     Harness h;
     h.state.player.moneyCallback = "Record";
     h.first("GiveMoney", {Value(5.0), Value(2.0)});
@@ -141,6 +144,7 @@ TEST_CASE("GiveMoney runs the money callback with the 0-based player and the amo
 }
 
 TEST_CASE("an item added with notify calls the money, item and human callbacks, in that order", "[player_bindings]") {
+    // Expected: player-state.md#pickup-callback, confirmed (code)
     Harness h;
     h.scripts.vm().registerFunction("Money", [&h](std::span<const Value> args) -> coney::script::binding::Results {
         h.recordedArgs.push_back({str("money"), args[0], args[1]});
@@ -177,6 +181,7 @@ TEST_CASE("an item added with notify calls the money, item and human callbacks, 
 }
 
 TEST_CASE("items, revives, keys and spray paint", "[player_bindings]") {
+    // Expected: player-state.md#inventory, confirmed (code)
     Harness h;
     h.first("CfgInventoryItem",
             {str("dyn_revival"), Value(1.0), Value(0.0), str("vags/interface/powerup"), Value(30000.0)});
@@ -197,6 +202,7 @@ TEST_CASE("items, revives, keys and spray paint", "[player_bindings]") {
 }
 
 TEST_CASE("the revive upgrade, once unlocked, lets a player carry four", "[player_bindings]") {
+    // Expected: player-state.md#inventory, confirmed (code)
     Harness h;
     h.first("UM_SetNumUnlockables", {Value(2.0)});
     h.first("UM_SetUnlockable", {Value(0.0), Value(99.0), Value(0.0), Value(0.0), Value(6.0), Value(0.0), Value(7.0)});
@@ -213,6 +219,7 @@ TEST_CASE("the revive upgrade, once unlocked, lets a player carry four", "[playe
 }
 
 TEST_CASE("statistics by a player's human; other handles do nothing", "[player_bindings]") {
+    // Expected: player-state.md#statistics, confirmed (code)
     Harness h;
     h.first("CfgSetStatValue", {Value(0.0), Value(0.0), Value(1000.0)});
     h.first("CfgSetStatValue", {Value(3.0), Value(2.0), Value(1.0)});
@@ -229,20 +236,22 @@ TEST_CASE("statistics by a player's human; other handles do nothing", "[player_b
 }
 
 TEST_CASE("the stopwatch runs in the player frame and calls its callback at the target", "[player_bindings]") {
+    // Expected: scripting.md#stopwatch, confirmed (code)
     Harness h;
     const coney::Pads pads;
     h.scripts.setTime(1000);
     h.first("W_SetStopWatch", {Value(500.0), Value(0.0), str("Record")});
     h.first("W_StartStopWatch", {Value(1.0)});
-    coney::runPlayerFrame(h.state, h.scripts, pads, 1400);
+    coney::runPlayerFrame(h.state, h.scripts, pads, 1400 * coney::script::ScriptSystem::kTicksPerMs);
     CHECK(h.number("W_GetStopWatchTime") == 100);
     CHECK(h.recordedArgs.empty());
-    coney::runPlayerFrame(h.state, h.scripts, pads, 1600);
+    coney::runPlayerFrame(h.state, h.scripts, pads, 1600 * coney::script::ScriptSystem::kTicksPerMs);
     CHECK(h.number("W_GetStopWatchTime") == 0);
     CHECK(h.recordedArgs.size() == 1);
 }
 
 TEST_CASE("pad handlers fire for buttons pressed on their port", "[player_bindings]") {
+    // Expected: player-state.md#warriors-functions, confirmed (code)
     Harness h;
     h.first("PadSetHandler", {Value(0.0), Value(static_cast<double>(coney::pad::kCross)), str("Record")});
     h.first("PadSetHandler", {Value(1.0), Value(static_cast<double>(coney::pad::kCircle)), str("Record")});
@@ -264,6 +273,7 @@ TEST_CASE("pad handlers fire for buttons pressed on their port", "[player_bindin
 }
 
 TEST_CASE("crime reporting, the stereo handler, joining and the store colour", "[player_bindings]") {
+    // Expected: ai-gangs.md#crimes, confirmed (code)
     Harness h;
     CHECK(h.state.player.crimes.reporting());
     h.first("ReportCrime", {Value()});
@@ -279,6 +289,7 @@ TEST_CASE("crime reporting, the stereo handler, joining and the store colour", "
 }
 
 TEST_CASE("SetCheckPoint takes the checkpoint copy a restart puts back", "[player_bindings]") {
+    // Expected: player-state.md#warriors-functions, confirmed (code)
     Harness h;
     h.first("GiveMoney", {Value(30.0)});
     h.first("SetCheckPoint", {Value(2.0)});
@@ -288,6 +299,7 @@ TEST_CASE("SetCheckPoint takes the checkpoint copy a restart puts back", "[playe
 }
 
 TEST_CASE("the level's objects report crimes and score statistics through the players' state", "[player_bindings]") {
+    // Expected: ai-gangs.md#crimes, confirmed (code)
     Harness h;
     coney::world_objects::WorldFlags flags;
     flags.createPool(4);
@@ -313,6 +325,7 @@ TEST_CASE("the level's objects report crimes and score statistics through the pl
 }
 
 TEST_CASE("a crime by player 1 makes his gang wanted once the level's brains give the gangs", "[player_bindings]") {
+    // Expected: ai-gangs.md#crimes, confirmed (code)
     Harness h;
     coney::world_objects::WorldFlags flags;
     flags.createPool(4);

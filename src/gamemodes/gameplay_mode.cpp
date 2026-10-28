@@ -323,6 +323,7 @@ void GameplayMode::endLevel() {
 }
 
 void GameplayMode::enter() {
+    // Not ported (#548): entering an Armies of the Night level from another level keeps whether player 2 is in.
     // The level's brains and gangs (InitLevel's AI reset), which its script's bindings drive. The calls on the humans
     // the script creates wait until the level has loaded its characters and made them.
     endLevel();
@@ -504,6 +505,13 @@ void GameplayMode::enter() {
             const std::array<float, 3>& p = placement->position;
             return std::pair{anim::Vec3{p[0], p[1], p[2]}, placement->headingDegrees};
         });
+    // The rail's mode 3 reads its target's locomotion velocity.
+    m_cameras->setVelocityLocator([scripted = m_scripted.get()](double handle) -> std::optional<anim::Vec3> {
+        if (const ai::Brain* brain = scripted->brain(handle); brain != nullptr) {
+            return brain->human().velocity();
+        }
+        return std::nullopt;
+    });
     // A locked camera's kept-in-view push moves a human the scripts made, keeping his heading.
     m_cameras->setMover([scripted = m_scripted.get()](double handle, anim::Vec3 feet) {
         if (ai::Brain* brain = scripted->brain(handle); brain != nullptr) {
@@ -789,6 +797,10 @@ ModeResult GameplayMode::update(GameModeStack& stack, const FrameTime& frame) {
 // Mode 1's frame of play in the original's order (docs/research/level-loading.md#a-frame-of-play).
 // @orig 0x00158728 Gm_Level_Update (unknown)
 ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& frame) {
+    // Not ported: a failure outside an Armies level's death camera, music fade, tint and blur and their end (#703);
+    // state 2's mission-complete mode (#670); a second player joining and his view's HUD (#549); the flip time limit
+    // during a fade, the call at 0x0048d420, the frame-rate statistics, a held player's ear, the debug heal, the file
+    // manager's service and the script system's and device's calls (#1008).
     // The level's step (the characters, the cameras, the streaming), then the scripts' frame, as a frame of play
     // orders them.
     ModeResult result = ModeResult::Stay;
@@ -811,7 +823,7 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
     updateUncuff();
     updateRevive();
     updateHiding();
-    m_scripts.setTime(nowMs);
+    m_scripts.setTimeTicks(frame.gameTicks);
     callPadHandler();
     // The end credits' last widget gone: the overlay pass's call of the Lua `CreditEnd` (Credits_Update,
     // docs/research/frontend.md#fn-credits), one step after the HUD's update that ended them.
@@ -855,7 +867,7 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
     updateTagging(stack.pads(), frame.seconds);
     updateTagPanel();
     updateActionPrompt();
-    runPlayerFrame(m_state, m_scripts, stack.pads(), nowMs, &m_objectServices.crimeServices());
+    runPlayerFrame(m_state, m_scripts, stack.pads(), frame.gameTicks, &m_objectServices.crimeServices());
     // The hint box's one step, where the original's HUD update stands in its frame: after this step's callbacks and
     // before the scheduled calls (a text set on a free box has already shown, in the call that set it).
     if (m_context.hud != nullptr) {
@@ -915,6 +927,23 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
 bool GameplayMode::releasePlayerToAi() {
     auto* scripted = dynamic_cast<ScriptedPlayer*>(m_level.get());
     return scripted != nullptr && scripted->releasePlayerToAi();
+}
+
+bool GameplayMode::playerStanding(int player) const {
+    const HumanCreation* created = m_humans.player(player + 1);
+    if (created == nullptr || !m_scripted) {
+        return false;
+    }
+    const ai::Brain* brain = m_scripted->brain(created->handle);
+    return brain != nullptr && !brain->knockedOut();
+}
+
+bool GameplayMode::playerIn(int player) const { return m_humans.player(player + 1) != nullptr; }
+
+void GameplayMode::healPlayer(int player) {
+    if (const HumanCreation* created = m_humans.player(player + 1); created != nullptr && m_scripted) {
+        m_scripted->humanHost().revive(created->handle);
+    }
 }
 
 // @coney-only Coney's hand-off of the humans' sounds and speech to the sound; the original's humans play their own
@@ -1467,6 +1496,15 @@ void GameplayMode::renderWithOverlay(const RenderTime& time,
     m_device.beginFrame(graphics::kBlack);
     overlay(m_device);
     m_device.present();
+}
+
+void GameplayMode::renderWorldWithOverlay(const RenderTime& time,
+                                          const std::function<void(graphics::RenderDevice&)>& overlay) {
+    if (auto* overlaid = dynamic_cast<OverlaidLevel*>(m_level.get())) {
+        overlaid->renderWorldWithOverlay(time, overlay);
+        return;
+    }
+    renderWithOverlay(time, overlay);
 }
 
 // Mode 1's Exit, then UnloadLevel's level and script steps (docs/research/level-loading.md#unload).

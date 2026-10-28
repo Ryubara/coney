@@ -1,0 +1,46 @@
+version = 1
+id = "r-20261026-level60-clock"
+date = "2026-10-26"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "3dbf89226d41b37a5bbbbb980291c1aaf074419755479d1faaa5a9fc213b3493"
+
+[who]
+agent = "abb26177bf5ab1735"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "street-end-run"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "level60 checkpoint 1 loaded with the load-checkpoint recipe from the state, pad idle. Breakpoints through the debug server on the bindings GoalMoveToFlag (P1.Start03), CloseDoor (P1.Start04), HUDANSetGOSignMode (F1.Restore01), W_SetStopWatch (F1.Time) and HUDLaunchANGameOver (F1.TimerOut); at each stop the game tick count was read and emulation resumed. Player 1's position and speed were read about every 100 ms between stops. At the HUDLaunchANGameOver stop the game timer's game and real milliseconds (+0x48, +0x38 of the timer) were read"
+
+[values]
+start03_tick = 1205
+walk_last_still_tick = 1224
+walk_first_moving_tick = 1231
+walk_last_moving_tick = 1405
+walk_stopped_tick = 1411
+start04_tick = 1428
+restore01_tick = 1457
+f1_time_tick = 1473
+timer_out_tick = 7541
+game_ms_at_timer_out = 125726
+real_ms_at_timer_out = 125726
+
+[addresses]
+tick_count = 0x005104f4
+game_timer = 0x0050b734
+lua_GoalMoveToFlag = 0x0035ff18
+lua_CloseDoor = 0x00379b78
+lua_HUDANSetGOSignMode = 0x00370c00
+lua_W_SetStopWatch = 0x00370d98
+lua_HUDLaunchANGameOver = 0x0036f1b8

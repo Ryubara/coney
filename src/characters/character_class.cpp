@@ -59,9 +59,13 @@ constexpr int kFirstWarriorPowerClass = 58;
 // The power class a Warriors type outside the groups plays with.
 constexpr int kOtherWarriorPowerClass = 7;
 
-// The Armies of the Night levels.
+// The level numbers the original takes for Armies of the Night: 60-69, though only 60-64 are on the disc
+// (docs/research/armies.md#what-it-is).
 constexpr int kFirstArmiesLevel = 60;
-constexpr int kLastArmiesLevel = 64;
+constexpr int kLastArmiesLevel = 69;
+// The last level whose humans Human_Init draws with the `_a` model: its own test takes 60-64
+// (docs/research/characters.md#type-to-model).
+constexpr int kLastArmiesModelLevel = 64;
 
 } // namespace
 
@@ -81,6 +85,8 @@ CharacterClass characterClassOf(int type) {
     return CharacterClass{.id = type, .variant = false};
 }
 
+// Human_Init's choice of the CfgChar record a human is drawn from: a player made as a plain alias takes the class's.
+// @orig 0x00218008 Human_Init (unknown)
 int modelRecordType(int type, int playerIndex) {
     const CharacterClass characterClass = characterClassOf(type);
     if (playerIndex < 1 || characterClass.variant) {
@@ -91,12 +97,19 @@ int modelRecordType(int type, int playerIndex) {
 
 bool isArmiesLevel(int levelNumber) { return levelNumber >= kFirstArmiesLevel && levelNumber <= kLastArmiesLevel; }
 
+// Human_Init's model: the record's model name, its `_a` one in an Armies of the Night level (+0x112 or +0x114).
+// Not ported, from Human_Init (#1020): the voice folder and the level's anim variant, the idle lines counted, the
+// brain's +0x26c by category beyond category 4's roll, the task byte, +0x19e and the radar entries by brain type,
+// the class's switches copied into the human flags, the class's weapon in the hand, +0x3bc's name test and the
+// type's own scale; (#689) HuCreate's forced brain type 2 and the random body size.
+// @orig 0x00218008 Human_Init (unknown)
 std::optional<std::string> modelNameFor(int type, int playerIndex, int levelNumber, const CfgCharModel& modelOf) {
     if (!modelOf) {
         return std::nullopt;
     }
     std::optional<std::string> model = modelOf(modelRecordType(type, playerIndex));
-    if (model && isArmiesLevel(levelNumber)) {
+    // Human_Init's own test, 60-64, not GameState_IsArmiesLevel's 60-69.
+    if (model && levelNumber >= kFirstArmiesLevel && levelNumber <= kLastArmiesModelLevel) {
         *model += "_a";
     }
     return model;
@@ -120,6 +133,9 @@ int warriorPowerClassOf(int type) {
     return warrior == kOtherWarriorClass ? kOtherWarriorPowerClass : kFirstWarriorPowerClass + warrior;
 }
 
+// Human_Init's power class byte +0x1b9: a type of the Warriors' category takes his Warrior's, any other the record's
+// (the `player` gate is a stand-in, as the header says).
+// @orig 0x00218008 Human_Init (unknown)
 int powerClassOf(int type, int category, int ownClass, bool player) {
     return player && category == kWarriorsCategory ? warriorPowerClassOf(type) : ownClass;
 }

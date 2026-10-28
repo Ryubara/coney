@@ -26,8 +26,10 @@ struct CharacterClass {
 /// class's record. So a player made as type 2 is drawn as type 1's model, while type 32 keeps its own.
 [[nodiscard]] int modelRecordType(int type, int playerIndex);
 
-/// Whether level number `levelNumber` is one of the Armies of the Night bonus levels (60-64), which draw every
-/// character with its `<model>_a` model (`CfgChar`'s `+0x114`).
+/// Whether level number `levelNumber` is one of the Armies of the Night bonus levels (the original takes 60-69; the
+/// disc has 60-64); the `_a` models follow Human_Init's own 60-64 test instead (modelNameFor()).
+/// @orig 0x0041d110 GameState_IsArmiesLevel (unknown)
+/// Research: docs/research/armies.md#what-it-is
 [[nodiscard]] bool isArmiesLevel(int levelNumber);
 
 /// The model name argument of type `type`'s `CfgChar` call (`warr_re_cv` for 32); nothing when the type has no call.
@@ -57,9 +59,11 @@ inline constexpr int kOtherWarriorClass = 9;
 /// @orig 0x00222ba8 Human_WarriorPowerClassOfType (unknown)
 [[nodiscard]] int warriorPowerClassOf(int type);
 
-/// The power class a human of `type` plays with, as `Human_Init` sets `+0x1b8` and `+0x1b9`: the type's own `CfgChar`
-/// byte `+0x11d` (`ownClass`), except that a player (`player`) of category kWarriorsCategory takes
-/// warriorPowerClassOf().
+/// The power class a human of `type` plays with, as `Human_Init` sets `+0x1b9`: the type's own `CfgChar` byte `+0x11d`
+/// (`ownClass`), except that a type of category kWarriorsCategory takes warriorPowerClassOf() (`+0x1b8` always keeps
+/// the record's byte; docs/research/characters.md#power-classes). **Coney's stand-in**: the `player` gate is Coney's;
+/// the original gives the Warrior's class to any human of that category. Its one caller (CharacterTypes::
+/// playerTraitsOf) passes true, so nothing differs in play.
 [[nodiscard]] int powerClassOf(int type, int category, int ownClass, bool player);
 
 /// The index of `CfgChar`'s model-name argument (0-based): the tenth argument, after the type, four bytes, the health,

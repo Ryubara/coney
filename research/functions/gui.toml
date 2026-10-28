@@ -168,7 +168,22 @@ page = "gui.md#fn-radarhud"
 role = "per frame from `HUD_Update`; below the table"
 level = "confirmed-code"
 coney = "src/hud/radar.h:radarBlipOffset"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "icons 25 and 26's batch, the objective blips' height icons, fixed-point and type-12 blips, the enemy marks and the police hint 8"
+relation = "not-ported"
+issue = 1018
+
+[[function.gaps]]
+what = "hint 22"
+relation = "not-ported"
+issue = 332
+
+[[function.gaps]]
+what = "the two-player arrow icons"
+relation = "not-ported"
+issue = 549
 
 [[function]]
 address = 0x001c60b0
@@ -177,7 +192,12 @@ page = "gui.md#fn-radarhud"
 role = "the map disc ([HUD](hud-radar.md#the-radar-on-screen))"
 level = "confirmed-code"
 coney = "src/hud/radar.h:addRadarDisc"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the video modes other than the default"
+relation = "not-ported"
+issue = 890
 
 [[function]]
 address = 0x001c7e80

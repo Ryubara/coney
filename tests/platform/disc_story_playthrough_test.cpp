@@ -59,6 +59,10 @@ struct Leg {
 
 // How close to a Run leg's point counts as there, m.
 constexpr float kArrived = 1.0F;
+// A climb counts when it lifts him this far, m (the chase's lowest face onto a roof is about 1 m high), or ends
+// within kClimbOverWithin of the leg's point, past the face (a climb over a wall or fence back to the same height).
+constexpr float kClimbRise = 0.5F;
+constexpr float kClimbOverWithin = 2.0F;
 // How far from a Climb leg's point triangle starts being tapped, m: the point lies 1.5-2 m beyond the face, so the
 // face is then about 2-2.5 m ahead. A player at the run or sprint gait probes 4.5 m for a face and takes it with the
 // running climb, which keeps his speed (docs/research/characters.md#climb), so he climbs without slowing down.
@@ -180,11 +184,24 @@ class RouteDriver final : public coney::InputSource {
             case Move::Run:
                 finished = std::hypot(leg.x - human.position().x, leg.y - human.position().y) < kArrived;
                 break;
-            case Move::Climb:
-                m_sawMove = m_sawMove || traversal == Traversal::Climbing;
-                finished = m_sawMove && traversal == Traversal::None;
-                m_climbs += finished ? 1 : 0;
+            case Move::Climb: {
+                // A climb counts once it has taken him onto the face (higher than he began) or over it (near the
+                // leg's point, which lies past the face); one that ends at the foot of the face (cut short in the
+                // scramble with the crew and the pursuers) is tried again, as a player would.
+                const coney::anim::Vec3 feet = human.position();
+                if (!m_sawMove && traversal == Traversal::Climbing) {
+                    m_sawMove = true;
+                    m_climbFromZ = feet.z;
+                }
+                const bool ended = m_sawMove && traversal == Traversal::None;
+                const bool over = std::hypot(leg.x - feet.x, leg.y - feet.y) < kClimbOverWithin;
+                finished = ended && (feet.z >= m_climbFromZ + kClimbRise || over);
+                m_climbs += ended ? 1 : 0;
+                if (ended && !finished) {
+                    m_sawMove = false;
+                }
                 break;
+            }
             case Move::Jump:
                 // A tap that lands on the last update before the edge comes too late: he runs off it and drops
                 // instead (traversal Falling). Every gap's far side is lower, so the drop may still carry him over;
@@ -253,6 +270,7 @@ class RouteDriver final : public coney::InputSource {
     std::function<const coney::human::Player*()> m_player;
     std::size_t m_leg = 0;
     bool m_sawMove = false;
+    float m_climbFromZ = 0.0F; // the height the climb under way began at
     bool m_jumped = false;     // a Jump leg's jump began (not a drop off the edge)
     bool m_backingOff = false; // a charge ended short of the barrier row: back to the run-up point
     int m_climbs = 0;
@@ -273,13 +291,16 @@ class RouteDriver final : public coney::InputSource {
 // the charge breaks only the barrier it meets. Without it he came in near the line between the two and broke number 6,
 // which held only while he cleared number 10 by about 1 m; after the physics sweep of #434 moved his approach by
 // 0.7 m that margin fell to 0.28 m, he slid into number 10 and pushed against it while the pursuers caught up.
+// Since the sliding doors work (issue #85), the Hi-Hat mimes come out of their lift (`EleTop01`, a `dyn_door_ele`,
+// opened by `ch4.OpenMimesDoor`) as the original's do, and the chase is closer: for AI seed 5 a sprint reached the
+// gap at x -64.5 a frame late and ran off the roof's edge instead of jumping, so that jump takes off at -65.
 constexpr std::array kChaseRoute{
     Leg{Move::Run, -212.0F, 363.7F},  Leg{Move::Climb, -205.5F, 363.5F}, Leg{Move::Climb, -200.5F, 363.3F},
     Leg{Move::Run, -163.0F, 363.4F},  Leg{Move::Climb, -157.5F, 362.8F}, Leg{Move::Run, -136.0F, 361.8F},
     Leg{Move::Jump, -131.0F, 361.7F}, Leg{Move::Run, -112.0F, 363.8F},   Leg{Move::Climb, -106.5F, 364.1F},
     Leg{Move::Run, -100.0F, 364.5F},  Leg{Move::Climb, -94.5F, 364.7F},  Leg{Move::Run, -88.5F, 364.8F},
     Leg{Move::Climb, -83.0F, 364.9F}, Leg{Move::Run, -79.5F, 364.9F},    Leg{Move::Climb, -74.5F, 364.9F},
-    Leg{Move::Jump, -64.5F, 364.9F},  Leg{Move::Run, 15.0F, 364.8F},     Leg{Move::Jump, 18.5F, 364.8F},
+    Leg{Move::Jump, -65.0F, 364.9F},  Leg{Move::Run, 15.0F, 364.8F},     Leg{Move::Jump, 18.5F, 364.8F},
     Leg{Move::Run, 50.0F, 365.1F},    Leg{Move::Run, 66.0F, 367.4F},     Leg{Move::Climb, 74.5F, 367.5F},
     Leg{Move::Run, 79.0F, 365.0F},    Leg{Move::Charge, 81.5F, 365.0F},  Leg{Move::Run, 92.0F, 365.0F},
     Leg{Move::Climb, 96.0F, 365.0F},  Leg{Move::Jump, 100.5F, 365.0F},   Leg{Move::Run, 134.0F, 364.7F},

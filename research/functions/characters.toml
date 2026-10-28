@@ -57,8 +57,58 @@ name = "Human_Init"
 page = "characters.md#original-structure"
 role = "type remap, model, ground snap, defaults"
 level = "confirmed-code"
-coney = "src/ai/brain.h:startingFlags"
-status = "legacy"
+coney = "src/characters/character_class.cpp:modelNameFor"
+status = "compared"
+
+[[function.gaps]]
+what = "the voice folder, the level's anim variant and the count of the type's idle lines"
+relation = "not-ported"
+issue = 1020
+
+[[function.gaps]]
+what = "HuCreate's flag (+0x19d) forcing brain type 2"
+relation = "not-ported"
+issue = 689
+
+[[function.gaps]]
+what = "the brain's +0x26c by carry category"
+relation = "not-ported"
+issue = 1020
+
+[[function.gaps]]
+what = "the radar entries and the task bytes by brain type"
+relation = "not-ported"
+issue = 1020
+
+[[function.gaps]]
+what = "the class's switches copied into the human flags (Human_ApplyClassFlags)"
+relation = "not-ported"
+issue = 1020
+
+[[function.gaps]]
+what = "the class's weapon put in the hand"
+relation = "not-ported"
+issue = 1020
+
+[[function.gaps]]
+what = "the +0x3bc byte from the character data's name hash"
+relation = "not-ported"
+issue = 1020
+
+[[function.gaps]]
+what = "the random body size"
+relation = "not-ported"
+issue = 689
+
+[[function.gaps]]
+what = "the type's own scale"
+relation = "not-ported"
+issue = 1020
+
+[[function.gaps]]
+what = "the Warrior's power class for any human of category 14: Coney's powerClassOf takes it for a player only"
+relation = "stand-in"
+issue = 1020
 
 [[function]]
 address = 0x00219d50

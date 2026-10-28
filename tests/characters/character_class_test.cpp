@@ -27,6 +27,7 @@ std::optional<std::string> modelOf(int type) {
 } // namespace
 
 TEST_CASE("Human_Init's switch maps a type to its class, as a plain alias or a variant", "[character_class]") {
+    // Expected: characters.md#type-to-model, confirmed (code)
     CHECK(characterClassOf(2).id == 1);
     CHECK(!characterClassOf(2).variant);
     CHECK(characterClassOf(4).id == 1);
@@ -44,6 +45,7 @@ TEST_CASE("Human_Init's switch maps a type to its class, as a plain alias or a v
 
 TEST_CASE("a player made as a plain alias is drawn as the class's model; anyone else as the type's own",
           "[character_class]") {
+    // Expected: characters.md#type-to-model, confirmed (code)
     CHECK(modelRecordType(2, 1) == 1);
     CHECK(modelRecordType(2, 0) == 2);
     CHECK(modelRecordType(32, 1) == 32);
@@ -55,14 +57,19 @@ TEST_CASE("a player made as a plain alias is drawn as the class's model; anyone 
 }
 
 TEST_CASE("levels 60 to 64 draw the `_a` model, and a type with no CfgChar call has none", "[character_class]") {
+    // Expected: characters.md#type-to-model, confirmed (code) at 0x00218008 (Human_Init reads +0x114 in levels 60-64)
     CHECK(modelNameFor(1, 1, 60, modelOf) == std::optional<std::string>("warr_cl_a"));
     CHECK(modelNameFor(1, 1, 64, modelOf) == std::optional<std::string>("warr_cl_a"));
+    // Human_Init's own test, not the Armies test of the HUD and the sound (60-69): 65 draws the plain model.
     CHECK(modelNameFor(1, 1, 65, modelOf) == std::optional<std::string>("warr_cl"));
+    CHECK(modelNameFor(1, 1, 59, modelOf) == std::optional<std::string>("warr_cl"));
+    CHECK(modelNameFor(1, 1, 70, modelOf) == std::optional<std::string>("warr_cl"));
     CHECK(!modelNameFor(500, 1, 2, modelOf).has_value());
     CHECK(!modelNameFor(1, 1, 2, {}).has_value());
 }
 
 TEST_CASE("a Warriors type plays with his Warrior's class; anyone else with his own", "[character_class]") {
+    // Expected: characters.md#power-classes, confirmed (code)
     using coney::characters::powerClassOf;
     using coney::characters::warriorClassOf;
     using coney::characters::warriorPowerClassOf;
@@ -84,7 +91,8 @@ TEST_CASE("a Warriors type plays with his Warrior's class; anyone else with his 
     CHECK(warriorPowerClassOf(32) == 64);
     CHECK(warriorPowerClassOf(10) == 66);
     CHECK(warriorPowerClassOf(41) == 7);
-    // Only a player of category 14 takes it; an AI human, or another category, keeps the type's own class.
+    // A player of category 14 takes it; another category keeps the type's own class. The AI human's 40 pins Coney's
+    // `player` gate, a stand-in: the original gives any human of category 14 the Warrior's class (unverified, #1020).
     CHECK(powerClassOf(32, coney::characters::kWarriorsCategory, 40, true) == 64);
     CHECK(powerClassOf(32, coney::characters::kWarriorsCategory, 40, false) == 40);
     CHECK(powerClassOf(417, 3, 2, true) == 2);

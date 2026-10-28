@@ -38,7 +38,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`level83`](#level83) | flashback 3 | 250 | 1 | 1 | 1 |
 | [`level20`](#level20) | flashback 4 | 258 | 11 | 11 | 5 |
 | [`level11`](#level11) | flashback 5 | 260 | 7 | 7 | 2 |
-| [`level60`](#level60) | Armies of the Night 1 | 150 | 15 | 15 | 4 |
+| [`level60`](#level60) | Armies of the Night 1 | 150 | 15 | 15 | 9 |
 | [`level61`](#level61) | Armies of the Night 2 | 168 | 0 | 0 | 0 |
 | [`level62`](#level62) | Armies of the Night 3 | 127 | 1 | 1 | 0 |
 | [`level63`](#level63) | Armies of the Night 4 | 150 | 0 | 0 | 0 |
@@ -655,7 +655,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level60: Armies of the Night 1 {#level60}
 
-150 bindings, 15 new: 15 traced, 4 implemented in Coney (136 of all 150).
+150 bindings, 15 new: 15 traced, 9 implemented in Coney (141 of all 150).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -664,12 +664,12 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`HuSetConscious`](character.md#husetconscious) | Characters | traced | confirmed (code) | implemented |
 | [`GangSetMoney`](gang.md#gangsetmoney) | Gangs | traced | confirmed (code) | not implemented |
 | [`CamLockRail`](camera.md#camlockrail) | Cameras | traced | confirmed (code) | not implemented |
-| [`HUDANEnableJoinMsg`](hud.md#hudanenablejoinmsg) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`HUDANGetCredit`](hud.md#hudangetcredit) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`HUDANSetCredit`](hud.md#hudansetcredit) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`HUDANSetGOSignMode`](hud.md#hudansetgosignmode) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`HUDANEnableJoinMsg`](hud.md#hudanenablejoinmsg) | HUD and menus | traced | confirmed (code) | implemented |
+| [`HUDANGetCredit`](hud.md#hudangetcredit) | HUD and menus | traced | confirmed (code) | implemented |
+| [`HUDANSetCredit`](hud.md#hudansetcredit) | HUD and menus | traced | confirmed (code) | implemented |
+| [`HUDANSetGOSignMode`](hud.md#hudansetgosignmode) | HUD and menus | traced | confirmed (code) | implemented |
 | [`HUDEnableFixedCamIcon`](hud.md#hudenablefixedcamicon) | HUD and menus | traced | confirmed (code) | implemented |
-| [`HUDLaunchANGameOver`](hud.md#hudlaunchangameover) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`HUDLaunchANGameOver`](hud.md#hudlaunchangameover) | HUD and menus | traced | confirmed (code) | implemented |
 | [`HUDSetANBossTexture`](hud.md#hudsetanbosstexture) | HUD and menus | traced | confirmed (code) | not implemented |
 | [`SetMultiplayerCallback`](script.md#setmultiplayercallback) | Script flow | traced | confirmed (code) | implemented |
 | [`CfgBaseChanceToBlock`](config.md#cfgbasechancetoblock) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
@@ -677,11 +677,11 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level61: Armies of the Night 2 {#level61}
 
-168 bindings, 0 new: 0 traced, 0 implemented in Coney (150 of all 168).
+168 bindings, 0 new: 0 traced, 0 implemented in Coney (155 of all 168).
 
 ## level62: Armies of the Night 3 {#level62}
 
-127 bindings, 1 new: 1 traced, 0 implemented in Coney (113 of all 127).
+127 bindings, 1 new: 1 traced, 0 implemented in Coney (118 of all 127).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -689,11 +689,11 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level63: Armies of the Night 4 {#level63}
 
-150 bindings, 0 new: 0 traced, 0 implemented in Coney (134 of all 150).
+150 bindings, 0 new: 0 traced, 0 implemented in Coney (139 of all 150).
 
 ## level64: Armies of the Night 5 {#level64}
 
-154 bindings, 4 new: 4 traced, 0 implemented in Coney (132 of all 154).
+154 bindings, 4 new: 4 traced, 0 implemented in Coney (137 of all 154).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |

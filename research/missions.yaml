@@ -451,13 +451,17 @@ missions:
     label: "Armies of the Night"
     summary: "Stage 1 of the Armies of the Night bonus game, which the hub offers once the five flashbacks are complete."
     summary_source: research
-    status: not-started
+    status: in-progress
     checkpoints:
       count: 3
       default: not-started
+      each:
+        1: {status: in-progress, note: "With the pad idle it plays as the original does: the intro scene, Swan walking out of the garage (a roll-up sliding door) to Flag_02, play with the Armies HUD (timer from 99, GO sign, CREDITS 07, player 2's join message) on the trailing rail camera, and the CONTINUE? screen when the timer runs out. Fights, player 2 joining and the way in from the hub's trophies (#569) are not checked yet."}
     research:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
       - {title: "Armies of the Night: the way in, the pieces and what Coney needs", path: "research/armies.md"}
+    issues: ["#569", "#570"]
+    test: "coney_tests \"[disc][armies]\""
   - level: 61
     group: armies
     slot: Armies of the Night 2

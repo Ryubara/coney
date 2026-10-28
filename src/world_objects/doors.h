@@ -18,7 +18,8 @@
 // The doors level scripts spawn with `SpawnDoor`: the swinging doors (`dyn_door_swinging`, one or two leaves, a state
 // machine, lock picking, the breakable ones) and the breakable barriers (`dyn_door_fence` and its kin).
 // Research: docs/research/objects.md#doors, docs/research/objects.md#door-states, docs/research/objects.md#door-break,
-// docs/research/objects.md#barriers, docs/research/objects.md#lock-pick
+// docs/research/objects.md#barriers, docs/research/objects.md#lock-pick, docs/research/script-types.md#sliding-doors,
+// docs/research/armies.md#garage-door
 
 namespace coney::world_objects {
 
@@ -26,7 +27,8 @@ namespace coney::world_objects {
 enum class DoorClass : std::uint8_t {
     Swinging, ///< `dyn_door_swinging`: leaves, states, commands.
     Barrier,  ///< `dyn_door_fence`, `_bar_bani`, `_bnstr`, `_chain_s`, `_fence_o`, `_parapet`: broken by hits.
-    Other,    ///< Any other class (`dyn_door_sliding`, ...): placed, but the page gives it no behaviour.
+    Sliding,  ///< `dyn_door_sliding`: the roll-up, portcullis, fence, lift, police, subway and spook doors.
+    Other,    ///< Any other class: placed, but the page gives it no behaviour.
 };
 
 /// The swinging door's state byte (data `+0x28`).
@@ -108,6 +110,40 @@ struct DoorTypeSetup {
 /// The class of the script type `className`.
 [[nodiscard]] DoorClass doorClassOf(std::string_view className);
 
+/// A sliding door's state byte (data `+0x2c`): what `IsDoorOpen` answers true for is kSlideOpen.
+namespace slide_state {
+inline constexpr int kSlideOpen = 2;   ///< Opened (commands 2 and 8).
+inline constexpr int kSlideClosed = 3; ///< Closed (commands 3 and 7, and the set-up).
+} // namespace slide_state
+
+/// A sliding door leaf's motion (its data `+0x04`): resting, sliding open or sliding shut.
+namespace slide_motion {
+inline constexpr int kRest = 0xc;
+inline constexpr int kOpening = 0xd;
+inline constexpr int kClosing = 0xe;
+} // namespace slide_motion
+
+/// A sliding door leaf's update interval while it slides and at rest, 60 Hz ticks.
+inline constexpr int kSlideStepTicks = 2;
+inline constexpr int kSlideRestTicks = 0x3c;
+/// The default open and close sound of a sliding door, and the roll-up's (name hashes).
+inline constexpr std::uint32_t kSlidingDoorSound = 0xf8638826U;
+inline constexpr std::uint32_t kRollupDoorSound = 0xd2479deeU;
+
+/// One leaf of a sliding door (a `sub_sliding_door` object): it slides from its closed place along its axis.
+struct SlidingLeaf {
+    double handle = kNoObject;
+    std::string model{};   ///< Its object type (`dyn_dr_*`).
+    anim::Vec3 closed{};   ///< Its closed place (leaf data `+0x10`).
+    anim::Quat rotation{}; ///< Its pose.
+    anim::Vec3 axis{};     ///< The unit direction it slides, its axis turned by its pose (`+0x20`).
+    float offset = 0.0F;   ///< How far it has slid (`+0x08`).
+    int motion = slide_motion::kRest;
+    int countdown = kSlideRestTicks;
+    /// Where it is now: the closed place moved `offset` along the axis.
+    [[nodiscard]] anim::Vec3 position() const { return anim::add(closed, anim::scale(axis, offset)); }
+};
+
 /// A leaf's update interval, 60 Hz ticks: the time one swing takes (docs/research/objects.md#leaves).
 inline constexpr int kLeafSwingTicks = 28;
 
@@ -154,8 +190,18 @@ struct Door {
     int hitpoints = 0;              ///< Data `+0x08` (and the `+0x128` mirror `GetHitpoints` reads).
     int maxHitpoints = 0;           ///< The type's, at spawn.
     std::vector<DoorLeaf> leaves{}; ///< Left, then right.
-    bool pickable = false;          ///< Data `+0x20`.
-    bool glint = false;             ///< The pickable glint (`sub_triglint`) is up.
+    /// A sliding door's leaves (one or two), its slide length (data `+0x34`, which may be negative), its leaves' step
+    /// (`+0x30`, twice property 6), its axis byte (`+0x2d`: 0 up, 1 down, 2 along +x, 3 along -x in the leaf's
+    /// frame) and its open and close sounds (`+0x24`, `+0x28`). Its state is `slideState`.
+    std::vector<SlidingLeaf> slidingLeaves{};
+    float slideLength = 0.0F;
+    float slideStep = 0.0F;
+    std::uint8_t slideAxis = 0;
+    int slideState = slide_state::kSlideClosed;
+    std::uint32_t slideOpenSound = kSlidingDoorSound;
+    std::uint32_t slideCloseSound = kSlidingDoorSound;
+    bool pickable = false; ///< Data `+0x20`.
+    bool glint = false;    ///< The pickable glint (`sub_triglint`) is up.
     anim::Vec3 glintAt{};
     int state = door_state::kClosed;  ///< Data `+0x28`.
     int abandonedPicks = 0;           ///< Record `+0x29`: lock picks abandoned at it.
@@ -191,18 +237,27 @@ class Doors {
     /// leaves (the second at `position + rotation × (−2w, 0, 0)`, turned 180°), its triangles two-sided with bit
     /// `0x400`, bit `0x40` when it has hitpoints and the type's material (a cabin door also `0x800`, state 10), its
     /// links retagged for `_dclub` and `_liz`, and the lock-pick glint for the pickable types. A barrier gets its
-    /// triangles two-sided with `0x40` and `0x400` and, all but `dyn_door_chain_s`, its links retagged `0x40`.
+    /// triangles two-sided with `0x40` and `0x400` and, all but `dyn_door_chain_s`, its links retagged `0x40`. A
+    /// sliding door gets its type's leaves (setUpSliding(): the roll-up one `dyn_dr_rollup`), its slide (property 7
+    /// along the leaf's x, else property 8 up it; the step twice property 6), its triangles two-sided with `0x400` and
+    /// the type's material, and starts closed (command 7). **Coney's reading** of a second leaf (the two-leaf types):
+    /// 2w along the door's x axis and turned 180° about the vertical, as a swinging door's.
     ///
     /// `w` is the type's `CfgObj` argument 15, one leaf's width (docs/research/objects.md#leaves).
     /// @orig 0x00397230 Door_Spawn (unknown)
     /// @orig 0x003fb5f8 DoorSwing_Init (unknown)
     /// @orig 0x003b2f40 DoorFence_Init (unknown)
+    /// @orig 0x003f5d10 DynDoorSliding_Init (unknown)
+    /// @orig 0x003f4c80 SlidingDoor_SpawnLeaves (unknown)
     const Door& spawn(double handle, const DoorSpawn& spawn, const ObjectTypeInfo* info, const HandleSource& handles,
                       ObjectWorld& world);
 
-    /// Message `0x22` (`ObjectChangeState`): the state commands of door_command. A barrier or another class ignores
-    /// them, as does a door whose task has ended.
+    /// Message `0x22` (`ObjectChangeState`): the state commands of door_command. A sliding door: 2 or 8 slide its
+    /// leaves open (state kSlideOpen, the open sound), then as 5, its triangles off and its number's links open; 3 or
+    /// 7 slide them shut (kSlideClosed, the close sound), then as 6, triangles on and links closed. A barrier or
+    /// another class ignores them, as does a swinging door whose task has ended.
     /// @orig 0x003f9770 DoorSwing_StateCommand (unknown)
+    /// @orig 0x003f5608 SlidingDoor_StateCommand (unknown)
     void command(double handle, int command, ObjectWorld& world);
     /// `SetDoorPickable(door, pickable)`: stops the humans picking it first when switching it off, then command 10 or
     /// 11.
@@ -213,10 +268,11 @@ class Doors {
     void openToDegree(double handle, float degrees, ObjectWorld& world);
     /// Message `0x0b` (`DoorOpen(door, human)`): a closed door that is not pickable swings ±170° away from the human at
     /// `humanAt` (or to the kept angle), with the open sound. **Coney's stand-in** for "away": the sign of the dot
-    /// product of the door's turned y axis with the human-to-door direction.
+    /// product of the door's turned y axis with the human-to-door direction. A sliding door takes command 2 instead.
     /// @orig 0x003f9910 DoorSwing_OpenBy (unknown)
+    /// @orig 0x003f5ef0 DynDoorSliding_OnMessage (unknown)
     void openBy(double handle, anim::Vec3 humanAt, ObjectWorld& world);
-    /// Message `0x0c` (`IsDoorOpen`): only state 5.
+    /// Message `0x0c` (`IsDoorOpen`): a swinging door only in state 5, a sliding door in slide_state::kSlideOpen.
     [[nodiscard]] bool isOpen(double handle) const;
 
     /// Message 1: a hit of `hit.kind`, taking `4 + 6 × kind` hitpoints. A swinging door by its type's DoorBreaking, a
@@ -238,8 +294,10 @@ class Doors {
     void setHittable(double handle, bool hittable);
 
     /// One 60 Hz tick: each door whose countdown runs out updates (a swinging door's states, a destroyed door's hit;
-    /// a broken barrier is removed, and takeRemoved() names it), and each leaf takes its target rotation.
+    /// a broken barrier is removed, and takeRemoved() names it), each leaf takes its target rotation, and each sliding
+    /// leaf takes its slide step when due.
     /// @orig 0x003fbba0 DoorSwing_Update (unknown)
+    /// @orig 0x003f5a68 SubSlidingDoor_Update (unknown)
     /// @orig 0x003fb5a0 SubSwingingDoor_Update (unknown)
     /// @orig 0x003b3220 DoorFence_Update (unknown)
     void tick(ObjectWorld& world);
@@ -284,13 +342,25 @@ class Doors {
     static void openAway(Door& door, anim::Vec3 humanAt, ObjectWorld& world);
     // Pickable on or off (commands 10 and 0 / 11).
     static void pickableOn(Door& door, ObjectWorld& world);
+    // Pickable off: no glint, and the humans targeting it let go.
     static void pickableOff(Door& door, ObjectWorld& world);
     // A swinging door's update.
     static void update(Door& door, ObjectWorld& world);
+    // A sliding door's set-up: its leaves, length, step, axis and sounds, then closed (command 7).
+    /// @orig 0x003f5d10 DynDoorSliding_Init (unknown)
+    static void setUpSliding(Door& door, const ObjectTypeInfo* info, const HandleSource& handles, ObjectWorld& world);
+    // A state command on a sliding door.
+    /// @orig 0x003f5608 SlidingDoor_StateCommand (unknown)
+    static void runSlidingCommand(Door& door, int command, ObjectWorld& world);
     // The breakable swinging doors' and the barriers' hits.
     static void hitStore(Door& door, const ObjectHit& hit, ObjectWorld& world);
+    // A cabin door's hit: damage, then both leaves broken below 7.
     static void hitCabin(Door& door, const ObjectHit& hit, ObjectWorld& world);
+    // A splintering door's hit: damage, splinters, its model stages, then the break or a sound.
     static void hitSplinters(Door& door, const ObjectHit& hit, ObjectWorld& world);
+    // The model stage a splintering door's hit crosses, read at `hitpoints`, its sound at `at`.
+    static void takeModelStage(Door& door, int hitpoints, anim::Vec3 at, ObjectWorld& world);
+    // A barrier's hit: damage, and broken at no hitpoints.
     static void hitBarrier(Door& door, const ObjectHit& hit, ObjectWorld& world);
     // The ends of a splintering door and a cabin door: triangles off, wreck pieces, state 6.
     static void wreck(Door& door, ObjectWorld& world);

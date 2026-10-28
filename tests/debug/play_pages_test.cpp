@@ -28,6 +28,7 @@
 #include "hud/hud.h"
 #include "human/climb.h"
 #include "support/test_paths.h"
+#include "warriors/game_state.h"
 
 using coney::debug::DebugServices;
 using coney::debug::DebugSession;
@@ -401,6 +402,29 @@ TEST_CASE("the Levels page lists the play mode's levels and asks for the one cho
     CHECK(levels->find("level2") != nullptr);
     itemOn(*levels, "level99").run();
     CHECK(asked == std::vector<std::string>{"level99"});
+}
+
+// User item 19 (issue #85): the level table's test record `armies` has no level file, so choosing it left a black
+// screen (docs/research/armies.md#coney-fixes).
+TEST_CASE("the Levels page leaves out the level-table records that cannot load and names them", "[debug]") {
+    // Expected: unverified, #85 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
+    TunableRegistry tunables;
+    coney::GameState state;
+    for (const auto& [id, name] : {std::pair{24, "level60"}, std::pair{101, "armies"}}) {
+        coney::LevelRecord record;
+        record.id = id;
+        record.name = name;
+        REQUIRE(state.levels.set(record));
+    }
+    DebugServices services;
+    services.gameState = [&state] { return &state; };
+    services.levelLoads = [](std::string_view name) { return name != "armies"; };
+    DebugSession session(tunables, services, nullptr);
+    const auto levels = session.model().openPage("Levels");
+    REQUIRE(levels != nullptr);
+    CHECK(levels->find("024 level60") != nullptr);
+    CHECK(levels->find("101 armies") == nullptr);
+    CHECK(itemOn(*levels, "No level file").watch() == "101 armies");
 }
 
 TEST_CASE("the Player page changes the player's character type through a choice and an action", "[debug]") {

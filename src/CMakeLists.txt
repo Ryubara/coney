@@ -53,6 +53,7 @@ add_library(coney_core STATIC
     gamemodes/load_entry_mode.cpp
     gamemodes/memory_card_mode.cpp
     gamemodes/mission_complete_mode.cpp
+    gamemodes/armies_game_over_mode.cpp
     gamemodes/mission_failed_mode.cpp
     gamemodes/movie_player.cpp
     gamemodes/pause_mode.cpp
@@ -100,6 +101,7 @@ add_library(coney_core STATIC
     gui/menu_input.cpp
     gui/message_box.cpp
     gui/option_grid.cpp
+    gui/pause_menu/armies_game_over_menu.cpp
     gui/pause_menu/mission_failed_menu.cpp
     gui/pause_menu/pause_items.cpp
     gui/pause_menu/pause_menu.cpp
@@ -407,6 +409,7 @@ target_sources(coney_core PRIVATE
 target_sources(coney_core PRIVATE raycast/collision_builder.cpp)
 # The in-game HUD: the player panels, hints, objectives, counters, the arrow and the radar (docs/research/hud.md).
 target_sources(coney_core PRIVATE
+    hud/armies_hud.cpp
     hud/counter_panels.cpp
     hud/credits.cpp
     hud/crime_panel.cpp

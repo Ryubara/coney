@@ -6,17 +6,21 @@
 
 #include <cmath>
 #include <cstdint>
+#include <numbers>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include "animation/anim_math.h"
 #include "core/name_hash.h"
 #include "raycast/collision_mesh.h"
 #include "support/object_fixtures.h"
 #include "world/path_map.h"
 #include "world_objects/level_objects.h"
+#include "world_objects/object_services.h"
 
 using coney::world_objects::Door;
 using coney::world_objects::DoorBreaking;
@@ -65,6 +69,7 @@ void tick(Doors& doors, coney::test::ObjectWorldFixture& fixture, int n) {
 } // namespace
 
 TEST_CASE("the swinging door types' set-up", "[world_objects][doors]") {
+    // Expected: objects.md#doors, confirmed (code)
     const auto gate = coney::world_objects::swingingDoorSetup("dyn_door_big_gate");
     CHECK(gate.leaves == 2);
     CHECK(gate.openSound == 0x43e4b743U);
@@ -83,10 +88,11 @@ TEST_CASE("the swinging door types' set-up", "[world_objects][doors]") {
     CHECK(coney::world_objects::swingingDoorSetup("dyn_door_liz").marksLinks);
     CHECK(coney::world_objects::swingingDoorSetup("dyn_door_woodp").leaves == 0);
     CHECK(coney::world_objects::doorClassOf("dyn_door_parapet") == DoorClass::Barrier);
-    CHECK(coney::world_objects::doorClassOf("dyn_door_sliding") == DoorClass::Other);
+    CHECK(coney::world_objects::doorClassOf("dyn_door_sliding") == DoorClass::Sliding);
 }
 
 TEST_CASE("a spawned double door: leaves, triangles, hitpoints", "[world_objects][doors]") {
+    // Expected: objects.md#leaves, confirmed (code)
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info = swinging(100);
@@ -109,6 +115,7 @@ TEST_CASE("a spawned double door: leaves, triangles, hitpoints", "[world_objects
 }
 
 TEST_CASE("OpenDoor swings, and collision goes 29 ticks later; CloseDoor brings it back", "[world_objects][doors]") {
+    // Expected: objects.md#opening, confirmed (code)
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info = swinging(100);
@@ -150,6 +157,9 @@ TEST_CASE("OpenDoor swings, and collision goes 29 ticks later; CloseDoor brings 
 }
 
 TEST_CASE("DoorOpen swings away from the human, only from closed", "[world_objects][doors]") {
+    // Expected: objects.md#opening, confirmed (code), but for the side's sign: unverified, #707
+    // The angles' signs pin Coney's side test (a stand-in): DoorSwing_OpenBy (0x003f9910) dots the door's axis with
+    // (human - door), the opposite of Coney's, and #707 corrects objects.md#opening with it.
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info = swinging(100);
@@ -171,6 +181,7 @@ TEST_CASE("DoorOpen swings away from the human, only from closed", "[world_objec
 }
 
 TEST_CASE("a pickable door refuses to open and keeps a DoorOpenDegree", "[world_objects][doors]") {
+    // Expected: objects.md#lock-pick, confirmed (code)
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info = swinging(100);
@@ -195,6 +206,7 @@ TEST_CASE("a pickable door refuses to open and keeps a DoorOpenDegree", "[world_
 }
 
 TEST_CASE("SetDoorPickable(false) stops the pickers; the third abandoned pick counts", "[world_objects][doors]") {
+    // Expected: objects.md#lock-pick, confirmed (code)
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info = swinging(100);
@@ -218,6 +230,8 @@ TEST_CASE("SetDoorPickable(false) stops the pickers; the third abandoned pick co
 }
 
 TEST_CASE("the store door: one hit swings it open away from the attacker", "[world_objects][doors]") {
+    // Expected: objects.md#door-break, confirmed (code), but for the side's sign: unverified, #707
+    // The -170 pins Coney's side test (a stand-in, as in "DoorOpen swings away from the human").
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info = swinging(1, coney::world_objects::object_type::kBreakAndEnterDoor);
@@ -234,6 +248,7 @@ TEST_CASE("the store door: one hit swings it open away from the attacker", "[wor
 }
 
 TEST_CASE("a cabin door: two plain hits break a leaf, three the door", "[world_objects][doors]") {
+    // Expected: objects.md#door-break, confirmed (code)
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info = swinging(12);
@@ -261,6 +276,11 @@ TEST_CASE("a cabin door: two plain hits break a leaf, three the door", "[world_o
 }
 
 TEST_CASE("dyn_door_liz: model stages, then wreck pieces and the links opened", "[world_objects][doors]") {
+    // Expected: unverified, #707 (objects.md#door-break is out of date; the values are read at 0x003fa438)
+    // DoorSwing_HitBreakable (0x003fa438) makes the dust and 20 splinters on every hit for every type, and takes one
+    // model stage a hit: below 80 % model 0xbdd06de7 with (material, material), below 60 % 0x24d93c5d with
+    // (material, 106), below 40 % 0x53de0ccb with (material, 36), below 20 % 0xcdba9968 with (material, 35); a hit
+    // that leaves hitpoints then pairs the material with CONCRETE, the breaking one with 121.
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info = swinging(100);
@@ -268,24 +288,137 @@ TEST_CASE("dyn_door_liz: model stages, then wreck pieces and the links opened", 
         doors.spawn(
                  fixture.handle(), at("dyn_door_liz"), &info, [&fixture] { return fixture.handle(); }, fixture.world)
             .handle;
+    using Pair = std::pair<std::uint8_t, std::uint8_t>;
+    using Model = std::pair<double, std::uint32_t>;
     CHECK(fixture.paths.edges()[0].flags == 0x40);              // marks its links
-    doors.hit(handle, hitBy(HitKind::Airborne), fixture.world); // 22: 78 left, past 80 %
-    CHECK(fixture.services.nextModels.size() == 1);
+    doors.hit(handle, hitBy(HitKind::Airborne), fixture.world); // 22: 78 left, below 80 %
+    CHECK(fixture.services.models == std::vector<Model>{{handle, 0xbdd06de7U}});
+    CHECK(fixture.services.pairs == std::vector<Pair>{{9, 9}, {9, 5}});
     CHECK(fixture.services.splinterCount == 20);
     CHECK(fixture.services.dusts == 2);
-    doors.hit(handle, hitBy(HitKind::Airborne), fixture.world); // 56: past 60 %
-    doors.hit(handle, hitBy(HitKind::Airborne), fixture.world); // 34: past 40 %
-    doors.hit(handle, hitBy(HitKind::Airborne), fixture.world); // 12: past 20 %
-    CHECK(fixture.services.nextModels.size() == 4);
-    doors.hit(handle, hitBy(HitKind::Airborne), fixture.world); // broken
+    doors.hit(handle, hitBy(HitKind::Airborne), fixture.world); // 56: below 60 %
+    doors.hit(handle, hitBy(HitKind::Airborne), fixture.world); // 34: below 40 %
+    doors.hit(handle, hitBy(HitKind::Airborne), fixture.world); // 12: below 20 %
+    CHECK(
+        fixture.services.models ==
+        std::vector<Model>{{handle, 0xbdd06de7U}, {handle, 0x24d93c5dU}, {handle, 0x53de0ccbU}, {handle, 0xcdba9968U}});
+    fixture.services.pairs.clear();
+    doors.hit(handle, hitBy(HitKind::Airborne), fixture.world); // broken, past every stage
     const Door& door = *doors.find(handle);
     CHECK(door.state == door_state::kBroken);
+    CHECK(fixture.services.models.size() == 4);
+    CHECK(fixture.services.pairs == std::vector<Pair>{{9, 121}});
+    // The break's 40 splinters twice, after the hit's 20.
+    CHECK(fixture.services.splinterCount == 5 * 20 + 2 * 40);
     CHECK((door.tint & 0xffU) == 0);
     CHECK(fixture.services.spawned == std::vector<std::string>{"dyn_dre_liz_e", "dyn_dre_liz_f"});
     CHECK_FALSE(fixture.paths.edges()[0].avoid);
 }
 
+TEST_CASE("a splintering door's hit makes its 20 splinters 0.5 m above the hit point", "[world_objects][doors]") {
+    // Expected: unverified, #707 (objects.md#door-break is out of date; the values are read at 0x003fa438)
+    // DoorSwing_HitBreakable (0x003fa438) makes the dust at the hit point (raised at random) and the hit's 20
+    // splinters at the hit point plus 0.5 m up.
+    coney::test::ObjectWorldFixture fixture;
+    Doors doors;
+    const ObjectTypeInfo info = swinging(100);
+    const double handle =
+        doors.spawn(
+                 fixture.handle(), at("dyn_door_liz"), &info, [&fixture] { return fixture.handle(); }, fixture.world)
+            .handle;
+    doors.hit(handle, hitBy(HitKind::Plain), fixture.world);
+    REQUIRE(fixture.services.splintersAt.size() == 1);
+    CHECK(fixture.services.splintersAt.front().x == 4.0F);
+    CHECK(fixture.services.splintersAt.front().y == 2.0F);
+    CHECK(fixture.services.splintersAt.front().z == 1.5F);
+}
+
+TEST_CASE("a breaking hit on dyn_door_liz or dyn_door_dclub first takes the model stage it crosses",
+          "[world_objects][doors]") {
+    // Expected: unverified, #707 (objects.md#door-break is out of date; the values are read at 0x003fa438)
+    // DoorSwing_HitBreakable (0x003fa438) runs the stages before the break test: one airborne hit (22) breaks a door
+    // of 20 hitpoints and still takes liz's first stage only, or dclub's stage (model 0x4d67682e, a burst and
+    // (material, material)), then the break's pair with 121 and its three bursts; no CONCRETE pair.
+    using Pair = std::pair<std::uint8_t, std::uint8_t>;
+    using Model = std::pair<double, std::uint32_t>;
+    const ObjectTypeInfo info = swinging(20);
+    {
+        coney::test::ObjectWorldFixture fixture;
+        Doors doors;
+        const double handle =
+            doors
+                .spawn(
+                    fixture.handle(), at("dyn_door_liz"), &info, [&fixture] { return fixture.handle(); }, fixture.world)
+                .handle;
+        doors.hit(handle, hitBy(HitKind::Airborne), fixture.world);
+        CHECK(doors.find(handle)->state == door_state::kBroken);
+        CHECK(fixture.services.models == std::vector<Model>{{handle, 0xbdd06de7U}});
+        CHECK(fixture.services.pairs == std::vector<Pair>{{9, 9}, {9, 121}});
+    }
+    {
+        coney::test::ObjectWorldFixture fixture;
+        Doors doors;
+        const double handle = doors
+                                  .spawn(
+                                      fixture.handle(), at("dyn_door_dclub"), &info,
+                                      [&fixture] { return fixture.handle(); }, fixture.world)
+                                  .handle;
+        doors.hit(handle, hitBy(HitKind::Airborne), fixture.world);
+        CHECK(doors.find(handle)->state == door_state::kBroken);
+        CHECK(fixture.services.models == std::vector<Model>{{handle, 0x4d67682eU}});
+        CHECK(fixture.services.pairs == std::vector<Pair>{{9, 9}, {9, 121}});
+        CHECK(fixture.services.bursts == 1 + 3);
+        CHECK(fixture.services.spawned == std::vector<std::string>{"dyn_dre_dclub_c", "dyn_dre_dclub_d"});
+    }
+}
+
+TEST_CASE("dyn_door_dclub takes its stage below half its hitpoints, not at half", "[world_objects][doors]") {
+    // Expected: unverified, #707 (objects.md#door-break is out of date; the values are read at 0x003fa438)
+    // 20 hitpoints: a thrown hit (10) leaves 10, at half, so no stage; a plain hit (4) then leaves 6, below half.
+    using Model = std::pair<double, std::uint32_t>;
+    coney::test::ObjectWorldFixture fixture;
+    Doors doors;
+    const ObjectTypeInfo info = swinging(20);
+    const double handle =
+        doors
+            .spawn(
+                fixture.handle(), at("dyn_door_dclub"), &info, [&fixture] { return fixture.handle(); }, fixture.world)
+            .handle;
+    doors.hit(handle, hitBy(HitKind::Thrown), fixture.world);
+    CHECK(fixture.services.models.empty());
+    doors.hit(handle, hitBy(HitKind::Plain), fixture.world);
+    CHECK(fixture.services.models == std::vector<Model>{{handle, 0x4d67682eU}});
+    CHECK(fixture.services.bursts == 1);
+    CHECK(doors.find(handle)->state != door_state::kBroken);
+}
+
+TEST_CASE("a hit on a splintering door in state 4 takes no damage but a stage as at 0 hitpoints",
+          "[world_objects][doors]") {
+    // Expected: unverified, #707 (objects.md#door-break is out of date; the values are read at 0x003fa438)
+    // DoorSwing_HitBreakable (0x003fa438): in state 4 no damage, dust or splinters; the stages read the hitpoints as
+    // 0, so liz's first stage is taken; the door does not break, so its material pairs with CONCRETE.
+    using Pair = std::pair<std::uint8_t, std::uint8_t>;
+    using Model = std::pair<double, std::uint32_t>;
+    coney::test::ObjectWorldFixture fixture;
+    Doors doors;
+    const ObjectTypeInfo info = swinging(100);
+    const double handle =
+        doors.spawn(
+                 fixture.handle(), at("dyn_door_liz"), &info, [&fixture] { return fixture.handle(); }, fixture.world)
+            .handle;
+    doors.command(handle, door_command::kOpen, fixture.world);
+    tick(doors, fixture, 1);
+    REQUIRE(doors.find(handle)->state == door_state::kSwung);
+    doors.hit(handle, hitBy(HitKind::Airborne), fixture.world);
+    CHECK(doors.find(handle)->hitpoints == 100);
+    CHECK(fixture.services.dusts == 0);
+    CHECK(fixture.services.splinterCount == 0);
+    CHECK(fixture.services.models == std::vector<Model>{{handle, 0xbdd06de7U}});
+    CHECK(fixture.services.pairs == std::vector<Pair>{{9, 9}, {9, 5}});
+}
+
 TEST_CASE("dyn_door_stall breaks on its first hit", "[world_objects][doors]") {
+    // Expected: unverified, #707 (objects.md#door-break is out of date; the values are read at 0x003fa438)
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info = swinging(10);
@@ -299,6 +432,7 @@ TEST_CASE("dyn_door_stall breaks on its first hit", "[world_objects][doors]") {
 }
 
 TEST_CASE("other swinging doors ignore hits; a destroyed one hits itself", "[world_objects][doors]") {
+    // Expected: objects.md#door-break, confirmed (code)
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info = swinging(12);
@@ -322,6 +456,7 @@ TEST_CASE("other swinging doors ignore hits; a destroyed one hits itself", "[wor
 
 TEST_CASE("a barrier: links charged through, boards, hidden, then removed with its body at its next update",
           "[world_objects][doors]") {
+    // Expected: objects.md#barriers, confirmed (code)
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info{
@@ -365,6 +500,9 @@ TEST_CASE("a barrier: links charged through, boards, hidden, then removed with i
 }
 
 TEST_CASE("walls throw no boards; message 10 stops a barrier being hit", "[world_objects][doors]") {
+    // Expected: objects.md#barriers, confirmed (code), but for dyn_door_wall_a hidden: unverified, #707
+    // dyn_door_wall_a hidden pins Coney's stand-in: DoorFence_OnHit (0x003b2180) never marks it broken, so it stays
+    // with its damaged model, and #707 corrects objects.md#barriers with it.
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info{.className = "dyn_door_fence", .hitpoints = 3};
@@ -387,6 +525,7 @@ TEST_CASE("walls throw no boards; message 10 stops a barrier being hit", "[world
 
 TEST_CASE("the doors draw their leaves at their poses and a barrier as its model until it breaks",
           "[world_objects][doors]") {
+    // Expected: objects.md#leaves, confirmed (code)
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo store = swinging(1, coney::world_objects::object_type::kBreakAndEnterDoor);
@@ -423,6 +562,7 @@ TEST_CASE("the doors draw their leaves at their poses and a barrier as its model
 
 TEST_CASE("a door whose model is not listed falls back to dyn_dr_ and its name, less a leading dbl",
           "[world_objects][doors]") {
+    // Expected: objects.md#models, confirmed (code)
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo fence{.className = "dyn_door_fence", .hitpoints = 10};
@@ -438,6 +578,7 @@ TEST_CASE("a door whose model is not listed falls back to dyn_dr_ and its name, 
 
 TEST_CASE("CamGhostDoor lets the camera's rays through a door's triangles, and only a door's",
           "[world_objects][doors]") {
+    // Expected: camera.md#notes, confirmed (code)
     coney::test::ObjectWorldFixture fixture;
     coney::world_objects::LevelObjects objects;
     objects.world = fixture.world;
@@ -466,4 +607,144 @@ TEST_CASE("CamGhostDoor lets the camera's rays through a door's triangles, and o
     CHECK(coney::world_objects::isDoorKind(30));
     CHECK(coney::world_objects::isDoorKind(33));
     CHECK_FALSE(coney::world_objects::isDoorKind(0));
+}
+
+TEST_CASE("a roll-up door: closed at its set-up, OpenDoor slides its leaf up and opens the way, CloseDoor shuts it",
+          "[world_objects][doors]") {
+    // Expected: script-types.md#sliding-doors, confirmed (code)
+    coney::test::ObjectWorldFixture fixture;
+    Doors doors;
+    // dyn_door_sliding: the step twice property 6 (0.1 m), no property 7, so property 8's 3 m up the leaf's z axis.
+    const ObjectTypeInfo info{.className = "dyn_door_sliding",
+                              .hitpoints = 0,
+                              .size = {3.0F, 0.2F, 3.0F},
+                              .material = 9,
+                              .leafWidth = 1.5F,
+                              .property6 = 0.05F,
+                              .property7 = 0.0F,
+                              .property8 = 3.0F,
+                              .objectType = 0};
+    const double handle =
+        doors
+            .spawn(
+                fixture.handle(), at("dyn_door_rollup"), &info, [&fixture] { return fixture.handle(); }, fixture.world)
+            .handle;
+    const Door& door = *doors.find(handle);
+    REQUIRE(door.doorClass == DoorClass::Sliding);
+    REQUIRE(door.slidingLeaves.size() == 1);
+    CHECK(door.slidingLeaves[0].model == "dyn_dr_rollup");
+    CHECK(door.slideAxis == 0);
+    CHECK(door.slideLength == Catch::Approx(3.0F));
+    CHECK(door.slideStep == Catch::Approx(0.1F));
+    CHECK(door.slidingLeaves[0].axis.z == Catch::Approx(1.0F));
+    // Set up closed: triangles on, its number's links avoided, the doorway's hole in place; the close sound.
+    CHECK(fixture.enabled(0));
+    CHECK(fixture.paths.edges()[0].avoid);
+    CHECK((fixture.paths.polygons()[3].flags & coney::world::kPathPolygonExcluded) == 0);
+    CHECK_FALSE(doors.isOpen(handle));
+    CHECK(fixture.services.sounds == std::vector<std::uint32_t>{coney::world_objects::kRollupDoorSound});
+
+    // OpenDoor: the way opens at once, and the leaf climbs 0.1 m every second tick until past 3 m, then settles there.
+    doors.command(handle, door_command::kOpen, fixture.world);
+    CHECK(doors.isOpen(handle));
+    CHECK_FALSE(fixture.enabled(0));
+    CHECK_FALSE(fixture.paths.edges()[0].avoid);
+    CHECK((fixture.paths.polygons()[3].flags & coney::world::kPathPolygonExcluded) != 0);
+    tick(doors, fixture, 2);
+    CHECK(door.slidingLeaves[0].offset == Catch::Approx(0.1F));
+    CHECK(door.slidingLeaves[0].position().z == Catch::Approx(0.1F));
+    tick(doors, fixture, 2 * 40);
+    CHECK(door.slidingLeaves[0].offset == Catch::Approx(3.0F));
+    CHECK(door.slidingLeaves[0].motion == coney::world_objects::slide_motion::kRest);
+
+    // CloseDoor: the way shuts at once and the leaf comes down.
+    doors.command(handle, door_command::kClose, fixture.world);
+    CHECK_FALSE(doors.isOpen(handle));
+    CHECK(fixture.enabled(0));
+    CHECK(fixture.paths.edges()[0].avoid);
+    tick(doors, fixture, 2 * 40);
+    CHECK(door.slidingLeaves[0].offset == Catch::Approx(0.0F));
+}
+
+TEST_CASE("a lift's two-leaf door (dyn_door_ele_c) opens its leaves apart, the first up and the second down",
+          "[world_objects][doors]") {
+    // Expected: script-types.md#sliding-doors, confirmed (code): SlidingDoor_SpawnLeaves turns the second leaf 180
+    // degrees about its y axis and places it 2w along -z; SubSlidingDoor_PlaceLeaf turns a vertical door's second leaf
+    // about y, so it slides down.
+    coney::test::ObjectWorldFixture fixture;
+    Doors doors;
+    const ObjectTypeInfo info{.className = "dyn_door_sliding",
+                              .hitpoints = 0,
+                              .size = {2.0F, 0.2F, 3.0F},
+                              .material = 9,
+                              .leafWidth = 0.0F,
+                              .property6 = 0.007F,
+                              .property7 = 0.0F,
+                              .property8 = 1.6F,
+                              .objectType = 0};
+    const double handle =
+        doors
+            .spawn(
+                fixture.handle(), at("dyn_door_ele_c"), &info, [&fixture] { return fixture.handle(); }, fixture.world)
+            .handle;
+    const Door& door = *doors.find(handle);
+    REQUIRE(door.slidingLeaves.size() == 2);
+    CHECK(door.slidingLeaves[0].axis.z == Catch::Approx(1.0F));
+    CHECK(door.slidingLeaves[1].axis.z == Catch::Approx(-1.0F));
+    doors.command(handle, door_command::kOpen, fixture.world);
+    tick(doors, fixture, 2 * 130);
+    const auto rise = [](const coney::world_objects::SlidingLeaf& leaf) { return leaf.position().z - leaf.closed.z; };
+    CHECK(rise(door.slidingLeaves[0]) == Catch::Approx(1.6F));
+    CHECK(rise(door.slidingLeaves[1]) == Catch::Approx(-1.6F));
+}
+
+TEST_CASE("a two-leaf sliding door's command puts its leaves back to the door's pose, the second turned about z; a "
+          "lift's pair keeps its own",
+          "[world_objects][doors]") {
+    // Expected: armies.md#garage-door, confirmed (code): SlidingDoor_StateCommand (0x003f5608) sets, for every type
+    // but dyn_door_ele_c, the first leaf's rotation to the door's and the second's to the door's turned 180 degrees
+    // about z, on every command; the slide direction SubSlidingDoor_PlaceLeaf (0x003f4950) worked out from the
+    // set-up's pose stays.
+    coney::test::ObjectWorldFixture fixture;
+    Doors doors;
+    // An up-and-down door (no property 7): its second leaf is set up turned about y.
+    const ObjectTypeInfo info{.className = "dyn_door_sliding",
+                              .hitpoints = 0,
+                              .size = {3.0F, 0.2F, 3.0F},
+                              .material = 9,
+                              .leafWidth = 1.5F,
+                              .property6 = 0.05F,
+                              .property7 = 0.0F,
+                              .property8 = 3.0F,
+                              .objectType = 0};
+    // The door turned a quarter round, so the turn's frame shows.
+    const float half = std::numbers::pi_v<float> / 4.0F;
+    const auto spawnTurned = [&](std::string type) -> const Door& {
+        DoorSpawn spawn = at(std::move(type));
+        spawn.rotation = coney::anim::Quat{0.0F, 0.0F, std::sin(half), std::cos(half)};
+        const double handle =
+            doors.spawn(fixture.handle(), spawn, &info, [&fixture] { return fixture.handle(); }, fixture.world).handle;
+        return *doors.find(handle);
+    };
+    const coney::anim::Vec3 up{0.0F, 0.0F, 1.0F};
+    const coney::anim::Vec3 across{1.0F, 0.0F, 0.0F};
+    const Door& portcullis = spawnTurned("dyn_door_portcullis");
+    REQUIRE(portcullis.slidingLeaves.size() == 2);
+    // Set up: the second leaf upside down (about y) and sliding down.
+    const coney::world_objects::SlidingLeaf& second = portcullis.slidingLeaves[1];
+    CHECK(coney::world_objects::rotate(second.rotation, up).z == Catch::Approx(-1.0F));
+    CHECK(second.axis.z == Catch::Approx(-1.0F));
+    doors.command(portcullis.handle, door_command::kOpen, fixture.world);
+    // After the command: upright again, its x the door's -x (the door's x is +y here), still sliding down.
+    CHECK(coney::world_objects::rotate(second.rotation, up).z == Catch::Approx(1.0F));
+    CHECK(coney::world_objects::rotate(second.rotation, across).y == Catch::Approx(-1.0F));
+    CHECK(second.axis.z == Catch::Approx(-1.0F));
+    CHECK(portcullis.slidingLeaves[0].rotation == portcullis.rotation);
+
+    // The lift's pair keeps the set-up's poses.
+    const Door& lift = spawnTurned("dyn_door_ele_c");
+    REQUIRE(lift.slidingLeaves.size() == 2);
+    const coney::anim::Quat liftSecond = lift.slidingLeaves[1].rotation;
+    doors.command(lift.handle, door_command::kOpen, fixture.world);
+    CHECK(lift.slidingLeaves[1].rotation == liftSecond);
 }

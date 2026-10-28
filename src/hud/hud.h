@@ -15,6 +15,7 @@
 #include <utility>
 
 #include "core/pad.h"
+#include "hud/armies_hud.h"
 #include "hud/counter_panels.h"
 #include "hud/credits.h"
 #include "hud/crime_panel.h"
@@ -51,6 +52,9 @@ struct HudFrame {
     /// Whether each player's camera ignores the right stick: a fixed, locked, transition or rail camera, or camera
     /// switch 0 off (the fixed-camera icon, docs/research/hud.md#hud-fixed-cam-icon).
     std::array<bool, kPlayers> cameraIgnoresStick{};
+    /// Whether each player's human is knocked out (`Human_IsKnockedOut`, state `0x40000`): an Armies panel then stops
+    /// being wanted (docs/research/armies.md#the-join-messages).
+    std::array<bool, kPlayers> knockedOut{};
     /// How many of gang `gang`'s members are standing (`Gang_CountLiving(gang, 1)`), which the gang-count
     /// indicators show; empty counts none.
     std::function<int(int gang)> gangLiving;
@@ -229,6 +233,8 @@ class Hud {
     /// callbacks set texts, and before `ScriptSystem::Update`; docs/research/level-loading.md#a-frame-of-play), since
     /// Coney's own HUD step comes before those callbacks. One step only: an expired hint's successor then shows one
     /// update after it ends, as in the original (docs/research/hud-messages.md#hint-queue-runtime).
+    /// @coney-only Coney's place for the HUD step's hint-box update, called apart from update() (the step itself is
+    /// HintBox::update)
     void updateHints(std::uint64_t nowMs) {
         if (!m_letterbox) {
             m_hints.update(nowMs);
@@ -246,9 +252,11 @@ class Hud {
     /// reads it here); empty for none. Only nil (and unloading the level) clears it.
     /// @orig 0x001b5e90 Tutorial_SetCallback (unknown)
     void setTutorialCallback(std::string name) { m_tutorialCallback = std::move(name); }
+    /// The tutorial callback's name; empty for none.
     [[nodiscard]] const std::string& tutorialCallback() const { return m_tutorialCallback; }
     /// `HUDEnableGameTutorialText(on)`: the game's tutorial hints (`W_GameState + 0x56e2`).
     void setGameTutorialText(bool on) { m_gameTutorialText = on; }
+    /// Whether the game's tutorial hints are on.
     [[nodiscard]] bool gameTutorialText() const { return m_gameTutorialText; }
 
     /// `HUDSetAnnounceMsg(kind, text, flag)`: kind 5 shows `text` centred at (0.5, 0.25), any other the built-in
@@ -273,11 +281,13 @@ class Hud {
         }
         m_prompts.at(player) = std::move(text);
     }
+    /// Player `player`'s prompt text; empty for none.
     [[nodiscard]] const std::string& actionPrompt(std::size_t player) const { return m_prompts.at(player); }
     /// `HUDEnableClubActionText(on)`: the prompt's text near the top of the screen (kClubPromptY, the clubhouse's
     /// place) or back at its normal place (kPromptPlace).
     /// @orig 0x001b5ea8 HUD_SetActionTextHigh (unknown)
     void setClubActionText(bool on) { m_clubActionText = on; }
+    /// Whether the prompt's text is at the clubhouse's place.
     [[nodiscard]] bool clubActionText() const { return m_clubActionText; }
     /// `HUDTurnOnActionCycleAnim`: player `player`'s prompt icon cycles between two button sprites as `cycle` says,
     /// until stopActionCycle(). Starting it hides the prompt's text until the text changes.
@@ -289,6 +299,7 @@ class Hud {
     /// `HUDTurnOffActionCycleAnim`: only the cycle flag is cleared.
     /// @orig 0x0019f320 ActionPrompt_StopCycle (unknown)
     void stopActionCycle(std::size_t player) { m_cycles.at(player).on = false; }
+    /// Player `player`'s prompt icon cycle.
     [[nodiscard]] const ActionCycle& actionCycle(std::size_t player) const { return m_cycles.at(player); }
 
     /// Player `player`'s mash meter (HUD `+0xebc0` + player × `0x430`,
@@ -306,6 +317,9 @@ class Hud {
     /// docs/research/hud-functions-lua.md#lock-pick-dial-layout).
     [[nodiscard]] LockPickHud& lockPick(std::size_t player) { return m_lockPick.at(player); }
     [[nodiscard]] const LockPickHud& lockPick(std::size_t player) const { return m_lockPick.at(player); }
+    /// The Armies of the Night parts: the credits line, the GO sign (HUD `+0xe650`) and the join messages.
+    [[nodiscard]] ArmiesHud& armies() { return m_armies; }
+    [[nodiscard]] const ArmiesHud& armies() const { return m_armies; }
     /// Player `player`'s fixed-camera icon (HUD `+0x135e0` + player × `0x100`).
     [[nodiscard]] FixedCamIcon& fixedCamIcon(std::size_t player) { return m_fixedCam.at(player); }
     [[nodiscard]] const FixedCamIcon& fixedCamIcon(std::size_t player) const { return m_fixedCam.at(player); }
@@ -330,7 +344,9 @@ class Hud {
     /// `HUDEnableInstArrow(on, x, y, angle)`: the place and angle apply only when turning it on.
     /// @orig 0x001b5c30 HUD_EnableInstructionArrow (unknown)
     void enableArrow(bool on, float x, float y, float angle);
+    /// The instruction arrow.
     [[nodiscard]] InstructionArrow& arrow() { return m_arrow; }
+    /// The instruction arrow, read-only.
     [[nodiscard]] const InstructionArrow& arrow() const { return m_arrow; }
 
     /// `HUDTurnOnRadar(player)` / `HUDTurnOffRadar(player)`: 0 or 1 one player's radar, 2 both.
@@ -352,7 +368,9 @@ class Hud {
     void setRadarLocator(std::function<std::optional<anim::Vec3>(double handle)> locate) {
         m_locate = std::move(locate);
     }
+    /// The radars' state.
     [[nodiscard]] RadarState& radar() { return m_radar; }
+    /// The radars' state, read-only.
     [[nodiscard]] const RadarState& radar() const { return m_radar; }
     /// Sets player `player`'s radar disc to `tint`, blending from the colour it shows now over kRadarTintBlendMs.
     /// Blue only while the HUD is shown (a blue asked for while it is hidden is ignored); nothing for the tint it has.
@@ -393,6 +411,7 @@ class Hud {
     /// the panel tally's numbers are not worked out).
     /// @orig 0x001b4438 HUD_SetNumIndicator (unknown)
     void setNumIndicator(int player, bool on, int gang);
+    /// Number indicator `index`.
     [[nodiscard]] const NumIndicator& numIndicator(std::size_t index) const { return m_indicators.at(index); }
 
     /// The spinner (HUD `+0xe050`): the loading screens' blinking element, drawn after the arrow while shown.
@@ -432,6 +451,7 @@ class Hud {
 
     /// Whether a mini-game panel is up for any player: the one place that lists the panels that hide the bottom-left
     /// text (a mash meter or a mug meter).
+    /// @coney-only Coney's one list of the panels that hide the text
     [[nodiscard]] bool miniGamePanelShown() const {
         return std::ranges::any_of(m_mash, [](const MashMeter& meter) { return meter.shown(); }) ||
                std::ranges::any_of(m_mug, [](const MugMeter& mug) { return mug.active(); });
@@ -439,6 +459,7 @@ class Hud {
     /// Whether the hint box, the prompts and the scroll-in messages are hidden now: a bottom-left announcement or a
     /// mini-game panel shows (and, for the hint box, a scroll-in message).
     [[nodiscard]] bool scrollInHidden() const { return m_announcement.has_value() || miniGamePanelShown(); }
+    /// Whether the hint box is hidden now: as scrollInHidden(), or a scroll-in message shows.
     [[nodiscard]] bool hintsHidden() const { return scrollInHidden() || m_scrollIn.showing(); }
 
     /// Adds the newest step's sprites: nothing while hidden or letterboxed; else the radar, the arrow, the counter
@@ -489,6 +510,7 @@ class Hud {
     std::array<MugMeter, kPlayers> m_mug{};
     std::array<LockPickHud, kPlayers> m_lockPick{};
     std::array<FixedCamIcon, kPlayers> m_fixedCam{};
+    ArmiesHud m_armies;
     std::array<TagHud, kPlayers> m_tagPanels{};
     CounterPanels m_counters;
     ScriptedBars m_bars;

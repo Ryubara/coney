@@ -38,6 +38,52 @@ coney = "src/hud/radar.h:addRadarDisc"
 status = "legacy"
 
 [[function]]
+address = 0x0019e030
+name = "GoSign_Setup"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "the Armies GO sign's set-up: off, placed for the language and the video mode"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::levelSetUp"
+status = "compared"
+
+[[function.gaps]]
+what = "the 16:9 and progressive layouts"
+relation = "not-ported"
+issue = 890
+
+[[function]]
+address = 0x0019e660
+name = "GoSign_StepBlink"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "steps the GO sign's frame every 300 ms, wrapping by mode"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::update"
+status = "compared"
+
+[[function]]
+address = 0x0019e758
+name = "GoSign_Update"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "the GO sign's update: its text and arrows by mode and frame"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::update"
+status = "compared"
+
+[[function.gaps]]
+what = "the 16:9 and progressive arrow size"
+relation = "not-ported"
+issue = 890
+
+[[function]]
+address = 0x0019ed28
+name = "GoSign_Render"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "draws the GO sign's text and arrows"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::render"
+status = "compared"
+
+[[function]]
 address = 0x0019f1b0
 name = "ActionPrompt_SetText"
 page = "hud-functions-parts.md#fn-pre-basewidget"
@@ -81,6 +127,34 @@ role = "[Action prompts](hud-messages.md#action-prompts)"
 level = "confirmed-code"
 coney = "src/hud/hud.h:Hud::promptRaise"
 status = "legacy"
+
+[[function]]
+address = 0x0019f528
+name = "ActionPrompt_Update"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "slot `+0x30`: places the prompt and its cycle icon ([Action prompts](hud-messages.md#action-prompts))"
+level = "confirmed-code"
+coney = "src/hud/hud.cpp:Hud::renderPrompt"
+status = "compared"
+
+[[function.gaps]]
+what = "the two-player places"
+relation = "not-ported"
+issue = 549
+
+[[function.gaps]]
+what = "the cycle icon size in the 16:9 and progressive modes"
+relation = "not-ported"
+issue = 890
+
+[[function]]
+address = 0x0019f850
+name = "ActionPrompt_Render"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "slot `+0x38`: in a two-player game or for player 0, the cycle icon (when on) and the text"
+level = "confirmed-code"
+coney = "src/hud/hud.cpp:Hud::renderPrompt"
+status = "compared"
 
 [[function]]
 address = 0x001a1138
@@ -242,7 +316,27 @@ page = "hud-functions-parts.md#fn-hudinterface"
 role = "per-level set-up (from `InitLevel`, `0x0015fe90`): the layout floats for the video mode, then every part of [the HUD object](hud.md#hud-object) that is not yet set up, the two player panels (`ANHud` panels allocated in levels 60-69, otherwise the static ones at `+0x19130`), the Armies of the Night widgets (`0x0041d110`); ends hidden (`HUD_Hide`) with `+0x177a4` = `+0x177ac` = `+0x177b4` = 1"
 level = "confirmed-code"
 coney = "src/hud/hud.h:Hud::levelSetUp"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the mission item icons, the status column, HudLabel and the menus' level hook"
+relation = "not-ported"
+issue = 662
+
+[[function.gaps]]
+what = "the crew status list"
+relation = "not-ported"
+issue = 515
+
+[[function.gaps]]
+what = "the split-screen divider sprites"
+relation = "not-ported"
+issue = 549
+
+[[function.gaps]]
+what = "an Armies level's ANHud player panels (Coney's story panel stands in)"
+relation = "not-ported"
+issue = 570
 
 [[function]]
 address = 0x001ae980
@@ -269,7 +363,32 @@ page = "hud-functions-parts.md#fn-hudinterface"
 role = "the HUD's frame ([The HUD's frame](hud.md#the-huds-frame)); `a` and `b` go to the two radars' updates (`0x001c5210`)"
 level = "confirmed-code"
 coney = "src/gamemodes/gameplay_mode.h:GameplayMode::updateActionPrompt"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the split-screen divider layout and sprites"
+relation = "not-ported"
+issue = 549
+
+[[function.gaps]]
+what = "the menus' countdown at +0x20ac"
+relation = "not-ported"
+issue = 682
+
+[[function.gaps]]
+what = "the caption pager, HudLabel, mission item icons, the Armies +0x1911c and +0xe050 widgets, and the radar's pending blips cleared"
+relation = "not-ported"
+issue = 662
+
+[[function.gaps]]
+what = "the crew status list"
+relation = "not-ported"
+issue = 515
+
+[[function.gaps]]
+what = "the Rumble intro screen (RM_Intro_Update)"
+relation = "not-ported"
+issue = 661
 
 [[function]]
 address = 0x001b1688
@@ -278,7 +397,22 @@ page = "hud-functions-parts.md#fn-hudinterface"
 role = "the HUD's draw ([The HUD's frame](hud.md#the-huds-frame))"
 level = "confirmed-code"
 coney = "src/hud/hud.h:Hud::render"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the split-screen divider sprites"
+relation = "not-ported"
+issue = 549
+
+[[function.gaps]]
+what = "HudLabel, the caption pager, the mission item icons, the status column, the Armies widgets, the prompts' Armies gate and the letterbox's radar and command steps"
+relation = "not-ported"
+issue = 662
+
+[[function.gaps]]
+what = "the crew status list"
+relation = "not-ported"
+issue = 515
 
 [[function]]
 address = 0x001b1f38
@@ -323,7 +457,7 @@ page = "hud-functions-parts.md#fn-hudinterface"
 role = "binds a panel to a human (`Human_MakePlayer`): for slot < 2 and a panel not locked (`+0x40f8`), init once (interface `+0x14`), reset (`+0x24`), bind (`+0x34`); hidden unless the HUD is shown; returns slot or -1"
 level = "confirmed-code"
 coney = "src/hud/hud.h:Hud::attachPlayer"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001b24d0
@@ -440,7 +574,7 @@ page = "hud-functions-lua.md#fn-hudlua-start"
 role = "`+0x177ac` (`0x00617fec`) = 1 or 0, then one player's radar, or both for 2 ([The radars across a scene](hud.md#radars-across-a-scene))"
 level = "confirmed-code"
 coney = "src/hud/hud.h:Hud::radarOn"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001b43a8
@@ -449,7 +583,7 @@ page = "hud-functions-lua.md#fn-hudlua-start"
 role = "`+0x177ac` (`0x00617fec`) = 1 or 0, then one player's radar, or both for 2 ([The radars across a scene](hud.md#radars-across-a-scene))"
 level = "confirmed-code"
 coney = "src/hud/hud.h:Hud::radarOff"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001b4438
@@ -459,6 +593,42 @@ role = "players 0 and 1: the panel's interface `+0x54(n)` and `+0x4c(value, 0 wh
 level = "confirmed-code"
 coney = "src/hud/hud.h:Hud::setNumIndicator"
 status = "legacy"
+
+[[function]]
+address = 0x001b4690
+name = "HUD_ANSetGOSignMode"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "`HUDANSetGOSignMode`: the GO sign's mode byte"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::setGoSignMode"
+status = "compared"
+
+[[function]]
+address = 0x001b46a0
+name = "HUD_ANEnableJoinMsg"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "`HUDANEnableJoinMsg`: a player panel's join message on or off"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::setJoinMessage"
+status = "compared"
+
+[[function]]
+address = 0x001b46e0
+name = "HUD_ANSetCredits"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "`HUDANSetCredit`: the Armies credits left"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::setCredits"
+status = "compared"
+
+[[function]]
+address = 0x001b4700
+name = "HUD_ANGetCredits"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "`HUDANGetCredit`: the Armies credits left"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::credits"
+status = "compared"
 
 [[function]]
 address = 0x001b4740
@@ -722,6 +892,15 @@ coney = "src/hud/num_indicator.h:NumIndicator::render"
 status = "legacy"
 
 [[function]]
+address = 0x001b7330
+name = "InstArrow_Update"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "slot `+0x30`: the instruction arrow's bob ([The instruction arrow](hud-messages.md#the-instruction-arrow-hudenableinstarrow))"
+level = "confirmed-code"
+coney = "src/hud/hud.cpp:InstructionArrow::offset"
+status = "compared"
+
+[[function]]
 address = 0x001b7a18
 name = "LockPickDial_SetDifficulty"
 page = "hud-functions-lua.md#fn-hudlua"
@@ -965,6 +1144,48 @@ coney = "src/hud/tag_hud.h:TagHud::render"
 status = "legacy"
 
 [[function]]
+address = 0x001ccf10
+name = "TextProgressHud_Compose"
+page = "hud-functions-panels.md#fn-after-textentrypad"
+role = "the shown text: `<SIZE 0.8>`, the label, `\": \"` and the value in decimal"
+level = "confirmed-code"
+coney = "src/hud/hud.cpp:Hud::renderScores"
+status = "compared"
+
+[[function.gaps]]
+what = "the one `<SIZE 0.8>label: score` markup text (Coney draws the label and the score as two plain texts at its own places)"
+relation = "stand-in"
+issue = 1018
+
+[[function]]
+address = 0x001cd5e8
+name = "StopWatchHud_UpdateMinutes"
+page = "hud-functions-panels.md#fn-after-textentrypad"
+role = "while the stopwatch shows: its label then `%2u:%02u` of its time, right-aligned"
+level = "confirmed-code"
+coney = "src/hud/hud.cpp:Hud::renderScores"
+status = "compared"
+
+[[function.gaps]]
+what = "the places per video mode"
+relation = "not-ported"
+issue = 890
+
+[[function]]
+address = 0x001cd748
+name = "StopWatchHud_UpdateSeconds"
+page = "hud-functions-panels.md#fn-after-textentrypad"
+role = "while the stopwatch shows: its label then `%02u` seconds, centred"
+level = "confirmed-code"
+coney = "src/hud/hud.cpp:Hud::renderScores"
+status = "compared"
+
+[[function.gaps]]
+what = "the places per video mode"
+relation = "not-ported"
+issue = 890
+
+[[function]]
 address = 0x001cdc80
 name = "HintBox_Update"
 page = "hud.md#original-structure"
@@ -1044,6 +1265,53 @@ role = "when attached and allowed (`+0x4108`): shown `+0x40fc` = 1, the money co
 level = "confirmed-code"
 coney = "src/hud/player_panel.h:PlayerPanel::show"
 status = "legacy"
+
+[[function]]
+address = 0x0020fd40
+name = "ANHud_Enable"
+page = "hud-functions-panels.md#fn-anhud"
+role = "the Armies player panel enabled (interface slot `+0x20`): wanted again and shown"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::panelEnabled"
+status = "compared"
+
+[[function.gaps]]
+what = "PlayerHUD_Show: the panel's parts are not built"
+relation = "not-ported"
+issue = 662
+
+[[function]]
+address = 0x002107e8
+name = "ANHud_Init"
+page = "hud-functions-panels.md#fn-anhud"
+role = "the Armies player panel's set-up on its first attach; clears its join message"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::panelAttached"
+status = "compared"
+
+[[function.gaps]]
+what = "the panel's bars, score counter and target panel (Coney's story panel stands in)"
+relation = "not-ported"
+issue = 662
+
+[[function]]
+address = 0x00211938
+name = "ANHud_Draw"
+page = "hud-functions-panels.md#fn-anhud"
+role = "the Armies player panel's drawing, or its join text while the panel is not wanted; a knock-out drops wanted"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::joinShowing"
+status = "compared"
+
+[[function.gaps]]
+what = "the panel's parts (score, banner, bars, frame, portrait, target panels)"
+relation = "not-ported"
+issue = 662
+
+[[function.gaps]]
+what = "the knock-out's drop asked of every wanted panel, not only a shown and loaded one, and in the HUD's next step"
+relation = "stand-in"
+issue = 662
 
 [[function]]
 address = 0x00211ca0
@@ -1149,3 +1417,17 @@ page = "hud-functions-lua.md#panel-tally"
 level = "confirmed-code"
 coney = "src/gui/pause_menu/pause_items.h:isRumbleLevel"
 status = "legacy"
+
+[[function]]
+address = 0x004ec650
+name = "ANHud_SetPlayer"
+page = "hud-functions-panels.md#fn-anhud"
+role = "the Armies player panel's player and its join message on, from the level's set-up"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::levelSetUp"
+status = "compared"
+
+[[function.gaps]]
+what = "the panel's player index (the panels are not built)"
+relation = "not-ported"
+issue = 662
