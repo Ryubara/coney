@@ -1,13 +1,14 @@
 # Coney Studio: icons
 
 The design of how Coney Studio uses icons: where Unity, Godot and Roblox Studio put them and at what size, where
-Studio puts them, the symbols Studio needs, the open icon sets it can take them from, and the one set this page
-recommends. The recommendation's licence is a question for a maintainer ([below](#question)). The design is
+Studio puts them, the symbols Studio needs, the open icon sets it can take them from, and the one set Studio
+uses: **Lucide's font, decided by a maintainer** ([The decision](#decision)). The design is
 [#1105](issue:1105); building it is [#1104](issue:1104). The theme and fonts it joins are the editor experience page's
 ([Look and theme](editor-experience.md#theme)).
 
-**Status: design.** Nothing here is built; Studio has no icons today and its tool buttons show letters. This is a
-design in the sense of [Page kinds](../writing-docs.md#page-kinds): when it is built, what is built moves into a guide.
+**Status: design, set decided.** A maintainer chose Lucide, and its building is [#1104](issue:1104), which waits on the
+Studio prototype ([#1090](issue:1090)); until it is built Studio has no icons. This is a design in the sense of [Page
+kinds](../writing-docs.md#page-kinds): when it is built, what is built moves into a guide.
 
 Two rules decide every choice, the editor experience page's own:
 
@@ -26,7 +27,7 @@ the names their documents give; the sets Coney can use are open ones, fetched at
 - [The symbols Studio needs](#symbols), now and soon
 - [Open icon sets](#sets): the licences, what each covers, how each looks beside Godot's Modern theme, the formats
 - [Loading into Dear ImGui and pinning](#loading)
-- [The recommendation](#recommendation) and [the question for a maintainer](#question)
+- [The recommendation](#recommendation) and [the decision](#decision)
 - [What #1104 builds](#build), [Sources](#sources)
 
 ## How three editors use icons {#editors}
@@ -150,11 +151,11 @@ at build time, not on a name.
   ([LEGAL.md](repo:LEGAL.md#licences)). The FSF's list says that ISC and the Expat (MIT) licence are
   compatible with the GNU GPL, CC BY 4.0 with all its versions, and Apache 2.0 with version 3 only
   ([the list](https://www.gnu.org/licenses/license-list.en.html)). This page reports licences; whether to accept one is
-  [a maintainer's](#question).
+  [a maintainer's](#decision).
 - **Coverage**: each set's list of names tested against about 100 concepts of [the list above](#symbols) (98 were
-  tested; the rest are drawn from two). A concept counts as covered when the set has an icon for it under any of the
-  common names. It is a first pass by name; the check at build time is a test over the pinned font
-  ([What #1104 builds](#build)).
+  tested; the others are drawn from two of them). A concept counts as covered when the set has an icon for it under any
+  of the common names. It is a first pass by name; the check at build time is a test over the pinned font ([What #1104
+  builds](#build)).
 - **Style** next to Godot's Modern theme: 16 pixel icons, a soft corner, a neutral look. The line width at 16 pixels
   is worked out from the set's grid and stroke, because a line that is not a whole number of pixels is soft on a
   display at 100%.
@@ -182,13 +183,13 @@ Kenney's game icons (CC0; about a hundred, for controller prompts rather than an
 
 ### What the table says {#sets-reading}
 
-- **Licence does not separate the four general sets.** Lucide (ISC), Phosphor and Tabler (MIT) and Godot's (MIT) each
+- **Licence does not separate the general sets.** Lucide (ISC), Phosphor and Tabler (MIT) and Godot's (MIT) each
   ask only that the copyright and permission notice go with the copies; Material Symbols (Apache 2.0) adds a notice and
   a patent clause and is compatible with version 3 of the GPL only, which is what Coney is. Codicons and Font Awesome's
   icons are CC BY 4.0, which asks for credit in a way the others do not.
-- **Coverage does not separate them either.** The four big general sets have every concept; Godot's editor icons lack
-  the generic ones (hand, globe, step, filter, more) because the engine never needed them, and Codicons has no
-  three-dimensional symbols.
+- **Coverage does not separate them either.** Lucide, Phosphor and Tabler have every concept, Material Symbols and
+  Bootstrap Icons all but one; Godot's editor icons lack the generic ones (hand, globe, step, filter, more) because the
+  engine never needed them, and Codicons has no three-dimensional symbols.
 - **Style does.** Godot's icons are 16 pixel drawings with a heavy line and fills, snapped to the pixel; nothing else is
   that. The nearest are Phosphor's regular and bold weights (a 1 and a 1.5 pixel line at 16 pixels, round ends) and
   Codicons (a 1 pixel line, drawn on the pixel but without the 3D vocabulary). Lucide and Tabler are 24 pixel drawings
@@ -282,16 +283,15 @@ Why not the others, one line each:
   a good source of ideas for the entity-kind pictures, not of files.
 - **Codicons and Font Awesome**: CC BY 4.0 credit terms, and Codicons lacks the three-dimensional vocabulary.
 
-## The question for a maintainer {#question}
+## The decision {#decision}
 
-A licence is a maintainer's decision ([AGENTS.md](repo:AGENTS.md)), so this page recommends and does not decide.
-
-**May Coney Studio ship the Lucide icon font (ISC licence), pinned at a release and copied beside `coney-studio` with
-its licence text, as it ships Inter and JetBrains Mono?** The ISC licence asks that its copyright and permission notice
-go with every copy; the notice goes in the same `fonts` folder as the other licences, and `LEGAL.md` gets a line
-naming it beside the other dependencies. The same question would be asked of Phosphor (MIT) if the maintainer
-prefers it, and of Godot's icons (MIT) if the maintainer wants Godot's own pictures; nothing is built until it is
-answered.
+A licence is a maintainer's decision ([AGENTS.md](repo:AGENTS.md)), so this page put the recommendation to one as a
+question. **Decided: Coney Studio ships Lucide 1.63.0 (ISC licence).** The release font is pinned by URL and SHA-256 in
+`cmake/deps.cmake`, the ISC text is pinned as its own download and copied beside `coney-studio` in `fonts/` with the
+other licences (the ISC licence asks that its copyright and permission notice go with every copy), and `LEGAL.md` gets a
+line naming it beside the other dependencies. Phosphor (MIT) and Godot's icons (MIT) stay the alternatives named
+[above](#recommendation) if the set is ever changed, which would be a maintainer's decision again. #1104 does the
+building.
 
 ## What #1104 builds {#build}
 

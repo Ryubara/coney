@@ -77,7 +77,7 @@ that varies most by platform, and a docked layout covers the brief.
 **The theme.** One file of design tokens (colours, rounding, spacing, the accent), shared by the launcher and Studio,
 applied at the [UI scale](../debug-menu.md#ui-scale) the overlay already computes. Fonts are shipped, never taken
 from the system: Inter for the interface and JetBrains Mono for code (both SIL OFL-1.1), and an icon font (Lucide,
-ISC, is recommended: [Icons](icons.md#recommendation)). The proof's theme took about 50 lines ([Proofs](#proof-shell)).
+ISC, decided: [Icons](icons.md#decision)). The proof's theme took about 50 lines ([Proofs](#proof-shell)).
 
 ## Testing Studio {#testing}
 
