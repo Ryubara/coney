@@ -199,6 +199,12 @@ The `mods/`, `cache/`, `modded/` and `mod-data/` entries, and why scripts never 
 - **Command line.** `--data <install>` opens the install folder, and `--disc` stays for development and CI. With
   neither, Coney looks for `game/ps2/` next to its executable. All three build the same store. Built (N7): until
   the store exists, `--data` and the lookup point `--disc` at `<install>/game/ps2/` ([Running Coney](running.md#install)).
+- **`overrides/files/` is built.** With `--data`, `io::Wad::useOverrides()` maps each file to the WAD entry its name
+  names (the entry's name or `0x` and its hash), and `Wad::openEntry()` reads that file whole in place of the entry's
+  range of `WARRIORS.WAD`. Every kind read through the WAD sees it, scripts and scenes included, and the readers size
+  their buffer by the stream, not the index, because a replacement is rarely the entry's size. Any replacement makes
+  the session modded (`Wad::modded()`, logged at start-up). `--disc` never reads overrides. How to play an edited
+  script: [Running Coney](running.md#install).
 
 ### The legacy loaders, one by one {#legacy-loaders}
 

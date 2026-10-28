@@ -146,6 +146,21 @@ says how to finish it, and cannot be given with `--disc`. With neither `--disc` 
 folder: run from a finished install (the `coney` that `--install` copied there), it plays that install, so a player
 just starts `coney`. A `--disc` on the command line always wins.
 
+**Replacing a WAD file: `overrides/files/`.** A game played from an install reads each file in `DIR/overrides/files/`
+in place of the WAD entry it is named after, whole and at the file's own size. The name is one `--load` takes: the
+entry's file name in any letter case (`level99.lua`), or `0x` and its name hash (`0x7e23a6f2`). Names are taken in
+sorted order, so when two files name one entry the first is used. A file that names no entry, and the second name of
+an entry, are ignored with a warning. When any entry is replaced, Coney logs `overrides/files: N WAD entries replaced:
+a modded session`. The same files given with `--disc` are the game as it is: overrides belong to an install.
+
+This is how an edited mission script is played. Decompile the chunk into a scratch folder (`coney-tools lua decompile
+level99.lua DIR`, [`lua decompile`](coney-tools-fidelity.md#lua)), edit it, and compile it with a **32-bit** Lua 4.0.1
+`luac` (`luac -o level99.lua edited.lua`). The game's chunks have 4-byte sizes, and Coney's chunk loader refuses the
+8-byte sizes a 64-bit `luac` writes, such as the one `workspace init --fetch lua` builds. Put the result in
+`overrides/files/` under the entry's name and run `coney --data DIR --play-level level99`. With `--script-trace`, the
+trace shows the edited calls. Neither the decompile nor the edited script goes in the repository
+([LEGAL.md](repo:LEGAL.md)).
+
 ## Script patches {#script-patches}
 
 `--script-patch make|apply` makes a script patch from a decompiled game script and your edit of it, or applies one,
