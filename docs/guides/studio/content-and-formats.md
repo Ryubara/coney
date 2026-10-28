@@ -54,7 +54,7 @@ script use, as Godot's `res://` paths and Unity's `Resources` paths are.
 | Root | Names | Example | Resolved by |
 | --- | --- | --- | --- |
 | `project:/` | A file in the project folder, by its path from the root | `project:/models/cj.glb` | The import table ([The import step](#import)) |
-| `project:/...#name` | One part of a file that holds several: a clip of a glTF or FBX, a mesh of a map file | `project:/anims/dance.glb#Dance` | The same, then the part by name |
+| `project:/...#name` | One part of a file that holds several: a clip of a glTF or FBX, a mesh of a map file | `project:/anims/dance.glb#Spin` | The same, then the part by name |
 | `game:/` | An asset on the player's disc, by the names `coney-tools extract` writes ([extract](../coney-tools-disc.md#extract)) | `game:/textures/warr_re_cv/warr_re_cv` | The asset store, by the original's id |
 
 **The `game:/` names** are the extract tool's, so a modder sees one set of names in Studio, in the `open/` modding kit
@@ -141,14 +141,14 @@ flowchart LR
   says so, and the project's Problems list names it.
 
 **Scripts use the same paths.** A script loads, plays or spawns an asset by its path string, as game engines do:
-`Coney.PlaySound("project:/sounds/horn.wav")`, `Coney.SpawnModel("project:/models/bench.glb", pos, rot)`,
-`Coney.PlayAnim(human, "project:/anims/dance.glb#Dance")`. The natives and their names are the Lua SDK design's
-([#1057](issue:1057)); the names here only show the shape. What this page fixes is that the string is the asset's
-`project:/` or `game:/` path, resolved through the import table and the asset store, and that a path that does not
-resolve is a script error with the path in it, never a silent nothing. Coney's existing native candidates take ids
-today (a character type for `Coney.ChangeCharacter`, an anim set and id for `Coney.PlayAnim`,
-[Coney native candidates](../asset-and-script-architecture.md#coney-native-candidates)); a path form beside each is
-the change.
+`Coney.PlaySound("project:/sounds/horn.wav", pos, volume)`, `Coney.SpawnModel("project:/models/bench.glb", pos,
+heading)`, `Coney.PlayClip(human, "project:/anims/dance.glb#Spin", loop, speed)`. The natives and their names are the
+Lua SDK design's ([#1057](issue:1057), its Assets by path), which uses this same scheme. What this page fixes is that
+the string is the asset's `project:/` or `game:/` path, resolved through the import table and the asset store, and that
+a path that does not resolve returns an error with the path in it that the script can test, never a silent nothing.
+Coney's existing native candidates take ids today (a character type for `Coney.ChangeCharacter`, an anim set and id for
+`Coney.PlayAnim`, [Coney native candidates](../asset-and-script-architecture.md#coney-native-candidates)); a path form
+beside each is the change.
 
 ### What stays editable after import {#editable}
 
@@ -504,7 +504,7 @@ A glTF or FBX animation imports as a clip: sampled at the clip format's key rate
 same bone map and rest pose, the pelvis's motion split into the root velocity and the root translation as the format
 holds them. A clip is used in two ways:
 
-- **Played by a script** by its path (`Coney.PlayAnim(human, "project:/anims/dance.glb#Dance")`), as the Animation
+- **Played by a script** by its path (`Coney.PlayClip(human, "project:/anims/dance.glb#Spin", loop, speed)`), as the Animation
   player plays any clip today. Gameplay is untouched.
 - **Put in a slot** of a custom character's anim set (its walk, its idle, an attack). That changes how the character
   plays, which is the point of a project, and it is allowed only in a project's sessions. An attack clip's reach and
