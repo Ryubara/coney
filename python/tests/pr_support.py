@@ -239,7 +239,7 @@ class Built:
             covers={
                 "test_commit": self.test_commit,
                 "fix_commit": self.tip,
-                "tests_sha256": fails_first.tests_sha256(self.root, self.tip, [TEST_FILE]),
+                fails_first.TEST_COVER: fails_first.test_sha256(self.root, self.tip, name, [TEST_FILE]),
                 "red_log_sha256": sha("red"),
                 "green_log_sha256": sha("green"),
             },

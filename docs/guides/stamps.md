@@ -31,7 +31,7 @@ One stamp is one line of canonical JSON (UTF-8, sorted keys, no spaces, no float
 | `subject` | What a repeating step is about: an address (`studied`, `compared`), a test name (`fails-first`), empty for the others |
 | `result` | `pass`, `fail` or `none` (`none`: no such step needed, with the reason in `detail`) |
 | `commit` | The unit worktree's HEAD when the step ended: a record, never compared, because a rebase rewrites it |
-| `covers` | Names mapped to hex hashes of what the step covered (a function's decompile, the cut, the pairs file, a Coney body, a test's files, logs, and for the steps that vouch for the whole change `diff_sha256`: [The change hash](#change)). Hashes only |
+| `covers` | Names mapped to hex hashes of what the step covered (a function's decompile, the cut, the pairs file, a Coney body, a test's own code and registration (`test_sha256`), logs, and for the steps that vouch for the whole change `diff_sha256`: [The change hash](#change)). Hashes only |
 | `detail` | Counts and names for the PR text and the mod, at most 2 KB |
 | `who` | What ran the step, the agent behind it and where that came from ([Who](#who)) |
 | `time` | UTC, never earlier than the stamp before |
@@ -398,7 +398,10 @@ C++ tests run), does the same on the fix commit (default HEAD), then puts the br
   prove it: both write a `fail` stamp. A build that does not compile, a build left queued for a slot, or names
   that match no test are errors with no stamp.
 * One stamp per test name (`--test` is repeatable; they are written together or not at all), covering both commits,
-  the test files and the hashes of both runs' logs (kept in scratch as `red-` and `green-<test commit>-<fix commit>.log`).
+  the test itself (`test_sha256`: [What a stamp binds](#fails-first-binds)) and the hashes of both runs' logs (kept in
+  scratch as `red-` and `green-<test commit>-<fix commit>.log`).
+* **A test added later**, in a review round, gets its own `orig fails-first` run with its own test commit (and the
+  stubs it needs); the stamps of the earlier tests stay valid, also when the new test is in the same file.
 * A docs or tooling task has nothing to run: `--none REASON` (one line, at most 200 characters, given alone) stamps
   `result: none` with the reason.
 
@@ -423,6 +426,38 @@ for exactly that pair of commits; a later edit of the test needs another.
 [`pr verify`](pr.md#verify), and so `pr open`, accept such a pass when the stamp its `decision_seq` names is a decision
 for the same test and commits (with `stamps.require_hook_source`, one the hook vouched the coordinator wrote); a
 decision alone is no proof that the test failed first, and it is no `--none` stamp for a task with nothing to test.
+
+### What a stamp binds {#fails-first-binds}
+
+A `fails-first` stamp is bound to **the one test it is about**, not to the files it sits in, so a test added to the same
+file in a later commit (a review round often adds one) leaves the earlier stamps valid. `covers.test_sha256` is the
+SHA-256 of (`fails_first.test_sha256`):
+
+* the test's name and, for each test file of the stamp (`detail.test_files`) that declares it, the file's path;
+* the test's **code**: the `TEST_CASE(...)` macro with its name and tags through the closing brace of its body, without
+  comments and white space (the rule of [the body hash](coney-tools-fidelity.md#body-hash), `orig_review.code_text`),
+  so clang-format or a reworded comment is no change; a string, a tag or a number is code;
+* its **registration**: the lines of the `CMakeLists.txt` files from the test file's folder up to `tests/` that name the
+  file (`ai/widget_test.cpp` in `tests/CMakeLists.txt`, or `widget_test.cpp` in `tests/ai/CMakeLists.txt`), comments
+  dropped. Another file added to the same list is not this file's line, so it changes nothing.
+
+It is recomputed at the branch's tip by `pr verify` and `task review` through one function, `fails_first.staleness`,
+which gives the reason a stamp is stale or nothing when it holds:
+
+| What happens after the stamp | Stamp |
+| --- | --- |
+| A test is added to the file (or above or below this one), or another test of the file is edited | valid |
+| A comment or layout edit, or a rebase that leaves the test's lines alone | valid |
+| The test's code or tags are edited, its file is taken out of the list or its line is changed | stale: `its test or its registration changed since (<files>)` |
+| The test is renamed or removed | stale, and a renamed test is a new one without a stamp |
+
+What it does not bind: code the test calls (a helper or fixture in the file, a header, the code under test). The
+stamp proves the test failed and then passed as written; the build and the reviewer cover the rest.
+
+**Stamps in the old form** carry `covers.tests_sha256`, the files as they were whole, and no `test_sha256`. They are
+still read: such a stamp holds while the files are as they were, and also when the files at the stamp's own
+`fix_commit` still hash to `tests_sha256` (the stamp was not edited, and the commit still exists) and the test's
+`test_sha256` there equals the one now, which is what a file that only grew means. Nothing rewrites an old stamp.
 
 ## For the commands that write more stamps {#api}
 

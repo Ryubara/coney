@@ -143,7 +143,11 @@ def test_red_then_green_is_a_pass_and_the_branch_is_restored(repo: Repo) -> None
         repo.fix,
     )
     assert stamp.covers["test_commit"] == repo.test and stamp.covers["fix_commit"] == repo.fix
-    assert len(stamp.covers["tests_sha256"]) == 64 and len(stamp.covers["red_log_sha256"]) == 64
+    assert len(stamp.covers["test_sha256"]) == 64 and len(stamp.covers["red_log_sha256"]) == 64
+    assert "tests_sha256" not in stamp.covers  # bound to the one test, not to whole files (issue 1097)
+    assert stamp.covers["test_sha256"] == fails_first.test_sha256(
+        repo.root, repo.fix, stamp.subject, ["tests/widget_test.cpp"]
+    )
     assert stamp.detail["red"] == "failed" and stamp.detail["green"] == "passed"
     assert stamp.detail["stubs"] == ["src/widget.h"]
     assert [h for h, _ in repo.seen] == [repo.test, repo.fix]

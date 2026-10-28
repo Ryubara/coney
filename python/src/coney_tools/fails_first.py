@@ -26,7 +26,7 @@ import sys
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from coney_tools import live_progress, stamps
 from coney_tools.build_run import TestScan
@@ -222,10 +222,22 @@ def tests_sha256(root: Path, commit: str, test_files: Sequence[str]) -> str:
     )
 
 
+#: The version line of the text a stamp's `test_sha256` hashes; a change to what is hashed changes it.
+TEST_HASH_VERSION = "coney-test 1"
+#: The key of a stamp's `covers` that binds it to the one test it is about (stamps made before it have `tests_sha256`).
+TEST_COVER = "test_sha256"
+#: The key of a stamp's `covers` that binds an older stamp to its test files whole.
+FILES_COVER = "tests_sha256"
+
+
+def _file_text(root: Path, commit: str, path: str) -> str:
+    """The text of `path` at `commit` ("" when the file is not there)."""
+    return _show(root, commit, path) or ""
+
+
 def declared_in(root: Path, commit: str, path: str) -> set[str]:
     """The `TEST_CASE` names the test file `path` declares at `commit` (none when the file is not there)."""
-    text = _show(root, commit, path)
-    return declared_names(text) if text is not None else set()
+    return declared_names(_file_text(root, commit, path))
 
 
 def _plan(root: Path, test_commit: str, fix_commit: str | None) -> tuple[str, str, list[str], list[str], list[str]]:
@@ -394,6 +406,95 @@ def declared_names(text: str) -> set[str]:
     return {_joined(match.group(1)) for match in _TEST_CASE.finditer(_without_comments(text))}
 
 
+#: What a scan for the end of a block finds: a string or character literal (whole, so a brace inside one is text) or
+#: a brace.
+_BRACES = re.compile(_KEEP + "|[{}]")
+
+
+def _block_end(text: str, start: int) -> int:
+    """Where the first `{...}` block at or after `start` ends in `text` (comments already gone); the end of the text
+    when the block never closes."""
+    depth = 0
+    for match in _BRACES.finditer(text, start):
+        brace = match.group(0)
+        if brace == "{":
+            depth += 1
+        elif brace == "}":
+            depth -= 1
+            if depth <= 0:
+                return match.end()
+    return len(text)
+
+
+def declared_bodies(text: str) -> dict[str, list[str]]:
+    """Each `TEST_CASE` declared in `text` -> its code (one entry for each declaration of the name), from the macro
+    through the closing brace of its body, without comments and white space (`orig_review.code_text`), so what
+    clang-format or a comment edit does is not a change of the test."""
+    plain = _without_comments(text)
+    bodies: dict[str, list[str]] = {}
+    for match in _TEST_CASE.finditer(plain):
+        end = _block_end(plain, match.end())
+        bodies.setdefault(_joined(match.group(1)), []).append(code_text(plain[match.start() : end]))
+    return bodies
+
+
+def _registration(root: Path, commit: str, path: str) -> list[str]:
+    """The lines of the `CMakeLists.txt` files between `path` and the test folder that name the file (the line that
+    compiles it into a test program), comments dropped. A line about another file is not the test's registration, so
+    adding a test file elsewhere in the same list does not change it."""
+    lines: list[str] = []
+    folder = PurePosixPath(path).parent
+    while True:
+        listing = (folder / "CMakeLists.txt").as_posix()
+        name = PurePosixPath(path).relative_to(folder).as_posix()
+        pattern = re.compile(r"(?<![\w./-])" + re.escape(name) + r"(?![\w./-])")
+        for line in _file_text(root, commit, listing).splitlines():
+            code = line.split("#", 1)[0].strip()
+            if code and pattern.search(code):
+                lines.append(f"{listing}: {code}")
+        if folder.as_posix() + "/" == TEST_DIR or folder == folder.parent:
+            return lines
+        folder = folder.parent
+
+
+def test_sha256(root: Path, commit: str, name: str, test_files: Sequence[str]) -> str:
+    """The hash a `fails-first` stamp covers as `test_sha256`: the one test `name`, read at `commit` from each of
+    `test_files` that declares it: the file's path, the code of its `TEST_CASE` and the lines that register the file.
+    A test added to the same file, or another file added to the same list, leaves it as it was; an edit to the test's
+    code, its rename (the name is not there any more) or its file's registration changes it."""
+    parts: list[str] = [TEST_HASH_VERSION, name]
+    for path in sorted(set(test_files)):
+        bodies = declared_bodies(_file_text(root, commit, path)).get(name)
+        if bodies:
+            parts += [path, *_registration(root, commit, path), *bodies]
+    return stamps.sha256_hex(json.dumps(parts).encode("utf-8"))
+
+
+def staleness(root: Path, commit: str, stamp: stamps.Stamp) -> str | None:
+    """Why a passing `fails-first` stamp no longer covers its test at `commit` (the branch's tip), or None when it
+    does: the one rule `pr verify` and `task review` share.
+
+    A stamp with `test_sha256` is current when the test's hash is the same now. An older stamp has only
+    `tests_sha256`, the whole test files: it is current when those are as they were, and also when the files are as
+    they were at the stamp's own fix commit (so the stamp has not been edited) and the test is the same now as it
+    was there, which is what a file that only grew since means."""
+    name = stamp.subject
+    files = stamp.detail.get("test_files")
+    listed = [str(f) for f in files] if isinstance(files, list) else []
+    where = ", ".join(listed)
+    if TEST_COVER in stamp.covers:
+        if stamp.covers[TEST_COVER] == test_sha256(root, commit, name, listed):
+            return None
+        return f"its test or its registration changed since ({where})"
+    if stamp.covers.get(FILES_COVER) == tests_sha256(root, commit, listed):
+        return None
+    fix = stamp.covers.get("fix_commit")
+    unedited = isinstance(fix, str) and stamp.covers.get(FILES_COVER) == tests_sha256(root, fix, listed)
+    if unedited and test_sha256(root, str(fix), name, listed) == test_sha256(root, commit, name, listed):
+        return None
+    return f"its test file changed since ({where})"
+
+
 def _check_names(root: Path, commit: str, test_files: list[str], names: Sequence[str]) -> None:
     """Every name must be a whole test name (`TEST_CASE("<name>"`, then `)` or `,` for tags) in a test file the test
     commit adds or changes: a typo, only part of a longer name, or a SECTION's name or any other quoted string would
@@ -485,7 +586,6 @@ def run(
         data = "".join(logs).encode("utf-8")
         (folder / f"{label}-{test[:12]}-{fix[:12]}.log").write_bytes(data)
         digests[label] = stamps.sha256_hex(data)
-    tests_hash = tests_sha256(root, fix, test_files)
     entries = []
     for name in names:
         red, green = runs["red"][1][name], runs["green"][1][name]
@@ -501,7 +601,7 @@ def run(
                 "covers": {
                     "test_commit": test,
                     "fix_commit": fix,
-                    "tests_sha256": tests_hash,
+                    TEST_COVER: test_sha256(root, fix, name, test_files),
                     "red_log_sha256": digests["red"],
                     "green_log_sha256": digests["green"],
                 },

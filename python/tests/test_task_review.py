@@ -19,7 +19,7 @@ from conventions_support import REMOVE, changed, write_checkout
 from git_support import git
 from review_support import make_verdict
 
-from coney_tools import identity, orig_pairs, pr_proof, review_verdict, stamps, task_review
+from coney_tools import fails_first, identity, orig_pairs, pr_proof, review_verdict, stamps, task_review
 from coney_tools.config import ConfigError
 from coney_tools.conventions import ConventionsError, load_conventions
 from coney_tools.review_verdict import problems as verdict_problems
@@ -433,6 +433,21 @@ def test_a_log_that_is_not_intact_is_refused(rig: Rig) -> None:
     assert any("stamp log" in p for p in rig.prepare()[1])
 
 
+def stamp_fails_first(rig: Rig, name: str, result: str = "pass") -> None:
+    """A `fails-first` stamp for `name` as `orig fails-first` writes it, covering the test as it is at the tip."""
+    files = ["tests/brain_test.cpp"]
+    rig.stamp(
+        "fails-first",
+        name,
+        result=result,
+        covers={
+            "fix_commit": rig.tip(),
+            fails_first.TEST_COVER: fails_first.test_sha256(rig.root, "HEAD", name, files),
+        },
+        detail={"test_files": files},
+    )
+
+
 def test_an_added_test_needs_a_passing_fails_first_stamp(rig: Rig) -> None:
     (rig.root / "tests").mkdir()
     (rig.root / "tests/brain_test.cpp").write_text('TEST_CASE("Brain thinks higher") {}\n', encoding="utf-8")
@@ -440,10 +455,30 @@ def test_an_added_test_needs_a_passing_fails_first_stamp(rig: Rig) -> None:
     git(rig.root, "commit", "-q", "-m", "test")
     _, problems = rig.prepare()
     assert any("Brain thinks higher" in p and "fails-first" in p for p in problems)
-    rig.stamp("fails-first", "Brain thinks higher")
+    stamp_fails_first(rig, "Brain thinks higher")
     assert rig.prepare()[1] == []
-    rig.stamp("fails-first", "Brain thinks higher", result="fail")
+    stamp_fails_first(rig, "Brain thinks higher", result="fail")
     assert any("Brain thinks higher" in p for p in rig.prepare()[1])
+
+
+def test_a_fails_first_stamp_is_read_by_the_rule_pr_verify_uses(rig: Rig) -> None:
+    path = rig.root / "tests/brain_test.cpp"
+    (rig.root / "tests").mkdir()
+    path.write_text('TEST_CASE("Brain thinks higher") {}\n', encoding="utf-8")
+    git(rig.root, "add", "-A")
+    git(rig.root, "commit", "-q", "-m", "test")
+    stamp_fails_first(rig, "Brain thinks higher")
+    path.write_text(path.read_text(encoding="utf-8") + 'TEST_CASE("Brain thinks lower") {}\n', encoding="utf-8")
+    git(rig.root, "commit", "-q", "-a", "-m", "a second test")
+    stamp_fails_first(rig, "Brain thinks lower")
+    assert rig.prepare()[1] == []  # a test added to the file later leaves the earlier stamp valid
+    path.write_text(
+        path.read_text(encoding="utf-8").replace('higher") {}', 'higher") { REQUIRE(1); }'), encoding="utf-8"
+    )
+    git(rig.root, "commit", "-q", "-a", "-m", "edit the first")
+    problems = rig.prepare()[1]
+    assert any("Brain thinks higher" in p and "changed since" in p for p in problems), problems
+    assert not any("Brain thinks lower" in p for p in problems)
 
 
 def test_nothing_to_review_is_refused(rig: Rig) -> None:
