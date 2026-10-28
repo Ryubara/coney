@@ -12,7 +12,7 @@ from types import SimpleNamespace
 from typing import cast
 
 import pytest
-from conventions_support import changed
+from conventions_support import REMOVE, changed
 from git_support import git
 from pr_support import (
     ENGINEER,
@@ -677,16 +677,142 @@ def test_the_rules_are_read_from_origins_default_branch_whatever_the_branch_name
     git(built.root, "fetch", "-q", "elsewhere")
     git(built.root, "update-ref", "refs/remotes/elsewhere/main", "HEAD")
     seen: list[str] = []
-    real = conventions_module.load_proof_rules_at
+    real = conventions_module.load_release_rules_at
 
     def spy(root: Path, ref: str, own: Conventions) -> tuple[Conventions, str]:
         seen.append(ref)
         return real(root, ref, own)
 
-    monkeypatch.setattr(pr_proof, "load_proof_rules_at", spy)
+    monkeypatch.setattr(pr_proof, "load_release_rules_at", spy)
     subject = pr_proof.load_subject(built.root, built.unit, built.task, built.kind, remote="elsewhere")
     assert seen == ["origin/main"] and subject.rules_from == "base"
     assert subject.remote_ref == "elsewhere/main"
+
+
+#: One edit per section that decides whether a release is allowed, as a branch could make it to its own file: the
+#: section's path in `Conventions`, and a change to a key in it that the real file does not already have.
+RELEASE_SECTIONS = [
+    pytest.param(("repo",), ("repo.default_branch", "sneaky"), id="repo"),
+    pytest.param(("paths",), ("paths.large_file_kb", 99999), id="paths"),
+    pytest.param(("commits",), ("commits.title.max_length", 200), id="commits"),
+    pytest.param(("pull_requests",), ("pull_requests.runtime.areas", ["graphics", "audio"]), id="pull_requests"),
+    pytest.param(("merge",), ("merge.auto_merge", False), id="merge"),
+    pytest.param(("claims",), ("claims.bot_login", "sneaky[bot]"), id="claims"),
+    pytest.param(("tasks", "review"), ("tasks.review.reverse_engineering_models", ["opus", "haiku"]), id="review"),
+    pytest.param(("stamps",), ("stamps.require_hook_source", True), id="stamps"),
+    pytest.param(("proof",), ("proof.build.preset", "dev"), id="proof"),
+]
+
+
+def section_of(rules: Conventions, path: tuple[str, ...]) -> object:
+    """The part of `rules` that `path` names (`("tasks", "review")` is `rules.tasks.review`)."""
+    value: object = rules
+    for part in path:
+        value = getattr(value, part)
+    return value
+
+
+@pytest.mark.parametrize(("path", "edit"), RELEASE_SECTIONS)
+def test_a_section_that_decides_a_release_is_the_default_branchs_whatever_the_branch_edits(
+    tmp_path: Path, path: tuple[str, ...], edit: tuple[str, object]
+) -> None:
+    built = make(tmp_path)
+    built.edit_rules(edit)
+    own = conventions_module.load_conventions(built.root)
+    assert section_of(own, path) != section_of(built.conventions, path), "the edit must change the section"
+    subject = built.subject()
+    assert section_of(subject.conventions, path) == section_of(built.conventions, path)
+    assert subject.rules_from == "base"
+
+
+def test_the_part_of_a_section_a_branch_leaves_alone_is_still_its_own_where_no_release_rule_reads_it(
+    tmp_path: Path,
+) -> None:
+    built = make(tmp_path)
+    built.edit_rules(("tasks.leads.max_per_source", 7))
+    subject = built.subject()
+    assert subject.conventions.tasks.leads.max_per_source == 7
+    assert subject.conventions.tasks.review == built.conventions.tasks.review
+
+
+def test_a_stricter_branch_is_not_held_to_more_than_the_default_branch_asks(tmp_path: Path) -> None:
+    built = make(tmp_path, skip=frozenset({"checked"}))
+    built.stamp(
+        "checked",
+        covers={"diff_sha256": built.diff, "build_record_sha256": built.build_record()},
+        detail=_checked(built),
+        who=UNVERIFIED,
+    )
+    built.edit_rules(("stamps.require_hook_source", True))
+    assert not any("without the hook identity" in t for t in texts(built.verify()))
+
+
+def test_a_branch_that_switches_the_hook_source_off_is_held_to_the_default_branchs_rule(tmp_path: Path) -> None:
+    built = make(tmp_path, skip=frozenset({"checked"}))
+    built.set_base_rules(("stamps.require_hook_source", True))  # the branch's own file says false
+    built.stamp(
+        "checked",
+        covers={"diff_sha256": built.diff, "build_record_sha256": built.build_record()},
+        detail=_checked(built),
+        who=UNVERIFIED,
+    )
+    result = built.verify()
+    assert any("checked" in t and "without the hook identity (source unverified)" in t for t in texts(result, "log"))
+    assert result.subject.conventions.stamps.require_hook_source
+
+
+def test_a_branch_that_widens_the_models_a_review_may_run_on_is_held_to_the_default_branchs(tmp_path: Path) -> None:
+    built = make(tmp_path, skip=frozenset({"reviewed"}))
+    built.set_base_rules(("stamps.require_hook_source", True))
+    built.edit_rules(
+        ("stamps.require_hook_source", False), ("tasks.review.reverse_engineering_models", ["opus", "haiku"])
+    )
+    built.review(reviewer={"id": "reviewer-2", "type": "reviewer", "model": "claude-haiku-5"})
+    refused = texts(built.verify(), "reviewed")
+    assert any("a review of orig work must run on opus" in t and "claude-haiku-5" in t for t in refused), refused
+
+
+def test_a_branch_that_calls_its_gameplay_folder_coney_only_still_needs_a_test_that_failed_first(
+    tmp_path: Path,
+) -> None:
+    built = make(tmp_path, shape="no-test")
+    paths = built.conventions.paths
+    built.edit_rules(
+        ("paths.gameplay", [folder for folder in paths.gameplay if folder != "src/ai/"]),
+        ("paths.coney_only", [*paths.coney_only, "src/ai/"]),
+    )
+    assert "src/ai/" not in conventions_module.load_conventions(built.root).paths.gameplay
+    assert texts(built.verify(), "fails-first") == [
+        "fails-first: a feature or fix under src/ai/ needs a test that failed first, or --none with a reason"
+    ]
+
+
+def test_an_unknown_key_in_the_default_branchs_rules_is_skipped_and_the_rest_still_steers(tmp_path: Path) -> None:
+    """A tool older than the default branch reads a key it does not know there as it reads one on a branch: it never
+    steers anything, so the release goes on with the rest."""
+    built = make(tmp_path)
+    built.set_base_rules(("stamps.a_later_rule", True), ("stamps.require_hook_source", True), ("a_later_section", {}))
+    subject = built.subject()
+    assert subject.conventions.stamps.require_hook_source and subject.rules_from == "base"
+
+
+@pytest.mark.parametrize("key", ["stamps.pairs", "tasks.review.folder", "pull_requests.runtime", "commits"])
+def test_rules_of_the_default_branch_that_cannot_be_read_stop_the_run_instead_of_the_branchs_being_used(
+    tmp_path: Path, key: str
+) -> None:
+    built = make(tmp_path)
+    built.set_base_rules((key, REMOVE))
+    with pytest.raises(ConfigError, match=rf"origin/main:\.github/conventions\.yml: .*{key.split('.')[-1]}"):
+        built.subject()
+
+
+def test_a_default_branch_that_predates_the_proof_section_leaves_only_the_proof_to_the_branch(tmp_path: Path) -> None:
+    built = make(tmp_path)
+    built.set_base_rules(("proof", REMOVE))
+    built.edit_rules(("proof.build.preset", "dev"), ("stamps.require_hook_source", True))
+    subject = built.subject()
+    assert subject.rules_from == "branch" and subject.conventions.proof.build.preset == "dev"
+    assert not subject.conventions.stamps.require_hook_source
 
 
 def test_without_origins_head_the_default_branch_is_unknown_and_nothing_runs(tmp_path: Path) -> None:

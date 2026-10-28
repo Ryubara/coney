@@ -19,14 +19,15 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from conventions_support import REPO, write_checkout
+import yaml
+from conventions_support import REPO, changed, write_checkout
 from git_support import git
 from test_orig_compare import SOURCE
 from test_orig_study import ADDRESS, FakeGhidra
 
 from coney_tools import build_record as build_record_module
 from coney_tools import fails_first, orig_compare, orig_copy, orig_pairs, orig_study, pr_diff, pr_proof, stamps
-from coney_tools.conventions import Conventions, load_conventions
+from coney_tools.conventions import CONVENTIONS_FILE, Conventions, load_conventions
 from coney_tools.task_file import TaskFile, render_task_file
 from coney_tools.unit import Unit
 
@@ -332,6 +333,25 @@ class Built:
         """Write a file and commit it on the branch; returns the commit."""
         write(self.root, name, text)
         return commit_all(self.root, message)
+
+    def edit_rules(self, *changes: tuple[str, object], message: str = "ci: edit the rules") -> str:
+        """The branch commits its own `.github/conventions.yml` with `changes` applied: a branch that edits the rules it
+        is released under. Returns the commit."""
+        return self.edit(CONVENTIONS_FILE, yaml.safe_dump(changed(*changes)), message)
+
+    def set_base_rules(self, *changes: tuple[str, object]) -> None:
+        """`origin/main` moves to hold `.github/conventions.yml` with `changes` applied, and this checkout fetches it:
+        the rules the branch is released under, while its own copy of the file stays as `make` wrote it."""
+        other = self.root.parent.parent / "other"
+        if not other.exists():
+            subprocess.run(["git", "clone", "-q", str(self.origin), str(other)], check=True)
+            own_identity(other)
+        git(other, "checkout", "-q", "main")
+        git(other, "pull", "-q", "origin", "main")
+        write(other, CONVENTIONS_FILE, yaml.safe_dump(changed(*changes)))
+        commit_all(other, "ci: change the rules")
+        git(other, "push", "-q", "origin", "main")
+        git(self.root, "fetch", "-q", "origin", "main")
 
     def subject(self, **more: Any) -> pr_proof.Subject:
         """The subject `pr verify` reads, at `NOW`."""

@@ -2846,18 +2846,12 @@ def _parse(data: object) -> Conventions:
     )
 
 
-def load_proof_rules_at(root: Path, ref: str, own: Conventions) -> tuple[Conventions, str]:
-    """`own` with its `proof` and path scope classes replaced by those of `.github/conventions.yml` at the git revision
-    `ref` (the rules a branch cannot have edited), and which rules they are: `base`, or `branch` when the file at
-    `ref` has no `proof` key at all (it is older than the section, as while the command is not merged). Only the
-    `proof` section and the three scope lists of `paths` are read, and their unknown keys are ignored, so a base that
-    gained another section or key since the branch forked is still read. Raises ConventionsError when git cannot show
-    the file, it is not YAML, or those sections do not validate: never a quiet fallback to the branch's own rules."""
+def _data_at(root: Path, ref: str) -> dict[str, Any]:
+    """The YAML mapping of `.github/conventions.yml` at the git revision `ref`. ConventionsError when git cannot show
+    the file, it is not YAML or it is not a mapping."""
     try:
         done = subprocess.run(
-            ["git", "-C", str(root), "show", f"{ref}:{CONVENTIONS_FILE}"],
-            capture_output=True,
-            check=False,
+            ["git", "-C", str(root), "show", f"{ref}:{CONVENTIONS_FILE}"], capture_output=True, check=False
         )
     except OSError as error:
         raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: git cannot be run ({error.strerror or error})") from error
@@ -2869,6 +2863,20 @@ def load_proof_rules_at(root: Path, ref: str, own: Conventions) -> tuple[Convent
         raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: not valid YAML ({error})") from error
     if not isinstance(data, dict):
         raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: expected a mapping")
+    return data
+
+
+def load_proof_rules_at(root: Path, ref: str, own: Conventions) -> tuple[Conventions, str]:
+    """`own` with its `proof` and path scope classes replaced by those of `.github/conventions.yml` at the git revision
+    `ref` (the rules a branch cannot have edited), and which rules they are: `base`, or `branch` when the file at
+    `ref` has no `proof` key at all (it is older than the section, as while the command is not merged). Only the
+    `proof` section and the three scope lists of `paths` are read, and their unknown keys are ignored, so a base that
+    gained another section or key since the branch forked is still read. Raises ConventionsError when git cannot show
+    the file, it is not YAML, or those sections do not validate: never a quiet fallback to the branch's own rules.
+
+    `task check` reads the proof rules with this; the release commands read every section that decides a release with
+    `load_release_rules_at`."""
+    data = _data_at(root, ref)
     if "proof" not in data:
         return own, "branch"
     try:
@@ -2886,37 +2894,40 @@ def load_proof_rules_at(root: Path, ref: str, own: Conventions) -> tuple[Convent
     return replace(own, proof=proof, paths=paths), "base"
 
 
-def load_release_rules_at(root: Path, ref: str, own: Conventions) -> Conventions:
-    """`own` with the sections that steer a release (`repo`, `pull_requests`, `merge`, `claims` and `stamps`) replaced
-    by those of `.github/conventions.yml` at the git revision `ref`, the rules a branch under release cannot have
-    edited. The other sections are not read, so a base that gained a key elsewhere is still read. Raises
-    ConventionsError when git cannot show the file, it is not YAML, or those sections do not validate."""
-    try:
-        done = subprocess.run(
-            ["git", "-C", str(root), "show", f"{ref}:{CONVENTIONS_FILE}"], capture_output=True, check=False
-        )
-    except OSError as error:
-        raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: git cannot be run ({error.strerror or error})") from error
-    if done.returncode != 0:
-        raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: git cannot show it")
-    try:
-        data = yaml.load(done.stdout.decode("utf-8"), Loader=_Loader)
-    except (UnicodeDecodeError, yaml.YAMLError) as error:
-        raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: not valid YAML ({error})") from error
-    if not isinstance(data, dict):
-        raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: expected a mapping")
+def load_release_rules_at(root: Path, ref: str, own: Conventions) -> tuple[Conventions, str]:
+    """`own` with every section that decides whether a release is allowed replaced by those of
+    `.github/conventions.yml` at the git revision `ref`, the rules a branch under release cannot have edited, and which
+    rules the proof is held to: `base`, or `branch` when the file at `ref` has no `proof` key at all (it is older than
+    the section, as while `pr verify` is not merged; then `proof` and `paths` stay `own`).
+
+    The sections are `repo`, `paths`, `commits`, `pull_requests`, `merge`, `claims`, `stamps`, `proof` and, of `tasks`,
+    only `review` (who may review, and on which model); the rest of `tasks` and the other sections, which no release
+    rule reads, stay `own`. They are read as a branch's file is for the release commands (`load_conventions_leniently`):
+    a key this tool does not know is skipped, since it never steers anything, while a missing key or a wrong value
+    raises ConventionsError naming the ref, and never falls back to the branch's own rules."""
+    data = _data_at(root, ref)
+    token = _IGNORED.set([])
     try:
         names = own.labels.names()
-        return replace(
+        tasks = _mapping(data.get("tasks"), "tasks")
+        rules = replace(
             own,
             repo=_read_repo(data.get("repo"), "repo"),
+            commits=_read_commits(data.get("commits"), "commits"),
             pull_requests=_read_pull_requests(data.get("pull_requests"), "pull_requests"),
             merge=_read_merge(data.get("merge"), "merge"),
             claims=_read_claims(data.get("claims"), "claims", names),
             stamps=_read_stamps(data.get("stamps"), "stamps"),
+            tasks=replace(own.tasks, review=_read_task_review(tasks.get("review"), "tasks.review")),
         )
+        if "proof" not in data:
+            return rules, "branch"
+        paths, proof = _read_paths(data.get("paths"), "paths"), _read_proof(data["proof"], "proof")
+        return replace(rules, paths=paths, proof=proof), "base"
     except ConventionsError as error:
         raise ConventionsError(f"{ref}:{CONVENTIONS_FILE}: {error}") from error
+    finally:
+        _IGNORED.reset(token)
 
 
 def _keep(value: object, keys: Iterable[str]) -> object:
@@ -2951,12 +2962,10 @@ def load_conventions(root: Path, ignored: list[str] | None = None) -> Convention
 def load_conventions_leniently(root: Path, say: Callable[[str], None] | None = None) -> Conventions:
     """`load_conventions` for the release commands (`pr open`, `pr verify` and `pr text`): a key this tool does not
     know is skipped, and `say` (if given) is told which, one line each. The file is the branch under release's, and
-    the first release of a branch that adds a rule is read by the tool main already has. Only some sections come from
-    the default branch instead (`load_proof_rules_at`: `proof` and the three `paths` scope lists, for the proof in all
-    three commands; `load_release_rules_at`: `repo`, `pull_requests`, `merge`, `claims` and `stamps`, for the steps of
-    `pr open` itself); the others, `stamps` and `tasks.review` among them for `pr verify` and the proof inside `pr
-    open`, are still the branch's own (issue #1044). Skipping an unknown key adds no steering: a key the tool does not
-    know is never read."""
+    the first release of a branch that adds a rule is read by the tool main already has. It is read for what no
+    release rule decides (the task file's name, the claims client's setup); every section that decides whether a
+    release is allowed is read from the default branch instead and replaces the branch's (`load_release_rules_at`).
+    Skipping an unknown key adds no steering: a key the tool does not know is never read."""
     ignored: list[str] = []
     conventions = load_conventions(root, ignored)
     if say is not None:
