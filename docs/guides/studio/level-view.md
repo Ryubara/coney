@@ -2,19 +2,19 @@
 
 How a user moves round a level and builds it in Coney Studio's Level view: the fly camera, the keymap, Unity's transform
 gizmo, selection, undo, and composing a level from primitives, textures, colliders, spawn points and path points.
-**Status: design; nothing here is built.** It is the second half of the
-[editor experience design](editor-experience.md), which holds the panels, the project, Play mode, importing, the two
-rules every choice follows and the build issues both pages propose; the editors' documentation read for both is listed
-in its [Sources](editor-experience.md#sources).
+**Status: design; nothing here is built.** It is the second half of the [editor experience
+design](editor-experience.md), which holds the panels, the project, Play mode, importing, the two rules every choice
+follows and the build issues both pages propose; the editors' documentation read for both is listed in its
+[Sources](editor-experience.md#sources).
 
 ## The Level view {#level-view}
 
 ### The fly camera {#fly-camera}
 
-All four editors fly the camera the same way: hold the **right mouse button** in the view, move the mouse to look,
-**W A S D** to move along the view and sideways, **Q and E** to sink and rise. They differ on Shift: in Unity and Godot
-Shift flies **faster**, in Roblox Studio it moves the camera **slower** for close work, and in Godot Alt is slower.
-Unity, Godot and Unreal change the base speed with the mouse wheel while the right button is held.
+All four editors fly the camera the same way: hold the **right mouse button** in the view, move the mouse to look, **W A
+S D** to move along the view and sideways, **Q and E** to sink and rise. They differ on Shift: in Unity and Godot Shift
+flies **faster**, in Roblox Studio it moves the camera **slower** for close work, and in Godot Alt is slower. Unity,
+Godot and Unreal change the base speed with the mouse wheel while the right button is held.
 
 Coney Studio copies the shared controls and Unity's Shift (the maintainer's choice), and takes Godot's Alt for slower:
 
@@ -33,14 +33,13 @@ Coney Studio copies the shared controls and Unity's Shift (the maintainer's choi
 | Shift+F | keep the view locked on the selection while it moves | Unity |
 | Pad 1 | fly as the world viewer's camera does | Coney's [world viewer](../running-viewers.md#the-world-viewer) |
 
-Q to Y are tools only while the right button is up (Unity's rule), so Q and E fly while it is held. The fly camera
-moves at the fixed step like everything else, so a scripted input flies the same path every time, as the world viewer
-does.
+Q to Y are tools only while the right button is up (Unity's rule), so Q and E fly while it is held. The fly camera moves
+at the fixed step like everything else, so a scripted input flies the same path every time, as the world viewer does.
 
 ### The keymap {#keymap}
 
-**Unity's keymap**, so a Unity user's hands already know it; Godot and Unreal use the same letters for move, rotate
-and scale, and the table says where they differ. Every key can be changed: the keymap is data, saved per user beside the
+**Unity's keymap**, so a Unity user's hands already know it; Godot and Unreal use the same letters for move, rotate and
+scale, and the table says where they differ. Every key can be changed: the keymap is data, saved per user beside the
 layouts, as Unity's Shortcuts Manager keeps it. Studio ships one keymap, not one per editor, so there is one set of keys
 to document and test.
 
@@ -94,15 +93,15 @@ Q (the View tool) shows no gizmo: a drag pans.
 - **Colours.** x red, y green, z blue, a plane square in the colour of the axis it does not move along, the free and
   outer handles grey-white. The handle under the cursor, and the one being dragged, turn **yellow** (Unity's highlight
   colour).
-- **Constant size on screen.** The gizmo is drawn the same size whatever the distance, scaled with the
-  [UI scale](../debug-menu.md#ui-scale), and drawn over the level without depth, so it is never hidden in a wall.
+- **Constant size on screen.** The gizmo is drawn the same size whatever the distance, scaled with the [UI
+  scale](../debug-menu.md#ui-scale), and drawn over the level without depth, so it is never hidden in a wall.
 - **Facing the camera.** The plane squares sit in the quadrant towards the camera, and an axis that points nearly
   straight at the camera fades out, since a drag along it would be erratic (both Unity's).
 - **Picking.** A click tests the gizmo's handles first, within a few pixels of each line, ring or cube, the nearest to
   the cursor winning; only a click that hits no handle selects something in the level ([Selection](#selection)). So a
   handle in front of another object is always the one dragged.
-- **Feedback while dragging.** The value being changed (a distance in metres, an angle in degrees, a scale factor)
-  shows beside the cursor, and the Inspector's field changes with it.
+- **Feedback while dragging.** The value being changed (a distance in metres, an angle in degrees, a scale factor) shows
+  beside the cursor, and the Inspector's field changes with it.
 - **One undo step.** A drag that ends is one step of [undo](#undo), however long it lasted; Escape during a drag puts
   the selection back where the drag began.
 
@@ -124,9 +123,9 @@ Both toggles are on the toolbar beside the tools, as in Unity, and Studio rememb
 | **Vertex** | **V** held | Drag a vertex of the selection onto a vertex of another model (Unity's vertex snapping); Shift+V keeps it on |
 | **Surface** | **Ctrl+Shift** while dragging the move centre | The selection lands on the collision surface under the cursor (Unity's surface snapping); End drops it straight down ([the keymap](#keymap)) |
 
-The steps are Coney's: a tenth of a metre lands on most sizes of the sandbox's courses (a 10 cm ledge, a 0.6 m
-fence; [The shipped layouts](../sandbox.md#the-shipped-layouts)), the Inspector takes any exact value (a 1.65 m wall),
-and 15° is the rotation step all of Unity, Godot and Roblox Studio users meet.
+The steps are Coney's: a tenth of a metre lands on most sizes of the sandbox's courses (a 10 cm ledge, a 0.6 m fence;
+[The shipped layouts](../sandbox.md#the-shipped-layouts)), the Inspector takes any exact value (a 1.65 m wall), and 15°
+is the rotation step all of Unity, Godot and Roblox Studio users meet.
 
 #### How Godot and Roblox Studio differ {#gizmo-differences}
 
@@ -159,8 +158,8 @@ So the full gizmo (three rings, the free sphere, scale on any axis of anything) 
 position, rotation and scale for every placed thing. The sandbox layout keeps a position, a yaw and sizes; Coney's own
 level format is the content page's ([#1058](issue:1058)), and this page asks it to keep all three, so that every handle
 of the Unity gizmo works on every placed thing. A human keeps one ring for good: Coney's humans have a heading, not a
-free orientation. Coordinates and units are the game's: metres, degrees, z up
-([The layout format](../sandbox.md#the-layout-format)).
+free orientation. Coordinates and units are the game's: metres, degrees, z up ([The layout
+format](../sandbox.md#the-layout-format)).
 
 ### Selection {#selection}
 
@@ -169,19 +168,19 @@ What all four do, and Studio with them:
 - A click in the Level view selects what is under the cursor; a click on empty space clears the selection.
 - **Shift+click** adds to the selection and **Ctrl+click** toggles one in or out (Unity); a **drag on empty space**
   draws a box that selects what it encloses (Godot, Unreal, Unity).
-- **One selection** shared by every panel: choosing in the Hierarchy selects in the Level view and fills the
-  Inspector, and the reverse. In Play it is the Entity inspector's selection, so the Debug draw's highlight follows it.
+- **One selection** shared by every panel: choosing in the Hierarchy selects in the Level view and fills the Inspector,
+  and the reverse. In Play it is the Entity inspector's selection, so the Debug draw's highlight follows it.
 - The Inspector shows the values a multiple selection shares and edits them all together; a value they differ in shows
   as mixed (Unity).
-- A selected thing is outlined in the Level view; what is under the cursor is lit before the click (Unity's and
-  Unreal's pre-selection highlight).
+- A selected thing is outlined in the Level view; what is under the cursor is lit before the click (Unity's and Unreal's
+  pre-selection highlight).
 
 ### Undo {#undo}
 
 - **Every edit is a command** with an inverse, kept on one undo stack per open level: a gizmo drag (one step, however
   long the drag), an Inspector value, a create, a duplicate, a delete. This is the model of the Entity editor, whose
-  edits are already commands, queued, applied between steps, logged and replayable
-  ([Entity editor](../debug-menu.md#entity-editor)); Studio's edit-time commands add the inverse.
+  edits are already commands, queued, applied between steps, logged and replayable ([Entity
+  editor](../debug-menu.md#entity-editor)); Studio's edit-time commands add the inverse.
 - **Edit > Undo History** lists the stack, and choosing a line goes back to it (Unity's Undo History).
 - Saving does not clear the stack; closing the level does.
 - **In Play**, a level edit is undone like any other and the undo is sent to the running game too; an edit of the
@@ -191,8 +190,8 @@ What all four do, and Studio with them:
 ## Composing a level {#composing}
 
 Users compose Coney-compatible content in Studio the way they do in Unity, Roblox Studio and Godot: maps and levels from
-primitives, textures applied, colliders, path points, the characters and things a level holds, and later custom
-missions and models. This section says what each is in the four editors and what it is in Coney.
+primitives, textures applied, colliders, path points, the characters and things a level holds, and later custom missions
+and models. This section says what each is in the four editors and what it is in Coney.
 
 ### What the four editors do {#composing-survey}
 
