@@ -4,12 +4,12 @@ system: ai
 owns:
   functions: [
     "0x0016bb58", "0x00221cd8", "0x002225d8", "0x00222288", "0x002223e8", "0x002235f8", "0x00223628", "0x00223800",
-    "0x0024df40", "0x0028abc0", "0x0028b358", "0x0028cfe0", "0x0028d190", "0x0028d2e8", "0x0028d358", "0x0028d538",
-    "0x0028de48", "0x0028df30", "0x0028e708", "0x0028fa18", "0x00290138", "0x002904e0", "0x002906b8", "0x00290ea8",
-    "0x00291008", "0x002911f8", "0x0029ce98", "0x0029f098", "0x0029f230", "0x0029f3a8", "0x002add08", "0x002ade10",
-    "0x002aebf8", "0x002af5b0", "0x002afa48", "0x002b2b90", "0x002b2c20", "0x002b2cd8", "0x002b2d00", "0x002b2e28",
-    "0x002b2fc8", "0x002b3360", "0x002b3ab0", "0x002b4098", "0x002b4200", "0x002b4330", "0x002b54d8", "0x002b5520",
-    "0x002b5808", "0x002c0430", "0x002c0748", "0x002fa918", "0x002fa9a8", "0x002fad30", "0x002fad70",
+    "0x00224060", "0x0024df40", "0x0028abc0", "0x0028b358", "0x0028cfe0", "0x0028d190", "0x0028d2e8", "0x0028d358",
+    "0x0028d538", "0x0028de48", "0x0028df30", "0x0028e708", "0x0028fa18", "0x00290138", "0x002904e0", "0x002906b8",
+    "0x00290ea8", "0x00291008", "0x002911f8", "0x0029ce98", "0x0029f098", "0x0029f230", "0x0029f3a8", "0x002add08",
+    "0x002ade10", "0x002aebf8", "0x002af5b0", "0x002afa48", "0x002b2b90", "0x002b2c20", "0x002b2cd8", "0x002b2d00",
+    "0x002b2e28", "0x002b2fc8", "0x002b3360", "0x002b3ab0", "0x002b4098", "0x002b4200", "0x002b4330", "0x002b54d8",
+    "0x002b5520", "0x002b5808", "0x002c0430", "0x002c0748", "0x002fa918", "0x002fa9a8", "0x002fad30", "0x002fad70",
   ]
 ---
 # AI fights: the fight goal, closing in and blocking
@@ -477,11 +477,11 @@ Confirmed (code) at the cited addresses unless a line says otherwise.
   It then queues the attack (no angle), clears the meter, notes the place, and the goal waits.
 - **The tackle meter** is kept by the think handlers of cops (`0x00300908`), gang soldiers (`0x00304840`) and the
   Warriors (`0x0030543c`). These run once per 0.2 s.
-    - It rises by T's gait (`+0x1a8`, capped at 36) while T moves and either holds a weapon (`0x00224060`) or moves
+    - It rises by T's gait (`+0x1a8`, capped at 36) while T moves and either holds an object (`0x00224060`) or moves
       away (T's velocity, `0x003a1f00`, has a non-negative dot product with A's facing).
     - Otherwise it falls by 2 (not below 0).
 
-  So a target who keeps running off, or who swings a weapon, is tackled sooner, and a high `k` makes it faster.
+  So a target who keeps running off, or who carries an object, is tackled sooner, and a high `k` makes it faster.
 
 #### The grab and snap try {#try-grab}
 
@@ -724,7 +724,7 @@ Otherwise the sum of these terms, `w` being the weights that `CfgSetTargetingPoi
 | `0x400` running | gait 4 with record `+0x08` clear | + 3 (`0x00510b70`) |
 | `0x800` train | `Brain_IsNearTrain` × 6 (`0x00510b74`); always 0 here, since such an enemy already returned −999 | 0 |
 | `0x1000` tagging | `0x2000000` | + 3 (`0x00510b78`) |
-| `0x2000` targets me armed | as `0x200`, and he holds a weapon (`0x00224060`) | + 3 (`0x00510b7c`) |
+| `0x2000` targets me armed | as `0x200`, and he holds an object (`Human_IsHoldingObject` `0x00224060`: the held object's kind `+0x86`, `0x00231a38`, not 0, whatever its anim set) | + 3 (`0x00510b7c`) |
 | `0x4000` a player | the enemy has a pad (`+0x1b0` ≠ −1) | + 20 (`0x00510b80`) [3] |
 | `0x8000` arrested | `0x20000` | −10 (`0x00510b98`) |
 | `0x10000` police | the enemy's brain is type 1 | + 30 (`0x00510ba0`) |

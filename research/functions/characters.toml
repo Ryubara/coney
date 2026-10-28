@@ -445,7 +445,7 @@ status = "legacy"
 [[function]]
 address = 0x00224060
 name = "Human_IsHoldingObject"
-page = "combat/index.md#charge-aim"
+page = "ai-fights.md#enemy-score"
 role = "Whether the held object's kind (`+0x86`, `0x00231a38`) is not 0, whatever its anim set."
 level = "confirmed-code"
 coney = "src/ai/targeting.cpp:armed"
