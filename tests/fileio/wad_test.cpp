@@ -72,7 +72,7 @@ void writeTwoEntryDisc(const TempDir& folder) {
 } // namespace
 
 TEST_CASE("Wad reads an entry from an overrides folder in place of the archive's", "[wad]") {
-    // Expected: formats/wad-dir.md#install-overrides, Coney's own behaviour (no counterpart in the original)
+    // Expected: docs/guides/asset-and-script-architecture.md#file-overrides, Coney's own behaviour
     TempDir disc;
     writeTwoEntryDisc(disc);
     TempDir overrides;
@@ -109,7 +109,7 @@ TEST_CASE("Wad reads an entry from an overrides folder in place of the archive's
 }
 
 TEST_CASE("Wad treats a missing overrides folder as no overrides", "[wad]") {
-    // Expected: formats/wad-dir.md#install-overrides, Coney's own behaviour (no counterpart in the original)
+    // Expected: docs/guides/asset-and-script-architecture.md#file-overrides, Coney's own behaviour
     TempDir disc;
     writeTwoEntryDisc(disc);
     auto opened = Disc::open(disc.path());
@@ -140,7 +140,7 @@ TEST_CASE("Wad treats a missing overrides folder as no overrides", "[wad]") {
 }
 
 TEST_CASE("Wad takes the first name in order when two override files name one entry", "[wad]") {
-    // Expected: formats/wad-dir.md#install-overrides, Coney's own behaviour (no counterpart in the original)
+    // Expected: docs/guides/asset-and-script-architecture.md#file-overrides, Coney's own behaviour
     TempDir disc;
     writeTwoEntryDisc(disc);
     TempDir overrides;

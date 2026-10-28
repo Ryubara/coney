@@ -199,12 +199,24 @@ The `mods/`, `cache/`, `modded/` and `mod-data/` entries, and why scripts never 
 - **Command line.** `--data <install>` opens the install folder, and `--disc` stays for development and CI. With
   neither, Coney looks for `game/ps2/` next to its executable. All three build the same store. Built (N7): until
   the store exists, `--data` and the lookup point `--disc` at `<install>/game/ps2/` ([Running Coney](running.md#install)).
-- **`overrides/files/` is built.** With `--data`, `io::Wad::useOverrides()` maps each file to the WAD entry its name
-  names (the entry's name or `0x` and its hash), and `Wad::openEntry()` reads that file whole in place of the entry's
-  range of `WARRIORS.WAD`. Every kind read through the WAD sees it, scripts and scenes included, and the readers size
-  their buffer by the stream, not the index, because a replacement is rarely the entry's size. Any replacement makes
-  the session modded (`Wad::modded()`, logged at start-up). `--disc` never reads overrides. How to play an edited
-  script: [Running Coney](running.md#install).
+
+#### Replacing a WAD entry: `overrides/files/` {#file-overrides}
+
+Built, and Coney's own: the original reads every entry from its disc. With `--data`, `io::Wad::useOverrides()` maps
+each file in `<install>/overrides/files/` to the WAD entry its name names, and `Wad::openEntry()` reads that file in
+place of the entry's range of `WARRIORS.WAD`:
+
+- A file is named as `--load` takes an entry: the entry's name in any letter case (`GLOBAL.LUA` and `global.lua` are
+  one entry, hashed lower-case as [WARRIORS.DIR](../research/formats/wad-dir.md#name-lookup) says), or `0x` and the
+  hash (`0x7e23a6f2`).
+- Names are taken in sorted order, so of two names for one entry the first wins. The second name, and a name that
+  matches no entry, are ignored with a warning. A missing folder replaces nothing.
+- A replaced entry is read whole at the file's own size, not the size in `WARRIORS.DIR`, and every other entry still
+  reads the archive. Every kind read through the WAD sees it, scripts and scenes included, and those readers size
+  their buffer from the stream, not the index, because a replacement is rarely the entry's size.
+- Any replacement makes the session modded (`Wad::modded()`, logged at start-up). `--disc` never reads overrides.
+
+How to play an edited script: [Running Coney](running.md#install).
 
 ### The legacy loaders, one by one {#legacy-loaders}
 

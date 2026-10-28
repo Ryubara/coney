@@ -115,7 +115,7 @@ TEST_CASE("only a finished install is one to play from", "[install]") {
 }
 
 TEST_CASE("a game played from an install reads its overrides/files in place of the WAD's entries", "[install][wad]") {
-    // Expected: formats/wad-dir.md#install-overrides, Coney's own behaviour (no counterpart in the original)
+    // Expected: docs/guides/asset-and-script-architecture.md#file-overrides, Coney's own behaviour
     // An install's game/ps2 holds the disc's files; overrides/files/<wad name> replaces one entry whole
     // (docs/guides/asset-and-script-architecture.md#install-folder).
     TempDir dir;

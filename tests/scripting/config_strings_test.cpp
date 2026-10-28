@@ -145,7 +145,7 @@ TEST_CASE("the string bindings refuse a bad id or a non-string text", "[config_s
 }
 
 TEST_CASE("wadScriptSource reads a replaced script at the replacement's own size", "[scripting][wad]") {
-    // Expected: formats/wad-dir.md#install-overrides, Coney's own behaviour (no counterpart in the original)
+    // Expected: docs/guides/asset-and-script-architecture.md#file-overrides, Coney's own behaviour
     // A recompiled script is rarely the size of the one on the disc: the source must read the file, not the entry's
     // size in WARRIORS.DIR (docs/guides/asset-and-script-architecture.md#install-folder).
     coney::test::TempDir disc;

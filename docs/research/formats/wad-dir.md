@@ -66,22 +66,6 @@ as written, and keeps those that match an entry's hash. It recovered 414 of 10,7
 (2026-10-04). The parser rejects a `WARRIORS.DIR` whose size is not `16 + count x 12` and an entry that ends past
 the end of the WAD; the game itself does neither check as far as these pages record.
 
-### Replacing an entry from an install {#install-overrides}
-
-Coney's own; the original reads every entry from the disc. A game played from an install (`--data`) reads each file
-in `<install>/overrides/files/` in place of the entry its name names, through `Wad::useOverrides()` and
-`Wad::openEntry()` (`src/fileio/wad.h`):
-
-- A file is named as `--load` takes an entry: the name, hashed as above after lower-casing (`GLOBAL.LUA` and
-  `global.lua` are one entry), or `0x` and the hash (`0x7e23a6f2`).
-- Names are taken in sorted order, so of two names for one entry the first wins; the other, and a name that matches
-  no entry, are ignored and reported.
-- A replaced entry is read whole at the file's size, not the size in `WARRIORS.DIR`; every other entry still reads
-  its range of `WARRIORS.WAD`. A missing folder replaces nothing.
-- Any replacement makes the session modded (`Wad::modded()`). A disc given with `--disc` never reads overrides.
-
-How to play an edited script with it: [Running Coney](../../guides/running.md#install).
-
 ## Open questions
 
 - Is the whole disc one flat root (`SLUS_212.15`, `WARRIORS.DIR`, `WARRIORS.WAD` and the other files), or does the
