@@ -28,7 +28,7 @@ using Fetch = std::function<std::expected<void, Error>(const Sink&)>;
 class Writer {
   public:
     /// A writer whose entries start at multiples of `alignment`, a power of two from kMinAlignment to kMaxAlignment
-    /// (checked by add() and write()).
+    /// (checked by write()).
     explicit Writer(std::uint32_t alignment = kDefaultAlignment) : m_alignment(alignment) {}
 
     /// The alignment a writer uses unless told otherwise: a memory page on Windows and x86-64 Linux, so that one entry
