@@ -38,6 +38,8 @@ merges its page adds its row here and its line to the `nav:` of `mkdocs.yml`, un
 | [Content and formats](content-and-formats.md) | What Studio shows and edits from the disc's files, the import step, readers, content by kind, export | [#1058](issue:1058) |
 | [Project formats](project-formats.md) | The files a project saves: the level file with its entity tree, names, tags and prefabs, and the `.cmod` package | [#1058](issue:1058) |
 | [Mission mods](mission-mods.md) | Changing a game script: decompiling on the user's machine, patches of differences pinned to the script's hash, merging two mods' patches, compiling and running in the script's place, and the verdict on a Lua 4.0 to 5.4 translator with its proof by traces | [#1074](issue:1074) |
+| [Entities and the Inspector](entities.md) | The entity kinds, the property schema each kind has as data, the Inspector and its tools against bloat, each kind's events connected by function name, stealth zones, attributes, spawning prefabs from scripts | [#1072](issue:1072) |
+| [A Human's properties](human-properties.md) | Every property of a Human, a Target and a Gang, grouped, with what Coney sets today and what waits | [#1072](issue:1072) |
 
 ## Terms {#terms}
 

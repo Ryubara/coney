@@ -5,7 +5,7 @@ for it: the **kinds** of entity a level holds, the **property schema** each kind
 every front end, how the Inspector shows everything about an entity without bloat, each kind's **events**, and
 **attributes**, the named values a project gives any entity for its scripts. The full list of a **Human**'s properties
 is its own page, [A Human's properties](human-properties.md). What Studio is, and the
-other design pages, are on the Studio index of the editor experience design ([#1055](issue:1055)); the Hierarchy and
+other design pages, are on the [Studio index](index.md); the Hierarchy and
 the Inspector panel are that design's, the level file and its entity tree are [Project formats](project-formats.md)'s,
 and the natives are the [Lua SDK](lua-sdk.md)'s.
 
@@ -40,6 +40,7 @@ absolutely everything about him, without bloat. The answer in five lines:
 - [A Human's properties](human-properties.md), with [a Target](human-properties.md#target) and
   [a Gang](human-properties.md#gang)
 - [Attributes](#attributes)
+- [Spawning a prefab from a script](#spawn-prefab): the pivot, the ground, `Coney.SpawnPrefab` and despawning
 - [What the level file stores](#level-file)
 - [Tests](#tests), [open questions](#open-questions), [proposed build issues](#build-issues), [sources](#sources)
 
@@ -61,18 +62,18 @@ FiveM, the model for the Lua SDK, has the same idea as Roblox's attributes on it
 script sets on an entity, owned by the server and replicated to clients.
 
 **What Coney takes.** Roblox's model fits Coney exactly, for the same reason Roblox Studio is the model of the whole
-editor ([Editor experience](issue:1055)): an editor for one game's content, whose classes are the engine's. Coney's
-kinds are fixed by Coney, as Roblox's classes are; a project adds values with attributes, not components, which keeps
-the maintainer's decision that scripts are never attached to entities. From Unreal it takes the reflected metadata in
-full (category, Advanced, range, an edit condition, read-only) and the bloat tools (Advanced, search, modified only);
+editor ([Editor experience](editor-experience.md)): an editor for one game's content, whose classes are the engine's.
+Coney's kinds are fixed by Coney, as Roblox's classes are; a project adds values with attributes, not components, which
+keeps the maintainer's decision that scripts are never attached to entities. From Unreal it takes the reflected metadata
+in full (category, Advanced, range, an edit condition, read-only) and the bloat tools (Advanced, search, modified only);
 from Godot the rule that a property equal to its default is not written to the file; from Unity the Debug view of the
 runtime values and the multiple-selection editing with mixed values shown as a dash.
 
 ## Entity kinds {#kinds}
 
 **The rule: one kind per thing Coney's engine makes.** A kind exists in Studio when Coney can make that thing in a
-level, and its properties are what Coney can set on it, each through a native or a Coney edit that exists. That is
-the Studio principle of reflecting Coney ([What Studio is](issue:1055)), applied to the Inspector. The game's own
+level, and its properties are what Coney can set on it, each through a native or a Coney edit that exists. That is the
+Studio principle of reflecting Coney ([What Studio is](index.md#principles)), applied to the Inspector. The game's own
 families of run-time things are listed on [Entities](../../references/entities.md); each Studio kind below names the
 family it makes and the level-file statement that stores it ([The level file](project-formats.md#level-file)).
 
@@ -162,10 +163,10 @@ designed here: a maintainer leaves it open as a possible future item, not for no
 
 ### Presets {#presets}
 
-The Create menu ([#1055](issue:1055)) offers **presets**: a kind with some values set. *AI fighter* is a Human with a
-fighter's type, gang and side, as the AI fighters page spawns one; *Target* is its own kind; *Box*, *Ramp* and the
-other primitives are the Primitive kind with its shape set. Presets are data beside the schema (a kind, a name, the
-values), so a new preset needs no code, and choosing one is the same as creating the kind and setting the values.
+The Create menu ([Create](level-view.md#create-menu)) offers **presets**: a kind with some values set. *AI fighter* is a
+Human with a fighter's type, gang and side, as the AI fighters page spawns one; *Target* is its own kind; *Box*, *Ramp*
+and the other primitives are the Primitive kind with its shape set. Presets are data beside the schema (a kind, a name,
+the values), so a new preset needs no code, and choosing one is the same as creating the kind and setting the values.
 
 ## The property schema {#schema}
 
@@ -277,7 +278,7 @@ flowchart TB
   and every available native setter becomes an edit item, which closes most of the editor's *Not here yet* list
   ([Entity editor](../debug-menu.md#entity-editor), [#974](issue:974)).
 - **Studio's Inspector** is a third front end of the same table ([The Inspector](#inspector)), as Studio's debug panels
-  are of the debug model ([#1055](issue:1055)).
+  are of the debug model ([Panels](editor-experience.md#panel-list)).
 - **The level file** reads and writes each kind's statement by the schema's keys and types
   ([What the level file stores](#level-file)).
 - **Edit commands and the run log** use the keys ([below](#edit-command)).
@@ -293,7 +294,7 @@ replays (`appliedEdits()`). The same command is:
 - an **Inspector edit of the running game**, queued and applied between two steps, logged, and refused on a network
   client, as the Entity editor's edits are;
 - a **level edit** in Studio, the same key and value written to the level document as an undoable command, and also sent
-  to the running game when the property is `live` ([Live edits while playing](issue:1055));
+  to the running game when the property is `live` ([Live edits while playing](editor-experience.md#live-edits));
 - the **edit command** of the technology page's live edits ([Live edits during Play](technology.md#live-edits)): plain,
   serializable data with ids, never pointers ([the networking checklist](../network-architecture.md#checklist)).
 
@@ -316,7 +317,8 @@ With one entity selected, top to bottom:
 4. **The groups**, in the schema's order, each a collapsible section with its common properties and an *Advanced*
    part under them (Unreal's arrow).
 5. **Attributes**: the project's values ([Attributes](#attributes)), with *Add attribute*.
-6. **The preview** of a model, at the foot, as the editor experience design places it ([#1055](issue:1055)).
+6. **The preview** of a model, at the foot, as the editor experience design places it
+   ([Previews](editor-experience.md#previews-coney)).
 
 The Inspector is a generic renderer: one widget per property type, as the debug front ends have one renderer per item
 kind ([One model](../debug-menu.md#one-model)); no Inspector code names a kind or a property.
@@ -343,15 +345,15 @@ reach without a wall of fields:
 - **Conditions.** A property whose `when` is false is not drawn: no wheelchair switch on a non-player, no AI group
   without a brain.
 - **Prefab overrides** are drawn in bold with a bar in the margin, with *Revert* and *Apply to prefab* (Unity's,
-  [#1055](issue:1055)).
+  [The Hierarchy's tree](editor-experience.md#hierarchy-tree)).
 - **Multiple selection.** With several entities of one kind, every `multi` property is shown and a value they differ
   in shows as a dash; setting it sets all, as one undo step. With several kinds, only the groups they share (Entity,
   Transform, Attributes they all have).
 
 ### Level and Running {#running}
 
-While playing, the Hierarchy has a Level tab and a Running tab ([Play mode](issue:1055)), and the Inspector shows the
-same schema for both, with the `live` field deciding what each allows:
+While playing, the Hierarchy has a Level tab and a Running tab ([Play mode](editor-experience.md#play-coney)), and the
+Inspector shows the same schema for both, with the `live` field deciding what each allows:
 
 | Property's `live` | Selected in the Level tab | Selected in the Running tab |
 | --- | --- | --- |
@@ -360,8 +362,8 @@ same schema for both, with the `live` field deciding what each allows:
 | `running-only` | Not shown | Editable; lost on Stop |
 | `watch` | Not shown | Read-only, live |
 
-This is the editor experience design's table of live edits ([Live edits while playing](issue:1055)), made a column of
-the schema instead of a list kept by hand.
+This is the editor experience design's table of live edits ([Live edits while
+playing](editor-experience.md#live-edits)), made a column of the schema instead of a list kept by hand.
 
 ## Events {#events}
 
@@ -485,6 +487,47 @@ tags](project-formats.md#names-tags)), in the same style:
 round the schema (an attribute never changes how Coney's engine treats the entity: a `health` attribute is not the
 human's health), or a lookup key (scripts find entities by name and tag; an attribute is read once the entity is found).
 
+## Spawning a prefab from a script {#spawn-prefab}
+
+A maintainer direction: prefabs stay built and placed in Studio, and a script may also **spawn** one while playing, as
+Unity's `Instantiate` and Roblox's `Clone` do. The prefab holds the set-up (a custom gang: its Gang entity, five
+humans with their properties, attributes and events, a crate), and the script decides when and where.
+
+**The pivot.** A prefab's pivot is the origin of its root entity, which the project formats page makes the instance's
+origin ([Prefabs](project-formats.md#prefabs)). *Create prefab* from a selection puts the pivot at the selection's
+centre, on the ground below it (the ground ray, as *Drop to ground* finds it), and writes every member relative to it;
+*Edit pivot* in the opened prefab moves it with the Move and Rotate gizmos (the vertical ring alone) and rewrites the
+members' offsets so nothing moves in the world. Members keep their offsets and facings relative to the root, and a
+nested prefab's instance is relative to its parent entity, as every transform in a level file is ([The entity
+tree](project-formats.md#entity-tree)).
+
+**The ground.** Each entity has *Drop to ground* (`ground`, in its Transform group): when it is on, a spawn or a level
+load puts the entity on the ground found below its place, so a formation built on flat ground stands on a slope or a
+stair. It is on for Humans and cannot be turned off there, because the original places them that way: `HuCreate` snaps
+a new human to the ground and writes back the snapped position ([its masterlist
+entry](../../references/bindings/character.md#hucreate)). It is off by default for the other kinds, where off keeps
+the stored height.
+
+| Proposed native | Does |
+| --- | --- |
+| `Coney.SpawnPrefab(path, pos, heading)` | Makes the prefab at `pos` (`{x, y, z}`), turned by `heading` degrees about z: every member at its offset turned by the heading, then dropped to the ground where its *Drop to ground* is on; returns the instance's handle and a table of its members' handles by name, or `nil` and the reason when it cannot be made |
+| `Coney.DespawnPrefab(handle)` | Removes everything a spawned instance made, each the way the game removes its kind (`HuDelete` for a human, `ObjDestroy` for an object, `CarDestroy`, `GangDelete`), its handlers disconnected; returns how many it removed; a level's own instance is refused |
+
+- **What it makes** is what a level load makes from the same entities: each member through its natives in file order,
+  its properties set, its event fields connected ([Events](#events)), its tags and attributes carried, so
+  `Coney.FindEntities` and `Coney.GetEntityAttribute` find the spawned members as they find the level's. A Gang inside
+  the prefab is a new gang per spawn, and the prefab's humans join it.
+- **The handles.** The instance's handle works with `Coney.GetEntityMembers` and `Coney.GetEntityInfo`; the members'
+  table maps each member's name to its handle (names repeated in the prefab: the first, with the rest reached through
+  `Coney.GetEntityMembers`, and Studio warns of the repeat). A spawned instance's id is `#N`, the session's count, so
+  its members are `#3/h2` to `Coney.FindEntity`, and never written to a file.
+- **All or nothing.** Before making anything, Coney counts the members of each kind against the game's pools (60
+  humans, 32 gangs, the object and flag limits, [Entities](../../references/entities.md)); a spawn that does not fit
+  makes nothing and says which pool is full.
+- **Deterministic and networked.** Both are `server` natives, called inside a step; the members' handles are the
+  session's, in file order, so a replay spawns the same handles, and clients learn of the members as of any entity.
+- **Only Coney's kinds.** A prefab can hold only what a level can, so a spawn never makes a kind Coney does not have.
+
 ## What the level file stores {#level-file}
 
 What this page needs of the level file, whose statements [The level file](project-formats.md#level-file) lists:
@@ -496,6 +539,8 @@ What this page needs of the level file, whose statements [The level file](projec
   stays short and diffs show what a user changed, and a `from-type` default is never frozen into a file: a human whose
   type's health changes in Coney gets the new health. A key the schema does not know is kept, listed when the level
   opens and ignored at Play, so a level made by a newer Coney opens in an older one without losing it.
+- **A prefab's pivot is its root entity's origin**, and *Drop to ground* is the `ground=` key of any entity, written
+  only where it differs from its kind's default ([Spawning a prefab](#spawn-prefab)).
 - **An entity reference is an id** (`gang=g2`, `look-at=h3`, `home:entity=f1`), never a name, so a rename never breaks
   one; inside a prefab, a reference to a member of the same prefab is its local id.
 - **Attributes are `attr` statements** ([above](#attributes)).
@@ -542,6 +587,11 @@ every check runs headless where it can.
 - **Events.** A test project's volume box and a flag's trigger sphere call the named functions with `(self, human)`
   once on entry and once on exit as a scripted player walks through, and *While Inside* at the repeat period; a name
   no script defines is listed and does nothing; nothing is called after the mission ends.
+- **Spawning a prefab.** A test project spawns a fixture prefab of a gang and three humans twice, at two places and
+  headings on a slope: each member stands at its offset turned by the heading, on the ground; the two gangs are
+  separate; the members' table names every member; `Coney.FindEntities` finds both instances' members by tag; a
+  spawn that would pass the 60 humans makes nothing; `Coney.DespawnPrefab` removes every member and a replay gives
+  the same handles.
 - **Attributes from scripts.** A test project reads and writes each type, removes one with `nil`, is refused a wrong
   type and a bad name, gets `attributeChanged` events in order, and finds the level's values unchanged after Stop; a
   network client's `SetEntityAttribute` is refused.
@@ -564,11 +614,11 @@ every check runs headless where it can.
 
 ## Proposed build issues {#build-issues}
 
-In the order they should come. Issues 1 to 3 need nothing of Studio and improve the debug menu at once; 4 to 6 build on
-the content design's level files of version 2 and level entities made at entry
-([Proposed build issues](content-and-formats.md#build-issues)), 5 and 6
-also on the Lua SDK's mods runtime ([Proposed build issues](lua-sdk.md#build-issues)); 7 and 8 build on the editor
-experience design's Hierarchy and Inspector issue ([#1055](issue:1055)), with which issue 7 is filed as one.
+In the order they should come. Issues 1 to 3 need nothing of Studio and improve the debug menu at once; 4 to 7 build on
+the content design's level files of version 2 and level entities made at entry ([Proposed build
+issues](content-and-formats.md#build-issues)), 5 to 7 also on the Lua SDK's mods runtime ([Proposed build
+issues](lua-sdk.md#build-issues)); 8 and 9 build on the editor experience design's Hierarchy and Inspector issue
+([Proposed build issues](editor-experience.md#build-issues)), with which issue 8 is filed as one.
 
 1. **tools: Add the entity property schema and its generators.** `research/entities/<kind>.yaml` with the fields of
    [What a property says](#property-fields), its schema in the research data guide; `coney-tools entities cpp` writing
@@ -610,14 +660,20 @@ experience design's Hierarchy and Inspector issue ([#1055](issue:1055)), with wh
    `apiset`; the host's changes sent as state in a network session. Tests: a test project reads and writes each type,
    removes one, is refused a wrong type and a bad name, gets its events in order; the level is unchanged after Stop; a
    client's set is refused.
-7. **tools: Add the schema-drawn Inspector to Coney Studio.** The Inspector of [The Inspector](#inspector): the header
+7. **core: Add spawning prefabs from scripts.** `Coney.SpawnPrefab` and `Coney.DespawnPrefab` in
+   `research/bindings/coney.yaml`: a prefab file expanded as a level load expands an instance, placed at a position
+   and turned by a heading about its pivot, each member dropped to the ground where its `ground` is on; its
+   properties, events, tags and attributes as at a level load; a new gang per spawn; the pools checked first; the
+   instance handle and the members by name returned; `#N` ids; despawning through each kind's removal native.
+   Needs prefabs in level files and the mods runtime. Tests: the *Spawning a prefab* cases of [Tests](#tests).
+8. **tools: Add the schema-drawn Inspector to Coney Studio.** The Inspector of [The Inspector](#inspector): the header
    with name and tags, the generic widgets per type, groups with remembered state, Advanced parts, the Debug groups
    for running entities, search (`@`, `native:`), *Modified*, pins per kind, conditions, prefab overrides, multiple
    selection with mixed values, the Level and Running rules of the `live` field, presets for the Create menu, and the
    Events group's fields, which open the script editor's Connect dialog ([#1073](issue:1073)). Tests: the fixture kind
    drawn with no kind code; search, filters, remembered state, multiple selection and the Level and Running cases of
    [Tests](#tests) under the Test Engine; an event field set through the dialog is saved as the function's name.
-8. **tools: Add attributes to the Coney Studio Inspector.** The Attributes section: add, rename, change type, delete,
+9. **tools: Add attributes to the Coney Studio Inspector.** The Attributes section: add, rename, change type, delete,
    edit by type, `@` search, *Modified*, shared attributes in a multiple selection, prefab overrides, and the Running
    tab's live values. Tests: an attribute added in the Inspector is in the saved file and read by a test project's
    script at Play; a change made by the script shows in the Running tab and is gone after Stop.

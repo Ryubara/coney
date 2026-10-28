@@ -164,8 +164,9 @@ ambush), with its own tree. A prefab holds no script: the project's scripts find
 ([Names and tags](#names-tags)).
 
 - **The prefab file** is a level file's entity statements under `format prefab 1`, with ids local to the prefab and one
-  root entity whose transform is the instance's origin. It holds no `base`, no `map` and no level settings (sky, fog,
-  title).
+  root entity whose transform is the instance's origin: the prefab's pivot, which a script's spawn places and turns
+  ([Spawning a prefab from a script](entities.md#spawn-prefab)). It holds no `base`, no `map` and no level settings
+  (sky, fog, title).
 - **An instance** is one `instance` line: the prefab's path and the instance's own id, parent and transform. Its
   entities' ids are `INSTANCE/LOCAL` (`p2/f3`), which scripts and the Hierarchy use.
 - **Per-instance overrides** are `set INSTANCE/LOCAL key=value ...`, only the keys that differ from the prefab, and
