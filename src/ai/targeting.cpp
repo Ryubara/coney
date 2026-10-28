@@ -2,7 +2,6 @@
 #include "ai/targeting.h"
 
 #include <algorithm>
-#include <cmath>
 #include <cstddef>
 #include <vector>
 
@@ -24,16 +23,22 @@ constexpr int kDogClass = 221;
 constexpr int kStreetGangKind = 0x17;
 // After every this many enemies the walk stops once it has a winner.
 constexpr std::size_t kPickBatch = 5;
+// The script's nil handle: nothing in hand.
+constexpr double kNoHeldObject = 0.0;
 
 // Whether `brain`'s human is knocked down (state `0x80000`, read only when the human has a record `+0xd4`).
 // **Coney stand-in**: Coney keeps no such flag; a human knocked down is the one whose target state is Grounded.
 // @orig 0x00223b98 Human_IsKnockedDown (unknown)
 bool down(const Brain& brain) { return brain.human().state() == human::TargetState::Grounded; }
 
-// Whether `brain`'s human holds an object (the held object's kind is not 0). **Coney stand-in**: Coney tracks an AI
-// human's held object only by the anim set it gives him, so an object with none does not count.
+// Whether `brain`'s human holds an object (the held object's kind `+0x86` is not 0), whatever its anim set.
+// **Coney stand-in**: the kinds are the level's object types, which the score cannot reach from a brain, so any
+// world object in hand counts; and a human with a weapon's anim set but no object (a spawner's item, which Coney does
+// not put in the hand) counts too.
 // @orig 0x00224060 Human_IsHoldingObject (unknown)
-bool armed(const Brain& brain) { return brain.human().fighter().animSet() != 0; }
+bool armed(const Brain& brain) {
+    return brain.human().script().heldObject != kNoHeldObject || brain.human().fighter().animSet() != 0;
+}
 
 } // namespace
 

@@ -3,13 +3,14 @@ kind: topic
 system: ai
 owns:
   functions: [
-    "0x0016bb58", "0x00221cd8", "0x002225d8", "0x00222288", "0x002223e8", "0x002235f8", "0x00223628", "0x00223800",
-    "0x00224060", "0x0024df40", "0x0028abc0", "0x0028b358", "0x0028cfe0", "0x0028d190", "0x0028d2e8", "0x0028d358",
-    "0x0028d538", "0x0028de48", "0x0028df30", "0x0028e708", "0x0028fa18", "0x00290138", "0x002904e0", "0x002906b8",
-    "0x00290ea8", "0x00291008", "0x002911f8", "0x0029ce98", "0x0029f098", "0x0029f230", "0x0029f3a8", "0x002add08",
-    "0x002ade10", "0x002aebf8", "0x002af5b0", "0x002afa48", "0x002b2b90", "0x002b2c20", "0x002b2cd8", "0x002b2d00",
-    "0x002b2e28", "0x002b2fc8", "0x002b3360", "0x002b3ab0", "0x002b4098", "0x002b4200", "0x002b4330", "0x002b54d8",
-    "0x002b5520", "0x002b5808", "0x002c0430", "0x002c0748", "0x002fa918", "0x002fa9a8", "0x002fad30", "0x002fad70",
+    "0x0016bb58", "0x00221cd8", "0x00222288", "0x002223e8", "0x002225d8", "0x002235f8", "0x00223628", "0x00223800",
+    "0x00224060", "0x0024df40", "0x0028abc0", "0x0028b358", "0x0028bf00", "0x0028cfe0", "0x0028d190", "0x0028d2e8",
+    "0x0028d358", "0x0028d538", "0x0028dc80", "0x0028de48", "0x0028df30", "0x0028e708", "0x0028fa18", "0x00290138",
+    "0x002904e0", "0x002906b8", "0x00290ea8", "0x00291008", "0x002911f8", "0x0029ce98", "0x0029f098", "0x0029f230",
+    "0x0029f3a8", "0x002add08", "0x002ade10", "0x002aebf8", "0x002af5b0", "0x002afa48", "0x002b2b90", "0x002b2c20",
+    "0x002b2cd8", "0x002b2d00", "0x002b2e28", "0x002b2fc8", "0x002b3360", "0x002b3ab0", "0x002b4098", "0x002b4200",
+    "0x002b4330", "0x002b54d8", "0x002b5520", "0x002b5808", "0x002c0430", "0x002c0748", "0x002fa918", "0x002fa9a8",
+    "0x002fad30", "0x002fad70",
   ]
 ---
 # AI fights: the fight goal, closing in and blocking
@@ -790,8 +791,8 @@ is 1, 0 would force level 0). The AI uses it to do less far away: [steering](ai-
 **The scan** (`Brain_ScanEnemies(brain, filter)` `0x0028b358`). A human who is down or dead empties his list. Else, with
 `R` the sight range (`Brain_GetSightRange` `0x0028bf00`: `+0x130`, at least 30 m while his gang is fighting, gang
 `+0x32` 1, whatever the gang's kind; confirmed (runtime), run r-20261028-sight-range-alert: a range of 2 m gave 30 m
-with the alert at 1, and a score of −999 at about 3.5 m with it at 0, the gang's kind 1 or `0x17`) and `c` = cos(field of
-view / 2):
+with the alert at 1 in a gang of kind `0x17`, and a score of −999 at about 3.5 m with it at 0, for kind `0x17` and for
+kind 1) and `c` = cos(field of view / 2):
 
 1. For each of the 32 gangs that is active (gang `+0x18`) and an enemy of his (`Gang_IsEnemyOf` `0x00168fe0`: the
    enemy bit of the other's id in gang `+0x38`; never between kinds 1 and 23, nor during a global truce), each of its
@@ -1042,9 +1043,9 @@ chance, `+0x37` the pattern-reading threshold ([Power classes](characters.md#pow
   muggings, interrogations, tagging or turf-only rule, so those tests pass and those terms give nothing; only the
   level's static collision blocks a sight ray; a gang's chosen target (`+0x10`) is kept but nothing sets it yet; the
   down term's `Human_IsKnockedDown` reads the Grounded target state, Coney having no state flag `0x80000`
-  ([q-score-down-flag](#q-score-down-flag)), and the armed term's `Human_IsHoldingObject` reads the anim set of what
-  he holds ([q-score-held-object](#q-score-held-object)). The sight range is at least 30 m while the gang is fighting,
-  whatever its kind (`sightRangeOf`, #1043).
+  ([q-score-down-flag](#q-score-down-flag)), and the armed term's `Human_IsHoldingObject` counts any world object in
+  hand, whatever its kind, and a weapon's anim set with no object ([q-score-held-object](#q-score-held-object)). The
+  sight range is at least 30 m while the gang is fighting, whatever its kind (`sightRangeOf`, #1043).
 - **The enemy scan** (`repo:src/ai/enemy_scan.h`, [The enemy scan](#enemy-scan)): `scanEnemies` lists the members of the
   enemy gangs in use that it sees (sight range, the shadow's 2 m rule, the spectate test's 1.9 m height limit, the
   Warriors' threat filter, the near radius of 1.5, 3 or 5.2 m all round and the view cone beyond it, then the line of
@@ -1108,9 +1109,11 @@ checked: compare both through a knockdown in PCSX2 and Coney.
 
 ### What an AI holds, for the armed term {#q-score-held-object}
 
-`Human_IsHoldingObject` (`0x00224060`) counts any held world object, whatever its anim set; Coney knows an AI human's
-held object only by the anim set it gives him. Whether an object with no anim set can be in an AI's hand during a fight
-decides whether the two ever differ: list the objects the scripts and the weapon piles hand to AI humans.
+`Human_IsHoldingObject` (`0x00224060`) counts a held world object whose kind (`+0x86`) is not 0, whatever its anim
+set. Coney's score cannot reach the level's object types from a brain, so it counts any world object in hand, and also
+a human who has a weapon's anim set with no object (a spawner's item, which Coney does not put in the hand). Whether
+any object an AI can hold has kind 0 decides whether the first ever differs: list the kinds of the objects the scripts,
+the weapon piles and the spawners hand to AI humans.
 
 ## How this was checked
 

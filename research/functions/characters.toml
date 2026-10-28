@@ -452,7 +452,7 @@ coney = "src/ai/targeting.cpp:armed"
 status = "compared"
 
 [[function.gaps]]
-what = "Coney tracks an AI human's held object only by its anim set, so an object with none does not count"
+what = "the object kinds are the level's and out of the score's reach, so any world object in hand counts (kind 0 too), and so does a weapon's anim set with no object"
 relation = "stand-in"
 question = "ai-fights.md#q-score-held-object"
 
