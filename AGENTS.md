@@ -1,9 +1,8 @@
 # AGENTS.md -- Coney
 
-Coney is an open-source, functional reimplementation of *The Warriors* (Rockstar Toronto, 2005) in C++23, running
-natively on Windows, Linux and macOS from a disc the player owns. It is built mainly on reverse engineering the PS2
-version, the reference for gameplay, with the Xbox port as a second source for rendering and assets. Anyone should be
-able to find, from our docs and code comments, where each behaviour lives in the original. Legal: `LEGAL.md`.
+Coney is an open-source, functional reimplementation of *The Warriors* (Rockstar Toronto, 2005) in C++23 for Windows,
+Linux and macOS, run from a disc the player owns. The PS2 version is the reference for gameplay, the Xbox port a second
+source for rendering and assets. Docs and comments say where each behaviour lives. Legal: `LEGAL.md`.
 
 ## Layout
 
@@ -43,10 +42,9 @@ contributing starts at CONTRIBUTING.md, section Your first hour; the rest of thi
 - **Research claims** carry an evidence level: confirmed (code) at a cited address, confirmed (runtime), inferred, or
   speculative. Addresses are like `0x001490b8` in NTSC-U `SLUS_212.15`. How: `docs/guides/research-evidence.md`.
 - **Reverse-engineering work** (Ghidra, disassembly, PCSX2, research claims) runs on Opus 5.5.
-- **Faithful first:** gameplay (rules, timings, maths, AI, missions) matches the PS2 exactly until the game is complete;
-  Coney's own mechanics wait (designs may be written now), debug tooling is fine. Anything either original build does
-  natively is faithful too, e.g. the Xbox port's lighting, shadows, textures and movies, as an option beside the PS2
-  look; only what neither does goes further now. All off in test mode; pages name the build (`research-evidence.md`).
+- **Faithful first:** gameplay matches the PS2 until the game is complete; Coney's own mechanics wait (designs may be
+  written now), debug tooling is fine. Anything either original build does natively (Xbox lighting, shadows, textures,
+  movies) is faithful too, as an option off in test mode; pages name the build (`research-evidence.md`).
 - **Never exclude a file from the 512 KB large-file check** in `.pre-commit-config.yaml`: it catches game data
   committed by mistake. Split big generated data and pages instead.
 <!-- conventions:begin maintainer-decisions -->
