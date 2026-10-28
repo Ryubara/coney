@@ -27,7 +27,8 @@ absolutely everything about him, without bloat. The answer in four lines:
 ## Contents {#contents}
 
 - [What the four editors do](#survey)
-- [Entity kinds](#kinds): the list, [inheritance and composition](#inheritance), [presets](#presets)
+- [Entity kinds](#kinds): the list, [stealth zones](#stealth-zone), [inheritance and composition](#inheritance),
+  [presets](#presets)
 - [The property schema](#schema): [what a property says](#property-fields), [where it lives](#schema-source),
   [one schema, every reader](#schema-readers), [one edit command](#edit-command)
 - [The Inspector](#inspector): [its layout](#inspector-layout), [no bloat](#no-bloat), [Level and Running](#running)
@@ -71,7 +72,7 @@ family it makes and the level-file statement that stores it (project formats, [#
 
 | Kind | Level-file statement | What it makes in Coney | Its groups (beyond [Entity](#human-entity)) | State |
 | --- | --- | --- | --- | --- |
-| **Level** (the tree's root) | `title`, `sky`, `sun`, `ambient`, `fog`, `occlusion`, `shadows`, `base` | The level's settings ([Statements](../sandbox.md#statements)) | Level, Lighting, Base level | ready for sandbox layouts |
+| **Level** (the tree's root) | `title`, `texture`, `sky`, `sun`, `ambient`, `fog`, `occlusion`, `shadows`, `tessellate`; `base` (proposed by [#1058](issue:1058)) | The level's settings ([Statements](../sandbox.md#statements)) | Level, Lighting, Base level | ready for sandbox layouts, but for `base`, which waits on a project level on a disc level |
 | **Group** | `group` | Nothing of its own: a parent its children follow | Transform | waits on level files of version 2 |
 | **Prefab instance** | `instance` | Its prefab's entities, expanded at Play | Transform, Prefab (its file, its overrides) | waits on level files of version 2 |
 | **Primitive** | `box`, `ramp`, `stairs`, `cylinder`, `capsule`, `sphere` | A solid textured shape ([Shapes](../sandbox.md#shapes)) | Transform, Shape (the shape and its sizes), Surface (texture, tiling, tint), Collision, Repeat | ready |
@@ -87,6 +88,7 @@ family it makes and the level-file statement that stores it (project formats, [#
 | **Flag link** | `flaglink` | A flag network link, `FlagNetAddLink` | Link | waits on level files of version 2 |
 | **Walkable area**, **Nav link** | `navarea`, `navlink` | The path map's areas and links | Area, Link | waits on Coney's path map builder |
 | **Volume box** | `volume` | A trigger box, `AddVolumeBox`; a gang's turf | Transform (no rotation), Box, Turf | waits on level files of version 2 |
+| **Stealth zone** | `stealth` (proposed in [Stealth zones](#stealth-zone)) | Shadow ground: the floor inside it hides the player, as the original's flagged collision does | Transform (a turn about z only), Zone (its size) | waits on level files of version 2 |
 | **Object** | `object`; a `trigger` on it | A world object, `ObjSpawn`; its trigger sphere, `TriggerSphereCfg` | Transform, Object (type, zone, flags, tint), Trigger | waits on level files of version 2 |
 | **Emitter** | `emitter` | A particle system, `SpawnParticle` | Transform, Emitter | waits on level files of version 2 |
 | **Door**, **Glass pane** | `door`, `glass` | `SpawnDoor`, `SpawnBreakableGlass` | Transform, Door or Pane | waits on doors and panes built with the level's collision |
@@ -103,6 +105,36 @@ A trigger sphere is the Inspector's *Trigger* group on its object, not a kind of
 one object (`TriggerSphereCfg` takes the object's handle); the level file keeps the project formats page's `trigger`
 statement for it. A **player** is not a kind either: he is a Human whose *Player slot* is set, or the human a spawn
 point makes at Play.
+
+### Stealth zones {#stealth-zone}
+
+A maintainer decision: stealth works as *The Warriors* does it, by zones that put the player in stealth when he walks
+into them, and Studio lets a user place them. In the original a stealth zone is **level collision, not a placed
+thing**: a floor triangle with flag bit 4 (`0x0010`) is *shadow ground*, and every update the ground ray under each
+human reads its flags; a player on such a triangle hides unless someone already hunts him or he carries a molotov
+([Stealth: shadow ground](../../research/stealth.md#shadow-ground), confirmed (code) at `Human_SnapToGround`
+`0x0023eab8`). The disc's levels hold 1,052 such triangles, and no script native adds, moves or tests one (inferred,
+from the bindings, on the same page). A zone has no settings of its own: the rules (hunted, the molotov, the 4 s
+grace, a hidden player seen only within 2 m) are the engine's and the same everywhere, and Coney implements them
+([Stealth: Coney's implementation](../../research/stealth.md#coneys-implementation)).
+
+So Studio offers stealth two ways, both writing the same collision bit:
+
+- **The *Stealth* switch of a surface.** The Collision group of a Primitive, a Mesh, a Collider and a `faces` edit
+  has *Stealth* (`sneak=yes`, one of the project formats page's collision names), the original's own form: the
+  surface's floor triangles are shadow ground. It is ready today for a sandbox primitive through its raw `flags=16`;
+  the named switch waits on level files of version 2.
+- **The Stealth zone kind**, for marking a stretch of an existing floor (a base level's alley, an imported map)
+  without editing its triangles one by one: an upright box, drawn translucent blue in the Level view, whose
+  properties are its position, its turn about z (`yaw`) and its size. When Coney builds the level's collision at
+  Play, every floor triangle whose centre lies inside the box gets bit 4, as if each had been marked by a `faces`
+  edit; the source files, the disc's included, are never changed. The Collision view mode colours shadow ground
+  either way, so a user sees exactly where the player can hide. It waits on level files of version 2 and on the
+  collision build applying it.
+
+A **Volume box** is not a stealth zone: level87's stealth tutorial uses volume boxes only to start its hints
+([Stealth: the hangout tutorial](../../research/stealth.md#level87)). **Stealth from a sun's real shadows** is not
+designed here: a maintainer leaves it open as a possible future item, not for now.
 
 ### Inheritance and composition {#inheritance}
 
@@ -232,9 +264,10 @@ flowchart TB
   `src/debug/entity_edit.h` lists the edits). With the schema, the Entity inspector builds its items from it, as the
   Tunables page builds its pages from the tunables registry ([Tunables](../debug-menu.md#tunables)): a `bool` is a
   toggle, an `int` or `float` a number item with the property's range and reset to its `from-type` value, a `choice` a
-  choice item, a `watch` a watch line. The groups and lines the merged entity panel of [#1053](issue:1053) shows today
-  are the first schema, so nothing it shows is lost, and every available native setter becomes an edit item, which
-  closes most of the panel's *Not here yet* list ([Entity editor](../debug-menu.md#entity-editor)).
+  choice item, a `watch` a watch line. The groups, watch lines and edits the Entity inspector and editor show (one
+  panel once [#1053](issue:1053) merges them, with its Model edit) are the first schema, so nothing they show is lost,
+  and every available native setter becomes an edit item, which closes most of the editor's *Not here yet* list
+  ([Entity editor](../debug-menu.md#entity-editor), [#974](issue:974)).
 - **Studio's Inspector** is a third front end of the same table ([The Inspector](#inspector)), as Studio's debug panels
   are of the debug model ([#1055](issue:1055)).
 - **The level file** reads and writes each kind's statement by the schema's keys and types
@@ -243,11 +276,11 @@ flowchart TB
 
 ### One edit command {#edit-command}
 
-Today an edit is an `EntityCommand` of one of sixteen `EditOp`s with up to three numbers (`src/debug/entity_edit.h`).
-It becomes **an entity id, a property key and a value** of the property's type; the actions that are not properties
-(drop to ground, move to camera, kill, delete, reset) stay as named actions. The op names the run log writes today
-(`health`, `scale-collision`, `model`) are kept as the properties' keys, so a recorded run log still replays
-(`appliedEdits()`). The same command is:
+An edit is an `EntityCommand` of one of the `EditOp`s with up to three numbers (`src/debug/entity_edit.h`; fifteen
+ops, and #1053 adds `model`). It becomes **an entity id, a property key and a value** of the property's type; the
+actions that are not properties (drop to ground, move to camera, kill, delete, reset) stay as named actions. The op
+names the run log writes (`health`, `scale-collision`) are kept as the properties' keys, so a recorded run log still
+replays (`appliedEdits()`). The same command is:
 
 - an **Inspector edit of the running game**, queued and applied between two steps, logged, and refused on a network
   client, as the Entity editor's edits are;
@@ -519,10 +552,11 @@ configured value) and *Log everything*.
 ### A Target {#target}
 
 Coney's passive sandbox human has no brain and no body in the physics, so its schema is short: Entity, Identity (its
-model, which the model swap of [#1053](issue:1053) changes while playing), Transform (position and heading, `next-play`,
-as a layout's `target` keeps them), *Frozen* (`running-only`), and the watches of Identity, Transform, Animation,
-Meters and Combat that the Entity inspector shows for it today. The panel takes no other edit of a target, so its
-health is a watch until the play mode handles one.
+model, Rembrandt's, which the model swap of [#1053](issue:1053) changes while playing), Transform (position and
+heading), Meters (*Health* `health`, 600 by default), each saved and `next-play` as a layout's `target` statement keeps
+them ([Statements](../sandbox.md#statements)), *Frozen* (`running-only`), and the watches of Identity, Transform,
+Animation, Meters and Combat that the Entity inspector shows for it. The Entity editor takes no other edit of a target,
+so while playing its health is a watch until the play mode handles one.
 
 ### A Gang {#gang}
 
@@ -639,6 +673,8 @@ What this page needs of the level file, to agree with the project formats page o
 - **A gang is a `gang` statement**, `gang Rivals id=g2 type=3 enemies=g1`, and a human's `gang=` names its id; a gang
   of the base level is named `gang=base:<its name>`. This differs from the project formats page's `gang=2` and is to
   be agreed with it.
+- **A stealth zone is a `stealth` statement**, `stealth id=z1 at=4,6,0 yaw=30 size=8,3,2`, and a surface's
+  *Stealth* switch is the project formats page's `sneak=yes` ([Stealth zones](#stealth-zone)).
 - **Live values are never stored.** Nothing marked `watch` or `running-only` is in a file.
 
 ## Tests {#tests}
@@ -669,14 +705,18 @@ every check runs headless where it can.
   step and is in the saved level; a `next-play` edit marks the session stale; a Running-tab edit is gone after Stop.
 - **The file.** A level with every kind, property type and attribute type round-trips byte for byte; a default is not
   written; an unknown key is kept and listed; an attribute that breaks a limit fails with its line.
+- **Stealth zones.** A scripted player walks into a stealth zone laid over a floor with no flag and hides (the hidden
+  state and the blue radar of Coney's hiding), and is no longer hidden after walking out; the floor triangles outside
+  the box keep their flags, and the source file is unchanged.
 - **Attributes from scripts.** A test project reads and writes each type, removes one with `nil`, is refused a wrong
   type and a bad name, gets `attributeChanged` events in order, and finds the level's values unchanged after Stop; a
   network client's `SetEntityAttribute` is refused.
 
 ## Open questions {#open-questions}
 
-- **The gang statement** ([What the level file stores](#level-file)) changes the project formats page's `gang=2`; the
-  two designs settle it together ([#1058](issue:1058)).
+- **The gang and stealth statements** ([What the level file stores](#level-file)): the `gang` statement changes the
+  project formats page's `gang=2`, and `stealth` is a statement that page does not list; the two designs settle them
+  together ([#1058](issue:1058)).
 - **Attributes on a base level's entities.** Whether a project may put attributes on a disc level's entity (an `attr`
   naming its trace id), which depends on how that page settles overrides of a base level's entities.
 - **Per-human stats.** Whether the engine should keep the [Stats](#human-stats) per human, so the Inspector can set
@@ -695,8 +735,8 @@ filed as one.
 1. **tools: Add the entity property schema and its generators.** `research/entities/<kind>.yaml` with the fields of
    [What a property says](#property-fields), its schema in the research data guide; `coney-tools entities cpp` writing
    the engine's schema table (available properties only, from the natives' status) and `entities render` writing a
-   reference page per kind, both with `--check` in the local gate and CI; the first schemas are what the merged entity
-   panel shows today, for the Human, the Target and the three object kinds. Tests: Python tests of both generators
+   reference page per kind, both with `--check` in the local gate and CI; the first schemas are what the Entity
+   inspector and editor show, for the Human, the Target and the three object kinds. Tests: Python tests of both generators
    over fixtures (a property appears, a waiting one is left out and listed, a bad native or duplicate key fails); the
    table matches the YAML.
 2. **tools: Rework the Entity inspector to draw from the schema.** The debug menu's entity groups, watch lines and edit
@@ -708,11 +748,13 @@ filed as one.
    [Everything about a Human](#human) and [A Gang](#gang) in the schemas, each with its play-mode handler calling the
    entry point its native calls, so the debug panel sets them while playing. Tests: per property, an edit through the
    queue and the native called by a script leave the same state; the handler check passes.
-4. **core: Add schema properties, gangs and attributes to level files.** The level reader and writer take each kind's
-   keys, types and defaults from the schema: only non-default values written, `from-type` defaults never frozen,
-   unknown keys kept and listed, entity references by id; the `gang` statement and `gang=` by id; the `attr`
-   statement with its types, limits and `nil`. Tests: a level with every kind, type and attribute type round-trips
-   byte for byte; a default is not written; a broken limit fails with its line; a version 1 layout reads unchanged.
+4. **core: Add schema properties, gangs, stealth zones and attributes to level files.** The level reader and writer
+   take each kind's keys, types and defaults from the schema: only non-default values written, `from-type` defaults
+   never frozen, unknown keys kept and listed, entity references by id; the `gang` statement and `gang=` by id; the
+   `stealth` statement, whose box sets the shadow-ground bit on the floor triangles inside it when the collision is
+   built; the `attr` statement with its types, limits and `nil`. Tests: a level with every kind, type and attribute
+   type round-trips byte for byte; a default is not written; a broken limit fails with its line; a version 1 layout
+   reads unchanged; a player walking into a stealth zone hides.
 5. **core: Add entity attributes and their natives.** The session's attribute table loaded at Play, the run-time
    attributes of handles made while playing, `Coney.GetEntityAttribute`, `Coney.SetEntityAttribute`,
    `Coney.GetEntityAttributes` and the `attributeChanged` entry point in `research/bindings/coney.yaml`, with their
