@@ -340,6 +340,7 @@ nav:
       - Network architecture design: guides/network-architecture.md
       - Coney Studio design:
           - Lua SDK and natives: guides/studio/lua-sdk.md
+          - Technology: guides/studio/technology.md
       - Conventions: guides/conventions.md
       - Repository conventions: guides/repo-conventions.md
       - Enforcement map: guides/enforcement.md

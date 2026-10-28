@@ -6,7 +6,7 @@ tooling, the script debugger, hot reload, the libraries that import assets and t
 question lists the alternatives weighed and the choice, and the page ends with the [build issues](#build-issues) it
 proposes, in order. Three small proofs settled what reading could not ([Proofs](#proofs)).
 
-What Studio is, its panels, Play's controls and the keymap are the [editor experience](editor-experience.md) design;
+What Studio is, its panels, Play's controls and the keymap are the editor experience design;
 what a script can call, the language version for mods and how Play loads a project are the Lua SDK and runtime design;
 what Studio can read and write from the game's files is the content and formats design. This page links to them and
 does not repeat them.
@@ -196,7 +196,7 @@ flowchart TB
 
 *Figure: one Studio process; the session is created from the document on Play and thrown away on Stop.*
 
-- **Play** ([Play mode](editor-experience.md#play-coney) has its keys and what the player sees) saves the project (and
+- **Play** (the editor experience design's Play mode has its keys and what the player sees) saves the project (and
   a recovery copy), builds a play session from the saved document, and starts it on its own simulation thread at the
   fixed 1/30 s step, with the game's seeded randomness. How the session loads the project's scripts, the map and the
   player (its game mode and load order) is the runtime design's; Studio only hosts it: it creates the
@@ -216,7 +216,7 @@ change or a placed object becomes an **edit command**: an id, the entity's id an
 thread queues it and the simulation thread applies the queue at the start of the next step, so a step never sees half
 an edit; it is the Entity editor's queue ([Entity editor](../debug-menu.md#entity-editor)) grown to every editable
 thing. Edits made while playing apply to the session only and are lost on Stop, as the editor experience design's
-[Play mode](editor-experience.md#play-coney) asks.
+Play mode asks.
 
 Sharing one world in one process is what makes this cheap: the Level view reads the session between steps and draws it
 with the same renderer, and an edit is one queued command. With a child process, the same edit would be a message over
