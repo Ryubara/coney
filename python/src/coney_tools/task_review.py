@@ -56,7 +56,7 @@ from coney_tools import (
     unit,
 )
 from coney_tools.config import ConfigError, find_repo_root
-from coney_tools.conventions import REVIEW_KINDS, Conventions, load_conventions
+from coney_tools.conventions import REVIEW_KINDS, Conventions, load_conventions_leniently
 from coney_tools.repo_checks import check_docs, check_title
 
 #: The agent definition handed to `claude --agents` for a run, written in the review's folder and removed after.
@@ -609,7 +609,7 @@ def add_review_parser(commands: Any) -> None:
 def environment(args: argparse.Namespace) -> ReviewEnv:
     """The environment of the real world for the parsed arguments."""
     worktree = (args.worktree or find_repo_root(Path.cwd())).resolve()
-    conventions = load_conventions(worktree)
+    conventions = load_conventions_leniently(worktree, lambda line: print(line, file=sys.stderr))
     task = unit.task_name(worktree, args.task)
     folder = unit.Unit.of(worktree, task)
     text_file = args.pr_file or folder.dir / "PR.md"

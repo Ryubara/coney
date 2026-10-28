@@ -242,12 +242,13 @@ commit: what is pushed is exactly what Check and Review saw. Its options and exi
    a release ([Where the rules come from](#rules), and so the claims client's bot login and markers) are read from
    `origin/<default branch>` whatever `--remote` is, never from the branch under release. A unit
    that `task start` cut from any other base (a stacked task) is refused: the rules never come from an unmerged branch.
-   The branch's own `.github/conventions.yml` is read leniently by `pr open`, `pr verify` and `pr text`: a key the tool
-   does not know is skipped with a `note: ... ignoring <key>` line (the first release of a branch that adds a rule is
-   read by the tool `main` already has), while a missing key, a wrong value and a misspelt required key are still
-   errors ([How it is read](repo-conventions.md#how-it-is-read)). What it skips adds no steering, because the sections
-   that decide a release are not the branch's: `pr open`, `pr verify` and `pr text` read them from the default branch
-   (the proof inside `pr open` too), and the branch's file is read only for the rest.
+   The branch's own `.github/conventions.yml` is read leniently by `pr open`, `pr verify` and `pr text` (and by `task
+   review`): a key the tool does not know is skipped with a `note: ... ignoring <key>` line (a branch that adds a rule is
+   read by the tool `main` already has), and a required key the branch lacks (it was cut before `main` added it) takes
+   `main`'s value with a `note: ... missing <key>` line, so an older unit needs no rebase to be released. A wrong value
+   is still an error ([How it is read](repo-conventions.md#how-it-is-read)). What it skips or fills adds no steering,
+   because the sections that decide a release are not the branch's: `pr open`, `pr verify` and `pr text` read them from
+   the default branch (the proof inside `pr open` too), and the branch's file is read only for the rest.
 2. **The claim (exit 1).** Each issue of the task is claimed by the person running the command (the card is present and
    not released); otherwise the message names the claimant.
 3. **The pull request (exit 1).** The branch's pull request is looked up (`gh pr list --head`). Merged: refused.

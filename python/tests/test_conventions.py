@@ -15,6 +15,7 @@ from coney_tools.conventions import (
     Conventions,
     ConventionsError,
     load_conventions,
+    load_conventions_leniently,
     parse_conventions,
 )
 
@@ -1059,3 +1060,95 @@ def test_the_impact_limits_are_whole_numbers_of_one_or_more() -> None:
     for key in ("cache_minutes", "common_max_issues", "max_reasons"):
         with pytest.raises(ConventionsError, match=key):
             conventions_with((f"issues.impact.{key}", 0))
+
+
+# --- the release reads an older branch's file with main's values for what it lacks ----------------------------------
+
+
+def test_a_lenient_read_takes_a_missing_key_from_the_defaults_and_says_which() -> None:
+    """The real case (#1093): a branch cut before #1091 has no `tasks.start.slots.tracks`; the release read of it takes
+    main's value instead of stopping."""
+    filled: list[str] = []
+    old = changed(("tasks.start.slots.tracks", REMOVE), ("tasks.start.slots.exempt_workflow", REMOVE))
+    got = parse_conventions(old, ignored=[], defaults=real_data(), filled=filled)
+    assert got == parse_conventions(real_data())
+    assert filled == ["tasks.start.slots.tracks", "tasks.start.slots.exempt_workflow"]
+
+
+def test_a_lenient_read_takes_a_whole_missing_section_from_the_defaults() -> None:
+    filled: list[str] = []
+    got = parse_conventions(changed(("ci", REMOVE)), ignored=[], defaults=real_data(), filled=filled)
+    assert got == parse_conventions(real_data()) and filled == ["ci"]
+
+
+def test_a_branch_value_is_kept_over_the_default() -> None:
+    """Only a key the branch lacks comes from the defaults; one it sets is its own."""
+    old = changed(("tasks.start.slots.tracks", REMOVE), ("tasks.start.slots.per_build_slot", 7))
+    got = parse_conventions(old, ignored=[], defaults=real_data(), filled=[])
+    assert got.tasks.start.slots.per_build_slot == 7
+
+
+def test_a_branch_that_adds_a_key_and_lacks_another_is_read_with_both_noted() -> None:
+    """A branch can be behind main on one rule and ahead of it on another."""
+    ignored: list[str] = []
+    filled: list[str] = []
+    data = changed(("tasks.start.slots.tracks", REMOVE), ("tasks.start.slots.a_later_rule", 3))
+    assert parse_conventions(data, ignored=ignored, defaults=real_data(), filled=filled) == parse_conventions(
+        real_data()
+    )
+    assert ignored == ["tasks.start.slots.a_later_rule"] and filled == ["tasks.start.slots.tracks"]
+
+
+def test_a_malformed_value_is_still_refused_with_defaults() -> None:
+    """A default stands in for a missing key only: a key the branch wrote wrongly is an error, and so is a key that is
+    missing in main's defaults too."""
+    defaults = real_data()
+    with pytest.raises(ConventionsError, match=r"merge\.auto_merge: expected true or false"):
+        parse_conventions(changed(("merge.auto_merge", "yes")), ignored=[], defaults=defaults, filled=[])
+    with pytest.raises(ConventionsError, match=r"tasks\.start\.slots\.per_build_slot: expected a whole number"):
+        parse_conventions(
+            changed(("tasks.start.slots.per_build_slot", "many"), ("tasks.start.slots.tracks", REMOVE)),
+            ignored=[],
+            defaults=defaults,
+            filled=[],
+        )
+    with pytest.raises(ConventionsError, match=r"missing the key 'warn_hours'"):
+        parse_conventions(
+            changed(("claims.warn_hours", REMOVE)), ignored=[], defaults=changed(("claims.warn_hours", REMOVE))
+        )
+
+
+def test_a_key_missing_from_a_list_item_gets_no_default() -> None:
+    """A list has no stable position across branches, so what an item lacks is an error even with defaults."""
+    data = changed(("labels.list.0.color", REMOVE))
+    with pytest.raises(ConventionsError, match=r"labels\.list\[0\]: missing the key 'color'"):
+        parse_conventions(data, ignored=[], defaults=real_data(), filled=[])
+
+
+def test_the_strict_read_still_refuses_a_missing_key() -> None:
+    """`repo check` and `task check` read the file of the checkout itself, which must be complete."""
+    with pytest.raises(ConventionsError, match=r"tasks\.start\.slots: missing the key 'tracks'"):
+        parse_conventions(changed(("tasks.start.slots.tracks", REMOVE)))
+    with pytest.raises(ConventionsError, match=r"tasks\.start\.slots: missing the key 'tracks'"):
+        parse_conventions(changed(("tasks.start.slots.tracks", REMOVE)), ignored=[])
+
+
+def test_the_release_load_of_an_older_checkout_fills_from_this_tools_own_file(tmp_path: Path) -> None:
+    """`pr open`, `pr verify` and `task review` read the branch's file with the tool's own checkout as the defaults."""
+    (tmp_path / "plain").mkdir()
+    plain = load_conventions(write_checkout(tmp_path / "plain"))
+    root = write_checkout(tmp_path, changed(("tasks.start.slots.tracks", REMOVE), ("claims.a_later_rule", 3)))
+    lines: list[str] = []
+    assert load_conventions_leniently(root, lines.append) == plain
+    assert len(lines) == 2
+    assert "ignoring claims.a_later_rule" in lines[0]
+    assert "missing tasks.start.slots.tracks" in lines[1] and "this tool's value" in lines[1]
+    (tmp_path / "strict").mkdir()
+    with pytest.raises(ConventionsError, match=r"missing the key 'tracks'"):
+        load_conventions(write_checkout(tmp_path / "strict", changed(("tasks.start.slots.tracks", REMOVE))))
+
+
+def test_the_release_load_still_refuses_a_malformed_value(tmp_path: Path) -> None:
+    root = write_checkout(tmp_path, changed(("tasks.start.slots.tracks", REMOVE), ("merge.auto_merge", "yes")))
+    with pytest.raises(ConventionsError, match=r"merge\.auto_merge: expected true or false"):
+        load_conventions_leniently(root)

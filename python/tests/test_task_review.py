@@ -3,6 +3,7 @@
 headless run. Git is real (a temporary repository); GitHub, the agent, the diff hash and the page checks are fakes.
 Invented code, names and addresses only."""
 
+import argparse
 import hashlib
 import json
 import shutil
@@ -12,13 +13,13 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from conventions_support import write_checkout
+from conventions_support import REMOVE, changed, write_checkout
 from git_support import git
 from review_support import make_verdict
 
 from coney_tools import identity, orig_pairs, pr_proof, review_verdict, stamps, task_review
 from coney_tools.config import ConfigError
-from coney_tools.conventions import load_conventions
+from coney_tools.conventions import ConventionsError, load_conventions
 from coney_tools.review_verdict import problems as verdict_problems
 from coney_tools.unit import Unit
 
@@ -844,6 +845,21 @@ def test_the_environment_comes_from_the_checkout_and_its_branch(rig: Rig) -> Non
     named = argparse.Namespace(worktree=rig.root, task="t1", base="origin/dev", pr_file=rig.text)
     other = task_review.environment(named)
     assert (other.unit.task, other.base_ref, other.text_file) == ("t1", "origin/dev", rig.text)
+
+
+def test_the_environment_reads_a_branch_cut_before_a_conventions_change(
+    rig: Rig, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """#1093: `task review` of a unit whose file lacks a key main has since required, or adds one main does not know."""
+    whole = load_conventions(rig.root)
+    write_checkout(rig.root, changed(("tasks.start.slots.tracks", REMOVE), ("claims.a_later_rule", 3)))
+    args = argparse.Namespace(worktree=rig.root, task=None, base=None, pr_file=None)
+    assert task_review.environment(args).conventions == whole
+    err = capsys.readouterr().err
+    assert "ignoring claims.a_later_rule" in err and "missing tasks.start.slots.tracks" in err
+    write_checkout(rig.root, changed(("tasks.start.slots.tracks", REMOVE), ("merge.auto_merge", "yes")))
+    with pytest.raises(ConventionsError, match=r"merge\.auto_merge: expected true or false"):
+        task_review.environment(args)
 
 
 def test_the_default_change_hash_is_the_stamp_formats(rig: Rig) -> None:
