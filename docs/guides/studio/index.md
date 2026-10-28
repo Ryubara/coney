@@ -72,7 +72,7 @@ because *The Warriors* is made of levels and calls its in-engine cutscenes scene
   with Coney Studio with their licence files alongside ([Look and theme](editor-experience.md#theme)).
 - **Stealth stays zone-based: decided.** Stealth works the way *The Warriors* does it: zones that put the player in
   stealth when he walks onto them, never real shadows, and Studio lets a user place those zones
-  ([The Create menu](level-view.md#create-menu)). A sun's real shadows, once the lighting enhancement has them, are
+  ([Stealth zones](entities.md#stealth-zone)). A sun's real shadows, once the lighting enhancement has them, are
   visual only.
 - **Level, not scene: decided.** Studio says *level* wherever other editors say *scene* ([Terms](#terms)).
 
