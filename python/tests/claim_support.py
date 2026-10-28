@@ -261,16 +261,20 @@ def plant_claim(
     at: datetime | None = None,
     task: str | None = None,
     exempt: bool = False,
+    studio: bool = False,
 ) -> None:
     """A claim another run made: the assignee, the working label and a card, without going through the engine. With
-    `exempt`, the issue carries `claims.exempt_label` and the card says so, as the claim Action's pass leaves it."""
+    `exempt`, the issue carries `claims.exempt_label` and the card says so, as the claim Action's pass leaves it; with
+    `studio`, it carries `claims.studio_label` and the card says `studio` and `exempt` (outside the limit)."""
     from coney_tools.issue_claim_model import Card, render_card
 
     view = github.items[number].view
     kept = tuple(label for label in view.labels if not label.startswith("S-"))
-    extra = (RULES.exempt_label,) if exempt and RULES.exempt_label not in kept else ()
+    extra: tuple[str, ...] = (RULES.exempt_label,) if exempt and RULES.exempt_label not in kept else ()
+    extra += (RULES.studio_label,) if studio and RULES.studio_label not in kept else ()
     github.items[number].view = replace(view, assignees=(login,), labels=(*kept, *extra, RULES.working_label))
-    card = Card(issue=number, claimant=login, claimed_at=at or github.clock.now(), task=task, exempt=exempt)
+    claimed_at = at or github.clock.now()
+    card = Card(issue=number, claimant=login, claimed_at=claimed_at, task=task, exempt=exempt or studio, studio=studio)
     github.create_comment(number, render_card(card, RULES))
 
 

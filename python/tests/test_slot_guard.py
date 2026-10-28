@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Tests for .claude/hooks/slot_guard.py, the Claude Code hook that refuses the coordinator's start of an engineer whose
-slot is full (docs/guides/agents.md#slots).
+track or machine is full, or a Studio unit on a model it may not use (docs/guides/agents.md#slots).
 
 The slot logic is `coney-tools task slots --admit` (tests/test_task_slots.py); these tests give the hook a stand-in for
 that command and check what it sends, whom it holds to the rule and what it does when the command cannot run.
@@ -32,6 +32,8 @@ def load() -> ModuleType:
 
 
 GUARD = load()
+#: What the tool prints for a start it lets through.
+LET_THROUGH = "1 of 4 places on this machine in use with x-1 (reimplementation track)"
 
 
 class Fake:
@@ -70,9 +72,29 @@ def test_the_coordinator_start_is_sent_to_the_tool_with_the_brief_and_the_type()
     assert stdin == "Hello\nTask id: x-1\n"
 
 
+def test_the_model_and_effort_of_the_call_are_sent_for_the_studio_check() -> None:
+    fake = Fake()
+    payload = call()
+    payload["tool_input"].update(model=" opus ", effort="high")
+    assert GUARD.refusal(payload, fake) is None
+    ((args, _),) = fake.calls
+    assert args[-2:] == ["--model=opus", "--effort=high"]
+
+
+@pytest.mark.parametrize("value", [None, "", "  ", 3])
+def test_a_missing_or_odd_model_or_effort_is_left_out(value: object) -> None:
+    fake = Fake()
+    payload = call()
+    payload["tool_input"].update(model=value, effort=value)
+    GUARD.refusal(payload, fake)
+    ((args, _),) = fake.calls
+    assert not any(arg.startswith(("--model", "--effort")) for arg in args)
+
+
 def test_a_refusal_of_the_tool_is_the_hooks_reason() -> None:
-    reason = GUARD.refusal(call(), Fake(3, "Blocked: no task slot is free on this machine (3 of 3 in use)."))
-    assert reason is not None and reason.startswith("Blocked: no task slot is free") and reason.endswith("\n")
+    message = "Blocked: no place on this machine for a studio unit (4 of 4 in use)."
+    reason = GUARD.refusal(call(), Fake(3, message))
+    assert reason is not None and reason.startswith("Blocked: no place on this machine") and reason.endswith("\n")
 
 
 @pytest.mark.parametrize("agent_type", ["engineer", "tooling", "reviewer", "Explore", "fork"])
@@ -120,7 +142,7 @@ def test_a_start_let_through_with_the_claim_unchecked_leaves_a_line(
     tmp_path: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr("tempfile.gettempdir", lambda: str(tmp_path))
-    out = "1 of 3 task slots in use with x-1\nwarning: the claim of 'x-1' was not checked, GitHub could not be read"
+    out = f"{LET_THROUGH}\nwarning: the claim of 'x-1' was not checked, GitHub could not be read"
     assert GUARD.refusal(call(), Fake(0, out)) is None
     log = (tmp_path / "coney-hooks.log").read_text(encoding="utf-8")
     assert "let through with a check skipped: the claim of 'x-1' was not checked" in log
@@ -128,7 +150,7 @@ def test_a_start_let_through_with_the_claim_unchecked_leaves_a_line(
 
 def test_a_plain_start_leaves_no_line(tmp_path: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("tempfile.gettempdir", lambda: str(tmp_path))
-    assert GUARD.refusal(call(), Fake(0, "1 of 3 task slots in use with x-1")) is None
+    assert GUARD.refusal(call(), Fake(0, LET_THROUGH)) is None
     assert not (tmp_path / "coney-hooks.log").exists()
 
 
@@ -192,9 +214,9 @@ def dispatch_agent(
 
 
 def test_a_full_slot_blocks_the_call_through_the_dispatcher(monkeypatch: pytest.MonkeyPatch) -> None:
-    fake = Fake(3, "Blocked: no task slot is free on this machine (3 of 3 in use).")
+    fake = Fake(3, "Blocked: no place on this machine for a reimplementation unit (4 of 4 in use).")
     code, _, err = dispatch_agent(monkeypatch, fake)
-    assert code == 2 and "no task slot is free" in err and len(fake.calls) == 1
+    assert code == 2 and "no place on this machine" in err and len(fake.calls) == 1
 
 
 def test_a_call_another_guard_refuses_keeps_no_slot(monkeypatch: pytest.MonkeyPatch) -> None:

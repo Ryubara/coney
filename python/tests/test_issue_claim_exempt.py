@@ -189,3 +189,65 @@ def test_claim_list_json_says_whether_a_claim_is_exempt(
     args = parser.parse_args(["claim", "list", "--json"])
     assert cli.run_claim(args, lambda arguments: json.dumps(item)) == 0
     assert json.loads(capsys.readouterr().out)[0]["exempt"] is True
+
+
+# --- the Studio label (`claims.studio_label`, maintainer decision 2026-10-28) -----------------------------------------
+
+STUDIO = (*READY, RULES.studio_label)
+
+
+def test_the_studio_label_is_in_the_conventions_and_the_label_list() -> None:
+    from audit_support import CONVENTIONS
+
+    assert RULES.studio_label == "studio" and RULES.studio_label in CONVENTIONS.labels.names()
+
+
+def test_a_studio_claim_is_outside_the_limit_and_the_card_says_studio(engine: Engine, github: FakeGitHub) -> None:
+    for number in (1, 2, 3):
+        github.add_issue(number, labels=READY)
+    for number in (5, 6, 7, 8):
+        github.add_issue(number, labels=STUDIO)
+    for number in (1, 2, 3, 5, 6, 7, 8):
+        take(engine, github, number)
+    assert held_by(github, (1, 2, 3, 5, 6, 7, 8)) == [1, 2, 3, 5, 6, 7, 8]
+    card = card_of(github, 5)
+    assert card.exempt and card.studio
+    assert "not counted toward the open-claims limit (`studio`)" in github.cards(5)[-1].body
+    workflow = card_of(github, 1)
+    assert not workflow.studio and not workflow.exempt
+
+
+def test_a_workflow_claim_is_not_studio(engine: Engine, github: FakeGitHub) -> None:
+    github.add_issue(4, labels=WORKFLOW)
+    take(engine, github, 4)
+    card = card_of(github, 4)
+    assert card.exempt and not card.studio
+    assert "(`workflow`)" in github.cards(4)[-1].body
+
+
+def test_the_studio_flag_follows_the_label(engine: Engine, github: FakeGitHub, clock: Clock) -> None:
+    github.add_issue(4, labels=READY)
+    take(engine, github, 4)
+    assert not card_of(github, 4).studio
+    github.items[4].view = replace(github.view(4), labels=(*github.view(4).labels, RULES.studio_label))
+    clock.advance(minutes=5)
+    make_engine(github, clock).reconcile(4)
+    assert card_of(github, 4).studio and card_of(github, 4).exempt
+    github.items[4].view = replace(github.view(4), labels=tuple(x for x in github.view(4).labels if x != "studio"))
+    clock.advance(minutes=5)
+    make_engine(github, clock).reconcile(4)
+    assert not card_of(github, 4).studio and not card_of(github, 4).exempt
+
+
+def test_an_old_card_without_the_studio_field_reads_as_not_studio() -> None:
+    text = model.render_card(model.Card(issue=1, claimant="a", claimed_at=START), RULES)
+    old = text.replace(',"studio":false', "")
+    assert '"studio"' not in old
+    parsed = model.parse_card(old, RULES)
+    assert parsed is not None and not parsed.studio
+
+
+def test_the_rules_name_both_labels_outside_the_limit() -> None:
+    assert RULES.outside_limit(("task", "workflow")) and RULES.outside_limit(("studio",))
+    assert not RULES.outside_limit(("task", "P-high"))
+    assert RULES.is_studio(("studio",)) and not RULES.is_studio(("workflow",))

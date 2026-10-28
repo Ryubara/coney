@@ -232,7 +232,8 @@ class Engine(LimitEnforcement):
             scope=command.scope or (),
             task=command.task,
             handled=(comment.id,),
-            exempt=self.rules.exempt_label in work.issue.labels,
+            exempt=self.rules.outside_limit(work.issue.labels),
+            studio=self.rules.is_studio(work.issue.labels),
         )
         fresh = Stored(None, card)
         work.stored.append(fresh)
@@ -243,7 +244,8 @@ class Engine(LimitEnforcement):
         # Who counts as what, in the log: the live test reads it to see the permission GitHub gave the Action.
         role = "a maintainer" if maintainer else "a contributor"
         permission = self._permissions.get(comment.login) or f"unknown, association {comment.association}"
-        exempt = f", outside the limit (`{self.rules.exempt_label}`)" if card.exempt else ""
+        label = self.rules.studio_label if card.studio else self.rules.exempt_label
+        exempt = f", outside the limit (`{label}`)" if card.exempt else ""
         work.log.append(f"#{number}: {comment.login} claimed it{half} as {role} (permission {permission}){exempt}")
         self._audit_new_claim(work, comment, fresh, maintainer)
 
@@ -700,7 +702,8 @@ class Engine(LimitEnforcement):
             claimed_at=self._now(),
             adopted=True,
             last_activity_why="assigned by hand",
-            exempt=self.rules.exempt_label in work.issue.labels,
+            exempt=self.rules.outside_limit(work.issue.labels),
+            studio=self.rules.is_studio(work.issue.labels),
         )
         fresh = Stored(None, card)
         work.stored.append(fresh)
@@ -726,8 +729,10 @@ class Engine(LimitEnforcement):
         changes: dict[str, object] = {
             "status": "pr-open" if open_pr else "claimed",
             "pr": open_pr.number if open_pr else None,
-            # The label can come and go: the claim is outside the limit while the issue carries it.
-            "exempt": self.rules.exempt_label in work.issue.labels,
+            # The labels can come and go: the claim is outside the limit while the issue carries one, and in the Studio
+            # track while it carries that one.
+            "exempt": self.rules.outside_limit(work.issue.labels),
+            "studio": self.rules.is_studio(work.issue.labels),
             "counted": counted,
             "regained": card.regained or (counted and not card.counted),
             # Every change of the count, so a warning for being over the limit can tell the claimant was under it

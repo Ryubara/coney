@@ -109,6 +109,7 @@ def test_the_real_labels_are_in_their_families() -> None:
         "duplicate",
         "wontfix",
         "workflow",
+        "studio",
         "claim-trial",
     )
     assert labels.names() == tuple(label.name for label in labels.list)
@@ -295,6 +296,11 @@ BAD: list[tuple[str, tuple[tuple[str, object], ...], str]] = [
         "an exempt label that is not a label",
         (("claims.exempt_label", "workflw"),),
         r"claims: 'workflw' is not in labels\.list",
+    ),
+    (
+        "a studio label that is not a label",
+        (("claims.studio_label", "studo"),),
+        r"claims: 'studo' is not in labels\.list",
     ),
     (
         "a hold label that does not pause the claim",
@@ -678,8 +684,10 @@ def test_the_real_claim_rules() -> None:
 def test_the_real_task_start_rules() -> None:
     start = load_conventions(REPO).tasks.start
     assert start.unit_file == "unit.json"
-    # Enforced since 2026-10-27; workflow units hold no slot until the cutover.
-    assert (start.slots.task, start.slots.fix, start.slots.enforce) == (3, 1, True)
+    # Enforced since 2026-10-27, tracks since 2026-10-28; workflow units hold no place until the cutover.
+    tracks = start.slots.tracks
+    assert (tracks.reimplementation.min, tracks.fix.min, tracks.fix.max, start.slots.enforce) == (1, 1, 1, True)
+    assert tracks.studio.max is None and start.slots.per_build_slot == 2
     assert start.slots.agent_types == ("engineer", "tooling")
     assert start.slots.reserve_minutes > 0
 
@@ -697,7 +705,27 @@ def test_the_workflow_exemption_from_the_slots_ends_at_the_cutover() -> None:
     [
         (("tasks.start.unit_file", "a/unit.json"), r"tasks\.start\.unit_file: a file name"),
         (("tasks.start.unit_file", "TASK.md"), r"tasks\.start\.unit_file: a file name"),
-        (("tasks.start.slots.task", 0), r"tasks\.start\.slots\.task: expected a whole number"),
+        (("tasks.start.slots.task", 3), "unknown key 'task'"),
+        (("tasks.start.slots.per_build_slot", 0), r"tasks\.start\.slots\.per_build_slot: expected a whole number"),
+        (("tasks.start.slots.tracks.studio", REMOVE), r"tasks\.start\.slots\.tracks: missing the key 'studio'"),
+        (("tasks.start.slots.tracks.extra", {"min": 0}), "unknown key 'extra'"),
+        (("tasks.start.slots.tracks.fix.min", -1), r"tracks\.fix\.min: expected a whole number of 0 or more"),
+        (("tasks.start.slots.tracks.fix.max", 0), r"tracks\.fix\.max: expected a whole number of 1 or more"),
+        (("tasks.start.slots.tracks.fix.min", 2), r"tracks\.fix\.min: must be at most max \(1\)"),
+        (("tasks.start.slots.tracks.studio.min", 1), r"the tracks keep 3 places, more than one build slot holds"),
+        (("tasks.start.slots.tracks.studio.models", "opus"), r"tracks\.studio\.models: expected a list"),
+        (
+            ("tasks.start.slots.tracks.studio.models", [{"model": "gpt", "effort": "high", "use": "x"}]),
+            r"tracks\.studio\.models\[0\]\.model",
+        ),
+        (
+            ("tasks.start.slots.tracks.studio.models", [{"model": "opus", "effort": "huge", "use": "x"}]),
+            r"tracks\.studio\.models\[0\]\.effort",
+        ),
+        (
+            ("tasks.start.slots.tracks.studio.models", [{"model": "opus", "effort": "high"}]),
+            r"missing the key 'use'",
+        ),
         (("tasks.start.slots.enforce", "yes"), r"tasks\.start\.slots\.enforce"),
         (("tasks.start.slots.extra", 1), "unknown key 'extra'"),
         (("tasks.start.slots.exempt_workflow", "yes"), r"tasks\.start\.slots\.exempt_workflow"),

@@ -132,8 +132,8 @@ def check_claim(
                 f"the task `{command.task}` already holds {in_task} of your issues "
                 f"({rules.limits.issues_per_task} at most): a task id is not a way round the limit of open claims"
             )
-    if rules.exempt_label in issue.labels:
-        return None  # a workflow unit: outside the open-claims limit
+    if rules.outside_limit(issue.labels):
+        return None  # a workflow or Studio unit: outside the open-claims limit
     others = open_task_keys(held, claimant, issue.number)
     limit = limit_for(maintainer, rules)
     if own not in others and len(others) >= limit:

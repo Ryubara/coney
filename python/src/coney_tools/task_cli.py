@@ -23,8 +23,9 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
-from coney_tools import stamps, task_check, task_slots
+from coney_tools import build_claims, stamps, task_check, task_slots
 from coney_tools.audit_github import Runner, run_gh
+from coney_tools.build_claims import MAIN_LANE
 from coney_tools.config import ConfigError, find_repo_root, load_config, main_checkout, workspace_folder
 from coney_tools.conventions import Conventions, load_conventions
 from coney_tools.issue_claim_model import Card, parse_scope
@@ -66,9 +67,11 @@ def add_task_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser])
     start.add_argument("--no-fetch", action="store_true", help="start from the base as it is here, without fetching")
     start.add_argument("--dry-run", action="store_true", help="check and print; make, stamp and post nothing")
     slots = commands.add_parser(
-        "slots", help="show the engineer slots, or check that an agent may start (the coordinator's Agent guard)"
+        "slots",
+        help="show the engineer tracks (reimplementation, fix, Studio) and the machine's places, or check that an "
+        "agent may start (the coordinator's Agent guard)",
     )
-    slots.add_argument("--json", action="store_true", help="print the slots as JSON")
+    slots.add_argument("--json", action="store_true", help="print the tracks as JSON")
     slots.add_argument(
         "--admit",
         action="store_true",
@@ -81,7 +84,11 @@ def add_task_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser])
         "--brief", metavar="FILE", help="with --admit: the agent's brief, a file or - for standard input"
     )
     slots.add_argument(
-        "--reserve", action="store_true", help="with --admit: keep the slot for the agent until its task start"
+        "--reserve", action="store_true", help="with --admit: keep the place for the agent until its task start"
+    )
+    slots.add_argument("--model", help="with --admit: the Agent call's model (a Studio unit must name an allowed one)")
+    slots.add_argument(
+        "--effort", help="with --admit: the Agent call's effort (a Studio unit must name an allowed one)"
     )
     leads = commands.add_parser("leads", help="search the indexes for the terms (no claim, nothing written)")
     leads.add_argument("--terms", nargs="+", required=True, metavar="TERM", help="names to search for")
@@ -130,6 +137,12 @@ def _workspace_trees(root: Path) -> list[Path]:
     return [tree.path for tree in listed if tree.path.resolve().is_relative_to(base)]
 
 
+def _build_slots(root: Path) -> int:
+    """The machine's build slots (`build_slots` in coney.local.toml, as `coney-tools build` reads it): the tracks'
+    machine limit is a multiple of it."""
+    return build_claims.default_slots(MAIN_LANE, root).slots
+
+
 #: How long one `gh` call of the claim check may take: the Agent guard waits for it, and GitHub down must not hold it.
 GH_CHECK_SECONDS = task_slots.GH_READ_SECONDS
 
@@ -155,9 +168,11 @@ def _run_slots(
     remote: Remote | None,
 ) -> int:
     """`task slots`: the report, or with `--admit` the verdict on one start (0 may start, 3 refused). The claim cards
-    (whether a claim is held, whether an issue has the workflow label) are read from GitHub, each call bounded; a
-    GitHub that cannot be read leaves the claim unchecked and counts every unit, with a `warning:` line."""
+    (whether a claim is held, whether an issue has the workflow or the Studio label) are read from GitHub, each call
+    bounded; a GitHub that cannot be read leaves the claim unchecked and counts every unit, with a `warning:` line. The
+    machine's limit comes from its build slots (`_build_slots`)."""
     scratch = scratch_folder(root)
+    build_slots = _build_slots(root)
     rules = conventions.claims
     github = remote or GhRemote(rules.bot_login, rules.card_marker, rules.reply_marker, _bounded_gh)
 
@@ -168,22 +183,34 @@ def _run_slots(
     if not args.admit:
         cards = task_slots.Cards(read_card)
 
-        def exemption(record: UnitRecord) -> bool | None:
-            """A live unit's exemption, from its claim cards."""
-            return task_slots.exempt_issues(record.issues, cards, conventions)
+        def labels(record: UnitRecord) -> task_slots.Labels | None:
+            """A live unit's labels, from its claim cards."""
+            return task_slots.unit_labels(record.issues, cards, conventions)
 
-        current = task_slots.scan(scratch, conventions, now(), _workspace_trees(root), exemption)
+        current = task_slots.scan(scratch, conventions, now(), _workspace_trees(root), labels)
         if args.json:
-            print(json.dumps(task_slots.as_json(current, conventions), indent=2))
+            print(json.dumps(task_slots.as_json(current, conventions, build_slots), indent=2))
         else:
-            print("\n".join(task_slots.report(current, conventions)))
+            print("\n".join(task_slots.report(current, conventions, build_slots)))
         return 0
     brief = ""
     if args.brief == "-":
         brief = sys.stdin.buffer.read().decode("utf-8", errors="replace")
     elif args.brief:
         brief = Path(args.brief).read_text(encoding="utf-8")
-    verdict = task_slots.admit(scratch, conventions, args.agent_type, brief, now(), read_card, args.task, args.reserve)
+    verdict = task_slots.admit(
+        scratch,
+        conventions,
+        args.agent_type,
+        brief,
+        now(),
+        read_card,
+        args.task,
+        args.reserve,
+        build_slots=build_slots,
+        model=args.model or "",
+        effort=args.effort or "",
+    )
     print(verdict.message.rstrip("\n"))
     if verdict.warning:
         print(f"warning: {verdict.warning}")
@@ -220,7 +247,9 @@ def run_task(
         name = args.task or os.environ.get("CONEY_TASK")
         if not name:
             raise ConfigError("task start: name the task (an argument, or CONEY_TASK)")
-        start_env = StartEnv(root, github, conventions, scratch_folder(root), now, lambda: who)
+        start_env = StartEnv(
+            root, github, conventions, scratch_folder(root), now, lambda: who, build_slots=_build_slots(root)
+        )
         return start_task(StartRequest(name, args.base, args.remote, not args.no_fetch, args.dry_run), start_env)
     if args.command == "leads":
         text = ""

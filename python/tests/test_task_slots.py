@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for the engineer slots (task_slots, `task slots` in task_cli): which units hold a slot, what a brief must say
-and when the coordinator's start of an agent is refused.
+"""Tests for the engineer tracks (task_slots, `task slots` in task_cli): which units hold a place in which track,
+what a brief must say and when the coordinator's start of an agent is refused.
 
 The scratch folder is a temporary one with task files, unit records and real stamp logs, as `task create` and
 `task start` leave them; nothing touches GitHub, git or the network (docs/guides/agents.md#slots).
@@ -45,6 +45,9 @@ class Scene:
         self.trees = tmp_path / "worktrees"
         self.clock = Clock()
         self.conventions: Conventions = CONVENTIONS
+        #: The machine's build slots: with two units per build slot, 4 places, so three reimplementation units and the
+        #: place kept for a fix fill it.
+        self.build_slots = 2
         #: The held claim cards on GitHub by issue, as the claim Action keeps them (`exempt` from the label).
         self.cards: dict[int, Card] = {}
         #: Whether GitHub cannot be read, and the tasks whose cards were read, in order.
@@ -65,10 +68,16 @@ class Scene:
         return self.clock.now()
 
     def task(
-        self, name: str, kind: str = "feature", age_minutes: int = 0, workflow: bool = False, **changes: object
+        self,
+        name: str,
+        kind: str = "feature",
+        age_minutes: int = 0,
+        workflow: bool = False,
+        studio: bool = False,
+        **changes: object,
     ) -> Path:
         """A task file as `task create` writes it, claimed `age_minutes` ago, and its held claim cards (labelled
-        `workflow` when asked)."""
+        `workflow` or `studio` when asked)."""
         issues = changes.pop("issues", None)
         if issues is None:
             issues = (self._next_issue,)
@@ -91,6 +100,8 @@ class Scene:
             self.cards[number] = Card(issue=number, claimant=USER, claimed_at=self.now(), task=claimed_for)
         if workflow:
             self.label(name, True)
+        if studio:
+            self.studio(name, True)
         path = self.scratch / name / self.conventions.tasks.file
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(render_task_file(TaskFile(**values)), encoding="utf-8")  # type: ignore[arg-type]
@@ -101,6 +112,12 @@ class Scene:
         `exempt`."""
         for number in self.issues_of[name]:
             self.cards[number] = replace(self.cards[number], exempt=on)
+
+    def studio(self, name: str, on: bool) -> None:
+        """Add or remove the `studio` label of the task's issues: the claim Action's next pass sets the card's `studio`
+        and `exempt` (outside the claim limit)."""
+        for number in self.issues_of[name]:
+            self.cards[number] = replace(self.cards[number], exempt=on, studio=on)
 
     def release(self, name: str) -> None:
         """The claims of the task were released since `task create` (idle, `/unclaim`)."""
@@ -152,21 +169,21 @@ class Scene:
             brief,
             self.now(),
             self.read_card,
-            **{"clock": lambda: self.seconds, **options},  # type: ignore[arg-type]
+            **{"clock": lambda: self.seconds, "build_slots": self.build_slots, **options},  # type: ignore[arg-type]
         )
 
     def scan(self) -> task_slots.Scan:
-        """What holds the slots, with each live unit's exemption read from its cards."""
+        """What holds the places, with each live unit's labels read from its cards."""
         cards = task_slots.Cards(self.read_card)
         return task_slots.scan(
             self.scratch,
             self.conventions,
             self.now(),
-            exemption=lambda record: task_slots.exempt_issues(record.issues, cards, self.conventions),
+            labels=lambda record: task_slots.unit_labels(record.issues, cards, self.conventions),
         )
 
-    def holders(self, slot: str = "task") -> list[str]:
-        return [holder.task for holder in self.scan().held(slot)]
+    def holders(self, track: str = "reimplementation") -> list[str]:
+        return [holder.task for holder in self.scan().held(track)]
 
 
 @pytest.fixture
@@ -187,7 +204,7 @@ def set_slots(scene: Scene, **changes: object) -> None:
 
 
 def full(scene: Scene) -> None:
-    """Three task units in work, which is every task slot."""
+    """Three reimplementation units in work: with the place kept for a fix, every place of the scene's machine."""
     for name in ("a-one", "b-two", "c-three"):
         scene.unit(name)
 
@@ -195,20 +212,31 @@ def full(scene: Scene) -> None:
 # --- the numbers ----------------------------------------------------------------------------------------------------
 
 
-def test_the_committed_slots_are_three_and_one_and_enforced() -> None:
+def test_the_committed_tracks_and_machine_limit() -> None:
     slots = CONVENTIONS.tasks.start.slots
-    assert (slots.task, slots.fix, slots.enforce) == (3, 1, True)
+    tracks = slots.tracks
+    assert (tracks.reimplementation.min, tracks.reimplementation.max) == (1, None)
+    assert (tracks.fix.min, tracks.fix.max) == (1, 1)
+    assert (tracks.studio.min, tracks.studio.max) == (0, None)
+    pairs = [(m.model, m.effort) for m in tracks.studio.models]
+    assert pairs == [("opus", "high"), ("opus", "medium"), ("sonnet", "high")]
+    assert (slots.per_build_slot, slots.enforce) == (2, True)
     assert slots.exempt_workflow is True
     assert slots.agent_types == ("engineer", "tooling")
+
+
+@pytest.mark.parametrize(("build_slots", "places"), [(1, 2), (2, 4), (5, 10), (0, 2)])
+def test_the_machine_limit_follows_the_build_slots(build_slots: int, places: int) -> None:
+    assert task_slots.machine_limit(CONVENTIONS, build_slots) == places
 
 
 # --- what holds a slot ----------------------------------------------------------------------------------------------
 
 
-def test_a_started_unit_holds_a_task_slot_and_a_fix_holds_the_fix_slot(scene: Scene) -> None:
+def test_a_started_unit_holds_a_reimplementation_place_and_a_fix_the_fix_place(scene: Scene) -> None:
     scene.unit("a-one")
     scene.unit("b-fix", kind="fix")
-    assert scene.holders("task") == ["a-one"] and scene.holders("fix") == ["b-fix"]
+    assert scene.holders("reimplementation") == ["a-one"] and scene.holders("fix") == ["b-fix"]
 
 
 @pytest.mark.parametrize("end", ["reviewed", "finished"])
@@ -276,7 +304,7 @@ def test_a_unit_whose_cards_cannot_be_read_is_counted_and_named(scene: Scene) ->
     scene.down = True
     current = scene.scan()
     assert [h.task for h in current.holders] == ["a-flow"] and current.unchecked == ("a-flow",)
-    assert any("could not be read" in line and "a-flow" in line for line in task_slots.report(current, CONVENTIONS))
+    assert any("could not be read" in line and "a-flow" in line for line in task_slots.report(current, CONVENTIONS, 2))
 
 
 def test_tooling_that_is_not_the_workflow_holds_a_slot(scene: Scene) -> None:
@@ -309,7 +337,7 @@ def test_worktrees_no_record_names_are_listed_as_unknown(scene: Scene) -> None:
     old.mkdir(parents=True)
     current = task_slots.scan(scene.scratch, scene.conventions, scene.now(), [scene.trees / "a-one", old])
     assert current.unknown_trees == (old,)
-    lines = task_slots.report(current, scene.conventions)
+    lines = task_slots.report(current, scene.conventions, scene.build_slots)
     assert any("without a unit record" in line and "old-branch" in line for line in lines)
 
 
@@ -366,11 +394,12 @@ def test_the_first_task_id_line_of_a_brief_wins() -> None:
 # --- admit ----------------------------------------------------------------------------------------------------------
 
 
-def test_a_free_slot_lets_the_start_through(scene: Scene) -> None:
+def test_a_free_place_lets_the_start_through(scene: Scene) -> None:
     scene.unit("a-one")
     scene.task("d-four")
     verdict = scene.admit(brief("d-four"))
-    assert verdict.allowed and "2 of 3 task slots" in verdict.message
+    assert verdict.allowed and "2 of 4 places on this machine" in verdict.message
+    assert "reimplementation track" in verdict.message
 
 
 def test_a_full_slot_refuses_the_start_and_names_the_busy_units(scene: Scene) -> None:
@@ -380,7 +409,9 @@ def test_a_full_slot_refuses_the_start_and_names_the_busy_units(scene: Scene) ->
     assert not verdict.allowed
     for name in ("a-one", "b-two", "c-three"):
         assert name in verdict.message
-    assert "3 of 3" in verdict.message and "passes Review" in verdict.message and "agents.md#slots" in verdict.message
+    assert "no place on this machine for a reimplementation unit (3 of 4 in use" in verdict.message
+    assert "1 kept for fix" in verdict.message and "2 build slot(s) x 2" in verdict.message
+    assert "passes Review" in verdict.message and "agents.md#slots" in verdict.message
 
 
 def test_a_passing_review_frees_the_slot(scene: Scene) -> None:
@@ -413,16 +444,17 @@ def test_a_unit_waiting_for_ci_does_not_block_the_next_task(scene: Scene) -> Non
 def test_restarting_the_agent_of_a_unit_in_work_is_allowed_when_full(scene: Scene) -> None:
     full(scene)
     verdict = scene.admit(brief("b-two"))
-    assert verdict.allowed and "holds a task slot already" in verdict.message
+    assert verdict.allowed and "holds a reimplementation place already" in verdict.message
 
 
-def test_the_fix_slot_is_counted_apart(scene: Scene) -> None:
+def test_the_place_kept_for_a_fix_lets_it_start_on_a_full_machine(scene: Scene) -> None:
     full(scene)
     scene.task("e-fix", kind="fix")
-    assert scene.admit(brief("e-fix")).allowed  # the task slots are full, the fix slot is free
+    assert scene.admit(brief("e-fix")).allowed  # reimplementation fills the rest, the fix's place is kept
     scene.unit("f-fix", kind="fix")
     verdict = scene.admit(brief("e-fix"))
-    assert not verdict.allowed and "no fix slot is free" in verdict.message and "f-fix" in verdict.message
+    assert not verdict.allowed and "the fix track is full (1 of 1 in use)" in verdict.message
+    assert "f-fix" in verdict.message
 
 
 def test_a_refused_fix_start_names_the_queue_oldest_first(scene: Scene) -> None:
@@ -431,6 +463,195 @@ def test_a_refused_fix_start_names_the_queue_oldest_first(scene: Scene) -> None:
     scene.task("h-fix", kind="fix", age_minutes=60)
     verdict = scene.admit(brief("g-fix"))
     assert not verdict.allowed and "h-fix, g-fix" in verdict.message
+
+
+# --- the tracks -----------------------------------------------------------------------------------------------------
+
+
+def studio_brief(task: str) -> str:
+    """A brief for a Studio unit."""
+    return f"You are a tooling engineer on Coney Studio.\n\nTask id: {task}\n"
+
+
+def admit_studio(scene: Scene, task: str, model: str = "opus", effort: str = "medium") -> task_slots.Verdict:
+    """The coordinator starts a Studio agent on an allowed model and effort unless told otherwise."""
+    return scene.admit(studio_brief(task), agent_type="tooling", model=model, effort=effort)
+
+
+def test_a_studio_unit_holds_a_studio_place(scene: Scene) -> None:
+    scene.unit("s-ui", kind="tooling", studio=True)
+    assert scene.holders("studio") == ["s-ui"] and scene.holders("reimplementation") == []
+
+
+def test_a_studio_start_is_admitted_past_three_reimplementation_units(scene: Scene) -> None:
+    # The issue's first test: with the old 3 task slots full, a Studio start still goes ahead on a machine with room.
+    scene.build_slots = 5
+    full(scene)
+    scene.task("s-ui", kind="tooling", studio=True)
+    verdict = admit_studio(scene, "s-ui")
+    assert verdict.allowed and "4 of 10 places on this machine in use with s-ui (studio track)" in verdict.message
+
+
+def test_a_second_fix_unit_is_refused_even_with_room_on_the_machine(scene: Scene) -> None:
+    # The issue's second test: the fix track holds one unit, however many places the machine has.
+    scene.build_slots = 5
+    scene.unit("f-fix", kind="fix")
+    scene.task("g-fix", kind="fix")
+    verdict = scene.admit(brief("g-fix"))
+    assert not verdict.allowed and "the fix track is full (1 of 1 in use)" in verdict.message
+    assert "f-fix" in verdict.message and "queued: g-fix" in verdict.message
+
+
+def test_studio_fills_the_machine_but_the_places_kept_for_reimplementation_and_fix(scene: Scene) -> None:
+    # 4 places: Studio may take 2, one stays for a reimplementation unit and one for a fix.
+    for name in ("s-one", "s-two"):
+        scene.unit(name, kind="tooling", studio=True)
+    scene.task("s-three", kind="tooling", studio=True)
+    verdict = admit_studio(scene, "s-three")
+    assert not verdict.allowed and "no place on this machine for a studio unit (2 of 4 in use" in verdict.message
+    assert "1 kept for reimplementation" in verdict.message and "1 kept for fix" in verdict.message
+    assert "s-one" in verdict.message and "[studio]" in verdict.message
+    scene.task("r-one")
+    assert scene.admit(brief("r-one")).allowed  # the kept place is reimplementation's own
+
+
+def test_reimplementation_has_no_cap_but_the_machine(scene: Scene) -> None:
+    scene.build_slots = 3  # 6 places
+    for name in ("r-one", "r-two", "r-three", "r-four"):
+        scene.unit(name)
+    scene.task("r-five")
+    assert scene.admit(brief("r-five")).allowed  # 4 in work, the fifth fits beside the place kept for a fix
+    scene.unit("r-five")
+    scene.task("r-six")
+    assert not scene.admit(brief("r-six")).allowed  # the sixth place is the fix's
+
+
+def test_once_reimplementation_runs_studio_may_use_every_place_but_the_fix(scene: Scene) -> None:
+    scene.build_slots = 3  # 6 places
+    scene.unit("r-one")
+    for name in ("s-one", "s-two", "s-three"):
+        scene.unit(name, kind="tooling", studio=True)
+    scene.task("s-four", kind="tooling", studio=True)
+    assert admit_studio(scene, "s-four").allowed  # 4 in work, the fifth fits beside the fix's place
+    scene.unit("s-four", kind="tooling", studio=True)
+    scene.task("s-five", kind="tooling", studio=True)
+    assert not admit_studio(scene, "s-five").allowed
+
+
+def test_reimplementation_may_not_take_the_place_kept_for_a_fix(scene: Scene) -> None:
+    full(scene)
+    scene.task("d-four")
+    verdict = scene.admit(brief("d-four"))
+    assert not verdict.allowed and "1 kept for fix" in verdict.message
+
+
+def test_a_full_machine_refuses_every_track_and_says_its_limit(scene: Scene) -> None:
+    full(scene)
+    scene.unit("f-fix", kind="fix")
+    scene.task("s-ui", kind="tooling", studio=True)
+    verdict = admit_studio(scene, "s-ui")
+    assert (
+        not verdict.allowed
+        and "(4 of 4 in use" in verdict.message
+        and "build_slots in coney.local.toml" in verdict.message
+    )
+
+
+def test_a_studio_label_added_after_task_create_moves_the_unit_to_studio(scene: Scene) -> None:
+    scene.unit("a-tools", kind="tooling")
+    assert scene.holders("reimplementation") == ["a-tools"]
+    scene.studio("a-tools", True)
+    assert scene.holders("studio") == ["a-tools"] and scene.holders("reimplementation") == []
+
+
+def test_a_studio_fix_is_a_fix(scene: Scene) -> None:
+    scene.unit("s-fix", kind="fix", studio=True)
+    assert scene.holders("fix") == ["s-fix"] and scene.holders("studio") == []
+
+
+def test_an_issue_labelled_workflow_and_studio_is_a_workflow_unit_until_the_cutover(scene: Scene) -> None:
+    scene.unit("w-studio", kind="tooling", issues=(900, 901))
+    scene.cards[900] = replace(scene.cards[900], exempt=True)  # workflow
+    scene.cards[901] = replace(scene.cards[901], exempt=True, studio=True)
+    assert scene.scan().exempt == ("w-studio",)
+    set_slots(scene, exempt_workflow=False)
+    assert scene.holders("studio") == ["w-studio"]
+
+
+def test_a_unit_whose_labels_cannot_be_read_counts_as_reimplementation(scene: Scene) -> None:
+    scene.unit("s-ui", kind="tooling", studio=True)
+    scene.unit("b-fix", kind="fix")
+    scene.down = True
+    current = scene.scan()
+    assert [h.task for h in current.held("reimplementation")] == ["s-ui"]
+    assert [h.task for h in current.held("fix")] == ["b-fix"] and current.unchecked == ("b-fix", "s-ui")
+
+
+def test_a_start_whose_labels_cannot_be_read_is_judged_as_reimplementation_without_a_model_check(
+    scene: Scene,
+) -> None:
+    for name in ("s-one", "s-two"):
+        scene.unit(name, kind="tooling", studio=True)
+    scene.task("s-three", kind="tooling", studio=True)
+    scene.down = True
+    verdict = admit_studio(scene, "s-three", "haiku", "low")
+    assert verdict.allowed and "(reimplementation track)" in verdict.message and "not checked" in verdict.warning
+
+
+def test_the_report_says_when_no_reimplementation_unit_runs(scene: Scene) -> None:
+    scene.unit("s-ui", kind="tooling", studio=True)
+    lines = task_slots.report(scene.scan(), scene.conventions, scene.build_slots)
+    assert "no reimplementation unit is in work: the track keeps at least one going" in lines
+    assert "studio: 1 in work (no minimum, no cap but the machine's)" in lines
+
+
+# --- the Studio models ------------------------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("model", "effort"), [("opus", "high"), ("opus", "medium"), ("sonnet", "high"), ("Opus", "HIGH")]
+)
+def test_a_studio_unit_starts_on_an_allowed_model_and_effort(scene: Scene, model: str, effort: str) -> None:
+    scene.task("s-ui", kind="tooling", studio=True)
+    assert admit_studio(scene, "s-ui", model, effort).allowed
+
+
+@pytest.mark.parametrize(
+    ("model", "effort"), [("sonnet", "medium"), ("haiku", "high"), ("opus", "low"), ("", ""), ("opus", "")]
+)
+def test_a_studio_unit_on_another_model_or_effort_is_refused(scene: Scene, model: str, effort: str) -> None:
+    scene.task("s-ui", kind="tooling", studio=True)
+    verdict = admit_studio(scene, "s-ui", model, effort)
+    assert not verdict.allowed and "is a Studio task" in verdict.message
+    assert "opus at high (research)" in verdict.message and "sonnet at high (simple development)" in verdict.message
+    assert not (scene.scratch / "s-ui" / task_slots.RESERVATION_FILE).exists()
+
+
+def test_the_model_rule_binds_only_studio(scene: Scene) -> None:
+    scene.task("r-one")
+    assert scene.admit(brief("r-one"), model="haiku", effort="low").allowed
+    scene.task("s-fix", kind="fix", studio=True)
+    assert scene.admit(brief("s-fix"), model="sonnet", effort="medium").allowed
+
+
+def test_the_model_rule_is_not_enforced_with_the_limits_off(scene: Scene) -> None:
+    set_slots(scene, enforce=False)
+    scene.task("s-ui", kind="tooling", studio=True)
+    assert admit_studio(scene, "s-ui", "haiku", "low").allowed
+
+
+def test_the_command_passes_the_model_and_effort(
+    scene: Scene, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    scene.task("s-ui", kind="tooling", issues=(12,))
+    scene.github.add_issue(12)
+    card = Card(issue=12, claimant=USER, claimed_at=scene.now(), task="s-ui", exempt=True, studio=True)
+    scene.github.create_comment(12, render_card(card, CONVENTIONS.claims))
+    words = ("--admit", "--agent-type=tooling", "--task", "s-ui")
+    code, out = run(scene, monkeypatch, capsys, *words, "--model", "haiku", "--effort", "high")
+    assert code == task_slots.REFUSED and "is a Studio task" in out
+    code, out = run(scene, monkeypatch, capsys, *words, "--model", "opus", "--effort", "high")
+    assert code == 0 and "studio track" in out
 
 
 def test_a_workflow_task_never_waits(scene: Scene) -> None:
@@ -556,6 +777,21 @@ def test_a_damaged_reservation_is_ignored(scene: Scene) -> None:
     assert scene.holders() == []
 
 
+def test_a_reservation_records_its_track(scene: Scene) -> None:
+    scene.task("s-ui", kind="tooling", studio=True)
+    assert scene.admit(brief("s-ui"), agent_type="tooling", reserve=True, model="sonnet", effort="high").allowed
+    data = json.loads((scene.scratch / "s-ui" / task_slots.RESERVATION_FILE).read_text(encoding="utf-8"))
+    assert data["track"] == "studio" and scene.holders("studio") == ["s-ui"]
+
+
+def test_a_reservation_from_before_the_tracks_reads_as_reimplementation(scene: Scene) -> None:
+    scene.task("c-three")
+    at = scene.now().isoformat().replace("+00:00", "Z")
+    old = {"v": 1, "task": "c-three", "kind": "feature", "slot": "task", "agent_type": "engineer", "at": at}
+    (scene.scratch / "c-three" / task_slots.RESERVATION_FILE).write_text(json.dumps(old), encoding="utf-8")
+    assert scene.holders("reimplementation") == ["c-three"]
+
+
 def test_a_workflow_start_reserves_nothing(scene: Scene) -> None:
     scene.task("t-flow", kind="tooling", workflow=True)
     assert scene.admit(brief("t-flow"), agent_type="tooling", reserve=True).allowed
@@ -607,6 +843,7 @@ def run(
     monkeypatch.setattr(task_cli, "load_conventions", lambda root: scene.conventions)
     monkeypatch.setattr(task_cli, "find_repo_root", lambda start: scene.scratch)
     monkeypatch.setattr(task_cli, "_workspace_trees", lambda root: [])
+    monkeypatch.setattr(task_cli, "_build_slots", lambda root: scene.build_slots)
     monkeypatch.setattr("sys.stdin", io.TextIOWrapper(io.BytesIO(stdin.encode("utf-8"))))
     group = argparse.ArgumentParser().add_subparsers(dest="group")
     task_cli.add_task_parser(group)
@@ -641,7 +878,9 @@ def test_the_report_lists_both_slots(
     scene.task("c-fix", kind="fix")
     code, out = run(scene, monkeypatch, capsys)
     assert code == 0
-    assert "task slots: 1 of 3 in use" in out and "fix slots: 1 of 1 in use" in out
+    assert "places: 2 of 4 in use (2 build slot(s) x 2, every track together)" in out
+    assert "reimplementation: 1 in work (at least 1 kept, no cap but the machine's)" in out
+    assert "fix: 1 in work (at least 1 kept, at most 1)" in out and "studio: 0 in work" in out
     assert "a-one" in out and "b-fix" in out and "t-flow" in out and "c-fix" in out
 
 
@@ -649,8 +888,10 @@ def test_the_json_report(scene: Scene, monkeypatch: pytest.MonkeyPatch, capsys: 
     scene.unit("a-one")
     code, out = run(scene, monkeypatch, capsys, "--json")
     data = json.loads(out)
-    assert code == 0 and data["enforce"] is True
-    assert data["slots"]["task"]["limit"] == 3 and data["slots"]["task"]["holders"][0]["task"] == "a-one"
+    assert code == 0 and data["enforce"] is True and data["machine"] == {"limit": 4, "build_slots": 2}
+    reimplementation = data["tracks"]["reimplementation"]
+    assert (reimplementation["min"], reimplementation["max"]) == (1, None)
+    assert reimplementation["holders"][0]["task"] == "a-one" and data["tracks"]["fix"]["max"] == 1
 
 
 def test_admit_reads_the_brief_from_standard_input(
@@ -662,10 +903,10 @@ def test_admit_reads_the_brief_from_standard_input(
     code, out = run(
         scene, monkeypatch, capsys, "--admit", "--agent-type=engineer", "--brief", "-", stdin=brief("d-four")
     )
-    assert code == 3 and "no task slot is free" in out and "a-one" in out
+    assert code == 3 and "no place on this machine" in out and "a-one" in out
     claimed(scene, "a-one")
     code, out = run(scene, monkeypatch, capsys, "--admit", "--task", "a-one")
-    assert code == 0 and "holds a task slot already" in out
+    assert code == 0 and "holds a reimplementation place already" in out
 
 
 def test_admit_reserves_only_when_asked(
@@ -716,7 +957,7 @@ def test_a_held_claim_with_a_full_slot_is_refused_for_the_slot(
     scene.task("d-four", issues=(11,))
     claimed(scene, "d-four", 11)
     code, out = run(scene, monkeypatch, capsys, "--admit", "--task", "d-four")
-    assert code == 3 and "no task slot is free" in out and "no claim" not in out
+    assert code == 3 and "no place on this machine" in out and "no claim" not in out
 
 
 class Down:
@@ -732,7 +973,7 @@ def test_a_github_that_cannot_be_read_skips_the_claim_but_still_counts_and_reser
     scene.task("d-four")
     down: Remote = Down()  # type: ignore[assignment]
     code, out = run(scene, monkeypatch, capsys, "--admit", "--task", "d-four", "--reserve", remote=down)
-    assert code == 0 and "1 of 3 task slots" in out
+    assert code == 0 and "1 of 4 places" in out
     assert "warning: the claim of 'd-four' was not checked" in out and "offline" in out
     assert (scene.scratch / "d-four" / task_slots.RESERVATION_FILE).is_file()
 
@@ -744,7 +985,7 @@ def test_a_github_that_cannot_be_read_does_not_open_a_full_slot(
     scene.task("d-four")
     down: Remote = Down()  # type: ignore[assignment]
     code, out = run(scene, monkeypatch, capsys, "--admit", "--task", "d-four", "--reserve", remote=down)
-    assert code == task_slots.REFUSED and "no task slot is free" in out
+    assert code == task_slots.REFUSED and "no place on this machine" in out
     assert not (scene.scratch / "d-four" / task_slots.RESERVATION_FILE).exists()
 
 
@@ -753,7 +994,7 @@ def test_a_github_that_cannot_be_read_counts_a_workflow_task(scene: Scene) -> No
     scene.task("t-flow", kind="tooling", workflow=True)
     scene.down = True
     verdict = scene.admit(brief("t-flow"), agent_type="tooling")
-    assert not verdict.allowed and "no task slot is free" in verdict.message
+    assert not verdict.allowed and "no place on this machine" in verdict.message
 
 
 def test_the_report_counts_every_unit_when_github_cannot_be_read(
@@ -762,7 +1003,8 @@ def test_the_report_counts_every_unit_when_github_cannot_be_read(
     scene.unit("a-one")
     down: Remote = Down()  # type: ignore[assignment]
     code, out = run(scene, monkeypatch, capsys, remote=down)
-    assert code == 0 and "task slots: 1 of 3 in use" in out and "could not be read from GitHub: a-one" in out
+    assert code == 0 and "places: 1 of 4 in use" in out and "could not be read from GitHub: a-one" in out
+    assert "reimplementation: 1 in work" in out  # counted where it was before the Studio label
 
 
 def test_the_report_reads_the_workflow_label_from_the_claim_card(
@@ -771,7 +1013,7 @@ def test_the_report_reads_the_workflow_label_from_the_claim_card(
     scene.unit("t-flow", kind="tooling")
     workflow_card(scene, "t-flow")
     code, out = run(scene, monkeypatch, capsys)
-    assert code == 0 and "task slots: 0 of 3 in use" in out and "workflow units until the cutover): t-flow" in out
+    assert code == 0 and "places: 0 of 4 in use" in out and "workflow units until the cutover): t-flow" in out
 
 
 def test_the_bounded_gh_call_fails_with_an_oserror_when_it_takes_too_long(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -811,7 +1053,7 @@ def test_a_held_claim_does_not_open_a_full_slot(scene: Scene) -> None:
     full(scene)
     scene.task("d-four")
     verdict = scene.admit(brief("d-four"))
-    assert not verdict.allowed and "no task slot is free" in verdict.message and scene.claim_asked[0] == "d-four"
+    assert not verdict.allowed and "no place on this machine" in verdict.message and scene.claim_asked[0] == "d-four"
 
 
 def test_a_workflow_task_still_needs_its_claim(scene: Scene) -> None:
@@ -842,7 +1084,7 @@ def test_a_hanging_github_costs_one_read_not_one_per_issue(scene: Scene) -> None
     scene.on_read = hang(scene)
     verdict = scene.admit(brief("d-four"), reserve=True)
     assert scene.reads == [scene.issues_of["d-four"][0]] and scene.seconds == task_slots.GH_READ_SECONDS
-    assert not verdict.allowed and "no task slot is free" in verdict.message  # still counted
+    assert not verdict.allowed and "no place on this machine" in verdict.message  # still counted
 
 
 def test_a_hanging_github_with_a_free_slot_still_reserves_it(scene: Scene) -> None:
@@ -902,7 +1144,7 @@ def test_a_unit_started_between_the_two_counts_is_counted_not_read(scene: Scene)
     scene.on_read = start_one_late
     verdict = scene.admit(brief("d-four"), reserve=True)
     assert late and late[0] not in scene.reads
-    assert verdict.allowed and "3 of 3 task slots in use" in verdict.message
+    assert verdict.allowed and "3 of 4 places on this machine in use" in verdict.message
 
 
 def test_a_workflow_task_of_several_issues_keeps_the_claim_warning(scene: Scene) -> None:

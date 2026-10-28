@@ -309,9 +309,10 @@ def _claim_rules(conventions: Conventions) -> list[str]:
         "at most."
     )
     lines += _bullet(
-        f"The claim of an issue labelled `{claims.exempt_label}` (a unit that builds the new workflow) neither counts "
-        "toward that limit nor is refused by it; the cap of a task still holds. Only someone who may label issues "
-        "(triage access or more) can set the label."
+        f"The claim of an issue labelled `{claims.exempt_label}` (a unit that builds the new workflow) or "
+        f"`{claims.studio_label}` (Coney Studio work, which has its own engineer track) neither counts toward that "
+        "limit nor is refused by it; the cap of a task still holds. Only someone who may label issues (triage access "
+        "or more) can set the labels."
     )
     ends = _join_or([f"`{stage}`" for stage in claims.limit_ends_at])
     lines += _bullet(

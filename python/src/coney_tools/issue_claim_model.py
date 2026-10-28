@@ -190,8 +190,11 @@ class Card:
     open_claims: tuple[int, ...] = ()
     #: Why the idle clock waits (`S-blocked`, `PR #12 open`), or None while it runs; it starts again when this ends.
     waiting: str | None = None
-    #: The issue carries `claims.exempt_label`: the claim is outside the open-claims limit (recomputed every pass).
+    #: The issue carries `claims.exempt_label` or `claims.studio_label`: the claim is outside the open-claims limit
+    #: (recomputed every pass).
     exempt: bool = False
+    #: The issue carries `claims.studio_label`: Coney Studio work, in its own engineer track (recomputed every pass).
+    studio: bool = False
     #: Whether the claim counts toward the limit now: false once `freed` is set or while the claim has a pull request
     #: that is open and not a draft (the unit's slot is free), recomputed every pass.
     counted: bool = True
@@ -329,6 +332,7 @@ def _data(card: Card) -> dict[str, Any]:
         "open_claims": list(card.open_claims),
         "waiting": card.waiting,
         "exempt": card.exempt,
+        "studio": card.studio,
         "counted": card.counted,
         "freed": card.freed,
         "regained": card.regained,
@@ -393,7 +397,8 @@ def render_card(card: Card, rules: Claims) -> str:
         lines.append(f"- **Ended:** {show_time(card.released_at)}")
     lines.append(f"- **Last activity:** {show_time(card.activity)} ({card.last_activity_why})")
     if card.active and card.exempt:
-        lines.append(f"- **Limit:** not counted toward the open-claims limit (`{rules.exempt_label}`)")
+        label = rules.studio_label if card.studio else rules.exempt_label
+        lines.append(f"- **Limit:** not counted toward the open-claims limit (`{label}`)")
     elif card.active and not card.counted:
         lines.append(
             "- **Limit:** no longer counted toward the open-claims limit (its review passed, or its pull request is "
@@ -460,6 +465,7 @@ def parse_card(body: str, rules: Claims) -> Card | None:
             open_claims=tuple(int(item) for item in data.get("open_claims", ())),
             waiting=str(data["waiting"]) if data.get("waiting") else None,
             exempt=bool(data.get("exempt", False)),
+            studio=bool(data.get("studio", False)),
             counted=bool(data.get("counted", True)),
             freed=bool(data.get("freed", False)),
             regained=bool(data.get("regained", False)),

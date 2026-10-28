@@ -1,13 +1,16 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Claude Code PreToolUse hook: the coordinator may not start an engineer or tooling agent without a held claim and
-a free slot.
+room in its track.
 
-The rule (docs/guides/agents.md#slots): a machine runs 3 task units and 1 fix unit at a time, a unit holds its slot
-until it passes Review, and the agent of a unit that waits for CI holds none. This guard asks `coney-tools task slots
---admit` before each Agent call of the coordinator; the tool reads the task records (`TASK.md` for the kind, `unit.json`
-and the stamp log for the liveness, a short reservation for an agent that has not run `task start` yet), the claim
-cards on GitHub and the numbers in `.github/conventions.yml`, so none of that is copied here. The brief names the unit
-with a `Task id: <id>` line; an engineer or tooling agent without one is refused.
+The rule (docs/guides/agents.md#slots): engineer work runs in three tracks, reimplementation (at least one place kept),
+fix (one) and Coney Studio (as many as the machine holds), all of them within the machine's limit of units, which
+follows its build slots. A unit holds its place until it passes Review, and the agent of a unit that waits for CI holds
+none; a Studio unit starts on one of the allowed models and efforts. This guard asks `coney-tools task slots --admit`
+before each Agent call of the coordinator, with the call's `model` and `effort`; the tool reads the task records
+(`TASK.md` for the kind, `unit.json` and the stamp log for the liveness, a short reservation for an agent that has not
+run `task start` yet), the claim cards on GitHub (the claim, the workflow and Studio labels), the build slots and the
+rules in `.github/conventions.yml`, so none of that is copied here. The brief names the unit with a `Task id: <id>`
+line; an engineer or tooling agent without one is refused.
 
 Only the main session's coordinator is held to it: an engineer starting its own helpers (`agent_type` is its own) is
 not. The hook passes the call when `coney-tools` cannot run: a refusal is the tool's own exit code, `REFUSED`, with the
@@ -85,8 +88,9 @@ def run_coney_tools(args: list[str], stdin: str) -> tuple[int, str]:
 def refusal(payload: object, runner: Runner | None = None) -> str | None:
     """The reason to refuse this hook input, or None to let the call run.
 
-    Only an Agent call of the coordinator is judged. The tool decides what holds a slot (its `agent_types`), so a
-    reviewer or a read-only helper passes without a slot, and the brief goes to it whole. `runner` is for the tests."""
+    Only an Agent call of the coordinator is judged. The tool decides what holds a place (its `agent_types`), so a
+    reviewer or a read-only helper passes without one, and the brief goes to it whole, with the call's model and
+    effort when it names them. `runner` is for the tests."""
     if not isinstance(payload, dict) or payload.get("tool_name") not in AGENT_TOOLS:
         return None
     if payload.get("agent_type") != ROLE:
@@ -98,6 +102,10 @@ def refusal(payload: object, runner: Runner | None = None) -> str | None:
     prompt = tool_input.get("prompt")
     agent_type = kind.strip() if isinstance(kind, str) else ""
     args = ["task", "slots", "--admit", f"--agent-type={agent_type}", "--brief", "-", "--reserve"]
+    for name in ("model", "effort"):  # a Studio unit's model and effort are checked by the tool
+        value = tool_input.get(name)
+        if isinstance(value, str) and value.strip():
+            args.append(f"--{name}={value.strip()}")
     code, out = (runner or run_coney_tools)(args, prompt if isinstance(prompt, str) else "")
     if code == REFUSED and out:
         return out + "\n"

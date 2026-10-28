@@ -25,9 +25,9 @@ hook holds each to its own commands and files ([Which role to start](agents.md#r
 | --- | --- | --- | --- | --- |
 | **Maintainer** | A person | What the coordinator escalates | The [maintainer decisions](repo:AGENTS.md) only; may merge | When one is due |
 | **`coordinator`** | The main session, started with `coney-agent` ([The coordinator](#coordinator)) | Issues, task files, unit records and stamps, GitHub | Triage, claims and task files (`task create`), briefs, answers, pull requests (`pr open`) and merges; the only role that writes to GitHub. No code, tests or research, no review, and none of the stage commands from Start to Review | Always; Conclave and Tether start its turns |
-| **`engineer`** | Agent, Opus (Sonnet without reverse engineering: [Which model](agents.md#models)), in a task slot or the fix slot ([Slots](#slots)) | Its task file and issue, the guides, the original, research pages | Code, tests, pages and docs on its task's branch, its stamps, `PR.md`. Never pushes or runs `pr open` | One task, from Start to a passing Review |
+| **`engineer`** | Agent, Opus (Sonnet without reverse engineering: [Which model](agents.md#models)), in one of the tracks: reimplementation, fix or Coney Studio ([Tracks](#slots)) | Its task file and issue, the guides, the original, research pages | Code, tests, pages and docs on its task's branch, its stamps, `PR.md`. Never pushes or runs `pr open` | One task, from Start to a passing Review |
 | **`tooling`** | Agent, Sonnet; the engineer's rules for the project's own tools | The guides and the tool's code; no Ghidra or PCSX2 | Tools, workflows, hooks and their guides, on its task's branch. Never pushes | One task about the tools or the process |
-| **`reviewer`** | Agent, Opus for research and `@orig`, smaller for docs and tooling ([The reviewer](agents.md#reviewer)); outside the slots | The diff, the packet, the [checklists](review/index.md), the original (read only) | Its verdict and report, nothing else; it never edits | Once per task tip, by someone other than its author ([Task review](review/task.md)) |
+| **`reviewer`** | Agent, Opus for research and `@orig`, smaller for docs and tooling ([The reviewer](agents.md#reviewer)); outside the tracks | The diff, the packet, the [checklists](review/index.md), the original (read only) | Its verdict and report, nothing else; it never edits | Once per task tip, by someone other than its author ([Task review](review/task.md)) |
 | **Claim Action** | The `claim` workflow on GitHub ([Claiming an issue](issues.md#claiming)) | `/claim`, `/unclaim` and `/progress` comments, issue and pull request events | Assignees, `S-` labels and the claim card; it deletes the command comments | On each command, and an hourly sweep |
 | **Conclave** | Coney's own Claude Code mod ([Conclave](conclave.md)) | `coney-tools conclave snapshot` | Nothing; it draws, and starts a coordinator turn for Coney's own events | In a session loaded with it, between the coordinator's turns |
 | **Tether** | A Claude Code plugin ([Waking the coordinator](coney-tools-setup.md#coord-wakes)) | The session and the machine | Nothing; it keeps the session healthy (context, cache, clearing) and starts a coordinator turn | Between the coordinator's turns |
@@ -57,7 +57,7 @@ flowchart TB
     triage["1 Triage"]
     claim["2 task create: claim, TASK.md"]
   end
-  subgraph eng ["Engineer, in a slot, in its own worktree"]
+  subgraph eng ["Engineer, in a track, in its own worktree"]
     start["3 task start"]
     study["4 orig study"]
     port["5 Test first, port:<br/>orig fails-first"]
@@ -81,7 +81,7 @@ flowchart TB
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Triage | Coordinator | (labels) | The issue has its type, area and priority, `S-ready-to-start`, and fits one reviewable pull request; `P-critical` issues first | none | [Triage](issues.md#triage) |
 | 2 | Claim | Coordinator | `coney-tools task create <issue>... --terms ... --scope ...` | The claim Action assigned the issue and it settled; `TASK.md` holds the goal, Done, scope, leads and decision points | `assigned` (written by Start) | [Task files](issues.md#task-files) |
-| 3 | Start | Engineer | `coney-tools task start <task>` | Branch and worktree from `main`, the unit record; reports the free slots, and refuses a start over the limit | `claimed` | [Starting a task](issues.md#starting) |
+| 3 | Start | Engineer | `coney-tools task start <task>` | Branch and worktree from `main`, the unit record; reports its track's places, and refuses a start over the limit | `claimed` | [Starting a task](issues.md#starting) |
 | 4 | Study | Engineer (and its helpers) | `coney-tools orig study <addr>`; PCSX2 for what a player sees | Per function: the decompile, callers, callees and data reads saved and hashed, the lines numbered and cut into pieces; the expected values found (code or runtime); research claims written and graded | `studied` per address | [Study](stamps.md#study), [The engineer's steps](#engineer-steps) |
 | 5 | Port | Engineer | `coney-tools build --agent <id> --preset dev --test -R ...`; `coney-tools orig fails-first` | The test is written first from the study's result, cites its expected values and fails; the port makes it pass; the copy check is clean | `fails-first` per test | [Fails first](stamps.md#fails-first), [Testing](testing.md) |
 | 6 | Compare | Engineer | `coney-tools orig compare <addr>` | Every numbered line of each ported function is in a pair (`same`, `stand-in` with a reason, `not-ported` with an issue) | `compared` per function | [Pairs](stamps.md#pairs), [Compare](stamps.md#compare) |
@@ -98,7 +98,7 @@ flowchart TB
   `orig fails-first --none <reason>`; a task that changes a research page still grades its claims. A tooling task's
   Python tests come first all the same, and the reviewer checks that they did.
 - **A finding sends the work back.** A finding in Review goes to the engineer, who fixes it in a new commit and runs
-  Check and Review again; a red CI check becomes a fix task ([Slots](#slots)).
+  Check and Review again; a red CI check becomes a fix task ([Tracks](#slots)).
 - **A refusal names the stage to redo.** `pr open`, `task review` and `orig compare` list every missing or stale
   result with the command that makes it, and the work goes back to the engineer, never to the coordinator's hands.
 
@@ -174,11 +174,12 @@ flowchart TB
   wake["Conclave and Tether<br/>wake the coordinator"]
   coord["Coordinator<br/>triages, claims, opens PRs"]
   action["Claim Action<br/>assigns, keeps the card"]
-  subgraph slots ["Slots"]
-    tasks["3 task engineers"]
-    fix["1 fix engineer"]
+  subgraph slots ["Tracks, within the machine's places"]
+    tasks["Reimplementation<br/>at least 1"]
+    fix["Fix<br/>1"]
+    studio["Coney Studio<br/>the rest"]
   end
-  rev["Reviewers<br/>outside the slots"]
+  rev["Reviewers<br/>outside the tracks"]
   gh["GitHub<br/>CI and main"]
   maint --> coord
   wake --> coord
@@ -205,24 +206,34 @@ What each role is, reads and writes is in [Who is who](#who-is-who); what is lef
 - **Pull requests open through `pr open`**, run by the coordinator once Check and Review hold, and from the cutover
   by no other route ([Opening the pull request](#release-queue)).
 
-### Slots {#slots}
+### Tracks {#slots}
 
-At most three task engineers and one fix engineer work at once on a machine (`tasks.start.slots` in
+Engineer work runs in three tracks (a maintainer decision of 2026-10-28, which put Coney Studio first):
+
+- **Reimplementation:** game issues and pull requests outside Coney Studio. At least one engineer always works on it.
+- **Fix:** one engineer resolves pull request problems (a failed check, a conflict, a rebase) after a unit's pull
+  request is opened.
+- **Coney Studio:** an issue labelled `studio`. As many engineers as the machine holds work on Studio research and
+  development, on the models [Which model](agents.md#models) names for them.
+
+A machine holds as many units of all tracks together as twice its build slots, the ones `coney-tools build` keeps
+(the evidence for the number is in [Engineer tracks](agents.md#slots)). One place is kept for reimplementation while
+none runs and one for a fix, so Studio never takes either (`tasks.start.slots` in
 [.github/conventions.yml](repo:.github/conventions.yml)); `task start` refuses a start over the limit and the
-coordinator's Agent guard refuses the engineer before it starts ([Engineer slots](agents.md#slots) has the rule in
+coordinator's Agent guard refuses the engineer before it starts ([Engineer tracks](agents.md#slots) has the rule in
 full). There are no standing teams: the coordinator assigns the next task from the triaged issues, `P-critical` first
-and then by priority, whenever a slot frees.
+and then by priority, whenever a place frees.
 
-- **A slot frees when its task passes Review.** The engineer's job ends there; its slot takes the next task while the
-  pull request runs CI.
-- **A CI failure on a pull request is a fix task** (`task create --fix-of <issue>`) in the fix slot: one at a time,
+- **A place frees when its task passes Review.** The engineer's job ends there; its place takes the next task while
+  the pull request runs CI.
+- **A CI failure on a pull request is a fix task** (`task create --fix-of <issue>`) in the fix track: one at a time,
   oldest failure first. If the engineer that wrote the task is still running, the fix goes to it; otherwise a fresh
   engineer takes it, and may take the next queued fix while its context is warm. A fix redoes only the stamps it made
   stale and goes out with `pr open` on the same pull request ([Starting a task](issues.md#starting)).
-- **Reviewers and helpers are outside the slots**, and so is work in other repositories. Until the cutover so are
+- **Reviewers and helpers are outside the tracks**, and so is work in other repositories. Until the cutover so are
   units that build the workflow itself (their issue carries the `workflow` label, read from the claim card); from it
-  they count like any other task ([Engineer slots](agents.md#slots) holds the rule). Their claims are outside the
-  open-claims limit too, by the same label.
+  they count like any other task ([Engineer tracks](agents.md#slots) holds the rule). Their claims are outside the
+  open-claims limit too, by the same label, and so are the claims of Studio issues, for good.
 - **Two engineers never work in the same functions.** A claim carries its scope, and `task create` warns when another
   held claim's scope overlaps.
 
@@ -331,8 +342,8 @@ coordinator then opens the pull request.
   [.github/conventions.yml](repo:.github/conventions.yml) is off until the cutover; with it on, `pr open` is the only
   way a pull request opens and the hook refuses the hand-typed routes in every session, the coordinator's too
   ([The PR guard](enforcement.md#pr-guard)).
-- **A failure CI finds** (another platform, a check that cannot run locally) becomes a fix task in the fix slot
-  ([Slots](#slots), [When a pull request fails checks](agents.md#ci-failures)). Stale failures restart themselves:
+- **A failure CI finds** (another platform, a check that cannot run locally) becomes a fix task in the fix track
+  ([Tracks](#slots), [When a pull request fails checks](agents.md#ci-failures)). Stale failures restart themselves:
   `coney-tools pr list-stuck --rerun --apply` reruns a required check that failed because the runner or GitHub did,
   at most twice per workflow and commit, and never a real lint, build or test failure
   ([pr list-stuck](coney-tools-pr.md#pr-list-stuck)).
@@ -478,11 +489,13 @@ requests and tidies after merges. It works under these rules:
   next instead of asking whether to start. It stops only when a maintainer says so.
 - **Escalate only maintainer decisions**, the list in [AGENTS.md](repo:AGENTS.md) (`repo.maintainer_decisions` in
   [.github/conventions.yml](repo:.github/conventions.yml)); everything else the coordinator decides itself.
-- **Keep the slots full, and never over them.** When a task passes Review its slot takes the next triaged issue at
-  once, `P-critical` first, then by priority ([Slots](#slots)); a failed check on a pull request goes to the fix slot.
-  The priorities are on the [roadmap](../roadmap.md#priorities). **No engineer or tooling agent starts without a held
-  claim:** its brief carries a line `Task id: <id>` from `task create`, and a hook refuses the start when the task file
-  is missing, the claim is no longer held or the slot of its kind is full ([Engineer slots](agents.md#slots)).
+- **Keep the places full, and never over them.** When a task passes Review its place takes the next triaged issue at
+  once, `P-critical` first, then by priority ([Tracks](#slots)); one reimplementation unit always runs, Coney Studio
+  takes the rest of the machine, and a failed check on a pull request goes to the fix track. The priorities are on the
+  [roadmap](../roadmap.md#priorities). **No engineer or tooling agent starts without a held claim:** its brief carries
+  a line `Task id: <id>` from `task create`, and a hook refuses the start when the task file is missing, the claim is
+  no longer held, its track or the machine is full, or a Studio unit names a model it may not use
+  ([Engineer tracks](agents.md#slots)).
 - **Never do a stage of the engineer's or the reviewer's.** It writes no engine code, tests or research, runs none of
   the stage commands from Start to Review, judges no fidelity and fixes no CI failure in a branch's files; the role
   rules refuse them ([Which role to start](agents.md#roles)).
@@ -544,7 +557,7 @@ and where the rules are read from):
 | Claude Code hooks (`.claude/hooks/`) | A raw `cmake --build`, `ctest` or `ninja`; a raw `gh` command that writes an issue; a push or GitHub write from a subagent; a wait loop with no bound; an agent started with `isolation: "worktree"` or with no Coney role; a tool call the session's role does not allow; a write to a stamp log; a `Co-Authored-By` trailer that names the wrong model | [The hooks](agents.md#hooks), [Enforcement map](enforcement.md#hooks) |
 | pre-commit (`.pre-commit-config.yaml`) | Unformatted C++ (clang-format) and Python (ruff); a Markdown line over 120 characters; trailing whitespace, broken YAML or TOML; any file over 512 KB, which is usually game data; a read of the real clock outside the frame pacer; a commit message with the wrong trailers | [Formatting and pre-commit](building.md#formatting-and-pre-commit) |
 | Claim Action and `task create` | A second claim on an issue; a claim on an issue that is not ready, is blocked by unfinished work, or over the claimant's limit (a `workflow` unit's claim is not counted); any other claim while a `P-critical` issue has none | [Claiming an issue](issues.md#claiming) |
-| Stage commands (`task start`, `orig compare`, `task check`, `task review`) | A start without a held claim (and over the slot limit); a compare with no current study, a line in no pair or a copied line; a Check whose gate fails; a Review whose compared or fails-first stamps are missing or stale, or one recorded by the change's author | [Stamps](stamps.md), [task check](coney-tools-repo.md#task-check), [Task review](review/task.md) |
+| Stage commands (`task start`, `orig compare`, `task check`, `task review`) | A start without a held claim (and over its track's or the machine's limit); a compare with no current study, a line in no pair or a copied line; a Check whose gate fails; a Review whose compared or fails-first stamps are missing or stale, or one recorded by the change's author | [Stamps](stamps.md), [task check](coney-tools-repo.md#task-check), [Task review](review/task.md) |
 | `pr open` | A unit whose stamps do not hold for the change, a generated title or description CI would refuse, a caller who is an engineer or reviewer. The stages are enforced here, locally, not in CI | [Opening the pull request](#release-queue), [pr open](pr.md#open) |
 | Conclave stop guard | A coordinator turn that ends while a pull request has a failed required check, a conflict, a stuck check or auto-merge off and nobody holds it | [Conclave](conclave.md#watchers) |
 | CI required checks | `title`, `docs`, `body`, `build-ok`, `python-ok`, `format`, `mkdocs`, `markdownlint`, `actionlint`, `clang-tidy`, `dependencies` | [What CI runs](building.md#what-ci-runs) |
@@ -605,7 +618,7 @@ hook, `coney-tools issue check` and the `issue-check` workflow ([Issues](#issues
   model, the task and what "done" means, and points at the rules rather than pasting them ([Briefing](agents.md#briefs)).
 - **No agent waits on CI, or pushes.** An engineer works local-first and ends when its task passes Review; the
   coordinator opens the pull request with `pr open`, which refuses an agent's identity, and a failure goes to the fix
-  slot ([When a pull request fails checks](agents.md#ci-failures)). An agent idle past its cache lifetime re-writes its
+  track ([When a pull request fails checks](agents.md#ci-failures)). An agent idle past its cache lifetime re-writes its
   whole context, often hundreds of thousands of tokens, when it resumes.
 - **Report what a reader needs:** commits, what works now and the command that shows it, stand-ins, open items and
   the results of the checks. Short. A pull request's description carries the same as a Testing section (what ran,
@@ -629,7 +642,7 @@ At the cutover, in one change of [.github/conventions.yml](repo:.github/conventi
 2. `claims.adopt` and `claims.release` turn on: an issue assigned by hand gets a claim card, and an idle claim is warned
    at 48 hours and released at 72 ([Claiming an issue](issues.md#claiming)).
 3. `tasks.start.slots.exempt_workflow` turns off, in the same change as item 2: units of `workflow` issues then hold a
-   slot and count against the claim limit like the rest ([Engineer slots](agents.md#slots)).
+   place and count against the claim limit like the rest ([Engineer tracks](agents.md#slots)).
 4. The [legacy release checks](#pr-review) and their commands (`legacy pr-review`, `legacy check-pr-review`, `repo
    review-stamp`, `orig review-stamp`, `orig check-review`, `orig record-findings`) are removed, and the old names of
    renamed `coney-tools` commands stop working. The sweep of [legacy fidelity](#fidelity-audit) uses `orig review-stamp

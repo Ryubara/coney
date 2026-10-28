@@ -11,10 +11,12 @@ leaves a unit record, and running the command again finishes what is missing ins
 task (`kind: fix`, made by `task create --fix-of`) makes no branch or worktree: it works in the unit of the task it
 fixes, so it gets a record that points there, and its `claimed` stamp joins that task's log.
 
-The engineer slots (`task_slots`) are counted and reported here, and a start over the limit is refused while
-`tasks.start.slots.enforce` is on; a task whose issue carries the `workflow` label now (`claims.exempt_label`, read
-from its held claim card) holds no slot while `tasks.start.slots.exempt_workflow` is on. GitHub is read through
-`Remote` and the clock and the agent's identity are passed in, so the tests touch neither the network nor the hooks.
+The engineer tracks (`task_slots`) are counted and reported here, and a start over the limit (its track's cap, or
+the machine's places with the places other tracks keep set aside) is refused while `tasks.start.slots.enforce` is on;
+a task whose issue carries the `workflow` label now (`claims.exempt_label`, read from its held claim card) holds no
+place while `tasks.start.slots.exempt_workflow` is on, and one with the Studio label is in the Studio track. GitHub is
+read through `Remote` and the clock and the agent's identity are passed in, so the tests touch neither the network nor
+the hooks.
 """
 
 from __future__ import annotations
@@ -27,6 +29,7 @@ from pathlib import Path
 from typing import Any
 
 from coney_tools import stamps, task_slots
+from coney_tools.build_claims import DEFAULT_SLOTS
 from coney_tools.config import ConfigError, main_checkout
 from coney_tools.conventions import Conventions
 from coney_tools.issue_claim_engine import Engine
@@ -65,6 +68,8 @@ class StartEnv:
     #: The `who` of the stamps (`stamps.who_from_env`), read once at the start of the command.
     who: Callable[[], dict[str, Any]]
     out: Callable[[str], None] = print
+    #: The machine's build slots (`build_slots` in coney.local.toml), which set its limit of units in work.
+    build_slots: int = DEFAULT_SLOTS
 
 
 def front_sha256(task: TaskFile) -> str:
@@ -86,33 +91,38 @@ def front_sha256(task: TaskFile) -> str:
 
 
 def _slot_check(task: TaskFile, env: StartEnv, engine: Engine) -> tuple[str, str | None]:
-    """(the slot line for the report, the refusal when the limit is enforced and exceeded). Whether a unit is a
-    workflow unit comes from the held claim cards `engine` read (their `exempt`), not from any file here."""
+    """(the tracks line for the report, the refusal when the limit is enforced and exceeded). Whether a unit is a
+    workflow or a Studio unit comes from the held claim cards `engine` read (their `exempt` and `studio`), not from any
+    file here; the room is `task_slots.room`, the rule the Agent guard applies."""
     conventions = env.conventions
     slots = conventions.tasks.start.slots
     held_cards = engine.held_cards()
     cards = task_slots.Cards(held_cards.get)
-    if task_slots.exempt_issues(task.issues, cards, conventions):
-        return "slots: a workflow task (its issue has the workflow label) holds no slot until the cutover", None
+    told = task_slots.unit_labels(task.issues, cards, conventions)
+    if told is not None and told.workflow:
+        return "slots: a workflow task (its issue has the workflow label) holds no place until the cutover", None
 
-    def exemption(record: UnitRecord) -> bool | None:
-        """Another unit's exemption, from the same cards."""
-        return task_slots.exempt_issues(record.issues, cards, conventions)
+    def labels(record: UnitRecord) -> task_slots.Labels | None:
+        """Another unit's labels, from the same cards."""
+        return task_slots.unit_labels(record.issues, cards, conventions)
 
-    kind = task_slots.slot_of(task.kind)
-    held = task_slots.scan(env.scratch, conventions, env.now(), exemption=exemption).held(kind)
-    others = [holder for holder in held if holder.task != task.task]
-    maximum = task_slots.limit(conventions, kind)
-    count = len(others) + 1
-    line = f"slots: {count} of {maximum} {kind} slots in use"
-    if count <= maximum:
+    track = task_slots.track_of(task.kind, told.studio if told is not None else False)
+    current = task_slots.scan(env.scratch, conventions, env.now(), labels=labels)
+    fit = task_slots.room(current, track, task.task, conventions, env.build_slots)
+    line = f"slots: {fit.note(task.task)}"
+    if fit.fits:
         return line, None
     if not slots.enforce:
         return line + " (over the limit, which is not enforced: tasks.start.slots.enforce)", None
+    busy = [holder for holder in current.holders if holder.task != task.task]
+    if fit.track_full:
+        why = f"the {track} track is full ({fit.count} of {fit.maximum})"
+    else:
+        kept = "".join(f", {places} kept for {name}" for name, places in fit.kept.items())
+        why = f"the machine has no place for a {track} unit ({fit.total} of {fit.machine} in use{kept})"
     return line, (
-        f"{len(others)} {kind} units are in work on this machine and {maximum} is the limit "
-        f"(tasks.start.slots in .github/conventions.yml): {', '.join(h.line() for h in others)}. "
-        "Finish one (it passes Review) before starting another"
+        f"{why} (tasks.start.slots in .github/conventions.yml, build_slots {env.build_slots}): "
+        f"{', '.join(f'{h.line()} [{h.track}]' for h in busy)}. Finish one (it passes Review) before starting another"
     )
 
 
@@ -144,15 +154,16 @@ def _claim_problem(task: TaskFile, user: str, expected_task: str, engine: Engine
 def _limit_problem(task: TaskFile, user: str, engine: Engine) -> str | None:
     """Why `user` holds more open claims than the limit allows, or None (a fix task reuses its claim).
 
-    A card's `exempt` flag follows the issue's label only when a claim run passes over it, and a burst of label events
-    leaves some cards stale until the sweep (GitHub cancels pending jobs); so the label is read from each of the
-    user's issues here, as `task create`'s checks read it, and a stale card cannot refuse the start.
+    A card's `exempt` flag follows the issue's labels (`claims.exempt_label`, `claims.studio_label`) only when a claim
+    run passes over it, and a burst of label events leaves some cards stale until the sweep (GitHub cancels pending
+    jobs); so the labels are read from each of the user's issues here, as `task create`'s checks read them, and a
+    stale card cannot refuse the start.
     """
-    label = engine.rules.exempt_label
+    rules = engine.rules
     held = [
         card
         if card.exempt or card.claimant != user
-        else card.changed(exempt=label in engine.remote.issue(card.issue).labels)
+        else card.changed(exempt=rules.outside_limit(engine.remote.issue(card.issue).labels))
         for card in engine.held_cards().values()
     ]
     open_tasks = open_task_keys(held, user, 0)
