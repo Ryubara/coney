@@ -1142,7 +1142,7 @@ def test_the_release_load_of_an_older_checkout_fills_from_this_tools_own_file(tm
     assert load_conventions_leniently(root, lines.append) == plain
     assert len(lines) == 2
     assert "ignoring claims.a_later_rule" in lines[0]
-    assert "missing tasks.start.slots.tracks" in lines[1] and "main's value" in lines[1]
+    assert "missing tasks.start.slots.tracks" in lines[1] and "this tool's value" in lines[1]
     (tmp_path / "strict").mkdir()
     with pytest.raises(ConventionsError, match=r"missing the key 'tracks'"):
         load_conventions(write_checkout(tmp_path / "strict", changed(("tasks.start.slots.tracks", REMOVE))))
