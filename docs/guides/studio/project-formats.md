@@ -1,8 +1,8 @@
 # Coney Studio: project formats
 
 **Status: design.** Nothing on this page is built. The files a Coney Studio project saves in formats of Coney's own:
-the level file with its entity tree and prefabs, characters, missions, overrides and import sidecars, and the `.cmod`
-package a finished project is exported as. What each kind of
+the level file with its entity tree and prefabs, characters, missions, overrides and import sidecars, the `.cmod`
+package a finished project is exported as, and override packs. What each kind of
 content is, and what Studio shows, edits and imports, is on [Content and formats](content-and-formats.md), which this
 page completes; the project folder's layout is the editor experience design's ([#1055](issue:1055)) and the manifest
 the [Lua SDK design](lua-sdk.md#manifest)'s.
@@ -181,8 +181,8 @@ project on the player's machine and is left out of a package.
 A finished project is exported as one file, a **`.cmod`** (the working name): a zip of the project folder with its
 manifest at the root. This page owns what goes into one; how Coney loads it, by hand or at start as its manifest says,
 and how mods depend on each other, are the Lua SDK design's ([The mods folder](lua-sdk.md#mods-folder)), whose loader
-reads a project as a folder today: reading a `.cmod` there in place of its unpacked folder is the change that page
-takes in. What goes in, from the formats on this page:
+reads a project as a folder: Coney reading a `.cmod` there in place of its unpacked folder is build issue 13 of
+[Content and formats](content-and-formats.md#build-issues). What goes in, from the formats on this page:
 
 | In the project | In the `.cmod` |
 | --- | --- |
@@ -198,3 +198,60 @@ each player's machine against their own disc ([Paths](content-and-formats.md#pat
 refuses a file marked derived, a file whose bytes match a disc asset it can resolve (a texture, sound or model hash
 compared with the asset store's), and a trace or listing of a disc level, and names each. A `.cmod` with no `levels/`
 is a scripts-only mod, one with no `scripts/` a level-only mod; both load.
+
+## Override packs {#override-packs}
+
+An **override pack** is a `.cmod` that replaces the game's own assets with the player's versions (HD textures, a
+remastered sound, a re-encoded movie, a character's new look) and holds nothing else, or a project that does this
+beside its levels and scripts. Coney layers the replacements over the disc; it never edits the game's files, so
+removing or disabling the mod brings the original back at the next start. It is the override source of
+[The install folder](../asset-and-script-architecture.md#install-folder) and the texture packs of
+[Texture packs](../enhancements.md#packs), carried in a `.cmod`.
+
+**Naming and matching.** Each replacement is one line of the pack's `overrides.layout`,
+`override GAME_PATH PROJECT_PATH`, keyed by the `game:/` path of the asset it replaces, which is the name
+`coney-tools extract` writes ([Paths](content-and-formats.md#paths)). Coney turns the path into the original's own key
+and matches on that, never on a file name alone:
+
+| Kind | Key the replacement matches | Replacement (engine form) |
+| --- | --- | --- |
+| Texture | The original texture's hash in its dictionary, as texture packs are keyed ([Texture packs](../enhancements.md#packs)) | PNG |
+| Movie | The `PSS/` file name, as the Xbox `_hd` movies are matched ([Xbox assets: movies](../../research/xbox-assets.md#movies)) | Bink 1 (`.bik`) |
+| Sound, music | The sound's name hash, the music track | WAV |
+| Character look | The model resource the Character List names ([Files of a character](../../research/characters.md#files)) | `.cmodel` |
+
+An entry whose key matches nothing on the player's disc is ignored and listed in the run log and in Studio's Problems
+list, as a texture pack's is.
+
+**What can be overridden.** Only presentation kinds, which change no gameplay
+([Layers](../asset-and-script-architecture.md#asset-layers)): textures, movies, sounds and music, and a character's
+look. Collision, animations, scripts, levels and object lists are simulation kinds; a pack never replaces them (a
+project level changes those, in a modded session). None of these loads from outside the disc on `main` today: the
+override source is designed, not built ([What Studio needs from Coney](content-and-formats.md#engine-needs)). Textures
+come first, as the roadmap's Enhancements milestone asks for a test pack that replaces a named texture
+([Enhancements](../../roadmap.md#enhancements)); then movies, by the same rule as the Xbox map; then sounds; then
+characters' looks.
+
+**Format checks**, made by Studio when the pack is built and by Coney when it loads; an entry that fails is skipped and
+listed, never half applied:
+
+| Kind | Check |
+| --- | --- |
+| Texture | The original's aspect ratio at any size (a texture twice as large in both directions is drawn with the same coordinates); alpha when the original has it; mip levels generated by Coney |
+| Movie | Bink 1, which Coney's decoder reads; as long as the original to 0.5 s and at its frame rate, since the subtitles are timed to it (the Xbox `_hd` rule) |
+| Sound | WAV, 16-bit PCM after import; a different length from the original is a warning, since speech lines are timed to subtitles and animations |
+| Character look | The same 32-bone skin as every character ([Character geometry](../../research/characters.md#character-geometry)), imported as a custom model is ([Custom player models](content-and-formats.md#custom-player)) |
+
+**Stacking several packs.** The packs apply in the mods' load order (the Lua SDK's `mods/enabled.toml`,
+[The mods folder](lua-sdk.md#mods-folder)): for each asset the last enabled pack that replaces it wins, and the others'
+entries for it are unused, never blended. Below every pack sits the Xbox source, then the PS2 disc, the order the
+architecture gives presentation kinds ([The install folder](../asset-and-script-architecture.md#install-folder)). The
+run log names the winning pack per replaced asset, and the mods menu shows a pack's assets that another pack hides.
+Test mode serves the PS2 data alone, so packs never touch a reference comparison.
+
+**What a pack may hold.** Original art (textures drawn by its author, sounds recorded by them) is the author's and is
+shared like any `.cmod`. An upscale or edit of a game asset is still the game's data
+([legal](../asset-and-script-architecture.md#legal)): it is the player's own local pack, which the `.cmod` export marks
+derived and leaves out of a shared package ([The `.cmod` package](#cmod)); the shareable form of such a pack is a recipe
+that each player rebuilds from their own disc, as texture packs already decide
+([Enhancements plan: decided](../enhancements.md#decided)).

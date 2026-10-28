@@ -118,9 +118,10 @@ flowchart LR
   time ([#1055](issue:1055) leaves `.studio/` out of a shared project). The import table (`.studio/imported/table`)
   maps each `project:/` path, and each redirect, to its engine form.
 - **Coney loads engine forms only**, by `project:/` path, through a project source in the asset store beside the disc
-  sources ([Sources](../asset-and-script-architecture.md#sources)). A finished project reaches players who do not
-  run Studio as a `.cmod` holding its engine forms ([The `.cmod` package](project-formats.md#cmod)); how Coney loads
-  one is the Lua SDK design's ([The mods folder](lua-sdk.md#mods-folder)).
+  sources ([Sources](../asset-and-script-architecture.md#sources)). A finished project reaches players who do not run
+  Studio as a `.cmod` holding its engine forms ([The `.cmod` package](project-formats.md#cmod)); Coney reads one from
+  the mods folder in place of its unpacked folder (build issue 13), and the Lua SDK design's loader takes it from there
+  ([The mods folder](lua-sdk.md#mods-folder)).
 
 | Source | Kind | Engine form | Read in Coney by |
 | --- | --- | --- | --- |
@@ -441,7 +442,8 @@ materials, bones); a texture dictionary in the Texture viewer (each texture, its
 addressing, as `--view-txd` shows them, [the 2D viewers](../running-viewers.md#viewing-texture-dictionaries)). The
 viewers are the editor experience design's ([#1055](issue:1055), build issue 9).
 
-**Edit: texture overrides on existing models.** A project replaces a disc texture with a PNG of its own: `override
+**Edit: texture overrides on existing models.** (A `.cmod` made only of such replacements is an **override pack**,
+[Override packs](project-formats.md#override-packs).) A project replaces a disc texture with a PNG of its own: `override
 game:/textures/<dictionary>/<texture> project:/textures/<file>.png` in the project's overrides file ([Project
 formats](project-formats.md#formats)). It applies wherever the game draws that texture (a character, an object, the
 world), in that project's sessions only. This is the override source of [The install
@@ -535,7 +537,8 @@ materials; an anim set whose slots a project overrides; clip playback by path.
 through Coney's mixer with their rate, loop points and length ([Audio data](../../research/formats/audio.md)).
 **Import** takes WAV ([The import step](#import)); the sidecar sets the loop points and whether it streams. **Edit**
 is choosing where a project's sounds play: by script (`Coney.PlaySound` with a path, at a position or attached to an
-entity) and on clip events. Replacing a disc sound with a project's (`override game:/sounds/<name> project:/...`) is the
+entity) and on clip events. Replacing a disc sound with a project's (`override game:/sounds/<name> project:/...`,
+[Override packs](project-formats.md#override-packs)) is the
 same override as a texture's, sounds being a presentation kind. **Export** writes a sound as WAV, as `extract` does.
 
 **Needs from Coney:** a WAV reader into `PcmSound`; playing a project sound by path and at a position through the
@@ -603,6 +606,7 @@ One row per engine change, the Studio kinds that wait on it and its state today.
 | Drawing an imported static mesh (`.cmesh`) | Maps, props | The sandbox draws its own mesh only |
 | A project level on a disc level | `base` levels | Not built |
 | The texture resolver with an override source, per project (F4) | Texture overrides | Designed ([Enhancements plan](../enhancements.md#foundations)) |
+| Override packs: the override source over every `.cmod` in load order, for textures, movies, sounds and character looks, with the format checks | Override packs | Designed ([Override packs](project-formats.md#override-packs)) |
 | A per-human texture | A character's own texture | Not built |
 | A custom character: a type with a project model, named by `HuCreate`, spawns and `ChangeCharacter` | Custom player models | The model swap is in work ([#1053](issue:1053)) |
 | `CharacterModel` and clips from engine forms; humans drawn with several materials | Custom models, clips | Disc decoders only; one material |
@@ -702,8 +706,15 @@ In the order they should come, after the editor experience design's shell, File 
 12. **tools: Add project missions with checkpoints.** The `.mission` file, starting a project mission at a checkpoint,
     objectives shown; after the mods runtime ([Lua SDK](lua-sdk.md#build-issues)). Tests: a synthetic mission starts at
     checkpoint 2 with the player at its spawn and its setup function called once.
-13. **tools: Add the `.cmod` export.** A project exported as one zip with its manifest, the file list and hashes, the
-    engine forms and optionally the sources, and none of the disc: derived files, files matching a disc asset's hash
-    and disc traces refused and listed ([The `.cmod` package](project-formats.md#cmod)). Tests: a synthetic project
-    exports to the expected entries byte for byte; a file equal to a synthetic disc asset is refused; a scripts-only
-    and a level-only project both export and load.
+13. **tools: Add the `.cmod` export and Coney reading a `.cmod`.** A project exported as one zip with its manifest,
+    the file list and hashes, the engine forms and optionally the sources, and none of the disc: derived files, files
+    matching a disc asset's hash and disc traces refused and listed ([The `.cmod` package](project-formats.md#cmod));
+    and Coney reading a `.cmod` in the mods folder in place of its unpacked folder, checking the hashes, for the Lua
+    SDK's loader. Tests: a synthetic project exports to the expected entries byte for byte; a file equal to a synthetic
+    disc asset is refused; a scripts-only and a level-only project both export, and both load from the `.cmod`.
+14. **graphics: Add override packs.** The override source over every enabled `.cmod`'s `overrides.layout`, in load
+    order, for textures first (the roadmap's test pack that replaces a named texture), then movies, sounds and
+    character looks, with the format checks and the per-asset winner in the run log
+    ([Override packs](project-formats.md#override-packs)). Tests: two synthetic packs replace one texture and the later
+    wins; a pack entry for a texture the disc lacks is ignored and listed; a movie of another length is refused; with
+    the packs removed every hash is the disc's; test mode serves the PS2 data only.
