@@ -1,8 +1,10 @@
 # Coney Studio: the editor experience
 
-The design of how Coney Studio looks and feels to the person using it: its panels and their default layout, the
-layouts a user saves, the project folder, Play mode, moving round the scene, the keymap, gizmos, selection, undo and
-importing files. **Status: design; nothing here is built.** What Studio is, and the other design pages, are on
+The design of how Coney Studio looks and feels to the person using it: its words, its panels and their default layout,
+the layouts a user saves, the project folder, a new level, Play mode, importing files and previews. Moving round a level
+and building it (the fly camera, the keymap, the gizmo, selection, undo and composing) are on
+[The Level view, gizmos and composing](level-view.md). **Status: design; nothing here is built.** What Studio is, and
+the other design pages, are on
 [Coney Studio](index.md); the GUI library and how Play runs the engine are the technology page's
 ([#1056](issue:1056)), so this page holds for whichever library that page picks.
 
@@ -21,27 +23,66 @@ what Coney Studio copies and what it skips, and why. Two rules decide every choi
 **Studio builds levels; it does not make models or animations.** What Blender and the other modelling tools do
 (modelling, sculpting, rigging, animating, painting textures) Studio leaves to them. Studio imports what they make and
 is where the user builds maps: placing, arranging, sizing and turning things, setting their collision, applying
-textures and laying out spawn points and paths. What can be edited in Studio depends on the kind of asset and how it came
-in ([Importing](#import)); the model, animation and texture viewers only look.
+textures and laying out spawn points and paths. What can be edited in Studio depends on the kind of asset and how it
+came in ([Importing](#import)); the model, animation and texture viewers only look.
 
 ## Contents {#contents}
 
-- [The panels](#panels), [the default layout](#default-layout) and [layouts](#layouts)
+- [Words](#words): level, Level view, prefab
+- [The panels](#panels), [the Hierarchy's tree](#hierarchy-tree), [the default layout](#default-layout) and
+  [layouts](#layouts)
 - [The project](#project): the folder, its layout and the game's files
+- [A new level](#new-level): the blank slate and the templates
 - [Play mode](#play-mode) and [live edits while playing](#live-edits)
-- [The Scene view](#scene-view): the fly camera, [the keymap](#keymap), [gizmos](#gizmos), [selection](#selection)
-  and [undo](#undo)
-- [Composing a level](#composing): primitives, textures, colliders and path points
+- [The Level view](level-view.md#level-view): the fly camera, [the keymap](level-view.md#keymap),
+  [gizmos](level-view.md#gizmos), [selection](level-view.md#selection)
+  and [undo](level-view.md#undo)
+- [Composing a level](level-view.md#composing): primitives, textures, colliders and path points
 - [Importing](#import)
+- [Previews](#previews) of models, animations and sounds
 - [What Studio skips](#skipped)
 - [Proposed build issues](#build-issues)
 - [Sources](#sources)
+
+## Words: level, Level view, prefab {#words}
+
+### What the editors call the world {#words-survey}
+
+| | Unity | Godot | Unreal | Roblox Studio |
+| --- | --- | --- | --- | --- |
+| What a user builds and plays | a **scene** (`.unity`) | a **scene** (`.tscn`), which is also any reusable tree: a character, a door, a whole level | a **level**, also called a map (`.umap`) | a **place** (`.rbxl`), whose world is the **Workspace** tree |
+| The view that edits it | Scene view | 3D viewport | Level viewport | viewport |
+| A reusable group of things | a **prefab**, with overrides per instance and variants | a scene **instanced** inside another (nested scenes) | a Blueprint actor, a Level Instance | a **model**, shared between places as a **package** |
+| A group for order only | an empty GameObject | a plain Node3D | a folder in the Outliner | a **folder** |
+
+### Coney Studio's words {#words-coney}
+
+**A maintainer decision: Studio says *level* wherever the other editors say *scene*.** What a user builds is a
+**level**, the view that edits it is the **Level view** (Unity's Scene view), and every word made from it follows: a
+new level, the level's tree, a level edit. The running game stays the **Game view**, as in Unity. The reason is
+*The Warriors*' own conventions:
+
+- The game is made of levels. The original loads a level (`InitLevel` and its `.lev` file,
+  [Level loading](../../research/level-loading.md)), each mission is a level ([Levels](../../references/levels.md)),
+  Coney plays one with `--play-level`, and the scripts are level scripts. It is also Unreal's word, so it is familiar.
+- In the game, a **scene** is something else: an in-engine cutscene ([Scenes](../../research/scenes.md)), which Studio
+  shows too. Studio's interface says *cutscene* for those, so neither word means two things.
+
+The other words:
+
+- **Folder** for a group that only keeps the Hierarchy tidy (Roblox's word): it has no position of its own and moving
+  it in the tree changes nothing in the level.
+- **Prefab** for a reusable group (Unity's word, the best known of the four): a set of placed things saved as one file
+  of the project, placed in a level as many times as wanted, each copy following the file, with the values a copy
+  changes kept as its overrides. A prefab, and a folder saved in the level, need Coney's own level format
+  ([#1058](issue:1058)): the sandbox layout has neither, so until then the Hierarchy groups a layout by kind
+  ([The Hierarchy's tree](#hierarchy-tree)) and the layout's `repeat=` is its one way to make copies.
 
 ## The panels {#panels}
 
 ### What the four editors have {#panels-survey}
 
-All four are built round the same five things: a **3D view** of the scene being edited, a **tree** of what the scene
+All four are built round the same five things: a **3D view** of the world being edited, a **tree** of what the world
 holds, a **property sheet** of what is selected, a **file browser** of the project's assets and an **output log**.
 They name them differently:
 
@@ -49,14 +90,15 @@ They name them differently:
 | --- | --- | --- | --- | --- |
 | The 3D view, edited | Scene view | 3D viewport | Level viewport | 3D viewport |
 | The game, running | Game view | a separate game window | Play In Editor viewport or window | the same viewport, in a playtest |
-| The scene's tree | Hierarchy | Scene dock | Outliner | Explorer |
+| The world's tree | Hierarchy | Scene dock | Outliner | Explorer |
 | What is selected | Inspector | Inspector | Details | Properties |
 | The project's files | Project window | FileSystem dock | Content Browser | Asset Manager, Toolbox |
 | Import settings | the Inspector, for an asset | Import dock | the asset editor | the 3D Importer's dialog |
 | The log | Console | Output | Output Log | Output |
 | A line of code to run | none built in | none built in | Console command line | Command Bar |
 
-Coney Studio uses **Unity's names** (rule 1), with **File system** for the file browser (the maintainer's word, and
+Coney Studio uses **Unity's names** (rule 1), but for *level* ([Words](#words-coney)), with **File system** for the file
+browser (the maintainer's word, and
 Godot's) and **Inspector** for the property sheet, as Unity and Godot both call it.
 
 ### Coney Studio's panels {#panel-list}
@@ -66,7 +108,7 @@ has what it names.
 
 | Panel | Its job | Realizes in Coney | State |
 | --- | --- | --- | --- |
-| **Scene view** | The level being edited, seen through the fly camera; selection, gizmos, and the debug views as view modes | The [world viewer](../running-viewers.md#the-world-viewer), the [sandbox](../sandbox.md)'s free camera, [Debug draw](../debug-menu.md#debug-draw) and the [mesh views](../debug-menu.md#mesh-views) | ready |
+| **Level view** | The level being edited, seen through the fly camera; selection, gizmos, and the debug views as view modes | The [world viewer](../running-viewers.md#the-world-viewer), the [sandbox](../sandbox.md)'s free camera, [Debug draw](../debug-menu.md#debug-draw) and the [mesh views](../debug-menu.md#mesh-views) | ready |
 | **Game view** | The game running in Play mode, with Play, Pause, Step and Stop | The play mode (`--play-level`, a sandbox with `sandbox:NAME`) and the debug menu's Time page (pause, step, time scale) ([pages](../debug-menu.md#pages)) | ready |
 | **Hierarchy** | Every entity of the level, by kind; choosing one selects it everywhere | The [Entity inspector](../debug-menu.md#entity-inspector)'s entity list (player, targets, AI humans, doors, panes, objects) and a sandbox layout's statements | ready |
 | **Inspector** | The selection's values, live, and the edits it takes; for a file, its details and import settings | The merged Entity inspector and Entity editor ([#1053](issue:1053)) | ready once [#1053](issue:1053) merges |
@@ -87,6 +129,59 @@ ends (the pad menu and the Dear ImGui overlay), and Studio becomes a **third fro
 to the debug menu then appears in Studio with no Studio code, which is how Studio keeps up with Coney by construction
 for everything the debug menu shows.
 
+### The Hierarchy's tree {#hierarchy-tree}
+
+Roblox Studio's Explorer starts from fixed roots (Workspace, Lighting, the script services) that every place has, which
+suits an editor for one game: a user never wonders where a thing goes. Unity's and Godot's trees start from nothing.
+Studio takes **Roblox's fixed roots**, named for what a Coney level holds, and lets the user make folders inside each:
+
+```text
+yard                          the level (its file in project:/levels/); selecting it shows its settings
+  Environment                 sky, sun, ambient light, fog, occlusion, shadows (the Lighting panel's)
+  Geometry                    primitives and, later, imported models; folders of them
+    Fences/                   a folder
+      box "fence 1.2 m"
+  Collision                   colliders with nothing drawn (waits on a level format that has them)
+  Spawn points                where the player can start; the first is Play's
+  Characters                  targets and AI fighters; later a human of any character type
+  Paths                       path points and their links (waits on paths)
+  Cameras                     camera views
+  Scripts                     the level's scripts (waits on the mods runtime)
+  Game level: level80         a game level this one builds on, read-only (waits on Coney's own level format)
+    World                     the two streamed worlds' parts
+    Level file                its collision, paths, sky and occluders
+    Objects                   the Object List: doors, glass, world objects, spawners
+    Zones and volume boxes
+    Lights
+    Level starts
+```
+
+*Figure: a level in the Hierarchy. While playing, the Running tab shows the running game's entities beside it
+([Play mode](#play-coney)).*
+
+- **The roots are fixed.** They cannot be renamed, moved or deleted, and each holds only its kind: a primitive dragged
+  onto *Spawn points* is refused. Create from a root's right-click makes a thing of that root's kind. An empty root that
+  Coney cannot fill yet (Collision, Paths, Scripts) is shown greyed with what it waits on, so the user sees what
+  Studio will have.
+- **Inside a root**, the user orders things by dragging and groups them in folders; a prefab shows as one row that opens
+  to its contents. Each row shows its kind's icon, its name and, for a thing with an override, a mark.
+- **A sandbox layout** opens with its statements sorted into the roots: `sky`, `sun`, `ambient`, `fog`, `occlusion`,
+  `shadows` and `tessellate` in Environment, the shapes in Geometry, `spawn` in Spawn points, `target` and `fighter` in
+  Characters, `view` in Cameras. A layout keeps its statements' order and comments when saved.
+- **The game's own levels** open read-only from `game:/`, to fly through in the Level view as the
+  [world viewer](../running-viewers.md#the-world-viewer) does and to examine. Their contents sit under the rows the
+  original's level is made of: the streamed **World** ([The streamed world](../../research/world.md)), the **Level
+  file** with its collision, path data, sky and occluders ([The level
+  file](../../research/level-loading.md#the-level-file)), the **Objects** of the Object List, with the doors, glass,
+  world objects and spawners
+  ([Objects](../../references/objects.md), [Spawner states](../../references/spawner-states.md)), the
+  [zones](../../references/zones.md) and [volume boxes](../../references/boxes.md), the
+  [lights](../../references/lights.md) and the [level starts](../../references/level-starts.md). Which of these Studio
+  can list without playing, and which
+  it can show only from the running game's entities, is the content page's to settle ([#1058](issue:1058)). A project
+  level that builds on a game level (adding to `level80` rather than starting empty) waits on Coney's own level format
+  and the mods runtime; its additions then sit in the project's roots and the game's in the read-only row.
+
 ## The default layout {#default-layout}
 
 ### What the four editors do {#layout-survey}
@@ -100,8 +195,8 @@ lower left under the Scene tree, and Roblox Studio puts Explorer and Properties 
 Coney Studio takes **Godot's arrangement**, which is what the brief asks for: the **Inspector on one side and the
 File system on the other**, so the two panels used most while building a level are both always in view, and the
 Hierarchy sits over the File system, as Godot's Scene dock sits over its FileSystem dock. The middle holds **two
-views side by side**, as Unity's *2 by 3* layout has them: the **Scene view** (fly round, select and move things with
-the gizmos) and the **Game view** (the game running), so an edit made in the Scene view while playing is seen at once in
+views side by side**, as Unity's *2 by 3* layout has them: the **Level view** (fly round, select and move things with
+the gizmos) and the **Game view** (the game running), so an edit made in the Level view while playing is seen at once in
 the Game view ([Live edits](#live-edits)). The Console and Natives share the bottom.
 
 ```text
@@ -109,11 +204,11 @@ the Game view ([Live edits](#live-edits)). The Console and Natives share the bot
 | File  Edit  Create  View  Play  Window  Help                                                  |
 | [Q][W][E][R][Y]  Pivot | Global  Snap           [ Play ][ Pause ][ Step ]     Layout: Default v |
 +----------------+------------------------------+------------------------------+----------------+
-| Hierarchy      | Scene                        | Game                         | Inspector      |
-|  Player        |                              |                              |  Identity      |
-|  Spawns        |  the level, seen by the      |  the game running, seen by   |  Transform     |
-|  Shapes        |  fly camera, with gizmos     |  the game's own camera       |  Collision     |
-|  AI humans     |                              |                              |  ...           |
+| Hierarchy      | Level                        | Game                         | Inspector      |
+|  Environment   |                              |                              |  Identity      |
+|  Geometry      |  the level, seen by the      |  the game running, seen by   |  Transform     |
+|  Spawn points  |  fly camera, with gizmos     |  the game's own camera       |  Collision     |
+|  Characters    |                              |                              |  ...           |
 +----------------+                              |                              |                |
 | File system    |                              |                              |                |
 |  project:/     +------------------------------+------------------------------+                |
@@ -124,11 +219,11 @@ the Game view ([Live edits](#live-edits)). The Console and Natives share the bot
 ```
 
 *Figure: the default layout. Outside Play the Game view shows the level from its first spawn point, as Unity's Game
-view shows the scene's camera. The Model, Animation and Texture viewers open as tabs over the Scene view; the debug
+view shows its scene's camera. The Model, Animation and Texture viewers open as tabs over the Level view; the debug
 panels and Lighting open where the user last docked them, or floating.*
 
-The toolbar holds the tools (Q to Y, [the keymap](#keymap)), the gizmo's pivot and space toggles, snapping, the Play
-controls in the middle, as in Unity, and the layout menu on the right, as in Unity's toolbar.
+The toolbar holds the tools (Q to Y, [the keymap](level-view.md#keymap)), the gizmo's pivot and space toggles,
+snapping, the Play controls in the middle, as in Unity, and the layout menu on the right, as in Unity's toolbar.
 
 ## Layouts {#layouts}
 
@@ -153,14 +248,15 @@ Copied from Godot and Unity together:
 - **Window > Layouts** and the toolbar's layout menu: *Save layout as...* (a name), the saved layouts to switch to,
   *Delete*, and *Reset to Default*. *Default* is built in and always comes back on reset (Godot's rule).
 - A layout is **per user, never per project**: it lives in Studio's settings folder, as Coney's overlay keeps its
-  windows in `coney-imgui.ini` beside the tunables file ([The developer overlay](../debug-menu.md#the-developer-overlay)),
-  so a project shared with someone else never changes their screen. Studio reopens with the layout it closed with.
+  windows in `coney-imgui.ini` beside the tunables file ([The developer
+  overlay](../debug-menu.md#the-developer-overlay)), so a project shared with someone else never changes their screen.
+  Studio reopens with the layout it closed with.
 - A layout saves which panels are open, where, their sizes and floating windows' places, at the
   [UI scale](../debug-menu.md#ui-scale) it was saved at, so it opens right on a display of another size, as the
   overlay's windows do.
-- Two factory layouts besides *Default*: **Wide** (the Scene and Game views as tabs in the middle and the Hierarchy and
-  File system as tabs on the left, for a laptop's screen) and
-  **Viewers** (the Model and Animation viewers in the middle, the File system on the left, the Inspector on the right,
+- Two factory layouts besides *Default*: **Wide** (the Level and Game views as tabs in the middle and the Hierarchy and
+  File system as tabs on the left, for a laptop's screen) and **Viewers** (the Model and Animation viewers in the
+  middle, the File system on the left, the Inspector on the right,
   for looking through the disc's models and clips). Unity's other factory layouts add nothing Coney Studio needs.
 
 ## The project {#project}
@@ -219,9 +315,46 @@ my-project/
 The manifest's name and its script and resource fields are the Lua SDK page's ([#1057](issue:1057)), which decides how
 far a project follows FiveM's resource folder; the formats of `levels/` are the content page's
 ([#1058](issue:1058)). The folders are where Studio puts what it creates and imports; a user may add others. A
-project's first level format is the **sandbox layout** Coney loads today ([The layout format](../sandbox.md#the-layout-format)):
-it already has shapes, textures, spawn points, targets, AI fighters, camera views and a sun, and Coney already plays one
+project's first level format is the **sandbox layout** Coney loads today ([The layout
+format](../sandbox.md#the-layout-format)): it
+already has shapes, textures, spawn points, targets, AI fighters, camera views and a sun, and Coney already plays one
 with the player at a chosen spawn (`--play-level sandbox:NAME --spawn NAME`).
+
+## A new level {#new-level}
+
+### What the editors do {#new-level-survey}
+
+| | Unity | Godot | Unreal | Roblox Studio |
+| --- | --- | --- | --- | --- |
+| Start | *File > New Scene* | *Scene > New Scene* | *File > New Level* | *New* on the start page |
+| Templates | scene templates: *Basic* (a camera and a light), *Empty*, and templates a user saves | none: an empty scene, then a root node to pick (2D, 3D, interface, other) | *Empty Level*, *Basic* (a floor, sky and light), *Open World* | *Baseplate*, *Flat Terrain* and whole sample games (a village, a castle, an obby) |
+| A whole map from a 3D tool | import the file, drag it into the scene | import the file; it opens as a scene of its own; `-col` and `-colonly` in a node's name make collision | import into the Content Browser; meshes named `UCX_` become collision | the 3D Importer brings a model into the Workspace |
+
+### Coney Studio's New Level {#new-level-coney}
+
+*File > New Level* (Ctrl+N) asks for a name and a template, and puts the new level in `project:/levels/`. **The default
+is a blank slate**, and the user goes on from it in one of three ways, each of which the dialog also offers as a start:
+
+| Template | What the level starts with | In the Hierarchy | State |
+| --- | --- | --- | --- |
+| **Empty** (the default) | Nothing: the blank slate | The fixed roots, all empty ([The Hierarchy's tree](#hierarchy-tree)) | ready |
+| **Basic** | A 60 m ground, a sky and sun, a spawn point at its middle and a camera view behind it, so Play works at once (Unreal's *Basic*, Roblox's *Baseplate*) | Environment: sky, sun; Geometry: Ground; Spawn points: start; Cameras: start | ready: a sandbox layout's statements |
+| **A Coney sandbox layout** | A copy of one of Coney's own courses (`default`, `combat`, `parkour`), to change ([The shipped layouts](../sandbox.md#the-shipped-layouts)) | Its statements sorted into the roots | ready: they are Coney's own assets, never game data |
+| **A level from the game** | One of the game's levels to work on, by its name ([Levels](../../references/levels.md)) | The read-only *Game level* row with the original's contents, and the project's roots empty, for what the user adds | ready to open, fly through and play unchanged (the world viewer, `--play-level`); additions that play with it wait on Coney's own level format and the mods runtime |
+| **A map from Blender** | A `.gltf` or `.glb` imported into `project:/models/` and placed whole at the origin | Geometry: the map as one row, its parts beneath it (read-only meshes, each with its collision switch); Collision: the parts marked as collision | waits on custom content ([Custom content](../../roadmap.md#custom-content)) |
+
+- **Building from scratch** is *Empty* or *Basic*, then the Create menu's primitives and the project's imported assets
+  ([Composing a level](level-view.md#composing)).
+- **A level from the game is referred to, never copied**: the level file holds its `game:/` name and the user's
+  additions and changes, so a shared project carries no game data ([The project](#project-coney)). Opening a game level
+  from `game:/` without making a level shows it read-only; *New Level* from it makes a level of the project that builds
+  on it.
+- **A map from Blender** is a map, not an editable mesh: Studio places it, sets its collision and assigns its textures,
+  and the map is changed in Blender and imported again, since Studio makes no models. Which of its parts collide follows
+  a naming rule in the Blender file, as Godot's `-col` and Unreal's `UCX_` do; the rule is the content page's to fix
+  ([#1058](issue:1058)), with Godot's as this page's proposal, since it needs no second mesh.
+- **A user's own template** is any level of the project, duplicated in the File system (Ctrl+D): Unity's saved scene
+  templates add nothing a duplicate does not do.
 
 ## Play mode {#play-mode}
 
@@ -244,7 +377,7 @@ second tree to tell apart from the first.
 ### Coney Studio's Play mode {#play-coney}
 
 - **Play** (Ctrl+P, Unity) starts the project's level in the Game view with the player at the level's first spawn
-  point, as Roblox's Play puts the avatar at a spawn location; **Play here** (Ctrl+Shift+Alt+P) puts him where the Scene
+  point, as Roblox's Play puts the avatar at a spawn location; **Play here** (Ctrl+Shift+Alt+P) puts him where the Level
   view's camera looks, on the ground below it, as Roblox's Play Here does. Both realize what Coney does today: the play
   mode with `--spawn`, and the Entity editor's *Move to camera* and *Drop to ground*
   ([Entity editor](../debug-menu.md#entity-editor)). The player is Rembrandt unless the project's scripts pick another
@@ -257,11 +390,12 @@ second tree to tell apart from the first.
 - **Stop** (Ctrl+P again, or the Stop button) ends Play and throws the running game away. The level keeps the edits
   made to it while playing ([Live edits](#live-edits)); while playing, the editor is **tinted** (Unity's Play mode
   tint), so it is always plain which state the screen shows.
-- **While playing**, the Hierarchy has two tabs, as Godot's Scene dock has *Local* and *Remote*: **Level** (what is saved)
-  and **Running** (the running game's entities, live, as the Entity inspector shows them). The Inspector edits whichever
+- **While playing**, the Hierarchy has two tabs, as Godot's Scene dock has *Local* and *Remote*: **Level** (what is
+  saved) and **Running** (the running game's entities, live, as the Entity inspector shows them). The Inspector edits
+  whichever
   is selected; an edit of a running entity goes through the Entity editor's queue, between two steps and into the run
   log ([Entity editor](../debug-menu.md#entity-editor)), and is lost on Stop. The debug panels work as in the game.
-- **Eject** (F8, Unreal) leaves the player where he stands and flies the Scene view's camera through the running game,
+- **Eject** (F8, Unreal) leaves the player where he stands and flies the Level view's camera through the running game,
   and F8 again takes the player back. It realizes the play mode's free camera (the Camera page's, which flies while the
   player stands still).
 - **The mouse and keyboard** go to the game while the Game view has focus, and Escape gives them back to the editor
@@ -276,10 +410,10 @@ the Game view's frames are Coney's, and that the running game can take a level e
 
 ### Live edits while playing {#live-edits}
 
-The maintainer asks that an edit made in the Scene view shows in the running Game view at once, where it can be done,
+The maintainer asks that an edit made in the Level view shows in the running Game view at once, where it can be done,
 and accepts that it is rough at first. Studio follows **Godot's model**, the only one of the four that does this:
 
-- **An edit in the Scene view during Play edits the level**, as it would outside Play: it is a command on the undo
+- **An edit in the Level view during Play edits the level**, as it would outside Play: it is a command on the undo
   stack, it is saved with the level, and it is **kept after Stop**. Losing work done while playing is the best known
   trap of Unity's Play mode, and Studio's users build levels, so the level is what they edit.
 - **The same edit is sent to the running game**, as Godot's *Synchronize Scene Changes* does: a command applied between
@@ -304,242 +438,6 @@ and accepts that it is rough at first. Studio follows **Godot's model**, the onl
 Unity's *Copy Component* and Unreal's *Keep Simulation Changes* are not needed: the level's edits are already kept, and
 the running game's are deliberately not.
 
-## The Scene view {#scene-view}
-
-### The fly camera {#fly-camera}
-
-All four editors fly the camera the same way: hold the **right mouse button** in the view, move the mouse to look,
-**W A S D** to move along the view and sideways, **Q and E** to sink and rise. They differ on Shift: in Unity and Godot
-Shift flies **faster**, in Roblox Studio it moves the camera **slower** for close work, and in Godot Alt is slower.
-Unity, Godot and Unreal change the base speed with the mouse wheel while the right button is held.
-
-Coney Studio copies the shared controls and Unity's Shift (the maintainer's choice), and takes Godot's Alt for slower:
-
-| Input | Does | Source |
-| --- | --- | --- |
-| Right mouse held, move the mouse | look round | all four |
-| Right mouse held, W A S D | fly forward, left, back, right along the view | all four |
-| Right mouse held, Q / E | sink / rise | Unity, Godot, Roblox (Unreal: Q and E too) |
-| Right mouse held, Shift | fly faster while held | Unity, Godot |
-| Right mouse held, Alt | fly slower while held | Godot |
-| Right mouse held, mouse wheel | change the base speed, which stays | Unity, Godot, Unreal |
-| Alt + left drag | orbit round the pivot | Unity |
-| Middle drag | pan | Unity, Godot, Unreal |
-| Mouse wheel | zoom towards the pivot | Unity, Godot |
-| F | frame the selection | all four |
-| Shift+F | keep the view locked on the selection while it moves | Unity |
-| Pad 1 | fly as the world viewer's camera does | Coney's [world viewer](../running-viewers.md#the-world-viewer) |
-
-Q to Y are tools only while the right button is up (Unity's rule), so Q and E fly while it is held. The fly camera
-moves at the fixed step like everything else, so a scripted input flies the same path every time, as the world viewer
-does.
-
-### The keymap {#keymap}
-
-**Unity's keymap**, so a Unity user's hands already know it; Godot and Unreal use the same letters for move, rotate
-and scale, and the table says where they differ. Every key can be changed: the keymap is data, saved per user beside the
-layouts, as Unity's Shortcuts Manager keeps it. Studio ships one keymap, not one per editor, so there is one set of keys
-to document and test.
-
-| Key | Does | Unity | Godot | Unreal | Roblox Studio |
-| --- | --- | --- | --- | --- | --- |
-| Q | View tool: drag pans, nothing is selected | View (hand) | Select | none | none |
-| W | Move tool | Move | Move | Translate | Ctrl+2 |
-| E | Rotate tool | Rotate | Rotate | Rotate | Ctrl+4 |
-| R | Scale tool | Scale | Scale | Scale | Ctrl+3 |
-| Y | Transform tool: move, rotate and scale in one gizmo | Transform | (Q: move and rotate) | none | none |
-| Z | Gizmo at the pivot or at the centre of the selection | Pivot / Center | none | none | none |
-| X | Gizmo in world or local axes | Global / Local | T: local space | Ctrl+` | Ctrl+L |
-| Ctrl held while dragging | snap to the grid's step | snap increment | Ctrl: snap | grid snap on by default | the grid step |
-| V held | snap a vertex onto another model's vertex | vertex snapping | none | V | none |
-| End | drop the selection to the ground below | (Ctrl+Shift drag: surface snapping) | none | End: snap to floor | none |
-| Ctrl+Alt+F | move the selection to where the camera looks | Move to View | none | none | none |
-| Ctrl+Shift+F | move the selection to the camera itself | Align with View | none | none | none |
-| Ctrl+Z, Ctrl+Y (Ctrl+Shift+Z) | undo, redo | same | same | same | same |
-| Ctrl+D | duplicate | Duplicate | Duplicate | Duplicate | Duplicate |
-| Delete | delete the selection | same | same | same | same |
-| F2 | rename | same | same | same | none |
-| Ctrl+A | select all in the focused panel | same | same | same | same |
-| Ctrl+S | save the open level | Save | Save scene | Save | publish or save |
-| Ctrl+P, Ctrl+Shift+P, Ctrl+Alt+P | Play and Stop, Pause, Step | same | F5, F7 | Alt+P | F5, Shift+F5 |
-| F8 | Eject in Play | none | none | Eject | Run |
-| Ctrl+Shift+Alt+P | Play here, from the Scene view's camera | none | none | none | Play Here (no key) |
-| Ctrl+Shift+R | Restart Play from the level's start | none | none | none | none |
-
-T is left free: Unity's Rect tool edits 2D and interface layouts, which Coney Studio does not make. On macOS, Ctrl reads
-Cmd, as in all four.
-
-### Gizmos {#gizmos}
-
-Studio's transform gizmo is **Unity's, handle for handle** (the maintainer's choice): the four tools below, the same
-colours, the same modifiers and the same toggles, so a Unity user moves, turns and sizes things in Studio without
-learning anything.
-
-#### The four tools {#gizmo-tools}
-
-| Tool | Key | Handles | Dragging |
-| --- | --- | --- | --- |
-| **Move** | W | An arrow per axis; a small square per pair of axes (the plane handles); the centre | An arrow moves along its axis; a square moves in its plane; Shift on the centre turns it into a flat square that moves in the plane facing the camera |
-| **Rotate** | E | A ring per axis; an outer ring round the whole gizmo; the sphere inside the rings | A ring turns about its axis; the outer ring turns about the line of sight (screen space); a drag inside the sphere turns freely, as a trackball |
-| **Scale** | R | A line per axis ending in a cube; a cube at the centre | An axis cube scales along that axis; the centre cube scales evenly on every axis |
-| **Transform** | Y | Move's arrows and plane squares, Rotate's rings and Scale's cubes together, in one gizmo | Each handle as in its own tool; Shift held switches the whole gizmo to screen space, as in Unity |
-
-Q (the View tool) shows no gizmo: a drag pans.
-
-#### How the handles look and pick {#gizmo-handles}
-
-- **Colours.** x red, y green, z blue, a plane square in the colour of the axis it does not move along, the free and
-  outer handles grey-white. The handle under the cursor, and the one being dragged, turn **yellow** (Unity's highlight
-  colour).
-- **Constant size on screen.** The gizmo is drawn the same size whatever the distance, scaled with the
-  [UI scale](../debug-menu.md#ui-scale), and drawn over the scene without depth, so it is never hidden in a wall.
-- **Facing the camera.** The plane squares sit in the quadrant towards the camera, and an axis that points nearly
-  straight at the camera fades out, since a drag along it would be erratic (both Unity's).
-- **Picking.** A click tests the gizmo's handles first, within a few pixels of each line, ring or cube, the nearest to
-  the cursor winning; only a click that hits no handle selects something in the scene ([Selection](#selection)). So a
-  handle in front of another object is always the one dragged.
-- **Feedback while dragging.** The value being changed (a distance in metres, an angle in degrees, a scale factor)
-  shows beside the cursor, and the Inspector's field changes with it.
-- **One undo step.** A drag that ends is one step of [undo](#undo), however long it lasted; Escape during a drag puts
-  the selection back where the drag began.
-
-#### The toggles {#gizmo-toggles}
-
-| Toggle | Key | Choices | As in |
-| --- | --- | --- | --- |
-| Handle position | Z | **Pivot**: at the selection's own origin (an `at=`, a human's feet); **Center**: at the middle of the selection's bounds, which a multiple selection turns about | Unity's Pivot / Center |
-| Handle rotation | X | **Global**: the world's axes; **Local**: the selection's own axes, so W moves a turned ramp along its slope | Unity's Global / Local |
-
-Both toggles are on the toolbar beside the tools, as in Unity, and Studio remembers them per user.
-
-#### Snapping {#gizmo-snapping}
-
-| Snap | How | Step |
-| --- | --- | --- |
-| **Increment** | **Ctrl** held while dragging (Unity) | Move 0.25 m along each axis, Rotate 15°, Scale 0.1 of the size; each step set on the toolbar's snap menu, Move per axis or linked, as in Unity's snap increment menu |
-| **Grid** | The toolbar's grid snap toggle | Moves land on the Scene view's grid (1 m, with 0.25 m lines up close) along the dragged axis, as Unity's grid snapping does |
-| **Vertex** | **V** held | Drag a vertex of the selection onto a vertex of another model (Unity's vertex snapping); Shift+V keeps it on |
-| **Surface** | **Ctrl+Shift** while dragging the move centre | The selection lands on the collision surface under the cursor (Unity's surface snapping); End drops it straight down ([the keymap](#keymap)) |
-
-The steps are Coney's: a quarter metre is fine enough for the sandbox's courses, whose sizes are in tenths and quarters
-of a metre ([The shipped layouts](../sandbox.md#the-shipped-layouts)), and 15° is the rotation step all of Unity,
-Godot and Roblox Studio users meet.
-
-#### How Godot and Roblox Studio differ {#gizmo-differences}
-
-| | Unity (Studio's model) | Godot | Roblox Studio |
-| --- | --- | --- | --- |
-| Tools | W, E, R and the combined Y | W, E, R; Q is select, which also shows a move and rotate gizmo | Separate Move, Scale and Rotate draggers, chosen with Ctrl+2, Ctrl+3 and Ctrl+4 |
-| Handles | arrows and planes; rings, outer ring and free sphere; cubes and a centre cube | the same arrows, planes, rings and scale handles in one style | Move: arrows; Rotate: rings with a ball to drag; Scale: balls on the faces, and Shift or Ctrl to scale evenly or both sides |
-| Snapping | Ctrl held for increments; a grid toggle | Ctrl held for increments, or the snap toggle; steps in *Configure Snap* | Always snapped to the Model tab's Move and Rotate steps, until unticked |
-| Local and global | X | T | Ctrl+L |
-| Pivot and centre | Z | none | the part's pivot, edited with the Pivot tool |
-
-Studio skips Roblox's always-on snapping (a Unity user expects free movement unless Ctrl is held) and its face-scale
-balls (one face moved, the opposite fixed), which no Coney thing needs while a box's size is set from its middle.
-
-#### What a gizmo can change {#gizmo-limits}
-
-A gizmo is a face of the Inspector, never a way round it: it changes only what the selected thing's format or Coney's
-engine can hold, and an axis the selection cannot take is drawn grey and does not pick.
-
-| Selected | Move | Rotate | Scale |
-| --- | --- | --- | --- |
-| A sandbox shape | its `at=` | its `yaw=`: the vertical ring alone, the only turn the layout format has | its size arguments (`size=`, `radius=`, `height=`, `width=`); a sphere evenly only |
-| A spawn point, a target, a fighter | its `at=` | its `heading=`: the vertical ring alone | none |
-| A camera view | its `at=` | its `yaw=` and `pitch=` | none |
-| A human, while playing | *Teleport* | *Heading*: the vertical ring alone | *Scale*, evenly ([Entity editor](../debug-menu.md#entity-editor)) |
-| An object, while playing | none: the Entity editor takes no object edit today | none | none |
-
-So the full gizmo (three rings, the free sphere, scale on any axis of anything) needs a level format that keeps a full
-position, rotation and scale for every placed thing. The sandbox layout keeps a position, a yaw and sizes; Coney's own
-level format is the content page's ([#1058](issue:1058)), and this page asks it to keep all three, so that every handle
-of the Unity gizmo works on every placed thing. A human keeps one ring for good: Coney's humans have a heading, not a
-free orientation. Coordinates and units are the game's: metres, degrees, z up
-([The layout format](../sandbox.md#the-layout-format)).
-
-### Selection {#selection}
-
-What all four do, and Studio with them:
-
-- A click in the Scene view selects what is under the cursor; a click on empty space clears the selection.
-- **Shift+click** adds to the selection and **Ctrl+click** toggles one in or out (Unity); a **drag on empty space**
-  draws a box that selects what it encloses (Godot, Unreal, Unity).
-- **One selection** shared by every panel: choosing in the Hierarchy selects in the Scene view and fills the
-  Inspector, and the reverse. In Play it is the Entity inspector's selection, so the Debug draw's highlight follows it.
-- The Inspector shows the values a multiple selection shares and edits them all together; a value they differ in shows
-  as mixed (Unity).
-- A selected thing is outlined in the Scene view; what is under the cursor is lit before the click (Unity's and
-  Unreal's pre-selection highlight).
-
-### Undo {#undo}
-
-- **Every edit is a command** with an inverse, kept on one undo stack per open level: a gizmo drag (one step, however
-  long the drag), an Inspector value, a create, a duplicate, a delete. This is the model of the Entity editor, whose
-  edits are already commands, queued, applied between steps, logged and replayable
-  ([Entity editor](../debug-menu.md#entity-editor)); Studio's edit-time commands add the inverse.
-- **Edit > Undo History** lists the stack, and choosing a line goes back to it (Unity's Undo History).
-- Saving does not clear the stack; closing the level does.
-- **In Play**, a level edit is undone like any other and the undo is sent to the running game too; an edit of the
-  running game has no undo, since Stop throws it away.
-- **File operations are not undone** (none of the four undoes them); a delete asks first and goes to the recycle bin.
-
-## Composing a level {#composing}
-
-Users compose Coney-compatible content in Studio the way they do in Unity, Roblox Studio and Godot: maps and levels from
-primitives, textures applied, colliders, path points, the characters and things a level holds, and later custom
-missions and models. This section says what each is in the four editors and what it is in Coney.
-
-### What the four editors do {#composing-survey}
-
-| Thing | Unity | Godot | Roblox Studio |
-| --- | --- | --- | --- |
-| Primitives | *GameObject > 3D Object*: cube, sphere, capsule, cylinder, plane, quad | a MeshInstance3D with a box, sphere, capsule, cylinder, plane or prism mesh; CSG shapes for blockouts | Parts: block, sphere, wedge, corner wedge, cylinder |
-| Texturing | a material with a texture, dragged onto the object | a material on the mesh, a texture dragged onto it | a texture or decal on a face, a material and a colour per part |
-| Colliders | collider components (box, sphere, capsule, mesh), added to an object or alone | a CollisionShape3D under a body | every part collides unless *CanCollide* is off |
-| Path points | a baked NavMesh, with links between areas | a NavigationRegion3D baked, Path3D curves | PathfindingService over the parts, with modifiers and links |
-| Where a new thing appears | at the Scene view's pivot | at the scene's origin | in front of the camera, on the surface |
-
-### Coney Studio's Create menu {#create-menu}
-
-*Create* (the menu, and a right-click in the Hierarchy or the Scene view) offers exactly the kinds a Coney level can
-hold today, as Roblox's *Insert Object* offers Roblox's classes. A new thing appears where the camera looks, dropped on
-the ground below (Roblox's rule, made of the Entity editor's *Move to camera* and *Drop to ground*), is selected, and
-the Move tool is chosen.
-
-| Create | What it makes | Realizes in Coney | State |
-| --- | --- | --- | --- |
-| **Primitive**: box, ramp, stairs, cylinder, capsule, sphere | A solid textured shape, sized in metres | The sandbox layout's shapes ([Shapes](../sandbox.md#shapes)), the Spawner page's objects | ready |
-| **Spawn point** | Where the player can start; Play uses the first | A layout's `spawn` | ready |
-| **Target** | A passive human to fight | A layout's `target` | ready |
-| **AI fighter** | An AI human that fights back | A layout's `fighter` ([AI fighters](../sandbox.md#ai-fighters)) | ready |
-| **Camera view** | A viewpoint, chosen from the Scene view's view menu | A layout's `view` | ready |
-| **Path point** | A point of the level's path network, linked to others | Coney's AI pathing ([AI moving](../../research/ai-moving.md)) | waits on Coney's path overlays and a project path format ([#1058](issue:1058)) |
-| **Character** of any type | A human of one of the game's character types, on a side | The AI fighters page's model picker and *Change character* ([pages](../debug-menu.md#pages)) | waits on a level format that places one (a layout's fighter is one fixed type) |
-
-Primitives repeat as the layout's `repeat=` and `step=` do: the Inspector's *Repeat* field makes a row of copies, and
-Ctrl+D duplicates one.
-
-### Textures, colliders and paths {#composing-parts}
-
-- **Applying a texture.** Drag a PNG from the File system onto a shape in the Scene view, or pick it in the Inspector:
-  it becomes the shape's `texture=`, with `uv=` (tiles per metre) and `tint=` beside it
-  ([Shapes](../sandbox.md#shapes)). A texture imported is a texture usable at once ([Importing](#import)).
-- **Colliders.** Every primitive collides, as a Roblox part does, and the Inspector's *Collision* group holds its
-  collider: solid or not (`solid=`), the collision material that decides footsteps and what a fall does (`material=`),
-  the triangle flags (`flags=`) and the area byte (`area=`), all of them Coney's collision fields
-  ([Collision](../../research/collision.md#triangles)). The Scene view's *Collision* view mode draws them, from the
-  Debug draw's collision lines. Two kinds wait: a collider with nothing drawn (an invisible wall, Unity's lone collider)
-  needs a layout option or Coney's level format ([#1058](issue:1058)), and a collider for an imported model waits on
-  custom content ([Custom content](../../roadmap.md#custom-content)).
-- **Path points.** Studio's design for them, for when Coney can draw and read a project's paths: a *Paths* mode of the
-  Scene view shows the points and their links as lines on the ground; Create adds a point linked to the selected one,
-  the Move gizmo places it (snapped to the ground), and *Link* (L) links or unlinks two selected points. The AI walks
-  them with Coney's own path planning; Studio adds no path logic of its own.
-- **Custom and customised models, custom missions.** They wait on what Coney lacks: models from outside the disc on
-  custom content, a human's model changed in place on [#1053](issue:1053), missions on the mods runtime and a mission
-  format of Coney's own. Each comes into Studio's Create menu and Inspector when Coney has it.
-
 ## Importing {#import}
 
 ### What the four editors do {#import-survey}
@@ -558,9 +456,9 @@ Ctrl+D duplicates one.
 
 - **Drag and drop imports only into the File system panel** (Unity, Godot and Unreal; not Roblox's viewport drop). A
   file dropped on a folder goes into that folder; dropped on empty space, into the selected folder; dropped anywhere
-  else (the Scene view, the Inspector), nothing is imported and the panel says where to drop it. One place for imports
+  else (the Level view, the Inspector), nothing is imported and the panel says where to drop it. One place for imports
   means one place to look for what came in.
-- **Dragging a project file from the File system into the Scene view places it**, which is not an import: a texture
+- **Dragging a project file from the File system into the Level view places it**, which is not an import: a texture
   dropped on a shape textures it, a level opens. This is how all four place assets.
 - **The Import button** on the File system panel's toolbar, and *File > Import...*, open the system's file picker and
   import the chosen files into the selected folder (Unreal's button, Unity's menu). It is the alternative to
@@ -585,6 +483,41 @@ What can be imported is what Coney can load (rule 2), so the list grows with Con
 
 The content page ([#1058](issue:1058)) owns the formats themselves and their export.
 
+## Previews {#previews}
+
+### What the editors do {#previews-survey}
+
+| | Unity | Godot | Roblox Studio |
+| --- | --- | --- | --- |
+| In the file browser | a thumbnail per asset, sized with a slider | a thumbnail per resource in the FileSystem dock's grid | thumbnails in the Asset Manager and the Toolbox, with a play button on a sound |
+| Selected | a **preview pane at the foot of the Inspector**: a model to turn with the mouse, an animation playing on a model with play, speed and a scrub bar, a sound with play, loop and its waveform | a preview in the Inspector for a mesh, texture or sound; the import dialog of a 3D file shows the model and plays its clips | a preview window in the 3D Importer before import |
+| Opened (double-click) | the asset's own window (the Animation window for a clip) or an outside program | the resource's editor; animations in the **Animation panel** along the bottom | the Animation Editor for a rig's clips |
+
+### Coney Studio's previews {#previews-coney}
+
+Three steps, each one click deeper, taking Unity's preview pane and Godot's and Roblox's thumbnails:
+
+1. **Thumbnails in the File system**, for `project:/` and `game:/` alike: a model drawn from the front, a texture
+   shrunk, a clip as its model in the clip's middle frame, a sound as a sound icon. They are made once and kept in the
+   `.studio/` cache (for a `game:/` file too, so no picture of game data leaves the player's machine).
+2. **A quick preview at the foot of the Inspector** when one file is selected (Unity's pane), resizable and folded
+   away with one click: a model turning, which a drag turns by hand; a clip playing on its model, with play, pause, loop
+   and speed; a texture at its size, with its alpha; a sound with play and stop.
+3. **The full viewer on double-click**, a tab over the Level view: the **Model viewer** (shaded, wireframe, by
+   material, normals, bone axes and the [Mesh group](../debug-menu.md#mesh-group)'s counts), the **Animation viewer**
+   (every clip of a set by category, loop, speed, in place, and a timeline) and the **Texture viewer**. These are the
+   viewers of [the panel list](#panel-list), and the *Viewers* layout arranges them.
+
+All three only look, since Studio makes no models or animations: nothing in a preview edits the file. What each
+realizes:
+
+| Preview | Realizes in Coney | State |
+| --- | --- | --- |
+| A model, still or turning | The [character viewer](../running-viewers.md#the-character-viewer) and the mesh views | ready |
+| A clip on its model | The [Animation player](../debug-menu.md#animation-player) and the character viewer's clips | ready; the timeline's scrubbing waits on a seek in the animation player |
+| A texture | The texture dictionary viewer | ready |
+| A sound | The game's sound banks load ([Sound](../../research/sound.md)); playing one sound by itself is the Audio page's test tone today | waits on Coney playing one sound of a bank by itself |
+
 ## What Studio skips {#skipped}
 
 | Feature | In | Why Coney Studio skips it |
@@ -594,7 +527,7 @@ The content page ([#1058](issue:1058)) owns the formats themselves and their exp
 | Components added freely to any object | Unity, Godot | Coney's entities are the kinds the game has (humans, objects, doors, panes) and the layout's statements; Studio's *Create* menu offers those, as Roblox's *Insert Object* offers Roblox's classes |
 | Terrain and foliage tools | Unity, Unreal, Roblox | Coney's worlds are sector meshes with no terrain system |
 | The Rect tool and an interface designer | Unity, Roblox | Coney has no interface a project can make |
-| Prefabs and packages of placed things | Unity, Godot, Roblox | Waits on Coney's own level format, which decides whether it has them ([#1058](issue:1058)) |
+| Prefabs and folders saved in a level, for now | Unity, Godot, Roblox | Studio's words for them are decided ([Words](#words-coney)); saving them waits on Coney's own level format ([#1058](issue:1058)) |
 | Copying edits out of Play one by one | Unity (*Copy Component*), Unreal (*Keep Simulation Changes*), Roblox (copy and paste) | Level edits made in Play are kept anyway ([Live edits](#live-edits)), and the running game's are deliberately thrown away |
 | Modelling, sculpting, rigging, animating, texture painting | Unity (ProBuilder), Unreal (modelling mode), Roblox (solid modelling) | Blender and the other tools do it; Studio imports their work and builds levels from it |
 | Running without a player | Roblox (Run), Unreal (Simulate) | The game's scripts and play mode expect a player; Eject gives the same view of a running level |
@@ -617,32 +550,35 @@ library and the program.
    files read-only under `game:/`; nothing outside the two is reachable, and no saved path is absolute or climbs above
    the root. Moves, renames and deletes fix the references and ask first; changes made on disk are seen. Tests: a path
    that leaves the root is refused; a rename updates a level that refers to the file.
-3. **tools: Add the Scene view with the fly camera and Unity's keymap.** A sandbox layout or a level's world drawn as
+3. **tools: Add the Level view with the fly camera and Unity's keymap.** A sandbox layout or a level's world drawn as
    the world viewer draws it, flown with the right mouse and W A S D, Q and E, Shift faster, Alt slower, the wheel for
    speed, orbit, pan, zoom, F and Shift+F; pad 1 flies it too. The keymap is data, rebindable and saved per user. The
    Debug draw and mesh views are its view modes. Tests: a scripted input flies the same path every run; every key of
    the table is bound by default.
-4. **tools: Add the Hierarchy and Inspector with one selection.** The level's entities by kind, one selection shared by
+4. **tools: Add the Hierarchy and Inspector with one selection.** The level's fixed roots (Environment, Geometry,
+   Spawn points, Characters, Cameras, and greyed the roots that wait), a sandbox layout sorted into them, one selection
+   shared by
    every panel (click, Shift and Ctrl, box), the merged inspector of [#1053](issue:1053), values shared by a multiple
    selection, and the pre-selection highlight. Tests: a selection made in one panel shows in the others; a multiple
    selection edits all.
-5. **tools: Add Unity's transform gizmo and undo to the Scene view.** The Move, Rotate, Scale and Transform tools
+5. **tools: Add Unity's transform gizmo and undo to the Level view.** The Move, Rotate, Scale and Transform tools
    (W, E, R, Y) with every handle of Unity's gizmo, its colours, yellow highlight, constant screen size and handle-first
    picking; the Pivot / Center (Z) and Global / Local (X) toggles; increment, grid, vertex and surface snapping with the
    toolbar's steps; drop to ground, move to view; axes the selection cannot take drawn grey; every drag one command on
    an undo stack with its history. Tests: a scripted drag of each handle gives the expected value, snapped and not;
    every edit undoes to the same state.
-6. **tools: Add composing levels to Coney Studio.** The Create menu's primitives, spawn points, targets, AI fighters and
+6. **tools: Add composing levels to Coney Studio.** *New Level* with the Empty, Basic and sandbox layout templates;
+   opening a game level read-only; the Create menu's primitives, spawn points, targets, AI fighters and
    camera views, placed where the camera looks and dropped to the ground; repeat and duplicate; textures applied by
    drag or in the Inspector with tiling and tint; each primitive's collider in the Inspector's Collision group and the
    Collision view mode; delete; saving the level as a sandbox layout. Tests: a level composed by script saves a layout
    that Coney loads and plays; a saved level reopens unchanged, byte for byte.
 7. **tools: Add Play mode to Coney Studio.** Play, Play here, Pause, Step, Restart and Stop with Unity's keys; the level
-   plays in the Game view beside the Scene view with the player at its spawn or the camera's spot, the editor tinted;
+   plays in the Game view beside the Level view with the player at its spawn or the camera's spot, the editor tinted;
    the Hierarchy's Level and Running tabs, the running game edited through the Entity editor's queue; Eject flies the
    free camera; Stop throws the running game away. Tests: a scripted Play reaches the spawn point and a fight with a
    layout's fighter; the level after Stop is the level as edited.
-8. **tools: Add live level edits during Play.** A level edit made in the Scene view while playing is kept in the level
+8. **tools: Add live level edits during Play.** A level edit made in the Level view while playing is kept in the level
    and applied to the running game between two steps: primitives and their collision rebuilt, textures and lighting
    redrawn, targets and fighters teleported, spawned or deleted; an edit that cannot apply live says *applies on the
    next Play*. Tests: a box moved during a scripted Play blocks the player at its new place in the same run; after
@@ -656,7 +592,9 @@ library and the program.
    (Console with the run log and Lua line, Natives, Tunables, Player, Camera, Spawner, AI fighters, HUD, Display, Audio,
    Network) as a panel, with no Studio code per page. Tests: every page of the session draws as a panel, as the overlay
    test checks for the overlay.
-11. **tools: Add the model, animation and texture viewers to Coney Studio.** A `game:/` model opens in the Model viewer
+11. **tools: Add previews and the model, animation and texture viewers.** Thumbnails in the File system, cached in
+   `.studio/`; the quick preview at the foot of the Inspector; and on double-click a `game:/` model opens in the Model
+   viewer
    (shaded, wireframe, by material, normals, bone axes, its Mesh group counts), a clip in the Animation viewer (the
    Animation player's sets, loop, speed, in place) and a texture dictionary in the Texture viewer; the *Viewers* layout
    arranges them. Tests: each viewer opens a synthetic fixture with no disc; a disc check prints counts only.
@@ -665,17 +603,23 @@ library and the program.
 
 The editors' own documentation, read for this page:
 
-- Unity: [Scene view navigation](https://docs.unity.com/en-us/engine/current/manual/unity-editor/editor-windows-views-reference/using-the-scene-view/scene-view-navigation),
-  [Positioning GameObjects](https://docs.unity.com/en-us/engine/current/manual/working-with-scenes/scenes-manage-gameobjects/positioning-game-objects)
+- Unity: [Scene view
+  navigation](https://docs.unity.com/en-us/engine/current/manual/unity-editor/editor-windows-views-reference/using-the-scene-view/scene-view-navigation),
+  [Positioning
+  GameObjects](https://docs.unity.com/en-us/engine/current/manual/working-with-scenes/scenes-manage-gameobjects/positioning-game-objects)
   (the tool keys and snapping).
 - Godot: [Introduction to 3D](https://docs.godotengine.org/en/stable/tutorials/3d/introduction_to_3d.html) (freelook and
   the tool keys), [File system](https://docs.godotengine.org/en/stable/tutorials/scripting/filesystem.html) (`res://`,
-  moving files), [Customizing the interface](https://docs.godotengine.org/en/stable/tutorials/editor/customizing_editor.html)
+  moving files), [Customizing the
+  interface](https://docs.godotengine.org/en/stable/tutorials/editor/customizing_editor.html)
   (docks and editor layouts),
-  [Overview of debugging tools](https://docs.godotengine.org/en/stable/tutorials/scripting/debug/overview_of_debugging_tools.html)
+  [Overview of debugging
+  tools](https://docs.godotengine.org/en/stable/tutorials/scripting/debug/overview_of_debugging_tools.html)
   (*Synchronize Scene Changes* and the Remote tree).
-- Unreal: [Viewport controls](https://dev.epicgames.com/documentation/en-us/unreal-engine/viewport-controls-in-unreal-engine).
+- Unreal: [Viewport
+  controls](https://dev.epicgames.com/documentation/en-us/unreal-engine/viewport-controls-in-unreal-engine).
 - Roblox Studio: [Studio interface](https://create.roblox.com/docs/studio/ui-overview),
   [Testing modes](https://create.roblox.com/docs/studio/testing-modes).
-- FiveM: [Creating your first script](https://docs.fivem.net/docs/scripting-manual/introduction/creating-your-first-script/)
+- FiveM: [Creating your first
+  script](https://docs.fivem.net/docs/scripting-manual/introduction/creating-your-first-script/)
   (the resource folder, its manifest, `refresh` and `restart`).

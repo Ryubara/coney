@@ -30,17 +30,25 @@ and its line to the `nav:` of `mkdocs.yml`, under *Coney Studio design*.
 
 | Page | What it decides | Issue |
 | --- | --- | --- |
-| [Editor experience](editor-experience.md) | The panels and the default layout, saved layouts, the project folder, the Scene and Game views, Play mode and live edits while playing, scene navigation and the keymap, Unity's transform gizmo, selection and undo, composing levels, the import flow | [#1055](issue:1055) |
+| [Editor experience](editor-experience.md) | The words (level, Level view, prefab), the panels, the Hierarchy's tree and the default layout, saved layouts, the project folder, a new level and its templates, Play mode and live edits while playing, the import flow, previews; the build issues of both pages | [#1055](issue:1055) |
+| [The Level view, gizmos and composing](level-view.md) | The fly camera and the keymap, Unity's transform gizmo, selection and undo, composing a level from primitives, textures, colliders and path points | [#1055](issue:1055) |
 | Technology (planned) | The GUI library, one program or an editor mode of `coney`, how Play runs the engine, the code editor and language server, hot reload | [#1056](issue:1056) |
 | Lua SDK and natives (planned) | The natives and their names, the mods runtime and loader, resources, the sandbox, typed stubs for completions | [#1057](issue:1057) |
 | Content and formats (planned) | What Studio shows and edits from the disc's files, a project's own formats, import and export | [#1058](issue:1058) |
 
 ## Terms {#terms}
 
+A maintainer decision: Studio says *level* wherever other editors say *scene*, and so in every word made from it,
+because *The Warriors* is made of levels and calls its in-engine cutscenes scenes
+([Words](editor-experience.md#words-coney)).
+
 | Term | Meaning |
 | --- | --- |
 | Project | A folder Studio creates: the root of the File system panel; nothing outside it is reachable ([The project](editor-experience.md#project)) |
-| Panel | One dockable window of Studio: the Scene view, the Inspector, the File system and the others ([Panels](editor-experience.md#panels)) |
+| Panel | One dockable window of Studio: the Level view, the Inspector, the File system and the others ([Panels](editor-experience.md#panels)) |
+| Level | What a user builds and plays, where other editors say "scene" ([Words](editor-experience.md#words-coney)) |
+| Level view, Game view | The view that edits a level (Unity's Scene view) and the view of the game running |
+| Prefab | A reusable group of placed things, saved as one file ([Words](editor-experience.md#words-coney)) |
 | Layout | Where the panels sit, saved per user, never in a project ([Layouts](editor-experience.md#layouts)) |
 | Natives | The script bindings a project's scripts call: the game's own and Coney's ([Script bindings](../../references/bindings/index.md)); the Lua SDK page decides the rest of the scripting terms |
 
