@@ -791,7 +791,7 @@ is 1, 0 would force level 0). The AI uses it to do less far away: [steering](ai-
 **The scan** (`Brain_ScanEnemies(brain, filter)` `0x0028b358`). A human who is down or dead empties his list. Else, with
 `R` the sight range (`Brain_GetSightRange` `0x0028bf00`: `+0x130`, at least 30 m while his gang is fighting, gang
 `+0x32` 1, whatever the gang's kind; confirmed (runtime), run r-20261028-sight-range-alert: a range of 2 m gave 30 m
-with the alert at 1 in a gang of kind `0x17`, and a score of −999 at about 3.5 m with it at 0, for kind `0x17` and for
+with the alert at 1 in a gang of kind `0x17`, and a score of −999 with it at 0, for kind `0x17` and for
 kind 1) and `c` = cos(field of view / 2):
 
 1. For each of the 32 gangs that is active (gang `+0x18`) and an enemy of his (`Gang_IsEnemyOf` `0x00168fe0`: the

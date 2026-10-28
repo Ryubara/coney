@@ -28,6 +28,7 @@ constexpr double kNoHeldObject = 0.0;
 
 // Whether `brain`'s human is knocked down (state `0x80000`, read only when the human has a record `+0xd4`).
 // **Coney stand-in**: Coney keeps no such flag; a human knocked down is the one whose target state is Grounded.
+// Open question: docs/research/ai-fights.md#q-score-down-flag
 // @orig 0x00223b98 Human_IsKnockedDown (unknown)
 bool down(const Brain& brain) { return brain.human().state() == human::TargetState::Grounded; }
 
@@ -35,6 +36,7 @@ bool down(const Brain& brain) { return brain.human().state() == human::TargetSta
 // **Coney stand-in**: the kinds are the level's object types, which the score cannot reach from a brain, so any
 // world object in hand counts; and a human with a weapon's anim set but no object (a spawner's item, which Coney does
 // not put in the hand) counts too.
+// Open question: docs/research/ai-fights.md#q-score-held-object
 // @orig 0x00224060 Human_IsHoldingObject (unknown)
 bool armed(const Brain& brain) {
     // Coney stand-in: any object in hand (not its kind), or a weapon's anim set.
