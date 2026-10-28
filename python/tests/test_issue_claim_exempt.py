@@ -223,8 +223,25 @@ def test_a_workflow_claim_is_not_studio(engine: Engine, github: FakeGitHub) -> N
     github.add_issue(4, labels=WORKFLOW)
     take(engine, github, 4)
     card = card_of(github, 4)
-    assert card.exempt and not card.studio
+    assert card.exempt and card.workflow and card.in_workflow and not card.studio
     assert "(`workflow`)" in github.cards(4)[-1].body
+
+
+def test_a_claim_of_an_issue_with_both_labels_says_workflow_and_studio(engine: Engine, github: FakeGitHub) -> None:
+    github.add_issue(4, labels=(*WORKFLOW, STUDIO_LABEL))
+    take(engine, github, 4)
+    card = card_of(github, 4)
+    assert card.exempt and card.workflow and card.studio and card.in_workflow
+
+
+def test_an_old_card_without_the_workflow_field_reads_from_exempt() -> None:
+    text = model.render_card(model.Card(issue=1, claimant="a", claimed_at=START, exempt=True, workflow=True), RULES)
+    old = text.replace(',"workflow":true', "")
+    assert '"workflow"' not in old
+    parsed = model.parse_card(old, RULES)
+    assert parsed is not None and not parsed.workflow and parsed.in_workflow
+    studio = model.Card(issue=2, claimant="a", claimed_at=START, exempt=True, studio=True)
+    assert not studio.in_workflow
 
 
 def test_the_studio_flag_follows_the_label(engine: Engine, github: FakeGitHub, clock: Clock) -> None:
@@ -253,6 +270,7 @@ def test_the_rules_name_both_labels_outside_the_limit() -> None:
     assert RULES.outside_limit(("task", "workflow")) and RULES.outside_limit(("studio",))
     assert not RULES.outside_limit(("task", "P-high"))
     assert RULES.is_studio(("studio",)) and not RULES.is_studio(("workflow",))
+    assert RULES.is_workflow(("workflow", "studio")) and not RULES.is_workflow(("studio",))
 
 
 def test_a_file_without_the_studio_label_has_no_studio_work() -> None:

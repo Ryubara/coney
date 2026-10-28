@@ -92,8 +92,8 @@ def front_sha256(task: TaskFile) -> str:
 
 def _slot_check(task: TaskFile, env: StartEnv, engine: Engine) -> tuple[str, str | None]:
     """(the tracks line for the report, the refusal when the limit is enforced and exceeded). Whether a unit is a
-    workflow or a Studio unit comes from the held claim cards `engine` read (their `exempt` and `studio`), not from any
-    file here; the room is `task_slots.room`, the rule the Agent guard applies."""
+    workflow or a Studio unit comes from the held claim cards `engine` read (their `workflow` and `studio`), not from
+    any file here; the room is `task_slots.room`, the rule the Agent guard applies."""
     conventions = env.conventions
     slots = conventions.tasks.start.slots
     held_cards = engine.held_cards()

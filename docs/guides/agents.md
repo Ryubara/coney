@@ -301,8 +301,8 @@ coordinator keeps the places full from the open issues, `P-critical` first.
 | **Workflow unit** | A task whose issue carries the `workflow` label (`claims.exempt_label`) now: a unit that builds the new workflow | A held claim, no place, while `tasks.start.slots.exempt_workflow` is on; **the cutover turns it off** (a test fails if `claims.adopt` or `claims.release` is on while it is still on) and such units count like the rest |
 | **Reviewer**, **helper** | A `reviewer` ([Task review](review/task.md)); an `Explore`, `Plan` or `claude-code-guide` agent, a `fork`, and any agent an engineer starts for its own task (no cap) | No claim, no place, no `Task id:` line |
 
-Both labels are read from the issue's held claim card (`exempt` and `studio`, which the claim Action recomputes on every
-pass), never from a file in the scratch folder, so a label added or removed after `task create` counts from the next
+Both labels are read from the issue's held claim card (`workflow` and `studio`, which the claim Action recomputes on
+every pass), never from a file in the scratch folder, so a label added or removed after `task create` counts from the next
 pass; an issue with both is a workflow unit until the cutover, and the claims of both are outside the open-claims limit
 ([Claiming an issue](issues.md#claiming)). There is no `Slot: none`: an `engineer` or `tooling` agent has a unit, or it
 is not started. Work in other repositories (Tether, Conclave's own plugin repository) is not counted.
@@ -314,7 +314,7 @@ are set aside for it: with 10 places, no reimplementation unit and no fix in wor
 reimplementation units and no fix, Studio may take 6. The number 2 was measured on 2026-10-28 from the build records
 (`<scratch>/<task>/build-runs/`) and the unit records: from `task start` to a passing Review, a `feature` unit held a
 build slot for 10% of its life (5 units, 52 hours, 5.3 of them building) and a `tooling` unit for 2% (19 units); over
-571 build runs from 2026-10-24 to 2026-10-28, five or more builds ran at once for 1.8 of the 50 hours any ran. Two
+618 build runs from 2026-10-24 to 2026-10-28, five or more builds ran at once for 1.7 of the 52.7 hours any ran. Two
 units per build slot put the builds' expected demand at about a fifth of the slots, so a build rarely waits; past
 that, the limit is the checks that take no build slot (with about 8 checks at once, the Python tests of `task check`
 took 80 minutes instead of 48). A machine's limit changes with its `build_slots`; `per_build_slot` changes only after

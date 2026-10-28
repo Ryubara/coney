@@ -16,11 +16,12 @@ after it replaces it.
 
 Only a unit with a `unit.json` is counted: work that predates `task start` is invisible to the count (`task slots`
 lists its worktrees as "without a unit record"). A unit whose issue carries `claims.exempt_label` now (the units that
-build the new workflow) holds no place while `tasks.start.slots.exempt_workflow` is on; the cutover turns it off. Both
-labels are read from the issue's held claim card on GitHub (its `exempt` and `studio`, which the claim Action
-recomputes from the labels on every pass), never from a file here, so nobody changes a track by editing the scratch
-folder. A unit whose card cannot be read is counted where it was before the Studio label existed: a fix as a fix,
-any other as reimplementation, so a GitHub that cannot be read costs no start; its Studio model is then not checked.
+build the new workflow) holds no place while `tasks.start.slots.exempt_workflow` is on, even when the issue also
+carries the Studio label; the cutover turns it off. Both labels are read from the issue's held claim card on GitHub
+(its `workflow` and `studio`, which the claim Action recomputes from the labels on every pass), never from a file
+here, so nobody changes a track by editing the scratch folder. A unit whose cards cannot be read (and none that was
+read says workflow or Studio) is counted where it was before the Studio label existed: a fix as a fix, any other as
+reimplementation, so a GitHub that cannot be read costs no start; its Studio model is then not checked.
 
 The Agent guard (`.claude/hooks/slot_guard.py`) runs `coney-tools task slots --admit` for each Agent call of the
 coordinator. No `engineer` or `tooling` agent starts without a held claim: the brief carries a `Task id: <id>` line, the
@@ -195,7 +196,8 @@ class Verdict:
 class Labels:
     """What the held claim cards of a unit's issues say about it."""
 
-    #: One of them carries `claims.exempt_label` (a workflow unit) and not the Studio label.
+    #: One of them carries `claims.exempt_label` (a workflow unit), with or without the Studio label: the workflow
+    #: exemption comes first until the cutover.
     workflow: bool
     #: One of them carries `claims.studio_label`.
     studio: bool
@@ -215,10 +217,11 @@ def machine_limit(conventions: Conventions, build_slots: int) -> int:
 
 
 def unit_labels(issues: Iterable[int], cards: Cards, conventions: Conventions) -> Labels | None:
-    """The labels of a unit on these issues, from their held claim cards (`studio`, and `exempt` without `studio` for
-    the workflow label). `workflow` is false while `tasks.start.slots.exempt_workflow` is off, so the unit counts like
-    any other. A workflow card that was read decides even when another card cannot be; otherwise None when a card
-    cannot be read: the caller counts the unit, a fix as a fix and any other as reimplementation."""
+    """The labels of a unit on these issues, from their held claim cards (`studio`, and `in_workflow` for the workflow
+    label; an issue with both is a workflow unit, which the callers check first). `workflow` is false while
+    `tasks.start.slots.exempt_workflow` is off, so the unit counts like any other. A workflow or Studio card that was
+    read decides even when another card cannot be; otherwise None when a card cannot be read: the caller counts the
+    unit, a fix as a fix and any other as reimplementation."""
     found: list[Card] = []
     unreadable = False
     for number in issues:
@@ -230,8 +233,8 @@ def unit_labels(issues: Iterable[int], cards: Cards, conventions: Conventions) -
         if card is not None:
             found.append(card)
     studio = any(card.studio for card in found)
-    workflow = conventions.tasks.start.slots.exempt_workflow and any(card.exempt and not card.studio for card in found)
-    if unreadable and not workflow:
+    workflow = conventions.tasks.start.slots.exempt_workflow and any(card.in_workflow for card in found)
+    if unreadable and not workflow and not studio:
         return None
     return Labels(workflow=workflow, studio=studio)
 

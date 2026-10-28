@@ -234,6 +234,7 @@ class Engine(LimitEnforcement):
             handled=(comment.id,),
             exempt=self.rules.outside_limit(work.issue.labels),
             studio=self.rules.is_studio(work.issue.labels),
+            workflow=self.rules.is_workflow(work.issue.labels),
         )
         fresh = Stored(None, card)
         work.stored.append(fresh)
@@ -704,6 +705,7 @@ class Engine(LimitEnforcement):
             last_activity_why="assigned by hand",
             exempt=self.rules.outside_limit(work.issue.labels),
             studio=self.rules.is_studio(work.issue.labels),
+            workflow=self.rules.is_workflow(work.issue.labels),
         )
         fresh = Stored(None, card)
         work.stored.append(fresh)
@@ -733,6 +735,7 @@ class Engine(LimitEnforcement):
             # track while it carries that one.
             "exempt": self.rules.outside_limit(work.issue.labels),
             "studio": self.rules.is_studio(work.issue.labels),
+            "workflow": self.rules.is_workflow(work.issue.labels),
             "counted": counted,
             "regained": card.regained or (counted and not card.counted),
             # Every change of the count, so a warning for being over the limit can tell the claimant was under it

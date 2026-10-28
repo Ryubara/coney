@@ -216,9 +216,9 @@ Engineer work runs in three tracks (a maintainer decision of 2026-10-28, which p
 - **Coney Studio:** an issue labelled `studio`. As many engineers as the machine holds work on Studio research and
   development, on the models [Which model](agents.md#models) names for them.
 
-A machine holds as many units of all tracks together as twice its build slots, the ones `coney-tools build` keeps
-(the evidence for the number is in [Engineer tracks](agents.md#slots)). One place is kept for reimplementation while
-none runs and one for a fix, so Studio never takes either (`tasks.start.slots` in
+A machine holds a fixed number of units of all tracks together for each of its build slots, the ones `coney-tools
+build` keeps ([Engineer tracks](agents.md#slots) has the number and the evidence for it). One place is kept for
+reimplementation while none runs and one for a fix, so Studio never takes either (`tasks.start.slots` in
 [.github/conventions.yml](repo:.github/conventions.yml)); `task start` refuses a start over the limit and the
 coordinator's Agent guard refuses the engineer before it starts ([Engineer tracks](agents.md#slots) has the rule in
 full). There are no standing teams: the coordinator assigns the next task from the triaged issues, `P-critical` first

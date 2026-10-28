@@ -397,8 +397,8 @@ label. The cap of a task (3 issues) holds for an exempt claim too.
 Studio research or development, which has a track of its own with no cap but the machine's ([Engineer
 tracks](agents.md#slots); a maintainer decision, 2026-10-28). Its claim is outside the open-claims limit the same way:
 the card says `Limit: not counted toward the open-claims limit (`studio`)`, and its hidden JSON carries `exempt` and
-`studio`, both set again from the labels on every pass, so the coordinator can label an issue after its claim and the
-next pass moves it. Unlike `workflow`, the cutover leaves it as it is.
+`studio` (and `workflow` for the workflow label), all set again from the labels on every pass, so the coordinator
+can label an issue after its claim and the next pass moves it. Unlike `workflow`, the cutover leaves it as it is.
 
 A label event for `workflow` starts a claim run, so the card usually follows within a minute or two, and at the latest
 by the sweep: the jobs run one at a time and GitHub cancels a pending one when another arrives, so labelling several

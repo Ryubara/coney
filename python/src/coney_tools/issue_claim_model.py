@@ -195,6 +195,9 @@ class Card:
     exempt: bool = False
     #: The issue carries `claims.studio_label`: Coney Studio work, in its own engineer track (recomputed every pass).
     studio: bool = False
+    #: The issue carries `claims.exempt_label`: a unit that builds the new workflow (recomputed every pass). A card
+    #: written before this field existed reads `in_workflow` from `exempt` and `studio` instead.
+    workflow: bool = False
     #: Whether the claim counts toward the limit now: false once `freed` is set or while the claim has a pull request
     #: that is open and not a draft (the unit's slot is free), recomputed every pass.
     counted: bool = True
@@ -227,6 +230,13 @@ class Card:
     def active(self) -> bool:
         """Whether the claim is held now."""
         return self.status in ACTIVE_STATUSES
+
+    @property
+    def in_workflow(self) -> bool:
+        """Whether the issue carries `claims.exempt_label`. A card written before `workflow` existed has only `exempt`,
+        which either label sets; such a card is a workflow one when it is exempt and not Studio (an issue with both
+        labels was not told apart then)."""
+        return self.workflow or (self.exempt and not self.studio)
 
     @property
     def task_key(self) -> str:
@@ -333,6 +343,7 @@ def _data(card: Card) -> dict[str, Any]:
         "waiting": card.waiting,
         "exempt": card.exempt,
         "studio": card.studio,
+        "workflow": card.workflow,
         "counted": card.counted,
         "freed": card.freed,
         "regained": card.regained,
@@ -466,6 +477,7 @@ def parse_card(body: str, rules: Claims) -> Card | None:
             waiting=str(data["waiting"]) if data.get("waiting") else None,
             exempt=bool(data.get("exempt", False)),
             studio=bool(data.get("studio", False)),
+            workflow=bool(data.get("workflow", False)),
             counted=bool(data.get("counted", True)),
             freed=bool(data.get("freed", False)),
             regained=bool(data.get("regained", False)),

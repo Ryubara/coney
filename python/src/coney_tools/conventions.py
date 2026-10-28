@@ -912,7 +912,11 @@ class Claims:
     def outside_limit(self, labels: Iterable[str]) -> bool:
         """Whether a claim of an issue with these labels is outside the open-claims limit (`exempt_label` or
         `studio_label`)."""
-        return self.exempt_label in set(labels) or self.is_studio(labels)
+        return self.is_workflow(labels) or self.is_studio(labels)
+
+    def is_workflow(self, labels: Iterable[str]) -> bool:
+        """Whether an issue with these labels is a unit that builds the new workflow (`exempt_label`)."""
+        return self.exempt_label in set(labels)
 
     def is_studio(self, labels: Iterable[str]) -> bool:
         """Whether an issue with these labels is Coney Studio work (`studio_label`; never without one)."""

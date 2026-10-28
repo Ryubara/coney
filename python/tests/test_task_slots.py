@@ -109,15 +109,17 @@ class Scene:
 
     def label(self, name: str, on: bool) -> None:
         """Add or remove the `workflow` label of the task's issues: the claim Action's next pass sets the card's
-        `exempt`."""
+        `workflow`, and `exempt` while either label is on."""
         for number in self.issues_of[name]:
-            self.cards[number] = replace(self.cards[number], exempt=on)
+            card = self.cards[number]
+            self.cards[number] = replace(card, workflow=on, exempt=on or card.studio)
 
     def studio(self, name: str, on: bool) -> None:
-        """Add or remove the `studio` label of the task's issues: the claim Action's next pass sets the card's `studio`
-        and `exempt` (outside the claim limit)."""
+        """Add or remove the `studio` label of the task's issues: the claim Action's next pass sets the card's `studio`,
+        and `exempt` (outside the claim limit) while either label is on."""
         for number in self.issues_of[name]:
-            self.cards[number] = replace(self.cards[number], exempt=on, studio=on)
+            card = self.cards[number]
+            self.cards[number] = replace(card, studio=on, exempt=on or card.workflow)
 
     def release(self, name: str) -> None:
         """The claims of the task were released since `task create` (idle, `/unclaim`)."""
@@ -570,12 +572,42 @@ def test_a_studio_fix_is_a_fix(scene: Scene) -> None:
 
 
 def test_an_issue_labelled_workflow_and_studio_is_a_workflow_unit_until_the_cutover(scene: Scene) -> None:
-    scene.unit("w-studio", kind="tooling", issues=(900, 901))
-    scene.cards[900] = replace(scene.cards[900], exempt=True)  # workflow
-    scene.cards[901] = replace(scene.cards[901], exempt=True, studio=True)
-    assert scene.scan().exempt == ("w-studio",)
+    scene.unit("w-studio", kind="tooling", workflow=True, studio=True)
+    (number,) = scene.issues_of["w-studio"]
+    assert scene.cards[number].workflow and scene.cards[number].studio  # one issue, both labels
+    assert scene.scan().exempt == ("w-studio",) and scene.holders("studio") == []
+    scene.task("w-next", kind="tooling", workflow=True, studio=True)
+    verdict = scene.admit(brief("w-next"), agent_type="tooling", model="haiku", effort="low")
+    assert verdict.allowed and "workflow task" in verdict.message  # no Studio model rule for a workflow unit
     set_slots(scene, exempt_workflow=False)
-    assert scene.holders("studio") == ["w-studio"]
+    assert scene.holders("studio") == ["w-studio"]  # after the cutover the Studio label decides
+
+
+def test_a_unit_on_a_workflow_issue_and_a_studio_issue_is_a_workflow_unit(scene: Scene) -> None:
+    scene.unit("w-two", kind="tooling", issues=(900, 901))
+    scene.cards[900] = replace(scene.cards[900], workflow=True, exempt=True)
+    scene.cards[901] = replace(scene.cards[901], studio=True, exempt=True)
+    assert scene.scan().exempt == ("w-two",)
+
+
+def test_an_old_card_without_the_workflow_field_reads_from_exempt(scene: Scene) -> None:
+    scene.unit("w-old", kind="tooling")
+    (number,) = scene.issues_of["w-old"]
+    scene.cards[number] = replace(scene.cards[number], exempt=True)  # written before `workflow` existed
+    assert scene.scan().exempt == ("w-old",)
+
+
+def test_a_studio_card_that_was_read_decides_when_another_cannot_be(scene: Scene) -> None:
+    scene.unit("s-two", kind="tooling", issues=(910, 911))
+    scene.cards[910] = replace(scene.cards[910], studio=True, exempt=True)
+
+    def second_fails(number: int) -> None:
+        if number == 911:
+            raise ConfigError("gh timed out")
+
+    scene.on_read = second_fails
+    current = scene.scan()
+    assert [h.task for h in current.held("studio")] == ["s-two"] and current.unchecked == ()
 
 
 def test_a_unit_whose_labels_cannot_be_read_counts_as_reimplementation(scene: Scene) -> None:

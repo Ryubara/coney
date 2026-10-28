@@ -386,9 +386,9 @@ claims:
   # A claim stops counting toward the limit when a maintainer records one of these stages (the tools post them; a
   # contributor's comment frees nothing, being free to write), or while a pull request of its claimant that closes the
   # issue is open and not a draft (one such pull request frees one task's slot: the oldest it closes and the issues of
-  # that task it names, however many issues it names): the limit stands for the engineers' task slots, and a slot
-  # frees when the unit passes review and takes the next task while CI runs (docs/guides/issues.md#slots). A stage
-  # frees the slot for good; a pull request closed unmerged gives the count back, and the newest claims then over the
+  # that task it names, however many issues it names): the limit stands for the claimant's units in work (Studio
+  # claims are outside it), and a claim frees when its unit passes review and takes the next task while CI runs
+  # (docs/guides/issues.md#slots). A stage frees it for good; a pull request closed unmerged gives the count back, and the newest claims then over the
   # limit are warned and, once `release` is on (or the trial label is), released after the notice (deadline_hours less
   # warn_hours), never a maintainer's. The claim itself stays held either way.
   limit_ends_at: [reviewed, pr-opened, fix, finished]
