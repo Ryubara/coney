@@ -391,7 +391,7 @@ of its native. Studio's Inspector shows the arguments by name and kind from the 
 | Entity | Native Coney calls at level entry | Notes |
 | --- | --- | --- |
 | Spawn point | `AddFlag`, then the project's player made at it (`HuCreate` with a player slot) | The character to spawn is a character type or a project character ([Custom player models](#custom-player)) |
-| Flag | `AddFlag(name, pos, heading, a, b)` | Names are cut to 15 characters by `FindFlag` ([Flags](../../research/flags.md#findflag)); Studio warns |
+| Flag | `AddFlag(name, pos, heading, a, b)` | A flag keeps 15 characters of its name, so `FindFlag` never matches a longer one ([Flags](../../research/flags.md#findflag)); Studio warns |
 | Path | `AddPath(name, {flags})` | At most eight flags, 32 paths a level |
 | Flag link | `FlagNetAddLink(flag, ...)` | Up to four links a flag |
 | Volume box | `AddVolumeBox(name, kind, corner, size, ...)` | Axis-aligned: Studio's gizmo offers no rotation ([Volume boxes](../../references/boxes.md)) |
@@ -409,9 +409,9 @@ of its native. Studio's Inspector shows the arguments by name and kind from the 
 - **Transforms are stored once, converted per native.** The level file keeps a position and a rotation (and a scale
   where the kind has one); Coney turns them into what each native takes. Headings differ by native: a flag's,
   `Teleport`'s and `TeleportToFlag`'s grow clockwise seen from above, `HuCreate`'s anticlockwise
-  ([Flags: which way a heading turns](../../research/flags.md#position), confirmed (code) at `0x004161e8` and
-  `0x00233d60`); Coney already converts with `world_objects::placementHeading()`. Kinds whose native takes no rotation
-  or no scale have those gizmo handles off.
+  ([Flags: which way a heading turns](../../research/flags.md#position), confirmed (code) at `Flag_Heading`
+  `0x00416258`, `TeleportToFlag` `0x00385db0` and `Human_Create` `0x00233d60`); Coney already converts with
+  `world_objects::placementHeading()`. Kinds whose native takes no rotation or no scale have those gizmo handles off.
 - **The capacity limits are the game's.** Flags, paths, objects, spawners and lights have the pools the original
   sizes (`CfgSetDatabaseSizes` and fixed tables); Studio counts each kind against its limit and says when a level is
   over it, rather than letting Coney drop the extra ones at entry.
@@ -615,6 +615,7 @@ An example, in version 2:
 ```text
 format level 2
 title Yard fight
+texture floor dark_grid.png
 
 base game:/levels/level99
 spawn start id=s1 at=12,4,0 heading=90 character=project:/characters/cj.character
@@ -623,9 +624,9 @@ mesh id=m1 model=project:/models/bench.glb at=14,6,0 yaw=30 collide=hull
 collider id=c1 shape=box at=10,10,0 size=4,0.2,1.1 material=LOW_FENCE climb=anyone
 box id=b1 at=20,0,0 size=6,6,0.1 rot=0,0.1305,0,0.9914 sneak=yes texture=floor
 
-flag id=f1 fYardGate at=16,12,0 heading=0
+flag fYardGate id=f1 at=16,12,0 heading=0
 object id=o1 type=dyn_trashcan at=15,11,0 zone=0
-character id=h1 name=Rival type=32 gang=2 at=18,12,0 heading=180
+character Rival id=h1 type=32 gang=2 at=18,12,0 heading=180
 script project:/scripts/yard.lua
 ```
 
