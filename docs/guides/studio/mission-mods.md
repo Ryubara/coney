@@ -374,12 +374,13 @@ native calls, in the same order, with the same arguments and results, step by st
 did the same thing to the game. That is the parity test the architecture page sets for Coney's own level rewrites
 ([Three parts](../asset-and-script-architecture.md#script-parts)), and the translator uses the same one:
 
-- **The trace.** Recorded where the native list wraps every native (the call tracer of the
-  [Lua SDK's first build issue](lua-sdk.md#build-issues)): the step, what started the script (level entry, update,
-  scheduled call, message, callback, trigger), each native's name, arguments and results as `script::Value`s, tables in
-  full (today's `--script-trace` shows a table as `{table}`, [Event logs](../running-play-level.md#event-log)), and each
-  call into the scripts. Values are compared as the natives see them, so 5.4's integer and float subtypes do not show,
-  and strings are compared byte for byte.
+- **The trace.** Recorded by a call tracer that wraps every native in the native list (the list is the
+  [Lua SDK's first build issue](lua-sdk.md#build-issues); the tracer is step 4 of the architecture page's
+  [deferred order](../asset-and-script-architecture.md#later), built here as issue 10): the step, what started the
+  script (level entry, update, scheduled call, message, callback, trigger), each native's name, arguments and results
+  as `script::Value`s, tables in full (today's `--script-trace` shows a table as `{table}`,
+  [Event logs](../running-play-level.md#event-log)), and each call into the scripts. Values are compared as the natives
+  see them, so 5.4's integer and float subtypes do not show, and strings are compared byte for byte.
 - **Playthrough runs.** Every [playthrough test](../testing.md#playthrough-tests) of a level runs twice, with the disc's
   scripts in the 4.0 game state and with their translations in the 5.4 one, the same input script and seed, and the two
   traces must be equal at every step. The front end's scripted run is compared the same way.
@@ -563,9 +564,9 @@ In order. Issues 1 to 6 are 4.0 patching; issue 7 is the probe; issues 8 to 11 f
    build settings, the game-state bridge (4.0's conventions) and the `lua40` helpers, reached by the scheduler's entries;
    every other level stays on 4.0. Tests: a synthetic level runs the same in both states; a 5.4 patch and a 4.0 patch
    of the same level run together; levels without a 5.4 patch never make a 5.4 state.
-10. **tests: Add trace equality between the 4.0 and 5.4 game states.** The full-value trace at the native list, its
-    diff, the fake host's differential runs over every script with coverage, and every playthrough test run in both
-    states; the list of proved levels that Studio reads. Tests: a deliberately wrong translation (a concatenation
+10. **tests: Add trace equality between the 4.0 and 5.4 game states.** The call tracer (a full-value trace at the
+    native list), its diff, the fake host's differential runs over every script with coverage, and every playthrough
+    test run in both states; the list of proved levels that Studio reads. Tests: a deliberately wrong translation (a concatenation
     without `lua40.str`) fails with the first unequal step; the differential runs report coverage.
 11. **tools: Offer each proved level's Lua 5.4 form in Studio.** *Convert to Lua 5.4* for proved levels, shared scripts
     last, and 5.4 editing with the language server and debugger of projects. Tests with the Test Engine: an unproved
