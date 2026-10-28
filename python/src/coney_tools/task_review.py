@@ -161,10 +161,11 @@ def _kinds(files: list[str], functions: list[dict[str, Any]], env: ReviewEnv, mo
     if mode == "text":
         return ["text"]
     rules = env.conventions.tasks.review
+    research = tuple(rules.research_paths)
     suffixes = tuple(rules.docs_suffixes)
     needed = {"text", "commits"}
     for name in files:
-        if rules.is_research_page(name):
+        if name.startswith(research):
             needed.add("research")
         elif name.endswith(suffixes):
             needed.add("docs")

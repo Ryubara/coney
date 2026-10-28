@@ -900,7 +900,7 @@ def _reviewer(subject: Subject, stamp: stamps.Stamp, refuse: Callable[..., Refus
         found.append(refuse(f"the reviewer's type is {reviewer.get('type')}, not {review.agent}"))
     # Reverse-engineering review runs on Opus (AGENTS.md): the same rule `task review --record` applies.
     kinds = {"orig"} if subject.changed else set()
-    if any(review.is_research_page(p) for p in subject.paths):
+    if any(p.startswith(tuple(review.research_paths)) for p in subject.paths):
         kinds.add("research")
     kinds &= set(review.reverse_engineering_kinds)
     model = str(reviewer.get("model", ""))

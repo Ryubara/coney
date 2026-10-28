@@ -950,9 +950,9 @@ class TaskReview:
     def is_research_page(self, path: str) -> bool:
         """Whether a changed path is a research page: a documentation file (`docs_suffixes`) under `research_paths`.
 
-        The one definition `task review` (the packet's pages and the research checklist) and `pr verify` (the pages
-        the review must have graded) share. A data file under `research/` (the legacy list, a YAML table) is no page:
-        a reviewer has nothing to grade in it, so it is reviewed as code (docs/guides/pr.md#verify)."""
+        The one definition `task review` (the packet's `pages`) and `pr verify` (the pages the review must have
+        graded) share. A data file under `research/` (the legacy list, a YAML table) is no page: there is nothing to
+        grade in it, though a change to it is still research work (docs/guides/pr.md#research-page)."""
         return path.startswith(self.research_paths) and path.endswith(self.docs_suffixes)
 
 

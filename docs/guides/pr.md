@@ -129,12 +129,12 @@ adds, changes and removes no `@orig` function, so the run does not read the sour
 
 A research page is a documentation file (`tasks.review.docs_suffixes`, `.md`) under one of `tasks.review.research_paths`
 (`docs/research/` and `research/`). `TaskReview.is_research_page` in `repo:python/src/coney_tools/conventions.py` is the
-one definition: `task review` lists exactly these in its packet's `pages` and gives them the research checklist, and
+one definition: `task review` lists exactly these in its packet's `pages`, and
 `pr verify` demands that the `reviewed` stamp graded a page only when the change touches one of them. A data file under
 `research/` (`legacy-files.toml`, which `standards prune` rewrites, or a YAML table) is not a page: no reviewer can
-grade it, so a change whose only research paths are data files passes with a review whose `pages` list is empty, and
-the reviewer reads those files with the code checklist. The reverse-engineering model rule
-(`tasks.review.reverse_engineering_kinds`) follows the same definition.
+grade it, so a change whose only research paths are data files passes with a review whose `pages` list is empty. It is
+still research work: any change under the research paths gets the research checklist and, for a verified reviewer,
+the reverse-engineering model rule (`tasks.review.reverse_engineering_kinds`).
 
 ## pr text {#text}
 

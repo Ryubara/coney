@@ -249,7 +249,7 @@ def test_the_packet_says_what_to_judge_and_quotes_the_hashes(rig: Rig) -> None:
     assert len(packet["pairs_set_sha256"]) == 64 and packet["rubric_version"] == 1
 
 
-def test_a_research_data_file_is_no_page_and_gets_no_research_checklist(rig: Rig) -> None:
+def test_a_research_data_file_is_research_work_but_no_page(rig: Rig) -> None:
     rules = rig.conventions.tasks.review
     assert rules.is_research_page("docs/research/ai/brain.md") and rules.is_research_page("research/notes.md")
     assert not rules.is_research_page("research/legacy-files.toml")
@@ -261,7 +261,7 @@ def test_a_research_data_file_is_no_page_and_gets_no_research_checklist(rig: Rig
     git(rig.root, "add", "-A")
     git(rig.root, "commit", "-q", "-m", "prune")
     packet, problems = rig.prepare()
-    assert problems == [] and packet["pages"] == [] and "research" not in packet["kinds"]
+    assert problems == [] and packet["pages"] == [] and "research" in packet["kinds"]
 
 
 def test_a_docs_change_needs_the_docs_checklist_and_a_code_change_the_code_one(rig: Rig) -> None:
