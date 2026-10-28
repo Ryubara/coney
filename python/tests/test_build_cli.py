@@ -42,7 +42,6 @@ def checkout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     )
     monkeypatch.chdir(root)
     monkeypatch.setattr(pcsx2_proc, "pid_alive", lambda pid: True)
-    monkeypatch.delenv("CONEY_DISC", raising=False)  # the machine's own disc must not change what a test sees
     return root
 
 
@@ -203,7 +202,6 @@ def test_an_agent_must_name_itself(
 
 
 def test_a_person_in_a_terminal_gets_a_default_id(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("CLAUDECODE", raising=False)
     terminal = lambda: True  # noqa: E731 -- a one-line stand-in for a terminal
     monkeypatch.setattr(getpass, "getuser", lambda: "Jane Doe")
     assert build_cli.default_agent_id(terminal) == "Jane-Doe"

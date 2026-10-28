@@ -88,6 +88,18 @@ else, so these reports go to stderr and the process ends at once; the `coney.err
 MSVC debug builds. In tests, check a container's size (`REQUIRE(!starts.empty())`) before reading `front()`,
 `back()` or an index, so a missing value fails one test cleanly instead of ending the whole run.
 
+### Python tests do not depend on the shell {#python-environment}
+
+A Python test gives the same answer in a task's shell (`CONEY_TASK` and `VIRTUAL_ENV` set), inside an agent tool
+(`CLAUDECODE`, `CONEY_AGENT_TOKEN`), in CI (`GITHUB_REPOSITORY`) and on a machine with a disc (`CONEY_DISC`).
+`python/tests/conftest.py` makes it so: an autouse fixture removes every variable the tools read before each test, and
+`python/tests/ambient_env.py` is the one list of them, each with what it changes. A test that needs one sets it with
+`monkeypatch.setenv`; it never has to `delenv` one "in case". `test_test_environment.py` keeps the list whole: it
+fails when the code names a variable that is in neither the list nor the short list of names a tool only sets for a
+child, and it runs the tests that once failed under `CONEY_TASK` with the variables set. The switches a developer sets
+on purpose (`CI`, `CONEY_UPDATE_FIXTURES`, `CONEY_ENGINE_STUB`, `CONEY_TYPESCRIPT`) are the exception and reach their
+tests. A tool that starts reading a new variable adds it to `ambient_env.py` in the same commit.
+
 ### Test through the player's path {#test-through-the-players-path}
 
 The game is set up one way. The story from the main menu, `coney --play-level LEVEL --checkpoint N` and the debug

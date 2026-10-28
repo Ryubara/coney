@@ -12,12 +12,6 @@ from coney_tools.cli import main
 from coney_tools.conventions import CONVENTIONS_FILE
 
 
-@pytest.fixture
-def at(monkeypatch: pytest.MonkeyPatch) -> None:
-    """No task from the environment; each test chdirs to its unit."""
-    monkeypatch.delenv("CONEY_TASK", raising=False)
-
-
 def run(built: Built, monkeypatch: pytest.MonkeyPatch, *args: str) -> int:
     """Run `coney-tools pr ...` from the unit's checkout."""
     monkeypatch.chdir(built.root)
@@ -25,7 +19,7 @@ def run(built: Built, monkeypatch: pytest.MonkeyPatch, *args: str) -> int:
 
 
 def test_verify_says_ok_for_a_complete_unit(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], at: None
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     built = make(tmp_path)
     assert run(built, monkeypatch, "verify") == 0
@@ -42,7 +36,7 @@ def add_unknown_key(built: Built) -> None:
 
 
 def test_verify_reads_a_conventions_file_with_a_key_this_tool_does_not_know(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], at: None
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """The first release of a branch that adds a rule is read by the tool main already has: the file's new key is
     skipped and named once on stderr (stdout stays the result), and the run goes on to its own checks."""
@@ -57,7 +51,7 @@ def test_verify_reads_a_conventions_file_with_a_key_this_tool_does_not_know(
 
 
 def test_text_reads_a_conventions_file_with_a_key_this_tool_does_not_know(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], at: None
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """`pr text` skips the key the same way and names it once, whatever it then says about the description."""
     built = make(tmp_path)
@@ -69,7 +63,7 @@ def test_text_reads_a_conventions_file_with_a_key_this_tool_does_not_know(
 
 
 def test_verify_lists_every_refusal_with_what_to_redo_and_exits_1(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], at: None
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     built = make(tmp_path, skip=frozenset({"checked", "reviewed"}))
     assert run(built, monkeypatch, "verify") == 1
@@ -80,7 +74,7 @@ def test_verify_lists_every_refusal_with_what_to_redo_and_exits_1(
 
 
 def test_verify_json_has_the_facts_and_the_refusals(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], at: None
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     built = make(tmp_path, skip=frozenset({"reviewed"}))
     assert run(built, monkeypatch, "verify", "--json") == 1
@@ -92,7 +86,7 @@ def test_verify_json_has_the_facts_and_the_refusals(
 
 @pytest.mark.parametrize("text", [None, "# tools: Add the widget\n\n## Testing\n\nRan it.\n"])
 def test_verify_refuses_when_the_text_review_covered_cannot_be_read(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], at: None, text: str | None
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], text: str | None
 ) -> None:
     built = make(tmp_path)
     path = built.unit.dir / "PR.md"
@@ -107,7 +101,7 @@ def test_verify_refuses_when_the_text_review_covered_cannot_be_read(
     assert "redo: engineer, then task review --text" in out and "ok:" not in out
 
 
-def test_verify_changes_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, at: None) -> None:
+def test_verify_changes_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     built = make(tmp_path, skip=frozenset({"checked"}))
     before = (git(built.root, "status", "--porcelain"), sorted(p.name for p in built.unit.dir.rglob("*")))
     stamps_before = (built.unit.stamps / "0001.jsonl").read_bytes()
@@ -117,7 +111,7 @@ def test_verify_changes_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 
 
 def test_verify_without_a_task_file_exits_2(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], at: None
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     built = make(tmp_path)
     (built.unit.dir / "TASK.md").unlink()
@@ -126,7 +120,7 @@ def test_verify_without_a_task_file_exits_2(
 
 
 def test_verify_with_an_unknown_base_exits_2(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], at: None
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     built = make(tmp_path)
     assert run(built, monkeypatch, "verify", "--remote", "elsewhere") == 2
@@ -134,7 +128,7 @@ def test_verify_with_an_unknown_base_exits_2(
 
 
 def test_a_fix_task_continues_its_parents_unit(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], at: None
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     built = make(tmp_path)
     fix = built.unit.dir.parent / "work-fix"
@@ -149,7 +143,7 @@ def test_a_fix_task_continues_its_parents_unit(
 
 
 def test_text_writes_the_title_and_the_description_that_the_repo_checks_accept(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], at: None
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     built = make(tmp_path)
     assert run(built, monkeypatch, "text") == 0
@@ -163,7 +157,7 @@ def test_text_writes_the_title_and_the_description_that_the_repo_checks_accept(
 
 
 def test_text_writes_nothing_when_a_check_fails_or_on_a_dry_run(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], at: None
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     built = make(tmp_path)
     assert run(built, monkeypatch, "text", "--dry-run") == 0
@@ -177,7 +171,7 @@ def test_text_writes_nothing_when_a_check_fails_or_on_a_dry_run(
 
 
 def test_text_json_has_the_hashes_a_release_records(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], at: None
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     built = make(tmp_path)
     assert run(built, monkeypatch, "text", "--json") == 0
@@ -193,7 +187,7 @@ def test_text_json_has_the_hashes_a_release_records(
 
 
 def test_text_reads_another_file_when_told_to(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], at: None
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     built = make(tmp_path)
     other = tmp_path / "elsewhere" / "PR.md"

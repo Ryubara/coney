@@ -27,7 +27,6 @@ def checkout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     git(root, "add", "-A")
     git(root, "commit", "-q", "-m", "base")
     monkeypatch.chdir(root)
-    monkeypatch.delenv("CONEY_TASK", raising=False)
     monkeypatch.setattr(original_cli, "http_fetch", lambda url: FakeGhidra())
     return root
 

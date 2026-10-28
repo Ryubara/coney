@@ -106,7 +106,6 @@ def test_placer_moves_each_new_window_once() -> None:
 
 
 def test_no_placer_without_the_variable(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv(window_display.ENV, raising=False)
     assert pcsx2_proc.window_placer() is None
 
 

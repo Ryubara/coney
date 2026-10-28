@@ -107,8 +107,6 @@ def test_the_hook_builds_the_pictures_for_the_progress_and_history_pages(
 
     hooks = load_hooks()
     root = make_grid_checkout(tmp_path)
-    monkeypatch.delenv("CONEY_PROGRESS_HISTORY", raising=False)
-    monkeypatch.delenv("CONEY_PROGRESS_HISTORY_CACHE", raising=False)
     state = hooks.load_progress(root)
     site = hooks.build_progress_site(root, state, "https://example.invalid/r")
     assert "progress/functions.json" in site.files and "progress/progress.json" in site.files
@@ -133,7 +131,6 @@ def test_a_published_history_is_the_cache_of_the_next_build(tmp_path: Path, monk
     cache = tmp_path / "history.json"
     old = progress_history.to_json([progress_history.Point("2020-01-01", "abc", 10, 1, 1, 5)], [])
     cache.write_text(json.dumps(old), encoding="utf-8")
-    monkeypatch.delenv("CONEY_PROGRESS_HISTORY", raising=False)
     monkeypatch.setenv("CONEY_PROGRESS_HISTORY_CACHE", str(cache))
     site = hooks.build_progress_site(root, state)
     dates = [p["date"] for p in json.loads(site.files["progress/history.json"])["points"]]

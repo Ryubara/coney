@@ -97,7 +97,6 @@ def test_serve_without_a_config_fails_quietly(
     # stdout belongs to the MCP protocol: a failure prints one line on stderr and nothing on stdout.
     (tmp_path / "coney.local.example.toml").write_text("", encoding="utf-8")
     monkeypatch.chdir(tmp_path)
-    monkeypatch.delenv("CLAUDE_PROJECT_DIR", raising=False)
     assert main(["mcp", "serve", "pcsx2"]) == 2
     captured = capsys.readouterr()
     assert captured.out == ""
