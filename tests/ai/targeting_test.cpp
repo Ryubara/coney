@@ -101,6 +101,18 @@ TEST_CASE("the always-counting terms: not attackable, and the gang's chosen targ
     CHECK(scene.brains.gangs().find(gang)->chosenTarget() == nullptr);
 }
 
+TEST_CASE("an enemy who targets the scorer with a world object in hand scores the armed term", "[ai][targeting]") {
+    // Expected: ai-fights.md#enemy-score, confirmed (code): Human_IsHoldingObject counts a held world object
+    Scene scene;
+    Brain& scorer = scene.add(40.0F, 40.0F, 0.0F, BrainType::Gang);
+    Brain& enemy = scene.add(40.0F, 45.0F, 180.0F, BrainType::Gang);
+    enemy.setTarget(&scorer);
+    CHECK(scoreEnemy(scorer, enemy, term::kTargetsMeArmed) == Catch::Approx(0.0F));
+    // A world object in hand, whatever its anim set (none here): + 3.
+    enemy.human().script().heldObject = 7.0;
+    CHECK(scoreEnemy(scorer, enemy, term::kTargetsMeArmed) == Catch::Approx(3.0F));
+}
+
 TEST_CASE("an enemy whose attack slots are full to nearer attackers is ruled out", "[ai][targeting]") {
     // Expected: ai-fights.md#enemy-score, confirmed (code)
     Scene scene;
