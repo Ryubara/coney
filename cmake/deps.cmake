@@ -101,12 +101,13 @@ FetchContent_Declare(librw GIT_REPOSITORY https://github.com/aap/librw.git
 FetchContent_Declare(Catch2 GIT_REPOSITORY https://github.com/catchorg/Catch2.git
                             GIT_TAG 317ac1ed4c0bb6e6b91eafc817e05c488feffcb3 ${_coney_Catch2_where} SYSTEM)
 
-# Dear ImGui v1.92.9b (a lightweight tag, so the commit is the tag's own), MIT licence. The developer overlay of the
-# debug menus (docs/guides/debug-menu.md), used only in src/platform/. It ships no CMake build, so the library is
-# made below from its core, its std::string helpers and the SDL3 and OpenGL 3 backends.
+# Dear ImGui v1.92.9b-docking (an annotated tag: the commit below is the one it points at, not the tag object's), MIT
+# licence: v1.92.9b with the docking branch merged in. The developer overlay of the debug menus
+# (docs/guides/debug-menu.md), used only in src/platform/. It ships no CMake build, so the library is made below from
+# its core, its std::string helpers and the SDL3 and OpenGL 3 backends.
 if(CONEY_DEBUG_TOOLS)
     FetchContent_Declare(imgui GIT_REPOSITORY https://github.com/ocornut/imgui.git
-                               GIT_TAG f1cc2ae15e53a861a874c3034aae6798fde194ab ${_coney_imgui_where} SYSTEM)
+                               GIT_TAG b48d1afbe8ee8b238e2961dc363a949dd7304e23 ${_coney_imgui_where} SYSTEM)
 endif()
 
 # ENet v1.3.18 (a lightweight tag, so the commit is the tag's own), MIT licence: the UDP transport of network play

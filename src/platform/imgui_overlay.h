@@ -12,6 +12,8 @@
 #include "platform/imgui_ui_scale.h"
 #include "platform/render_engine.h"
 
+struct ImGuiIO;
+
 namespace coney::platform {
 
 /// The debug menus' developer overlay: the session's model drawn with Dear ImGui (ImGuiModelView) over the game,
@@ -26,6 +28,11 @@ namespace coney::platform {
 /// docs/guides/debug-menu.md#the-developer-overlay.
 class ImGuiOverlay {
   public:
+    /// Sets the Dear ImGui input and window options the overlay runs with: keyboard navigation, and docking (a page
+    /// window can be dragged by its title onto another to tab with it or split beside it, and the layout is kept in
+    /// the settings file). Apart from `start`, so the tests set a bare context up the same way.
+    static void configureIo(ImGuiIO& io);
+
     /// Starts Dear ImGui on `renderer`'s window and OpenGL context, over `session`'s model; both must outlive the
     /// overlay, which must be destroyed before the renderer stops. Fails with ErrorCode::PlatformFailure when the
     /// renderer has no window or a backend refuses. `iniPath` is where ImGui keeps window places (empty: nowhere).

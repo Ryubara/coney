@@ -29,6 +29,13 @@ bool isMouseEvent(const SDL_Event& event) {
 
 } // namespace
 
+void ImGuiOverlay::configureIo(ImGuiIO& io) {
+    // Mouse and keyboard only: the gamepads belong to the game and the pad menu.
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    // Windows dock into each other (tabs and splits) inside the viewport. Multi-viewport stays off: it is the part of
+    // the docking release that varies most by platform (docs/guides/studio/technology.md#gui-choice).
+}
+
 ImGuiOverlay::ImGuiOverlay(debug::DebugSession& session, std::string iniPath)
     : m_view(session.model()), m_scale(session.display()), m_iniPath(std::move(iniPath)) {}
 
@@ -43,8 +50,7 @@ ImGuiOverlay::start(RenderEngine& renderer, debug::DebugSession& session, std::s
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     io.IniFilename = overlay->m_iniPath.empty() ? nullptr : overlay->m_iniPath.c_str();
-    // Mouse and keyboard only: the gamepads belong to the game and the pad menu.
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    configureIo(io);
     ImGui::StyleColorsDark();
     overlay->m_view.keepOpenPagesInSettings();
     overlay->m_scale.setup();
@@ -66,6 +72,7 @@ ImGuiOverlay::start(RenderEngine& renderer, debug::DebugSession& session, std::s
     return overlay;
 }
 
+// Undoes whatever start() got as far as, in reverse order, so an early failure leaves nothing running.
 ImGuiOverlay::~ImGuiOverlay() {
     if (m_glStarted) {
         ImGui_ImplOpenGL3_Shutdown();
