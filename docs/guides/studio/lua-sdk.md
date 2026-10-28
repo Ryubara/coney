@@ -113,8 +113,8 @@ The architecture page advises one runtime until mods need what Lua 4.0 lacks
 ([Three parts](../asset-and-script-architecture.md#script-parts)). The SDK is that need. A maintainer decided:
 
 - **Lua 4.0 stays the runtime of the game**: the disc's scripts, Coney's own rewrites of the level scripts (compared
-  call for call with the originals), script overrides that replace a disc script, and the debug console in the game
-  state. Nothing about it changes.
+  call for call with the originals), disc scripts a mod patches, and the debug console in the game state. Nothing about
+  it changes.
 - **Lua 5.4 is the runtime of projects**: every script a user writes runs in a project state of stock Lua 5.4, behind
   the same Native API as the game state.
 
@@ -132,11 +132,11 @@ reasons:
 | Cost | No second runtime | A second runtime: stock Lua 5.4 as a pinned dependency (MIT licence), a value bridge, deterministic build settings ([below](#lua-build)) |
 | Sharing the game's state | A project could run in the game state, hook its functions and set its globals | A project state is separate; it shares the world, not the game state's globals ([The two states](#two-states)) |
 
-The last row is the only one in 4.0's favour, and it is also a reason against: a script that patches the game state
-can break the faithful scripts in ways nobody can debug, and a separate state is what the sandbox and the network
-model need anyway. A user who wants to change a level script itself writes a script override in Lua 4.0, which the
-[compiler](#compiler) builds and the script catalog runs in place of the disc's chunk
-([Three parts](../asset-and-script-architecture.md#script-parts)).
+The last row is the only one in 4.0's favour, and it is also a reason against: a script that patches the game state can
+break the faithful scripts in ways nobody can debug, and a separate state is what the sandbox and the network model need
+anyway. A user who wants to change a level script itself ships a patch (only the differences, applied to the player's
+own copy; [#1074](issue:1074)), which the [compiler](#compiler) builds and the script catalog runs in place of the
+disc's chunk ([Three parts](../asset-and-script-architecture.md#script-parts)).
 
 That decision is recorded under [Maintainer decisions](#decisions); the network page lists the same choice for
 resources.
@@ -590,7 +590,7 @@ Changing a script while the game runs, as FiveM's `restart`:
 What a project made in the world (humans, objects) stays across a reload; a project that wants a clean world deletes
 its cast in `stop`. Hot reload is for Studio and a mod writer's machine: it is off in test mode, and in a networked
 session only the host reloads its own server scripts. A run with a reload is marked in the run log
-([Determinism](#determinism)). Reloading a script of the game state (a Coney rewrite, a script override) is the
+([Determinism](#determinism)). Reloading a script of the game state (a Coney rewrite, a patched disc script) is the
 console's *Reload* of the architecture page ([Debug console needs](../asset-and-script-architecture.md#console-needs)),
 not the SDK's.
 
@@ -605,7 +605,8 @@ four uses for source text:
   ([Debug console needs](../asset-and-script-architecture.md#console-needs)).
 - **Coney's level rewrites**, written as Lua 4.0 source and compared call for call with the disc's chunks
   ([Three parts](../asset-and-script-architecture.md#script-parts)).
-- **Script overrides**, a user's replacement of a disc script, which must run in the game state.
+- **Patched disc scripts**, a mod's differences applied to the player's own copy of a disc script ([#1074](issue:1074)),
+  which must run in the game state.
 - **The debugger's** watch expressions while paused in the game state ([The script debugger](#debugger)).
 
 The original carries the same ability: its Lua 4.0 library includes the source parser. The chunk loader
@@ -653,7 +654,7 @@ on its own simulation thread, so the Game view and the panels keep drawing while
 ([The script debugger](technology.md#debugger)).
 
 **The game state.** Coney's own Lua 4.0 VM gets the same hooks (a line hook for chunks with line information, an
-instruction hook for those without), so Coney's level rewrites and script overrides debug by line, and a disc chunk by
+instruction hook for those without), so Coney's level rewrites and patched scripts debug by line, and a disc chunk by
 function prototype and instruction (the locator form of a mission page, `level99.lua:f31`), for engineers comparing a
 rewrite with the original. A watch in the game state needs the [compiler](#compiler).
 
@@ -754,7 +755,7 @@ running a project's scripts. Issues 2 to 6 build on the [decision](#decisions) f
    old state fires after the reload.
 7. **core: Add the Lua 4.0 source compiler and the full console.** A lexer and parser written from the Lua 4.0 manual,
    emitting Coney's `LuaProto` with line information; the console on it (statements, `local`, loops, functions, errors
-   with lines); `dostring` compiling text; script overrides through the script catalog. Tests: synthetic programs
+   with lines); `dostring` compiling text; patched disc scripts through the script catalog. Tests: synthetic programs
    compile and give their expected results, every instruction kind covered; the console runs a loop; a disc check
    compares the natives called by the disc's bytecode and by the recompiled decompiles, counts and hashes only.
 8. **core: Add the script debugger over the Debug Adapter Protocol.** A DAP server in the engine over a loopback socket:

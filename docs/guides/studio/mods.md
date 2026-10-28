@@ -41,8 +41,11 @@ data. What mods add to it:
 
 - **`mods/` holds packages; `overrides/` holds data.** Scripts load only from a package in `mods/`, from Studio's open
   project, or from a folder named on the command line (`coney --project <folder>`, for modders who use another editor
-  and for tests); nothing in `overrides/` is ever run as a script. A replacement for one of the game's own scripts is
-  the `game-scripts` permission of a project, not a file dropped into `overrides/files/` ([Attack surface](security.md#surface)).
+  and for tests); nothing in `overrides/` is ever run as a script. A change to one of the game's own scripts is a patch,
+  as [#1074](issue:1074) designs (the mission mods page planned for this folder), under the `game-scripts` permission
+  of a project: only the differences, pinned to the disc script's hash, which each player's Coney applies to the
+  script from their own disc and compiles. No game script ships in a mod, not even as Lua 4.0 source, and none is ever
+  a file dropped into `overrides/files/` ([Attack surface](security.md#surface)).
   A folder found in `mods/` is not loaded; the mods menu says so and points at `--project` and Studio's Export.
 - **A project's store** lives with the saves, because it is save data (the install-folder decision keeps only save data
   in the per-user location); it is named by the project's name and, for a signed project, its signer, so a project of
@@ -73,12 +76,13 @@ it holds, the manifest lists it, and a file not listed is not read.
   listed file's size and hash and the signature, and remembers the result in `cache/mods/`. A file whose bytes differ
   from the manifest fails the check and the mod does not load; each read is bounded by the size the manifest declares.
 - **The `.cpak` layout ([#798](issue:798))** puts the installed game in Coney's own archives, and its step 5 planned
-  mods as `mods/enabled.txt` and `mods/<mod>/mod.toml` folders of patch archives that mirror `game/`. The later
-  decision of one universal mods folder of `.cmod` packages takes that step's place: a mod's replacements of game
-  entries travel inside its `.cmod` as patch entries named as in the catalogue, in the same lookup order (enabled mods,
-  then texture packs, then `game/`), and the load list is `enabled.toml`. Whether the `.cmod` uses the `.cpak`
-  container (an index at the front, entries readable in place, a hash per entry) instead of zip, once that format
-  exists, is for a maintainer to confirm ([Script security: Maintainer decisions](security.md#decisions)).
+  mods as `mods/enabled.txt` and `mods/<mod>/mod.toml` folders of patch archives that mirror `game/`. The later decision
+  of one universal mods folder of `.cmod` packages takes that step's place: a mod's replacements of game entries (data
+  only: a game script changes only by a `game-scripts` patch) travel inside its `.cmod` as patch entries named as in the
+  catalogue, in the same lookup order (enabled mods, then texture packs, then `game/`), and the load list is
+  `enabled.toml`. Whether the `.cmod` uses the `.cpak` container (an index at the front, entries readable in place, a
+  hash per entry) instead of zip, once that format exists, is for a maintainer to confirm ([Script security: Maintainer
+  decisions](security.md#decisions)).
 - **Studio's Play runs the project folder directly**, with no packaging step; Export is only for sharing. Play and
   `--project` read the folder through the same file layer, so what works in Studio works from the package.
 
@@ -183,7 +187,7 @@ comes after the mods already running. That order is the order of main chunks, `s
 | --- | --- | --- |
 | Two mods with the same name | At install and at `refresh` | Only one can be enabled; the other is listed as a second version |
 | Two mods replace the same game file or asset | From their manifests, before anything starts | Allowed; the later mod in the load order wins, as in Minecraft's data packs, and the clash is listed with the winner |
-| Two mods' `game-scripts` override the same game script | From their manifests | Refused: only one can be enabled at a time, and the message names both |
+| Two mods' `game-scripts` patch the same game script | From their manifests | Refused until [#1074](issue:1074) decides whether two patches to one script can apply together: only one can be enabled at a time, and the message names both |
 | A mod names another under `[load] conflicts` | From the manifest | The two cannot run together; the later one is not started |
 | Two mods' scripts disagree at run time (both set the time scale) | Not detectable | Handlers run in load order and a one-slot native keeps the last value set ([The value bridge](lua-sdk.md#bridge)); authors declare `conflicts` once they know |
 
