@@ -1,15 +1,16 @@
 # Coney Studio: content and formats
 
 **Status: design.** Nothing on this page is built. It decides, for each kind of content, what Coney Studio shows from
-the player's disc, what a user edits, imports and exports, the files a project saves in formats of Coney's own, and
-what Studio needs from the engine for each, so that the Studio roadmap can say which kinds wait on Coney. It is one of
-the four Studio designs under [#1054](issue:1054); the panels, the project folder and the import flow are the editor
-experience design's ([#1055](issue:1055)), the program and its libraries the technology design's
-([#1056](issue:1056)), and the scripting terms, the mods runtime and the natives' names the Lua SDK design's
+the player's disc, what a user edits, imports and exports, the files a project saves in formats of Coney's own, and what
+Studio needs from the engine for each, so that the Studio roadmap can say which kinds wait on Coney. It is one of the
+four Studio designs under [#1054](issue:1054); the panels, the project folder and the import flow are the editor
+experience design's ([#1055](issue:1055)), the program and its libraries the technology design's ([#1056](issue:1056)),
+and the scripting terms, the mods runtime and the natives' names the [Lua SDK design](lua-sdk.md)'s
 ([#1057](issue:1057)). It uses their terms (the `.studio/` cache, the Level view where other editors have a Scene view,
 the Game view; what other editors call a scene, Studio calls a level) and does not repeat them. The path scheme
-(`project:/`, `game:/` and `#` for a part of a file) is named on the editor experience page and used by the Lua SDK
-page; this page owns its detail: which names `game:/` holds and how a path resolves ([Paths](#paths)).
+(`project:/`, `game:/` and `#` for a part of a file) is named on the editor experience page, and scripts use it through
+the [Lua SDK's assets by path](lua-sdk.md#assets); this page owns its detail: which names `game:/` holds and how a path
+resolves ([Paths](#paths)).
 
 ## Contents {#contents}
 
@@ -118,7 +119,7 @@ flowchart LR
 - **Coney loads engine forms only**, by `project:/` path, through a project source in the asset store beside the disc
   sources ([Sources](../asset-and-script-architecture.md#sources)). How a project is packaged for players who do not
   run Studio (sources and engine forms, or engine forms alone) is the Lua SDK design's, with resources
-  ([#1057](issue:1057)).
+  ([Lua SDK: the mods folder](lua-sdk.md#mods-folder)).
 
 | Source | Kind | Engine form | Read in Coney by |
 | --- | --- | --- | --- |
@@ -128,7 +129,7 @@ flowchart LR
 | `.gltf`, `.glb`, `.fbx` | Clip | `.cclip`: the clip format's sections in Coney's own layout: root velocity, root translation, one rotation channel per pose bone, events, flags | A new core parser to the struct `parseAnimClip` returns today |
 | `.gltf`, `.glb`, `.fbx` | Map | Several `.cmesh`, a collision mesh's triangles and the level statements its nodes asked for ([Levels](#levels)) | The two above and the collision builder |
 | `.wav` (PCM 8, 16, 24 bit or float, any rate) | Sound | WAV, signed 16-bit PCM, mono or stereo, at most `kMaxSourceRate` | A WAV reader to `PcmSound`, which the mixer plays at any rate ([`pcm_sound.h`](repo:src/audio/pcm_sound.h)) |
-| `.lua` | Script | The source as it is | The mods runtime ([#1057](issue:1057)) |
+| `.lua` | Script | The source as it is | The Lua 5.4 mods runtime ([Lua SDK: the runtime](lua-sdk.md#runtime)) |
 
 - **Every engine form starts with a magic, a format version and the Studio version that wrote it**, and a parser
   refuses a version it does not know, with a message to reimport. The forms are Coney's own and may change; the sources
@@ -144,7 +145,7 @@ flowchart LR
 **Scripts use the same paths.** A script loads, plays or spawns an asset by its path string, as game engines do:
 `Coney.PlaySound("project:/sounds/horn.wav", pos, volume)`, `Coney.SpawnModel("project:/models/bench.glb", pos,
 heading)`, `Coney.PlayClip(human, "project:/anims/dance.glb#Spin", loop, speed)`. The natives and their names are the
-Lua SDK design's ([#1057](issue:1057), its Assets by path), which uses this same scheme. What this page fixes is that
+Lua SDK design's ([Assets by path](lua-sdk.md#assets)), which uses this same scheme. What this page fixes is that
 the string is the asset's `project:/` or `game:/` path, resolved through the import table and the asset store, and that
 a path that does not resolve returns an error with the path in it that the script can test, never a silent nothing.
 Coney's existing native candidates take ids today (a character type for `Coney.ChangeCharacter`, an anim set and id for
@@ -167,7 +168,7 @@ across a reimport.
 | Clip | Its keys | Which clips of a file are kept and their names; the bone map it shares; the slot it fills in a custom character's anim set; its events (a hit frame, a sound) on the timeline; its reach and ranges when it fills an attack slot |
 | Texture | Its pixels | What it overrides, its filtering and addressing, the materials that use it |
 | Sound | Its samples | Its loop points, whether it streams, what plays it (overrides, clip events, scripts) |
-| Script | | Everything, in the script editor ([#1057](issue:1057)) |
+| Script | | Everything, in the script editor ([Lua SDK](lua-sdk.md)) |
 
 **Hand-edited collision** means working on the collision triangles as data, not modelling them: select faces of a
 generated collision mesh and set their material, flags (climbable, sneak zone, two-sided) and area, delete faces
@@ -447,7 +448,7 @@ rest.
 **Edit: custom props.** An imported static model placed in a level is drawn at its transform, with the collision its
 sidecar asks for (none, its mesh, or a hull). It is level geometry, not an object of the game: it cannot be picked up,
 broken or thrown, since that needs an Object List type with a class, which the original's types define and a project
-cannot add until Coney has a way to register a type of its own (a Coney native, [#1057](issue:1057)).
+cannot add until Coney has a way to register a type of its own (a Coney native, [Lua SDK: names](lua-sdk.md#names)).
 
 **Export.** A model to glTF (a character with its skin) and a texture to PNG, as `extract` writes them, to the export
 folder.
@@ -542,7 +543,8 @@ pages ([Missions](../../missions/index.md)).
 and its **checkpoints**: for each, the spawn point the player restarts at, the function of the mission's script that
 sets it up and the objective text shown (`SetCheckPoint`, `HUDSetObjective`, both implemented). The mission's logic
 is Lua calling natives, written in the script editor; the runtime that loads a project's scripts, the entry points,
-hot reload and the sandbox are the Lua SDK design's ([#1057](issue:1057)). This page fixes only that a mission is a
+hot reload and the sandbox are the [Lua SDK design](lua-sdk.md)'s ([entry points](lua-sdk.md#entry-points),
+[Play](lua-sdk.md#play)). This page fixes only that a mission is a
 level plus scripts plus checkpoints, all as `project:/` paths, and that its objective strings are the project's own
 (the game's text is never copied in).
 
@@ -566,7 +568,7 @@ never absolute.
 
 ```text
 my-project/
-  coney-project.toml        the manifest (#1055, #1057), plus: the disc it was made against
+  coney-project.toml        the manifest (#1055, lua-sdk.md#manifest), plus: the disc it was made against
   overrides.layout          texture and sound overrides of disc assets
   levels/<name>.layout      levels
   prefabs/<name>.prefab     prefabs: groups of entities placed many times
@@ -613,7 +615,7 @@ units and axes: metres and degrees, the game's axes, z up.
 | `navlink` | `from= to= kind=walk\|jump\|climb\|door` | A link between areas |
 | Entities | `flag`, `path`, `flaglink`, `volume`, `object`, `emitter`, `door`, `glass`, `car`, `light`, `character`, `spawner`, `trigger` with their natives' arguments by name | The entities of [Level objects](#entities) |
 | `spawn NAME` | `character=` a type number or `project:/characters/...` | The spawn point's character |
-| `script PATH` | the entity keys | A script entity, run at the level's entry after the entities; its parent is the entity it belongs to ([#1057](issue:1057)) |
+| `script PATH` | the entity keys | A script entity, run at the level's entry after the entities; its parent is the entity it belongs to ([Lua SDK: Play](lua-sdk.md#play)) |
 
 An example, in version 2:
 
@@ -731,7 +733,7 @@ One row per engine change, the Studio kinds that wait on it and its state today.
 | `CharacterModel` and clips from engine forms; humans drawn with several materials | Custom models, clips | Disc decoders only; one material |
 | Anim set slots a project overrides | Custom clips in a moveset | Not built |
 | A WAV reader into `PcmSound`; project sounds by path and position | Sounds | The mixer plays any `PcmSound` |
-| The mods runtime and natives by path ([#1057](issue:1057)) | Scripts, missions, assets by string | Designed ([Script mods](../../roadmap.md#script-mods)) |
+| The mods runtime and natives by path ([Lua SDK](lua-sdk.md#assets)) | Scripts, missions, assets by string | Designed ([Script mods](../../roadmap.md#script-mods)) |
 | A recorded trace of a level's entity natives, kept for Studio | Showing a disc level's entities | `--script-trace` writes every call |
 
 What needs nothing new: the viewers of models, textures, clips, scenes and movies (the debug menus' parsers and views),
@@ -761,7 +763,7 @@ natives are implemented), and the export of every kind the extract tool writes.
 - **Removing what a disc level's script makes.** An override removes such an entity after the script made it and may
   still hold its handle; a later call of the script on that handle then meets nothing. Which kinds can be removed
   safely, and whether stopping the call itself is better, is to be tried per kind with the Lua SDK design
-  ([#1057](issue:1057)).
+  ([Lua SDK](lua-sdk.md)).
 
 ## Proposed build issues {#build-issues}
 
@@ -822,5 +824,5 @@ In the order they should come, after the editor experience design's shell, File 
     as derived. Tests: an exported synthetic model reimports to the same `.cmodel`; a disc export never lands inside
     the project folder.
 12. **tools: Add project missions with checkpoints.** The `.mission` file, starting a project mission at a checkpoint,
-    objectives shown; after the mods runtime ([#1057](issue:1057)). Tests: a synthetic mission starts at checkpoint 2
-    with the player at its spawn and its setup function called once.
+    objectives shown; after the mods runtime ([Lua SDK](lua-sdk.md#build-issues)). Tests: a synthetic mission starts at
+    checkpoint 2 with the player at its spawn and its setup function called once.
