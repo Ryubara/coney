@@ -60,7 +60,8 @@ class Wad {
     /// (docs/guides/asset-and-script-architecture.md#install-folder): each file named as lookup() takes a name
     /// (`level99.lua`, any case, or `0x` and its name hash) is read by openEntry() in place of the entry's bytes in
     /// WARRIORS.WAD. The names are taken in sorted order, so the first of two names for one entry wins. A missing
-    /// folder replaces nothing. Fails with ErrorCode::NotFound when the folder exists but cannot be listed.
+    /// folder replaces nothing and keeps what an earlier call replaced. Fails with ErrorCode::NotFound when the folder
+    /// exists but cannot be listed.
     /// @coney-only the original reads every entry from the disc; an install's overrides are Coney's modding path
     [[nodiscard]] std::expected<WadOverrideReport, Error> useOverrides(const std::filesystem::path& folder);
 
