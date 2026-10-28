@@ -422,7 +422,8 @@ class Room:
     #: Units of every track in work, and the machine limit.
     total: int
     machine: int
-    #: The places kept for other tracks that run fewer than their `min`: track to places.
+    #: The places kept for tracks that run fewer than their `min` of filling units, the asking track's own too when
+    #: the unit asking would not fill it (a tooling unit in reimplementation): track to places.
     kept: dict[str, int]
 
     @property
