@@ -16,7 +16,7 @@ resolves ([Paths](#paths)).
 
 - [Principles](#principles): the four rules every section below follows.
 - [Paths](#paths): how a project names its own files and the disc's, and how scripts use the same names.
-- [The import step](#import): from a source file (glTF, FBX, PNG, WAV) to what the engine loads.
+- [The import step](#import): from a source file (glTF, FBX, images, audio) to what the engine loads.
   [What stays editable after import](#editable) is its last part.
 - [Readers](#readers): glTF, FBX and Blender, and the choice of FBX reader.
 - [Content by kind](#kinds): per kind, what Studio shows, edits, imports and exports.
@@ -92,7 +92,7 @@ writes a hash in hex because the name is not recovered, so does the path.
 
 ## The import step {#import}
 
-Importing turns a **source file** a user brings (a `.glb`, an `.fbx`, a `.png`, a `.wav`) into the **engine form**
+Importing turns a **source file** a user brings (a `.glb`, an `.fbx`, an image, a sound file) into the **engine form**
 Coney loads. Unity and Godot work the same way; this is Coney's version.
 
 ```mermaid
@@ -125,7 +125,7 @@ flowchart LR
 
 | Source | Kind | Engine form | Read in Coney by |
 | --- | --- | --- | --- |
-| `.png` | Texture | The PNG, checked (size, depth) | The texture loader (librw reads PNG today, as the sandbox's textures show) |
+| `.png`, `.jpg`, `.tga` | Texture | A PNG, checked (size, depth) | The texture loader (librw reads PNG today, as the sandbox's textures show) |
 | `.gltf`, `.glb`, `.fbx` | Static model (a prop, a map's geometry) | `.cmesh`: triangles, normals, two texture coordinate sets, materials naming textures by path, in game axes | A new core parser to a mesh struct, beside the sandbox's mesh |
 | `.gltf`, `.glb`, `.fbx` | Skinned model (a character) | `.cmodel`: a `CharacterModel` (vertices with up to the format's bone weights on the 32 skin bones, triangles, bind matrices) and its textures | A new core parser to the struct `decodeCharacterModel` returns today |
 | `.gltf`, `.glb`, `.fbx` | Clip | `.cclip`: the clip format's sections in Coney's own layout: root velocity, root translation, one rotation channel per pose bone, events, flags | A new core parser to the struct `parseAnimClip` returns today |
@@ -222,9 +222,9 @@ stays editable in Studio, and what only Blender changes, is [What stays editable
 | [Colliders and primitives](#collision) | A level's collision triangles by flag and material | Primitives and colliders with full transforms, material, flags, area | A collision mesh from glTF or FBX | glTF | Exists: primitives (yaw only), the collision builder |
 | [Paths](#paths-kind) | The path map's areas, holes and route graph; script paths; flag networks | Walkable areas and links, script paths, flag networks | | glTF, JSON | Path map decoder exists; building one from Coney data waits |
 | [Level objects and spawners](#entities) | The entities a level makes, by kind | Placed entities of every kind whose native Coney implements | | | The natives exist; making them from level data waits |
-| [Models and textures](#models) | Models (shaded, wireframe, by material, normals, bones), texture dictionaries | Texture overrides on existing models; custom props | glTF, FBX, PNG | glTF, PNG | Decoders and views exist; overrides and custom meshes wait |
+| [Models and textures](#models) | Models (shaded, wireframe, by material, normals, bones), texture dictionaries | Texture overrides on existing models; custom props | glTF, FBX, PNG, JPEG, TGA | glTF, PNG | Decoders and views exist; overrides and custom meshes wait |
 | [Skeletons and animations](#animations) | The 34-bone skeleton, clips with their events and flags, a type's anim set | Custom player models on an existing moveset; custom clips | glTF, FBX (skinned, clips) | glTF | Clip and rig code exists; outside models and clips wait |
-| [Sounds](#sounds) | Sound banks, streams, music | Sound files a project plays | WAV | WAV | The mixer exists; sounds from a project wait |
+| [Sounds](#sounds) | Sound banks, streams, music | Sound files a project plays | WAV, FLAC, MP3, Ogg Vorbis | WAV | The mixer exists; sounds from a project wait |
 | [Missions and scripts](#missions) | A level's script chunk: its functions and the natives it calls | Project missions, checkpoints, objectives, scripts | Lua | | Natives exist; the mods runtime waits |
 | [Scenes, movies, text](#scenes) | Scene records played; movies played | Nothing | | | Players exist |
 
@@ -536,10 +536,10 @@ materials; an anim set whose slots a project overrides; clip playback by path.
 
 **Show.** Sound banks and their sounds, the streamed sounds of `IOP/BFW.SND` and the music of `IOP/MUSIC.SND`, played
 through Coney's mixer with their rate, loop points and length ([Audio data](../../research/formats/audio.md)).
-**Import** takes WAV ([The import step](#import)); the sidecar sets the loop points and whether it streams. **Edit**
-is choosing where a project's sounds play: by script (`Coney.PlaySound` with a path, at a position or attached to an
-entity) and on clip events. Replacing a disc sound with a project's (`override game:/sounds/<name> project:/...`,
-[Override packs](project-formats.md#override-packs)) is the
+**Import** takes WAV, FLAC, MP3 and Ogg Vorbis, each turned into the WAV engine form ([The import step](#import)); the
+sidecar sets the loop points and whether it streams. **Edit** is choosing where a project's sounds play: by script
+(`Coney.PlaySound` with a path, at a position or attached to an entity) and on clip events. Replacing a disc sound with
+a project's (`override game:/sounds/<name> project:/...`, [Override packs](project-formats.md#override-packs)) is the
 same override as a texture's, sounds being a presentation kind. **Export** writes a sound as WAV, as `extract` does.
 
 **Needs from Coney:** a WAV reader into `PcmSound`; playing a project sound by path and at a position through the
