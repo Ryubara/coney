@@ -349,14 +349,15 @@ _COMMENTS = re.compile("(?P<raw>" + _RAW + ")|(?P<keep>" + _KEEP + ")|" + _COMME
 _TEST_CASE = re.compile(r"TEST_CASE\s*+\(\s*+((?:" + _LITERAL + r"\s*+)+)[,)]")
 
 
-def _without_comments(text: str) -> str:
-    """`text` as the compiler sees it: each comment replaced by one space, each raw string by `0`, literals whole.
-    One scan, left to right, so a quote inside a comment and a comment marker inside a literal are both text."""
+def _without_comments(text: str, raw: Callable[[str], str] = lambda _: "0") -> str:
+    """`text` as the compiler sees it: each comment replaced by one space, each raw string by what `raw` makes of it
+    (`0` unless told), literals whole. One scan, left to right, so a quote inside a comment and a comment marker inside
+    a literal are both text."""
 
     def one(match: re.Match[str]) -> str:
         if match.group("keep") is not None:
             return match.group(0)
-        return "0" if match.group("raw") is not None else " "
+        return raw(match.group(0)) if match.group("raw") is not None else " "
 
     return _COMMENTS.sub(one, text)
 
@@ -430,11 +431,15 @@ def declared_bodies(text: str) -> dict[str, list[str]]:
     """Each `TEST_CASE` declared in `text` -> its code (one entry for each declaration of the name), from the macro
     through the closing brace of its body, without comments and white space (`orig_review.code_text`), so what
     clang-format or a comment edit does is not a change of the test."""
-    plain = _without_comments(text)
+    # Two readings of the same text, equally long: one with each raw string made a plain string of the same length, to
+    # find the macros and the ends of their bodies (a brace inside a raw string is data); one with the raw strings
+    # whole, which is what is hashed (an edit to a fixture inside one is an edit to the test).
+    plain = _without_comments(text, lambda lit: '"' + "x" * (len(lit) - 2) + '"')
+    whole = _without_comments(text, lambda lit: lit)
     bodies: dict[str, list[str]] = {}
     for match in _TEST_CASE.finditer(plain):
         end = _block_end(plain, match.end())
-        bodies.setdefault(_joined(match.group(1)), []).append(code_text(plain[match.start() : end]))
+        bodies.setdefault(_joined(match.group(1)), []).append(code_text(whole[match.start() : end]))
     return bodies
 
 

@@ -128,6 +128,19 @@ def test_braces_in_a_string_do_not_end_the_body_early(tree: Tree) -> None:
     assert tree.hash() != first
 
 
+def test_an_edit_inside_a_raw_string_of_the_test_is_a_change(tree: Tree) -> None:
+    tree.put(FILE, 'TEST_CASE("Widget ready frame") {\n    parse(R"({"frames": [1, {2}]})");\n}\n' + OTHER)
+    tree.commit("a raw string fixture")
+    before = tree.hash()
+    tree.put(FILE, tree.read(FILE).replace("[1, {2}]", "[1, {3}]"))
+    tree.commit("edit the fixture")
+    assert tree.hash() != before
+    after = tree.hash()
+    tree.put(FILE, tree.read(FILE).replace("other() == 1", "other() == 2"))
+    tree.commit("edit the other test, after the raw string")
+    assert tree.hash() == after
+
+
 def test_a_renamed_test_is_stale(tree: Tree) -> None:
     tree.put(FILE, tree.read(FILE).replace("Widget ready frame", "Widget ready"))
     tree.commit("rename")

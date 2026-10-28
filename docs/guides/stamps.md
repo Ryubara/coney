@@ -436,7 +436,8 @@ SHA-256 of (`fails_first.test_sha256`):
 * the test's name and, for each test file of the stamp (`detail.test_files`) that declares it, the file's path;
 * the test's **code**: the `TEST_CASE(...)` macro with its name and tags through the closing brace of its body, without
   comments and white space (the rule of [the body hash](coney-tools-fidelity.md#body-hash), `orig_review.code_text`),
-  so clang-format or a reworded comment is no change; a string, a tag or a number is code;
+  so clang-format or a reworded comment is no change; a string (a raw string too, whatever it holds), a tag or a
+  number is code;
 * its **registration**: the lines of the `CMakeLists.txt` files from the test file's folder up to `tests/` that name the
   file (`ai/widget_test.cpp` in `tests/CMakeLists.txt`, or `widget_test.cpp` in `tests/ai/CMakeLists.txt`), comments
   dropped. Another file added to the same list is not this file's line, so it changes nothing.
