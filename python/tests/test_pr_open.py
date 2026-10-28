@@ -24,11 +24,6 @@ from coney_tools.issue_claim_remote import GhRemote
 from coney_tools.task_file import TaskFile, render_task_file
 
 
-@pytest.fixture(autouse=True)
-def _no_task_from_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("CONEY_TASK", raising=False)
-
-
 def docs_unit(tmp_path: Path, shape: str = "docs") -> Open:
     """A released-ready unit of the given shape (`docs` by default: fast, no `@orig` function)."""
     return make_open(make(tmp_path, shape))

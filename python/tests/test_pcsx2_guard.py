@@ -677,7 +677,6 @@ def test_the_script_copes_with_a_working_directory_that_is_no_path(
     cwd: object,
 ) -> None:
     registry.claim("coop-1", "pcsx2-b")
-    monkeypatch.delenv("CLAUDE_PROJECT_DIR", raising=False)
     monkeypatch.setattr(pcsx2_guard, "default_guard", lambda start: guard)
     guard.bind("s1", "agent-1", ["recipes-1"])
     call = {"session_id": "s1", "agent_id": "agent-1", "tool_name": CONNECT, "cwd": cwd}

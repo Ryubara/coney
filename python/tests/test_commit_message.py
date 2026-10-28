@@ -249,6 +249,7 @@ def run(
     env: dict[str, str] | None = None,
 ) -> tuple[int, str]:
     """Run `coney-tools pr check-commit` on a message file, from the repository; (exit code, stdout + stderr)."""
+    # A test calls this more than once and the autouse fixture clears only before the test: clear again between calls.
     for name in ("CONEY_AGENT_MODEL", "CONEY_AGENT_INJECTED", "CONEY_AGENT_TOKEN"):
         monkeypatch.delenv(name, raising=False)
     identity.reset()

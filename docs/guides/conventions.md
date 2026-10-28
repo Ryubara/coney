@@ -600,6 +600,10 @@ the harness that drives a running Coney or PCSX2 with scripted input.
   title limit, a description section, a label, a path class, a limit in days) is a key of
   `.github/conventions.yml`, read through `coney_tools/conventions.py`; code never repeats it as a constant
   ([Repository conventions](repo-conventions.md)).
+- **Tests start in a clean environment.** An autouse fixture in `python/tests/conftest.py` clears the variables the
+  tools read (`CONEY_TASK`, `VIRTUAL_ENV`, `CONEY_DISC` and the rest), so a suite run inside a task passes as it does
+  in CI; a test sets what it needs with `monkeypatch.setenv`
+  ([details](testing.md#python-environment)).
 - **`pathlib` only** for paths, never string concatenation or `os.path`. Every tool runs on Windows, Linux and
   macOS, and `pathlib` handles the separators and drive letters.
 - **Docstrings** on every public module, class and function: a one-line summary, then whatever a caller needs

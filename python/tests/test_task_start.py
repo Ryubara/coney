@@ -936,7 +936,6 @@ def test_start_from_the_command_line_uses_the_checkout_it_runs_in(
 ) -> None:
     world.ready()
     monkeypatch.chdir(world.main)
-    monkeypatch.delenv("CONEY_TASK", raising=False)
     status = task_cli.run_task(parse("start", TASK), remote=world.github, now=world.clock.now)
     assert status == 0 and world.worktree().is_dir()
     assert "started" in capsys.readouterr().out

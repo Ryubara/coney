@@ -146,7 +146,6 @@ def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> World:
     git(root, "add", "-A")
     git(root, "commit", "-q", "-m", "base")
     git(root, "checkout", "-q", "-b", "work")
-    monkeypatch.delenv("CONEY_TASK", raising=False)
     return World(root)
 
 

@@ -105,8 +105,7 @@ def test_placer_moves_each_new_window_once() -> None:
     assert desktop.windows[0x10] == Rect(0, 0, 1296, 798)
 
 
-def test_no_placer_without_the_variable(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv(window_display.ENV, raising=False)
+def test_no_placer_without_the_variable() -> None:
     assert pcsx2_proc.window_placer() is None
 
 
