@@ -29,6 +29,8 @@ NativeFunction stringSetter(std::string_view name, gui::StringTable table, gui::
     return [name = std::string(name), table, &strings](std::span<const Value> args) -> BindingResult {
         const std::optional<double> id = args.empty() ? std::nullopt : args[0].number();
         const std::optional<std::string_view> text = args.size() < 2 ? std::nullopt : args[1].string();
+        // Coney's choice: an id that is not a whole number in range is an error; the original converts whatever
+        // number it gets to an integer (docs/research/gui.md#strings).
         if (!id || *id < 0 || *id > kMaxStringId || std::floor(*id) != *id) {
             return fail(ErrorCode::Invalid, std::format("{}: the id must be a whole number from 0", name));
         }
