@@ -613,6 +613,24 @@ def test_a_change_to_research_pages_needs_the_pages_graded(tmp_path: Path) -> No
     assert texts(built.verify()) == []
 
 
+def test_a_change_to_a_research_data_file_needs_no_page_graded(tmp_path: Path) -> None:
+    # `standards prune` rewrites research/legacy-files.toml: no page, so nothing for the reviewer to grade.
+    built = make(tmp_path, shape="docs", skip=frozenset({"reviewed"}))
+    built.edit("research/legacy-files.toml", 'files = ["a"]\n')
+    built.check("docs")
+    built.review(functions={}, pages=[])
+    assert texts(built.verify()) == []
+    # A page beside the data file is still graded.
+    built = make(tmp_path / "b", shape="docs", skip=frozenset({"reviewed", "checked"}))
+    built.edit("research/legacy-files.toml", 'files = ["a"]\n')
+    built.edit("docs/research/widget.md", "# Widget\n")
+    built.check("docs")
+    built.review(functions={}, pages=[])
+    assert texts(built.verify(), "reviewed") == [
+        "reviewed: Review did not grade the research pages this change touches"
+    ]
+
+
 # --- the whole -------------------------------------------------------------------------------------------------------
 
 

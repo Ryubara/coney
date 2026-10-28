@@ -108,7 +108,7 @@ What it refuses, exactly (`<...>` is filled in):
 | `reviewed` | `reviewed: stale: the pull request title changed since Review`; `... the summary paragraph ...`; `... the screenshots ...` | `task review --text` |
 | `reviewed` | `reviewed: the text Review covered cannot be read: <path>: <why>` (no `PR.md`, or one with no title or summary: the three text hashes cannot be compared, so nothing holds) | the engineer, then `task review --text` |
 | `reviewed` | `reviewed: 0x00501000 was judged diff-bug`; `reviewed: Review did not cover 0x00501000` | the engineer fixes, then `task check` and `task review`; `task review` |
-| `reviewed` | `reviewed: Review did not grade the research pages this change touches` (a change under `tasks.review.research_paths`) | `task review` |
+| `reviewed` | `reviewed: Review did not grade the research pages this change touches` (a change to a [research page](#research-page)) | `task review` |
 | `reviewed` | `reviewed: reviewer engineer-1 also worked on this task` (the reviewer wrote any stamp of the unit other than a `reviewed` one, whatever its agent type: the rule `task review --record` applies); `reviewed: the Review stamp names no reviewer` | `task review` (another reviewer) |
 | `reviewed` | `reviewed: the reviewer's type is engineer, not reviewer`; `reviewed: a review of orig work must run on opus; this review ran on <model>` (the agent and the model words of `tasks.review`, the rule `task review --record` applies; only with `stamps.require_hook_source`) | `task review` |
 
@@ -124,6 +124,17 @@ one Coney body.
 
 A function the branch removes is printed as a note, not a refusal. A change that touches no C++ file under `src/`
 adds, changes and removes no `@orig` function, so the run does not read the source at all.
+
+### What counts as a research page {#research-page}
+
+A research page is a documentation file (`tasks.review.docs_suffixes`, `.md`) under one of `tasks.review.research_paths`
+(`docs/research/` and `research/`). `TaskReview.is_research_page` in `repo:python/src/coney_tools/conventions.py` is the
+one definition: `task review` lists exactly these in its packet's `pages` and gives them the research checklist, and
+`pr verify` demands that the `reviewed` stamp graded a page only when the change touches one of them. A data file under
+`research/` (`legacy-files.toml`, which `standards prune` rewrites, or a YAML table) is not a page: no reviewer can
+grade it, so a change whose only research paths are data files passes with a review whose `pages` list is empty, and
+the reviewer reads those files with the code checklist. The reverse-engineering model rule
+(`tasks.review.reverse_engineering_kinds`) follows the same definition.
 
 ## pr text {#text}
 

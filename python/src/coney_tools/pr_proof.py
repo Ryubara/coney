@@ -875,8 +875,7 @@ def check_reviewed(subject: Subject, text: TextHashes | None) -> list[Refusal]:
                 found.append(refuse(f"Review did not cover {address}"))
             elif judged not in PASSING_CLASSES:
                 found.append(refuse(f"{address} was judged {judged}", "engineer, then task check and task review"))
-    research = tuple(subject.conventions.tasks.review.research_paths)
-    if any(p.startswith(research) for p in subject.paths):
+    if any(subject.conventions.tasks.review.is_research_page(p) for p in subject.paths):
         pages = stamp.detail.get("pages")
         if not (isinstance(pages, list) and pages):
             found.append(refuse("Review did not grade the research pages this change touches"))
@@ -901,7 +900,7 @@ def _reviewer(subject: Subject, stamp: stamps.Stamp, refuse: Callable[..., Refus
         found.append(refuse(f"the reviewer's type is {reviewer.get('type')}, not {review.agent}"))
     # Reverse-engineering review runs on Opus (AGENTS.md): the same rule `task review --record` applies.
     kinds = {"orig"} if subject.changed else set()
-    if any(p.startswith(tuple(review.research_paths)) for p in subject.paths):
+    if any(review.is_research_page(p) for p in subject.paths):
         kinds.add("research")
     kinds &= set(review.reverse_engineering_kinds)
     model = str(reviewer.get("model", ""))
