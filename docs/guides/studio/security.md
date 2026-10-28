@@ -346,7 +346,7 @@ on copies. It is a proposed build issue ([17](#build-issues)), filed when a nati
 | HTTP for a leaderboard or an update check | none for local mods and clients; a ConeyMP server script may get web requests from its operator ([Declared permissions](#declared)) |
 | The `debug` library for introspection | Tracebacks in every error; breakpoints, stepping and watches in the [script debugger](lua-sdk.md#debugger), from outside the state |
 | `string.dump` and precompiled chunks to hide source | none: projects ship source. Client scripts are public anyway ([Coney resources](../network-architecture.md#resources)) |
-| Shipping a changed copy of a game script | A patch, as [#1074](issue:1074) designs: only the differences, applied to the player's own disc script, with the `game-scripts` permission ([Declared permissions](#declared)) |
+| Shipping a changed copy of a game script | A patch, as [Mission mods](mission-mods.md#patches) designs: only the differences, applied to the player's own disc script, with the `game-scripts` permission ([Declared permissions](#declared)) |
 
 Spawning, moving, fighting, sounds, the HUD, the project's own assets and its data need no approval from the player.
 
@@ -448,7 +448,7 @@ memory = 128                   # MiB, up to Coney's ceiling; shown, never asked
 
 | Permission | What it allows | Who approves | Why it is a permission |
 | --- | --- | --- | --- |
-| `game-scripts` | Patches to the named disc scripts, as [#1074](issue:1074) designs (the mission mods page planned for this folder): only the differences, pinned to the disc script's hash; each player's Coney applies them to the script from their own disc, compiles the result with its Lua 4.0 [compiler](lua-sdk.md#compiler) and runs it in the game state in the script's place ([Three parts](../asset-and-script-architecture.md#script-parts)). No game script ships, not even as Lua 4.0 source | The player, before the mod first starts | They run in the game state beside the faithful scripts, can change the story's flow and are not held by a project state's separation; the player should know which levels a mod changes |
+| `game-scripts` | Patches to the named disc scripts, as [Mission mods](mission-mods.md#patches) designs: only the differences, pinned to the disc script's hash; each player's Coney applies them to the script from their own disc, compiles the result with its Lua 4.0 [compiler](lua-sdk.md#compiler) and runs it in the game state in the script's place ([Three parts](../asset-and-script-architecture.md#script-parts)). No game script ships, not even as Lua 4.0 source | The player, before the mod first starts | They run in the game state beside the faithful scripts, can change the story's flow and are not held by a project state's separation; the player should know which levels a mod changes |
 | `http` (P4) | Web requests from a ConeyMP **server** script to the hosts listed | The server's operator, per project, in the server's configuration (Bedrock's `permissions.json`) | Network access is how remote code and stolen data travel ([FiveM](#fivem)); never on a client and never for a local mod |
 | `secrets` (P4) | Named values from the server's configuration, usable only as an `http` header's value, never readable as text | The operator, per project | A token a script can print can be leaked |
 
@@ -518,7 +518,7 @@ The same panel opens from the join prompt of a modded server and from Studio's P
 | --- | --- | --- | --- |
 | **`load` and string-to-code** | A way to bytecode, or to an environment that is not the sandbox | `load` forces mode `"t"` and defaults to the project environment; a script can pass only tables it already holds as `env` | Escape suite; the source fuzzer |
 | **Bytecode, Lua 5.4** | Crafted bytecode corrupts memory ([Lua itself](#lua-itself)) | No path in: `load` text only, `require` text only (a file starting with Lua's binary signature is refused), no `string.dump`, no `loadfile`; packages and server caches hold no bytecode | Escape suite: every path given a dumped chunk |
-| **Bytecode, Lua 4.0** | A patched disc script runs in Coney's own 4.0 VM, which reads bytecode | A game script changes only by a project's `game-scripts` patch ([#1074](issue:1074)): text, never bytecode, applied only to the player's own disc script whose hash it pins, and the result compiled by Coney's [compiler](lua-sdk.md#compiler); no game script ships in a `.cmod`, not even as Lua 4.0 source; `overrides/` never holds a script, and its `files/` entries of script kinds are refused; the player's own disc chunks, checked against their SHA-1 at install, are the only bytecode the game state runs; the 4.0 chunk loader and VM are fuzzed all the same | A patch carrying bytecode, a patch against another hash and a script chunk in `overrides/files/` refused; the 4.0 chunk fuzzer |
+| **Bytecode, Lua 4.0** | A patched disc script runs in Coney's own 4.0 VM, which reads bytecode | A game script changes only by a project's `game-scripts` patch ([Mission mods](mission-mods.md#compiling)): text, never bytecode, applied only to the player's own disc script whose hash it pins, and the result compiled by Coney's [compiler](lua-sdk.md#compiler); no game script ships in a `.cmod`, not even as Lua 4.0 source; `overrides/` never holds a script, and its `files/` entries of script kinds are refused; the player's own disc chunks, checked against their SHA-1 at install, are the only bytecode the game state runs; the 4.0 chunk loader and VM are fuzzed all the same | A patch carrying bytecode, a patch against another hash and a script chunk in `overrides/files/` refused; the 4.0 chunk fuzzer |
 | **Lua's own bugs** | A crash or escape from plain source (CVE-2021-44964) | Lua 5.4.9 pinned, its bugs page watched, every script-reachable fix applied ([Keeping the runtime current](#runtime-updates)); fuzzing under sanitizers | The source fuzzer |
 | **The C API and errors** | Lua's errors unwind with `longjmp`, which skips C++ destructors (undefined behaviour, and a leak at best); a native holding C++ objects when an error is raised breaks the engine | Natives never call Lua's API. The bridge's C function reads the arguments into `script::Value`s, calls the native, and raises the native's error only after every C++ object of the call is gone; the API calls that may raise (allocations) happen before or after the C++ part, never in it | Bridge tests under ASan: a native that fails, an allocation failure during argument conversion and during results |
 | **The value bridge** | A metatable on a table argument runs script code inside a native (`__index`, `__len`); a cycle or a huge table; a string with zero bytes; NaN in an integer; a stale callback id | Raw access only (`lua_rawgeti`, `lua_rawlen`) when reading arguments, so no metamethod runs inside a native; sizes and depth limited; integers range-checked; a callback id carries its state and generation and is dropped on reload ([The value bridge](lua-sdk.md#bridge)) | The native fuzzer |
@@ -549,9 +549,9 @@ game data), each named after the escape it closes:
 - **No file outside the project.** `require` and `Coney.ReadData` with `..`, absolute paths, drive letters, network
   and device paths, alternate streams, reserved names, a symbolic link, a junction and a hard link (each made by the
   test in a temporary folder, skipped with a message where the platform cannot make one).
-- **No way out of the environment.** Setting a native's name fails; `setmetatable(_ENV, nil)` fails;
-  `getmetatable(_ENV)` reveals no table; nothing reachable from a project state names another project's state, the
-  registry or the game state.
+- **No way out of the environment.** Setting a native's name fails, and `rawset` of one shadows it only in the project's
+  own environment; `setmetatable(_ENV, nil)` fails; `getmetatable(_ENV)` reveals no table; nothing reachable from a
+  project state names another project's state, the registry or the game state.
 - **Runaway code stops.** An endless loop, the same inside `pcall`, inside `coroutine.wrap`, inside a `__close`, in a
   thread that never waits, and ten thousand handlers in one step: each stops with the budget error and the next step
   runs.
@@ -581,6 +581,7 @@ game data), each named after the escape it closes:
 | Manifests and `.cmod` packages | Mutated TOML and zip files | Only `std::expected` errors; no write to disk; inflated sizes within the declared ones |
 | Each parser of project content | Mutated levels, models, textures, sounds, written synthetically | Only errors; allocations within limits |
 | The Lua 4.0 chunk loader and VM | Mutated chunks | Only errors (the patched-script path) |
+| The `.cpatch` parser and apply ([The format](mission-mods.md#format)) | Mutated patches against synthetic bases | Only refusals; nothing applied to a base whose hash differs |
 
 - **Where it runs.** Fuzz targets are built with Clang's libFuzzer and AddressSanitizer and UndefinedBehaviorSanitizer
   on Linux in a nightly CI job, as the network page's fuzzing does. A crash found becomes a fixture and a unit test.
@@ -660,9 +661,9 @@ Open:
 
 The build issues of this page and of [Mods, packages and loading](mods.md), in order, interleaved with the SDK's [build
 issues](lua-sdk.md#build-issues): 1 and 2 come with its runtime (SDK issue 2), 3 to 11 with its loader (SDK issue 3; 7
-and 8 also with the console of [#1064](issue:1064)), 12 with its compiler (SDK issue 7) and #1074's patches, 13 and 14
-when Studio's Export and code editor are built, 15 and 16 with ConeyMP's resources ([#566](issue:566)), and 17 when a
-native needs it.
+and 8 also with the console of [#1064](issue:1064)), 12 with its compiler (SDK issue 7) and Mission mods' issue 5, 13
+and 14 when Studio's Export and code editor are built, 15 and 16 with ConeyMP's resources ([#566](issue:566)), and 17
+when a native needs it.
 
 1. **core: Add the project file layer.** The one way a name becomes a project file, over a folder root: relative names
    with `/`, every refusal of [Files and paths](#paths) (absolute, drive, network and device paths, `..`, alternate
@@ -692,10 +693,9 @@ native needs it.
    package added on at start, written by nothing else but the mods menu and the player); `[load] autostart`; starting
    dependencies first and stopping dependants first; `[dependencies]` with semantic-version ranges, missing, disabled
    and cyclic ones refused with their messages; the load order from the graph and the file; clash detection from
-   manifests (same name, same replaced asset, same game script, `conflicts`); the `mod:/` asset root. Tests: two mods
-   run their handlers in the file's order with a dependency first; a cycle and a version outside the range are refused
-   while the other mods start; a content mod runs only when its level is played; two mods patching the same game script
-   cannot both run.
+   manifests (same name, same replaced asset, `conflicts`); the `mod:/` asset root. Tests: two mods run their handlers
+   in the file's order with a dependency first; a cycle and a version outside the range are refused while the other mods
+   start; a content mod runs only when its level is played (patches of one game script merge by Mission mods' issue 4).
 6. **core: Add exports between mods.** `Coney.Export`, `Coney.CallExport` and `Coney.GetExport`: the call in the
    library's state and budget and charged to the caller's step, values copied deep within limits without metatables,
    functions as callbacks to the state they came from, declared dependencies only, a depth limit, same side only. Tests:
@@ -728,11 +728,10 @@ native needs it.
     list and every start and stop in the run, and refuses to play back with any difference. Tests: a modded session's
     save leaves `profiles/` byte-for-byte unchanged; a save without mods carries no mark; the warning names the missing
     mod; a replay with one package changed is refused.
-12. **core: Add the safety rules for game-script patches.** Around [#1074](issue:1074)'s patches (its issues build the
-    format and applying it): a patch read as text only, bytecode refused, applied only to the disc script whose hash
-    it pins, compiled by Coney's Lua 4.0 compiler; `overrides/files/` script kinds refused; a memory cap on a modded
-    game state; the 4.0 chunk loader fuzz target. Tests: a patched synthetic disc chunk runs in its place; a patch with
-    bytecode, one against another hash and a script chunk in `overrides/files/` are refused; the fuzz corpus replays.
+12. **core: Add the safety rules around game-script patches.** Beside [Mission mods](mission-mods.md#build-issues)'
+    issue 5, which runs patched scripts in the game state: `overrides/files/` script kinds refused; a memory cap on a
+    modded game state; fuzz targets for the 4.0 chunk loader and the `.cpatch` parser. Tests: a script chunk in
+    `overrides/files/` is refused; a patch carrying bytecode is refused; both fuzz corpora replay clean.
 13. **tools: Add signed `.cmod` packages.** `coney-tools mod sign` and `mod verify`, Studio's Export signing with the
     user's key: the Ed25519 `coney-project.sig` over the packaged manifest; Coney verifying it at the check, recording
     the fingerprint on first enable and holding an update by another key or unsigned after signed. Needs the libsodium

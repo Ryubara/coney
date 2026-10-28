@@ -135,8 +135,8 @@ reasons:
 The last row is the only one in 4.0's favour, and it is also a reason against: a script that patches the game state can
 break the faithful scripts in ways nobody can debug, and a separate state is what the sandbox and the network model need
 anyway. A user who wants to change a level script itself ships a patch (only the differences, applied to the player's
-own copy; [#1074](issue:1074)), which the [compiler](#compiler) builds and the script catalog runs in place of the
-disc's chunk ([Three parts](../asset-and-script-architecture.md#script-parts)).
+own copy; [Mission mods](mission-mods.md)), which the [compiler](#compiler) builds and the script catalog runs in place
+of the disc's chunk ([Three parts](../asset-and-script-architecture.md#script-parts)).
 
 That decision is recorded under [Maintainer decisions](#decisions); the network page lists the same choice for
 resources.
@@ -419,7 +419,8 @@ the network page's [sandbox](../network-architecture.md#sandbox) and adds what k
   path ([Assets by path](#assets)) and `Coney.ReadData(path)`, which reads a project's JSON or TOML data file; what it
   keeps between sessions goes in its own store (`Coney.SaveData`, `Coney.LoadData`), with a quota.
 - **One environment per project** over a read-only table of the natives: a script can set its own globals, never a
-  native's name (`HuCreate = nil` raises an error), and never another project's state.
+  native's name (`HuCreate = nil` raises an error; `rawset` can only shadow it in its own environment), and never
+  another project's state.
 - **Budgets:** an instruction budget per call into the state (an entry, a handler, a callback, one resume of a thread)
   and per step, by `lua_sethook`'s count hook inherited by every coroutine; once spent it raises at every check, so
   `pcall` cannot catch it and loop on. Library calls whose work grows with their input are charged to it.
@@ -606,8 +607,8 @@ four uses for source text:
   ([Debug console needs](../asset-and-script-architecture.md#console-needs)).
 - **Coney's level rewrites**, written as Lua 4.0 source and compared call for call with the disc's chunks
   ([Three parts](../asset-and-script-architecture.md#script-parts)).
-- **Patched disc scripts**, a mod's differences applied to the player's own copy of a disc script ([#1074](issue:1074)),
-  which must run in the game state.
+- **Patched disc scripts**, a mod's differences applied to the player's own copy of a disc script ([Mission
+  mods](mission-mods.md)), which must run in the game state.
 - **The debugger's** watch expressions while paused in the game state ([The script debugger](#debugger)).
 
 The original carries the same ability: its Lua 4.0 library includes the source parser. The chunk loader

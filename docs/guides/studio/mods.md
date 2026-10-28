@@ -42,12 +42,12 @@ data. What mods add to it:
 - **`mods/` holds packages; `overrides/` holds data.** Scripts load only from a package in `mods/`, from Studio's open
   project, from a folder named on the command line (`coney --project <folder>`, for modders who use another editor and
   for tests), or, while connected, from what a server sent (`cache/servers/<key>/`, its client scripts only); nothing in
-  `overrides/` is ever run as a script. A change to one of the game's own scripts is a patch, as [#1074](issue:1074)
-  designs (the mission mods page planned for this folder), under the `game-scripts` permission of a project: only the
-  differences, pinned to the disc script's hash, which each player's Coney applies to the script from their own disc and
-  compiles. No game script ships in a mod, not even as Lua 4.0 source, and none is ever a file dropped into
-  `overrides/files/` ([Attack surface](security.md#surface)). A folder found in `mods/` is not loaded; the mods menu
-  says so and points at `--project` and Studio's Export.
+  `overrides/` is ever run as a script. A change to one of the game's own scripts is a patch, as [Mission
+  mods](mission-mods.md#patches) designs, under the `game-scripts` permission of a project: only the differences, pinned
+  to the disc script's hash, which each player's Coney applies to the script from their own disc and compiles. No game
+  script ships in a mod, not even as Lua 4.0 source, and none is ever a file dropped into `overrides/files/` ([Attack
+  surface](security.md#surface)). A folder found in `mods/` is not loaded; the mods menu says so and points at
+  `--project` and Studio's Export.
 - **A project's store** lives with the saves, because it is save data (the install-folder decision keeps only save data
   in the per-user location); it is named by the project's name and, for a signed project, its signer, so a project of
   the same name by someone else does not read it.
@@ -186,9 +186,9 @@ comes after the mods already running. That order is the order of main chunks, `s
 
 | Clash | Found | What happens |
 | --- | --- | --- |
-| Two mods with the same name | At install and at `refresh` | Only one can be enabled; the other is listed as a second version |
+| Two mods with the same name | At install and at `refresh` | Only one can be enabled: a new version beside an enabled one is listed, not added to `enabled.toml`, until the player switches to it in the mods menu, which replaces the line and applies the update rules ([Permissions](security.md#declared), [Trust](security.md#trust)) |
 | Two mods replace the same asset | From their override packs, before anything starts | Allowed; the later mod in the load order wins, as in Minecraft's data packs, and the clash is listed with the winner ([Override packs](project-formats.md#override-packs)) |
-| Two mods' `game-scripts` patch the same game script | From their manifests | Refused until [#1074](issue:1074) decides whether two patches to one script can apply together: only one can be enabled at a time, and the message names both |
+| Two mods patch the same game script | When the mods start, before any script runs | Merged when their changes do not overlap; on a real overlap the player chooses on the Mods screen, and the choice is kept in `enabled.toml` with both package hashes ([Two mods patching one script](mission-mods.md#two-mods)) |
 | A mod names another under `[load] conflicts` | From the manifest | The two cannot run together; the later one is not started |
 | Two mods' scripts disagree at run time (both set the time scale) | Not detectable | Handlers run in load order and a one-slot native keeps the last value set ([The value bridge](lua-sdk.md#bridge)); authors declare `conflicts` once they know |
 
@@ -225,16 +225,10 @@ leave `server.cfg` alone.
 
 ### The player console {#player-console}
 
-A maintainer decision: the release build **includes a player console**, limited in what it can reach, with its code
-kept cleanly apart from the developer debug tools, which stay out of the release build. The console design
-(its section Release) owns how: the console's model, UI-free, in `src/console/` in the game library; its
-screen a Dear ImGui front end in a release target of its own, `coney_console_ui`, so that only that target and
-`coney_devtools` link Dear ImGui; the separation kept by target and model, not by library. That changes the release
-checks' marker list (the `imgui.ini` marker goes, since Dear ImGui's default file name is then in the release game, and
-markers only the debug tools carry come in) and the rule's wording in [AGENTS.md](repo:AGENTS.md), the conventions and
-[The debug tools and the game](../building.md#debug-tools), a build issue this page and the console design share
-([7](security.md#build-issues)). What a mod's own commands and the release console may reach is
-[Script security](security.md#console).
+A maintainer decision: the release build **includes a player console**, limited in what it can reach, with its code kept
+cleanly apart from the developer debug tools, which stay out of the release build. The console design (its section
+Release, [#1064](issue:1064)) owns how, and the rule's new wording is build issue [7](security.md#build-issues), shared
+with it. What a mod's own commands and the release console may reach is [Script security](security.md#console).
 
 ## Modded saves and replays {#saves-replays}
 
