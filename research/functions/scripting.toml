@@ -317,8 +317,8 @@ address = 0x0035e5d0
 name = "lua_CfgHUDMessage"
 page = "../references/bindings/config.md#cfghudmessage"
 level = "confirmed-code"
-coney = "src/scripting/config_strings.h:addStringBindings"
-status = "legacy"
+coney = "src/scripting/config_strings.cpp:stringSetter"
+status = "compared"
 
 [[function]]
 address = 0x0035eb78
