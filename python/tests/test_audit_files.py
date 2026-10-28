@@ -150,9 +150,7 @@ def test_the_address_in_a_file_other_than_the_readme_is_found(root: Path, monkey
     assert items(found(af.address_only_in_readme, context(root))) == ["docs/page.md", "docs/site.md"]
 
 
-def test_the_address_is_read_from_the_origin_remote_without_the_environment(
-    root: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_the_address_is_read_from_the_origin_remote_without_the_environment(root: Path) -> None:
     subprocess.run(["git", "init", "-q"], cwd=root, check=True, env=GIT_ENV)
     subprocess.run(["git", "remote", "add", "origin", "https://github.com/Someone/Coney.git"], cwd=root, check=True)
     assert af.repository_address_terms(root) == [
@@ -165,7 +163,7 @@ def test_the_address_is_read_from_the_origin_remote_without_the_environment(
     assert items(found(af.address_only_in_readme, context(root))) == ["docs/page.md"]
 
 
-def test_without_a_known_address_nothing_is_found(root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_without_a_known_address_nothing_is_found(root: Path) -> None:
     (root / "docs" / "page.md").write_text("github.com/someone/coney\n", encoding="utf-8")
     assert af.repository_address_terms(root) == [] and found(af.address_only_in_readme, context(root)) == []
 

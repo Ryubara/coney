@@ -8,8 +8,8 @@ command is about, whose build it is, where the disc is), so a test that does not
 and fail in another. A test that needs one sets it with `monkeypatch.setenv`.
 """
 
-#: Every variable a tool reads from the caller's environment, and what it changes. `test_test_environment.py` fails when
-#: the code names a variable that is in neither this table nor `NOT_READ`.
+#: Every variable a tool reads from the caller's environment and that a test must not inherit, and what it changes.
+#: `test_test_environment.py` fails when the code reads a variable that is in none of the tables of this module.
 CLEARED: dict[str, str] = {
     # Which task and which agent a command is about.
     "CONEY_TASK": "the task a command is about (`unit.task_name`, `task start`), ahead of the branch",
@@ -32,6 +32,13 @@ CLEARED: dict[str, str] = {
     "GHIDRA_MCP_URL": "the Ghidra server `mcp_serve` points the MCP client at",
     "PCSX2_DEBUG_PORT": "the PCSX2 copy's debug port (`mcp_serve`)",
     "PCSX2_PINE_PORT": "the PCSX2 copy's PINE port (`mcp_serve`)",
+    # The compiler and the Java setup the build, doctor and Ghidra tools look at.
+    "CMAKE_C_COMPILER_LAUNCHER": "ccache for the C compiler: the compiler cache checks it first (`compiler_cache`)",
+    "CMAKE_CXX_COMPILER_LAUNCHER": "ccache for the C++ compiler: the build's compiler cache checks it first",
+    "CXX": "the C++ compiler `doctor` says CMake will use",
+    "VSCMD_VER": "set in a Visual Studio prompt: `build` then does not load the Visual Studio environment",
+    "JAVA_HOME": "the JDK the Ghidra tools and `workspace` checks look for",
+    "UV": "the `uv` that started coney-tools, which `mcp serve` reuses",
     # The docs build and CI.
     "CONEY_PROGRESS_HISTORY": "the progress history file (`mkdocs_hooks.py`)",
     "CONEY_PROGRESS_HISTORY_CACHE": "the previous history, whose days are kept (`mkdocs_hooks.py`)",
@@ -39,6 +46,13 @@ CLEARED: dict[str, str] = {
     "GITHUB_REPOSITORY": "the repository CI runs in (`audit_files`, `mkdocs_hooks.py`)",
     "GITHUB_SERVER_URL": "the GitHub server CI runs on (`mkdocs_hooks.py`)",
     "GITHUB_OUTPUT": "the file a CI step writes its outputs to (`ci_cli`)",
+}
+
+#: Variables a tool reads that are the machine's own and that every program needs, so they stay: clearing `PATH` would
+#: stop every subprocess a test starts.
+KEPT: dict[str, str] = {
+    "PATH": "where programs are found (`build_run`, `ghidra_headless`)",
+    "ProgramFiles(x86)": "where Windows keeps the Visual Studio installer (`build_run`, `workspace_checks`)",
 }
 
 #: Names the code spells that are not variables the caller sets: a tool sets them for a child process, so what the
