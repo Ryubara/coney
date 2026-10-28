@@ -357,7 +357,7 @@ Studio builds Dear ImGui's style from the tokens, as Godot builds its theme from
 | Corner radius | `WindowRounding`, `ChildRounding`, `FrameRounding`, `PopupRounding`, `TabRounding`, `GrabRounding`, `ScrollbarRounding` |
 | Border size | `WindowBorderSize`, `FrameBorderSize`, `PopupBorderSize`, `TabBorderSize` |
 | Spacing | `WindowPadding`, `FramePadding`, `ItemSpacing`, `ItemInnerSpacing`, `CellPadding` from the base spacing, plus the additional spacing |
-| Fonts and sizes | The font atlas: Inter (and the icon font merged into it) as the default font and JetBrains Mono as the code font, loaded at size times UI scale; a change rebuilds the atlas at the next frame, as a change of UI scale does |
+| Fonts and sizes | The font atlas: Inter (and the [icon font](icons.md#loading) merged into it) as the default font and JetBrains Mono as the code font, loaded at size times UI scale; a change rebuilds the atlas at the next frame, as a change of UI scale does |
 
 A change applies at the next frame, so the user sees the theme change as they drag a colour.
 
