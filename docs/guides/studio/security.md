@@ -526,7 +526,7 @@ The same panel opens from the join prompt of a modded server and from Studio's P
 | **Natives with paths or handles** | A name that reaches the disk (`../`, `C:\`, `\\host\share`); a handle of another kind or another session | The [file layer](#paths) and the asset store; handles checked with kind and generation ([What natives may do](#natives)) | The file monitor ([Proof](#proof)); the native fuzzer |
 | **Manifests and packages** | A crafted `coney-project.toml` or `.cmod`: overlapping or duplicate zip entries, a central directory that disagrees with the local headers, a compression bomb | Parsed into types with limits, `std::expected` on every error; the strict zip reader of [The `.cmod` package](mods.md#cmod), sizes enforced while inflating, every file checked against the manifest's hash | Parser fuzzers |
 | **Levels, models, textures, sounds** | A crafted file breaks a parser (a classic route into a game) | Every parser reads through bounds-checked readers, checks counts before allocating, and is fuzzed; the same parsers serve the game's own files | Parser fuzzers |
-| **Mod commands** | Text the player types reaching a mod's handler; a release console that grows into a debug tool | The handler runs in the mod's sandbox at a step boundary; no script runs console text; the release set never reaches Lua, natives or paths ([The console and mods](#console); the console design's section Mod commands, `console.md`) | The console's tests and the escape suite's console items |
+| **Mod commands** | Text the player types reaching a mod's handler; a release console that grows into a debug tool | The handler runs in the mod's sandbox at a step boundary; no script runs console text; the release set never reaches Lua, natives or paths ([The console and mods](#console); the console design's section Mod commands, planned on [#1064](issue:1064)) | The console's tests and the escape suite's console items |
 | **Studio's tools** | The language server's plugin, the debugger's port | [A shared Studio project](#studio-project) | A test project carrying `runtime.plugin` runs nothing; the debugger refuses a client without the token |
 | **The network** | Packets and packages from a server or client | The network page's strict decoding and fuzzing ([Testing](../network-architecture.md#testing)); packages as above | The network fuzzers |
 
@@ -702,7 +702,7 @@ when a native needs it.
    functions as callbacks to the state they came from, declared dependencies only, a depth limit, same side only. Tests:
    a library's function returns a copied table the caller cannot use to reach the library's state; a call to an
    undeclared mod and a mutual recursion past the depth are errors; a runaway export stops on the library's budget.
-7. **docs: Update the release build's rule for the player console.** Shared with the console design (`console.md`,
+7. **docs: Update the release build's rule for the player console.** Shared with the console design (planned on
    [#1064](issue:1064)), whose release front end depends on it: the rule in [AGENTS.md](repo:AGENTS.md), the conventions
    and [The debug tools and the game](../building.md#debug-tools) that the release build holds no debug tools gains the
    player console as the one console it holds, kept apart by target and model ([The player
@@ -711,7 +711,7 @@ when a native needs it.
 8. **core: Add the mods' console commands.** The `ModHost` side of the console: the commands of [Console
    commands](mods.md#console) (`mods`, `mod`, `levels`, `start`, `stop`, `restart`, `ensure`, `refresh`, `enable`,
    `disable`, `play`), for the running session only, at a step boundary, the host's or operator's online. Built on the
-   console design's console-core issue (`console.md`, [#1064](issue:1064)). Tests against a fake console: start runs
+   console design's console-core issue (planned on [#1064](issue:1064)). Tests against a fake console: start runs
    dependencies first, stop stops dependants first, `disable` keeps a mod off for the session, nothing writes
    `enabled.toml`, a guest gets the listing commands only.
 9. **core: Add mod permissions, approvals and the mod details.** `[permissions]` and `[limits]` in the manifest;
