@@ -40,13 +40,14 @@ data. What mods add to it:
 ```
 
 - **`mods/` holds packages; `overrides/` holds data.** Scripts load only from a package in `mods/`, from Studio's open
-  project, or from a folder named on the command line (`coney --project <folder>`, for modders who use another editor
-  and for tests); nothing in `overrides/` is ever run as a script. A change to one of the game's own scripts is a patch,
-  as [#1074](issue:1074) designs (the mission mods page planned for this folder), under the `game-scripts` permission
-  of a project: only the differences, pinned to the disc script's hash, which each player's Coney applies to the
-  script from their own disc and compiles. No game script ships in a mod, not even as Lua 4.0 source, and none is ever
-  a file dropped into `overrides/files/` ([Attack surface](security.md#surface)).
-  A folder found in `mods/` is not loaded; the mods menu says so and points at `--project` and Studio's Export.
+  project, from a folder named on the command line (`coney --project <folder>`, for modders who use another editor and
+  for tests), or, while connected, from what a server sent (`cache/servers/<key>/`, its client scripts only); nothing in
+  `overrides/` is ever run as a script. A change to one of the game's own scripts is a patch, as [#1074](issue:1074)
+  designs (the mission mods page planned for this folder), under the `game-scripts` permission of a project: only the
+  differences, pinned to the disc script's hash, which each player's Coney applies to the script from their own disc and
+  compiles. No game script ships in a mod, not even as Lua 4.0 source, and none is ever a file dropped into
+  `overrides/files/` ([Attack surface](security.md#surface)). A folder found in `mods/` is not loaded; the mods menu
+  says so and points at `--project` and Studio's Export.
 - **A project's store** lives with the saves, because it is save data (the install-folder decision keeps only save data
   in the per-user location); it is named by the project's name and, for a signed project, its signer, so a project of
   the same name by someone else does not read it.

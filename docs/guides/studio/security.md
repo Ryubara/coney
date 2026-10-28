@@ -355,8 +355,9 @@ Spawning, moving, fighting, sounds, the HUD, the project's own assets and its da
 One layer turns a name a script or manifest gives into a file: Coney's **project file layer**, used by `require`, the
 loader, the asset store's project source, `Coney.ReadData` and Studio's File system panel. Nothing else opens a project
 file. It reads from two kinds of root: a **project folder** (Studio's open project, `coney --project <folder>`) and a
-**mounted package** (a `.cmod`, read in place, [The `.cmod` package](mods.md#cmod)). The name rules hold for both; the
-link and handle rules are for folders, since a package holds no links. Its rules:
+**mounted package**: a `.cmod`, read in place ([The `.cmod` package](mods.md#cmod)), or a server's client package in
+`cache/servers/<key>/` while connected, named by the packaged manifest it announced ([Coney's model](mods.md#mp-model)).
+The name rules hold for both; the link and handle rules are for folders, since a package holds no links. Its rules:
 
 - **Relative names only**, written with `/`. Refused: an absolute path, a drive letter, a network path (`\\host\share`,
   which on Windows would send the player's login hash to that host), a device path (`\\.\`, `\\?\`), `..`, `.` as a

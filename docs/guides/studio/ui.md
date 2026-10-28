@@ -261,8 +261,7 @@ list, the usage line):
 1. **Installed mods**, in load order, each on or off, with its load mode; accept opens its **details**, the panel the
    security design defines (name, version, author, signer, what it changes, its permissions and limits, [What the player
    sees](security.md#player-view)), to which this page adds **what it adds where** (its additions at each point) and its
-   option rows. On and off here or at the console; a permission only here, never by a console command
-   ([Permissions](security.md#declared)).
+   option rows. On and off here or at the console; a permission only here, never by a console command.
 2. **Mod content**: the `mods` point, every enabled project's entries grouped under its title, and each content mod that
    starts by hand (its level, [Starting and stopping](mods.md#starting)).
 
