@@ -242,7 +242,8 @@ same natives called in the same order with the same arguments, compared on a tra
 A compiler from Lua 4.0 source to `LuaProto` replaces the console's evaluator (`debug/lua_console`, expressions and
 assignments only). It also gives the console `if`, loops, `local` and `function`. A **modern Lua (5.4) runtime for
 mods** would be a second runtime behind the same native API, with its own value bridge. Defer it. One runtime is
-enough until mods need features that 4.0 lacks.
+enough until mods need features that 4.0 lacks. The Lua SDK design weighs that need for Coney Studio's projects and
+proposes Lua 5.4 for them, with 4.0 kept for the game's scripts ([Coney Studio: the Lua SDK](studio/lua-sdk.md#runtime-choice)).
 
 **Native API.** Today each `*_bindings.cpp` captures a `BindingContext` and calls `vm.registerFunction(name,
 lambda)`. Bindings reach the game only through host interfaces (`BindingHost`, `AiBindingHost`, `SoundHost`,
