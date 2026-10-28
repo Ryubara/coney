@@ -141,10 +141,10 @@ folder (beside `coney.log`, [Where it goes](../run-log.md#outputs)), at most 200
 no history, as it touches no user folder.
 
 **When a command runs.** A **local** command that only reads (help, a panel, the log, a profiler reading) runs at once.
-A **session** command, and any command that changes something, is checked at once (its name, level and arguments, so a
-typo is answered while you type) and then queued, and the queue runs between two simulation steps, in the order the
-lines were entered, as the Entity editor's edits are ([Entity editor](../debug-menu.md#entity-editor)). A step therefore
-never sees the game change half-way, and a paused game takes the command at the next frame.
+A **session** command, and any command that changes something, is checked at once (its name, access level and
+arguments, so a typo is answered while you type) and then queued, and the queue runs between two simulation steps, in
+the order the lines were entered, as the Entity editor's edits are ([Entity editor](../debug-menu.md#entity-editor)). A
+step therefore never sees the game change half-way, and a paused game takes the command at the next frame.
 
 **What the console writes.** Its history, a bug report into the run log ([`bugreport`](#commands)) and profiler
 captures into a `captures/` folder in the user's data folder ([Captures](#captures)). It never writes a file at a path
@@ -162,7 +162,7 @@ reference pages are generated and which the runner reads. The console's built-in
 [[command]]
 name = "mission"
 group = "Levels and missions"
-level = "player"                 # player | developer; the developer file may only say developer
+access = "player"                # player | developer; the developer file may only say developer
 scope = "session"                # local | session
 summary = "Start a mission you have completed, at one of its checkpoints, as the mission select does."
 needs = ["game", "profile"]      # what must exist: the game session, a profile, a level in play, a disc
@@ -173,16 +173,21 @@ args = [
 ]
 ```
 
-- **Two files, two levels.** `src/console/commands.toml` holds the player set and is compiled into the game library;
-  `src/debug/console_commands.toml` holds the developer set and is compiled into the debug tools. A player entry in the
-  developer file, or a developer entry in the player file, fails the generator.
+- **Two files, two access levels.** `src/console/commands.toml` holds the player set and is compiled into the game
+  library; `src/debug/console_commands.toml` holds the developer set and is compiled into the debug tools. A player
+  entry in the developer file, or a developer entry in the player file, fails the generator. The key is `access`, not
+  `level`, so it never reads as a game level.
+- **One name, one command.** A name is in one catalog only: the generator reads both files and refuses a name that is
+  in both, so a developer build, which registers both sets into one registry, never has two built-ins of one name, and
+  the registry refuses a second registration of a name at run time as well. A developer variant of a player command
+  takes a name of its own (the developer set's `any-mission` beside the player set's `mission`).
 - **Generated, not hand-kept.** `coney-tools console cpp` turns each file into its table of command specifications
-  (names, groups, summaries, arguments, levels, scopes, needs), as `coney-tools natives cpp` makes the natives'
+  (names, groups, summaries, arguments, access levels, scopes, needs), as `coney-tools natives cpp` makes the natives'
   signatures, and CI fails when a table is not current. Each handler is a C++ function bound by name; a test fails when
   a catalog entry has no handler or a handler no entry.
 - **One reference page.** `coney-tools console render` writes a generated guide, the console commands reference, one
-  section per group, each command with its arguments, level, scope, needs and the Coney feature it waits for, as the
-  recipe pages are written from `research/pcsx2-recipes.toml`.
+  section per group, each command with its arguments, access level, scope, needs and the Coney feature it waits for,
+  as the recipe pages are written from `research/pcsx2-recipes.toml`.
 - **Argument types** each bring their check and their completion: `int`, `number`, `bool` (`on`, `off`), `text`,
   `choice` (a fixed list), and the game's own kinds, `mission`, `checkpoint`, `level`, `mod`, `setting`, `command`.
 - **`available`, as the SDK reflects Coney.** A command that drives a Coney feature names it, and is absent (not
@@ -220,8 +225,8 @@ writing `mods/enabled.toml`, is the mods design's ([#1062](issue:1062)). They re
 host interface ([The code boundary](#boundary)).
 
 **Starting a level in release** is therefore of two kinds: a story mission the player has already reached, as the
-mission select allows (`mission`), and a mod's level (`play`). Any level at any checkpoint is the developer set's
-`level`, as the debug menus' Levels and Missions pages are.
+mission select allows (`mission`), and a mod's level (`play`). Any level or mission at any checkpoint is the developer
+set's `level` and `any-mission`, as the debug menus' Levels and Missions pages are.
 
 ### The developer set {#developer-set}
 
@@ -232,7 +237,7 @@ differently.
 | Command | Does | The page it matches |
 | --- | --- | --- |
 | `level <name> [checkpoint]` | Starts any level at any checkpoint, at the start of the next frame | Levels |
-| `mission <n> [checkpoint]` | In the developer set, any of the story's missions, flashbacks and Armies of the Night stages | Missions |
+| `any-mission <n> [checkpoint]` | Any of the story's missions, flashbacks and Armies of the Night stages, completed or not (the player set's `mission` keeps to completed ones) | Missions |
 | `load-checkpoint <n>` | Restarts the level in play at a checkpoint, as the story does after a death | Missions (the recipe of the same name) |
 | `teleport <x> <y> <z> [heading]` | Puts player 1 there, dropped to the ground | Player |
 | `noclip [on\|off]` | The noclip | Player ([Noclip](../debug-menu.md#noclip)) |
@@ -252,13 +257,13 @@ set is in Studio's Console panel ([The code boundary](#boundary)).
 
 ## Access levels and scope {#access}
 
-| Level | In which builds | Who adds commands and panels to it |
+| Access level | In which builds | Who adds commands and panels to it |
 | --- | --- | --- |
 | **player** | Every build, the release build included | `src/console/commands.toml` and the console's own panels; running mods, for their own commands |
 | **developer** | Only builds with the debug tools (`dev`, `playtest`, `ci`, `asan`) and Studio | The debug tools, through the registry's registration call at start-up |
 
-A level is a property of the code, not a switch: the release build has no developer commands to unlock, as it has no
-debug menus. A developer build shows both sets in `help`, the developer commands marked `[dev]`.
+An access level is a property of the code, not a switch: the release build has no developer commands to unlock, as it
+has no debug menus. A developer build shows both sets in `help`, the developer commands marked `[dev]`.
 
 **Scope** decides who may run a command in a network session:
 
@@ -268,8 +273,10 @@ debug menus. A developer build shows both sets in `help`, the developer commands
 | **session** | yes | yes | refused: "only the host can do this in a network game" |
 
 A developer build is used online only between developers; there, the developer commands are session commands too,
-held to the host. A guest never sends a command to the host: a guest's console has its local commands and nothing
-more, and there is no remote console in this design ([Open questions](#open-questions)).
+held to the host. A guest never sends a built-in command to the host: a guest's console runs its local built-in
+commands and nothing more, and there is no remote console in this design ([Open questions](#open-questions)). The one
+thing a guest's line can send is an unrestricted command of a mod's server script, as a request the mod checks
+([Mod commands](#mod-commands)).
 
 ## Mod commands {#mod-commands}
 
@@ -277,7 +284,7 @@ A mod can add commands to the console, as a FiveM resource does with `RegisterCo
 `Coney` table ([Names and namespaces](lua-sdk.md#names)):
 
 ```lua
-Coney.RegisterCommand("wave", function(args)
+Coney.RegisterCommand("wave", function(args, slot)   -- slot: the player slot that typed it
   local n = args.count
   StartWave(n)
   return "wave " .. n .. " started"
@@ -305,10 +312,17 @@ sandbox holds for a handler holds for it ([The sandbox](lua-sdk.md#sandbox); the
 - **No way to the console from a script.** The SDK has no `ExecuteCommand`: a mod cannot run a built-in command
   (`quit`, `disable`, a developer command in a developer build) or another mod's command. Mods call each other through
   exports ([#1062](issue:1062)).
-- **Level and scope.** A mod command is at the player level and has session scope: it runs mod code that changes the
-  game. `restricted` holds it to the host online; an unrestricted command of a *client* script (ConeyMP, P4) runs on
-  the guest's own machine, in its client state, with client natives only ([Deterministic and network-safe
-  calls](lua-sdk.md#determinism)).
+- **Access and the network.** A mod command is at the player access level, in every build. Where it runs follows the
+  script that registered it, not the scopes of the built-in commands, and agrees with the script security design's
+  line ([#1062](issue:1062)):
+    - **A server script's command** runs in the server state, where the simulation runs. Offline that is the one
+      machine. Online, the host's own line runs it; a `restricted` command is the host's (or a server operator's) only,
+      and a guest typing it is refused on its own machine. An unrestricted one typed by a guest is sent as a request,
+      as a client's event is ([Coney resources](../network-architecture.md#resources)): the server runs it at a step
+      boundary with the guest's player slot as `slot`, so the handler decides what that guest may do, and the reply
+      comes back to the guest's terminal.
+    - **A client script's command** (ConeyMP, P4) runs on the machine that typed it, in its client state, with client
+      natives only ([Deterministic and network-safe calls](lua-sdk.md#determinism)); it sends nothing.
 - **It lives as long as the mod runs.** Stopping, disabling or reloading the mod removes its commands; a hot reload
   registers them again from the new state ([Hot reload](lua-sdk.md#hot-reload)).
 - **Shown as the mod's.** `help` lists mod commands under each mod's name; the completion and the gamepad picker use the
@@ -426,11 +440,16 @@ to a bug report.
 - **The keyboard is the console's while it is open.** The keyboard does not play on port 1 (Backspace is SELECT on the
   keyboard, [Controls](../running-input.md#controls)), and the mouse acts on the bar and its panels. Closed, the
   console takes no key but F8.
-- **The pad.** The chord is caught before the game, as the noclip's hotkey is: from the moment both are held, neither
-  reaches the game until they are let go ([Noclip](../debug-menu.md#noclip)). No control of the retail game holds
-  SELECT and R3 together; the cheat codes press single buttons one after another. While the console is open, the game
-  sees port 1 with nothing pressed, and the buttons still held when it closes stay hidden until let go, as with the
-  debug menus ([Opening it and the controls](../debug-menu.md#controls)); port 2 always reaches the game.
+- **The pad.** The chord is caught before the game, by the same rule as the noclip's hotkey: from the moment both are
+  held, neither reaches the game until they are let go ([Noclip](../debug-menu.md#noclip)). The debug tools' input
+  gate (`src/debug/input_gate.h`) is not in the release build, so the console has its own small gate in its model
+  (`src/console/`), which catches only its chord and holds port 1 while the console is open; the debug tools' gate
+  keeps its own chords. No control of the original holds SELECT and R3 together: the player's held combinations with
+  SELECT are SELECT with a d-pad direction and SELECT with L3 ([Commands](../../research/combat/index.md#commands),
+  confirmed (code) there), and the cheat codes press single buttons one after another
+  ([Cheat codes](../../research/debug.md#cheats)). While the console is open, the game sees port 1 with nothing
+  pressed, and the buttons still held when it closes stay hidden until let go, as with the debug menus
+  ([Opening it and the controls](../debug-menu.md#controls)); port 2 always reaches the game.
 - **Driving it with a pad.** The d-pad and left stick move between the bar's menus, the panels' rows and the
   buttons, cross chooses and circle goes back (Dear ImGui's gamepad navigation). The terminal offers a **command
   picker**: the commands by group, then one row per argument, each a list filled by its type's completion (the
@@ -444,8 +463,9 @@ to a bug report.
 - **Size.** The bar is drawn at the same physical size at any resolution, by the rule the developer overlay uses
   ([Size at any resolution](../debug-menu.md#ui-scale)); that rule moves from the debug tools into a shared place the
   console reaches.
-- **In Studio**, F8 belongs to Studio's own keymap (the editor experience design gives it to Eject during Play), and
-  the console's terminal is Studio's Console panel; its other panels are Studio panels ([The code boundary](#boundary)).
+- **In Studio**, F8 belongs to Studio's own keymap (the editor experience design of [#1055](issue:1055) gives it to
+  Eject during Play), and the console's terminal is Studio's Console panel; its other panels are Studio panels
+  ([The code boundary](#boundary)).
 
 ## The code boundary {#boundary}
 
@@ -469,11 +489,13 @@ to a bug report.
   scrolling views of thousands of lines with filters, sortable tables and plots, all driven by mouse, keyboard or pad.
   The game's own widgets are a PS2 front end's (menus of circled text, [Front end](../../research/frontend.md)) and
   have none of these; drawing them in the game's font would mean writing a widget toolkit. Dear ImGui is already
-  pinned and MIT, already reaches players in the launcher ([The launcher](../launcher.md#decided)), is Studio's toolkit
-  ([The GUI library](technology.md#gui)), has gamepad navigation, and FiveM's console is drawn the same way. The split
-  from the debug tools is by target and by model, not by library: `coney_console_ui` links Dear ImGui for the console
-  alone and includes nothing of the debug tools, and the developer overlay stays in `coney_devtools`. This is a
-  [maintainer decision](#decisions) to confirm, since the release build fetches no Dear ImGui today.
+  pinned and MIT, is the toolkit decided for the launcher's screens ([The launcher](../launcher.md#decided)) and for
+  Studio ([The GUI library](technology.md#gui)), has gamepad navigation, and FiveM's console is drawn the same way. No
+  program a player gets carries Dear ImGui today: the launcher's screens are planned, and `cmake/deps.cmake` fetches
+  Dear ImGui only with the debug tools, so the console would be the first part of a player's download to use it. The
+  split from the debug tools is by target and by model, not by library: `coney_console_ui` links Dear ImGui for the
+  console alone and includes nothing of the debug tools, and the developer overlay stays in `coney_devtools`. It is
+  listed under [Maintainer decisions](#decisions), since it changes what players download.
 - **One registry in every program.** The game's debug-tools `coney` registers both sets into one registry, so the F8
   terminal of a developer build has every command. Studio links the same console core, registers both sets, and shows
   the terminal as its Console panel and Resources, Performance and Log as docked panels, for the project in Play.
@@ -504,10 +526,11 @@ tool ships, and newly proves the console does:
    executable: `help` prints exactly the player catalog's names; `noclip` and `lua print(1)` print "unknown command";
    `quit` ends the run with exit code 0. On the debug tools' `coney`, the same `noclip` is accepted.
 
-The text of the rule ([The debug tools and the game](../building.md#debug-tools), and the conventions that repeat it),
-which says the release build holds no debug tools, gains the console as the one console it holds and Dear ImGui as the
-console's toolkit. That change of text is shared: it is build issue 7 of the script security design
-([#1062](issue:1062)), made once for both designs, and this page's front-end issue depends on it
+The rule that the release build holds no debug tools is written in one place,
+[The debug tools and the game](../building.md#debug-tools), and checked by the split test above, which names
+`coney_devtools` as the one target that links `imgui`. The text gains the console as the one console the release
+build holds and Dear ImGui as the console's toolkit. That change of text is shared: it is build issue 7 of the script
+security design ([#1062](issue:1062)), made once for both designs, and this page's front-end issue depends on it
 ([Proposed build issues](#build-issues)).
 
 ## Determinism, replays and the network {#determinism}
@@ -524,17 +547,20 @@ The [networking checklist](../network-architecture.md#checklist) holds for the c
   are shown, plotted and written to captures, and no step reads them ([Update and render](../conventions.md#update-and-render)).
 - **Developer commands mark a run** that changes the game (a teleport, a tunable, a Lua line), as the Entity editor's
   edits are logged ([Entity editor](../debug-menu.md#entity-editor)).
-- **Online**, only the host runs session commands ([Access levels and scope](#access)), and their effects reach the
-  guests as any change of the host's game does: as state and events ([The authority model](../network-architecture.md#authority)).
+- **Online**, only the host runs session built-in commands ([Access levels and scope](#access)), a guest's
+  unrestricted mod command reaches the server as a request ([Mod commands](#mod-commands)), and the effects of both
+  reach the guests as any change of the host's game does: as state and events
+  ([The authority model](../network-architecture.md#authority)).
 
 ## Tests {#tests}
 
 Every check runs without a person, as [Testing](../testing.md) asks:
 
 - **The console's core** (unit tests in the release build's list): the tokenizer (quotes, escapes, empty and overlong
-  lines, a `;` taken as text); each argument type's check and completion; the registry (a mod's name clash, the
-  `mod:name` form, an ambiguous bare name, `available` hiding a command); the queue (a session command runs between
-  steps, in typed order; a paused game takes it at the next frame); the scope rules with a fake network host (a guest's
+  lines, a `;` taken as text); each argument type's check and completion; the registry (a name in both catalogs
+  refused by the generator, a second registration of a built-in's name refused, a mod's name clash, the `mod:name`
+  form, an ambiguous bare name, `available` hiding a command); the queue (a session command runs between steps, in
+  typed order; a paused game takes it at the next frame); the scope rules with a fake network host (a guest's
   session command refused).
 - **Each player command** against fake hosts: `mission` refuses a mission the profile has not completed; `set` changes
   a setting and writes no file; `bugreport` dumps the ring; `quit` asks the session to end.
@@ -556,7 +582,8 @@ Every check runs without a person, as [Testing](../testing.md) asks:
   call of its frames.
 - **Mod commands** (with the mods loader): a fixture mod's command runs in its state at a step boundary; a runaway
   handler stops at the budget and the game goes on; a built-in's name is refused; a mod cannot reach `quit`; a reload
-  removes and registers its commands again.
+  removes and registers its commands again; over a loopback session, a guest's restricted command is refused on the
+  guest and an unrestricted one runs on the host with the guest's slot.
 - **The release checks** of [the list above](#release): the split test, the catalog checks, the markers and their twin,
   the release smoke lines.
 
@@ -585,8 +612,9 @@ When this design is accepted:
 ## Maintainer decisions {#decisions}
 
 1. **Dear ImGui in the release build**, for the console alone, in its own target ([The code boundary](#boundary)). The
-   release build fetches and links no Dear ImGui today, by the debug tools' split; the console needs it, the launcher
-   already ships it, and the split stays by target and model. The coordinator approved it as fitting the decided clean
+   release build fetches and links no Dear ImGui today, by the debug tools' split, and no program a player gets carries
+   it yet (the launcher is decided on it, its screens are planned); the console needs it, and the split stays by target
+   and model. The coordinator approved it as fitting the decided clean
    separation; it is listed here because it changes what players download and the release marker list
    ([How the release build keeps only the release set](#release)).
 2. **The release set** ([The release set](#release-set)): `mission` limited to completed missions (as the mission
@@ -633,12 +661,13 @@ Studio's shell ([Build issues](technology.md#build-issues)).
    release executable's `help` equals the catalog.
 3. **platform: Add the F8 console bar to the release build.** The `coney_console_ui` target with Dear ImGui (fetched
    in the release configure for it), the bar, the terminal's widgets with completion and the picker, pinned panels,
-   `coney-console.ini`, F8 and the SELECT + R3 chord with the input gate's rules, Escape, the UI scale rule moved out
-   of the debug tools, the pad typing moved into the console's model; the split test's rules for the new target and
-   the `imgui` link; the release marker list changed (`imgui.ini` out, the developer commands' summaries in);
-   `--console-open`. It depends on the shared change of the rule's text, build issue 7 of the script security design
-   ([#1062](issue:1062)). Tests: the front end over a bare context, the frame unchanged with the
-   console opened and closed, the pad chord and the picker running `missions` from an input script.
+   `coney-console.ini`, F8 and the SELECT + R3 chord caught by the console's own gate in `src/console/` (the debug
+   tools' input gate's rule, not its code), Escape, the UI scale rule moved out of the debug tools, the pad typing
+   moved into the console's model; the split test's rules for the new target and the `imgui` link; the release marker
+   list changed (`imgui.ini` out, the developer commands' summaries in); `--console-open`. It depends on the shared
+   change of the rule's text, build issue 7 of the script security design ([#1062](issue:1062)). Tests: the front end
+   over a bare context, the frame unchanged with the console opened and closed, the pad chord and the picker running
+   `missions` from an input script.
 4. **core: Add the console's log viewer and the run log's mods category.** A listener list on the logger, the Log
    panel's buffer of 10,000 lines with filters by level, category, mod and text, follow, copy that writes kept-off
    lines by their length, *Write bug report*; the `mods` category. Tests: each filter; the copy of a local-only line;
@@ -648,16 +677,18 @@ Studio's shell ([Build issues](technology.md#build-issues)).
    and `save` with the trace event file in `captures/`. Tests: the readings exist and measuring is off when closed; a
    capture parses and holds its frames' zones.
 6. **core: Add the developer commands to the console.** `src/debug/console_commands.toml` and its handlers in
-   `coney_debug`, over the debug tools' own capabilities: `level`, `mission` (any), `load-checkpoint`, `teleport`,
+   `coney_debug`, over the debug tools' own capabilities: `level`, `any-mission`, `load-checkpoint`, `teleport`,
    `noclip`, `timescale`, `pause`, `step`, `spawn-fighters`, `clear-fighters`, `tune`, `tunables`, `lua`, `native`,
    `cheat`, `movie`, and `menu <page/item>` over the debug model; the bar's Debug menu in `coney_devtools`; the
    developer commands' summaries generated into the markers. Tests: each command does what its page does, through an
    input script; `menu` reaches an item of every kind; the release smoke lines still refuse them.
 7. **core: Add mod commands through Coney.RegisterCommand.** The SDK function with its spec (help, typed arguments,
    `restricted`), handlers run in the mod's state at a step boundary under its budget, names that never take a
-   built-in's, the `mod:name` form, removal on stop and reload, `help` and the picker listing them. Tests: a fixture
-   mod's command runs and prints under its name; a runaway handler is stopped; a built-in's name is refused; no SDK
-   function runs a built-in command; a reload registers the commands again.
+   built-in's, the `mod:name` form, removal on stop and reload, `help` and the picker listing them; online, a guest's
+   unrestricted server-script command sent as a request with its slot, and a restricted one refused on the guest.
+   Tests: a fixture mod's command runs and prints under its name; a runaway handler is stopped; a built-in's name is
+   refused; no SDK function runs a built-in command; a reload registers the commands again; the two network cases
+   over a loopback session.
 8. **core: Add the mods' resource monitor and their profiler captures.** The Resources panel's rows from the
    scheduler, the count hook, the allocator, the threads, the handlers and the value bridge, with the game scripts'
    row; mod calls with their file and line in captures. Tests: a synthetic mod's exact counts in two runs; times
