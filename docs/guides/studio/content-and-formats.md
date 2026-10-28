@@ -6,8 +6,9 @@ what Studio needs from the engine for each, so that the Studio roadmap can say w
 the four Studio designs under [#1054](issue:1054); the panels, the project folder and the import flow are the editor
 experience design's ([#1055](issue:1055)), the program and its libraries the technology design's
 ([#1056](issue:1056)), and the scripting terms, the mods runtime and the natives' names the Lua SDK design's
-([#1057](issue:1057)). This page uses their terms (`project:/`, `game:/`, the `.studio/` cache) and does not repeat
-them.
+([#1057](issue:1057)). This page uses their terms (`project:/`, `game:/`, the `.studio/` cache, the Level view where
+other editors have a Scene view, the Game view) and does not repeat them; what other editors call a scene, Studio
+calls a level.
 
 ## Contents {#contents}
 
@@ -53,7 +54,7 @@ script use, as Godot's `res://` paths and Unity's `Resources` paths are.
 | Root | Names | Example | Resolved by |
 | --- | --- | --- | --- |
 | `project:/` | A file in the project folder, by its path from the root | `project:/models/cj.glb` | The import table ([The import step](#import)) |
-| `project:/...#name` | One part of a file that holds several: a clip of a glTF or FBX, a mesh of a scene | `project:/anims/dance.glb#Dance` | The same, then the part by name |
+| `project:/...#name` | One part of a file that holds several: a clip of a glTF or FBX, a mesh of a map file | `project:/anims/dance.glb#Dance` | The same, then the part by name |
 | `game:/` | An asset on the player's disc, by the names `coney-tools extract` writes ([extract](../coney-tools-disc.md#extract)) | `game:/textures/warr_re_cv/warr_re_cv` | The asset store, by the original's id |
 
 **The `game:/` names** are the extract tool's, so a modder sees one set of names in Studio, in the `open/` modding kit
@@ -160,7 +161,7 @@ across a reimport.
 | Imported kind | Fixed at import (edit the source, reimport) | Editable in Studio |
 | --- | --- | --- |
 | Static model, prop | Its vertices, normals, texture coordinates, materials and their names | Its transform where placed (each placement its own); its collision: **generated** from the mesh (every triangle, or a convex hull), **replaced** by primitive colliders the user arranges, or **hand-edited** (below); the collision material, flags and area per material or per face; which texture each material wears; the import scale |
-| Map (a whole scene) | The same, per mesh; the scene's node names | Every node as a placed mesh (move, hide, delete from the level); per node: drawn, collision or both; the collision, as for a prop; the statements its empties became (spawns, flags), which become ordinary level statements once imported |
+| Map (a whole Blender scene) | The same, per mesh; the node names | Every node as a placed mesh (move, hide, delete from the level); per node: drawn, collision or both; the collision, as for a prop; the statements its empties became (spawns, flags), which become ordinary level statements once imported |
 | Skinned model (a character) | Its mesh, its weights, its source armature | The bone map, and so the rest pose it is bound in (reimports at once); its textures; the custom character it serves (base type, scale) |
 | Clip | Its keys | Which clips of a file are kept and their names; the bone map it shares; the slot it fills in a custom character's anim set; its events (a hit frame, a sound) on the timeline; its reach and ranges when it fills an attack slot |
 | Texture | Its pixels | What it overrides, its filtering and addressing, the materials that use it |
@@ -244,7 +245,7 @@ the sandbox layout: Coney plays one today with the player at a spawn (`--play-le
 level entry Coney builds the collision mesh from the level's solid geometry and colliders, the path map from its
 walkable areas, then makes each entity through its native, in the order of the file, then runs the level's scripts.
 
-**Live edits during Play.** The brief asks that a change made in the Scene view show in the running game where it
+**Live edits during Play.** The brief asks that a change made in the Level view show in the running game where it
 can; how Play and the Game view run is [#1055](issue:1055)'s and [#1056](issue:1056)'s. What a level's data allows:
 a moved entity is moved in the running level through the native that places it (`Teleport` for a human or an object,
 a flag's position for a flag); a changed primitive, collider or face rebuilds the collision mesh between two steps; a
@@ -288,10 +289,11 @@ edited (from the trace above); editing one writes its override.
 walkable areas and entities from the *Create* menu, each with full transforms. Nothing in such a level comes from the
 disc but what its entities name (a character type, an object type, a texture).
 
-**(c) Importing a whole map from Blender** turns one glTF or FBX scene into a level's geometry, collision, materials and
-markers. The source file stays in the project and the level holds `map project:/maps/yard.glb`; the importer reads the
-scene's **naming convention** and, where present, its **custom properties** (Blender writes an object's custom
-properties into glTF as `extras` and into FBX as user properties; a property beats a name):
+**(c) Importing a whole map from Blender** turns one Blender scene, exported as glTF or FBX, into a level's geometry,
+collision, materials and markers. The source file stays in the project and the level holds
+`map project:/maps/yard.glb`; the importer reads the scene's **naming convention** and, where present, its **custom
+properties** (Blender writes an object's custom properties into glTF as `extras` and into FBX as user properties; a
+property beats a name):
 
 | In Blender | Name convention | Custom property | Becomes |
 | --- | --- | --- | --- |
@@ -546,9 +548,10 @@ checkpoint, as `Coney.StartLevel` does for the story.
 
 ### Scenes, movies and text {#scenes}
 
-Scene records (the in-engine cutscenes) play in a viewer through Coney's scene player, with their roles, camera and
-tracks; movies play through the movie decoder. Neither is edited or exported by Studio: a project's own cutscenes
-wait on a scene format of Coney's own, and the game's text (subtitles, dialogue) is never shown outside the game's own
+Scene records are the game's in-engine cutscenes (Studio's word for what other editors call a scene is *level*). They
+play in a viewer through Coney's scene player, with their roles, camera and tracks; movies play through the movie
+decoder. Neither is edited or exported by Studio: a project's own cutscenes wait on a cutscene format of Coney's own,
+and the game's text (subtitles, dialogue) is never shown outside the game's own
 screens or copied (a [maintainer decision](../asset-and-script-architecture.md#maintainer-decisions) keeps it out of
 anything shipped).
 
@@ -705,7 +708,7 @@ natives are implemented), and the export of every kind the extract tool writes.
 
 ## Proposed build issues {#build-issues}
 
-In the order they should come, after the editor experience design's shell, File system panel and Scene view
+In the order they should come, after the editor experience design's shell, File system panel and Level view
 ([#1055](issue:1055)); each states the engine change it needs first, from [What Studio needs from Coney](#engine-needs).
 
 1. **core: Add the asset store with the disc and project sources.** N1 and N3 of the asset architecture
