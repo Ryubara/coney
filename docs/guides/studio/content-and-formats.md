@@ -3,7 +3,7 @@
 **Status: design.** Nothing on this page is built. It decides, for each kind of content, what Coney Studio shows from
 the player's disc, what a user edits, imports and exports, the files a project saves in formats of Coney's own, and what
 Studio needs from the engine for each, so that the Studio roadmap can say which kinds wait on Coney. It is one of the
-four Studio designs under [#1054](issue:1054); the panels, the project folder and the import flow are the editor
+Studio designs under [#1054](issue:1054); the panels, the project folder and the import flow are the editor
 experience design's ([#1055](issue:1055)), the program and its libraries the technology design's ([#1056](issue:1056)),
 and the scripting terms, the mods runtime and the natives' names the [Lua SDK design](lua-sdk.md)'s
 ([#1057](issue:1057)). It uses their terms (the `.studio/` cache, the Level view where other editors have a Scene view,
@@ -249,7 +249,7 @@ file](project-formats.md#level-file)), grown from the sandbox layout: Coney play
 and colliders; its contents are entities. At level entry Coney builds the collision mesh from the level's solid geometry
 and colliders, the path map from its walkable areas, then makes each entity through its native, in the order of the
 file. The project's scripts are loaded from the manifest, never from a level ([Play, step by step](lua-sdk.md#play)); a
-level reaches them through script entities ([The entity tree](project-formats.md#entity-tree)).
+script finds a level's entities by id, name or tag ([Names and tags](project-formats.md#names-tags)).
 
 **Live edits during Play.** The Studio brief ([#1054](issue:1054)) asks that a change made in the Level view show in the
 running game where it can; how Play and the Game view run is [#1055](issue:1055)'s and [#1056](issue:1056)'s. What a
@@ -281,11 +281,11 @@ the edit. Such a level is a modded session in the store's terms (simulation kind
 | What is changed | Override | How Coney applies it |
 | --- | --- | --- |
 | A placed object of `<level>_objs.txt` | `edit objs:<line> move at= rot=`, `edit objs:<line> remove` | Coney reads the object list itself ([Objects](../../research/objects.md#objs-file)), so it moves or skips that line before `ObjSpawn`-ing it |
-| An entity the level script makes | `edit call:<function>:<n> move at= heading=`, `edit call:<function>:<n> remove` (the *n*-th entity native the function calls) | After the script's set-up, through the handle the call returned: `Teleport` to move, `ObjDestroy` or the kind's own removal to remove; a change that only the call itself could make (a door's type) is refused with the reason |
-| A collision triangle | `faces mesh=game faces=LIST ...` or `remove`, as for an imported mesh ([What stays editable](#editable)) | The disc mesh's triangles by index, changed before the level's first step; the disc file is untouched |
+| An entity the level script makes | `edit call:<function>:<n> move at= rot=`, `edit call:<function>:<n> remove` (the *n*-th entity native the function calls) | After the script's set-up, through the handle the call returned: `Teleport` to move, `ObjDestroy` or the kind's own removal to remove; a change that only the call itself could make (a door's type) is refused with the reason |
+| A collision triangle | `faces mesh=base faces=LIST ...` or `remove`, as for an imported mesh ([What stays editable](#editable)) | The disc mesh's triangles by index, changed before the level's first step; the disc file is untouched |
 | A walkable area of the path map | `edit nav:<area> remove`, or a new `navarea` | The path map rebuilt with the change at entry |
 | A texture or a sound | `override GAME_PATH PROJECT_PATH` in the project's overrides ([Models and textures](#models)) | The override source |
-| Anything added | Ordinary statements: primitives, colliders, meshes, entities, script entities | After the disc level's own set-up |
+| Anything added | Ordinary statements: primitives, colliders, meshes, entities | After the disc level's own set-up |
 
 An override that no longer matches (another disc, a line or call that is not there) is listed when the level opens
 and skipped at Play, never applied to the wrong thing. The disc's own entities show in the Hierarchy greyed until
@@ -569,8 +569,9 @@ anything shipped).
 
 ## Project formats {#formats-pointer}
 
-The files a project saves (the level file with its entity tree and prefabs, characters, missions, overrides, import
-sidecars) are on their own page, [Project formats](project-formats.md).
+The files a project saves (the level file with its entity tree, names, tags and prefabs, characters, missions,
+overrides, import sidecars) and the `.cmod` package a finished project becomes are on their own page, [Project
+formats](project-formats.md).
 
 ## Export {#export}
 
@@ -647,11 +648,12 @@ In the order they should come, after the editor experience design's shell, File 
    synthetic WADs and a synthetic project resolve every path kind of [Paths](#paths); a missing path fails with its
    name; disc checks print counts only.
 2. **core: Add level files of version 2 with the entity tree and colliders.** The layout parser reads `format`, ids,
-   names, parents and groups ([The entity tree](project-formats.md#entity-tree)), `rot=` and `scale=` on every entity,
-   `collider` statements and collision names (`material=GRASS`, `climb=`, `sneak=`); the tree is flattened into world
-   transforms and the solid geometry built into the collision mesh; version 1 layouts read unchanged and play the same.
-   Tests: every shipped layout parses to the same primitives; a box under a rotated, scaled group lands where the
-   composed transform puts it; a sneak collider sets bit 4 under a human.
+   names, tags, parents and groups ([The entity tree](project-formats.md#entity-tree)), `rot=` and `scale=` on every
+   entity, `collider` statements and collision names (`material=GRASS`, `climb=`, `sneak=`); the tree is flattened into
+   world transforms and the solid geometry built into the collision mesh; version 1 layouts read unchanged and play the
+   same. Tests: every shipped layout parses to the same primitives; a box under a rotated, scaled group lands where the
+   composed transform puts it; a sneak collider sets bit 4 under a human; ids, names and tags reach the table scripts
+   read ([Names and tags](project-formats.md#names-tags)).
 3. **gameplay: Add level entities made from a level file at entry.** The entity statements of
    [Level objects](#entities), each made through its native in file order with its handle kept by id, the heading
    converted per native, door and pane triangles built into the mesh and passed by index, pool limits checked. Tests:
@@ -697,3 +699,8 @@ In the order they should come, after the editor experience design's shell, File 
 12. **tools: Add project missions with checkpoints.** The `.mission` file, starting a project mission at a checkpoint,
     objectives shown; after the mods runtime ([Lua SDK](lua-sdk.md#build-issues)). Tests: a synthetic mission starts at
     checkpoint 2 with the player at its spawn and its setup function called once.
+13. **tools: Add the `.cmod` export.** A project exported as one zip with its manifest, the file list and hashes, the
+    engine forms and optionally the sources, and none of the disc: derived files, files matching a disc asset's hash
+    and disc traces refused and listed ([The `.cmod` package](project-formats.md#cmod)). Tests: a synthetic project
+    exports to the expected entries byte for byte; a file equal to a synthetic disc asset is refused; a scripts-only
+    and a level-only project both export and load.

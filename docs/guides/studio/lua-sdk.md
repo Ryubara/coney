@@ -294,7 +294,8 @@ flowchart TB
    chunks: defining functions, registering handlers). Then the `start` handlers run. An error in a main chunk stops
    that file and is shown in Studio's Console with its file and line; the project goes on with the files that loaded.
 4. **The level.** The level named by `[play]` loads. For a project level (a sandbox layout today, Coney's own format
-   later, [#1058](issue:1058)) the world and its entities are built from the file, its spawn points are registered as
+   later, [Project formats](project-formats.md#level-file)) the world and its entities are built from the file, its
+   spawn points are registered as
    **world flags** of the same names, and the game state runs `global.lua`, so the game's helpers exist, but no level
    script: a project level has none. For a `game:/` level the game state runs `global.lua` and the level's own script
    exactly as the game does, at the checkpoint asked for.
@@ -336,7 +337,7 @@ call its functions. Whether it may read a game-state global through a Coney nati
 
 A project's script loads, plays or spawns an asset by its path, as engines do (`Resources.Load` in Unity, `load()` in
 Godot). The paths are the editor page's two roots ([#1055](issue:1055)); the formats behind them and how an import
-becomes a project file are the content page's ([#1058](issue:1058)), and the two pages use the same scheme:
+becomes a project file are the [content page](content-and-formats.md#paths)'s, and the two pages use the same scheme:
 
 | Root | Means | Example |
 | --- | --- | --- |

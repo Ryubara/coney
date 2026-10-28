@@ -1,7 +1,8 @@
 # Coney Studio: project formats
 
 **Status: design.** Nothing on this page is built. The files a Coney Studio project saves in formats of Coney's own:
-the level file with its entity tree and prefabs, characters, missions, overrides and import sidecars. What each kind of
+the level file with its entity tree and prefabs, characters, missions, overrides and import sidecars, and the `.cmod`
+package a finished project is exported as. What each kind of
 content is, and what Studio shows, edits and imports, is on [Content and formats](content-and-formats.md), which this
 page completes; the project folder's layout is the editor experience design's ([#1055](issue:1055)) and the manifest
 the [Lua SDK design](lua-sdk.md#manifest)'s.
@@ -46,7 +47,7 @@ units and axes: metres and degrees, the game's axes, z up.
 
 | Addition | Arguments | Does |
 | --- | --- | --- |
-| On every entity | `id=` (stable, written by Studio), `parent=ID`, `name=` | Its place in the level's tree ([The entity tree](#entity-tree)); an id scripts and other entities refer to |
+| On every entity | `id=` (stable, written by Studio), `name=`, `tags=a,b`, `parent=ID` | Its identity and its place in the level's tree; what scripts find it by ([Names and tags](#names-tags)) |
 | Transform | `at=x,y,z`, `rot=x,y,z,w` (a quaternion) or `yaw= pitch= roll=`, `scale=x,y,z` | Every entity's full transform, relative to its parent; `heading=` and `yaw=` keep their meaning, so version 1 layouts read unchanged |
 | `group` | an entity with a transform and nothing else | Unity's empty object: a parent to arrange and move children by |
 | `instance` | `prefab=project:/prefabs/<name>.prefab`, the entity keys | A placed prefab ([Prefabs](#prefabs)) |
@@ -55,14 +56,13 @@ units and axes: metres and degrees, the game's axes, z up.
 | `edit TARGET` | `objs:<line>`, `call:<function>:<n>` or `nav:<area>`, then `move at= rot=` or `remove` | An override of a disc level's thing ([How a level starts](content-and-formats.md#level-start)) |
 | `map PATH` | `project:/maps/<file>` | A whole map imported from Blender, its markers written as statements beside it |
 | `mesh` | `model=project:/...`, `collide=none\|mesh\|hull`, collision settings | An imported static mesh |
-| `faces` | `mesh=ID faces=LIST` and `material= climb= sneak= twosided= area=`, or `remove` | Hand edits to an imported mesh's collision, by triangle index ([What stays editable](content-and-formats.md#editable)) |
+| `faces` | `mesh=ID` (or `mesh=base`, the base level's collision) `faces=LIST` and `material= climb= sneak= twosided= area=`, or `remove` | Hand edits to an imported mesh's or the base level's collision, by triangle index ([What stays editable](content-and-formats.md#editable)) |
 | `collider` | `shape=box\|sphere\|capsule\|hull\|mesh`, its sizes or `model=`, `material= climb= sneak= twosided= area=` | Collision only ([Colliders](content-and-formats.md#collision)) |
 | Collision names | `material=GRASS`, `climb=player`, `sneak=yes` on shapes and colliders | Names in place of `flags=` and a numeric `material=`, which stay for the bits not named |
 | `navarea` | `points=x,y;x,y;...`, `hole=` lines after it, `area=`, `flags=` | A walkable area of the path map |
 | `navlink` | `from= to= kind=walk\|jump\|climb\|door` | A link between areas |
 | Entities | `flag`, `path`, `flaglink`, `volume`, `object`, `emitter`, `door`, `glass`, `car`, `light`, `character`, `spawner`, `trigger` with their natives' arguments by name | The entities of [Level objects](content-and-formats.md#entities) |
 | `spawn NAME` | `character=` a type number or `project:/characters/...` | The spawn point's character |
-| `script` | `handler=NAME` and the entity keys | A script entity: a function the project's scripts define, called with its parent entity ([Script entities](#script-entities)) |
 
 An example, in version 2:
 
@@ -81,11 +81,10 @@ box id=b1 at=20,0,0 size=6,6,0.1 rot=0,0.1305,0,0.9914 sneak=yes texture=floor
 group id=g1 name=Gate at=16,12,0
 flag fYardGate id=f1 parent=g1 at=0,0,0 heading=0
 object id=o1 parent=g1 type=dyn_trashcan at=-1,-1,0 zone=0
-character Rival id=h1 type=32 gang=2 at=18,12,0 heading=180
-script id=sc1 parent=h1 handler=Yard.OnRival
+character Rival id=h1 tags=rivals type=32 gang=2 at=18,12,0 heading=180
 
-instance id=p1 prefab=project:/prefabs/ambush.prefab at=30,5,0 yaw=90
-instance id=p2 prefab=project:/prefabs/ambush.prefab at=40,-8,0
+instance id=p1 name=AmbushNorth tags=ambush prefab=project:/prefabs/ambush.prefab at=30,5,0 yaw=90
+instance id=p2 name=AmbushSouth tags=ambush prefab=project:/prefabs/ambush.prefab at=40,-8,0
 set p2/h3 at=0,2,0 type=33
 drop p2/c2
 ```
@@ -95,7 +94,8 @@ drop p2/c2
 A level is a tree of **entities**, as Unity's Hierarchy is (the maintainer's choice; [#1055](issue:1055) draws it): any
 entity may be the parent of any other, a child's transform is relative to its parent's and follows it, and the tree has
 no folders by kind. Every statement that places something is an entity: primitives, colliders, meshes, walkable areas,
-every entity kind of [Level objects](content-and-formats.md#entities), groups, prefab instances and scripts.
+every entity kind of [Level objects](content-and-formats.md#entities), groups and prefab instances. Scripts are not
+entities and are never attached to one: they belong to the project ([Names and tags](#names-tags)).
 
 - **Full transforms on every entity**: position, rotation and scale, kept relative to the parent; the file stores
   them as the user set them, and Studio composes them down the tree.
@@ -106,8 +106,7 @@ every entity kind of [Level objects](content-and-formats.md#entities), groups, p
   human or an object of the game, which have no scale. Studio shows such a child's scale as unused rather than refusing
   the parent.
 - **Order** is the file's: a child's line comes after its parent's, and Coney makes entities in file order, so a parent
-  exists before its children. Script entities run later, once every entity is made ([Script
-  entities](#script-entities)).
+  exists before its children.
 - **The base level beside the tree.** A loaded game level ([How a level starts](content-and-formats.md#level-start)) is
   a read-only branch at the bottom of the tree, as the editor experience design draws it ([#1055](issue:1055)): its
   parts are shown, selected and inspected, never stored in the file and never changed in place. The project's entities
@@ -118,17 +117,25 @@ every entity kind of [Level objects](content-and-formats.md#entities), groups, p
   script makes (flags, paths, boxes, doors, glass, lights, cars, spawners, characters) only from the set-up trace of
   [Levels and worlds](content-and-formats.md#levels), which runs the level's set-up headless on the player's machine.
 
-### Script entities {#script-entities}
+### Names and tags {#names-tags}
 
-A project's code is loaded from the manifest's `[scripts]`, and a level has no level script of its own
-([Projects and the manifest](lua-sdk.md#manifest), [Play, step by step](lua-sdk.md#play)). A **script entity** joins
-that code to a place in the tree: `script id=sc1 parent=h1 handler=Yard.OnRival` names a function the project's
-scripts define. In step 5 of Play, after the project's own `levelStart` handlers, Coney calls each script entity's
-function in file order with the handle of its parent entity, the level's name and the checkpoint, in the project's
-state and with its instruction budget; a handler that does not exist is an error in the Console with the level line,
-and Play goes on. A prefab's script entity is called once per instance, with that instance's entity, which is how an
-ambush prefab's script finds its own fighters. This call is an addition to the Lua SDK's Play order, which that page's
-entry points take in when it is built.
+Studio attaches no script to an entity (the maintainer's choice: Studio is not a general engine). A project's code is
+the manifest's `[scripts]`, and a level has no script of its own ([Projects and the manifest](lua-sdk.md#manifest),
+[Play, step by step](lua-sdk.md#play)). A script finds the entities it needs when a level starts, in its `levelStart`
+handler, as the original's level scripts find flags by name ([Flags](../../research/flags.md#findflag)), and handles one
+that is missing. So every entity carries what a script can look it up by:
+
+- **An id**, `id=`, written by Studio, unique in the level and never changed by a rename or a move; inside a prefab
+  instance it is `INSTANCE/LOCAL` (`p2/h3`), nested as deep as the instances are.
+- **A name**, `name=` (or the statement's own name, as `flag fYardGate`), set by the user and shown in the Hierarchy;
+  Studio warns when two entities share one, since a lookup by name then finds the first in file order.
+- **Tags**, `tags=ambush,guards`, any number of short words. An instance's tags belong to the instance; the entities
+  inside it keep the prefab's tags, and `set p2/h3 tags=...` overrides one instance's.
+
+At Play, Coney keeps a table from each id, name and tag to the handles its natives returned, and the Lua SDK's natives
+read it: one entity by id or name, every entity with a tag (an instance's members found from it), each answer the
+handles the game natives take ([Assets by path](lua-sdk.md#assets) for the native family; the names are that page's).
+"Every entity tagged ambush" is one call, and a script that finds none gets an empty list, never an error.
 
 ### Prefabs {#prefabs}
 
@@ -167,3 +174,25 @@ A file copied or converted from the disc (the export folder is outside the proje
 [Export](content-and-formats.md#export)); a script listing or trace of a disc level; the game's text; anything under
 `.studio/` in a shared copy. A derived file (an edited export, [Provenance](content-and-formats.md#import)) may sit in a
 project on the player's machine and is left out of a package.
+
+## The `.cmod` package {#cmod}
+
+A finished project is exported as one file, a **`.cmod`** (the working name): a zip of the project folder with its
+manifest at the root, which the player puts in the one mods folder ([The mods folder](lua-sdk.md#mods-folder)). How
+Coney loads it, by hand or at start as its manifest says, and how mods depend on each other, are the Lua SDK design's.
+What goes in, from the formats on this page:
+
+| In the project | In the `.cmod` |
+| --- | --- |
+| `coney-project.toml` | At the root, with a list of every file the package holds and its SHA-256, written by the export |
+| `levels/`, `prefabs/`, `missions/`, `characters/`, `overrides.layout` | As they are: text files of the statement format, holding `project:/` and `game:/` paths only |
+| `scripts/` | As they are |
+| `models/`, `anims/`, `textures/`, `sounds/` with their sidecars | The engine forms the import made (`imported/`, from `.studio/imported/`, with the import table), which is what Coney loads; the sources and sidecars too unless the export is told to leave them out, so another user can open the project in Studio |
+| `.studio/` (cache, traces, the user's layouts) | Nothing but the engine forms above |
+| A derived file (an edited export of a disc asset, [Provenance](content-and-formats.md#import)) | Never: the export leaves it out and lists it |
+
+**Nothing from the disc goes into a `.cmod`.** A package refers to the game's assets only by `game:/` path, resolved on
+each player's machine against their own disc ([Paths](content-and-formats.md#paths)). The export enforces it: it
+refuses a file marked derived, a file whose bytes match a disc asset it can resolve (a texture, sound or model hash
+compared with the asset store's), and a trace or listing of a disc level, and names each. A `.cmod` with no `levels/`
+is a scripts-only mod, one with no `scripts/` a level-only mod; both load.
