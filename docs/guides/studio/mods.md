@@ -1,11 +1,11 @@
 # Coney Studio: mods, packages and loading
 
 How a finished project becomes a mod and how Coney loads it: the install folder, the `.cmod` package, installed mods,
-starting and stopping, dependencies and exports, load order and clashes, mods from the console, modded saves and
+starting and stopping, dependencies and exports, load order and clashes, console commands for mods, modded saves and
 replays, and how scripts load offline and online, with what other platforms do. It is the loading half of [Coney Studio:
 script security](security.md), whose threat model and rules it follows, and it extends the manifest and mods folder of
 [Coney Studio: the Lua SDK](lua-sdk.md#manifest). The parent issue is [#1054](issue:1054); this page comes from
-[#1062](issue:1062). Its build issues are on [Script security's list](security.md#build-issues) (4, 5, 6, 9 and 14).
+[#1062](issue:1062). Its build issues are on [Script security's list](security.md#build-issues) (4 to 8, 11 and 15).
 
 **Status: design.** Nothing on this page is built. It is a design in the sense of
 [Page kinds](../writing-docs.md#page-kinds).
@@ -15,7 +15,7 @@ script security](security.md), whose threat model and rules it follows, and it e
 1. [The install folder](#install-layout).
 2. [The `.cmod` package](#cmod): one file, its manifest, its hash and signature, mounted read-only.
 3. [Installed mods](#installed), [Starting and stopping](#starting), [Dependencies and exports](#dependencies),
-   [Load order](#load-order) and its clashes, [Mods from the console](#console),
+   [Load order](#load-order) and its clashes, [Console commands](#console) and [the player console](#player-console),
    [Modded saves and replays](#saves-replays).
 4. [How other platforms load scripts offline and online](#mp-prior-art) and
    [Coney's model: single player first, multiplayer designed in](#mp-model).
@@ -81,7 +81,7 @@ it holds, the manifest lists it, and a file not listed is not read.
 with every session, in the order they start, and records for each its name, version, package hash, the permissions the
 player approved and the signer. **Only two things change it**: the player editing the file, and the mods menu, which
 writes it (proposed here; its screens are the mods UI unit's, [#1063](issue:1063)). The console never does
-([Mods from the console](#console)): every start loads exactly what the file says, as a FiveM server loads `server.cfg`.
+([Console commands](#console)): every start loads exactly what the file says, as a FiveM server loads `server.cfg`.
 
 1. **Installing** is putting a `.cmod` in `mods/`. At the next start Coney finds it, checks it
    ([The `.cmod` package](#cmod)) and adds it to the end of `enabled.toml`, **on**, the one write Coney makes itself: a
@@ -179,26 +179,49 @@ comes after the mods already running. That order is the order of main chunks, `s
 | A mod names another under `conflicts` | From the manifest | The two cannot run together; the later one is not started |
 | Two mods' scripts disagree at run time (both set the time scale) | Not detectable | Handlers run in load order and a one-slot native keeps the last value set ([The value bridge](lua-sdk.md#bridge)); authors declare `conflicts` once they know |
 
-## Mods from the console {#console}
+## Console commands {#console}
 
-The Coney console (an F8 terminal with built-in commands, access levels and a release-ready menu bar, a maintainer
-decision) is its own unit, [#1064](issue:1064), and its page, the console design in `docs/guides/studio/`, owns its
-commands, panels and code boundary. What this page decides for it, about loading:
+The Coney console itself (the F8 terminal, its command catalog, access levels, the menu bar, profilers and log viewer,
+the code boundary and mod-registered commands) is [#1064](issue:1064)'s console design (`console.md` in this folder),
+which links here for what its commands do to mods. They are FiveM's resource commands, plus `enable`, `disable`, `play`
+and the listing commands. All of them act on the **running session only** (a maintainer decision): none writes
+`enabled.toml`, so the next start loads exactly what the file says, as FiveM's `start` and `stop` leave `server.cfg`
+alone.
 
-- **FiveM's resource commands act on mods**: `start`, `stop`, `restart`, `ensure` and `refresh`, with `enable` and
-  `disable`, list the same states this page defines (running, stopped, disabled, held, refused) and follow its rules:
-  a mod starts after its dependencies and stops after its dependants, `restart` is a [hot
-  reload](lua-sdk.md#hot-reload) from the package, `refresh` rescans `mods/` so a new package can be started, and a
-  content mod's level can be started by name.
-- **Every console change is for the running session only** (a maintainer decision): no command writes
-  `enabled.toml`, so the next start loads exactly what the file says, as FiveM's `start` and `stop` leave `server.cfg`
-  alone. `disable` keeps a mod off for the rest of the session, so no dependant or `ensure` brings it back.
-- **Commands take effect at a step boundary** like every outside request ([Determinism](lua-sdk.md#determinism)), and a
-  run in which a mod was started, stopped or restarted after the session began is marked in the run log and recorded
-  in its replay ([Modded saves and replays](#saves-replays)).
-- **A console command never approves a permission** and never loads a file outside `mods/`; online, the commands that
-  change the session are the host's or the server operator's. What a mod's own console commands may do, and what the
-  release console may never reach, is [Script security](security.md#console).
+| Command | Does, in this session |
+| --- | --- |
+| `mods` | Lists every installed mod: running, stopped, disabled, held or refused, with its version, `autostart` and the reason it is held or refused |
+| `mod <name>` | One mod's details ([What the player sees](security.md#player-view)) |
+| `levels <mod>` | The levels a content mod offers |
+| `start <mod>` | Starts a stopped mod, its dependencies first |
+| `stop <mod>` | Stops a running mod, the mods that depend on it first |
+| `restart <mod>` | Stops and starts a running mod: a [hot reload](lua-sdk.md#hot-reload) from its package |
+| `ensure <mod>` | Restarts the mod if it runs, starts it if not |
+| `refresh` | Rescans `mods/`: checks new and changed packages and their manifests, so a new mod can be started in this session (it joins `enabled.toml` at the next start, as any new package does) |
+| `disable <mod>` | Stops the mod and keeps it off for the rest of the session: no dependant, `ensure` or level start brings it back |
+| `enable <mod>` | Lifts `disable` and starts the mod |
+| `play <mod>[/<level>]` | Starts a content mod's level (its `[play]` level when none is named) |
+
+- **They take effect at a step boundary** like every outside request ([Determinism](lua-sdk.md#determinism)); a run in
+  which a mod was started, stopped or restarted after the session began is marked in the run log and recorded in its
+  replay ([Modded saves and replays](#saves-replays)).
+- **They never approve a permission** (a held mod stays held until the player approves it in its details), never load
+  a file outside `mods/`, never run Lua and never call a native.
+- **Online**, the commands that change the session are the host's or the server operator's; a guest's console lists the
+  session's mods and nothing more.
+
+### The player console {#player-console}
+
+A maintainer decision: the release build **includes a player console**, limited in what it can reach, with its code
+kept cleanly apart from the developer debug tools, which stay out of the release build. The console design
+(`console.md`, section Release) owns how: the console's model, UI-free, in `src/console/` in the game library; its
+screen a Dear ImGui front end in a release target of its own, `coney_console_ui`, so that only that target and
+`coney_devtools` link Dear ImGui; the separation kept by target and model, not by library. That changes the release
+checks' marker list (the `imgui.ini` marker goes, since Dear ImGui's default file name is then in the release game, and
+markers only the debug tools carry come in) and the rule's wording in [AGENTS.md](repo:AGENTS.md), the conventions and
+[The debug tools and the game](../building.md#debug-tools), a build issue this page and the console design share
+([7](security.md#build-issues)). What a mod's own commands and the release console may reach is
+[Script security](security.md#console).
 
 ## Modded saves and replays {#saves-replays}
 

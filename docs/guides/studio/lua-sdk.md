@@ -270,6 +270,10 @@ the order they were registered, projects in load order. The events, at the point
 | `levelEnd` | Before a level unloads (a level change, a restart, the end of Play) | level name, reason (`change`, `restart`, `stop`) | Cleaning up what the project made |
 | `stop` | When the project stops: the session ends, Play stops, or a hot reload replaces it | reason (`quit`, `stop`, `reload`) | Saving the project's own data |
 
+A project may also add console commands with `Coney.RegisterCommand(name, handler, spec)`, an SDK function whose
+handler is an entry point like these, run in the project's state at a step boundary (the console design, `console.md`
+in this folder; [Script security](security.md#console)).
+
 Everything else a script reacts to comes through the game natives' own callbacks, as for the game's scripts: message
 handlers on objects (`SetMsgHandler`), trigger boxes, animation callbacks, pad handlers, scheduled calls. Network
 events between projects and machines are the network page's (P4).
@@ -721,13 +725,13 @@ running a project's scripts. Issues 2 to 6 build on the [decision](#decisions) f
    arguments.
 3. **core: Add the mods loader with projects and entry points.** `coney-project.toml` read and checked (name, SDK level,
    script lists, globs in byte order); the mods folder of `.cmod` packages and `mods/enabled.toml`, with [Script
-   security](security.md#build-issues)'s limits, packages, starting and dependencies, exports, permissions, store and
-   modded saves (its build issues 3 to 9); `Coney.On` and `Coney.Off` with `start`, `levelStart`, `update`, `levelEnd`
-   and `stop`; `Coney.CreateThread` and `Coney.Wait` in steps; the project's frame after the game state's; a project
-   level's spawn points as world flags; the default player; Stop at a step boundary; the modded-session mark. Tests: a
-   test project from a fixture folder runs at a level start, makes a human with `HuCreate` at a flag and moves the
-   camera; a thread's waits land on the expected steps; with the folder empty the game's scripted runs are unchanged
-   (the roadmap's Done line).
+   security](security.md#build-issues)'s limits, packages, starting and dependencies, exports, the mods' console
+   commands, permissions, store and modded saves (its build issues 3 to 11); `Coney.On` and `Coney.Off` with `start`,
+   `levelStart`, `update`, `levelEnd` and `stop`; `Coney.CreateThread` and `Coney.Wait` in steps; the project's frame
+   after the game state's; a project level's spawn points as world flags; the default player; Stop at a step boundary;
+   the modded-session mark. Tests: a test project from a fixture folder runs at a level start, makes a human with
+   `HuCreate` at a flag and moves the camera; a thread's waits land on the expected steps; with the folder empty the
+   game's scripted runs are unchanged (the roadmap's Done line).
 4. **core: Add the first Coney natives.** `research/bindings/coney.yaml` with `origin: coney` and the schema keys
    `apiset`, `mods`, `handle`, `reads`, `since`; `natives coney` and `natives render` reading it; the first natives from
    the candidates table that have a C++ entry point today (`Coney.TeleportPlayer`, `Coney.SetPlayerFrozen`,

@@ -1,18 +1,15 @@
 # Coney Studio: script security and the sandbox
 
 The design of how Coney protects players from the scripts they run: what other platforms that run strangers' Lua do and
-why, the threat model, the line Coney draws (what a project's scripts keep and lose, and the reason for each), the few
-permissions a mod declares, how a player sees and trusts a mod, the attack surface, and the tests and fuzzing that prove
-the sandbox holds. How mods are packaged and loaded (the `.cmod`, starting and stopping, dependencies and exports, the
-console, modded saves, offline and online loading) is its companion page, [Coney Studio: mods, packages and
-loading](mods.md). It ends with the build issues both pages propose, in order. The parent issue is [#1054](issue:1054);
-this page is [#1062](issue:1062).
+why, the threat model, what a project's scripts keep and lose and why, the few permissions a mod declares, trust, the
+attack surface, and the tests and fuzzing that prove the sandbox holds. Its companion page, [Coney Studio: mods,
+packages and loading](mods.md), covers how mods are packaged and loaded. It ends with the build issues of both pages, in
+order. The parent issue is [#1054](issue:1054); this page is [#1062](issue:1062).
 
-**Status: design.** Nothing on this page is built. It is a design in the sense of
-[Page kinds](../writing-docs.md#page-kinds). It builds on [Coney Studio: the Lua SDK](lua-sdk.md), whose
-[sandbox](lua-sdk.md#sandbox) section it owns from now on (that section summarises this page and links here), and on
-the [security](../network-architecture.md#security) and [sandboxing](../network-architecture.md#sandbox) of Network
-architecture. Where it changes another page, [What changes on other pages](#other-pages) lists it.
+**Status: design.** Nothing on this page is built ([Page kinds](../writing-docs.md#page-kinds)). It builds on [Coney
+Studio: the Lua SDK](lua-sdk.md), whose [sandbox](lua-sdk.md#sandbox) section it owns (that section summarises it), and
+on the [security](../network-architecture.md#security) and [sandboxing](../network-architecture.md#sandbox) of Network
+architecture; [What changes on other pages](#other-pages) lists what it changes elsewhere.
 
 ## Contents {#contents}
 
@@ -334,7 +331,7 @@ parsing of a big project data file, a large computation Coney offers as a native
 starts the job with copied inputs and returns a job id; the result arrives at a later step boundary, at a step fixed by
 the request (the job's declared delay), and the simulation waits for the worker there if it is late, so the run is the
 same on any machine; in test mode the result arrives at once. No script runs on a worker: only Coney's own code does,
-on copies. It is a proposed build issue ([16](#build-issues)), filed when a native needs it.
+on copies. It is a proposed build issue ([17](#build-issues)), filed when a native needs it.
 
 ### What modders lose, and what they get {#dx}
 
@@ -404,32 +401,29 @@ Play). Opening a project someone else made is safe because nothing in it runs on
 
 ## The console and mods {#console}
 
-The Coney console (an F8 terminal with built-in commands, access levels and a menu bar in the release game) is
-[#1064](issue:1064), whose console design in `docs/guides/studio/` owns its commands, panels and code boundary; what it
-does with mods is [Mods from the console](mods.md#console). The security rules it and mods follow:
+The Coney console is [#1064](issue:1064)'s console design (`console.md` in this folder, which owns the console and
+mod-registered commands); what its commands do to mods is [Console commands](mods.md#console). The security line both
+hold to:
 
-- **A mod may add commands**, as FiveM's `RegisterCommand`: `Coney.RegisterCommand(name, fn, help)` in a mod's script.
-  The name is lower case, digits and `-`, and may not be a built-in command or another running mod's (the second
-  registration is an error); `help` and the console's list show which mod a command comes from, and the commands go
-  when the mod stops.
-- **A mod's command runs in the mod's own sandbox**: in its state, under its budget, at a step boundary, like any
-  handler. It receives the words typed as strings, never evaluated as Lua, and returns text the console prints, within
-  a length limit. It can do nothing the mod's scripts cannot do already, whoever types it: a higher access level in the
-  console never widens what a mod's code may reach, and a mod's command is never offered at a level above the one #1064
-  gives mods.
-- **No script runs console text.** There is no native that executes a console command (FiveM's `ExecuteCommand`): a
-  mod cannot drive the built-in commands, another mod's commands, or the console's access levels.
-- **Online**, a server mod's command typed on a client is a request to the server, which knows the sender's slot and
-  checks the command's access as it checks a client's event ([Coney resources](../network-architecture.md#resources));
-  a client mod's command runs in that client's state with client natives only.
+- **A mod's command runs in the mod's own sandbox.** `Coney.RegisterCommand(name, handler, spec)` (FiveM's
+  `RegisterCommand`) makes the handler an entry point like an event handler: it runs in the mod's state, queued to the
+  next step boundary, under the mod's instruction budget, memory cap and print limits, with only the natives that state
+  has. Its arguments arrive as strings checked against the declared types, never evaluated as Lua. It can do nothing
+  the mod's scripts cannot do already, whoever types it: a console access level never widens what a mod's code may
+  reach. A mod cannot register a built-in's name, and its commands go when it stops or reloads.
+- **No script runs console text.** No native executes a console command (FiveM's `ExecuteCommand`): a mod cannot drive
+  the built-in commands, another mod's commands or the console's access levels.
+- **Online**, a command marked `restricted` is the host's or the server operator's only; a server mod's command typed
+  on a client is a request the server checks against the sender's slot, as it checks a client's event
+  ([Coney resources](../network-architecture.md#resources)); a client mod's command runs in that client's state with
+  client natives only.
 - **What the release console may never reach**, at any access level: evaluating Lua or any expression, calling a
   native, reading or writing an entity, a value or memory, opening a file by path, the network, starting a program,
   approving a permission, or any of the debug tools (the Lua console, the Natives page, the debug menu), which stay out
-  of the release build ([The debug tools and the game](../building.md#debug-tools)). Its changes to mods are for the
-  running session only ([Mods from the console](mods.md#console)).
-- **Proved by** tests in the console's unit and the [escape suite](#escape-suite): the release console refuses `lua`
-  and a native's name as unknown commands; a mod's command that loops stops on the mod's budget; a mod cannot register
-  a built-in's name; no available native executes console text.
+  of the release build. Its changes to mods are for the running session only.
+- **Proved by** the console's tests and the [escape suite](#escape-suite): the release console refuses `lua` and a
+  native's name as unknown commands; a mod's command that loops stops on the mod's budget; a mod cannot register a
+  built-in's name; no available native executes console text.
 
 ## Permissions and trust {#permissions}
 
@@ -532,7 +526,7 @@ The same panel opens from the join prompt of a modded server and from Studio's P
 | **Natives with paths or handles** | A name that reaches the disk (`../`, `C:\`, `\\host\share`); a handle of another kind or another session | The [file layer](#paths) and the asset store; handles checked with kind and generation ([What natives may do](#natives)) | The file monitor ([Proof](#proof)); the native fuzzer |
 | **Manifests and packages** | A crafted `coney-project.toml` or `.cmod`: overlapping or duplicate zip entries, a central directory that disagrees with the local headers, a compression bomb | Parsed into types with limits, `std::expected` on every error; the strict zip reader of [The `.cmod` package](mods.md#cmod), sizes enforced while inflating, every file checked against the manifest's hash | Parser fuzzers |
 | **Levels, models, textures, sounds** | A crafted file breaks a parser (a classic route into a game) | Every parser reads through bounds-checked readers, checks counts before allocating, and is fuzzed; the same parsers serve the game's own files | Parser fuzzers |
-| **The console** | Text the player types; a mod's command; a release console that grows into a debug tool | Mods' commands run in their own sandbox; no script runs console text; the release set never reaches Lua, natives or paths ([The console and mods](#console)) | The console's tests and the escape suite's console items |
+| **Mod commands** | Text the player types reaching a mod's handler; a release console that grows into a debug tool | The handler runs in the mod's sandbox at a step boundary; no script runs console text; the release set never reaches Lua, natives or paths ([The console and mods](#console); the console design's section Mod commands, `console.md`) | The console's tests and the escape suite's console items |
 | **Studio's tools** | The language server's plugin, the debugger's port | [A shared Studio project](#studio-project) | A test project carrying `runtime.plugin` runs nothing; the debugger refuses a client without the token |
 | **The network** | Packets and packages from a server or client | The network page's strict decoding and fuzzing ([Testing](../network-architecture.md#testing)); packages as above | The network fuzzers |
 
@@ -601,12 +595,11 @@ fuzz target for a new parser.
 
 ### Keeping the runtime current {#runtime-updates}
 
-- **Pin the last release:** Lua 5.4.9 in `cmake/deps.cmake`, the release that carries every fix listed for 5.4.
-- **Watch the bugs page** at every Coney release. Since 5.4 gets no more releases, a fix reachable from scripts that
-  appears for 5.5 is applied to the pinned 5.4.9 as a patch the build fetches beside it, with a test, or the runtime
-  moves to 5.5 ([Maintainer decisions](#decisions)).
-- **A dependency update is a security change**: its pull request runs the escape suite and the fuzz corpus like any
-  other, and names the bugs it brings in.
+Lua 5.4.9 is pinned in `cmake/deps.cmake`: the last 5.4 release, with every fix listed for 5.4. The bugs page is read at
+every Coney release; since 5.4 gets no more releases, a fix reachable from scripts that appears for 5.5 is applied to
+5.4.9 as a patch the build fetches beside it, with a test, or the runtime moves to 5.5 ([Maintainer
+decisions](#decisions)). A dependency update is a security change: its pull request runs the escape suite and the fuzz
+corpus and names the bugs it brings in.
 
 ## What changes on other pages {#other-pages}
 
@@ -666,9 +659,10 @@ Open:
 ## Proposed build issues {#build-issues}
 
 The build issues of this page and of [Mods, packages and loading](mods.md), in order, interleaved with the SDK's
-[build issues](lua-sdk.md#build-issues): 1 and 2 come with its runtime (SDK issue 2), 3 to 9 with its loader (SDK
-issue 3), 10 with its compiler (SDK issue 7), 11 and 12 when Studio's Export and code editor are built, 13 with the
-console ([#1064](issue:1064)), 14 and 15 with ConeyMP's resources ([#566](issue:566)), and 16 when a native needs it.
+[build issues](lua-sdk.md#build-issues): 1 and 2 come with its runtime (SDK issue 2), 3 to 11 with its loader (SDK
+issue 3; 7 and 8 also with the console of [#1064](issue:1064)), 12 with its compiler (SDK issue 7), 13 and 14 when
+Studio's Export and code editor are built, 15 and 16 with ConeyMP's resources ([#566](issue:566)), and 17 when a
+native needs it.
 
 1. **core: Add the project file layer.** The one way a name becomes a project file, over a folder root: relative names
    with `/`, every refusal of [Files and paths](#paths) (absolute, drive, network and device paths, `..`, alternate
@@ -707,53 +701,59 @@ console ([#1064](issue:1064)), 14 and 15 with ConeyMP's resources ([#566](issue:
    functions as callbacks to the state they came from, declared dependencies only, a depth limit, same side only. Tests:
    a library's function returns a copied table the caller cannot use to reach the library's state; a call to an
    undeclared mod and a mutual recursion past the depth are errors; a runaway export stops on the library's budget.
-7. **core: Add mod permissions, approvals and the mod details.** `[permissions]` and `[limits]` in the manifest;
+7. **docs: Update the release build's rule for the player console.** Shared with the console design (`console.md`,
+   [#1064](issue:1064)), whose release front end depends on it: the rule in [AGENTS.md](repo:AGENTS.md), the conventions
+   and [The debug tools and the game](../building.md#debug-tools) that the release build holds no debug tools gains the
+   player console as the one console it holds, kept apart by target and model ([The player
+   console](mods.md#player-console)); the release marker list loses `imgui.ini` and gains markers only the debug tools
+   carry. A maintainer decided the console; this issue changes the text that states the rule.
+8. **core: Add the mods' console commands.** The `ModHost` side of the console: the commands of [Console
+   commands](mods.md#console) (`mods`, `mod`, `levels`, `start`, `stop`, `restart`, `ensure`, `refresh`, `enable`,
+   `disable`, `play`), for the running session only, at a step boundary, the host's or operator's online. Built on the
+   console design's console-core issue (`console.md`, [#1064](issue:1064)). Tests against a fake console: start runs
+   dependencies first, stop stops dependants first, `disable` keeps a mod off for the session, nothing writes
+   `enabled.toml`, a guest gets the listing commands only.
+9. **core: Add mod permissions, approvals and the mod details.** `[permissions]` and `[limits]` in the manifest;
    `enabled.toml` recording each approval with the package hash and the signer; a mod whose permissions grew or whose
    signer changed held; the details of [What the player sees](#player-view) for the mods UI. Tests: a mod with
    `game-scripts` starts only once approved; an update adding a permission is held; one dropping a permission starts
    without a question.
-8. **core: Add the project's store.** `Coney.SaveData`, `Coney.LoadData`, `Coney.ReadData`, `Coney.JsonEncode` and
-   `Coney.JsonDecode`: plain values only, JSON in `mod-data/<project>/` keyed by name and signer, the quota, writes at
-   step boundaries. Tests: a value round-trips; functions, cycles and userdata are refused; past the quota nothing is
-   written; two projects never see each other's keys.
-9. **core: Keep modded saves and replays apart and exact.** A save written while any mod runs goes to the per-user
-   `modded/` folder with every running mod's name, version and package hash; a save made with no mod is unmarked, in
-   `profiles/`; loading a modded save with a mod missing, stopped or changed warns; a replay records the list and every
-   start and stop in the run, and refuses to play back with any difference. Tests: a modded session's save leaves
-   `profiles/` byte-for-byte unchanged; a save without mods carries no mark; the warning names the missing mod; a replay
-   with one package changed is refused.
-10. **core: Accept game-script overrides only as Lua 4.0 source.** `game-scripts` overrides and `overrides/files/`
+10. **core: Add the project's store.** `Coney.SaveData`, `Coney.LoadData`, `Coney.ReadData`, `Coney.JsonEncode` and
+    `Coney.JsonDecode`: plain values only, JSON in `mod-data/<project>/` keyed by name and signer, the quota, writes at
+    step boundaries. Tests: a value round-trips; functions, cycles and userdata are refused; past the quota nothing is
+    written; two projects never see each other's keys.
+11. **core: Keep modded saves and replays apart and exact.** A save written while any mod runs goes to the per-user
+    `modded/` folder with every running mod's name, version and package hash; a save made with no mod is unmarked, in
+    `profiles/`; loading a modded save with a mod missing, stopped or changed warns; a replay records the list and every
+    start and stop in the run, and refuses to play back with any difference. Tests: a modded session's save leaves
+    `profiles/` byte-for-byte unchanged; a save without mods carries no mark; the warning names the missing mod; a
+    replay with one package changed is refused.
+12. **core: Accept game-script overrides only as Lua 4.0 source.** `game-scripts` overrides and `overrides/files/`
     entries of script kinds compiled by Coney's Lua 4.0 compiler, bytecode refused; the game state given a memory cap in
     a modded session; the 4.0 chunk loader fuzz target. Tests: a source override runs in place of a synthetic disc
     chunk; a bytecode override is refused with its message; the chunk fuzzer's corpus replays clean.
-11. **tools: Add signed `.cmod` packages.** `coney-tools mod sign` and `mod verify`, Studio's Export signing with the
+13. **tools: Add signed `.cmod` packages.** `coney-tools mod sign` and `mod verify`, Studio's Export signing with the
     user's key: the Ed25519 `coney-project.sig` over the packaged manifest; Coney verifying it at the check, recording
     the fingerprint on first enable and holding an update by another key or unsigned after signed. Needs the libsodium
     decision ([Maintainer decisions](#decisions)). Tests: a signed package verifies; a changed manifest and a wrong key
     are refused; an update by another key is held with its warning.
-12. **Studio: Open shared projects without running their tools.** Studio's language-server settings passed by Studio,
+14. **Studio: Open shared projects without running their tools.** Studio's language-server settings passed by Studio,
     `runtime.plugin` and settings naming programs never taken from a project, a notice when a project carries them; the
     debugger's loopback-only port with a token; the signing key kept out of projects; importers' fuzz targets. Comes
     with Studio's code editor issue. Tests: a fixture project with a plugin setting runs no plugin; the debugger refuses
     a client without the token.
-13. **core: Add mods' console commands.** `Coney.RegisterCommand(name, fn, help)`: names checked against the built-in
-    commands and other running mods, the command run in its mod's state under its budget at a step boundary with the
-    typed words as strings, bounded output, removal when the mod stops, server commands from a client sent as validated
-    requests; no native that executes console text. Comes with the console of [#1064](issue:1064). Tests: a mod's
-    command runs and prints; a looping one stops on the budget; a built-in's name is refused; a client cannot run a
-    server mod's command above its access.
-14. **core: Add hosts' and servers' client packages and their cache.** The load-order announcement (names, versions,
+15. **core: Add hosts' and servers' client packages and their cache.** The load-order announcement (names, versions,
     package hashes, packaged manifests), the guest's own `.cmod` used when its package hash matches, the fetch of the
     rest on the rate-capped stream with hash and size checks, client limits the server cannot raise, the cache per
     server with eviction, the join prompt, the client's own mods off while connected, client states with client natives
     only. A sub-issue of [#566](issue:566), used by co-op hosts with mods too. Tests over the loopback: a guest with the
     same package downloads nothing; a guest without it receives and runs the client script; a wrong hash, an over-limit
     package and a higher SDK level are refused; a second server cannot learn what the first sent.
-15. **core: Add web requests and secrets for ConeyMP server scripts.** The operator's per-project `http` host list and
+16. **core: Add web requests and secrets for ConeyMP server scripts.** The operator's per-project `http` host list and
     `secrets`, a server-only `Coney.HttpRequest` whose results arrive at a step boundary, secrets usable only as header
     values; absent from client and local states. A sub-issue of [#566](issue:566). Tests: a request to an unlisted host
     is refused; a secret cannot be read as text; the native does not exist in a client state or offline.
-16. **core: Add asynchronous jobs for heavy natives.** A worker pool for Coney's own work that does not touch the world
+17. **core: Add asynchronous jobs for heavy natives.** A worker pool for Coney's own work that does not touch the world
     (path queries, parsing large project data): a native starts a job on copied inputs and returns a job id, the result
     arrives at the step fixed by the request and the simulation waits there for a late worker, at once in test mode; no
     script runs on a worker ([One thread, cooperative](#one-thread)). Filed when a native needs it. Tests: the same run
