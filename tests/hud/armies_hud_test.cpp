@@ -159,11 +159,13 @@ TEST_CASE("a knocked-out player's panel is no longer wanted, so his join message
     CHECK_FALSE(armies.joinShowing(0));
 }
 
-TEST_CASE("a player beaten to 0 health is knocked out, so his Armies panel drops and his join message shows",
+TEST_CASE("a player beaten to 0 health is knocked out when his dying reaction ends, so his Armies panel drops then",
           "[hud][armies]") {
     // Expected: armies.md#the-join-messages, confirmed (code): Human_IsKnockedOut (0x00227dd8) reads state 0x40000,
     // which Human_KnockOut (0x00230328) sets when a player's health runs out (Human_OnHealthOut 0x002674c0) as for
     // HuSetConscious(false); ANHud_Draw (0x00211938) then clears his panel's wanted flag.
+    // Expected: combat-reactions.md#knockout-timing, confirmed (runtime): Human_OnHealthOut is the end callback of the
+    // dying reaction's last clip, so the panel stays while that clip plays.
     const coney::test::FightCharacter character;
     coney::test::Fight fight(character, 30.0F);
     fight.human().setFlag(coney::human::flag::kDemiGod, false);
@@ -176,11 +178,19 @@ TEST_CASE("a player beaten to 0 health is knocked out, so his Armies panel drops
     REQUIRE_FALSE(armies.joinShowing(0));
     fight.human().takeHit(coney::human::IncomingHit{
         .damage = 900, .attackAnim = 12, .code = 0x0a, .flags = 0x800, .attacker = {40.0F, 41.0F, 0.0F}});
-    fight.run("", 5);
+    fight.run("", 2);
     REQUIRE(fight.human().fighter().health().depleted());
-    CHECK(fight.human().knockedOut());
+    REQUIRE(fight.human().animator().drivingClipPlaying());
+    // While the dying reaction plays, his panel stays.
     armies.update(10, 60, {true, false}, {fight.human().knockedOut(), false});
     armies.update(20, 60, {true, false}, {fight.human().knockedOut(), false});
+    CHECK_FALSE(armies.joinShowing(0));
+    for (int update = 0; update < 600 && fight.human().animator().drivingClipPlaying(); ++update) {
+        fight.run("", 1);
+    }
+    CHECK(fight.human().knockedOut());
+    armies.update(30, 60, {true, false}, {fight.human().knockedOut(), false});
+    armies.update(40, 60, {true, false}, {fight.human().knockedOut(), false});
     CHECK(armies.joinShowing(0));
 }
 

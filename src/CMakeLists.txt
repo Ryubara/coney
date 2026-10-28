@@ -57,6 +57,7 @@ add_library(coney_core STATIC
     gamemodes/mission_failed_mode.cpp
     gamemodes/movie_player.cpp
     gamemodes/pause_mode.cpp
+    gamemodes/hud_feed.cpp
     gamemodes/player_frame.cpp
     gamemodes/profile_manager_mode.cpp
     gamemodes/rumble_intro_layer.cpp
