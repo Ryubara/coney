@@ -36,6 +36,7 @@ its line to the `nav:` of `mkdocs.yml`, under *Coney Studio design*.
 | Script security and sandbox (planned) | How Studio and Coney keep a project's scripts from harming the player's machine | [#1062](issue:1062) |
 | UI and menus for mods (planned) | The interface a project's scripts can show | [#1063](issue:1063) |
 | The Coney console (planned) | The F8 terminal, profilers and logs | [#1064](issue:1064) |
+| Entity kinds and the Inspector (planned) | Each kind of entity a level holds and what the Inspector shows for it | [#1072](issue:1072) |
 | [Lua SDK and natives](lua-sdk.md) | The natives and their names, the Lua 5.4 runtime for projects and its loader, the manifest, the sandbox, typed stubs for completions, hot reload | [#1057](issue:1057) |
 | Content and formats (planned) | What Studio shows and edits from the disc's files, a project's own formats, import and export | [#1058](issue:1058) |
 

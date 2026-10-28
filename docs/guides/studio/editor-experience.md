@@ -70,11 +70,11 @@ Warriors*' own conventions:
 The other words:
 
 - **Entity** for a thing in the level's tree: Coney's existing word, as in the [Entity
-  inspector](../debug-menu.md#entity-inspector) and the merged entity panel of [#1053](issue:1053). A primitive, a spawn
-  point, a fighter, a camera view and a path point are all entities. Every entity has a **name** and **tags** in the
-  Inspector, which is how scripts find it. A script is never an entity and is never attached to one: scripts are files
-  in the project's `scripts/` folder, which the project's manifest runs ([Projects and the
-  manifest](lua-sdk.md#manifest)).
+  inspector](../debug-menu.md#entity-inspector) and the entity panel that [#1053](issue:1053) merges from the inspector
+  and the editor. A primitive, a spawn point, a fighter, a camera view and a path point are all entities. Every entity
+  has a **name** and **tags** in the Inspector, which is how scripts find it. A script is never an entity and is never
+  attached to one: scripts are files in the project's `scripts/` folder, which the project's manifest runs ([Projects
+  and the manifest](lua-sdk.md#manifest)).
 - **Group** for an empty entity that only holds others (Unity's empty GameObject): it has a position, rotation and
   scale, and its children follow it.
 - **Prefab** for a reusable group (Unity's word, the best known of the four): any mix of entities saved as one file of
@@ -646,12 +646,12 @@ realizes:
 
 In the order they should come. Each realizes a feature Coney has today; the issues for what waits on Coney (the script
 editor, paths, a mission editor, lighting for game levels, several players) are written when Coney gains it, from the
-roadmap the parent issue asks for. They are the editor's side of the work, and four of them meet the [technology page's
-build issues](technology.md#build-issues), which build the program, the play session, the edit command queue and the
-importers: when filed, issues 1 and 2 here go with its issue 2 (the shell and the File system panel), issue 7 with its
-5, issue 8 with its 6 and issue 9 with its 10, as one issue each. In the import pair, the technology issue brings the
-importer libraries (glTF, FBX, images, audio) and this one the import flow; a kind is offered in Studio once Coney can
-load what it makes ([Importing](#import-coney)), PNG and `.layout` first.
+roadmap the parent issue asks for. They are the editor's side of the work, and five of them meet four of the [technology
+page's build issues](technology.md#build-issues), which build the program, the play session, the edit command queue and
+the importers: when filed, issues 1 and 2 here go with its issue 2 (the shell and the File system panel), issue 7 with
+its 5, issue 8 with its 6 and issue 9 with its 10, as one issue each. In the import pair, the technology issue brings
+the importer libraries (glTF, FBX, images, audio) and this one the import flow; a kind is offered in Studio once Coney
+can load what it makes ([Importing](#import-coney)), PNG and `.layout` first.
 
 1. **tools: Add the Coney Studio shell with projects and layouts.** Studio starts, makes a new project folder with its
    manifest and the folders above, or opens one, and remembers the recent ones. Its panels dock, tab, float and resize;
