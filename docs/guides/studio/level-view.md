@@ -27,7 +27,7 @@ Coney Studio copies the shared controls and Unity's Shift (the maintainer's choi
 | Right mouse held, Alt | fly slower while held | Godot |
 | Right mouse held, mouse wheel | change the base speed, which stays | Unity, Godot, Unreal |
 | Alt + left drag | orbit round the pivot | Unity |
-| Middle drag | pan | Unity, Godot, Unreal |
+| Middle drag | pan | Unity, Unreal (Godot pans with Shift and the middle button; its middle drag orbits) |
 | Mouse wheel | zoom towards the pivot | Unity, Godot |
 | F | frame the selection | all four |
 | Shift+F | keep the view locked on the selection while it moves | Unity |

@@ -93,7 +93,7 @@ name them differently:
 | Job | Unity | Godot | Unreal | Roblox Studio |
 | --- | --- | --- | --- | --- |
 | The 3D view, edited | Scene view | 3D viewport | Level viewport | 3D viewport |
-| The game, running | Game view | a separate game window | Play In Editor viewport or window | the same viewport, in a playtest |
+| The game, running | Game view | a separate game process, shown in the editor's Game workspace since 4.4 | Play In Editor viewport or window | the same viewport, in a playtest |
 | The world's tree | Hierarchy | Scene dock | Outliner | Explorer |
 | What is selected | Inspector | Inspector | Details | Properties |
 | The project's files | Project window | FileSystem dock | Content Browser | Asset Manager, Toolbox |
@@ -305,9 +305,8 @@ Godot 4.6's editor theme, read from its source (`editor/settings/editor_settings
 
 The technology page already chose the same two fonts for Studio
 ([Choice: Dear ImGui with docking](technology.md#gui-choice)). Both are under the SIL Open Font License 1.1, which Godot
-ships with their licence text in `thirdparty/fonts`; Coney ships no font under it today
-([LEGAL.md](repo:LEGAL.md#licences)), so shipping them is a question for a maintainer
-([Questions for a maintainer](index.md#questions)).
+ships with their licence text in `thirdparty/fonts`; a maintainer approved shipping both with Coney Studio, with their
+licence files alongside ([Maintainer decisions](index.md#decisions)).
 
 ### Coney Studio's defaults {#theme-defaults}
 
@@ -468,9 +467,9 @@ is a blank slate**, and the user goes on from it in one of three ways, each of w
 | | Unity | Godot | Unreal | Roblox Studio |
 | --- | --- | --- | --- | --- |
 | Start | Play button (Ctrl+P) | Run Project (F5) or the current scene (F6) | Play In Editor (Alt+P), in the viewport or a new window | Play (F5): the avatar at a spawn location; Play Here: in front of the camera; Run (F8): no avatar |
-| Where it runs | the Game view, in the editor's process | a separate game process; the editor shows its live tree (the Remote tree) | in the editor, or a standalone process | the same viewport |
-| Pause, step | Pause (Ctrl+Shift+P), Step (Ctrl+Alt+P) | Pause (F7) | Pause, Frame Skip | none in the toolbar |
-| Leave the player's view | the Scene view stays live beside the Game view | none | Eject (F8): the editor camera, the game still running | Client/Server toggle |
+| Where it runs | the Game view, in the editor's process | a separate game process, embedded in the editor's Game workspace since 4.4; the editor shows its live tree (the Remote tree) | in the editor, or a standalone process | the same viewport |
+| Pause, step | Pause (Ctrl+Shift+P), Step (Ctrl+Alt+P) | Pause (F7); the Game workspace steps one frame (4.4+) | Pause, Frame Skip | none in the toolbar |
+| Leave the player's view | the Scene view stays live beside the Game view | the Game workspace's camera override, a free camera in the running game (4.4+) | Eject (F8): the editor camera, the game still running | Client/Server toggle |
 | Edits made while playing | made in the Scene view to the running game, seen at once in the Game view, and lost on Stop; the editor is tinted to warn; *Copy Component* in Play and *Paste Component Values* after keeps one | two kinds: an edit to the running game through the Remote tree is lost; an edit to the edited scene is kept, and with *Debug > Synchronize Scene Changes* it is replicated in the running game at once | lost, unless kept with *Keep Simulation Changes* (K) in Simulate | lost: Stop resets every object; an instance copied in the playtest can be pasted after Stop |
 | Several players | none built in | several instances | several clients | Server and up to eight clients (F7) |
 
@@ -649,8 +648,10 @@ In the order they should come. Each realizes a feature Coney has today; the issu
 editor, paths, a mission editor, lighting for game levels, several players) are written when Coney gains it, from the
 roadmap the parent issue asks for. They are the editor's side of the work, and four of them meet the [technology page's
 build issues](technology.md#build-issues), which build the program, the play session, the edit command queue and the
-importers: when filed, issue 1 here goes with its issue 2, issue 7 with its 5, issue 8 with its 6 and issue 9 with its
-10, as one issue each.
+importers: when filed, issues 1 and 2 here go with its issue 2 (the shell and the File system panel), issue 7 with its
+5, issue 8 with its 6 and issue 9 with its 10, as one issue each. In the import pair, the technology issue brings the
+importer libraries (glTF, FBX, images, audio) and this one the import flow; a kind is offered in Studio once Coney can
+load what it makes ([Importing](#import-coney)), PNG and `.layout` first.
 
 1. **tools: Add the Coney Studio shell with projects and layouts.** Studio starts, makes a new project folder with its
    manifest and the folders above, or opens one, and remembers the recent ones. Its panels dock, tab, float and resize;
@@ -720,30 +721,37 @@ importers: when filed, issue 1 here goes with its issue 2, issue 7 with its 5, i
 
 The editors' own documentation and source, read for this page:
 
-- Unity: [Scene view navigation](https://docs.unity.com/en-us/engine/current/manual/unity-editor/editor-windows-views-reference/using-the-scene-view/scene-view-navigation),
-  [Positioning GameObjects](https://docs.unity.com/en-us/engine/current/manual/working-with-scenes/scenes-manage-gameobjects/positioning-game-objects)
-  (the tool keys and snapping), [Customizing your workspace](https://docs.unity3d.com/Manual/CustomizingYourWorkspace.html)
-  (layouts), [The Game view](https://docs.unity3d.com/Manual/GameView.html) (Play mode),
+- Unity: [Scene view
+  navigation](https://docs.unity.com/en-us/engine/current/manual/unity-editor/editor-windows-views-reference/using-the-scene-view/scene-view-navigation),
+  [Positioning
+  GameObjects](https://docs.unity.com/en-us/engine/current/manual/working-with-scenes/scenes-manage-gameobjects/positioning-game-objects)
+  (the tool keys and snapping), [Customizing your
+  workspace](https://docs.unity3d.com/Manual/CustomizingYourWorkspace.html) (layouts), [The Game
+  view](https://docs.unity3d.com/Manual/GameView.html) (Play mode),
   [Preferences](https://docs.unity3d.com/Manual/Preferences.html) (the Play mode tint),
   [Prefabs](https://docs.unity3d.com/Manual/Prefabs.html) (instances and overrides).
 - Godot: [Introduction to 3D](https://docs.godotengine.org/en/stable/tutorials/3d/introduction_to_3d.html) (freelook and
   the tool keys), [File system](https://docs.godotengine.org/en/stable/tutorials/scripting/filesystem.html) (`res://`,
-  moving files), [Customizing the interface](https://docs.godotengine.org/en/stable/tutorials/editor/customizing_editor.html)
-  (docks and editor layouts, `editor_layouts.cfg`),
-  [Overview of debugging tools](https://docs.godotengine.org/en/stable/tutorials/scripting/debug/overview_of_debugging_tools.html)
+  moving files), [Customizing the
+  interface](https://docs.godotengine.org/en/stable/tutorials/editor/customizing_editor.html) (docks and editor layouts,
+  `editor_layouts.cfg`), [Overview of debugging
+  tools](https://docs.godotengine.org/en/stable/tutorials/scripting/debug/overview_of_debugging_tools.html)
   (*Synchronize Scene Changes* and the Remote tree); the 4.6 editor theme from its source at `4.6-stable`:
-  [editor_settings.cpp](https://github.com/godotengine/godot/blob/4.6-stable/editor/settings/editor_settings.cpp)
-  (the settings' defaults and ranges),
+  [editor_settings.cpp](https://github.com/godotengine/godot/blob/4.6-stable/editor/settings/editor_settings.cpp) (the
+  settings' defaults and ranges),
   [editor_theme_manager.cpp](https://github.com/godotengine/godot/blob/4.6-stable/editor/themes/editor_theme_manager.cpp)
-  (the presets and spacing) and [thirdparty/fonts](https://github.com/godotengine/godot/tree/4.6-stable/thirdparty/fonts)
-  (the fonts and their licences).
-- Unreal: [Viewport controls](https://dev.epicgames.com/documentation/en-us/unreal-engine/viewport-controls-in-unreal-engine),
-  [Play and Simulate](https://dev.epicgames.com/documentation/en-us/unreal-engine/in-editor-testing-play-and-simulate-in-unreal-engine)
+  (the presets and spacing) and
+  [thirdparty/fonts](https://github.com/godotengine/godot/tree/4.6-stable/thirdparty/fonts) (the fonts and their
+  licences).
+- Unreal: [Viewport
+  controls](https://dev.epicgames.com/documentation/en-us/unreal-engine/viewport-controls-in-unreal-engine), [Play and
+  Simulate](https://dev.epicgames.com/documentation/en-us/unreal-engine/in-editor-testing-play-and-simulate-in-unreal-engine)
   (Play In Editor, Eject, *Keep Simulation Changes*).
 - Roblox Studio: [Studio interface](https://create.roblox.com/docs/studio/ui-overview),
   [Testing modes](https://create.roblox.com/docs/studio/testing-modes).
-- FiveM: [Creating your first script](https://docs.fivem.net/docs/scripting-manual/introduction/creating-your-first-script/)
-  (the resource folder, its manifest, `refresh` and `restart`).
+- FiveM: [Creating your first
+  script](https://docs.fivem.net/docs/scripting-manual/introduction/creating-your-first-script/) (the resource folder,
+  its manifest, `refresh` and `restart`).
 
 A few small facts come from the editors as they are used rather than a page: Unity's *Undo History* window and
 *Create Empty Parent* key, Roblox Studio's Ctrl+1 to Ctrl+4 tool keys and Shift for a slower camera (the last from

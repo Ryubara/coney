@@ -66,10 +66,6 @@ because *The Warriors* is made of levels and calls its in-engine cutscenes scene
 - **The Hierarchy is the level, as in Unity: decided.** A free list of entities with free parenting, prefabs of any mix
   of entities, the level's settings on the level and sorting by kind as a filter ([The Hierarchy's
   tree](editor-experience.md#hierarchy-tree)).
+- **Shipping the theme's fonts: decided.** Inter and JetBrains Mono, both under the SIL Open Font License 1.1, ship
+  with Coney Studio with their licence files alongside ([Look and theme](editor-experience.md#theme)).
 - **Level, not scene: decided.** Studio says *level* wherever other editors say *scene* ([Terms](#terms)).
-
-## Questions for a maintainer {#questions}
-
-- **Shipping the theme's fonts.** Studio's theme uses Inter and JetBrains Mono, both under the SIL Open Font License
-  1.1 ([Look and theme](editor-experience.md#theme)); Coney ships no font under that licence today, and a licence
-  question is a maintainer's ([AGENTS.md](repo:AGENTS.md)).
