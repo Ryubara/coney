@@ -718,7 +718,8 @@ and exits 1; one chunk by name is a one-line error.
 the [`xbox`](coney-tools-disc.md#xbox) commands): its 503 chunks, from `XBoxWad.idx` and its volumes, each named from
 the WAD names list and the file and level names the chunks and `default.xbe` mention, else by its entry's hash in hex
 (which is not the PS2 entry's hash, as the Xbox hashes names under `ee_files\`). It takes no `DISC` and goes with
-`--all` or `NAME OUT_DIR` alike. Give `--all --xbox` its own `--out` folder: the shared folder is the PS2 disc's.
+`--all` or `NAME OUT_DIR` alike. `--all --xbox` needs its own `--out` folder and is refused without one: the shared
+folder is the PS2 disc's.
 
 `lua compare DIR_A DIR_B` compares two `--all` folders, made to check that the Xbox disc holds the PS2 disc's mission
 code ([Xbox assets: the scripts](../research/xbox-assets.md#scripts)). It reads the marker line at the end of each

@@ -522,7 +522,7 @@ and object lists. Disc check, the PS2's distinct chunks or entries:
 | Data | PS2 | Same bytes on the Xbox | The difference | Verdict | Evidence |
 | --- | ---: | ---: | --- | --- | --- |
 | Scene records (`.scn`) | 2,765 | 2,765 | | same | inferred |
-| Scene list (`0x43`, `scene_list.cnk`) | 2,765 records | every record's name and size | the Xbox inserts 49 records (cutscenes of the extra levels) at position 1,358, so the ids after it are 49 higher | converts exactly: a script finds a scene by name, and all 344 script strings that name a record find the same one on both lists | inferred |
+| Scene list (`0x43`, `scene_list.cnk`) | 2,765 records | all 2,765 by position: name and size | the Xbox inserts 49 records (cutscenes of the extra levels) at position 1,358 and keeps the PS2's order around them; each record's stored id is its position, so the ids after it are 49 higher | converts exactly: the game finds a scene by name and keeps the id it gets ([below](#either-scene-list)) | inferred |
 | Object lists (`_objs.txt`) | 39 | 39 | | same | inferred |
 | Path data (`0x40`) | 64 | 64 | | same | inferred |
 | Subtitles (`0x51`) | 64 | 64 | | same | inferred |
@@ -531,7 +531,7 @@ and object lists. Disc check, the PS2's distinct chunks or entries:
 | Collision index lists (`0x06`) | 64 | 13 | bytes no grid cell reaches; every cell's list is the same | same in use | inferred |
 | Collision checked bits (`0x52`) | 64 | 42 | scratch bits, which the `0x03` handler clears at load (`0x00350580`) | nothing to take | confirmed (code) |
 | Collision header (`0x03`) | 64 | 0 | 144 bytes on the Xbox: the same values 12 bytes earlier (no padding after the pointer slot), no last zero word; `level118` also differs in a padding half-word | converts exactly | inferred |
-| Level header (`0x17`) | 64 | 0 | 48 bytes on the PS2, 128 on the Xbox; the PS2's level object is built over it and its constructor sets every word (`0x0040cf40`) | nothing to take | confirmed (code) |
+| Level header (`0x17`) | 64 | 0 | 48 bytes on the PS2, 128 on the Xbox. Its handler `LevelHeader_OnLoaded` (`0x0040ce30`) builds the level object over the PS2's 48 bytes: the constructor (`0x0040cf40`) writes the vtable and zeroes `+0x04` to `+0x28`, and the handler then fills them with the chunks it pops. The last word, `+0x2c`, is past the 0x2c-byte object ([Level loading](level-loading.md#the-level-object)) | nothing to take | confirmed (code) |
 | Character data (`0x08`), anim ranges (`0x45`), bone offsets (`0x28`) | 53, 53, 153 | all | | same | inferred |
 | Character List (`0x44`), Object List (`0x46`) | 543 and 1,406 records | every record's hashes | only the resource sizes (`+0x14` to `+0x20`), which are the sizes of each disc's own model and texture resources | converts exactly | inferred |
 | Anim List (`0x4e`) | 564 records | 561 | one `level14` clip (`l14_leanBack`) replaced by another, and the sizes of the two after it swapped | different: one clip | inferred |
@@ -545,13 +545,50 @@ and object lists. Disc check, the PS2's distinct chunks or entries:
 
 Inferred from the comparison as the table says: a row's basis is the SHA-1 match, and for the scene list, the
 collision and the lists the field-by-field reading in its difference cell. The confirmed rows are read at the handler
-addresses given. The streamed world (2,277 PS2 entries) is graphics only and has no counterpart byte for byte. Only on
-the PS2 are 25 resources: 23 standalone texture dictionaries that no pack, Object List or Character List names (who
-loads them is open, [q-orphan-dictionaries](#q-orphan-dictionaries)), the clip `l14_leanBack` and the PS2's scene list,
-which the Xbox stores under another resource hash. Only on the Xbox are 32.
+addresses given. The streamed world (2,229 PS2 entries, [Kinds of entry](#kinds-of-entry)) is graphics only and has
+no counterpart byte for byte. Only on the PS2 are 25 resources: 23 standalone texture dictionaries that no pack,
+Object List or Character List names (who loads them is open, [q-orphan-dictionaries](#q-orphan-dictionaries)), the
+clip `l14_leanBack` and the PS2's scene list, which the Xbox stores under another resource hash. Only on the Xbox are
+32.
 
 The `level11` vertex is number 1,282 of 4,703, used by four triangles; each coordinate differs by less than 0.0001
 units. Inferred from the vertex buffers.
+
+#### The scene list on both discs {#either-scene-list}
+
+The game reads the scene list in three ways ([Scenes](scenes.md)):
+
+- `SceneList_FindBySubstring` (`0x00353698`) returns the position of the first record whose name contains a string.
+  It serves `Scene_Preload` (`0x00353f88`), `Scene_IsPreloaded` (`0x00354b38`), `SceneRecord_Fixup` (`0x00352098`,
+  which keeps the result in the scene at `+0x04`), `AddressTactic_Init` (`0x00306c68`) and `Brain_PlayScene`
+  (`0x002cb5d0`). Confirmed (code).
+- `SceneList_FindByName` (`0x00353778`) returns the record whose name is exactly the string, for
+  `SceneSegment_Request` (`0x00352c08`). Confirmed (code).
+- `SceneList_FindById` (`0x00353730`) returns the record whose stored id (`+0x00`) equals a number, for
+  `SceneSlot_Load` (`0x003525f8`), which `Scene_Request` (`0x00353af0`) and the `Scene_Play` family call with an
+  id. Confirmed (code).
+
+The ids come from the first lookup: the callers above keep its result (confirmed (code) at their addresses). The
+scripts hold an id only as a value `ScenePreload` returned. No scene native in the PS2 scripts is passed a literal
+number (inferred from the decompiles). So the list converts if two things hold. Every name the game passes must
+find a record of the same name on both lists. And each record's stored id must be its position on both, so that a
+position from the first lookup finds that record by id.
+
+Measured on the two lists, inferred from the scene-list chunks of both discs (scratch scripts):
+
+- Each record's stored id is its position: 2,765 of 2,765 on the PS2, 2,814 of 2,814 on the Xbox.
+- Without the 49 inserted records, the Xbox list is the PS2 list: the same names and sizes in the same order. Four
+  PS2 names occur twice, both times on both lists.
+- 385 substrings of the two lists' names find a different first record on the Xbox, almost all because an inserted
+  name holds them. The strings the game could pass were checked against that set: every string in the PS2 scripts,
+  in `SLUS_212.15` and in the PS2 archive's chunks, and the parlay names `Goal_StartParlay` (`0x00299248`) builds as
+  a script's string plus `_000` to `_004` (109,995 of them, 40 of which name a record). Five strings fall in the
+  set. None is passed as a scene name: one is a level-table name, one an animation's name in its descriptor, one
+  part of a sound's name, and two are bytes inside binary data. The parlay names' pattern is confirmed (code) at
+  `0x00299248`.
+
+The lookups by name therefore return the same record on both discs. They return a different id after position
+1,358, but only through the record they found.
 
 #### Animations on both discs {#either-animations}
 
@@ -810,7 +847,8 @@ was made on 2026-10-28 for #1077, with the PS2 disc mounted and the Xbox disc as
 - `coney-tools xbox compare H:/ <image>`: every row of the table under [Everything else the simulation
   reads](#either-data). The fields that differ (collision headers and lists, the global lists, the scene list, the
   animation descriptors and events) were then compared field by field with short scripts kept in the task's scratch
-  folder, printing counts only.
+  folder. They print counts and, for a look at a difference, the names and bytes involved; only the counts are on
+  this page.
 - The random table: the 4,096 bytes at `0x005117e0` of `SLUS_212.15` were searched for in `default.xbe` and found
   once, in a data section at XBE `0x0045e068`.
 - The handlers named in the table (`0x00350580`, `0x0040cf40`, `0x001045e0`) were read in Ghidra.
