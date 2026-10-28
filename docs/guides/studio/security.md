@@ -82,9 +82,10 @@ FiveM runs CfxLua, a modified Lua 5.4 (every script since June 2025), in resourc
   Child processes and workers need a line in the operator's `server.cfg` (`add_unsafe_child_process_permission`), and
   the page warns that the filesystem overrides are for fully trusted resources only. `load` is kept.
 - **What it limits on the client.** In late 2024 Cfx.re shipped a sandboxed `os`, `io` and `debug` library; on the
-  client the debug library kept only a few getters (`getinfo`, `traceback`, `getmetatable`, `setmetatable`,
-  `getupvalue`), losing every setter, `sethook` and `getregistry`. Staff's reason, on the forum: the debug library is
-  unsafe, setters most of all, and it is meant for debugging, not production code. `load` stays.
+  client the debug library kept five functions (`getinfo`, `traceback`, `getmetatable`, `setmetatable`, `getupvalue`)
+  and lost the other eleven, among them `setupvalue`, `setlocal`, `sethook` and `getregistry`. Staff's reason, on the
+  forum: the debug library is unsafe, setters most of all, and it is meant for debugging, not production code. `load`
+  stays.
 - **Files on the client.** `LoadResourceFile(resource, path)` returns a file's text, and on the client only a file the
   resource's manifest lists under `files`. The manifest is a Lua file run in a runtime of its own, apart from the
   resource's scripts.
@@ -281,8 +282,8 @@ Natives are the only door to the world, so every native, game or Coney, follows 
    scripts ([`apiset`](lua-sdk.md#determinism)); a client native never writes game state
    ([Coney resources](../network-architecture.md#resources)).
 7. **No text field that pretends to be Coney's.** A native that asks the player to type something (a later chat or
-   name box) shows the project's name in its frame, and Coney never asks for a password in a script's frame, so a fake
-   login cannot be told apart from nothing real: Coney has no login.
+   name box) shows the project's name in its frame. Coney has no login and never asks for a password, so any password
+   prompt in a script's frame is a fake, and the frame says whose it is.
 8. **Game natives that make no sense from a project** carry `mods: false` ([Allowed](lua-sdk.md#availability)).
 
 ### Limits {#limits}
@@ -346,8 +347,7 @@ on copies. It is a proposed build issue ([17](#build-issues)), filed when a nati
 | `string.dump` and precompiled chunks to hide source | none: projects ship source. Client scripts are public anyway ([Coney resources](../network-architecture.md#resources)) |
 | Patching the game's scripts from a mod | A game-script override in Lua 4.0, with the `game-scripts` permission ([Declared permissions](#declared)) |
 
-What a modder never has to do: ask the player for anything to spawn, move, fight, play sounds, draw on the HUD, load
-the project's own assets or keep data. That is the whole SDK, and it needs no approval.
+Spawning, moving, fighting, sounds, the HUD, the project's own assets and its data need no approval from the player.
 
 ## Files and paths {#paths}
 
@@ -488,7 +488,7 @@ first starts and at any time after:
 - name, title, version, author and **signed by** (fingerprint) or **unsigned**, and the package hash's short form;
 - whether it starts with every session or when its level is played (`autostart`), the SDK level and the other mods it
   needs, and whether they are here;
-- the clashes with other enabled mods ([Clashes and load order](mods.md#clashes)) and which one wins;
+- the clashes with other enabled mods ([Load order](mods.md#load-order)) and which one wins;
 - **what it changes**: its levels, the game files and assets it replaces, and, under `game-scripts`, the game scripts
   it rewrites;
 - **its limits** if it asks for more than the default;
@@ -640,6 +640,8 @@ Open:
    plugin interface later. This page recommends never loading native code from a mod, a project or a server; a native
    plugin, if ever wanted, would be a separate thing the player installs by hand outside `mods/`, as Garry's Mod keeps
    binary modules out of addons.
+4. **The mods step of the `.cpak` layout** ([#798](issue:798)): `.cmod` packages replace its `mods/<mod>/` folders
+   ([The `.cmod` package](mods.md#cmod)); confirm, and whether a `.cmod` uses the `.cpak` container or zip.
 
 ## Open questions {#open-questions}
 
@@ -720,13 +722,13 @@ native needs it.
     `Coney.JsonDecode`: plain values only, JSON in `mod-data/<project>/` keyed by name and signer, the quota, writes at
     step boundaries. Tests: a value round-trips; functions, cycles and userdata are refused; past the quota nothing is
     written; two projects never see each other's keys.
-11. **core: Keep modded saves and replays apart and exact.** A save written while any mod runs goes to the per-user
-    `modded/` folder with every running mod's name, version and package hash; a save made with no mod is unmarked, in
-    `profiles/`; loading a modded save with a mod missing, stopped or changed warns; a replay records the list and every
-    start and stop in the run, and refuses to play back with any difference. Tests: a modded session's save leaves
-    `profiles/` byte-for-byte unchanged; a save without mods carries no mark; the warning names the missing mod; a
-    replay with one package changed is refused.
-12. **core: Accept game-script overrides only as Lua 4.0 source.** `game-scripts` overrides compiled by Coney's Lua 4.0
+11. **core: Add modded saves apart from the story and exact modded replays.** A save written while any mod runs goes to
+    the per-user `modded/` folder with every running mod's name, version and package hash; a save made with no mod is
+    unmarked, in `profiles/`; loading a modded save with a mod missing, stopped or changed warns; a replay records the
+    list and every start and stop in the run, and refuses to play back with any difference. Tests: a modded session's
+    save leaves `profiles/` byte-for-byte unchanged; a save without mods carries no mark; the warning names the missing
+    mod; a replay with one package changed is refused.
+12. **core: Add game-script overrides as Lua 4.0 source only.** `game-scripts` overrides compiled by Coney's Lua 4.0
     compiler, bytecode refused, and `overrides/files/` entries of script kinds refused; the game state given a memory
     cap in a modded session; the 4.0 chunk loader fuzz target. Tests: a source override runs in place of a synthetic
     disc chunk; a bytecode override and a script chunk in `overrides/files/` are refused with their messages; the chunk
@@ -736,7 +738,7 @@ native needs it.
     the fingerprint on first enable and holding an update by another key or unsigned after signed. Needs the libsodium
     decision ([Maintainer decisions](#decisions)). Tests: a signed package verifies; a changed manifest and a wrong key
     are refused; an update by another key is held with its warning.
-14. **Studio: Open shared projects without running their tools.** Studio's language-server settings passed by Studio,
+14. **tools: Add safe opening of shared projects to Studio.** Studio's language-server settings passed by Studio,
     `runtime.plugin` and settings naming programs never taken from a project, a notice when a project carries them; the
     debugger's loopback-only port with a token; the signing key kept out of projects; importers' fuzz targets. Comes
     with Studio's code editor issue. Tests: a fixture project with a plugin setting runs no plugin; the debugger refuses

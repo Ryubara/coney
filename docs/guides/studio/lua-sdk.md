@@ -198,6 +198,7 @@ sdk = 4                        # the lowest SDK level it needs; Coney refuses a 
 
 [load]
 autostart = false              # true (the default): starts with every session; false: when its level is played
+conflicts = []                 # mods that cannot run with this one
 
 [play]
 level = "project:/levels/yard.layout"   # where Play and `play <mod>` start it; a game:/ level is allowed
@@ -208,9 +209,8 @@ server = ["scripts/main.lua", "scripts/fighters/*.lua"]   # run where the simula
 client = []                                               # presentation only (ConeyMP, P4)
 shared = ["scripts/util.lua"]                             # loaded first, on both sides
 
-[dependencies]
-"crate-pack" = ">=1.2, <2"     # another mod and a version range; loaded first
-conflicts = []                 # mods that cannot be enabled with this one
+[dependencies]                 # other mods, by name, with a version range; each loaded first
+"crate-pack" = ">=1.2, <2"
 
 [permissions]                  # what reaches beyond the sandbox, approved by the player (Script security)
 game-scripts = []
@@ -246,8 +246,8 @@ package](mods.md#cmod)). `mods/enabled.toml` lists the mods that start with ever
 name, version, package hash, approved permissions and signer ([Installed mods](mods.md#installed)); a new package is
 added on, since scripts are on by default, and only the mods menu or the player editing the file changes it afterwards.
 An enabled mod starts with every session, and a content mod with `autostart = false` starts when its level is played
-([Starting and stopping](mods.md#starting)). Console commands start and stop mods for the running session only ([Mods
-from the console](mods.md#console)). Studio's Play runs exactly one project, the open folder, without packaging it, and
+([Starting and stopping](mods.md#starting)). Console commands start and stop mods for the running session only ([Console
+commands](mods.md#console)). Studio's Play runs exactly one project, the open folder, without packaging it, and
 `coney --project <folder>` does the same outside Studio. With no mod enabled, Coney runs exactly as it does without the
 SDK: no project state is made, no entry point runs, and the game is the faithful one ([Roadmap: Script
 mods](../../roadmap.md#script-mods), whose Done line this keeps). A session with any project loaded is a **modded
@@ -379,7 +379,7 @@ pages use the same scheme:
 | --- | --- | --- |
 | `project:/` | The project folder; nothing above it | `project:/models/crate.glb` |
 | `game:/` | The player's installed game files, read-only, by the extract tool's names, so a project refers to a game asset and never carries it ([LEGAL.md](repo:LEGAL.md#no-game-data)) | `game:/sounds/...` |
-| `mod:/` | Another mod this project depends on, read-only, by its name ([Dependencies and versions](mods.md#dependencies)) | `mod:/crate-pack/models/crate.glb` |
+| `mod:/` | Another mod this project depends on, read-only, by its name ([Dependencies and exports](mods.md#dependencies)) | `mod:/crate-pack/models/crate.glb` |
 
 A sub-asset (one clip of a file that holds several, one mesh of a model file) follows a `#`:
 `project:/anims/dance.glb#Spin`. The calls are Coney natives, available once Coney can load that kind from outside

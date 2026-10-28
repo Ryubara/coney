@@ -72,6 +72,13 @@ it holds, the manifest lists it, and a file not listed is not read.
 - **Checked before it runs.** When a package is enabled, and again when its size or time changes, Coney checks every
   listed file's size and hash and the signature, and remembers the result in `cache/mods/`. A file whose bytes differ
   from the manifest fails the check and the mod does not load; each read is bounded by the size the manifest declares.
+- **The `.cpak` layout ([#798](issue:798))** puts the installed game in Coney's own archives, and its step 5 planned
+  mods as `mods/enabled.txt` and `mods/<mod>/mod.toml` folders of patch archives that mirror `game/`. The later
+  decision of one universal mods folder of `.cmod` packages takes that step's place: a mod's replacements of game
+  entries travel inside its `.cmod` as patch entries named as in the catalogue, in the same lookup order (enabled mods,
+  then texture packs, then `game/`), and the load list is `enabled.toml`. Whether the `.cmod` uses the `.cpak`
+  container (an index at the front, entries readable in place, a hash per entry) instead of zip, once that format
+  exists, is for a maintainer to confirm ([Script security: Maintainer decisions](security.md#decisions)).
 - **Studio's Play runs the project folder directly**, with no packaging step; Export is only for sharing. Play and
   `--project` read the folder through the same file layer, so what works in Studio works from the package.
 
@@ -79,9 +86,10 @@ it holds, the manifest lists it, and a file not listed is not read.
 
 `mods/enabled.toml` plays the part of a FiveM server's `server.cfg` and its `ensure` lines: it lists the mods that start
 with every session, in the order they start, and records for each its name, version, package hash, the permissions the
-player approved and the signer. **Only two things change it**: the player editing the file, and the mods menu, which
-writes it (proposed here; its screens are the mods UI unit's, [#1063](issue:1063)). The console never does
-([Console commands](#console)): every start loads exactly what the file says, as a FiveM server loads `server.cfg`.
+player approved and the signer. Coney adds each new package to it once (below); **after that only two things change
+it**: the player editing the file, and the mods menu, which writes it (proposed here; its screens are the mods UI
+unit's, [#1063](issue:1063)). The console never does ([Console commands](#console)): every start loads exactly what the
+file says, as a FiveM server loads `server.cfg`.
 
 1. **Installing** is putting a `.cmod` in `mods/`. At the next start Coney finds it, checks it
    ([The `.cmod` package](#cmod)) and adds it to the end of `enabled.toml`, **on**, the one write Coney makes itself: a
@@ -106,6 +114,7 @@ the same model, with one switch in the manifest for content a player starts by h
 ```toml
 [load]
 autostart = true       # default: start with every session while enabled; false: start only when asked
+conflicts = []         # mods that cannot run with this one
 ```
 
 | Kind of mod | `autostart` | When its scripts run |
@@ -128,9 +137,8 @@ autostart = true       # default: start with every session while enabled; false:
 [project]
 version = "0.3.0"                      # semantic version: major.minor.patch
 
-[dependencies]
-"crate-pack" = ">=1.2, <2"             # another mod, by name and version range
-conflicts = ["old-hud"]                # mods that cannot run with this one
+[dependencies]                         # only mod names, each with a version range
+"crate-pack" = ">=1.2, <2"
 ```
 
 - **Versions.** A mod's version is a semantic version; a range uses `>=`, `<`, `=`, `^` (same major) and `~` (same
@@ -176,7 +184,7 @@ comes after the mods already running. That order is the order of main chunks, `s
 | Two mods with the same name | At install and at `refresh` | Only one can be enabled; the other is listed as a second version |
 | Two mods replace the same game file or asset | From their manifests, before anything starts | Allowed; the later mod in the load order wins, as in Minecraft's data packs, and the clash is listed with the winner |
 | Two mods' `game-scripts` override the same game script | From their manifests | Refused: only one can be enabled at a time, and the message names both |
-| A mod names another under `conflicts` | From the manifest | The two cannot run together; the later one is not started |
+| A mod names another under `[load] conflicts` | From the manifest | The two cannot run together; the later one is not started |
 | Two mods' scripts disagree at run time (both set the time scale) | Not detectable | Handlers run in load order and a one-slot native keeps the last value set ([The value bridge](lua-sdk.md#bridge)); authors declare `conflicts` once they know |
 
 ## Console commands {#console}
