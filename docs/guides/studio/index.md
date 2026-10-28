@@ -1,9 +1,9 @@
 # Coney Studio
 
 Coney Studio is a planned editor for making content that runs on Coney: a modder opens a project folder, builds or edits
-a level, places spawn points, characters, paths and scripts, presses **Play** and is in the game at once, with all of
-Coney's behaviour (combat, AI, pathing, missions) working. It is to Coney what Roblox Studio is to Roblox: an editor for
-one game's content, not a general engine like Unity. The parent issue is [#1054](issue:1054).
+a level, places spawn points, characters and paths, writes the project's scripts, presses **Play** and is in the game at
+once, with all of Coney's behaviour (combat, AI, pathing, missions) working. It is to Coney what Roblox Studio is to
+Roblox: an editor for one game's content, not a general engine like Unity. The parent issue is [#1054](issue:1054).
 
 **Status: design.** Nothing in this folder is built. These pages are designs in the sense of [Page
 kinds](../writing-docs.md#page-kinds): each one says what Studio should do and why, and names the questions only a

@@ -29,7 +29,7 @@ and laying out spawn points and paths. What can be edited in Studio depends on t
 
 - [Words](#words): level, Level view, prefab
 - [The panels](#panels), [the Hierarchy's tree](#hierarchy-tree), [the default layout](#default-layout) and
-  [layouts](#layouts)
+  [layouts](#layouts), [look and theme](#theme)
 - [The project](#project): the folder, its layout and the game's files
 - [A new level](#new-level): the blank slate and the templates
 - [Play mode](#play-mode) and [live edits while playing](#live-edits)
@@ -261,7 +261,9 @@ the Play controls in the middle, as in Unity, and the layout menu on the right, 
 
 Copied from Godot and Unity together:
 
-- Every panel docks to any side, tabs with others or floats in its own window; every split resizes.
+- Every panel docks to any side, tabs with others or floats over the main window; every split resizes. A panel torn
+  out into a window of its own waits on Dear ImGui's multi-viewport, which the technology page leaves off at first
+  ([Choice: Dear ImGui with docking](technology.md#gui-choice)).
 - **Window > Layouts** and the toolbar's layout menu: *Save layout as...* (a name), the saved layouts to switch to,
   *Delete*, and *Reset to Default*. *Default* is built in and always comes back on reset (Godot's rule).
 - A layout is **per user, never per project**: it lives in Studio's settings folder, as Coney's overlay keeps its
@@ -275,6 +277,85 @@ Copied from Godot and Unity together:
   File system as tabs on the left, for a laptop's screen) and **Viewers** (the Model and Animation viewers in the
   middle, the File system on the left, the Inspector on the right, for looking through the disc's models and clips).
   Unity's other factory layouts add nothing Coney Studio needs.
+
+## Look and theme {#theme}
+
+The maintainer asks for a modern look that the user can change (colour scheme, accent and fonts), modelled on Godot's
+new editor theme. The technology page chose Dear ImGui with one file of design tokens shared with the launcher
+([Choice: Dear ImGui with docking](technology.md#gui-choice)); this section sets the tokens' values and the settings a
+user changes.
+
+### What Godot's editor uses {#theme-godot}
+
+Godot 4.6's editor theme, read from its source (`editor/settings/editor_settings.cpp`,
+`editor/themes/editor_theme_manager.cpp`, tag `4.6-stable`):
+
+| Setting | Godot's default | What it does |
+| --- | --- | --- |
+| Style | *Modern* (or *Classic*, the older look) | Modern came from a community theme: neutral grey in place of the old blue, fewer lines, softer corners |
+| Colour preset | *Default*: base `#292929` (0.161 grey), accent `#569EFF` | Also *Gray*, *Light*, *Black (OLED)*, *Breeze Dark*, *Solarized* dark and light, *Godot 2*, *Godot 3* (the old blue `#363D4A` with accent `#70BAFA`), *Custom* |
+| Base colour, accent colour | as the preset | Every surface is derived from the base; the accent marks what is pressed, hovered or selected |
+| Contrast | 0.3 (range −1 to 1; the light presets use −0.06) | How far the derived surfaces move from the base: darker when positive, lighter when negative |
+| Corner radius | 4 px (Classic 3; range 0 to 6) | Rounding of panels, buttons and fields |
+| Border size | 0 px (range 0 to 2) | Lines round panels; *Black (OLED)* turns extra borders on |
+| Spacing preset | *Default*: base 4 px, additional 0 (*Compact* 2 and 2, *Spacious* 6 and 2) | Padding and gaps throughout |
+| Interface font | **Inter**, 14 px (range 8 to 48) | SIL Open Font License 1.1 |
+| Code font | **JetBrains Mono**, 14 px (range 8 to 48) | SIL Open Font License 1.1 |
+| Follow the system | off; also *use the system's accent colour* | Picks the light or dark preset, and the accent, from the operating system |
+
+Both fonts are under the SIL Open Font License 1.1, which lets Studio ship them in its release with their licence
+text, as Godot does in `thirdparty/fonts` ([LEGAL.md](repo:LEGAL.md#licences) lists every third-party licence Coney
+ships).
+
+### Coney Studio's defaults {#theme-defaults}
+
+Studio's default theme is Godot's *Modern* with its *Default* preset, so a Godot user sees a familiar editor:
+
+| Token | Default |
+| --- | --- |
+| Base colour | `#292929` |
+| Accent colour | `#569EFF` |
+| Contrast | 0.3 |
+| Corner radius | 4 px |
+| Border size | 0 px |
+| Spacing | base 4 px, additional 0 |
+| Interface font | Inter Regular and Bold, 14 px |
+| Code font | JetBrains Mono Regular, 14 px |
+
+Every size is multiplied by the [UI scale](../debug-menu.md#ui-scale), as the overlay's are, so the theme looks the
+same at 1080p and at 4K. The Play mode tint ([Play mode](#play-coney)) is the accent at low opacity over the window's
+frame.
+
+### What a user can change {#theme-settings}
+
+*Edit > Preferences > Theme* holds Godot's settings, fewer of them where one does nothing in Studio:
+
+- **Preset**: *Default*, *Gray*, *Light*, *Black (OLED)* and *Custom*; choosing a colour by hand switches to *Custom*.
+- **Base colour**, **accent colour** and **contrast** (−1 to 1).
+- **Corner radius** (0 to 6 px) and **spacing** (*Compact*, *Default*, *Spacious*).
+- **Interface font** and **code font**: the shipped Inter and JetBrains Mono, or a TTF or OTF file of the user's own,
+  read from where it is and never copied into a project; each with a **size** (8 to 48 px).
+- **Follow the system** (light or dark) and **use the system's accent colour**.
+
+The settings are **per user**, in Studio's settings folder beside the [layouts](#layouts-coney) and the keymap, never in
+a project, so a shared project never changes anyone's look. *Reset to Default* brings Godot's Modern values back.
+
+### How the settings map onto Dear ImGui {#theme-imgui}
+
+Studio builds Dear ImGui's style from the tokens, as Godot builds its theme from the same few settings:
+
+| Setting | Dear ImGui |
+| --- | --- |
+| Base colour | The window, child and popup backgrounds (`ImGuiCol_WindowBg`, `ChildBg`, `PopupBg`, `DockingEmptyBg`) |
+| Contrast | The other surfaces, the base moved towards black or white by multiples of the contrast, as Godot derives its contrast colours: frames, title bars, headers, tabs, scrollbars, separators and borders (`FrameBg`, `TitleBg`, `Header`, `Tab`, `ScrollbarBg`, `Separator`, `Border`) |
+| Accent colour | What is active, hovered or chosen: `ButtonActive`, `HeaderHovered`, `TabSelected`, `CheckMark`, `SliderGrab`, `DockingPreview`, `NavCursor`, and `TextSelectedBg` at reduced opacity |
+| Text colour | White or black by the base colour's luminance, as Godot picks its mono colour, with disabled text at reduced opacity |
+| Corner radius | `WindowRounding`, `ChildRounding`, `FrameRounding`, `PopupRounding`, `TabRounding`, `GrabRounding`, `ScrollbarRounding` |
+| Border size | `WindowBorderSize`, `FrameBorderSize`, `PopupBorderSize`, `TabBorderSize` |
+| Spacing | `WindowPadding`, `FramePadding`, `ItemSpacing`, `ItemInnerSpacing`, `CellPadding` from the base spacing, plus the additional spacing |
+| Fonts and sizes | The font atlas: Inter (and the icon font merged into it) as the default font and JetBrains Mono as the code font, loaded at size times UI scale; a change rebuilds the atlas at the next frame, as a change of UI scale does |
+
+A change applies at the next frame, so the user sees the theme change as they drag a colour.
 
 ## The project {#project}
 
@@ -444,7 +525,7 @@ and accepts that it is rough at first. Studio follows **Godot's model**, the onl
 
   | Edit to the level | In the running game |
   | --- | --- |
-  | A primitive moved, turned, sized, added or deleted; its collision changed | Its drawn mesh is rebuilt in place, and its collision too where the asset kinds allow it ([Hot reload](technology.md#hot-reload)); otherwise it applies on the next Play |
+  | A primitive moved, turned, sized, added or deleted; its collision changed | Collision is a simulation asset, which a live edit may not replace ([Hot reload](technology.md#hot-reload)): the Game view marks the session stale and asks for Play again (*Restart*), and the change is in the level already |
   | A texture, tiling or tint | Drawn with the new one at the next frame |
   | Sky, sun, ambient light, fog, occlusion, shadows | Applied at the next frame |
   | An AI fighter moved or turned | Teleported there through the Entity editor's *Teleport* and *Heading*, which an AI human takes |
@@ -452,12 +533,13 @@ and accepts that it is rough at first. Studio follows **Godot's model**, the onl
   | A target moved, turned, added or deleted | Nothing until the next Play: the Entity editor takes only *Frozen* for a target ([Entity editor](../debug-menu.md#entity-editor)) |
   | A spawn point or camera view | Nothing until the next Play: they matter only at a start |
 
-- **An edit Coney cannot apply live is kept in the level and said so** on the Game view (*applies on the next Play*),
-  never silently dropped, and *Restart* (Ctrl+Shift+R) plays the level again from its start with every edit.
+- **An edit Coney cannot apply live is kept in the level and said so**: the Game view marks the session stale (*applies
+  on the next Play*), never dropping the edit silently, and *Restart* (Ctrl+Shift+R) plays the level again from its
+  start with every edit.
 - **Edits of the running game itself** (a human's health, a fighter's state, the Running tab) are the Entity editor's
   and are lost on Stop, as in all four editors.
-- **Rough at first is accepted:** the first version may rebuild all of a level's primitives for a change to one;
-  correctness (the running game matching the saved level after a Restart) comes before speed.
+- **Rough at first is accepted:** the first version may mark the session stale for more edits than it must;
+  correctness (the running game matching the saved level after a Restart) comes before doing more live.
 
 Unity's *Copy Component* and Unreal's *Keep Simulation Changes* are not needed: the level's edits are already kept, and
 the running game's are deliberately not.
@@ -570,7 +652,8 @@ importers: when filed, issue 1 here goes with its issue 2, issue 7 with its 5, i
 1. **tools: Add the Coney Studio shell with projects and layouts.** Studio starts, makes a new project folder with its
    manifest and the folders above, or opens one, and remembers the recent ones. Its panels dock, tab, float and resize;
    *Window > Layouts* saves, switches, deletes and resets to the built-in *Default*, *Wide* and *Viewers* layouts, per
-   user, at any UI scale. Tests: a project made and opened again with no window; a layout saved and loaded round-trips.
+   user, at any UI scale; the theme's defaults and *Edit > Preferences > Theme*, saved per user. Tests: a project made
+   and opened again with no window; a layout and a theme saved and loaded round-trip.
 2. **tools: Add the File system panel rooted at the project.** The project as a tree under `project:/`, with the game's
    files read-only under `game:/`; nothing outside the two is reachable, and no saved path is absolute or climbs above
    the root. Moves, renames and deletes fix the references and ask first; changes made on disk are seen. Tests: a path
@@ -604,10 +687,11 @@ importers: when filed, issue 1 here goes with its issue 2, issue 7 with its 5, i
    free camera; Stop throws the running game away. Tests: a scripted Play reaches the spawn point and a fight with a
    layout's fighter; the level after Stop is the level as edited.
 8. **tools: Add live level edits during Play.** A level edit made in the Level view while playing is kept in the level
-   and applied to the running game between two steps: primitives and their collision rebuilt, textures and lighting
-   redrawn, AI fighters teleported, spawned or deleted; an edit that cannot apply live (a target's) says *applies on the
-   next Play*. Tests: a box moved during a scripted Play blocks the player at its new place in the same run; after Stop
-   and Restart the running game matches the saved level.
+   and applied to the running game between two steps: textures and lighting redrawn, AI fighters teleported, spawned or
+   deleted; an edit that cannot apply live (a primitive's, whose collision only a new Play replaces, or a target's)
+   marks the session stale and asks for *Restart*. Tests: a sun turned during a scripted Play shows at the next frame; a
+   box moved marks the session stale; after Restart the player is blocked at its new place and the running game matches
+   the saved level.
 9. **tools: Add drag-and-drop import and the Import button.** Drops land only in the File system panel (into the folder
    under the cursor or the selected one) and nowhere else; the Import button and *File > Import...* do the same through
    a file picker; PNG and `.layout` import by kind with their settings in the Inspector and Reimport; name clashes ask;

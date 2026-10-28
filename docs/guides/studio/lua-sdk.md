@@ -634,8 +634,7 @@ When this design is accepted, these lines change on the pages that own them:
   not one per Lua state ([The two states](#two-states)).
 - [Asset and script architecture: Deferred, in order](../asset-and-script-architecture.md#later): the native list, the
   scheduler, the compiler and the `Coney` table move ahead of the whole game, as Studio's first build work
-  ([Proposed build issues](#build-issues)), as the maintainer's decision on Studio and faithful first allows
-  ([Maintainer decisions](#decisions)).
+  ([Proposed build issues](#build-issues)), in the order the parent issue gives ([#1054](issue:1054)).
 - [Roadmap: Script mods](../../roadmap.md#script-mods): the loader's points are this page's entry points.
 
 ## Maintainer decisions {#decisions}
