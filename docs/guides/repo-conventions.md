@@ -186,15 +186,18 @@ tool's own in two ways, and each is handled and named in a `note:` line (on stde
   stays missing and an error.
 
 A wrong value is an error in every case: a key the branch wrote itself is never replaced by a default. The file steers
-nothing that decides a release: `stamps`, `tasks.review` (who may review, on which model), `proof`, `paths`,
-`pull_requests`, `commits`, `repo`, `merge` and `claims` are always read from `origin/<default branch>`, which a branch
-cannot have edited, and replace the branch's (`load_release_rules_at`; the table is [Where the rules come
-from](pr.md#rules)). The branch's file is read for the rest of `tasks` (the task file's name and kinds, `task start`)
-and nothing else a release uses. In the default branch's own sections a missing key or a wrong value stays an error
-(it names `origin/<default branch>`). A misspelt key reads as an unknown key plus a missing one, so it is named twice
-and its value comes from `main`: a typo of an optional key (`except`, `manual_paths`, `jobs` and the like) is skipped
-like any unknown key and its default applies, because a new key next to an old one cannot be told from a typo of it.
-`repo check-conventions`, `task check`, the tests and the Action stay strict and catch every typo.
+nothing that decides a release: for `pr open`, `pr verify` and `pr text`, `stamps`, `tasks.review` (who may review, on
+which model), `proof`, `paths`, `pull_requests`, `commits`, `repo`, `merge` and `claims` are always read from
+`origin/<default branch>`, which a branch cannot have edited, and replace the branch's (`load_release_rules_at`; the
+table is [Where the rules come from](pr.md#rules)). The branch's file is read for the rest of `tasks` (the task file's
+name and kinds, `task start`) and nothing else a release uses. `task review` reads the whole file leniently from the
+branch, because it only records a verdict; `pr verify` checks the `reviewed` stamp again under `origin/<default
+branch>`'s rules, so a branch cannot loosen its own review. In the default branch's own sections a missing key or a
+wrong value stays an error (it names `origin/<default branch>`). A misspelt required key reads as an unknown key plus a
+missing one, so it is named twice and its value comes from the checkout the tool runs from: a typo of an optional key
+(`except`, `manual_paths`, `jobs` and the like) is skipped like any unknown key and its default applies, because a new
+key next to an old one cannot be told from a typo of it. `repo check-conventions`, `task check`, the tests and the
+Action stay strict and catch every typo.
 
 `coney-tools repo check-conventions` loads the file, so a mistake in it fails the `python` workflow and `coney-tools ci
 run` before anything else runs. Every command that needs a rule exits with code 2 and one line when the file is missing

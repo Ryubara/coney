@@ -3216,5 +3216,5 @@ def load_conventions_leniently(root: Path, say: Callable[[str], None] | None = N
         for key in ignored:
             say(f"note: {CONVENTIONS_FILE}: ignoring {key}, which this tool does not know yet")
         for key in filled:
-            say(f"note: {CONVENTIONS_FILE}: missing {key}, taking main's value until the branch is rebased")
+            say(f"note: {CONVENTIONS_FILE}: missing {key}, taking this tool's value until the branch is rebased")
     return conventions
