@@ -375,7 +375,7 @@ The maintainer's example, by two routes:
 - **At the `missions` point.** Once Coney has ported the game's mission select (mode 0x10, `HUDShowMissionSelect`), a
   project adds its missions there with `Coney.AddMenuEntry("missions", {...})`: its level or mission file, its
   checkpoints and an area of its own. The game's areas and their completed missions come first, as the original lists
-  them (`MissionSelect_IsMissionListed` `0x001bc100`, completed missions of levels 2 to 99, confirmed (code)).
+  them (`MissionSelect_IsMissionListed` `0x001bc100`: completed levels 2 to 99 but 95 and 60 to 65, confirmed (code)).
 - **As a project's own screen**: an entry at `mods` whose action opens a [mod screen](#widgets) with a list
   of the levels a script chooses, `accept` starting one at a checkpoint. It needs a list widget, the level table
   (`Coney.GetLevels`, a read of the records the game's `CfgLevelName` calls made) and `Coney.StartLevel`
@@ -515,7 +515,8 @@ local screen = Coney.CreateScreen{ layer = "menu", title = "Mission Select", pau
 Coney.AddText(screen, { id = "title", text = "<BIGFONT>MISSIONS", at = {0.5, 0.08}, size = 2.23, align = "center" })
 local list = Coney.AddList(screen, { id = "levels", at = {0.2, 0.25}, rows = 6 })
 for _, level in ipairs(Coney.GetLevels()) do
-  if level.number >= 2 and level.number <= 99 then
+  local n = level.number  -- the story missions, as the game's own mission select lists them
+  if n >= 2 and n <= 99 and n ~= 95 and (n < 60 or n > 65) then
     Coney.AddItem(list, { text = level.title, value = level.name })
   end
 end
@@ -631,8 +632,7 @@ The sandbox and the permissions are the security design's ([#1062](issue:1062));
 - **The frame label.** Every mod screen and dialog shows the project's title, small, in a fixed place (top right of the
   safe area), drawn by Coney in the trusted layer. A project cannot hide or move it and cannot draw over it, so a screen
   that imitates the Mods screen or a Coney message still says whose it is.
-- **Reserved looks.** A project cannot set the frame label's text, and its menu entries are drawn by Coney under the
-  project's title on the Mods screen, never mixed into Coney's own items.
+- **Reserved looks.** A project cannot set the frame label's text or mix its entries into Coney's own items.
 - **Back always closes**, so no mod screen can hold the player ([Focus](#focus)).
 - **Additions only, and disclosed.** A project can add at [extension points](#points) and nowhere else, never hiding or
   changing a game item; its details on the Mods screen list every addition and where it is, and MODS is always there
