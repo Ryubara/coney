@@ -1259,7 +1259,7 @@ def test_the_report_issue_labels_filled_from_main_may_be_labels_only_main_has() 
 
 
 def test_the_required_checks_are_looked_for_in_both_files_places_when_ci_took_a_key_from_main() -> None:
-    """`merge.required_checks` names jobs of `ci.places`: with `ci` part main's, a job may be one of main's places."""
+    """`merge.required_checks` names jobs of `ci.places`: with `ci` filled from the tool's file, a job may be its."""
     old = real_data()
     old["ci"]["places"] = [place for place in old["ci"]["places"] if place["id"] != "dependencies"]
     with pytest.raises(ConventionsError, match=r"the required check 'dependencies' \(merge\.required_checks\)"):

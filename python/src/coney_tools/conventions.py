@@ -1427,9 +1427,9 @@ def _default_at(path: str) -> tuple[bool, Any]:
 
 
 def _mixed(*sections: str) -> bool:
-    """Whether a lenient read took a key of any of the top-level `sections` from the defaults. Such a section is main's
-    in part and the branch's in part, so a rule that ties it to another section (a label it names, an area, a check)
-    is not one file's rule: it is read against both files, never against the branch's alone."""
+    """Whether a lenient read took a key of any of the top-level `sections` from the defaults. Such a section is the
+    tool's file's in part and the branch's in part, so a rule that ties it to another section (a label it names, an
+    area, a check) is not one file's rule: it is read against both files, never against the branch's alone."""
     held = _DEFAULTS.get()
     return held is not None and any(path.split(".", 1)[0] in sections for path in held[1])
 
@@ -3085,7 +3085,7 @@ def _parse(data: object) -> Conventions:
 
     # A section that names labels is checked against the file's own list, unless it took a key from the defaults (or the
     # list did; the claims and CI readers ask when they check, after they have read their keys): then it is partly
-    # main's and a label may be one the branch has not added yet (`_known`).
+    # the tool's file's and a label may be one the branch has not added yet (`_known`).
     def names_for(section: str) -> tuple[str, ...]:
         """The label names a reference in `section` may point at."""
         return _known(labels.names(), _default_labels, "labels", section)
@@ -3122,7 +3122,7 @@ def _parse(data: object) -> Conventions:
             "ci",
             lambda: names_for("ci"),
             merge.required_checks,
-            # With `ci` or `merge` part main's, a required check may be a job of a place of either file.
+            # With `ci` or `merge` filled from the tool's file, a required check may be a job of either file's places.
             lambda own: _known(own, _default_job_ids, "ci", "merge"),
         ),
     )
