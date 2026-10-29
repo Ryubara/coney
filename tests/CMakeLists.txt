@@ -55,6 +55,7 @@ add_executable(coney_tests
     gamemodes/game_mode_stack_test.cpp
     gamemodes/idle_mode_test.cpp
     gamemodes/legal_screen_mode_test.cpp
+    gamemodes/hud_feed_test.cpp
     gamemodes/level_items_test.cpp
     gamemodes/level_pickups_test.cpp
     gamemodes/loading_screen_test.cpp
@@ -309,6 +310,7 @@ target_sources(coney_tests PRIVATE
     human/disc_player_test.cpp
     human/human_edit_test.cpp
     human/human_test.cpp
+    human/knockout_test.cpp
     human/workout_test.cpp
     human/human_revive_test.cpp
     human/human_uncuff_test.cpp

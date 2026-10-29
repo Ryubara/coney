@@ -1,0 +1,2 @@
+# Square at 10: the player's first punch (S1) lands on PoizoCiv, a puppet at 1 health 1.0 m ahead. Stick centred.
+10 tap square

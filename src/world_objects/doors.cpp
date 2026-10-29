@@ -312,8 +312,9 @@ void playPair(ObjectWorld& world, std::uint8_t a, std::uint8_t b, anim::Vec3 at)
 }
 
 // The dust and the splinters of a splintering door's or a barrier's hit.
-// The dust (two radii) and the 20 splinters both hits make, the splinters 0.5 m above the hit point
-// (docs/research/objects.md#door-break, docs/research/objects.md#barriers).
+// The dust (two radii) and the 20 splinters both hits make, the splinters 0.5 m above the hit point: both functions add
+// (0, 0, 0.5) to the hit point for the per-hit splinters, as read at 0x003fa438 and 0x003b2180. The pages
+// (docs/research/objects.md#door-break, docs/research/objects.md#barriers) do not state the rise yet (#707).
 // @orig 0x003fa438 DoorSwing_HitBreakable (unknown)
 // @orig 0x003b2180 DoorFence_OnHit (unknown)
 void dustAndSplinters(ObjectWorld& world, anim::Vec3 at) {

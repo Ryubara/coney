@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261028-knockout-timing"
+date = "2026-10-28"
+kind = "trace"
+tool = "trace original"
+digest = "348252962a1b067459b8bf5c8e524791ca73ad8e490da72cf20406738422d620"
+
+[who]
+agent = "aaa7e8753cd990542"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["anim-dispatch", "puppet", "right-stick", "scripted-pad", "strike-contact"]
+
+[run]
+name = "knockout_timing"
+method = ""
+
+[values]
+updates = 151
+missed_updates = 0
+columns = 19
+
+[hashes]
+trace_csv = "9389ffd26aebaf9914c1cde32b3d316249523f355980cfcf812b5a31a33bbc41"

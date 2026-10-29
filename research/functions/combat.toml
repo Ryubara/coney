@@ -851,6 +851,13 @@ role = "The lethal reaction for Human_PlayLethalReaction: blends out, plays the 
 level = "confirmed-code"
 
 [[function]]
+address = 0x00267a00
+name = "Human_PlayDeathReaction"
+page = "combat-reactions.md#knockout-timing"
+role = "The death chain: the dying reaction, a fall, 205, then the loop (349, 200 or 323); the last clip before the loop ends in Human_OnHealthOut, the knock-out."
+level = "confirmed-code"
+
+[[function]]
 address = 0x00268430
 name = "HitReact_InSpecial"
 page = "combat/index.md#code-reactions"

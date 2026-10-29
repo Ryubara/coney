@@ -492,6 +492,10 @@ class Fighter {
     /// The player's health (record `+0x144`).
     [[nodiscard]] const combat::Health& health() const { return m_health; }
     [[nodiscard]] combat::Health& health() { return m_health; }
+    /// Its health ran out and its dying reaction has ended, so `Human_OnHealthOut` has knocked it out: the original
+    /// runs that as the end callback of the death chain's last clip, not at the hit
+    /// (docs/research/combat-reactions.md#knockout-timing). A heal ends it.
+    [[nodiscard]] bool healthOut() const { return m_healthOut && m_health.depleted(); }
     /// The player's reactions, stun and ground timers.
     [[nodiscard]] const Victim& victim() const { return m_victim; }
     /// Hurt: below the power class's hurt fraction of its health.
@@ -901,6 +905,7 @@ class Fighter {
     anim::Vec3 m_tandemAttacker;               // where the attacker stood at the start
     std::optional<int> m_tandemRequest;        // the victim's: the set its grabber has not joined yet
     std::optional<IncomingHit> m_deathPending; // a defeating hit taken while a paired move holds the death back
+    bool m_healthOut = false;                  // healthOut(): the dying reaction ended with the health out
     Combatant* m_target = nullptr;             // the target kept (human +0xc8)
     Combatant* m_snapTarget = nullptr;         // what the snap's search found for this update's square (not the target)
     int m_connect = 72;            // the grab's front connecting clip: 72, or the strong grapple's 657 (649 in rage)

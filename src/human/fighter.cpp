@@ -383,6 +383,14 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     // The counter from the rise comes before the ground's update would skip the dispatcher: a counter played frees
     // the player, and the dispatcher takes no command this update (as for the duck's).
     bool riseCountered = false;
+    // Out of health, the knock-out comes the update the dying clip has ended and the ground's loop plays
+    // (`Human_PlayDeathReaction` 0x00267a00 gives the chain's last clip `Human_OnHealthOut` as its end callback); a
+    // lethal hit held back plays its paired clip first. With health back, it is over (healthOut()).
+    if (!m_health.depleted()) {
+        m_healthOut = false;
+    } else if (!m_deathPending.has_value() && !animator.drivingClipPlaying()) {
+        m_healthOut = true;
+    }
     bool reacting = stepVictim(input, animator);
     if (reacting) {
         riseCountered = riseCounter(input, animator);
