@@ -57,6 +57,10 @@ a listing long enough to carry the game's code or data into the repository.
   never copied into the repository: SDL3 (zlib), librw (MIT), Dear ImGui (MIT, the debug menus' developer overlay),
   ENet (MIT, the UDP transport of network play; approved by the maintainer on 2026-10-20) and Catch2 (Boost Software
   Licence 1.0, tests only), and FFmpeg (below). A build that is passed on carries their licence notices.
+- Coney Studio's fonts, Inter (interface) and JetBrains Mono (code), are under the **SIL Open Font License 1.1**
+  (approved by the maintainer on 2026-10-28). Like the dependencies they are fetched at build time from their pinned
+  release archives (`cmake/deps.cmake`), never copied into the repository, and the build puts each font's licence
+  file beside it (`fonts/Inter-LICENSE.txt`, `fonts/JetBrainsMono-OFL.txt`).
 - FFmpeg (`ffmpeg.org`) decodes the game's Bink movies: a trimmed build of release 9.0.2 with only the Bink demuxer,
   the Bink video decoder and the Bink audio (DCT) decoder, under the **GNU Lesser General Public License 2.1 or
   later** (no GPL, version-3 or nonfree part is enabled; `avcodec_license()` reports it). Coney links it statically;

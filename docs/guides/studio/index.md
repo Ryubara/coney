@@ -5,7 +5,7 @@ a level, places spawn points, characters and paths, writes the project's scripts
 once, with all of Coney's behaviour (combat, AI, pathing, missions) working. It is to Coney what Roblox Studio is to
 Roblox: an editor for one game's content, not a general engine like Unity. The parent issue is [#1054](issue:1054).
 
-**Status: design.** Nothing in this folder is built. These pages are designs in the sense of [Page
+**Status: design.** Only the [prototype](prototype.md) is built. These pages are designs in the sense of [Page
 kinds](../writing-docs.md#page-kinds): each one says what Studio should do and why, and names the questions only a
 maintainer can answer. The maintainer's decisions so far are [below](#decisions). What gets built moves into a guide.
 
@@ -46,6 +46,9 @@ merges its page adds its row here and its line to the `nav:` of `mkdocs.yml`, un
 | [Mods, packages and loading](mods.md) | The mods folder and `enabled.toml`, how Coney trusts and reads a `.cmod`, starting and stopping, dependencies and exports, load order and clashes, console commands, modded saves, offline and online loading | [#1062](issue:1062) |
 | [The Coney console](console.md) | The F8 console in the release game and in developer builds: the terminal, game commands and script commands, the release and developer sets, mod commands, who may run what in co-op, the code boundary, off in test mode | [#1064](issue:1064) |
 | [The Coney console's F8 bar](console-bar.md) | The console's menu bar and panels: the mods' resource monitor over the SDK's monitor, the engine's frame and step timings, the log viewer, the network figures, profiler captures | [#1064](issue:1064) |
+
+The first program built from them is the prototype of [#1068](issue:1068): [Coney Studio: the prototype](prototype.md)
+says what it does and how to run it.
 
 ## Terms {#terms}
 

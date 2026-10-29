@@ -3,9 +3,10 @@
 The design of how Coney Studio looks and feels to the person using it: its words, its panels and their default layout,
 the layouts a user saves, the project folder, a new level, Play mode, importing files and previews. Moving round a level
 and building it (the fly camera, the keymap, the gizmo, selection, undo and composing) are on [The Level view, gizmos
-and composing](level-view.md). **Status: design; nothing here is built.** What Studio is, and the other design pages,
-are on [Coney Studio](index.md); the GUI library, the program and how Play and live edits run inside it are the
-[technology](technology.md) page's.
+and composing](level-view.md). **Status: design; the first prototype builds the theme, the default layout and the
+project folder** ([Coney Studio: the prototype](prototype.md)), and nothing else here yet. What Studio is, and the
+other design pages, are on [Coney Studio](index.md); the GUI library, the program and how Play and live edits run
+inside it are the [technology](technology.md) page's.
 
 The design comes from four editors people already know: Unity, Godot, Unreal and above all **Roblox Studio**, the
 closest model, because it too is an editor for one game's content rather than a general engine. FiveM is the model for
@@ -353,9 +354,9 @@ Studio builds Dear ImGui's style from the tokens, as Godot builds its theme from
 
 | Setting | Dear ImGui |
 | --- | --- |
-| Base colour | The window, child and popup backgrounds (`ImGuiCol_WindowBg`, `ChildBg`, `PopupBg`, `DockingEmptyBg`) |
-| Contrast | The other surfaces, the base moved towards black or white by multiples of the contrast, as Godot derives its contrast colours: frames, title bars, headers, tabs, scrollbars, separators and borders (`FrameBg`, `TitleBg`, `Header`, `Tab`, `ScrollbarBg`, `Separator`, `Border`) |
-| Accent colour | What is active, hovered or chosen: `ButtonActive`, `HeaderHovered`, `TabSelected`, `CheckMark`, `SliderGrab`, `DockingPreview`, `NavCursor`, and `TextSelectedBg` at reduced opacity |
+| Base colour | The panels: the window and popup backgrounds and the selected tab (`ImGuiCol_WindowBg`, `PopupBg`, `TabSelected`) |
+| Contrast | Godot's three dark shades, the base moved towards black by the contrast, 1.5 and 2 times it (0.7, 0.55 and 0.4 of each channel at the default 0.3). The first is fields and buttons (`FrameBg`, `Button`); the second is everything behind and between the panels: the menu bar, the toolbar, the tab strips and the dock's gaps, one base spacing wide (`MenuBarBg`, `TitleBg`, `Tab`, `DockingEmptyBg`, `DockingSeparatorSize`); the third the deepest wells. Separators and popup borders are the text colour, faint |
+| Accent colour | What is chosen, active or focused: the selected tab's line over it (`TabSelectedOverline`, fainter in a panel without focus), a chosen row and selected text at reduced opacity (`Header`, `TextSelectedBg`), toggles and sliders (`CheckMark`, `SliderGrab`), a pressed button, the focus (`NavCursor`), dock previews, the Inspector's section headers fainter still, and Play, the one filled accent button |
 | Text colour | White or black by the base colour's luminance, as Godot picks its mono colour, with disabled text at reduced opacity |
 | Corner radius | `WindowRounding`, `ChildRounding`, `FrameRounding`, `PopupRounding`, `TabRounding`, `GrabRounding`, `ScrollbarRounding` |
 | Border size | `WindowBorderSize`, `FrameBorderSize`, `PopupBorderSize`, `TabBorderSize` |

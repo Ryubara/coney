@@ -144,7 +144,7 @@ paths:
     - "src/world_objects/"
   # Coney's own by nature: the operating system, SDL3 and librw (platform), the engine's plumbing (core, fileio),
   # the debug tools, network play and the sandbox. Their functions need no marker.
-  coney_only: ["src/platform/", "src/core/", "src/fileio/", "src/debug/", "src/net/", "src/sandbox/", "src/install/", "src/launcher/"]
+  coney_only: ["src/platform/", "src/core/", "src/fileio/", "src/debug/", "src/net/", "src/sandbox/", "src/install/", "src/launcher/", "src/studio/"]
 
 commits:
   title:

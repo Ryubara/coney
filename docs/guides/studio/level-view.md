@@ -2,7 +2,9 @@
 
 How a user moves round a level and builds it in Coney Studio's Level view: the fly camera, the keymap, Unity's transform
 gizmo, snapping and the grid, selection, undo, and composing a level from primitives, textures, colliders, spawn points
-and path points. **Status: design; nothing here is built.** It is the second half of the [editor experience
+and path points. **Status: design; the first prototype builds the fly camera, click selection and framing the
+selection** ([Coney Studio: the prototype](prototype.md)), and nothing else here yet. It is the second half of the
+[editor experience
 design](editor-experience.md), which holds the panels, the project, Play mode, importing, the two rules every choice
 follows and the build issues both pages propose; the editors' documentation read for both is listed in its
 [Sources](editor-experience.md#sources), except the snapping survey's, which [Snapping](#snapping) lists itself.
